@@ -1,4 +1,5 @@
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
@@ -15,6 +16,7 @@ const DAILY_STREAK = 7;
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation<any>();
 
   return (
     <ScrollView style={[styles.screen, { paddingTop: insets.top }]} contentContainerStyle={styles.scrollContent}>
@@ -29,7 +31,9 @@ export default function HomeScreen() {
       </View>
       <WeekCalendar />
       <View style={styles.cta}>
-        <DailyExerciseButton onPress={() => {}} />
+        <DailyExerciseButton
+          onPress={() => navigation.navigate('DailyExercise')}
+        />
       </View>
       <DailyScoresSection />
       <AnalyticsSection />
