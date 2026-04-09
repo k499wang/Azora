@@ -14,7 +14,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { colors } from './src/theme/colors';
 import { typography } from './src/theme/typography';
 import HomeScreen from './src/screens/HomeScreen';
-import BreatheScreen from './src/screens/BreatheScreen';
+import ExercisePage from './src/screens/ExercisePage';
 import ProfileScreen from './src/screens/ProfileScreen';
 
 SplashScreen.preventAutoHideAsync();
@@ -54,7 +54,7 @@ export default function App() {
           }}
         >
           <Tab.Screen name="Home" component={HomeScreen} />
-          <Tab.Screen name="Breathe" component={BreatheScreen} />
+          <Tab.Screen name="Exercise" component={ExercisePage} />
           <Tab.Screen name="Profile" component={ProfileScreen} />
         </Tab.Navigator>
       </NavigationContainer>
