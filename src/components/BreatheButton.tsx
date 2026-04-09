@@ -1,19 +1,19 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { BlurView } from 'expo-blur';
-import { LinearGradient } from 'expo-linear-gradient';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { colors } from '../theme/colors';
-import { typography } from '../theme/typography';
 
 interface BreatheButtonProps {
   onPress: () => void;
 }
 
-const SIZE = 240;
+const SIZE = 300;
 
 export default function BreatheButton({ onPress }: BreatheButtonProps) {
   return (
     <View style={styles.wrapper}>
-      <View style={styles.glow} />
+      {/* Outer ambient glow */}
+      <View style={styles.glowOuter} />
+      {/* Inner glow ring */}
+      <View style={styles.glowInner} />
       <Pressable
         style={({ pressed }) => [
           styles.outer,
@@ -21,26 +21,8 @@ export default function BreatheButton({ onPress }: BreatheButtonProps) {
         ]}
         onPress={onPress}
       >
-        {/* Base gradient */}
-        <LinearGradient
-          colors={[colors.primary.blue400, colors.primary.blue600]}
-          start={{ x: 0.2, y: 0 }}
-          end={{ x: 0.8, y: 1 }}
-          style={styles.gradient}
-        />
-        {/* Glass blur overlay */}
-        <BlurView intensity={25} tint="light" style={styles.blurLayer} />
-        {/* Glass surface */}
-        <View style={styles.glassSurface}>
-          {/* Top highlight / reflection */}
-          <View style={styles.reflection} />
-          <View style={styles.inner}>
-            <Text style={styles.label}>Start</Text>
-            <Text style={styles.sublabel}>Breathing</Text>
-          </View>
-        </View>
-        {/* Inner border for glass edge */}
-        <View style={styles.borderRing} />
+        <View style={styles.solidBg} />
+        <View style={styles.inner} />
       </Pressable>
     </View>
   );
@@ -48,17 +30,25 @@ export default function BreatheButton({ onPress }: BreatheButtonProps) {
 
 const styles = StyleSheet.create({
   wrapper: {
-    width: SIZE + 48,
-    height: SIZE + 48,
+    width: SIZE + 80,
+    height: SIZE + 80,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  glow: {
+  glowOuter: {
     position: 'absolute',
-    width: SIZE + 48,
-    height: SIZE + 48,
-    borderRadius: (SIZE + 48) / 2,
+    width: SIZE + 80,
+    height: SIZE + 80,
+    borderRadius: (SIZE + 80) / 2,
     backgroundColor: colors.primary.blue400,
+    opacity: 0.08,
+  },
+  glowInner: {
+    position: 'absolute',
+    width: SIZE + 40,
+    height: SIZE + 40,
+    borderRadius: (SIZE + 40) / 2,
+    backgroundColor: colors.primary.blue500,
     opacity: 0.12,
   },
   outer: {
@@ -66,53 +56,24 @@ const styles = StyleSheet.create({
     height: SIZE,
     borderRadius: SIZE / 2,
     overflow: 'hidden',
-    shadowColor: colors.primary.blue600,
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.25,
-    shadowRadius: 24,
-    elevation: 10,
+    shadowColor: colors.primary.blue700,
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.35,
+    shadowRadius: 32,
+    elevation: 14,
   },
   pressed: {
-    opacity: 0.9,
-    transform: [{ scale: 0.96 }],
+    opacity: 0.85,
+    transform: [{ scale: 0.95 }],
   },
-  gradient: {
+  solidBg: {
     ...StyleSheet.absoluteFillObject,
-  },
-  blurLayer: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  glassSurface: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255, 255, 255, 0.12)',
-  },
-  reflection: {
-    position: 'absolute',
-    top: -SIZE * 0.15,
-    left: '15%',
-    right: '15%',
-    height: SIZE * 0.55,
-    borderRadius: SIZE,
-    backgroundColor: 'rgba(255, 255, 255, 0.18)',
-  },
-  borderRing: {
-    ...StyleSheet.absoluteFillObject,
-    borderRadius: SIZE / 2,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.25)',
+    backgroundColor: colors.primary.blue600,
   },
   inner: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  label: {
-    ...typography.display.display3,
-    color: colors.text.inverse,
-  },
-  sublabel: {
-    ...typography.body.medium,
-    color: colors.text.inverse,
-    opacity: 0.75,
+    gap: 6,
   },
 });
