@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
 import { LayoutChangeEvent, StyleSheet, Text, View } from 'react-native';
-import { colors } from '../theme/colors';
-import { typography } from '../theme/typography';
-import { spacing } from '../theme/spacing';
+import { colors } from '../../theme/colors';
+import { typography } from '../../theme/typography';
+import { spacing } from '../../theme/spacing';
 
 export interface DataPoint {
   label: string;
@@ -16,6 +16,8 @@ interface BarGraphProps {
   unit?: string;
   height?: number;
   barColor?: string;
+  highlightIndex?: number;
+  highlightColor?: string;
 }
 
 const CHART_PADDING = {
@@ -34,6 +36,8 @@ export default function BarGraph({
   unit = '',
   height = 180,
   barColor = colors.primary.blue500,
+  highlightIndex,
+  highlightColor = colors.orange[400],
 }: BarGraphProps) {
   const [containerWidth, setContainerWidth] = useState(0);
 
@@ -84,30 +88,35 @@ export default function BarGraph({
       <View style={styles.container} onLayout={onLayout}>
         {chart ? (
           <View style={[styles.chartArea, { height }]}>
-            {chart.bars.map((bar, index) => (
-              <View
-                key={`bar-${bar.label}-${index}`}
-                style={[
-                  styles.bar,
-                  {
-                    left: bar.barLeft,
-                    width: bar.barWidth,
-                    height: bar.barHeight,
-                    bottom: CHART_PADDING.bottom,
-                    backgroundColor: barColor,
-                  },
-                ]}
-              />
-            ))}
+            {chart.bars.map((bar, index) => {
+              const isHighlighted = index === highlightIndex;
+              return (
+                <View
+                  key={`bar-${bar.label}-${index}`}
+                  style={[
+                    styles.bar,
+                    {
+                      left: bar.barLeft,
+                      width: bar.barWidth,
+                      height: bar.barHeight,
+                      bottom: CHART_PADDING.bottom,
+                      backgroundColor: isHighlighted ? highlightColor : barColor,
+                    },
+                  ]}
+                />
+              );
+            })}
 
             {chart.bars.map((bar, index) => {
               const barTop = height - CHART_PADDING.bottom - bar.barHeight;
+              const isHighlighted = index === highlightIndex;
               return (
                 <Text
                   key={`val-${bar.label}-${index}`}
                   style={[
                     styles.valueLabel,
                     { left: bar.centerX - 20, top: barTop - 18 },
+                    isHighlighted && { color: highlightColor, fontWeight: '700' },
                   ]}
                   numberOfLines={1}
                 >
