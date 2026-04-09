@@ -2,12 +2,12 @@ import { useImperativeHandle, forwardRef, useRef, ReactNode } from 'react';
 import { Animated, Easing, StyleSheet, View } from 'react-native';
 import { colors } from '../../theme/colors';
 
-const INNER_SIZE = 180;
-const LAYER_TWO_SIZE = 220;
-const LAYER_THREE_SIZE = 260;
-const OUTER_SIZE = 300;
-const MIN_SCALE = 0.55;
-const MAX_SCALE = 1;
+const INNER_SIZE = 220;
+const LAYER_TWO_SIZE = 270;
+const LAYER_THREE_SIZE = 320;
+const OUTER_SIZE = 370;
+const MIN_SCALE = 0.78;
+const MAX_SCALE = 1.08;
 
 export interface BreathingCircleRef {
   expand: (duration: number) => void;
