@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
-import { spacing, padding } from '../theme/spacing';
+import { spacing } from '../theme/spacing';
 import BreathingCircle, {
   BreathingCircleRef,
 } from '../components/exercise/BreathingCircle';
 import ExercisePicker from '../components/exercise/ExercisePicker';
+import ExerciseScaffold from '../components/exercise/ExerciseScaffold';
 import TECHNIQUES from '../data/techniques';
 import type { BreathingTechnique } from '../data/techniques';
 
@@ -27,14 +27,12 @@ const PHASE_LABELS: Record<Phase, string> = {
 };
 
 export default function ExercisePage() {
-  const insets = useSafeAreaInsets();
   const circleRef = useRef<BreathingCircleRef>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [phase, setPhase] = useState<Phase>('idle');
   const [countdown, setCountdown] = useState(0);
   const [round, setRound] = useState(0);
   const [elapsed, setElapsed] = useState(0);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
   const [technique, setTechnique] = useState<BreathingTechnique>(TECHNIQUES[0]);
   const [totalRounds, setTotalRounds] = useState(TECHNIQUES[0].defaultRounds);
 
@@ -51,18 +49,23 @@ export default function ExercisePage() {
         onDone();
         return;
       }
+
       setPhase(p);
       setCountdown(secs);
 
-      if (p === 'inhale') circleRef.current?.expand(secs);
-      else if (p === 'exhale') circleRef.current?.contract(secs);
+      if (p === 'inhale') {
+        circleRef.current?.expand(secs);
+      } else if (p === 'exhale') {
+        circleRef.current?.contract(secs);
+      }
 
       let remaining = secs;
       clearTimer();
       timerRef.current = setInterval(() => {
         remaining -= 1;
         setCountdown(remaining);
-        setElapsed((e) => e + 1);
+        setElapsed((current) => current + 1);
+
         if (remaining <= 0) {
           clearTimer();
           onDone();
@@ -78,6 +81,7 @@ export default function ExercisePage() {
         setPhase('done');
         return;
       }
+
       setRound(currentRound);
 
       runPhase('inhale', pattern.inhale, () => {
@@ -93,32 +97,32 @@ export default function ExercisePage() {
     [runPhase],
   );
 
-  const handleStart = () => {
-    if (phase === 'idle' || phase === 'done') {
-      setElapsed(0);
-      circleRef.current?.reset();
-      startCycle(1, technique.pattern, totalRounds);
-    }
-  };
-
-  const handleReset = () => {
+  const resetSession = useCallback(() => {
     clearTimer();
     circleRef.current?.reset();
     setPhase('idle');
     setCountdown(0);
     setRound(0);
     setElapsed(0);
-  };
-
-  const handleTechniqueSelect = (t: BreathingTechnique) => {
-    if (phase !== 'idle' && phase !== 'done') return;
-    setTechnique(t);
-    setTotalRounds(t.defaultRounds);
-  };
-
-  useEffect(() => {
-    return () => clearTimer();
   }, []);
+
+  const handleStart = () => {
+    if (phase === 'idle' || phase === 'done') {
+      setElapsed(0);
+      setCountdown(0);
+      setRound(0);
+      circleRef.current?.reset();
+      startCycle(1, technique.pattern, totalRounds);
+    }
+  };
+
+  const handleTechniqueSelect = (nextTechnique: BreathingTechnique) => {
+    if (phase !== 'idle' && phase !== 'done') return;
+    setTechnique(nextTechnique);
+    setTotalRounds(nextTechnique.defaultRounds);
+  };
+
+  useEffect(() => () => clearTimer(), []);
 
   const formatTime = (secs: number) => {
     const m = Math.floor(secs / 60);
@@ -129,59 +133,48 @@ export default function ExercisePage() {
   const isActive = phase !== 'idle' && phase !== 'done';
 
   return (
-    <View style={[styles.screen, { paddingTop: insets.top }]}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.titleRow}>
-          <Text style={styles.pageTitle}>Exercise</Text>
-          <View style={styles.headerRight}>
-            <View style={isActive ? styles.hidden : undefined} pointerEvents={isActive ? 'none' : 'auto'}>
-              <View style={styles.stepper}>
-                <Pressable
-                  style={[styles.stepBtn, totalRounds <= MIN_ROUNDS && styles.stepBtnDisabled]}
-                  onPress={() => totalRounds > MIN_ROUNDS && setTotalRounds(totalRounds - 1)}
-                >
-                  <MaterialCommunityIcons
-                    name="minus"
-                    size={14}
-                    color={totalRounds <= MIN_ROUNDS ? colors.text.tertiary : colors.text.primary}
-                  />
-                </Pressable>
-                <View style={styles.stepValueWrap}>
-                  <Text style={styles.stepValue}>{totalRounds}</Text>
-                  <Text style={styles.stepLabel}>rounds</Text>
-                </View>
-                <Pressable
-                  style={[styles.stepBtn, totalRounds >= MAX_ROUNDS && styles.stepBtnDisabled]}
-                  onPress={() => totalRounds < MAX_ROUNDS && setTotalRounds(totalRounds + 1)}
-                >
-                  <MaterialCommunityIcons
-                    name="plus"
-                    size={14}
-                    color={totalRounds >= MAX_ROUNDS ? colors.text.tertiary : colors.text.primary}
-                  />
-                </Pressable>
-              </View>
+    <ExerciseScaffold
+      title="Exercise"
+      rightSlot={
+        !isActive ? (
+          <View style={styles.stepper}>
+            <Pressable
+              style={[styles.stepBtn, totalRounds <= MIN_ROUNDS && styles.stepBtnDisabled]}
+              onPress={() => totalRounds > MIN_ROUNDS && setTotalRounds(totalRounds - 1)}
+            >
+              <MaterialCommunityIcons
+                name="minus"
+                size={14}
+                color={totalRounds <= MIN_ROUNDS ? colors.text.tertiary : colors.text.primary}
+              />
+            </Pressable>
+            <View style={styles.stepValueWrap}>
+              <Text style={styles.stepValue}>{totalRounds}</Text>
+              <Text style={styles.stepLabel}>rounds</Text>
             </View>
-            {isActive ? (
-              <Pressable onPress={handleReset} style={styles.resetButton}>
-                <MaterialCommunityIcons name="close" size={20} color={colors.text.secondary} />
-              </Pressable>
-            ) : null}
+            <Pressable
+              style={[styles.stepBtn, totalRounds >= MAX_ROUNDS && styles.stepBtnDisabled]}
+              onPress={() => totalRounds < MAX_ROUNDS && setTotalRounds(totalRounds + 1)}
+            >
+              <MaterialCommunityIcons
+                name="plus"
+                size={14}
+                color={totalRounds >= MAX_ROUNDS ? colors.text.tertiary : colors.text.primary}
+              />
+            </Pressable>
           </View>
-        </View>
-        <View style={isActive ? styles.hidden : undefined} pointerEvents={isActive ? 'none' : 'auto'}>
+        ) : undefined
+      }
+      onClose={isActive ? resetSession : undefined}
+      pickerSlot={
+        !isActive ? (
           <ExercisePicker techniques={TECHNIQUES} selected={technique.id} onSelect={handleTechniqueSelect} />
-        </View>
-      </View>
-
-      {/* Center */}
-      <View style={styles.center}>
+        ) : undefined
+      }
+      centerSlot={
         <BreathingCircle ref={circleRef}>
           <Text style={styles.phaseLabel}>{PHASE_LABELS[phase]}</Text>
-          {isActive ? (
-            <Text style={styles.countdown}>{countdown}</Text>
-          ) : null}
+          {isActive ? <Text style={styles.countdown}>{countdown}</Text> : null}
           {phase === 'done' ? (
             <MaterialCommunityIcons
               name="check-circle-outline"
@@ -190,11 +183,9 @@ export default function ExercisePage() {
             />
           ) : null}
         </BreathingCircle>
-      </View>
-
-      {/* Bottom */}
-      <View style={[styles.bottom, { paddingBottom: insets.bottom + spacing.lg }]}>
-        {isActive ? (
+      }
+      bottomSlot={
+        isActive ? (
           <View style={styles.stats}>
             <View style={styles.stat}>
               <Text style={styles.statLabel}>Round</Text>
@@ -210,57 +201,20 @@ export default function ExercisePage() {
           </View>
         ) : (
           <Pressable
-            style={({ pressed }) => [
-              styles.startButton,
-              pressed && styles.startButtonPressed,
-            ]}
+            style={({ pressed }) => [styles.startButton, pressed && styles.startButtonPressed]}
             onPress={handleStart}
           >
             <Text style={styles.startButtonText}>
               {phase === 'done' ? 'Restart' : 'Begin Session'}
             </Text>
           </Pressable>
-        )}
-      </View>
-    </View>
+        )
+      }
+    />
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: colors.background.primary,
-  },
-  header: {
-    paddingHorizontal: padding.screen.horizontal,
-    paddingTop: padding.screen.vertical,
-    gap: spacing.sm,
-    zIndex: 10,
-  },
-  titleRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  pageTitle: {
-    ...typography.title.title1,
-    color: colors.text.primary,
-  },
-  headerRight: {
-    position: 'relative',
-  },
-  resetButton: {
-    position: 'absolute',
-    right: 0,
-    top: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: spacing.xl + spacing.xs,
-    height: spacing.xl + spacing.xs,
-    borderRadius: (spacing.xl + spacing.xs) / 2,
-    backgroundColor: colors.neutral[100],
-  },
   stepper: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -295,24 +249,14 @@ const styles = StyleSheet.create({
     ...typography.caption.caption2,
     color: colors.text.tertiary,
   },
-  hidden: {
-    opacity: 0,
-  },
-  center: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   phaseLabel: {
     ...typography.title.title3,
     color: colors.text.inverse,
+    textAlign: 'center',
   },
   countdown: {
     ...typography.display.display1,
     color: colors.text.inverse,
-  },
-  bottom: {
-    paddingHorizontal: padding.screen.horizontal,
   },
   stats: {
     flexDirection: 'row',
