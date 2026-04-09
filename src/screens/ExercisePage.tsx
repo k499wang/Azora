@@ -8,9 +8,12 @@ import { spacing, padding } from '../theme/spacing';
 import BreathingCircle, {
   BreathingCircleRef,
 } from '../components/exercise/BreathingCircle';
+import ExercisePicker from '../components/exercise/ExercisePicker';
+import TECHNIQUES from '../data/techniques';
+import type { BreathingTechnique } from '../data/techniques';
 
-const PATTERN = { inhale: 4, holdIn: 4, exhale: 4, holdOut: 4 };
-const TOTAL_ROUNDS = 8;
+const MIN_ROUNDS = 1;
+const MAX_ROUNDS = 20;
 
 type Phase = 'idle' | 'inhale' | 'holdIn' | 'exhale' | 'holdOut' | 'done';
 
@@ -32,6 +35,9 @@ export default function ExercisePage() {
   const [elapsed, setElapsed] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  const [technique, setTechnique] = useState<BreathingTechnique>(TECHNIQUES[0]);
+  const [totalRounds, setTotalRounds] = useState(TECHNIQUES[0].defaultRounds);
+
   const clearTimer = () => {
     if (timerRef.current) {
       clearInterval(timerRef.current);
@@ -41,6 +47,10 @@ export default function ExercisePage() {
 
   const runPhase = useCallback(
     (p: Phase, secs: number, onDone: () => void) => {
+      if (secs === 0) {
+        onDone();
+        return;
+      }
       setPhase(p);
       setCountdown(secs);
 
@@ -63,18 +73,18 @@ export default function ExercisePage() {
   );
 
   const startCycle = useCallback(
-    (currentRound: number) => {
-      if (currentRound > TOTAL_ROUNDS) {
+    (currentRound: number, pattern: BreathingTechnique['pattern'], rounds: number) => {
+      if (currentRound > rounds) {
         setPhase('done');
         return;
       }
       setRound(currentRound);
 
-      runPhase('inhale', PATTERN.inhale, () => {
-        runPhase('holdIn', PATTERN.holdIn, () => {
-          runPhase('exhale', PATTERN.exhale, () => {
-            runPhase('holdOut', PATTERN.holdOut, () => {
-              startCycle(currentRound + 1);
+      runPhase('inhale', pattern.inhale, () => {
+        runPhase('holdIn', pattern.holdIn, () => {
+          runPhase('exhale', pattern.exhale, () => {
+            runPhase('holdOut', pattern.holdOut, () => {
+              startCycle(currentRound + 1, pattern, rounds);
             });
           });
         });
@@ -87,7 +97,7 @@ export default function ExercisePage() {
     if (phase === 'idle' || phase === 'done') {
       setElapsed(0);
       circleRef.current?.reset();
-      startCycle(1);
+      startCycle(1, technique.pattern, totalRounds);
     }
   };
 
@@ -98,6 +108,12 @@ export default function ExercisePage() {
     setCountdown(0);
     setRound(0);
     setElapsed(0);
+  };
+
+  const handleTechniqueSelect = (t: BreathingTechnique) => {
+    if (phase !== 'idle' && phase !== 'done') return;
+    setTechnique(t);
+    setTotalRounds(t.defaultRounds);
   };
 
   useEffect(() => {
@@ -116,17 +132,47 @@ export default function ExercisePage() {
     <View style={[styles.screen, { paddingTop: insets.top }]}>
       {/* Header */}
       <View style={styles.header}>
-        <View>
-          <Text style={styles.technique}>Box Breathing</Text>
-          <Text style={styles.pattern}>
-            {PATTERN.inhale}-{PATTERN.holdIn}-{PATTERN.exhale}-{PATTERN.holdOut}
-          </Text>
+        <View style={styles.titleRow}>
+          <Text style={styles.pageTitle}>Exercise</Text>
+          <View style={styles.headerRight}>
+            <View style={isActive ? styles.hidden : undefined} pointerEvents={isActive ? 'none' : 'auto'}>
+              <View style={styles.stepper}>
+                <Pressable
+                  style={[styles.stepBtn, totalRounds <= MIN_ROUNDS && styles.stepBtnDisabled]}
+                  onPress={() => totalRounds > MIN_ROUNDS && setTotalRounds(totalRounds - 1)}
+                >
+                  <MaterialCommunityIcons
+                    name="minus"
+                    size={14}
+                    color={totalRounds <= MIN_ROUNDS ? colors.text.tertiary : colors.text.primary}
+                  />
+                </Pressable>
+                <View style={styles.stepValueWrap}>
+                  <Text style={styles.stepValue}>{totalRounds}</Text>
+                  <Text style={styles.stepLabel}>rounds</Text>
+                </View>
+                <Pressable
+                  style={[styles.stepBtn, totalRounds >= MAX_ROUNDS && styles.stepBtnDisabled]}
+                  onPress={() => totalRounds < MAX_ROUNDS && setTotalRounds(totalRounds + 1)}
+                >
+                  <MaterialCommunityIcons
+                    name="plus"
+                    size={14}
+                    color={totalRounds >= MAX_ROUNDS ? colors.text.tertiary : colors.text.primary}
+                  />
+                </Pressable>
+              </View>
+            </View>
+            {isActive ? (
+              <Pressable onPress={handleReset} style={styles.resetButton}>
+                <MaterialCommunityIcons name="close" size={20} color={colors.text.secondary} />
+              </Pressable>
+            ) : null}
+          </View>
         </View>
-        {isActive ? (
-          <Pressable onPress={handleReset} style={styles.resetButton}>
-            <MaterialCommunityIcons name="close" size={20} color={colors.text.secondary} />
-          </Pressable>
-        ) : null}
+        <View style={isActive ? styles.hidden : undefined} pointerEvents={isActive ? 'none' : 'auto'}>
+          <ExercisePicker techniques={TECHNIQUES} selected={technique.id} onSelect={handleTechniqueSelect} />
+        </View>
       </View>
 
       {/* Center */}
@@ -153,7 +199,7 @@ export default function ExercisePage() {
             <View style={styles.stat}>
               <Text style={styles.statLabel}>Round</Text>
               <Text style={styles.statValue}>
-                {round}/{TOTAL_ROUNDS}
+                {round}/{totalRounds}
               </Text>
             </View>
             <View style={styles.statDivider} />
@@ -186,28 +232,71 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.primary,
   },
   header: {
+    paddingHorizontal: padding.screen.horizontal,
+    paddingTop: padding.screen.vertical,
+    gap: spacing.sm,
+    zIndex: 10,
+  },
+  titleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: padding.screen.horizontal,
-    paddingTop: padding.screen.vertical,
   },
-  technique: {
+  pageTitle: {
     ...typography.title.title1,
     color: colors.text.primary,
   },
-  pattern: {
-    ...typography.body.small,
-    color: colors.text.tertiary,
-    marginTop: 2,
+  headerRight: {
+    position: 'relative',
   },
   resetButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: spacing.xl + spacing.xs,
+    height: spacing.xl + spacing.xs,
+    borderRadius: (spacing.xl + spacing.xs) / 2,
+    backgroundColor: colors.neutral[100],
+  },
+  stepper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    backgroundColor: colors.background.elevated,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.border.subtle,
+    paddingHorizontal: spacing.xs,
+    paddingVertical: spacing.xs,
+  },
+  stepBtn: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
     backgroundColor: colors.neutral[100],
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  stepBtnDisabled: {
+    opacity: 0.4,
+  },
+  stepValueWrap: {
+    alignItems: 'center',
+    minWidth: 26,
+  },
+  stepValue: {
+    ...typography.heading.heading2,
+    color: colors.text.primary,
+  },
+  stepLabel: {
+    ...typography.caption.caption2,
+    color: colors.text.tertiary,
+  },
+  hidden: {
+    opacity: 0,
   },
   center: {
     flex: 1,
@@ -233,7 +322,7 @@ const styles = StyleSheet.create({
   },
   stat: {
     alignItems: 'center',
-    gap: 2,
+    gap: spacing.xs / 2,
   },
   statLabel: {
     ...typography.caption.caption1,
@@ -245,7 +334,7 @@ const styles = StyleSheet.create({
   },
   statDivider: {
     width: 1,
-    height: 28,
+    height: spacing.lg + spacing.xs,
     backgroundColor: colors.border.subtle,
   },
   startButton: {
