@@ -14,6 +14,7 @@ import { spacing, padding, margin } from '../../theme/spacing';
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const TOTAL_DAYS = 28;
 const PILL_GAP = spacing.sm;
+const PILL_WIDTH_RATIO = 0.94;
 
 function buildDays() {
   const today = new Date();
@@ -52,13 +53,14 @@ export default function WeekCalendar({ onSelectDay }: WeekCalendarProps) {
   const onContainerLayout = useCallback(
     (e: LayoutChangeEvent) => {
       const containerWidth = e.nativeEvent.layout.width;
+      const viewportWidth = containerWidth - padding.screen.horizontal * 2;
       // 7 pills visible with 6 gaps
-      const w = (containerWidth - PILL_GAP * 6) / 7;
+      const visiblePillWidth = (viewportWidth - PILL_GAP * 6) / 7;
+      const w = visiblePillWidth * PILL_WIDTH_RATIO;
       setPillWidth(w);
 
-      // Scroll so the last 7 days are fully visible (today = second-to-last)
-      const totalContentWidth = TOTAL_DAYS * w + (TOTAL_DAYS - 1) * PILL_GAP;
-      const scrollTo = totalContentWidth - containerWidth;
+      // Align to the start of the final 7-day window so only whole pills show.
+      const scrollTo = (TOTAL_DAYS - 7) * (w + PILL_GAP);
       setTimeout(() => {
         scrollRef.current?.scrollTo({ x: scrollTo, animated: false });
       }, 0);
@@ -140,9 +142,9 @@ const styles = StyleSheet.create({
   pill: {
     alignItems: 'center',
     paddingVertical: spacing.md,
-    borderRadius: 18,
+    borderRadius: 16,
     backgroundColor: colors.background.accentSoft,
-    gap: 2,
+    gap: 1,
   },
   pillSelected: {
     backgroundColor: colors.primary.blue600,
@@ -172,7 +174,7 @@ const styles = StyleSheet.create({
   },
   todayDot: {
     position: 'absolute',
-    bottom: 4,
+    bottom: 3,
     width: 5,
     height: 5,
     borderRadius: 2.5,
