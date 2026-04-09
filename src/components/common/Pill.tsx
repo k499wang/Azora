@@ -1,8 +1,8 @@
 import { StyleSheet, Text, View, ViewStyle } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { colors } from '../theme/colors';
-import { typography } from '../theme/typography';
-import { spacing } from '../theme/spacing';
+import { colors } from '../../theme/colors';
+import { typography } from '../../theme/typography';
+import { spacing } from '../../theme/spacing';
 
 interface PillProps {
   icon: keyof typeof MaterialCommunityIcons.glyphMap;

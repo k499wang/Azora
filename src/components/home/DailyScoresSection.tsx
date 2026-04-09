@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { colors } from '../theme/colors';
-import { typography } from '../theme/typography';
-import { spacing, padding, margin } from '../theme/spacing';
+import { colors } from '../../theme/colors';
+import { typography } from '../../theme/typography';
+import { spacing, padding, margin } from '../../theme/spacing';
 
 const SCORES = [
   { value: '1:42', label: 'Hold time ' },

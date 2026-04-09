@@ -1,8 +1,8 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { colors } from '../theme/colors';
-import { typography } from '../theme/typography';
-import { spacing, padding, margin } from '../theme/spacing';
+import { colors } from '../../theme/colors';
+import { typography } from '../../theme/typography';
+import { spacing, padding, margin } from '../../theme/spacing';
 
 const DAILY_TASKS = [
   { label: 'Morning breathing session', time: '5 min', technique: 'Box Breathing', icon: 'weather-sunny' as const },

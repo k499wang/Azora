@@ -1,12 +1,14 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
 import { spacing, padding, margin } from '../theme/spacing';
-import Pill from '../components/Pill';
-import AnalyticsSection from '../components/AnalyticsSection';
-import DailyScoresSection from '../components/DailyScoresSection';
+import Pill from '../components/common/Pill';
+import WeekCalendar from '../components/home/WeekCalendar';
+import DailyExerciseButton from '../components/home/DailyExerciseButton';
+import DailyScoresSection from '../components/home/DailyScoresSection';
+import HighlightCards from '../components/home/HighlightCards';
+import AnalyticsSection from '../components/analytics/AnalyticsSection';
 
 const USER_NAME = 'Kevin';
 const DAILY_STREAK = 7;
@@ -25,23 +27,13 @@ export default function HomeScreen() {
           <Pill icon="fire" label={String(DAILY_STREAK)} />
         </View>
       </View>
+      <WeekCalendar />
       <View style={styles.cta}>
-        <Pressable style={({ pressed }) => [styles.ctaButton, pressed && styles.ctaButtonPressed]} onPress={() => {}}>
-          <View style={styles.ctaButtonContent}>
-            <View style={styles.ctaCopy}>
-              <Text style={styles.ctaButtonTitle}>Daily exercise</Text>
-              <Text style={styles.ctaButtonSubtitle}>
-                Start your breath hold exercise.
-              </Text>
-            </View>
-            <View style={styles.ctaVisual}>
-              <MaterialCommunityIcons name="chevron-right" size={30} color={colors.text.inverse} />
-            </View>
-          </View>
-        </Pressable>
+        <DailyExerciseButton onPress={() => {}} />
       </View>
       <DailyScoresSection />
       <AnalyticsSection />
+      <HighlightCards />
     </ScrollView>
   );
 }
@@ -75,48 +67,5 @@ const styles = StyleSheet.create({
   cta: {
     paddingHorizontal: padding.screen.horizontal,
     marginTop: margin.sectionGap,
-  },
-  ctaButton: {
-    width: '100%',
-    backgroundColor: colors.primary.blue600,
-    borderRadius: 22,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    shadowColor: colors.primary.blue700,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.16,
-    shadowRadius: 14,
-    elevation: 6,
-    overflow: 'hidden',
-  },
-  ctaButtonPressed: {
-    opacity: 0.92,
-    transform: [{ scale: 0.99 }],
-  },
-  ctaButtonContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.md,
-  },
-  ctaCopy: {
-    flex: 1,
-    gap: 2,
-  },
-  ctaButtonTitle: {
-    ...typography.title.title3,
-    color: colors.text.inverse,
-  },
-  ctaButtonSubtitle: {
-    ...typography.body.xsmall,
-    color: colors.primary.blue100,
-    maxWidth: 240,
-    lineHeight: 18,
-  },
-  ctaVisual: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
 });

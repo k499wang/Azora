@@ -1,5 +1,5 @@
 import { Pressable, StyleSheet, View } from 'react-native';
-import { colors } from '../theme/colors';
+import { colors } from '../../theme/colors';
 
 interface BreatheButtonProps {
   onPress: () => void;
