@@ -59,6 +59,7 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: colors.background.primary,
+    justifyContent: 'space-between',
   },
   header: {
     paddingHorizontal: padding.screen.horizontal,
@@ -99,11 +100,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.neutral[100],
   },
   center: {
-    flex: 1,
+    ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
     justifyContent: 'center',
+    pointerEvents: 'box-none',
   },
   bottom: {
     paddingHorizontal: padding.screen.horizontal,
+    zIndex: 10,
   },
 });

@@ -3,9 +3,14 @@ import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing, padding, margin } from '../../theme/spacing';
 
-const SCORES = [
+interface ScoreItem {
+  value: string;
+  label: string;
+  unit?: string;
+}
+
+const SCORES: ScoreItem[] = [
   { value: '1:42', label: 'Hold time ' },
-  { value: '62', unit: 'bpm', label: 'Heart rate' },
   { value: '88', label: 'Health score' },
 ];
 

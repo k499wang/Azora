@@ -6,13 +6,9 @@ import { spacing, padding, margin } from '../../theme/spacing';
 
 interface HighlightCardsProps {
   bestHold?: string;
-  avgHeartRate?: string;
 }
 
-export default function HighlightCards({
-  bestHold = '2:14',
-  avgHeartRate = '64',
-}: HighlightCardsProps) {
+export default function HighlightCards({ bestHold = '2:14' }: HighlightCardsProps) {
   return (
     <View style={styles.section}>
       <View style={styles.row}>
@@ -23,16 +19,6 @@ export default function HighlightCards({
           </View>
           <Text style={styles.value}>{bestHold}</Text>
           <Text style={styles.unit}>minutes</Text>
-          <View style={[styles.accent, styles.accentBlue]} />
-        </View>
-
-        <View style={[styles.card, styles.cardRed]}>
-          <View style={styles.cardTop}>
-            <MaterialCommunityIcons name="heart-pulse" size={18} color={colors.primary.blue600} />
-            <Text style={[styles.label, styles.labelBlue]}>Avg HR</Text>
-          </View>
-          <Text style={styles.value}>{avgHeartRate}</Text>
-          <Text style={styles.unit}>bpm</Text>
           <View style={[styles.accent, styles.accentBlue]} />
         </View>
       </View>
@@ -56,9 +42,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   cardBlue: {
-    backgroundColor: colors.background.accentSoft,
-  },
-  cardRed: {
     backgroundColor: colors.background.accentSoft,
   },
   cardTop: {
