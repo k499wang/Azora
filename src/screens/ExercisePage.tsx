@@ -11,6 +11,8 @@ import ExercisePicker from '../components/exercise/ExercisePicker';
 import ExerciseScaffold from '../components/exercise/ExerciseScaffold';
 import TECHNIQUES from '../data/techniques';
 import type { BreathingTechnique } from '../data/techniques';
+import { recordGuidedExerciseSession } from '../storage/progress';
+import { formatDuration } from '../utils/time';
 
 const MIN_ROUNDS = 1;
 const MAX_ROUNDS = 20;
@@ -29,6 +31,7 @@ const PHASE_LABELS: Record<Phase, string> = {
 export default function ExercisePage() {
   const circleRef = useRef<BreathingCircleRef>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const elapsedRef = useRef(0);
   const [phase, setPhase] = useState<Phase>('idle');
   const [countdown, setCountdown] = useState(0);
   const [round, setRound] = useState(0);
@@ -64,7 +67,8 @@ export default function ExercisePage() {
       timerRef.current = setInterval(() => {
         remaining -= 1;
         setCountdown(remaining);
-        setElapsed((current) => current + 1);
+        elapsedRef.current += 1;
+        setElapsed(elapsedRef.current);
 
         if (remaining <= 0) {
           clearTimer();
@@ -78,6 +82,11 @@ export default function ExercisePage() {
   const startCycle = useCallback(
     (currentRound: number, pattern: BreathingTechnique['pattern'], rounds: number) => {
       if (currentRound > rounds) {
+        void recordGuidedExerciseSession({
+          techniqueId: technique.id,
+          rounds,
+          elapsedSeconds: elapsedRef.current,
+        });
         setPhase('done');
         return;
       }
@@ -94,7 +103,7 @@ export default function ExercisePage() {
         });
       });
     },
-    [runPhase],
+    [runPhase, technique.id],
   );
 
   const resetSession = useCallback(() => {
@@ -103,11 +112,13 @@ export default function ExercisePage() {
     setPhase('idle');
     setCountdown(0);
     setRound(0);
+    elapsedRef.current = 0;
     setElapsed(0);
   }, []);
 
   const handleStart = () => {
     if (phase === 'idle' || phase === 'done') {
+      elapsedRef.current = 0;
       setElapsed(0);
       setCountdown(0);
       setRound(0);
@@ -123,12 +134,6 @@ export default function ExercisePage() {
   };
 
   useEffect(() => () => clearTimer(), []);
-
-  const formatTime = (secs: number) => {
-    const m = Math.floor(secs / 60);
-    const s = secs % 60;
-    return `${m}:${s.toString().padStart(2, '0')}`;
-  };
 
   const isActive = phase !== 'idle' && phase !== 'done';
 
@@ -196,7 +201,7 @@ export default function ExercisePage() {
             <View style={styles.statDivider} />
             <View style={styles.stat}>
               <Text style={styles.statLabel}>Elapsed</Text>
-              <Text style={styles.statValue}>{formatTime(elapsed)}</Text>
+              <Text style={styles.statValue}>{formatDuration(elapsed)}</Text>
             </View>
           </View>
         ) : (

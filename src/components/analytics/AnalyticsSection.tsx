@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing, padding, margin } from '../../theme/spacing';
-import BarGraph from './BarGraph';
+import BarGraph, { type DataPoint } from './BarGraph';
 
 function getCurrentWeekRange() {
   const now = new Date();
@@ -19,30 +19,26 @@ function getCurrentWeekRange() {
   return `${fmt(monday)} – ${fmt(sunday)}`;
 }
 
-const ANALYTICS_DATA = [
-  { label: 'Mon', value: 56 },
-  { label: 'Tue', value: 72 },
-  { label: 'Wed', value: 64 },
-  { label: 'Thu', value: 88 },
-  { label: 'Fri', value: 81 },
-  { label: 'Sat', value: 97 },
-  { label: 'Sun', value: 90 },
-];
+interface AnalyticsSectionProps {
+  data: DataPoint[];
+}
 
-export default function AnalyticsSection() {
+export default function AnalyticsSection({ data }: AnalyticsSectionProps) {
   const weekRange = useMemo(() => getCurrentWeekRange(), []);
 
   const best = useMemo(() => {
     let maxVal = -1;
-    let maxIdx = 0;
-    ANALYTICS_DATA.forEach((d, i) => {
+    let maxIdx = -1;
+    data.forEach((d, i) => {
       if (d.value > maxVal) {
         maxVal = d.value;
         maxIdx = i;
       }
     });
     return { index: maxIdx, value: maxVal };
-  }, []);
+  }, [data]);
+
+  const hasData = best.value > 0;
 
   return (
     <View style={styles.section}>
@@ -55,14 +51,14 @@ export default function AnalyticsSection() {
           </View>
           <View style={styles.bestBadge}>
             <Text style={styles.bestLabel}>Best</Text>
-            <Text style={styles.bestValue}>{best.value}s</Text>
+            <Text style={styles.bestValue}>{hasData ? `${best.value}s` : '--'}</Text>
           </View>
         </View>
         <BarGraph
-          data={ANALYTICS_DATA}
+          data={data}
           unit="s"
           barColor={colors.primary.blue500}
-          highlightIndex={best.index}
+          highlightIndex={hasData ? best.index : undefined}
         />
       </View>
     </View>

@@ -2,6 +2,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing, padding, margin } from '../../theme/spacing';
+import { formatDuration } from '../../utils/time';
 
 interface ScoreItem {
   value: string;
@@ -9,17 +10,28 @@ interface ScoreItem {
   unit?: string;
 }
 
-const SCORES: ScoreItem[] = [
-  { value: '1:42', label: 'Hold time ' },
-  { value: '88', label: 'Health score' },
-];
+interface DailyScoresSectionProps {
+  bestHoldSeconds: number;
+  totalPracticeSeconds: number;
+  sessionCount: number;
+}
 
-export default function DailyScoresSection() {
+export default function DailyScoresSection({
+  bestHoldSeconds,
+  totalPracticeSeconds,
+  sessionCount,
+}: DailyScoresSectionProps) {
+  const scores: ScoreItem[] = [
+    { value: formatDuration(bestHoldSeconds), label: 'Best hold' },
+    { value: formatDuration(totalPracticeSeconds), label: 'Practice time' },
+    { value: String(sessionCount), label: 'Sessions' },
+  ];
+
   return (
     <View style={styles.section}>
       <Text style={styles.title}>Today&apos;s statistics</Text>
       <View style={styles.row}>
-        {SCORES.map((score) => (
+        {scores.map((score) => (
           <View key={score.label} style={styles.item}>
             <View style={styles.circle}>
               <Text style={styles.value}>{score.value}</Text>

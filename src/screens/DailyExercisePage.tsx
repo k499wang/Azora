@@ -9,6 +9,8 @@ import BreathingCircle, {
   BreathingCircleRef,
 } from '../components/exercise/BreathingCircle';
 import ExerciseScaffold from '../components/exercise/ExerciseScaffold';
+import { getTodayBestHoldSeconds, recordDailyHoldSession } from '../storage/progress';
+import { formatDuration } from '../utils/time';
 
 type HoldPhase = 'idle' | 'inhale' | 'hold' | 'done';
 
@@ -34,13 +36,14 @@ export default function DailyExercisePage() {
     }
   };
 
-  useEffect(() => () => clearTimer(), []);
+  useEffect(() => {
+    void (async () => {
+      const todayBest = await getTodayBestHoldSeconds();
+      setBestHoldSeconds(todayBest);
+    })();
 
-  const formatTime = (secs: number) => {
-    const m = Math.floor(secs / 60);
-    const s = secs % 60;
-    return `${m}:${s.toString().padStart(2, '0')}`;
-  };
+    return () => clearTimer();
+  }, []);
 
   const startInhale = () => {
     clearTimer();
@@ -63,6 +66,7 @@ export default function DailyExercisePage() {
     clearTimer();
     setBestHoldSeconds((current) => Math.max(current, holdSeconds));
     setPhase('done');
+    void recordDailyHoldSession(holdSeconds);
   };
 
   const handlePrimaryPress = () => {
@@ -104,7 +108,7 @@ export default function DailyExercisePage() {
           ? 'Hold until you are ready to breathe. Release when it stops feeling controlled.'
           : 'Nice work. Rest for a moment, then begin again when you feel ready.';
 
-  const displayTime = phase === 'hold' || phase === 'done' ? formatTime(holdSeconds) : null;
+  const displayTime = phase === 'hold' || phase === 'done' ? formatDuration(holdSeconds) : null;
 
   return (
     <ExerciseScaffold
@@ -133,12 +137,12 @@ export default function DailyExercisePage() {
           <View style={styles.stats}>
             <View style={styles.stat}>
               <Text style={styles.statLabel}>Current hold</Text>
-              <Text style={styles.statValue}>{formatTime(holdSeconds)}</Text>
+              <Text style={styles.statValue}>{formatDuration(holdSeconds)}</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.stat}>
               <Text style={styles.statLabel}>Best today</Text>
-              <Text style={styles.statValue}>{formatTime(bestHoldSeconds)}</Text>
+              <Text style={styles.statValue}>{formatDuration(bestHoldSeconds)}</Text>
             </View>
           </View>
 

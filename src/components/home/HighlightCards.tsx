@@ -3,12 +3,13 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing, padding, margin } from '../../theme/spacing';
+import { formatDuration } from '../../utils/time';
 
 interface HighlightCardsProps {
-  bestHold?: string;
+  bestHoldSeconds?: number;
 }
 
-export default function HighlightCards({ bestHold = '2:14' }: HighlightCardsProps) {
+export default function HighlightCards({ bestHoldSeconds = 0 }: HighlightCardsProps) {
   return (
     <View style={styles.section}>
       <View style={styles.row}>
@@ -17,8 +18,8 @@ export default function HighlightCards({ bestHold = '2:14' }: HighlightCardsProp
             <MaterialCommunityIcons name="trophy-outline" size={18} color={colors.primary.blue600} />
             <Text style={[styles.label, styles.labelBlue]}>Best hold</Text>
           </View>
-          <Text style={styles.value}>{bestHold}</Text>
-          <Text style={styles.unit}>minutes</Text>
+          <Text style={styles.value}>{formatDuration(bestHoldSeconds)}</Text>
+          <Text style={styles.unit}>personal best</Text>
           <View style={[styles.accent, styles.accentBlue]} />
         </View>
       </View>

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -10,13 +11,15 @@ import DailyExerciseButton from '../components/home/DailyExerciseButton';
 import DailyScoresSection from '../components/home/DailyScoresSection';
 import HighlightCards from '../components/home/HighlightCards';
 import AnalyticsSection from '../components/analytics/AnalyticsSection';
+import useBreathingStats from '../hooks/useBreathingStats';
 
 const USER_NAME = 'Kevin';
-const DAILY_STREAK = 7;
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
+  const [selectedDaysAgo, setSelectedDaysAgo] = useState(0);
+  const { summary } = useBreathingStats(selectedDaysAgo);
 
   return (
     <ScrollView style={[styles.screen, { paddingTop: insets.top }]} contentContainerStyle={styles.scrollContent}>
@@ -26,18 +29,22 @@ export default function HomeScreen() {
             <Text style={styles.greeting}>Welcome to Azora</Text>
             <Text style={styles.name}>Hi, {USER_NAME}!</Text>
           </View>
-          <Pill icon="fire" label={String(DAILY_STREAK)} />
+          <Pill icon="fire" label={String(summary.streakCount)} />
         </View>
       </View>
-      <WeekCalendar />
+      <WeekCalendar onSelectDay={setSelectedDaysAgo} />
       <View style={styles.cta}>
         <DailyExerciseButton
           onPress={() => navigation.navigate('DailyExercise')}
         />
       </View>
-      <DailyScoresSection />
-      <AnalyticsSection />
-      <HighlightCards />
+      <DailyScoresSection
+        bestHoldSeconds={summary.selectedDayStats.bestHoldSeconds}
+        totalPracticeSeconds={summary.selectedDayStats.totalPracticeSeconds}
+        sessionCount={summary.selectedDayStats.sessionCount}
+      />
+      <AnalyticsSection data={summary.weeklyHoldTrend} />
+      <HighlightCards bestHoldSeconds={summary.bestHoldSeconds} />
     </ScrollView>
   );
 }
