@@ -23,7 +23,7 @@ export default function HomeScreen() {
       <View style={styles.header}>
         <View style={styles.headerTop}>
           <View>
-            <Text style={styles.greeting}>Welcome to Brthe</Text>
+            <Text style={styles.greeting}>Welcome to Azora</Text>
             <Text style={styles.name}>Hi, {USER_NAME}!</Text>
           </View>
           <Pill icon="fire" label={String(DAILY_STREAK)} />

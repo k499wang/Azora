@@ -17,7 +17,6 @@ import { typography } from './src/theme/typography';
 import HomeScreen from './src/screens/HomeScreen';
 import ExercisePage from './src/screens/ExercisePage';
 import DailyExercisePage from './src/screens/DailyExercisePage';
-import ProfileScreen from './src/screens/ProfileScreen';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -40,7 +39,6 @@ function MainTabs() {
     >
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Exercise" component={ExercisePage} />
-      <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
   );
 }
