@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
@@ -25,8 +25,15 @@ export default function HomeScreen() {
     <ScrollView style={[styles.screen, { paddingTop: insets.top }]} contentContainerStyle={styles.scrollContent}>
       <View style={styles.header}>
         <View style={styles.headerTop}>
-          <View>
-            <Text style={styles.greeting}>Welcome to Azora</Text>
+          <View style={styles.brandBlock}>
+            <View style={styles.brandRow}>
+              <Image
+                source={require('../../assets/icon2.png')}
+                style={styles.logo}
+                resizeMode="contain"
+              />
+              <Text style={styles.brandName}>Azora</Text>
+            </View>
             <Text style={styles.name}>Hi, {USER_NAME}!</Text>
           </View>
           <Pill icon="fire" label={String(summary.streakCount)} />
@@ -64,12 +71,26 @@ const styles = StyleSheet.create({
   headerTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
   },
-  greeting: {
-    ...typography.body.medium,
-    color: colors.text.secondary,
-    marginBottom: spacing.xs,
+  brandBlock: {
+    flex: 1,
+    paddingRight: spacing.md,
+  },
+  brandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  logo: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+  },
+  brandName: {
+    ...typography.title.title3,
+    color: colors.text.primary,
   },
   name: {
     ...typography.title.title1,
