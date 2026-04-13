@@ -86,6 +86,12 @@ export default function DailyExercisePage() {
     setHoldSeconds(0);
   };
 
+  const handleViewResults = () => {
+    navigation.navigate('DailyResult', {
+      holdSeconds,
+    });
+  };
+
   const primaryLabel =
     phase === 'idle'
       ? 'Start Inhale'
@@ -148,6 +154,16 @@ export default function DailyExercisePage() {
           >
             <Text style={styles.startButtonText}>{primaryLabel}</Text>
           </Pressable>
+
+          {phase === 'done' && (
+            <Pressable
+              style={({ pressed }) => [styles.viewResultsButton, pressed && styles.startButtonPressed]}
+              onPress={handleViewResults}
+            >
+              <MaterialCommunityIcons name="chart-line" size={18} color={colors.primary.blue600} style={{ marginRight: spacing.xs }} />
+              <Text style={styles.viewResultsText}>View Results</Text>
+            </Pressable>
+          )}
         </>
       }
     />
@@ -213,5 +229,20 @@ const styles = StyleSheet.create({
   startButtonText: {
     ...typography.button.large,
     color: colors.text.inverse,
+  },
+  viewResultsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.background.accentSoft,
+    borderRadius: 18,
+    paddingVertical: spacing.md,
+    marginTop: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.primary.blue400,
+  },
+  viewResultsText: {
+    ...typography.button.large,
+    color: colors.primary.blue600,
   },
 });
