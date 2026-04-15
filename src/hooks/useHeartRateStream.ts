@@ -7,20 +7,39 @@ import {
 import { useRunOnJS } from 'react-native-worklets-core';
 import type {
   StreamState,
-  BrightnessSample,
+  PpgFrameSample,
   FingerPlacementState,
   HeartRateStreamSummary,
 } from '../lib/heartRate/types';
 import { heartRatePlugin } from '../lib/heartRate/heartRatePlugin';
 import { classifyFingerPlacementStateless } from '../lib/heartRate/fingerQuality';
 import { computeRollingBPM } from '../lib/heartRate/rollingWindow';
+import { PREVIEW_BPM_OPTIONS } from '../lib/heartRate/signalProcessing';
 
 const ROLLING_WINDOW_MS = 15000;
-const BPM_UPDATE_INTERVAL_MS = 4000;
+const BPM_UPDATE_INTERVAL_MS = 1000;
 const FINGER_LOST_TIMEOUT_MS = 30000;
 const FINGER_CLASSIFY_WINDOW_MS = 1000;
 const ROLLING_CLASSIFY_WINDOW_MS = 2000;
 const WARMUP_DURATION_MS = 5000;
+
+function isValidFrameSample(value: unknown): value is PpgFrameSample {
+  if (value == null || typeof value !== 'object') return false;
+
+  const sample = value as Partial<PpgFrameSample>;
+  if (!Number.isFinite(sample.timestamp) || !Array.isArray(sample.rois)) return false;
+
+  return sample.rois.length > 0 && sample.rois.every((roi) =>
+    roi != null &&
+    typeof roi.id === 'string' &&
+    Number.isFinite(roi.r) &&
+    Number.isFinite(roi.g) &&
+    Number.isFinite(roi.b) &&
+    Number.isFinite(roi.saturatedPct) &&
+    Number.isFinite(roi.darkPct) &&
+    Number.isFinite(roi.variance)
+  );
+}
 
 interface UseHeartRateStreamReturn {
   streamState: StreamState;
@@ -45,7 +64,7 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
   const [bpmHistory, setBpmHistory] = useState<number[]>([]);
   const [sessionSummary, setSessionSummary] = useState<HeartRateStreamSummary | null>(null);
 
-  const bufferRef = useRef<BrightnessSample[]>([]);
+  const bufferRef = useRef<PpgFrameSample[]>([]);
   const streamStartRef = useRef<number | null>(null);
   const lastBpmUpdateRef = useRef<number>(0);
   const fingerLostSinceRef = useRef<number | null>(null);
@@ -68,8 +87,8 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
   const torchMode: 'on' | 'off' =
     streamState !== 'idle' && streamState !== 'stopped' ? 'on' : 'off';
 
-  const startStreaming = useCallback(() => {
-    warmupStartRef.current = Date.now();
+  const startStreaming = useCallback((startTimestamp?: number) => {
+    warmupStartRef.current = startTimestamp ?? null;
     goodSinceRef.current = null;
     setStreamState('warming_up');
     streamStateRef.current = 'warming_up';
@@ -109,13 +128,22 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
   }, []);
 
   const addSample = useRunOnJS(
-    (brightness: number) => {
-      const timestamp = Date.now();
+    (frameSample: unknown) => {
+      if (!isValidFrameSample(frameSample)) {
+        bufferRef.current = [];
+        goodSinceRef.current = null;
+        fingerLostSinceRef.current = null;
+        fingerClassifyStateRef.current = {};
+        setCurrentBpm(null);
+        setFingerPlacement('no_finger');
+        return;
+      }
+
+      const timestamp = frameSample.timestamp;
       const state = streamStateRef.current;
       if (state === 'idle' || state === 'stopped') return;
 
-      const sample: BrightnessSample = { value: brightness, timestamp };
-      bufferRef.current.push(sample);
+      bufferRef.current.push(frameSample);
 
       // Keep buffer from growing unbounded — keep last 60s
       const cutoff60 = timestamp - 60000;
@@ -137,7 +165,7 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
           if (goodSinceRef.current == null) {
             goodSinceRef.current = timestamp;
           } else if (timestamp - goodSinceRef.current >= 1500) {
-            startStreaming();
+            startStreaming(timestamp);
           }
         } else {
           goodSinceRef.current = null;
@@ -146,6 +174,9 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
       }
 
       if (state === 'warming_up') {
+        if (warmupStartRef.current == null) {
+          warmupStartRef.current = timestamp;
+        }
         if (warmupStartRef.current != null) {
           if (timestamp - warmupStartRef.current >= WARMUP_DURATION_MS) {
             setStreamState('streaming');
@@ -159,6 +190,7 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
         if (placement === 'lost' || (placement !== 'good' && placement !== 'partial')) {
           if (state !== 'finger_lost') {
             fingerLostSinceRef.current = timestamp;
+            setCurrentBpm(null);
             setStreamState('finger_lost');
             streamStateRef.current = 'finger_lost';
           } else if (fingerLostSinceRef.current != null) {
@@ -180,7 +212,11 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
         timestamp - lastBpmUpdateRef.current >= BPM_UPDATE_INTERVAL_MS
       ) {
         lastBpmUpdateRef.current = timestamp;
-        const bpmResult = computeRollingBPM(bufferRef.current, ROLLING_WINDOW_MS);
+        const bpmResult = computeRollingBPM(
+          bufferRef.current,
+          ROLLING_WINDOW_MS,
+          PREVIEW_BPM_OPTIONS,
+        );
         if (bpmResult != null) {
           setCurrentBpm(bpmResult.bpm);
           bpmHistoryRef.current = [...bpmHistoryRef.current, bpmResult.bpm];
@@ -194,9 +230,9 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
   const frameProcessor = useFrameProcessor(
     (frame) => {
       'worklet';
-      const brightness = heartRatePlugin(frame);
-      if (brightness != null) {
-        addSample(brightness);
+      const frameSample = heartRatePlugin(frame);
+      if (frameSample != null) {
+        addSample(frameSample);
       }
     },
     [addSample],

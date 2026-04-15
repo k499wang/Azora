@@ -33,6 +33,7 @@ export function HeartRateCaptureFlow({
     fingerPlacement,
     progress,
     secondsRemaining,
+    currentBpm,
     result,
     device,
     frameProcessor,
@@ -150,6 +151,7 @@ export function HeartRateCaptureFlow({
         <MeasuringScreen
           progress={progress}
           secondsRemaining={secondsRemaining}
+          currentBpm={currentBpm}
           fingerPlacement={fingerPlacement}
           onCancel={handleCancel}
         />
