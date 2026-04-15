@@ -4,6 +4,9 @@ export interface BreathingTechnique {
   description: string;
   pattern: { inhale: number; holdIn: number; exhale: number; holdOut: number };
   defaultRounds: number;
+  category: 'calm' | 'focus' | 'energy' | 'sleep';
+  icon: string;
+  duration: string;
 }
 
 /**
@@ -17,6 +20,9 @@ const TECHNIQUES: BreathingTechnique[] = [
     description: 'Equal parts inhale, hold, exhale, hold',
     pattern: { inhale: 4, holdIn: 4, exhale: 4, holdOut: 4 },
     defaultRounds: 8,
+    category: 'focus',
+    icon: 'checkbox-blank-outline',
+    duration: '~2 min',
   },
   {
     id: '478',
@@ -24,6 +30,9 @@ const TECHNIQUES: BreathingTechnique[] = [
     description: 'Calming technique for sleep and anxiety',
     pattern: { inhale: 4, holdIn: 7, exhale: 8, holdOut: 0 },
     defaultRounds: 4,
+    category: 'sleep',
+    icon: 'moon-waning-crescent',
+    duration: '~1 min',
   },
   {
     id: 'wimhof',
@@ -31,6 +40,9 @@ const TECHNIQUES: BreathingTechnique[] = [
     description: 'Rapid breathing for energy and focus',
     pattern: { inhale: 2, holdIn: 0, exhale: 2, holdOut: 0 },
     defaultRounds: 30,
+    category: 'energy',
+    icon: 'flash-outline',
+    duration: '~2 min',
   },
   {
     id: 'resonance',
@@ -38,6 +50,9 @@ const TECHNIQUES: BreathingTechnique[] = [
     description: 'Balanced breathing at 6 breaths per minute',
     pattern: { inhale: 5, holdIn: 0, exhale: 5, holdOut: 0 },
     defaultRounds: 10,
+    category: 'calm',
+    icon: 'waves',
+    duration: '~2 min',
   },
   {
     id: 'relaxing',
@@ -45,6 +60,9 @@ const TECHNIQUES: BreathingTechnique[] = [
     description: 'Extended exhale for deep relaxation',
     pattern: { inhale: 4, holdIn: 0, exhale: 6, holdOut: 0 },
     defaultRounds: 6,
+    category: 'calm',
+    icon: 'leaf',
+    duration: '~1 min',
   },
 ];
 
