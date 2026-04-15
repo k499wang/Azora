@@ -81,7 +81,9 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
   const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const { hasPermission, requestPermission } = useCameraPermission();
-  const device = useCameraDevice('back');
+  const device = useCameraDevice('back', {
+    physicalDevices: ['wide-angle-camera'],
+  });
 
   // Keep captureStateRef in sync
   useEffect(() => {
