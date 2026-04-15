@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
 import { spacing } from '../theme/spacing';
 import BreathingCircle, {
   BreathingCircleRef,
 } from '../components/exercise/BreathingCircle';
-import ExercisePicker from '../components/exercise/ExercisePicker';
 import ExerciseScaffold from '../components/exercise/ExerciseScaffold';
 import TECHNIQUES from '../data/techniques';
 import type { BreathingTechnique } from '../data/techniques';
@@ -26,15 +26,24 @@ const PHASE_LABELS: Record<Phase, string> = {
   done: 'Well done',
 };
 
-export default function ExercisePage() {
+type RouteParams = {
+  ExerciseSession: { techniqueId: string };
+};
+
+export default function ExerciseSessionPage() {
+  const navigation = useNavigation();
+  const route = useRoute<RouteProp<RouteParams, 'ExerciseSession'>>();
+  const techniqueId = route.params?.techniqueId;
+  const initialTechnique = TECHNIQUES.find((t) => t.id === techniqueId) ?? TECHNIQUES[0];
+
   const circleRef = useRef<BreathingCircleRef>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [phase, setPhase] = useState<Phase>('idle');
   const [countdown, setCountdown] = useState(0);
   const [round, setRound] = useState(0);
   const [elapsed, setElapsed] = useState(0);
-  const [technique, setTechnique] = useState<BreathingTechnique>(TECHNIQUES[0]);
-  const [totalRounds, setTotalRounds] = useState(TECHNIQUES[0].defaultRounds);
+  const [technique] = useState<BreathingTechnique>(initialTechnique);
+  const [totalRounds, setTotalRounds] = useState(initialTechnique.defaultRounds);
 
   const clearTimer = () => {
     if (timerRef.current) {
@@ -116,10 +125,9 @@ export default function ExercisePage() {
     }
   };
 
-  const handleTechniqueSelect = (nextTechnique: BreathingTechnique) => {
-    if (phase !== 'idle' && phase !== 'done') return;
-    setTechnique(nextTechnique);
-    setTotalRounds(nextTechnique.defaultRounds);
+  const handleClose = () => {
+    clearTimer();
+    navigation.goBack();
   };
 
   useEffect(() => () => clearTimer(), []);
@@ -134,7 +142,8 @@ export default function ExercisePage() {
 
   return (
     <ExerciseScaffold
-      title="Exercise"
+      title={technique.name}
+      subtitle={technique.description}
       rightSlot={
         !isActive ? (
           <View style={styles.stepper}>
@@ -165,12 +174,7 @@ export default function ExercisePage() {
           </View>
         ) : undefined
       }
-      onClose={isActive ? resetSession : undefined}
-      pickerSlot={
-        !isActive ? (
-          <ExercisePicker techniques={TECHNIQUES} selected={technique.id} onSelect={handleTechniqueSelect} />
-        ) : undefined
-      }
+      onClose={handleClose}
       centerSlot={
         <BreathingCircle ref={circleRef}>
           <Text style={styles.phaseLabel}>{PHASE_LABELS[phase]}</Text>

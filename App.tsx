@@ -16,7 +16,8 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from './src/theme/colors';
 import { typography } from './src/theme/typography';
 import HomeScreen from './src/screens/HomeScreen';
-import ExercisePage from './src/screens/ExercisePage';
+import ExerciseLibraryPage from './src/screens/ExerciseLibraryPage';
+import ExerciseSessionPage from './src/screens/ExerciseSessionPage';
 import DailyExercisePage from './src/screens/DailyExercisePage';
 import ProfileScreen from './src/screens/ProfileScreen';
 import ShareableResultScreen from './src/screens/ShareableResultScreen';
@@ -48,7 +49,7 @@ function MainTabs() {
       />
       <Tab.Screen
         name="Exercise"
-        component={ExercisePage}
+        component={ExerciseLibraryPage}
         options={{ tabBarIcon: ({ color, size }) => <MaterialCommunityIcons name="weather-windy" size={size} color={color} /> }}
       />
       <Tab.Screen
@@ -87,6 +88,14 @@ export default function App() {
       <NavigationContainer>
         <Stack.Navigator screenOptions={{ headerShown: false }}>
           <Stack.Screen name="MainTabs" component={MainTabs} />
+          <Stack.Screen
+            name="ExerciseSession"
+            component={ExerciseSessionPage}
+            options={{
+              presentation: 'card',
+              animation: 'slide_from_right',
+            }}
+          />
           <Stack.Screen
             name="DailyExercise"
             component={DailyExercisePage}
