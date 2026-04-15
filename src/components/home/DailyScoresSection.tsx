@@ -12,7 +12,6 @@ const SCORES = [
 export default function DailyScoresSection() {
   return (
     <View style={styles.section}>
-      <Text style={styles.title}>Today&apos;s statistics</Text>
       <View style={styles.row}>
         {SCORES.map((score) => (
           <View key={score.label} style={styles.item}>
