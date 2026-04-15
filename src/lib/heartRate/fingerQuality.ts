@@ -40,17 +40,20 @@ function redToMaxChannel(roi: PpgRoiSample): number {
   return roi.r / Math.max(1, roi.g, roi.b);
 }
 
+function weightedFrameValue(rois: PpgRoiSample[]): number {
+  return mean(rois.map(weightedValue));
+}
+
 function isCoveredByFinger(roi: PpgRoiSample): boolean {
   const value = weightedValue(roi);
 
   return (
-    value >= 70 &&
+    value >= 25 &&
     value <= 245 &&
-    roi.r >= 105 &&
     roi.darkPct < 0.35 &&
     roi.saturatedPct < 0.45 &&
-    redToSum(roi) >= 0.72 &&
-    redToMaxChannel(roi) >= 1.32
+    redToSum(roi) >= 0.65 &&
+    redToMaxChannel(roi) >= 1.18
   );
 }
 
@@ -62,8 +65,6 @@ function classifyRecent(recent: PpgFrameSample[]): FingerPlacementState {
   const rois = frameRois.flat();
   const values = rois.map(weightedValue);
   const avgValue = mean(values);
-  const avgRed = mean(rois.map((roi) => roi.r));
-  const avgBlueToRed = mean(rois.map((roi) => roi.b / Math.max(1, roi.r)));
   const avgSaturated = mean(rois.map((roi) => roi.saturatedPct));
   const avgDark = mean(rois.map((roi) => roi.darkPct));
   const avgRedToSum = mean(rois.map(redToSum));
@@ -71,6 +72,18 @@ function classifyRecent(recent: PpgFrameSample[]): FingerPlacementState {
   const avgCoverage = mean(
     frameRois.map((items) => items.filter(isCoveredByFinger).length / items.length),
   );
+  const frameValues = frameRois.map(weightedFrameValue);
+  const frameMeanValue = Math.max(1, mean(frameValues));
+  let largeFrameJumps = 0;
+  for (let i = 1; i < frameValues.length; i++) {
+    const jumpRatio = Math.abs(frameValues[i] - frameValues[i - 1]) / Math.max(1, frameValues[i - 1]);
+    if (jumpRatio > 0.12) {
+      largeFrameJumps += 1;
+    }
+  }
+  const frameJumpFraction = largeFrameJumps / Math.max(1, frameValues.length - 1);
+  const frameDriftRatio =
+    (Math.max(...frameValues) - Math.min(...frameValues)) / frameMeanValue;
   const roiIds = Array.from(new Set(rois.map((roi) => roi.id)));
   const avgTemporalCv = mean(
     roiIds.map((roiId) => {
@@ -92,14 +105,7 @@ function classifyRecent(recent: PpgFrameSample[]): FingerPlacementState {
     return 'too_much_pressure';
   }
 
-  if (
-    avgCoverage < 0.45 ||
-    avgRed < 95 ||
-    avgValue < 65 ||
-    avgRedToSum < 0.62 ||
-    avgRedToMax < 1.15 ||
-    avgBlueToRed > 0.5
-  ) {
+  if (avgCoverage < 0.35 || avgRedToSum < 0.58 || avgRedToMax < 1.08) {
     return 'no_finger';
   }
 
@@ -107,15 +113,16 @@ function classifyRecent(recent: PpgFrameSample[]): FingerPlacementState {
     return 'partial';
   }
 
+  if (frameDriftRatio > 0.35 || frameJumpFraction > 0.15) {
+    return 'partial';
+  }
+
   if (
-    avgCoverage >= 0.85 &&
-    avgRed >= 115 &&
-    avgValue >= 80 &&
-    avgRedToSum >= 0.72 &&
-    avgRedToMax >= 1.32 &&
-    avgBlueToRed <= 0.45 &&
-    avgTemporalCv >= 0.0035 &&
-    avgSpatialCv <= 0.28
+    avgCoverage >= 0.75 &&
+    avgRedToSum >= 0.65 &&
+    avgRedToMax >= 1.18 &&
+    avgTemporalCv >= 0.0015 &&
+    avgSpatialCv <= 0.35
   ) {
     return 'good';
   }

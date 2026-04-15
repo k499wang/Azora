@@ -170,9 +170,19 @@ export function ResultScreen({ result, onRetry, onDone, context }: ResultScreenP
 
           <View style={styles.spacer} />
 
-          <TouchableOpacity style={styles.primaryButton} onPress={onDone} activeOpacity={0.85}>
-            <Text style={styles.primaryButtonText}>Done</Text>
-          </TouchableOpacity>
+          <View style={styles.successActions}>
+            <TouchableOpacity style={styles.primaryButton} onPress={onRetry} activeOpacity={0.85}>
+              <Text style={styles.primaryButtonText}>Check Again</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={onDone}
+              activeOpacity={0.7}
+              style={styles.cancelTouchable}
+            >
+              <Text style={styles.cancelText}>Done</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </SafeAreaView>
     );
@@ -404,6 +414,11 @@ const styles = StyleSheet.create({
     color: colors.text.inverse,
   },
   errorActions: {
+    width: '100%',
+    gap: spacing.md,
+    alignItems: 'center',
+  },
+  successActions: {
     width: '100%',
     gap: spacing.md,
     alignItems: 'center',

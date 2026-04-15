@@ -78,7 +78,9 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
   const bpmHistoryRef = useRef<number[]>([]);
 
   const { hasPermission, requestPermission } = useCameraPermission();
-  const device = useCameraDevice('back');
+  const device = useCameraDevice('back', {
+    physicalDevices: ['wide-angle-camera'],
+  });
 
   useEffect(() => {
     streamStateRef.current = streamState;

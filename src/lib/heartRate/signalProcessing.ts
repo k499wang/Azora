@@ -17,6 +17,9 @@ const BPM_FREQ_MAX = 3.0; // 180 bpm
 const MIN_SNR_DB = 2.5;
 const MIN_CONFIDENCE = 0.45;
 const MAX_FREQ_PEAK_DIFF_BPM = 12;
+const MAX_LIGHTING_DRIFT_RATIO = 0.22;
+const MAX_LIGHTING_JUMP_RATIO = 0.08;
+const MAX_LIGHTING_JUMP_FRACTION = 0.08;
 const CHANNELS: PpgChannel[] = ['weighted', 'red', 'green', 'redRatio'];
 
 export interface ComputeBpmOptions {
@@ -134,6 +137,31 @@ function winsorize(values: number[], threshold = 5): number[] {
   const min = center - threshold * scale;
   const max = center + threshold * scale;
   return values.map((value) => clamp(value, min, max));
+}
+
+function lightingIsStable(values: number[]): boolean {
+  if (values.length < 8) return false;
+
+  const avgValue = mean(values);
+  if (avgValue <= 0) return false;
+
+  const windowSize = Math.max(3, Math.round(values.length * 0.15));
+  const startMean = mean(values.slice(0, windowSize));
+  const endMean = mean(values.slice(-windowSize));
+  const driftRatio = Math.abs(endMean - startMean) / avgValue;
+
+  if (driftRatio > MAX_LIGHTING_DRIFT_RATIO) return false;
+
+  let jumpCount = 0;
+  for (let i = 1; i < values.length; i++) {
+    const previous = Math.max(1, values[i - 1]);
+    const jumpRatio = Math.abs(values[i] - values[i - 1]) / previous;
+    if (jumpRatio > MAX_LIGHTING_JUMP_RATIO) {
+      jumpCount += 1;
+    }
+  }
+
+  return jumpCount / Math.max(1, values.length - 1) <= MAX_LIGHTING_JUMP_FRACTION;
 }
 
 function channelValue(roi: PpgRoiSample, channel: PpgChannel): number {
@@ -406,6 +434,7 @@ function evaluateCandidate(
 
   const resampled = resampleUniform(stableSeries, options);
   if (resampled == null) return null;
+  if (!lightingIsStable(resampled.values)) return null;
 
   const processed = preprocess(resampled.values, resampled.sampleRate);
   const freq = frequencyEstimate(processed, resampled.sampleRate);
