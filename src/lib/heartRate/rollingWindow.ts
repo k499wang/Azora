@@ -1,5 +1,5 @@
-import type { BrightnessSample } from './types';
-import { computeBPM } from './signalProcessing';
+import type { HeartRateEstimate, PpgFrameSample } from './types';
+import { computeBPM, type ComputeBpmOptions } from './signalProcessing';
 
 const DEFAULT_WINDOW_MS = 15000;
 
@@ -8,9 +8,10 @@ const DEFAULT_WINDOW_MS = 15000;
  * Returns null if not enough data for a valid reading.
  */
 export function computeRollingBPM(
-  buffer: BrightnessSample[],
+  buffer: PpgFrameSample[],
   windowMs: number = DEFAULT_WINDOW_MS,
-): { bpm: number; confidence: number } | null {
+  options?: ComputeBpmOptions,
+): HeartRateEstimate | null {
   if (buffer.length === 0) return null;
 
   const now = buffer[buffer.length - 1].timestamp;
@@ -19,5 +20,5 @@ export function computeRollingBPM(
 
   if (windowSamples.length === 0) return null;
 
-  return computeBPM(windowSamples);
+  return computeBPM(windowSamples, options);
 }

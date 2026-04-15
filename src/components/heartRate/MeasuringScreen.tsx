@@ -16,6 +16,7 @@ import type { FingerPlacementState } from '../../lib/heartRate/types';
 interface MeasuringScreenProps {
   progress: number; // 0-1
   secondsRemaining: number;
+  currentBpm: number | null;
   fingerPlacement: FingerPlacementState;
   onCancel: () => void;
 }
@@ -39,6 +40,7 @@ function getSignalQuality(placement: FingerPlacementState): {
 export function MeasuringScreen({
   progress,
   secondsRemaining,
+  currentBpm,
   fingerPlacement,
   onCancel,
 }: MeasuringScreenProps) {
@@ -135,6 +137,15 @@ export function MeasuringScreen({
           <View style={[styles.progressBarFill, { width: `${progress * 100}%` }]} />
         </View>
         <Text style={styles.progressLabel}>{Math.round(progress * 100)}% complete</Text>
+
+        {/* Current BPM */}
+        <View style={styles.currentBpmRow}>
+          <Text style={styles.currentBpmLabel}>Current BPM</Text>
+          <View style={styles.currentBpmValueRow}>
+            <Text style={styles.currentBpmValue}>{currentBpm ?? '--'}</Text>
+            <Text style={styles.currentBpmUnit}>bpm</Text>
+          </View>
+        </View>
 
         {/* Signal quality */}
         <View style={styles.signalRow}>
@@ -260,6 +271,33 @@ const styles = StyleSheet.create({
     ...typography.caption.caption1,
     color: colors.text.tertiary,
     marginBottom: spacing.lg,
+  },
+  currentBpmRow: {
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+    minHeight: 56,
+  },
+  currentBpmLabel: {
+    ...typography.caption.caption1,
+    color: colors.text.tertiary,
+    marginBottom: spacing.xs,
+  },
+  currentBpmValueRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'center',
+    minWidth: 96,
+  },
+  currentBpmValue: {
+    ...typography.title.title2,
+    color: colors.text.primary,
+    minWidth: 44,
+    textAlign: 'right',
+  },
+  currentBpmUnit: {
+    ...typography.caption.caption1,
+    color: colors.text.secondary,
+    marginLeft: spacing.xs,
   },
   signalRow: {
     flexDirection: 'row',

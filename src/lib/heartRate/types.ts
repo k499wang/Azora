@@ -22,14 +22,47 @@ export type FingerPlacementState =
   | 'good'
   | 'lost';
 
-export interface BrightnessSample {
-  value: number;       // red channel average 0-255
-  timestamp: number;   // ms since capture started
+export type PpgQuality = 'good' | 'fair' | 'poor';
+
+export type PpgChannel = 'weighted' | 'red' | 'green' | 'blue' | 'redRatio';
+
+export interface PpgRoiSample {
+  id: string;
+  r: number;
+  g: number;
+  b: number;
+  saturatedPct: number;
+  darkPct: number;
+  variance: number;
+}
+
+export interface PpgFrameSample {
+  timestamp: number;
+  rois: PpgRoiSample[];
+}
+
+export interface HeartRateEstimate {
+  bpm: number;
+  confidence: number;
+  quality: PpgQuality;
+  sampleCount: number;
+  durationMs: number;
+  roiId: string;
+  channel: PpgChannel;
+  snrDb: number;
+  frequencyBpm: number;
+  peakBpm: number | null;
 }
 
 export interface HeartRateReading {
   bpm: number;
   confidence: number;
+  quality?: PpgQuality;
+  roiId?: string;
+  channel?: PpgChannel;
+  snrDb?: number;
+  frequencyBpm?: number;
+  peakBpm?: number | null;
   sampleCount: number;
   durationMs: number;
   recordedAt: string;

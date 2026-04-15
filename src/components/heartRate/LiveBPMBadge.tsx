@@ -22,9 +22,10 @@ export function LiveBPMBadge({ bpm, streamState, onStop }: LiveBPMBadgeProps) {
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const pulseAnimation = useRef<Animated.CompositeAnimation | null>(null);
 
-  const isStreaming = streamState === 'streaming' && bpm != null;
+  const hasBpm = bpm != null && streamState !== 'finger_lost';
+  const isStreaming = hasBpm;
   const isLost = streamState === 'finger_lost';
-  const isWarmingUp = streamState === 'warming_up' || (streamState === 'streaming' && bpm == null);
+  const isWarmingUp = !hasBpm && (streamState === 'warming_up' || streamState === 'streaming');
 
   useEffect(() => {
     if (isStreaming) {
