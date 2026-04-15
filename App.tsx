@@ -20,6 +20,7 @@ import ExercisePage from './src/screens/ExercisePage';
 import DailyExercisePage from './src/screens/DailyExercisePage';
 import ProfileScreen from './src/screens/ProfileScreen';
 import ShareableResultScreen from './src/screens/ShareableResultScreen';
+import { HeartRateScreen } from './src/screens/HeartRateScreen';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -49,6 +50,11 @@ function MainTabs() {
         name="Exercise"
         component={ExercisePage}
         options={{ tabBarIcon: ({ color, size }) => <MaterialCommunityIcons name="weather-windy" size={size} color={color} /> }}
+      />
+      <Tab.Screen
+        name="HeartRate"
+        component={HeartRateScreen}
+        options={{ tabBarIcon: ({ color, size }) => <MaterialCommunityIcons name="heart-pulse" size={size} color={color} /> }}
       />
       <Tab.Screen
         name="Profile"
