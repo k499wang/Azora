@@ -65,12 +65,17 @@ export default function ExerciseLibraryPage() {
       <AppTopBar />
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.grid}
+        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {TECHNIQUES.map((t) => (
-          <TechniqueCard key={t.id} technique={t} />
-        ))}
+        <View style={styles.pageHeader}>
+          <Text style={styles.pageTitle}>Breathing Exercises</Text>
+        </View>
+        <View style={styles.grid}>
+          {TECHNIQUES.map((t) => (
+            <TechniqueCard key={t.id} technique={t} />
+          ))}
+        </View>
       </ScrollView>
     </View>
   );
@@ -83,9 +88,25 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
+  scrollContent: {
+    paddingBottom: spacing['2xl'],
+  },
+  pageHeader: {
+    paddingHorizontal: padding.screen.horizontal,
+    paddingTop: padding.screen.vertical,
+    paddingBottom: spacing.lg,
+  },
+  pageTitle: {
+    ...typography.title.title1,
+    color: colors.text.primary,
+  },
+  pageSubtitle: {
+    ...typography.body.small,
+    color: colors.text.secondary,
+    marginTop: spacing.xs,
+  },
   grid: {
     paddingHorizontal: padding.screen.horizontal,
-    paddingBottom: spacing['2xl'],
     gap: spacing.md,
   },
   card: {
