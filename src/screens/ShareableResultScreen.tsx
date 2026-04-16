@@ -6,6 +6,7 @@ import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
 import { spacing, padding, margin } from '../theme/spacing';
 import LineGraph, { DataPoint } from '../components/analytics/LineGraph';
+import AppTopBar from '../components/common/AppTopBar';
 
 // ─── Edit these values to customise the shareable screen ───────────────────────
 
@@ -51,7 +52,8 @@ export default function ShareableResultScreen() {
       style={[styles.screen, { paddingTop: insets.top }]}
       contentContainerStyle={styles.scrollContent}
     >
-      {/* Header */}
+      <AppTopBar />
+
       <View style={styles.header}>
         <Pressable style={styles.closeButton} onPress={() => navigation.goBack()}>
           <MaterialCommunityIcons name="close" size={24} color={colors.text.secondary} />

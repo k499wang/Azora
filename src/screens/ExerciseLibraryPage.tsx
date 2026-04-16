@@ -6,6 +6,7 @@ import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
 import { spacing, padding } from '../theme/spacing';
 import TECHNIQUES, { type BreathingTechnique } from '../data/techniques';
+import AppTopBar from '../components/common/AppTopBar';
 
 const CATEGORY_CONFIG = {
   calm: { label: 'Calm', color: colors.primary.blue500, bg: colors.primary.blue100 },
@@ -59,6 +60,8 @@ export default function ExerciseLibraryPage() {
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
+      <AppTopBar />
+
       <View style={styles.header}>
         <Text style={styles.pageTitle}>Exercise</Text>
         <Text style={styles.pageSubtitle}>Choose a breathing technique</Text>
