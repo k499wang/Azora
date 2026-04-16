@@ -1,4 +1,5 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -48,8 +49,9 @@ export default function ShareableResultScreen() {
   );
 
   return (
+    <View style={[styles.screen, { paddingTop: insets.top }]}>
+    <LinearGradient colors={['#F0E6F6', '#E8EEF8', colors.background.primary]} locations={[0, 0.4, 0.75]} style={StyleSheet.absoluteFill} />
     <ScrollView
-      style={[styles.screen, { paddingTop: insets.top }]}
       contentContainerStyle={styles.scrollContent}
     >
       <AppTopBar />
@@ -132,6 +134,7 @@ export default function ShareableResultScreen() {
         </Pressable>
       </View>
     </ScrollView>
+    </View>
   );
 }
 
@@ -139,7 +142,6 @@ const styles = StyleSheet.create({
   // Screen
   screen: {
     flex: 1,
-    backgroundColor: colors.background.primary,
   },
   scrollContent: {
     paddingBottom: spacing['5xl'],
