@@ -2,12 +2,11 @@ import { useImperativeHandle, forwardRef, useRef, ReactNode } from 'react';
 import { Animated, Easing, StyleSheet, View } from 'react-native';
 import { colors } from '../../theme/colors';
 
-const INNER_SIZE = 220;
-const LAYER_TWO_SIZE = 270;
-const LAYER_THREE_SIZE = 320;
-const OUTER_SIZE = 370;
-const MIN_SCALE = 0.78;
-const MAX_SCALE = 1.08;
+const TRACK_WIDTH = 260;
+const BALL_SIZE = 44;
+// Ball left-edge travels from 0 → TRACK_WIDTH so its center aligns with track ends
+const BALL_TRAVEL = TRACK_WIDTH;
+const CONTAINER_WIDTH = TRACK_WIDTH + BALL_SIZE;
 
 export interface BreathingCircleRef {
   expand: (duration: number) => void;
@@ -21,73 +20,52 @@ interface BreathingCircleProps {
 
 const BreathingCircle = forwardRef<BreathingCircleRef, BreathingCircleProps>(
   ({ children }, ref) => {
-    const scale = useRef(new Animated.Value(MIN_SCALE)).current;
-    const glowOpacity = useRef(new Animated.Value(0.15)).current;
+    const ballX = useRef(new Animated.Value(0)).current;
 
     useImperativeHandle(ref, () => ({
       expand(duration: number) {
-        Animated.parallel([
-          Animated.timing(scale, {
-            toValue: MAX_SCALE,
-            duration: duration * 1000,
-            easing: Easing.inOut(Easing.sin),
-            useNativeDriver: true,
-          }),
-          Animated.timing(glowOpacity, {
-            toValue: 0.35,
-            duration: duration * 1000,
-            easing: Easing.inOut(Easing.sin),
-            useNativeDriver: true,
-          }),
-        ]).start();
+        Animated.timing(ballX, {
+          toValue: BALL_TRAVEL,
+          duration: duration * 1000,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }).start();
       },
       contract(duration: number) {
-        Animated.parallel([
-          Animated.timing(scale, {
-            toValue: MIN_SCALE,
-            duration: duration * 1000,
-            easing: Easing.inOut(Easing.sin),
-            useNativeDriver: true,
-          }),
-          Animated.timing(glowOpacity, {
-            toValue: 0.1,
-            duration: duration * 1000,
-            easing: Easing.inOut(Easing.sin),
-            useNativeDriver: true,
-          }),
-        ]).start();
+        Animated.timing(ballX, {
+          toValue: 0,
+          duration: duration * 1000,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }).start();
       },
       reset() {
-        scale.stopAnimation();
-        glowOpacity.stopAnimation();
-        scale.setValue(MIN_SCALE);
-        glowOpacity.setValue(0.15);
+        ballX.stopAnimation();
+        ballX.setValue(0);
       },
     }));
 
     return (
-      <View style={styles.container}>
-        <Animated.View
-          style={[
-            styles.outerLayer,
-            { opacity: glowOpacity, transform: [{ scale }] },
-          ]}
-        />
-        <Animated.View
-          style={[
-            styles.layerThree,
-            { opacity: glowOpacity, transform: [{ scale }] },
-          ]}
-        />
-        <Animated.View
-          style={[
-            styles.layerTwo,
-            { opacity: glowOpacity, transform: [{ scale }] },
-          ]}
-        />
-        <Animated.View style={[styles.innerCircle, { transform: [{ scale }] }]}>
-          {children}
-        </Animated.View>
+      <View style={styles.wrapper}>
+        {/* Track + ball row */}
+        <View style={styles.trackRow}>
+          {/* Track background */}
+          <View style={styles.track}>
+            <View style={styles.trackInner} />
+          </View>
+
+          {/* End markers */}
+          <View style={[styles.endDot, { left: 0 }]} />
+          <View style={[styles.endDot, { right: 0 }]} />
+
+          {/* Ball */}
+          <Animated.View style={[styles.ballContainer, { transform: [{ translateX: ballX }] }]}>
+            <View style={styles.ball} />
+          </Animated.View>
+        </View>
+
+        {/* Phase label + countdown rendered below the track */}
+        <View style={styles.childrenContainer}>{children}</View>
       </View>
     );
   },
@@ -97,45 +75,60 @@ BreathingCircle.displayName = 'BreathingCircle';
 
 export default BreathingCircle;
 
+const TRACK_TOP = (BALL_SIZE - 6) / 2;
+const BALL_TOP = 0;
+
 const styles = StyleSheet.create({
-  container: {
-    width: OUTER_SIZE,
-    height: OUTER_SIZE,
+  wrapper: {
     alignItems: 'center',
     justifyContent: 'center',
+    width: CONTAINER_WIDTH,
   },
-  outerLayer: {
-    position: 'absolute',
-    width: OUTER_SIZE,
-    height: OUTER_SIZE,
-    borderRadius: OUTER_SIZE / 2,
-    backgroundColor: colors.primary.blue100,
+  trackRow: {
+    width: CONTAINER_WIDTH,
+    height: BALL_SIZE,
   },
-  layerThree: {
+  track: {
     position: 'absolute',
-    width: LAYER_THREE_SIZE,
-    height: LAYER_THREE_SIZE,
-    borderRadius: LAYER_THREE_SIZE / 2,
+    left: BALL_SIZE / 2,
+    right: BALL_SIZE / 2,
+    top: TRACK_TOP,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#0a1628',
+    overflow: 'hidden',
+  },
+  trackInner: {
+    flex: 1,
+    borderRadius: 3,
+    backgroundColor: '#1a3a5c',
+    opacity: 0.7,
+  },
+  endDot: {
+    position: 'absolute',
+    width: 10,
+    height: 10,
+    borderRadius: 5,
     backgroundColor: colors.primary.blue400,
+    top: TRACK_TOP - 2,
+    opacity: 0.7,
   },
-  layerTwo: {
+  ballContainer: {
     position: 'absolute',
-    width: LAYER_TWO_SIZE,
-    height: LAYER_TWO_SIZE,
-    borderRadius: LAYER_TWO_SIZE / 2,
+    left: 0,
+    top: BALL_TOP,
+    width: BALL_SIZE,
+    height: BALL_SIZE,
+  },
+  ball: {
+    width: BALL_SIZE,
+    height: BALL_SIZE,
+    borderRadius: BALL_SIZE / 2,
     backgroundColor: colors.primary.blue500,
   },
-  innerCircle: {
-    width: INNER_SIZE,
-    height: INNER_SIZE,
-    borderRadius: INNER_SIZE / 2,
-    backgroundColor: colors.primary.blue600,
+  childrenContainer: {
+    marginTop: 28,
     alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: colors.primary.blue700,
-    shadowOffset: { width: 0, height: 16 },
-    shadowOpacity: 0.35,
-    shadowRadius: 32,
-    elevation: 14,
+    gap: 4,
   },
 });

@@ -4,11 +4,11 @@ import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import {
   useFonts,
-  Manrope_400Regular,
-  Manrope_500Medium,
-  Manrope_600SemiBold,
-  Manrope_700Bold,
-} from '@expo-google-fonts/manrope';
+  Nunito_400Regular,
+  Nunito_500Medium,
+  Nunito_600SemiBold,
+  Nunito_700Bold,
+} from '@expo-google-fonts/nunito';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -61,10 +61,10 @@ function MainTabs() {
 
 export default function App() {
   const [fontsLoaded] = useFonts({
-    'Manrope-Regular': Manrope_400Regular,
-    'Manrope-Medium': Manrope_500Medium,
-    'Manrope-SemiBold': Manrope_600SemiBold,
-    'Manrope-Bold': Manrope_700Bold,
+    'Nunito-Regular': Nunito_400Regular,
+    'Nunito-Medium': Nunito_500Medium,
+    'Nunito-SemiBold': Nunito_600SemiBold,
+    'Nunito-Bold': Nunito_700Bold,
   });
 
   const onLayoutRootView = useCallback(async () => {

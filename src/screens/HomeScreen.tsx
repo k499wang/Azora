@@ -17,6 +17,7 @@ import WeekCalendar from '../components/home/WeekCalendar';
 import DailyExerciseButton from '../components/home/DailyExerciseButton';
 import DailyScoresSection from '../components/home/DailyScoresSection';
 import HighlightCards from '../components/home/HighlightCards';
+import { LinearGradient } from 'expo-linear-gradient';
 import AnalyticsSection from '../components/analytics/AnalyticsSection';
 
 const USER_NAME = 'Kevin';
@@ -100,6 +101,11 @@ export default function HomeScreen() {
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
+      <LinearGradient
+        colors={['#F0E6F6', '#E8EEF8', colors.background.primary]}
+        locations={[0, 0.4, 0.75]}
+        style={StyleSheet.absoluteFill}
+      />
       {/* ── Top bar (sticky) ── */}
       <AppTopBar streak={DAILY_STREAK} />
 
