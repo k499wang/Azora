@@ -61,12 +61,6 @@ export default function ExerciseLibraryPage() {
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
       <AppTopBar />
-
-      <View style={styles.header}>
-        <Text style={styles.pageTitle}>Exercise</Text>
-        <Text style={styles.pageSubtitle}>Choose a breathing technique</Text>
-      </View>
-
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.grid}
@@ -84,20 +78,6 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: colors.background.primary,
-  },
-  header: {
-    paddingHorizontal: padding.screen.horizontal,
-    paddingTop: padding.screen.vertical,
-    paddingBottom: spacing.md,
-  },
-  pageTitle: {
-    ...typography.title.title1,
-    color: colors.text.primary,
-  },
-  pageSubtitle: {
-    ...typography.body.small,
-    color: colors.text.secondary,
-    marginTop: spacing.xs,
   },
   scrollView: {
     flex: 1,
