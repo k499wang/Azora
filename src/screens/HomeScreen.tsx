@@ -16,9 +16,7 @@ import AppTopBar from '../components/common/AppTopBar';
 import WeekCalendar from '../components/home/WeekCalendar';
 import DailyExerciseButton from '../components/home/DailyExerciseButton';
 import DailyScoresSection from '../components/home/DailyScoresSection';
-import HighlightCards from '../components/home/HighlightCards';
 import { LinearGradient } from 'expo-linear-gradient';
-import AnalyticsSection from '../components/analytics/AnalyticsSection';
 
 const USER_NAME = 'Kevin';
 const DAILY_STREAK = 1;
@@ -143,8 +141,6 @@ export default function HomeScreen() {
         <DailyScoresSection />
       </View>
 
-      <AnalyticsSection />
-      <HighlightCards />
       </ScrollView>
     </View>
   );

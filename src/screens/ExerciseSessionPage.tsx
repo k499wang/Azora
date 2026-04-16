@@ -157,7 +157,7 @@ export default function ExerciseSessionPage() {
 
   const handleClose = () => {
     clearTimer();
-    navigation.navigate('MainTabs' as never, { screen: 'Exercise' } as never);
+    navigation.goBack();
   };
 
   useEffect(() => () => clearTimer(), []);
