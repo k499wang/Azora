@@ -135,7 +135,10 @@ export default function HomeScreen() {
         />
       </View>
 
-      <DailyScoresSection />
+      <View style={styles.scoresContainer}>
+        <DailyScoresSection />
+      </View>
+
       <AnalyticsSection />
       <HighlightCards />
     </ScrollView>
@@ -174,7 +177,9 @@ const styles = StyleSheet.create({
   /* ── CTA ── */
   cta: {
     paddingHorizontal: padding.screen.horizontal,
-    marginTop: spacing.lg,
+    marginTop: spacing.md,
   },
-
+  scoresContainer: {
+    marginTop: -spacing.md,
+  },
 });
