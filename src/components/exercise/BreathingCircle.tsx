@@ -11,6 +11,9 @@ const CONTAINER_WIDTH = TRACK_WIDTH + BALL_SIZE;
 export interface BreathingCircleRef {
   expand: (duration: number) => void;
   contract: (duration: number) => void;
+  pause: () => void;
+  resumeExpand: (remainingSecs: number) => void;
+  resumeContract: (remainingSecs: number) => void;
   reset: () => void;
 }
 
@@ -35,6 +38,25 @@ const BreathingCircle = forwardRef<BreathingCircleRef, BreathingCircleProps>(
         Animated.timing(ballX, {
           toValue: 0,
           duration: duration * 1000,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }).start();
+      },
+      pause() {
+        ballX.stopAnimation();
+      },
+      resumeExpand(remainingSecs: number) {
+        Animated.timing(ballX, {
+          toValue: BALL_TRAVEL,
+          duration: remainingSecs * 1000,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }).start();
+      },
+      resumeContract(remainingSecs: number) {
+        Animated.timing(ballX, {
+          toValue: 0,
+          duration: remainingSecs * 1000,
           easing: Easing.inOut(Easing.sin),
           useNativeDriver: true,
         }).start();
@@ -81,8 +103,8 @@ const BALL_TOP = 0;
 const styles = StyleSheet.create({
   wrapper: {
     alignItems: 'center',
-    justifyContent: 'center',
     width: CONTAINER_WIDTH,
+    minHeight: 44 + 28 + 28 + 4 + 56,
   },
   trackRow: {
     width: CONTAINER_WIDTH,

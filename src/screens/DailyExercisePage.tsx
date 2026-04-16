@@ -114,6 +114,8 @@ export default function DailyExercisePage() {
 
   return (
     <ExerciseScaffold
+      title="Daily Breath Hold"
+      subtitle="Take a full breath in, then hold as long as feels comfortable."
       onClose={() => {
         resetSession();
         navigation.goBack();
@@ -126,14 +128,16 @@ export default function DailyExercisePage() {
             <MaterialCommunityIcons
               name="check-circle-outline"
               size={32}
-              color={colors.primary.blue100}
+              color={colors.primary.blue600}
             />
           ) : null}
         </BreathingCircle>
       }
       bottomSlot={
-        <>
-          <Text style={styles.guidance}>{guidance}</Text>
+        <View style={styles.bottomContainer}>
+          <View style={styles.guidanceWrap}>
+            <Text style={styles.guidance}>{guidance}</Text>
+          </View>
 
           <Pressable
             style={({ pressed }) => [styles.startButton, pressed && styles.startButtonPressed]}
@@ -142,36 +146,49 @@ export default function DailyExercisePage() {
             <Text style={styles.startButtonText}>{primaryLabel}</Text>
           </Pressable>
 
-          {phase === 'done' && (
-            <Pressable
-              style={({ pressed }) => [styles.viewResultsButton, pressed && styles.startButtonPressed]}
-              onPress={handleViewResults}
-            >
-              <MaterialCommunityIcons name="chart-line" size={18} color={colors.primary.blue600} style={{ marginRight: spacing.xs }} />
-              <Text style={styles.viewResultsText}>View Results</Text>
-            </Pressable>
-          )}
-        </>
+          <Pressable
+            pointerEvents={phase === 'done' ? 'auto' : 'none'}
+            style={({ pressed }) => [
+              styles.viewResultsButton,
+              pressed && styles.startButtonPressed,
+              phase !== 'done' && styles.viewResultsHidden,
+            ]}
+            onPress={handleViewResults}
+          >
+            <MaterialCommunityIcons name="chart-line" size={18} color={colors.primary.blue600} style={{ marginRight: spacing.xs }} />
+            <Text style={styles.viewResultsText}>View Results</Text>
+          </Pressable>
+        </View>
       }
     />
   );
 }
 
 const styles = StyleSheet.create({
+  bottomContainer: {
+    gap: 0,
+  },
+  guidanceWrap: {
+    minHeight: 66,
+    justifyContent: 'center',
+    marginBottom: spacing.lg,
+  },
+  viewResultsHidden: {
+    opacity: 0,
+  },
   phaseLabel: {
     ...typography.title.title3,
-    color: colors.text.inverse,
+    color: colors.text.secondary,
     textAlign: 'center',
   },
   countdown: {
     ...typography.display.display1,
-    color: colors.text.inverse,
+    color: colors.text.primary,
   },
   guidance: {
     ...typography.body.small,
     color: colors.text.secondary,
     textAlign: 'center',
-    marginBottom: spacing.lg,
     paddingHorizontal: spacing.md,
   },
   stats: {
