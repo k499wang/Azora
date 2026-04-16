@@ -79,13 +79,6 @@ export default function DailyExercisePage() {
     releaseHold();
   };
 
-  const resetSession = () => {
-    clearTimer();
-    circleRef.current?.reset();
-    setPhase('idle');
-    setHoldSeconds(0);
-  };
-
   const handleViewResults = () => {
     navigation.navigate('DailyResult', {
       holdSeconds,
@@ -114,23 +107,26 @@ export default function DailyExercisePage() {
 
   return (
     <ExerciseScaffold
-      title="Daily Breath Hold"
-      subtitle="Take a full breath in, then hold as long as feels comfortable."
-      onClose={() => {
-        resetSession();
-        navigation.goBack();
-      }}
+      titleSlot={
+        <View style={styles.patternRow}>
+          {[
+            { key: 'inhale', icon: 'arrow-up' as const, label: '6s' },
+            { key: 'hold',   icon: 'dots-horizontal' as const, label: '∞' },
+          ].map((p, i, arr) => (
+            <View key={p.key} style={styles.patternItem}>
+              <View style={styles.patternCircle}>
+                <MaterialCommunityIcons name={p.icon} size={24} color={colors.text.secondary} />
+              </View>
+              <Text style={styles.patternSecs}>{p.label}</Text>
+              {i < arr.length - 1 && <View style={styles.patternConnector} />}
+            </View>
+          ))}
+        </View>
+      }
       centerSlot={
         <BreathingCircle ref={circleRef}>
           {phase !== 'idle' ? <Text style={styles.phaseLabel}>{PHASE_LABELS[phase]}</Text> : null}
           {displayTime ? <Text style={styles.countdown}>{displayTime}</Text> : null}
-          {phase === 'done' ? (
-            <MaterialCommunityIcons
-              name="check-circle-outline"
-              size={32}
-              color={colors.primary.blue600}
-            />
-          ) : null}
         </BreathingCircle>
       }
       bottomSlot={
@@ -138,21 +134,30 @@ export default function DailyExercisePage() {
           <View style={styles.guidanceWrap}>
             <Text style={styles.guidance}>{guidance}</Text>
           </View>
-
-          <Pressable
-            style={({ pressed }) => [styles.startButton, pressed && styles.startButtonPressed]}
-            onPress={handlePrimaryPress}
-          >
-            <Text style={styles.startButtonText}>{primaryLabel}</Text>
-          </Pressable>
-
+          <View style={styles.btnRow}>
+            <Pressable
+              style={({ pressed }) => [styles.circleBtn, pressed && styles.circleBtnPressed]}
+              onPress={() => navigation.navigate('MainTabs' as never, { screen: 'Exercise' } as never)}
+            >
+              <MaterialCommunityIcons name="stop" size={26} color={colors.neutral[900]} />
+            </Pressable>
+            <Pressable
+              style={({ pressed }) => [styles.circleBtn, pressed && styles.circleBtnPressed]}
+              onPress={handlePrimaryPress}
+            >
+              <MaterialCommunityIcons
+                name={
+                  phase === 'idle' || phase === 'done' ? 'play' :
+                  phase === 'inhale' ? 'chevron-right' : 'hand-back-left-outline'
+                }
+                size={28}
+                color={colors.neutral[900]}
+              />
+            </Pressable>
+          </View>
           <Pressable
             pointerEvents={phase === 'done' ? 'auto' : 'none'}
-            style={({ pressed }) => [
-              styles.viewResultsButton,
-              pressed && styles.startButtonPressed,
-              phase !== 'done' && styles.viewResultsHidden,
-            ]}
+            style={({ pressed }) => [styles.viewResultsButton, pressed && styles.circleBtnPressed, phase !== 'done' && styles.viewResultsHidden]}
             onPress={handleViewResults}
           >
             <MaterialCommunityIcons name="chart-line" size={18} color={colors.primary.blue600} style={{ marginRight: spacing.xs }} />
@@ -165,13 +170,65 @@ export default function DailyExercisePage() {
 }
 
 const styles = StyleSheet.create({
+  patternRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+  },
+  patternItem: {
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  patternCircle: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: colors.neutral[100],
+    borderWidth: 1,
+    borderColor: colors.border.subtle,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  patternSecs: {
+    ...typography.caption.caption1,
+    color: colors.text.tertiary,
+  },
+  patternConnector: {
+    position: 'absolute',
+    top: 25,
+    right: -spacing.sm,
+    width: spacing.sm,
+    height: 1,
+    backgroundColor: colors.border.subtle,
+  },
   bottomContainer: {
-    gap: 0,
+    alignItems: 'center',
+    gap: spacing.lg,
   },
   guidanceWrap: {
     minHeight: 66,
     justifyContent: 'center',
-    marginBottom: spacing.lg,
+  },
+  btnRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.md,
+  },
+  circleBtn: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.neutral[100],
+    borderWidth: 1,
+    borderColor: colors.border.subtle,
+  },
+  circleBtnPressed: {
+    opacity: 0.75,
+    transform: [{ scale: 0.96 }],
   },
   viewResultsHidden: {
     opacity: 0,
@@ -191,49 +248,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingHorizontal: spacing.md,
   },
-  stats: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: spacing.lg,
-  },
-  stat: {
-    alignItems: 'center',
-    gap: spacing.xs / 2,
-  },
-  statLabel: {
-    ...typography.caption.caption1,
-    color: colors.text.tertiary,
-  },
-  statValue: {
-    ...typography.heading.heading1,
-    color: colors.text.primary,
-  },
-  statDivider: {
-    width: 1,
-    height: spacing.lg + spacing.xs,
-    backgroundColor: colors.border.subtle,
-  },
-  startButton: {
-    backgroundColor: colors.primary.blue600,
-    borderRadius: 18,
-    paddingVertical: spacing.md,
-    alignItems: 'center',
-    shadowColor: colors.primary.blue700,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.16,
-    shadowRadius: 14,
-    elevation: 6,
-    marginTop: spacing.lg,
-  },
-  startButtonPressed: {
-    opacity: 0.92,
-    transform: [{ scale: 0.99 }],
-  },
-  startButtonText: {
-    ...typography.button.large,
-    color: colors.text.inverse,
-  },
   viewResultsButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -241,7 +255,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.accentSoft,
     borderRadius: 18,
     paddingVertical: spacing.md,
-    marginTop: spacing.sm,
+    paddingHorizontal: spacing.xl,
     borderWidth: 1,
     borderColor: colors.primary.blue400,
   },

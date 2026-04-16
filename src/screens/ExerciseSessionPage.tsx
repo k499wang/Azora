@@ -157,7 +157,7 @@ export default function ExerciseSessionPage() {
 
   const handleClose = () => {
     clearTimer();
-    navigation.goBack();
+    navigation.navigate('MainTabs' as never, { screen: 'Exercise' } as never);
   };
 
   useEffect(() => () => clearTimer(), []);
@@ -173,6 +173,8 @@ export default function ExerciseSessionPage() {
   return (
     <ExerciseScaffold
       titleSlot={
+        <View style={styles.titleSlotWrap}>
+        <Text style={styles.techniqueSubtitle}>{technique.name}</Text>
         <View style={styles.patternRow}>
           {(
             [
@@ -186,7 +188,7 @@ export default function ExerciseSessionPage() {
             .map((p, i, arr) => (
               <View key={p.key} style={styles.patternItem}>
                 <View style={styles.patternCircle}>
-                  <MaterialCommunityIcons name={p.icon} size={18} color={colors.text.secondary} />
+                  <MaterialCommunityIcons name={p.icon} size={24} color={colors.text.secondary} />
                 </View>
                 <Text style={styles.patternSecs}>{p.secs}s</Text>
                 {i < arr.length - 1 && (
@@ -194,6 +196,7 @@ export default function ExerciseSessionPage() {
                 )}
               </View>
             ))}
+        </View>
         </View>
       }
       centerSlot={
@@ -264,20 +267,28 @@ export default function ExerciseSessionPage() {
 }
 
 const styles = StyleSheet.create({
+  titleSlotWrap: {
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  techniqueSubtitle: {
+    ...typography.title.title2,
+    color: colors.text.primary,
+  },
   patternRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.md * 2,
+    gap: spacing.sm,
   },
   patternItem: {
     alignItems: 'center',
     gap: spacing.xs,
   },
   patternCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     backgroundColor: colors.neutral[100],
     borderWidth: 1,
     borderColor: colors.border.subtle,
@@ -285,14 +296,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   patternSecs: {
-    ...typography.caption.caption2,
+    ...typography.caption.caption1,
     color: colors.text.tertiary,
   },
   patternConnector: {
     position: 'absolute',
-    top: 19,
-    right: -spacing.md,
-    width: spacing.md,
+    top: 25,
+    right: -spacing.sm,
+    width: spacing.sm,
     height: 1,
     backgroundColor: colors.border.subtle,
   },

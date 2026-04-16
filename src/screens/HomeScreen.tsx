@@ -21,7 +21,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import AnalyticsSection from '../components/analytics/AnalyticsSection';
 
 const USER_NAME = 'Kevin';
-const DAILY_STREAK = 7;
+const DAILY_STREAK = 1;
 
 function getGreeting(): { greeting: string; subtitle: string } {
   const hour = new Date().getHours();
