@@ -134,27 +134,19 @@ export default function DailyExercisePage() {
           <View style={styles.guidanceWrap}>
             <Text style={styles.guidance}>{guidance}</Text>
           </View>
-          <View style={styles.btnRow}>
-            <Pressable
-              style={({ pressed }) => [styles.circleBtn, pressed && styles.circleBtnPressed]}
-              onPress={() => navigation.navigate('MainTabs' as never, { screen: 'Exercise' } as never)}
-            >
-              <MaterialCommunityIcons name="stop" size={26} color={colors.neutral[900]} />
-            </Pressable>
-            <Pressable
-              style={({ pressed }) => [styles.circleBtn, pressed && styles.circleBtnPressed]}
-              onPress={handlePrimaryPress}
-            >
-              <MaterialCommunityIcons
-                name={
-                  phase === 'idle' || phase === 'done' ? 'play' :
-                  phase === 'inhale' ? 'chevron-right' : 'hand-back-left-outline'
-                }
-                size={28}
-                color={colors.neutral[900]}
-              />
-            </Pressable>
-          </View>
+          <Pressable
+            style={({ pressed }) => [styles.circleBtn, pressed && styles.circleBtnPressed]}
+            onPress={handlePrimaryPress}
+          >
+            <MaterialCommunityIcons
+              name={
+                phase === 'idle' || phase === 'done' ? 'play' :
+                phase === 'inhale' ? 'chevron-right' : 'hand-back-left-outline'
+              }
+              size={28}
+              color={colors.neutral[900]}
+            />
+          </Pressable>
           <Pressable
             pointerEvents={phase === 'done' ? 'auto' : 'none'}
             style={({ pressed }) => [styles.viewResultsButton, pressed && styles.circleBtnPressed, phase !== 'done' && styles.viewResultsHidden]}
