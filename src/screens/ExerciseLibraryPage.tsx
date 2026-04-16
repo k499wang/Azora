@@ -1,4 +1,5 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -60,6 +61,7 @@ export default function ExerciseLibraryPage() {
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
+      <LinearGradient colors={['#F0E6F6', '#E8EEF8', colors.background.primary]} locations={[0, 0.4, 0.75]} style={StyleSheet.absoluteFill} />
       <AppTopBar />
       <ScrollView
         style={styles.scrollView}
@@ -77,7 +79,6 @@ export default function ExerciseLibraryPage() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: colors.background.primary,
   },
   scrollView: {
     flex: 1,

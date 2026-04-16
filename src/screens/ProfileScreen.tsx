@@ -1,4 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
@@ -9,6 +10,7 @@ export default function ProfileScreen() {
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
+      <LinearGradient colors={['#F0E6F6', '#E8EEF8', colors.background.primary]} locations={[0, 0.4, 0.75]} style={StyleSheet.absoluteFill} />
       <AppTopBar />
       <View style={styles.content}>
         <Text style={styles.title}>Profile</Text>
@@ -20,7 +22,6 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: colors.background.primary,
   },
   content: {
     flex: 1,

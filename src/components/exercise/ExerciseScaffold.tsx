@@ -1,5 +1,6 @@
 import { ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../theme/colors';
@@ -30,6 +31,7 @@ export default function ExerciseScaffold({
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
+      <LinearGradient colors={['#F0E6F6', '#E8EEF8', colors.background.primary]} locations={[0, 0.4, 0.75]} style={StyleSheet.absoluteFill} />
       <AppTopBar />
 
       <View style={styles.header}>
@@ -61,7 +63,6 @@ export default function ExerciseScaffold({
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: colors.background.primary,
   },
   header: {
     paddingHorizontal: padding.screen.horizontal,

@@ -141,7 +141,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     borderRadius: 16,
-    backgroundColor: colors.background.accentSoft,
+    backgroundColor: colors.background.elevated,
     gap: 1,
   },
   pillSelected: {
