@@ -4,39 +4,100 @@ const { createRunOncePlugin, withXcodeProject } = require('@expo/config-plugins'
 const { addBuildSourceFileToGroup } = require('@expo/config-plugins/build/ios/utils/Xcodeproj');
 
 const PLUGIN_NAME = 'with-heart-rate-plugin';
-const SOURCE_FILES = ['HeartRatePlugin.swift', 'HeartRatePlugin.m'];
+const NATIVE_IOS_DIR = path.join('native', 'ios');
+const SWIFT_SOURCE_FILES = ['HeartRatePlugin.swift', 'HeartRatePlugin.m'];
+const OBJC_SOURCE_FILES = ['HeartRatePlugin.mm'];
+const SOURCE_EXTENSIONS = new Set(['.c', '.cc', '.cpp', '.m', '.mm', '.swift']);
 
-function copySourceFile(projectRoot, iosRoot, fileName) {
-  const sourcePath = path.join(projectRoot, 'native', 'ios', fileName);
-  const destinationPath = path.join(iosRoot, fileName);
+function assertDirectoryExists(directoryPath) {
+  if (!fs.existsSync(directoryPath) || !fs.statSync(directoryPath).isDirectory()) {
+    throw new Error(`${PLUGIN_NAME}: missing native iOS directory ${directoryPath}`);
+  }
+}
 
-  if (!fs.existsSync(sourcePath)) {
-    throw new Error(`${PLUGIN_NAME}: missing source file ${sourcePath}`);
+function listFilesRecursively(directoryPath, relativeTo = directoryPath) {
+  const entries = fs.readdirSync(directoryPath, { withFileTypes: true });
+  const files = [];
+
+  for (const entry of entries) {
+    const entryPath = path.join(directoryPath, entry.name);
+
+    if (entry.isDirectory()) {
+      files.push(...listFilesRecursively(entryPath, relativeTo));
+      continue;
+    }
+
+    if (entry.isFile()) {
+      files.push(path.relative(relativeTo, entryPath));
+    }
   }
 
+  return files;
+}
+
+function copyFile(projectRoot, iosRoot, relativeFilePath) {
+  const sourcePath = path.join(projectRoot, NATIVE_IOS_DIR, relativeFilePath);
+  const destinationPath = path.join(iosRoot, relativeFilePath);
+
+  fs.mkdirSync(path.dirname(destinationPath), { recursive: true });
   fs.copyFileSync(sourcePath, destinationPath);
 }
 
-function addSourceFile(project, fileName) {
-  if (project.hasFile(fileName)) {
+function nativeFileExists(projectRoot, relativeFilePath) {
+  return fs.existsSync(path.join(projectRoot, NATIVE_IOS_DIR, relativeFilePath));
+}
+
+function resolveCompiledSourceFiles(projectRoot) {
+  const hasSwiftImplementation = SWIFT_SOURCE_FILES.every((fileName) =>
+    nativeFileExists(projectRoot, fileName)
+  );
+
+  if (hasSwiftImplementation) {
+    return SWIFT_SOURCE_FILES;
+  }
+
+  return OBJC_SOURCE_FILES.filter((fileName) => nativeFileExists(projectRoot, fileName));
+}
+
+function addFileToProject(project, relativeFilePath) {
+  if (project.hasFile(relativeFilePath)) {
     return project;
   }
 
   return addBuildSourceFileToGroup({
-    filepath: fileName,
+    filepath: relativeFilePath,
     groupName: '',
     project,
   });
+}
+
+function shouldAddToProject(relativeFilePath, compiledSourceFiles) {
+  const extension = path.extname(relativeFilePath);
+
+  return SOURCE_EXTENSIONS.has(extension) && compiledSourceFiles.includes(relativeFilePath);
 }
 
 function withHeartRatePlugin(config) {
   return withXcodeProject(config, (config) => {
     const projectRoot = config.modRequest.projectRoot;
     const iosRoot = config.modRequest.platformProjectRoot;
+    const nativeIosRoot = path.join(projectRoot, NATIVE_IOS_DIR);
 
-    for (const fileName of SOURCE_FILES) {
-      copySourceFile(projectRoot, iosRoot, fileName);
-      config.modResults = addSourceFile(config.modResults, fileName);
+    assertDirectoryExists(nativeIosRoot);
+
+    const nativeFiles = listFilesRecursively(nativeIosRoot);
+    const compiledSourceFiles = resolveCompiledSourceFiles(projectRoot);
+
+    if (compiledSourceFiles.length === 0) {
+      throw new Error(`${PLUGIN_NAME}: no compilable heart rate plugin source files found in ${nativeIosRoot}`);
+    }
+
+    for (const relativeFilePath of nativeFiles) {
+      copyFile(projectRoot, iosRoot, relativeFilePath);
+
+      if (shouldAddToProject(relativeFilePath, compiledSourceFiles)) {
+        config.modResults = addFileToProject(config.modResults, relativeFilePath);
+      }
     }
 
     return config;

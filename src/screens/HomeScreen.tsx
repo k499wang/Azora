@@ -6,15 +6,13 @@ import {
   StyleSheet,
   Text,
   View,
-  Pressable,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
-import { spacing, padding, margin } from '../theme/spacing';
-import Pill from '../components/common/Pill';
+import { spacing, padding } from '../theme/spacing';
+import AppTopBar from '../components/common/AppTopBar';
 import WeekCalendar from '../components/home/WeekCalendar';
 import DailyExerciseButton from '../components/home/DailyExerciseButton';
 import DailyScoresSection from '../components/home/DailyScoresSection';
@@ -106,17 +104,7 @@ export default function HomeScreen() {
       contentContainerStyle={styles.scrollContent}
     >
       {/* ── Top bar ── */}
-      <View style={styles.topBar}>
-        <Pill icon="fire" label={String(DAILY_STREAK)} />
-        <Text style={styles.brandTitle}>Brthe</Text>
-        <Pressable style={styles.gearButton}>
-          <MaterialCommunityIcons
-            name="cog-outline"
-            size={22}
-            color={colors.text.secondary}
-          />
-        </Pressable>
-      </View>
+      <AppTopBar streak={DAILY_STREAK} />
 
       {/* ── Week calendar ── */}
       <WeekCalendar />
@@ -162,35 +150,12 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: spacing['5xl'],
   },
-
-  /* ── Top bar ── */
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: padding.screen.horizontal,
-    paddingTop: spacing.md,
-  },
-  brandTitle: {
-    ...typography.title.title2,
-    color: colors.text.primary,
-    letterSpacing: 1,
-  },
-  gearButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.neutral[100],
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
   /* ── Greeting ── */
   greetingZone: {
     alignItems: 'center',
     paddingHorizontal: padding.screen.horizontal,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.sm,
+    paddingTop: spacing['2xl'],
+    paddingBottom: spacing.md,
   },
   greeting: {
     ...typography.title.title1,
@@ -209,7 +174,7 @@ const styles = StyleSheet.create({
   /* ── CTA ── */
   cta: {
     paddingHorizontal: padding.screen.horizontal,
-    marginTop: spacing.sm,
+    marginTop: spacing.lg,
   },
 
 });

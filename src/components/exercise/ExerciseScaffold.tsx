@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing, padding } from '../../theme/spacing';
+import AppTopBar from '../common/AppTopBar';
 
 interface ExerciseScaffoldProps {
   title: string;
@@ -29,6 +30,8 @@ export default function ExerciseScaffold({
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
+      <AppTopBar />
+
       <View style={styles.header}>
         <View style={styles.titleRow}>
           <View style={styles.titleCopy}>
