@@ -114,15 +114,13 @@ export default function DailyExercisePage() {
 
   return (
     <ExerciseScaffold
-      title="Daily Exercise"
-      subtitle="Inhale fully, begin your hold, then release when you are ready to breathe."
       onClose={() => {
         resetSession();
         navigation.goBack();
       }}
       centerSlot={
         <BreathingCircle ref={circleRef}>
-          <Text style={styles.phaseLabel}>{PHASE_LABELS[phase]}</Text>
+          {phase !== 'idle' ? <Text style={styles.phaseLabel}>{PHASE_LABELS[phase]}</Text> : null}
           {displayTime ? <Text style={styles.countdown}>{displayTime}</Text> : null}
           {phase === 'done' ? (
             <MaterialCommunityIcons
@@ -136,17 +134,6 @@ export default function DailyExercisePage() {
       bottomSlot={
         <>
           <Text style={styles.guidance}>{guidance}</Text>
-          <View style={styles.stats}>
-            <View style={styles.stat}>
-              <Text style={styles.statLabel}>Current hold</Text>
-              <Text style={styles.statValue}>{formatTime(holdSeconds)}</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.stat}>
-              <Text style={styles.statLabel}>Best today</Text>
-              <Text style={styles.statValue}>{formatTime(bestHoldSeconds)}</Text>
-            </View>
-          </View>
 
           <Pressable
             style={({ pressed }) => [styles.startButton, pressed && styles.startButtonPressed]}

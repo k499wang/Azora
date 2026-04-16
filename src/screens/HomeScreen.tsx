@@ -99,13 +99,11 @@ export default function HomeScreen() {
   }, [greetingFade, greetingSlide, subtitleFade, subtitleSlide]);
 
   return (
-    <ScrollView
-      style={[styles.screen, { paddingTop: insets.top }]}
-      contentContainerStyle={styles.scrollContent}
-    >
-      {/* ── Top bar ── */}
+    <View style={[styles.screen, { paddingTop: insets.top }]}>
+      {/* ── Top bar (sticky) ── */}
       <AppTopBar streak={DAILY_STREAK} />
 
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
       {/* ── Week calendar ── */}
       <WeekCalendar />
 
@@ -141,7 +139,8 @@ export default function HomeScreen() {
 
       <AnalyticsSection />
       <HighlightCards />
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
 
@@ -149,6 +148,9 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: colors.background.primary,
+  },
+  scroll: {
+    flex: 1,
   },
   scrollContent: {
     paddingBottom: spacing['5xl'],

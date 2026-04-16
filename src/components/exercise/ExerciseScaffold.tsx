@@ -8,7 +8,7 @@ import { spacing, padding } from '../../theme/spacing';
 import AppTopBar from '../common/AppTopBar';
 
 interface ExerciseScaffoldProps {
-  title: string;
+  title?: string;
   subtitle?: string;
   rightSlot?: ReactNode;
   pickerSlot?: ReactNode;
@@ -35,7 +35,7 @@ export default function ExerciseScaffold({
       <View style={styles.header}>
         <View style={styles.titleRow}>
           <View style={styles.titleCopy}>
-            <Text style={styles.pageTitle}>{title}</Text>
+            {title ? <Text style={styles.pageTitle}>{title}</Text> : null}
             {subtitle ? <Text style={styles.pageSubtitle}>{subtitle}</Text> : null}
           </View>
           <View style={styles.headerRight}>

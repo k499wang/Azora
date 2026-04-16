@@ -4,7 +4,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   SafeAreaView,
-  ScrollView,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../../theme/colors';
@@ -27,30 +26,10 @@ const steps = [
   },
 ];
 
-export function DefaultInstructionScreen({ onNext, onCancel }: SetupScreenProps) {
+export function DefaultInstructionScreen({ onNext }: SetupScreenProps) {
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Header icon */}
-        <View style={styles.iconContainer}>
-          <View style={styles.iconCircle}>
-            <MaterialCommunityIcons
-              name="heart-pulse"
-              size={56}
-              color={colors.primary.blue600}
-            />
-          </View>
-        </View>
-
-        {/* Title */}
-        <Text style={styles.title}>Measure Heart Rate</Text>
-        <Text style={styles.subtitle}>
-          Using your phone's camera and flash to detect your pulse
-        </Text>
-
+      <View style={styles.content}>
         {/* Steps */}
         <View style={styles.stepsContainer}>
           {steps.map((step, index) => (
@@ -79,17 +58,11 @@ export function DefaultInstructionScreen({ onNext, onCancel }: SetupScreenProps)
           </Text>
         </View>
 
-        {/* Actions */}
-        <View style={styles.actions}>
-          <TouchableOpacity style={styles.primaryButton} onPress={onNext} activeOpacity={0.85}>
-            <Text style={styles.primaryButtonText}>I'm Ready</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity onPress={onCancel} activeOpacity={0.7} style={styles.cancelTouchable}>
-            <Text style={styles.cancelText}>Cancel</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
+        <TouchableOpacity style={styles.primaryButton} onPress={onNext} activeOpacity={0.85}>
+          <MaterialCommunityIcons name="heart-pulse" size={20} color={colors.text.inverse} style={styles.buttonIcon} />
+          <Text style={styles.primaryButtonText}>Measure My Heart Rate</Text>
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 }
@@ -99,36 +72,12 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background.primary,
   },
-  scrollContent: {
-    flexGrow: 1,
+  content: {
+    flex: 1,
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.xl,
     paddingBottom: spacing.xl,
-    alignItems: 'center',
-  },
-  iconContainer: {
-    marginBottom: spacing.lg,
-  },
-  iconCircle: {
-    width: 104,
-    height: 104,
-    borderRadius: 52,
-    backgroundColor: colors.primary.blue100,
-    alignItems: 'center',
     justifyContent: 'center',
-  },
-  title: {
-    ...typography.title.title1,
-    color: colors.text.primary,
-    textAlign: 'center',
-    marginBottom: spacing.sm,
-  },
-  subtitle: {
-    ...typography.body.medium,
-    color: colors.text.secondary,
-    textAlign: 'center',
-    marginBottom: spacing.xl,
-    lineHeight: 22,
   },
   stepsContainer: {
     width: '100%',
@@ -176,28 +125,21 @@ const styles = StyleSheet.create({
     color: colors.text.tertiary,
     flex: 1,
   },
-  actions: {
-    width: '100%',
-    gap: spacing.md,
-    alignItems: 'center',
-  },
   primaryButton: {
     width: '100%',
     backgroundColor: colors.primary.blue600,
     borderRadius: 14,
     paddingVertical: 16,
     alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: spacing.sm,
+  },
+  buttonIcon: {
+    marginRight: 2,
   },
   primaryButtonText: {
     ...typography.button.large,
     color: colors.text.inverse,
-  },
-  cancelTouchable: {
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-  },
-  cancelText: {
-    ...typography.body.medium,
-    color: colors.text.secondary,
   },
 });

@@ -22,14 +22,14 @@ export default function DailyExerciseButton({ onPress }: DailyExerciseButtonProp
         ]}
       >
         <Canvas style={styles.canvas}>
-          {/* Intense Outer Bloom */}
-          <Circle cx={CENTER} cy={CENTER} r={110} color="rgba(74, 144, 245, 0.18)">
-            <BlurMask blur={70} style="normal" />
+          {/* Outer Bloom */}
+          <Circle cx={CENTER} cy={CENTER} r={110} color="rgba(30, 99, 214, 0.22)">
+            <BlurMask blur={60} style="normal" />
           </Circle>
 
-          {/* Core Radiant Glow */}
-          <Circle cx={CENTER} cy={CENTER} r={95} color="rgba(74, 144, 245, 0.5)">
-            <BlurMask blur={35} style="normal" />
+          {/* Core Glow */}
+          <Circle cx={CENTER} cy={CENTER} r={95} color="rgba(30, 99, 214, 0.40)">
+            <BlurMask blur={25} style="normal" />
           </Circle>
 
           {/* Main Button Surface - Increased radius */}
