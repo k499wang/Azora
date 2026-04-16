@@ -16,8 +16,10 @@ export function HeartRateOverlay({ onStreamStopped, onClose }: HeartRateOverlayP
     streamState,
     fingerPlacement,
     currentBpm,
+    beatTick,
     sessionSummary,
     device,
+    format,
     frameProcessor,
     torchMode,
     startStream,
@@ -83,6 +85,7 @@ export function HeartRateOverlay({ onStreamStopped, onClose }: HeartRateOverlayP
     <Camera
       style={styles.hiddenCamera}
       device={device}
+      format={format}
       isActive={true}
       torch={torchMode}
       pixelFormat="rgb"
@@ -119,6 +122,7 @@ export function HeartRateOverlay({ onStreamStopped, onClose }: HeartRateOverlayP
         <View style={styles.badgeContainer} pointerEvents="box-none">
           <LiveBPMBadge
             bpm={currentBpm}
+            beatTick={beatTick}
             streamState={streamState}
             onStop={stopStream}
           />

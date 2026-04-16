@@ -14,13 +14,13 @@ import type { StreamState } from '../../lib/heartRate/types';
 
 interface LiveBPMBadgeProps {
   bpm: number | null;
+  beatTick: number;
   streamState: StreamState;
   onStop: () => void;
 }
 
-export function LiveBPMBadge({ bpm, streamState, onStop }: LiveBPMBadgeProps) {
+export function LiveBPMBadge({ bpm, beatTick, streamState, onStop }: LiveBPMBadgeProps) {
   const pulseAnim = useRef(new Animated.Value(1)).current;
-  const pulseAnimation = useRef<Animated.CompositeAnimation | null>(null);
 
   const hasBpm = bpm != null && streamState !== 'finger_lost';
   const isStreaming = hasBpm;
@@ -28,32 +28,24 @@ export function LiveBPMBadge({ bpm, streamState, onStop }: LiveBPMBadgeProps) {
   const isWarmingUp = !hasBpm && (streamState === 'warming_up' || streamState === 'streaming');
 
   useEffect(() => {
-    if (isStreaming) {
-      pulseAnimation.current = Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulseAnim, {
-            toValue: 1.15,
-            duration: 350,
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseAnim, {
-            toValue: 1,
-            duration: 350,
-            useNativeDriver: true,
-          }),
-          Animated.delay(700),
-        ]),
-      );
-      pulseAnimation.current.start();
-    } else {
-      pulseAnimation.current?.stop();
+    if (!isStreaming || beatTick <= 0) {
       pulseAnim.setValue(1);
+      return;
     }
 
-    return () => {
-      pulseAnimation.current?.stop();
-    };
-  }, [isStreaming, pulseAnim]);
+    Animated.sequence([
+      Animated.timing(pulseAnim, {
+        toValue: 1.25,
+        duration: 90,
+        useNativeDriver: true,
+      }),
+      Animated.timing(pulseAnim, {
+        toValue: 1,
+        duration: 180,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [beatTick, isStreaming, pulseAnim]);
 
   const getBadgeStyle = () => {
     if (isLost) return [styles.badge, styles.badgeLost];

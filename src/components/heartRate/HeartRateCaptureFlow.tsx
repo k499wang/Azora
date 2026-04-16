@@ -34,8 +34,10 @@ export function HeartRateCaptureFlow({
     progress,
     secondsRemaining,
     currentBpm,
+    beatTick,
     result,
     device,
+    format,
     frameProcessor,
     torchMode,
     startCapture,
@@ -120,6 +122,7 @@ export function HeartRateCaptureFlow({
     <Camera
       style={styles.hiddenCamera}
       device={device}
+      format={format}
       isActive={true}
       torch={torchMode}
       pixelFormat="rgb"
@@ -152,6 +155,7 @@ export function HeartRateCaptureFlow({
           progress={progress}
           secondsRemaining={secondsRemaining}
           currentBpm={currentBpm}
+          beatTick={beatTick}
           fingerPlacement={fingerPlacement}
           onCancel={handleCancel}
         />

@@ -2,6 +2,7 @@ import { useCallback, useRef, useState, useEffect } from 'react';
 import {
   useFrameProcessor,
   useCameraDevice,
+  useCameraFormat,
   useCameraPermission,
 } from 'react-native-vision-camera';
 import { useRunOnJS } from 'react-native-worklets-core';
@@ -13,7 +14,11 @@ import type {
 } from '../lib/heartRate/types';
 import { heartRatePlugin } from '../lib/heartRate/heartRatePlugin';
 import { classifyFingerPlacementStateless } from '../lib/heartRate/fingerQuality';
-import { computeBPM, PREVIEW_BPM_OPTIONS } from '../lib/heartRate/signalProcessing';
+import {
+  computeBPM,
+  detectLatestBeat,
+  PREVIEW_BPM_OPTIONS,
+} from '../lib/heartRate/signalProcessing';
 import { computeRollingBPM } from '../lib/heartRate/rollingWindow';
 
 const CAPTURE_DURATION_MS = 15000;
@@ -22,6 +27,8 @@ const FINGER_QUALITY_WINDOW_MS = 1000;
 const ROLLING_CLASSIFY_WINDOW_MS = 2000;
 const ROLLING_BPM_WINDOW_MS = 8000;
 const BPM_UPDATE_INTERVAL_MS = 1000;
+const PROGRESS_UPDATE_INTERVAL_MS = 200;
+const BEAT_DETECTION_INTERVAL_MS = 80;
 
 function isValidFrameSample(value: unknown): value is PpgFrameSample {
   if (value == null || typeof value !== 'object') return false;
@@ -47,8 +54,10 @@ interface UseHeartRateCaptureReturn {
   progress: number;
   secondsRemaining: number;
   currentBpm: number | null;
+  beatTick: number;
   result: CaptureResult | null;
   device: ReturnType<typeof useCameraDevice>;
+  format: ReturnType<typeof useCameraFormat>;
   frameProcessor: ReturnType<typeof useFrameProcessor>;
   torchMode: 'on' | 'off';
   startCapture: () => void;
@@ -65,6 +74,7 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
   const [progress, setProgress] = useState(0);
   const [secondsRemaining, setSecondsRemaining] = useState(15);
   const [currentBpm, setCurrentBpm] = useState<number | null>(null);
+  const [beatTick, setBeatTick] = useState(0);
   const [result, setResult] = useState<CaptureResult | null>(null);
 
   const samplesRef = useRef<PpgFrameSample[]>([]);
@@ -72,7 +82,11 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
   const measureStartRef = useRef<number | null>(null);
   const goodSinceRef = useRef<number | null>(null);
   const lastBpmUpdateRef = useRef<number>(0);
+  const lastProgressUpdateRef = useRef<number>(0);
+  const lastBeatCheckTimestampRef = useRef<number>(0);
+  const lastBeatTimestampRef = useRef<number | null>(null);
   const currentBpmRef = useRef<number | null>(null);
+  const fingerPlacementRef = useRef<FingerPlacementState>('no_finger');
   const captureStateRef = useRef<CaptureState>('idle');
   const fingerClassifyStateRef = useRef<{
     previousState?: FingerPlacementState;
@@ -84,6 +98,10 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
   const device = useCameraDevice('back', {
     physicalDevices: ['wide-angle-camera'],
   });
+  const format = useCameraFormat(device, [
+    { fps: 30 },
+    { videoResolution: { width: 640, height: 480 } },
+  ]);
 
   // Keep captureStateRef in sync
   useEffect(() => {
@@ -98,9 +116,13 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
     measureStartRef.current = startTimestamp ?? null;
     goodSinceRef.current = null;
     lastBpmUpdateRef.current = 0;
+    lastProgressUpdateRef.current = 0;
+    lastBeatCheckTimestampRef.current = 0;
+    lastBeatTimestampRef.current = null;
     fingerClassifyStateRef.current = {};
     setProgress(0);
     setSecondsRemaining(15);
+    setBeatTick(0);
     currentBpmRef.current = null;
     setCurrentBpm(null);
     setCaptureState('measuring');
@@ -115,6 +137,8 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
         goodSinceRef.current = null;
         fingerClassifyStateRef.current = {};
         currentBpmRef.current = null;
+        fingerPlacementRef.current = 'no_finger';
+        lastBeatTimestampRef.current = null;
         setCurrentBpm(null);
         setFingerPlacement('no_finger');
         return;
@@ -135,7 +159,10 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
         fingerClassifyStateRef.current,
       );
       fingerClassifyStateRef.current = newClassifyState;
-      setFingerPlacement(placement);
+      if (placement !== fingerPlacementRef.current) {
+        fingerPlacementRef.current = placement;
+        setFingerPlacement(placement);
+      }
 
       if (state === 'camera_check') {
         if (placement === 'good') {
@@ -155,15 +182,36 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
 
         if (measureStartRef.current != null) {
           const elapsed = timestamp - measureStartRef.current;
-          const prog = Math.min(1, elapsed / CAPTURE_DURATION_MS);
-          const remaining = Math.max(0, Math.ceil((CAPTURE_DURATION_MS - elapsed) / 1000));
-          setProgress(prog);
-          setSecondsRemaining(remaining);
+          if (
+            timestamp - lastProgressUpdateRef.current >= PROGRESS_UPDATE_INTERVAL_MS ||
+            elapsed >= CAPTURE_DURATION_MS
+          ) {
+            lastProgressUpdateRef.current = timestamp;
+            const prog = Math.min(1, elapsed / CAPTURE_DURATION_MS);
+            const remaining = Math.max(0, Math.ceil((CAPTURE_DURATION_MS - elapsed) / 1000));
+            setProgress(prog);
+            setSecondsRemaining(remaining);
+          }
 
           const canEstimateBpm = placement === 'good' || placement === 'partial';
           if (!canEstimateBpm && currentBpmRef.current != null) {
             currentBpmRef.current = null;
             setCurrentBpm(null);
+          }
+          if (!canEstimateBpm) {
+            lastBeatTimestampRef.current = null;
+          }
+
+          if (
+            canEstimateBpm &&
+            timestamp - lastBeatCheckTimestampRef.current >= BEAT_DETECTION_INTERVAL_MS
+          ) {
+            lastBeatCheckTimestampRef.current = timestamp;
+            const beat = detectLatestBeat(samplesRef.current, lastBeatTimestampRef.current);
+            if (beat != null) {
+              lastBeatTimestampRef.current = beat.timestamp;
+              setBeatTick((tick) => tick + 1);
+            }
           }
 
           if (
@@ -246,12 +294,17 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
     measureStartRef.current = null;
     goodSinceRef.current = null;
     lastBpmUpdateRef.current = 0;
+    lastProgressUpdateRef.current = 0;
+    lastBeatCheckTimestampRef.current = 0;
+    lastBeatTimestampRef.current = null;
     fingerClassifyStateRef.current = {};
     setProgress(0);
     setSecondsRemaining(15);
     setResult(null);
+    setBeatTick(0);
     currentBpmRef.current = null;
     setCurrentBpm(null);
+    fingerPlacementRef.current = 'no_finger';
     setFingerPlacement('no_finger');
     setCaptureState('camera_check');
     captureStateRef.current = 'camera_check';
@@ -267,11 +320,16 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
     measureStartRef.current = null;
     goodSinceRef.current = null;
     lastBpmUpdateRef.current = 0;
+    lastProgressUpdateRef.current = 0;
+    lastBeatCheckTimestampRef.current = 0;
+    lastBeatTimestampRef.current = null;
     fingerClassifyStateRef.current = {};
     setProgress(0);
     setSecondsRemaining(15);
     currentBpmRef.current = null;
+    setBeatTick(0);
     setCurrentBpm(null);
+    fingerPlacementRef.current = 'no_finger';
     setFingerPlacement('no_finger');
     setCaptureState('idle');
     captureStateRef.current = 'idle';
@@ -297,8 +355,10 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
     progress,
     secondsRemaining,
     currentBpm,
+    beatTick,
     result,
     device,
+    format,
     frameProcessor,
     torchMode,
     startCapture,
