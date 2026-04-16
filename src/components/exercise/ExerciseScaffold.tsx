@@ -6,11 +6,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing, padding } from '../../theme/spacing';
-import AppTopBar from '../common/AppTopBar';
-
 interface ExerciseScaffoldProps {
   title?: string;
   subtitle?: string;
+  titleSlot?: ReactNode;
   rightSlot?: ReactNode;
   pickerSlot?: ReactNode;
   centerSlot: ReactNode;
@@ -21,6 +20,7 @@ interface ExerciseScaffoldProps {
 export default function ExerciseScaffold({
   title,
   subtitle,
+  titleSlot,
   rightSlot,
   pickerSlot,
   centerSlot,
@@ -32,15 +32,15 @@ export default function ExerciseScaffold({
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
       <LinearGradient colors={['#F0E6F6', '#E8EEF8', colors.background.primary]} locations={[0, 0.4, 0.75]} style={StyleSheet.absoluteFill} />
-      <AppTopBar />
-
       <View style={styles.header}>
         <View style={styles.titleRow}>
-          <View style={styles.titleCopy}>
-            {title ? <Text style={styles.pageTitle}>{title}</Text> : null}
-            {subtitle ? <Text style={styles.pageSubtitle}>{subtitle}</Text> : null}
-          </View>
-          <View style={styles.headerRight}>
+          {!titleSlot && (
+            <View style={styles.titleCopy}>
+              {title ? <Text style={styles.pageTitle}>{title}</Text> : null}
+              {subtitle ? <Text style={styles.pageSubtitle}>{subtitle}</Text> : null}
+            </View>
+          )}
+          <View style={[styles.headerRight, titleSlot && styles.headerRightPushed]}>
             {rightSlot}
             {onClose ? (
               <Pressable onPress={onClose} style={styles.closeButton}>
@@ -50,10 +50,18 @@ export default function ExerciseScaffold({
           </View>
         </View>
 
+        {titleSlot ? (
+          <View style={styles.titleSlotRow}>{titleSlot}</View>
+        ) : null}
+
         {pickerSlot ? <View>{pickerSlot}</View> : null}
       </View>
 
-      <View style={styles.center}>{centerSlot}</View>
+      <View style={styles.center} pointerEvents="box-none">
+        {centerSlot}
+      </View>
+
+      <View style={styles.spacer} />
 
       <View style={[styles.bottom, { paddingBottom: insets.bottom + spacing.lg }]}>{bottomSlot}</View>
     </View>
@@ -79,6 +87,13 @@ const styles = StyleSheet.create({
   titleCopy: {
     flex: 1,
   },
+  titleSlotRow: {
+    alignItems: 'center',
+    paddingTop: spacing.xs,
+  },
+  headerRightPushed: {
+    marginLeft: 'auto',
+  },
   pageTitle: {
     ...typography.title.title1,
     color: colors.text.primary,
@@ -90,9 +105,9 @@ const styles = StyleSheet.create({
     maxWidth: 280,
   },
   headerRight: {
-    minHeight: spacing.xl + spacing.xs,
-    justifyContent: 'center',
-    alignItems: 'flex-end',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
   },
   closeButton: {
     justifyContent: 'center',
@@ -103,9 +118,16 @@ const styles = StyleSheet.create({
     backgroundColor: colors.neutral[100],
   },
   center: {
-    flex: 1,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  spacer: {
+    flex: 1,
   },
   bottom: {
     paddingHorizontal: padding.screen.horizontal,
