@@ -17,6 +17,7 @@ interface MeasuringScreenProps {
   progress: number; // 0-1
   secondsRemaining: number;
   currentBpm: number | null;
+  beatTick: number;
   fingerPlacement: FingerPlacementState;
   onCancel: () => void;
 }
@@ -41,48 +42,46 @@ export function MeasuringScreen({
   progress,
   secondsRemaining,
   currentBpm,
+  beatTick,
   fingerPlacement,
   onCancel,
 }: MeasuringScreenProps) {
-  const pulseAnim = useRef(new Animated.Value(1)).current;
-  const pulseOpacity = useRef(new Animated.Value(0.5)).current;
-  const pulseAnimation = useRef<Animated.CompositeAnimation | null>(null);
+  const beatScale = useRef(new Animated.Value(1)).current;
+  const beatOpacity = useRef(new Animated.Value(0)).current;
+  const heartScale = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    pulseAnimation.current = Animated.loop(
-      Animated.sequence([
-        Animated.parallel([
-          Animated.timing(pulseAnim, {
-            toValue: 1.25,
-            duration: 700,
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseOpacity, {
-            toValue: 0,
-            duration: 700,
-            useNativeDriver: true,
-          }),
-        ]),
-        Animated.parallel([
-          Animated.timing(pulseAnim, {
-            toValue: 1,
-            duration: 0,
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseOpacity, {
-            toValue: 0.5,
-            duration: 0,
-            useNativeDriver: true,
-          }),
-        ]),
-      ]),
-    );
-    pulseAnimation.current.start();
+    if (beatTick <= 0) return;
 
-    return () => {
-      pulseAnimation.current?.stop();
-    };
-  }, [pulseAnim, pulseOpacity]);
+    beatScale.setValue(0.82);
+    beatOpacity.setValue(0.45);
+    heartScale.setValue(1);
+
+    Animated.parallel([
+      Animated.timing(beatScale, {
+        toValue: 1.35,
+        duration: 360,
+        useNativeDriver: true,
+      }),
+      Animated.timing(beatOpacity, {
+        toValue: 0,
+        duration: 360,
+        useNativeDriver: true,
+      }),
+      Animated.sequence([
+        Animated.timing(heartScale, {
+          toValue: 1.22,
+          duration: 90,
+          useNativeDriver: true,
+        }),
+        Animated.timing(heartScale, {
+          toValue: 1,
+          duration: 180,
+          useNativeDriver: true,
+        }),
+      ]),
+    ]).start();
+  }, [beatOpacity, beatScale, beatTick, heartScale]);
 
   const signalQuality = getSignalQuality(fingerPlacement);
   const isFingerLost = fingerPlacement === 'lost' || fingerPlacement === 'no_finger';
@@ -114,23 +113,27 @@ export function MeasuringScreen({
             style={[
               styles.pulseRing,
               {
-                transform: [{ scale: pulseAnim }],
-                opacity: pulseOpacity,
+                transform: [{ scale: beatScale }],
+                opacity: beatOpacity,
               },
             ]}
           />
           {/* Inner circle */}
           <View style={styles.countdownCircle}>
-            <MaterialCommunityIcons
-              name="heart"
-              size={24}
-              color={colors.primary.blue600}
-              style={styles.heartIcon}
-            />
+            <Animated.View style={[styles.heartIcon, { transform: [{ scale: heartScale }] }]}>
+              <MaterialCommunityIcons
+                name="heart"
+                size={24}
+                color={beatTick > 0 ? colors.error[500] : colors.primary.blue600}
+              />
+            </Animated.View>
             <Text style={styles.countdown}>{secondsRemaining}</Text>
             <Text style={styles.countdownLabel}>seconds</Text>
           </View>
         </View>
+        <Text style={styles.beatLabel}>
+          {beatTick > 0 ? 'Beat detected' : 'Waiting for pulse'}
+        </Text>
 
         {/* Progress bar */}
         <View style={styles.progressBarContainer}>
@@ -219,7 +222,7 @@ const styles = StyleSheet.create({
     height: 180,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing.xl,
+    marginBottom: spacing.sm,
   },
   pulseRing: {
     position: 'absolute',
@@ -243,6 +246,12 @@ const styles = StyleSheet.create({
   },
   heartIcon: {
     marginBottom: 2,
+  },
+  beatLabel: {
+    ...typography.caption.caption1,
+    color: colors.text.tertiary,
+    marginBottom: spacing.lg,
+    minHeight: 18,
   },
   countdown: {
     ...typography.title.title1,

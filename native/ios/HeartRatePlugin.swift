@@ -10,6 +10,7 @@ private struct HeartRateROI {
   let y: Double
   let width: Double
   let height: Double
+  let targetSamples: Int
 }
 
 @objc(HeartRatePlugin)
@@ -33,7 +34,8 @@ public class HeartRatePlugin: FrameProcessorPlugin {
     let roiHeight = max(1, Int(floor(Double(height) * roi.height)))
     let endX = min(width, startX + roiWidth)
     let endY = min(height, startY + roiHeight)
-    let step = 4
+    let sampleArea = max(1, (endX - startX) * (endY - startY))
+    let step = max(2, Int(sqrt(Double(sampleArea) / Double(max(1, roi.targetSamples)))))
 
     var redSum = 0.0
     var greenSum = 0.0
@@ -48,7 +50,7 @@ public class HeartRatePlugin: FrameProcessorPlugin {
       var x = startX
       while x < endX {
         let offset = y * bytesPerRow + x * 4
-        if offset + 2 < bufferSize {
+        if offset + 3 < bufferSize {
           let blue = Double(bytes[offset])
           let green = Double(bytes[offset + 1])
           let red = Double(bytes[offset + 2])
@@ -116,12 +118,13 @@ public class HeartRatePlugin: FrameProcessorPlugin {
     let bufferSize = bytesPerRow * height
 
     let rois = [
-      HeartRateROI(id: "full", x: 0.0, y: 0.0, width: 1.0, height: 1.0),
-      HeartRateROI(id: "center", x: 0.25, y: 0.25, width: 0.5, height: 0.5),
-      HeartRateROI(id: "left", x: 0.0, y: 0.0, width: 0.5, height: 1.0),
-      HeartRateROI(id: "right", x: 0.5, y: 0.0, width: 0.5, height: 1.0),
-      HeartRateROI(id: "top", x: 0.0, y: 0.0, width: 1.0, height: 0.5),
-      HeartRateROI(id: "bottom", x: 0.0, y: 0.5, width: 1.0, height: 0.5),
+      HeartRateROI(id: "full", x: 0.05, y: 0.05, width: 0.9, height: 0.9, targetSamples: 1400),
+      HeartRateROI(id: "center", x: 0.25, y: 0.25, width: 0.5, height: 0.5, targetSamples: 900),
+      HeartRateROI(id: "inner", x: 0.35, y: 0.35, width: 0.3, height: 0.3, targetSamples: 600),
+      HeartRateROI(id: "left", x: 0.05, y: 0.2, width: 0.45, height: 0.6, targetSamples: 700),
+      HeartRateROI(id: "right", x: 0.5, y: 0.2, width: 0.45, height: 0.6, targetSamples: 700),
+      HeartRateROI(id: "top", x: 0.2, y: 0.05, width: 0.6, height: 0.45, targetSamples: 700),
+      HeartRateROI(id: "bottom", x: 0.2, y: 0.5, width: 0.6, height: 0.45, targetSamples: 700),
     ]
 
     let roiSamples = rois.map {
@@ -135,14 +138,7 @@ public class HeartRatePlugin: FrameProcessorPlugin {
       )
     }
 
-    let presentationTime = CMSampleBufferGetPresentationTimeStamp(frame.buffer)
-    var timestampMs = CACurrentMediaTime() * 1000
-    if presentationTime.isValid && !presentationTime.isIndefinite {
-      let seconds = CMTimeGetSeconds(presentationTime)
-      if seconds.isFinite {
-        timestampMs = seconds * 1000
-      }
-    }
+    let timestampMs = CACurrentMediaTime() * 1000
 
     return [
       "timestamp": timestampMs,

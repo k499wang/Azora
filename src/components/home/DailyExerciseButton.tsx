@@ -1,8 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
-import { spacing } from '../../theme/spacing';
 
 interface DailyExerciseButtonProps {
   onPress: () => void;
@@ -10,64 +9,89 @@ interface DailyExerciseButtonProps {
 
 export default function DailyExerciseButton({ onPress }: DailyExerciseButtonProps) {
   return (
-    <Pressable style={({ pressed }) => [styles.button, pressed && styles.pressed]} onPress={onPress}>
-      <View style={styles.content}>
-        <View style={styles.copy}>
-          <Text style={styles.title}>Daily exercise</Text>
-          <Text style={styles.subtitle}>
-            Start your breath hold exercise.
-          </Text>
-        </View>
-        <View style={styles.visual}>
-          <MaterialCommunityIcons name="chevron-right" size={30} color={colors.text.inverse} />
-        </View>
+    <Pressable
+      style={({ pressed }) => [styles.pressable, pressed && styles.pressed]}
+      onPress={onPress}
+    >
+      <LinearGradient
+        pointerEvents="none"
+        colors={['#EAF2FF', '#78B4FF', '#2F7AEF', '#78B4FF']}
+        locations={[0, 0.35, 0.7, 1]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.glowAura}
+      />
+
+      <View style={styles.glowWrap}>
+        <LinearGradient
+          colors={['#EAF2FF', '#78B4FF', '#2F7AEF', '#4A90F5']}
+          locations={[0, 0.28, 0.68, 1]}
+          start={{ x: 0.1, y: 0 }}
+          end={{ x: 0.9, y: 1 }}
+          style={styles.gradientRing}
+        >
+          <View style={styles.button}>
+            <Text style={styles.label}>start</Text>
+          </View>
+        </LinearGradient>
       </View>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  button: {
-    width: '100%',
-    backgroundColor: colors.primary.blue600,
-    borderRadius: 22,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    shadowColor: colors.primary.blue700,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.16,
-    shadowRadius: 14,
-    elevation: 6,
-    overflow: 'hidden',
-  },
-  pressed: {
-    opacity: 0.92,
-    transform: [{ scale: 0.99 }],
-  },
-  content: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.md,
-  },
-  copy: {
-    flex: 1,
-    gap: 2,
-  },
-  title: {
-    ...typography.title.title3,
-    color: colors.text.inverse,
-  },
-  subtitle: {
-    ...typography.body.xsmall,
-    color: colors.primary.blue100,
-    maxWidth: 240,
-    lineHeight: 18,
-  },
-  visual: {
-    width: 40,
-    height: 40,
+  pressable: {
+    alignSelf: 'center',
+    width: 150,
+    height: 150,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  glowAura: {
+    position: 'absolute',
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    opacity: 0.34,
+    shadowColor: colors.primary.blue500,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.55,
+    shadowRadius: 30,
+    elevation: 14,
+  },
+  glowWrap: {
+    width: 134,
+    height: 134,
+    borderRadius: 65,
+    shadowColor: colors.primary.blue500,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.45,
+    shadowRadius: 24,
+    elevation: 12,
+  },
+  gradientRing: {
+    width: 134,
+    height: 134,
+    borderRadius: 67,
+    padding: 5,
+  },
+  button: {
+    flex: 1,
+    borderRadius: 60,
+    backgroundColor: colors.primary.blue600,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pressed: {
+    opacity: 0.9,
+    transform: [{ scale: 0.97 }],
+  },
+  label: {
+    ...typography.button.large,
+    color: colors.text.inverse,
+    textAlign: 'center',
+    textAlignVertical: 'center',
+    includeFontPadding: false,
+    lineHeight: 20,
   },
 });

@@ -17,10 +17,13 @@ const BPM_FREQ_MAX = 3.0; // 180 bpm
 const MIN_SNR_DB = 2.5;
 const MIN_CONFIDENCE = 0.45;
 const MAX_FREQ_PEAK_DIFF_BPM = 12;
-const MAX_LIGHTING_DRIFT_RATIO = 0.22;
+const MAX_LIGHTING_DRIFT_RATIO = 0.30;
 const MAX_LIGHTING_JUMP_RATIO = 0.08;
 const MAX_LIGHTING_JUMP_FRACTION = 0.08;
 const CHANNELS: PpgChannel[] = ['weighted', 'red', 'green', 'redRatio'];
+const BEAT_DETECTION_WINDOW_MS = 5000;
+const MIN_BEAT_INTERVAL_MS = 320;
+const MAX_BEAT_DETECTION_LAG_MS = 450;
 
 export interface ComputeBpmOptions {
   minDurationMs?: number;
@@ -81,6 +84,13 @@ interface PeakResult {
   bpm: number;
   consistency: number;
   peaks: number[];
+}
+
+export interface BeatDetectionResult {
+  timestamp: number;
+  confidence: number;
+  roiId: string;
+  channel: PpgChannel;
 }
 
 function clamp(value: number, min: number, max: number): number {
@@ -306,7 +316,7 @@ function frequencyEstimate(signal: number[], sampleRate: number): FrequencyResul
 
   const peakFreq = frequencies[peakIndex];
   const peakScore = scores[peakIndex];
-  const otherScores = scores.filter((_, index) => Math.abs(frequencies[index] - peakFreq) > 0.15);
+  const otherScores = scores.filter((_, index) => Math.abs(frequencies[index] - peakFreq) > 0.25);
   const noiseFloor = otherScores.length > 0 ? mean(otherScores) : 1;
   const snrDb = 10 * Math.log10((peakScore + Number.EPSILON) / (noiseFloor + Number.EPSILON));
 
@@ -532,13 +542,150 @@ function buildCandidates(frames: PpgFrameSample[]): CandidateSeries[] {
 function candidatePriority(estimate: HeartRateEstimate): number {
   const channelBonus =
     estimate.channel === 'weighted' ? 0.04 :
-      estimate.channel === 'red' ? 0.03 :
-        estimate.channel === 'green' ? 0.02 : 0;
+      estimate.channel === 'green' ? 0.035 :
+        estimate.channel === 'red' ? 0.025 : 0;
   const roiBonus =
     estimate.roiId === 'full' ? 0.03 :
       estimate.roiId === 'center' ? 0.025 : 0;
 
   return estimate.confidence + estimate.snrDb / 25 + channelBonus + roiBonus;
+}
+
+function consensusEstimate(estimates: HeartRateEstimate[]): HeartRateEstimate | null {
+  if (estimates.length === 0) return null;
+
+  const ranked = [...estimates].sort((a, b) => candidatePriority(b) - candidatePriority(a));
+  const best = ranked[0];
+  const cluster = ranked.filter((estimate) => Math.abs(estimate.bpm - best.bpm) <= 8);
+
+  if (cluster.length < 2) return best;
+
+  let totalWeight = 0;
+  let weightedBpm = 0;
+  for (const estimate of cluster) {
+    const weight = estimate.confidence * Math.max(1, estimate.snrDb);
+    totalWeight += weight;
+    weightedBpm += estimate.bpm * weight;
+  }
+
+  if (totalWeight <= 0) return best;
+
+  return {
+    ...best,
+    bpm: Math.round(weightedBpm / totalWeight),
+    confidence: clamp(best.confidence + Math.min(0.08, (cluster.length - 1) * 0.015), 0, 0.99),
+  };
+}
+
+function latestPeakForPolarity(
+  values: number[],
+  timestamps: number[],
+  previousBeatTimestamp: number | null,
+  polarity: 1 | -1,
+): { index: number; confidence: number } | null {
+  if (values.length < 5) return null;
+
+  const oriented = values.map((value) => value * polarity);
+  const avg = mean(oriented);
+  const sd = standardDeviation(oriented);
+  if (sd <= 0) return null;
+
+  const threshold = avg + sd * 0.45;
+  const latestTimestamp = timestamps[timestamps.length - 1];
+  let best: { index: number; confidence: number } | null = null;
+
+  for (let i = 2; i < oriented.length - 1; i++) {
+    const timestamp = timestamps[i];
+    if (latestTimestamp - timestamp > MAX_BEAT_DETECTION_LAG_MS) continue;
+    if (
+      previousBeatTimestamp != null &&
+      timestamp - previousBeatTimestamp < MIN_BEAT_INTERVAL_MS
+    ) {
+      continue;
+    }
+    if (oriented[i] <= threshold) continue;
+    if (oriented[i] <= oriented[i - 1] || oriented[i] < oriented[i + 1]) continue;
+
+    const prominence = oriented[i] - Math.max(oriented[i - 1], oriented[i + 1], threshold);
+    const confidence = clamp(prominence / (sd * 1.5), 0, 1);
+    if (best == null || confidence >= best.confidence) {
+      best = { index: i, confidence };
+    }
+  }
+
+  return best;
+}
+
+/**
+ * Detects the newest pulse peak in the recent PPG stream.
+ *
+ * This is intentionally lighter than the final BPM estimator. It is used only
+ * to trigger UI feedback when a beat is seen, while computeBPM remains the
+ * source of truth for the reading.
+ */
+export function detectLatestBeat(
+  samples: PpgFrameSample[],
+  previousBeatTimestamp: number | null = null,
+): BeatDetectionResult | null {
+  if (samples.length === 0) return null;
+
+  const latestTimestamp = samples[samples.length - 1].timestamp;
+  const recentSamples = samples.filter(
+    (sample) => sample.timestamp >= latestTimestamp - BEAT_DETECTION_WINDOW_MS,
+  );
+
+  const candidates = buildCandidates(recentSamples);
+  let best: BeatDetectionResult | null = null;
+
+  for (const candidate of candidates) {
+    if (candidate.timestamps.length < 24) continue;
+    if (candidate.meanDarkPct > 0.55 || candidate.meanSaturatedPct > 0.65) continue;
+
+    const sampleRate = estimateSampleRate(candidate.timestamps);
+    if (sampleRate == null) continue;
+
+    const processed = preprocess(candidate.values, sampleRate);
+    const positive = latestPeakForPolarity(
+      processed,
+      candidate.timestamps,
+      previousBeatTimestamp,
+      1,
+    );
+    const negative = latestPeakForPolarity(
+      processed,
+      candidate.timestamps,
+      previousBeatTimestamp,
+      -1,
+    );
+    const peak =
+      positive == null ? negative :
+        negative == null ? positive :
+          positive.confidence >= negative.confidence ? positive : negative;
+
+    if (peak == null || peak.confidence < 0.12) continue;
+
+    const channelBonus =
+      candidate.channel === 'weighted' ? 0.05 :
+        candidate.channel === 'green' ? 0.04 :
+          candidate.channel === 'red' ? 0.025 : 0;
+    const roiBonus =
+      candidate.roiId === 'center' ? 0.05 :
+        candidate.roiId === 'inner' ? 0.045 :
+          candidate.roiId === 'full' ? 0.03 : 0;
+    const qualityPenalty = clamp(candidate.meanDarkPct + candidate.meanSaturatedPct, 0, 1) * 0.2;
+    const confidence = clamp(peak.confidence + channelBonus + roiBonus - qualityPenalty, 0, 1);
+
+    if (best == null || confidence > best.confidence) {
+      best = {
+        timestamp: candidate.timestamps[peak.index],
+        confidence,
+        roiId: candidate.roiId,
+        channel: candidate.channel,
+      };
+    }
+  }
+
+  return best;
 }
 
 /**
@@ -557,8 +704,7 @@ export function computeBPM(
   const resolvedOptions = resolveOptions(options);
   const estimates = buildCandidates(samples)
     .map((candidate) => evaluateCandidate(candidate, resolvedOptions))
-    .filter((estimate): estimate is HeartRateEstimate => estimate != null)
-    .sort((a, b) => candidatePriority(b) - candidatePriority(a));
+    .filter((estimate): estimate is HeartRateEstimate => estimate != null);
 
-  return estimates[0] ?? null;
+  return consensusEstimate(estimates);
 }

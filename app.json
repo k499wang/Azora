@@ -37,7 +37,8 @@
     },
     "plugins": [
       "expo-font",
-      "react-native-vision-camera"
+      "react-native-vision-camera",
+      "./plugins/with-heart-rate-plugin"
     ]
   }
 }

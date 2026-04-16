@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import {
   Animated,
+  Easing,
   ScrollView,
   StyleSheet,
   Text,
@@ -61,25 +62,43 @@ export default function HomeScreen() {
   const navigation = useNavigation<any>();
   const { greeting, subtitle } = getGreeting();
 
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(18)).current;
+  const greetingFade = useRef(new Animated.Value(0)).current;
+  const greetingSlide = useRef(new Animated.Value(12)).current;
+  const subtitleFade = useRef(new Animated.Value(0)).current;
+  const subtitleSlide = useRef(new Animated.Value(10)).current;
 
   useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 600,
-        delay: 200,
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 600,
-        delay: 200,
-        useNativeDriver: true,
-      }),
+    Animated.stagger(300, [
+      Animated.parallel([
+        Animated.timing(greetingFade, {
+          toValue: 1,
+          duration: 800,
+          easing: Easing.out(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.timing(greetingSlide, {
+          toValue: 0,
+          duration: 800,
+          easing: Easing.out(Easing.quad),
+          useNativeDriver: true,
+        }),
+      ]),
+      Animated.parallel([
+        Animated.timing(subtitleFade, {
+          toValue: 1,
+          duration: 700,
+          easing: Easing.out(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.timing(subtitleSlide, {
+          toValue: 0,
+          duration: 700,
+          easing: Easing.out(Easing.quad),
+          useNativeDriver: true,
+        }),
+      ]),
     ]).start();
-  }, [fadeAnim, slideAnim]);
+  }, [greetingFade, greetingSlide, subtitleFade, subtitleSlide]);
 
   return (
     <ScrollView
@@ -102,18 +121,26 @@ export default function HomeScreen() {
       {/* ── Week calendar ── */}
       <WeekCalendar />
 
-      {/* ── Greeting zone (centered, animated) ── */}
-      <Animated.View
-        style={[
-          styles.greetingZone,
-          { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
-        ]}
-      >
-        <Text style={styles.greeting}>{greeting}</Text>
-        <Text style={styles.subtitle}>{subtitle}</Text>
-      </Animated.View>
+      {/* ── Greeting zone (typing animation) ── */}
+      <View style={styles.greetingZone}>
+        <Animated.Text
+          style={[
+            styles.greeting,
+            { opacity: greetingFade, transform: [{ translateY: greetingSlide }] },
+          ]}
+        >
+          {greeting}
+        </Animated.Text>
+        <Animated.Text
+          style={[
+            styles.subtitle,
+            { opacity: subtitleFade, transform: [{ translateY: subtitleSlide }] },
+          ]}
+        >
+          {subtitle}
+        </Animated.Text>
+      </View>
 
-      {/* ── Daily CTA with gradient accent ── */}
       <View style={styles.cta}>
         <DailyExerciseButton
           onPress={() => navigation.navigate('DailyExercise')}
@@ -162,8 +189,8 @@ const styles = StyleSheet.create({
   greetingZone: {
     alignItems: 'center',
     paddingHorizontal: padding.screen.horizontal,
-    paddingTop: spacing['3xl'],
-    paddingBottom: spacing['2xl'],
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.sm,
   },
   greeting: {
     ...typography.title.title1,

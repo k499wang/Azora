@@ -2,6 +2,7 @@ import { useCallback, useRef, useState, useEffect } from 'react';
 import {
   useFrameProcessor,
   useCameraDevice,
+  useCameraFormat,
   useCameraPermission,
 } from 'react-native-vision-camera';
 import { useRunOnJS } from 'react-native-worklets-core';
@@ -14,7 +15,7 @@ import type {
 import { heartRatePlugin } from '../lib/heartRate/heartRatePlugin';
 import { classifyFingerPlacementStateless } from '../lib/heartRate/fingerQuality';
 import { computeRollingBPM } from '../lib/heartRate/rollingWindow';
-import { PREVIEW_BPM_OPTIONS } from '../lib/heartRate/signalProcessing';
+import { detectLatestBeat, PREVIEW_BPM_OPTIONS } from '../lib/heartRate/signalProcessing';
 
 const ROLLING_WINDOW_MS = 15000;
 const BPM_UPDATE_INTERVAL_MS = 1000;
@@ -22,6 +23,7 @@ const FINGER_LOST_TIMEOUT_MS = 30000;
 const FINGER_CLASSIFY_WINDOW_MS = 1000;
 const ROLLING_CLASSIFY_WINDOW_MS = 2000;
 const WARMUP_DURATION_MS = 5000;
+const BEAT_DETECTION_INTERVAL_MS = 80;
 
 function isValidFrameSample(value: unknown): value is PpgFrameSample {
   if (value == null || typeof value !== 'object') return false;
@@ -45,9 +47,11 @@ interface UseHeartRateStreamReturn {
   streamState: StreamState;
   fingerPlacement: FingerPlacementState;
   currentBpm: number | null;
+  beatTick: number;
   bpmHistory: number[];
   sessionSummary: HeartRateStreamSummary | null;
   device: ReturnType<typeof useCameraDevice>;
+  format: ReturnType<typeof useCameraFormat>;
   frameProcessor: ReturnType<typeof useFrameProcessor>;
   torchMode: 'on' | 'off';
   startStream: () => void;
@@ -61,15 +65,19 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
   const [streamState, setStreamState] = useState<StreamState>('idle');
   const [fingerPlacement, setFingerPlacement] = useState<FingerPlacementState>('no_finger');
   const [currentBpm, setCurrentBpm] = useState<number | null>(null);
+  const [beatTick, setBeatTick] = useState(0);
   const [bpmHistory, setBpmHistory] = useState<number[]>([]);
   const [sessionSummary, setSessionSummary] = useState<HeartRateStreamSummary | null>(null);
 
   const bufferRef = useRef<PpgFrameSample[]>([]);
   const streamStartRef = useRef<number | null>(null);
   const lastBpmUpdateRef = useRef<number>(0);
+  const lastBeatCheckTimestampRef = useRef<number>(0);
+  const lastBeatTimestampRef = useRef<number | null>(null);
   const fingerLostSinceRef = useRef<number | null>(null);
   const goodSinceRef = useRef<number | null>(null);
   const warmupStartRef = useRef<number | null>(null);
+  const fingerPlacementRef = useRef<FingerPlacementState>('no_finger');
   const streamStateRef = useRef<StreamState>('idle');
   const fingerClassifyStateRef = useRef<{
     previousState?: FingerPlacementState;
@@ -81,6 +89,10 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
   const device = useCameraDevice('back', {
     physicalDevices: ['wide-angle-camera'],
   });
+  const format = useCameraFormat(device, [
+    { fps: 30 },
+    { videoResolution: { width: 640, height: 480 } },
+  ]);
 
   useEffect(() => {
     streamStateRef.current = streamState;
@@ -120,9 +132,12 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
     bpmHistoryRef.current = [];
     streamStartRef.current = null;
     lastBpmUpdateRef.current = 0;
+    lastBeatCheckTimestampRef.current = 0;
+    lastBeatTimestampRef.current = null;
     fingerLostSinceRef.current = null;
     goodSinceRef.current = null;
     warmupStartRef.current = null;
+    fingerPlacementRef.current = 'no_finger';
     fingerClassifyStateRef.current = {};
 
     setStreamState('stopped');
@@ -136,6 +151,8 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
         goodSinceRef.current = null;
         fingerLostSinceRef.current = null;
         fingerClassifyStateRef.current = {};
+        fingerPlacementRef.current = 'no_finger';
+        lastBeatTimestampRef.current = null;
         setCurrentBpm(null);
         setFingerPlacement('no_finger');
         return;
@@ -160,7 +177,10 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
         fingerClassifyStateRef.current,
       );
       fingerClassifyStateRef.current = newClassifyState;
-      setFingerPlacement(placement);
+      if (placement !== fingerPlacementRef.current) {
+        fingerPlacementRef.current = placement;
+        setFingerPlacement(placement);
+      }
 
       if (state === 'camera_check') {
         if (placement === 'good') {
@@ -192,6 +212,7 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
         if (placement === 'lost' || (placement !== 'good' && placement !== 'partial')) {
           if (state !== 'finger_lost') {
             fingerLostSinceRef.current = timestamp;
+            lastBeatTimestampRef.current = null;
             setCurrentBpm(null);
             setStreamState('finger_lost');
             streamStateRef.current = 'finger_lost';
@@ -203,12 +224,26 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
           }
         } else if (state === 'finger_lost') {
           fingerLostSinceRef.current = null;
+          lastBeatTimestampRef.current = null;
           setStreamState('streaming');
           streamStateRef.current = 'streaming';
         }
       }
 
-      // Rolling BPM update every 4s
+      if (
+        (state === 'streaming' || state === 'warming_up') &&
+        (placement === 'good' || placement === 'partial') &&
+        timestamp - lastBeatCheckTimestampRef.current >= BEAT_DETECTION_INTERVAL_MS
+      ) {
+        lastBeatCheckTimestampRef.current = timestamp;
+        const beat = detectLatestBeat(bufferRef.current, lastBeatTimestampRef.current);
+        if (beat != null) {
+          lastBeatTimestampRef.current = beat.timestamp;
+          setBeatTick((tick) => tick + 1);
+        }
+      }
+
+      // Rolling BPM update every second
       if (
         (state === 'streaming' || state === 'warming_up') &&
         timestamp - lastBpmUpdateRef.current >= BPM_UPDATE_INTERVAL_MS
@@ -245,14 +280,19 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
     bpmHistoryRef.current = [];
     streamStartRef.current = Date.now();
     lastBpmUpdateRef.current = 0;
+    lastBeatCheckTimestampRef.current = 0;
+    lastBeatTimestampRef.current = null;
     fingerLostSinceRef.current = null;
     goodSinceRef.current = null;
     warmupStartRef.current = null;
+    fingerPlacementRef.current = 'no_finger';
     fingerClassifyStateRef.current = {};
 
     setCurrentBpm(null);
+    setBeatTick(0);
     setBpmHistory([]);
     setSessionSummary(null);
+    fingerPlacementRef.current = 'no_finger';
     setFingerPlacement('no_finger');
     setStreamState('camera_check');
     streamStateRef.current = 'camera_check';
@@ -266,9 +306,11 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
     streamState,
     fingerPlacement,
     currentBpm,
+    beatTick,
     bpmHistory,
     sessionSummary,
     device,
+    format,
     frameProcessor,
     torchMode,
     startStream,

@@ -10,6 +10,7 @@ typedef struct {
   CGFloat y;
   CGFloat width;
   CGFloat height;
+  size_t targetSamples;
 } HeartRateROI;
 
 @interface HeartRatePlugin : FrameProcessorPlugin
@@ -29,7 +30,8 @@ typedef struct {
   size_t roiHeight = MAX((size_t)1, (size_t)floor((double)height * roi.height));
   size_t endX = MIN(width, startX + roiWidth);
   size_t endY = MIN(height, startY + roiHeight);
-  size_t step = 4;
+  size_t sampleArea = MAX((size_t)1, (endX - startX) * (endY - startY));
+  size_t step = MAX((size_t)2, (size_t)sqrt((double)sampleArea / (double)MAX((size_t)1, roi.targetSamples)));
 
   double redSum = 0;
   double greenSum = 0;
@@ -42,7 +44,7 @@ typedef struct {
   for (size_t y = startY; y < endY; y += step) {
     for (size_t x = startX; x < endX; x += step) {
       size_t offset = y * bytesPerRow + x * 4;
-      if (offset + 2 >= bufferSize) {
+      if (offset + 3 >= bufferSize) {
         continue;
       }
 
@@ -118,16 +120,17 @@ typedef struct {
 
   size_t bufferSize = bytesPerRow * height;
   HeartRateROI rois[] = {
-    {@"full", 0.0, 0.0, 1.0, 1.0},
-    {@"center", 0.25, 0.25, 0.5, 0.5},
-    {@"left", 0.0, 0.0, 0.5, 1.0},
-    {@"right", 0.5, 0.0, 0.5, 1.0},
-    {@"top", 0.0, 0.0, 1.0, 0.5},
-    {@"bottom", 0.0, 0.5, 1.0, 0.5},
+    {@"full", 0.05, 0.05, 0.9, 0.9, 1400},
+    {@"center", 0.25, 0.25, 0.5, 0.5, 900},
+    {@"inner", 0.35, 0.35, 0.3, 0.3, 600},
+    {@"left", 0.05, 0.2, 0.45, 0.6, 700},
+    {@"right", 0.5, 0.2, 0.45, 0.6, 700},
+    {@"top", 0.2, 0.05, 0.6, 0.45, 700},
+    {@"bottom", 0.2, 0.5, 0.6, 0.45, 700},
   };
-  NSMutableArray* roiSamples = [NSMutableArray arrayWithCapacity:6];
+  NSMutableArray* roiSamples = [NSMutableArray arrayWithCapacity:7];
 
-  for (NSUInteger i = 0; i < 6; i++) {
+  for (NSUInteger i = 0; i < 7; i++) {
     [roiSamples addObject:[self sampleROI:rois[i]
                                     width:width
                                    height:height
@@ -138,14 +141,7 @@ typedef struct {
 
   CVPixelBufferUnlockBaseAddress(imageBuffer, kCVPixelBufferLock_ReadOnly);
 
-  CMTime presentationTime = CMSampleBufferGetPresentationTimeStamp(frame.buffer);
   double timestampMs = CACurrentMediaTime() * 1000.0;
-  if (CMTIME_IS_VALID(presentationTime) && !CMTIME_IS_INDEFINITE(presentationTime)) {
-    double seconds = CMTimeGetSeconds(presentationTime);
-    if (isfinite(seconds)) {
-      timestampMs = seconds * 1000.0;
-    }
-  }
 
   return @{
     @"timestamp": @(timestampMs),
