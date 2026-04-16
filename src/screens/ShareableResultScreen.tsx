@@ -7,8 +7,6 @@ import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
 import { spacing, padding, margin } from '../theme/spacing';
 import LineGraph, { DataPoint } from '../components/analytics/LineGraph';
-import AppTopBar from '../components/common/AppTopBar';
-
 // ─── Edit these values to customise the shareable screen ───────────────────────
 
 const LUNG_AGE = 23;
@@ -54,10 +52,8 @@ export default function ShareableResultScreen() {
     <ScrollView
       contentContainerStyle={styles.scrollContent}
     >
-      <AppTopBar />
-
       <View style={styles.header}>
-        <Pressable style={styles.closeButton} onPress={() => navigation.goBack()}>
+        <Pressable style={styles.closeButton} onPress={() => navigation.navigate('MainTabs')}>
           <MaterialCommunityIcons name="close" size={24} color={colors.text.secondary} />
         </Pressable>
         <Text style={styles.title}>Your Results</Text>
@@ -124,15 +120,6 @@ export default function ShareableResultScreen() {
         </View>
       </View>
 
-      {/* Done button */}
-      <View style={styles.doneSection}>
-        <Pressable
-          style={({ pressed }) => [styles.doneButton, pressed && styles.doneButtonPressed]}
-          onPress={() => navigation.goBack()}
-        >
-          <Text style={styles.doneButtonText}>Done</Text>
-        </Pressable>
-      </View>
     </ScrollView>
     </View>
   );
@@ -280,28 +267,4 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary.blue500,
   },
 
-  // Done
-  doneSection: {
-    paddingHorizontal: padding.screen.horizontal,
-    marginTop: margin.sectionGap,
-  },
-  doneButton: {
-    backgroundColor: colors.primary.blue600,
-    borderRadius: 18,
-    paddingVertical: spacing.md,
-    alignItems: 'center',
-    shadowColor: colors.primary.blue700,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.16,
-    shadowRadius: 14,
-    elevation: 6,
-  },
-  doneButtonPressed: {
-    opacity: 0.92,
-    transform: [{ scale: 0.99 }],
-  },
-  doneButtonText: {
-    ...typography.button.large,
-    color: colors.text.inverse,
-  },
 });
