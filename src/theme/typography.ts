@@ -12,19 +12,19 @@ const weight = {
 export const typography = {
   display: {
     display1: {
-      fontFamily: 'Manrope-Bold',
+      fontFamily: 'Nunito-Bold',
       fontWeight: weight.bold,
       fontSize: 48,
       lineHeight: 56,
     },
     display2: {
-      fontFamily: 'Manrope-Bold',
+      fontFamily: 'Nunito-Bold',
       fontWeight: weight.bold,
       fontSize: 40,
       lineHeight: 48,
     },
     display3: {
-      fontFamily: 'Manrope-Bold',
+      fontFamily: 'Nunito-Bold',
       fontWeight: weight.bold,
       fontSize: 32,
       lineHeight: 40,
@@ -33,19 +33,19 @@ export const typography = {
 
   title: {
     title1: {
-      fontFamily: 'Manrope-Bold',
+      fontFamily: 'Nunito-Bold',
       fontWeight: weight.bold,
       fontSize: 28,
       lineHeight: 36,
     },
     title2: {
-      fontFamily: 'Manrope-Bold',
+      fontFamily: 'Nunito-Bold',
       fontWeight: weight.bold,
       fontSize: 24,
       lineHeight: 32,
     },
     title3: {
-      fontFamily: 'Manrope-SemiBold',
+      fontFamily: 'Nunito-SemiBold',
       fontWeight: weight.semibold,
       fontSize: 20,
       lineHeight: 28,
@@ -54,13 +54,13 @@ export const typography = {
 
   heading: {
     heading1: {
-      fontFamily: 'Manrope-SemiBold',
+      fontFamily: 'Nunito-SemiBold',
       fontWeight: weight.semibold,
       fontSize: 18,
       lineHeight: 26,
     },
     heading2: {
-      fontFamily: 'Manrope-SemiBold',
+      fontFamily: 'Nunito-SemiBold',
       fontWeight: weight.semibold,
       fontSize: 16,
       lineHeight: 24,
@@ -69,25 +69,25 @@ export const typography = {
 
   body: {
     large: {
-      fontFamily: 'Manrope-Regular',
+      fontFamily: 'Nunito-Regular',
       fontWeight: weight.regular,
       fontSize: 18,
       lineHeight: 28,
     },
     medium: {
-      fontFamily: 'Manrope-Regular',
+      fontFamily: 'Nunito-Regular',
       fontWeight: weight.regular,
       fontSize: 16,
       lineHeight: 24,
     },
     small: {
-      fontFamily: 'Manrope-Regular',
+      fontFamily: 'Nunito-Regular',
       fontWeight: weight.regular,
       fontSize: 14,
       lineHeight: 22,
     },
     xsmall: {
-      fontFamily: 'Manrope-Regular',
+      fontFamily: 'Nunito-Regular',
       fontWeight: weight.regular,
       fontSize: 12,
       lineHeight: 18,
@@ -96,19 +96,19 @@ export const typography = {
 
   label: {
     large: {
-      fontFamily: 'Manrope-SemiBold',
+      fontFamily: 'Nunito-SemiBold',
       fontWeight: weight.semibold,
       fontSize: 16,
       lineHeight: 20,
     },
     medium: {
-      fontFamily: 'Manrope-Medium',
+      fontFamily: 'Nunito-Medium',
       fontWeight: weight.medium,
       fontSize: 14,
       lineHeight: 18,
     },
     small: {
-      fontFamily: 'Manrope-Medium',
+      fontFamily: 'Nunito-Medium',
       fontWeight: weight.medium,
       fontSize: 12,
       lineHeight: 16,
@@ -117,19 +117,19 @@ export const typography = {
 
   button: {
     large: {
-      fontFamily: 'Manrope-SemiBold',
+      fontFamily: 'Nunito-SemiBold',
       fontWeight: weight.semibold,
       fontSize: 16,
       lineHeight: 20,
     },
     medium: {
-      fontFamily: 'Manrope-SemiBold',
+      fontFamily: 'Nunito-SemiBold',
       fontWeight: weight.semibold,
       fontSize: 14,
       lineHeight: 18,
     },
     small: {
-      fontFamily: 'Manrope-SemiBold',
+      fontFamily: 'Nunito-SemiBold',
       fontWeight: weight.semibold,
       fontSize: 12,
       lineHeight: 16,
@@ -138,19 +138,19 @@ export const typography = {
 
   input: {
     text: {
-      fontFamily: 'Manrope-Regular',
+      fontFamily: 'Nunito-Regular',
       fontWeight: weight.regular,
       fontSize: 16,
       lineHeight: 24,
     },
     label: {
-      fontFamily: 'Manrope-Medium',
+      fontFamily: 'Nunito-Medium',
       fontWeight: weight.medium,
       fontSize: 14,
       lineHeight: 18,
     },
     helper: {
-      fontFamily: 'Manrope-Regular',
+      fontFamily: 'Nunito-Regular',
       fontWeight: weight.regular,
       fontSize: 12,
       lineHeight: 16,
@@ -159,13 +159,13 @@ export const typography = {
 
   caption: {
     caption1: {
-      fontFamily: 'Manrope-Regular',
+      fontFamily: 'Nunito-Regular',
       fontWeight: weight.regular,
       fontSize: 12,
       lineHeight: 16,
     },
     caption2: {
-      fontFamily: 'Manrope-Medium',
+      fontFamily: 'Nunito-Medium',
       fontWeight: weight.medium,
       fontSize: 11,
       lineHeight: 14,
@@ -173,7 +173,7 @@ export const typography = {
   },
 
   overline: {
-    fontFamily: 'Manrope-SemiBold',
+    fontFamily: 'Nunito-SemiBold',
     fontWeight: weight.semibold,
     fontSize: 10,
     lineHeight: 14,

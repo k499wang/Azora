@@ -23,21 +23,21 @@ export default function DailyExerciseButton({ onPress }: DailyExerciseButtonProp
       >
         <Canvas style={styles.canvas}>
           {/* Outer Bloom */}
-          <Circle cx={CENTER} cy={CENTER} r={110} color="rgba(30, 99, 214, 0.22)">
+          <Circle cx={CENTER} cy={CENTER} r={110} color="rgba(74, 144, 245, 0.15)">
             <BlurMask blur={60} style="normal" />
           </Circle>
 
           {/* Core Glow */}
-          <Circle cx={CENTER} cy={CENTER} r={95} color="rgba(30, 99, 214, 0.40)">
+          <Circle cx={CENTER} cy={CENTER} r={95} color="rgba(74, 144, 245, 0.22)">
             <BlurMask blur={25} style="normal" />
           </Circle>
 
-          {/* Main Button Surface - Increased radius */}
+          {/* Main Button Surface */}
           <Circle cx={CENTER} cy={CENTER} r={82}>
             <LinearGradient
-              start={vec(CENTER - 82, CENTER - 82)}
-              end={vec(CENTER + 82, CENTER + 82)}
-              colors={[colors.primary.blue500, colors.primary.blue700]}
+              start={vec(CENTER - 82, CENTER + 82)}
+              end={vec(CENTER + 82, CENTER - 82)}
+              colors={[colors.primary.blue400, colors.primary.blue500, colors.primary.blue600]}
             />
           </Circle>
         </Canvas>
