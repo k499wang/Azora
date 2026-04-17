@@ -12,12 +12,15 @@ import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import type { FingerPlacementState } from '../../lib/heartRate/types';
+import { HeartRateCameraPreview } from './HeartRateCameraPreview';
+import type { HeartRateCameraPreviewProps } from './HeartRateCameraPreview';
 
 interface CameraCheckScreenProps {
   fingerPlacement: FingerPlacementState;
   onStartAnyway: () => void;
   onCancel: () => void;
   timeoutSeconds?: number;
+  cameraProps?: HeartRateCameraPreviewProps;
 }
 
 interface StateConfig {
@@ -71,6 +74,7 @@ export function CameraCheckScreen({
   onStartAnyway,
   onCancel,
   timeoutSeconds = 10,
+  cameraProps,
 }: CameraCheckScreenProps) {
   const [showStartAnyway, setShowStartAnyway] = useState(false);
   const [goodProgress, setGoodProgress] = useState(0);
@@ -148,15 +152,18 @@ export function CameraCheckScreen({
           )}
         </View>
 
-        {/* Placement diagram */}
-        <View style={styles.diagramContainer}>
-          <View style={styles.phoneOutline}>
-            <View style={[styles.cameraLens, { borderColor: config.accentColor }]}>
-              <View style={[styles.cameraLensInner, { backgroundColor: config.accentColor }]} />
+        {/* Camera preview */}
+        <View style={styles.previewContainer}>
+          <View style={[styles.previewRing, { borderColor: config.accentColor }]}>
+            <View style={styles.previewClip}>
+              {cameraProps != null ? (
+                <HeartRateCameraPreview {...cameraProps} />
+              ) : (
+                <View style={[styles.previewPlaceholder, { backgroundColor: config.accentColor + '20' }]} />
+              )}
             </View>
-            <View style={[styles.flashDot, { backgroundColor: config.accentColor }]} />
           </View>
-          <Text style={styles.diagramLabel}>Rear camera</Text>
+          <Text style={styles.diagramLabel}>Cover this camera with your fingertip</Text>
         </View>
 
         <View style={styles.spacer} />
@@ -233,43 +240,32 @@ const styles = StyleSheet.create({
     height: '100%',
     borderRadius: 3,
   },
-  diagramContainer: {
+  previewContainer: {
     alignItems: 'center',
     marginTop: spacing.xl,
   },
-  phoneOutline: {
-    width: 64,
-    height: 64,
-    borderRadius: 16,
-    borderWidth: 2,
-    borderColor: colors.border.subtle,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
-    gap: spacing.sm,
+  previewRing: {
+    width: 160,
+    height: 160,
+    borderRadius: 80,
+    borderWidth: 3,
+    padding: 4,
     marginBottom: spacing.sm,
   },
-  cameraLens: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    borderWidth: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
+  previewClip: {
+    flex: 1,
+    borderRadius: 72,
+    overflow: 'hidden',
+    backgroundColor: '#000',
   },
-  cameraLensInner: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  },
-  flashDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+  previewPlaceholder: {
+    flex: 1,
   },
   diagramLabel: {
     ...typography.caption.caption1,
     color: colors.text.tertiary,
+    textAlign: 'center',
+    maxWidth: 200,
   },
   spacer: {
     flex: 1,

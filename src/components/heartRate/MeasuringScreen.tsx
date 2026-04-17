@@ -12,6 +12,8 @@ import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import type { FingerPlacementState } from '../../lib/heartRate/types';
+import { HeartRateCameraPreview } from './HeartRateCameraPreview';
+import type { HeartRateCameraPreviewProps } from './HeartRateCameraPreview';
 
 interface MeasuringScreenProps {
   progress: number; // 0-1
@@ -20,6 +22,7 @@ interface MeasuringScreenProps {
   beatTick: number;
   fingerPlacement: FingerPlacementState;
   onCancel: () => void;
+  cameraProps?: HeartRateCameraPreviewProps;
 }
 
 function getSignalQuality(placement: FingerPlacementState): {
@@ -45,6 +48,7 @@ export function MeasuringScreen({
   beatTick,
   fingerPlacement,
   onCancel,
+  cameraProps,
 }: MeasuringScreenProps) {
   const beatScale = useRef(new Animated.Value(1)).current;
   const beatOpacity = useRef(new Animated.Value(0)).current;
@@ -150,13 +154,22 @@ export function MeasuringScreen({
           </View>
         </View>
 
-        {/* Signal quality */}
-        <View style={styles.signalRow}>
-          <Text style={styles.signalLabel}>Signal: </Text>
-          <View style={[styles.signalDot, { backgroundColor: signalQuality.color }]} />
-          <Text style={[styles.signalValue, { color: signalQuality.color }]}>
-            {signalQuality.label}
-          </Text>
+        {/* Camera preview + signal quality */}
+        <View style={styles.cameraSignalRow}>
+          {cameraProps != null && (
+            <View style={[styles.miniPreviewRing, { borderColor: signalQuality.color }]}>
+              <View style={styles.miniPreviewClip}>
+                <HeartRateCameraPreview {...cameraProps} />
+              </View>
+            </View>
+          )}
+          <View style={styles.signalRow}>
+            <Text style={styles.signalLabel}>Signal: </Text>
+            <View style={[styles.signalDot, { backgroundColor: signalQuality.color }]} />
+            <Text style={[styles.signalValue, { color: signalQuality.color }]}>
+              {signalQuality.label}
+            </Text>
+          </View>
         </View>
 
         <View style={styles.spacer} />
@@ -307,6 +320,23 @@ const styles = StyleSheet.create({
     ...typography.caption.caption1,
     color: colors.text.secondary,
     marginLeft: spacing.xs,
+  },
+  cameraSignalRow: {
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  miniPreviewRing: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    borderWidth: 2,
+    padding: 3,
+  },
+  miniPreviewClip: {
+    flex: 1,
+    borderRadius: 31,
+    overflow: 'hidden',
+    backgroundColor: '#000',
   },
   signalRow: {
     flexDirection: 'row',

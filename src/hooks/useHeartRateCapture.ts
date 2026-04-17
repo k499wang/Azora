@@ -4,6 +4,7 @@ import {
   useCameraDevice,
   useCameraFormat,
   useCameraPermission,
+  runAtTargetFps,
 } from 'react-native-vision-camera';
 import { useRunOnJS } from 'react-native-worklets-core';
 import type {
@@ -29,6 +30,7 @@ const ROLLING_BPM_WINDOW_MS = 8000;
 const BPM_UPDATE_INTERVAL_MS = 1000;
 const PROGRESS_UPDATE_INTERVAL_MS = 200;
 const BEAT_DETECTION_INTERVAL_MS = 80;
+const FRAME_PROCESSING_FPS = 20;
 
 function isValidFrameSample(value: unknown): value is PpgFrameSample {
   if (value == null || typeof value !== 'object') return false;
@@ -80,9 +82,9 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
   const samplesRef = useRef<PpgFrameSample[]>([]);
   const captureStartRef = useRef<number | null>(null);
   const measureStartRef = useRef<number | null>(null);
+  const measureStartWallClockRef = useRef<number | null>(null);
   const goodSinceRef = useRef<number | null>(null);
   const lastBpmUpdateRef = useRef<number>(0);
-  const lastProgressUpdateRef = useRef<number>(0);
   const lastBeatCheckTimestampRef = useRef<number>(0);
   const lastBeatTimestampRef = useRef<number | null>(null);
   const currentBpmRef = useRef<number | null>(null);
@@ -93,6 +95,7 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
     goodSinceMs?: number;
   }>({});
   const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const finishRequestedRef = useRef(false);
 
   const { hasPermission, requestPermission } = useCameraPermission();
   const device = useCameraDevice('back', {
@@ -111,15 +114,80 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
   const torchMode: 'on' | 'off' =
     captureState === 'camera_check' || captureState === 'measuring' ? 'on' : 'off';
 
+  const clearProgressTimer = useCallback(() => {
+    if (progressIntervalRef.current) {
+      clearInterval(progressIntervalRef.current);
+      progressIntervalRef.current = null;
+    }
+  }, []);
+
+  const updateProgress = useCallback((elapsedMs: number) => {
+    const clampedElapsed = Math.max(0, Math.min(CAPTURE_DURATION_MS, elapsedMs));
+    const prog = clampedElapsed / CAPTURE_DURATION_MS;
+    const remaining = Math.max(0, Math.ceil((CAPTURE_DURATION_MS - clampedElapsed) / 1000));
+    setProgress(prog);
+    setSecondsRemaining(remaining);
+  }, []);
+
+  const finishMeasurement = useCallback(() => {
+    if (finishRequestedRef.current) return;
+
+    finishRequestedRef.current = true;
+    clearProgressTimer();
+    updateProgress(CAPTURE_DURATION_MS);
+    setCaptureState('processing');
+    captureStateRef.current = 'processing';
+
+    const samples = [...samplesRef.current];
+    setTimeout(() => {
+      if (captureStateRef.current !== 'processing') return;
+
+      const bpmResult = computeBPM(samples);
+      if (bpmResult == null) {
+        const tooFew = samples.length < 60;
+        setResult({
+          reading: null,
+          error: tooFew ? 'too_few_samples' : 'low_confidence',
+        });
+        setCaptureState('error');
+        captureStateRef.current = 'error';
+      } else {
+        const startTs = samples[0]?.timestamp ?? 0;
+        const endTs = samples[samples.length - 1]?.timestamp ?? 0;
+        setResult({
+          reading: {
+            bpm: bpmResult.bpm,
+            confidence: bpmResult.confidence,
+            quality: bpmResult.quality,
+            roiId: bpmResult.roiId,
+            channel: bpmResult.channel,
+            snrDb: bpmResult.snrDb,
+            frequencyBpm: bpmResult.frequencyBpm,
+            peakBpm: bpmResult.peakBpm,
+            sampleCount: bpmResult.sampleCount,
+            durationMs: bpmResult.durationMs || endTs - startTs,
+            recordedAt: new Date().toISOString(),
+            source: 'camera-flash',
+          },
+          error: null,
+        });
+        setCaptureState('done');
+        captureStateRef.current = 'done';
+      }
+    }, 0);
+  }, [clearProgressTimer, updateProgress]);
+
   const startMeasuring = useCallback((startTimestamp?: number) => {
+    clearProgressTimer();
     samplesRef.current = [];
     measureStartRef.current = startTimestamp ?? null;
+    measureStartWallClockRef.current = Date.now();
     goodSinceRef.current = null;
     lastBpmUpdateRef.current = 0;
-    lastProgressUpdateRef.current = 0;
     lastBeatCheckTimestampRef.current = 0;
     lastBeatTimestampRef.current = null;
     fingerClassifyStateRef.current = {};
+    finishRequestedRef.current = false;
     setProgress(0);
     setSecondsRemaining(15);
     setBeatTick(0);
@@ -127,7 +195,18 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
     setCurrentBpm(null);
     setCaptureState('measuring');
     captureStateRef.current = 'measuring';
-  }, []);
+
+    progressIntervalRef.current = setInterval(() => {
+      const startMs = measureStartWallClockRef.current;
+      if (startMs == null || captureStateRef.current !== 'measuring') return;
+
+      const elapsed = Date.now() - startMs;
+      updateProgress(elapsed);
+      if (elapsed >= CAPTURE_DURATION_MS) {
+        finishMeasurement();
+      }
+    }, PROGRESS_UPDATE_INTERVAL_MS);
+  }, [clearProgressTimer, finishMeasurement, updateProgress]);
 
   // JS callback invoked from worklet to add a brightness sample
   const addSample = useRunOnJS(
@@ -182,16 +261,6 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
 
         if (measureStartRef.current != null) {
           const elapsed = timestamp - measureStartRef.current;
-          if (
-            timestamp - lastProgressUpdateRef.current >= PROGRESS_UPDATE_INTERVAL_MS ||
-            elapsed >= CAPTURE_DURATION_MS
-          ) {
-            lastProgressUpdateRef.current = timestamp;
-            const prog = Math.min(1, elapsed / CAPTURE_DURATION_MS);
-            const remaining = Math.max(0, Math.ceil((CAPTURE_DURATION_MS - elapsed) / 1000));
-            setProgress(prog);
-            setSecondsRemaining(remaining);
-          }
 
           const canEstimateBpm = placement === 'good' || placement === 'partial';
           if (!canEstimateBpm && currentBpmRef.current != null) {
@@ -231,73 +300,40 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
           }
 
           if (elapsed >= CAPTURE_DURATION_MS) {
-            // Done — process result
-            setCaptureState('processing');
-            captureStateRef.current = 'processing';
-
-            const samples = [...samplesRef.current];
-            setTimeout(() => {
-              const bpmResult = computeBPM(samples);
-              if (bpmResult == null) {
-                const tooFew = samples.length < 60;
-                setResult({
-                  reading: null,
-                  error: tooFew ? 'too_few_samples' : 'low_confidence',
-                });
-                setCaptureState('error');
-                captureStateRef.current = 'error';
-              } else {
-                const startTs = samples[0]?.timestamp ?? 0;
-                const endTs = samples[samples.length - 1]?.timestamp ?? 0;
-                setResult({
-                  reading: {
-                    bpm: bpmResult.bpm,
-                    confidence: bpmResult.confidence,
-                    quality: bpmResult.quality,
-                    roiId: bpmResult.roiId,
-                    channel: bpmResult.channel,
-                    snrDb: bpmResult.snrDb,
-                    frequencyBpm: bpmResult.frequencyBpm,
-                    peakBpm: bpmResult.peakBpm,
-                    sampleCount: bpmResult.sampleCount,
-                    durationMs: bpmResult.durationMs || endTs - startTs,
-                    recordedAt: new Date().toISOString(),
-                    source: 'camera-flash',
-                  },
-                  error: null,
-                });
-                setCaptureState('done');
-                captureStateRef.current = 'done';
-              }
-            }, 0);
+            finishMeasurement();
           }
         }
       }
     },
-    [startMeasuring],
+    [finishMeasurement, startMeasuring],
   );
 
   const frameProcessor = useFrameProcessor(
     (frame) => {
       'worklet';
-      const frameSample = heartRatePlugin(frame);
-      if (frameSample != null) {
-        addSample(frameSample);
-      }
+      runAtTargetFps(FRAME_PROCESSING_FPS, () => {
+        'worklet';
+        const frameSample = heartRatePlugin(frame);
+        if (frameSample != null) {
+          addSample(frameSample);
+        }
+      });
     },
     [addSample],
   );
 
   const startCapture = useCallback(() => {
+    clearProgressTimer();
     samplesRef.current = [];
     captureStartRef.current = Date.now();
     measureStartRef.current = null;
+    measureStartWallClockRef.current = null;
     goodSinceRef.current = null;
     lastBpmUpdateRef.current = 0;
-    lastProgressUpdateRef.current = 0;
     lastBeatCheckTimestampRef.current = 0;
     lastBeatTimestampRef.current = null;
     fingerClassifyStateRef.current = {};
+    finishRequestedRef.current = false;
     setProgress(0);
     setSecondsRemaining(15);
     setResult(null);
@@ -308,22 +344,20 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
     setFingerPlacement('no_finger');
     setCaptureState('camera_check');
     captureStateRef.current = 'camera_check';
-  }, []);
+  }, [clearProgressTimer]);
 
   const cancel = useCallback(() => {
-    if (progressIntervalRef.current) {
-      clearInterval(progressIntervalRef.current);
-      progressIntervalRef.current = null;
-    }
+    clearProgressTimer();
     samplesRef.current = [];
     captureStartRef.current = null;
     measureStartRef.current = null;
+    measureStartWallClockRef.current = null;
     goodSinceRef.current = null;
     lastBpmUpdateRef.current = 0;
-    lastProgressUpdateRef.current = 0;
     lastBeatCheckTimestampRef.current = 0;
     lastBeatTimestampRef.current = null;
     fingerClassifyStateRef.current = {};
+    finishRequestedRef.current = false;
     setProgress(0);
     setSecondsRemaining(15);
     currentBpmRef.current = null;
@@ -333,7 +367,7 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
     setFingerPlacement('no_finger');
     setCaptureState('idle');
     captureStateRef.current = 'idle';
-  }, []);
+  }, [clearProgressTimer]);
 
   const reset = useCallback(() => {
     cancel();
@@ -343,11 +377,9 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (progressIntervalRef.current) {
-        clearInterval(progressIntervalRef.current);
-      }
+      clearProgressTimer();
     };
-  }, []);
+  }, [clearProgressTimer]);
 
   return {
     captureState,
