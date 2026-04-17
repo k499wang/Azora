@@ -19,8 +19,8 @@ export default function ProfileScreen() {
         <View style={styles.pageHeader}>
           <Text style={styles.pageTitle}>Profile</Text>
         </View>
-        <HighlightCards />
         <AnalyticsSection />
+        <HighlightCards />
       </ScrollView>
     </View>
   );
