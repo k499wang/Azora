@@ -1,6 +1,5 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { View, StyleSheet } from 'react-native';
-import { Camera } from 'react-native-vision-camera';
 import { useHeartRateCapture } from '../../hooks/useHeartRateCapture';
 import { CameraCheckScreen } from './CameraCheckScreen';
 import { MeasuringScreen } from './MeasuringScreen';
@@ -99,10 +98,17 @@ export function HeartRateCaptureFlow({
     startMeasuring();
   }, [startMeasuring]);
 
-  const cameraActive =
-    captureState === 'camera_check' ||
-    captureState === 'measuring' ||
-    captureState === 'processing';
+  const cameraProps = useMemo(() => (
+    device != null
+      ? {
+        device,
+        format,
+        frameProcessor,
+        torchMode,
+        isActive: captureState !== 'processing',
+      }
+      : undefined
+  ), [captureState, device, format, frameProcessor, torchMode]);
 
   // Render setup screens
   if (!pastSetup) {
@@ -117,49 +123,31 @@ export function HeartRateCaptureFlow({
     }
   }
 
-  // Shared camera that persists across check → measuring transitions
-  const sharedCamera = device != null && cameraActive ? (
-    <Camera
-      style={styles.hiddenCamera}
-      device={device}
-      format={format}
-      isActive={true}
-      torch={torchMode}
-      pixelFormat="rgb"
-      fps={30}
-      frameProcessor={frameProcessor}
-    />
-  ) : null;
-
   // Camera check
   if (captureState === 'camera_check') {
     return (
-      <View style={styles.flex}>
-        {sharedCamera}
-        <CameraCheckScreen
-          fingerPlacement={fingerPlacement}
-          onStartAnyway={handleStartAnyway}
-          onCancel={handleCancel}
-          timeoutSeconds={10}
-        />
-      </View>
+      <CameraCheckScreen
+        fingerPlacement={fingerPlacement}
+        onStartAnyway={handleStartAnyway}
+        onCancel={handleCancel}
+        timeoutSeconds={10}
+        cameraProps={cameraProps}
+      />
     );
   }
 
   // Measuring or processing
   if (captureState === 'measuring' || captureState === 'processing') {
     return (
-      <View style={styles.flex}>
-        {sharedCamera}
-        <MeasuringScreen
-          progress={progress}
-          secondsRemaining={secondsRemaining}
-          currentBpm={currentBpm}
-          beatTick={beatTick}
-          fingerPlacement={fingerPlacement}
-          onCancel={handleCancel}
-        />
-      </View>
+      <MeasuringScreen
+        progress={progress}
+        secondsRemaining={secondsRemaining}
+        currentBpm={currentBpm}
+        beatTick={beatTick}
+        fingerPlacement={fingerPlacement}
+        onCancel={handleCancel}
+        cameraProps={cameraProps}
+      />
     );
   }
 
@@ -182,11 +170,5 @@ export function HeartRateCaptureFlow({
 const styles = StyleSheet.create({
   flex: {
     flex: 1,
-  },
-  hiddenCamera: {
-    position: 'absolute',
-    opacity: 0,
-    width: 1,
-    height: 1,
   },
 });
