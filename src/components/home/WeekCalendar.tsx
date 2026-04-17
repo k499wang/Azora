@@ -11,17 +11,14 @@ import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing, padding, margin } from '../../theme/spacing';
 
-const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const DAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 const TOTAL_DAYS = 28;
 const PILL_GAP = spacing.sm;
+const CIRCLE_SIZE = 34;
 
 function buildDays() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-
-  // Today sits at second-to-last position in a visible 7-day window.
-  // Total = 28 days: indices 0..26 are past/today, 27 is tomorrow.
-  // Today index = TOTAL_DAYS - 2 = 26.
   const todayIndex = TOTAL_DAYS - 2;
 
   return Array.from({ length: TOTAL_DAYS }, (_, i) => {
@@ -53,11 +50,9 @@ export default function WeekCalendar({ onSelectDay }: WeekCalendarProps) {
     (e: LayoutChangeEvent) => {
       const containerWidth = e.nativeEvent.layout.width;
       const viewportWidth = containerWidth - padding.screen.horizontal * 2;
-      // 7 pills visible with 6 gaps
       const w = (viewportWidth - PILL_GAP * 6) / 7;
       setPillWidth(w);
 
-      // Align to the start of the final 7-day window so only whole pills show.
       const scrollTo = (TOTAL_DAYS - 7) * (w + PILL_GAP);
       setTimeout(() => {
         scrollRef.current?.scrollTo({ x: scrollTo, animated: false });
@@ -90,36 +85,18 @@ export default function WeekCalendar({ onSelectDay }: WeekCalendarProps) {
             return (
               <Pressable
                 key={day.key}
-                style={[
-                  styles.pill,
-                  { width: pillWidth },
-                  isSelected && styles.pillSelected,
-                  isFuture && styles.pillFuture,
-                ]}
+                style={[styles.dayItem, { width: pillWidth }, isFuture && styles.dayItemFuture]}
                 onPress={() => handlePress(index)}
                 disabled={isFuture}
               >
-                <Text
-                  style={[
-                    styles.dayLabel,
-                    isSelected && styles.dayLabelSelected,
-                    isFuture && styles.dayLabelFuture,
-                  ]}
-                >
-                  {day.dayLabel}
-                </Text>
-                <Text
-                  style={[
-                    styles.dateNum,
-                    isSelected && styles.dateNumSelected,
-                    isFuture && styles.dateNumFuture,
-                  ]}
-                >
+                <View style={[styles.circle, isSelected && styles.circleSelected]}>
+                  <Text style={[styles.dayLabel, isSelected && styles.dayLabelSelected]}>
+                    {day.dayLabel}
+                  </Text>
+                </View>
+                <Text style={[styles.dateNum, isSelected && styles.dateNumSelected]}>
                   {day.dateNum}
                 </Text>
-                {day.isToday && !isSelected ? (
-                  <View style={styles.todayDot} />
-                ) : null}
               </Pressable>
             );
           })}
@@ -137,45 +114,42 @@ const styles = StyleSheet.create({
   scrollContent: {
     gap: PILL_GAP,
   },
-  pill: {
+  dayItem: {
     alignItems: 'center',
-    paddingVertical: 12,
-    borderRadius: 16,
-    backgroundColor: colors.background.elevated,
-    gap: 1,
+    gap: spacing.xs,
   },
-  pillSelected: {
-    backgroundColor: colors.primary.blue600,
+  dayItemFuture: {
+    opacity: 0.35,
   },
-  pillFuture: {
-    opacity: 0.4,
+  circle: {
+    width: CIRCLE_SIZE,
+    height: CIRCLE_SIZE,
+    borderRadius: CIRCLE_SIZE / 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: colors.border.default,
+    borderStyle: 'dashed',
+  },
+  circleSelected: {
+    borderStyle: 'solid',
+    borderWidth: 2,
+    borderColor: colors.text.primary,
   },
   dayLabel: {
-    ...typography.caption.caption1,
-    color: colors.text.brand,
+    ...typography.label.small,
+    color: colors.text.secondary,
   },
   dayLabelSelected: {
-    color: colors.primary.blue100,
-  },
-  dayLabelFuture: {
-    color: colors.text.tertiary,
-  },
-  dateNum: {
     ...typography.label.medium,
     color: colors.text.primary,
   },
-  dateNumSelected: {
-    color: colors.text.inverse,
-  },
-  dateNumFuture: {
+  dateNum: {
+    ...typography.caption.caption1,
     color: colors.text.tertiary,
   },
-  todayDot: {
-    position: 'absolute',
-    bottom: 3,
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
-    backgroundColor: colors.primary.blue500,
+  dateNumSelected: {
+    ...typography.label.small,
+    color: colors.text.primary,
   },
 });

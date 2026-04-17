@@ -46,7 +46,6 @@ export default function AnalyticsSection() {
 
   return (
     <View style={styles.section}>
-      <Text style={styles.title}>Analytics</Text>
       <View style={styles.card}>
         <View style={styles.cardHeader}>
           <View>
