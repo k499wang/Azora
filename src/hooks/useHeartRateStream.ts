@@ -14,8 +14,9 @@ import type {
 } from '../lib/heartRate/types';
 import { heartRatePlugin } from '../lib/heartRate/heartRatePlugin';
 import { classifyFingerPlacementStateless } from '../lib/heartRate/fingerQuality';
-import { computeRollingBPM } from '../lib/heartRate/rollingWindow';
+import { computeRollingBPMComparison } from '../lib/heartRate/rollingWindow';
 import { detectLatestBeat, PREVIEW_BPM_OPTIONS } from '../lib/heartRate/signalProcessing';
+import { logHeartRateComparison } from '../lib/heartRate/debug';
 
 const ROLLING_WINDOW_MS = 15000;
 const BPM_UPDATE_INTERVAL_MS = 1000;
@@ -249,11 +250,13 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
         timestamp - lastBpmUpdateRef.current >= BPM_UPDATE_INTERVAL_MS
       ) {
         lastBpmUpdateRef.current = timestamp;
-        const bpmResult = computeRollingBPM(
+        const bpmComparison = computeRollingBPMComparison(
           bufferRef.current,
           ROLLING_WINDOW_MS,
           PREVIEW_BPM_OPTIONS,
         );
+        logHeartRateComparison('stream', bpmComparison);
+        const bpmResult = bpmComparison.consensus;
         if (bpmResult != null) {
           setCurrentBpm(bpmResult.bpm);
           bpmHistoryRef.current = [...bpmHistoryRef.current, bpmResult.bpm];

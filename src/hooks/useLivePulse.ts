@@ -11,7 +11,8 @@ import type { FingerPlacementState, PpgFrameSample } from '../lib/heartRate/type
 import { heartRatePlugin } from '../lib/heartRate/heartRatePlugin';
 import { classifyFingerPlacementStateless } from '../lib/heartRate/fingerQuality';
 import { detectLatestBeat, PREVIEW_BPM_OPTIONS } from '../lib/heartRate/signalProcessing';
-import { computeRollingBPM } from '../lib/heartRate/rollingWindow';
+import { computeRollingBPMComparison } from '../lib/heartRate/rollingWindow';
+import { logHeartRateComparison, logHeartRateStatus } from '../lib/heartRate/debug';
 
 // Shorter timing constants than the one-shot capture hook. Live mode prioritizes
 // responsiveness over a final, locked-in reading.
@@ -77,6 +78,7 @@ export function useLivePulse(): UseLivePulseReturn {
   const samplesRef = useRef<PpgFrameSample[]>([]);
   const lastBpmUpdateRef = useRef(0);
   const lastBeatCheckRef = useRef(0);
+  const lastDebugStatusRef = useRef(0);
   const lastBeatTimestampRef = useRef<number | null>(null);
   const currentBpmRef = useRef<number | null>(null);
   const bpmHistoryRef = useRef<number[]>([]);
@@ -101,6 +103,7 @@ export function useLivePulse(): UseLivePulseReturn {
     samplesRef.current = [];
     lastBpmUpdateRef.current = 0;
     lastBeatCheckRef.current = 0;
+    lastDebugStatusRef.current = 0;
     lastBeatTimestampRef.current = null;
     currentBpmRef.current = null;
     bpmHistoryRef.current = [];
@@ -115,6 +118,7 @@ export function useLivePulse(): UseLivePulseReturn {
     if (activeRef.current) return;
     resetStreamState();
     activeRef.current = true;
+    logHeartRateStatus('live-pulse', 'start');
     setActive(true);
     setCurrentBpm(null);
     setBeatTick(0);
@@ -123,6 +127,7 @@ export function useLivePulse(): UseLivePulseReturn {
 
   const stop = useCallback(() => {
     activeRef.current = false;
+    logHeartRateStatus('live-pulse', 'stop');
     setActive(false);
     resetStreamState();
     setCurrentBpm(null);
@@ -173,6 +178,16 @@ export function useLivePulse(): UseLivePulseReturn {
       const canDetectBeat = placement === 'good' || placement === 'partial';
       const canEstimateBpm = placement === 'good';
 
+      if (timestamp - lastDebugStatusRef.current >= BPM_UPDATE_INTERVAL_MS) {
+        lastDebugStatusRef.current = timestamp;
+        logHeartRateStatus('live-pulse', 'sample', {
+          placement,
+          samples: samplesRef.current.length,
+          canDetectBeat,
+          canEstimateBpm,
+        });
+      }
+
       if (!canDetectBeat) {
         if (currentBpmRef.current != null) {
           currentBpmRef.current = null;
@@ -194,11 +209,13 @@ export function useLivePulse(): UseLivePulseReturn {
 
       if (canEstimateBpm && timestamp - lastBpmUpdateRef.current >= BPM_UPDATE_INTERVAL_MS) {
         lastBpmUpdateRef.current = timestamp;
-        const bpm = computeRollingBPM(
+        const bpmComparison = computeRollingBPMComparison(
           samplesRef.current,
           ROLLING_BPM_WINDOW_MS,
           PREVIEW_BPM_OPTIONS,
         );
+        logHeartRateComparison('live-pulse', bpmComparison);
+        const bpm = bpmComparison.consensus;
         if (bpm != null) {
           // Median-smooth raw readings. Pushes outliers to the tails where the
           // median ignores them — this is what makes the displayed BPM stop

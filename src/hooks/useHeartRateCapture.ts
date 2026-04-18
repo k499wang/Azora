@@ -19,8 +19,9 @@ import {
   detectLatestBeat,
   PREVIEW_BPM_OPTIONS,
 } from '../lib/heartRate/signalProcessing';
-import { computeRollingBPM } from '../lib/heartRate/rollingWindow';
+import { computeRollingBPMComparison } from '../lib/heartRate/rollingWindow';
 import { buildCaptureResult } from '../lib/heartRate/captureResult';
+import { logHeartRateComparison } from '../lib/heartRate/debug';
 import { useMeasurementTimer } from './useMeasurementTimer';
 
 // Total measurement length. Samples accumulate over this window, then we run BPM.
@@ -250,11 +251,13 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
 
       if (timestamp - lastBpmUpdateRef.current >= BPM_UPDATE_INTERVAL_MS) {
         lastBpmUpdateRef.current = timestamp;
-        const bpmResult = computeRollingBPM(
+        const bpmComparison = computeRollingBPMComparison(
           samplesRef.current,
           ROLLING_BPM_WINDOW_MS,
           PREVIEW_BPM_OPTIONS,
         );
+        logHeartRateComparison('capture-preview', bpmComparison);
+        const bpmResult = bpmComparison.consensus;
         if (bpmResult != null) {
           currentBpmRef.current = bpmResult.bpm;
           setCurrentBpm(bpmResult.bpm);

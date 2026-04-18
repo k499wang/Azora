@@ -24,7 +24,7 @@ export type FingerPlacementState =
 
 export type PpgQuality = 'good' | 'fair' | 'poor';
 
-export type PpgChannel = 'weighted' | 'red' | 'green' | 'blue' | 'redRatio';
+export type PpgChannel = 'weighted' | 'red' | 'green' | 'blue' | 'redRatio' | 'hue';
 
 export interface PpgRoiSample {
   id: string;

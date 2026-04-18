@@ -21,9 +21,15 @@ const MAX_LIGHTING_DRIFT_RATIO = 0.30;
 const MAX_LIGHTING_JUMP_RATIO = 0.08;
 const MAX_LIGHTING_JUMP_FRACTION = 0.08;
 const CHANNELS: PpgChannel[] = ['weighted', 'red', 'green', 'redRatio'];
+const PULSE_HUE_CHANNELS: PpgChannel[] = ['hue'];
 const BEAT_DETECTION_WINDOW_MS = 5000;
 const MIN_BEAT_INTERVAL_MS = 320;
 const MAX_BEAT_DETECTION_LAG_MS = 450;
+const PULSE_AVERAGE_SIZE = 20;
+const PULSE_MIN_PERIOD_SECONDS = 0.33; // 180 bpm
+const PULSE_MAX_PERIOD_SECONDS = 1.5; // 40 bpm
+const PULSE_MIN_PERIODS = 3;
+const PULSE_BANDPASS_GAIN = 1.894427025e1;
 
 export interface ComputeBpmOptions {
   minDurationMs?: number;
@@ -89,11 +95,23 @@ interface PeakResult {
   peaks: number[];
 }
 
+interface PulsePeriodResult {
+  bpm: number;
+  consistency: number;
+  periods: number[];
+}
+
 export interface BeatDetectionResult {
   timestamp: number;
   confidence: number;
   roiId: string;
   channel: PpgChannel;
+}
+
+export interface ComputeBpmComparison {
+  original: HeartRateEstimate | null;
+  pulseHue: HeartRateEstimate | null;
+  consensus: HeartRateEstimate | null;
 }
 
 function clamp(value: number, min: number, max: number): number {
@@ -189,10 +207,54 @@ function channelValue(roi: PpgRoiSample, channel: PpgChannel): number {
       const total = roi.r + roi.g + roi.b;
       return total > 0 ? (roi.r / total) * 255 : 0;
     }
+    case 'hue':
+      return rgbToHue(roi.r, roi.g, roi.b);
     case 'weighted':
     default:
       return roi.r * 0.67 + roi.g * 0.33;
   }
+}
+
+function rgbToHue(red: number, green: number, blue: number): number {
+  const r = clamp(red / 255, 0, 1);
+  const g = clamp(green / 255, 0, 1);
+  const b = clamp(blue / 255, 0, 1);
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const delta = max - min;
+
+  if (delta === 0) return 0;
+
+  let hue =
+    max === r ? ((g - b) / delta) % 6 :
+      max === g ? (b - r) / delta + 2 :
+        (r - g) / delta + 4;
+
+  hue /= 6;
+  return hue < 0 ? hue + 1 : hue;
+}
+
+function unwrapHue(values: number[]): number[] {
+  if (values.length === 0) return [];
+
+  const unwrapped = [values[0]];
+  let offset = 0;
+
+  for (let i = 1; i < values.length; i++) {
+    const previousRaw = values[i - 1];
+    const currentRaw = values[i];
+    const diff = currentRaw - previousRaw;
+
+    if (diff > 0.5) {
+      offset -= 1;
+    } else if (diff < -0.5) {
+      offset += 1;
+    }
+
+    unwrapped.push(currentRaw + offset);
+  }
+
+  return unwrapped;
 }
 
 function resolveOptions(options: ComputeBpmOptions = {}): ResolvedComputeBpmOptions {
@@ -416,6 +478,106 @@ function peakEstimate(signal: number[], sampleRate: number): PeakResult | null {
   return positiveScore >= negativeScore ? positive : negative;
 }
 
+function pulseBandpass(values: number[]): number[] {
+  // Pulse-style IIR band-pass filter over HSV hue. This keeps the simple
+  // period-detection path from thanospapazoglou/Pulse available as a candidate.
+  const xv = new Array(11).fill(0);
+  const yv = new Array(11).fill(0);
+  const output: number[] = [];
+
+  for (const value of values) {
+    for (let i = 0; i < 10; i++) {
+      xv[i] = xv[i + 1];
+      yv[i] = yv[i + 1];
+    }
+
+    xv[10] = value / PULSE_BANDPASS_GAIN;
+    yv[10] =
+      (xv[10] - xv[0]) +
+      5 * (xv[2] - xv[8]) +
+      10 * (xv[6] - xv[4]) +
+      0.0357796363 * yv[1] +
+      -0.1476158522 * yv[2] +
+      0.3992561394 * yv[3] +
+      -1.1743136181 * yv[4] +
+      2.4692165842 * yv[5] +
+      -3.3820859632 * yv[6] +
+      3.9628972812 * yv[7] +
+      -4.38325949 * yv[8] +
+      3.2101976096 * yv[9];
+
+    output.push(yv[10]);
+  }
+
+  return output;
+}
+
+function averageRecent(values: number[]): number {
+  const nonZeroValues = values.filter((value) => value > 0);
+  if (nonZeroValues.length === 0) return 0;
+  return mean(nonZeroValues);
+}
+
+function pulsePeriodEstimate(filtered: number[], timestamps: number[]): PulsePeriodResult | null {
+  if (filtered.length !== timestamps.length || filtered.length < PULSE_AVERAGE_SIZE * 2) {
+    return null;
+  }
+
+  const upVals = new Array(PULSE_AVERAGE_SIZE).fill(0);
+  const downVals = new Array(PULSE_AVERAGE_SIZE).fill(0);
+  let upIndex = 0;
+  let downIndex = 0;
+  let wasDown = false;
+  let periodStartSeconds: number | null = null;
+  const periods: number[] = [];
+
+  for (let i = 0; i < filtered.length; i++) {
+    const value = filtered[i];
+    const timeSeconds = timestamps[i] / 1000;
+
+    if (value > 0) {
+      upVals[upIndex] = value;
+      upIndex = (upIndex + 1) % PULSE_AVERAGE_SIZE;
+    } else if (value < 0) {
+      downVals[downIndex] = -value;
+      downIndex = (downIndex + 1) % PULSE_AVERAGE_SIZE;
+    }
+
+    const averageUp = averageRecent(upVals);
+    const averageDown = averageRecent(downVals);
+    if (averageUp <= 0 || averageDown <= 0) continue;
+
+    if (value < -0.5 * averageDown) {
+      wasDown = true;
+    }
+
+    if (value >= 0.5 * averageUp && wasDown) {
+      wasDown = false;
+
+      if (periodStartSeconds != null) {
+        const period = timeSeconds - periodStartSeconds;
+        if (period >= PULSE_MIN_PERIOD_SECONDS && period <= PULSE_MAX_PERIOD_SECONDS) {
+          periods.push(period);
+        }
+      }
+
+      periodStartSeconds = timeSeconds;
+    }
+  }
+
+  if (periods.length < PULSE_MIN_PERIODS) return null;
+
+  const avgPeriod = mean(periods);
+  const bpm = Math.round(60 / avgPeriod);
+  if (bpm < 40 || bpm > 180) return null;
+
+  return {
+    bpm,
+    consistency: clamp(1 - standardDeviation(periods) / avgPeriod, 0, 1),
+    periods,
+  };
+}
+
 function qualityFromEstimate(
   confidence: number,
   snrDb: number,
@@ -488,6 +650,60 @@ function evaluateCandidate(
   };
 }
 
+function evaluatePulseHueCandidate(
+  series: CandidateSeries,
+  options: ResolvedComputeBpmOptions,
+): HeartRateEstimate | null {
+  const stableStart = series.timestamps[0] + options.stabilizationMs;
+  const stableSeries: CandidateSeries = {
+    ...series,
+    timestamps: [],
+    values: [],
+  };
+
+  for (let i = 0; i < series.timestamps.length; i++) {
+    if (series.timestamps[i] >= stableStart) {
+      stableSeries.timestamps.push(series.timestamps[i]);
+      stableSeries.values.push(series.values[i]);
+    }
+  }
+
+  const resampled = resampleUniform(stableSeries, options);
+  if (resampled == null) return null;
+
+  const hueValues = unwrapHue(resampled.values);
+  const filtered = pulseBandpass(hueValues);
+  const timestamps: number[] = [];
+  const start = stableSeries.timestamps[0];
+  const stepMs = 1000 / resampled.sampleRate;
+  for (let i = 0; i < filtered.length; i++) {
+    timestamps.push(start + i * stepMs);
+  }
+
+  const pulse = pulsePeriodEstimate(filtered, timestamps);
+  if (pulse == null) return null;
+
+  const qualityPenalty = clamp(series.meanSaturatedPct + series.meanDarkPct, 0, 1) * 0.25;
+  const confidence = clamp(0.35 + pulse.consistency * 0.5 - qualityPenalty, 0, 0.96);
+  if (confidence < options.minConfidence) return null;
+
+  const durationMs = stableSeries.timestamps[stableSeries.timestamps.length - 1] - stableSeries.timestamps[0];
+  const snrDb = 2.5 + pulse.consistency * 7;
+
+  return {
+    bpm: pulse.bpm,
+    confidence,
+    quality: qualityFromEstimate(confidence, snrDb, pulse.consistency, options),
+    sampleCount: stableSeries.values.length,
+    durationMs,
+    roiId: series.roiId,
+    channel: 'hue',
+    snrDb,
+    frequencyBpm: pulse.bpm,
+    peakBpm: pulse.bpm,
+  };
+}
+
 function buildCandidates(frames: PpgFrameSample[]): CandidateSeries[] {
   const sortedFrames = [...frames]
     .filter((frame) => Number.isFinite(frame.timestamp) && Array.isArray(frame.rois))
@@ -542,11 +758,66 @@ function buildCandidates(frames: PpgFrameSample[]): CandidateSeries[] {
   return candidates;
 }
 
+function buildPulseHueCandidates(frames: PpgFrameSample[]): CandidateSeries[] {
+  const sortedFrames = [...frames]
+    .filter((frame) => Number.isFinite(frame.timestamp) && Array.isArray(frame.rois))
+    .sort((a, b) => a.timestamp - b.timestamp);
+  const roiIds = new Set<string>();
+
+  for (const frame of sortedFrames) {
+    for (const roi of frame.rois) {
+      roiIds.add(roi.id);
+    }
+  }
+
+  const candidates: CandidateSeries[] = [];
+
+  for (const roiId of roiIds) {
+    for (const channel of PULSE_HUE_CHANNELS) {
+      const timestamps: number[] = [];
+      const values: number[] = [];
+      const saturated: number[] = [];
+      const dark: number[] = [];
+
+      for (const frame of sortedFrames) {
+        const roi = frame.rois.find((item) => item.id === roiId);
+        if (roi == null) continue;
+        if (roi.saturatedPct > 0.7 || roi.darkPct > 0.7) continue;
+
+        const value = channelValue(roi, channel);
+        if (!Number.isFinite(value)) continue;
+
+        const previousTimestamp = timestamps[timestamps.length - 1];
+        if (previousTimestamp != null && frame.timestamp <= previousTimestamp) continue;
+
+        timestamps.push(frame.timestamp);
+        values.push(value);
+        saturated.push(roi.saturatedPct);
+        dark.push(roi.darkPct);
+      }
+
+      if (timestamps.length > 0) {
+        candidates.push({
+          roiId,
+          channel,
+          timestamps,
+          values,
+          meanSaturatedPct: mean(saturated),
+          meanDarkPct: mean(dark),
+        });
+      }
+    }
+  }
+
+  return candidates;
+}
+
 function candidatePriority(estimate: HeartRateEstimate): number {
   const channelBonus =
     estimate.channel === 'weighted' ? 0.04 :
       estimate.channel === 'green' ? 0.035 :
-        estimate.channel === 'red' ? 0.025 : 0;
+        estimate.channel === 'hue' ? 0.03 :
+          estimate.channel === 'red' ? 0.025 : 0;
   const roiBonus =
     estimate.roiId === 'full' ? 0.03 :
       estimate.roiId === 'center' ? 0.025 : 0;
@@ -702,12 +973,32 @@ export function computeBPM(
   samples: PpgFrameSample[],
   options?: ComputeBpmOptions,
 ): HeartRateEstimate | null {
-  if (samples.length === 0) return null;
+  return computeBPMComparison(samples, options).consensus;
+}
+
+export function computeBPMComparison(
+  samples: PpgFrameSample[],
+  options?: ComputeBpmOptions,
+): ComputeBpmComparison {
+  if (samples.length === 0) {
+    return {
+      original: null,
+      pulseHue: null,
+      consensus: null,
+    };
+  }
 
   const resolvedOptions = resolveOptions(options);
   const estimates = buildCandidates(samples)
     .map((candidate) => evaluateCandidate(candidate, resolvedOptions))
     .filter((estimate): estimate is HeartRateEstimate => estimate != null);
+  const pulseHueEstimates = buildPulseHueCandidates(samples)
+    .map((candidate) => evaluatePulseHueCandidate(candidate, resolvedOptions))
+    .filter((estimate): estimate is HeartRateEstimate => estimate != null);
 
-  return consensusEstimate(estimates);
+  return {
+    original: consensusEstimate(estimates),
+    pulseHue: consensusEstimate(pulseHueEstimates),
+    consensus: consensusEstimate([...estimates, ...pulseHueEstimates]),
+  };
 }
