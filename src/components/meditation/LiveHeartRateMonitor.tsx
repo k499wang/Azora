@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { Animated, StyleSheet, Text, View } from 'react-native';
 import { Camera } from 'react-native-vision-camera';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import type { useLivePulse } from '../../hooks/useLivePulse';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
@@ -33,6 +34,9 @@ export function LiveHeartRateMonitor({
 
   useEffect(() => {
     if (beatTick <= 0) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {
+      // Haptics can be unavailable in simulator, web, or device settings.
+    });
     pulseScale.setValue(1);
     Animated.sequence([
       Animated.timing(pulseScale, { toValue: 1.25, duration: 90, useNativeDriver: true }),
