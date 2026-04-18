@@ -13,6 +13,7 @@ import { classifyFingerPlacementStateless } from '../lib/heartRate/fingerQuality
 import { detectLatestBeat, PREVIEW_BPM_OPTIONS } from '../lib/heartRate/signalProcessing';
 import { computeRollingBPMComparison } from '../lib/heartRate/rollingWindow';
 import { logHeartRateComparison, logHeartRateStatus } from '../lib/heartRate/debug';
+import { shouldEmitVisualBeat } from '../lib/heartRate/beatGate';
 
 // Shorter timing constants than the one-shot capture hook. Live mode prioritizes
 // responsiveness over a final, locked-in reading.
@@ -80,6 +81,7 @@ export function useLivePulse(): UseLivePulseReturn {
   const lastBeatCheckRef = useRef(0);
   const lastDebugStatusRef = useRef(0);
   const lastBeatTimestampRef = useRef<number | null>(null);
+  const lastVisualBeatTimestampRef = useRef<number | null>(null);
   const currentBpmRef = useRef<number | null>(null);
   const bpmHistoryRef = useRef<number[]>([]);
   const fingerPlacementRef = useRef<FingerPlacementState>('no_finger');
@@ -105,6 +107,7 @@ export function useLivePulse(): UseLivePulseReturn {
     lastBeatCheckRef.current = 0;
     lastDebugStatusRef.current = 0;
     lastBeatTimestampRef.current = null;
+    lastVisualBeatTimestampRef.current = null;
     currentBpmRef.current = null;
     bpmHistoryRef.current = [];
     fingerPlacementRef.current = 'no_finger';
@@ -144,6 +147,7 @@ export function useLivePulse(): UseLivePulseReturn {
         currentBpmRef.current = null;
         fingerPlacementRef.current = 'no_finger';
         lastBeatTimestampRef.current = null;
+        lastVisualBeatTimestampRef.current = null;
         fingerClassifyStateRef.current = {};
         setCurrentBpm(null);
         setFingerPlacement('no_finger');
@@ -195,6 +199,7 @@ export function useLivePulse(): UseLivePulseReturn {
         }
         bpmHistoryRef.current = [];
         lastBeatTimestampRef.current = null;
+        lastVisualBeatTimestampRef.current = null;
         return;
       }
 
@@ -203,7 +208,16 @@ export function useLivePulse(): UseLivePulseReturn {
         const beat = detectLatestBeat(samplesRef.current, lastBeatTimestampRef.current);
         if (beat != null) {
           lastBeatTimestampRef.current = beat.timestamp;
-          setBeatTick((t) => t + 1);
+          if (
+            shouldEmitVisualBeat(
+              beat.timestamp,
+              lastVisualBeatTimestampRef.current,
+              currentBpmRef.current,
+            )
+          ) {
+            lastVisualBeatTimestampRef.current = beat.timestamp;
+            setBeatTick((t) => t + 1);
+          }
         }
       }
 

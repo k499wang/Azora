@@ -22,6 +22,7 @@ import {
 import { computeRollingBPMComparison } from '../lib/heartRate/rollingWindow';
 import { buildCaptureResult } from '../lib/heartRate/captureResult';
 import { logHeartRateComparison } from '../lib/heartRate/debug';
+import { shouldEmitVisualBeat } from '../lib/heartRate/beatGate';
 import { useMeasurementTimer } from './useMeasurementTimer';
 
 // Total measurement length. Samples accumulate over this window, then we run BPM.
@@ -94,6 +95,7 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
   const lastBpmUpdateRef = useRef<number>(0);
   const lastBeatCheckTimestampRef = useRef<number>(0);
   const lastBeatTimestampRef = useRef<number | null>(null);
+  const lastVisualBeatTimestampRef = useRef<number | null>(null);
   const currentBpmRef = useRef<number | null>(null);
   const fingerPlacementRef = useRef<FingerPlacementState>('no_finger');
   const captureStateRef = useRef<CaptureState>('idle');
@@ -127,6 +129,7 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
     lastBpmUpdateRef.current = 0;
     lastBeatCheckTimestampRef.current = 0;
     lastBeatTimestampRef.current = null;
+    lastVisualBeatTimestampRef.current = null;
     currentBpmRef.current = null;
     fingerClassifyStateRef.current = {};
   }, []);
@@ -189,6 +192,7 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
         currentBpmRef.current = null;
         fingerPlacementRef.current = 'no_finger';
         lastBeatTimestampRef.current = null;
+        lastVisualBeatTimestampRef.current = null;
         setCurrentBpm(null);
         setFingerPlacement('no_finger');
         return;
@@ -237,6 +241,7 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
           setCurrentBpm(null);
         }
         lastBeatTimestampRef.current = null;
+        lastVisualBeatTimestampRef.current = null;
         return;
       }
 
@@ -245,7 +250,16 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
         const beat = detectLatestBeat(samplesRef.current, lastBeatTimestampRef.current);
         if (beat != null) {
           lastBeatTimestampRef.current = beat.timestamp;
-          setBeatTick((tick) => tick + 1);
+          if (
+            shouldEmitVisualBeat(
+              beat.timestamp,
+              lastVisualBeatTimestampRef.current,
+              currentBpmRef.current,
+            )
+          ) {
+            lastVisualBeatTimestampRef.current = beat.timestamp;
+            setBeatTick((tick) => tick + 1);
+          }
         }
       }
 
