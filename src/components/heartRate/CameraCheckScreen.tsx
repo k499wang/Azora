@@ -77,13 +77,9 @@ export function CameraCheckScreen({
   cameraProps,
 }: CameraCheckScreenProps) {
   const [showStartAnyway, setShowStartAnyway] = useState(false);
-  const [goodProgress, setGoodProgress] = useState(0);
 
-  const bgAnim = useRef(new Animated.Value(0)).current;
   const goodProgressAnim = useRef(new Animated.Value(0)).current;
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const goodProgressRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const prevPlacementRef = useRef<FingerPlacementState>('no_finger');
 
   // Show "Start Anyway" after timeout
   useEffect(() => {
@@ -110,7 +106,6 @@ export function CameraCheckScreen({
       goodProgressAnim.stopAnimation();
       goodProgressAnim.setValue(0);
     }
-    prevPlacementRef.current = fingerPlacement;
   }, [fingerPlacement, goodProgressAnim]);
 
   const config = stateConfigs[fingerPlacement];
