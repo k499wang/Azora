@@ -23,7 +23,10 @@ import { computeRollingBPM } from '../lib/heartRate/rollingWindow';
 import { buildCaptureResult } from '../lib/heartRate/captureResult';
 import { useMeasurementTimer } from './useMeasurementTimer';
 
+// Total measurement length. Samples accumulate over this window, then we run BPM.
 const CAPTURE_DURATION_MS = 15000;
+const CAPTURE_DURATION_SEC = CAPTURE_DURATION_MS / 1000;
+// Finger must stay 'good' this long before we start measuring — avoids false starts.
 const MIN_GOOD_DURATION_MS = 1500;
 const FINGER_QUALITY_WINDOW_MS = 1000;
 const ROLLING_CLASSIFY_WINDOW_MS = 2000;
@@ -31,6 +34,8 @@ const ROLLING_BPM_WINDOW_MS = 8000;
 const BPM_UPDATE_INTERVAL_MS = 1000;
 const PROGRESS_UPDATE_INTERVAL_MS = 200;
 const BEAT_DETECTION_INTERVAL_MS = 80;
+// Downsample camera frames on the JS thread. The camera runs at 30fps but full-rate
+// processing saturates the bridge and causes UI lag (e.g. frozen countdown).
 const FRAME_PROCESSING_FPS = 20;
 
 function isValidFrameSample(value: unknown): value is PpgFrameSample {
@@ -80,6 +85,9 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
   const [beatTick, setBeatTick] = useState(0);
   const [result, setResult] = useState<CaptureResult | null>(null);
 
+  // Refs shadow any state that's read from inside the camera frame callback.
+  // Frame callbacks fire faster than React can flush, so reading state directly
+  // would see stale values.
   const samplesRef = useRef<PpgFrameSample[]>([]);
   const goodSinceRef = useRef<number | null>(null);
   const lastBpmUpdateRef = useRef<number>(0);
@@ -105,6 +113,13 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
   const torchMode: 'on' | 'off' =
     captureState === 'camera_check' || captureState === 'measuring' ? 'on' : 'off';
 
+  // Always use this instead of setCaptureState directly. The ref has to stay in
+  // sync because the frame callback reads it synchronously.
+  const setCaptureStateAndRef = useCallback((next: CaptureState) => {
+    captureStateRef.current = next;
+    setCaptureState(next);
+  }, []);
+
   const resetCaptureRefs = useCallback(() => {
     samplesRef.current = [];
     goodSinceRef.current = null;
@@ -125,21 +140,19 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
 
   const finishMeasurement = useCallback(() => {
     updateProgress(CAPTURE_DURATION_MS);
-    setCaptureState('processing');
-    captureStateRef.current = 'processing';
+    setCaptureStateAndRef('processing');
 
-    // Yield so 'processing' paints before the blocking BPM computation.
+    // setTimeout yields so the 'processing' state paints before BPM computation
+    // (which can block the JS thread for 100ms+ on 15s of samples).
     const samples = [...samplesRef.current];
     setTimeout(() => {
       if (captureStateRef.current !== 'processing') return;
 
       const nextResult = buildCaptureResult(samples);
-      const next = nextResult.reading == null ? 'error' : 'done';
       setResult(nextResult);
-      setCaptureState(next);
-      captureStateRef.current = next;
+      setCaptureStateAndRef(nextResult.reading == null ? 'error' : 'done');
     }, 0);
-  }, [updateProgress]);
+  }, [setCaptureStateAndRef, updateProgress]);
 
   const {
     start: startMeasurementTimer,
@@ -155,18 +168,20 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
     stopMeasurementTimer();
     resetCaptureRefs();
     setProgress(0);
-    setSecondsRemaining(15);
+    setSecondsRemaining(CAPTURE_DURATION_SEC);
     setBeatTick(0);
     setCurrentBpm(null);
-    setCaptureState('measuring');
-    captureStateRef.current = 'measuring';
+    setCaptureStateAndRef('measuring');
     startMeasurementTimer();
-  }, [resetCaptureRefs, startMeasurementTimer, stopMeasurementTimer]);
+  }, [resetCaptureRefs, setCaptureStateAndRef, startMeasurementTimer, stopMeasurementTimer]);
 
-  // JS callback invoked from worklet to add a brightness sample
+  // Runs on the JS thread, invoked from the camera frame worklet via useRunOnJS.
+  // Treat this as hot-path: it fires ~20 times/sec. Avoid allocations in tight branches.
   const addSample = useRunOnJS(
     (frameSample: unknown) => {
       if (!isValidFrameSample(frameSample)) {
+        // Invalid frame = lens is uncovered or camera hiccuped. Reset so we don't
+        // carry stale BPM/beat state into the next valid window.
         samplesRef.current = [];
         goodSinceRef.current = null;
         fingerClassifyStateRef.current = {};
@@ -267,28 +282,26 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
     stopMeasurementTimer();
     resetCaptureRefs();
     setProgress(0);
-    setSecondsRemaining(15);
+    setSecondsRemaining(CAPTURE_DURATION_SEC);
     setResult(null);
     setBeatTick(0);
     setCurrentBpm(null);
     fingerPlacementRef.current = 'no_finger';
     setFingerPlacement('no_finger');
-    setCaptureState('camera_check');
-    captureStateRef.current = 'camera_check';
-  }, [resetCaptureRefs, stopMeasurementTimer]);
+    setCaptureStateAndRef('camera_check');
+  }, [resetCaptureRefs, setCaptureStateAndRef, stopMeasurementTimer]);
 
   const cancel = useCallback(() => {
     stopMeasurementTimer();
     resetCaptureRefs();
     setProgress(0);
-    setSecondsRemaining(15);
+    setSecondsRemaining(CAPTURE_DURATION_SEC);
     setBeatTick(0);
     setCurrentBpm(null);
     fingerPlacementRef.current = 'no_finger';
     setFingerPlacement('no_finger');
-    setCaptureState('idle');
-    captureStateRef.current = 'idle';
-  }, [resetCaptureRefs, stopMeasurementTimer]);
+    setCaptureStateAndRef('idle');
+  }, [resetCaptureRefs, setCaptureStateAndRef, stopMeasurementTimer]);
 
   const reset = useCallback(() => {
     cancel();

@@ -35,14 +35,17 @@ export interface ComputeBpmOptions {
   fallbackSnrDbWithoutPeaks?: number;
 }
 
+// Tightened vs the original preview: the live path now requires frequency/peak
+// agreement and a higher SNR floor. Stops the BPM from jittering on noisy
+// candidates that the one-shot estimator would have rejected.
 export const PREVIEW_BPM_OPTIONS: ComputeBpmOptions = {
-  minDurationMs: 4500,
-  stabilizationMs: 1000,
-  minResampledSamples: 60,
-  minSnrDb: 2,
-  minConfidence: 0.35,
-  requirePeakAgreement: false,
-  fallbackSnrDbWithoutPeaks: 5.5,
+  minDurationMs: 6000,
+  stabilizationMs: 1500,
+  minResampledSamples: 80,
+  minSnrDb: 2.5,
+  minConfidence: 0.4,
+  requirePeakAgreement: true,
+  fallbackSnrDbWithoutPeaks: 6.5,
 };
 
 interface ResolvedComputeBpmOptions {

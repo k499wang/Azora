@@ -11,6 +11,8 @@ import BreathingCircle, {
 import ExerciseScaffold from '../components/exercise/ExerciseScaffold';
 import TECHNIQUES from '../data/techniques';
 import type { BreathingTechnique } from '../data/techniques';
+import { useLivePulse } from '../hooks/useLivePulse';
+import { LiveHeartRateMonitor } from '../components/meditation/LiveHeartRateMonitor';
 
 const MIN_ROUNDS = 1;
 const MAX_ROUNDS = 20;
@@ -47,6 +49,33 @@ export default function ExerciseSessionPage() {
   const [paused, setPaused] = useState(false);
   const [technique] = useState<BreathingTechnique>(initialTechnique);
   const [totalRounds, setTotalRounds] = useState(initialTechnique.defaultRounds);
+  const [hrEnabled, setHrEnabled] = useState(false);
+
+  const pulse = useLivePulse();
+  const { start: startPulse, stop: stopPulse, hasPermission, requestPermission } = pulse;
+
+  // Depend on the derived boolean, not raw `phase`. Phase changes every few
+  // seconds (inhale → holdIn → exhale → holdOut); if this effect re-ran on
+  // every transition it would churn the camera stream and wipe BPM samples
+  // before they could stabilize.
+  const isSessionActive = phase !== 'idle' && phase !== 'done' && !paused;
+
+  useEffect(() => {
+    if (hrEnabled && isSessionActive) {
+      startPulse();
+    } else {
+      stopPulse();
+    }
+  }, [hrEnabled, isSessionActive, startPulse, stopPulse]);
+
+  const handleToggleHr = useCallback(async () => {
+    if (hrEnabled) {
+      setHrEnabled(false);
+      return;
+    }
+    const granted = hasPermission ? true : await requestPermission();
+    if (granted) setHrEnabled(true);
+  }, [hrEnabled, hasPermission, requestPermission]);
 
   const clearTimer = () => {
     if (timerRef.current) {
@@ -157,6 +186,7 @@ export default function ExerciseSessionPage() {
 
   const handleClose = () => {
     clearTimer();
+    stopPulse();
     navigation.goBack();
   };
 
@@ -175,6 +205,37 @@ export default function ExerciseSessionPage() {
       titleSlot={
         <View style={styles.titleSlotWrap}>
         <Text style={styles.techniqueSubtitle}>{technique.name}</Text>
+        <View style={styles.hrRow}>
+          <Pressable
+            onPress={handleToggleHr}
+            style={({ pressed }) => [
+              styles.hrToggle,
+              hrEnabled && styles.hrToggleOn,
+              pressed && styles.hrTogglePressed,
+            ]}
+          >
+            <MaterialCommunityIcons
+              name={hrEnabled ? 'heart' : 'heart-outline'}
+              size={14}
+              color={hrEnabled ? colors.error[500] : colors.text.secondary}
+            />
+            <Text style={[styles.hrToggleText, hrEnabled && styles.hrToggleTextOn]}>
+              {hrEnabled ? 'Heart rate on' : 'Track heart rate'}
+            </Text>
+          </Pressable>
+          {pulse.active ? (
+            <LiveHeartRateMonitor
+              active={pulse.active}
+              fingerPlacement={pulse.fingerPlacement}
+              currentBpm={pulse.currentBpm}
+              beatTick={pulse.beatTick}
+              device={pulse.device}
+              format={pulse.format}
+              frameProcessor={pulse.frameProcessor}
+              torchMode={pulse.torchMode}
+            />
+          ) : null}
+        </View>
         <View style={styles.patternRow}>
           {(
             [
@@ -274,6 +335,38 @@ const styles = StyleSheet.create({
   techniqueSubtitle: {
     ...typography.title.title2,
     color: colors.text.primary,
+  },
+  hrRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+  },
+  hrToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 6,
+    backgroundColor: colors.background.elevated,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: colors.border.subtle,
+  },
+  hrToggleOn: {
+    borderColor: colors.error[500],
+  },
+  hrTogglePressed: {
+    opacity: 0.7,
+  },
+  hrToggleText: {
+    ...typography.caption.caption1,
+    color: colors.text.secondary,
+  },
+  hrToggleTextOn: {
+    color: colors.text.primary,
+    fontWeight: '600',
   },
   patternRow: {
     flexDirection: 'row',
