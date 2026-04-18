@@ -40,7 +40,7 @@ export default function ExerciseScaffold({
               {subtitle ? <Text style={styles.pageSubtitle}>{subtitle}</Text> : null}
             </View>
           )}
-          <View style={[styles.headerRight, titleSlot && styles.headerRightPushed]}>
+          <View style={[styles.headerRight, titleSlot ? styles.headerRightPushed : null]}>
             {rightSlot}
             {onClose ? (
               <Pressable onPress={onClose} style={styles.closeButton}>
