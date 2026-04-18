@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   useFrameProcessor,
   useCameraDevice,
@@ -18,11 +18,16 @@ import { classifyFingerPlacementStateless } from '../lib/heartRate/fingerQuality
 import {
   detectLatestBeat,
   PREVIEW_BPM_OPTIONS,
+  type BeatSignal,
 } from '../lib/heartRate/signalProcessing';
 import { computeRollingBPMComparison } from '../lib/heartRate/rollingWindow';
 import { buildCaptureResult } from '../lib/heartRate/captureResult';
 import { logHeartRateComparison } from '../lib/heartRate/debug';
-import { shouldEmitVisualBeat } from '../lib/heartRate/beatGate';
+import {
+  scheduledBeatIntervalMs,
+  shouldEmitScheduledBeat,
+  shouldEmitVisualBeat,
+} from '../lib/heartRate/beatGate';
 import { useMeasurementTimer } from './useMeasurementTimer';
 
 // Total measurement length. Samples accumulate over this window, then we run BPM.
@@ -36,6 +41,8 @@ const ROLLING_BPM_WINDOW_MS = 8000;
 const BPM_UPDATE_INTERVAL_MS = 1000;
 const PROGRESS_UPDATE_INTERVAL_MS = 200;
 const BEAT_DETECTION_INTERVAL_MS = 80;
+const VISUAL_BEAT_SCHEDULER_INTERVAL_MS = 80;
+const RAW_BEAT_PHASE_LOCK_FRACTION = 0.75;
 // Downsample camera frames on the JS thread. The camera runs at 30fps but full-rate
 // processing saturates the bridge and causes UI lag (e.g. frozen countdown).
 const FRAME_PROCESSING_FPS = 20;
@@ -94,9 +101,10 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
   const goodSinceRef = useRef<number | null>(null);
   const lastBpmUpdateRef = useRef<number>(0);
   const lastBeatCheckTimestampRef = useRef<number>(0);
-  const lastBeatTimestampRef = useRef<number | null>(null);
   const lastVisualBeatTimestampRef = useRef<number | null>(null);
+  const lastVisualBeatWallClockRef = useRef<number | null>(null);
   const currentBpmRef = useRef<number | null>(null);
+  const preferredBeatSignalRef = useRef<BeatSignal | null>(null);
   const fingerPlacementRef = useRef<FingerPlacementState>('no_finger');
   const captureStateRef = useRef<CaptureState>('idle');
   const fingerClassifyStateRef = useRef<{
@@ -128,9 +136,10 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
     goodSinceRef.current = null;
     lastBpmUpdateRef.current = 0;
     lastBeatCheckTimestampRef.current = 0;
-    lastBeatTimestampRef.current = null;
     lastVisualBeatTimestampRef.current = null;
+    lastVisualBeatWallClockRef.current = null;
     currentBpmRef.current = null;
+    preferredBeatSignalRef.current = null;
     fingerClassifyStateRef.current = {};
   }, []);
 
@@ -140,6 +149,28 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
     const remaining = Math.max(0, Math.ceil((CAPTURE_DURATION_MS - clampedElapsed) / 1000));
     setProgress(prog);
     setSecondsRemaining(remaining);
+  }, []);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      if (captureStateRef.current !== 'measuring') return;
+      if (fingerPlacementRef.current !== 'good' && fingerPlacementRef.current !== 'partial') {
+        return;
+      }
+
+      const bpm = currentBpmRef.current;
+      const nowMs = Date.now();
+      if (!shouldEmitScheduledBeat(nowMs, lastVisualBeatWallClockRef.current, bpm)) return;
+
+      lastVisualBeatWallClockRef.current = nowMs;
+      const latestSample = samplesRef.current[samplesRef.current.length - 1];
+      if (latestSample != null) {
+        lastVisualBeatTimestampRef.current = latestSample.timestamp;
+      }
+      setBeatTick((tick) => tick + 1);
+    }, VISUAL_BEAT_SCHEDULER_INTERVAL_MS);
+
+    return () => clearInterval(timer);
   }, []);
 
   const finishMeasurement = useCallback(() => {
@@ -191,8 +222,9 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
         fingerClassifyStateRef.current = {};
         currentBpmRef.current = null;
         fingerPlacementRef.current = 'no_finger';
-        lastBeatTimestampRef.current = null;
         lastVisualBeatTimestampRef.current = null;
+        lastVisualBeatWallClockRef.current = null;
+        preferredBeatSignalRef.current = null;
         setCurrentBpm(null);
         setFingerPlacement('no_finger');
         return;
@@ -240,24 +272,37 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
           currentBpmRef.current = null;
           setCurrentBpm(null);
         }
-        lastBeatTimestampRef.current = null;
         lastVisualBeatTimestampRef.current = null;
+        lastVisualBeatWallClockRef.current = null;
+        preferredBeatSignalRef.current = null;
         return;
       }
 
       if (timestamp - lastBeatCheckTimestampRef.current >= BEAT_DETECTION_INTERVAL_MS) {
         lastBeatCheckTimestampRef.current = timestamp;
-        const beat = detectLatestBeat(samplesRef.current, lastBeatTimestampRef.current);
+        const beat = detectLatestBeat(samplesRef.current, {
+          previousBeatTimestamp: lastVisualBeatTimestampRef.current,
+          preferredSignal: preferredBeatSignalRef.current,
+        });
         if (beat != null) {
-          lastBeatTimestampRef.current = beat.timestamp;
+          const bpm = currentBpmRef.current;
+          const nowMs = Date.now();
+          const lastVisualBeatMs = lastVisualBeatWallClockRef.current;
+          const canPhaseLock =
+            bpm == null ||
+            lastVisualBeatMs == null ||
+            nowMs - lastVisualBeatMs >= scheduledBeatIntervalMs(bpm) * RAW_BEAT_PHASE_LOCK_FRACTION;
+
           if (
+            canPhaseLock &&
             shouldEmitVisualBeat(
               beat.timestamp,
               lastVisualBeatTimestampRef.current,
-              currentBpmRef.current,
+              bpm,
             )
           ) {
             lastVisualBeatTimestampRef.current = beat.timestamp;
+            lastVisualBeatWallClockRef.current = nowMs;
             setBeatTick((tick) => tick + 1);
           }
         }
@@ -273,6 +318,10 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
         logHeartRateComparison('capture-preview', bpmComparison);
         const bpmResult = bpmComparison.consensus;
         if (bpmResult != null) {
+          preferredBeatSignalRef.current = {
+            roiId: bpmResult.roiId,
+            channel: bpmResult.channel,
+          };
           currentBpmRef.current = bpmResult.bpm;
           setCurrentBpm(bpmResult.bpm);
         }

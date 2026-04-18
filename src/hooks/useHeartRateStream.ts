@@ -15,9 +15,17 @@ import type {
 import { heartRatePlugin } from '../lib/heartRate/heartRatePlugin';
 import { classifyFingerPlacementStateless } from '../lib/heartRate/fingerQuality';
 import { computeRollingBPMComparison } from '../lib/heartRate/rollingWindow';
-import { detectLatestBeat, PREVIEW_BPM_OPTIONS } from '../lib/heartRate/signalProcessing';
+import {
+  detectLatestBeat,
+  PREVIEW_BPM_OPTIONS,
+  type BeatSignal,
+} from '../lib/heartRate/signalProcessing';
 import { logHeartRateComparison } from '../lib/heartRate/debug';
-import { shouldEmitVisualBeat } from '../lib/heartRate/beatGate';
+import {
+  scheduledBeatIntervalMs,
+  shouldEmitScheduledBeat,
+  shouldEmitVisualBeat,
+} from '../lib/heartRate/beatGate';
 
 const ROLLING_WINDOW_MS = 15000;
 const BPM_UPDATE_INTERVAL_MS = 1000;
@@ -26,6 +34,8 @@ const FINGER_CLASSIFY_WINDOW_MS = 1000;
 const ROLLING_CLASSIFY_WINDOW_MS = 2000;
 const WARMUP_DURATION_MS = 5000;
 const BEAT_DETECTION_INTERVAL_MS = 80;
+const VISUAL_BEAT_SCHEDULER_INTERVAL_MS = 80;
+const RAW_BEAT_PHASE_LOCK_FRACTION = 0.75;
 
 function isValidFrameSample(value: unknown): value is PpgFrameSample {
   if (value == null || typeof value !== 'object') return false;
@@ -75,8 +85,9 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
   const streamStartRef = useRef<number | null>(null);
   const lastBpmUpdateRef = useRef<number>(0);
   const lastBeatCheckTimestampRef = useRef<number>(0);
-  const lastBeatTimestampRef = useRef<number | null>(null);
   const lastVisualBeatTimestampRef = useRef<number | null>(null);
+  const lastVisualBeatWallClockRef = useRef<number | null>(null);
+  const preferredBeatSignalRef = useRef<BeatSignal | null>(null);
   const fingerLostSinceRef = useRef<number | null>(null);
   const goodSinceRef = useRef<number | null>(null);
   const warmupStartRef = useRef<number | null>(null);
@@ -103,6 +114,29 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
 
   const torchMode: 'on' | 'off' =
     streamState !== 'idle' && streamState !== 'stopped' ? 'on' : 'off';
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      const state = streamStateRef.current;
+      if (state !== 'streaming' && state !== 'warming_up') return;
+      if (fingerPlacementRef.current !== 'good' && fingerPlacementRef.current !== 'partial') {
+        return;
+      }
+
+      const latestBpm = bpmHistoryRef.current[bpmHistoryRef.current.length - 1] ?? null;
+      const nowMs = Date.now();
+      if (!shouldEmitScheduledBeat(nowMs, lastVisualBeatWallClockRef.current, latestBpm)) return;
+
+      lastVisualBeatWallClockRef.current = nowMs;
+      const latestSample = bufferRef.current[bufferRef.current.length - 1];
+      if (latestSample != null) {
+        lastVisualBeatTimestampRef.current = latestSample.timestamp;
+      }
+      setBeatTick((tick) => tick + 1);
+    }, VISUAL_BEAT_SCHEDULER_INTERVAL_MS);
+
+    return () => clearInterval(timer);
+  }, []);
 
   const startStreaming = useCallback((startTimestamp?: number) => {
     warmupStartRef.current = startTimestamp ?? null;
@@ -136,8 +170,9 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
     streamStartRef.current = null;
     lastBpmUpdateRef.current = 0;
     lastBeatCheckTimestampRef.current = 0;
-    lastBeatTimestampRef.current = null;
     lastVisualBeatTimestampRef.current = null;
+    lastVisualBeatWallClockRef.current = null;
+    preferredBeatSignalRef.current = null;
     fingerLostSinceRef.current = null;
     goodSinceRef.current = null;
     warmupStartRef.current = null;
@@ -156,8 +191,9 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
         fingerLostSinceRef.current = null;
         fingerClassifyStateRef.current = {};
         fingerPlacementRef.current = 'no_finger';
-        lastBeatTimestampRef.current = null;
         lastVisualBeatTimestampRef.current = null;
+        lastVisualBeatWallClockRef.current = null;
+        preferredBeatSignalRef.current = null;
         setCurrentBpm(null);
         setFingerPlacement('no_finger');
         return;
@@ -217,8 +253,9 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
         if (placement === 'lost' || (placement !== 'good' && placement !== 'partial')) {
           if (state !== 'finger_lost') {
             fingerLostSinceRef.current = timestamp;
-            lastBeatTimestampRef.current = null;
             lastVisualBeatTimestampRef.current = null;
+            lastVisualBeatWallClockRef.current = null;
+            preferredBeatSignalRef.current = null;
             setCurrentBpm(null);
             setStreamState('finger_lost');
             streamStateRef.current = 'finger_lost';
@@ -230,8 +267,9 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
           }
         } else if (state === 'finger_lost') {
           fingerLostSinceRef.current = null;
-          lastBeatTimestampRef.current = null;
           lastVisualBeatTimestampRef.current = null;
+          lastVisualBeatWallClockRef.current = null;
+          preferredBeatSignalRef.current = null;
           setStreamState('streaming');
           streamStateRef.current = 'streaming';
         }
@@ -243,11 +281,22 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
         timestamp - lastBeatCheckTimestampRef.current >= BEAT_DETECTION_INTERVAL_MS
       ) {
         lastBeatCheckTimestampRef.current = timestamp;
-        const beat = detectLatestBeat(bufferRef.current, lastBeatTimestampRef.current);
+        const beat = detectLatestBeat(bufferRef.current, {
+          previousBeatTimestamp: lastVisualBeatTimestampRef.current,
+          preferredSignal: preferredBeatSignalRef.current,
+        });
         if (beat != null) {
-          lastBeatTimestampRef.current = beat.timestamp;
           const latestBpm = bpmHistoryRef.current[bpmHistoryRef.current.length - 1] ?? null;
+          const nowMs = Date.now();
+          const lastVisualBeatMs = lastVisualBeatWallClockRef.current;
+          const canPhaseLock =
+            latestBpm == null ||
+            lastVisualBeatMs == null ||
+            nowMs - lastVisualBeatMs >=
+              scheduledBeatIntervalMs(latestBpm) * RAW_BEAT_PHASE_LOCK_FRACTION;
+
           if (
+            canPhaseLock &&
             shouldEmitVisualBeat(
               beat.timestamp,
               lastVisualBeatTimestampRef.current,
@@ -255,6 +304,7 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
             )
           ) {
             lastVisualBeatTimestampRef.current = beat.timestamp;
+            lastVisualBeatWallClockRef.current = nowMs;
             setBeatTick((tick) => tick + 1);
           }
         }
@@ -274,6 +324,10 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
         logHeartRateComparison('stream', bpmComparison);
         const bpmResult = bpmComparison.consensus;
         if (bpmResult != null) {
+          preferredBeatSignalRef.current = {
+            roiId: bpmResult.roiId,
+            channel: bpmResult.channel,
+          };
           setCurrentBpm(bpmResult.bpm);
           bpmHistoryRef.current = [...bpmHistoryRef.current, bpmResult.bpm];
           setBpmHistory([...bpmHistoryRef.current]);
@@ -300,8 +354,9 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
     streamStartRef.current = Date.now();
     lastBpmUpdateRef.current = 0;
     lastBeatCheckTimestampRef.current = 0;
-    lastBeatTimestampRef.current = null;
     lastVisualBeatTimestampRef.current = null;
+    lastVisualBeatWallClockRef.current = null;
+    preferredBeatSignalRef.current = null;
     fingerLostSinceRef.current = null;
     goodSinceRef.current = null;
     warmupStartRef.current = null;

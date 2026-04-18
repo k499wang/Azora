@@ -108,6 +108,16 @@ export interface BeatDetectionResult {
   channel: PpgChannel;
 }
 
+export interface BeatSignal {
+  roiId: string;
+  channel: PpgChannel;
+}
+
+export interface DetectLatestBeatOptions {
+  previousBeatTimestamp?: number | null;
+  preferredSignal?: BeatSignal | null;
+}
+
 export interface ComputeBpmComparison {
   original: HeartRateEstimate | null;
   pulseHue: HeartRateEstimate | null;
@@ -890,25 +900,10 @@ function latestPeakForPolarity(
   return best;
 }
 
-/**
- * Detects the newest pulse peak in the recent PPG stream.
- *
- * This is intentionally lighter than the final BPM estimator. It is used only
- * to trigger UI feedback when a beat is seen, while computeBPM remains the
- * source of truth for the reading.
- */
-export function detectLatestBeat(
-  samples: PpgFrameSample[],
-  previousBeatTimestamp: number | null = null,
+function detectBeatInCandidates(
+  candidates: CandidateSeries[],
+  previousBeatTimestamp: number | null,
 ): BeatDetectionResult | null {
-  if (samples.length === 0) return null;
-
-  const latestTimestamp = samples[samples.length - 1].timestamp;
-  const recentSamples = samples.filter(
-    (sample) => sample.timestamp >= latestTimestamp - BEAT_DETECTION_WINDOW_MS,
-  );
-
-  const candidates = buildCandidates(recentSamples);
   let best: BeatDetectionResult | null = null;
 
   for (const candidate of candidates) {
@@ -960,6 +955,44 @@ export function detectLatestBeat(
   }
 
   return best;
+}
+
+/**
+ * Detects the newest pulse peak in the recent PPG stream.
+ *
+ * This is intentionally lighter than the final BPM estimator. It is used only
+ * to trigger UI feedback when a beat is seen, while computeBPM remains the
+ * source of truth for the reading. When a preferred signal is supplied, the
+ * visual beat follows that one ROI/channel instead of switching between
+ * slightly-offset candidates.
+ */
+export function detectLatestBeat(
+  samples: PpgFrameSample[],
+  options: DetectLatestBeatOptions = {},
+): BeatDetectionResult | null {
+  if (samples.length === 0) return null;
+
+  const previousBeatTimestamp = options.previousBeatTimestamp ?? null;
+  const latestTimestamp = samples[samples.length - 1].timestamp;
+  const recentSamples = samples.filter(
+    (sample) => sample.timestamp >= latestTimestamp - BEAT_DETECTION_WINDOW_MS,
+  );
+
+  const candidates = buildCandidates(recentSamples);
+  const preferredSignal = options.preferredSignal;
+
+  if (preferredSignal != null) {
+    const preferredCandidates = candidates.filter(
+      (candidate) =>
+        candidate.roiId === preferredSignal.roiId &&
+        candidate.channel === preferredSignal.channel,
+    );
+    if (preferredCandidates.length > 0) {
+      return detectBeatInCandidates(preferredCandidates, previousBeatTimestamp);
+    }
+  }
+
+  return detectBeatInCandidates(candidates, previousBeatTimestamp);
 }
 
 /**

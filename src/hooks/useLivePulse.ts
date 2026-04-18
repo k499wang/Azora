@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   useFrameProcessor,
   useCameraDevice,
@@ -10,10 +10,18 @@ import { useRunOnJS } from 'react-native-worklets-core';
 import type { FingerPlacementState, PpgFrameSample } from '../lib/heartRate/types';
 import { heartRatePlugin } from '../lib/heartRate/heartRatePlugin';
 import { classifyFingerPlacementStateless } from '../lib/heartRate/fingerQuality';
-import { detectLatestBeat, PREVIEW_BPM_OPTIONS } from '../lib/heartRate/signalProcessing';
+import {
+  detectLatestBeat,
+  PREVIEW_BPM_OPTIONS,
+  type BeatSignal,
+} from '../lib/heartRate/signalProcessing';
 import { computeRollingBPMComparison } from '../lib/heartRate/rollingWindow';
 import { logHeartRateComparison, logHeartRateStatus } from '../lib/heartRate/debug';
-import { shouldEmitVisualBeat } from '../lib/heartRate/beatGate';
+import {
+  scheduledBeatIntervalMs,
+  shouldEmitScheduledBeat,
+  shouldEmitVisualBeat,
+} from '../lib/heartRate/beatGate';
 
 // Shorter timing constants than the one-shot capture hook. Live mode prioritizes
 // responsiveness over a final, locked-in reading.
@@ -22,6 +30,8 @@ const ROLLING_CLASSIFY_WINDOW_MS = 2000;
 const ROLLING_BPM_WINDOW_MS = 10000;
 const BPM_UPDATE_INTERVAL_MS = 1000;
 const BEAT_DETECTION_INTERVAL_MS = 80;
+const VISUAL_BEAT_SCHEDULER_INTERVAL_MS = 80;
+const RAW_BEAT_PHASE_LOCK_FRACTION = 0.75;
 const FRAME_PROCESSING_FPS = 20;
 // Continuous stream — cap the sample buffer so memory doesn't grow unbounded.
 const MAX_SAMPLE_AGE_MS = ROLLING_BPM_WINDOW_MS + 2000;
@@ -80,9 +90,10 @@ export function useLivePulse(): UseLivePulseReturn {
   const lastBpmUpdateRef = useRef(0);
   const lastBeatCheckRef = useRef(0);
   const lastDebugStatusRef = useRef(0);
-  const lastBeatTimestampRef = useRef<number | null>(null);
   const lastVisualBeatTimestampRef = useRef<number | null>(null);
+  const lastVisualBeatWallClockRef = useRef<number | null>(null);
   const currentBpmRef = useRef<number | null>(null);
+  const preferredBeatSignalRef = useRef<BeatSignal | null>(null);
   const bpmHistoryRef = useRef<number[]>([]);
   const fingerPlacementRef = useRef<FingerPlacementState>('no_finger');
   const fingerClassifyStateRef = useRef<{
@@ -101,14 +112,37 @@ export function useLivePulse(): UseLivePulseReturn {
 
   const torchMode: 'on' | 'off' = active ? 'on' : 'off';
 
+  useEffect(() => {
+    const timer = setInterval(() => {
+      if (!activeRef.current) return;
+      if (fingerPlacementRef.current !== 'good' && fingerPlacementRef.current !== 'partial') {
+        return;
+      }
+
+      const bpm = currentBpmRef.current;
+      const nowMs = Date.now();
+      if (!shouldEmitScheduledBeat(nowMs, lastVisualBeatWallClockRef.current, bpm)) return;
+
+      lastVisualBeatWallClockRef.current = nowMs;
+      const latestSample = samplesRef.current[samplesRef.current.length - 1];
+      if (latestSample != null) {
+        lastVisualBeatTimestampRef.current = latestSample.timestamp;
+      }
+      setBeatTick((tick) => tick + 1);
+    }, VISUAL_BEAT_SCHEDULER_INTERVAL_MS);
+
+    return () => clearInterval(timer);
+  }, []);
+
   const resetStreamState = useCallback(() => {
     samplesRef.current = [];
     lastBpmUpdateRef.current = 0;
     lastBeatCheckRef.current = 0;
     lastDebugStatusRef.current = 0;
-    lastBeatTimestampRef.current = null;
     lastVisualBeatTimestampRef.current = null;
+    lastVisualBeatWallClockRef.current = null;
     currentBpmRef.current = null;
+    preferredBeatSignalRef.current = null;
     bpmHistoryRef.current = [];
     fingerPlacementRef.current = 'no_finger';
     fingerClassifyStateRef.current = {};
@@ -146,8 +180,9 @@ export function useLivePulse(): UseLivePulseReturn {
         samplesRef.current = [];
         currentBpmRef.current = null;
         fingerPlacementRef.current = 'no_finger';
-        lastBeatTimestampRef.current = null;
         lastVisualBeatTimestampRef.current = null;
+        lastVisualBeatWallClockRef.current = null;
+        preferredBeatSignalRef.current = null;
         fingerClassifyStateRef.current = {};
         setCurrentBpm(null);
         setFingerPlacement('no_finger');
@@ -198,24 +233,37 @@ export function useLivePulse(): UseLivePulseReturn {
           setCurrentBpm(null);
         }
         bpmHistoryRef.current = [];
-        lastBeatTimestampRef.current = null;
         lastVisualBeatTimestampRef.current = null;
+        lastVisualBeatWallClockRef.current = null;
+        preferredBeatSignalRef.current = null;
         return;
       }
 
       if (timestamp - lastBeatCheckRef.current >= BEAT_DETECTION_INTERVAL_MS) {
         lastBeatCheckRef.current = timestamp;
-        const beat = detectLatestBeat(samplesRef.current, lastBeatTimestampRef.current);
+        const beat = detectLatestBeat(samplesRef.current, {
+          previousBeatTimestamp: lastVisualBeatTimestampRef.current,
+          preferredSignal: preferredBeatSignalRef.current,
+        });
         if (beat != null) {
-          lastBeatTimestampRef.current = beat.timestamp;
+          const bpm = currentBpmRef.current;
+          const nowMs = Date.now();
+          const lastVisualBeatMs = lastVisualBeatWallClockRef.current;
+          const canPhaseLock =
+            bpm == null ||
+            lastVisualBeatMs == null ||
+            nowMs - lastVisualBeatMs >= scheduledBeatIntervalMs(bpm) * RAW_BEAT_PHASE_LOCK_FRACTION;
+
           if (
+            canPhaseLock &&
             shouldEmitVisualBeat(
               beat.timestamp,
               lastVisualBeatTimestampRef.current,
-              currentBpmRef.current,
+              bpm,
             )
           ) {
             lastVisualBeatTimestampRef.current = beat.timestamp;
+            lastVisualBeatWallClockRef.current = nowMs;
             setBeatTick((t) => t + 1);
           }
         }
@@ -231,6 +279,10 @@ export function useLivePulse(): UseLivePulseReturn {
         logHeartRateComparison('live-pulse', bpmComparison);
         const bpm = bpmComparison.consensus;
         if (bpm != null) {
+          preferredBeatSignalRef.current = {
+            roiId: bpm.roiId,
+            channel: bpm.channel,
+          };
           // Median-smooth raw readings. Pushes outliers to the tails where the
           // median ignores them — this is what makes the displayed BPM stop
           // bouncing between e.g. 72 and 81 each second.
