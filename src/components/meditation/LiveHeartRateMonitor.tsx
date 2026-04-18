@@ -79,7 +79,7 @@ export function LiveHeartRateMonitor({
       ) : (
         <Text style={styles.prompt}>
           {fingerPlacement === 'lost'
-            ? 'Signal lost — hold steady'
+            ? 'Signal lost - hold steady'
             : 'Place finger on rear camera'}
         </Text>
       )}

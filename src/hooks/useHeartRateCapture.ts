@@ -14,36 +14,21 @@ import type {
   FingerPlacementState,
 } from '../lib/heartRate/types';
 import { heartRatePlugin } from '../lib/heartRate/heartRatePlugin';
-import { classifyFingerPlacementStateless } from '../lib/heartRate/fingerQuality';
-import {
-  detectLatestBeat,
-  PREVIEW_BPM_OPTIONS,
-} from '../lib/heartRate/signalProcessing';
-import { computeRollingBPM } from '../lib/heartRate/rollingWindow';
+import { HeartRateManager } from '../lib/heartRate/heartRateManager';
 import { buildCaptureResult } from '../lib/heartRate/captureResult';
 import { useMeasurementTimer } from './useMeasurementTimer';
 
-// Total measurement length. Samples accumulate over this window, then we run BPM.
 const CAPTURE_DURATION_MS = 15000;
 const CAPTURE_DURATION_SEC = CAPTURE_DURATION_MS / 1000;
-// Finger must stay 'good' this long before we start measuring — avoids false starts.
 const MIN_GOOD_DURATION_MS = 1500;
-const FINGER_QUALITY_WINDOW_MS = 1000;
-const ROLLING_CLASSIFY_WINDOW_MS = 2000;
-const ROLLING_BPM_WINDOW_MS = 8000;
-const BPM_UPDATE_INTERVAL_MS = 1000;
 const PROGRESS_UPDATE_INTERVAL_MS = 200;
-const BEAT_DETECTION_INTERVAL_MS = 80;
-// Downsample camera frames on the JS thread. The camera runs at 30fps but full-rate
-// processing saturates the bridge and causes UI lag (e.g. frozen countdown).
+const BPM_UPDATE_INTERVAL_MS = 1000;
 const FRAME_PROCESSING_FPS = 20;
 
 function isValidFrameSample(value: unknown): value is PpgFrameSample {
   if (value == null || typeof value !== 'object') return false;
-
   const sample = value as Partial<PpgFrameSample>;
   if (!Number.isFinite(sample.timestamp) || !Array.isArray(sample.rois)) return false;
-
   return sample.rois.length > 0 && sample.rois.every((roi) =>
     roi != null &&
     typeof roi.id === 'string' &&
@@ -85,21 +70,12 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
   const [beatTick, setBeatTick] = useState(0);
   const [result, setResult] = useState<CaptureResult | null>(null);
 
-  // Refs shadow any state that's read from inside the camera frame callback.
-  // Frame callbacks fire faster than React can flush, so reading state directly
-  // would see stale values.
   const samplesRef = useRef<PpgFrameSample[]>([]);
   const goodSinceRef = useRef<number | null>(null);
   const lastBpmUpdateRef = useRef<number>(0);
-  const lastBeatCheckTimestampRef = useRef<number>(0);
-  const lastBeatTimestampRef = useRef<number | null>(null);
   const currentBpmRef = useRef<number | null>(null);
-  const fingerPlacementRef = useRef<FingerPlacementState>('no_finger');
   const captureStateRef = useRef<CaptureState>('idle');
-  const fingerClassifyStateRef = useRef<{
-    previousState?: FingerPlacementState;
-    goodSinceMs?: number;
-  }>({});
+  const managerRef = useRef(new HeartRateManager());
 
   const { hasPermission, requestPermission } = useCameraPermission();
   const device = useCameraDevice('back', {
@@ -113,8 +89,6 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
   const torchMode: 'on' | 'off' =
     captureState === 'camera_check' || captureState === 'measuring' ? 'on' : 'off';
 
-  // Always use this instead of setCaptureState directly. The ref has to stay in
-  // sync because the frame callback reads it synchronously.
   const setCaptureStateAndRef = useCallback((next: CaptureState) => {
     captureStateRef.current = next;
     setCaptureState(next);
@@ -124,10 +98,8 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
     samplesRef.current = [];
     goodSinceRef.current = null;
     lastBpmUpdateRef.current = 0;
-    lastBeatCheckTimestampRef.current = 0;
-    lastBeatTimestampRef.current = null;
     currentBpmRef.current = null;
-    fingerClassifyStateRef.current = {};
+    managerRef.current.reset();
   }, []);
 
   const updateProgress = useCallback((elapsedMs: number) => {
@@ -142,8 +114,6 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
     updateProgress(CAPTURE_DURATION_MS);
     setCaptureStateAndRef('processing');
 
-    // setTimeout yields so the 'processing' state paints before BPM computation
-    // (which can block the JS thread for 100ms+ on 15s of samples).
     const samples = [...samplesRef.current];
     setTimeout(() => {
       if (captureStateRef.current !== 'processing') return;
@@ -175,21 +145,15 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
     startMeasurementTimer();
   }, [resetCaptureRefs, setCaptureStateAndRef, startMeasurementTimer, stopMeasurementTimer]);
 
-  // Runs on the JS thread, invoked from the camera frame worklet via useRunOnJS.
-  // Treat this as hot-path: it fires ~20 times/sec. Avoid allocations in tight branches.
   const addSample = useRunOnJS(
     (frameSample: unknown) => {
       if (!isValidFrameSample(frameSample)) {
-        // Invalid frame = lens is uncovered or camera hiccuped. Reset so we don't
-        // carry stale BPM/beat state into the next valid window.
         samplesRef.current = [];
         goodSinceRef.current = null;
-        fingerClassifyStateRef.current = {};
         currentBpmRef.current = null;
-        fingerPlacementRef.current = 'no_finger';
-        lastBeatTimestampRef.current = null;
         setCurrentBpm(null);
         setFingerPlacement('no_finger');
+        managerRef.current.reset();
         return;
       }
 
@@ -199,22 +163,13 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
 
       samplesRef.current.push(frameSample);
 
-      // Classify finger placement based on last ROLLING_CLASSIFY_WINDOW_MS of samples
-      const recentCutoff = timestamp - ROLLING_CLASSIFY_WINDOW_MS;
-      const recentSamples = samplesRef.current.filter((s) => s.timestamp >= recentCutoff);
-      const { placement, state: newClassifyState } = classifyFingerPlacementStateless(
-        recentSamples,
-        FINGER_QUALITY_WINDOW_MS,
-        fingerClassifyStateRef.current,
-      );
-      fingerClassifyStateRef.current = newClassifyState;
-      if (placement !== fingerPlacementRef.current) {
-        fingerPlacementRef.current = placement;
-        setFingerPlacement(placement);
+      const frameState = managerRef.current.processFrame(frameSample);
+      if (frameState.fingerPlacement !== fingerPlacement) {
+        setFingerPlacement(frameState.fingerPlacement);
       }
 
       if (state === 'camera_check') {
-        if (placement !== 'good') {
+        if (frameState.fingerPlacement !== 'good') {
           goodSinceRef.current = null;
           return;
         }
@@ -228,40 +183,25 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
         return;
       }
 
-      // state === 'measuring'
-      const canEstimateBpm = placement === 'good' || placement === 'partial';
-      if (!canEstimateBpm) {
-        if (currentBpmRef.current != null) {
-          currentBpmRef.current = null;
-          setCurrentBpm(null);
-        }
-        lastBeatTimestampRef.current = null;
-        return;
-      }
-
-      if (timestamp - lastBeatCheckTimestampRef.current >= BEAT_DETECTION_INTERVAL_MS) {
-        lastBeatCheckTimestampRef.current = timestamp;
-        const beat = detectLatestBeat(samplesRef.current, lastBeatTimestampRef.current);
-        if (beat != null) {
-          lastBeatTimestampRef.current = beat.timestamp;
-          setBeatTick((tick) => tick + 1);
-        }
+      if (frameState.beatDetected) {
+        setBeatTick((tick) => tick + 1);
       }
 
       if (timestamp - lastBpmUpdateRef.current >= BPM_UPDATE_INTERVAL_MS) {
         lastBpmUpdateRef.current = timestamp;
-        const bpmResult = computeRollingBPM(
-          samplesRef.current,
-          ROLLING_BPM_WINDOW_MS,
-          PREVIEW_BPM_OPTIONS,
-        );
-        if (bpmResult != null) {
-          currentBpmRef.current = bpmResult.bpm;
-          setCurrentBpm(bpmResult.bpm);
+        const bpm = managerRef.current.getCurrentBpm();
+        if (bpm != null) {
+          currentBpmRef.current = bpm;
+          setCurrentBpm(bpm);
         }
       }
+
+      if (frameState.fingerPlacement === 'lost') {
+        currentBpmRef.current = null;
+        setCurrentBpm(null);
+      }
     },
-    [startMeasuring],
+    [fingerPlacement, startMeasuring],
   );
 
   const frameProcessor = useFrameProcessor(
@@ -286,7 +226,6 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
     setResult(null);
     setBeatTick(0);
     setCurrentBpm(null);
-    fingerPlacementRef.current = 'no_finger';
     setFingerPlacement('no_finger');
     setCaptureStateAndRef('camera_check');
   }, [resetCaptureRefs, setCaptureStateAndRef, stopMeasurementTimer]);
@@ -298,7 +237,6 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
     setSecondsRemaining(CAPTURE_DURATION_SEC);
     setBeatTick(0);
     setCurrentBpm(null);
-    fingerPlacementRef.current = 'no_finger';
     setFingerPlacement('no_finger');
     setCaptureStateAndRef('idle');
   }, [resetCaptureRefs, setCaptureStateAndRef, stopMeasurementTimer]);
