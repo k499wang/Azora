@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState, useEffect } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import {
   useFrameProcessor,
   useCameraDevice,
@@ -16,11 +16,12 @@ import type {
 import { heartRatePlugin } from '../lib/heartRate/heartRatePlugin';
 import { classifyFingerPlacementStateless } from '../lib/heartRate/fingerQuality';
 import {
-  computeBPM,
   detectLatestBeat,
   PREVIEW_BPM_OPTIONS,
 } from '../lib/heartRate/signalProcessing';
 import { computeRollingBPM } from '../lib/heartRate/rollingWindow';
+import { buildCaptureResult } from '../lib/heartRate/captureResult';
+import { useMeasurementTimer } from './useMeasurementTimer';
 
 const CAPTURE_DURATION_MS = 15000;
 const MIN_GOOD_DURATION_MS = 1500;
@@ -80,9 +81,6 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
   const [result, setResult] = useState<CaptureResult | null>(null);
 
   const samplesRef = useRef<PpgFrameSample[]>([]);
-  const captureStartRef = useRef<number | null>(null);
-  const measureStartRef = useRef<number | null>(null);
-  const measureStartWallClockRef = useRef<number | null>(null);
   const goodSinceRef = useRef<number | null>(null);
   const lastBpmUpdateRef = useRef<number>(0);
   const lastBeatCheckTimestampRef = useRef<number>(0);
@@ -94,8 +92,6 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
     previousState?: FingerPlacementState;
     goodSinceMs?: number;
   }>({});
-  const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const finishRequestedRef = useRef(false);
 
   const { hasPermission, requestPermission } = useCameraPermission();
   const device = useCameraDevice('back', {
@@ -106,19 +102,17 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
     { videoResolution: { width: 640, height: 480 } },
   ]);
 
-  // Keep captureStateRef in sync
-  useEffect(() => {
-    captureStateRef.current = captureState;
-  }, [captureState]);
-
   const torchMode: 'on' | 'off' =
     captureState === 'camera_check' || captureState === 'measuring' ? 'on' : 'off';
 
-  const clearProgressTimer = useCallback(() => {
-    if (progressIntervalRef.current) {
-      clearInterval(progressIntervalRef.current);
-      progressIntervalRef.current = null;
-    }
+  const resetCaptureRefs = useCallback(() => {
+    samplesRef.current = [];
+    goodSinceRef.current = null;
+    lastBpmUpdateRef.current = 0;
+    lastBeatCheckTimestampRef.current = 0;
+    lastBeatTimestampRef.current = null;
+    currentBpmRef.current = null;
+    fingerClassifyStateRef.current = {};
   }, []);
 
   const updateProgress = useCallback((elapsedMs: number) => {
@@ -130,83 +124,44 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
   }, []);
 
   const finishMeasurement = useCallback(() => {
-    if (finishRequestedRef.current) return;
-
-    finishRequestedRef.current = true;
-    clearProgressTimer();
     updateProgress(CAPTURE_DURATION_MS);
     setCaptureState('processing');
     captureStateRef.current = 'processing';
 
+    // Yield so 'processing' paints before the blocking BPM computation.
     const samples = [...samplesRef.current];
     setTimeout(() => {
       if (captureStateRef.current !== 'processing') return;
 
-      const bpmResult = computeBPM(samples);
-      if (bpmResult == null) {
-        const tooFew = samples.length < 60;
-        setResult({
-          reading: null,
-          error: tooFew ? 'too_few_samples' : 'low_confidence',
-        });
-        setCaptureState('error');
-        captureStateRef.current = 'error';
-      } else {
-        const startTs = samples[0]?.timestamp ?? 0;
-        const endTs = samples[samples.length - 1]?.timestamp ?? 0;
-        setResult({
-          reading: {
-            bpm: bpmResult.bpm,
-            confidence: bpmResult.confidence,
-            quality: bpmResult.quality,
-            roiId: bpmResult.roiId,
-            channel: bpmResult.channel,
-            snrDb: bpmResult.snrDb,
-            frequencyBpm: bpmResult.frequencyBpm,
-            peakBpm: bpmResult.peakBpm,
-            sampleCount: bpmResult.sampleCount,
-            durationMs: bpmResult.durationMs || endTs - startTs,
-            recordedAt: new Date().toISOString(),
-            source: 'camera-flash',
-          },
-          error: null,
-        });
-        setCaptureState('done');
-        captureStateRef.current = 'done';
-      }
+      const nextResult = buildCaptureResult(samples);
+      const next = nextResult.reading == null ? 'error' : 'done';
+      setResult(nextResult);
+      setCaptureState(next);
+      captureStateRef.current = next;
     }, 0);
-  }, [clearProgressTimer, updateProgress]);
+  }, [updateProgress]);
 
-  const startMeasuring = useCallback((startTimestamp?: number) => {
-    clearProgressTimer();
-    samplesRef.current = [];
-    measureStartRef.current = startTimestamp ?? null;
-    measureStartWallClockRef.current = Date.now();
-    goodSinceRef.current = null;
-    lastBpmUpdateRef.current = 0;
-    lastBeatCheckTimestampRef.current = 0;
-    lastBeatTimestampRef.current = null;
-    fingerClassifyStateRef.current = {};
-    finishRequestedRef.current = false;
+  const {
+    start: startMeasurementTimer,
+    stop: stopMeasurementTimer,
+  } = useMeasurementTimer({
+    durationMs: CAPTURE_DURATION_MS,
+    intervalMs: PROGRESS_UPDATE_INTERVAL_MS,
+    onTick: updateProgress,
+    onComplete: finishMeasurement,
+  });
+
+  const startMeasuring = useCallback(() => {
+    stopMeasurementTimer();
+    resetCaptureRefs();
     setProgress(0);
     setSecondsRemaining(15);
     setBeatTick(0);
-    currentBpmRef.current = null;
     setCurrentBpm(null);
     setCaptureState('measuring');
     captureStateRef.current = 'measuring';
-
-    progressIntervalRef.current = setInterval(() => {
-      const startMs = measureStartWallClockRef.current;
-      if (startMs == null || captureStateRef.current !== 'measuring') return;
-
-      const elapsed = Date.now() - startMs;
-      updateProgress(elapsed);
-      if (elapsed >= CAPTURE_DURATION_MS) {
-        finishMeasurement();
-      }
-    }, PROGRESS_UPDATE_INTERVAL_MS);
-  }, [clearProgressTimer, finishMeasurement, updateProgress]);
+    startMeasurementTimer();
+  }, [resetCaptureRefs, startMeasurementTimer, stopMeasurementTimer]);
 
   // JS callback invoked from worklet to add a brightness sample
   const addSample = useRunOnJS(
@@ -244,68 +199,54 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
       }
 
       if (state === 'camera_check') {
-        if (placement === 'good') {
-          if (goodSinceRef.current == null) {
-            goodSinceRef.current = timestamp;
-          } else if (timestamp - goodSinceRef.current >= MIN_GOOD_DURATION_MS) {
-            // Transition to a clean measurement window after placement stabilizes.
-            startMeasuring(timestamp);
-          }
-        } else {
+        if (placement !== 'good') {
           goodSinceRef.current = null;
+          return;
         }
-      } else if (state === 'measuring') {
-        if (measureStartRef.current == null) {
-          measureStartRef.current = timestamp;
+        if (goodSinceRef.current == null) {
+          goodSinceRef.current = timestamp;
+          return;
         }
+        if (timestamp - goodSinceRef.current >= MIN_GOOD_DURATION_MS) {
+          startMeasuring();
+        }
+        return;
+      }
 
-        if (measureStartRef.current != null) {
-          const elapsed = timestamp - measureStartRef.current;
+      // state === 'measuring'
+      const canEstimateBpm = placement === 'good' || placement === 'partial';
+      if (!canEstimateBpm) {
+        if (currentBpmRef.current != null) {
+          currentBpmRef.current = null;
+          setCurrentBpm(null);
+        }
+        lastBeatTimestampRef.current = null;
+        return;
+      }
 
-          const canEstimateBpm = placement === 'good' || placement === 'partial';
-          if (!canEstimateBpm && currentBpmRef.current != null) {
-            currentBpmRef.current = null;
-            setCurrentBpm(null);
-          }
-          if (!canEstimateBpm) {
-            lastBeatTimestampRef.current = null;
-          }
+      if (timestamp - lastBeatCheckTimestampRef.current >= BEAT_DETECTION_INTERVAL_MS) {
+        lastBeatCheckTimestampRef.current = timestamp;
+        const beat = detectLatestBeat(samplesRef.current, lastBeatTimestampRef.current);
+        if (beat != null) {
+          lastBeatTimestampRef.current = beat.timestamp;
+          setBeatTick((tick) => tick + 1);
+        }
+      }
 
-          if (
-            canEstimateBpm &&
-            timestamp - lastBeatCheckTimestampRef.current >= BEAT_DETECTION_INTERVAL_MS
-          ) {
-            lastBeatCheckTimestampRef.current = timestamp;
-            const beat = detectLatestBeat(samplesRef.current, lastBeatTimestampRef.current);
-            if (beat != null) {
-              lastBeatTimestampRef.current = beat.timestamp;
-              setBeatTick((tick) => tick + 1);
-            }
-          }
-
-          if (
-            timestamp - lastBpmUpdateRef.current >= BPM_UPDATE_INTERVAL_MS &&
-            canEstimateBpm
-          ) {
-            lastBpmUpdateRef.current = timestamp;
-            const bpmResult = computeRollingBPM(
-              samplesRef.current,
-              ROLLING_BPM_WINDOW_MS,
-              PREVIEW_BPM_OPTIONS,
-            );
-            if (bpmResult != null) {
-              currentBpmRef.current = bpmResult.bpm;
-              setCurrentBpm(bpmResult.bpm);
-            }
-          }
-
-          if (elapsed >= CAPTURE_DURATION_MS) {
-            finishMeasurement();
-          }
+      if (timestamp - lastBpmUpdateRef.current >= BPM_UPDATE_INTERVAL_MS) {
+        lastBpmUpdateRef.current = timestamp;
+        const bpmResult = computeRollingBPM(
+          samplesRef.current,
+          ROLLING_BPM_WINDOW_MS,
+          PREVIEW_BPM_OPTIONS,
+        );
+        if (bpmResult != null) {
+          currentBpmRef.current = bpmResult.bpm;
+          setCurrentBpm(bpmResult.bpm);
         }
       }
     },
-    [finishMeasurement, startMeasuring],
+    [startMeasuring],
   );
 
   const frameProcessor = useFrameProcessor(
@@ -323,63 +264,36 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
   );
 
   const startCapture = useCallback(() => {
-    clearProgressTimer();
-    samplesRef.current = [];
-    captureStartRef.current = Date.now();
-    measureStartRef.current = null;
-    measureStartWallClockRef.current = null;
-    goodSinceRef.current = null;
-    lastBpmUpdateRef.current = 0;
-    lastBeatCheckTimestampRef.current = 0;
-    lastBeatTimestampRef.current = null;
-    fingerClassifyStateRef.current = {};
-    finishRequestedRef.current = false;
+    stopMeasurementTimer();
+    resetCaptureRefs();
     setProgress(0);
     setSecondsRemaining(15);
     setResult(null);
     setBeatTick(0);
-    currentBpmRef.current = null;
     setCurrentBpm(null);
     fingerPlacementRef.current = 'no_finger';
     setFingerPlacement('no_finger');
     setCaptureState('camera_check');
     captureStateRef.current = 'camera_check';
-  }, [clearProgressTimer]);
+  }, [resetCaptureRefs, stopMeasurementTimer]);
 
   const cancel = useCallback(() => {
-    clearProgressTimer();
-    samplesRef.current = [];
-    captureStartRef.current = null;
-    measureStartRef.current = null;
-    measureStartWallClockRef.current = null;
-    goodSinceRef.current = null;
-    lastBpmUpdateRef.current = 0;
-    lastBeatCheckTimestampRef.current = 0;
-    lastBeatTimestampRef.current = null;
-    fingerClassifyStateRef.current = {};
-    finishRequestedRef.current = false;
+    stopMeasurementTimer();
+    resetCaptureRefs();
     setProgress(0);
     setSecondsRemaining(15);
-    currentBpmRef.current = null;
     setBeatTick(0);
     setCurrentBpm(null);
     fingerPlacementRef.current = 'no_finger';
     setFingerPlacement('no_finger');
     setCaptureState('idle');
     captureStateRef.current = 'idle';
-  }, [clearProgressTimer]);
+  }, [resetCaptureRefs, stopMeasurementTimer]);
 
   const reset = useCallback(() => {
     cancel();
     setResult(null);
   }, [cancel]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      clearProgressTimer();
-    };
-  }, [clearProgressTimer]);
 
   return {
     captureState,
