@@ -7,6 +7,7 @@ import {
   View,
   LayoutChangeEvent,
 } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing, padding, margin } from '../../theme/spacing';
@@ -16,7 +17,7 @@ const TOTAL_DAYS = 28;
 const PILL_GAP = spacing.sm;
 const CIRCLE_SIZE = 34;
 
-function buildDays() {
+function buildDays(completedDaysAgo: Set<number>) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const todayIndex = TOTAL_DAYS - 2;
@@ -31,16 +32,22 @@ function buildDays() {
       dateNum: date.getDate(),
       isToday: offset === 0,
       isFuture: offset > 0,
+      isCompleted: offset <= 0 && completedDaysAgo.has(-offset),
     };
   });
 }
 
 interface WeekCalendarProps {
   onSelectDay?: (daysAgo: number) => void;
+  completedDaysAgo?: number[];
 }
 
-export default function WeekCalendar({ onSelectDay }: WeekCalendarProps) {
-  const days = useMemo(() => buildDays(), []);
+export default function WeekCalendar({
+  onSelectDay,
+  completedDaysAgo = [1, 2, 4],
+}: WeekCalendarProps) {
+  const completedSet = useMemo(() => new Set(completedDaysAgo), [completedDaysAgo]);
+  const days = useMemo(() => buildDays(completedSet), [completedSet]);
   const todayIndex = TOTAL_DAYS - 2;
   const [selectedIndex, setSelectedIndex] = useState(todayIndex);
   const scrollRef = useRef<ScrollView>(null);
@@ -97,6 +104,15 @@ export default function WeekCalendar({ onSelectDay }: WeekCalendarProps) {
                 <Text style={[styles.dateNum, isSelected && styles.dateNumSelected]}>
                   {day.dateNum}
                 </Text>
+                <View style={styles.streakSlot}>
+                  {day.isCompleted ? (
+                    <MaterialCommunityIcons
+                      name="fire"
+                      size={20}
+                      color={colors.orange[500]}
+                    />
+                  ) : null}
+                </View>
               </Pressable>
             );
           })}
@@ -151,5 +167,10 @@ const styles = StyleSheet.create({
   dateNumSelected: {
     ...typography.label.small,
     color: colors.text.primary,
+  },
+  streakSlot: {
+    height: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

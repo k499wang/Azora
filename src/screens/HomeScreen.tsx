@@ -30,7 +30,7 @@ export default function HomeScreen() {
       >
         <WeekCalendar />
 
-        <View style={styles.section}>
+        <View style={styles.heroSection}>
           <HeroActionCard
             title="Daily breath"
             subtitle="Box breathing to center your focus"
@@ -85,6 +85,10 @@ const styles = StyleSheet.create({
   section: {
     paddingHorizontal: padding.screen.horizontal,
     marginTop: margin.sectionGap,
+  },
+  heroSection: {
+    paddingHorizontal: padding.screen.horizontal,
+    marginTop: spacing.md,
   },
   ringsRow: {
     flexDirection: 'row',
