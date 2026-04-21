@@ -1,146 +1,71 @@
-import { useEffect, useRef } from 'react';
-import {
-  Animated,
-  Easing,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
-import { typography } from '../theme/typography';
-import { spacing, padding } from '../theme/spacing';
+import { spacing, padding, margin } from '../theme/spacing';
 import AppTopBar from '../components/common/AppTopBar';
+import SectionHeader from '../components/common/SectionHeader';
 import WeekCalendar from '../components/home/WeekCalendar';
-import DailyExerciseButton from '../components/home/DailyExerciseButton';
-import DailyScoresSection from '../components/home/DailyScoresSection';
-import { LinearGradient } from 'expo-linear-gradient';
+import HeroActionCard from '../components/home/HeroActionCard';
+import RingStatCard from '../components/home/RingStatCard';
+import EmptyStateCard from '../components/home/EmptyStateCard';
+import BreathingLibrary from '../components/home/BreathingLibrary';
 
-const USER_NAME = 'Kevin';
 const DAILY_STREAK = 1;
-
-function getGreeting(): { greeting: string; subtitle: string } {
-  const hour = new Date().getHours();
-
-  if (hour < 5) {
-    return {
-      greeting: `Late night, ${USER_NAME}`,
-      subtitle: 'A few deep breaths before rest can work wonders.',
-    };
-  }
-  if (hour < 12) {
-    return {
-      greeting: `Good morning, ${USER_NAME}`,
-      subtitle: 'Start your day with a calm, focused mind.',
-    };
-  }
-  if (hour < 17) {
-    return {
-      greeting: `Good afternoon, ${USER_NAME}`,
-      subtitle: 'Take a moment to reset and recharge.',
-    };
-  }
-  if (hour < 21) {
-    return {
-      greeting: `Good evening, ${USER_NAME}`,
-      subtitle: 'Wind down and let the tension go.',
-    };
-  }
-  return {
-    greeting: `Good night, ${USER_NAME}`,
-    subtitle: 'A few deep breaths before rest can work wonders.',
-  };
-}
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
-  const { greeting, subtitle } = getGreeting();
 
-  const greetingFade = useRef(new Animated.Value(0)).current;
-  const greetingSlide = useRef(new Animated.Value(12)).current;
-  const subtitleFade = useRef(new Animated.Value(0)).current;
-  const subtitleSlide = useRef(new Animated.Value(10)).current;
-
-  useEffect(() => {
-    Animated.stagger(300, [
-      Animated.parallel([
-        Animated.timing(greetingFade, {
-          toValue: 1,
-          duration: 800,
-          easing: Easing.out(Easing.quad),
-          useNativeDriver: true,
-        }),
-        Animated.timing(greetingSlide, {
-          toValue: 0,
-          duration: 800,
-          easing: Easing.out(Easing.quad),
-          useNativeDriver: true,
-        }),
-      ]),
-      Animated.parallel([
-        Animated.timing(subtitleFade, {
-          toValue: 1,
-          duration: 700,
-          easing: Easing.out(Easing.quad),
-          useNativeDriver: true,
-        }),
-        Animated.timing(subtitleSlide, {
-          toValue: 0,
-          duration: 700,
-          easing: Easing.out(Easing.quad),
-          useNativeDriver: true,
-        }),
-      ]),
-    ]).start();
-  }, [greetingFade, greetingSlide, subtitleFade, subtitleSlide]);
+  const handleStart = () => navigation.navigate('DailyExercise');
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
-      <LinearGradient
-        colors={['#F0E6F6', '#E8EEF8', colors.background.primary]}
-        locations={[0, 0.4, 0.75]}
-        style={StyleSheet.absoluteFill}
-      />
-      {/* ── Top bar (sticky) ── */}
       <AppTopBar streak={DAILY_STREAK} />
 
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
-      {/* ── Week calendar ── */}
-      <WeekCalendar />
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <WeekCalendar />
 
-      {/* ── Greeting zone (typing animation) ── */}
-      <View style={styles.greetingZone}>
-        <Animated.Text
-          style={[
-            styles.greeting,
-            { opacity: greetingFade, transform: [{ translateY: greetingSlide }] },
-          ]}
-        >
-          {greeting}
-        </Animated.Text>
-        <Animated.Text
-          style={[
-            styles.subtitle,
-            { opacity: subtitleFade, transform: [{ translateY: subtitleSlide }] },
-          ]}
-        >
-          {subtitle}
-        </Animated.Text>
-      </View>
+        <View style={styles.section}>
+          <HeroActionCard
+            title="Daily breath"
+            subtitle="Box breathing to center your focus"
+            onPress={handleStart}
+          />
+        </View>
 
-      <View style={styles.cta}>
-        <DailyExerciseButton
-          onPress={() => navigation.navigate('DailyExercise')}
-        />
-      </View>
+        <View style={[styles.section, styles.ringsRow]}>
+          <RingStatCard
+            label="BPM"
+            value="62 bpm"
+            progress={0.48}
+            color={colors.error[500]}
+            trackColor={colors.neutral[100]}
+            icon="heart-pulse"
+          />
+          <RingStatCard
+            label="Hold"
+            value="1:42"
+            progress={0.72}
+            color={colors.primary.blue500}
+            trackColor={colors.neutral[100]}
+            icon="timer-sand"
+          />
+        </View>
 
-      <View style={styles.scoresContainer}>
-        <DailyScoresSection />
-      </View>
+        <BreathingLibrary />
 
+        <View style={styles.recentSection}>
+          <SectionHeader title="Recently logged" />
+          <EmptyStateCard
+            title="No sessions yet"
+            subtitle="Start today's breath to see it show up here."
+          />
+        </View>
       </ScrollView>
     </View>
   );
@@ -157,33 +82,17 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: spacing['5xl'],
   },
-  /* ── Greeting ── */
-  greetingZone: {
-    alignItems: 'center',
+  section: {
     paddingHorizontal: padding.screen.horizontal,
-    paddingTop: spacing['2xl'],
-    paddingBottom: spacing.md,
+    marginTop: margin.sectionGap,
   },
-  greeting: {
-    ...typography.title.title1,
-    color: colors.text.primary,
-    textAlign: 'center',
+  ringsRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
   },
-  subtitle: {
-    ...typography.body.medium,
-    color: colors.text.secondary,
-    textAlign: 'center',
-    marginTop: spacing.sm,
-    maxWidth: 280,
-    lineHeight: 24,
-  },
-
-  /* ── CTA ── */
-  cta: {
+  recentSection: {
     paddingHorizontal: padding.screen.horizontal,
-    marginTop: spacing.md,
-  },
-  scoresContainer: {
-    marginTop: -spacing.md,
+    marginTop: margin.sectionGap,
+    gap: spacing.md,
   },
 });

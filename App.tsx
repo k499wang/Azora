@@ -16,7 +16,6 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from './src/theme/colors';
 import { typography } from './src/theme/typography';
 import HomeScreen from './src/screens/HomeScreen';
-import ExerciseLibraryPage from './src/screens/ExerciseLibraryPage';
 import ExerciseSessionPage from './src/screens/ExerciseSessionPage';
 import DailyExercisePage from './src/screens/DailyExercisePage';
 import ProfileScreen from './src/screens/ProfileScreen';
@@ -45,11 +44,6 @@ function MainTabs() {
         name="Home"
         component={HomeScreen}
         options={{ tabBarIcon: ({ color, size }) => <MaterialCommunityIcons name="home-outline" size={size} color={color} /> }}
-      />
-      <Tab.Screen
-        name="Exercise"
-        component={ExerciseLibraryPage}
-        options={{ tabBarIcon: ({ color, size }) => <MaterialCommunityIcons name="weather-windy" size={size} color={color} /> }}
       />
       <Tab.Screen
         name="HeartRate"
