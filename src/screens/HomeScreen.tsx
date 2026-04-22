@@ -3,16 +3,14 @@ import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import { spacing, padding, margin } from '../theme/spacing';
-import AppTopBar from '../components/common/AppTopBar';
 import SectionHeader from '../components/common/SectionHeader';
 import WeekCalendar from '../components/home/WeekCalendar';
 import HeroActionCard from '../components/home/HeroActionCard';
+import HeartHealthSection from '../components/home/HeartHealthSection';
 import SessionStatsPager from '../components/home/SessionStatsPager';
 import EmptyStateCard from '../components/home/EmptyStateCard';
 import BreathingLibrary from '../components/home/BreathingLibrary';
 import DailyQuote from '../components/home/DailyQuote';
-
-const DAILY_STREAK = 1;
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
@@ -22,8 +20,6 @@ export default function HomeScreen() {
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
-      <AppTopBar streak={DAILY_STREAK} />
-
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
@@ -46,6 +42,8 @@ export default function HomeScreen() {
         <View style={styles.section}>
           <SessionStatsPager />
         </View>
+
+        <HeartHealthSection />
 
         <BreathingLibrary />
 
