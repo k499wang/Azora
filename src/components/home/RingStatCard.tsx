@@ -90,18 +90,20 @@ const styles = StyleSheet.create({
   },
   value: {
     ...typography.title.title3,
+    fontSize: 24,
     color: colors.text.primary,
     fontFamily: 'Nunito-Bold',
     fontWeight: '800',
   },
   target: {
     ...typography.label.small,
+    fontSize: 14,
     color: colors.text.tertiary,
     fontFamily: 'Nunito-SemiBold',
   },
   label: {
     ...typography.body.small,
-    color: colors.text.tertiary,
+    color: colors.text.secondary,
   },
   ringWrap: {
     alignItems: 'center',
