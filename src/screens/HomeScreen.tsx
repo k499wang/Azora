@@ -3,10 +3,12 @@ import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import { spacing, padding, margin } from '../theme/spacing';
+import AppTopBar from '../components/common/AppTopBar';
 import SectionHeader from '../components/common/SectionHeader';
 import WeekCalendar from '../components/home/WeekCalendar';
 import HeroActionCard from '../components/home/HeroActionCard';
 import HeartHealthSection from '../components/home/HeartHealthSection';
+import HomeTopMesh from '../components/home/HomeTopMesh';
 import SessionStatsPager from '../components/home/SessionStatsPager';
 import EmptyStateCard from '../components/home/EmptyStateCard';
 import BreathingLibrary from '../components/home/BreathingLibrary';
@@ -19,24 +21,30 @@ export default function HomeScreen() {
   const handleStart = () => navigation.navigate('DailyExercise');
 
   return (
-    <View style={[styles.screen, { paddingTop: insets.top }]}>
+    <View style={styles.screen}>
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <WeekCalendar />
+        <View style={[styles.topSection, { paddingTop: insets.top }]}>
+          <HomeTopMesh />
 
-        <View style={styles.quoteSection}>
-          <DailyQuote />
-        </View>
+          <AppTopBar />
 
-        <View style={styles.heroSection}>
-          <HeroActionCard
-            title="Daily breath"
-            subtitle="Box breathing to center your focus"
-            onPress={handleStart}
-          />
+          <WeekCalendar />
+
+          <View style={styles.quoteSection}>
+            <DailyQuote />
+          </View>
+
+          <View style={styles.heroSection}>
+            <HeroActionCard
+              title="Daily breath"
+              subtitle="Box breathing to center your focus"
+              onPress={handleStart}
+            />
+          </View>
         </View>
 
         <View style={styles.section}>
@@ -70,18 +78,23 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: spacing['5xl'],
   },
+  topSection: {
+    paddingTop: spacing.md,
+    paddingBottom: spacing['3xl'],
+    overflow: 'hidden',
+  },
   section: {
     paddingHorizontal: padding.screen.horizontal,
     marginTop: margin.sectionGap,
   },
   heroSection: {
     paddingHorizontal: padding.screen.horizontal,
-    marginTop: spacing.md,
+    marginTop: spacing.lg,
   },
   quoteSection: {
     paddingHorizontal: padding.screen.horizontal,
-    marginTop: spacing.xl,
-    marginBottom: spacing.lg,
+    marginTop: spacing['2xl'],
+    marginBottom: spacing.xl,
   },
   recentSection: {
     paddingHorizontal: padding.screen.horizontal,
