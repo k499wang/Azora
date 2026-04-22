@@ -67,12 +67,12 @@ const styles = StyleSheet.create({
   },
   topSection: {
     paddingTop: spacing.md,
-    paddingBottom: spacing['4xl'],
+    paddingBottom: spacing.xl,
     overflow: 'hidden',
   },
   section: {
     paddingHorizontal: padding.screen.horizontal,
-    marginTop: margin.sectionGap,
+    marginTop: spacing.md,
   },
   planSection: {
     paddingHorizontal: padding.screen.horizontal,

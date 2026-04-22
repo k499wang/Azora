@@ -9,18 +9,19 @@ import { card } from '../../theme/card';
 interface Task {
   id: string;
   label: string;
-  meta: string;
+  value: string;
   icon: keyof typeof import('@expo/vector-icons/build/MaterialCommunityIcons').glyphMap;
   done: boolean;
+  color?: string;
 }
 
 const DEFAULT_TASKS: Task[] = [
-  { id: 'am', label: 'Morning box breath', meta: '5 min', icon: 'weather-sunny', done: true },
-  { id: 'mid', label: 'Midday reset', meta: '3 min', icon: 'white-balance-sunny', done: false },
-  { id: 'pm', label: '4-7-8 wind down', meta: '7 min', icon: 'weather-night', done: false },
+  { id: 'am', label: 'Morning', value: 'Box breath', icon: 'weather-sunny', done: true, color: colors.orange[500] },
+  { id: 'mid', label: 'Midday', value: '3 min reset', icon: 'silverware-fork-knife', done: false, color: colors.primary.blue500 },
+  { id: 'pm', label: 'Evening', value: '4-7-8 hold', icon: 'fire', done: false, color: colors.orange[400] },
 ];
 
-const RING_SIZE = 72;
+const RING_SIZE = 140;
 const RING_STROKE = 8;
 
 interface DailyPlanCardProps {
@@ -30,6 +31,7 @@ interface DailyPlanCardProps {
 export default function DailyPlanCard({ tasks = DEFAULT_TASKS }: DailyPlanCardProps) {
   const completed = tasks.filter((t) => t.done).length;
   const total = tasks.length;
+  const remaining = total - completed;
   const progress = total === 0 ? 0 : completed / total;
 
   const cx = RING_SIZE / 2;
@@ -45,51 +47,53 @@ export default function DailyPlanCard({ tasks = DEFAULT_TASKS }: DailyPlanCardPr
 
   return (
     <View style={styles.card}>
-      <View style={styles.ringWrap}>
-        <View style={{ width: RING_SIZE, height: RING_SIZE }}>
-          <Canvas style={StyleSheet.absoluteFill}>
-            <Path
-              path={track}
-              style="stroke"
-              strokeWidth={RING_STROKE}
-              color={colors.neutral[100]}
-            />
-            {progress > 0 && (
+      <Text style={styles.title}>Today's plan</Text>
+
+      <View style={styles.body}>
+        <View style={styles.ringWrap}>
+          <View style={{ width: RING_SIZE, height: RING_SIZE }}>
+            <Canvas style={StyleSheet.absoluteFill}>
               <Path
-                path={arc}
+                path={track}
                 style="stroke"
                 strokeWidth={RING_STROKE}
-                strokeCap="round"
-                color={colors.primary.blue500}
+                color={colors.neutral[100]}
               />
-            )}
-          </Canvas>
-          <View style={styles.ringCenter} pointerEvents="none">
-            <Text style={styles.ringCount}>{`${completed}/${total}`}</Text>
+              {progress > 0 && (
+                <Path
+                  path={arc}
+                  style="stroke"
+                  strokeWidth={RING_STROKE}
+                  strokeCap="round"
+                  color={colors.primary.blue500}
+                />
+              )}
+            </Canvas>
+            <View style={styles.ringCenter} pointerEvents="none">
+              <Text style={styles.ringNumber}>{remaining}</Text>
+              <Text style={styles.ringLabel}>Remaining</Text>
+            </View>
           </View>
         </View>
-        <Text style={styles.ringLabel}>Today's plan</Text>
-      </View>
 
-      <View style={styles.taskList}>
-        {tasks.map((task) => (
-          <View key={task.id} style={styles.taskRow}>
-            <View style={[styles.taskIcon, task.done && styles.taskIconDone]}>
+        <View style={styles.taskList}>
+          {tasks.map((task) => (
+            <View key={task.id} style={styles.taskRow}>
               <MaterialCommunityIcons
-                name={task.done ? 'check' : task.icon}
-                size={14}
-                color={task.done ? colors.text.inverse : colors.primary.blue600}
+                name={task.icon}
+                size={22}
+                color={task.color ?? colors.primary.blue500}
+                style={styles.taskIcon}
               />
+              <View style={styles.taskTextWrap}>
+                <Text style={styles.taskLabel}>{task.label}</Text>
+                <Text style={[styles.taskValue, task.done && styles.taskValueDone]}>
+                  {task.value}
+                </Text>
+              </View>
             </View>
-            <Text
-              style={[styles.taskLabel, task.done && styles.taskLabelDone]}
-              numberOfLines={1}
-            >
-              {task.label}
-            </Text>
-            <Text style={styles.taskMeta}>{task.meta}</Text>
-          </View>
-        ))}
+          ))}
+        </View>
       </View>
     </View>
   );
@@ -99,34 +103,43 @@ const styles = StyleSheet.create({
   card: {
     ...card.base,
     ...card.shadow,
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.lg,
+  },
+  title: {
+    ...typography.title.title2,
+    color: colors.text.primary,
+  },
+  body: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: spacing.md,
+    marginTop: spacing.md,
     gap: spacing.md,
   },
   ringWrap: {
     alignItems: 'center',
-    gap: spacing.xs,
+    justifyContent: 'center',
   },
   ringCenter: {
     ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  ringCount: {
-    ...typography.title.title3,
-    fontSize: 18,
-    color: colors.text.primary,
+  ringNumber: {
     fontFamily: 'Nunito-Bold',
-    fontWeight: '700',
+    fontWeight: '800',
+    fontSize: 36,
+    lineHeight: 42,
+    color: colors.text.primary,
   },
   ringLabel: {
-    ...typography.label.small,
+    ...typography.body.small,
     color: colors.text.secondary,
+    marginTop: 2,
   },
   taskList: {
     flex: 1,
-    gap: spacing.sm,
+    gap: spacing.md,
   },
   taskRow: {
     flexDirection: 'row',
@@ -134,27 +147,26 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   taskIcon: {
-    width: 24,
-    height: 24,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.primary.blue100,
+    width: 26,
+    textAlign: 'center',
   },
-  taskIconDone: {
-    backgroundColor: colors.primary.blue500,
-  },
-  taskLabel: {
-    ...typography.body.small,
-    color: colors.text.primary,
+  taskTextWrap: {
     flex: 1,
   },
-  taskLabelDone: {
-    color: colors.text.tertiary,
-    textDecorationLine: 'line-through',
-  },
-  taskMeta: {
+  taskLabel: {
     ...typography.label.small,
     color: colors.text.tertiary,
+    fontSize: 12,
+  },
+  taskValue: {
+    ...typography.body.small,
+    color: colors.text.primary,
+    fontFamily: 'Nunito-SemiBold',
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  taskValueDone: {
+    color: colors.text.tertiary,
+    textDecorationLine: 'line-through',
   },
 });
