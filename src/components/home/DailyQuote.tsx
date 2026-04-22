@@ -35,7 +35,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   title: {
-    ...typography.title.title1,
+    ...typography.title.title3,
+    fontSize: 24,
+    lineHeight: 32,
     color: colors.text.primary,
     textAlign: 'center',
   },
