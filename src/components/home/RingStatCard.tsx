@@ -16,7 +16,7 @@ interface RingStatCardProps {
 }
 
 const RING_SIZE = 76;
-const STROKE = 7;
+const STROKE = 8;
 
 export default function RingStatCard({
   label,
