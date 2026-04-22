@@ -7,18 +7,20 @@ import { typography } from '../../theme/typography';
 interface RingStatCardProps {
   label: string;
   value: string;
+  target?: string;
   progress: number; // 0..1
   color?: string;
   trackColor?: string;
   icon: keyof typeof MaterialCommunityIcons.glyphMap;
 }
 
-const RING_SIZE = 104;
+const RING_SIZE = 76;
 const STROKE = 7;
 
 export default function RingStatCard({
   label,
   value,
+  target,
   progress,
   color = colors.neutral[900],
   trackColor = colors.neutral[100],
@@ -38,26 +40,31 @@ export default function RingStatCard({
 
   return (
     <View style={styles.card}>
-      <View style={{ width: RING_SIZE, height: RING_SIZE }}>
-        <Canvas style={StyleSheet.absoluteFill}>
-          <Path path={track} style="stroke" strokeWidth={STROKE} color={trackColor} />
-          {clamped > 0 && (
-            <Path
-              path={arc}
-              style="stroke"
-              strokeWidth={STROKE}
-              strokeCap="round"
-              color={color}
-            />
-          )}
-        </Canvas>
-        <View style={styles.iconCenter} pointerEvents="none">
-          <MaterialCommunityIcons name={icon} size={26} color={colors.text.primary} />
+      <View style={styles.valueRow}>
+        <Text style={styles.value}>{value}</Text>
+        {target ? <Text style={styles.target}>/{target}</Text> : null}
+      </View>
+      <Text style={styles.label}>{label}</Text>
+
+      <View style={styles.ringWrap}>
+        <View style={{ width: RING_SIZE, height: RING_SIZE }}>
+          <Canvas style={StyleSheet.absoluteFill}>
+            <Path path={track} style="stroke" strokeWidth={STROKE} color={trackColor} />
+            {clamped > 0 && (
+              <Path
+                path={arc}
+                style="stroke"
+                strokeWidth={STROKE}
+                strokeCap="round"
+                color={color}
+              />
+            )}
+          </Canvas>
+          <View style={styles.iconCenter} pointerEvents="none">
+            <MaterialCommunityIcons name={icon} size={22} color={color} />
+          </View>
         </View>
       </View>
-
-      <Text style={styles.label}>{label}</Text>
-      <Text style={styles.value}>{value}</Text>
     </View>
   );
 }
@@ -65,31 +72,44 @@ export default function RingStatCard({
 const styles = StyleSheet.create({
   card: {
     flex: 1,
-    alignItems: 'center',
     backgroundColor: colors.background.elevated,
-    borderRadius: 20,
+    borderRadius: 22,
     paddingVertical: 16,
-    paddingHorizontal: 12,
-    gap: 8,
+    paddingHorizontal: 14,
+    gap: 0,
     shadowColor: colors.primary.blue700,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.05,
     shadowRadius: 12,
     elevation: 2,
   },
+  valueRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 2,
+  },
+  value: {
+    ...typography.title.title3,
+    color: colors.text.primary,
+    fontFamily: 'Nunito-Bold',
+    fontWeight: '800',
+  },
+  target: {
+    ...typography.label.small,
+    color: colors.text.tertiary,
+    fontFamily: 'Nunito-SemiBold',
+  },
+  label: {
+    ...typography.body.small,
+    color: colors.text.tertiary,
+  },
+  ringWrap: {
+    alignItems: 'center',
+    marginTop: 10,
+  },
   iconCenter: {
     ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  label: {
-    ...typography.body.small,
-    color: colors.text.secondary,
-  },
-  value: {
-    ...typography.title.title2,
-    color: colors.text.primary,
-    fontFamily: 'Nunito-Bold',
-    fontWeight: '800',
   },
 });

@@ -27,22 +27,22 @@ function TechniqueCard({ technique }: { technique: BreathingTechnique }) {
       onPress={() => navigation.navigate('ExerciseSession', { techniqueId: technique.id })}
       style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
     >
-      <View style={[styles.iconCircle, { backgroundColor: cat.bg }]}>
-        <MaterialCommunityIcons
-          name={technique.icon as any}
-          size={22}
-          color={cat.color}
-        />
+      <View style={styles.topRow}>
+        <View style={[styles.iconCircle, { backgroundColor: cat.bg }]}>
+          <MaterialCommunityIcons
+            name={technique.icon as any}
+            size={22}
+            color={cat.color}
+          />
+        </View>
+        <View style={[styles.categoryPill, { backgroundColor: cat.bg }]}>
+          <Text style={[styles.categoryPillText, { color: cat.color }]}>{cat.label}</Text>
+        </View>
       </View>
       <Text style={styles.name} numberOfLines={1}>
         {technique.name}
       </Text>
-      <View style={styles.metaRow}>
-        <Text style={[styles.categoryText, { color: cat.color }]}>{cat.label}</Text>
-        <Text style={styles.dot}>·</Text>
-        <Text style={styles.meta}>{formatPattern(technique.pattern)}</Text>
-      </View>
-      <Text style={styles.duration}>{technique.duration}</Text>
+      <Text style={styles.meta}>{formatPattern(technique.pattern)}</Text>
     </Pressable>
   );
 }
@@ -88,6 +88,8 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: spacing.md,
     gap: spacing.xs,
+    borderWidth: 1,
+    borderColor: colors.neutral[200],
     shadowColor: colors.primary.blue700,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.05,
@@ -98,36 +100,34 @@ const styles = StyleSheet.create({
     opacity: 0.88,
     transform: [{ scale: 0.98 }],
   },
+  topRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.xs,
+  },
   iconCircle: {
     width: 40,
     height: 40,
     borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing.xs,
+  },
+  categoryPill: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+  },
+  categoryPillText: {
+    ...typography.label.small,
+    fontWeight: '600',
   },
   name: {
     ...typography.heading.heading2,
     color: colors.text.primary,
   },
-  metaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  categoryText: {
-    ...typography.label.small,
-  },
-  dot: {
-    ...typography.label.small,
-    color: colors.text.tertiary,
-  },
   meta: {
     ...typography.label.small,
-    color: colors.text.tertiary,
-  },
-  duration: {
-    ...typography.caption.caption1,
     color: colors.text.tertiary,
   },
 });
