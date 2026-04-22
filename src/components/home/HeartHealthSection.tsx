@@ -3,6 +3,7 @@ import { Text } from 'react-native';
 import { colors } from '../../theme/colors';
 import { spacing, padding } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
+import { card } from '../../theme/card';
 import SectionHeader from '../common/SectionHeader';
 import BigRingStatCard from './BigRingStatCard';
 import { computeHRVStats } from '../../lib/hrv';
@@ -106,19 +107,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: padding.screen.horizontal,
   },
   insightCard: {
+    ...card.base,
+    ...card.shadow,
     marginHorizontal: padding.screen.horizontal,
     minHeight: 136,
-    borderRadius: 24,
-    paddingHorizontal: 18,
-    paddingVertical: 18,
-    backgroundColor: colors.background.elevated,
-    borderWidth: 1,
-    borderColor: colors.neutral[200],
-    shadowColor: colors.primary.blue700,
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.14,
-    shadowRadius: 3,
-    elevation: 8,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
     justifyContent: 'center',
     gap: spacing.xs,
   },
