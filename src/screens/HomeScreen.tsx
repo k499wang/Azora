@@ -80,7 +80,7 @@ const styles = StyleSheet.create({
   },
   topSection: {
     paddingTop: spacing.md,
-    paddingBottom: spacing['3xl'],
+    paddingBottom: spacing['5xl'] + spacing['4xl'],
     overflow: 'hidden',
   },
   section: {

@@ -25,6 +25,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     alignItems: 'center',
     gap: spacing.xs,
+    shadowColor: colors.primary.blue700,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.14,
+    shadowRadius: 3,
+    elevation: 8,
   },
   title: {
     ...typography.title.title3,

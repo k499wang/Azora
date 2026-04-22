@@ -52,10 +52,10 @@ const styles = StyleSheet.create({
   cardWrap: {
     borderRadius: 22,
     shadowColor: colors.primary.blue700,
-    shadowOffset: { width: 0, height: 10 },
+    shadowOffset: { width: 0, height: 12 },
     shadowOpacity: 0.18,
-    shadowRadius: 18,
-    elevation: 5,
+    shadowRadius: 4,
+    elevation: 10,
     overflow: 'hidden',
   },
   card: {
