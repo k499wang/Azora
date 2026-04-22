@@ -7,7 +7,6 @@ import {
   View,
   LayoutChangeEvent,
 } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing, padding, margin } from '../../theme/spacing';
@@ -96,23 +95,26 @@ export default function WeekCalendar({
                 onPress={() => handlePress(index)}
                 disabled={isFuture}
               >
-                <View style={[styles.circle, isSelected && styles.circleSelected]}>
-                  <Text style={[styles.dayLabel, isSelected && styles.dayLabelSelected]}>
+                <View
+                  style={[
+                    styles.circle,
+                    day.isCompleted && styles.circleCompleted,
+                    isSelected && styles.circleSelected,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.dayLabel,
+                      day.isCompleted && styles.dayLabelCompleted,
+                      isSelected && styles.dayLabelSelected,
+                    ]}
+                  >
                     {day.dayLabel}
                   </Text>
                 </View>
                 <Text style={[styles.dateNum, isSelected && styles.dateNumSelected]}>
                   {day.dateNum}
                 </Text>
-                <View style={styles.streakSlot}>
-                  {day.isCompleted ? (
-                    <MaterialCommunityIcons
-                      name="fire"
-                      size={20}
-                      color={colors.orange[500]}
-                    />
-                  ) : null}
-                </View>
               </Pressable>
             );
           })}
@@ -152,6 +154,11 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: colors.text.primary,
   },
+  circleCompleted: {
+    borderStyle: 'solid',
+    borderWidth: 0,
+    backgroundColor: colors.orange[500],
+  },
   dayLabel: {
     ...typography.label.small,
     color: colors.text.secondary,
@@ -160,6 +167,11 @@ const styles = StyleSheet.create({
     ...typography.label.medium,
     color: colors.text.primary,
   },
+  dayLabelCompleted: {
+    color: colors.text.inverse,
+    fontFamily: 'Nunito-Bold',
+    fontWeight: '700',
+  },
   dateNum: {
     ...typography.caption.caption1,
     color: colors.text.tertiary,
@@ -167,10 +179,5 @@ const styles = StyleSheet.create({
   dateNumSelected: {
     ...typography.label.small,
     color: colors.text.primary,
-  },
-  streakSlot: {
-    height: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
 });

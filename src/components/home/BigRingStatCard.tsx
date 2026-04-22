@@ -17,7 +17,7 @@ interface BigRingStatCardProps {
 }
 
 const RING_SIZE = 120;
-const STROKE = 9;
+const STROKE = 8;
 
 export default function BigRingStatCard({
   label,
