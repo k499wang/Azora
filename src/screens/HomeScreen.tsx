@@ -1,24 +1,19 @@
 import { ScrollView, StyleSheet, View } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import { spacing, padding, margin } from '../theme/spacing';
 import AppTopBar from '../components/common/AppTopBar';
 import SectionHeader from '../components/common/SectionHeader';
 import WeekCalendar from '../components/home/WeekCalendar';
-import HeroActionCard from '../components/home/HeroActionCard';
 import HeartHealthSection from '../components/home/HeartHealthSection';
 import HomeTopMesh from '../components/home/HomeTopMesh';
 import SessionStatsPager from '../components/home/SessionStatsPager';
 import EmptyStateCard from '../components/home/EmptyStateCard';
 import BreathingLibrary from '../components/home/BreathingLibrary';
-import DailyQuote from '../components/home/DailyQuote';
+import DailyPlanCard from '../components/home/DailyPlanCard';
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
-  const navigation = useNavigation<any>();
-
-  const handleStart = () => navigation.navigate('DailyExercise');
 
   return (
     <View style={styles.screen}>
@@ -34,16 +29,8 @@ export default function HomeScreen() {
 
           <WeekCalendar />
 
-          <View style={styles.quoteSection}>
-            <DailyQuote />
-          </View>
-
-          <View style={styles.heroSection}>
-            <HeroActionCard
-              title="Daily breath"
-              subtitle="Box breathing to center your focus"
-              onPress={handleStart}
-            />
+          <View style={styles.planSection}>
+            <DailyPlanCard />
           </View>
         </View>
 
@@ -80,21 +67,16 @@ const styles = StyleSheet.create({
   },
   topSection: {
     paddingTop: spacing.md,
-    paddingBottom: spacing.xl,
+    paddingBottom: spacing['4xl'],
     overflow: 'hidden',
   },
   section: {
     paddingHorizontal: padding.screen.horizontal,
     marginTop: margin.sectionGap,
   },
-  heroSection: {
+  planSection: {
     paddingHorizontal: padding.screen.horizontal,
-    marginTop: spacing.lg,
-  },
-  quoteSection: {
-    paddingHorizontal: padding.screen.horizontal,
-    marginTop: spacing['2xl'],
-    marginBottom: spacing.xl,
+    marginTop: spacing.xl,
   },
   recentSection: {
     paddingHorizontal: padding.screen.horizontal,

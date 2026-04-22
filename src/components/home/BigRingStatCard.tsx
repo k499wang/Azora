@@ -4,6 +4,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
+import { card } from '../../theme/card';
 
 interface BigRingStatCardProps {
   label: string;
@@ -78,20 +79,12 @@ export default function BigRingStatCard({
 
 const styles = StyleSheet.create({
   card: {
+    ...card.base,
+    ...card.shadow,
     flex: 1,
-    backgroundColor: colors.background.elevated,
-    borderRadius: 24,
-    paddingVertical: 20,
-    paddingHorizontal: 18,
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.md,
     alignItems: 'center',
-    gap: 0,
-    borderWidth: 1,
-    borderColor: colors.neutral[200],
-    shadowColor: colors.primary.blue700,
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.14,
-    shadowRadius: 3,
-    elevation: 8,
   },
   valueRow: {
     flexDirection: 'row',

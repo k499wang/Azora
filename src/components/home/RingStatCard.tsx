@@ -4,6 +4,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
+import { card } from '../../theme/card';
 
 interface RingStatCardProps {
   label: string;
@@ -72,19 +73,12 @@ export default function RingStatCard({
 
 const styles = StyleSheet.create({
   card: {
+    ...card.base,
+    ...card.shadow,
     flex: 1,
-    backgroundColor: colors.background.elevated,
-    borderRadius: 22,
-    paddingVertical: 16,
-    paddingHorizontal: 14,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
     gap: spacing.xs,
-    borderWidth: 1,
-    borderColor: colors.neutral[200],
-    shadowColor: colors.primary.blue700,
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.14,
-    shadowRadius: 3,
-    elevation: 8,
   },
   valueRow: {
     flexDirection: 'row',

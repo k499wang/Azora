@@ -28,6 +28,12 @@ export default function HomeTopMesh() {
             <Stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.55" />
             <Stop offset="100%" stopColor="#FFFFFF" stopOpacity="0" />
           </LinearGradient>
+
+          <LinearGradient id="bottomFade" x1="0%" y1="0%" x2="0%" y2="100%">
+            <Stop offset="0%" stopColor="#F8FBFF" stopOpacity="0" />
+            <Stop offset="50%" stopColor="#F8FBFF" stopOpacity="0.5" />
+            <Stop offset="100%" stopColor="#F8FBFF" stopOpacity="1" />
+          </LinearGradient>
         </Defs>
 
         <G clipPath="url(#topShell)">
@@ -37,6 +43,8 @@ export default function HomeTopMesh() {
             d="M-5 62 C25 38 55 30 105 52 L105 -5 L-5 -5 Z"
             fill="url(#arcHighlight)"
           />
+
+          <Rect x="0" y="65" width="100" height="35" fill="url(#bottomFade)" />
         </G>
       </Svg>
     </View>

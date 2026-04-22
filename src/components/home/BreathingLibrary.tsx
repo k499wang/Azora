@@ -4,6 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing, padding } from '../../theme/spacing';
+import { card } from '../../theme/card';
 import TECHNIQUES, { type BreathingTechnique } from '../../data/techniques';
 import SectionHeader from '../common/SectionHeader';
 
@@ -83,13 +84,10 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   card: {
+    ...card.base,
     width: CARD_WIDTH,
-    backgroundColor: colors.background.elevated,
-    borderRadius: 20,
     padding: spacing.md,
     gap: spacing.xs,
-    borderWidth: 1,
-    borderColor: colors.neutral[200],
   },
   cardPressed: {
     opacity: 0.88,

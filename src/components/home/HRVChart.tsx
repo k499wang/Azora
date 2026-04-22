@@ -4,6 +4,7 @@ import Svg, { Line, Path } from 'react-native-svg';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
+import { card } from '../../theme/card';
 
 interface HRVChartProps {
   /**
@@ -157,17 +158,10 @@ export default function HRVChart({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.background.elevated,
-    borderRadius: 22,
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    borderWidth: 1,
-    borderColor: colors.neutral[200],
-    shadowColor: colors.primary.blue700,
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.14,
-    shadowRadius: 3,
-    elevation: 8,
+    ...card.base,
+    ...card.shadow,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
   },
   title: {
     ...typography.heading.heading2,
