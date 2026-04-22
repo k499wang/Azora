@@ -3,8 +3,9 @@ import { Canvas, Path, Skia } from '@shopify/react-native-skia';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
+import { spacing } from '../../theme/spacing';
 
-interface RingStatCardProps {
+interface BigRingStatCardProps {
   label: string;
   value: string;
   target?: string;
@@ -14,18 +15,18 @@ interface RingStatCardProps {
   icon: keyof typeof MaterialCommunityIcons.glyphMap;
 }
 
-const RING_SIZE = 76;
-const STROKE = 7;
+const RING_SIZE = 120;
+const STROKE = 9;
 
-export default function RingStatCard({
+export default function BigRingStatCard({
   label,
   value,
   target,
   progress,
   color = colors.neutral[900],
-  trackColor = colors.neutral[100],
+  trackColor = colors.neutral[200],
   icon,
-}: RingStatCardProps) {
+}: BigRingStatCardProps) {
   const cx = RING_SIZE / 2;
   const cy = RING_SIZE / 2;
   const r = RING_SIZE / 2 - STROKE / 2;
@@ -40,12 +41,12 @@ export default function RingStatCard({
 
   return (
     <View style={styles.card}>
-      <View style={styles.valueRow}>
-        <Text style={styles.value}>{value}</Text>
-        {target ? <Text style={styles.target}>/{target}</Text> : null}
-      </View>
-      <Text style={styles.label}>{label}</Text>
-
+      <MaterialCommunityIcons
+        name="information-outline"
+        size={14}
+        color={colors.text.tertiary}
+        style={styles.infoIcon}
+      />
       <View style={styles.ringWrap}>
         <View style={{ width: RING_SIZE, height: RING_SIZE }}>
           <Canvas style={StyleSheet.absoluteFill}>
@@ -61,9 +62,15 @@ export default function RingStatCard({
             )}
           </Canvas>
           <View style={styles.iconCenter} pointerEvents="none">
-            <MaterialCommunityIcons name={icon} size={22} color={color} />
+            <MaterialCommunityIcons name={icon} size={32} color={color} />
           </View>
         </View>
+      </View>
+
+      <Text style={styles.label}>{label}</Text>
+      <View style={styles.valueRow}>
+        <Text style={styles.value}>{value}</Text>
+        {target ? <Text style={styles.target}>/{target}</Text> : null}
       </View>
     </View>
   );
@@ -73,10 +80,13 @@ const styles = StyleSheet.create({
   card: {
     flex: 1,
     backgroundColor: colors.background.elevated,
-    borderRadius: 22,
-    paddingVertical: 16,
-    paddingHorizontal: 14,
+    borderRadius: 24,
+    paddingVertical: 20,
+    paddingHorizontal: 18,
+    alignItems: 'center',
     gap: 0,
+    borderWidth: 1,
+    borderColor: colors.neutral[200],
     shadowColor: colors.primary.blue700,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.05,
@@ -104,10 +114,15 @@ const styles = StyleSheet.create({
   label: {
     ...typography.body.small,
     color: colors.text.secondary,
+    marginTop: spacing.md,
   },
   ringWrap: {
     alignItems: 'center',
-    marginTop: 10,
+  },
+  infoIcon: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
   },
   iconCenter: {
     ...StyleSheet.absoluteFillObject,

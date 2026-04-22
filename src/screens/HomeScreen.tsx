@@ -7,7 +7,7 @@ import AppTopBar from '../components/common/AppTopBar';
 import SectionHeader from '../components/common/SectionHeader';
 import WeekCalendar from '../components/home/WeekCalendar';
 import HeroActionCard from '../components/home/HeroActionCard';
-import RingStatCard from '../components/home/RingStatCard';
+import SessionStatsPager from '../components/home/SessionStatsPager';
 import EmptyStateCard from '../components/home/EmptyStateCard';
 import BreathingLibrary from '../components/home/BreathingLibrary';
 import DailyQuote from '../components/home/DailyQuote';
@@ -43,34 +43,8 @@ export default function HomeScreen() {
           />
         </View>
 
-        <View style={[styles.section, styles.ringsRow]}>
-          <RingStatCard
-            label="BPM"
-            value="62"
-            target="60"
-            progress={0.48}
-            color={colors.error[500]}
-            trackColor={colors.neutral[200]}
-            icon="heart-pulse"
-          />
-          <RingStatCard
-            label="Hold"
-            value="1:42"
-            target="2:00"
-            progress={0.72}
-            color={colors.primary.blue500}
-            trackColor={colors.neutral[200]}
-            icon="timer-sand"
-          />
-          <RingStatCard
-            label="Health"
-            value="92"
-            target="100"
-            progress={0.92}
-            color={colors.success[500]}
-            trackColor={colors.neutral[200]}
-            icon="heart-plus"
-          />
+        <View style={styles.section}>
+          <SessionStatsPager />
         </View>
 
         <BreathingLibrary />
@@ -110,10 +84,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: padding.screen.horizontal,
     marginTop: spacing.xl,
     marginBottom: spacing.lg,
-  },
-  ringsRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
   },
   recentSection: {
     paddingHorizontal: padding.screen.horizontal,
