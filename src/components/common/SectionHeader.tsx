@@ -21,7 +21,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   title: {
-    ...typography.title.title2,
+    ...typography.title.title3,
     color: colors.text.primary,
   },
 });

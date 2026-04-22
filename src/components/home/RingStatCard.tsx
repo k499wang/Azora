@@ -3,6 +3,7 @@ import { Canvas, Path, Skia } from '@shopify/react-native-skia';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
+import { spacing } from '../../theme/spacing';
 
 interface RingStatCardProps {
   label: string;
@@ -76,14 +77,14 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     paddingVertical: 16,
     paddingHorizontal: 14,
-    gap: 0,
+    gap: spacing.xs,
     borderWidth: 1,
     borderColor: colors.neutral[200],
     shadowColor: colors.primary.blue700,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.14,
+    shadowRadius: 3,
+    elevation: 8,
   },
   valueRow: {
     flexDirection: 'row',
@@ -92,7 +93,8 @@ const styles = StyleSheet.create({
   },
   value: {
     ...typography.title.title3,
-    fontSize: 24,
+    fontSize: 21,
+    lineHeight: 26,
     color: colors.text.primary,
     fontFamily: 'Nunito-Bold',
     fontWeight: '800',
@@ -109,7 +111,7 @@ const styles = StyleSheet.create({
   },
   ringWrap: {
     alignItems: 'center',
-    marginTop: 10,
+    marginTop: spacing.sm,
   },
   iconCenter: {
     ...StyleSheet.absoluteFillObject,

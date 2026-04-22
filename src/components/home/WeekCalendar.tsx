@@ -144,7 +144,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1.5,
-    borderColor: colors.border.strong,
+    borderColor: colors.neutral[900],
     borderStyle: 'dashed',
   },
   circleSelected: {

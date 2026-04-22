@@ -1,6 +1,7 @@
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
+import { typography } from '../../theme/typography';
 import RingStatCard from './RingStatCard';
 import HRVChart from './HRVChart';
 
@@ -17,6 +18,8 @@ const DEFAULT_IBI_MS: number[] = [
 export default function SessionStatsPager({ ibiMs = DEFAULT_IBI_MS }: SessionStatsPagerProps) {
   return (
     <View style={styles.page}>
+      <Text style={styles.title}>Today&apos;s insights</Text>
+
       <View style={styles.smallRingsRow}>
         <RingStatCard
           label="BPM"
@@ -54,6 +57,10 @@ export default function SessionStatsPager({ ibiMs = DEFAULT_IBI_MS }: SessionSta
 const styles = StyleSheet.create({
   page: {
     gap: spacing.md,
+  },
+  title: {
+    ...typography.title.title3,
+    color: colors.text.primary,
   },
   smallRingsRow: {
     flexDirection: 'row',
