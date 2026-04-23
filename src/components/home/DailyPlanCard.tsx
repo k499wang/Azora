@@ -6,6 +6,7 @@ import { typography, fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import { card } from '../../theme/card';
 import Icon from '../common/icons/Icon';
+import type { MainTabNavigationProp } from '../../app/navigation';
 
 interface DailyPlanCardProps {
   duration?: string;
@@ -18,7 +19,7 @@ export default function DailyPlanCard({
   streakDays = 7,
   onPress,
 }: DailyPlanCardProps) {
-  const navigation = useNavigation<any>();
+  const navigation = useNavigation<MainTabNavigationProp<'Home'>>();
 
   const handlePress = () => {
     if (onPress) return onPress();

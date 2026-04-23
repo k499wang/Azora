@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useNavigation, useRoute, type RouteProp } from '@react-navigation/native';
 import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
 import { spacing } from '../theme/spacing';
@@ -13,6 +12,7 @@ import TECHNIQUES from '../data/techniques';
 import type { BreathingTechnique } from '../data/techniques';
 import { useLivePulse } from '../hooks/useLivePulse';
 import { LiveHeartRateMonitor } from '../components/meditation/LiveHeartRateMonitor';
+import type { ExerciseSessionScreenProps } from '../app/navigation';
 
 const MIN_ROUNDS = 1;
 const MAX_ROUNDS = 20;
@@ -28,13 +28,10 @@ const PHASE_LABELS: Record<Phase, string> = {
   done: 'Well done',
 };
 
-type RouteParams = {
-  ExerciseSession: { techniqueId: string };
-};
-
-export default function ExerciseSessionPage() {
-  const navigation = useNavigation();
-  const route = useRoute<RouteProp<RouteParams, 'ExerciseSession'>>();
+export default function ExerciseSessionPage({
+  navigation,
+  route,
+}: ExerciseSessionScreenProps) {
   const techniqueId = route.params?.techniqueId;
   const initialTechnique = TECHNIQUES.find((t) => t.id === techniqueId) ?? TECHNIQUES[0];
 
@@ -494,4 +491,3 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
   },
 });
-

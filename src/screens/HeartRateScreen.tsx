@@ -5,26 +5,16 @@ import { DefaultInstructionScreen } from '../components/heartRate/setupScreens';
 import type { CaptureResult } from '../lib/heartRate/types';
 import AppTopBar from '../components/common/AppTopBar';
 import { colors } from '../theme/colors';
+import type { HeartRateScreenProps } from '../app/navigation';
 
-interface HeartRateScreenProps {
-  navigation?: {
-    goBack: () => void;
-    navigate: (screen: string, params?: object) => void;
-  };
-  route?: {
-    params?: {
-      context?: string;
-    };
-  };
-}
-
-export function HeartRateScreen({ navigation, route }: HeartRateScreenProps) {
+export function HeartRateScreen({
+  navigation,
+  route,
+}: HeartRateScreenProps) {
   const context = route?.params?.context;
 
   const handleComplete = useCallback(
     (result: CaptureResult) => {
-      // Navigate back — the caller can read the result from navigation params
-      // or via a callback passed through route params
       if (navigation != null) {
         navigation.goBack();
       }

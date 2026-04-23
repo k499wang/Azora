@@ -15,10 +15,11 @@ Project-specific guide for Claude Code. Complements `AGENTS.md` — read that fi
 ## Commands
 
 - `npm start` — Expo dev server
-- `npx expo start --ios` / `--android` — platform simulators
+- `npm run ios` / `npm run android` — native runs for local platform testing
+- `npm test` — current lightweight test suite
 - `npx tsc --noEmit` — type-check (run before finishing any non-trivial change)
 
-There is no test suite yet. When one exists, add it here.
+The current test coverage is minimal, not nonexistent. Treat `npm test` and `npx tsc --noEmit` as the default verification baseline, then add targeted tests when changing logic.
 
 ---
 
@@ -48,24 +49,38 @@ Import `card` from `src/theme/card.ts`. Every elevated surface uses `...card.bas
 
 ## Folder Conventions
 
-See `AGENTS.md` §"Default Architecture" for the rules. Current layout:
+See `AGENTS.md` first for architecture rules and migration policy. Current layout today:
 
 ```
 src/
-  theme/            colors, spacing, typography, card tokens
   components/
+    analytics/      analytics-only UI
     common/         reusable primitives (Icon, Pill, AppTopBar, SectionHeader)
-    home/           home-screen-only components (cards, sections)
-  screens/          top-level route components — thin
-  hooks/            shared React behavior (empty — add as needed)
-  lib/              pure domain logic (e.g. hrv.ts)
+    exercise/       exercise flow UI
+    heartRate/      heart-rate flow UI
+    home/           home-screen UI
+    meditation/     live session monitor UI
   data/             static config (techniques.ts)
+  screens/          top-level route components — thin
+  hooks/            reusable React behavior and feature orchestration
+  lib/              pure domain logic (e.g. hrv.ts)
+    heartRate/      pure heart-rate domain logic and related helpers
+  theme/            colors, spacing, typography, card tokens
 ```
 
 **Rules:**
-- If a component is used by one screen, it lives under that screen's feature folder.
-- If it's used by two+, promote to `common/`.
+- Do not reorganize folders just to chase an ideal target structure. Follow the current layout unless the task justifies moving code.
+- If UI is feature-specific, keep it under that feature folder.
+- If UI is reused across features, promote it to `src/components/common/`.
+- If code is pure logic, prefer `src/lib/` or `src/lib/heartRate/` instead of components or screens.
 - Don't create `utils.ts`, `helpers.ts`, or `shared.ts` — they rot. Name files after what they contain (`hrv.ts`, `streak.ts`).
+
+### App And Navigation
+
+- `App.tsx` is bootstrap only: fonts, splash handling, providers, and `NavigationContainer`.
+- Put navigators in `src/app/navigation/`.
+- Put route param lists and screen prop aliases in `src/app/navigation/types.ts`.
+- Export navigation types from `src/app/navigation/index.ts` so screens and components import from one place.
 
 ---
 
@@ -76,6 +91,97 @@ src/
 - **`useSafeAreaInsets()`** from `react-native-safe-area-context` for safe areas.
 - **Skia for arc drawing** (see `RingStatCard.tsx`, `BigRingStatCard.tsx`) — reuse the pattern, don't introduce `react-native-svg` arc math.
 - **SVG for vector illustrations** via `Icon` wrapper — don't use Skia for simple shapes.
+
+### Screen Typing Pattern
+
+Registered screens should use screen props, not ad hoc navigation shapes and not `useNavigation()` by default.
+
+Example:
+
+```ts
+import type { DailyResultScreenProps } from '../app/navigation';
+
+export default function ShareableResultScreen({
+  navigation,
+  route,
+}: DailyResultScreenProps) {
+  const holdSeconds = route.params.holdSeconds;
+
+  return (
+    <Pressable onPress={() => navigation.navigate('MainTabs', { screen: 'Home' })} />
+  );
+}
+```
+
+Why:
+- `route.params` is typed
+- `navigation.navigate(...)` is typed
+- route names and params stay centralized
+
+### Child Component Navigation Pattern
+
+Non-screen child components can use `useNavigation(...)`, but the type must come from the central navigation types.
+
+Example:
+
+```ts
+import { useNavigation } from '@react-navigation/native';
+import type { MainTabNavigationProp } from '../../app/navigation';
+
+const navigation = useNavigation<MainTabNavigationProp<'Home'>>();
+
+navigation.navigate('DailyExercise');
+navigation.navigate('ExerciseSession', { techniqueId: technique.id });
+```
+
+Use this only when the component is not itself a registered screen.
+
+### Adding A New Screen
+
+1. Add the route to `src/app/navigation/types.ts`.
+
+```ts
+export type RootStackParamList = {
+  MainTabs: NavigatorScreenParams<MainTabParamList> | undefined;
+  ExerciseSession: { techniqueId: string };
+  DailyExercise: undefined;
+  DailyResult: { holdSeconds: number };
+  Settings: undefined;
+};
+
+export type SettingsScreenProps = RootStackScreenProps<'Settings'>;
+```
+
+2. Register it in the correct navigator.
+
+```ts
+<Stack.Screen name="Settings" component={SettingsScreen} />
+```
+
+3. Type the screen itself.
+
+```ts
+import type { SettingsScreenProps } from '../app/navigation';
+
+export default function SettingsScreen(_: SettingsScreenProps) {
+  return <View />;
+}
+```
+
+4. Navigate to it from children with a typed navigation prop.
+
+```ts
+const navigation = useNavigation<MainTabNavigationProp<'Home'>>();
+navigation.navigate('Settings');
+```
+
+### Which Type To Use
+
+- Use `MainTabParamList` and `MainTabScreenProps<'ScreenName'>` for tab-registered screens like `Home`.
+- Use `RootStackParamList` and `RootStackScreenProps<'ScreenName'>` for stack-registered screens like `DailyResult`.
+- Use screen-specific aliases like `HomeScreenProps` or `DailyResultScreenProps` in actual screen files.
+- Use `MainTabNavigationProp<'Home'>` in child components inside the Home tab.
+- Use `RootStackNavigationProp<'SomeRoute'>` only when a non-screen child truly needs direct stack navigation outside the tab composite.
 
 ---
 
@@ -111,6 +217,8 @@ src/
 - Prefer adding to existing token files over creating parallel ones.
 - Default to **no comments** — well-named code explains itself. Only comment when the *why* is non-obvious.
 - Don't leave `// removed X` or dead code. Delete it.
+- Never add a new route only in a screen file. Route names and params belong in `src/app/navigation/types.ts`.
+- Never use `useNavigation<any>()` or hand-rolled `navigation` prop interfaces.
 
 ### What not to do
 - Don't add Redux / MobX / React Query until there's a real problem.
@@ -125,5 +233,6 @@ src/
 
 On top of `AGENTS.md` §"Definition Of Done":
 - All inline `fontFamily` / shadow / color literals that were touched are swept to tokens.
+- `npm test` is run when relevant, or any gap is called out explicitly.
 - TypeScript has no new errors (`npx tsc --noEmit` passes).
 - A 1–2 sentence summary is given, with specific file paths.

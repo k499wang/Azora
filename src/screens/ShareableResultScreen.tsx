@@ -1,17 +1,14 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
 import { spacing, padding, margin } from '../theme/spacing';
 import LineGraph, { DataPoint } from '../components/analytics/LineGraph';
-// ─── Edit these values to customise the shareable screen ───────────────────────
+import type { DailyResultScreenProps } from '../app/navigation';
 
 const LUNG_AGE = 23;
 const LUNG_HEALTH: 'elite' | 'very-healthy' | 'healthy' | 'average' | 'below-average' | 'light-smoker' | 'heavy-smoker' = 'very-healthy';
-
-const HOLD_TIME = '1:42';
 const AVG_BPM = '64';
 
 const BPM_DATA: DataPoint[] = [
@@ -36,10 +33,19 @@ const LUNG_HEALTH_MAP = {
   'heavy-smoker':   { label: 'Heavy Smoker',    color: colors.error[500],      icon: 'smoking-off' as const },
 };
 
-export default function ShareableResultScreen() {
+function formatTime(secs: number) {
+  const minutes = Math.floor(secs / 60);
+  const seconds = secs % 60;
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+}
+
+export default function ShareableResultScreen({
+  navigation,
+  route,
+}: DailyResultScreenProps) {
   const insets = useSafeAreaInsets();
-  const navigation = useNavigation<any>();
   const health = LUNG_HEALTH_MAP[LUNG_HEALTH];
+  const holdTime = formatTime(route.params.holdSeconds);
 
   const lowestIndex = BPM_DATA.indexOf(
     BPM_DATA.reduce((min, p) => (p.value < min.value ? p : min), BPM_DATA[0])
@@ -47,78 +53,75 @@ export default function ShareableResultScreen() {
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
-    <ScrollView
-      contentContainerStyle={styles.scrollContent}
-    >
-      <View style={styles.header}>
-        <Pressable style={styles.closeButton} onPress={() => navigation.navigate('MainTabs')}>
-          <MaterialCommunityIcons name="close" size={24} color={colors.text.secondary} />
-        </Pressable>
-        <Text style={styles.title}>Your Results</Text>
-      </View>
-
-      {/* HERO: Lung Health */}
-      <View style={styles.lungHealthSection}>
-        <View style={[styles.lungHealthRing, { borderColor: health.color }]}>
-          <MaterialCommunityIcons name={health.icon} size={46} color={health.color} />
-          <View style={styles.lungAgeRow}>
-            <Text style={styles.lungAgeLabel}>LUNG AGE</Text>
-            <Text style={[styles.lungAgeValue, { color: health.color }]}>{LUNG_AGE}</Text>
-          </View>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <View style={styles.header}>
+          <Pressable
+            style={styles.closeButton}
+            onPress={() => navigation.navigate('MainTabs', { screen: 'Home' })}
+          >
+            <MaterialCommunityIcons name="close" size={24} color={colors.text.secondary} />
+          </Pressable>
+          <Text style={styles.title}>Your Results</Text>
         </View>
 
-        <View style={[styles.healthBadge, { backgroundColor: health.color + '18' }]}>
-          <Text style={[styles.healthBadgeText, { color: health.color }]}>
-            {health.label}
-          </Text>
-        </View>
-
-      </View>
-
-      {/* Heart Rate Graph */}
-      <View style={styles.graphSection}>
-        <Text style={styles.sectionTitle}>Heart Rate</Text>
-        <View style={styles.card}>
-          <LineGraph
-            data={BPM_DATA}
-            subtitle="BPM during breath hold"
-            unit=""
-            height={180}
-            lineColor={colors.primary.blue500}
-            fillColor={colors.primary.blue100}
-            dotColor={colors.primary.blue600}
-            highlightIndex={lowestIndex}
-            highlightColor={colors.primary.blue600}
-          />
-        </View>
-      </View>
-
-      {/* Stats */}
-      <View style={styles.statsSection}>
-        <View style={styles.statsRow}>
-          <View style={[styles.statCard, styles.statCardBlue]}>
-            <View style={styles.statCardTop}>
-              <MaterialCommunityIcons name="timer-outline" size={18} color={colors.primary.blue600} />
-              <Text style={styles.statLabel}>Hold Time</Text>
+        <View style={styles.lungHealthSection}>
+          <View style={[styles.lungHealthRing, { borderColor: health.color }]}>
+            <MaterialCommunityIcons name={health.icon} size={46} color={health.color} />
+            <View style={styles.lungAgeRow}>
+              <Text style={styles.lungAgeLabel}>LUNG AGE</Text>
+              <Text style={[styles.lungAgeValue, { color: health.color }]}>{LUNG_AGE}</Text>
             </View>
-            <Text style={styles.statValue}>{HOLD_TIME}</Text>
-            <Text style={styles.statUnit}>minutes</Text>
-            <View style={[styles.statAccent, styles.statAccentBlue]} />
           </View>
 
-          <View style={[styles.statCard, styles.statCardBlue]}>
-            <View style={styles.statCardTop}>
-              <MaterialCommunityIcons name="heart-pulse" size={18} color={colors.primary.blue600} />
-              <Text style={styles.statLabel}>Avg HR</Text>
-            </View>
-            <Text style={styles.statValue}>{AVG_BPM}</Text>
-            <Text style={styles.statUnit}>bpm</Text>
-            <View style={[styles.statAccent, styles.statAccentBlue]} />
+          <View style={[styles.healthBadge, { backgroundColor: health.color + '18' }]}>
+            <Text style={[styles.healthBadgeText, { color: health.color }]}>
+              {health.label}
+            </Text>
           </View>
         </View>
-      </View>
 
-    </ScrollView>
+        <View style={styles.graphSection}>
+          <Text style={styles.sectionTitle}>Heart Rate</Text>
+          <View style={styles.card}>
+            <LineGraph
+              data={BPM_DATA}
+              subtitle="BPM during breath hold"
+              unit=""
+              height={180}
+              lineColor={colors.primary.blue500}
+              fillColor={colors.primary.blue100}
+              dotColor={colors.primary.blue600}
+              highlightIndex={lowestIndex}
+              highlightColor={colors.primary.blue600}
+            />
+          </View>
+        </View>
+
+        <View style={styles.statsSection}>
+          <View style={styles.statsRow}>
+            <View style={[styles.statCard, styles.statCardBlue]}>
+              <View style={styles.statCardTop}>
+                <MaterialCommunityIcons name="timer-outline" size={18} color={colors.primary.blue600} />
+                <Text style={styles.statLabel}>Hold Time</Text>
+              </View>
+              <Text style={styles.statValue}>{holdTime}</Text>
+              <Text style={styles.statUnit}>minutes</Text>
+              <View style={[styles.statAccent, styles.statAccentBlue]} />
+            </View>
+
+            <View style={[styles.statCard, styles.statCardBlue]}>
+              <View style={styles.statCardTop}>
+                <MaterialCommunityIcons name="heart-pulse" size={18} color={colors.primary.blue600} />
+                <Text style={styles.statLabel}>Avg HR</Text>
+              </View>
+              <Text style={styles.statValue}>{AVG_BPM}</Text>
+              <Text style={styles.statUnit}>bpm</Text>
+              <View style={[styles.statAccent, styles.statAccentBlue]} />
+            </View>
+          </View>
+        </View>
+
+      </ScrollView>
     </View>
   );
 }

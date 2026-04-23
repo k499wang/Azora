@@ -1,3 +1,8 @@
+import type { ComponentProps } from 'react';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+
+type TechniqueIconName = NonNullable<ComponentProps<typeof MaterialCommunityIcons>['name']>;
+
 export interface BreathingTechnique {
   id: string;
   name: string;
@@ -5,7 +10,7 @@ export interface BreathingTechnique {
   pattern: { inhale: number; holdIn: number; exhale: number; holdOut: number };
   defaultRounds: number;
   category: 'calm' | 'focus' | 'energy' | 'sleep';
-  icon: string;
+  icon: TechniqueIconName;
   duration: string;
 }
 
