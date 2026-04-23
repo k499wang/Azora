@@ -26,7 +26,8 @@ Do not ship in this phase:
 
 ## Technique Storage
 
-Keep built-in techniques in `src/data/techniques.ts` for v1.
+Keep built-in techniques in `src/data/techniques.ts` for v1, but validate
+session writes against a narrow backend reference table.
 
 Why:
 
@@ -34,7 +35,8 @@ Why:
 - no admin flow needed
 - no remote content system needed yet
 
-`breathing_sessions.technique_id` stays as text and should be validated server-side against the launch ids.
+`breathing_sessions.technique_id` stays as text and should be validated
+server-side against `breathing_technique_catalog`, which holds the launch ids.
 
 ## Schema Summary
 
@@ -132,6 +134,17 @@ data.
 - Client reads should be scoped to `auth.uid()`.
 - Tracking writes should go through security-definer RPCs so sessions, derived samples, and `daily_activity` update atomically.
 - Subscription and RevenueCat event writes should stay server-side.
+- User-scoped convenience views should run with `security_invoker = true` so
+  they respect the caller's permissions and RLS context.
+
+## Duplicate Protection
+
+Graph-point tables should reject duplicate offsets per parent session:
+
+- `heart_rate_samples`: unique per `(session_id, offset_ms)`
+- `heart_rate_ibi_samples`: unique per `(session_id, offset_ms)`
+
+RPCs should upsert those points on retry rather than inserting duplicates.
 
 ## Existing Migration Files
 

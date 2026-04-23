@@ -23,7 +23,7 @@ const CAPTURE_DURATION_SEC = CAPTURE_DURATION_MS / 1000;
 const MIN_GOOD_DURATION_MS = 1500;
 const PROGRESS_UPDATE_INTERVAL_MS = 200;
 const BPM_UPDATE_INTERVAL_MS = 1000;
-const FRAME_PROCESSING_FPS = 20;
+const FRAME_PROCESSING_FPS = 30;
 
 function isValidFrameSample(value: unknown): value is PpgFrameSample {
   if (value == null || typeof value !== 'object') return false;

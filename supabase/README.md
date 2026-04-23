@@ -20,7 +20,9 @@ Move techniques to Supabase later when the app needs:
 - A larger technique library.
 - Server-side technique metadata, categories, recommendations, or experiments.
 
-The v1 schema stores `breathing_sessions.technique_id` as text and validates it server-side against the launch technique ids.
+The v1 schema stores `breathing_sessions.technique_id` as text and validates it
+server-side against `breathing_technique_catalog`, a narrow backend reference
+table for the active launch ids.
 
 ## Migration Scope
 
@@ -50,6 +52,12 @@ Standalone heart-rate sessions can also store `rmssd`, `sdnn`, `pnn50`,
 `hr_drop`, and `beat_count` on `heart_rate_sessions`. Use
 `user_today_heart_rate_v` and `user_today_heart_rate_ibi_samples_v` to read the
 latest authenticated standalone heart-rate summary and graph data for today.
+
+Tracking views that depend on the authenticated user should be created with
+`security_invoker = true` so they respect caller permissions and RLS context.
+
+Graph-point tables are protected against duplicate offsets per parent session,
+and the completion RPCs upsert those rows on retry.
 
 Deferred intentionally:
 

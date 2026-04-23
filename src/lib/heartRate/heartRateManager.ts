@@ -22,6 +22,37 @@ const MAX_IBI_MS = 1500;
 const WARMUP_FRAMES = 20;
 const REINIT_GAP_MS = 1000;
 const IBI_HISTORY_SIZE = 8;
+const MALIK_THRESHOLD = 0.2;
+const MALIK_WINDOW = 5;
+const MALIK_MIN_HISTORY = 3;
+const SIGNAL_QUALITY_REF = 0.02;
+
+export function interpolatePeakTimestamp(
+  y1: number,
+  y2: number,
+  y3: number,
+  t1: number,
+  t2: number,
+  t3: number,
+): number {
+  const denom = y1 - 2 * y2 + y3;
+  if (!Number.isFinite(denom) || denom >= 0) return t2;
+  let offset = (0.5 * (y1 - y3)) / denom;
+  if (!Number.isFinite(offset)) return t2;
+  if (offset > 1) offset = 1;
+  if (offset < -1) offset = -1;
+  const dt = (t3 - t1) / 2;
+  return t2 + offset * dt;
+}
+
+export function medianOfRecent(values: number[], window: number): number {
+  const slice = values.slice(-window);
+  const sorted = [...slice].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 === 0
+    ? (sorted[mid - 1] + sorted[mid]) / 2
+    : sorted[mid];
+}
 
 function weightedChannelValue(roi: PpgRoiSample): number {
   return roi.r * 0.67 + roi.g * 0.33;
@@ -93,6 +124,7 @@ export class HeartRateManager {
   private prev1 = 0;
   private prev2 = 0;
   private prev1Ts = 0;
+  private prev2Ts = 0;
   private lastPeakTs = 0;
   private lastGoodTs = 0;
   private validFrameCounter = 0;
@@ -109,6 +141,7 @@ export class HeartRateManager {
     this.prev1 = 0;
     this.prev2 = 0;
     this.prev1Ts = 0;
+    this.prev2Ts = 0;
     this.lastPeakTs = 0;
     this.lastGoodTs = 0;
     this.validFrameCounter = 0;
@@ -126,6 +159,8 @@ export class HeartRateManager {
       this.validFrameCounter = 0;
       this.prev1 = 0;
       this.prev2 = 0;
+      this.prev1Ts = 0;
+      this.prev2Ts = 0;
       this.lastPlacement = this.lastPlacement === 'good' ? 'lost' : placement;
       return {
         fingerPlacement: this.lastPlacement,
@@ -142,7 +177,7 @@ export class HeartRateManager {
 
     const gapMs = this.lastGoodTs === 0 ? 0 : sample.timestamp - this.lastGoodTs;
     if (!this.initialized || gapMs > REINIT_GAP_MS) {
-      if (this.sessionStartTs == null || gapMs > REINIT_GAP_MS) {
+      if (this.sessionStartTs == null) {
         this.sessionStartTs = sample.timestamp;
       }
       this.baseline = weightedAverage;
@@ -150,7 +185,10 @@ export class HeartRateManager {
       this.amplitude = 0;
       this.prev1 = 0;
       this.prev2 = 0;
+      this.prev1Ts = 0;
+      this.prev2Ts = 0;
       this.lastPeakTs = 0;
+      this.ibiHistory.length = 0;
       this.validFrameCounter = 0;
       this.initialized = true;
     }
@@ -172,32 +210,62 @@ export class HeartRateManager {
         this.prev1 >= this.prev2 &&
         this.prev1 > ac;
       if (isPeak) {
+        const peakTs =
+          this.prev2Ts > 0
+            ? interpolatePeakTimestamp(
+                this.prev2,
+                this.prev1,
+                ac,
+                this.prev2Ts,
+                this.prev1Ts,
+                sample.timestamp,
+              )
+            : this.prev1Ts;
         const refractoryOk =
-          this.lastPeakTs === 0 || this.prev1Ts - this.lastPeakTs >= MIN_IBI_MS;
+          this.lastPeakTs === 0 || peakTs - this.lastPeakTs >= MIN_IBI_MS;
         if (refractoryOk) {
+          let advanceAnchor = true;
           if (this.lastPeakTs !== 0) {
-            const ibi = this.prev1Ts - this.lastPeakTs;
-            if (ibi <= MAX_IBI_MS) {
-              this.ibiHistory.push(ibi);
-              if (this.ibiHistory.length > IBI_HISTORY_SIZE) {
-                this.ibiHistory.shift();
-              }
-              this.ibiSamples.push({
-                offsetMs: Math.max(0, this.prev1Ts - (this.sessionStartTs ?? this.prev1Ts)),
-                ibiMs: Math.round(ibi),
-                signalQuality: null,
-              });
-            } else {
+            const ibi = peakTs - this.lastPeakTs;
+            if (ibi > MAX_IBI_MS) {
               this.ibiHistory.length = 0;
+            } else {
+              const ectopic =
+                this.ibiHistory.length >= MALIK_MIN_HISTORY &&
+                (() => {
+                  const med = medianOfRecent(this.ibiHistory, MALIK_WINDOW);
+                  return med > 0 && Math.abs(ibi - med) / med > MALIK_THRESHOLD;
+                })();
+              if (ectopic) {
+                advanceAnchor = false;
+              } else {
+                this.ibiHistory.push(ibi);
+                if (this.ibiHistory.length > IBI_HISTORY_SIZE) {
+                  this.ibiHistory.shift();
+                }
+                const anchorTs = this.sessionStartTs ?? peakTs;
+                const quality = Math.min(
+                  1,
+                  Math.max(0, this.amplitude / SIGNAL_QUALITY_REF),
+                );
+                this.ibiSamples.push({
+                  offsetMs: Math.max(0, Math.round(peakTs - anchorTs)),
+                  ibiMs: Math.round(ibi),
+                  signalQuality: quality,
+                });
+              }
             }
           }
-          this.lastPeakTs = this.prev1Ts;
+          if (advanceAnchor) {
+            this.lastPeakTs = peakTs;
+          }
           beatDetected = true;
         }
       }
     }
 
     this.prev2 = this.prev1;
+    this.prev2Ts = this.prev1Ts;
     this.prev1 = ac;
     this.prev1Ts = sample.timestamp;
     this.lastGoodTs = sample.timestamp;
