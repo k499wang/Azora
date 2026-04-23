@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors } from '../../theme/colors';
-import { typography } from '../../theme/typography';
+import { typography, fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import { card } from '../../theme/card';
 
@@ -43,7 +43,7 @@ const styles = StyleSheet.create({
     ...typography.title.title3,
     fontSize: 13,
     color: colors.primary.blue600,
-    fontFamily: 'Nunito-Bold',
+    fontFamily: fonts.bold,
     fontWeight: '700',
   },
   pressed: {

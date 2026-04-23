@@ -2,7 +2,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Canvas, Path, Skia } from '@shopify/react-native-skia';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
-import { typography } from '../../theme/typography';
+import { typography, fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import { card } from '../../theme/card';
 import Icon, { type IconName } from '../common/icons/Icon';
@@ -96,14 +96,14 @@ const styles = StyleSheet.create({
     ...typography.title.title3,
     fontSize: 24,
     color: colors.text.primary,
-    fontFamily: 'Nunito-Bold',
-    fontWeight: '800',
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
   },
   target: {
     ...typography.label.small,
     fontSize: 14,
     color: colors.text.tertiary,
-    fontFamily: 'Nunito-SemiBold',
+    fontFamily: fonts.semibold,
   },
   label: {
     ...typography.body.small,

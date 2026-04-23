@@ -8,7 +8,7 @@ import {
   LayoutChangeEvent,
 } from 'react-native';
 import { colors } from '../../theme/colors';
-import { typography } from '../../theme/typography';
+import { typography, fonts } from '../../theme/typography';
 import { spacing, padding, margin } from '../../theme/spacing';
 
 const DAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
@@ -169,8 +169,8 @@ const styles = StyleSheet.create({
   },
   dayLabelCompleted: {
     color: colors.text.inverse,
-    fontFamily: 'Nunito-Bold',
-    fontWeight: '700',
+    fontFamily: fonts.semibold,
+    fontWeight: '400',
   },
   dateNum: {
     ...typography.caption.caption1,
