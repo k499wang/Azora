@@ -23,7 +23,13 @@ const MAX_LIGHTING_JUMP_FRACTION = 0.08;
 const CHANNELS: PpgChannel[] = ['weighted', 'red', 'green', 'redRatio'];
 const BEAT_DETECTION_WINDOW_MS = 5000;
 const MIN_BEAT_INTERVAL_MS = 320;
+const MAX_BEAT_INTERVAL_MS = 1500;
 const MAX_BEAT_DETECTION_LAG_MS = 450;
+const HRV_END_GUARD_MS = 1500;
+const HRV_INTERVAL_CLEANUP_THRESHOLD = 0.25;
+const HRV_INTERVAL_CLEANUP_WINDOW = 5;
+const HRV_INTERVAL_CLEANUP_MIN_HISTORY = 3;
+const HRV_INTERVAL_HISTORY_SIZE = 8;
 
 export interface ComputeBpmOptions {
   minDurationMs?: number;
@@ -97,6 +103,7 @@ interface PeakResult {
   bpm: number;
   consistency: number;
   peaks: number[];
+  polarity: 1 | -1;
 }
 
 interface CandidateAnalysis {
@@ -104,6 +111,7 @@ interface CandidateAnalysis {
   stableStartTimestamp: number;
   sampleRate: number;
   peaks: PeakResult | null;
+  processed: number[];
 }
 
 type PeakCandidateAnalysis = CandidateAnalysis & { peaks: PeakResult };
@@ -125,6 +133,12 @@ export interface CaptureBeatSeries {
   snrDb: number;
   frequencyBpm: number;
   peakBpm: number;
+}
+
+interface ScoredCaptureBeatSeries extends CaptureBeatSeries {
+  hrvScore: number;
+  rawIntervalCount: number;
+  rejectedIntervalCount: number;
 }
 
 function clamp(value: number, min: number, max: number): number {
@@ -432,6 +446,7 @@ function peakEstimateForPolarity(
     bpm,
     consistency,
     peaks,
+    polarity,
   };
 }
 
@@ -521,6 +536,7 @@ function analyzeCandidate(
     stableStartTimestamp: stableSeries.timestamps[0],
     sampleRate: resampled.sampleRate,
     peaks,
+    processed,
   };
 }
 
@@ -599,17 +615,156 @@ function beatTimestampsFromPeaks(
   return peakIndexes.map((peakIndex) => stableStartTimestamp + peakIndex * stepMs);
 }
 
-function ibiMsFromBeatTimestamps(beatTimestamps: number[]): number[] {
-  const intervals: number[] = [];
+function interpolatePeakOffset(y1: number, y2: number, y3: number): number {
+  const denom = y1 - 2 * y2 + y3;
+  if (!Number.isFinite(denom) || denom >= 0) return 0;
+  const offset = (0.5 * (y1 - y3)) / denom;
+  if (!Number.isFinite(offset)) return 0;
+  return clamp(offset, -1, 1);
+}
 
-  for (let i = 1; i < beatTimestamps.length; i++) {
-    const intervalMs = beatTimestamps[i] - beatTimestamps[i - 1];
-    if (intervalMs >= 333 && intervalMs <= 1500) {
-      intervals.push(intervalMs);
+function refinedBeatTimestampsFromPeaks(
+  peakIndexes: number[],
+  processed: number[],
+  polarity: 1 | -1,
+  sampleRate: number,
+  stableStartTimestamp: number,
+): number[] {
+  const stepMs = 1000 / sampleRate;
+
+  return peakIndexes.map((peakIndex) => {
+    if (peakIndex <= 0 || peakIndex >= processed.length - 1) {
+      return stableStartTimestamp + peakIndex * stepMs;
     }
+
+    const orientedPrev = processed[peakIndex - 1] * polarity;
+    const orientedCurrent = processed[peakIndex] * polarity;
+    const orientedNext = processed[peakIndex + 1] * polarity;
+    const offset = interpolatePeakOffset(orientedPrev, orientedCurrent, orientedNext);
+    return stableStartTimestamp + (peakIndex + offset) * stepMs;
+  });
+}
+
+function cleanBeatSeries(
+  beatTimestamps: number[],
+): { beatTimestamps: number[]; ibiMs: number[]; rawIntervalCount: number; rejectedIntervalCount: number } {
+  if (beatTimestamps.length < 2) {
+    return { beatTimestamps: [], ibiMs: [], rawIntervalCount: 0, rejectedIntervalCount: 0 };
   }
 
-  return intervals;
+  const cleanedBeatTimestamps: number[] = [beatTimestamps[0]];
+  const ibiMs: number[] = [];
+  const ibiHistory: number[] = [];
+  let rejectedIntervalCount = 0;
+  let anchorTimestamp = beatTimestamps[0];
+
+  for (let i = 1; i < beatTimestamps.length; i++) {
+    const beatTimestamp = beatTimestamps[i];
+    const intervalMs = beatTimestamp - anchorTimestamp;
+
+    if (intervalMs < MIN_BEAT_INTERVAL_MS) {
+      rejectedIntervalCount += 1;
+      continue;
+    }
+
+    if (intervalMs > MAX_BEAT_INTERVAL_MS) {
+      rejectedIntervalCount += 1;
+      anchorTimestamp = beatTimestamp;
+      cleanedBeatTimestamps.push(beatTimestamp);
+      ibiHistory.length = 0;
+      continue;
+    }
+
+    const isOutlier =
+      ibiHistory.length >= HRV_INTERVAL_CLEANUP_MIN_HISTORY &&
+      (() => {
+        const medianIbi = median(ibiHistory.slice(-HRV_INTERVAL_CLEANUP_WINDOW));
+        return medianIbi > 0 && Math.abs(intervalMs - medianIbi) / medianIbi > HRV_INTERVAL_CLEANUP_THRESHOLD;
+      })();
+    if (isOutlier) {
+      rejectedIntervalCount += 1;
+      continue;
+    }
+
+    ibiHistory.push(intervalMs);
+    if (ibiHistory.length > HRV_INTERVAL_HISTORY_SIZE) {
+      ibiHistory.shift();
+    }
+    ibiMs.push(intervalMs);
+    anchorTimestamp = beatTimestamp;
+    cleanedBeatTimestamps.push(beatTimestamp);
+  }
+
+  return {
+    beatTimestamps: cleanedBeatTimestamps,
+    ibiMs,
+    rawIntervalCount: Math.max(0, beatTimestamps.length - 1),
+    rejectedIntervalCount,
+  };
+}
+
+function hrvCandidatePriority(
+  estimate: HeartRateEstimate,
+  ibiMs: number[],
+  rawIntervalCount: number,
+  rejectedIntervalCount: number,
+): number {
+  const baseScore = candidatePriority(estimate);
+  const intervalMean = ibiMs.length > 0 ? mean(ibiMs) : 0;
+  const intervalScatter =
+    ibiMs.length >= 2 && intervalMean > 0
+      ? clamp(standardDeviation(ibiMs) / intervalMean, 0, 1)
+      : 1;
+  const consistencyBonus = (1 - intervalScatter) * 0.35;
+  const cleanedBeatBonus = clamp(ibiMs.length / 24, 0, 1) * 0.25;
+  const keptRatio =
+    rawIntervalCount > 0
+      ? clamp((rawIntervalCount - rejectedIntervalCount) / rawIntervalCount, 0, 1)
+      : 0;
+  const retentionBonus = keptRatio * 0.25;
+  const rejectionPenalty =
+    rawIntervalCount > 0
+      ? clamp(rejectedIntervalCount / rawIntervalCount, 0, 1) * 0.35
+      : 0;
+
+  return baseScore + consistencyBonus + cleanedBeatBonus + retentionBonus - rejectionPenalty;
+}
+
+function buildScoredCaptureBeatSeries(
+  analysis: PeakCandidateAnalysis,
+  captureEndTimestamp: number,
+): ScoredCaptureBeatSeries | null {
+  const rawBeatTimestamps = refinedBeatTimestampsFromPeaks(
+    analysis.peaks.peaks,
+    analysis.processed,
+    analysis.peaks.polarity,
+    analysis.sampleRate,
+    analysis.stableStartTimestamp,
+  );
+  const hrvEndCutoff = captureEndTimestamp - HRV_END_GUARD_MS;
+  const guardedBeatTimestamps = rawBeatTimestamps.filter((timestamp) => timestamp <= hrvEndCutoff);
+  const { beatTimestamps, ibiMs, rawIntervalCount, rejectedIntervalCount } = cleanBeatSeries(guardedBeatTimestamps);
+  if (ibiMs.length < 2) return null;
+
+  return {
+    beatTimestamps,
+    ibiMs,
+    roiId: analysis.estimate.roiId,
+    channel: analysis.estimate.channel,
+    confidence: analysis.estimate.confidence,
+    quality: analysis.estimate.quality,
+    snrDb: analysis.estimate.snrDb,
+    frequencyBpm: analysis.estimate.frequencyBpm,
+    peakBpm: analysis.peaks.bpm,
+    hrvScore: hrvCandidatePriority(
+      analysis.estimate,
+      ibiMs,
+      rawIntervalCount,
+      rejectedIntervalCount,
+    ),
+    rawIntervalCount,
+    rejectedIntervalCount,
+  };
 }
 
 function consensusEstimate(estimates: HeartRateEstimate[]): HeartRateEstimate | null {
@@ -762,27 +917,24 @@ export function extractBestCaptureBeatSeries(
 
   if (analyses.length === 0) return null;
 
-  const best = [...analyses].sort(
-    (a, b) => candidatePriority(b.estimate) - candidatePriority(a.estimate),
-  )[0];
-  const beatTimestamps = beatTimestampsFromPeaks(
-    best.peaks.peaks,
-    best.sampleRate,
-    best.stableStartTimestamp,
-  );
-  const ibiMs = ibiMsFromBeatTimestamps(beatTimestamps);
-  if (ibiMs.length < 2) return null;
+  const captureEndTimestamp = samples[samples.length - 1]?.timestamp ?? 0;
+  const scoredCandidates = analyses
+    .map((analysis) => buildScoredCaptureBeatSeries(analysis, captureEndTimestamp))
+    .filter((candidate): candidate is ScoredCaptureBeatSeries => candidate != null);
+  if (scoredCandidates.length === 0) return null;
+
+  const best = [...scoredCandidates].sort((a, b) => b.hrvScore - a.hrvScore)[0];
 
   return {
-    beatTimestamps,
-    ibiMs,
-    roiId: best.estimate.roiId,
-    channel: best.estimate.channel,
-    confidence: best.estimate.confidence,
-    quality: best.estimate.quality,
-    snrDb: best.estimate.snrDb,
-    frequencyBpm: best.estimate.frequencyBpm,
-    peakBpm: best.peaks.bpm,
+    beatTimestamps: best.beatTimestamps,
+    ibiMs: best.ibiMs,
+    roiId: best.roiId,
+    channel: best.channel,
+    confidence: best.confidence,
+    quality: best.quality,
+    snrDb: best.snrDb,
+    frequencyBpm: best.frequencyBpm,
+    peakBpm: best.peakBpm,
   };
 }
 
