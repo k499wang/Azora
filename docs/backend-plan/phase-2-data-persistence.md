@@ -52,6 +52,8 @@ Tracking:
 Derived HR detail:
 
 - `heart_rate_samples`
+- `heart_rate_ibi_samples`
+- derived HRV summary fields on `breath_hold_sessions`
 
 Daily aggregation:
 
@@ -78,6 +80,51 @@ Rules:
 - store derived BPM points only
 - do not store raw RGB / ROI / frame-level PPG signal data
 - target roughly 1 derived BPM row per second while tracking is active
+
+## IBI Sample Definition
+
+`heart_rate_ibi_samples` stores derived inter-beat intervals, not raw camera
+frames and not raw optical samples.
+
+Each row represents one beat interval in a session time series:
+
+- `offset_ms`
+- `ibi_ms`
+- `signal_quality`
+- exactly one parent session id
+
+Rules:
+
+- store derived interval timings only
+- do not store raw RGB / ROI / frame-level PPG signal data
+- use these rows for HRV graphs and recomputation of RMSSD / SDNN / pNN50
+
+## Breath-Hold HRV Summary
+
+For the launch breath-hold and standalone heart-rate flows, store derived HRV
+summary metrics directly on the session row:
+
+- `rmssd`
+- `sdnn`
+- `pnn50`
+- `hr_drop`
+- `beat_count`
+
+These are derived metrics, not raw signal data, so they fit the launch storage
+rule. They make home-screen reads simpler and avoid reconstructing HRV from
+stored BPM points later.
+
+Use `user_today_breath_hold_v` to read the authenticated user's latest
+breath-hold session for their current local day.
+
+Use `user_today_breath_hold_ibi_samples_v` to read the latest authenticated
+breath-hold IBI series for today's HRV graph.
+
+Use `user_today_heart_rate_v` to read the authenticated user's latest
+standalone heart-rate session for their current local day.
+
+Use `user_today_heart_rate_ibi_samples_v` to read that session's IBI graph
+data.
 
 ## Security Model
 
