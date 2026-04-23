@@ -133,6 +133,7 @@ export class HeartRateManager {
   private readonly ibiHistory: number[] = [];
   private readonly ibiSamples: IbiSample[] = [];
   private sessionStartTs: number | null = null;
+  private skipNextRecordedIbi = false;
 
   reset(): void {
     this.baseline = 0;
@@ -150,6 +151,16 @@ export class HeartRateManager {
     this.ibiHistory.length = 0;
     this.ibiSamples.length = 0;
     this.sessionStartTs = null;
+    this.skipNextRecordedIbi = false;
+  }
+
+  beginMeasurementWindow(startTimestamp: number): void {
+    this.ibiSamples.length = 0;
+    this.sessionStartTs = startTimestamp;
+    // Preserve the warmed detector and rolling BPM history, but avoid storing
+    // the first accepted interval because it straddles the setup->measurement
+    // boundary.
+    this.skipNextRecordedIbi = this.lastPeakTs !== 0;
   }
 
   processFrame(sample: PpgFrameSample): HeartRateFrameState {
@@ -243,16 +254,20 @@ export class HeartRateManager {
                 if (this.ibiHistory.length > IBI_HISTORY_SIZE) {
                   this.ibiHistory.shift();
                 }
-                const anchorTs = this.sessionStartTs ?? peakTs;
-                const quality = Math.min(
-                  1,
-                  Math.max(0, this.amplitude / SIGNAL_QUALITY_REF),
-                );
-                this.ibiSamples.push({
-                  offsetMs: Math.max(0, Math.round(peakTs - anchorTs)),
-                  ibiMs: Math.round(ibi),
-                  signalQuality: quality,
-                });
+                if (this.skipNextRecordedIbi) {
+                  this.skipNextRecordedIbi = false;
+                } else {
+                  const anchorTs = this.sessionStartTs ?? peakTs;
+                  const quality = Math.min(
+                    1,
+                    Math.max(0, this.amplitude / SIGNAL_QUALITY_REF),
+                  );
+                  this.ibiSamples.push({
+                    offsetMs: Math.max(0, Math.round(peakTs - anchorTs)),
+                    ibiMs: Math.round(ibi),
+                    signalQuality: quality,
+                  });
+                }
               }
             }
           }
