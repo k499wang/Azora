@@ -23,6 +23,7 @@ export type FingerPlacementState =
   | 'lost';
 
 export type PpgQuality = 'good' | 'fair' | 'poor';
+export type HrvAvailabilityReason = 'not_enough_clean_beats' | 'low_signal_quality';
 
 export type PpgChannel = 'weighted' | 'red' | 'green' | 'blue' | 'redRatio';
 
@@ -78,6 +79,7 @@ export interface HeartRateReading {
   pnn50?: number;
   hrDrop?: number;
   beatCount?: number;
+  hrvAvailabilityReason?: HrvAvailabilityReason;
 }
 
 export interface CaptureResult {

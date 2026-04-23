@@ -11,7 +11,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
-import type { CaptureResult } from '../../lib/heartRate/types';
+import type { CaptureResult, HrvAvailabilityReason } from '../../lib/heartRate/types';
 
 interface ResultScreenProps {
   result: CaptureResult;
@@ -61,6 +61,19 @@ function getErrorMessage(
 function formatMetricMs(value: number | undefined): string | null {
   if (value == null || !Number.isFinite(value)) return null;
   return `${Math.round(value)} ms`;
+}
+
+function getHrvUnavailableMessage(
+  reason: HrvAvailabilityReason | undefined,
+): string | null {
+  switch (reason) {
+    case 'not_enough_clean_beats':
+      return 'HRV unavailable: not enough clean beats';
+    case 'low_signal_quality':
+      return 'HRV unavailable: low signal quality';
+    default:
+      return null;
+  }
 }
 
 export function ResultScreen({ result, onRetry, onDone, context }: ResultScreenProps) {
@@ -113,6 +126,7 @@ export function ResultScreen({ result, onRetry, onDone, context }: ResultScreenP
     const confidence = getConfidenceLabel(reading.confidence);
     const rmssd = formatMetricMs(reading.rmssd);
     const sdnn = formatMetricMs(reading.sdnn);
+    const hrvUnavailableMessage = getHrvUnavailableMessage(reading.hrvAvailabilityReason);
 
     return (
       <SafeAreaView style={styles.safeArea}>
@@ -179,6 +193,12 @@ export function ResultScreen({ result, onRetry, onDone, context }: ResultScreenP
                     <Text style={styles.detailLabel}>SDNN</Text>
                     <Text style={styles.detailValue}>{sdnn}</Text>
                   </View>
+                </>
+              )}
+              {rmssd == null && sdnn == null && hrvUnavailableMessage != null && (
+                <>
+                  <View style={styles.detailDivider} />
+                  <Text style={styles.hrvUnavailableText}>{hrvUnavailableMessage}</Text>
                 </>
               )}
               {context != null && (
@@ -383,6 +403,12 @@ const styles = StyleSheet.create({
     ...typography.body.small,
     color: colors.text.primary,
     fontWeight: '600',
+  },
+  hrvUnavailableText: {
+    ...typography.body.small,
+    color: colors.text.secondary,
+    paddingTop: spacing.sm,
+    lineHeight: 20,
   },
   errorTitle: {
     ...typography.heading.heading1,
