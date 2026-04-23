@@ -28,6 +28,10 @@ function buildCaptureSamples() {
       0.18 * Math.sin(phase * 3 - 1.1);
     const redNoise = 10 * Math.sin(timestamp / 110) + 5.5 * Math.sin(timestamp / 47);
     const slowDrift = 3 * Math.sin(timestamp / 1200);
+    const tailArtifact =
+      timestamp >= CAPTURE_DURATION_MS - 900
+        ? 12 * Math.sin(timestamp / 18) + 6 * Math.sin(timestamp / 9)
+        : 0;
 
     samples.push({
       timestamp,
@@ -35,7 +39,7 @@ function buildCaptureSamples() {
         {
           id: 'center',
           r: 72 + redNoise,
-          g: 112 + slowDrift + pulse * 36,
+          g: 112 + slowDrift + pulse * 36 + tailArtifact,
           b: 18 + slowDrift * 0.25,
           saturatedPct: 0.03,
           darkPct: 0.01,
@@ -65,6 +69,14 @@ test('extractBestCaptureBeatSeries chooses the strongest ROI/channel beat series
   assert.equal(beatSeries.roiId, 'center');
   assert.equal(beatSeries.channel, 'weighted');
   assert.ok(beatSeries.ibiMs.length >= 20, `expected many HRV intervals, got ${beatSeries.ibiMs.length}`);
+  assert.ok(
+    beatSeries.beatTimestamps[beatSeries.beatTimestamps.length - 1] <= CAPTURE_DURATION_MS - 1450,
+    `expected HRV beat series to stop before noisy tail, got ${beatSeries.beatTimestamps[beatSeries.beatTimestamps.length - 1]}`,
+  );
+  assert.ok(
+    Math.min(...beatSeries.ibiMs) > 500,
+    `expected cleanup to avoid implausibly short HRV intervals, got ${Math.min(...beatSeries.ibiMs)}`,
+  );
 
   const medianIbi = median(beatSeries.ibiMs);
   assert.ok(
