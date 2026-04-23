@@ -73,6 +73,7 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
   const samplesRef = useRef<PpgFrameSample[]>([]);
   const goodSinceRef = useRef<number | null>(null);
   const lastBpmUpdateRef = useRef<number>(0);
+  const lastFrameTimestampRef = useRef<number | null>(null);
   const currentBpmRef = useRef<number | null>(null);
   const captureStateRef = useRef<CaptureState>('idle');
   const managerRef = useRef(new HeartRateManager());
@@ -94,13 +95,18 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
     setCaptureState(next);
   }, []);
 
-  const resetCaptureRefs = useCallback(() => {
+  const resetMeasurementRefs = useCallback(() => {
     samplesRef.current = [];
     goodSinceRef.current = null;
     lastBpmUpdateRef.current = 0;
+  }, []);
+
+  const resetCaptureRefs = useCallback(() => {
+    resetMeasurementRefs();
+    lastFrameTimestampRef.current = null;
     currentBpmRef.current = null;
     managerRef.current.reset();
-  }, []);
+  }, [resetMeasurementRefs]);
 
   const updateProgress = useCallback((elapsedMs: number) => {
     const clampedElapsed = Math.max(0, Math.min(CAPTURE_DURATION_MS, elapsedMs));
@@ -137,14 +143,20 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
 
   const startMeasuring = useCallback(() => {
     stopMeasurementTimer();
-    resetCaptureRefs();
+    resetMeasurementRefs();
+    const measurementStartTs = lastFrameTimestampRef.current;
+    if (measurementStartTs != null) {
+      managerRef.current.beginMeasurementWindow(measurementStartTs);
+    }
+    const warmBpm = managerRef.current.getCurrentBpm();
+    currentBpmRef.current = warmBpm;
     setProgress(0);
     setSecondsRemaining(CAPTURE_DURATION_SEC);
     setBeatTick(0);
-    setCurrentBpm(null);
+    setCurrentBpm(warmBpm);
     setCaptureStateAndRef('measuring');
     startMeasurementTimer();
-  }, [resetCaptureRefs, setCaptureStateAndRef, startMeasurementTimer, stopMeasurementTimer]);
+  }, [resetMeasurementRefs, setCaptureStateAndRef, startMeasurementTimer, stopMeasurementTimer]);
 
   const addSample = useRunOnJS(
     (frameSample: unknown) => {
@@ -159,6 +171,7 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
       }
 
       const timestamp = frameSample.timestamp;
+      lastFrameTimestampRef.current = timestamp;
       const state = captureStateRef.current;
       if (state !== 'camera_check' && state !== 'measuring') return;
 
