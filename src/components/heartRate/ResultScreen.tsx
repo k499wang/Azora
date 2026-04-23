@@ -38,7 +38,7 @@ function getErrorMessage(
     case 'signal_lost':
       return {
         title: 'Finger Moved',
-        message: 'Your finger moved during measurement. Try to keep it still for the full 15 seconds.',
+        message: 'Your finger moved during measurement. Try to keep it still for the full 30 seconds.',
       };
     case 'too_few_samples':
       return {
@@ -56,6 +56,11 @@ function getErrorMessage(
         message: 'We were unable to get a clear reading. Please try again.',
       };
   }
+}
+
+function formatMetricMs(value: number | undefined): string | null {
+  if (value == null || !Number.isFinite(value)) return null;
+  return `${Math.round(value)} ms`;
 }
 
 export function ResultScreen({ result, onRetry, onDone, context }: ResultScreenProps) {
@@ -106,6 +111,8 @@ export function ResultScreen({ result, onRetry, onDone, context }: ResultScreenP
   if (isSuccess && result.reading) {
     const reading = result.reading;
     const confidence = getConfidenceLabel(reading.confidence);
+    const rmssd = formatMetricMs(reading.rmssd);
+    const sdnn = formatMetricMs(reading.sdnn);
 
     return (
       <SafeAreaView style={styles.safeArea}>
@@ -156,6 +163,24 @@ export function ResultScreen({ result, onRetry, onDone, context }: ResultScreenP
                 <Text style={styles.detailLabel}>Samples</Text>
                 <Text style={styles.detailValue}>{reading.sampleCount}</Text>
               </View>
+              {rmssd != null && (
+                <>
+                  <View style={styles.detailDivider} />
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>RMSSD</Text>
+                    <Text style={styles.detailValue}>{rmssd}</Text>
+                  </View>
+                </>
+              )}
+              {sdnn != null && (
+                <>
+                  <View style={styles.detailDivider} />
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>SDNN</Text>
+                    <Text style={styles.detailValue}>{sdnn}</Text>
+                  </View>
+                </>
+              )}
               {context != null && (
                 <>
                   <View style={styles.detailDivider} />
@@ -226,7 +251,7 @@ export function ResultScreen({ result, onRetry, onDone, context }: ResultScreenP
             </View>
             <View style={styles.tipRow}>
               <MaterialCommunityIcons name="circle-small" size={16} color={colors.text.tertiary} />
-              <Text style={styles.tipText}>Stay still for the full 15 seconds</Text>
+              <Text style={styles.tipText}>Stay still for the full 30 seconds</Text>
             </View>
           </View>
         </Animated.View>

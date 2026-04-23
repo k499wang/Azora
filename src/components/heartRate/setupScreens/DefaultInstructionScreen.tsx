@@ -22,7 +22,7 @@ const steps = [
   },
   {
     icon: 'timer-outline' as const,
-    text: 'Keep your hand still for 15 seconds',
+    text: 'Keep your hand still for 30 seconds',
   },
 ];
 

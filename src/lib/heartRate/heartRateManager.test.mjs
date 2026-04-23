@@ -103,6 +103,18 @@ test('HeartRateManager: produces ~800ms IBIs from a regular beat train', () => {
   }
 });
 
+test('HeartRateManager: returns provisional BPM after 2 accepted intervals', () => {
+  const manager = new HeartRateManager();
+  runBeatTrain(manager, [24, 48, 72]);
+
+  const bpm = manager.getCurrentBpm();
+  assert.ok(bpm != null, 'expected BPM after 2 accepted intervals');
+  assert.ok(
+    Math.abs(bpm - 75) <= 3,
+    `expected bpm near 75, got ${bpm}`,
+  );
+});
+
 test('HeartRateManager: rejects ectopic IBI without advancing anchor', () => {
   const manager = new HeartRateManager();
   // Regular beats every 24 frames (~800ms), then a spurious beat 12 frames
