@@ -32,6 +32,22 @@ function stddev(values: number[]): number {
   return Math.sqrt(variance);
 }
 
+function linearDetrend(values: number[]): number[] {
+  const n = values.length;
+  if (n < 3) return values;
+  const xMean = (n - 1) / 2;
+  const yMean = mean(values);
+  let num = 0;
+  let den = 0;
+  for (let i = 0; i < n; i++) {
+    num += (i - xMean) * (values[i] - yMean);
+    den += (i - xMean) * (i - xMean);
+  }
+  if (den === 0) return values;
+  const slope = num / den;
+  return values.map((v, i) => v - slope * (i - xMean));
+}
+
 function ibiToBpm(ibiMs: number): number {
   if (ibiMs <= 0) return 0;
   return Math.round(60000 / ibiMs);
@@ -61,7 +77,7 @@ export function computeHRVStats(ibi: number[]): HRVStats {
     if (Math.abs(diff) > 50) nn50 += 1;
   }
   const rmssd = Math.round(Math.sqrt(sumSq / (ibi.length - 1)));
-  const sdnn = Math.round(stddev(ibi));
+  const sdnn = Math.round(stddev(linearDetrend(ibi)));
   const pnn50 = Math.round((nn50 / (ibi.length - 1)) * 100);
 
   const meanIbi = mean(ibi);

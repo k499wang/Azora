@@ -13,6 +13,18 @@ typedef struct {
   size_t targetSamples;
 } HeartRateROI;
 
+static double HeartRateFrameTimestampMs(CMSampleBufferRef sampleBuffer) {
+  CMTime presentationTimestamp = CMSampleBufferGetPresentationTimeStamp(sampleBuffer);
+  if (CMTIME_IS_VALID(presentationTimestamp) && !CMTIME_IS_INDEFINITE(presentationTimestamp)) {
+    Float64 seconds = CMTimeGetSeconds(presentationTimestamp);
+    if (isfinite(seconds)) {
+      return seconds * 1000.0;
+    }
+  }
+
+  return CACurrentMediaTime() * 1000.0;
+}
+
 @interface HeartRatePlugin : FrameProcessorPlugin
 @end
 
@@ -141,7 +153,7 @@ typedef struct {
 
   CVPixelBufferUnlockBaseAddress(imageBuffer, kCVPixelBufferLock_ReadOnly);
 
-  double timestampMs = CACurrentMediaTime() * 1000.0;
+  double timestampMs = HeartRateFrameTimestampMs(frame.buffer);
 
   return @{
     @"timestamp": @(timestampMs),

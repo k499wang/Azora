@@ -13,19 +13,95 @@ export interface HeartRateFrameState {
 }
 
 const BASELINE_ALPHA = 0.02;
-const SMOOTH_ALPHA = 0.4;
 const AMPLITUDE_ALPHA = 0.05;
 const PEAK_THRESHOLD_FACTOR = 0.4;
 const MIN_AMPLITUDE = 0.001;
 const MIN_IBI_MS = 300;
 const MAX_IBI_MS = 1500;
-const WARMUP_FRAMES = 20;
+const WARMUP_FRAMES = 60;
 const REINIT_GAP_MS = 1000;
 const IBI_HISTORY_SIZE = 8;
 const MALIK_THRESHOLD = 0.2;
 const MALIK_WINDOW = 5;
 const MALIK_MIN_HISTORY = 3;
 const SIGNAL_QUALITY_REF = 0.02;
+
+const SAMPLE_RATE_HZ = 30;
+const BP_LOW_HZ = 0.7;
+const BP_HIGH_HZ = 3.5;
+
+interface BiquadCoeffs {
+  b0: number;
+  b1: number;
+  b2: number;
+  a1: number;
+  a2: number;
+}
+
+function designHighpass(fs: number, f0: number): BiquadCoeffs {
+  const w0 = (2 * Math.PI * f0) / fs;
+  const cosw = Math.cos(w0);
+  const sinw = Math.sin(w0);
+  const alpha = sinw / (2 * Math.SQRT1_2);
+  const a0 = 1 + alpha;
+  return {
+    b0: (1 + cosw) / 2 / a0,
+    b1: -(1 + cosw) / a0,
+    b2: (1 + cosw) / 2 / a0,
+    a1: (-2 * cosw) / a0,
+    a2: (1 - alpha) / a0,
+  };
+}
+
+function designLowpass(fs: number, f0: number): BiquadCoeffs {
+  const w0 = (2 * Math.PI * f0) / fs;
+  const cosw = Math.cos(w0);
+  const sinw = Math.sin(w0);
+  const alpha = sinw / (2 * Math.SQRT1_2);
+  const a0 = 1 + alpha;
+  return {
+    b0: (1 - cosw) / 2 / a0,
+    b1: (1 - cosw) / a0,
+    b2: (1 - cosw) / 2 / a0,
+    a1: (-2 * cosw) / a0,
+    a2: (1 - alpha) / a0,
+  };
+}
+
+const HP_COEFFS = designHighpass(SAMPLE_RATE_HZ, BP_LOW_HZ);
+const LP_COEFFS = designLowpass(SAMPLE_RATE_HZ, BP_HIGH_HZ);
+
+class Biquad {
+  private readonly coeffs: BiquadCoeffs;
+  private s1 = 0;
+  private s2 = 0;
+
+  constructor(coeffs: BiquadCoeffs) {
+    this.coeffs = coeffs;
+  }
+
+  process(x: number): number {
+    const { b0, b1, b2, a1, a2 } = this.coeffs;
+    const y = b0 * x + this.s1;
+    this.s1 = b1 * x - a1 * y + this.s2;
+    this.s2 = b2 * x - a2 * y;
+    return y;
+  }
+
+  reset(): void {
+    this.s1 = 0;
+    this.s2 = 0;
+  }
+
+  // Seed filter state as if it had seen a constant input x0 indefinitely.
+  // dcGain is the filter's DC response (0 for highpass, 1 for lowpass).
+  prime(x0: number, dcGain: number): void {
+    const { b0, b2, a2 } = this.coeffs;
+    const y = dcGain * x0;
+    this.s1 = y - b0 * x0;
+    this.s2 = b2 * x0 - a2 * y;
+  }
+}
 
 export function interpolatePeakTimestamp(
   y1: number,
@@ -119,8 +195,10 @@ function classifyFrame(sample: PpgFrameSample): {
 
 export class HeartRateManager {
   private baseline = 0;
-  private smoothed = 0;
   private amplitude = 0;
+  private readonly bpHp = new Biquad(HP_COEFFS);
+  private readonly bpLp = new Biquad(LP_COEFFS);
+  private needsBandpassPrime = false;
   private prev1 = 0;
   private prev2 = 0;
   private prev1Ts = 0;
@@ -137,8 +215,10 @@ export class HeartRateManager {
 
   reset(): void {
     this.baseline = 0;
-    this.smoothed = 0;
     this.amplitude = 0;
+    this.bpHp.reset();
+    this.bpLp.reset();
+    this.needsBandpassPrime = false;
     this.prev1 = 0;
     this.prev2 = 0;
     this.prev1Ts = 0;
@@ -168,6 +248,10 @@ export class HeartRateManager {
 
     if (placement === 'no_finger' || placement === 'too_much_pressure') {
       this.validFrameCounter = 0;
+      this.amplitude = 0;
+      this.bpHp.reset();
+      this.bpLp.reset();
+      this.needsBandpassPrime = true;
       this.prev1 = 0;
       this.prev2 = 0;
       this.prev1Ts = 0;
@@ -192,7 +276,9 @@ export class HeartRateManager {
         this.sessionStartTs = sample.timestamp;
       }
       this.baseline = weightedAverage;
-      this.smoothed = weightedAverage;
+      this.bpHp.prime(weightedAverage, 0);
+      this.bpLp.prime(0, 1);
+      this.needsBandpassPrime = false;
       this.amplitude = 0;
       this.prev1 = 0;
       this.prev2 = 0;
@@ -204,10 +290,21 @@ export class HeartRateManager {
       this.initialized = true;
     }
 
+    if (this.needsBandpassPrime) {
+      // After a brief placement loss, re-seed the band-pass on the next
+      // valid frame so stale filter state cannot distort the first beats.
+      this.baseline = weightedAverage;
+      this.bpHp.prime(weightedAverage, 0);
+      this.bpLp.prime(0, 1);
+      this.amplitude = 0;
+      this.needsBandpassPrime = false;
+    }
+
     this.baseline += BASELINE_ALPHA * (weightedAverage - this.baseline);
-    this.smoothed += SMOOTH_ALPHA * (weightedAverage - this.smoothed);
+    const hp = this.bpHp.process(weightedAverage);
+    const bp = this.bpLp.process(hp);
     const denom = Math.max(this.baseline, 1);
-    const ac = (this.smoothed - this.baseline) / denom;
+    const ac = bp / denom;
     this.amplitude += AMPLITUDE_ALPHA * (Math.abs(ac) - this.amplitude);
 
     this.validFrameCounter += 1;
