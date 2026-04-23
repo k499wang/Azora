@@ -18,7 +18,7 @@ import { HeartRateManager } from '../lib/heartRate/heartRateManager';
 import { buildCaptureResult } from '../lib/heartRate/captureResult';
 import { useMeasurementTimer } from './useMeasurementTimer';
 
-const CAPTURE_DURATION_MS = 15000;
+const CAPTURE_DURATION_MS = 30000;
 const CAPTURE_DURATION_SEC = CAPTURE_DURATION_MS / 1000;
 const MIN_GOOD_DURATION_MS = 1500;
 const PROGRESS_UPDATE_INTERVAL_MS = 200;
@@ -65,7 +65,7 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
   const [captureState, setCaptureState] = useState<CaptureState>('idle');
   const [fingerPlacement, setFingerPlacement] = useState<FingerPlacementState>('no_finger');
   const [progress, setProgress] = useState(0);
-  const [secondsRemaining, setSecondsRemaining] = useState(15);
+  const [secondsRemaining, setSecondsRemaining] = useState(CAPTURE_DURATION_SEC);
   const [currentBpm, setCurrentBpm] = useState<number | null>(null);
   const [beatTick, setBeatTick] = useState(0);
   const [result, setResult] = useState<CaptureResult | null>(null);
