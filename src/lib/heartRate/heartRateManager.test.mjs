@@ -182,6 +182,32 @@ test('HeartRateManager: short-gap (<1s) keeps ibiHistory and anchor', () => {
   );
 });
 
+test('HeartRateManager: short-gap recovery does not add transient bogus IBIs', () => {
+  const manager = new HeartRateManager();
+  runBeatTrain(manager, [24, 48, 72, 96]);
+  const beforeCount = manager.getIbiSamples().length;
+
+  let t = 20_000;
+  for (let i = 0; i < 15; i++) {
+    manager.processFrame(makeNoFingerFrame(t));
+    t += FRAME_SPACING_MS;
+  }
+
+  for (let i = 0; i < 140; i++) {
+    const weighted = [24, 48, 72, 96].includes(i) ? BEAT_WEIGHTED : BASELINE_WEIGHTED;
+    manager.processFrame(makeFrame(t, weighted));
+    t += FRAME_SPACING_MS;
+  }
+
+  const resumedSamples = manager.getIbiSamples().slice(beforeCount);
+  const tooShortTransient = resumedSamples.some((sample) => sample.ibiMs < 650);
+  assert.equal(
+    tooShortTransient,
+    false,
+    `expected no transient short IBIs after gap, got ${JSON.stringify(resumedSamples)}`,
+  );
+});
+
 test('HeartRateManager: long-gap (>1s) reinits but preserves sessionStart and samples', () => {
   const manager = new HeartRateManager();
   runBeatTrain(manager, [24, 48, 72, 96]);

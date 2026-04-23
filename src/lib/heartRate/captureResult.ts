@@ -1,25 +1,20 @@
 import { computeHRVStats } from '../hrv';
 import type { CaptureResult, IbiSample, PpgFrameSample } from './types';
-import { computeBPM } from './signalProcessing';
+import { computeBPM, extractBestCaptureBeatSeries } from './signalProcessing';
 
-const MIN_HRV_SIGNAL_QUALITY = 0.6;
-
-export function getHrvEligibleIbiMs(ibiSamples: IbiSample[]): number[] {
-  return ibiSamples
-    .filter((sample) =>
-      sample.signalQuality != null &&
-      Number.isFinite(sample.signalQuality) &&
-      sample.signalQuality >= MIN_HRV_SIGNAL_QUALITY,
-    )
-    .map((sample) => sample.ibiMs);
-}
+const MIN_HRV_BEAT_COUNT = 12;
 
 export function buildCaptureResult(
   samples: PpgFrameSample[],
   ibiSamples: IbiSample[] = [],
 ): CaptureResult {
   const bpmResult = computeBPM(samples);
-  const hrvStats = computeHRVStats(getHrvEligibleIbiMs(ibiSamples));
+  const hrvBeatSeries = extractBestCaptureBeatSeries(samples);
+  const hrvEligibleIbis = hrvBeatSeries?.ibiMs ?? [];
+  const hrvStats =
+    hrvEligibleIbis.length >= MIN_HRV_BEAT_COUNT
+      ? computeHRVStats(hrvEligibleIbis)
+      : null;
 
   if (bpmResult == null) {
     const tooFew = samples.length < 60;
@@ -47,11 +42,11 @@ export function buildCaptureResult(
       durationMs: bpmResult.durationMs || endTs - startTs,
       recordedAt: new Date().toISOString(),
       source: 'camera-flash',
-      rmssd: hrvStats.rmssd,
-      sdnn: hrvStats.sdnn,
-      pnn50: hrvStats.pnn50,
-      hrDrop: hrvStats.hrDrop,
-      beatCount: hrvStats.beatCount,
+      rmssd: hrvStats?.rmssd,
+      sdnn: hrvStats?.sdnn,
+      pnn50: hrvStats?.pnn50,
+      hrDrop: hrvStats?.hrDrop,
+      beatCount: hrvStats?.beatCount ?? hrvBeatSeries?.ibiMs.length,
     },
     error: null,
     ibiSamples,

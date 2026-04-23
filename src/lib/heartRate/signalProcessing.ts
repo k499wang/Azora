@@ -48,6 +48,16 @@ export const PREVIEW_BPM_OPTIONS: ComputeBpmOptions = {
   fallbackSnrDbWithoutPeaks: 6.5,
 };
 
+export const HRV_CAPTURE_OPTIONS: ComputeBpmOptions = {
+  minDurationMs: 8000,
+  stabilizationMs: 5000,
+  minResampledSamples: 96,
+  minSnrDb: 2.5,
+  minConfidence: 0.45,
+  requirePeakAgreement: true,
+  fallbackSnrDbWithoutPeaks: 7,
+};
+
 interface ResolvedComputeBpmOptions {
   minDurationMs: number;
   stabilizationMs: number;
@@ -89,11 +99,32 @@ interface PeakResult {
   peaks: number[];
 }
 
+interface CandidateAnalysis {
+  estimate: HeartRateEstimate;
+  stableStartTimestamp: number;
+  sampleRate: number;
+  peaks: PeakResult | null;
+}
+
+type PeakCandidateAnalysis = CandidateAnalysis & { peaks: PeakResult };
+
 export interface BeatDetectionResult {
   timestamp: number;
   confidence: number;
   roiId: string;
   channel: PpgChannel;
+}
+
+export interface CaptureBeatSeries {
+  beatTimestamps: number[];
+  ibiMs: number[];
+  roiId: string;
+  channel: PpgChannel;
+  confidence: number;
+  quality: PpgQuality;
+  snrDb: number;
+  frequencyBpm: number;
+  peakBpm: number;
 }
 
 function clamp(value: number, min: number, max: number): number {
@@ -427,10 +458,10 @@ function qualityFromEstimate(
   return 'poor';
 }
 
-function evaluateCandidate(
+function analyzeCandidate(
   series: CandidateSeries,
   options: ResolvedComputeBpmOptions,
-): HeartRateEstimate | null {
+): CandidateAnalysis | null {
   const stableStart = series.timestamps[0] + options.stabilizationMs;
   const stableSeries: CandidateSeries = {
     ...series,
@@ -475,16 +506,21 @@ function evaluateCandidate(
   const durationMs = stableSeries.timestamps[stableSeries.timestamps.length - 1] - stableSeries.timestamps[0];
 
   return {
-    bpm: freq.bpm,
-    confidence,
-    quality: qualityFromEstimate(confidence, freq.snrDb, agreement, options),
-    sampleCount: stableSeries.values.length,
-    durationMs,
-    roiId: series.roiId,
-    channel: series.channel,
-    snrDb: freq.snrDb,
-    frequencyBpm: freq.bpm,
-    peakBpm: peaks?.bpm ?? null,
+    estimate: {
+      bpm: freq.bpm,
+      confidence,
+      quality: qualityFromEstimate(confidence, freq.snrDb, agreement, options),
+      sampleCount: stableSeries.values.length,
+      durationMs,
+      roiId: series.roiId,
+      channel: series.channel,
+      snrDb: freq.snrDb,
+      frequencyBpm: freq.bpm,
+      peakBpm: peaks?.bpm ?? null,
+    },
+    stableStartTimestamp: stableSeries.timestamps[0],
+    sampleRate: resampled.sampleRate,
+    peaks,
   };
 }
 
@@ -552,6 +588,28 @@ function candidatePriority(estimate: HeartRateEstimate): number {
       estimate.roiId === 'center' ? 0.025 : 0;
 
   return estimate.confidence + estimate.snrDb / 25 + channelBonus + roiBonus;
+}
+
+function beatTimestampsFromPeaks(
+  peakIndexes: number[],
+  sampleRate: number,
+  stableStartTimestamp: number,
+): number[] {
+  const stepMs = 1000 / sampleRate;
+  return peakIndexes.map((peakIndex) => stableStartTimestamp + peakIndex * stepMs);
+}
+
+function ibiMsFromBeatTimestamps(beatTimestamps: number[]): number[] {
+  const intervals: number[] = [];
+
+  for (let i = 1; i < beatTimestamps.length; i++) {
+    const intervalMs = beatTimestamps[i] - beatTimestamps[i - 1];
+    if (intervalMs >= 333 && intervalMs <= 1500) {
+      intervals.push(intervalMs);
+    }
+  }
+
+  return intervals;
 }
 
 function consensusEstimate(estimates: HeartRateEstimate[]): HeartRateEstimate | null {
@@ -691,6 +749,43 @@ export function detectLatestBeat(
   return best;
 }
 
+export function extractBestCaptureBeatSeries(
+  samples: PpgFrameSample[],
+  options: ComputeBpmOptions = HRV_CAPTURE_OPTIONS,
+): CaptureBeatSeries | null {
+  if (samples.length === 0) return null;
+
+  const resolvedOptions = resolveOptions(options);
+  const analyses = buildCandidates(samples)
+    .map((candidate) => analyzeCandidate(candidate, resolvedOptions))
+    .filter((analysis): analysis is PeakCandidateAnalysis => analysis != null && analysis.peaks != null);
+
+  if (analyses.length === 0) return null;
+
+  const best = [...analyses].sort(
+    (a, b) => candidatePriority(b.estimate) - candidatePriority(a.estimate),
+  )[0];
+  const beatTimestamps = beatTimestampsFromPeaks(
+    best.peaks.peaks,
+    best.sampleRate,
+    best.stableStartTimestamp,
+  );
+  const ibiMs = ibiMsFromBeatTimestamps(beatTimestamps);
+  if (ibiMs.length < 2) return null;
+
+  return {
+    beatTimestamps,
+    ibiMs,
+    roiId: best.estimate.roiId,
+    channel: best.estimate.channel,
+    confidence: best.estimate.confidence,
+    quality: best.estimate.quality,
+    snrDb: best.estimate.snrDb,
+    frequencyBpm: best.estimate.frequencyBpm,
+    peakBpm: best.peaks.bpm,
+  };
+}
+
 /**
  * Compute BPM from native camera PPG frame summaries.
  *
@@ -706,7 +801,7 @@ export function computeBPM(
 
   const resolvedOptions = resolveOptions(options);
   const estimates = buildCandidates(samples)
-    .map((candidate) => evaluateCandidate(candidate, resolvedOptions))
+    .map((candidate) => analyzeCandidate(candidate, resolvedOptions)?.estimate ?? null)
     .filter((estimate): estimate is HeartRateEstimate => estimate != null);
 
   return consensusEstimate(estimates);

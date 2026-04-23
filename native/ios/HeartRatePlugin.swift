@@ -101,6 +101,16 @@ public class HeartRatePlugin: FrameProcessorPlugin {
     ]
   }
 
+  private func frameTimestampMs(for sampleBuffer: CMSampleBuffer) -> Double {
+    let presentationTimestamp = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
+    let seconds = CMTimeGetSeconds(presentationTimestamp)
+    if seconds.isFinite {
+      return seconds * 1000
+    }
+
+    return CACurrentMediaTime() * 1000
+  }
+
   public override func callback(_ frame: Frame, withArguments arguments: [AnyHashable: Any]?) -> Any? {
     guard let imageBuffer = CMSampleBufferGetImageBuffer(frame.buffer) else { return nil }
     let pixelFormat = CVPixelBufferGetPixelFormatType(imageBuffer)
@@ -138,7 +148,7 @@ public class HeartRatePlugin: FrameProcessorPlugin {
       )
     }
 
-    let timestampMs = CACurrentMediaTime() * 1000
+    let timestampMs = frameTimestampMs(for: frame.buffer)
 
     return [
       "timestamp": timestampMs,
