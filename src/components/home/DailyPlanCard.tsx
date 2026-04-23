@@ -2,7 +2,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
-import { typography } from '../../theme/typography';
+import { typography, fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import { card } from '../../theme/card';
 import Icon from '../common/icons/Icon';
@@ -84,15 +84,15 @@ const styles = StyleSheet.create({
     fontSize: 11,
     textTransform: 'uppercase',
     letterSpacing: 0.8,
-    fontFamily: 'Nunito-SemiBold',
+    fontFamily: fonts.semibold,
     fontWeight: '700',
   },
   title: {
     ...typography.title.title3,
     fontSize: 17,
     color: colors.text.primary,
-    fontFamily: 'Nunito-Bold',
-    fontWeight: '700',
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
     marginTop: 2,
   },
   metaRow: {

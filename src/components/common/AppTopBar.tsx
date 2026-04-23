@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import type { StyleProp, ViewStyle } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
-import { typography } from '../../theme/typography';
+import { typography, fonts } from '../../theme/typography';
 import { spacing, padding } from '../../theme/spacing';
 
 interface AppTopBarProps {
@@ -15,7 +15,7 @@ interface AppTopBarProps {
 }
 
 export default function AppTopBar({
-  title = 'Brthe',
+  title = 'Azora',
   streak = 7,
   rightSlot,
   showStreak = true,
@@ -63,8 +63,8 @@ const styles = StyleSheet.create({
   brandTitle: {
     ...typography.title.title2,
     color: colors.text.primary,
-    fontFamily: 'Nunito-Bold',
-    fontWeight: '800',
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
     letterSpacing: 0.2,
   },
   streakPill: {
@@ -84,7 +84,7 @@ const styles = StyleSheet.create({
   streakText: {
     ...typography.label.medium,
     color: colors.text.primary,
-    fontFamily: 'Nunito-Bold',
+    fontFamily: fonts.bold,
     fontWeight: '700',
   },
 });

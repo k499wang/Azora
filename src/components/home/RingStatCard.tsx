@@ -2,7 +2,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Canvas, Path, Skia } from '@shopify/react-native-skia';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
-import { typography } from '../../theme/typography';
+import { typography, fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import { card } from '../../theme/card';
 import Icon, { type IconName } from '../common/icons/Icon';
@@ -108,14 +108,14 @@ const styles = StyleSheet.create({
     fontSize: 21,
     lineHeight: 26,
     color: colors.text.primary,
-    fontFamily: 'Nunito-Bold',
-    fontWeight: '800',
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
   },
   target: {
     ...typography.label.small,
     fontSize: 14,
     color: colors.text.tertiary,
-    fontFamily: 'Nunito-SemiBold',
+    fontFamily: fonts.semibold,
   },
   label: {
     ...typography.body.small,
@@ -135,7 +135,7 @@ const styles = StyleSheet.create({
   trendText: {
     ...typography.caption.caption2,
     fontSize: 11,
-    fontFamily: 'Nunito-SemiBold',
+    fontFamily: fonts.semibold,
     fontWeight: '600',
   },
   ringWrap: {
