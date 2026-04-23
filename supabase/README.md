@@ -32,12 +32,24 @@ Included in v1 migrations:
 - `breathing_sessions`
 - `heart_rate_sessions`
 - `heart_rate_samples`
+- `heart_rate_ibi_samples`
 - `daily_activity`
 - `subscriptions`
 - `revenuecat_events`
 - RLS policies
 - `user_streaks_v`
 - Session completion RPCs
+
+Derived HRV metrics for the launch breath-hold flow are stored directly on
+`breath_hold_sessions` (`rmssd`, `sdnn`, `pnn50`, `hr_drop`, `beat_count`).
+Use `user_today_breath_hold_v` to read the latest authenticated breath-hold
+session for the user's current local day. Use
+`user_today_breath_hold_ibi_samples_v` to read that session's IBI graph data.
+
+Standalone heart-rate sessions can also store `rmssd`, `sdnn`, `pnn50`,
+`hr_drop`, and `beat_count` on `heart_rate_sessions`. Use
+`user_today_heart_rate_v` and `user_today_heart_rate_ibi_samples_v` to read the
+latest authenticated standalone heart-rate summary and graph data for today.
 
 Deferred intentionally:
 

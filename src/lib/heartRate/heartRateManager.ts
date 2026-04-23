@@ -1,4 +1,9 @@
-import type { FingerPlacementState, PpgFrameSample, PpgRoiSample } from './types';
+import type {
+  FingerPlacementState,
+  IbiSample,
+  PpgFrameSample,
+  PpgRoiSample,
+} from './types';
 
 export interface HeartRateFrameState {
   fingerPlacement: FingerPlacementState;
@@ -94,6 +99,8 @@ export class HeartRateManager {
   private initialized = false;
   private lastPlacement: FingerPlacementState = 'no_finger';
   private readonly ibiHistory: number[] = [];
+  private readonly ibiSamples: IbiSample[] = [];
+  private sessionStartTs: number | null = null;
 
   reset(): void {
     this.baseline = 0;
@@ -108,6 +115,8 @@ export class HeartRateManager {
     this.initialized = false;
     this.lastPlacement = 'no_finger';
     this.ibiHistory.length = 0;
+    this.ibiSamples.length = 0;
+    this.sessionStartTs = null;
   }
 
   processFrame(sample: PpgFrameSample): HeartRateFrameState {
@@ -133,6 +142,9 @@ export class HeartRateManager {
 
     const gapMs = this.lastGoodTs === 0 ? 0 : sample.timestamp - this.lastGoodTs;
     if (!this.initialized || gapMs > REINIT_GAP_MS) {
+      if (this.sessionStartTs == null || gapMs > REINIT_GAP_MS) {
+        this.sessionStartTs = sample.timestamp;
+      }
       this.baseline = weightedAverage;
       this.smoothed = weightedAverage;
       this.amplitude = 0;
@@ -170,6 +182,11 @@ export class HeartRateManager {
               if (this.ibiHistory.length > IBI_HISTORY_SIZE) {
                 this.ibiHistory.shift();
               }
+              this.ibiSamples.push({
+                offsetMs: Math.max(0, this.prev1Ts - (this.sessionStartTs ?? this.prev1Ts)),
+                ibiMs: Math.round(ibi),
+                signalQuality: null,
+              });
             } else {
               this.ibiHistory.length = 0;
             }
@@ -206,5 +223,9 @@ export class HeartRateManager {
     const bpm = Math.round(60000 / medianMs);
     if (bpm < 40 || bpm > 180) return null;
     return bpm;
+  }
+
+  getIbiSamples(): IbiSample[] {
+    return this.ibiSamples.map((sample) => ({ ...sample }));
   }
 }

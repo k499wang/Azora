@@ -26,6 +26,12 @@ export type PpgQuality = 'good' | 'fair' | 'poor';
 
 export type PpgChannel = 'weighted' | 'red' | 'green' | 'blue' | 'redRatio';
 
+export interface IbiSample {
+  offsetMs: number;
+  ibiMs: number;
+  signalQuality: number | null;
+}
+
 export interface PpgRoiSample {
   id: string;
   r: number;
@@ -67,11 +73,17 @@ export interface HeartRateReading {
   durationMs: number;
   recordedAt: string;
   source: 'camera-flash';
+  rmssd?: number;
+  sdnn?: number;
+  pnn50?: number;
+  hrDrop?: number;
+  beatCount?: number;
 }
 
 export interface CaptureResult {
   reading: HeartRateReading | null;
   error: 'low_confidence' | 'too_few_samples' | 'signal_lost' | 'camera_error' | null;
+  ibiSamples: IbiSample[];
 }
 
 export interface HeartRateStreamSummary {
