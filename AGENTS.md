@@ -79,6 +79,8 @@ src/
 
 When touching existing code, prefer moving it gradually toward this shape only when the change is already justified. Do not churn unrelated files just to satisfy folder purity.
 
+Until that migration is real, prefer the current repo layout over speculative rearranging. Put new code in the most local, obvious existing home first, and only promote or move code when reuse or ownership boundaries are clear.
+
 ## Abstraction Rules
 
 Good abstractions in this repo:
@@ -113,6 +115,34 @@ If the answer is mostly no, keep the code inline and simple.
 - Keep effects narrow and purposeful. If an effect manages a workflow, consider a custom hook.
 - Avoid `any`. Especially avoid `useNavigation<any>()`.
 - Use typed route params and central navigation types.
+
+## Navigation Rules
+
+- Navigation types live in `src/app/navigation/types.ts`.
+- Navigators live in `src/app/navigation/`.
+- `App.tsx` should stay a thin bootstrap file and should not own route registration logic.
+- All new route names and params must be added to the central param lists before wiring screens.
+- Every screen must use an explicit screen prop type from `src/app/navigation/types.ts` or the `src/app/navigation` barrel export.
+- Prefer typed screen props for screens and typed `useNavigation(...)` only for nested child components that are not registered screens.
+
+When adding a new screen:
+
+1. Add the route and params to `MainTabParamList` or `RootStackParamList`.
+2. Add a screen prop alias if the screen is a real route.
+3. Register the screen in `MainTabs.tsx` or `RootNavigator.tsx`.
+4. Type the screen function with the matching prop alias.
+5. Update any child components that navigate to it using the correct typed navigation prop.
+
+Preferred patterns:
+- Registered screen:
+  - `function DailyResultScreen({ navigation, route }: DailyResultScreenProps) {}`
+- Child component inside a tab screen:
+  - `const navigation = useNavigation<MainTabNavigationProp<'Home'>>();`
+
+Avoid:
+- manual `navigation?: { ... }` prop shapes
+- local route-param type definitions inside screens when the route already exists centrally
+- `useNavigation<any>()`
 
 ## State Rules
 
@@ -168,6 +198,7 @@ When asked to make changes:
 - Keep camera/native plugin access behind a narrow boundary.
 - Keep static breathing techniques simple until there is a real need for user-authored or backend-driven techniques.
 - Backend work should preserve the documented Supabase data model and Android portability goals in `docs/backend-plan/`.
+- In the current layout, feature-specific UI can stay under `src/components/<feature>/`, shared primitives belong in `src/components/common/`, and pure heart-rate logic belongs in `src/lib/heartRate/`.
 
 ## What Agents Should Avoid
 

@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
 import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
 import { spacing } from '../theme/spacing';
@@ -9,6 +8,7 @@ import BreathingCircle, {
   BreathingCircleRef,
 } from '../components/exercise/BreathingCircle';
 import ExerciseScaffold from '../components/exercise/ExerciseScaffold';
+import type { DailyExerciseScreenProps } from '../app/navigation';
 
 type HoldPhase = 'idle' | 'inhale' | 'hold' | 'done';
 
@@ -19,8 +19,9 @@ const PHASE_LABELS: Record<HoldPhase, string> = {
   done: 'Released',
 };
 
-export default function DailyExercisePage() {
-  const navigation = useNavigation<any>();
+export default function DailyExercisePage({
+  navigation,
+}: DailyExerciseScreenProps) {
   const circleRef = useRef<BreathingCircleRef>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [phase, setPhase] = useState<HoldPhase>('idle');

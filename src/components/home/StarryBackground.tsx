@@ -1,8 +1,9 @@
 import { StyleSheet, View } from 'react-native';
+import type { DimensionValue } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 // Deterministic star positions — no randomness at render time
-const STARS: { top: string; left: string; size: number; opacity: number }[] = [
+const STARS: { top: DimensionValue; left: DimensionValue; size: number; opacity: number }[] = [
   { top: '2%',  left: '8%',  size: 2,   opacity: 0.9 },
   { top: '3%',  left: '55%', size: 1.5, opacity: 0.7 },
   { top: '5%',  left: '30%', size: 2.5, opacity: 0.8 },
@@ -53,8 +54,8 @@ export default function StarryBackground() {
           style={[
             styles.star,
             {
-              top: star.top as any,
-              left: star.left as any,
+              top: star.top,
+              left: star.left,
               width: star.size,
               height: star.size,
               borderRadius: star.size / 2,

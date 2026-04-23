@@ -7,6 +7,7 @@ import { spacing, padding } from '../../theme/spacing';
 import { card } from '../../theme/card';
 import TECHNIQUES, { type BreathingTechnique } from '../../data/techniques';
 import SectionHeader from '../common/SectionHeader';
+import type { MainTabNavigationProp } from '../../app/navigation';
 
 const CATEGORY_CONFIG = {
   calm: { label: 'Calm', color: colors.primary.blue500, bg: colors.primary.blue100 },
@@ -20,7 +21,7 @@ function formatPattern(p: BreathingTechnique['pattern']) {
 }
 
 function TechniqueCard({ technique }: { technique: BreathingTechnique }) {
-  const navigation = useNavigation<any>();
+  const navigation = useNavigation<MainTabNavigationProp<'Home'>>();
   const cat = CATEGORY_CONFIG[technique.category];
 
   return (
@@ -31,7 +32,7 @@ function TechniqueCard({ technique }: { technique: BreathingTechnique }) {
       <View style={styles.topRow}>
         <View style={[styles.iconCircle, { backgroundColor: cat.bg }]}>
           <MaterialCommunityIcons
-            name={technique.icon as any}
+            name={technique.icon}
             size={22}
             color={cat.color}
           />

@@ -6,8 +6,9 @@ import { padding, spacing } from '../theme/spacing';
 import AppTopBar from '../components/common/AppTopBar';
 import AnalyticsSection from '../components/analytics/AnalyticsSection';
 import HighlightCards from '../components/home/HighlightCards';
+import type { ProfileScreenProps } from '../app/navigation';
 
-export default function ProfileScreen() {
+export default function ProfileScreen(_: ProfileScreenProps) {
   const insets = useSafeAreaInsets();
 
   return (

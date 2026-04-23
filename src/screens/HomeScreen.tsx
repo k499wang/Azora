@@ -11,8 +11,9 @@ import SessionStatsPager from '../components/home/SessionStatsPager';
 import EmptyStateCard from '../components/home/EmptyStateCard';
 import BreathingLibrary from '../components/home/BreathingLibrary';
 import DailyPlanCard from '../components/home/DailyPlanCard';
+import type { HomeScreenProps } from '../app/navigation';
 
-export default function HomeScreen() {
+export default function HomeScreen(_: HomeScreenProps) {
   const insets = useSafeAreaInsets();
 
   return (
