@@ -9,22 +9,29 @@ const weight = {
   bold: '700' as FontWeight,
 };
 
+// Switch this to try different display fonts for headings/titles.
+// Options: 'Fredoka' | 'Baloo2' | 'Unbounded' | 'Sniglet' | 'Nunito'
+const DISPLAY_FAMILY = 'Fredoka';
+
+const displayBold = `${DISPLAY_FAMILY}-Bold`;
+const displaySemiBold = `${DISPLAY_FAMILY}-SemiBold`;
+
 export const typography = {
   display: {
     display1: {
-      fontFamily: 'Nunito-Bold',
+      fontFamily: displayBold,
       fontWeight: weight.bold,
       fontSize: 48,
       lineHeight: 56,
     },
     display2: {
-      fontFamily: 'Nunito-Bold',
+      fontFamily: displayBold,
       fontWeight: weight.bold,
       fontSize: 40,
       lineHeight: 48,
     },
     display3: {
-      fontFamily: 'Nunito-Bold',
+      fontFamily: displayBold,
       fontWeight: weight.bold,
       fontSize: 32,
       lineHeight: 40,
@@ -33,19 +40,19 @@ export const typography = {
 
   title: {
     title1: {
-      fontFamily: 'Nunito-Bold',
+      fontFamily: displayBold,
       fontWeight: weight.bold,
       fontSize: 28,
       lineHeight: 36,
     },
     title2: {
-      fontFamily: 'Nunito-Bold',
+      fontFamily: displayBold,
       fontWeight: weight.bold,
       fontSize: 24,
       lineHeight: 32,
     },
     title3: {
-      fontFamily: 'Nunito-SemiBold',
+      fontFamily: displaySemiBold,
       fontWeight: weight.semibold,
       fontSize: 20,
       lineHeight: 28,
