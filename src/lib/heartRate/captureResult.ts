@@ -2,12 +2,24 @@ import { computeHRVStats } from '../hrv';
 import type { CaptureResult, IbiSample, PpgFrameSample } from './types';
 import { computeBPM } from './signalProcessing';
 
+const MIN_HRV_SIGNAL_QUALITY = 0.6;
+
+export function getHrvEligibleIbiMs(ibiSamples: IbiSample[]): number[] {
+  return ibiSamples
+    .filter((sample) =>
+      sample.signalQuality != null &&
+      Number.isFinite(sample.signalQuality) &&
+      sample.signalQuality >= MIN_HRV_SIGNAL_QUALITY,
+    )
+    .map((sample) => sample.ibiMs);
+}
+
 export function buildCaptureResult(
   samples: PpgFrameSample[],
   ibiSamples: IbiSample[] = [],
 ): CaptureResult {
   const bpmResult = computeBPM(samples);
-  const hrvStats = computeHRVStats(ibiSamples.map((sample) => sample.ibiMs));
+  const hrvStats = computeHRVStats(getHrvEligibleIbiMs(ibiSamples));
 
   if (bpmResult == null) {
     const tooFew = samples.length < 60;
