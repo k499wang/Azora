@@ -133,6 +133,8 @@ export interface CaptureBeatSeries {
   snrDb: number;
   frequencyBpm: number;
   peakBpm: number;
+  rawIntervalCount: number;
+  rejectedIntervalCount: number;
 }
 
 interface ScoredCaptureBeatSeries extends CaptureBeatSeries {
@@ -935,6 +937,8 @@ export function extractBestCaptureBeatSeries(
     snrDb: best.snrDb,
     frequencyBpm: best.frequencyBpm,
     peakBpm: best.peakBpm,
+    rawIntervalCount: best.rawIntervalCount,
+    rejectedIntervalCount: best.rejectedIntervalCount,
   };
 }
 
