@@ -5,6 +5,7 @@ import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import { card } from '../../theme/card';
+import Icon, { type IconName } from '../common/icons/Icon';
 
 interface RingStatCardProps {
   label: string;
@@ -13,7 +14,11 @@ interface RingStatCardProps {
   progress: number; // 0..1
   color?: string;
   trackColor?: string;
-  icon: keyof typeof MaterialCommunityIcons.glyphMap;
+  icon: IconName;
+  trend?: {
+    direction: 'up' | 'down';
+    delta?: string;
+  };
 }
 
 const RING_SIZE = 76;
@@ -27,7 +32,10 @@ export default function RingStatCard({
   color = colors.neutral[900],
   trackColor = colors.neutral[100],
   icon,
+  trend,
 }: RingStatCardProps) {
+  const trendColor = trend?.direction === 'up' ? colors.success[500] : colors.error[500];
+  const trendIcon = trend?.direction === 'up' ? 'arrow-top-right' : 'arrow-bottom-right';
   const cx = RING_SIZE / 2;
   const cy = RING_SIZE / 2;
   const r = RING_SIZE / 2 - STROKE / 2;
@@ -46,7 +54,17 @@ export default function RingStatCard({
         <Text style={styles.value}>{value}</Text>
         {target ? <Text style={styles.target}>/{target}</Text> : null}
       </View>
-      <Text style={styles.label}>{label}</Text>
+      <View style={styles.labelRow}>
+        <Text style={styles.label}>{label}</Text>
+        {trend ? (
+          <View style={styles.trendWrap}>
+            <MaterialCommunityIcons name={trendIcon} size={12} color={trendColor} />
+            {trend.delta ? (
+              <Text style={[styles.trendText, { color: trendColor }]}>{trend.delta}</Text>
+            ) : null}
+          </View>
+        ) : null}
+      </View>
 
       <View style={styles.ringWrap}>
         <View style={{ width: RING_SIZE, height: RING_SIZE }}>
@@ -63,7 +81,7 @@ export default function RingStatCard({
             )}
           </Canvas>
           <View style={styles.iconCenter} pointerEvents="none">
-            <MaterialCommunityIcons name={icon} size={22} color={color} />
+            <Icon name={icon} size={34} color={color} />
           </View>
         </View>
       </View>
@@ -102,6 +120,23 @@ const styles = StyleSheet.create({
   label: {
     ...typography.body.small,
     color: colors.text.secondary,
+  },
+  labelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.xs,
+  },
+  trendWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  trendText: {
+    ...typography.caption.caption2,
+    fontSize: 11,
+    fontFamily: 'Nunito-SemiBold',
+    fontWeight: '600',
   },
   ringWrap: {
     alignItems: 'center',

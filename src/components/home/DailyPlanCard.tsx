@@ -1,101 +1,57 @@
-import { StyleSheet, Text, View } from 'react-native';
-import { Canvas, Path, Skia } from '@shopify/react-native-skia';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import { card } from '../../theme/card';
-
-interface Task {
-  id: string;
-  label: string;
-  value: string;
-  icon: keyof typeof import('@expo/vector-icons/build/MaterialCommunityIcons').glyphMap;
-  done: boolean;
-  color?: string;
-}
-
-const DEFAULT_TASKS: Task[] = [
-  { id: 'am', label: 'Morning', value: 'Box breath', icon: 'weather-sunny', done: true, color: colors.orange[500] },
-  { id: 'mid', label: 'Midday', value: '3 min reset', icon: 'silverware-fork-knife', done: false, color: colors.primary.blue500 },
-  { id: 'pm', label: 'Evening', value: '4-7-8 hold', icon: 'fire', done: false, color: colors.orange[400] },
-];
-
-const RING_SIZE = 140;
-const RING_STROKE = 8;
+import Icon from '../common/icons/Icon';
 
 interface DailyPlanCardProps {
-  tasks?: Task[];
+  duration?: string;
+  streakDays?: number;
+  onPress?: () => void;
 }
 
-export default function DailyPlanCard({ tasks = DEFAULT_TASKS }: DailyPlanCardProps) {
-  const completed = tasks.filter((t) => t.done).length;
-  const total = tasks.length;
-  const remaining = total - completed;
-  const progress = total === 0 ? 0 : completed / total;
+export default function DailyPlanCard({
+  duration = '2:00',
+  streakDays = 7,
+  onPress,
+}: DailyPlanCardProps) {
+  const navigation = useNavigation<any>();
 
-  const cx = RING_SIZE / 2;
-  const cy = RING_SIZE / 2;
-  const r = RING_SIZE / 2 - RING_STROKE / 2;
-
-  const track = Skia.Path.Make();
-  track.addCircle(cx, cy, r);
-
-  const arc = Skia.Path.Make();
-  const rect = Skia.XYWHRect(cx - r, cy - r, r * 2, r * 2);
-  arc.addArc(rect, -90, 360 * progress);
+  const handlePress = () => {
+    if (onPress) return onPress();
+    navigation.navigate('DailyExercise');
+  };
 
   return (
-    <View style={styles.card}>
-      <Text style={styles.title}>Today's plan</Text>
+    <Pressable
+      onPress={handlePress}
+      style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+      accessibilityRole="button"
+      accessibilityLabel="Start your daily breath hold"
+    >
+      <View style={styles.iconCircle}>
+        <Icon name="breath-hold" size={56} color={colors.primary.blue500} />
+      </View>
 
       <View style={styles.body}>
-        <View style={styles.ringWrap}>
-          <View style={{ width: RING_SIZE, height: RING_SIZE }}>
-            <Canvas style={StyleSheet.absoluteFill}>
-              <Path
-                path={track}
-                style="stroke"
-                strokeWidth={RING_STROKE}
-                color={colors.neutral[100]}
-              />
-              {progress > 0 && (
-                <Path
-                  path={arc}
-                  style="stroke"
-                  strokeWidth={RING_STROKE}
-                  strokeCap="round"
-                  color={colors.primary.blue500}
-                />
-              )}
-            </Canvas>
-            <View style={styles.ringCenter} pointerEvents="none">
-              <Text style={styles.ringNumber}>{remaining}</Text>
-              <Text style={styles.ringLabel}>Remaining</Text>
-            </View>
-          </View>
-        </View>
-
-        <View style={styles.taskList}>
-          {tasks.map((task) => (
-            <View key={task.id} style={styles.taskRow}>
-              <MaterialCommunityIcons
-                name={task.icon}
-                size={22}
-                color={task.color ?? colors.primary.blue500}
-                style={styles.taskIcon}
-              />
-              <View style={styles.taskTextWrap}>
-                <Text style={styles.taskLabel}>{task.label}</Text>
-                <Text style={[styles.taskValue, task.done && styles.taskValueDone]}>
-                  {task.value}
-                </Text>
-              </View>
-            </View>
-          ))}
+        <Text style={styles.eyebrow}>Daily action</Text>
+        <Text style={styles.title}>Start your breath hold</Text>
+        <View style={styles.metaRow}>
+          <MaterialCommunityIcons name="timer-outline" size={13} color={colors.text.secondary} />
+          <Text style={styles.meta}>{duration}</Text>
+          <View style={styles.dot} />
+          <MaterialCommunityIcons name="fire" size={13} color={colors.orange[500]} />
+          <Text style={styles.meta}>{`${streakDays} day streak`}</Text>
         </View>
       </View>
-    </View>
+
+      <View style={styles.playCircle}>
+        <MaterialCommunityIcons name="play" size={20} color={colors.text.inverse} />
+      </View>
+    </Pressable>
   );
 }
 
@@ -103,70 +59,66 @@ const styles = StyleSheet.create({
   card: {
     ...card.base,
     ...card.shadow,
-    paddingVertical: spacing.lg,
-    paddingHorizontal: spacing.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
   },
-  title: {
-    ...typography.title.title2,
-    color: colors.text.primary,
+  pressed: {
+    transform: [{ scale: 0.98 }],
+    opacity: 0.96,
+  },
+  iconCircle: {
+    width: 64,
+    height: 64,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   body: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: spacing.md,
-    gap: spacing.md,
+    flex: 1,
   },
-  ringWrap: {
-    alignItems: 'center',
-    justifyContent: 'center',
+  eyebrow: {
+    ...typography.label.small,
+    color: colors.primary.blue600,
+    fontSize: 11,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    fontFamily: 'Nunito-SemiBold',
+    fontWeight: '700',
   },
-  ringCenter: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  ringNumber: {
-    fontFamily: 'Nunito-Bold',
-    fontWeight: '800',
-    fontSize: 36,
-    lineHeight: 42,
+  title: {
+    ...typography.title.title3,
+    fontSize: 17,
     color: colors.text.primary,
-  },
-  ringLabel: {
-    ...typography.body.small,
-    color: colors.text.secondary,
+    fontFamily: 'Nunito-Bold',
+    fontWeight: '700',
     marginTop: 2,
   },
-  taskList: {
-    flex: 1,
-    gap: spacing.md,
-  },
-  taskRow: {
+  metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: 4,
+    marginTop: 4,
   },
-  taskIcon: {
-    width: 26,
-    textAlign: 'center',
-  },
-  taskTextWrap: {
-    flex: 1,
-  },
-  taskLabel: {
+  meta: {
     ...typography.label.small,
-    color: colors.text.tertiary,
+    color: colors.text.secondary,
     fontSize: 12,
   },
-  taskValue: {
-    ...typography.body.small,
-    color: colors.text.primary,
-    fontFamily: 'Nunito-SemiBold',
-    fontWeight: '600',
-    fontSize: 14,
+  dot: {
+    width: 3,
+    height: 3,
+    borderRadius: 1.5,
+    backgroundColor: colors.border.strong,
+    marginHorizontal: 4,
   },
-  taskValueDone: {
-    color: colors.text.tertiary,
-    textDecorationLine: 'line-through',
+  playCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: colors.primary.blue600,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

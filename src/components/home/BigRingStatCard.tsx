@@ -5,6 +5,7 @@ import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import { card } from '../../theme/card';
+import Icon, { type IconName } from '../common/icons/Icon';
 
 interface BigRingStatCardProps {
   label: string;
@@ -13,7 +14,7 @@ interface BigRingStatCardProps {
   progress: number; // 0..1
   color?: string;
   trackColor?: string;
-  icon: keyof typeof MaterialCommunityIcons.glyphMap;
+  icon: IconName;
 }
 
 const RING_SIZE = 120;
@@ -63,7 +64,7 @@ export default function BigRingStatCard({
             )}
           </Canvas>
           <View style={styles.iconCenter} pointerEvents="none">
-            <MaterialCommunityIcons name={icon} size={32} color={color} />
+            <Icon name={icon} size={48} color={color} />
           </View>
         </View>
       </View>

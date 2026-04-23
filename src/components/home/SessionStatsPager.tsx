@@ -28,7 +28,8 @@ export default function SessionStatsPager({ ibiMs = DEFAULT_IBI_MS }: SessionSta
           progress={0.48}
           color={colors.error[500]}
           trackColor={colors.neutral[200]}
-          icon="heart-pulse"
+          icon="heart-bpm"
+          trend={{ direction: 'down', delta: '3' }}
         />
         <RingStatCard
           label="Hold"
@@ -37,7 +38,8 @@ export default function SessionStatsPager({ ibiMs = DEFAULT_IBI_MS }: SessionSta
           progress={0.72}
           color={colors.primary.blue500}
           trackColor={colors.neutral[200]}
-          icon="timer-sand"
+          icon="breath-timer"
+          trend={{ direction: 'up', delta: '12s' }}
         />
         <RingStatCard
           label="Health"
@@ -46,7 +48,8 @@ export default function SessionStatsPager({ ibiMs = DEFAULT_IBI_MS }: SessionSta
           progress={0.92}
           color={colors.success[500]}
           trackColor={colors.neutral[200]}
-          icon="heart-plus"
+          icon="heart-glow"
+          trend={{ direction: 'up', delta: '4' }}
         />
       </View>
       <HRVChart ibiMs={ibiMs} color={colors.error[500]} />

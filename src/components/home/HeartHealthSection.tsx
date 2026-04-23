@@ -71,7 +71,7 @@ export default function HeartHealthSection({
           progress={stats.rmssd / 60}
           color={colors.primary.blue500}
           trackColor={colors.neutral[200]}
-          icon="pulse"
+          icon="heart-rmssd"
         />
         <BigRingStatCard
           label="SDNN"
@@ -80,7 +80,7 @@ export default function HeartHealthSection({
           progress={stats.sdnn / 50}
           color={colors.success[500]}
           trackColor={colors.neutral[200]}
-          icon="chart-bell-curve"
+          icon="heart-sdnn"
         />
       </View>
 
