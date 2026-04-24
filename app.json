@@ -14,7 +14,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.k3vinwvng.BreathingAppInit",
+      "bundleIdentifier": "com.azora.breath",
       "infoPlist": {
         "NSCameraUsageDescription": "Allow $(PRODUCT_NAME) to access your camera"
       }
@@ -30,7 +30,7 @@
         "android.permission.CAMERA",
         "android.permission.CAMERA"
       ],
-      "package": "com.k3vinwvng.BreathingAppInit"
+      "package": "com.azora.breath"
     },
     "web": {
       "favicon": "./assets/favicon.png"
