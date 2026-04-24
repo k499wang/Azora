@@ -94,6 +94,7 @@ See:
 - [20260420000100_create_launch_schema.sql](/Users/k3vinwvng/Documents/Azora/Azora/supabase/migrations/20260420000100_create_launch_schema.sql)
 - [20260420000200_enable_rls.sql](/Users/k3vinwvng/Documents/Azora/Azora/supabase/migrations/20260420000200_enable_rls.sql)
 - [20260424000200_phase_4_entitlement_support.sql](/Users/k3vinwvng/Documents/Azora/Azora/supabase/migrations/20260424000200_phase_4_entitlement_support.sql)
+- [20260424000300_subscription_attribution_columns.sql](/Users/k3vinwvng/Documents/Azora/Azora/supabase/migrations/20260424000300_subscription_attribution_columns.sql) — adds `initial_offering_id`, `experiment_id`, `experiment_variant` to `subscriptions` and re-defines `user_entitlement_v` to expose them. Set once on `INITIAL_PURCHASE` and preserved across later events so pricing-test attribution survives renewals and product changes. See [docs/analytics/paywall-pricing-experiments-playbook.md](/Users/k3vinwvng/Documents/Azora/Azora/docs/analytics/paywall-pricing-experiments-playbook.md).
 
 ## App Work In This Phase
 
