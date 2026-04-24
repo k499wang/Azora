@@ -68,7 +68,6 @@ historical local dates from session rows.
 - [20260420000400_create_session_completion_rpcs.sql](/Users/k3vinwvng/Documents/Azora/Azora/supabase/migrations/20260420000400_create_session_completion_rpcs.sql)
 - [20260422000100_add_breath_hold_hrv_metrics.sql](/Users/k3vinwvng/Documents/Azora/Azora/supabase/migrations/20260422000100_add_breath_hold_hrv_metrics.sql) — re-defines `complete_breath_hold` to also persist derived HRV metrics inside the same atomic write.
 - [20260423000100_harden_tracking_schema.sql](/Users/k3vinwvng/Documents/Azora/Azora/supabase/migrations/20260423000100_harden_tracking_schema.sql) — adds `breathing_technique_catalog` validation and forces `security_invoker` on user-scoped views (including `user_streaks_v`).
-- [20260424000100_recompute_daily_activity_on_breath_hold_delete.sql](/Users/k3vinwvng/Documents/Azora/Azora/supabase/migrations/20260424000100_recompute_daily_activity_on_breath_hold_delete.sql) — `after delete` trigger on `breath_hold_sessions` recomputes `daily_activity` (count, best hold, completion flag, `qualifies_for_streak`) for the affected local date so deletions can't leave phantom streak days.
 
 ## App Work In This Phase
 

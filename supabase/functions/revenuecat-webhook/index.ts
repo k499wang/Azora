@@ -38,6 +38,19 @@ interface RevenueCatEvent {
   expiration_at_ms?: number | null;
   store?: string;
   cancel_reason?: string | null;
+  presented_offering_id?: string | null;
+  presented_offering_identifier?: string | null;
+  experiment_id?: string | null;
+  experiment_name?: string | null;
+  variant_id?: string | null;
+  variant_name?: string | null;
+  experiment?: {
+    id?: string | null;
+    name?: string | null;
+    variant?: string | null;
+    variant_id?: string | null;
+    variant_name?: string | null;
+  } | null;
 }
 
 interface RevenueCatPayload {
@@ -63,6 +76,36 @@ function isUuid(value: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
     value,
   );
+}
+
+function extractInitialAttribution(event: RevenueCatEvent): {
+  initial_offering_id: string | null;
+  experiment_id: string | null;
+  experiment_variant: string | null;
+} {
+  const offeringId =
+    event.presented_offering_id ??
+    event.presented_offering_identifier ??
+    null;
+
+  const experimentId =
+    event.experiment?.id ??
+    event.experiment_id ??
+    null;
+
+  const experimentVariant =
+    event.experiment?.variant ??
+    event.experiment?.variant_name ??
+    event.experiment?.variant_id ??
+    event.variant_name ??
+    event.variant_id ??
+    null;
+
+  return {
+    initial_offering_id: offeringId,
+    experiment_id: experimentId,
+    experiment_variant: experimentVariant,
+  };
 }
 
 function deriveStatus(
@@ -157,22 +200,25 @@ Deno.serve(async (req) => {
       ? new Date(event.expiration_at_ms).toISOString()
       : null;
 
+  const baseRow: Record<string, unknown> = {
+    user_id: userId,
+    revenuecat_app_user_id: event.app_user_id,
+    entitlement,
+    status,
+    product_id: event.product_id ?? null,
+    store: event.store ?? null,
+    current_period_ends_at: currentPeriodEndsAt,
+    will_renew: willRenew,
+    trial_ends_at: trialEndsAt,
+  };
+
+  if (event.type === 'INITIAL_PURCHASE') {
+    Object.assign(baseRow, extractInitialAttribution(event));
+  }
+
   const { error: upsertError } = await supabase
     .from('subscriptions')
-    .upsert(
-      {
-        user_id: userId,
-        revenuecat_app_user_id: event.app_user_id,
-        entitlement,
-        status,
-        product_id: event.product_id ?? null,
-        store: event.store ?? null,
-        current_period_ends_at: currentPeriodEndsAt,
-        will_renew: willRenew,
-        trial_ends_at: trialEndsAt,
-      },
-      { onConflict: 'user_id' },
-    );
+    .upsert(baseRow, { onConflict: 'user_id' });
 
   if (upsertError) {
     console.error('subscriptions upsert failed', upsertError);
