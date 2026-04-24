@@ -34,6 +34,7 @@ import { RootNavigator } from './src/app/navigation';
 import type { RootStackParamList } from './src/app/navigation';
 import { posthog } from './src/config/posthog';
 import { trackAppOpened, trackScreenView } from './src/services/analytics/tracking';
+import { bootstrapAnalytics } from './src/services/analytics/identity';
 SplashScreen.preventAutoHideAsync();
 
 const navigationRef = createNavigationContainerRef<RootStackParamList>();
@@ -64,9 +65,9 @@ export default function App() {
   const lastTrackedRouteNameRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (fontsLoaded) {
-      trackAppOpened();
-    }
+    if (!fontsLoaded) return;
+    bootstrapAnalytics();
+    trackAppOpened();
   }, [fontsLoaded]);
 
   const trackCurrentScreen = useCallback(() => {

@@ -7,6 +7,7 @@ import { typography, fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import { card } from '../../theme/card';
 import Icon from '../common/icons/Icon';
+import { AnalyticsEvent } from '../../services/analytics/events';
 import type { MainTabNavigationProp } from '../../app/navigation';
 
 interface DailyPlanCardProps {
@@ -24,7 +25,7 @@ export default function DailyPlanCard({
   const posthog = usePostHog();
 
   const handlePress = () => {
-    posthog.capture('daily_plan_started', { streak_days: streakDays });
+    posthog.capture(AnalyticsEvent.DailyPlanStarted, { streak_days: streakDays });
     if (onPress) return onPress();
     navigation.navigate('DailyExercise');
   };

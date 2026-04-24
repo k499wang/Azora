@@ -15,6 +15,7 @@ import { LiveHeartRateMonitor } from '../components/meditation/LiveHeartRateMoni
 import { usePostHog } from 'posthog-react-native';
 import type { ExerciseSessionScreenProps } from '../app/navigation';
 import { captureException } from '../services/analytics/errorTracking';
+import { AnalyticsEvent } from '../services/analytics/events';
 
 const MIN_ROUNDS = 1;
 const MAX_ROUNDS = 20;
@@ -73,7 +74,7 @@ export default function ExerciseSessionPage({
     try {
       if (hrEnabled) {
         setHrEnabled(false);
-        posthog.capture('heart_rate_monitoring_toggled', {
+        posthog.capture(AnalyticsEvent.HeartRateMonitoringToggled, {
           enabled: false,
           technique_id: technique.id,
           technique_name: technique.name,
@@ -83,7 +84,7 @@ export default function ExerciseSessionPage({
       const granted = hasPermission ? true : await requestPermission();
       if (granted) {
         setHrEnabled(true);
-        posthog.capture('heart_rate_monitoring_toggled', {
+        posthog.capture(AnalyticsEvent.HeartRateMonitoringToggled, {
           enabled: true,
           technique_id: technique.id,
           technique_name: technique.name,
@@ -147,7 +148,7 @@ export default function ExerciseSessionPage({
     (currentRound: number, pattern: BreathingTechnique['pattern'], rounds: number) => {
       if (currentRound > rounds) {
         setPhase('done');
-        posthog.capture('exercise_session_completed', {
+        posthog.capture(AnalyticsEvent.ExerciseSessionCompleted, {
           technique_id: technique.id,
           technique_name: technique.name,
           technique_category: technique.category,
@@ -177,7 +178,7 @@ export default function ExerciseSessionPage({
     clearTimer();
     circleRef.current?.pause();
     setPaused(true);
-    posthog.capture('exercise_session_paused', {
+    posthog.capture(AnalyticsEvent.ExerciseSessionPaused, {
       technique_id: technique.id,
       technique_name: technique.name,
       round,
@@ -218,7 +219,7 @@ export default function ExerciseSessionPage({
       setCountdown(0);
       setRound(0);
       circleRef.current?.reset();
-      posthog.capture('exercise_session_started', {
+      posthog.capture(AnalyticsEvent.ExerciseSessionStarted, {
         technique_id: technique.id,
         technique_name: technique.name,
         technique_category: technique.category,
@@ -233,7 +234,7 @@ export default function ExerciseSessionPage({
     clearTimer();
     stopPulse();
     if (phase !== 'idle' && phase !== 'done') {
-      posthog.capture('exercise_session_abandoned', {
+      posthog.capture(AnalyticsEvent.ExerciseSessionAbandoned, {
         technique_id: technique.id,
         technique_name: technique.name,
         round,

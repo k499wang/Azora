@@ -15,18 +15,10 @@ export function captureException(error: unknown, context: ErrorContext) {
       ? error
       : new Error(typeof error === 'string' ? error : 'Unknown error');
 
-  posthog.capture('$exception', {
-    $exception_list: [
-      {
-        type: exception.name,
-        value: exception.message,
-        stacktrace: {
-          type: 'raw',
-          frames: exception.stack ?? '',
-        },
-      },
-    ],
-    $exception_source: 'react-native',
-    ...context,
-  });
+  const properties: Record<string, string | number | boolean | null> = {};
+  for (const [key, value] of Object.entries(context)) {
+    if (value !== undefined) properties[key] = value;
+  }
+
+  posthog.captureException(exception, properties);
 }

@@ -148,3 +148,14 @@ Screen autocapture is currently disabled, so screen views are only tracked throu
 - The app only sends these events when PostHog is configured with a project token and host.
 - This list should be updated when new `posthog.capture(...)` calls are added.
 - `$exception` is used for caught exceptions in critical flows like heart-rate setup and exercise heart-rate toggling.
+
+
+ 1. App launches → bootstrapAnalytics() registers super props.          
+  2. User lands on auth screen → any events here go to a throwaway
+  PostHog anon ID (you don't care about these).                          
+  3. User signs in → onUserSignedIn() → events now attributed to user.id,
+   signup_date set on first sign-in.                                     
+  4. User uses the app → every event has app_version, platform,
+  os_version, is attributed to user.id.                                  
+  5. User signs out → onUserSignedOut() → clean slate for the next user
+  on this device.       
