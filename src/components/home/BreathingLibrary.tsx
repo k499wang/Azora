@@ -1,6 +1,7 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { usePostHog } from 'posthog-react-native';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing, padding } from '../../theme/spacing';
@@ -22,11 +23,22 @@ function formatPattern(p: BreathingTechnique['pattern']) {
 
 function TechniqueCard({ technique }: { technique: BreathingTechnique }) {
   const navigation = useNavigation<MainTabNavigationProp<'Home'>>();
+  const posthog = usePostHog();
   const cat = CATEGORY_CONFIG[technique.category];
+
+  const handlePress = () => {
+    posthog.capture('breathing_technique_selected', {
+      technique_id: technique.id,
+      technique_name: technique.name,
+      technique_category: technique.category,
+      pattern: formatPattern(technique.pattern),
+    });
+    navigation.navigate('ExerciseSession', { techniqueId: technique.id });
+  };
 
   return (
     <Pressable
-      onPress={() => navigation.navigate('ExerciseSession', { techniqueId: technique.id })}
+      onPress={handlePress}
       style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
     >
       <View style={styles.topRow}>

@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
@@ -25,9 +25,18 @@ import {
   Sniglet_400Regular,
   Sniglet_800ExtraBold,
 } from '@expo-google-fonts/sniglet';
-import { NavigationContainer } from '@react-navigation/native';
+import {
+  NavigationContainer,
+  createNavigationContainerRef,
+} from '@react-navigation/native';
+import { PostHogProvider } from 'posthog-react-native';
 import { RootNavigator } from './src/app/navigation';
+import type { RootStackParamList } from './src/app/navigation';
+import { posthog } from './src/config/posthog';
+import { trackAppOpened, trackScreenView } from './src/services/analytics/tracking';
 SplashScreen.preventAutoHideAsync();
+
+const navigationRef = createNavigationContainerRef<RootStackParamList>();
 
 export default function App() {
   const [fontsLoaded] = useFonts({
@@ -52,13 +61,39 @@ export default function App() {
     }
   }, [fontsLoaded]);
 
+  const lastTrackedRouteNameRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (fontsLoaded) {
+      trackAppOpened();
+    }
+  }, [fontsLoaded]);
+
+  const trackCurrentScreen = useCallback(() => {
+    if (!navigationRef.isReady()) return;
+
+    const currentRoute = navigationRef.getCurrentRoute();
+    if (currentRoute == null) return;
+
+    if (lastTrackedRouteNameRef.current === currentRoute.name) return;
+
+    lastTrackedRouteNameRef.current = currentRoute.name;
+    trackScreenView(currentRoute);
+  }, []);
+
   if (!fontsLoaded) return null;
 
   return (
     <SafeAreaProvider onLayout={onLayoutRootView}>
       <StatusBar style="dark" />
-      <NavigationContainer>
-        <RootNavigator />
+      <NavigationContainer
+        ref={navigationRef}
+        onReady={trackCurrentScreen}
+        onStateChange={trackCurrentScreen}
+      >
+        <PostHogProvider client={posthog} autocapture={{ captureTouches: true, captureScreens: false }}>
+          <RootNavigator />
+        </PostHogProvider>
       </NavigationContainer>
     </SafeAreaProvider>
   );

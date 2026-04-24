@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { usePostHog } from 'posthog-react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
 import { typography, fonts } from '../../theme/typography';
@@ -20,8 +21,10 @@ export default function DailyPlanCard({
   onPress,
 }: DailyPlanCardProps) {
   const navigation = useNavigation<MainTabNavigationProp<'Home'>>();
+  const posthog = usePostHog();
 
   const handlePress = () => {
+    posthog.capture('daily_plan_started', { streak_days: streakDays });
     if (onPress) return onPress();
     navigation.navigate('DailyExercise');
   };

@@ -1,11 +1,13 @@
 import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { View, StyleSheet } from 'react-native';
+import { usePostHog } from 'posthog-react-native';
 import { useHeartRateCapture } from '../../hooks/useHeartRateCapture';
 import { CameraCheckScreen } from './CameraCheckScreen';
 import { MeasuringScreen } from './MeasuringScreen';
 import { ResultScreen } from './ResultScreen';
 import { DefaultInstructionScreen } from './setupScreens/DefaultInstructionScreen';
 import type { SetupScreenProps, CaptureResult } from '../../lib/heartRate/types';
+import { captureException } from '../../services/analytics/errorTracking';
 
 interface HeartRateCaptureFlowProps {
   setupScreens?: React.ComponentType<SetupScreenProps>[];
@@ -24,6 +26,7 @@ export function HeartRateCaptureFlow({
   onCancel,
   context,
 }: HeartRateCaptureFlowProps) {
+  const posthog = usePostHog();
   const [currentSetupIndex, setCurrentSetupIndex] = useState(0);
   const [pastSetup, setPastSetup] = useState(false);
 
@@ -48,21 +51,40 @@ export function HeartRateCaptureFlow({
   } = useHeartRateCapture();
 
   const beginCapture = useCallback(async () => {
-    if (!hasPermission) {
-      const granted = await requestPermission();
-      if (!granted) return;
+    try {
+      if (!hasPermission) {
+        const granted = await requestPermission();
+        if (!granted) return;
+      }
+      setPastSetup(true);
+      posthog.capture('heart_rate_capture_started', { context: context ?? null });
+      startCapture();
+    } catch (error) {
+      captureException(error, {
+        flow: 'heart_rate_capture',
+        action: 'begin_capture',
+        screen_name: 'HeartRate',
+        context: context ?? null,
+      });
     }
-    setPastSetup(true);
-    startCapture();
-  }, [hasPermission, requestPermission, startCapture]);
+  }, [hasPermission, requestPermission, startCapture, posthog, context]);
 
   const handleSetupNext = useCallback(async () => {
-    if (currentSetupIndex < setupScreens.length - 1) {
-      setCurrentSetupIndex((i) => i + 1);
-    } else {
-      await beginCapture();
+    try {
+      if (currentSetupIndex < setupScreens.length - 1) {
+        setCurrentSetupIndex((i) => i + 1);
+      } else {
+        await beginCapture();
+      }
+    } catch (error) {
+      captureException(error, {
+        flow: 'heart_rate_capture',
+        action: 'setup_next',
+        screen_name: 'HeartRate',
+        context: context ?? null,
+      });
     }
-  }, [beginCapture, currentSetupIndex, setupScreens.length]);
+  }, [beginCapture, context, currentSetupIndex, setupScreens.length]);
 
   useEffect(() => {
     if (setupScreens.length === 0 && !pastSetup) {
@@ -95,8 +117,17 @@ export function HeartRateCaptureFlow({
 
   const handleStartAnyway = useCallback(() => {
     // Force transition to measuring even if finger placement isn't perfect
-    startMeasuring();
-  }, [startMeasuring]);
+    try {
+      startMeasuring();
+    } catch (error) {
+      captureException(error, {
+        flow: 'heart_rate_capture',
+        action: 'start_anyway',
+        screen_name: 'HeartRate',
+        context: context ?? null,
+      });
+    }
+  }, [context, startMeasuring]);
 
   const cameraProps = useMemo(() => (
     device != null

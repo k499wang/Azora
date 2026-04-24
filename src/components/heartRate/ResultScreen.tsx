@@ -8,6 +8,7 @@ import {
   SafeAreaView,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { usePostHog } from 'posthog-react-native';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
@@ -77,11 +78,33 @@ function getHrvUnavailableMessage(
 }
 
 export function ResultScreen({ result, onRetry, onDone, context }: ResultScreenProps) {
+  const posthog = usePostHog();
   const scaleAnim = useRef(new Animated.Value(0.7)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
   const heartPulse = useRef(new Animated.Value(1)).current;
 
   const isSuccess = result.reading != null;
+
+  useEffect(() => {
+    if (isSuccess && result.reading) {
+      posthog.capture('heart_rate_capture_completed', {
+        bpm: result.reading.bpm,
+        confidence: result.reading.confidence,
+        duration_ms: result.reading.durationMs,
+        sample_count: result.reading.sampleCount,
+        rmssd_ms: result.reading.rmssd ?? null,
+        sdnn_ms: result.reading.sdnn ?? null,
+        hrv_availability_reason: result.reading.hrvAvailabilityReason ?? null,
+        context: context ?? null,
+      });
+    } else if (!isSuccess) {
+      posthog.capture('heart_rate_capture_failed', {
+        error_type: result.error ?? 'unknown',
+        context: context ?? null,
+      });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     // Entrance animation
@@ -216,7 +239,14 @@ export function ResultScreen({ result, onRetry, onDone, context }: ResultScreenP
           <View style={styles.spacer} />
 
           <View style={styles.successActions}>
-            <TouchableOpacity style={styles.primaryButton} onPress={onRetry} activeOpacity={0.85}>
+            <TouchableOpacity
+              style={styles.primaryButton}
+              onPress={() => {
+                posthog.capture('heart_rate_capture_retried', { previous_result: 'success', context: context ?? null });
+                onRetry();
+              }}
+              activeOpacity={0.85}
+            >
               <Text style={styles.primaryButtonText}>Check Again</Text>
             </TouchableOpacity>
 
@@ -281,7 +311,10 @@ export function ResultScreen({ result, onRetry, onDone, context }: ResultScreenP
         <View style={styles.errorActions}>
           <TouchableOpacity
             style={styles.primaryButton}
-            onPress={onRetry}
+            onPress={() => {
+              posthog.capture('heart_rate_capture_retried', { previous_result: 'failure', error_type: result.error ?? 'unknown', context: context ?? null });
+              onRetry();
+            }}
             activeOpacity={0.85}
           >
             <Text style={styles.primaryButtonText}>Try Again</Text>

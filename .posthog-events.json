@@ -1,0 +1,7 @@
+[
+  {
+    "event": "$exception",
+    "description": "Capture unexpected errors from critical user flows with flow/action context.",
+    "file_path": "src/services/analytics/errorTracking.ts"
+  }
+]
