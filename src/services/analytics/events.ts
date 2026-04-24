@@ -1,5 +1,12 @@
+// Property naming convention:
+// - Reserved keys (prefix `$`) are PostHog-owned — don't collide with them.
+// - App-defined keys use snake_case with an `app_` prefix only when they would
+//   otherwise shadow a PostHog reserved key (e.g. `app_screen_name`).
+// - Use `null` for missing values, never `undefined`.
 export const AnalyticsEvent = {
   AppOpened: 'app_opened',
+  AppForegrounded: 'app_foregrounded',
+  SessionEnded: 'session_ended',
   ScreenView: 'screen_view',
 
   DailyPlanStarted: 'daily_plan_started',
@@ -18,7 +25,7 @@ export const AnalyticsEvent = {
   HeartRateCaptureStarted: 'heart_rate_capture_started',
   HeartRateCaptureCompleted: 'heart_rate_capture_completed',
   HeartRateCaptureFailed: 'heart_rate_capture_failed',
-  HeartRateCaptureRetried: 'heart_rate_capture_retried',
+  HeartRateResultAction: 'heart_rate_result_action',
 } as const;
 
 export type AnalyticsEventName =

@@ -35,6 +35,7 @@ import type { RootStackParamList } from './src/app/navigation';
 import { posthog } from './src/config/posthog';
 import { trackAppOpened, trackScreenView } from './src/services/analytics/tracking';
 import { bootstrapAnalytics } from './src/services/analytics/identity';
+import { registerAppSessionTracking } from './src/services/analytics/appSession';
 SplashScreen.preventAutoHideAsync();
 
 const navigationRef = createNavigationContainerRef<RootStackParamList>();
@@ -68,6 +69,8 @@ export default function App() {
     if (!fontsLoaded) return;
     bootstrapAnalytics();
     trackAppOpened();
+    const unsubscribe = registerAppSessionTracking();
+    return unsubscribe;
   }, [fontsLoaded]);
 
   const trackCurrentScreen = useCallback(() => {
