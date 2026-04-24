@@ -77,12 +77,23 @@ Recommended UI rules:
 
 ## Existing Schema Support
 
-- `subscriptions`
-- `revenuecat_events`
+- `subscriptions` (per-user state, one row per user)
+- `revenuecat_events` (idempotent by `event_id` primary key)
+- `user_entitlement_v` — authenticated client read of Pro state. `is_pro` is
+  true when status is `active` / `trialing` / `in_grace_period` and the
+  current period has not elapsed. Phase 5 freemium gates read from this.
+- Unique index on `subscriptions.revenuecat_app_user_id` so the webhook cannot
+  accidentally link the same RevenueCat app_user_id to multiple Supabase users.
+
+Writes to `subscriptions` and `revenuecat_events` stay service-role only; the
+webhook handler should `insert ... on conflict do nothing` on `event_id` for
+idempotent ingest (no dedicated RPC required).
 
 See:
 
-- [create_launch_schema.sql](/Users/k3vinwvng/Documents/Azora/Azora/supabase/migrations/20260420000100_create_launch_schema.sql)
+- [20260420000100_create_launch_schema.sql](/Users/k3vinwvng/Documents/Azora/Azora/supabase/migrations/20260420000100_create_launch_schema.sql)
+- [20260420000200_enable_rls.sql](/Users/k3vinwvng/Documents/Azora/Azora/supabase/migrations/20260420000200_enable_rls.sql)
+- [20260424000200_phase_4_entitlement_support.sql](/Users/k3vinwvng/Documents/Azora/Azora/supabase/migrations/20260424000200_phase_4_entitlement_support.sql)
 
 ## App Work In This Phase
 
