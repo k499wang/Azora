@@ -13,6 +13,7 @@ import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import type { CaptureResult, HrvAvailabilityReason } from '../../lib/heartRate/types';
+import { AnalyticsEvent } from '../../services/analytics/events';
 
 interface ResultScreenProps {
   result: CaptureResult;
@@ -87,7 +88,7 @@ export function ResultScreen({ result, onRetry, onDone, context }: ResultScreenP
 
   useEffect(() => {
     if (isSuccess && result.reading) {
-      posthog.capture('heart_rate_capture_completed', {
+      posthog.capture(AnalyticsEvent.HeartRateCaptureCompleted, {
         bpm: result.reading.bpm,
         confidence: result.reading.confidence,
         duration_ms: result.reading.durationMs,
@@ -98,7 +99,7 @@ export function ResultScreen({ result, onRetry, onDone, context }: ResultScreenP
         context: context ?? null,
       });
     } else if (!isSuccess) {
-      posthog.capture('heart_rate_capture_failed', {
+      posthog.capture(AnalyticsEvent.HeartRateCaptureFailed, {
         error_type: result.error ?? 'unknown',
         context: context ?? null,
       });
@@ -242,7 +243,7 @@ export function ResultScreen({ result, onRetry, onDone, context }: ResultScreenP
             <TouchableOpacity
               style={styles.primaryButton}
               onPress={() => {
-                posthog.capture('heart_rate_capture_retried', { previous_result: 'success', context: context ?? null });
+                posthog.capture(AnalyticsEvent.HeartRateCaptureRetried, { previous_result: 'success', context: context ?? null });
                 onRetry();
               }}
               activeOpacity={0.85}
@@ -312,7 +313,7 @@ export function ResultScreen({ result, onRetry, onDone, context }: ResultScreenP
           <TouchableOpacity
             style={styles.primaryButton}
             onPress={() => {
-              posthog.capture('heart_rate_capture_retried', { previous_result: 'failure', error_type: result.error ?? 'unknown', context: context ?? null });
+              posthog.capture(AnalyticsEvent.HeartRateCaptureRetried, { previous_result: 'failure', error_type: result.error ?? 'unknown', context: context ?? null });
               onRetry();
             }}
             activeOpacity={0.85}

@@ -8,6 +8,7 @@ import { ResultScreen } from './ResultScreen';
 import { DefaultInstructionScreen } from './setupScreens/DefaultInstructionScreen';
 import type { SetupScreenProps, CaptureResult } from '../../lib/heartRate/types';
 import { captureException } from '../../services/analytics/errorTracking';
+import { AnalyticsEvent } from '../../services/analytics/events';
 
 interface HeartRateCaptureFlowProps {
   setupScreens?: React.ComponentType<SetupScreenProps>[];
@@ -57,7 +58,7 @@ export function HeartRateCaptureFlow({
         if (!granted) return;
       }
       setPastSetup(true);
-      posthog.capture('heart_rate_capture_started', { context: context ?? null });
+      posthog.capture(AnalyticsEvent.HeartRateCaptureStarted, { context: context ?? null });
       startCapture();
     } catch (error) {
       captureException(error, {

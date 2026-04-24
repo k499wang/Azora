@@ -8,6 +8,7 @@ import { spacing, padding } from '../../theme/spacing';
 import { card } from '../../theme/card';
 import TECHNIQUES, { type BreathingTechnique } from '../../data/techniques';
 import SectionHeader from '../common/SectionHeader';
+import { AnalyticsEvent } from '../../services/analytics/events';
 import type { MainTabNavigationProp } from '../../app/navigation';
 
 const CATEGORY_CONFIG = {
@@ -27,7 +28,7 @@ function TechniqueCard({ technique }: { technique: BreathingTechnique }) {
   const cat = CATEGORY_CONFIG[technique.category];
 
   const handlePress = () => {
-    posthog.capture('breathing_technique_selected', {
+    posthog.capture(AnalyticsEvent.BreathingTechniqueSelected, {
       technique_id: technique.id,
       technique_name: technique.name,
       technique_category: technique.category,

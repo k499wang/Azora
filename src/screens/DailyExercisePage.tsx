@@ -9,6 +9,7 @@ import BreathingCircle, {
 } from '../components/exercise/BreathingCircle';
 import ExerciseScaffold from '../components/exercise/ExerciseScaffold';
 import { usePostHog } from 'posthog-react-native';
+import { AnalyticsEvent } from '../services/analytics/events';
 import type { DailyExerciseScreenProps } from '../app/navigation';
 
 type HoldPhase = 'idle' | 'inhale' | 'hold' | 'done';
@@ -51,7 +52,7 @@ export default function DailyExercisePage({
     setPhase('inhale');
     circleRef.current?.reset();
     circleRef.current?.expand(6);
-    posthog.capture('daily_breath_hold_started');
+    posthog.capture(AnalyticsEvent.DailyBreathHoldStarted);
   };
 
   const beginHold = () => {
@@ -67,7 +68,7 @@ export default function DailyExercisePage({
     clearTimer();
     setBestHoldSeconds((current) => Math.max(current, holdSeconds));
     setPhase('done');
-    posthog.capture('daily_breath_hold_released', {
+    posthog.capture(AnalyticsEvent.DailyBreathHoldReleased, {
       hold_seconds: holdSeconds,
       best_hold_seconds: Math.max(bestHoldSeconds, holdSeconds),
     });
@@ -88,7 +89,7 @@ export default function DailyExercisePage({
   };
 
   const handleViewResults = () => {
-    posthog.capture('daily_results_viewed', {
+    posthog.capture(AnalyticsEvent.DailyResultsViewed, {
       hold_seconds: holdSeconds,
       best_hold_seconds: bestHoldSeconds,
     });
