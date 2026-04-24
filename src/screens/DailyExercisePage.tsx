@@ -8,6 +8,7 @@ import BreathingCircle, {
   BreathingCircleRef,
 } from '../components/exercise/BreathingCircle';
 import ExerciseScaffold from '../components/exercise/ExerciseScaffold';
+import { usePostHog } from 'posthog-react-native';
 import type { DailyExerciseScreenProps } from '../app/navigation';
 
 type HoldPhase = 'idle' | 'inhale' | 'hold' | 'done';
@@ -22,6 +23,7 @@ const PHASE_LABELS: Record<HoldPhase, string> = {
 export default function DailyExercisePage({
   navigation,
 }: DailyExerciseScreenProps) {
+  const posthog = usePostHog();
   const circleRef = useRef<BreathingCircleRef>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [phase, setPhase] = useState<HoldPhase>('idle');
@@ -49,6 +51,7 @@ export default function DailyExercisePage({
     setPhase('inhale');
     circleRef.current?.reset();
     circleRef.current?.expand(6);
+    posthog.capture('daily_breath_hold_started');
   };
 
   const beginHold = () => {
@@ -64,6 +67,10 @@ export default function DailyExercisePage({
     clearTimer();
     setBestHoldSeconds((current) => Math.max(current, holdSeconds));
     setPhase('done');
+    posthog.capture('daily_breath_hold_released', {
+      hold_seconds: holdSeconds,
+      best_hold_seconds: Math.max(bestHoldSeconds, holdSeconds),
+    });
   };
 
   const handlePrimaryPress = () => {
@@ -81,6 +88,10 @@ export default function DailyExercisePage({
   };
 
   const handleViewResults = () => {
+    posthog.capture('daily_results_viewed', {
+      hold_seconds: holdSeconds,
+      best_hold_seconds: bestHoldSeconds,
+    });
     navigation.navigate('DailyResult', {
       holdSeconds,
     });

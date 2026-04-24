@@ -12,7 +12,9 @@ import TECHNIQUES from '../data/techniques';
 import type { BreathingTechnique } from '../data/techniques';
 import { useLivePulse } from '../hooks/useLivePulse';
 import { LiveHeartRateMonitor } from '../components/meditation/LiveHeartRateMonitor';
+import { usePostHog } from 'posthog-react-native';
 import type { ExerciseSessionScreenProps } from '../app/navigation';
+import { captureException } from '../services/analytics/errorTracking';
 
 const MIN_ROUNDS = 1;
 const MAX_ROUNDS = 20;
@@ -48,6 +50,8 @@ export default function ExerciseSessionPage({
   const [totalRounds, setTotalRounds] = useState(initialTechnique.defaultRounds);
   const [hrEnabled, setHrEnabled] = useState(false);
 
+  const posthog = usePostHog();
+
   const pulse = useLivePulse();
   const { start: startPulse, stop: stopPulse, hasPermission, requestPermission } = pulse;
 
@@ -66,13 +70,35 @@ export default function ExerciseSessionPage({
   }, [hrEnabled, isSessionActive, startPulse, stopPulse]);
 
   const handleToggleHr = useCallback(async () => {
-    if (hrEnabled) {
-      setHrEnabled(false);
-      return;
+    try {
+      if (hrEnabled) {
+        setHrEnabled(false);
+        posthog.capture('heart_rate_monitoring_toggled', {
+          enabled: false,
+          technique_id: technique.id,
+          technique_name: technique.name,
+        });
+        return;
+      }
+      const granted = hasPermission ? true : await requestPermission();
+      if (granted) {
+        setHrEnabled(true);
+        posthog.capture('heart_rate_monitoring_toggled', {
+          enabled: true,
+          technique_id: technique.id,
+          technique_name: technique.name,
+        });
+      }
+    } catch (error) {
+      captureException(error, {
+        flow: 'exercise_session',
+        action: 'toggle_heart_rate',
+        screen_name: 'ExerciseSession',
+        technique_id: technique.id,
+        technique_name: technique.name,
+      });
     }
-    const granted = hasPermission ? true : await requestPermission();
-    if (granted) setHrEnabled(true);
-  }, [hrEnabled, hasPermission, requestPermission]);
+  }, [hrEnabled, hasPermission, requestPermission, posthog, technique]);
 
   const clearTimer = () => {
     if (timerRef.current) {
@@ -121,6 +147,14 @@ export default function ExerciseSessionPage({
     (currentRound: number, pattern: BreathingTechnique['pattern'], rounds: number) => {
       if (currentRound > rounds) {
         setPhase('done');
+        posthog.capture('exercise_session_completed', {
+          technique_id: technique.id,
+          technique_name: technique.name,
+          technique_category: technique.category,
+          total_rounds: rounds,
+          elapsed_seconds: elapsed,
+          hr_monitoring_enabled: hrEnabled,
+        });
         return;
       }
 
@@ -136,13 +170,20 @@ export default function ExerciseSessionPage({
         });
       });
     },
-    [runPhase],
+    [runPhase, posthog, technique, elapsed, hrEnabled],
   );
 
   const handlePause = () => {
     clearTimer();
     circleRef.current?.pause();
     setPaused(true);
+    posthog.capture('exercise_session_paused', {
+      technique_id: technique.id,
+      technique_name: technique.name,
+      round,
+      total_rounds: totalRounds,
+      elapsed_seconds: elapsed,
+    });
   };
 
   const handleResume = (currentPhase: Phase) => {
@@ -177,6 +218,13 @@ export default function ExerciseSessionPage({
       setCountdown(0);
       setRound(0);
       circleRef.current?.reset();
+      posthog.capture('exercise_session_started', {
+        technique_id: technique.id,
+        technique_name: technique.name,
+        technique_category: technique.category,
+        total_rounds: totalRounds,
+        hr_monitoring_enabled: hrEnabled,
+      });
       startCycle(1, technique.pattern, totalRounds);
     }
   };
@@ -184,6 +232,15 @@ export default function ExerciseSessionPage({
   const handleClose = () => {
     clearTimer();
     stopPulse();
+    if (phase !== 'idle' && phase !== 'done') {
+      posthog.capture('exercise_session_abandoned', {
+        technique_id: technique.id,
+        technique_name: technique.name,
+        round,
+        total_rounds: totalRounds,
+        elapsed_seconds: elapsed,
+      });
+    }
     navigation.goBack();
   };
 
