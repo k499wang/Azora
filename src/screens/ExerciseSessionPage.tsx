@@ -234,12 +234,21 @@ export default function ExerciseSessionPage({
     clearTimer();
     stopPulse();
     if (phase !== 'idle' && phase !== 'done') {
+      const cycleSeconds =
+        technique.pattern.inhale +
+        technique.pattern.holdIn +
+        technique.pattern.exhale +
+        technique.pattern.holdOut;
+      const targetSeconds = cycleSeconds * totalRounds;
       posthog.capture(AnalyticsEvent.ExerciseSessionAbandoned, {
         technique_id: technique.id,
         technique_name: technique.name,
-        round,
+        abandoned_at_phase: phase,
+        abandoned_at_round: round,
         total_rounds: totalRounds,
         elapsed_seconds: elapsed,
+        target_seconds: targetSeconds,
+        completion_rate: targetSeconds > 0 ? elapsed / targetSeconds : 0,
       });
     }
     navigation.goBack();

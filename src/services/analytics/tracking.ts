@@ -16,8 +16,7 @@ export function trackAppOpened() {
 
 export function trackScreenView(route: ScreenRoute) {
   const props: NonNullable<Parameters<typeof posthog.capture>[1]> = {
-    screen_name: route.name,
-    route_name: route.name,
+    app_screen_name: route.name,
   };
 
   if (route.name === 'HeartRate') {

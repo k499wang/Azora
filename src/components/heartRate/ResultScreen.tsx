@@ -243,7 +243,11 @@ export function ResultScreen({ result, onRetry, onDone, context }: ResultScreenP
             <TouchableOpacity
               style={styles.primaryButton}
               onPress={() => {
-                posthog.capture(AnalyticsEvent.HeartRateCaptureRetried, { previous_result: 'success', context: context ?? null });
+                posthog.capture(AnalyticsEvent.HeartRateResultAction, {
+                  action: 'retry',
+                  previous_result: 'success',
+                  context: context ?? null,
+                });
                 onRetry();
               }}
               activeOpacity={0.85}
@@ -252,7 +256,14 @@ export function ResultScreen({ result, onRetry, onDone, context }: ResultScreenP
             </TouchableOpacity>
 
             <TouchableOpacity
-              onPress={onDone}
+              onPress={() => {
+                posthog.capture(AnalyticsEvent.HeartRateResultAction, {
+                  action: 'done',
+                  previous_result: 'success',
+                  context: context ?? null,
+                });
+                onDone();
+              }}
               activeOpacity={0.7}
               style={styles.cancelTouchable}
             >
@@ -313,7 +324,12 @@ export function ResultScreen({ result, onRetry, onDone, context }: ResultScreenP
           <TouchableOpacity
             style={styles.primaryButton}
             onPress={() => {
-              posthog.capture(AnalyticsEvent.HeartRateCaptureRetried, { previous_result: 'failure', error_type: result.error ?? 'unknown', context: context ?? null });
+              posthog.capture(AnalyticsEvent.HeartRateResultAction, {
+                action: 'retry',
+                previous_result: 'failure',
+                error_type: result.error ?? 'unknown',
+                context: context ?? null,
+              });
               onRetry();
             }}
             activeOpacity={0.85}
@@ -322,7 +338,15 @@ export function ResultScreen({ result, onRetry, onDone, context }: ResultScreenP
           </TouchableOpacity>
 
           <TouchableOpacity
-            onPress={onDone}
+            onPress={() => {
+              posthog.capture(AnalyticsEvent.HeartRateResultAction, {
+                action: 'cancel',
+                previous_result: 'failure',
+                error_type: result.error ?? 'unknown',
+                context: context ?? null,
+              });
+              onDone();
+            }}
             activeOpacity={0.7}
             style={styles.cancelTouchable}
           >
