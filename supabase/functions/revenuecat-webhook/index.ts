@@ -1,0 +1,185 @@
+// RevenueCat webhook receiver.
+//
+// Writes every incoming event to `revenuecat_events` (idempotent via event_id
+// primary key) and upserts the caller's current subscription state into
+// `subscriptions`. Uses the service-role key to bypass RLS.
+//
+// Configure in RevenueCat dashboard:
+//   - URL:     https://<project>.functions.supabase.co/revenuecat-webhook
+//   - Header:  Authorization: Bearer <REVENUECAT_WEBHOOK_SECRET>
+
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+type RevenueCatEventType =
+  | 'INITIAL_PURCHASE'
+  | 'RENEWAL'
+  | 'CANCELLATION'
+  | 'UNCANCELLATION'
+  | 'NON_RENEWING_PURCHASE'
+  | 'EXPIRATION'
+  | 'BILLING_ISSUE'
+  | 'PRODUCT_CHANGE'
+  | 'SUBSCRIBER_ALIAS'
+  | 'TRANSFER'
+  | 'TEST';
+
+type PeriodType = 'TRIAL' | 'INTRO' | 'NORMAL' | 'PROMOTIONAL';
+
+interface RevenueCatEvent {
+  id: string;
+  type: RevenueCatEventType;
+  app_user_id: string;
+  original_app_user_id?: string;
+  aliases?: string[];
+  environment: 'SANDBOX' | 'PRODUCTION';
+  product_id?: string;
+  entitlement_ids?: string[] | null;
+  period_type?: PeriodType;
+  expiration_at_ms?: number | null;
+  store?: string;
+  cancel_reason?: string | null;
+}
+
+interface RevenueCatPayload {
+  event: RevenueCatEvent;
+  api_version?: string;
+}
+
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
+const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+const WEBHOOK_SECRET = Deno.env.get('REVENUECAT_WEBHOOK_SECRET');
+
+if (!SUPABASE_URL || !SERVICE_ROLE_KEY || !WEBHOOK_SECRET) {
+  throw new Error(
+    'Missing required env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, REVENUECAT_WEBHOOK_SECRET',
+  );
+}
+
+const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
+  auth: { persistSession: false },
+});
+
+function isUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+    value,
+  );
+}
+
+function deriveStatus(
+  event: RevenueCatEvent,
+): { status: string; willRenew: boolean | null } {
+  switch (event.type) {
+    case 'INITIAL_PURCHASE':
+    case 'RENEWAL':
+    case 'UNCANCELLATION':
+    case 'PRODUCT_CHANGE':
+      return {
+        status: event.period_type === 'TRIAL' ? 'trialing' : 'active',
+        willRenew: true,
+      };
+    case 'NON_RENEWING_PURCHASE':
+      return { status: 'active', willRenew: false };
+    case 'CANCELLATION':
+      return { status: 'active', willRenew: false };
+    case 'BILLING_ISSUE':
+      return { status: 'in_grace_period', willRenew: true };
+    case 'EXPIRATION':
+      return { status: 'expired', willRenew: false };
+    case 'TRANSFER':
+    case 'SUBSCRIBER_ALIAS':
+    case 'TEST':
+      return { status: 'active', willRenew: null };
+    default:
+      return { status: 'unknown', willRenew: null };
+  }
+}
+
+Deno.serve(async (req) => {
+  if (req.method !== 'POST') {
+    return new Response('method not allowed', { status: 405 });
+  }
+
+  const auth = req.headers.get('authorization') ?? '';
+  const expected = `Bearer ${WEBHOOK_SECRET}`;
+  if (auth !== expected) {
+    return new Response('unauthorized', { status: 401 });
+  }
+
+  let payload: RevenueCatPayload;
+  try {
+    payload = await req.json();
+  } catch {
+    return new Response('invalid json', { status: 400 });
+  }
+
+  const event = payload?.event;
+  if (!event?.id || !event.type || !event.app_user_id) {
+    return new Response('missing event fields', { status: 400 });
+  }
+
+  const userId = isUuid(event.app_user_id) ? event.app_user_id : null;
+
+  const { error: logError } = await supabase
+    .from('revenuecat_events')
+    .insert({
+      event_id: event.id,
+      user_id: userId,
+      environment: event.environment,
+      event_type: event.type,
+      payload,
+    });
+
+  if (logError && logError.code !== '23505') {
+    console.error('revenuecat_events insert failed', logError);
+    return new Response('event log failed', { status: 500 });
+  }
+
+  if (event.type === 'TEST') {
+    return new Response(JSON.stringify({ ok: true, logged: true }), {
+      headers: { 'content-type': 'application/json' },
+    });
+  }
+
+  if (!userId) {
+    console.warn('app_user_id is not a Supabase user uuid', event.app_user_id);
+    return new Response(JSON.stringify({ ok: true, logged: true }), {
+      headers: { 'content-type': 'application/json' },
+    });
+  }
+
+  const { status, willRenew } = deriveStatus(event);
+  const entitlement = event.entitlement_ids?.[0] ?? 'pro';
+  const currentPeriodEndsAt = event.expiration_at_ms
+    ? new Date(event.expiration_at_ms).toISOString()
+    : null;
+  const trialEndsAt =
+    event.period_type === 'TRIAL' && event.expiration_at_ms
+      ? new Date(event.expiration_at_ms).toISOString()
+      : null;
+
+  const { error: upsertError } = await supabase
+    .from('subscriptions')
+    .upsert(
+      {
+        user_id: userId,
+        revenuecat_app_user_id: event.app_user_id,
+        entitlement,
+        status,
+        product_id: event.product_id ?? null,
+        store: event.store ?? null,
+        current_period_ends_at: currentPeriodEndsAt,
+        will_renew: willRenew,
+        trial_ends_at: trialEndsAt,
+      },
+      { onConflict: 'user_id' },
+    );
+
+  if (upsertError) {
+    console.error('subscriptions upsert failed', upsertError);
+    return new Response('subscription write failed', { status: 500 });
+  }
+
+  return new Response(JSON.stringify({ ok: true }), {
+    headers: { 'content-type': 'application/json' },
+  });
+});

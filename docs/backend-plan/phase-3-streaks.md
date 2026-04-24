@@ -57,12 +57,18 @@ Handle:
 - multiple devices
 - deleted breath-hold sessions
 
-Historical calculations should use the timezone stored on the session row.
+Writes stamp `daily_activity.activity_date` using the session's local
+timezone at write-time. `user_streaks_v` reads `profiles.timezone` only to
+compute "today" for the current-streak calculation — it does not re-derive
+historical local dates from session rows.
 
 ## Existing Migration Files
 
-- [create_streak_view.sql](/Users/k3vinwvng/Documents/Azora/Azora/supabase/migrations/20260420000300_create_streak_view.sql)
-- [create_session_completion_rpcs.sql](/Users/k3vinwvng/Documents/Azora/Azora/supabase/migrations/20260420000400_create_session_completion_rpcs.sql)
+- [20260420000300_create_streak_view.sql](/Users/k3vinwvng/Documents/Azora/Azora/supabase/migrations/20260420000300_create_streak_view.sql)
+- [20260420000400_create_session_completion_rpcs.sql](/Users/k3vinwvng/Documents/Azora/Azora/supabase/migrations/20260420000400_create_session_completion_rpcs.sql)
+- [20260422000100_add_breath_hold_hrv_metrics.sql](/Users/k3vinwvng/Documents/Azora/Azora/supabase/migrations/20260422000100_add_breath_hold_hrv_metrics.sql) — re-defines `complete_breath_hold` to also persist derived HRV metrics inside the same atomic write.
+- [20260423000100_harden_tracking_schema.sql](/Users/k3vinwvng/Documents/Azora/Azora/supabase/migrations/20260423000100_harden_tracking_schema.sql) — adds `breathing_technique_catalog` validation and forces `security_invoker` on user-scoped views (including `user_streaks_v`).
+- [20260424000100_recompute_daily_activity_on_breath_hold_delete.sql](/Users/k3vinwvng/Documents/Azora/Azora/supabase/migrations/20260424000100_recompute_daily_activity_on_breath_hold_delete.sql) — `after delete` trigger on `breath_hold_sessions` recomputes `daily_activity` (count, best hold, completion flag, `qualifies_for_streak`) for the affected local date so deletions can't leave phantom streak days.
 
 ## App Work In This Phase
 

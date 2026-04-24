@@ -6,7 +6,7 @@ Persist launch tracking data in Supabase and replace hardcoded analytics with re
 
 ## Scope
 
-Ship only the launch schema:
+Ship the launch schema:
 
 - `profiles`
 - `user_preferences`
@@ -14,13 +14,25 @@ Ship only the launch schema:
 - `breathing_sessions`
 - `heart_rate_sessions`
 - `heart_rate_samples`
+- `heart_rate_ibi_samples`
 - `daily_activity`
 - `subscriptions`
 - `revenuecat_events`
+- `breathing_technique_catalog` (narrow server-side id validator, not a full CMS/techniques table)
+
+Derived HRV summary columns on `breath_hold_sessions` and `heart_rate_sessions`
+(`rmssd`, `sdnn`, `pnn50`, `hr_drop`, `beat_count`) are also in scope.
+
+Today-scoped convenience views (all `security_invoker = true`):
+
+- `user_today_breath_hold_v`
+- `user_today_breath_hold_ibi_samples_v`
+- `user_today_heart_rate_v`
+- `user_today_heart_rate_ibi_samples_v`
 
 Do not ship in this phase:
 
-- `breathing_techniques`
+- a full `breathing_techniques` CMS table (distinct from the narrow `breathing_technique_catalog` reference table above)
 - achievements / XP / streak-freeze tables
 - social tables
 
@@ -148,8 +160,13 @@ RPCs should upsert those points on retry rather than inserting duplicates.
 
 ## Existing Migration Files
 
-- [create_launch_schema.sql](/Users/k3vinwvng/Documents/Azora/Azora/supabase/migrations/20260420000100_create_launch_schema.sql)
-- [enable_rls.sql](/Users/k3vinwvng/Documents/Azora/Azora/supabase/migrations/20260420000200_enable_rls.sql)
+- [20260420000100_create_launch_schema.sql](/Users/k3vinwvng/Documents/Azora/Azora/supabase/migrations/20260420000100_create_launch_schema.sql)
+- [20260420000200_enable_rls.sql](/Users/k3vinwvng/Documents/Azora/Azora/supabase/migrations/20260420000200_enable_rls.sql)
+- [20260420000400_create_session_completion_rpcs.sql](/Users/k3vinwvng/Documents/Azora/Azora/supabase/migrations/20260420000400_create_session_completion_rpcs.sql)
+- [20260422000100_add_breath_hold_hrv_metrics.sql](/Users/k3vinwvng/Documents/Azora/Azora/supabase/migrations/20260422000100_add_breath_hold_hrv_metrics.sql)
+- [20260422000200_add_ibi_samples.sql](/Users/k3vinwvng/Documents/Azora/Azora/supabase/migrations/20260422000200_add_ibi_samples.sql)
+- [20260422000300_add_hrv_metrics_to_heart_rate_sessions.sql](/Users/k3vinwvng/Documents/Azora/Azora/supabase/migrations/20260422000300_add_hrv_metrics_to_heart_rate_sessions.sql)
+- [20260423000100_harden_tracking_schema.sql](/Users/k3vinwvng/Documents/Azora/Azora/supabase/migrations/20260423000100_harden_tracking_schema.sql)
 
 ## App Work In This Phase
 
