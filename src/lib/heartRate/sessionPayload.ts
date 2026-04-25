@@ -28,10 +28,14 @@ export interface HeartRateSessionRpcIbiSample {
   signal_quality: number | null;
 }
 
-export interface HeartRateSessionRpcPayload {
-  session: HeartRateSessionRpcSession;
-  samples: HeartRateSessionRpcSample[];
+export interface CompleteHeartRateSessionRpcSession
+  extends HeartRateSessionRpcSession {
   ibi_samples: HeartRateSessionRpcIbiSample[];
+}
+
+export interface CompleteHeartRateSessionRpcArgs {
+  p_session: CompleteHeartRateSessionRpcSession;
+  p_samples: HeartRateSessionRpcSample[];
 }
 
 interface BuildHeartRateSessionRpcPayloadOptions {
@@ -152,7 +156,7 @@ export function buildHeartRateSessionRpcPayload(
   captureSamples: PpgFrameSample[],
   result: CaptureResult,
   options: BuildHeartRateSessionRpcPayloadOptions,
-): HeartRateSessionRpcPayload | null {
+): CompleteHeartRateSessionRpcArgs | null {
   const reading = result.reading;
   if (reading == null) return null;
 
@@ -176,7 +180,7 @@ export function buildHeartRateSessionRpcPayload(
       : (isFiniteNumber(reading.durationMs) ? reading.durationMs : 0);
 
   return {
-    session: {
+    p_session: {
       started_at: new Date(startedAtMs).toISOString(),
       ended_at: new Date(endedAtMs).toISOString(),
       local_date: formatLocalDate(endedAtMs, options.timezone),
@@ -190,8 +194,8 @@ export function buildHeartRateSessionRpcPayload(
       pnn50: reading.pnn50 ?? null,
       hr_drop: reading.hrDrop ?? null,
       beat_count: reading.beatCount ?? null,
+      ibi_samples: ibiSamples,
     },
-    samples: bpmSamples,
-    ibi_samples: ibiSamples,
+    p_samples: bpmSamples,
   };
 }
