@@ -160,7 +160,22 @@ Deno.serve(async (req) => {
     return new Response('missing event fields', { status: 400 });
   }
 
-  const userId = isUuid(event.app_user_id) ? event.app_user_id : null;
+  let userId: string | null = null;
+
+  if (isUuid(event.app_user_id)) {
+    const { data: profile, error: profileLookupError } = await supabase
+      .from('profiles')
+      .select('user_id')
+      .eq('user_id', event.app_user_id)
+      .maybeSingle();
+
+    if (profileLookupError) {
+      console.error('profiles lookup failed', profileLookupError);
+      return new Response('profile lookup failed', { status: 500 });
+    }
+
+    userId = profile?.user_id ?? null;
+  }
 
   const { error: logError } = await supabase
     .from('revenuecat_events')
@@ -177,7 +192,7 @@ Deno.serve(async (req) => {
     return new Response('event log failed', { status: 500 });
   }
 
-  if (event.type === 'TEST') {
+  if (event.type === 'TEST' || event.type === 'TRANSFER' || event.type === 'SUBSCRIBER_ALIAS') {
     return new Response(JSON.stringify({ ok: true, logged: true }), {
       headers: { 'content-type': 'application/json' },
     });
@@ -192,9 +207,14 @@ Deno.serve(async (req) => {
 
   const { status, willRenew } = deriveStatus(event);
   const entitlement = event.entitlement_ids?.[0] ?? 'pro';
+  // For access-terminating events, fall back to now() so that null doesn't
+  // accidentally satisfy the `current_period_ends_at IS NULL` branch of is_pro.
+  const isTerminatingEvent = event.type === 'CANCELLATION' || event.type === 'EXPIRATION';
   const currentPeriodEndsAt = event.expiration_at_ms
     ? new Date(event.expiration_at_ms).toISOString()
-    : null;
+    : isTerminatingEvent
+      ? new Date().toISOString()
+      : null;
   const trialEndsAt =
     event.period_type === 'TRIAL' && event.expiration_at_ms
       ? new Date(event.expiration_at_ms).toISOString()

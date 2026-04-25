@@ -56,44 +56,58 @@ shortcut. Design around your real traffic.
 
 ### Step 1 — Decide the price ladder
 
-Pick three price points per plan — low, mid, high. Ship the `mid` price at
-launch so you have a sane default if experiments are off.
+**Current shipped plan is a 2-arm test (4 products total).** Launch at the
+control price; test one discounted arm against it.
 
-| Plan   | Low             | Mid (launch default) | High            |
-| ------ | --------------- | -------------------- | --------------- |
-| Weekly | $5.99 (or $6.99) | $7.99                | $9.99           |
-| Annual | $39.99           | $59.99               | $79.99          |
+| Plan   | Discount arm (`default_low`) | Control (`default_mid`, launch default) |
+| ------ | ---------------------------- | --------------------------------------- |
+| Weekly | $5.99                        | $7.99                                   |
+| Annual | $39.99                       | $59.99                                  |
 
-You can deviate, but keep the ratio roughly 0.75× / 1.0× / 1.25×. Arms that
-are too close together need massive sample sizes to resolve.
+A 2-arm test is statistically simpler than 3-arm: you learn "does a
+discount lift revenue-per-view?" with ~half the sample per arm, because
+traffic splits 50/50 instead of 33/33/33. Trade-off: you can't
+simultaneously test a **higher** price tier.
 
-### Step 2 — Create all six products in App Store Connect
+**If you later want to test a higher price**, you'll need to create two
+more products in App Store Connect (`azora_pro_weekly_999` at $9.99 and
+`azora_pro_yearly_7999` at $79.99) and wait for App Review. These can't
+be added mid-experiment — create them before the *next* experiment,
+not during the current one. Leaving this as a future option, not a
+launch requirement.
 
-One subscription group `Azora Pro`. Six auto-renewing subscriptions:
+### Step 2 — Create the four products in App Store Connect
+
+One subscription group `Azora Pro`. Four auto-renewing subscriptions:
 
 - `azora_pro_weekly_599` — $5.99 / week, no trial
 - `azora_pro_weekly_799` — $7.99 / week, no trial
-- `azora_pro_weekly_999` — $9.99 / week, no trial
 - `azora_pro_yearly_3999` — $39.99 / year, with trial (e.g., 7 days)
 - `azora_pro_yearly_5999` — $59.99 / year, with trial
-- `azora_pro_yearly_7999` — $79.99 / year, with trial
 
-Apple requires a subscription group to act as an "upgrade/downgrade" ladder.
-Listing six price points in one group is fine — users only see the ones your
-active offering presents them.
+Apple's subscription-group Level ordering (Level 1 = highest tier):
+
+1. `azora_pro_yearly_5999`
+2. `azora_pro_yearly_3999`
+3. `azora_pro_weekly_799`
+4. `azora_pro_weekly_599`
+
+Rule: longer duration above shorter; within same duration, higher price
+above lower. Level only affects upgrade/downgrade behavior if a user
+switches plans — for a pricing test each user sees only one offering, so
+the hierarchy is mostly cosmetic.
 
 ### Step 3 — Import products into RevenueCat
 
-RevenueCat dashboard → Products → import from App Store Connect. All six
+RevenueCat dashboard → Products → import from App Store Connect. All four
 should appear.
 
-### Step 4 — Create three offerings
+### Step 4 — Create two offerings
 
 | Offering id     | Weekly package              | Annual package              |
 | --------------- | --------------------------- | --------------------------- |
 | `default_low`   | `azora_pro_weekly_599`      | `azora_pro_yearly_3999`     |
 | `default_mid`   | `azora_pro_weekly_799`      | `azora_pro_yearly_5999`     |
-| `default_high`  | `azora_pro_weekly_999`      | `azora_pro_yearly_7999`     |
 
 Mark `default_mid` as the **current offering**. At launch, every user sees
 this one.
@@ -189,15 +203,15 @@ baseline yet).
 RevenueCat dashboard → Experiments → New experiment.
 
 - **Name:** `pricing_tier_v1`
-- **Hypothesis:** `default_high` produces higher revenue per paywall view
-  than `default_mid`, and `default_low` produces lower.
-- **Control:** `default_mid`
-- **Treatments:** `default_low`, `default_high`
-- **Traffic split:** 34 / 33 / 33
+- **Hypothesis:** `default_low` lifts trial-start and paid conversion
+  enough that revenue per paywall view meets or exceeds `default_mid`.
+- **Control:** `default_mid` ($7.99 / $59.99)
+- **Treatment:** `default_low` ($5.99 / $39.99)
+- **Traffic split:** 50 / 50
 - **Primary metric:** revenue per paywall view (RC native)
 - **Secondary metrics:** trial-to-paid conversion, day-30 retention
 - **Minimum duration:** 4 weeks
-- **Minimum sample:** 1,500 paywall views per arm
+- **Minimum sample:** 1,500 paywall views per arm (so ~3,000 total)
 
 ### Reading results
 
@@ -311,8 +325,8 @@ exceeds 5%.
 
 Before you launch:
 
-- [ ] Six products created in App Store Connect, across three price points
-- [ ] Three offerings created in RevenueCat (`default_low/mid/high`)
+- [ ] Four products created in App Store Connect (2 price points × 2 durations)
+- [ ] Two offerings created in RevenueCat (`default_low`, `default_mid`)
 - [ ] `default_mid` marked as current offering
 - [ ] Migration `20260424000300` applied
 - [ ] Webhook deployed and capturing `initial_offering_id` on

@@ -126,9 +126,9 @@ look created but will silently fail in sandbox with cryptic errors.
 
 ---
 
-## Phase 4 — Create the six subscription products
+## Phase 4 — Create the four subscription products
 
-**Time:** 1 hour, if you have screenshots ready.
+**Time:** 45 min, if you have screenshots ready.
 
 ### 4.1 Create the subscription group
 
@@ -138,24 +138,28 @@ look created but will silently fail in sandbox with cryptic errors.
 3. Reference Name: `Azora Pro`
 4. Save
 
-### 4.2 Create all six products
+### 4.2 Create the four products
 
-Per the pricing playbook, create all six price points now — you can't add
-new products instantly later without an App Review cycle.
+**Current shipped plan is a 2-arm pricing test (4 products).** A future
+3-arm test would require adding `azora_pro_weekly_999` and
+`azora_pro_yearly_7999` later and waiting for App Review — do that before
+the *next* experiment, not as part of launch.
 
-For each of the six below:
+For each of the four below:
 
 1. Inside `Azora Pro` group → **Create** next to Subscriptions
 2. Reference Name (internal) and Product ID (external) per the table
 
-| # | Reference Name         | Product ID                    | Duration | Price (USD)    | Intro Offer           |
-|---|------------------------|-------------------------------|----------|----------------|-----------------------|
-| 1 | Pro Weekly $5.99       | `azora_pro_weekly_599`        | 1 Week   | Tier for $5.99 | None                  |
-| 2 | Pro Weekly $7.99       | `azora_pro_weekly_799`        | 1 Week   | Tier for $7.99 | None                  |
-| 3 | Pro Weekly $9.99       | `azora_pro_weekly_999`        | 1 Week   | Tier for $9.99 | None                  |
-| 4 | Pro Annual $39.99      | `azora_pro_yearly_3999`       | 1 Year   | Tier for $39.99| 7-day free trial      |
-| 5 | Pro Annual $59.99      | `azora_pro_yearly_5999`       | 1 Year   | Tier for $59.99| 7-day free trial      |
-| 6 | Pro Annual $79.99      | `azora_pro_yearly_7999`       | 1 Year   | Tier for $79.99| 7-day free trial      |
+| Level | Reference Name         | Product ID                    | Duration | Price (USD)    | Intro Offer           |
+|-------|------------------------|-------------------------------|----------|----------------|-----------------------|
+| 1     | Pro Annual $59.99      | `azora_pro_yearly_5999`       | 1 Year   | Tier for $59.99| 7-day free trial      |
+| 2     | Pro Annual $39.99      | `azora_pro_yearly_3999`       | 1 Year   | Tier for $39.99| 7-day free trial      |
+| 3     | Pro Weekly $7.99       | `azora_pro_weekly_799`        | 1 Week   | Tier for $7.99 | None                  |
+| 4     | Pro Weekly $5.99       | `azora_pro_weekly_599`        | 1 Week   | Tier for $5.99 | None                  |
+
+Level ordering (1 = highest tier) follows Apple's convention: longer
+duration above shorter; within same duration, higher price above lower.
+For a pricing test this is mostly cosmetic — each user sees one offering.
 
 For each product you'll need to fill:
 
@@ -243,7 +247,7 @@ RevenueCat will now fetch your products from App Store Connect automatically.
 ### 7.3 Verify products imported
 
 1. RevenueCat → **Products** (sidebar)
-2. You should see all six products with their pricing. If any are missing,
+2. You should see all four products with their pricing. If any are missing,
    they're likely still in "Missing Metadata" in App Store Connect — fix
    them, then return and hit **Refresh Products**
 
@@ -261,16 +265,16 @@ RevenueCat will now fetch your products from App Store Connect automatically.
 4. Description: "Full access to Azora"
 5. Save
 
-### 8.2 Attach all six products to the `pro` entitlement
+### 8.2 Attach all four products to the `pro` entitlement
 
 1. Inside the `pro` entitlement page → **Attach Products**
-2. Select all six — weekly × 3 and yearly × 3
+2. Select all four — 2 weekly + 2 annual
 3. Save
 
 This tells RevenueCat: "if the user owns any of these products, they have
 the `pro` entitlement."
 
-### 8.3 Create the three offerings
+### 8.3 Create the two offerings
 
 For each offering below:
 
@@ -285,7 +289,6 @@ For each offering below:
 |---------------------|---------------------------|---------------------------|
 | `default_low`       | `azora_pro_weekly_599`    | `azora_pro_yearly_3999`   |
 | `default_mid`       | `azora_pro_weekly_799`    | `azora_pro_yearly_5999`   |
-| `default_high`      | `azora_pro_weekly_999`    | `azora_pro_yearly_7999`   |
 
 ### 8.4 Set the current offering
 
@@ -308,11 +311,13 @@ This is what every non-experiment user sees.
 
 ### 9.2 Create the webhook secret
 
-```bash
-openssl rand -hex 32
-```
+Create a random 64-character hex string and save it somewhere temporary.
+Examples:
 
-Copy this output. You'll need it in two places:
+- terminal: `openssl rand -hex 32`
+- password manager / secret generator
+
+You'll need this in two places:
 - Supabase (for the Edge Function env var)
 - RevenueCat (for the webhook Authorization header)
 
@@ -323,46 +328,66 @@ the secret now. Keep it somewhere safe temporarily.
 
 ---
 
-## Phase 10 — Deploy the Supabase webhook
+## Phase 10 — Deploy the Supabase webhook in the Supabase website
 
 **Time:** 10 min.
 
-### 10.1 Set the webhook secret
+### 10.1 Open the function source from this repo
 
-```bash
-cd /Users/k3vinwvng/Documents/Azora/Azora
-supabase secrets set REVENUECAT_WEBHOOK_SECRET=<paste the hex string from 9.2>
-```
+Use this repo file as the source of truth:
 
-### 10.2 Deploy the function
+- [`supabase/functions/revenuecat-webhook/index.ts`](/Users/k3vinwvng/Documents/Azora/Azora/supabase/functions/revenuecat-webhook/index.ts)
 
-```bash
-supabase functions deploy revenuecat-webhook --no-verify-jwt
-```
+You'll paste this into the Supabase dashboard editor in the next step.
 
-`--no-verify-jwt` is required because RevenueCat is not a Supabase-auth
-client. The Authorization header check inside the function itself is what
-protects it.
+### 10.2 Create and deploy the function in the Supabase dashboard
 
-### 10.3 Note the function URL
+1. Open your project in the Supabase dashboard
+2. Left sidebar → **Edge Functions**
+3. Click **Deploy a new function**
+4. Choose **Via Editor**
+5. Name: `revenuecat-webhook`
+6. Replace the starter template with the contents of
+   `supabase/functions/revenuecat-webhook/index.ts`
+7. In the function settings, disable JWT verification for this function
+   because RevenueCat will call it directly
+8. Click **Deploy function**
+
+JWT verification must be disabled because RevenueCat is not a
+Supabase-auth client. The Authorization header check inside the function
+itself is what protects it.
+
+### 10.3 Add the webhook secret in the Supabase dashboard
+
+1. Supabase dashboard → **Project Settings** → **Edge Functions**
+2. Open **Secrets**
+3. Add a new secret:
+   - Name: `REVENUECAT_WEBHOOK_SECRET`
+   - Value: paste the hex string from Phase 9.2
+4. Save
+5. Secrets are available to the function immediately; no extra deploy is
+   usually required
+
+### 10.4 Note the function URL
 
 After deploy, the URL is:
 
 ```
-https://<your-project-ref>.functions.supabase.co/revenuecat-webhook
+https://<your-project-ref>.supabase.co/functions/v1/revenuecat-webhook
 ```
 
-Your project ref is visible in the Supabase dashboard URL.
+You can copy this directly from the function details page. The project ref is
+also visible in the Supabase dashboard URL.
 
-### 10.4 Configure the webhook in RevenueCat
+### 10.5 Configure the webhook in RevenueCat
 
 1. RevenueCat → **Integrations** → **Webhooks**
-2. URL: paste the function URL from 10.3
+2. URL: paste the function URL from 10.4
 3. Authorization header: `Bearer <the hex string from 9.2>`
 4. Save
 5. Click **Send Test Event** — you should see it succeed
 
-### 10.5 Verify it worked
+### 10.6 Verify it worked
 
 In Supabase SQL editor:
 
@@ -375,10 +400,14 @@ limit 5;
 
 You should see a row with `event_type = 'TEST'`. If you don't:
 
-- Check Supabase function logs:
-  `supabase functions logs revenuecat-webhook --tail`
+- Check the function's logs in the Supabase dashboard
 - Most common issue: `Authorization` header mismatch → 401. Re-check the
   secret in both places.
+
+> Dashboard deployment is fine for setup and low-frequency edits, but it has
+> weak version-control ergonomics. Keep
+> `supabase/functions/revenuecat-webhook/index.ts` in git as the canonical
+> source and copy from there when updating the website version.
 
 ---
 
@@ -528,9 +557,9 @@ When ready:
 2. Name: `pricing_tier_v1`
 3. **Type:** Offering experiment (not Paywall experiment — that's for UI
    variants)
-4. **Control offering:** `default_mid`
-5. **Treatment offerings:** `default_low`, `default_high`
-6. **Traffic split:** 34 / 33 / 33
+4. **Control offering:** `default_mid` ($7.99 / $59.99)
+5. **Treatment offering:** `default_low` ($5.99 / $39.99)
+6. **Traffic split:** 50 / 50
 7. **Audience:** All new users (default)
 8. **Minimum duration:** 4 weeks
 9. Start

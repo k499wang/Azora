@@ -4,7 +4,7 @@ import { computeHRVStats } from '../hrv.ts';
 import { extractBestCaptureBeatSeries } from './signalProcessing.ts';
 
 const FRAME_SPACING_MS = 1000 / 30;
-const CAPTURE_DURATION_MS = 30000;
+const CAPTURE_DURATION_MS = 45000;
 
 function median(values) {
   const sorted = [...values].sort((a, b) => a - b);
