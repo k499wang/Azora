@@ -61,6 +61,7 @@ export function buildCaptureResult(
       source: 'camera-flash',
       rmssd: hrvStats?.rmssd,
       sdnn: hrvStats?.sdnn,
+      stress: hrvStats?.stress,
       pnn50: hrvStats?.pnn50,
       hrDrop: hrvStats?.hrDrop,
       beatCount: hrvStats?.beatCount,

@@ -7,6 +7,7 @@
 export interface HRVStats {
   rmssd: number;       // ms — short-term variability (parasympathetic)
   sdnn: number;        // ms — overall variability
+  stress: number;      // 0..100 stress index
   pnn50: number;       // %  — pairs of beats differing by >50ms
   meanHr: number;      // bpm
   minHr: number;       // bpm (over the hold)
@@ -58,6 +59,7 @@ export function computeHRVStats(ibi: number[]): HRVStats {
     return {
       rmssd: 0,
       sdnn: 0,
+      stress: 0,
       pnn50: 0,
       meanHr: 0,
       minHr: 0,
@@ -80,8 +82,11 @@ export function computeHRVStats(ibi: number[]): HRVStats {
   const sdnn = Math.round(stddev(linearDetrend(ibi)));
   const pnn50 = Math.round((nn50 / (ibi.length - 1)) * 100);
 
+  const rmssdScore = Math.max(0, 100 - (rmssd / HRV_TARGET_RMSSD) * 100);
   const meanIbi = mean(ibi);
   const meanHr = ibiToBpm(meanIbi);
+  const hrScore = Math.max(0, (meanHr - 50) / 30 * 100);
+  const stress = Math.round(rmssdScore * 0.7 + hrScore * 0.3);
   const minHr = ibiToBpm(Math.max(...ibi));
   const maxHr = ibiToBpm(Math.min(...ibi));
 
@@ -96,6 +101,7 @@ export function computeHRVStats(ibi: number[]): HRVStats {
   return {
     rmssd,
     sdnn,
+    stress,
     pnn50,
     meanHr,
     minHr,

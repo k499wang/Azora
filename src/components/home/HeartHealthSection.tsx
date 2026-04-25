@@ -74,10 +74,10 @@ export default function HeartHealthSection({
           icon="heart-rmssd"
         />
         <BigRingStatCard
-          label="SDNN"
-          value={`${stats.sdnn}`}
-          target="50"
-          progress={stats.sdnn / 50}
+          label="Stress"
+          value={`${stats.stress}`}
+          target="30"
+          progress={stats.stress / 30}
           color={colors.success[500]}
           trackColor={colors.neutral[200]}
           icon="heart-sdnn"

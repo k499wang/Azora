@@ -94,6 +94,7 @@ export function ResultScreen({ result, onRetry, onDone, context }: ResultScreenP
         duration_ms: result.reading.durationMs,
         sample_count: result.reading.sampleCount,
         rmssd_ms: result.reading.rmssd ?? null,
+        stress: result.reading.stress ?? null,
         sdnn_ms: result.reading.sdnn ?? null,
         hrv_availability_reason: result.reading.hrvAvailabilityReason ?? null,
         context: context ?? null,
@@ -149,7 +150,7 @@ export function ResultScreen({ result, onRetry, onDone, context }: ResultScreenP
     const reading = result.reading;
     const confidence = getConfidenceLabel(reading.confidence);
     const rmssd = formatMetricMs(reading.rmssd);
-    const sdnn = formatMetricMs(reading.sdnn);
+    const stress = reading.stress?.toString() ?? null;
     const hrvUnavailableMessage = getHrvUnavailableMessage(reading.hrvAvailabilityReason);
 
     return (
@@ -210,16 +211,16 @@ export function ResultScreen({ result, onRetry, onDone, context }: ResultScreenP
                   </View>
                 </>
               )}
-              {sdnn != null && (
+              {stress != null && (
                 <>
                   <View style={styles.detailDivider} />
                   <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>SDNN</Text>
-                    <Text style={styles.detailValue}>{sdnn}</Text>
+                    <Text style={styles.detailLabel}>Stress</Text>
+                    <Text style={styles.detailValue}>{stress}</Text>
                   </View>
                 </>
               )}
-              {rmssd == null && sdnn == null && hrvUnavailableMessage != null && (
+              {rmssd == null && stress == null && hrvUnavailableMessage != null && (
                 <>
                   <View style={styles.detailDivider} />
                   <Text style={styles.hrvUnavailableText}>{hrvUnavailableMessage}</Text>
