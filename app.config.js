@@ -14,7 +14,7 @@ module.exports = {
     },
     ios: {
       supportsTablet: true,
-      bundleIdentifier: 'com.k3vinwvng.BreathingAppInit',
+      bundleIdentifier: 'com.azora.breath',
       infoPlist: {
         NSCameraUsageDescription: 'Allow $(PRODUCT_NAME) to access your camera',
       },
@@ -27,7 +27,7 @@ module.exports = {
       edgeToEdgeEnabled: true,
       predictiveBackGestureEnabled: false,
       permissions: ['android.permission.CAMERA', 'android.permission.CAMERA'],
-      package: 'com.k3vinwvng.BreathingAppInit',
+      package: 'com.azora.breath',
     },
     web: {
       favicon: './assets/favicon.png',
@@ -36,12 +36,15 @@ module.exports = {
       'expo-font',
       'react-native-vision-camera',
       './plugins/with-heart-rate-plugin',
+      'react-native-purchases',
     ],
     extra: {
       posthogProjectToken: process.env.POSTHOG_PROJECT_TOKEN,
       posthogHost: process.env.POSTHOG_HOST,
       supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,
       supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
+      revenueCatIosApiKey: process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY,
+      revenueCatAndroidApiKey: process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_KEY,
     },
   },
 }
