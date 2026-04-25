@@ -40,7 +40,7 @@ function getErrorMessage(
     case 'signal_lost':
       return {
         title: 'Finger Moved',
-        message: 'Your finger moved during measurement. Try to keep it still for the full 30 seconds.',
+        message: 'Your finger moved during measurement. Try to keep it still for the full 45 seconds.',
       };
     case 'too_few_samples':
       return {
@@ -313,7 +313,7 @@ export function ResultScreen({ result, onRetry, onDone, context }: ResultScreenP
             </View>
             <View style={styles.tipRow}>
               <MaterialCommunityIcons name="circle-small" size={16} color={colors.text.tertiary} />
-              <Text style={styles.tipText}>Stay still for the full 30 seconds</Text>
+              <Text style={styles.tipText}>Stay still for the full 45 seconds</Text>
             </View>
           </View>
         </Animated.View>

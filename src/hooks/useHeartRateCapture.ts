@@ -18,12 +18,12 @@ import { HeartRateManager } from '../lib/heartRate/heartRateManager';
 import { buildCaptureResult } from '../lib/heartRate/captureResult';
 import { useMeasurementTimer } from './useMeasurementTimer';
 
-const CAPTURE_DURATION_MS = 30000;
+const CAPTURE_DURATION_MS = 45000;
 const CAPTURE_DURATION_SEC = CAPTURE_DURATION_MS / 1000;
 const MIN_GOOD_DURATION_MS = 2500;
 const PROGRESS_UPDATE_INTERVAL_MS = 200;
 const BPM_UPDATE_INTERVAL_MS = 1000;
-const FRAME_PROCESSING_FPS = 30;
+const FRAME_PROCESSING_FPS = 45;
 
 function isValidFrameSample(value: unknown): value is PpgFrameSample {
   if (value == null || typeof value !== 'object') return false;

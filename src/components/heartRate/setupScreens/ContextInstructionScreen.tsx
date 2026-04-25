@@ -42,7 +42,7 @@ export function ContextInstructionScreen({ onNext, onCancel }: SetupScreenProps)
           <View style={styles.divider} />
           <View style={styles.bulletRow}>
             <MaterialCommunityIcons name="clock-outline" size={16} color={colors.text.secondary} />
-            <Text style={styles.bulletText}>Takes about 30 seconds</Text>
+            <Text style={styles.bulletText}>Takes about 45 seconds</Text>
           </View>
           <View style={styles.bulletRow}>
             <MaterialCommunityIcons name="flash" size={16} color={colors.text.secondary} />
