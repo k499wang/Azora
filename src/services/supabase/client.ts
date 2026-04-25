@@ -12,6 +12,9 @@ export type SupabaseAuthChangeEvent =
 export interface SupabaseUser {
   id: string;
   email?: string | null;
+  app_metadata?: {
+    provider?: string | null;
+  };
 }
 
 export interface SupabaseSession {
