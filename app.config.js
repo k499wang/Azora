@@ -42,7 +42,12 @@ module.exports = {
       posthogProjectToken: process.env.POSTHOG_PROJECT_TOKEN,
       posthogHost: process.env.POSTHOG_HOST,
       supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,
-      supabaseAnonKey: process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
+      supabasePublishableKey:
+        process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY ??
+        process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY,
+      supabaseAnonKey:
+        process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ??
+        process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
       revenueCatIosApiKey: process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY,
       revenueCatAndroidApiKey: process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_KEY,
     },
