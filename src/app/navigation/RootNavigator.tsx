@@ -1,14 +1,32 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { View, ActivityIndicator } from 'react-native';
 import DailyExercisePage from '../../screens/DailyExercisePage';
 import ExerciseSessionPage from '../../screens/ExerciseSessionPage';
 import { HeartRateScreen } from '../../screens/HeartRateScreen';
 import ShareableResultScreen from '../../screens/ShareableResultScreen';
+import { OnboardingFlow } from '../../components/onboarding/OnboardingFlow';
+import { useOnboardingComplete } from '../../hooks/useOnboardingComplete';
+import { colors } from '../../theme/colors';
 import { MainTabs } from './MainTabs';
 import type { RootStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export function RootNavigator() {
+  const { isComplete, markComplete } = useOnboardingComplete();
+
+  if (isComplete === null) {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.background.primary, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator color={colors.primary.blue600} />
+      </View>
+    );
+  }
+
+  if (!isComplete) {
+    return <OnboardingFlow onComplete={markComplete} />;
+  }
+
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="MainTabs" component={MainTabs} />
