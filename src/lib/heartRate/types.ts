@@ -76,6 +76,7 @@ export interface HeartRateReading {
   source: 'camera-flash';
   rmssd?: number;
   sdnn?: number;
+  stress?: number;
   pnn50?: number;
   hrDrop?: number;
   beatCount?: number;
