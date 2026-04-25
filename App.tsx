@@ -32,6 +32,7 @@ import {
 import { PostHogProvider } from 'posthog-react-native';
 import { RootNavigator } from './src/app/navigation';
 import type { RootStackParamList } from './src/app/navigation';
+import { AppProviders } from './src/app/providers/AppProviders';
 import { posthog } from './src/config/posthog';
 import { trackAppOpened, trackScreenView } from './src/services/analytics/tracking';
 import { bootstrapAnalytics } from './src/services/analytics/identity';
@@ -101,7 +102,9 @@ export default function App() {
         onStateChange={trackCurrentScreen}
       >
         <PostHogProvider client={posthog} autocapture={{ captureTouches: true, captureScreens: false }}>
-          <RootNavigator />
+          <AppProviders>
+            <RootNavigator />
+          </AppProviders>
         </PostHogProvider>
       </NavigationContainer>
     </SafeAreaProvider>

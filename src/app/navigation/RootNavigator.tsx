@@ -1,11 +1,12 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { View, ActivityIndicator } from 'react-native';
+import AuthLandingScreen from '../../screens/AuthLandingScreen';
 import DailyExercisePage from '../../screens/DailyExercisePage';
 import ExerciseSessionPage from '../../screens/ExerciseSessionPage';
 import { HeartRateScreen } from '../../screens/HeartRateScreen';
 import ShareableResultScreen from '../../screens/ShareableResultScreen';
 import { OnboardingFlow } from '../../components/onboarding/OnboardingFlow';
-import { useOnboardingComplete } from '../../hooks/useOnboardingComplete';
+import { useAppGate } from '../../hooks/useAppGate';
 import { colors } from '../../theme/colors';
 import { MainTabs } from './MainTabs';
 import type { RootStackParamList } from './types';
@@ -13,9 +14,9 @@ import type { RootStackParamList } from './types';
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 export function RootNavigator() {
-  const { isComplete, markComplete } = useOnboardingComplete();
+  const gate = useAppGate();
 
-  if (isComplete === null) {
+  if (gate.status === 'booting') {
     return (
       <View style={{ flex: 1, backgroundColor: colors.background.primary, justifyContent: 'center', alignItems: 'center' }}>
         <ActivityIndicator color={colors.primary.blue600} />
@@ -23,8 +24,12 @@ export function RootNavigator() {
     );
   }
 
-  if (!isComplete) {
-    return <OnboardingFlow onComplete={markComplete} />;
+  if (gate.status === 'signed_out') {
+    return <AuthLandingScreen />;
+  }
+
+  if (gate.status === 'needs_onboarding') {
+    return <OnboardingFlow onComplete={() => void gate.completeOnboarding()} />;
   }
 
   return (
