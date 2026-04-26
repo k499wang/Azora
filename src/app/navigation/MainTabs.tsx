@@ -22,22 +22,24 @@ function EmptyScreen() {
 
 function MeasureTabButton({ onPress, accessibilityState }: BottomTabBarButtonProps) {
   return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityState={accessibilityState}
-      accessibilityLabel="Measure heart rate"
-      style={({ pressed }) => [
-        styles.measureButton,
-        pressed && styles.measureButtonPressed,
-      ]}
-    >
-      <MaterialCommunityIcons
-        name="heart-pulse"
-        size={28}
-        color={colors.text.inverse}
-      />
-    </Pressable>
+    <View style={styles.measureSlot}>
+      <Pressable
+        onPress={onPress}
+        accessibilityRole="button"
+        accessibilityState={accessibilityState}
+        accessibilityLabel="Measure heart rate"
+        style={({ pressed }) => [
+          styles.measureButton,
+          pressed && styles.measureButtonPressed,
+        ]}
+      >
+        <MaterialCommunityIcons
+          name="heart-pulse"
+          size={28}
+          color={colors.text.inverse}
+        />
+      </Pressable>
+    </View>
   );
 }
 
@@ -57,6 +59,10 @@ export function MainTabs() {
           height: 74,
           paddingTop: spacing.sm,
           paddingBottom: spacing.sm,
+        },
+        tabBarItemStyle: {
+          alignItems: 'center',
+          justifyContent: 'center',
         },
       }}
     >
@@ -99,6 +105,11 @@ const styles = StyleSheet.create({
   hiddenScreen: {
     flex: 1,
     backgroundColor: colors.background.primary,
+  },
+  measureSlot: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   measureButton: {
     width: 62,

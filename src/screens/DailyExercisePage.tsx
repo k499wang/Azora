@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
 import { spacing } from '../theme/spacing';
@@ -29,18 +31,30 @@ interface BpmSample {
   bpm: number;
 }
 
+const BEST_HOLD_KEY = 'daily_breath_hold_best_seconds';
+
+function formatBest(secs: number) {
+  const m = Math.floor(secs / 60);
+  const s = secs % 60;
+  return `${m}:${s.toString().padStart(2, '0')}`;
+}
+
 export default function DailyExercisePage({
   navigation,
 }: DailyExerciseScreenProps) {
   const posthog = usePostHog();
   const circleRef = useRef<BreathingCircleRef>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const inhaleTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const samplesRef = useRef<BpmSample[]>([]);
+  const holdStartAtRef = useRef<number>(0);
   const [phase, setPhase] = useState<HoldPhase>('idle');
   const [holdSeconds, setHoldSeconds] = useState(0);
+  const [inhaleCountdown, setInhaleCountdown] = useState(0);
   const [bestHoldSeconds, setBestHoldSeconds] = useState(0);
   const [hrEnabled, setHrEnabled] = useState(false);
   const [lastSamples, setLastSamples] = useState<BpmSample[]>([]);
+  const [isNewBest, setIsNewBest] = useState(false);
 
   const pulse = useLivePulse();
   const {
@@ -56,10 +70,26 @@ export default function DailyExercisePage({
     currentBpmRef.current = currentBpm;
   }, [currentBpm]);
 
+  useEffect(() => {
+    let cancelled = false;
+    AsyncStorage.getItem(BEST_HOLD_KEY).then((raw) => {
+      if (cancelled || raw == null) return;
+      const stored = parseInt(raw, 10);
+      if (Number.isFinite(stored) && stored > 0) setBestHoldSeconds(stored);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const clearTimer = () => {
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
+    }
+    if (inhaleTimeoutRef.current) {
+      clearTimeout(inhaleTimeoutRef.current);
+      inhaleTimeoutRef.current = null;
     }
   };
 
@@ -94,23 +124,13 @@ export default function DailyExercisePage({
     }
   }, [hrEnabled, hasPermission, requestPermission]);
 
-  const startInhale = () => {
+  const beginHold = useCallback(() => {
     clearTimer();
     samplesRef.current = [];
-    setLastSamples([]);
-    setHoldSeconds(0);
-    setPhase('inhale');
-    circleRef.current?.reset();
-    circleRef.current?.expand(6);
-    if (hrEnabled) startPulse();
-    posthog.capture(AnalyticsEvent.DailyBreathHoldStarted);
-  };
-
-  const beginHold = () => {
-    clearTimer();
-    samplesRef.current = [];
+    holdStartAtRef.current = Date.now();
     setHoldSeconds(0);
     setPhase('hold');
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
     timerRef.current = setInterval(() => {
       setHoldSeconds((current) => {
         const next = current + 1;
@@ -121,21 +141,84 @@ export default function DailyExercisePage({
         return next;
       });
     }, 1000);
+  }, []);
+
+  const INHALE_SECONDS = 6;
+
+  const startInhale = () => {
+    clearTimer();
+    samplesRef.current = [];
+    setLastSamples([]);
+    setHoldSeconds(0);
+    setIsNewBest(false);
+    setPhase('inhale');
+    setInhaleCountdown(INHALE_SECONDS);
+    circleRef.current?.reset();
+    circleRef.current?.expand(INHALE_SECONDS);
+    if (hrEnabled) startPulse();
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    posthog.capture(AnalyticsEvent.DailyBreathHoldStarted);
+    timerRef.current = setInterval(() => {
+      setInhaleCountdown((current) => {
+        const next = current - 1;
+        if (next <= 0) {
+          clearTimer();
+          beginHold();
+          return 0;
+        }
+        return next;
+      });
+    }, 1000);
+  };
+
+  const skipInhale = () => {
+    if (phase !== 'inhale') return;
+    clearTimer();
+    setInhaleCountdown(0);
+    beginHold();
   };
 
   const releaseHold = () => {
     clearTimer();
     const samples = samplesRef.current.slice();
     setLastSamples(samples);
-    setBestHoldSeconds((current) => Math.max(current, holdSeconds));
+    const newBest = holdSeconds > bestHoldSeconds && holdSeconds > 0;
+    const updatedBest = Math.max(bestHoldSeconds, holdSeconds);
+    setBestHoldSeconds(updatedBest);
+    setIsNewBest(newBest);
     setPhase('done');
     stopPulse();
+    if (newBest) {
+      AsyncStorage.setItem(BEST_HOLD_KEY, String(updatedBest)).catch(() => {});
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+    } else {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    }
     posthog.capture(AnalyticsEvent.DailyBreathHoldReleased, {
       hold_seconds: holdSeconds,
-      best_hold_seconds: Math.max(bestHoldSeconds, holdSeconds),
+      best_hold_seconds: updatedBest,
+      is_new_best: newBest,
       hr_monitoring_enabled: hrEnabled,
       bpm_sample_count: samples.length,
     });
+  };
+
+  const HOLD_RELEASE_GUARD_MS = 1000;
+
+  const tryReleaseHold = () => {
+    if (phase !== 'hold') return;
+    if (Date.now() - holdStartAtRef.current < HOLD_RELEASE_GUARD_MS) return;
+    releaseHold();
+  };
+
+  const handleCirclePress = () => {
+    if (phase === 'inhale') {
+      skipInhale();
+      return;
+    }
+    if (phase === 'hold') {
+      tryReleaseHold();
+    }
   };
 
   const handlePrimaryPress = () => {
@@ -143,13 +226,13 @@ export default function DailyExercisePage({
       startInhale();
       return;
     }
-
     if (phase === 'inhale') {
-      beginHold();
+      skipInhale();
       return;
     }
-
-    releaseHold();
+    if (phase === 'hold') {
+      tryReleaseHold();
+    }
   };
 
   const handleViewResults = () => {
@@ -179,9 +262,9 @@ export default function DailyExercisePage({
 
   const primaryLabel =
     phase === 'idle'
-      ? 'Start Inhale'
+      ? 'Start'
       : phase === 'inhale'
-        ? 'Begin Hold'
+        ? 'Skip'
         : phase === 'hold'
           ? 'Release'
           : 'Try Again';
@@ -190,9 +273,9 @@ export default function DailyExercisePage({
     phase === 'idle'
       ? 'Take one full breath in, then hold until you are ready to breathe.'
       : phase === 'inhale'
-        ? 'Fill your lungs gently. Begin the hold when your inhale feels complete.'
+        ? 'Fill your lungs gently. Tap the circle when your inhale feels complete.'
         : phase === 'hold'
-          ? 'Hold until you are ready to breathe. Release when it stops feeling controlled.'
+          ? 'Tap the circle when you need to breathe.'
           : 'Nice work. Rest for a moment, then begin again when you feel ready.';
 
   const displayTime = phase === 'hold' || phase === 'done' ? formatTime(holdSeconds) : null;
@@ -249,10 +332,49 @@ export default function DailyExercisePage({
         </View>
       }
       centerSlot={
-        <BreathingCircle ref={circleRef}>
-          {phase !== 'idle' ? <Text style={styles.phaseLabel}>{PHASE_LABELS[phase]}</Text> : null}
-          {displayTime ? <Text style={styles.countdown}>{displayTime}</Text> : null}
-        </BreathingCircle>
+        <Pressable
+          onPress={handleCirclePress}
+          disabled={phase !== 'hold' && phase !== 'inhale'}
+          accessibilityRole="button"
+          accessibilityLabel={
+            phase === 'hold'
+              ? 'Tap to release hold'
+              : phase === 'inhale'
+                ? 'Tap to skip inhale and begin hold'
+                : undefined
+          }
+          style={({ pressed }) => [
+            styles.circleTapTarget,
+            (phase === 'hold' || phase === 'inhale') && pressed && styles.circleTapPressed,
+          ]}
+        >
+          <BreathingCircle ref={circleRef}>
+            {phase !== 'idle' ? <Text style={styles.phaseLabel}>{PHASE_LABELS[phase]}</Text> : null}
+            {phase === 'inhale' ? (
+              <Text style={styles.countdown}>{inhaleCountdown}</Text>
+            ) : displayTime ? (
+              <Text style={styles.countdown}>{displayTime}</Text>
+            ) : null}
+            {phase === 'inhale' ? (
+              <Text style={styles.tapHint}>Tap when ready</Text>
+            ) : phase === 'hold' ? (
+              <Text style={styles.tapHint}>Tap to release</Text>
+            ) : null}
+            {bestHoldSeconds > 0 ? (
+              <View style={[styles.bestChip, isNewBest && styles.bestChipNew]}>
+                <MaterialCommunityIcons
+                  name={isNewBest ? 'trophy' : 'trophy-outline'}
+                  size={12}
+                  color={isNewBest ? colors.warning[700] : colors.text.tertiary}
+                />
+                <Text style={[styles.bestChipText, isNewBest && styles.bestChipTextNew]}>
+                  {isNewBest ? 'New best · ' : 'Best · '}
+                  {formatBest(bestHoldSeconds)}
+                </Text>
+              </View>
+            ) : null}
+          </BreathingCircle>
+        </Pressable>
       }
       bottomSlot={
         <View style={styles.bottomContainer}>
@@ -266,8 +388,11 @@ export default function DailyExercisePage({
           >
             <MaterialCommunityIcons
               name={
-                phase === 'idle' || phase === 'done' ? 'play' :
-                phase === 'inhale' ? 'chevron-right' : 'hand-back-left-outline'
+                phase === 'idle' || phase === 'done'
+                  ? 'play'
+                  : phase === 'inhale'
+                    ? 'chevron-double-down'
+                    : 'hand-back-left-outline'
               }
               size={28}
               color={colors.neutral[900]}
@@ -378,6 +503,22 @@ const styles = StyleSheet.create({
     opacity: 0.75,
     transform: [{ scale: 0.96 }],
   },
+  circleBtnDisabled: {
+    opacity: 0.4,
+  },
+  circleTapTarget: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  circleTapPressed: {
+    opacity: 0.85,
+    transform: [{ scale: 0.98 }],
+  },
+  tapHint: {
+    ...typography.caption.caption1,
+    color: colors.text.tertiary,
+    marginTop: spacing.xs,
+  },
   viewResultsHidden: {
     opacity: 0,
   },
@@ -389,6 +530,30 @@ const styles = StyleSheet.create({
   countdown: {
     ...typography.display.display1,
     color: colors.text.primary,
+  },
+  bestChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    backgroundColor: colors.background.elevated,
+    borderRadius: 999,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderWidth: 1,
+    borderColor: colors.border.subtle,
+    marginTop: spacing.xs,
+  },
+  bestChipNew: {
+    backgroundColor: colors.warning[100],
+    borderColor: colors.warning[500],
+  },
+  bestChipText: {
+    ...typography.caption.caption2,
+    color: colors.text.tertiary,
+  },
+  bestChipTextNew: {
+    color: colors.warning[700],
+    fontWeight: '600',
   },
   guidance: {
     ...typography.body.small,
