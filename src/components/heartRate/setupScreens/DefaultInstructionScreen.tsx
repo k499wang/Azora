@@ -1,142 +1,167 @@
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  SafeAreaView,
-} from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../../theme/colors';
 import { typography } from '../../../theme/typography';
 import { spacing } from '../../../theme/spacing';
+import { card } from '../../../theme/card';
 import type { SetupScreenProps } from '../../../lib/heartRate/types';
 
-const steps = [
-  {
-    icon: 'camera' as const,
-    text: 'Cover the rear camera and flash fully with your fingertip',
-  },
-  {
-    icon: 'hand-back-right' as const,
-    text: 'Apply gentle, even pressure — not too hard',
-  },
-  {
-    icon: 'timer-outline' as const,
-    text: 'Keep your hand still for 45 seconds',
-  },
+const STEPS = [
+  'Cover the rear camera with your fingertip',
+  'Apply gentle pressure',
+  'Stay still and breathe normally',
 ];
 
 export function DefaultInstructionScreen({ onNext }: SetupScreenProps) {
+  const insets = useSafeAreaInsets();
+
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.content}>
-        {/* Steps */}
-        <View style={styles.stepsContainer}>
-          {steps.map((step, index) => (
-            <View key={index} style={styles.stepRow}>
-              <View style={styles.stepIconWrap}>
-                <MaterialCommunityIcons
-                  name={step.icon}
-                  size={22}
-                  color={colors.primary.blue600}
-                />
-              </View>
-              <Text style={styles.stepText}>{step.text}</Text>
-            </View>
-          ))}
-        </View>
-
-        {/* Note */}
-        <View style={styles.noteContainer}>
-          <MaterialCommunityIcons
-            name="information-outline"
-            size={16}
-            color={colors.text.tertiary}
-          />
-          <Text style={styles.noteText}>
-            Find a comfortable position before starting
-          </Text>
-        </View>
-
-        <TouchableOpacity style={styles.primaryButton} onPress={onNext} activeOpacity={0.85}>
-          <MaterialCommunityIcons name="heart-pulse" size={20} color={colors.text.inverse} style={styles.buttonIcon} />
-          <Text style={styles.primaryButtonText}>Measure My Heart Rate</Text>
-        </TouchableOpacity>
+    <View style={[styles.container, { paddingTop: insets.top + 56 }]}>
+      <View style={styles.titleRow}>
+        <MaterialCommunityIcons name="heart-pulse" size={20} color={colors.error[500]} />
+        <Text style={styles.title}>Measure Heart Rate</Text>
       </View>
-    </SafeAreaView>
+      <View style={styles.intro}>
+        <MaterialCommunityIcons
+          name="information-outline"
+          size={16}
+          color={colors.primary.blue600}
+        />
+        <Text style={styles.introText}>
+          Your phone's camera detects your pulse through the light passing through your fingertip.
+        </Text>
+      </View>
+
+      <View style={[card.base, card.shadow, styles.stepsCard]}>
+        {STEPS.map((text, i) => (
+          <View key={i} style={[styles.stepRow, i === 0 && styles.stepRowFirst]}>
+            <View style={styles.stepNumber}>
+              <Text style={styles.stepNumberText}>{i + 1}</Text>
+            </View>
+            <Text style={styles.stepText}>{text}</Text>
+          </View>
+        ))}
+      </View>
+
+      <View style={styles.metaRow}>
+        <View style={styles.metaPill}>
+          <MaterialCommunityIcons name="timer-outline" size={12} color={colors.text.tertiary} />
+          <Text style={styles.metaText}>~45s</Text>
+        </View>
+        <View style={styles.metaPill}>
+          <MaterialCommunityIcons name="lock-outline" size={12} color={colors.text.tertiary} />
+          <Text style={styles.metaText}>On-device</Text>
+        </View>
+      </View>
+
+      <View style={styles.spacer} />
+
+      <Pressable
+        style={({ pressed }) => [styles.primaryButton, pressed && styles.primaryButtonPressed]}
+        onPress={onNext}
+      >
+        <Text style={styles.primaryButtonText}>Begin</Text>
+      </Pressable>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: colors.background.primary,
-  },
-  content: {
+  container: {
     flex: 1,
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.xl,
-    paddingBottom: spacing.xl,
-    justifyContent: 'center',
+    paddingBottom: spacing.lg,
   },
-  stepsContainer: {
-    width: '100%',
-    backgroundColor: colors.background.elevated,
-    borderRadius: 16,
-    padding: spacing.md,
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
     marginBottom: spacing.md,
-    gap: spacing.md,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
+  },
+  title: {
+    ...typography.title.title3,
+    color: colors.text.primary,
+  },
+  intro: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.sm,
+    marginBottom: spacing.lg,
+    backgroundColor: colors.background.accentSoft,
+    borderRadius: 12,
+  },
+  introText: {
+    ...typography.body.small,
+    color: colors.text.secondary,
+    flex: 1,
+  },
+  stepsCard: {
+    padding: spacing.md,
   },
   stepRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     gap: spacing.md,
+    paddingVertical: spacing.sm,
   },
-  stepIconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+  stepRowFirst: {
+    paddingTop: 0,
+  },
+  stepNumber: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     backgroundColor: colors.primary.blue100,
     alignItems: 'center',
     justifyContent: 'center',
-    flexShrink: 0,
+  },
+  stepNumberText: {
+    ...typography.label.medium,
+    color: colors.primary.blue700,
+    fontWeight: '700',
   },
   stepText: {
     ...typography.body.medium,
     color: colors.text.primary,
     flex: 1,
-    lineHeight: 22,
-    paddingTop: 6,
   },
-  noteContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    marginBottom: spacing.xl,
-    paddingHorizontal: spacing.sm,
-  },
-  noteText: {
-    ...typography.caption.caption1,
-    color: colors.text.tertiary,
+  spacer: {
     flex: 1,
   },
-  primaryButton: {
-    width: '100%',
-    backgroundColor: colors.primary.blue600,
-    borderRadius: 14,
-    paddingVertical: 16,
-    alignItems: 'center',
+  metaRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     gap: spacing.sm,
+    marginTop: spacing.md,
   },
-  buttonIcon: {
-    marginRight: 2,
+  metaPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderRadius: 999,
+    backgroundColor: colors.background.elevated,
+    borderWidth: 1,
+    borderColor: colors.border.subtle,
+  },
+  metaText: {
+    ...typography.caption.caption2,
+    color: colors.text.tertiary,
+  },
+  primaryButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primary.blue600,
+    borderRadius: 16,
+    paddingVertical: spacing.md,
+  },
+  primaryButtonPressed: {
+    opacity: 0.85,
   },
   primaryButtonText: {
     ...typography.button.large,
