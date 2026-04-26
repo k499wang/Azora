@@ -6,6 +6,7 @@ export interface UserProfile {
   avatarUrl: string | null;
   timezone: string;
   onboardingGoal: string | null;
+  onboardingCompletedAt: string | null;
 }
 
 export interface UserPreferences {
@@ -21,6 +22,7 @@ export interface UpdateProfileInput {
   avatarUrl?: string | null;
   timezone?: string;
   onboardingGoal?: string | null;
+  onboardingCompletedAt?: string | null;
 }
 
 export interface UpdatePreferencesInput {
