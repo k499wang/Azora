@@ -16,6 +16,7 @@ export interface Database {
           avatar_url: string | null;
           timezone: string;
           onboarding_goal: string | null;
+          onboarding_completed_at: string | null;
           created_at: string;
           updated_at: string;
         };

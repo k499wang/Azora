@@ -36,7 +36,6 @@ module.exports = {
       'expo-font',
       'react-native-vision-camera',
       './plugins/with-heart-rate-plugin',
-      'react-native-purchases',
     ],
     extra: {
       posthogProjectToken: process.env.POSTHOG_PROJECT_TOKEN,
