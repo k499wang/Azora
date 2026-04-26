@@ -1,9 +1,20 @@
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
-import { useState } from 'react';
+import {
+  Alert,
+  Dimensions,
+  FlatList,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
+  type ViewToken,
+} from 'react-native';
+import { useRef, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon, { type IconName } from '../components/common/icons/Icon';
 import { colors } from '../theme/colors';
-import { fonts } from '../theme/typography';
+import { typography, fonts } from '../theme/typography';
 import { spacing } from '../theme/spacing';
 
 function showNotWiredAlert(provider: 'Apple' | 'Google') {
@@ -13,67 +24,131 @@ function showNotWiredAlert(provider: 'Apple' | 'Google') {
   );
 }
 
-interface FloatingIconConfig {
-  name: IconName;
-  size: number;
-  color: string;
-  top: number;
-  left?: number;
-  right?: number;
-  rotate?: number;
+interface Slide {
+  id: string;
+  icon: IconName;
+  iconTint: string;
+  bubbleTint: string;
+  eyebrow: string;
+  title: string;
+  body: string;
 }
 
-const FLOATING_ICONS: FloatingIconConfig[] = [
-  { name: 'sparkle', size: 22, color: colors.neutral[0], top: 12, left: 28 },
-  { name: 'heart-glow', size: 38, color: colors.primary.blue100, top: 36, left: 8, rotate: -12 },
-  { name: 'breath-hold', size: 44, color: colors.primary.blue700, top: 110, left: 30, rotate: -8 },
-  { name: 'sparkle', size: 16, color: colors.primary.blue100, top: 90, right: 60 },
-  { name: 'meditation', size: 36, color: colors.neutral[0], top: 30, right: 24, rotate: 10 },
-  { name: 'timer', size: 30, color: colors.primary.blue100, top: 100, right: 14, rotate: 8 },
-  { name: 'streak', size: 32, color: colors.orange[400], top: 160, right: 40, rotate: -6 },
-  { name: 'sparkle', size: 14, color: colors.neutral[0], top: 180, left: 80 },
+const SLIDES: Slide[] = [
+  {
+    id: 'calm',
+    icon: 'breath-wave',
+    iconTint: colors.primary.blue600,
+    bubbleTint: colors.primary.blue100,
+    eyebrow: 'Feel better tonight',
+    title: 'Calm your mind in 5 minutes.',
+    body: 'Guided breathwork that drops your stress in a single session — no app fatigue, no fluff.',
+  },
+  {
+    id: 'science',
+    icon: 'heart-rmssd',
+    iconTint: colors.primary.blue600,
+    bubbleTint: colors.primary.blue100,
+    eyebrow: 'Backed by science',
+    title: 'Measured by your heart.',
+    body: 'Real-time HRV — the gold-standard biomarker used in clinical research — shows you exactly when you shift into recovery.',
+  },
+  {
+    id: 'sleep',
+    icon: 'breath-moon',
+    iconTint: colors.primary.blue700,
+    bubbleTint: colors.primary.blue100,
+    eyebrow: 'Sleep deeper',
+    title: 'Wind down without scrolling.',
+    body: '4-7-8 and resonance breathing protocols proven to lower nighttime heart rate and ease you into sleep.',
+  },
+  {
+    id: 'athlete',
+    icon: 'breath-lightning',
+    iconTint: colors.orange[500],
+    bubbleTint: colors.orange[100],
+    eyebrow: 'Train like an athlete',
+    title: 'Recover faster, breathe stronger.',
+    body: 'The same box-breathing protocols used by Navy SEALs and elite athletes — now tied to your live HRV.',
+  },
+  {
+    id: 'heart',
+    icon: 'heart-glow',
+    iconTint: colors.error[500],
+    bubbleTint: colors.error[100],
+    eyebrow: 'Heart & wellness',
+    title: 'Build a stronger nervous system.',
+    body: 'Track HRV, RMSSD, and SDNN over time. Watch your resilience grow with every session.',
+  },
 ];
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export default function AuthLandingScreen() {
   const [agreed, setAgreed] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const listRef = useRef<FlatList<Slide>>(null);
+
+  const onViewable = useRef(
+    ({ viewableItems }: { viewableItems: ViewToken[] }) => {
+      if (viewableItems[0]?.index != null) setActiveIndex(viewableItems[0].index);
+    },
+  ).current;
+
+  const onMomentumEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const i = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
+    setActiveIndex(i);
+  };
 
   return (
     <View style={styles.screen}>
       <SafeAreaView edges={['top']} style={styles.heroSafe}>
-        <View style={styles.hero}>
-          {FLOATING_ICONS.map((cfg, i) => (
-            <View
-              key={i}
-              style={[
-                styles.floating,
-                {
-                  top: cfg.top,
-                  left: cfg.left,
-                  right: cfg.right,
-                  transform: cfg.rotate ? [{ rotate: `${cfg.rotate}deg` }] : undefined,
-                },
-              ]}
-            >
-              <Icon name={cfg.name} size={cfg.size} color={cfg.color} />
-            </View>
-          ))}
-
-          <View style={styles.heroCenter}>
-            <View style={styles.heroBlob}>
-              <Icon name="breath-hold" size={120} color={colors.neutral[0]} />
-            </View>
+        <View style={styles.brandRow}>
+          <Text style={styles.brand}>AZORA</Text>
+          <View style={styles.proofBadge}>
+            <View style={styles.proofDot} />
+            <Text style={styles.proofText}>HRV-backed</Text>
           </View>
+        </View>
+
+        <FlatList
+          ref={listRef}
+          data={SLIDES}
+          keyExtractor={(item) => item.id}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          onViewableItemsChanged={onViewable}
+          onMomentumScrollEnd={onMomentumEnd}
+          viewabilityConfig={{ itemVisiblePercentThreshold: 60 }}
+          renderItem={({ item }) => (
+            <View style={styles.slide}>
+              <View style={styles.iconWrap}>
+                <View style={[styles.iconRingOuter, { backgroundColor: item.bubbleTint }]} />
+                <View style={[styles.iconRingInner, { backgroundColor: item.bubbleTint }]} />
+                <View style={styles.iconCore}>
+                  <Icon name={item.icon} size={72} color={item.iconTint} />
+                </View>
+              </View>
+              <View style={styles.copy}>
+                <Text style={styles.eyebrow}>{item.eyebrow}</Text>
+                <Text style={styles.title}>{item.title}</Text>
+                <Text style={styles.body}>{item.body}</Text>
+              </View>
+            </View>
+          )}
+        />
+
+        <View style={styles.dots}>
+          {SLIDES.map((_, i) => (
+            <View key={i} style={[styles.dot, i === activeIndex && styles.dotActive]} />
+          ))}
         </View>
       </SafeAreaView>
 
       <View style={styles.sheet}>
         <SafeAreaView edges={['bottom']} style={styles.sheetSafe}>
           <View style={styles.sheetContent}>
-            <View style={styles.copy}>
-              <Text style={styles.title}>Welcome to Azora</Text>
-              <Text style={styles.subtitle}>Breathe better. Measure better.</Text>
-            </View>
-
             <Pressable
               accessibilityRole="checkbox"
               accessibilityState={{ checked: agreed }}
@@ -93,10 +168,7 @@ export default function AuthLandingScreen() {
               <Pressable
                 accessibilityRole="button"
                 onPress={() => showNotWiredAlert('Apple')}
-                style={({ pressed }) => [
-                  styles.primaryButton,
-                  pressed && styles.buttonPressed,
-                ]}
+                style={({ pressed }) => [styles.primaryButton, pressed && styles.buttonPressed]}
               >
                 <Icon name="apple" size={18} color={colors.text.inverse} />
                 <Text style={styles.primaryButtonLabel}>Continue with Apple</Text>
@@ -105,10 +177,7 @@ export default function AuthLandingScreen() {
               <Pressable
                 accessibilityRole="button"
                 onPress={() => showNotWiredAlert('Google')}
-                style={({ pressed }) => [
-                  styles.secondaryButton,
-                  pressed && styles.buttonPressed,
-                ]}
+                style={({ pressed }) => [styles.secondaryButton, pressed && styles.buttonPressed]}
               >
                 <Icon name="google" size={18} />
                 <Text style={styles.secondaryButtonLabel}>Continue with Google</Text>
@@ -124,58 +193,128 @@ export default function AuthLandingScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: colors.primary.blue500,
+    backgroundColor: colors.background.primary,
   },
   heroSafe: {
     flex: 1,
   },
-  hero: {
-    flex: 1,
-    position: 'relative',
+  brandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.lg,
   },
-  floating: {
+  brand: {
+    ...typography.overline,
+    color: colors.text.brand,
+    letterSpacing: 3,
+  },
+  proofBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    backgroundColor: colors.background.accentSoft,
+    borderRadius: 999,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 6,
+  },
+  proofDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.success[500],
+  },
+  proofText: {
+    ...typography.label.small,
+    color: colors.text.brand,
+  },
+  slide: {
+    width: SCREEN_WIDTH,
+    paddingHorizontal: spacing.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xl,
+  },
+  iconWrap: {
+    width: 220,
+    height: 220,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconRingOuter: {
     position: 'absolute',
+    width: 220,
+    height: 220,
+    borderRadius: 110,
+    opacity: 0.45,
   },
-  heroCenter: {
-    flex: 1,
+  iconRingInner: {
+    position: 'absolute',
+    width: 158,
+    height: 158,
+    borderRadius: 79,
+  },
+  iconCore: {
+    width: 102,
+    height: 102,
+    borderRadius: 51,
+    backgroundColor: colors.background.elevated,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  heroBlob: {
-    width: 200,
-    height: 200,
-    borderRadius: 100,
+  copy: {
+    gap: spacing.sm,
+    alignItems: 'center',
+  },
+  eyebrow: {
+    ...typography.overline,
+    color: colors.text.brand,
+    letterSpacing: 2,
+  },
+  title: {
+    ...typography.title.title1,
+    color: colors.text.primary,
+    textAlign: 'center',
+  },
+  body: {
+    ...typography.body.medium,
+    color: colors.text.secondary,
+    textAlign: 'center',
+  },
+  dots: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    paddingVertical: spacing.lg,
+  },
+  dot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.neutral[200],
+  },
+  dotActive: {
+    width: 24,
     backgroundColor: colors.primary.blue600,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   sheet: {
     backgroundColor: colors.background.elevated,
-    borderTopLeftRadius: 48,
-    borderTopRightRadius: 48,
-    marginTop: -32,
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    shadowColor: colors.primary.blue700,
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 8,
   },
   sheetSafe: {},
   sheetContent: {
     paddingHorizontal: spacing.xl,
-    paddingTop: spacing['2xl'],
+    paddingTop: spacing.lg,
     paddingBottom: spacing.lg,
-    gap: spacing.lg,
-  },
-  copy: {
-    gap: spacing.sm,
-  },
-  title: {
-    color: colors.text.primary,
-    fontFamily: fonts.bold,
-    fontSize: 28,
-    lineHeight: 36,
-  },
-  subtitle: {
-    color: colors.text.secondary,
-    fontFamily: fonts.semibold,
-    fontSize: 16,
-    lineHeight: 22,
+    gap: spacing.md,
   },
   terms: {
     flexDirection: 'row',
