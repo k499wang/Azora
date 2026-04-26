@@ -23,7 +23,13 @@ export type RootStackParamList = {
   HeartRate: { context?: string } | undefined;
   ExerciseSession: { techniqueId: string };
   DailyExercise: undefined;
-  DailyResult: { holdSeconds: number };
+  DailyResult: {
+    holdSeconds: number;
+    bpmSamples?: { t: number; bpm: number }[];
+    avgBpm?: number;
+    minBpm?: number;
+    maxBpm?: number;
+  };
 };
 
 export type RootStackScreenProps<Screen extends keyof RootStackParamList> =

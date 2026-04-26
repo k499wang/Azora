@@ -9,17 +9,24 @@ import type { DailyResultScreenProps } from '../app/navigation';
 
 const LUNG_AGE = 23;
 const LUNG_HEALTH: 'elite' | 'very-healthy' | 'healthy' | 'average' | 'below-average' | 'light-smoker' | 'heavy-smoker' = 'very-healthy';
-const AVG_BPM = '64';
 
-const BPM_DATA: DataPoint[] = [
-  { label: '0s', value: 72 },
-  { label: '10s', value: 68 },
-  { label: '20s', value: 64 },
-  { label: '30s', value: 60 },
-  { label: '40s', value: 58 },
-  { label: '50s', value: 62 },
-  { label: '60s', value: 66 },
-];
+function downsampleSamples(
+  samples: { t: number; bpm: number }[],
+  maxPoints = 20,
+): DataPoint[] {
+  if (samples.length === 0) return [];
+  if (samples.length <= maxPoints) {
+    return samples.map((s) => ({ label: `${s.t}s`, value: s.bpm }));
+  }
+  const step = (samples.length - 1) / (maxPoints - 1);
+  const out: DataPoint[] = [];
+  for (let i = 0; i < maxPoints; i++) {
+    const idx = Math.round(i * step);
+    const s = samples[idx];
+    out.push({ label: `${s.t}s`, value: s.bpm });
+  }
+  return out;
+}
 
 // ───────────��──────────────────────────────────────��─────────────────────────────
 
@@ -45,11 +52,15 @@ export default function ShareableResultScreen({
 }: DailyResultScreenProps) {
   const insets = useSafeAreaInsets();
   const health = LUNG_HEALTH_MAP[LUNG_HEALTH];
-  const holdTime = formatTime(route.params.holdSeconds);
+  const { holdSeconds, bpmSamples = [], avgBpm, minBpm, maxBpm } = route.params;
+  const holdTime = formatTime(holdSeconds);
 
-  const lowestIndex = BPM_DATA.indexOf(
-    BPM_DATA.reduce((min, p) => (p.value < min.value ? p : min), BPM_DATA[0])
-  );
+  const bpmData = downsampleSamples(bpmSamples);
+  const hasBpm = bpmData.length > 0;
+  const lowestIndex = hasBpm
+    ? bpmData.indexOf(bpmData.reduce((min, p) => (p.value < min.value ? p : min), bpmData[0]))
+    : -1;
+  const avgBpmDisplay = avgBpm != null ? String(avgBpm) : '—';
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
@@ -83,17 +94,32 @@ export default function ShareableResultScreen({
         <View style={styles.graphSection}>
           <Text style={styles.sectionTitle}>Heart Rate</Text>
           <View style={styles.card}>
-            <LineGraph
-              data={BPM_DATA}
-              subtitle="BPM during breath hold"
-              unit=""
-              height={180}
-              lineColor={colors.primary.blue500}
-              fillColor={colors.primary.blue100}
-              dotColor={colors.primary.blue600}
-              highlightIndex={lowestIndex}
-              highlightColor={colors.primary.blue600}
-            />
+            {hasBpm ? (
+              <LineGraph
+                data={bpmData}
+                subtitle="BPM during breath hold"
+                unit=""
+                height={180}
+                lineColor={colors.primary.blue500}
+                fillColor={colors.primary.blue100}
+                dotColor={colors.primary.blue600}
+                highlightIndex={lowestIndex}
+                highlightColor={colors.primary.blue600}
+              />
+            ) : (
+              <View style={styles.emptyGraph}>
+                <MaterialCommunityIcons
+                  name="heart-off-outline"
+                  size={28}
+                  color={colors.text.tertiary}
+                />
+                <Text style={styles.emptyGraphTitle}>Heart rate not tracked</Text>
+                <Text style={styles.emptyGraphBody}>
+                  Tap "Track heart rate" before your next hold and place a finger over the rear
+                  camera to capture your BPM live.
+                </Text>
+              </View>
+            )}
           </View>
         </View>
 
@@ -114,11 +140,35 @@ export default function ShareableResultScreen({
                 <MaterialCommunityIcons name="heart-pulse" size={18} color={colors.primary.blue600} />
                 <Text style={styles.statLabel}>Avg HR</Text>
               </View>
-              <Text style={styles.statValue}>{AVG_BPM}</Text>
+              <Text style={styles.statValue}>{avgBpmDisplay}</Text>
               <Text style={styles.statUnit}>bpm</Text>
               <View style={[styles.statAccent, styles.statAccentBlue]} />
             </View>
           </View>
+
+          {hasBpm && minBpm != null && maxBpm != null ? (
+            <View style={[styles.statsRow, { marginTop: spacing.md }]}>
+              <View style={[styles.statCard, styles.statCardBlue]}>
+                <View style={styles.statCardTop}>
+                  <MaterialCommunityIcons name="arrow-down" size={18} color={colors.primary.blue600} />
+                  <Text style={styles.statLabel}>Min HR</Text>
+                </View>
+                <Text style={styles.statValue}>{minBpm}</Text>
+                <Text style={styles.statUnit}>bpm</Text>
+                <View style={[styles.statAccent, styles.statAccentBlue]} />
+              </View>
+
+              <View style={[styles.statCard, styles.statCardBlue]}>
+                <View style={styles.statCardTop}>
+                  <MaterialCommunityIcons name="arrow-up" size={18} color={colors.primary.blue600} />
+                  <Text style={styles.statLabel}>Max HR</Text>
+                </View>
+                <Text style={styles.statValue}>{maxBpm}</Text>
+                <Text style={styles.statUnit}>bpm</Text>
+                <View style={[styles.statAccent, styles.statAccentBlue]} />
+              </View>
+            </View>
+          ) : null}
         </View>
 
       </ScrollView>
@@ -269,4 +319,21 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary.blue500,
   },
 
+  emptyGraph: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.xl,
+    paddingHorizontal: spacing.md,
+    gap: spacing.sm,
+    minHeight: 180,
+  },
+  emptyGraphTitle: {
+    ...typography.heading.heading2,
+    color: colors.text.primary,
+  },
+  emptyGraphBody: {
+    ...typography.body.small,
+    color: colors.text.secondary,
+    textAlign: 'center',
+  },
 });

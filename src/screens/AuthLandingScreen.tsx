@@ -13,6 +13,7 @@ import {
 import { useRef, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon, { type IconName } from '../components/common/icons/Icon';
+import { useAuthStore } from '../stores/authStore';
 import { colors } from '../theme/colors';
 import { typography, fonts } from '../theme/typography';
 import { spacing } from '../theme/spacing';
@@ -88,6 +89,7 @@ export default function AuthLandingScreen() {
   const [agreed, setAgreed] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const listRef = useRef<FlatList<Slide>>(null);
+  const devSkipAuth = useAuthStore((s) => s.devSkipAuth);
 
   const onViewable = useRef(
     ({ viewableItems }: { viewableItems: ViewToken[] }) => {
@@ -105,9 +107,16 @@ export default function AuthLandingScreen() {
       <SafeAreaView edges={['top']} style={styles.heroSafe}>
         <View style={styles.brandRow}>
           <Text style={styles.brand}>AZORA</Text>
-          <View style={styles.proofBadge}>
-            <View style={styles.proofDot} />
-            <Text style={styles.proofText}>HRV-backed</Text>
+          <View style={styles.brandRight}>
+            {__DEV__ && (
+              <Pressable onPress={devSkipAuth} hitSlop={8} style={styles.devPill}>
+                <Text style={styles.devPillText}>DEV · Skip auth</Text>
+              </Pressable>
+            )}
+            <View style={styles.proofBadge}>
+              <View style={styles.proofDot} />
+              <Text style={styles.proofText}>HRV-backed</Text>
+            </View>
           </View>
         </View>
 
@@ -210,6 +219,23 @@ const styles = StyleSheet.create({
     ...typography.overline,
     color: colors.text.brand,
     letterSpacing: 3,
+  },
+  brandRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  devPill: {
+    backgroundColor: colors.warning[100],
+    borderRadius: 999,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: colors.warning[500],
+  },
+  devPillText: {
+    ...typography.label.small,
+    color: colors.warning[700],
   },
   proofBadge: {
     flexDirection: 'row',
