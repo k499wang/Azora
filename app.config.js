@@ -15,6 +15,7 @@ module.exports = {
     ios: {
       supportsTablet: true,
       bundleIdentifier: 'com.azora.breath',
+      usesAppleSignIn: true,
       infoPlist: {
         NSCameraUsageDescription: 'Allow $(PRODUCT_NAME) to access your camera',
       },
@@ -36,6 +37,14 @@ module.exports = {
       'expo-font',
       'react-native-vision-camera',
       './plugins/with-heart-rate-plugin',
+      [
+        '@react-native-google-signin/google-signin',
+        {
+          iosUrlScheme:
+            'com.googleusercontent.apps.464959684647-rreivqrb4nfroan35pl04gb7nr3mumel',
+        },
+      ],
+      'expo-apple-authentication',
     ],
     extra: {
       posthogProjectToken: process.env.POSTHOG_PROJECT_TOKEN,
@@ -49,6 +58,10 @@ module.exports = {
         process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
       revenueCatIosApiKey: process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY,
       revenueCatAndroidApiKey: process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_KEY,
+      googleWebClientId:
+        '464959684647-og75a7kr59nc9siganhms2rlp8ph2afm.apps.googleusercontent.com',
+      googleIosClientId:
+        '464959684647-rreivqrb4nfroan35pl04gb7nr3mumel.apps.googleusercontent.com',
     },
   },
 }
