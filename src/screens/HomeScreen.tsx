@@ -46,8 +46,8 @@ export default function HomeScreen(_: HomeScreenProps) {
         <View style={styles.recentSection}>
           <SectionHeader title="Recently logged" />
           <EmptyStateCard
-            title="No sessions yet"
-            subtitle="Start today's breath to see it show up here."
+            title="No heart rate logged yet"
+            subtitle="Press the blue circle button on the menu bar to measure your heart rate."
           />
         </View>
       </ScrollView>

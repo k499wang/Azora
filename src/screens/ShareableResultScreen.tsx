@@ -2,8 +2,9 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
-import { typography } from '../theme/typography';
+import { typography, fonts } from '../theme/typography';
 import { spacing, padding, margin } from '../theme/spacing';
+import { card } from '../theme/card';
 import LineGraph, { DataPoint } from '../components/analytics/LineGraph';
 import type { DailyResultScreenProps } from '../app/navigation';
 
@@ -125,47 +126,43 @@ export default function ShareableResultScreen({
 
         <View style={styles.statsSection}>
           <View style={styles.statsRow}>
-            <View style={[styles.statCard, styles.statCardBlue]}>
+            <View style={styles.statCard}>
               <View style={styles.statCardTop}>
                 <MaterialCommunityIcons name="timer-outline" size={18} color={colors.primary.blue600} />
                 <Text style={styles.statLabel}>Hold Time</Text>
               </View>
               <Text style={styles.statValue}>{holdTime}</Text>
               <Text style={styles.statUnit}>minutes</Text>
-              <View style={[styles.statAccent, styles.statAccentBlue]} />
             </View>
 
-            <View style={[styles.statCard, styles.statCardBlue]}>
+            <View style={styles.statCard}>
               <View style={styles.statCardTop}>
                 <MaterialCommunityIcons name="heart-pulse" size={18} color={colors.primary.blue600} />
                 <Text style={styles.statLabel}>Avg HR</Text>
               </View>
               <Text style={styles.statValue}>{avgBpmDisplay}</Text>
               <Text style={styles.statUnit}>bpm</Text>
-              <View style={[styles.statAccent, styles.statAccentBlue]} />
             </View>
           </View>
 
           {hasBpm && minBpm != null && maxBpm != null ? (
             <View style={[styles.statsRow, { marginTop: spacing.md }]}>
-              <View style={[styles.statCard, styles.statCardBlue]}>
+              <View style={styles.statCard}>
                 <View style={styles.statCardTop}>
                   <MaterialCommunityIcons name="arrow-down" size={18} color={colors.primary.blue600} />
                   <Text style={styles.statLabel}>Min HR</Text>
                 </View>
                 <Text style={styles.statValue}>{minBpm}</Text>
                 <Text style={styles.statUnit}>bpm</Text>
-                <View style={[styles.statAccent, styles.statAccentBlue]} />
               </View>
 
-              <View style={[styles.statCard, styles.statCardBlue]}>
+              <View style={styles.statCard}>
                 <View style={styles.statCardTop}>
                   <MaterialCommunityIcons name="arrow-up" size={18} color={colors.primary.blue600} />
                   <Text style={styles.statLabel}>Max HR</Text>
                 </View>
                 <Text style={styles.statValue}>{maxBpm}</Text>
                 <Text style={styles.statUnit}>bpm</Text>
-                <View style={[styles.statAccent, styles.statAccentBlue]} />
               </View>
             </View>
           ) : null}
@@ -207,6 +204,8 @@ const styles = StyleSheet.create({
   title: {
     ...typography.title.title1,
     color: colors.text.primary,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
   },
 
   // Lung Health Hero
@@ -263,11 +262,9 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   card: {
-    backgroundColor: colors.background.elevated,
-    borderRadius: 18,
+    ...card.base,
+    ...card.shadow,
     padding: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border.subtle,
     overflow: 'hidden',
   },
 
@@ -281,42 +278,32 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   statCard: {
+    ...card.base,
+    ...card.shadow,
     flex: 1,
-    borderRadius: 18,
     padding: spacing.md,
-    overflow: 'hidden',
-  },
-  statCardBlue: {
-    backgroundColor: colors.background.accentSoft,
   },
   statCardTop: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: spacing.xs,
     marginBottom: spacing.sm,
   },
   statLabel: {
-    ...typography.label.small,
-    color: colors.primary.blue600,
+    ...typography.label.medium,
+    color: colors.text.secondary,
+    fontFamily: fonts.medium,
   },
   statValue: {
     ...typography.display.display3,
     color: colors.text.primary,
+    fontFamily: fonts.semibold,
+    fontWeight: '500',
   },
   statUnit: {
-    ...typography.body.small,
-    color: colors.text.secondary,
+    ...typography.caption.caption1,
+    color: colors.text.tertiary,
     marginTop: 2,
-  },
-  statAccent: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 3,
-  },
-  statAccentBlue: {
-    backgroundColor: colors.primary.blue500,
   },
 
   emptyGraph: {
