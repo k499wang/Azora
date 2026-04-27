@@ -6,13 +6,19 @@ import {
   TouchableOpacity,
   Animated,
   SafeAreaView,
+  ScrollView,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { usePostHog } from 'posthog-react-native';
 import { colors } from '../../theme/colors';
-import { typography } from '../../theme/typography';
+import { typography, fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
-import type { CaptureResult, HrvAvailabilityReason } from '../../lib/heartRate/types';
+import { card } from '../../theme/card';
+import LineGraph, { DataPoint } from '../analytics/LineGraph';
+import SectionHeader from '../common/SectionHeader';
+import StressGauge from './StressGauge';
+import { getStressZone } from '../../lib/heartRate/stress';
+import type { CaptureResult, HrvAvailabilityReason, IbiSample } from '../../lib/heartRate/types';
 import { AnalyticsEvent } from '../../services/analytics/events';
 
 interface ResultScreenProps {
@@ -60,9 +66,65 @@ function getErrorMessage(
   }
 }
 
-function formatMetricMs(value: number | undefined): string | null {
-  if (value == null || !Number.isFinite(value)) return null;
-  return `${Math.round(value)} ms`;
+function downsampleIbi(
+  samples: IbiSample[],
+  toDataPoint: (s: IbiSample) => number,
+  maxPoints = 24,
+): DataPoint[] {
+  if (samples.length === 0) return [];
+  const fmt = (offsetMs: number) => `${Math.round(offsetMs / 1000)}s`;
+  if (samples.length <= maxPoints) {
+    return samples.map((s) => ({ label: fmt(s.offsetMs), value: toDataPoint(s) }));
+  }
+  const step = (samples.length - 1) / (maxPoints - 1);
+  const out: DataPoint[] = [];
+  for (let i = 0; i < maxPoints; i++) {
+    const s = samples[Math.round(i * step)];
+    out.push({ label: fmt(s.offsetMs), value: toDataPoint(s) });
+  }
+  return out;
+}
+
+interface StatCardProps {
+  icon: keyof typeof MaterialCommunityIcons.glyphMap;
+  label: string;
+  value: string;
+  unit?: string;
+  iconColor?: string;
+  caption?: string;
+  captionColor?: string;
+}
+
+function StatCard({
+  icon,
+  label,
+  value,
+  unit,
+  iconColor,
+  caption,
+  captionColor,
+}: StatCardProps) {
+  return (
+    <View style={styles.statCard}>
+      <View style={styles.statCardTop}>
+        <MaterialCommunityIcons
+          name={icon}
+          size={18}
+          color={iconColor ?? colors.primary.blue600}
+        />
+        <Text style={styles.statLabel}>{label}</Text>
+      </View>
+      <View style={styles.statValueRow}>
+        <Text style={styles.statValue}>{value}</Text>
+        {unit ? <Text style={styles.statUnit}>{unit}</Text> : null}
+        {caption ? (
+          <Text style={[styles.statCaption, captionColor ? { color: captionColor } : null]}>
+            {caption}
+          </Text>
+        ) : null}
+      </View>
+    </View>
+  );
 }
 
 function getHrvUnavailableMessage(
@@ -149,13 +211,52 @@ export function ResultScreen({ result, onRetry, onDone, context }: ResultScreenP
   if (isSuccess && result.reading) {
     const reading = result.reading;
     const confidence = getConfidenceLabel(reading.confidence);
-    const rmssd = formatMetricMs(reading.rmssd);
-    const stress = reading.stress?.toString() ?? null;
+    const rmssdValue =
+      reading.rmssd != null && Number.isFinite(reading.rmssd)
+        ? `${Math.round(reading.rmssd)}`
+        : null;
+    const stressValue = reading.stress?.toString() ?? null;
     const hrvUnavailableMessage = getHrvUnavailableMessage(reading.hrvAvailabilityReason);
+
+    const stats: StatCardProps[] = [
+      {
+        icon: 'pulse',
+        label: 'Samples',
+        value: `${reading.sampleCount}`,
+      },
+    ];
+    if (rmssdValue != null) {
+      stats.push({
+        icon: 'heart-pulse',
+        label: 'RMSSD',
+        value: rmssdValue,
+        unit: 'ms',
+        iconColor: colors.error[500],
+      });
+    }
+    const stressZone =
+      reading.stress != null ? getStressZone(reading.stress) : null;
+
+    const statRows: StatCardProps[][] = [];
+    for (let i = 0; i < stats.length; i += 2) {
+      statRows.push(stats.slice(i, i + 2));
+    }
+
+    const ibiSamples = result.ibiSamples ?? [];
+    const bpmSeries = downsampleIbi(ibiSamples, (s) =>
+      s.ibiMs > 0 ? Math.round(60000 / s.ibiMs) : 0,
+    );
+    const rrSeries = downsampleIbi(ibiSamples, (s) => Math.round(s.ibiMs));
+    const hasGraphs = ibiSamples.length >= 2;
 
     return (
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.container}>
+          <ScrollView
+            style={styles.scrollFlex}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+          >
           <Animated.View
             style={[
               styles.content,
@@ -189,56 +290,76 @@ export function ResultScreen({ result, onRetry, onDone, context }: ResultScreenP
               </Text>
             </View>
 
-            {/* Details */}
-            <View style={styles.detailsCard}>
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Duration</Text>
-                <Text style={styles.detailValue}>
-                  {Math.round(reading.durationMs / 1000)}s
-                </Text>
-              </View>
-              <View style={styles.detailDivider} />
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Samples</Text>
-                <Text style={styles.detailValue}>{reading.sampleCount}</Text>
-              </View>
-              {rmssd != null && (
-                <>
-                  <View style={styles.detailDivider} />
-                  <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>RMSSD</Text>
-                    <Text style={styles.detailValue}>{rmssd}</Text>
-                  </View>
-                </>
-              )}
-              {stress != null && (
-                <>
-                  <View style={styles.detailDivider} />
-                  <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Stress</Text>
-                    <Text style={styles.detailValue}>{stress}</Text>
-                  </View>
-                </>
-              )}
-              {rmssd == null && stress == null && hrvUnavailableMessage != null && (
-                <>
-                  <View style={styles.detailDivider} />
-                  <Text style={styles.hrvUnavailableText}>{hrvUnavailableMessage}</Text>
-                </>
-              )}
-              {context != null && (
-                <>
-                  <View style={styles.detailDivider} />
-                  <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Context</Text>
-                    <Text style={styles.detailValue}>{context}</Text>
-                  </View>
-                </>
-              )}
+            <View style={styles.sectionHeaderWrap}>
+              <SectionHeader title="Heart statistics" />
             </View>
-          </Animated.View>
 
-          <View style={styles.spacer} />
+            <View style={styles.statsGrid}>
+              {statRows.map((row, rowIndex) => (
+                <View key={rowIndex} style={styles.statsRow}>
+                  {row.map((stat) => (
+                    <StatCard key={stat.label} {...stat} />
+                  ))}
+                  {row.length === 1 ? <View style={styles.statCardSpacer} /> : null}
+                </View>
+              ))}
+            </View>
+
+            {stressZone != null && reading.stress != null ? (
+              <View style={styles.gaugeWrap}>
+                <StressGauge value={reading.stress} zone={stressZone} />
+              </View>
+            ) : null}
+
+            {rmssdValue == null && stressValue == null && hrvUnavailableMessage != null ? (
+              <View style={styles.hrvUnavailableCard}>
+                <MaterialCommunityIcons
+                  name="information-outline"
+                  size={16}
+                  color={colors.text.secondary}
+                />
+                <Text style={styles.hrvUnavailableText}>{hrvUnavailableMessage}</Text>
+              </View>
+            ) : null}
+
+            {context != null ? (
+              <View style={styles.contextCard}>
+                <Text style={styles.contextLabel}>Context</Text>
+                <Text style={styles.contextValue}>{context}</Text>
+              </View>
+            ) : null}
+
+            {hasGraphs ? (
+              <>
+                <View style={styles.graphCard}>
+                  <Text style={styles.graphTitle}>Heart rate</Text>
+                  <LineGraph
+                    data={bpmSeries}
+                    subtitle="BPM during the reading"
+                    unit=""
+                    height={180}
+                    lineColor={colors.primary.blue500}
+                    fillColor={colors.primary.blue100}
+                    dotColor={colors.primary.blue600}
+                  />
+                </View>
+
+                <View style={styles.graphCard}>
+                  <Text style={styles.graphTitle}>Heart rate variability</Text>
+                  <LineGraph
+                    data={rrSeries}
+                    subtitle="RR intervals (ms) — wider swings = more variability"
+                    unit=""
+                    height={180}
+                    lineColor={colors.error[500]}
+                    fillColor={`${colors.error[500]}1A`}
+                    dotColor={colors.error[500]}
+                  />
+                </View>
+              </>
+            ) : null}
+          </Animated.View>
+          </ScrollView>
 
           <View style={styles.successActions}>
             <TouchableOpacity
@@ -394,7 +515,11 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   resultTitle: {
-    ...typography.title.title2,
+    ...typography.title.title1,
+    fontFamily: fonts.medium,
+    fontWeight: '500',
+    fontSize: 32,
+    lineHeight: 40,
     color: colors.text.secondary,
     marginBottom: spacing.sm,
   },
@@ -405,10 +530,12 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   bpmNumber: {
-    fontSize: 80,
-    fontWeight: '700',
+    ...typography.display.display1,
+    fontFamily: fonts.semibold,
+    fontWeight: '500',
+    fontSize: 72,
+    lineHeight: 80,
     color: colors.text.primary,
-    lineHeight: 88,
   },
   bpmUnit: {
     ...typography.heading.heading1,
@@ -433,41 +560,118 @@ const styles = StyleSheet.create({
     ...typography.caption.caption1,
     fontWeight: '600',
   },
-  detailsCard: {
+  sectionHeaderWrap: {
     width: '100%',
-    backgroundColor: colors.background.elevated,
-    borderRadius: 16,
-    padding: spacing.md,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
+    marginTop: spacing.lg,
+    marginBottom: spacing.sm,
   },
-  detailRow: {
+  statsGrid: {
+    width: '100%',
+    gap: spacing.sm,
+  },
+  statsRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  statCard: {
+    ...card.base,
+    ...card.shadow,
+    flex: 1,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    gap: spacing.sm,
+  },
+  statCardSpacer: {
+    flex: 1,
+  },
+  statCardTop: {
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: spacing.xs,
+    gap: spacing.xs,
   },
-  detailDivider: {
-    height: 1,
-    backgroundColor: colors.border.subtle,
-  },
-  detailLabel: {
-    ...typography.body.small,
+  statLabel: {
+    ...typography.label.medium,
     color: colors.text.secondary,
+    fontFamily: fonts.medium,
   },
-  detailValue: {
-    ...typography.body.small,
+  statValueRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: spacing.xs,
+  },
+  statValue: {
+    ...typography.display.display3,
     color: colors.text.primary,
+    fontFamily: fonts.semibold,
+    fontWeight: '500',
+  },
+  statUnit: {
+    ...typography.caption.caption1,
+    color: colors.text.tertiary,
+  },
+  statCaption: {
+    ...typography.caption.caption1,
+    fontFamily: fonts.semibold,
     fontWeight: '600',
+  },
+  hrvUnavailableCard: {
+    ...card.base,
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    marginTop: spacing.sm,
   },
   hrvUnavailableText: {
     ...typography.body.small,
     color: colors.text.secondary,
-    paddingTop: spacing.sm,
-    lineHeight: 20,
+    flex: 1,
+  },
+  contextCard: {
+    ...card.base,
+    width: '100%',
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    marginTop: spacing.sm,
+    gap: 2,
+  },
+  contextLabel: {
+    ...typography.label.medium,
+    color: colors.text.secondary,
+    fontFamily: fonts.medium,
+  },
+  contextValue: {
+    ...typography.body.small,
+    color: colors.text.primary,
+    fontFamily: fonts.semibold,
+  },
+  scrollFlex: {
+    flex: 1,
+    width: '100%',
+  },
+  scrollContent: {
+    alignItems: 'center',
+    paddingBottom: spacing.lg,
+  },
+  gaugeWrap: {
+    width: '100%',
+    marginTop: spacing.sm,
+  },
+  graphCard: {
+    ...card.base,
+    ...card.shadow,
+    width: '100%',
+    padding: spacing.md,
+    marginTop: spacing.sm,
+    overflow: 'hidden',
+  },
+  graphTitle: {
+    ...typography.heading.heading2,
+    color: colors.text.primary,
+    fontFamily: fonts.semibold,
+    marginBottom: spacing.xs,
   },
   errorTitle: {
     ...typography.heading.heading1,
