@@ -33,3 +33,13 @@ export function trackScreenView(route: ScreenRoute) {
 
   posthog.capture(AnalyticsEvent.ScreenView, props);
 }
+
+export function trackProfileAction(
+  action: string,
+  properties?: Record<string, string | number | boolean | null>,
+) {
+  posthog.capture(AnalyticsEvent.ProfileAction, {
+    action,
+    ...properties,
+  });
+}
