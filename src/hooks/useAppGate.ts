@@ -50,9 +50,6 @@ export function useAppGate(): AppGate {
   }
 
   if (onboardingQuery.data !== true) {
-    if (__DEV__ && process.env.EXPO_PUBLIC_DEV_SKIP_ONBOARDING === 'true') {
-      return { status: 'ready' };
-    }
     return {
       status: 'needs_onboarding',
       completeOnboarding,

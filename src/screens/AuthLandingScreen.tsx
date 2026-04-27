@@ -2,6 +2,7 @@ import {
   Alert,
   Dimensions,
   FlatList,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -10,18 +11,23 @@ import {
   type NativeSyntheticEvent,
   type ViewToken,
 } from 'react-native';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon, { type IconName } from '../components/common/icons/Icon';
 import { useAuthStore } from '../stores/authStore';
+import {
+  AppleSignInCancelledError,
+  GoogleSignInCancelledError,
+  isAppleSignInAvailable,
+} from '../services/supabase';
 import { colors } from '../theme/colors';
 import { typography, fonts } from '../theme/typography';
 import { spacing } from '../theme/spacing';
 
-function showNotWiredAlert(provider: 'Apple' | 'Google') {
+function showTermsRequiredAlert() {
   Alert.alert(
-    `${provider} sign-in not wired yet`,
-    'This scaffold adds the auth landing screen and root gate. The provider handlers still need to be implemented.',
+    'Agree to continue',
+    "Please agree to Azora's Terms & Conditions and Privacy Policy to continue.",
   );
 }
 
@@ -88,8 +94,58 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 export default function AuthLandingScreen() {
   const [agreed, setAgreed] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [googleBusy, setGoogleBusy] = useState(false);
+  const [appleBusy, setAppleBusy] = useState(false);
+  const [appleAvailable, setAppleAvailable] = useState(Platform.OS === 'ios');
   const listRef = useRef<FlatList<Slide>>(null);
-  const devSkipAuth = useAuthStore((s) => s.devSkipAuth);
+  const signInWithGoogle = useAuthStore((s) => s.signInWithGoogle);
+  const signInWithApple = useAuthStore((s) => s.signInWithApple);
+
+  useEffect(() => {
+    let cancelled = false;
+    isAppleSignInAvailable().then((available) => {
+      if (!cancelled) setAppleAvailable(available);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const onGooglePress = async () => {
+    if (!agreed) {
+      showTermsRequiredAlert();
+      return;
+    }
+    if (googleBusy) return;
+    setGoogleBusy(true);
+    try {
+      await signInWithGoogle();
+    } catch (err) {
+      if (err instanceof GoogleSignInCancelledError) return;
+      const message = err instanceof Error ? err.message : 'Please try again.';
+      Alert.alert('Google sign-in failed', message);
+    } finally {
+      setGoogleBusy(false);
+    }
+  };
+
+  const onApplePress = async () => {
+    if (!agreed) {
+      showTermsRequiredAlert();
+      return;
+    }
+    if (appleBusy) return;
+    setAppleBusy(true);
+    try {
+      await signInWithApple();
+    } catch (err) {
+      if (err instanceof AppleSignInCancelledError) return;
+      const message = err instanceof Error ? err.message : 'Please try again.';
+      Alert.alert('Apple sign-in failed', message);
+    } finally {
+      setAppleBusy(false);
+    }
+  };
 
   const onViewable = useRef(
     ({ viewableItems }: { viewableItems: ViewToken[] }) => {
@@ -108,11 +164,6 @@ export default function AuthLandingScreen() {
         <View style={styles.brandRow}>
           <Text style={styles.brand}>AZORA</Text>
           <View style={styles.brandRight}>
-            {__DEV__ && (
-              <Pressable onPress={devSkipAuth} hitSlop={8} style={styles.devPill}>
-                <Text style={styles.devPillText}>DEV · Skip auth</Text>
-              </Pressable>
-            )}
             <View style={styles.proofBadge}>
               <View style={styles.proofDot} />
               <Text style={styles.proofText}>HRV-backed</Text>
@@ -174,22 +225,40 @@ export default function AuthLandingScreen() {
             </Pressable>
 
             <View style={styles.actions}>
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => showNotWiredAlert('Apple')}
-                style={({ pressed }) => [styles.primaryButton, pressed && styles.buttonPressed]}
-              >
-                <Icon name="apple" size={18} color={colors.text.inverse} />
-                <Text style={styles.primaryButtonLabel}>Continue with Apple</Text>
-              </Pressable>
+              {appleAvailable && (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityState={{ disabled: appleBusy }}
+                  onPress={onApplePress}
+                  disabled={appleBusy}
+                  style={({ pressed }) => [
+                    styles.primaryButton,
+                    pressed && styles.buttonPressed,
+                    appleBusy && styles.buttonDisabled,
+                  ]}
+                >
+                  <Icon name="apple" size={18} color={colors.text.inverse} />
+                  <Text style={styles.primaryButtonLabel}>
+                    {appleBusy ? 'Signing in…' : 'Continue with Apple'}
+                  </Text>
+                </Pressable>
+              )}
 
               <Pressable
                 accessibilityRole="button"
-                onPress={() => showNotWiredAlert('Google')}
-                style={({ pressed }) => [styles.secondaryButton, pressed && styles.buttonPressed]}
+                accessibilityState={{ disabled: googleBusy }}
+                onPress={onGooglePress}
+                disabled={googleBusy}
+                style={({ pressed }) => [
+                  styles.secondaryButton,
+                  pressed && styles.buttonPressed,
+                  googleBusy && styles.buttonDisabled,
+                ]}
               >
                 <Icon name="google" size={18} />
-                <Text style={styles.secondaryButtonLabel}>Continue with Google</Text>
+                <Text style={styles.secondaryButtonLabel}>
+                  {googleBusy ? 'Signing in…' : 'Continue with Google'}
+                </Text>
               </Pressable>
             </View>
           </View>
@@ -224,18 +293,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
-  },
-  devPill: {
-    backgroundColor: colors.warning[100],
-    borderRadius: 999,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 6,
-    borderWidth: 1,
-    borderColor: colors.warning[500],
-  },
-  devPillText: {
-    ...typography.label.small,
-    color: colors.warning[700],
   },
   proofBadge: {
     flexDirection: 'row',
@@ -409,5 +466,8 @@ const styles = StyleSheet.create({
   buttonPressed: {
     opacity: 0.9,
     transform: [{ scale: 0.985 }],
+  },
+  buttonDisabled: {
+    opacity: 0.6,
   },
 });
