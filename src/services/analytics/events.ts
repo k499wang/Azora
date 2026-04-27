@@ -26,6 +26,7 @@ export const AnalyticsEvent = {
   HeartRateCaptureCompleted: 'heart_rate_capture_completed',
   HeartRateCaptureFailed: 'heart_rate_capture_failed',
   HeartRateResultAction: 'heart_rate_result_action',
+  ProfileAction: 'profile_action',
 } as const;
 
 export type AnalyticsEventName =

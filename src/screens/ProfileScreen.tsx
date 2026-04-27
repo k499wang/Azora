@@ -16,6 +16,7 @@ import ProfileBreathHoldTrendCard from '../components/profile/ProfileBreathHoldT
 import ProfileAccountCard from '../components/profile/ProfileAccountCard';
 import { useAuthStore } from '../stores/authStore';
 import type { ProfileScreenProps } from '../app/navigation';
+import { trackProfileAction } from '../services/analytics/tracking';
 
 const PROFILE_HERO: ProfileStatHero = {
   label: 'Longest hold',
@@ -67,19 +68,31 @@ export default function ProfileScreen(_: ProfileScreenProps) {
 
   const handleSignOut = () => {
     if (signingOut) return;
+    trackProfileAction('sign_out_prompt_opened');
     Alert.alert(
       'Sign out?',
       'You can sign back in any time.',
       [
-        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Cancel',
+          style: 'cancel',
+          onPress: () => {
+            trackProfileAction('sign_out_cancelled');
+          },
+        },
         {
           text: 'Sign out',
           style: 'destructive',
           onPress: async () => {
+            trackProfileAction('sign_out_confirmed');
             setSigningOut(true);
             try {
               await signOut();
+              trackProfileAction('sign_out_succeeded');
             } catch (err) {
+              trackProfileAction('sign_out_failed', {
+                error_message: err instanceof Error ? err.message : 'unknown_error',
+              });
               const message = err instanceof Error ? err.message : 'Please try again.';
               Alert.alert('Sign out failed', message);
             } finally {
@@ -136,14 +149,22 @@ export default function ProfileScreen(_: ProfileScreenProps) {
           <View style={styles.sectionBody}>
             <ProfileAccountCard
               email={user?.email ?? undefined}
-              onOpenNotifications={() => Linking.openSettings()}
-              onOpenPrivacyPolicy={() =>
-                Linking.openURL('https://azora.app/privacy')
-              }
-              onOpenTerms={() => Linking.openURL('https://azora.app/terms')}
-              onManageSubscription={() =>
-                Linking.openURL('https://apps.apple.com/account/subscriptions')
-              }
+              onOpenNotifications={() => {
+                trackProfileAction('notifications_opened');
+                void Linking.openSettings();
+              }}
+              onOpenPrivacyPolicy={() => {
+                trackProfileAction('privacy_policy_opened');
+                void Linking.openURL('https://azora.app/privacy');
+              }}
+              onOpenTerms={() => {
+                trackProfileAction('terms_opened');
+                void Linking.openURL('https://azora.app/terms');
+              }}
+              onManageSubscription={() => {
+                trackProfileAction('manage_subscription_opened');
+                void Linking.openURL('https://apps.apple.com/account/subscriptions');
+              }}
               onSignOut={handleSignOut}
             />
           </View>

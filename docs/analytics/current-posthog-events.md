@@ -130,6 +130,17 @@ It is based on the actual `posthog.capture(...)` calls in the codebase.
 - `technique_id`
 - `technique_name`
 
+## Profile
+
+- `profile_action`
+
+### Profile Properties
+
+`profile_action`
+
+- `action`
+- `error_message` on sign-out failure
+
 ## Automatic PostHog Capture
 
 The app also has provider-level automatic capture enabled for:
