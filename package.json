@@ -6,7 +6,7 @@
     "start": "expo start",
     "android": "expo run:android",
     "ios": "expo run:ios",
-    "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test src/lib/heartRate/measurementTimer.test.mjs src/lib/heartRate/heartRateManager.test.mjs src/lib/heartRate/signalProcessing.test.mjs src/lib/heartRate/sessionPayload.test.mjs src/services/supabase/authIdentitySync.test.mjs",
+    "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test src/lib/heartRate/measurementTimer.test.mjs src/lib/heartRate/heartRateManager.test.mjs src/lib/heartRate/signalProcessing.test.mjs src/lib/heartRate/sessionPayload.test.mjs src/services/supabase/authIdentitySync.test.mjs src/services/subscriptions/revenueCatClientCore.test.mjs",
     "web": "expo start --web"
   },
   "dependencies": {

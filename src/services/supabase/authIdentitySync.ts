@@ -6,6 +6,7 @@ import {
   clearRevenueCatIdentity as clearRevenueCatIdentityState,
   syncRevenueCatIdentity as syncRevenueCatUser,
 } from '../subscriptions/revenueCatClient';
+import { ensureUserProfile } from '../profile/profileBootstrapService';
 import { getSupabaseClient } from './client';
 import {
   registerAuthIdentitySync as registerAuthIdentitySyncCore,
@@ -14,6 +15,7 @@ import {
 
 const defaultDependencies: AuthIdentitySyncDependencies = {
   clearRevenueCatIdentity: clearRevenueCatIdentityState,
+  ensureProfile: ensureUserProfile,
   getSupabaseClient,
   onUserSignedIn: identifyPostHogUser,
   onUserSignedOut: resetPostHogUser,

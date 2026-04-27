@@ -2,6 +2,7 @@ import type { SupabaseAuthChangeEvent, SupabaseClientLike, SupabaseSession } fro
 
 export interface AuthIdentitySyncDependencies {
   clearRevenueCatIdentity: () => Promise<void>;
+  ensureProfile: (userId: string) => Promise<void>;
   getSupabaseClient: () => SupabaseClientLike | null;
   onUserSignedIn: (user: {
     id: string;
@@ -75,6 +76,8 @@ export function registerAuthIdentitySync(
       await dependencies.clearRevenueCatIdentity();
       return;
     }
+
+    await dependencies.ensureProfile(session.user.id);
 
     dependencies.onUserSignedIn({
       id: session.user.id,

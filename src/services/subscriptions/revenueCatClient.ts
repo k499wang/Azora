@@ -1,68 +1,51 @@
 import Purchases, { LOG_LEVEL } from 'react-native-purchases';
 import { getRevenueCatApiKey, isRevenueCatSupportedPlatform } from './revenueCatConfig';
+import {
+  createRevenueCatClient,
+  RevenueCatSignedOutError,
+  type RevenueCatIdentityUser,
+} from './revenueCatClientCore';
 
-export interface RevenueCatIdentityUser {
-  id: string;
-  email?: string | null;
-}
+const revenueCatClient = createRevenueCatClient({
+  apiKey: getRevenueCatApiKey(),
+  debugLogLevel: LOG_LEVEL.DEBUG,
+  errorLogLevel: LOG_LEVEL.ERROR,
+  isDev: __DEV__,
+  isSupportedPlatform: isRevenueCatSupportedPlatform,
+  sdk: {
+    configure: Purchases.configure,
+    getCustomerInfo: Purchases.getCustomerInfo,
+    isConfigured: Purchases.isConfigured,
+    logIn: async (appUserId) => {
+      await Purchases.logIn(appUserId);
+    },
+    setEmail: Purchases.setEmail,
+    setLogLevel: async (level) => {
+      await Purchases.setLogLevel(level as LOG_LEVEL);
+    },
+  },
+});
 
-let currentAppUserId: string | null = null;
-let serialTask: Promise<void> = Promise.resolve();
-
-function runSerial(task: () => Promise<void>): Promise<void> {
-  serialTask = serialTask.then(task, task);
-  return serialTask;
-}
-
-async function ensureConfigured(appUserId: string): Promise<void> {
-  const apiKey = getRevenueCatApiKey();
-  if (!isRevenueCatSupportedPlatform || apiKey == null) {
-    return;
-  }
-
-  await Purchases.setLogLevel(__DEV__ ? LOG_LEVEL.DEBUG : LOG_LEVEL.ERROR);
-
-  const isConfigured = await Purchases.isConfigured();
-  if (!isConfigured) {
-    Purchases.configure({
-      apiKey,
-      appUserID: appUserId,
-    });
-    currentAppUserId = appUserId;
-    return;
-  }
-
-  if (currentAppUserId !== appUserId) {
-    await Purchases.logIn(appUserId);
-    currentAppUserId = appUserId;
-  }
-}
+export { RevenueCatSignedOutError, type RevenueCatIdentityUser };
 
 export function getCurrentRevenueCatAppUserId(): string | null {
-  return currentAppUserId;
+  return revenueCatClient.getCurrentAppUserId();
 }
 
 export function isRevenueCatReady(): boolean {
-  return isRevenueCatSupportedPlatform && getRevenueCatApiKey() != null;
+  return revenueCatClient.isReady();
+}
+
+export function requireCurrentRevenueCatAppUserId(): string {
+  return revenueCatClient.requireCurrentAppUserId();
 }
 
 export function syncRevenueCatIdentity(
   user: RevenueCatIdentityUser,
 ): Promise<void> {
-  return runSerial(async () => {
-    if (!isRevenueCatReady()) {
-      currentAppUserId = user.id;
-      return;
-    }
-
-    await ensureConfigured(user.id);
-    await Purchases.setEmail(user.email ?? null);
-    await Purchases.getCustomerInfo();
-  });
+  return revenueCatClient.syncIdentity(user);
 }
 
 export function clearRevenueCatIdentity(): Promise<void> {
-  return runSerial(async () => {
-    currentAppUserId = null;
-  });
+  return revenueCatClient.clearIdentity();
 }
