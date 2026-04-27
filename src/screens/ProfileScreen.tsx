@@ -1,4 +1,5 @@
-import { Linking, ScrollView, StyleSheet, View } from 'react-native';
+import { useState } from 'react';
+import { Alert, Linking, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import { padding, spacing } from '../theme/spacing';
@@ -13,6 +14,7 @@ import ProfileStatsGrid, {
 import ProfileCompletionCalendarCard from '../components/profile/ProfileCompletionCalendarCard';
 import ProfileBreathHoldTrendCard from '../components/profile/ProfileBreathHoldTrendCard';
 import ProfileAccountCard from '../components/profile/ProfileAccountCard';
+import { useAuthStore } from '../stores/authStore';
 import type { ProfileScreenProps } from '../app/navigation';
 
 const PROFILE_HERO: ProfileStatHero = {
@@ -59,6 +61,35 @@ const COMPLETED_DAYS = [2, 3, 5, 6, 8, 10, 11, 13, 15, 16, 18, 20, 21, 22, 23, 2
 
 export default function ProfileScreen(_: ProfileScreenProps) {
   const insets = useSafeAreaInsets();
+  const user = useAuthStore((s) => s.user);
+  const signOut = useAuthStore((s) => s.signOut);
+  const [signingOut, setSigningOut] = useState(false);
+
+  const handleSignOut = () => {
+    if (signingOut) return;
+    Alert.alert(
+      'Sign out?',
+      'You can sign back in any time.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Sign out',
+          style: 'destructive',
+          onPress: async () => {
+            setSigningOut(true);
+            try {
+              await signOut();
+            } catch (err) {
+              const message = err instanceof Error ? err.message : 'Please try again.';
+              Alert.alert('Sign out failed', message);
+            } finally {
+              setSigningOut(false);
+            }
+          },
+        },
+      ],
+    );
+  };
 
   return (
     <View style={styles.screen}>
@@ -104,7 +135,7 @@ export default function ProfileScreen(_: ProfileScreenProps) {
           <SectionHeader title="Account" />
           <View style={styles.sectionBody}>
             <ProfileAccountCard
-              email="kevin@example.com"
+              email={user?.email ?? undefined}
               onOpenNotifications={() => Linking.openSettings()}
               onOpenPrivacyPolicy={() =>
                 Linking.openURL('https://azora.app/privacy')
@@ -113,6 +144,7 @@ export default function ProfileScreen(_: ProfileScreenProps) {
               onManageSubscription={() =>
                 Linking.openURL('https://apps.apple.com/account/subscriptions')
               }
+              onSignOut={handleSignOut}
             />
           </View>
         </View>

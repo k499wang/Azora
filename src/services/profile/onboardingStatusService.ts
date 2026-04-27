@@ -1,16 +1,81 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { requireSupabaseClient, type SupabaseClientLike } from '../supabase';
 
-function getOnboardingKey(userId: string): string {
-  return `onboarding_complete:${userId}`;
+interface OnboardingDatabase {
+  public: {
+    Tables: {
+      profiles: {
+        Row: {
+          user_id: string;
+          onboarding_completed_at: string | null;
+        };
+        Insert: {
+          user_id: string;
+          onboarding_completed_at?: string | null;
+        };
+        Update: {
+          user_id?: string;
+          onboarding_completed_at?: string | null;
+        };
+        Relationships: [];
+      };
+    };
+    Views: Record<string, never>;
+    Functions: Record<string, never>;
+  };
 }
 
-// Temporary local adapter. Keep this user-scoped shape so it can be replaced
-// with a profile-backed Supabase field later without changing navigation code.
+type ProfileInsert = OnboardingDatabase['public']['Tables']['profiles']['Insert'];
+
+function getOnboardingClient(): SupabaseClientLike<OnboardingDatabase> {
+  return requireSupabaseClient() as unknown as SupabaseClientLike<OnboardingDatabase>;
+}
+
+async function ensureProfile(userId: string): Promise<void> {
+  const supabase = getOnboardingClient();
+  const profile: ProfileInsert = { user_id: userId };
+
+  const { error } = await supabase
+    .from('profiles')
+    .upsert(profile, { onConflict: 'user_id' });
+
+  if (error != null) {
+    throw error;
+  }
+}
+
 export async function getOnboardingStatus(userId: string): Promise<boolean> {
-  const value = await AsyncStorage.getItem(getOnboardingKey(userId));
-  return value === 'true';
+  const supabase = getOnboardingClient();
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('onboarding_completed_at')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (error != null) {
+    throw error;
+  }
+
+  if (data == null) {
+    await ensureProfile(userId);
+    return false;
+  }
+
+  return data.onboarding_completed_at != null;
 }
 
 export async function completeOnboarding(userId: string): Promise<void> {
-  await AsyncStorage.setItem(getOnboardingKey(userId), 'true');
+  const supabase = getOnboardingClient();
+  const profile: ProfileInsert = {
+    user_id: userId,
+    onboarding_completed_at: new Date().toISOString(),
+  };
+
+  const { error } = await supabase
+    .from('profiles')
+    .upsert(profile, { onConflict: 'user_id' });
+
+  if (error != null) {
+    throw error;
+  }
 }
