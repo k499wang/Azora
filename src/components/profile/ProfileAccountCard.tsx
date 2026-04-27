@@ -6,39 +6,108 @@ import { spacing } from '../../theme/spacing';
 import { card } from '../../theme/card';
 
 interface ProfileAccountCardProps {
-  onDeleteAccount?: () => void;
+  email?: string;
+  onOpenNotifications?: () => void;
+  onOpenPrivacyPolicy?: () => void;
+  onOpenTerms?: () => void;
+  onExportData?: () => void;
+  onSignOut?: () => void;
   onManageSubscription?: () => void;
+  onDeleteAccount?: () => void;
 }
 
-const APPLE_GUIDELINE_NOTES = [
-  'Start account deletion inside the app, not only on a website.',
-  'Explain that deleting an account does not automatically cancel Apple billing.',
-  'Finish removing the user record and app data after a confirmation step.',
-];
+interface RowProps {
+  icon: keyof typeof MaterialCommunityIcons.glyphMap;
+  label: string;
+  detail?: string;
+  onPress?: () => void;
+  destructive?: boolean;
+  isLast?: boolean;
+}
+
+function Row({ icon, label, detail, onPress, destructive, isLast }: RowProps) {
+  const tint = destructive ? colors.error[500] : colors.primary.blue600;
+  const labelColor = destructive ? colors.error[500] : colors.text.primary;
+  const disabled = onPress == null;
+
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      style={({ pressed }) => [
+        styles.row,
+        !isLast && styles.rowDivider,
+        pressed && !disabled && styles.rowPressed,
+        disabled && styles.rowDisabled,
+      ]}
+    >
+      <MaterialCommunityIcons name={icon} size={20} color={tint} />
+      <Text style={[styles.rowLabel, { color: labelColor }]} numberOfLines={1}>
+        {label}
+      </Text>
+      {detail ? (
+        <Text style={styles.rowDetail} numberOfLines={1}>
+          {detail}
+        </Text>
+      ) : null}
+      {!destructive ? (
+        <MaterialCommunityIcons
+          name="chevron-right"
+          size={20}
+          color={colors.text.tertiary}
+        />
+      ) : null}
+    </Pressable>
+  );
+}
 
 export default function ProfileAccountCard({
-  onDeleteAccount,
+  email,
+  onOpenNotifications,
+  onOpenPrivacyPolicy,
+  onOpenTerms,
+  onExportData,
+  onSignOut,
   onManageSubscription,
+  onDeleteAccount,
 }: ProfileAccountCardProps) {
   return (
     <View style={styles.card}>
       <View style={styles.headerRow}>
-        <View style={styles.headerCopy}>
-          <Text style={styles.title}>Account & privacy</Text>
-        </View>
+        <Text style={styles.title}>Account & privacy</Text>
       </View>
 
-      <View style={styles.notesWrap}>
-        {APPLE_GUIDELINE_NOTES.map((note) => (
-          <View key={note} style={styles.noteRow}>
-            <MaterialCommunityIcons
-              name="check-decagram-outline"
-              size={16}
-              color={colors.primary.blue600}
-            />
-            <Text style={styles.noteText}>{note}</Text>
-          </View>
-        ))}
+      <View style={styles.rowGroup}>
+        {email ? (
+          <Row icon="email-outline" label="Email" detail={email} />
+        ) : null}
+        <Row
+          icon="bell-outline"
+          label="Notifications"
+          onPress={onOpenNotifications}
+        />
+        <Row
+          icon="shield-lock-outline"
+          label="Privacy policy"
+          onPress={onOpenPrivacyPolicy}
+        />
+        <Row
+          icon="file-document-outline"
+          label="Terms of service"
+          onPress={onOpenTerms}
+        />
+        <Row
+          icon="download-outline"
+          label="Export my data"
+          onPress={onExportData}
+        />
+        <Row
+          icon="logout-variant"
+          label="Sign out"
+          onPress={onSignOut}
+          destructive
+          isLast
+        />
       </View>
 
       <View style={styles.buttonGroup}>
@@ -81,26 +150,39 @@ const styles = StyleSheet.create({
   headerRow: {
     gap: spacing.xs,
   },
-  headerCopy: {
-    gap: spacing.xs,
-  },
   title: {
     ...typography.title.title3,
     color: colors.text.primary,
   },
-  notesWrap: {
-    gap: spacing.sm,
+  rowGroup: {
+    gap: 0,
   },
-  noteRow: {
+  row: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     gap: spacing.sm,
-    paddingVertical: spacing.xs,
+    paddingVertical: spacing.sm,
   },
-  noteText: {
-    ...typography.body.small,
-    color: colors.text.primary,
+  rowDivider: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border.subtle,
+  },
+  rowPressed: {
+    opacity: 0.6,
+  },
+  rowDisabled: {
+    opacity: 0.55,
+  },
+  rowLabel: {
+    ...typography.body.medium,
+    fontFamily: fonts.medium,
+    fontWeight: '500',
     flex: 1,
+  },
+  rowDetail: {
+    ...typography.body.small,
+    color: colors.text.tertiary,
+    maxWidth: '50%',
   },
   buttonGroup: {
     gap: spacing.sm,

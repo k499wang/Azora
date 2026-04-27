@@ -86,7 +86,10 @@ export function computeHRVStats(ibi: number[]): HRVStats {
   const meanIbi = mean(ibi);
   const meanHr = ibiToBpm(meanIbi);
   const hrScore = Math.max(0, (meanHr - 50) / 30 * 100);
-  const stress = Math.round(rmssdScore * 0.7 + hrScore * 0.3);
+  const stress = Math.max(
+    0,
+    Math.min(100, Math.round(rmssdScore * 0.7 + hrScore * 0.3)),
+  );
   const minHr = ibiToBpm(Math.max(...ibi));
   const maxHr = ibiToBpm(Math.min(...ibi));
 

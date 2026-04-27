@@ -1,4 +1,4 @@
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { Linking, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import { padding, spacing } from '../theme/spacing';
@@ -103,7 +103,17 @@ export default function ProfileScreen(_: ProfileScreenProps) {
         <View style={styles.section}>
           <SectionHeader title="Account" />
           <View style={styles.sectionBody}>
-            <ProfileAccountCard />
+            <ProfileAccountCard
+              email="kevin@example.com"
+              onOpenNotifications={() => Linking.openSettings()}
+              onOpenPrivacyPolicy={() =>
+                Linking.openURL('https://azora.app/privacy')
+              }
+              onOpenTerms={() => Linking.openURL('https://azora.app/terms')}
+              onManageSubscription={() =>
+                Linking.openURL('https://apps.apple.com/account/subscriptions')
+              }
+            />
           </View>
         </View>
       </ScrollView>
