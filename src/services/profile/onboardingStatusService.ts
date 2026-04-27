@@ -1,4 +1,5 @@
 import { requireSupabaseClient, type SupabaseClientLike } from '../supabase';
+import { ensureUserProfile } from './profileBootstrapService';
 
 interface OnboardingDatabase {
   public: {
@@ -30,19 +31,6 @@ function getOnboardingClient(): SupabaseClientLike<OnboardingDatabase> {
   return requireSupabaseClient() as unknown as SupabaseClientLike<OnboardingDatabase>;
 }
 
-async function ensureProfile(userId: string): Promise<void> {
-  const supabase = getOnboardingClient();
-  const profile: ProfileInsert = { user_id: userId };
-
-  const { error } = await supabase
-    .from('profiles')
-    .upsert(profile, { onConflict: 'user_id' });
-
-  if (error != null) {
-    throw error;
-  }
-}
-
 export async function getOnboardingStatus(userId: string): Promise<boolean> {
   const supabase = getOnboardingClient();
 
@@ -57,7 +45,7 @@ export async function getOnboardingStatus(userId: string): Promise<boolean> {
   }
 
   if (data == null) {
-    await ensureProfile(userId);
+    await ensureUserProfile(userId);
     return false;
   }
 

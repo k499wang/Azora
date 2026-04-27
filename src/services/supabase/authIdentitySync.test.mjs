@@ -53,6 +53,12 @@ function createHarness(initialSession) {
     clearRevenueCatIdentity: async () => {
       events.push({ event: 'SIGNED_OUT', session: null });
     },
+    ensureProfile: async (userId) => {
+      events.push({
+        event: 'PROFILE_ENSURED',
+        session: createSession(userId),
+      });
+    },
     getSupabaseClient: () => client,
     onUserSignedIn: (user) => {
       events.push({
@@ -106,7 +112,7 @@ test('registerAuthIdentitySync syncs the initial signed-in session once', async 
 
   assert.deepEqual(
     harness.getEvents().map((entry) => entry.event),
-    ['SIGNED_IN', 'USER_UPDATED'],
+    ['PROFILE_ENSURED', 'SIGNED_IN', 'USER_UPDATED'],
   );
 
   unsubscribe();
@@ -131,7 +137,7 @@ test('registerAuthIdentitySync ignores TOKEN_REFRESHED for the same user', async
 
   assert.deepEqual(
     harness.getEvents().map((entry) => entry.event),
-    ['SIGNED_IN', 'USER_UPDATED'],
+    ['PROFILE_ENSURED', 'SIGNED_IN', 'USER_UPDATED'],
   );
 });
 
@@ -156,7 +162,14 @@ test('registerAuthIdentitySync forces a refresh on USER_UPDATED', async () => {
 
   assert.deepEqual(
     harness.getEvents().map((entry) => entry.event),
-    ['SIGNED_IN', 'USER_UPDATED', 'SIGNED_IN', 'USER_UPDATED'],
+    [
+      'PROFILE_ENSURED',
+      'SIGNED_IN',
+      'USER_UPDATED',
+      'PROFILE_ENSURED',
+      'SIGNED_IN',
+      'USER_UPDATED',
+    ],
   );
 });
 
@@ -172,13 +185,36 @@ test('registerAuthIdentitySync clears state on SIGNED_OUT', async () => {
 
   assert.deepEqual(
     harness.getEvents().map((entry) => entry.event),
-    ['SIGNED_IN', 'USER_UPDATED', 'PASSWORD_RECOVERY', 'SIGNED_OUT'],
+    [
+      'PROFILE_ENSURED',
+      'SIGNED_IN',
+      'USER_UPDATED',
+      'PASSWORD_RECOVERY',
+      'SIGNED_OUT',
+    ],
+  );
+});
+
+test('registerAuthIdentitySync ensures the profile before RevenueCat sync', async () => {
+  const session = createSession('user-42', {
+    email: 'user-42@example.com',
+    provider: 'google',
+  });
+  const harness = createHarness(session);
+
+  registerAuthIdentitySync(harness.dependencies);
+  await flushMicrotasks();
+
+  assert.deepEqual(
+    harness.getEvents().map((entry) => entry.event),
+    ['PROFILE_ENSURED', 'SIGNED_IN', 'USER_UPDATED'],
   );
 });
 
 test('registerAuthIdentitySync returns a noop when Supabase is unavailable', () => {
   const unsubscribe = registerAuthIdentitySync({
     clearRevenueCatIdentity: async () => undefined,
+    ensureProfile: async () => undefined,
     getSupabaseClient: () => null,
     onUserSignedIn: () => undefined,
     onUserSignedOut: () => undefined,
