@@ -1,48 +1,46 @@
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import { padding, spacing } from '../theme/spacing';
-import { typography } from '../theme/typography';
 import AppTopBar from '../components/common/AppTopBar';
 import HomeTopMesh from '../components/home/HomeTopMesh';
 import SectionHeader from '../components/common/SectionHeader';
 import ProfileIdentityCard from '../components/profile/ProfileIdentityCard';
 import ProfileStatsGrid, {
   type ProfileStatBadge,
+  type ProfileStatHero,
 } from '../components/profile/ProfileStatsGrid';
 import ProfileCompletionCalendarCard from '../components/profile/ProfileCompletionCalendarCard';
 import ProfileBreathHoldTrendCard from '../components/profile/ProfileBreathHoldTrendCard';
 import ProfileAccountCard from '../components/profile/ProfileAccountCard';
 import type { ProfileScreenProps } from '../app/navigation';
 
-const PROFILE_BADGES: ProfileStatBadge[] = [
-  {
-    label: 'Longest hold',
-    value: '2:18',
-    detail: 'Personal best',
-    icon: 'trophy-outline',
-    tone: 'orange',
-  },
+const PROFILE_HERO: ProfileStatHero = {
+  label: 'Longest hold',
+  value: '2:18',
+  detail: 'Personal best · up 12s this month',
+  icon: 'breath-hold',
+  trend: [72, 79, 77, 84, 89, 93, 98, 138],
+};
+
+const PROFILE_SECONDARY: ProfileStatBadge[] = [
   {
     label: 'Best streak',
-    value: '19 days',
-    detail: 'Consistency peak',
-    icon: 'fire',
-    tone: 'red',
+    value: '19',
+    detail: 'days',
+    icon: 'streak',
   },
   {
     label: 'Breath holds',
     value: '47',
-    detail: 'Completed sessions',
-    icon: 'weather-windy',
-    tone: 'blue',
+    detail: 'sessions',
+    icon: 'timer',
   },
   {
     label: 'Active days',
     value: '22',
-    detail: 'Tracked practice days',
-    icon: 'calendar-check-outline',
-    tone: 'green',
+    detail: 'tracked',
+    icon: 'sparkle',
   },
 ];
 
@@ -84,7 +82,7 @@ export default function ProfileScreen(_: ProfileScreenProps) {
         <View style={styles.section}>
           <SectionHeader title="All-time statistics" />
           <View style={styles.sectionBody}>
-            <ProfileStatsGrid badges={PROFILE_BADGES} />
+            <ProfileStatsGrid hero={PROFILE_HERO} secondary={PROFILE_SECONDARY} />
           </View>
         </View>
 
@@ -132,7 +130,6 @@ const styles = StyleSheet.create({
   heroCardWrap: {
     paddingHorizontal: padding.screen.horizontal,
     marginTop: spacing.lg,
-    marginBottom: spacing.sm,
   },
   section: {
     paddingHorizontal: padding.screen.horizontal,
