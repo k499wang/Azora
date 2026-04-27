@@ -33,8 +33,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   subtitle: {
-    ...typography.body.medium,
+    ...typography.body.small,
     color: colors.text.secondary,
     textAlign: 'center',
+    lineHeight: 20,
   },
 });

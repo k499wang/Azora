@@ -6,7 +6,9 @@ import { typography } from '../../theme/typography';
 import { card } from '../../theme/card';
 import SectionHeader from '../common/SectionHeader';
 import BigRingStatCard from './BigRingStatCard';
+import StressGauge from '../heartRate/StressGauge';
 import { computeHRVStats } from '../../lib/hrv';
+import { getStressZone } from '../../lib/heartRate/stress';
 
 interface HeartHealthSectionProps {
   ibiMs?: number[];
@@ -74,14 +76,18 @@ export default function HeartHealthSection({
           icon="heart-rmssd"
         />
         <BigRingStatCard
-          label="Stress"
-          value={`${stats.stress}`}
-          target="30"
-          progress={stats.stress / 30}
+          label="Avg HRV"
+          value={`${stats.sdnn}`}
+          target="50"
+          progress={stats.sdnn / 50}
           color={colors.success[500]}
           trackColor={colors.neutral[200]}
           icon="heart-sdnn"
         />
+      </View>
+
+      <View style={styles.gaugeWrap}>
+        <StressGauge value={stats.stress} zone={getStressZone(stats.stress)} />
       </View>
 
       <View style={styles.insightCard}>
@@ -104,6 +110,9 @@ const styles = StyleSheet.create({
   metricRow: {
     flexDirection: 'row',
     gap: spacing.sm,
+    paddingHorizontal: padding.screen.horizontal,
+  },
+  gaugeWrap: {
     paddingHorizontal: padding.screen.horizontal,
   },
   insightCard: {

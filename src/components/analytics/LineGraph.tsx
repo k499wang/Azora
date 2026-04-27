@@ -52,8 +52,12 @@ export default function LineGraph({
   const chart = useMemo(() => {
     if (data.length === 0 || containerWidth <= 0) return null;
 
-    const maxValue = Math.max(...data.map((d) => d.value));
-    const minValue = Math.min(...data.map((d) => d.value));
+    const values = data.map((d) => d.value);
+    const maxValue = Math.max(...values);
+    const minValue = Math.min(...values);
+    const maxIndex = values.indexOf(maxValue);
+    const minIndex = values.indexOf(minValue);
+    const lastIndex = data.length - 1;
     const range = maxValue - minValue || 1;
     const paddedMax = maxValue + range * 0.15;
     const paddedMin = minValue - range * 0.15;
@@ -87,8 +91,42 @@ export default function LineGraph({
       ` L ${points[points.length - 1].x} ${fillBottom}` +
       ` L ${points[0].x} ${fillBottom} Z`;
 
-    return { points, linePath, fillPath, fillBottom };
-  }, [data, height, containerWidth]);
+    const valueLabelIndices = new Set<number>();
+    if (data.length <= 3) {
+      data.forEach((_, i) => valueLabelIndices.add(i));
+    } else {
+      valueLabelIndices.add(minIndex);
+      valueLabelIndices.add(maxIndex);
+      valueLabelIndices.add(lastIndex);
+      if (
+        highlightIndex != null &&
+        highlightIndex >= 0 &&
+        highlightIndex < data.length
+      ) {
+        valueLabelIndices.add(highlightIndex);
+      }
+    }
+
+    const xLabelIndices = new Set<number>();
+    if (data.length <= 3) {
+      data.forEach((_, i) => xLabelIndices.add(i));
+    } else {
+      xLabelIndices.add(0);
+      xLabelIndices.add(Math.floor(lastIndex / 2));
+      xLabelIndices.add(lastIndex);
+    }
+
+    return {
+      points,
+      linePath,
+      fillPath,
+      fillBottom,
+      valueLabelIndices,
+      xLabelIndices,
+      minIndex,
+      maxIndex,
+    };
+  }, [data, height, containerWidth, highlightIndex]);
 
   if (data.length === 0) return null;
 
@@ -120,8 +158,9 @@ export default function LineGraph({
                 strokeLinejoin="round"
               />
 
-              {/* Dots */}
+              {/* Dots — only on anchor points to keep the line clean */}
               {chart.points.map((point, index) => {
+                if (!chart.valueLabelIndices.has(index)) return null;
                 const isHighlighted = index === highlightIndex;
                 return (
                   <Circle
@@ -137,8 +176,9 @@ export default function LineGraph({
               })}
             </Svg>
 
-            {/* Value labels */}
+            {/* Value labels — min, max, last (and highlight if set) */}
             {chart.points.map((point, index) => {
+              if (!chart.valueLabelIndices.has(index)) return null;
               const isHighlighted = index === highlightIndex;
               return (
                 <Text
@@ -162,16 +202,26 @@ export default function LineGraph({
               );
             })}
 
-            {/* X-axis labels */}
-            {chart.points.map((point, index) => (
-              <Text
-                key={`label-${index}`}
-                style={[styles.xLabel, { left: point.x - 18, bottom: 0 }]}
-                numberOfLines={1}
-              >
-                {point.label}
-              </Text>
-            ))}
+            {/* X-axis labels — first, middle, last only */}
+            {chart.points.map((point, index) => {
+              if (!chart.xLabelIndices.has(index)) return null;
+              const isFirst = index === 0;
+              const isLast = index === chart.points.length - 1;
+              const positionStyle = isFirst
+                ? { left: 0, textAlign: 'left' as const }
+                : isLast
+                  ? { right: 0, textAlign: 'right' as const }
+                  : { left: point.x - 24, textAlign: 'center' as const };
+              return (
+                <Text
+                  key={`label-${index}`}
+                  style={[styles.xLabel, positionStyle, { bottom: 0 }]}
+                  numberOfLines={1}
+                >
+                  {point.label}
+                </Text>
+              );
+            })}
           </View>
         ) : (
           <View style={styles.placeholder}>
@@ -210,8 +260,7 @@ const styles = StyleSheet.create({
   xLabel: {
     ...typography.caption.caption1,
     position: 'absolute',
-    width: 36,
-    textAlign: 'center',
+    width: 48,
     color: colors.text.secondary,
   },
   placeholder: {
