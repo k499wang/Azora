@@ -5,7 +5,6 @@ import DailyExercisePage from '../../screens/DailyExercisePage';
 import ExerciseSessionPage from '../../screens/ExerciseSessionPage';
 import { HeartRateScreen } from '../../screens/HeartRateScreen';
 import ShareableResultScreen from '../../screens/ShareableResultScreen';
-import { OnboardingFlow } from '../../components/onboarding/OnboardingFlow';
 import { useAppGate } from '../../hooks/useAppGate';
 import { colors } from '../../theme/colors';
 import { MainTabs } from './MainTabs';
@@ -26,10 +25,6 @@ export function RootNavigator() {
 
   if (gate.status === 'signed_out') {
     return <AuthLandingScreen />;
-  }
-
-  if (gate.status === 'needs_onboarding') {
-    return <OnboardingFlow onComplete={() => void gate.completeOnboarding()} />;
   }
 
   return (

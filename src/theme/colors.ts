@@ -56,6 +56,10 @@ export const colors = {
     accentSoft: '#EAF2FF',
   },
 
+  surface: {
+    welcome: '#FAF6F0',
+  },
+
   text: {
     primary: '#0F172A',
     secondary: '#475569',
