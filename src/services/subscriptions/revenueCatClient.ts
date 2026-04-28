@@ -1,5 +1,6 @@
 import Purchases, { LOG_LEVEL } from 'react-native-purchases';
 import { getRevenueCatApiKey, isRevenueCatSupportedPlatform } from './revenueCatConfig';
+import { logIdentitySyncDebug } from '../debug/identitySyncLogger.js';
 import {
   createRevenueCatClient,
   RevenueCatSignedOutError,
@@ -43,9 +44,19 @@ export function requireCurrentRevenueCatAppUserId(): string {
 export function syncRevenueCatIdentity(
   user: RevenueCatIdentityUser,
 ): Promise<void> {
+  logIdentitySyncDebug('revenuecat.sync_identity_requested', {
+    revenuecat_target_app_user_id: user.id,
+    revenuecat_target_email: user.email ?? null,
+    revenuecat_current_app_user_id: revenueCatClient.getCurrentAppUserId(),
+    revenuecat_ready: revenueCatClient.isReady(),
+  });
   return revenueCatClient.syncIdentity(user);
 }
 
 export function clearRevenueCatIdentity(): Promise<void> {
+  logIdentitySyncDebug('revenuecat.clear_identity_requested', {
+    revenuecat_current_app_user_id: revenueCatClient.getCurrentAppUserId(),
+    revenuecat_ready: revenueCatClient.isReady(),
+  });
   return revenueCatClient.clearIdentity();
 }

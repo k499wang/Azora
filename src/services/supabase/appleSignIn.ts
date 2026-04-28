@@ -1,6 +1,7 @@
 import { Platform } from 'react-native';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import { requireSupabaseClient, type SupabaseSession } from './client';
+import { logIdentitySyncDebug } from '../debug/identitySyncLogger.js';
 
 export class AppleSignInCancelledError extends Error {
   constructor() {
@@ -25,6 +26,7 @@ export async function signInWithApple(): Promise<SupabaseSession> {
   if (Platform.OS !== 'ios') {
     throw new AppleSignInUnsupportedError();
   }
+  logIdentitySyncDebug('supabase.apple_sign_in_started');
 
   let credential: AppleAuthentication.AppleAuthenticationCredential;
   try {
@@ -63,5 +65,10 @@ export async function signInWithApple(): Promise<SupabaseSession> {
     throw new Error('Supabase did not return a session for the Apple identityToken');
   }
 
+  logIdentitySyncDebug('supabase.apple_sign_in_completed', {
+    supabase_user_id: data.session.user.id,
+    supabase_email: data.session.user.email ?? null,
+    supabase_provider: data.session.user.app_metadata?.provider ?? 'apple',
+  });
   return data.session;
 }

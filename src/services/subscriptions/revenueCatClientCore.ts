@@ -41,26 +41,52 @@ export function createRevenueCatClient(
 
   async function ensureConfigured(appUserId: string): Promise<void> {
     if (!dependencies.isSupportedPlatform || dependencies.apiKey == null) {
+      logRevenueCat('revenuecat.ensure_config_skipped', {
+        reason: dependencies.isSupportedPlatform ? 'missing_api_key' : 'unsupported_platform',
+        revenuecat_current_app_user_id: currentAppUserId,
+      });
       return;
     }
 
+    logRevenueCat('revenuecat.set_log_level_started', {
+      revenuecat_target_app_user_id: appUserId,
+      revenuecat_current_app_user_id: currentAppUserId,
+    });
     await dependencies.sdk.setLogLevel(
       dependencies.isDev ? dependencies.debugLogLevel : dependencies.errorLogLevel,
     );
+    logRevenueCat('revenuecat.set_log_level_completed', {
+      revenuecat_target_app_user_id: appUserId,
+      revenuecat_current_app_user_id: currentAppUserId,
+    });
 
     const isConfigured = await dependencies.sdk.isConfigured();
     if (!isConfigured) {
+      logRevenueCat('revenuecat.configure_started', {
+        revenuecat_target_app_user_id: appUserId,
+        revenuecat_current_app_user_id: currentAppUserId,
+      });
       dependencies.sdk.configure({
         apiKey: dependencies.apiKey,
         appUserID: appUserId,
       });
       currentAppUserId = appUserId;
+      logRevenueCat('revenuecat.configure_completed', {
+        revenuecat_current_app_user_id: currentAppUserId,
+      });
       return;
     }
 
     if (currentAppUserId !== appUserId) {
+      logRevenueCat('revenuecat.login_started', {
+        revenuecat_target_app_user_id: appUserId,
+        revenuecat_current_app_user_id: currentAppUserId,
+      });
       await dependencies.sdk.logIn(appUserId);
       currentAppUserId = appUserId;
+      logRevenueCat('revenuecat.login_completed', {
+        revenuecat_current_app_user_id: currentAppUserId,
+      });
     }
   }
 
@@ -79,7 +105,13 @@ export function createRevenueCatClient(
   return {
     clearIdentity(): Promise<void> {
       return runSerial(async () => {
+        logRevenueCat('revenuecat.clear_identity_started', {
+          revenuecat_current_app_user_id: currentAppUserId,
+        });
         currentAppUserId = null;
+        logRevenueCat('revenuecat.clear_identity_completed', {
+          revenuecat_current_app_user_id: currentAppUserId,
+        });
       });
     },
     getCurrentAppUserId(): string | null {
@@ -89,17 +121,56 @@ export function createRevenueCatClient(
     requireCurrentAppUserId,
     syncIdentity(user: RevenueCatIdentityUser): Promise<void> {
       return runSerial(async () => {
+        logRevenueCat('revenuecat.sync_identity_started', {
+          revenuecat_target_app_user_id: user.id,
+          revenuecat_target_email: user.email ?? null,
+          revenuecat_current_app_user_id: currentAppUserId,
+          revenuecat_ready: isReady(),
+        });
         if (!isReady()) {
           currentAppUserId = user.id;
+          logRevenueCat('revenuecat.sync_identity_completed_local_only', {
+            revenuecat_current_app_user_id: currentAppUserId,
+            revenuecat_ready: false,
+          });
           return;
         }
 
         await ensureConfigured(user.id);
         currentAppUserId = user.id;
         requireCurrentAppUserId();
+        logRevenueCat('revenuecat.set_email_started', {
+          revenuecat_current_app_user_id: currentAppUserId,
+          revenuecat_target_email: user.email ?? null,
+        });
         await dependencies.sdk.setEmail(user.email ?? null);
+        logRevenueCat('revenuecat.set_email_completed', {
+          revenuecat_current_app_user_id: currentAppUserId,
+          revenuecat_target_email: user.email ?? null,
+        });
+        logRevenueCat('revenuecat.get_customer_info_started', {
+          revenuecat_current_app_user_id: currentAppUserId,
+        });
         await dependencies.sdk.getCustomerInfo();
+        logRevenueCat('revenuecat.sync_identity_completed', {
+          revenuecat_current_app_user_id: currentAppUserId,
+          revenuecat_ready: true,
+        });
       });
     },
   };
+}
+
+function logRevenueCat(
+  event: string,
+  payload: Record<string, unknown>,
+): void {
+  if (!(typeof __DEV__ !== 'undefined' && __DEV__)) {
+    return;
+  }
+
+  console.log(`[identity-sync] ${event}`, {
+    timestamp: new Date().toISOString(),
+    ...payload,
+  });
 }
