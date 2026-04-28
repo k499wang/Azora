@@ -127,6 +127,12 @@ export function WelcomeIntro({ onFinish }: Props) {
         </Pressable>
       </Animated.View>
 
+      <View style={[styles.copy, { paddingTop: insets.top + spacing['4xl'] }]}>
+        <Animated.Text style={[styles.headline, { opacity: headlineOpacity }]}>
+          {phase === 'inhale' ? 'Breathe in' : 'Breathe out'}
+        </Animated.Text>
+      </View>
+
       <View style={styles.orbWrap} pointerEvents="none">
         <Animated.View
           style={[
@@ -139,15 +145,6 @@ export function WelcomeIntro({ onFinish }: Props) {
         >
           <BreathOrb size={orbSize} />
         </Animated.View>
-      </View>
-
-      <View style={[styles.copy, { paddingBottom: insets.bottom + spacing['4xl'] }]}>
-        <Animated.Text style={[styles.label, { opacity: headlineOpacity }]}>
-          {phase === 'inhale' ? 'Inhale' : 'Exhale'}
-        </Animated.Text>
-        <Animated.Text style={[styles.headline, { opacity: headlineOpacity }]}>
-          {phase === 'inhale' ? 'Breathe in' : 'Breathe out'}
-        </Animated.Text>
       </View>
     </Animated.View>
   );
@@ -182,15 +179,6 @@ const styles = StyleSheet.create({
   copy: {
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
-  },
-  label: {
-    ...typography.label.medium,
-    fontFamily: fonts.semibold,
-    fontWeight: '600',
-    color: colors.text.brand,
-    letterSpacing: 2,
-    textTransform: 'uppercase',
-    marginBottom: spacing.sm,
   },
   headline: {
     ...typography.display.display2,

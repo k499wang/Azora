@@ -70,9 +70,8 @@ export function CategoryIntroScreen({ onContinue }: Props) {
   return (
     <View style={[styles.root, { paddingTop: insets.top + spacing['3xl'] }]}>
       <View style={styles.copyTop}>
-        <Text style={styles.eyebrow}>Introducing</Text>
         <Text style={styles.headline}>
-          The first vitals-backed breathing app.
+          Vitals-backed breathing app.
         </Text>
         <Text style={styles.subhead}>
           Clinically-grounded protocols. Real-time HRV biofeedback. Measure the
@@ -125,15 +124,6 @@ const styles = StyleSheet.create({
   copyTop: {
     alignItems: 'center',
     paddingHorizontal: spacing.sm,
-  },
-  eyebrow: {
-    ...typography.label.small,
-    fontFamily: fonts.semibold,
-    fontWeight: '600',
-    color: colors.text.brand,
-    letterSpacing: 3,
-    textTransform: 'uppercase',
-    marginBottom: spacing.md,
   },
   headline: {
     ...typography.title.title1,
