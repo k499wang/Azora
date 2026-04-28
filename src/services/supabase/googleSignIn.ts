@@ -5,6 +5,7 @@ import {
   isErrorWithCode,
 } from '@react-native-google-signin/google-signin';
 import { requireSupabaseClient, type SupabaseSession } from './client';
+import { logIdentitySyncDebug } from '../debug/identitySyncLogger.js';
 
 type GoogleExtra = {
   googleWebClientId?: string;
@@ -37,6 +38,7 @@ export class GoogleSignInCancelledError extends Error {
 
 export async function signInWithGoogle(): Promise<SupabaseSession> {
   configureOnce();
+  logIdentitySyncDebug('supabase.google_sign_in_started');
 
   await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
 
@@ -68,14 +70,21 @@ export async function signInWithGoogle(): Promise<SupabaseSession> {
     throw new Error('Supabase did not return a session for the Google idToken');
   }
 
+  logIdentitySyncDebug('supabase.google_sign_in_completed', {
+    supabase_user_id: data.session.user.id,
+    supabase_email: data.session.user.email ?? null,
+    supabase_provider: data.session.user.app_metadata?.provider ?? 'google',
+  });
   return data.session;
 }
 
 export async function signOutGoogle(): Promise<void> {
   if (!configured) return;
+  logIdentitySyncDebug('supabase.google_sign_out_started');
   try {
     await GoogleSignin.signOut();
   } catch {
     // ignore — supabase signOut still proceeds
   }
+  logIdentitySyncDebug('supabase.google_sign_out_completed');
 }

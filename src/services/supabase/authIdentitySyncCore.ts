@@ -1,9 +1,17 @@
 import type { SupabaseAuthChangeEvent, SupabaseClientLike, SupabaseSession } from './client';
+import {
+  getSessionDebugSnapshot,
+  logIdentitySyncDebug,
+  warnIdentitySyncDebug,
+} from '../debug/identitySyncLogger.js';
 
 export interface AuthIdentitySyncDependencies {
   clearRevenueCatIdentity: () => Promise<void>;
   ensureProfile: (userId: string) => Promise<void>;
   getSupabaseClient: () => SupabaseClientLike | null;
+  getPostHogDistinctId?: () => string | null;
+  getRevenueCatAppUserId?: () => string | null;
+  isRevenueCatReady?: () => boolean;
   onUserSignedIn: (user: {
     id: string;
     email?: string | null;
@@ -49,6 +57,9 @@ export function registerAuthIdentitySync(
 ): () => void {
   const client = dependencies.getSupabaseClient();
   if (client == null) {
+    logIdentitySyncDebug('supabase.identity_sync_skipped', {
+      reason: 'missing_supabase_client',
+    });
     return () => {};
   }
 
@@ -59,35 +70,97 @@ export function registerAuthIdentitySync(
     event: SupabaseAuthChangeEvent,
     session: SupabaseSession | null,
   ): Promise<void> => {
+    logIdentitySyncDebug('supabase.auth_event_received', {
+      supabase_auth_event: event,
+      ...getSessionDebugSnapshot(session),
+      last_identity_key: lastIdentityKey,
+      posthog_distinct_id: dependencies.getPostHogDistinctId?.() ?? null,
+      revenuecat_current_app_user_id: dependencies.getRevenueCatAppUserId?.() ?? null,
+      revenuecat_ready: dependencies.isRevenueCatReady?.() ?? null,
+    });
+
     if (!shouldHandleAuthEvent(event, session)) {
+      logIdentitySyncDebug('supabase.auth_event_ignored', {
+        supabase_auth_event: event,
+        ...getSessionDebugSnapshot(session),
+      });
       return;
     }
 
     const nextIdentityKey = getSessionIdentityKey(session);
     const shouldForceSync = event === 'USER_UPDATED';
     if (!shouldForceSync && lastIdentityKey === nextIdentityKey) {
+      logIdentitySyncDebug('supabase.identity_sync_deduped', {
+        supabase_auth_event: event,
+        next_identity_key: nextIdentityKey,
+        last_identity_key: lastIdentityKey,
+      });
       return;
     }
 
     lastIdentityKey = nextIdentityKey;
+    logIdentitySyncDebug('supabase.identity_sync_started', {
+      supabase_auth_event: event,
+      next_identity_key: nextIdentityKey,
+      should_force_sync: shouldForceSync,
+      ...getSessionDebugSnapshot(session),
+      posthog_distinct_id: dependencies.getPostHogDistinctId?.() ?? null,
+      revenuecat_current_app_user_id: dependencies.getRevenueCatAppUserId?.() ?? null,
+      revenuecat_ready: dependencies.isRevenueCatReady?.() ?? null,
+    });
 
     if (session == null) {
+      logIdentitySyncDebug('supabase.identity_sync_sign_out_started', {
+        posthog_distinct_id: dependencies.getPostHogDistinctId?.() ?? null,
+        revenuecat_current_app_user_id: dependencies.getRevenueCatAppUserId?.() ?? null,
+      });
       dependencies.onUserSignedOut();
       await dependencies.clearRevenueCatIdentity();
+      logIdentitySyncDebug('supabase.identity_sync_sign_out_completed', {
+        posthog_distinct_id: dependencies.getPostHogDistinctId?.() ?? null,
+        revenuecat_current_app_user_id: dependencies.getRevenueCatAppUserId?.() ?? null,
+        revenuecat_ready: dependencies.isRevenueCatReady?.() ?? null,
+      });
       return;
     }
 
+    logIdentitySyncDebug('supabase.profile_ensure_started', {
+      supabase_user_id: session.user.id,
+    });
     await dependencies.ensureProfile(session.user.id);
+    logIdentitySyncDebug('supabase.profile_ensure_completed', {
+      supabase_user_id: session.user.id,
+    });
 
+    logIdentitySyncDebug('supabase.posthog_sync_started', {
+      supabase_user_id: session.user.id,
+      posthog_distinct_id_before: dependencies.getPostHogDistinctId?.() ?? null,
+    });
     dependencies.onUserSignedIn({
       id: session.user.id,
       email: session.user.email ?? null,
       authProvider: session.user.app_metadata?.provider ?? null,
     });
+    logIdentitySyncDebug('supabase.posthog_sync_completed', {
+      supabase_user_id: session.user.id,
+      posthog_distinct_id_after: dependencies.getPostHogDistinctId?.() ?? null,
+    });
 
+    logIdentitySyncDebug('supabase.revenuecat_sync_started', {
+      supabase_user_id: session.user.id,
+      revenuecat_current_app_user_id_before: dependencies.getRevenueCatAppUserId?.() ?? null,
+      revenuecat_ready: dependencies.isRevenueCatReady?.() ?? null,
+    });
     await dependencies.syncRevenueCatIdentity({
       id: session.user.id,
       email: session.user.email ?? null,
+    });
+    logIdentitySyncDebug('supabase.identity_sync_completed', {
+      supabase_auth_event: event,
+      ...getSessionDebugSnapshot(session),
+      posthog_distinct_id: dependencies.getPostHogDistinctId?.() ?? null,
+      revenuecat_current_app_user_id: dependencies.getRevenueCatAppUserId?.() ?? null,
+      revenuecat_ready: dependencies.isRevenueCatReady?.() ?? null,
     });
   };
 
@@ -97,12 +170,24 @@ export function registerAuthIdentitySync(
   ): void => {
     void syncSessionIdentity(event, session).catch((error: unknown) => {
       if (!disposed) {
+        warnIdentitySyncDebug('supabase.identity_sync_failed', {
+          supabase_auth_event: event,
+          ...getSessionDebugSnapshot(session),
+          error_message: error instanceof Error ? error.message : String(error),
+          posthog_distinct_id: dependencies.getPostHogDistinctId?.() ?? null,
+          revenuecat_current_app_user_id: dependencies.getRevenueCatAppUserId?.() ?? null,
+          revenuecat_ready: dependencies.isRevenueCatReady?.() ?? null,
+        });
         dependencies.warn('Failed to sync auth identities', error);
       }
     });
   };
 
   const { data } = client.auth.onAuthStateChange((event, session) => {
+    logIdentitySyncDebug('supabase.auth_listener_fired', {
+      supabase_auth_event: event,
+      ...getSessionDebugSnapshot(session),
+    });
     runSync(event, session);
   });
 
@@ -113,16 +198,23 @@ export function registerAuthIdentitySync(
         throw error;
       }
 
+      logIdentitySyncDebug('supabase.initial_session_loaded', {
+        ...getSessionDebugSnapshot(sessionData.session),
+      });
       runSync('INITIAL_SESSION', sessionData.session);
     })
     .catch((error: unknown) => {
       if (!disposed) {
+        warnIdentitySyncDebug('supabase.initial_session_failed', {
+          error_message: error instanceof Error ? error.message : String(error),
+        });
         dependencies.warn('Failed to read initial Supabase session', error);
       }
     });
 
   return () => {
     disposed = true;
+    logIdentitySyncDebug('supabase.identity_sync_unsubscribed');
     data.subscription.unsubscribe();
   };
 }
