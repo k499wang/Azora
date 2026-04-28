@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
@@ -38,6 +39,8 @@ import { trackAppOpened, trackScreenView } from './src/services/analytics/tracki
 import { bootstrapAnalytics } from './src/services/analytics/identity';
 import { registerAppSessionTracking } from './src/services/analytics/appSession';
 import { registerAuthIdentitySync } from './src/services/supabase';
+import { SplashScreen as WelcomeSplash } from './src/components/welcome/SplashScreen';
+import { colors } from './src/theme/colors';
 SplashScreen.preventAutoHideAsync();
 
 const navigationRef = createNavigationContainerRef<RootStackParamList>();
@@ -91,22 +94,27 @@ export default function App() {
     trackScreenView(currentRoute);
   }, []);
 
+  const [splashVisible, setSplashVisible] = useState(true);
+
   if (!fontsLoaded) return null;
 
   return (
     <SafeAreaProvider onLayout={onLayoutRootView}>
       <StatusBar style="dark" />
-      <NavigationContainer
-        ref={navigationRef}
-        onReady={trackCurrentScreen}
-        onStateChange={trackCurrentScreen}
-      >
-        <PostHogProvider client={posthog} autocapture={{ captureTouches: true, captureScreens: false }}>
-          <AppProviders>
-            <RootNavigator />
-          </AppProviders>
-        </PostHogProvider>
-      </NavigationContainer>
+      <View style={{ flex: 1, backgroundColor: colors.surface.welcome }}>
+        <NavigationContainer
+          ref={navigationRef}
+          onReady={trackCurrentScreen}
+          onStateChange={trackCurrentScreen}
+        >
+          <PostHogProvider client={posthog} autocapture={{ captureTouches: true, captureScreens: false }}>
+            <AppProviders>
+              <RootNavigator />
+            </AppProviders>
+          </PostHogProvider>
+        </NavigationContainer>
+        {splashVisible ? <WelcomeSplash onFinish={() => setSplashVisible(false)} /> : null}
+      </View>
     </SafeAreaProvider>
   );
 }
