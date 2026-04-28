@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
@@ -40,6 +40,8 @@ import { bootstrapAnalytics } from './src/services/analytics/identity';
 import { registerAppSessionTracking } from './src/services/analytics/appSession';
 import { registerAuthIdentitySync } from './src/services/supabase';
 import { SplashScreen as WelcomeSplash } from './src/components/welcome/SplashScreen';
+import { WelcomeIntro } from './src/components/welcome/WelcomeIntro';
+import { CategoryIntroScreen } from './src/components/welcome/CategoryIntroScreen';
 import { colors } from './src/theme/colors';
 SplashScreen.preventAutoHideAsync();
 
@@ -95,13 +97,15 @@ export default function App() {
   }, []);
 
   const [splashVisible, setSplashVisible] = useState(true);
+  const [introVisible, setIntroVisible] = useState(true);
+  const [categoryVisible, setCategoryVisible] = useState(true);
 
   if (!fontsLoaded) return null;
 
   return (
     <SafeAreaProvider onLayout={onLayoutRootView}>
       <StatusBar style="dark" />
-      <View style={{ flex: 1, backgroundColor: colors.surface.welcome }}>
+      <View style={{ flex: 1, backgroundColor: colors.background.primary }}>
         <NavigationContainer
           ref={navigationRef}
           onReady={trackCurrentScreen}
@@ -113,6 +117,14 @@ export default function App() {
             </AppProviders>
           </PostHogProvider>
         </NavigationContainer>
+        {categoryVisible ? (
+          <View style={StyleSheet.absoluteFill}>
+            <CategoryIntroScreen onContinue={() => setCategoryVisible(false)} />
+          </View>
+        ) : null}
+        {introVisible ? (
+          <WelcomeIntro onFinish={() => setIntroVisible(false)} />
+        ) : null}
         {splashVisible ? <WelcomeSplash onFinish={() => setSplashVisible(false)} /> : null}
       </View>
     </SafeAreaProvider>
