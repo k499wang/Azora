@@ -34,58 +34,28 @@ function showTermsRequiredAlert() {
 interface Slide {
   id: string;
   icon: IconName;
-  iconTint: string;
-  bubbleTint: string;
-  eyebrow: string;
   title: string;
   body: string;
 }
 
 const SLIDES: Slide[] = [
   {
-    id: 'calm',
-    icon: 'breath-wave',
-    iconTint: colors.primary.blue600,
-    bubbleTint: colors.primary.blue100,
-    eyebrow: 'Feel better tonight',
-    title: 'Calm your mind in 5 minutes.',
-    body: 'Guided breathwork that drops your stress in a single session — no app fatigue, no fluff.',
-  },
-  {
-    id: 'science',
+    id: 'measure',
     icon: 'heart-rmssd',
-    iconTint: colors.primary.blue600,
-    bubbleTint: colors.primary.blue100,
-    eyebrow: 'Backed by science',
-    title: 'Measured by your heart.',
-    body: 'Real-time HRV — the gold-standard biomarker used in clinical research — shows you exactly when you shift into recovery.',
+    title: 'Measure your heart.',
+    body: 'Live HRV biofeedback shows the exact moment your nervous system shifts into recovery.',
   },
   {
-    id: 'sleep',
-    icon: 'breath-moon',
-    iconTint: colors.primary.blue700,
-    bubbleTint: colors.primary.blue100,
-    eyebrow: 'Sleep deeper',
-    title: 'Wind down without scrolling.',
-    body: '4-7-8 and resonance breathing protocols proven to lower nighttime heart rate and ease you into sleep.',
-  },
-  {
-    id: 'athlete',
+    id: 'train',
     icon: 'breath-lightning',
-    iconTint: colors.orange[500],
-    bubbleTint: colors.orange[100],
-    eyebrow: 'Train like an athlete',
-    title: 'Recover faster, breathe stronger.',
-    body: 'The same box-breathing protocols used by Navy SEALs and elite athletes — now tied to your live HRV.',
+    title: 'Train with protocols.',
+    body: 'Box breathing, 4-7-8, and resonance — guided breathwork tied to your real-time vitals.',
   },
   {
-    id: 'heart',
+    id: 'insights',
     icon: 'heart-glow',
-    iconTint: colors.error[500],
-    bubbleTint: colors.error[100],
-    eyebrow: 'Heart & wellness',
-    title: 'Build a stronger nervous system.',
-    body: 'Track HRV, RMSSD, and SDNN over time. Watch your resilience grow with every session.',
+    title: 'See your progress.',
+    body: 'Track HRV, resting heart rate, and resilience trends over time. Watch your baseline rise.',
   },
 ];
 
@@ -112,10 +82,7 @@ export default function AuthLandingScreen() {
   }, []);
 
   const onGooglePress = async () => {
-    if (!agreed) {
-      showTermsRequiredAlert();
-      return;
-    }
+    if (!agreed) return showTermsRequiredAlert();
     if (googleBusy) return;
     setGoogleBusy(true);
     try {
@@ -130,10 +97,7 @@ export default function AuthLandingScreen() {
   };
 
   const onApplePress = async () => {
-    if (!agreed) {
-      showTermsRequiredAlert();
-      return;
-    }
+    if (!agreed) return showTermsRequiredAlert();
     if (appleBusy) return;
     setAppleBusy(true);
     try {
@@ -161,14 +125,8 @@ export default function AuthLandingScreen() {
   return (
     <View style={styles.screen}>
       <SafeAreaView edges={['top']} style={styles.heroSafe}>
-        <View style={styles.brandRow}>
+        <View style={styles.header}>
           <Text style={styles.brand}>AZORA</Text>
-          <View style={styles.brandRight}>
-            <View style={styles.proofBadge}>
-              <View style={styles.proofDot} />
-              <Text style={styles.proofText}>HRV-backed</Text>
-            </View>
-          </View>
         </View>
 
         <FlatList
@@ -184,16 +142,15 @@ export default function AuthLandingScreen() {
           renderItem={({ item }) => (
             <View style={styles.slide}>
               <View style={styles.iconWrap}>
-                <View style={[styles.iconRingOuter, { backgroundColor: item.bubbleTint }]} />
-                <View style={[styles.iconRingInner, { backgroundColor: item.bubbleTint }]} />
+                <View style={styles.iconHaloOuter} />
+                <View style={styles.iconHaloInner} />
                 <View style={styles.iconCore}>
-                  <Icon name={item.icon} size={72} color={item.iconTint} />
+                  <Icon name={item.icon} size={56} color={colors.primary.blue600} />
                 </View>
               </View>
               <View style={styles.copy}>
-                <Text style={styles.eyebrow}>{item.eyebrow}</Text>
-                <Text style={styles.title}>{item.title}</Text>
-                <Text style={styles.body}>{item.body}</Text>
+                <Text style={styles.slideTitle}>{item.title}</Text>
+                <Text style={styles.slideBody}>{item.body}</Text>
               </View>
             </View>
           )}
@@ -207,7 +164,7 @@ export default function AuthLandingScreen() {
       </SafeAreaView>
 
       <View style={styles.sheet}>
-        <SafeAreaView edges={['bottom']} style={styles.sheetSafe}>
+        <SafeAreaView edges={['bottom']}>
           <View style={styles.sheetContent}>
             <Pressable
               accessibilityRole="checkbox"
@@ -276,42 +233,21 @@ const styles = StyleSheet.create({
   heroSafe: {
     flex: 1,
   },
-  brandRow: {
-    flexDirection: 'row',
+  header: {
     alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
+    paddingTop: spacing['2xl'],
     paddingBottom: spacing.lg,
-  },
-  brand: {
-    ...typography.overline,
-    color: colors.text.brand,
-    letterSpacing: 3,
-  },
-  brandRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
     gap: spacing.sm,
   },
-  proofBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    backgroundColor: colors.background.accentSoft,
-    borderRadius: 999,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 6,
-  },
-  proofDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: colors.success[500],
-  },
-  proofText: {
-    ...typography.label.small,
-    color: colors.text.brand,
+  brand: {
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    fontSize: 32,
+    lineHeight: 38,
+    letterSpacing: 6,
+    color: colors.text.primary,
+    textAlign: 'center',
   },
   slide: {
     width: SCREEN_WIDTH,
@@ -321,54 +257,62 @@ const styles = StyleSheet.create({
     gap: spacing.xl,
   },
   iconWrap: {
-    width: 220,
-    height: 220,
+    width: 200,
+    height: 200,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  iconRingOuter: {
+  iconHaloOuter: {
     position: 'absolute',
-    width: 220,
-    height: 220,
-    borderRadius: 110,
-    opacity: 0.45,
+    width: 200,
+    height: 200,
+    borderRadius: 100,
+    backgroundColor: colors.primary.blue100,
+    opacity: 0.5,
   },
-  iconRingInner: {
+  iconHaloInner: {
     position: 'absolute',
-    width: 158,
-    height: 158,
-    borderRadius: 79,
+    width: 144,
+    height: 144,
+    borderRadius: 72,
+    backgroundColor: colors.primary.blue100,
   },
   iconCore: {
-    width: 102,
-    height: 102,
-    borderRadius: 51,
+    width: 92,
+    height: 92,
+    borderRadius: 46,
     backgroundColor: colors.background.elevated,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: colors.primary.blue700,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
   },
   copy: {
-    gap: spacing.sm,
     alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
   },
-  eyebrow: {
-    ...typography.overline,
-    color: colors.text.brand,
-    letterSpacing: 2,
-  },
-  title: {
-    ...typography.title.title1,
+  slideTitle: {
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    fontSize: 24,
+    lineHeight: 30,
     color: colors.text.primary,
     textAlign: 'center',
   },
-  body: {
+  slideBody: {
     ...typography.body.medium,
     color: colors.text.secondary,
     textAlign: 'center',
+    maxWidth: 320,
   },
   dots: {
     flexDirection: 'row',
     justifyContent: 'center',
+    alignItems: 'center',
     gap: spacing.xs,
     paddingVertical: spacing.lg,
   },
@@ -392,7 +336,6 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 8,
   },
-  sheetSafe: {},
   sheetContent: {
     paddingHorizontal: spacing.xl,
     paddingTop: spacing.lg,
@@ -456,11 +399,13 @@ const styles = StyleSheet.create({
   primaryButtonLabel: {
     color: colors.text.inverse,
     fontFamily: fonts.semibold,
+    fontWeight: '600',
     fontSize: 16,
   },
   secondaryButtonLabel: {
     color: colors.text.primary,
     fontFamily: fonts.semibold,
+    fontWeight: '600',
     fontSize: 16,
   },
   buttonPressed: {

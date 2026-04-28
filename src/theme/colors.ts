@@ -1,6 +1,8 @@
 export const colors = {
   primary: {
     blue100: '#EAF2FF',
+    blue200: '#C8DBFF',
+    blue300: '#A0C4FF',
     blue400: '#78B4FF',
     blue500: '#4A90F5',
     blue600: '#2F7AEF',
