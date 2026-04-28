@@ -192,6 +192,21 @@ When asked to make changes:
 5. Update docs when the architecture or workflow changes materially.
 6. Run tests or the closest available verification step.
 
+## Session Workflow Preferences
+
+Use these as default collaboration preferences when the active coding agent supports them:
+
+- Prefer planning before large edits. For complex changes, enter plan mode first and lay out the approach before writing code.
+- Break large requests into steps. When possible, do the first meaningful step, verify it, then continue.
+- Use high-effort reasoning for ambiguous or high-risk tasks.
+- End important sessions with a short `Summary of learnings` paragraph so future sessions can recover context quickly.
+- If the tool supports isolated branches or rewindable turns, prefer branching for risky explorations and rewinding instead of stacking messy follow-up fixes.
+- Let the agent fix its own mistakes after verification failures so it can preserve an accurate working model of the repo.
+- Prefer direct file references when giving instructions. If a path is known, point to it explicitly instead of making the agent search.
+- For repetitive workflows, prefer turning the instructions into a reusable skill or repo-local guide instead of restating them each session.
+- Keep context narrow and relevant. Load only the files and details needed for the current task.
+- For especially sensitive areas like auth, billing, subscriptions, and analytics identity, rely on repo-local guidance files before making changes.
+
 ## Repo-Specific Guidance
 
 - Keep heart-rate signal processing logic in domain-oriented files, not inside screens.
@@ -217,3 +232,7 @@ A change is done when:
 - types remain strong
 - behavior is verified
 - the next developer can understand the change quickly
+
+Manage your context like it's water on the desert. There's an exponential correlation between the quality of Claude's responses and exclusivity of the data you feed into the context. Most immediate example: verbose and noisy tasks should be handled by subagents.
+
+Split the work across two different sessions: Designer and coder. Designer should handle the architecture and have the bigger picture, coder should work on the single files and handle all the context-bloating tasks.

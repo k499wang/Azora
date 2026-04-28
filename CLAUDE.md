@@ -195,14 +195,37 @@ navigation.navigate('Settings');
 
 ## Working With Claude Code
 
+### Preferred Session Setup
+
+- Use `/effort high` for non-trivial work. If extended reasoning is needed, explicitly use `ultrathink`.
+- For complex or risky work, start in Plan mode before editing code.
+- If a task benefits from isolated investigation, use `/fork <name>` to branch the conversation.
+- If the last turn went in the wrong direction, prefer `/rewind` to undo the turn and its edits cleanly.
+- If a sub-role is needed, explicitly start an Explore agent or enter Plan mode instead of improvising the role setup.
+- End important sessions with a short `Summary of learnings` paragraph so Claude's memory can recover key repo context later.
+
 ### Prompting
 - **Be scope-specific.** "Fix the pill shadow" is too broad — "Update `HeroActionCard.tsx` to use `card.shadow` instead of inline values, don't touch other files" is right.
 - **Name the file and line when you can.** Cold context costs time.
 - **Don't ask for refactors to happen alongside a feature change** — ask for them separately.
+- **Ask for the first step when a feature is large.** Review that step, then continue.
+- **Ask clarifying questions when requirements are under-specified.**
+- **Use preview before finalizing** whenever the tool offers one.
+- **Use `@/path/to/file` references** when you already know the file you want Claude to inspect.
+- **Use shell commands directly** for verification or repo inspection when that is faster than describing the task abstractly.
 
 ### When to use subagents
 - **`Explore`** — "how is the font system wired across the app?" — spawn it, don't burn main-context tokens.
 - **Main session** — actual edits, reviews, and decisions. Keep it focused.
+
+### Workflow Habits
+
+- Let Claude fix its own failed implementation after tests or typecheck failures instead of manually patching around it.
+- Run `/simplify` before review if the implementation feels more abstract than the repo needs.
+- Turn repeated instruction sets into a reusable skill or repo-local guide instead of restating them.
+- Split large efforts across sessions when roles are meaningfully different, for example exploration vs implementation.
+- Avoid loading unnecessary plugins or reference material when starting a task; keep the context small and specific.
+- Treat context as a limited resource. Prefer a few highly relevant files over broad dumps of unrelated code.
 
 ### Expected communication style
 - Terse. A 1–2 sentence end-of-turn summary (what changed, what's next) is ideal.
@@ -219,6 +242,7 @@ navigation.navigate('Settings');
 - Don't leave `// removed X` or dead code. Delete it.
 - Never add a new route only in a screen file. Route names and params belong in `src/app/navigation/types.ts`.
 - Never use `useNavigation<any>()` or hand-rolled `navigation` prop interfaces.
+- Default to repo-local `AGENTS.md` and `CLAUDE.md` guidance first when working in auth, billing, subscriptions, onboarding, or analytics flows.
 
 ### What not to do
 - Don't add Redux / MobX / React Query until there's a real problem.
@@ -236,3 +260,8 @@ On top of `AGENTS.md` §"Definition Of Done":
 - `npm test` is run when relevant, or any gap is called out explicitly.
 - TypeScript has no new errors (`npx tsc --noEmit` passes).
 - A 1–2 sentence summary is given, with specific file paths.
+
+
+Manage your context like it's water on the desert. There's an exponential correlation between the quality of Claude's responses and exclusivity of the data you feed into the context. Most immediate example: verbose and noisy tasks should be handled by subagents.
+
+Split the work across two different sessions: Designer and coder. Designer should handle the architecture and have the bigger picture, coder should work on the single files and handle all the context-bloating tasks.
