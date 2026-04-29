@@ -8,6 +8,8 @@ They are intentionally small. The goal is to help you start from the current arc
 
 - [screen-template.md](/Users/k3vinwvng/Documents/Azora/Azora/docs/templates/screen-template.md:1)
   - for new registered screens or composition-heavy screens
+- [onboarding-screen-template.md](/Users/k3vinwvng/Documents/Azora/Azora/docs/templates/onboarding-screen-template.md:1)
+  - for new post-login onboarding steps inside `src/components/onboarding/`
 - [query-hook-template.md](/Users/k3vinwvng/Documents/Azora/Azora/docs/templates/query-hook-template.md:1)
   - for new React Query hooks around backend-backed services
 - [service-template.md](/Users/k3vinwvng/Documents/Azora/Azora/docs/templates/service-template.md:1)
@@ -30,6 +32,8 @@ Each template was derived from current repo code:
   - `src/screens/HomeScreen.tsx`
   - `src/screens/ProfileScreen.tsx`
   - `src/screens/HeartRateScreen.tsx`
+- onboarding screen:
+  - `src/components/onboarding/OnboardingFlow.tsx`
 - query hook:
   - `src/queries/profile/useOnboardingStatusQuery.ts`
   - `src/queries/profile/useCompleteOnboardingMutation.ts`
