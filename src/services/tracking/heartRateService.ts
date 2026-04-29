@@ -1,6 +1,7 @@
 import type { CaptureResult, PpgFrameSample } from '../../lib/heartRate/types';
 import { buildHeartRateSessionRpcPayload } from '../../lib/heartRate/sessionPayload';
 import { requireSupabaseClient } from '../supabase';
+import type { Database } from '../supabase/database.types';
 import type {
   HeartRateIbiPoint,
   TodayHeartRateSummary,
@@ -11,6 +12,9 @@ export interface CompleteHeartRateSessionInput {
   result: CaptureResult;
   timezone: string;
 }
+
+type HeartRateRow = Database['public']['Views']['user_today_heart_rate_v']['Row'];
+type HeartRateIbiRow = Database['public']['Views']['user_today_heart_rate_ibi_samples_v']['Row'];
 
 export async function completeHeartRateSession(
   input: CompleteHeartRateSessionInput,
@@ -34,20 +38,65 @@ export async function completeHeartRateSession(
   );
 }
 
-export async function getTodayHeartRateSummary(): Promise<TodayHeartRateSummary | null> {
+export async function getTodayHeartRateSummary(
+  userId: string,
+): Promise<TodayHeartRateSummary | null> {
   const supabase = requireSupabaseClient();
-  void supabase;
 
-  throw new Error(
-    'getTodayHeartRateSummary is scaffolded but not wired yet. Read from `user_today_heart_rate_v`.',
-  );
+  const { data, error } = await supabase
+    .from('user_today_heart_rate_v')
+    .select('id, started_at, ended_at, local_date, timezone, duration_seconds, avg_bpm, min_bpm, max_bpm, rmssd, sdnn, pnn50, hr_drop, beat_count')
+    .eq('user_id', userId)
+    .order('started_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error != null) {
+    throw error;
+  }
+
+  if (data == null) {
+    return null;
+  }
+
+  const row = data as HeartRateRow;
+
+  return {
+    sessionId: row.id,
+    startedAt: row.started_at,
+    endedAt: row.ended_at,
+    localDate: row.local_date,
+    timezone: row.timezone,
+    durationSeconds: row.duration_seconds,
+    avgBpm: row.avg_bpm,
+    minBpm: row.min_bpm,
+    maxBpm: row.max_bpm,
+    rmssd: row.rmssd,
+    sdnn: row.sdnn,
+    pnn50: row.pnn50,
+    hrDrop: row.hr_drop,
+    beatCount: row.beat_count,
+  };
 }
 
-export async function getTodayHeartRateIbiSeries(): Promise<HeartRateIbiPoint[]> {
+export async function getTodayHeartRateIbiSeries(
+  userId: string,
+): Promise<HeartRateIbiPoint[]> {
   const supabase = requireSupabaseClient();
-  void supabase;
 
-  throw new Error(
-    'getTodayHeartRateIbiSeries is scaffolded but not wired yet. Read from `user_today_heart_rate_ibi_samples_v` ordered by `offset_ms`.',
-  );
+  const { data, error } = await supabase
+    .from('user_today_heart_rate_ibi_samples_v')
+    .select('offset_ms, ibi_ms, signal_quality')
+    .eq('user_id', userId)
+    .order('offset_ms', { ascending: true });
+
+  if (error != null) {
+    throw error;
+  }
+
+  return ((data ?? []) as HeartRateIbiRow[]).map((row) => ({
+    offsetMs: row.offset_ms,
+    ibiMs: row.ibi_ms,
+    signalQuality: row.signal_quality,
+  }));
 }

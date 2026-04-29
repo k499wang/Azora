@@ -7,28 +7,31 @@ import { card } from '../../theme/card';
 import SectionHeader from '../common/SectionHeader';
 import BigRingStatCard from './BigRingStatCard';
 import StressGauge from '../heartRate/StressGauge';
-import { computeHRVStats } from '../../lib/hrv';
 import { getStressZone } from '../../lib/heartRate/stress';
 
 interface HeartHealthSectionProps {
-  ibiMs?: number[];
+  rmssd?: number | null;
+  sdnn?: number | null;
+  stress?: number | null;
+  hrDrop?: number | null;
 }
 
-const DEFAULT_IBI_MS: number[] = [
-  790, 812, 835, 818, 802, 845, 870, 858, 832, 880,
-  905, 892, 915, 940, 928, 952, 975, 962, 985, 1010,
-  998, 1025, 1048, 1032, 1018, 1045, 1062,
-];
-
-function buildInsight(rmssd: number, sdnn: number, hrDrop: number): {
+function buildInsight(rmssd: number | null, sdnn: number | null, hrDrop: number | null): {
   tone: string;
   detail: string;
 } {
+  if (rmssd == null || sdnn == null) {
+    return {
+      tone: 'No HRV yet today',
+      detail: 'Complete a breath hold with heart-rate tracking to unlock today\'s recovery insight.',
+    };
+  }
+
   if (rmssd >= 55 && sdnn >= 45) {
     return {
       tone: 'Strong recovery',
       detail:
-        hrDrop > 0
+        hrDrop != null && hrDrop > 0
           ? `Your variability looks strong today and your heart rate settled by ${hrDrop} bpm during recovery.`
           : 'Your variability looks strong today, with a stable recovery pattern through the session.',
     };
@@ -38,7 +41,7 @@ function buildInsight(rmssd: number, sdnn: number, hrDrop: number): {
     return {
       tone: 'Balanced pattern',
       detail:
-        hrDrop > 0
+        hrDrop != null && hrDrop > 0
           ? `Your breath hold shows a steady recovery response, with heart rate easing down by ${hrDrop} bpm.`
           : 'Your variability sits in a balanced range today, though recovery looks more flat than usual.',
     };
@@ -47,17 +50,23 @@ function buildInsight(rmssd: number, sdnn: number, hrDrop: number): {
   return {
     tone: 'Recovery is muted',
     detail:
-      hrDrop > 0
+      hrDrop != null && hrDrop > 0
         ? `Variability is on the lower side today. A ${hrDrop} bpm drop still shows some recovery, but the signal suggests stress or fatigue.`
         : 'Variability is on the lower side today, which can happen when stress, fatigue, or inconsistent breathing is higher.',
   };
 }
 
 export default function HeartHealthSection({
-  ibiMs = DEFAULT_IBI_MS,
+  rmssd,
+  sdnn,
+  stress,
+  hrDrop,
 }: HeartHealthSectionProps) {
-  const stats = computeHRVStats(ibiMs);
-  const insight = buildInsight(stats.rmssd, stats.sdnn, stats.hrDrop);
+  const rmssdValue = rmssd ?? null;
+  const sdnnValue = sdnn ?? null;
+  const stressValue = stress ?? null;
+  const hrDropValue = hrDrop ?? null;
+  const insight = buildInsight(rmssdValue, sdnnValue, hrDropValue);
 
   return (
     <View style={styles.section}>
@@ -68,18 +77,18 @@ export default function HeartHealthSection({
       <View style={styles.metricRow}>
         <BigRingStatCard
           label="RMSSD"
-          value={`${stats.rmssd}`}
+          value={rmssdValue == null ? '--' : `${rmssdValue}`}
           target="60"
-          progress={stats.rmssd / 60}
+          progress={rmssdValue == null ? 0 : rmssdValue / 60}
           color={colors.primary.blue500}
           trackColor={colors.neutral[200]}
           icon="heart-rmssd"
         />
         <BigRingStatCard
           label="Avg HRV"
-          value={`${stats.sdnn}`}
+          value={sdnnValue == null ? '--' : `${sdnnValue}`}
           target="50"
-          progress={stats.sdnn / 50}
+          progress={sdnnValue == null ? 0 : sdnnValue / 50}
           color={colors.success[500]}
           trackColor={colors.neutral[200]}
           icon="heart-sdnn"
@@ -87,7 +96,16 @@ export default function HeartHealthSection({
       </View>
 
       <View style={styles.gaugeWrap}>
-        <StressGauge value={stats.stress} zone={getStressZone(stats.stress)} />
+        {stressValue == null ? (
+          <View style={styles.stressPlaceholder}>
+            <Text style={styles.stressPlaceholderTitle}>No stress score yet</Text>
+            <Text style={styles.stressPlaceholderText}>
+              Complete a tracked session with valid HRV to see today&apos;s stress gauge.
+            </Text>
+          </View>
+        ) : (
+          <StressGauge value={stressValue} zone={getStressZone(stressValue)} />
+        )}
       </View>
 
       <View style={styles.insightCard}>
@@ -114,6 +132,27 @@ const styles = StyleSheet.create({
   },
   gaugeWrap: {
     paddingHorizontal: padding.screen.horizontal,
+  },
+  stressPlaceholder: {
+    ...card.base,
+    ...card.shadow,
+    minHeight: 160,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.lg,
+  },
+  stressPlaceholderTitle: {
+    ...typography.title.title3,
+    color: colors.text.primary,
+    textAlign: 'center',
+  },
+  stressPlaceholderText: {
+    ...typography.body.small,
+    color: colors.text.secondary,
+    textAlign: 'center',
+    lineHeight: 20,
   },
   insightCard: {
     ...card.base,

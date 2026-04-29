@@ -6,16 +6,29 @@ import RingStatCard from './RingStatCard';
 import HRVChart from './HRVChart';
 
 interface SessionStatsPagerProps {
+  avgBpm?: number | null;
+  holdSeconds?: number | null;
+  healthScore?: number | null;
   ibiMs?: number[];
 }
 
-const DEFAULT_IBI_MS: number[] = [
-  790, 812, 835, 818, 802, 845, 870, 858, 832, 880,
-  905, 892, 915, 940, 928, 952, 975, 962, 985, 1010,
-  998, 1025, 1048, 1032, 1018, 1045, 1062,
-];
+function formatHold(seconds: number | null | undefined): string {
+  if (seconds == null || seconds <= 0) return '--';
+  const minutes = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${minutes}:${secs.toString().padStart(2, '0')}`;
+}
 
-export default function SessionStatsPager({ ibiMs = DEFAULT_IBI_MS }: SessionStatsPagerProps) {
+export default function SessionStatsPager({
+  avgBpm,
+  holdSeconds,
+  healthScore,
+  ibiMs = [],
+}: SessionStatsPagerProps) {
+  const bpmValue = avgBpm == null ? '--' : `${Math.round(avgBpm)}`;
+  const holdValue = formatHold(holdSeconds);
+  const healthValue = healthScore == null ? '--' : `${Math.round(healthScore)}`;
+
   return (
     <View style={styles.page}>
       <Text style={styles.title}>Today&apos;s insights</Text>
@@ -23,33 +36,30 @@ export default function SessionStatsPager({ ibiMs = DEFAULT_IBI_MS }: SessionSta
       <View style={styles.smallRingsRow}>
         <RingStatCard
           label="BPM"
-          value="62"
+          value={bpmValue}
           target="60"
-          progress={0.48}
+          progress={avgBpm == null ? 0 : avgBpm / 130}
           color={colors.error[500]}
           trackColor={colors.neutral[200]}
           icon="heart-bpm"
-          trend={{ direction: 'down', delta: '3' }}
         />
         <RingStatCard
           label="Hold"
-          value="1:42"
+          value={holdValue}
           target="2:00"
-          progress={0.72}
+          progress={holdSeconds == null ? 0 : holdSeconds / 120}
           color={colors.primary.blue500}
           trackColor={colors.neutral[200]}
           icon="breath-timer"
-          trend={{ direction: 'up', delta: '12s' }}
         />
         <RingStatCard
           label="Health"
-          value="92"
+          value={healthValue}
           target="100"
-          progress={0.92}
+          progress={healthScore == null ? 0 : healthScore / 100}
           color={colors.success[500]}
           trackColor={colors.neutral[200]}
           icon="heart-glow"
-          trend={{ direction: 'up', delta: '4' }}
         />
       </View>
       <HRVChart ibiMs={ibiMs} color={colors.error[500]} />

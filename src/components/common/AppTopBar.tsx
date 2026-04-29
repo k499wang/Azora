@@ -16,7 +16,7 @@ interface AppTopBarProps {
 
 export default function AppTopBar({
   title = 'Azora',
-  streak = 7,
+  streak = 0,
   rightSlot,
   showStreak = true,
   style,

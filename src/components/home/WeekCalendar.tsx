@@ -43,7 +43,7 @@ interface WeekCalendarProps {
 
 export default function WeekCalendar({
   onSelectDay,
-  completedDaysAgo = [1, 2, 4],
+  completedDaysAgo = [],
 }: WeekCalendarProps) {
   const completedSet = useMemo(() => new Set(completedDaysAgo), [completedDaysAgo]);
   const days = useMemo(() => buildDays(completedSet), [completedSet]);
