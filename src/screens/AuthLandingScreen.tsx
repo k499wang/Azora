@@ -125,10 +125,6 @@ export default function AuthLandingScreen() {
   return (
     <View style={styles.screen}>
       <SafeAreaView edges={['top']} style={styles.heroSafe}>
-        <View style={styles.header}>
-          <Text style={styles.brand}>AZORA</Text>
-        </View>
-
         <FlatList
           ref={listRef}
           data={SLIDES}
@@ -232,22 +228,6 @@ const styles = StyleSheet.create({
   },
   heroSafe: {
     flex: 1,
-  },
-  header: {
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing['2xl'],
-    paddingBottom: spacing.lg,
-    gap: spacing.sm,
-  },
-  brand: {
-    fontFamily: fonts.semibold,
-    fontWeight: '600',
-    fontSize: 32,
-    lineHeight: 38,
-    letterSpacing: 6,
-    color: colors.text.primary,
-    textAlign: 'center',
   },
   slide: {
     width: SCREEN_WIDTH,

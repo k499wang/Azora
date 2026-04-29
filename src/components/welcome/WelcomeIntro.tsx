@@ -1,18 +1,18 @@
 import { useEffect, useRef, useState } from 'react';
 import {
   Animated,
-  Dimensions,
   Easing,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
+  Vibration,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
-import { BreathOrb } from './BreathOrb';
 
 interface Props {
   onFinish: () => void;
@@ -23,8 +23,8 @@ const EXHALE_MS = 2600;
 const FADE_MS = 280;
 const HEADLINE_FADE_MS = 380;
 const SKIP_FADE_MS = 1000;
-const REST_SCALE = 0.78;
-const FULL_SCALE = 1;
+const INHALE_TEXT_VISIBLE_MS = HEADLINE_FADE_MS + INHALE_MS + HEADLINE_FADE_MS;
+const IOS_INHALE_VIBRATION_PATTERN_MS = [0, 400, 80];
 
 type Phase = 'inhale' | 'exhale';
 
@@ -32,18 +32,17 @@ export function WelcomeIntro({ onFinish }: Props) {
   const insets = useSafeAreaInsets();
   const [phase, setPhase] = useState<Phase>('inhale');
 
-  const orbScale = useRef(new Animated.Value(REST_SCALE)).current;
-  const haloOpacity = useRef(new Animated.Value(0.5)).current;
   const headlineOpacity = useRef(new Animated.Value(0)).current;
   const screenOpacity = useRef(new Animated.Value(1)).current;
   const skipOpacity = useRef(new Animated.Value(1)).current;
 
-  const orbSize = Dimensions.get('window').width * 0.78;
-
   const finishedRef = useRef(false);
+  const stopInhaleVibration = () => Vibration.cancel();
+
   const finish = () => {
     if (finishedRef.current) return;
     finishedRef.current = true;
+    stopInhaleVibration();
     Animated.timing(screenOpacity, {
       toValue: 0,
       duration: FADE_MS,
@@ -64,50 +63,48 @@ export function WelcomeIntro({ onFinish }: Props) {
 
   useEffect(() => {
     headlineOpacity.setValue(0);
-    Animated.sequence([
+
+    const isInhale = phase === 'inhale';
+    const duration = isInhale ? INHALE_MS : EXHALE_MS;
+
+    if (isInhale) {
+      if (Platform.OS === 'ios') {
+        Vibration.vibrate(IOS_INHALE_VIBRATION_PATTERN_MS, true);
+      } else {
+        Vibration.vibrate(INHALE_TEXT_VISIBLE_MS);
+      }
+    }
+
+    const textAnimation = Animated.sequence([
       Animated.timing(headlineOpacity, {
         toValue: 1,
         duration: HEADLINE_FADE_MS,
         easing: Easing.out(Easing.ease),
         useNativeDriver: true,
       }),
-    ]).start();
-
-    const isInhale = phase === 'inhale';
-    const duration = isInhale ? INHALE_MS : EXHALE_MS;
-
-    const orb = Animated.timing(orbScale, {
-      toValue: isInhale ? FULL_SCALE : REST_SCALE,
-      duration,
-      easing: Easing.inOut(Easing.ease),
-      useNativeDriver: true,
-    });
-
-    const halo = Animated.timing(haloOpacity, {
-      toValue: isInhale ? 1 : 0.45,
-      duration,
-      easing: Easing.inOut(Easing.ease),
-      useNativeDriver: true,
-    });
-
-    const composite = Animated.parallel([orb, halo]);
-    composite.start(({ finished }) => {
-      if (!finished) return;
+      Animated.delay(duration),
       Animated.timing(headlineOpacity, {
         toValue: 0,
         duration: HEADLINE_FADE_MS,
         easing: Easing.in(Easing.ease),
         useNativeDriver: true,
-      }).start(() => {
-        if (isInhale) {
-          setPhase('exhale');
-        } else {
-          finish();
-        }
-      });
+      }),
+    ]);
+
+    textAnimation.start(({ finished }) => {
+      if (!finished) return;
+      stopInhaleVibration();
+      if (isInhale) {
+        setPhase('exhale');
+      } else {
+        finish();
+      }
     });
 
-    return () => composite.stop();
+    return () => {
+      textAnimation.stop();
+      stopInhaleVibration();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [phase]);
 
@@ -127,24 +124,10 @@ export function WelcomeIntro({ onFinish }: Props) {
         </Pressable>
       </Animated.View>
 
-      <View style={[styles.copy, { paddingTop: insets.top + spacing['4xl'] }]}>
+      <View style={styles.copy}>
         <Animated.Text style={[styles.headline, { opacity: headlineOpacity }]}>
           {phase === 'inhale' ? 'Breathe in' : 'Breathe out'}
         </Animated.Text>
-      </View>
-
-      <View style={styles.orbWrap} pointerEvents="none">
-        <Animated.View
-          style={[
-            styles.haloLayer,
-            {
-              opacity: haloOpacity,
-              transform: [{ scale: orbScale }],
-            },
-          ]}
-        >
-          <BreathOrb size={orbSize} />
-        </Animated.View>
       </View>
     </Animated.View>
   );
@@ -156,7 +139,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.primary,
     zIndex: 900,
     elevation: 900,
-    justifyContent: 'space-between',
   },
   skip: {
     position: 'absolute',
@@ -167,18 +149,13 @@ const styles = StyleSheet.create({
     ...typography.label.small,
     color: colors.text.tertiary,
   },
-  orbWrap: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  haloLayer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   copy: {
+    ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
+    justifyContent: 'center',
     paddingHorizontal: spacing.lg,
+    zIndex: 1,
+    elevation: 1,
   },
   headline: {
     ...typography.display.display2,

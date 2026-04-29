@@ -7,14 +7,17 @@ interface OnboardingDatabase {
       profiles: {
         Row: {
           user_id: string;
+          onboarding_goal: string | null;
           onboarding_completed_at: string | null;
         };
         Insert: {
           user_id: string;
+          onboarding_goal?: string | null;
           onboarding_completed_at?: string | null;
         };
         Update: {
           user_id?: string;
+          onboarding_goal?: string | null;
           onboarding_completed_at?: string | null;
         };
         Relationships: [];
@@ -26,6 +29,10 @@ interface OnboardingDatabase {
 }
 
 type ProfileInsert = OnboardingDatabase['public']['Tables']['profiles']['Insert'];
+
+export interface CompleteOnboardingInput {
+  onboardingGoal?: string | null;
+}
 
 function getOnboardingClient(): SupabaseClientLike<OnboardingDatabase> {
   return requireSupabaseClient() as unknown as SupabaseClientLike<OnboardingDatabase>;
@@ -52,10 +59,14 @@ export async function getOnboardingStatus(userId: string): Promise<boolean> {
   return data.onboarding_completed_at != null;
 }
 
-export async function completeOnboarding(userId: string): Promise<void> {
+export async function completeOnboarding(
+  userId: string,
+  input: CompleteOnboardingInput = {},
+): Promise<void> {
   const supabase = getOnboardingClient();
   const profile: ProfileInsert = {
     user_id: userId,
+    onboarding_goal: input.onboardingGoal ?? null,
     onboarding_completed_at: new Date().toISOString(),
   };
 
