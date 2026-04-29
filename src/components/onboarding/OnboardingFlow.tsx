@@ -40,6 +40,8 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         selectedIntent={selectedIntent}
         isSubmitting={isSubmitting}
         errorMessage={errorMessage}
+        stepIndex={1}
+        stepCount={4}
         onSelect={selectIntent}
         onContinue={completeIntentStep}
       />
