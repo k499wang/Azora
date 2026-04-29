@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ContinuousHaptics } from '../../native/continuousHaptics';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
@@ -24,7 +25,6 @@ const FADE_MS = 280;
 const HEADLINE_FADE_MS = 380;
 const SKIP_FADE_MS = 1000;
 const INHALE_TEXT_VISIBLE_MS = HEADLINE_FADE_MS + INHALE_MS + HEADLINE_FADE_MS;
-const IOS_INHALE_VIBRATION_PATTERN_MS = [0, 400, 80];
 
 type Phase = 'inhale' | 'exhale';
 
@@ -37,7 +37,13 @@ export function WelcomeIntro({ onFinish }: Props) {
   const skipOpacity = useRef(new Animated.Value(1)).current;
 
   const finishedRef = useRef(false);
-  const stopInhaleVibration = () => Vibration.cancel();
+  const stopInhaleVibration = () => {
+    if (Platform.OS === 'ios') {
+      ContinuousHaptics.stop();
+    } else {
+      Vibration.cancel();
+    }
+  };
 
   const finish = () => {
     if (finishedRef.current) return;
@@ -69,7 +75,7 @@ export function WelcomeIntro({ onFinish }: Props) {
 
     if (isInhale) {
       if (Platform.OS === 'ios') {
-        Vibration.vibrate(IOS_INHALE_VIBRATION_PATTERN_MS, true);
+        ContinuousHaptics.start(INHALE_TEXT_VISIBLE_MS);
       } else {
         Vibration.vibrate(INHALE_TEXT_VISIBLE_MS);
       }

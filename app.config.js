@@ -37,6 +37,7 @@ module.exports = {
       'expo-font',
       'react-native-vision-camera',
       './plugins/with-heart-rate-plugin',
+      './plugins/with-continuous-haptics-plugin',
       [
         '@react-native-google-signin/google-signin',
         {

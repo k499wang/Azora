@@ -17,6 +17,8 @@ interface IntentQuestionScreenProps {
   selectedIntent: string | null;
   isSubmitting: boolean;
   errorMessage: string | null;
+  stepIndex: number;
+  stepCount: number;
   onSelect: (intentId: string) => void;
   onContinue: () => void;
 }
@@ -25,16 +27,22 @@ export default function IntentQuestionScreen({
   selectedIntent,
   isSubmitting,
   errorMessage,
+  stepIndex,
+  stepCount,
   onSelect,
   onContinue,
 }: IntentQuestionScreenProps) {
   const canContinue = selectedIntent != null && !isSubmitting;
+  const progress = Math.max(0, Math.min(1, stepIndex / stepCount));
 
   return (
-    <SafeAreaView style={styles.screen}>
+    <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
+      <View style={styles.progressBar}>
+        <View style={[styles.progressFill, { width: `${progress * 100}%` }]} />
+      </View>
+
       <View style={styles.content}>
         <View style={styles.copy}>
-          <Text style={styles.eyebrow}>Personalize Azora</Text>
           <Text style={styles.title}>What brings you here?</Text>
           <Text style={styles.subtitle}>
             Choose the goal that feels closest right now.
@@ -71,10 +79,6 @@ export default function IntentQuestionScreen({
                   <Text style={styles.optionTitle}>{option.title}</Text>
                   <Text style={styles.optionBody}>{option.body}</Text>
                 </View>
-
-                {selected ? (
-                  <ActivityIndicator color={colors.primary.blue600} />
-                ) : null}
               </Pressable>
             );
           })}
@@ -116,14 +120,22 @@ const styles = StyleSheet.create({
     paddingVertical: spacing['3xl'],
     gap: spacing.xl,
   },
+  progressBar: {
+    height: 6,
+    marginHorizontal: spacing.lg,
+    marginTop: spacing.md,
+    borderRadius: 999,
+    backgroundColor: colors.primary.blue100,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 999,
+    backgroundColor: colors.primary.blue600,
+  },
   copy: {
     alignItems: 'center',
     gap: spacing.sm,
-  },
-  eyebrow: {
-    ...typography.label.medium,
-    color: colors.text.brand,
-    textAlign: 'center',
   },
   title: {
     ...typography.title.title1,
