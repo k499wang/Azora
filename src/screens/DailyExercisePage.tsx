@@ -12,19 +12,23 @@ import BreathingCircle, {
 import ExerciseScaffold from '../components/exercise/ExerciseScaffold';
 import { useLivePulse } from '../hooks/useLivePulse';
 import { LiveHeartRateMonitor } from '../components/meditation/LiveHeartRateMonitor';
+import { CameraCheckScreen } from '../components/heartRate/CameraCheckScreen';
 import { usePostHog } from 'posthog-react-native';
 import { AnalyticsEvent } from '../services/analytics/events';
 import { captureException } from '../services/analytics/errorTracking';
 import type { DailyExerciseScreenProps } from '../app/navigation';
 
-type HoldPhase = 'idle' | 'inhale' | 'hold' | 'done';
+type HoldPhase = 'idle' | 'placement' | 'inhale' | 'hold' | 'done';
 
 const PHASE_LABELS: Record<HoldPhase, string> = {
   idle: 'Daily Hold',
+  placement: 'Place finger',
   inhale: 'Inhale',
   hold: 'Hold',
   done: 'Released',
 };
+
+const PLACEMENT_GOOD_DURATION_MS = 1500;
 
 interface BpmSample {
   t: number;
@@ -42,6 +46,7 @@ function formatBest(secs: number) {
 export default function DailyExercisePage({
   navigation,
 }: DailyExerciseScreenProps) {
+  const autoStartedRef = useRef(false);
   const posthog = usePostHog();
   const circleRef = useRef<BreathingCircleRef>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -52,7 +57,7 @@ export default function DailyExercisePage({
   const [holdSeconds, setHoldSeconds] = useState(0);
   const [inhaleCountdown, setInhaleCountdown] = useState(0);
   const [bestHoldSeconds, setBestHoldSeconds] = useState(0);
-  const [hrEnabled, setHrEnabled] = useState(false);
+  const [hrEnabled, setHrEnabled] = useState(true);
   const [lastSamples, setLastSamples] = useState<BpmSample[]>([]);
   const [isNewBest, setIsNewBest] = useState(false);
 
@@ -107,22 +112,11 @@ export default function DailyExercisePage({
     return `${m}:${s.toString().padStart(2, '0')}`;
   };
 
-  const handleToggleHr = useCallback(async () => {
-    try {
-      if (hrEnabled) {
-        setHrEnabled(false);
-        return;
-      }
-      const granted = hasPermission ? true : await requestPermission();
-      if (granted) setHrEnabled(true);
-    } catch (error) {
-      captureException(error, {
-        flow: 'daily_breath_hold',
-        action: 'toggle_heart_rate',
-        screen_name: 'DailyExercise',
-      });
-    }
-  }, [hrEnabled, hasPermission, requestPermission]);
+  const cancelPlacement = useCallback(() => {
+    clearTimer();
+    stopPulse();
+    navigation.goBack();
+  }, [navigation, stopPulse]);
 
   const beginHold = useCallback(() => {
     clearTimer();
@@ -145,7 +139,7 @@ export default function DailyExercisePage({
 
   const INHALE_SECONDS = 6;
 
-  const startInhale = () => {
+  const startInhale = useCallback(() => {
     clearTimer();
     samplesRef.current = [];
     setLastSamples([]);
@@ -169,7 +163,43 @@ export default function DailyExercisePage({
         return next;
       });
     }, 1000);
-  };
+  }, [beginHold, hrEnabled, posthog, startPulse]);
+
+  const startPlacement = useCallback(async () => {
+    try {
+      const granted = hasPermission ? true : await requestPermission();
+      if (!granted) {
+        setHrEnabled(false);
+        startInhale();
+        return;
+      }
+      setHrEnabled(true);
+      setPhase('placement');
+      startPulse();
+    } catch (error) {
+      captureException(error, {
+        flow: 'daily_breath_hold',
+        action: 'start_placement',
+        screen_name: 'DailyExercise',
+      });
+      startInhale();
+    }
+  }, [hasPermission, requestPermission, startInhale, startPulse]);
+
+  useEffect(() => {
+    if (phase !== 'placement') return;
+    if (pulse.fingerPlacement !== 'good') return;
+    const t = setTimeout(() => {
+      startInhale();
+    }, PLACEMENT_GOOD_DURATION_MS);
+    return () => clearTimeout(t);
+  }, [phase, pulse.fingerPlacement, startInhale]);
+
+  useEffect(() => {
+    if (autoStartedRef.current) return;
+    autoStartedRef.current = true;
+    void startPlacement();
+  }, [startPlacement]);
 
   const skipInhale = () => {
     if (phase !== 'inhale') return;
@@ -223,7 +253,7 @@ export default function DailyExercisePage({
 
   const handlePrimaryPress = () => {
     if (phase === 'idle' || phase === 'done') {
-      startInhale();
+      void startPlacement();
       return;
     }
     if (phase === 'inhale') {
@@ -280,29 +310,34 @@ export default function DailyExercisePage({
 
   const displayTime = phase === 'hold' || phase === 'done' ? formatTime(holdSeconds) : null;
 
+  if (phase === 'placement') {
+    const cameraProps =
+      pulse.device != null
+        ? {
+            device: pulse.device,
+            format: pulse.format,
+            frameProcessor: pulse.frameProcessor,
+            torchMode: pulse.torchMode,
+            isActive: true,
+          }
+        : undefined;
+    return (
+      <CameraCheckScreen
+        fingerPlacement={pulse.fingerPlacement}
+        onStartAnyway={startInhale}
+        onCancel={cancelPlacement}
+        timeoutSeconds={10}
+        cameraProps={cameraProps}
+      />
+    );
+  }
+
   return (
     <ExerciseScaffold
       titleSlot={
         <View style={styles.titleSlotWrap}>
-          <View style={styles.hrRow}>
-            <Pressable
-              onPress={handleToggleHr}
-              style={({ pressed }) => [
-                styles.hrToggle,
-                hrEnabled && styles.hrToggleOn,
-                pressed && styles.hrTogglePressed,
-              ]}
-            >
-              <MaterialCommunityIcons
-                name={hrEnabled ? 'heart' : 'heart-outline'}
-                size={14}
-                color={hrEnabled ? colors.error[500] : colors.text.secondary}
-              />
-              <Text style={[styles.hrToggleText, hrEnabled && styles.hrToggleTextOn]}>
-                {hrEnabled ? 'Heart rate on' : 'Track heart rate'}
-              </Text>
-            </Pressable>
-            {pulse.active ? (
+          {pulse.active ? (
+            <View style={styles.hrRow}>
               <LiveHeartRateMonitor
                 active={pulse.active}
                 fingerPlacement={pulse.fingerPlacement}
@@ -313,8 +348,8 @@ export default function DailyExercisePage({
                 frameProcessor={pulse.frameProcessor}
                 torchMode={pulse.torchMode}
               />
-            ) : null}
-          </View>
+            </View>
+          ) : null}
           <View style={styles.patternRow}>
             {[
               { key: 'inhale', icon: 'arrow-up' as const, label: '6s' },
@@ -423,31 +458,6 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     flexWrap: 'wrap',
     justifyContent: 'center',
-  },
-  hrToggle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 6,
-    backgroundColor: colors.background.elevated,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: colors.border.subtle,
-  },
-  hrToggleOn: {
-    borderColor: colors.error[500],
-  },
-  hrTogglePressed: {
-    opacity: 0.7,
-  },
-  hrToggleText: {
-    ...typography.caption.caption1,
-    color: colors.text.secondary,
-  },
-  hrToggleTextOn: {
-    color: colors.text.primary,
-    fontWeight: '600',
   },
   patternRow: {
     flexDirection: 'row',
