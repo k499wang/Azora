@@ -1,4 +1,4 @@
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import { spacing, padding, margin } from '../theme/spacing';
@@ -33,6 +33,7 @@ export default function HomeScreen(_: HomeScreenProps) {
   const currentStreak = stats?.streak?.currentStreak ?? 0;
   const avgBpm = todayBreathHold?.avgBpm ?? todayHeartRate?.avgBpm ?? null;
   const healthScore = stats?.hrv.stress == null ? null : 100 - stats.hrv.stress;
+  const hasPartialStatsError = stats != null && Object.values(stats.partialErrors).some(Boolean);
 
   return (
     <View style={styles.screen}>
@@ -57,6 +58,11 @@ export default function HomeScreen(_: HomeScreenProps) {
         </View>
 
         <View style={styles.section}>
+          {hasPartialStatsError || homeStatsQuery.isError ? (
+            <Text style={styles.partialErrorText}>
+              Some stats may be out of date.
+            </Text>
+          ) : null}
           <SessionStatsPager
             avgBpm={avgBpm}
             holdSeconds={todayBreathHold?.holdSeconds ?? null}
@@ -84,7 +90,9 @@ export default function HomeScreen(_: HomeScreenProps) {
             }
             subtitle={
               homeStatsQuery.isError
-                ? 'Stats could not load from Supabase. Pull to refresh support can be added next.'
+                ? 'Stats could not load from Supabase.'
+                : hasPartialStatsError
+                  ? 'Some Home stats could not refresh. The available data is still shown.'
                 : todayHeartRate == null
                   ? 'Press the blue circle button on the menu bar to measure your heart rate.'
                   : 'Standalone heart-rate capture from today.'
@@ -115,6 +123,12 @@ const styles = StyleSheet.create({
   section: {
     paddingHorizontal: padding.screen.horizontal,
     marginTop: spacing.md,
+  },
+  partialErrorText: {
+    color: colors.text.tertiary,
+    fontSize: 12,
+    textAlign: 'center',
+    marginBottom: spacing.sm,
   },
   planSection: {
     paddingHorizontal: padding.screen.horizontal,
