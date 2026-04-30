@@ -29,6 +29,15 @@ export interface HomeStats {
   completedDaysAgo: number[];
   ibiSeries: HeartRateIbiPoint[];
   hrv: HomeHrvStats;
+  partialErrors: HomeStatsPartialErrors;
+}
+
+export interface HomeStatsPartialErrors {
+  streak: boolean;
+  todayBreathHold: boolean;
+  todayHeartRate: boolean;
+  dailyActivity: boolean;
+  breathHoldIbiSeries: boolean;
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -82,20 +91,40 @@ function deriveStressFromStoredSummary(rmssd: number, avgBpm: number): number {
   return Math.max(0, Math.min(100, Math.round(rmssdScore * 0.7 + hrScore * 0.3)));
 }
 
+function getSettledValue<T>(
+  result: PromiseSettledResult<T>,
+  fallback: T,
+): T {
+  return result.status === 'fulfilled' ? result.value : fallback;
+}
+
 export async function getHomeStats(userId: string): Promise<HomeStats> {
   const [
-    streak,
-    todayBreathHold,
-    todayHeartRate,
-    dailyActivity,
-    breathHoldIbiSeries,
-  ] = await Promise.all([
+    streakResult,
+    todayBreathHoldResult,
+    todayHeartRateResult,
+    dailyActivityResult,
+    breathHoldIbiSeriesResult,
+  ] = await Promise.allSettled([
     getStreakSummary(userId),
     getTodayBreathHoldSummary(userId),
     getTodayHeartRateSummary(userId),
     getDailyActivityRange(userId, 28),
     getTodayBreathHoldIbiSeries(userId),
   ]);
+
+  const streak = getSettledValue(streakResult, null);
+  const todayBreathHold = getSettledValue(todayBreathHoldResult, null);
+  const todayHeartRate = getSettledValue(todayHeartRateResult, null);
+  const dailyActivity = getSettledValue(dailyActivityResult, []);
+  const breathHoldIbiSeries = getSettledValue(breathHoldIbiSeriesResult, []);
+  const partialErrors: HomeStatsPartialErrors = {
+    streak: streakResult.status === 'rejected',
+    todayBreathHold: todayBreathHoldResult.status === 'rejected',
+    todayHeartRate: todayHeartRateResult.status === 'rejected',
+    dailyActivity: dailyActivityResult.status === 'rejected',
+    breathHoldIbiSeries: breathHoldIbiSeriesResult.status === 'rejected',
+  };
 
   return {
     streak,
@@ -105,5 +134,6 @@ export async function getHomeStats(userId: string): Promise<HomeStats> {
     completedDaysAgo: getCompletedDaysAgo(dailyActivity),
     ibiSeries: breathHoldIbiSeries,
     hrv: buildHrvStats(todayBreathHold, todayHeartRate),
+    partialErrors,
   };
 }
