@@ -10,6 +10,7 @@ import { useRunOnJS } from 'react-native-worklets-core';
 import type { FingerPlacementState, PpgFrameSample } from '../lib/heartRate/types';
 import { heartRatePlugin } from '../lib/heartRate/heartRatePlugin';
 import { HeartRateManager } from '../lib/heartRate/heartRateManager';
+import { useLockedBrightness } from './useLockedBrightness';
 
 const FRAME_PROCESSING_FPS = 20;
 const BPM_UPDATE_INTERVAL_MS = 1000;
@@ -67,6 +68,8 @@ export function useLivePulse(): UseLivePulseReturn {
   ]);
 
   const torchMode: 'on' | 'off' = active ? 'on' : 'off';
+
+  useLockedBrightness(active);
 
   const resetStreamState = useCallback(() => {
     managerRef.current.reset();

@@ -15,6 +15,7 @@ import type {
 } from '../lib/heartRate/types';
 import { heartRatePlugin } from '../lib/heartRate/heartRatePlugin';
 import { HeartRateManager } from '../lib/heartRate/heartRateManager';
+import { useLockedBrightness } from './useLockedBrightness';
 
 const ROLLING_WINDOW_MS = 15000;
 const BPM_UPDATE_INTERVAL_MS = 1000;
@@ -85,6 +86,8 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
 
   const torchMode: 'on' | 'off' =
     streamState !== 'idle' && streamState !== 'stopped' ? 'on' : 'off';
+
+  useLockedBrightness(torchMode === 'on');
 
   const startStreaming = useCallback((startTimestamp?: number) => {
     warmupStartRef.current = startTimestamp ?? null;
