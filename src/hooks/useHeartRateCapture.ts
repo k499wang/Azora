@@ -17,7 +17,6 @@ import { heartRatePlugin } from '../lib/heartRate/heartRatePlugin';
 import { HeartRateManager } from '../lib/heartRate/heartRateManager';
 import { buildCaptureResult } from '../lib/heartRate/captureResult';
 import { useMeasurementTimer } from './useMeasurementTimer';
-import { useLockedBrightness } from './useLockedBrightness';
 
 const CAPTURE_DURATION_MS = 45000;
 const CAPTURE_DURATION_SEC = CAPTURE_DURATION_MS / 1000;
@@ -90,8 +89,6 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
 
   const torchMode: 'on' | 'off' =
     captureState === 'camera_check' || captureState === 'measuring' ? 'on' : 'off';
-
-  useLockedBrightness(torchMode === 'on');
 
   const setCaptureStateAndRef = useCallback((next: CaptureState) => {
     captureStateRef.current = next;
