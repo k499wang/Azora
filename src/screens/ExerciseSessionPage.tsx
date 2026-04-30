@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
-import { typography } from '../theme/typography';
+import { typography, fonts } from '../theme/typography';
 import { spacing } from '../theme/spacing';
 import BreathingCircle, {
   BreathingCircleRef,
@@ -12,6 +12,7 @@ import TECHNIQUES from '../data/techniques';
 import type { BreathingTechnique } from '../data/techniques';
 import { useLivePulse } from '../hooks/useLivePulse';
 import { LiveHeartRateMonitor } from '../components/meditation/LiveHeartRateMonitor';
+import { CameraCheckScreen } from '../components/heartRate/CameraCheckScreen';
 import { usePostHog } from 'posthog-react-native';
 import type { ExerciseSessionScreenProps } from '../app/navigation';
 import { captureException } from '../services/analytics/errorTracking';
@@ -19,14 +20,23 @@ import { AnalyticsEvent } from '../services/analytics/events';
 
 const MIN_ROUNDS = 1;
 const MAX_ROUNDS = 20;
+const PLACEMENT_GOOD_DURATION_MS = 1500;
 
-type Phase = 'idle' | 'inhale' | 'holdIn' | 'exhale' | 'holdOut' | 'done';
+type Phase =
+  | 'idle'
+  | 'placement'
+  | 'inhale'
+  | 'holdIn'
+  | 'exhale'
+  | 'holdOut'
+  | 'done';
 
 const PHASE_LABELS: Record<Phase, string> = {
   idle: '',
-  inhale: 'Breathe In',
+  placement: '',
+  inhale: 'Inhale',
   holdIn: 'Hold',
-  exhale: 'Breathe Out',
+  exhale: 'Exhale',
   holdOut: 'Hold',
   done: 'Well done',
 };
@@ -49,7 +59,7 @@ export default function ExerciseSessionPage({
   const [paused, setPaused] = useState(false);
   const [technique] = useState<BreathingTechnique>(initialTechnique);
   const [totalRounds, setTotalRounds] = useState(initialTechnique.defaultRounds);
-  const [hrEnabled, setHrEnabled] = useState(false);
+  const [hrEnabled, setHrEnabled] = useState(true);
 
   const posthog = usePostHog();
 
@@ -213,8 +223,8 @@ export default function ExerciseSessionPage({
     }, 1000);
   };
 
-  const handleStart = () => {
-    if (phase === 'idle' || phase === 'done') {
+  const beginExercise = useCallback(
+    (withHr: boolean) => {
       setElapsed(0);
       setCountdown(0);
       setRound(0);
@@ -224,11 +234,51 @@ export default function ExerciseSessionPage({
         technique_name: technique.name,
         technique_category: technique.category,
         total_rounds: totalRounds,
-        hr_monitoring_enabled: hrEnabled,
+        hr_monitoring_enabled: withHr,
       });
       startCycle(1, technique.pattern, totalRounds);
+    },
+    [posthog, technique, totalRounds, startCycle],
+  );
+
+  const startPlacement = useCallback(async () => {
+    try {
+      const granted = hasPermission ? true : await requestPermission();
+      if (!granted) {
+        setHrEnabled(false);
+        beginExercise(false);
+        return;
+      }
+      setHrEnabled(true);
+      setPhase('placement');
+      startPulse();
+    } catch (error) {
+      captureException(error, {
+        flow: 'exercise_session',
+        action: 'start_placement',
+        screen_name: 'ExerciseSession',
+        technique_id: technique.id,
+        technique_name: technique.name,
+      });
+      setHrEnabled(false);
+      beginExercise(false);
+    }
+  }, [hasPermission, requestPermission, startPulse, beginExercise, technique]);
+
+  const handleStart = () => {
+    if (phase === 'idle' || phase === 'done') {
+      void startPlacement();
     }
   };
+
+  useEffect(() => {
+    if (phase !== 'placement') return;
+    if (pulse.fingerPlacement !== 'good') return;
+    const t = setTimeout(() => {
+      beginExercise(true);
+    }, PLACEMENT_GOOD_DURATION_MS);
+    return () => clearTimeout(t);
+  }, [phase, pulse.fingerPlacement, beginExercise]);
 
   const handleClose = () => {
     clearTimer();
@@ -262,13 +312,49 @@ export default function ExerciseSessionPage({
     return `${m}:${s.toString().padStart(2, '0')}`;
   };
 
-  const isActive = phase !== 'idle' && phase !== 'done';
+  const isActive =
+    phase !== 'idle' && phase !== 'done' && phase !== 'placement';
+
+  const cycleSeconds =
+    technique.pattern.inhale +
+    technique.pattern.holdIn +
+    technique.pattern.exhale +
+    technique.pattern.holdOut;
+  const totalSeconds = Math.max(1, cycleSeconds * totalRounds);
+  const progress = Math.min(
+    1,
+    phase === 'done' ? 1 : elapsed / totalSeconds,
+  );
+
+  if (phase === 'placement') {
+    const cameraProps =
+      pulse.device != null
+        ? {
+            device: pulse.device,
+            format: pulse.format,
+            frameProcessor: pulse.frameProcessor,
+            torchMode: pulse.torchMode,
+            isActive: true,
+          }
+        : undefined;
+    return (
+      <CameraCheckScreen
+        fingerPlacement={pulse.fingerPlacement}
+        onStartAnyway={() => beginExercise(false)}
+        onCancel={() => {
+          stopPulse();
+          navigation.goBack();
+        }}
+        timeoutSeconds={10}
+        cameraProps={cameraProps}
+      />
+    );
+  }
 
   return (
     <ExerciseScaffold
       titleSlot={
         <View style={styles.titleSlotWrap}>
-        <Text style={styles.techniqueSubtitle}>{technique.name}</Text>
         <View style={styles.hrRow}>
           <Pressable
             onPress={handleToggleHr}
@@ -300,39 +386,16 @@ export default function ExerciseSessionPage({
             />
           ) : null}
         </View>
-        <View style={styles.patternRow}>
-          {(
-            [
-              { key: 'inhale', icon: 'arrow-up', label: 'Inhale', secs: technique.pattern.inhale },
-              { key: 'holdIn', icon: 'dots-horizontal', label: 'Hold', secs: technique.pattern.holdIn },
-              { key: 'exhale', icon: 'arrow-down', label: 'Exhale', secs: technique.pattern.exhale },
-              { key: 'holdOut', icon: 'dots-horizontal', label: 'Hold', secs: technique.pattern.holdOut },
-            ] as const
-          )
-            .filter((p) => p.secs > 0)
-            .map((p, i, arr) => (
-              <View key={p.key} style={styles.patternItem}>
-                <View style={styles.patternCircle}>
-                  <MaterialCommunityIcons name={p.icon} size={24} color={colors.text.secondary} />
-                </View>
-                <Text style={styles.patternSecs}>{p.secs}s</Text>
-                {i < arr.length - 1 && (
-                  <View style={styles.patternConnector} />
-                )}
-              </View>
-            ))}
-        </View>
         </View>
       }
       centerSlot={
         <BreathingCircle ref={circleRef}>
           <Text style={styles.phaseLabel}>{PHASE_LABELS[phase]}</Text>
-          {isActive ? <Text style={styles.countdown}>{countdown}</Text> : null}
           {phase === 'done' ? (
             <MaterialCommunityIcons
               name="check-circle-outline"
               size={32}
-              color={colors.primary.blue600}
+              color={colors.neutral[50]}
             />
           ) : null}
         </BreathingCircle>
@@ -340,9 +403,13 @@ export default function ExerciseSessionPage({
       bottomSlot={
         <View style={styles.bottomContainer}>
           {isActive || paused ? (
-            <View style={styles.roundCounter}>
-              <Text style={styles.roundValue}>{round}<Text style={styles.roundTotal}>/{totalRounds}</Text></Text>
-              <Text style={styles.roundLabel}>rounds</Text>
+            <View style={styles.progressWrap}>
+              <View style={styles.progressTrack}>
+                <View style={[styles.progressFill, { width: `${progress * 100}%` }]} />
+              </View>
+              <Text style={styles.progressLabel}>
+                Round {Math.min(round, totalRounds)} of {totalRounds}
+              </Text>
             </View>
           ) : (
             <View style={styles.stepper}>
@@ -396,10 +463,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
   },
-  techniqueSubtitle: {
-    ...typography.title.title2,
-    color: colors.text.primary,
-  },
   hrRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -432,57 +495,33 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     fontWeight: '600',
   },
-  patternRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-  },
-  patternItem: {
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  patternCircle: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: colors.neutral[100],
-    borderWidth: 1,
-    borderColor: colors.border.subtle,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  patternSecs: {
-    ...typography.caption.caption1,
-    color: colors.text.tertiary,
-  },
-  patternConnector: {
-    position: 'absolute',
-    top: 25,
-    right: -spacing.sm,
-    width: spacing.sm,
-    height: 1,
-    backgroundColor: colors.border.subtle,
-  },
   bottomContainer: {
     alignItems: 'center',
     gap: spacing.lg,
   },
-  roundCounter: {
+  progressWrap: {
+    width: '100%',
     alignItems: 'center',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.lg,
   },
-  roundValue: {
-    ...typography.display.display2,
-    color: colors.text.primary,
+  progressTrack: {
+    width: '100%',
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.neutral[100],
+    borderWidth: 1,
+    borderColor: colors.border.subtle,
+    overflow: 'hidden',
   },
-  roundTotal: {
-    ...typography.heading.heading1,
-    color: colors.text.tertiary,
+  progressFill: {
+    height: '100%',
+    backgroundColor: colors.primary.blue500,
+    borderRadius: 4,
   },
-  roundLabel: {
+  progressLabel: {
     ...typography.caption.caption1,
     color: colors.text.tertiary,
-    marginTop: 2,
   },
   btnRow: {
     flexDirection: 'row',
@@ -549,12 +588,12 @@ const styles = StyleSheet.create({
     color: colors.text.tertiary,
   },
   phaseLabel: {
-    ...typography.title.title3,
-    color: colors.text.secondary,
+    ...typography.display.display2,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    fontSize: 32,
+    lineHeight: 40,
+    color: colors.neutral[50],
     textAlign: 'center',
-  },
-  countdown: {
-    ...typography.display.display1,
-    color: colors.text.primary,
   },
 });

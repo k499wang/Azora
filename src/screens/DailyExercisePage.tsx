@@ -4,7 +4,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors } from '../theme/colors';
-import { typography } from '../theme/typography';
+import { typography, fonts } from '../theme/typography';
 import { spacing } from '../theme/spacing';
 import BreathingCircle, {
   BreathingCircleRef,
@@ -124,6 +124,7 @@ export default function DailyExercisePage({
     holdStartAtRef.current = Date.now();
     setHoldSeconds(0);
     setPhase('hold');
+    circleRef.current?.pause();
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
     timerRef.current = setInterval(() => {
       setHoldSeconds((current) => {
@@ -302,11 +303,11 @@ export default function DailyExercisePage({
   const guidance =
     phase === 'idle'
       ? 'Take one full breath in, then hold until you are ready to breathe.'
-      : phase === 'inhale'
-        ? 'Fill your lungs gently. Tap the circle when your inhale feels complete.'
-        : phase === 'hold'
-          ? 'Tap the circle when you need to breathe.'
-          : 'Nice work. Rest for a moment, then begin again when you feel ready.';
+      : phase === 'hold'
+        ? 'Tap the circle when you need to breathe.'
+        : phase === 'done'
+          ? 'Nice work. Rest for a moment, then begin again when you feel ready.'
+          : '';
 
   const displayTime = phase === 'hold' || phase === 'done' ? formatTime(holdSeconds) : null;
 
@@ -350,20 +351,6 @@ export default function DailyExercisePage({
               />
             </View>
           ) : null}
-          <View style={styles.patternRow}>
-            {[
-              { key: 'inhale', icon: 'arrow-up' as const, label: '6s' },
-              { key: 'hold', icon: 'dots-horizontal' as const, label: '∞' },
-            ].map((p, i, arr) => (
-              <View key={p.key} style={styles.patternItem}>
-                <View style={styles.patternCircle}>
-                  <MaterialCommunityIcons name={p.icon} size={24} color={colors.text.secondary} />
-                </View>
-                <Text style={styles.patternSecs}>{p.label}</Text>
-                {i < arr.length - 1 && <View style={styles.patternConnector} />}
-              </View>
-            ))}
-          </View>
         </View>
       }
       centerSlot={
@@ -459,38 +446,6 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     justifyContent: 'center',
   },
-  patternRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-  },
-  patternItem: {
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  patternCircle: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: colors.neutral[100],
-    borderWidth: 1,
-    borderColor: colors.border.subtle,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  patternSecs: {
-    ...typography.caption.caption1,
-    color: colors.text.tertiary,
-  },
-  patternConnector: {
-    position: 'absolute',
-    top: 25,
-    right: -spacing.sm,
-    width: spacing.sm,
-    height: 1,
-    backgroundColor: colors.border.subtle,
-  },
   bottomContainer: {
     alignItems: 'center',
     gap: spacing.lg,
@@ -526,20 +481,25 @@ const styles = StyleSheet.create({
   },
   tapHint: {
     ...typography.caption.caption1,
-    color: colors.text.tertiary,
+    color: colors.neutral[50],
+    opacity: 0.85,
     marginTop: spacing.xs,
   },
   viewResultsHidden: {
     opacity: 0,
   },
   phaseLabel: {
-    ...typography.title.title3,
-    color: colors.text.secondary,
+    ...typography.display.display2,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    fontSize: 32,
+    lineHeight: 40,
+    color: colors.neutral[50],
     textAlign: 'center',
   },
   countdown: {
     ...typography.display.display1,
-    color: colors.text.primary,
+    color: colors.neutral[50],
   },
   bestChip: {
     flexDirection: 'row',
