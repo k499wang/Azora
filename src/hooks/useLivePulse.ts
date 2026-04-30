@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   useFrameProcessor,
   useCameraDevice,
@@ -10,10 +10,12 @@ import { useRunOnJS } from 'react-native-worklets-core';
 import type { FingerPlacementState, PpgFrameSample } from '../lib/heartRate/types';
 import { heartRatePlugin } from '../lib/heartRate/heartRatePlugin';
 import { HeartRateManager } from '../lib/heartRate/heartRateManager';
+import { CameraSettingsLock } from '../native/cameraSettingsLock';
 
 const FRAME_PROCESSING_FPS = 20;
 const BPM_UPDATE_INTERVAL_MS = 1000;
 const FINGER_LOST_TIMEOUT_MS = 1500;
+const CAMERA_SETTLE_MS = 1500;
 
 function isValidFrameSample(value: unknown): value is PpgFrameSample {
   if (value == null || typeof value !== 'object') return false;
@@ -53,6 +55,8 @@ export function useLivePulse(): UseLivePulseReturn {
   const [beatTick, setBeatTick] = useState(0);
 
   const activeRef = useRef(false);
+  const settledRef = useRef(false);
+  const settleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const managerRef = useRef(new HeartRateManager());
   const lastBpmUpdateRef = useRef(0);
   const lastFingerSeenAtRef = useRef<number | null>(null);
@@ -74,27 +78,61 @@ export function useLivePulse(): UseLivePulseReturn {
     lastFingerSeenAtRef.current = null;
   }, []);
 
+  const clearSettleTimer = useCallback(() => {
+    if (settleTimerRef.current != null) {
+      clearTimeout(settleTimerRef.current);
+      settleTimerRef.current = null;
+    }
+  }, []);
+
   const start = useCallback(() => {
     if (activeRef.current) return;
     resetStreamState();
     activeRef.current = true;
+    settledRef.current = false;
     setActive(true);
     setCurrentBpm(null);
     setBeatTick(0);
     setFingerPlacement('no_finger');
-  }, [resetStreamState]);
+    clearSettleTimer();
+    settleTimerRef.current = setTimeout(() => {
+      settleTimerRef.current = null;
+      if (!activeRef.current) return;
+      void CameraSettingsLock.lock().finally(() => {
+        if (activeRef.current) {
+          settledRef.current = true;
+          managerRef.current.reset();
+          lastBpmUpdateRef.current = 0;
+        }
+      });
+    }, CAMERA_SETTLE_MS);
+  }, [clearSettleTimer, resetStreamState]);
 
   const stop = useCallback(() => {
     activeRef.current = false;
+    settledRef.current = false;
+    clearSettleTimer();
+    void CameraSettingsLock.unlock();
     setActive(false);
     resetStreamState();
     setCurrentBpm(null);
     setFingerPlacement('no_finger');
-  }, [resetStreamState]);
+  }, [clearSettleTimer, resetStreamState]);
+
+  useEffect(
+    () => () => {
+      clearSettleTimer();
+      if (activeRef.current) {
+        void CameraSettingsLock.unlock();
+      }
+    },
+    [clearSettleTimer],
+  );
 
   const addSample = useRunOnJS(
     (frameSample: unknown) => {
       if (!activeRef.current) return;
+      if (!settledRef.current) return;
       if (!isValidFrameSample(frameSample)) {
         managerRef.current.reset();
         lastFingerSeenAtRef.current = null;

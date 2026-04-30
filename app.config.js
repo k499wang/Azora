@@ -38,6 +38,7 @@ module.exports = {
       'react-native-vision-camera',
       './plugins/with-heart-rate-plugin',
       './plugins/with-continuous-haptics-plugin',
+      './plugins/with-camera-settings-lock-plugin',
       [
         '@react-native-google-signin/google-signin',
         {
