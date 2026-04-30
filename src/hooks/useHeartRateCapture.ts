@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   useFrameProcessor,
   useCameraDevice,
@@ -17,6 +17,7 @@ import { heartRatePlugin } from '../lib/heartRate/heartRatePlugin';
 import { HeartRateManager } from '../lib/heartRate/heartRateManager';
 import { buildCaptureResult } from '../lib/heartRate/captureResult';
 import { useMeasurementTimer } from './useMeasurementTimer';
+import { CameraSettingsLock } from '../native/cameraSettingsLock';
 
 const CAPTURE_DURATION_MS = 45000;
 const CAPTURE_DURATION_SEC = CAPTURE_DURATION_MS / 1000;
@@ -24,6 +25,7 @@ const MIN_GOOD_DURATION_MS = 2500;
 const PROGRESS_UPDATE_INTERVAL_MS = 200;
 const BPM_UPDATE_INTERVAL_MS = 1000;
 const FRAME_PROCESSING_FPS = 45;
+const CAMERA_SETTLE_MS = 1500;
 
 function isValidFrameSample(value: unknown): value is PpgFrameSample {
   if (value == null || typeof value !== 'object') return false;
@@ -77,6 +79,8 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
   const currentBpmRef = useRef<number | null>(null);
   const captureStateRef = useRef<CaptureState>('idle');
   const managerRef = useRef(new HeartRateManager());
+  const settledRef = useRef(false);
+  const settleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const { hasPermission, requestPermission } = useCameraPermission();
   const device = useCameraDevice('back', {
@@ -122,6 +126,7 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
 
     const samples = [...samplesRef.current];
     const ibiSamples = managerRef.current.getIbiSamples();
+    void CameraSettingsLock.unlock();
     setTimeout(() => {
       if (captureStateRef.current !== 'processing') return;
 
@@ -175,6 +180,7 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
       const state = captureStateRef.current;
       if (state !== 'camera_check' && state !== 'measuring') return;
 
+      if (!settledRef.current) return;
       samplesRef.current.push(frameSample);
 
       const frameState = managerRef.current.processFrame(frameSample);
@@ -232,6 +238,13 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
     [addSample],
   );
 
+  const clearSettleTimer = useCallback(() => {
+    if (settleTimerRef.current != null) {
+      clearTimeout(settleTimerRef.current);
+      settleTimerRef.current = null;
+    }
+  }, []);
+
   const startCapture = useCallback(() => {
     stopMeasurementTimer();
     resetCaptureRefs();
@@ -241,11 +254,30 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
     setBeatTick(0);
     setCurrentBpm(null);
     setFingerPlacement('no_finger');
+    settledRef.current = false;
+    clearSettleTimer();
     setCaptureStateAndRef('camera_check');
-  }, [resetCaptureRefs, setCaptureStateAndRef, stopMeasurementTimer]);
+    settleTimerRef.current = setTimeout(() => {
+      settleTimerRef.current = null;
+      const state = captureStateRef.current;
+      if (state !== 'camera_check' && state !== 'measuring') return;
+      void CameraSettingsLock.lock().finally(() => {
+        const s = captureStateRef.current;
+        if (s === 'camera_check' || s === 'measuring') {
+          managerRef.current.reset();
+          samplesRef.current = [];
+          lastBpmUpdateRef.current = 0;
+          settledRef.current = true;
+        }
+      });
+    }, CAMERA_SETTLE_MS);
+  }, [clearSettleTimer, resetCaptureRefs, setCaptureStateAndRef, stopMeasurementTimer]);
 
   const cancel = useCallback(() => {
     stopMeasurementTimer();
+    clearSettleTimer();
+    settledRef.current = false;
+    void CameraSettingsLock.unlock();
     resetCaptureRefs();
     setProgress(0);
     setSecondsRemaining(CAPTURE_DURATION_SEC);
@@ -253,7 +285,17 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
     setCurrentBpm(null);
     setFingerPlacement('no_finger');
     setCaptureStateAndRef('idle');
-  }, [resetCaptureRefs, setCaptureStateAndRef, stopMeasurementTimer]);
+  }, [clearSettleTimer, resetCaptureRefs, setCaptureStateAndRef, stopMeasurementTimer]);
+
+  useEffect(
+    () => () => {
+      clearSettleTimer();
+      if (captureStateRef.current !== 'idle') {
+        void CameraSettingsLock.unlock();
+      }
+    },
+    [clearSettleTimer],
+  );
 
   const reset = useCallback(() => {
     cancel();
