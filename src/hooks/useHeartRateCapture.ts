@@ -78,6 +78,7 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
   const lastFrameTimestampRef = useRef<number | null>(null);
   const currentBpmRef = useRef<number | null>(null);
   const captureStateRef = useRef<CaptureState>('idle');
+  const fingerPlacementRef = useRef<FingerPlacementState>('no_finger');
   const managerRef = useRef(new HeartRateManager());
   const settledRef = useRef(false);
   const settleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -170,6 +171,7 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
         goodSinceRef.current = null;
         currentBpmRef.current = null;
         setCurrentBpm(null);
+        fingerPlacementRef.current = 'no_finger';
         setFingerPlacement('no_finger');
         managerRef.current.reset();
         return;
@@ -184,7 +186,8 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
       samplesRef.current.push(frameSample);
 
       const frameState = managerRef.current.processFrame(frameSample);
-      if (frameState.fingerPlacement !== fingerPlacement) {
+      if (frameState.fingerPlacement !== fingerPlacementRef.current) {
+        fingerPlacementRef.current = frameState.fingerPlacement;
         setFingerPlacement(frameState.fingerPlacement);
       }
 
@@ -221,7 +224,7 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
         setCurrentBpm(null);
       }
     },
-    [fingerPlacement, startMeasuring],
+    [startMeasuring],
   );
 
   const frameProcessor = useFrameProcessor(
@@ -253,6 +256,7 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
     setResult(null);
     setBeatTick(0);
     setCurrentBpm(null);
+    fingerPlacementRef.current = 'no_finger';
     setFingerPlacement('no_finger');
     settledRef.current = false;
     clearSettleTimer();
@@ -283,6 +287,7 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
     setSecondsRemaining(CAPTURE_DURATION_SEC);
     setBeatTick(0);
     setCurrentBpm(null);
+    fingerPlacementRef.current = 'no_finger';
     setFingerPlacement('no_finger');
     setCaptureStateAndRef('idle');
   }, [clearSettleTimer, resetCaptureRefs, setCaptureStateAndRef, stopMeasurementTimer]);

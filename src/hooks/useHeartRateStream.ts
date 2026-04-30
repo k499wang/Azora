@@ -70,6 +70,7 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
   const fingerLostSinceRef = useRef<number | null>(null);
   const goodSinceRef = useRef<number | null>(null);
   const warmupStartRef = useRef<number | null>(null);
+  const bpmHistoryRef = useRef<number[]>([]);
   const fingerPlacementRef = useRef<FingerPlacementState>('no_finger');
   const streamStateRef = useRef<StreamState>('idle');
   const managerRef = useRef(new HeartRateManager());
@@ -94,7 +95,7 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
   }, []);
 
   const finishStream = useCallback(() => {
-    const history = bpmHistory;
+    const history = bpmHistoryRef.current;
     const startTs = streamStartRef.current ?? Date.now();
     const durationMs = Date.now() - startTs;
 
@@ -118,12 +119,13 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
     fingerLostSinceRef.current = null;
     goodSinceRef.current = null;
     warmupStartRef.current = null;
+    bpmHistoryRef.current = [];
     fingerPlacementRef.current = 'no_finger';
     managerRef.current.reset();
 
     setStreamState('stopped');
     streamStateRef.current = 'stopped';
-  }, [bpmHistory]);
+  }, []);
 
   const addSample = useRunOnJS(
     (frameSample: unknown) => {
@@ -202,7 +204,11 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
         if (bpm != null) {
           setCurrentBpm(bpm);
           if (state === 'streaming') {
-            setBpmHistory((history) => [...history, bpm].slice(-15));
+            setBpmHistory((history) => {
+              const next = [...history, bpm].slice(-15);
+              bpmHistoryRef.current = next;
+              return next;
+            });
           }
         }
       }
@@ -236,6 +242,7 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
 
     setCurrentBpm(null);
     setBeatTick(0);
+    bpmHistoryRef.current = [];
     setBpmHistory([]);
     setSessionSummary(null);
     setFingerPlacement('no_finger');
