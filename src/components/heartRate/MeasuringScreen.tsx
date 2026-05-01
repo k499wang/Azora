@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -7,9 +7,11 @@ import {
   Animated,
   SafeAreaView,
 } from 'react-native';
+import { Canvas, Path, Skia } from '@shopify/react-native-skia';
+import * as Haptics from 'expo-haptics';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
-import { typography } from '../../theme/typography';
+import { typography, fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import type { FingerPlacementState } from '../../lib/heartRate/types';
 import { HeartRateCameraPreview } from './HeartRateCameraPreview';
@@ -25,25 +27,11 @@ interface MeasuringScreenProps {
   cameraProps?: HeartRateCameraPreviewProps;
 }
 
-function getSignalQuality(placement: FingerPlacementState): {
-  label: string;
-  color: string;
-} {
-  switch (placement) {
-    case 'good':
-      return { label: 'Good', color: colors.success[500] };
-    case 'partial':
-      return { label: 'Fair', color: colors.warning[500] };
-    case 'lost':
-      return { label: 'Lost', color: colors.error[500] };
-    default:
-      return { label: 'Weak', color: colors.warning[500] };
-  }
-}
+const RING_SIZE = 240;
+const RING_STROKE = 10;
 
 export function MeasuringScreen({
   progress,
-  secondsRemaining,
   currentBpm,
   beatTick,
   fingerPlacement,
@@ -54,16 +42,53 @@ export function MeasuringScreen({
   const beatOpacity = useRef(new Animated.Value(0)).current;
   const heartScale = useRef(new Animated.Value(1)).current;
 
+  const [smoothProgress, setSmoothProgress] = useState(progress);
+  const targetProgressRef = useRef(progress);
+  const currentProgressRef = useRef(progress);
+  const rafRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    targetProgressRef.current = progress;
+
+    if (rafRef.current != null) return;
+
+    const tick = () => {
+      const target = targetProgressRef.current;
+      const current = currentProgressRef.current;
+      const diff = target - current;
+      if (Math.abs(diff) < 0.0005) {
+        currentProgressRef.current = target;
+        setSmoothProgress(target);
+        rafRef.current = null;
+        return;
+      }
+      const next = current + diff * 0.12;
+      currentProgressRef.current = next;
+      setSmoothProgress(next);
+      rafRef.current = requestAnimationFrame(tick);
+    };
+
+    rafRef.current = requestAnimationFrame(tick);
+  }, [progress]);
+
+  useEffect(() => {
+    return () => {
+      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+    };
+  }, []);
+
   useEffect(() => {
     if (beatTick <= 0) return;
 
-    beatScale.setValue(0.82);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+
+    beatScale.setValue(0.92);
     beatOpacity.setValue(0.45);
     heartScale.setValue(1);
 
     Animated.parallel([
       Animated.timing(beatScale, {
-        toValue: 1.35,
+        toValue: 1.18,
         duration: 360,
         useNativeDriver: true,
       }),
@@ -87,8 +112,19 @@ export function MeasuringScreen({
     ]).start();
   }, [beatOpacity, beatScale, beatTick, heartScale]);
 
-  const signalQuality = getSignalQuality(fingerPlacement);
   const isFingerLost = fingerPlacement === 'lost' || fingerPlacement === 'no_finger';
+
+  const cx = RING_SIZE / 2;
+  const cy = RING_SIZE / 2;
+  const r = RING_SIZE / 2 - RING_STROKE / 2;
+  const clamped = Math.max(0, Math.min(1, smoothProgress));
+
+  const track = Skia.Path.Make();
+  track.addCircle(cx, cy, r);
+
+  const arc = Skia.Path.Make();
+  const rect = Skia.XYWHRect(cx - r, cy - r, r * 2, r * 2);
+  arc.addArc(rect, -90, 360 * clamped);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -107,12 +143,10 @@ export function MeasuringScreen({
           </View>
         )}
 
-        {/* Title */}
-        <Text style={styles.title}>Measuring...</Text>
+        <View style={styles.topSpacer} />
 
-        {/* Pulse ring + countdown */}
+        {/* Ring with camera preview inside */}
         <View style={styles.pulseContainer}>
-          {/* Outer pulse ring */}
           <Animated.View
             style={[
               styles.pulseRing,
@@ -122,28 +156,42 @@ export function MeasuringScreen({
               },
             ]}
           />
-          {/* Inner circle */}
-          <View style={styles.countdownCircle}>
-            <Animated.View style={[styles.heartIcon, { transform: [{ scale: heartScale }] }]}>
-              <MaterialCommunityIcons
-                name="heart"
-                size={24}
-                color={beatTick > 0 ? colors.error[500] : colors.primary.blue600}
+          <View style={{ width: RING_SIZE, height: RING_SIZE }}>
+            <Canvas style={StyleSheet.absoluteFill}>
+              <Path
+                path={track}
+                style="stroke"
+                strokeWidth={RING_STROKE}
+                color={colors.border.subtle}
               />
-            </Animated.View>
-            <Text style={styles.countdown}>{secondsRemaining}</Text>
-            <Text style={styles.countdownLabel}>seconds</Text>
+              {clamped > 0 && (
+                <Path
+                  path={arc}
+                  style="stroke"
+                  strokeWidth={RING_STROKE}
+                  strokeCap="round"
+                  color={colors.primary.blue600}
+                />
+              )}
+            </Canvas>
+            <View style={styles.previewClip}>
+              {cameraProps != null ? (
+                <HeartRateCameraPreview {...cameraProps} />
+              ) : (
+                <View style={styles.previewPlaceholder} />
+              )}
+            </View>
+            <View style={styles.heartOverlay} pointerEvents="none">
+              <Animated.View style={{ transform: [{ scale: heartScale }] }}>
+                <MaterialCommunityIcons
+                  name="heart"
+                  size={36}
+                  color={colors.text.inverse}
+                />
+              </Animated.View>
+            </View>
           </View>
         </View>
-        <Text style={styles.beatLabel}>
-          {beatTick > 0 ? 'Beat detected' : 'Waiting for pulse'}
-        </Text>
-
-        {/* Progress bar */}
-        <View style={styles.progressBarContainer}>
-          <View style={[styles.progressBarFill, { width: `${progress * 100}%` }]} />
-        </View>
-        <Text style={styles.progressLabel}>{Math.round(progress * 100)}% complete</Text>
 
         {/* Current BPM */}
         <View style={styles.currentBpmRow}>
@@ -151,24 +199,6 @@ export function MeasuringScreen({
           <View style={styles.currentBpmValueRow}>
             <Text style={styles.currentBpmValue}>{currentBpm ?? '--'}</Text>
             <Text style={styles.currentBpmUnit}>bpm</Text>
-          </View>
-        </View>
-
-        {/* Camera preview + signal quality */}
-        <View style={styles.cameraSignalRow}>
-          {cameraProps != null && (
-            <View style={[styles.miniPreviewRing, { borderColor: signalQuality.color }]}>
-              <View style={styles.miniPreviewClip}>
-                <HeartRateCameraPreview {...cameraProps} />
-              </View>
-            </View>
-          )}
-          <View style={styles.signalRow}>
-            <Text style={styles.signalLabel}>Signal: </Text>
-            <View style={[styles.signalDot, { backgroundColor: signalQuality.color }]} />
-            <Text style={[styles.signalValue, { color: signalQuality.color }]}>
-              {signalQuality.label}
-            </Text>
           </View>
         </View>
 
@@ -210,6 +240,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   warningBanner: {
+    position: 'absolute',
+    top: spacing.lg,
+    left: spacing.lg,
+    right: spacing.lg,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
@@ -217,144 +251,84 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
-    marginBottom: spacing.md,
-    width: '100%',
+    zIndex: 10,
   },
   warningText: {
     ...typography.body.small,
     color: '#92400E',
     flex: 1,
   },
-  title: {
-    ...typography.title.title2,
-    color: colors.text.primary,
-    marginBottom: spacing.xl,
+  topSpacer: {
+    flex: 1,
   },
   pulseContainer: {
-    width: 180,
-    height: 180,
+    width: RING_SIZE,
+    height: RING_SIZE,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing.sm,
+    marginBottom: spacing.xl,
   },
   pulseRing: {
     position: 'absolute',
-    width: 160,
-    height: 160,
-    borderRadius: 80,
+    width: RING_SIZE,
+    height: RING_SIZE,
+    borderRadius: RING_SIZE / 2,
     backgroundColor: colors.primary.blue100,
   },
-  countdownCircle: {
-    width: 130,
-    height: 130,
-    borderRadius: 65,
-    backgroundColor: colors.background.elevated,
+  previewClip: {
+    position: 'absolute',
+    top: RING_STROKE + 4,
+    left: RING_STROKE + 4,
+    right: RING_STROKE + 4,
+    bottom: RING_STROKE + 4,
+    borderRadius: (RING_SIZE - (RING_STROKE + 4) * 2) / 2,
+    overflow: 'hidden',
+    backgroundColor: '#000',
+  },
+  previewPlaceholder: {
+    flex: 1,
+    backgroundColor: '#000',
+  },
+  heartOverlay: {
+    ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  heartIcon: {
-    marginBottom: 2,
-  },
-  beatLabel: {
-    ...typography.caption.caption1,
-    color: colors.text.tertiary,
-    marginBottom: spacing.lg,
-    minHeight: 18,
-  },
-  countdown: {
-    ...typography.title.title1,
-    color: colors.primary.blue600,
-    fontSize: 40,
-    lineHeight: 44,
-  },
-  countdownLabel: {
-    ...typography.caption.caption2,
-    color: colors.text.tertiary,
-  },
-  progressBarContainer: {
-    width: '100%',
-    height: 8,
-    backgroundColor: colors.border.subtle,
-    borderRadius: 4,
-    overflow: 'hidden',
-    marginBottom: spacing.sm,
-  },
-  progressBarFill: {
-    height: '100%',
-    backgroundColor: colors.primary.blue600,
-    borderRadius: 4,
-  },
-  progressLabel: {
-    ...typography.caption.caption1,
-    color: colors.text.tertiary,
-    marginBottom: spacing.lg,
   },
   currentBpmRow: {
     alignItems: 'center',
-    marginBottom: spacing.lg,
-    minHeight: 56,
+    marginBottom: spacing.md,
+    minHeight: 80,
   },
   currentBpmLabel: {
-    ...typography.caption.caption1,
-    color: colors.text.tertiary,
+    ...typography.body.medium,
+    color: colors.text.secondary,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
     marginBottom: spacing.xs,
   },
   currentBpmValueRow: {
     flexDirection: 'row',
     alignItems: 'baseline',
     justifyContent: 'center',
-    minWidth: 96,
+    minWidth: 120,
   },
   currentBpmValue: {
-    ...typography.title.title2,
+    ...typography.title.title1,
     color: colors.text.primary,
-    minWidth: 44,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    fontSize: 56,
+    lineHeight: 60,
+    minWidth: 64,
     textAlign: 'right',
   },
   currentBpmUnit: {
-    ...typography.caption.caption1,
+    ...typography.body.medium,
     color: colors.text.secondary,
-    marginLeft: spacing.xs,
-  },
-  cameraSignalRow: {
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  miniPreviewRing: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    borderWidth: 2,
-    padding: 3,
-  },
-  miniPreviewClip: {
-    flex: 1,
-    borderRadius: 31,
-    overflow: 'hidden',
-    backgroundColor: '#000',
-  },
-  signalRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  signalLabel: {
-    ...typography.body.small,
-    color: colors.text.secondary,
-  },
-  signalDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  signalValue: {
-    ...typography.body.small,
+    fontFamily: fonts.semibold,
     fontWeight: '600',
+    fontSize: 20,
+    marginLeft: spacing.xs,
   },
   spacer: {
     flex: 1,
