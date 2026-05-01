@@ -1,15 +1,13 @@
 import { useCallback, useRef, useState } from 'react';
 import {
   useFrameProcessor,
-  useCameraDevice,
-  useCameraFormat,
-  useCameraPermission,
   runAtTargetFps,
 } from 'react-native-vision-camera';
 import { useRunOnJS } from 'react-native-worklets-core';
 import type { FingerPlacementState, PpgFrameSample } from '../lib/heartRate/types';
 import { heartRatePlugin } from '../lib/heartRate/heartRatePlugin';
 import { HeartRateManager } from '../lib/heartRate/heartRateManager';
+import { useHeartRateCamera } from './useHeartRateCamera';
 
 const FRAME_PROCESSING_FPS = 20;
 const BPM_UPDATE_INTERVAL_MS = 1000;
@@ -38,8 +36,8 @@ interface UseLivePulseReturn {
   fingerPlacement: FingerPlacementState;
   currentBpm: number | null;
   beatTick: number;
-  device: ReturnType<typeof useCameraDevice>;
-  format: ReturnType<typeof useCameraFormat>;
+  device: ReturnType<typeof useHeartRateCamera>['device'];
+  format: ReturnType<typeof useHeartRateCamera>['format'];
   frameProcessor: ReturnType<typeof useFrameProcessor>;
   torchMode: 'on' | 'off';
   hasPermission: boolean;
@@ -57,16 +55,12 @@ export function useLivePulse(): UseLivePulseReturn {
   const lastBpmUpdateRef = useRef(0);
   const lastFingerSeenAtRef = useRef<number | null>(null);
 
-  const { hasPermission, requestPermission } = useCameraPermission();
-  const device = useCameraDevice('back', {
-    physicalDevices: ['wide-angle-camera'],
-  });
-  const format = useCameraFormat(device, [
-    { fps: 30 },
-    { videoResolution: { width: 640, height: 480 } },
-  ]);
+  const { device, format, hasPermission, requestPermission } = useHeartRateCamera();
 
-  const torchMode: 'on' | 'off' = active ? 'on' : 'off';
+  const torchMode: 'on' | 'off' =
+    active && device?.hasTorch === true
+      ? 'on'
+      : 'off';
 
   const resetStreamState = useCallback(() => {
     managerRef.current.reset();

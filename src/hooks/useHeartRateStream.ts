@@ -1,9 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
 import {
   useFrameProcessor,
-  useCameraDevice,
-  useCameraFormat,
-  useCameraPermission,
   runAtTargetFps,
 } from 'react-native-vision-camera';
 import { useRunOnJS } from 'react-native-worklets-core';
@@ -15,6 +12,7 @@ import type {
 } from '../lib/heartRate/types';
 import { heartRatePlugin } from '../lib/heartRate/heartRatePlugin';
 import { HeartRateManager } from '../lib/heartRate/heartRateManager';
+import { useHeartRateCamera } from './useHeartRateCamera';
 
 const ROLLING_WINDOW_MS = 15000;
 const BPM_UPDATE_INTERVAL_MS = 1000;
@@ -45,8 +43,8 @@ interface UseHeartRateStreamReturn {
   beatTick: number;
   bpmHistory: number[];
   sessionSummary: HeartRateStreamSummary | null;
-  device: ReturnType<typeof useCameraDevice>;
-  format: ReturnType<typeof useCameraFormat>;
+  device: ReturnType<typeof useHeartRateCamera>['device'];
+  format: ReturnType<typeof useHeartRateCamera>['format'];
   frameProcessor: ReturnType<typeof useFrameProcessor>;
   torchMode: 'on' | 'off';
   startStream: () => void;
@@ -75,17 +73,13 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
   const streamStateRef = useRef<StreamState>('idle');
   const managerRef = useRef(new HeartRateManager());
 
-  const { hasPermission, requestPermission } = useCameraPermission();
-  const device = useCameraDevice('back', {
-    physicalDevices: ['wide-angle-camera'],
-  });
-  const format = useCameraFormat(device, [
-    { fps: 30 },
-    { videoResolution: { width: 640, height: 480 } },
-  ]);
+  const { device, format, hasPermission, requestPermission } = useHeartRateCamera();
 
+  const needsIllumination = streamState !== 'idle' && streamState !== 'stopped';
   const torchMode: 'on' | 'off' =
-    streamState !== 'idle' && streamState !== 'stopped' ? 'on' : 'off';
+    needsIllumination && device?.hasTorch === true
+      ? 'on'
+      : 'off';
 
   const startStreaming = useCallback((startTimestamp?: number) => {
     warmupStartRef.current = startTimestamp ?? null;
