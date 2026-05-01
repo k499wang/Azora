@@ -63,12 +63,6 @@ interface PreviewFrame {
 
 const BEST_HOLD_KEY = 'daily_breath_hold_best_seconds';
 
-function formatBest(secs: number) {
-  const m = Math.floor(secs / 60);
-  const s = secs % 60;
-  return `${m}:${s.toString().padStart(2, '0')}`;
-}
-
 export default function DailyExercisePage({
   navigation,
 }: DailyExerciseScreenProps) {
@@ -81,11 +75,9 @@ export default function DailyExercisePage({
   const holdStartAtRef = useRef<number>(0);
   const [phase, setPhase] = useState<HoldPhase>('idle');
   const [holdSeconds, setHoldSeconds] = useState(0);
-  const [inhaleCountdown, setInhaleCountdown] = useState(0);
   const [bestHoldSeconds, setBestHoldSeconds] = useState(0);
   const [hrEnabled, setHrEnabled] = useState(true);
   const [lastSamples, setLastSamples] = useState<BpmSample[]>([]);
-  const [isNewBest, setIsNewBest] = useState(false);
   const [previewFrame, setPreviewFrame] = useState<PreviewFrame | null>(null);
 
   const pulse = useLivePulse();
@@ -133,12 +125,6 @@ export default function DailyExercisePage({
     [stopPulse],
   );
 
-  const formatTime = (secs: number) => {
-    const m = Math.floor(secs / 60);
-    const s = secs % 60;
-    return `${m}:${s.toString().padStart(2, '0')}`;
-  };
-
   const cancelPlacement = useCallback(() => {
     clearTimer();
     stopPulse();
@@ -151,7 +137,6 @@ export default function DailyExercisePage({
     holdStartAtRef.current = Date.now();
     setHoldSeconds(0);
     setPhase('hold');
-    circleRef.current?.pause();
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
     timerRef.current = setInterval(() => {
       setHoldSeconds((current) => {
@@ -172,26 +157,26 @@ export default function DailyExercisePage({
     samplesRef.current = [];
     setLastSamples([]);
     setHoldSeconds(0);
-    setIsNewBest(false);
     setPhase('inhale');
-    setInhaleCountdown(INHALE_SECONDS);
-    circleRef.current?.reset();
-    circleRef.current?.expand(INHALE_SECONDS);
     if (hrEnabled) startPulse();
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     posthog.capture(AnalyticsEvent.DailyBreathHoldStarted);
-    timerRef.current = setInterval(() => {
-      setInhaleCountdown((current) => {
-        const next = current - 1;
-        if (next <= 0) {
-          clearTimer();
-          beginHold();
-          return 0;
-        }
-        return next;
-      });
-    }, 1000);
+    inhaleTimeoutRef.current = setTimeout(() => {
+      clearTimer();
+      beginHold();
+    }, INHALE_SECONDS * 1000);
   }, [beginHold, hrEnabled, posthog, startPulse]);
+
+  useEffect(() => {
+    if (phase === 'inhale') {
+      circleRef.current?.reset();
+      circleRef.current?.expand(INHALE_SECONDS);
+      return;
+    }
+    if (phase === 'hold') {
+      circleRef.current?.pause();
+    }
+  }, [phase]);
 
   const startPlacement = useCallback(async () => {
     try {
@@ -232,7 +217,6 @@ export default function DailyExercisePage({
   const skipInhale = () => {
     if (phase !== 'inhale') return;
     clearTimer();
-    setInhaleCountdown(0);
     beginHold();
   };
 
@@ -243,7 +227,6 @@ export default function DailyExercisePage({
     const newBest = holdSeconds > bestHoldSeconds && holdSeconds > 0;
     const updatedBest = Math.max(bestHoldSeconds, holdSeconds);
     setBestHoldSeconds(updatedBest);
-    setIsNewBest(newBest);
     setPhase('done');
     stopPulse();
     if (newBest) {
@@ -326,17 +309,6 @@ export default function DailyExercisePage({
         : phase === 'hold'
           ? 'Release'
           : 'Try Again';
-
-  const guidance =
-    phase === 'idle'
-      ? 'Take one full breath in, then hold until you are ready to breathe.'
-      : phase === 'hold'
-        ? 'Tap the circle when you need to breathe.'
-        : phase === 'done'
-          ? 'Nice work. Rest for a moment, then begin again when you feel ready.'
-          : '';
-
-  const displayTime = phase === 'hold' || phase === 'done' ? formatTime(holdSeconds) : null;
 
   // Placement state: hold-steady arc + start-anyway timeout
   const [placementHoldProgress, setPlacementHoldProgress] = useState(0);
@@ -463,38 +435,14 @@ export default function DailyExercisePage({
           ]}
         >
           <BreathingCircle ref={circleRef}>
-            {phase !== 'idle' ? <Text style={styles.phaseLabel}>{PHASE_LABELS[phase]}</Text> : null}
-            {phase === 'inhale' ? (
-              <Text style={styles.countdown}>{inhaleCountdown}</Text>
-            ) : displayTime ? (
-              <Text style={styles.countdown}>{displayTime}</Text>
-            ) : null}
-            {phase === 'inhale' ? (
-              <Text style={styles.tapHint}>Tap when ready</Text>
-            ) : phase === 'hold' ? (
-              <Text style={styles.tapHint}>Tap to release</Text>
-            ) : null}
-            {bestHoldSeconds > 0 ? (
-              <View style={[styles.bestChip, isNewBest && styles.bestChipNew]}>
-                <MaterialCommunityIcons
-                  name={isNewBest ? 'trophy' : 'trophy-outline'}
-                  size={12}
-                  color={isNewBest ? colors.warning[700] : colors.text.tertiary}
-                />
-                <Text style={[styles.bestChipText, isNewBest && styles.bestChipTextNew]}>
-                  {isNewBest ? 'New best · ' : 'Best · '}
-                  {formatBest(bestHoldSeconds)}
-                </Text>
-              </View>
+            {phase === 'inhale' || phase === 'hold' ? (
+              <Text style={styles.phaseLabel}>{PHASE_LABELS[phase]}</Text>
             ) : null}
           </BreathingCircle>
         </Pressable>
       }
       bottomSlot={
         <View style={styles.bottomContainer}>
-          <View style={styles.guidanceWrap}>
-            <Text style={styles.guidance}>{guidance}</Text>
-          </View>
           <Pressable
             style={({ pressed }) => [styles.circleBtn, pressed && styles.circleBtnPressed]}
             onPress={handlePrimaryPress}
@@ -653,10 +601,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.lg,
   },
-  guidanceWrap: {
-    minHeight: 66,
-    justifyContent: 'center',
-  },
   circleBtn: {
     width: 64,
     height: 64,
@@ -682,12 +626,6 @@ const styles = StyleSheet.create({
     opacity: 0.85,
     transform: [{ scale: 0.98 }],
   },
-  tapHint: {
-    ...typography.caption.caption1,
-    color: colors.neutral[50],
-    opacity: 0.85,
-    marginTop: spacing.xs,
-  },
   viewResultsHidden: {
     opacity: 0,
   },
@@ -699,40 +637,6 @@ const styles = StyleSheet.create({
     lineHeight: 40,
     color: colors.neutral[50],
     textAlign: 'center',
-  },
-  countdown: {
-    ...typography.display.display1,
-    color: colors.neutral[50],
-  },
-  bestChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    backgroundColor: colors.background.elevated,
-    borderRadius: 999,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    borderWidth: 1,
-    borderColor: colors.border.subtle,
-    marginTop: spacing.xs,
-  },
-  bestChipNew: {
-    backgroundColor: colors.warning[100],
-    borderColor: colors.warning[500],
-  },
-  bestChipText: {
-    ...typography.caption.caption2,
-    color: colors.text.tertiary,
-  },
-  bestChipTextNew: {
-    color: colors.warning[700],
-    fontWeight: '600',
-  },
-  guidance: {
-    ...typography.body.small,
-    color: colors.text.secondary,
-    textAlign: 'center',
-    paddingHorizontal: spacing.md,
   },
   viewResultsButton: {
     flexDirection: 'row',
