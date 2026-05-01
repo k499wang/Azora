@@ -18,6 +18,8 @@ import { usePostHog } from 'posthog-react-native';
 import { AnalyticsEvent } from '../services/analytics/events';
 import { captureException } from '../services/analytics/errorTracking';
 import type { DailyExerciseScreenProps } from '../app/navigation';
+import { startInhaleVibration, stopInhaleVibration } from '../native/inhaleVibration';
+import { isHapticsEnabled } from '../services/preferences/hapticsPreference';
 
 const PLACEMENT_RING_SIZE = 240;
 const PLACEMENT_TIMEOUT_SECONDS = 10;
@@ -120,6 +122,7 @@ export default function DailyExercisePage({
   useEffect(
     () => () => {
       clearTimer();
+      stopInhaleVibration();
       stopPulse();
     },
     [stopPulse],
@@ -127,17 +130,21 @@ export default function DailyExercisePage({
 
   const cancelPlacement = useCallback(() => {
     clearTimer();
+    stopInhaleVibration();
     stopPulse();
     navigation.goBack();
   }, [navigation, stopPulse]);
 
   const beginHold = useCallback(() => {
     clearTimer();
+    stopInhaleVibration();
     samplesRef.current = [];
     holdStartAtRef.current = Date.now();
     setHoldSeconds(0);
     setPhase('hold');
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+    if (isHapticsEnabled()) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+    }
     timerRef.current = setInterval(() => {
       setHoldSeconds((current) => {
         const next = current + 1;
@@ -159,7 +166,7 @@ export default function DailyExercisePage({
     setHoldSeconds(0);
     setPhase('inhale');
     if (hrEnabled) startPulse();
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    startInhaleVibration(INHALE_SECONDS * 1000);
     posthog.capture(AnalyticsEvent.DailyBreathHoldStarted);
     inhaleTimeoutRef.current = setTimeout(() => {
       clearTimer();
@@ -217,11 +224,13 @@ export default function DailyExercisePage({
   const skipInhale = () => {
     if (phase !== 'inhale') return;
     clearTimer();
+    stopInhaleVibration();
     beginHold();
   };
 
   const releaseHold = () => {
     clearTimer();
+    stopInhaleVibration();
     const samples = samplesRef.current.slice();
     setLastSamples(samples);
     const newBest = holdSeconds > bestHoldSeconds && holdSeconds > 0;
@@ -231,8 +240,10 @@ export default function DailyExercisePage({
     stopPulse();
     if (newBest) {
       AsyncStorage.setItem(BEST_HOLD_KEY, String(updatedBest)).catch(() => {});
+    }
+    if (isHapticsEnabled() && newBest) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-    } else {
+    } else if (isHapticsEnabled()) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     }
     posthog.capture(AnalyticsEvent.DailyBreathHoldReleased, {

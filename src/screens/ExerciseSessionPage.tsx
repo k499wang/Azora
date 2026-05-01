@@ -14,6 +14,7 @@ import { useLivePulse } from '../hooks/useLivePulse';
 import { LiveHeartRateMonitor } from '../components/meditation/LiveHeartRateMonitor';
 import { PersistentCameraRing } from '../components/heartRate/PersistentCameraRing';
 import type { FingerPlacementState } from '../lib/heartRate/types';
+import { startInhaleVibration, stopInhaleVibration } from '../native/inhaleVibration';
 import { usePostHog } from 'posthog-react-native';
 import type { ExerciseSessionScreenProps } from '../app/navigation';
 import { captureException } from '../services/analytics/errorTracking';
@@ -78,7 +79,6 @@ export default function ExerciseSessionPage({
   const remainingRef = useRef(0);
   const onDoneRef = useRef<(() => void) | null>(null);
   const [phase, setPhase] = useState<Phase>('idle');
-  const [countdown, setCountdown] = useState(0);
   const [round, setRound] = useState(0);
   const [elapsed, setElapsed] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -153,8 +153,12 @@ export default function ExerciseSessionPage({
 
       onDoneRef.current = onDone;
       setPhase(p);
-      setCountdown(secs);
       setPaused(false);
+      if (p === 'inhale') {
+        startInhaleVibration(secs * 1000);
+      } else {
+        stopInhaleVibration();
+      }
 
       if (p === 'inhale' || p === 'exhale') {
         // Defer to the next frame: on the first phase, BreathingCircle
@@ -172,7 +176,6 @@ export default function ExerciseSessionPage({
       timerRef.current = setInterval(() => {
         remaining -= 1;
         remainingRef.current = remaining;
-        setCountdown(remaining);
         setElapsed((current) => current + 1);
 
         if (remaining <= 0) {
@@ -188,6 +191,7 @@ export default function ExerciseSessionPage({
     (currentRound: number, pattern: BreathingTechnique['pattern'], rounds: number) => {
       if (currentRound > rounds) {
         setPhase('done');
+        stopInhaleVibration();
         posthog.capture(AnalyticsEvent.ExerciseSessionCompleted, {
           technique_id: technique.id,
           technique_name: technique.name,
@@ -217,6 +221,7 @@ export default function ExerciseSessionPage({
   const handlePause = () => {
     clearTimer();
     circleRef.current?.pause();
+    stopInhaleVibration();
     setPaused(true);
     posthog.capture(AnalyticsEvent.ExerciseSessionPaused, {
       technique_id: technique.id,
@@ -235,6 +240,7 @@ export default function ExerciseSessionPage({
 
     if (currentPhase === 'inhale') {
       circleRef.current?.resumeExpand(remaining);
+      startInhaleVibration(remaining * 1000);
     } else if (currentPhase === 'exhale') {
       circleRef.current?.resumeContract(remaining);
     }
@@ -244,7 +250,6 @@ export default function ExerciseSessionPage({
     timerRef.current = setInterval(() => {
       rem -= 1;
       remainingRef.current = rem;
-      setCountdown(rem);
       setElapsed((current) => current + 1);
       if (rem <= 0) {
         clearTimer();
@@ -256,7 +261,6 @@ export default function ExerciseSessionPage({
   const beginExercise = useCallback(
     (withHr: boolean) => {
       setElapsed(0);
-      setCountdown(0);
       setRound(0);
       requestAnimationFrame(() => circleRef.current?.reset());
       posthog.capture(AnalyticsEvent.ExerciseSessionStarted, {
@@ -340,6 +344,7 @@ export default function ExerciseSessionPage({
 
   const handleClose = () => {
     clearTimer();
+    stopInhaleVibration();
     stopPulse();
     if (phase !== 'idle' && phase !== 'done') {
       const cycleSeconds =
@@ -362,13 +367,13 @@ export default function ExerciseSessionPage({
     navigation.goBack();
   };
 
-  useEffect(() => () => clearTimer(), []);
-
-  const formatTime = (secs: number) => {
-    const m = Math.floor(secs / 60);
-    const s = secs % 60;
-    return `${m}:${s.toString().padStart(2, '0')}`;
-  };
+  useEffect(
+    () => () => {
+      clearTimer();
+      stopInhaleVibration();
+    },
+    [],
+  );
 
   const isActive =
     phase !== 'idle' && phase !== 'done' && phase !== 'placement';
