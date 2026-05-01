@@ -152,6 +152,24 @@ test('HeartRateManager: split-beat anchor preservation recovers rhythm', () => {
   );
 });
 
+test('HeartRateManager: fast legitimate rhythm is captured after cold start', () => {
+  const manager = new HeartRateManager();
+  runBeatTrain(manager, [11, 22, 33, 44, 55, 66, 77, 88, 99, 110]);
+  const samples = manager.getIbiSamples();
+
+  assert.ok(
+    samples.length >= 7,
+    `expected fast rhythm to populate samples, got ${JSON.stringify(samples)}`,
+  );
+  for (const s of samples) {
+    assert.ok(
+      Math.abs(s.ibiMs - 11 * FRAME_SPACING_MS) < 50,
+      `expected ~363ms IBI, got ${s.ibiMs}`,
+    );
+  }
+  assert.equal(manager.getCurrentBpm(), 165);
+});
+
 test('HeartRateManager: rejected split beats do not emit live beat ticks', () => {
   const manager = new HeartRateManager();
   const beatFrames = [24, 48, 72, 96, 108, 120, 144, 168];
