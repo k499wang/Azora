@@ -17,7 +17,9 @@ type Props = Pick<
   | 'format'
   | 'frameProcessor'
   | 'torchMode'
->;
+> & {
+  mountCamera?: boolean;
+};
 
 export function LiveHeartRateMonitor({
   active,
@@ -28,6 +30,7 @@ export function LiveHeartRateMonitor({
   format,
   frameProcessor,
   torchMode,
+  mountCamera = true,
 }: Props) {
   const pulseScale = useRef(new Animated.Value(1)).current;
 
@@ -47,8 +50,9 @@ export function LiveHeartRateMonitor({
 
   return (
     <View style={styles.container}>
-      {/* Camera must be mounted and isActive for the frame processor to run. */}
-      {device != null ? (
+      {/* Camera must be mounted and isActive for the frame processor to run.
+          When mountCamera is false, the parent owns a persistent Camera. */}
+      {mountCamera && device != null ? (
         <View style={styles.preview}>
           <Camera
             style={StyleSheet.absoluteFill}

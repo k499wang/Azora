@@ -1,15 +1,14 @@
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  Animated,
   SafeAreaView,
 } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { Canvas, Path, Skia } from '@shopify/react-native-skia';
 import { colors } from '../../theme/colors';
-import { typography } from '../../theme/typography';
+import { typography, fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import type { FingerPlacementState } from '../../lib/heartRate/types';
 import { HeartRateCameraPreview } from './HeartRateCameraPreview';
@@ -24,50 +23,35 @@ interface CameraCheckScreenProps {
 }
 
 interface StateConfig {
-  bgColor: string;
-  accentColor: string;
-  icon: React.ComponentProps<typeof MaterialCommunityIcons>['name'];
-  title: string;
-  subtitle: string;
+  ringColor: string;
+  status: string;
 }
 
 const stateConfigs: Record<FingerPlacementState, StateConfig> = {
   no_finger: {
-    bgColor: '#FFF5F5',
-    accentColor: colors.error[500],
-    icon: 'gesture-tap',
-    title: 'Place your fingertip over the camera and flash',
-    subtitle: 'Cover both the lens and flash completely',
+    ringColor: colors.error[500],
+    status: 'Place your fingertip over the camera',
   },
   partial: {
-    bgColor: '#FFFBEB',
-    accentColor: colors.warning[500],
-    icon: 'alert-circle-outline',
-    title: 'Adjust your finger — cover the lens fully',
-    subtitle: 'Make sure the flash is also covered',
+    ringColor: colors.warning[500],
+    status: 'Cover the lens fully',
   },
   too_much_pressure: {
-    bgColor: '#F5F3FF',
-    accentColor: '#8B5CF6',
-    icon: 'hand-back-right',
-    title: 'Ease up slightly',
-    subtitle: 'Lighten your touch a little',
+    ringColor: '#8B5CF6',
+    status: 'Ease up slightly',
   },
   good: {
-    bgColor: '#F0FDF4',
-    accentColor: colors.success[500],
-    icon: 'check-circle-outline',
-    title: 'Good — hold still',
-    subtitle: 'Keep your finger in place...',
+    ringColor: colors.success[500],
+    status: 'Hold still…',
   },
   lost: {
-    bgColor: '#FFF5F5',
-    accentColor: colors.error[500],
-    icon: 'gesture-tap',
-    title: 'Place your fingertip over the camera and flash',
-    subtitle: 'Cover both the lens and flash completely',
+    ringColor: colors.error[500],
+    status: 'Place your fingertip over the camera',
   },
 };
+
+const RING_SIZE = 240;
+const RING_STROKE = 10;
 
 export function CameraCheckScreen({
   fingerPlacement,
@@ -77,93 +61,101 @@ export function CameraCheckScreen({
   cameraProps,
 }: CameraCheckScreenProps) {
   const [showStartAnyway, setShowStartAnyway] = useState(false);
+  const [holdProgress, setHoldProgress] = useState(0);
+  const rafRef = useRef<number | null>(null);
+  const startTimeRef = useRef<number | null>(null);
 
-  const goodProgressAnim = useRef(new Animated.Value(0)).current;
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // Show "Start Anyway" after timeout
   useEffect(() => {
-    timeoutRef.current = setTimeout(() => {
-      setShowStartAnyway(true);
-    }, timeoutSeconds * 1000);
-
-    return () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    };
+    const t = setTimeout(() => setShowStartAnyway(true), timeoutSeconds * 1000);
+    return () => clearTimeout(t);
   }, [timeoutSeconds]);
 
-  // Animate good progress bar
   useEffect(() => {
-    if (fingerPlacement === 'good') {
-      // Animate progress bar over 1.5s
-      goodProgressAnim.setValue(0);
-      Animated.timing(goodProgressAnim, {
-        toValue: 1,
-        duration: 1500,
-        useNativeDriver: false,
-      }).start();
-    } else {
-      goodProgressAnim.stopAnimation();
-      goodProgressAnim.setValue(0);
+    if (fingerPlacement !== 'good') {
+      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+      startTimeRef.current = null;
+      setHoldProgress(0);
+      return;
     }
-  }, [fingerPlacement, goodProgressAnim]);
+
+    startTimeRef.current = Date.now();
+    const tick = () => {
+      const start = startTimeRef.current;
+      if (start == null) return;
+      const elapsed = Date.now() - start;
+      const p = Math.min(1, elapsed / 1500);
+      setHoldProgress(p);
+      if (p < 1) {
+        rafRef.current = requestAnimationFrame(tick);
+      } else {
+        rafRef.current = null;
+      }
+    };
+    rafRef.current = requestAnimationFrame(tick);
+
+    return () => {
+      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
+    };
+  }, [fingerPlacement]);
 
   const config = stateConfigs[fingerPlacement];
 
+  const cx = RING_SIZE / 2;
+  const cy = RING_SIZE / 2;
+  const r = RING_SIZE / 2 - RING_STROKE / 2;
+
+  const track = Skia.Path.Make();
+  track.addCircle(cx, cy, r);
+
+  const arc = Skia.Path.Make();
+  const rect = Skia.XYWHRect(cx - r, cy - r, r * 2, r * 2);
+  const arcSweep = fingerPlacement === 'good' ? 360 * holdProgress : 0;
+  if (arcSweep > 0) {
+    arc.addArc(rect, -90, arcSweep);
+  }
+
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: config.bgColor }]}>
+    <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        {/* Status area */}
-        <View style={styles.statusArea}>
-          {/* Icon */}
-          <View style={[styles.iconCircle, { backgroundColor: `${config.accentColor}20` }]}>
-            <MaterialCommunityIcons
-              name={config.icon}
-              size={52}
-              color={config.accentColor}
-            />
-          </View>
+        <View style={styles.topSpacer} />
 
-          {/* Text */}
-          <Text style={[styles.title, { color: config.accentColor }]}>{config.title}</Text>
-          <Text style={styles.subtitle}>{config.subtitle}</Text>
+        <Text style={[styles.status, { color: config.ringColor }]}>
+          {config.status}
+        </Text>
 
-          {/* Good progress bar */}
-          {fingerPlacement === 'good' && (
-            <View style={styles.progressBarContainer}>
-              <Animated.View
-                style={[
-                  styles.progressBarFill,
-                  {
-                    width: goodProgressAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: ['0%', '100%'],
-                    }),
-                    backgroundColor: config.accentColor,
-                  },
-                ]}
+        <View style={styles.ringWrap}>
+          <View style={{ width: RING_SIZE, height: RING_SIZE }}>
+            <Canvas style={StyleSheet.absoluteFill}>
+              <Path
+                path={track}
+                style="stroke"
+                strokeWidth={RING_STROKE}
+                color={config.ringColor + '33'}
               />
-            </View>
-          )}
-        </View>
-
-        {/* Camera preview */}
-        <View style={styles.previewContainer}>
-          <View style={[styles.previewRing, { borderColor: config.accentColor }]}>
+              {arcSweep > 0 && (
+                <Path
+                  path={arc}
+                  style="stroke"
+                  strokeWidth={RING_STROKE}
+                  strokeCap="round"
+                  color={config.ringColor}
+                />
+              )}
+            </Canvas>
             <View style={styles.previewClip}>
               {cameraProps != null ? (
                 <HeartRateCameraPreview {...cameraProps} />
               ) : (
-                <View style={[styles.previewPlaceholder, { backgroundColor: config.accentColor + '20' }]} />
+                <View style={styles.previewPlaceholder} />
               )}
             </View>
           </View>
-          <Text style={styles.diagramLabel}>Cover this camera with your fingertip</Text>
         </View>
 
-        <View style={styles.spacer} />
+        <View style={styles.bottomSpacer} />
 
-        {/* Actions */}
         <View style={styles.actions}>
           {showStartAnyway && (
             <TouchableOpacity
@@ -174,7 +166,6 @@ export function CameraCheckScreen({
               <Text style={styles.startAnywayText}>Start Anyway</Text>
             </TouchableOpacity>
           )}
-
           <TouchableOpacity
             onPress={onCancel}
             activeOpacity={0.7}
@@ -191,79 +182,46 @@ export function CameraCheckScreen({
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
+    backgroundColor: colors.background.primary,
   },
   container: {
     flex: 1,
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.xl,
+    paddingTop: spacing.lg,
     paddingBottom: spacing.xl,
     alignItems: 'center',
   },
-  statusArea: {
-    alignItems: 'center',
-    width: '100%',
+  topSpacer: {
+    flex: 1,
   },
-  iconCircle: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+  bottomSpacer: {
+    flex: 1,
+  },
+  status: {
+    ...typography.title.title3,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: spacing.xl,
+    paddingHorizontal: spacing.lg,
+  },
+  ringWrap: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing.lg,
-  },
-  title: {
-    ...typography.heading.heading1,
-    textAlign: 'center',
-    marginBottom: spacing.sm,
-    paddingHorizontal: spacing.sm,
-  },
-  subtitle: {
-    ...typography.body.medium,
-    color: colors.text.secondary,
-    textAlign: 'center',
-    marginBottom: spacing.md,
-  },
-  progressBarContainer: {
-    width: '80%',
-    height: 6,
-    backgroundColor: colors.border.subtle,
-    borderRadius: 3,
-    overflow: 'hidden',
-    marginTop: spacing.sm,
-  },
-  progressBarFill: {
-    height: '100%',
-    borderRadius: 3,
-  },
-  previewContainer: {
-    alignItems: 'center',
-    marginTop: spacing.xl,
-  },
-  previewRing: {
-    width: 160,
-    height: 160,
-    borderRadius: 80,
-    borderWidth: 3,
-    padding: 4,
-    marginBottom: spacing.sm,
   },
   previewClip: {
-    flex: 1,
-    borderRadius: 72,
+    position: 'absolute',
+    top: RING_STROKE + 4,
+    left: RING_STROKE + 4,
+    right: RING_STROKE + 4,
+    bottom: RING_STROKE + 4,
+    borderRadius: (RING_SIZE - (RING_STROKE + 4) * 2) / 2,
     overflow: 'hidden',
     backgroundColor: '#000',
   },
   previewPlaceholder: {
     flex: 1,
-  },
-  diagramLabel: {
-    ...typography.caption.caption1,
-    color: colors.text.tertiary,
-    textAlign: 'center',
-    maxWidth: 200,
-  },
-  spacer: {
-    flex: 1,
+    backgroundColor: '#000',
   },
   actions: {
     width: '100%',
@@ -279,6 +237,8 @@ const styles = StyleSheet.create({
   },
   startAnywayText: {
     ...typography.button.large,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
     color: colors.text.inverse,
   },
   cancelTouchable: {

@@ -71,3 +71,23 @@ only logging in means we
   not actually live.
 
   If you want, I can implement that slice next.
+
+
+  The rule is one sentence: the <Camera> must live in a parent 
+  that doesn't unmount across the transition. Concretely:       
+                                                            
+  1. In DailyExercisePage / ExerciseSessionPage, render         
+  <PersistentCameraRing> directly in the page component (not
+  inside the check sub-screen).                                 
+  2. Render the check chrome (status + buttons) and the     
+  breathing chrome (rings, timer, holds) as siblings of the     
+  persistent ring, swapping based on phase — same trick as the
+  HR flow.                                                      
+  3. If a phase doesn't visually need the camera ring on screen,
+   just shrink/hide its container with opacity: 0 and           
+  pointerEvents: 'none' — DO NOT conditionally remove it from
+  the tree.                                                     
+                                                            
+  Once you do that, both exercise screens get the same          
+  flicker-free behavior. Want me to do DailyExercisePage next?
+                                                                
