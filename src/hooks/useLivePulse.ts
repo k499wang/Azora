@@ -9,7 +9,7 @@ import { heartRatePlugin } from '../lib/heartRate/heartRatePlugin';
 import { HeartRateManager } from '../lib/heartRate/heartRateManager';
 import { useHeartRateCamera } from './useHeartRateCamera';
 
-const FRAME_PROCESSING_FPS = 20;
+const FRAME_PROCESSING_FPS = 45;
 const BPM_UPDATE_INTERVAL_MS = 1000;
 const FINGER_LOST_TIMEOUT_MS = 1500;
 
@@ -101,11 +101,12 @@ export function useLivePulse(): UseLivePulseReturn {
       lastFingerSeenAtRef.current = frameState.fingerPlacement === 'no_finger' ? lastFingerSeenAtRef.current : frameSample.timestamp;
       setFingerPlacement(frameState.fingerPlacement);
 
-      if (frameState.beatDetected) {
+      const bpm = managerRef.current.getCurrentBpm();
+
+      if (frameState.beatDetected && bpm != null) {
         setBeatTick((tick) => tick + 1);
       }
 
-      const bpm = managerRef.current.getCurrentBpm();
       if (bpm != null && frameSample.timestamp - lastBpmUpdateRef.current >= BPM_UPDATE_INTERVAL_MS) {
         lastBpmUpdateRef.current = frameSample.timestamp;
         setCurrentBpm(bpm);

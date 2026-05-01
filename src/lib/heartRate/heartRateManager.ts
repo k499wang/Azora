@@ -333,10 +333,12 @@ export class HeartRateManager {
           this.lastPeakTs === 0 || peakTs - this.lastPeakTs >= MIN_IBI_MS;
         if (refractoryOk) {
           let advanceAnchor = true;
+          let acceptedPeak = this.lastPeakTs === 0;
           if (this.lastPeakTs !== 0) {
             const ibi = peakTs - this.lastPeakTs;
             if (ibi > MAX_IBI_MS) {
               this.ibiHistory.length = 0;
+              acceptedPeak = true;
             } else {
               const ectopic =
                 this.ibiHistory.length >= MALIK_MIN_HISTORY &&
@@ -347,6 +349,7 @@ export class HeartRateManager {
               if (ectopic) {
                 advanceAnchor = false;
               } else {
+                acceptedPeak = true;
                 this.ibiHistory.push(ibi);
                 if (this.ibiHistory.length > IBI_HISTORY_SIZE) {
                   this.ibiHistory.shift();
@@ -371,7 +374,7 @@ export class HeartRateManager {
           if (advanceAnchor) {
             this.lastPeakTs = peakTs;
           }
-          beatDetected = true;
+          beatDetected = acceptedPeak;
         }
       }
     }

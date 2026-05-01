@@ -194,13 +194,14 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
         return;
       }
 
-      if (frameState.beatDetected) {
+      const bpm = managerRef.current.getCurrentBpm();
+
+      if (frameState.beatDetected && bpm != null) {
         setBeatTick((tick) => tick + 1);
       }
 
       if (timestamp - lastBpmUpdateRef.current >= BPM_UPDATE_INTERVAL_MS) {
         lastBpmUpdateRef.current = timestamp;
-        const bpm = managerRef.current.getCurrentBpm();
         if (bpm != null) {
           currentBpmRef.current = bpm;
           setCurrentBpm(bpm);
