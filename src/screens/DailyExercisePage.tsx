@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Canvas, Path, Skia } from '@shopify/react-native-skia';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -12,11 +14,31 @@ import BreathingCircle, {
 import ExerciseScaffold from '../components/exercise/ExerciseScaffold';
 import { useLivePulse } from '../hooks/useLivePulse';
 import { LiveHeartRateMonitor } from '../components/meditation/LiveHeartRateMonitor';
-import { CameraCheckScreen } from '../components/heartRate/CameraCheckScreen';
+import { HeartRateCameraPreview } from '../components/heartRate/HeartRateCameraPreview';
+import type { FingerPlacementState } from '../lib/heartRate/types';
 import { usePostHog } from 'posthog-react-native';
 import { AnalyticsEvent } from '../services/analytics/events';
 import { captureException } from '../services/analytics/errorTracking';
 import type { DailyExerciseScreenProps } from '../app/navigation';
+
+const PLACEMENT_RING_SIZE = 240;
+const PLACEMENT_RING_STROKE = 10;
+const PLACEMENT_TIMEOUT_SECONDS = 10;
+
+function placementConfig(p: FingerPlacementState): { ringColor: string; status: string } {
+  switch (p) {
+    case 'good':
+      return { ringColor: colors.success[500], status: 'Hold still…' };
+    case 'partial':
+      return { ringColor: colors.warning[500], status: 'Cover the lens fully' };
+    case 'too_much_pressure':
+      return { ringColor: '#8B5CF6', status: 'Ease up slightly' };
+    case 'no_finger':
+    case 'lost':
+    default:
+      return { ringColor: colors.error[500], status: 'Place your fingertip over the camera' };
+  }
+}
 
 type HoldPhase = 'idle' | 'placement' | 'inhale' | 'hold' | 'done';
 
@@ -61,6 +83,7 @@ export default function DailyExercisePage({
   const [lastSamples, setLastSamples] = useState<BpmSample[]>([]);
   const [isNewBest, setIsNewBest] = useState(false);
 
+  const insets = useSafeAreaInsets();
   const pulse = useLivePulse();
   const {
     start: startPulse,
@@ -311,30 +334,148 @@ export default function DailyExercisePage({
 
   const displayTime = phase === 'hold' || phase === 'done' ? formatTime(holdSeconds) : null;
 
+  // Placement state: hold-steady arc + start-anyway timeout
+  const [placementHoldProgress, setPlacementHoldProgress] = useState(0);
+  useEffect(() => {
+    if (phase !== 'placement' || pulse.fingerPlacement !== 'good') {
+      setPlacementHoldProgress(0);
+      return;
+    }
+    const start = Date.now();
+    let raf: number;
+    const tick = () => {
+      const elapsed = Date.now() - start;
+      const p = Math.min(1, elapsed / PLACEMENT_GOOD_DURATION_MS);
+      setPlacementHoldProgress(p);
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [phase, pulse.fingerPlacement]);
+
+  const [showStartAnyway, setShowStartAnyway] = useState(false);
+  useEffect(() => {
+    if (phase !== 'placement') {
+      setShowStartAnyway(false);
+      return;
+    }
+    const t = setTimeout(() => setShowStartAnyway(true), PLACEMENT_TIMEOUT_SECONDS * 1000);
+    return () => clearTimeout(t);
+  }, [phase]);
+
+  // Persistent camera mount: stays alive across placement → inhale → hold so
+  // the torch/frame processor never restart. Visually shown only during
+  // placement; otherwise off-screen but still active.
+  const cameraIsLive = pulse.active && pulse.device != null;
+  const showCameraInRing = phase === 'placement';
+  const placementCfg = placementConfig(pulse.fingerPlacement);
+
+  const cx = PLACEMENT_RING_SIZE / 2;
+  const cy = PLACEMENT_RING_SIZE / 2;
+  const r = PLACEMENT_RING_SIZE / 2 - PLACEMENT_RING_STROKE / 2;
+  const ringTrack = Skia.Path.Make();
+  ringTrack.addCircle(cx, cy, r);
+  const ringArc = Skia.Path.Make();
+  if (placementHoldProgress > 0) {
+    ringArc.addArc(
+      Skia.XYWHRect(cx - r, cy - r, r * 2, r * 2),
+      -90,
+      360 * placementHoldProgress,
+    );
+  }
+
+  // Compensate for iOS safe-area asymmetry: the chrome's flex layout is
+  // centered within the safe-area content (after insets), but `top: 50%` for
+  // an absolute child is 50% of the SafeAreaView's full height. Shift the
+  // camera by half the inset asymmetry so its center matches the ring slot.
+  const verticalAdjust = (insets.top - insets.bottom) / 2;
+  const persistentCamera = cameraIsLive ? (
+    <View
+      pointerEvents="none"
+      style={[
+        styles.persistentCamera,
+        showCameraInRing
+          ? [
+              styles.persistentCameraVisible,
+              {
+                marginTop: -PLACEMENT_RING_SIZE / 2 + verticalAdjust,
+              },
+            ]
+          : styles.persistentCameraHidden,
+      ]}
+    >
+      <View style={styles.persistentCameraInner}>
+        <HeartRateCameraPreview
+          device={pulse.device!}
+          format={pulse.format}
+          frameProcessor={pulse.frameProcessor}
+          torchMode={pulse.torchMode}
+          isActive={true}
+        />
+      </View>
+      {showCameraInRing && (
+        <Canvas style={StyleSheet.absoluteFill}>
+          <Path
+            path={ringTrack}
+            style="stroke"
+            strokeWidth={PLACEMENT_RING_STROKE}
+            color={placementCfg.ringColor + '33'}
+          />
+          {placementHoldProgress > 0 && (
+            <Path
+              path={ringArc}
+              style="stroke"
+              strokeWidth={PLACEMENT_RING_STROKE}
+              strokeCap="round"
+              color={placementCfg.ringColor}
+            />
+          )}
+        </Canvas>
+      )}
+    </View>
+  ) : null;
+
   if (phase === 'placement') {
-    const cameraProps =
-      pulse.device != null
-        ? {
-            device: pulse.device,
-            format: pulse.format,
-            frameProcessor: pulse.frameProcessor,
-            torchMode: pulse.torchMode,
-            isActive: true,
-          }
-        : undefined;
     return (
-      <CameraCheckScreen
-        fingerPlacement={pulse.fingerPlacement}
-        onStartAnyway={startInhale}
-        onCancel={cancelPlacement}
-        timeoutSeconds={10}
-        cameraProps={cameraProps}
-      />
+      <SafeAreaView style={styles.placementSafeArea}>
+        <View style={styles.placementContainer}>
+          <View style={styles.placementTopArea}>
+            <Text style={[styles.placementStatus, { color: placementCfg.ringColor }]}>
+              {placementCfg.status}
+            </Text>
+          </View>
+
+          {/* Reserves space for the persistent camera + ring (rendered absolutely) */}
+          <View style={styles.placementRingSlot} pointerEvents="none" />
+
+          <View style={styles.placementBottomArea}>
+            {showStartAnyway && (
+              <TouchableOpacity
+                style={styles.startAnywayButton}
+                onPress={startInhale}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.startAnywayText}>Start Anyway</Text>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity
+              onPress={cancelPlacement}
+              activeOpacity={0.7}
+              style={styles.placementCancelTouchable}
+            >
+              <Text style={styles.placementCancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {persistentCamera}
+      </SafeAreaView>
     );
   }
 
   return (
-    <ExerciseScaffold
+    <View style={styles.fill}>
+      <ExerciseScaffold
       titleSlot={
         <View style={styles.titleSlotWrap}>
           {pulse.active ? (
@@ -348,6 +489,7 @@ export default function DailyExercisePage({
                 format={pulse.format}
                 frameProcessor={pulse.frameProcessor}
                 torchMode={pulse.torchMode}
+                mountCamera={false}
               />
             </View>
           ) : null}
@@ -431,10 +573,106 @@ export default function DailyExercisePage({
         </View>
       }
     />
+    {persistentCamera}
+    </View>
   );
 }
 
+const PERSISTENT_CAMERA_INSET = PLACEMENT_RING_STROKE + 4;
+
 const styles = StyleSheet.create({
+  fill: {
+    flex: 1,
+  },
+  persistentCamera: {
+    position: 'absolute',
+    zIndex: 0,
+  },
+  persistentCameraVisible: {
+    top: '50%',
+    left: '50%',
+    width: PLACEMENT_RING_SIZE,
+    height: PLACEMENT_RING_SIZE,
+    marginTop: -PLACEMENT_RING_SIZE / 2,
+    marginLeft: -PLACEMENT_RING_SIZE / 2,
+    opacity: 1,
+  },
+  persistentCameraHidden: {
+    top: -9999,
+    left: -9999,
+    width: 1,
+    height: 1,
+    opacity: 0,
+  },
+  persistentCameraInner: {
+    position: 'absolute',
+    top: PERSISTENT_CAMERA_INSET,
+    left: PERSISTENT_CAMERA_INSET,
+    right: PERSISTENT_CAMERA_INSET,
+    bottom: PERSISTENT_CAMERA_INSET,
+    borderRadius: (PLACEMENT_RING_SIZE - PERSISTENT_CAMERA_INSET * 2) / 2,
+    overflow: 'hidden',
+    backgroundColor: '#000',
+  },
+  placementSafeArea: {
+    flex: 1,
+    backgroundColor: colors.background.primary,
+  },
+  placementContainer: {
+    flex: 1,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.lg,
+    alignItems: 'center',
+  },
+  placementTopArea: {
+    flex: 1,
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    paddingBottom: spacing['6xl'],
+    zIndex: 2,
+  },
+  placementRingSlot: {
+    width: PLACEMENT_RING_SIZE,
+    height: PLACEMENT_RING_SIZE,
+  },
+  placementBottomArea: {
+    flex: 1,
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    paddingTop: spacing.xl,
+    gap: spacing.sm,
+    zIndex: 2,
+  },
+  placementStatus: {
+    ...typography.title.title3,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    textAlign: 'center',
+    paddingHorizontal: spacing.lg,
+  },
+  startAnywayButton: {
+    width: '100%',
+    backgroundColor: colors.primary.blue600,
+    borderRadius: 14,
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+  startAnywayText: {
+    ...typography.button.large,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    color: colors.text.inverse,
+  },
+  placementCancelTouchable: {
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+  },
+  placementCancelText: {
+    ...typography.body.medium,
+    color: colors.text.secondary,
+  },
   titleSlotWrap: {
     alignItems: 'center',
     gap: spacing.sm,
