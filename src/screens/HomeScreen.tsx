@@ -57,6 +57,8 @@ export default function HomeScreen(_: HomeScreenProps) {
           </View>
         </View>
 
+        <BreathingLibrary />
+
         <View style={styles.section}>
           {hasPartialStatsError || homeStatsQuery.isError ? (
             <Text style={styles.partialErrorText}>
@@ -77,8 +79,6 @@ export default function HomeScreen(_: HomeScreenProps) {
           stress={stats?.hrv.stress ?? null}
           hrDrop={stats?.hrv.hrDrop ?? null}
         />
-
-        <BreathingLibrary />
 
         <View style={styles.recentSection}>
           <SectionHeader title="Recently logged" />

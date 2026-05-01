@@ -156,10 +156,14 @@ export default function ExerciseSessionPage({
       setCountdown(secs);
       setPaused(false);
 
-      if (p === 'inhale') {
-        circleRef.current?.expand(secs);
-      } else if (p === 'exhale') {
-        circleRef.current?.contract(secs);
+      if (p === 'inhale' || p === 'exhale') {
+        // Defer to the next frame: on the first phase, BreathingCircle
+        // mounts in the same render that flips off the placement UI, so
+        // circleRef is still null when runPhase fires.
+        requestAnimationFrame(() => {
+          if (p === 'inhale') circleRef.current?.expand(secs);
+          else circleRef.current?.contract(secs);
+        });
       }
 
       let remaining = secs;
@@ -254,7 +258,7 @@ export default function ExerciseSessionPage({
       setElapsed(0);
       setCountdown(0);
       setRound(0);
-      circleRef.current?.reset();
+      requestAnimationFrame(() => circleRef.current?.reset());
       posthog.capture(AnalyticsEvent.ExerciseSessionStarted, {
         technique_id: technique.id,
         technique_name: technique.name,
