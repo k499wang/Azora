@@ -152,6 +152,34 @@ test('HeartRateManager: split-beat anchor preservation recovers rhythm', () => {
   );
 });
 
+test('HeartRateManager: rejected split beats do not emit live beat ticks', () => {
+  const manager = new HeartRateManager();
+  const beatFrames = [24, 48, 72, 96, 108, 120, 144, 168];
+  const beatSet = new Set(beatFrames);
+  let t = 0;
+  let beatTicks = 0;
+
+  for (let i = 0; i < WARMUP_FRAMES; i++) {
+    const state = manager.processFrame(makeFrame(t, BASELINE_WEIGHTED));
+    if (state.beatDetected) beatTicks += 1;
+    t += FRAME_SPACING_MS;
+  }
+
+  const totalPostWarmupFrames = Math.max(...beatFrames) + 15;
+  for (let i = 0; i < totalPostWarmupFrames; i++) {
+    const weighted = beatSet.has(i) ? BEAT_WEIGHTED : BASELINE_WEIGHTED;
+    const state = manager.processFrame(makeFrame(t, weighted));
+    if (state.beatDetected) beatTicks += 1;
+    t += FRAME_SPACING_MS;
+  }
+
+  assert.equal(
+    beatTicks,
+    7,
+    'the split beat should be rejected for both BPM history and live beat animation',
+  );
+});
+
 test('HeartRateManager: short-gap (<1s) keeps ibiHistory and anchor', () => {
   const manager = new HeartRateManager();
   runBeatTrain(manager, [24, 48, 72, 96]);
