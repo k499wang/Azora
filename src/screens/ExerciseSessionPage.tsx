@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 import { typography, fonts } from '../theme/typography';
@@ -12,7 +12,8 @@ import TECHNIQUES from '../data/techniques';
 import type { BreathingTechnique } from '../data/techniques';
 import { useLivePulse } from '../hooks/useLivePulse';
 import { LiveHeartRateMonitor } from '../components/meditation/LiveHeartRateMonitor';
-import { CameraCheckScreen } from '../components/heartRate/CameraCheckScreen';
+import { PersistentCameraRing } from '../components/heartRate/PersistentCameraRing';
+import type { FingerPlacementState } from '../lib/heartRate/types';
 import { usePostHog } from 'posthog-react-native';
 import type { ExerciseSessionScreenProps } from '../app/navigation';
 import { captureException } from '../services/analytics/errorTracking';
@@ -21,6 +22,30 @@ import { AnalyticsEvent } from '../services/analytics/events';
 const MIN_ROUNDS = 1;
 const MAX_ROUNDS = 20;
 const PLACEMENT_GOOD_DURATION_MS = 1500;
+const PLACEMENT_TIMEOUT_SECONDS = 10;
+const PLACEMENT_RING_SIZE = 240;
+
+interface PreviewFrame {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+function placementConfig(p: FingerPlacementState): { ringColor: string; status: string } {
+  switch (p) {
+    case 'good':
+      return { ringColor: colors.success[500], status: 'Hold still…' };
+    case 'partial':
+      return { ringColor: colors.warning[500], status: 'Cover the lens fully' };
+    case 'too_much_pressure':
+      return { ringColor: '#8B5CF6', status: 'Ease up slightly' };
+    case 'no_finger':
+    case 'lost':
+    default:
+      return { ringColor: colors.error[500], status: 'Place your fingertip over the camera' };
+  }
+}
 
 type Phase =
   | 'idle'
@@ -60,6 +85,7 @@ export default function ExerciseSessionPage({
   const [technique] = useState<BreathingTechnique>(initialTechnique);
   const [totalRounds, setTotalRounds] = useState(initialTechnique.defaultRounds);
   const [hrEnabled, setHrEnabled] = useState(true);
+  const [previewFrame, setPreviewFrame] = useState<PreviewFrame | null>(null);
 
   const posthog = usePostHog();
 
@@ -280,6 +306,34 @@ export default function ExerciseSessionPage({
     return () => clearTimeout(t);
   }, [phase, pulse.fingerPlacement, beginExercise]);
 
+  const [placementHoldProgress, setPlacementHoldProgress] = useState(0);
+  useEffect(() => {
+    if (phase !== 'placement' || pulse.fingerPlacement !== 'good') {
+      setPlacementHoldProgress(0);
+      return;
+    }
+    const start = Date.now();
+    let raf: number;
+    const tick = () => {
+      const elapsedMs = Date.now() - start;
+      const next = Math.min(1, elapsedMs / PLACEMENT_GOOD_DURATION_MS);
+      setPlacementHoldProgress(next);
+      if (next < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [phase, pulse.fingerPlacement]);
+
+  const [showStartAnyway, setShowStartAnyway] = useState(false);
+  useEffect(() => {
+    if (phase !== 'placement') {
+      setShowStartAnyway(false);
+      return;
+    }
+    const t = setTimeout(() => setShowStartAnyway(true), PLACEMENT_TIMEOUT_SECONDS * 1000);
+    return () => clearTimeout(t);
+  }, [phase]);
+
   const handleClose = () => {
     clearTimer();
     stopPulse();
@@ -326,33 +380,65 @@ export default function ExerciseSessionPage({
     phase === 'done' ? 1 : elapsed / totalSeconds,
   );
 
-  if (phase === 'placement') {
-    const cameraProps =
-      pulse.device != null
-        ? {
-            device: pulse.device,
-            format: pulse.format,
-            frameProcessor: pulse.frameProcessor,
-            torchMode: pulse.torchMode,
-            isActive: true,
-          }
-        : undefined;
-    return (
-      <CameraCheckScreen
-        fingerPlacement={pulse.fingerPlacement}
-        onStartAnyway={() => beginExercise(false)}
-        onCancel={() => {
-          stopPulse();
-          navigation.goBack();
-        }}
-        timeoutSeconds={10}
-        cameraProps={cameraProps}
-      />
-    );
-  }
+  const isPlacement = phase === 'placement';
+  const placementCfg = placementConfig(pulse.fingerPlacement);
+  const pillPreviewStyle = !isPlacement && pulse.active && previewFrame != null
+    ? [
+        styles.persistentCameraPillPreview,
+        {
+          top: previewFrame.y - (PLACEMENT_RING_SIZE - previewFrame.height) / 2,
+          left: previewFrame.x - (PLACEMENT_RING_SIZE - previewFrame.width) / 2,
+        },
+      ]
+    : null;
+  const cameraProps = useMemo(() => (
+    pulse.device != null
+      ? {
+          device: pulse.device,
+          format: pulse.format,
+          frameProcessor: pulse.frameProcessor,
+          torchMode: pulse.torchMode,
+          isActive: pulse.active,
+        }
+      : undefined
+  ), [pulse.active, pulse.device, pulse.format, pulse.frameProcessor, pulse.torchMode]);
 
   return (
-    <ExerciseScaffold
+    <View style={styles.fill}>
+      {isPlacement ? (
+        <View style={styles.placementContainer}>
+          <View style={styles.placementTopArea}>
+            <Text style={[styles.placementStatus, { color: placementCfg.ringColor }]}>
+              {placementCfg.status}
+            </Text>
+          </View>
+
+          <View style={styles.placementRingSlot} pointerEvents="none" />
+
+          <View style={styles.placementBottomArea}>
+            {showStartAnyway && (
+              <TouchableOpacity
+                style={styles.startAnywayButton}
+                onPress={() => beginExercise(false)}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.startAnywayText}>Start Anyway</Text>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity
+              onPress={() => {
+                stopPulse();
+                navigation.goBack();
+              }}
+              activeOpacity={0.7}
+              style={styles.placementCancelTouchable}
+            >
+              <Text style={styles.placementCancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      ) : (
+        <ExerciseScaffold
       titleSlot={
         <View style={styles.titleSlotWrap}>
         <View style={styles.hrRow}>
@@ -383,6 +469,9 @@ export default function ExerciseSessionPage({
               format={pulse.format}
               frameProcessor={pulse.frameProcessor}
               torchMode={pulse.torchMode}
+              mountCamera={false}
+              showCameraPreview={true}
+              onPreviewFrame={setPreviewFrame}
             />
           ) : null}
         </View>
@@ -454,11 +543,120 @@ export default function ExerciseSessionPage({
           </View>
         </View>
       }
-    />
+        />
+      )}
+      <View
+        pointerEvents="none"
+        style={[
+          styles.persistentCamera,
+          isPlacement
+            ? styles.persistentCameraVisible
+            : pillPreviewStyle
+              ? pillPreviewStyle
+              : styles.persistentCameraHidden,
+        ]}
+      >
+        <PersistentCameraRing
+          ringColor={isPlacement ? placementCfg.ringColor : colors.primary.blue600}
+          trackColor={isPlacement ? placementCfg.ringColor + '33' : colors.border.subtle}
+          progress={isPlacement ? placementHoldProgress : 0}
+          cameraProps={cameraProps}
+        />
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  fill: {
+    flex: 1,
+    backgroundColor: colors.background.primary,
+  },
+  persistentCamera: {
+    position: 'absolute',
+    zIndex: 0,
+  },
+  persistentCameraVisible: {
+    top: '50%',
+    left: '50%',
+    width: PLACEMENT_RING_SIZE,
+    height: PLACEMENT_RING_SIZE,
+    marginTop: -PLACEMENT_RING_SIZE / 2,
+    marginLeft: -PLACEMENT_RING_SIZE / 2,
+    opacity: 1,
+  },
+  persistentCameraHidden: {
+    top: 0,
+    left: 0,
+    width: PLACEMENT_RING_SIZE,
+    height: PLACEMENT_RING_SIZE,
+    opacity: 0,
+    transform: [{ scale: 0.01 }],
+  },
+  persistentCameraPillPreview: {
+    width: PLACEMENT_RING_SIZE,
+    height: PLACEMENT_RING_SIZE,
+    opacity: 1,
+    zIndex: 100,
+    elevation: 100,
+    transform: [{ scale: 20 / PLACEMENT_RING_SIZE }],
+  },
+  placementContainer: {
+    flex: 1,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.lg,
+    alignItems: 'center',
+    backgroundColor: colors.background.primary,
+  },
+  placementTopArea: {
+    flex: 1,
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    paddingBottom: spacing['6xl'],
+    zIndex: 2,
+  },
+  placementRingSlot: {
+    width: PLACEMENT_RING_SIZE,
+    height: PLACEMENT_RING_SIZE,
+  },
+  placementBottomArea: {
+    flex: 1,
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    paddingTop: spacing.xl,
+    gap: spacing.sm,
+    zIndex: 2,
+  },
+  placementStatus: {
+    ...typography.title.title3,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    textAlign: 'center',
+    paddingHorizontal: spacing.lg,
+  },
+  startAnywayButton: {
+    width: '100%',
+    backgroundColor: colors.primary.blue600,
+    borderRadius: 14,
+    paddingVertical: 16,
+    alignItems: 'center',
+  },
+  startAnywayText: {
+    ...typography.button.large,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    color: colors.text.inverse,
+  },
+  placementCancelTouchable: {
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+  },
+  placementCancelText: {
+    ...typography.body.medium,
+    color: colors.text.secondary,
+  },
   titleSlotWrap: {
     alignItems: 'center',
     gap: spacing.sm,

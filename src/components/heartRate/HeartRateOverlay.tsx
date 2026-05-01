@@ -87,7 +87,7 @@ export function HeartRateOverlay({ onStreamStopped, onClose }: HeartRateOverlayP
       device={device}
       format={format}
       isActive={true}
-      torch={torchMode}
+      torch={device.hasTorch ? torchMode : 'off'}
       pixelFormat="rgb"
       fps={30}
       frameProcessor={frameProcessor}

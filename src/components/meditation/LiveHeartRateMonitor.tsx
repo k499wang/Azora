@@ -19,6 +19,8 @@ type Props = Pick<
   | 'torchMode'
 > & {
   mountCamera?: boolean;
+  showCameraPreview?: boolean;
+  onPreviewFrame?: (frame: { x: number; y: number; width: number; height: number }) => void;
 };
 
 export function LiveHeartRateMonitor({
@@ -31,8 +33,11 @@ export function LiveHeartRateMonitor({
   frameProcessor,
   torchMode,
   mountCamera = true,
+  showCameraPreview = false,
+  onPreviewFrame,
 }: Props) {
   const pulseScale = useRef(new Animated.Value(1)).current;
+  const previewRef = useRef<View>(null);
 
   useEffect(() => {
     if (beatTick <= 0) return;
@@ -50,21 +55,35 @@ export function LiveHeartRateMonitor({
 
   return (
     <View style={styles.container}>
-      {/* Camera must be mounted and isActive for the frame processor to run.
-          When mountCamera is false, the parent owns a persistent Camera. */}
+      {/* Camera must stay mounted and active for the frame processor to run.
+          It is hidden by default, but the daily exercise pill can opt into a
+          visible preview when it owns the active camera mount. */}
       {mountCamera && device != null ? (
-        <View style={styles.preview}>
+        <View style={showCameraPreview ? styles.preview : styles.hiddenCamera}>
           <Camera
             style={StyleSheet.absoluteFill}
             device={device}
             format={format}
             isActive={true}
-            torch={torchMode}
+            torch={device.hasTorch ? torchMode : 'off'}
             pixelFormat="rgb"
             fps={30}
             frameProcessor={frameProcessor}
           />
         </View>
+      ) : null}
+      {!mountCamera && showCameraPreview ? (
+        <View
+          ref={previewRef}
+          style={styles.previewSlot}
+          onLayout={() => {
+            requestAnimationFrame(() => {
+              previewRef.current?.measureInWindow((x, y, width, height) => {
+                onPreviewFrame?.({ x, y, width, height });
+              });
+            });
+          }}
+        />
       ) : null}
 
       <Animated.View style={{ transform: [{ scale: pulseScale }] }}>
@@ -110,6 +129,19 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: '#000',
     marginRight: spacing.xs,
+  },
+  previewSlot: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    overflow: 'hidden',
+    marginRight: spacing.xs,
+  },
+  hiddenCamera: {
+    position: 'absolute',
+    width: 1,
+    height: 1,
+    opacity: 0,
   },
   bpm: {
     ...typography.body.medium,

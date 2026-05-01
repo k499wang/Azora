@@ -1,9 +1,6 @@
 import { useCallback, useRef, useState } from 'react';
 import {
   useFrameProcessor,
-  useCameraDevice,
-  useCameraFormat,
-  useCameraPermission,
   runAtTargetFps,
 } from 'react-native-vision-camera';
 import { useRunOnJS } from 'react-native-worklets-core';
@@ -17,6 +14,7 @@ import { heartRatePlugin } from '../lib/heartRate/heartRatePlugin';
 import { HeartRateManager } from '../lib/heartRate/heartRateManager';
 import { buildCaptureResult } from '../lib/heartRate/captureResult';
 import { useMeasurementTimer } from './useMeasurementTimer';
+import { useHeartRateCamera } from './useHeartRateCamera';
 
 const CAPTURE_DURATION_MS = 45000;
 const CAPTURE_DURATION_SEC = CAPTURE_DURATION_MS / 1000;
@@ -49,8 +47,8 @@ interface UseHeartRateCaptureReturn {
   currentBpm: number | null;
   beatTick: number;
   result: CaptureResult | null;
-  device: ReturnType<typeof useCameraDevice>;
-  format: ReturnType<typeof useCameraFormat>;
+  device: ReturnType<typeof useHeartRateCamera>['device'];
+  format: ReturnType<typeof useHeartRateCamera>['format'];
   frameProcessor: ReturnType<typeof useFrameProcessor>;
   torchMode: 'on' | 'off';
   startCapture: () => void;
@@ -79,17 +77,13 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
   const fingerPlacementRef = useRef<FingerPlacementState>('no_finger');
   const managerRef = useRef(new HeartRateManager());
 
-  const { hasPermission, requestPermission } = useCameraPermission();
-  const device = useCameraDevice('back', {
-    physicalDevices: ['wide-angle-camera'],
-  });
-  const format = useCameraFormat(device, [
-    { fps: 30 },
-    { videoResolution: { width: 640, height: 480 } },
-  ]);
+  const { device, format, hasPermission, requestPermission } = useHeartRateCamera();
 
+  const needsIllumination = captureState === 'camera_check' || captureState === 'measuring';
   const torchMode: 'on' | 'off' =
-    captureState === 'camera_check' || captureState === 'measuring' ? 'on' : 'off';
+    needsIllumination && device?.hasTorch === true
+      ? 'on'
+      : 'off';
 
   const setCaptureStateAndRef = useCallback((next: CaptureState) => {
     captureStateRef.current = next;

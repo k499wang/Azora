@@ -1,7 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Pressable, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { Canvas, Path, Skia } from '@shopify/react-native-skia';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -14,7 +12,7 @@ import BreathingCircle, {
 import ExerciseScaffold from '../components/exercise/ExerciseScaffold';
 import { useLivePulse } from '../hooks/useLivePulse';
 import { LiveHeartRateMonitor } from '../components/meditation/LiveHeartRateMonitor';
-import { HeartRateCameraPreview } from '../components/heartRate/HeartRateCameraPreview';
+import { PersistentCameraRing } from '../components/heartRate/PersistentCameraRing';
 import type { FingerPlacementState } from '../lib/heartRate/types';
 import { usePostHog } from 'posthog-react-native';
 import { AnalyticsEvent } from '../services/analytics/events';
@@ -22,7 +20,6 @@ import { captureException } from '../services/analytics/errorTracking';
 import type { DailyExerciseScreenProps } from '../app/navigation';
 
 const PLACEMENT_RING_SIZE = 240;
-const PLACEMENT_RING_STROKE = 10;
 const PLACEMENT_TIMEOUT_SECONDS = 10;
 
 function placementConfig(p: FingerPlacementState): { ringColor: string; status: string } {
@@ -57,6 +54,13 @@ interface BpmSample {
   bpm: number;
 }
 
+interface PreviewFrame {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
 const BEST_HOLD_KEY = 'daily_breath_hold_best_seconds';
 
 function formatBest(secs: number) {
@@ -82,8 +86,8 @@ export default function DailyExercisePage({
   const [hrEnabled, setHrEnabled] = useState(true);
   const [lastSamples, setLastSamples] = useState<BpmSample[]>([]);
   const [isNewBest, setIsNewBest] = useState(false);
+  const [previewFrame, setPreviewFrame] = useState<PreviewFrame | null>(null);
 
-  const insets = useSafeAreaInsets();
   const pulse = useLivePulse();
   const {
     start: startPulse,
@@ -363,81 +367,31 @@ export default function DailyExercisePage({
     return () => clearTimeout(t);
   }, [phase]);
 
-  // Persistent camera mount: stays alive across placement → inhale → hold so
-  // the torch/frame processor never restart. Visually shown only during
-  // placement; otherwise off-screen but still active.
-  const cameraIsLive = pulse.active && pulse.device != null;
-  const showCameraInRing = phase === 'placement';
   const placementCfg = placementConfig(pulse.fingerPlacement);
+  const isPlacement = phase === 'placement';
+  const pillPreviewStyle = !isPlacement && pulse.active && previewFrame != null
+    ? [
+        styles.persistentCameraPillPreview,
+        {
+          top: previewFrame.y - (PLACEMENT_RING_SIZE - previewFrame.height) / 2,
+          left: previewFrame.x - (PLACEMENT_RING_SIZE - previewFrame.width) / 2,
+        },
+      ]
+    : null;
+  const cameraProps = pulse.device != null
+    ? {
+        device: pulse.device,
+        format: pulse.format,
+        frameProcessor: pulse.frameProcessor,
+        torchMode: pulse.torchMode,
+        isActive: pulse.active,
+      }
+    : undefined;
 
-  const cx = PLACEMENT_RING_SIZE / 2;
-  const cy = PLACEMENT_RING_SIZE / 2;
-  const r = PLACEMENT_RING_SIZE / 2 - PLACEMENT_RING_STROKE / 2;
-  const ringTrack = Skia.Path.Make();
-  ringTrack.addCircle(cx, cy, r);
-  const ringArc = Skia.Path.Make();
-  if (placementHoldProgress > 0) {
-    ringArc.addArc(
-      Skia.XYWHRect(cx - r, cy - r, r * 2, r * 2),
-      -90,
-      360 * placementHoldProgress,
-    );
-  }
-
-  // Compensate for iOS safe-area asymmetry: the chrome's flex layout is
-  // centered within the safe-area content (after insets), but `top: 50%` for
-  // an absolute child is 50% of the SafeAreaView's full height. Shift the
-  // camera by half the inset asymmetry so its center matches the ring slot.
-  const verticalAdjust = (insets.top - insets.bottom) / 2;
-  const persistentCamera = cameraIsLive ? (
-    <View
-      pointerEvents="none"
-      style={[
-        styles.persistentCamera,
-        showCameraInRing
-          ? [
-              styles.persistentCameraVisible,
-              {
-                marginTop: -PLACEMENT_RING_SIZE / 2 + verticalAdjust,
-              },
-            ]
-          : styles.persistentCameraHidden,
-      ]}
-    >
-      <View style={styles.persistentCameraInner}>
-        <HeartRateCameraPreview
-          device={pulse.device!}
-          format={pulse.format}
-          frameProcessor={pulse.frameProcessor}
-          torchMode={pulse.torchMode}
-          isActive={true}
-        />
-      </View>
-      {showCameraInRing && (
-        <Canvas style={StyleSheet.absoluteFill}>
-          <Path
-            path={ringTrack}
-            style="stroke"
-            strokeWidth={PLACEMENT_RING_STROKE}
-            color={placementCfg.ringColor + '33'}
-          />
-          {placementHoldProgress > 0 && (
-            <Path
-              path={ringArc}
-              style="stroke"
-              strokeWidth={PLACEMENT_RING_STROKE}
-              strokeCap="round"
-              color={placementCfg.ringColor}
-            />
-          )}
-        </Canvas>
-      )}
-    </View>
-  ) : null;
-
-  if (phase === 'placement') {
-    return (
-      <SafeAreaView style={styles.placementSafeArea}>
+  return (
+    <View style={styles.fill}>
+      {isPlacement ? (
+        <SafeAreaView style={styles.placementSafeArea}>
         <View style={styles.placementContainer}>
           <View style={styles.placementTopArea}>
             <Text style={[styles.placementStatus, { color: placementCfg.ringColor }]}>
@@ -467,15 +421,9 @@ export default function DailyExercisePage({
             </TouchableOpacity>
           </View>
         </View>
-
-        {persistentCamera}
-      </SafeAreaView>
-    );
-  }
-
-  return (
-    <View style={styles.fill}>
-      <ExerciseScaffold
+        </SafeAreaView>
+      ) : (
+        <ExerciseScaffold
       titleSlot={
         <View style={styles.titleSlotWrap}>
           {pulse.active ? (
@@ -490,6 +438,8 @@ export default function DailyExercisePage({
                 frameProcessor={pulse.frameProcessor}
                 torchMode={pulse.torchMode}
                 mountCamera={false}
+                showCameraPreview={true}
+                onPreviewFrame={setPreviewFrame}
               />
             </View>
           ) : null}
@@ -573,12 +523,28 @@ export default function DailyExercisePage({
         </View>
       }
     />
-    {persistentCamera}
+      )}
+      <View
+        pointerEvents="none"
+        style={[
+          styles.persistentCamera,
+          isPlacement
+            ? styles.persistentCameraVisible
+            : pillPreviewStyle
+              ? pillPreviewStyle
+              : styles.persistentCameraHidden,
+        ]}
+      >
+        <PersistentCameraRing
+          ringColor={isPlacement ? placementCfg.ringColor : colors.primary.blue600}
+          trackColor={isPlacement ? placementCfg.ringColor + '33' : colors.border.subtle}
+          progress={isPlacement ? placementHoldProgress : 0}
+          cameraProps={cameraProps}
+        />
+      </View>
     </View>
   );
 }
-
-const PERSISTENT_CAMERA_INSET = PLACEMENT_RING_STROKE + 4;
 
 const styles = StyleSheet.create({
   fill: {
@@ -598,21 +564,20 @@ const styles = StyleSheet.create({
     opacity: 1,
   },
   persistentCameraHidden: {
-    top: -9999,
-    left: -9999,
-    width: 1,
-    height: 1,
+    top: 0,
+    left: 0,
+    width: PLACEMENT_RING_SIZE,
+    height: PLACEMENT_RING_SIZE,
     opacity: 0,
+    transform: [{ scale: 0.01 }],
   },
-  persistentCameraInner: {
-    position: 'absolute',
-    top: PERSISTENT_CAMERA_INSET,
-    left: PERSISTENT_CAMERA_INSET,
-    right: PERSISTENT_CAMERA_INSET,
-    bottom: PERSISTENT_CAMERA_INSET,
-    borderRadius: (PLACEMENT_RING_SIZE - PERSISTENT_CAMERA_INSET * 2) / 2,
-    overflow: 'hidden',
-    backgroundColor: '#000',
+  persistentCameraPillPreview: {
+    width: PLACEMENT_RING_SIZE,
+    height: PLACEMENT_RING_SIZE,
+    opacity: 1,
+    zIndex: 100,
+    elevation: 100,
+    transform: [{ scale: 20 / PLACEMENT_RING_SIZE }],
   },
   placementSafeArea: {
     flex: 1,
