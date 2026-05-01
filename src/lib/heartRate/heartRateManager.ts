@@ -18,6 +18,11 @@ const PEAK_THRESHOLD_FACTOR = 0.4;
 const MIN_AMPLITUDE = 0.001;
 const MIN_IBI_MS = 300;
 const MAX_IBI_MS = 1500;
+const ADAPTIVE_REFRACTORY_FRACTION = 0.5;
+const TROUGH_REARM_FACTOR = 0.1;
+const FORCE_REARM_AFTER_MS = 900;
+const SHORT_IBI_CONFIRMATION_MS = 430;
+const SHORT_IBI_CONFIRMATION_TOLERANCE = 0.25;
 const WARMUP_FRAMES = 60;
 const REINIT_GAP_MS = 1000;
 const IBI_HISTORY_SIZE = 8;
@@ -212,6 +217,8 @@ export class HeartRateManager {
   private readonly ibiSamples: IbiSample[] = [];
   private sessionStartTs: number | null = null;
   private skipNextRecordedIbi = false;
+  private armedForPeak = true;
+  private pendingShortPeakTs: number | null = null;
 
   reset(): void {
     this.baseline = 0;
@@ -232,6 +239,29 @@ export class HeartRateManager {
     this.ibiSamples.length = 0;
     this.sessionStartTs = null;
     this.skipNextRecordedIbi = false;
+    this.armedForPeak = true;
+    this.pendingShortPeakTs = null;
+  }
+
+  private pushAcceptedIbi(peakTs: number, ibi: number): void {
+    this.ibiHistory.push(ibi);
+    if (this.ibiHistory.length > IBI_HISTORY_SIZE) {
+      this.ibiHistory.shift();
+    }
+    if (this.skipNextRecordedIbi) {
+      this.skipNextRecordedIbi = false;
+      return;
+    }
+    const anchorTs = this.sessionStartTs ?? peakTs;
+    const quality = Math.min(
+      1,
+      Math.max(0, this.amplitude / SIGNAL_QUALITY_REF),
+    );
+    this.ibiSamples.push({
+      offsetMs: Math.max(0, Math.round(peakTs - anchorTs)),
+      ibiMs: Math.round(ibi),
+      signalQuality: quality,
+    });
   }
 
   beginMeasurementWindow(startTimestamp: number): void {
@@ -256,6 +286,8 @@ export class HeartRateManager {
       this.prev2 = 0;
       this.prev1Ts = 0;
       this.prev2Ts = 0;
+      this.armedForPeak = true;
+      this.pendingShortPeakTs = null;
       this.lastPlacement = this.lastPlacement === 'good' ? 'lost' : placement;
       return {
         fingerPlacement: this.lastPlacement,
@@ -288,6 +320,8 @@ export class HeartRateManager {
       this.ibiHistory.length = 0;
       this.validFrameCounter = 0;
       this.initialized = true;
+      this.armedForPeak = true;
+      this.pendingShortPeakTs = null;
     }
 
     if (this.needsBandpassPrime) {
@@ -298,6 +332,8 @@ export class HeartRateManager {
       this.bpLp.prime(0, 1);
       this.amplitude = 0;
       this.needsBandpassPrime = false;
+      this.armedForPeak = true;
+      this.pendingShortPeakTs = null;
     }
 
     this.baseline += BASELINE_ALPHA * (weightedAverage - this.baseline);
@@ -312,9 +348,20 @@ export class HeartRateManager {
     let beatDetected = false;
 
     if (readyForMeasurement && this.amplitude > MIN_AMPLITUDE) {
-      const threshold = this.amplitude * PEAK_THRESHOLD_FACTOR;
+      const upperThreshold = this.amplitude * PEAK_THRESHOLD_FACTOR;
+      const lowerThreshold = -this.amplitude * TROUGH_REARM_FACTOR;
+      if (
+        !this.armedForPeak &&
+        (ac < lowerThreshold ||
+          (this.lastPeakTs !== 0 &&
+            sample.timestamp - this.lastPeakTs >= FORCE_REARM_AFTER_MS))
+      ) {
+        this.armedForPeak = true;
+      }
+
       const isPeak =
-        this.prev1 > threshold &&
+        this.armedForPeak &&
+        this.prev1 > upperThreshold &&
         this.prev1 >= this.prev2 &&
         this.prev1 > ac;
       if (isPeak) {
@@ -329,50 +376,79 @@ export class HeartRateManager {
                 sample.timestamp,
               )
             : this.prev1Ts;
+        const adaptiveMinIbi =
+          this.ibiHistory.length >= MALIK_MIN_HISTORY
+            ? Math.max(
+                MIN_IBI_MS,
+                ADAPTIVE_REFRACTORY_FRACTION *
+                  medianOfRecent(this.ibiHistory, MALIK_WINDOW),
+              )
+            : MIN_IBI_MS;
         const refractoryOk =
-          this.lastPeakTs === 0 || peakTs - this.lastPeakTs >= MIN_IBI_MS;
+          this.lastPeakTs === 0 || peakTs - this.lastPeakTs >= adaptiveMinIbi;
         if (refractoryOk) {
           let advanceAnchor = true;
           let acceptedPeak = this.lastPeakTs === 0;
           if (this.lastPeakTs !== 0) {
             const ibi = peakTs - this.lastPeakTs;
-            if (ibi > MAX_IBI_MS) {
-              this.ibiHistory.length = 0;
-              acceptedPeak = true;
-            } else {
-              const ectopic =
-                this.ibiHistory.length >= MALIK_MIN_HISTORY &&
-                (() => {
-                  const med = medianOfRecent(this.ibiHistory, MALIK_WINDOW);
-                  return med > 0 && Math.abs(ibi - med) / med > MALIK_THRESHOLD;
-                })();
-              if (ectopic) {
+            let handledInterval = false;
+
+            const pendingTs = this.pendingShortPeakTs;
+            if (pendingTs != null) {
+              const pendingIbi = pendingTs - this.lastPeakTs;
+              const confirmedIbi = peakTs - pendingTs;
+              const confirmsFastRhythm =
+                confirmedIbi >= MIN_IBI_MS &&
+                confirmedIbi < SHORT_IBI_CONFIRMATION_MS &&
+                Math.abs(confirmedIbi - pendingIbi) / Math.max(pendingIbi, 1) <=
+                  SHORT_IBI_CONFIRMATION_TOLERANCE;
+              if (confirmsFastRhythm) {
+                acceptedPeak = true;
+                handledInterval = true;
+                this.pendingShortPeakTs = null;
+                this.pushAcceptedIbi(pendingTs, pendingIbi);
+                this.pushAcceptedIbi(peakTs, confirmedIbi);
+              } else {
+                this.pendingShortPeakTs = null;
+              }
+            }
+
+            if (!handledInterval) {
+              if (ibi > MAX_IBI_MS) {
+                this.ibiHistory.length = 0;
+                acceptedPeak = true;
+              } else if (
+                this.ibiHistory.length < MALIK_MIN_HISTORY &&
+                ibi < SHORT_IBI_CONFIRMATION_MS
+              ) {
+                // Cold start: defer short IBIs until a similar next IBI
+                // confirms a real fast rhythm; otherwise drop as a likely
+                // dicrotic doublet.
+                this.pendingShortPeakTs = peakTs;
                 advanceAnchor = false;
               } else {
-                acceptedPeak = true;
-                this.ibiHistory.push(ibi);
-                if (this.ibiHistory.length > IBI_HISTORY_SIZE) {
-                  this.ibiHistory.shift();
-                }
-                if (this.skipNextRecordedIbi) {
-                  this.skipNextRecordedIbi = false;
+                const ectopic =
+                  this.ibiHistory.length >= MALIK_MIN_HISTORY &&
+                  (() => {
+                    const med = medianOfRecent(this.ibiHistory, MALIK_WINDOW);
+                    return (
+                      med > 0 && Math.abs(ibi - med) / med > MALIK_THRESHOLD
+                    );
+                  })();
+                if (ectopic) {
+                  advanceAnchor = false;
                 } else {
-                  const anchorTs = this.sessionStartTs ?? peakTs;
-                  const quality = Math.min(
-                    1,
-                    Math.max(0, this.amplitude / SIGNAL_QUALITY_REF),
-                  );
-                  this.ibiSamples.push({
-                    offsetMs: Math.max(0, Math.round(peakTs - anchorTs)),
-                    ibiMs: Math.round(ibi),
-                    signalQuality: quality,
-                  });
+                  acceptedPeak = true;
+                  this.pushAcceptedIbi(peakTs, ibi);
                 }
               }
             }
           }
           if (advanceAnchor) {
             this.lastPeakTs = peakTs;
+            if (acceptedPeak) {
+              this.armedForPeak = false;
+            }
           }
           beatDetected = acceptedPeak;
         }
