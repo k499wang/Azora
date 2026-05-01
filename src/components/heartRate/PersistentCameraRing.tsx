@@ -4,6 +4,7 @@ import { Canvas, Path, Skia } from '@shopify/react-native-skia';
 import * as Haptics from 'expo-haptics';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
+import { isHapticsEnabled } from '../../services/preferences/hapticsPreference';
 import { HeartRateCameraPreview } from './HeartRateCameraPreview';
 import type { HeartRateCameraPreviewProps } from './HeartRateCameraPreview';
 
@@ -75,7 +76,7 @@ export const PersistentCameraRing = memo(function PersistentCameraRing({
   useEffect(() => {
     if (beatTick <= 0) return;
 
-    if (hapticOnBeat) {
+    if (hapticOnBeat && isHapticsEnabled()) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     }
 

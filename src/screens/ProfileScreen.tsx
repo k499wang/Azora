@@ -17,6 +17,7 @@ import ProfileAccountCard from '../components/profile/ProfileAccountCard';
 import { useAuthStore } from '../stores/authStore';
 import type { ProfileScreenProps } from '../app/navigation';
 import { trackProfileAction } from '../services/analytics/tracking';
+import { useHapticsPreference } from '../hooks/useHapticsPreference';
 
 const PROFILE_HERO: ProfileStatHero = {
   label: 'Longest hold',
@@ -65,6 +66,7 @@ export default function ProfileScreen(_: ProfileScreenProps) {
   const user = useAuthStore((s) => s.user);
   const signOut = useAuthStore((s) => s.signOut);
   const [signingOut, setSigningOut] = useState(false);
+  const { hapticsEnabled, setHapticsEnabled } = useHapticsPreference();
 
   const handleSignOut = () => {
     if (signingOut) return;
@@ -149,6 +151,11 @@ export default function ProfileScreen(_: ProfileScreenProps) {
           <View style={styles.sectionBody}>
             <ProfileAccountCard
               email={user?.email ?? undefined}
+              hapticsEnabled={hapticsEnabled}
+              onToggleHaptics={(enabled) => {
+                setHapticsEnabled(enabled);
+                trackProfileAction('haptics_toggled', { enabled });
+              }}
               onOpenNotifications={() => {
                 trackProfileAction('notifications_opened');
                 void Linking.openSettings();

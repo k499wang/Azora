@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ContinuousHaptics } from '../../native/continuousHaptics';
+import { isHapticsEnabled } from '../../services/preferences/hapticsPreference';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
@@ -73,7 +74,7 @@ export function WelcomeIntro({ onFinish }: Props) {
     const isInhale = phase === 'inhale';
     const duration = isInhale ? INHALE_MS : EXHALE_MS;
 
-    if (isInhale) {
+    if (isInhale && isHapticsEnabled()) {
       if (Platform.OS === 'ios') {
         ContinuousHaptics.start(INHALE_TEXT_VISIBLE_MS);
       } else {

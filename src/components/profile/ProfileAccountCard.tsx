@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
 import { typography, fonts } from '../../theme/typography';
@@ -14,6 +14,8 @@ interface ProfileAccountCardProps {
   onSignOut?: () => void;
   onManageSubscription?: () => void;
   onDeleteAccount?: () => void;
+  hapticsEnabled: boolean;
+  onToggleHaptics: (enabled: boolean) => void;
 }
 
 interface RowProps {
@@ -63,6 +65,7 @@ function Row({ icon, label, detail, onPress, destructive, isLast }: RowProps) {
 
 export default function ProfileAccountCard({
   email,
+  hapticsEnabled,
   onOpenNotifications,
   onOpenPrivacyPolicy,
   onOpenTerms,
@@ -70,6 +73,7 @@ export default function ProfileAccountCard({
   onSignOut,
   onManageSubscription,
   onDeleteAccount,
+  onToggleHaptics,
 }: ProfileAccountCardProps) {
   return (
     <View style={styles.card}>
@@ -86,6 +90,25 @@ export default function ProfileAccountCard({
           label="Notifications"
           onPress={onOpenNotifications}
         />
+        <View style={[styles.row, styles.rowDivider]}>
+          <MaterialCommunityIcons
+            name="vibrate"
+            size={20}
+            color={colors.primary.blue600}
+          />
+          <Text style={[styles.rowLabel, styles.hapticsLabel]} numberOfLines={1}>
+            Haptics
+          </Text>
+          <Switch
+            value={hapticsEnabled}
+            onValueChange={onToggleHaptics}
+            trackColor={{
+              false: colors.neutral[300],
+              true: colors.primary.blue300,
+            }}
+            thumbColor={hapticsEnabled ? colors.primary.blue600 : colors.neutral[50]}
+          />
+        </View>
         <Row
           icon="shield-lock-outline"
           label="Privacy policy"
@@ -178,6 +201,9 @@ const styles = StyleSheet.create({
     fontFamily: fonts.medium,
     fontWeight: '500',
     flex: 1,
+  },
+  hapticsLabel: {
+    color: colors.text.primary,
   },
   rowDetail: {
     ...typography.body.small,

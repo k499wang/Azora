@@ -14,6 +14,7 @@ import { colors } from '../../theme/colors';
 import { typography, fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import type { FingerPlacementState } from '../../lib/heartRate/types';
+import { isHapticsEnabled } from '../../services/preferences/hapticsPreference';
 import { HeartRateCameraPreview } from './HeartRateCameraPreview';
 import type { HeartRateCameraPreviewProps } from './HeartRateCameraPreview';
 
@@ -80,7 +81,9 @@ export function MeasuringScreen({
   useEffect(() => {
     if (beatTick <= 0) return;
 
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    if (isHapticsEnabled()) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    }
 
     beatScale.setValue(0.92);
     beatOpacity.setValue(0.45);
