@@ -74,11 +74,9 @@ function buildHrvStats(
 ): HomeHrvStats {
   const summary = breathHold ?? heartRate;
   const rmssd = summary?.rmssd ?? null;
-  const avgBpm = summary?.avgBpm ?? null;
-  const stress =
-    rmssd != null && avgBpm != null
-      ? deriveStressFromStoredSummary(rmssd, avgBpm)
-      : null;
+  const stress = breathHold != null
+    ? deriveStressFromStoredSummary(breathHold.rmssd, breathHold.avgBpm)
+    : (heartRate?.stress ?? null);
 
   return {
     rmssd,
@@ -90,7 +88,12 @@ function buildHrvStats(
   };
 }
 
-function deriveStressFromStoredSummary(rmssd: number, avgBpm: number): number {
+function deriveStressFromStoredSummary(
+  rmssd: number | null,
+  avgBpm: number | null,
+): number | null {
+  if (rmssd == null || avgBpm == null) return null;
+
   const rmssdScore = Math.max(0, 100 - (rmssd / 60) * 100);
   const hrScore = Math.max(0, ((avgBpm - 50) / 30) * 100);
   return Math.max(0, Math.min(100, Math.round(rmssdScore * 0.7 + hrScore * 0.3)));
