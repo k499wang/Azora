@@ -39,6 +39,12 @@ export interface TodayHeartRateSummary {
   beatCount: number | null;
 }
 
+export interface HeartRateSessionDetail extends TodayHeartRateSummary {
+  bpmSeries: HeartRatePoint[];
+  ibiSeries: HeartRateIbiPoint[];
+  stress: number | null;
+}
+
 export interface BreathHoldSummary {
   sessionId: string;
   startedAt: string;

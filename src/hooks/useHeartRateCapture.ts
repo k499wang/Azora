@@ -47,6 +47,7 @@ interface UseHeartRateCaptureReturn {
   currentBpm: number | null;
   beatTick: number;
   result: CaptureResult | null;
+  captureSamples: PpgFrameSample[];
   device: ReturnType<typeof useHeartRateCamera>['device'];
   format: ReturnType<typeof useHeartRateCamera>['format'];
   frameProcessor: ReturnType<typeof useFrameProcessor>;
@@ -67,6 +68,7 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
   const [currentBpm, setCurrentBpm] = useState<number | null>(null);
   const [beatTick, setBeatTick] = useState(0);
   const [result, setResult] = useState<CaptureResult | null>(null);
+  const [captureSamples, setCaptureSamples] = useState<PpgFrameSample[]>([]);
 
   const samplesRef = useRef<PpgFrameSample[]>([]);
   const goodSinceRef = useRef<number | null>(null);
@@ -117,6 +119,7 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
 
     const samples = [...samplesRef.current];
     const ibiSamples = managerRef.current.getIbiSamples();
+    setCaptureSamples(samples);
     setTimeout(() => {
       if (captureStateRef.current !== 'processing') return;
 
@@ -236,6 +239,7 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
     setProgress(0);
     setSecondsRemaining(CAPTURE_DURATION_SEC);
     setResult(null);
+    setCaptureSamples([]);
     setBeatTick(0);
     setCurrentBpm(null);
     fingerPlacementRef.current = 'no_finger';
@@ -258,6 +262,7 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
   const reset = useCallback(() => {
     cancel();
     setResult(null);
+    setCaptureSamples([]);
   }, [cancel]);
 
   return {
@@ -268,6 +273,7 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
     currentBpm,
     beatTick,
     result,
+    captureSamples,
     device,
     format,
     frameProcessor,

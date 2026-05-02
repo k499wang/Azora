@@ -4,6 +4,7 @@ import AuthLandingScreen from '../../screens/AuthLandingScreen';
 import DailyExercisePage from '../../screens/DailyExercisePage';
 import ExerciseSessionPage from '../../screens/ExerciseSessionPage';
 import { HeartRateScreen } from '../../screens/HeartRateScreen';
+import { HeartRateSessionDetailScreen } from '../../screens/HeartRateSessionDetailScreen';
 import ShareableResultScreen from '../../screens/ShareableResultScreen';
 import { useAppGate } from '../../hooks/useAppGate';
 import { OnboardingFlow } from '../../components/onboarding';
@@ -45,6 +46,14 @@ export function RootNavigator() {
         options={{
           presentation: 'modal',
           animation: 'slide_from_bottom',
+        }}
+      />
+      <Stack.Screen
+        name="HeartRateSessionDetail"
+        component={HeartRateSessionDetailScreen}
+        options={{
+          presentation: 'card',
+          animation: 'slide_from_right',
         }}
       />
       <Stack.Screen

@@ -89,45 +89,17 @@ function mapIbiSamples(ibiSamples: IbiSample[]): HeartRateSessionRpcIbiSample[] 
 function buildBpmSamplesFromIbiSamples(
   ibiSamples: HeartRateSessionRpcIbiSample[],
 ): HeartRateSessionRpcSample[] {
-  const buckets = new Map<number, {
-    sumBpm: number;
-    bpmCount: number;
-    sumQuality: number;
-    qualityCount: number;
-  }>();
-
-  for (const sample of ibiSamples) {
-    const bpm = Math.round(60000 / sample.ibi_ms);
-    if (!isFiniteNumber(bpm) || bpm < 20 || bpm > 240) continue;
-
-    const bucketOffsetMs = Math.floor(sample.offset_ms / 1000) * 1000;
-    const bucket = buckets.get(bucketOffsetMs) ?? {
-      sumBpm: 0,
-      bpmCount: 0,
-      sumQuality: 0,
-      qualityCount: 0,
-    };
-
-    bucket.sumBpm += bpm;
-    bucket.bpmCount += 1;
-
-    if (sample.signal_quality != null) {
-      bucket.sumQuality += sample.signal_quality;
-      bucket.qualityCount += 1;
-    }
-
-    buckets.set(bucketOffsetMs, bucket);
-  }
-
-  return [...buckets.entries()]
-    .sort(([a], [b]) => a - b)
-    .map(([offsetMs, bucket]) => ({
-      offset_ms: offsetMs,
-      bpm: Math.round(bucket.sumBpm / bucket.bpmCount),
-      signal_quality: bucket.qualityCount > 0
-        ? bucket.sumQuality / bucket.qualityCount
-        : null,
-    }));
+  return ibiSamples
+    .map((sample) => ({
+      offset_ms: sample.offset_ms,
+      bpm: Math.round(60000 / sample.ibi_ms),
+      signal_quality: sample.signal_quality,
+    }))
+    .filter((sample) => (
+      isFiniteNumber(sample.bpm) &&
+      sample.bpm >= 20 &&
+      sample.bpm <= 240
+    ));
 }
 
 function summarizeBpmSamples(samples: HeartRateSessionRpcSample[]): {
