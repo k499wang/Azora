@@ -16,7 +16,9 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.azora.breath",
       "infoPlist": {
-        "NSCameraUsageDescription": "Allow $(PRODUCT_NAME) to access your camera"
+        "NSCameraUsageDescription": "Allow $(PRODUCT_NAME) to access your camera",
+        "NSPhotoLibraryUsageDescription": "Allow $(PRODUCT_NAME) to access your photos so you can set a profile picture.",
+        "NSPhotoLibraryAddUsageDescription": "Allow $(PRODUCT_NAME) to save photos to your library."
       }
     },
     "android": {
@@ -39,7 +41,13 @@
       "expo-font",
       "react-native-vision-camera",
       "./plugins/with-heart-rate-plugin",
-      "react-native-purchases"
+      "react-native-purchases",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow $(PRODUCT_NAME) to access your photos so you can set a profile picture."
+        }
+      ]
     ]
   }
 }
