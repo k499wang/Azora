@@ -1,29 +1,101 @@
 import { requireSupabaseClient } from '../supabase';
-import type { Database } from '../supabase/database.types';
+import type { Database, Json } from '../supabase/database.types';
 import type {
   BreathHoldSummary,
   DailyActivitySummary,
   HeartRateIbiPoint,
 } from './types';
 
+export interface BreathHoldBpmSampleInput {
+  offsetMs: number;
+  bpm: number;
+  signalQuality: number | null;
+}
+
 export interface CompleteBreathHoldInput {
-  // Add the pure breath-hold RPC payload mapper here when that write path is implemented.
-  session: Record<string, unknown>;
-  samples?: Array<Record<string, unknown>>;
+  startedAt: string;
+  endedAt: string;
+  localDate: string;
+  timezone: string;
+  inhaleSeconds: number | null;
+  holdSeconds: number;
+  avgBpm: number | null;
+  minBpm: number | null;
+  maxBpm: number | null;
+  lungAge: number | null;
+  samples?: BreathHoldBpmSampleInput[];
 }
 
 type BreathHoldRow = Database['public']['Views']['user_today_breath_hold_v']['Row'];
 type DailyActivityRow = Database['public']['Tables']['daily_activity']['Row'];
 
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === 'number' && Number.isFinite(value);
+}
+
+function nullableInt(value: number | null): number | null {
+  return isFiniteNumber(value) ? Math.round(value) : null;
+}
+
+function mapSamples(
+  samples: BreathHoldBpmSampleInput[] | undefined,
+): Array<{ offset_ms: number; bpm: number; signal_quality: number | null }> {
+  return (samples ?? [])
+    .filter((sample) => (
+      isFiniteNumber(sample.offsetMs) &&
+      sample.offsetMs >= 0 &&
+      isFiniteNumber(sample.bpm) &&
+      sample.bpm >= 20 &&
+      sample.bpm <= 240
+    ))
+    .sort((a, b) => a.offsetMs - b.offsetMs)
+    .map((sample) => ({
+      offset_ms: Math.round(sample.offsetMs),
+      bpm: Math.round(sample.bpm),
+      signal_quality: isFiniteNumber(sample.signalQuality)
+        ? Math.min(1, Math.max(0, sample.signalQuality))
+        : null,
+    }));
+}
+
 export async function completeBreathHold(
-  _input: CompleteBreathHoldInput,
+  input: CompleteBreathHoldInput,
 ): Promise<string> {
   const supabase = requireSupabaseClient();
-  void supabase;
 
-  throw new Error(
-    'completeBreathHold is scaffolded but not wired yet. This should call `complete_breath_hold` through a pure payload mapper.',
-  );
+  const { data, error } = await supabase.rpc('complete_breath_hold', {
+    p_session: {
+      started_at: input.startedAt,
+      ended_at: input.endedAt,
+      local_date: input.localDate,
+      timezone: input.timezone,
+      inhale_seconds: nullableInt(input.inhaleSeconds),
+      hold_seconds: Math.max(0, Math.round(input.holdSeconds)),
+      recovery_seconds: null,
+      avg_bpm: nullableInt(input.avgBpm),
+      min_bpm: nullableInt(input.minBpm),
+      max_bpm: nullableInt(input.maxBpm),
+      health_score: null,
+      lung_age: nullableInt(input.lungAge),
+      score_version: 1,
+      notes: null,
+      rmssd: null,
+      sdnn: null,
+      pnn50: null,
+      hr_drop: input.avgBpm != null && input.minBpm != null
+        ? Math.round(input.avgBpm - input.minBpm)
+        : null,
+      beat_count: null,
+      ibi_samples: [],
+    } as unknown as Json,
+    p_samples: mapSamples(input.samples) as unknown as Json,
+  });
+
+  if (error != null) {
+    throw error;
+  }
+
+  return data;
 }
 
 function mapBreathHoldSummary(
