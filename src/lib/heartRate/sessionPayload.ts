@@ -1,5 +1,7 @@
 import type { CaptureResult, IbiSample, PpgFrameSample } from './types';
 
+const MAX_SAMPLE_JUMP_BPM = 8;
+
 export interface HeartRateSessionRpcSession {
   started_at: string;
   ended_at: string;
@@ -47,6 +49,12 @@ function isFiniteNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value);
 }
 
+function clampBpmStep(value: number, previous: number | null): number {
+  if (previous == null) return value;
+  if (Math.abs(value - previous) <= MAX_SAMPLE_JUMP_BPM) return value;
+  return previous + Math.sign(value - previous) * MAX_SAMPLE_JUMP_BPM;
+}
+
 function clampQuality(value: number | null): number | null {
   if (!isFiniteNumber(value)) return null;
   return Math.min(1, Math.max(0, value));
@@ -88,6 +96,32 @@ function mapIbiSamples(ibiSamples: IbiSample[]): HeartRateSessionRpcIbiSample[] 
 }
 
 function buildBpmSamplesFromIbiSamples(
+  ibiSamples: HeartRateSessionRpcIbiSample[],
+): HeartRateSessionRpcSample[] {
+  const instantaneousSamples = ibiSamples
+    .map((sample) => ({
+      offset_ms: sample.offset_ms,
+      bpm: Math.round(60000 / sample.ibi_ms),
+      signal_quality: sample.signal_quality,
+    }))
+    .filter((sample) => (
+      isFiniteNumber(sample.bpm) &&
+      sample.bpm >= 20 &&
+      sample.bpm <= 240
+    ));
+
+  let previousBpm: number | null = null;
+  return instantaneousSamples.map((sample) => {
+    const bpm = Math.round(clampBpmStep(sample.bpm, previousBpm));
+    previousBpm = bpm;
+    return {
+      ...sample,
+      bpm,
+    };
+  });
+}
+
+function buildInstantaneousBpmSamplesFromIbiSamples(
   ibiSamples: HeartRateSessionRpcIbiSample[],
 ): HeartRateSessionRpcSample[] {
   return ibiSamples
@@ -144,8 +178,9 @@ export function buildHeartRateSessionRpcPayload(
   }
 
   const ibiSamples = mapIbiSamples(result.ibiSamples);
+  const instantaneousBpmSamples = buildInstantaneousBpmSamplesFromIbiSamples(ibiSamples);
   const bpmSamples = buildBpmSamplesFromIbiSamples(ibiSamples);
-  const bpmSummary = summarizeBpmSamples(bpmSamples);
+  const bpmSummary = summarizeBpmSamples(instantaneousBpmSamples);
   const rawDurationMs = endedAtMs - startedAtMs;
   const durationMs =
     rawDurationMs > 0

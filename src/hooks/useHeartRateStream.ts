@@ -12,6 +12,7 @@ import type {
 } from '../lib/heartRate/types';
 import { heartRatePlugin } from '../lib/heartRate/heartRatePlugin';
 import { HeartRateManager } from '../lib/heartRate/heartRateManager';
+import { stabilizeBpmUpdate } from '../lib/heartRate/bpmSmoothing';
 import { useHeartRateCamera } from './useHeartRateCamera';
 
 const ROLLING_WINDOW_MS = 15000;
@@ -69,6 +70,7 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
   const goodSinceRef = useRef<number | null>(null);
   const warmupStartRef = useRef<number | null>(null);
   const bpmHistoryRef = useRef<number[]>([]);
+  const publishedBpmRef = useRef<number | null>(null);
   const fingerPlacementRef = useRef<FingerPlacementState>('no_finger');
   const streamStateRef = useRef<StreamState>('idle');
   const managerRef = useRef(new HeartRateManager());
@@ -114,6 +116,7 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
     goodSinceRef.current = null;
     warmupStartRef.current = null;
     bpmHistoryRef.current = [];
+    publishedBpmRef.current = null;
     fingerPlacementRef.current = 'no_finger';
     managerRef.current.reset();
 
@@ -129,6 +132,7 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
         fingerLostSinceRef.current = null;
         fingerPlacementRef.current = 'no_finger';
         managerRef.current.reset();
+        publishedBpmRef.current = null;
         setCurrentBpm(null);
         setFingerPlacement('no_finger');
         return;
@@ -175,6 +179,7 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
         if (frameState.fingerPlacement === 'lost' || (frameState.fingerPlacement !== 'good' && frameState.fingerPlacement !== 'partial')) {
           if (state !== 'finger_lost') {
             fingerLostSinceRef.current = timestamp;
+            publishedBpmRef.current = null;
             setCurrentBpm(null);
             setStreamState('finger_lost');
             streamStateRef.current = 'finger_lost';
@@ -196,10 +201,12 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
         lastBpmUpdateRef.current = timestamp;
         const bpm = managerRef.current.getCurrentBpm();
         if (bpm != null) {
-          setCurrentBpm(bpm);
+          const stabilizedBpm = stabilizeBpmUpdate(bpm, publishedBpmRef.current);
+          publishedBpmRef.current = stabilizedBpm;
+          setCurrentBpm(stabilizedBpm);
           if (state === 'streaming') {
             setBpmHistory((history) => {
-              const next = [...history, bpm].slice(-15);
+              const next = [...history, stabilizedBpm].slice(-15);
               bpmHistoryRef.current = next;
               return next;
             });
@@ -237,6 +244,7 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
     setCurrentBpm(null);
     setBeatTick(0);
     bpmHistoryRef.current = [];
+    publishedBpmRef.current = null;
     setBpmHistory([]);
     setSessionSummary(null);
     setFingerPlacement('no_finger');

@@ -26,6 +26,7 @@ const SHORT_IBI_CONFIRMATION_TOLERANCE = 0.25;
 const WARMUP_FRAMES = 60;
 const REINIT_GAP_MS = 1000;
 const IBI_HISTORY_SIZE = 8;
+const MIN_LIVE_BPM_IBIS = 5;
 const MALIK_THRESHOLD = 0.2;
 const MALIK_WINDOW = 5;
 const MALIK_MIN_HISTORY = 3;
@@ -244,13 +245,13 @@ export class HeartRateManager {
   }
 
   private pushAcceptedIbi(peakTs: number, ibi: number): void {
-    this.ibiHistory.push(ibi);
-    if (this.ibiHistory.length > IBI_HISTORY_SIZE) {
-      this.ibiHistory.shift();
-    }
     if (this.skipNextRecordedIbi) {
       this.skipNextRecordedIbi = false;
       return;
+    }
+    this.ibiHistory.push(ibi);
+    if (this.ibiHistory.length > IBI_HISTORY_SIZE) {
+      this.ibiHistory.shift();
     }
     const anchorTs = this.sessionStartTs ?? peakTs;
     const quality = Math.min(
@@ -267,10 +268,13 @@ export class HeartRateManager {
   beginMeasurementWindow(startTimestamp: number): void {
     this.ibiSamples.length = 0;
     this.sessionStartTs = startTimestamp;
-    // Preserve the warmed detector and rolling BPM history, but avoid storing
-    // the first accepted interval because it straddles the setup->measurement
-    // boundary.
+    // Preserve the warmed detector, but avoid storing the first accepted
+    // interval because it straddles the setup->measurement boundary.
     this.skipNextRecordedIbi = this.lastPeakTs !== 0;
+    // Do not let setup-phase settling artifacts seed the displayed BPM or
+    // outlier rejection for the actual measurement window.
+    this.ibiHistory.length = 0;
+    this.pendingShortPeakTs = null;
   }
 
   processFrame(sample: PpgFrameSample): HeartRateFrameState {
@@ -471,7 +475,7 @@ export class HeartRateManager {
   }
 
   getCurrentBpm(): number | null {
-    if (this.ibiHistory.length < 3) return null;
+    if (this.ibiHistory.length < MIN_LIVE_BPM_IBIS) return null;
     const sorted = [...this.ibiHistory].sort((a, b) => a - b);
     const middle = Math.floor(sorted.length / 2);
     const medianMs =
