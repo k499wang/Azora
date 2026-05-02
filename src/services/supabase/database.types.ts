@@ -630,6 +630,27 @@ export type Database = {
       }
     }
     Views: {
+      user_streaks_v: {
+        Row: {
+          current_streak: number
+          last_qualified_date: string | null
+          longest_streak: number
+          user_id: string
+        }
+        Insert: {
+          current_streak?: never
+          last_qualified_date?: never
+          longest_streak?: never
+          user_id?: never
+        }
+        Update: {
+          current_streak?: never
+          last_qualified_date?: never
+          longest_streak?: never
+          user_id?: never
+        }
+        Relationships: []
+      }
       user_entitlement_v: {
         Row: {
           current_period_ends_at: string | null

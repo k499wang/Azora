@@ -61,6 +61,16 @@ export async function getTodayHeartRateSummary(
 
   const row = data as HeartRateRow;
 
+  if (
+    row.id == null ||
+    row.started_at == null ||
+    row.local_date == null ||
+    row.timezone == null ||
+    row.duration_seconds == null
+  ) {
+    return null;
+  }
+
   return {
     sessionId: row.id,
     startedAt: row.started_at,
@@ -94,9 +104,11 @@ export async function getTodayHeartRateIbiSeries(
     throw error;
   }
 
-  return ((data ?? []) as HeartRateIbiRow[]).map((row) => ({
-    offsetMs: row.offset_ms,
-    ibiMs: row.ibi_ms,
-    signalQuality: row.signal_quality,
-  }));
+  return ((data ?? []) as HeartRateIbiRow[])
+    .filter((row) => row.offset_ms != null && row.ibi_ms != null)
+    .map((row) => ({
+      offsetMs: row.offset_ms as number,
+      ibiMs: row.ibi_ms as number,
+      signalQuality: row.signal_quality,
+    }));
 }
