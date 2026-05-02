@@ -18,6 +18,8 @@ module.exports = {
       usesAppleSignIn: true,
       infoPlist: {
         NSCameraUsageDescription: 'Allow $(PRODUCT_NAME) to access your camera',
+        NSPhotoLibraryUsageDescription:
+          'Allow $(PRODUCT_NAME) to choose a profile photo',
       },
     },
     android: {
@@ -38,6 +40,12 @@ module.exports = {
       'react-native-vision-camera',
       './plugins/with-heart-rate-plugin',
       './plugins/with-continuous-haptics-plugin',
+      [
+        'expo-image-picker',
+        {
+          photosPermission: 'Allow $(PRODUCT_NAME) to choose a profile photo',
+        },
+      ],
       [
         '@react-native-google-signin/google-signin',
         {

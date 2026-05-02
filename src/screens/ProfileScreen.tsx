@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Alert, Linking, ScrollView, StyleSheet, View } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import { padding, spacing } from '../theme/spacing';
@@ -20,6 +21,7 @@ import { trackProfileAction } from '../services/analytics/tracking';
 import { useHapticsPreference } from '../hooks/useHapticsPreference';
 import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
 import { formatProfileHoldTime } from '../services/profile/profileSummaryService';
+import { useUploadProfileAvatarMutation } from '../queries/profile/useUploadProfileAvatarMutation';
 
 function getFallbackDisplayName(email: string | undefined): string {
   if (email == null) {
@@ -53,6 +55,7 @@ export default function ProfileScreen(_: ProfileScreenProps) {
   const [signingOut, setSigningOut] = useState(false);
   const { hapticsEnabled, setHapticsEnabled } = useHapticsPreference();
   const profileSummaryQuery = useProfileSummaryQuery(user?.id ?? null);
+  const uploadAvatarMutation = useUploadProfileAvatarMutation(user?.id ?? null);
 
   const profileSummary = profileSummaryQuery.data;
   const displayName =
@@ -134,6 +137,60 @@ export default function ProfileScreen(_: ProfileScreenProps) {
     );
   };
 
+  const handleChangePhoto = async () => {
+    if (uploadAvatarMutation.isPending) {
+      return;
+    }
+
+    if (user == null) {
+      Alert.alert('Sign in required', 'Sign in before changing your profile photo.');
+      return;
+    }
+
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+    if (!permission.granted) {
+      Alert.alert(
+        'Photo access needed',
+        'Allow photo access in Settings to choose a profile photo.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Open Settings',
+            onPress: () => {
+              void Linking.openSettings();
+            },
+          },
+        ],
+      );
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.9,
+    });
+
+    if (result.canceled || result.assets[0]?.uri == null) {
+      return;
+    }
+
+    try {
+      await uploadAvatarMutation.mutateAsync(result.assets[0].uri);
+      trackProfileAction('profile_photo_updated');
+    } catch (err) {
+      trackProfileAction('profile_photo_update_failed', {
+        error_message: err instanceof Error ? err.message : 'unknown_error',
+      });
+      Alert.alert(
+        'Photo update failed',
+        err instanceof Error ? err.message : 'Please try again.',
+      );
+    }
+  };
+
   return (
     <View style={styles.screen}>
       <ScrollView
@@ -150,6 +207,7 @@ export default function ProfileScreen(_: ProfileScreenProps) {
               displayName={displayName}
               avatarLabel={avatarLabel}
               avatarUrl={profileSummary?.profile?.avatarUrl}
+              onChangePhoto={handleChangePhoto}
             />
           </View>
         </View>

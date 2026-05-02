@@ -92,6 +92,8 @@ const styles = StyleSheet.create({
   avatarLabel: {
     ...typography.display.display3,
     color: colors.text.inverse,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
     fontSize: 30,
     lineHeight: 34,
   },
