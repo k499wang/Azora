@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 import { typography, fonts } from '../theme/typography';
@@ -87,6 +87,32 @@ export default function ExerciseSessionPage({
   const [totalRounds, setTotalRounds] = useState(initialTechnique.defaultRounds);
   const [hrEnabled, setHrEnabled] = useState(true);
   const [previewFrame, setPreviewFrame] = useState<PreviewFrame | null>(null);
+
+  const hudOpacity = useRef(new Animated.Value(1)).current;
+  const [hudVisible, setHudVisible] = useState(true);
+  const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showHud = useCallback(() => {
+    if (hideTimerRef.current) {
+      clearTimeout(hideTimerRef.current);
+      hideTimerRef.current = null;
+    }
+    setHudVisible(true);
+    Animated.timing(hudOpacity, {
+      toValue: 1,
+      duration: 200,
+      useNativeDriver: true,
+    }).start();
+    hideTimerRef.current = setTimeout(() => {
+      Animated.timing(hudOpacity, {
+        toValue: 0,
+        duration: 250,
+        useNativeDriver: true,
+      }).start(({ finished }) => {
+        if (finished) setHudVisible(false);
+      });
+    }, 3000);
+  }, [hudOpacity]);
 
   const posthog = usePostHog();
   useBreathPhaseAudio(
@@ -375,12 +401,23 @@ export default function ExerciseSessionPage({
     () => () => {
       clearTimer();
       stopInhaleVibration();
+      if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
     },
     [],
   );
 
   const isActive =
     phase !== 'idle' && phase !== 'done' && phase !== 'placement';
+
+  useEffect(() => {
+    if (isActive) {
+      showHud();
+    } else {
+      if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+      setHudVisible(true);
+      hudOpacity.setValue(1);
+    }
+  }, [isActive, showHud, hudOpacity]);
 
   const cycleSeconds =
     technique.pattern.inhale +
@@ -416,8 +453,19 @@ export default function ExerciseSessionPage({
       : undefined
   ), [pulse.active, pulse.device, pulse.format, pulse.frameProcessor, pulse.torchMode]);
 
+  const handleScreenTap = () => {
+    if (isActive) showHud();
+  };
+
   return (
     <View style={styles.fill}>
+      {isActive && !hudVisible ? (
+        <Pressable
+          style={styles.tapToRevealLayer}
+          onPress={handleScreenTap}
+          accessibilityLabel="Show controls"
+        />
+      ) : null}
       {isPlacement ? (
         <View style={styles.placementContainer}>
           <View style={styles.placementTopArea}>
@@ -503,7 +551,9 @@ export default function ExerciseSessionPage({
         </BreathingCircle>
       }
       bottomSlot={
-        <View style={styles.bottomContainer}>
+        <Animated.View
+          style={[styles.bottomContainer, isActive ? { opacity: hudOpacity } : null]}
+        >
           {isActive || paused ? (
             <View style={styles.progressWrap}>
               <View style={styles.progressTrack}>
@@ -534,18 +584,27 @@ export default function ExerciseSessionPage({
             </View>
           )}
           <View style={styles.btnRow}>
-            <Pressable style={({ pressed }) => [styles.squareBtn, pressed && styles.circleBtnPressed]} onPress={handleClose}>
+            <Pressable
+              style={({ pressed }) => [styles.squareBtn, pressed && styles.circleBtnPressed]}
+              onPress={() => {
+                if (isActive) showHud();
+                handleClose();
+              }}
+            >
               <MaterialCommunityIcons name="stop" size={26} color={colors.neutral[900]} />
             </Pressable>
             <Pressable
               style={({ pressed }) => [styles.circleBtn, pressed && styles.circleBtnPressed]}
-              onPress={
-                phase === 'idle' || phase === 'done'
-                  ? handleStart
-                  : paused
-                    ? () => handleResume(phase)
-                    : handlePause
-              }
+              onPress={() => {
+                if (isActive) showHud();
+                if (phase === 'idle' || phase === 'done') {
+                  handleStart();
+                } else if (paused) {
+                  handleResume(phase);
+                } else {
+                  handlePause();
+                }
+              }}
             >
               <MaterialCommunityIcons
                 name={isActive && !paused ? 'pause' : 'play'}
@@ -554,7 +613,7 @@ export default function ExerciseSessionPage({
               />
             </Pressable>
           </View>
-        </View>
+        </Animated.View>
       }
         />
       )}
@@ -584,6 +643,10 @@ const styles = StyleSheet.create({
   fill: {
     flex: 1,
     backgroundColor: colors.background.primary,
+  },
+  tapToRevealLayer: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 1,
   },
   persistentCamera: {
     position: 'absolute',
