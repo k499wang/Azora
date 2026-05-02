@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Pressable, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Pressable, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -21,6 +21,9 @@ import type { DailyExerciseScreenProps } from '../app/navigation';
 import { startInhaleVibration, stopInhaleVibration } from '../native/inhaleVibration';
 import { isHapticsEnabled } from '../services/preferences/hapticsPreference';
 import { useBreathPhaseAudio } from '../hooks/useBreathPhaseAudio';
+import { useAuthStore } from '../stores/authStore';
+import { useCompleteBreathHoldMutation } from '../queries/tracking/useCompleteBreathHoldMutation';
+import { estimateLungAge } from '../lib/lungAge';
 
 const PLACEMENT_RING_SIZE = 240;
 const PLACEMENT_TIMEOUT_SECONDS = 10;
@@ -57,6 +60,22 @@ interface BpmSample {
   bpm: number;
 }
 
+function summarizeBpmSamples(samples: BpmSample[]): {
+  avgBpm: number | null;
+  minBpm: number | null;
+  maxBpm: number | null;
+} {
+  const bpms = samples.map((s) => s.bpm);
+
+  return {
+    avgBpm: bpms.length
+      ? Math.round(bpms.reduce((a, b) => a + b, 0) / bpms.length)
+      : null,
+    minBpm: bpms.length ? Math.min(...bpms) : null,
+    maxBpm: bpms.length ? Math.max(...bpms) : null,
+  };
+}
+
 interface PreviewFrame {
   x: number;
   y: number;
@@ -70,7 +89,11 @@ export default function DailyExercisePage({
   navigation,
 }: DailyExerciseScreenProps) {
   const autoStartedRef = useRef(false);
+  const savedSessionKeyRef = useRef<string | null>(null);
+  const savingSessionKeyRef = useRef<string | null>(null);
   const posthog = usePostHog();
+  const user = useAuthStore((state) => state.user);
+  const completeBreathHoldMutation = useCompleteBreathHoldMutation(user?.id ?? null);
   const circleRef = useRef<BreathingCircleRef>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const inhaleTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -173,6 +196,8 @@ export default function DailyExercisePage({
   const startInhale = useCallback(() => {
     clearTimer();
     samplesRef.current = [];
+    savedSessionKeyRef.current = null;
+    savingSessionKeyRef.current = null;
     setLastSamples([]);
     setReleaseAudioActive(false);
     setHoldSeconds(0);
@@ -185,6 +210,70 @@ export default function DailyExercisePage({
       beginHold();
     }, INHALE_SECONDS * 1000);
   }, [beginHold, hrEnabled, posthog, startPulse]);
+
+  const saveCompletedHold = useCallback(async (
+    completedHoldSeconds: number,
+    samples: BpmSample[],
+    endedAtMs: number,
+  ) => {
+    const startedAtMs = holdStartAtRef.current;
+    if (startedAtMs <= 0 || endedAtMs < startedAtMs) return;
+
+    const sessionKey = [
+      startedAtMs,
+      endedAtMs,
+      completedHoldSeconds,
+      samples.length,
+    ].join(':');
+
+    if (
+      savedSessionKeyRef.current === sessionKey ||
+      savingSessionKeyRef.current === sessionKey
+    ) {
+      return;
+    }
+
+    const { avgBpm, minBpm, maxBpm } = summarizeBpmSamples(samples);
+    const lungAge = estimateLungAge({
+      holdSeconds: completedHoldSeconds,
+      avgBpm: avgBpm ?? undefined,
+      minBpm: minBpm ?? undefined,
+    }).age;
+
+    savingSessionKeyRef.current = sessionKey;
+    try {
+      await completeBreathHoldMutation.mutateAsync({
+        startedAt: new Date(startedAtMs).toISOString(),
+        endedAt: new Date(endedAtMs).toISOString(),
+        inhaleSeconds: INHALE_SECONDS,
+        holdSeconds: completedHoldSeconds,
+        avgBpm,
+        minBpm,
+        maxBpm,
+        lungAge,
+        samples: samples.map((sample) => ({
+          offsetMs: sample.t * 1000,
+          bpm: sample.bpm,
+          signalQuality: null,
+        })),
+      });
+      savedSessionKeyRef.current = sessionKey;
+    } catch (error) {
+      captureException(error, {
+        flow: 'daily_breath_hold',
+        action: 'complete_breath_hold',
+        screen_name: 'DailyExercise',
+      });
+      Alert.alert(
+        'Could not save breath hold',
+        'Please check your connection and try again.',
+      );
+    } finally {
+      if (savingSessionKeyRef.current === sessionKey) {
+        savingSessionKeyRef.current = null;
+      }
+    }
+  }, [completeBreathHoldMutation]);
 
   useEffect(() => {
     if (phase === 'inhale') {
@@ -241,6 +330,7 @@ export default function DailyExercisePage({
   };
 
   const releaseHold = () => {
+    const endedAtMs = Date.now();
     clearTimer();
     stopInhaleVibration();
     const samples = samplesRef.current.slice();
@@ -270,6 +360,7 @@ export default function DailyExercisePage({
       hr_monitoring_enabled: hrEnabled,
       bpm_sample_count: samples.length,
     });
+    void saveCompletedHold(holdSeconds, samples, endedAtMs);
   };
 
   const HOLD_RELEASE_GUARD_MS = 1000;
@@ -306,12 +397,7 @@ export default function DailyExercisePage({
 
   const handleViewResults = () => {
     const samples = lastSamples;
-    const bpms = samples.map((s) => s.bpm);
-    const avgBpm = bpms.length
-      ? Math.round(bpms.reduce((a, b) => a + b, 0) / bpms.length)
-      : undefined;
-    const minBpm = bpms.length ? Math.min(...bpms) : undefined;
-    const maxBpm = bpms.length ? Math.max(...bpms) : undefined;
+    const { avgBpm, minBpm, maxBpm } = summarizeBpmSamples(samples);
 
     posthog.capture(AnalyticsEvent.DailyResultsViewed, {
       hold_seconds: holdSeconds,
@@ -323,9 +409,9 @@ export default function DailyExercisePage({
     navigation.navigate('DailyResult', {
       holdSeconds,
       bpmSamples: samples,
-      avgBpm,
-      minBpm,
-      maxBpm,
+      avgBpm: avgBpm ?? undefined,
+      minBpm: minBpm ?? undefined,
+      maxBpm: maxBpm ?? undefined,
     });
   };
 
