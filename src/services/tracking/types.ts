@@ -37,12 +37,12 @@ export interface TodayHeartRateSummary {
   pnn50: number | null;
   hrDrop: number | null;
   beatCount: number | null;
+  stress: number | null;
 }
 
 export interface HeartRateSessionDetail extends TodayHeartRateSummary {
   bpmSeries: HeartRatePoint[];
   ibiSeries: HeartRateIbiPoint[];
-  stress: number | null;
 }
 
 export interface BreathHoldSummary {

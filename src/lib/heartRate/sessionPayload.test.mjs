@@ -56,6 +56,7 @@ test('buildHeartRateSessionRpcPayload matches complete_heart_rate_session RPC ar
         pnn50: 18,
         hrDrop: 7,
         beatCount: 16,
+        stress: 29,
       },
       error: null,
       ibiSamples: [
@@ -75,7 +76,7 @@ test('buildHeartRateSessionRpcPayload matches complete_heart_rate_session RPC ar
     local_date: '2026-04-24',
     timezone: 'America/Toronto',
     duration_seconds: 90,
-    avg_bpm: 71,
+    avg_bpm: 68,
     min_bpm: 60,
     max_bpm: 80,
     rmssd: 41,
@@ -83,6 +84,7 @@ test('buildHeartRateSessionRpcPayload matches complete_heart_rate_session RPC ar
     pnn50: 18,
     hr_drop: 7,
     beat_count: 16,
+    stress: 29,
     ibi_samples: [
       { offset_ms: 1_200, ibi_ms: 1_000, signal_quality: 0.5 },
       { offset_ms: 1_800, ibi_ms: 900, signal_quality: 0.7 },
@@ -124,6 +126,7 @@ test('buildHeartRateSessionRpcPayload falls back to the final reading when no BP
   assert.equal(payload.p_session.avg_bpm, 62);
   assert.equal(payload.p_session.min_bpm, 62);
   assert.equal(payload.p_session.max_bpm, 62);
+  assert.equal(payload.p_session.stress, null);
   assert.deepEqual(payload.p_session.ibi_samples, []);
   assert.deepEqual(payload.p_samples, []);
 });

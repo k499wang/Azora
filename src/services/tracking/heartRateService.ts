@@ -76,10 +76,11 @@ function mapHeartRateSummary(
     pnn50: row.pnn50,
     hrDrop: row.hr_drop,
     beatCount: row.beat_count,
+    stress: row.stress ?? deriveStressFromStoredSummary(row.rmssd, row.avg_bpm),
   };
 }
 
-function deriveStressFromSummary(
+function deriveStressFromStoredSummary(
   rmssd: number | null,
   avgBpm: number | null,
 ): number | null {
@@ -97,7 +98,7 @@ export async function getTodayHeartRateSummary(
 
   const { data, error } = await supabase
     .from('user_today_heart_rate_v')
-    .select('id, started_at, ended_at, local_date, timezone, duration_seconds, avg_bpm, min_bpm, max_bpm, rmssd, sdnn, pnn50, hr_drop, beat_count')
+    .select('id, started_at, ended_at, local_date, timezone, duration_seconds, avg_bpm, min_bpm, max_bpm, rmssd, sdnn, pnn50, hr_drop, beat_count, stress')
     .eq('user_id', userId)
     .order('started_at', { ascending: false })
     .limit(1)
@@ -122,7 +123,7 @@ export async function getRecentHeartRateSummaries(
 
   const { data, error } = await supabase
     .from('heart_rate_sessions')
-    .select('id, started_at, ended_at, local_date, timezone, duration_seconds, avg_bpm, min_bpm, max_bpm, rmssd, sdnn, pnn50, hr_drop, beat_count')
+    .select('id, started_at, ended_at, local_date, timezone, duration_seconds, avg_bpm, min_bpm, max_bpm, rmssd, sdnn, pnn50, hr_drop, beat_count, stress')
     .eq('user_id', userId)
     .order('started_at', { ascending: false })
     .limit(limit);
@@ -144,7 +145,7 @@ export async function getHeartRateSessionDetail(
 
   const { data: sessionData, error: sessionError } = await supabase
     .from('heart_rate_sessions')
-    .select('id, started_at, ended_at, local_date, timezone, duration_seconds, avg_bpm, min_bpm, max_bpm, rmssd, sdnn, pnn50, hr_drop, beat_count')
+    .select('id, started_at, ended_at, local_date, timezone, duration_seconds, avg_bpm, min_bpm, max_bpm, rmssd, sdnn, pnn50, hr_drop, beat_count, stress')
     .eq('user_id', userId)
     .eq('id', sessionId)
     .maybeSingle();
@@ -205,7 +206,6 @@ export async function getHeartRateSessionDetail(
     ...summary,
     bpmSeries,
     ibiSeries,
-    stress: deriveStressFromSummary(summary.rmssd, summary.avgBpm),
   };
 }
 

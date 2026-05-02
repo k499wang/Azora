@@ -14,6 +14,7 @@ export interface HeartRateSessionRpcSession {
   pnn50: number | null;
   hr_drop: number | null;
   beat_count: number | null;
+  stress: number | null;
 }
 
 export interface HeartRateSessionRpcSample {
@@ -158,7 +159,7 @@ export function buildHeartRateSessionRpcPayload(
       local_date: formatLocalDate(endedAtMs, options.timezone),
       timezone: options.timezone,
       duration_seconds: Math.max(1, Math.round(durationMs / 1000)),
-      avg_bpm: bpmSummary.avgBpm ?? reading.bpm,
+      avg_bpm: reading.bpm,
       min_bpm: bpmSummary.minBpm ?? reading.bpm,
       max_bpm: bpmSummary.maxBpm ?? reading.bpm,
       rmssd: reading.rmssd ?? null,
@@ -166,6 +167,7 @@ export function buildHeartRateSessionRpcPayload(
       pnn50: reading.pnn50 ?? null,
       hr_drop: reading.hrDrop ?? null,
       beat_count: reading.beatCount ?? null,
+      stress: reading.stress ?? null,
       ibi_samples: ibiSamples,
     },
     p_samples: bpmSamples,
