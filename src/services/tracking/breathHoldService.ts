@@ -28,7 +28,17 @@ export async function completeBreathHold(
 
 function mapBreathHoldSummary(
   row: BreathHoldRow,
-): BreathHoldSummary {
+): BreathHoldSummary | null {
+  if (
+    row.id == null ||
+    row.started_at == null ||
+    row.local_date == null ||
+    row.timezone == null ||
+    row.hold_seconds == null
+  ) {
+    return null;
+  }
+
   return {
     sessionId: row.id,
     startedAt: row.started_at,
@@ -98,11 +108,13 @@ export async function getTodayBreathHoldIbiSeries(
     throw error;
   }
 
-  return ((data ?? []) as Database['public']['Views']['user_today_breath_hold_ibi_samples_v']['Row'][]).map((row) => ({
-    offsetMs: row.offset_ms,
-    ibiMs: row.ibi_ms,
-    signalQuality: row.signal_quality,
-  }));
+  return ((data ?? []) as Database['public']['Views']['user_today_breath_hold_ibi_samples_v']['Row'][])
+    .filter((row) => row.offset_ms != null && row.ibi_ms != null)
+    .map((row) => ({
+      offsetMs: row.offset_ms as number,
+      ibiMs: row.ibi_ms as number,
+      signalQuality: row.signal_quality,
+    }));
 }
 
 export async function getDailyActivityRange(

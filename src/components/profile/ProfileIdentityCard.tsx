@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
 import { typography, fonts } from '../../theme/typography';
@@ -7,12 +7,14 @@ import { spacing } from '../../theme/spacing';
 interface ProfileIdentityCardProps {
   displayName: string;
   avatarLabel: string;
+  avatarUrl?: string | null;
   onChangePhoto?: () => void;
 }
 
 export default function ProfileIdentityCard({
   displayName,
   avatarLabel,
+  avatarUrl,
   onChangePhoto,
 }: ProfileIdentityCardProps) {
   return (
@@ -25,7 +27,11 @@ export default function ProfileIdentityCard({
       <View style={styles.avatarSection}>
         <View style={styles.avatarShell}>
           <View style={styles.avatar}>
-            <Text style={styles.avatarLabel}>{avatarLabel}</Text>
+            {avatarUrl ? (
+              <Image source={{ uri: avatarUrl }} style={styles.avatarImage} />
+            ) : (
+              <Text style={styles.avatarLabel}>{avatarLabel}</Text>
+            )}
           </View>
         </View>
 
@@ -77,6 +83,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary.blue600,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  avatarImage: {
+    width: '100%',
+    height: '100%',
   },
   avatarLabel: {
     ...typography.display.display3,

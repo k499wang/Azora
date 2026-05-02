@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Alert, Linking, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
@@ -18,48 +18,33 @@ import { useAuthStore } from '../stores/authStore';
 import type { ProfileScreenProps } from '../app/navigation';
 import { trackProfileAction } from '../services/analytics/tracking';
 import { useHapticsPreference } from '../hooks/useHapticsPreference';
+import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
+import { formatProfileHoldTime } from '../services/profile/profileSummaryService';
 
-const PROFILE_HERO: ProfileStatHero = {
-  label: 'Longest hold',
-  value: '2:18',
-  detail: 'Personal best · up 12s this month',
-  icon: 'breath-hold',
-  trend: [72, 79, 77, 84, 89, 93, 98, 138],
-};
+function getFallbackDisplayName(email: string | undefined): string {
+  if (email == null) {
+    return 'Azora athlete';
+  }
 
-const PROFILE_SECONDARY: ProfileStatBadge[] = [
-  {
-    label: 'Best streak',
-    value: '19',
-    detail: 'days',
-    icon: 'streak',
-  },
-  {
-    label: 'Breath holds',
-    value: '47',
-    detail: 'sessions',
-    icon: 'timer',
-  },
-  {
-    label: 'Active days',
-    value: '22',
-    detail: 'tracked',
-    icon: 'sparkle',
-  },
-];
+  return email.split('@')[0] || 'Azora athlete';
+}
 
-const BREATH_HOLD_TREND = [
-  { label: '3', value: 72 },
-  { label: '6', value: 79 },
-  { label: '9', value: 77 },
-  { label: '12', value: 84 },
-  { label: '15', value: 89 },
-  { label: '18', value: 93 },
-  { label: '21', value: 98 },
-  { label: '24', value: 104 },
-];
+function getAvatarLabel(displayName: string): string {
+  const words = displayName
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
 
-const COMPLETED_DAYS = [2, 3, 5, 6, 8, 10, 11, 13, 15, 16, 18, 20, 21, 22, 23, 24, 25, 26];
+  if (words.length === 0) {
+    return 'A';
+  }
+
+  return words
+    .slice(0, 2)
+    .map((word) => word[0])
+    .join('')
+    .toUpperCase();
+}
 
 export default function ProfileScreen(_: ProfileScreenProps) {
   const insets = useSafeAreaInsets();
@@ -67,6 +52,49 @@ export default function ProfileScreen(_: ProfileScreenProps) {
   const signOut = useAuthStore((s) => s.signOut);
   const [signingOut, setSigningOut] = useState(false);
   const { hapticsEnabled, setHapticsEnabled } = useHapticsPreference();
+  const profileSummaryQuery = useProfileSummaryQuery(user?.id ?? null);
+
+  const profileSummary = profileSummaryQuery.data;
+  const displayName =
+    profileSummary?.profile?.displayName ?? getFallbackDisplayName(user?.email);
+  const avatarLabel = getAvatarLabel(displayName);
+
+  const profileHero: ProfileStatHero = useMemo(() => {
+    const longestHoldSeconds = profileSummary?.longestHoldSeconds ?? null;
+    const trend = profileSummary?.breathHoldTrend.map((point) => point.value) ?? [];
+
+    return {
+      label: 'Longest hold',
+      value: formatProfileHoldTime(longestHoldSeconds),
+      detail: longestHoldSeconds == null ? 'No breath holds yet' : 'Personal best',
+      icon: 'breath-hold',
+      trend,
+    };
+  }, [profileSummary]);
+
+  const profileSecondary: ProfileStatBadge[] = useMemo(
+    () => [
+      {
+        label: 'Best streak',
+        value: String(profileSummary?.longestStreak ?? 0),
+        detail: 'days',
+        icon: 'streak',
+      },
+      {
+        label: 'Breath holds',
+        value: String(profileSummary?.breathHoldCount ?? 0),
+        detail: 'sessions',
+        icon: 'timer',
+      },
+      {
+        label: 'Active days',
+        value: String(profileSummary?.activeDays ?? 0),
+        detail: 'tracked',
+        icon: 'sparkle',
+      },
+    ],
+    [profileSummary],
+  );
 
   const handleSignOut = () => {
     if (signingOut) return;
@@ -119,8 +147,9 @@ export default function ProfileScreen(_: ProfileScreenProps) {
 
           <View style={styles.heroCardWrap}>
             <ProfileIdentityCard
-              displayName="Kevin Wong"
-              avatarLabel="KW"
+              displayName={displayName}
+              avatarLabel={avatarLabel}
+              avatarUrl={profileSummary?.profile?.avatarUrl}
             />
           </View>
         </View>
@@ -128,21 +157,21 @@ export default function ProfileScreen(_: ProfileScreenProps) {
         <View style={styles.section}>
           <SectionHeader title="All-time statistics" />
           <View style={styles.sectionBody}>
-            <ProfileStatsGrid hero={PROFILE_HERO} secondary={PROFILE_SECONDARY} />
+            <ProfileStatsGrid hero={profileHero} secondary={profileSecondary} />
           </View>
         </View>
 
         <View style={styles.section}>
           <SectionHeader title="Consistency" />
           <View style={styles.sectionBody}>
-            <ProfileCompletionCalendarCard completedDays={COMPLETED_DAYS} />
+            <ProfileCompletionCalendarCard completedDays={profileSummary?.completedDays ?? []} />
           </View>
         </View>
 
         <View style={styles.section}>
           <SectionHeader title="Heart health" />
           <View style={styles.sectionBody}>
-            <ProfileBreathHoldTrendCard data={BREATH_HOLD_TREND} />
+            <ProfileBreathHoldTrendCard data={profileSummary?.breathHoldTrend ?? []} />
           </View>
         </View>
 
