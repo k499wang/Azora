@@ -7,6 +7,7 @@ import { useRunOnJS } from 'react-native-worklets-core';
 import type { FingerPlacementState, PpgFrameSample } from '../lib/heartRate/types';
 import { heartRatePlugin } from '../lib/heartRate/heartRatePlugin';
 import { HeartRateManager } from '../lib/heartRate/heartRateManager';
+import { stabilizeBpmUpdate } from '../lib/heartRate/bpmSmoothing';
 import { useHeartRateCamera } from './useHeartRateCamera';
 
 const FRAME_PROCESSING_FPS = 45;
@@ -54,6 +55,7 @@ export function useLivePulse(): UseLivePulseReturn {
   const managerRef = useRef(new HeartRateManager());
   const lastBpmUpdateRef = useRef(0);
   const lastFingerSeenAtRef = useRef<number | null>(null);
+  const publishedBpmRef = useRef<number | null>(null);
 
   const { device, format, hasPermission, requestPermission } = useHeartRateCamera();
 
@@ -66,6 +68,7 @@ export function useLivePulse(): UseLivePulseReturn {
     managerRef.current.reset();
     lastBpmUpdateRef.current = 0;
     lastFingerSeenAtRef.current = null;
+    publishedBpmRef.current = null;
   }, []);
 
   const start = useCallback(() => {
@@ -92,6 +95,7 @@ export function useLivePulse(): UseLivePulseReturn {
       if (!isValidFrameSample(frameSample)) {
         managerRef.current.reset();
         lastFingerSeenAtRef.current = null;
+        publishedBpmRef.current = null;
         setCurrentBpm(null);
         setFingerPlacement('no_finger');
         return;
@@ -109,7 +113,9 @@ export function useLivePulse(): UseLivePulseReturn {
 
       if (bpm != null && frameSample.timestamp - lastBpmUpdateRef.current >= BPM_UPDATE_INTERVAL_MS) {
         lastBpmUpdateRef.current = frameSample.timestamp;
-        setCurrentBpm(bpm);
+        const stabilizedBpm = stabilizeBpmUpdate(bpm, publishedBpmRef.current);
+        publishedBpmRef.current = stabilizedBpm;
+        setCurrentBpm(stabilizedBpm);
       }
 
       if (
@@ -117,6 +123,7 @@ export function useLivePulse(): UseLivePulseReturn {
         frameSample.timestamp - lastFingerSeenAtRef.current > FINGER_LOST_TIMEOUT_MS &&
         frameState.fingerPlacement === 'lost'
       ) {
+        publishedBpmRef.current = null;
         setCurrentBpm(null);
       }
     },

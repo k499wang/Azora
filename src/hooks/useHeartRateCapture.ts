@@ -13,6 +13,7 @@ import type {
 import { heartRatePlugin } from '../lib/heartRate/heartRatePlugin';
 import { HeartRateManager } from '../lib/heartRate/heartRateManager';
 import { buildCaptureResult } from '../lib/heartRate/captureResult';
+import { stabilizeBpmUpdate } from '../lib/heartRate/bpmSmoothing';
 import { useMeasurementTimer } from './useMeasurementTimer';
 import { useHeartRateCamera } from './useHeartRateCamera';
 
@@ -146,12 +147,11 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
     if (measurementStartTs != null) {
       managerRef.current.beginMeasurementWindow(measurementStartTs);
     }
-    const warmBpm = managerRef.current.getCurrentBpm();
-    currentBpmRef.current = warmBpm;
+    currentBpmRef.current = null;
     setProgress(0);
     setSecondsRemaining(CAPTURE_DURATION_SEC);
     setBeatTick(0);
-    setCurrentBpm(warmBpm);
+    setCurrentBpm(null);
     setCaptureStateAndRef('measuring');
     startMeasurementTimer();
   }, [resetMeasurementRefs, setCaptureStateAndRef, startMeasurementTimer, stopMeasurementTimer]);
@@ -206,8 +206,9 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
       if (timestamp - lastBpmUpdateRef.current >= BPM_UPDATE_INTERVAL_MS) {
         lastBpmUpdateRef.current = timestamp;
         if (bpm != null) {
-          currentBpmRef.current = bpm;
-          setCurrentBpm(bpm);
+          const stabilizedBpm = stabilizeBpmUpdate(bpm, currentBpmRef.current);
+          currentBpmRef.current = stabilizedBpm;
+          setCurrentBpm(stabilizedBpm);
         }
       }
 

@@ -8,6 +8,7 @@ import { card } from '../theme/card';
 import LineGraph, { DataPoint } from '../components/analytics/LineGraph';
 import type { DailyResultScreenProps } from '../app/navigation';
 import { estimateLungAge, type LungHealthKey } from '../lib/lungAge';
+import { smoothBpmValuePoints } from '../lib/heartRate/bpmSmoothing';
 
 function downsampleSamples(
   samples: { t: number; bpm: number }[],
@@ -58,7 +59,7 @@ export default function ShareableResultScreen({
   const health = LUNG_HEALTH_MAP[lungEstimate.key];
   const holdTime = formatTime(holdSeconds);
 
-  const bpmData = downsampleSamples(bpmSamples);
+  const bpmData = smoothBpmValuePoints(downsampleSamples(bpmSamples));
   const hasBpm = bpmData.length > 0;
   const lowestIndex = hasBpm
     ? bpmData.indexOf(bpmData.reduce((min, p) => (p.value < min.value ? p : min), bpmData[0]))

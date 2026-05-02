@@ -101,6 +101,43 @@ test('buildHeartRateSessionRpcPayload matches complete_heart_rate_session RPC ar
   ]);
 });
 
+test('buildHeartRateSessionRpcPayload smooths isolated IBI spikes for graph samples only', () => {
+  const startedAt = Date.parse('2026-04-25T02:29:00.000Z');
+  const endedAt = Date.parse('2026-04-25T02:30:00.000Z');
+
+  const payload = buildHeartRateSessionRpcPayload(
+    [
+      makeFrame(startedAt),
+      makeFrame(endedAt),
+    ],
+    {
+      reading: {
+        bpm: 67,
+        confidence: 0.88,
+        sampleCount: 120,
+        durationMs: 60_000,
+        recordedAt: '2026-04-25T02:30:00.000Z',
+        source: 'camera-flash',
+      },
+      error: null,
+      ibiSamples: [
+        { offsetMs: 1_000, ibiMs: 900, signalQuality: 0.8 },
+        { offsetMs: 2_000, ibiMs: 895, signalQuality: 0.8 },
+        { offsetMs: 3_000, ibiMs: 600, signalQuality: 0.8 },
+        { offsetMs: 4_000, ibiMs: 900, signalQuality: 0.8 },
+        { offsetMs: 5_000, ibiMs: 905, signalQuality: 0.8 },
+        { offsetMs: 6_000, ibiMs: 910, signalQuality: 0.8 },
+      ],
+    },
+    { timezone: 'UTC' },
+  );
+
+  assert.ok(payload, 'expected a payload');
+  assert.deepEqual(payload.p_samples.map((sample) => sample.bpm), [67, 67, 75, 67, 66, 66]);
+  assert.equal(payload.p_session.min_bpm, 66);
+  assert.equal(payload.p_session.max_bpm, 100);
+});
+
 test('buildHeartRateSessionRpcPayload falls back to the final reading when no BPM buckets can be derived', () => {
   const payload = buildHeartRateSessionRpcPayload(
     [
