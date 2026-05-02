@@ -20,11 +20,13 @@ import StressGauge from './StressGauge';
 import { getStressZone } from '../../lib/heartRate/stress';
 import type { CaptureResult, HrvAvailabilityReason, IbiSample } from '../../lib/heartRate/types';
 import { AnalyticsEvent } from '../../services/analytics/events';
+import { HeartRateResultContent } from './HeartRateResultContent';
 
 interface ResultScreenProps {
   result: CaptureResult;
   onRetry: () => void;
-  onDone: () => void;
+  onDone: () => void | Promise<void>;
+  isSaving?: boolean;
   context?: string;
 }
 
@@ -140,7 +142,13 @@ function getHrvUnavailableMessage(
   }
 }
 
-export function ResultScreen({ result, onRetry, onDone, context }: ResultScreenProps) {
+export function ResultScreen({
+  result,
+  onRetry,
+  onDone,
+  isSaving = false,
+  context,
+}: ResultScreenProps) {
   const posthog = usePostHog();
   const scaleAnim = useRef(new Animated.Value(0.7)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
@@ -210,45 +218,6 @@ export function ResultScreen({ result, onRetry, onDone, context }: ResultScreenP
 
   if (isSuccess && result.reading) {
     const reading = result.reading;
-    const confidence = getConfidenceLabel(reading.confidence);
-    const rmssdValue =
-      reading.rmssd != null && Number.isFinite(reading.rmssd)
-        ? `${Math.round(reading.rmssd)}`
-        : null;
-    const stressValue = reading.stress?.toString() ?? null;
-    const hrvUnavailableMessage = getHrvUnavailableMessage(reading.hrvAvailabilityReason);
-
-    const stats: StatCardProps[] = [
-      {
-        icon: 'pulse',
-        label: 'Samples',
-        value: `${reading.sampleCount}`,
-      },
-    ];
-    if (rmssdValue != null) {
-      stats.push({
-        icon: 'heart-pulse',
-        label: 'RMSSD',
-        value: rmssdValue,
-        unit: 'ms',
-        iconColor: colors.error[500],
-      });
-    }
-    const stressZone =
-      reading.stress != null ? getStressZone(reading.stress) : null;
-
-    const statRows: StatCardProps[][] = [];
-    for (let i = 0; i < stats.length; i += 2) {
-      statRows.push(stats.slice(i, i + 2));
-    }
-
-    const ibiSamples = result.ibiSamples ?? [];
-    const bpmSeries = downsampleIbi(ibiSamples, (s) =>
-      s.ibiMs > 0 ? Math.round(60000 / s.ibiMs) : 0,
-    );
-    const rrSeries = downsampleIbi(ibiSamples, (s) => Math.round(s.ibiMs));
-    const hasGraphs = ibiSamples.length >= 2;
-
     return (
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.container}>
@@ -263,107 +232,25 @@ export function ResultScreen({ result, onRetry, onDone, context }: ResultScreenP
               { transform: [{ scale: scaleAnim }], opacity: opacityAnim },
             ]}
           >
-            {/* Heart icon */}
-            <Animated.View style={{ transform: [{ scale: heartPulse }] }}>
-              <View style={styles.heartIconContainer}>
-                <MaterialCommunityIcons
-                  name="heart"
-                  size={56}
-                  color={colors.error[500]}
-                />
-              </View>
-            </Animated.View>
-
-            <Text style={styles.resultTitle}>Heart Rate</Text>
-
-            {/* BPM display */}
-            <View style={styles.bpmContainer}>
-              <Text style={styles.bpmNumber}>{reading.bpm}</Text>
-              <Text style={styles.bpmUnit}>bpm</Text>
-            </View>
-
-            {/* Confidence badge */}
-            <View style={[styles.confidenceBadge, { backgroundColor: `${confidence.color}15` }]}>
-              <View style={[styles.confidenceDot, { backgroundColor: confidence.color }]} />
-              <Text style={[styles.confidenceText, { color: confidence.color }]}>
-                {confidence.label}
-              </Text>
-            </View>
-
-            <View style={styles.sectionHeaderWrap}>
-              <SectionHeader title="Heart statistics" />
-            </View>
-
-            <View style={styles.statsGrid}>
-              {statRows.map((row, rowIndex) => (
-                <View key={rowIndex} style={styles.statsRow}>
-                  {row.map((stat) => (
-                    <StatCard key={stat.label} {...stat} />
-                  ))}
-                  {row.length === 1 ? <View style={styles.statCardSpacer} /> : null}
-                </View>
-              ))}
-            </View>
-
-            {stressZone != null && reading.stress != null ? (
-              <View style={styles.gaugeWrap}>
-                <StressGauge value={reading.stress} zone={stressZone} />
-              </View>
-            ) : null}
-
-            {rmssdValue == null && stressValue == null && hrvUnavailableMessage != null ? (
-              <View style={styles.hrvUnavailableCard}>
-                <MaterialCommunityIcons
-                  name="information-outline"
-                  size={16}
-                  color={colors.text.secondary}
-                />
-                <Text style={styles.hrvUnavailableText}>{hrvUnavailableMessage}</Text>
-              </View>
-            ) : null}
-
-            {context != null ? (
-              <View style={styles.contextCard}>
-                <Text style={styles.contextLabel}>Context</Text>
-                <Text style={styles.contextValue}>{context}</Text>
-              </View>
-            ) : null}
-
-            {hasGraphs ? (
-              <>
-                <View style={styles.graphCard}>
-                  <Text style={styles.graphTitle}>Heart rate</Text>
-                  <LineGraph
-                    data={bpmSeries}
-                    subtitle="BPM during the reading"
-                    unit=""
-                    height={180}
-                    lineColor={colors.primary.blue500}
-                    fillColor={colors.primary.blue100}
-                    dotColor={colors.primary.blue600}
-                  />
-                </View>
-
-                <View style={styles.graphCard}>
-                  <Text style={styles.graphTitle}>Heart rate variability</Text>
-                  <LineGraph
-                    data={rrSeries}
-                    subtitle="RR intervals (ms) — wider swings = more variability"
-                    unit=""
-                    height={180}
-                    lineColor={colors.error[500]}
-                    fillColor={`${colors.error[500]}1A`}
-                    dotColor={colors.error[500]}
-                  />
-                </View>
-              </>
-            ) : null}
+            <HeartRateResultContent
+              bpm={reading.bpm}
+              confidence={reading.confidence}
+              sampleCount={reading.sampleCount}
+              rmssd={reading.rmssd ?? null}
+              hrDrop={reading.hrDrop ?? null}
+              stress={reading.stress ?? null}
+              hrvAvailabilityReason={reading.hrvAvailabilityReason}
+              ibiSamples={result.ibiSamples ?? []}
+              context={context}
+              heartScale={heartPulse}
+            />
           </Animated.View>
           </ScrollView>
 
           <View style={styles.successActions}>
             <TouchableOpacity
               style={styles.primaryButton}
+              disabled={isSaving}
               onPress={() => {
                 posthog.capture(AnalyticsEvent.HeartRateResultAction, {
                   action: 'retry',
@@ -379,6 +266,7 @@ export function ResultScreen({ result, onRetry, onDone, context }: ResultScreenP
 
             <TouchableOpacity
               onPress={() => {
+                if (isSaving) return;
                 posthog.capture(AnalyticsEvent.HeartRateResultAction, {
                   action: 'done',
                   previous_result: 'success',
@@ -387,9 +275,10 @@ export function ResultScreen({ result, onRetry, onDone, context }: ResultScreenP
                 onDone();
               }}
               activeOpacity={0.7}
+              disabled={isSaving}
               style={styles.cancelTouchable}
             >
-              <Text style={styles.cancelText}>Done</Text>
+              <Text style={styles.cancelText}>{isSaving ? 'Saving...' : 'Done'}</Text>
             </TouchableOpacity>
           </View>
         </View>

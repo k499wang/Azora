@@ -3,6 +3,7 @@ export type {
   DailyExerciseScreenProps,
   DailyResultScreenProps,
   ExerciseSessionScreenProps,
+  HeartRateSessionDetailScreenProps,
   HeartRateScreenProps,
   HomeScreenProps,
   MainTabNavigationProp,

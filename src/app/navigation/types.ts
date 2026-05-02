@@ -21,6 +21,7 @@ export type MainTabParamList = {
 export type RootStackParamList = {
   MainTabs: NavigatorScreenParams<MainTabParamList> | undefined;
   HeartRate: { context?: string } | undefined;
+  HeartRateSessionDetail: { sessionId: string };
   ExerciseSession: { techniqueId: string };
   DailyExercise: undefined;
   DailyResult: {
@@ -56,6 +57,7 @@ export type HomeScreenProps = MainTabScreenProps<'Home'>;
 export type ProfileScreenProps = MainTabScreenProps<'Profile'>;
 
 export type HeartRateScreenProps = RootStackScreenProps<'HeartRate'>;
+export type HeartRateSessionDetailScreenProps = RootStackScreenProps<'HeartRateSessionDetail'>;
 export type ExerciseSessionScreenProps = RootStackScreenProps<'ExerciseSession'>;
 export type DailyExerciseScreenProps = RootStackScreenProps<'DailyExercise'>;
 export type DailyResultScreenProps = RootStackScreenProps<'DailyResult'>;

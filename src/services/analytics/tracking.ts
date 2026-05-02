@@ -7,6 +7,7 @@ type ScreenRoute = {
     context?: string;
     techniqueId?: string;
     holdSeconds?: number;
+    sessionId?: string;
   } | undefined;
 };
 
@@ -29,6 +30,10 @@ export function trackScreenView(route: ScreenRoute) {
 
   if (route.name === 'DailyResult') {
     props.hold_seconds = route.params?.holdSeconds ?? null;
+  }
+
+  if (route.name === 'HeartRateSessionDetail') {
+    props.session_id = route.params?.sessionId ?? null;
   }
 
   posthog.capture(AnalyticsEvent.ScreenView, props);

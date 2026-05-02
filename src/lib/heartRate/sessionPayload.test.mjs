@@ -76,8 +76,8 @@ test('buildHeartRateSessionRpcPayload matches complete_heart_rate_session RPC ar
     timezone: 'America/Toronto',
     duration_seconds: 90,
     avg_bpm: 71,
-    min_bpm: 64,
-    max_bpm: 78,
+    min_bpm: 60,
+    max_bpm: 80,
     rmssd: 41,
     sdnn: 33,
     pnn50: 18,
@@ -92,8 +92,10 @@ test('buildHeartRateSessionRpcPayload matches complete_heart_rate_session RPC ar
   });
 
   assert.deepEqual(payload.p_samples, [
-    { offset_ms: 1_000, bpm: 64, signal_quality: 0.6 },
-    { offset_ms: 2_000, bpm: 78, signal_quality: 0.4 },
+    { offset_ms: 1_200, bpm: 60, signal_quality: 0.5 },
+    { offset_ms: 1_800, bpm: 67, signal_quality: 0.7 },
+    { offset_ms: 2_250, bpm: 75, signal_quality: 0.4 },
+    { offset_ms: 2_950, bpm: 80, signal_quality: null },
   ]);
 });
 
