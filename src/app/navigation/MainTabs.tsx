@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import {
   createBottomTabNavigator,
@@ -7,6 +8,10 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import HomeScreen from '../../screens/HomeScreen';
 import ProfileScreen from '../../screens/ProfileScreen';
+import Icon from '../../components/common/icons/Icon';
+import BreatheActionSheet, {
+  type BreatheActionId,
+} from '../../components/common/BreatheActionSheet';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import type {
@@ -20,24 +25,20 @@ function EmptyScreen() {
   return <View style={styles.hiddenScreen} />;
 }
 
-function MeasureTabButton({ onPress, accessibilityState }: BottomTabBarButtonProps) {
+function BreatheTabButton({ onPress, accessibilityState }: BottomTabBarButtonProps) {
   return (
     <View style={styles.measureSlot}>
       <Pressable
         onPress={onPress}
         accessibilityRole="button"
         accessibilityState={accessibilityState}
-        accessibilityLabel="Measure heart rate"
+        accessibilityLabel="Breathe"
         style={({ pressed }) => [
           styles.measureButton,
           pressed && styles.measureButtonPressed,
         ]}
       >
-        <MaterialCommunityIcons
-          name="heart-pulse"
-          size={28}
-          color={colors.text.inverse}
-        />
+        <Icon name="meditation" size={28} color={colors.text.inverse} />
       </Pressable>
     </View>
   );
@@ -45,59 +46,78 @@ function MeasureTabButton({ onPress, accessibilityState }: BottomTabBarButtonPro
 
 export function MainTabs() {
   const navigation = useNavigation<RootStackNavigationProp<'MainTabs'>>();
+  const [sheetVisible, setSheetVisible] = useState(false);
+
+  const handleSelect = (id: BreatheActionId) => {
+    if (id === 'daily') {
+      navigation.navigate('DailyExercise');
+    } else if (id === 'box') {
+      navigation.navigate('ExerciseSession', { techniqueId: 'box' });
+    } else {
+      navigation.navigate('HeartRate');
+    }
+  };
 
   return (
-    <Tab.Navigator
-      screenOptions={{
-        headerShown: false,
-        tabBarActiveTintColor: colors.primary.blue600,
-        tabBarInactiveTintColor: colors.text.tertiary,
-        tabBarShowLabel: false,
-        tabBarStyle: {
-          backgroundColor: colors.background.elevated,
-          borderTopColor: colors.border.subtle,
-          height: 74,
-          paddingTop: spacing.sm,
-          paddingBottom: spacing.sm,
-        },
-        tabBarItemStyle: {
-          alignItems: 'center',
-          justifyContent: 'center',
-        },
-      }}
-    >
-      <Tab.Screen
-        name="Home"
-        component={HomeScreen}
-        options={{
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="home-outline" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="Measure"
-        component={EmptyScreen}
-        options={{
-          tabBarButton: (props) => <MeasureTabButton {...props} />,
-        }}
-        listeners={{
-          tabPress: (event) => {
-            event.preventDefault();
-            navigation.navigate('HeartRate');
+    <>
+      <Tab.Navigator
+        screenOptions={{
+          headerShown: false,
+          tabBarActiveTintColor: colors.primary.blue600,
+          tabBarInactiveTintColor: colors.text.tertiary,
+          tabBarShowLabel: false,
+          tabBarStyle: {
+            backgroundColor: colors.background.elevated,
+            borderTopColor: colors.border.subtle,
+            height: 74,
+            paddingTop: spacing.sm,
+            paddingBottom: spacing.sm,
+          },
+          tabBarItemStyle: {
+            alignItems: 'center',
+            justifyContent: 'center',
           },
         }}
+      >
+        <Tab.Screen
+          name="Home"
+          component={HomeScreen}
+          options={{
+            tabBarIcon: ({ color, size }) => (
+              <MaterialCommunityIcons name="home-outline" size={size} color={color} />
+            ),
+          }}
+        />
+        <Tab.Screen
+          name="Measure"
+          component={EmptyScreen}
+          options={{
+            tabBarButton: (props) => <BreatheTabButton {...props} />,
+          }}
+          listeners={{
+            tabPress: (event) => {
+              event.preventDefault();
+              setSheetVisible(true);
+            },
+          }}
+        />
+        <Tab.Screen
+          name="Profile"
+          component={ProfileScreen}
+          options={{
+            tabBarIcon: ({ color, size }) => (
+              <MaterialCommunityIcons name="account-outline" size={size} color={color} />
+            ),
+          }}
+        />
+      </Tab.Navigator>
+
+      <BreatheActionSheet
+        visible={sheetVisible}
+        onClose={() => setSheetVisible(false)}
+        onSelect={handleSelect}
       />
-      <Tab.Screen
-        name="Profile"
-        component={ProfileScreen}
-        options={{
-          tabBarIcon: ({ color, size }) => (
-            <MaterialCommunityIcons name="account-outline" size={size} color={color} />
-          ),
-        }}
-      />
-    </Tab.Navigator>
+    </>
   );
 }
 

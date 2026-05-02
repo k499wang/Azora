@@ -41,6 +41,13 @@ module.exports = {
       './plugins/with-heart-rate-plugin',
       './plugins/with-continuous-haptics-plugin',
       [
+        'expo-audio',
+        {
+          microphonePermission: false,
+          recordAudioAndroid: false,
+        },
+      ],
+      [
         'expo-image-picker',
         {
           photosPermission: 'Allow $(PRODUCT_NAME) to choose a profile photo',

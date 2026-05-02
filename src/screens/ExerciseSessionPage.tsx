@@ -11,6 +11,7 @@ import ExerciseScaffold from '../components/exercise/ExerciseScaffold';
 import TECHNIQUES from '../data/techniques';
 import type { BreathingTechnique } from '../data/techniques';
 import { useLivePulse } from '../hooks/useLivePulse';
+import { useBreathPhaseAudio } from '../hooks/useBreathPhaseAudio';
 import { LiveHeartRateMonitor } from '../components/meditation/LiveHeartRateMonitor';
 import { PersistentCameraRing } from '../components/heartRate/PersistentCameraRing';
 import type { FingerPlacementState } from '../lib/heartRate/types';
@@ -88,6 +89,9 @@ export default function ExerciseSessionPage({
   const [previewFrame, setPreviewFrame] = useState<PreviewFrame | null>(null);
 
   const posthog = usePostHog();
+  useBreathPhaseAudio(
+    !paused && (phase === 'inhale' || phase === 'exhale') ? phase : null,
+  );
 
   const pulse = useLivePulse();
   const { start: startPulse, stop: stopPulse, hasPermission, requestPermission } = pulse;

@@ -1,12 +1,12 @@
 import { useCallback } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { HeartRateCaptureFlow } from '../components/heartRate/HeartRateCaptureFlow';
 import { DefaultInstructionScreen } from '../components/heartRate/setupScreens';
 import type { CaptureResult } from '../lib/heartRate/types';
 import { colors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
+import { typography, fonts } from '../theme/typography';
 import type { HeartRateScreenProps } from '../app/navigation';
 
 export function HeartRateScreen({ navigation, route }: HeartRateScreenProps) {
@@ -35,10 +35,14 @@ export function HeartRateScreen({ navigation, route }: HeartRateScreenProps) {
       <Pressable
         onPress={handleCancel}
         hitSlop={16}
-        accessibilityLabel="Close heart rate measurement"
-        style={[styles.closeButton, { top: insets.top + spacing.xs }]}
+        accessibilityLabel="Cancel heart rate measurement"
+        style={({ pressed }) => [
+          styles.cancelButton,
+          { top: insets.top + spacing.xs },
+          pressed && styles.cancelButtonPressed,
+        ]}
       >
-        <MaterialCommunityIcons name="close" size={26} color={colors.text.secondary} />
+        <Text style={styles.cancelText}>Cancel</Text>
       </Pressable>
     </View>
   );
@@ -49,12 +53,18 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background.primary,
   },
-  closeButton: {
+  cancelButton: {
     position: 'absolute',
     left: spacing.md,
-    width: 36,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.sm,
+  },
+  cancelButtonPressed: {
+    opacity: 0.6,
+  },
+  cancelText: {
+    ...typography.body.medium,
+    fontFamily: fonts.semibold,
+    color: colors.text.secondary,
   },
 });
