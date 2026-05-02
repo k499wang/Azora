@@ -20,6 +20,7 @@ import { captureException } from '../services/analytics/errorTracking';
 import type { DailyExerciseScreenProps } from '../app/navigation';
 import { startInhaleVibration, stopInhaleVibration } from '../native/inhaleVibration';
 import { isHapticsEnabled } from '../services/preferences/hapticsPreference';
+import { useBreathPhaseAudio } from '../hooks/useBreathPhaseAudio';
 
 const PLACEMENT_RING_SIZE = 240;
 const PLACEMENT_TIMEOUT_SECONDS = 10;
@@ -73,6 +74,7 @@ export default function DailyExercisePage({
   const circleRef = useRef<BreathingCircleRef>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const inhaleTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const releaseAudioTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const samplesRef = useRef<BpmSample[]>([]);
   const holdStartAtRef = useRef<number>(0);
   const [phase, setPhase] = useState<HoldPhase>('idle');
@@ -81,6 +83,11 @@ export default function DailyExercisePage({
   const [hrEnabled, setHrEnabled] = useState(true);
   const [lastSamples, setLastSamples] = useState<BpmSample[]>([]);
   const [previewFrame, setPreviewFrame] = useState<PreviewFrame | null>(null);
+  const [releaseAudioActive, setReleaseAudioActive] = useState(false);
+
+  useBreathPhaseAudio(
+    phase === 'inhale' ? 'inhale' : releaseAudioActive ? 'exhale' : null,
+  );
 
   const pulse = useLivePulse();
   const {
@@ -116,6 +123,10 @@ export default function DailyExercisePage({
     if (inhaleTimeoutRef.current) {
       clearTimeout(inhaleTimeoutRef.current);
       inhaleTimeoutRef.current = null;
+    }
+    if (releaseAudioTimeoutRef.current) {
+      clearTimeout(releaseAudioTimeoutRef.current);
+      releaseAudioTimeoutRef.current = null;
     }
   };
 
@@ -163,6 +174,7 @@ export default function DailyExercisePage({
     clearTimer();
     samplesRef.current = [];
     setLastSamples([]);
+    setReleaseAudioActive(false);
     setHoldSeconds(0);
     setPhase('inhale');
     if (hrEnabled) startPulse();
@@ -232,6 +244,11 @@ export default function DailyExercisePage({
     clearTimer();
     stopInhaleVibration();
     const samples = samplesRef.current.slice();
+    setReleaseAudioActive(true);
+    releaseAudioTimeoutRef.current = setTimeout(() => {
+      setReleaseAudioActive(false);
+      releaseAudioTimeoutRef.current = null;
+    }, 6000);
     setLastSamples(samples);
     const newBest = holdSeconds > bestHoldSeconds && holdSeconds > 0;
     const updatedBest = Math.max(bestHoldSeconds, holdSeconds);
