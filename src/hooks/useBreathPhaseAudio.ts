@@ -11,8 +11,8 @@ const EXHALE_AUDIO = require('../../assets/audio/breath-exhale-bowl.m4a');
 const FADE_STEP_MS = 50;
 const FADE_IN_MS = 450;
 const FADE_OUT_MS = 550;
-const INHALE_VOLUME = 0.24;
-const EXHALE_VOLUME = 0.2;
+const INHALE_VOLUME = 0.5;
+const EXHALE_VOLUME = 0.46;
 
 function clearRamp(ref: MutableRefObject<ReturnType<typeof setInterval> | null>) {
   if (ref.current) {
@@ -21,10 +21,40 @@ function clearRamp(ref: MutableRefObject<ReturnType<typeof setInterval> | null>)
   }
 }
 
+function safely(action: () => void) {
+  try {
+    action();
+  } catch {
+    // expo-audio can release the native shared object before React cleanup runs.
+  }
+}
+
+function getPlayerNumber(read: () => number, fallback = 0) {
+  try {
+    return read();
+  } catch {
+    return fallback;
+  }
+}
+
+function getPlayerBoolean(read: () => boolean, fallback = false) {
+  try {
+    return read();
+  } catch {
+    return fallback;
+  }
+}
+
 function stopImmediately(player: AudioPlayer) {
-  player.pause();
-  player.volume = 0;
-  player.seekTo(0).catch(() => {});
+  safely(() => {
+    player.pause();
+  });
+  safely(() => {
+    player.volume = 0;
+  });
+  safely(() => {
+    player.seekTo(0).catch(() => {});
+  });
 }
 
 export function useBreathPhaseAudio(phase: BreathAudioPhase) {
@@ -47,10 +77,12 @@ export function useBreathPhaseAudio(phase: BreathAudioPhase) {
   }, []);
 
   useEffect(() => {
-    inhalePlayer.loop = true;
-    inhalePlayer.volume = 0;
-    exhalePlayer.loop = true;
-    exhalePlayer.volume = 0;
+    safely(() => {
+      inhalePlayer.loop = true;
+      inhalePlayer.volume = 0;
+      exhalePlayer.loop = true;
+      exhalePlayer.volume = 0;
+    });
   }, [exhalePlayer, inhalePlayer]);
 
   const fadeOut = useCallback(
@@ -59,8 +91,9 @@ export function useBreathPhaseAudio(phase: BreathAudioPhase) {
       rampRef: MutableRefObject<ReturnType<typeof setInterval> | null>,
     ) => {
       clearRamp(rampRef);
-      const startVolume = player.volume;
-      if (startVolume <= 0 || !player.playing) {
+      const startVolume = getPlayerNumber(() => player.volume);
+      const isPlaying = getPlayerBoolean(() => player.playing);
+      if (startVolume <= 0 || !isPlaying) {
         stopImmediately(player);
         return;
       }
@@ -70,7 +103,9 @@ export function useBreathPhaseAudio(phase: BreathAudioPhase) {
       rampRef.current = setInterval(() => {
         step += 1;
         const nextVolume = startVolume * (1 - step / steps);
-        player.volume = Math.max(0, nextVolume);
+        safely(() => {
+          player.volume = Math.max(0, nextVolume);
+        });
 
         if (step >= steps) {
           clearRamp(rampRef);
@@ -88,16 +123,24 @@ export function useBreathPhaseAudio(phase: BreathAudioPhase) {
       targetVolume: number,
     ) => {
       clearRamp(rampRef);
-      player.loop = true;
-      player.volume = 0;
-      player.seekTo(0).catch(() => {});
-      player.play();
+      safely(() => {
+        player.loop = true;
+        player.volume = 0;
+      });
+      safely(() => {
+        player.seekTo(0).catch(() => {});
+      });
+      safely(() => {
+        player.play();
+      });
 
       const steps = Math.max(1, Math.ceil(FADE_IN_MS / FADE_STEP_MS));
       let step = 0;
       rampRef.current = setInterval(() => {
         step += 1;
-        player.volume = Math.min(targetVolume, targetVolume * (step / steps));
+        safely(() => {
+          player.volume = Math.min(targetVolume, targetVolume * (step / steps));
+        });
 
         if (step >= steps) {
           clearRamp(rampRef);

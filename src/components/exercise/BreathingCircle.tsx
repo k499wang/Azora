@@ -3,8 +3,8 @@ import { Animated, Easing, StyleSheet, View } from 'react-native';
 import { colors } from '../../theme/colors';
 
 const OUTER_MAX_SIZE = 300;
-const OUTER_MIN_SIZE = 170;
-const INNER_SIZE = 160;
+const OUTER_MIN_SIZE = 118;
+const INNER_SIZE = 136;
 const OUTER_MIN_SCALE = OUTER_MIN_SIZE / OUTER_MAX_SIZE;
 
 export interface BreathingCircleRef {
