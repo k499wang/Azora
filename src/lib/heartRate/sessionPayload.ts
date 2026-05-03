@@ -79,7 +79,7 @@ function formatLocalDate(timestampMs: number, timezone: string): string {
   return `${year}-${month}-${day}`;
 }
 
-function mapIbiSamples(ibiSamples: IbiSample[]): HeartRateSessionRpcIbiSample[] {
+export function mapIbiSamples(ibiSamples: IbiSample[]): HeartRateSessionRpcIbiSample[] {
   return ibiSamples
     .filter((sample) => (
       isFiniteNumber(sample.offsetMs) &&
@@ -95,7 +95,7 @@ function mapIbiSamples(ibiSamples: IbiSample[]): HeartRateSessionRpcIbiSample[] 
     }));
 }
 
-function buildBpmSamplesFromIbiSamples(
+export function buildBpmSamplesFromIbiSamples(
   ibiSamples: HeartRateSessionRpcIbiSample[],
 ): HeartRateSessionRpcSample[] {
   const instantaneousSamples = ibiSamples
@@ -121,7 +121,7 @@ function buildBpmSamplesFromIbiSamples(
   });
 }
 
-function buildInstantaneousBpmSamplesFromIbiSamples(
+export function buildInstantaneousBpmSamplesFromIbiSamples(
   ibiSamples: HeartRateSessionRpcIbiSample[],
 ): HeartRateSessionRpcSample[] {
   return ibiSamples
@@ -137,7 +137,7 @@ function buildInstantaneousBpmSamplesFromIbiSamples(
     ));
 }
 
-function summarizeBpmSamples(samples: HeartRateSessionRpcSample[]): {
+export function summarizeBpmSamples(samples: HeartRateSessionRpcSample[]): {
   avgBpm: number | null;
   minBpm: number | null;
   maxBpm: number | null;

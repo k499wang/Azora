@@ -60,6 +60,7 @@ export interface BreathHoldSummary {
   pnn50: number | null;
   hrDrop: number | null;
   beatCount: number | null;
+  stress: number | null;
 }
 
 export interface BreathingSessionSummary {

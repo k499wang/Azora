@@ -75,7 +75,7 @@ function buildHrvStats(
   const summary = breathHold ?? heartRate;
   const rmssd = summary?.rmssd ?? null;
   const stress = breathHold != null
-    ? deriveStressFromStoredSummary(breathHold.rmssd, breathHold.avgBpm)
+    ? (breathHold.stress ?? deriveStressFromStoredSummary(breathHold.rmssd, breathHold.avgBpm))
     : (heartRate?.stress ?? null);
 
   return {

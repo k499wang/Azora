@@ -13,7 +13,7 @@ import ExerciseScaffold from '../components/exercise/ExerciseScaffold';
 import { useLivePulse } from '../hooks/useLivePulse';
 import { LiveHeartRateMonitor } from '../components/meditation/LiveHeartRateMonitor';
 import { PersistentCameraRing } from '../components/heartRate/PersistentCameraRing';
-import type { FingerPlacementState } from '../lib/heartRate/types';
+import type { FingerPlacementState, IbiSample, PpgFrameSample } from '../lib/heartRate/types';
 import { usePostHog } from 'posthog-react-native';
 import { AnalyticsEvent } from '../services/analytics/events';
 import { captureException } from '../services/analytics/errorTracking';
@@ -24,6 +24,13 @@ import { useBreathPhaseAudio } from '../hooks/useBreathPhaseAudio';
 import { useAuthStore } from '../stores/authStore';
 import { useCompleteBreathHoldMutation } from '../queries/tracking/useCompleteBreathHoldMutation';
 import { estimateLungAge } from '../lib/lungAge';
+import { buildCaptureResult } from '../lib/heartRate/captureResult';
+import {
+  buildBpmSamplesFromIbiSamples,
+  buildInstantaneousBpmSamplesFromIbiSamples,
+  mapIbiSamples,
+  summarizeBpmSamples as summarizeHeartRateBpmSamples,
+} from '../lib/heartRate/sessionPayload';
 
 const PLACEMENT_RING_SIZE = 240;
 const PLACEMENT_TIMEOUT_SECONDS = 10;
@@ -126,6 +133,9 @@ export default function DailyExercisePage({
     hasPermission,
     requestPermission,
     currentBpm,
+    beginMeasurementWindow: beginPulseMeasurementWindow,
+    getMeasurementSamples,
+    getIbiSamples,
   } = pulse;
 
   const currentBpmRef = useRef<number | null>(null);
@@ -181,6 +191,7 @@ export default function DailyExercisePage({
     stopInhaleVibration();
     samplesRef.current = [];
     holdStartAtRef.current = Date.now();
+    beginPulseMeasurementWindow();
     setHoldSeconds(0);
     setPhase('hold');
     if (isHapticsEnabled()) {
@@ -196,7 +207,7 @@ export default function DailyExercisePage({
         return next;
       });
     }, 1000);
-  }, []);
+  }, [beginPulseMeasurementWindow]);
 
   const INHALE_SECONDS = 6;
 
@@ -220,7 +231,9 @@ export default function DailyExercisePage({
 
   const saveCompletedHold = useCallback(async (
     completedHoldSeconds: number,
-    samples: BpmSample[],
+    liveSamples: BpmSample[],
+    captureSamples: PpgFrameSample[],
+    ibiSamples: IbiSample[],
     endedAtMs: number,
   ) => {
     const startedAtMs = holdStartAtRef.current;
@@ -230,7 +243,8 @@ export default function DailyExercisePage({
       startedAtMs,
       endedAtMs,
       completedHoldSeconds,
-      samples.length,
+      captureSamples.length,
+      ibiSamples.length,
     ].join(':');
 
     if (
@@ -240,7 +254,17 @@ export default function DailyExercisePage({
       return;
     }
 
-    const { avgBpm, minBpm, maxBpm } = summarizeBpmSamples(samples);
+    const result = buildCaptureResult(captureSamples, ibiSamples);
+    const reading = result.reading;
+    const rpcIbiSamples = mapIbiSamples(result.ibiSamples);
+    const bpmSamples = buildBpmSamplesFromIbiSamples(rpcIbiSamples);
+    const bpmSummary = summarizeHeartRateBpmSamples(
+      buildInstantaneousBpmSamplesFromIbiSamples(rpcIbiSamples),
+    );
+    const liveSummary = summarizeBpmSamples(liveSamples);
+    const avgBpm = reading?.bpm ?? liveSummary.avgBpm;
+    const minBpm = bpmSummary.minBpm ?? reading?.bpm ?? liveSummary.minBpm;
+    const maxBpm = bpmSummary.maxBpm ?? reading?.bpm ?? liveSummary.maxBpm;
     const lungAge = estimateLungAge({
       holdSeconds: completedHoldSeconds,
       avgBpm: avgBpm ?? undefined,
@@ -258,10 +282,23 @@ export default function DailyExercisePage({
         minBpm,
         maxBpm,
         lungAge,
-        samples: samples.map((sample) => ({
-          offsetMs: sample.t * 1000,
+        rmssd: reading?.rmssd ?? null,
+        sdnn: reading?.sdnn ?? null,
+        pnn50: reading?.pnn50 ?? null,
+        hrDrop: reading?.hrDrop ?? (
+          avgBpm != null && minBpm != null ? Math.round(avgBpm - minBpm) : null
+        ),
+        beatCount: reading?.beatCount ?? null,
+        stress: reading?.stress ?? null,
+        samples: bpmSamples.map((sample) => ({
+          offsetMs: sample.offset_ms,
           bpm: sample.bpm,
-          signalQuality: null,
+          signalQuality: sample.signal_quality,
+        })),
+        ibiSamples: rpcIbiSamples.map((sample) => ({
+          offsetMs: sample.offset_ms,
+          ibiMs: sample.ibi_ms,
+          signalQuality: sample.signal_quality,
         })),
       });
       savedSessionKeyRef.current = sessionKey;
@@ -341,11 +378,9 @@ export default function DailyExercisePage({
     clearTimer();
     stopInhaleVibration();
     const samples = samplesRef.current.slice();
-    setReleaseAudioActive(true);
-    releaseAudioTimeoutRef.current = setTimeout(() => {
-      setReleaseAudioActive(false);
-      releaseAudioTimeoutRef.current = null;
-    }, 6000);
+    const captureSamples = getMeasurementSamples();
+    const ibiSamples = getIbiSamples();
+    setReleaseAudioActive(false);
     setLastSamples(samples);
     const newBest = holdSeconds > bestHoldSeconds && holdSeconds > 0;
     const updatedBest = Math.max(bestHoldSeconds, holdSeconds);
@@ -367,7 +402,15 @@ export default function DailyExercisePage({
       hr_monitoring_enabled: hrEnabled,
       bpm_sample_count: samples.length,
     });
-    void saveCompletedHold(holdSeconds, samples, endedAtMs);
+    void saveCompletedHold(holdSeconds, samples, captureSamples, ibiSamples, endedAtMs);
+    const { avgBpm, minBpm, maxBpm } = summarizeBpmSamples(samples);
+    navigation.navigate('DailyResult', {
+      holdSeconds,
+      bpmSamples: samples,
+      avgBpm: avgBpm ?? undefined,
+      minBpm: minBpm ?? undefined,
+      maxBpm: maxBpm ?? undefined,
+    });
   };
 
   const HOLD_RELEASE_GUARD_MS = 1000;

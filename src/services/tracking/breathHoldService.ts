@@ -12,6 +12,12 @@ export interface BreathHoldBpmSampleInput {
   signalQuality: number | null;
 }
 
+export interface BreathHoldIbiSampleInput {
+  offsetMs: number;
+  ibiMs: number;
+  signalQuality: number | null;
+}
+
 export interface CompleteBreathHoldInput {
   startedAt: string;
   endedAt: string;
@@ -23,7 +29,14 @@ export interface CompleteBreathHoldInput {
   minBpm: number | null;
   maxBpm: number | null;
   lungAge: number | null;
+  rmssd: number | null;
+  sdnn: number | null;
+  pnn50: number | null;
+  hrDrop: number | null;
+  beatCount: number | null;
+  stress: number | null;
   samples?: BreathHoldBpmSampleInput[];
+  ibiSamples?: BreathHoldIbiSampleInput[];
 }
 
 type BreathHoldRow = Database['public']['Views']['user_today_breath_hold_v']['Row'];
@@ -58,6 +71,27 @@ function mapSamples(
     }));
 }
 
+function mapIbiSamples(
+  samples: BreathHoldIbiSampleInput[] | undefined,
+): Array<{ offset_ms: number; ibi_ms: number; signal_quality: number | null }> {
+  return (samples ?? [])
+    .filter((sample) => (
+      isFiniteNumber(sample.offsetMs) &&
+      sample.offsetMs >= 0 &&
+      isFiniteNumber(sample.ibiMs) &&
+      sample.ibiMs >= 300 &&
+      sample.ibiMs <= 2000
+    ))
+    .sort((a, b) => a.offsetMs - b.offsetMs)
+    .map((sample) => ({
+      offset_ms: Math.round(sample.offsetMs),
+      ibi_ms: Math.round(sample.ibiMs),
+      signal_quality: isFiniteNumber(sample.signalQuality)
+        ? Math.min(1, Math.max(0, sample.signalQuality))
+        : null,
+    }));
+}
+
 export async function completeBreathHold(
   input: CompleteBreathHoldInput,
 ): Promise<string> {
@@ -79,14 +113,13 @@ export async function completeBreathHold(
       lung_age: nullableInt(input.lungAge),
       score_version: 1,
       notes: null,
-      rmssd: null,
-      sdnn: null,
-      pnn50: null,
-      hr_drop: input.avgBpm != null && input.minBpm != null
-        ? Math.round(input.avgBpm - input.minBpm)
-        : null,
-      beat_count: null,
-      ibi_samples: [],
+      rmssd: nullableInt(input.rmssd),
+      sdnn: nullableInt(input.sdnn),
+      pnn50: nullableInt(input.pnn50),
+      hr_drop: nullableInt(input.hrDrop),
+      beat_count: nullableInt(input.beatCount),
+      stress: nullableInt(input.stress),
+      ibi_samples: mapIbiSamples(input.ibiSamples),
     } as unknown as Json,
     p_samples: mapSamples(input.samples) as unknown as Json,
   });
@@ -126,6 +159,7 @@ function mapBreathHoldSummary(
     pnn50: row.pnn50 ?? null,
     hrDrop: row.hr_drop ?? null,
     beatCount: row.beat_count ?? null,
+    stress: row.stress ?? null,
   };
 }
 
@@ -152,7 +186,7 @@ export async function getTodayBreathHoldSummary(
 
   const { data, error } = await supabase
     .from('user_today_breath_hold_v')
-    .select('id, started_at, ended_at, local_date, timezone, hold_seconds, avg_bpm, min_bpm, max_bpm, rmssd, sdnn, pnn50, hr_drop, beat_count')
+    .select('id, started_at, ended_at, local_date, timezone, hold_seconds, avg_bpm, min_bpm, max_bpm, rmssd, sdnn, pnn50, hr_drop, beat_count, stress')
     .eq('user_id', userId)
     .order('started_at', { ascending: false })
     .limit(1)
