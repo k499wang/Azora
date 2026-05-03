@@ -6,6 +6,7 @@ import RingStatCard from './RingStatCard';
 import HRVChart from './HRVChart';
 
 interface SessionStatsPagerProps {
+  title?: string;
   avgBpm?: number | null;
   holdSeconds?: number | null;
   healthScore?: number | null;
@@ -20,6 +21,7 @@ function formatHold(seconds: number | null | undefined): string {
 }
 
 export default function SessionStatsPager({
+  title = 'Today\'s insights',
   avgBpm,
   holdSeconds,
   healthScore,
@@ -31,7 +33,7 @@ export default function SessionStatsPager({
 
   return (
     <View style={styles.page}>
-      <Text style={styles.title}>Today&apos;s insights</Text>
+      <Text style={styles.title}>{title}</Text>
 
       <View style={styles.smallRingsRow}>
         <RingStatCard

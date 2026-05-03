@@ -15,7 +15,9 @@ export interface CompleteHeartRateSessionInput {
   timezone: string;
 }
 
-type HeartRateRow = Database['public']['Views']['user_today_heart_rate_v']['Row'];
+type HeartRateRow =
+  | Database['public']['Views']['user_today_heart_rate_v']['Row']
+  | Database['public']['Tables']['heart_rate_sessions']['Row'];
 type HeartRateSessionRow = Database['public']['Tables']['heart_rate_sessions']['Row'];
 type HeartRateSampleRow = Database['public']['Tables']['heart_rate_samples']['Row'];
 type HeartRateIbiRow = Database['public']['Views']['user_today_heart_rate_ibi_samples_v']['Row'];
@@ -100,6 +102,32 @@ export async function getTodayHeartRateSummary(
     .from('user_today_heart_rate_v')
     .select('id, started_at, ended_at, local_date, timezone, duration_seconds, avg_bpm, min_bpm, max_bpm, rmssd, sdnn, pnn50, hr_drop, beat_count, stress')
     .eq('user_id', userId)
+    .order('started_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error != null) {
+    throw error;
+  }
+
+  if (data == null) {
+    return null;
+  }
+
+  return mapHeartRateSummary(data as HeartRateRow);
+}
+
+export async function getHeartRateSummaryForDate(
+  userId: string,
+  localDate: string,
+): Promise<TodayHeartRateSummary | null> {
+  const supabase = requireSupabaseClient();
+
+  const { data, error } = await supabase
+    .from('heart_rate_sessions')
+    .select('id, started_at, ended_at, local_date, timezone, duration_seconds, avg_bpm, min_bpm, max_bpm, rmssd, sdnn, pnn50, hr_drop, beat_count, stress')
+    .eq('user_id', userId)
+    .eq('local_date', localDate)
     .order('started_at', { ascending: false })
     .limit(1)
     .maybeSingle();
