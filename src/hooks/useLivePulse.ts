@@ -102,14 +102,6 @@ export function useLivePulse(): UseLivePulseReturn {
     (frameSample: unknown) => {
       if (!activeRef.current) return;
       if (!isValidFrameSample(frameSample)) {
-        managerRef.current.reset();
-        lastFingerSeenAtRef.current = null;
-        lastFrameTimestampRef.current = null;
-        measurementActiveRef.current = false;
-        measurementSamplesRef.current = [];
-        publishedBpmRef.current = null;
-        setCurrentBpm(null);
-        setFingerPlacement('no_finger');
         return;
       }
 
@@ -123,7 +115,7 @@ export function useLivePulse(): UseLivePulseReturn {
 
       const bpm = managerRef.current.getCurrentBpm();
 
-      if (frameState.beatDetected && bpm != null) {
+      if (frameState.beatDetected) {
         setBeatTick((tick) => tick + 1);
       }
 

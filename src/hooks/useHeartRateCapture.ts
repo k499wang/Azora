@@ -159,13 +159,6 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
   const addSample = useRunOnJS(
     (frameSample: unknown) => {
       if (!isValidFrameSample(frameSample)) {
-        samplesRef.current = [];
-        goodSinceRef.current = null;
-        currentBpmRef.current = null;
-        setCurrentBpm(null);
-        fingerPlacementRef.current = 'no_finger';
-        setFingerPlacement('no_finger');
-        managerRef.current.reset();
         return;
       }
 
@@ -199,7 +192,7 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
 
       const bpm = managerRef.current.getCurrentBpm();
 
-      if (frameState.beatDetected && bpm != null) {
+      if (frameState.beatDetected) {
         setBeatTick((tick) => tick + 1);
       }
 
