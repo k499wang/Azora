@@ -18,6 +18,7 @@ interface HRVChartProps {
 }
 
 const PADDING = { top: 14, right: 8, bottom: 8, left: 8 };
+const Y_TICK_HEIGHT = 14;
 
 export default function HRVChart({
   ibiMs,
@@ -99,10 +100,19 @@ export default function HRVChart({
       <Text style={styles.title}>Heart rate variability</Text>
 
       <View style={styles.plotRow}>
-        <View style={styles.yAxis}>
-          {yTicks.map((t) => (
-            <Text key={t} style={styles.yTick}>{t}</Text>
-          ))}
+        <View style={[styles.yAxis, { height }]}>
+          {yTicks.map((t, i) => {
+            const innerH = height - PADDING.top - PADDING.bottom;
+            const y = PADDING.top + (i / (yTicks.length - 1)) * innerH;
+            return (
+              <Text
+                key={`${t}-${i}`}
+                style={[styles.yTick, { top: y - Y_TICK_HEIGHT / 2 }]}
+              >
+                {t}
+              </Text>
+            );
+          })}
         </View>
 
         <View style={styles.chartCol}>
@@ -174,17 +184,19 @@ const styles = StyleSheet.create({
     alignItems: 'stretch',
   },
   yAxis: {
-    justifyContent: 'space-between',
-    paddingTop: PADDING.top - 7,
-    paddingBottom: PADDING.bottom - 7,
+    position: 'relative',
+    width: 28,
     marginRight: 6,
   },
   yTick: {
     ...typography.caption.caption1,
     color: colors.text.tertiary,
     fontSize: 11,
+    lineHeight: Y_TICK_HEIGHT,
     textAlign: 'right',
-    minWidth: 28,
+    position: 'absolute',
+    right: 0,
+    width: 28,
   },
   chartCol: {
     flex: 1,

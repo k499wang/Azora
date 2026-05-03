@@ -1,6 +1,7 @@
 import type { CaptureResult, IbiSample, PpgFrameSample } from './types';
 
 const MAX_SAMPLE_JUMP_BPM = 8;
+const GRAPH_BPM_MEDIAN_WINDOW = 5;
 
 export interface HeartRateSessionRpcSession {
   started_at: string;
@@ -55,6 +56,15 @@ function clampBpmStep(value: number, previous: number | null): number {
   return previous + Math.sign(value - previous) * MAX_SAMPLE_JUMP_BPM;
 }
 
+function median(values: number[]): number {
+  if (values.length === 0) return 0;
+  const sorted = [...values].sort((a, b) => a - b);
+  const middle = Math.floor(sorted.length / 2);
+  return sorted.length % 2 === 0
+    ? (sorted[middle - 1] + sorted[middle]) / 2
+    : sorted[middle];
+}
+
 function clampQuality(value: number | null): number | null {
   if (!isFiniteNumber(value)) return null;
   return Math.min(1, Math.max(0, value));
@@ -98,12 +108,20 @@ export function mapIbiSamples(ibiSamples: IbiSample[]): HeartRateSessionRpcIbiSa
 export function buildBpmSamplesFromIbiSamples(
   ibiSamples: HeartRateSessionRpcIbiSample[],
 ): HeartRateSessionRpcSample[] {
-  const instantaneousSamples = ibiSamples
-    .map((sample) => ({
-      offset_ms: sample.offset_ms,
-      bpm: Math.round(60000 / sample.ibi_ms),
-      signal_quality: sample.signal_quality,
-    }))
+  const graphSamples = ibiSamples
+    .map((sample, index) => {
+      const windowStart = Math.max(0, index - GRAPH_BPM_MEDIAN_WINDOW + 1);
+      const recentIbis = ibiSamples
+        .slice(windowStart, index + 1)
+        .map((item) => item.ibi_ms)
+        .filter((ibiMs) => isFiniteNumber(ibiMs) && ibiMs > 0);
+
+      return {
+        offset_ms: sample.offset_ms,
+        bpm: Math.round(60000 / median(recentIbis)),
+        signal_quality: sample.signal_quality,
+      };
+    })
     .filter((sample) => (
       isFiniteNumber(sample.bpm) &&
       sample.bpm >= 20 &&
@@ -111,7 +129,7 @@ export function buildBpmSamplesFromIbiSamples(
     ));
 
   let previousBpm: number | null = null;
-  return instantaneousSamples.map((sample) => {
+  return graphSamples.map((sample) => {
     const bpm = Math.round(clampBpmStep(sample.bpm, previousBpm));
     previousBpm = bpm;
     return {

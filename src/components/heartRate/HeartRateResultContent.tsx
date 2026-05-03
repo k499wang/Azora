@@ -8,7 +8,10 @@ import LineGraph, { type DataPoint } from '../analytics/LineGraph';
 import SectionHeader from '../common/SectionHeader';
 import StressGauge from './StressGauge';
 import { getStressZone } from '../../lib/heartRate/stress';
-import { smoothBpmValuePoints } from '../../lib/heartRate/bpmSmoothing';
+import {
+  buildGraphBpmValuePointsFromIbis,
+  smoothBpmValuePoints,
+} from '../../lib/heartRate/bpmSmoothing';
 import type { HrvAvailabilityReason, IbiSample } from '../../lib/heartRate/types';
 
 export interface HeartRateResultStat {
@@ -164,11 +167,12 @@ export function HeartRateResultContent({
     statRows.push(stats.slice(i, i + 2));
   }
 
-  const resolvedBpmSeries = smoothBpmValuePoints(
-    bpmSeries ?? downsampleIbi(ibiSamples, (s) =>
-      s.ibiMs > 0 ? Math.round(60000 / s.ibiMs) : 0,
-    ),
-  );
+  const resolvedBpmSeries = bpmSeries != null
+    ? smoothBpmValuePoints(bpmSeries)
+    : buildGraphBpmValuePointsFromIbis(
+        ibiSamples,
+        (sample) => `${Math.round(sample.offsetMs / 1000)}s`,
+      );
   const resolvedRrSeries = rrSeries ?? downsampleIbi(ibiSamples, (s) => Math.round(s.ibiMs));
   const hasGraphs = resolvedBpmSeries.length >= 2 || resolvedRrSeries.length >= 2;
 

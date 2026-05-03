@@ -10,7 +10,8 @@ const EXHALE_AUDIO = require('../../assets/audio/breath-exhale-bowl.m4a');
 
 const FADE_STEP_MS = 50;
 const FADE_IN_MS = 450;
-const FADE_OUT_MS = 550;
+const PHASE_SWITCH_FADE_OUT_MS = 350;
+const HOLD_RELEASE_FADE_OUT_MS = 1400;
 const INHALE_VOLUME = 0.5;
 const EXHALE_VOLUME = 0.46;
 
@@ -89,6 +90,7 @@ export function useBreathPhaseAudio(phase: BreathAudioPhase) {
     (
       player: AudioPlayer,
       rampRef: MutableRefObject<ReturnType<typeof setInterval> | null>,
+      durationMs = PHASE_SWITCH_FADE_OUT_MS,
     ) => {
       clearRamp(rampRef);
       const startVolume = getPlayerNumber(() => player.volume);
@@ -98,7 +100,7 @@ export function useBreathPhaseAudio(phase: BreathAudioPhase) {
         return;
       }
 
-      const steps = Math.max(1, Math.ceil(FADE_OUT_MS / FADE_STEP_MS));
+      const steps = Math.max(1, Math.ceil(durationMs / FADE_STEP_MS));
       let step = 0;
       rampRef.current = setInterval(() => {
         step += 1;
@@ -163,8 +165,8 @@ export function useBreathPhaseAudio(phase: BreathAudioPhase) {
       return;
     }
 
-    fadeOut(inhalePlayer, inhaleRampRef);
-    fadeOut(exhalePlayer, exhaleRampRef);
+    fadeOut(inhalePlayer, inhaleRampRef, HOLD_RELEASE_FADE_OUT_MS);
+    fadeOut(exhalePlayer, exhaleRampRef, HOLD_RELEASE_FADE_OUT_MS);
   }, [exhalePlayer, fadeIn, fadeOut, inhalePlayer, phase]);
 
   useEffect(
