@@ -14,6 +14,9 @@ export const AnalyticsEvent = {
   DailyBreathHoldReleased: 'daily_breath_hold_released',
   DailyResultsViewed: 'daily_results_viewed',
 
+  RecentlyLoggedViewed: 'recently_logged_viewed',
+  RecentlyLoggedSessionOpened: 'recently_logged_session_opened',
+
   BreathingTechniqueSelected: 'breathing_technique_selected',
 
   ExerciseSessionStarted: 'exercise_session_started',

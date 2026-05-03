@@ -1,6 +1,9 @@
+import { useEffect, useRef } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { usePostHog } from 'posthog-react-native';
 import { getStressZone } from '../lib/heartRate/stress';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { AnalyticsEvent } from '../services/analytics/events';
 import { colors } from '../theme/colors';
 import { spacing, padding, margin } from '../theme/spacing';
 import { typography, fonts } from '../theme/typography';
@@ -85,7 +88,7 @@ function RecentHeartRateList({
 }: {
   items: TodayHeartRateSummary[];
   hasError: boolean;
-  onPressItem: (sessionId: string) => void;
+  onPressItem: (sessionId: string, position: number) => void;
 }) {
   if (items.length === 0) {
     return (
@@ -102,7 +105,7 @@ function RecentHeartRateList({
 
   return (
     <View style={styles.recentList}>
-      {items.map((item) => {
+      {items.map((item, index) => {
         const stress = computeStress(item.rmssd, item.avgBpm);
         const stressZone = stress == null ? null : getStressZone(stress);
         const metrics: {
@@ -131,7 +134,7 @@ function RecentHeartRateList({
         return (
           <Pressable
             key={item.sessionId}
-            onPress={() => onPressItem(item.sessionId)}
+            onPress={() => onPressItem(item.sessionId, index)}
             style={({ pressed }) => [
               styles.recentCard,
               pressed ? styles.recentCardPressed : null,
@@ -173,12 +176,25 @@ function RecentHeartRateList({
 
 export default function HomeScreen({ navigation }: HomeScreenProps) {
   const insets = useSafeAreaInsets();
+  const posthog = usePostHog();
   const user = useAuthStore((state) => state.user);
   const homeStatsQuery = useHomeStatsQuery(user?.id ?? null);
   const stats = homeStatsQuery.data;
   const todayBreathHold = stats?.todayBreathHold ?? null;
   const todayHeartRate = stats?.todayHeartRate ?? null;
   const recentHeartRates = stats?.recentHeartRates ?? [];
+  const recentHeartRatesError =
+    homeStatsQuery.isError || stats?.partialErrors.recentHeartRates === true;
+  const recentlyLoggedViewedRef = useRef(false);
+  useEffect(() => {
+    if (recentlyLoggedViewedRef.current) return;
+    if (homeStatsQuery.isLoading) return;
+    recentlyLoggedViewedRef.current = true;
+    posthog.capture(AnalyticsEvent.RecentlyLoggedViewed, {
+      item_count: recentHeartRates.length,
+      has_error: recentHeartRatesError,
+    });
+  }, [homeStatsQuery.isLoading, posthog, recentHeartRates.length, recentHeartRatesError]);
   const ibiMs = stats?.ibiSeries.map((point) => point.ibiMs) ?? [];
   const currentStreak = stats?.streak?.currentStreak ?? 0;
   const avgBpm = todayBreathHold?.avgBpm ?? todayHeartRate?.avgBpm ?? null;
@@ -234,8 +250,13 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           <SectionHeader title="Recently logged" />
           <RecentHeartRateList
             items={recentHeartRates}
-            hasError={homeStatsQuery.isError || stats?.partialErrors.recentHeartRates === true}
-            onPressItem={(sessionId) => {
+            hasError={recentHeartRatesError}
+            onPressItem={(sessionId, position) => {
+              posthog.capture(AnalyticsEvent.RecentlyLoggedSessionOpened, {
+                session_id: sessionId,
+                position,
+                item_count: recentHeartRates.length,
+              });
               navigation.navigate('HeartRateSessionDetail', { sessionId });
             }}
           />

@@ -19,6 +19,8 @@ The wizard has completed a deep integration of PostHog analytics into the Azora 
 | `heart_rate_capture_completed` | Measurement succeeded; records bpm, confidence, rmssd, sdnn | `src/components/heartRate/ResultScreen.tsx` |
 | `heart_rate_capture_failed` | Measurement failed; records error type | `src/components/heartRate/ResultScreen.tsx` |
 | `heart_rate_capture_retried` | User retries after a result (success or failure) | `src/components/heartRate/ResultScreen.tsx` |
+| `recently_logged_viewed` | Home "Recently logged" section becomes visible after stats load | `src/screens/HomeScreen.tsx` |
+| `recently_logged_session_opened` | User taps a recent heart-rate session card to open its detail | `src/screens/HomeScreen.tsx` |
 
 ## Next steps
 
