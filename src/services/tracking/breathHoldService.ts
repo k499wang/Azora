@@ -39,8 +39,11 @@ export interface CompleteBreathHoldInput {
   ibiSamples?: BreathHoldIbiSampleInput[];
 }
 
-type BreathHoldRow = Database['public']['Views']['user_today_breath_hold_v']['Row'];
+type BreathHoldRow =
+  | Database['public']['Views']['user_today_breath_hold_v']['Row']
+  | Database['public']['Tables']['breath_hold_sessions']['Row'];
 type DailyActivityRow = Database['public']['Tables']['daily_activity']['Row'];
+type HeartRateIbiSampleRow = Database['public']['Tables']['heart_rate_ibi_samples']['Row'];
 
 function isFiniteNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value);
@@ -199,6 +202,28 @@ export async function getTodayBreathHoldSummary(
   return data == null ? null : mapBreathHoldSummary(data as BreathHoldRow);
 }
 
+export async function getBreathHoldSummaryForDate(
+  userId: string,
+  localDate: string,
+): Promise<BreathHoldSummary | null> {
+  const supabase = requireSupabaseClient();
+
+  const { data, error } = await supabase
+    .from('breath_hold_sessions')
+    .select('id, started_at, ended_at, local_date, timezone, hold_seconds, avg_bpm, min_bpm, max_bpm, rmssd, sdnn, pnn50, hr_drop, beat_count, stress')
+    .eq('user_id', userId)
+    .eq('local_date', localDate)
+    .order('started_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error != null) {
+    throw error;
+  }
+
+  return data == null ? null : mapBreathHoldSummary(data as BreathHoldRow);
+}
+
 export async function getTodayBreathHoldIbiSeries(
   userId: string,
 ): Promise<HeartRateIbiPoint[]> {
@@ -219,6 +244,36 @@ export async function getTodayBreathHoldIbiSeries(
     .map((row) => ({
       offsetMs: row.offset_ms as number,
       ibiMs: row.ibi_ms as number,
+      signalQuality: row.signal_quality,
+    }));
+}
+
+export async function getBreathHoldIbiSeries(
+  userId: string,
+  breathHoldSessionId: string | null,
+): Promise<HeartRateIbiPoint[]> {
+  if (breathHoldSessionId == null) {
+    return [];
+  }
+
+  const supabase = requireSupabaseClient();
+
+  const { data, error } = await supabase
+    .from('heart_rate_ibi_samples')
+    .select('offset_ms, ibi_ms, signal_quality')
+    .eq('user_id', userId)
+    .eq('breath_hold_session_id', breathHoldSessionId)
+    .order('offset_ms', { ascending: true });
+
+  if (error != null) {
+    throw error;
+  }
+
+  return ((data ?? []) as HeartRateIbiSampleRow[])
+    .filter((row) => row.offset_ms != null && row.ibi_ms != null)
+    .map((row) => ({
+      offsetMs: row.offset_ms,
+      ibiMs: row.ibi_ms,
       signalQuality: row.signal_quality,
     }));
 }

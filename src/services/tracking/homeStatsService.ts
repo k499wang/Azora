@@ -1,12 +1,12 @@
 import { getStreakSummary, type StreakSummary } from '../streaks/streakService';
 import {
+  getBreathHoldIbiSeries,
+  getBreathHoldSummaryForDate,
   getDailyActivityRange,
-  getTodayBreathHoldIbiSeries,
-  getTodayBreathHoldSummary,
 } from './breathHoldService';
 import {
+  getHeartRateSummaryForDate,
   getRecentHeartRateSummaries,
-  getTodayHeartRateSummary,
 } from './heartRateService';
 import type {
   BreathHoldSummary,
@@ -106,33 +106,37 @@ function getSettledValue<T>(
   return result.status === 'fulfilled' ? result.value : fallback;
 }
 
-export async function getHomeStats(userId: string): Promise<HomeStats> {
+export async function getHomeStats(
+  userId: string,
+  localDate: string,
+): Promise<HomeStats> {
   const [
     streakResult,
-    todayBreathHoldResult,
-    todayHeartRateResult,
+    selectedBreathHoldResult,
+    selectedHeartRateResult,
     recentHeartRatesResult,
     dailyActivityResult,
-    breathHoldIbiSeriesResult,
   ] = await Promise.allSettled([
     getStreakSummary(userId),
-    getTodayBreathHoldSummary(userId),
-    getTodayHeartRateSummary(userId),
+    getBreathHoldSummaryForDate(userId, localDate),
+    getHeartRateSummaryForDate(userId, localDate),
     getRecentHeartRateSummaries(userId, 3),
     getDailyActivityRange(userId, 28),
-    getTodayBreathHoldIbiSeries(userId),
   ]);
 
   const streak = getSettledValue(streakResult, null);
-  const todayBreathHold = getSettledValue(todayBreathHoldResult, null);
-  const todayHeartRate = getSettledValue(todayHeartRateResult, null);
+  const todayBreathHold = getSettledValue(selectedBreathHoldResult, null);
+  const todayHeartRate = getSettledValue(selectedHeartRateResult, null);
   const recentHeartRates = getSettledValue(recentHeartRatesResult, []);
   const dailyActivity = getSettledValue(dailyActivityResult, []);
+  const [breathHoldIbiSeriesResult] = await Promise.allSettled([
+    getBreathHoldIbiSeries(userId, todayBreathHold?.sessionId ?? null),
+  ]);
   const breathHoldIbiSeries = getSettledValue(breathHoldIbiSeriesResult, []);
   const partialErrors: HomeStatsPartialErrors = {
     streak: streakResult.status === 'rejected',
-    todayBreathHold: todayBreathHoldResult.status === 'rejected',
-    todayHeartRate: todayHeartRateResult.status === 'rejected',
+    todayBreathHold: selectedBreathHoldResult.status === 'rejected',
+    todayHeartRate: selectedHeartRateResult.status === 'rejected',
     recentHeartRates: recentHeartRatesResult.status === 'rejected',
     dailyActivity: dailyActivityResult.status === 'rejected',
     breathHoldIbiSeries: breathHoldIbiSeriesResult.status === 'rejected',

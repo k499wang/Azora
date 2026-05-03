@@ -16,9 +16,21 @@ const TOTAL_DAYS = 28;
 const PILL_GAP = spacing.sm;
 const CIRCLE_SIZE = 34;
 
-function buildDays(completedDaysAgo: Set<number>) {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+function formatLocalDate(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+}
+
+function parseLocalDate(localDate: string): Date {
+  const [year, month, day] = localDate.split('-').map(Number);
+  return new Date(year, month - 1, day);
+}
+
+function buildDays(todayLocalDate: string, completedDaysAgo: Set<number>) {
+  const today = parseLocalDate(todayLocalDate);
   const todayIndex = TOTAL_DAYS - 2;
 
   return Array.from({ length: TOTAL_DAYS }, (_, i) => {
@@ -26,7 +38,8 @@ function buildDays(completedDaysAgo: Set<number>) {
     const date = new Date(today);
     date.setDate(today.getDate() + offset);
     return {
-      key: date.toISOString(),
+      key: formatLocalDate(date),
+      localDate: formatLocalDate(date),
       dayLabel: DAY_LABELS[date.getDay()],
       dateNum: date.getDate(),
       isToday: offset === 0,
@@ -37,18 +50,24 @@ function buildDays(completedDaysAgo: Set<number>) {
 }
 
 interface WeekCalendarProps {
-  onSelectDay?: (daysAgo: number) => void;
+  todayLocalDate: string;
+  selectedLocalDate: string;
+  onSelectDay?: (localDate: string) => void;
   completedDaysAgo?: number[];
 }
 
 export default function WeekCalendar({
+  todayLocalDate,
+  selectedLocalDate,
   onSelectDay,
   completedDaysAgo = [],
 }: WeekCalendarProps) {
   const completedSet = useMemo(() => new Set(completedDaysAgo), [completedDaysAgo]);
-  const days = useMemo(() => buildDays(completedSet), [completedSet]);
+  const days = useMemo(
+    () => buildDays(todayLocalDate, completedSet),
+    [completedSet, todayLocalDate],
+  );
   const todayIndex = TOTAL_DAYS - 2;
-  const [selectedIndex, setSelectedIndex] = useState(todayIndex);
   const scrollRef = useRef<ScrollView>(null);
   const [pillWidth, setPillWidth] = useState(0);
 
@@ -69,8 +88,7 @@ export default function WeekCalendar({
 
   const handlePress = (index: number) => {
     if (days[index].isFuture) return;
-    setSelectedIndex(index);
-    onSelectDay?.(todayIndex - index);
+    onSelectDay?.(days[index].localDate);
   };
 
   return (
@@ -85,7 +103,7 @@ export default function WeekCalendar({
           decelerationRate="fast"
         >
           {days.map((day, index) => {
-            const isSelected = index === selectedIndex;
+            const isSelected = day.localDate === selectedLocalDate;
             const isFuture = day.isFuture;
 
             return (

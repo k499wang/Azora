@@ -1,5 +1,5 @@
-import { useEffect, useRef } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { AppState, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { usePostHog } from 'posthog-react-native';
 import { getStressZone } from '../lib/heartRate/stress';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -27,6 +27,36 @@ function formatDuration(seconds: number | null | undefined): string {
   const minutes = Math.floor(seconds / 60);
   const secs = seconds % 60;
   return `${minutes}:${secs.toString().padStart(2, '0')}`;
+}
+
+function formatLocalDate(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+}
+
+function formatInsightTitle(localDate: string, todayLocalDate: string): string {
+  const [year, month, day] = localDate.split('-').map(Number);
+  const selected = new Date(year, month - 1, day);
+
+  if (localDate === todayLocalDate) {
+    return 'Today\'s insights';
+  }
+
+  return `${new Intl.DateTimeFormat(undefined, {
+    month: 'short',
+    day: 'numeric',
+  }).format(selected)} insights`;
+}
+
+function getMsUntilNextLocalDay(): number {
+  const now = new Date();
+  const nextDay = new Date(now);
+  nextDay.setHours(24, 0, 1, 0);
+
+  return Math.max(1000, nextDay.getTime() - now.getTime());
 }
 
 function formatRelativeDay(value: string): string {
@@ -178,7 +208,23 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const insets = useSafeAreaInsets();
   const posthog = usePostHog();
   const user = useAuthStore((state) => state.user);
-  const homeStatsQuery = useHomeStatsQuery(user?.id ?? null);
+  const [todayLocalDate, setTodayLocalDate] = useState(() => formatLocalDate(new Date()));
+  const [selectedLocalDate, setSelectedLocalDate] = useState(todayLocalDate);
+  const refreshTodayLocalDate = useCallback(() => {
+    const nextTodayLocalDate = formatLocalDate(new Date());
+
+    if (nextTodayLocalDate === todayLocalDate) {
+      return;
+    }
+
+    setTodayLocalDate(nextTodayLocalDate);
+    setSelectedLocalDate((currentSelectedLocalDate) =>
+      currentSelectedLocalDate === todayLocalDate
+        ? nextTodayLocalDate
+        : currentSelectedLocalDate,
+    );
+  }, [todayLocalDate]);
+  const homeStatsQuery = useHomeStatsQuery(user?.id ?? null, selectedLocalDate);
   const stats = homeStatsQuery.data;
   const todayBreathHold = stats?.todayBreathHold ?? null;
   const todayHeartRate = stats?.todayHeartRate ?? null;
@@ -186,6 +232,22 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const recentHeartRatesError =
     homeStatsQuery.isError || stats?.partialErrors.recentHeartRates === true;
   const recentlyLoggedViewedRef = useRef(false);
+  useEffect(() => {
+    const timeout = setTimeout(refreshTodayLocalDate, getMsUntilNextLocalDay());
+
+    return () => clearTimeout(timeout);
+  }, [refreshTodayLocalDate]);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active') {
+        refreshTodayLocalDate();
+      }
+    });
+
+    return () => subscription.remove();
+  }, [refreshTodayLocalDate]);
+
   useEffect(() => {
     if (recentlyLoggedViewedRef.current) return;
     if (homeStatsQuery.isLoading) return;
@@ -213,7 +275,12 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
 
           <AppTopBar streak={currentStreak} />
 
-          <WeekCalendar completedDaysAgo={stats?.completedDaysAgo ?? []} />
+          <WeekCalendar
+            todayLocalDate={todayLocalDate}
+            selectedLocalDate={selectedLocalDate}
+            completedDaysAgo={stats?.completedDaysAgo ?? []}
+            onSelectDay={setSelectedLocalDate}
+          />
 
           <View style={styles.planSection}>
             <DailyPlanCard
@@ -232,6 +299,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             </Text>
           ) : null}
           <SessionStatsPager
+            title={formatInsightTitle(selectedLocalDate, todayLocalDate)}
             avgBpm={avgBpm}
             holdSeconds={todayBreathHold?.holdSeconds ?? null}
             healthScore={healthScore}
