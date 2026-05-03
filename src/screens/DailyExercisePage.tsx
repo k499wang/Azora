@@ -85,6 +85,13 @@ interface PreviewFrame {
 
 const BEST_HOLD_KEY = 'daily_breath_hold_best_seconds';
 
+function formatHoldTime(totalSeconds: number): string {
+  const safe = Math.max(0, Math.floor(totalSeconds));
+  const minutes = Math.floor(safe / 60);
+  const seconds = safe % 60;
+  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+}
+
 export default function DailyExercisePage({
   navigation,
 }: DailyExerciseScreenProps) {
@@ -549,8 +556,13 @@ export default function DailyExercisePage({
           ]}
         >
           <BreathingCircle ref={circleRef}>
-            {phase === 'inhale' || phase === 'hold' ? (
-              <Text style={styles.phaseLabel}>{PHASE_LABELS[phase]}</Text>
+            {phase === 'hold' ? (
+              <View style={styles.holdStack}>
+                <Text style={styles.holdTimer}>{formatHoldTime(holdSeconds)}</Text>
+                <Text style={styles.holdCaption}>{PHASE_LABELS.hold}</Text>
+              </View>
+            ) : phase === 'inhale' ? (
+              <Text style={styles.phaseLabel}>{PHASE_LABELS.inhale}</Text>
             ) : null}
           </BreathingCircle>
         </Pressable>
@@ -751,6 +763,32 @@ const styles = StyleSheet.create({
     lineHeight: 34,
     color: colors.neutral[50],
     textAlign: 'center',
+  },
+  holdStack: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  holdTimer: {
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    fontSize: 64,
+    lineHeight: 72,
+    color: colors.neutral[50],
+    textAlign: 'center',
+    fontVariant: ['tabular-nums'],
+    letterSpacing: 1,
+  },
+  holdCaption: {
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    fontSize: 14,
+    lineHeight: 18,
+    color: colors.neutral[50],
+    opacity: 0.75,
+    textAlign: 'center',
+    marginTop: spacing.xs,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
   },
   viewResultsButton: {
     flexDirection: 'row',

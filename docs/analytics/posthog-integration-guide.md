@@ -101,6 +101,10 @@ Breathing exercise sessions
 - `exercise_session_started` / `exercise_session_paused` / `exercise_session_completed`.
 - `exercise_session_abandoned` — includes `abandoned_at_phase`, `abandoned_at_round`, `elapsed_seconds`, `target_seconds`, `completion_rate`. Tells you where drop-off happens, not just that it happened.
 
+Recently logged (home)
+- `recently_logged_viewed` — fired once per Home mount after `useHomeStatsQuery` finishes loading. Carries `item_count` and `has_error`.
+- `recently_logged_session_opened` — user taps a recent heart-rate card. Carries `session_id`, `position` (0-indexed), and `item_count`.
+
 Heart rate
 - `heart_rate_monitoring_toggled` — in-session HR toggle.
 - `heart_rate_capture_started` / `heart_rate_capture_completed` / `heart_rate_capture_failed`.

@@ -130,6 +130,24 @@ It is based on the actual `posthog.capture(...)` calls in the codebase.
 - `technique_id`
 - `technique_name`
 
+## Recently Logged
+
+- `recently_logged_viewed`
+- `recently_logged_session_opened`
+
+### Recently Logged Properties
+
+`recently_logged_viewed`
+
+- `item_count`
+- `has_error`
+
+`recently_logged_session_opened`
+
+- `session_id`
+- `position`
+- `item_count`
+
 ## Profile
 
 - `profile_action`
