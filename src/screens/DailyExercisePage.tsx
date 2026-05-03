@@ -403,13 +403,29 @@ export default function DailyExercisePage({
       bpm_sample_count: samples.length,
     });
     void saveCompletedHold(holdSeconds, samples, captureSamples, ibiSamples, endedAtMs);
-    const { avgBpm, minBpm, maxBpm } = summarizeBpmSamples(samples);
+    const liveSummary = summarizeBpmSamples(samples);
+    const captureResult = buildCaptureResult(captureSamples, ibiSamples);
+    const reading = captureResult.reading;
+    const avgBpm = reading?.bpm ?? liveSummary.avgBpm ?? undefined;
+    const hrDrop = reading?.hrDrop ?? (
+      avgBpm != null && liveSummary.minBpm != null
+        ? Math.round(avgBpm - liveSummary.minBpm)
+        : null
+    );
     navigation.navigate('DailyResult', {
       holdSeconds,
       bpmSamples: samples,
-      avgBpm: avgBpm ?? undefined,
-      minBpm: minBpm ?? undefined,
-      maxBpm: maxBpm ?? undefined,
+      avgBpm,
+      minBpm: liveSummary.minBpm ?? undefined,
+      maxBpm: liveSummary.maxBpm ?? undefined,
+      rmssd: reading?.rmssd ?? null,
+      sdnn: reading?.sdnn ?? null,
+      hrDrop,
+      stress: reading?.stress ?? null,
+      confidence: reading?.confidence,
+      sampleCount: reading?.sampleCount,
+      hrvAvailabilityReason: reading?.hrvAvailabilityReason,
+      ibiSamples: captureResult.ibiSamples,
     });
   };
 

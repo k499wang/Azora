@@ -38,6 +38,7 @@ interface HeartRateResultContentProps {
   extraStats?: HeartRateResultStat[];
   heartScale?: Animated.Value;
   showConfidence?: boolean;
+  showHero?: boolean;
 }
 
 function getConfidenceLabel(confidence: number): { label: string; color: string } {
@@ -126,6 +127,7 @@ export function HeartRateResultContent({
   extraStats = [],
   heartScale,
   showConfidence = true,
+  showHero = true,
 }: HeartRateResultContentProps) {
   const rmssdValue =
     rmssd != null && Number.isFinite(rmssd)
@@ -182,27 +184,31 @@ export function HeartRateResultContent({
 
   return (
     <View style={styles.content}>
-      {heartScale != null ? (
-        <Animated.View style={{ transform: [{ scale: heartScale }] }}>
-          {heart}
-        </Animated.View>
-      ) : heart}
+      {showHero ? (
+        <>
+          {heartScale != null ? (
+            <Animated.View style={{ transform: [{ scale: heartScale }] }}>
+              {heart}
+            </Animated.View>
+          ) : heart}
 
-      <Text style={styles.resultTitle}>Heart Rate</Text>
-      {metaText != null ? <Text style={styles.metaText}>{metaText}</Text> : null}
+          <Text style={styles.resultTitle}>Heart Rate</Text>
+          {metaText != null ? <Text style={styles.metaText}>{metaText}</Text> : null}
 
-      <View style={styles.bpmContainer}>
-        <Text style={styles.bpmNumber}>{bpm}</Text>
-        <Text style={styles.bpmUnit}>bpm</Text>
-      </View>
+          <View style={styles.bpmContainer}>
+            <Text style={styles.bpmNumber}>{bpm}</Text>
+            <Text style={styles.bpmUnit}>bpm</Text>
+          </View>
 
-      {showConfidence && confidenceInfo != null ? (
-        <View style={[styles.confidenceBadge, { backgroundColor: `${confidenceInfo.color}15` }]}>
-          <View style={[styles.confidenceDot, { backgroundColor: confidenceInfo.color }]} />
-          <Text style={[styles.confidenceText, { color: confidenceInfo.color }]}>
-            {confidenceInfo.label}
-          </Text>
-        </View>
+          {showConfidence && confidenceInfo != null ? (
+            <View style={[styles.confidenceBadge, { backgroundColor: `${confidenceInfo.color}15` }]}>
+              <View style={[styles.confidenceDot, { backgroundColor: confidenceInfo.color }]} />
+              <Text style={[styles.confidenceText, { color: confidenceInfo.color }]}>
+                {confidenceInfo.label}
+              </Text>
+            </View>
+          ) : null}
+        </>
       ) : null}
 
       <View style={styles.sectionHeaderWrap}>

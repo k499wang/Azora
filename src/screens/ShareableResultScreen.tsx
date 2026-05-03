@@ -4,29 +4,10 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 import { typography, fonts } from '../theme/typography';
 import { spacing, padding, margin } from '../theme/spacing';
-import { card } from '../theme/card';
-import LineGraph, { DataPoint } from '../components/analytics/LineGraph';
+import { HeartRateResultContent } from '../components/heartRate/HeartRateResultContent';
+import type { HeartRateResultStat } from '../components/heartRate/HeartRateResultContent';
 import type { DailyResultScreenProps } from '../app/navigation';
 import { estimateLungAge, type LungHealthKey } from '../lib/lungAge';
-import { smoothBpmValuePoints } from '../lib/heartRate/bpmSmoothing';
-
-function downsampleSamples(
-  samples: { t: number; bpm: number }[],
-  maxPoints = 20,
-): DataPoint[] {
-  if (samples.length === 0) return [];
-  if (samples.length <= maxPoints) {
-    return samples.map((s) => ({ label: `${s.t}s`, value: s.bpm }));
-  }
-  const step = (samples.length - 1) / (maxPoints - 1);
-  const out: DataPoint[] = [];
-  for (let i = 0; i < maxPoints; i++) {
-    const idx = Math.round(i * step);
-    const s = samples[idx];
-    out.push({ label: `${s.t}s`, value: s.bpm });
-  }
-  return out;
-}
 
 // ───────────��──────────────────────────────────────��─────────────────────────────
 
@@ -54,17 +35,32 @@ export default function ShareableResultScreen({
   route,
 }: DailyResultScreenProps) {
   const insets = useSafeAreaInsets();
-  const { holdSeconds, bpmSamples = [], avgBpm, minBpm, maxBpm } = route.params;
+  const {
+    holdSeconds,
+    avgBpm,
+    minBpm,
+    maxBpm,
+    rmssd,
+    hrDrop,
+    stress,
+    confidence,
+    sampleCount,
+    hrvAvailabilityReason,
+    ibiSamples = [],
+  } = route.params;
   const lungEstimate = estimateLungAge({ holdSeconds, avgBpm, minBpm });
   const health = LUNG_HEALTH_MAP[lungEstimate.key];
   const holdTime = formatTime(holdSeconds);
 
-  const bpmData = smoothBpmValuePoints(downsampleSamples(bpmSamples));
-  const hasBpm = bpmData.length > 0;
-  const lowestIndex = hasBpm
-    ? bpmData.indexOf(bpmData.reduce((min, p) => (p.value < min.value ? p : min), bpmData[0]))
-    : -1;
-  const avgBpmDisplay = avgBpm != null ? String(avgBpm) : '—';
+  const extraStats: HeartRateResultStat[] = [
+    { icon: 'timer-outline', label: 'Hold Time', value: holdTime, unit: 'min' },
+  ];
+  if (minBpm != null) {
+    extraStats.push({ icon: 'arrow-down', label: 'Min HR', value: String(minBpm), unit: 'bpm' });
+  }
+  if (maxBpm != null) {
+    extraStats.push({ icon: 'arrow-up', label: 'Max HR', value: String(maxBpm), unit: 'bpm' });
+  }
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
@@ -147,80 +143,19 @@ export default function ShareableResultScreen({
           </View>
         </View>
 
-        <View style={styles.graphSection}>
-          <Text style={styles.sectionTitle}>Heart Rate</Text>
-          <View style={styles.card}>
-            {hasBpm ? (
-              <LineGraph
-                data={bpmData}
-                subtitle="BPM during breath hold"
-                unit=""
-                height={180}
-                lineColor={colors.primary.blue500}
-                fillColor={colors.primary.blue100}
-                dotColor={colors.primary.blue600}
-                highlightIndex={lowestIndex}
-                highlightColor={colors.primary.blue600}
-              />
-            ) : (
-              <View style={styles.emptyGraph}>
-                <MaterialCommunityIcons
-                  name="heart-off-outline"
-                  size={28}
-                  color={colors.text.tertiary}
-                />
-                <Text style={styles.emptyGraphTitle}>Heart rate not tracked</Text>
-                <Text style={styles.emptyGraphBody}>
-                  Tap "Track heart rate" before your next hold and place a finger over the rear
-                  camera to capture your BPM live.
-                </Text>
-              </View>
-            )}
-          </View>
-        </View>
-
-        <View style={styles.statsSection}>
-          <View style={styles.statsRow}>
-            <View style={styles.statCard}>
-              <View style={styles.statCardTop}>
-                <MaterialCommunityIcons name="timer-outline" size={18} color={colors.primary.blue600} />
-                <Text style={styles.statLabel}>Hold Time</Text>
-              </View>
-              <Text style={styles.statValue}>{holdTime}</Text>
-              <Text style={styles.statUnit}>minutes</Text>
-            </View>
-
-            <View style={styles.statCard}>
-              <View style={styles.statCardTop}>
-                <MaterialCommunityIcons name="heart-pulse" size={18} color={colors.primary.blue600} />
-                <Text style={styles.statLabel}>Avg HR</Text>
-              </View>
-              <Text style={styles.statValue}>{avgBpmDisplay}</Text>
-              <Text style={styles.statUnit}>bpm</Text>
-            </View>
-          </View>
-
-          {hasBpm && minBpm != null && maxBpm != null ? (
-            <View style={[styles.statsRow, { marginTop: spacing.md }]}>
-              <View style={styles.statCard}>
-                <View style={styles.statCardTop}>
-                  <MaterialCommunityIcons name="arrow-down" size={18} color={colors.primary.blue600} />
-                  <Text style={styles.statLabel}>Min HR</Text>
-                </View>
-                <Text style={styles.statValue}>{minBpm}</Text>
-                <Text style={styles.statUnit}>bpm</Text>
-              </View>
-
-              <View style={styles.statCard}>
-                <View style={styles.statCardTop}>
-                  <MaterialCommunityIcons name="arrow-up" size={18} color={colors.primary.blue600} />
-                  <Text style={styles.statLabel}>Max HR</Text>
-                </View>
-                <Text style={styles.statValue}>{maxBpm}</Text>
-                <Text style={styles.statUnit}>bpm</Text>
-              </View>
-            </View>
-          ) : null}
+        <View style={styles.heartResultSection}>
+          <HeartRateResultContent
+            bpm={avgBpm ?? '—'}
+            confidence={confidence}
+            sampleCount={sampleCount}
+            rmssd={rmssd}
+            hrDrop={hrDrop}
+            stress={stress}
+            hrvAvailabilityReason={hrvAvailabilityReason}
+            ibiSamples={ibiSamples}
+            extraStats={extraStats}
+            showHero={false}
+          />
         </View>
 
       </ScrollView>
@@ -357,76 +292,8 @@ const styles = StyleSheet.create({
     color: colors.text.tertiary,
   },
 
-  // Graph
-  graphSection: {
+  heartResultSection: {
     paddingHorizontal: padding.screen.horizontal,
     marginTop: margin.sectionGap,
-  },
-  sectionTitle: {
-    ...typography.title.title3,
-    color: colors.text.primary,
-    marginBottom: spacing.md,
-  },
-  card: {
-    ...card.base,
-    ...card.shadow,
-    padding: spacing.md,
-    overflow: 'hidden',
-  },
-
-  // Stats
-  statsSection: {
-    paddingHorizontal: padding.screen.horizontal,
-    marginTop: margin.sectionGap,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    gap: spacing.md,
-  },
-  statCard: {
-    ...card.base,
-    ...card.shadow,
-    flex: 1,
-    padding: spacing.md,
-  },
-  statCardTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    marginBottom: spacing.sm,
-  },
-  statLabel: {
-    ...typography.label.medium,
-    color: colors.text.secondary,
-    fontFamily: fonts.medium,
-  },
-  statValue: {
-    ...typography.display.display3,
-    color: colors.text.primary,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-  },
-  statUnit: {
-    ...typography.caption.caption1,
-    color: colors.text.tertiary,
-    marginTop: 2,
-  },
-
-  emptyGraph: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing.xl,
-    paddingHorizontal: spacing.md,
-    gap: spacing.sm,
-    minHeight: 180,
-  },
-  emptyGraphTitle: {
-    ...typography.heading.heading2,
-    color: colors.text.primary,
-  },
-  emptyGraphBody: {
-    ...typography.body.small,
-    color: colors.text.secondary,
-    textAlign: 'center',
   },
 });
