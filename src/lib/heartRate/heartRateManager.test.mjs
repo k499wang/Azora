@@ -275,6 +275,31 @@ test('HeartRateManager: short-gap recovery does not add transient bogus IBIs', (
   );
 });
 
+test('HeartRateManager: transient bad placement does not force beat warmup', () => {
+  const manager = new HeartRateManager();
+  let t = runBeatTrain(manager, [24, 48, 72, 96, 120, 144]);
+  assert.equal(manager.getCurrentBpm(), 76);
+
+  for (let i = 0; i < 10; i++) {
+    const state = manager.processFrame(makeNoFingerFrame(t));
+    assert.equal(state.beatDetected, false);
+    t += FRAME_SPACING_MS;
+  }
+
+  let resumedBeatTicks = 0;
+  for (let i = 0; i < 50; i++) {
+    const weighted = [24, 48].includes(i) ? BEAT_WEIGHTED : BASELINE_WEIGHTED;
+    const state = manager.processFrame(makeFrame(t, weighted));
+    if (state.beatDetected) resumedBeatTicks += 1;
+    t += FRAME_SPACING_MS;
+  }
+
+  assert.ok(
+    resumedBeatTicks > 0,
+    'beats should resume without waiting for a full warmup after a transient bad placement',
+  );
+});
+
 test('HeartRateManager: long-gap (>1s) reinits but preserves sessionStart and samples', () => {
   const manager = new HeartRateManager();
   runBeatTrain(manager, [24, 48, 72, 96]);

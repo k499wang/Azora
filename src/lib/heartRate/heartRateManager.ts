@@ -25,6 +25,7 @@ const SHORT_IBI_CONFIRMATION_MS = 430;
 const SHORT_IBI_CONFIRMATION_TOLERANCE = 0.25;
 const WARMUP_FRAMES = 60;
 const REINIT_GAP_MS = 1000;
+const BAD_PLACEMENT_GRACE_MS = 500;
 const IBI_HISTORY_SIZE = 8;
 const MIN_LIVE_BPM_IBIS = 5;
 const MALIK_THRESHOLD = 0.2;
@@ -220,6 +221,7 @@ export class HeartRateManager {
   private skipNextRecordedIbi = false;
   private armedForPeak = true;
   private pendingShortPeakTs: number | null = null;
+  private badPlacementSinceTs: number | null = null;
 
   reset(): void {
     this.baseline = 0;
@@ -242,6 +244,7 @@ export class HeartRateManager {
     this.skipNextRecordedIbi = false;
     this.armedForPeak = true;
     this.pendingShortPeakTs = null;
+    this.badPlacementSinceTs = null;
   }
 
   private pushAcceptedIbi(peakTs: number, ibi: number): void {
@@ -281,6 +284,24 @@ export class HeartRateManager {
     const { placement, weightedAverage } = classifyFrame(sample);
 
     if (placement === 'no_finger' || placement === 'too_much_pressure') {
+      if (this.initialized && this.lastGoodTs !== 0) {
+        if (this.badPlacementSinceTs == null) {
+          this.badPlacementSinceTs = sample.timestamp;
+        }
+
+        if (sample.timestamp - this.badPlacementSinceTs <= BAD_PLACEMENT_GRACE_MS) {
+          return {
+            fingerPlacement: this.lastPlacement,
+            beatDetected: false,
+            readyForMeasurement: this.validFrameCounter > WARMUP_FRAMES,
+            signalText:
+              this.validFrameCounter > WARMUP_FRAMES
+                ? 'Measuring pulse'
+                : 'Warm up and hold steady',
+          };
+        }
+      }
+
       this.validFrameCounter = 0;
       this.amplitude = 0;
       this.bpHp.reset();
@@ -305,6 +326,8 @@ export class HeartRateManager {
               : 'Cover the back camera and flash',
       };
     }
+
+    this.badPlacementSinceTs = null;
 
     const gapMs = this.lastGoodTs === 0 ? 0 : sample.timestamp - this.lastGoodTs;
     if (!this.initialized || gapMs > REINIT_GAP_MS) {

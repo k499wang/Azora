@@ -127,14 +127,6 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
   const addSample = useRunOnJS(
     (frameSample: unknown) => {
       if (!isValidFrameSample(frameSample)) {
-        bufferRef.current = [];
-        goodSinceRef.current = null;
-        fingerLostSinceRef.current = null;
-        fingerPlacementRef.current = 'no_finger';
-        managerRef.current.reset();
-        publishedBpmRef.current = null;
-        setCurrentBpm(null);
-        setFingerPlacement('no_finger');
         return;
       }
 
