@@ -67,7 +67,10 @@ export default function LineGraph({
     const innerHeight = height - CHART_PADDING.top - CHART_PADDING.bottom;
 
     const points = data.map((point, index) => {
-      const x = CHART_PADDING.left + (index / (data.length - 1)) * innerWidth;
+      const x =
+        data.length === 1
+          ? CHART_PADDING.left + innerWidth / 2
+          : CHART_PADDING.left + (index / (data.length - 1)) * innerWidth;
       const y = CHART_PADDING.top + (1 - (point.value - paddedMin) / paddedRange) * innerHeight;
       return { ...point, x, y };
     });
