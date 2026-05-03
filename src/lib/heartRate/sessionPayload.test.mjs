@@ -95,13 +95,13 @@ test('buildHeartRateSessionRpcPayload matches complete_heart_rate_session RPC ar
 
   assert.deepEqual(payload.p_samples, [
     { offset_ms: 1_200, bpm: 60, signal_quality: 0.5 },
-    { offset_ms: 1_800, bpm: 67, signal_quality: 0.7 },
-    { offset_ms: 2_250, bpm: 75, signal_quality: 0.4 },
-    { offset_ms: 2_950, bpm: 80, signal_quality: null },
+    { offset_ms: 1_800, bpm: 63, signal_quality: 0.7 },
+    { offset_ms: 2_250, bpm: 67, signal_quality: 0.4 },
+    { offset_ms: 2_950, bpm: 71, signal_quality: null },
   ]);
 });
 
-test('buildHeartRateSessionRpcPayload smooths isolated IBI spikes for graph samples only', () => {
+test('buildHeartRateSessionRpcPayload uses rolling median BPM for graph samples only', () => {
   const startedAt = Date.parse('2026-04-25T02:29:00.000Z');
   const endedAt = Date.parse('2026-04-25T02:30:00.000Z');
 
@@ -133,7 +133,7 @@ test('buildHeartRateSessionRpcPayload smooths isolated IBI spikes for graph samp
   );
 
   assert.ok(payload, 'expected a payload');
-  assert.deepEqual(payload.p_samples.map((sample) => sample.bpm), [67, 67, 75, 67, 66, 66]);
+  assert.deepEqual(payload.p_samples.map((sample) => sample.bpm), [67, 67, 67, 67, 67, 67]);
   assert.equal(payload.p_session.min_bpm, 66);
   assert.equal(payload.p_session.max_bpm, 100);
 });
