@@ -219,6 +219,66 @@ test('HeartRateManager: rejected split beats do not emit live beat ticks', () =>
   );
 });
 
+test('HeartRateManager: live beat ticks recover on the next rhythmic peak after one rejected peak', () => {
+  const manager = new HeartRateManager();
+  const beatFrames = [24, 48, 72, 96, 120, 132, 156, 180, 204];
+  const beatSet = new Set(beatFrames);
+  let t = 0;
+  let beatTicks = 0;
+
+  for (let i = 0; i < WARMUP_FRAMES; i++) {
+    const state = manager.processFrame(makeFrame(t, BASELINE_WEIGHTED));
+    if (state.beatDetected) beatTicks += 1;
+    t += FRAME_SPACING_MS;
+  }
+
+  const totalPostWarmupFrames = Math.max(...beatFrames) + 15;
+  for (let i = 0; i < totalPostWarmupFrames; i++) {
+    const weighted = beatSet.has(i) ? BEAT_WEIGHTED : BASELINE_WEIGHTED;
+    const state = manager.processFrame(makeFrame(t, weighted));
+    if (state.beatDetected) beatTicks += 1;
+    t += FRAME_SPACING_MS;
+  }
+
+  assert.equal(
+    beatTicks,
+    8,
+    'only the rejected peak should be skipped; the following rhythmic beats should still animate live pulse',
+  );
+});
+
+test('HeartRateManager: one bad placement frame does not reset live beat detection', () => {
+  const manager = new HeartRateManager();
+  const beatFrames = [24, 48, 72, 96, 120, 144, 168, 192];
+  const beatSet = new Set(beatFrames);
+  const badPlacementFrame = 132;
+  let t = 0;
+  let beatTicks = 0;
+
+  for (let i = 0; i < WARMUP_FRAMES; i++) {
+    const state = manager.processFrame(makeFrame(t, BASELINE_WEIGHTED));
+    if (state.beatDetected) beatTicks += 1;
+    t += FRAME_SPACING_MS;
+  }
+
+  const totalPostWarmupFrames = Math.max(...beatFrames) + 15;
+  for (let i = 0; i < totalPostWarmupFrames; i++) {
+    const frame =
+      i === badPlacementFrame
+        ? makeNoFingerFrame(t)
+        : makeFrame(t, beatSet.has(i) ? BEAT_WEIGHTED : BASELINE_WEIGHTED);
+    const state = manager.processFrame(frame);
+    if (state.beatDetected) beatTicks += 1;
+    t += FRAME_SPACING_MS;
+  }
+
+  assert.equal(
+    beatTicks,
+    beatFrames.length,
+    'a transient placement flicker should not force a warmup that suppresses following beats',
+  );
+});
+
 test('HeartRateManager: short-gap (<1s) keeps ibiHistory and anchor', () => {
   const manager = new HeartRateManager();
   runBeatTrain(manager, [24, 48, 72, 96]);

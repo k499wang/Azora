@@ -25,6 +25,7 @@ const SHORT_IBI_CONFIRMATION_MS = 430;
 const SHORT_IBI_CONFIRMATION_TOLERANCE = 0.25;
 const WARMUP_FRAMES = 60;
 const REINIT_GAP_MS = 1000;
+const BAD_PLACEMENT_RESET_MS = 600;
 const IBI_HISTORY_SIZE = 8;
 const MIN_LIVE_BPM_IBIS = 5;
 const MALIK_THRESHOLD = 0.2;
@@ -211,6 +212,7 @@ export class HeartRateManager {
   private prev2Ts = 0;
   private lastPeakTs = 0;
   private lastGoodTs = 0;
+  private badPlacementSinceTs: number | null = null;
   private validFrameCounter = 0;
   private initialized = false;
   private lastPlacement: FingerPlacementState = 'no_finger';
@@ -220,6 +222,7 @@ export class HeartRateManager {
   private skipNextRecordedIbi = false;
   private armedForPeak = true;
   private pendingShortPeakTs: number | null = null;
+  private lastRejectedPeakTs: number | null = null;
 
   reset(): void {
     this.baseline = 0;
@@ -233,6 +236,7 @@ export class HeartRateManager {
     this.prev2Ts = 0;
     this.lastPeakTs = 0;
     this.lastGoodTs = 0;
+    this.badPlacementSinceTs = null;
     this.validFrameCounter = 0;
     this.initialized = false;
     this.lastPlacement = 'no_finger';
@@ -242,6 +246,7 @@ export class HeartRateManager {
     this.skipNextRecordedIbi = false;
     this.armedForPeak = true;
     this.pendingShortPeakTs = null;
+    this.lastRejectedPeakTs = null;
   }
 
   private pushAcceptedIbi(peakTs: number, ibi: number): void {
@@ -275,23 +280,33 @@ export class HeartRateManager {
     // outlier rejection for the actual measurement window.
     this.ibiHistory.length = 0;
     this.pendingShortPeakTs = null;
+    this.lastRejectedPeakTs = null;
   }
 
   processFrame(sample: PpgFrameSample): HeartRateFrameState {
     const { placement, weightedAverage } = classifyFrame(sample);
 
     if (placement === 'no_finger' || placement === 'too_much_pressure') {
-      this.validFrameCounter = 0;
-      this.amplitude = 0;
-      this.bpHp.reset();
-      this.bpLp.reset();
-      this.needsBandpassPrime = true;
-      this.prev1 = 0;
-      this.prev2 = 0;
-      this.prev1Ts = 0;
-      this.prev2Ts = 0;
-      this.armedForPeak = true;
-      this.pendingShortPeakTs = null;
+      if (this.badPlacementSinceTs == null) {
+        this.badPlacementSinceTs = sample.timestamp;
+      }
+      const placementHasBeenBad =
+        sample.timestamp - this.badPlacementSinceTs >= BAD_PLACEMENT_RESET_MS;
+
+      if (placementHasBeenBad) {
+        this.validFrameCounter = 0;
+        this.amplitude = 0;
+        this.bpHp.reset();
+        this.bpLp.reset();
+        this.needsBandpassPrime = true;
+        this.prev1 = 0;
+        this.prev2 = 0;
+        this.prev1Ts = 0;
+        this.prev2Ts = 0;
+        this.armedForPeak = true;
+        this.pendingShortPeakTs = null;
+        this.lastRejectedPeakTs = null;
+      }
       this.lastPlacement = this.lastPlacement === 'good' ? 'lost' : placement;
       return {
         fingerPlacement: this.lastPlacement,
@@ -305,6 +320,7 @@ export class HeartRateManager {
               : 'Cover the back camera and flash',
       };
     }
+    this.badPlacementSinceTs = null;
 
     const gapMs = this.lastGoodTs === 0 ? 0 : sample.timestamp - this.lastGoodTs;
     if (!this.initialized || gapMs > REINIT_GAP_MS) {
@@ -326,6 +342,7 @@ export class HeartRateManager {
       this.initialized = true;
       this.armedForPeak = true;
       this.pendingShortPeakTs = null;
+      this.lastRejectedPeakTs = null;
     }
 
     if (this.needsBandpassPrime) {
@@ -338,6 +355,7 @@ export class HeartRateManager {
       this.needsBandpassPrime = false;
       this.armedForPeak = true;
       this.pendingShortPeakTs = null;
+      this.lastRejectedPeakTs = null;
     }
 
     this.baseline += BASELINE_ALPHA * (weightedAverage - this.baseline);
@@ -421,6 +439,7 @@ export class HeartRateManager {
               if (ibi > MAX_IBI_MS) {
                 this.ibiHistory.length = 0;
                 acceptedPeak = true;
+                this.lastRejectedPeakTs = null;
               } else if (
                 this.ibiHistory.length < MALIK_MIN_HISTORY &&
                 ibi < SHORT_IBI_CONFIRMATION_MS
@@ -430,19 +449,42 @@ export class HeartRateManager {
                 // dicrotic doublet.
                 this.pendingShortPeakTs = peakTs;
                 advanceAnchor = false;
+                this.lastRejectedPeakTs = peakTs;
               } else {
+                const medianIbi =
+                  this.ibiHistory.length >= MALIK_MIN_HISTORY
+                    ? medianOfRecent(this.ibiHistory, MALIK_WINDOW)
+                    : 0;
                 const ectopic =
-                  this.ibiHistory.length >= MALIK_MIN_HISTORY &&
-                  (() => {
-                    const med = medianOfRecent(this.ibiHistory, MALIK_WINDOW);
-                    return (
-                      med > 0 && Math.abs(ibi - med) / med > MALIK_THRESHOLD
-                    );
-                  })();
+                  medianIbi > 0 &&
+                  Math.abs(ibi - medianIbi) / medianIbi > MALIK_THRESHOLD;
                 if (ectopic) {
-                  advanceAnchor = false;
+                  const recoveryIbi =
+                    this.lastRejectedPeakTs == null
+                      ? 0
+                      : peakTs - this.lastRejectedPeakTs;
+                  const recoversRhythm =
+                    medianIbi > 0 &&
+                    recoveryIbi >= MIN_IBI_MS &&
+                    recoveryIbi <= MAX_IBI_MS &&
+                    Math.abs(recoveryIbi - medianIbi) / medianIbi <=
+                      MALIK_THRESHOLD;
+
+                  if (recoversRhythm) {
+                    // The previous peak was rejected as a likely doublet, but
+                    // this peak lands exactly where the ongoing rhythm expects
+                    // it relative to that candidate. Accept this beat so live
+                    // pulse feedback recovers immediately, while avoiding a
+                    // suspect IBI write for the rejected candidate.
+                    acceptedPeak = true;
+                    this.lastRejectedPeakTs = null;
+                  } else {
+                    advanceAnchor = false;
+                    this.lastRejectedPeakTs = peakTs;
+                  }
                 } else {
                   acceptedPeak = true;
+                  this.lastRejectedPeakTs = null;
                   this.pushAcceptedIbi(peakTs, ibi);
                 }
               }
