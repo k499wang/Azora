@@ -36,6 +36,7 @@ export type Database = {
           score_version: number
           sdnn: number | null
           started_at: string
+          stress: number | null
           timezone: string
           user_id: string
         }
@@ -60,6 +61,7 @@ export type Database = {
           score_version?: number
           sdnn?: number | null
           started_at: string
+          stress?: number | null
           timezone: string
           user_id: string
         }
@@ -84,6 +86,7 @@ export type Database = {
           score_version?: number
           sdnn?: number | null
           started_at?: string
+          stress?: number | null
           timezone?: string
           user_id?: string
         }
@@ -763,6 +766,7 @@ export type Database = {
           score_version: number | null
           sdnn: number | null
           started_at: string | null
+          stress: number | null
           timezone: string | null
           user_id: string | null
         }

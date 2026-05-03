@@ -4,7 +4,7 @@ import {
   runAtTargetFps,
 } from 'react-native-vision-camera';
 import { useRunOnJS } from 'react-native-worklets-core';
-import type { FingerPlacementState, PpgFrameSample } from '../lib/heartRate/types';
+import type { FingerPlacementState, IbiSample, PpgFrameSample } from '../lib/heartRate/types';
 import { heartRatePlugin } from '../lib/heartRate/heartRatePlugin';
 import { HeartRateManager } from '../lib/heartRate/heartRateManager';
 import { stabilizeBpmUpdate } from '../lib/heartRate/bpmSmoothing';
@@ -43,6 +43,9 @@ interface UseLivePulseReturn {
   torchMode: 'on' | 'off';
   hasPermission: boolean;
   requestPermission: () => Promise<boolean>;
+  beginMeasurementWindow: () => void;
+  getMeasurementSamples: () => PpgFrameSample[];
+  getIbiSamples: () => IbiSample[];
 }
 
 export function useLivePulse(): UseLivePulseReturn {
@@ -55,6 +58,9 @@ export function useLivePulse(): UseLivePulseReturn {
   const managerRef = useRef(new HeartRateManager());
   const lastBpmUpdateRef = useRef(0);
   const lastFingerSeenAtRef = useRef<number | null>(null);
+  const lastFrameTimestampRef = useRef<number | null>(null);
+  const measurementActiveRef = useRef(false);
+  const measurementSamplesRef = useRef<PpgFrameSample[]>([]);
   const publishedBpmRef = useRef<number | null>(null);
 
   const { device, format, hasPermission, requestPermission } = useHeartRateCamera();
@@ -68,6 +74,9 @@ export function useLivePulse(): UseLivePulseReturn {
     managerRef.current.reset();
     lastBpmUpdateRef.current = 0;
     lastFingerSeenAtRef.current = null;
+    lastFrameTimestampRef.current = null;
+    measurementActiveRef.current = false;
+    measurementSamplesRef.current = [];
     publishedBpmRef.current = null;
   }, []);
 
@@ -95,12 +104,19 @@ export function useLivePulse(): UseLivePulseReturn {
       if (!isValidFrameSample(frameSample)) {
         managerRef.current.reset();
         lastFingerSeenAtRef.current = null;
+        lastFrameTimestampRef.current = null;
+        measurementActiveRef.current = false;
+        measurementSamplesRef.current = [];
         publishedBpmRef.current = null;
         setCurrentBpm(null);
         setFingerPlacement('no_finger');
         return;
       }
 
+      lastFrameTimestampRef.current = frameSample.timestamp;
+      if (measurementActiveRef.current) {
+        measurementSamplesRef.current.push(frameSample);
+      }
       const frameState = managerRef.current.processFrame(frameSample);
       lastFingerSeenAtRef.current = frameState.fingerPlacement === 'no_finger' ? lastFingerSeenAtRef.current : frameSample.timestamp;
       setFingerPlacement(frameState.fingerPlacement);
@@ -130,6 +146,22 @@ export function useLivePulse(): UseLivePulseReturn {
     [],
   );
 
+  const beginMeasurementWindow = useCallback(() => {
+    measurementSamplesRef.current = [];
+    measurementActiveRef.current = true;
+    managerRef.current.beginMeasurementWindow(lastFrameTimestampRef.current ?? Date.now());
+  }, []);
+
+  const getMeasurementSamples = useCallback(() => {
+    measurementActiveRef.current = false;
+    return measurementSamplesRef.current.map((sample) => ({
+      timestamp: sample.timestamp,
+      rois: sample.rois.map((roi) => ({ ...roi })),
+    }));
+  }, []);
+
+  const getIbiSamples = useCallback(() => managerRef.current.getIbiSamples(), []);
+
   const frameProcessor = useFrameProcessor(
     (frame) => {
       'worklet';
@@ -157,5 +189,8 @@ export function useLivePulse(): UseLivePulseReturn {
     torchMode,
     hasPermission,
     requestPermission,
+    beginMeasurementWindow,
+    getMeasurementSamples,
+    getIbiSamples,
   };
 }
