@@ -7,6 +7,8 @@ export type OnboardingStep =
   | 'age'
   | 'gender'
   | 'dailyTime'
+  | 'baseline'
+  | 'recommendation'
   | 'pact';
 
 export interface IntentOption {

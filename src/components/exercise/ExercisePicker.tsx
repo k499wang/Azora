@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
-import { typography } from '../../theme/typography';
+import { fonts, typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import type { BreathingTechnique } from '../../data/techniques';
 
@@ -14,11 +14,24 @@ interface ExercisePickerProps {
   techniques: BreathingTechnique[];
   selected: string;
   onSelect: (technique: BreathingTechnique) => void;
+  defaultTechniqueId?: string | null;
 }
 
-export default function ExercisePicker({ techniques, selected, onSelect }: ExercisePickerProps) {
+export default function ExercisePicker({
+  techniques,
+  selected,
+  onSelect,
+  defaultTechniqueId,
+}: ExercisePickerProps) {
   const [open, setOpen] = useState(false);
   const current = techniques.find((t) => t.id === selected) ?? techniques[0];
+
+  const orderedTechniques = useMemo(() => {
+    if (defaultTechniqueId == null) return techniques;
+    const recommended = techniques.find((t) => t.id === defaultTechniqueId);
+    if (recommended == null) return techniques;
+    return [recommended, ...techniques.filter((t) => t.id !== defaultTechniqueId)];
+  }, [defaultTechniqueId, techniques]);
 
   return (
     <View style={styles.wrapper}>
@@ -36,8 +49,9 @@ export default function ExercisePicker({ techniques, selected, onSelect }: Exerc
 
       {open ? (
         <View style={styles.dropdown}>
-          {techniques.map((t) => {
+          {orderedTechniques.map((t) => {
             const isSelected = t.id === selected;
+            const isRecommended = t.id === defaultTechniqueId;
             return (
               <Pressable
                 key={t.id}
@@ -48,9 +62,16 @@ export default function ExercisePicker({ techniques, selected, onSelect }: Exerc
                 }}
               >
                 <View style={styles.optionContent}>
-                  <Text style={[styles.optionName, isSelected && styles.optionNameSelected]}>
-                    {t.name}
-                  </Text>
+                  <View style={styles.optionNameRow}>
+                    <Text style={[styles.optionName, isSelected && styles.optionNameSelected]}>
+                      {t.name}
+                    </Text>
+                    {isRecommended ? (
+                      <View style={styles.recommendedPill}>
+                        <Text style={styles.recommendedText}>For you</Text>
+                      </View>
+                    ) : null}
+                  </View>
                   <Text style={[styles.optionDesc, isSelected && styles.optionDescSelected]}>
                     {t.description}
                   </Text>
@@ -144,5 +165,23 @@ const styles = StyleSheet.create({
   },
   optionPatternSelected: {
     color: colors.primary.blue600,
+  },
+  optionNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  recommendedPill: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 999,
+    backgroundColor: colors.primary.blue600,
+  },
+  recommendedText: {
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    fontSize: 9,
+    letterSpacing: 0.5,
+    color: colors.text.inverse,
   },
 });

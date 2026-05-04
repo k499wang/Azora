@@ -1,14 +1,17 @@
+import { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { usePostHog } from 'posthog-react-native';
 import { colors } from '../../theme/colors';
-import { typography } from '../../theme/typography';
+import { fonts, typography } from '../../theme/typography';
 import { spacing, padding } from '../../theme/spacing';
 import { card } from '../../theme/card';
 import TECHNIQUES, { type BreathingTechnique } from '../../data/techniques';
 import SectionHeader from '../common/SectionHeader';
 import { AnalyticsEvent } from '../../services/analytics/events';
+import { useAuthStore } from '../../stores/authStore';
+import { useUserDefaultTechniqueQuery } from '../../queries/profile/useUserDefaultTechniqueQuery';
 import type { MainTabNavigationProp } from '../../app/navigation';
 
 const CATEGORY_CONFIG = {
@@ -22,7 +25,13 @@ function formatPattern(p: BreathingTechnique['pattern']) {
   return [p.inhale, p.holdIn, p.exhale, p.holdOut].filter((v) => v > 0).join('-');
 }
 
-function TechniqueCard({ technique }: { technique: BreathingTechnique }) {
+function TechniqueCard({
+  technique,
+  recommended = false,
+}: {
+  technique: BreathingTechnique;
+  recommended?: boolean;
+}) {
   const navigation = useNavigation<MainTabNavigationProp<'Home'>>();
   const posthog = usePostHog();
   const cat = CATEGORY_CONFIG[technique.category];
@@ -33,6 +42,7 @@ function TechniqueCard({ technique }: { technique: BreathingTechnique }) {
       technique_name: technique.name,
       technique_category: technique.category,
       pattern: formatPattern(technique.pattern),
+      recommended,
     });
     navigation.navigate('ExerciseSession', { techniqueId: technique.id });
   };
@@ -40,8 +50,17 @@ function TechniqueCard({ technique }: { technique: BreathingTechnique }) {
   return (
     <Pressable
       onPress={handlePress}
-      style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+      style={({ pressed }) => [
+        styles.card,
+        recommended && styles.cardRecommended,
+        pressed && styles.cardPressed,
+      ]}
     >
+      {recommended ? (
+        <View style={styles.recommendedPill}>
+          <Text style={styles.recommendedText}>For you</Text>
+        </View>
+      ) : null}
       <View style={styles.topRow}>
         <View style={[styles.iconCircle, { backgroundColor: cat.bg }]}>
           <MaterialCommunityIcons
@@ -63,6 +82,16 @@ function TechniqueCard({ technique }: { technique: BreathingTechnique }) {
 }
 
 export default function BreathingLibrary() {
+  const userId = useAuthStore((s) => s.user?.id ?? null);
+  const { data: defaultTechniqueId } = useUserDefaultTechniqueQuery(userId);
+
+  const orderedTechniques = useMemo(() => {
+    if (defaultTechniqueId == null) return TECHNIQUES;
+    const recommended = TECHNIQUES.find((t) => t.id === defaultTechniqueId);
+    if (recommended == null) return TECHNIQUES;
+    return [recommended, ...TECHNIQUES.filter((t) => t.id !== defaultTechniqueId)];
+  }, [defaultTechniqueId]);
+
   return (
     <View style={styles.section}>
       <View style={styles.headerWrap}>
@@ -75,8 +104,12 @@ export default function BreathingLibrary() {
         decelerationRate="fast"
         snapToInterval={CARD_WIDTH + spacing.sm}
       >
-        {TECHNIQUES.map((t) => (
-          <TechniqueCard key={t.id} technique={t} />
+        {orderedTechniques.map((t) => (
+          <TechniqueCard
+            key={t.id}
+            technique={t}
+            recommended={t.id === defaultTechniqueId}
+          />
         ))}
       </ScrollView>
     </View>
@@ -103,9 +136,30 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     gap: spacing.xs,
   },
+  cardRecommended: {
+    borderColor: colors.primary.blue600,
+    borderWidth: 1.5,
+  },
   cardPressed: {
     opacity: 0.88,
     transform: [{ scale: 0.98 }],
+  },
+  recommendedPill: {
+    position: 'absolute',
+    top: -8,
+    left: spacing.md,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999,
+    backgroundColor: colors.primary.blue600,
+    zIndex: 1,
+  },
+  recommendedText: {
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    fontSize: 10,
+    letterSpacing: 0.6,
+    color: colors.text.inverse,
   },
   topRow: {
     flexDirection: 'row',

@@ -474,9 +474,13 @@ export type Database = {
       }
       profiles: {
         Row: {
+          age: number | null
           avatar_url: string | null
           created_at: string
+          daily_minutes: number | null
+          default_technique_id: string | null
           display_name: string | null
+          gender: string | null
           onboarding_completed_at: string | null
           onboarding_goal: string | null
           timezone: string
@@ -484,9 +488,13 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          age?: number | null
           avatar_url?: string | null
           created_at?: string
+          daily_minutes?: number | null
+          default_technique_id?: string | null
           display_name?: string | null
+          gender?: string | null
           onboarding_completed_at?: string | null
           onboarding_goal?: string | null
           timezone?: string
@@ -494,9 +502,13 @@ export type Database = {
           user_id: string
         }
         Update: {
+          age?: number | null
           avatar_url?: string | null
           created_at?: string
+          daily_minutes?: number | null
+          default_technique_id?: string | null
           display_name?: string | null
+          gender?: string | null
           onboarding_completed_at?: string | null
           onboarding_goal?: string | null
           timezone?: string

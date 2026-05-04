@@ -1,5 +1,7 @@
 import { requireSupabaseClient } from '../supabase';
 
+export type UserGender = 'female' | 'male' | 'nonbinary' | 'prefer_not';
+
 export interface UserProfile {
   userId: string;
   displayName: string | null;
@@ -7,6 +9,10 @@ export interface UserProfile {
   timezone: string;
   onboardingGoal: string | null;
   onboardingCompletedAt: string | null;
+  age: number | null;
+  gender: UserGender | null;
+  dailyMinutes: number | null;
+  defaultTechniqueId: string | null;
 }
 
 export interface UserPreferences {
@@ -23,6 +29,10 @@ export interface UpdateProfileInput {
   timezone?: string;
   onboardingGoal?: string | null;
   onboardingCompletedAt?: string | null;
+  age?: number | null;
+  gender?: UserGender | null;
+  dailyMinutes?: number | null;
+  defaultTechniqueId?: string | null;
 }
 
 export interface UpdatePreferencesInput {
