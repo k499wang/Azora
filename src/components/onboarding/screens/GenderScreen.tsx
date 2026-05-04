@@ -1,81 +1,74 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import Icon from '../../common/icons/Icon';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
 import { isHapticsEnabled } from '../../../services/preferences/hapticsPreference';
-import { INTENT_OPTIONS } from '../data/intentOptions';
+import { GENDER_OPTIONS, type GenderOption } from '../data/genderOptions';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 
-interface IntentQuestionScreenProps {
-  selectedIntent: string | null;
-  isSubmitting: boolean;
-  errorMessage: string | null;
+interface GenderScreenProps {
+  value: GenderOption['id'] | null;
   stepIndex: number;
   stepCount: number;
-  onSelect: (intentId: string) => void;
+  onSelect: (id: GenderOption['id']) => void;
   onContinue: () => void;
+  onBack: () => void;
 }
 
-export default function IntentQuestionScreen({
-  selectedIntent,
-  isSubmitting,
-  errorMessage,
+export default function GenderScreen({
+  value,
   stepIndex,
   stepCount,
   onSelect,
   onContinue,
-}: IntentQuestionScreenProps) {
-  const canContinue = selectedIntent != null && !isSubmitting;
-
-  const handleSelect = (intentId: string) => {
+  onBack,
+}: GenderScreenProps) {
+  const handleSelect = (id: GenderOption['id']) => {
     if (isHapticsEnabled()) Haptics.selectionAsync().catch(() => {});
-    onSelect(intentId);
+    onSelect(id);
   };
 
   return (
     <OnboardingScreenLayout
-      title="What's on your mind?"
-      subtitle="Pick what feels closest right now — Azora will tune to it."
+      title="How do you identify?"
+      subtitle="This helps Azora frame guidance more naturally."
       progress={stepIndex / stepCount}
+      onBack={onBack}
       footer={
         <OnboardingPrimaryButton
           label="Continue"
           onPress={onContinue}
-          disabled={!canContinue}
-          loading={isSubmitting}
+          disabled={value == null}
         />
       }
     >
       <View style={styles.options}>
-        {INTENT_OPTIONS.map((option, index) => {
-          const selected = selectedIntent === option.id;
+        {GENDER_OPTIONS.map((option, index) => {
+          const selected = value === option.id;
           const isFirst = index === 0;
 
           return (
             <Pressable
               key={option.id}
               accessibilityRole="button"
-              accessibilityState={{ selected, disabled: isSubmitting }}
-              disabled={isSubmitting}
+              accessibilityState={{ selected }}
               onPress={() => handleSelect(option.id)}
               style={({ pressed }) => [
                 styles.option,
                 !isFirst && styles.optionDivider,
                 pressed && styles.optionPressed,
-                isSubmitting && !selected && styles.optionDisabled,
               ]}
             >
-              <Icon
-                name={option.icon}
-                size={22}
-                color={selected ? option.accent : colors.text.tertiary}
+              <View
+                style={[
+                  styles.dot,
+                  { backgroundColor: selected ? option.accent : colors.border.default },
+                ]}
               />
               <Text
                 style={[styles.optionTitle, selected && styles.optionTitleSelected]}
-                numberOfLines={1}
               >
                 {option.title}
               </Text>
@@ -83,8 +76,6 @@ export default function IntentQuestionScreen({
           );
         })}
       </View>
-
-      {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
     </OnboardingScreenLayout>
   );
 }
@@ -106,8 +97,10 @@ const styles = StyleSheet.create({
   optionPressed: {
     opacity: 0.6,
   },
-  optionDisabled: {
-    opacity: 0.5,
+  dot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
   },
   optionTitle: {
     ...typography.body.medium,
@@ -117,11 +110,5 @@ const styles = StyleSheet.create({
   optionTitleSelected: {
     fontFamily: fonts.semibold,
     fontWeight: '600',
-    color: colors.text.primary,
-  },
-  error: {
-    ...typography.body.small,
-    color: colors.error[700],
-    marginTop: spacing.sm,
   },
 });

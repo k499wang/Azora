@@ -2,24 +2,48 @@
 
 Use this when adding a new step to the post-login onboarding flow.
 
-Onboarding files should use this shape:
+Onboarding is currently a gated UI flow, not a React Navigation stack. `RootNavigator` renders `OnboardingFlow` when `useAppGate()` returns `needs_onboarding`, and `OnboardingFlow.tsx` owns the internal step state.
+
+Current onboarding files:
 
 ```text
 src/components/onboarding/
   OnboardingFlow.tsx
+  OnboardingPrimaryButton.tsx
+  OnboardingScreenLayout.tsx
+  OnboardingHapticSlider.tsx
   screens/
     IntentQuestionScreen.tsx
-    ExperienceQuestionScreen.tsx
+    IntentReflectionScreen.tsx
+    CustomIntentScreen.tsx
+    AgeScreen.tsx
+    GenderScreen.tsx
+    DailyTimeScreen.tsx
   data/
     intentOptions.ts
-    experienceOptions.ts
+    genderOptions.ts
   types.ts
 ```
+
+Active wired steps are:
+
+```text
+IntentQuestionScreen
+  -> IntentReflectionScreen
+  -> complete onboarding
+
+IntentQuestionScreen
+  -> CustomIntentScreen
+  -> complete onboarding
+```
+
+`AgeScreen`, `GenderScreen`, and `DailyTimeScreen` exist as UI building blocks, but they are not wired into `OnboardingFlow.tsx` yet.
 
 Keep each screen presentational. Let `OnboardingFlow.tsx` own:
 
 - current step state
 - accumulated answers
+- back and continue transitions
 - final `onComplete(...)` call
 - submission/loading/error state
 
@@ -27,176 +51,186 @@ Use `data/` for static options and `types.ts` for shared answer/step types.
 
 ## 1. Create The Screen Component
 
+Prefer the current shared onboarding primitives over reimplementing layout in each screen:
+
+- `OnboardingScreenLayout`
+- `OnboardingPrimaryButton`
+- `OnboardingHapticSlider` for numeric slider steps
+- theme tokens from `src/theme/`
+
 Example:
 
 ```tsx
 // src/components/onboarding/screens/ExperienceQuestionScreen.tsx
-import {
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { card } from '../../../theme/card';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
-import { EXPERIENCE_OPTIONS } from '../data/experienceOptions';
+import { isHapticsEnabled } from '../../../services/preferences/hapticsPreference';
+import OnboardingScreenLayout from '../OnboardingScreenLayout';
+import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
+import { EXPERIENCE_OPTIONS, type ExperienceOption } from '../data/experienceOptions';
 
 interface ExperienceQuestionScreenProps {
-  onSelect: (experienceLevel: string) => void;
+  value: ExperienceOption['id'] | null;
+  stepIndex: number;
+  stepCount: number;
+  onSelect: (id: ExperienceOption['id']) => void;
+  onContinue: () => void;
+  onBack: () => void;
 }
 
 export default function ExperienceQuestionScreen({
+  value,
+  stepIndex,
+  stepCount,
   onSelect,
+  onContinue,
+  onBack,
 }: ExperienceQuestionScreenProps) {
-  return (
-    <SafeAreaView style={styles.screen}>
-      <View style={styles.content}>
-        <View style={styles.copy}>
-          <Text style={styles.title}>How familiar are you?</Text>
-          <Text style={styles.subtitle}>
-            This helps tune the first sessions we show you.
-          </Text>
-        </View>
+  const handleSelect = (id: ExperienceOption['id']) => {
+    if (isHapticsEnabled()) Haptics.selectionAsync().catch(() => {});
+    onSelect(id);
+  };
 
-        <View style={styles.options}>
-          {EXPERIENCE_OPTIONS.map((option) => (
+  return (
+    <OnboardingScreenLayout
+      title="How familiar are you?"
+      subtitle="This helps tune the first sessions we show you."
+      progress={stepIndex / stepCount}
+      onBack={onBack}
+      footer={
+        <OnboardingPrimaryButton
+          label="Continue"
+          onPress={onContinue}
+          disabled={value == null}
+        />
+      }
+    >
+      <View style={styles.options}>
+        {EXPERIENCE_OPTIONS.map((option, index) => {
+          const selected = value === option.id;
+
+          return (
             <Pressable
               key={option.id}
               accessibilityRole="button"
-              onPress={() => onSelect(option.id)}
+              accessibilityState={{ selected }}
+              onPress={() => handleSelect(option.id)}
               style={({ pressed }) => [
                 styles.option,
+                index !== 0 && styles.optionDivider,
                 pressed && styles.optionPressed,
               ]}
             >
-              <Text style={styles.optionTitle}>{option.title}</Text>
+              <Text
+                style={[styles.optionTitle, selected && styles.optionTitleSelected]}
+              >
+                {option.title}
+              </Text>
             </Pressable>
-          ))}
-        </View>
+          );
+        })}
       </View>
-    </SafeAreaView>
+    </OnboardingScreenLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: colors.background.primary,
-  },
-  content: {
-    flex: 1,
-    justifyContent: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing['3xl'],
-    gap: spacing.xl,
-  },
-  copy: {
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  title: {
-    ...typography.title.title1,
-    fontFamily: fonts.semibold,
-    fontWeight: '600',
-    color: colors.text.primary,
-    textAlign: 'center',
-  },
-  subtitle: {
-    ...typography.body.medium,
-    color: colors.text.secondary,
-    textAlign: 'center',
-    maxWidth: 320,
-  },
   options: {
-    gap: spacing.md,
+    marginTop: spacing.xs,
   },
   option: {
-    ...card.base,
-    ...card.shadow,
-    minHeight: 72,
-    justifyContent: 'center',
-    padding: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing.lg,
+  },
+  optionDivider: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border.default,
   },
   optionPressed: {
-    opacity: 0.94,
-    transform: [{ scale: 0.985 }],
+    opacity: 0.6,
   },
   optionTitle: {
-    ...typography.heading.heading2,
+    ...typography.body.medium,
     color: colors.text.primary,
-    textAlign: 'center',
+    flex: 1,
+  },
+  optionTitleSelected: {
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
   },
 });
 ```
 
-## 2. Export It
+## 2. Add Static Data
 
-Add the screen to:
-
-```ts
-// src/components/onboarding/index.ts
-export { default as ExperienceQuestionScreen } from './screens/ExperienceQuestionScreen';
-```
-
-If the screen uses static options, add them under `data/`:
+If the screen uses fixed options, add a specific data file:
 
 ```ts
 // src/components/onboarding/data/experienceOptions.ts
-export const EXPERIENCE_OPTIONS = [
+export interface ExperienceOption {
+  id: 'new' | 'some' | 'regular';
+  title: string;
+}
+
+export const EXPERIENCE_OPTIONS: ExperienceOption[] = [
   { id: 'new', title: 'I am new to breathwork' },
   { id: 'some', title: 'I have tried it before' },
   { id: 'regular', title: 'I practice regularly' },
 ];
 ```
 
-## 3. Add It To The Flow
+Avoid a generic `utils.ts` or catch-all options file. Name the data after the answer it collects.
 
-`OnboardingFlow.tsx` decides which onboarding screen is visible.
+## 3. Update Shared Types
 
-Use a small typed step state:
+Add the new step to `src/components/onboarding/types.ts`:
+
+```ts
+export type OnboardingStep =
+  | 'intent'
+  | 'intentReflection'
+  | 'customIntent'
+  | 'experience';
+```
+
+If the answer has a stable domain type, export it near the option data or from `types.ts`, whichever keeps imports clearer.
+
+## 4. Add It To The Flow
+
+`OnboardingFlow.tsx` decides which onboarding screen is visible. Add local state for the answer and a render branch for the step.
+
+Example:
 
 ```tsx
-type OnboardingStep = 'intent' | 'experience';
+const [experience, setExperience] = useState<ExperienceOption['id'] | null>(null);
 
-export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
-  const [step, setStep] = useState<OnboardingStep>('intent');
-  const [intent, setIntent] = useState<string | null>(null);
-  const [experience, setExperience] = useState<string | null>(null);
-
-  if (step === 'intent') {
-    return (
-      <IntentQuestionScreen
-        onSelect={(nextIntent) => {
-          setIntent(nextIntent);
-          setStep('experience');
-        }}
-      />
-    );
-  }
-
+if (step === 'experience') {
   return (
     <ExperienceQuestionScreen
-      onSelect={async (nextExperience) => {
-        setExperience(nextExperience);
+      value={experience}
+      stepIndex={3}
+      stepCount={4}
+      onSelect={setExperience}
+      onBack={() => setStep('intentReflection')}
+      onContinue={() => {
+        if (experience == null || selectedIntent == null) return;
 
-        if (intent == null) return;
-
-        await onComplete({
-          onboardingGoal: intent,
-          onboardingExperienceLevel: nextExperience,
-        });
+        void completeOnboarding(selectedIntent);
       }}
     />
   );
 }
 ```
 
-Only call `onComplete(...)` on the final step. That writes `onboarding_completed_at`, and the app gate will move the user into the main app.
+Only call `onComplete(...)` on the final step. That writes `onboarding_completed_at`, invalidates the onboarding status query, and lets the root gate move the user into the main app.
 
-## 4. Store The New Answer
+Do not add a route unless onboarding needs real navigation history, deep links, or route-level behavior. Gate-level rendering through `RootNavigator` is the default.
+
+## 5. Persist The New Answer
 
 If the new screen needs to persist an answer, add a Supabase column first, for example:
 
@@ -209,6 +243,7 @@ Then update:
 - `src/services/supabase/database.types.ts`
 - `src/services/profile/onboardingStatusService.ts`
 - `src/queries/profile/useCompleteOnboardingMutation.ts` if the input shape changes
+- `src/components/onboarding/OnboardingFlow.tsx`
 
 Example service input:
 
@@ -234,7 +269,9 @@ const profile: ProfileInsert = {
 
 - Keep screen files UI-only.
 - Keep Supabase writes in `services/`.
+- Keep React Query invalidation in mutation hooks.
 - Keep onboarding completion at the end of the flow.
 - Use explicit prop types.
-- Reuse `colors`, `spacing`, `typography`, and `card` tokens.
-- Do not add a route unless onboarding needs real navigation history. Gate-level rendering through `RootNavigator` is the default.
+- Reuse onboarding primitives and theme tokens.
+- Keep `stepIndex` and `stepCount` accurate for the active path.
+- Do not introduce `useNavigation<any>()` or local route types for onboarding steps.

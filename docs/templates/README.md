@@ -24,6 +24,8 @@ They are intentionally small. The goal is to help you start from the current arc
 3. Keep the final file smaller than the template if the real feature is simple.
 4. Check [patterns.md](/Users/k3vinwvng/Documents/Azora/Azora/patterns.md:1) if you are unsure where logic belongs.
 
+For onboarding-specific flow details, read [onboarding-flow-guide.md](/Users/k3vinwvng/Documents/Azora/Azora/docs/onboarding-flow-guide.md:1) before wiring a new step.
+
 ## Real File References
 
 Each template was derived from current repo code:
