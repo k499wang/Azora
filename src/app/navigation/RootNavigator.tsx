@@ -32,7 +32,7 @@ export function RootNavigator() {
   if (gate.status === 'needs_onboarding') {
     return (
       <OnboardingFlow
-        onComplete={(onboardingGoal) => gate.completeOnboarding({ onboardingGoal })}
+        onComplete={(result) => gate.completeOnboarding(result)}
       />
     );
   }

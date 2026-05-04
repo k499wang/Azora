@@ -1,20 +1,32 @@
 import { useMemo, useState } from 'react';
 import AgeScreen from './screens/AgeScreen';
+import BaselineScreen, { type BaselineResult } from './screens/BaselineScreen';
 import CustomIntentScreen from './screens/CustomIntentScreen';
 import DailyTimeScreen from './screens/DailyTimeScreen';
 import GenderScreen from './screens/GenderScreen';
 import IntentQuestionScreen from './screens/IntentQuestionScreen';
 import IntentReflectionScreen from './screens/IntentReflectionScreen';
 import PactScreen from './screens/PactScreen';
+import RecommendationScreen from './screens/RecommendationScreen';
 import { PERSONALIZED_INTENT_OPTIONS } from './data/intentOptions';
+import { INTENT_TO_TECHNIQUE } from './data/techniqueRecommendations';
 import type { GenderOption } from './data/genderOptions';
 import type { OnboardingStep } from './types';
 
-interface OnboardingFlowProps {
-  onComplete: (onboardingGoal: string) => Promise<void>;
+export interface OnboardingFlowResult {
+  onboardingGoal: string;
+  age: number | null;
+  gender: GenderOption['id'] | null;
+  dailyMinutes: number | null;
+  defaultTechniqueId: string | null;
 }
 
-const STEP_COUNT = 6;
+interface OnboardingFlowProps {
+  onComplete: (result: OnboardingFlowResult) => Promise<void>;
+}
+
+
+const STEP_COUNT = 8;
 const STEP_INDEX: Record<OnboardingStep, number> = {
   intent: 1,
   intentReflection: 2,
@@ -22,7 +34,9 @@ const STEP_INDEX: Record<OnboardingStep, number> = {
   age: 3,
   gender: 4,
   dailyTime: 5,
-  pact: 6,
+  baseline: 6,
+  recommendation: 7,
+  pact: 8,
 };
 
 export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
@@ -32,6 +46,7 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   const [age, setAge] = useState(25);
   const [gender, setGender] = useState<GenderOption['id'] | null>(null);
   const [dailyMinutes, setDailyMinutes] = useState(5);
+  const [baseline, setBaseline] = useState<BaselineResult | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -59,7 +74,14 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     setErrorMessage(null);
 
     try {
-      await onComplete(goal);
+      await onComplete({
+        onboardingGoal: goal,
+        age,
+        gender,
+        dailyMinutes,
+        defaultTechniqueId:
+          selectedIntent != null ? INTENT_TO_TECHNIQUE[selectedIntent] ?? null : null,
+      });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Please try again.';
       setErrorMessage(message);
@@ -138,8 +160,45 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         stepIndex={stepIndex}
         stepCount={STEP_COUNT}
         onChange={setDailyMinutes}
-        onContinue={() => setStep('pact')}
+        onContinue={() => setStep('baseline')}
         onBack={() => setStep('gender')}
+      />
+    );
+  }
+
+  if (step === 'baseline') {
+    return (
+      <BaselineScreen
+        stepIndex={stepIndex}
+        stepCount={STEP_COUNT}
+        onContinue={(result) => {
+          setBaseline(result);
+          setStep('recommendation');
+        }}
+        onBack={() => setStep('dailyTime')}
+      />
+    );
+  }
+
+  if (step === 'recommendation') {
+    const intentTitle =
+      selectedIntent === 'other'
+        ? customIntent.trim() || 'reach your goal'
+        : selectedOption?.title ?? 'reach your goal';
+    const techniqueId =
+      selectedIntent != null ? INTENT_TO_TECHNIQUE[selectedIntent] ?? 'box' : 'box';
+
+    return (
+      <RecommendationScreen
+        techniqueId={techniqueId}
+        intentTitle={intentTitle}
+        age={age}
+        dailyMinutes={dailyMinutes}
+        baseline={baseline}
+        stepIndex={stepIndex}
+        stepCount={STEP_COUNT}
+        onContinue={() => setStep('pact')}
+        onBack={() => setStep('baseline')}
       />
     );
   }
@@ -159,7 +218,7 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         isSubmitting={isSubmitting}
         errorMessage={errorMessage}
         onConfirm={finish}
-        onBack={() => setStep('dailyTime')}
+        onBack={() => setStep('recommendation')}
       />
     );
   }

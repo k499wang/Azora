@@ -9,16 +9,28 @@ interface OnboardingDatabase {
           user_id: string;
           onboarding_goal: string | null;
           onboarding_completed_at: string | null;
+          age: number | null;
+          gender: string | null;
+          daily_minutes: number | null;
+          default_technique_id: string | null;
         };
         Insert: {
           user_id: string;
           onboarding_goal?: string | null;
           onboarding_completed_at?: string | null;
+          age?: number | null;
+          gender?: string | null;
+          daily_minutes?: number | null;
+          default_technique_id?: string | null;
         };
         Update: {
           user_id?: string;
           onboarding_goal?: string | null;
           onboarding_completed_at?: string | null;
+          age?: number | null;
+          gender?: string | null;
+          daily_minutes?: number | null;
+          default_technique_id?: string | null;
         };
         Relationships: [];
       };
@@ -30,8 +42,14 @@ interface OnboardingDatabase {
 
 type ProfileInsert = OnboardingDatabase['public']['Tables']['profiles']['Insert'];
 
+export type OnboardingGender = 'female' | 'male' | 'nonbinary' | 'prefer_not';
+
 export interface CompleteOnboardingInput {
   onboardingGoal?: string | null;
+  age?: number | null;
+  gender?: OnboardingGender | null;
+  dailyMinutes?: number | null;
+  defaultTechniqueId?: string | null;
 }
 
 function getOnboardingClient(): SupabaseClientLike<OnboardingDatabase> {
@@ -68,6 +86,10 @@ export async function completeOnboarding(
     user_id: userId,
     onboarding_goal: input.onboardingGoal ?? null,
     onboarding_completed_at: new Date().toISOString(),
+    age: input.age ?? null,
+    gender: input.gender ?? null,
+    daily_minutes: input.dailyMinutes ?? null,
+    default_technique_id: input.defaultTechniqueId ?? null,
   };
 
   const { error } = await supabase
