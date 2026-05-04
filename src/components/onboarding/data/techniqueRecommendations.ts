@@ -42,7 +42,7 @@ export const INTENT_TO_TECHNIQUE: Record<string, string> = {
 
 export function progressionCopy(age: number, dailyMinutes: number): string {
   if (age < 30) {
-    return `We'll start at ${dailyMinutes} min/day and reassess your plan after 2 weeks.`;
+    return '';
   }
   if (age < 50) {
     return `Steady progression — we'll reassess your plan after 2 weeks.`;

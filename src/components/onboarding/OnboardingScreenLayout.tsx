@@ -5,6 +5,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -85,19 +86,26 @@ export default function OnboardingScreenLayout({
         </View>
       </View>
 
-      <Animated.View
-        style={[
-          styles.content,
-          { opacity: fade, transform: [{ translateY: slide }] },
-        ]}
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={true}
+        keyboardShouldPersistTaps="handled"
       >
-        <View style={styles.copy}>
-          <Text style={styles.title}>{title}</Text>
-          {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
-        </View>
+        <Animated.View
+          style={[
+            styles.content,
+            { opacity: fade, transform: [{ translateY: slide }] },
+          ]}
+        >
+          <View style={styles.copy}>
+            <Text style={styles.title}>{title}</Text>
+            {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+          </View>
 
-        <View style={styles.body}>{children}</View>
-      </Animated.View>
+          <View style={styles.body}>{children}</View>
+        </Animated.View>
+      </ScrollView>
 
       <View style={styles.bottom}>{footer}</View>
     </>
@@ -162,6 +170,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.text.primary,
     lineHeight: 24,
+  },
+  scroll: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
   },
   content: {
     flex: 1,

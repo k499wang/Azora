@@ -1,16 +1,14 @@
 import { StyleSheet, Text, View } from 'react-native';
-import Icon from '../../common/icons/Icon';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { card } from '../../../theme/card';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
-import {
-  TECHNIQUE_RECOMMENDATIONS,
-  progressionCopy,
-} from '../data/techniqueRecommendations';
+import { TECHNIQUE_RECOMMENDATIONS } from '../data/techniqueRecommendations';
 import type { BaselineResult } from './BaselineScreen';
+import LineGraph, { type DataPoint } from '../../analytics/LineGraph';
 
 interface RecommendationScreenProps {
   techniqueId: string;
@@ -22,6 +20,22 @@ interface RecommendationScreenProps {
   stepCount: number;
   onContinue: () => void;
   onBack: () => void;
+}
+
+function buildBpmSeries(history: number[]): DataPoint[] {
+  if (history.length === 0) return [];
+  const step = Math.max(1, Math.floor(history.length / 12));
+  const points: DataPoint[] = [];
+  for (let i = 0; i < history.length; i += step) {
+    const value = history[i];
+    const second = Math.round((i / history.length) * 60);
+    points.push({ label: `${second}s`, value });
+  }
+  // Always include the last point
+  if (points.length === 0 || points[points.length - 1].value !== history[history.length - 1]) {
+    points.push({ label: '60s', value: history[history.length - 1] });
+  }
+  return points;
 }
 
 export default function RecommendationScreen({
@@ -37,11 +51,15 @@ export default function RecommendationScreen({
 }: RecommendationScreenProps) {
   const technique =
     TECHNIQUE_RECOMMENDATIONS[techniqueId] ?? TECHNIQUE_RECOMMENDATIONS.box;
-  const progression = progressionCopy(age, dailyMinutes);
 
   const hrCompleted = baseline?.completed === true && baseline.avgBpm != null;
   const drop = baseline?.bpmDrop ?? 0;
   const hrDropPositive = hrCompleted && drop > 1;
+
+  const bpmSeries = baseline?.bpmHistory?.length
+    ? buildBpmSeries(baseline.bpmHistory)
+    : [];
+  const hasGraph = bpmSeries.length >= 2;
 
   return (
     <OnboardingScreenLayout
@@ -53,26 +71,68 @@ export default function RecommendationScreen({
     >
       {hrCompleted ? (
         <View style={styles.hrCard}>
-          <View style={styles.hrLeft}>
-            <Text style={styles.hrLabel}>Resting HR</Text>
-            <View style={styles.hrValueRow}>
-              <Text style={styles.hrValue}>{baseline?.avgBpm}</Text>
-              <Text style={styles.hrUnit}>bpm</Text>
+          <View style={styles.hrCardHeader}>
+            <View style={styles.hrCardTitleRow}>
+              <View style={styles.hrIconWrap}>
+                <MaterialCommunityIcons
+                  name="heart-pulse"
+                  size={18}
+                  color={colors.error[500]}
+                />
+              </View>
+              <Text style={styles.hrCardTitle}>Heart response</Text>
             </View>
+            {hrDropPositive ? (
+              <View style={styles.hrBadge}>
+                <Text style={styles.hrBadgeText}>↓ {drop} bpm</Text>
+              </View>
+            ) : (
+              <View style={[styles.hrBadge, styles.hrBadgeSteady]}>
+                <Text style={[styles.hrBadgeText, styles.hrBadgeTextSteady]}>
+                  Steady
+                </Text>
+              </View>
+            )}
           </View>
-          {hrDropPositive ? (
-            <View style={styles.hrRight}>
-              <Icon name="heart-glow" size={18} color={colors.success[500]} />
-              <Text style={styles.hrDropText}>
-                ↓ {drop} bpm{'\n'}during breathing
-              </Text>
+
+          <View style={styles.statsRow}>
+            <View style={styles.statItem}>
+              <Text style={styles.statValue}>{baseline?.avgBpm}</Text>
+              <Text style={styles.statLabel}>Avg BPM</Text>
             </View>
-          ) : (
-            <View style={styles.hrRight}>
-              <Icon name="waves" size={18} color={colors.primary.blue600} />
-              <Text style={styles.hrSteadyText}>Steady{'\n'}baseline</Text>
+            {baseline?.earlyBpm != null ? (
+              <View style={styles.statItem}>
+                <Text style={styles.statValue}>{baseline.earlyBpm}</Text>
+                <Text style={styles.statLabel}>Early</Text>
+              </View>
+            ) : null}
+            {baseline?.lateBpm != null ? (
+              <View style={styles.statItem}>
+                <Text style={styles.statValue}>{baseline.lateBpm}</Text>
+                <Text style={styles.statLabel}>Late</Text>
+              </View>
+            ) : null}
+            {baseline?.durationSec != null && baseline.durationSec > 0 ? (
+              <View style={styles.statItem}>
+                <Text style={styles.statValue}>{baseline.durationSec}s</Text>
+                <Text style={styles.statLabel}>Duration</Text>
+              </View>
+            ) : null}
+          </View>
+
+          {hasGraph ? (
+            <View style={styles.graphWrap}>
+              <LineGraph
+                data={bpmSeries}
+                subtitle="BPM during breathing"
+                unit=""
+                height={140}
+                lineColor={colors.primary.blue500}
+                fillColor={colors.primary.blue100}
+                dotColor={colors.primary.blue600}
+              />
             </View>
-          )}
+          ) : null}
         </View>
       ) : null}
 
@@ -84,10 +144,7 @@ export default function RecommendationScreen({
         <Text style={styles.techniqueWhy}>{technique.why}</Text>
       </View>
 
-      <View style={styles.planRow}>
-        <Icon name="streak" size={20} color={colors.orange[500]} />
-        <Text style={styles.planText}>{progression}</Text>
-      </View>
+      
     </OnboardingScreenLayout>
   );
 }
@@ -98,53 +155,80 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
     paddingVertical: spacing.lg,
     paddingHorizontal: spacing.lg,
+    borderRadius: 18,
+    gap: spacing.md,
+  },
+  hrCardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderRadius: 18,
   },
-  hrLeft: {
-    gap: spacing.xs,
-  },
-  hrLabel: {
-    ...typography.caption.caption2,
-    fontFamily: fonts.semibold,
-    fontWeight: '600',
-    letterSpacing: 1.5,
-    color: colors.text.tertiary,
-  },
-  hrValueRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: spacing.xs,
-  },
-  hrValue: {
-    fontFamily: fonts.semibold,
-    fontWeight: '600',
-    fontSize: 40,
-    lineHeight: 44,
-    letterSpacing: -1,
-    color: colors.text.primary,
-  },
-  hrUnit: {
-    ...typography.body.small,
-    color: colors.text.secondary,
-  },
-  hrRight: {
+  hrCardTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
   },
-  hrDropText: {
-    ...typography.body.small,
+  hrIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.error[100],
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  hrCardTitle: {
+    ...typography.body.medium,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    color: colors.text.primary,
+  },
+  hrBadge: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderRadius: 999,
+    backgroundColor: colors.success[100],
+    borderWidth: 1,
+    borderColor: colors.success[100],
+  },
+  hrBadgeSteady: {
+    backgroundColor: colors.neutral[100],
+    borderColor: colors.border.subtle,
+  },
+  hrBadgeText: {
+    ...typography.caption.caption2,
     fontFamily: fonts.semibold,
     fontWeight: '600',
     color: colors.success[700],
   },
-  hrSteadyText: {
-    ...typography.body.small,
+  hrBadgeTextSteady: {
     color: colors.text.secondary,
   },
+  statsRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.lg,
+  },
+  statItem: {
+    flex: 1,
+    gap: spacing.xs,
+  },
+  statValue: {
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    fontSize: 28,
+    lineHeight: 32,
+    letterSpacing: -0.4,
+    color: colors.text.primary,
+  },
+  statLabel: {
+    ...typography.caption.caption2,
+    color: colors.text.tertiary,
+  },
+  graphWrap: {
+    marginTop: spacing.xs,
+    overflow: 'hidden',
+  },
+
   techniqueCard: {
     ...card.base,
     ...card.shadow,
@@ -183,17 +267,5 @@ const styles = StyleSheet.create({
     ...typography.body.small,
     color: colors.text.secondary,
     lineHeight: 20,
-  },
-  planRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    marginTop: spacing.md,
-    paddingHorizontal: spacing.sm,
-  },
-  planText: {
-    ...typography.body.small,
-    color: colors.text.primary,
-    flex: 1,
   },
 });

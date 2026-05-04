@@ -86,13 +86,15 @@ export function LiveHeartRateMonitor({
         />
       ) : null}
 
-      <Animated.View style={{ transform: [{ scale: pulseScale }] }}>
-        <MaterialCommunityIcons
-          name="heart"
-          size={14}
-          color={showBpm ? colors.error[500] : colors.text.tertiary}
-        />
-      </Animated.View>
+      {hasFinger ? (
+        <Animated.View style={{ transform: [{ scale: pulseScale }] }}>
+          <MaterialCommunityIcons
+            name="heart"
+            size={14}
+            color={showBpm ? colors.error[500] : colors.text.tertiary}
+          />
+        </Animated.View>
+      ) : null}
 
       {showBpm ? (
         <>

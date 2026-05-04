@@ -56,11 +56,6 @@ function TechniqueCard({
         pressed && styles.cardPressed,
       ]}
     >
-      {recommended ? (
-        <View style={styles.recommendedPill}>
-          <Text style={styles.recommendedText}>For you</Text>
-        </View>
-      ) : null}
       <View style={styles.topRow}>
         <View style={[styles.iconCircle, { backgroundColor: cat.bg }]}>
           <MaterialCommunityIcons
@@ -143,23 +138,6 @@ const styles = StyleSheet.create({
   cardPressed: {
     opacity: 0.88,
     transform: [{ scale: 0.98 }],
-  },
-  recommendedPill: {
-    position: 'absolute',
-    top: -8,
-    left: spacing.md,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 999,
-    backgroundColor: colors.primary.blue600,
-    zIndex: 1,
-  },
-  recommendedText: {
-    fontFamily: fonts.semibold,
-    fontWeight: '600',
-    fontSize: 10,
-    letterSpacing: 0.6,
-    color: colors.text.inverse,
   },
   topRow: {
     flexDirection: 'row',
