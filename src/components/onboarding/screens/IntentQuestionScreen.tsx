@@ -1,17 +1,13 @@
-import {
-  ActivityIndicator,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import Icon from '../../common/icons/Icon';
-import { card } from '../../../theme/card';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
+import { isHapticsEnabled } from '../../../services/preferences/hapticsPreference';
 import { INTENT_OPTIONS } from '../data/intentOptions';
+import OnboardingScreenLayout from '../OnboardingScreenLayout';
+import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 
 interface IntentQuestionScreenProps {
   selectedIntent: string | null;
@@ -33,194 +29,99 @@ export default function IntentQuestionScreen({
   onContinue,
 }: IntentQuestionScreenProps) {
   const canContinue = selectedIntent != null && !isSubmitting;
-  const progress = Math.max(0, Math.min(1, stepIndex / stepCount));
+
+  const handleSelect = (intentId: string) => {
+    if (isHapticsEnabled()) Haptics.selectionAsync().catch(() => {});
+    onSelect(intentId);
+  };
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
-      <View style={styles.progressBar}>
-        <View style={[styles.progressFill, { width: `${progress * 100}%` }]} />
-      </View>
-
-      <View style={styles.content}>
-        <View style={styles.copy}>
-          <Text style={styles.title}>What brings you here?</Text>
-          <Text style={styles.subtitle}>
-            Choose the goal that feels closest right now.
-          </Text>
-        </View>
-
-        <View style={styles.options}>
-          {INTENT_OPTIONS.map((option) => {
-            const selected = selectedIntent === option.id;
-
-            return (
-              <Pressable
-                key={option.id}
-                accessibilityRole="button"
-                accessibilityState={{ selected, disabled: isSubmitting }}
-                disabled={isSubmitting}
-                onPress={() => onSelect(option.id)}
-                style={({ pressed }) => [
-                  styles.option,
-                  selected && styles.optionSelected,
-                  pressed && styles.optionPressed,
-                  isSubmitting && !selected && styles.optionDisabled,
-                ]}
-              >
-                <View style={[styles.iconWrap, selected && styles.iconWrapSelected]}>
-                  <Icon
-                    name={option.icon}
-                    size={24}
-                    color={selected ? colors.text.inverse : colors.primary.blue600}
-                  />
-                </View>
-
-                <View style={styles.optionCopy}>
-                  <Text style={styles.optionTitle}>{option.title}</Text>
-                  <Text style={styles.optionBody}>{option.body}</Text>
-                </View>
-              </Pressable>
-            );
-          })}
-        </View>
-
-        {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
-
-        <Pressable
-          accessibilityRole="button"
-          accessibilityState={{ disabled: !canContinue }}
-          disabled={!canContinue}
+    <OnboardingScreenLayout
+      title="What's on your mind?"
+      subtitle="Pick what feels closest right now — Azora will tune to it."
+      progress={stepIndex / stepCount}
+      footer={
+        <OnboardingPrimaryButton
+          label="Continue"
           onPress={onContinue}
-          style={({ pressed }) => [
-            styles.continueButton,
-            pressed && styles.continueButtonPressed,
-            !canContinue && styles.continueButtonDisabled,
-          ]}
-        >
-          {isSubmitting ? (
-            <ActivityIndicator color={colors.text.inverse} />
-          ) : (
-            <Text style={styles.continueButtonText}>Continue</Text>
-          )}
-        </Pressable>
+          disabled={!canContinue}
+          loading={isSubmitting}
+        />
+      }
+    >
+      <View style={styles.options}>
+        {INTENT_OPTIONS.map((option, index) => {
+          const selected = selectedIntent === option.id;
+          const isFirst = index === 0;
+
+          return (
+            <Pressable
+              key={option.id}
+              accessibilityRole="button"
+              accessibilityState={{ selected, disabled: isSubmitting }}
+              disabled={isSubmitting}
+              onPress={() => handleSelect(option.id)}
+              style={({ pressed }) => [
+                styles.option,
+                !isFirst && styles.optionDivider,
+                pressed && styles.optionPressed,
+                isSubmitting && !selected && styles.optionDisabled,
+              ]}
+            >
+              <Icon
+                name={option.icon}
+                size={22}
+                color={selected ? option.accent : colors.text.tertiary}
+              />
+              <Text
+                style={[styles.optionTitle, selected && styles.optionTitleSelected]}
+                numberOfLines={1}
+              >
+                {option.title}
+              </Text>
+            </Pressable>
+          );
+        })}
       </View>
-    </SafeAreaView>
+
+      {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
+    </OnboardingScreenLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: colors.background.primary,
+  options: {
+    marginTop: spacing.xs,
   },
-  content: {
-    flex: 1,
-    justifyContent: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing['3xl'],
-    gap: spacing.xl,
-  },
-  progressBar: {
-    height: 6,
-    marginHorizontal: spacing.lg,
-    marginTop: spacing.md,
-    borderRadius: 999,
-    backgroundColor: colors.primary.blue100,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: 999,
-    backgroundColor: colors.primary.blue600,
-  },
-  copy: {
+  option: {
+    flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: spacing.lg,
+    paddingVertical: spacing.lg,
   },
-  title: {
-    ...typography.title.title1,
+  optionDivider: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border.default,
+  },
+  optionPressed: {
+    opacity: 0.6,
+  },
+  optionDisabled: {
+    opacity: 0.5,
+  },
+  optionTitle: {
+    ...typography.body.medium,
+    color: colors.text.primary,
+    flex: 1,
+  },
+  optionTitleSelected: {
     fontFamily: fonts.semibold,
     fontWeight: '600',
     color: colors.text.primary,
-    textAlign: 'center',
-  },
-  subtitle: {
-    ...typography.body.medium,
-    color: colors.text.secondary,
-    textAlign: 'center',
-    maxWidth: 320,
-  },
-  options: {
-    gap: spacing.md,
-  },
-  option: {
-    ...card.base,
-    ...card.shadow,
-    minHeight: 88,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    padding: spacing.md,
-  },
-  optionSelected: {
-    borderColor: colors.border.brand,
-    backgroundColor: colors.background.accentSoft,
-  },
-  optionPressed: {
-    opacity: 0.94,
-    transform: [{ scale: 0.985 }],
-  },
-  optionDisabled: {
-    opacity: 0.6,
-  },
-  iconWrap: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: colors.primary.blue100,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  iconWrapSelected: {
-    backgroundColor: colors.primary.blue600,
-  },
-  optionCopy: {
-    flex: 1,
-    gap: 2,
-  },
-  optionTitle: {
-    ...typography.heading.heading2,
-    color: colors.text.primary,
-  },
-  optionBody: {
-    ...typography.body.small,
-    color: colors.text.secondary,
   },
   error: {
     ...typography.body.small,
     color: colors.error[700],
-    textAlign: 'center',
-  },
-  continueButton: {
-    minHeight: 56,
-    borderRadius: 999,
-    backgroundColor: colors.primary.blue600,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  continueButtonPressed: {
-    backgroundColor: colors.primary.blue700,
-    transform: [{ scale: 0.985 }],
-  },
-  continueButtonDisabled: {
-    opacity: 0.45,
-  },
-  continueButtonText: {
-    ...typography.button.large,
-    fontFamily: fonts.semibold,
-    fontWeight: '600',
-    color: colors.text.inverse,
+    marginTop: spacing.sm,
   },
 });

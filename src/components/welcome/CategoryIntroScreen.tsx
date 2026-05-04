@@ -8,10 +8,12 @@ import {
   Text,
   View,
 } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
+import { isHapticsEnabled } from '../../services/preferences/hapticsPreference';
 import { BreathOrb } from './BreathOrb';
 
 interface Props {
@@ -22,10 +24,33 @@ const PULSE_MS = 3600;
 
 export function CategoryIntroScreen({ onContinue }: Props) {
   const insets = useSafeAreaInsets();
-  const orbSize = Math.min(Dimensions.get('window').width * 0.72, 320);
+  const orbSize = Math.min(Dimensions.get('window').width * 0.42, 180);
 
   const pulse = useRef(new Animated.Value(0)).current;
   const halo = useRef(new Animated.Value(0)).current;
+  const enter = useRef(new Animated.Value(0)).current;
+  const exit = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    Animated.timing(enter, {
+      toValue: 1,
+      duration: 600,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+  }, [enter]);
+
+  const handleBegin = () => {
+    if (isHapticsEnabled()) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+    }
+    Animated.timing(exit, {
+      toValue: 0,
+      duration: 320,
+      easing: Easing.in(Easing.cubic),
+      useNativeDriver: true,
+    }).start(() => onContinue());
+  };
 
   useEffect(() => {
     Animated.loop(
@@ -67,17 +92,26 @@ export function CategoryIntroScreen({ onContinue }: Props) {
   const haloOpacity = halo.interpolate({ inputRange: [0, 1], outputRange: [0.35, 0.7] });
   const haloScale = halo.interpolate({ inputRange: [0, 1], outputRange: [1, 1.18] });
 
+  const screenOpacity = Animated.multiply(enter, exit);
+  const headlineTranslate = enter.interpolate({
+    inputRange: [0, 1],
+    outputRange: [18, 0],
+  });
+
   return (
-    <View style={[styles.root, { paddingTop: insets.top + spacing['3xl'] }]}>
-      <View style={styles.copyTop}>
+    <Animated.View
+      style={[
+        styles.root,
+        { paddingTop: insets.top + spacing['3xl'], opacity: screenOpacity },
+      ]}
+    >
+      <Animated.View
+        style={[styles.copyTop, { transform: [{ translateY: headlineTranslate }] }]}
+      >
         <Text style={styles.headline}>
-          Vitals-backed breathing app.
+          Meet Azora,{'\n'}your breathing{'\n'}assistant.
         </Text>
-        <Text style={styles.subhead}>
-          Clinically-grounded protocols. Real-time HRV biofeedback. Measure the
-          exact moment your nervous system shifts.
-        </Text>
-      </View>
+      </Animated.View>
 
       <View style={styles.orbWrap} pointerEvents="none">
         <Animated.View
@@ -105,13 +139,13 @@ export function CategoryIntroScreen({ onContinue }: Props) {
 
       <View style={[styles.bottom, { paddingBottom: insets.bottom + spacing.lg }]}>
         <Pressable
-          onPress={onContinue}
+          onPress={handleBegin}
           style={({ pressed }) => [styles.cta, pressed && styles.ctaPressed]}
         >
           <Text style={styles.ctaText}>Begin</Text>
         </Pressable>
       </View>
-    </View>
+    </Animated.View>
   );
 }
 
@@ -129,17 +163,11 @@ const styles = StyleSheet.create({
     ...typography.title.title1,
     fontFamily: fonts.semibold,
     fontWeight: '600',
-    fontSize: 30,
-    lineHeight: 38,
+    fontSize: 44,
+    lineHeight: 52,
+    letterSpacing: -0.5,
     color: colors.text.primary,
     textAlign: 'center',
-    marginBottom: spacing.md,
-  },
-  subhead: {
-    ...typography.body.medium,
-    color: colors.text.secondary,
-    textAlign: 'center',
-    maxWidth: 340,
   },
   orbWrap: {
     flex: 1,
