@@ -4,6 +4,7 @@ import Icon from '../../common/icons/Icon';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { isHapticsEnabled } from '../../../services/preferences/hapticsPreference';
 import { INTENT_OPTIONS } from '../data/intentOptions';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
@@ -49,6 +50,15 @@ export default function IntentQuestionScreen({
         />
       }
     >
+      <View style={styles.timeHint}>
+        <MaterialCommunityIcons
+          name="clock-outline"
+          size={14}
+          color={colors.text.tertiary}
+        />
+        <Text style={styles.timeHintText}>Takes about 2 minutes</Text>
+      </View>
+
       <View style={styles.options}>
         {INTENT_OPTIONS.map((option, index) => {
           const selected = selectedIntent === option.id;
@@ -90,6 +100,18 @@ export default function IntentQuestionScreen({
 }
 
 const styles = StyleSheet.create({
+  timeHint: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginTop: spacing.xs,
+    marginBottom: spacing.sm,
+  },
+  timeHintText: {
+    ...typography.body.small,
+    fontSize: 12,
+    color: colors.text.tertiary,
+  },
   options: {
     marginTop: spacing.xs,
   },

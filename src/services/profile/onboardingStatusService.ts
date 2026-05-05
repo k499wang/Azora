@@ -1,6 +1,8 @@
 import { requireSupabaseClient, type SupabaseClientLike } from '../supabase';
 import { ensureUserProfile } from './profileBootstrapService';
 
+type AgreementResponses = Record<string, 'disagree' | 'neutral' | 'agree' | null>;
+
 interface OnboardingDatabase {
   public: {
     Tables: {
@@ -13,6 +15,11 @@ interface OnboardingDatabase {
           gender: string | null;
           daily_minutes: number | null;
           default_technique_id: string | null;
+          display_name: string | null;
+          stress_level: number | null;
+          sleep_quality: number | null;
+          agreement_responses: AgreementResponses | null;
+          experience_level: string | null;
         };
         Insert: {
           user_id: string;
@@ -22,6 +29,11 @@ interface OnboardingDatabase {
           gender?: string | null;
           daily_minutes?: number | null;
           default_technique_id?: string | null;
+          display_name?: string | null;
+          stress_level?: number | null;
+          sleep_quality?: number | null;
+          agreement_responses?: AgreementResponses | null;
+          experience_level?: string | null;
         };
         Update: {
           user_id?: string;
@@ -31,6 +43,11 @@ interface OnboardingDatabase {
           gender?: string | null;
           daily_minutes?: number | null;
           default_technique_id?: string | null;
+          display_name?: string | null;
+          stress_level?: number | null;
+          sleep_quality?: number | null;
+          agreement_responses?: AgreementResponses | null;
+          experience_level?: string | null;
         };
         Relationships: [];
       };
@@ -43,6 +60,7 @@ interface OnboardingDatabase {
 type ProfileInsert = OnboardingDatabase['public']['Tables']['profiles']['Insert'];
 
 export type OnboardingGender = 'female' | 'male' | 'nonbinary' | 'prefer_not';
+export type OnboardingExperienceLevel = 'never' | 'little' | 'regular';
 
 export interface CompleteOnboardingInput {
   onboardingGoal?: string | null;
@@ -50,6 +68,11 @@ export interface CompleteOnboardingInput {
   gender?: OnboardingGender | null;
   dailyMinutes?: number | null;
   defaultTechniqueId?: string | null;
+  displayName?: string | null;
+  stressLevel?: number | null;
+  sleepQuality?: number | null;
+  agreementResponses?: AgreementResponses | null;
+  experienceLevel?: OnboardingExperienceLevel | null;
 }
 
 function getOnboardingClient(): SupabaseClientLike<OnboardingDatabase> {
@@ -90,6 +113,11 @@ export async function completeOnboarding(
     gender: input.gender ?? null,
     daily_minutes: input.dailyMinutes ?? null,
     default_technique_id: input.defaultTechniqueId ?? null,
+    display_name: input.displayName ?? null,
+    stress_level: input.stressLevel ?? null,
+    sleep_quality: input.sleepQuality ?? null,
+    agreement_responses: input.agreementResponses ?? null,
+    experience_level: input.experienceLevel ?? null,
   };
 
   const { error } = await supabase

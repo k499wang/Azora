@@ -98,10 +98,12 @@ export default function OnboardingScreenLayout({
             { opacity: fade, transform: [{ translateY: slide }] },
           ]}
         >
-          <View style={styles.copy}>
-            <Text style={styles.title}>{title}</Text>
-            {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
-          </View>
+          {title ? (
+            <View style={styles.copy}>
+              <Text style={styles.title}>{title}</Text>
+              {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+            </View>
+          ) : null}
 
           <View style={styles.body}>{children}</View>
         </Animated.View>

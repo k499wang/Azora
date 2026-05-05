@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { Animated, Image, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
+
+const BASELINE_ILLUSTRATION = require('../../../../assets/baseline.png');
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import BreathingCircle, {
@@ -467,19 +469,24 @@ export default function BaselineScreen({
         </View>
       }
     >
-      <View style={styles.intro}>
+      <View style={styles.illustrationWrap}>
+        <Image
+          source={BASELINE_ILLUSTRATION}
+          style={styles.illustration}
+          resizeMode="contain"
+          accessible
+          accessibilityLabel="Place your fingertip over the back camera lens"
+        />
+      </View>
+
+      <View style={styles.stepsRow}>
         {STEPS.map((step, index) => (
-          <View
-            key={step.num}
-            style={[
-              styles.stepRow,
-              index !== 0 && styles.stepRowDivider,
-            ]}
-          >
+          <View key={step.num} style={styles.stepItem}>
             <View style={styles.stepBadge}>
               <Text style={styles.stepBadgeText}>{step.num}</Text>
             </View>
             <Text style={styles.stepLabel}>{step.label}</Text>
+            {index < STEPS.length - 1 && <View style={styles.stepConnector} />}
           </View>
         ))}
       </View>
@@ -488,18 +495,25 @@ export default function BaselineScreen({
 }
 
 const styles = StyleSheet.create({
-  intro: {
-    marginTop: spacing.md,
-  },
-  stepRow: {
-    flexDirection: 'row',
+  illustrationWrap: {
     alignItems: 'center',
-    gap: spacing.lg,
-    paddingVertical: spacing.lg,
+    justifyContent: 'center',
+    marginTop: spacing.sm,
   },
-  stepRowDivider: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border.default,
+  illustration: {
+    width: '100%',
+    height: 200,
+  },
+  stepsRow: {
+    marginTop: spacing.md,
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  stepItem: {
+    flex: 1,
+    alignItems: 'center',
+    gap: spacing.sm,
+    position: 'relative',
   },
   stepBadge: {
     width: 28,
@@ -516,9 +530,20 @@ const styles = StyleSheet.create({
     color: colors.primary.blue700,
   },
   stepLabel: {
-    ...typography.body.medium,
-    color: colors.text.primary,
-    flex: 1,
+    ...typography.body.small,
+    fontSize: 12,
+    lineHeight: 17,
+    textAlign: 'center',
+    color: colors.text.secondary,
+  },
+  stepConnector: {
+    position: 'absolute',
+    top: 13,
+    right: -spacing.sm - 6,
+    width: 12,
+    height: 2,
+    borderRadius: 1,
+    backgroundColor: colors.border.subtle,
   },
 
   fill: {

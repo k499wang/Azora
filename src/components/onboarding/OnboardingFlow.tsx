@@ -1,12 +1,27 @@
 import { useMemo, useState } from 'react';
 import AgeScreen from './screens/AgeScreen';
+import ScienceCredibilityScreen from './screens/ScienceCredibilityScreen';
+import ScienceResearchScreen from './screens/ScienceResearchScreen';
 import BaselineScreen, { type BaselineResult } from './screens/BaselineScreen';
+import BaselineIntroScreen from './screens/BaselineIntroScreen';
 import CustomIntentScreen from './screens/CustomIntentScreen';
 import DailyTimeScreen from './screens/DailyTimeScreen';
 import GenderScreen from './screens/GenderScreen';
 import IntentQuestionScreen from './screens/IntentQuestionScreen';
 import IntentReflectionScreen from './screens/IntentReflectionScreen';
+import MicroFactScreen from './screens/MicroFactScreen';
+import AgreementScreen, {
+  AGREEMENT_STATEMENTS,
+  type AgreementValue,
+} from './screens/AgreementScreen';
+import AssessmentReflectionScreen from './screens/AssessmentReflectionScreen';
+import ExperienceScreen, {
+  type ExperienceLevel,
+} from './screens/ExperienceScreen';
+import NameScreen from './screens/NameScreen';
 import PactScreen from './screens/PactScreen';
+import SleepScreen from './screens/SleepScreen';
+import StressScreen from './screens/StressScreen';
 import RecommendationScreen from './screens/RecommendationScreen';
 import { PERSONALIZED_INTENT_OPTIONS } from './data/intentOptions';
 import { INTENT_TO_TECHNIQUE } from './data/techniqueRecommendations';
@@ -15,6 +30,11 @@ import type { OnboardingStep } from './types';
 
 export interface OnboardingFlowResult {
   onboardingGoal: string;
+  displayName: string | null;
+  stressLevel: number | null;
+  sleepQuality: number | null;
+  agreementResponses: Record<string, AgreementValue | null>;
+  experienceLevel: ExperienceLevel | null;
   age: number | null;
   gender: GenderOption['id'] | null;
   dailyMinutes: number | null;
@@ -26,23 +46,50 @@ interface OnboardingFlowProps {
 }
 
 
-const STEP_COUNT = 8;
+const STEP_COUNT = 18;
 const STEP_INDEX: Record<OnboardingStep, number> = {
   intent: 1,
   intentReflection: 2,
   customIntent: 2,
-  age: 3,
-  gender: 4,
-  dailyTime: 5,
-  baseline: 6,
-  recommendation: 7,
-  pact: 8,
+  name: 3,
+  stress: 4,
+  sleep: 5,
+  agreement: 6,
+  experience: 7,
+  assessmentReflection: 8,
+  age: 9,
+  gender: 10,
+  dailyTime: 11,
+  microFact: 12,
+  baselineIntro: 13,
+  baseline: 14,
+  scienceResearch: 15,
+  recommendation: 16,
+  scienceCredibility: 17,
+  pact: 18,
 };
 
 export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   const [step, setStep] = useState<OnboardingStep>('intent');
   const [selectedIntent, setSelectedIntent] = useState<string | null>(null);
   const [customIntent, setCustomIntent] = useState('');
+  const [name, setName] = useState('');
+  const [stressLevel, setStressLevel] = useState(5);
+  const [sleepQuality, setSleepQuality] = useState(5);
+  const [agreementResponses, setAgreementResponses] = useState<
+    Record<string, AgreementValue | null>
+  >(() =>
+    AGREEMENT_STATEMENTS.reduce<Record<string, AgreementValue | null>>(
+      (acc, statement) => {
+        acc[statement.id] = null;
+        return acc;
+      },
+      {},
+    ),
+  );
+  const [experienceLevel, setExperienceLevel] = useState<ExperienceLevel | null>(
+    null,
+  );
   const [age, setAge] = useState(25);
   const [gender, setGender] = useState<GenderOption['id'] | null>(null);
   const [dailyMinutes, setDailyMinutes] = useState(5);
@@ -76,6 +123,11 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     try {
       await onComplete({
         onboardingGoal: goal,
+        displayName: name.trim() || null,
+        stressLevel,
+        sleepQuality,
+        agreementResponses,
+        experienceLevel,
         age,
         gender,
         dailyMinutes,
@@ -98,7 +150,7 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         stepIndex={stepIndex}
         stepCount={STEP_COUNT}
         isSubmitting={isSubmitting}
-        onContinue={() => setStep('age')}
+        onContinue={() => setStep('name')}
         onBack={() => setStep('intent')}
       />
     );
@@ -118,9 +170,94 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
             setErrorMessage('Please share a few words.');
             return;
           }
-          setStep('age');
+          setStep('name');
         }}
         onBack={() => setStep('intent')}
+      />
+    );
+  }
+
+  if (step === 'name') {
+    return (
+      <NameScreen
+        value={name}
+        stepIndex={stepIndex}
+        stepCount={STEP_COUNT}
+        onChange={setName}
+        onContinue={() => setStep('stress')}
+        onBack={() =>
+          setStep(selectedIntent === 'other' ? 'customIntent' : 'intentReflection')
+        }
+      />
+    );
+  }
+
+  if (step === 'stress') {
+    return (
+      <StressScreen
+        value={stressLevel}
+        stepIndex={stepIndex}
+        stepCount={STEP_COUNT}
+        onChange={setStressLevel}
+        onContinue={() => setStep('sleep')}
+        onBack={() => setStep('name')}
+      />
+    );
+  }
+
+  if (step === 'sleep') {
+    return (
+      <SleepScreen
+        value={sleepQuality}
+        stepIndex={stepIndex}
+        stepCount={STEP_COUNT}
+        onChange={setSleepQuality}
+        onContinue={() => setStep('agreement')}
+        onBack={() => setStep('stress')}
+      />
+    );
+  }
+
+  if (step === 'agreement') {
+    return (
+      <AgreementScreen
+        responses={agreementResponses}
+        stepIndex={stepIndex}
+        stepCount={STEP_COUNT}
+        onChange={(id, value) =>
+          setAgreementResponses((prev) => ({ ...prev, [id]: value }))
+        }
+        onContinue={() => setStep('experience')}
+        onBack={() => setStep('sleep')}
+      />
+    );
+  }
+
+  if (step === 'experience') {
+    return (
+      <ExperienceScreen
+        value={experienceLevel}
+        stepIndex={stepIndex}
+        stepCount={STEP_COUNT}
+        onSelect={setExperienceLevel}
+        onContinue={() => setStep('assessmentReflection')}
+        onBack={() => setStep('agreement')}
+      />
+    );
+  }
+
+  if (step === 'assessmentReflection') {
+    return (
+      <AssessmentReflectionScreen
+        name={name}
+        stressLevel={stressLevel}
+        sleepQuality={sleepQuality}
+        agreementResponses={agreementResponses}
+        experienceLevel={experienceLevel}
+        stepIndex={stepIndex}
+        stepCount={STEP_COUNT}
+        onContinue={() => setStep('age')}
+        onBack={() => setStep('experience')}
       />
     );
   }
@@ -133,9 +270,7 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         stepCount={STEP_COUNT}
         onChange={setAge}
         onContinue={() => setStep('gender')}
-        onBack={() =>
-          setStep(selectedIntent === 'other' ? 'customIntent' : 'intentReflection')
-        }
+        onBack={() => setStep('assessmentReflection')}
       />
     );
   }
@@ -160,8 +295,31 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         stepIndex={stepIndex}
         stepCount={STEP_COUNT}
         onChange={setDailyMinutes}
-        onContinue={() => setStep('baseline')}
+        onContinue={() => setStep('microFact')}
         onBack={() => setStep('gender')}
+      />
+    );
+  }
+
+  if (step === 'microFact') {
+    return (
+      <MicroFactScreen
+        stepIndex={stepIndex}
+        stepCount={STEP_COUNT}
+        onContinue={() => setStep('baselineIntro')}
+        onBack={() => setStep('dailyTime')}
+      />
+    );
+  }
+
+  if (step === 'baselineIntro') {
+    return (
+      <BaselineIntroScreen
+        stepIndex={stepIndex}
+        stepCount={STEP_COUNT}
+        name={name}
+        onContinue={() => setStep('baseline')}
+        onBack={() => setStep('microFact')}
       />
     );
   }
@@ -173,9 +331,20 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         stepCount={STEP_COUNT}
         onContinue={(result) => {
           setBaseline(result);
-          setStep('recommendation');
+          setStep('scienceResearch');
         }}
-        onBack={() => setStep('dailyTime')}
+        onBack={() => setStep('baselineIntro')}
+      />
+    );
+  }
+
+  if (step === 'scienceResearch') {
+    return (
+      <ScienceResearchScreen
+        stepIndex={stepIndex}
+        stepCount={STEP_COUNT}
+        onContinue={() => setStep('recommendation')}
+        onBack={() => setStep('baseline')}
       />
     );
   }
@@ -197,8 +366,19 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         baseline={baseline}
         stepIndex={stepIndex}
         stepCount={STEP_COUNT}
+        onContinue={() => setStep('scienceCredibility')}
+        onBack={() => setStep('scienceResearch')}
+      />
+    );
+  }
+
+  if (step === 'scienceCredibility') {
+    return (
+      <ScienceCredibilityScreen
+        stepIndex={stepIndex}
+        stepCount={STEP_COUNT}
         onContinue={() => setStep('pact')}
-        onBack={() => setStep('baseline')}
+        onBack={() => setStep('recommendation')}
       />
     );
   }
@@ -212,13 +392,14 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     return (
       <PactScreen
         intentTitle={intentTitle}
+        displayName={name.trim() || null}
         dailyMinutes={dailyMinutes}
         stepIndex={stepIndex}
         stepCount={STEP_COUNT}
         isSubmitting={isSubmitting}
         errorMessage={errorMessage}
         onConfirm={finish}
-        onBack={() => setStep('recommendation')}
+        onBack={() => setStep('scienceCredibility')}
       />
     );
   }
