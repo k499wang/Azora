@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import type { PurchasesPackage } from 'react-native-purchases';
 import { posthog } from '../config/posthog';
 import { AnalyticsEvent } from '../services/analytics/events';
+import { logRevenueCatDebugSnapshot } from '../services/debug/revenueCatDebugSnapshot';
 import {
   buildPaywallEventProperties,
   getPaywallOffering,
@@ -12,8 +14,10 @@ import {
   type PaywallPlacementValue,
   type PaywallResult,
 } from '../services/paywall';
-import { syncRevenueCatIdentity } from '../services/subscriptions/revenueCatClient';
+import { ensureRevenueCatIdentityForCurrentUser } from '../services/subscriptions/revenueCatIdentitySync';
 import { useAuthStore } from '../stores/authStore';
+import { useRevenueCatIdentityStore } from '../stores/revenueCatIdentityStore';
+import { getUserEntitlementQueryKey } from '../queries/subscriptions/useUserEntitlementQuery';
 
 interface UsePaywallOptions {
   placement: PaywallPlacementValue;
@@ -26,9 +30,15 @@ export function usePaywall({
   sourceScreen,
   enabled = true,
 }: UsePaywallOptions) {
+  const queryClient = useQueryClient();
   const user = useAuthStore((state) => state.user);
   const userId = user?.id ?? null;
-  const userEmail = user?.email ?? null;
+  const revenueCatStatus = useRevenueCatIdentityStore((state) => state.status);
+  const revenueCatAppUserId = useRevenueCatIdentityStore((state) => state.appUserId);
+  const revenueCatLastError = useRevenueCatIdentityStore((state) => state.lastErrorMessage);
+  const revenueCatUnavailableReason = useRevenueCatIdentityStore(
+    (state) => state.lastUnavailableReason,
+  );
   const [offering, setOffering] = useState<PaywallOffering | null>(null);
   const [revenueCatPackages, setRevenueCatPackages] = useState<
     Record<PaywallPackageId, PurchasesPackage | null>
@@ -50,6 +60,8 @@ export function usePaywall({
       };
     }
 
+    logRevenueCatDebugSnapshot('paywall_load_started');
+
     if (userId == null) {
       setOffering(null);
       setRevenueCatPackages({ weekly: null, annual: null });
@@ -63,8 +75,43 @@ export function usePaywall({
     setIsLoading(true);
     setErrorMessage(null);
 
-    syncRevenueCatIdentity({ id: userId, email: userEmail })
-      .then(() => getPaywallOffering(placement))
+    if (revenueCatStatus === 'idle' || revenueCatStatus === 'signed_out') {
+      void ensureRevenueCatIdentityForCurrentUser();
+      return () => {
+        isActive = false;
+      };
+    }
+
+    if (revenueCatStatus === 'syncing') {
+      return () => {
+        isActive = false;
+      };
+    }
+
+    if (revenueCatStatus === 'unavailable') {
+      setIsLoading(false);
+      setErrorMessage(getRevenueCatUnavailableMessage(revenueCatUnavailableReason));
+      return () => {
+        isActive = false;
+      };
+    }
+
+    if (revenueCatStatus === 'failed') {
+      setIsLoading(false);
+      setErrorMessage(getRevenueCatFailedMessage(revenueCatLastError));
+      return () => {
+        isActive = false;
+      };
+    }
+
+    if (revenueCatAppUserId !== userId) {
+      void ensureRevenueCatIdentityForCurrentUser();
+      return () => {
+        isActive = false;
+      };
+    }
+
+    getPaywallOffering(placement)
       .then((result) => {
         if (!isActive) return;
         setOffering(result.offering);
@@ -102,10 +149,20 @@ export function usePaywall({
     return () => {
       isActive = false;
     };
-  }, [enabled, placement, sourceScreen, userEmail, userId]);
+  }, [
+    enabled,
+    placement,
+    revenueCatAppUserId,
+    revenueCatLastError,
+    revenueCatStatus,
+    revenueCatUnavailableReason,
+    sourceScreen,
+    userId,
+  ]);
 
   const purchaseSelectedPackage = async (): Promise<PaywallResult> => {
     const selectedPackage = revenueCatPackages[selectedPackageId];
+    logRevenueCatDebugSnapshot('paywall_purchase_started');
     setIsPurchasing(true);
     setErrorMessage(null);
 
@@ -123,6 +180,10 @@ export function usePaywall({
     setIsPurchasing(false);
 
     if (result.status === 'purchased') {
+      void queryClient.invalidateQueries({
+        queryKey: getUserEntitlementQueryKey(userId),
+      });
+
       if (!result.isPro) {
         setErrorMessage('Purchase completed, but Pro access was not activated yet. Please try restoring purchases.');
       }
@@ -178,6 +239,7 @@ export function usePaywall({
 
   const restorePurchases = async (): Promise<PaywallResult> => {
     setIsRestoring(true);
+    logRevenueCatDebugSnapshot('paywall_restore_started');
     setErrorMessage(null);
 
     posthog.capture(
@@ -194,6 +256,10 @@ export function usePaywall({
     setIsRestoring(false);
 
     if (result.status === 'restored') {
+      void queryClient.invalidateQueries({
+        queryKey: getUserEntitlementQueryKey(userId),
+      });
+
       posthog.capture(AnalyticsEvent.PaywallRestoreCompleted, {
         ...buildPaywallEventProperties({
           placement,
@@ -243,6 +309,13 @@ export function usePaywall({
     );
   };
 
+  const retryRevenueCatSync = async () => {
+    logRevenueCatDebugSnapshot('paywall_revenuecat_retry_started');
+    setIsLoading(true);
+    setErrorMessage(null);
+    await ensureRevenueCatIdentityForCurrentUser();
+  };
+
   return {
     offering,
     selectedPackageId,
@@ -254,6 +327,7 @@ export function usePaywall({
     purchaseSelectedPackage,
     restorePurchases,
     trackDismissed,
+    retryRevenueCatSync,
   };
 }
 
@@ -269,4 +343,24 @@ function getNotPresentedMessage(
   }
 
   return 'RevenueCat is not ready yet. Please try again in a moment.';
+}
+
+function getRevenueCatUnavailableMessage(reason: string | null): string {
+  if (reason === 'missing_api_key') {
+    return 'Subscription options are unavailable because this build is missing a RevenueCat API key.';
+  }
+
+  if (reason === 'unsupported_platform') {
+    return 'Subscription options are unavailable on this platform.';
+  }
+
+  return 'Subscription options are unavailable right now.';
+}
+
+function getRevenueCatFailedMessage(lastErrorMessage: string | null): string {
+  if (lastErrorMessage == null || lastErrorMessage.length === 0) {
+    return 'Could not connect to RevenueCat. Please try again.';
+  }
+
+  return `Could not connect to RevenueCat. Please try again. (${lastErrorMessage})`;
 }

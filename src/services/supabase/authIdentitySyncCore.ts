@@ -9,9 +9,17 @@ export interface AuthIdentitySyncDependencies {
   clearRevenueCatIdentity: () => Promise<void>;
   ensureProfile: (userId: string) => Promise<void>;
   getSupabaseClient: () => SupabaseClientLike | null;
+  getRevenueCatAvailability?: () =>
+    | { status: 'ready' }
+    | { status: 'unavailable'; reason: string };
   getPostHogDistinctId?: () => string | null;
   getRevenueCatAppUserId?: () => string | null;
   isRevenueCatReady?: () => boolean;
+  onRevenueCatSyncFailed?: (error: unknown, userId: string) => void;
+  onRevenueCatSyncStarted?: (userId: string) => void;
+  onRevenueCatSyncSucceeded?: (userId: string) => void;
+  onRevenueCatSyncUnavailable?: (reason: string) => void;
+  onRevenueCatSignedOut?: () => void;
   onUserSignedIn: (user: {
     id: string;
     email?: string | null;
@@ -116,6 +124,7 @@ export function registerAuthIdentitySync(
       });
       dependencies.onUserSignedOut();
       await dependencies.clearRevenueCatIdentity();
+      dependencies.onRevenueCatSignedOut?.();
       logIdentitySyncDebug('supabase.identity_sync_sign_out_completed', {
         posthog_distinct_id: dependencies.getPostHogDistinctId?.() ?? null,
         revenuecat_current_app_user_id: dependencies.getRevenueCatAppUserId?.() ?? null,
@@ -151,10 +160,27 @@ export function registerAuthIdentitySync(
       revenuecat_current_app_user_id_before: dependencies.getRevenueCatAppUserId?.() ?? null,
       revenuecat_ready: dependencies.isRevenueCatReady?.() ?? null,
     });
-    await dependencies.syncRevenueCatIdentity({
-      id: session.user.id,
-      email: session.user.email ?? null,
-    });
+
+    const revenueCatAvailability = dependencies.getRevenueCatAvailability?.();
+    if (revenueCatAvailability?.status === 'unavailable') {
+      dependencies.onRevenueCatSyncUnavailable?.(revenueCatAvailability.reason);
+      logIdentitySyncDebug('supabase.revenuecat_sync_unavailable', {
+        supabase_user_id: session.user.id,
+        revenuecat_unavailable_reason: revenueCatAvailability.reason,
+      });
+    } else {
+      dependencies.onRevenueCatSyncStarted?.(session.user.id);
+      try {
+        await dependencies.syncRevenueCatIdentity({
+          id: session.user.id,
+          email: session.user.email ?? null,
+        });
+        dependencies.onRevenueCatSyncSucceeded?.(session.user.id);
+      } catch (error) {
+        dependencies.onRevenueCatSyncFailed?.(error, session.user.id);
+        throw error;
+      }
+    }
     logIdentitySyncDebug('supabase.identity_sync_completed', {
       supabase_auth_event: event,
       ...getSessionDebugSnapshot(session),

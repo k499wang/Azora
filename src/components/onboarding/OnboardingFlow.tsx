@@ -144,8 +144,7 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
           selectedIntent != null ? INTENT_TO_TECHNIQUE[selectedIntent] ?? null : null,
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Please try again.';
-      setErrorMessage(message);
+      setErrorMessage(getErrorMessage(error));
       setIsSubmitting(false);
     }
   };
@@ -456,6 +455,9 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         onRestore={() => {
           void restorePurchases();
         }}
+        onRetry={() => {
+          void paywall.retryRevenueCatSync();
+        }}
         onContinueWithoutPro={continueWithoutPro}
         onBack={() => setStep('pact')}
       />
@@ -473,4 +475,21 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
       onContinue={goFromIntent}
     />
   );
+}
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  if (
+    typeof error === 'object' &&
+    error != null &&
+    'message' in error &&
+    typeof error.message === 'string'
+  ) {
+    return error.message;
+  }
+
+  return 'Please try again.';
 }
