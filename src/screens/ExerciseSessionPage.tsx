@@ -10,6 +10,7 @@ import BreathingCircle, {
 import ExerciseScaffold from '../components/exercise/ExerciseScaffold';
 import TECHNIQUES from '../data/techniques';
 import type { BreathingTechnique } from '../data/techniques';
+import { useCancellableFlow } from '../hooks/useCancellableFlow';
 import { useLivePulse } from '../hooks/useLivePulse';
 import { useBreathPhaseAudio } from '../hooks/useBreathPhaseAudio';
 import { LiveHeartRateMonitor } from '../components/meditation/LiveHeartRateMonitor';
@@ -174,9 +175,21 @@ export default function ExerciseSessionPage({
     }
   };
 
+  const flow = useCancellableFlow(
+    useCallback(() => {
+      clearTimer();
+      stopInhaleVibration();
+      stopPulse();
+      if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+    }, [stopPulse]),
+  );
+
   const runPhase = useCallback(
     (p: Phase, secs: number, onDone: () => void) => {
+      if (!flow.isActive()) return;
+
       if (secs === 0) {
+        if (!flow.isActive()) return;
         onDone();
         return;
       }
@@ -210,18 +223,21 @@ export default function ExerciseSessionPage({
 
         if (remaining <= 0) {
           clearTimer();
+          if (!flow.isActive()) return;
           onDone();
         }
       }, 1000);
     },
-    [],
+    [flow],
   );
 
   const startCycle = useCallback(
     (currentRound: number, pattern: BreathingTechnique['pattern'], rounds: number) => {
+      if (!flow.isActive()) return;
+
       if (currentRound > rounds) {
+        flow.cancel();
         setPhase('done');
-        stopInhaleVibration();
         posthog.capture(AnalyticsEvent.ExerciseSessionCompleted, {
           technique_id: technique.id,
           technique_name: technique.name,
@@ -245,7 +261,7 @@ export default function ExerciseSessionPage({
         });
       });
     },
-    [runPhase, posthog, technique, elapsed, hrEnabled],
+    [flow, runPhase, posthog, technique, elapsed, hrEnabled],
   );
 
   const handlePause = () => {
@@ -283,6 +299,7 @@ export default function ExerciseSessionPage({
       setElapsed((current) => current + 1);
       if (rem <= 0) {
         clearTimer();
+        if (!flow.isActive()) return;
         onDone();
       }
     }, 1000);
@@ -290,6 +307,7 @@ export default function ExerciseSessionPage({
 
   const beginExercise = useCallback(
     (withHr: boolean) => {
+      if (!flow.start()) return;
       setElapsed(0);
       setRound(0);
       requestAnimationFrame(() => circleRef.current?.reset());
@@ -302,12 +320,14 @@ export default function ExerciseSessionPage({
       });
       startCycle(1, technique.pattern, totalRounds);
     },
-    [posthog, technique, totalRounds, startCycle],
+    [flow, posthog, technique, totalRounds, startCycle],
   );
 
   const startPlacement = useCallback(async () => {
+    if (!flow.start()) return;
     try {
       const granted = hasPermission ? true : await requestPermission();
+      if (!flow.isActive()) return;
       if (!granted) {
         setHrEnabled(false);
         beginExercise(false);
@@ -317,6 +337,7 @@ export default function ExerciseSessionPage({
       setPhase('placement');
       startPulse();
     } catch (error) {
+      if (!flow.isActive()) return;
       captureException(error, {
         flow: 'exercise_session',
         action: 'start_placement',
@@ -327,7 +348,7 @@ export default function ExerciseSessionPage({
       setHrEnabled(false);
       beginExercise(false);
     }
-  }, [hasPermission, requestPermission, startPulse, beginExercise, technique]);
+  }, [flow, hasPermission, requestPermission, startPulse, beginExercise, technique]);
 
   const handleStart = () => {
     if (phase === 'idle' || phase === 'done') {
@@ -339,10 +360,11 @@ export default function ExerciseSessionPage({
     if (phase !== 'placement') return;
     if (pulse.fingerPlacement !== 'good') return;
     const t = setTimeout(() => {
+      if (!flow.isActive()) return;
       beginExercise(true);
     }, PLACEMENT_GOOD_DURATION_MS);
     return () => clearTimeout(t);
-  }, [phase, pulse.fingerPlacement, beginExercise]);
+  }, [flow, phase, pulse.fingerPlacement, beginExercise]);
 
   const [placementHoldProgress, setPlacementHoldProgress] = useState(0);
   useEffect(() => {
@@ -373,9 +395,7 @@ export default function ExerciseSessionPage({
   }, [phase]);
 
   const handleClose = () => {
-    clearTimer();
-    stopInhaleVibration();
-    stopPulse();
+    flow.cancel();
     if (phase !== 'idle' && phase !== 'done') {
       const cycleSeconds =
         technique.pattern.inhale +
@@ -396,15 +416,6 @@ export default function ExerciseSessionPage({
     }
     navigation.goBack();
   };
-
-  useEffect(
-    () => () => {
-      clearTimer();
-      stopInhaleVibration();
-      if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
-    },
-    [],
-  );
 
   const isActive =
     phase !== 'idle' && phase !== 'done' && phase !== 'placement';
@@ -488,7 +499,7 @@ export default function ExerciseSessionPage({
             )}
             <TouchableOpacity
               onPress={() => {
-                stopPulse();
+                flow.cancel();
                 navigation.goBack();
               }}
               activeOpacity={0.7}
