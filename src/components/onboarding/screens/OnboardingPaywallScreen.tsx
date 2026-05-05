@@ -1,19 +1,25 @@
+import { useEffect, useRef } from 'react';
 import {
   ActivityIndicator,
+  Animated,
+  Easing,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
-import { colors } from '../../../theme/colors';
-import { spacing } from '../../../theme/spacing';
-import { fonts, typography } from '../../../theme/typography';
-import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
-import OnboardingScreenLayout from '../OnboardingScreenLayout';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import type {
   PaywallOffering,
   PaywallPackageId,
+  PaywallPackageOption,
 } from '../../../services/paywall';
+import { colors } from '../../../theme/colors';
+import { spacing } from '../../../theme/spacing';
+import { fonts, typography } from '../../../theme/typography';
+import Icon, { type IconName } from '../../common/icons/Icon';
+import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 
 interface OnboardingPaywallScreenProps {
   offering: PaywallOffering | null;
@@ -32,18 +38,9 @@ interface OnboardingPaywallScreenProps {
   onBack: () => void;
 }
 
-const BENEFITS = [
-  'Personalized daily breathwork plan',
-  'Unlimited heart-rate and stress tracking',
-  'Advanced HRV insights after each session',
-  'Progress trends that show what is working',
-];
-
 export default function OnboardingPaywallScreen({
   offering,
   selectedPackageId,
-  stepIndex,
-  stepCount,
   isLoading,
   isPurchasing,
   isRestoring,
@@ -58,321 +55,460 @@ export default function OnboardingPaywallScreen({
   const selectedPackage = offering?.packages.find(
     (pkg) => pkg.id === selectedPackageId,
   );
+  const annualPackage = offering?.packages.find((pkg) => pkg.id === 'annual');
+  const weeklyPackage = offering?.packages.find((pkg) => pkg.id === 'weekly');
+  const isAnnualSelected = selectedPackageId === 'annual';
   const isBusy = isLoading || isPurchasing || isRestoring;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(18)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 420,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 460,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [fadeAnim, slideAnim]);
+
+  const ctaLabel = isAnnualSelected && selectedPackage?.trialLabel
+    ? 'Start my free trial'
+    : 'Continue with weekly';
+  const timelineSteps = getAnnualTrialSteps();
 
   return (
-    <OnboardingScreenLayout
-      title="Unlock your full plan"
-      subtitle="Your baseline is ready. Azora Pro keeps the plan adaptive as your nervous system changes."
-      progress={stepIndex / stepCount}
-      onBack={onBack}
-      footer={
-        <View style={styles.footer}>
-          <OnboardingPrimaryButton
-            label={selectedPackage?.trialLabel ?? 'Start Azora Pro'}
-            onPress={onPurchase}
-            loading={isPurchasing}
-            disabled={isLoading || selectedPackage == null || isRestoring}
-          />
-          <Pressable
-            accessibilityRole="button"
-            disabled={isBusy}
-            onPress={onContinueWithoutPro}
-            style={({ pressed }) => [
-              styles.secondaryButton,
-              pressed && styles.secondaryButtonPressed,
-              isBusy && styles.disabled,
-            ]}
-          >
-            <Text style={styles.secondaryButtonText}>Continue without Pro</Text>
-          </Pressable>
-        </View>
-      }
-    >
-      <View style={styles.heroCard}>
-        <View style={styles.badge}>
-          <Text style={styles.badgeText}>AZORA PRO</Text>
-        </View>
-        <Text style={styles.heroTitle}>Build consistency with feedback, not guesswork.</Text>
-        <Text style={styles.heroBody}>
-          Keep cloud sync free. Upgrade only for deeper guidance, unlimited
-          measurement, and premium progress insights.
-        </Text>
-      </View>
-
-      <View style={styles.benefitsCard}>
-        {BENEFITS.map((benefit) => (
-          <View key={benefit} style={styles.benefitRow}>
-            <View style={styles.checkmark}>
-              <Text style={styles.checkmarkText}>✓</Text>
-            </View>
-            <Text style={styles.benefitText}>{benefit}</Text>
-          </View>
-        ))}
-      </View>
-
-      {isLoading ? (
-        <View style={styles.loadingCard}>
-          <ActivityIndicator color={colors.primary.blue600} />
-          <Text style={styles.loadingText}>Loading subscription options...</Text>
-        </View>
-      ) : (
-        <View style={styles.packageList}>
-          {offering?.packages.map((pkg) => {
-            const isSelected = pkg.id === selectedPackageId;
-            return (
-              <Pressable
-                key={pkg.id}
-                accessibilityRole="button"
-                accessibilityState={{ selected: isSelected }}
-                onPress={() => onSelectPackage(pkg.id)}
-                style={({ pressed }) => [
-                  styles.packageCard,
-                  isSelected && styles.packageCardSelected,
-                  pressed && styles.packageCardPressed,
-                ]}
-              >
-                <View style={styles.packageTopRow}>
-                  <View>
-                    <View style={styles.packageTitleRow}>
-                      <Text style={styles.packageTitle}>{pkg.title}</Text>
-                      {pkg.isRecommended ? (
-                        <View style={styles.recommendedBadge}>
-                          <Text style={styles.recommendedText}>Recommended</Text>
-                        </View>
-                      ) : null}
-                    </View>
-                    <Text style={styles.packageSubtitle}>
-                      {pkg.trialLabel ?? 'Flexible access'}
-                    </Text>
-                  </View>
-                  <View style={styles.radioOuter}>
-                    {isSelected ? <View style={styles.radioInner} /> : null}
-                  </View>
-                </View>
-                <View style={styles.priceRow}>
-                  <Text style={styles.price}>{pkg.priceString}</Text>
-                  <Text style={styles.priceMeta}>
-                    {pkg.pricePerMonthString != null
-                      ? `${pkg.pricePerMonthString} / month`
-                      : pkg.subscriptionPeriod ?? ''}
-                  </Text>
-                </View>
-              </Pressable>
-            );
-          })}
-        </View>
-      )}
-
-      <View style={styles.restoreRow}>
+    <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
+      <View style={styles.header}>
         <Pressable
           accessibilityRole="button"
-          disabled={isLoading || isPurchasing || isRestoring}
-          onPress={onRestore}
+          accessibilityLabel="Close paywall"
+          hitSlop={12}
+          onPress={onBack}
           style={({ pressed }) => [
-            styles.restoreButton,
-            pressed && styles.secondaryButtonPressed,
-            (isLoading || isPurchasing || isRestoring) && styles.disabled,
+            styles.closeButton,
+            pressed && styles.subtlePressed,
           ]}
         >
-          <Text style={styles.restoreText}>
-            {isRestoring ? 'Restoring...' : 'Restore purchases'}
-          </Text>
+          <Text style={styles.closeText}>×</Text>
         </Pressable>
       </View>
 
-      {errorMessage ? (
-        <View style={styles.errorBlock}>
-          <Text style={styles.error}>{errorMessage}</Text>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <Animated.View
+          style={[
+            styles.content,
+            { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
+          ]}
+        >
+          <View style={styles.copy}>
+            <Text style={styles.title}>Azora Pro</Text>
+            <Text style={styles.subtitle}>
+              Heart data, unlimited sessions, personalized plans, and progress insights.
+            </Text>
+          </View>
+
+          <View style={styles.planTabs}>
+            {isLoading ? (
+              <View style={styles.planLoading}>
+                <ActivityIndicator color={colors.primary.blue600} />
+              </View>
+            ) : (
+              <>
+                {annualPackage ? (
+                  <PlanTab
+                    pkg={annualPackage}
+                    isSelected={selectedPackageId === annualPackage.id}
+                    onSelectPackage={onSelectPackage}
+                  />
+                ) : null}
+                {weeklyPackage ? (
+                  <PlanTab
+                    pkg={weeklyPackage}
+                    isSelected={selectedPackageId === weeklyPackage.id}
+                    onSelectPackage={onSelectPackage}
+                  />
+                ) : null}
+              </>
+            )}
+          </View>
+
+          {isAnnualSelected ? (
+            <View style={styles.timeline}>
+              {timelineSteps.map((step, index) => (
+                <TimelineStep
+                  key={step.label}
+                  {...step}
+                  showLine={index < timelineSteps.length - 1}
+                />
+              ))}
+            </View>
+          ) : (
+            <IncludedInPro />
+          )}
+
           <Pressable
             accessibilityRole="button"
-            disabled={isBusy}
-            onPress={onRetry}
+            disabled={isLoading || isPurchasing || isRestoring}
+            onPress={onRestore}
             style={({ pressed }) => [
-              styles.retryButton,
-              pressed && styles.secondaryButtonPressed,
-              isBusy && styles.disabled,
+              styles.restoreButton,
+              pressed && styles.subtlePressed,
+              (isLoading || isPurchasing || isRestoring) && styles.disabled,
             ]}
           >
-            <Text style={styles.retryText}>Retry subscription sync</Text>
+            <Text style={styles.restoreText}>
+              {isRestoring ? 'Restoring...' : 'Restore Purchase'}
+            </Text>
           </Pressable>
-        </View>
-      ) : null}
 
-      <Text style={styles.legal}>
-        Payment is handled by the App Store. Subscriptions renew automatically
-        unless cancelled in account settings.
+          {errorMessage ? (
+            <View style={styles.errorBlock}>
+              <Text style={styles.error}>{errorMessage}</Text>
+              <Pressable
+                accessibilityRole="button"
+                disabled={isBusy}
+                onPress={onRetry}
+                style={({ pressed }) => [
+                  styles.retryButton,
+                  pressed && styles.subtlePressed,
+                  isBusy && styles.disabled,
+                ]}
+              >
+                <Text style={styles.retryText}>Retry</Text>
+              </Pressable>
+            </View>
+          ) : null}
+        </Animated.View>
+      </ScrollView>
+
+      <View style={styles.footer}>
+        <OnboardingPrimaryButton
+          label={ctaLabel}
+          onPress={onPurchase}
+          loading={isPurchasing}
+          disabled={isLoading || selectedPackage == null || isRestoring}
+        />
+        <Pressable
+          accessibilityRole="button"
+          disabled={isBusy}
+          onPress={onContinueWithoutPro}
+          style={({ pressed }) => [
+            styles.freeButton,
+            pressed && styles.subtlePressed,
+            isBusy && styles.disabled,
+          ]}
+        >
+          <Text style={styles.freeButtonText}>Continue free</Text>
+        </Pressable>
+        <Text style={styles.legal}>
+          Auto-renews unless cancelled. Manage or cancel in App Store settings.
+        </Text>
+      </View>
+    </SafeAreaView>
+  );
+}
+
+interface PlanTabProps {
+  pkg: PaywallPackageOption;
+  isSelected: boolean;
+  onSelectPackage: (packageId: PaywallPackageId) => void;
+}
+
+function PlanTab({ pkg, isSelected, onSelectPackage }: PlanTabProps) {
+  const priceLine =
+    pkg.id === 'annual'
+      ? `${pkg.priceString}/year`
+      : `${pkg.priceString}/week`;
+  const detailLine =
+    pkg.id === 'annual'
+      ? '3 days free'
+      : 'No free trial';
+
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ selected: isSelected }}
+      onPress={() => onSelectPackage(pkg.id)}
+      style={({ pressed }) => [
+        styles.planTab,
+        isSelected && styles.planTabSelected,
+        pressed && styles.planTabPressed,
+      ]}
+    >
+      <Text style={[styles.planTabText, isSelected && styles.planTabTextSelected]}>
+        {pkg.title}
       </Text>
-    </OnboardingScreenLayout>
+      <Text style={[styles.planTabPrice, isSelected && styles.planTabTextSelected]}>
+        {priceLine}
+      </Text>
+      <Text style={[styles.planTabDetail, isSelected && styles.planTabTextSelected]}>
+        {detailLine}
+      </Text>
+    </Pressable>
+  );
+}
+
+interface TimelineStepProps {
+  icon: IconName;
+  label: string;
+  title: string;
+  body: string;
+  showLine?: boolean;
+}
+
+function TimelineStep({
+  icon,
+  label,
+  title,
+  body,
+  showLine = false,
+}: TimelineStepProps) {
+  return (
+    <View style={styles.timelineRow}>
+      <View style={styles.timelineRail}>
+        <View style={styles.timelineIcon}>
+          <Icon name={icon} size={20} color={colors.text.inverse} />
+        </View>
+        {showLine ? <View style={styles.timelineLine} /> : null}
+      </View>
+      <View style={styles.timelineCopy}>
+        <Text style={styles.timelineLabel}>{label}</Text>
+        <Text style={styles.timelineTitle}>{title}</Text>
+        <Text style={styles.timelineBody}>{body}</Text>
+      </View>
+    </View>
+  );
+}
+
+function getAnnualTrialSteps(): Omit<TimelineStepProps, 'showLine'>[] {
+  return [
+    {
+      icon: 'sparkle',
+      label: 'Today',
+      title: 'Unlock Azora Pro',
+      body: 'Start your 3-day free trial for Azora Pro today.',
+    },
+    {
+      icon: 'timer',
+      label: 'Day 3',
+      title: "We'll send you a reminder",
+      body: 'We’ll remind you before annual billing begins.',
+    },
+    {
+      icon: 'heart',
+      label: 'Anytime',
+      title: 'Cancel anytime',
+      body: 'Manage or cancel in App Store settings whenever you want.',
+    },
+  ];
+}
+
+function IncludedInPro() {
+  const benefits: Array<{ icon: IconName; title: string; body: string }> = [
+    {
+      icon: 'heart',
+      title: 'Heart data insights',
+      body: 'See heart-rate, HRV, and stress signals in one place.',
+    },
+    {
+      icon: 'timer',
+      title: 'Unlimited heart-rate sessions',
+      body: 'Measure as often as you want without session limits.',
+    },
+    {
+      icon: 'sparkle',
+      title: 'Personalized plan',
+      body: 'Get guidance shaped around your baseline and goals.',
+    },
+    {
+      icon: 'journal',
+      title: 'Progress insights',
+      body: 'Track patterns over time and understand what is changing.',
+    },
+  ];
+
+  return (
+    <View style={styles.includedList}>
+      {benefits.map((benefit, index) => (
+        <View key={benefit.title}>
+            <View style={styles.includedRow}>
+            <View style={styles.includedIcon}>
+              <Icon name={benefit.icon} size={20} color={colors.text.inverse} />
+            </View>
+            <View style={styles.includedCopy}>
+              <Text style={styles.includedItemTitle}>{benefit.title}</Text>
+              <Text style={styles.includedItemBody}>{benefit.body}</Text>
+            </View>
+          </View>
+          {index < benefits.length - 1 ? <View style={styles.includedDivider} /> : null}
+        </View>
+      ))}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  heroCard: {
-    borderRadius: 28,
-    padding: spacing.xl,
-    gap: spacing.md,
-    backgroundColor: colors.neutral[900],
-  },
-  badge: {
-    alignSelf: 'flex-start',
-    borderRadius: 999,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 5,
-    backgroundColor: colors.primary.blue500,
-  },
-  badgeText: {
-    ...typography.caption.caption2,
-    fontFamily: fonts.semibold,
-    fontWeight: '600',
-    letterSpacing: 1.2,
-    color: colors.text.inverse,
-  },
-  heroTitle: {
-    ...typography.title.title1,
-    fontFamily: fonts.bold,
-    fontWeight: '700',
-    color: colors.text.inverse,
-  },
-  heroBody: {
-    ...typography.body.medium,
-    color: colors.neutral[200],
-    lineHeight: 23,
-  },
-  benefitsCard: {
-    borderRadius: 22,
-    padding: spacing.lg,
-    gap: spacing.md,
+  screen: {
+    flex: 1,
     backgroundColor: colors.background.elevated,
-    borderWidth: 1,
-    borderColor: colors.border.subtle,
   },
-  benefitRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
+  header: {
+    minHeight: 56,
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm,
   },
-  checkmark: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+  closeButton: {
+    width: 36,
+    height: 36,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.success[100],
   },
-  checkmarkText: {
+  closeText: {
     fontFamily: fonts.semibold,
     fontWeight: '600',
-    color: colors.success[700],
+    fontSize: 36,
+    lineHeight: 36,
+    color: colors.neutral[900],
   },
-  benefitText: {
-    ...typography.body.medium,
+  scroll: {
     flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.xl,
+  },
+  content: {
+    gap: spacing.xl,
+  },
+  copy: {
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  title: {
+    ...typography.display.display3,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    textAlign: 'center',
     color: colors.text.primary,
   },
-  loadingCard: {
-    minHeight: 130,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.background.elevated,
-    borderWidth: 1,
-    borderColor: colors.border.subtle,
-  },
-  loadingText: {
-    ...typography.body.small,
+  subtitle: {
+    ...typography.body.medium,
+    textAlign: 'center',
     color: colors.text.secondary,
   },
-  packageList: {
-    gap: spacing.md,
-  },
-  packageCard: {
-    borderRadius: 22,
-    padding: spacing.lg,
-    gap: spacing.md,
-    backgroundColor: colors.background.elevated,
-    borderWidth: 1.5,
-    borderColor: colors.border.subtle,
-  },
-  packageCardSelected: {
-    borderColor: colors.primary.blue600,
-    backgroundColor: colors.primary.blue100,
-  },
-  packageCardPressed: {
-    transform: [{ scale: 0.99 }],
-  },
-  packageTopRow: {
+  planTabs: {
+    alignSelf: 'center',
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    gap: spacing.md,
-  },
-  packageTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-  packageTitle: {
-    ...typography.title.title3,
-    fontFamily: fonts.semibold,
-    fontWeight: '600',
-    color: colors.text.primary,
-  },
-  recommendedBadge: {
     borderRadius: 999,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    backgroundColor: colors.orange[100],
+    padding: 4,
+    backgroundColor: colors.neutral[100],
   },
-  recommendedText: {
-    ...typography.caption.caption2,
+  planLoading: {
+    minWidth: 160,
+    minHeight: 42,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  planTab: {
+    minWidth: 94,
+    minHeight: 58,
+    borderRadius: 999,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+  },
+  planTabSelected: {
+    backgroundColor: colors.neutral[700],
+  },
+  planTabPressed: {
+    opacity: 0.8,
+  },
+  planTabText: {
+    ...typography.button.medium,
     fontFamily: fonts.semibold,
     fontWeight: '600',
-    color: colors.orange[700],
+    color: colors.text.secondary,
   },
-  packageSubtitle: {
-    ...typography.body.small,
+  planTabPrice: {
+    ...typography.caption.caption1,
     color: colors.text.secondary,
     marginTop: 2,
   },
-  radioOuter: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    borderWidth: 2,
-    borderColor: colors.primary.blue600,
+  planTabDetail: {
+    ...typography.caption.caption2,
+    color: colors.text.tertiary,
+    marginTop: 1,
+  },
+  planTabTextSelected: {
+    color: colors.text.inverse,
+  },
+  timeline: {
+    alignSelf: 'stretch',
+    gap: 0,
+    paddingHorizontal: spacing.md,
+  },
+  timelineRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  timelineRail: {
+    alignItems: 'center',
+    width: 42,
+  },
+  timelineIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  radioInner: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
     backgroundColor: colors.primary.blue600,
   },
-  priceRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: spacing.sm,
+  timelineLine: {
+    width: 8,
+    flex: 1,
+    minHeight: 70,
+    backgroundColor: colors.primary.blue100,
   },
-  price: {
-    ...typography.title.title2,
-    fontFamily: fonts.bold,
-    fontWeight: '700',
+  timelineCopy: {
+    flex: 1,
+    paddingBottom: spacing.lg,
+  },
+  timelineLabel: {
+    ...typography.heading.heading1,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
     color: colors.text.primary,
   },
-  priceMeta: {
-    ...typography.body.small,
+  timelineTitle: {
+    ...typography.body.medium,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    color: colors.text.primary,
+    marginTop: 2,
+  },
+  timelineBody: {
+    ...typography.body.medium,
     color: colors.text.secondary,
   },
-  restoreRow: {
-    alignItems: 'center',
-  },
   restoreButton: {
+    alignSelf: 'center',
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.xs,
   },
   restoreText: {
     ...typography.button.medium,
@@ -380,9 +516,48 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.text.brand,
   },
+  includedList: {
+    paddingHorizontal: spacing.sm,
+  },
+  includedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  includedIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primary.blue600,
+  },
+  includedCopy: {
+    flex: 1,
+  },
+  includedItemTitle: {
+    ...typography.heading.heading2,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    color: colors.text.primary,
+  },
+  includedItemBody: {
+    ...typography.body.medium,
+    color: colors.text.secondary,
+  },
+  includedDivider: {
+    height: StyleSheet.hairlineWidth,
+    marginLeft: 58,
+    marginTop: spacing.md,
+    marginBottom: spacing.md,
+    backgroundColor: colors.border.subtle,
+  },
   errorBlock: {
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: spacing.xs,
+    borderRadius: 20,
+    padding: spacing.md,
+    backgroundColor: colors.error[100],
   },
   error: {
     ...typography.body.small,
@@ -394,38 +569,39 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
     backgroundColor: colors.background.elevated,
-    borderWidth: 1,
-    borderColor: colors.border.subtle,
   },
   retryText: {
     ...typography.button.small,
     fontFamily: fonts.semibold,
     fontWeight: '600',
-    color: colors.text.brand,
+    color: colors.error[700],
+  },
+  footer: {
+    gap: spacing.xs,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.lg,
+    backgroundColor: colors.background.elevated,
+  },
+  freeButton: {
+    alignSelf: 'center',
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.md,
+  },
+  freeButtonText: {
+    ...typography.button.small,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    color: colors.text.secondary,
   },
   legal: {
     ...typography.caption.caption2,
     color: colors.text.tertiary,
     textAlign: 'center',
-    lineHeight: 17,
+    lineHeight: 15,
   },
-  footer: {
-    gap: spacing.sm,
-  },
-  secondaryButton: {
-    minHeight: 44,
-    borderRadius: 999,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  secondaryButtonPressed: {
+  subtlePressed: {
     opacity: 0.65,
-  },
-  secondaryButtonText: {
-    ...typography.button.medium,
-    fontFamily: fonts.semibold,
-    fontWeight: '600',
-    color: colors.text.secondary,
   },
   disabled: {
     opacity: 0.45,
