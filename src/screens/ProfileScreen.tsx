@@ -22,6 +22,9 @@ import { useHapticsPreference } from '../hooks/useHapticsPreference';
 import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
 import { formatProfileHoldTime } from '../services/profile/profileSummaryService';
 import { useUploadProfileAvatarMutation } from '../queries/profile/useUploadProfileAvatarMutation';
+import { getRevenueCatCustomerInfo } from '../services/subscriptions/revenueCatClient';
+
+const APP_STORE_SUBSCRIPTIONS_URL = 'https://apps.apple.com/account/subscriptions';
 
 function getFallbackDisplayName(email: string | undefined): string {
   if (email == null) {
@@ -191,6 +194,29 @@ export default function ProfileScreen(_: ProfileScreenProps) {
     }
   };
 
+  const handleManageSubscription = async () => {
+    trackProfileAction('manage_subscription_opened');
+
+    try {
+      const customerInfo = await getRevenueCatCustomerInfo();
+      const managementUrl = customerInfo.managementURL ?? APP_STORE_SUBSCRIPTIONS_URL;
+      await Linking.openURL(managementUrl);
+    } catch (err) {
+      trackProfileAction('manage_subscription_failed', {
+        error_message: err instanceof Error ? err.message : 'unknown_error',
+      });
+
+      try {
+        await Linking.openURL(APP_STORE_SUBSCRIPTIONS_URL);
+      } catch {
+        Alert.alert(
+          'Could not open subscriptions',
+          'Open App Store account settings to manage your subscription.',
+        );
+      }
+    }
+  };
+
   return (
     <View style={styles.screen}>
       <ScrollView
@@ -256,8 +282,7 @@ export default function ProfileScreen(_: ProfileScreenProps) {
                 void Linking.openURL('https://azora.app/terms');
               }}
               onManageSubscription={() => {
-                trackProfileAction('manage_subscription_opened');
-                void Linking.openURL('https://apps.apple.com/account/subscriptions');
+                void handleManageSubscription();
               }}
               onSignOut={handleSignOut}
             />

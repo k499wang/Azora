@@ -8,7 +8,10 @@ import {
   RevenueCatSignedOutError,
   restoreRevenueCatPurchases,
 } from '../subscriptions/revenueCatClient';
-import { logRevenueCatPaywallOfferingSnapshot } from '../debug/revenueCatDebugSnapshot';
+import {
+  logRevenueCatCustomerInfoSnapshot,
+  logRevenueCatPaywallOfferingSnapshot,
+} from '../debug/revenueCatDebugSnapshot';
 import type { PaywallPlacementValue } from './paywallPlacements';
 import type {
   PaywallOffering,
@@ -17,7 +20,9 @@ import type {
   PaywallResult,
 } from './paywallResult';
 
-const PRO_ENTITLEMENT = 'pro';
+const PRO_ENTITLEMENT = 'Azora  Pro';
+const PRO_ENTITLEMENT_REFRESH_ATTEMPTS = 4;
+const PRO_ENTITLEMENT_REFRESH_DELAY_MS = 750;
 
 export async function getPaywallOffering(
   placement: PaywallPlacementValue,
@@ -95,7 +100,15 @@ export async function purchasePaywallPackage(
 
   try {
     const customerInfo = await purchaseRevenueCatPackage(revenueCatPackage);
-    return { status: 'purchased', isPro: hasProAccess(customerInfo) };
+    return {
+      status: 'purchased',
+      isPro: await waitForProAccess(customerInfo, {
+        flow: 'purchase',
+        expected_entitlement_id: PRO_ENTITLEMENT,
+        selected_package_identifier: revenueCatPackage.identifier,
+        selected_product_identifier: revenueCatPackage.product.identifier,
+      }),
+    };
   } catch (error) {
     return toFailedPaywallResult(error);
   }
@@ -108,7 +121,13 @@ export async function restorePaywallPurchases(): Promise<PaywallResult> {
 
   try {
     const customerInfo = await restoreRevenueCatPurchases();
-    return { status: 'restored', isPro: hasProAccess(customerInfo) };
+    return {
+      status: 'restored',
+      isPro: await waitForProAccess(customerInfo, {
+        flow: 'restore',
+        expected_entitlement_id: PRO_ENTITLEMENT,
+      }),
+    };
   } catch (error) {
     return toFailedPaywallResult(error);
   }
@@ -172,6 +191,59 @@ function formatTrialLabel(
 
 function hasProAccess(customerInfo: CustomerInfo): boolean {
   return customerInfo.entitlements.active[PRO_ENTITLEMENT]?.isActive === true;
+}
+
+async function waitForProAccess(
+  initialCustomerInfo: CustomerInfo,
+  debugPayload: Record<string, unknown>,
+): Promise<boolean> {
+  if (hasProAccess(initialCustomerInfo)) {
+    logRevenueCatCustomerInfoSnapshot(
+      'paywall_pro_entitlement_active_initially',
+      initialCustomerInfo,
+      debugPayload,
+    );
+    return true;
+  }
+
+  logRevenueCatCustomerInfoSnapshot(
+    'paywall_pro_entitlement_missing_initially',
+    initialCustomerInfo,
+    debugPayload,
+  );
+
+  for (let attempt = 0; attempt < PRO_ENTITLEMENT_REFRESH_ATTEMPTS; attempt += 1) {
+    await delay(PRO_ENTITLEMENT_REFRESH_DELAY_MS);
+    const customerInfo = await getRevenueCatCustomerInfo();
+    const refreshPayload = {
+      ...debugPayload,
+      refresh_attempt: attempt + 1,
+      refresh_attempts: PRO_ENTITLEMENT_REFRESH_ATTEMPTS,
+    };
+
+    if (hasProAccess(customerInfo)) {
+      logRevenueCatCustomerInfoSnapshot(
+        'paywall_pro_entitlement_active_after_refresh',
+        customerInfo,
+        refreshPayload,
+      );
+      return true;
+    }
+
+    logRevenueCatCustomerInfoSnapshot(
+      'paywall_pro_entitlement_missing_after_refresh',
+      customerInfo,
+      refreshPayload,
+    );
+  }
+
+  return false;
+}
+
+function delay(milliseconds: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, milliseconds);
+  });
 }
 
 function toFailedPaywallResult(error: unknown): PaywallResult {
