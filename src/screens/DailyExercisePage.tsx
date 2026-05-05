@@ -578,6 +578,9 @@ export default function DailyExercisePage({
         <ExerciseScaffold
       titleSlot={
         <View style={styles.titleSlotWrap}>
+          {phase === 'hold' || phase === 'inhale' ? (
+            <Text style={styles.elapsedTime}>{formatHoldTime(holdSeconds)}</Text>
+          ) : null}
           {pulse.active ? (
             <View style={styles.hrRow}>
               <LiveHeartRateMonitor
@@ -615,13 +618,8 @@ export default function DailyExercisePage({
           ]}
         >
           <BreathingCircle ref={circleRef}>
-            {phase === 'hold' ? (
-              <View style={styles.holdStack}>
-                <Text style={styles.holdTimer}>{formatHoldTime(holdSeconds)}</Text>
-                <Text style={styles.holdCaption}>{PHASE_LABELS.hold}</Text>
-              </View>
-            ) : phase === 'inhale' ? (
-              <Text style={styles.phaseLabel}>{PHASE_LABELS.inhale}</Text>
+            {phase === 'inhale' || phase === 'hold' ? (
+              <Text style={styles.phaseLabel}>{PHASE_LABELS[phase]}</Text>
             ) : null}
           </BreathingCircle>
         </Pressable>
@@ -823,31 +821,14 @@ const styles = StyleSheet.create({
     color: colors.neutral[50],
     textAlign: 'center',
   },
-  holdStack: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  holdTimer: {
+  elapsedTime: {
     fontFamily: fonts.semibold,
     fontWeight: '600',
-    fontSize: 64,
-    lineHeight: 72,
-    color: colors.neutral[50],
+    fontSize: 20,
+    lineHeight: 26,
+    color: colors.text.primary,
     textAlign: 'center',
     fontVariant: ['tabular-nums'],
-    letterSpacing: 1,
-  },
-  holdCaption: {
-    fontFamily: fonts.semibold,
-    fontWeight: '600',
-    fontSize: 14,
-    lineHeight: 18,
-    color: colors.neutral[50],
-    opacity: 0.75,
-    textAlign: 'center',
-    marginTop: spacing.xs,
-    letterSpacing: 2,
-    textTransform: 'uppercase',
   },
   viewResultsButton: {
     flexDirection: 'row',

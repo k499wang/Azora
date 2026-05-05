@@ -119,29 +119,34 @@ export default function OnboardingPaywallScreen({
             </Text>
           </View>
 
-          <View style={styles.planTabs}>
-            {isLoading ? (
-              <View style={styles.planLoading}>
-                <ActivityIndicator color={colors.primary.blue600} />
-              </View>
-            ) : (
-              <>
-                {annualPackage ? (
-                  <PlanTab
-                    pkg={annualPackage}
-                    isSelected={selectedPackageId === annualPackage.id}
-                    onSelectPackage={onSelectPackage}
-                  />
-                ) : null}
-                {weeklyPackage ? (
-                  <PlanTab
-                    pkg={weeklyPackage}
-                    isSelected={selectedPackageId === weeklyPackage.id}
-                    onSelectPackage={onSelectPackage}
-                  />
-                ) : null}
-              </>
-            )}
+          <View style={styles.planSection}>
+            <View style={styles.planTabs}>
+              {isLoading ? (
+                <View style={styles.planLoading}>
+                  <ActivityIndicator color={colors.primary.blue600} />
+                </View>
+              ) : (
+                <>
+                  {annualPackage ? (
+                    <PlanTab
+                      pkg={annualPackage}
+                      isSelected={selectedPackageId === annualPackage.id}
+                      onSelectPackage={onSelectPackage}
+                    />
+                  ) : null}
+                  {weeklyPackage ? (
+                    <PlanTab
+                      pkg={weeklyPackage}
+                      isSelected={selectedPackageId === weeklyPackage.id}
+                      onSelectPackage={onSelectPackage}
+                    />
+                  ) : null}
+                </>
+              )}
+            </View>
+            {!isLoading && selectedPackage ? (
+              <PlanPriceDetail pkg={selectedPackage} />
+            ) : null}
           </View>
 
           {isAnnualSelected ? (
@@ -227,15 +232,6 @@ interface PlanTabProps {
 }
 
 function PlanTab({ pkg, isSelected, onSelectPackage }: PlanTabProps) {
-  const priceLine =
-    pkg.id === 'annual'
-      ? `${pkg.priceString}/year`
-      : `${pkg.priceString}/week`;
-  const detailLine =
-    pkg.id === 'annual'
-      ? '3 days free'
-      : 'No free trial';
-
   return (
     <Pressable
       accessibilityRole="button"
@@ -248,15 +244,31 @@ function PlanTab({ pkg, isSelected, onSelectPackage }: PlanTabProps) {
       ]}
     >
       <Text style={[styles.planTabText, isSelected && styles.planTabTextSelected]}>
-        {pkg.title}
-      </Text>
-      <Text style={[styles.planTabPrice, isSelected && styles.planTabTextSelected]}>
-        {priceLine}
-      </Text>
-      <Text style={[styles.planTabDetail, isSelected && styles.planTabTextSelected]}>
-        {detailLine}
+        {pkg.id === 'annual' ? 'Annual' : 'Weekly'}
       </Text>
     </Pressable>
+  );
+}
+
+interface PlanPriceDetailProps {
+  pkg: PaywallPackageOption;
+}
+
+function PlanPriceDetail({ pkg }: PlanPriceDetailProps) {
+  const priceLine =
+    pkg.id === 'annual'
+      ? `${pkg.priceString}/year`
+      : `${pkg.priceString}/week`;
+  const detailLine =
+    pkg.id === 'annual'
+      ? '3 days free'
+      : 'No free trial';
+
+  return (
+    <View style={styles.planPriceDetail}>
+      <Text style={styles.planPriceDetailPrice}>{priceLine}</Text>
+      <Text style={styles.planPriceDetailTrial}>{detailLine}</Text>
+    </View>
   );
 }
 
@@ -423,9 +435,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  planSection: {
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
   planTab: {
     minWidth: 94,
-    minHeight: 58,
+    minHeight: 42,
     borderRadius: 999,
     alignItems: 'center',
     justifyContent: 'center',
@@ -449,13 +465,22 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
     marginTop: 2,
   },
-  planTabDetail: {
-    ...typography.caption.caption2,
-    color: colors.text.tertiary,
-    marginTop: 1,
-  },
   planTabTextSelected: {
     color: colors.text.inverse,
+  },
+  planPriceDetail: {
+    alignItems: 'center',
+    gap: 2,
+  },
+  planPriceDetailPrice: {
+    ...typography.body.medium,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    color: colors.text.primary,
+  },
+  planPriceDetailTrial: {
+    ...typography.caption.caption2,
+    color: colors.text.tertiary,
   },
   timeline: {
     alignSelf: 'stretch',
