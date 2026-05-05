@@ -125,6 +125,31 @@ export async function completeOnboarding(
     .upsert(profile, { onConflict: 'user_id' });
 
   if (error != null) {
-    throw error;
+    throw toError(error);
   }
+}
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  if (
+    typeof error === 'object' &&
+    error != null &&
+    'message' in error &&
+    typeof error.message === 'string'
+  ) {
+    return error.message;
+  }
+
+  return String(error);
+}
+
+function toError(error: unknown): Error {
+  if (error instanceof Error) {
+    return error;
+  }
+
+  return new Error(getErrorMessage(error));
 }

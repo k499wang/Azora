@@ -25,13 +25,14 @@ When the app starts:
 1. `App.tsx` mounts the app providers and navigation.
 2. `src/stores/authStore.ts` reads the current Supabase session.
 3. `src/services/supabase/authIdentitySync.ts` listens for auth changes and keeps RevenueCat identity in sync.
-4. `src/hooks/useAppGate.ts` decides whether the UI should show:
+4. `src/hooks/useSubscriptionBootstrap.ts` refreshes RevenueCat customer info and the Supabase entitlement query for signed-in users.
+5. `src/hooks/useAppGate.ts` decides whether the UI should show:
    - booting
    - signed out
    - onboarding
    - the main app
-5. If the user reaches onboarding, `src/components/onboarding/OnboardingFlow.tsx` eventually mounts the paywall.
-6. `src/hooks/usePaywall.ts` loads the offering and drives purchase / restore actions.
+6. If the user reaches onboarding, `src/components/onboarding/OnboardingFlow.tsx` eventually mounts the paywall.
+7. `src/hooks/usePaywall.ts` loads the offering and drives purchase / restore actions.
 
 ## Auth Flow
 
@@ -110,6 +111,33 @@ That means:
 
 This repo intentionally avoids creating anonymous RevenueCat users on sign out.
 
+### RevenueCat Identity Status
+
+File:
+
+- [src/stores/revenueCatIdentityStore.ts](/Users/k3vinwvng/Documents/Azora/Azora/src/stores/revenueCatIdentityStore.ts)
+
+RevenueCat sync is tracked explicitly now.
+
+The status can be:
+
+- `idle`
+- `syncing`
+- `synced`
+- `signed_out`
+- `unavailable`
+- `failed`
+
+The store also keeps:
+
+- current RevenueCat app user id
+- last error message
+- last unavailable reason
+- last attempted sync time
+- last successful sync time
+
+This is the state to inspect when the app is signed in but subscriptions are not behaving correctly.
+
 ### `authIdentitySync`
 
 File:
@@ -123,10 +151,17 @@ It listens for auth changes and does this:
 1. On sign out:
    - clear PostHog identity
    - clear RevenueCat local identity state
+   - mark RevenueCat identity as `signed_out`
 2. On sign in:
    - ensure the profile exists in Supabase
    - identify the user in PostHog
+   - mark RevenueCat identity as `syncing`
    - sync the same user into RevenueCat
+   - mark RevenueCat identity as `synced`
+
+If RevenueCat is not configured for the current build or platform, identity status becomes `unavailable`.
+
+If the native SDK or network call fails, identity status becomes `failed`.
 
 The core work happens in:
 
@@ -222,8 +257,9 @@ This hook drives the paywall UI state.
 It does four jobs:
 
 1. Determines whether the user is signed in
-2. Syncs RevenueCat identity for that user
-3. Loads the paywall offering
+2. Reads RevenueCat identity status
+3. Retries RevenueCat identity sync if needed
+4. Loads the paywall offering only after identity is synced
 4. Handles purchase, restore, analytics, and error messaging
 
 The hook is used in onboarding like this:
@@ -237,9 +273,13 @@ When the onboarding step becomes `paywall`:
 1. `usePaywall()` runs because the paywall screen is now mounted.
 2. It reads the current Supabase user from `authStore`.
 3. If there is no Supabase user, it shows a sign-in message.
-4. If there is a user, it calls `syncRevenueCatIdentity({ id, email })`.
-5. After identity sync completes, it calls `getPaywallOffering()`.
-6. If an offering exists, it renders the packages and tracks `PaywallViewed`.
+4. It reads RevenueCat identity status from `revenueCatIdentityStore`.
+5. If status is `idle`, `signed_out`, or synced to a different user, it starts sync.
+6. If status is `syncing`, it keeps the paywall loading.
+7. If status is `failed`, it shows a retryable error.
+8. If status is `unavailable`, it shows a config/platform message.
+9. If status is `synced` to the current Supabase user, it calls `getPaywallOffering()`.
+10. If an offering exists, it renders the packages and tracks `PaywallViewed`.
 
 ### Offering Fetch
 
@@ -298,6 +338,24 @@ That means:
 
 This is the right boundary for that fix.
 
+### Retry Flow
+
+The paywall exposes a retry action.
+
+Retry calls:
+
+- [src/services/subscriptions/revenueCatIdentitySync.ts](/Users/k3vinwvng/Documents/Azora/Azora/src/services/subscriptions/revenueCatIdentitySync.ts)
+
+That service:
+
+- reads the current Supabase user
+- checks RevenueCat availability
+- marks status as `syncing`
+- calls RevenueCat identity sync
+- marks status as `synced`, `unavailable`, or `failed`
+
+This means a one-time RevenueCat SDK or network failure does not require restarting the app.
+
 ## Supabase Subscription Mirror
 
 ### Why There Is a Supabase Subscription Layer
@@ -321,6 +379,69 @@ File:
 This service reads `user_entitlement_v` from Supabase and turns it into a typed entitlement object.
 
 That view is the Supabase-side mirror of subscription state.
+
+### Entitlement Query
+
+File:
+
+- [src/queries/subscriptions/useUserEntitlementQuery.ts](/Users/k3vinwvng/Documents/Azora/Azora/src/queries/subscriptions/useUserEntitlementQuery.ts)
+
+This query is the normal app-side way to ask:
+
+- is this authenticated user Pro?
+
+Most Pro gates should read this query, not call RevenueCat directly.
+
+RevenueCat is still used for:
+
+- fetching offerings
+- starting purchases
+- restoring purchases
+- immediate post-purchase confirmation from `CustomerInfo`
+- refreshing subscription state on app boot and foreground
+
+Supabase entitlement is used for:
+
+- stable app-wide Pro checks
+- backend-backed feature gates
+- state that survives temporary RevenueCat/network availability issues
+
+### Why Pro Checks Do Not Need RevenueCat Every Second
+
+RevenueCat is the payment source of truth, but the app mirrors subscription events into Supabase through the webhook.
+
+That means normal feature gates can read `user_entitlement_v` from Supabase.
+
+If RevenueCat is temporarily unreachable after the app is already running, the app can still use the last server-confirmed entitlement from Supabase.
+
+RevenueCat only needs to be contacted when:
+
+- the app boots or returns to foreground and wants to refresh
+- the user opens a paywall
+- the user purchases
+- the user restores
+- the app needs fresh `CustomerInfo`
+
+This makes Pro checks resilient. They do not fail just because RevenueCat cannot be reached at that exact second.
+
+### Subscription Bootstrap
+
+File:
+
+- [src/hooks/useSubscriptionBootstrap.ts](/Users/k3vinwvng/Documents/Azora/Azora/src/hooks/useSubscriptionBootstrap.ts)
+
+This hook runs for signed-in users.
+
+It:
+
+- ensures RevenueCat identity is synced on app boot
+- fetches RevenueCat `CustomerInfo`
+- invalidates the Supabase entitlement query
+- repeats that refresh when the app returns to foreground
+
+It is mounted from:
+
+- [src/app/providers/AppProviders.tsx](/Users/k3vinwvng/Documents/Azora/Azora/src/app/providers/AppProviders.tsx)
 
 ### Webhook
 
@@ -373,11 +494,28 @@ Use this order when something subscription-related breaks:
 
 1. Confirm Supabase session state in `authStore`
 2. Confirm `RootNavigator` is showing the expected tree
-3. Confirm auth identity sync ran
-4. Confirm RevenueCat has a current app user id
-5. Confirm the paywall offering fetch returned an offering
-6. Confirm purchase or restore returned a `CustomerInfo` object with `pro` active
-7. Confirm the Supabase webhook wrote the mirrored entitlement row
+3. Confirm `revenueCatIdentityStore.status`
+4. Confirm RevenueCat app user id matches Supabase user id
+5. Confirm auth identity sync ran
+6. Confirm the paywall offering fetch returned an offering
+7. Confirm purchase or restore returned a `CustomerInfo` object with `pro` active
+8. Confirm `useUserEntitlementQuery()` sees the Supabase entitlement mirror
+9. Confirm the Supabase webhook wrote the mirrored entitlement row
+
+Helpful dev snapshot:
+
+- [src/services/debug/revenueCatDebugSnapshot.ts](/Users/k3vinwvng/Documents/Azora/Azora/src/services/debug/revenueCatDebugSnapshot.ts)
+
+It logs:
+
+- auth status
+- Supabase user id
+- RevenueCat identity status
+- RevenueCat app user id
+- RevenueCat readiness
+- unavailable reason
+- last sync error
+- last synced time
 
 ## Files To Know
 
@@ -388,8 +526,12 @@ These are the main files to read when debugging:
 - [src/hooks/useAppGate.ts](/Users/k3vinwvng/Documents/Azora/Azora/src/hooks/useAppGate.ts)
 - [src/app/navigation/RootNavigator.tsx](/Users/k3vinwvng/Documents/Azora/Azora/src/app/navigation/RootNavigator.tsx)
 - [src/services/supabase/authIdentitySyncCore.ts](/Users/k3vinwvng/Documents/Azora/Azora/src/services/supabase/authIdentitySyncCore.ts)
+- [src/stores/revenueCatIdentityStore.ts](/Users/k3vinwvng/Documents/Azora/Azora/src/stores/revenueCatIdentityStore.ts)
 - [src/services/subscriptions/revenueCatClientCore.ts](/Users/k3vinwvng/Documents/Azora/Azora/src/services/subscriptions/revenueCatClientCore.ts)
 - [src/services/subscriptions/revenueCatClient.ts](/Users/k3vinwvng/Documents/Azora/Azora/src/services/subscriptions/revenueCatClient.ts)
+- [src/services/subscriptions/revenueCatIdentitySync.ts](/Users/k3vinwvng/Documents/Azora/Azora/src/services/subscriptions/revenueCatIdentitySync.ts)
+- [src/hooks/useSubscriptionBootstrap.ts](/Users/k3vinwvng/Documents/Azora/Azora/src/hooks/useSubscriptionBootstrap.ts)
+- [src/queries/subscriptions/useUserEntitlementQuery.ts](/Users/k3vinwvng/Documents/Azora/Azora/src/queries/subscriptions/useUserEntitlementQuery.ts)
 - [src/services/paywall/paywallService.ts](/Users/k3vinwvng/Documents/Azora/Azora/src/services/paywall/paywallService.ts)
 - [src/hooks/usePaywall.ts](/Users/k3vinwvng/Documents/Azora/Azora/src/hooks/usePaywall.ts)
 - [src/components/onboarding/OnboardingFlow.tsx](/Users/k3vinwvng/Documents/Azora/Azora/src/components/onboarding/OnboardingFlow.tsx)

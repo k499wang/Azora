@@ -211,6 +211,119 @@ test('registerAuthIdentitySync ensures the profile before RevenueCat sync', asyn
   );
 });
 
+test('registerAuthIdentitySync reports RevenueCat sync status for the initial session', async () => {
+  const session = createSession('user-1');
+  const harness = createHarness(session);
+  const statuses = [];
+
+  registerAuthIdentitySync({
+    ...harness.dependencies,
+    getRevenueCatAvailability: () => ({ status: 'ready' }),
+    onRevenueCatSyncStarted: (userId) => {
+      statuses.push({ status: 'syncing', userId });
+    },
+    onRevenueCatSyncSucceeded: (userId) => {
+      statuses.push({ status: 'synced', userId });
+    },
+  });
+  await flushMicrotasks();
+
+  assert.deepEqual(statuses, [
+    { status: 'syncing', userId: 'user-1' },
+    { status: 'synced', userId: 'user-1' },
+  ]);
+});
+
+test('registerAuthIdentitySync reports RevenueCat unavailable without syncing', async () => {
+  const session = createSession('user-1');
+  const harness = createHarness(session);
+  const statuses = [];
+
+  registerAuthIdentitySync({
+    ...harness.dependencies,
+    getRevenueCatAvailability: () => ({
+      status: 'unavailable',
+      reason: 'missing_api_key',
+    }),
+    onRevenueCatSyncStarted: (userId) => {
+      statuses.push({ status: 'syncing', userId });
+    },
+    onRevenueCatSyncUnavailable: (reason) => {
+      statuses.push({ status: 'unavailable', reason });
+    },
+  });
+  await flushMicrotasks();
+
+  assert.deepEqual(statuses, [
+    { status: 'unavailable', reason: 'missing_api_key' },
+  ]);
+  assert.deepEqual(
+    harness.getEvents().map((entry) => entry.event),
+    ['PROFILE_ENSURED', 'SIGNED_IN'],
+  );
+});
+
+test('registerAuthIdentitySync reports RevenueCat sync failures', async () => {
+  const session = createSession('user-1');
+  const harness = createHarness(session);
+  const statuses = [];
+
+  registerAuthIdentitySync({
+    ...harness.dependencies,
+    syncRevenueCatIdentity: async () => {
+      throw new Error('RevenueCat exploded');
+    },
+    warn: (message, error) => {
+      statuses.push({
+        status: 'warned',
+        message,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    },
+    getRevenueCatAvailability: () => ({ status: 'ready' }),
+    onRevenueCatSyncStarted: (userId) => {
+      statuses.push({ status: 'syncing', userId });
+    },
+    onRevenueCatSyncFailed: (error, userId) => {
+      statuses.push({
+        status: 'failed',
+        userId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    },
+  });
+  await flushMicrotasks();
+
+  assert.deepEqual(statuses, [
+    { status: 'syncing', userId: 'user-1' },
+    { status: 'failed', userId: 'user-1', error: 'RevenueCat exploded' },
+    {
+      status: 'warned',
+      message: 'Failed to sync auth identities',
+      error: 'RevenueCat exploded',
+    },
+  ]);
+});
+
+test('registerAuthIdentitySync reports RevenueCat signed out', async () => {
+  const session = createSession('user-1');
+  const harness = createHarness(session);
+  const statuses = [];
+
+  registerAuthIdentitySync({
+    ...harness.dependencies,
+    onRevenueCatSignedOut: () => {
+      statuses.push({ status: 'signed_out' });
+    },
+  });
+  await flushMicrotasks();
+
+  harness.emit('SIGNED_OUT', null);
+  await flushMicrotasks();
+
+  assert.deepEqual(statuses, [{ status: 'signed_out' }]);
+});
+
 test('registerAuthIdentitySync returns a noop when Supabase is unavailable', () => {
   const unsubscribe = registerAuthIdentitySync({
     clearRevenueCatIdentity: async () => undefined,

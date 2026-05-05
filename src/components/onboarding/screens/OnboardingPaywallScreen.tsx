@@ -27,6 +27,7 @@ interface OnboardingPaywallScreenProps {
   onSelectPackage: (packageId: PaywallPackageId) => void;
   onPurchase: () => void;
   onRestore: () => void;
+  onRetry: () => void;
   onContinueWithoutPro: () => void;
   onBack: () => void;
 }
@@ -50,6 +51,7 @@ export default function OnboardingPaywallScreen({
   onSelectPackage,
   onPurchase,
   onRestore,
+  onRetry,
   onContinueWithoutPro,
   onBack,
 }: OnboardingPaywallScreenProps) {
@@ -179,7 +181,23 @@ export default function OnboardingPaywallScreen({
         </Pressable>
       </View>
 
-      {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
+      {errorMessage ? (
+        <View style={styles.errorBlock}>
+          <Text style={styles.error}>{errorMessage}</Text>
+          <Pressable
+            accessibilityRole="button"
+            disabled={isBusy}
+            onPress={onRetry}
+            style={({ pressed }) => [
+              styles.retryButton,
+              pressed && styles.secondaryButtonPressed,
+              isBusy && styles.disabled,
+            ]}
+          >
+            <Text style={styles.retryText}>Retry subscription sync</Text>
+          </Pressable>
+        </View>
+      ) : null}
 
       <Text style={styles.legal}>
         Payment is handled by the App Store. Subscriptions renew automatically
@@ -362,10 +380,28 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.text.brand,
   },
+  errorBlock: {
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
   error: {
     ...typography.body.small,
     color: colors.error[700],
     textAlign: 'center',
+  },
+  retryButton: {
+    borderRadius: 999,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    backgroundColor: colors.background.elevated,
+    borderWidth: 1,
+    borderColor: colors.border.subtle,
+  },
+  retryText: {
+    ...typography.button.small,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    color: colors.text.brand,
   },
   legal: {
     ...typography.caption.caption2,

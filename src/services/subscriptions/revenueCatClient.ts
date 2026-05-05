@@ -42,6 +42,22 @@ const revenueCatClient = createRevenueCatClient({
 
 export { RevenueCatSignedOutError, type RevenueCatIdentityUser };
 
+export type RevenueCatAvailability =
+  | { status: 'ready' }
+  | { status: 'unavailable'; reason: 'unsupported_platform' | 'missing_api_key' };
+
+export function getRevenueCatAvailability(): RevenueCatAvailability {
+  if (!isRevenueCatSupportedPlatform) {
+    return { status: 'unavailable', reason: 'unsupported_platform' };
+  }
+
+  if (getRevenueCatApiKey() == null) {
+    return { status: 'unavailable', reason: 'missing_api_key' };
+  }
+
+  return { status: 'ready' };
+}
+
 export function getCurrentRevenueCatAppUserId(): string | null {
   return revenueCatClient.getCurrentAppUserId();
 }

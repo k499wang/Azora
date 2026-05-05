@@ -6,9 +6,11 @@ import {
 import {
   clearRevenueCatIdentity as clearRevenueCatIdentityState,
   getCurrentRevenueCatAppUserId,
+  getRevenueCatAvailability,
   isRevenueCatReady,
   syncRevenueCatIdentity as syncRevenueCatUser,
 } from '../subscriptions/revenueCatClient';
+import { useRevenueCatIdentityStore } from '../../stores/revenueCatIdentityStore';
 import { ensureUserProfile } from '../profile/profileBootstrapService';
 import { getSupabaseClient } from './client';
 import {
@@ -20,8 +22,24 @@ const defaultDependencies: AuthIdentitySyncDependencies = {
   clearRevenueCatIdentity: clearRevenueCatIdentityState,
   ensureProfile: ensureUserProfile,
   getSupabaseClient,
+  getRevenueCatAvailability,
   getPostHogDistinctId: getCurrentPostHogDistinctId,
   getRevenueCatAppUserId: getCurrentRevenueCatAppUserId,
+  onRevenueCatSyncFailed: (error, userId) => {
+    useRevenueCatIdentityStore.getState().setFailed(error, userId);
+  },
+  onRevenueCatSyncStarted: (userId) => {
+    useRevenueCatIdentityStore.getState().setSyncing(userId);
+  },
+  onRevenueCatSyncSucceeded: (userId) => {
+    useRevenueCatIdentityStore.getState().setSynced(userId);
+  },
+  onRevenueCatSyncUnavailable: (reason) => {
+    useRevenueCatIdentityStore.getState().setUnavailable(reason);
+  },
+  onRevenueCatSignedOut: () => {
+    useRevenueCatIdentityStore.getState().setSignedOut();
+  },
   onUserSignedIn: identifyPostHogUser,
   onUserSignedOut: resetPostHogUser,
   isRevenueCatReady,
