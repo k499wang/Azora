@@ -1,7 +1,16 @@
-import { useEffect, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  Animated,
+  Easing,
+  GestureResponderEvent,
+  PanResponder,
+  PanResponderGestureState,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import Svg, { Path } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
-import Icon from '../../common/icons/Icon';
 import { card } from '../../../theme/card';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
@@ -13,6 +22,7 @@ import CelebrationOverlay from '../CelebrationOverlay';
 
 interface PactScreenProps {
   intentTitle: string;
+  displayName: string | null;
   dailyMinutes: number;
   stepIndex: number;
   stepCount: number;
@@ -22,8 +32,32 @@ interface PactScreenProps {
   onBack: () => void;
 }
 
+interface Point {
+  x: number;
+  y: number;
+}
+
+const PAD_WIDTH = 320;
+const PAD_HEIGHT = 140;
+
+function buildSmoothPath(points: Point[]): string {
+  if (points.length === 0) return '';
+  if (points.length === 1) return `M ${points[0].x} ${points[0].y}`;
+
+  let d = `M ${points[0].x} ${points[0].y}`;
+
+  for (let i = 1; i < points.length; i++) {
+    const p0 = points[i - 1];
+    const p1 = points[i];
+    // Simple line for responsiveness; could use quadratic bezier for smoother curves
+    d += ` L ${p1.x} ${p1.y}`;
+  }
+  return d;
+}
+
 export default function PactScreen({
   intentTitle,
+  displayName,
   dailyMinutes,
   stepIndex,
   stepCount,
@@ -33,176 +67,480 @@ export default function PactScreen({
   onBack,
 }: PactScreenProps) {
   const [celebrating, setCelebrating] = useState(false);
+  const [hasSigned, setHasSigned] = useState(false);
+  const [strokes, setStrokes] = useState<Point[][]>([]);
+  const [currentStroke, setCurrentStroke] = useState<Point[]>([]);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(16)).current;
+  const inkOpacity = useRef(new Animated.Value(0)).current;
+  const padRef = useRef<View>(null);
+  const padOffset = useRef({ x: 0, y: 0 });
 
   useEffect(() => {
     if (isHapticsEnabled()) {
       Haptics.selectionAsync().catch(() => {});
     }
-  }, []);
+
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 500,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 550,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [fadeAnim, slideAnim]);
 
   useEffect(() => {
     if (errorMessage) setCelebrating(false);
   }, [errorMessage]);
 
+  const measurePad = useCallback(() => {
+    padRef.current?.measureInWindow((x, y) => {
+      padOffset.current = { x, y };
+    });
+  }, []);
+
+  const addPoint = useCallback(
+    (evt: GestureResponderEvent) => {
+      const { pageX, pageY } = evt.nativeEvent;
+      const x = pageX - padOffset.current.x;
+      const y = pageY - padOffset.current.y;
+      setCurrentStroke((prev) => [...prev, { x, y }]);
+    },
+    [],
+  );
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderGrant: (evt) => {
+        measurePad();
+        setCurrentStroke([]);
+        addPoint(evt);
+      },
+      onPanResponderMove: (evt) => {
+        addPoint(evt);
+      },
+      onPanResponderRelease: () => {
+        setStrokes((prev) => {
+          const next = [...prev, currentStroke];
+          if (next.length > 0 && !hasSigned) {
+            setHasSigned(true);
+            Animated.timing(inkOpacity, {
+              toValue: 1,
+              duration: 300,
+              useNativeDriver: true,
+            }).start();
+            if (isHapticsEnabled()) {
+              Haptics.notificationAsync(
+                Haptics.NotificationFeedbackType.Success,
+              ).catch(() => {});
+            }
+          }
+          return next;
+        });
+        setCurrentStroke([]);
+      },
+    }),
+  ).current;
+
+  const handleClear = () => {
+    setStrokes([]);
+    setCurrentStroke([]);
+    setHasSigned(false);
+    inkOpacity.setValue(0);
+    if (isHapticsEnabled()) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    }
+  };
+
   const handleConfirm = () => {
-    if (celebrating || isSubmitting) return;
+    if (celebrating || isSubmitting || !hasSigned) return;
     setCelebrating(true);
     onConfirm();
   };
+
+  const allPaths = [...strokes, currentStroke].filter((s) => s.length > 0);
+  const svgPaths = allPaths.map(buildSmoothPath).filter(Boolean);
+
+  const today = new Date().toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  });
 
   return (
     <>
       <OnboardingScreenLayout
         title="Your daily pact"
-        subtitle="A small promise to yourself — that's where real change starts."
+        subtitle="Sign to seal your commitment."
         progress={stepIndex / stepCount}
         onBack={onBack}
         footer={
-          <OnboardingPrimaryButton
-            label="I'm in"
-            onPress={handleConfirm}
-            loading={isSubmitting && !celebrating}
-            disabled={celebrating}
-          />
+          <Animated.View
+            style={[
+              styles.footerWrap,
+              { opacity: inkOpacity },
+            ]}
+          >
+            <OnboardingPrimaryButton
+              label="Sign & commit"
+              onPress={handleConfirm}
+              loading={isSubmitting && !celebrating}
+              disabled={!hasSigned || celebrating}
+            />
+          </Animated.View>
         }
       >
-        <View style={styles.cardWrap}>
-        <View style={styles.pactCard}>
-          <View style={styles.stamp}>
-            <Text style={styles.stampText}>AZORA</Text>
-            <Text style={styles.stampSub}>SEALED · 2026</Text>
-          </View>
+        <Animated.View
+          style={[
+            styles.contractWrap,
+            { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
+          ]}
+        >
+          {/* Contract Paper */}
+          <View style={styles.paper}>
+            {/* Watermark */}
+            <View style={styles.watermark} pointerEvents="none">
+              <Text style={styles.watermarkText}>AZORA</Text>
+            </View>
 
-          <View style={styles.leftColumn}>
-            <Text style={styles.value}>{dailyMinutes}</Text>
-            <Text style={styles.unit}>min / day</Text>
-          </View>
+            {/* Header */}
+            <View style={styles.paperHeader}>
+              <View style={styles.seal}>
+                <Text style={styles.sealText}>AZORA</Text>
+                <View style={styles.sealDot} />
+              </View>
+              <View style={styles.headerLine} />
+              <Text style={styles.docType}>DAILY COMMITMENT</Text>
+            </View>
 
-          <View style={styles.divider} />
+            {/* Body */}
+            <View style={styles.paperBody}>
+              <Text style={styles.salutation}>
+                I,{' '}
+                <Text style={styles.nameHighlight}>
+                  {displayName || 'the undersigned'}
+                </Text>
+                , hereby commit to:
+              </Text>
 
-          <View style={styles.rightColumn}>
-            <Text style={styles.kicker}>MY PACT</Text>
-            <Text style={styles.lead}>
-              I'll give Azora{' '}
-              <Text style={styles.leadStrong}>
-                {dailyMinutes} min a day
-              </Text>{' '}
-              to {intentTitle.toLowerCase()}.
-            </Text>
-            <View style={styles.footerRow}>
-              <Icon name="sun" size={14} color={colors.orange[500]} />
-              <Text style={styles.footerText}>Starts tomorrow</Text>
+              <View style={styles.clauses}>
+                <View style={styles.clause}>
+                  <View style={styles.clauseNum}>
+                    <Text style={styles.clauseNumText}>1</Text>
+                  </View>
+                  <Text style={styles.clauseText}>
+                    Practice breathing exercises for{' '}
+                    <Text style={styles.clauseStrong}>{dailyMinutes} minutes</Text>{' '}
+                    every day.
+                  </Text>
+                </View>
+
+                <View style={styles.clause}>
+                  <View style={styles.clauseNum}>
+                    <Text style={styles.clauseNumText}>2</Text>
+                  </View>
+                  <Text style={styles.clauseText}>
+                    Focus on{' '}
+                    <Text style={styles.clauseStrong}>
+                      {intentTitle.toLowerCase()}
+                    </Text>
+                    .
+                  </Text>
+                </View>
+
+                <View style={styles.clause}>
+                  <View style={styles.clauseNum}>
+                    <Text style={styles.clauseNumText}>3</Text>
+                  </View>
+                  <Text style={styles.clauseText}>
+                    Show up consistently — progress over perfection.
+                  </Text>
+                </View>
+              </View>
+
+              {/* Signature Pad */}
+              <View style={styles.sigSection}>
+                <Text style={styles.sigLabel}>
+                  {hasSigned ? 'Signed' : 'Sign below'}
+                </Text>
+
+                <View
+                  ref={padRef}
+                  style={styles.sigPad}
+                  onLayout={measurePad}
+                  {...panResponder.panHandlers}
+                >
+                  {/* Dotted guide lines */}
+                  <View style={styles.guideLine} pointerEvents="none" />
+                  <View style={[styles.guideLine, { top: PAD_HEIGHT * 0.33 }]} pointerEvents="none" />
+                  <View style={[styles.guideLine, { top: PAD_HEIGHT * 0.66 }]} pointerEvents="none" />
+
+                  {/* SVG Ink */}
+                  <Svg
+                    width={PAD_WIDTH}
+                    height={PAD_HEIGHT}
+                    viewBox={`0 0 ${PAD_WIDTH} ${PAD_HEIGHT}`}
+                    style={styles.inkLayer}
+                  >
+                    {svgPaths.map((d, i) => (
+                      <Path
+                        key={i}
+                        d={d}
+                        fill="none"
+                        stroke={colors.primary.blue700}
+                        strokeWidth={2.5}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    ))}
+                  </Svg>
+
+                  {/* Placeholder hint */}
+                  {!hasSigned && svgPaths.length === 0 && (
+                    <View style={styles.sigHint} pointerEvents="none">
+                      <Text style={styles.sigHintText}>
+                        {displayName || 'Your signature'}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+
+                <View style={styles.sigFooter}>
+                  <Text style={styles.sigDate}>{today}</Text>
+                  {hasSigned && (
+                    <Text style={styles.clearBtn} onPress={handleClear}>
+                      Clear
+                    </Text>
+                  )}
+                </View>
+              </View>
             </View>
           </View>
-        </View>
-        </View>
+        </Animated.View>
 
-        {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
+        {errorMessage ? (
+          <Text style={styles.error}>{errorMessage}</Text>
+        ) : null}
       </OnboardingScreenLayout>
+
       {celebrating ? <CelebrationOverlay /> : null}
     </>
   );
 }
 
 const styles = StyleSheet.create({
-  cardWrap: {
+  contractWrap: {
     alignItems: 'center',
-    marginTop: spacing.sm,
+    marginTop: spacing.xs,
   },
-  pactCard: {
+
+  // Paper
+  paper: {
     ...card.base,
     ...card.shadow,
     width: '100%',
-    aspectRatio: 1.65,
-    flexDirection: 'row',
-    alignItems: 'stretch',
-    padding: spacing.xl,
-    borderRadius: 24,
+    borderRadius: 16,
+    backgroundColor: colors.background.elevated,
     overflow: 'hidden',
+    position: 'relative',
   },
-  stamp: {
+  watermark: {
     position: 'absolute',
-    top: spacing.md,
-    right: spacing.md,
-    transform: [{ rotate: '-10deg' }],
-    borderWidth: 1.5,
-    borderColor: colors.orange[500],
-    borderRadius: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    opacity: 0.85,
-  },
-  stampText: {
-    fontFamily: fonts.semibold,
-    fontWeight: '600',
-    fontSize: 9,
-    letterSpacing: 1.6,
-    color: colors.orange[500],
-  },
-  stampSub: {
-    fontFamily: fonts.semibold,
-    fontWeight: '600',
-    fontSize: 7,
-    letterSpacing: 1.2,
-    color: colors.orange[500],
-    opacity: 0.7,
-    textAlign: 'center',
-    marginTop: 1,
-  },
-  leftColumn: {
-    flex: 1,
+    top: '30%',
+    left: 0,
+    right: 0,
     alignItems: 'center',
-    justifyContent: 'center',
+    opacity: 0.04,
   },
-  value: {
-    fontFamily: fonts.semibold,
-    fontWeight: '600',
-    fontSize: 84,
-    lineHeight: 88,
-    letterSpacing: -2,
+  watermarkText: {
+    fontFamily: fonts.bold,
+    fontWeight: '700',
+    fontSize: 80,
+    letterSpacing: 8,
     color: colors.primary.blue700,
   },
-  unit: {
-    ...typography.body.medium,
-    color: colors.text.secondary,
-    marginTop: spacing.xs,
+
+  // Header
+  paperHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border.subtle,
   },
-  divider: {
+  seal: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 2,
+    borderColor: colors.orange[500],
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  sealText: {
+    fontFamily: fonts.bold,
+    fontWeight: '700',
+    fontSize: 8,
+    letterSpacing: 0.5,
+    color: colors.orange[500],
+  },
+  sealDot: {
+    position: 'absolute',
+    bottom: 4,
+    width: 3,
+    height: 3,
+    borderRadius: 1.5,
+    backgroundColor: colors.orange[500],
+  },
+  headerLine: {
     width: 1,
-    backgroundColor: colors.border.default,
-    marginHorizontal: spacing.lg,
+    height: 24,
+    backgroundColor: colors.border.subtle,
   },
-  rightColumn: {
-    flex: 1.3,
-    justifyContent: 'space-between',
-    paddingVertical: spacing.xs,
-  },
-  kicker: {
+  docType: {
     ...typography.caption.caption2,
     fontFamily: fonts.semibold,
     fontWeight: '600',
     letterSpacing: 2,
     color: colors.text.tertiary,
   },
-  lead: {
+
+  // Body
+  paperBody: {
+    padding: spacing.lg,
+    gap: spacing.lg,
+  },
+  salutation: {
     ...typography.body.medium,
     color: colors.text.secondary,
-    lineHeight: 22,
+    lineHeight: 24,
   },
-  leadStrong: {
+  nameHighlight: {
     fontFamily: fonts.semibold,
     fontWeight: '600',
     color: colors.text.primary,
   },
-  footerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
+
+  // Clauses
+  clauses: {
+    gap: spacing.md,
   },
-  footerText: {
-    ...typography.caption.caption1,
+  clause: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.md,
+  },
+  clauseNum: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: colors.primary.blue100,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 1,
+  },
+  clauseNumText: {
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    fontSize: 12,
+    color: colors.primary.blue700,
+  },
+  clauseText: {
+    ...typography.body.medium,
+    color: colors.text.secondary,
+    flex: 1,
+    lineHeight: 24,
+  },
+  clauseStrong: {
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    color: colors.text.primary,
+  },
+
+  // Signature Section
+  sigSection: {
+    gap: spacing.sm,
+  },
+  sigLabel: {
+    ...typography.caption.caption2,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    letterSpacing: 1.5,
     color: colors.text.tertiary,
   },
+  sigPad: {
+    width: PAD_WIDTH,
+    height: PAD_HEIGHT,
+    alignSelf: 'center',
+    backgroundColor: colors.neutral[50],
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.border.subtle,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  guideLine: {
+    position: 'absolute',
+    left: 12,
+    right: 12,
+    top: PAD_HEIGHT * 0.33,
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.border.subtle,
+    opacity: 0.5,
+  },
+  inkLayer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+  },
+  sigHint: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sigHintText: {
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    fontSize: 18,
+    color: colors.text.tertiary,
+    opacity: 0.35,
+    fontStyle: 'italic',
+  },
+  sigFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: spacing.xs,
+  },
+  sigDate: {
+    ...typography.caption.caption2,
+    color: colors.text.tertiary,
+  },
+  clearBtn: {
+    ...typography.caption.caption2,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    color: colors.primary.blue600,
+  },
+
+  // Footer
+  footerWrap: {
+    opacity: 0,
+  },
+
   error: {
     ...typography.body.small,
     color: colors.error[700],

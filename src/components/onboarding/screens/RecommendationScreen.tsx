@@ -1,4 +1,5 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { card } from '../../../theme/card';
 import { colors } from '../../../theme/colors';
@@ -38,6 +39,12 @@ function buildBpmSeries(history: number[]): DataPoint[] {
   return points;
 }
 
+const PERSONALIZING_STEPS = [
+  'Analyzing your breathing pattern…',
+  'Matching technique to your goal…',
+  'Calibrating session length…',
+];
+
 export default function RecommendationScreen({
   techniqueId,
   intentTitle,
@@ -49,6 +56,12 @@ export default function RecommendationScreen({
   onContinue,
   onBack,
 }: RecommendationScreenProps) {
+  const [showingResult, setShowingResult] = useState(false);
+  const [loadingStep, setLoadingStep] = useState(0);
+  const progressAnim = useRef(new Animated.Value(0)).current;
+  const resultFade = useRef(new Animated.Value(0)).current;
+  const resultSlide = useRef(new Animated.Value(16)).current;
+
   const technique =
     TECHNIQUE_RECOMMENDATIONS[techniqueId] ?? TECHNIQUE_RECOMMENDATIONS.box;
 
@@ -61,95 +74,248 @@ export default function RecommendationScreen({
     : [];
   const hasGraph = bpmSeries.length >= 2;
 
+  useEffect(() => {
+    // Animate progress bar over ~2.2s
+    Animated.timing(progressAnim, {
+      toValue: 1,
+      duration: 2200,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false,
+    }).start();
+
+    // Cycle through step labels
+    const stepInterval = setInterval(() => {
+      setLoadingStep((prev) => {
+        const next = prev + 1;
+        return next >= PERSONALIZING_STEPS.length ? prev : next;
+      });
+    }, 650);
+
+    // Reveal result after loading
+    const revealTimer = setTimeout(() => {
+      clearInterval(stepInterval);
+      setShowingResult(true);
+      Animated.parallel([
+        Animated.timing(resultFade, {
+          toValue: 1,
+          duration: 400,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.timing(resultSlide, {
+          toValue: 0,
+          duration: 450,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }, 2400);
+
+    return () => {
+      clearInterval(stepInterval);
+      clearTimeout(revealTimer);
+    };
+  }, [progressAnim, resultFade, resultSlide]);
+
+  const progressWidth = progressAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0%', '100%'],
+  });
+
+  if (!showingResult) {
+    return (
+      <OnboardingScreenLayout
+        title="Recommended for you"
+        subtitle="We're building your personalized exercise based on your responses."
+        progress={stepIndex / stepCount}
+        onBack={onBack}
+        footer={
+          <View style={styles.loadingFooter}>
+            <View style={styles.progressTrack}>
+              <Animated.View style={[styles.progressFillBar, { width: progressWidth }]} />
+            </View>
+            <Text style={styles.loadingStep}>{PERSONALIZING_STEPS[loadingStep]}</Text>
+          </View>
+        }
+      >
+        <View style={styles.loadingBody}>
+          {/* Pulsing technique card placeholder */}
+          <View style={styles.ghostCard}>
+            <View style={styles.ghostKicker} />
+            <View style={styles.ghostTitle} />
+            <View style={styles.ghostTagline} />
+            <View style={styles.ghostDivider} />
+            <View style={styles.ghostBody} />
+          </View>
+        </View>
+      </OnboardingScreenLayout>
+    );
+  }
+
   return (
     <OnboardingScreenLayout
-      title="Your starting plan"
+      title="Recommended for you"
       subtitle={`Tailored to ${intentTitle.toLowerCase()}, your age, and how your body responded.`}
       progress={stepIndex / stepCount}
       onBack={onBack}
       footer={<OnboardingPrimaryButton label="Sounds good" onPress={onContinue} />}
     >
-      {hrCompleted ? (
-        <View style={styles.hrCard}>
-          <View style={styles.hrCardHeader}>
-            <View style={styles.hrCardTitleRow}>
-              <View style={styles.hrIconWrap}>
-                <MaterialCommunityIcons
-                  name="heart-pulse"
-                  size={18}
-                  color={colors.error[500]}
+      <Animated.View
+        style={[
+          styles.resultBody,
+          { opacity: resultFade, transform: [{ translateY: resultSlide }] },
+        ]}
+      >
+        {hrCompleted ? (
+          <View style={styles.hrCard}>
+            <View style={styles.hrCardHeader}>
+              <View style={styles.hrCardTitleRow}>
+                <View style={styles.hrIconWrap}>
+                  <MaterialCommunityIcons
+                    name="heart-pulse"
+                    size={18}
+                    color={colors.error[500]}
+                  />
+                </View>
+                <Text style={styles.hrCardTitle}>Heart response</Text>
+              </View>
+              {hrDropPositive ? (
+                <View style={styles.hrBadge}>
+                  <Text style={styles.hrBadgeText}>↓ {drop} bpm</Text>
+                </View>
+              ) : (
+                <View style={[styles.hrBadge, styles.hrBadgeSteady]}>
+                  <Text style={[styles.hrBadgeText, styles.hrBadgeTextSteady]}>
+                    Steady
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            <View style={styles.statsRow}>
+              <View style={styles.statItem}>
+                <Text style={styles.statValue}>{baseline?.avgBpm}</Text>
+                <Text style={styles.statLabel}>Avg BPM</Text>
+              </View>
+              {baseline?.earlyBpm != null ? (
+                <View style={styles.statItem}>
+                  <Text style={styles.statValue}>{baseline.earlyBpm}</Text>
+                  <Text style={styles.statLabel}>Early</Text>
+                </View>
+              ) : null}
+              {baseline?.lateBpm != null ? (
+                <View style={styles.statItem}>
+                  <Text style={styles.statValue}>{baseline.lateBpm}</Text>
+                  <Text style={styles.statLabel}>Late</Text>
+                </View>
+              ) : null}
+              {baseline?.durationSec != null && baseline.durationSec > 0 ? (
+                <View style={styles.statItem}>
+                  <Text style={styles.statValue}>{baseline.durationSec}s</Text>
+                  <Text style={styles.statLabel}>Duration</Text>
+                </View>
+              ) : null}
+            </View>
+
+            {hasGraph ? (
+              <View style={styles.graphWrap}>
+                <LineGraph
+                  data={bpmSeries}
+                  subtitle="BPM during breathing"
+                  unit=""
+                  height={140}
+                  lineColor={colors.primary.blue500}
+                  fillColor={colors.primary.blue100}
+                  dotColor={colors.primary.blue600}
                 />
               </View>
-              <Text style={styles.hrCardTitle}>Heart response</Text>
-            </View>
-            {hrDropPositive ? (
-              <View style={styles.hrBadge}>
-                <Text style={styles.hrBadgeText}>↓ {drop} bpm</Text>
-              </View>
-            ) : (
-              <View style={[styles.hrBadge, styles.hrBadgeSteady]}>
-                <Text style={[styles.hrBadgeText, styles.hrBadgeTextSteady]}>
-                  Steady
-                </Text>
-              </View>
-            )}
-          </View>
-
-          <View style={styles.statsRow}>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{baseline?.avgBpm}</Text>
-              <Text style={styles.statLabel}>Avg BPM</Text>
-            </View>
-            {baseline?.earlyBpm != null ? (
-              <View style={styles.statItem}>
-                <Text style={styles.statValue}>{baseline.earlyBpm}</Text>
-                <Text style={styles.statLabel}>Early</Text>
-              </View>
-            ) : null}
-            {baseline?.lateBpm != null ? (
-              <View style={styles.statItem}>
-                <Text style={styles.statValue}>{baseline.lateBpm}</Text>
-                <Text style={styles.statLabel}>Late</Text>
-              </View>
-            ) : null}
-            {baseline?.durationSec != null && baseline.durationSec > 0 ? (
-              <View style={styles.statItem}>
-                <Text style={styles.statValue}>{baseline.durationSec}s</Text>
-                <Text style={styles.statLabel}>Duration</Text>
-              </View>
             ) : null}
           </View>
+        ) : null}
 
-          {hasGraph ? (
-            <View style={styles.graphWrap}>
-              <LineGraph
-                data={bpmSeries}
-                subtitle="BPM during breathing"
-                unit=""
-                height={140}
-                lineColor={colors.primary.blue500}
-                fillColor={colors.primary.blue100}
-                dotColor={colors.primary.blue600}
-              />
-            </View>
-          ) : null}
+        <View style={styles.techniqueCard}>
+          <Text style={styles.techniqueKicker}>RECOMMENDED TECHNIQUE</Text>
+          <Text style={styles.techniqueName}>{technique.name}</Text>
+          <Text style={styles.techniqueTagline}>{technique.tagline}</Text>
+          <View style={styles.divider} />
+          <Text style={styles.techniqueWhy}>{technique.why}</Text>
         </View>
-      ) : null}
-
-      <View style={styles.techniqueCard}>
-        <Text style={styles.techniqueKicker}>RECOMMENDED TECHNIQUE</Text>
-        <Text style={styles.techniqueName}>{technique.name}</Text>
-        <Text style={styles.techniqueTagline}>{technique.tagline}</Text>
-        <View style={styles.divider} />
-        <Text style={styles.techniqueWhy}>{technique.why}</Text>
-      </View>
-
-      
+      </Animated.View>
     </OnboardingScreenLayout>
   );
 }
 
 const styles = StyleSheet.create({
+  // Loading state
+  loadingBody: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  loadingFooter: {
+    gap: spacing.sm,
+    alignItems: 'center',
+  },
+  progressTrack: {
+    width: '100%',
+    height: 4,
+    borderRadius: 999,
+    backgroundColor: colors.primary.blue100,
+    overflow: 'hidden',
+  },
+  progressFillBar: {
+    height: '100%',
+    borderRadius: 999,
+    backgroundColor: colors.primary.blue600,
+  },
+  loadingStep: {
+    ...typography.body.small,
+    color: colors.text.tertiary,
+    textAlign: 'center',
+  },
+  ghostCard: {
+    ...card.base,
+    ...card.shadow,
+    paddingVertical: spacing.xl,
+    paddingHorizontal: spacing.lg,
+    borderRadius: 24,
+    gap: spacing.sm,
+    opacity: 0.45,
+  },
+  ghostKicker: {
+    width: 140,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: colors.primary.blue200,
+  },
+  ghostTitle: {
+    width: 200,
+    height: 28,
+    borderRadius: 8,
+    backgroundColor: colors.neutral[200],
+    marginTop: spacing.xs,
+  },
+  ghostTagline: {
+    width: 160,
+    height: 16,
+    borderRadius: 6,
+    backgroundColor: colors.neutral[200],
+  },
+  ghostDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.border.default,
+    marginVertical: spacing.md,
+  },
+  ghostBody: {
+    width: '100%',
+    height: 40,
+    borderRadius: 8,
+    backgroundColor: colors.neutral[100],
+  },
+
+  // Result state
+  resultBody: {
+    gap: spacing.md,
+  },
   hrCard: {
     ...card.base,
     marginTop: spacing.md,

@@ -121,6 +121,49 @@ export const ICON_PATHS = {
     <path fill="currentColor" d="M12 2.5c.4 0 .76.27.88.66l1.2 4a3 3 0 0 0 2.06 2.06l4 1.2a.92.92 0 0 1 0 1.76l-4 1.2a3 3 0 0 0-2.06 2.06l-1.2 4a.92.92 0 0 1-1.76 0l-1.2-4a3 3 0 0 0-2.06-2.06l-4-1.2a.92.92 0 0 1 0-1.76l4-1.2a3 3 0 0 0 2.06-2.06l1.2-4A.92.92 0 0 1 12 2.5Z"/>
     <path fill="currentColor" opacity="0.55" d="M19 16.5c.2 0 .38.13.44.32l.45 1.45a1 1 0 0 0 .67.67l1.45.45a.46.46 0 0 1 0 .88l-1.45.45a1 1 0 0 0-.67.67l-.45 1.45a.46.46 0 0 1-.88 0l-.45-1.45a1 1 0 0 0-.67-.67l-1.45-.45a.46.46 0 0 1 0-.88l1.45-.45a1 1 0 0 0 .67-.67l.45-1.45A.46.46 0 0 1 19 16.5Z"/>
   `,
+
+  flask: `
+    <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M9 3h6"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M10 3v5.3L6.5 16.8A2 2 0 0 0 8.3 20h7.4a2 2 0 0 0 1.8-3.2L14 8.3V3"/>
+    <path fill="currentColor" opacity="0.14" d="M10.5 14h3l1.2 3H9.3l1.2-3Z"/>
+  `,
+
+  microscope: `
+    <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M6 18h12"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M8 18v-3a3 3 0 0 1 3-3h2a3 3 0 0 1 3 3v3"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M12 12V7"/>
+    <circle cx="12" cy="5" r="2" stroke="currentColor" stroke-width="1.8" fill="none" />
+    <path fill="currentColor" opacity="0.14" d="M10 18h4v2h-4z"/>
+  `,
+
+  'university-harvard': `
+    <path fill="currentColor" opacity="0.14" d="M12 3 19 5 V11 C19 16 15.5 19.5 12 21 C8.5 19.5 5 16 5 11 V5 Z"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M12 3 19 5 V11 C19 16 15.5 19.5 12 21 C8.5 19.5 5 16 5 11 V5 Z"/>
+    <rect x="8" y="8.5" width="2.6" height="3" stroke="currentColor" stroke-width="1.4" fill="none"/>
+    <rect x="11.4" y="8.5" width="2.6" height="3" stroke="currentColor" stroke-width="1.4" fill="none"/>
+    <rect x="9.7" y="13" width="2.6" height="3" stroke="currentColor" stroke-width="1.4" fill="none"/>
+  `,
+
+  'university-stanford': `
+    <path fill="currentColor" opacity="0.14" d="M12 3 C10 5 9 7 9 9 C7 9 6 11 7 13 C5.5 13 5 14.5 6 16 H18 C19 14.5 18.5 13 17 13 C18 11 17 9 15 9 C15 7 14 5 12 3 Z"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M12 3 C10 5 9 7 9 9 C7 9 6 11 7 13 C5.5 13 5 14.5 6 16 H18 C19 14.5 18.5 13 17 13 C18 11 17 9 15 9 C15 7 14 5 12 3 Z"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M12 16 V21"/>
+  `,
+
+  'research-paper': `
+    <path fill="currentColor" opacity="0.14" d="M6.5 3 H14 L18 7 V20 A1 1 0 0 1 17 21 H6.5 A1 1 0 0 1 5.5 20 V4 A1 1 0 0 1 6.5 3 Z"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M6.5 3 H14 L18 7 V20 A1 1 0 0 1 17 21 H6.5 A1 1 0 0 1 5.5 20 V4 A1 1 0 0 1 6.5 3 Z"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M14 3 V7 H18"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" d="M9 13.5 V17 M12 11.5 V17 M15 14.5 V17"/>
+  `,
+
+  journal: `
+    <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M4 4h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M8 4v16"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" d="M11 9h5"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" d="M11 13h4"/>
+    <path fill="currentColor" opacity="0.12" d="M4 4h4v16H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/>
+  `,
 } as const;
 
 export type IconName = keyof typeof ICON_PATHS;

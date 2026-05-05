@@ -4,11 +4,21 @@ export type OnboardingStep =
   | 'intent'
   | 'intentReflection'
   | 'customIntent'
+  | 'name'
+  | 'stress'
+  | 'sleep'
+  | 'agreement'
+  | 'experience'
+  | 'assessmentReflection'
   | 'age'
   | 'gender'
   | 'dailyTime'
+  | 'microFact'
+  | 'baselineIntro'
   | 'baseline'
+  | 'scienceResearch'
   | 'recommendation'
+  | 'scienceCredibility'
   | 'pact';
 
 export interface IntentOption {
