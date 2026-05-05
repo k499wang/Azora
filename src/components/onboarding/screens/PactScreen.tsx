@@ -1,22 +1,19 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Animated,
   Easing,
-  GestureResponderEvent,
-  PanResponder,
-  PanResponderGestureState,
+  ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { card } from '../../../theme/card';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
 import { isHapticsEnabled } from '../../../services/preferences/hapticsPreference';
-import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import CelebrationOverlay from '../CelebrationOverlay';
 
@@ -32,28 +29,15 @@ interface PactScreenProps {
   onBack: () => void;
 }
 
-interface Point {
-  x: number;
-  y: number;
-}
-
-const PAD_WIDTH = 320;
-const PAD_HEIGHT = 140;
-
-function buildSmoothPath(points: Point[]): string {
-  if (points.length === 0) return '';
-  if (points.length === 1) return `M ${points[0].x} ${points[0].y}`;
-
-  let d = `M ${points[0].x} ${points[0].y}`;
-
-  for (let i = 1; i < points.length; i++) {
-    const p0 = points[i - 1];
-    const p1 = points[i];
-    // Simple line for responsiveness; could use quadratic bezier for smoother curves
-    d += ` L ${p1.x} ${p1.y}`;
-  }
-  return d;
-}
+/* ─── floating-particle positions (static) ─── */
+const PARTICLES = Array.from({ length: 18 }, (_, i) => ({
+  key: i,
+  x: 20 + Math.random() * 60,
+  y: 10 + Math.random() * 80,
+  size: 1.5 + Math.random() * 2.5,
+  delay: Math.random() * 2000,
+  duration: 2500 + Math.random() * 2500,
+}));
 
 export default function PactScreen({
   intentTitle,
@@ -67,15 +51,18 @@ export default function PactScreen({
   onBack,
 }: PactScreenProps) {
   const [celebrating, setCelebrating] = useState(false);
-  const [hasSigned, setHasSigned] = useState(false);
-  const [strokes, setStrokes] = useState<Point[][]>([]);
-  const [currentStroke, setCurrentStroke] = useState<Point[]>([]);
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(16)).current;
-  const inkOpacity = useRef(new Animated.Value(0)).current;
-  const padRef = useRef<View>(null);
-  const padOffset = useRef({ x: 0, y: 0 });
+  const [hasConfirmed, setHasConfirmed] = useState(false);
 
+  /* animated values */
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(30)).current;
+  const glowPulse = useRef(new Animated.Value(0.6)).current;
+  const sealScale = useRef(new Animated.Value(0)).current;
+  const sealRotate = useRef(new Animated.Value(0)).current;
+  const paperGlow = useRef(new Animated.Value(0)).current;
+  const btnScale = useRef(new Animated.Value(1)).current;
+
+  /* entrance */
   useEffect(() => {
     if (isHapticsEnabled()) {
       Haptics.selectionAsync().catch(() => {});
@@ -84,92 +71,100 @@ export default function PactScreen({
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 1,
-        duration: 500,
+        duration: 800,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
       Animated.timing(slideAnim, {
         toValue: 0,
-        duration: 550,
+        duration: 900,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
     ]).start();
-  }, [fadeAnim, slideAnim]);
+
+    /* ambient glow loop */
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(glowPulse, {
+          toValue: 1,
+          duration: 2200,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+        Animated.timing(glowPulse, {
+          toValue: 0.6,
+          duration: 2200,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+      ]),
+    ).start();
+  }, [fadeAnim, glowPulse, slideAnim]);
 
   useEffect(() => {
     if (errorMessage) setCelebrating(false);
   }, [errorMessage]);
 
-  const measurePad = useCallback(() => {
-    padRef.current?.measureInWindow((x, y) => {
-      padOffset.current = { x, y };
-    });
-  }, []);
+  /* seal stamp animation when confirmed */
+  useEffect(() => {
+    if (hasConfirmed) {
+      Animated.sequence([
+        Animated.timing(sealScale, {
+          toValue: 1,
+          duration: 400,
+          easing: Easing.out(Easing.back(1.6)),
+          useNativeDriver: true,
+        }),
+        Animated.timing(sealRotate, {
+          toValue: 1,
+          duration: 300,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+      ]).start();
 
-  const addPoint = useCallback(
-    (evt: GestureResponderEvent) => {
-      const { pageX, pageY } = evt.nativeEvent;
-      const x = pageX - padOffset.current.x;
-      const y = pageY - padOffset.current.y;
-      setCurrentStroke((prev) => [...prev, { x, y }]);
-    },
-    [],
-  );
-
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => true,
-      onPanResponderGrant: (evt) => {
-        measurePad();
-        setCurrentStroke([]);
-        addPoint(evt);
-      },
-      onPanResponderMove: (evt) => {
-        addPoint(evt);
-      },
-      onPanResponderRelease: () => {
-        setStrokes((prev) => {
-          const next = [...prev, currentStroke];
-          if (next.length > 0 && !hasSigned) {
-            setHasSigned(true);
-            Animated.timing(inkOpacity, {
-              toValue: 1,
-              duration: 300,
-              useNativeDriver: true,
-            }).start();
-            if (isHapticsEnabled()) {
-              Haptics.notificationAsync(
-                Haptics.NotificationFeedbackType.Success,
-              ).catch(() => {});
-            }
-          }
-          return next;
-        });
-        setCurrentStroke([]);
-      },
-    }),
-  ).current;
-
-  const handleClear = () => {
-    setStrokes([]);
-    setCurrentStroke([]);
-    setHasSigned(false);
-    inkOpacity.setValue(0);
-    if (isHapticsEnabled()) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+      Animated.timing(paperGlow, {
+        toValue: 1,
+        duration: 600,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }).start();
+    } else {
+      sealScale.setValue(0);
+      sealRotate.setValue(0);
+      paperGlow.setValue(0);
     }
-  };
+  }, [hasConfirmed, paperGlow, sealRotate, sealScale]);
 
   const handleConfirm = () => {
-    if (celebrating || isSubmitting || !hasSigned) return;
+    if (celebrating || isSubmitting) return;
+
+    /* button press animation */
+    Animated.sequence([
+      Animated.timing(btnScale, {
+        toValue: 0.96,
+        duration: 80,
+        useNativeDriver: true,
+      }),
+      Animated.timing(btnScale, {
+        toValue: 1,
+        duration: 120,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    setHasConfirmed(true);
     setCelebrating(true);
+
+    if (isHapticsEnabled()) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
+        () => {},
+      );
+    }
+
     onConfirm();
   };
-
-  const allPaths = [...strokes, currentStroke].filter((s) => s.length > 0);
-  const svgPaths = allPaths.map(buildSmoothPath).filter(Boolean);
 
   const today = new Date().toLocaleDateString('en-US', {
     month: 'long',
@@ -177,200 +172,382 @@ export default function PactScreen({
     year: 'numeric',
   });
 
+  const progress = stepIndex / stepCount;
+  const clamped = Math.max(0, Math.min(1, progress));
+
+  /* interpolated values */
+  const sealRotation = sealRotate.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['-12deg', '0deg'],
+  });
+
+  const paperGlowOpacity = paperGlow.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 0.12],
+  });
+
   return (
     <>
-      <OnboardingScreenLayout
-        title="Your daily pact"
-        subtitle="Sign to seal your commitment."
-        progress={stepIndex / stepCount}
-        onBack={onBack}
-        footer={
+      <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.backGlyph} onPress={onBack}>
+            ←
+          </Text>
+          <View style={styles.progressBar}>
+            <View style={[styles.progressFill, { width: `${clamped * 100}%` }]} />
+          </View>
+        </View>
+
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
           <Animated.View
             style={[
-              styles.footerWrap,
-              { opacity: inkOpacity },
+              styles.content,
+              { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
             ]}
           >
-            <OnboardingPrimaryButton
-              label="Sign & commit"
-              onPress={handleConfirm}
-              loading={isSubmitting && !celebrating}
-              disabled={!hasSigned || celebrating}
-            />
-          </Animated.View>
-        }
-      >
-        <Animated.View
-          style={[
-            styles.contractWrap,
-            { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
-          ]}
-        >
-          {/* Contract Paper */}
-          <View style={styles.paper}>
-            {/* Watermark */}
-            <View style={styles.watermark} pointerEvents="none">
-              <Text style={styles.watermarkText}>AZORA</Text>
-            </View>
-
-            {/* Header */}
-            <View style={styles.paperHeader}>
-              <View style={styles.seal}>
-                <Text style={styles.sealText}>AZORA</Text>
-                <View style={styles.sealDot} />
-              </View>
-              <View style={styles.headerLine} />
-              <Text style={styles.docType}>DAILY COMMITMENT</Text>
-            </View>
-
-            {/* Body */}
-            <View style={styles.paperBody}>
-              <Text style={styles.salutation}>
-                I,{' '}
-                <Text style={styles.nameHighlight}>
-                  {displayName || 'the undersigned'}
-                </Text>
-                , hereby commit to:
+            {/* Title */}
+            <View style={styles.copy}>
+              <Text style={styles.title}>Your daily pact</Text>
+              <Text style={styles.subtitle}>
+                A promise to yourself, sealed with your mark.
               </Text>
+            </View>
 
-              <View style={styles.clauses}>
-                <View style={styles.clause}>
-                  <View style={styles.clauseNum}>
-                    <Text style={styles.clauseNumText}>1</Text>
-                  </View>
-                  <Text style={styles.clauseText}>
-                    Practice breathing exercises for{' '}
-                    <Text style={styles.clauseStrong}>{dailyMinutes} minutes</Text>{' '}
-                    every day.
-                  </Text>
+            {/* ── Magical Contract Paper ── */}
+            <View style={styles.paperWrap}>
+              {/* ambient glow behind paper */}
+              <Animated.View
+                style={[
+                  styles.paperGlow,
+                  { opacity: Animated.multiply(glowPulse, paperGlowOpacity) },
+                ]}
+                pointerEvents="none"
+              />
+
+              <View style={styles.paper}>
+                {/* floating particles */}
+                <View style={StyleSheet.absoluteFill} pointerEvents="none">
+                  {PARTICLES.map((p) => (
+                    <FloatingParticle
+                      key={p.key}
+                      x={p.x}
+                      y={p.y}
+                      size={p.size}
+                      delay={p.delay}
+                      duration={p.duration}
+                    />
+                  ))}
                 </View>
 
-                <View style={styles.clause}>
-                  <View style={styles.clauseNum}>
-                    <Text style={styles.clauseNumText}>2</Text>
+                {/* watermark */}
+                <View style={styles.watermark} pointerEvents="none">
+                  <Text style={styles.watermarkText}>AZORA</Text>
+                </View>
+
+                {/* paper header */}
+                <View style={styles.paperHeader}>
+                  <View style={styles.sealRing}>
+                    <Text style={styles.sealRingText}>✦</Text>
                   </View>
-                  <Text style={styles.clauseText}>
-                    Focus on{' '}
-                    <Text style={styles.clauseStrong}>
-                      {intentTitle.toLowerCase()}
+                  <View style={styles.headerLine} />
+                  <Text style={styles.docType}>DAILY COMMITMENT</Text>
+                </View>
+
+                {/* body */}
+                <View style={styles.paperBody}>
+                  <Text style={styles.salutation}>
+                    I,{' '}
+                    <Text style={styles.nameHighlight}>
+                      {displayName || 'the undersigned'}
                     </Text>
-                    .
+                    , hereby commit to:
                   </Text>
-                </View>
 
-                <View style={styles.clause}>
-                  <View style={styles.clauseNum}>
-                    <Text style={styles.clauseNumText}>3</Text>
-                  </View>
-                  <Text style={styles.clauseText}>
-                    Show up consistently — progress over perfection.
-                  </Text>
-                </View>
-              </View>
-
-              {/* Signature Pad */}
-              <View style={styles.sigSection}>
-                <Text style={styles.sigLabel}>
-                  {hasSigned ? 'Signed' : 'Sign below'}
-                </Text>
-
-                <View
-                  ref={padRef}
-                  style={styles.sigPad}
-                  onLayout={measurePad}
-                  {...panResponder.panHandlers}
-                >
-                  {/* Dotted guide lines */}
-                  <View style={styles.guideLine} pointerEvents="none" />
-                  <View style={[styles.guideLine, { top: PAD_HEIGHT * 0.33 }]} pointerEvents="none" />
-                  <View style={[styles.guideLine, { top: PAD_HEIGHT * 0.66 }]} pointerEvents="none" />
-
-                  {/* SVG Ink */}
-                  <Svg
-                    width={PAD_WIDTH}
-                    height={PAD_HEIGHT}
-                    viewBox={`0 0 ${PAD_WIDTH} ${PAD_HEIGHT}`}
-                    style={styles.inkLayer}
-                  >
-                    {svgPaths.map((d, i) => (
-                      <Path
-                        key={i}
-                        d={d}
-                        fill="none"
-                        stroke={colors.primary.blue700}
-                        strokeWidth={2.5}
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
+                  <View style={styles.clauses}>
+                    {[
+                      `Practice breathing exercises for ${dailyMinutes} minutes every day.`,
+                      `Focus on ${intentTitle.toLowerCase()}.`,
+                      'Show up consistently — progress over perfection.',
+                    ].map((text, i) => (
+                      <View key={i} style={styles.clause}>
+                        <View style={styles.clauseBullet}>
+                          <Text style={styles.clauseBulletText}>{i + 1}</Text>
+                        </View>
+                        <Text style={styles.clauseText}>
+                          {i === 0 ? (
+                            <>
+                              Practice breathing exercises for{' '}
+                              <Text style={styles.clauseStrong}>
+                                {dailyMinutes} minutes
+                              </Text>{' '}
+                              every day.
+                            </>
+                          ) : i === 1 ? (
+                            <>
+                              Focus on{' '}
+                              <Text style={styles.clauseStrong}>
+                                {intentTitle.toLowerCase()}
+                              </Text>
+                              .
+                            </>
+                          ) : (
+                            text
+                          )}
+                        </Text>
+                      </View>
                     ))}
-                  </Svg>
+                  </View>
 
-                  {/* Placeholder hint */}
-                  {!hasSigned && svgPaths.length === 0 && (
-                    <View style={styles.sigHint} pointerEvents="none">
-                      <Text style={styles.sigHintText}>
-                        {displayName || 'Your signature'}
-                      </Text>
+                  <View style={styles.dateRow}>
+                    <Text style={styles.dateText}>{today}</Text>
+                  </View>
+                </View>
+
+                {/* wax-seal stamp (appears after confirming) */}
+                {hasConfirmed && (
+                  <Animated.View
+                    style={[
+                      styles.waxSeal,
+                      {
+                        transform: [
+                          { scale: sealScale },
+                          { rotate: sealRotation },
+                        ],
+                      },
+                    ]}
+                    pointerEvents="none"
+                  >
+                    <View style={styles.waxSealInner}>
+                      <Text style={styles.waxSealText}>✦</Text>
                     </View>
-                  )}
-                </View>
-
-                <View style={styles.sigFooter}>
-                  <Text style={styles.sigDate}>{today}</Text>
-                  {hasSigned && (
-                    <Text style={styles.clearBtn} onPress={handleClear}>
-                      Clear
-                    </Text>
-                  )}
-                </View>
+                  </Animated.View>
+                )}
               </View>
             </View>
-          </View>
-        </Animated.View>
 
-        {errorMessage ? (
-          <Text style={styles.error}>{errorMessage}</Text>
-        ) : null}
-      </OnboardingScreenLayout>
+            {/* ── Confirmation Section ── */}
+            <View style={styles.confirmSection}>
+              <View style={styles.confirmBadge}>
+                <Text style={styles.confirmBadgeText}>
+                  {hasConfirmed ? '✓  COMMITMENT SEALED' : 'READY TO COMMIT'}
+                </Text>
+              </View>
+
+              <Animated.View
+                style={[
+                  styles.confirmButtonWrap,
+                  { transform: [{ scale: btnScale }] },
+                ]}
+              >
+                <OnboardingPrimaryButton
+                  label={
+                    hasConfirmed
+                      ? 'Sealed — continuing...'
+                      : 'I commit to this pact'
+                  }
+                  onPress={handleConfirm}
+                  loading={isSubmitting && !celebrating}
+                  disabled={hasConfirmed || celebrating}
+                />
+              </Animated.View>
+
+              <Text style={styles.confirmHint}>
+                {hasConfirmed
+                  ? 'Your promise has been recorded.'
+                  : 'Tap the button above to seal your commitment.'}
+              </Text>
+            </View>
+
+            {errorMessage ? (
+              <Text style={styles.error}>{errorMessage}</Text>
+            ) : null}
+          </Animated.View>
+        </ScrollView>
+      </SafeAreaView>
 
       {celebrating ? <CelebrationOverlay /> : null}
     </>
   );
 }
 
+/* ─── Floating particle component ─── */
+function FloatingParticle({
+  x,
+  y,
+  size,
+  delay,
+  duration,
+}: {
+  x: number;
+  y: number;
+  size: number;
+  delay: number;
+  duration: number;
+}) {
+  const anim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.delay(delay),
+        Animated.timing(anim, {
+          toValue: 1,
+          duration,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+        Animated.timing(anim, {
+          toValue: 0,
+          duration,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    loop.start();
+    return () => {
+      loop.stop();
+    };
+  }, [anim, delay, duration]);
+
+  const translateY = anim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, -18],
+  });
+  const opacity = anim.interpolate({
+    inputRange: [0, 0.5, 1],
+    outputRange: [0.15, 0.45, 0.15],
+  });
+
+  return (
+    <Animated.View
+      style={{
+        position: 'absolute',
+        left: `${x}%`,
+        top: `${y}%`,
+        width: size,
+        height: size,
+        borderRadius: size / 2,
+        backgroundColor: colors.primary.blue400,
+        opacity,
+        transform: [{ translateY }],
+      }}
+    />
+  );
+}
+
+/* ─── Styles ─── */
 const styles = StyleSheet.create({
-  contractWrap: {
-    alignItems: 'center',
-    marginTop: spacing.xs,
+  screen: {
+    flex: 1,
+    backgroundColor: colors.background.primary,
   },
 
-  // Paper
+  /* Header */
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.xl,
+  },
+  backGlyph: {
+    fontSize: 22,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    color: colors.text.primary,
+    lineHeight: 24,
+    padding: 4,
+  },
+  progressBar: {
+    flex: 1,
+    height: 6,
+    borderRadius: 999,
+    backgroundColor: colors.primary.blue100,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 999,
+    backgroundColor: colors.primary.blue600,
+  },
+
+  /* Scroll */
+  scroll: { flex: 1 },
+  scrollContent: { flexGrow: 1 },
+  content: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: 0,
+    gap: spacing.xl,
+    paddingBottom: spacing.xl,
+  },
+
+  /* Title */
+  copy: { gap: spacing.sm },
+  title: {
+    ...typography.title.title1,
+    color: colors.text.primary,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+  },
+  subtitle: {
+    ...typography.body.small,
+    color: colors.text.secondary,
+  },
+
+  /* ── Paper ── */
+  paperWrap: {
+    position: 'relative',
+    alignSelf: 'center',
+    width: '100%',
+  },
+  paperGlow: {
+    position: 'absolute',
+    top: -12,
+    left: -12,
+    right: -12,
+    bottom: -12,
+    borderRadius: 24,
+    backgroundColor: colors.primary.blue400,
+  },
   paper: {
     ...card.base,
-    ...card.shadow,
     width: '100%',
-    borderRadius: 16,
+    borderRadius: 18,
     backgroundColor: colors.background.elevated,
     overflow: 'hidden',
     position: 'relative',
+    borderWidth: 1,
+    borderColor: colors.border.subtle,
+    shadowColor: colors.primary.blue700,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.1,
+    shadowRadius: 16,
+    elevation: 5,
   },
   watermark: {
     position: 'absolute',
-    top: '30%',
+    top: '28%',
     left: 0,
     right: 0,
     alignItems: 'center',
-    opacity: 0.04,
+    opacity: 0.03,
   },
   watermarkText: {
     fontFamily: fonts.bold,
     fontWeight: '700',
     fontSize: 80,
-    letterSpacing: 8,
+    letterSpacing: 12,
     color: colors.primary.blue700,
   },
 
-  // Header
+  /* Paper header */
   paperHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -379,35 +556,24 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border.subtle,
+    backgroundColor: colors.neutral[50],
   },
-  seal: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    borderWidth: 2,
-    borderColor: colors.orange[500],
+  sealRing: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: colors.orange[400],
     alignItems: 'center',
     justifyContent: 'center',
-    position: 'relative',
   },
-  sealText: {
-    fontFamily: fonts.bold,
-    fontWeight: '700',
-    fontSize: 8,
-    letterSpacing: 0.5,
+  sealRingText: {
+    fontSize: 14,
     color: colors.orange[500],
-  },
-  sealDot: {
-    position: 'absolute',
-    bottom: 4,
-    width: 3,
-    height: 3,
-    borderRadius: 1.5,
-    backgroundColor: colors.orange[500],
   },
   headerLine: {
     width: 1,
-    height: 24,
+    height: 20,
     backgroundColor: colors.border.subtle,
   },
   docType: {
@@ -418,7 +584,7 @@ const styles = StyleSheet.create({
     color: colors.text.tertiary,
   },
 
-  // Body
+  /* Paper body */
   paperBody: {
     padding: spacing.lg,
     gap: spacing.lg,
@@ -434,16 +600,14 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
   },
 
-  // Clauses
-  clauses: {
-    gap: spacing.md,
-  },
+  /* Clauses */
+  clauses: { gap: spacing.md },
   clause: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: spacing.md,
   },
-  clauseNum: {
+  clauseBullet: {
     width: 24,
     height: 24,
     borderRadius: 12,
@@ -452,10 +616,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 1,
   },
-  clauseNumText: {
+  clauseBulletText: {
     fontFamily: fonts.semibold,
     fontWeight: '600',
-    fontSize: 12,
+    fontSize: 11,
     color: colors.primary.blue700,
   },
   clauseText: {
@@ -470,81 +634,78 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
   },
 
-  // Signature Section
-  sigSection: {
-    gap: spacing.sm,
+  dateRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
   },
-  sigLabel: {
+  dateText: {
     ...typography.caption.caption2,
-    fontFamily: fonts.semibold,
-    fontWeight: '600',
-    letterSpacing: 1.5,
     color: colors.text.tertiary,
+    fontStyle: 'italic',
   },
-  sigPad: {
-    width: PAD_WIDTH,
-    height: PAD_HEIGHT,
-    alignSelf: 'center',
-    backgroundColor: colors.neutral[50],
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.border.subtle,
-    overflow: 'hidden',
-    position: 'relative',
-  },
-  guideLine: {
+
+  /* Wax seal */
+  waxSeal: {
     position: 'absolute',
-    left: 12,
-    right: 12,
-    top: PAD_HEIGHT * 0.33,
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.border.subtle,
-    opacity: 0.5,
+    bottom: 14,
+    right: 14,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: colors.orange[500],
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: colors.orange[700],
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.35,
+    shadowRadius: 6,
+    elevation: 6,
   },
-  inkLayer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-  },
-  sigHint: {
-    ...StyleSheet.absoluteFillObject,
+  waxSealInner: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.5)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  sigHintText: {
-    fontFamily: fonts.semibold,
-    fontWeight: '600',
+  waxSealText: {
     fontSize: 18,
-    color: colors.text.tertiary,
-    opacity: 0.35,
-    fontStyle: 'italic',
-  },
-  sigFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: spacing.xs,
-  },
-  sigDate: {
-    ...typography.caption.caption2,
-    color: colors.text.tertiary,
-  },
-  clearBtn: {
-    ...typography.caption.caption2,
-    fontFamily: fonts.semibold,
-    fontWeight: '600',
-    color: colors.primary.blue600,
+    color: colors.text.inverse,
   },
 
-  // Footer
-  footerWrap: {
-    opacity: 0,
+  /* ── Confirmation Section ── */
+  confirmSection: {
+    gap: spacing.md,
+    marginTop: spacing.sm,
+    alignItems: 'center',
+  },
+  confirmBadge: {
+    backgroundColor: colors.primary.blue100,
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+  },
+  confirmBadgeText: {
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    fontSize: 11,
+    letterSpacing: 1.5,
+    color: colors.primary.blue700,
+  },
+  confirmButtonWrap: {
+    width: '100%',
+  },
+  confirmHint: {
+    ...typography.caption.caption2,
+    color: colors.text.tertiary,
+    textAlign: 'center',
   },
 
   error: {
     ...typography.body.small,
     color: colors.error[700],
     textAlign: 'center',
-    marginTop: spacing.md,
   },
 });

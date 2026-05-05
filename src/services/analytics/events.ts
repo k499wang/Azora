@@ -29,6 +29,14 @@ export const AnalyticsEvent = {
   HeartRateCaptureCompleted: 'heart_rate_capture_completed',
   HeartRateCaptureFailed: 'heart_rate_capture_failed',
   HeartRateResultAction: 'heart_rate_result_action',
+  PaywallViewed: 'paywall_viewed',
+  PaywallPurchaseStarted: 'paywall_purchase_started',
+  PaywallPurchaseCompleted: 'paywall_purchase_completed',
+  PaywallPurchaseCancelled: 'paywall_purchase_cancelled',
+  PaywallRestoreStarted: 'paywall_restore_started',
+  PaywallRestoreCompleted: 'paywall_restore_completed',
+  PaywallDismissed: 'paywall_dismissed',
+  PaywallFailed: 'paywall_failed',
   ProfileAction: 'profile_action',
 } as const;
 
