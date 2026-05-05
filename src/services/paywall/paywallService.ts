@@ -8,6 +8,7 @@ import {
   RevenueCatSignedOutError,
   restoreRevenueCatPurchases,
 } from '../subscriptions/revenueCatClient';
+import { logRevenueCatPaywallOfferingSnapshot } from '../debug/revenueCatDebugSnapshot';
 import type { PaywallPlacementValue } from './paywallPlacements';
 import type {
   PaywallOffering,
@@ -57,6 +58,20 @@ export async function getPaywallOffering(
   const packages = [annual, weekly]
     .filter((pkg): pkg is PurchasesPackage => pkg != null)
     .map(toPaywallPackageOption);
+
+  logRevenueCatPaywallOfferingSnapshot('paywall_offering_loaded', {
+    placement,
+    offeringIdentifier: offering.identifier,
+    packages: [annual, weekly]
+      .filter((pkg): pkg is PurchasesPackage => pkg != null)
+      .map((pkg) => ({
+        id: pkg.packageType === PACKAGE_TYPE.ANNUAL ? 'annual' : 'weekly',
+        productIdentifier: pkg.product.identifier,
+        packageIdentifier: pkg.identifier,
+        hasIntroOffer: pkg.product.introPrice != null,
+        introOfferLabel: formatTrialLabel(pkg.product.introPrice),
+      })),
+  });
 
   return {
     offering: {

@@ -26,6 +26,31 @@ export function getRevenueCatDebugSnapshot() {
   };
 }
 
+export function logRevenueCatPaywallOfferingSnapshot(
+  label: string,
+  payload: {
+    placement: string;
+    offeringIdentifier: string | null;
+    packages: Array<{
+      id: string;
+      productIdentifier: string;
+      packageIdentifier: string;
+      hasIntroOffer: boolean;
+      introOfferLabel: string | null;
+    }>;
+  },
+): void {
+  if (!(typeof __DEV__ !== 'undefined' && __DEV__)) {
+    return;
+  }
+
+  console.log(`[revenuecat-debug] ${label}`, {
+    timestamp: new Date().toISOString(),
+    ...getRevenueCatDebugSnapshot(),
+    ...payload,
+  });
+}
+
 export function logRevenueCatDebugSnapshot(label: string): void {
   if (!(typeof __DEV__ !== 'undefined' && __DEV__)) {
     return;
