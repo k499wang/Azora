@@ -21,6 +21,7 @@ import type { DailyExerciseScreenProps } from '../app/navigation';
 import { startInhaleVibration, stopInhaleVibration } from '../native/inhaleVibration';
 import { isHapticsEnabled } from '../services/preferences/hapticsPreference';
 import { useBreathPhaseAudio } from '../hooks/useBreathPhaseAudio';
+import { useCancellableFlow } from '../hooks/useCancellableFlow';
 import { useAuthStore } from '../stores/authStore';
 import { useCompleteBreathHoldMutation } from '../queries/tracking/useCompleteBreathHoldMutation';
 import { estimateLungAge } from '../lib/lungAge';
@@ -170,23 +171,21 @@ export default function DailyExercisePage({
     }
   };
 
-  useEffect(
-    () => () => {
+  const flow = useCancellableFlow(
+    useCallback(() => {
       clearTimer();
       stopInhaleVibration();
       stopPulse();
-    },
-    [stopPulse],
+    }, [stopPulse]),
   );
 
   const cancelPlacement = useCallback(() => {
-    clearTimer();
-    stopInhaleVibration();
-    stopPulse();
+    flow.cancel();
     navigation.goBack();
-  }, [navigation, stopPulse]);
+  }, [flow, navigation]);
 
   const beginHold = useCallback(() => {
+    if (!flow.isActive()) return;
     clearTimer();
     stopInhaleVibration();
     samplesRef.current = [];
@@ -207,11 +206,12 @@ export default function DailyExercisePage({
         return next;
       });
     }, 1000);
-  }, [beginPulseMeasurementWindow]);
+  }, [beginPulseMeasurementWindow, flow]);
 
   const INHALE_SECONDS = 6;
 
   const startInhale = useCallback(() => {
+    if (!flow.isActive()) return;
     clearTimer();
     samplesRef.current = [];
     savedSessionKeyRef.current = null;
@@ -224,10 +224,11 @@ export default function DailyExercisePage({
     startInhaleVibration(INHALE_SECONDS * 1000);
     posthog.capture(AnalyticsEvent.DailyBreathHoldStarted);
     inhaleTimeoutRef.current = setTimeout(() => {
+      if (!flow.isActive()) return;
       clearTimer();
       beginHold();
     }, INHALE_SECONDS * 1000);
-  }, [beginHold, hrEnabled, posthog, startPulse]);
+  }, [beginHold, flow, hrEnabled, posthog, startPulse]);
 
   const saveCompletedHold = useCallback(async (
     completedHoldSeconds: number,
@@ -331,8 +332,10 @@ export default function DailyExercisePage({
   }, [phase]);
 
   const startPlacement = useCallback(async () => {
+    if (!flow.start()) return;
     try {
       const granted = hasPermission ? true : await requestPermission();
+      if (!flow.isActive()) return;
       if (!granted) {
         setHrEnabled(false);
         startInhale();
@@ -342,6 +345,7 @@ export default function DailyExercisePage({
       setPhase('placement');
       startPulse();
     } catch (error) {
+      if (!flow.isActive()) return;
       captureException(error, {
         flow: 'daily_breath_hold',
         action: 'start_placement',
@@ -349,16 +353,17 @@ export default function DailyExercisePage({
       });
       startInhale();
     }
-  }, [hasPermission, requestPermission, startInhale, startPulse]);
+  }, [flow, hasPermission, requestPermission, startInhale, startPulse]);
 
   useEffect(() => {
     if (phase !== 'placement') return;
     if (pulse.fingerPlacement !== 'good') return;
     const t = setTimeout(() => {
+      if (!flow.isActive()) return;
       startInhale();
     }, PLACEMENT_GOOD_DURATION_MS);
     return () => clearTimeout(t);
-  }, [phase, pulse.fingerPlacement, startInhale]);
+  }, [flow, phase, pulse.fingerPlacement, startInhale]);
 
   useEffect(() => {
     if (autoStartedRef.current) return;
@@ -375,8 +380,7 @@ export default function DailyExercisePage({
 
   const releaseHold = () => {
     const endedAtMs = Date.now();
-    clearTimer();
-    stopInhaleVibration();
+    flow.cancel();
     const samples = samplesRef.current.slice();
     const captureSamples = getMeasurementSamples();
     const ibiSamples = getIbiSamples();
