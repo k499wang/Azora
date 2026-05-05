@@ -23,10 +23,13 @@ import PactScreen from './screens/PactScreen';
 import SleepScreen from './screens/SleepScreen';
 import StressScreen from './screens/StressScreen';
 import RecommendationScreen from './screens/RecommendationScreen';
+import OnboardingPaywallScreen from './screens/OnboardingPaywallScreen';
 import { PERSONALIZED_INTENT_OPTIONS } from './data/intentOptions';
 import { INTENT_TO_TECHNIQUE } from './data/techniqueRecommendations';
 import type { GenderOption } from './data/genderOptions';
 import type { OnboardingStep } from './types';
+import { usePaywall } from '../../hooks/usePaywall';
+import { PaywallPlacement } from '../../services/paywall';
 
 export interface OnboardingFlowResult {
   onboardingGoal: string;
@@ -46,7 +49,7 @@ interface OnboardingFlowProps {
 }
 
 
-const STEP_COUNT = 18;
+const STEP_COUNT = 19;
 const STEP_INDEX: Record<OnboardingStep, number> = {
   intent: 1,
   intentReflection: 2,
@@ -67,6 +70,7 @@ const STEP_INDEX: Record<OnboardingStep, number> = {
   recommendation: 16,
   scienceCredibility: 17,
   pact: 18,
+  paywall: 19,
 };
 
 export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
@@ -96,6 +100,11 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   const [baseline, setBaseline] = useState<BaselineResult | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const paywall = usePaywall({
+    placement: PaywallPlacement.OnboardingComplete,
+    sourceScreen: 'onboarding',
+    enabled: step === 'paywall',
+  });
 
   const selectedOption = useMemo(
     () => PERSONALIZED_INTENT_OPTIONS.find((option) => option.id === selectedIntent) ?? null,
@@ -139,6 +148,31 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
       setErrorMessage(message);
       setIsSubmitting(false);
     }
+  };
+
+  const purchaseSelectedPackage = async () => {
+    if (isSubmitting) return;
+
+    const result = await paywall.purchaseSelectedPackage();
+    if (result.status === 'purchased' && result.isPro) {
+      await finish();
+    }
+  };
+
+  const restorePurchases = async () => {
+    if (isSubmitting) return;
+
+    const result = await paywall.restorePurchases();
+    if (result.status === 'restored' && result.isPro) {
+      await finish();
+    }
+  };
+
+  const continueWithoutPro = () => {
+    if (isSubmitting) return;
+
+    paywall.trackDismissed();
+    void finish();
   };
 
   const stepIndex = STEP_INDEX[step];
@@ -398,8 +432,32 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         stepCount={STEP_COUNT}
         isSubmitting={isSubmitting}
         errorMessage={errorMessage}
-        onConfirm={finish}
+        onConfirm={() => setStep('paywall')}
         onBack={() => setStep('scienceCredibility')}
+      />
+    );
+  }
+
+  if (step === 'paywall') {
+    return (
+      <OnboardingPaywallScreen
+        offering={paywall.offering}
+        selectedPackageId={paywall.selectedPackageId}
+        stepIndex={stepIndex}
+        stepCount={STEP_COUNT}
+        isLoading={paywall.isLoading}
+        isPurchasing={paywall.isPurchasing}
+        isRestoring={paywall.isRestoring}
+        errorMessage={paywall.errorMessage ?? errorMessage}
+        onSelectPackage={paywall.setSelectedPackageId}
+        onPurchase={() => {
+          void purchaseSelectedPackage();
+        }}
+        onRestore={() => {
+          void restorePurchases();
+        }}
+        onContinueWithoutPro={continueWithoutPro}
+        onBack={() => setStep('pact')}
       />
     );
   }

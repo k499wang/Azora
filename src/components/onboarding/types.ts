@@ -19,7 +19,8 @@ export type OnboardingStep =
   | 'scienceResearch'
   | 'recommendation'
   | 'scienceCredibility'
-  | 'pact';
+  | 'pact'
+  | 'paywall';
 
 export interface IntentOption {
   id: string;

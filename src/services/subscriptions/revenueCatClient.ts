@@ -1,4 +1,9 @@
-import Purchases, { LOG_LEVEL } from 'react-native-purchases';
+import Purchases, {
+  LOG_LEVEL,
+  type CustomerInfo,
+  type PurchasesOffering,
+  type PurchasesPackage,
+} from 'react-native-purchases';
 import { getRevenueCatApiKey, isRevenueCatSupportedPlatform } from './revenueCatConfig';
 import { logIdentitySyncDebug } from '../debug/identitySyncLogger.js';
 import {
@@ -14,13 +19,21 @@ const revenueCatClient = createRevenueCatClient({
   isDev: __DEV__,
   isSupportedPlatform: isRevenueCatSupportedPlatform,
   sdk: {
-    configure: Purchases.configure,
-    getCustomerInfo: Purchases.getCustomerInfo,
-    isConfigured: Purchases.isConfigured,
+    configure: (options) => {
+      Purchases.configure(options);
+    },
+    getCustomerInfo: () => Purchases.getCustomerInfo(),
+    getCurrentOfferingForPlacement: (placement) =>
+      Purchases.getCurrentOfferingForPlacement(placement),
+    getOfferings: () => Purchases.getOfferings(),
+    isConfigured: () => Purchases.isConfigured(),
     logIn: async (appUserId) => {
       await Purchases.logIn(appUserId);
     },
-    setEmail: Purchases.setEmail,
+    purchasePackage: async (revenueCatPackage) =>
+      Purchases.purchasePackage(revenueCatPackage as PurchasesPackage),
+    restorePurchases: () => Purchases.restorePurchases(),
+    setEmail: (email) => Purchases.setEmail(email),
     setLogLevel: async (level) => {
       await Purchases.setLogLevel(level as LOG_LEVEL);
     },
@@ -31,6 +44,10 @@ export { RevenueCatSignedOutError, type RevenueCatIdentityUser };
 
 export function getCurrentRevenueCatAppUserId(): string | null {
   return revenueCatClient.getCurrentAppUserId();
+}
+
+export function hasCurrentRevenueCatIdentity(): boolean {
+  return revenueCatClient.getCurrentAppUserId() != null;
 }
 
 export function isRevenueCatReady(): boolean {
@@ -59,4 +76,24 @@ export function clearRevenueCatIdentity(): Promise<void> {
     revenuecat_ready: revenueCatClient.isReady(),
   });
   return revenueCatClient.clearIdentity();
+}
+
+export function getRevenueCatCustomerInfo(): Promise<CustomerInfo> {
+  return revenueCatClient.getCustomerInfo() as Promise<CustomerInfo>;
+}
+
+export function getRevenueCatOfferingForPlacement(
+  placement: string,
+): Promise<PurchasesOffering | null> {
+  return revenueCatClient.getOfferingForPlacement(placement) as Promise<PurchasesOffering | null>;
+}
+
+export function purchaseRevenueCatPackage(
+  revenueCatPackage: PurchasesPackage,
+): Promise<CustomerInfo> {
+  return revenueCatClient.purchasePackage(revenueCatPackage) as Promise<CustomerInfo>;
+}
+
+export function restoreRevenueCatPurchases(): Promise<CustomerInfo> {
+  return revenueCatClient.restorePurchases() as Promise<CustomerInfo>;
 }

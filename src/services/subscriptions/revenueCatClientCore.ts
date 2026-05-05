@@ -6,8 +6,12 @@ export interface RevenueCatIdentityUser {
 export interface RevenueCatSdk {
   configure: (options: { apiKey: string; appUserID: string }) => void;
   getCustomerInfo: () => Promise<unknown>;
+  getCurrentOfferingForPlacement?: (placement: string) => Promise<unknown>;
+  getOfferings?: () => Promise<{ current: unknown | null }>;
   isConfigured: () => Promise<boolean>;
   logIn: (appUserId: string) => Promise<unknown>;
+  purchasePackage?: (revenueCatPackage: unknown) => Promise<{ customerInfo: unknown }>;
+  restorePurchases?: () => Promise<unknown>;
   setEmail: (email: string | null) => Promise<void>;
   setLogLevel: (level: unknown) => Promise<void> | void;
 }
@@ -119,6 +123,44 @@ export function createRevenueCatClient(
     },
     isReady,
     requireCurrentAppUserId,
+    async getCustomerInfo(): Promise<unknown> {
+      requireCurrentAppUserId();
+      if (!isReady()) {
+        throw new Error('RevenueCat is not configured for this platform.');
+      }
+
+      return dependencies.sdk.getCustomerInfo();
+    },
+    async getOfferingForPlacement(placement: string): Promise<unknown | null> {
+      requireCurrentAppUserId();
+      if (!isReady()) {
+        return null;
+      }
+
+      if (dependencies.sdk.getCurrentOfferingForPlacement != null) {
+        return dependencies.sdk.getCurrentOfferingForPlacement(placement);
+      }
+
+      const offerings = await dependencies.sdk.getOfferings?.();
+      return offerings?.current ?? null;
+    },
+    async purchasePackage(revenueCatPackage: unknown): Promise<unknown> {
+      requireCurrentAppUserId();
+      if (!isReady() || dependencies.sdk.purchasePackage == null) {
+        throw new Error('RevenueCat purchases are not available.');
+      }
+
+      const result = await dependencies.sdk.purchasePackage(revenueCatPackage);
+      return result.customerInfo;
+    },
+    async restorePurchases(): Promise<unknown> {
+      requireCurrentAppUserId();
+      if (!isReady() || dependencies.sdk.restorePurchases == null) {
+        throw new Error('RevenueCat restore is not available.');
+      }
+
+      return dependencies.sdk.restorePurchases();
+    },
     syncIdentity(user: RevenueCatIdentityUser): Promise<void> {
       return runSerial(async () => {
         logRevenueCat('revenuecat.sync_identity_started', {

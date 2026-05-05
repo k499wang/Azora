@@ -16,9 +16,32 @@ export interface UserEntitlement {
 
 export async function getUserEntitlement(): Promise<UserEntitlement | null> {
   const supabase = requireSupabaseClient();
-  void supabase;
+  const { data, error } = await supabase
+    .from('user_entitlement_v')
+    .select(
+      'entitlement,status,product_id,store,current_period_ends_at,trial_ends_at,will_renew,is_pro,initial_offering_id,experiment_id,experiment_variant',
+    )
+    .maybeSingle();
 
-  throw new Error(
-    'getUserEntitlement is scaffolded but not wired yet. Read from `user_entitlement_v`.',
-  );
+  if (error != null) {
+    throw error;
+  }
+
+  if (data == null || data.entitlement == null || data.status == null) {
+    return null;
+  }
+
+  return {
+    entitlement: data.entitlement,
+    status: data.status,
+    productId: data.product_id,
+    store: data.store,
+    currentPeriodEndsAt: data.current_period_ends_at,
+    trialEndsAt: data.trial_ends_at,
+    willRenew: data.will_renew,
+    isPro: data.is_pro === true,
+    initialOfferingId: data.initial_offering_id,
+    experimentId: data.experiment_id,
+    experimentVariant: data.experiment_variant,
+  };
 }
