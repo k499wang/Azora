@@ -16,12 +16,12 @@ const BASELINE_ALPHA = 0.02;
 const AMPLITUDE_ALPHA = 0.05;
 const PEAK_THRESHOLD_FACTOR = 0.4;
 const MIN_AMPLITUDE = 0.001;
-const MIN_IBI_MS = 300;
+const MIN_IBI_MS = 320;
 const MAX_IBI_MS = 1500;
 const ADAPTIVE_REFRACTORY_FRACTION = 0.5;
-const TROUGH_REARM_FACTOR = 0.1;
-const FORCE_REARM_AFTER_MS = 900;
-const SHORT_IBI_CONFIRMATION_MS = 430;
+const TROUGH_REARM_FACTOR = 0.05;
+const FORCE_REARM_AFTER_MS = 600;
+const SHORT_IBI_CONFIRMATION_MS = 360;
 const SHORT_IBI_CONFIRMATION_TOLERANCE = 0.25;
 const WARMUP_FRAMES = 60;
 const REINIT_GAP_MS = 1000;
@@ -415,7 +415,7 @@ export class HeartRateManager {
           this.lastPeakTs === 0 || peakTs - this.lastPeakTs >= adaptiveMinIbi;
         if (refractoryOk) {
           let advanceAnchor = true;
-          let acceptedPeak = this.lastPeakTs === 0;
+          let emitTick = this.lastPeakTs === 0;
           if (this.lastPeakTs !== 0) {
             const ibi = peakTs - this.lastPeakTs;
             let handledInterval = false;
@@ -430,7 +430,7 @@ export class HeartRateManager {
                 Math.abs(confirmedIbi - pendingIbi) / Math.max(pendingIbi, 1) <=
                   SHORT_IBI_CONFIRMATION_TOLERANCE;
               if (confirmsFastRhythm) {
-                acceptedPeak = true;
+                emitTick = true;
                 handledInterval = true;
                 this.pendingShortPeakTs = null;
                 this.pushAcceptedIbi(pendingTs, pendingIbi);
@@ -443,17 +443,19 @@ export class HeartRateManager {
             if (!handledInterval) {
               if (ibi > MAX_IBI_MS) {
                 this.ibiHistory.length = 0;
-                acceptedPeak = true;
+                emitTick = true;
               } else if (
                 this.ibiHistory.length < MALIK_MIN_HISTORY &&
                 ibi < SHORT_IBI_CONFIRMATION_MS
               ) {
                 // Cold start: defer short IBIs until a similar next IBI
                 // confirms a real fast rhythm; otherwise drop as a likely
-                // dicrotic doublet.
+                // dicrotic doublet. No tick yet — we don't know if this
+                // peak is real or a dicrotic notch.
                 this.pendingShortPeakTs = peakTs;
                 advanceAnchor = false;
               } else {
+                emitTick = true;
                 const ectopic =
                   this.ibiHistory.length >= MALIK_MIN_HISTORY &&
                   (() => {
@@ -462,10 +464,7 @@ export class HeartRateManager {
                       med > 0 && Math.abs(ibi - med) / med > MALIK_THRESHOLD
                     );
                   })();
-                if (ectopic) {
-                  advanceAnchor = false;
-                } else {
-                  acceptedPeak = true;
+                if (!ectopic) {
                   this.pushAcceptedIbi(peakTs, ibi);
                 }
               }
@@ -473,11 +472,11 @@ export class HeartRateManager {
           }
           if (advanceAnchor) {
             this.lastPeakTs = peakTs;
-            if (acceptedPeak) {
+            if (emitTick) {
               this.armedForPeak = false;
             }
           }
-          beatDetected = acceptedPeak;
+          beatDetected = emitTick;
         }
       }
     }
