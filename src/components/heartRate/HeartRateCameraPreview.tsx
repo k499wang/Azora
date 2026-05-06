@@ -16,7 +16,13 @@ export interface HeartRateCameraPreviewProps {
   torchMode?: 'on' | 'off';
   fingerPlacement?: FingerPlacementState;
   isActive?: boolean;
+  exposure?: number;
 }
+
+const resolveExposure = (device: CameraDevice, exposure?: number): number => {
+  const target = exposure ?? 2.0;
+  return Math.min(device.maxExposure, Math.max(device.minExposure, target));
+};
 
 export const HeartRateCameraPreview = memo(function HeartRateCameraPreview({
   device,
@@ -25,6 +31,7 @@ export const HeartRateCameraPreview = memo(function HeartRateCameraPreview({
   torchMode = 'off',
   fingerPlacement,
   isActive = true,
+  exposure,
 }: HeartRateCameraPreviewProps) {
   useHeartRateCameraControls({
     device,
@@ -40,6 +47,7 @@ export const HeartRateCameraPreview = memo(function HeartRateCameraPreview({
       format={format}
       isActive={isActive}
       torch={device.hasTorch ? torchMode : 'off'}
+      exposure={resolveExposure(device, exposure)}
       pixelFormat="rgb"
       fps={30}
       videoStabilizationMode="off"

@@ -3,7 +3,7 @@ import type { CameraDevice } from 'react-native-vision-camera';
 import type { FingerPlacementState } from '../lib/heartRate/types';
 import { HeartRateCameraControls } from '../native/heartRateCameraControls';
 
-const STABLE_GOOD_DURATION_MS = 500;
+const STABLE_GOOD_DURATION_MS = 750;
 
 interface UseHeartRateCameraControlsOptions {
   device?: CameraDevice;
