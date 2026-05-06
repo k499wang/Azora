@@ -191,7 +191,7 @@ test('HeartRateManager: fast legitimate rhythm is captured after cold start', ()
   assert.equal(manager.getCurrentBpm(), 165);
 });
 
-test('HeartRateManager: rejected split beats do not emit live beat ticks', () => {
+test('HeartRateManager: ectopic beats emit live ticks but stay out of IBI history', () => {
   const manager = new HeartRateManager();
   const beatFrames = [24, 48, 72, 96, 108, 120, 144, 168];
   const beatSet = new Set(beatFrames);
@@ -212,10 +212,23 @@ test('HeartRateManager: rejected split beats do not emit live beat ticks', () =>
     t += FRAME_SPACING_MS;
   }
 
+  // Every refractory-passed peak should emit a visual tick — the live tick
+  // path must reflect what the heart actually did, not the HRV-stats gate.
   assert.equal(
     beatTicks,
-    7,
-    'the split beat should be rejected for both BPM history and live beat animation',
+    beatFrames.length,
+    'every distinct refractory-passed peak should emit a live tick',
+  );
+
+  // Doublet defenses (amplitude + refractory + arm-disarm) gate the tick;
+  // Malik gates only the stored IBI history. The short-IBI ectopic between
+  // frames 96 and 108 must not appear in the stored samples.
+  const samples = manager.getIbiSamples();
+  const shortEctopic = samples.find((s) => Math.abs(s.ibiMs - 12 * FRAME_SPACING_MS) < 50);
+  assert.equal(
+    shortEctopic,
+    undefined,
+    `Malik-rejected short IBI must not enter ibiSamples, got ${JSON.stringify(samples)}`,
   );
 });
 
