@@ -44,7 +44,7 @@ type Phase = 'intro' | 'placement' | 'running' | 'done';
 
 const SESSION_MS = 60_000;
 const HALF_BREATH_SEC = 5.5;
-const PLACEMENT_GOOD_DURATION_MS = 1500;
+const PLACEMENT_GOOD_DURATION_MS = 2500;
 const PLACEMENT_RING_SIZE = 240;
 
 interface PreviewFrame {
@@ -110,6 +110,13 @@ export default function BaselineScreen({
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const placementCfg = placementConfig(stream.fingerPlacement);
+  const hasConfirmedSignal =
+    stream.streamState === 'streaming' &&
+    (stream.fingerPlacement === 'good' || stream.fingerPlacement === 'partial');
+  const hasUsableFingerSignal =
+    stream.fingerPlacement === 'good' || stream.fingerPlacement === 'partial';
+  const visibleBpm = hasConfirmedSignal ? stream.currentBpm : null;
+  const visibleBeatTick = hasUsableFingerSignal ? stream.beatTick : 0;
 
   const showHud = useCallback(() => {
     if (hideTimerRef.current) {
@@ -210,7 +217,7 @@ export default function BaselineScreen({
   }, []);
 
   useEffect(() => {
-    if (phase !== 'running' || stream.currentBpm == null) return;
+    if (phase !== 'running' || !hasConfirmedSignal || stream.currentBpm == null) return;
     const elapsed = startedAtRef.current
       ? Date.now() - startedAtRef.current
       : 0;
@@ -220,7 +227,7 @@ export default function BaselineScreen({
     } else {
       lateBpmsRef.current.push(stream.currentBpm);
     }
-  }, [stream.currentBpm, phase]);
+  }, [stream.currentBpm, phase, hasConfirmedSignal]);
 
   useEffect(() => {
     if (phase !== 'placement' || stream.fingerPlacement !== 'good') {
@@ -248,6 +255,7 @@ export default function BaselineScreen({
       lateBpmsRef.current = [];
       allBpmsRef.current = [];
       setProgress(0);
+      setPlacementHoldProgress(1);
       setBreathLabel('Inhale');
       setPhase('running');
     }, PLACEMENT_GOOD_DURATION_MS);
@@ -318,7 +326,6 @@ export default function BaselineScreen({
     }
     setPhase('placement');
     stream.startStream();
-    setTimeout(() => stream.startStreaming(), 200);
   };
 
   const remainingSec = Math.max(0, Math.ceil((1 - progress) * 60));
@@ -371,8 +378,8 @@ export default function BaselineScreen({
                 <LiveHeartRateMonitor
                   active
                   fingerPlacement={stream.fingerPlacement}
-                  currentBpm={stream.currentBpm}
-                  beatTick={stream.beatTick}
+                  currentBpm={visibleBpm}
+                  beatTick={visibleBeatTick}
                   device={stream.device}
                   format={stream.format}
                   frameProcessor={stream.frameProcessor}
@@ -438,9 +445,8 @@ export default function BaselineScreen({
                 ? placementCfg.ringColor + '33'
                 : colors.border.subtle
             }
-            progress={phase === 'placement' ? placementHoldProgress : 0}
+            progress={phase === 'placement' ? placementHoldProgress : 1}
             cameraProps={cameraProps}
-            smoothProgress={phase === 'placement'}
           />
         </View>
       </View>
