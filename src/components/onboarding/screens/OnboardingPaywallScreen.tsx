@@ -38,6 +38,9 @@ interface OnboardingPaywallScreenProps {
   isPurchasing: boolean;
   isRestoring: boolean;
   errorMessage: string | null;
+  title?: string;
+  subtitle?: string;
+  continueWithoutProLabel?: string;
   onSelectPackage: (packageId: PaywallPackageId) => void;
   onPurchase: () => void;
   onRestore: () => void;
@@ -52,6 +55,9 @@ export default function OnboardingPaywallScreen({
   isPurchasing,
   isRestoring,
   errorMessage,
+  title = 'Azora Pro',
+  subtitle = 'Heart data, unlimited sessions, personalized plans, and progress insights.',
+  continueWithoutProLabel = 'Continue free',
   onSelectPackage,
   onPurchase,
   onRestore,
@@ -185,10 +191,8 @@ export default function OnboardingPaywallScreen({
                 />
                 <Text style={styles.proPillText}>PRO</Text>
               </View>
-              <Text style={styles.title}>Azora Pro</Text>
-              <Text style={styles.subtitle}>
-                Heart data, unlimited sessions, personalized plans, and progress insights.
-              </Text>
+              <Text style={styles.title}>{title}</Text>
+              <Text style={styles.subtitle}>{subtitle}</Text>
             </LinearGradient>
 
             <View style={styles.planSection}>
@@ -287,7 +291,7 @@ export default function OnboardingPaywallScreen({
               (isBusy || isExiting) && styles.disabled,
             ]}
           >
-            <Text style={styles.freeButtonText}>Continue free</Text>
+            <Text style={styles.freeButtonText}>{continueWithoutProLabel}</Text>
           </Pressable>
           <Text style={styles.legal}>
             Auto-renews unless cancelled. Manage or cancel in App Store settings.

@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -8,6 +9,9 @@ import { HeartRateResultContent } from '../components/heartRate/HeartRateResultC
 import type { HeartRateResultStat } from '../components/heartRate/HeartRateResultContent';
 import type { DailyResultScreenProps } from '../app/navigation';
 import { estimateLungAge, type LungHealthKey } from '../lib/lungAge';
+import { useFeatureAccess } from '../hooks/useFeatureAccess';
+import { PaywallPlacement } from '../services/paywall';
+import { FeatureKey } from '../services/subscriptions/featureAccess';
 
 // ───────────��──────────────────────────────────────��─────────────────────────────
 
@@ -35,6 +39,7 @@ export default function ShareableResultScreen({
   route,
 }: DailyResultScreenProps) {
   const insets = useSafeAreaInsets();
+  const advancedStatsAccess = useFeatureAccess(FeatureKey.AdvancedStats);
   const {
     holdSeconds,
     avgBpm,
@@ -51,6 +56,15 @@ export default function ShareableResultScreen({
   const lungEstimate = estimateLungAge({ holdSeconds, avgBpm, minBpm });
   const health = LUNG_HEALTH_MAP[lungEstimate.key];
   const holdTime = formatTime(holdSeconds);
+  const advancedStatsLocked =
+    !advancedStatsAccess.allowed && !advancedStatsAccess.isLoading;
+  const showAdvancedStatsPaywall = useCallback(() => {
+    navigation.navigate('ProPaywall', {
+      placement: PaywallPlacement.DailyResultProGate,
+      sourceScreen: 'DailyResult',
+      feature: FeatureKey.AdvancedStats,
+    });
+  }, [navigation]);
 
   const extraStats: HeartRateResultStat[] = [
     { icon: 'timer-outline', label: 'Hold Time', value: holdTime, unit: 'min' },
@@ -155,6 +169,8 @@ export default function ShareableResultScreen({
             ibiSamples={ibiSamples}
             extraStats={extraStats}
             showHero={false}
+            advancedStatsLocked={advancedStatsLocked}
+            onPressUpgrade={showAdvancedStatsPaywall}
           />
         </View>
 

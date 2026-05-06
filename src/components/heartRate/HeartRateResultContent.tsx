@@ -1,4 +1,4 @@
-import { Animated, StyleSheet, Text, View } from 'react-native';
+import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
 import { typography, fonts } from '../../theme/typography';
@@ -42,6 +42,8 @@ interface HeartRateResultContentProps {
   heartScale?: Animated.Value;
   showConfidence?: boolean;
   showHero?: boolean;
+  advancedStatsLocked?: boolean;
+  onPressUpgrade?: () => void;
 }
 
 function getConfidenceLabel(confidence: number): { label: string; color: string } {
@@ -131,6 +133,8 @@ export function HeartRateResultContent({
   heartScale,
   showConfidence = true,
   showHero = true,
+  advancedStatsLocked = false,
+  onPressUpgrade,
 }: HeartRateResultContentProps) {
   const rmssdValue =
     rmssd != null && Number.isFinite(rmssd)
@@ -143,7 +147,7 @@ export function HeartRateResultContent({
   const stressZone = stress != null ? getStressZone(stress) : null;
 
   const stats: HeartRateResultStat[] = [];
-  if (rmssdValue != null) {
+  if (!advancedStatsLocked && rmssdValue != null) {
     stats.push({
       icon: 'heart-pulse',
       label: 'RMSSD',
@@ -152,7 +156,7 @@ export function HeartRateResultContent({
       iconColor: colors.error[500],
     });
   }
-  if (hrDrop != null) {
+  if (!advancedStatsLocked && hrDrop != null) {
     stats.push({
       icon: 'swap-vertical',
       label: 'HR Change',
@@ -174,7 +178,10 @@ export function HeartRateResultContent({
         (sample) => `${Math.round(sample.offsetMs / 1000)}s`,
       );
   const resolvedRrSeries = rrSeries ?? downsampleIbi(ibiSamples, (s) => Math.round(s.ibiMs));
-  const hasGraphs = resolvedBpmSeries.length >= 2 || resolvedRrSeries.length >= 2;
+  const hasGraphs = !advancedStatsLocked && (
+    resolvedBpmSeries.length >= 2 ||
+    resolvedRrSeries.length >= 2
+  );
 
   const heart = (
     <View style={styles.heartIconContainer}>
@@ -230,13 +237,38 @@ export function HeartRateResultContent({
         ))}
       </View>
 
-      {stressZone != null && stress != null ? (
+      {advancedStatsLocked ? (
+        <Pressable
+          disabled={onPressUpgrade == null}
+          onPress={onPressUpgrade}
+          style={({ pressed }) => [
+            styles.proStatsCard,
+            pressed && styles.proStatsCardPressed,
+          ]}
+        >
+          <View style={styles.proStatsTopRow}>
+            <MaterialCommunityIcons
+              name="star-four-points"
+              size={18}
+              color={colors.warning[500]}
+            />
+            <Text style={styles.proStatsLabel}>Advanced stats</Text>
+            <View style={styles.proBadge}>
+              <Text style={styles.proBadgeText}>PRO</Text>
+            </View>
+          </View>
+          <Text style={styles.proStatsTitle}>Unlock HRV, stress, and recovery graphs</Text>
+          <Text style={styles.proStatsText}>
+            Azora Pro shows RMSSD, heart-rate recovery, stress, and variability trends after each session.
+          </Text>
+        </Pressable>
+      ) : stressZone != null && stress != null ? (
         <View style={styles.gaugeWrap}>
           <StressGauge value={stress} zone={stressZone} />
         </View>
       ) : null}
 
-      {rmssdValue == null && stressValue == null && hrvUnavailableMessage != null ? (
+      {!advancedStatsLocked && rmssdValue == null && stressValue == null && hrvUnavailableMessage != null ? (
         <View style={styles.hrvUnavailableCard}>
           <MaterialCommunityIcons
             name="information-outline"
@@ -381,6 +413,50 @@ const styles = StyleSheet.create({
   },
   statCardSpacer: {
     flex: 1,
+  },
+  proStatsCard: {
+    ...card.base,
+    ...card.shadow,
+    width: '100%',
+    gap: spacing.xs,
+    padding: spacing.md,
+    marginTop: spacing.sm,
+  },
+  proStatsCardPressed: {
+    opacity: 0.85,
+  },
+  proStatsTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  proStatsLabel: {
+    ...typography.label.medium,
+    flex: 1,
+    color: colors.text.secondary,
+    fontFamily: fonts.medium,
+  },
+  proBadge: {
+    borderRadius: 999,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    backgroundColor: colors.neutral[900],
+  },
+  proBadgeText: {
+    ...typography.caption.caption2,
+    color: colors.text.inverse,
+    fontFamily: fonts.semibold,
+    fontWeight: '700',
+  },
+  proStatsTitle: {
+    ...typography.heading.heading2,
+    color: colors.text.primary,
+    fontFamily: fonts.semibold,
+  },
+  proStatsText: {
+    ...typography.body.small,
+    color: colors.text.secondary,
+    lineHeight: 20,
   },
   statCardTop: {
     flexDirection: 'row',

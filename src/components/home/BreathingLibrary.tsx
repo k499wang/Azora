@@ -12,6 +12,10 @@ import SectionHeader from '../common/SectionHeader';
 import { AnalyticsEvent } from '../../services/analytics/events';
 import { useAuthStore } from '../../stores/authStore';
 import { useUserDefaultTechniqueQuery } from '../../queries/profile/useUserDefaultTechniqueQuery';
+import { useFeatureAccess } from '../../hooks/useFeatureAccess';
+import { PaywallPlacement } from '../../services/paywall';
+import { FeatureKey } from '../../services/subscriptions/featureAccess';
+import type { FeatureAccessResult } from '../../services/subscriptions/featureAccess';
 import type { MainTabNavigationProp } from '../../app/navigation';
 
 const CATEGORY_CONFIG = {
@@ -28,9 +32,11 @@ function formatPattern(p: BreathingTechnique['pattern']) {
 function TechniqueCard({
   technique,
   recommended = false,
+  exerciseAccess,
 }: {
   technique: BreathingTechnique;
   recommended?: boolean;
+  exerciseAccess: FeatureAccessResult & { isLoading: boolean };
 }) {
   const navigation = useNavigation<MainTabNavigationProp<'Home'>>();
   const posthog = usePostHog();
@@ -44,6 +50,16 @@ function TechniqueCard({
       pattern: formatPattern(technique.pattern),
       recommended,
     });
+
+    if (!exerciseAccess.allowed && !exerciseAccess.isLoading) {
+      navigation.navigate('ProPaywall', {
+        placement: PaywallPlacement.ExercisePremiumGate,
+        sourceScreen: 'Home',
+        feature: FeatureKey.DailyExercise,
+      });
+      return;
+    }
+
     navigation.navigate('ExerciseSession', { techniqueId: technique.id });
   };
 
@@ -78,6 +94,7 @@ function TechniqueCard({
 
 export default function BreathingLibrary() {
   const userId = useAuthStore((s) => s.user?.id ?? null);
+  const exerciseAccess = useFeatureAccess(FeatureKey.DailyExercise);
   const { data: defaultTechniqueId } = useUserDefaultTechniqueQuery(userId);
 
   const orderedTechniques = useMemo(() => {
@@ -104,6 +121,7 @@ export default function BreathingLibrary() {
             key={t.id}
             technique={t}
             recommended={t.id === defaultTechniqueId}
+            exerciseAccess={exerciseAccess}
           />
         ))}
       </ScrollView>

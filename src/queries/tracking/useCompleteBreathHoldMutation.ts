@@ -3,6 +3,7 @@ import {
   completeBreathHold,
   type CompleteBreathHoldInput,
 } from '../../services/tracking/breathHoldService';
+import { getDailyFeatureUsageQueryKey } from '../subscriptions/useDailyFeatureUsageQuery';
 import { getHomeStatsQueryKey } from './useHomeStatsQuery';
 
 type CompleteBreathHoldMutationInput = Omit<CompleteBreathHoldInput, 'timezone' | 'localDate'>;
@@ -47,10 +48,18 @@ export function useCompleteBreathHoldMutation(userId: string | null) {
         localDate: formatLocalDate(input.endedAt, timezone),
       });
     },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: getHomeStatsQueryKey(userId),
-      });
+    onSuccess: async (_sessionId, input) => {
+      const timezone = getDeviceTimezone();
+      const localDate = formatLocalDate(input.endedAt, timezone);
+
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: getHomeStatsQueryKey(userId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: getDailyFeatureUsageQueryKey(userId, localDate),
+        }),
+      ]);
     },
   });
 }

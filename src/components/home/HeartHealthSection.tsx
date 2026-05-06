@@ -1,4 +1,4 @@
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { Text } from 'react-native';
 import { colors } from '../../theme/colors';
 import { spacing, padding } from '../../theme/spacing';
@@ -14,6 +14,8 @@ interface HeartHealthSectionProps {
   sdnn?: number | null;
   stress?: number | null;
   hrDrop?: number | null;
+  locked?: boolean;
+  onPressUpgrade?: () => void;
 }
 
 function buildInsight(rmssd: number | null, sdnn: number | null, hrDrop: number | null): {
@@ -61,6 +63,8 @@ export default function HeartHealthSection({
   sdnn,
   stress,
   hrDrop,
+  locked = false,
+  onPressUpgrade,
 }: HeartHealthSectionProps) {
   const rmssdValue = rmssd ?? null;
   const sdnnValue = sdnn ?? null;
@@ -74,45 +78,73 @@ export default function HeartHealthSection({
         <SectionHeader title="Heart health" />
       </View>
 
-      <View style={styles.metricRow}>
-        <BigRingStatCard
-          label="RMSSD"
-          value={rmssdValue == null ? '--' : `${rmssdValue}`}
-          target="60"
-          progress={rmssdValue == null ? 0 : rmssdValue / 60}
-          color={colors.primary.blue500}
-          trackColor={colors.neutral[200]}
-          icon="heart-rmssd"
-        />
-        <BigRingStatCard
-          label="Avg HRV"
-          value={sdnnValue == null ? '--' : `${sdnnValue}`}
-          target="50"
-          progress={sdnnValue == null ? 0 : sdnnValue / 50}
-          color={colors.success[500]}
-          trackColor={colors.neutral[200]}
-          icon="heart-sdnn"
-        />
-      </View>
-
-      <View style={styles.gaugeWrap}>
-        {stressValue == null ? (
-          <View style={styles.stressPlaceholder}>
-            <Text style={styles.stressPlaceholderTitle}>No stress score yet</Text>
-            <Text style={styles.stressPlaceholderText}>
-              Complete a tracked session with valid HRV to see this day&apos;s stress gauge.
-            </Text>
+      <Pressable
+        disabled={!locked || onPressUpgrade == null}
+        onPress={onPressUpgrade}
+        style={({ pressed }) => [
+          locked && styles.lockedWrap,
+          pressed && styles.lockedPressed,
+        ]}
+      >
+        {locked ? (
+          <View style={styles.lockedBadge}>
+            <Text style={styles.lockedBadgeText}>PRO</Text>
           </View>
-        ) : (
-          <StressGauge value={stressValue} zone={getStressZone(stressValue)} />
-        )}
-      </View>
+        ) : null}
 
-      <View style={styles.insightCard}>
-        <Text style={styles.insightEyebrow}>Insight</Text>
-        <Text style={styles.insightTone}>{insight.tone}</Text>
-        <Text style={styles.insightDetail}>{insight.detail}</Text>
-      </View>
+        <View style={[styles.metricRow, locked && styles.lockedContent]}>
+          <BigRingStatCard
+            label="RMSSD"
+            value={locked ? 'Pro' : rmssdValue == null ? '--' : `${rmssdValue}`}
+            target="60"
+            progress={locked || rmssdValue == null ? 0.72 : rmssdValue / 60}
+            color={colors.primary.blue500}
+            trackColor={colors.neutral[200]}
+            icon="heart-rmssd"
+          />
+          <BigRingStatCard
+            label="Avg HRV"
+            value={locked ? 'Pro' : sdnnValue == null ? '--' : `${sdnnValue}`}
+            target="50"
+            progress={locked || sdnnValue == null ? 0.62 : sdnnValue / 50}
+            color={colors.success[500]}
+            trackColor={colors.neutral[200]}
+            icon="heart-sdnn"
+          />
+        </View>
+
+        <View style={[styles.gaugeWrap, locked && styles.lockedContent]}>
+          {locked ? (
+            <View style={styles.stressPlaceholder}>
+              <Text style={styles.stressPlaceholderTitle}>Stress score is Pro</Text>
+              <Text style={styles.stressPlaceholderText}>
+                Unlock Azora Pro to see stress, HRV, and recovery patterns after each session.
+              </Text>
+            </View>
+          ) : stressValue == null ? (
+            <View style={styles.stressPlaceholder}>
+              <Text style={styles.stressPlaceholderTitle}>No stress score yet</Text>
+              <Text style={styles.stressPlaceholderText}>
+                Complete a tracked session with valid HRV to see this day&apos;s stress gauge.
+              </Text>
+            </View>
+          ) : (
+            <StressGauge value={stressValue} zone={getStressZone(stressValue)} />
+          )}
+        </View>
+
+        <View style={[styles.insightCard, locked && styles.lockedContent]}>
+          <Text style={styles.insightEyebrow}>Insight</Text>
+          <Text style={styles.insightTone}>
+            {locked ? 'Unlock recovery insight' : insight.tone}
+          </Text>
+          <Text style={styles.insightDetail}>
+            {locked
+              ? 'Pro reveals what your HRV and stress data mean after each session.'
+              : insight.detail}
+          </Text>
+        </View>
+      </Pressable>
     </View>
   );
 }
@@ -129,6 +161,31 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.sm,
     paddingHorizontal: padding.screen.horizontal,
+  },
+  lockedWrap: {
+    position: 'relative',
+  },
+  lockedPressed: {
+    opacity: 0.85,
+  },
+  lockedContent: {
+    opacity: 0.78,
+  },
+  lockedBadge: {
+    position: 'absolute',
+    top: -6,
+    right: padding.screen.horizontal,
+    zIndex: 5,
+    borderRadius: 999,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 5,
+    backgroundColor: colors.neutral[900],
+  },
+  lockedBadgeText: {
+    ...typography.caption.caption1,
+    color: colors.text.inverse,
+    fontWeight: '700',
+    letterSpacing: 0.8,
   },
   gaugeWrap: {
     paddingHorizontal: padding.screen.horizontal,

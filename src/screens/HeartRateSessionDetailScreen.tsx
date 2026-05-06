@@ -6,7 +6,10 @@ import { typography, fonts } from '../theme/typography';
 import type { DataPoint } from '../components/analytics/LineGraph';
 import { HeartRateResultContent } from '../components/heartRate/HeartRateResultContent';
 import { useAuthStore } from '../stores/authStore';
+import { useFeatureAccess } from '../hooks/useFeatureAccess';
 import { useHeartRateSessionDetailQuery } from '../queries/tracking/useHeartRateSessionDetailQuery';
+import { PaywallPlacement } from '../services/paywall';
+import { FeatureKey } from '../services/subscriptions/featureAccess';
 import type { HeartRateSessionDetailScreenProps } from '../app/navigation';
 
 function formatLoggedAt(value: string): string {
@@ -45,7 +48,10 @@ export function HeartRateSessionDetailScreen({
   const user = useAuthStore((state) => state.user);
   const sessionId = route.params.sessionId;
   const detailQuery = useHeartRateSessionDetailQuery(user?.id ?? null, sessionId);
+  const advancedStatsAccess = useFeatureAccess(FeatureKey.AdvancedStats);
   const detail = detailQuery.data ?? null;
+  const advancedStatsLocked =
+    !advancedStatsAccess.allowed && !advancedStatsAccess.isLoading;
 
   const bpmSeries = detail == null
     ? []
@@ -106,6 +112,14 @@ export function HeartRateSessionDetailScreen({
               rrSeries={rrSeries}
               metaText={formatLoggedAt(detail.startedAt)}
               showConfidence={false}
+              advancedStatsLocked={advancedStatsLocked}
+              onPressUpgrade={() => {
+                navigation.navigate('ProPaywall', {
+                  placement: PaywallPlacement.DailyResultProGate,
+                  sourceScreen: 'HeartRateSessionDetail',
+                  feature: FeatureKey.AdvancedStats,
+                });
+              }}
             />
           </ScrollView>
         )}
