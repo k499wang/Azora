@@ -184,6 +184,8 @@ public class HeartRateCameraControls: NSObject {
         if device.isFocusModeSupported(.locked) {
           device.focusMode = .locked
         }
+        device.automaticallyEnablesLowLightBoostWhenAvailable = false
+        device.automaticallyAdjustsVideoHDREnabled = false
       } catch {
         return
       }
@@ -211,6 +213,8 @@ public class HeartRateCameraControls: NSObject {
           device.focusMode = .continuousAutoFocus
         }
         device.setExposureTargetBias(0)
+        device.automaticallyEnablesLowLightBoostWhenAvailable = true
+        device.automaticallyAdjustsVideoHDREnabled = true
       } catch {
         return
       }
