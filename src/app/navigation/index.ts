@@ -10,6 +10,7 @@ export type {
   MainTabParamList,
   MainTabScreenProps,
   ProfileScreenProps,
+  ProPaywallScreenProps,
   RootStackNavigationProp,
   RootStackParamList,
   RootStackScreenProps,

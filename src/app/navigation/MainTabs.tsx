@@ -14,6 +14,9 @@ import BreatheActionSheet, {
 } from '../../components/common/BreatheActionSheet';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
+import { useFeatureAccess } from '../../hooks/useFeatureAccess';
+import { PaywallPlacement } from '../../services/paywall';
+import { FeatureKey } from '../../services/subscriptions/featureAccess';
 import type {
   MainTabParamList,
   RootStackNavigationProp,
@@ -47,13 +50,41 @@ function BreatheTabButton({ onPress, accessibilityState }: BottomTabBarButtonPro
 export function MainTabs() {
   const navigation = useNavigation<RootStackNavigationProp<'MainTabs'>>();
   const [sheetVisible, setSheetVisible] = useState(false);
+  const heartRateAccess = useFeatureAccess(FeatureKey.HeartRateMeasurement);
+  const exerciseAccess = useFeatureAccess(FeatureKey.DailyExercise);
 
   const handleSelect = (id: BreatheActionId) => {
+    setSheetVisible(false);
+
     if (id === 'daily') {
+      if (!exerciseAccess.allowed && !exerciseAccess.isLoading) {
+        navigation.navigate('ProPaywall', {
+          placement: PaywallPlacement.ExercisePremiumGate,
+          sourceScreen: 'MainTabs',
+          feature: FeatureKey.DailyExercise,
+        });
+        return;
+      }
       navigation.navigate('DailyExercise');
     } else if (id === 'box') {
+      if (!exerciseAccess.allowed && !exerciseAccess.isLoading) {
+        navigation.navigate('ProPaywall', {
+          placement: PaywallPlacement.ExercisePremiumGate,
+          sourceScreen: 'MainTabs',
+          feature: FeatureKey.DailyExercise,
+        });
+        return;
+      }
       navigation.navigate('ExerciseSession', { techniqueId: 'box' });
     } else {
+      if (!heartRateAccess.allowed && !heartRateAccess.isLoading) {
+        navigation.navigate('ProPaywall', {
+          placement: PaywallPlacement.HeartRateProGate,
+          sourceScreen: 'MainTabs',
+          feature: FeatureKey.HeartRateMeasurement,
+        });
+        return;
+      }
       navigation.navigate('HeartRate');
     }
   };

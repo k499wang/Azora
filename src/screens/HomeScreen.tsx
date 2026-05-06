@@ -17,9 +17,12 @@ import SessionStatsPager from '../components/home/SessionStatsPager';
 import EmptyStateCard from '../components/home/EmptyStateCard';
 import BreathingLibrary from '../components/home/BreathingLibrary';
 import DailyPlanCard from '../components/home/DailyPlanCard';
+import { useFeatureAccess } from '../hooks/useFeatureAccess';
 import type { HomeScreenProps } from '../app/navigation';
 import { useHomeStatsQuery } from '../queries/tracking/useHomeStatsQuery';
 import { useAuthStore } from '../stores/authStore';
+import { PaywallPlacement } from '../services/paywall';
+import { FeatureKey } from '../services/subscriptions/featureAccess';
 import type { TodayHeartRateSummary } from '../services/tracking/types';
 
 function formatDuration(seconds: number | null | undefined): string {
@@ -208,6 +211,9 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const insets = useSafeAreaInsets();
   const posthog = usePostHog();
   const user = useAuthStore((state) => state.user);
+  const dailyExerciseAccess = useFeatureAccess(FeatureKey.DailyExercise);
+  const advancedStatsAccess = useFeatureAccess(FeatureKey.AdvancedStats);
+  const sessionHistoryAccess = useFeatureAccess(FeatureKey.SessionHistory);
   const [todayLocalDate, setTodayLocalDate] = useState(() => formatLocalDate(new Date()));
   const [selectedLocalDate, setSelectedLocalDate] = useState(todayLocalDate);
   const refreshTodayLocalDate = useCallback(() => {
@@ -262,6 +268,16 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const avgBpm = todayBreathHold?.avgBpm ?? todayHeartRate?.avgBpm ?? null;
   const healthScore = stats?.hrv.stress == null ? null : 100 - stats.hrv.stress;
   const hasPartialStatsError = stats != null && Object.values(stats.partialErrors).some(Boolean);
+  const showProPaywall = useCallback((
+    feature: typeof FeatureKey[keyof typeof FeatureKey],
+    placement: typeof PaywallPlacement[keyof typeof PaywallPlacement],
+  ) => {
+    navigation.navigate('ProPaywall', {
+      placement,
+      sourceScreen: 'Home',
+      feature,
+    });
+  }, [navigation]);
 
   return (
     <View style={styles.screen}>
@@ -286,6 +302,17 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             <DailyPlanCard
               duration={formatDuration(todayBreathHold?.holdSeconds)}
               streakDays={currentStreak}
+              onPress={() => {
+                if (!dailyExerciseAccess.allowed && !dailyExerciseAccess.isLoading) {
+                  showProPaywall(
+                    FeatureKey.DailyExercise,
+                    PaywallPlacement.ExercisePremiumGate,
+                  );
+                  return;
+                }
+
+                navigation.navigate('DailyExercise');
+              }}
             />
           </View>
         </View>
@@ -312,6 +339,13 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           sdnn={stats?.hrv.sdnn ?? null}
           stress={stats?.hrv.stress ?? null}
           hrDrop={stats?.hrv.hrDrop ?? null}
+          locked={!advancedStatsAccess.allowed && !advancedStatsAccess.isLoading}
+          onPressUpgrade={() => {
+            showProPaywall(
+              FeatureKey.AdvancedStats,
+              PaywallPlacement.DailyResultProGate,
+            );
+          }}
         />
 
         <View style={styles.recentSection}>
@@ -325,6 +359,19 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
                 position,
                 item_count: recentHeartRates.length,
               });
+              if (sessionHistoryAccess.isLoading) return;
+
+              if (
+                position > 0 &&
+                !sessionHistoryAccess.allowed &&
+                !sessionHistoryAccess.isLoading
+              ) {
+                showProPaywall(
+                  FeatureKey.SessionHistory,
+                  PaywallPlacement.DailyResultProGate,
+                );
+                return;
+              }
               navigation.navigate('HeartRateSessionDetail', { sessionId });
             }}
           />

@@ -11,6 +11,8 @@ import type {
   NativeStackNavigationProp,
   NativeStackScreenProps,
 } from '@react-navigation/native-stack';
+import type { PaywallPlacementValue } from '../../services/paywall';
+import type { FeatureKeyValue } from '../../services/subscriptions/featureAccess';
 
 export type MainTabParamList = {
   Home: undefined;
@@ -21,6 +23,11 @@ export type MainTabParamList = {
 export type RootStackParamList = {
   MainTabs: NavigatorScreenParams<MainTabParamList> | undefined;
   HeartRate: { context?: string } | undefined;
+  ProPaywall: {
+    placement: PaywallPlacementValue;
+    sourceScreen?: string;
+    feature?: FeatureKeyValue;
+  };
   HeartRateSessionDetail: { sessionId: string };
   ExerciseSession: { techniqueId: string };
   DailyExercise: undefined;
@@ -65,6 +72,7 @@ export type HomeScreenProps = MainTabScreenProps<'Home'>;
 export type ProfileScreenProps = MainTabScreenProps<'Profile'>;
 
 export type HeartRateScreenProps = RootStackScreenProps<'HeartRate'>;
+export type ProPaywallScreenProps = RootStackScreenProps<'ProPaywall'>;
 export type HeartRateSessionDetailScreenProps = RootStackScreenProps<'HeartRateSessionDetail'>;
 export type ExerciseSessionScreenProps = RootStackScreenProps<'ExerciseSession'>;
 export type DailyExerciseScreenProps = RootStackScreenProps<'DailyExercise'>;

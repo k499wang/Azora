@@ -3,13 +3,18 @@ import { AnalyticsEvent } from './events';
 
 type ScreenRoute = {
   name: string;
-  params?: {
-    context?: string;
-    techniqueId?: string;
-    holdSeconds?: number;
-    sessionId?: string;
-  } | undefined;
+  params?: Readonly<Record<string, unknown>> | undefined;
 };
+
+function getStringParam(route: ScreenRoute, key: string): string | null {
+  const value = route.params?.[key];
+  return typeof value === 'string' ? value : null;
+}
+
+function getNumberParam(route: ScreenRoute, key: string): number | null {
+  const value = route.params?.[key];
+  return typeof value === 'number' ? value : null;
+}
 
 export function trackAppOpened() {
   posthog.capture(AnalyticsEvent.AppOpened);
@@ -21,19 +26,19 @@ export function trackScreenView(route: ScreenRoute) {
   };
 
   if (route.name === 'HeartRate') {
-    props.context = route.params?.context ?? null;
+    props.context = getStringParam(route, 'context');
   }
 
   if (route.name === 'ExerciseSession') {
-    props.technique_id = route.params?.techniqueId ?? null;
+    props.technique_id = getStringParam(route, 'techniqueId');
   }
 
   if (route.name === 'DailyResult') {
-    props.hold_seconds = route.params?.holdSeconds ?? null;
+    props.hold_seconds = getNumberParam(route, 'holdSeconds');
   }
 
   if (route.name === 'HeartRateSessionDetail') {
-    props.session_id = route.params?.sessionId ?? null;
+    props.session_id = getStringParam(route, 'sessionId');
   }
 
   posthog.capture(AnalyticsEvent.ScreenView, props);
