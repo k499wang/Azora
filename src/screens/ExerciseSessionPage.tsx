@@ -459,10 +459,11 @@ export default function ExerciseSessionPage({
           format: pulse.format,
           frameProcessor: pulse.frameProcessor,
           torchMode: pulse.torchMode,
+          fingerPlacement: pulse.fingerPlacement,
           isActive: pulse.active,
         }
       : undefined
-  ), [pulse.active, pulse.device, pulse.format, pulse.frameProcessor, pulse.torchMode]);
+  ), [pulse.active, pulse.device, pulse.fingerPlacement, pulse.format, pulse.frameProcessor, pulse.torchMode]);
 
   const handleScreenTap = () => {
     if (isActive) showHud();

@@ -5,7 +5,11 @@ const { addBuildSourceFileToGroup } = require('@expo/config-plugins/build/ios/ut
 
 const PLUGIN_NAME = 'with-heart-rate-plugin';
 const NATIVE_IOS_DIR = path.join('native', 'ios');
-const SWIFT_SOURCE_FILES = ['HeartRatePlugin.swift', 'HeartRatePlugin.m'];
+const SWIFT_SOURCE_FILES = [
+  'HeartRatePlugin.swift',
+  'HeartRatePlugin.m',
+  'HeartRateCameraControls.m',
+];
 const OBJC_SOURCE_FILES = ['HeartRatePlugin.mm'];
 const SOURCE_EXTENSIONS = new Set(['.c', '.cc', '.cpp', '.m', '.mm', '.swift']);
 

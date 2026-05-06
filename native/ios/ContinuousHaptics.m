@@ -11,3 +11,12 @@ RCT_EXTERN_METHOD(stop)
 + (BOOL)requiresMainQueueSetup { return NO; }
 
 @end
+
+@interface RCT_EXTERN_MODULE(HeartRateCameraControls, NSObject)
+
+RCT_EXTERN_METHOD(lockForHeartRate:(NSString *)deviceId
+                  options:(NSDictionary *)options)
+
+RCT_EXTERN_METHOD(unlockForHeartRate:(NSString *)deviceId)
+
+@end

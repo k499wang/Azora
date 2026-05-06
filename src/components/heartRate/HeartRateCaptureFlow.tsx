@@ -241,10 +241,11 @@ export function HeartRateCaptureFlow({
         format,
         frameProcessor,
         torchMode,
+        fingerPlacement,
         isActive: captureState !== 'processing',
       }
       : undefined
-  ), [captureState, device, format, frameProcessor, torchMode]);
+  ), [captureState, device, fingerPlacement, format, frameProcessor, torchMode]);
 
   // Hold-steady progress for camera_check state
   const [holdProgress, setHoldProgress] = useState(0);

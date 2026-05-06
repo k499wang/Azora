@@ -540,6 +540,7 @@ export default function DailyExercisePage({
         format: pulse.format,
         frameProcessor: pulse.frameProcessor,
         torchMode: pulse.torchMode,
+        fingerPlacement: pulse.fingerPlacement,
         isActive: pulse.active,
       }
     : undefined;

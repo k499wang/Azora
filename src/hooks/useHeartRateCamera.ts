@@ -35,6 +35,8 @@ export function useHeartRateCamera() {
   const format = useCameraFormat(device, [
     { fps: 30 },
     { videoResolution: { width: 640, height: 480 } },
+    { videoHdr: false },
+    { photoHdr: false },
   ]);
 
   return {

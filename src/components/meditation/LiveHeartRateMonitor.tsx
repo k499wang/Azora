@@ -1,11 +1,11 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, StyleSheet, Text, View } from 'react-native';
-import { Camera } from 'react-native-vision-camera';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { useLivePulse } from '../../hooks/useLivePulse';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
+import { HeartRateCameraPreview } from '../heartRate/HeartRateCameraPreview';
 
 type Props = Pick<
   ReturnType<typeof useLivePulse>,
@@ -60,14 +60,12 @@ export function LiveHeartRateMonitor({
           visible preview when it owns the active camera mount. */}
       {mountCamera && device != null ? (
         <View style={showCameraPreview ? styles.preview : styles.hiddenCamera}>
-          <Camera
-            style={StyleSheet.absoluteFill}
+          <HeartRateCameraPreview
             device={device}
             format={format}
             isActive={true}
-            torch={device.hasTorch ? torchMode : 'off'}
-            pixelFormat="rgb"
-            fps={30}
+            torchMode={torchMode}
+            fingerPlacement={fingerPlacement}
             frameProcessor={frameProcessor}
           />
         </View>
