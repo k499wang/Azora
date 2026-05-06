@@ -1,8 +1,8 @@
-import React, { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 import { View, StyleSheet, Modal } from 'react-native';
-import { Camera } from 'react-native-vision-camera';
 import { useHeartRateStream } from '../../hooks/useHeartRateStream';
 import { CameraCheckScreen } from './CameraCheckScreen';
+import { HeartRateCameraPreview } from './HeartRateCameraPreview';
 import { LiveBPMBadge } from './LiveBPMBadge';
 import type { HeartRateStreamSummary } from '../../lib/heartRate/types';
 
@@ -81,23 +81,27 @@ export function HeartRateOverlay({ onStreamStopped, onClose }: HeartRateOverlayP
 
   const cameraActive = streamState !== 'idle' && streamState !== 'stopped';
 
-  const camera = device != null && cameraActive ? (
-    <Camera
-      style={styles.hiddenCamera}
-      device={device}
-      format={format}
-      isActive={true}
-      torch={device.hasTorch ? torchMode : 'off'}
-      pixelFormat="rgb"
-      fps={30}
-      frameProcessor={frameProcessor}
-    />
+  const cameraProps = device != null && cameraActive
+    ? {
+      device,
+      format,
+      frameProcessor,
+      torchMode,
+      fingerPlacement,
+      isActive: true,
+    }
+    : undefined;
+
+  const hiddenCamera = cameraProps != null ? (
+    <View style={styles.hiddenCamera}>
+      <HeartRateCameraPreview {...cameraProps} />
+    </View>
   ) : null;
 
   return (
     <View style={styles.root} pointerEvents="box-none">
       {/* Hidden camera — always mounted during active session */}
-      {!showModal && camera}
+      {!showModal && hiddenCamera}
 
       {/* Full-screen modal for camera check */}
       <Modal
@@ -107,12 +111,12 @@ export function HeartRateOverlay({ onStreamStopped, onClose }: HeartRateOverlayP
         onRequestClose={handleCancelSetup}
       >
         <View style={styles.flex}>
-          {camera}
           <CameraCheckScreen
             fingerPlacement={fingerPlacement}
             onStartAnyway={handleStartAnyway}
             onCancel={handleCancelSetup}
             timeoutSeconds={10}
+            cameraProps={cameraProps}
           />
         </View>
       </Modal>
@@ -142,9 +146,9 @@ const styles = StyleSheet.create({
   },
   hiddenCamera: {
     position: 'absolute',
-    opacity: 0,
     width: 1,
     height: 1,
+    opacity: 0,
   },
   badgeContainer: {
     position: 'absolute',

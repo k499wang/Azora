@@ -151,6 +151,7 @@ export default function BaselineScreen({
       format: stream.format,
       frameProcessor: stream.frameProcessor,
       torchMode: stream.torchMode,
+      fingerPlacement: stream.fingerPlacement,
       isActive: phase === 'placement' || phase === 'running',
     };
   }, [
@@ -158,6 +159,7 @@ export default function BaselineScreen({
     stream.format,
     stream.frameProcessor,
     stream.torchMode,
+    stream.fingerPlacement,
     phase,
   ]);
 

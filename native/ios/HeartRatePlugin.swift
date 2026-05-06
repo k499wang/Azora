@@ -1,3 +1,4 @@
+import AVFoundation
 import CoreMedia
 import CoreVideo
 import Foundation
@@ -154,5 +155,65 @@ public class HeartRatePlugin: FrameProcessorPlugin {
       "timestamp": timestampMs,
       "rois": roiSamples,
     ]
+  }
+}
+
+@objc(HeartRateCameraControls)
+public class HeartRateCameraControls: NSObject {
+  private let queue = DispatchQueue(label: "heart-rate-camera-controls", qos: .userInitiated)
+
+  @objc static func requiresMainQueueSetup() -> Bool { return false }
+
+  @objc(lockForHeartRate:)
+  func lockForHeartRate(_ deviceId: NSString) {
+    let id = deviceId as String
+
+    queue.async {
+      guard let device = AVCaptureDevice(uniqueID: id) else { return }
+
+      do {
+        try device.lockForConfiguration()
+        defer { device.unlockForConfiguration() }
+
+        if device.isExposureModeSupported(.locked) {
+          device.exposureMode = .locked
+        }
+        if device.isWhiteBalanceModeSupported(.locked) {
+          device.whiteBalanceMode = .locked
+        }
+        if device.isFocusModeSupported(.locked) {
+          device.focusMode = .locked
+        }
+      } catch {
+        return
+      }
+    }
+  }
+
+  @objc(unlockForHeartRate:)
+  func unlockForHeartRate(_ deviceId: NSString) {
+    let id = deviceId as String
+
+    queue.async {
+      guard let device = AVCaptureDevice(uniqueID: id) else { return }
+
+      do {
+        try device.lockForConfiguration()
+        defer { device.unlockForConfiguration() }
+
+        if device.isExposureModeSupported(.continuousAutoExposure) {
+          device.exposureMode = .continuousAutoExposure
+        }
+        if device.isWhiteBalanceModeSupported(.continuousAutoWhiteBalance) {
+          device.whiteBalanceMode = .continuousAutoWhiteBalance
+        }
+        if device.isFocusModeSupported(.continuousAutoFocus) {
+          device.focusMode = .continuousAutoFocus
+        }
+        device.setExposureTargetBias(0)
+      } catch {
+        return
+      }
+    }
   }
 }
