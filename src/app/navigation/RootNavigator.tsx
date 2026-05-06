@@ -120,7 +120,7 @@ function AppStack() {
         name="ProPaywall"
         component={ProPaywallScreen}
         options={{
-          presentation: 'modal',
+          presentation: 'transparentModal',
           animation: 'none',
         }}
       />

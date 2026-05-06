@@ -82,6 +82,7 @@ export default function HeartHealthSection({
         disabled={!locked || onPressUpgrade == null}
         onPress={onPressUpgrade}
         style={({ pressed }) => [
+          styles.contentWrap,
           locked && styles.lockedWrap,
           pressed && styles.lockedPressed,
         ]}
@@ -161,6 +162,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.sm,
     paddingHorizontal: padding.screen.horizontal,
+  },
+  contentWrap: {
+    gap: spacing.md,
   },
   lockedWrap: {
     position: 'relative',

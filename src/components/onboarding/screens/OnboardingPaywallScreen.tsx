@@ -10,7 +10,7 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import type {
@@ -65,6 +65,7 @@ export default function OnboardingPaywallScreen({
   onContinueWithoutPro,
 }: OnboardingPaywallScreenProps) {
   const { height: windowHeight } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const selectedPackage = offering?.packages.find(
     (pkg) => pkg.id === selectedPackageId,
   );
@@ -127,7 +128,10 @@ export default function OnboardingPaywallScreen({
         { transform: [{ translateY: exitSlideAnim }] },
       ]}
     >
-      <SafeAreaView style={styles.screenBody} edges={['top', 'left', 'right']}>
+      <SafeAreaView
+        style={[styles.screenBody, { paddingTop: insets.top + spacing.sm }]}
+        edges={['left', 'right']}
+      >
         <View style={styles.header}>
           <Pressable
             accessibilityRole="button"
@@ -461,7 +465,6 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     justifyContent: 'center',
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.sm,
   },
   closeButton: {
     width: 36,
