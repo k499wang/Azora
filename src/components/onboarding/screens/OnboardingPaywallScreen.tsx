@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Animated,
@@ -7,9 +7,12 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import type {
   PaywallOffering,
   PaywallPackageId,
@@ -20,6 +23,11 @@ import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
 import Icon, { type IconName } from '../../common/icons/Icon';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
+
+const PRO_GOLD = '#F4C96D';
+const PRO_GOLD_SOFT = '#FFF3CF';
+const PRO_INK = '#101A2E';
+const PRO_BLUE = '#2458D6';
 
 interface OnboardingPaywallScreenProps {
   offering: PaywallOffering | null;
@@ -35,7 +43,6 @@ interface OnboardingPaywallScreenProps {
   onRestore: () => void;
   onRetry: () => void;
   onContinueWithoutPro: () => void;
-  onBack: () => void;
 }
 
 export default function OnboardingPaywallScreen({
@@ -50,8 +57,8 @@ export default function OnboardingPaywallScreen({
   onRestore,
   onRetry,
   onContinueWithoutPro,
-  onBack,
 }: OnboardingPaywallScreenProps) {
+  const { height: windowHeight } = useWindowDimensions();
   const selectedPackage = offering?.packages.find(
     (pkg) => pkg.id === selectedPackageId,
   );
@@ -61,6 +68,8 @@ export default function OnboardingPaywallScreen({
   const isBusy = isLoading || isPurchasing || isRestoring;
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(18)).current;
+  const exitSlideAnim = useRef(new Animated.Value(0)).current;
+  const [isExiting, setIsExiting] = useState(false);
 
   useEffect(() => {
     Animated.parallel([
@@ -83,145 +92,209 @@ export default function OnboardingPaywallScreen({
     ? 'Start my free trial'
     : 'Continue with weekly';
   const timelineSteps = getAnnualTrialSteps();
+  const handleContinueWithoutPro = useCallback(() => {
+    if (isBusy || isExiting) return;
+
+    setIsExiting(true);
+    Animated.timing(exitSlideAnim, {
+      toValue: windowHeight,
+      duration: 340,
+      easing: Easing.in(Easing.cubic),
+      useNativeDriver: true,
+    }).start(({ finished }) => {
+      if (finished) {
+        onContinueWithoutPro();
+      }
+    });
+  }, [
+    exitSlideAnim,
+    isBusy,
+    isExiting,
+    onContinueWithoutPro,
+    windowHeight,
+  ]);
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
-      <View style={styles.header}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Close paywall"
-          hitSlop={12}
-          onPress={onBack}
-          style={({ pressed }) => [
-            styles.closeButton,
-            pressed && styles.subtlePressed,
-          ]}
-        >
-          <Text style={styles.closeText}>×</Text>
-        </Pressable>
-      </View>
-
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        <Animated.View
-          style={[
-            styles.content,
-            { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
-          ]}
-        >
-          <View style={styles.copy}>
-            <Text style={styles.title}>Azora Pro</Text>
-            <Text style={styles.subtitle}>
-              Heart data, unlimited sessions, personalized plans, and progress insights.
-            </Text>
-          </View>
-
-          <View style={styles.planSection}>
-            <View style={styles.planTabs}>
-              {isLoading ? (
-                <View style={styles.planLoading}>
-                  <ActivityIndicator color={colors.primary.blue600} />
-                </View>
-              ) : (
-                <>
-                  {annualPackage ? (
-                    <PlanTab
-                      pkg={annualPackage}
-                      isSelected={selectedPackageId === annualPackage.id}
-                      onSelectPackage={onSelectPackage}
-                    />
-                  ) : null}
-                  {weeklyPackage ? (
-                    <PlanTab
-                      pkg={weeklyPackage}
-                      isSelected={selectedPackageId === weeklyPackage.id}
-                      onSelectPackage={onSelectPackage}
-                    />
-                  ) : null}
-                </>
-              )}
-            </View>
-            {!isLoading && selectedPackage ? (
-              <PlanPriceDetail pkg={selectedPackage} />
-            ) : null}
-          </View>
-
-          {isAnnualSelected ? (
-            <View style={styles.timeline}>
-              {timelineSteps.map((step, index) => (
-                <TimelineStep
-                  key={step.label}
-                  {...step}
-                  showLine={index < timelineSteps.length - 1}
-                />
-              ))}
-            </View>
-          ) : (
-            <IncludedInPro />
-          )}
-
+    <Animated.View
+      style={[
+        styles.screen,
+        { transform: [{ translateY: exitSlideAnim }] },
+      ]}
+    >
+      <SafeAreaView style={styles.screenBody} edges={['top', 'left', 'right']}>
+        <View style={styles.header}>
           <Pressable
             accessibilityRole="button"
-            disabled={isLoading || isPurchasing || isRestoring}
-            onPress={onRestore}
+            accessibilityLabel="Close paywall"
+            hitSlop={12}
+            disabled={isBusy || isExiting}
+            onPress={handleContinueWithoutPro}
             style={({ pressed }) => [
-              styles.restoreButton,
+              styles.closeButton,
               pressed && styles.subtlePressed,
-              (isLoading || isPurchasing || isRestoring) && styles.disabled,
+              (isBusy || isExiting) && styles.disabled,
             ]}
           >
-            <Text style={styles.restoreText}>
-              {isRestoring ? 'Restoring...' : 'Restore Purchase'}
-            </Text>
+            <Text style={styles.closeText}>×</Text>
           </Pressable>
+        </View>
 
-          {errorMessage ? (
-            <View style={styles.errorBlock}>
-              <Text style={styles.error}>{errorMessage}</Text>
-              <Pressable
-                accessibilityRole="button"
-                disabled={isBusy}
-                onPress={onRetry}
-                style={({ pressed }) => [
-                  styles.retryButton,
-                  pressed && styles.subtlePressed,
-                  isBusy && styles.disabled,
-                ]}
-              >
-                <Text style={styles.retryText}>Retry</Text>
-              </Pressable>
-            </View>
-          ) : null}
-        </Animated.View>
-      </ScrollView>
-
-      <View style={styles.footer}>
-        <OnboardingPrimaryButton
-          label={ctaLabel}
-          onPress={onPurchase}
-          loading={isPurchasing}
-          disabled={isLoading || selectedPackage == null || isRestoring}
-        />
-        <Pressable
-          accessibilityRole="button"
-          disabled={isBusy}
-          onPress={onContinueWithoutPro}
-          style={({ pressed }) => [
-            styles.freeButton,
-            pressed && styles.subtlePressed,
-            isBusy && styles.disabled,
-          ]}
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
         >
-          <Text style={styles.freeButtonText}>Continue free</Text>
-        </Pressable>
-        <Text style={styles.legal}>
-          Auto-renews unless cancelled. Manage or cancel in App Store settings.
-        </Text>
-      </View>
-    </SafeAreaView>
+          <Animated.View
+            style={[
+              styles.content,
+              { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
+            ]}
+          >
+            <LinearGradient
+              colors={[PRO_INK, PRO_BLUE, colors.primary.blue600]}
+              start={{ x: 0.06, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.hero}
+            >
+              <View style={[styles.heroSparkle, styles.heroSparkleTop]}>
+                <MaterialCommunityIcons
+                  name="star-four-points"
+                  size={14}
+                  color={PRO_GOLD}
+                />
+              </View>
+              <View style={[styles.heroSparkle, styles.heroSparkleBottom]}>
+                <MaterialCommunityIcons
+                  name="star-four-points"
+                  size={10}
+                  color={colors.text.inverse}
+                />
+              </View>
+              <View style={styles.appIconBadge}>
+                <MaterialCommunityIcons
+                  name="weather-windy"
+                  size={34}
+                  color={PRO_INK}
+                />
+              </View>
+              <View style={styles.proPill}>
+                <MaterialCommunityIcons
+                  name="crown-outline"
+                  size={13}
+                  color={PRO_GOLD}
+                />
+                <Text style={styles.proPillText}>PRO</Text>
+              </View>
+              <Text style={styles.title}>Azora Pro</Text>
+              <Text style={styles.subtitle}>
+                Heart data, unlimited sessions, personalized plans, and progress insights.
+              </Text>
+            </LinearGradient>
+
+            <View style={styles.planSection}>
+              <View style={styles.planTabs}>
+                {isLoading ? (
+                  <View style={styles.planLoading}>
+                    <ActivityIndicator color={colors.primary.blue600} />
+                  </View>
+                ) : (
+                  <>
+                    {annualPackage ? (
+                      <PlanTab
+                        pkg={annualPackage}
+                        isSelected={selectedPackageId === annualPackage.id}
+                        onSelectPackage={onSelectPackage}
+                      />
+                    ) : null}
+                    {weeklyPackage ? (
+                      <PlanTab
+                        pkg={weeklyPackage}
+                        isSelected={selectedPackageId === weeklyPackage.id}
+                        onSelectPackage={onSelectPackage}
+                      />
+                    ) : null}
+                  </>
+                )}
+              </View>
+              {!isLoading && selectedPackage ? (
+                <PlanPriceDetail pkg={selectedPackage} />
+              ) : null}
+            </View>
+
+            {isAnnualSelected ? (
+              <View style={styles.timeline}>
+                {timelineSteps.map((step, index) => (
+                  <TimelineStep
+                    key={step.label}
+                    {...step}
+                    showLine={index < timelineSteps.length - 1}
+                  />
+                ))}
+              </View>
+            ) : (
+              <IncludedInPro />
+            )}
+
+            <Pressable
+              accessibilityRole="button"
+              disabled={isLoading || isPurchasing || isRestoring || isExiting}
+              onPress={onRestore}
+              style={({ pressed }) => [
+                styles.restoreButton,
+                pressed && styles.subtlePressed,
+                (isLoading || isPurchasing || isRestoring || isExiting) && styles.disabled,
+              ]}
+            >
+              <Text style={styles.restoreText}>
+                {isRestoring ? 'Restoring...' : 'Restore Purchase'}
+              </Text>
+            </Pressable>
+
+            {errorMessage ? (
+              <View style={styles.errorBlock}>
+                <Text style={styles.error}>{errorMessage}</Text>
+                <Pressable
+                  accessibilityRole="button"
+                  disabled={isBusy || isExiting}
+                  onPress={onRetry}
+                  style={({ pressed }) => [
+                    styles.retryButton,
+                    pressed && styles.subtlePressed,
+                    (isBusy || isExiting) && styles.disabled,
+                  ]}
+                >
+                  <Text style={styles.retryText}>Retry</Text>
+                </Pressable>
+              </View>
+            ) : null}
+          </Animated.View>
+        </ScrollView>
+
+        <View style={styles.footer}>
+          <OnboardingPrimaryButton
+            label={ctaLabel}
+            onPress={onPurchase}
+            loading={isPurchasing}
+            disabled={isLoading || selectedPackage == null || isRestoring || isExiting}
+          />
+          <Pressable
+            accessibilityRole="button"
+            disabled={isBusy || isExiting}
+            onPress={handleContinueWithoutPro}
+            style={({ pressed }) => [
+              styles.freeButton,
+              pressed && styles.subtlePressed,
+              (isBusy || isExiting) && styles.disabled,
+            ]}
+          >
+            <Text style={styles.freeButtonText}>Continue free</Text>
+          </Pressable>
+          <Text style={styles.legal}>
+            Auto-renews unless cancelled. Manage or cancel in App Store settings.
+          </Text>
+        </View>
+      </SafeAreaView>
+    </Animated.View>
   );
 }
 
@@ -374,7 +447,10 @@ function IncludedInPro() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: colors.background.elevated,
+    backgroundColor: colors.background.primary,
+  },
+  screenBody: {
+    flex: 1,
   },
   header: {
     minHeight: 56,
@@ -406,28 +482,96 @@ const styles = StyleSheet.create({
   content: {
     gap: spacing.xl,
   },
-  copy: {
+  hero: {
     alignItems: 'center',
-    gap: spacing.md,
+    gap: spacing.sm,
+    borderRadius: 30,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.xl,
+    overflow: 'hidden',
+    shadowColor: PRO_BLUE,
+    shadowOffset: { width: 0, height: 14 },
+    shadowOpacity: 0.18,
+    shadowRadius: 28,
+    elevation: 8,
+  },
+  heroSparkle: {
+    position: 'absolute',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 999,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#FFFFFF66',
+    backgroundColor: '#FFFFFF1F',
+  },
+  heroSparkleTop: {
+    top: 24,
+    right: 34,
+    width: 34,
+    height: 34,
+  },
+  heroSparkleBottom: {
+    left: 34,
+    bottom: 28,
+    width: 26,
+    height: 26,
+  },
+  appIconBadge: {
+    width: 66,
+    height: 66,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: PRO_GOLD_SOFT,
+    borderWidth: 1,
+    borderColor: '#FFFFFF99',
+    shadowColor: colors.neutral[900],
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.22,
+    shadowRadius: 18,
+    elevation: 6,
+  },
+  proPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    borderRadius: 999,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 5,
+    backgroundColor: '#FFFFFF1F',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: '#FFFFFF70',
+    marginTop: spacing.xs,
+  },
+  proPillText: {
+    ...typography.caption.caption1,
+    fontFamily: fonts.bold,
+    fontWeight: '700',
+    color: colors.text.inverse,
+    letterSpacing: 1.2,
   },
   title: {
     ...typography.display.display3,
     fontFamily: fonts.semibold,
     fontWeight: '600',
     textAlign: 'center',
-    color: colors.text.primary,
+    color: colors.text.inverse,
+    letterSpacing: 0,
   },
   subtitle: {
     ...typography.body.medium,
     textAlign: 'center',
-    color: colors.text.secondary,
+    color: '#EAF2FF',
   },
   planTabs: {
     alignSelf: 'center',
     flexDirection: 'row',
     borderRadius: 999,
     padding: 4,
-    backgroundColor: colors.neutral[100],
+    backgroundColor: colors.background.elevated,
+    borderWidth: 1,
+    borderColor: colors.border.subtle,
   },
   planLoading: {
     minWidth: 160,
@@ -449,7 +593,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
   },
   planTabSelected: {
-    backgroundColor: colors.neutral[700],
+    backgroundColor: PRO_INK,
   },
   planTabPressed: {
     opacity: 0.8,
@@ -466,7 +610,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   planTabTextSelected: {
-    color: colors.text.inverse,
+    color: PRO_GOLD_SOFT,
   },
   planPriceDetail: {
     alignItems: 'center',
@@ -501,13 +645,15 @@ const styles = StyleSheet.create({
     borderRadius: 21,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.primary.blue600,
+    backgroundColor: PRO_INK,
+    borderWidth: 1,
+    borderColor: PRO_GOLD,
   },
   timelineLine: {
     width: 8,
     flex: 1,
     minHeight: 70,
-    backgroundColor: colors.primary.blue100,
+    backgroundColor: PRO_GOLD_SOFT,
   },
   timelineCopy: {
     flex: 1,
@@ -555,7 +701,9 @@ const styles = StyleSheet.create({
     borderRadius: 21,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.primary.blue600,
+    backgroundColor: PRO_INK,
+    borderWidth: 1,
+    borderColor: PRO_GOLD,
   },
   includedCopy: {
     flex: 1,
@@ -607,6 +755,8 @@ const styles = StyleSheet.create({
     paddingTop: spacing.sm,
     paddingBottom: spacing.lg,
     backgroundColor: colors.background.elevated,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border.subtle,
   },
   freeButton: {
     alignSelf: 'center',

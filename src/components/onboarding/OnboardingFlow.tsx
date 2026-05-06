@@ -459,7 +459,6 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
           void paywall.retryRevenueCatSync();
         }}
         onContinueWithoutPro={continueWithoutPro}
-        onBack={() => setStep('pact')}
       />
     );
   }

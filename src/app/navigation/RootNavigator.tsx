@@ -1,5 +1,5 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { View, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, ActivityIndicator } from 'react-native';
 import AuthLandingScreen from '../../screens/AuthLandingScreen';
 import DailyExercisePage from '../../screens/DailyExercisePage';
 import ExerciseSessionPage from '../../screens/ExerciseSessionPage';
@@ -14,29 +14,7 @@ import type { RootStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
-export function RootNavigator() {
-  const gate = useAppGate();
-
-  if (gate.status === 'booting') {
-    return (
-      <View style={{ flex: 1, backgroundColor: colors.background.primary, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator color={colors.primary.blue600} />
-      </View>
-    );
-  }
-
-  if (gate.status === 'signed_out') {
-    return <AuthLandingScreen />;
-  }
-
-  if (gate.status === 'needs_onboarding') {
-    return (
-      <OnboardingFlow
-        onComplete={(result) => gate.completeOnboarding(result)}
-      />
-    );
-  }
-
+function AppStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="MainTabs" component={MainTabs} />
@@ -83,3 +61,44 @@ export function RootNavigator() {
     </Stack.Navigator>
   );
 }
+
+export function RootNavigator() {
+  const gate = useAppGate();
+
+  if (gate.status === 'booting') {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.background.primary, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator color={colors.primary.blue600} />
+      </View>
+    );
+  }
+
+  if (gate.status === 'signed_out') {
+    return <AuthLandingScreen />;
+  }
+
+  if (gate.status === 'needs_onboarding') {
+    return (
+      <View style={styles.overlayRoot}>
+        <AppStack />
+        <View style={styles.onboardingOverlay}>
+          <OnboardingFlow
+            onComplete={(result) => gate.completeOnboarding(result)}
+          />
+        </View>
+      </View>
+    );
+  }
+
+  return <AppStack />;
+}
+
+const styles = StyleSheet.create({
+  overlayRoot: {
+    flex: 1,
+    backgroundColor: colors.background.primary,
+  },
+  onboardingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+  },
+});
