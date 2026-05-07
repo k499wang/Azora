@@ -37,7 +37,10 @@ export function buildCaptureResult(
           : null;
   const hrvPreprocess =
     hrvAvailabilityReason == null ? preprocessHRVIntervals(hrvEligibleIbis) : null;
-  const hrvStats = hrvPreprocess != null ? computeHRVStats(hrvPreprocess.correctedIbi) : null;
+  const hrvStats =
+    hrvPreprocess != null
+      ? computeHRVStats(hrvPreprocess.correctedIbi, hrvBeatSeries?.adjacencyBreaks)
+      : null;
   const startTs = samples[0]?.timestamp ?? 0;
   const endTs = samples[samples.length - 1]?.timestamp ?? 0;
   const finalIbiSamples =

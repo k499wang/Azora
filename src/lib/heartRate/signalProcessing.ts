@@ -127,6 +127,13 @@ export interface BeatDetectionResult {
 export interface CaptureBeatSeries {
   beatTimestamps: number[];
   ibiMs: number[];
+  /**
+   * Parallel to `ibiMs`. `adjacencyBreaks[i] === true` means ibiMs[i] is NOT
+   * physiologically adjacent to ibiMs[i-1] — either a missed beat sat between
+   * them, or ibiMs[i] is a composite span across a rejected beat. Consumers
+   * computing successive-difference stats (RMSSD, pNN50) must skip these pairs.
+   */
+  adjacencyBreaks: boolean[];
   roiId: string;
   channel: PpgChannel;
   confidence: number;
@@ -679,16 +686,30 @@ function refinedBeatTimestampsFromPeaks(
 
 function cleanBeatSeries(
   beatTimestamps: number[],
-): { beatTimestamps: number[]; ibiMs: number[]; rawIntervalCount: number; rejectedIntervalCount: number } {
+): {
+  beatTimestamps: number[];
+  ibiMs: number[];
+  adjacencyBreaks: boolean[];
+  rawIntervalCount: number;
+  rejectedIntervalCount: number;
+} {
   if (beatTimestamps.length < 2) {
-    return { beatTimestamps: [], ibiMs: [], rawIntervalCount: 0, rejectedIntervalCount: 0 };
+    return {
+      beatTimestamps: [],
+      ibiMs: [],
+      adjacencyBreaks: [],
+      rawIntervalCount: 0,
+      rejectedIntervalCount: 0,
+    };
   }
 
   const cleanedBeatTimestamps: number[] = [beatTimestamps[0]];
   const ibiMs: number[] = [];
+  const adjacencyBreaks: boolean[] = [];
   const ibiHistory: number[] = [];
   let rejectedIntervalCount = 0;
   let anchorTimestamp = beatTimestamps[0];
+  let pendingBreak = false;
 
   for (let i = 1; i < beatTimestamps.length; i++) {
     const beatTimestamp = beatTimestamps[i];
@@ -704,6 +725,7 @@ function cleanBeatSeries(
       anchorTimestamp = beatTimestamp;
       cleanedBeatTimestamps.push(beatTimestamp);
       ibiHistory.length = 0;
+      pendingBreak = true;
       continue;
     }
 
@@ -715,6 +737,7 @@ function cleanBeatSeries(
       })();
     if (isOutlier) {
       rejectedIntervalCount += 1;
+      pendingBreak = true;
       continue;
     }
 
@@ -723,6 +746,8 @@ function cleanBeatSeries(
       ibiHistory.shift();
     }
     ibiMs.push(intervalMs);
+    adjacencyBreaks.push(pendingBreak);
+    pendingBreak = false;
     anchorTimestamp = beatTimestamp;
     cleanedBeatTimestamps.push(beatTimestamp);
   }
@@ -730,6 +755,7 @@ function cleanBeatSeries(
   return {
     beatTimestamps: cleanedBeatTimestamps,
     ibiMs,
+    adjacencyBreaks,
     rawIntervalCount: Math.max(0, beatTimestamps.length - 1),
     rejectedIntervalCount,
   };
@@ -775,12 +801,14 @@ function buildScoredCaptureBeatSeries(
   );
   const hrvEndCutoff = captureEndTimestamp - HRV_END_GUARD_MS;
   const guardedBeatTimestamps = rawBeatTimestamps.filter((timestamp) => timestamp <= hrvEndCutoff);
-  const { beatTimestamps, ibiMs, rawIntervalCount, rejectedIntervalCount } = cleanBeatSeries(guardedBeatTimestamps);
+  const { beatTimestamps, ibiMs, adjacencyBreaks, rawIntervalCount, rejectedIntervalCount } =
+    cleanBeatSeries(guardedBeatTimestamps);
   if (ibiMs.length < 2) return null;
 
   return {
     beatTimestamps,
     ibiMs,
+    adjacencyBreaks,
     roiId: analysis.estimate.roiId,
     channel: analysis.estimate.channel,
     confidence: analysis.estimate.confidence,
@@ -960,6 +988,7 @@ export function extractBestCaptureBeatSeries(
   return {
     beatTimestamps: best.beatTimestamps,
     ibiMs: best.ibiMs,
+    adjacencyBreaks: best.adjacencyBreaks,
     roiId: best.roiId,
     channel: best.channel,
     confidence: best.confidence,

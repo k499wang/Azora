@@ -212,7 +212,7 @@ function ibiToBpm(ibiMs: number): number {
   return Math.round(60000 / ibiMs);
 }
 
-export function computeHRVStats(ibi: number[]): HRVStats {
+export function computeHRVStats(ibi: number[], adjacencyBreaks?: boolean[]): HRVStats {
   if (ibi.length < 2) {
     return {
       rmssd: 0,
@@ -233,14 +233,26 @@ export function computeHRVStats(ibi: number[]): HRVStats {
 
   let sumSq = 0;
   let nn50 = 0;
+  let pairs = 0;
+  let nn50Pairs = 0;
   for (let i = 1; i < correctedIbi.length; i++) {
+    if (adjacencyBreaks?.[i]) continue;
+    const localStart = Math.max(0, i - 5);
+    const local = median(correctedIbi.slice(localStart, i + 1));
+    if (local <= 0) continue;
+    const dev = Math.abs(correctedIbi[i] - local) / local;
+    const devPrev = Math.abs(correctedIbi[i - 1] - local) / local;
+    if (dev > 0.20 || devPrev > 0.20) continue;
+
     const diff = correctedIbi[i] - correctedIbi[i - 1];
     sumSq += diff * diff;
+    pairs += 1;
     if (Math.abs(diff) > 50) nn50 += 1;
+    nn50Pairs += 1;
   }
-  const rmssd = Math.round(Math.sqrt(sumSq / (correctedIbi.length - 1)));
+  const rmssd = pairs > 0 ? Math.round(Math.sqrt(sumSq / pairs)) : 0;
   const sdnn = Math.round(stddev(linearDetrend(correctedIbi)));
-  const pnn50 = Math.round((nn50 / (correctedIbi.length - 1)) * 100);
+  const pnn50 = nn50Pairs > 0 ? Math.round((nn50 / nn50Pairs) * 100) : 0;
 
   const rmssdScore = Math.max(0, 100 - (rmssd / HRV_TARGET_RMSSD) * 100);
   const meanIbi = mean(correctedIbi);
@@ -250,8 +262,11 @@ export function computeHRVStats(ibi: number[]): HRVStats {
     0,
     Math.min(100, Math.round(rmssdScore * 0.7 + hrScore * 0.3)),
   );
-  const minHr = ibiToBpm(Math.max(...correctedIbi));
-  const maxHr = ibiToBpm(Math.min(...correctedIbi));
+  const sortedIbi = [...correctedIbi].sort((a, b) => a - b);
+  const p5Index = Math.min(sortedIbi.length - 1, Math.floor(sortedIbi.length * 0.05));
+  const p95Index = Math.min(sortedIbi.length - 1, Math.floor(sortedIbi.length * 0.95));
+  const minHr = ibiToBpm(sortedIbi[p95Index]);
+  const maxHr = ibiToBpm(sortedIbi[p5Index]);
 
   const window = Math.max(2, Math.floor(correctedIbi.length * 0.15));
   const startHr = ibiToBpm(mean(correctedIbi.slice(0, window)));

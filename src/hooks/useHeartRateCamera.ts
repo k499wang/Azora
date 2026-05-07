@@ -37,6 +37,7 @@ export function useHeartRateCamera() {
     { videoResolution: { width: 640, height: 480 } },
     { videoHdr: false },
     { photoHdr: false },
+    { videoStabilizationMode: 'off' },
   ]);
 
   return {
