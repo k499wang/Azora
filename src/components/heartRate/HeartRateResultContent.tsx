@@ -57,9 +57,9 @@ function getHrvUnavailableMessage(
 ): string | null {
   switch (reason) {
     case 'not_enough_clean_beats':
-      return 'HRV unavailable: not enough clean beats';
+      return 'HRV unavailable. Please try again with your finger steady over the camera.';
     case 'low_signal_quality':
-      return 'HRV unavailable: low signal quality';
+      return 'HRV unavailable. Please try again in a quiet position with steady pressure.';
     default:
       return null;
   }

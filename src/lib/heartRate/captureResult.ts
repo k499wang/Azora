@@ -1,8 +1,10 @@
 import { computeHRVStatsFromCleanIntervals, preprocessHRVIntervals } from '../hrv';
-import type { CaptureResult, IbiSample, PpgFrameSample } from './types';
+import type { HRVStats } from '../hrv';
+import type { CaptureResult, HrvAvailabilityReason, IbiSample, PpgFrameSample } from './types';
 import {
   analyzeCapture,
   buildIbiSamplesFromCaptureBeatSeries,
+  type CaptureBeatSeries,
 } from './signalProcessing';
 
 const MIN_HRV_BEAT_COUNT = 15;
@@ -10,17 +12,22 @@ const MIN_HRV_CONFIDENCE = 0.55;
 const MIN_HRV_SNR_DB = 4;
 const MIN_HRV_RETENTION_RATIO = 0.7;
 
-export function buildCaptureResult(
-  samples: PpgFrameSample[],
-  _liveIbiSamples: IbiSample[] = [],
-): CaptureResult {
-  const { estimate: bpmResult, beatSeries: hrvBeatSeries } = analyzeCapture(samples);
+interface CaptureHrvResult {
+  hrvStats: HRVStats | null;
+  correctedIbi: number[];
+  hrvAvailabilityReason: HrvAvailabilityReason | null;
+}
+
+export function deriveCaptureHrvResult(
+  hrvBeatSeries: CaptureBeatSeries | null,
+): CaptureHrvResult {
   const hrvEligibleIbis = hrvBeatSeries?.ibiMs ?? [];
   const hrvRetentionRatio =
     hrvBeatSeries != null && hrvBeatSeries.rawIntervalCount > 0
       ? (hrvBeatSeries.rawIntervalCount - hrvBeatSeries.rejectedIntervalCount) / hrvBeatSeries.rawIntervalCount
       : 0;
-  const hrvAvailabilityReason =
+
+  const initialAvailabilityReason: HrvAvailabilityReason | null =
     hrvBeatSeries == null
       ? 'low_signal_quality'
       : hrvEligibleIbis.length < MIN_HRV_BEAT_COUNT
@@ -33,24 +40,63 @@ export function buildCaptureResult(
         )
           ? 'low_signal_quality'
           : null;
-  const hrvPreprocess =
-    hrvAvailabilityReason == null
-      ? preprocessHRVIntervals(hrvEligibleIbis, hrvBeatSeries?.adjacencyBreaks)
-      : null;
-  const hrvStats =
-    hrvPreprocess != null
-      ? computeHRVStatsFromCleanIntervals({
-          ibi: hrvPreprocess.correctedIbi,
-          adjacencyBreaks: hrvPreprocess.adjacencyBreaks,
-          artifactRatio: hrvPreprocess.artifactRatio,
-          usable: hrvPreprocess.usable,
-        })
-      : null;
+
+  if (initialAvailabilityReason != null) {
+    return {
+      hrvStats: null,
+      correctedIbi: [],
+      hrvAvailabilityReason: initialAvailabilityReason,
+    };
+  }
+
+  const hrvPreprocess = preprocessHRVIntervals(
+    hrvEligibleIbis,
+    hrvBeatSeries?.adjacencyBreaks,
+  );
+
+  if (hrvPreprocess.correctedIbi.length < MIN_HRV_BEAT_COUNT) {
+    return {
+      hrvStats: null,
+      correctedIbi: [],
+      hrvAvailabilityReason: 'not_enough_clean_beats',
+    };
+  }
+
+  if (!hrvPreprocess.usable) {
+    return {
+      hrvStats: null,
+      correctedIbi: [],
+      hrvAvailabilityReason: 'low_signal_quality',
+    };
+  }
+
+  return {
+    hrvStats: computeHRVStatsFromCleanIntervals({
+      ibi: hrvPreprocess.correctedIbi,
+      adjacencyBreaks: hrvPreprocess.adjacencyBreaks,
+      artifactRatio: hrvPreprocess.artifactRatio,
+      usable: hrvPreprocess.usable,
+    }),
+    correctedIbi: hrvPreprocess.correctedIbi,
+    hrvAvailabilityReason: null,
+  };
+}
+
+export function buildCaptureResult(
+  samples: PpgFrameSample[],
+  _liveIbiSamples: IbiSample[] = [],
+): CaptureResult {
+  const { estimate: bpmResult, beatSeries: hrvBeatSeries } = analyzeCapture(samples);
+  const {
+    hrvStats,
+    correctedIbi,
+    hrvAvailabilityReason,
+  } = deriveCaptureHrvResult(hrvBeatSeries);
   const startTs = samples[0]?.timestamp ?? 0;
   const endTs = samples[samples.length - 1]?.timestamp ?? 0;
   const finalIbiSamples =
-    hrvPreprocess != null && hrvBeatSeries != null
-      ? buildIbiSamplesFromCaptureBeatSeries(hrvBeatSeries, startTs, hrvPreprocess.correctedIbi)
+    hrvStats != null && hrvBeatSeries != null
+      ? buildIbiSamplesFromCaptureBeatSeries(hrvBeatSeries, startTs, correctedIbi)
       : [];
 
   if (bpmResult == null) {
