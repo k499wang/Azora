@@ -71,6 +71,10 @@ test('extractBestCaptureBeatSeries chooses the strongest ROI/channel beat series
   assert.ok(beatSeries, 'expected a beat series');
   assert.equal(beatSeries.roiId, 'center');
   assert.equal(beatSeries.channel, 'weighted');
+  assert.ok(
+    ['peak', 'onset', 'maxSlope'].includes(beatSeries.fiducial),
+    `expected selected HRV fiducial metadata, got ${beatSeries.fiducial}`,
+  );
   assert.ok(beatSeries.ibiMs.length >= 20, `expected many HRV intervals, got ${beatSeries.ibiMs.length}`);
   assert.ok(
     beatSeries.beatTimestamps[beatSeries.beatTimestamps.length - 1] <= CAPTURE_DURATION_MS - 1450,
@@ -85,6 +89,18 @@ test('extractBestCaptureBeatSeries chooses the strongest ROI/channel beat series
   assert.ok(
     Math.abs(medianIbi - 800) < 70,
     `expected median IBI near 800ms, got ${medianIbi}`,
+  );
+});
+
+test('extractBestCaptureBeatSeries can select a non-peak fiducial for cleaner HRV timing', () => {
+  const samples = buildCaptureSamples();
+  const beatSeries = extractBestCaptureBeatSeries(samples);
+
+  assert.ok(beatSeries, 'expected batch beat series');
+  assert.notEqual(
+    beatSeries.fiducial,
+    'peak',
+    `expected onset or max-slope timing to beat rounded waveform peaks, got ${beatSeries.fiducial}`,
   );
 });
 
@@ -109,6 +125,7 @@ test('buildIbiSamplesFromCaptureBeatSeries maps final batch beats to persisted I
     ibiMs: [799.8, 785.5, 824.4],
     roiId: 'center',
     channel: 'weighted',
+    fiducial: 'maxSlope',
     confidence: 0.73,
     quality: 'good',
     snrDb: 8.2,

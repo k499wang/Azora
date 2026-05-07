@@ -116,6 +116,7 @@ interface CandidateAnalysis {
 }
 
 type PeakCandidateAnalysis = CandidateAnalysis & { peaks: PeakResult };
+export type CaptureFiducial = 'peak' | 'onset' | 'maxSlope';
 
 export interface BeatDetectionResult {
   timestamp: number;
@@ -129,6 +130,7 @@ export interface CaptureBeatSeries {
   ibiMs: number[];
   roiId: string;
   channel: PpgChannel;
+  fiducial: CaptureFiducial;
   confidence: number;
   quality: PpgQuality;
   snrDb: number;
@@ -157,6 +159,15 @@ interface ScoredCaptureBeatSeries extends CaptureBeatSeries {
   hrvScore: number;
   rawIntervalCount: number;
   rejectedIntervalCount: number;
+}
+
+interface ScoredFiducialBeatSeries {
+  fiducial: CaptureFiducial;
+  beatTimestamps: number[];
+  ibiMs: number[];
+  rawIntervalCount: number;
+  rejectedIntervalCount: number;
+  hrvScore: number;
 }
 
 function clamp(value: number, min: number, max: number): number {
@@ -624,13 +635,13 @@ function candidatePriority(estimate: HeartRateEstimate): number {
   return estimate.confidence + estimate.snrDb / 25 + channelBonus + roiBonus;
 }
 
-function beatTimestampsFromPeaks(
-  peakIndexes: number[],
+function beatTimestampsFromSampleIndexes(
+  sampleIndexes: number[],
   sampleRate: number,
   stableStartTimestamp: number,
 ): number[] {
   const stepMs = 1000 / sampleRate;
-  return peakIndexes.map((peakIndex) => stableStartTimestamp + peakIndex * stepMs);
+  return sampleIndexes.map((sampleIndex) => stableStartTimestamp + sampleIndex * stepMs);
 }
 
 function interpolatePeakOffset(y1: number, y2: number, y3: number): number {
@@ -641,30 +652,107 @@ function interpolatePeakOffset(y1: number, y2: number, y3: number): number {
   return clamp(offset, -1, 1);
 }
 
-function refinedBeatTimestampsFromPeaks(
+function refinedPeakSampleIndexes(
   peakIndexes: number[],
   processed: number[],
   polarity: 1 | -1,
-  sampleRate: number,
-  stableStartTimestamp: number,
 ): number[] {
-  const stepMs = 1000 / sampleRate;
-
   return peakIndexes.map((peakIndex) => {
     if (peakIndex <= 0 || peakIndex >= processed.length - 1) {
-      return stableStartTimestamp + peakIndex * stepMs;
+      return peakIndex;
     }
 
     const orientedPrev = processed[peakIndex - 1] * polarity;
     const orientedCurrent = processed[peakIndex] * polarity;
     const orientedNext = processed[peakIndex + 1] * polarity;
     const offset = interpolatePeakOffset(orientedPrev, orientedCurrent, orientedNext);
-    return stableStartTimestamp + (peakIndex + offset) * stepMs;
+    return peakIndex + offset;
   });
+}
+
+function onsetSampleIndexesFromPeaks(
+  peakIndexes: number[],
+  processed: number[],
+  polarity: 1 | -1,
+  sampleRate: number,
+): number[] {
+  const oriented = processed.map((value) => value * polarity);
+  const minLeadSamples = Math.max(1, Math.round(sampleRate * 0.04));
+  const minLookbackSamples = Math.max(2, Math.round(sampleRate * 0.18));
+  const maxLookbackSamples = Math.max(minLookbackSamples, Math.round(sampleRate * 0.75));
+
+  return peakIndexes.map((peakIndex, index) => {
+    const previousPeak = peakIndexes[index - 1];
+    const intervalSamples =
+      previousPeak == null ? maxLookbackSamples : Math.max(minLookbackSamples, peakIndex - previousPeak);
+    const dynamicLookback = clamp(Math.round(intervalSamples * 0.75), minLookbackSamples, maxLookbackSamples);
+    const previousPeakGuard =
+      previousPeak == null
+        ? 0
+        : previousPeak + Math.round((peakIndex - previousPeak) * 0.2);
+    const start = Math.max(0, previousPeakGuard, peakIndex - dynamicLookback);
+    const end = Math.max(start, peakIndex - minLeadSamples);
+
+    let onsetIndex = start;
+    for (let i = start + 1; i <= end; i++) {
+      if (oriented[i] < oriented[onsetIndex]) {
+        onsetIndex = i;
+      }
+    }
+
+    return onsetIndex;
+  });
+}
+
+function maxSlopeSampleIndexesFromPeaks(
+  peakIndexes: number[],
+  processed: number[],
+  polarity: 1 | -1,
+  sampleRate: number,
+): number[] {
+  const oriented = processed.map((value) => value * polarity);
+  const minLeadSamples = Math.max(1, Math.round(sampleRate * 0.04));
+  const maxLookbackSamples = Math.max(2, Math.round(sampleRate * 0.35));
+
+  return peakIndexes.map((peakIndex) => {
+    const start = Math.max(0, peakIndex - maxLookbackSamples);
+    const end = Math.min(processed.length - 2, Math.max(start, peakIndex - minLeadSamples));
+
+    let bestIndex = start;
+    let bestSlope = -Infinity;
+    for (let i = start; i <= end; i++) {
+      const slope = oriented[i + 1] - oriented[i];
+      if (slope > bestSlope) {
+        bestSlope = slope;
+        bestIndex = i;
+      }
+    }
+
+    return bestSlope > 0 ? bestIndex + 0.5 : peakIndex;
+  });
+}
+
+function fiducialSampleIndexes(
+  fiducial: CaptureFiducial,
+  peakIndexes: number[],
+  processed: number[],
+  polarity: 1 | -1,
+  sampleRate: number,
+): number[] {
+  switch (fiducial) {
+    case 'onset':
+      return onsetSampleIndexesFromPeaks(peakIndexes, processed, polarity, sampleRate);
+    case 'maxSlope':
+      return maxSlopeSampleIndexesFromPeaks(peakIndexes, processed, polarity, sampleRate);
+    case 'peak':
+    default:
+      return refinedPeakSampleIndexes(peakIndexes, processed, polarity);
+  }
 }
 
 function cleanBeatSeries(
   beatTimestamps: number[],
+  expectedIbiMs?: number,
 ): { beatTimestamps: number[]; ibiMs: number[]; rawIntervalCount: number; rejectedIntervalCount: number } {
   if (beatTimestamps.length < 2) {
     return { beatTimestamps: [], ibiMs: [], rawIntervalCount: 0, rejectedIntervalCount: 0 };
@@ -690,6 +778,20 @@ function cleanBeatSeries(
       anchorTimestamp = beatTimestamp;
       cleanedBeatTimestamps.push(beatTimestamp);
       ibiHistory.length = 0;
+      continue;
+    }
+
+    if (
+      expectedIbiMs != null &&
+      expectedIbiMs > 0 &&
+      Math.abs(intervalMs - expectedIbiMs) / expectedIbiMs > 0.45
+    ) {
+      rejectedIntervalCount += 1;
+      if (intervalMs > expectedIbiMs) {
+        anchorTimestamp = beatTimestamp;
+        cleanedBeatTimestamps.push(beatTimestamp);
+        ibiHistory.length = 0;
+      }
       continue;
     }
 
@@ -744,44 +846,90 @@ function hrvCandidatePriority(
     rawIntervalCount > 0
       ? clamp(rejectedIntervalCount / rawIntervalCount, 0, 1) * 0.35
       : 0;
+  const medianIbi = median(ibiMs);
+  const fiducialBpm = medianIbi > 0 ? 60000 / medianIbi : 0;
+  const bpmAgreementBonus =
+    fiducialBpm > 0
+      ? clamp(1 - Math.abs(fiducialBpm - estimate.frequencyBpm) / MAX_FREQ_PEAK_DIFF_BPM, 0, 1) * 0.2
+      : 0;
+  const expectedIbi = estimate.frequencyBpm > 0 ? 60000 / estimate.frequencyBpm : 0;
+  const implausibleIntervalPenalty =
+    expectedIbi > 0 && ibiMs.length > 0
+      ? clamp(
+        ibiMs.filter((ibi) => Math.abs(ibi - expectedIbi) / expectedIbi > 0.35).length / ibiMs.length,
+        0,
+        1,
+      ) * 0.45
+      : 0;
 
-  return baseScore + consistencyBonus + cleanedBeatBonus + retentionBonus - rejectionPenalty;
+  return (
+    baseScore +
+    consistencyBonus +
+    cleanedBeatBonus +
+    retentionBonus +
+    bpmAgreementBonus -
+    rejectionPenalty -
+    implausibleIntervalPenalty
+  );
 }
 
 function buildScoredCaptureBeatSeries(
   analysis: PeakCandidateAnalysis,
   captureEndTimestamp: number,
 ): ScoredCaptureBeatSeries | null {
-  const rawBeatTimestamps = refinedBeatTimestampsFromPeaks(
-    analysis.peaks.peaks,
-    analysis.processed,
-    analysis.peaks.polarity,
-    analysis.sampleRate,
-    analysis.stableStartTimestamp,
-  );
   const hrvEndCutoff = captureEndTimestamp - HRV_END_GUARD_MS;
-  const guardedBeatTimestamps = rawBeatTimestamps.filter((timestamp) => timestamp <= hrvEndCutoff);
-  const { beatTimestamps, ibiMs, rawIntervalCount, rejectedIntervalCount } = cleanBeatSeries(guardedBeatTimestamps);
-  if (ibiMs.length < 2) return null;
+  const expectedIbiMs =
+    analysis.estimate.frequencyBpm > 0 ? 60000 / analysis.estimate.frequencyBpm : undefined;
+  const fiducials: CaptureFiducial[] = ['peak', 'onset', 'maxSlope'];
+  const fiducialCandidates = fiducials
+    .map((fiducial) => {
+      const sampleIndexes = fiducialSampleIndexes(
+        fiducial,
+        analysis.peaks.peaks,
+        analysis.processed,
+        analysis.peaks.polarity,
+        analysis.sampleRate,
+      );
+      const rawBeatTimestamps = beatTimestampsFromSampleIndexes(
+        sampleIndexes,
+        analysis.sampleRate,
+        analysis.stableStartTimestamp,
+      );
+      const guardedBeatTimestamps = rawBeatTimestamps.filter((timestamp) => timestamp <= hrvEndCutoff);
+      const cleaned = cleanBeatSeries(guardedBeatTimestamps, expectedIbiMs);
+      if (cleaned.ibiMs.length < 2) return null;
+
+      return {
+        fiducial,
+        ...cleaned,
+        hrvScore: hrvCandidatePriority(
+          analysis.estimate,
+          cleaned.ibiMs,
+          cleaned.rawIntervalCount,
+          cleaned.rejectedIntervalCount,
+        ),
+      };
+    })
+    .filter((candidate): candidate is ScoredFiducialBeatSeries => candidate != null);
+
+  if (fiducialCandidates.length === 0) return null;
+
+  const bestFiducial = [...fiducialCandidates].sort((a, b) => b.hrvScore - a.hrvScore)[0];
 
   return {
-    beatTimestamps,
-    ibiMs,
+    beatTimestamps: bestFiducial.beatTimestamps,
+    ibiMs: bestFiducial.ibiMs,
     roiId: analysis.estimate.roiId,
     channel: analysis.estimate.channel,
+    fiducial: bestFiducial.fiducial,
     confidence: analysis.estimate.confidence,
     quality: analysis.estimate.quality,
     snrDb: analysis.estimate.snrDb,
     frequencyBpm: analysis.estimate.frequencyBpm,
     peakBpm: analysis.peaks.bpm,
-    hrvScore: hrvCandidatePriority(
-      analysis.estimate,
-      ibiMs,
-      rawIntervalCount,
-      rejectedIntervalCount,
-    ),
-    rawIntervalCount,
-    rejectedIntervalCount,
+    hrvScore: bestFiducial.hrvScore,
+    rawIntervalCount: bestFiducial.rawIntervalCount,
+    rejectedIntervalCount: bestFiducial.rejectedIntervalCount,
   };
 }
 
@@ -948,6 +1096,7 @@ export function extractBestCaptureBeatSeries(
     ibiMs: best.ibiMs,
     roiId: best.roiId,
     channel: best.channel,
+    fiducial: best.fiducial,
     confidence: best.confidence,
     quality: best.quality,
     snrDb: best.snrDb,
