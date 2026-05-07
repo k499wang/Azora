@@ -141,9 +141,23 @@ export interface CaptureBeatSeries {
 export function buildIbiSamplesFromCaptureBeatSeries(
   beatSeries: CaptureBeatSeries,
   captureStartTimestamp: number,
+  ibiMsOverride?: number[],
 ): IbiSample[] {
-  return beatSeries.ibiMs.map((ibiMs, index) => {
-    const intervalEndTimestamp = beatSeries.beatTimestamps[index + 1];
+  if (ibiMsOverride == null) {
+    return beatSeries.ibiMs.map((ibiMs, index) => {
+      const intervalEndTimestamp = beatSeries.beatTimestamps[index + 1];
+
+      return {
+        offsetMs: Math.max(0, Math.round(intervalEndTimestamp - captureStartTimestamp)),
+        ibiMs: Math.round(ibiMs),
+        signalQuality: beatSeries.confidence,
+      };
+    });
+  }
+
+  let intervalEndTimestamp = beatSeries.beatTimestamps[0] ?? captureStartTimestamp;
+  return ibiMsOverride.map((ibiMs) => {
+    intervalEndTimestamp += ibiMs;
 
     return {
       offsetMs: Math.max(0, Math.round(intervalEndTimestamp - captureStartTimestamp)),
