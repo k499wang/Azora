@@ -32,6 +32,7 @@ const HRV_MIN_CLEAN_ANCHORS = 4;
 
 export interface HRVPreprocessResult {
   correctedIbi: number[];
+  adjacencyBreaks: boolean[];
   artifactIndices: number[];
   artifactRatio: number;
   maxRunLength: number;
@@ -140,74 +141,6 @@ function detectHrvArtifacts(ibi: number[]): boolean[] {
   return artifactMask;
 }
 
-function buildNaturalCubicSpline(xs: number[], ys: number[]): (x: number) => number {
-  const n = xs.length;
-  if (n === 0) return () => 0;
-  if (n === 1) {
-    const only = ys[0];
-    return () => only;
-  }
-  if (n === 2) {
-    const [x0, x1] = xs;
-    const [y0, y1] = ys;
-    const dx = x1 - x0;
-    return (x: number) => (dx === 0 ? y0 : y0 + ((y1 - y0) * (x - x0)) / dx);
-  }
-
-  const h = new Array(n - 1);
-  for (let i = 0; i < n - 1; i++) h[i] = xs[i + 1] - xs[i];
-
-  const a = new Array(n).fill(0);
-  const b = new Array(n).fill(1);
-  const c = new Array(n).fill(0);
-  const d = new Array(n).fill(0);
-
-  for (let i = 1; i < n - 1; i++) {
-    a[i] = h[i - 1];
-    b[i] = 2 * (h[i - 1] + h[i]);
-    c[i] = h[i];
-    d[i] = 6 * ((ys[i + 1] - ys[i]) / h[i] - (ys[i] - ys[i - 1]) / h[i - 1]);
-  }
-
-  for (let i = 2; i < n - 1; i++) {
-    const w = a[i] / b[i - 1];
-    b[i] -= w * c[i - 1];
-    d[i] -= w * d[i - 1];
-  }
-
-  const M = new Array(n).fill(0);
-  if (n >= 3) M[n - 2] = d[n - 2] / b[n - 2];
-  for (let i = n - 3; i >= 1; i--) {
-    M[i] = (d[i] - c[i] * M[i + 1]) / b[i];
-  }
-
-  return (x: number) => {
-    let lo = 0;
-    let hi = n - 1;
-    if (x <= xs[0]) {
-      lo = 0;
-    } else if (x >= xs[n - 1]) {
-      lo = n - 2;
-    } else {
-      while (hi - lo > 1) {
-        const mid = (lo + hi) >> 1;
-        if (xs[mid] <= x) lo = mid;
-        else hi = mid;
-      }
-    }
-    const i = lo;
-    const hh = h[i];
-    if (hh === 0) return ys[i];
-    const A = (xs[i + 1] - x) / hh;
-    const B = (x - xs[i]) / hh;
-    return (
-      A * ys[i] +
-      B * ys[i + 1] +
-      ((A * A * A - A) * M[i] + (B * B * B - B) * M[i + 1]) * (hh * hh) / 6
-    );
-  };
-}
-
 function findArtifactRuns(mask: boolean[]): { start: number; end: number }[] {
   const runs: { start: number; end: number }[] = [];
   let i = 0;
@@ -223,10 +156,14 @@ function findArtifactRuns(mask: boolean[]): { start: number; end: number }[] {
   return runs;
 }
 
-export function preprocessHRVIntervals(ibi: number[]): HRVPreprocessResult {
+export function preprocessHRVIntervals(
+  ibi: number[],
+  sourceAdjacencyBreaks?: boolean[],
+): HRVPreprocessResult {
   if (ibi.length === 0) {
     return {
       correctedIbi: [],
+      adjacencyBreaks: [],
       artifactIndices: [],
       artifactRatio: 0,
       maxRunLength: 0,
@@ -246,6 +183,7 @@ export function preprocessHRVIntervals(ibi: number[]): HRVPreprocessResult {
   if (firstClean > lastClean) {
     return {
       correctedIbi: [],
+      adjacencyBreaks: [],
       artifactIndices: [],
       artifactRatio: 1,
       maxRunLength,
@@ -256,50 +194,48 @@ export function preprocessHRVIntervals(ibi: number[]): HRVPreprocessResult {
   const trimmed = ibi.slice(firstClean, lastClean + 1);
   const trimmedMask = artifactMask.slice(firstClean, lastClean + 1);
 
-  const cleanXs: number[] = [];
-  const cleanYs: number[] = [];
-  for (let i = 0; i < trimmed.length; i++) {
-    if (!trimmedMask[i]) {
-      cleanXs.push(i);
-      cleanYs.push(trimmed[i]);
-    }
-  }
-
   const interiorArtifactIndices: number[] = [];
   for (let i = 0; i < trimmedMask.length; i++) {
     if (trimmedMask[i]) interiorArtifactIndices.push(i);
   }
 
   const artifactRatio = trimmed.length > 0 ? interiorArtifactIndices.length / trimmed.length : 0;
+  const cleanedIbi: number[] = [];
+  const cleanedAdjacencyBreaks: boolean[] = [];
+  let previousRawIndex: number | null = null;
 
-  if (cleanXs.length < HRV_MIN_CLEAN_ANCHORS) {
-    return {
-      correctedIbi: trimmed,
-      artifactIndices: interiorArtifactIndices,
-      artifactRatio,
-      maxRunLength,
-      usable: false,
-    };
-  }
+  for (let i = 0; i < trimmed.length; i++) {
+    if (trimmedMask[i]) continue;
 
-  const spline = buildNaturalCubicSpline(cleanXs, cleanYs);
-  const corrected = [...trimmed];
-  const localMedian = median(cleanYs);
-  const minPlausible = Math.max(250, localMedian * 0.5);
-  const maxPlausible = Math.min(2500, localMedian * 1.8);
+    const rawIndex = firstClean + i;
+    const hasSkippedInterval =
+      previousRawIndex != null && rawIndex - previousRawIndex > 1;
+    let hasSourceBreak = false;
 
-  for (const i of interiorArtifactIndices) {
-    const value = spline(i);
-    corrected[i] = Math.max(minPlausible, Math.min(maxPlausible, value));
+    if (previousRawIndex != null) {
+      for (let j = previousRawIndex + 1; j <= rawIndex; j++) {
+        if (sourceAdjacencyBreaks?.[j]) {
+          hasSourceBreak = true;
+          break;
+        }
+      }
+    }
+
+    cleanedIbi.push(trimmed[i]);
+    cleanedAdjacencyBreaks.push(
+      previousRawIndex == null ? Boolean(sourceAdjacencyBreaks?.[rawIndex]) : hasSkippedInterval || hasSourceBreak,
+    );
+    previousRawIndex = rawIndex;
   }
 
   const usable =
     maxRunLength <= HRV_MAX_ARTIFACT_RUN &&
     artifactRatio <= HRV_MAX_ARTIFACT_RATIO &&
-    corrected.length >= HRV_MIN_CLEAN_ANCHORS;
+    cleanedIbi.length >= HRV_MIN_CLEAN_ANCHORS;
 
   return {
-    correctedIbi: corrected,
+    correctedIbi: cleanedIbi,
+    adjacencyBreaks: cleanedAdjacencyBreaks,
     artifactIndices: interiorArtifactIndices,
     artifactRatio,
     maxRunLength,
@@ -331,7 +267,12 @@ export function computeHRVStats(ibi: number[], adjacencyBreaks?: boolean[]): HRV
     };
   }
 
-  const { correctedIbi, artifactRatio, usable } = preprocessHRVIntervals(ibi);
+  const {
+    correctedIbi,
+    adjacencyBreaks: cleanedAdjacencyBreaks,
+    artifactRatio,
+    usable,
+  } = preprocessHRVIntervals(ibi, adjacencyBreaks);
 
   if (!usable || correctedIbi.length < 2) {
     const meanIbiUnusable = mean(correctedIbi);
@@ -357,7 +298,7 @@ export function computeHRVStats(ibi: number[], adjacencyBreaks?: boolean[]): HRV
   let pairs = 0;
   let nn50Pairs = 0;
   for (let i = 1; i < correctedIbi.length; i++) {
-    if (adjacencyBreaks?.[i]) continue;
+    if (cleanedAdjacencyBreaks[i]) continue;
     const localStart = Math.max(0, i - 5);
     const local = median(correctedIbi.slice(localStart, i + 1));
     if (local <= 0) continue;
