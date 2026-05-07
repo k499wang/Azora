@@ -16,6 +16,8 @@ export interface HRVStats {
   durationSec: number; // s
   beatCount: number;
   score: number;       // 0..100 composite (RMSSD vs 60ms target)
+  artifactRatio: number; // 0..1 fraction of beats corrected
+  usable: boolean;       // false if too many / too-long artifact runs
 }
 
 const HRV_TARGET_RMSSD = 60;
@@ -24,10 +26,16 @@ const HRV_ARTIFACT_RELATIVE_THRESHOLD = 0.28;
 const HRV_ARTIFACT_MAD_THRESHOLD = 3.5;
 const HRV_ARTIFACT_ABSOLUTE_THRESHOLD_MS = 40;
 const HRV_DRR_PAIR_THRESHOLD = 0.2;
+const HRV_MAX_ARTIFACT_RUN = 2;
+const HRV_MAX_ARTIFACT_RATIO = 0.05;
+const HRV_MIN_CLEAN_ANCHORS = 4;
 
 export interface HRVPreprocessResult {
   correctedIbi: number[];
   artifactIndices: number[];
+  artifactRatio: number;
+  maxRunLength: number;
+  usable: boolean;
 }
 
 function mean(values: number[]): number {
@@ -132,53 +140,87 @@ function detectHrvArtifacts(ibi: number[]): boolean[] {
   return artifactMask;
 }
 
-function interpolateArtifactRuns(ibi: number[], artifactMask: boolean[]): number[] {
-  if (ibi.length === 0) return [];
-
-  const corrected = [...ibi];
-  let index = 0;
-
-  while (index < corrected.length) {
-    if (!artifactMask[index]) {
-      index += 1;
-      continue;
-    }
-
-    const runStart = index;
-    while (index < corrected.length && artifactMask[index]) {
-      index += 1;
-    }
-    const runEnd = index - 1;
-
-    let leftIndex = runStart - 1;
-    while (leftIndex >= 0 && artifactMask[leftIndex]) {
-      leftIndex -= 1;
-    }
-
-    let rightIndex = runEnd + 1;
-    while (rightIndex < corrected.length && artifactMask[rightIndex]) {
-      rightIndex += 1;
-    }
-
-    const leftValue = leftIndex >= 0 ? corrected[leftIndex] : null;
-    const rightValue = rightIndex < corrected.length ? corrected[rightIndex] : null;
-    const span = runEnd - runStart + 2;
-
-    for (let i = runStart; i <= runEnd; i++) {
-      if (leftValue != null && rightValue != null) {
-        const position = i - runStart + 1;
-        corrected[i] = leftValue + ((rightValue - leftValue) * position) / span;
-      } else if (leftValue != null) {
-        corrected[i] = leftValue;
-      } else if (rightValue != null) {
-        corrected[i] = rightValue;
-      } else {
-        corrected[i] = median(ibi);
-      }
-    }
+function buildNaturalCubicSpline(xs: number[], ys: number[]): (x: number) => number {
+  const n = xs.length;
+  if (n === 0) return () => 0;
+  if (n === 1) {
+    const only = ys[0];
+    return () => only;
+  }
+  if (n === 2) {
+    const [x0, x1] = xs;
+    const [y0, y1] = ys;
+    const dx = x1 - x0;
+    return (x: number) => (dx === 0 ? y0 : y0 + ((y1 - y0) * (x - x0)) / dx);
   }
 
-  return corrected;
+  const h = new Array(n - 1);
+  for (let i = 0; i < n - 1; i++) h[i] = xs[i + 1] - xs[i];
+
+  const a = new Array(n).fill(0);
+  const b = new Array(n).fill(1);
+  const c = new Array(n).fill(0);
+  const d = new Array(n).fill(0);
+
+  for (let i = 1; i < n - 1; i++) {
+    a[i] = h[i - 1];
+    b[i] = 2 * (h[i - 1] + h[i]);
+    c[i] = h[i];
+    d[i] = 6 * ((ys[i + 1] - ys[i]) / h[i] - (ys[i] - ys[i - 1]) / h[i - 1]);
+  }
+
+  for (let i = 2; i < n - 1; i++) {
+    const w = a[i] / b[i - 1];
+    b[i] -= w * c[i - 1];
+    d[i] -= w * d[i - 1];
+  }
+
+  const M = new Array(n).fill(0);
+  if (n >= 3) M[n - 2] = d[n - 2] / b[n - 2];
+  for (let i = n - 3; i >= 1; i--) {
+    M[i] = (d[i] - c[i] * M[i + 1]) / b[i];
+  }
+
+  return (x: number) => {
+    let lo = 0;
+    let hi = n - 1;
+    if (x <= xs[0]) {
+      lo = 0;
+    } else if (x >= xs[n - 1]) {
+      lo = n - 2;
+    } else {
+      while (hi - lo > 1) {
+        const mid = (lo + hi) >> 1;
+        if (xs[mid] <= x) lo = mid;
+        else hi = mid;
+      }
+    }
+    const i = lo;
+    const hh = h[i];
+    if (hh === 0) return ys[i];
+    const A = (xs[i + 1] - x) / hh;
+    const B = (x - xs[i]) / hh;
+    return (
+      A * ys[i] +
+      B * ys[i + 1] +
+      ((A * A * A - A) * M[i] + (B * B * B - B) * M[i + 1]) * (hh * hh) / 6
+    );
+  };
+}
+
+function findArtifactRuns(mask: boolean[]): { start: number; end: number }[] {
+  const runs: { start: number; end: number }[] = [];
+  let i = 0;
+  while (i < mask.length) {
+    if (!mask[i]) {
+      i += 1;
+      continue;
+    }
+    const start = i;
+    while (i < mask.length && mask[i]) i += 1;
+    runs.push({ start, end: i - 1 });
+  }
+  return runs;
 }
 
 export function preprocessHRVIntervals(ibi: number[]): HRVPreprocessResult {
@@ -186,24 +228,82 @@ export function preprocessHRVIntervals(ibi: number[]): HRVPreprocessResult {
     return {
       correctedIbi: [],
       artifactIndices: [],
+      artifactRatio: 0,
+      maxRunLength: 0,
+      usable: false,
     };
   }
 
   const artifactMask = detectHrvArtifacts(ibi);
-  const artifactIndices = artifactMask
-    .map((isArtifact, index) => (isArtifact ? index : null))
-    .filter((index): index is number => index != null);
+  const runs = findArtifactRuns(artifactMask);
+  const maxRunLength = runs.reduce((m, r) => Math.max(m, r.end - r.start + 1), 0);
 
-  if (artifactIndices.length === 0) {
+  let firstClean = 0;
+  while (firstClean < ibi.length && artifactMask[firstClean]) firstClean += 1;
+  let lastClean = ibi.length - 1;
+  while (lastClean >= 0 && artifactMask[lastClean]) lastClean -= 1;
+
+  if (firstClean > lastClean) {
     return {
-      correctedIbi: [...ibi],
+      correctedIbi: [],
       artifactIndices: [],
+      artifactRatio: 1,
+      maxRunLength,
+      usable: false,
     };
   }
 
+  const trimmed = ibi.slice(firstClean, lastClean + 1);
+  const trimmedMask = artifactMask.slice(firstClean, lastClean + 1);
+
+  const cleanXs: number[] = [];
+  const cleanYs: number[] = [];
+  for (let i = 0; i < trimmed.length; i++) {
+    if (!trimmedMask[i]) {
+      cleanXs.push(i);
+      cleanYs.push(trimmed[i]);
+    }
+  }
+
+  const interiorArtifactIndices: number[] = [];
+  for (let i = 0; i < trimmedMask.length; i++) {
+    if (trimmedMask[i]) interiorArtifactIndices.push(i);
+  }
+
+  const artifactRatio = trimmed.length > 0 ? interiorArtifactIndices.length / trimmed.length : 0;
+
+  if (cleanXs.length < HRV_MIN_CLEAN_ANCHORS) {
+    return {
+      correctedIbi: trimmed,
+      artifactIndices: interiorArtifactIndices,
+      artifactRatio,
+      maxRunLength,
+      usable: false,
+    };
+  }
+
+  const spline = buildNaturalCubicSpline(cleanXs, cleanYs);
+  const corrected = [...trimmed];
+  const localMedian = median(cleanYs);
+  const minPlausible = Math.max(250, localMedian * 0.5);
+  const maxPlausible = Math.min(2500, localMedian * 1.8);
+
+  for (const i of interiorArtifactIndices) {
+    const value = spline(i);
+    corrected[i] = Math.max(minPlausible, Math.min(maxPlausible, value));
+  }
+
+  const usable =
+    maxRunLength <= HRV_MAX_ARTIFACT_RUN &&
+    artifactRatio <= HRV_MAX_ARTIFACT_RATIO &&
+    corrected.length >= HRV_MIN_CLEAN_ANCHORS;
+
   return {
-    correctedIbi: interpolateArtifactRuns(ibi, artifactMask),
-    artifactIndices,
+    correctedIbi: corrected,
+    artifactIndices: interiorArtifactIndices,
+    artifactRatio,
+    maxRunLength,
+    usable,
   };
 }
 
@@ -226,10 +326,31 @@ export function computeHRVStats(ibi: number[], adjacencyBreaks?: boolean[]): HRV
       durationSec: 0,
       beatCount: ibi.length,
       score: 0,
+      artifactRatio: 0,
+      usable: false,
     };
   }
 
-  const { correctedIbi } = preprocessHRVIntervals(ibi);
+  const { correctedIbi, artifactRatio, usable } = preprocessHRVIntervals(ibi);
+
+  if (!usable || correctedIbi.length < 2) {
+    const meanIbiUnusable = mean(correctedIbi);
+    return {
+      rmssd: 0,
+      sdnn: 0,
+      stress: 0,
+      pnn50: 0,
+      meanHr: meanIbiUnusable > 0 ? ibiToBpm(meanIbiUnusable) : 0,
+      minHr: 0,
+      maxHr: 0,
+      hrDrop: 0,
+      durationSec: Math.round(correctedIbi.reduce((s, v) => s + v, 0) / 1000),
+      beatCount: correctedIbi.length,
+      score: 0,
+      artifactRatio,
+      usable: false,
+    };
+  }
 
   let sumSq = 0;
   let nn50 = 0;
@@ -242,7 +363,7 @@ export function computeHRVStats(ibi: number[], adjacencyBreaks?: boolean[]): HRV
     if (local <= 0) continue;
     const dev = Math.abs(correctedIbi[i] - local) / local;
     const devPrev = Math.abs(correctedIbi[i - 1] - local) / local;
-    if (dev > 0.20 || devPrev > 0.20) continue;
+    if (dev > 0.35 || devPrev > 0.35) continue;
 
     const diff = correctedIbi[i] - correctedIbi[i - 1];
     sumSq += diff * diff;
@@ -288,5 +409,7 @@ export function computeHRVStats(ibi: number[], adjacencyBreaks?: boolean[]): HRV
     durationSec,
     beatCount: correctedIbi.length,
     score,
+    artifactRatio,
+    usable: true,
   };
 }
