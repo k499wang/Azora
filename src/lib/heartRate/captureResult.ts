@@ -1,4 +1,4 @@
-import { computeHRVStats } from '../hrv';
+import { computeHRVStats, preprocessHRVIntervals } from '../hrv';
 import type { CaptureResult, IbiSample, PpgFrameSample } from './types';
 import {
   buildIbiSamplesFromCaptureBeatSeries,
@@ -35,12 +35,14 @@ export function buildCaptureResult(
         )
           ? 'low_signal_quality'
           : null;
-  const hrvStats = hrvAvailabilityReason == null ? computeHRVStats(hrvEligibleIbis) : null;
+  const hrvPreprocess =
+    hrvAvailabilityReason == null ? preprocessHRVIntervals(hrvEligibleIbis) : null;
+  const hrvStats = hrvPreprocess != null ? computeHRVStats(hrvPreprocess.correctedIbi) : null;
   const startTs = samples[0]?.timestamp ?? 0;
   const endTs = samples[samples.length - 1]?.timestamp ?? 0;
   const finalIbiSamples =
-    hrvAvailabilityReason == null && hrvBeatSeries != null
-      ? buildIbiSamplesFromCaptureBeatSeries(hrvBeatSeries, startTs)
+    hrvPreprocess != null && hrvBeatSeries != null
+      ? buildIbiSamplesFromCaptureBeatSeries(hrvBeatSeries, startTs, hrvPreprocess.correctedIbi)
       : [];
 
   if (bpmResult == null) {

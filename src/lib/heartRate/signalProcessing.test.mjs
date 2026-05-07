@@ -127,3 +127,28 @@ test('buildIbiSamplesFromCaptureBeatSeries maps final batch beats to persisted I
     ],
   );
 });
+
+test('buildIbiSamplesFromCaptureBeatSeries can persist corrected HRV intervals', () => {
+  const beatSeries = {
+    beatTimestamps: [1_500, 2_300, 2_700, 3_900],
+    ibiMs: [800, 400, 1_200],
+    roiId: 'center',
+    channel: 'weighted',
+    confidence: 0.73,
+    quality: 'good',
+    snrDb: 8.2,
+    frequencyBpm: 74,
+    peakBpm: 75,
+    rawIntervalCount: 3,
+    rejectedIntervalCount: 0,
+  };
+
+  assert.deepEqual(
+    buildIbiSamplesFromCaptureBeatSeries(beatSeries, 1_000, [800, 800, 800]),
+    [
+      { offsetMs: 1_300, ibiMs: 800, signalQuality: 0.73 },
+      { offsetMs: 2_100, ibiMs: 800, signalQuality: 0.73 },
+      { offsetMs: 2_900, ibiMs: 800, signalQuality: 0.73 },
+    ],
+  );
+});
