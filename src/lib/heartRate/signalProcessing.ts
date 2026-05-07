@@ -423,50 +423,58 @@ function peakEstimateForPolarity(
   expectedBpm?: number,
 ): PeakResult | null {
   const oriented = signal.map((value) => value * polarity);
-  const positiveSquared = oriented.map((value) => Math.pow(Math.max(0, value), 2));
-  const peakAverage = movingAverage(positiveSquared, sampleRate * 0.111);
-  const beatAverage = movingAverage(positiveSquared, sampleRate * 0.667);
-  const thresholdOffset = mean(positiveSquared) * 0.02;
-  const minBlockSamples = Math.max(2, Math.round(sampleRate * 0.111));
+  const center = median(oriented);
+  const sd = standardDeviation(oriented);
+  if (sd <= 0) return null;
+
+  const minPeakHeight = center + sd * 0.15;
+  const minProminence = sd * 0.18;
+  const localSearchSamples = Math.max(2, Math.round(sampleRate * 0.08));
+  const prominenceWindowSamples = Math.max(3, Math.round(sampleRate * 0.28));
   const expectedIntervalMs =
     expectedBpm != null && expectedBpm > 0 ? 60000 / expectedBpm : null;
   const refractoryMs =
-    expectedIntervalMs == null ? 300 : clamp(expectedIntervalMs * 0.82, 300, 650);
+    expectedIntervalMs == null ? 320 : clamp(expectedIntervalMs * 0.45, 280, 520);
   const refractorySamples = Math.max(1, Math.round(sampleRate * (refractoryMs / 1000)));
   const peaks: number[] = [];
 
-  let index = 0;
-  while (index < signal.length) {
-    if (peakAverage[index] <= beatAverage[index] + thresholdOffset) {
-      index += 1;
-      continue;
-    }
+  for (let index = 1; index < oriented.length - 1; index++) {
+    if (oriented[index - 1] < oriented[index] && oriented[index] >= oriented[index + 1]) {
+      let peakIndex = index;
+      const searchStart = Math.max(1, index - localSearchSamples);
+      const searchEnd = Math.min(oriented.length - 2, index + localSearchSamples);
 
-    const blockStart = index;
-    while (
-      index < signal.length &&
-      peakAverage[index] > beatAverage[index] + thresholdOffset
-    ) {
-      index += 1;
-    }
-    const blockEnd = index - 1;
-
-    if (blockEnd - blockStart + 1 < minBlockSamples) {
-      continue;
-    }
-
-    let peakIndex = blockStart;
-    for (let i = blockStart + 1; i <= blockEnd; i++) {
-      if (oriented[i] > oriented[peakIndex]) {
-        peakIndex = i;
+      for (let i = searchStart; i <= searchEnd; i++) {
+        if (oriented[i] > oriented[peakIndex]) {
+          peakIndex = i;
+        }
       }
-    }
 
-    const lastPeak = peaks[peaks.length - 1];
-    if (lastPeak == null || peakIndex - lastPeak >= refractorySamples) {
-      peaks.push(peakIndex);
-    } else if (oriented[peakIndex] > oriented[lastPeak]) {
-      peaks[peaks.length - 1] = peakIndex;
+      if (oriented[peakIndex] <= minPeakHeight) continue;
+
+      const leftStart = Math.max(0, peakIndex - prominenceWindowSamples);
+      const rightEnd = Math.min(oriented.length - 1, peakIndex + prominenceWindowSamples);
+      let leftMin = oriented[peakIndex];
+      let rightMin = oriented[peakIndex];
+
+      for (let i = leftStart; i < peakIndex; i++) {
+        if (oriented[i] < leftMin) leftMin = oriented[i];
+      }
+      for (let i = peakIndex + 1; i <= rightEnd; i++) {
+        if (oriented[i] < rightMin) rightMin = oriented[i];
+      }
+
+      const prominence = oriented[peakIndex] - Math.max(leftMin, rightMin);
+      if (prominence < minProminence) continue;
+
+      const lastPeak = peaks[peaks.length - 1];
+      if (lastPeak == null || peakIndex - lastPeak >= refractorySamples) {
+        peaks.push(peakIndex);
+      } else if (oriented[peakIndex] > oriented[lastPeak]) {
+        peaks[peaks.length - 1] = peakIndex;
+      }
+
+      index = Math.max(index, peakIndex);
     }
   }
 

@@ -36,10 +36,12 @@ export function buildCaptureResult(
           ? 'low_signal_quality'
           : null;
   const hrvPreprocess =
-    hrvAvailabilityReason == null ? preprocessHRVIntervals(hrvEligibleIbis) : null;
+    hrvAvailabilityReason == null
+      ? preprocessHRVIntervals(hrvEligibleIbis, hrvBeatSeries?.adjacencyBreaks)
+      : null;
   const hrvStats =
     hrvPreprocess != null
-      ? computeHRVStats(hrvPreprocess.correctedIbi, hrvBeatSeries?.adjacencyBreaks)
+      ? computeHRVStats(hrvPreprocess.correctedIbi, hrvPreprocess.adjacencyBreaks)
       : null;
   const startTs = samples[0]?.timestamp ?? 0;
   const endTs = samples[samples.length - 1]?.timestamp ?? 0;
