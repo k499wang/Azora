@@ -1,9 +1,8 @@
-import { computeHRVStats, preprocessHRVIntervals } from '../hrv';
+import { computeHRVStatsFromCleanIntervals, preprocessHRVIntervals } from '../hrv';
 import type { CaptureResult, IbiSample, PpgFrameSample } from './types';
 import {
+  analyzeCapture,
   buildIbiSamplesFromCaptureBeatSeries,
-  computeBPM,
-  extractBestCaptureBeatSeries,
 } from './signalProcessing';
 
 const MIN_HRV_BEAT_COUNT = 15;
@@ -15,8 +14,7 @@ export function buildCaptureResult(
   samples: PpgFrameSample[],
   _liveIbiSamples: IbiSample[] = [],
 ): CaptureResult {
-  const bpmResult = computeBPM(samples);
-  const hrvBeatSeries = extractBestCaptureBeatSeries(samples);
+  const { estimate: bpmResult, beatSeries: hrvBeatSeries } = analyzeCapture(samples);
   const hrvEligibleIbis = hrvBeatSeries?.ibiMs ?? [];
   const hrvRetentionRatio =
     hrvBeatSeries != null && hrvBeatSeries.rawIntervalCount > 0
@@ -41,7 +39,12 @@ export function buildCaptureResult(
       : null;
   const hrvStats =
     hrvPreprocess != null
-      ? computeHRVStats(hrvPreprocess.correctedIbi, hrvPreprocess.adjacencyBreaks)
+      ? computeHRVStatsFromCleanIntervals({
+          ibi: hrvPreprocess.correctedIbi,
+          adjacencyBreaks: hrvPreprocess.adjacencyBreaks,
+          artifactRatio: hrvPreprocess.artifactRatio,
+          usable: hrvPreprocess.usable,
+        })
       : null;
   const startTs = samples[0]?.timestamp ?? 0;
   const endTs = samples[samples.length - 1]?.timestamp ?? 0;

@@ -161,13 +161,27 @@ export function upsampleCubicSpline(
   const stepMs = 1000 / targetRate;
   const sampleCount = Math.floor((end - start) / stepMs) + 1;
 
-  const newValues: number[] = [];
-  const newTimestamps: number[] = [];
+  const newValues = new Array<number>(sampleCount);
+  const newTimestamps = new Array<number>(sampleCount);
+  let segmentIndex = 0;
+  const lastSegmentIndex = spline.x.length - 2;
 
   for (let i = 0; i < sampleCount; i++) {
     const t = start + i * stepMs;
-    newTimestamps.push(t);
-    newValues.push(evaluateSpline(spline, t));
+    while (
+      segmentIndex < lastSegmentIndex &&
+      t >= spline.x[segmentIndex + 1]
+    ) {
+      segmentIndex += 1;
+    }
+
+    const dx = t - spline.x[segmentIndex];
+    newTimestamps[i] = t;
+    newValues[i] =
+      spline.a[segmentIndex] +
+      spline.b[segmentIndex] * dx +
+      spline.c[segmentIndex] * dx * dx +
+      spline.d[segmentIndex] * dx * dx * dx;
   }
 
   return { values: newValues, timestamps: newTimestamps, sampleRate: targetRate };

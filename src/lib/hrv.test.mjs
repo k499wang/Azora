@@ -1,6 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { computeHRVStats, preprocessHRVIntervals } from './hrv.ts';
+import {
+  computeHRVStats,
+  computeHRVStatsFromCleanIntervals,
+  preprocessHRVIntervals,
+} from './hrv.ts';
 
 function rawRmssd(ibi) {
   if (ibi.length < 2) return 0;
@@ -42,4 +46,18 @@ test('computeHRVStats skips artifact intervals instead of interpolating fake IBI
   assert.ok(stats.rmssd < 60, `expected corrected RMSSD to stay physiologic, got ${stats.rmssd}`);
   assert.ok(stats.rmssd < raw / 4, `expected cleaned RMSSD to be much smaller than raw RMSSD, got ${stats.rmssd} vs ${raw}`);
   assert.equal(stats.beatCount, input.length - 2);
+});
+
+test('computeHRVStatsFromCleanIntervals computes stats without preprocessing again', () => {
+  const cleaned = [800, 805, 802, 799, 803, 801];
+  const stats = computeHRVStatsFromCleanIntervals({
+    ibi: cleaned,
+    adjacencyBreaks: [false, false, true, false, false, false],
+    artifactRatio: 0.25,
+    usable: true,
+  });
+
+  assert.equal(stats.beatCount, cleaned.length);
+  assert.equal(stats.artifactRatio, 0.25);
+  assert.equal(stats.rmssd, 4);
 });

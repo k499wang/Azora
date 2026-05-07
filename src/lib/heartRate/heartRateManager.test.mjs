@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  adaptivePeakThreshold,
   HeartRateManager,
   interpolatePeakTimestamp,
   medianOfRecent,
@@ -88,6 +89,37 @@ test('medianOfRecent: even window averages middle pair', () => {
 
 test('medianOfRecent: uses only the last `window` values', () => {
   assert.equal(medianOfRecent([99, 99, 99, 800, 820, 810], 3), 810);
+});
+
+test('adaptivePeakThreshold: starts stricter then decays toward lower threshold', () => {
+  const amplitude = 0.02;
+  const expectedIbiMs = 800;
+
+  const immediate = adaptivePeakThreshold(amplitude, 0, expectedIbiMs);
+  const beforeExpectedWindow = adaptivePeakThreshold(amplitude, 400, expectedIbiMs);
+  const afterExpectedWindow = adaptivePeakThreshold(amplitude, 1600, expectedIbiMs);
+  const longAfterPeak = adaptivePeakThreshold(amplitude, 2400, expectedIbiMs);
+
+  assert.equal(immediate, amplitude * 0.4);
+  assert.equal(beforeExpectedWindow, amplitude * 0.4);
+  assert.ok(
+    afterExpectedWindow < immediate,
+    `threshold should decay after the expected beat window, got ${afterExpectedWindow} >= ${immediate}`,
+  );
+  assert.ok(
+    longAfterPeak < afterExpectedWindow,
+    `threshold should continue decaying when beats slow, got ${longAfterPeak} >= ${afterExpectedWindow}`,
+  );
+  assert.ok(
+    longAfterPeak > amplitude * 0.3,
+    `threshold should approach the amplitude floor, got ${longAfterPeak}`,
+  );
+});
+
+test('adaptivePeakThreshold: falls back to fixed startup factor for invalid timing', () => {
+  assert.equal(adaptivePeakThreshold(0.02, -1, 800), 0.02 * 0.4);
+  assert.equal(adaptivePeakThreshold(0.02, 500, 0), 0.02 * 0.4);
+  assert.equal(adaptivePeakThreshold(0, 500, 800), 0);
 });
 
 test('HeartRateManager: produces ~800ms IBIs from a regular beat train', () => {

@@ -14,7 +14,11 @@ export interface HeartRateFrameState {
 
 const BASELINE_ALPHA = 0.02;
 const AMPLITUDE_ALPHA = 0.05;
-const PEAK_THRESHOLD_FACTOR = 0.4;
+const INITIAL_PEAK_THRESHOLD_FACTOR = 0.4;
+const ADAPTIVE_THRESHOLD_BASE_FACTOR = 0.3;
+const ADAPTIVE_THRESHOLD_DECAY_FACTOR = 0.2;
+const ADAPTIVE_THRESHOLD_DECAY_START_FRACTION = 0.85;
+const DEFAULT_EXPECTED_IBI_MS = 800;
 const MIN_AMPLITUDE = 0.001;
 const MIN_IBI_MS = 320;
 const MAX_IBI_MS = 1500;
@@ -32,6 +36,7 @@ const MALIK_THRESHOLD = 0.2;
 const MALIK_WINDOW = 5;
 const MALIK_MIN_HISTORY = 3;
 const SIGNAL_QUALITY_REF = 0.02;
+const FILTER_GROUP_DELAY_MS = 65;
 
 const SAMPLE_RATE_HZ = 30;
 const BP_LOW_HZ = 0.7;
@@ -135,6 +140,29 @@ export function medianOfRecent(values: number[], window: number): number {
   return sorted.length % 2 === 0
     ? (sorted[mid - 1] + sorted[mid]) / 2
     : sorted[mid];
+}
+
+export function adaptivePeakThreshold(
+  amplitude: number,
+  timeSinceLastPeakMs: number,
+  expectedIbiMs: number,
+): number {
+  if (amplitude <= 0) return 0;
+  if (timeSinceLastPeakMs < 0 || expectedIbiMs <= 0) {
+    return amplitude * INITIAL_PEAK_THRESHOLD_FACTOR;
+  }
+  const decayStartMs = expectedIbiMs * ADAPTIVE_THRESHOLD_DECAY_START_FRACTION;
+  if (timeSinceLastPeakMs < decayStartMs) {
+    return amplitude * INITIAL_PEAK_THRESHOLD_FACTOR;
+  }
+  const decayElapsedMs = timeSinceLastPeakMs - decayStartMs;
+  const decayFactor = Math.exp(-decayElapsedMs / expectedIbiMs);
+  const thresholdFactor = Math.min(
+    INITIAL_PEAK_THRESHOLD_FACTOR,
+    ADAPTIVE_THRESHOLD_BASE_FACTOR +
+      ADAPTIVE_THRESHOLD_DECAY_FACTOR * decayFactor,
+  );
+  return amplitude * thresholdFactor;
 }
 
 function weightedChannelValue(roi: PpgRoiSample): number {
@@ -280,6 +308,16 @@ export class HeartRateManager {
     this.pendingShortPeakTs = null;
   }
 
+  private getExpectedIbiMs(): number {
+    if (this.ibiHistory.length >= MALIK_MIN_HISTORY) {
+      return Math.min(
+        MAX_IBI_MS,
+        Math.max(MIN_IBI_MS, medianOfRecent(this.ibiHistory, MALIK_WINDOW)),
+      );
+    }
+    return DEFAULT_EXPECTED_IBI_MS;
+  }
+
   processFrame(sample: PpgFrameSample): HeartRateFrameState {
     const { placement, weightedAverage } = classifyFrame(sample);
 
@@ -375,7 +413,14 @@ export class HeartRateManager {
     let beatDetected = false;
 
     if (readyForMeasurement && this.amplitude > MIN_AMPLITUDE) {
-      const upperThreshold = this.amplitude * PEAK_THRESHOLD_FACTOR;
+      const upperThreshold =
+        this.lastPeakTs === 0
+          ? this.amplitude * INITIAL_PEAK_THRESHOLD_FACTOR
+          : adaptivePeakThreshold(
+              this.amplitude,
+              sample.timestamp - this.lastPeakTs,
+              this.getExpectedIbiMs(),
+            );
       const lowerThreshold = -this.amplitude * TROUGH_REARM_FACTOR;
       if (
         !this.armedForPeak &&
@@ -392,7 +437,7 @@ export class HeartRateManager {
         this.prev1 >= this.prev2 &&
         this.prev1 > ac;
       if (isPeak) {
-        const peakTs =
+        const rawPeakTs =
           this.prev2Ts > 0
             ? interpolatePeakTimestamp(
                 this.prev2,
@@ -403,6 +448,7 @@ export class HeartRateManager {
                 sample.timestamp,
               )
             : this.prev1Ts;
+        const peakTs = rawPeakTs - FILTER_GROUP_DELAY_MS;
         const adaptiveMinIbi =
           this.ibiHistory.length >= MALIK_MIN_HISTORY
             ? Math.max(
