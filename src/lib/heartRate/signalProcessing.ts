@@ -6,12 +6,14 @@ import type {
   PpgQuality,
   PpgRoiSample,
 } from './types';
+import { upsampleCubicSpline } from './cubicSpline';
 
 const MIN_DURATION_MS = 8000;
 const STABILIZATION_MS = 2500;
 const MIN_RESAMPLED_SAMPLES = 96;
 const TARGET_SAMPLE_RATE_MIN = 15;
 const TARGET_SAMPLE_RATE_MAX = 30;
+const UPSAMPLE_TARGET_RATE = 180; // Hz — reduces beat timing quantization error
 const FREQ_STEP = 0.01;
 const BPM_FREQ_MIN = 0.67; // 40 bpm
 const BPM_FREQ_MAX = 3.0; // 180 bpm
@@ -418,6 +420,7 @@ function peakEstimateForPolarity(
   signal: number[],
   sampleRate: number,
   polarity: 1 | -1,
+  expectedBpm?: number,
 ): PeakResult | null {
   const oriented = signal.map((value) => value * polarity);
   const positiveSquared = oriented.map((value) => Math.pow(Math.max(0, value), 2));
@@ -425,7 +428,11 @@ function peakEstimateForPolarity(
   const beatAverage = movingAverage(positiveSquared, sampleRate * 0.667);
   const thresholdOffset = mean(positiveSquared) * 0.02;
   const minBlockSamples = Math.max(2, Math.round(sampleRate * 0.111));
-  const refractorySamples = Math.max(1, Math.round(sampleRate * 0.3));
+  const expectedIntervalMs =
+    expectedBpm != null && expectedBpm > 0 ? 60000 / expectedBpm : null;
+  const refractoryMs =
+    expectedIntervalMs == null ? 300 : clamp(expectedIntervalMs * 0.82, 300, 650);
+  const refractorySamples = Math.max(1, Math.round(sampleRate * (refractoryMs / 1000)));
   const peaks: number[] = [];
 
   let index = 0;
@@ -489,9 +496,9 @@ function peakEstimateForPolarity(
   };
 }
 
-function peakEstimate(signal: number[], sampleRate: number): PeakResult | null {
-  const positive = peakEstimateForPolarity(signal, sampleRate, 1);
-  const negative = peakEstimateForPolarity(signal, sampleRate, -1);
+function peakEstimate(signal: number[], sampleRate: number, expectedBpm?: number): PeakResult | null {
+  const positive = peakEstimateForPolarity(signal, sampleRate, 1, expectedBpm);
+  const negative = peakEstimateForPolarity(signal, sampleRate, -1, expectedBpm);
 
   if (positive == null) return negative;
   if (negative == null) return positive;
@@ -534,11 +541,32 @@ function analyzeCandidate(
   if (resampled == null) return null;
   if (!lightingIsStable(resampled.values)) return null;
 
-  const processed = preprocess(resampled.values, resampled.sampleRate);
-  const freq = frequencyEstimate(processed, resampled.sampleRate);
+  // Upsample to 180 Hz via cubic spline to reduce beat timing quantization
+  // error from ±16.7 ms (30 Hz) to ±2.8 ms (180 Hz). This directly improves
+  // HRV accuracy (RMSSD, SDNN) without affecting the frequency-domain BPM
+  // estimate, which is computed on the original resampled signal.
+  //
+  // Build uniform timestamps for the stabilized resampled signal. These must
+  // use the same origin as `stableSeries`, otherwise refined beat timestamps
+  // are shifted by the stabilization trim.
+  const resampledTimestamps: number[] = [];
+  const stepMs = 1000 / resampled.sampleRate;
+  for (let i = 0; i < resampled.values.length; i++) {
+    resampledTimestamps.push(stableSeries.timestamps[0] + i * stepMs);
+  }
+
+  const upsampled = upsampleCubicSpline(
+    resampled.values,
+    resampledTimestamps,
+    UPSAMPLE_TARGET_RATE,
+  );
+
+  const frequencyProcessed = preprocess(resampled.values, resampled.sampleRate);
+  const freq = frequencyEstimate(frequencyProcessed, resampled.sampleRate);
   if (freq == null || freq.snrDb < options.minSnrDb) return null;
 
-  const peaks = peakEstimate(processed, resampled.sampleRate);
+  const processed = preprocess(upsampled.values, upsampled.sampleRate);
+  const peaks = peakEstimate(processed, upsampled.sampleRate, freq.bpm);
   const peakDiff = peaks != null ? Math.abs(freq.bpm - peaks.bpm) : null;
   const hasPeakAgreement = peakDiff != null && peakDiff <= MAX_FREQ_PEAK_DIFF_BPM;
 
@@ -573,7 +601,7 @@ function analyzeCandidate(
       peakBpm: peaks?.bpm ?? null,
     },
     stableStartTimestamp: stableSeries.timestamps[0],
-    sampleRate: resampled.sampleRate,
+    sampleRate: upsampled.sampleRate,
     peaks,
     processed,
   };
