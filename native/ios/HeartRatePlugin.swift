@@ -175,9 +175,9 @@ public class HeartRateCameraControls: NSObject {
         try device.lockForConfiguration()
         defer { device.unlockForConfiguration() }
 
-        if device.isExposureModeSupported(.locked) {
-          device.exposureMode = .locked
-        }
+        // Exposure stays in continuous auto so the captured image keeps
+        // tracking finger micro-shifts and stays bright. WB and focus are
+        // locked to keep R/G/B channels and sampling stable for PPG.
         if device.isWhiteBalanceModeSupported(.locked) {
           device.whiteBalanceMode = .locked
         }
@@ -202,18 +202,12 @@ public class HeartRateCameraControls: NSObject {
         try device.lockForConfiguration()
         defer { device.unlockForConfiguration() }
 
-        if device.isExposureModeSupported(.continuousAutoExposure) {
-          device.exposureMode = .continuousAutoExposure
-        }
         if device.isWhiteBalanceModeSupported(.continuousAutoWhiteBalance) {
           device.whiteBalanceMode = .continuousAutoWhiteBalance
         }
         if device.isFocusModeSupported(.continuousAutoFocus) {
           device.focusMode = .continuousAutoFocus
         }
-        device.setExposureTargetBias(0)
-        device.automaticallyEnablesLowLightBoostWhenAvailable = true
-        device.automaticallyAdjustsVideoHDREnabled = true
       } catch {
         return
       }
