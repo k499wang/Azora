@@ -1037,6 +1037,64 @@ export function extractBestCaptureBeatSeries(
   };
 }
 
+export interface CaptureAnalysis {
+  estimate: HeartRateEstimate | null;
+  beatSeries: CaptureBeatSeries | null;
+}
+
+/**
+ * Single-pass capture analysis: runs the candidate pipeline once and derives
+ * both the consensus BPM estimate and the best HRV beat series from the same
+ * `analyzeCandidate` results. This avoids upsampling/peak-detecting every
+ * candidate twice (which is what calling `computeBPM` and
+ * `extractBestCaptureBeatSeries` separately does).
+ */
+export function analyzeCapture(
+  samples: PpgFrameSample[],
+  options: ComputeBpmOptions = HRV_CAPTURE_OPTIONS,
+): CaptureAnalysis {
+  if (samples.length === 0) return { estimate: null, beatSeries: null };
+
+  const resolvedOptions = resolveOptions(options);
+  const analyses = buildCandidates(samples)
+    .map((candidate) => analyzeCandidate(candidate, resolvedOptions))
+    .filter((analysis): analysis is CandidateAnalysis => analysis != null);
+
+  if (analyses.length === 0) return { estimate: null, beatSeries: null };
+
+  const estimate = consensusEstimate(analyses.map((a) => a.estimate));
+
+  const peakAnalyses = analyses.filter(
+    (analysis): analysis is PeakCandidateAnalysis => analysis.peaks != null,
+  );
+  let beatSeries: CaptureBeatSeries | null = null;
+  if (peakAnalyses.length > 0) {
+    const captureEndTimestamp = samples[samples.length - 1]?.timestamp ?? 0;
+    const scoredCandidates = peakAnalyses
+      .map((analysis) => buildScoredCaptureBeatSeries(analysis, captureEndTimestamp))
+      .filter((candidate): candidate is ScoredCaptureBeatSeries => candidate != null);
+    if (scoredCandidates.length > 0) {
+      const best = [...scoredCandidates].sort((a, b) => b.hrvScore - a.hrvScore)[0];
+      beatSeries = {
+        beatTimestamps: best.beatTimestamps,
+        ibiMs: best.ibiMs,
+        adjacencyBreaks: best.adjacencyBreaks,
+        roiId: best.roiId,
+        channel: best.channel,
+        confidence: best.confidence,
+        quality: best.quality,
+        snrDb: best.snrDb,
+        frequencyBpm: best.frequencyBpm,
+        peakBpm: best.peakBpm,
+        rawIntervalCount: best.rawIntervalCount,
+        rejectedIntervalCount: best.rejectedIntervalCount,
+      };
+    }
+  }
+
+  return { estimate, beatSeries };
+}
+
 /**
  * Compute BPM from native camera PPG frame summaries.
  *

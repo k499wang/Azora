@@ -39,6 +39,13 @@ export interface HRVPreprocessResult {
   usable: boolean;
 }
 
+export interface CleanHRVStatsInput {
+  ibi: number[];
+  adjacencyBreaks?: boolean[];
+  artifactRatio: number;
+  usable: boolean;
+}
+
 function mean(values: number[]): number {
   if (values.length === 0) return 0;
   return values.reduce((sum, v) => sum + v, 0) / values.length;
@@ -273,6 +280,23 @@ export function computeHRVStats(ibi: number[], adjacencyBreaks?: boolean[]): HRV
     artifactRatio,
     usable,
   } = preprocessHRVIntervals(ibi, adjacencyBreaks);
+
+  return computeHRVStatsFromCleanIntervals({
+    ibi: correctedIbi,
+    adjacencyBreaks: cleanedAdjacencyBreaks,
+    artifactRatio,
+    usable,
+  });
+}
+
+export function computeHRVStatsFromCleanIntervals({
+  ibi,
+  adjacencyBreaks,
+  artifactRatio,
+  usable,
+}: CleanHRVStatsInput): HRVStats {
+  const correctedIbi = ibi;
+  const cleanedAdjacencyBreaks = adjacencyBreaks ?? [];
 
   if (!usable || correctedIbi.length < 2) {
     const meanIbiUnusable = mean(correctedIbi);
