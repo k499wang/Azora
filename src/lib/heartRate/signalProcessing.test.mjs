@@ -1,7 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { computeHRVStats } from '../hrv.ts';
-import { extractBestCaptureBeatSeries } from './signalProcessing.ts';
+import {
+  buildIbiSamplesFromCaptureBeatSeries,
+  extractBestCaptureBeatSeries,
+} from './signalProcessing.ts';
 
 const FRAME_SPACING_MS = 1000 / 30;
 const CAPTURE_DURATION_MS = 45000;
@@ -97,5 +100,30 @@ test('batch beat series produces enough clean intervals for HRV stats', () => {
   assert.ok(
     stats.beatCount >= 12,
     `expected enough beats for HRV, got ${stats.beatCount}`,
+  );
+});
+
+test('buildIbiSamplesFromCaptureBeatSeries maps final batch beats to persisted IBI samples', () => {
+  const beatSeries = {
+    beatTimestamps: [1_500.4, 2_300.2, 3_085.7, 3_910.1],
+    ibiMs: [799.8, 785.5, 824.4],
+    roiId: 'center',
+    channel: 'weighted',
+    confidence: 0.73,
+    quality: 'good',
+    snrDb: 8.2,
+    frequencyBpm: 74,
+    peakBpm: 75,
+    rawIntervalCount: 3,
+    rejectedIntervalCount: 0,
+  };
+
+  assert.deepEqual(
+    buildIbiSamplesFromCaptureBeatSeries(beatSeries, 1_000),
+    [
+      { offsetMs: 1_300, ibiMs: 800, signalQuality: 0.73 },
+      { offsetMs: 2_086, ibiMs: 786, signalQuality: 0.73 },
+      { offsetMs: 2_910, ibiMs: 824, signalQuality: 0.73 },
+    ],
   );
 });

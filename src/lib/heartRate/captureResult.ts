@@ -1,6 +1,10 @@
 import { computeHRVStats } from '../hrv';
 import type { CaptureResult, IbiSample, PpgFrameSample } from './types';
-import { computeBPM, extractBestCaptureBeatSeries } from './signalProcessing';
+import {
+  buildIbiSamplesFromCaptureBeatSeries,
+  computeBPM,
+  extractBestCaptureBeatSeries,
+} from './signalProcessing';
 
 const MIN_HRV_BEAT_COUNT = 15;
 const MIN_HRV_CONFIDENCE = 0.55;
@@ -9,7 +13,7 @@ const MIN_HRV_RETENTION_RATIO = 0.7;
 
 export function buildCaptureResult(
   samples: PpgFrameSample[],
-  ibiSamples: IbiSample[] = [],
+  _liveIbiSamples: IbiSample[] = [],
 ): CaptureResult {
   const bpmResult = computeBPM(samples);
   const hrvBeatSeries = extractBestCaptureBeatSeries(samples);
@@ -32,18 +36,21 @@ export function buildCaptureResult(
           ? 'low_signal_quality'
           : null;
   const hrvStats = hrvAvailabilityReason == null ? computeHRVStats(hrvEligibleIbis) : null;
+  const startTs = samples[0]?.timestamp ?? 0;
+  const endTs = samples[samples.length - 1]?.timestamp ?? 0;
+  const finalIbiSamples =
+    hrvAvailabilityReason == null && hrvBeatSeries != null
+      ? buildIbiSamplesFromCaptureBeatSeries(hrvBeatSeries, startTs)
+      : [];
 
   if (bpmResult == null) {
     const tooFew = samples.length < 60;
     return {
       reading: null,
       error: tooFew ? 'too_few_samples' : 'low_confidence',
-      ibiSamples,
+      ibiSamples: [],
     };
   }
-
-  const startTs = samples[0]?.timestamp ?? 0;
-  const endTs = samples[samples.length - 1]?.timestamp ?? 0;
 
   return {
     reading: {
@@ -68,6 +75,6 @@ export function buildCaptureResult(
       hrvAvailabilityReason: hrvAvailabilityReason ?? undefined,
     },
     error: null,
-    ibiSamples,
+    ibiSamples: finalIbiSamples,
   };
 }

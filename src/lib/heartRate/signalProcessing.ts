@@ -1,5 +1,6 @@
 import type {
   HeartRateEstimate,
+  IbiSample,
   PpgChannel,
   PpgFrameSample,
   PpgQuality,
@@ -135,6 +136,21 @@ export interface CaptureBeatSeries {
   peakBpm: number;
   rawIntervalCount: number;
   rejectedIntervalCount: number;
+}
+
+export function buildIbiSamplesFromCaptureBeatSeries(
+  beatSeries: CaptureBeatSeries,
+  captureStartTimestamp: number,
+): IbiSample[] {
+  return beatSeries.ibiMs.map((ibiMs, index) => {
+    const intervalEndTimestamp = beatSeries.beatTimestamps[index + 1];
+
+    return {
+      offsetMs: Math.max(0, Math.round(intervalEndTimestamp - captureStartTimestamp)),
+      ibiMs: Math.round(ibiMs),
+      signalQuality: beatSeries.confidence,
+    };
+  });
 }
 
 interface ScoredCaptureBeatSeries extends CaptureBeatSeries {
