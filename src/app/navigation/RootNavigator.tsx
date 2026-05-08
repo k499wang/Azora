@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { StyleSheet, View, ActivityIndicator } from 'react-native';
 import AuthLandingScreen from '../../screens/AuthLandingScreen';
@@ -9,100 +8,12 @@ import { HeartRateSessionDetailScreen } from '../../screens/HeartRateSessionDeta
 import { ProPaywallScreen } from '../../screens/ProPaywallScreen';
 import ShareableResultScreen from '../../screens/ShareableResultScreen';
 import { useAppGate } from '../../hooks/useAppGate';
-import { useFeatureAccess } from '../../hooks/useFeatureAccess';
 import { OnboardingFlow } from '../../components/onboarding';
-import { PaywallPlacement } from '../../services/paywall';
-import { FeatureKey } from '../../services/subscriptions/featureAccess';
 import { colors } from '../../theme/colors';
 import { MainTabs } from './MainTabs';
-import type {
-  DailyExerciseScreenProps,
-  ExerciseSessionScreenProps,
-  HeartRateScreenProps,
-  RootStackParamList,
-} from './types';
+import type { RootStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
-
-function GatedLoadingScreen() {
-  return (
-    <View style={styles.loadingScreen}>
-      <ActivityIndicator color={colors.primary.blue600} />
-    </View>
-  );
-}
-
-function GatedHeartRateScreen(props: HeartRateScreenProps) {
-  const access = useFeatureAccess(FeatureKey.HeartRateMeasurement);
-
-  useEffect(() => {
-    if (access.isLoading || access.allowed) return;
-
-    props.navigation.replace('ProPaywall', {
-      placement: PaywallPlacement.HeartRateProGate,
-      sourceScreen: 'HeartRate',
-      feature: FeatureKey.HeartRateMeasurement,
-    });
-  }, [access.allowed, access.isLoading, props.navigation]);
-
-  if (access.isLoading) {
-    return <GatedLoadingScreen />;
-  }
-
-  if (!access.allowed) {
-    return <GatedLoadingScreen />;
-  }
-
-  return <HeartRateScreen {...props} />;
-}
-
-function GatedExerciseSessionPage(props: ExerciseSessionScreenProps) {
-  const access = useFeatureAccess(FeatureKey.DailyExercise);
-
-  useEffect(() => {
-    if (access.isLoading || access.allowed) return;
-
-    props.navigation.replace('ProPaywall', {
-      placement: PaywallPlacement.ExercisePremiumGate,
-      sourceScreen: 'ExerciseSession',
-      feature: FeatureKey.DailyExercise,
-    });
-  }, [access.allowed, access.isLoading, props.navigation]);
-
-  if (access.isLoading) {
-    return <GatedLoadingScreen />;
-  }
-
-  if (!access.allowed) {
-    return <GatedLoadingScreen />;
-  }
-
-  return <ExerciseSessionPage {...props} />;
-}
-
-function GatedDailyExercisePage(props: DailyExerciseScreenProps) {
-  const access = useFeatureAccess(FeatureKey.DailyExercise);
-
-  useEffect(() => {
-    if (access.isLoading || access.allowed) return;
-
-    props.navigation.replace('ProPaywall', {
-      placement: PaywallPlacement.ExercisePremiumGate,
-      sourceScreen: 'DailyExercise',
-      feature: FeatureKey.DailyExercise,
-    });
-  }, [access.allowed, access.isLoading, props.navigation]);
-
-  if (access.isLoading) {
-    return <GatedLoadingScreen />;
-  }
-
-  if (!access.allowed) {
-    return <GatedLoadingScreen />;
-  }
-
-  return <DailyExercisePage {...props} />;
-}
 
 function AppStack() {
   return (
@@ -110,7 +21,7 @@ function AppStack() {
       <Stack.Screen name="MainTabs" component={MainTabs} />
       <Stack.Screen
         name="HeartRate"
-        component={GatedHeartRateScreen}
+        component={HeartRateScreen}
         options={{
           presentation: 'card',
           animation: 'slide_from_right',
@@ -134,7 +45,7 @@ function AppStack() {
       />
       <Stack.Screen
         name="ExerciseSession"
-        component={GatedExerciseSessionPage}
+        component={ExerciseSessionPage}
         options={{
           presentation: 'card',
           animation: 'slide_from_right',
@@ -142,7 +53,7 @@ function AppStack() {
       />
       <Stack.Screen
         name="DailyExercise"
-        component={GatedDailyExercisePage}
+        component={DailyExercisePage}
         options={{
           presentation: 'card',
           animation: 'slide_from_right',
@@ -194,12 +105,6 @@ export function RootNavigator() {
 const styles = StyleSheet.create({
   overlayRoot: {
     flex: 1,
-    backgroundColor: colors.background.primary,
-  },
-  loadingScreen: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
     backgroundColor: colors.background.primary,
   },
   onboardingOverlay: {

@@ -30,10 +30,29 @@ export function useFeatureAccess(feature: FeatureKeyValue): FeatureAccessResult 
     [feature, isPro, usageQuery.data],
   );
 
-  return {
+  const result = {
     ...access,
     isLoading:
       entitlementQuery.isPending ||
       (needsUsage && usageQuery.isPending),
   };
+
+  console.log('[hr-gate] useFeatureAccess', {
+    feature,
+    userId,
+    isPro,
+    entitlementStatus: {
+      isPending: entitlementQuery.isPending,
+      isFetching: entitlementQuery.isFetching,
+      data: entitlementQuery.data,
+    },
+    usageStatus: {
+      isPending: usageQuery.isPending,
+      isFetching: usageQuery.isFetching,
+      data: usageQuery.data,
+    },
+    decision: result,
+  });
+
+  return result;
 }

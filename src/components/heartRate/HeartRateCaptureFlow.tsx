@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { Alert, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import { usePostHog } from 'posthog-react-native';
 import { useHeartRateCapture } from '../../hooks/useHeartRateCapture';
 import { ResultScreen } from './ResultScreen';
@@ -14,10 +15,14 @@ import type {
   CaptureResult,
   FingerPlacementState,
 } from '../../lib/heartRate/types';
+import type { RootStackNavigationProp } from '../../app/navigation';
 import { captureException } from '../../services/analytics/errorTracking';
 import { AnalyticsEvent } from '../../services/analytics/events';
 import { useAuthStore } from '../../stores/authStore';
 import { useCompleteHeartRateSessionMutation } from '../../queries/tracking/useCompleteHeartRateSessionMutation';
+import { useFeatureAccess } from '../../hooks/useFeatureAccess';
+import { FeatureKey } from '../../services/subscriptions/featureAccess';
+import { PaywallPlacement } from '../../services/paywall';
 
 interface HeartRateCaptureFlowProps {
   setupScreens?: React.ComponentType<SetupScreenProps>[];
@@ -58,12 +63,26 @@ export function HeartRateCaptureFlow({
   context,
 }: HeartRateCaptureFlowProps) {
   const posthog = usePostHog();
+  const navigation = useNavigation<RootStackNavigationProp<'HeartRate'>>();
   const user = useAuthStore((state) => state.user);
   const completeHeartRateSessionMutation = useCompleteHeartRateSessionMutation(user?.id ?? null);
+  const heartRateAccess = useFeatureAccess(FeatureKey.HeartRateMeasurement);
   const savedResultKeyRef = useRef<string | null>(null);
   const savingResultKeyRef = useRef<string | null>(null);
   const [currentSetupIndex, setCurrentSetupIndex] = useState(0);
   const [pastSetup, setPastSetup] = useState(false);
+  const [hasSavedReadingThisMount, setHasSavedReadingThisMount] = useState(false);
+
+  console.log('[hr-gate] CaptureFlow render', {
+    userId: user?.id ?? null,
+    hasSavedReadingThisMount,
+    isPro: heartRateAccess.isPro,
+    allowed: heartRateAccess.allowed,
+    isLoading: heartRateAccess.isLoading,
+    used: heartRateAccess.used,
+    limit: heartRateAccess.limit,
+    reason: heartRateAccess.reason,
+  });
 
   const {
     captureState,
@@ -132,12 +151,44 @@ export function HeartRateCaptureFlow({
   }, [onCancel]);
 
   const handleRetry = useCallback(() => {
+    const blockedByLimit =
+      hasSavedReadingThisMount && !heartRateAccess.isPro;
+    const blockedByCache =
+      !heartRateAccess.isLoading && !heartRateAccess.allowed;
+    console.log('[hr-gate] handleRetry tapped', {
+      hasSavedReadingThisMount,
+      isPro: heartRateAccess.isPro,
+      allowed: heartRateAccess.allowed,
+      isLoading: heartRateAccess.isLoading,
+      used: heartRateAccess.used,
+      limit: heartRateAccess.limit,
+      reason: heartRateAccess.reason,
+      blockedByLimit,
+      blockedByCache,
+      willGate: blockedByLimit || blockedByCache,
+    });
+    if (blockedByLimit || blockedByCache) {
+      navigation.replace('ProPaywall', {
+        placement: PaywallPlacement.HeartRateProGate,
+        sourceScreen: 'HeartRate',
+        feature: FeatureKey.HeartRateMeasurement,
+      });
+      return;
+    }
     savedResultKeyRef.current = null;
     savingResultKeyRef.current = null;
+    setHasSavedReadingThisMount(false);
     reset();
     setCurrentSetupIndex(0);
     setPastSetup(false);
-  }, [reset]);
+  }, [
+    hasSavedReadingThisMount,
+    heartRateAccess.allowed,
+    heartRateAccess.isLoading,
+    heartRateAccess.isPro,
+    navigation,
+    reset,
+  ]);
 
   const getResultKey = useCallback((nextResult: CaptureResult): string | null => {
     const reading = nextResult.reading;
@@ -163,11 +214,14 @@ export function HeartRateCaptureFlow({
 
     savingResultKeyRef.current = resultKey;
     try {
+      console.log('[hr-gate] saveResult: calling RPC', { resultKey, sampleCount: captureSamples.length });
       await completeHeartRateSessionMutation.mutateAsync({
         captureSamples,
         result: nextResult,
       });
       savedResultKeyRef.current = resultKey;
+      setHasSavedReadingThisMount(true);
+      console.log('[hr-gate] saveResult: RPC ok, hasSavedReadingThisMount=true');
     } catch (error) {
       captureException(error, {
         flow: 'heart_rate_capture',
