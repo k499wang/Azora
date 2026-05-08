@@ -17,7 +17,12 @@ export function useDailyFeatureUsageQuery(userId: string | null) {
   return useQuery({
     queryKey: getDailyFeatureUsageQueryKey(userId, localDate),
     enabled: userId != null,
-    queryFn: () => getDailyFeatureUsage(userId as string, localDate),
+    queryFn: async () => {
+      console.log('[hr-gate] useDailyFeatureUsageQuery: fetching from supabase', { userId, localDate });
+      const data = await getDailyFeatureUsage(userId as string, localDate);
+      console.log('[hr-gate] useDailyFeatureUsageQuery: got', data);
+      return data;
+    },
     staleTime: 1000 * 60,
   });
 }

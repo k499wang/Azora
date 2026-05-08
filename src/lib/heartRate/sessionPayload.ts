@@ -189,9 +189,9 @@ export function buildHeartRateSessionRpcPayload(
     .filter((sample) => isFiniteNumber(sample.timestamp))
     .sort((a, b) => a.timestamp - b.timestamp);
 
-  const startedAtMs = orderedSamples[0]?.timestamp;
-  const endedAtMs = orderedSamples[orderedSamples.length - 1]?.timestamp;
-  if (!isFiniteNumber(startedAtMs) || !isFiniteNumber(endedAtMs) || endedAtMs < startedAtMs) {
+  const firstFrameTs = orderedSamples[0]?.timestamp;
+  const lastFrameTs = orderedSamples[orderedSamples.length - 1]?.timestamp;
+  if (!isFiniteNumber(firstFrameTs) || !isFiniteNumber(lastFrameTs) || lastFrameTs < firstFrameTs) {
     return null;
   }
 
@@ -199,11 +199,17 @@ export function buildHeartRateSessionRpcPayload(
   const instantaneousBpmSamples = buildInstantaneousBpmSamplesFromIbiSamples(ibiSamples);
   const bpmSamples = buildBpmSamplesFromIbiSamples(ibiSamples);
   const bpmSummary = summarizeBpmSamples(instantaneousBpmSamples);
-  const rawDurationMs = endedAtMs - startedAtMs;
+  const rawDurationMs = lastFrameTs - firstFrameTs;
   const durationMs =
     rawDurationMs > 0
       ? rawDurationMs
       : (isFiniteNumber(reading.durationMs) ? reading.durationMs : 0);
+
+  // Frame timestamps are a monotonic clock (ms since boot), not Unix epoch — only their
+  // deltas are wall-clock-meaningful. Anchor session times to recordedAt (real wall-clock).
+  const recordedAtMs = Date.parse(reading.recordedAt);
+  const endedAtMs = Number.isFinite(recordedAtMs) ? recordedAtMs : Date.now();
+  const startedAtMs = endedAtMs - durationMs;
 
   return {
     p_session: {

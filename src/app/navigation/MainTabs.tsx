@@ -77,7 +77,16 @@ export function MainTabs() {
       }
       navigation.navigate('ExerciseSession', { techniqueId: 'box' });
     } else {
+      console.log('[hr-gate] MainTabs HR tap', {
+        allowed: heartRateAccess.allowed,
+        isLoading: heartRateAccess.isLoading,
+        isPro: heartRateAccess.isPro,
+        used: heartRateAccess.used,
+        limit: heartRateAccess.limit,
+        reason: heartRateAccess.reason,
+      });
       if (!heartRateAccess.allowed && !heartRateAccess.isLoading) {
+        console.log('[hr-gate] MainTabs HR: routing to ProPaywall');
         navigation.navigate('ProPaywall', {
           placement: PaywallPlacement.HeartRateProGate,
           sourceScreen: 'MainTabs',
@@ -85,6 +94,7 @@ export function MainTabs() {
         });
         return;
       }
+      console.log('[hr-gate] MainTabs HR: navigating to HeartRate');
       navigation.navigate('HeartRate');
     }
   };

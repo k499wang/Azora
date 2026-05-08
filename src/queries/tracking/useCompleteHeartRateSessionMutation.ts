@@ -39,44 +39,38 @@ export function useCompleteHeartRateSessionMutation(userId: string | null) {
 
   return useMutation({
     mutationFn: async (input: CompleteHeartRateSessionMutationInput) => {
+      console.log('[hr-gate] completeHeartRateSessionMutation: start', { userId, sampleCount: input.captureSamples.length });
       if (userId == null) {
         throw new Error('Cannot save a heart-rate reading without a signed-in user.');
       }
 
       const timezone = getDeviceTimezone();
 
-      return completeHeartRateSession({
+      const sessionId = await completeHeartRateSession({
         captureSamples: input.captureSamples,
         result: input.result,
         timezone,
       });
+      console.log('[hr-gate] completeHeartRateSessionMutation: RPC returned', { sessionId });
+      return sessionId;
     },
     onSuccess: async (_sessionId, input) => {
       const timezone = getDeviceTimezone();
-      const endedAt = input.captureSamples.reduce<number | null>(
-        (latest, sample) => (
-          typeof sample.timestamp === 'number' && Number.isFinite(sample.timestamp)
-            ? Math.max(latest ?? sample.timestamp, sample.timestamp)
-            : latest
-        ),
-        null,
-      );
+      // Frame timestamps are a monotonic clock, not wall-clock — use recordedAt for the date key.
+      const recordedAtMs = Date.parse(input.result.reading?.recordedAt ?? '');
+      const endedAt = Number.isFinite(recordedAtMs) ? recordedAtMs : Date.now();
+      const usageDate = formatLocalDate(endedAt, timezone);
+      console.log('[hr-gate] mutation onSuccess: invalidating', { userId, usageDate, endedAt });
 
       await Promise.all([
         queryClient.invalidateQueries({
           queryKey: getHomeStatsQueryKey(userId),
         }),
-        ...(endedAt == null
-          ? []
-          : [
-              queryClient.invalidateQueries({
-                queryKey: getDailyFeatureUsageQueryKey(
-                  userId,
-                  formatLocalDate(endedAt, timezone),
-                ),
-              }),
-            ]),
+        queryClient.invalidateQueries({
+          queryKey: getDailyFeatureUsageQueryKey(userId, usageDate),
+        }),
       ]);
+      console.log('[hr-gate] mutation onSuccess: invalidate complete');
     },
   });
 }
