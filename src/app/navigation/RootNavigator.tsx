@@ -32,7 +32,7 @@ function AppStack() {
         component={ProPaywallScreen}
         options={{
           presentation: 'transparentModal',
-          animation: 'none',
+          animation: 'slide_from_bottom',
         }}
       />
       <Stack.Screen
