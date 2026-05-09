@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Canvas, Path, Skia } from '@shopify/react-native-skia';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
@@ -15,6 +15,7 @@ interface BigRingStatCardProps {
   color?: string;
   trackColor?: string;
   icon: IconName;
+  info?: { title: string; message: string };
 }
 
 const RING_SIZE = 120;
@@ -28,6 +29,7 @@ export default function BigRingStatCard({
   color = colors.neutral[900],
   trackColor = colors.neutral[200],
   icon,
+  info,
 }: BigRingStatCardProps) {
   const cx = RING_SIZE / 2;
   const cy = RING_SIZE / 2;
@@ -43,12 +45,19 @@ export default function BigRingStatCard({
 
   return (
     <View style={styles.card}>
-      <MaterialCommunityIcons
-        name="information-outline"
-        size={14}
-        color={colors.text.tertiary}
-        style={styles.infoIcon}
-      />
+      {info ? (
+        <Pressable
+          hitSlop={12}
+          onPress={() => Alert.alert(info.title, info.message)}
+          style={styles.infoButton}
+        >
+          <MaterialCommunityIcons
+            name="information-outline"
+            size={16}
+            color={colors.text.tertiary}
+          />
+        </Pressable>
+      ) : null}
       <View style={styles.ringWrap}>
         <View style={{ width: RING_SIZE, height: RING_SIZE }}>
           <Canvas style={StyleSheet.absoluteFill}>
@@ -113,10 +122,16 @@ const styles = StyleSheet.create({
   ringWrap: {
     alignItems: 'center',
   },
-  infoIcon: {
+  infoButton: {
     position: 'absolute',
-    top: 10,
-    right: 10,
+    top: 8,
+    right: 8,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 2,
   },
   iconCenter: {
     ...StyleSheet.absoluteFillObject,

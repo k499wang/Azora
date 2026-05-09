@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Canvas, Path, Skia } from '@shopify/react-native-skia';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
@@ -19,6 +19,7 @@ interface RingStatCardProps {
     direction: 'up' | 'down';
     delta?: string;
   };
+  info?: { title: string; message: string };
 }
 
 const RING_SIZE = 76;
@@ -33,6 +34,7 @@ export default function RingStatCard({
   trackColor = colors.neutral[100],
   icon,
   trend,
+  info,
 }: RingStatCardProps) {
   const trendColor = trend?.direction === 'up' ? colors.success[500] : colors.error[500];
   const trendIcon = trend?.direction === 'up' ? 'arrow-top-right' : 'arrow-bottom-right';
@@ -50,6 +52,19 @@ export default function RingStatCard({
 
   return (
     <View style={styles.card}>
+      {info ? (
+        <Pressable
+          hitSlop={10}
+          onPress={() => Alert.alert(info.title, info.message)}
+          style={styles.infoButton}
+        >
+          <MaterialCommunityIcons
+            name="information-outline"
+            size={14}
+            color={colors.text.tertiary}
+          />
+        </Pressable>
+      ) : null}
       <View style={styles.valueRow}>
         <Text style={styles.value}>{value}</Text>
         {target ? <Text style={styles.target}>/{target}</Text> : null}
@@ -146,5 +161,16 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  infoButton: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 2,
   },
 });
