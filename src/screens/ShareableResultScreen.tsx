@@ -68,13 +68,13 @@ export default function ShareableResultScreen({
 
   const extraStats: HeartRateResultStat[] = [
     { icon: 'timer-outline', label: 'Hold Time', value: holdTime, unit: 'min' },
+    minBpm != null
+      ? { icon: 'arrow-down', label: 'Min HR', value: String(minBpm), unit: 'bpm' }
+      : { icon: 'arrow-down', label: 'Min HR', value: 'Unavailable', unavailable: true },
+    maxBpm != null
+      ? { icon: 'arrow-up', label: 'Max HR', value: String(maxBpm), unit: 'bpm' }
+      : { icon: 'arrow-up', label: 'Max HR', value: 'Unavailable', unavailable: true },
   ];
-  if (minBpm != null) {
-    extraStats.push({ icon: 'arrow-down', label: 'Min HR', value: String(minBpm), unit: 'bpm' });
-  }
-  if (maxBpm != null) {
-    extraStats.push({ icon: 'arrow-up', label: 'Max HR', value: String(maxBpm), unit: 'bpm' });
-  }
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>

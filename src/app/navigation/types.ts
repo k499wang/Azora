@@ -33,7 +33,6 @@ export type RootStackParamList = {
   DailyExercise: undefined;
   DailyResult: {
     holdSeconds: number;
-    bpmSamples?: { t: number; bpm: number }[];
     avgBpm?: number;
     minBpm?: number;
     maxBpm?: number;

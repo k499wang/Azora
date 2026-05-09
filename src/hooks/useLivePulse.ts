@@ -141,6 +141,10 @@ export function useLivePulse(): UseLivePulseReturn {
   const beginMeasurementWindow = useCallback(() => {
     measurementSamplesRef.current = [];
     measurementActiveRef.current = true;
+    lastBpmUpdateRef.current = 0;
+    publishedBpmRef.current = null;
+    setCurrentBpm(null);
+    setBeatTick(0);
     managerRef.current.beginMeasurementWindow(lastFrameTimestampRef.current ?? Date.now());
   }, []);
 

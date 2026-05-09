@@ -12,7 +12,12 @@ import BreathingCircle, {
 import ExerciseScaffold from '../components/exercise/ExerciseScaffold';
 import { useLivePulse } from '../hooks/useLivePulse';
 import { HeartRateCameraPreview } from '../components/heartRate/HeartRateCameraPreview';
-import type { FingerPlacementState, IbiSample, PpgFrameSample } from '../lib/heartRate/types';
+import type {
+  CaptureResult,
+  FingerPlacementState,
+  HrvAvailabilityReason,
+  IbiSample,
+} from '../lib/heartRate/types';
 import { usePostHog } from 'posthog-react-native';
 import { AnalyticsEvent } from '../services/analytics/events';
 import { captureException } from '../services/analytics/errorTracking';
@@ -67,21 +72,6 @@ interface BpmSample {
   bpm: number;
 }
 
-function summarizeBpmSamples(samples: BpmSample[]): {
-  avgBpm: number | null;
-  minBpm: number | null;
-  maxBpm: number | null;
-} {
-  const bpms = samples.map((s) => s.bpm);
-  return {
-    avgBpm: bpms.length
-      ? Math.round(bpms.reduce((a, b) => a + b, 0) / bpms.length)
-      : null,
-    minBpm: bpms.length ? Math.min(...bpms) : null,
-    maxBpm: bpms.length ? Math.max(...bpms) : null,
-  };
-}
-
 function formatHoldTime(totalSeconds: number): string {
   const safe = Math.max(0, Math.floor(totalSeconds));
   const minutes = Math.floor(safe / 60);
@@ -110,7 +100,19 @@ export default function DailyExercisePage({
   const inhaleTickRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [bestHoldSeconds, setBestHoldSeconds] = useState(0);
   const [hrEnabled, setHrEnabled] = useState(true);
-  const [lastSamples, setLastSamples] = useState<BpmSample[]>([]);
+  const [lastRelease, setLastRelease] = useState<{
+    ibiSamples: IbiSample[];
+    rmssd: number | null;
+    sdnn: number | null;
+    hrDrop: number | null;
+    stress: number | null;
+    confidence?: number;
+    sampleCount?: number;
+    hrvAvailabilityReason?: HrvAvailabilityReason;
+    avgBpm?: number;
+    minBpm?: number;
+    maxBpm?: number;
+  } | null>(null);
   const [releaseAudioActive, setReleaseAudioActive] = useState(false);
 
   const bpmOpacity = useRef(new Animated.Value(0.6)).current;
@@ -129,7 +131,6 @@ export default function DailyExercisePage({
     currentBpm,
     beginMeasurementWindow: beginPulseMeasurementWindow,
     getMeasurementSamples,
-    getIbiSamples,
   } = pulse;
 
   useEffect(() => {
@@ -228,7 +229,6 @@ export default function DailyExercisePage({
     samplesRef.current = [];
     savedSessionKeyRef.current = null;
     savingSessionKeyRef.current = null;
-    setLastSamples([]);
     setReleaseAudioActive(false);
     setHoldSeconds(0);
     setInhaleSeconds(0);
@@ -248,9 +248,8 @@ export default function DailyExercisePage({
 
   const saveCompletedHold = useCallback(async (
     completedHoldSeconds: number,
-    liveSamples: BpmSample[],
-    captureSamples: PpgFrameSample[],
-    ibiSamples: IbiSample[],
+    captureSampleCount: number,
+    result: CaptureResult,
     endedAtMs: number,
   ) => {
     const startedAtMs = holdStartAtRef.current;
@@ -260,8 +259,9 @@ export default function DailyExercisePage({
       startedAtMs,
       endedAtMs,
       completedHoldSeconds,
-      captureSamples.length,
-      ibiSamples.length,
+      captureSampleCount,
+      result.reading?.sampleCount ?? 0,
+      result.ibiSamples.length,
     ].join(':');
 
     if (
@@ -271,17 +271,15 @@ export default function DailyExercisePage({
       return;
     }
 
-    const result = buildCaptureResult(captureSamples, ibiSamples);
     const reading = result.reading;
     const rpcIbiSamples = mapIbiSamples(result.ibiSamples);
     const bpmSamples = buildBpmSamplesFromIbiSamples(rpcIbiSamples);
     const bpmSummary = summarizeHeartRateBpmSamples(
       buildInstantaneousBpmSamplesFromIbiSamples(rpcIbiSamples),
     );
-    const liveSummary = summarizeBpmSamples(liveSamples);
-    const avgBpm = reading?.bpm ?? liveSummary.avgBpm;
-    const minBpm = bpmSummary.minBpm ?? reading?.bpm ?? liveSummary.minBpm;
-    const maxBpm = bpmSummary.maxBpm ?? reading?.bpm ?? liveSummary.maxBpm;
+    const avgBpm = reading?.bpm ?? null;
+    const minBpm = bpmSummary.minBpm ?? reading?.bpm ?? null;
+    const maxBpm = bpmSummary.maxBpm ?? reading?.bpm ?? null;
     const lungAge = estimateLungAge({
       holdSeconds: completedHoldSeconds,
       avgBpm: avgBpm ?? undefined,
@@ -302,9 +300,7 @@ export default function DailyExercisePage({
         rmssd: reading?.rmssd ?? null,
         sdnn: reading?.sdnn ?? null,
         pnn50: reading?.pnn50 ?? null,
-        hrDrop: reading?.hrDrop ?? (
-          avgBpm != null && minBpm != null ? Math.round(avgBpm - minBpm) : null
-        ),
+        hrDrop: reading?.hrDrop ?? null,
         beatCount: reading?.beatCount ?? null,
         stress: reading?.stress ?? null,
         samples: bpmSamples.map((sample) => ({
@@ -396,12 +392,11 @@ export default function DailyExercisePage({
 
   const releaseHold = () => {
     const endedAtMs = Date.now();
-    flow.cancel();
-    const samples = samplesRef.current.slice();
+    const liveSampleCount = samplesRef.current.length;
     const captureSamples = getMeasurementSamples();
-    const ibiSamples = getIbiSamples();
+    const captureResult = buildCaptureResult(captureSamples);
+    flow.cancel();
     setReleaseAudioActive(false);
-    setLastSamples(samples);
     const newBest = holdSeconds > bestHoldSeconds && holdSeconds > 0;
     const updatedBest = Math.max(bestHoldSeconds, holdSeconds);
     setBestHoldSeconds(updatedBest);
@@ -420,32 +415,50 @@ export default function DailyExercisePage({
       best_hold_seconds: updatedBest,
       is_new_best: newBest,
       hr_monitoring_enabled: hrEnabled,
-      bpm_sample_count: samples.length,
+      bpm_sample_count: liveSampleCount,
     });
-    void saveCompletedHold(holdSeconds, samples, captureSamples, ibiSamples, endedAtMs);
-    const liveSummary = summarizeBpmSamples(samples);
-    const captureResult = buildCaptureResult(captureSamples, ibiSamples);
+    void saveCompletedHold(holdSeconds, captureSamples.length, captureResult, endedAtMs);
     const reading = captureResult.reading;
-    const avgBpm = reading?.bpm ?? liveSummary.avgBpm ?? undefined;
-    const hrDrop = reading?.hrDrop ?? (
-      avgBpm != null && liveSummary.minBpm != null
-        ? Math.round(avgBpm - liveSummary.minBpm)
-        : null
+    const rpcIbiSamples = mapIbiSamples(captureResult.ibiSamples);
+    const bpmSummary = summarizeHeartRateBpmSamples(
+      buildInstantaneousBpmSamplesFromIbiSamples(rpcIbiSamples),
     );
-    navigation.navigate('DailyResult', {
-      holdSeconds,
-      bpmSamples: samples,
-      avgBpm,
-      minBpm: liveSummary.minBpm ?? undefined,
-      maxBpm: liveSummary.maxBpm ?? undefined,
+    const avgBpm = reading?.bpm ?? undefined;
+    const minBpm = bpmSummary.minBpm ?? reading?.bpm ?? undefined;
+    const maxBpm = bpmSummary.maxBpm ?? reading?.bpm ?? undefined;
+    const fallbackHrvReason: HrvAvailabilityReason | undefined =
+      reading == null
+        ? (captureResult.error === 'too_few_samples'
+            ? 'not_enough_clean_beats'
+            : 'low_signal_quality')
+        : reading.hrvAvailabilityReason;
+    const release = {
+      ibiSamples: captureResult.ibiSamples,
       rmssd: reading?.rmssd ?? null,
       sdnn: reading?.sdnn ?? null,
-      hrDrop,
+      hrDrop: reading?.hrDrop ?? null,
       stress: reading?.stress ?? null,
       confidence: reading?.confidence,
       sampleCount: reading?.sampleCount,
-      hrvAvailabilityReason: reading?.hrvAvailabilityReason,
-      ibiSamples: captureResult.ibiSamples,
+      hrvAvailabilityReason: fallbackHrvReason,
+      avgBpm,
+      minBpm,
+      maxBpm,
+    };
+    setLastRelease(release);
+    navigation.navigate('DailyResult', {
+      holdSeconds,
+      avgBpm: release.avgBpm,
+      minBpm: release.minBpm,
+      maxBpm: release.maxBpm,
+      rmssd: release.rmssd,
+      sdnn: release.sdnn,
+      hrDrop: release.hrDrop,
+      stress: release.stress,
+      confidence: release.confidence,
+      sampleCount: release.sampleCount,
+      hrvAvailabilityReason: release.hrvAvailabilityReason,
+      ibiSamples: release.ibiSamples,
     });
   };
 
@@ -480,22 +493,26 @@ export default function DailyExercisePage({
   };
 
   const handleViewResults = () => {
-    const samples = lastSamples;
-    const { avgBpm, minBpm, maxBpm } = summarizeBpmSamples(samples);
-
     posthog.capture(AnalyticsEvent.DailyResultsViewed, {
       hold_seconds: holdSeconds,
       best_hold_seconds: bestHoldSeconds,
-      avg_bpm: avgBpm ?? null,
-      min_bpm: minBpm ?? null,
-      max_bpm: maxBpm ?? null,
+      avg_bpm: lastRelease?.avgBpm ?? null,
+      min_bpm: lastRelease?.minBpm ?? null,
+      max_bpm: lastRelease?.maxBpm ?? null,
     });
     navigation.navigate('DailyResult', {
       holdSeconds,
-      bpmSamples: samples,
-      avgBpm: avgBpm ?? undefined,
-      minBpm: minBpm ?? undefined,
-      maxBpm: maxBpm ?? undefined,
+      avgBpm: lastRelease?.avgBpm,
+      minBpm: lastRelease?.minBpm,
+      maxBpm: lastRelease?.maxBpm,
+      rmssd: lastRelease?.rmssd ?? null,
+      sdnn: lastRelease?.sdnn ?? null,
+      hrDrop: lastRelease?.hrDrop ?? null,
+      stress: lastRelease?.stress ?? null,
+      confidence: lastRelease?.confidence,
+      sampleCount: lastRelease?.sampleCount,
+      hrvAvailabilityReason: lastRelease?.hrvAvailabilityReason,
+      ibiSamples: lastRelease?.ibiSamples ?? [],
     });
   };
 
