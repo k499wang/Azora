@@ -5,6 +5,12 @@ import { typography } from '../../theme/typography';
 import RingStatCard from './RingStatCard';
 import HRVChart from './HRVChart';
 
+const HEALTH_INFO = {
+  title: 'Health Score',
+  message:
+    'A 0–100 composite score based on heart rate, HRV, breath hold, and recovery during the session. A higher score indicates better overall cardiorespiratory health.\n\n70+ is considered strong; 85+ is excellent.',
+};
+
 interface SessionStatsPagerProps {
   title?: string;
   avgBpm?: number | null;
@@ -39,7 +45,6 @@ export default function SessionStatsPager({
         <RingStatCard
           label="BPM"
           value={bpmValue}
-          target="60"
           progress={avgBpm == null ? 0 : avgBpm / 130}
           color={colors.error[500]}
           trackColor={colors.neutral[200]}
@@ -48,7 +53,6 @@ export default function SessionStatsPager({
         <RingStatCard
           label="Hold"
           value={holdValue}
-          target="2:00"
           progress={holdSeconds == null ? 0 : holdSeconds / 120}
           color={colors.primary.blue500}
           trackColor={colors.neutral[200]}
@@ -62,6 +66,7 @@ export default function SessionStatsPager({
           color={colors.success[500]}
           trackColor={colors.neutral[200]}
           icon="heart-glow"
+          info={HEALTH_INFO}
         />
       </View>
       <HRVChart ibiMs={ibiMs} color={colors.error[500]} />

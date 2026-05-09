@@ -5,6 +5,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 import { typography, fonts } from '../theme/typography';
 import { spacing, padding, margin } from '../theme/spacing';
+import { card } from '../theme/card';
 import { HeartRateResultContent } from '../components/heartRate/HeartRateResultContent';
 import type { HeartRateResultStat } from '../components/heartRate/HeartRateResultContent';
 import type { DailyResultScreenProps } from '../app/navigation';
@@ -24,8 +25,8 @@ const LUNG_HEALTH_MAP: Record<
   'healthy':       { label: 'Healthy',       color: colors.success[700],    icon: 'leaf' },
   'average':       { label: 'Average',       color: colors.warning[500],    icon: 'minus-circle-outline' },
   'below-average': { label: 'Below Average', color: colors.orange[500],     icon: 'alert-circle-outline' },
-  'light-smoker':  { label: 'Light Smoker',  color: colors.orange[600],     icon: 'smoking' },
-  'heavy-smoker':  { label: 'Heavy Smoker',  color: colors.error[500],      icon: 'smoking-off' },
+  'light-smoker':  { label: 'Could Improve', color: colors.orange[600],    icon: 'arrow-up-bold-circle-outline' },
+  'heavy-smoker':  { label: 'Needs Work',    color: colors.error[500],     icon: 'alert-circle-outline' },
 };
 
 function formatTime(secs: number) {
@@ -44,7 +45,6 @@ export default function ShareableResultScreen({
     holdSeconds,
     avgBpm,
     minBpm,
-    maxBpm,
     rmssd,
     hrDrop,
     stress,
@@ -71,90 +71,134 @@ export default function ShareableResultScreen({
     minBpm != null
       ? { icon: 'arrow-down', label: 'Min HR', value: String(minBpm), unit: 'bpm' }
       : { icon: 'arrow-down', label: 'Min HR', value: 'Unavailable', unavailable: true },
-    maxBpm != null
-      ? { icon: 'arrow-up', label: 'Max HR', value: String(maxBpm), unit: 'bpm' }
-      : { icon: 'arrow-up', label: 'Max HR', value: 'Unavailable', unavailable: true },
   ];
+
+  const heroStats: Array<{
+    icon: keyof typeof MaterialCommunityIcons.glyphMap;
+    value: string;
+    label: string;
+    tint: string;
+    unavailable?: boolean;
+  }> = [
+    { icon: 'timer-sand', value: holdTime, label: 'Hold', tint: colors.primary.blue500 },
+    avgBpm != null
+      ? {
+          icon: 'heart-pulse',
+          value: String(avgBpm),
+          label: 'Avg HR',
+          tint: colors.error[500],
+        }
+      : {
+          icon: 'heart-pulse',
+          value: 'Unavailable',
+          label: 'Avg HR',
+          tint: colors.error[500],
+          unavailable: true,
+        },
+    lungEstimate.hrDropBpm != null
+      ? {
+          icon: 'trending-down',
+          value: String(lungEstimate.hrDropBpm),
+          label: 'Max HR Drop',
+          tint: colors.success[500],
+        }
+      : {
+          icon: 'trending-down',
+          value: 'Unavailable',
+          label: 'Max HR Drop',
+          tint: colors.success[500],
+          unavailable: true,
+        },
+  ];
+  const hasUnavailable = heroStats.some((s) => s.unavailable);
+  const encouragement = hasUnavailable
+    ? `Try holding your breath a bit longer next time — a longer hold gives us enough signal to unlock more of your stats.`
+    : `You held your breath for ${holdTime} — keep the streak alive.`;
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.header}>
           <Pressable
             style={styles.closeButton}
             onPress={() => navigation.navigate('MainTabs', { screen: 'Home' })}
           >
-            <MaterialCommunityIcons name="close" size={24} color={colors.text.secondary} />
+            <MaterialCommunityIcons name="close" size={22} color={colors.text.secondary} />
           </Pressable>
-          <Text style={styles.title}>Your Results</Text>
+          <Text style={styles.title}>Nice work!</Text>
         </View>
 
-        <View style={styles.lungHealthSection}>
-          <View style={styles.lungMedallionOuter}>
+        <View style={styles.heroCardWrap}>
+          <View
+            style={[
+              styles.heroCard,
+              card.shadow,
+              { backgroundColor: health.color + '0F', borderColor: health.color + '33' },
+            ]}
+          >
             <View
               style={[
-                styles.lungMedallionGlow,
-                { backgroundColor: health.color + '14' },
-              ]}
-            />
-            <View
-              style={[
-                styles.lungMedallion,
-                { backgroundColor: health.color + '22', borderColor: health.color + '55' },
+                styles.ribbon,
+                { backgroundColor: health.color },
               ]}
             >
               <MaterialCommunityIcons
-                name={health.icon}
-                size={72}
-                color={health.color}
-              />
-            </View>
-          </View>
-
-          <Text style={styles.lungCardLabel}>Estimated lung age</Text>
-          <View style={styles.lungAgeRow}>
-            <Text style={styles.lungAgeValue}>{lungEstimate.age}</Text>
-            <Text style={styles.lungAgeUnit}>yrs</Text>
-          </View>
-          <View style={[styles.healthBadge, { backgroundColor: health.color + '1A' }]}>
-            <Text style={[styles.healthBadgeText, { color: health.color }]}>
-              {health.label}
-            </Text>
-          </View>
-
-          <View style={styles.lungChipRow}>
-            <View style={styles.lungChip}>
-              <MaterialCommunityIcons
-                name="timer-outline"
+                name="medal"
                 size={14}
-                color={colors.text.secondary}
+                color={colors.text.inverse}
               />
-              <Text style={styles.lungChipValue}>{holdTime}</Text>
-              <Text style={styles.lungChipLabel}>hold</Text>
+              <Text style={styles.ribbonText}>{health.label}</Text>
             </View>
-            {avgBpm != null ? (
-              <View style={styles.lungChip}>
-                <MaterialCommunityIcons
-                  name="heart-pulse"
-                  size={14}
-                  color={colors.text.secondary}
-                />
-                <Text style={styles.lungChipValue}>{avgBpm}</Text>
-                <Text style={styles.lungChipLabel}>avg HR</Text>
-              </View>
-            ) : null}
-            {lungEstimate.hrDropBpm != null ? (
-              <View style={styles.lungChip}>
-                <MaterialCommunityIcons
-                  name="arrow-down"
-                  size={14}
-                  color={colors.text.secondary}
-                />
-                <Text style={styles.lungChipValue}>{lungEstimate.hrDropBpm}</Text>
-                <Text style={styles.lungChipLabel}>HR drop</Text>
-              </View>
-            ) : null}
+
+            <Text style={styles.lungCardLabel}>Estimated lung age</Text>
+            <View style={styles.lungAgeRow}>
+              <Text style={styles.lungAgeValue}>{lungEstimate.age}</Text>
+              <Text style={styles.lungAgeUnit}>yrs</Text>
+            </View>
+            <Text style={styles.encouragement}>{encouragement}</Text>
           </View>
+        </View>
+
+        <View style={styles.statTileRow}>
+          {heroStats.map((stat) => (
+            <View
+              key={stat.label}
+              style={[
+                styles.statTile,
+                card.base,
+                stat.unavailable && styles.statTileUnavailable,
+              ]}
+            >
+              <View
+                style={[
+                  styles.statIconBubble,
+                  {
+                    backgroundColor: stat.unavailable
+                      ? colors.neutral[100]
+                      : stat.tint + '1F',
+                  },
+                ]}
+              >
+                <MaterialCommunityIcons
+                  name={stat.icon}
+                  size={18}
+                  color={stat.unavailable ? colors.text.tertiary : stat.tint}
+                />
+              </View>
+              <Text
+                style={[
+                  styles.statValue,
+                  stat.unavailable && styles.statValueUnavailable,
+                ]}
+              >
+                {stat.value}
+              </Text>
+              <Text style={styles.statLabel}>{stat.label}</Text>
+            </View>
+          ))}
         </View>
 
         <View style={styles.heartResultSection}>
@@ -173,14 +217,12 @@ export default function ShareableResultScreen({
             onPressUpgrade={showAdvancedStatsPaywall}
           />
         </View>
-
       </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  // Screen
   screen: {
     flex: 1,
     backgroundColor: colors.background.primary,
@@ -189,7 +231,6 @@ const styles = StyleSheet.create({
     paddingBottom: spacing['5xl'],
   },
 
-  // Header
   header: {
     paddingHorizontal: padding.screen.horizontal,
     paddingTop: padding.screen.vertical,
@@ -203,6 +244,8 @@ const styles = StyleSheet.create({
     height: 36,
     borderRadius: 18,
     backgroundColor: colors.background.elevated,
+    borderWidth: 1,
+    borderColor: colors.border.subtle,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 1,
@@ -214,40 +257,42 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
 
-  // Lung Health Hero
-  lungHealthSection: {
+  heroCardWrap: {
     paddingHorizontal: padding.screen.horizontal,
     marginTop: margin.sectionGap,
-    alignItems: 'center',
   },
-  lungMedallionOuter: {
-    width: 168,
-    height: 168,
+  heroCard: {
+    borderRadius: 28,
+    borderWidth: 1,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.xl,
+    paddingHorizontal: spacing.lg,
     alignItems: 'center',
-    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  ribbon: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 6,
+    borderRadius: 999,
     marginBottom: spacing.md,
   },
-  lungMedallionGlow: {
-    position: 'absolute',
-    width: 168,
-    height: 168,
-    borderRadius: 84,
-    opacity: 0.85,
+  ribbonText: {
+    ...typography.label.small,
+    color: colors.text.inverse,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    letterSpacing: 0.4,
   },
-  lungMedallion: {
-    width: 124,
-    height: 124,
-    borderRadius: 62,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+
   lungCardLabel: {
-    ...typography.label.medium,
+    ...typography.label.small,
     color: colors.text.secondary,
-    fontFamily: fonts.medium,
+    fontFamily: fonts.semibold,
     textTransform: 'uppercase',
-    letterSpacing: 1,
+    letterSpacing: 1.2,
   },
   lungAgeRow: {
     flexDirection: 'row',
@@ -257,55 +302,67 @@ const styles = StyleSheet.create({
   },
   lungAgeValue: {
     ...typography.display.display1,
-    fontSize: 64,
-    lineHeight: 72,
+    fontSize: 72,
+    lineHeight: 78,
     color: colors.text.primary,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   lungAgeUnit: {
     ...typography.body.medium,
     color: colors.text.tertiary,
     fontFamily: fonts.semibold,
   },
-  healthBadge: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: 6,
-    borderRadius: 999,
-    marginTop: spacing.xs,
-  },
-  healthBadgeText: {
-    ...typography.label.medium,
+  encouragement: {
+    ...typography.body.small,
+    color: colors.text.secondary,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    textAlign: 'center',
+    marginTop: spacing.sm,
+    paddingHorizontal: spacing.sm,
   },
-  lungChipRow: {
+
+  statTileRow: {
     flexDirection: 'row',
     gap: spacing.sm,
+    paddingHorizontal: padding.screen.horizontal,
     marginTop: spacing.md,
-    flexWrap: 'wrap',
-    justifyContent: 'center',
   },
-  lungChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: colors.background.elevated,
-    borderWidth: 1,
-    borderColor: colors.neutral[200],
-    paddingVertical: 6,
+  statTile: {
+    flex: 1,
+    paddingVertical: spacing.md,
     paddingHorizontal: spacing.sm,
-    borderRadius: 999,
+    alignItems: 'center',
+    borderRadius: 18,
   },
-  lungChipValue: {
-    ...typography.label.small,
+  statIconBubble: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.xs,
+  },
+  statValue: {
+    ...typography.title.title3,
+    color: colors.text.primary,
     fontFamily: fonts.semibold,
     fontWeight: '600',
-    color: colors.text.primary,
   },
-  lungChipLabel: {
+  statValueUnavailable: {
+    ...typography.caption.caption1,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    color: colors.text.tertiary,
+  },
+  statTileUnavailable: {
+    opacity: 0.75,
+  },
+  statLabel: {
     ...typography.caption.caption1,
     color: colors.text.tertiary,
+    fontFamily: fonts.semibold,
+    marginTop: 2,
   },
 
   heartResultSection: {

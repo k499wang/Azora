@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
-import { LayoutChangeEvent, StyleSheet, Text, View } from 'react-native';
+import { Alert, LayoutChangeEvent, Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Line, Path } from 'react-native-svg';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
@@ -19,6 +20,12 @@ interface HRVChartProps {
 
 const PADDING = { top: 14, right: 8, bottom: 8, left: 8 };
 const Y_TICK_HEIGHT = 14;
+
+const HRV_INFO = {
+  title: 'Heart Rate Variability',
+  message:
+    'HRV is the variation in time between consecutive heartbeats. The chart shows your RR intervals (in milliseconds) over the session — wider swings mean more variability and stronger vagal tone.\n\nHealthy resting RR intervals fall roughly between 700–1100 ms, with visible beat-to-beat variation. Higher variability generally indicates better recovery and cardiovascular health.',
+};
 
 export default function HRVChart({
   ibiMs,
@@ -97,6 +104,17 @@ export default function HRVChart({
 
   return (
     <View style={styles.card}>
+      <Pressable
+        hitSlop={10}
+        onPress={() => Alert.alert(HRV_INFO.title, HRV_INFO.message)}
+        style={styles.infoButton}
+      >
+        <MaterialCommunityIcons
+          name="information-outline"
+          size={16}
+          color={colors.text.tertiary}
+        />
+      </Pressable>
       <Text style={styles.title}>Heart rate variability</Text>
 
       <View style={styles.plotRow}>
@@ -228,5 +246,16 @@ const styles = StyleSheet.create({
   emptyText: {
     ...typography.body.small,
     color: colors.text.tertiary,
+  },
+  infoButton: {
+    position: 'absolute',
+    top: spacing.sm,
+    right: spacing.sm,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 2,
   },
 });

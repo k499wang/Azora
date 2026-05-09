@@ -1,5 +1,6 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, View } from 'react-native';
 import { Text } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
 import { spacing, padding } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
@@ -8,6 +9,22 @@ import SectionHeader from '../common/SectionHeader';
 import BigRingStatCard from './BigRingStatCard';
 import StressGauge from '../heartRate/StressGauge';
 import { getStressZone } from '../../lib/heartRate/stress';
+
+const RMSSD_INFO = {
+  title: 'RMSSD',
+  message:
+    'Root Mean Square of Successive Differences — a heart rate variability (HRV) measure that reflects parasympathetic (vagal) activity and recovery.\n\nHealthy resting range: 20–80 ms. Higher generally indicates better recovery and cardiovascular health. Varies with age, fitness, and stress.',
+};
+const SDNN_INFO = {
+  title: 'Avg HRV (SDNN)',
+  message:
+    'Standard Deviation of NN intervals — an overall measure of heart rate variability across the session.\n\nHealthy resting: 30–60 ms in short readings. Higher SDNN reflects a more adaptable autonomic nervous system.',
+};
+const STRESS_INFO = {
+  title: 'Stress Score',
+  message:
+    'A 0–100 estimate of physiological stress derived from your HRV. Lower numbers reflect a calmer, more recovered state.\n\n0–30: relaxed. 30–60: balanced. 60–100: elevated stress or fatigue.',
+};
 
 interface HeartHealthSectionProps {
   rmssd?: number | null;
@@ -97,20 +114,20 @@ export default function HeartHealthSection({
           <BigRingStatCard
             label="RMSSD"
             value={locked ? 'Pro' : rmssdValue == null ? '--' : `${rmssdValue}`}
-            target="60"
             progress={locked || rmssdValue == null ? 0.72 : rmssdValue / 60}
             color={colors.primary.blue500}
             trackColor={colors.neutral[200]}
             icon="heart-rmssd"
+            info={RMSSD_INFO}
           />
           <BigRingStatCard
             label="Avg HRV"
             value={locked ? 'Pro' : sdnnValue == null ? '--' : `${sdnnValue}`}
-            target="50"
             progress={locked || sdnnValue == null ? 0.62 : sdnnValue / 50}
             color={colors.success[500]}
             trackColor={colors.neutral[200]}
             icon="heart-sdnn"
+            info={SDNN_INFO}
           />
         </View>
 
@@ -130,7 +147,20 @@ export default function HeartHealthSection({
               </Text>
             </View>
           ) : (
-            <StressGauge value={stressValue} zone={getStressZone(stressValue)} />
+            <View style={styles.stressGaugeWrap}>
+              <Pressable
+                hitSlop={12}
+                onPress={() => Alert.alert(STRESS_INFO.title, STRESS_INFO.message)}
+                style={styles.stressInfoButton}
+              >
+                <MaterialCommunityIcons
+                  name="information-outline"
+                  size={16}
+                  color={colors.text.tertiary}
+                />
+              </Pressable>
+              <StressGauge value={stressValue} zone={getStressZone(stressValue)} />
+            </View>
           )}
         </View>
 
@@ -193,6 +223,20 @@ const styles = StyleSheet.create({
   },
   gaugeWrap: {
     paddingHorizontal: padding.screen.horizontal,
+  },
+  stressGaugeWrap: {
+    position: 'relative',
+  },
+  stressInfoButton: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 2,
   },
   stressPlaceholder: {
     ...card.base,
