@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
@@ -41,7 +41,6 @@ import { registerAppSessionTracking } from './src/services/analytics/appSession'
 import { registerAuthIdentitySync } from './src/services/supabase';
 import { SplashScreen as WelcomeSplash } from './src/components/welcome/SplashScreen';
 import { WelcomeIntro } from './src/components/welcome/WelcomeIntro';
-import { CategoryIntroScreen } from './src/components/welcome/CategoryIntroScreen';
 import { colors } from './src/theme/colors';
 SplashScreen.preventAutoHideAsync();
 
@@ -98,7 +97,6 @@ export default function App() {
 
   const [splashVisible, setSplashVisible] = useState(true);
   const [introVisible, setIntroVisible] = useState(true);
-  const [categoryVisible, setCategoryVisible] = useState(true);
 
   if (!fontsLoaded) return null;
 
@@ -117,11 +115,6 @@ export default function App() {
             </AppProviders>
           </PostHogProvider>
         </NavigationContainer>
-        {categoryVisible ? (
-          <View style={StyleSheet.absoluteFill}>
-            <CategoryIntroScreen onContinue={() => setCategoryVisible(false)} />
-          </View>
-        ) : null}
         {introVisible ? (
           <WelcomeIntro onFinish={() => setIntroVisible(false)} />
         ) : null}

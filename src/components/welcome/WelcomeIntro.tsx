@@ -6,9 +6,11 @@ import {
   Pressable,
   StyleSheet,
   Text,
+  useWindowDimensions,
   Vibration,
   View,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ContinuousHaptics } from '../../native/continuousHaptics';
 import { isHapticsEnabled } from '../../services/preferences/hapticsPreference';
@@ -27,15 +29,45 @@ const HEADLINE_FADE_MS = 380;
 const SKIP_FADE_MS = 1000;
 const INHALE_TEXT_VISIBLE_MS = HEADLINE_FADE_MS + INHALE_MS + HEADLINE_FADE_MS;
 
+const INHALE_GRADIENT: [string, string] = ['#EAF2FF', '#C8DBFF'];
+const EXHALE_GRADIENT: [string, string] = ['#FFF4E6', '#FFE0BF'];
+
+interface ParticleDef {
+  x: number;
+  y: number;
+  rise: number;
+  size: number;
+  opacity: number;
+}
+
+const PARTICLES: ParticleDef[] = [
+  { x: 0.12, y: 0.62, rise: -0.16, size: 3, opacity: 0.3 },
+  { x: 0.22, y: 0.72, rise: -0.20, size: 2, opacity: 0.2 },
+  { x: 0.32, y: 0.58, rise: -0.14, size: 4, opacity: 0.35 },
+  { x: 0.42, y: 0.68, rise: -0.18, size: 2.5, opacity: 0.25 },
+  { x: 0.52, y: 0.64, rise: -0.22, size: 3.5, opacity: 0.3 },
+  { x: 0.62, y: 0.75, rise: -0.15, size: 2, opacity: 0.2 },
+  { x: 0.72, y: 0.60, rise: -0.19, size: 4, opacity: 0.35 },
+  { x: 0.82, y: 0.70, rise: -0.17, size: 2.5, opacity: 0.25 },
+  { x: 0.18, y: 0.78, rise: -0.21, size: 3, opacity: 0.2 },
+  { x: 0.68, y: 0.66, rise: -0.16, size: 2, opacity: 0.25 },
+  { x: 0.38, y: 0.74, rise: -0.18, size: 3.5, opacity: 0.3 },
+  { x: 0.88, y: 0.63, rise: -0.14, size: 2, opacity: 0.2 },
+];
+
 type Phase = 'inhale' | 'exhale';
 
 export function WelcomeIntro({ onFinish }: Props) {
   const insets = useSafeAreaInsets();
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const [phase, setPhase] = useState<Phase>('inhale');
 
   const headlineOpacity = useRef(new Animated.Value(0)).current;
   const screenOpacity = useRef(new Animated.Value(1)).current;
   const skipOpacity = useRef(new Animated.Value(1)).current;
+  const gradientOpacity = useRef(new Animated.Value(0)).current;
+  const gradientAnimRef = useRef<Animated.CompositeAnimation | null>(null);
+  const particleAnims = useRef(PARTICLES.map(() => new Animated.Value(0))).current;
 
   const finishedRef = useRef(false);
   const stopInhaleVibration = () => {
@@ -82,6 +114,27 @@ export function WelcomeIntro({ onFinish }: Props) {
       }
     }
 
+    // Ambient gradient shift synced to breath phase
+    gradientAnimRef.current?.stop();
+    gradientAnimRef.current = Animated.timing(gradientOpacity, {
+      toValue: isInhale ? 1 : 0,
+      duration,
+      easing: Easing.inOut(Easing.ease),
+      useNativeDriver: true,
+    });
+    gradientAnimRef.current.start();
+
+    // Particles rise on inhale, settle on exhale
+    particleAnims.forEach((anim) => {
+      anim.stopAnimation();
+      Animated.timing(anim, {
+        toValue: isInhale ? 1 : 0,
+        duration,
+        easing: Easing.inOut(Easing.ease),
+        useNativeDriver: true,
+      }).start();
+    });
+
     const textAnimation = Animated.sequence([
       Animated.timing(headlineOpacity, {
         toValue: 1,
@@ -110,6 +163,8 @@ export function WelcomeIntro({ onFinish }: Props) {
 
     return () => {
       textAnimation.stop();
+      gradientAnimRef.current?.stop();
+      particleAnims.forEach((anim) => anim.stopAnimation());
       stopInhaleVibration();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -120,6 +175,41 @@ export function WelcomeIntro({ onFinish }: Props) {
       style={[styles.root, { opacity: screenOpacity }]}
       pointerEvents="box-none"
     >
+      {/* Ambient breath gradient */}
+      <View style={StyleSheet.absoluteFill} pointerEvents="none">
+        <LinearGradient colors={EXHALE_GRADIENT} style={StyleSheet.absoluteFill} />
+        <Animated.View style={[StyleSheet.absoluteFill, { opacity: gradientOpacity }]}>
+          <LinearGradient colors={INHALE_GRADIENT} style={StyleSheet.absoluteFill} />
+        </Animated.View>
+      </View>
+
+      {/* Rising / falling breath particles */}
+      <View style={[StyleSheet.absoluteFill, { pointerEvents: 'none' }]}>
+        {PARTICLES.map((p, i) => (
+          <Animated.View
+            key={i}
+            style={{
+              position: 'absolute',
+              left: p.x * screenWidth,
+              top: p.y * screenHeight,
+              width: p.size,
+              height: p.size,
+              borderRadius: p.size / 2,
+              backgroundColor: colors.neutral[0],
+              opacity: p.opacity,
+              transform: [
+                {
+                  translateY: particleAnims[i].interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0, p.rise * screenHeight],
+                  }),
+                },
+              ],
+            }}
+          />
+        ))}
+      </View>
+
       <Animated.View
         style={[
           styles.skip,
