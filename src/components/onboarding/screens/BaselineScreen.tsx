@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Image, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { Animated, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 const BASELINE_ILLUSTRATION = require('../../../../assets/baseline.png');
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -7,8 +8,7 @@ import * as Haptics from 'expo-haptics';
 import BreathingCircle, {
   type BreathingCircleRef,
 } from '../../exercise/BreathingCircle';
-import { PersistentCameraRing } from '../../heartRate/PersistentCameraRing';
-import { LiveHeartRateMonitor } from '../../meditation/LiveHeartRateMonitor';
+import { HeartRateCameraPreview } from '../../heartRate/HeartRateCameraPreview';
 import { useHeartRateStream } from '../../../hooks/useHeartRateStream';
 import { useBreathPhaseAudio } from '../../../hooks/useBreathPhaseAudio';
 import {
@@ -45,14 +45,6 @@ type Phase = 'intro' | 'placement' | 'running' | 'done';
 const SESSION_MS = 60_000;
 const HALF_BREATH_SEC = 5.5;
 const PLACEMENT_GOOD_DURATION_MS = 2500;
-const PLACEMENT_RING_SIZE = 240;
-
-interface PreviewFrame {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
 
 const STEPS: { num: string; label: string }[] = [
   { num: '1', label: 'Rest your fingertip on the back camera lens.' },
@@ -94,8 +86,6 @@ export default function BaselineScreen({
   const [phase, setPhase] = useState<Phase>('intro');
   const [breathLabel, setBreathLabel] = useState<'Inhale' | 'Exhale'>('Inhale');
   const [progress, setProgress] = useState(0);
-  const [placementHoldProgress, setPlacementHoldProgress] = useState(0);
-  const [previewFrame, setPreviewFrame] = useState<PreviewFrame | null>(null);
 
   const circleRef = useRef<BreathingCircleRef>(null);
   const startedAtRef = useRef<number | null>(null);
@@ -108,6 +98,8 @@ export default function BaselineScreen({
   const hudOpacity = useRef(new Animated.Value(1)).current;
   const [hudVisible, setHudVisible] = useState(true);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const bpmOpacity = useRef(new Animated.Value(0.6)).current;
+  const heartScale = useRef(new Animated.Value(1)).current;
 
   const placementCfg = placementConfig(stream.fingerPlacement);
   const hasConfirmedSignal =
@@ -115,8 +107,35 @@ export default function BaselineScreen({
     (stream.fingerPlacement === 'good' || stream.fingerPlacement === 'partial');
   const hasUsableFingerSignal =
     stream.fingerPlacement === 'good' || stream.fingerPlacement === 'partial';
-  const visibleBpm = hasConfirmedSignal ? stream.currentBpm : null;
   const visibleBeatTick = hasUsableFingerSignal ? stream.beatTick : 0;
+  const bpmDisplay =
+    phase === 'running' && stream.currentBpm != null && stream.currentBpm > 0
+      ? Math.round(stream.currentBpm)
+      : null;
+  const signalGood = stream.fingerPlacement === 'good';
+  const showSignalWarning = phase === 'running' && !signalGood;
+
+  useEffect(() => {
+    if (visibleBeatTick <= 0) return;
+    bpmOpacity.setValue(0.95);
+    Animated.timing(bpmOpacity, {
+      toValue: 0.6,
+      duration: 420,
+      useNativeDriver: true,
+    }).start();
+    Animated.sequence([
+      Animated.timing(heartScale, {
+        toValue: 1.28,
+        duration: 90,
+        useNativeDriver: true,
+      }),
+      Animated.timing(heartScale, {
+        toValue: 1,
+        duration: 240,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [visibleBeatTick, bpmOpacity, heartScale]);
 
   const showHud = useCallback(() => {
     if (hideTimerRef.current) {
@@ -145,7 +164,7 @@ export default function BaselineScreen({
   );
 
   const cameraProps = useMemo(() => {
-    if (stream.device == null) return undefined;
+    if (stream.device == null) return null;
     return {
       device: stream.device,
       format: stream.format,
@@ -163,16 +182,10 @@ export default function BaselineScreen({
     phase,
   ]);
 
-  const pillPreviewStyle =
-    phase === 'running' && previewFrame != null
-      ? [
-          styles.persistentCameraPillPreview,
-          {
-            top: previewFrame.y - (PLACEMENT_RING_SIZE - previewFrame.height) / 2,
-            left: previewFrame.x - (PLACEMENT_RING_SIZE - previewFrame.width) / 2,
-          },
-        ]
-      : null;
+  const cameraSlot =
+    (phase === 'placement' || phase === 'running') && cameraProps != null ? (
+      <HeartRateCameraPreview {...cameraProps} />
+    ) : null;
 
   const finishCapture = (completed: boolean) => {
     if (tickRef.current) clearInterval(tickRef.current);
@@ -232,23 +245,6 @@ export default function BaselineScreen({
   }, [stream.currentBpm, phase, hasConfirmedSignal]);
 
   useEffect(() => {
-    if (phase !== 'placement' || stream.fingerPlacement !== 'good') {
-      setPlacementHoldProgress(0);
-      return;
-    }
-    const start = Date.now();
-    let raf: number;
-    const tick = () => {
-      const elapsedMs = Date.now() - start;
-      const next = Math.min(1, elapsedMs / PLACEMENT_GOOD_DURATION_MS);
-      setPlacementHoldProgress(next);
-      if (next < 1) raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [phase, stream.fingerPlacement]);
-
-  useEffect(() => {
     if (phase !== 'placement') return;
     if (stream.fingerPlacement !== 'good') return;
     const t = setTimeout(() => {
@@ -257,7 +253,6 @@ export default function BaselineScreen({
       lateBpmsRef.current = [];
       allBpmsRef.current = [];
       setProgress(0);
-      setPlacementHoldProgress(1);
       setBreathLabel('Inhale');
       setPhase('running');
     }, PLACEMENT_GOOD_DURATION_MS);
@@ -333,9 +328,10 @@ export default function BaselineScreen({
   const remainingSec = Math.max(0, Math.ceil((1 - progress) * 60));
 
   if (phase === 'placement' || phase === 'running') {
+    const isRunning = phase === 'running';
     return (
       <View style={styles.fill}>
-        {phase === 'running' && !hudVisible ? (
+        {isRunning && !hudVisible ? (
           <Pressable
             style={styles.tapToRevealLayer}
             onPress={showHud}
@@ -343,10 +339,9 @@ export default function BaselineScreen({
           />
         ) : null}
 
-        {phase === 'placement' ? (
-          <SafeAreaView style={styles.placementSafeArea}>
-          <View style={styles.placementContainer}>
-            <View style={styles.placementTopArea}>
+        <View style={[styles.stage, { paddingTop: insets.top }]}>
+          <View style={styles.header}>
+            {!isRunning ? (
               <Text
                 style={[
                   styles.placementStatus,
@@ -355,11 +350,106 @@ export default function BaselineScreen({
               >
                 {placementCfg.status}
               </Text>
+            ) : null}
+          </View>
+
+          <View style={styles.center}>
+            <View style={styles.centerStack}>
+              <BreathingCircle
+                ref={circleRef}
+                cameraSlot={cameraSlot}
+                beatTick={visibleBeatTick}
+              >
+                {isRunning ? (
+                  <Text style={styles.phaseLabel}>{breathLabel}</Text>
+                ) : null}
+              </BreathingCircle>
+              {isRunning ? (
+                <View style={styles.metricSlot}>
+                  <View style={styles.metricStack}>
+                    {bpmDisplay != null ? (
+                      <View
+                        style={[
+                          styles.bpmRow,
+                          showSignalWarning && styles.bpmRowDim,
+                        ]}
+                      >
+                        <Animated.Text
+                          style={[
+                            styles.bpmNumber,
+                            showSignalWarning ? null : { opacity: bpmOpacity },
+                          ]}
+                        >
+                          {bpmDisplay}
+                        </Animated.Text>
+                        <Animated.View
+                          style={
+                            showSignalWarning
+                              ? null
+                              : { transform: [{ scale: heartScale }] }
+                          }
+                        >
+                          <MaterialCommunityIcons
+                            name="heart"
+                            size={18}
+                            color={
+                              showSignalWarning
+                                ? colors.text.tertiary
+                                : colors.error[500]
+                            }
+                          />
+                        </Animated.View>
+                      </View>
+                    ) : null}
+                    {showSignalWarning ? (
+                      <View style={styles.warningRow}>
+                        <MaterialCommunityIcons
+                          name="alert-circle-outline"
+                          size={12}
+                          color={colors.warning[500]}
+                        />
+                        <Text style={styles.warningText}>
+                          {placementCfg.status}
+                        </Text>
+                      </View>
+                    ) : null}
+                  </View>
+                </View>
+              ) : null}
             </View>
+          </View>
 
-            <View style={styles.placementRingSlot} pointerEvents="none" />
-
-            <View style={styles.placementBottomArea}>
+          <Animated.View
+            style={[
+              styles.bottom,
+              isRunning ? { opacity: hudOpacity } : null,
+            ]}
+          >
+            {isRunning ? (
+              <>
+                <View style={styles.timePill}>
+                  <Text style={styles.timeValue}>{remainingSec}s</Text>
+                </View>
+                <View style={styles.progressBar}>
+                  <View
+                    style={[
+                      styles.progressFill,
+                      { width: `${progress * 100}%` },
+                    ]}
+                  />
+                </View>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => finishCapture(false)}
+                  style={({ pressed }) => [
+                    styles.cancel,
+                    pressed && styles.skipPressed,
+                  ]}
+                >
+                  <Text style={styles.skipText}>End early</Text>
+                </Pressable>
+              </>
+            ) : (
               <Pressable
                 accessibilityRole="button"
                 onPress={() => finishCapture(false)}
@@ -370,86 +460,8 @@ export default function BaselineScreen({
               >
                 <Text style={styles.skipText}>Cancel</Text>
               </Pressable>
-            </View>
-          </View>
-          </SafeAreaView>
-        ) : (
-          <View style={[styles.runningStage, { paddingTop: insets.top }]}>
-            <View style={styles.runningHeader}>
-              <View style={styles.runningPillRow}>
-                <LiveHeartRateMonitor
-                  active
-                  fingerPlacement={stream.fingerPlacement}
-                  currentBpm={visibleBpm}
-                  beatTick={visibleBeatTick}
-                  device={stream.device}
-                  format={stream.format}
-                  frameProcessor={stream.frameProcessor}
-                  torchMode={stream.torchMode}
-                  mountCamera={false}
-                  showCameraPreview
-                  onPreviewFrame={setPreviewFrame}
-                />
-              </View>
-            </View>
-
-            <View style={styles.runningCenter}>
-              <BreathingCircle ref={circleRef}>
-                <Text style={styles.phaseLabel}>{breathLabel}</Text>
-              </BreathingCircle>
-            </View>
-
-            <Animated.View
-              style={[styles.runningBottom, { opacity: hudOpacity }]}
-            >
-              <View style={styles.timePill}>
-                <Text style={styles.timeValue}>{remainingSec}s</Text>
-              </View>
-              <View style={styles.progressBar}>
-                <View
-                  style={[
-                    styles.progressFill,
-                    { width: `${progress * 100}%` },
-                  ]}
-                />
-              </View>
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => finishCapture(false)}
-                style={({ pressed }) => [
-                  styles.cancel,
-                  pressed && styles.skipPressed,
-                ]}
-              >
-                <Text style={styles.skipText}>End early</Text>
-              </Pressable>
-            </Animated.View>
-          </View>
-        )}
-
-        <View
-          pointerEvents="none"
-          style={[
-            styles.persistentCamera,
-            phase === 'placement'
-              ? styles.persistentCameraVisible
-              : pillPreviewStyle ?? styles.persistentCameraHidden,
-          ]}
-        >
-          <PersistentCameraRing
-            ringColor={
-              phase === 'placement'
-                ? placementCfg.ringColor
-                : colors.primary.blue600
-            }
-            trackColor={
-              phase === 'placement'
-                ? placementCfg.ringColor + '33'
-                : colors.border.subtle
-            }
-            progress={phase === 'placement' ? placementHoldProgress : 1}
-            cameraProps={cameraProps}
-          />
+            )}
+          </Animated.View>
         </View>
       </View>
     );
@@ -562,30 +574,63 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     zIndex: 1,
   },
-  runningStage: {
+  stage: {
     flex: 1,
     backgroundColor: colors.background.primary,
   },
-  runningHeader: {
+  header: {
+    minHeight: 56,
     alignItems: 'center',
+    justifyContent: 'center',
     paddingTop: spacing.xl,
     paddingHorizontal: spacing.lg,
-    zIndex: 10,
   },
-  runningCenter: {
+  center: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  runningPillRow: {
-    flexDirection: 'row',
+  centerStack: {
     alignItems: 'center',
     justifyContent: 'center',
-    width: '100%',
-    gap: spacing.sm,
-    flexWrap: 'wrap',
   },
-  runningBottom: {
+  metricSlot: {
+    height: 44,
+    marginTop: spacing.xs,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  metricStack: {
+    alignItems: 'center',
+    gap: 4,
+  },
+  bpmRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  bpmRowDim: {
+    opacity: 0.25,
+  },
+  bpmNumber: {
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    fontSize: 26,
+    lineHeight: 30,
+    letterSpacing: 0,
+    color: colors.text.primary,
+  },
+  warningRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  warningText: {
+    ...typography.caption.caption1,
+    fontFamily: fonts.medium,
+    color: colors.warning[700],
+  },
+  bottom: {
     width: '100%',
     alignItems: 'center',
     gap: spacing.md,
@@ -623,74 +668,12 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: colors.primary.blue600,
   },
-
-  placementSafeArea: {
-    flex: 1,
-    backgroundColor: colors.background.primary,
-  },
-  placementContainer: {
-    flex: 1,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.lg,
-    alignItems: 'center',
-    backgroundColor: colors.background.primary,
-  },
-  placementTopArea: {
-    flex: 1,
-    width: '100%',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    paddingBottom: spacing['6xl'],
-    zIndex: 2,
-  },
-  placementRingSlot: {
-    width: PLACEMENT_RING_SIZE,
-    height: PLACEMENT_RING_SIZE,
-  },
-  placementBottomArea: {
-    flex: 1,
-    width: '100%',
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    paddingTop: spacing.xl,
-    gap: spacing.sm,
-    zIndex: 2,
-  },
   placementStatus: {
     ...typography.title.title3,
     fontFamily: fonts.semibold,
     fontWeight: '600',
     textAlign: 'center',
     paddingHorizontal: spacing.lg,
-  },
-  persistentCamera: {
-    position: 'absolute',
-    zIndex: 0,
-  },
-  persistentCameraVisible: {
-    top: '50%',
-    left: '50%',
-    width: PLACEMENT_RING_SIZE,
-    height: PLACEMENT_RING_SIZE,
-    marginTop: -PLACEMENT_RING_SIZE / 2,
-    marginLeft: -PLACEMENT_RING_SIZE / 2,
-    opacity: 1,
-  },
-  persistentCameraHidden: {
-    top: 0,
-    left: 0,
-    width: PLACEMENT_RING_SIZE,
-    height: PLACEMENT_RING_SIZE,
-    opacity: 0,
-    transform: [{ scale: 0.01 }],
-  },
-  persistentCameraPillPreview: {
-    width: PLACEMENT_RING_SIZE,
-    height: PLACEMENT_RING_SIZE,
-    opacity: 1,
-    zIndex: 100,
-    elevation: 100,
-    transform: [{ scale: 20 / PLACEMENT_RING_SIZE }],
   },
 
   introFooter: {
