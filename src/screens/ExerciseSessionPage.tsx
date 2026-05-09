@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useIsFocused } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 import { typography, fonts } from '../theme/typography';
@@ -77,6 +78,7 @@ export default function ExerciseSessionPage({
   const [technique] = useState<BreathingTechnique>(initialTechnique);
   const [totalRounds, setTotalRounds] = useState(initialTechnique.defaultRounds);
   const [hrEnabled, setHrEnabled] = useState(true);
+  const isFocused = useIsFocused();
 
   const hudOpacity = useRef(new Animated.Value(1)).current;
   const [hudVisible, setHudVisible] = useState(true);
@@ -110,6 +112,7 @@ export default function ExerciseSessionPage({
   const posthog = usePostHog();
   useBreathPhaseAudio(
     !paused && (phase === 'inhale' || phase === 'exhale') ? phase : null,
+    { active: isFocused },
   );
 
   const pulse = useLivePulse();
@@ -162,6 +165,13 @@ export default function ExerciseSessionPage({
       if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
     }, [stopPulse]),
   );
+
+  useEffect(() => {
+    if (isFocused || phase === 'done') return;
+
+    setPaused(false);
+    setPhase('idle');
+  }, [isFocused, phase]);
 
   const runPhase = useCallback(
     (p: Phase, secs: number, onDone: () => void) => {

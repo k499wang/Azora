@@ -1,9 +1,14 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { MutableRefObject } from 'react';
+import { AppState, type AppStateStatus } from 'react-native';
 import { setAudioModeAsync, useAudioPlayer } from 'expo-audio';
 import type { AudioPlayer } from 'expo-audio';
 
 type BreathAudioPhase = 'inhale' | 'exhale' | null;
+
+interface UseBreathPhaseAudioOptions {
+  active?: boolean;
+}
 
 const INHALE_AUDIO = require('../../assets/audio/breath-inhale-bell.m4a');
 const EXHALE_AUDIO = require('../../assets/audio/breath-exhale-bowl.m4a');
@@ -58,7 +63,18 @@ function stopImmediately(player: AudioPlayer) {
   });
 }
 
-export function useBreathPhaseAudio(phase: BreathAudioPhase) {
+function isActiveAppState(state: AppStateStatus) {
+  return state === 'active';
+}
+
+export function useBreathPhaseAudio(
+  phase: BreathAudioPhase,
+  options: UseBreathPhaseAudioOptions = {},
+) {
+  const { active = true } = options;
+  const [appActive, setAppActive] = useState(() =>
+    isActiveAppState(AppState.currentState),
+  );
   const inhalePlayer = useAudioPlayer(INHALE_AUDIO, {
     updateInterval: 1000,
     keepAudioSessionActive: true,
@@ -69,6 +85,16 @@ export function useBreathPhaseAudio(phase: BreathAudioPhase) {
   });
   const inhaleRampRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const exhaleRampRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const shouldPlayAudio = active && appActive;
+  const effectivePhase = shouldPlayAudio ? phase : null;
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextState) => {
+      setAppActive(isActiveAppState(nextState));
+    });
+
+    return () => subscription.remove();
+  }, []);
 
   useEffect(() => {
     setAudioModeAsync({
@@ -153,13 +179,13 @@ export function useBreathPhaseAudio(phase: BreathAudioPhase) {
   );
 
   useEffect(() => {
-    if (phase === 'inhale') {
+    if (effectivePhase === 'inhale') {
       fadeOut(exhalePlayer, exhaleRampRef);
       fadeIn(inhalePlayer, inhaleRampRef, INHALE_VOLUME);
       return;
     }
 
-    if (phase === 'exhale') {
+    if (effectivePhase === 'exhale') {
       fadeOut(inhalePlayer, inhaleRampRef);
       fadeIn(exhalePlayer, exhaleRampRef, EXHALE_VOLUME);
       return;
@@ -167,7 +193,16 @@ export function useBreathPhaseAudio(phase: BreathAudioPhase) {
 
     fadeOut(inhalePlayer, inhaleRampRef, HOLD_RELEASE_FADE_OUT_MS);
     fadeOut(exhalePlayer, exhaleRampRef, HOLD_RELEASE_FADE_OUT_MS);
-  }, [exhalePlayer, fadeIn, fadeOut, inhalePlayer, phase]);
+  }, [effectivePhase, exhalePlayer, fadeIn, fadeOut, inhalePlayer]);
+
+  useEffect(() => {
+    if (shouldPlayAudio) return;
+
+    clearRamp(inhaleRampRef);
+    clearRamp(exhaleRampRef);
+    stopImmediately(inhalePlayer);
+    stopImmediately(exhalePlayer);
+  }, [exhalePlayer, inhalePlayer, shouldPlayAudio]);
 
   useEffect(
     () => () => {
