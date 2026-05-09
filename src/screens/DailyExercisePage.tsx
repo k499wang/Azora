@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Animated, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useIsFocused } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -114,12 +115,14 @@ export default function DailyExercisePage({
     maxBpm?: number;
   } | null>(null);
   const [releaseAudioActive, setReleaseAudioActive] = useState(false);
+  const isFocused = useIsFocused();
 
   const bpmOpacity = useRef(new Animated.Value(0.6)).current;
   const heartScale = useRef(new Animated.Value(1)).current;
 
   useBreathPhaseAudio(
     phase === 'inhale' ? 'inhale' : releaseAudioActive ? 'exhale' : null,
+    { active: isFocused },
   );
 
   const pulse = useLivePulse();
@@ -196,8 +199,16 @@ export default function DailyExercisePage({
       clearTimer();
       stopInhaleVibration();
       stopPulse();
+      setReleaseAudioActive(false);
     }, [stopPulse]),
   );
+
+  useEffect(() => {
+    if (isFocused || phase === 'done') return;
+
+    setReleaseAudioActive(false);
+    setPhase('idle');
+  }, [isFocused, phase]);
 
   const beginHold = useCallback(() => {
     if (!flow.isActive()) return;
