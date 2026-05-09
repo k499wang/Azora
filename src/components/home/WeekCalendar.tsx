@@ -174,8 +174,8 @@ const styles = StyleSheet.create({
   },
   circleCompleted: {
     borderStyle: 'solid',
-    borderWidth: 0,
-    backgroundColor: colors.orange[500],
+    borderWidth: 1.5,
+    borderColor: colors.primary.blue500,
   },
   dayLabel: {
     ...typography.label.small,
@@ -186,7 +186,7 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
   },
   dayLabelCompleted: {
-    color: colors.text.inverse,
+    color: colors.primary.blue500,
     fontFamily: fonts.semibold,
     fontWeight: '400',
   },
