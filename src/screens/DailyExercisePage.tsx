@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Pressable, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Alert, Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -11,8 +11,7 @@ import BreathingCircle, {
 } from '../components/exercise/BreathingCircle';
 import ExerciseScaffold from '../components/exercise/ExerciseScaffold';
 import { useLivePulse } from '../hooks/useLivePulse';
-import { LiveHeartRateMonitor } from '../components/meditation/LiveHeartRateMonitor';
-import { PersistentCameraRing } from '../components/heartRate/PersistentCameraRing';
+import { HeartRateCameraPreview } from '../components/heartRate/HeartRateCameraPreview';
 import type { FingerPlacementState, IbiSample, PpgFrameSample } from '../lib/heartRate/types';
 import { usePostHog } from 'posthog-react-native';
 import { AnalyticsEvent } from '../services/analytics/events';
@@ -33,35 +32,35 @@ import {
   summarizeBpmSamples as summarizeHeartRateBpmSamples,
 } from '../lib/heartRate/sessionPayload';
 
-const PLACEMENT_RING_SIZE = 240;
-const PLACEMENT_TIMEOUT_SECONDS = 10;
+const PLACEMENT_GOOD_DURATION_MS = 1500;
+const INHALE_SECONDS = 6;
+const HOLD_RELEASE_GUARD_MS = 1000;
+const BEST_HOLD_KEY = 'daily_breath_hold_best_seconds';
 
-function placementConfig(p: FingerPlacementState): { ringColor: string; status: string } {
+function placementHint(p: FingerPlacementState): string {
   switch (p) {
     case 'good':
-      return { ringColor: colors.success[500], status: 'Hold still…' };
+      return 'Hold still';
     case 'partial':
-      return { ringColor: colors.warning[500], status: 'Cover the lens fully' };
+      return 'Cover the lens fully';
     case 'too_much_pressure':
-      return { ringColor: '#8B5CF6', status: 'Ease up slightly' };
+      return 'Ease up slightly';
     case 'no_finger':
     case 'lost':
     default:
-      return { ringColor: colors.error[500], status: 'Place your fingertip over the camera' };
+      return 'Rest your fingertip on the camera';
   }
 }
 
 type HoldPhase = 'idle' | 'placement' | 'inhale' | 'hold' | 'done';
 
 const PHASE_LABELS: Record<HoldPhase, string> = {
-  idle: 'Daily Hold',
-  placement: 'Place finger',
+  idle: '',
+  placement: '',
   inhale: 'Inhale',
   hold: 'Hold',
   done: 'Released',
 };
-
-const PLACEMENT_GOOD_DURATION_MS = 1500;
 
 interface BpmSample {
   t: number;
@@ -74,7 +73,6 @@ function summarizeBpmSamples(samples: BpmSample[]): {
   maxBpm: number | null;
 } {
   const bpms = samples.map((s) => s.bpm);
-
   return {
     avgBpm: bpms.length
       ? Math.round(bpms.reduce((a, b) => a + b, 0) / bpms.length)
@@ -83,15 +81,6 @@ function summarizeBpmSamples(samples: BpmSample[]): {
     maxBpm: bpms.length ? Math.max(...bpms) : null,
   };
 }
-
-interface PreviewFrame {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
-
-const BEST_HOLD_KEY = 'daily_breath_hold_best_seconds';
 
 function formatHoldTime(totalSeconds: number): string {
   const safe = Math.max(0, Math.floor(totalSeconds));
@@ -117,11 +106,15 @@ export default function DailyExercisePage({
   const holdStartAtRef = useRef<number>(0);
   const [phase, setPhase] = useState<HoldPhase>('idle');
   const [holdSeconds, setHoldSeconds] = useState(0);
+  const [inhaleSeconds, setInhaleSeconds] = useState(0);
+  const inhaleTickRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [bestHoldSeconds, setBestHoldSeconds] = useState(0);
   const [hrEnabled, setHrEnabled] = useState(true);
   const [lastSamples, setLastSamples] = useState<BpmSample[]>([]);
-  const [previewFrame, setPreviewFrame] = useState<PreviewFrame | null>(null);
   const [releaseAudioActive, setReleaseAudioActive] = useState(false);
+
+  const bpmOpacity = useRef(new Animated.Value(0.6)).current;
+  const heartScale = useRef(new Animated.Value(1)).current;
 
   useBreathPhaseAudio(
     phase === 'inhale' ? 'inhale' : releaseAudioActive ? 'exhale' : null,
@@ -138,6 +131,28 @@ export default function DailyExercisePage({
     getMeasurementSamples,
     getIbiSamples,
   } = pulse;
+
+  useEffect(() => {
+    if (pulse.beatTick <= 0) return;
+    bpmOpacity.setValue(0.95);
+    Animated.timing(bpmOpacity, {
+      toValue: 0.6,
+      duration: 420,
+      useNativeDriver: true,
+    }).start();
+    Animated.sequence([
+      Animated.timing(heartScale, {
+        toValue: 1.28,
+        duration: 90,
+        useNativeDriver: true,
+      }),
+      Animated.timing(heartScale, {
+        toValue: 1,
+        duration: 240,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [pulse.beatTick, bpmOpacity, heartScale]);
 
   const currentBpmRef = useRef<number | null>(null);
   useEffect(() => {
@@ -161,6 +176,10 @@ export default function DailyExercisePage({
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
+    if (inhaleTickRef.current) {
+      clearInterval(inhaleTickRef.current);
+      inhaleTickRef.current = null;
+    }
     if (inhaleTimeoutRef.current) {
       clearTimeout(inhaleTimeoutRef.current);
       inhaleTimeoutRef.current = null;
@@ -178,11 +197,6 @@ export default function DailyExercisePage({
       stopPulse();
     }, [stopPulse]),
   );
-
-  const cancelPlacement = useCallback(() => {
-    flow.cancel();
-    navigation.goBack();
-  }, [flow, navigation]);
 
   const beginHold = useCallback(() => {
     if (!flow.isActive()) return;
@@ -208,8 +222,6 @@ export default function DailyExercisePage({
     }, 1000);
   }, [beginPulseMeasurementWindow, flow]);
 
-  const INHALE_SECONDS = 6;
-
   const startInhale = useCallback(() => {
     if (!flow.isActive()) return;
     clearTimer();
@@ -219,10 +231,14 @@ export default function DailyExercisePage({
     setLastSamples([]);
     setReleaseAudioActive(false);
     setHoldSeconds(0);
+    setInhaleSeconds(0);
     setPhase('inhale');
     if (hrEnabled) startPulse();
     startInhaleVibration(INHALE_SECONDS * 1000);
     posthog.capture(AnalyticsEvent.DailyBreathHoldStarted);
+    inhaleTickRef.current = setInterval(() => {
+      setInhaleSeconds((s) => Math.min(INHALE_SECONDS, s + 1));
+    }, 1000);
     inhaleTimeoutRef.current = setTimeout(() => {
       if (!flow.isActive()) return;
       clearTimer();
@@ -433,8 +449,6 @@ export default function DailyExercisePage({
     });
   };
 
-  const HOLD_RELEASE_GUARD_MS = 1000;
-
   const tryReleaseHold = () => {
     if (phase !== 'hold') return;
     if (Date.now() - holdStartAtRef.current < HOLD_RELEASE_GUARD_MS) return;
@@ -485,6 +499,14 @@ export default function DailyExercisePage({
     });
   };
 
+  const cancelPlacement = useCallback(() => {
+    flow.cancel();
+    navigation.goBack();
+  }, [flow, navigation]);
+
+  const isPlacement = phase === 'placement';
+  const isLive = phase === 'inhale' || phase === 'hold';
+
   const primaryLabel =
     phase === 'idle'
       ? 'Start'
@@ -494,190 +516,176 @@ export default function DailyExercisePage({
           ? 'Release'
           : 'Try Again';
 
-  // Placement state: hold-steady arc + start-anyway timeout
-  const [placementHoldProgress, setPlacementHoldProgress] = useState(0);
-  useEffect(() => {
-    if (phase !== 'placement' || pulse.fingerPlacement !== 'good') {
-      setPlacementHoldProgress(0);
-      return;
-    }
-    const start = Date.now();
-    let raf: number;
-    const tick = () => {
-      const elapsed = Date.now() - start;
-      const p = Math.min(1, elapsed / PLACEMENT_GOOD_DURATION_MS);
-      setPlacementHoldProgress(p);
-      if (p < 1) raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [phase, pulse.fingerPlacement]);
+  const cameraProps = useMemo(() => (
+    pulse.device != null
+      ? {
+          device: pulse.device,
+          format: pulse.format,
+          frameProcessor: pulse.frameProcessor,
+          torchMode: pulse.torchMode,
+          fingerPlacement: pulse.fingerPlacement,
+          isActive: pulse.active,
+        }
+      : undefined
+  ), [pulse.active, pulse.device, pulse.fingerPlacement, pulse.format, pulse.frameProcessor, pulse.torchMode]);
 
-  const [showStartAnyway, setShowStartAnyway] = useState(false);
-  useEffect(() => {
-    if (phase !== 'placement') {
-      setShowStartAnyway(false);
-      return;
-    }
-    const t = setTimeout(() => setShowStartAnyway(true), PLACEMENT_TIMEOUT_SECONDS * 1000);
-    return () => clearTimeout(t);
-  }, [phase]);
+  const showCamera = (isPlacement || isLive) && pulse.active && cameraProps != null;
+  const cameraSlot = showCamera ? <HeartRateCameraPreview {...cameraProps} /> : null;
 
-  const placementCfg = placementConfig(pulse.fingerPlacement);
-  const isPlacement = phase === 'placement';
-  const pillPreviewStyle = !isPlacement && pulse.active && previewFrame != null
-    ? [
-        styles.persistentCameraPillPreview,
-        {
-          top: previewFrame.y - (PLACEMENT_RING_SIZE - previewFrame.height) / 2,
-          left: previewFrame.x - (PLACEMENT_RING_SIZE - previewFrame.width) / 2,
-        },
-      ]
-    : null;
-  const cameraProps = pulse.device != null
-    ? {
-        device: pulse.device,
-        format: pulse.format,
-        frameProcessor: pulse.frameProcessor,
-        torchMode: pulse.torchMode,
-        fingerPlacement: pulse.fingerPlacement,
-        isActive: pulse.active,
-      }
-    : undefined;
+  const bpmDisplay =
+    isLive && pulse.active && pulse.currentBpm != null && pulse.currentBpm > 0
+      ? Math.round(pulse.currentBpm)
+      : null;
+  const signalGood = pulse.fingerPlacement === 'good';
+  const showSignalWarning = isLive && pulse.active && !signalGood;
 
   return (
     <View style={styles.fill}>
-      {isPlacement ? (
-        <SafeAreaView style={styles.placementSafeArea}>
-        <View style={styles.placementContainer}>
-          <View style={styles.placementTopArea}>
-            <Text style={[styles.placementStatus, { color: placementCfg.ringColor }]}>
-              {placementCfg.status}
-            </Text>
-          </View>
-
-          {/* Reserves space for the persistent camera + ring (rendered absolutely) */}
-          <View style={styles.placementRingSlot} pointerEvents="none" />
-
-          <View style={styles.placementBottomArea}>
-            {showStartAnyway && (
-              <TouchableOpacity
-                style={styles.startAnywayButton}
-                onPress={startInhale}
-                activeOpacity={0.85}
-              >
-                <Text style={styles.startAnywayText}>Start Anyway</Text>
-              </TouchableOpacity>
-            )}
-            <TouchableOpacity
-              onPress={cancelPlacement}
-              activeOpacity={0.7}
-              style={styles.placementCancelTouchable}
-            >
-              <Text style={styles.placementCancelText}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-        </SafeAreaView>
-      ) : (
-        <ExerciseScaffold
-      titleSlot={
-        <View style={styles.titleSlotWrap}>
-          {phase === 'hold' || phase === 'inhale' ? (
-            <Text style={styles.elapsedTime}>{formatHoldTime(holdSeconds)}</Text>
-          ) : null}
-          {pulse.active ? (
-            <View style={styles.hrRow}>
-              <LiveHeartRateMonitor
-                active={pulse.active}
-                fingerPlacement={pulse.fingerPlacement}
-                currentBpm={pulse.currentBpm}
-                beatTick={pulse.beatTick}
-                device={pulse.device}
-                format={pulse.format}
-                frameProcessor={pulse.frameProcessor}
-                torchMode={pulse.torchMode}
-                mountCamera={false}
-                showCameraPreview={true}
-                onPreviewFrame={setPreviewFrame}
-              />
+      <ExerciseScaffold
+        centerSlot={
+          <Pressable
+            onPress={handleCirclePress}
+            disabled={!isLive}
+            accessibilityRole="button"
+            accessibilityLabel={
+              phase === 'hold'
+                ? 'Tap to release hold'
+                : phase === 'inhale'
+                  ? 'Tap to skip inhale and begin hold'
+                  : undefined
+            }
+            style={({ pressed }) => [
+              styles.centerStack,
+              isLive && pressed && styles.circleTapPressed,
+            ]}
+          >
+            <View style={styles.phaseSlot}>
+              {PHASE_LABELS[phase] ? (
+                <View style={styles.phaseRow}>
+                  <Text style={styles.phaseLabel}>{PHASE_LABELS[phase]}</Text>
+                  {isLive ? (
+                    <Text style={styles.phaseTimer}>
+                      {formatHoldTime(phase === 'inhale' ? inhaleSeconds : holdSeconds)}
+                    </Text>
+                  ) : null}
+                </View>
+              ) : null}
             </View>
-          ) : null}
-        </View>
-      }
-      centerSlot={
-        <Pressable
-          onPress={handleCirclePress}
-          disabled={phase !== 'hold' && phase !== 'inhale'}
-          accessibilityRole="button"
-          accessibilityLabel={
-            phase === 'hold'
-              ? 'Tap to release hold'
-              : phase === 'inhale'
-                ? 'Tap to skip inhale and begin hold'
-                : undefined
-          }
-          style={({ pressed }) => [
-            styles.circleTapTarget,
-            (phase === 'hold' || phase === 'inhale') && pressed && styles.circleTapPressed,
-          ]}
-        >
-          <BreathingCircle ref={circleRef}>
-            {phase === 'inhale' || phase === 'hold' ? (
-              <Text style={styles.phaseLabel}>{PHASE_LABELS[phase]}</Text>
-            ) : null}
-          </BreathingCircle>
-        </Pressable>
-      }
-      bottomSlot={
-        <View style={styles.bottomContainer}>
-          <Pressable
-            style={({ pressed }) => [styles.circleBtn, pressed && styles.circleBtnPressed]}
-            onPress={handlePrimaryPress}
-            accessibilityLabel={primaryLabel}
-          >
-            <MaterialCommunityIcons
-              name={
-                phase === 'idle' || phase === 'done'
-                  ? 'play'
-                  : phase === 'inhale'
-                    ? 'chevron-double-down'
-                    : 'hand-back-left-outline'
-              }
-              size={28}
-              color={colors.neutral[900]}
+            <BreathingCircle
+              ref={circleRef}
+              cameraSlot={cameraSlot}
+              beatTick={pulse.beatTick}
             />
+            <View style={styles.belowSlot}>
+              {isPlacement ? (
+                <Text style={styles.hintText}>
+                  {placementHint(pulse.fingerPlacement)}
+                </Text>
+              ) : phase === 'hold' || phase === 'inhale' ? (
+                <View style={styles.metricStack}>
+                  {bpmDisplay != null ? (
+                    <View style={[styles.bpmRow, showSignalWarning && styles.bpmRowDim]}>
+                      <Animated.Text
+                        style={[
+                          styles.bpmNumber,
+                          showSignalWarning ? null : { opacity: bpmOpacity },
+                        ]}
+                      >
+                        {bpmDisplay}
+                      </Animated.Text>
+                      <Animated.View
+                        style={
+                          showSignalWarning
+                            ? null
+                            : { transform: [{ scale: heartScale }] }
+                        }
+                      >
+                        <MaterialCommunityIcons
+                          name="heart"
+                          size={18}
+                          color={
+                            showSignalWarning
+                              ? colors.text.tertiary
+                              : colors.error[500]
+                          }
+                        />
+                      </Animated.View>
+                    </View>
+                  ) : null}
+                  {showSignalWarning ? (
+                    <View style={styles.warningRow}>
+                      <MaterialCommunityIcons
+                        name="alert-circle-outline"
+                        size={12}
+                        color={colors.warning[500]}
+                      />
+                      <Text style={styles.warningText}>
+                        {placementHint(pulse.fingerPlacement)}
+                      </Text>
+                    </View>
+                  ) : null}
+                </View>
+              ) : null}
+            </View>
           </Pressable>
-          <Pressable
-            pointerEvents={phase === 'done' ? 'auto' : 'none'}
-            style={({ pressed }) => [styles.viewResultsButton, pressed && styles.circleBtnPressed, phase !== 'done' && styles.viewResultsHidden]}
-            onPress={handleViewResults}
-          >
-            <MaterialCommunityIcons name="chart-line" size={18} color={colors.primary.blue600} style={{ marginRight: spacing.xs }} />
-            <Text style={styles.viewResultsText}>View Results</Text>
-          </Pressable>
-        </View>
-      }
-    />
-      )}
-      <View
-        pointerEvents="none"
-        style={[
-          styles.persistentCamera,
-          isPlacement
-            ? styles.persistentCameraVisible
-            : pillPreviewStyle
-              ? pillPreviewStyle
-              : styles.persistentCameraHidden,
-        ]}
-      >
-        <PersistentCameraRing
-          ringColor={isPlacement ? placementCfg.ringColor : colors.primary.blue600}
-          trackColor={isPlacement ? placementCfg.ringColor + '33' : colors.border.subtle}
-          progress={isPlacement ? placementHoldProgress : 0}
-          cameraProps={cameraProps}
-        />
-      </View>
+        }
+        bottomSlot={
+          <View style={styles.bottomContainer}>
+            <View style={styles.btnRow}>
+              {isPlacement ? (
+                <>
+                  <Pressable
+                    style={({ pressed }) => [styles.squareBtn, pressed && styles.circleBtnPressed]}
+                    onPress={cancelPlacement}
+                    accessibilityLabel="Cancel"
+                  >
+                    <MaterialCommunityIcons name="close" size={26} color={colors.neutral[900]} />
+                  </Pressable>
+                  <Pressable
+                    onPress={startInhale}
+                    style={({ pressed }) => [
+                      styles.inlineLink,
+                      pressed && styles.textLinkPressed,
+                    ]}
+                  >
+                    <Text style={styles.textLinkLabel}>Skip heart rate</Text>
+                  </Pressable>
+                </>
+              ) : (
+                <Pressable
+                  style={({ pressed }) => [styles.circleBtn, pressed && styles.circleBtnPressed]}
+                  onPress={handlePrimaryPress}
+                  accessibilityLabel={primaryLabel}
+                >
+                  <MaterialCommunityIcons
+                    name={
+                      phase === 'idle' || phase === 'done'
+                        ? 'play'
+                        : phase === 'inhale'
+                          ? 'chevron-double-down'
+                          : 'hand-back-left-outline'
+                    }
+                    size={28}
+                    color={colors.neutral[900]}
+                  />
+                </Pressable>
+              )}
+            </View>
+            <Pressable
+              pointerEvents={phase === 'done' ? 'auto' : 'none'}
+              style={({ pressed }) => [
+                styles.viewResultsButton,
+                pressed && styles.circleBtnPressed,
+                phase !== 'done' && styles.viewResultsHidden,
+              ]}
+              onPress={handleViewResults}
+            >
+              <MaterialCommunityIcons name="chart-line" size={18} color={colors.primary.blue600} style={{ marginRight: spacing.xs }} />
+              <Text style={styles.viewResultsText}>View Results</Text>
+            </Pressable>
+          </View>
+        }
+      />
     </View>
   );
 }
@@ -685,109 +693,132 @@ export default function DailyExercisePage({
 const styles = StyleSheet.create({
   fill: {
     flex: 1,
-  },
-  persistentCamera: {
-    position: 'absolute',
-    zIndex: 0,
-  },
-  persistentCameraVisible: {
-    top: '50%',
-    left: '50%',
-    width: PLACEMENT_RING_SIZE,
-    height: PLACEMENT_RING_SIZE,
-    marginTop: -PLACEMENT_RING_SIZE / 2,
-    marginLeft: -PLACEMENT_RING_SIZE / 2,
-    opacity: 1,
-  },
-  persistentCameraHidden: {
-    top: 0,
-    left: 0,
-    width: PLACEMENT_RING_SIZE,
-    height: PLACEMENT_RING_SIZE,
-    opacity: 0,
-    transform: [{ scale: 0.01 }],
-  },
-  persistentCameraPillPreview: {
-    width: PLACEMENT_RING_SIZE,
-    height: PLACEMENT_RING_SIZE,
-    opacity: 1,
-    zIndex: 100,
-    elevation: 100,
-    transform: [{ scale: 20 / PLACEMENT_RING_SIZE }],
-  },
-  placementSafeArea: {
-    flex: 1,
     backgroundColor: colors.background.primary,
   },
-  placementContainer: {
-    flex: 1,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.lg,
+  centerStack: {
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  placementTopArea: {
-    flex: 1,
-    width: '100%',
+  circleTapPressed: {
+    opacity: 0.85,
+  },
+  phaseSlot: {
+    height: 40,
     alignItems: 'center',
     justifyContent: 'flex-end',
-    paddingBottom: spacing['6xl'],
-    zIndex: 2,
+    marginBottom: spacing.lg,
   },
-  placementRingSlot: {
-    width: PLACEMENT_RING_SIZE,
-    height: PLACEMENT_RING_SIZE,
+  phaseRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: spacing.md,
   },
-  placementBottomArea: {
-    flex: 1,
-    width: '100%',
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    paddingTop: spacing.xl,
-    gap: spacing.sm,
-    zIndex: 2,
-  },
-  placementStatus: {
-    ...typography.title.title3,
+  phaseTimer: {
     fontFamily: fonts.semibold,
     fontWeight: '600',
+    fontSize: 22,
+    lineHeight: 26,
+    letterSpacing: 1,
+    color: colors.text.primary,
+    opacity: 0.55,
+    fontVariant: ['tabular-nums'],
+  },
+  phaseLabel: {
+    ...typography.display.display2,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    fontSize: 28,
+    lineHeight: 34,
+    letterSpacing: 1.5,
+    color: colors.text.primary,
+    opacity: 0.7,
+    textAlign: 'center',
+  },
+  belowSlot: {
+    minHeight: 64,
+    marginTop: spacing.xs,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  hintText: {
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    fontSize: 14,
+    color: colors.text.secondary,
+    opacity: 0.6,
     textAlign: 'center',
     paddingHorizontal: spacing.lg,
   },
-  startAnywayButton: {
-    width: '100%',
-    backgroundColor: colors.primary.blue600,
-    borderRadius: 14,
-    paddingVertical: 16,
+  metricStack: {
     alignItems: 'center',
+    gap: spacing.xs,
   },
-  startAnywayText: {
-    ...typography.button.large,
-    fontFamily: fonts.semibold,
-    fontWeight: '600',
-    color: colors.text.inverse,
-  },
-  placementCancelTouchable: {
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-  },
-  placementCancelText: {
-    ...typography.body.medium,
-    color: colors.text.secondary,
-  },
-  titleSlotWrap: {
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  hrRow: {
+  bpmRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
-    flexWrap: 'wrap',
-    justifyContent: 'center',
+    gap: 8,
+  },
+  bpmRowDim: {
+    opacity: 0.25,
+  },
+  bpmNumber: {
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    fontSize: 22,
+    lineHeight: 26,
+    letterSpacing: 0.5,
+    color: colors.text.primary,
+  },
+  warningRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 2,
+  },
+  warningText: {
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    fontSize: 11,
+    letterSpacing: 0.5,
+    color: colors.warning[500],
+    opacity: 0.85,
   },
   bottomContainer: {
     alignItems: 'center',
     gap: spacing.lg,
+  },
+  inlineLink: {
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  textLinkPressed: {
+    opacity: 0.5,
+  },
+  textLinkLabel: {
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    fontSize: 12,
+    letterSpacing: 0.5,
+    color: colors.text.tertiary,
+    opacity: 0.7,
+  },
+  btnRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.md,
+  },
+  squareBtn: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.neutral[100],
+    borderWidth: 1,
+    borderColor: colors.border.subtle,
   },
   circleBtn: {
     width: 64,
@@ -803,37 +834,8 @@ const styles = StyleSheet.create({
     opacity: 0.75,
     transform: [{ scale: 0.96 }],
   },
-  circleBtnDisabled: {
-    opacity: 0.4,
-  },
-  circleTapTarget: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  circleTapPressed: {
-    opacity: 0.85,
-    transform: [{ scale: 0.98 }],
-  },
   viewResultsHidden: {
     opacity: 0,
-  },
-  phaseLabel: {
-    ...typography.display.display2,
-    fontFamily: fonts.semibold,
-    fontWeight: '600',
-    fontSize: 28,
-    lineHeight: 34,
-    color: colors.neutral[50],
-    textAlign: 'center',
-  },
-  elapsedTime: {
-    fontFamily: fonts.semibold,
-    fontWeight: '600',
-    fontSize: 20,
-    lineHeight: 26,
-    color: colors.text.primary,
-    textAlign: 'center',
-    fontVariant: ['tabular-nums'],
   },
   viewResultsButton: {
     flexDirection: 'row',
