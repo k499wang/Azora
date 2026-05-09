@@ -22,6 +22,7 @@ export interface HeartRateResultStat {
   iconColor?: string;
   caption?: string;
   captionColor?: string;
+  unavailable?: boolean;
 }
 
 interface HeartRateResultContentProps {
@@ -92,20 +93,38 @@ function StatCard({
   iconColor,
   caption,
   captionColor,
+  unavailable,
 }: HeartRateResultStat) {
   return (
-    <View style={styles.statCard}>
+    <View style={[styles.statCard, unavailable && styles.statCardUnavailable]}>
       <View style={styles.statCardTop}>
         <MaterialCommunityIcons
           name={icon}
           size={18}
-          color={iconColor ?? colors.primary.blue600}
+          color={
+            unavailable
+              ? colors.text.tertiary
+              : iconColor ?? colors.primary.blue600
+          }
         />
-        <Text style={styles.statLabel}>{label}</Text>
+        <Text style={[styles.statLabel, unavailable && styles.statLabelMuted]}>
+          {label}
+        </Text>
       </View>
       <View style={styles.statValueRow}>
-        <Text style={styles.statValue}>{value}</Text>
-        {unit ? <Text style={styles.statUnit}>{unit}</Text> : null}
+        <Text
+          style={[
+            styles.statValue,
+            unavailable && styles.statValueUnavailable,
+          ]}
+        >
+          {value}
+        </Text>
+        {unit ? (
+          <Text style={[styles.statUnit, unavailable && styles.statUnitMuted]}>
+            {unit}
+          </Text>
+        ) : null}
         {caption ? (
           <Text style={[styles.statCaption, captionColor ? { color: captionColor } : null]}>
             {caption}
@@ -147,22 +166,40 @@ export function HeartRateResultContent({
   const stressZone = stress != null ? getStressZone(stress) : null;
 
   const stats: HeartRateResultStat[] = [];
-  if (!advancedStatsLocked && rmssdValue != null) {
-    stats.push({
-      icon: 'heart-pulse',
-      label: 'RMSSD',
-      value: rmssdValue,
-      unit: 'ms',
-      iconColor: colors.error[500],
-    });
+  if (!advancedStatsLocked) {
+    stats.push(
+      rmssdValue != null
+        ? {
+            icon: 'heart-pulse',
+            label: 'RMSSD',
+            value: rmssdValue,
+            unit: 'ms',
+            iconColor: colors.error[500],
+          }
+        : {
+            icon: 'heart-pulse',
+            label: 'RMSSD',
+            value: 'Unavailable',
+            unavailable: true,
+          },
+    );
   }
-  if (!advancedStatsLocked && hrDrop != null) {
-    stats.push({
-      icon: 'swap-vertical',
-      label: 'HR Change',
-      value: `${Math.abs(hrDrop)}`,
-      unit: 'bpm',
-    });
+  if (!advancedStatsLocked) {
+    stats.push(
+      hrDrop != null
+        ? {
+            icon: 'swap-vertical',
+            label: 'HR Change',
+            value: `${Math.abs(hrDrop)}`,
+            unit: 'bpm',
+          }
+        : {
+            icon: 'swap-vertical',
+            label: 'HR Change',
+            value: 'Unavailable',
+            unavailable: true,
+          },
+    );
   }
   stats.push(...extraStats);
 
@@ -478,6 +515,23 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     fontFamily: fonts.semibold,
     fontWeight: '500',
+  },
+  statValueUnavailable: {
+    ...typography.body.small,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    color: colors.text.tertiary,
+    fontSize: 14,
+    lineHeight: 18,
+  },
+  statCardUnavailable: {
+    opacity: 0.65,
+  },
+  statLabelMuted: {
+    color: colors.text.tertiary,
+  },
+  statUnitMuted: {
+    color: colors.text.tertiary,
   },
   statUnit: {
     ...typography.caption.caption1,

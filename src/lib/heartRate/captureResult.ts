@@ -41,6 +41,21 @@ export function deriveCaptureHrvResult(
           ? 'low_signal_quality'
           : null;
 
+  console.log('[hrv-gate] initial', {
+    beats: hrvEligibleIbis.length,
+    minBeats: MIN_HRV_BEAT_COUNT,
+    confidence: hrvBeatSeries?.confidence,
+    minConfidence: MIN_HRV_CONFIDENCE,
+    snrDb: hrvBeatSeries?.snrDb,
+    minSnrDb: MIN_HRV_SNR_DB,
+    quality: hrvBeatSeries?.quality,
+    rawIntervals: hrvBeatSeries?.rawIntervalCount,
+    rejectedIntervals: hrvBeatSeries?.rejectedIntervalCount,
+    retention: hrvRetentionRatio,
+    minRetention: MIN_HRV_RETENTION_RATIO,
+    reason: initialAvailabilityReason,
+  });
+
   if (initialAvailabilityReason != null) {
     return {
       hrvStats: null,
@@ -55,6 +70,11 @@ export function deriveCaptureHrvResult(
   );
 
   if (hrvPreprocess.correctedIbi.length < MIN_HRV_BEAT_COUNT) {
+    console.log('[hrv-gate] postprocess fail: not_enough_clean_beats', {
+      correctedLength: hrvPreprocess.correctedIbi.length,
+      minBeats: MIN_HRV_BEAT_COUNT,
+      artifactRatio: hrvPreprocess.artifactRatio,
+    });
     return {
       hrvStats: null,
       correctedIbi: [],
@@ -63,12 +83,21 @@ export function deriveCaptureHrvResult(
   }
 
   if (!hrvPreprocess.usable) {
+    console.log('[hrv-gate] postprocess fail: low_signal_quality', {
+      correctedLength: hrvPreprocess.correctedIbi.length,
+      artifactRatio: hrvPreprocess.artifactRatio,
+    });
     return {
       hrvStats: null,
       correctedIbi: [],
       hrvAvailabilityReason: 'low_signal_quality',
     };
   }
+
+  console.log('[hrv-gate] passed', {
+    correctedLength: hrvPreprocess.correctedIbi.length,
+    artifactRatio: hrvPreprocess.artifactRatio,
+  });
 
   return {
     hrvStats: computeHRVStatsFromCleanIntervals({

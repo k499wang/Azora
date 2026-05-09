@@ -68,23 +68,27 @@ function getCompletedDaysAgo(activity: DailyActivitySummary[]): number[] {
     .filter((daysAgo) => daysAgo >= 0 && daysAgo < 28);
 }
 
-function buildHrvStats(
-  breathHold: BreathHoldSummary | null,
-  heartRate: TodayHeartRateSummary | null,
-): HomeHrvStats {
-  const summary = breathHold ?? heartRate;
-  const rmssd = summary?.rmssd ?? null;
-  const stress = breathHold != null
-    ? (breathHold.stress ?? deriveStressFromStoredSummary(breathHold.rmssd, breathHold.avgBpm))
-    : (heartRate?.stress ?? null);
+function buildHrvStats(breathHold: BreathHoldSummary | null): HomeHrvStats {
+  if (breathHold == null) {
+    return {
+      rmssd: null,
+      sdnn: null,
+      pnn50: null,
+      hrDrop: null,
+      stress: null,
+      beatCount: null,
+    };
+  }
 
   return {
-    rmssd,
-    sdnn: summary?.sdnn ?? null,
-    pnn50: summary?.pnn50 ?? null,
-    hrDrop: summary?.hrDrop ?? null,
-    stress,
-    beatCount: summary?.beatCount ?? null,
+    rmssd: breathHold.rmssd ?? null,
+    sdnn: breathHold.sdnn ?? null,
+    pnn50: breathHold.pnn50 ?? null,
+    hrDrop: breathHold.hrDrop ?? null,
+    stress:
+      breathHold.stress ??
+      deriveStressFromStoredSummary(breathHold.rmssd, breathHold.avgBpm),
+    beatCount: breathHold.beatCount ?? null,
   };
 }
 
@@ -150,7 +154,7 @@ export async function getHomeStats(
     dailyActivity,
     completedDaysAgo: getCompletedDaysAgo(dailyActivity),
     ibiSeries: breathHoldIbiSeries,
-    hrv: buildHrvStats(todayBreathHold, todayHeartRate),
+    hrv: buildHrvStats(todayBreathHold),
     partialErrors,
   };
 }

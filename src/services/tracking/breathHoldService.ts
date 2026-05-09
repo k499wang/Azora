@@ -53,6 +53,33 @@ function nullableInt(value: number | null): number | null {
   return isFiniteNumber(value) ? Math.round(value) : null;
 }
 
+function nullableBpm(value: number | null): number | null {
+  if (!isFiniteNumber(value)) return null;
+  const rounded = Math.round(value);
+  return rounded >= 20 && rounded <= 240 ? rounded : null;
+}
+
+function nullableLungAge(value: number | null): number | null {
+  if (!isFiniteNumber(value)) return null;
+  const rounded = Math.round(value);
+  return rounded >= 1 && rounded <= 120 ? rounded : null;
+}
+
+function nullablePercent(value: number | null): number | null {
+  if (!isFiniteNumber(value)) return null;
+  return Math.max(0, Math.min(100, Math.round(value)));
+}
+
+function nullableHrDrop(value: number | null): number | null {
+  if (!isFiniteNumber(value)) return null;
+  return Math.max(-240, Math.min(240, Math.round(value)));
+}
+
+function nullableHrvMs(value: number | null): number | null {
+  if (!isFiniteNumber(value)) return null;
+  return Math.max(0, Math.min(500, Math.round(value)));
+}
+
 function mapSamples(
   samples: BreathHoldBpmSampleInput[] | undefined,
 ): Array<{ offset_ms: number; bpm: number; signal_quality: number | null }> {
@@ -109,19 +136,19 @@ export async function completeBreathHold(
       inhale_seconds: nullableInt(input.inhaleSeconds),
       hold_seconds: Math.max(0, Math.round(input.holdSeconds)),
       recovery_seconds: null,
-      avg_bpm: nullableInt(input.avgBpm),
-      min_bpm: nullableInt(input.minBpm),
-      max_bpm: nullableInt(input.maxBpm),
+      avg_bpm: nullableBpm(input.avgBpm),
+      min_bpm: nullableBpm(input.minBpm),
+      max_bpm: nullableBpm(input.maxBpm),
       health_score: null,
-      lung_age: nullableInt(input.lungAge),
+      lung_age: nullableLungAge(input.lungAge),
       score_version: 1,
       notes: null,
-      rmssd: nullableInt(input.rmssd),
-      sdnn: nullableInt(input.sdnn),
-      pnn50: nullableInt(input.pnn50),
-      hr_drop: nullableInt(input.hrDrop),
+      rmssd: nullableHrvMs(input.rmssd),
+      sdnn: nullableHrvMs(input.sdnn),
+      pnn50: nullablePercent(input.pnn50),
+      hr_drop: nullableHrDrop(input.hrDrop),
       beat_count: nullableInt(input.beatCount),
-      stress: nullableInt(input.stress),
+      stress: nullablePercent(input.stress),
       ibi_samples: mapIbiSamples(input.ibiSamples),
     } as unknown as Json,
     p_samples: mapSamples(input.samples) as unknown as Json,
