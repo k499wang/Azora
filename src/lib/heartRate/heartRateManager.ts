@@ -18,6 +18,8 @@ const INITIAL_PEAK_THRESHOLD_FACTOR = 0.4;
 const ADAPTIVE_THRESHOLD_BASE_FACTOR = 0.3;
 const ADAPTIVE_THRESHOLD_DECAY_FACTOR = 0.2;
 const ADAPTIVE_THRESHOLD_DECAY_START_FRACTION = 0.85;
+const POLARITY_LOCK_DOMINANCE = 1.35;
+const POLARITY_EXCURSION_THRESHOLD_FACTOR = 0.5;
 const DEFAULT_EXPECTED_IBI_MS = 800;
 const MIN_AMPLITUDE = 0.001;
 const MIN_IBI_MS = 320;
@@ -151,6 +153,7 @@ export function adaptivePeakThreshold(
   if (timeSinceLastPeakMs < 0 || expectedIbiMs <= 0) {
     return amplitude * INITIAL_PEAK_THRESHOLD_FACTOR;
   }
+
   const decayStartMs = expectedIbiMs * ADAPTIVE_THRESHOLD_DECAY_START_FRACTION;
   if (timeSinceLastPeakMs < decayStartMs) {
     return amplitude * INITIAL_PEAK_THRESHOLD_FACTOR;
@@ -250,6 +253,10 @@ export class HeartRateManager {
   private armedForPeak = true;
   private pendingShortPeakTs: number | null = null;
   private badPlacementSinceTs: number | null = null;
+  private polarity: 1 | -1 = 1;
+  private polarityLocked = false;
+  private polarityPositiveScore = 0;
+  private polarityNegativeScore = 0;
 
   reset(): void {
     this.baseline = 0;
@@ -273,6 +280,10 @@ export class HeartRateManager {
     this.armedForPeak = true;
     this.pendingShortPeakTs = null;
     this.badPlacementSinceTs = null;
+    this.polarity = 1;
+    this.polarityLocked = false;
+    this.polarityPositiveScore = 0;
+    this.polarityNegativeScore = 0;
   }
 
   private pushAcceptedIbi(peakTs: number, ibi: number): void {
@@ -405,11 +416,35 @@ export class HeartRateManager {
     const hp = this.bpHp.process(weightedAverage);
     const bp = this.bpLp.process(hp);
     const denom = Math.max(this.baseline, 1);
-    const ac = bp / denom;
-    this.amplitude += AMPLITUDE_ALPHA * (Math.abs(ac) - this.amplitude);
+    const rawAc = bp / denom;
+    this.amplitude += AMPLITUDE_ALPHA * (Math.abs(rawAc) - this.amplitude);
+
+    if (!this.polarityLocked && this.amplitude > MIN_AMPLITUDE) {
+      const excursionThreshold =
+        this.amplitude * POLARITY_EXCURSION_THRESHOLD_FACTOR;
+      if (rawAc > excursionThreshold) {
+        this.polarityPositiveScore += rawAc;
+      } else if (rawAc < -excursionThreshold) {
+        this.polarityNegativeScore += -rawAc;
+      }
+    }
 
     this.validFrameCounter += 1;
     const readyForMeasurement = this.validFrameCounter > WARMUP_FRAMES;
+
+    if (!this.polarityLocked && readyForMeasurement) {
+      const pos = this.polarityPositiveScore;
+      const neg = this.polarityNegativeScore;
+      if (
+        neg > pos * POLARITY_LOCK_DOMINANCE &&
+        neg > 0
+      ) {
+        this.polarity = -1;
+      }
+      this.polarityLocked = true;
+    }
+
+    const ac = rawAc * this.polarity;
     let beatDetected = false;
 
     if (readyForMeasurement && this.amplitude > MIN_AMPLITUDE) {
