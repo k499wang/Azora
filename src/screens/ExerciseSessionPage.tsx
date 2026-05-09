@@ -555,7 +555,11 @@ export default function ExerciseSessionPage({
               </Pressable>
               {isPlacement ? (
                 <Pressable
-                  onPress={() => beginExercise(false)}
+                  onPress={() => {
+                    setHrEnabled(false);
+                    stopPulse();
+                    beginExercise(false);
+                  }}
                   style={({ pressed }) => [
                     styles.inlineLink,
                     pressed && styles.textLinkPressed,
