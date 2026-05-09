@@ -670,7 +670,11 @@ export default function DailyExercisePage({
                     <MaterialCommunityIcons name="close" size={26} color={colors.neutral[900]} />
                   </Pressable>
                   <Pressable
-                    onPress={startInhale}
+                    onPress={() => {
+                      setHrEnabled(false);
+                      stopPulse();
+                      startInhale();
+                    }}
                     style={({ pressed }) => [
                       styles.inlineLink,
                       pressed && styles.textLinkPressed,
