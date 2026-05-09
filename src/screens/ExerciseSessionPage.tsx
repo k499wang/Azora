@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 import { typography, fonts } from '../theme/typography';
@@ -13,8 +13,7 @@ import type { BreathingTechnique } from '../data/techniques';
 import { useCancellableFlow } from '../hooks/useCancellableFlow';
 import { useLivePulse } from '../hooks/useLivePulse';
 import { useBreathPhaseAudio } from '../hooks/useBreathPhaseAudio';
-import { LiveHeartRateMonitor } from '../components/meditation/LiveHeartRateMonitor';
-import { PersistentCameraRing } from '../components/heartRate/PersistentCameraRing';
+import { HeartRateCameraPreview } from '../components/heartRate/HeartRateCameraPreview';
 import type { FingerPlacementState } from '../lib/heartRate/types';
 import { startInhaleVibration, stopInhaleVibration } from '../native/inhaleVibration';
 import { usePostHog } from 'posthog-react-native';
@@ -25,28 +24,19 @@ import { AnalyticsEvent } from '../services/analytics/events';
 const MIN_ROUNDS = 1;
 const MAX_ROUNDS = 20;
 const PLACEMENT_GOOD_DURATION_MS = 1500;
-const PLACEMENT_TIMEOUT_SECONDS = 10;
-const PLACEMENT_RING_SIZE = 240;
 
-interface PreviewFrame {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
-
-function placementConfig(p: FingerPlacementState): { ringColor: string; status: string } {
+function placementHint(p: FingerPlacementState): string {
   switch (p) {
     case 'good':
-      return { ringColor: colors.success[500], status: 'Hold still…' };
+      return 'Hold still';
     case 'partial':
-      return { ringColor: colors.warning[500], status: 'Cover the lens fully' };
+      return 'Cover the lens fully';
     case 'too_much_pressure':
-      return { ringColor: '#8B5CF6', status: 'Ease up slightly' };
+      return 'Ease up slightly';
     case 'no_finger':
     case 'lost':
     default:
-      return { ringColor: colors.error[500], status: 'Place your fingertip over the camera' };
+      return 'Rest your fingertip on the camera';
   }
 }
 
@@ -87,11 +77,13 @@ export default function ExerciseSessionPage({
   const [technique] = useState<BreathingTechnique>(initialTechnique);
   const [totalRounds, setTotalRounds] = useState(initialTechnique.defaultRounds);
   const [hrEnabled, setHrEnabled] = useState(true);
-  const [previewFrame, setPreviewFrame] = useState<PreviewFrame | null>(null);
 
   const hudOpacity = useRef(new Animated.Value(1)).current;
   const [hudVisible, setHudVisible] = useState(true);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const bpmOpacity = useRef(new Animated.Value(0.6)).current;
+  const heartScale = useRef(new Animated.Value(1)).current;
 
   const showHud = useCallback(() => {
     if (hideTimerRef.current) {
@@ -107,7 +99,7 @@ export default function ExerciseSessionPage({
     hideTimerRef.current = setTimeout(() => {
       Animated.timing(hudOpacity, {
         toValue: 0,
-        duration: 250,
+        duration: 600,
         useNativeDriver: true,
       }).start(({ finished }) => {
         if (finished) setHudVisible(false);
@@ -123,10 +115,28 @@ export default function ExerciseSessionPage({
   const pulse = useLivePulse();
   const { start: startPulse, stop: stopPulse, hasPermission, requestPermission } = pulse;
 
-  // Depend on the derived boolean, not raw `phase`. Phase changes every few
-  // seconds (inhale → holdIn → exhale → holdOut); if this effect re-ran on
-  // every transition it would churn the camera stream and wipe BPM samples
-  // before they could stabilize.
+  useEffect(() => {
+    if (pulse.beatTick <= 0) return;
+    bpmOpacity.setValue(0.95);
+    Animated.timing(bpmOpacity, {
+      toValue: 0.6,
+      duration: 420,
+      useNativeDriver: true,
+    }).start();
+    Animated.sequence([
+      Animated.timing(heartScale, {
+        toValue: 1.28,
+        duration: 90,
+        useNativeDriver: true,
+      }),
+      Animated.timing(heartScale, {
+        toValue: 1,
+        duration: 240,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [pulse.beatTick, bpmOpacity, heartScale]);
+
   const isSessionActive = phase !== 'idle' && phase !== 'done' && !paused;
 
   useEffect(() => {
@@ -136,37 +146,6 @@ export default function ExerciseSessionPage({
       stopPulse();
     }
   }, [hrEnabled, isSessionActive, startPulse, stopPulse]);
-
-  const handleToggleHr = useCallback(async () => {
-    try {
-      if (hrEnabled) {
-        setHrEnabled(false);
-        posthog.capture(AnalyticsEvent.HeartRateMonitoringToggled, {
-          enabled: false,
-          technique_id: technique.id,
-          technique_name: technique.name,
-        });
-        return;
-      }
-      const granted = hasPermission ? true : await requestPermission();
-      if (granted) {
-        setHrEnabled(true);
-        posthog.capture(AnalyticsEvent.HeartRateMonitoringToggled, {
-          enabled: true,
-          technique_id: technique.id,
-          technique_name: technique.name,
-        });
-      }
-    } catch (error) {
-      captureException(error, {
-        flow: 'exercise_session',
-        action: 'toggle_heart_rate',
-        screen_name: 'ExerciseSession',
-        technique_id: technique.id,
-        technique_name: technique.name,
-      });
-    }
-  }, [hrEnabled, hasPermission, requestPermission, posthog, technique]);
 
   const clearTimer = () => {
     if (timerRef.current) {
@@ -204,9 +183,6 @@ export default function ExerciseSessionPage({
       }
 
       if (p === 'inhale' || p === 'exhale') {
-        // Defer to the next frame: on the first phase, BreathingCircle
-        // mounts in the same render that flips off the placement UI, so
-        // circleRef is still null when runPhase fires.
         requestAnimationFrame(() => {
           if (p === 'inhale') circleRef.current?.expand(secs);
           else circleRef.current?.contract(secs);
@@ -366,34 +342,6 @@ export default function ExerciseSessionPage({
     return () => clearTimeout(t);
   }, [flow, phase, pulse.fingerPlacement, beginExercise]);
 
-  const [placementHoldProgress, setPlacementHoldProgress] = useState(0);
-  useEffect(() => {
-    if (phase !== 'placement' || pulse.fingerPlacement !== 'good') {
-      setPlacementHoldProgress(0);
-      return;
-    }
-    const start = Date.now();
-    let raf: number;
-    const tick = () => {
-      const elapsedMs = Date.now() - start;
-      const next = Math.min(1, elapsedMs / PLACEMENT_GOOD_DURATION_MS);
-      setPlacementHoldProgress(next);
-      if (next < 1) raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [phase, pulse.fingerPlacement]);
-
-  const [showStartAnyway, setShowStartAnyway] = useState(false);
-  useEffect(() => {
-    if (phase !== 'placement') {
-      setShowStartAnyway(false);
-      return;
-    }
-    const t = setTimeout(() => setShowStartAnyway(true), PLACEMENT_TIMEOUT_SECONDS * 1000);
-    return () => clearTimeout(t);
-  }, [phase]);
-
   const handleClose = () => {
     flow.cancel();
     if (phase !== 'idle' && phase !== 'done') {
@@ -419,6 +367,7 @@ export default function ExerciseSessionPage({
 
   const isActive =
     phase !== 'idle' && phase !== 'done' && phase !== 'placement';
+  const isPlacement = phase === 'placement';
 
   useEffect(() => {
     if (isActive) {
@@ -441,17 +390,6 @@ export default function ExerciseSessionPage({
     phase === 'done' ? 1 : elapsed / totalSeconds,
   );
 
-  const isPlacement = phase === 'placement';
-  const placementCfg = placementConfig(pulse.fingerPlacement);
-  const pillPreviewStyle = !isPlacement && pulse.active && previewFrame != null
-    ? [
-        styles.persistentCameraPillPreview,
-        {
-          top: previewFrame.y - (PLACEMENT_RING_SIZE - previewFrame.height) / 2,
-          left: previewFrame.x - (PLACEMENT_RING_SIZE - previewFrame.width) / 2,
-        },
-      ]
-    : null;
   const cameraProps = useMemo(() => (
     pulse.device != null
       ? {
@@ -464,6 +402,16 @@ export default function ExerciseSessionPage({
         }
       : undefined
   ), [pulse.active, pulse.device, pulse.fingerPlacement, pulse.format, pulse.frameProcessor, pulse.torchMode]);
+
+  const showCamera = (isPlacement || isActive) && pulse.active && cameraProps != null;
+  const cameraSlot = showCamera ? <HeartRateCameraPreview {...cameraProps} /> : null;
+
+  const bpmDisplay =
+    isActive && pulse.active && pulse.currentBpm != null && pulse.currentBpm > 0
+      ? Math.round(pulse.currentBpm)
+      : null;
+  const signalGood = pulse.fingerPlacement === 'good';
+  const showSignalWarning = isActive && pulse.active && !signalGood;
 
   const handleScreenTap = () => {
     if (isActive) showHud();
@@ -478,175 +426,158 @@ export default function ExerciseSessionPage({
           accessibilityLabel="Show controls"
         />
       ) : null}
-      {isPlacement ? (
-        <View style={styles.placementContainer}>
-          <View style={styles.placementTopArea}>
-            <Text style={[styles.placementStatus, { color: placementCfg.ringColor }]}>
-              {placementCfg.status}
-            </Text>
-          </View>
-
-          <View style={styles.placementRingSlot} pointerEvents="none" />
-
-          <View style={styles.placementBottomArea}>
-            {showStartAnyway && (
-              <TouchableOpacity
-                style={styles.startAnywayButton}
-                onPress={() => beginExercise(false)}
-                activeOpacity={0.85}
-              >
-                <Text style={styles.startAnywayText}>Start Anyway</Text>
-              </TouchableOpacity>
-            )}
-            <TouchableOpacity
-              onPress={() => {
-                flow.cancel();
-                navigation.goBack();
-              }}
-              activeOpacity={0.7}
-              style={styles.placementCancelTouchable}
-            >
-              <Text style={styles.placementCancelText}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      ) : (
-        <ExerciseScaffold
-      titleSlot={
-        <View style={styles.titleSlotWrap}>
-        <View style={styles.hrRow}>
-          <Pressable
-            onPress={handleToggleHr}
-            style={({ pressed }) => [
-              styles.hrToggle,
-              hrEnabled && styles.hrToggleOn,
-              pressed && styles.hrTogglePressed,
-            ]}
-          >
-            <MaterialCommunityIcons
-              name={hrEnabled ? 'heart' : 'heart-outline'}
-              size={14}
-              color={hrEnabled ? colors.error[500] : colors.text.secondary}
-            />
-            <Text style={[styles.hrToggleText, hrEnabled && styles.hrToggleTextOn]}>
-              {hrEnabled ? 'Heart rate on' : 'Track heart rate'}
-            </Text>
-          </Pressable>
-          {pulse.active ? (
-            <LiveHeartRateMonitor
-              active={pulse.active}
-              fingerPlacement={pulse.fingerPlacement}
-              currentBpm={pulse.currentBpm}
+      <ExerciseScaffold
+        centerSlot={
+          <View style={styles.centerStack}>
+            <View style={styles.phaseSlot}>
+              {PHASE_LABELS[phase] ? (
+                <Text style={styles.phaseLabel}>{PHASE_LABELS[phase]}</Text>
+              ) : null}
+            </View>
+            <BreathingCircle
+              ref={circleRef}
+              cameraSlot={cameraSlot}
               beatTick={pulse.beatTick}
-              device={pulse.device}
-              format={pulse.format}
-              frameProcessor={pulse.frameProcessor}
-              torchMode={pulse.torchMode}
-              mountCamera={false}
-              showCameraPreview={true}
-              onPreviewFrame={setPreviewFrame}
-            />
-          ) : null}
-        </View>
-        </View>
-      }
-      centerSlot={
-        <BreathingCircle ref={circleRef}>
-          <Text style={styles.phaseLabel}>{PHASE_LABELS[phase]}</Text>
-          {phase === 'done' ? (
-            <MaterialCommunityIcons
-              name="check-circle-outline"
-              size={32}
-              color={colors.neutral[50]}
-            />
-          ) : null}
-        </BreathingCircle>
-      }
-      bottomSlot={
-        <Animated.View
-          style={[styles.bottomContainer, isActive ? { opacity: hudOpacity } : null]}
-        >
-          {isActive || paused ? (
-            <View style={styles.progressWrap}>
-              <View style={styles.progressTrack}>
-                <View style={[styles.progressFill, { width: `${progress * 100}%` }]} />
-              </View>
-              <Text style={styles.progressLabel}>
-                Round {Math.min(round, totalRounds)} of {totalRounds}
-              </Text>
-            </View>
-          ) : (
-            <View style={styles.stepper}>
-              <Pressable
-                style={[styles.stepBtn, totalRounds <= MIN_ROUNDS && styles.stepBtnDisabled]}
-                onPress={() => totalRounds > MIN_ROUNDS && setTotalRounds(totalRounds - 1)}
-              >
-                <MaterialCommunityIcons name="minus" size={14} color={totalRounds <= MIN_ROUNDS ? colors.text.tertiary : colors.text.primary} />
-              </Pressable>
-              <View style={styles.stepValueWrap}>
-                <Text style={styles.stepValue}>{totalRounds}</Text>
-                <Text style={styles.stepLabel}>rounds</Text>
-              </View>
-              <Pressable
-                style={[styles.stepBtn, totalRounds >= MAX_ROUNDS && styles.stepBtnDisabled]}
-                onPress={() => totalRounds < MAX_ROUNDS && setTotalRounds(totalRounds + 1)}
-              >
-                <MaterialCommunityIcons name="plus" size={14} color={totalRounds >= MAX_ROUNDS ? colors.text.tertiary : colors.text.primary} />
-              </Pressable>
-            </View>
-          )}
-          <View style={styles.btnRow}>
-            <Pressable
-              style={({ pressed }) => [styles.squareBtn, pressed && styles.circleBtnPressed]}
-              onPress={() => {
-                if (isActive) showHud();
-                handleClose();
-              }}
             >
-              <MaterialCommunityIcons name="stop" size={26} color={colors.neutral[900]} />
-            </Pressable>
-            <Pressable
-              style={({ pressed }) => [styles.circleBtn, pressed && styles.circleBtnPressed]}
-              onPress={() => {
-                if (isActive) showHud();
-                if (phase === 'idle' || phase === 'done') {
-                  handleStart();
-                } else if (paused) {
-                  handleResume(phase);
-                } else {
-                  handlePause();
-                }
-              }}
-            >
-              <MaterialCommunityIcons
-                name={isActive && !paused ? 'pause' : 'play'}
-                size={28}
-                color={colors.neutral[900]}
-              />
-            </Pressable>
+              {phase === 'done' ? (
+                <MaterialCommunityIcons
+                  name="check-circle-outline"
+                  size={32}
+                  color={colors.neutral[50]}
+                />
+              ) : null}
+            </BreathingCircle>
+            <View style={styles.belowSlot}>
+              {isPlacement ? (
+                <Text style={styles.hintText}>
+                  {placementHint(pulse.fingerPlacement)}
+                </Text>
+              ) : isActive && pulse.active ? (
+                <View style={styles.metricStack}>
+                  {bpmDisplay != null ? (
+                    <View style={[styles.bpmRow, showSignalWarning && styles.bpmRowDim]}>
+                      <Animated.Text
+                        style={[
+                          styles.bpmNumber,
+                          showSignalWarning ? null : { opacity: bpmOpacity },
+                        ]}
+                      >
+                        {bpmDisplay}
+                      </Animated.Text>
+                      <Animated.View
+                        style={
+                          showSignalWarning
+                            ? null
+                            : { transform: [{ scale: heartScale }] }
+                        }
+                      >
+                        <MaterialCommunityIcons
+                          name="heart"
+                          size={18}
+                          color={
+                            showSignalWarning
+                              ? colors.text.tertiary
+                              : colors.error[500]
+                          }
+                        />
+                      </Animated.View>
+                    </View>
+                  ) : null}
+                  {showSignalWarning ? (
+                    <View style={styles.warningRow}>
+                      <MaterialCommunityIcons
+                        name="alert-circle-outline"
+                        size={12}
+                        color={colors.warning[500]}
+                      />
+                      <Text style={styles.warningText}>
+                        {placementHint(pulse.fingerPlacement)}
+                      </Text>
+                    </View>
+                  ) : null}
+                </View>
+              ) : null}
+            </View>
           </View>
-        </Animated.View>
-      }
-        />
-      )}
-      <View
-        pointerEvents="none"
-        style={[
-          styles.persistentCamera,
-          isPlacement
-            ? styles.persistentCameraVisible
-            : pillPreviewStyle
-              ? pillPreviewStyle
-              : styles.persistentCameraHidden,
-        ]}
-      >
-        <PersistentCameraRing
-          ringColor={isPlacement ? placementCfg.ringColor : colors.primary.blue600}
-          trackColor={isPlacement ? placementCfg.ringColor + '33' : colors.border.subtle}
-          progress={isPlacement ? placementHoldProgress : 0}
-          cameraProps={cameraProps}
-        />
-      </View>
+        }
+        bottomSlot={
+          <Animated.View
+            style={[styles.bottomContainer, isActive ? { opacity: hudOpacity } : null]}
+          >
+            {isActive || paused ? (
+              <View style={styles.progressWrap}>
+                <View style={styles.progressTrack}>
+                  <View style={[styles.progressFill, { width: `${progress * 100}%` }]} />
+                </View>
+                <Text style={styles.progressLabel}>
+                  Round {Math.min(round, totalRounds)} of {totalRounds}
+                </Text>
+              </View>
+            ) : isPlacement ? null : (
+              <View style={styles.stepper}>
+                <Pressable
+                  style={[styles.stepBtn, totalRounds <= MIN_ROUNDS && styles.stepBtnDisabled]}
+                  onPress={() => totalRounds > MIN_ROUNDS && setTotalRounds(totalRounds - 1)}
+                >
+                  <MaterialCommunityIcons name="minus" size={14} color={totalRounds <= MIN_ROUNDS ? colors.text.tertiary : colors.text.primary} />
+                </Pressable>
+                <View style={styles.stepValueWrap}>
+                  <Text style={styles.stepValue}>{totalRounds}</Text>
+                  <Text style={styles.stepLabel}>rounds</Text>
+                </View>
+                <Pressable
+                  style={[styles.stepBtn, totalRounds >= MAX_ROUNDS && styles.stepBtnDisabled]}
+                  onPress={() => totalRounds < MAX_ROUNDS && setTotalRounds(totalRounds + 1)}
+                >
+                  <MaterialCommunityIcons name="plus" size={14} color={totalRounds >= MAX_ROUNDS ? colors.text.tertiary : colors.text.primary} />
+                </Pressable>
+              </View>
+            )}
+            <View style={styles.btnRow}>
+              <Pressable
+                style={({ pressed }) => [styles.squareBtn, pressed && styles.circleBtnPressed]}
+                onPress={() => {
+                  if (isActive) showHud();
+                  handleClose();
+                }}
+              >
+                <MaterialCommunityIcons name="stop" size={26} color={colors.neutral[900]} />
+              </Pressable>
+              {isPlacement ? (
+                <Pressable
+                  onPress={() => beginExercise(false)}
+                  style={({ pressed }) => [
+                    styles.inlineLink,
+                    pressed && styles.textLinkPressed,
+                  ]}
+                >
+                  <Text style={styles.textLinkLabel}>Skip heart rate</Text>
+                </Pressable>
+              ) : (
+                <Pressable
+                  style={({ pressed }) => [styles.circleBtn, pressed && styles.circleBtnPressed]}
+                  onPress={() => {
+                    if (isActive) showHud();
+                    if (phase === 'idle' || phase === 'done') {
+                      handleStart();
+                    } else if (paused) {
+                      handleResume(phase);
+                    } else {
+                      handlePause();
+                    }
+                  }}
+                >
+                  <MaterialCommunityIcons
+                    name={isActive && !paused ? 'pause' : 'play'}
+                    size={28}
+                    color={colors.neutral[900]}
+                  />
+                </Pressable>
+              )}
+            </View>
+          </Animated.View>
+        }
+      />
     </View>
   );
 }
@@ -660,126 +591,74 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     zIndex: 1,
   },
-  persistentCamera: {
-    position: 'absolute',
-    zIndex: 0,
-  },
-  persistentCameraVisible: {
-    top: '50%',
-    left: '50%',
-    width: PLACEMENT_RING_SIZE,
-    height: PLACEMENT_RING_SIZE,
-    marginTop: -PLACEMENT_RING_SIZE / 2,
-    marginLeft: -PLACEMENT_RING_SIZE / 2,
-    opacity: 1,
-  },
-  persistentCameraHidden: {
-    top: 0,
-    left: 0,
-    width: PLACEMENT_RING_SIZE,
-    height: PLACEMENT_RING_SIZE,
-    opacity: 0,
-    transform: [{ scale: 0.01 }],
-  },
-  persistentCameraPillPreview: {
-    width: PLACEMENT_RING_SIZE,
-    height: PLACEMENT_RING_SIZE,
-    opacity: 1,
-    zIndex: 100,
-    elevation: 100,
-    transform: [{ scale: 20 / PLACEMENT_RING_SIZE }],
-  },
-  placementContainer: {
-    flex: 1,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.lg,
+  centerStack: {
     alignItems: 'center',
-    backgroundColor: colors.background.primary,
+    justifyContent: 'center',
   },
-  placementTopArea: {
-    flex: 1,
-    width: '100%',
+  phaseSlot: {
+    height: 40,
     alignItems: 'center',
     justifyContent: 'flex-end',
-    paddingBottom: spacing['6xl'],
-    zIndex: 2,
+    marginBottom: spacing.lg,
   },
-  placementRingSlot: {
-    width: PLACEMENT_RING_SIZE,
-    height: PLACEMENT_RING_SIZE,
-  },
-  placementBottomArea: {
-    flex: 1,
-    width: '100%',
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    paddingTop: spacing.xl,
-    gap: spacing.sm,
-    zIndex: 2,
-  },
-  placementStatus: {
-    ...typography.title.title3,
+  phaseLabel: {
+    ...typography.display.display2,
     fontFamily: fonts.semibold,
     fontWeight: '600',
+    fontSize: 28,
+    lineHeight: 34,
+    letterSpacing: 1.5,
+    color: colors.text.primary,
+    opacity: 0.7,
+    textAlign: 'center',
+  },
+  belowSlot: {
+    height: 44,
+    marginTop: spacing.xs,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  hintText: {
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    fontSize: 14,
+    color: colors.text.secondary,
+    opacity: 0.6,
     textAlign: 'center',
     paddingHorizontal: spacing.lg,
   },
-  startAnywayButton: {
-    width: '100%',
-    backgroundColor: colors.primary.blue600,
-    borderRadius: 14,
-    paddingVertical: 16,
+  metricStack: {
     alignItems: 'center',
+    gap: 4,
   },
-  startAnywayText: {
-    ...typography.button.large,
+  bpmRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  bpmRowDim: {
+    opacity: 0.25,
+  },
+  bpmNumber: {
     fontFamily: fonts.semibold,
     fontWeight: '600',
-    color: colors.text.inverse,
-  },
-  placementCancelTouchable: {
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-  },
-  placementCancelText: {
-    ...typography.body.medium,
-    color: colors.text.secondary,
-  },
-  titleSlotWrap: {
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  hrRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    flexWrap: 'wrap',
-    justifyContent: 'center',
-  },
-  hrToggle: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 6,
-    backgroundColor: colors.background.elevated,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: colors.border.subtle,
-  },
-  hrToggleOn: {
-    borderColor: colors.error[500],
-  },
-  hrTogglePressed: {
-    opacity: 0.7,
-  },
-  hrToggleText: {
-    ...typography.caption.caption1,
-    color: colors.text.secondary,
-  },
-  hrToggleTextOn: {
+    fontSize: 26,
+    lineHeight: 30,
+    letterSpacing: 0.5,
     color: colors.text.primary,
+  },
+  warningRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  warningText: {
+    fontFamily: fonts.semibold,
     fontWeight: '600',
+    fontSize: 11,
+    letterSpacing: 0.5,
+    color: colors.warning[500],
+    opacity: 0.85,
   },
   bottomContainer: {
     alignItems: 'center',
@@ -793,21 +672,41 @@ const styles = StyleSheet.create({
   },
   progressTrack: {
     width: '100%',
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.neutral[100],
-    borderWidth: 1,
-    borderColor: colors.border.subtle,
+    height: 2,
+    borderRadius: 1,
+    backgroundColor: colors.border.subtle,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    backgroundColor: colors.primary.blue500,
-    borderRadius: 4,
+    backgroundColor: colors.primary.blue400,
+    opacity: 0.6,
+    borderRadius: 1,
   },
   progressLabel: {
     ...typography.caption.caption1,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
     color: colors.text.tertiary,
+    opacity: 0.6,
+    letterSpacing: 1,
+  },
+  inlineLink: {
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  textLinkPressed: {
+    opacity: 0.5,
+  },
+  textLinkLabel: {
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    fontSize: 12,
+    letterSpacing: 0.5,
+    color: colors.text.tertiary,
+    opacity: 0.7,
   },
   btnRow: {
     flexDirection: 'row',
@@ -872,14 +771,5 @@ const styles = StyleSheet.create({
   stepLabel: {
     ...typography.caption.caption2,
     color: colors.text.tertiary,
-  },
-  phaseLabel: {
-    ...typography.display.display2,
-    fontFamily: fonts.semibold,
-    fontWeight: '600',
-    fontSize: 28,
-    lineHeight: 34,
-    color: colors.neutral[50],
-    textAlign: 'center',
   },
 });
