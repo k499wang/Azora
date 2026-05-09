@@ -20,7 +20,7 @@ export interface HeartRateCameraPreviewProps {
 }
 
 const resolveExposure = (device: CameraDevice, exposure?: number): number => {
-  const target = exposure ?? 2.0;
+  const target = exposure ?? 1;
   return Math.min(device.maxExposure, Math.max(device.minExposure, target));
 };
 

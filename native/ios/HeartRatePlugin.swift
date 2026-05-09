@@ -271,6 +271,9 @@ public class HeartRateCameraControls: NSObject {
         if device.isFocusModeSupported(.locked) {
           device.focusMode = .locked
         }
+        if device.isExposureModeSupported(.locked) {
+          device.exposureMode = .locked
+        }
 
       } catch {
         return
@@ -294,6 +297,9 @@ public class HeartRateCameraControls: NSObject {
         }
         if device.isFocusModeSupported(.continuousAutoFocus) {
           device.focusMode = .continuousAutoFocus
+        }
+        if device.isExposureModeSupported(.continuousAutoExposure) {
+          device.exposureMode = .continuousAutoExposure
         }
       } catch {
         return
