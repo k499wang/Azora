@@ -10,15 +10,13 @@ const weight = {
 };
 
 // Single app-wide font family. Switch to try any of:
-// 'Fredoka' | 'Baloo2' | 'Unbounded' | 'Sniglet' | 'Nunito'
-const FONT_FAMILY = 'Sniglet';
+// 'Urbanist' | 'Fredoka' | 'Baloo2' | 'Unbounded' | 'Sniglet' | 'Nunito'
+const FONT_FAMILY = 'Urbanist';
 
 const fontBold = `${FONT_FAMILY}-Bold`;
 const fontSemiBold = `${FONT_FAMILY}-SemiBold`;
-// Sniglet has no Regular/Medium variants — SemiBold key falls back to the lightest
-// available weight, so we reuse it for regular/medium slots too.
-const fontRegular = fontSemiBold;
-const fontMedium = fontSemiBold;
+const fontRegular = `${FONT_FAMILY}-Regular`;
+const fontMedium = `${FONT_FAMILY}-Medium`;
 
 export const typography = {
   display: {

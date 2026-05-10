@@ -2,11 +2,14 @@ import {
   Alert,
   Dimensions,
   FlatList,
+  Image,
+  Linking,
   Platform,
   Pressable,
   StyleSheet,
   Text,
   View,
+  type ImageSourcePropType,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
   type ViewToken,
@@ -14,6 +17,7 @@ import {
 import { useEffect, useRef, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon, { type IconName } from '../components/common/icons/Icon';
+import PhoneFrame from '../components/common/PhoneFrame';
 import { useAuthStore } from '../stores/authStore';
 import {
   AppleSignInCancelledError,
@@ -21,7 +25,7 @@ import {
   isAppleSignInAvailable,
 } from '../services/supabase';
 import { colors } from '../theme/colors';
-import { typography, fonts } from '../theme/typography';
+import { fonts } from '../theme/typography';
 import { spacing } from '../theme/spacing';
 
 function showTermsRequiredAlert() {
@@ -31,31 +35,37 @@ function showTermsRequiredAlert() {
   );
 }
 
+type SlideType = 'image' | 'mockup';
+
 interface Slide {
   id: string;
-  icon: IconName;
+  type: SlideType;
+  source?: ImageSourcePropType;
   title: string;
   body: string;
 }
 
 const SLIDES: Slide[] = [
   {
+    id: 'health',
+    type: 'image',
+    source: require('../../assets/onboarding/onboard1.png'),
+    title: 'See your heart health.',
+    body: 'Get a real-time window into your nervous system through live HRV biofeedback.',
+  },
+  {
+    id: 'performance',
+    type: 'image',
+    source: require('../../assets/onboarding/onboard3.webp'),
+    title: 'See your performance.',
+    body: 'Track how your body adapts over time and unlock insights into your recovery and readiness.',
+  },
+  {
     id: 'measure',
-    icon: 'heart-rmssd',
+    type: 'image',
+    source: require('../../assets/onboarding/onboard4.webp'),
     title: 'Measure your heart.',
     body: 'Live HRV biofeedback shows the exact moment your nervous system shifts into recovery.',
-  },
-  {
-    id: 'train',
-    icon: 'breath-lightning',
-    title: 'Train with protocols.',
-    body: 'Box breathing, 4-7-8, and resonance — guided breathwork tied to your real-time vitals.',
-  },
-  {
-    id: 'insights',
-    icon: 'heart-glow',
-    title: 'See your progress.',
-    body: 'Track HRV, resting heart rate, and resilience trends over time. Watch your baseline rise.',
   },
 ];
 
@@ -137,16 +147,13 @@ export default function AuthLandingScreen() {
           viewabilityConfig={{ itemVisiblePercentThreshold: 60 }}
           renderItem={({ item }) => (
             <View style={styles.slide}>
-              <View style={styles.iconWrap}>
-                <View style={styles.iconHaloOuter} />
-                <View style={styles.iconHaloInner} />
-                <View style={styles.iconCore}>
-                  <Icon name={item.icon} size={56} color={colors.primary.blue600} />
-                </View>
-              </View>
+              <PhoneFrame>
+                {item.source ? (
+                  <Image source={item.source} style={styles.frameImage} resizeMode="contain" />
+                ) : null}
+              </PhoneFrame>
               <View style={styles.copy}>
                 <Text style={styles.slideTitle}>{item.title}</Text>
-                <Text style={styles.slideBody}>{item.body}</Text>
               </View>
             </View>
           )}
@@ -172,8 +179,21 @@ export default function AuthLandingScreen() {
                 {agreed && <Icon name="sparkle" size={12} color={colors.text.inverse} />}
               </View>
               <Text style={styles.termsText}>
-                I agree to Azora's <Text style={styles.link}>Terms & Conditions</Text> and
-                acknowledge the <Text style={styles.link}>Privacy Policy</Text>.
+                I agree to Azora's{' '}
+                <Text
+                  style={styles.link}
+                  onPress={() => void Linking.openURL('https://www.tryazora.app/terms')}
+                >
+                  Terms & Conditions
+                </Text>{' '}
+                and acknowledge the{' '}
+                <Text
+                  style={styles.link}
+                  onPress={() => void Linking.openURL('https://www.tryazora.app/privacy')}
+                >
+                  Privacy Policy
+                </Text>
+                .
               </Text>
             </Pressable>
 
@@ -234,41 +254,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.xl,
+    gap: spacing.lg,
   },
-  iconWrap: {
-    width: 200,
-    height: 200,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  iconHaloOuter: {
-    position: 'absolute',
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    backgroundColor: colors.primary.blue100,
-    opacity: 0.5,
-  },
-  iconHaloInner: {
-    position: 'absolute',
-    width: 144,
-    height: 144,
-    borderRadius: 72,
-    backgroundColor: colors.primary.blue100,
-  },
-  iconCore: {
-    width: 92,
-    height: 92,
-    borderRadius: 46,
-    backgroundColor: colors.background.elevated,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: colors.primary.blue700,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+  frameImage: {
+    width: '100%',
+    height: '100%',
   },
   copy: {
     alignItems: 'center',
@@ -282,12 +272,6 @@ const styles = StyleSheet.create({
     lineHeight: 30,
     color: colors.text.primary,
     textAlign: 'center',
-  },
-  slideBody: {
-    ...typography.body.medium,
-    color: colors.text.secondary,
-    textAlign: 'center',
-    maxWidth: 320,
   },
   dots: {
     flexDirection: 'row',
