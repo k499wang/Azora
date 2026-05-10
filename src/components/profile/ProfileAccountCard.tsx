@@ -10,7 +10,6 @@ interface ProfileAccountCardProps {
   onOpenNotifications?: () => void;
   onOpenPrivacyPolicy?: () => void;
   onOpenTerms?: () => void;
-  onExportData?: () => void;
   onSignOut?: () => void;
   onManageSubscription?: () => void;
   onDeleteAccount?: () => void;
@@ -69,7 +68,6 @@ export default function ProfileAccountCard({
   onOpenNotifications,
   onOpenPrivacyPolicy,
   onOpenTerms,
-  onExportData,
   onSignOut,
   onManageSubscription,
   onDeleteAccount,
@@ -118,11 +116,6 @@ export default function ProfileAccountCard({
           icon="file-document-outline"
           label="Terms of service"
           onPress={onOpenTerms}
-        />
-        <Row
-          icon="download-outline"
-          label="Export my data"
-          onPress={onExportData}
         />
         <Row
           icon="logout-variant"
