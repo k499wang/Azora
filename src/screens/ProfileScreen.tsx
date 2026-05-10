@@ -275,11 +275,11 @@ export default function ProfileScreen(_: ProfileScreenProps) {
               }}
               onOpenPrivacyPolicy={() => {
                 trackProfileAction('privacy_policy_opened');
-                void Linking.openURL('https://azora.app/privacy');
+                void Linking.openURL('https://www.tryazora.app/privacy');
               }}
               onOpenTerms={() => {
                 trackProfileAction('terms_opened');
-                void Linking.openURL('https://azora.app/terms');
+                void Linking.openURL('https://www.tryazora.app/terms');
               }}
               onManageSubscription={() => {
                 void handleManageSubscription();
