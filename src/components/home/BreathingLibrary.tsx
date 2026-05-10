@@ -19,10 +19,11 @@ import type { FeatureAccessResult } from '../../services/subscriptions/featureAc
 import type { MainTabNavigationProp } from '../../app/navigation';
 
 const CATEGORY_CONFIG = {
-  calm: { label: 'Calm', color: colors.primary.blue500, bg: colors.primary.blue100 },
-  focus: { label: 'Focus', color: colors.orange[600], bg: colors.orange[100] },
-  energy: { label: 'Energy', color: colors.success[700], bg: colors.success[100] },
-  sleep: { label: 'Sleep', color: colors.neutral[600], bg: colors.neutral[200] },
+  calm: { label: 'Calm', color: colors.primary.blue700, bg: colors.primary.blue100 },
+  focus: { label: 'Focus', color: colors.primary.blue700, bg: colors.primary.blue100 },
+  energy: { label: 'Energy', color: colors.primary.blue700, bg: colors.primary.blue100 },
+  sleep: { label: 'Sleep', color: colors.primary.blue700, bg: colors.primary.blue100 },
+  balance: { label: 'Balance', color: colors.primary.blue700, bg: colors.primary.blue100 },
 } as const;
 
 function formatPattern(p: BreathingTechnique['pattern']) {
@@ -68,26 +69,20 @@ function TechniqueCard({
       onPress={handlePress}
       style={({ pressed }) => [
         styles.card,
-        recommended && styles.cardRecommended,
+        recommended && { borderColor: cat.color, borderWidth: 1.5 },
         pressed && styles.cardPressed,
       ]}
     >
-      <View style={styles.topRow}>
-        <View style={[styles.iconCircle, { backgroundColor: cat.bg }]}>
-          <MaterialCommunityIcons
-            name={technique.icon}
-            size={22}
-            color={cat.color}
-          />
-        </View>
-        <View style={[styles.categoryPill, { backgroundColor: cat.bg }]}>
-          <Text style={[styles.categoryPillText, { color: cat.color }]}>{cat.label}</Text>
-        </View>
+      <MaterialCommunityIcons
+        name={technique.icon}
+        size={22}
+        color={cat.color}
+        style={styles.icon}
+      />
+      <View style={styles.textBlock}>
+        <Text style={styles.category}>{cat.label}</Text>
+        <Text style={styles.pattern}>{formatPattern(technique.pattern)}</Text>
       </View>
-      <Text style={styles.name} numberOfLines={1}>
-        {technique.name}
-      </Text>
-      <Text style={styles.meta}>{formatPattern(technique.pattern)}</Text>
     </Pressable>
   );
 }
@@ -129,7 +124,8 @@ export default function BreathingLibrary() {
   );
 }
 
-const CARD_WIDTH = 160;
+const CARD_WIDTH = 132;
+const CARD_HEIGHT = 168;
 
 const styles = StyleSheet.create({
   section: {
@@ -146,45 +142,29 @@ const styles = StyleSheet.create({
   card: {
     ...card.base,
     width: CARD_WIDTH,
+    height: CARD_HEIGHT,
     padding: spacing.md,
-    gap: spacing.xs,
+    justifyContent: 'space-between',
   },
-  cardRecommended: {
-    borderColor: colors.primary.blue600,
-    borderWidth: 1.5,
+  icon: {
+    alignSelf: 'flex-start',
+  },
+  textBlock: {
+    gap: spacing.xs,
   },
   cardPressed: {
     opacity: 0.88,
     transform: [{ scale: 0.98 }],
   },
-  topRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacing.xs,
-  },
-  iconCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  categoryPill: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 999,
-  },
-  categoryPillText: {
-    ...typography.label.small,
-    fontWeight: '600',
-  },
-  name: {
-    ...typography.heading.heading2,
+  category: {
+    ...typography.title.title3,
+    fontFamily: fonts.semibold,
     color: colors.text.primary,
   },
-  meta: {
-    ...typography.label.small,
-    color: colors.text.tertiary,
+  pattern: {
+    ...typography.heading.heading2,
+    fontFamily: fonts.semibold,
+    color: colors.text.primary,
+    opacity: 0.7,
   },
 });

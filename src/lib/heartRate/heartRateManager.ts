@@ -13,13 +13,15 @@ export interface HeartRateFrameState {
 }
 
 const BASELINE_ALPHA = 0.02;
-const AMPLITUDE_ALPHA = 0.05;
-const INITIAL_PEAK_THRESHOLD_FACTOR = 0.4;
-const ADAPTIVE_THRESHOLD_BASE_FACTOR = 0.3;
+const AMPLITUDE_ALPHA = 0.10;
+const INITIAL_PEAK_THRESHOLD_FACTOR = 0.3;
+const ADAPTIVE_THRESHOLD_BASE_FACTOR = 0.2;
 const ADAPTIVE_THRESHOLD_DECAY_FACTOR = 0.2;
 const ADAPTIVE_THRESHOLD_DECAY_START_FRACTION = 0.85;
+const POLARITY_LOCK_DOMINANCE = 1.35;
+const POLARITY_EXCURSION_THRESHOLD_FACTOR = 0.5;
 const DEFAULT_EXPECTED_IBI_MS = 800;
-const MIN_AMPLITUDE = 0.001;
+const MIN_AMPLITUDE = 0.0004;
 const MIN_IBI_MS = 320;
 const MAX_IBI_MS = 1500;
 const ADAPTIVE_REFRACTORY_FRACTION = 0.5;
@@ -31,8 +33,9 @@ const WARMUP_FRAMES = 60;
 const REINIT_GAP_MS = 1000;
 const BAD_PLACEMENT_GRACE_MS = 500;
 const IBI_HISTORY_SIZE = 8;
-const MIN_LIVE_BPM_IBIS = 5;
+const MIN_LIVE_BPM_IBIS = 3;
 const MALIK_THRESHOLD = 0.2;
+const MALIK_SHORT_THRESHOLD = 0.12;
 const MALIK_WINDOW = 5;
 const MALIK_MIN_HISTORY = 3;
 const SIGNAL_QUALITY_REF = 0.02;
@@ -151,6 +154,7 @@ export function adaptivePeakThreshold(
   if (timeSinceLastPeakMs < 0 || expectedIbiMs <= 0) {
     return amplitude * INITIAL_PEAK_THRESHOLD_FACTOR;
   }
+
   const decayStartMs = expectedIbiMs * ADAPTIVE_THRESHOLD_DECAY_START_FRACTION;
   if (timeSinceLastPeakMs < decayStartMs) {
     return amplitude * INITIAL_PEAK_THRESHOLD_FACTOR;
@@ -185,8 +189,8 @@ function isRoiCovered(roi: PpgRoiSample): boolean {
     value <= 245 &&
     roi.darkPct < 0.35 &&
     roi.saturatedPct < 0.45 &&
-    redToSum(roi) >= 0.58 &&
-    redToMax(roi) >= 1.08
+    redToSum(roi) >= 0.54 &&
+    redToMax(roi) >= 1.05
   );
 }
 
@@ -222,7 +226,7 @@ function classifyFrame(sample: PpgFrameSample): {
   if (coverage < 0.35) {
     return { placement: 'no_finger', weightedAverage };
   }
-  if (avgSaturated > 0.55 || coverage < 0.7) {
+  if (avgSaturated > 0.55 || coverage < 0.65) {
     return { placement: 'partial', weightedAverage };
   }
   return { placement: 'good', weightedAverage };
@@ -239,6 +243,7 @@ export class HeartRateManager {
   private prev1Ts = 0;
   private prev2Ts = 0;
   private lastPeakTs = 0;
+  private lastTickTs = 0;
   private lastGoodTs = 0;
   private validFrameCounter = 0;
   private initialized = false;
@@ -250,6 +255,10 @@ export class HeartRateManager {
   private armedForPeak = true;
   private pendingShortPeakTs: number | null = null;
   private badPlacementSinceTs: number | null = null;
+  private polarity: 1 | -1 = 1;
+  private polarityLocked = false;
+  private polarityPositiveScore = 0;
+  private polarityNegativeScore = 0;
 
   reset(): void {
     this.baseline = 0;
@@ -262,6 +271,7 @@ export class HeartRateManager {
     this.prev1Ts = 0;
     this.prev2Ts = 0;
     this.lastPeakTs = 0;
+    this.lastTickTs = 0;
     this.lastGoodTs = 0;
     this.validFrameCounter = 0;
     this.initialized = false;
@@ -273,6 +283,10 @@ export class HeartRateManager {
     this.armedForPeak = true;
     this.pendingShortPeakTs = null;
     this.badPlacementSinceTs = null;
+    this.polarity = 1;
+    this.polarityLocked = false;
+    this.polarityPositiveScore = 0;
+    this.polarityNegativeScore = 0;
   }
 
   private pushAcceptedIbi(peakTs: number, ibi: number): void {
@@ -306,6 +320,7 @@ export class HeartRateManager {
     // outlier rejection for the actual measurement window.
     this.ibiHistory.length = 0;
     this.pendingShortPeakTs = null;
+    this.lastTickTs = 0;
   }
 
   private getExpectedIbiMs(): number {
@@ -321,7 +336,7 @@ export class HeartRateManager {
   processFrame(sample: PpgFrameSample): HeartRateFrameState {
     const { placement, weightedAverage } = classifyFrame(sample);
 
-    if (placement === 'no_finger' || placement === 'too_much_pressure') {
+    if (placement !== 'good') {
       if (this.initialized && this.lastGoodTs !== 0) {
         if (this.badPlacementSinceTs == null) {
           this.badPlacementSinceTs = sample.timestamp;
@@ -351,7 +366,11 @@ export class HeartRateManager {
       this.prev2Ts = 0;
       this.armedForPeak = true;
       this.pendingShortPeakTs = null;
-      this.lastPlacement = this.lastPlacement === 'good' ? 'lost' : placement;
+      this.lastTickTs = 0;
+      this.lastPlacement =
+        placement === 'no_finger' && this.lastPlacement === 'good'
+          ? 'lost'
+          : placement;
       return {
         fingerPlacement: this.lastPlacement,
         beatDetected: false,
@@ -359,6 +378,8 @@ export class HeartRateManager {
         signalText:
           placement === 'too_much_pressure'
             ? 'Ease up on the pressure'
+            : placement === 'partial'
+              ? 'Adjust finger coverage'
             : this.lastPlacement === 'lost'
               ? 'Signal lost - hold steady'
               : 'Cover the back camera and flash',
@@ -382,6 +403,7 @@ export class HeartRateManager {
       this.prev1Ts = 0;
       this.prev2Ts = 0;
       this.lastPeakTs = 0;
+      this.lastTickTs = 0;
       this.ibiHistory.length = 0;
       this.validFrameCounter = 0;
       this.initialized = true;
@@ -405,11 +427,35 @@ export class HeartRateManager {
     const hp = this.bpHp.process(weightedAverage);
     const bp = this.bpLp.process(hp);
     const denom = Math.max(this.baseline, 1);
-    const ac = bp / denom;
-    this.amplitude += AMPLITUDE_ALPHA * (Math.abs(ac) - this.amplitude);
+    const rawAc = bp / denom;
+    this.amplitude += AMPLITUDE_ALPHA * (Math.abs(rawAc) - this.amplitude);
+
+    if (!this.polarityLocked && this.amplitude > MIN_AMPLITUDE) {
+      const excursionThreshold =
+        this.amplitude * POLARITY_EXCURSION_THRESHOLD_FACTOR;
+      if (rawAc > excursionThreshold) {
+        this.polarityPositiveScore += rawAc;
+      } else if (rawAc < -excursionThreshold) {
+        this.polarityNegativeScore += -rawAc;
+      }
+    }
 
     this.validFrameCounter += 1;
     const readyForMeasurement = this.validFrameCounter > WARMUP_FRAMES;
+
+    if (!this.polarityLocked && readyForMeasurement) {
+      const pos = this.polarityPositiveScore;
+      const neg = this.polarityNegativeScore;
+      if (
+        neg > pos * POLARITY_LOCK_DOMINANCE &&
+        neg > 0
+      ) {
+        this.polarity = -1;
+      }
+      this.polarityLocked = true;
+    }
+
+    const ac = rawAc * this.polarity;
     let beatDetected = false;
 
     if (readyForMeasurement && this.amplitude > MIN_AMPLITUDE) {
@@ -506,21 +552,32 @@ export class HeartRateManager {
                   this.ibiHistory.length >= MALIK_MIN_HISTORY &&
                   (() => {
                     const med = medianOfRecent(this.ibiHistory, MALIK_WINDOW);
-                    return (
-                      med > 0 && Math.abs(ibi - med) / med > MALIK_THRESHOLD
-                    );
+                    if (med <= 0) return false;
+                    const threshold =
+                      ibi < med ? MALIK_SHORT_THRESHOLD : MALIK_THRESHOLD;
+                    return Math.abs(ibi - med) / med > threshold;
                   })();
                 if (!ectopic) {
                   this.pushAcceptedIbi(peakTs, ibi);
+                } else {
+                  advanceAnchor = false;
                 }
               }
             }
           }
           if (advanceAnchor) {
             this.lastPeakTs = peakTs;
-            if (emitTick) {
-              this.armedForPeak = false;
-            }
+          }
+          if (
+            emitTick &&
+            this.lastTickTs !== 0 &&
+            peakTs - this.lastTickTs < MIN_IBI_MS
+          ) {
+            emitTick = false;
+          }
+          if (emitTick) {
+            this.lastTickTs = peakTs;
+            this.armedForPeak = false;
           }
           beatDetected = emitTick;
         }
@@ -543,6 +600,7 @@ export class HeartRateManager {
   }
 
   getCurrentBpm(): number | null {
+    if (this.lastPlacement !== 'good') return null;
     if (this.ibiHistory.length < MIN_LIVE_BPM_IBIS) return null;
     const sorted = [...this.ibiHistory].sort((a, b) => a - b);
     const middle = Math.floor(sorted.length / 2);

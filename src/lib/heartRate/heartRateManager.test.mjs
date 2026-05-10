@@ -28,6 +28,23 @@ function makeNoFingerFrame(timestamp) {
   return { timestamp, rois: [] };
 }
 
+function makeSaturatedFrame(timestamp) {
+  return {
+    timestamp,
+    rois: [
+      {
+        id: 'roi-0',
+        r: 255,
+        g: 255,
+        b: 255,
+        saturatedPct: 0.95,
+        darkPct: 0,
+        variance: 1,
+      },
+    ],
+  };
+}
+
 function runBeatTrain(manager, beatFrameOffsets, startTime = 0) {
   const beatSet = new Set(beatFrameOffsets);
   let t = startTime;
@@ -100,8 +117,8 @@ test('adaptivePeakThreshold: starts stricter then decays toward lower threshold'
   const afterExpectedWindow = adaptivePeakThreshold(amplitude, 1600, expectedIbiMs);
   const longAfterPeak = adaptivePeakThreshold(amplitude, 2400, expectedIbiMs);
 
-  assert.equal(immediate, amplitude * 0.4);
-  assert.equal(beforeExpectedWindow, amplitude * 0.4);
+  assert.equal(immediate, amplitude * 0.3);
+  assert.equal(beforeExpectedWindow, amplitude * 0.3);
   assert.ok(
     afterExpectedWindow < immediate,
     `threshold should decay after the expected beat window, got ${afterExpectedWindow} >= ${immediate}`,
@@ -111,14 +128,14 @@ test('adaptivePeakThreshold: starts stricter then decays toward lower threshold'
     `threshold should continue decaying when beats slow, got ${longAfterPeak} >= ${afterExpectedWindow}`,
   );
   assert.ok(
-    longAfterPeak > amplitude * 0.3,
+    longAfterPeak > amplitude * 0.2,
     `threshold should approach the amplitude floor, got ${longAfterPeak}`,
   );
 });
 
 test('adaptivePeakThreshold: falls back to fixed startup factor for invalid timing', () => {
-  assert.equal(adaptivePeakThreshold(0.02, -1, 800), 0.02 * 0.4);
-  assert.equal(adaptivePeakThreshold(0.02, 500, 0), 0.02 * 0.4);
+  assert.equal(adaptivePeakThreshold(0.02, -1, 800), 0.02 * 0.3);
+  assert.equal(adaptivePeakThreshold(0.02, 500, 0), 0.02 * 0.3);
   assert.equal(adaptivePeakThreshold(0, 500, 800), 0);
 });
 
@@ -420,4 +437,26 @@ test('HeartRateManager: populates signalQuality in [0, 1]', () => {
       `signalQuality should be clamped to [0, 1], got ${s.signalQuality}`,
     );
   }
+});
+
+test('HeartRateManager: saturated frames do not feed live beat detection', () => {
+  const manager = new HeartRateManager();
+  let t = runBeatTrain(manager, [24, 48, 72, 96, 120, 144]);
+  const beforeSamples = manager.getIbiSamples().length;
+  assert.equal(manager.getCurrentBpm(), 76);
+
+  let saturatedTicks = 0;
+  for (let i = 0; i < 40; i++) {
+    const state = manager.processFrame(makeSaturatedFrame(t));
+    if (state.beatDetected) saturatedTicks += 1;
+    t += FRAME_SPACING_MS;
+  }
+
+  assert.equal(saturatedTicks, 0, 'clipped frames should not emit live beat ticks');
+  assert.equal(
+    manager.getIbiSamples().length,
+    beforeSamples,
+    'clipped frames should not append IBIs',
+  );
+  assert.equal(manager.getCurrentBpm(), null, 'sustained clipping should stop live BPM publishing');
 });
