@@ -6,7 +6,7 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
     id: 'stress_relief',
     icon: 'waves',
     accent: colors.success[500],
-    title: 'Calm stress',
+    title: 'Reduce stress',
     body: 'Use breathing to settle your nervous system.',
     reflectionHeadline: 'Lower stress in one session.',
     reflectionBody:
@@ -26,6 +26,33 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
         icon: 'meditation',
         accent: colors.orange[500],
         label: 'Cuts perceived stress nearly in half over 8 weeks',
+      },
+    ],
+  },
+  {
+    id: 'breath_work',
+    icon: 'breath-timer',
+    accent: colors.primary.blue600,
+    title: 'Breath work',
+    body: 'Build a steady breathing practice you can return to daily.',
+    reflectionHeadline: 'Make breathwork part of your routine.',
+    reflectionBody:
+      'A few focused minutes each day is enough to train calmer breathing and better recovery.',
+    valuePoints: [
+      {
+        icon: 'breath-timer',
+        accent: colors.primary.blue600,
+        label: 'Short daily sessions are easier to keep than long, occasional ones',
+      },
+      {
+        icon: 'waves',
+        accent: colors.success[500],
+        label: 'Steady breathing can lower stress within a single practice',
+      },
+      {
+        icon: 'streak',
+        accent: colors.orange[500],
+        label: 'Consistency builds the strongest results over time',
       },
     ],
   },

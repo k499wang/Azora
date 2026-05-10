@@ -9,8 +9,8 @@ import { Animated, Easing, StyleSheet, View } from 'react-native';
 import { colors } from '../../theme/colors';
 
 const OUTER_MAX_SIZE = 300;
-const OUTER_MIN_SIZE = 118;
 const INNER_SIZE = 136;
+const OUTER_MIN_SIZE = INNER_SIZE;
 const OUTER_MIN_SCALE = OUTER_MIN_SIZE / OUTER_MAX_SIZE;
 
 export interface BreathingCircleRef {
@@ -41,7 +41,7 @@ const BreathingCircle = forwardRef<BreathingCircleRef, BreathingCircleProps>(
       Animated.timing(scale, {
         toValue,
         duration: duration * 1000,
-        easing: Easing.inOut(Easing.sin),
+        easing: Easing.bezier(0.4, 0, 0.6, 1),
         useNativeDriver: true,
       }).start();
     };

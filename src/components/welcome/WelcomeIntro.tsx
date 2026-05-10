@@ -29,8 +29,8 @@ const HEADLINE_FADE_MS = 380;
 const SKIP_FADE_MS = 1000;
 const INHALE_TEXT_VISIBLE_MS = HEADLINE_FADE_MS + INHALE_MS + HEADLINE_FADE_MS;
 
-const INHALE_GRADIENT: [string, string] = ['#EAF2FF', '#C8DBFF'];
-const EXHALE_GRADIENT: [string, string] = ['#FFF4E6', '#FFE0BF'];
+const INHALE_GRADIENT: [string, string] = [colors.primary.blue400, colors.primary.blue700];
+const EXHALE_GRADIENT: [string, string] = [colors.orange[400], colors.orange[700]];
 
 interface ParticleDef {
   x: number;

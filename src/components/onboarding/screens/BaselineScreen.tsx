@@ -47,9 +47,16 @@ const HALF_BREATH_SEC = 5.5;
 const PLACEMENT_GOOD_DURATION_MS = 2500;
 
 const STEPS: { num: string; label: string }[] = [
-  { num: '1', label: 'Rest your fingertip on the back camera lens.' },
-  { num: '2', label: 'Breathe along with the circle for 60 seconds.' },
-  { num: '3', label: "We'll show how your heart responds." },
+  { num: '1', label: 'Get relaxed in a comfortable place.' },
+  { num: '2', label: 'Cover the back camera and flash with your fingertip.' },
+  { num: '3', label: 'Breathe with the circle while staying still.' },
+];
+
+const READING_TIPS = [
+  'Warm, dry hands work best.',
+  'Use gentle pressure - enough to cover the lens, not enough to block blood flow.',
+  'Keep your phone and finger steady, and avoid talking during the reading.',
+  'If the signal drops, adjust until your fingertip fully covers the camera and flash.',
 ];
 
 function placementConfig(p: FingerPlacementState): { ringColor: string; status: string } {
@@ -470,7 +477,7 @@ export default function BaselineScreen({
   return (
     <OnboardingScreenLayout
       title="Read your baseline"
-      subtitle="A 60-second breathing check so we can tune your plan."
+      subtitle="A 60-second breathing check so we can tune your plan. Make sure you're relaxed and in a comfortable place."
       progress={stepIndex / stepCount}
       onBack={onBack}
       footer={
@@ -507,6 +514,16 @@ export default function BaselineScreen({
             </View>
             <Text style={styles.stepLabel}>{step.label}</Text>
             {index < STEPS.length - 1 && <View style={styles.stepConnector} />}
+          </View>
+        ))}
+      </View>
+
+      <View style={styles.tipsCard}>
+        <Text style={styles.tipsTitle}>For the cleanest reading</Text>
+        {READING_TIPS.map((tip) => (
+          <View key={tip} style={styles.tipRow}>
+            <View style={styles.tipDot} />
+            <Text style={styles.tipText}>{tip}</Text>
           </View>
         ))}
       </View>
@@ -564,6 +581,38 @@ const styles = StyleSheet.create({
     height: 2,
     borderRadius: 1,
     backgroundColor: colors.border.subtle,
+  },
+  tipsCard: {
+    marginTop: spacing.lg,
+    gap: spacing.sm,
+    padding: spacing.md,
+    borderRadius: 20,
+    backgroundColor: colors.background.elevated,
+    borderWidth: 1,
+    borderColor: colors.border.subtle,
+  },
+  tipsTitle: {
+    ...typography.body.small,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    color: colors.text.primary,
+  },
+  tipRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+  },
+  tipDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginTop: 7,
+    backgroundColor: colors.primary.blue500,
+  },
+  tipText: {
+    ...typography.body.small,
+    flex: 1,
+    color: colors.text.secondary,
   },
 
   fill: {
