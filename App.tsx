@@ -5,6 +5,12 @@ import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import {
   useFonts,
+  Urbanist_400Regular,
+  Urbanist_500Medium,
+  Urbanist_600SemiBold,
+  Urbanist_700Bold,
+} from '@expo-google-fonts/urbanist';
+import {
   Nunito_400Regular,
   Nunito_500Medium,
   Nunito_600SemiBold,
@@ -48,6 +54,10 @@ const navigationRef = createNavigationContainerRef<RootStackParamList>();
 
 export default function App() {
   const [fontsLoaded] = useFonts({
+    'Urbanist-Regular': Urbanist_400Regular,
+    'Urbanist-Medium': Urbanist_500Medium,
+    'Urbanist-SemiBold': Urbanist_600SemiBold,
+    'Urbanist-Bold': Urbanist_700Bold,
     'Nunito-Regular': Nunito_400Regular,
     'Nunito-Medium': Nunito_500Medium,
     'Nunito-SemiBold': Nunito_600SemiBold,
