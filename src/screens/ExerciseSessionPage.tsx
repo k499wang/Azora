@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useIsFocused } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
@@ -9,6 +9,7 @@ import BreathingCircle, {
   BreathingCircleRef,
 } from '../components/exercise/BreathingCircle';
 import ExerciseScaffold from '../components/exercise/ExerciseScaffold';
+import TechniqueIntro from '../components/exercise/TechniqueIntro';
 import TECHNIQUES from '../data/techniques';
 import type { BreathingTechnique } from '../data/techniques';
 import { useCancellableFlow } from '../hooks/useCancellableFlow';
@@ -86,6 +87,40 @@ export default function ExerciseSessionPage({
 
   const bpmOpacity = useRef(new Animated.Value(0.6)).current;
   const heartScale = useRef(new Animated.Value(1)).current;
+
+  const transition = useRef(new Animated.Value(phase === 'idle' ? 0 : 1)).current;
+
+  useEffect(() => {
+    const toValue = phase === 'idle' ? 0 : 1;
+    Animated.timing(transition, {
+      toValue,
+      duration: 450,
+      easing: Easing.inOut(Easing.ease),
+      useNativeDriver: true,
+    }).start();
+  }, [phase === 'idle']);
+
+  const introOpacity = transition.interpolate({
+    inputRange: [0, 0.55, 1],
+    outputRange: [1, 0.4, 0],
+  });
+  const introScale = transition.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 0.96],
+  });
+  const introTranslateY = transition.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, -12],
+  });
+
+  const circleOpacity = transition.interpolate({
+    inputRange: [0, 0.45, 1],
+    outputRange: [0, 0.3, 1],
+  });
+  const circleScale = transition.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.88, 1],
+  });
 
   const showHud = useCallback(() => {
     if (hideTimerRef.current) {
@@ -444,19 +479,48 @@ export default function ExerciseSessionPage({
                 <Text style={styles.phaseLabel}>{PHASE_LABELS[phase]}</Text>
               ) : null}
             </View>
-            <BreathingCircle
-              ref={circleRef}
-              cameraSlot={cameraSlot}
-              beatTick={pulse.beatTick}
-            >
-              {phase === 'done' ? (
-                <MaterialCommunityIcons
-                  name="check-circle-outline"
-                  size={32}
-                  color={colors.neutral[50]}
-                />
-              ) : null}
-            </BreathingCircle>
+
+            <View style={styles.contentArea}>
+              <Animated.View
+                style={[
+                  styles.contentLayer,
+                  {
+                    opacity: introOpacity,
+                    transform: [
+                      { scale: introScale },
+                      { translateY: introTranslateY },
+                    ],
+                  },
+                ]}
+              >
+                <TechniqueIntro technique={technique} />
+              </Animated.View>
+
+              <Animated.View
+                style={[
+                  styles.contentLayer,
+                  {
+                    opacity: circleOpacity,
+                    transform: [{ scale: circleScale }],
+                  },
+                ]}
+              >
+                <BreathingCircle
+                  ref={circleRef}
+                  cameraSlot={cameraSlot}
+                  beatTick={pulse.beatTick}
+                >
+                  {phase === 'done' ? (
+                    <MaterialCommunityIcons
+                      name="check-circle-outline"
+                      size={32}
+                      color={colors.neutral[50]}
+                    />
+                  ) : null}
+                </BreathingCircle>
+              </Animated.View>
+            </View>
+
             <View style={styles.belowSlot}>
               {isPlacement ? (
                 <Text style={styles.hintText}>
@@ -607,10 +671,23 @@ const styles = StyleSheet.create({
   },
   phaseSlot: {
     height: 40,
+    alignSelf: 'stretch',
     alignItems: 'center',
     justifyContent: 'flex-end',
-    marginBottom: spacing.lg,
+    marginBottom: spacing.sm,
   },
+  contentArea: {
+    width: 340,
+    height: 300,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  contentLayer: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
   phaseLabel: {
     ...typography.display.display2,
     fontFamily: fonts.semibold,
