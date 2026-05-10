@@ -61,7 +61,7 @@ export default function ExperienceScreen({
   return (
     <OnboardingScreenLayout
       title="Have you tried breathwork before?"
-      subtitle="We'll match the difficulty to your experience."
+      subtitle="We'll tailor the app to your experience."
       progress={stepIndex / stepCount}
       onBack={onBack}
       footer={

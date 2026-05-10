@@ -3,7 +3,6 @@ import type { IconName } from '../common/icons/Icon';
 export type OnboardingStep =
   | 'intent'
   | 'intentReflection'
-  | 'customIntent'
   | 'name'
   | 'stress'
   | 'sleep'
@@ -13,7 +12,6 @@ export type OnboardingStep =
   | 'age'
   | 'gender'
   | 'dailyTime'
-  | 'microFact'
   | 'baselineIntro'
   | 'baseline'
   | 'scienceResearch'

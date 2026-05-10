@@ -4,12 +4,10 @@ import ScienceCredibilityScreen from './screens/ScienceCredibilityScreen';
 import ScienceResearchScreen from './screens/ScienceResearchScreen';
 import BaselineScreen, { type BaselineResult } from './screens/BaselineScreen';
 import BaselineIntroScreen from './screens/BaselineIntroScreen';
-import CustomIntentScreen from './screens/CustomIntentScreen';
 import DailyTimeScreen from './screens/DailyTimeScreen';
 import GenderScreen from './screens/GenderScreen';
 import IntentQuestionScreen from './screens/IntentQuestionScreen';
 import IntentReflectionScreen from './screens/IntentReflectionScreen';
-import MicroFactScreen from './screens/MicroFactScreen';
 import AgreementScreen, {
   AGREEMENT_STATEMENTS,
   type AgreementValue,
@@ -49,11 +47,10 @@ interface OnboardingFlowProps {
 }
 
 
-const STEP_COUNT = 19;
+const STEP_COUNT = 18;
 const STEP_INDEX: Record<OnboardingStep, number> = {
   intent: 1,
   intentReflection: 2,
-  customIntent: 2,
   name: 3,
   stress: 4,
   sleep: 5,
@@ -63,14 +60,13 @@ const STEP_INDEX: Record<OnboardingStep, number> = {
   age: 9,
   gender: 10,
   dailyTime: 11,
-  microFact: 12,
+  scienceResearch: 12,
   baselineIntro: 13,
   baseline: 14,
-  scienceResearch: 15,
-  recommendation: 16,
-  scienceCredibility: 17,
-  pact: 18,
-  paywall: 19,
+  recommendation: 15,
+  scienceCredibility: 16,
+  pact: 17,
+  paywall: 18,
 };
 
 export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
@@ -119,7 +115,12 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
 
   const goFromIntent = () => {
     if (selectedIntent == null || isSubmitting) return;
-    setStep(selectedIntent === 'other' ? 'customIntent' : 'intentReflection');
+    if (selectedIntent === 'other' && customIntent.trim().length === 0) {
+      setErrorMessage('Please share a few words.');
+      return;
+    }
+
+    setStep(selectedIntent === 'other' ? 'name' : 'intentReflection');
   };
 
   const finish = async () => {
@@ -189,27 +190,6 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     );
   }
 
-  if (step === 'customIntent') {
-    return (
-      <CustomIntentScreen
-        value={customIntent}
-        stepIndex={stepIndex}
-        stepCount={STEP_COUNT}
-        isSubmitting={isSubmitting}
-        errorMessage={errorMessage}
-        onChange={setCustomIntent}
-        onContinue={() => {
-          if (customIntent.trim().length === 0) {
-            setErrorMessage('Please share a few words.');
-            return;
-          }
-          setStep('name');
-        }}
-        onBack={() => setStep('intent')}
-      />
-    );
-  }
-
   if (step === 'name') {
     return (
       <NameScreen
@@ -218,9 +198,7 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         stepCount={STEP_COUNT}
         onChange={setName}
         onContinue={() => setStep('stress')}
-        onBack={() =>
-          setStep(selectedIntent === 'other' ? 'customIntent' : 'intentReflection')
-        }
+        onBack={() => setStep('intent')}
       />
     );
   }
@@ -328,15 +306,15 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         stepIndex={stepIndex}
         stepCount={STEP_COUNT}
         onChange={setDailyMinutes}
-        onContinue={() => setStep('microFact')}
+        onContinue={() => setStep('scienceResearch')}
         onBack={() => setStep('gender')}
       />
     );
   }
 
-  if (step === 'microFact') {
+  if (step === 'scienceResearch') {
     return (
-      <MicroFactScreen
+      <ScienceResearchScreen
         stepIndex={stepIndex}
         stepCount={STEP_COUNT}
         onContinue={() => setStep('baselineIntro')}
@@ -352,7 +330,7 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         stepCount={STEP_COUNT}
         name={name}
         onContinue={() => setStep('baseline')}
-        onBack={() => setStep('microFact')}
+        onBack={() => setStep('scienceResearch')}
       />
     );
   }
@@ -364,20 +342,9 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         stepCount={STEP_COUNT}
         onContinue={(result) => {
           setBaseline(result);
-          setStep('scienceResearch');
+          setStep('recommendation');
         }}
         onBack={() => setStep('baselineIntro')}
-      />
-    );
-  }
-
-  if (step === 'scienceResearch') {
-    return (
-      <ScienceResearchScreen
-        stepIndex={stepIndex}
-        stepCount={STEP_COUNT}
-        onContinue={() => setStep('recommendation')}
-        onBack={() => setStep('baseline')}
       />
     );
   }
@@ -400,7 +367,7 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         stepIndex={stepIndex}
         stepCount={STEP_COUNT}
         onContinue={() => setStep('scienceCredibility')}
-        onBack={() => setStep('scienceResearch')}
+        onBack={() => setStep('baseline')}
       />
     );
   }
@@ -466,11 +433,13 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   return (
     <IntentQuestionScreen
       selectedIntent={selectedIntent}
+      customIntent={customIntent}
       isSubmitting={isSubmitting}
       errorMessage={errorMessage}
       stepIndex={stepIndex}
       stepCount={STEP_COUNT}
       onSelect={selectIntent}
+      onCustomIntentChange={setCustomIntent}
       onContinue={goFromIntent}
     />
   );

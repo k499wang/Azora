@@ -23,6 +23,14 @@ function descriptorFor(value: number): string {
   return 'Fully recharged';
 }
 
+function accentForRestedness(value: number): string {
+  if (value <= 2) return colors.error[500];
+  if (value <= 4) return colors.orange[500];
+  if (value <= 6) return colors.warning[500];
+  if (value <= 8) return colors.primary.blue500;
+  return colors.success[500];
+}
+
 export default function SleepScreen({
   value,
   stepIndex,
@@ -31,6 +39,8 @@ export default function SleepScreen({
   onContinue,
   onBack,
 }: SleepScreenProps) {
+  const accent = accentForRestedness(value);
+
   return (
     <OnboardingScreenLayout
       title="How rested do you feel most mornings?"
@@ -40,13 +50,13 @@ export default function SleepScreen({
       footer={<OnboardingPrimaryButton label="Continue" onPress={onContinue} />}
     >
       <View style={styles.content}>
-        <Text style={styles.descriptor}>{descriptorFor(value)}</Text>
+        <Text style={[styles.descriptor, { color: accent }]}>{descriptorFor(value)}</Text>
 
         <OnboardingHapticSlider
           min={1}
           max={10}
           value={value}
-          accent={colors.primary.blue600}
+          accent={accent}
           onChange={onChange}
         />
 
