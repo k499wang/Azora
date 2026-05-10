@@ -55,7 +55,9 @@ export default function ProfileScreen(_: ProfileScreenProps) {
   const insets = useSafeAreaInsets();
   const user = useAuthStore((s) => s.user);
   const signOut = useAuthStore((s) => s.signOut);
+  const deleteAccount = useAuthStore((s) => s.deleteAccount);
   const [signingOut, setSigningOut] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
   const { hapticsEnabled, setHapticsEnabled } = useHapticsPreference();
   const profileSummaryQuery = useProfileSummaryQuery(user?.id ?? null);
   const uploadAvatarMutation = useUploadProfileAvatarMutation(user?.id ?? null);
@@ -194,6 +196,63 @@ export default function ProfileScreen(_: ProfileScreenProps) {
     }
   };
 
+  const handleDeleteAccount = () => {
+    if (deletingAccount) return;
+    trackProfileAction('delete_account_prompt_opened');
+    Alert.alert(
+      'Delete account?',
+      'This permanently deletes your account and all data. This cannot be undone.',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+          onPress: () => {
+            trackProfileAction('delete_account_cancelled');
+          },
+        },
+        {
+          text: 'Delete account',
+          style: 'destructive',
+          onPress: () => {
+            trackProfileAction('delete_account_confirmed');
+            Alert.alert(
+              'Are you sure?',
+              'All your sessions, stats, and progress will be gone forever.',
+              [
+                {
+                  text: 'Keep my account',
+                  style: 'cancel',
+                  onPress: () => {
+                    trackProfileAction('delete_account_second_cancelled');
+                  },
+                },
+                {
+                  text: 'Yes, delete everything',
+                  style: 'destructive',
+                  onPress: async () => {
+                    setDeletingAccount(true);
+                    try {
+                      await deleteAccount();
+                      trackProfileAction('delete_account_succeeded');
+                    } catch (err) {
+                      trackProfileAction('delete_account_failed', {
+                        error_message: err instanceof Error ? err.message : 'unknown_error',
+                      });
+                      const message = err instanceof Error ? err.message : 'Please try again.';
+                      Alert.alert('Delete account failed', message);
+                    } finally {
+                      setDeletingAccount(false);
+                    }
+                  },
+                },
+              ],
+            );
+          },
+        },
+      ],
+    );
+  };
+
   const handleManageSubscription = async () => {
     trackProfileAction('manage_subscription_opened');
 
@@ -285,6 +344,7 @@ export default function ProfileScreen(_: ProfileScreenProps) {
                 void handleManageSubscription();
               }}
               onSignOut={handleSignOut}
+              onDeleteAccount={handleDeleteAccount}
             />
           </View>
         </View>

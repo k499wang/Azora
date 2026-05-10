@@ -8,6 +8,7 @@ import {
   subscribeToAuthChanges,
 } from '../services/supabase';
 import type { SupabaseSession, SupabaseUser } from '../services/supabase';
+import { deleteAccount as deleteAccountService } from '../services/profile/deleteAccountService';
 
 export type AuthStatus = 'booting' | 'signed_out' | 'signed_in';
 
@@ -19,6 +20,7 @@ interface AuthState {
   signInWithGoogle: () => Promise<void>;
   signInWithApple: () => Promise<void>;
   signOut: () => Promise<void>;
+  deleteAccount: () => Promise<void>;
 }
 
 let authSubscriptionUnsubscribe: (() => void) | null = null;
@@ -63,5 +65,10 @@ export const useAuthStore = create<AuthState>((set) => ({
   signOut: async () => {
     await signOutGoogle();
     await signOutSession();
+  },
+  deleteAccount: async () => {
+    await deleteAccountService();
+    await signOutGoogle();
+    applySession(null);
   },
 }));
