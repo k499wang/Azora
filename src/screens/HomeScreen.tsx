@@ -317,8 +317,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           </View>
         </View>
 
-        <BreathingLibrary />
-
         <View style={styles.section}>
           {hasPartialStatsError || homeStatsQuery.isError ? (
             <Text style={styles.partialErrorText}>
@@ -333,6 +331,8 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             ibiMs={ibiMs}
           />
         </View>
+
+        <BreathingLibrary />
 
         <HeartHealthSection
           rmssd={stats?.hrv.rmssd ?? null}

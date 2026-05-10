@@ -9,7 +9,7 @@ export interface BreathingTechnique {
   description: string;
   pattern: { inhale: number; holdIn: number; exhale: number; holdOut: number };
   defaultRounds: number;
-  category: 'calm' | 'focus' | 'energy' | 'sleep';
+  category: 'calm' | 'focus' | 'energy' | 'sleep' | 'balance';
   icon: TechniqueIconName;
   duration: string;
 }
@@ -22,7 +22,8 @@ const TECHNIQUES: BreathingTechnique[] = [
   {
     id: 'box',
     name: 'Box Breathing',
-    description: 'Equal parts inhale, hold, exhale, hold',
+    description:
+      'A technique trusted by Navy SEALs, pilots, and elite athletes to stay razor-sharp under extreme pressure. By equalizing each phase of the breath, you stabilize your nervous system, slow your heart rate, and clear mental noise in seconds.',
     pattern: { inhale: 4, holdIn: 4, exhale: 4, holdOut: 4 },
     defaultRounds: 8,
     category: 'focus',
@@ -32,7 +33,8 @@ const TECHNIQUES: BreathingTechnique[] = [
   {
     id: '478',
     name: '4-7-8 Breathing',
-    description: 'Calming technique for sleep and anxiety',
+    description:
+      "Developed by Dr. Andrew Weil as a natural tranquilizer for the nervous system. The extended exhale gently coaxes your body out of fight-or-flight and into deep rest. Many people use it to fall asleep faster or ease anxiety before a big moment.",
     pattern: { inhale: 4, holdIn: 7, exhale: 8, holdOut: 0 },
     defaultRounds: 4,
     category: 'sleep',
@@ -42,7 +44,8 @@ const TECHNIQUES: BreathingTechnique[] = [
   {
     id: 'wimhof',
     name: 'Wim Hof',
-    description: 'Rapid breathing for energy and focus',
+    description:
+      "Popularized by the 'Iceman,' this rapid cyclic breathing floods your body with oxygen, alkalizing the blood and energizing every cell. Research links it to reduced inflammation, stronger immunity, and a measurable boost in energy and mental clarity.",
     pattern: { inhale: 2, holdIn: 0, exhale: 2, holdOut: 0 },
     defaultRounds: 30,
     category: 'energy',
@@ -52,17 +55,19 @@ const TECHNIQUES: BreathingTechnique[] = [
   {
     id: 'resonance',
     name: 'Resonance',
-    description: 'Balanced breathing at 6 breaths per minute',
+    description:
+      'Also known as coherent breathing, this rhythm matches your body\'s natural resonant frequency. At five to six breaths per minute, you maximize heart rate variability, improve autonomic balance, and train your nervous system to recover faster from stress.',
     pattern: { inhale: 5, holdIn: 0, exhale: 5, holdOut: 0 },
     defaultRounds: 10,
-    category: 'calm',
+    category: 'balance',
     icon: 'waves',
     duration: '~2 min',
   },
   {
     id: 'relaxing',
     name: 'Relaxing Breath',
-    description: 'Extended exhale for deep relaxation',
+    description:
+      'A simple but powerful pattern that activates the vagus nerve and triggers your parasympathetic relaxation response. By extending the exhale, you measurably lower heart rate and blood pressure, making this perfect for unwinding after a hectic day.',
     pattern: { inhale: 4, holdIn: 0, exhale: 6, holdOut: 0 },
     defaultRounds: 6,
     category: 'calm',
