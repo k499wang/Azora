@@ -3,6 +3,7 @@ import {
   Dimensions,
   FlatList,
   Image,
+  Linking,
   Platform,
   Pressable,
   StyleSheet,
@@ -178,8 +179,21 @@ export default function AuthLandingScreen() {
                 {agreed && <Icon name="sparkle" size={12} color={colors.text.inverse} />}
               </View>
               <Text style={styles.termsText}>
-                I agree to Azora's <Text style={styles.link}>Terms & Conditions</Text> and
-                acknowledge the <Text style={styles.link}>Privacy Policy</Text>.
+                I agree to Azora's{' '}
+                <Text
+                  style={styles.link}
+                  onPress={() => void Linking.openURL('https://www.tryazora.app/terms')}
+                >
+                  Terms & Conditions
+                </Text>{' '}
+                and acknowledge the{' '}
+                <Text
+                  style={styles.link}
+                  onPress={() => void Linking.openURL('https://www.tryazora.app/privacy')}
+                >
+                  Privacy Policy
+                </Text>
+                .
               </Text>
             </Pressable>
 
