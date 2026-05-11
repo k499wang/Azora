@@ -539,11 +539,8 @@ export default function DailyExercisePage({
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     }
     posthog.capture(AnalyticsEvent.DailyBreathHoldReleased, {
-      hold_seconds: holdSeconds,
-      best_hold_seconds: updatedBest,
       is_new_best: newBest,
       hr_monitoring_enabled: hrEnabled,
-      bpm_sample_count: liveSampleCount,
     });
     void saveCompletedHold(holdSeconds, captureSamples.length, captureResult, endedAtMs);
     const reading = captureResult.reading;
@@ -622,11 +619,7 @@ export default function DailyExercisePage({
 
   const handleViewResults = () => {
     posthog.capture(AnalyticsEvent.DailyResultsViewed, {
-      hold_seconds: holdSeconds,
-      best_hold_seconds: bestHoldSeconds,
-      avg_bpm: lastRelease?.avgBpm ?? null,
-      min_bpm: lastRelease?.minBpm ?? null,
-      max_bpm: lastRelease?.maxBpm ?? null,
+      hr_monitoring_enabled: lastRelease?.avgBpm != null,
     });
     navigation.navigate('DailyResult', {
       holdSeconds,

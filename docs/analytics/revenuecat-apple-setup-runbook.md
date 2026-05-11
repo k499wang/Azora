@@ -140,10 +140,7 @@ look created but will silently fail in sandbox with cryptic errors.
 
 ### 4.2 Create the four products
 
-**Current shipped plan is a 2-arm pricing test (4 products).** A future
-3-arm test would require adding `azora_pro_weekly_999` and
-`azora_pro_yearly_7999` later and waiting for App Review — do that before
-the *next* experiment, not as part of launch.
+**Current shipped plan is a 2-arm pricing test (4 products).**
 
 For each of the four below:
 
@@ -152,7 +149,7 @@ For each of the four below:
 
 | Level | Reference Name         | Product ID                    | Duration | Price (USD)    | Intro Offer           |
 |-------|------------------------|-------------------------------|----------|----------------|-----------------------|
-| 1     | Pro Annual $59.99      | `azora_pro_yearly_5999`       | 1 Year   | Tier for $59.99| 7-day free trial      |
+| 1     | Pro Annual $59.99      | `azora_pro_yearly_5999_v2`    | 1 Year   | Tier for $59.99| 7-day free trial      |
 | 2     | Pro Annual $39.99      | `azora_pro_yearly_3999`       | 1 Year   | Tier for $39.99| 7-day free trial      |
 | 3     | Pro Weekly $7.99       | `azora_pro_weekly_799`        | 1 Week   | Tier for $7.99 | None                  |
 | 4     | Pro Weekly $5.99       | `azora_pro_weekly_599`        | 1 Week   | Tier for $5.99 | None                  |
@@ -288,7 +285,7 @@ For each offering below:
 | Offering identifier | Weekly product            | Annual product            |
 |---------------------|---------------------------|---------------------------|
 | `default_low`       | `azora_pro_weekly_599`    | `azora_pro_yearly_3999`   |
-| `default_mid`       | `azora_pro_weekly_799`    | `azora_pro_yearly_5999`   |
+| `default_mid`       | `azora_pro_weekly_799`    | `azora_pro_yearly_5999_v2`   |
 
 ### 8.4 Set the current offering
 
@@ -522,7 +519,7 @@ Four places to check — all must line up:
    `event_type = 'INITIAL_PURCHASE'`
 4. **Supabase `subscriptions`** table:
    - `status` = `trialing` (for annual with trial) or `active`
-   - `product_id` = `azora_pro_yearly_5999`
+   - `product_id` = `azora_pro_yearly_5999_v2`
    - `initial_offering_id` = `default_mid`
    - `current_period_ends_at` = 7 days from now
 

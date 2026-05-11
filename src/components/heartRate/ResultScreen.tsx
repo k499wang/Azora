@@ -175,14 +175,6 @@ export function ResultScreen({
   useEffect(() => {
     if (isSuccess && result.reading) {
       posthog.capture(AnalyticsEvent.HeartRateCaptureCompleted, {
-        bpm: result.reading.bpm,
-        confidence: result.reading.confidence,
-        duration_ms: result.reading.durationMs,
-        sample_count: result.reading.sampleCount,
-        rmssd_ms: result.reading.rmssd ?? null,
-        stress: result.reading.stress ?? null,
-        sdnn_ms: result.reading.sdnn ?? null,
-        hrv_availability_reason: result.reading.hrvAvailabilityReason ?? null,
         context: context ?? null,
       });
     } else if (!isSuccess) {
