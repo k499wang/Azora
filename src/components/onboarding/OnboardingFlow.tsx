@@ -168,11 +168,11 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     }
   };
 
-  const continueWithoutPro = () => {
+  const continueWithoutPro = async () => {
     if (isSubmitting) return;
 
     paywall.trackDismissed();
-    void finish();
+    await finish();
   };
 
   const stepIndex = STEP_INDEX[step];
