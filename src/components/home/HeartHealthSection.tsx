@@ -1,9 +1,12 @@
+import type { ReactNode } from 'react';
 import { Alert, Pressable, StyleSheet, View } from 'react-native';
 import { Text } from 'react-native';
+import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
 import { spacing, padding } from '../../theme/spacing';
-import { typography } from '../../theme/typography';
+import { typography, fonts } from '../../theme/typography';
 import { card } from '../../theme/card';
 import SectionHeader from '../common/SectionHeader';
 import BigRingStatCard from './BigRingStatCard';
@@ -83,11 +86,17 @@ export default function HeartHealthSection({
   locked = false,
   onPressUpgrade,
 }: HeartHealthSectionProps) {
-  const rmssdValue = rmssd ?? null;
-  const sdnnValue = sdnn ?? null;
-  const stressValue = stress ?? null;
-  const hrDropValue = hrDrop ?? null;
-  const insight = buildInsight(rmssdValue, sdnnValue, hrDropValue);
+  const rmssdValue = rmssd ?? (locked ? 48 : null);
+  const sdnnValue = sdnn ?? (locked ? 42 : null);
+  const stressValue = stress ?? (locked ? 38 : null);
+  const hrDropValue = hrDrop ?? (locked ? 9 : null);
+  const insight = locked
+    ? {
+        tone: 'Strong recovery',
+        detail:
+          'Your variability looks strong for this day, with a stable recovery pattern through the session.',
+      }
+    : buildInsight(rmssdValue, sdnnValue, hrDropValue);
 
   return (
     <View style={styles.section}>
@@ -95,26 +104,12 @@ export default function HeartHealthSection({
         <SectionHeader title="Heart health" />
       </View>
 
-      <Pressable
-        disabled={!locked || onPressUpgrade == null}
-        onPress={onPressUpgrade}
-        style={({ pressed }) => [
-          styles.contentWrap,
-          locked && styles.lockedWrap,
-          pressed && styles.lockedPressed,
-        ]}
-      >
-        {locked ? (
-          <View style={styles.lockedBadge}>
-            <Text style={styles.lockedBadgeText}>PRO</Text>
-          </View>
-        ) : null}
-
-        <View style={[styles.metricRow, locked && styles.lockedContent]}>
+      <LockedOverlay locked={locked} onPressUpgrade={onPressUpgrade}>
+        <View style={styles.metricRow}>
           <BigRingStatCard
             label="RMSSD"
-            value={locked ? 'Pro' : rmssdValue == null ? '--' : `${rmssdValue}`}
-            progress={locked || rmssdValue == null ? 0.72 : rmssdValue / 60}
+            value={rmssdValue == null ? '--' : `${rmssdValue}`}
+            progress={rmssdValue == null ? 0.72 : rmssdValue / 60}
             color={colors.primary.blue500}
             trackColor={colors.neutral[200]}
             icon="heart-rmssd"
@@ -122,8 +117,8 @@ export default function HeartHealthSection({
           />
           <BigRingStatCard
             label="Avg HRV"
-            value={locked ? 'Pro' : sdnnValue == null ? '--' : `${sdnnValue}`}
-            progress={locked || sdnnValue == null ? 0.62 : sdnnValue / 50}
+            value={sdnnValue == null ? '--' : `${sdnnValue}`}
+            progress={sdnnValue == null ? 0.62 : sdnnValue / 50}
             color={colors.success[500]}
             trackColor={colors.neutral[200]}
             icon="heart-sdnn"
@@ -131,15 +126,8 @@ export default function HeartHealthSection({
           />
         </View>
 
-        <View style={[styles.gaugeWrap, locked && styles.lockedContent]}>
-          {locked ? (
-            <View style={styles.stressPlaceholder}>
-              <Text style={styles.stressPlaceholderTitle}>Stress score is Pro</Text>
-              <Text style={styles.stressPlaceholderText}>
-                Unlock Azora Pro to see stress, HRV, and recovery patterns after each session.
-              </Text>
-            </View>
-          ) : stressValue == null ? (
+        <View style={styles.gaugeWrap}>
+          {stressValue == null ? (
             <View style={styles.stressPlaceholder}>
               <Text style={styles.stressPlaceholderTitle}>No stress score yet</Text>
               <Text style={styles.stressPlaceholderText}>
@@ -150,6 +138,7 @@ export default function HeartHealthSection({
             <View style={styles.stressGaugeWrap}>
               <Pressable
                 hitSlop={12}
+                disabled={locked}
                 onPress={() => Alert.alert(STRESS_INFO.title, STRESS_INFO.message)}
                 style={styles.stressInfoButton}
               >
@@ -164,18 +153,73 @@ export default function HeartHealthSection({
           )}
         </View>
 
-        <View style={[styles.insightCard, locked && styles.lockedContent]}>
+        <View style={styles.insightCard}>
           <Text style={styles.insightEyebrow}>Insight</Text>
-          <Text style={styles.insightTone}>
-            {locked ? 'Unlock recovery insight' : insight.tone}
-          </Text>
-          <Text style={styles.insightDetail}>
-            {locked
-              ? 'Pro reveals what your HRV and stress data mean after each session.'
-              : insight.detail}
+          <Text style={styles.insightTone}>{insight.tone}</Text>
+          <Text style={styles.insightDetail}>{insight.detail}</Text>
+        </View>
+      </LockedOverlay>
+    </View>
+  );
+}
+
+interface LockedOverlayProps {
+  locked: boolean;
+  onPressUpgrade?: () => void;
+  children: ReactNode;
+}
+
+function LockedOverlay({ locked, onPressUpgrade, children }: LockedOverlayProps) {
+  if (!locked) {
+    return <View style={styles.contentWrap}>{children}</View>;
+  }
+  return (
+    <View style={styles.lockedWrap}>
+      <View pointerEvents="none" style={styles.contentWrap}>
+        {children}
+      </View>
+      <BlurView
+        intensity={18}
+        tint="light"
+        style={StyleSheet.absoluteFill}
+        pointerEvents="none"
+      />
+      <LinearGradient
+        pointerEvents="none"
+        colors={[
+          'rgba(255,255,255,0)',
+          'rgba(255,255,255,0.45)',
+          'rgba(255,255,255,0.45)',
+          'rgba(255,255,255,0)',
+        ]}
+        locations={[0, 0.25, 0.75, 1]}
+        style={StyleSheet.absoluteFill}
+      />
+      <View style={styles.lockedCenter} pointerEvents="box-none">
+        <Pressable
+          disabled={onPressUpgrade == null}
+          onPress={onPressUpgrade}
+          style={({ pressed }) => [
+            styles.lockedCta,
+            pressed && styles.lockedCtaPressed,
+          ]}
+        >
+          <MaterialCommunityIcons
+            name="lock"
+            size={18}
+            color={colors.text.inverse}
+          />
+          <Text style={styles.lockedCtaText}>Get Pro to unlock</Text>
+          <View style={styles.lockedBadge}>
+            <Text style={styles.lockedBadgeText}>PRO</Text>
+          </View>
+        </Pressable>
+        <View style={styles.lockedSubtextPill}>
+          <Text style={styles.lockedSubtext}>
+            HRV, stress, and recovery insights are part of Azora Pro.
           </Text>
         </View>
-      </Pressable>
+      </View>
     </View>
   );
 }
@@ -198,26 +242,60 @@ const styles = StyleSheet.create({
   },
   lockedWrap: {
     position: 'relative',
+    overflow: 'hidden',
   },
-  lockedPressed: {
+  lockedCenter: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.lg,
+    gap: spacing.sm,
+  },
+  lockedCta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.neutral[900],
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderRadius: 999,
+    ...card.shadow,
+  },
+  lockedCtaPressed: {
     opacity: 0.85,
   },
-  lockedContent: {
-    opacity: 0.78,
+  lockedCtaText: {
+    ...typography.label.medium,
+    color: colors.text.inverse,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+  },
+  lockedSubtext: {
+    ...typography.caption.caption1,
+    color: colors.text.primary,
+    fontFamily: fonts.semibold,
+    textAlign: 'center',
+  },
+  lockedSubtextPill: {
+    backgroundColor: 'rgba(255,255,255,0.88)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.72)',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: 999,
+    maxWidth: '92%',
+    ...card.shadow,
   },
   lockedBadge: {
-    position: 'absolute',
-    top: -6,
-    right: padding.screen.horizontal,
-    zIndex: 5,
     borderRadius: 999,
     paddingHorizontal: spacing.sm,
-    paddingVertical: 5,
-    backgroundColor: colors.neutral[900],
+    paddingVertical: 4,
+    backgroundColor: colors.primary.blue500,
   },
   lockedBadgeText: {
-    ...typography.caption.caption1,
+    ...typography.caption.caption2,
     color: colors.text.inverse,
+    fontFamily: fonts.semibold,
     fontWeight: '700',
     letterSpacing: 0.8,
   },

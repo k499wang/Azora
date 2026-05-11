@@ -1,4 +1,7 @@
+import type { ReactNode } from 'react';
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
+import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
 import { typography, fonts } from '../../theme/typography';
@@ -163,16 +166,21 @@ export function HeartRateResultContent({
   const hrvUnavailableMessage = getHrvUnavailableMessage(hrvAvailabilityReason);
   const confidenceInfo =
     confidence != null ? getConfidenceLabel(confidence) : null;
-  const stressZone = stress != null ? getStressZone(stress) : null;
 
-  const stats: HeartRateResultStat[] = [];
-  if (!advancedStatsLocked) {
-    stats.push(
-      rmssdValue != null
+  const proStats: HeartRateResultStat[] = [
+    rmssdValue != null
+      ? {
+          icon: 'heart-pulse',
+          label: 'RMSSD',
+          value: rmssdValue,
+          unit: 'ms',
+          iconColor: colors.error[500],
+        }
+      : advancedStatsLocked
         ? {
             icon: 'heart-pulse',
             label: 'RMSSD',
-            value: rmssdValue,
+            value: '48',
             unit: 'ms',
             iconColor: colors.error[500],
           }
@@ -182,15 +190,18 @@ export function HeartRateResultContent({
             value: 'Unavailable',
             unavailable: true,
           },
-    );
-  }
-  if (!advancedStatsLocked) {
-    stats.push(
-      hrDrop != null
+    hrDrop != null
+      ? {
+          icon: 'swap-vertical',
+          label: 'HR Change',
+          value: `${Math.abs(hrDrop)}`,
+          unit: 'bpm',
+        }
+      : advancedStatsLocked
         ? {
             icon: 'swap-vertical',
             label: 'HR Change',
-            value: `${Math.abs(hrDrop)}`,
+            value: '12',
             unit: 'bpm',
           }
         : {
@@ -199,13 +210,16 @@ export function HeartRateResultContent({
             value: 'Unavailable',
             unavailable: true,
           },
-    );
-  }
-  stats.push(...extraStats);
+  ];
 
-  const statRows: HeartRateResultStat[][] = [];
-  for (let i = 0; i < stats.length; i += 2) {
-    statRows.push(stats.slice(i, i + 2));
+  const basicStatRows: HeartRateResultStat[][] = [];
+  for (let i = 0; i < extraStats.length; i += 2) {
+    basicStatRows.push(extraStats.slice(i, i + 2));
+  }
+
+  const proStatRows: HeartRateResultStat[][] = [];
+  for (let i = 0; i < proStats.length; i += 2) {
+    proStatRows.push(proStats.slice(i, i + 2));
   }
 
   const resolvedBpmSeries = bpmSeries != null
@@ -215,10 +229,26 @@ export function HeartRateResultContent({
         (sample) => `${Math.round(sample.offsetMs / 1000)}s`,
       );
   const resolvedRrSeries = rrSeries ?? downsampleIbi(ibiSamples, (s) => Math.round(s.ibiMs));
-  const hasGraphs = !advancedStatsLocked && (
-    resolvedBpmSeries.length >= 2 ||
-    resolvedRrSeries.length >= 2
-  );
+  const placeholderBpmSeries: DataPoint[] = Array.from({ length: 12 }, (_, i) => ({
+    label: `${i * 2}s`,
+    value: 72 + Math.round(Math.sin(i * 0.6) * 6),
+  }));
+  const placeholderRrSeries: DataPoint[] = Array.from({ length: 12 }, (_, i) => ({
+    label: `${i * 2}s`,
+    value: 820 + Math.round(Math.cos(i * 0.5) * 40),
+  }));
+  const showBpmGraph =
+    resolvedBpmSeries.length >= 2 || advancedStatsLocked;
+  const showRrGraph =
+    resolvedRrSeries.length >= 2 || advancedStatsLocked;
+  const displayBpmSeries =
+    resolvedBpmSeries.length >= 2 ? resolvedBpmSeries : placeholderBpmSeries;
+  const displayRrSeries =
+    resolvedRrSeries.length >= 2 ? resolvedRrSeries : placeholderRrSeries;
+  const stressForDisplay =
+    stress != null ? stress : advancedStatsLocked ? 42 : null;
+  const stressZoneForDisplay =
+    stressForDisplay != null ? getStressZone(stressForDisplay) : null;
 
   const heart = (
     <View style={styles.heartIconContainer}>
@@ -259,53 +289,81 @@ export function HeartRateResultContent({
         </>
       ) : null}
 
-      <View style={styles.sectionHeaderWrap}>
-        <SectionHeader title="Heart statistics" />
-      </View>
-
-      <View style={styles.statsGrid}>
-        {statRows.map((row, rowIndex) => (
-          <View key={rowIndex} style={styles.statsRow}>
-            {row.map((stat) => (
-              <StatCard key={stat.label} {...stat} />
+      {extraStats.length > 0 ? (
+        <>
+          <View style={styles.sectionHeaderWrap}>
+            <SectionHeader title="Heart statistics" />
+          </View>
+          <View style={styles.statsGrid}>
+            {basicStatRows.map((row, rowIndex) => (
+              <View key={rowIndex} style={styles.statsRow}>
+                {row.map((stat) => (
+                  <StatCard key={stat.label} {...stat} />
+                ))}
+                {row.length === 1 ? <View style={styles.statCardSpacer} /> : null}
+              </View>
             ))}
-            {row.length === 1 ? <View style={styles.statCardSpacer} /> : null}
           </View>
-        ))}
-      </View>
-
-      {advancedStatsLocked ? (
-        <Pressable
-          disabled={onPressUpgrade == null}
-          onPress={onPressUpgrade}
-          style={({ pressed }) => [
-            styles.proStatsCard,
-            pressed && styles.proStatsCardPressed,
-          ]}
-        >
-          <View style={styles.proStatsTopRow}>
-            <MaterialCommunityIcons
-              name="star-four-points"
-              size={18}
-              color={colors.warning[500]}
-            />
-            <Text style={styles.proStatsLabel}>Advanced stats</Text>
-            <View style={styles.proBadge}>
-              <Text style={styles.proBadgeText}>PRO</Text>
-            </View>
-          </View>
-          <Text style={styles.proStatsTitle}>Unlock HRV, stress, and recovery graphs</Text>
-          <Text style={styles.proStatsText}>
-            Azora Pro shows RMSSD, heart-rate recovery, stress, and variability trends after each session.
-          </Text>
-        </Pressable>
-      ) : stressZone != null && stress != null ? (
-        <View style={styles.gaugeWrap}>
-          <StressGauge value={stress} zone={stressZone} />
-        </View>
+        </>
       ) : null}
 
-      {!advancedStatsLocked && rmssdValue == null && stressValue == null && hrvUnavailableMessage != null ? (
+      <View style={styles.sectionHeaderWrap}>
+        <SectionHeader title="Advanced stats" />
+      </View>
+
+      <LockedOverlay locked={advancedStatsLocked} onPressUpgrade={onPressUpgrade}>
+        <View style={styles.statsGrid}>
+          {proStatRows.map((row, rowIndex) => (
+            <View key={rowIndex} style={styles.statsRow}>
+              {row.map((stat) => (
+                <StatCard key={stat.label} {...stat} />
+              ))}
+              {row.length === 1 ? <View style={styles.statCardSpacer} /> : null}
+            </View>
+          ))}
+        </View>
+
+        {stressZoneForDisplay != null && stressForDisplay != null ? (
+          <View style={styles.gaugeWrap}>
+            <StressGauge value={stressForDisplay} zone={stressZoneForDisplay} />
+          </View>
+        ) : null}
+
+        {showBpmGraph ? (
+          <View style={styles.graphCard}>
+            <Text style={styles.graphTitle}>Heart rate</Text>
+            <LineGraph
+              data={displayBpmSeries}
+              subtitle="BPM during the reading"
+              unit=""
+              height={180}
+              lineColor={colors.primary.blue500}
+              fillColor={colors.primary.blue100}
+              dotColor={colors.primary.blue600}
+            />
+          </View>
+        ) : null}
+
+        {showRrGraph ? (
+          <View style={styles.graphCard}>
+            <Text style={styles.graphTitle}>Heart rate variability</Text>
+            <LineGraph
+              data={displayRrSeries}
+              subtitle="RR intervals (ms) - wider swings = more variability"
+              unit=""
+              height={180}
+              lineColor={colors.error[500]}
+              fillColor={`${colors.error[500]}1A`}
+              dotColor={colors.error[500]}
+            />
+          </View>
+        ) : null}
+      </LockedOverlay>
+
+      {!advancedStatsLocked &&
+      rmssdValue == null &&
+      stressValue == null &&
+      hrvUnavailableMessage != null ? (
         <View style={styles.hrvUnavailableCard}>
           <MaterialCommunityIcons
             name="information-outline"
@@ -322,40 +380,67 @@ export function HeartRateResultContent({
           <Text style={styles.contextValue}>{context}</Text>
         </View>
       ) : null}
+    </View>
+  );
+}
 
-      {hasGraphs ? (
-        <>
-          {resolvedBpmSeries.length >= 2 ? (
-            <View style={styles.graphCard}>
-              <Text style={styles.graphTitle}>Heart rate</Text>
-              <LineGraph
-                data={resolvedBpmSeries}
-                subtitle="BPM during the reading"
-                unit=""
-                height={180}
-                lineColor={colors.primary.blue500}
-                fillColor={colors.primary.blue100}
-                dotColor={colors.primary.blue600}
-              />
-            </View>
-          ) : null}
+interface LockedOverlayProps {
+  locked: boolean;
+  onPressUpgrade?: () => void;
+  children: ReactNode;
+}
 
-          {resolvedRrSeries.length >= 2 ? (
-            <View style={styles.graphCard}>
-              <Text style={styles.graphTitle}>Heart rate variability</Text>
-              <LineGraph
-                data={resolvedRrSeries}
-                subtitle="RR intervals (ms) - wider swings = more variability"
-                unit=""
-                height={180}
-                lineColor={colors.error[500]}
-                fillColor={`${colors.error[500]}1A`}
-                dotColor={colors.error[500]}
-              />
-            </View>
-          ) : null}
-        </>
-      ) : null}
+function LockedOverlay({ locked, onPressUpgrade, children }: LockedOverlayProps) {
+  if (!locked) {
+    return <>{children}</>;
+  }
+  return (
+    <View style={styles.lockedWrap}>
+      <View pointerEvents="none" style={styles.lockedContent}>
+        {children}
+      </View>
+      <BlurView
+        intensity={18}
+        tint="light"
+        style={StyleSheet.absoluteFill}
+        pointerEvents="none"
+      />
+      <LinearGradient
+        pointerEvents="none"
+        colors={[
+          'rgba(255,255,255,0)',
+          'rgba(255,255,255,0.45)',
+          'rgba(255,255,255,0.45)',
+          'rgba(255,255,255,0)',
+        ]}
+        locations={[0, 0.25, 0.75, 1]}
+        style={StyleSheet.absoluteFill}
+      />
+      <View style={styles.lockedCenter} pointerEvents="box-none">
+        <Pressable
+          disabled={onPressUpgrade == null}
+          onPress={onPressUpgrade}
+          style={({ pressed }) => [
+            styles.lockedCta,
+            pressed && styles.lockedCtaPressed,
+          ]}
+        >
+          <MaterialCommunityIcons
+            name="lock"
+            size={18}
+            color={colors.text.inverse}
+          />
+          <Text style={styles.lockedCtaText}>Get Pro to unlock</Text>
+          <View style={styles.proBadge}>
+            <Text style={styles.proBadgeText}>PRO</Text>
+          </View>
+        </Pressable>
+        <View style={styles.lockedSubtextPill}>
+          <Text style={styles.lockedSubtext}>
+            HRV, stress, and recovery graphs are part of Azora Pro.
+          </Text>
+        </View>
+      </View>
     </View>
   );
 }
@@ -592,5 +677,56 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     fontFamily: fonts.semibold,
     marginBottom: spacing.xs,
+  },
+  lockedWrap: {
+    width: '100%',
+    position: 'relative',
+    borderRadius: 20,
+    overflow: 'hidden',
+  },
+  lockedContent: {
+    width: '100%',
+  },
+  lockedCenter: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.lg,
+    gap: spacing.sm,
+  },
+  lockedCta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.neutral[900],
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderRadius: 999,
+    ...card.shadow,
+  },
+  lockedCtaPressed: {
+    opacity: 0.85,
+  },
+  lockedCtaText: {
+    ...typography.label.medium,
+    color: colors.text.inverse,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+  },
+  lockedSubtext: {
+    ...typography.caption.caption1,
+    color: colors.text.primary,
+    fontFamily: fonts.semibold,
+    textAlign: 'center',
+  },
+  lockedSubtextPill: {
+    backgroundColor: 'rgba(255,255,255,0.88)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.72)',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: 999,
+    maxWidth: '92%',
+    ...card.shadow,
   },
 });
