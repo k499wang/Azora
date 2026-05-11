@@ -37,6 +37,7 @@ module.exports = {
     },
     plugins: [
       'expo-font',
+      'expo-asset',
       'react-native-vision-camera',
       './plugins/with-heart-rate-plugin',
       './plugins/with-continuous-haptics-plugin',
@@ -63,6 +64,9 @@ module.exports = {
       'expo-apple-authentication',
     ],
     extra: {
+      eas: {
+        projectId: 'da7f6c59-bf84-4a19-b5a5-416fa73df15b',
+      },
       posthogProjectToken: process.env.POSTHOG_PROJECT_TOKEN,
       posthogHost: process.env.POSTHOG_HOST,
       supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,
