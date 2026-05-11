@@ -398,7 +398,9 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         stepCount={STEP_COUNT}
         isSubmitting={isSubmitting}
         errorMessage={errorMessage}
-        onConfirm={() => setStep('paywall')}
+        onConfirm={() => {
+          setTimeout(() => setStep('paywall'), 3500);
+        }}
         onBack={() => setStep('scienceCredibility')}
       />
     );

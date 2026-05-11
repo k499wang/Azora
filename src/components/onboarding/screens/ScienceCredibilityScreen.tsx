@@ -59,7 +59,7 @@ export default function ScienceCredibilityScreen({
       toValue: 1,
       duration: 1500,
       easing: Easing.out(Easing.cubic),
-      useNativeDriver: true,
+      useNativeDriver: false,
     }).start();
 
     Animated.stagger(
@@ -125,16 +125,11 @@ export default function ScienceCredibilityScreen({
               style={[
                 styles.areaClip,
                 {
-                  width: GRAPH_WIDTH,
+                  width: graphProgress.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0, GRAPH_WIDTH],
+                  }),
                   height: GRAPH_HEIGHT,
-                  transform: [
-                    {
-                      translateX: graphProgress.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [-GRAPH_WIDTH, 0],
-                      }),
-                    },
-                  ],
                 },
               ]}
             >
@@ -234,7 +229,7 @@ export default function ScienceCredibilityScreen({
         </View>
 
         <Text style={styles.caption}>
-          Within four weeks of consistent breathwork, <Text style={styles.captionStrong}>85% of users</Text> feel calm more than 15 days a month.
+          Within four weeks of consistent breathwork, <Text style={styles.captionStrong}>95% of users</Text> have reported feeling more calm.
         </Text>
       </View>
     </OnboardingScreenLayout>
