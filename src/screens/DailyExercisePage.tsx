@@ -426,7 +426,25 @@ export default function DailyExercisePage({
       });
       savedSessionKeyRef.current = sessionKey;
     } catch (error) {
+      const errObj = error as {
+        name?: string;
+        message?: string;
+        stack?: string;
+        code?: string;
+        details?: string;
+        hint?: string;
+        status?: number;
+        cause?: unknown;
+      } | null;
       console.error('[daily-breath-hold] Could not save breath hold', {
+        errorName: errObj?.name,
+        errorMessage: errObj?.message,
+        errorCode: errObj?.code,
+        errorDetails: errObj?.details,
+        errorHint: errObj?.hint,
+        errorStatus: errObj?.status,
+        errorCause: errObj?.cause,
+        errorStack: errObj?.stack,
         error,
         sessionKey,
         startedAtMs,

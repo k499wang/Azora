@@ -48,6 +48,12 @@ export function useCompleteBreathHoldMutation(userId: string | null) {
         localDate: formatLocalDate(input.endedAt, timezone),
       });
     },
+    retry: (failureCount, error) => {
+      if (failureCount >= 2) return false;
+      const message = (error as { message?: string } | null)?.message ?? '';
+      return /network request failed|fetch failed|aborted|timeout/i.test(message);
+    },
+    retryDelay: (attempt) => 500 * 2 ** attempt,
     onSuccess: async (_sessionId, input) => {
       const timezone = getDeviceTimezone();
       const localDate = formatLocalDate(input.endedAt, timezone);
