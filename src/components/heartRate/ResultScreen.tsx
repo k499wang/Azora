@@ -21,6 +21,11 @@ import { getStressZone } from '../../lib/heartRate/stress';
 import type { CaptureResult, HrvAvailabilityReason, IbiSample } from '../../lib/heartRate/types';
 import { AnalyticsEvent } from '../../services/analytics/events';
 import { HeartRateResultContent } from './HeartRateResultContent';
+import { useNavigation } from '@react-navigation/native';
+import { useFeatureAccess } from '../../hooks/useFeatureAccess';
+import { PaywallPlacement } from '../../services/paywall';
+import { FeatureKey } from '../../services/subscriptions/featureAccess';
+import type { RootStackNavigationProp } from '../../app/navigation';
 
 interface ResultScreenProps {
   result: CaptureResult;
@@ -150,6 +155,17 @@ export function ResultScreen({
   context,
 }: ResultScreenProps) {
   const posthog = usePostHog();
+  const navigation = useNavigation<RootStackNavigationProp<'HeartRate'>>();
+  const advancedStatsAccess = useFeatureAccess(FeatureKey.AdvancedStats);
+  const advancedStatsLocked =
+    !advancedStatsAccess.allowed && !advancedStatsAccess.isLoading;
+  const showAdvancedStatsPaywall = () => {
+    navigation.navigate('ProPaywall', {
+      placement: PaywallPlacement.DailyResultProGate,
+      sourceScreen: 'HeartRateResult',
+      feature: FeatureKey.AdvancedStats,
+    });
+  };
   const scaleAnim = useRef(new Animated.Value(0.7)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
   const heartPulse = useRef(new Animated.Value(1)).current;
@@ -243,6 +259,8 @@ export function ResultScreen({
               ibiSamples={result.ibiSamples ?? []}
               context={context}
               heartScale={heartPulse}
+              advancedStatsLocked={advancedStatsLocked}
+              onPressUpgrade={showAdvancedStatsPaywall}
             />
           </Animated.View>
           </ScrollView>

@@ -40,7 +40,10 @@ import {
 } from '../lib/heartRate/sessionPayload';
 
 const PLACEMENT_GOOD_DURATION_MS = 1500;
-const INHALE_SECONDS = 6;
+const PRE_BREATH_CYCLES = 3;
+const PRE_BREATH_INHALE_SECONDS = 3;
+const PRE_BREATH_EXHALE_SECONDS = 6;
+const FINAL_INHALE_SECONDS = 4;
 const HOLD_RELEASE_GUARD_MS = 1000;
 const BEST_HOLD_KEY = 'daily_breath_hold_best_seconds';
 
@@ -59,22 +62,52 @@ function placementHint(p: FingerPlacementState): string {
   }
 }
 
-type HoldPhase = 'idle' | 'placement' | 'inhale' | 'hold' | 'done';
+type HoldPhase = 'idle' | 'placement' | 'preInhale' | 'preExhale' | 'inhale' | 'hold' | 'done';
 
 const PHASE_LABELS: Record<HoldPhase, string> = {
   idle: '',
   placement: '',
-  inhale: 'Breathe in',
+  preInhale: 'Slow inhale',
+  preExhale: 'Long exhale',
+  inhale: 'Final inhale',
   hold: 'Hold',
   done: 'Done',
 };
 
 const INSTRUCTION_STEPS = [
   'Place your fingertip on the camera to measure heart rate (optional)',
-  'Inhale deeply as the circle expands',
+  'Take 3 slow breaths with longer exhales',
+  'Take one final inhale as the circle expands',
   'Hold your breath for as long as you comfortably can',
   'Tap Release when you need to breathe out',
 ];
+
+function isBreathingPhase(phase: HoldPhase): boolean {
+  return phase === 'preInhale' || phase === 'preExhale' || phase === 'inhale';
+}
+
+function getBreathingPhaseDuration(phase: HoldPhase): number {
+  if (phase === 'preInhale') return PRE_BREATH_INHALE_SECONDS;
+  if (phase === 'preExhale') return PRE_BREATH_EXHALE_SECONDS;
+  if (phase === 'inhale') return FINAL_INHALE_SECONDS;
+  return 0;
+}
+
+function breathCue(phase: HoldPhase, prepCycle: number): string | null {
+  if (phase === 'preInhale') {
+    return `Easy inhale through your nose - cycle ${prepCycle} of ${PRE_BREATH_CYCLES}`;
+  }
+  if (phase === 'preExhale') {
+    return `Slow exhale. Relax your shoulders - cycle ${prepCycle} of ${PRE_BREATH_CYCLES}`;
+  }
+  if (phase === 'inhale') {
+    return 'Fill up gently, then stay relaxed';
+  }
+  if (phase === 'hold') {
+    return 'Relax your jaw and shoulders. Release when you need to breathe.';
+  }
+  return null;
+}
 
 interface BpmSample {
   t: number;
@@ -104,8 +137,7 @@ export default function DailyExercisePage({
   const holdStartAtRef = useRef<number>(0);
   const [phase, setPhase] = useState<HoldPhase>('idle');
   const [holdSeconds, setHoldSeconds] = useState(0);
-  const [inhaleSeconds, setInhaleSeconds] = useState(0);
-  const inhaleTickRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [prepCycle, setPrepCycle] = useState(1);
   const [bestHoldSeconds, setBestHoldSeconds] = useState(0);
   const [hrEnabled, setHrEnabled] = useState(true);
   const [lastRelease, setLastRelease] = useState<{
@@ -162,7 +194,11 @@ export default function DailyExercisePage({
   });
 
   useBreathPhaseAudio(
-    phase === 'inhale' ? 'inhale' : releaseAudioActive ? 'exhale' : null,
+    phase === 'preInhale' || phase === 'inhale'
+      ? 'inhale'
+      : phase === 'preExhale' || releaseAudioActive
+        ? 'exhale'
+        : null,
     { active: isFocused },
   );
 
@@ -221,10 +257,6 @@ export default function DailyExercisePage({
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
-    if (inhaleTickRef.current) {
-      clearInterval(inhaleTickRef.current);
-      inhaleTickRef.current = null;
-    }
     if (inhaleTimeoutRef.current) {
       clearTimeout(inhaleTimeoutRef.current);
       inhaleTimeoutRef.current = null;
@@ -275,7 +307,37 @@ export default function DailyExercisePage({
     }, 1000);
   }, [beginPulseMeasurementWindow, flow]);
 
-  const startInhale = useCallback(() => {
+  const startBreathPhase = useCallback((nextPhase: 'preInhale' | 'preExhale' | 'inhale', cycle: number) => {
+    if (!flow.isActive()) return;
+    clearTimer();
+    const duration = getBreathingPhaseDuration(nextPhase);
+    setPrepCycle(cycle);
+    setPhase(nextPhase);
+    if (nextPhase === 'preExhale') {
+      stopInhaleVibration();
+    } else {
+      startInhaleVibration(duration * 1000);
+    }
+    inhaleTimeoutRef.current = setTimeout(() => {
+      if (!flow.isActive()) return;
+      clearTimer();
+      if (nextPhase === 'preInhale') {
+        startBreathPhase('preExhale', cycle);
+        return;
+      }
+      if (nextPhase === 'preExhale') {
+        if (cycle < PRE_BREATH_CYCLES) {
+          startBreathPhase('preInhale', cycle + 1);
+          return;
+        }
+        startBreathPhase('inhale', PRE_BREATH_CYCLES);
+        return;
+      }
+      beginHold();
+    }, duration * 1000);
+  }, [beginHold, flow]);
+
+  const startPrepBreathing = useCallback((withHeartRate = hrEnabled) => {
     if (!flow.isActive()) return;
     clearTimer();
     samplesRef.current = [];
@@ -283,20 +345,16 @@ export default function DailyExercisePage({
     savingSessionKeyRef.current = null;
     setReleaseAudioActive(false);
     setHoldSeconds(0);
-    setInhaleSeconds(0);
-    setPhase('inhale');
-    if (hrEnabled) startPulse();
-    startInhaleVibration(INHALE_SECONDS * 1000);
-    posthog.capture(AnalyticsEvent.DailyBreathHoldStarted);
-    inhaleTickRef.current = setInterval(() => {
-      setInhaleSeconds((s) => Math.min(INHALE_SECONDS, s + 1));
-    }, 1000);
-    inhaleTimeoutRef.current = setTimeout(() => {
-      if (!flow.isActive()) return;
-      clearTimer();
-      beginHold();
-    }, INHALE_SECONDS * 1000);
-  }, [beginHold, flow, hrEnabled, posthog, startPulse]);
+    setPrepCycle(1);
+    if (withHeartRate) startPulse();
+    posthog.capture(AnalyticsEvent.DailyBreathHoldStarted, {
+      prep_cycles: PRE_BREATH_CYCLES,
+      prep_inhale_seconds: PRE_BREATH_INHALE_SECONDS,
+      prep_exhale_seconds: PRE_BREATH_EXHALE_SECONDS,
+      final_inhale_seconds: FINAL_INHALE_SECONDS,
+    });
+    startBreathPhase('preInhale', 1);
+  }, [flow, hrEnabled, posthog, startBreathPhase, startPulse]);
 
   const saveCompletedHold = useCallback(async (
     completedHoldSeconds: number,
@@ -343,7 +401,7 @@ export default function DailyExercisePage({
       await completeBreathHoldMutation.mutateAsync({
         startedAt: new Date(startedAtMs).toISOString(),
         endedAt: new Date(endedAtMs).toISOString(),
-        inhaleSeconds: INHALE_SECONDS,
+        inhaleSeconds: FINAL_INHALE_SECONDS,
         holdSeconds: completedHoldSeconds,
         avgBpm,
         minBpm,
@@ -368,6 +426,17 @@ export default function DailyExercisePage({
       });
       savedSessionKeyRef.current = sessionKey;
     } catch (error) {
+      console.error('[daily-breath-hold] Could not save breath hold', {
+        error,
+        sessionKey,
+        startedAtMs,
+        endedAtMs,
+        holdSeconds: completedHoldSeconds,
+        captureSampleCount,
+        ibiSampleCount: rpcIbiSamples.length,
+        bpmSampleCount: bpmSamples.length,
+        hasReading: reading != null,
+      });
       captureException(error, {
         flow: 'daily_breath_hold',
         action: 'complete_breath_hold',
@@ -385,15 +454,23 @@ export default function DailyExercisePage({
   }, [completeBreathHoldMutation]);
 
   useEffect(() => {
+    if (phase === 'preInhale') {
+      if (prepCycle === 1) circleRef.current?.reset();
+      circleRef.current?.expand(PRE_BREATH_INHALE_SECONDS);
+      return;
+    }
+    if (phase === 'preExhale') {
+      circleRef.current?.contract(PRE_BREATH_EXHALE_SECONDS);
+      return;
+    }
     if (phase === 'inhale') {
-      circleRef.current?.reset();
-      circleRef.current?.expand(INHALE_SECONDS);
+      circleRef.current?.expand(FINAL_INHALE_SECONDS);
       return;
     }
     if (phase === 'hold') {
       circleRef.current?.pause();
     }
-  }, [phase]);
+  }, [phase, prepCycle]);
 
   const startPlacement = useCallback(async () => {
     if (!flow.start()) return;
@@ -402,7 +479,7 @@ export default function DailyExercisePage({
       if (!flow.isActive()) return;
       if (!granted) {
         setHrEnabled(false);
-        startInhale();
+        startPrepBreathing(false);
         return;
       }
       setHrEnabled(true);
@@ -415,25 +492,29 @@ export default function DailyExercisePage({
         action: 'start_placement',
         screen_name: 'DailyExercise',
       });
-      startInhale();
+      startPrepBreathing(false);
     }
-  }, [flow, hasPermission, requestPermission, startInhale, startPulse]);
+  }, [flow, hasPermission, requestPermission, startPrepBreathing, startPulse]);
 
   useEffect(() => {
     if (phase !== 'placement') return;
     if (pulse.fingerPlacement !== 'good') return;
     const t = setTimeout(() => {
       if (!flow.isActive()) return;
-      startInhale();
+      startPrepBreathing();
     }, PLACEMENT_GOOD_DURATION_MS);
     return () => clearTimeout(t);
-  }, [flow, phase, pulse.fingerPlacement, startInhale]);
+  }, [flow, phase, pulse.fingerPlacement, startPrepBreathing]);
 
 
-  const skipInhale = () => {
-    if (phase !== 'inhale') return;
+  const skipBreathingPhase = () => {
+    if (!isBreathingPhase(phase)) return;
     clearTimer();
     stopInhaleVibration();
+    if (phase === 'preInhale' || phase === 'preExhale') {
+      startBreathPhase('inhale', PRE_BREATH_CYCLES);
+      return;
+    }
     beginHold();
   };
 
@@ -516,8 +597,8 @@ export default function DailyExercisePage({
   };
 
   const handleCirclePress = () => {
-    if (phase === 'inhale') {
-      skipInhale();
+    if (isBreathingPhase(phase)) {
+      skipBreathingPhase();
       return;
     }
     if (phase === 'hold') {
@@ -530,8 +611,8 @@ export default function DailyExercisePage({
       void startPlacement();
       return;
     }
-    if (phase === 'inhale') {
-      skipInhale();
+    if (isBreathingPhase(phase)) {
+      skipBreathingPhase();
       return;
     }
     if (phase === 'hold') {
@@ -569,12 +650,13 @@ export default function DailyExercisePage({
   }, [flow, navigation]);
 
   const isPlacement = phase === 'placement';
-  const isLive = phase === 'inhale' || phase === 'hold';
+  const isLive = isBreathingPhase(phase) || phase === 'hold';
+  const activeBreathCue = breathCue(phase, prepCycle);
 
   const primaryLabel =
     phase === 'idle'
       ? 'Start'
-      : phase === 'inhale'
+      : isBreathingPhase(phase)
         ? 'Skip'
         : phase === 'hold'
           ? 'Release'
@@ -664,8 +746,8 @@ export default function DailyExercisePage({
                 accessibilityLabel={
                   phase === 'hold'
                     ? 'Tap to release hold'
-                    : phase === 'inhale'
-                      ? 'Tap to skip inhale and begin hold'
+                    : isBreathingPhase(phase)
+                      ? 'Tap to skip breathing prep'
                       : undefined
                 }
                 style={({ pressed }) => [
@@ -677,9 +759,9 @@ export default function DailyExercisePage({
                   {PHASE_LABELS[phase] ? (
                     <View style={styles.phaseRow}>
                       <Text style={styles.phaseLabel}>{PHASE_LABELS[phase]}</Text>
-                      {isLive ? (
+                      {phase === 'hold' ? (
                         <Text style={styles.phaseTimer}>
-                          {formatHoldTime(phase === 'inhale' ? Math.max(0, INHALE_SECONDS - inhaleSeconds) : holdSeconds)}
+                          {formatHoldTime(holdSeconds)}
                         </Text>
                       ) : null}
                     </View>
@@ -695,10 +777,10 @@ export default function DailyExercisePage({
                     <Text style={styles.hintText}>
                       {placementHint(pulse.fingerPlacement)}
                     </Text>
-                  ) : phase === 'hold' || phase === 'inhale' ? (
+                  ) : phase === 'hold' || isBreathingPhase(phase) ? (
                     <View style={styles.metricStack}>
-                      {phase === 'hold' ? (
-                        <Text style={styles.holdMicroCopy}>Hold for as long as you can</Text>
+                      {activeBreathCue != null ? (
+                        <Text style={styles.holdMicroCopy}>{activeBreathCue}</Text>
                       ) : null}
                       {bpmDisplay != null ? (
                         <View style={[styles.bpmRow, showSignalWarning && styles.bpmRowDim]}>
@@ -764,7 +846,7 @@ export default function DailyExercisePage({
                     onPress={() => {
                       setHrEnabled(false);
                       stopPulse();
-                      startInhale();
+                      startPrepBreathing(false);
                     }}
                     style={({ pressed }) => [
                       styles.inlineLink,
@@ -784,7 +866,7 @@ export default function DailyExercisePage({
                     name={
                       phase === 'idle' || phase === 'done'
                         ? 'play'
-                        : phase === 'inhale'
+                        : isBreathingPhase(phase)
                           ? 'chevron-double-down'
                           : 'hand-back-left-outline'
                     }
