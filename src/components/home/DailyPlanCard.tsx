@@ -35,7 +35,7 @@ export default function DailyPlanCard({
       onPress={handlePress}
       style={({ pressed }) => [styles.card, pressed && styles.pressed]}
       accessibilityRole="button"
-      accessibilityLabel="Start your daily breath hold"
+      accessibilityLabel="Start your daily breath hold challenge"
     >
       <View style={styles.iconCircle}>
         <Icon name="breath-hold" size={56} color={colors.primary.blue500} />
@@ -43,7 +43,7 @@ export default function DailyPlanCard({
 
       <View style={styles.body}>
         <Text style={styles.eyebrow}>Daily action</Text>
-        <Text style={styles.title}>Start your breath hold</Text>
+        <Text style={styles.title}>Breath hold challenge</Text>
         <View style={styles.metaRow}>
           <MaterialCommunityIcons name="timer-outline" size={13} color={colors.text.secondary} />
           <Text style={styles.meta}>{duration}</Text>
