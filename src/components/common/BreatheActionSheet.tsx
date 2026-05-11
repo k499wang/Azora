@@ -1,17 +1,19 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon, { type IconName } from './icons/Icon';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography, fonts } from '../../theme/typography';
+import type { BreathingTechnique } from '../../data/techniques';
 
-export type BreatheActionId = 'daily' | 'box' | 'measure';
+export type BreatheActionId = 'daily' | 'breathe' | 'measure';
 
 interface Props {
   visible: boolean;
   onClose: () => void;
   onSelect: (id: BreatheActionId) => void;
+  recommendedTechnique: BreathingTechnique;
 }
 
 interface Action {
@@ -23,39 +25,61 @@ interface Action {
   bg: string;
 }
 
-const ACTIONS: Action[] = [
-  {
-    id: 'daily',
-    title: 'Daily plan',
-    subtitle: "Today's session",
-    icon: 'meditation',
-    color: colors.primary.blue600,
-    bg: colors.primary.blue100,
-  },
-  {
-    id: 'box',
-    title: 'Box breath',
-    subtitle: '4-4-4-4',
-    icon: 'waves',
-    color: colors.orange[500],
-    bg: colors.orange[100],
-  },
-  {
-    id: 'measure',
-    title: 'Measure',
-    subtitle: 'Heart rate',
-    icon: 'heart',
-    color: colors.error[500],
-    bg: colors.error[100],
-  },
-];
+const CATEGORY_ICON: Record<BreathingTechnique['category'], IconName> = {
+  calm: 'meditation',
+  focus: 'waves',
+  energy: 'sparkle',
+  sleep: 'moon',
+  balance: 'waves',
+};
+
+function formatPattern(pattern: BreathingTechnique['pattern']): string {
+  return [pattern.inhale, pattern.holdIn, pattern.exhale, pattern.holdOut]
+    .filter((v) => v > 0)
+    .join('-');
+}
 
 const TAB_BAR_HEIGHT = 74;
 const TAIL_HEIGHT = 10;
 const BUBBLE_GAP = 2;
 
-export default function BreatheActionSheet({ visible, onClose, onSelect }: Props) {
+export default function BreatheActionSheet({
+  visible,
+  onClose,
+  onSelect,
+  recommendedTechnique,
+}: Props) {
   const insets = useSafeAreaInsets();
+
+  const actions = useMemo<Action[]>(
+    () => [
+      {
+        id: 'daily',
+        title: 'Daily plan',
+        subtitle: "Today's session",
+        icon: 'meditation',
+        color: colors.primary.blue600,
+        bg: colors.primary.blue100,
+      },
+      {
+        id: 'breathe',
+        title: 'Breathe',
+        subtitle: formatPattern(recommendedTechnique.pattern),
+        icon: CATEGORY_ICON[recommendedTechnique.category],
+        color: colors.orange[500],
+        bg: colors.orange[100],
+      },
+      {
+        id: 'measure',
+        title: 'Measure',
+        subtitle: 'Heart rate',
+        icon: 'heart',
+        color: colors.error[500],
+        bg: colors.error[100],
+      },
+    ],
+    [recommendedTechnique],
+  );
   const bottomOffset = insets.bottom + TAB_BAR_HEIGHT + BUBBLE_GAP;
   const progress = useRef(new Animated.Value(0)).current;
   const [mounted, setMounted] = useState(visible);
@@ -107,7 +131,7 @@ export default function BreatheActionSheet({ visible, onClose, onSelect }: Props
         >
           <Pressable style={styles.bubble} onPress={(e) => e.stopPropagation()}>
             <View style={styles.row}>
-              {ACTIONS.map((action) => (
+              {actions.map((action) => (
                 <Pressable
                   key={action.id}
                   onPress={() => {

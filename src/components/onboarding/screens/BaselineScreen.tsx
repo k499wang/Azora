@@ -347,18 +347,7 @@ export default function BaselineScreen({
         ) : null}
 
         <View style={[styles.stage, { paddingTop: insets.top }]}>
-          <View style={styles.header}>
-            {!isRunning ? (
-              <Text
-                style={[
-                  styles.placementStatus,
-                  { color: placementCfg.ringColor },
-                ]}
-              >
-                {placementCfg.status}
-              </Text>
-            ) : null}
-          </View>
+          <View style={styles.header} />
 
           <View style={styles.center}>
             <View style={styles.centerStack}>
@@ -371,8 +360,17 @@ export default function BaselineScreen({
                   <Text style={styles.phaseLabel}>{breathLabel}</Text>
                 ) : null}
               </BreathingCircle>
-              {isRunning ? (
-                <View style={styles.metricSlot}>
+              <View style={styles.belowSlot}>
+                {!isRunning ? (
+                  <Text
+                    style={[
+                      styles.hintText,
+                      { color: placementCfg.ringColor },
+                    ]}
+                  >
+                    {placementCfg.status}
+                  </Text>
+                ) : (
                   <View style={styles.metricStack}>
                     {bpmDisplay != null ? (
                       <View
@@ -421,8 +419,8 @@ export default function BaselineScreen({
                       </View>
                     ) : null}
                   </View>
-                </View>
-              ) : null}
+                )}
+              </View>
             </View>
           </View>
 
@@ -432,42 +430,39 @@ export default function BaselineScreen({
               isRunning ? { opacity: hudOpacity } : null,
             ]}
           >
-            {isRunning ? (
-              <>
-                <View style={styles.timePill}>
-                  <Text style={styles.timeValue}>{remainingSec}s</Text>
-                </View>
-                <View style={styles.progressBar}>
-                  <View
-                    style={[
-                      styles.progressFill,
-                      { width: `${progress * 100}%` },
-                    ]}
-                  />
-                </View>
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={() => finishCapture(false)}
-                  style={({ pressed }) => [
-                    styles.cancel,
-                    pressed && styles.skipPressed,
-                  ]}
-                >
-                  <Text style={styles.skipText}>End early</Text>
-                </Pressable>
-              </>
-            ) : (
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => finishCapture(false)}
-                style={({ pressed }) => [
-                  styles.cancel,
-                  pressed && styles.skipPressed,
+            <View
+              style={[
+                styles.timePill,
+                !isRunning && styles.hiddenPlaceholder,
+              ]}
+            >
+              <Text style={styles.timeValue}>{remainingSec}s</Text>
+            </View>
+            <View
+              style={[
+                styles.progressBar,
+                !isRunning && styles.hiddenPlaceholder,
+              ]}
+            >
+              <View
+                style={[
+                  styles.progressFill,
+                  { width: `${progress * 100}%` },
                 ]}
-              >
-                <Text style={styles.skipText}>Cancel</Text>
-              </Pressable>
-            )}
+              />
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => finishCapture(false)}
+              style={({ pressed }) => [
+                styles.cancel,
+                pressed && styles.skipPressed,
+              ]}
+            >
+              <Text style={styles.skipText}>
+                {isRunning ? 'End early' : 'Cancel'}
+              </Text>
+            </Pressable>
           </Animated.View>
         </View>
       </View>
@@ -643,15 +638,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  metricSlot: {
-    height: 44,
+  belowSlot: {
+    minHeight: 64,
     marginTop: spacing.xs,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: spacing.lg,
   },
   metricStack: {
     alignItems: 'center',
     gap: 4,
+  },
+  hintText: {
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    fontSize: 14,
+    textAlign: 'center',
+    paddingHorizontal: spacing.lg,
   },
   bpmRow: {
     flexDirection: 'row',
@@ -717,14 +720,9 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: colors.primary.blue600,
   },
-  placementStatus: {
-    ...typography.title.title3,
-    fontFamily: fonts.semibold,
-    fontWeight: '600',
-    textAlign: 'center',
-    paddingHorizontal: spacing.lg,
+  hiddenPlaceholder: {
+    opacity: 0,
   },
-
   introFooter: {
     gap: spacing.sm,
   },
