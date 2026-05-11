@@ -155,6 +155,32 @@ export async function completeBreathHold(
   });
 
   if (error != null) {
+    const postgrest = error as {
+      message?: string;
+      details?: string;
+      hint?: string;
+      code?: string;
+    };
+    const looksEmpty =
+      !postgrest.code &&
+      !postgrest.message &&
+      !postgrest.details &&
+      !postgrest.hint;
+    if (looksEmpty) {
+      const cause = error as unknown as { cause?: unknown; name?: string };
+      const underlying = (cause?.cause ?? error) as {
+        name?: string;
+        message?: string;
+        status?: number;
+      };
+      const wrapped = new Error(
+        `complete_breath_hold transport failure: ${underlying?.name ?? 'Error'}${
+          underlying?.message ? `: ${underlying.message}` : ''
+        }${underlying?.status != null ? ` (status=${underlying.status})` : ''}`,
+      );
+      (wrapped as Error & { cause?: unknown }).cause = error;
+      throw wrapped;
+    }
     throw error;
   }
 
