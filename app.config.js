@@ -1,10 +1,10 @@
 module.exports = {
   expo: {
-    name: 'BreathingAppInit',
-    slug: 'BreathingAppInit',
+    name: 'Azora',
+    slug: 'Azora',
     version: '1.0.0',
     orientation: 'portrait',
-    icon: './assets/icon.png',
+    icon: './assets/iconApp.png',
     userInterfaceStyle: 'light',
     newArchEnabled: true,
     splash: {
