@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import {
   createBottomTabNavigator,
@@ -17,10 +17,16 @@ import { spacing } from '../../theme/spacing';
 import { useFeatureAccess } from '../../hooks/useFeatureAccess';
 import { PaywallPlacement } from '../../services/paywall';
 import { FeatureKey } from '../../services/subscriptions/featureAccess';
+import { useAuthStore } from '../../stores/authStore';
+import { useUserDefaultTechniqueQuery } from '../../queries/profile/useUserDefaultTechniqueQuery';
+import TECHNIQUES from '../../data/techniques';
 import type {
   MainTabParamList,
   RootStackNavigationProp,
 } from './types';
+
+const FALLBACK_TECHNIQUE =
+  TECHNIQUES.find((t) => t.id === 'box') ?? TECHNIQUES[0];
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
@@ -52,6 +58,14 @@ export function MainTabs() {
   const [sheetVisible, setSheetVisible] = useState(false);
   const heartRateAccess = useFeatureAccess(FeatureKey.HeartRateMeasurement);
   const exerciseAccess = useFeatureAccess(FeatureKey.DailyExercise);
+  const userId = useAuthStore((s) => s.user?.id ?? null);
+  const { data: defaultTechniqueId } = useUserDefaultTechniqueQuery(userId);
+
+  const recommendedTechnique = useMemo(
+    () =>
+      TECHNIQUES.find((t) => t.id === defaultTechniqueId) ?? FALLBACK_TECHNIQUE,
+    [defaultTechniqueId],
+  );
 
   const handleSelect = (id: BreatheActionId) => {
     setSheetVisible(false);
@@ -66,7 +80,7 @@ export function MainTabs() {
         return;
       }
       navigation.navigate('DailyExercise');
-    } else if (id === 'box') {
+    } else if (id === 'breathe') {
       if (!exerciseAccess.allowed && !exerciseAccess.isLoading) {
         navigation.navigate('ProPaywall', {
           placement: PaywallPlacement.ExercisePremiumGate,
@@ -75,7 +89,9 @@ export function MainTabs() {
         });
         return;
       }
-      navigation.navigate('ExerciseSession', { techniqueId: 'box' });
+      navigation.navigate('ExerciseSession', {
+        techniqueId: recommendedTechnique.id,
+      });
     } else {
       console.log('[hr-gate] MainTabs HR tap', {
         allowed: heartRateAccess.allowed,
@@ -157,6 +173,7 @@ export function MainTabs() {
         visible={sheetVisible}
         onClose={() => setSheetVisible(false)}
         onSelect={handleSelect}
+        recommendedTechnique={recommendedTechnique}
       />
     </>
   );
