@@ -4,6 +4,7 @@ import {
   completeOnboarding,
 } from '../../services/profile/onboardingStatusService';
 import { getOnboardingStatusQueryKey } from './useOnboardingStatusQuery';
+import { getUserDefaultTechniqueQueryKey } from './useUserDefaultTechniqueQuery';
 
 export function useCompleteOnboardingMutation(userId: string | null) {
   const queryClient = useQueryClient();
@@ -16,10 +17,21 @@ export function useCompleteOnboardingMutation(userId: string | null) {
 
       await completeOnboarding(userId, input);
     },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({
-        queryKey: getOnboardingStatusQueryKey(userId),
-      });
+    onSuccess: async (_data, input) => {
+      if (input?.defaultTechniqueId !== undefined) {
+        queryClient.setQueryData(
+          getUserDefaultTechniqueQueryKey(userId),
+          input.defaultTechniqueId,
+        );
+      }
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: getOnboardingStatusQueryKey(userId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: getUserDefaultTechniqueQueryKey(userId),
+        }),
+      ]);
     },
   });
 }
