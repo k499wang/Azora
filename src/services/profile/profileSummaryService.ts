@@ -21,6 +21,7 @@ export interface ProfileSummary {
   longestHoldSeconds: number | null;
   breathHoldCount: number;
   activeDays: number;
+  currentStreak: number;
   longestStreak: number;
   completedDays: number[];
   breathHoldTrend: Array<{
@@ -138,7 +139,7 @@ export async function getProfileSummary(userId: string): Promise<ProfileSummary>
 
   const streakQuery = supabase
     .from('user_streaks_v')
-    .select('longest_streak')
+    .select('current_streak, longest_streak')
     .eq('user_id', userId)
     .maybeSingle();
 
@@ -206,7 +207,7 @@ export async function getProfileSummary(userId: string): Promise<ProfileSummary>
       : null;
   const streak =
     streakResult.status === 'fulfilled' && streakResult.value.error == null
-      ? (streakResult.value.data as Pick<StreakRow, 'longest_streak'> | null)
+      ? (streakResult.value.data as Pick<StreakRow, 'current_streak' | 'longest_streak'> | null)
       : null;
   const completedDays =
     completedDaysResult.status === 'fulfilled' && completedDaysResult.value.error == null
@@ -228,6 +229,7 @@ export async function getProfileSummary(userId: string): Promise<ProfileSummary>
     longestHoldSeconds: longestHold?.hold_seconds ?? null,
     breathHoldCount: breathHoldCount ?? 0,
     activeDays: activeDays ?? 0,
+    currentStreak: streak?.current_streak ?? 0,
     longestStreak: streak?.longest_streak ?? 0,
     completedDays: mapCompletedDays(completedDays),
     breathHoldTrend: mapTrend(trendRows),
