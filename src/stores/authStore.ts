@@ -9,6 +9,7 @@ import {
 } from '../services/supabase';
 import type { SupabaseSession, SupabaseUser } from '../services/supabase';
 import { deleteAccount as deleteAccountService } from '../services/profile/deleteAccountService';
+import { loadInitialSession } from './authBootstrap';
 
 export type AuthStatus = 'booting' | 'signed_out' | 'signed_in';
 
@@ -46,13 +47,17 @@ export const useAuthStore = create<AuthState>((set) => ({
     authInitialized = true;
     set({ status: 'booting' });
 
-    const session = await getCurrentSession();
+    const session = await loadInitialSession(getCurrentSession);
     applySession(session);
 
     authSubscriptionUnsubscribe?.();
-    authSubscriptionUnsubscribe = subscribeToAuthChanges((_event, nextSession) => {
-      applySession(nextSession);
-    });
+    try {
+      authSubscriptionUnsubscribe = subscribeToAuthChanges((_event, nextSession) => {
+        applySession(nextSession);
+      });
+    } catch (error) {
+      console.warn('[auth] subscribeToAuthChanges failed', error);
+    }
   },
   signInWithGoogle: async () => {
     const session = await signInWithGoogleSession();
