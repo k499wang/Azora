@@ -285,7 +285,7 @@ export default function ProfileScreen(_: ProfileScreenProps) {
       >
         <View style={[styles.topSection, { paddingTop: insets.top }]}>
           <HomeTopMesh />
-          <AppTopBar />
+          <AppTopBar streak={profileSummary?.currentStreak ?? 0} />
 
           <View style={styles.heroCardWrap}>
             <ProfileIdentityCard

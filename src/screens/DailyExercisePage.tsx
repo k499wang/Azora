@@ -520,7 +520,6 @@ export default function DailyExercisePage({
 
   const releaseHold = () => {
     const endedAtMs = Date.now();
-    const liveSampleCount = samplesRef.current.length;
     const captureSamples = getMeasurementSamples();
     const captureResult = buildCaptureResult(captureSamples);
     flow.cancel();
