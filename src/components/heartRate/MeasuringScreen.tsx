@@ -15,6 +15,7 @@ import { typography, fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import type { FingerPlacementState } from '../../lib/heartRate/types';
 import { isHapticsEnabled } from '../../services/preferences/hapticsPreference';
+import { AnimatedCalibratingText } from './AnimatedCalibratingText';
 import { HeartRateCameraPreview } from './HeartRateCameraPreview';
 import type { HeartRateCameraPreviewProps } from './HeartRateCameraPreview';
 
@@ -199,10 +200,14 @@ export function MeasuringScreen({
         {/* Current BPM */}
         <View style={styles.currentBpmRow}>
           <Text style={styles.currentBpmLabel}>Current BPM</Text>
-          <View style={styles.currentBpmValueRow}>
-            <Text style={styles.currentBpmValue}>{currentBpm ?? '--'}</Text>
-            <Text style={styles.currentBpmUnit}>bpm</Text>
-          </View>
+          {currentBpm == null ? (
+            <AnimatedCalibratingText textStyle={styles.currentBpmCalibrating} />
+          ) : (
+            <View style={styles.currentBpmValueRow}>
+              <Text style={styles.currentBpmValue}>{currentBpm}</Text>
+              <Text style={styles.currentBpmUnit}>bpm</Text>
+            </View>
+          )}
         </View>
 
         <View style={styles.spacer} />
@@ -324,6 +329,13 @@ const styles = StyleSheet.create({
     lineHeight: 60,
     minWidth: 64,
     textAlign: 'right',
+  },
+  currentBpmCalibrating: {
+    ...typography.title.title3,
+    color: colors.text.primary,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    textAlign: 'center',
   },
   currentBpmUnit: {
     ...typography.body.medium,

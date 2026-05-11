@@ -7,6 +7,7 @@ import { useHeartRateCapture } from '../../hooks/useHeartRateCapture';
 import { ResultScreen } from './ResultScreen';
 import { DefaultInstructionScreen } from './setupScreens/DefaultInstructionScreen';
 import { PersistentCameraRing } from './PersistentCameraRing';
+import { AnimatedCalibratingText } from './AnimatedCalibratingText';
 import { colors } from '../../theme/colors';
 import { typography, fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
@@ -409,10 +410,14 @@ export function HeartRateCaptureFlow({
           {isMeasuring && (
             <View style={styles.bpmRow}>
               <Text style={styles.bpmLabel}>Current BPM</Text>
-              <View style={styles.bpmValueRow}>
-                <Text style={styles.bpmValue}>{currentBpm ?? '--'}</Text>
-                <Text style={styles.bpmUnit}>bpm</Text>
-              </View>
+              {currentBpm == null ? (
+                <AnimatedCalibratingText textStyle={styles.bpmCalibrating} />
+              ) : (
+                <View style={styles.bpmValueRow}>
+                  <Text style={styles.bpmValue}>{currentBpm}</Text>
+                  <Text style={styles.bpmUnit}>bpm</Text>
+                </View>
+              )}
             </View>
           )}
 
@@ -518,6 +523,13 @@ const styles = StyleSheet.create({
     lineHeight: 60,
     minWidth: 64,
     textAlign: 'right',
+  },
+  bpmCalibrating: {
+    ...typography.title.title3,
+    color: colors.text.primary,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    textAlign: 'center',
   },
   bpmUnit: {
     color: colors.text.secondary,
