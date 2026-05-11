@@ -474,12 +474,6 @@ export default function ExerciseSessionPage({
       <ExerciseScaffold
         centerSlot={
           <View style={styles.centerStack}>
-            <View style={styles.phaseSlot}>
-              {PHASE_LABELS[phase] ? (
-                <Text style={styles.phaseLabel}>{PHASE_LABELS[phase]}</Text>
-              ) : null}
-            </View>
-
             <View style={styles.contentArea}>
               <Animated.View
                 style={[
@@ -516,6 +510,8 @@ export default function ExerciseSessionPage({
                       size={32}
                       color={colors.neutral[50]}
                     />
+                  ) : PHASE_LABELS[phase] ? (
+                    <Text style={styles.phaseLabel}>{PHASE_LABELS[phase]}</Text>
                   ) : null}
                 </BreathingCircle>
               </Animated.View>
@@ -693,14 +689,12 @@ const styles = StyleSheet.create({
   },
 
   phaseLabel: {
-    ...typography.display.display2,
     fontFamily: fonts.semibold,
     fontWeight: '600',
-    fontSize: 28,
-    lineHeight: 34,
-    letterSpacing: 1.5,
-    color: colors.text.primary,
-    opacity: 0.7,
+    fontSize: 16,
+    lineHeight: 20,
+    letterSpacing: 1.2,
+    color: colors.neutral[50],
     textAlign: 'center',
   },
   belowSlot: {
