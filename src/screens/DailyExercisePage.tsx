@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Animated, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useIsFocused } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -7,6 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors } from '../theme/colors';
 import { typography, fonts } from '../theme/typography';
 import { spacing } from '../theme/spacing';
+import { card } from '../theme/card';
 import BreathingCircle, {
   BreathingCircleRef,
 } from '../components/exercise/BreathingCircle';
@@ -63,10 +64,17 @@ type HoldPhase = 'idle' | 'placement' | 'inhale' | 'hold' | 'done';
 const PHASE_LABELS: Record<HoldPhase, string> = {
   idle: '',
   placement: '',
-  inhale: 'Inhale',
+  inhale: 'Breathe in',
   hold: 'Hold',
-  done: 'Released',
+  done: 'Done',
 };
+
+const INSTRUCTION_STEPS = [
+  'Place your fingertip on the camera to measure heart rate (optional)',
+  'Inhale deeply as the circle expands',
+  'Hold your breath for as long as you comfortably can',
+  'Tap Release when you need to breathe out',
+];
 
 interface BpmSample {
   t: number;
@@ -83,7 +91,6 @@ function formatHoldTime(totalSeconds: number): string {
 export default function DailyExercisePage({
   navigation,
 }: DailyExerciseScreenProps) {
-  const autoStartedRef = useRef(false);
   const savedSessionKeyRef = useRef<string | null>(null);
   const savingSessionKeyRef = useRef<string | null>(null);
   const posthog = usePostHog();
@@ -119,6 +126,40 @@ export default function DailyExercisePage({
 
   const bpmOpacity = useRef(new Animated.Value(0.6)).current;
   const heartScale = useRef(new Animated.Value(1)).current;
+
+  const transition = useRef(new Animated.Value(phase === 'idle' ? 0 : 1)).current;
+
+  useEffect(() => {
+    const toValue = phase === 'idle' ? 0 : 1;
+    Animated.timing(transition, {
+      toValue,
+      duration: 450,
+      easing: Easing.inOut(Easing.ease),
+      useNativeDriver: true,
+    }).start();
+  }, [phase === 'idle']);
+
+  const instructionsOpacity = transition.interpolate({
+    inputRange: [0, 0.55, 1],
+    outputRange: [1, 0.4, 0],
+  });
+  const instructionsScale = transition.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 0.96],
+  });
+  const instructionsTranslateY = transition.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, -12],
+  });
+
+  const circleOpacity = transition.interpolate({
+    inputRange: [0, 0.45, 1],
+    outputRange: [0, 0.3, 1],
+  });
+  const circleScale = transition.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.88, 1],
+  });
 
   useBreathPhaseAudio(
     phase === 'inhale' ? 'inhale' : releaseAudioActive ? 'exhale' : null,
@@ -388,11 +429,6 @@ export default function DailyExercisePage({
     return () => clearTimeout(t);
   }, [flow, phase, pulse.fingerPlacement, startInhale]);
 
-  useEffect(() => {
-    if (autoStartedRef.current) return;
-    autoStartedRef.current = true;
-    void startPlacement();
-  }, [startPlacement]);
 
   const skipInhale = () => {
     if (phase !== 'inhale') return;
@@ -570,92 +606,147 @@ export default function DailyExercisePage({
   return (
     <View style={styles.fill}>
       <ExerciseScaffold
+        title={phase === 'idle' ? 'Daily Breath Hold' : undefined}
+        subtitle={phase === 'idle' ? 'Test your lung capacity and heart recovery' : undefined}
         centerSlot={
-          <Pressable
-            onPress={handleCirclePress}
-            disabled={!isLive}
-            accessibilityRole="button"
-            accessibilityLabel={
-              phase === 'hold'
-                ? 'Tap to release hold'
-                : phase === 'inhale'
-                  ? 'Tap to skip inhale and begin hold'
-                  : undefined
-            }
-            style={({ pressed }) => [
-              styles.centerStack,
-              isLive && pressed && styles.circleTapPressed,
-            ]}
-          >
-            <View style={styles.phaseSlot}>
-              {PHASE_LABELS[phase] ? (
-                <View style={styles.phaseRow}>
-                  <Text style={styles.phaseLabel}>{PHASE_LABELS[phase]}</Text>
-                  {isLive ? (
-                    <Text style={styles.phaseTimer}>
-                      {formatHoldTime(phase === 'inhale' ? inhaleSeconds : holdSeconds)}
+          <View style={styles.contentArea}>
+            <Animated.View
+              style={[
+                styles.contentLayer,
+                {
+                  opacity: instructionsOpacity,
+                  transform: [
+                    { scale: instructionsScale },
+                    { translateY: instructionsTranslateY },
+                  ],
+                },
+              ]}
+              pointerEvents={phase === 'idle' ? 'auto' : 'none'}
+            >
+              <View style={styles.instructionsContainer}>
+                <View style={[card.base, card.shadow, styles.stepsCard]}>
+                  {INSTRUCTION_STEPS.map((step, i) => (
+                    <View key={i} style={[styles.stepRow, i === 0 && styles.stepRowFirst]}>
+                      <View style={styles.stepNumber}>
+                        <Text style={styles.stepNumberText}>{i + 1}</Text>
+                      </View>
+                      <Text style={styles.stepText}>{step}</Text>
+                    </View>
+                  ))}
+                </View>
+                <View style={styles.instructionsMeta}>
+                  <View style={styles.metaPill}>
+                    <MaterialCommunityIcons name="timer-outline" size={12} color={colors.text.tertiary} />
+                    <Text style={styles.metaText}>~2 min</Text>
+                  </View>
+                  <View style={styles.metaPill}>
+                    <MaterialCommunityIcons name="heart-pulse" size={12} color={colors.text.tertiary} />
+                    <Text style={styles.metaText}>Heart rate optional</Text>
+                  </View>
+                </View>
+              </View>
+            </Animated.View>
+
+            <Animated.View
+              style={[
+                styles.contentLayer,
+                {
+                  opacity: circleOpacity,
+                  transform: [{ scale: circleScale }],
+                },
+              ]}
+              pointerEvents={phase === 'idle' ? 'none' : 'auto'}
+            >
+              <Pressable
+                onPress={handleCirclePress}
+                disabled={!isLive}
+                accessibilityRole="button"
+                accessibilityLabel={
+                  phase === 'hold'
+                    ? 'Tap to release hold'
+                    : phase === 'inhale'
+                      ? 'Tap to skip inhale and begin hold'
+                      : undefined
+                }
+                style={({ pressed }) => [
+                  styles.centerStack,
+                  isLive && pressed && styles.circleTapPressed,
+                ]}
+              >
+                <View style={styles.phaseSlot}>
+                  {PHASE_LABELS[phase] ? (
+                    <View style={styles.phaseRow}>
+                      <Text style={styles.phaseLabel}>{PHASE_LABELS[phase]}</Text>
+                      {isLive ? (
+                        <Text style={styles.phaseTimer}>
+                          {formatHoldTime(phase === 'inhale' ? Math.max(0, INHALE_SECONDS - inhaleSeconds) : holdSeconds)}
+                        </Text>
+                      ) : null}
+                    </View>
+                  ) : null}
+                </View>
+                <BreathingCircle
+                  ref={circleRef}
+                  cameraSlot={cameraSlot}
+                  beatTick={pulse.beatTick}
+                />
+                <View style={styles.belowSlot}>
+                  {isPlacement ? (
+                    <Text style={styles.hintText}>
+                      {placementHint(pulse.fingerPlacement)}
                     </Text>
-                  ) : null}
-                </View>
-              ) : null}
-            </View>
-            <BreathingCircle
-              ref={circleRef}
-              cameraSlot={cameraSlot}
-              beatTick={pulse.beatTick}
-            />
-            <View style={styles.belowSlot}>
-              {isPlacement ? (
-                <Text style={styles.hintText}>
-                  {placementHint(pulse.fingerPlacement)}
-                </Text>
-              ) : phase === 'hold' || phase === 'inhale' ? (
-                <View style={styles.metricStack}>
-                  {bpmDisplay != null ? (
-                    <View style={[styles.bpmRow, showSignalWarning && styles.bpmRowDim]}>
-                      <Animated.Text
-                        style={[
-                          styles.bpmNumber,
-                          showSignalWarning ? null : { opacity: bpmOpacity },
-                        ]}
-                      >
-                        {bpmDisplay}
-                      </Animated.Text>
-                      <Animated.View
-                        style={
-                          showSignalWarning
-                            ? null
-                            : { transform: [{ scale: heartScale }] }
-                        }
-                      >
-                        <MaterialCommunityIcons
-                          name="heart"
-                          size={18}
-                          color={
-                            showSignalWarning
-                              ? colors.text.tertiary
-                              : colors.error[500]
-                          }
-                        />
-                      </Animated.View>
-                    </View>
-                  ) : null}
-                  {showSignalWarning ? (
-                    <View style={styles.warningRow}>
-                      <MaterialCommunityIcons
-                        name="alert-circle-outline"
-                        size={12}
-                        color={colors.warning[500]}
-                      />
-                      <Text style={styles.warningText}>
-                        {placementHint(pulse.fingerPlacement)}
-                      </Text>
+                  ) : phase === 'hold' || phase === 'inhale' ? (
+                    <View style={styles.metricStack}>
+                      {phase === 'hold' ? (
+                        <Text style={styles.holdMicroCopy}>Hold for as long as you can</Text>
+                      ) : null}
+                      {bpmDisplay != null ? (
+                        <View style={[styles.bpmRow, showSignalWarning && styles.bpmRowDim]}>
+                          <Animated.Text
+                            style={[
+                              styles.bpmNumber,
+                              showSignalWarning ? null : { opacity: bpmOpacity },
+                            ]}
+                          >
+                            {bpmDisplay}
+                          </Animated.Text>
+                          <Animated.View
+                            style={
+                              showSignalWarning
+                                ? null
+                                : { transform: [{ scale: heartScale }] }
+                            }
+                          >
+                            <MaterialCommunityIcons
+                              name="heart"
+                              size={18}
+                              color={
+                                showSignalWarning
+                                  ? colors.text.tertiary
+                                  : colors.error[500]
+                              }
+                            />
+                          </Animated.View>
+                        </View>
+                      ) : null}
+                      {showSignalWarning ? (
+                        <View style={styles.warningRow}>
+                          <MaterialCommunityIcons
+                            name="alert-circle-outline"
+                            size={12}
+                            color={colors.warning[500]}
+                          />
+                          <Text style={styles.warningText}>
+                            {placementHint(pulse.fingerPlacement)}
+                          </Text>
+                        </View>
+                      ) : null}
                     </View>
                   ) : null}
                 </View>
-              ) : null}
-            </View>
-          </Pressable>
+              </Pressable>
+            </Animated.View>
+          </View>
         }
         bottomSlot={
           <View style={styles.bottomContainer}>
@@ -883,5 +974,85 @@ const styles = StyleSheet.create({
   viewResultsText: {
     ...typography.button.large,
     color: colors.primary.blue600,
+  },
+  instructionsContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    paddingHorizontal: spacing.lg,
+    gap: spacing.md,
+    maxWidth: 360,
+  },
+  contentArea: {
+    width: '100%',
+    maxWidth: 360,
+    height: 430,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  contentLayer: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepsCard: {
+    width: '100%',
+    padding: spacing.md,
+    gap: spacing.sm,
+    borderRadius: 20,
+  },
+  stepRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.xs,
+  },
+  stepRowFirst: {
+    paddingTop: 0,
+  },
+  stepNumber: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: colors.primary.blue100,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepNumberText: {
+    ...typography.label.medium,
+    color: colors.primary.blue700,
+    fontWeight: '700',
+  },
+  stepText: {
+    ...typography.body.medium,
+    color: colors.text.primary,
+    flex: 1,
+    flexShrink: 1,
+  },
+  instructionsMeta: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: spacing.sm,
+  },
+  metaPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderRadius: 999,
+    backgroundColor: colors.background.elevated,
+    borderWidth: 1,
+    borderColor: colors.border.subtle,
+  },
+  metaText: {
+    ...typography.caption.caption2,
+    color: colors.text.tertiary,
+  },
+  holdMicroCopy: {
+    ...typography.label.small,
+    color: colors.text.secondary,
+    textAlign: 'center',
+    marginBottom: spacing.xs,
   },
 });
