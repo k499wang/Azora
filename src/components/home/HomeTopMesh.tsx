@@ -9,9 +9,11 @@ import Svg, {
   Stop,
 } from 'react-native-svg';
 
+const TOP_MESH_HEIGHT = 360;
+
 export default function HomeTopMesh() {
   return (
-    <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+    <View pointerEvents="none" style={styles.mesh}>
       <Svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
         <Defs>
           <ClipPath id="topShell">
@@ -50,3 +52,13 @@ export default function HomeTopMesh() {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  mesh: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    left: 0,
+    height: TOP_MESH_HEIGHT,
+  },
+});
