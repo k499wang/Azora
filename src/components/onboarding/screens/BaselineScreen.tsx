@@ -705,8 +705,10 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semibold,
     fontWeight: '600',
     fontSize: 22,
-    letterSpacing: 0,
-    color: colors.text.inverse,
+    lineHeight: 26,
+    letterSpacing: 1.2,
+    color: colors.neutral[50],
+    textAlign: 'center',
   },
   progressBar: {
     height: 3,
