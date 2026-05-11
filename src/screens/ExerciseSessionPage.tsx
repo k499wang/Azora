@@ -691,8 +691,8 @@ const styles = StyleSheet.create({
   phaseLabel: {
     fontFamily: fonts.semibold,
     fontWeight: '600',
-    fontSize: 16,
-    lineHeight: 20,
+    fontSize: 22,
+    lineHeight: 26,
     letterSpacing: 1.2,
     color: colors.neutral[50],
     textAlign: 'center',
