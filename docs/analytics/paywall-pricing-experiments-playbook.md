@@ -69,13 +69,6 @@ discount lift revenue-per-view?" with ~half the sample per arm, because
 traffic splits 50/50 instead of 33/33/33. Trade-off: you can't
 simultaneously test a **higher** price tier.
 
-**If you later want to test a higher price**, you'll need to create two
-more products in App Store Connect (`azora_pro_weekly_999` at $9.99 and
-`azora_pro_yearly_7999` at $79.99) and wait for App Review. These can't
-be added mid-experiment — create them before the *next* experiment,
-not during the current one. Leaving this as a future option, not a
-launch requirement.
-
 ### Step 2 — Create the four products in App Store Connect
 
 One subscription group `Azora Pro`. Four auto-renewing subscriptions:
@@ -83,11 +76,11 @@ One subscription group `Azora Pro`. Four auto-renewing subscriptions:
 - `azora_pro_weekly_599` — $5.99 / week, no trial
 - `azora_pro_weekly_799` — $7.99 / week, no trial
 - `azora_pro_yearly_3999` — $39.99 / year, with trial (e.g., 7 days)
-- `azora_pro_yearly_5999` — $59.99 / year, with trial
+- `azora_pro_yearly_5999_v2` — $59.99 / year, with trial
 
 Apple's subscription-group Level ordering (Level 1 = highest tier):
 
-1. `azora_pro_yearly_5999`
+1. `azora_pro_yearly_5999_v2`
 2. `azora_pro_yearly_3999`
 3. `azora_pro_weekly_799`
 4. `azora_pro_weekly_599`
@@ -107,7 +100,7 @@ should appear.
 | Offering id     | Weekly package              | Annual package              |
 | --------------- | --------------------------- | --------------------------- |
 | `default_low`   | `azora_pro_weekly_599`      | `azora_pro_yearly_3999`     |
-| `default_mid`   | `azora_pro_weekly_799`      | `azora_pro_yearly_5999`     |
+| `default_mid`   | `azora_pro_weekly_799`      | `azora_pro_yearly_5999_v2`  |
 
 Mark `default_mid` as the **current offering**. At launch, every user sees
 this one.
