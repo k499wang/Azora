@@ -5,12 +5,10 @@ import { colors } from '../../theme/colors';
 import { fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 
-const TOP_BAR_DAYS = 8;
+const TOP_BAR_DAYS = 7;
 const DAY_WIDTH = 18;
-const DOT_SIZE = 4;
 const CALENDAR_HEIGHT = 30;
 const UNDERLINE_HEIGHT = 2;
-const MARK_HEIGHT = 8;
 
 interface TopBarWeekCalendarProps {
   todayLocalDate: string;
@@ -46,16 +44,13 @@ export default function TopBarWeekCalendar({
             <Text
               style={[
                 styles.dayLabel,
-                day.isCompleted && styles.dayLabelCompleted,
                 isSelected && styles.dayLabelSelected,
+                day.isCompleted && styles.dayLabelCompleted,
               ]}
             >
               {day.dayLabel}
             </Text>
-            <View style={styles.statusMarks}>
-              <View style={[styles.underline, isSelected && styles.underlineSelected]} />
-              <View style={[styles.dot, day.isCompleted && styles.dotCompleted]} />
-            </View>
+            <View style={[styles.underline, isSelected && styles.underlineSelected]} />
           </Pressable>
         );
       })}
@@ -82,7 +77,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.medium,
   },
   dayLabelCompleted: {
-    color: colors.text.secondary,
+    color: colors.orange[500],
     fontFamily: fonts.semibold,
     fontWeight: '600',
   },
@@ -90,21 +85,6 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     fontFamily: fonts.semibold,
     fontWeight: '600',
-  },
-  dot: {
-    width: DOT_SIZE,
-    height: DOT_SIZE,
-    borderRadius: DOT_SIZE / 2,
-    backgroundColor: 'transparent',
-  },
-  dotCompleted: {
-    backgroundColor: colors.orange[500],
-  },
-  statusMarks: {
-    width: 12,
-    height: MARK_HEIGHT,
-    alignItems: 'center',
-    justifyContent: 'space-between',
   },
   underline: {
     width: 12,
