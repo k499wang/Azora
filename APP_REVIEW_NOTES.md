@@ -65,6 +65,7 @@ To access the app as a reviewer:
 
 - Sign in using Apple Sign-In with a sandbox Apple ID, or use Google Sign-In with any Google account
 - No pre-loaded credentials are required — the app uses OAuth exclusively and creates a new profile automatically on first sign-in
+- After Sign in with Apple, users are not required to provide their name or email address. The onboarding name field is optional and can be skipped.
 
 **To test account deletion:**
 

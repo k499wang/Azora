@@ -22,22 +22,15 @@ export default function NameScreen({
   onContinue,
   onBack,
 }: NameScreenProps) {
-  const trimmed = value.trim();
-  const canContinue = trimmed.length > 0;
-
   return (
     <OnboardingScreenLayout
-      title="What should we call you?"
-      subtitle="Azora will use your name to keep things personal."
+      title="Add a name?"
+      subtitle="This is optional and only used to personalize your experience."
       progress={stepIndex / stepCount}
       onBack={onBack}
       keyboardAvoiding
       footer={
-        <OnboardingPrimaryButton
-          label="Continue"
-          onPress={onContinue}
-          disabled={!canContinue}
-        />
+        <OnboardingPrimaryButton label="Continue" onPress={onContinue} />
       }
     >
       <TextInput
@@ -47,14 +40,14 @@ export default function NameScreen({
         autoFocus
         maxLength={40}
         onChangeText={onChange}
-        onSubmitEditing={canContinue ? onContinue : undefined}
-        placeholder="First name"
+        onSubmitEditing={onContinue}
+        placeholder="First name (optional)"
         placeholderTextColor={colors.text.tertiary}
         returnKeyType="done"
         style={styles.input}
         value={value}
       />
-      <Text style={styles.hint}>You can change this anytime in Settings.</Text>
+      <Text style={styles.hint}>You can leave this blank or change it later in Settings.</Text>
     </OnboardingScreenLayout>
   );
 }
