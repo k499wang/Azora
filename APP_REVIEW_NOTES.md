@@ -61,6 +61,12 @@ To access the app as a reviewer:
 4. At the end of onboarding, you will see the subscription paywall — you may tap "Continue for free" to use the free tier, or proceed with a purchase to access Pro features
 5. From the Home tab: tap any breathing technique card to start a guided session, or tap "Daily Exercise" to begin a breath hold with live heart rate monitoring
 
+**Subscription disclosure:**
+
+- The subscription paywall displays the subscription options, billing period, price, auto-renewal disclosure, and functional Terms and Privacy Policy links.
+- Terms of Use: https://www.tryazora.app/terms
+- Privacy Policy: https://www.tryazora.app/privacy
+
 **Test credentials (Sandbox reviewer account):**
 
 - Sign in using Apple Sign-In with a sandbox Apple ID, or use Google Sign-In with any Google account

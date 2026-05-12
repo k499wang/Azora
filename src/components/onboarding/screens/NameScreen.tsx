@@ -47,7 +47,7 @@ export default function NameScreen({
         style={styles.input}
         value={value}
       />
-      <Text style={styles.hint}>You can leave this blank or change it later in Settings.</Text>
+      <Text style={styles.hint}>You can leave this blank.</Text>
     </OnboardingScreenLayout>
   );
 }
