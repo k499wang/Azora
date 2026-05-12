@@ -1,5 +1,6 @@
 import { requireSupabaseClient } from '../supabase';
 import type { Database } from '../supabase/database.types';
+import { getCompletedDaysAgoFromActivityDates } from '../../lib/calendar/weekCalendarDays';
 
 type ProfileRow = Database['public']['Tables']['profiles']['Row'];
 type BreathHoldRow = Pick<
@@ -24,6 +25,7 @@ export interface ProfileSummary {
   currentStreak: number;
   longestStreak: number;
   completedDays: number[];
+  completedDaysAgo: number[];
   breathHoldTrend: Array<{
     label: string;
     value: number;
@@ -54,6 +56,13 @@ function getMonthRange(date: Date): { start: string; end: string } {
   };
 }
 
+function getRecentActivityStart(date: Date, days: number): string {
+  const start = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  start.setDate(start.getDate() - (days - 1));
+
+  return toDateKey(start);
+}
+
 function toDateKey(date: Date): string {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -73,13 +82,24 @@ function secondsToDisplay(totalSeconds: number | null): string {
   return `${minutes}:${seconds}`;
 }
 
-function mapCompletedDays(rows: DailyActivityRow[]): number[] {
+function mapCompletedDays(rows: DailyActivityRow[], monthStart: string, monthEnd: string): number[] {
   return rows
+    .filter((row) => row.activity_date >= monthStart && row.activity_date < monthEnd)
     .filter((row) => row.qualifies_for_streak)
     .map((row) => {
       const [, , day] = row.activity_date.split('-').map(Number);
       return day;
     });
+}
+
+function mapCompletedDaysAgo(rows: DailyActivityRow[], today: Date): number[] {
+  return getCompletedDaysAgoFromActivityDates(
+    rows.map((row) => ({
+      activityDate: row.activity_date,
+      qualifiesForStreak: row.qualifies_for_streak,
+    })),
+    today,
+  );
 }
 
 function mapTrend(rows: BreathHoldRow[]): ProfileSummary['breathHoldTrend'] {
@@ -111,7 +131,10 @@ export function formatProfileHoldTime(totalSeconds: number | null): string {
 
 export async function getProfileSummary(userId: string): Promise<ProfileSummary> {
   const supabase = requireSupabaseClient();
-  const { start, end } = getMonthRange(new Date());
+  const today = new Date();
+  const { start, end } = getMonthRange(today);
+  const recentStart = getRecentActivityStart(today, 28);
+  const activityStart = start < recentStart ? start : recentStart;
 
   const profileQuery = supabase
     .from('profiles')
@@ -147,7 +170,7 @@ export async function getProfileSummary(userId: string): Promise<ProfileSummary>
     .from('daily_activity')
     .select('activity_date, qualifies_for_streak')
     .eq('user_id', userId)
-    .gte('activity_date', start)
+    .gte('activity_date', activityStart)
     .lt('activity_date', end)
     .order('activity_date', { ascending: true });
 
@@ -231,7 +254,8 @@ export async function getProfileSummary(userId: string): Promise<ProfileSummary>
     activeDays: activeDays ?? 0,
     currentStreak: streak?.current_streak ?? 0,
     longestStreak: streak?.longest_streak ?? 0,
-    completedDays: mapCompletedDays(completedDays),
+    completedDays: mapCompletedDays(completedDays, start, end),
+    completedDaysAgo: mapCompletedDaysAgo(completedDays, today),
     breathHoldTrend: mapTrend(trendRows),
     partialErrors,
   };
