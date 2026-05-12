@@ -79,12 +79,12 @@ To access the app as a reviewer:
 |---|---|
 | Supabase | Backend database, user authentication sessions, profile storage, session history, account deletion |
 | RevenueCat | In-app purchase management for iOS App Store subscriptions (weekly and annual plans) |
-| PostHog | Anonymous usage analytics and feature flag management |
+| PostHog | First-party product analytics, feature flag management, and debugging. Events are linked only to the app's internal user ID; Azora does not send name or email to PostHog. |
 | Apple Sign-In | OAuth authentication (Sign in with Apple) |
 | Google Sign-In | OAuth authentication via Google |
 | Expo / EAS | App build and deployment infrastructure |
 
-No third-party AI services are used. No advertising SDKs are used.
+No third-party AI services are used. No advertising SDKs are used. The app does not use IDFA, does not share user data with data brokers, and does not use PostHog or any other service for cross-app tracking, targeted advertising, or third-party advertising measurement.
 
 ---
 
