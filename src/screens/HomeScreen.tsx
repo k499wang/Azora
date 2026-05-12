@@ -9,14 +9,15 @@ import { spacing, padding, margin } from '../theme/spacing';
 import { typography, fonts } from '../theme/typography';
 import { card } from '../theme/card';
 import AppTopBar from '../components/common/AppTopBar';
+import TopBarWeekCalendar from '../components/common/TopBarWeekCalendar';
 import SectionHeader from '../components/common/SectionHeader';
-import WeekCalendar from '../components/home/WeekCalendar';
 import HeartHealthSection from '../components/home/HeartHealthSection';
 import SessionStatsPager from '../components/home/SessionStatsPager';
 import EmptyStateCard from '../components/home/EmptyStateCard';
 import BreathingLibrary from '../components/home/BreathingLibrary';
 import DailyPlanCard from '../components/home/DailyPlanCard';
 import { useFeatureAccess } from '../hooks/useFeatureAccess';
+import { formatLocalDate } from '../lib/calendar/weekCalendarDays';
 import type { HomeScreenProps } from '../app/navigation';
 import { useHomeStatsQuery } from '../queries/tracking/useHomeStatsQuery';
 import { useAuthStore } from '../stores/authStore';
@@ -29,14 +30,6 @@ function formatDuration(seconds: number | null | undefined): string {
   const minutes = Math.floor(seconds / 60);
   const secs = seconds % 60;
   return `${minutes}:${secs.toString().padStart(2, '0')}`;
-}
-
-function formatLocalDate(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-
-  return `${year}-${month}-${day}`;
 }
 
 function formatInsightTitle(localDate: string, todayLocalDate: string): string {
@@ -286,13 +279,16 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         showsVerticalScrollIndicator={false}
       >
         <View style={[styles.topSection, { paddingTop: insets.top }]}>
-          <AppTopBar streak={currentStreak} />
-
-          <WeekCalendar
-            todayLocalDate={todayLocalDate}
-            selectedLocalDate={selectedLocalDate}
-            completedDaysAgo={stats?.completedDaysAgo ?? []}
-            onSelectDay={setSelectedLocalDate}
+          <AppTopBar
+            streak={currentStreak}
+            leftSlot={(
+              <TopBarWeekCalendar
+                todayLocalDate={todayLocalDate}
+                selectedLocalDate={selectedLocalDate}
+                completedDaysAgo={stats?.completedDaysAgo ?? []}
+                onSelectDay={setSelectedLocalDate}
+              />
+            )}
           />
 
           <View style={styles.planSection}>

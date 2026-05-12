@@ -8,6 +8,7 @@ import { spacing, padding } from '../../theme/spacing';
 
 interface AppTopBarProps {
   title?: string;
+  leftSlot?: ReactNode;
   streak?: string | number;
   rightSlot?: ReactNode;
   showStreak?: boolean;
@@ -16,11 +17,22 @@ interface AppTopBarProps {
 
 export default function AppTopBar({
   title = 'Azora',
+  leftSlot,
   streak = 0,
   rightSlot,
   showStreak = true,
   style,
 }: AppTopBarProps) {
+  const leftContent = leftSlot ?? (
+    <View style={styles.brandRow}>
+      <MaterialCommunityIcons
+        name="weather-windy"
+        size={24}
+        color={colors.text.primary}
+      />
+      <Text style={styles.brandTitle}>{title}</Text>
+    </View>
+  );
   const rightContent =
     rightSlot ??
     (showStreak ? (
@@ -32,14 +44,7 @@ export default function AppTopBar({
 
   return (
     <View style={[styles.container, style]}>
-      <View style={styles.brandRow}>
-        <MaterialCommunityIcons
-          name="weather-windy"
-          size={24}
-          color={colors.text.primary}
-        />
-        <Text style={styles.brandTitle}>{title}</Text>
-      </View>
+      {leftContent}
 
       {rightContent}
     </View>
