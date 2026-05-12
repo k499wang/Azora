@@ -119,7 +119,7 @@ export default function App() {
           onReady={trackCurrentScreen}
           onStateChange={trackCurrentScreen}
         >
-          <PostHogProvider client={posthog} autocapture={{ captureTouches: true, captureScreens: false }}>
+          <PostHogProvider client={posthog} autocapture={{ captureTouches: false, captureScreens: false }}>
             <AppProviders>
               <RootNavigator />
             </AppProviders>

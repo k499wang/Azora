@@ -5,7 +5,6 @@ import { logIdentitySyncDebug } from '../debug/identitySyncLogger.js';
 
 type SignedInUser = {
   id: string;
-  email?: string | null;
   authProvider?: string | null;
 };
 
@@ -35,13 +34,11 @@ export function onUserSignedIn(user: SignedInUser): void {
   logIdentitySyncDebug('posthog.identify_started', {
     posthog_distinct_id_before: getCurrentPostHogDistinctId(),
     posthog_target_user_id: user.id,
-    posthog_target_email: user.email ?? null,
     posthog_target_provider: user.authProvider ?? null,
   });
 
   posthog.identify(user.id, {
     $set: {
-      email: user.email ?? null,
       auth_provider: user.authProvider ?? null,
     },
     $set_once: {

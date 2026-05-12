@@ -47,7 +47,6 @@ supabase.auth.onAuthStateChange((event, session) => {
   if (event === 'SIGNED_IN' && session) {
     onUserSignedIn({
       id: session.user.id,
-      email: session.user.email,
       authProvider: session.user.app_metadata?.provider,
     });
   }
@@ -55,9 +54,13 @@ supabase.auth.onAuthStateChange((event, session) => {
 });
 ```
 
-`onUserSignedIn` calls `posthog.identify(user.id, ...)` with `email` + `auth_provider` on `$set` and `signup_date` on `$set_once`. `onUserSignedOut` calls `posthog.reset()`.
+`onUserSignedIn` calls `posthog.identify(user.id, ...)` using the internal Supabase user id as the PostHog distinct id. It does not send email, name, or other direct contact identifiers to PostHog. It sets `auth_provider` on `$set` and `signup_date` on `$set_once`. `onUserSignedOut` calls `posthog.reset()`.
 
 No `alias()` — because every user signs in, there's no anonymous history worth stitching.
+
+## Privacy posture
+
+PostHog is used for first-party product analytics, feature flags, and debugging. Events may be linked to the app's internal Supabase user id so we can understand feature usage by account, but contact identifiers such as email and name should stay out of PostHog. Do not use PostHog events for advertising, third-party ad measurement, data broker sharing, or cross-app tracking.
 
 ## Super properties
 

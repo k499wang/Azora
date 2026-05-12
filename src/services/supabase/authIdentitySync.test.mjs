@@ -64,7 +64,6 @@ function createHarness(initialSession) {
       events.push({
         event: 'SIGNED_IN',
         session: createSession(user.id, {
-          email: user.email ?? null,
           provider: user.authProvider ?? null,
         }),
       });

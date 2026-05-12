@@ -22,7 +22,6 @@ export interface AuthIdentitySyncDependencies {
   onRevenueCatSignedOut?: () => void;
   onUserSignedIn: (user: {
     id: string;
-    email?: string | null;
     authProvider?: string | null;
   }) => void;
   onUserSignedOut: () => void;
@@ -147,7 +146,6 @@ export function registerAuthIdentitySync(
     });
     dependencies.onUserSignedIn({
       id: session.user.id,
-      email: session.user.email ?? null,
       authProvider: session.user.app_metadata?.provider ?? null,
     });
     logIdentitySyncDebug('supabase.posthog_sync_completed', {
