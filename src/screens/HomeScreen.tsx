@@ -12,7 +12,6 @@ import AppTopBar from '../components/common/AppTopBar';
 import SectionHeader from '../components/common/SectionHeader';
 import WeekCalendar from '../components/home/WeekCalendar';
 import HeartHealthSection from '../components/home/HeartHealthSection';
-import HomeTopMesh from '../components/home/HomeTopMesh';
 import SessionStatsPager from '../components/home/SessionStatsPager';
 import EmptyStateCard from '../components/home/EmptyStateCard';
 import BreathingLibrary from '../components/home/BreathingLibrary';
@@ -287,8 +286,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         showsVerticalScrollIndicator={false}
       >
         <View style={[styles.topSection, { paddingTop: insets.top }]}>
-          <HomeTopMesh />
-
           <AppTopBar streak={currentStreak} />
 
           <WeekCalendar
