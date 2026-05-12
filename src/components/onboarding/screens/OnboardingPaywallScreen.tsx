@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Animated,
   Easing,
+  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -28,6 +29,8 @@ const PRO_GOLD = '#F4C96D';
 const PRO_GOLD_SOFT = '#FFF3CF';
 const PRO_INK = '#101A2E';
 const PRO_BLUE = '#2458D6';
+const TERMS_URL = 'https://www.tryazora.app/terms';
+const PRIVACY_URL = 'https://www.tryazora.app/privacy';
 
 interface OnboardingPaywallScreenProps {
   offering: PaywallOffering | null;
@@ -298,7 +301,16 @@ export default function OnboardingPaywallScreen({
             <Text style={styles.freeButtonText}>{continueWithoutProLabel}</Text>
           </Pressable>
           <Text style={styles.legal}>
-            Auto-renews unless cancelled. Manage or cancel in App Store settings.
+            Auto-renews unless cancelled. Manage or cancel in App Store settings. By continuing,
+            you agree to the{' '}
+            <Text style={styles.legalLink} onPress={() => void Linking.openURL(TERMS_URL)}>
+              Terms
+            </Text>{' '}
+            and acknowledge the{' '}
+            <Text style={styles.legalLink} onPress={() => void Linking.openURL(PRIVACY_URL)}>
+              Privacy Policy
+            </Text>
+            .
           </Text>
         </View>
       </SafeAreaView>
@@ -781,6 +793,11 @@ const styles = StyleSheet.create({
     color: colors.text.tertiary,
     textAlign: 'center',
     lineHeight: 15,
+  },
+  legalLink: {
+    color: colors.text.brand,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
   },
   subtlePressed: {
     opacity: 0.65,
