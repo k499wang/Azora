@@ -5,7 +5,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import { padding, spacing } from '../theme/spacing';
 import AppTopBar from '../components/common/AppTopBar';
-import HomeTopMesh from '../components/home/HomeTopMesh';
 import SectionHeader from '../components/common/SectionHeader';
 import ProfileIdentityCard from '../components/profile/ProfileIdentityCard';
 import ProfileStatsGrid, {
@@ -284,7 +283,6 @@ export default function ProfileScreen(_: ProfileScreenProps) {
         showsVerticalScrollIndicator={false}
       >
         <View style={[styles.topSection, { paddingTop: insets.top }]}>
-          <HomeTopMesh />
           <AppTopBar streak={profileSummary?.currentStreak ?? 0} />
 
           <View style={styles.heroCardWrap}>
