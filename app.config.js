@@ -17,7 +17,7 @@ module.exports = {
       bundleIdentifier: 'com.azora.breath',
       usesAppleSignIn: true,
       infoPlist: {
-        NSCameraUsageDescription: 'Allow $(PRODUCT_NAME) to access your camera',
+        NSCameraUsageDescription: 'Allow $(PRODUCT_NAME) to access your camera. Azora uses your camera and flash to estimate your heart rate during breathing sessions by detecting color changes in your fingertip. Place your finger over the rear camera so Azora can show live BPM and breathing feedback. Azora does not take photos or store video.',
         NSPhotoLibraryUsageDescription:
           'Allow $(PRODUCT_NAME) to choose a profile photo',
       },
