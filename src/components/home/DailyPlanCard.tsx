@@ -2,13 +2,18 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { usePostHog } from 'posthog-react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import {
+  GlassView,
+  isGlassEffectAPIAvailable,
+  isLiquidGlassAvailable,
+} from 'expo-glass-effect';
 import { colors } from '../../theme/colors';
-import { typography, fonts } from '../../theme/typography';
+import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
-import { card } from '../../theme/card';
-import Icon from '../common/icons/Icon';
 import { AnalyticsEvent } from '../../services/analytics/events';
 import type { MainTabNavigationProp } from '../../app/navigation';
+
+const canUseLiquidGlass = isLiquidGlassAvailable() && isGlassEffectAPIAvailable();
 
 interface DailyPlanCardProps {
   duration?: string;
@@ -17,7 +22,6 @@ interface DailyPlanCardProps {
 }
 
 export default function DailyPlanCard({
-  duration = '2:00',
   streakDays = 7,
   onPress,
 }: DailyPlanCardProps) {
@@ -33,97 +37,110 @@ export default function DailyPlanCard({
   return (
     <Pressable
       onPress={handlePress}
-      style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+      style={({ pressed }) => [styles.pressable, pressed && styles.pressed]}
       accessibilityRole="button"
       accessibilityLabel="Start your daily breath hold challenge"
     >
-      <View style={styles.iconCircle}>
-        <Icon name="breath-hold" size={56} color={colors.primary.blue500} />
-      </View>
+      <View style={styles.card}>
+        <View style={styles.cardContent}>
+          <View style={styles.titleArea}>
+            <Text style={styles.title}>Breathhold Challenge</Text>
+          </View>
 
-      <View style={styles.body}>
-        <Text style={styles.eyebrow}>Daily action</Text>
-        <Text style={styles.title}>Breath hold challenge</Text>
-        <View style={styles.metaRow}>
-          <MaterialCommunityIcons name="timer-outline" size={13} color={colors.text.secondary} />
-          <Text style={styles.meta}>{duration}</Text>
-          <View style={styles.dot} />
-          <MaterialCommunityIcons name="fire" size={13} color={colors.orange[500]} />
-          <Text style={styles.meta}>{`${streakDays} day streak`}</Text>
+          <View style={styles.playPillShadow}>
+            {canUseLiquidGlass ? (
+              <GlassView
+                colorScheme="light"
+                glassEffectStyle="clear"
+                isInteractive
+                style={styles.playPill}
+                tintColor="rgba(255,255,255,0.48)"
+              >
+                <View style={styles.playPillContent}>
+                  <MaterialCommunityIcons name="play" size={18} color={colors.primary.blue600} />
+                  <Text style={styles.playPillText}>Start</Text>
+                </View>
+              </GlassView>
+            ) : (
+              <View style={[styles.playPill, styles.playPillFallback]}>
+                <View style={styles.playPillContent}>
+                  <MaterialCommunityIcons name="play" size={18} color={colors.primary.blue600} />
+                  <Text style={styles.playPillText}>Start</Text>
+                </View>
+              </View>
+            )}
+          </View>
         </View>
-      </View>
-
-      <View style={styles.playCircle}>
-        <MaterialCommunityIcons name="play" size={20} color={colors.text.inverse} />
       </View>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
-    ...card.base,
-    ...card.shadow,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md,
+  pressable: {
+    borderRadius: 24,
+    shadowColor: colors.primary.blue700,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.18,
+    shadowRadius: 18,
+    elevation: 4,
   },
   pressed: {
     transform: [{ scale: 0.98 }],
-    opacity: 0.96,
   },
-  iconCircle: {
-    width: 64,
-    height: 64,
-    alignItems: 'center',
-    justifyContent: 'center',
+  card: {
+    minHeight: 176,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.lg,
+    paddingHorizontal: spacing.lg,
+    borderRadius: 24,
+    overflow: 'hidden',
+    backgroundColor: colors.primary.blue600,
   },
-  body: {
+
+  cardContent: {
     flex: 1,
-  },
-  eyebrow: {
-    ...typography.label.small,
-    color: colors.primary.blue600,
-    fontSize: 11,
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-    fontFamily: fonts.semibold,
-    fontWeight: '700',
+    alignItems: 'center',
   },
   title: {
-    ...typography.title.title3,
-    fontSize: 17,
-    color: colors.text.primary,
-    fontFamily: fonts.semibold,
-    fontWeight: '600',
-    marginTop: 2,
+    ...typography.title.title2,
+    color: colors.text.inverse,
+    textAlign: 'center',
   },
-  metaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginTop: 4,
-  },
-  meta: {
-    ...typography.label.small,
-    color: colors.text.secondary,
-    fontSize: 12,
-  },
-  dot: {
-    width: 3,
-    height: 3,
-    borderRadius: 1.5,
-    backgroundColor: colors.border.strong,
-    marginHorizontal: 4,
-  },
-  playCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: colors.primary.blue600,
+  titleArea: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    width: '100%',
+  },
+  playPillShadow: {
+    borderRadius: 999,
+    shadowColor: colors.primary.blue700,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.16,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  playPill: {
+    minWidth: 116,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: 999,
+    shadowOpacity: 0,
+    elevation: 0,
+    overflow: 'hidden',
+  },
+  playPillFallback: {
+    backgroundColor: 'rgba(255,255,255,0.68)',
+  },
+  playPillContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+  },
+  playPillText: {
+    ...typography.button.medium,
+    color: colors.primary.blue600,
   },
 });
