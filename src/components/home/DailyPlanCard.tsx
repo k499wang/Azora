@@ -8,7 +8,7 @@ import {
   isLiquidGlassAvailable,
 } from 'expo-glass-effect';
 import { colors } from '../../theme/colors';
-import { typography } from '../../theme/typography';
+import { fonts, typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import { AnalyticsEvent } from '../../services/analytics/events';
 import type { MainTabNavigationProp } from '../../app/navigation';
@@ -36,12 +36,7 @@ export default function DailyPlanCard({
   };
 
   return (
-    <Pressable
-      onPress={handlePress}
-      style={({ pressed }) => [styles.pressable, pressed && styles.pressed]}
-      accessibilityRole="button"
-      accessibilityLabel="Start your daily breath hold challenge"
-    >
+    <View style={styles.container}>
       <ImageBackground
         source={BREATHHOLD_CHALLENGE_BACKGROUND}
         style={styles.card}
@@ -50,41 +45,51 @@ export default function DailyPlanCard({
       >
         <View style={styles.imageOverlay} />
         <View style={styles.cardContent}>
-          <View style={styles.titleArea}>
-            <Text style={styles.title}>Breathhold Challenge</Text>
+          <View style={styles.leftCol}>
+            <View style={styles.titleArea}>
+              <View style={styles.labelChip}>
+                <Text style={styles.labelText}>Daily Challenge</Text>
+              </View>
+              <Text style={styles.title}>Breathhold{'\n'}Challenge</Text>
+            </View>
+            <View style={styles.timeBadge}>
+              <MaterialCommunityIcons name="clock-outline" size={14} color="rgba(255,255,255,0.82)" />
+              <Text style={styles.timeText}>~3 min</Text>
+            </View>
           </View>
 
-          <View style={styles.playPillShadow}>
-            {canUseLiquidGlass ? (
-              <GlassView
-                colorScheme="light"
-                glassEffectStyle="clear"
-                isInteractive
-                style={styles.playPill}
-                tintColor="rgba(255,255,255,0.48)"
-              >
-                <View style={styles.playPillContent}>
-                  <MaterialCommunityIcons name="play" size={18} color={colors.primary.blue600} />
-                  <Text style={styles.playPillText}>Start</Text>
+          <View style={styles.rightCol}>
+            <Pressable
+              onPress={handlePress}
+              style={({ pressed }) => [styles.playBtnShadow, pressed && styles.pressed]}
+              accessibilityRole="button"
+              accessibilityLabel="Start your daily breath hold challenge"
+            >
+              {canUseLiquidGlass ? (
+                <GlassView
+                  colorScheme="light"
+                  glassEffectStyle="clear"
+                  isInteractive
+                  style={styles.playBtn}
+                  tintColor="rgba(255,255,255,0.48)"
+                >
+                  <MaterialCommunityIcons name="play" size={30} color={colors.primary.blue600} />
+                </GlassView>
+              ) : (
+                <View style={[styles.playBtn, styles.playBtnFallback]}>
+                  <MaterialCommunityIcons name="play" size={30} color={colors.primary.blue600} />
                 </View>
-              </GlassView>
-            ) : (
-              <View style={[styles.playPill, styles.playPillFallback]}>
-                <View style={styles.playPillContent}>
-                  <MaterialCommunityIcons name="play" size={18} color={colors.primary.blue600} />
-                  <Text style={styles.playPillText}>Start</Text>
-                </View>
-              </View>
-            )}
+              )}
+            </Pressable>
           </View>
         </View>
       </ImageBackground>
-    </Pressable>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  pressable: {
+  container: {
     borderRadius: 24,
     shadowColor: colors.primary.blue700,
     shadowOffset: { width: 0, height: 8 },
@@ -93,7 +98,8 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   pressed: {
-    transform: [{ scale: 0.98 }],
+    transform: [{ scale: 0.96 }],
+    opacity: 0.9,
   },
   card: {
     minHeight: 176,
@@ -114,47 +120,67 @@ const styles = StyleSheet.create({
 
   cardContent: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'stretch',
+  },
+  leftCol: {
+    flex: 1,
+    justifyContent: 'space-between',
+  },
+  rightCol: {
     alignItems: 'center',
+    justifyContent: 'center',
+  },
+  titleArea: {
+    gap: spacing.sm,
+  },
+  labelChip: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.28)',
+  },
+  labelText: {
+    ...typography.label.small,
+    fontFamily: fonts.semibold,
+    color: 'rgba(255,255,255,0.9)',
+    letterSpacing: 0.4,
   },
   title: {
     ...typography.title.title2,
+    fontFamily: fonts.semibold,
     color: colors.text.inverse,
-    textAlign: 'center',
   },
-  titleArea: {
-    flex: 1,
+  timeBadge: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%',
+    gap: spacing.xs,
   },
-  playPillShadow: {
+  timeText: {
+    ...typography.label.medium,
+    fontFamily: fonts.semibold,
+    color: 'rgba(255,255,255,0.82)',
+  },
+  playBtnShadow: {
     borderRadius: 999,
     shadowColor: colors.primary.blue700,
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.16,
+    shadowOpacity: 0.2,
     shadowRadius: 12,
     elevation: 4,
   },
-  playPill: {
-    minWidth: 116,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    borderRadius: 999,
-    shadowOpacity: 0,
-    elevation: 0,
-    overflow: 'hidden',
-  },
-  playPillFallback: {
-    backgroundColor: 'rgba(255,255,255,0.68)',
-  },
-  playPillContent: {
-    flexDirection: 'row',
+  playBtn: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.xs,
+    overflow: 'hidden',
   },
-  playPillText: {
-    ...typography.button.medium,
-    color: colors.primary.blue600,
+  playBtnFallback: {
+    backgroundColor: 'rgba(255,255,255,0.68)',
   },
 });
