@@ -19,11 +19,11 @@ import type { FeatureAccessResult } from '../../services/subscriptions/featureAc
 import type { MainTabNavigationProp } from '../../app/navigation';
 
 const CATEGORY_CONFIG = {
-  calm: { label: 'Calm', color: colors.primary.blue700, bg: colors.primary.blue100 },
-  focus: { label: 'Focus', color: colors.primary.blue700, bg: colors.primary.blue100 },
-  energy: { label: 'Energy', color: colors.primary.blue700, bg: colors.primary.blue100 },
-  sleep: { label: 'Sleep', color: colors.primary.blue700, bg: colors.primary.blue100 },
-  balance: { label: 'Balance', color: colors.primary.blue700, bg: colors.primary.blue100 },
+  calm: { label: 'Calm', color: colors.primary.blue600, bg: colors.primary.blue100 },
+  focus: { label: 'Focus', color: colors.primary.blue600, bg: colors.primary.blue100 },
+  energy: { label: 'Energy', color: colors.primary.blue600, bg: colors.primary.blue100 },
+  sleep: { label: 'Sleep', color: colors.primary.blue600, bg: colors.primary.blue100 },
+  balance: { label: 'Balance', color: colors.primary.blue600, bg: colors.primary.blue100 },
 } as const;
 
 function formatPattern(p: BreathingTechnique['pattern']) {
@@ -144,7 +144,7 @@ const styles = StyleSheet.create({
   cardWrapper: {
     paddingHorizontal: spacing.xs,
     paddingBottom: spacing.xs,
-    shadowColor: colors.primary.blue700,
+    shadowColor: colors.primary.blue500,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.10,
     shadowRadius: 4,
