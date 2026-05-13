@@ -76,7 +76,7 @@ function TechniqueCard({
       >
         <MaterialCommunityIcons
           name={technique.icon}
-          size={22}
+          size={26}
           color={cat.color}
           style={styles.icon}
         />
@@ -111,7 +111,7 @@ export default function BreathingLibrary() {
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
         decelerationRate="fast"
-        snapToInterval={CARD_WIDTH + spacing.sm}
+        snapToInterval={CARD_WIDTH + spacing.xs * 2}
       >
         {orderedTechniques.map((t) => (
           <TechniqueCard
@@ -126,8 +126,8 @@ export default function BreathingLibrary() {
   );
 }
 
-const CARD_WIDTH = 132;
-const CARD_HEIGHT = 168;
+const CARD_WIDTH = 156;
+const CARD_HEIGHT = 208;
 
 const styles = StyleSheet.create({
   section: {
@@ -154,7 +154,7 @@ const styles = StyleSheet.create({
     ...card.base,
     width: CARD_WIDTH,
     height: CARD_HEIGHT,
-    padding: spacing.md,
+    padding: spacing.lg,
     justifyContent: 'space-between',
   },
   icon: {
@@ -168,14 +168,14 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.98 }],
   },
   category: {
-    ...typography.title.title3,
+    ...typography.heading.heading1,
     fontFamily: fonts.semibold,
     color: colors.text.primary,
   },
   pattern: {
-    ...typography.heading.heading2,
+    ...typography.label.medium,
     fontFamily: fonts.semibold,
     color: colors.text.primary,
-    opacity: 0.7,
+    opacity: 0.6,
   },
 });
