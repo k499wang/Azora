@@ -65,25 +65,27 @@ function TechniqueCard({
   };
 
   return (
-    <Pressable
-      onPress={handlePress}
-      style={({ pressed }) => [
-        styles.card,
-        recommended && { borderColor: cat.color, borderWidth: 1.5 },
-        pressed && styles.cardPressed,
-      ]}
-    >
-      <MaterialCommunityIcons
-        name={technique.icon}
-        size={22}
-        color={cat.color}
-        style={styles.icon}
-      />
-      <View style={styles.textBlock}>
-        <Text style={styles.category}>{cat.label}</Text>
-        <Text style={styles.pattern}>{formatPattern(technique.pattern)}</Text>
-      </View>
-    </Pressable>
+    <View style={styles.cardWrapper}>
+      <Pressable
+        onPress={handlePress}
+        style={({ pressed }) => [
+          styles.card,
+          recommended && { borderColor: cat.color, borderWidth: 1.5 },
+          pressed && styles.cardPressed,
+        ]}
+      >
+        <MaterialCommunityIcons
+          name={technique.icon}
+          size={22}
+          color={cat.color}
+          style={styles.icon}
+        />
+        <View style={styles.textBlock}>
+          <Text style={styles.category}>{cat.label}</Text>
+          <Text style={styles.pattern}>{formatPattern(technique.pattern)}</Text>
+        </View>
+      </Pressable>
+    </View>
   );
 }
 
@@ -136,8 +138,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: padding.screen.horizontal,
   },
   scrollContent: {
-    paddingHorizontal: padding.screen.horizontal,
-    gap: spacing.sm,
+    paddingHorizontal: padding.screen.horizontal - spacing.xs,
+    paddingVertical: spacing.sm,
+  },
+  cardWrapper: {
+    paddingHorizontal: spacing.xs,
+    paddingBottom: spacing.xs,
+    shadowColor: colors.primary.blue700,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.10,
+    shadowRadius: 4,
+    elevation: 3,
   },
   card: {
     ...card.base,
