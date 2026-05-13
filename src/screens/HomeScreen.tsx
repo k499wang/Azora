@@ -12,6 +12,7 @@ import AppTopBar from '../components/common/AppTopBar';
 import TopBarWeekCalendar from '../components/common/TopBarWeekCalendar';
 import SectionHeader from '../components/common/SectionHeader';
 import HeartHealthSection from '../components/home/HeartHealthSection';
+import RecoverySection from '../components/home/RecoverySection';
 import SessionStatsPager from '../components/home/SessionStatsPager';
 import EmptyStateCard from '../components/home/EmptyStateCard';
 import BreathingLibrary from '../components/home/BreathingLibrary';
@@ -259,6 +260,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const currentStreak = stats?.streak?.currentStreak ?? 0;
   const avgBpm = todayBreathHold?.avgBpm ?? todayHeartRate?.avgBpm ?? null;
   const healthScore = stats?.hrv.stress == null ? null : 100 - stats.hrv.stress;
+  const advancedStatsLocked = !advancedStatsAccess.allowed && !advancedStatsAccess.isLoading;
   const hasPartialStatsError = stats != null && Object.values(stats.partialErrors).some(Boolean);
   const showProPaywall = useCallback((
     feature: typeof FeatureKey[keyof typeof FeatureKey],
@@ -330,9 +332,21 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         <HeartHealthSection
           rmssd={stats?.hrv.rmssd ?? null}
           sdnn={stats?.hrv.sdnn ?? null}
+          locked={advancedStatsLocked}
+          onPressUpgrade={() => {
+            showProPaywall(
+              FeatureKey.AdvancedStats,
+              PaywallPlacement.DailyResultProGate,
+            );
+          }}
+        />
+
+        <RecoverySection
+          rmssd={stats?.hrv.rmssd ?? null}
+          sdnn={stats?.hrv.sdnn ?? null}
           stress={stats?.hrv.stress ?? null}
           hrDrop={stats?.hrv.hrDrop ?? null}
-          locked={!advancedStatsAccess.allowed && !advancedStatsAccess.isLoading}
+          locked={advancedStatsLocked}
           onPressUpgrade={() => {
             showProPaywall(
               FeatureKey.AdvancedStats,
