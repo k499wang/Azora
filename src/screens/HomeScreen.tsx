@@ -18,6 +18,7 @@ import EmptyStateCard from '../components/home/EmptyStateCard';
 import BreathingLibrary from '../components/home/BreathingLibrary';
 import DailyPlanCard from '../components/home/DailyPlanCard';
 import { useFeatureAccess } from '../hooks/useFeatureAccess';
+import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
 import { formatLocalDate } from '../lib/calendar/weekCalendarDays';
 import type { HomeScreenProps } from '../app/navigation';
 import { useHomeStatsQuery } from '../queries/tracking/useHomeStatsQuery';
@@ -200,10 +201,22 @@ function RecentHeartRateList({
   );
 }
 
+function Greeting({ displayName }: { displayName: string | null | undefined }) {
+  const firstName = displayName?.trim().split(/\s+/)[0];
+  if (!firstName) return null;
+  return (
+    <Text style={styles.greeting} numberOfLines={1} ellipsizeMode="tail">
+      Hi, {firstName}
+    </Text>
+  );
+}
+
 export default function HomeScreen({ navigation }: HomeScreenProps) {
   const insets = useSafeAreaInsets();
   const posthog = usePostHog();
   const user = useAuthStore((state) => state.user);
+  const profileSummaryQuery = useProfileSummaryQuery(user?.id ?? null);
+  const displayName = profileSummaryQuery.data?.profile?.displayName ?? null;
   const dailyExerciseAccess = useFeatureAccess(FeatureKey.DailyExercise);
   const advancedStatsAccess = useFeatureAccess(FeatureKey.AdvancedStats);
   const sessionHistoryAccess = useFeatureAccess(FeatureKey.SessionHistory);
@@ -294,6 +307,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           />
 
           <View style={styles.planSection}>
+            <Greeting displayName={displayName} />
             <DailyPlanCard
               duration={formatDuration(todayBreathHold?.holdSeconds)}
               streakDays={currentStreak}
@@ -417,6 +431,12 @@ const styles = StyleSheet.create({
   planSection: {
     paddingHorizontal: padding.screen.horizontal,
     marginTop: spacing.xl,
+    gap: spacing.md,
+  },
+  greeting: {
+    ...typography.title.title1,
+    fontFamily: fonts.semibold,
+    color: colors.text.primary,
   },
   recentSection: {
     paddingHorizontal: padding.screen.horizontal,
