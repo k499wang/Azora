@@ -63,8 +63,8 @@ export const colors = {
   },
 
   text: {
-    primary: '#0F172A',
-    secondary: '#475569',
+    primary: '#2e333a',
+    secondary: '#3f4855',
     tertiary: '#94A3B8',
     inverse: '#FFFFFF',
     brand: '#2F7AEF',

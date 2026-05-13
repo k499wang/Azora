@@ -46,26 +46,26 @@ export default function SessionStatsPager({
           label="BPM"
           value={bpmValue}
           progress={avgBpm == null ? 0 : avgBpm / 130}
-          color={colors.error[500]}
+          color={colors.error[700]}
           trackColor={colors.neutral[200]}
-          icon="heart-bpm"
+          icon="stat-heart-pulse"
         />
         <RingStatCard
           label="Hold"
           value={holdValue}
           progress={holdSeconds == null ? 0 : holdSeconds / 120}
-          color={colors.primary.blue500}
+          color={colors.primary.blue700}
           trackColor={colors.neutral[200]}
-          icon="breath-timer"
+          icon="stat-breath-flow"
         />
         <RingStatCard
           label="Health"
           value={healthValue}
           target="100"
           progress={healthScore == null ? 0 : healthScore / 100}
-          color={colors.success[500]}
+          color={colors.orange[700]}
           trackColor={colors.neutral[200]}
-          icon="heart-glow"
+          icon="stat-health-spark"
           info={HEALTH_INFO}
         />
       </View>

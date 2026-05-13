@@ -110,18 +110,18 @@ export default function HeartHealthSection({
             label="RMSSD"
             value={rmssdValue == null ? '--' : `${rmssdValue}`}
             progress={rmssdValue == null ? 0.72 : rmssdValue / 60}
-            color={colors.primary.blue500}
+            color={colors.primary.blue700}
             trackColor={colors.neutral[200]}
-            icon="heart-rmssd"
+            icon="stat-rmssd-wave"
             info={RMSSD_INFO}
           />
           <BigRingStatCard
             label="Avg HRV"
             value={sdnnValue == null ? '--' : `${sdnnValue}`}
             progress={sdnnValue == null ? 0.62 : sdnnValue / 50}
-            color={colors.success[500]}
+            color={colors.orange[700]}
             trackColor={colors.neutral[200]}
-            icon="heart-sdnn"
+            icon="stat-hrv-curve"
             info={SDNN_INFO}
           />
         </View>
