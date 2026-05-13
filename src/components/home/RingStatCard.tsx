@@ -22,8 +22,9 @@ interface RingStatCardProps {
   info?: { title: string; message: string };
 }
 
-const RING_SIZE = 76;
-const STROKE = 8;
+const RING_SIZE = 92;
+const STROKE = 6;
+const RING_INSET = 9;
 
 export default function RingStatCard({
   label,
@@ -40,7 +41,7 @@ export default function RingStatCard({
   const trendIcon = trend?.direction === 'up' ? 'arrow-top-right' : 'arrow-bottom-right';
   const cx = RING_SIZE / 2;
   const cy = RING_SIZE / 2;
-  const r = RING_SIZE / 2 - STROKE / 2;
+  const r = RING_SIZE / 2 - RING_INSET - STROKE / 2;
   const clamped = Math.max(0, Math.min(1, progress));
 
   const track = Skia.Path.Make();
@@ -82,7 +83,7 @@ export default function RingStatCard({
       </View>
 
       <View style={styles.ringWrap}>
-        <View style={{ width: RING_SIZE, height: RING_SIZE }}>
+        <View style={styles.ringSurface}>
           <Canvas style={StyleSheet.absoluteFill}>
             <Path path={track} style="stroke" strokeWidth={STROKE} color={trackColor} />
             {clamped > 0 && (
@@ -156,6 +157,19 @@ const styles = StyleSheet.create({
   ringWrap: {
     alignItems: 'center',
     marginTop: spacing.sm,
+  },
+  ringSurface: {
+    width: RING_SIZE,
+    height: RING_SIZE,
+    borderRadius: RING_SIZE / 2,
+    backgroundColor: colors.background.elevated,
+    borderWidth: 1,
+    borderColor: colors.neutral[100],
+    shadowColor: colors.neutral[900],
+    shadowOpacity: 0.07,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 5 },
+    elevation: 2,
   },
   iconCenter: {
     ...StyleSheet.absoluteFillObject,

@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { ImageBackground, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { usePostHog } from 'posthog-react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -14,6 +14,7 @@ import { AnalyticsEvent } from '../../services/analytics/events';
 import type { MainTabNavigationProp } from '../../app/navigation';
 
 const canUseLiquidGlass = isLiquidGlassAvailable() && isGlassEffectAPIAvailable();
+const BREATHHOLD_CHALLENGE_BACKGROUND = require('../../../assets/back.avif');
 
 interface DailyPlanCardProps {
   duration?: string;
@@ -41,7 +42,13 @@ export default function DailyPlanCard({
       accessibilityRole="button"
       accessibilityLabel="Start your daily breath hold challenge"
     >
-      <View style={styles.card}>
+      <ImageBackground
+        source={BREATHHOLD_CHALLENGE_BACKGROUND}
+        style={styles.card}
+        imageStyle={styles.cardImage}
+        resizeMode="cover"
+      >
+        <View style={styles.imageOverlay} />
         <View style={styles.cardContent}>
           <View style={styles.titleArea}>
             <Text style={styles.title}>Breathhold Challenge</Text>
@@ -71,7 +78,7 @@ export default function DailyPlanCard({
             )}
           </View>
         </View>
-      </View>
+      </ImageBackground>
     </Pressable>
   );
 }
@@ -96,6 +103,13 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     overflow: 'hidden',
     backgroundColor: colors.primary.blue600,
+  },
+  cardImage: {
+    borderRadius: 24,
+  },
+  imageOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(20, 26, 46, 0.16)',
   },
 
   cardContent: {

@@ -73,6 +73,28 @@ export const ICON_PATHS = {
 <path fill="currentColor" d="M18.1 2.9l.3 1.2c.1.3.3.5.6.6l1.2.3-1.2.3c-.3.1-.5.3-.6.6l-.3 1.2-.3-1.2a1 1 0 0 0-.6-.6L16 5l1.2-.3c.3-.1.5-.3.6-.6l.3-1.2Z"/>
   `,
 
+  'stat-heart-pulse': `
+    <path fill="currentColor" opacity="0.1" d="M12 19.2c-4.3-3-6.9-5.5-6.9-8.7 0-2 1.5-3.6 3.4-3.6 1.3 0 2.5.7 3.1 1.8.2.3.6.3.8 0 .6-1.1 1.8-1.8 3.1-1.8 1.9 0 3.4 1.6 3.4 3.6 0 3.2-2.6 5.7-6.9 8.7Z"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" d="M12 19.2c-4.3-3-6.9-5.5-6.9-8.7 0-2 1.5-3.6 3.4-3.6 1.3 0 2.5.7 3.1 1.8.2.3.6.3.8 0 .6-1.1 1.8-1.8 3.1-1.8 1.9 0 3.4 1.6 3.4 3.6 0 3.2-2.6 5.7-6.9 8.7Z"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" d="M6.9 12.5h2.4l1.2-2.1 1.9 4.5 1.4-2.4h3.3"/>
+  `,
+
+  'stat-breath-flow': `
+    <path fill="currentColor" opacity="0.1" d="M12 5.3a6.7 6.7 0 1 0 0 13.4 6.7 6.7 0 0 0 0-13.4Z"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" d="M12 5.3a6.7 6.7 0 1 0 0 13.4 6.7 6.7 0 0 0 0-13.4Z"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" d="M12 2.8v2.5m-1.7-2.5h3.4"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" d="M7.9 12.4c1.2-1 2.6-1 4.1 0s2.9 1 4.1 0"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" opacity="0.72" d="M8.8 15.1c.9-.7 2-.7 3.2 0s2.3.7 3.2 0"/>
+    <path fill="currentColor" d="M12 8.1a.95.95 0 1 1 0 1.9.95.95 0 0 1 0-1.9Z"/>
+  `,
+
+  'stat-health-spark': `
+    <path fill="currentColor" opacity="0.1" d="M12 20.1c-3.9-1.7-6.4-5.3-6.4-9.3V6.2L12 3.8l6.4 2.4v4.6c0 4-2.5 7.6-6.4 9.3Z"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" d="M12 20.1c-3.9-1.7-6.4-5.3-6.4-9.3V6.2L12 3.8l6.4 2.4v4.6c0 4-2.5 7.6-6.4 9.3Z"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" d="M9 12.1h2.1l.9-1.8 1.2 3.6 1-1.8H15"/>
+    <path fill="currentColor" d="M17.5 2.8l.25.95c.08.3.3.52.6.6l.95.25-.95.25a.88.88 0 0 0-.6.6l-.25.95-.25-.95a.88.88 0 0 0-.6-.6l-.95-.25.95-.25c.3-.08.52-.3.6-.6l.25-.95Z"/>
+  `,
+
   // --- Heart health section ---
   'heart-rmssd': `
 <path fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" d="M5 14h3l1.4 2.2L12 9l2.6 7.2L16 14h3"/>
@@ -83,6 +105,18 @@ export const ICON_PATHS = {
 <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M3.5 18h17"/>
 <path fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" d="M4.2 18c1.7 0 2.5-1.7 3.3-4 .9-2.5 2-5.4 4.5-5.4s3.6 2.9 4.5 5.4c.8 2.3 1.6 4 3.3 4"/>
 <path fill="none" stroke="currentColor" opacity="0.7" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M12 8.6V18"/>
+  `,
+
+  'stat-rmssd-wave': `
+    <path fill="currentColor" opacity="0.1" d="M4.5 16.6c1.6-.2 2.5-1.9 3.4-4.1.9-2.3 2-5.1 4.1-5.1s3.2 2.8 4.1 5.1c.9 2.2 1.8 3.9 3.4 4.1v1.6h-15v-1.6Z"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M4.2 16.8c1.8 0 2.6-1.8 3.5-4.2.9-2.5 2-5.3 4.3-5.3s3.4 2.8 4.3 5.3c.9 2.4 1.7 4.2 3.5 4.2"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" opacity="0.72" d="M6.4 18.9h11.2M8.9 14.2 12 9.1l3.1 5.1"/>
+  `,
+
+  'stat-hrv-curve': `
+    <path fill="currentColor" opacity="0.1" d="M5 17.4c1.8 0 2.8-1.5 3.8-3.6 1-2.2 1.8-4.5 3.2-4.5s2.2 2.3 3.2 4.5c1 2.1 2 3.6 3.8 3.6v1.4H5v-1.4Z"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M4.8 17.5c1.8 0 2.8-1.5 3.8-3.7 1-2.3 1.9-4.7 3.4-4.7s2.4 2.4 3.4 4.7c1 2.2 2 3.7 3.8 3.7"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" stroke-linejoin="round" opacity="0.72" d="M6 19h12M9.2 17.1v-2.7m2.8 2.9v-5.6m2.8 5.4v-2.7"/>
   `,
 
   // --- Breathing exercises ---
