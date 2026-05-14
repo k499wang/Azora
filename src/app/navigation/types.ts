@@ -4,9 +4,9 @@ import type {
   NavigatorScreenParams,
 } from '@react-navigation/native';
 import type {
-  BottomTabNavigationProp,
-  BottomTabScreenProps,
-} from '@react-navigation/bottom-tabs';
+  NativeBottomTabNavigationProp,
+  NativeBottomTabScreenProps,
+} from '@react-navigation/bottom-tabs/unstable';
 import type {
   NativeStackNavigationProp,
   NativeStackScreenProps,
@@ -16,7 +16,6 @@ import type { FeatureKeyValue } from '../../services/subscriptions/featureAccess
 
 export type MainTabParamList = {
   Home: undefined;
-  Measure: undefined;
   Profile: undefined;
 };
 
@@ -52,7 +51,7 @@ export type RootStackScreenProps<Screen extends keyof RootStackParamList> =
 
 export type MainTabScreenProps<Screen extends keyof MainTabParamList> =
   CompositeScreenProps<
-    BottomTabScreenProps<MainTabParamList, Screen>,
+    NativeBottomTabScreenProps<MainTabParamList, Screen>,
     NativeStackScreenProps<RootStackParamList>
   >;
 
@@ -63,7 +62,7 @@ export type RootStackNavigationProp<
 export type MainTabNavigationProp<
   Screen extends keyof MainTabParamList = keyof MainTabParamList,
 > = CompositeNavigationProp<
-  BottomTabNavigationProp<MainTabParamList, Screen>,
+  NativeBottomTabNavigationProp<MainTabParamList, Screen>,
   NativeStackNavigationProp<RootStackParamList>
 >;
 

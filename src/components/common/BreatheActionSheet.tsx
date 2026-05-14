@@ -11,6 +11,8 @@ export type BreatheActionId = 'daily' | 'breathe' | 'measure';
 
 interface Props {
   visible: boolean;
+  bottomOffset?: number;
+  horizontalAnchor?: 'center' | 'right';
   onClose: () => void;
   onSelect: (id: BreatheActionId) => void;
   recommendedTechnique: BreathingTechnique;
@@ -45,6 +47,8 @@ const BUBBLE_GAP = 2;
 
 export default function BreatheActionSheet({
   visible,
+  bottomOffset,
+  horizontalAnchor = 'center',
   onClose,
   onSelect,
   recommendedTechnique,
@@ -80,7 +84,7 @@ export default function BreatheActionSheet({
     ],
     [recommendedTechnique],
   );
-  const bottomOffset = insets.bottom + TAB_BAR_HEIGHT + BUBBLE_GAP;
+  const resolvedBottomOffset = bottomOffset ?? insets.bottom + TAB_BAR_HEIGHT + BUBBLE_GAP;
   const progress = useRef(new Animated.Value(0)).current;
   const [mounted, setMounted] = useState(visible);
 
@@ -125,42 +129,57 @@ export default function BreatheActionSheet({
         <Animated.View
           style={[
             styles.anchor,
-            { bottom: bottomOffset, opacity: progress, transform: [{ translateY }] },
+            horizontalAnchor === 'right' && styles.anchorRight,
+            { bottom: resolvedBottomOffset, opacity: progress, transform: [{ translateY }] },
           ]}
           pointerEvents="box-none"
         >
           <Pressable style={styles.bubble} onPress={(e) => e.stopPropagation()}>
-            <View style={styles.row}>
-              {actions.map((action) => (
-                <Pressable
-                  key={action.id}
-                  onPress={() => {
-                    onSelect(action.id);
-                    onClose();
-                  }}
-                  style={({ pressed }) => [
-                    styles.actionItem,
-                    pressed && styles.actionItemPressed,
-                  ]}
-                >
-                  <View
-                    style={[
-                      styles.iconCircle,
-                      { backgroundColor: action.bg, borderColor: action.color },
-                    ]}
-                  >
-                    <Icon name={action.icon} size={28} color={action.color} />
-                  </View>
-                  <Text style={styles.actionTitle}>{action.title}</Text>
-                  <Text style={styles.actionSubtitle}>{action.subtitle}</Text>
-                </Pressable>
-              ))}
-            </View>
+            <ActionRow actions={actions} onClose={onClose} onSelect={onSelect} />
           </Pressable>
-          <View style={styles.tail} />
+          <View style={[styles.tail, horizontalAnchor === 'right' && styles.tailRight]} />
         </Animated.View>
       </Pressable>
     </Modal>
+  );
+}
+
+function ActionRow({
+  actions,
+  onClose,
+  onSelect,
+}: {
+  actions: Action[];
+  onClose: () => void;
+  onSelect: (id: BreatheActionId) => void;
+}) {
+  return (
+    <View style={styles.row}>
+      {actions.map((action) => (
+        <Pressable
+          key={action.id}
+          onPress={() => {
+            onSelect(action.id);
+            onClose();
+          }}
+          style={({ pressed }) => [
+            styles.actionItem,
+            pressed && styles.actionItemPressed,
+          ]}
+        >
+          <View
+            style={[
+              styles.iconCircle,
+              { backgroundColor: action.bg, borderColor: action.color },
+            ]}
+          >
+            <Icon name={action.icon} size={28} color={action.color} />
+          </View>
+          <Text style={styles.actionTitle}>{action.title}</Text>
+          <Text style={styles.actionSubtitle}>{action.subtitle}</Text>
+        </Pressable>
+      ))}
+    </View>
   );
 }
 
@@ -177,6 +196,10 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     alignItems: 'center',
+  },
+  anchorRight: {
+    alignItems: 'flex-end',
+    paddingRight: spacing.lg,
   },
   bubble: {
     backgroundColor: colors.background.elevated,
@@ -238,5 +261,8 @@ const styles = StyleSheet.create({
     borderRightColor: 'transparent',
     borderTopColor: colors.background.elevated,
     marginTop: -1,
+  },
+  tailRight: {
+    marginRight: 50,
   },
 });
