@@ -3,6 +3,7 @@ import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { Canvas, Path, Skia } from '@shopify/react-native-skia';
 import { colors } from '../../theme/colors';
 import { typography, fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
@@ -18,17 +19,6 @@ import {
 } from '../../lib/heartRate/bpmSmoothing';
 import type { HrvAvailabilityReason, IbiSample } from '../../lib/heartRate/types';
 
-export interface HeartRateResultStat {
-  icon: keyof typeof MaterialCommunityIcons.glyphMap;
-  label: string;
-  value: string;
-  unit?: string;
-  iconColor?: string;
-  caption?: string;
-  captionColor?: string;
-  unavailable?: boolean;
-}
-
 interface HeartRateResultContentProps {
   bpm: number | string;
   confidence?: number;
@@ -43,19 +33,21 @@ interface HeartRateResultContentProps {
   rrSeries?: DataPoint[];
   context?: string;
   metaText?: string;
-  extraStats?: HeartRateResultStat[];
   heartScale?: Animated.Value;
   showConfidence?: boolean;
   showHero?: boolean;
   advancedStatsLocked?: boolean;
   onPressUpgrade?: () => void;
+  showRmssd?: boolean;
+  showStress?: boolean;
 }
 
-function getConfidenceLabel(confidence: number): { label: string; color: string } {
-  if (confidence > 0.7) return { label: 'High Confidence', color: colors.success[500] };
-  if (confidence > 0.4) return { label: 'Moderate Confidence', color: colors.warning[500] };
-  return { label: 'Low Confidence', color: colors.error[500] };
-}
+const HERO_RING_SIZE = 240;
+const HERO_RING_STROKE = 16;
+const HERO_RING_START = 135;
+const HERO_RING_SWEEP = 270;
+const HERO_BPM_MIN = 40;
+const HERO_BPM_MAX = 120;
 
 function getHrvUnavailableMessage(
   reason: HrvAvailabilityReason | undefined,
@@ -89,56 +81,6 @@ function downsampleIbi(
   return out;
 }
 
-function StatCard({
-  icon,
-  label,
-  value,
-  unit,
-  iconColor,
-  caption,
-  captionColor,
-  unavailable,
-}: HeartRateResultStat) {
-  return (
-    <View style={[styles.statCard, unavailable && styles.statCardUnavailable]}>
-      <View style={styles.statCardTop}>
-        <MaterialCommunityIcons
-          name={icon}
-          size={18}
-          color={
-            unavailable
-              ? colors.text.tertiary
-              : iconColor ?? colors.primary.blue600
-          }
-        />
-        <Text style={[styles.statLabel, unavailable && styles.statLabelMuted]}>
-          {label}
-        </Text>
-      </View>
-      <View style={styles.statValueRow}>
-        <Text
-          style={[
-            styles.statValue,
-            unavailable && styles.statValueUnavailable,
-          ]}
-        >
-          {value}
-        </Text>
-        {unit ? (
-          <Text style={[styles.statUnit, unavailable && styles.statUnitMuted]}>
-            {unit}
-          </Text>
-        ) : null}
-        {caption ? (
-          <Text style={[styles.statCaption, captionColor ? { color: captionColor } : null]}>
-            {caption}
-          </Text>
-        ) : null}
-      </View>
-    </View>
-  );
-}
-
 export function HeartRateResultContent({
   bpm,
   confidence,
@@ -152,12 +94,13 @@ export function HeartRateResultContent({
   rrSeries,
   context,
   metaText,
-  extraStats = [],
   heartScale,
   showConfidence = true,
   showHero = true,
   advancedStatsLocked = false,
   onPressUpgrade,
+  showRmssd = true,
+  showStress = true,
 }: HeartRateResultContentProps) {
   const rmssdValue =
     rmssd != null && Number.isFinite(rmssd)
@@ -165,8 +108,6 @@ export function HeartRateResultContent({
       : null;
   const stressValue = stress?.toString() ?? null;
   const hrvUnavailableMessage = getHrvUnavailableMessage(hrvAvailabilityReason);
-  const confidenceInfo =
-    confidence != null ? getConfidenceLabel(confidence) : null;
 
   const rmssdNumeric =
     rmssd != null && Number.isFinite(rmssd)
@@ -174,11 +115,6 @@ export function HeartRateResultContent({
       : advancedStatsLocked
         ? 48
         : null;
-  const basicStatRows: HeartRateResultStat[][] = [];
-  for (let i = 0; i < extraStats.length; i += 2) {
-    basicStatRows.push(extraStats.slice(i, i + 2));
-  }
-
   const resolvedBpmSeries = bpmSeries != null
     ? smoothBpmValuePoints(bpmSeries)
     : buildGraphBpmValuePointsFromIbis(
@@ -207,114 +143,124 @@ export function HeartRateResultContent({
   const stressZoneForDisplay =
     stressForDisplay != null ? getStressZone(stressForDisplay) : null;
 
-  const heart = (
-    <View style={styles.heartIconContainer}>
-      <MaterialCommunityIcons
-        name="heart"
-        size={56}
-        color={colors.error[500]}
-      />
+  const heroBpmNumber = typeof bpm === 'number' ? bpm : Number(bpm);
+  const heroScore =
+    Number.isFinite(heroBpmNumber)
+      ? Math.max(0, Math.min(1, (HERO_BPM_MAX - heroBpmNumber) / (HERO_BPM_MAX - HERO_BPM_MIN)))
+      : 0;
+  const heroCx = HERO_RING_SIZE / 2;
+  const heroR = HERO_RING_SIZE / 2 - HERO_RING_STROKE;
+  const heroRect = Skia.XYWHRect(heroCx - heroR, heroCx - heroR, heroR * 2, heroR * 2);
+  const heroTrack = Skia.Path.Make();
+  heroTrack.addArc(heroRect, HERO_RING_START, HERO_RING_SWEEP);
+  const heroArc = Skia.Path.Make();
+  heroArc.addArc(heroRect, HERO_RING_START, HERO_RING_SWEEP * heroScore);
+
+  const heroRing = (
+    <View style={styles.heroRingWrap}>
+      <Canvas style={StyleSheet.absoluteFill}>
+        <Path
+          path={heroTrack}
+          style="stroke"
+          strokeWidth={HERO_RING_STROKE}
+          strokeCap="round"
+          color={colors.error[500] + '26'}
+        />
+        {heroScore > 0 && (
+          <Path
+            path={heroArc}
+            style="stroke"
+            strokeWidth={HERO_RING_STROKE}
+            strokeCap="round"
+            color={colors.error[500]}
+          />
+        )}
+      </Canvas>
+      <View style={styles.heroRingCenter} pointerEvents="none">
+        <Text style={styles.heroRingValue}>{bpm}</Text>
+        <Text style={styles.heroRingUnit}>bpm</Text>
+      </View>
     </View>
   );
 
   return (
     <View style={styles.content}>
       {showHero ? (
-        <>
-          {heartScale != null ? (
-            <Animated.View style={{ transform: [{ scale: heartScale }] }}>
-              {heart}
-            </Animated.View>
-          ) : heart}
-
-          <Text style={styles.resultTitle}>Heart Rate</Text>
-          {metaText != null ? <Text style={styles.metaText}>{metaText}</Text> : null}
-
-          <View style={styles.bpmContainer}>
-            <Text style={styles.bpmNumber}>{bpm}</Text>
-            <Text style={styles.bpmUnit}>bpm</Text>
-          </View>
-
-          {showConfidence && confidenceInfo != null ? (
-            <View style={[styles.confidenceBadge, { backgroundColor: `${confidenceInfo.color}15` }]}>
-              <View style={[styles.confidenceDot, { backgroundColor: confidenceInfo.color }]} />
-              <Text style={[styles.confidenceText, { color: confidenceInfo.color }]}>
-                {confidenceInfo.label}
-              </Text>
-            </View>
-          ) : null}
-        </>
+        heartScale != null ? (
+          <Animated.View style={{ transform: [{ scale: heartScale }] }}>
+            {heroRing}
+          </Animated.View>
+        ) : (
+          heroRing
+        )
       ) : null}
 
-      {extraStats.length > 0 ? (
+      {showRmssd ||
+      (showStress && stressZoneForDisplay != null && stressForDisplay != null) ? (
         <>
           <View style={styles.sectionHeaderWrap}>
-            <SectionHeader title="Heart statistics" />
+            <SectionHeader title="Statistics" />
           </View>
-          <View style={styles.statsGrid}>
-            {basicStatRows.map((row, rowIndex) => (
-              <View key={rowIndex} style={styles.statsRow}>
-                {row.map((stat) => (
-                  <StatCard key={stat.label} {...stat} />
-                ))}
-                {row.length === 1 ? <View style={styles.statCardSpacer} /> : null}
+          <LockedOverlay locked={advancedStatsLocked} onPressUpgrade={onPressUpgrade}>
+            {showRmssd ? (
+              <View style={styles.proStatsColumn}>
+                <HRVTrackStatCard
+                  label="RMSSD"
+                  value={rmssdNumeric}
+                  unit="ms"
+                  icon="stat-rmssd-wave"
+                  max={80}
+                  lowBound={20}
+                  highBound={50}
+                />
               </View>
-            ))}
-          </View>
+            ) : null}
+
+            {showStress && stressZoneForDisplay != null && stressForDisplay != null ? (
+              <View style={styles.gaugeWrap}>
+                <StressGauge value={stressForDisplay} zone={stressZoneForDisplay} />
+              </View>
+            ) : null}
+          </LockedOverlay>
         </>
       ) : null}
 
-      <View style={styles.sectionHeaderWrap}>
-        <SectionHeader title="Advanced stats" />
-      </View>
-
-      <LockedOverlay locked={advancedStatsLocked} onPressUpgrade={onPressUpgrade}>
-        <View style={styles.proStatsColumn}>
-          <HRVTrackStatCard
-            label="RMSSD"
-            value={rmssdNumeric}
-            unit="ms"
-            icon="stat-rmssd-wave"
-            max={80}
-            lowBound={20}
-            highBound={50}
-          />
-        </View>
-
-        {stressZoneForDisplay != null && stressForDisplay != null ? (
-          <View style={styles.gaugeWrap}>
-            <StressGauge value={stressForDisplay} zone={stressZoneForDisplay} />
+      {showBpmGraph || showRrGraph ? (
+        <>
+          <View style={styles.sectionHeaderWrap}>
+            <SectionHeader title="Advanced statistics" />
           </View>
-        ) : null}
+          <LockedOverlay locked={advancedStatsLocked} onPressUpgrade={onPressUpgrade}>
+            {showBpmGraph ? (
+              <View style={styles.graphCard}>
+                <Text style={styles.graphTitle}>Heart rate</Text>
+                <LineGraph
+                  data={displayBpmSeries}
+                  unit=""
+                  height={180}
+                  lineColor={colors.primary.blue500}
+                  fillColor={colors.primary.blue100}
+                  dotColor={colors.primary.blue600}
+                />
+              </View>
+            ) : null}
 
-        {showBpmGraph ? (
-          <View style={styles.graphCard}>
-            <Text style={styles.graphTitle}>Heart rate</Text>
-            <LineGraph
-              data={displayBpmSeries}
-              unit=""
-              height={180}
-              lineColor={colors.primary.blue500}
-              fillColor={colors.primary.blue100}
-              dotColor={colors.primary.blue600}
-            />
-          </View>
-        ) : null}
-
-        {showRrGraph ? (
-          <View style={styles.graphCard}>
-            <Text style={styles.graphTitle}>Heart rate variability</Text>
-            <LineGraph
-              data={displayRrSeries}
-              unit=""
-              height={180}
-              lineColor={colors.error[500]}
-              fillColor={`${colors.error[500]}1A`}
-              dotColor={colors.error[500]}
-            />
-          </View>
-        ) : null}
-      </LockedOverlay>
+            {showRrGraph ? (
+              <View style={styles.graphCard}>
+                <Text style={styles.graphTitle}>Heart rate variability</Text>
+                <LineGraph
+                  data={displayRrSeries}
+                  unit=""
+                  height={180}
+                  lineColor={colors.error[500]}
+                  fillColor={`${colors.error[500]}1A`}
+                  dotColor={colors.error[500]}
+                />
+              </View>
+            ) : null}
+          </LockedOverlay>
+        </>
+      ) : null}
 
       {!advancedStatsLocked &&
       rmssdValue == null &&
@@ -406,118 +352,48 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '100%',
   },
-  heartIconContainer: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: '#FFF5F5',
+  heroRingWrap: {
+    width: HERO_RING_SIZE,
+    height: HERO_RING_SIZE,
+    borderRadius: HERO_RING_SIZE / 2,
+    backgroundColor: colors.background.elevated,
+    borderWidth: 1,
+    borderColor: colors.neutral[100],
+    shadowColor: colors.neutral[900],
+    shadowOpacity: 0.1,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 4,
+    marginBottom: spacing.lg,
+  },
+  heroRingCenter: {
+    ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing.lg,
   },
-  resultTitle: {
-    ...typography.title.title1,
-    fontFamily: fonts.medium,
-    fontWeight: '500',
-    fontSize: 32,
-    lineHeight: 40,
-    color: colors.text.secondary,
-    marginBottom: spacing.sm,
-  },
-  metaText: {
-    ...typography.body.small,
-    color: colors.text.tertiary,
-    marginTop: -spacing.xs,
-    marginBottom: spacing.sm,
-    textAlign: 'center',
-  },
-  bpmContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    marginBottom: spacing.md,
-    gap: spacing.xs,
-  },
-  bpmNumber: {
+  heroRingValue: {
     ...typography.display.display1,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
+    fontWeight: '600',
     fontSize: 72,
-    lineHeight: 80,
+    lineHeight: 78,
     color: colors.text.primary,
   },
-  bpmUnit: {
-    ...typography.heading.heading1,
-    color: colors.text.secondary,
-    marginBottom: 12,
-  },
-  confidenceBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    borderRadius: 20,
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.sm,
-    marginBottom: spacing.lg,
-  },
-  confidenceDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  confidenceText: {
-    ...typography.caption.caption1,
-    fontWeight: '600',
+  heroRingUnit: {
+    ...typography.body.medium,
+    color: colors.text.tertiary,
+    fontFamily: fonts.semibold,
+    marginTop: 2,
   },
   sectionHeaderWrap: {
     width: '100%',
     marginTop: spacing.lg,
     marginBottom: spacing.sm,
   },
-  statsGrid: {
-    width: '100%',
-    gap: spacing.sm,
-  },
   proStatsColumn: {
     width: '100%',
     flexDirection: 'column',
     gap: spacing.sm,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  statCard: {
-    ...card.base,
-    ...card.shadow,
-    flex: 1,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md,
-    gap: spacing.sm,
-  },
-  statCardSpacer: {
-    flex: 1,
-  },
-  proStatsCard: {
-    ...card.base,
-    ...card.shadow,
-    width: '100%',
-    gap: spacing.xs,
-    padding: spacing.md,
-    marginTop: spacing.sm,
-  },
-  proStatsCardPressed: {
-    opacity: 0.85,
-  },
-  proStatsTopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  proStatsLabel: {
-    ...typography.label.medium,
-    flex: 1,
-    color: colors.text.secondary,
-    fontFamily: fonts.medium,
   },
   proBadge: {
     borderRadius: 999,
@@ -530,63 +406,6 @@ const styles = StyleSheet.create({
     color: colors.text.inverse,
     fontFamily: fonts.semibold,
     fontWeight: '700',
-  },
-  proStatsTitle: {
-    ...typography.heading.heading2,
-    color: colors.text.primary,
-    fontFamily: fonts.semibold,
-  },
-  proStatsText: {
-    ...typography.body.small,
-    color: colors.text.secondary,
-    lineHeight: 20,
-  },
-  statCardTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  statLabel: {
-    ...typography.label.medium,
-    color: colors.text.secondary,
-    fontFamily: fonts.medium,
-  },
-  statValueRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: spacing.xs,
-  },
-  statValue: {
-    ...typography.display.display3,
-    color: colors.text.primary,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-  },
-  statValueUnavailable: {
-    ...typography.body.small,
-    fontFamily: fonts.semibold,
-    fontWeight: '600',
-    color: colors.text.tertiary,
-    fontSize: 14,
-    lineHeight: 18,
-  },
-  statCardUnavailable: {
-    opacity: 0.65,
-  },
-  statLabelMuted: {
-    color: colors.text.tertiary,
-  },
-  statUnitMuted: {
-    color: colors.text.tertiary,
-  },
-  statUnit: {
-    ...typography.caption.caption1,
-    color: colors.text.tertiary,
-  },
-  statCaption: {
-    ...typography.caption.caption1,
-    fontFamily: fonts.semibold,
-    fontWeight: '600',
   },
   hrvUnavailableCard: {
     ...card.base,
