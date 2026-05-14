@@ -48,9 +48,9 @@ export default function DailyPlanCard({
           <View style={styles.leftCol}>
             <View style={styles.titleArea}>
               <View style={styles.labelChip}>
-                <Text style={styles.labelText}>Daily Challenge</Text>
+                <Text style={styles.labelText}>Daily Exercise</Text>
               </View>
-              <Text style={styles.title}>Breathhold{'\n'}Challenge</Text>
+              <Text style={styles.title}>Breathhold{'\n'}Exercise</Text>
             </View>
             <View style={styles.timeBadge}>
               <MaterialCommunityIcons name="clock-outline" size={14} color="rgba(255,255,255,0.82)" />

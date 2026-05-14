@@ -7,7 +7,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors } from '../theme/colors';
 import { typography, fonts } from '../theme/typography';
 import { spacing } from '../theme/spacing';
-import { card } from '../theme/card';
 import BreathingCircle, {
   BreathingCircleRef,
 } from '../components/exercise/BreathingCircle';
@@ -73,14 +72,6 @@ const PHASE_LABELS: Record<HoldPhase, string> = {
   hold: 'Hold',
   done: 'Done',
 };
-
-const INSTRUCTION_STEPS = [
-  'Place your fingertip on the camera to measure heart rate (optional)',
-  'Take 3 slow breaths with longer exhales',
-  'Take one final inhale as the circle expands',
-  'Hold your breath for as long as you comfortably can',
-  'Tap Release when you need to breathe out',
-];
 
 function isBreathingPhase(phase: HoldPhase): boolean {
   return phase === 'preInhale' || phase === 'preExhale' || phase === 'inhale';
@@ -170,19 +161,6 @@ export default function DailyExercisePage({
       useNativeDriver: true,
     }).start();
   }, [phase === 'idle']);
-
-  const instructionsOpacity = transition.interpolate({
-    inputRange: [0, 0.55, 1],
-    outputRange: [1, 0.4, 0],
-  });
-  const instructionsScale = transition.interpolate({
-    inputRange: [0, 1],
-    outputRange: [1, 0.96],
-  });
-  const instructionsTranslateY = transition.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, -12],
-  });
 
   const circleOpacity = transition.interpolate({
     inputRange: [0, 0.45, 1],
@@ -515,6 +493,11 @@ export default function DailyExercisePage({
   }, [flow, hasPermission, requestPermission, startPrepBreathing, startPulse]);
 
   useEffect(() => {
+    if (!isFocused || phase !== 'idle') return;
+    void startPlacement();
+  }, [isFocused, phase, startPlacement]);
+
+  useEffect(() => {
     if (phase !== 'placement') return;
     if (pulse.fingerPlacement !== 'good') return;
     const t = setTimeout(() => {
@@ -698,47 +681,8 @@ export default function DailyExercisePage({
   return (
     <View style={styles.fill}>
       <ExerciseScaffold
-        title={phase === 'idle' ? 'Daily Breath Hold' : undefined}
-        subtitle={phase === 'idle' ? 'Test your lung capacity and heart recovery' : undefined}
         centerSlot={
           <View style={styles.contentArea}>
-            <Animated.View
-              style={[
-                styles.contentLayer,
-                {
-                  opacity: instructionsOpacity,
-                  transform: [
-                    { scale: instructionsScale },
-                    { translateY: instructionsTranslateY },
-                  ],
-                },
-              ]}
-              pointerEvents={phase === 'idle' ? 'auto' : 'none'}
-            >
-              <View style={styles.instructionsContainer}>
-                <View style={[card.base, card.shadow, styles.stepsCard]}>
-                  {INSTRUCTION_STEPS.map((step, i) => (
-                    <View key={i} style={[styles.stepRow, i === 0 && styles.stepRowFirst]}>
-                      <View style={styles.stepNumber}>
-                        <Text style={styles.stepNumberText}>{i + 1}</Text>
-                      </View>
-                      <Text style={styles.stepText}>{step}</Text>
-                    </View>
-                  ))}
-                </View>
-                <View style={styles.instructionsMeta}>
-                  <View style={styles.metaPill}>
-                    <MaterialCommunityIcons name="timer-outline" size={12} color={colors.text.tertiary} />
-                    <Text style={styles.metaText}>~2 min</Text>
-                  </View>
-                  <View style={styles.metaPill}>
-                    <MaterialCommunityIcons name="heart-pulse" size={12} color={colors.text.tertiary} />
-                    <Text style={styles.metaText}>Heart rate optional</Text>
-                  </View>
-                </View>
-              </View>
-            </Animated.View>
-
             <Animated.View
               style={[
                 styles.contentLayer,
@@ -1067,14 +1011,6 @@ const styles = StyleSheet.create({
     ...typography.button.large,
     color: colors.primary.blue600,
   },
-  instructionsContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%',
-    paddingHorizontal: spacing.lg,
-    gap: spacing.md,
-    maxWidth: 360,
-  },
   contentArea: {
     width: '100%',
     maxWidth: 360,
@@ -1086,60 +1022,6 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  stepsCard: {
-    width: '100%',
-    padding: spacing.md,
-    gap: spacing.sm,
-    borderRadius: 20,
-  },
-  stepRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    paddingVertical: spacing.xs,
-  },
-  stepRowFirst: {
-    paddingTop: 0,
-  },
-  stepNumber: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: colors.primary.blue100,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  stepNumberText: {
-    ...typography.label.medium,
-    color: colors.primary.blue700,
-    fontWeight: '700',
-  },
-  stepText: {
-    ...typography.body.medium,
-    color: colors.text.primary,
-    flex: 1,
-    flexShrink: 1,
-  },
-  instructionsMeta: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: spacing.sm,
-  },
-  metaPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    borderRadius: 999,
-    backgroundColor: colors.background.elevated,
-    borderWidth: 1,
-    borderColor: colors.border.subtle,
-  },
-  metaText: {
-    ...typography.caption.caption2,
-    color: colors.text.tertiary,
   },
   holdMicroCopy: {
     ...typography.label.small,

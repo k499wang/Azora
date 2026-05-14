@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   recommendedCard: {
-    borderColor: colors.orange[500],
+    borderColor: colors.primary.blue500,
     borderWidth: 2,
   },
   cardTop: {
@@ -187,14 +187,14 @@ const styles = StyleSheet.create({
   },
   recommendedPill: {
     borderRadius: 999,
-    backgroundColor: colors.orange[100],
+    backgroundColor: colors.primary.blue100,
     paddingHorizontal: spacing.sm,
     paddingVertical: 3,
   },
   recommendedText: {
     ...typography.label.small,
     fontFamily: fonts.semibold,
-    color: colors.orange[700],
+    color: colors.primary.blue700,
   },
   textBlock: {
     gap: spacing.xs,
