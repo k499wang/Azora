@@ -3,6 +3,7 @@ import {
   completeBreathHold,
   type CompleteBreathHoldInput,
 } from '../../services/tracking/breathHoldService';
+import { getProfileSummaryQueryKey } from '../profile/useProfileSummaryQuery';
 import { getDailyFeatureUsageQueryKey } from '../subscriptions/useDailyFeatureUsageQuery';
 import { getHomeStatsQueryKey } from './useHomeStatsQuery';
 
@@ -64,6 +65,9 @@ export function useCompleteBreathHoldMutation(userId: string | null) {
         }),
         queryClient.invalidateQueries({
           queryKey: getDailyFeatureUsageQueryKey(userId, localDate),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: getProfileSummaryQueryKey(userId),
         }),
       ]);
     },
