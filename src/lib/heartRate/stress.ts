@@ -6,7 +6,7 @@ export interface StressZone {
 }
 
 export function getStressZone(stress: number): StressZone {
-  if (stress <= 33) return { label: 'Low', color: colors.success[500] };
-  if (stress <= 66) return { label: 'Moderate', color: colors.warning[500] };
-  return { label: 'High', color: colors.error[500] };
+  if (stress <= 33) return { label: 'Low', color: colors.primary.blue500 };
+  if (stress <= 66) return { label: 'Moderate', color: colors.orange[500] };
+  return { label: 'High', color: colors.orange[700] };
 }

@@ -1,8 +1,7 @@
 import { StyleSheet, View } from 'react-native';
-import { colors } from '../../theme/colors';
 import { spacing, padding } from '../../theme/spacing';
 import SectionHeader from '../common/SectionHeader';
-import BigRingStatCard from './BigRingStatCard';
+import HRVTrackStatCard from './HRVTrackStatCard';
 import ProLockedOverlay from './ProLockedOverlay';
 
 const RMSSD_INFO = {
@@ -42,23 +41,25 @@ export default function HeartHealthSection({
         onPressUpgrade={onPressUpgrade}
         subtext="Advanced HRV metrics are part of Azora Pro."
       >
-        <View style={styles.metricRow}>
-          <BigRingStatCard
+        <View style={styles.metricColumn}>
+          <HRVTrackStatCard
             label="RMSSD"
-            value={rmssdValue == null ? '--' : `${rmssdValue}`}
-            progress={rmssdValue == null ? 0.72 : rmssdValue / 60}
-            color={colors.primary.blue700}
-            trackColor={colors.neutral[200]}
+            value={rmssdValue}
+            unit="ms"
             icon="stat-rmssd-wave"
+            max={80}
+            lowBound={20}
+            highBound={50}
             info={RMSSD_INFO}
           />
-          <BigRingStatCard
+          <HRVTrackStatCard
             label="Avg HRV"
-            value={sdnnValue == null ? '--' : `${sdnnValue}`}
-            progress={sdnnValue == null ? 0.62 : sdnnValue / 50}
-            color={colors.orange[700]}
-            trackColor={colors.neutral[200]}
+            value={sdnnValue}
+            unit="ms"
             icon="stat-hrv-curve"
+            max={80}
+            lowBound={20}
+            highBound={45}
             info={SDNN_INFO}
           />
         </View>
@@ -75,8 +76,8 @@ const styles = StyleSheet.create({
   headerWrap: {
     paddingHorizontal: padding.screen.horizontal,
   },
-  metricRow: {
-    flexDirection: 'row',
+  metricColumn: {
+    flexDirection: 'column',
     gap: spacing.sm,
     paddingHorizontal: padding.screen.horizontal,
   },
