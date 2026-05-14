@@ -322,7 +322,7 @@ export default function OnboardingPaywallScreen({
                 <Text style={styles.freeButtonText}>{continueWithoutProLabel}</Text>
               </Pressable>
               <Text style={styles.legal}>
-                Auto-renews unless cancelled. Manage or cancel in App Store settings. By
+                3-day free trial, then auto-renews unless cancelled. Manage or cancel in App Store settings. By
                 continuing, you agree to the{' '}
                 <Text style={styles.legalLink} onPress={() => void Linking.openURL(TERMS_URL)}>
                   Terms
@@ -384,6 +384,7 @@ function StepValue() {
         <Text style={styles.valueSubtitle}>
           Heart data, unlimited sessions, and a plan built around you.
         </Text>
+        <Text style={styles.trialNote}>Try free for 3 days — no charge until day 3</Text>
       </View>
 
       <View style={styles.valueGrid}>
@@ -411,13 +412,10 @@ function StepPersonalizedPlan({
   return (
     <View style={styles.stepContainer}>
       <View style={styles.valueHeader}>
-        <View style={styles.valueProPill}>
-          <View style={styles.valueProDot} />
-          <Text style={styles.valueProPillText}>YOUR PLAN</Text>
-        </View>
-        <Text style={styles.planHeadline}>Your custom plan is ready!</Text>
+        <Text style={styles.planHeadline}>Your plan is ready!</Text>
         <View style={styles.valueTitleUnderline} />
         <Text style={styles.valueSubtitle}>{personalization.headline}</Text>
+        <Text style={styles.trialNote}>Try free for 3 days — no charge until day 3</Text>
       </View>
 
       <View style={styles.planTargetCard}>
@@ -531,7 +529,6 @@ function StepTrial() {
   return (
     <View style={styles.stepContainer}>
       <View style={styles.stepHeader}>
-        <Text style={styles.stepEyebrow}>How the trial works</Text>
         <Text style={styles.stepTitle}>3 days free, fully cancellable</Text>
         <Text style={styles.stepSubtitle}>
           You won&apos;t be charged until day 3 — and we&apos;ll always remind you first.
@@ -570,8 +567,8 @@ function StepChoose({
   return (
     <View style={styles.stepContainer}>
       <View style={styles.stepHeader}>
-        <Text style={styles.stepEyebrow}>Choose your plan</Text>
-        <Text style={styles.stepTitle}>Begin your practice today</Text>
+        <Text style={styles.stepTitle}>Start Breathing Better</Text>
+        <Text style={styles.stepSubtitle}>Get a 3 day free trial, on us.</Text>
       </View>
 
       <PaywallFeatureList />
@@ -855,6 +852,14 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
     textAlign: 'center',
     paddingHorizontal: spacing.md,
+  },
+  trialNote: {
+    ...typography.caption.caption1,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    color: colors.primary.blue600,
+    textAlign: 'center',
+    marginTop: spacing.xs,
   },
   valueGrid: {
     gap: spacing.sm,

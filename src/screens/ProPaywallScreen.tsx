@@ -147,6 +147,7 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
               <Text style={styles.eyebrow}>Azora Pro</Text>
               <Text style={styles.title}>{copy.title}</Text>
               <Text style={styles.subtitle}>{copy.subtitle}</Text>
+              <Text style={styles.trialNote}>Try free for 3 days — no charge until day 3</Text>
             </View>
 
             <PaywallFeatureList />
@@ -231,7 +232,7 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
             </Text>
           </Pressable>
           <Text style={styles.legal}>
-            Auto-renews unless cancelled. Manage or cancel in App Store settings. By
+            3-day free trial, then auto-renews unless cancelled. Manage or cancel in App Store settings. By
             continuing, you agree to the{' '}
             <Text style={styles.legalLink} onPress={() => void Linking.openURL(TERMS_URL)}>
               Terms
@@ -257,7 +258,7 @@ function getPaywallCopy(feature: RootStackScreenProps<'ProPaywall'>['route']['pa
       };
     case 'daily_exercise':
       return {
-        title: 'Keep training today',
+        title: 'Breath whenever, wherever',
         subtitle: 'Unlock unlimited breath holds, guided exercises, and progress insights.',
       };
     case 'advanced_stats':
@@ -344,6 +345,14 @@ const styles = StyleSheet.create({
     ...typography.body.medium,
     color: colors.text.secondary,
     textAlign: 'center',
+  },
+  trialNote: {
+    ...typography.caption.caption1,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    color: colors.primary.blue600,
+    textAlign: 'center',
+    marginTop: spacing.xs,
   },
   cardsLoading: {
     minHeight: 180,
