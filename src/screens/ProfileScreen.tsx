@@ -6,6 +6,7 @@ import { colors } from '../theme/colors';
 import { padding, spacing } from '../theme/spacing';
 import AppTopBar from '../components/common/AppTopBar';
 import SectionHeader from '../components/common/SectionHeader';
+import ProfileDisplayNameEditorDialog from '../components/profile/ProfileDisplayNameEditorDialog';
 import ProfileIdentityCard from '../components/profile/ProfileIdentityCard';
 import ProfileStatsGrid, {
   type ProfileStatBadge,
@@ -21,6 +22,7 @@ import { useHapticsPreference } from '../hooks/useHapticsPreference';
 import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
 import { formatProfileHoldTime } from '../services/profile/profileSummaryService';
 import { useUploadProfileAvatarMutation } from '../queries/profile/useUploadProfileAvatarMutation';
+import { useUpdateProfileDisplayNameMutation } from '../queries/profile/useUpdateProfileDisplayNameMutation';
 import { getRevenueCatCustomerInfo } from '../services/subscriptions/revenueCatClient';
 const APP_STORE_SUBSCRIPTIONS_URL = 'https://apps.apple.com/account/subscriptions';
 
@@ -56,9 +58,11 @@ export default function ProfileScreen(_: ProfileScreenProps) {
   const deleteAccount = useAuthStore((s) => s.deleteAccount);
   const [signingOut, setSigningOut] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
+  const [editingDisplayName, setEditingDisplayName] = useState(false);
   const { hapticsEnabled, setHapticsEnabled } = useHapticsPreference();
   const profileSummaryQuery = useProfileSummaryQuery(user?.id ?? null);
   const uploadAvatarMutation = useUploadProfileAvatarMutation(user?.id ?? null);
+  const updateDisplayNameMutation = useUpdateProfileDisplayNameMutation(user?.id ?? null);
 
   const profileSummary = profileSummaryQuery.data;
   const displayName =
@@ -194,6 +198,39 @@ export default function ProfileScreen(_: ProfileScreenProps) {
     }
   };
 
+  const handleUpdateDisplayName = async (nextDisplayName: string) => {
+    const trimmedDisplayName = nextDisplayName.trim();
+
+    if (user == null) {
+      Alert.alert('Sign in required', 'Sign in before changing your profile name.');
+      throw new Error('Cannot update a profile name without a signed-in user.');
+    }
+
+    if (trimmedDisplayName.length === 0) {
+      Alert.alert('Name required', 'Enter a display name before saving.');
+      throw new Error('Display name is required.');
+    }
+
+    try {
+      await updateDisplayNameMutation.mutateAsync(trimmedDisplayName);
+      trackProfileAction('profile_name_updated');
+    } catch (err) {
+      trackProfileAction('profile_name_update_failed', {
+        error_message: err instanceof Error ? err.message : 'unknown_error',
+      });
+      Alert.alert(
+        'Name update failed',
+        err instanceof Error ? err.message : 'Please try again.',
+      );
+      throw err;
+    }
+  };
+
+  const handleSaveDisplayName = async (nextDisplayName: string) => {
+    await handleUpdateDisplayName(nextDisplayName);
+    setEditingDisplayName(false);
+  };
+
   const handleDeleteAccount = () => {
     if (deletingAccount) return;
     trackProfileAction('delete_account_prompt_opened');
@@ -290,6 +327,10 @@ export default function ProfileScreen(_: ProfileScreenProps) {
               avatarLabel={avatarLabel}
               avatarUrl={profileSummary?.profile?.avatarUrl}
               onChangePhoto={handleChangePhoto}
+              onEditDisplayName={() => {
+                trackProfileAction('profile_name_edit_opened');
+                setEditingDisplayName(true);
+              }}
             />
           </View>
         </View>
@@ -345,6 +386,16 @@ export default function ProfileScreen(_: ProfileScreenProps) {
           </View>
         </View>
       </ScrollView>
+
+      <ProfileDisplayNameEditorDialog
+        visible={editingDisplayName}
+        displayName={displayName}
+        isSaving={updateDisplayNameMutation.isPending}
+        onCancel={() => {
+          setEditingDisplayName(false);
+        }}
+        onSave={handleSaveDisplayName}
+      />
     </View>
   );
 }

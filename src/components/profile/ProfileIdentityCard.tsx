@@ -9,6 +9,7 @@ interface ProfileIdentityCardProps {
   avatarLabel: string;
   avatarUrl?: string | null;
   onChangePhoto?: () => void;
+  onEditDisplayName?: () => void;
 }
 
 export default function ProfileIdentityCard({
@@ -16,11 +17,31 @@ export default function ProfileIdentityCard({
   avatarLabel,
   avatarUrl,
   onChangePhoto,
+  onEditDisplayName,
 }: ProfileIdentityCardProps) {
   return (
     <View style={styles.container}>
       <View style={styles.headerCopy}>
-        <Text style={styles.name}>{displayName}</Text>
+        <View style={styles.nameRow}>
+          <Text style={styles.name}>{displayName}</Text>
+          {onEditDisplayName != null ? (
+            <Pressable
+              accessibilityLabel="Edit display name"
+              accessibilityRole="button"
+              onPress={onEditDisplayName}
+              style={({ pressed }) => [
+                styles.editNameButton,
+                pressed && styles.iconButtonPressed,
+              ]}
+            >
+              <MaterialCommunityIcons
+                name="pencil-outline"
+                size={18}
+                color={colors.text.secondary}
+              />
+            </Pressable>
+          ) : null}
+        </View>
       </View>
 
       <View style={styles.avatarSection}>
@@ -122,12 +143,31 @@ const styles = StyleSheet.create({
   headerCopy: {
     alignItems: 'center',
     gap: spacing.xs,
+    width: '100%',
+  },
+  nameRow: {
+    maxWidth: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
   },
   name: {
     ...typography.title.title3,
+    flexShrink: 1,
     color: colors.text.primary,
     textAlign: 'center',
     fontFamily: fonts.semibold,
     fontWeight: '600',
+  },
+  editNameButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  iconButtonPressed: {
+    opacity: 0.76,
   },
 });

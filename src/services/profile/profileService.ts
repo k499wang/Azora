@@ -1,4 +1,7 @@
 import { requireSupabaseClient } from '../supabase';
+import type { Database } from '../supabase/database.types';
+
+type ProfileRow = Database['public']['Tables']['profiles']['Row'];
 
 export type UserGender = 'female' | 'male' | 'nonbinary' | 'prefer_not';
 
@@ -60,6 +63,30 @@ export async function updateProfile(
   throw new Error(
     'updateProfile is scaffolded but not wired yet. Upsert into `profiles` for the authenticated user.',
   );
+}
+
+export async function updateProfileDisplayName(
+  userId: string,
+  displayName: string | null,
+): Promise<string | null> {
+  const supabase = requireSupabaseClient();
+  const { data, error } = await supabase
+    .from('profiles')
+    .upsert(
+      {
+        user_id: userId,
+        display_name: displayName,
+      },
+      { onConflict: 'user_id' },
+    )
+    .select('display_name')
+    .single();
+
+  if (error != null) {
+    throw error;
+  }
+
+  return (data as Pick<ProfileRow, 'display_name'>).display_name;
 }
 
 export async function getPreferences(): Promise<UserPreferences | null> {

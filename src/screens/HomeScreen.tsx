@@ -201,6 +201,35 @@ function RecentHeartRateList({
   );
 }
 
+function StreakNudge({
+  streakDays,
+  todayDone,
+}: {
+  streakDays: number;
+  todayDone: boolean;
+}) {
+  let message: string;
+  if (todayDone) {
+    if (streakDays <= 0) return null;
+    message =
+      streakDays === 1
+        ? 'Day 1 locked in — see you tomorrow'
+        : `${streakDays}-day streak locked in for today`;
+  } else if (streakDays <= 0) {
+    message = 'Start your streak with today’s hold';
+  } else if (streakDays === 1) {
+    message = 'Day 1 in the books — keep it going today';
+  } else {
+    message = `${streakDays}-day streak — don’t break it today`;
+  }
+
+  return (
+    <Text style={styles.streakNudge} numberOfLines={1} ellipsizeMode="tail">
+      {message}
+    </Text>
+  );
+}
+
 function Greeting({ displayName }: { displayName: string | null | undefined }) {
   const firstName = displayName?.trim().split(/\s+/)[0];
   if (!firstName) return null;
@@ -308,6 +337,10 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
 
           <View style={styles.planSection}>
             <Greeting displayName={displayName} />
+            <StreakNudge
+              streakDays={currentStreak}
+              todayDone={todayBreathHold?.holdSeconds != null}
+            />
             <DailyPlanCard
               duration={formatDuration(todayBreathHold?.holdSeconds)}
               streakDays={currentStreak}
@@ -437,6 +470,12 @@ const styles = StyleSheet.create({
     ...typography.title.title1,
     fontFamily: fonts.semibold,
     color: colors.text.primary,
+  },
+  streakNudge: {
+    ...typography.body.small,
+    fontFamily: fonts.semibold,
+    color: colors.text.tertiary,
+    marginTop: -spacing.xs,
   },
   recentSection: {
     paddingHorizontal: padding.screen.horizontal,
