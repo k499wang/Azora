@@ -28,6 +28,7 @@ import type { GenderOption } from './data/genderOptions';
 import type { OnboardingStep } from './types';
 import { usePaywall } from '../../hooks/usePaywall';
 import { PaywallPlacement } from '../../services/paywall';
+import { buildPaywallPersonalization } from '../../lib/paywallPersonalization';
 
 export interface OnboardingFlowResult {
   onboardingGoal: string;
@@ -407,6 +408,13 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   }
 
   if (step === 'paywall') {
+    const personalization = buildPaywallPersonalization({
+      displayName: name.trim() || null,
+      intentId: selectedIntent,
+      stressLevel,
+      sleepQuality,
+      dailyMinutes,
+    });
     return (
       <OnboardingPaywallScreen
         offering={paywall.offering}
@@ -417,6 +425,7 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         isPurchasing={paywall.isPurchasing}
         isRestoring={paywall.isRestoring}
         errorMessage={paywall.errorMessage ?? errorMessage}
+        personalization={personalization}
         onSelectPackage={paywall.setSelectedPackageId}
         onPurchase={() => {
           void purchaseSelectedPackage();

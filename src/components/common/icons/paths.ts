@@ -24,6 +24,10 @@ export const ICON_PATHS = {
     <path d="M10.5 16.5a1.8 1.8 0 1 0 3 0c0-1-.9-1.5-1.5-1.5s-1.5.5-1.5 1.5z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" fill="none" />
   `,
 
+  check: `
+    <path d="M5 12.5l4 4 10-10" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+  `,
+
   timer: `
     <path d="M10 3h4" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
     <path d="M12 3v3" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
