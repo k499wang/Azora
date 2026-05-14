@@ -11,6 +11,7 @@ import BreathingCircle, {
 } from '../components/exercise/BreathingCircle';
 import ExerciseScaffold from '../components/exercise/ExerciseScaffold';
 import TechniqueIntro from '../components/exercise/TechniqueIntro';
+import RoundsHapticPicker from '../components/exercise/RoundsHapticPicker';
 import TECHNIQUES from '../data/techniques';
 import type { BreathingTechnique } from '../data/techniques';
 import { useCancellableFlow } from '../hooks/useCancellableFlow';
@@ -639,37 +640,13 @@ export default function ExerciseSessionPage({
                 </Text>
               </View>
             ) : isPlacement ? null : (
-              <View
-                style={[
-                  styles.stepper,
-                  { backgroundColor: activeTheme.surface, borderColor: activeTheme.surfaceBorder },
-                ]}
-              >
-                <Pressable
-                  style={[styles.stepBtn, { backgroundColor: activeTheme.surface }, totalRounds <= MIN_ROUNDS && styles.stepBtnDisabled]}
-                  onPress={() => totalRounds > MIN_ROUNDS && setTotalRounds(totalRounds - 1)}
-                >
-                  <MaterialCommunityIcons
-                    name="minus"
-                    size={14}
-                    color={totalRounds <= MIN_ROUNDS ? activeTheme.textTertiary : activeTheme.textPrimary}
-                  />
-                </Pressable>
-                <View style={styles.stepValueWrap}>
-                  <Text style={[styles.stepValue, { color: activeTheme.textPrimary }]}>{totalRounds}</Text>
-                  <Text style={[styles.stepLabel, { color: activeTheme.textTertiary }]}>rounds</Text>
-                </View>
-                <Pressable
-                  style={[styles.stepBtn, { backgroundColor: activeTheme.surface }, totalRounds >= MAX_ROUNDS && styles.stepBtnDisabled]}
-                  onPress={() => totalRounds < MAX_ROUNDS && setTotalRounds(totalRounds + 1)}
-                >
-                  <MaterialCommunityIcons
-                    name="plus"
-                    size={14}
-                    color={totalRounds >= MAX_ROUNDS ? activeTheme.textTertiary : activeTheme.textPrimary}
-                  />
-                </Pressable>
-              </View>
+              <RoundsHapticPicker
+                value={totalRounds}
+                min={MIN_ROUNDS}
+                max={MAX_ROUNDS}
+                onChange={setTotalRounds}
+                theme={activeTheme}
+              />
             )}
             <View style={styles.btnRow}>
               <Pressable
@@ -915,39 +892,5 @@ const styles = StyleSheet.create({
   circleBtnPressed: {
     opacity: 0.75,
     transform: [{ scale: 0.96 }],
-  },
-  stepper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    backgroundColor: colors.background.elevated,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: colors.border.subtle,
-    paddingHorizontal: spacing.xs,
-    paddingVertical: spacing.xs,
-  },
-  stepBtn: {
-    width: 24,
-    height: 24,
-    borderRadius: 6,
-    backgroundColor: colors.neutral[100],
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  stepBtnDisabled: {
-    opacity: 0.4,
-  },
-  stepValueWrap: {
-    alignItems: 'center',
-    minWidth: 26,
-  },
-  stepValue: {
-    ...typography.heading.heading2,
-    color: colors.text.primary,
-  },
-  stepLabel: {
-    ...typography.caption.caption2,
-    color: colors.text.tertiary,
   },
 });

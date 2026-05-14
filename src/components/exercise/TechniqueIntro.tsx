@@ -33,13 +33,6 @@ export default function TechniqueIntro({ technique, textColors }: Props) {
 
   return (
     <View style={styles.container}>
-      <Text style={[styles.name, textColors && { color: textColors.primary }]}>
-        {technique.name}
-      </Text>
-      <Text style={[styles.description, textColors && { color: textColors.secondary }]}>
-        {technique.description}
-      </Text>
-
       <View style={styles.phaseRow}>
         {phases.map((p, idx) => (
           <View key={`${p.key}-${idx}`} style={styles.phase}>
@@ -57,6 +50,13 @@ export default function TechniqueIntro({ technique, textColors }: Props) {
           </View>
         ))}
       </View>
+
+      <Text style={[styles.name, textColors && { color: textColors.primary }]}>
+        {technique.name}
+      </Text>
+      <Text style={[styles.description, textColors && { color: textColors.secondary }]}>
+        {technique.description}
+      </Text>
     </View>
   );
 }
@@ -66,6 +66,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     gap: spacing.md,
     alignItems: 'center',
+    transform: [{ translateY: -48 }],
   },
   name: {
     ...typography.title.title1,
@@ -84,7 +85,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     gap: spacing.md,
-    marginTop: spacing.xs,
+    marginBottom: spacing.xs,
   },
   phase: {
     alignItems: 'center',
