@@ -263,6 +263,6 @@ const styles = StyleSheet.create({
     marginTop: -1,
   },
   tailRight: {
-    marginRight: 50,
+    marginRight: 28,
   },
 });
