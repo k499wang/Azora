@@ -10,6 +10,7 @@ import { card } from '../../theme/card';
 import LineGraph, { type DataPoint } from '../analytics/LineGraph';
 import SectionHeader from '../common/SectionHeader';
 import StressGauge from './StressGauge';
+import HRVTrackStatCard from '../home/HRVTrackStatCard';
 import { getStressZone } from '../../lib/heartRate/stress';
 import {
   buildGraphBpmValuePointsFromIbis,
@@ -167,59 +168,15 @@ export function HeartRateResultContent({
   const confidenceInfo =
     confidence != null ? getConfidenceLabel(confidence) : null;
 
-  const proStats: HeartRateResultStat[] = [
-    rmssdValue != null
-      ? {
-          icon: 'heart-pulse',
-          label: 'RMSSD',
-          value: rmssdValue,
-          unit: 'ms',
-          iconColor: colors.error[500],
-        }
+  const rmssdNumeric =
+    rmssd != null && Number.isFinite(rmssd)
+      ? rmssd
       : advancedStatsLocked
-        ? {
-            icon: 'heart-pulse',
-            label: 'RMSSD',
-            value: '48',
-            unit: 'ms',
-            iconColor: colors.error[500],
-          }
-        : {
-            icon: 'heart-pulse',
-            label: 'RMSSD',
-            value: 'Unavailable',
-            unavailable: true,
-          },
-    hrDrop != null
-      ? {
-          icon: 'swap-vertical',
-          label: 'HR Change',
-          value: `${Math.abs(hrDrop)}`,
-          unit: 'bpm',
-        }
-      : advancedStatsLocked
-        ? {
-            icon: 'swap-vertical',
-            label: 'HR Change',
-            value: '12',
-            unit: 'bpm',
-          }
-        : {
-            icon: 'swap-vertical',
-            label: 'HR Change',
-            value: 'Unavailable',
-            unavailable: true,
-          },
-  ];
-
+        ? 48
+        : null;
   const basicStatRows: HeartRateResultStat[][] = [];
   for (let i = 0; i < extraStats.length; i += 2) {
     basicStatRows.push(extraStats.slice(i, i + 2));
-  }
-
-  const proStatRows: HeartRateResultStat[][] = [];
-  for (let i = 0; i < proStats.length; i += 2) {
-    proStatRows.push(proStats.slice(i, i + 2));
   }
 
   const resolvedBpmSeries = bpmSeries != null
@@ -312,15 +269,16 @@ export function HeartRateResultContent({
       </View>
 
       <LockedOverlay locked={advancedStatsLocked} onPressUpgrade={onPressUpgrade}>
-        <View style={styles.statsGrid}>
-          {proStatRows.map((row, rowIndex) => (
-            <View key={rowIndex} style={styles.statsRow}>
-              {row.map((stat) => (
-                <StatCard key={stat.label} {...stat} />
-              ))}
-              {row.length === 1 ? <View style={styles.statCardSpacer} /> : null}
-            </View>
-          ))}
+        <View style={styles.proStatsColumn}>
+          <HRVTrackStatCard
+            label="RMSSD"
+            value={rmssdNumeric}
+            unit="ms"
+            icon="stat-rmssd-wave"
+            max={80}
+            lowBound={20}
+            highBound={50}
+          />
         </View>
 
         {stressZoneForDisplay != null && stressForDisplay != null ? (
@@ -334,7 +292,6 @@ export function HeartRateResultContent({
             <Text style={styles.graphTitle}>Heart rate</Text>
             <LineGraph
               data={displayBpmSeries}
-              subtitle="BPM during the reading"
               unit=""
               height={180}
               lineColor={colors.primary.blue500}
@@ -349,7 +306,6 @@ export function HeartRateResultContent({
             <Text style={styles.graphTitle}>Heart rate variability</Text>
             <LineGraph
               data={displayRrSeries}
-              subtitle="RR intervals (ms) - wider swings = more variability"
               unit=""
               height={180}
               lineColor={colors.error[500]}
@@ -521,6 +477,11 @@ const styles = StyleSheet.create({
     width: '100%',
     gap: spacing.sm,
   },
+  proStatsColumn: {
+    width: '100%',
+    flexDirection: 'column',
+    gap: spacing.sm,
+  },
   statsRow: {
     flexDirection: 'row',
     gap: spacing.sm,
@@ -673,8 +634,8 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   graphTitle: {
-    ...typography.heading.heading2,
-    color: colors.text.primary,
+    ...typography.heading.heading1,
+    color: colors.text.secondary,
     fontFamily: fonts.semibold,
     marginBottom: spacing.xs,
   },
