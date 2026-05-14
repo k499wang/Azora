@@ -19,6 +19,7 @@ import { useBreathPhaseAudio } from '../hooks/useBreathPhaseAudio';
 import { HeartRateCameraPreview } from '../components/heartRate/HeartRateCameraPreview';
 import type { FingerPlacementState } from '../lib/heartRate/types';
 import { startInhaleVibration, stopInhaleVibration } from '../native/inhaleVibration';
+import { startHoldHaptics, stopHoldHaptics } from '../native/holdHaptics';
 import { usePostHog } from 'posthog-react-native';
 import type { ExerciseSessionScreenProps } from '../app/navigation';
 import { captureException } from '../services/analytics/errorTracking';
@@ -199,6 +200,7 @@ export default function ExerciseSessionPage({
     useCallback(() => {
       clearTimer();
       stopInhaleVibration();
+      stopHoldHaptics();
       stopPulse();
       if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
     }, [stopPulse]),
@@ -226,8 +228,13 @@ export default function ExerciseSessionPage({
       setPaused(false);
       if (p === 'inhale') {
         startInhaleVibration(secs * 1000);
+        stopHoldHaptics();
+      } else if (p === 'holdIn' || p === 'holdOut') {
+        stopInhaleVibration();
+        startHoldHaptics();
       } else {
         stopInhaleVibration();
+        stopHoldHaptics();
       }
 
       if (p === 'inhale' || p === 'exhale') {
@@ -292,6 +299,7 @@ export default function ExerciseSessionPage({
     clearTimer();
     circleRef.current?.pause();
     stopInhaleVibration();
+    stopHoldHaptics();
     setPaused(true);
     posthog.capture(AnalyticsEvent.ExerciseSessionPaused, {
       technique_id: technique.id,
@@ -313,6 +321,8 @@ export default function ExerciseSessionPage({
       startInhaleVibration(remaining * 1000);
     } else if (currentPhase === 'exhale') {
       circleRef.current?.resumeContract(remaining);
+    } else if (currentPhase === 'holdIn' || currentPhase === 'holdOut') {
+      startHoldHaptics();
     }
 
     let rem = remaining;
