@@ -22,14 +22,23 @@ export interface BreathingCircleRef {
   reset: () => void;
 }
 
+interface BreathingThemeColors {
+  outline: string;
+  outlineOpacity?: number;
+  outer: string;
+  outerOpacity?: number;
+  inner: string;
+}
+
 interface BreathingCircleProps {
   children?: ReactNode;
   cameraSlot?: ReactNode;
   beatTick?: number;
+  themeColors?: BreathingThemeColors;
 }
 
 const BreathingCircle = forwardRef<BreathingCircleRef, BreathingCircleProps>(
-  ({ children, cameraSlot, beatTick = 0 }, ref) => {
+  ({ children, cameraSlot, beatTick = 0, themeColors }, ref) => {
     const scale = useRef(new Animated.Value(OUTER_MIN_SCALE)).current;
     const beatScale = useRef(new Animated.Value(1)).current;
     const beatOpacity = useRef(new Animated.Value(0)).current;
@@ -135,9 +144,25 @@ const BreathingCircle = forwardRef<BreathingCircleRef, BreathingCircleProps>(
 
     return (
       <View style={styles.wrapper}>
-        <View style={styles.outline} pointerEvents="none" />
+        <View
+          style={[
+            styles.outline,
+            themeColors && {
+              borderColor: themeColors.outline,
+              opacity: themeColors.outlineOpacity ?? 0.5,
+            },
+          ]}
+          pointerEvents="none"
+        />
         <Animated.View
-          style={[styles.outer, { transform: [{ scale }] }]}
+          style={[
+            styles.outer,
+            { transform: [{ scale }] },
+            themeColors && {
+              backgroundColor: themeColors.outer,
+              opacity: themeColors.outerOpacity ?? 0.28,
+            },
+          ]}
           pointerEvents="none"
         />
         <Animated.View
@@ -154,7 +179,10 @@ const BreathingCircle = forwardRef<BreathingCircleRef, BreathingCircleProps>(
           ]}
           pointerEvents="none"
         />
-        <View style={styles.inner} pointerEvents="none">
+        <View
+          style={[styles.inner, themeColors && { backgroundColor: themeColors.inner }]}
+          pointerEvents="none"
+        >
           {cameraSlot ? (
             <View style={StyleSheet.absoluteFillObject}>{cameraSlot}</View>
           ) : null}

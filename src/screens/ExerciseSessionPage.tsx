@@ -5,6 +5,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 import { typography, fonts } from '../theme/typography';
 import { spacing } from '../theme/spacing';
+import { EXERCISE_DARK_THEMES, type ExerciseDarkTheme } from '../theme/exerciseDarkThemes';
 import BreathingCircle, {
   BreathingCircleRef,
 } from '../components/exercise/BreathingCircle';
@@ -67,6 +68,8 @@ export default function ExerciseSessionPage({
 }: ExerciseSessionScreenProps) {
   const techniqueId = route.params?.techniqueId;
   const initialTechnique = TECHNIQUES.find((t) => t.id === techniqueId) ?? TECHNIQUES[0];
+
+  const [activeTheme, setActiveTheme] = useState<ExerciseDarkTheme>(EXERCISE_DARK_THEMES[0]);
 
   const circleRef = useRef<BreathingCircleRef>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -462,8 +465,24 @@ export default function ExerciseSessionPage({
     if (isActive) showHud();
   };
 
+  const themeSwitcher = (
+    <View style={styles.themePicker}>
+      {EXERCISE_DARK_THEMES.map((t) => (
+        <Pressable
+          key={t.id}
+          onPress={() => setActiveTheme(t)}
+          style={[
+            styles.themeDot,
+            { backgroundColor: t.dotColor },
+            activeTheme.id === t.id && styles.themeDotActive,
+          ]}
+        />
+      ))}
+    </View>
+  );
+
   return (
-    <View style={styles.fill}>
+    <View style={[styles.fill, { backgroundColor: activeTheme.screen }]}>
       {isActive && !hudVisible ? (
         <Pressable
           style={styles.tapToRevealLayer}
@@ -472,6 +491,8 @@ export default function ExerciseSessionPage({
         />
       ) : null}
       <ExerciseScaffold
+        darkTheme={activeTheme}
+        rightSlot={themeSwitcher}
         centerSlot={
           <View style={styles.centerStack}>
             <View style={styles.contentArea}>
@@ -487,7 +508,15 @@ export default function ExerciseSessionPage({
                   },
                 ]}
               >
-                <TechniqueIntro technique={technique} />
+                <TechniqueIntro
+                  technique={technique}
+                  textColors={{
+                    primary: activeTheme.textPrimary,
+                    secondary: activeTheme.textSecondary,
+                    tertiary: activeTheme.textTertiary,
+                    accent: activeTheme.textAccent,
+                  }}
+                />
               </Animated.View>
 
               <Animated.View
@@ -503,6 +532,13 @@ export default function ExerciseSessionPage({
                   ref={circleRef}
                   cameraSlot={cameraSlot}
                   beatTick={pulse.beatTick}
+                  themeColors={{
+                    outline: activeTheme.circleOutline,
+                    outlineOpacity: activeTheme.circleOutlineOpacity,
+                    outer: activeTheme.circleOuter,
+                    outerOpacity: activeTheme.circleOuterOpacity,
+                    inner: activeTheme.circleInner,
+                  }}
                 >
                   {phase === 'done' ? (
                     <MaterialCommunityIcons
@@ -519,7 +555,7 @@ export default function ExerciseSessionPage({
 
             <View style={styles.belowSlot}>
               {isPlacement ? (
-                <Text style={styles.hintText}>
+                <Text style={[styles.hintText, { color: activeTheme.textSecondary }]}>
                   {placementHint(pulse.fingerPlacement)}
                 </Text>
               ) : isActive && pulse.active ? (
@@ -529,6 +565,7 @@ export default function ExerciseSessionPage({
                       <Animated.Text
                         style={[
                           styles.bpmNumber,
+                          { color: activeTheme.textPrimary },
                           showSignalWarning ? null : { opacity: bpmOpacity },
                         ]}
                       >
@@ -576,42 +613,64 @@ export default function ExerciseSessionPage({
           >
             {isActive || paused ? (
               <View style={styles.progressWrap}>
-                <View style={styles.progressTrack}>
-                  <View style={[styles.progressFill, { width: `${progress * 100}%` }]} />
+                <View style={[styles.progressTrack, { backgroundColor: activeTheme.progressTrack }]}>
+                  <View
+                    style={[
+                      styles.progressFill,
+                      { width: `${progress * 100}%`, backgroundColor: activeTheme.progressFill },
+                    ]}
+                  />
                 </View>
-                <Text style={styles.progressLabel}>
+                <Text style={[styles.progressLabel, { color: activeTheme.textTertiary }]}>
                   Round {Math.min(round, totalRounds)} of {totalRounds}
                 </Text>
               </View>
             ) : isPlacement ? null : (
-              <View style={styles.stepper}>
+              <View
+                style={[
+                  styles.stepper,
+                  { backgroundColor: activeTheme.surface, borderColor: activeTheme.surfaceBorder },
+                ]}
+              >
                 <Pressable
-                  style={[styles.stepBtn, totalRounds <= MIN_ROUNDS && styles.stepBtnDisabled]}
+                  style={[styles.stepBtn, { backgroundColor: activeTheme.surface }, totalRounds <= MIN_ROUNDS && styles.stepBtnDisabled]}
                   onPress={() => totalRounds > MIN_ROUNDS && setTotalRounds(totalRounds - 1)}
                 >
-                  <MaterialCommunityIcons name="minus" size={14} color={totalRounds <= MIN_ROUNDS ? colors.text.tertiary : colors.text.primary} />
+                  <MaterialCommunityIcons
+                    name="minus"
+                    size={14}
+                    color={totalRounds <= MIN_ROUNDS ? activeTheme.textTertiary : activeTheme.textPrimary}
+                  />
                 </Pressable>
                 <View style={styles.stepValueWrap}>
-                  <Text style={styles.stepValue}>{totalRounds}</Text>
-                  <Text style={styles.stepLabel}>rounds</Text>
+                  <Text style={[styles.stepValue, { color: activeTheme.textPrimary }]}>{totalRounds}</Text>
+                  <Text style={[styles.stepLabel, { color: activeTheme.textTertiary }]}>rounds</Text>
                 </View>
                 <Pressable
-                  style={[styles.stepBtn, totalRounds >= MAX_ROUNDS && styles.stepBtnDisabled]}
+                  style={[styles.stepBtn, { backgroundColor: activeTheme.surface }, totalRounds >= MAX_ROUNDS && styles.stepBtnDisabled]}
                   onPress={() => totalRounds < MAX_ROUNDS && setTotalRounds(totalRounds + 1)}
                 >
-                  <MaterialCommunityIcons name="plus" size={14} color={totalRounds >= MAX_ROUNDS ? colors.text.tertiary : colors.text.primary} />
+                  <MaterialCommunityIcons
+                    name="plus"
+                    size={14}
+                    color={totalRounds >= MAX_ROUNDS ? activeTheme.textTertiary : activeTheme.textPrimary}
+                  />
                 </Pressable>
               </View>
             )}
             <View style={styles.btnRow}>
               <Pressable
-                style={({ pressed }) => [styles.squareBtn, pressed && styles.circleBtnPressed]}
+                style={({ pressed }) => [
+                  styles.squareBtn,
+                  { backgroundColor: activeTheme.surface, borderColor: activeTheme.surfaceBorder },
+                  pressed && styles.circleBtnPressed,
+                ]}
                 onPress={() => {
                   if (isActive) showHud();
                   handleClose();
                 }}
               >
-                <MaterialCommunityIcons name="stop" size={26} color={colors.neutral[900]} />
+                <MaterialCommunityIcons name="stop" size={26} color={activeTheme.iconPrimary} />
               </Pressable>
               {isPlacement ? (
                 <Pressable
@@ -625,11 +684,17 @@ export default function ExerciseSessionPage({
                     pressed && styles.textLinkPressed,
                   ]}
                 >
-                  <Text style={styles.textLinkLabel}>Skip heart rate</Text>
+                  <Text style={[styles.textLinkLabel, { color: activeTheme.textTertiary }]}>
+                    Skip heart rate
+                  </Text>
                 </Pressable>
               ) : (
                 <Pressable
-                  style={({ pressed }) => [styles.circleBtn, pressed && styles.circleBtnPressed]}
+                  style={({ pressed }) => [
+                    styles.circleBtn,
+                    { backgroundColor: activeTheme.surface, borderColor: activeTheme.surfaceBorder },
+                    pressed && styles.circleBtnPressed,
+                  ]}
                   onPress={() => {
                     if (isActive) showHud();
                     if (phase === 'idle' || phase === 'done') {
@@ -644,7 +709,7 @@ export default function ExerciseSessionPage({
                   <MaterialCommunityIcons
                     name={isActive && !paused ? 'pause' : 'play'}
                     size={28}
-                    color={colors.neutral[900]}
+                    color={activeTheme.iconPrimary}
                   />
                 </Pressable>
               )}
@@ -659,7 +724,22 @@ export default function ExerciseSessionPage({
 const styles = StyleSheet.create({
   fill: {
     flex: 1,
-    backgroundColor: colors.background.primary,
+  },
+  themePicker: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    paddingHorizontal: 4,
+    paddingVertical: 4,
+  },
+  themeDot: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+  },
+  themeDotActive: {
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.7)',
   },
   tapToRevealLayer: {
     ...StyleSheet.absoluteFillObject,

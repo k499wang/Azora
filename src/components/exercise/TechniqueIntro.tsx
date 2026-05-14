@@ -5,8 +5,16 @@ import { fonts, typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import type { BreathingTechnique } from '../../data/techniques';
 
+interface TextColors {
+  primary: string;
+  secondary: string;
+  tertiary: string;
+  accent: string;
+}
+
 interface Props {
   technique: BreathingTechnique;
+  textColors?: TextColors;
 }
 
 const PHASE_META: {
@@ -20,13 +28,17 @@ const PHASE_META: {
   { key: 'holdOut', label: 'Hold', icon: 'pause' },
 ];
 
-export default function TechniqueIntro({ technique }: Props) {
+export default function TechniqueIntro({ technique, textColors }: Props) {
   const phases = PHASE_META.filter((p) => technique.pattern[p.key] > 0);
 
   return (
     <View style={styles.container}>
-      <Text style={styles.name}>{technique.name}</Text>
-      <Text style={styles.description}>{technique.description}</Text>
+      <Text style={[styles.name, textColors && { color: textColors.primary }]}>
+        {technique.name}
+      </Text>
+      <Text style={[styles.description, textColors && { color: textColors.secondary }]}>
+        {technique.description}
+      </Text>
 
       <View style={styles.phaseRow}>
         {phases.map((p, idx) => (
@@ -34,10 +46,14 @@ export default function TechniqueIntro({ technique }: Props) {
             <MaterialCommunityIcons
               name={p.icon}
               size={16}
-              color={colors.primary.blue700}
+              color={textColors ? textColors.accent : colors.primary.blue700}
             />
-            <Text style={styles.phaseValue}>{technique.pattern[p.key]}s</Text>
-            <Text style={styles.phaseLabel}>{p.label}</Text>
+            <Text style={[styles.phaseValue, textColors && { color: textColors.primary }]}>
+              {technique.pattern[p.key]}s
+            </Text>
+            <Text style={[styles.phaseLabel, textColors && { color: textColors.tertiary }]}>
+              {p.label}
+            </Text>
           </View>
         ))}
       </View>
