@@ -17,6 +17,13 @@ import type { BreathingTechnique } from '../data/techniques';
 import { useCancellableFlow } from '../hooks/useCancellableFlow';
 import { useLivePulse } from '../hooks/useLivePulse';
 import { useBreathPhaseAudio } from '../hooks/useBreathPhaseAudio';
+import { useAmbientAudio } from '../hooks/useAmbientAudio';
+import { usePhaseChime } from '../hooks/usePhaseChime';
+import {
+  AudioSettingsSheet,
+  SettingsGearButton,
+  ThemePickerSection,
+} from '../features/audioSettings';
 import { HeartRateCameraPreview } from '../components/heartRate/HeartRateCameraPreview';
 import type { FingerPlacementState } from '../lib/heartRate/types';
 import { startInhaleVibration, stopInhaleVibration } from '../native/inhaleVibration';
@@ -72,6 +79,7 @@ export default function ExerciseSessionPage({
   const initialTechnique = TECHNIQUES.find((t) => t.id === techniqueId) ?? TECHNIQUES[0];
 
   const [activeTheme, setActiveTheme] = useState<ExerciseDarkTheme>(EXERCISE_DARK_THEMES[0]);
+  const [audioSettingsOpen, setAudioSettingsOpen] = useState(false);
 
   const circleRef = useRef<BreathingCircleRef>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -150,10 +158,21 @@ export default function ExerciseSessionPage({
   }, [hudOpacity]);
 
   const posthog = usePostHog();
+  const exerciseAudioActive =
+    isFocused &&
+    !paused &&
+    (phase === 'inhale' || phase === 'holdIn' || phase === 'exhale' || phase === 'holdOut');
+  const phaseCueAudioActive =
+    isFocused && !paused && (phase === 'inhale' || phase === 'exhale');
+
   useBreathPhaseAudio(
     !paused && (phase === 'inhale' || phase === 'exhale') ? phase : null,
-    { active: isFocused },
+    { active: phaseCueAudioActive },
   );
+  useAmbientAudio({
+    active: exerciseAudioActive,
+  });
+  usePhaseChime(phase, { active: phaseCueAudioActive });
 
   const pulse = useLivePulse();
   const { start: startPulse, stop: stopPulse, hasPermission, requestPermission } = pulse;
@@ -403,6 +422,8 @@ export default function ExerciseSessionPage({
 
   const handleClose = () => {
     flow.cancel();
+    setPaused(false);
+    setPhase('idle');
     if (phase !== 'idle' && phase !== 'done') {
       const cycleSeconds =
         technique.pattern.inhale +
@@ -476,23 +497,13 @@ export default function ExerciseSessionPage({
     if (isActive) showHud();
   };
 
-  const themeSwitcher = (
-    <View style={styles.themePicker}>
-      {EXERCISE_DARK_THEMES.map((t) => (
-        <Pressable
-          key={t.id}
-          onPress={() => setActiveTheme(t)}
-          style={[
-            styles.themeDot,
-            { backgroundColor: t.dotColor },
-            activeTheme.id === t.id && [
-              styles.themeDotActive,
-              { borderColor: activeTheme.textPrimary },
-            ],
-          ]}
-        />
-      ))}
-    </View>
+  const headerControls = (
+    <SettingsGearButton
+      onPress={() => setAudioSettingsOpen(true)}
+      color={activeTheme.iconPrimary}
+      backgroundColor={activeTheme.surface}
+      borderColor={activeTheme.surfaceBorder}
+    />
   );
 
   return (
@@ -506,7 +517,7 @@ export default function ExerciseSessionPage({
       ) : null}
       <ExerciseScaffold
         darkTheme={activeTheme}
-        rightSlot={themeSwitcher}
+        rightSlot={headerControls}
         centerSlot={
           <View style={styles.centerStack}>
             <View style={styles.contentArea}>
@@ -707,6 +718,16 @@ export default function ExerciseSessionPage({
           </Animated.View>
         }
       />
+      <AudioSettingsSheet
+        visible={audioSettingsOpen}
+        onClose={() => setAudioSettingsOpen(false)}
+        extraSectionsTop={
+          <ThemePickerSection
+            activeThemeId={activeTheme.id}
+            onSelect={setActiveTheme}
+          />
+        }
+      />
     </View>
   );
 }
@@ -714,22 +735,6 @@ export default function ExerciseSessionPage({
 const styles = StyleSheet.create({
   fill: {
     flex: 1,
-  },
-  themePicker: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 7,
-    paddingHorizontal: 4,
-    paddingVertical: 4,
-  },
-  themeDot: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-  },
-  themeDotActive: {
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.7)',
   },
   tapToRevealLayer: {
     ...StyleSheet.absoluteFillObject,

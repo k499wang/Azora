@@ -27,6 +27,13 @@ import type { DailyExerciseScreenProps } from '../app/navigation';
 import { startInhaleVibration, stopInhaleVibration } from '../native/inhaleVibration';
 import { isHapticsEnabled } from '../services/preferences/hapticsPreference';
 import { useBreathPhaseAudio } from '../hooks/useBreathPhaseAudio';
+import { useAmbientAudio } from '../hooks/useAmbientAudio';
+import { usePhaseChime } from '../hooks/usePhaseChime';
+import {
+  AudioSettingsSheet,
+  SettingsGearButton,
+  ThemePickerSection,
+} from '../features/audioSettings';
 import { useCancellableFlow } from '../hooks/useCancellableFlow';
 import { useAuthStore } from '../stores/authStore';
 import { useCompleteBreathHoldMutation } from '../queries/tracking/useCompleteBreathHoldMutation';
@@ -147,6 +154,7 @@ export default function DailyExercisePage({
   } | null>(null);
   const [releaseAudioActive, setReleaseAudioActive] = useState(false);
   const [activeTheme, setActiveTheme] = useState<ExerciseDarkTheme>(EXERCISE_DARK_THEMES[0]);
+  const [audioSettingsOpen, setAudioSettingsOpen] = useState(false);
   const isFocused = useIsFocused();
 
   const bpmOpacity = useRef(new Animated.Value(0.6)).current;
@@ -172,6 +180,9 @@ export default function DailyExercisePage({
     inputRange: [0, 1],
     outputRange: [0.88, 1],
   });
+  const dailyAudioActive =
+    isFocused && (isBreathingPhase(phase) || phase === 'hold');
+  const phaseCueAudioActive = isFocused && isBreathingPhase(phase);
 
   useBreathPhaseAudio(
     phase === 'preInhale' || phase === 'inhale'
@@ -179,8 +190,12 @@ export default function DailyExercisePage({
       : phase === 'preExhale' || releaseAudioActive
         ? 'exhale'
         : null,
-    { active: isFocused },
+    { active: phaseCueAudioActive || (isFocused && releaseAudioActive) },
   );
+  useAmbientAudio({
+    active: dailyAudioActive,
+  });
+  usePhaseChime(phase, { active: phaseCueAudioActive });
 
   const pulse = useLivePulse();
   const {
@@ -641,6 +656,7 @@ export default function DailyExercisePage({
 
   const cancelPlacement = useCallback(() => {
     flow.cancel();
+    setPhase('idle');
     navigation.goBack();
   }, [flow, navigation]);
 
@@ -680,30 +696,20 @@ export default function DailyExercisePage({
   const signalGood = pulse.fingerPlacement === 'good';
   const showSignalWarning = isLive && pulse.active && !signalGood;
 
-  const themeSwitcher = (
-    <View style={styles.themePicker}>
-      {EXERCISE_DARK_THEMES.map((t) => (
-        <Pressable
-          key={t.id}
-          onPress={() => setActiveTheme(t)}
-          style={[
-            styles.themeDot,
-            { backgroundColor: t.dotColor },
-            activeTheme.id === t.id && [
-              styles.themeDotActive,
-              { borderColor: activeTheme.textPrimary },
-            ],
-          ]}
-        />
-      ))}
-    </View>
+  const headerControls = (
+    <SettingsGearButton
+      onPress={() => setAudioSettingsOpen(true)}
+      color={activeTheme.iconPrimary}
+      backgroundColor={activeTheme.surface}
+      borderColor={activeTheme.surfaceBorder}
+    />
   );
 
   return (
     <View style={[styles.fill, { backgroundColor: activeTheme.screen }]}>
       <ExerciseScaffold
         darkTheme={activeTheme}
-        rightSlot={themeSwitcher}
+        rightSlot={headerControls}
         centerSlot={
           <View style={styles.contentArea}>
             <Animated.View
@@ -885,6 +891,16 @@ export default function DailyExercisePage({
           </View>
         }
       />
+      <AudioSettingsSheet
+        visible={audioSettingsOpen}
+        onClose={() => setAudioSettingsOpen(false)}
+        extraSectionsTop={
+          <ThemePickerSection
+            activeThemeId={activeTheme.id}
+            onSelect={setActiveTheme}
+          />
+        }
+      />
     </View>
   );
 }
@@ -893,22 +909,6 @@ const styles = StyleSheet.create({
   fill: {
     flex: 1,
     backgroundColor: colors.background.primary,
-  },
-  themePicker: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 7,
-    paddingHorizontal: 4,
-    paddingVertical: 4,
-  },
-  themeDot: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-  },
-  themeDotActive: {
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.7)',
   },
   centerStack: {
     alignItems: 'center',

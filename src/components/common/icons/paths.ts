@@ -195,6 +195,19 @@ export const ICON_PATHS = {
     <path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" d="M9 13.5 V17 M12 11.5 V17 M15 14.5 V17"/>
   `,
 
+  settings: `
+    <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M12 3.5l1.4 2.1 2.5-.4.6 2.5 2.3 1.1-.9 2.4.9 2.4-2.3 1.1-.6 2.5-2.5-.4L12 20.5l-1.4-2.1-2.5.4-.6-2.5-2.3-1.1.9-2.4-.9-2.4 2.3-1.1.6-2.5 2.5.4L12 3.5z"/>
+    <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8" fill="none"/>
+  `,
+
+  'play-triangle': `
+    <path fill="currentColor" d="M8 5.5a1 1 0 0 1 1.5-.87l9 5.5a1 1 0 0 1 0 1.74l-9 5.5A1 1 0 0 1 8 16.5v-11z"/>
+  `,
+
+  close: `
+    <path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" d="M6 6l12 12M18 6L6 18"/>
+  `,
+
   journal: `
     <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M4 4h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/>
     <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M8 4v16"/>
