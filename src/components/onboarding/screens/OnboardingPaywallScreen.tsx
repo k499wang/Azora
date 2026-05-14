@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Animated,
@@ -12,8 +12,14 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import Svg, {
+  Circle,
+  Defs,
+  LinearGradient as SvgLinearGradient,
+  Path,
+  Stop,
+} from 'react-native-svg';
 import type {
   PaywallOffering,
   PaywallPackageId,
@@ -22,15 +28,27 @@ import type {
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
+import { card } from '../../../theme/card';
 import Icon, { type IconName } from '../../common/icons/Icon';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
+import {
+  PlanCard,
+  UrgencyBanner,
+  computeAnnualSavings,
+  PRO_GOLD,
+  PRO_GOLD_SOFT,
+  PRO_INK,
+} from '../../paywall/PlanCard';
+import PaywallFeatureList from '../../paywall/PaywallFeatureList';
+import type {
+  PaywallChartDirection,
+  PaywallPersonalization,
+} from '../../../lib/paywallPersonalization';
 
-const PRO_GOLD = '#F4C96D';
-const PRO_GOLD_SOFT = '#FFF3CF';
-const PRO_INK = '#101A2E';
 const PRO_BLUE = '#2458D6';
 const TERMS_URL = 'https://www.tryazora.app/terms';
 const PRIVACY_URL = 'https://www.tryazora.app/privacy';
+const STEP_COUNT = 3;
 
 interface OnboardingPaywallScreenProps {
   offering: PaywallOffering | null;
@@ -41,8 +59,7 @@ interface OnboardingPaywallScreenProps {
   isPurchasing: boolean;
   isRestoring: boolean;
   errorMessage: string | null;
-  title?: string;
-  subtitle?: string;
+  personalization?: PaywallPersonalization | null;
   continueWithoutProLabel?: string;
   onSelectPackage: (packageId: PaywallPackageId) => void;
   onPurchase: () => void;
@@ -58,8 +75,7 @@ export default function OnboardingPaywallScreen({
   isPurchasing,
   isRestoring,
   errorMessage,
-  title = 'Azora Pro',
-  subtitle = 'Heart data, unlimited sessions, personalized plans, and progress insights.',
+  personalization,
   continueWithoutProLabel = 'Continue free',
   onSelectPackage,
   onPurchase,
@@ -69,17 +85,23 @@ export default function OnboardingPaywallScreen({
 }: OnboardingPaywallScreenProps) {
   const { height: windowHeight } = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  const selectedPackage = offering?.packages.find(
-    (pkg) => pkg.id === selectedPackageId,
-  );
-  const annualPackage = offering?.packages.find((pkg) => pkg.id === 'annual');
-  const weeklyPackage = offering?.packages.find((pkg) => pkg.id === 'weekly');
-  const isAnnualSelected = selectedPackageId === 'annual';
-  const isBusy = isLoading || isPurchasing || isRestoring;
+  const [step, setStep] = useState(0);
+  const stepAnim = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(18)).current;
   const exitSlideAnim = useRef(new Animated.Value(0)).current;
   const [isExiting, setIsExiting] = useState(false);
+
+  const selectedPackage = offering?.packages.find((pkg) => pkg.id === selectedPackageId);
+  const annualPackage = offering?.packages.find((pkg) => pkg.id === 'annual');
+  const weeklyPackage = offering?.packages.find((pkg) => pkg.id === 'weekly');
+  const isAnnualSelected = selectedPackageId === 'annual';
+  const isBusy = isLoading || isPurchasing || isRestoring;
+
+  const savingsPercent = useMemo(
+    () => computeAnnualSavings(annualPackage, weeklyPackage),
+    [annualPackage, weeklyPackage],
+  );
 
   useEffect(() => {
     Animated.parallel([
@@ -98,13 +120,32 @@ export default function OnboardingPaywallScreen({
     ]).start();
   }, [fadeAnim, slideAnim]);
 
-  const ctaLabel = isAnnualSelected && selectedPackage?.trialLabel
-    ? 'Start my free trial'
-    : 'Continue with weekly';
-  const timelineSteps = getAnnualTrialSteps();
+  const animateToStep = useCallback(
+    (next: number) => {
+      Animated.timing(stepAnim, {
+        toValue: 0,
+        duration: 180,
+        easing: Easing.in(Easing.cubic),
+        useNativeDriver: true,
+      }).start(() => {
+        setStep(next);
+        Animated.timing(stepAnim, {
+          toValue: 1,
+          duration: 260,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }).start();
+      });
+    },
+    [stepAnim],
+  );
+
+  useEffect(() => {
+    stepAnim.setValue(1);
+  }, [stepAnim]);
+
   const handleContinueWithoutPro = useCallback(() => {
     if (isBusy || isExiting) return;
-
     setIsExiting(true);
     Animated.timing(exitSlideAnim, {
       toValue: windowHeight,
@@ -112,44 +153,71 @@ export default function OnboardingPaywallScreen({
       easing: Easing.in(Easing.cubic),
       useNativeDriver: true,
     }).start(({ finished }) => {
-      if (finished) {
-        onContinueWithoutPro();
-      }
+      if (finished) onContinueWithoutPro();
     });
-  }, [
-    exitSlideAnim,
-    isBusy,
-    isExiting,
-    onContinueWithoutPro,
-    windowHeight,
-  ]);
+  }, [exitSlideAnim, isBusy, isExiting, onContinueWithoutPro, windowHeight]);
+
+  const handleNext = useCallback(() => {
+    if (step < STEP_COUNT - 1) animateToStep(step + 1);
+  }, [animateToStep, step]);
+
+  const handleBack = useCallback(() => {
+    if (step > 0) animateToStep(step - 1);
+  }, [animateToStep, step]);
+
+  const ctaLabel = isAnnualSelected && selectedPackage?.trialLabel
+    ? 'Start my 3-day free trial'
+    : 'Continue with weekly';
+
+  const stepContentTranslate = stepAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [14, 0],
+  });
 
   return (
-    <Animated.View
-      style={[
-        styles.screen,
-        { transform: [{ translateY: exitSlideAnim }] },
-      ]}
-    >
+    <Animated.View style={[styles.screen, { transform: [{ translateY: exitSlideAnim }] }]}>
       <SafeAreaView
         style={[styles.screenBody, { paddingTop: insets.top + spacing.sm }]}
         edges={['left', 'right']}
       >
         <View style={styles.header}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Close paywall"
-            hitSlop={12}
-            disabled={isBusy || isExiting}
-            onPress={handleContinueWithoutPro}
-            style={({ pressed }) => [
-              styles.closeButton,
-              pressed && styles.subtlePressed,
-              (isBusy || isExiting) && styles.disabled,
-            ]}
-          >
-            <Text style={styles.closeText}>×</Text>
-          </Pressable>
+          {step > 0 ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Go back"
+              hitSlop={12}
+              disabled={isBusy || isExiting}
+              onPress={handleBack}
+              style={({ pressed }) => [
+                styles.headerButton,
+                pressed && styles.subtlePressed,
+                (isBusy || isExiting) && styles.disabled,
+              ]}
+            >
+              <Text style={styles.backText}>‹</Text>
+            </Pressable>
+          ) : (
+            <View style={styles.headerButton} />
+          )}
+          <StepDots count={STEP_COUNT} current={step} />
+          {step === STEP_COUNT - 1 ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Close paywall"
+              hitSlop={12}
+              disabled={isBusy || isExiting}
+              onPress={handleContinueWithoutPro}
+              style={({ pressed }) => [
+                styles.headerButton,
+                pressed && styles.subtlePressed,
+                (isBusy || isExiting) && styles.disabled,
+              ]}
+            >
+              <Text style={styles.closeText}>×</Text>
+            </Pressable>
+          ) : (
+            <View style={styles.headerButton} />
+          )}
         </View>
 
         <ScrollView
@@ -160,108 +228,39 @@ export default function OnboardingPaywallScreen({
           <Animated.View
             style={[
               styles.content,
-              { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
+              {
+                opacity: fadeAnim,
+                transform: [{ translateY: slideAnim }],
+              },
             ]}
           >
-            <LinearGradient
-              colors={[PRO_INK, PRO_BLUE, colors.primary.blue600]}
-              start={{ x: 0.06, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.hero}
+            <Animated.View
+              style={{
+                opacity: stepAnim,
+                transform: [{ translateY: stepContentTranslate }],
+              }}
             >
-              <View style={[styles.heroSparkle, styles.heroSparkleTop]}>
-                <MaterialCommunityIcons
-                  name="star-four-points"
-                  size={14}
-                  color={PRO_GOLD}
-                />
-              </View>
-              <View style={[styles.heroSparkle, styles.heroSparkleBottom]}>
-                <MaterialCommunityIcons
-                  name="star-four-points"
-                  size={10}
-                  color={colors.text.inverse}
-                />
-              </View>
-              <View style={styles.appIconBadge}>
-                <MaterialCommunityIcons
-                  name="weather-windy"
-                  size={34}
-                  color={PRO_INK}
-                />
-              </View>
-              <View style={styles.proPill}>
-                <MaterialCommunityIcons
-                  name="crown-outline"
-                  size={13}
-                  color={PRO_GOLD}
-                />
-                <Text style={styles.proPillText}>PRO</Text>
-              </View>
-              <Text style={styles.title}>{title}</Text>
-              <Text style={styles.subtitle}>{subtitle}</Text>
-            </LinearGradient>
-
-            <View style={styles.planSection}>
-              <View style={styles.planTabs}>
-                {isLoading ? (
-                  <View style={styles.planLoading}>
-                    <ActivityIndicator color={colors.primary.blue600} />
-                  </View>
+              {step === 0 ? (
+                personalization ? (
+                  <StepPersonalizedPlan personalization={personalization} />
                 ) : (
-                  <>
-                    {annualPackage ? (
-                      <PlanTab
-                        pkg={annualPackage}
-                        isSelected={selectedPackageId === annualPackage.id}
-                        onSelectPackage={onSelectPackage}
-                      />
-                    ) : null}
-                    {weeklyPackage ? (
-                      <PlanTab
-                        pkg={weeklyPackage}
-                        isSelected={selectedPackageId === weeklyPackage.id}
-                        onSelectPackage={onSelectPackage}
-                      />
-                    ) : null}
-                  </>
-                )}
-              </View>
-              {!isLoading && selectedPackage ? (
-                <PlanPriceDetail pkg={selectedPackage} />
+                  <StepValue />
+                )
               ) : null}
-            </View>
+              {step === 1 ? <StepTrial /> : null}
+              {step === 2 ? (
+                <StepChoose
+                  isLoading={isLoading}
+                  annualPackage={annualPackage}
+                  weeklyPackage={weeklyPackage}
+                  selectedPackageId={selectedPackageId}
+                  onSelectPackage={onSelectPackage}
+                  savingsPercent={savingsPercent}
+                />
+              ) : null}
+            </Animated.View>
 
-            {isAnnualSelected ? (
-              <View style={styles.timeline}>
-                {timelineSteps.map((step, index) => (
-                  <TimelineStep
-                    key={step.label}
-                    {...step}
-                    showLine={index < timelineSteps.length - 1}
-                  />
-                ))}
-              </View>
-            ) : (
-              <IncludedInPro />
-            )}
-
-            <Pressable
-              accessibilityRole="button"
-              disabled={isLoading || isPurchasing || isRestoring || isExiting}
-              onPress={onRestore}
-              style={({ pressed }) => [
-                styles.restoreButton,
-                pressed && styles.subtlePressed,
-                (isLoading || isPurchasing || isRestoring || isExiting) && styles.disabled,
-              ]}
-            >
-              <Text style={styles.restoreText}>
-                {isRestoring ? 'Restoring...' : 'Restore Purchase'}
-              </Text>
-            </Pressable>
-
-            {errorMessage ? (
+            {step === 2 && errorMessage ? (
               <View style={styles.errorBlock}>
                 <Text style={styles.error}>{errorMessage}</Text>
                 <Pressable
@@ -282,85 +281,327 @@ export default function OnboardingPaywallScreen({
         </ScrollView>
 
         <View style={styles.footer}>
-          <OnboardingPrimaryButton
-            label={ctaLabel}
-            onPress={onPurchase}
-            loading={isPurchasing}
-            disabled={isLoading || selectedPackage == null || isRestoring || isExiting}
-          />
-          <Pressable
-            accessibilityRole="button"
-            disabled={isBusy || isExiting}
-            onPress={handleContinueWithoutPro}
-            style={({ pressed }) => [
-              styles.freeButton,
-              pressed && styles.subtlePressed,
-              (isBusy || isExiting) && styles.disabled,
-            ]}
-          >
-            <Text style={styles.freeButtonText}>{continueWithoutProLabel}</Text>
-          </Pressable>
-          <Text style={styles.legal}>
-            Auto-renews unless cancelled. Manage or cancel in App Store settings. By continuing,
-            you agree to the{' '}
-            <Text style={styles.legalLink} onPress={() => void Linking.openURL(TERMS_URL)}>
-              Terms
-            </Text>{' '}
-            and acknowledge the{' '}
-            <Text style={styles.legalLink} onPress={() => void Linking.openURL(PRIVACY_URL)}>
-              Privacy Policy
-            </Text>
-            .
-          </Text>
+          {step < STEP_COUNT - 1 ? (
+            <OnboardingPrimaryButton
+              label="Continue"
+              onPress={handleNext}
+              disabled={isExiting}
+            />
+          ) : (
+            <>
+              <OnboardingPrimaryButton
+                label={ctaLabel}
+                onPress={onPurchase}
+                loading={isPurchasing}
+                disabled={isLoading || selectedPackage == null || isRestoring || isExiting}
+              />
+              <Pressable
+                accessibilityRole="button"
+                disabled={isLoading || isPurchasing || isRestoring || isExiting}
+                onPress={onRestore}
+                style={({ pressed }) => [
+                  styles.restoreButton,
+                  pressed && styles.subtlePressed,
+                  (isLoading || isPurchasing || isRestoring || isExiting) && styles.disabled,
+                ]}
+              >
+                <Text style={styles.restoreText}>
+                  {isRestoring ? 'Restoring...' : 'Restore Purchase'}
+                </Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                disabled={isBusy || isExiting}
+                onPress={handleContinueWithoutPro}
+                style={({ pressed }) => [
+                  styles.freeButton,
+                  pressed && styles.subtlePressed,
+                  (isBusy || isExiting) && styles.disabled,
+                ]}
+              >
+                <Text style={styles.freeButtonText}>{continueWithoutProLabel}</Text>
+              </Pressable>
+              <Text style={styles.legal}>
+                Auto-renews unless cancelled. Manage or cancel in App Store settings. By
+                continuing, you agree to the{' '}
+                <Text style={styles.legalLink} onPress={() => void Linking.openURL(TERMS_URL)}>
+                  Terms
+                </Text>{' '}
+                and acknowledge the{' '}
+                <Text style={styles.legalLink} onPress={() => void Linking.openURL(PRIVACY_URL)}>
+                  Privacy Policy
+                </Text>
+                .
+              </Text>
+            </>
+          )}
         </View>
       </SafeAreaView>
     </Animated.View>
   );
 }
 
-interface PlanTabProps {
-  pkg: PaywallPackageOption;
-  isSelected: boolean;
-  onSelectPackage: (packageId: PaywallPackageId) => void;
-}
+function StepValue() {
+  const benefits: Array<{
+    icon: IconName;
+    title: string;
+    body: string;
+    accent: string;
+    accentSoft: string;
+  }> = [
+    {
+      icon: 'heart',
+      title: 'Heart data insights',
+      body: 'Heart rate, HRV, stress, and recovery in one place.',
+      accent: colors.primary.blue500,
+      accentSoft: colors.primary.blue100,
+    },
+    {
+      icon: 'timer',
+      title: 'Unlimited sessions',
+      body: 'Measure and train as often as you want — no caps.',
+      accent: colors.primary.blue700,
+      accentSoft: colors.primary.blue100,
+    },
+    {
+      icon: 'sparkle',
+      title: 'Personalized plan',
+      body: 'Guidance shaped around your baseline and goals.',
+      accent: colors.primary.blue600,
+      accentSoft: colors.primary.blue100,
+    },
+  ];
 
-function PlanTab({ pkg, isSelected, onSelectPackage }: PlanTabProps) {
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityState={{ selected: isSelected }}
-      onPress={() => onSelectPackage(pkg.id)}
-      style={({ pressed }) => [
-        styles.planTab,
-        isSelected && styles.planTabSelected,
-        pressed && styles.planTabPressed,
-      ]}
-    >
-      <Text style={[styles.planTabText, isSelected && styles.planTabTextSelected]}>
-        {pkg.id === 'annual' ? 'Annual' : 'Weekly'}
-      </Text>
-    </Pressable>
+    <View style={styles.stepContainer}>
+      <View style={styles.valueHeader}>
+        <View style={styles.valueProPill}>
+          <View style={styles.valueProDot} />
+          <Text style={styles.valueProPillText}>PRO MEMBERSHIP</Text>
+        </View>
+        <Text style={styles.valueTitle}>Azora Pro</Text>
+        <View style={styles.valueTitleUnderline} />
+        <Text style={styles.valueSubtitle}>
+          Heart data, unlimited sessions, and a plan built around you.
+        </Text>
+      </View>
+
+      <View style={styles.valueGrid}>
+        {benefits.map((benefit) => (
+          <View key={benefit.title} style={styles.valueTile}>
+            <View style={[styles.valueTileIcon, { backgroundColor: benefit.accent }]}>
+              <Icon name={benefit.icon} size={22} color={colors.text.inverse} />
+            </View>
+            <View style={styles.valueTileCopy}>
+              <Text style={styles.valueTileTitle}>{benefit.title}</Text>
+              <Text style={styles.valueTileBody}>{benefit.body}</Text>
+            </View>
+          </View>
+        ))}
+      </View>
+    </View>
   );
 }
 
-interface PlanPriceDetailProps {
-  pkg: PaywallPackageOption;
+function StepPersonalizedPlan({
+  personalization,
+}: {
+  personalization: PaywallPersonalization;
+}) {
+  return (
+    <View style={styles.stepContainer}>
+      <View style={styles.valueHeader}>
+        <View style={styles.valueProPill}>
+          <View style={styles.valueProDot} />
+          <Text style={styles.valueProPillText}>YOUR PLAN</Text>
+        </View>
+        <Text style={styles.planHeadline}>Your custom plan is ready!</Text>
+        <View style={styles.valueTitleUnderline} />
+        <Text style={styles.valueSubtitle}>{personalization.headline}</Text>
+      </View>
+
+      <View style={styles.planTargetCard}>
+        <Text style={styles.planMetricLabel}>{personalization.metricLabel}</Text>
+        <PlanProgressChart direction={personalization.chartDirection} />
+        <View style={styles.planTargetRow}>
+          <View style={styles.planTargetCol}>
+            <Text style={styles.planTargetValue}>{personalization.baselineValue}</Text>
+            <Text style={styles.planTargetCaption}>{personalization.baselineCaption}</Text>
+          </View>
+          <View style={styles.planTargetArrowWrap}>
+            <Text style={styles.planTargetArrow}>›</Text>
+          </View>
+          <View style={styles.planTargetCol}>
+            <Text style={[styles.planTargetValue, styles.planTargetValueAccent]}>
+              {personalization.targetValue}
+            </Text>
+            <Text style={styles.planTargetCaption}>{personalization.targetCaption}</Text>
+          </View>
+        </View>
+      </View>
+
+      <View style={styles.valueGrid}>
+        <View style={styles.valueTile}>
+          <View style={[styles.valueTileIcon, { backgroundColor: colors.primary.blue600 }]}>
+            <Icon name="breath-timer" size={22} color={colors.text.inverse} />
+          </View>
+          <View style={styles.valueTileCopy}>
+            <Text style={styles.valueTileTitle}>
+              {personalization.techniqueName} · {personalization.dailyMinutes} min/day
+            </Text>
+            <Text style={styles.valueTileBody}>{personalization.techniqueWhy}</Text>
+          </View>
+        </View>
+        <View style={styles.valueTile}>
+          <View style={[styles.valueTileIcon, { backgroundColor: colors.orange[500] }]}>
+            <Icon name="streak" size={22} color={colors.text.inverse} />
+          </View>
+          <View style={styles.valueTileCopy}>
+            <Text style={styles.valueTileTitle}>Daily challenge</Text>
+            <Text style={styles.valueTileBody}>{personalization.challenge}</Text>
+          </View>
+        </View>
+      </View>
+    </View>
+  );
 }
 
-function PlanPriceDetail({ pkg }: PlanPriceDetailProps) {
-  const priceLine =
-    pkg.id === 'annual'
-      ? `${pkg.priceString}/year`
-      : `${pkg.priceString}/week`;
-  const detailLine =
-    pkg.id === 'annual'
-      ? '3 days free'
-      : 'No free trial';
+function PlanProgressChart({ direction }: { direction: PaywallChartDirection }) {
+  const stroke = colors.primary.blue600;
+  const startFill = direction === 'down' ? colors.error[500] : colors.neutral[400];
+  const linePath =
+    direction === 'down'
+      ? 'M2,8 C22,10 38,22 60,30 S88,38 98,36'
+      : 'M2,36 C12,34 28,24 42,14 S72,4 98,8';
+  const fillPath = `${linePath} L98,42 L2,42 Z`;
+  const startPoint = direction === 'down' ? { x: 2, y: 8 } : { x: 2, y: 36 };
+  const endPoint = direction === 'down' ? { x: 98, y: 36 } : { x: 98, y: 8 };
 
   return (
-    <View style={styles.planPriceDetail}>
-      <Text style={styles.planPriceDetailPrice}>{priceLine}</Text>
-      <Text style={styles.planPriceDetailTrial}>{detailLine}</Text>
+    <View style={styles.planChartWrap}>
+      <Svg
+        width="100%"
+        height="100%"
+        viewBox="0 0 100 44"
+        preserveAspectRatio="none"
+      >
+        <Defs>
+          <SvgLinearGradient id="planChartFill" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor={stroke} stopOpacity="0.18" />
+            <Stop offset="1" stopColor={stroke} stopOpacity="0" />
+          </SvgLinearGradient>
+        </Defs>
+        <Path d={fillPath} fill="url(#planChartFill)" />
+        <Path
+          d={linePath}
+          stroke={stroke}
+          strokeWidth={2.4}
+          strokeLinecap="round"
+          fill="none"
+        />
+        <Circle cx={startPoint.x} cy={startPoint.y} r={3} fill={startFill} />
+        <Circle cx={endPoint.x} cy={endPoint.y} r={3.5} fill={stroke} />
+      </Svg>
+    </View>
+  );
+}
+
+function StepTrial() {
+  const steps: Array<Omit<TimelineStepProps, 'showLine'>> = [
+    {
+      icon: 'sparkle',
+      label: 'Today',
+      title: 'Unlock everything',
+      body: 'Start your 3-day free trial — all Pro features unlocked instantly.',
+    },
+    {
+      icon: 'timer',
+      label: 'Day 2',
+      title: "We'll send a reminder",
+      body: "You'll get a notification before your trial converts to a paid plan.",
+    },
+    {
+      icon: 'heart',
+      label: 'Day 3',
+      title: 'Cancel anytime',
+      body: 'Cancel in App Store settings up to the moment billing starts.',
+    },
+  ];
+
+  return (
+    <View style={styles.stepContainer}>
+      <View style={styles.stepHeader}>
+        <Text style={styles.stepEyebrow}>How the trial works</Text>
+        <Text style={styles.stepTitle}>3 days free, fully cancellable</Text>
+        <Text style={styles.stepSubtitle}>
+          You won&apos;t be charged until day 3 — and we&apos;ll always remind you first.
+        </Text>
+      </View>
+      <View style={styles.timeline}>
+        {steps.map((step, index) => (
+          <TimelineStep
+            key={step.label}
+            {...step}
+            showLine={index < steps.length - 1}
+          />
+        ))}
+      </View>
+    </View>
+  );
+}
+
+interface StepChooseProps {
+  isLoading: boolean;
+  annualPackage: PaywallPackageOption | undefined;
+  weeklyPackage: PaywallPackageOption | undefined;
+  selectedPackageId: PaywallPackageId;
+  onSelectPackage: (packageId: PaywallPackageId) => void;
+  savingsPercent: number | null;
+}
+
+function StepChoose({
+  isLoading,
+  annualPackage,
+  weeklyPackage,
+  selectedPackageId,
+  onSelectPackage,
+  savingsPercent,
+}: StepChooseProps) {
+  return (
+    <View style={styles.stepContainer}>
+      <View style={styles.stepHeader}>
+        <Text style={styles.stepEyebrow}>Choose your plan</Text>
+        <Text style={styles.stepTitle}>Begin your practice today</Text>
+      </View>
+
+      <PaywallFeatureList />
+
+      {savingsPercent != null ? <UrgencyBanner percent={savingsPercent} /> : null}
+
+      {isLoading ? (
+        <View style={styles.cardsLoading}>
+          <ActivityIndicator color={colors.primary.blue600} />
+        </View>
+      ) : (
+        <View style={styles.planCards}>
+          {annualPackage ? (
+            <PlanCard
+              pkg={annualPackage}
+              isSelected={selectedPackageId === 'annual'}
+              onSelect={onSelectPackage}
+              savingsPercent={savingsPercent}
+            />
+          ) : null}
+          {weeklyPackage ? (
+            <PlanCard
+              pkg={weeklyPackage}
+              isSelected={selectedPackageId === 'weekly'}
+              onSelect={onSelectPackage}
+              savingsPercent={null}
+            />
+          ) : null}
+        </View>
+      )}
     </View>
   );
 }
@@ -373,13 +614,7 @@ interface TimelineStepProps {
   showLine?: boolean;
 }
 
-function TimelineStep({
-  icon,
-  label,
-  title,
-  body,
-  showLine = false,
-}: TimelineStepProps) {
+function TimelineStep({ icon, label, title, body, showLine = false }: TimelineStepProps) {
   return (
     <View style={styles.timelineRow}>
       <View style={styles.timelineRail}>
@@ -397,68 +632,18 @@ function TimelineStep({
   );
 }
 
-function getAnnualTrialSteps(): Omit<TimelineStepProps, 'showLine'>[] {
-  return [
-    {
-      icon: 'sparkle',
-      label: 'Today',
-      title: 'Unlock Azora Pro',
-      body: 'Start your 3-day free trial for Azora Pro today.',
-    },
-    {
-      icon: 'timer',
-      label: 'Day 3',
-      title: "We'll send you a reminder",
-      body: 'We’ll remind you before annual billing begins.',
-    },
-    {
-      icon: 'heart',
-      label: 'Anytime',
-      title: 'Cancel anytime',
-      body: 'Manage or cancel in App Store settings whenever you want.',
-    },
-  ];
-}
-
-function IncludedInPro() {
-  const benefits: Array<{ icon: IconName; title: string; body: string }> = [
-    {
-      icon: 'heart',
-      title: 'Heart data insights',
-      body: 'See heart-rate, HRV, and stress signals in one place.',
-    },
-    {
-      icon: 'timer',
-      title: 'Unlimited heart-rate sessions',
-      body: 'Measure as often as you want without session limits.',
-    },
-    {
-      icon: 'sparkle',
-      title: 'Personalized plan',
-      body: 'Get guidance shaped around your baseline and goals.',
-    },
-    {
-      icon: 'journal',
-      title: 'Progress insights',
-      body: 'Track patterns over time and understand what is changing.',
-    },
-  ];
-
+function StepDots({ count, current }: { count: number; current: number }) {
   return (
-    <View style={styles.includedList}>
-      {benefits.map((benefit, index) => (
-        <View key={benefit.title}>
-            <View style={styles.includedRow}>
-            <View style={styles.includedIcon}>
-              <Icon name={benefit.icon} size={20} color={colors.text.inverse} />
-            </View>
-            <View style={styles.includedCopy}>
-              <Text style={styles.includedItemTitle}>{benefit.title}</Text>
-              <Text style={styles.includedItemBody}>{benefit.body}</Text>
-            </View>
-          </View>
-          {index < benefits.length - 1 ? <View style={styles.includedDivider} /> : null}
-        </View>
+    <View style={styles.stepDots}>
+      {Array.from({ length: count }, (_, i) => (
+        <View
+          key={i}
+          style={[
+            styles.stepDot,
+            i === current && styles.stepDotActive,
+            i < current && styles.stepDotPast,
+          ]}
+        />
       ))}
     </View>
   );
@@ -474,22 +659,48 @@ const styles = StyleSheet.create({
   },
   header: {
     minHeight: 56,
-    alignItems: 'flex-end',
-    justifyContent: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: spacing.lg,
   },
-  closeButton: {
+  headerButton: {
     width: 36,
     height: 36,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  backText: {
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    fontSize: 34,
+    lineHeight: 34,
+    color: colors.text.primary,
+  },
   closeText: {
     fontFamily: fonts.semibold,
     fontWeight: '600',
-    fontSize: 36,
-    lineHeight: 36,
-    color: colors.neutral[900],
+    fontSize: 32,
+    lineHeight: 32,
+    color: colors.text.primary,
+  },
+  stepDots: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  stepDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.neutral[300],
+  },
+  stepDotPast: {
+    backgroundColor: colors.neutral[400],
+  },
+  stepDotActive: {
+    width: 22,
+    backgroundColor: PRO_INK,
   },
   scroll: {
     flex: 1,
@@ -499,155 +710,193 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xl,
   },
   content: {
+    gap: spacing.lg,
+  },
+  stepContainer: {
     gap: spacing.xl,
   },
-  hero: {
-    alignItems: 'center',
-    gap: spacing.sm,
-    borderRadius: 30,
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.xl,
-    paddingBottom: spacing.xl,
-    overflow: 'hidden',
-    shadowColor: PRO_BLUE,
-    shadowOffset: { width: 0, height: 14 },
-    shadowOpacity: 0.18,
-    shadowRadius: 28,
-    elevation: 8,
-  },
-  heroSparkle: {
-    position: 'absolute',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 999,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#FFFFFF66',
-    backgroundColor: '#FFFFFF1F',
-  },
-  heroSparkleTop: {
-    top: 24,
-    right: 34,
-    width: 34,
-    height: 34,
-  },
-  heroSparkleBottom: {
-    left: 34,
-    bottom: 28,
-    width: 26,
-    height: 26,
-  },
-  appIconBadge: {
-    width: 66,
-    height: 66,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: PRO_GOLD_SOFT,
-    borderWidth: 1,
-    borderColor: '#FFFFFF99',
-    shadowColor: colors.neutral[900],
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.22,
-    shadowRadius: 18,
-    elevation: 6,
-  },
-  proPill: {
-    flexDirection: 'row',
+  stepHeader: {
     alignItems: 'center',
     gap: spacing.xs,
-    borderRadius: 999,
     paddingHorizontal: spacing.sm,
-    paddingVertical: 5,
-    backgroundColor: '#FFFFFF1F',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: '#FFFFFF70',
-    marginTop: spacing.xs,
   },
-  proPillText: {
+  stepEyebrow: {
     ...typography.caption.caption1,
-    fontFamily: fonts.bold,
-    fontWeight: '700',
-    color: colors.text.inverse,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    color: colors.text.brand,
     letterSpacing: 1.2,
+    textTransform: 'uppercase',
   },
-  title: {
+  stepTitle: {
     ...typography.display.display3,
     fontFamily: fonts.semibold,
     fontWeight: '600',
+    color: colors.text.primary,
     textAlign: 'center',
-    color: colors.text.inverse,
-    letterSpacing: 0,
   },
-  subtitle: {
+  stepSubtitle: {
     ...typography.body.medium,
+    color: colors.text.secondary,
     textAlign: 'center',
-    color: '#EAF2FF',
   },
-  planTabs: {
-    alignSelf: 'center',
-    flexDirection: 'row',
-    borderRadius: 999,
-    padding: 4,
-    backgroundColor: colors.background.elevated,
-    borderWidth: 1,
-    borderColor: colors.border.subtle,
-  },
-  planLoading: {
-    minWidth: 160,
-    minHeight: 42,
+  valueHeader: {
     alignItems: 'center',
-    justifyContent: 'center',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.sm,
   },
-  planSection: {
+  valueProPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderRadius: 999,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 5,
+    backgroundColor: colors.primary.blue100,
+    marginBottom: spacing.xs,
+  },
+  valueProDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.primary.blue600,
+  },
+  valueProPillText: {
+    ...typography.caption.caption2,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    color: colors.primary.blue700,
+    letterSpacing: 1.6,
+  },
+  valueTitle: {
+    ...typography.display.display1,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    color: colors.text.primary,
+    textAlign: 'center',
+    letterSpacing: -0.6,
+  },
+  valueTitleUnderline: {
+    width: 56,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: colors.primary.blue600,
+    marginTop: spacing.xs,
+    marginBottom: spacing.xs,
+  },
+  planHeadline: {
+    ...typography.display.display3,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    color: colors.text.primary,
+    textAlign: 'center',
+    letterSpacing: -0.3,
+  },
+  planTargetCard: {
+    ...card.base,
+    ...card.shadow,
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.md,
+    backgroundColor: colors.background.elevated,
     alignItems: 'center',
     gap: spacing.sm,
   },
-  planTab: {
-    minWidth: 94,
-    minHeight: 42,
-    borderRadius: 999,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-  },
-  planTabSelected: {
-    backgroundColor: PRO_INK,
-  },
-  planTabPressed: {
-    opacity: 0.8,
-  },
-  planTabText: {
-    ...typography.button.medium,
+  planMetricLabel: {
+    ...typography.caption.caption2,
     fontFamily: fonts.semibold,
     fontWeight: '600',
-    color: colors.text.secondary,
+    color: colors.text.brand,
+    letterSpacing: 1.4,
+    textTransform: 'uppercase',
   },
-  planTabPrice: {
-    ...typography.caption.caption1,
-    color: colors.text.secondary,
-    marginTop: 2,
+  planChartWrap: {
+    alignSelf: 'stretch',
+    height: 72,
+    paddingHorizontal: spacing.xs,
   },
-  planTabTextSelected: {
-    color: PRO_GOLD_SOFT,
+  planTargetRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    alignSelf: 'stretch',
+    paddingHorizontal: spacing.md,
   },
-  planPriceDetail: {
+  planTargetCol: {
+    flex: 1,
     alignItems: 'center',
     gap: 2,
   },
-  planPriceDetailPrice: {
+  planTargetValue: {
+    ...typography.display.display2,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    color: colors.text.secondary,
+    letterSpacing: -0.6,
+  },
+  planTargetValueAccent: {
+    color: colors.primary.blue600,
+  },
+  planTargetCaption: {
+    ...typography.caption.caption1,
+    color: colors.text.tertiary,
+  },
+  planTargetArrowWrap: {
+    paddingHorizontal: spacing.sm,
+  },
+  planTargetArrow: {
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    fontSize: 36,
+    lineHeight: 36,
+    color: colors.primary.blue600,
+  },
+  valueSubtitle: {
     ...typography.body.medium,
+    color: colors.text.secondary,
+    textAlign: 'center',
+    paddingHorizontal: spacing.md,
+  },
+  valueGrid: {
+    gap: spacing.sm,
+  },
+  valueTile: {
+    ...card.base,
+    ...card.shadow,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    backgroundColor: colors.background.elevated,
+  },
+  valueTileIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: colors.neutral[900],
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    elevation: 3,
+  },
+  valueTileCopy: {
+    flex: 1,
+  },
+  valueTileTitle: {
+    ...typography.heading.heading2,
     fontFamily: fonts.semibold,
     fontWeight: '600',
     color: colors.text.primary,
   },
-  planPriceDetailTrial: {
-    ...typography.caption.caption2,
-    color: colors.text.tertiary,
+  valueTileBody: {
+    ...typography.body.small,
+    color: colors.text.secondary,
+    marginTop: 2,
   },
   timeline: {
     alignSelf: 'stretch',
-    gap: 0,
     paddingHorizontal: spacing.md,
   },
   timelineRow: {
@@ -664,15 +913,13 @@ const styles = StyleSheet.create({
     borderRadius: 21,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: PRO_INK,
-    borderWidth: 1,
-    borderColor: PRO_GOLD,
+    backgroundColor: colors.primary.blue600,
   },
   timelineLine: {
-    width: 8,
+    width: 6,
     flex: 1,
-    minHeight: 70,
-    backgroundColor: PRO_GOLD_SOFT,
+    minHeight: 56,
+    backgroundColor: colors.primary.blue100,
   },
   timelineCopy: {
     flex: 1,
@@ -692,8 +939,18 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   timelineBody: {
-    ...typography.body.medium,
+    ...typography.body.small,
     color: colors.text.secondary,
+    marginTop: 2,
+  },
+  cardsLoading: {
+    minHeight: 180,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  planCards: {
+    gap: spacing.sm,
+    marginTop: spacing.xs,
   },
   restoreButton: {
     alignSelf: 'center',
@@ -705,44 +962,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semibold,
     fontWeight: '600',
     color: colors.text.brand,
-  },
-  includedList: {
-    paddingHorizontal: spacing.sm,
-  },
-  includedRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  includedIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: PRO_INK,
-    borderWidth: 1,
-    borderColor: PRO_GOLD,
-  },
-  includedCopy: {
-    flex: 1,
-  },
-  includedItemTitle: {
-    ...typography.heading.heading2,
-    fontFamily: fonts.semibold,
-    fontWeight: '600',
-    color: colors.text.primary,
-  },
-  includedItemBody: {
-    ...typography.body.medium,
-    color: colors.text.secondary,
-  },
-  includedDivider: {
-    height: StyleSheet.hairlineWidth,
-    marginLeft: 58,
-    marginTop: spacing.md,
-    marginBottom: spacing.md,
-    backgroundColor: colors.border.subtle,
   },
   errorBlock: {
     alignItems: 'center',
@@ -773,9 +992,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.sm,
     paddingBottom: spacing.lg,
-    backgroundColor: colors.background.elevated,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border.subtle,
+    backgroundColor: colors.background.primary,
   },
   freeButton: {
     alignSelf: 'center',
