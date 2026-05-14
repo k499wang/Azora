@@ -124,7 +124,7 @@ function RecentHeartRateList({
         subtitle={
           hasError
             ? 'Stats could not load from Supabase.'
-            : 'Press the blue circle button on the menu bar to measure your heart rate.'
+            : 'Press the circle button on the bottom right to measure your heart rate.'
         }
       />
     );
