@@ -371,7 +371,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    paddingBottom: spacing['5xl'],
+    paddingBottom: spacing['7xl'] + spacing.xl,
   },
   topSection: {
     paddingTop: spacing.md,
