@@ -131,14 +131,19 @@ export default function LineGraph({
     };
   }, [data, height, containerWidth, highlightIndex]);
 
-  if (data.length === 0) return null;
-
   return (
     <View style={styles.wrapper}>
       {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
 
       <View style={styles.container} onLayout={onLayout}>
-        {chart ? (
+        {data.length === 0 ? (
+          <View style={[styles.emptyChart, { height }]}>
+            <Text style={styles.emptyTitle}>No holds yet</Text>
+            <Text style={styles.emptyBody}>
+              Complete your first breath hold to start tracking your progress.
+            </Text>
+          </View>
+        ) : chart ? (
           <View style={[styles.chartArea, { height }]}>
             <Svg width={containerWidth} height={height}>
               <Defs>
@@ -270,6 +275,22 @@ const styles = StyleSheet.create({
     height: 160,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  emptyChart: {
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.lg,
+    gap: spacing.xs,
+  },
+  emptyTitle: {
+    ...typography.label.large,
+    color: colors.text.primary,
+  },
+  emptyBody: {
+    ...typography.body.small,
+    color: colors.text.tertiary,
+    textAlign: 'center',
   },
   placeholderText: {
     ...typography.body.small,

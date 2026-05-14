@@ -20,7 +20,6 @@ export default function ProfileIdentityCard({
   return (
     <View style={styles.container}>
       <View style={styles.headerCopy}>
-        <Text style={styles.eyebrow}>Your profile</Text>
         <Text style={styles.name}>{displayName}</Text>
       </View>
 
@@ -123,14 +122,6 @@ const styles = StyleSheet.create({
   headerCopy: {
     alignItems: 'center',
     gap: spacing.xs,
-  },
-  eyebrow: {
-    ...typography.label.small,
-    color: colors.primary.blue600,
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-    fontFamily: fonts.semibold,
-    fontWeight: '700',
   },
   name: {
     ...typography.title.title3,

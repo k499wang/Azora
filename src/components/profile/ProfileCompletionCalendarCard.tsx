@@ -81,8 +81,6 @@ export default function ProfileCompletionCalendarCard({
 
   return (
     <View style={styles.card}>
-      <Text style={styles.title}>Completion calendar</Text>
-
       <View style={styles.monthRow}>
         <Text style={styles.monthLabel}>{monthLabel}</Text>
         <Text style={styles.monthMeta}>{completedDays.length} completed days</Text>
@@ -131,11 +129,6 @@ const styles = StyleSheet.create({
     ...card.shadow,
     padding: spacing.md,
     gap: spacing.md,
-  },
-  title: {
-    ...typography.heading.heading2,
-    color: colors.text.primary,
-    fontSize: 18,
   },
   monthRow: {
     flexDirection: 'row',

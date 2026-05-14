@@ -6,7 +6,6 @@ import { spacing } from '../../theme/spacing';
 import { card } from '../../theme/card';
 
 interface ProfileAccountCardProps {
-  email?: string;
   onOpenNotifications?: () => void;
   onOpenPrivacyPolicy?: () => void;
   onOpenTerms?: () => void;
@@ -63,7 +62,6 @@ function Row({ icon, label, detail, onPress, destructive, isLast }: RowProps) {
 }
 
 export default function ProfileAccountCard({
-  email,
   hapticsEnabled,
   onOpenNotifications,
   onOpenPrivacyPolicy,
@@ -75,14 +73,7 @@ export default function ProfileAccountCard({
 }: ProfileAccountCardProps) {
   return (
     <View style={styles.card}>
-      <View style={styles.headerRow}>
-        <Text style={styles.title}>Account & privacy</Text>
-      </View>
-
       <View style={styles.rowGroup}>
-        {email ? (
-          <Row icon="email-outline" label="Email" detail={email} />
-        ) : null}
         <Row
           icon="bell-outline"
           label="Notifications"
@@ -162,13 +153,6 @@ const styles = StyleSheet.create({
     ...card.shadow,
     padding: spacing.md,
     gap: spacing.md,
-  },
-  headerRow: {
-    gap: spacing.xs,
-  },
-  title: {
-    ...typography.title.title3,
-    color: colors.text.primary,
   },
   rowGroup: {
     gap: 0,
