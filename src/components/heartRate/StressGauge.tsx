@@ -13,8 +13,8 @@ import { spacing } from '../../theme/spacing';
 import { card } from '../../theme/card';
 
 interface StressGaugeProps {
-  value: number;
-  zone: { label: string; color: string };
+  value: number | null;
+  zone: { label: string; color: string } | null;
 }
 
 const SIZE = 220;
@@ -39,8 +39,9 @@ function tickPath(angleDeg: number) {
 }
 
 export default function StressGauge({ value, zone }: StressGaugeProps) {
-  const clamped = Math.max(0, Math.min(100, value));
-  const sweep = (clamped / 100) * SWEEP;
+  const hasValue = value != null && Number.isFinite(value);
+  const clamped = hasValue ? Math.max(0, Math.min(100, value)) : null;
+  const sweep = clamped != null ? (clamped / 100) * SWEEP : null;
 
   const rect = Skia.XYWHRect(CX - R, CY - R, R * 2, R * 2);
 
@@ -48,7 +49,9 @@ export default function StressGauge({ value, zone }: StressGaugeProps) {
   track.addArc(rect, START_ANGLE, SWEEP);
 
   const progress = Skia.Path.Make();
-  progress.addArc(rect, START_ANGLE, sweep);
+  if (sweep != null) {
+    progress.addArc(rect, START_ANGLE, sweep);
+  }
 
   const ticks = [0, 25, 50, 75, 100].map((t) =>
     tickPath(START_ANGLE + (t / 100) * SWEEP),
@@ -67,19 +70,21 @@ export default function StressGauge({ value, zone }: StressGaugeProps) {
             strokeCap="round"
             color={colors.neutral[100]}
           />
-          <Path
-            path={progress}
-            style="stroke"
-            strokeWidth={STROKE}
-            strokeCap="round"
-          >
-            <SweepGradient
-              c={vec(CX, CY)}
-              start={START_ANGLE}
-              end={START_ANGLE + SWEEP}
-              colors={[zone.color + '55', zone.color]}
-            />
-          </Path>
+          {zone != null ? (
+            <Path
+              path={progress}
+              style="stroke"
+              strokeWidth={STROKE}
+              strokeCap="round"
+            >
+              <SweepGradient
+                c={vec(CX, CY)}
+                start={START_ANGLE}
+                end={START_ANGLE + SWEEP}
+                colors={[zone.color + '55', zone.color]}
+              />
+            </Path>
+          ) : null}
           {ticks.map((p, i) => (
             <Path
               key={i}
@@ -99,15 +104,17 @@ export default function StressGauge({ value, zone }: StressGaugeProps) {
 
         <View style={styles.centerOverlay} pointerEvents="none">
           <View style={styles.valueRow}>
-            <Text style={styles.value}>{clamped}</Text>
+            <Text style={styles.value}>{clamped ?? '--'}</Text>
             <Text style={styles.valueMax}>/100</Text>
           </View>
-          <View style={[styles.zonePill, { borderColor: zone.color + '33' }]}>
-            <View style={[styles.zoneDot, { backgroundColor: zone.color }]} />
-            <Text style={[styles.zoneLabel, { color: zone.color }]}>
-              {zone.label}
-            </Text>
-          </View>
+          {zone != null ? (
+            <View style={[styles.zonePill, { borderColor: zone.color + '33' }]}>
+              <View style={[styles.zoneDot, { backgroundColor: zone.color }]} />
+              <Text style={[styles.zoneLabel, { color: zone.color }]}>
+                {zone.label}
+              </Text>
+            </View>
+          ) : null}
         </View>
       </View>
     </View>
@@ -149,11 +156,9 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
   },
   centerOverlay: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: SIZE / 2 - 44,
+    ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   valueRow: {
     flexDirection: 'row',

@@ -92,30 +92,24 @@ export default function RecoverySection({
 
       <ProLockedOverlay locked={locked} onPressUpgrade={onPressUpgrade}>
         <View style={styles.gaugeWrap}>
-          {stressValue == null ? (
-            <View style={styles.stressPlaceholder}>
-              <Text style={styles.stressPlaceholderTitle}>No stress score yet</Text>
-              <Text style={styles.stressPlaceholderText}>
-                Complete a tracked session with valid HRV to see this day&apos;s stress gauge.
-              </Text>
-            </View>
-          ) : (
-            <View style={styles.stressGaugeWrap}>
-              <Pressable
-                hitSlop={12}
-                disabled={locked}
-                onPress={() => Alert.alert(STRESS_INFO.title, STRESS_INFO.message)}
-                style={styles.stressInfoButton}
-              >
-                <MaterialCommunityIcons
-                  name="information-outline"
-                  size={16}
-                  color={colors.text.tertiary}
-                />
-              </Pressable>
-              <StressGauge value={stressValue} zone={getStressZone(stressValue)} />
-            </View>
-          )}
+          <View style={styles.stressGaugeWrap}>
+            <Pressable
+              hitSlop={12}
+              disabled={locked}
+              onPress={() => Alert.alert(STRESS_INFO.title, STRESS_INFO.message)}
+              style={styles.stressInfoButton}
+            >
+              <MaterialCommunityIcons
+                name="information-outline"
+                size={16}
+                color={colors.text.tertiary}
+              />
+            </Pressable>
+            <StressGauge
+              value={stressValue}
+              zone={stressValue == null ? null : getStressZone(stressValue)}
+            />
+          </View>
         </View>
 
         <View style={styles.insightCard}>
@@ -152,27 +146,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 2,
-  },
-  stressPlaceholder: {
-    ...card.base,
-    ...card.shadow,
-    minHeight: 160,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xs,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.lg,
-  },
-  stressPlaceholderTitle: {
-    ...typography.title.title3,
-    color: colors.text.primary,
-    textAlign: 'center',
-  },
-  stressPlaceholderText: {
-    ...typography.body.small,
-    color: colors.text.secondary,
-    textAlign: 'center',
-    lineHeight: 20,
   },
   insightCard: {
     ...card.base,
