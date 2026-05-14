@@ -5,11 +5,10 @@ import { typography } from '../../theme/typography';
 import Icon from '../common/icons/Icon';
 
 const DEFAULT_FEATURES = [
-    'Heart rate, HRV & stress from your phone camera — no wearable needed',
-  'Personalized 30-day plan.',
+  "3 day free trial for annual users.",
+  'Heart rate, HRV & stress from your phone camera — no wearable needed',
   'Unlimited guided sessions',
   'Daily streak & progress insights',
-  'Cancel anytime — no questions asked',
 ];
 
 interface PaywallFeatureListProps {
