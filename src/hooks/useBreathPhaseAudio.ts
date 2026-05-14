@@ -3,6 +3,8 @@ import type { MutableRefObject } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
 import { setAudioModeAsync, useAudioPlayer } from 'expo-audio';
 import type { AudioPlayer } from 'expo-audio';
+import { getAudioOption } from '../features/audioSettings/registry';
+import { useAudioPreferences } from '../features/audioSettings/useAudioPreferences';
 
 type BreathAudioPhase = 'inhale' | 'exhale' | null;
 
@@ -10,8 +12,8 @@ interface UseBreathPhaseAudioOptions {
   active?: boolean;
 }
 
-const INHALE_AUDIO = require('../../assets/audio/breath-inhale-bell.m4a');
-const EXHALE_AUDIO = require('../../assets/audio/breath-exhale-bowl.m4a');
+const DEFAULT_INHALE_AUDIO = require('../../assets/audio/chimes/inhale-bell.m4a');
+const DEFAULT_EXHALE_AUDIO = require('../../assets/audio/chimes/exhale-bowl.m4a');
 
 const FADE_STEP_MS = 50;
 const FADE_IN_MS = 450;
@@ -72,20 +74,39 @@ export function useBreathPhaseAudio(
   options: UseBreathPhaseAudioOptions = {},
 ) {
   const { active = true } = options;
+  const { preferences } = useAudioPreferences();
+  const voiceOption = getAudioOption('voice', preferences.voice);
+  const hasVoice = voiceOption != null;
+  const inhaleAsset =
+    voiceOption?.phaseAssets?.inhale ?? voiceOption?.asset ?? DEFAULT_INHALE_AUDIO;
+  const exhaleAsset =
+    voiceOption?.phaseAssets?.exhale ?? voiceOption?.asset ?? DEFAULT_EXHALE_AUDIO;
   const [appActive, setAppActive] = useState(() =>
     isActiveAppState(AppState.currentState),
   );
-  const inhalePlayer = useAudioPlayer(INHALE_AUDIO, {
+  const inhalePlayer = useAudioPlayer(DEFAULT_INHALE_AUDIO, {
     updateInterval: 1000,
     keepAudioSessionActive: true,
   });
-  const exhalePlayer = useAudioPlayer(EXHALE_AUDIO, {
+  const exhalePlayer = useAudioPlayer(DEFAULT_EXHALE_AUDIO, {
     updateInterval: 1000,
     keepAudioSessionActive: true,
   });
+
+  useEffect(() => {
+    safely(() => {
+      inhalePlayer.replace(inhaleAsset);
+    });
+  }, [inhaleAsset, inhalePlayer]);
+
+  useEffect(() => {
+    safely(() => {
+      exhalePlayer.replace(exhaleAsset);
+    });
+  }, [exhaleAsset, exhalePlayer]);
   const inhaleRampRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const exhaleRampRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const shouldPlayAudio = active && appActive;
+  const shouldPlayAudio = active && appActive && hasVoice;
   const effectivePhase = shouldPlayAudio ? phase : null;
 
   useEffect(() => {
