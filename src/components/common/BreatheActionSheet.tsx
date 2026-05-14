@@ -15,7 +15,8 @@ interface Props {
   horizontalAnchor?: 'center' | 'right';
   onClose: () => void;
   onSelect: (id: BreatheActionId) => void;
-  recommendedTechnique: BreathingTechnique;
+  recommendedTechnique: BreathingTechnique | null;
+  isRecommendedTechniqueLoading?: boolean;
 }
 
 interface Action {
@@ -25,6 +26,7 @@ interface Action {
   icon: IconName;
   color: string;
   bg: string;
+  disabled?: boolean;
 }
 
 const CATEGORY_ICON: Record<BreathingTechnique['category'], IconName> = {
@@ -52,11 +54,34 @@ export default function BreatheActionSheet({
   onClose,
   onSelect,
   recommendedTechnique,
+  isRecommendedTechniqueLoading = false,
 }: Props) {
   const insets = useSafeAreaInsets();
 
-  const actions = useMemo<Action[]>(
-    () => [
+  const actions = useMemo<Action[]>(() => {
+    const breatheAction: Action =
+      recommendedTechnique == null
+        ? {
+            id: 'breathe',
+            title: 'Breathe',
+            subtitle: isRecommendedTechniqueLoading
+              ? 'Loading plan'
+              : 'Plan unavailable',
+            icon: 'meditation',
+            color: colors.neutral[400],
+            bg: colors.neutral[100],
+            disabled: true,
+          }
+        : {
+            id: 'breathe',
+            title: 'Breathe',
+            subtitle: formatPattern(recommendedTechnique.pattern),
+            icon: CATEGORY_ICON[recommendedTechnique.category],
+            color: colors.orange[500],
+            bg: colors.orange[100],
+          };
+
+    return [
       {
         id: 'daily',
         title: 'Daily plan',
@@ -65,14 +90,7 @@ export default function BreatheActionSheet({
         color: colors.primary.blue600,
         bg: colors.primary.blue100,
       },
-      {
-        id: 'breathe',
-        title: 'Breathe',
-        subtitle: formatPattern(recommendedTechnique.pattern),
-        icon: CATEGORY_ICON[recommendedTechnique.category],
-        color: colors.orange[500],
-        bg: colors.orange[100],
-      },
+      breatheAction,
       {
         id: 'measure',
         title: 'Measure',
@@ -81,9 +99,8 @@ export default function BreatheActionSheet({
         color: colors.error[500],
         bg: colors.error[100],
       },
-    ],
-    [recommendedTechnique],
-  );
+    ];
+  }, [isRecommendedTechniqueLoading, recommendedTechnique]);
   const resolvedBottomOffset = bottomOffset ?? insets.bottom + TAB_BAR_HEIGHT + BUBBLE_GAP;
   const progress = useRef(new Animated.Value(0)).current;
   const [mounted, setMounted] = useState(visible);
@@ -158,12 +175,14 @@ function ActionRow({
       {actions.map((action) => (
         <Pressable
           key={action.id}
+          disabled={action.disabled}
           onPress={() => {
             onSelect(action.id);
             onClose();
           }}
           style={({ pressed }) => [
             styles.actionItem,
+            action.disabled && styles.actionItemDisabled,
             pressed && styles.actionItemPressed,
           ]}
         >
@@ -225,6 +244,9 @@ const styles = StyleSheet.create({
   actionItemPressed: {
     opacity: 0.75,
     transform: [{ scale: 0.96 }],
+  },
+  actionItemDisabled: {
+    opacity: 0.55,
   },
   iconCircle: {
     width: 64,
