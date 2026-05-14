@@ -2,9 +2,9 @@ import { StyleSheet, Text, View } from 'react-native';
 import {
   Canvas,
   Circle,
-  LinearGradient,
   Path,
   Skia,
+  SweepGradient,
   vec,
 } from '@shopify/react-native-skia';
 import { colors } from '../../theme/colors';
@@ -18,27 +18,47 @@ interface StressGaugeProps {
 }
 
 const SIZE = 220;
-const STROKE = 16;
+const STROKE = 10;
 const CX = SIZE / 2;
 const CY = SIZE / 2;
-const R = SIZE / 2 - STROKE / 2 - 4;
-const CANVAS_HEIGHT = SIZE / 2 + STROKE + 8;
+const R = SIZE / 2 - STROKE / 2 - 6;
+const START_ANGLE = 135;
+const SWEEP = 270;
+const TICK_INNER = R - STROKE / 2 - 6;
+const TICK_OUTER = R - STROKE / 2 - 2;
+const INNER_R = R - STROKE / 2 - 14;
+
+function tickPath(angleDeg: number) {
+  const rad = (angleDeg * Math.PI) / 180;
+  const cos = Math.cos(rad);
+  const sin = Math.sin(rad);
+  const p = Skia.Path.Make();
+  p.moveTo(CX + TICK_INNER * cos, CY + TICK_INNER * sin);
+  p.lineTo(CX + TICK_OUTER * cos, CY + TICK_OUTER * sin);
+  return p;
+}
 
 export default function StressGauge({ value, zone }: StressGaugeProps) {
   const clamped = Math.max(0, Math.min(100, value));
+  const sweep = (clamped / 100) * SWEEP;
+
+  const rect = Skia.XYWHRect(CX - R, CY - R, R * 2, R * 2);
 
   const track = Skia.Path.Make();
-  const rect = Skia.XYWHRect(CX - R, CY - R, R * 2, R * 2);
-  track.addArc(rect, 180, 180);
+  track.addArc(rect, START_ANGLE, SWEEP);
 
-  const angleDeg = 180 + (clamped / 100) * 180;
-  const angleRad = (angleDeg * Math.PI) / 180;
-  const needleX = CX + R * Math.cos(angleRad);
-  const needleY = CY + R * Math.sin(angleRad);
+  const progress = Skia.Path.Make();
+  progress.addArc(rect, START_ANGLE, sweep);
+
+  const ticks = [0, 25, 50, 75, 100].map((t) =>
+    tickPath(START_ANGLE + (t / 100) * SWEEP),
+  );
 
   return (
     <View style={styles.card}>
-      <View style={styles.canvasWrap}>
+      <Text style={styles.title}>Stress Index</Text>
+
+      <View style={styles.ringSurface}>
         <Canvas style={styles.canvas}>
           <Path
             path={track}
@@ -47,25 +67,34 @@ export default function StressGauge({ value, zone }: StressGaugeProps) {
             strokeCap="round"
             color={colors.neutral[100]}
           />
-          <Path path={track} style="stroke" strokeWidth={STROKE} strokeCap="round">
-            <LinearGradient
-              start={vec(CX - R, CY)}
-              end={vec(CX + R, CY)}
-              colors={[
-                colors.success[500],
-                colors.warning[500],
-                colors.error[500],
-              ]}
-              positions={[0, 0.5, 1]}
+          <Path
+            path={progress}
+            style="stroke"
+            strokeWidth={STROKE}
+            strokeCap="round"
+          >
+            <SweepGradient
+              c={vec(CX, CY)}
+              start={START_ANGLE}
+              end={START_ANGLE + SWEEP}
+              colors={[zone.color + '55', zone.color]}
             />
           </Path>
-          <Circle
-            cx={needleX}
-            cy={needleY}
-            r={STROKE / 2 + 5}
-            color={colors.background.elevated}
-          />
-          <Circle cx={needleX} cy={needleY} r={STROKE / 2} color={zone.color} />
+          {ticks.map((p, i) => (
+            <Path
+              key={i}
+              path={p}
+              style="stroke"
+              strokeWidth={1.5}
+              strokeCap="round"
+              color={colors.neutral[200]}
+            />
+          ))}
+
+          <Circle cx={CX} cy={CY + 3} r={INNER_R + 3} color="rgba(15,23,42,0.04)" />
+          <Circle cx={CX} cy={CY + 1.5} r={INNER_R + 1.5} color="rgba(15,23,42,0.02)" />
+          <Circle cx={CX} cy={CY} r={INNER_R + 1} color={colors.neutral[200]} />
+          <Circle cx={CX} cy={CY} r={INNER_R} color={colors.background.elevated} />
         </Canvas>
 
         <View style={styles.centerOverlay} pointerEvents="none">
@@ -73,16 +102,13 @@ export default function StressGauge({ value, zone }: StressGaugeProps) {
             <Text style={styles.value}>{clamped}</Text>
             <Text style={styles.valueMax}>/100</Text>
           </View>
-          <Text style={[styles.zone, { color: zone.color }]}>
-            {zone.label.toUpperCase()}
-          </Text>
+          <View style={[styles.zonePill, { borderColor: zone.color + '33' }]}>
+            <View style={[styles.zoneDot, { backgroundColor: zone.color }]} />
+            <Text style={[styles.zoneLabel, { color: zone.color }]}>
+              {zone.label}
+            </Text>
+          </View>
         </View>
-      </View>
-
-      <View style={styles.endpointRow}>
-        <Text style={styles.endpoint}>0</Text>
-        <Text style={styles.caption}>Stress</Text>
-        <Text style={styles.endpoint}>100</Text>
       </View>
     </View>
   );
@@ -94,14 +120,30 @@ const styles = StyleSheet.create({
     ...card.shadow,
     width: '100%',
     paddingTop: spacing.md,
-    paddingBottom: spacing.md,
-    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.lg,
+    paddingHorizontal: spacing.lg,
     alignItems: 'center',
   },
-  canvasWrap: {
+  title: {
+    ...typography.heading.heading1,
+    color: colors.text.secondary,
+    fontFamily: fonts.semibold,
+    alignSelf: 'flex-start',
+    marginBottom: spacing.sm,
+  },
+  ringSurface: {
     width: SIZE,
-    height: CANVAS_HEIGHT,
+    height: SIZE,
+    borderRadius: SIZE / 2,
     position: 'relative',
+    backgroundColor: colors.background.elevated,
+    borderWidth: 1,
+    borderColor: colors.neutral[100],
+    shadowColor: colors.neutral[900],
+    shadowOpacity: 0.08,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 7 },
+    elevation: 3,
   },
   canvas: {
     ...StyleSheet.absoluteFillObject,
@@ -110,7 +152,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
-    top: SIZE / 2 - 56,
+    top: SIZE / 2 - 44,
     alignItems: 'center',
   },
   valueRow: {
@@ -119,41 +161,40 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   value: {
-    ...typography.display.display1,
     fontFamily: fonts.semibold,
     fontWeight: '500',
-    fontSize: 48,
-    lineHeight: 52,
+    fontSize: 56,
+    lineHeight: 60,
+    letterSpacing: -1.5,
     color: colors.text.primary,
   },
   valueMax: {
-    ...typography.body.medium,
+    ...typography.body.small,
     fontFamily: fonts.semibold,
     fontWeight: '500',
     color: colors.text.tertiary,
+    letterSpacing: -0.2,
   },
-  zone: {
-    ...typography.label.medium,
-    fontFamily: fonts.semibold,
-    fontWeight: '600',
-    letterSpacing: 1,
-    marginTop: 2,
-  },
-  endpointRow: {
-    width: SIZE,
+  zonePill: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+    borderWidth: StyleSheet.hairlineWidth,
     marginTop: spacing.xs,
   },
-  endpoint: {
-    ...typography.caption.caption1,
-    color: colors.text.tertiary,
-    fontFamily: fonts.semibold,
+  zoneDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
-  caption: {
-    ...typography.label.medium,
-    color: colors.text.secondary,
+  zoneLabel: {
+    ...typography.caption.caption1,
     fontFamily: fonts.semibold,
+    fontWeight: '600',
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
   },
 });

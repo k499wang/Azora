@@ -1,0 +1,269 @@
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Canvas, Circle, Path, Skia } from '@shopify/react-native-skia';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { colors } from '../../theme/colors';
+import { typography, fonts } from '../../theme/typography';
+import { spacing } from '../../theme/spacing';
+import { card } from '../../theme/card';
+import Icon, { type IconName } from '../common/icons/Icon';
+
+const SIZE = 112;
+const CX = SIZE / 2;
+const CY = SIZE / 2;
+const R = 46;           // outer tick ring radius
+const INNER_R = 26;     // inner white circle radius
+const START_ANGLE = 135;
+const SWEEP = 270;
+
+const NUM_TICKS = 40;
+const TICK_HALF = 5;
+const TICK_WIDTH = 3;
+
+// Curved triangle indicator — points outward from inner circle edge
+const TRI_TIP_OFFSET = 8;  // how far beyond INNER_R the tip extends
+const TRI_HALF_DEG = 7;    // half-width of the base in degrees
+
+const PASTEL_STOPS = ['#FCA5A5', '#FDE68A', '#86EFAC'];
+
+function hexToRgb(hex: string): [number, number, number] {
+  return [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)];
+}
+
+function lerpColor(t: number, stops: string[]): string {
+  const n = stops.length - 1;
+  const scaled = t * n;
+  const i = Math.min(Math.floor(scaled), n - 1);
+  const f = scaled - i;
+  const [r1, g1, b1] = hexToRgb(stops[i]);
+  const [r2, g2, b2] = hexToRgb(stops[i + 1]);
+  return `rgb(${Math.round(r1 + (r2 - r1) * f)},${Math.round(g1 + (g2 - g1) * f)},${Math.round(b1 + (b2 - b1) * f)})`;
+}
+
+// Static outer tick paths — computed once at module load
+const TICKS = Array.from({ length: NUM_TICKS }, (_, i) => {
+  const t = i / (NUM_TICKS - 1);
+  const angleRad = ((START_ANGLE + t * SWEEP) * Math.PI) / 180;
+  const cosA = Math.cos(angleRad);
+  const sinA = Math.sin(angleRad);
+  const path = Skia.Path.Make();
+  path.moveTo(CX + (R - TICK_HALF) * cosA, CY + (R - TICK_HALF) * sinA);
+  path.lineTo(CX + (R + TICK_HALF) * cosA, CY + (R + TICK_HALF) * sinA);
+  return { path, color: lerpColor(t, PASTEL_STOPS) };
+});
+
+function getZone(
+  value: number,
+  lowBound: number,
+  highBound: number,
+): { label: string; color: string } {
+  const color = colors.primary.blue500;
+  if (value < lowBound) return { label: 'Low', color };
+  if (value < highBound) return { label: 'Moderate', color };
+  return { label: 'High', color };
+}
+
+interface HRVTrackStatCardProps {
+  label: string;
+  value: number | null;
+  unit: string;
+  icon: IconName;
+  iconColor?: string;
+  min?: number;
+  max: number;
+  lowBound: number;
+  highBound: number;
+  info?: { title: string; message: string };
+}
+
+export default function HRVTrackStatCard({
+  label,
+  value,
+  unit,
+  icon,
+  iconColor,
+  min = 0,
+  max,
+  lowBound,
+  highBound,
+  info,
+}: HRVTrackStatCardProps) {
+  const hasValue = value != null && Number.isFinite(value);
+  const clamped = hasValue ? Math.max(min, Math.min(max, value!)) : null;
+  const progress = clamped != null ? (clamped - min) / (max - min) : null;
+  const zone = clamped != null ? getZone(clamped, lowBound, highBound) : null;
+
+  // Curved triangle: tip points outward, curved base follows inner circle arc
+  const indPath = (() => {
+    if (progress == null) return null;
+    const angleDeg = START_ANGLE + progress * SWEEP;
+    const angleRad = (angleDeg * Math.PI) / 180;
+
+    // Tip: beyond the inner circle
+    const tipX = CX + (INNER_R + TRI_TIP_OFFSET) * Math.cos(angleRad);
+    const tipY = CY + (INNER_R + TRI_TIP_OFFSET) * Math.sin(angleRad);
+
+    // Base right corner on inner circle circumference
+    const rightRad = ((angleDeg + TRI_HALF_DEG) * Math.PI) / 180;
+    const rightX = CX + INNER_R * Math.cos(rightRad);
+    const rightY = CY + INNER_R * Math.sin(rightRad);
+
+    const innerOval = Skia.XYWHRect(CX - INNER_R, CY - INNER_R, INNER_R * 2, INNER_R * 2);
+
+    const path = Skia.Path.Make();
+    path.moveTo(tipX, tipY);
+    path.lineTo(rightX, rightY);
+    // Arc counterclockwise along inner circle from right to left base corner
+    path.arcToOval(innerOval, angleDeg + TRI_HALF_DEG, -2 * TRI_HALF_DEG, false);
+    path.close();
+    return path;
+  })();
+
+  const resolvedIconColor = iconColor ?? zone?.color ?? colors.primary.blue500;
+
+  return (
+    <View style={styles.card}>
+      {info ? (
+        <Pressable
+          hitSlop={12}
+          onPress={() => Alert.alert(info.title, info.message)}
+          style={styles.infoButton}
+        >
+          <MaterialCommunityIcons
+            name="information-outline"
+            size={16}
+            color={colors.text.tertiary}
+          />
+        </Pressable>
+      ) : null}
+
+      <View style={styles.left}>
+        <View style={styles.labelRow}>
+          <Text style={styles.label}>{label}</Text>
+          <Icon name={icon} size={26} color={resolvedIconColor} />
+        </View>
+
+        <View style={styles.valueRow}>
+          <Text style={styles.value}>{hasValue ? Math.round(value!) : '--'}</Text>
+          <Text style={styles.unit}>{unit}</Text>
+        </View>
+
+        {zone != null ? (
+          <View style={[styles.zonePill, { backgroundColor: `${zone.color}18` }]}>
+            <Text style={[styles.zonePillText, { color: zone.color }]}>
+              {zone.label}
+            </Text>
+          </View>
+        ) : null}
+      </View>
+
+      <View style={styles.ringSurface}>
+        <Canvas style={StyleSheet.absoluteFill}>
+          {/* Outer gradient tick ring */}
+          {TICKS.map((tick, i) => (
+            <Path
+              key={i}
+              path={tick.path}
+              style="stroke"
+              strokeWidth={TICK_WIDTH}
+              strokeCap="round"
+              color={tick.color}
+              opacity={0.85}
+            />
+          ))}
+
+          {/* Inner white circle — shadow, border, fill */}
+          <Circle cx={CX} cy={CY + 3} r={INNER_R + 3} color="rgba(15,23,42,0.04)" />
+          <Circle cx={CX} cy={CY + 1.5} r={INNER_R + 1.5} color="rgba(15,23,42,0.02)" />
+          <Circle cx={CX} cy={CY} r={INNER_R + 1} color={colors.neutral[200]} />
+          <Circle cx={CX} cy={CY} r={INNER_R} color={colors.background.elevated} />
+
+          {/* Curved blue triangle indicator */}
+          {indPath != null ? (
+            <Path
+              path={indPath}
+              style="fill"
+              color={colors.primary.blue500}
+            />
+          ) : null}
+        </Canvas>
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  card: {
+    ...card.base,
+    ...card.shadow,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+    paddingLeft: spacing.md,
+    paddingRight: spacing.md,
+    position: 'relative',
+  },
+  infoButton: {
+    position: 'absolute',
+    top: spacing.sm,
+    right: spacing.sm,
+    width: 24,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 2,
+  },
+  left: {
+    flex: 1,
+    gap: spacing.sm,
+  },
+  labelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  label: {
+    ...typography.heading.heading1,
+    color: colors.text.secondary,
+    fontFamily: fonts.semibold,
+  },
+  valueRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  value: {
+    ...typography.title.title1,
+    fontFamily: fonts.semibold,
+    color: colors.text.primary,
+  },
+  unit: {
+    ...typography.body.medium,
+    fontFamily: fonts.semibold,
+    color: colors.text.tertiary,
+  },
+  zonePill: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
+    borderRadius: 20,
+  },
+  zonePillText: {
+    ...typography.label.small,
+    fontFamily: fonts.semibold,
+    fontSize: 11,
+  },
+  ringSurface: {
+    width: SIZE,
+    height: SIZE,
+    borderRadius: SIZE / 2,
+    flexShrink: 0,
+    backgroundColor: colors.background.elevated,
+    borderWidth: 1,
+    borderColor: colors.neutral[100],
+    shadowColor: colors.neutral[900],
+    shadowOpacity: 0.08,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 7 },
+    elevation: 3,
+  },
+});
