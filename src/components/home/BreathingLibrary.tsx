@@ -11,8 +11,8 @@ import TECHNIQUES, { type BreathingTechnique } from '../../data/techniques';
 import SectionHeader from '../common/SectionHeader';
 import { AnalyticsEvent } from '../../services/analytics/events';
 import { useAuthStore } from '../../stores/authStore';
-import { useUserDefaultTechniqueQuery } from '../../queries/profile/useUserDefaultTechniqueQuery';
 import { useFeatureAccess } from '../../hooks/useFeatureAccess';
+import { useRecommendedTechnique } from '../../hooks/useRecommendedTechnique';
 import { PaywallPlacement } from '../../services/paywall';
 import { FeatureKey } from '../../services/subscriptions/featureAccess';
 import type { FeatureAccessResult } from '../../services/subscriptions/featureAccess';
@@ -70,17 +70,27 @@ function TechniqueCard({
         onPress={handlePress}
         style={({ pressed }) => [
           styles.card,
-          recommended && { borderColor: cat.color, borderWidth: 1.5 },
+          recommended && styles.recommendedCard,
           pressed && styles.cardPressed,
         ]}
       >
-        <MaterialCommunityIcons
-          name={technique.icon}
-          size={26}
-          color={cat.color}
-          style={styles.icon}
-        />
+        <View style={styles.cardTop}>
+          <MaterialCommunityIcons
+            name={technique.icon}
+            size={26}
+            color={cat.color}
+            style={styles.icon}
+          />
+          {recommended ? (
+            <View style={styles.recommendedPill}>
+              <Text style={styles.recommendedText}>For you</Text>
+            </View>
+          ) : null}
+        </View>
         <View style={styles.textBlock}>
+          <Text style={styles.techniqueName} numberOfLines={2}>
+            {technique.name}
+          </Text>
           <Text style={styles.category}>{cat.label}</Text>
           <Text style={styles.pattern}>{formatPattern(technique.pattern)}</Text>
         </View>
@@ -92,14 +102,18 @@ function TechniqueCard({
 export default function BreathingLibrary() {
   const userId = useAuthStore((s) => s.user?.id ?? null);
   const exerciseAccess = useFeatureAccess(FeatureKey.DailyExercise);
-  const { data: defaultTechniqueId } = useUserDefaultTechniqueQuery(userId);
+  const recommendedTechnique = useRecommendedTechnique(userId);
+  const recommendedTechniqueId =
+    recommendedTechnique.source === 'profile'
+      ? recommendedTechnique.technique?.id ?? null
+      : null;
 
   const orderedTechniques = useMemo(() => {
-    if (defaultTechniqueId == null) return TECHNIQUES;
-    const recommended = TECHNIQUES.find((t) => t.id === defaultTechniqueId);
+    if (recommendedTechniqueId == null) return TECHNIQUES;
+    const recommended = TECHNIQUES.find((t) => t.id === recommendedTechniqueId);
     if (recommended == null) return TECHNIQUES;
-    return [recommended, ...TECHNIQUES.filter((t) => t.id !== defaultTechniqueId)];
-  }, [defaultTechniqueId]);
+    return [recommended, ...TECHNIQUES.filter((t) => t.id !== recommendedTechniqueId)];
+  }, [recommendedTechniqueId]);
 
   return (
     <View style={styles.section}>
@@ -117,7 +131,7 @@ export default function BreathingLibrary() {
           <TechniqueCard
             key={t.id}
             technique={t}
-            recommended={t.id === defaultTechniqueId}
+            recommended={t.id === recommendedTechniqueId}
             exerciseAccess={exerciseAccess}
           />
         ))}
@@ -157,8 +171,30 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     justifyContent: 'space-between',
   },
+  recommendedCard: {
+    borderColor: colors.orange[500],
+    borderWidth: 2,
+  },
+  cardTop: {
+    minHeight: 30,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
   icon: {
     alignSelf: 'flex-start',
+  },
+  recommendedPill: {
+    borderRadius: 999,
+    backgroundColor: colors.orange[100],
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 3,
+  },
+  recommendedText: {
+    ...typography.label.small,
+    fontFamily: fonts.semibold,
+    color: colors.orange[700],
   },
   textBlock: {
     gap: spacing.xs,
@@ -167,10 +203,15 @@ const styles = StyleSheet.create({
     opacity: 0.88,
     transform: [{ scale: 0.98 }],
   },
-  category: {
+  techniqueName: {
     ...typography.heading.heading1,
     fontFamily: fonts.semibold,
     color: colors.text.primary,
+  },
+  category: {
+    ...typography.label.small,
+    fontFamily: fonts.semibold,
+    color: colors.text.tertiary,
   },
   pattern: {
     ...typography.label.medium,
