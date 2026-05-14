@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing, padding } from '../../theme/spacing';
+import type { ExerciseDarkTheme } from '../../theme/exerciseDarkThemes';
 interface ExerciseScaffoldProps {
   title?: string;
   subtitle?: string;
@@ -14,6 +15,7 @@ interface ExerciseScaffoldProps {
   centerSlot: ReactNode;
   bottomSlot: ReactNode;
   onClose?: () => void;
+  darkTheme?: ExerciseDarkTheme;
 }
 
 export default function ExerciseScaffold({
@@ -25,24 +27,53 @@ export default function ExerciseScaffold({
   centerSlot,
   bottomSlot,
   onClose,
+  darkTheme,
 }: ExerciseScaffoldProps) {
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={[styles.screen, { paddingTop: insets.top }]}>
+    <View
+      style={[
+        styles.screen,
+        { paddingTop: insets.top },
+        darkTheme && { backgroundColor: darkTheme.screen },
+      ]}
+    >
       <View style={styles.header}>
         <View style={styles.titleRow}>
           {!titleSlot && (
             <View style={styles.titleCopy}>
-              {title ? <Text style={styles.pageTitle}>{title}</Text> : null}
-              {subtitle ? <Text style={styles.pageSubtitle}>{subtitle}</Text> : null}
+              {title ? (
+                <Text style={[styles.pageTitle, darkTheme && { color: darkTheme.textPrimary }]}>
+                  {title}
+                </Text>
+              ) : null}
+              {subtitle ? (
+                <Text style={[styles.pageSubtitle, darkTheme && { color: darkTheme.textSecondary }]}>
+                  {subtitle}
+                </Text>
+              ) : null}
             </View>
           )}
           <View style={[styles.headerRight, titleSlot ? styles.headerRightPushed : null]}>
             {rightSlot}
             {onClose ? (
-              <Pressable onPress={onClose} style={styles.closeButton}>
-                <MaterialCommunityIcons name="close" size={20} color={colors.text.secondary} />
+              <Pressable
+                onPress={onClose}
+                style={[
+                  styles.closeButton,
+                  darkTheme && {
+                    backgroundColor: darkTheme.surface,
+                    borderColor: darkTheme.surfaceBorder,
+                    borderWidth: 1,
+                  },
+                ]}
+              >
+                <MaterialCommunityIcons
+                  name="close"
+                  size={20}
+                  color={darkTheme ? darkTheme.iconPrimary : colors.text.secondary}
+                />
               </Pressable>
             ) : null}
           </View>
