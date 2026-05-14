@@ -1,5 +1,5 @@
 export interface ExerciseDarkTheme {
-  id: 'slate' | 'stone' | 'sage';
+  id: 'light' | 'slate' | 'stone' | 'sage';
   label: string;
   dotColor: string;
   screen: string;
@@ -20,6 +20,26 @@ export interface ExerciseDarkTheme {
 }
 
 export const EXERCISE_DARK_THEMES: ExerciseDarkTheme[] = [
+  {
+    id: 'light',
+    label: 'Light',
+    dotColor: '#78B4FF',
+    screen: '#F8FBFF',
+    surface: '#F1F5F9',
+    surfaceBorder: '#E2E8F0',
+    circleOutline: '#78B4FF',
+    circleOutlineOpacity: 0.5,
+    circleOuter: '#78B4FF',
+    circleOuterOpacity: 0.28,
+    circleInner: '#4A90F5',
+    progressTrack: '#E2E8F0',
+    progressFill: '#78B4FF',
+    textPrimary: '#2e333a',
+    textSecondary: '#3f4855',
+    textTertiary: '#94A3B8',
+    textAccent: '#2F7AEF',
+    iconPrimary: '#0F172A',
+  },
   {
     id: 'slate',
     label: 'Slate',

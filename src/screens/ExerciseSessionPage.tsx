@@ -484,7 +484,10 @@ export default function ExerciseSessionPage({
           style={[
             styles.themeDot,
             { backgroundColor: t.dotColor },
-            activeTheme.id === t.id && styles.themeDotActive,
+            activeTheme.id === t.id && [
+              styles.themeDotActive,
+              { borderColor: activeTheme.textPrimary },
+            ],
           ]}
         />
       ))}

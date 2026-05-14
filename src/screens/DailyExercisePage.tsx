@@ -7,6 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { colors } from '../theme/colors';
 import { typography, fonts } from '../theme/typography';
 import { spacing } from '../theme/spacing';
+import { EXERCISE_DARK_THEMES, type ExerciseDarkTheme } from '../theme/exerciseDarkThemes';
 import BreathingCircle, {
   BreathingCircleRef,
 } from '../components/exercise/BreathingCircle';
@@ -145,6 +146,7 @@ export default function DailyExercisePage({
     maxBpm?: number;
   } | null>(null);
   const [releaseAudioActive, setReleaseAudioActive] = useState(false);
+  const [activeTheme, setActiveTheme] = useState<ExerciseDarkTheme>(EXERCISE_DARK_THEMES[0]);
   const isFocused = useIsFocused();
 
   const bpmOpacity = useRef(new Animated.Value(0.6)).current;
@@ -678,9 +680,30 @@ export default function DailyExercisePage({
   const signalGood = pulse.fingerPlacement === 'good';
   const showSignalWarning = isLive && pulse.active && !signalGood;
 
+  const themeSwitcher = (
+    <View style={styles.themePicker}>
+      {EXERCISE_DARK_THEMES.map((t) => (
+        <Pressable
+          key={t.id}
+          onPress={() => setActiveTheme(t)}
+          style={[
+            styles.themeDot,
+            { backgroundColor: t.dotColor },
+            activeTheme.id === t.id && [
+              styles.themeDotActive,
+              { borderColor: activeTheme.textPrimary },
+            ],
+          ]}
+        />
+      ))}
+    </View>
+  );
+
   return (
-    <View style={styles.fill}>
+    <View style={[styles.fill, { backgroundColor: activeTheme.screen }]}>
       <ExerciseScaffold
+        darkTheme={activeTheme}
+        rightSlot={themeSwitcher}
         centerSlot={
           <View style={styles.contentArea}>
             <Animated.View
@@ -712,9 +735,9 @@ export default function DailyExercisePage({
                 <View style={styles.phaseSlot}>
                   {PHASE_LABELS[phase] ? (
                     <View style={styles.phaseRow}>
-                      <Text style={styles.phaseLabel}>{PHASE_LABELS[phase]}</Text>
+                      <Text style={[styles.phaseLabel, { color: activeTheme.textPrimary }]}>{PHASE_LABELS[phase]}</Text>
                       {phase === 'hold' ? (
-                        <Text style={styles.phaseTimer}>
+                        <Text style={[styles.phaseTimer, { color: activeTheme.textPrimary }]}>
                           {formatHoldTime(holdSeconds)}
                         </Text>
                       ) : null}
@@ -725,22 +748,30 @@ export default function DailyExercisePage({
                   ref={circleRef}
                   cameraSlot={cameraSlot}
                   beatTick={pulse.beatTick}
+                  themeColors={{
+                    outline: activeTheme.circleOutline,
+                    outlineOpacity: activeTheme.circleOutlineOpacity,
+                    outer: activeTheme.circleOuter,
+                    outerOpacity: activeTheme.circleOuterOpacity,
+                    inner: activeTheme.circleInner,
+                  }}
                 />
                 <View style={styles.belowSlot}>
                   {isPlacement ? (
-                    <Text style={styles.hintText}>
+                    <Text style={[styles.hintText, { color: activeTheme.textSecondary }]}>
                       {placementHint(pulse.fingerPlacement)}
                     </Text>
                   ) : phase === 'hold' || isBreathingPhase(phase) ? (
                     <View style={styles.metricStack}>
                       {activeBreathCue != null ? (
-                        <Text style={styles.holdMicroCopy}>{activeBreathCue}</Text>
+                        <Text style={[styles.holdMicroCopy, { color: activeTheme.textSecondary }]}>{activeBreathCue}</Text>
                       ) : null}
                       {bpmDisplay != null ? (
                         <View style={[styles.bpmRow, showSignalWarning && styles.bpmRowDim]}>
                           <Animated.Text
                             style={[
                               styles.bpmNumber,
+                              { color: activeTheme.textPrimary },
                               showSignalWarning ? null : { opacity: bpmOpacity },
                             ]}
                           >
@@ -790,11 +821,15 @@ export default function DailyExercisePage({
               {isPlacement ? (
                 <>
                   <Pressable
-                    style={({ pressed }) => [styles.squareBtn, pressed && styles.circleBtnPressed]}
+                    style={({ pressed }) => [
+                      styles.squareBtn,
+                      { backgroundColor: activeTheme.surface, borderColor: activeTheme.surfaceBorder },
+                      pressed && styles.circleBtnPressed,
+                    ]}
                     onPress={cancelPlacement}
                     accessibilityLabel="Cancel"
                   >
-                    <MaterialCommunityIcons name="close" size={26} color={colors.neutral[900]} />
+                    <MaterialCommunityIcons name="close" size={26} color={activeTheme.iconPrimary} />
                   </Pressable>
                   <Pressable
                     onPress={() => {
@@ -807,12 +842,16 @@ export default function DailyExercisePage({
                       pressed && styles.textLinkPressed,
                     ]}
                   >
-                    <Text style={styles.textLinkLabel}>Skip heart rate</Text>
+                    <Text style={[styles.textLinkLabel, { color: activeTheme.textTertiary }]}>Skip heart rate</Text>
                   </Pressable>
                 </>
               ) : (
                 <Pressable
-                  style={({ pressed }) => [styles.circleBtn, pressed && styles.circleBtnPressed]}
+                  style={({ pressed }) => [
+                    styles.circleBtn,
+                    { backgroundColor: activeTheme.surface, borderColor: activeTheme.surfaceBorder },
+                    pressed && styles.circleBtnPressed,
+                  ]}
                   onPress={handlePrimaryPress}
                   accessibilityLabel={primaryLabel}
                 >
@@ -825,7 +864,7 @@ export default function DailyExercisePage({
                           : 'hand-back-left-outline'
                     }
                     size={28}
-                    color={colors.neutral[900]}
+                    color={activeTheme.iconPrimary}
                   />
                 </Pressable>
               )}
@@ -834,13 +873,14 @@ export default function DailyExercisePage({
               pointerEvents={phase === 'done' ? 'auto' : 'none'}
               style={({ pressed }) => [
                 styles.viewResultsButton,
+                { backgroundColor: activeTheme.surface, borderColor: activeTheme.surfaceBorder },
                 pressed && styles.circleBtnPressed,
                 phase !== 'done' && styles.viewResultsHidden,
               ]}
               onPress={handleViewResults}
             >
-              <MaterialCommunityIcons name="chart-line" size={18} color={colors.primary.blue600} style={{ marginRight: spacing.xs }} />
-              <Text style={styles.viewResultsText}>View Results</Text>
+              <MaterialCommunityIcons name="chart-line" size={18} color={activeTheme.textAccent} style={{ marginRight: spacing.xs }} />
+              <Text style={[styles.viewResultsText, { color: activeTheme.textPrimary }]}>View Results</Text>
             </Pressable>
           </View>
         }
@@ -853,6 +893,22 @@ const styles = StyleSheet.create({
   fill: {
     flex: 1,
     backgroundColor: colors.background.primary,
+  },
+  themePicker: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    paddingHorizontal: 4,
+    paddingVertical: 4,
+  },
+  themeDot: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+  },
+  themeDotActive: {
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.7)',
   },
   centerStack: {
     alignItems: 'center',
