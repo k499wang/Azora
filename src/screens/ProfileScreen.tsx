@@ -331,7 +331,6 @@ export default function ProfileScreen(_: ProfileScreenProps) {
           <SectionHeader title="Account" />
           <View style={styles.sectionBody}>
             <ProfileAccountCard
-              email={user?.email ?? undefined}
               hapticsEnabled={hapticsEnabled}
               onToggleHaptics={(enabled) => {
                 setHapticsEnabled(enabled);
