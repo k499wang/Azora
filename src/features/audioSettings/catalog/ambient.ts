@@ -7,11 +7,10 @@ export const ambientCategory: AudioCategory = {
   allowOff: true,
   previewable: true,
   options: [
-    // Add ambient loops here. Example shape:
-    // {
-    //   id: 'rain',
-    //   label: 'Rain',
-    //   asset: require('../../../../assets/audio/ambient/rain.m4a'),
-    // },
+    {
+      id: 'rain',
+      label: 'Rain',
+      asset: require('../../../../assets/audio/ambient/rain.m4a'),
+    },
   ],
 };

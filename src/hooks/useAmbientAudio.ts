@@ -31,6 +31,7 @@ export function useAmbientAudio({ active }: UseAmbientAudioOptions) {
 
   const playerRef = useRef<AudioPlayer | null>(null);
   const rampRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const targetVolumeRef = useRef(targetVolume);
   const [appActive, setAppActive] = useState(() => AppState.currentState === 'active');
   const effectiveActive = active && appActive;
 
@@ -47,6 +48,10 @@ export function useAmbientAudio({ active }: UseAmbientAudioOptions) {
     });
     return () => sub.remove();
   }, []);
+
+  useEffect(() => {
+    targetVolumeRef.current = targetVolume;
+  }, [targetVolume]);
 
   useEffect(() => {
     const clearRamp = () => {
@@ -118,7 +123,8 @@ export function useAmbientAudio({ active }: UseAmbientAudioOptions) {
     rampRef.current = setInterval(() => {
       step += 1;
       safely(() => {
-        player.volume = Math.min(targetVolume, targetVolume * (step / steps));
+        const volume = Math.max(0, Math.min(1, targetVolumeRef.current));
+        player.volume = Math.min(volume, volume * (step / steps));
       });
       if (step >= steps) {
         clearRamp();
@@ -134,7 +140,7 @@ export function useAmbientAudio({ active }: UseAmbientAudioOptions) {
         playerRef.current = null;
       }
     };
-  }, [effectiveActive, option, targetVolume]);
+  }, [effectiveActive, option]);
 
   useEffect(() => {
     const player = playerRef.current;
