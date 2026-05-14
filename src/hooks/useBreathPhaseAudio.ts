@@ -12,9 +12,6 @@ interface UseBreathPhaseAudioOptions {
   active?: boolean;
 }
 
-const DEFAULT_INHALE_AUDIO = require('../../assets/audio/chimes/inhale-bell.m4a');
-const DEFAULT_EXHALE_AUDIO = require('../../assets/audio/chimes/exhale-bowl.m4a');
-
 const FADE_STEP_MS = 50;
 const FADE_IN_MS = 450;
 const PHASE_SWITCH_FADE_OUT_MS = 350;
@@ -76,38 +73,46 @@ export function useBreathPhaseAudio(
   const { active = true } = options;
   const { preferences } = useAudioPreferences();
   const voiceOption = getAudioOption('voice', preferences.voice);
-  const hasVoice = voiceOption != null;
+  // Voice cues must not fall back to chime assets; chimes are owned by usePhaseChime.
   const inhaleAsset =
-    voiceOption?.phaseAssets?.inhale ?? voiceOption?.asset ?? DEFAULT_INHALE_AUDIO;
+    voiceOption?.phaseAssets?.inhale ?? voiceOption?.asset ?? null;
   const exhaleAsset =
-    voiceOption?.phaseAssets?.exhale ?? voiceOption?.asset ?? DEFAULT_EXHALE_AUDIO;
+    voiceOption?.phaseAssets?.exhale ?? voiceOption?.asset ?? null;
   const [appActive, setAppActive] = useState(() =>
     isActiveAppState(AppState.currentState),
   );
-  const inhalePlayer = useAudioPlayer(DEFAULT_INHALE_AUDIO, {
+  const inhalePlayer = useAudioPlayer(undefined, {
     updateInterval: 1000,
     keepAudioSessionActive: true,
   });
-  const exhalePlayer = useAudioPlayer(DEFAULT_EXHALE_AUDIO, {
+  const exhalePlayer = useAudioPlayer(undefined, {
     updateInterval: 1000,
     keepAudioSessionActive: true,
   });
 
   useEffect(() => {
+    if (inhaleAsset == null) {
+      stopImmediately(inhalePlayer);
+      return;
+    }
+
     safely(() => {
       inhalePlayer.replace(inhaleAsset);
     });
   }, [inhaleAsset, inhalePlayer]);
 
   useEffect(() => {
+    if (exhaleAsset == null) {
+      stopImmediately(exhalePlayer);
+      return;
+    }
+
     safely(() => {
       exhalePlayer.replace(exhaleAsset);
     });
   }, [exhaleAsset, exhalePlayer]);
   const inhaleRampRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const exhaleRampRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const shouldPlayAudio = active && appActive && hasVoice;
-  const effectivePhase = shouldPlayAudio ? phase : null;
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (nextState) => {
@@ -198,6 +203,12 @@ export function useBreathPhaseAudio(
     },
     [],
   );
+
+  const canPlayPhase =
+    (phase === 'inhale' && inhaleAsset != null) ||
+    (phase === 'exhale' && exhaleAsset != null);
+  const shouldPlayAudio = active && appActive && canPlayPhase;
+  const effectivePhase = shouldPlayAudio ? phase : null;
 
   useEffect(() => {
     if (effectivePhase === 'inhale') {

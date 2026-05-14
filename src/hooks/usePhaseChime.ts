@@ -15,7 +15,6 @@ type PhaseKey = 'inhale' | 'exhale';
 const FADE_STEP_MS = 50;
 const FADE_IN_MS = 450;
 const PHASE_SWITCH_FADE_OUT_MS = 350;
-const HOLD_RELEASE_FADE_OUT_MS = 1400;
 const INHALE_VOLUME = 0.6;
 const EXHALE_VOLUME = 0.55;
 
@@ -72,7 +71,7 @@ export function usePhaseChime(
 ) {
   const { preferences } = useAudioPreferences();
   const option = getAudioOption('chime', preferences.chime);
-  const inhaleAsset = option?.phaseAssets?.inhale ?? null;
+  const inhaleAsset = option?.phaseAssets?.inhale ?? option?.asset ?? null;
   const exhaleAsset = option?.phaseAssets?.exhale ?? option?.asset ?? null;
 
   const inhalePlayerRef = useRef<AudioPlayer | null>(null);
@@ -193,19 +192,15 @@ export function usePhaseChime(
       fadeIn(exhalePlayerRef.current, exhaleRampRef, EXHALE_VOLUME);
       return;
     }
-    fadeOut(inhalePlayerRef.current, inhaleRampRef, HOLD_RELEASE_FADE_OUT_MS);
-    fadeOut(exhalePlayerRef.current, exhaleRampRef, HOLD_RELEASE_FADE_OUT_MS);
+    fadeOut(inhalePlayerRef.current, inhaleRampRef, PHASE_SWITCH_FADE_OUT_MS);
+    fadeOut(exhalePlayerRef.current, exhaleRampRef, PHASE_SWITCH_FADE_OUT_MS);
   }, [kind, fadeIn, fadeOut]);
 
   useEffect(() => {
     if (shouldPlay) return;
-    clearRamp(inhaleRampRef);
-    clearRamp(exhaleRampRef);
-    const i = inhalePlayerRef.current;
-    const e = exhalePlayerRef.current;
-    if (i) stopImmediately(i);
-    if (e) stopImmediately(e);
-  }, [shouldPlay]);
+    fadeOut(inhalePlayerRef.current, inhaleRampRef, PHASE_SWITCH_FADE_OUT_MS);
+    fadeOut(exhalePlayerRef.current, exhaleRampRef, PHASE_SWITCH_FADE_OUT_MS);
+  }, [shouldPlay, fadeOut]);
 
   useEffect(
     () => () => {
