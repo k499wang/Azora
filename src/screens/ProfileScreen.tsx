@@ -5,7 +5,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import { padding, spacing } from '../theme/spacing';
 import AppTopBar from '../components/common/AppTopBar';
-import TopBarWeekCalendar from '../components/common/TopBarWeekCalendar';
 import SectionHeader from '../components/common/SectionHeader';
 import ProfileIdentityCard from '../components/profile/ProfileIdentityCard';
 import ProfileStatsGrid, {
@@ -23,8 +22,6 @@ import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuer
 import { formatProfileHoldTime } from '../services/profile/profileSummaryService';
 import { useUploadProfileAvatarMutation } from '../queries/profile/useUploadProfileAvatarMutation';
 import { getRevenueCatCustomerInfo } from '../services/subscriptions/revenueCatClient';
-import { formatLocalDate } from '../lib/calendar/weekCalendarDays';
-
 const APP_STORE_SUBSCRIPTIONS_URL = 'https://apps.apple.com/account/subscriptions';
 
 function getFallbackDisplayName(email: string | undefined): string {
@@ -55,7 +52,6 @@ function getAvatarLabel(displayName: string): string {
 export default function ProfileScreen(_: ProfileScreenProps) {
   const insets = useSafeAreaInsets();
   const user = useAuthStore((s) => s.user);
-  const todayLocalDate = formatLocalDate(new Date());
   const signOut = useAuthStore((s) => s.signOut);
   const deleteAccount = useAuthStore((s) => s.deleteAccount);
   const [signingOut, setSigningOut] = useState(false);
@@ -286,15 +282,7 @@ export default function ProfileScreen(_: ProfileScreenProps) {
         showsVerticalScrollIndicator={false}
       >
         <View style={[styles.topSection, { paddingTop: insets.top }]}>
-          <AppTopBar
-            streak={profileSummary?.currentStreak ?? 0}
-            leftSlot={(
-              <TopBarWeekCalendar
-                todayLocalDate={todayLocalDate}
-                completedDaysAgo={profileSummary?.completedDaysAgo ?? []}
-              />
-            )}
-          />
+          <AppTopBar streak={profileSummary?.currentStreak ?? 0} />
 
           <View style={styles.heroCardWrap}>
             <ProfileIdentityCard
