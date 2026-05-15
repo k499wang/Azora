@@ -54,7 +54,7 @@ export function useCompleteHeartRateSessionMutation(userId: string | null) {
       console.log('[hr-gate] completeHeartRateSessionMutation: RPC returned', { sessionId });
       return sessionId;
     },
-    onSuccess: async (_sessionId, input) => {
+    onSuccess: (_sessionId, input) => {
       const timezone = getDeviceTimezone();
       // Frame timestamps are a monotonic clock, not wall-clock — use recordedAt for the date key.
       const recordedAtMs = Date.parse(input.result.reading?.recordedAt ?? '');
@@ -62,15 +62,20 @@ export function useCompleteHeartRateSessionMutation(userId: string | null) {
       const usageDate = formatLocalDate(endedAt, timezone);
       console.log('[hr-gate] mutation onSuccess: invalidating', { userId, usageDate, endedAt });
 
-      await Promise.all([
+      void Promise.all([
         queryClient.invalidateQueries({
           queryKey: getHomeStatsQueryKey(userId),
         }),
         queryClient.invalidateQueries({
           queryKey: getDailyFeatureUsageQueryKey(userId, usageDate),
         }),
-      ]);
-      console.log('[hr-gate] mutation onSuccess: invalidate complete');
+      ])
+        .then(() => {
+          console.log('[hr-gate] mutation onSuccess: invalidate complete');
+        })
+        .catch((error) => {
+          console.warn('[hr-gate] mutation onSuccess: invalidate failed', error);
+        });
     },
   });
 }
