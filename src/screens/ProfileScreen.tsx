@@ -350,7 +350,7 @@ export default function ProfileScreen(_: ProfileScreenProps) {
         </View>
 
         <View style={styles.section}>
-          <SectionHeader title="Heart health" />
+          <SectionHeader title="Breath Statistics" />
           <View style={styles.sectionBody}>
             <ProfileBreathHoldTrendCard data={profileSummary?.breathHoldTrend ?? []} />
           </View>
