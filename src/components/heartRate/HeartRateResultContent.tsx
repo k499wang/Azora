@@ -292,7 +292,7 @@ interface LockedOverlayProps {
   children: ReactNode;
 }
 
-function LockedOverlay({ locked, onPressUpgrade, children }: LockedOverlayProps) {
+export function LockedOverlay({ locked, onPressUpgrade, children }: LockedOverlayProps) {
   if (!locked) {
     return <>{children}</>;
   }

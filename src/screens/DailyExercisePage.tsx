@@ -175,6 +175,7 @@ export default function DailyExercisePage({
   const inhaleTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const releaseAudioTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const samplesRef = useRef<BpmSample[]>([]);
+  const measurementStartAtRef = useRef<number>(0);
   const holdStartAtRef = useRef<number>(0);
   const [phase, setPhase] = useState<HoldPhase>('idle');
   const [holdSeconds, setHoldSeconds] = useState(0);
@@ -239,6 +240,7 @@ export default function DailyExercisePage({
     currentBpm,
     beginMeasurementWindow: beginPulseMeasurementWindow,
     getMeasurementSamples,
+    getIbiSamples,
   } = pulse;
 
   useEffect(() => {
@@ -370,10 +372,12 @@ export default function DailyExercisePage({
     samplesRef.current = [];
     savedSessionKeyRef.current = null;
     savingSessionKeyRef.current = null;
+    measurementStartAtRef.current = 0;
     setReleaseAudioActive(false);
     setHoldSeconds(0);
     setPrepCycle(1);
     if (withHeartRate) {
+      measurementStartAtRef.current = Date.now();
       startPulse();
       beginPulseMeasurementWindow();
     }
@@ -392,7 +396,12 @@ export default function DailyExercisePage({
     result: CaptureResult,
     endedAtMs: number,
   ) => {
-    const startedAtMs = holdStartAtRef.current;
+    const holdStartedAtMs = holdStartAtRef.current;
+    const measuredStartedAtMs = measurementStartAtRef.current;
+    const startedAtMs =
+      measuredStartedAtMs > 0
+        ? Math.min(measuredStartedAtMs, holdStartedAtMs || measuredStartedAtMs)
+        : holdStartedAtMs;
     if (startedAtMs <= 0 || endedAtMs < startedAtMs) return;
 
     const sessionKey = [
@@ -574,7 +583,9 @@ export default function DailyExercisePage({
   const releaseHold = () => {
     const endedAtMs = Date.now();
     const captureSamples = getMeasurementSamples();
-    const captureResult = buildCaptureResult(captureSamples);
+    const captureResult = buildCaptureResult(captureSamples, getIbiSamples(), {
+      preferLiveIbiSamples: true,
+    });
     flow.cancel();
     setReleaseAudioActive(false);
     const newBest = holdSeconds > bestHoldSeconds && holdSeconds > 0;

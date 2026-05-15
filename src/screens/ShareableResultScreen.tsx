@@ -7,7 +7,11 @@ import { colors } from '../theme/colors';
 import { typography, fonts } from '../theme/typography';
 import { spacing, padding, margin } from '../theme/spacing';
 import { card } from '../theme/card';
-import { HeartRateResultContent } from '../components/heartRate/HeartRateResultContent';
+import {
+  HeartRateResultContent,
+  LockedOverlay,
+} from '../components/heartRate/HeartRateResultContent';
+import HRVTrackStatCard from '../components/home/HRVTrackStatCard';
 import SectionHeader from '../components/common/SectionHeader';
 import type { DailyResultScreenProps } from '../app/navigation';
 import { estimateLungAge, type LungHealthKey } from '../lib/lungAge';
@@ -172,8 +176,11 @@ export default function ShareableResultScreen({
                 />
               </Canvas>
               <View style={styles.ageRingCenter} pointerEvents="none">
+                <Text style={styles.ageRingCaption}>Lung Age</Text>
                 <Text style={styles.ageRingValue}>{lungEstimate.age}</Text>
-                <Text style={styles.ageRingUnit}>years</Text>
+                <Text style={[styles.ageRingTier, { color: health.color }]}>
+                  {health.label}
+                </Text>
               </View>
             </View>
           </View>
@@ -231,6 +238,29 @@ export default function ShareableResultScreen({
               </Fragment>
             );
           })}
+        </View>
+
+        <View style={styles.rmssdWrap}>
+          <LockedOverlay
+            locked={advancedStatsLocked}
+            onPressUpgrade={showAdvancedStatsPaywall}
+          >
+            <HRVTrackStatCard
+              label="RMSSD"
+              value={
+                rmssd != null && Number.isFinite(rmssd)
+                  ? rmssd
+                  : advancedStatsLocked
+                    ? 48
+                    : null
+              }
+              unit="ms"
+              icon="stat-rmssd-wave"
+              max={80}
+              lowBound={20}
+              highBound={50}
+            />
+          </LockedOverlay>
         </View>
 
         {stressZone != null && stress != null ? (
@@ -332,11 +362,18 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semibold,
     fontWeight: '600',
   },
-  ageRingUnit: {
-    ...typography.body.small,
+  ageRingCaption: {
+    ...typography.caption.caption1,
     color: colors.text.tertiary,
     fontFamily: fonts.semibold,
-    marginTop: 2,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    marginBottom: 4,
+  },
+  ageRingTier: {
+    ...typography.body.small,
+    fontFamily: fonts.semibold,
+    marginTop: 4,
   },
   statsHeader: {
     paddingHorizontal: padding.screen.horizontal,
@@ -403,6 +440,10 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
 
+  rmssdWrap: {
+    paddingHorizontal: padding.screen.horizontal,
+    marginTop: spacing.sm,
+  },
   stressWrap: {
     paddingHorizontal: padding.screen.horizontal,
     marginTop: spacing.md,
