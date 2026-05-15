@@ -6,7 +6,7 @@ import type { AudioPlayer } from 'expo-audio';
 import { getAudioOption } from '../features/audioSettings/registry';
 import { useAudioPreferences } from '../features/audioSettings/useAudioPreferences';
 
-type BreathAudioPhase = 'inhale' | 'exhale' | null;
+type BreathAudioPhase = 'inhale' | 'exhale' | 'hold' | null;
 
 interface UseBreathPhaseAudioOptions {
   active?: boolean;
@@ -18,6 +18,7 @@ const PHASE_SWITCH_FADE_OUT_MS = 350;
 const HOLD_RELEASE_FADE_OUT_MS = 1400;
 const INHALE_VOLUME = 0.5;
 const EXHALE_VOLUME = 0.46;
+const HOLD_VOLUME = 0.48;
 
 function clearRamp(ref: MutableRefObject<ReturnType<typeof setInterval> | null>) {
   if (ref.current) {
@@ -78,6 +79,8 @@ export function useBreathPhaseAudio(
     voiceOption?.phaseAssets?.inhale ?? voiceOption?.asset ?? null;
   const exhaleAsset =
     voiceOption?.phaseAssets?.exhale ?? voiceOption?.asset ?? null;
+  const holdAsset =
+    voiceOption?.phaseAssets?.hold ?? voiceOption?.asset ?? null;
   const [appActive, setAppActive] = useState(() =>
     isActiveAppState(AppState.currentState),
   );
@@ -86,6 +89,10 @@ export function useBreathPhaseAudio(
     keepAudioSessionActive: true,
   });
   const exhalePlayer = useAudioPlayer(undefined, {
+    updateInterval: 1000,
+    keepAudioSessionActive: true,
+  });
+  const holdPlayer = useAudioPlayer(undefined, {
     updateInterval: 1000,
     keepAudioSessionActive: true,
   });
@@ -111,8 +118,19 @@ export function useBreathPhaseAudio(
       exhalePlayer.replace(exhaleAsset);
     });
   }, [exhaleAsset, exhalePlayer]);
+  useEffect(() => {
+    if (holdAsset == null) {
+      stopImmediately(holdPlayer);
+      return;
+    }
+
+    safely(() => {
+      holdPlayer.replace(holdAsset);
+    });
+  }, [holdAsset, holdPlayer]);
   const inhaleRampRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const exhaleRampRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const holdRampRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (nextState) => {
@@ -131,12 +149,14 @@ export function useBreathPhaseAudio(
 
   useEffect(() => {
     safely(() => {
-      inhalePlayer.loop = true;
+      inhalePlayer.loop = false;
       inhalePlayer.volume = 0;
-      exhalePlayer.loop = true;
+      exhalePlayer.loop = false;
       exhalePlayer.volume = 0;
+      holdPlayer.loop = false;
+      holdPlayer.volume = 0;
     });
-  }, [exhalePlayer, inhalePlayer]);
+  }, [exhalePlayer, holdPlayer, inhalePlayer]);
 
   const fadeOut = useCallback(
     (
@@ -178,7 +198,7 @@ export function useBreathPhaseAudio(
     ) => {
       clearRamp(rampRef);
       safely(() => {
-        player.loop = true;
+        player.loop = false;
         player.volume = 0;
       });
       safely(() => {
@@ -206,43 +226,58 @@ export function useBreathPhaseAudio(
 
   const canPlayPhase =
     (phase === 'inhale' && inhaleAsset != null) ||
-    (phase === 'exhale' && exhaleAsset != null);
+    (phase === 'exhale' && exhaleAsset != null) ||
+    (phase === 'hold' && holdAsset != null);
   const shouldPlayAudio = active && appActive && canPlayPhase;
   const effectivePhase = shouldPlayAudio ? phase : null;
 
   useEffect(() => {
     if (effectivePhase === 'inhale') {
       fadeOut(exhalePlayer, exhaleRampRef);
+      fadeOut(holdPlayer, holdRampRef);
       fadeIn(inhalePlayer, inhaleRampRef, INHALE_VOLUME);
       return;
     }
 
     if (effectivePhase === 'exhale') {
       fadeOut(inhalePlayer, inhaleRampRef);
+      fadeOut(holdPlayer, holdRampRef);
       fadeIn(exhalePlayer, exhaleRampRef, EXHALE_VOLUME);
+      return;
+    }
+
+    if (effectivePhase === 'hold') {
+      fadeOut(inhalePlayer, inhaleRampRef);
+      fadeOut(exhalePlayer, exhaleRampRef);
+      fadeIn(holdPlayer, holdRampRef, HOLD_VOLUME);
       return;
     }
 
     fadeOut(inhalePlayer, inhaleRampRef, HOLD_RELEASE_FADE_OUT_MS);
     fadeOut(exhalePlayer, exhaleRampRef, HOLD_RELEASE_FADE_OUT_MS);
-  }, [effectivePhase, exhalePlayer, fadeIn, fadeOut, inhalePlayer]);
+    fadeOut(holdPlayer, holdRampRef, HOLD_RELEASE_FADE_OUT_MS);
+  }, [effectivePhase, exhalePlayer, fadeIn, fadeOut, holdPlayer, inhalePlayer]);
 
   useEffect(() => {
     if (shouldPlayAudio) return;
 
     clearRamp(inhaleRampRef);
     clearRamp(exhaleRampRef);
+    clearRamp(holdRampRef);
     stopImmediately(inhalePlayer);
     stopImmediately(exhalePlayer);
-  }, [exhalePlayer, inhalePlayer, shouldPlayAudio]);
+    stopImmediately(holdPlayer);
+  }, [exhalePlayer, holdPlayer, inhalePlayer, shouldPlayAudio]);
 
   useEffect(
     () => () => {
       clearRamp(inhaleRampRef);
       clearRamp(exhaleRampRef);
+      clearRamp(holdRampRef);
       stopImmediately(inhalePlayer);
       stopImmediately(exhalePlayer);
+      stopImmediately(holdPlayer);
     },
-    [exhalePlayer, inhalePlayer],
+    [exhalePlayer, holdPlayer, inhalePlayer],
   );
 }

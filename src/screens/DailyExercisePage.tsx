@@ -182,13 +182,16 @@ export default function DailyExercisePage({
   });
   const dailyAudioActive =
     isFocused && (isBreathingPhase(phase) || phase === 'hold');
-  const phaseCueAudioActive = isFocused && isBreathingPhase(phase);
+  const phaseCueAudioActive =
+    isFocused && (isBreathingPhase(phase) || phase === 'hold');
 
   useBreathPhaseAudio(
     phase === 'preInhale' || phase === 'inhale'
       ? 'inhale'
       : phase === 'preExhale' || releaseAudioActive
         ? 'exhale'
+        : phase === 'hold'
+          ? 'hold'
         : null,
     { active: phaseCueAudioActive || (isFocused && releaseAudioActive) },
   );
