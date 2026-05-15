@@ -10,7 +10,7 @@ export const ambientCategory: AudioCategory = {
     {
       id: 'rain',
       label: 'Rain',
-      asset: require('../../../../assets/audio/ambient/rain.m4a'),
+      asset: require('../../../../assets/audio/ambient/rain.mp3'),
     },
   ],
 };

@@ -163,10 +163,16 @@ export default function ExerciseSessionPage({
     !paused &&
     (phase === 'inhale' || phase === 'holdIn' || phase === 'exhale' || phase === 'holdOut');
   const phaseCueAudioActive =
-    isFocused && !paused && (phase === 'inhale' || phase === 'exhale');
+    isFocused &&
+    !paused &&
+    (phase === 'inhale' || phase === 'holdIn' || phase === 'exhale' || phase === 'holdOut');
 
   useBreathPhaseAudio(
-    !paused && (phase === 'inhale' || phase === 'exhale') ? phase : null,
+    !paused && (phase === 'inhale' || phase === 'exhale')
+      ? phase
+      : !paused && (phase === 'holdIn' || phase === 'holdOut')
+        ? 'hold'
+        : null,
     { active: phaseCueAudioActive },
   );
   useAmbientAudio({

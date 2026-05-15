@@ -7,11 +7,15 @@ export const voiceCategory: AudioCategory = {
   allowOff: true,
   previewable: true,
   options: [
-    // Add voice packs here. Example shape:
-    // {
-    //   id: 'calm-female',
-    //   label: 'Calm (female)',
-    //   asset: require('../../../../assets/audio/voices/calm-female-inhale.m4a'),
-    // },
+    {
+      id: 'theo',
+      label: 'Theo',
+      asset: require('../../../../assets/audio/voices/theo_in.mp3'),
+      phaseAssets: {
+        inhale: require('../../../../assets/audio/voices/theo_in.mp3'),
+        exhale: require('../../../../assets/audio/voices/theo_out.mp3'),
+        hold: require('../../../../assets/audio/voices/theo_hold.mp3'),
+      },
+    },
   ],
 };
