@@ -307,14 +307,6 @@ export default function ExerciseSessionPage({
         flow.cancel();
         setPhase('done');
         stopPulse();
-        posthog.capture(AnalyticsEvent.ExerciseSessionCompleted, {
-          technique_id: technique.id,
-          technique_name: technique.name,
-          technique_category: technique.category,
-          total_rounds: rounds,
-          elapsed_seconds: elapsed,
-          hr_monitoring_enabled: hrEnabled,
-        });
 
         const cycleSeconds =
           pattern.inhale + pattern.holdIn + pattern.exhale + pattern.holdOut;
@@ -324,13 +316,26 @@ export default function ExerciseSessionPage({
           samples.length > 0
             ? samples.reduce((sum, s) => sum + s.bpm, 0) / samples.length
             : undefined;
+        const actualDurationSec =
+          sessionStartMsRef.current > 0
+            ? Math.round((Date.now() - sessionStartMsRef.current) / 1000)
+            : elapsed;
+
+        posthog.capture(AnalyticsEvent.ExerciseSessionCompleted, {
+          technique_id: technique.id,
+          technique_name: technique.name,
+          technique_category: technique.category,
+          total_rounds: rounds,
+          elapsed_seconds: actualDurationSec,
+          hr_monitoring_enabled: hrEnabled,
+        });
 
         navigation.replace('SessionComplete', {
           techniqueId: technique.id,
           techniqueName: technique.name,
           breathCount: rounds,
           targetBreaths: rounds,
-          durationSec: elapsed,
+          durationSec: actualDurationSec,
           targetSec: targetSeconds,
           cycles: rounds,
           targetCycles: rounds,
