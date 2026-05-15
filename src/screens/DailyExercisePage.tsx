@@ -699,20 +699,12 @@ export default function DailyExercisePage({
   const signalGood = pulse.fingerPlacement === 'good';
   const showSignalWarning = isLive && pulse.active && !signalGood;
 
-  const headerControls = (
-    <SettingsGearButton
-      onPress={() => setAudioSettingsOpen(true)}
-      color={activeTheme.iconPrimary}
-      backgroundColor={activeTheme.surface}
-      borderColor={activeTheme.surfaceBorder}
-    />
-  );
+  const showSettingsPill = phase === 'idle' || phase === 'done';
 
   return (
     <View style={[styles.fill, { backgroundColor: activeTheme.screen }]}>
       <ExerciseScaffold
         darkTheme={activeTheme}
-        rightSlot={headerControls}
         centerSlot={
           <View style={styles.contentArea}>
             <Animated.View
@@ -826,6 +818,16 @@ export default function DailyExercisePage({
         }
         bottomSlot={
           <View style={styles.bottomContainer}>
+            {showSettingsPill ? (
+              <SettingsGearButton
+                onPress={() => setAudioSettingsOpen(true)}
+                label="Audio & voice"
+                color={activeTheme.textPrimary}
+                backgroundColor={activeTheme.surface}
+                borderColor={activeTheme.surfaceBorder}
+                style={styles.settingsPill}
+              />
+            ) : null}
             <View style={styles.btnRow}>
               {isPlacement ? (
                 <>
@@ -1004,6 +1006,9 @@ const styles = StyleSheet.create({
   bottomContainer: {
     alignItems: 'center',
     gap: spacing.lg,
+  },
+  settingsPill: {
+    alignSelf: 'center',
   },
   inlineLink: {
     paddingVertical: spacing.sm,

@@ -503,15 +503,6 @@ export default function ExerciseSessionPage({
     if (isActive) showHud();
   };
 
-  const headerControls = (
-    <SettingsGearButton
-      onPress={() => setAudioSettingsOpen(true)}
-      color={activeTheme.iconPrimary}
-      backgroundColor={activeTheme.surface}
-      borderColor={activeTheme.surfaceBorder}
-    />
-  );
-
   return (
     <View style={[styles.fill, { backgroundColor: activeTheme.screen }]}>
       {isActive && !hudVisible ? (
@@ -523,7 +514,6 @@ export default function ExerciseSessionPage({
       ) : null}
       <ExerciseScaffold
         darkTheme={activeTheme}
-        rightSlot={headerControls}
         centerSlot={
           <View style={styles.centerStack}>
             <View style={styles.contentArea}>
@@ -547,6 +537,15 @@ export default function ExerciseSessionPage({
                     tertiary: activeTheme.textTertiary,
                     accent: activeTheme.textAccent,
                   }}
+                  topSlot={
+                    <SettingsGearButton
+                      onPress={() => setAudioSettingsOpen(true)}
+                      label="Audio & voice"
+                      color={activeTheme.textPrimary}
+                      backgroundColor={activeTheme.surface}
+                      borderColor={activeTheme.surfaceBorder}
+                    />
+                  }
                 />
               </Animated.View>
 

@@ -1,7 +1,9 @@
-import { Pressable, StyleSheet } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import type { StyleProp, ViewStyle } from 'react-native';
-import Icon from '../../components/common/icons/Icon';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
+import { fonts, typography } from '../../theme/typography';
+import { spacing } from '../../theme/spacing';
 
 interface SettingsGearButtonProps {
   onPress: () => void;
@@ -9,6 +11,7 @@ interface SettingsGearButtonProps {
   backgroundColor?: string;
   borderColor?: string;
   size?: number;
+  label?: string;
   style?: StyleProp<ViewStyle>;
 }
 
@@ -20,27 +23,43 @@ export default function SettingsGearButton({
   backgroundColor = colors.background.elevated,
   borderColor = colors.border.subtle,
   size = DEFAULT_SIZE,
+  label,
   style,
 }: SettingsGearButtonProps) {
+  const isPill = label != null;
+  const iconSize = isPill ? 18 : Math.round(size * 0.55);
+
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel="Session settings"
+      accessibilityLabel={label ?? 'Session settings'}
+      hitSlop={8}
       style={({ pressed }) => [
         styles.button,
-        {
-          width: size,
-          height: size,
-          borderRadius: size / 2,
-          backgroundColor,
-          borderColor,
-        },
+        isPill
+          ? {
+              backgroundColor,
+              borderColor,
+              paddingVertical: spacing.sm,
+              paddingHorizontal: spacing.md,
+              borderRadius: 999,
+            }
+          : {
+              width: size,
+              height: size,
+              borderRadius: size / 2,
+              backgroundColor,
+              borderColor,
+            },
         pressed && styles.pressed,
         style,
       ]}
     >
-      <Icon name="settings" size={Math.round(size * 0.55)} color={color} />
+      <View style={styles.row}>
+        <MaterialCommunityIcons name="cog-outline" size={iconSize} color={color} />
+        {label ? <Text style={[styles.label, { color }]}>{label}</Text> : null}
+      </View>
     </Pressable>
   );
 }
@@ -50,6 +69,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  label: {
+    ...typography.body.small,
+    fontFamily: fonts.semibold,
   },
   pressed: {
     opacity: 0.75,

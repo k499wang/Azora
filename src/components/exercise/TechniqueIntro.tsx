@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
@@ -15,6 +16,7 @@ interface TextColors {
 interface Props {
   technique: BreathingTechnique;
   textColors?: TextColors;
+  topSlot?: ReactNode;
 }
 
 const PHASE_META: {
@@ -28,11 +30,12 @@ const PHASE_META: {
   { key: 'holdOut', label: 'Hold', icon: 'pause' },
 ];
 
-export default function TechniqueIntro({ technique, textColors }: Props) {
+export default function TechniqueIntro({ technique, textColors, topSlot }: Props) {
   const phases = PHASE_META.filter((p) => technique.pattern[p.key] > 0);
 
   return (
     <View style={styles.container}>
+      {topSlot ? <View style={styles.topSlot}>{topSlot}</View> : null}
       <View style={styles.phaseRow}>
         {phases.map((p, idx) => (
           <View key={`${p.key}-${idx}`} style={styles.phase}>
@@ -85,6 +88,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     gap: spacing.md,
+    marginBottom: spacing.xs,
+  },
+  topSlot: {
+    alignItems: 'center',
     marginBottom: spacing.xs,
   },
   phase: {
