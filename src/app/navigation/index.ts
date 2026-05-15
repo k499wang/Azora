@@ -14,4 +14,5 @@ export type {
   RootStackNavigationProp,
   RootStackParamList,
   RootStackScreenProps,
+  SessionCompleteScreenProps,
 } from './types';

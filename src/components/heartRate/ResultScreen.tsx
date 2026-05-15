@@ -7,12 +7,14 @@ import {
   Animated,
   SafeAreaView,
   ScrollView,
+  Pressable,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { usePostHog } from 'posthog-react-native';
 import { colors } from '../../theme/colors';
 import { typography, fonts } from '../../theme/typography';
-import { spacing } from '../../theme/spacing';
+import { spacing, padding, margin } from '../../theme/spacing';
 import { card } from '../../theme/card';
 import LineGraph, { DataPoint } from '../analytics/LineGraph';
 import SectionHeader from '../common/SectionHeader';
@@ -155,6 +157,7 @@ export function ResultScreen({
   context,
 }: ResultScreenProps) {
   const posthog = usePostHog();
+  const insets = useSafeAreaInsets();
   const navigation = useNavigation<RootStackNavigationProp<'HeartRate'>>();
   const advancedStatsAccess = useFeatureAccess(FeatureKey.AdvancedStats);
   const advancedStatsLocked =
@@ -227,37 +230,59 @@ export function ResultScreen({
   if (isSuccess && result.reading) {
     const reading = result.reading;
     return (
-      <SafeAreaView style={styles.safeArea}>
-        <View style={styles.container}>
-          <ScrollView
-            style={styles.scrollFlex}
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-          >
-          <Animated.View
-            style={[
-              styles.content,
-              { transform: [{ scale: scaleAnim }], opacity: opacityAnim },
-            ]}
-          >
-            <HeartRateResultContent
-              bpm={reading.bpm}
-              confidence={reading.confidence}
-              sampleCount={reading.sampleCount}
-              rmssd={reading.rmssd ?? null}
-              hrDrop={reading.hrDrop ?? null}
-              stress={reading.stress ?? null}
-              hrvAvailabilityReason={reading.hrvAvailabilityReason}
-              ibiSamples={result.ibiSamples ?? []}
-              context={context}
-              heartScale={heartPulse}
-              advancedStatsLocked={advancedStatsLocked}
-              onPressUpgrade={showAdvancedStatsPaywall}
-            />
-          </Animated.View>
-          </ScrollView>
+      <View style={[styles.screen, { paddingTop: insets.top }]}>
+        <ScrollView
+          style={styles.scrollFlex}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.header}>
+            <Pressable
+              style={styles.closeButton}
+              onPress={() => {
+                posthog.capture(AnalyticsEvent.HeartRateResultAction, {
+                  action: 'done',
+                  previous_result: 'success',
+                  context: context ?? null,
+                });
+                onDone();
+              }}
+            >
+              <MaterialCommunityIcons
+                name="close"
+                size={22}
+                color={colors.text.secondary}
+              />
+            </Pressable>
+            <Text style={styles.headerTitle}>Nice work!</Text>
+          </View>
 
-          <View style={styles.successActions}>
+          <View style={styles.heroWrap}>
+            <Animated.View
+              style={[
+                styles.heroContent,
+                { transform: [{ scale: scaleAnim }], opacity: opacityAnim },
+              ]}
+            >
+              <HeartRateResultContent
+                bpm={reading.bpm}
+                confidence={reading.confidence}
+                sampleCount={reading.sampleCount}
+                rmssd={reading.rmssd ?? null}
+                hrDrop={reading.hrDrop ?? null}
+                stress={reading.stress ?? null}
+                hrvAvailabilityReason={reading.hrvAvailabilityReason}
+                ibiSamples={result.ibiSamples ?? []}
+                context={context}
+                heartScale={heartPulse}
+                advancedStatsLocked={advancedStatsLocked}
+                onPressUpgrade={showAdvancedStatsPaywall}
+              />
+            </Animated.View>
+          </View>
+        </ScrollView>
+
+        <View style={[styles.successActions, { paddingBottom: insets.bottom + spacing.lg }]}>
             <TouchableOpacity
               style={styles.primaryButton}
               disabled={isSaving}
@@ -271,28 +296,12 @@ export function ResultScreen({
               }}
               activeOpacity={0.85}
             >
-              <Text style={styles.primaryButtonText}>Check Again</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => {
-                if (isSaving) return;
-                posthog.capture(AnalyticsEvent.HeartRateResultAction, {
-                  action: 'done',
-                  previous_result: 'success',
-                  context: context ?? null,
-                });
-                onDone();
-              }}
-              activeOpacity={0.7}
-              disabled={isSaving}
-              style={styles.cancelTouchable}
-            >
-              <Text style={styles.cancelText}>{isSaving ? 'Saving...' : 'Done'}</Text>
+              <Text style={styles.primaryButtonText}>
+                {isSaving ? 'Saving...' : 'Check Again'}
+              </Text>
             </TouchableOpacity>
           </View>
-        </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
@@ -380,6 +389,10 @@ export function ResultScreen({
 }
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: colors.background.primary,
+  },
   safeArea: {
     flex: 1,
     backgroundColor: colors.background.primary,
@@ -390,6 +403,40 @@ const styles = StyleSheet.create({
     paddingTop: spacing.xl,
     paddingBottom: spacing.xl,
     alignItems: 'center',
+  },
+  header: {
+    paddingHorizontal: padding.screen.horizontal,
+    paddingTop: padding.screen.vertical,
+    alignItems: 'center',
+  },
+  closeButton: {
+    position: 'absolute',
+    top: padding.screen.vertical,
+    left: padding.screen.horizontal,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.background.elevated,
+    borderWidth: 1,
+    borderColor: colors.border.subtle,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1,
+  },
+  headerTitle: {
+    ...typography.title.title1,
+    color: colors.text.primary,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+  },
+  heroWrap: {
+    paddingHorizontal: padding.screen.horizontal,
+    marginTop: margin.sectionGap,
+  },
+  heroContent: {
+    alignItems: 'center',
+    width: '100%',
+    paddingTop: spacing.xl,
   },
   content: {
     alignItems: 'center',
@@ -461,7 +508,7 @@ const styles = StyleSheet.create({
   },
   sectionHeaderWrap: {
     width: '100%',
-    marginTop: spacing.lg,
+    marginTop: margin.resultSection,
     marginBottom: spacing.sm,
   },
   statsGrid: {
@@ -551,7 +598,6 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   scrollContent: {
-    alignItems: 'center',
     paddingBottom: spacing.lg,
   },
   gaugeWrap: {
@@ -635,6 +681,8 @@ const styles = StyleSheet.create({
     width: '100%',
     gap: spacing.md,
     alignItems: 'center',
+    paddingHorizontal: padding.screen.horizontal,
+    paddingTop: spacing.md,
   },
   cancelTouchable: {
     paddingVertical: spacing.sm,

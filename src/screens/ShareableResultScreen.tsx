@@ -154,7 +154,6 @@ export default function ShareableResultScreen({
 
         <View style={styles.heroCardWrap}>
           <View style={styles.heroCard}>
-            <Text style={styles.lungCardLabel}>Estimated lung age</Text>
             <View style={styles.ageRingWrap}>
               <Canvas style={StyleSheet.absoluteFill}>
                 <Path
@@ -307,17 +306,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     alignItems: 'center',
   },
-  lungCardLabel: {
-    ...typography.label.small,
-    color: colors.text.secondary,
-    fontFamily: fonts.semibold,
-    textTransform: 'uppercase',
-    letterSpacing: 1.2,
-  },
   ageRingWrap: {
     width: AGE_RING_SIZE,
     height: AGE_RING_SIZE,
-    marginTop: spacing.sm,
     borderRadius: AGE_RING_SIZE / 2,
     backgroundColor: colors.background.elevated,
     borderWidth: 1,
@@ -349,7 +340,7 @@ const styles = StyleSheet.create({
   },
   statsHeader: {
     paddingHorizontal: padding.screen.horizontal,
-    marginTop: margin.sectionGap,
+    marginTop: margin.resultSection,
     marginBottom: spacing.sm,
   },
   statTileRow: {
@@ -418,6 +409,6 @@ const styles = StyleSheet.create({
   },
   heartResultSection: {
     paddingHorizontal: padding.screen.horizontal,
-    marginTop: margin.sectionGap,
+    marginTop: margin.resultSection,
   },
 });

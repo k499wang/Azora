@@ -6,7 +6,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Canvas, Path, Skia } from '@shopify/react-native-skia';
 import { colors } from '../../theme/colors';
 import { typography, fonts } from '../../theme/typography';
-import { spacing } from '../../theme/spacing';
+import { spacing, margin } from '../../theme/spacing';
 import { card } from '../../theme/card';
 import LineGraph, { type DataPoint } from '../analytics/LineGraph';
 import SectionHeader from '../common/SectionHeader';
@@ -387,7 +387,7 @@ const styles = StyleSheet.create({
   },
   sectionHeaderWrap: {
     width: '100%',
-    marginTop: spacing.lg,
+    marginTop: margin.resultSection,
     marginBottom: spacing.sm,
   },
   proStatsColumn: {

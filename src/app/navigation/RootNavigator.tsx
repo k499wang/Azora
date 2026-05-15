@@ -3,6 +3,7 @@ import { StyleSheet, View, ActivityIndicator } from 'react-native';
 import AuthLandingScreen from '../../screens/AuthLandingScreen';
 import DailyExercisePage from '../../screens/DailyExercisePage';
 import ExerciseSessionPage from '../../screens/ExerciseSessionPage';
+import SessionCompleteScreen from '../../screens/SessionCompleteScreen';
 import { HeartRateScreen } from '../../screens/HeartRateScreen';
 import { HeartRateSessionDetailScreen } from '../../screens/HeartRateSessionDetailScreen';
 import { ProPaywallScreen } from '../../screens/ProPaywallScreen';
@@ -49,6 +50,15 @@ function AppStack() {
         options={{
           presentation: 'card',
           animation: 'slide_from_right',
+        }}
+      />
+      <Stack.Screen
+        name="SessionComplete"
+        component={SessionCompleteScreen}
+        options={{
+          presentation: 'card',
+          animation: 'slide_from_right',
+          gestureEnabled: false,
         }}
       />
       <Stack.Screen
