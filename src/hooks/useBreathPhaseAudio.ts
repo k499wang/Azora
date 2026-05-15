@@ -3,6 +3,7 @@ import type { MutableRefObject } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
 import { setAudioModeAsync, useAudioPlayer } from 'expo-audio';
 import type { AudioPlayer } from 'expo-audio';
+import { audioMix } from '../features/audioSettings/audioMix';
 import { getAudioOption } from '../features/audioSettings/registry';
 import { useAudioPreferences } from '../features/audioSettings/useAudioPreferences';
 
@@ -16,9 +17,6 @@ const FADE_STEP_MS = 50;
 const FADE_IN_MS = 450;
 const PHASE_SWITCH_FADE_OUT_MS = 350;
 const HOLD_RELEASE_FADE_OUT_MS = 1400;
-const INHALE_VOLUME = 0.5;
-const EXHALE_VOLUME = 0.46;
-const HOLD_VOLUME = 0.48;
 
 function clearRamp(ref: MutableRefObject<ReturnType<typeof setInterval> | null>) {
   if (ref.current) {
@@ -235,21 +233,21 @@ export function useBreathPhaseAudio(
     if (effectivePhase === 'inhale') {
       fadeOut(exhalePlayer, exhaleRampRef);
       fadeOut(holdPlayer, holdRampRef);
-      fadeIn(inhalePlayer, inhaleRampRef, INHALE_VOLUME);
+      fadeIn(inhalePlayer, inhaleRampRef, audioMix.voice.inhale);
       return;
     }
 
     if (effectivePhase === 'exhale') {
       fadeOut(inhalePlayer, inhaleRampRef);
       fadeOut(holdPlayer, holdRampRef);
-      fadeIn(exhalePlayer, exhaleRampRef, EXHALE_VOLUME);
+      fadeIn(exhalePlayer, exhaleRampRef, audioMix.voice.exhale);
       return;
     }
 
     if (effectivePhase === 'hold') {
       fadeOut(inhalePlayer, inhaleRampRef);
       fadeOut(exhalePlayer, exhaleRampRef);
-      fadeIn(holdPlayer, holdRampRef, HOLD_VOLUME);
+      fadeIn(holdPlayer, holdRampRef, audioMix.voice.hold);
       return;
     }
 

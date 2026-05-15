@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { AppState } from 'react-native';
 import { createAudioPlayer, setAudioModeAsync } from 'expo-audio';
 import type { AudioPlayer } from 'expo-audio';
+import { audioMix } from '../features/audioSettings/audioMix';
 import { getAudioOption } from '../features/audioSettings/registry';
 import { useAudioPreferences } from '../features/audioSettings/useAudioPreferences';
 
@@ -27,7 +28,7 @@ export function useAmbientAudio({ active }: UseAmbientAudioOptions) {
     () => getAudioOption('ambient', preferences.ambient),
     [preferences.ambient],
   );
-  const targetVolume = preferences.ambientVolume;
+  const targetVolume = preferences.ambientVolume * audioMix.ambient.maxVolume;
 
   const playerRef = useRef<AudioPlayer | null>(null);
   const rampRef = useRef<ReturnType<typeof setInterval> | null>(null);
