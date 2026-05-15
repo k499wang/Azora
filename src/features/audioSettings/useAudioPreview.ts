@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { createAudioPlayer, setAudioModeAsync } from 'expo-audio';
 import type { AudioPlayer } from 'expo-audio';
+import { audioMix } from './audioMix';
 
 export function useAudioPreview() {
   const playerRef = useRef<AudioPlayer | null>(null);
@@ -33,7 +34,7 @@ export function useAudioPreview() {
       const player = createAudioPlayer(asset);
       playerRef.current = player;
       setPreviewingAsset(asset);
-      player.volume = 0.7;
+      player.volume = audioMix.preview.volume;
       player.play();
     } catch {
       playerRef.current = null;

@@ -3,6 +3,7 @@ import type { MutableRefObject } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
 import { createAudioPlayer, setAudioModeAsync } from 'expo-audio';
 import type { AudioPlayer } from 'expo-audio';
+import { audioMix } from '../features/audioSettings/audioMix';
 import { getAudioOption } from '../features/audioSettings/registry';
 import { useAudioPreferences } from '../features/audioSettings/useAudioPreferences';
 
@@ -15,8 +16,6 @@ type PhaseKey = 'inhale' | 'exhale';
 const FADE_STEP_MS = 50;
 const FADE_IN_MS = 450;
 const PHASE_SWITCH_FADE_OUT_MS = 350;
-const INHALE_VOLUME = 0.6;
-const EXHALE_VOLUME = 0.55;
 
 function safely(action: () => void) {
   try {
@@ -184,12 +183,12 @@ export function usePhaseChime(
   useEffect(() => {
     if (kind === 'inhale') {
       fadeOut(exhalePlayerRef.current, exhaleRampRef);
-      fadeIn(inhalePlayerRef.current, inhaleRampRef, INHALE_VOLUME);
+      fadeIn(inhalePlayerRef.current, inhaleRampRef, audioMix.chime.inhale);
       return;
     }
     if (kind === 'exhale') {
       fadeOut(inhalePlayerRef.current, inhaleRampRef);
-      fadeIn(exhalePlayerRef.current, exhaleRampRef, EXHALE_VOLUME);
+      fadeIn(exhalePlayerRef.current, exhaleRampRef, audioMix.chime.exhale);
       return;
     }
     fadeOut(inhalePlayerRef.current, inhaleRampRef, PHASE_SWITCH_FADE_OUT_MS);
