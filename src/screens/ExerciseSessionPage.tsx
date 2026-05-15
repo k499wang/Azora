@@ -21,7 +21,6 @@ import { useAmbientAudio } from '../hooks/useAmbientAudio';
 import { usePhaseChime } from '../hooks/usePhaseChime';
 import {
   AudioSettingsSheet,
-  SettingsGearButton,
   ThemePickerSection,
 } from '../features/audioSettings';
 import { HeartRateCameraPreview } from '../components/heartRate/HeartRateCameraPreview';
@@ -537,15 +536,6 @@ export default function ExerciseSessionPage({
                     tertiary: activeTheme.textTertiary,
                     accent: activeTheme.textAccent,
                   }}
-                  topSlot={
-                    <SettingsGearButton
-                      onPress={() => setAudioSettingsOpen(true)}
-                      label="Audio & voice"
-                      color={activeTheme.textPrimary}
-                      backgroundColor={activeTheme.surface}
-                      borderColor={activeTheme.surfaceBorder}
-                    />
-                  }
                 />
               </Animated.View>
 
@@ -677,6 +667,24 @@ export default function ExerciseSessionPage({
                 }}
               >
                 <MaterialCommunityIcons name="stop" size={26} color={activeTheme.iconPrimary} />
+              </Pressable>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.circleBtn,
+                  { backgroundColor: activeTheme.surface, borderColor: activeTheme.surfaceBorder },
+                  pressed && styles.circleBtnPressed,
+                ]}
+                onPress={() => {
+                  if (isActive) showHud();
+                  setAudioSettingsOpen(true);
+                }}
+                accessibilityLabel="Audio & voice"
+              >
+                <MaterialCommunityIcons
+                  name="cog-outline"
+                  size={26}
+                  color={activeTheme.iconPrimary}
+                />
               </Pressable>
               {isPlacement ? (
                 <Pressable
@@ -828,6 +836,7 @@ const styles = StyleSheet.create({
   bottomContainer: {
     alignItems: 'center',
     gap: spacing.lg,
+    marginBottom: spacing['4xl'],
   },
   progressWrap: {
     width: '100%',
