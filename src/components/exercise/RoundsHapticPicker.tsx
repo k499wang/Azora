@@ -1,16 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import {
-  Animated,
-  Easing,
-  GestureResponderEvent,
-  PanResponder,
-  PanResponderGestureState,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { useRef } from 'react';
+import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import { isHapticsEnabled } from '../../services/preferences/hapticsPreference';
@@ -24,10 +15,6 @@ interface RoundsHapticPickerProps {
   theme: ExerciseDarkTheme;
 }
 
-const STEP_DISTANCE = 22;
-const HINT_SEEN_KEY = 'exercise:rounds_picker_hint_seen';
-const TICK_COUNT = 7;
-
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
@@ -39,55 +26,20 @@ export default function RoundsHapticPicker({
   onChange,
   theme,
 }: RoundsHapticPickerProps) {
-  const valueRef = useRef(value);
-  valueRef.current = value;
-  const dragStartValueRef = useRef(value);
-  const lastEmittedRef = useRef(value);
-
   const scale = useRef(new Animated.Value(1)).current;
-  const hintOpacity = useRef(new Animated.Value(0)).current;
-  const [hintVisible, setHintVisible] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
-    AsyncStorage.getItem(HINT_SEEN_KEY)
-      .then((seen) => {
-        if (cancelled || seen === 'true') return;
-        setHintVisible(true);
-        Animated.timing(hintOpacity, {
-          toValue: 1,
-          duration: 400,
-          delay: 250,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: true,
-        }).start();
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [hintOpacity]);
-
-  const dismissHint = () => {
-    if (!hintVisible) return;
-    Animated.timing(hintOpacity, {
-      toValue: 0,
-      duration: 250,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: true,
-    }).start(({ finished }) => {
-      if (finished) setHintVisible(false);
-    });
-    AsyncStorage.setItem(HINT_SEEN_KEY, 'true').catch(() => {});
+  const fireHaptic = () => {
+    if (!isHapticsEnabled()) return;
+    Haptics.selectionAsync().catch(() => {});
   };
 
   const pulseScale = () => {
     scale.stopAnimation();
     Animated.sequence([
-      Animated.spring(scale, {
-        toValue: 1.06,
-        speed: 24,
-        bounciness: 8,
+      Animated.timing(scale, {
+        toValue: 1.08,
+        duration: 90,
+        easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
       Animated.spring(scale, {
@@ -99,89 +51,78 @@ export default function RoundsHapticPicker({
     ]).start();
   };
 
-  const fireHaptic = () => {
-    if (!isHapticsEnabled()) return;
-    Haptics.selectionAsync().catch(() => {});
+  const step = (direction: 1 | -1) => {
+    const next = clamp(value + direction, min, max);
+    if (next === value) return;
+    fireHaptic();
+    pulseScale();
+    onChange(next);
   };
 
-  const handleMove = (_: GestureResponderEvent, gesture: PanResponderGestureState) => {
-    const deltaSteps = Math.round(gesture.dx / STEP_DISTANCE);
-    const next = clamp(dragStartValueRef.current + deltaSteps, min, max);
-    if (next !== lastEmittedRef.current) {
-      lastEmittedRef.current = next;
-      fireHaptic();
-      pulseScale();
-      onChange(next);
-    }
-  };
-
-  const panResponder = useMemo(
-    () =>
-      PanResponder.create({
-        onStartShouldSetPanResponder: () => true,
-        onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > 2,
-        onPanResponderGrant: () => {
-          dragStartValueRef.current = valueRef.current;
-          lastEmittedRef.current = valueRef.current;
-          dismissHint();
-        },
-        onPanResponderMove: handleMove,
-        onPanResponderRelease: () => {
-          dragStartValueRef.current = valueRef.current;
-        },
-        onPanResponderTerminate: () => {
-          dragStartValueRef.current = valueRef.current;
-        },
-      }),
-    // handleMove/dismissHint close over stable refs and state setters; deps intentionally empty.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [min, max, onChange],
-  );
+  const leftDisabled = value <= min;
+  const rightDisabled = value >= max;
 
   return (
-    <View style={styles.wrap} {...panResponder.panHandlers}>
-      <Animated.Text
-        style={[
-          styles.value,
-          { color: theme.textPrimary, transform: [{ scale }] },
-        ]}
-        allowFontScaling={false}
-      >
-        {value}
-      </Animated.Text>
-      <Text style={[styles.label, { color: theme.textTertiary }]}>rounds</Text>
+    <View style={styles.wrap}>
+      <View style={styles.row}>
+        <Chevron
+          direction="left"
+          color={theme.textPrimary}
+          disabled={leftDisabled}
+          onPress={() => step(-1)}
+        />
 
-      <View style={styles.tickRail} pointerEvents="none">
-        {Array.from({ length: TICK_COUNT }).map((_, i) => {
-          const isCenter = i === Math.floor(TICK_COUNT / 2);
-          return (
-            <View
-              key={i}
-              style={[
-                styles.tick,
-                {
-                  backgroundColor: theme.textTertiary,
-                  opacity: isCenter ? 0.5 : 0.18,
-                  width: isCenter ? 18 : 12,
-                },
-              ]}
-            />
-          );
-        })}
-      </View>
-
-      {hintVisible ? (
         <Animated.Text
+          allowFontScaling={false}
           style={[
-            styles.hint,
-            { color: theme.textTertiary, opacity: hintOpacity },
+            styles.value,
+            { color: theme.textPrimary, transform: [{ scale }] },
           ]}
-          pointerEvents="none"
         >
-          Swipe to adjust
+          {value}
         </Animated.Text>
-      ) : null}
+
+        <Chevron
+          direction="right"
+          color={theme.textPrimary}
+          disabled={rightDisabled}
+          onPress={() => step(1)}
+        />
+      </View>
+      <Text style={[styles.label, { color: theme.textTertiary }]}>rounds</Text>
     </View>
+  );
+}
+
+interface ChevronProps {
+  direction: 'left' | 'right';
+  color: string;
+  disabled: boolean;
+  onPress: () => void;
+}
+
+function Chevron({ direction, color, disabled, onPress }: ChevronProps) {
+  const path = direction === 'left' ? 'M15 4 L7 12 L15 20' : 'M9 4 L17 12 L9 20';
+  return (
+    <Pressable
+      onPress={disabled ? undefined : onPress}
+      hitSlop={14}
+      style={({ pressed }) => [
+        styles.chevronHit,
+        { opacity: disabled ? 0.18 : pressed ? 0.55 : 0.7 },
+      ]}
+    >
+      <Svg width={16} height={28} viewBox="0 0 24 24">
+        <Path
+          d={path}
+          stroke={color}
+          strokeWidth={2.4}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          fill="none"
+        />
+      </Svg>
+    </Pressable>
   );
 }
 
@@ -189,9 +130,14 @@ const styles = StyleSheet.create({
   wrap: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.xs,
     paddingHorizontal: spacing.xl,
-    minHeight: 120,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.lg,
   },
   value: {
     fontFamily: fonts.semibold,
@@ -200,28 +146,19 @@ const styles = StyleSheet.create({
     lineHeight: 62,
     letterSpacing: -1,
     fontVariant: ['tabular-nums'],
+    minWidth: 70,
+    textAlign: 'center',
   },
   label: {
     ...typography.caption.caption1,
-    marginTop: 2,
     letterSpacing: 0.6,
     textTransform: 'lowercase',
+    marginTop: -2,
   },
-  tickRail: {
-    flexDirection: 'row',
+  chevronHit: {
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.sm,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    marginTop: spacing.sm,
-    height: 4,
-  },
-  tick: {
-    height: 2,
-    borderRadius: 1,
-  },
-  hint: {
-    ...typography.caption.caption2,
-    marginTop: spacing.xs,
-    letterSpacing: 0.4,
   },
 });
