@@ -3,7 +3,6 @@ import assert from 'node:assert/strict';
 import {
   buildCaptureResult,
   deriveCaptureHrvResult,
-  deriveLiveIbiHrvResult,
 } from './captureResult.ts';
 
 function makeBeatSeries(ibiMs, overrides = {}) {
@@ -51,50 +50,8 @@ test('deriveCaptureHrvResult returns HRV stats for usable cleaned intervals', ()
   assert.ok(result.hrvStats.rmssd > 0);
 });
 
-test('deriveLiveIbiHrvResult derives full-window HRV from live IBI samples', () => {
-  const liveIbiSamples = Array.from({ length: 20 }, (_, index) => {
-    const ibiMs = 800 + (index % 2 === 0 ? 12 : -8);
-    return {
-      offsetMs: (index + 1) * ibiMs,
-      ibiMs,
-      signalQuality: 0.8,
-    };
-  });
-
-  const result = deriveLiveIbiHrvResult(liveIbiSamples);
-
-  assert.ok(result.hrvStats, 'expected live HRV stats');
-  assert.equal(result.hrvAvailabilityReason, null);
-  assert.equal(result.correctedIbi.length, liveIbiSamples.length);
-  assert.equal(result.avgBpm, 75);
-});
-
-test('buildCaptureResult can use live full-window IBIs for reading and HRV stats', () => {
-  const liveIbiSamples = Array.from({ length: 20 }, (_, index) => ({
-    offsetMs: (index + 1) * 800,
-    ibiMs: 800,
-    signalQuality: 0.75,
-  }));
-
-  const result = buildCaptureResult([], liveIbiSamples, {
-    preferLiveIbiSamples: true,
-  });
-
-  assert.ok(result.reading, 'expected a reading from live IBIs');
-  assert.equal(result.reading.bpm, 75);
-  assert.equal(result.reading.beatCount, 20);
-  assert.equal(result.error, null);
-  assert.equal(result.ibiSamples.length, 20);
-});
-
-test('buildCaptureResult keeps the offline capture path by default', () => {
-  const liveIbiSamples = Array.from({ length: 20 }, (_, index) => ({
-    offsetMs: (index + 1) * 800,
-    ibiMs: 800,
-    signalQuality: 0.75,
-  }));
-
-  const result = buildCaptureResult([], liveIbiSamples);
+test('buildCaptureResult requires captured frame samples for the final analyzer', () => {
+  const result = buildCaptureResult([]);
 
   assert.equal(result.reading, null);
   assert.equal(result.error, 'too_few_samples');

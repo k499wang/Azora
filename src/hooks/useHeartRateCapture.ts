@@ -119,12 +119,11 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
     setCaptureStateAndRef('processing');
 
     const samples = [...samplesRef.current];
-    const ibiSamples = managerRef.current.getIbiSamples();
     setCaptureSamples(samples);
     setTimeout(() => {
       if (captureStateRef.current !== 'processing') return;
 
-      const nextResult = buildCaptureResult(samples, ibiSamples);
+      const nextResult = buildCaptureResult(samples);
       setResult(nextResult);
       setCaptureStateAndRef(nextResult.reading == null ? 'error' : 'done');
     }, 0);

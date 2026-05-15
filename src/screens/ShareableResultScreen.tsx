@@ -1,6 +1,8 @@
-import { Fragment, useCallback } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Fragment, useCallback, useRef } from 'react';
+import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import ViewShot from 'react-native-view-shot';
+import * as Sharing from 'expo-sharing';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Canvas, Path, Skia } from '@shopify/react-native-skia';
 import { colors } from '../theme/colors';
@@ -28,13 +30,21 @@ const LUNG_HEALTH_MAP: Record<
   { label: string; color: string; icon: keyof typeof MaterialCommunityIcons.glyphMap }
 > = {
   'elite':         { label: 'Elite Athlete', color: colors.primary.blue600, icon: 'trophy' },
-  'very-healthy':  { label: 'Very Healthy',  color: colors.success[500],    icon: 'lungs' },
-  'healthy':       { label: 'Healthy',       color: colors.success[700],    icon: 'leaf' },
-  'average':       { label: 'Average',       color: colors.warning[500],    icon: 'minus-circle-outline' },
+  'very-healthy':  { label: 'Very Healthy',  color: colors.primary.blue500, icon: 'lungs' },
+  'healthy':       { label: 'Healthy',       color: colors.primary.blue500, icon: 'leaf' },
+  'average':       { label: 'Average',       color: colors.primary.blue400, icon: 'minus-circle-outline' },
   'below-average': { label: 'Below Average', color: colors.orange[500],     icon: 'alert-circle-outline' },
-  'light-smoker':  { label: 'Could Improve', color: colors.orange[600],    icon: 'arrow-up-bold-circle-outline' },
-  'heavy-smoker':  { label: 'Needs Work',    color: colors.error[500],     icon: 'alert-circle-outline' },
+  'light-smoker':  { label: 'Could Improve', color: colors.orange[500],     icon: 'arrow-up-bold-circle-outline' },
+  'heavy-smoker':  { label: 'Needs Work',    color: colors.orange[600],     icon: 'alert-circle-outline' },
 };
+
+function formatTodayLabel(): string {
+  return new Date().toLocaleDateString(undefined, {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  });
+}
 
 const AGE_RING_SIZE = 260;
 const AGE_RING_STROKE = 16;
@@ -82,6 +92,25 @@ export default function ShareableResultScreen({
   arcPath.addArc(ringRect, AGE_RING_START, AGE_RING_SWEEP * ageScore);
   const advancedStatsLocked =
     !advancedStatsAccess.allowed && !advancedStatsAccess.isLoading;
+  const artifactRef = useRef<ViewShot>(null);
+  const handleShare = useCallback(async () => {
+    try {
+      const node = artifactRef.current;
+      if (node?.capture == null) return;
+      const uri = await node.capture();
+      const available = await Sharing.isAvailableAsync();
+      if (!available) {
+        Alert.alert('Sharing unavailable', 'This device does not support sharing.');
+        return;
+      }
+      await Sharing.shareAsync(uri, {
+        mimeType: 'image/png',
+        dialogTitle: 'Share your result',
+      });
+    } catch {
+      Alert.alert('Could not share', 'Please try again.');
+    }
+  }, []);
   const showAdvancedStatsPaywall = useCallback(() => {
     navigation.navigate('ProPaywall', {
       placement: PaywallPlacement.DailyResultProGate,
@@ -108,13 +137,13 @@ export default function ShareableResultScreen({
       ? {
           value: String(avgBpm),
           label: 'Avg HR',
-          tint: colors.error[500],
+          tint: colors.primary.blue500,
           score: clamp01((100 - avgBpm) / 50),
         }
       : {
           value: '—',
           label: 'Avg HR',
-          tint: colors.error[500],
+          tint: colors.primary.blue500,
           score: 0,
           unavailable: true,
         },
@@ -122,13 +151,13 @@ export default function ShareableResultScreen({
       ? {
           value: String(lungEstimate.hrDropBpm),
           label: 'Max HR Drop',
-          tint: colors.success[500],
+          tint: colors.primary.blue500,
           score: clamp01(lungEstimate.hrDropBpm / 20),
         }
       : {
           value: '—',
           label: 'Max HR Drop',
-          tint: colors.success[500],
+          tint: colors.primary.blue500,
           score: 0,
           unavailable: true,
         },
@@ -146,15 +175,39 @@ export default function ShareableResultScreen({
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.header}>
+        <View style={styles.headerControls}>
           <Pressable
             style={styles.closeButton}
             onPress={() => navigation.navigate('MainTabs', { screen: 'Home' })}
           >
             <MaterialCommunityIcons name="close" size={22} color={colors.text.secondary} />
           </Pressable>
-          <Text style={styles.title}>Nice work!</Text>
+          <Pressable style={styles.shareButton} onPress={handleShare}>
+            <MaterialCommunityIcons
+              name="share-variant"
+              size={20}
+              color={colors.primary.blue600}
+            />
+          </Pressable>
         </View>
+
+        <ViewShot
+          ref={artifactRef}
+          options={{ format: 'png', quality: 0.95, result: 'tmpfile' }}
+          style={styles.artifact}
+        >
+          <View style={styles.header}>
+            <View style={styles.brandRow}>
+              <Image
+                source={require('../../assets/iconApp.png')}
+                style={styles.brandMark}
+                resizeMode="contain"
+              />
+              <Text style={styles.brandWordmark}>Azora</Text>
+            </View>
+            <Text style={styles.title}>Nice work!</Text>
+            <Text style={styles.dateLabel}>{formatTodayLabel()}</Text>
+          </View>
 
         <View style={styles.heroCardWrap}>
           <View style={styles.heroCard}>
@@ -262,6 +315,7 @@ export default function ShareableResultScreen({
             />
           </LockedOverlay>
         </View>
+        </ViewShot>
 
         {stressZone != null && stress != null ? (
           <View style={styles.stressWrap}>
@@ -300,15 +354,22 @@ const styles = StyleSheet.create({
     paddingBottom: spacing['5xl'],
   },
 
-  header: {
+  artifact: {
+    backgroundColor: colors.background.primary,
+  },
+  headerControls: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: padding.screen.horizontal,
     paddingTop: padding.screen.vertical,
+  },
+  header: {
+    paddingHorizontal: padding.screen.horizontal,
+    paddingTop: spacing.sm,
     alignItems: 'center',
   },
   closeButton: {
-    position: 'absolute',
-    top: padding.screen.vertical,
-    left: padding.screen.horizontal,
     width: 36,
     height: 36,
     borderRadius: 18,
@@ -317,13 +378,47 @@ const styles = StyleSheet.create({
     borderColor: colors.border.subtle,
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 1,
+  },
+  shareButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.background.elevated,
+    borderWidth: 1,
+    borderColor: colors.border.subtle,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  brandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginBottom: spacing.sm,
+  },
+  brandMark: {
+    width: 24,
+    height: 24,
+  },
+  brandWordmark: {
+    ...typography.body.medium,
+    color: colors.primary.blue600,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    letterSpacing: 0.5,
   },
   title: {
     ...typography.title.title1,
     color: colors.text.primary,
     fontFamily: fonts.semibold,
     fontWeight: '600',
+  },
+  dateLabel: {
+    ...typography.caption.caption1,
+    color: colors.text.tertiary,
+    fontFamily: fonts.semibold,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    marginTop: spacing.xs,
   },
 
   heroCardWrap: {

@@ -125,6 +125,7 @@ interface HeartRateReleaseStats {
   avgBpm?: number;
   minBpm?: number;
   maxBpm?: number;
+  holdStartOffsetSeconds?: number;
 }
 
 function formatHoldTime(totalSeconds: number): string {
@@ -240,7 +241,6 @@ export default function DailyExercisePage({
     currentBpm,
     beginMeasurementWindow: beginPulseMeasurementWindow,
     getMeasurementSamples,
-    getIbiSamples,
   } = pulse;
 
   useEffect(() => {
@@ -583,9 +583,7 @@ export default function DailyExercisePage({
   const releaseHold = () => {
     const endedAtMs = Date.now();
     const captureSamples = getMeasurementSamples();
-    const captureResult = buildCaptureResult(captureSamples, getIbiSamples(), {
-      preferLiveIbiSamples: true,
-    });
+    const captureResult = buildCaptureResult(captureSamples);
     flow.cancel();
     setReleaseAudioActive(false);
     const newBest = holdSeconds > bestHoldSeconds && holdSeconds > 0;
@@ -606,10 +604,21 @@ export default function DailyExercisePage({
       hr_monitoring_enabled: hrEnabled,
     });
     void saveCompletedHold(holdSeconds, captureSamples.length, captureResult, endedAtMs);
-    const release = buildStatsFromCaptureResult(captureResult);
+    const measurementStartedAtMs = measurementStartAtRef.current;
+    const hasCombinedMeasurementWindow =
+      measurementStartedAtMs > 0 && holdStartAtRef.current > measurementStartedAtMs;
+    const holdStartOffsetSeconds =
+      hasCombinedMeasurementWindow
+        ? Math.max(0, Math.round((holdStartAtRef.current - measurementStartedAtMs) / 1000))
+        : undefined;
+    const release = {
+      ...buildStatsFromCaptureResult(captureResult),
+      holdStartOffsetSeconds,
+    };
     setLastRelease(release);
     navigation.navigate('DailyResult', {
       holdSeconds,
+      holdStartOffsetSeconds,
       avgBpm: release.avgBpm,
       minBpm: release.minBpm,
       maxBpm: release.maxBpm,
@@ -660,6 +669,7 @@ export default function DailyExercisePage({
     });
     navigation.navigate('DailyResult', {
       holdSeconds,
+      holdStartOffsetSeconds: lastRelease?.holdStartOffsetSeconds,
       avgBpm: lastRelease?.avgBpm,
       minBpm: lastRelease?.minBpm,
       maxBpm: lastRelease?.maxBpm,

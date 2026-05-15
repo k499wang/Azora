@@ -29,6 +29,7 @@ interface HeartRateResultContentProps {
   stress?: number | null;
   hrvAvailabilityReason?: HrvAvailabilityReason;
   ibiSamples?: IbiSample[];
+  holdStartOffsetSeconds?: number;
   bpmSeries?: DataPoint[];
   rrSeries?: DataPoint[];
   context?: string;
@@ -81,6 +82,21 @@ function downsampleIbi(
   return out;
 }
 
+function findClosestIbiIndex(samples: IbiSample[], offsetSeconds: number | undefined): number | undefined {
+  if (offsetSeconds == null || samples.length === 0) return undefined;
+  const offsetMs = offsetSeconds * 1000;
+  let bestIndex = 0;
+  let bestDistance = Math.abs(samples[0].offsetMs - offsetMs);
+  for (let i = 1; i < samples.length; i++) {
+    const distance = Math.abs(samples[i].offsetMs - offsetMs);
+    if (distance < bestDistance) {
+      bestIndex = i;
+      bestDistance = distance;
+    }
+  }
+  return bestIndex;
+}
+
 export function HeartRateResultContent({
   bpm,
   confidence,
@@ -90,6 +106,7 @@ export function HeartRateResultContent({
   stress,
   hrvAvailabilityReason,
   ibiSamples = [],
+  holdStartOffsetSeconds,
   bpmSeries,
   rrSeries,
   context,
@@ -122,6 +139,14 @@ export function HeartRateResultContent({
         (sample) => `${Math.round(sample.offsetMs / 1000)}s`,
       );
   const resolvedRrSeries = rrSeries ?? downsampleIbi(ibiSamples, (s) => Math.round(s.ibiMs));
+  const holdStartHighlightIndex =
+    bpmSeries == null && resolvedBpmSeries.length >= 2
+      ? findClosestIbiIndex(ibiSamples, holdStartOffsetSeconds)
+      : undefined;
+  const rrHoldStartHighlightIndex =
+    rrSeries == null && resolvedRrSeries.length >= 2 && ibiSamples.length <= 24
+      ? holdStartHighlightIndex
+      : undefined;
   const placeholderBpmSeries: DataPoint[] = Array.from({ length: 12 }, (_, i) => ({
     label: `${i * 2}s`,
     value: 72 + Math.round(Math.sin(i * 0.6) * 6),
@@ -241,6 +266,7 @@ export function HeartRateResultContent({
                   lineColor={colors.primary.blue500}
                   fillColor={colors.primary.blue100}
                   dotColor={colors.primary.blue600}
+                  highlightIndex={holdStartHighlightIndex}
                 />
               </View>
             ) : null}
@@ -255,6 +281,7 @@ export function HeartRateResultContent({
                   lineColor={colors.error[500]}
                   fillColor={`${colors.error[500]}1A`}
                   dotColor={colors.error[500]}
+                  highlightIndex={rrHoldStartHighlightIndex}
                 />
               </View>
             ) : null}
