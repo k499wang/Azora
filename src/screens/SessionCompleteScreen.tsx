@@ -1,93 +1,87 @@
-import { Fragment, useCallback } from 'react';
+import { Fragment, useEffect } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Canvas, Path, Skia } from '@shopify/react-native-skia';
+import * as Haptics from 'expo-haptics';
 import { colors } from '../theme/colors';
 import { typography, fonts } from '../theme/typography';
 import { spacing, padding, margin } from '../theme/spacing';
 import { card } from '../theme/card';
-import { HeartRateResultContent } from '../components/heartRate/HeartRateResultContent';
 import SectionHeader from '../components/common/SectionHeader';
-import type { DailyResultScreenProps } from '../app/navigation';
-import { estimateLungAge, type LungHealthKey } from '../lib/lungAge';
-import { getStressZone } from '../lib/heartRate/stress';
-import StressGauge from '../components/heartRate/StressGauge';
-import { useFeatureAccess } from '../hooks/useFeatureAccess';
-import { PaywallPlacement } from '../services/paywall';
-import { FeatureKey } from '../services/subscriptions/featureAccess';
+import HRGraphCard from '../components/exercise/HRGraphCard';
+import type { SessionCompleteScreenProps } from '../app/navigation';
+import { useAuthStore } from '../stores/authStore';
+import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
+import { buildAffirmation } from '../lib/affirmation';
 
-// ───────────��──────────────────────────────────────��─────────────────────────────
-
-const LUNG_HEALTH_MAP: Record<
-  LungHealthKey,
-  { label: string; color: string; icon: keyof typeof MaterialCommunityIcons.glyphMap }
-> = {
-  'elite':         { label: 'Elite Athlete', color: colors.primary.blue600, icon: 'trophy' },
-  'very-healthy':  { label: 'Very Healthy',  color: colors.success[500],    icon: 'lungs' },
-  'healthy':       { label: 'Healthy',       color: colors.success[700],    icon: 'leaf' },
-  'average':       { label: 'Average',       color: colors.warning[500],    icon: 'minus-circle-outline' },
-  'below-average': { label: 'Below Average', color: colors.orange[500],     icon: 'alert-circle-outline' },
-  'light-smoker':  { label: 'Could Improve', color: colors.orange[600],    icon: 'arrow-up-bold-circle-outline' },
-  'heavy-smoker':  { label: 'Needs Work',    color: colors.error[500],     icon: 'alert-circle-outline' },
-};
-
-const AGE_RING_SIZE = 260;
-const AGE_RING_STROKE = 16;
-const AGE_RING_START = 135;
-const AGE_RING_SWEEP = 270;
+const HERO_RING_SIZE = 260;
+const HERO_RING_STROKE = 16;
+const RING_START = 135;
+const RING_SWEEP = 270;
 
 const MINI_RING_SIZE = 76;
 const MINI_RING_STROKE = 6;
 
-function formatTime(secs: number) {
-  const minutes = Math.floor(secs / 60);
-  const seconds = secs % 60;
-  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+function formatDuration(secs: number): string {
+  const m = Math.floor(secs / 60);
+  const s = secs % 60;
+  return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
-export default function ShareableResultScreen({
+function clamp01(n: number): number {
+  return Math.max(0, Math.min(1, n));
+}
+
+export default function SessionCompleteScreen({
   navigation,
   route,
-}: DailyResultScreenProps) {
+}: SessionCompleteScreenProps) {
   const insets = useSafeAreaInsets();
-  const advancedStatsAccess = useFeatureAccess(FeatureKey.AdvancedStats);
   const {
-    holdSeconds,
+    techniqueName,
+    breathCount,
+    targetBreaths,
+    durationSec,
+    targetSec,
+    cycles,
+    targetCycles,
     avgBpm,
-    minBpm,
-    rmssd,
-    hrDrop,
-    stress,
-    confidence,
-    sampleCount,
-    hrvAvailabilityReason,
-    ibiSamples = [],
+    hrSamples = [],
   } = route.params;
-  const lungEstimate = estimateLungAge({ holdSeconds, avgBpm, minBpm });
-  const health = LUNG_HEALTH_MAP[lungEstimate.key];
-  const holdTime = formatTime(holdSeconds);
 
-  const ringCx = AGE_RING_SIZE / 2;
-  const ringR = AGE_RING_SIZE / 2 - AGE_RING_STROKE;
+  useEffect(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+  }, []);
+
+  const user = useAuthStore((state) => state.user);
+  const profileSummaryQuery = useProfileSummaryQuery(user?.id ?? null);
+  const displayName = profileSummaryQuery.data?.profile?.displayName ?? null;
+  const firstName = displayName?.trim().split(/\s+/)[0] ?? null;
+  const affirmation = buildAffirmation({
+    firstName,
+    hour: new Date().getHours(),
+    durationSec,
+  });
+
+  const ringCx = HERO_RING_SIZE / 2;
+  const ringR = HERO_RING_SIZE / 2 - HERO_RING_STROKE;
   const ringRect = Skia.XYWHRect(ringCx - ringR, ringCx - ringR, ringR * 2, ringR * 2);
-  const ageScore = Math.max(0, Math.min(1, (80 - lungEstimate.age) / (80 - 18)));
-  const trackPath = Skia.Path.Make();
-  trackPath.addArc(ringRect, AGE_RING_START, AGE_RING_SWEEP);
-  const arcPath = Skia.Path.Make();
-  arcPath.addArc(ringRect, AGE_RING_START, AGE_RING_SWEEP * ageScore);
-  const advancedStatsLocked =
-    !advancedStatsAccess.allowed && !advancedStatsAccess.isLoading;
-  const showAdvancedStatsPaywall = useCallback(() => {
-    navigation.navigate('ProPaywall', {
-      placement: PaywallPlacement.DailyResultProGate,
-      sourceScreen: 'DailyResult',
-      feature: FeatureKey.AdvancedStats,
-    });
-  }, [navigation]);
+  const breathScore = clamp01(targetBreaths > 0 ? breathCount / targetBreaths : 0);
+  const heroTrackPath = Skia.Path.Make();
+  heroTrackPath.addArc(ringRect, RING_START, RING_SWEEP);
+  const heroArcPath = Skia.Path.Make();
+  heroArcPath.addArc(ringRect, RING_START, RING_SWEEP * breathScore);
 
-  const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
-  const heroStats: Array<{
+  const heroColor = colors.primary.blue500;
+
+  const miniCx = MINI_RING_SIZE / 2;
+  const miniR = MINI_RING_SIZE / 2 - MINI_RING_STROKE;
+  const miniRect = Skia.XYWHRect(miniCx - miniR, miniCx - miniR, miniR * 2, miniR * 2);
+  const miniTrackPath = Skia.Path.Make();
+  miniTrackPath.addArc(miniRect, RING_START, RING_SWEEP);
+
+  const stats: Array<{
     value: string;
     label: string;
     tint: string;
@@ -95,14 +89,20 @@ export default function ShareableResultScreen({
     unavailable?: boolean;
   }> = [
     {
-      value: holdTime,
-      label: 'Hold',
+      value: formatDuration(durationSec),
+      label: 'Duration',
       tint: colors.primary.blue500,
-      score: clamp01(holdSeconds / 120),
+      score: clamp01(targetSec > 0 ? durationSec / targetSec : 0),
+    },
+    {
+      value: String(cycles),
+      label: 'Cycles',
+      tint: colors.success[500],
+      score: clamp01(targetCycles > 0 ? cycles / targetCycles : 0),
     },
     avgBpm != null
       ? {
-          value: String(avgBpm),
+          value: String(Math.round(avgBpm)),
           label: 'Avg HR',
           tint: colors.error[500],
           score: clamp01((100 - avgBpm) / 50),
@@ -114,28 +114,14 @@ export default function ShareableResultScreen({
           score: 0,
           unavailable: true,
         },
-    lungEstimate.hrDropBpm != null
-      ? {
-          value: String(lungEstimate.hrDropBpm),
-          label: 'Max HR Drop',
-          tint: colors.success[500],
-          score: clamp01(lungEstimate.hrDropBpm / 20),
-        }
-      : {
-          value: '—',
-          label: 'Max HR Drop',
-          tint: colors.success[500],
-          score: 0,
-          unavailable: true,
-        },
   ];
-  const stressZone = stress != null ? getStressZone(stress) : null;
 
-  const miniCx = MINI_RING_SIZE / 2;
-  const miniR = MINI_RING_SIZE / 2 - MINI_RING_STROKE;
-  const miniRect = Skia.XYWHRect(miniCx - miniR, miniCx - miniR, miniR * 2, miniR * 2);
-  const miniTrackPath = Skia.Path.Make();
-  miniTrackPath.addArc(miniRect, AGE_RING_START, AGE_RING_SWEEP);
+  const showGraph = hrSamples.length >= 10;
+
+  const handleClose = () => {
+    navigation.navigate('MainTabs', { screen: 'Home' });
+  };
+
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
       <ScrollView
@@ -143,39 +129,38 @@ export default function ShareableResultScreen({
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
-          <Pressable
-            style={styles.closeButton}
-            onPress={() => navigation.navigate('MainTabs', { screen: 'Home' })}
-          >
+          <Pressable style={styles.closeButton} onPress={handleClose}>
             <MaterialCommunityIcons name="close" size={22} color={colors.text.secondary} />
           </Pressable>
           <Text style={styles.title}>Nice work!</Text>
         </View>
 
-        <View style={styles.heroCardWrap}>
+        <View style={styles.heroWrap}>
           <View style={styles.heroCard}>
-            <View style={styles.ageRingWrap}>
+            <View style={styles.ringWrap}>
               <Canvas style={StyleSheet.absoluteFill}>
                 <Path
-                  path={trackPath}
+                  path={heroTrackPath}
                   style="stroke"
-                  strokeWidth={AGE_RING_STROKE}
+                  strokeWidth={HERO_RING_STROKE}
                   strokeCap="round"
-                  color={health.color + '26'}
+                  color={heroColor + '26'}
                 />
                 <Path
-                  path={arcPath}
+                  path={heroArcPath}
                   style="stroke"
-                  strokeWidth={AGE_RING_STROKE}
+                  strokeWidth={HERO_RING_STROKE}
                   strokeCap="round"
-                  color={health.color}
+                  color={heroColor}
                 />
               </Canvas>
-              <View style={styles.ageRingCenter} pointerEvents="none">
-                <Text style={styles.ageRingValue}>{lungEstimate.age}</Text>
-                <Text style={styles.ageRingUnit}>years</Text>
+              <View style={styles.ringCenter} pointerEvents="none">
+                <Text style={styles.ringValue}>{breathCount}</Text>
+                <Text style={styles.ringUnit}>breaths</Text>
               </View>
             </View>
+            <Text style={styles.techniqueName}>{techniqueName}</Text>
+            <Text style={styles.affirmation}>{affirmation}</Text>
           </View>
         </View>
 
@@ -184,9 +169,9 @@ export default function ShareableResultScreen({
         </View>
 
         <View style={styles.statTileRow}>
-          {heroStats.map((stat, idx) => {
+          {stats.map((stat, idx) => {
             const arc = Skia.Path.Make();
-            arc.addArc(miniRect, AGE_RING_START, AGE_RING_SWEEP * stat.score);
+            arc.addArc(miniRect, RING_START, RING_SWEEP * stat.score);
             const arcColor = stat.unavailable ? colors.neutral[200] : stat.tint;
             return (
               <Fragment key={stat.label}>
@@ -233,29 +218,11 @@ export default function ShareableResultScreen({
           })}
         </View>
 
-        {stressZone != null && stress != null ? (
-          <View style={styles.stressWrap}>
-            <StressGauge value={stress} zone={stressZone} />
+        {showGraph ? (
+          <View style={styles.graphWrap}>
+            <HRGraphCard samples={hrSamples} durationSec={durationSec} />
           </View>
         ) : null}
-
-        <View style={styles.heartResultSection}>
-          <HeartRateResultContent
-            bpm={avgBpm ?? '—'}
-            confidence={confidence}
-            sampleCount={sampleCount}
-            rmssd={rmssd}
-            hrDrop={hrDrop}
-            stress={stress}
-            hrvAvailabilityReason={hrvAvailabilityReason}
-            ibiSamples={ibiSamples}
-            showHero={false}
-            showRmssd={false}
-            showStress={false}
-            advancedStatsLocked={advancedStatsLocked}
-            onPressUpgrade={showAdvancedStatsPaywall}
-          />
-        </View>
       </ScrollView>
     </View>
   );
@@ -269,7 +236,6 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: spacing['5xl'],
   },
-
   header: {
     paddingHorizontal: padding.screen.horizontal,
     paddingTop: padding.screen.vertical,
@@ -295,8 +261,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semibold,
     fontWeight: '600',
   },
-
-  heroCardWrap: {
+  heroWrap: {
     paddingHorizontal: padding.screen.horizontal,
     marginTop: margin.sectionGap,
   },
@@ -306,10 +271,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     alignItems: 'center',
   },
-  ageRingWrap: {
-    width: AGE_RING_SIZE,
-    height: AGE_RING_SIZE,
-    borderRadius: AGE_RING_SIZE / 2,
+  ringWrap: {
+    width: HERO_RING_SIZE,
+    height: HERO_RING_SIZE,
+    borderRadius: HERO_RING_SIZE / 2,
     backgroundColor: colors.background.elevated,
     borderWidth: 1,
     borderColor: colors.neutral[100],
@@ -319,12 +284,12 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 8 },
     elevation: 4,
   },
-  ageRingCenter: {
+  ringCenter: {
     ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  ageRingValue: {
+  ringValue: {
     ...typography.display.display1,
     fontSize: 72,
     lineHeight: 78,
@@ -332,11 +297,25 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semibold,
     fontWeight: '600',
   },
-  ageRingUnit: {
+  ringUnit: {
     ...typography.body.small,
     color: colors.text.tertiary,
     fontFamily: fonts.semibold,
     marginTop: 2,
+  },
+  techniqueName: {
+    ...typography.body.small,
+    color: colors.text.secondary,
+    fontFamily: fonts.semibold,
+    marginTop: spacing.md,
+  },
+  affirmation: {
+    ...typography.title.title2,
+    color: colors.text.primary,
+    fontFamily: fonts.semibold,
+    marginTop: spacing.sm,
+    textAlign: 'center',
+    paddingHorizontal: spacing.md,
   },
   statsHeader: {
     paddingHorizontal: padding.screen.horizontal,
@@ -402,13 +381,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semibold,
     marginTop: spacing.xs,
   },
-
-  stressWrap: {
+  graphWrap: {
     paddingHorizontal: padding.screen.horizontal,
-    marginTop: spacing.md,
-  },
-  heartResultSection: {
-    paddingHorizontal: padding.screen.horizontal,
-    marginTop: margin.resultSection,
   },
 });

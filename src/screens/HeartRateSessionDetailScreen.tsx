@@ -1,7 +1,8 @@
-import { ActivityIndicator, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
-import { spacing } from '../theme/spacing';
+import { spacing, padding, margin } from '../theme/spacing';
 import { typography, fonts } from '../theme/typography';
 import type { DataPoint } from '../components/analytics/LineGraph';
 import { HeartRateResultContent } from '../components/heartRate/HeartRateResultContent';
@@ -45,6 +46,7 @@ export function HeartRateSessionDetailScreen({
   navigation,
   route,
 }: HeartRateSessionDetailScreenProps) {
+  const insets = useSafeAreaInsets();
   const user = useAuthStore((state) => state.user);
   const sessionId = route.params.sessionId;
   const detailQuery = useHeartRateSessionDetailQuery(user?.id ?? null, sessionId);
@@ -67,19 +69,16 @@ export function HeartRateSessionDetailScreen({
     }));
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
-        <View style={styles.topBar}>
-          <Pressable
-            onPress={() => navigation.goBack()}
-            hitSlop={16}
-            accessibilityLabel="Go back"
-            style={styles.backButton}
-          >
-            <MaterialCommunityIcons name="chevron-left" size={30} color={colors.text.primary} />
+    <View style={[styles.screen, { paddingTop: insets.top }]}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.header}>
+          <Pressable style={styles.closeButton} onPress={() => navigation.goBack()}>
+            <MaterialCommunityIcons name="close" size={22} color={colors.text.secondary} />
           </Pressable>
-          <Text style={styles.topTitle}>Heart Rate</Text>
-          <View style={styles.backButton} />
+          <Text style={styles.headerTitle}>Nice work!</Text>
         </View>
 
         {detailQuery.isLoading ? (
@@ -94,79 +93,88 @@ export function HeartRateSessionDetailScreen({
               color={colors.warning[500]}
             />
             <Text style={styles.errorTitle}>Could not load reading</Text>
-            <Text style={styles.errorText}>This heart-rate session may no longer be available.</Text>
+            <Text style={styles.errorText}>
+              This heart-rate session may no longer be available.
+            </Text>
           </View>
         ) : (
-          <ScrollView
-            style={styles.scroll}
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-          >
-            <HeartRateResultContent
-              bpm={detail.avgBpm ?? '--'}
-              sampleCount={detail.bpmSeries.length || null}
-              rmssd={detail.rmssd}
-              hrDrop={detail.hrDrop}
-              stress={detail.stress}
-              bpmSeries={bpmSeries}
-              rrSeries={rrSeries}
-              metaText={formatLoggedAt(detail.startedAt)}
-              showConfidence={false}
-              advancedStatsLocked={advancedStatsLocked}
-              onPressUpgrade={() => {
-                navigation.navigate('ProPaywall', {
-                  placement: PaywallPlacement.DailyResultProGate,
-                  sourceScreen: 'HeartRateSessionDetail',
-                  feature: FeatureKey.AdvancedStats,
-                });
-              }}
-            />
-          </ScrollView>
+          <View style={styles.heroWrap}>
+            <View style={styles.heroContent}>
+              <HeartRateResultContent
+                bpm={detail.avgBpm ?? '--'}
+                sampleCount={detail.bpmSeries.length || null}
+                rmssd={detail.rmssd}
+                hrDrop={detail.hrDrop}
+                stress={detail.stress}
+                bpmSeries={bpmSeries}
+                rrSeries={rrSeries}
+                metaText={formatLoggedAt(detail.startedAt)}
+                showConfidence={false}
+                advancedStatsLocked={advancedStatsLocked}
+                onPressUpgrade={() => {
+                  navigation.navigate('ProPaywall', {
+                    placement: PaywallPlacement.DailyResultProGate,
+                    sourceScreen: 'HeartRateSessionDetail',
+                    feature: FeatureKey.AdvancedStats,
+                  });
+                }}
+              />
+            </View>
+          </View>
         )}
-      </View>
-    </SafeAreaView>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
+  screen: {
     flex: 1,
     backgroundColor: colors.background.primary,
   },
-  container: {
-    flex: 1,
+  scrollContent: {
+    paddingBottom: spacing['5xl'],
   },
-  topBar: {
-    height: 56,
-    paddingHorizontal: spacing.md,
-    flexDirection: 'row',
+  header: {
+    paddingHorizontal: padding.screen.horizontal,
+    paddingTop: padding.screen.vertical,
     alignItems: 'center',
-    justifyContent: 'space-between',
   },
-  backButton: {
-    width: 40,
-    height: 40,
+  closeButton: {
+    position: 'absolute',
+    top: padding.screen.vertical,
+    left: padding.screen.horizontal,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.background.elevated,
+    borderWidth: 1,
+    borderColor: colors.border.subtle,
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 1,
   },
-  topTitle: {
-    ...typography.heading.heading1,
+  headerTitle: {
+    ...typography.title.title1,
     color: colors.text.primary,
     fontFamily: fonts.semibold,
+    fontWeight: '600',
   },
-  scroll: {
-    flex: 1,
+  heroWrap: {
+    paddingHorizontal: padding.screen.horizontal,
+    marginTop: margin.sectionGap,
   },
-  scrollContent: {
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing['5xl'],
+  heroContent: {
     alignItems: 'center',
+    width: '100%',
+    paddingTop: spacing.xl,
   },
   centerState: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing.xl,
+    paddingTop: spacing['5xl'],
     gap: spacing.sm,
   },
   errorTitle: {

@@ -29,6 +29,18 @@ export type RootStackParamList = {
   };
   HeartRateSessionDetail: { sessionId: string };
   ExerciseSession: { techniqueId: string };
+  SessionComplete: {
+    techniqueId: string;
+    techniqueName: string;
+    breathCount: number;
+    targetBreaths: number;
+    durationSec: number;
+    targetSec: number;
+    cycles: number;
+    targetCycles: number;
+    avgBpm?: number;
+    hrSamples?: Array<{ t: number; bpm: number }>;
+  };
   DailyExercise: undefined;
   DailyResult: {
     holdSeconds: number;
@@ -73,5 +85,6 @@ export type HeartRateScreenProps = RootStackScreenProps<'HeartRate'>;
 export type ProPaywallScreenProps = RootStackScreenProps<'ProPaywall'>;
 export type HeartRateSessionDetailScreenProps = RootStackScreenProps<'HeartRateSessionDetail'>;
 export type ExerciseSessionScreenProps = RootStackScreenProps<'ExerciseSession'>;
+export type SessionCompleteScreenProps = RootStackScreenProps<'SessionComplete'>;
 export type DailyExerciseScreenProps = RootStackScreenProps<'DailyExercise'>;
 export type DailyResultScreenProps = RootStackScreenProps<'DailyResult'>;

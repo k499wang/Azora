@@ -33,6 +33,7 @@ export const padding = {
 
 export const margin = {
   sectionGap: spacing.xl,
+  resultSection: spacing.lg,
   itemGap: spacing.md,
   textGap: spacing.sm,
   tightGap: spacing.xs,
