@@ -8,6 +8,7 @@ import { ResultScreen } from './ResultScreen';
 import { DefaultInstructionScreen } from './setupScreens/DefaultInstructionScreen';
 import { PersistentCameraRing } from './PersistentCameraRing';
 import { AnimatedCalibratingText } from './AnimatedCalibratingText';
+import { RotatingSubtitle } from './RotatingSubtitle';
 import { colors } from '../../theme/colors';
 import { typography, fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
@@ -389,6 +390,7 @@ export function HeartRateCaptureFlow({
               {checkConfig.status}
             </Text>
           )}
+          {isMeasuring && !isFingerLost && <RotatingSubtitle />}
         </View>
 
         {/* Persistent ring + camera — never unmounts across check ↔ measuring */}
