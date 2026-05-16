@@ -4,9 +4,9 @@ import type { AudioCategoryId, AudioPreferences } from './types';
 const STORAGE_KEY = 'settings:audio_v1';
 
 const DEFAULT_PREFERENCES: AudioPreferences = {
-  voice: null,
-  ambient: null,
-  chime: null,
+  voice: 'theo',
+  ambient: 'rain',
+  chime: 'singingBowl',
   ambientVolume: 0.5,
 };
 
