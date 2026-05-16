@@ -14,6 +14,7 @@ import { heartRatePlugin } from '../lib/heartRate/heartRatePlugin';
 import { HeartRateManager } from '../lib/heartRate/heartRateManager';
 import { buildCaptureResult } from '../lib/heartRate/captureResult';
 import { stabilizeBpmUpdate } from '../lib/heartRate/bpmSmoothing';
+import { runAfterNextPaint } from '../lib/ui/runAfterNextPaint';
 import { useMeasurementTimer } from './useMeasurementTimer';
 import { useHeartRateCamera } from './useHeartRateCamera';
 
@@ -120,13 +121,14 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
 
     const samples = [...samplesRef.current];
     setCaptureSamples(samples);
-    setTimeout(() => {
+
+    void runAfterNextPaint(() => {
       if (captureStateRef.current !== 'processing') return;
 
       const nextResult = buildCaptureResult(samples);
       setResult(nextResult);
       setCaptureStateAndRef(nextResult.reading == null ? 'error' : 'done');
-    }, 0);
+    });
   }, [setCaptureStateAndRef, updateProgress]);
 
   const {

@@ -14,6 +14,7 @@ import BreathingCircle, {
 import ExerciseScaffold from '../components/exercise/ExerciseScaffold';
 import { useLivePulse } from '../hooks/useLivePulse';
 import { HeartRateCameraPreview } from '../components/heartRate/HeartRateCameraPreview';
+import { HeartRateProcessingScreen } from '../components/heartRate/HeartRateProcessingScreen';
 import type {
   CaptureResult,
   FingerPlacementState,
@@ -39,6 +40,7 @@ import { useAuthStore } from '../stores/authStore';
 import { useCompleteBreathHoldMutation } from '../queries/tracking/useCompleteBreathHoldMutation';
 import { estimateLungAge } from '../lib/lungAge';
 import { buildCaptureResult } from '../lib/heartRate/captureResult';
+import { runAfterNextPaint } from '../lib/ui/runAfterNextPaint';
 import {
   buildBpmSamplesFromIbiSamples,
   buildInstantaneousBpmSamplesFromIbiSamples,
@@ -69,7 +71,15 @@ function placementHint(p: FingerPlacementState): string {
   }
 }
 
-type HoldPhase = 'idle' | 'placement' | 'preInhale' | 'preExhale' | 'inhale' | 'hold' | 'done';
+type HoldPhase =
+  | 'idle'
+  | 'placement'
+  | 'preInhale'
+  | 'preExhale'
+  | 'inhale'
+  | 'hold'
+  | 'processingResults'
+  | 'done';
 
 const PHASE_LABELS: Record<HoldPhase, string> = {
   idle: '',
@@ -78,6 +88,7 @@ const PHASE_LABELS: Record<HoldPhase, string> = {
   preExhale: 'Long exhale',
   inhale: 'Final inhale',
   hold: 'Hold',
+  processingResults: '',
   done: 'Done',
 };
 
@@ -312,6 +323,13 @@ export default function DailyExercisePage({
     setReleaseAudioActive(false);
     setPhase('idle');
   }, [isFocused, phase]);
+
+  useEffect(() => {
+    navigation.setOptions({ gestureEnabled: phase !== 'processingResults' });
+    return () => {
+      navigation.setOptions({ gestureEnabled: true });
+    };
+  }, [navigation, phase]);
 
   const beginHold = useCallback(() => {
     if (!flow.isActive()) return;
@@ -583,53 +601,58 @@ export default function DailyExercisePage({
   const releaseHold = () => {
     const endedAtMs = Date.now();
     const captureSamples = getMeasurementSamples();
-    const captureResult = buildCaptureResult(captureSamples);
-    flow.cancel();
-    setReleaseAudioActive(false);
-    const newBest = holdSeconds > bestHoldSeconds && holdSeconds > 0;
-    const updatedBest = Math.max(bestHoldSeconds, holdSeconds);
-    setBestHoldSeconds(updatedBest);
-    setPhase('done');
-    stopPulse();
-    if (newBest) {
-      AsyncStorage.setItem(BEST_HOLD_KEY, String(updatedBest)).catch(() => {});
-    }
-    if (isHapticsEnabled() && newBest) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-    } else if (isHapticsEnabled()) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    }
-    posthog.capture(AnalyticsEvent.DailyBreathHoldReleased, {
-      is_new_best: newBest,
-      hr_monitoring_enabled: hrEnabled,
-    });
-    void saveCompletedHold(holdSeconds, captureSamples.length, captureResult, endedAtMs);
-    const measurementStartedAtMs = measurementStartAtRef.current;
-    const hasCombinedMeasurementWindow =
-      measurementStartedAtMs > 0 && holdStartAtRef.current > measurementStartedAtMs;
-    const holdStartOffsetSeconds =
-      hasCombinedMeasurementWindow
-        ? Math.max(0, Math.round((holdStartAtRef.current - measurementStartedAtMs) / 1000))
-        : undefined;
-    const release = {
-      ...buildStatsFromCaptureResult(captureResult),
-      holdStartOffsetSeconds,
-    };
-    setLastRelease(release);
-    navigation.navigate('DailyResult', {
-      holdSeconds,
-      holdStartOffsetSeconds,
-      avgBpm: release.avgBpm,
-      minBpm: release.minBpm,
-      maxBpm: release.maxBpm,
-      rmssd: release.rmssd,
-      sdnn: release.sdnn,
-      hrDrop: release.hrDrop,
-      stress: release.stress,
-      confidence: release.confidence,
-      sampleCount: release.sampleCount,
-      hrvAvailabilityReason: release.hrvAvailabilityReason,
-      ibiSamples: release.ibiSamples,
+    const releasedHoldSeconds = holdSeconds;
+    setPhase('processingResults');
+
+    void runAfterNextPaint(() => {
+      const captureResult = buildCaptureResult(captureSamples);
+      flow.cancel();
+      setReleaseAudioActive(false);
+      const newBest = releasedHoldSeconds > bestHoldSeconds && releasedHoldSeconds > 0;
+      const updatedBest = Math.max(bestHoldSeconds, releasedHoldSeconds);
+      setBestHoldSeconds(updatedBest);
+      setPhase('done');
+      if (newBest) {
+        AsyncStorage.setItem(BEST_HOLD_KEY, String(updatedBest)).catch(() => {});
+      }
+      if (isHapticsEnabled() && newBest) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+      } else if (isHapticsEnabled()) {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+      }
+      posthog.capture(AnalyticsEvent.DailyBreathHoldReleased, {
+        is_new_best: newBest,
+        hr_monitoring_enabled: hrEnabled,
+      });
+      void saveCompletedHold(releasedHoldSeconds, captureSamples.length, captureResult, endedAtMs);
+
+      const measurementStartedAtMs = measurementStartAtRef.current;
+      const hasCombinedMeasurementWindow =
+        measurementStartedAtMs > 0 && holdStartAtRef.current > measurementStartedAtMs;
+      const holdStartOffsetSeconds =
+        hasCombinedMeasurementWindow
+          ? Math.max(0, Math.round((holdStartAtRef.current - measurementStartedAtMs) / 1000))
+          : undefined;
+      const release = {
+        ...buildStatsFromCaptureResult(captureResult),
+        holdStartOffsetSeconds,
+      };
+      setLastRelease(release);
+      navigation.navigate('DailyResult', {
+        holdSeconds: releasedHoldSeconds,
+        holdStartOffsetSeconds,
+        avgBpm: release.avgBpm,
+        minBpm: release.minBpm,
+        maxBpm: release.maxBpm,
+        rmssd: release.rmssd,
+        sdnn: release.sdnn,
+        hrDrop: release.hrDrop,
+        stress: release.stress,
+        confidence: release.confidence,
+        sampleCount: release.sampleCount,
+        hrvAvailabilityReason: release.hrvAvailabilityReason,
+        ibiSamples: release.ibiSamples,
+      });
     });
   };
 
@@ -727,6 +750,19 @@ export default function DailyExercisePage({
   const showSignalWarning = isLive && pulse.active && !signalGood;
 
   const showSettingsPill = phase === 'idle' || phase === 'done';
+
+  if (phase === 'processingResults') {
+    return (
+      <HeartRateProcessingScreen
+        title="Reading your recovery signal"
+        message="Turning your heart rhythm into today's results"
+        backgroundColor={activeTheme.screen}
+        accentColor={activeTheme.textAccent}
+        titleColor={activeTheme.textPrimary}
+        messageColor={activeTheme.textSecondary}
+      />
+    );
+  }
 
   return (
     <View style={[styles.fill, { backgroundColor: activeTheme.screen }]}>
