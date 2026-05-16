@@ -13,6 +13,7 @@ import SectionHeader from '../common/SectionHeader';
 import StressGauge from './StressGauge';
 import HRVTrackStatCard from '../home/HRVTrackStatCard';
 import { getStressZone } from '../../lib/heartRate/stress';
+import { computeHRVStats } from '../../lib/hrv';
 import {
   buildGraphBpmValuePointsFromIbis,
   smoothBpmValuePoints,
@@ -102,6 +103,7 @@ export function HeartRateResultContent({
   confidence,
   sampleCount,
   rmssd,
+  sdnn,
   hrDrop,
   stress,
   hrvAvailabilityReason,
@@ -132,6 +134,16 @@ export function HeartRateResultContent({
       : advancedStatsLocked
         ? 48
         : null;
+  const sdnnFromProp =
+    sdnn != null && Number.isFinite(sdnn) && sdnn > 0 ? sdnn : null;
+  const sdnnFromIbis =
+    ibiSamples.length >= 2
+      ? computeHRVStats(ibiSamples.map((s) => s.ibiMs)).sdnn
+      : 0;
+  const sdnnRaw =
+    sdnnFromProp ??
+    (sdnnFromIbis > 0 && Number.isFinite(sdnnFromIbis) ? sdnnFromIbis : null);
+  const sdnnNumeric = sdnnRaw ?? (advancedStatsLocked ? 55 : null);
   const resolvedBpmSeries = bpmSeries != null
     ? smoothBpmValuePoints(bpmSeries)
     : buildGraphBpmValuePointsFromIbis(
@@ -227,6 +239,12 @@ export function HeartRateResultContent({
             <SectionHeader title="Statistics" />
           </View>
           <LockedOverlay locked={advancedStatsLocked} onPressUpgrade={onPressUpgrade}>
+            {showStress && stressZoneForDisplay != null && stressForDisplay != null ? (
+              <View style={styles.gaugeWrap}>
+                <StressGauge value={stressForDisplay} zone={stressZoneForDisplay} />
+              </View>
+            ) : null}
+
             {showRmssd ? (
               <View style={styles.proStatsColumn}>
                 <HRVTrackStatCard
@@ -238,12 +256,15 @@ export function HeartRateResultContent({
                   lowBound={20}
                   highBound={50}
                 />
-              </View>
-            ) : null}
-
-            {showStress && stressZoneForDisplay != null && stressForDisplay != null ? (
-              <View style={styles.gaugeWrap}>
-                <StressGauge value={stressForDisplay} zone={stressZoneForDisplay} />
+                <HRVTrackStatCard
+                  label="Avg HRV"
+                  value={sdnnNumeric}
+                  unit="ms"
+                  icon="stat-hrv-curve"
+                  max={100}
+                  lowBound={30}
+                  highBound={70}
+                />
               </View>
             ) : null}
           </LockedOverlay>
@@ -421,6 +442,7 @@ const styles = StyleSheet.create({
     width: '100%',
     flexDirection: 'column',
     gap: spacing.sm,
+    marginTop: spacing.sm,
   },
   proBadge: {
     borderRadius: 999,

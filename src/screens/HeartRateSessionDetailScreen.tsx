@@ -104,6 +104,7 @@ export function HeartRateSessionDetailScreen({
                 bpm={detail.avgBpm ?? '--'}
                 sampleCount={detail.bpmSeries.length || null}
                 rmssd={detail.rmssd}
+                sdnn={detail.sdnn}
                 hrDrop={detail.hrDrop}
                 stress={detail.stress}
                 bpmSeries={bpmSeries}
