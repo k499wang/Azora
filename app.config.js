@@ -29,7 +29,10 @@ module.exports = {
       },
       edgeToEdgeEnabled: true,
       predictiveBackGestureEnabled: false,
-      permissions: ['android.permission.CAMERA', 'android.permission.CAMERA'],
+      permissions: [
+        'android.permission.CAMERA',
+        'android.permission.POST_NOTIFICATIONS',
+      ],
       package: 'com.azora.breath',
     },
     web: {
@@ -38,6 +41,7 @@ module.exports = {
     plugins: [
       'expo-font',
       'expo-asset',
+      'expo-notifications',
       'react-native-vision-camera',
       './plugins/with-heart-rate-plugin',
       './plugins/with-continuous-haptics-plugin',
@@ -62,6 +66,7 @@ module.exports = {
         },
       ],
       'expo-apple-authentication',
+      '@react-native-community/datetimepicker',
     ],
     extra: {
       eas: {

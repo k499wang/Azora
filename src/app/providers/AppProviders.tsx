@@ -5,6 +5,7 @@ import {
 } from '@tanstack/react-query';
 import { useAuthStore } from '../../stores/authStore';
 import { useSubscriptionBootstrap } from '../../hooks/useSubscriptionBootstrap';
+import { useNotificationBootstrap } from '../../hooks/useNotificationBootstrap';
 
 interface AppProvidersProps {
   children: ReactNode;
@@ -29,14 +30,20 @@ export function AppProviders({ children }: AppProvidersProps) {
   }, [initialize]);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <SubscriptionBootstrap />
-      {children}
-    </QueryClientProvider>
+      <QueryClientProvider client={queryClient}>
+        <SubscriptionBootstrap />
+        <NotificationBootstrap />
+        {children}
+      </QueryClientProvider>
   );
 }
 
 function SubscriptionBootstrap() {
   useSubscriptionBootstrap();
+  return null;
+}
+
+function NotificationBootstrap() {
+  useNotificationBootstrap();
   return null;
 }

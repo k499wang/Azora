@@ -259,11 +259,11 @@ function getPaywallCopy(feature: RootStackScreenProps<'ProPaywall'>['route']['pa
     case 'daily_exercise':
       return {
         title: 'Breath whenever, wherever',
-        subtitle: 'Unlock unlimited breath holds, guided exercises, and progress insights.',
+        subtitle: 'Unlock guided exercises and progress insights.',
       };
     case 'advanced_stats':
       return {
-        title: 'Unlock your heart insights',
+        title: 'Unlock your heart',
         subtitle: 'See RMSSD, HRV, stress, recovery response, and deeper trends.',
       };
     case 'session_history':

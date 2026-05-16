@@ -15,6 +15,7 @@ import ProfileStatsGrid, {
 import ProfileCompletionCalendarCard from '../components/profile/ProfileCompletionCalendarCard';
 import ProfileBreathHoldTrendCard from '../components/profile/ProfileBreathHoldTrendCard';
 import ProfileAccountCard from '../components/profile/ProfileAccountCard';
+import NotificationsSettingsSheet from '../features/notifications/NotificationsSettingsSheet';
 import { useAuthStore } from '../stores/authStore';
 import type { ProfileScreenProps } from '../app/navigation';
 import { trackProfileAction } from '../services/analytics/tracking';
@@ -59,6 +60,7 @@ export default function ProfileScreen(_: ProfileScreenProps) {
   const [signingOut, setSigningOut] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [editingDisplayName, setEditingDisplayName] = useState(false);
+  const [notificationsVisible, setNotificationsVisible] = useState(false);
   const { hapticsEnabled, setHapticsEnabled } = useHapticsPreference();
   const profileSummaryQuery = useProfileSummaryQuery(user?.id ?? null);
   const uploadAvatarMutation = useUploadProfileAvatarMutation(user?.id ?? null);
@@ -367,7 +369,7 @@ export default function ProfileScreen(_: ProfileScreenProps) {
               }}
               onOpenNotifications={() => {
                 trackProfileAction('notifications_opened');
-                void Linking.openSettings();
+                setNotificationsVisible(true);
               }}
               onOpenPrivacyPolicy={() => {
                 trackProfileAction('privacy_policy_opened');
@@ -395,6 +397,14 @@ export default function ProfileScreen(_: ProfileScreenProps) {
           setEditingDisplayName(false);
         }}
         onSave={handleSaveDisplayName}
+      />
+
+      <NotificationsSettingsSheet
+        visible={notificationsVisible}
+        userId={user?.id ?? null}
+        onClose={() => {
+          setNotificationsVisible(false);
+        }}
       />
     </View>
   );
