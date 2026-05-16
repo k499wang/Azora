@@ -114,7 +114,7 @@ function breathCue(phase: HoldPhase, prepCycle: number): string | null {
     return 'Fill up gently, then stay relaxed';
   }
   if (phase === 'hold') {
-    return 'Relax your jaw and shoulders. Release when you need to breathe.';
+    return 'Relax your jaw and shoulders. Tap the screen when you need to breathe.';
   }
   return null;
 }
@@ -587,17 +587,6 @@ export default function DailyExercisePage({
   }, [flow, phase, pulse.fingerPlacement, startPrepBreathing]);
 
 
-  const skipBreathingPhase = () => {
-    if (!isBreathingPhase(phase)) return;
-    clearTimer();
-    stopInhaleVibration();
-    if (phase === 'preInhale' || phase === 'preExhale') {
-      startBreathPhase('inhale', PRE_BREATH_CYCLES);
-      return;
-    }
-    beginHold();
-  };
-
   const releaseHold = () => {
     const endedAtMs = Date.now();
     const captureSamples = getMeasurementSamples();
@@ -663,10 +652,6 @@ export default function DailyExercisePage({
   };
 
   const handleCirclePress = () => {
-    if (isBreathingPhase(phase)) {
-      skipBreathingPhase();
-      return;
-    }
     if (phase === 'hold') {
       tryReleaseHold();
     }
@@ -675,14 +660,6 @@ export default function DailyExercisePage({
   const handlePrimaryPress = () => {
     if (phase === 'idle' || phase === 'done') {
       void startPlacement();
-      return;
-    }
-    if (isBreathingPhase(phase)) {
-      skipBreathingPhase();
-      return;
-    }
-    if (phase === 'hold') {
-      tryReleaseHold();
     }
   };
 
@@ -717,14 +694,7 @@ export default function DailyExercisePage({
   const isLive = isBreathingPhase(phase) || phase === 'hold';
   const activeBreathCue = breathCue(phase, prepCycle);
 
-  const primaryLabel =
-    phase === 'idle'
-      ? 'Start'
-      : isBreathingPhase(phase)
-        ? 'Skip'
-        : phase === 'hold'
-          ? 'Release'
-          : 'Try Again';
+  const primaryLabel = phase === 'idle' ? 'Start' : 'Try Again';
 
   const cameraProps = useMemo(() => (
     pulse.device != null
@@ -750,6 +720,8 @@ export default function DailyExercisePage({
   const showSignalWarning = isLive && pulse.active && !signalGood;
 
   const showSettingsPill = phase === 'idle' || phase === 'done';
+  const showPrimaryButton = phase === 'idle' || phase === 'done' || isPlacement;
+  const tapAnywhereToRelease = phase === 'hold';
 
   if (phase === 'processingResults') {
     return (
@@ -782,18 +754,12 @@ export default function DailyExercisePage({
             >
               <Pressable
                 onPress={handleCirclePress}
-                disabled={!isLive}
+                disabled={phase !== 'hold'}
                 accessibilityRole="button"
-                accessibilityLabel={
-                  phase === 'hold'
-                    ? 'Tap to release hold'
-                    : isBreathingPhase(phase)
-                      ? 'Tap to skip breathing prep'
-                      : undefined
-                }
+                accessibilityLabel={phase === 'hold' ? 'Tap to release hold' : undefined}
                 style={({ pressed }) => [
                   styles.centerStack,
-                  isLive && pressed && styles.circleTapPressed,
+                  phase === 'hold' && pressed && styles.circleTapPressed,
                 ]}
               >
                 <View style={styles.phaseSlot}>
@@ -891,58 +857,54 @@ export default function DailyExercisePage({
                 style={styles.settingsPill}
               />
             ) : null}
-            <View style={styles.btnRow}>
-              {isPlacement ? (
-                <>
+            {showPrimaryButton ? (
+              <View style={styles.btnRow}>
+                {isPlacement ? (
+                  <>
+                    <Pressable
+                      style={({ pressed }) => [
+                        styles.squareBtn,
+                        { backgroundColor: activeTheme.surface, borderColor: activeTheme.surfaceBorder },
+                        pressed && styles.circleBtnPressed,
+                      ]}
+                      onPress={cancelPlacement}
+                      accessibilityLabel="Cancel"
+                    >
+                      <MaterialCommunityIcons name="close" size={26} color={activeTheme.iconPrimary} />
+                    </Pressable>
+                    <Pressable
+                      onPress={() => {
+                        setHrEnabled(false);
+                        stopPulse();
+                        startPrepBreathing(false);
+                      }}
+                      style={({ pressed }) => [
+                        styles.inlineLink,
+                        pressed && styles.textLinkPressed,
+                      ]}
+                    >
+                      <Text style={[styles.textLinkLabel, { color: activeTheme.textTertiary }]}>Skip heart rate</Text>
+                    </Pressable>
+                  </>
+                ) : (
                   <Pressable
                     style={({ pressed }) => [
-                      styles.squareBtn,
+                      styles.circleBtn,
                       { backgroundColor: activeTheme.surface, borderColor: activeTheme.surfaceBorder },
                       pressed && styles.circleBtnPressed,
                     ]}
-                    onPress={cancelPlacement}
-                    accessibilityLabel="Cancel"
+                    onPress={handlePrimaryPress}
+                    accessibilityLabel={primaryLabel}
                   >
-                    <MaterialCommunityIcons name="close" size={26} color={activeTheme.iconPrimary} />
+                    <MaterialCommunityIcons
+                      name={phase === 'idle' || phase === 'done' ? 'play' : 'hand-back-left-outline'}
+                      size={28}
+                      color={activeTheme.iconPrimary}
+                    />
                   </Pressable>
-                  <Pressable
-                    onPress={() => {
-                      setHrEnabled(false);
-                      stopPulse();
-                      startPrepBreathing(false);
-                    }}
-                    style={({ pressed }) => [
-                      styles.inlineLink,
-                      pressed && styles.textLinkPressed,
-                    ]}
-                  >
-                    <Text style={[styles.textLinkLabel, { color: activeTheme.textTertiary }]}>Skip heart rate</Text>
-                  </Pressable>
-                </>
-              ) : (
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.circleBtn,
-                    { backgroundColor: activeTheme.surface, borderColor: activeTheme.surfaceBorder },
-                    pressed && styles.circleBtnPressed,
-                  ]}
-                  onPress={handlePrimaryPress}
-                  accessibilityLabel={primaryLabel}
-                >
-                  <MaterialCommunityIcons
-                    name={
-                      phase === 'idle' || phase === 'done'
-                        ? 'play'
-                        : isBreathingPhase(phase)
-                          ? 'chevron-double-down'
-                          : 'hand-back-left-outline'
-                    }
-                    size={28}
-                    color={activeTheme.iconPrimary}
-                  />
-                </Pressable>
-              )}
-            </View>
+                )}
+              </View>
+            ) : null}
             <Pressable
               pointerEvents={phase === 'done' ? 'auto' : 'none'}
               style={({ pressed }) => [
@@ -959,6 +921,14 @@ export default function DailyExercisePage({
           </View>
         }
       />
+      {tapAnywhereToRelease ? (
+        <Pressable
+          style={StyleSheet.absoluteFill}
+          onPress={tryReleaseHold}
+          accessibilityRole="button"
+          accessibilityLabel="Tap anywhere to release hold"
+        />
+      ) : null}
       <AudioSettingsSheet
         visible={audioSettingsOpen}
         onClose={() => setAudioSettingsOpen(false)}
