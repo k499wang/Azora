@@ -1,12 +1,12 @@
 import { useCallback } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { HeartRateCaptureFlow } from '../components/heartRate/HeartRateCaptureFlow';
 import { DefaultInstructionScreen } from '../components/heartRate/setupScreens';
 import type { CaptureResult } from '../lib/heartRate/types';
 import { colors } from '../theme/colors';
-import { spacing } from '../theme/spacing';
-import { typography, fonts } from '../theme/typography';
+import { padding } from '../theme/spacing';
 import type { HeartRateScreenProps } from '../app/navigation';
 
 export function HeartRateScreen({ navigation, route }: HeartRateScreenProps) {
@@ -35,14 +35,14 @@ export function HeartRateScreen({ navigation, route }: HeartRateScreenProps) {
       <Pressable
         onPress={handleCancel}
         hitSlop={16}
-        accessibilityLabel="Cancel heart rate measurement"
+        accessibilityLabel="Close heart rate measurement"
         style={({ pressed }) => [
-          styles.cancelButton,
-          { top: insets.top + spacing.xs },
-          pressed && styles.cancelButtonPressed,
+          styles.closeButton,
+          { top: insets.top + padding.screen.vertical },
+          pressed && styles.closeButtonPressed,
         ]}
       >
-        <Text style={styles.cancelText}>Cancel</Text>
+        <MaterialCommunityIcons name="close" size={22} color={colors.text.secondary} />
       </Pressable>
     </View>
   );
@@ -53,18 +53,20 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background.primary,
   },
-  cancelButton: {
+  closeButton: {
     position: 'absolute',
-    left: spacing.md,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.sm,
+    left: padding.screen.horizontal,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.background.elevated,
+    borderWidth: 1,
+    borderColor: colors.border.subtle,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1,
   },
-  cancelButtonPressed: {
+  closeButtonPressed: {
     opacity: 0.6,
-  },
-  cancelText: {
-    ...typography.body.medium,
-    fontFamily: fonts.semibold,
-    color: colors.text.secondary,
   },
 });

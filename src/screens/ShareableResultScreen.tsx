@@ -1,5 +1,5 @@
-import { Fragment, useCallback, useRef } from 'react';
-import { Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Fragment, useCallback, useRef, useState } from 'react';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ViewShot from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
@@ -22,6 +22,10 @@ import StressGauge from '../components/heartRate/StressGauge';
 import { useFeatureAccess } from '../hooks/useFeatureAccess';
 import { PaywallPlacement } from '../services/paywall';
 import { FeatureKey } from '../services/subscriptions/featureAccess';
+import { useAuthStore } from '../stores/authStore';
+import { useProfileQuery } from '../queries/profile/useProfileQuery';
+import { getHoldBenchmark } from '../lib/breathHoldBenchmark';
+import { computeHRVStats } from '../lib/hrv';
 
 // ───────────��──────────────────────────────────────��─────────────────────────────
 
@@ -66,6 +70,9 @@ export default function ShareableResultScreen({
 }: DailyResultScreenProps) {
   const insets = useSafeAreaInsets();
   const advancedStatsAccess = useFeatureAccess(FeatureKey.AdvancedStats);
+  const userId = useAuthStore((s) => s.user?.id ?? null);
+  const profileQuery = useProfileQuery(userId);
+  const userAge = profileQuery.data?.age ?? null;
   const {
     holdSeconds,
     avgBpm,
@@ -81,6 +88,10 @@ export default function ShareableResultScreen({
   const lungEstimate = estimateLungAge({ holdSeconds, avgBpm, minBpm });
   const health = LUNG_HEALTH_MAP[lungEstimate.key];
   const holdTime = formatTime(holdSeconds);
+  const benchmark = getHoldBenchmark(holdSeconds, userAge);
+  const ibiMs = ibiSamples.map((s) => s.ibiMs);
+  const sdnnValue = ibiMs.length >= 2 ? computeHRVStats(ibiMs).sdnn : 0;
+  const sessionSdnn = sdnnValue > 0 && Number.isFinite(sdnnValue) ? sdnnValue : null;
 
   const ringCx = AGE_RING_SIZE / 2;
   const ringR = AGE_RING_SIZE / 2 - AGE_RING_STROKE;
@@ -93,11 +104,18 @@ export default function ShareableResultScreen({
   const advancedStatsLocked =
     !advancedStatsAccess.allowed && !advancedStatsAccess.isLoading;
   const artifactRef = useRef<ViewShot>(null);
+  const [isCapturing, setIsCapturing] = useState(false);
   const handleShare = useCallback(async () => {
     try {
+      setIsCapturing(true);
+      await new Promise((resolve) => setTimeout(resolve, 50));
       const node = artifactRef.current;
-      if (node?.capture == null) return;
+      if (node?.capture == null) {
+        setIsCapturing(false);
+        return;
+      }
       const uri = await node.capture();
+      setIsCapturing(false);
       const available = await Sharing.isAvailableAsync();
       if (!available) {
         Alert.alert('Sharing unavailable', 'This device does not support sharing.');
@@ -108,6 +126,7 @@ export default function ShareableResultScreen({
         dialogTitle: 'Share your result',
       });
     } catch {
+      setIsCapturing(false);
       Alert.alert('Could not share', 'Please try again.');
     }
   }, []);
@@ -171,42 +190,45 @@ export default function ShareableResultScreen({
   miniTrackPath.addArc(miniRect, AGE_RING_START, AGE_RING_SWEEP);
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.headerControls}>
+      {!isCapturing ? (
+        <>
           <Pressable
-            style={styles.closeButton}
+            style={[styles.closeButton, { top: insets.top + padding.screen.vertical }]}
             onPress={() => navigation.navigate('MainTabs', { screen: 'Home' })}
           >
             <MaterialCommunityIcons name="close" size={22} color={colors.text.secondary} />
           </Pressable>
-          <Pressable style={styles.shareButton} onPress={handleShare}>
+          <Pressable
+            style={[styles.shareButton, { top: insets.top + padding.screen.vertical }]}
+            onPress={handleShare}
+          >
             <MaterialCommunityIcons
               name="share-variant"
               size={20}
               color={colors.primary.blue600}
             />
           </Pressable>
-        </View>
-
+        </>
+      ) : null}
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         <ViewShot
           ref={artifactRef}
           options={{ format: 'png', quality: 0.95, result: 'tmpfile' }}
           style={styles.artifact}
         >
           <View style={styles.header}>
-            <View style={styles.brandRow}>
-              <Image
-                source={require('../../assets/iconApp.png')}
-                style={styles.brandMark}
-                resizeMode="contain"
-              />
-              <Text style={styles.brandWordmark}>Azora</Text>
-            </View>
+            {isCapturing ? (
+              <View style={styles.brandRow}>
+                <Text style={styles.brandWordmark}>Azora</Text>
+              </View>
+            ) : null}
             <Text style={styles.title}>Nice work!</Text>
-            <Text style={styles.dateLabel}>{formatTodayLabel()}</Text>
+            {isCapturing ? (
+              <Text style={styles.dateLabel}>{formatTodayLabel()}</Text>
+            ) : null}
           </View>
 
         <View style={styles.heroCardWrap}>
@@ -236,8 +258,10 @@ export default function ShareableResultScreen({
                 </Text>
               </View>
             </View>
+            <Text style={styles.benchmarkText}>{benchmark.sentence}</Text>
           </View>
         </View>
+        </ViewShot>
 
         <View style={styles.statsHeader}>
           <SectionHeader title="Statistics" />
@@ -293,7 +317,17 @@ export default function ShareableResultScreen({
           })}
         </View>
 
-        <View style={styles.rmssdWrap}>
+        {stressZone != null && stress != null ? (
+          <View style={styles.stressWrap}>
+            <StressGauge value={stress} zone={stressZone} />
+          </View>
+        ) : null}
+
+        <View style={styles.heartHealthHeader}>
+          <SectionHeader title="Heart Health" />
+        </View>
+
+        <View style={styles.heartHealthCard}>
           <LockedOverlay
             locked={advancedStatsLocked}
             onPressUpgrade={showAdvancedStatsPaywall}
@@ -315,13 +349,29 @@ export default function ShareableResultScreen({
             />
           </LockedOverlay>
         </View>
-        </ViewShot>
 
-        {stressZone != null && stress != null ? (
-          <View style={styles.stressWrap}>
-            <StressGauge value={stress} zone={stressZone} />
-          </View>
-        ) : null}
+        <View style={styles.heartHealthCard}>
+          <LockedOverlay
+            locked={advancedStatsLocked}
+            onPressUpgrade={showAdvancedStatsPaywall}
+          >
+            <HRVTrackStatCard
+              label="Avg HRV"
+              value={
+                sessionSdnn != null
+                  ? sessionSdnn
+                  : advancedStatsLocked
+                    ? 55
+                    : null
+              }
+              unit="ms"
+              icon="stat-hrv-curve"
+              max={100}
+              lowBound={30}
+              highBound={70}
+            />
+          </LockedOverlay>
+        </View>
 
         <View style={styles.heartResultSection}>
           <HeartRateResultContent
@@ -357,19 +407,14 @@ const styles = StyleSheet.create({
   artifact: {
     backgroundColor: colors.background.primary,
   },
-  headerControls: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: padding.screen.horizontal,
-    paddingTop: padding.screen.vertical,
-  },
   header: {
     paddingHorizontal: padding.screen.horizontal,
-    paddingTop: spacing.sm,
+    paddingTop: padding.screen.vertical,
     alignItems: 'center',
   },
   closeButton: {
+    position: 'absolute',
+    left: padding.screen.horizontal,
     width: 36,
     height: 36,
     borderRadius: 18,
@@ -378,8 +423,11 @@ const styles = StyleSheet.create({
     borderColor: colors.border.subtle,
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 1,
   },
   shareButton: {
+    position: 'absolute',
+    right: padding.screen.horizontal,
     width: 36,
     height: 36,
     borderRadius: 18,
@@ -388,16 +436,13 @@ const styles = StyleSheet.create({
     borderColor: colors.border.subtle,
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 1,
   },
   brandRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
     marginBottom: spacing.sm,
-  },
-  brandMark: {
-    width: 24,
-    height: 24,
   },
   brandWordmark: {
     ...typography.body.medium,
@@ -470,6 +515,14 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semibold,
     marginTop: 4,
   },
+  benchmarkText: {
+    ...typography.body.small,
+    fontFamily: fonts.semibold,
+    color: colors.text.secondary,
+    textAlign: 'center',
+    marginTop: spacing.md,
+    paddingHorizontal: spacing.md,
+  },
   statsHeader: {
     paddingHorizontal: padding.screen.horizontal,
     marginTop: margin.resultSection,
@@ -535,7 +588,12 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
 
-  rmssdWrap: {
+  heartHealthHeader: {
+    paddingHorizontal: padding.screen.horizontal,
+    marginTop: margin.resultSection,
+    marginBottom: spacing.sm,
+  },
+  heartHealthCard: {
     paddingHorizontal: padding.screen.horizontal,
     marginTop: spacing.sm,
   },

@@ -171,7 +171,6 @@ export function ResultScreen({
   };
   const scaleAnim = useRef(new Animated.Value(0.7)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
-  const heartPulse = useRef(new Animated.Value(1)).current;
 
   const isSuccess = result.reading != null;
 
@@ -204,28 +203,7 @@ export function ResultScreen({
         useNativeDriver: true,
       }),
     ]).start();
-
-    if (isSuccess) {
-      // Heart pulse animation
-      const pulse = Animated.loop(
-        Animated.sequence([
-          Animated.timing(heartPulse, {
-            toValue: 1.2,
-            duration: 400,
-            useNativeDriver: true,
-          }),
-          Animated.timing(heartPulse, {
-            toValue: 1,
-            duration: 400,
-            useNativeDriver: true,
-          }),
-          Animated.delay(600),
-        ]),
-      );
-      pulse.start();
-      return () => pulse.stop();
-    }
-  }, [isSuccess, scaleAnim, opacityAnim, heartPulse]);
+  }, [isSuccess, scaleAnim, opacityAnim]);
 
   if (isSuccess && result.reading) {
     const reading = result.reading;
@@ -274,7 +252,6 @@ export function ResultScreen({
                 hrvAvailabilityReason={reading.hrvAvailabilityReason}
                 ibiSamples={result.ibiSamples ?? []}
                 context={context}
-                heartScale={heartPulse}
                 advancedStatsLocked={advancedStatsLocked}
                 onPressUpgrade={showAdvancedStatsPaywall}
               />
@@ -365,22 +342,6 @@ export function ResultScreen({
             activeOpacity={0.85}
           >
             <Text style={styles.primaryButtonText}>Try Again</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={() => {
-              posthog.capture(AnalyticsEvent.HeartRateResultAction, {
-                action: 'cancel',
-                previous_result: 'failure',
-                error_type: result.error ?? 'unknown',
-                context: context ?? null,
-              });
-              onDone();
-            }}
-            activeOpacity={0.7}
-            style={styles.cancelTouchable}
-          >
-            <Text style={styles.cancelText}>Cancel</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -683,13 +644,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: padding.screen.horizontal,
     paddingTop: spacing.md,
-  },
-  cancelTouchable: {
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-  },
-  cancelText: {
-    ...typography.body.medium,
-    color: colors.text.secondary,
   },
 });
