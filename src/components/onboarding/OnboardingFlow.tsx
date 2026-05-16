@@ -18,6 +18,7 @@ import ExperienceScreen, {
 } from './screens/ExperienceScreen';
 import NameScreen from './screens/NameScreen';
 import PactScreen from './screens/PactScreen';
+import NotificationPermissionScreen from './screens/NotificationPermissionScreen';
 import SleepScreen from './screens/SleepScreen';
 import StressScreen from './screens/StressScreen';
 import RecommendationScreen from './screens/RecommendationScreen';
@@ -29,6 +30,10 @@ import type { OnboardingStep } from './types';
 import { usePaywall } from '../../hooks/usePaywall';
 import { PaywallPlacement } from '../../services/paywall';
 import { buildPaywallPersonalization } from '../../lib/paywallPersonalization';
+import { useAuthStore } from '../../stores/authStore';
+import { requestNotificationPermissions } from '../../services/notifications/notificationClient';
+import type { NotificationPreferences } from '../../services/notifications/types';
+import { useUpdateNotificationPreferencesMutation } from '../../queries/notifications/useUpdateNotificationPreferencesMutation';
 
 export interface OnboardingFlowResult {
   onboardingGoal: string;
@@ -48,7 +53,7 @@ interface OnboardingFlowProps {
 }
 
 
-const STEP_COUNT = 18;
+const STEP_COUNT = 19;
 const STEP_INDEX: Record<OnboardingStep, number> = {
   intent: 1,
   intentReflection: 2,
@@ -65,12 +70,14 @@ const STEP_INDEX: Record<OnboardingStep, number> = {
   baselineIntro: 13,
   baseline: 14,
   recommendation: 15,
-  scienceCredibility: 16,
-  pact: 17,
-  paywall: 18,
+  notifications: 16,
+  scienceCredibility: 17,
+  pact: 18,
+  paywall: 19,
 };
 
 export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
+  const userId = useAuthStore((state) => state.user?.id ?? null);
   const [step, setStep] = useState<OnboardingStep>('intent');
   const [selectedIntent, setSelectedIntent] = useState<string | null>(null);
   const [customIntent, setCustomIntent] = useState('');
@@ -96,7 +103,10 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   const [dailyMinutes, setDailyMinutes] = useState(5);
   const [baseline, setBaseline] = useState<BaselineResult | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [notificationErrorMessage, setNotificationErrorMessage] = useState<string | null>(null);
+  const [isNotificationSubmitting, setIsNotificationSubmitting] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const updateNotificationPreferences = useUpdateNotificationPreferencesMutation(userId);
   const paywall = usePaywall({
     placement: PaywallPlacement.OnboardingComplete,
     sourceScreen: 'onboarding',
@@ -174,6 +184,48 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
 
     paywall.trackDismissed();
     await finish();
+  };
+
+  const enableNotifications = async (preferences: NotificationPreferences) => {
+    if (isNotificationSubmitting) return;
+
+    setIsNotificationSubmitting(true);
+    setNotificationErrorMessage(null);
+
+    try {
+      const permissionStatus = await requestNotificationPermissions();
+
+      if (userId != null) {
+        if (permissionStatus === 'granted') {
+          await updateNotificationPreferences.mutateAsync({
+            dailyReminders: preferences.dailyReminders,
+            trialEndingReminder: preferences.trialEndingReminder,
+          });
+        } else {
+          await updateNotificationPreferences.mutateAsync({
+            dailyReminders: {
+              morning: {
+                enabled: false,
+                time: preferences.dailyReminders.morning.time,
+              },
+              evening: {
+                enabled: false,
+                time: preferences.dailyReminders.evening.time,
+              },
+            },
+            trialEndingReminder: {
+              enabled: false,
+            },
+          });
+        }
+      }
+
+      setStep('scienceCredibility');
+    } catch (error) {
+      setNotificationErrorMessage(getErrorMessage(error));
+    } finally {
+      setIsNotificationSubmitting(false);
+    }
   };
 
   const stepIndex = STEP_INDEX[step];
@@ -367,8 +419,27 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         baseline={baseline}
         stepIndex={stepIndex}
         stepCount={STEP_COUNT}
-        onContinue={() => setStep('scienceCredibility')}
+        onContinue={() => setStep('notifications')}
         onBack={() => setStep('baseline')}
+      />
+    );
+  }
+
+  if (step === 'notifications') {
+    return (
+      <NotificationPermissionScreen
+        stepIndex={stepIndex}
+        stepCount={STEP_COUNT}
+        isSubmitting={isNotificationSubmitting}
+        errorMessage={notificationErrorMessage}
+        onEnable={(preferences) => {
+          void enableNotifications(preferences);
+        }}
+        onSkip={() => {
+          setNotificationErrorMessage(null);
+          setStep('scienceCredibility');
+        }}
+        onBack={() => setStep('recommendation')}
       />
     );
   }
@@ -379,7 +450,7 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         stepIndex={stepIndex}
         stepCount={STEP_COUNT}
         onContinue={() => setStep('pact')}
-        onBack={() => setStep('recommendation')}
+        onBack={() => setStep('notifications')}
       />
     );
   }

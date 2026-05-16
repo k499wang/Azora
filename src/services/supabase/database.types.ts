@@ -611,6 +611,7 @@ export type Database = {
       user_preferences: {
         Row: {
           created_at: string
+          notification_preferences: Json
           privacy_settings: Json
           reminder_enabled: boolean
           reminder_time: string | null
@@ -620,6 +621,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          notification_preferences?: Json
           privacy_settings?: Json
           reminder_enabled?: boolean
           reminder_time?: string | null
@@ -629,6 +631,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          notification_preferences?: Json
           privacy_settings?: Json
           reminder_enabled?: boolean
           reminder_time?: string | null
