@@ -11,10 +11,16 @@ import { colors } from '../../theme/colors';
 import { typography, fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import { card } from '../../theme/card';
+import StressStatsRow from './StressStatsRow';
+import {
+  getStressStats,
+  type StressHistoryEntry,
+} from '../../lib/heartRate/stress';
 
 interface StressGaugeProps {
   value: number | null;
   zone: { label: string; color: string } | null;
+  history?: StressHistoryEntry[];
 }
 
 const SIZE = 220;
@@ -38,7 +44,8 @@ function tickPath(angleDeg: number) {
   return p;
 }
 
-export default function StressGauge({ value, zone }: StressGaugeProps) {
+export default function StressGauge({ value, zone, history }: StressGaugeProps) {
+  const stats = history != null ? getStressStats(history) : null;
   const hasValue = value != null && Number.isFinite(value);
   const clamped = hasValue ? Math.max(0, Math.min(100, value)) : null;
   const sweep = clamped != null ? (clamped / 100) * SWEEP : null;
@@ -117,6 +124,8 @@ export default function StressGauge({ value, zone }: StressGaugeProps) {
           ) : null}
         </View>
       </View>
+
+      {stats != null && stats.count > 0 ? <StressStatsRow stats={stats} /> : null}
     </View>
   );
 }

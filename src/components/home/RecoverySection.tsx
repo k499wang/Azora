@@ -4,7 +4,10 @@ import { colors } from '../../theme/colors';
 import { spacing, padding } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 import { card } from '../../theme/card';
-import { getStressZone } from '../../lib/heartRate/stress';
+import {
+  getStressZone,
+  type StressHistoryEntry,
+} from '../../lib/heartRate/stress';
 import SectionHeader from '../common/SectionHeader';
 import StressGauge from '../heartRate/StressGauge';
 import ProLockedOverlay from './ProLockedOverlay';
@@ -20,6 +23,7 @@ interface RecoverySectionProps {
   sdnn?: number | null;
   stress?: number | null;
   hrDrop?: number | null;
+  stressHistory?: StressHistoryEntry[];
   locked?: boolean;
   onPressUpgrade?: () => void;
 }
@@ -69,6 +73,7 @@ export default function RecoverySection({
   sdnn,
   stress,
   hrDrop,
+  stressHistory,
   locked = false,
   onPressUpgrade,
 }: RecoverySectionProps) {
@@ -108,6 +113,7 @@ export default function RecoverySection({
             <StressGauge
               value={stressValue}
               zone={stressValue == null ? null : getStressZone(stressValue)}
+              history={locked ? undefined : stressHistory}
             />
           </View>
         </View>

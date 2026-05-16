@@ -393,6 +393,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           sdnn={stats?.hrv.sdnn ?? null}
           stress={stats?.hrv.stress ?? null}
           hrDrop={stats?.hrv.hrDrop ?? null}
+          stressHistory={stats?.stressHistory ?? []}
           locked={advancedStatsLocked}
           onPressUpgrade={() => {
             showProPaywall(

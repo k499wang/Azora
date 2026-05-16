@@ -14,6 +14,7 @@ import type {
   HeartRateIbiPoint,
   TodayHeartRateSummary,
 } from './types';
+import type { StressHistoryEntry } from '../../lib/heartRate/stress';
 
 export interface HomeHrvStats {
   rmssd: number | null;
@@ -29,6 +30,7 @@ export interface HomeStats {
   todayBreathHold: BreathHoldSummary | null;
   todayHeartRate: TodayHeartRateSummary | null;
   recentHeartRates: TodayHeartRateSummary[];
+  stressHistory: StressHistoryEntry[];
   dailyActivity: DailyActivitySummary[];
   completedDaysAgo: number[];
   ibiSeries: HeartRateIbiPoint[];
@@ -41,6 +43,7 @@ export interface HomeStatsPartialErrors {
   todayBreathHold: boolean;
   todayHeartRate: boolean;
   recentHeartRates: boolean;
+  stressHistory: boolean;
   dailyActivity: boolean;
   breathHoldIbiSeries: boolean;
 }
@@ -119,12 +122,14 @@ export async function getHomeStats(
     selectedBreathHoldResult,
     selectedHeartRateResult,
     recentHeartRatesResult,
+    stressHistoryResult,
     dailyActivityResult,
   ] = await Promise.allSettled([
     getStreakSummary(userId),
     getBreathHoldSummaryForDate(userId, localDate),
     getHeartRateSummaryForDate(userId, localDate),
     getRecentHeartRateSummaries(userId, 3),
+    getRecentHeartRateSummaries(userId, 30),
     getDailyActivityRange(userId, 28),
   ]);
 
@@ -132,6 +137,14 @@ export async function getHomeStats(
   const todayBreathHold = getSettledValue(selectedBreathHoldResult, null);
   const todayHeartRate = getSettledValue(selectedHeartRateResult, null);
   const recentHeartRates = getSettledValue(recentHeartRatesResult, []);
+  const stressHistorySource = getSettledValue(
+    stressHistoryResult,
+    [] as TodayHeartRateSummary[],
+  );
+  const stressHistory: StressHistoryEntry[] = stressHistorySource.map((s) => ({
+    stress: s.stress ?? null,
+    localDate: s.localDate,
+  }));
   const dailyActivity = getSettledValue(dailyActivityResult, []);
   const [breathHoldIbiSeriesResult] = await Promise.allSettled([
     getBreathHoldIbiSeries(userId, todayBreathHold?.sessionId ?? null),
@@ -142,6 +155,7 @@ export async function getHomeStats(
     todayBreathHold: selectedBreathHoldResult.status === 'rejected',
     todayHeartRate: selectedHeartRateResult.status === 'rejected',
     recentHeartRates: recentHeartRatesResult.status === 'rejected',
+    stressHistory: stressHistoryResult.status === 'rejected',
     dailyActivity: dailyActivityResult.status === 'rejected',
     breathHoldIbiSeries: breathHoldIbiSeriesResult.status === 'rejected',
   };
@@ -151,6 +165,7 @@ export async function getHomeStats(
     todayBreathHold,
     todayHeartRate,
     recentHeartRates,
+    stressHistory,
     dailyActivity,
     completedDaysAgo: getCompletedDaysAgo(dailyActivity),
     ibiSeries: breathHoldIbiSeries,
