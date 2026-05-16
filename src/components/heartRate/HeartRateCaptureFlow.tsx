@@ -9,6 +9,7 @@ import { DefaultInstructionScreen } from './setupScreens/DefaultInstructionScree
 import { PersistentCameraRing } from './PersistentCameraRing';
 import { AnimatedCalibratingText } from './AnimatedCalibratingText';
 import { RotatingSubtitle } from './RotatingSubtitle';
+import { HeartRateProcessingScreen } from './HeartRateProcessingScreen';
 import { colors } from '../../theme/colors';
 import { typography, fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
@@ -147,6 +148,13 @@ export function HeartRateCaptureFlow({
       void beginCapture();
     }
   }, [beginCapture, pastSetup, setupScreens.length]);
+
+  useEffect(() => {
+    navigation.setOptions({ gestureEnabled: captureState !== 'processing' });
+    return () => {
+      navigation.setOptions({ gestureEnabled: true });
+    };
+  }, [captureState, navigation]);
 
   const handleSetupCancel = useCallback(() => {
     onCancel();
@@ -359,7 +367,11 @@ export function HeartRateCaptureFlow({
     );
   }
 
-  const isMeasuring = captureState === 'measuring' || captureState === 'processing';
+  if (captureState === 'processing') {
+    return <HeartRateProcessingScreen />;
+  }
+
+  const isMeasuring = captureState === 'measuring';
   const isCheck = captureState === 'camera_check';
   const checkConfig = checkStateConfig(fingerPlacement);
   const isFingerLost = fingerPlacement === 'lost' || fingerPlacement === 'no_finger';
