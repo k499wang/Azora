@@ -2,7 +2,6 @@ import { requireSupabaseClient, type SupabaseClientLike } from '../supabase';
 import {
   DEFAULT_NOTIFICATION_PREFERENCES,
   type DailyReminderPreference,
-  type DailyReminderSlot,
   type NotificationPreferences,
   type UpdateNotificationPreferencesInput,
 } from './types';
@@ -62,11 +61,7 @@ export async function getNotificationPreferences(
     return { ...DEFAULT_NOTIFICATION_PREFERENCES };
   }
 
-  return sanitizeNotificationPreferences(
-    data.notification_preferences,
-    data.reminder_enabled,
-    data.reminder_time,
-  );
+  return sanitizeNotificationPreferences(data.notification_preferences);
 }
 
 export async function updateNotificationPreferences(
@@ -78,13 +73,8 @@ export async function updateNotificationPreferences(
   const supabase = getNotificationPreferencesClient();
   const payload: UserPreferencesInsert = {
     user_id: userId,
-    reminder_enabled:
-      next.dailyReminders.morning.enabled || next.dailyReminders.evening.enabled,
-    reminder_time: next.dailyReminders.morning.enabled
-      ? next.dailyReminders.morning.time
-      : next.dailyReminders.evening.enabled
-        ? next.dailyReminders.evening.time
-        : null,
+    reminder_enabled: next.dailyReminder.enabled,
+    reminder_time: next.dailyReminder.enabled ? next.dailyReminder.time : null,
     notification_preferences: next,
   };
 
@@ -104,15 +94,9 @@ export function mergeNotificationPreferences(
   input: UpdateNotificationPreferencesInput,
 ): NotificationPreferences {
   return sanitizeNotificationPreferences({
-    dailyReminders: {
-      morning: {
-        ...current.dailyReminders.morning,
-        ...input.dailyReminders?.morning,
-      },
-      evening: {
-        ...current.dailyReminders.evening,
-        ...input.dailyReminders?.evening,
-      },
+    dailyReminder: {
+      ...current.dailyReminder,
+      ...input.dailyReminder,
     },
     trialEndingReminder: {
       ...current.trialEndingReminder,
@@ -123,61 +107,27 @@ export function mergeNotificationPreferences(
 
 export function sanitizeNotificationPreferences(
   raw: unknown,
-  legacyReminderEnabled = false,
-  legacyReminderTime: string | null = null,
 ): NotificationPreferences {
-  const fallback = getLegacyFallback(legacyReminderEnabled, legacyReminderTime);
-
   if (raw == null || typeof raw !== 'object') {
-    return fallback;
+    return { ...DEFAULT_NOTIFICATION_PREFERENCES };
   }
 
   const record = raw as Partial<NotificationPreferences>;
-  const daily = record.dailyReminders;
+  const reminder = record.dailyReminder;
   const trial = record.trialEndingReminder;
 
   return {
-    dailyReminders: {
-      morning: sanitizeDailyReminder(
-        daily?.morning,
-        fallback.dailyReminders.morning,
-      ),
-      evening: sanitizeDailyReminder(
-        daily?.evening,
-        fallback.dailyReminders.evening,
-      ),
-    },
+    dailyReminder: sanitizeDailyReminder(
+      reminder,
+      DEFAULT_NOTIFICATION_PREFERENCES.dailyReminder,
+    ),
     trialEndingReminder: {
       enabled:
         typeof trial?.enabled === 'boolean'
           ? trial.enabled
-          : fallback.trialEndingReminder.enabled,
+          : DEFAULT_NOTIFICATION_PREFERENCES.trialEndingReminder.enabled,
     },
   };
-}
-
-function getLegacyFallback(
-  legacyReminderEnabled: boolean,
-  legacyReminderTime: string | null,
-): NotificationPreferences {
-  const fallback = {
-    dailyReminders: {
-      morning: { ...DEFAULT_NOTIFICATION_PREFERENCES.dailyReminders.morning },
-      evening: { ...DEFAULT_NOTIFICATION_PREFERENCES.dailyReminders.evening },
-    },
-    trialEndingReminder: {
-      ...DEFAULT_NOTIFICATION_PREFERENCES.trialEndingReminder,
-    },
-  };
-
-  if (legacyReminderEnabled && isValidTime(legacyReminderTime)) {
-    fallback.dailyReminders.morning = {
-      enabled: true,
-      time: normalizeTime(legacyReminderTime),
-    };
-  }
-
-  return fallback;
 }
 
 function sanitizeDailyReminder(
@@ -196,11 +146,4 @@ function isValidTime(value: unknown): value is string {
 
 function normalizeTime(value: string): string {
   return value.slice(0, 5);
-}
-
-export function getDailyReminderPreference(
-  preferences: NotificationPreferences,
-  slot: DailyReminderSlot,
-): DailyReminderPreference {
-  return preferences.dailyReminders[slot];
 }

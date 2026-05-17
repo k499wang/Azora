@@ -1,7 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Animated,
+  Easing,
   Linking,
   Modal,
   Pressable,
@@ -17,8 +19,7 @@ import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import {
   DEFAULT_NOTIFICATION_PREFERENCES,
-  type DailyReminderSlot,
-  type NotificationPreferences,
+  type DailyReminderPreference,
 } from '../../services/notifications/types';
 import {
   getNotificationPermissionStatus,
@@ -27,6 +28,7 @@ import {
 import { useNotificationPreferencesQuery } from '../../queries/notifications/useNotificationPreferencesQuery';
 import { useUpdateNotificationPreferencesMutation } from '../../queries/notifications/useUpdateNotificationPreferencesMutation';
 import TimePickerField from '../../components/common/TimePickerField';
+import { trackNotificationPermissionResult } from '../../services/analytics/tracking';
 
 interface NotificationsSettingsSheetProps {
   visible: boolean;
@@ -43,8 +45,31 @@ export default function NotificationsSettingsSheet({
   const preferencesQuery = useNotificationPreferencesQuery(userId);
   const updatePreferences = useUpdateNotificationPreferencesMutation(userId);
   const [permissionStatus, setPermissionStatus] = useState<string>('undetermined');
+  const progress = useRef(new Animated.Value(0)).current;
+  const [mounted, setMounted] = useState(visible);
 
   const preferences = preferencesQuery.data ?? DEFAULT_NOTIFICATION_PREFERENCES;
+
+  useEffect(() => {
+    if (visible) {
+      setMounted(true);
+      Animated.timing(progress, {
+        toValue: 1,
+        duration: 240,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }).start();
+    } else if (mounted) {
+      Animated.timing(progress, {
+        toValue: 0,
+        duration: 180,
+        easing: Easing.in(Easing.cubic),
+        useNativeDriver: true,
+      }).start(({ finished }) => {
+        if (finished) setMounted(false);
+      });
+    }
+  }, [visible, mounted, progress]);
 
   useEffect(() => {
     if (!visible) return;
@@ -63,18 +88,14 @@ export default function NotificationsSettingsSheet({
     };
   }, [visible]);
 
-  const hasEnabledNotification = useMemo(
-    () =>
-      preferences.dailyReminders.morning.enabled ||
-      preferences.dailyReminders.evening.enabled,
-    [preferences],
-  );
+  const hasEnabledNotification = preferences.dailyReminder.enabled;
 
   const ensurePermissionForEnabledNotification = async (): Promise<boolean> => {
     if (permissionStatus === 'granted') return true;
 
     const status = await requestNotificationPermissions();
     setPermissionStatus(status);
+    trackNotificationPermissionResult({ status, source: 'settings' });
 
     if (status === 'granted') return true;
 
@@ -94,10 +115,7 @@ export default function NotificationsSettingsSheet({
     return false;
   };
 
-  const updateSlot = async (
-    slot: DailyReminderSlot,
-    next: Partial<NotificationPreferences['dailyReminders'][DailyReminderSlot]>,
-  ) => {
+  const updateReminder = async (next: Partial<DailyReminderPreference>) => {
     if (userId == null) return;
 
     if (next.enabled === true) {
@@ -105,30 +123,39 @@ export default function NotificationsSettingsSheet({
       if (!permissionGranted) return;
     }
 
-    await updatePreferences.mutateAsync({
-      dailyReminders: {
-        [slot]: next,
-      },
-    });
+    await updatePreferences.mutateAsync({ dailyReminder: next });
   };
+
+  if (!mounted) return null;
+
+  const translateY = progress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [400, 0],
+  });
 
   return (
     <Modal
-      visible={visible}
-      animationType="slide"
+      visible={mounted}
+      animationType="none"
       transparent
       statusBarTranslucent
       onRequestClose={onClose}
     >
       <View style={styles.backdrop}>
+        <Animated.View style={[styles.backdropFill, { opacity: progress }]} />
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
-        <View style={[styles.sheet, { paddingBottom: insets.bottom + spacing.lg }]}>
+        <Animated.View
+          style={[
+            styles.sheet,
+            { paddingBottom: insets.bottom + spacing.lg, transform: [{ translateY }] },
+          ]}
+        >
           <View style={styles.grabber} />
           <View style={styles.header}>
             <View>
               <Text style={styles.title}>Notifications</Text>
               <Text style={styles.subtitle}>
-                Manage daily reminders and trial notices.
+                A daily nudge so your practice does not slip.
               </Text>
             </View>
             <Pressable
@@ -152,22 +179,9 @@ export default function NotificationsSettingsSheet({
           ) : (
             <View style={styles.body}>
               <ReminderRow
-                slot="morning"
-                title="Morning reminder"
-                subtitle="Start the day with a short breathing reset."
-                icon="weather-sunny"
-                preferences={preferences}
+                reminder={preferences.dailyReminder}
                 disabled={updatePreferences.isPending}
-                onUpdate={updateSlot}
-              />
-              <ReminderRow
-                slot="evening"
-                title="Evening reminder"
-                subtitle="Wind down before the day ends."
-                icon="weather-night"
-                preferences={preferences}
-                disabled={updatePreferences.isPending}
-                onUpdate={updateSlot}
+                onUpdate={updateReminder}
               />
 
               {permissionStatus === 'denied' && hasEnabledNotification ? (
@@ -192,47 +206,40 @@ export default function NotificationsSettingsSheet({
               ) : null}
             </View>
           )}
-        </View>
+        </Animated.View>
       </View>
     </Modal>
   );
 }
 
 function ReminderRow({
-  slot,
-  title,
-  subtitle,
-  icon,
-  preferences,
+  reminder,
   disabled,
   onUpdate,
 }: {
-  slot: DailyReminderSlot;
-  title: string;
-  subtitle: string;
-  icon: keyof typeof MaterialCommunityIcons.glyphMap;
-  preferences: NotificationPreferences;
+  reminder: DailyReminderPreference;
   disabled: boolean;
-  onUpdate: (
-    slot: DailyReminderSlot,
-    next: Partial<NotificationPreferences['dailyReminders'][DailyReminderSlot]>,
-  ) => Promise<void>;
+  onUpdate: (next: Partial<DailyReminderPreference>) => Promise<void>;
 }) {
-  const reminder = preferences.dailyReminders[slot];
-
   return (
     <View style={styles.reminderBlock}>
       <View style={styles.rowTop}>
-        <MaterialCommunityIcons name={icon} size={21} color={colors.primary.blue600} />
+        <MaterialCommunityIcons
+          name="bell-outline"
+          size={21}
+          color={colors.primary.blue600}
+        />
         <View style={styles.rowCopy}>
-          <Text style={styles.rowTitle}>{title}</Text>
-          <Text style={styles.rowSubtitle}>{subtitle}</Text>
+          <Text style={styles.rowTitle}>Daily reminder</Text>
+          <Text style={styles.rowSubtitle}>
+            One nudge a day at the time you choose.
+          </Text>
         </View>
         <Switch
           value={reminder.enabled}
           disabled={disabled}
           onValueChange={(enabled) => {
-            void onUpdate(slot, { enabled });
+            void onUpdate({ enabled });
           }}
           trackColor={{ false: colors.neutral[300], true: colors.primary.blue300 }}
           thumbColor={reminder.enabled ? colors.primary.blue600 : colors.neutral[50]}
@@ -241,10 +248,10 @@ function ReminderRow({
       <TimePickerField
         value={reminder.time}
         onChange={(next) => {
-          void onUpdate(slot, { time: next });
+          void onUpdate({ time: next });
         }}
         disabled={!reminder.enabled || disabled}
-        accessibilityLabel={`${title} time`}
+        accessibilityLabel="Daily reminder time"
       />
     </View>
   );
@@ -254,6 +261,9 @@ const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
     justifyContent: 'flex-end',
+  },
+  backdropFill: {
+    ...StyleSheet.absoluteFillObject,
     backgroundColor: colors.overlay.dark,
   },
   sheet: {
