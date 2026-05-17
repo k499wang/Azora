@@ -19,12 +19,9 @@ import { colors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
 import { fonts, typography } from '../theme/typography';
 import OnboardingPrimaryButton from '../components/onboarding/OnboardingPrimaryButton';
-import {
-  PlanCard,
-  UrgencyBanner,
-  computeAnnualSavings,
-} from '../components/paywall/PlanCard';
+import { PlanCard, computeAnnualSavings } from '../components/paywall/PlanCard';
 import PaywallFeatureList from '../components/paywall/PaywallFeatureList';
+import PaywallTrialReminderToggle from '../components/paywall/PaywallTrialReminderToggle';
 
 const TERMS_URL = 'https://www.tryazora.app/terms';
 const PRIVACY_URL = 'https://www.tryazora.app/privacy';
@@ -144,7 +141,6 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
             ]}
           >
             <View style={styles.headerCopy}>
-              <Text style={styles.eyebrow}>Azora Pro</Text>
               <Text style={styles.title}>{copy.title}</Text>
               <Text style={styles.subtitle}>{copy.subtitle}</Text>
               <Text style={styles.trialNote}>Try free for 3 days — no charge until day 3</Text>
@@ -152,7 +148,7 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
 
             <PaywallFeatureList />
 
-            {savingsPercent != null ? <UrgencyBanner percent={savingsPercent} /> : null}
+            <PaywallTrialReminderToggle />
 
             {paywall.isLoading ? (
               <View style={styles.cardsLoading}>
@@ -325,14 +321,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.xs,
     paddingHorizontal: spacing.sm,
-  },
-  eyebrow: {
-    ...typography.caption.caption1,
-    fontFamily: fonts.semibold,
-    fontWeight: '600',
-    color: colors.text.brand,
-    letterSpacing: 1.2,
-    textTransform: 'uppercase',
   },
   title: {
     ...typography.display.display3,

@@ -135,7 +135,7 @@ Two things to keep in mind:
 - `DEFAULT_NOTIFICATION_PREFERENCES` — for users who haven't completed onboarding.
 - `ONBOARDING_NOTIFICATION_PREFERENCES` — what onboarding writes when the user opts in.
 
-Server side: `notificationPreferencesService.ts` reads/writes `user_preferences.notification_preferences` (jsonb) plus legacy `reminder_enabled` / `reminder_time` columns for backwards compatibility.
+Server side: `notificationPreferencesService.ts` reads/writes only `user_preferences.notification_preferences` (jsonb). The legacy `reminder_enabled` / `reminder_time` columns are not part of the app's notification preference model.
 
 `sanitizeNotificationPreferences` is the trust boundary — anything coming back from Supabase passes through it before reaching app code.
 

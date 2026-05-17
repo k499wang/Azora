@@ -33,19 +33,16 @@ import Icon, { type IconName } from '../../common/icons/Icon';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import {
   PlanCard,
-  UrgencyBanner,
   computeAnnualSavings,
-  PRO_GOLD,
-  PRO_GOLD_SOFT,
   PRO_INK,
 } from '../../paywall/PlanCard';
 import PaywallFeatureList from '../../paywall/PaywallFeatureList';
+import PaywallTrialReminderToggle from '../../paywall/PaywallTrialReminderToggle';
 import type {
   PaywallChartDirection,
   PaywallPersonalization,
 } from '../../../lib/paywallPersonalization';
 
-const PRO_BLUE = '#2458D6';
 const TERMS_URL = 'https://www.tryazora.app/terms';
 const PRIVACY_URL = 'https://www.tryazora.app/privacy';
 const STEP_COUNT = 3;
@@ -375,10 +372,6 @@ function StepValue() {
   return (
     <View style={styles.stepContainer}>
       <View style={styles.valueHeader}>
-        <View style={styles.valueProPill}>
-          <View style={styles.valueProDot} />
-          <Text style={styles.valueProPillText}>PRO MEMBERSHIP</Text>
-        </View>
         <Text style={styles.valueTitle}>Azora Pro</Text>
         <View style={styles.valueTitleUnderline} />
         <Text style={styles.valueSubtitle}>
@@ -573,7 +566,7 @@ function StepChoose({
 
       <PaywallFeatureList />
 
-      {savingsPercent != null ? <UrgencyBanner percent={savingsPercent} /> : null}
+      <PaywallTrialReminderToggle />
 
       {isLoading ? (
         <View style={styles.cardsLoading}>
@@ -741,29 +734,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.xs,
     paddingHorizontal: spacing.sm,
-  },
-  valueProPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    borderRadius: 999,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 5,
-    backgroundColor: colors.primary.blue100,
-    marginBottom: spacing.xs,
-  },
-  valueProDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: colors.primary.blue600,
-  },
-  valueProPillText: {
-    ...typography.caption.caption2,
-    fontFamily: fonts.semibold,
-    fontWeight: '600',
-    color: colors.primary.blue700,
-    letterSpacing: 1.6,
   },
   valueTitle: {
     ...typography.display.display1,

@@ -613,8 +613,6 @@ export type Database = {
           created_at: string
           notification_preferences: Json
           privacy_settings: Json
-          reminder_enabled: boolean
-          reminder_time: string | null
           units: string
           updated_at: string
           user_id: string
@@ -623,8 +621,6 @@ export type Database = {
           created_at?: string
           notification_preferences?: Json
           privacy_settings?: Json
-          reminder_enabled?: boolean
-          reminder_time?: string | null
           units?: string
           updated_at?: string
           user_id: string
@@ -633,8 +629,6 @@ export type Database = {
           created_at?: string
           notification_preferences?: Json
           privacy_settings?: Json
-          reminder_enabled?: boolean
-          reminder_time?: string | null
           units?: string
           updated_at?: string
           user_id?: string
