@@ -606,7 +606,7 @@ function StepChoose({
       <View style={styles.stepHeader}>
         <Text style={styles.stepTitle}>Start Breathing Better</Text>
         <Text style={styles.stepSubtitle}>
-          {annualPackage?.trialLabel != null
+          {selectedPackageHasTrial
             ? 'Get a 3 day free trial, on us.'
             : 'Pick a plan to unlock everything.'}
         </Text>
