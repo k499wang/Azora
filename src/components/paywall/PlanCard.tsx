@@ -19,12 +19,17 @@ interface PlanCardProps {
   savingsPercent: number | null;
 }
 
-export function PlanCard({ pkg, isSelected, onSelect, savingsPercent }: PlanCardProps) {
+export function PlanCard({
+  pkg,
+  isSelected,
+  onSelect,
+  savingsPercent,
+}: PlanCardProps) {
   const isAnnual = pkg.id === 'annual';
   const perWeek = computePerWeek(pkg);
   const headline = isAnnual ? 'Annual' : 'Weekly';
   const secondary = isAnnual ? `${pkg.priceString}/year` : `${pkg.priceString}/week`;
-  const trial = isAnnual ? '3-day free trial' : 'No free trial';
+  const planDetail = pkg.trialLabel ?? (isAnnual ? 'Annual subscription' : 'Weekly subscription');
 
   return (
     <Pressable
@@ -50,7 +55,7 @@ export function PlanCard({ pkg, isSelected, onSelect, savingsPercent }: PlanCard
           </View>
           <View style={styles.planCardCopy}>
             <Text style={styles.planCardTitle}>{headline}</Text>
-            <Text style={styles.planCardTrial}>{trial}</Text>
+            <Text style={styles.planCardTrial}>{planDetail}</Text>
           </View>
         </View>
         <View style={styles.planCardRight}>

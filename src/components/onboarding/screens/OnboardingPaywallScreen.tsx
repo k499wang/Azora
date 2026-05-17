@@ -93,6 +93,8 @@ export default function OnboardingPaywallScreen({
   const annualPackage = offering?.packages.find((pkg) => pkg.id === 'annual');
   const weeklyPackage = offering?.packages.find((pkg) => pkg.id === 'weekly');
   const isAnnualSelected = selectedPackageId === 'annual';
+  const hasAnnualTrial = annualPackage?.trialLabel != null;
+  const selectedPackageHasTrial = selectedPackage?.trialLabel != null;
   const isBusy = isLoading || isPurchasing || isRestoring;
 
   const savingsPercent = useMemo(
@@ -162,9 +164,12 @@ export default function OnboardingPaywallScreen({
     if (step > 0) animateToStep(step - 1);
   }, [animateToStep, step]);
 
-  const ctaLabel = isAnnualSelected && selectedPackage?.trialLabel
-    ? 'Start my 3-day free trial'
-    : 'Continue with weekly';
+  const ctaLabel =
+    isAnnualSelected && selectedPackageHasTrial
+      ? 'Start my 3-day free trial'
+      : isAnnualSelected
+        ? 'Subscribe yearly'
+        : 'Continue with weekly';
 
   const stepContentTranslate = stepAnim.interpolate({
     inputRange: [0, 1],
@@ -239,12 +244,15 @@ export default function OnboardingPaywallScreen({
             >
               {step === 0 ? (
                 personalization ? (
-                  <StepPersonalizedPlan personalization={personalization} />
+                  <StepPersonalizedPlan
+                    personalization={personalization}
+                    hasAnnualTrial={hasAnnualTrial}
+                  />
                 ) : (
-                  <StepValue />
+                  <StepValue hasAnnualTrial={hasAnnualTrial} />
                 )
               ) : null}
-              {step === 1 ? <StepTrial /> : null}
+              {step === 1 ? <StepTrial hasAnnualTrial={hasAnnualTrial} /> : null}
               {step === 2 ? (
                 <StepChoose
                   isLoading={isLoading}
@@ -253,6 +261,7 @@ export default function OnboardingPaywallScreen({
                   selectedPackageId={selectedPackageId}
                   onSelectPackage={onSelectPackage}
                   savingsPercent={savingsPercent}
+                  selectedPackageHasTrial={selectedPackageHasTrial}
                 />
               ) : null}
             </Animated.View>
@@ -319,8 +328,10 @@ export default function OnboardingPaywallScreen({
                 <Text style={styles.freeButtonText}>{continueWithoutProLabel}</Text>
               </Pressable>
               <Text style={styles.legal}>
-                3-day free trial, then auto-renews unless cancelled. Manage or cancel in App Store settings. By
-                continuing, you agree to the{' '}
+                {selectedPackageHasTrial
+                  ? '3-day free trial, then auto-renews unless cancelled. Manage or cancel in App Store settings. '
+                  : 'Auto-renews unless cancelled. Manage or cancel in App Store settings. '}
+                By continuing, you agree to the{' '}
                 <Text style={styles.legalLink} onPress={() => void Linking.openURL(TERMS_URL)}>
                   Terms
                 </Text>{' '}
@@ -338,7 +349,7 @@ export default function OnboardingPaywallScreen({
   );
 }
 
-function StepValue() {
+function StepValue({ hasAnnualTrial }: { hasAnnualTrial: boolean }) {
   const benefits: Array<{
     icon: IconName;
     title: string;
@@ -377,7 +388,9 @@ function StepValue() {
         <Text style={styles.valueSubtitle}>
           Heart data, unlimited sessions, and a plan built around you.
         </Text>
-        <Text style={styles.trialNote}>Try free for 3 days — no charge until day 3</Text>
+        {hasAnnualTrial ? (
+          <Text style={styles.trialNote}>Try free for 3 days — no charge until day 3</Text>
+        ) : null}
       </View>
 
       <View style={styles.valueGrid}>
@@ -399,8 +412,10 @@ function StepValue() {
 
 function StepPersonalizedPlan({
   personalization,
+  hasAnnualTrial,
 }: {
   personalization: PaywallPersonalization;
+  hasAnnualTrial: boolean;
 }) {
   return (
     <View style={styles.stepContainer}>
@@ -408,7 +423,9 @@ function StepPersonalizedPlan({
         <Text style={styles.planHeadline}>Your plan is ready!</Text>
         <View style={styles.valueTitleUnderline} />
         <Text style={styles.valueSubtitle}>{personalization.headline}</Text>
-        <Text style={styles.trialNote}>Try free for 3 days — no charge until day 3</Text>
+        {hasAnnualTrial ? (
+          <Text style={styles.trialNote}>Try free for 3 days — no charge until day 3</Text>
+        ) : null}
       </View>
 
       <View style={styles.planTargetCard}>
@@ -497,34 +514,59 @@ function PlanProgressChart({ direction }: { direction: PaywallChartDirection }) 
   );
 }
 
-function StepTrial() {
-  const steps: Array<Omit<TimelineStepProps, 'showLine'>> = [
-    {
-      icon: 'sparkle',
-      label: 'Today',
-      title: 'Unlock everything',
-      body: 'Start your 3-day free trial — all Pro features unlocked instantly.',
-    },
-    {
-      icon: 'timer',
-      label: 'Day 2',
-      title: "We'll send a reminder",
-      body: "You'll get a notification before your trial converts to a paid plan.",
-    },
-    {
-      icon: 'heart',
-      label: 'Day 3',
-      title: 'Cancel anytime',
-      body: 'Cancel in App Store settings up to the moment billing starts.',
-    },
-  ];
+function StepTrial({ hasAnnualTrial }: { hasAnnualTrial: boolean }) {
+  const steps: Array<Omit<TimelineStepProps, 'showLine'>> = hasAnnualTrial
+    ? [
+        {
+          icon: 'sparkle',
+          label: 'Today',
+          title: 'Unlock everything',
+          body: 'Start your 3-day free trial — all Pro features unlocked instantly.',
+        },
+        {
+          icon: 'timer',
+          label: 'Day 2',
+          title: "We'll send a reminder",
+          body: "You'll get a notification before your trial converts to a paid plan.",
+        },
+        {
+          icon: 'heart',
+          label: 'Day 3',
+          title: 'Cancel anytime',
+          body: 'Cancel in App Store settings up to the moment billing starts.',
+        },
+      ]
+    : [
+        {
+          icon: 'sparkle',
+          label: 'Today',
+          title: 'Unlock everything',
+          body: 'Subscribe to unlock every Pro feature instantly.',
+        },
+        {
+          icon: 'timer',
+          label: 'Anytime',
+          title: 'Cancel in one tap',
+          body: 'Manage or cancel in App Store settings whenever you want.',
+        },
+        {
+          icon: 'heart',
+          label: 'Welcome back',
+          title: 'Pick up where you left off',
+          body: 'Your past progress and insights stay with you.',
+        },
+      ];
 
   return (
     <View style={styles.stepContainer}>
       <View style={styles.stepHeader}>
-        <Text style={styles.stepTitle}>3 days free, fully cancellable</Text>
+        <Text style={styles.stepTitle}>
+          {hasAnnualTrial ? '3 days free, fully cancellable' : 'Pro, on your terms'}
+        </Text>
         <Text style={styles.stepSubtitle}>
-          You won&apos;t be charged until day 3 — and we&apos;ll always remind you first.
+          {hasAnnualTrial
+            ? "You won't be charged until day 3 — and we'll always remind you first."
+            : 'Cancel anytime in App Store settings — no questions asked.'}
         </Text>
       </View>
       <View style={styles.timeline}>
@@ -547,6 +589,7 @@ interface StepChooseProps {
   selectedPackageId: PaywallPackageId;
   onSelectPackage: (packageId: PaywallPackageId) => void;
   savingsPercent: number | null;
+  selectedPackageHasTrial: boolean;
 }
 
 function StepChoose({
@@ -556,17 +599,22 @@ function StepChoose({
   selectedPackageId,
   onSelectPackage,
   savingsPercent,
+  selectedPackageHasTrial,
 }: StepChooseProps) {
   return (
     <View style={styles.stepContainer}>
       <View style={styles.stepHeader}>
         <Text style={styles.stepTitle}>Start Breathing Better</Text>
-        <Text style={styles.stepSubtitle}>Get a 3 day free trial, on us.</Text>
+        <Text style={styles.stepSubtitle}>
+          {annualPackage?.trialLabel != null
+            ? 'Get a 3 day free trial, on us.'
+            : 'Pick a plan to unlock everything.'}
+        </Text>
       </View>
 
       <PaywallFeatureList />
 
-      <PaywallTrialReminderToggle />
+      {selectedPackageHasTrial ? <PaywallTrialReminderToggle /> : null}
 
       {isLoading ? (
         <View style={styles.cardsLoading}>

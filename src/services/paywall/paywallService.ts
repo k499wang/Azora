@@ -4,6 +4,7 @@ import {
   getRevenueCatOfferingForPlacement,
   hasCurrentRevenueCatIdentity,
   isRevenueCatReady,
+  checkRevenueCatTrialEligibility,
   purchaseRevenueCatPackage,
   RevenueCatSignedOutError,
   restoreRevenueCatPurchases,
@@ -19,6 +20,11 @@ import type {
   PaywallPackageOption,
   PaywallResult,
 } from './paywallResult';
+import {
+  formatEligibleTrialLabel,
+  hasFreeTrialIntroPrice,
+  type TrialEligibilityStatus,
+} from './paywallTrialEligibility';
 
 const PRO_ENTITLEMENT = 'Azora  Pro';
 const PRO_ENTITLEMENT_REFRESH_ATTEMPTS = 4;
@@ -60,9 +66,15 @@ export async function getPaywallOffering(
 
   const weekly = findPackage(offering, 'weekly');
   const annual = findPackage(offering, 'annual');
+  const annualTrialEligibilityStatus = await getTrialEligibilityStatus(annual);
   const packages = [annual, weekly]
     .filter((pkg): pkg is PurchasesPackage => pkg != null)
-    .map(toPaywallPackageOption);
+    .map((pkg) =>
+      toPaywallPackageOption(
+        pkg,
+        pkg === annual ? annualTrialEligibilityStatus : null,
+      ),
+    );
 
   logRevenueCatPaywallOfferingSnapshot('paywall_offering_loaded', {
     placement,
@@ -74,7 +86,12 @@ export async function getPaywallOffering(
         productIdentifier: pkg.product.identifier,
         packageIdentifier: pkg.identifier,
         hasIntroOffer: pkg.product.introPrice != null,
-        introOfferLabel: formatTrialLabel(pkg.product.introPrice),
+        introOfferEligibilityStatus:
+          pkg === annual ? annualTrialEligibilityStatus : null,
+        introOfferLabel: formatEligibleTrialLabel({
+          introPrice: pkg.product.introPrice,
+          eligibilityStatus: pkg === annual ? annualTrialEligibilityStatus : null,
+        }),
       })),
   });
 
@@ -161,7 +178,10 @@ function findPackage(
   );
 }
 
-function toPaywallPackageOption(pkg: PurchasesPackage): PaywallPackageOption {
+function toPaywallPackageOption(
+  pkg: PurchasesPackage,
+  trialEligibilityStatus: TrialEligibilityStatus,
+): PaywallPackageOption {
   const isAnnual = pkg.packageType === PACKAGE_TYPE.ANNUAL;
 
   return {
@@ -172,21 +192,35 @@ function toPaywallPackageOption(pkg: PurchasesPackage): PaywallPackageOption {
     priceString: pkg.product.priceString,
     pricePerMonthString: pkg.product.pricePerMonthString,
     subscriptionPeriod: pkg.product.subscriptionPeriod,
-    trialLabel: formatTrialLabel(pkg.product.introPrice),
+    trialLabel: isAnnual
+      ? formatEligibleTrialLabel({
+          introPrice: pkg.product.introPrice,
+          eligibilityStatus: trialEligibilityStatus,
+        })
+      : null,
     isRecommended: isAnnual,
   };
 }
 
-function formatTrialLabel(
-  introPrice: PurchasesPackage['product']['introPrice'],
-): string | null {
-  if (introPrice == null || introPrice.price !== 0) {
+async function getTrialEligibilityStatus(
+  pkg: PurchasesPackage | null,
+): Promise<TrialEligibilityStatus> {
+  if (pkg == null || !hasFreeTrialIntroPrice(pkg.product.introPrice)) {
     return null;
   }
 
-  const unit = introPrice.periodUnit.toLowerCase();
-  const suffix = introPrice.periodNumberOfUnits === 1 ? unit : `${unit}s`;
-  return `${introPrice.periodNumberOfUnits} ${suffix} free`;
+  try {
+    const eligibility = await checkRevenueCatTrialEligibility([
+      pkg.product.identifier,
+    ]);
+    return eligibility[pkg.product.identifier]?.status ?? null;
+  } catch (error) {
+    logRevenueCatPaywallOfferingSnapshot('paywall_trial_eligibility_check_failed', {
+      productIdentifier: pkg.product.identifier,
+      errorMessage: error instanceof Error ? error.message : String(error),
+    });
+    return null;
+  }
 }
 
 function hasProAccess(customerInfo: CustomerInfo): boolean {

@@ -1,6 +1,8 @@
 import Purchases, {
+  INTRO_ELIGIBILITY_STATUS,
   LOG_LEVEL,
   type CustomerInfo,
+  type IntroEligibility,
   type PurchasesOffering,
   type PurchasesPackage,
 } from 'react-native-purchases';
@@ -113,3 +115,14 @@ export function purchaseRevenueCatPackage(
 export function restoreRevenueCatPurchases(): Promise<CustomerInfo> {
   return revenueCatClient.restorePurchases() as Promise<CustomerInfo>;
 }
+
+export async function checkRevenueCatTrialEligibility(
+  productIdentifiers: string[],
+): Promise<Record<string, IntroEligibility>> {
+  if (productIdentifiers.length === 0) return {};
+  if (!isRevenueCatReady() || !hasCurrentRevenueCatIdentity()) return {};
+  return Purchases.checkTrialOrIntroductoryPriceEligibility(productIdentifiers);
+}
+
+export { INTRO_ELIGIBILITY_STATUS };
+export type { IntroEligibility };

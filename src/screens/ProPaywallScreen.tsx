@@ -64,6 +64,7 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
     (pkg) => pkg.id === paywall.selectedPackageId,
   );
   const isAnnualSelected = paywall.selectedPackageId === 'annual';
+  const selectedPackageHasTrial = selectedPackage?.trialLabel != null;
   const isBusy = paywall.isLoading || paywall.isPurchasing || paywall.isRestoring;
 
   const savingsPercent = useMemo(
@@ -101,9 +102,12 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
     }
   }, [navigation, paywall]);
 
-  const ctaLabel = isAnnualSelected && selectedPackage?.trialLabel
-    ? 'Start my 3-day free trial'
-    : 'Continue with weekly';
+  const ctaLabel =
+    isAnnualSelected && selectedPackageHasTrial
+      ? 'Start my 3-day free trial'
+      : isAnnualSelected
+        ? 'Subscribe yearly'
+        : 'Continue with weekly';
 
   return (
     <Animated.View style={[styles.screen, { transform: [{ translateY: exitSlideAnim }] }]}>
@@ -143,12 +147,14 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
             <View style={styles.headerCopy}>
               <Text style={styles.title}>{copy.title}</Text>
               <Text style={styles.subtitle}>{copy.subtitle}</Text>
-              <Text style={styles.trialNote}>Try free for 3 days — no charge until day 3</Text>
+              {selectedPackageHasTrial ? (
+                <Text style={styles.trialNote}>Try free for 3 days — no charge until day 3</Text>
+              ) : null}
             </View>
 
             <PaywallFeatureList />
 
-            <PaywallTrialReminderToggle />
+            {selectedPackageHasTrial ? <PaywallTrialReminderToggle /> : null}
 
             {paywall.isLoading ? (
               <View style={styles.cardsLoading}>
@@ -228,8 +234,10 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
             </Text>
           </Pressable>
           <Text style={styles.legal}>
-            3-day free trial, then auto-renews unless cancelled. Manage or cancel in App Store settings. By
-            continuing, you agree to the{' '}
+            {selectedPackageHasTrial
+              ? '3-day free trial, then auto-renews unless cancelled. Manage or cancel in App Store settings. '
+              : 'Auto-renews unless cancelled. Manage or cancel in App Store settings. '}
+            By continuing, you agree to the{' '}
             <Text style={styles.legalLink} onPress={() => void Linking.openURL(TERMS_URL)}>
               Terms
             </Text>{' '}

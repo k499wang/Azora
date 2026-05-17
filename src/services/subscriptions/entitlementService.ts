@@ -39,8 +39,8 @@ export async function getUserEntitlement(): Promise<UserEntitlement | null> {
     throw error;
   }
 
-  const supabaseRow = mapEntitlementRow(data);
   const authUserId = authResult.data.user?.id ?? null;
+  const supabaseRow = mapEntitlementRow(data);
   const revenueCatProEntitlement = await getActiveRevenueCatProEntitlement(authUserId);
 
   if (supabaseRow != null && supabaseRow.isPro) {
@@ -113,8 +113,12 @@ async function getActiveRevenueCatProEntitlement(
   authUserId: string | null,
 ): Promise<UserEntitlement | null> {
   if (authUserId == null) return null;
-  if (!isRevenueCatReady() || !hasCurrentRevenueCatIdentity()) return null;
-  if (getCurrentRevenueCatAppUserId() !== authUserId) return null;
+  if (!isRevenueCatReady() || !hasCurrentRevenueCatIdentity()) {
+    return null;
+  }
+  if (getCurrentRevenueCatAppUserId() !== authUserId) {
+    return null;
+  }
 
   let customerInfo;
   try {
