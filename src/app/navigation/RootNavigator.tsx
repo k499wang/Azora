@@ -7,6 +7,7 @@ import SessionCompleteScreen from '../../screens/SessionCompleteScreen';
 import { HeartRateScreen } from '../../screens/HeartRateScreen';
 import { HeartRateSessionDetailScreen } from '../../screens/HeartRateSessionDetailScreen';
 import { ProPaywallScreen } from '../../screens/ProPaywallScreen';
+import SettingsScreen from '../../screens/SettingsScreen';
 import ShareableResultScreen from '../../screens/ShareableResultScreen';
 import { useAppGate } from '../../hooks/useAppGate';
 import { OnboardingFlow } from '../../components/onboarding';
@@ -64,6 +65,14 @@ function AppStack() {
       <Stack.Screen
         name="DailyExercise"
         component={DailyExercisePage}
+        options={{
+          presentation: 'card',
+          animation: 'slide_from_right',
+        }}
+      />
+      <Stack.Screen
+        name="Settings"
+        component={SettingsScreen}
         options={{
           presentation: 'card',
           animation: 'slide_from_right',
