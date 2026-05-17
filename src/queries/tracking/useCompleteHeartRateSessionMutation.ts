@@ -3,6 +3,7 @@ import type { CaptureResult, PpgFrameSample } from '../../lib/heartRate/types';
 import {
   completeHeartRateSession,
 } from '../../services/tracking/heartRateService';
+import { getProfileSummaryQueryKey } from '../profile/useProfileSummaryQuery';
 import { getDailyFeatureUsageQueryKey } from '../subscriptions/useDailyFeatureUsageQuery';
 import { getHomeStatsQueryKey } from './useHomeStatsQuery';
 
@@ -68,6 +69,9 @@ export function useCompleteHeartRateSessionMutation(userId: string | null) {
         }),
         queryClient.invalidateQueries({
           queryKey: getDailyFeatureUsageQueryKey(userId, usageDate),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: getProfileSummaryQueryKey(userId),
         }),
       ])
         .then(() => {

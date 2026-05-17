@@ -185,6 +185,12 @@ navigation.navigate('Settings');
 
 ---
 
+## React Query Cache Invalidation
+
+Before adding or modifying any `useMutation`, read `docs/query-cache-invalidation-map.md` and update it in the same change. The map enumerates which queries each mutation must invalidate. Stale-cache bugs (a DB write that the UI doesn't reflect until reload) almost always come from a mutation that didn't invalidate every query reading the fields it wrote — the map exists to make that enumeration mechanical.
+
+---
+
 ## Android Readiness (recurring check)
 
 - Every card's shadow must include **both** `shadow*` (iOS) and `elevation` (Android). The `card.shadow` token does this — use it.
