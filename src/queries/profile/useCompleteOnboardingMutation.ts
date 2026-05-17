@@ -4,6 +4,7 @@ import {
   completeOnboarding,
 } from '../../services/profile/onboardingStatusService';
 import { getOnboardingStatusQueryKey } from './useOnboardingStatusQuery';
+import { getProfileSummaryQueryKey } from './useProfileSummaryQuery';
 import { getUserDefaultTechniqueQueryKey } from './useUserDefaultTechniqueQuery';
 
 export function useCompleteOnboardingMutation(userId: string | null) {
@@ -30,6 +31,9 @@ export function useCompleteOnboardingMutation(userId: string | null) {
         }),
         queryClient.invalidateQueries({
           queryKey: getUserDefaultTechniqueQueryKey(userId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: getProfileSummaryQueryKey(userId),
         }),
       ]);
     },
