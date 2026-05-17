@@ -15,4 +15,5 @@ export type {
   RootStackParamList,
   RootStackScreenProps,
   SessionCompleteScreenProps,
+  SettingsScreenProps,
 } from './types';

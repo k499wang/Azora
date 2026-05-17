@@ -42,6 +42,7 @@ export type RootStackParamList = {
     hrSamples?: Array<{ t: number; bpm: number }>;
   };
   DailyExercise: undefined;
+  Settings: undefined;
   DailyResult: {
     holdSeconds: number;
     holdStartOffsetSeconds?: number;
@@ -88,4 +89,5 @@ export type HeartRateSessionDetailScreenProps = RootStackScreenProps<'HeartRateS
 export type ExerciseSessionScreenProps = RootStackScreenProps<'ExerciseSession'>;
 export type SessionCompleteScreenProps = RootStackScreenProps<'SessionComplete'>;
 export type DailyExerciseScreenProps = RootStackScreenProps<'DailyExercise'>;
+export type SettingsScreenProps = RootStackScreenProps<'Settings'>;
 export type DailyResultScreenProps = RootStackScreenProps<'DailyResult'>;

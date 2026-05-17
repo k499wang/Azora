@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
-import { Alert, Linking, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import { padding, spacing } from '../theme/spacing';
@@ -14,18 +15,13 @@ import ProfileStatsGrid, {
 } from '../components/profile/ProfileStatsGrid';
 import ProfileCompletionCalendarCard from '../components/profile/ProfileCompletionCalendarCard';
 import ProfileBreathHoldTrendCard from '../components/profile/ProfileBreathHoldTrendCard';
-import ProfileAccountCard from '../components/profile/ProfileAccountCard';
-import NotificationsSettingsSheet from '../features/notifications/NotificationsSettingsSheet';
 import { useAuthStore } from '../stores/authStore';
 import type { ProfileScreenProps } from '../app/navigation';
 import { trackProfileAction } from '../services/analytics/tracking';
-import { useHapticsPreference } from '../hooks/useHapticsPreference';
 import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
 import { formatProfileHoldTime } from '../services/profile/profileSummaryService';
 import { useUploadProfileAvatarMutation } from '../queries/profile/useUploadProfileAvatarMutation';
 import { useUpdateProfileDisplayNameMutation } from '../queries/profile/useUpdateProfileDisplayNameMutation';
-import { getRevenueCatCustomerInfo } from '../services/subscriptions/revenueCatClient';
-const APP_STORE_SUBSCRIPTIONS_URL = 'https://apps.apple.com/account/subscriptions';
 
 function getFallbackDisplayName(email: string | undefined): string {
   if (email == null) {
@@ -52,16 +48,10 @@ function getAvatarLabel(displayName: string): string {
     .toUpperCase();
 }
 
-export default function ProfileScreen(_: ProfileScreenProps) {
+export default function ProfileScreen({ navigation }: ProfileScreenProps) {
   const insets = useSafeAreaInsets();
   const user = useAuthStore((s) => s.user);
-  const signOut = useAuthStore((s) => s.signOut);
-  const deleteAccount = useAuthStore((s) => s.deleteAccount);
-  const [signingOut, setSigningOut] = useState(false);
-  const [deletingAccount, setDeletingAccount] = useState(false);
   const [editingDisplayName, setEditingDisplayName] = useState(false);
-  const [notificationsVisible, setNotificationsVisible] = useState(false);
-  const { hapticsEnabled, setHapticsEnabled } = useHapticsPreference();
   const profileSummaryQuery = useProfileSummaryQuery(user?.id ?? null);
   const uploadAvatarMutation = useUploadProfileAvatarMutation(user?.id ?? null);
   const updateDisplayNameMutation = useUpdateProfileDisplayNameMutation(user?.id ?? null);
@@ -107,44 +97,6 @@ export default function ProfileScreen(_: ProfileScreenProps) {
     ],
     [profileSummary],
   );
-
-  const handleSignOut = () => {
-    if (signingOut) return;
-    trackProfileAction('sign_out_prompt_opened');
-    Alert.alert(
-      'Sign out?',
-      'You can sign back in any time.',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-          onPress: () => {
-            trackProfileAction('sign_out_cancelled');
-          },
-        },
-        {
-          text: 'Sign out',
-          style: 'destructive',
-          onPress: async () => {
-            trackProfileAction('sign_out_confirmed');
-            setSigningOut(true);
-            try {
-              await signOut();
-              trackProfileAction('sign_out_succeeded');
-            } catch (err) {
-              trackProfileAction('sign_out_failed', {
-                error_message: err instanceof Error ? err.message : 'unknown_error',
-              });
-              const message = err instanceof Error ? err.message : 'Please try again.';
-              Alert.alert('Sign out failed', message);
-            } finally {
-              setSigningOut(false);
-            }
-          },
-        },
-      ],
-    );
-  };
 
   const handleChangePhoto = async () => {
     if (uploadAvatarMutation.isPending) {
@@ -233,86 +185,6 @@ export default function ProfileScreen(_: ProfileScreenProps) {
     setEditingDisplayName(false);
   };
 
-  const handleDeleteAccount = () => {
-    if (deletingAccount) return;
-    trackProfileAction('delete_account_prompt_opened');
-    Alert.alert(
-      'Delete account?',
-      'This permanently deletes your account and all data. This cannot be undone.',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-          onPress: () => {
-            trackProfileAction('delete_account_cancelled');
-          },
-        },
-        {
-          text: 'Delete account',
-          style: 'destructive',
-          onPress: () => {
-            trackProfileAction('delete_account_confirmed');
-            Alert.alert(
-              'Are you sure?',
-              'All your sessions, stats, and progress will be gone forever.',
-              [
-                {
-                  text: 'Keep my account',
-                  style: 'cancel',
-                  onPress: () => {
-                    trackProfileAction('delete_account_second_cancelled');
-                  },
-                },
-                {
-                  text: 'Yes, delete everything',
-                  style: 'destructive',
-                  onPress: async () => {
-                    setDeletingAccount(true);
-                    try {
-                      await deleteAccount();
-                      trackProfileAction('delete_account_succeeded');
-                    } catch (err) {
-                      trackProfileAction('delete_account_failed', {
-                        error_message: err instanceof Error ? err.message : 'unknown_error',
-                      });
-                      const message = err instanceof Error ? err.message : 'Please try again.';
-                      Alert.alert('Delete account failed', message);
-                    } finally {
-                      setDeletingAccount(false);
-                    }
-                  },
-                },
-              ],
-            );
-          },
-        },
-      ],
-    );
-  };
-
-  const handleManageSubscription = async () => {
-    trackProfileAction('manage_subscription_opened');
-
-    try {
-      const customerInfo = await getRevenueCatCustomerInfo();
-      const managementUrl = customerInfo.managementURL ?? APP_STORE_SUBSCRIPTIONS_URL;
-      await Linking.openURL(managementUrl);
-    } catch (err) {
-      trackProfileAction('manage_subscription_failed', {
-        error_message: err instanceof Error ? err.message : 'unknown_error',
-      });
-
-      try {
-        await Linking.openURL(APP_STORE_SUBSCRIPTIONS_URL);
-      } catch {
-        Alert.alert(
-          'Could not open subscriptions',
-          'Open App Store account settings to manage your subscription.',
-        );
-      }
-    }
-  };
-
   return (
     <View style={styles.screen}>
       <ScrollView
@@ -321,7 +193,28 @@ export default function ProfileScreen(_: ProfileScreenProps) {
         showsVerticalScrollIndicator={false}
       >
         <View style={[styles.topSection, { paddingTop: insets.top }]}>
-          <AppTopBar streak={profileSummary?.currentStreak ?? 0} />
+          <AppTopBar
+            showStreak={false}
+            rightSlot={
+              <Pressable
+                onPress={() => {
+                  trackProfileAction('settings_opened');
+                  navigation.navigate('Settings');
+                }}
+                hitSlop={12}
+                style={({ pressed }) => [
+                  styles.settingsButton,
+                  pressed && styles.settingsButtonPressed,
+                ]}
+              >
+                <MaterialCommunityIcons
+                  name="cog-outline"
+                  size={26}
+                  color={colors.text.primary}
+                />
+              </Pressable>
+            }
+          />
 
           <View style={styles.heroCardWrap}>
             <ProfileIdentityCard
@@ -358,35 +251,6 @@ export default function ProfileScreen(_: ProfileScreenProps) {
           </View>
         </View>
 
-        <View style={styles.section}>
-          <SectionHeader title="Account" />
-          <View style={styles.sectionBody}>
-            <ProfileAccountCard
-              hapticsEnabled={hapticsEnabled}
-              onToggleHaptics={(enabled) => {
-                setHapticsEnabled(enabled);
-                trackProfileAction('haptics_toggled', { enabled });
-              }}
-              onOpenNotifications={() => {
-                trackProfileAction('notifications_opened');
-                setNotificationsVisible(true);
-              }}
-              onOpenPrivacyPolicy={() => {
-                trackProfileAction('privacy_policy_opened');
-                void Linking.openURL('https://www.tryazora.app/privacy');
-              }}
-              onOpenTerms={() => {
-                trackProfileAction('terms_opened');
-                void Linking.openURL('https://www.tryazora.app/terms');
-              }}
-              onManageSubscription={() => {
-                void handleManageSubscription();
-              }}
-              onSignOut={handleSignOut}
-              onDeleteAccount={handleDeleteAccount}
-            />
-          </View>
-        </View>
       </ScrollView>
 
       <ProfileDisplayNameEditorDialog
@@ -397,14 +261,6 @@ export default function ProfileScreen(_: ProfileScreenProps) {
           setEditingDisplayName(false);
         }}
         onSave={handleSaveDisplayName}
-      />
-
-      <NotificationsSettingsSheet
-        visible={notificationsVisible}
-        userId={user?.id ?? null}
-        onClose={() => {
-          setNotificationsVisible(false);
-        }}
       />
     </View>
   );
@@ -437,5 +293,14 @@ const styles = StyleSheet.create({
   },
   sectionBody: {
     marginTop: spacing.xs,
+  },
+  settingsButton: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  settingsButtonPressed: {
+    opacity: 0.6,
   },
 });
