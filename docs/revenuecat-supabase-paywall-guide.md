@@ -301,6 +301,34 @@ That is deliberate.
 
 It prevents the UI from surfacing internal RevenueCat identity errors to users.
 
+### Trial Copy And Eligibility
+
+The paywall UI should only show free-trial copy when the package data includes
+a `trialLabel`.
+
+Today this is intentionally conservative for the iOS launch:
+
+1. `getPaywallOffering()` loads the RevenueCat offering.
+2. The annual product must have a free intro price.
+3. RevenueCat must return `INTRO_ELIGIBILITY_STATUS_ELIGIBLE` for that annual
+   product.
+4. Only then does `paywallService` keep the annual package `trialLabel`.
+
+If RevenueCat returns unknown eligibility, the app hides trial copy and the
+trial reminder toggle. This avoids telling an iOS user they can start a free
+trial when Apple may charge them immediately because they already used an
+introductory offer in the subscription group.
+
+Important Android follow-up:
+
+- RevenueCat documents Android trial/intro eligibility as returning unknown.
+- When Android launch work starts, do not reuse the current iOS-only unknown
+  behavior as-is.
+- Android needs a platform-aware fallback that can preserve Google Play trial
+  labels when the selected subscription option/package can still grant a trial.
+- Until that Android-specific logic exists, the current behavior should be
+  considered iOS-launch behavior only.
+
 ### Purchase Flow
 
 When the user taps a package:
