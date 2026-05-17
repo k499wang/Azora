@@ -62,7 +62,7 @@ export function trackNotificationTapped(props: NotificationEventProps) {
 
 export function trackNotificationPermissionResult(props: {
   status: string;
-  source: 'onboarding' | 'settings';
+  source: 'onboarding' | 'settings' | 'paywall';
 }) {
   posthog.capture(AnalyticsEvent.NotificationPermissionResult, props);
 }

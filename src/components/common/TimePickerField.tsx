@@ -198,7 +198,6 @@ const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
     justifyContent: 'flex-end',
-    backgroundColor: colors.overlay.dark,
   },
   sheet: {
     borderTopLeftRadius: 28,

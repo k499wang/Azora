@@ -5,6 +5,7 @@ import {
   hasCurrentRevenueCatIdentity,
   isRevenueCatReady,
 } from './revenueCatClient';
+import { getRevenueCatTrialEndsAt } from './entitlementTrial';
 
 const PRO_ENTITLEMENT = 'Azora  Pro';
 
@@ -39,16 +40,36 @@ export async function getUserEntitlement(): Promise<UserEntitlement | null> {
   }
 
   const supabaseRow = mapEntitlementRow(data);
+  const authUserId = authResult.data.user?.id ?? null;
+  const revenueCatProEntitlement = await getActiveRevenueCatProEntitlement(authUserId);
+
   if (supabaseRow != null && supabaseRow.isPro) {
+    if (supabaseRow.trialEndsAt != null) {
+      logTrialEntitlementResolution(supabaseRow, revenueCatProEntitlement, supabaseRow);
+      return supabaseRow;
+    }
+
+    if (revenueCatProEntitlement?.trialEndsAt != null) {
+      const mergedEntitlement = {
+        ...supabaseRow,
+        currentPeriodEndsAt:
+          revenueCatProEntitlement.currentPeriodEndsAt ?? supabaseRow.currentPeriodEndsAt,
+        trialEndsAt: revenueCatProEntitlement.trialEndsAt,
+      };
+      logTrialEntitlementResolution(supabaseRow, revenueCatProEntitlement, mergedEntitlement);
+      return mergedEntitlement;
+    }
+
+    logTrialEntitlementResolution(supabaseRow, revenueCatProEntitlement, supabaseRow);
     return supabaseRow;
   }
 
-  const authUserId = authResult.data.user?.id ?? null;
-  const revenueCatProEntitlement = await getActiveRevenueCatProEntitlement(authUserId);
   if (revenueCatProEntitlement != null) {
+    logTrialEntitlementResolution(supabaseRow, revenueCatProEntitlement, revenueCatProEntitlement);
     return revenueCatProEntitlement;
   }
 
+  logTrialEntitlementResolution(supabaseRow, revenueCatProEntitlement, supabaseRow);
   return supabaseRow;
 }
 
@@ -111,19 +132,38 @@ async function getActiveRevenueCatProEntitlement(
     return null;
   }
 
+  const trialEndsAt = getRevenueCatTrialEndsAt(entitlement);
+
   return {
     entitlement: PRO_ENTITLEMENT,
     status: 'active',
     productId: entitlement.productIdentifier ?? null,
     store: entitlement.store ?? null,
     currentPeriodEndsAt: entitlement.expirationDate ?? null,
-    trialEndsAt: null,
+    trialEndsAt,
     willRenew: entitlement.willRenew ?? null,
     isPro: true,
     initialOfferingId: null,
     experimentId: null,
     experimentVariant: null,
   };
+}
+
+function logTrialEntitlementResolution(
+  supabaseRow: UserEntitlement | null,
+  revenueCatRow: UserEntitlement | null,
+  finalRow: UserEntitlement | null,
+): void {
+  if (!__DEV__) return;
+
+  console.log('[subscriptions] trial entitlement resolution', {
+    supabaseTrialEndsAt: supabaseRow?.trialEndsAt ?? null,
+    revenueCatTrialEndsAt: revenueCatRow?.trialEndsAt ?? null,
+    finalTrialEndsAt: finalRow?.trialEndsAt ?? null,
+    supabaseIsPro: supabaseRow?.isPro ?? null,
+    revenueCatIsPro: revenueCatRow?.isPro ?? null,
+    finalIsPro: finalRow?.isPro ?? null,
+  });
 }
 
 function isExpired(expirationDate: string | null | undefined): boolean {

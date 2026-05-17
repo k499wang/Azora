@@ -12,20 +12,14 @@ interface NotificationPreferencesDatabase {
       user_preferences: {
         Row: {
           user_id: string;
-          reminder_enabled: boolean;
-          reminder_time: string | null;
           notification_preferences: unknown | null;
         };
         Insert: {
           user_id: string;
-          reminder_enabled?: boolean;
-          reminder_time?: string | null;
           notification_preferences?: unknown | null;
         };
         Update: {
           user_id?: string;
-          reminder_enabled?: boolean;
-          reminder_time?: string | null;
           notification_preferences?: unknown | null;
         };
         Relationships: [];
@@ -49,7 +43,7 @@ export async function getNotificationPreferences(
   const supabase = getNotificationPreferencesClient();
   const { data, error } = await supabase
     .from('user_preferences')
-    .select('user_id, reminder_enabled, reminder_time, notification_preferences')
+    .select('user_id, notification_preferences')
     .eq('user_id', userId)
     .maybeSingle();
 
@@ -73,8 +67,6 @@ export async function updateNotificationPreferences(
   const supabase = getNotificationPreferencesClient();
   const payload: UserPreferencesInsert = {
     user_id: userId,
-    reminder_enabled: next.dailyReminder.enabled,
-    reminder_time: next.dailyReminder.enabled ? next.dailyReminder.time : null,
     notification_preferences: next,
   };
 
