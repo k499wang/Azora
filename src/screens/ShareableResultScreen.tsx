@@ -267,6 +267,11 @@ export default function ShareableResultScreen({
           <SectionHeader title="Statistics" />
         </View>
 
+        <View style={styles.statisticsSection}>
+          <LockedOverlay
+            locked={advancedStatsLocked}
+            onPressUpgrade={showAdvancedStatsPaywall}
+          >
         <View style={styles.statTileRow}>
           {heroStats.map((stat, idx) => {
             const arc = Skia.Path.Make();
@@ -322,6 +327,8 @@ export default function ShareableResultScreen({
             <StressGauge value={stress} zone={stressZone} />
           </View>
         ) : null}
+          </LockedOverlay>
+        </View>
 
         <View style={styles.heartHealthHeader}>
           <SectionHeader title="Heart Health" />
@@ -521,6 +528,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: padding.screen.horizontal,
     marginTop: margin.resultSection,
     marginBottom: spacing.sm,
+  },
+  statisticsSection: {
+    overflow: 'hidden',
   },
   statTileRow: {
     ...card.base,
