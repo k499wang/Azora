@@ -332,44 +332,38 @@ export default function ShareableResultScreen({
             locked={advancedStatsLocked}
             onPressUpgrade={showAdvancedStatsPaywall}
           >
-            <HRVTrackStatCard
-              label="RMSSD"
-              value={
-                rmssd != null && Number.isFinite(rmssd)
-                  ? rmssd
-                  : advancedStatsLocked
-                    ? 48
-                    : null
-              }
-              unit="ms"
-              icon="stat-rmssd-wave"
-              max={80}
-              lowBound={20}
-              highBound={50}
-            />
-          </LockedOverlay>
-        </View>
-
-        <View style={styles.heartHealthCard}>
-          <LockedOverlay
-            locked={advancedStatsLocked}
-            onPressUpgrade={showAdvancedStatsPaywall}
-          >
-            <HRVTrackStatCard
-              label="Avg HRV"
-              value={
-                sessionSdnn != null
-                  ? sessionSdnn
-                  : advancedStatsLocked
-                    ? 55
-                    : null
-              }
-              unit="ms"
-              icon="stat-hrv-curve"
-              max={100}
-              lowBound={30}
-              highBound={70}
-            />
+            <View style={styles.heartHealthStack}>
+              <HRVTrackStatCard
+                label="RMSSD"
+                value={
+                  rmssd != null && Number.isFinite(rmssd)
+                    ? rmssd
+                    : advancedStatsLocked
+                      ? 48
+                      : null
+                }
+                unit="ms"
+                icon="stat-rmssd-wave"
+                max={80}
+                lowBound={20}
+                highBound={50}
+              />
+              <HRVTrackStatCard
+                label="Avg HRV"
+                value={
+                  sessionSdnn != null
+                    ? sessionSdnn
+                    : advancedStatsLocked
+                      ? 55
+                      : null
+                }
+                unit="ms"
+                icon="stat-hrv-curve"
+                max={100}
+                lowBound={30}
+                highBound={70}
+              />
+            </View>
           </LockedOverlay>
         </View>
 
@@ -596,6 +590,9 @@ const styles = StyleSheet.create({
   heartHealthCard: {
     paddingHorizontal: padding.screen.horizontal,
     marginTop: spacing.sm,
+  },
+  heartHealthStack: {
+    gap: spacing.sm,
   },
   stressWrap: {
     paddingHorizontal: padding.screen.horizontal,

@@ -32,6 +32,7 @@ import { PaywallPlacement } from '../../services/paywall';
 import { buildPaywallPersonalization } from '../../lib/paywallPersonalization';
 import { useAuthStore } from '../../stores/authStore';
 import { requestNotificationPermissions } from '../../services/notifications/notificationClient';
+import { trackNotificationPermissionResult } from '../../services/analytics/tracking';
 import type { NotificationPreferences } from '../../services/notifications/types';
 import { useUpdateNotificationPreferencesMutation } from '../../queries/notifications/useUpdateNotificationPreferencesMutation';
 
@@ -194,28 +195,21 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
 
     try {
       const permissionStatus = await requestNotificationPermissions();
+      trackNotificationPermissionResult({ status: permissionStatus, source: 'onboarding' });
 
       if (userId != null) {
         if (permissionStatus === 'granted') {
           await updateNotificationPreferences.mutateAsync({
-            dailyReminders: preferences.dailyReminders,
+            dailyReminder: preferences.dailyReminder,
             trialEndingReminder: preferences.trialEndingReminder,
           });
         } else {
           await updateNotificationPreferences.mutateAsync({
-            dailyReminders: {
-              morning: {
-                enabled: false,
-                time: preferences.dailyReminders.morning.time,
-              },
-              evening: {
-                enabled: false,
-                time: preferences.dailyReminders.evening.time,
-              },
-            },
-            trialEndingReminder: {
+            dailyReminder: {
               enabled: false,
+              time: preferences.dailyReminder.time,
             },
+            trialEndingReminder: { enabled: false },
           });
         }
       }

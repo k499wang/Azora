@@ -6,16 +6,10 @@ import {
 } from './notificationCatalog';
 import type { NotificationPreferences } from './types';
 
-export type NotificationScheduleTrigger =
-  | {
-      type: 'daily';
-      hour: number;
-      minute: number;
-    }
-  | {
-      type: 'date';
-      date: Date;
-    };
+export interface NotificationScheduleTrigger {
+  type: 'date';
+  date: Date;
+}
 
 export interface DesiredScheduledNotification {
   stableId: string;
@@ -36,6 +30,8 @@ export interface BuildNotificationScheduleInput {
 const TRIAL_FINAL_DAY_HOUR = 9;
 const TRIAL_FINAL_DAY_MINUTE = 0;
 const MISSED_TRIAL_REMINDER_DELAY_MS = 5 * 60 * 1000;
+const DAILY_REMINDER_HORIZON_DAYS = 14;
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 export function buildDesiredNotificationSchedule({
   preferences,
@@ -44,34 +40,8 @@ export function buildDesiredNotificationSchedule({
 }: BuildNotificationScheduleInput): DesiredScheduledNotification[] {
   const desired: DesiredScheduledNotification[] = [];
 
-  if (preferences.dailyReminders.morning.enabled) {
-    const time = parseTime(preferences.dailyReminders.morning.time);
-    const content = buildDailyReminderContent('morning');
-    desired.push({
-      stableId: `${AZORA_NOTIFICATION_ID_PREFIX}:daily:morning`,
-      kind: 'daily_reminder_morning',
-      ...content,
-      trigger: {
-        type: 'daily',
-        hour: time.hour,
-        minute: time.minute,
-      },
-    });
-  }
-
-  if (preferences.dailyReminders.evening.enabled) {
-    const time = parseTime(preferences.dailyReminders.evening.time);
-    const content = buildDailyReminderContent('evening');
-    desired.push({
-      stableId: `${AZORA_NOTIFICATION_ID_PREFIX}:daily:evening`,
-      kind: 'daily_reminder_evening',
-      ...content,
-      trigger: {
-        type: 'daily',
-        hour: time.hour,
-        minute: time.minute,
-      },
-    });
+  if (preferences.dailyReminder.enabled) {
+    desired.push(...buildDailyEntries(preferences.dailyReminder.time, now));
   }
 
   if (preferences.trialEndingReminder.enabled) {
@@ -82,15 +52,47 @@ export function buildDesiredNotificationSchedule({
         stableId: `${AZORA_NOTIFICATION_ID_PREFIX}:trial:ending`,
         kind: 'trial_ending',
         ...content,
-        trigger: {
-          type: 'date',
-          date: trialReminderDate,
-        },
+        trigger: { type: 'date', date: trialReminderDate },
       });
     }
   }
 
   return desired;
+}
+
+function buildDailyEntries(
+  time: string,
+  now: Date,
+): DesiredScheduledNotification[] {
+  const { hour, minute } = parseTime(time);
+  const entries: DesiredScheduledNotification[] = [];
+
+  for (let offset = 0; offset < DAILY_REMINDER_HORIZON_DAYS; offset += 1) {
+    const fireDate = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate() + offset,
+      hour,
+      minute,
+      0,
+      0,
+    );
+
+    if (fireDate <= now) continue;
+
+    const dayIndex = getEpochDayIndex(fireDate);
+    const content = buildDailyReminderContent(hour, dayIndex);
+    const dateKey = formatDateKey(fireDate);
+
+    entries.push({
+      stableId: `${AZORA_NOTIFICATION_ID_PREFIX}:daily:${dateKey}`,
+      kind: content.data.notification_kind as ScheduledNotificationKind,
+      ...content,
+      trigger: { type: 'date', date: fireDate },
+    });
+  }
+
+  return entries;
 }
 
 export function parseTime(value: string): { hour: number; minute: number } {
@@ -139,4 +141,15 @@ export function getTrialFinalMorningDate(
 
   const catchUpDate = new Date(now.getTime() + MISSED_TRIAL_REMINDER_DELAY_MS);
   return catchUpDate < trialEnd ? catchUpDate : null;
+}
+
+export function getEpochDayIndex(date: Date): number {
+  return Math.floor(date.getTime() / MS_PER_DAY);
+}
+
+function formatDateKey(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }

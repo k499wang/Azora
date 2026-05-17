@@ -38,6 +38,10 @@ export const AnalyticsEvent = {
   PaywallDismissed: 'paywall_dismissed',
   PaywallFailed: 'paywall_failed',
   ProfileAction: 'profile_action',
+
+  NotificationScheduled: 'notification_scheduled',
+  NotificationTapped: 'notification_tapped',
+  NotificationPermissionResult: 'notification_permission_result',
 } as const;
 
 export type AnalyticsEventName =

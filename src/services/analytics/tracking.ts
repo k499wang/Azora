@@ -44,6 +44,29 @@ export function trackScreenView(route: ScreenRoute) {
   posthog.capture(AnalyticsEvent.ScreenView, props);
 }
 
+interface NotificationEventProps {
+  notification_kind: string;
+  variant_index: number | null;
+  destination: string | null;
+}
+
+export function trackNotificationScheduled(
+  props: NotificationEventProps & { fire_at: string; stable_id: string },
+) {
+  posthog.capture(AnalyticsEvent.NotificationScheduled, { ...props });
+}
+
+export function trackNotificationTapped(props: NotificationEventProps) {
+  posthog.capture(AnalyticsEvent.NotificationTapped, { ...props });
+}
+
+export function trackNotificationPermissionResult(props: {
+  status: string;
+  source: 'onboarding' | 'settings';
+}) {
+  posthog.capture(AnalyticsEvent.NotificationPermissionResult, props);
+}
+
 export function trackProfileAction(
   action: string,
   properties?: Record<string, string | number | boolean | null>,

@@ -6,6 +6,7 @@ import {
 import { useAuthStore } from '../../stores/authStore';
 import { useSubscriptionBootstrap } from '../../hooks/useSubscriptionBootstrap';
 import { useNotificationBootstrap } from '../../hooks/useNotificationBootstrap';
+import { useNotificationResponseBootstrap } from '../../hooks/useNotificationResponseBootstrap';
 
 interface AppProvidersProps {
   children: ReactNode;
@@ -32,6 +33,7 @@ export function AppProviders({ children }: AppProvidersProps) {
   return (
       <QueryClientProvider client={queryClient}>
         <SubscriptionBootstrap />
+        <NotificationResponseBootstrap />
         <NotificationBootstrap />
         {children}
       </QueryClientProvider>
@@ -45,5 +47,10 @@ function SubscriptionBootstrap() {
 
 function NotificationBootstrap() {
   useNotificationBootstrap();
+  return null;
+}
+
+function NotificationResponseBootstrap() {
+  useNotificationResponseBootstrap();
   return null;
 }

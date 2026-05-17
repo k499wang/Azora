@@ -28,40 +28,27 @@ export default function NotificationPermissionScreen({
   onSkip,
   onBack,
 }: NotificationPermissionScreenProps) {
-  const [morningEnabled, setMorningEnabled] = useState(true);
-  const [eveningEnabled, setEveningEnabled] = useState(true);
-  const [morningTime, setMorningTime] = useState('08:00');
-  const [eveningTime, setEveningTime] = useState('20:30');
+  const [enabled, setEnabled] = useState(true);
+  const [time, setTime] = useState('08:00');
 
   const preferences = useMemo<NotificationPreferences>(
     () => ({
-      dailyReminders: {
-        morning: {
-          enabled: morningEnabled,
-          time: morningTime,
-        },
-        evening: {
-          enabled: eveningEnabled,
-          time: eveningTime,
-        },
-      },
-      trialEndingReminder: {
-        enabled: true,
-      },
+      dailyReminder: { enabled, time },
+      trialEndingReminder: { enabled: true },
     }),
-    [eveningEnabled, eveningTime, morningEnabled, morningTime],
+    [enabled, time],
   );
 
   return (
     <OnboardingScreenLayout
       title="Build your breathing habit"
-      subtitle="Azora can send gentle morning and evening reminders so your practice does not slip."
+      subtitle="Azora can send one gentle reminder a day so your practice does not slip."
       progress={stepIndex / stepCount}
       onBack={onBack}
       footer={
         <View style={styles.footer}>
           <OnboardingPrimaryButton
-            label="Enable reminders"
+            label="Enable reminder"
             loading={isSubmitting}
             onPress={() => onEnable(preferences)}
           />
@@ -82,22 +69,10 @@ export default function NotificationPermissionScreen({
     >
       <View style={styles.content}>
         <ReminderCard
-          icon="weather-sunny"
-          title="Morning"
-          subtitle="Start the day with a short reset."
-          enabled={morningEnabled}
-          time={morningTime}
-          onToggle={setMorningEnabled}
-          onTimeChange={setMorningTime}
-        />
-        <ReminderCard
-          icon="weather-night"
-          title="Evening"
-          subtitle="Wind down before the day ends."
-          enabled={eveningEnabled}
-          time={eveningTime}
-          onToggle={setEveningEnabled}
-          onTimeChange={setEveningTime}
+          enabled={enabled}
+          time={time}
+          onToggle={setEnabled}
+          onTimeChange={setTime}
         />
 
         {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
@@ -107,17 +82,11 @@ export default function NotificationPermissionScreen({
 }
 
 function ReminderCard({
-  icon,
-  title,
-  subtitle,
   enabled,
   time,
   onToggle,
   onTimeChange,
 }: {
-  icon: keyof typeof MaterialCommunityIcons.glyphMap;
-  title: string;
-  subtitle: string;
   enabled: boolean;
   time: string;
   onToggle: (enabled: boolean) => void;
@@ -127,10 +96,16 @@ function ReminderCard({
     <View style={styles.card}>
       <View style={styles.cardHeader}>
         <View style={styles.cardTitleRow}>
-          <MaterialCommunityIcons name={icon} size={22} color={colors.primary.blue600} />
+          <MaterialCommunityIcons
+            name="bell-outline"
+            size={22}
+            color={colors.primary.blue600}
+          />
           <View style={styles.cardCopy}>
-            <Text style={styles.cardTitle}>{title}</Text>
-            <Text style={styles.cardSubtitle}>{subtitle}</Text>
+            <Text style={styles.cardTitle}>Daily reminder</Text>
+            <Text style={styles.cardSubtitle}>
+              One nudge a day at the time you choose.
+            </Text>
           </View>
         </View>
         <Switch
@@ -145,7 +120,7 @@ function ReminderCard({
         value={time}
         onChange={onTimeChange}
         disabled={!enabled}
-        accessibilityLabel={`${title} reminder time`}
+        accessibilityLabel="Daily reminder time"
       />
     </View>
   );
