@@ -1,5 +1,5 @@
-import { Fragment, useCallback, useRef, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Fragment, useCallback, useRef } from 'react';
+import { Alert, Dimensions, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ViewShot from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
@@ -49,6 +49,8 @@ function formatTodayLabel(): string {
     year: 'numeric',
   });
 }
+
+const SCREEN_WIDTH = Dimensions.get('window').width;
 
 const AGE_RING_SIZE = 260;
 const AGE_RING_STROKE = 16;
@@ -104,18 +106,11 @@ export default function ShareableResultScreen({
   const advancedStatsLocked =
     !advancedStatsAccess.allowed && !advancedStatsAccess.isLoading;
   const artifactRef = useRef<ViewShot>(null);
-  const [isCapturing, setIsCapturing] = useState(false);
   const handleShare = useCallback(async () => {
     try {
-      setIsCapturing(true);
-      await new Promise((resolve) => setTimeout(resolve, 50));
       const node = artifactRef.current;
-      if (node?.capture == null) {
-        setIsCapturing(false);
-        return;
-      }
+      if (node?.capture == null) return;
       const uri = await node.capture();
-      setIsCapturing(false);
       const available = await Sharing.isAvailableAsync();
       if (!available) {
         Alert.alert('Sharing unavailable', 'This device does not support sharing.');
@@ -126,7 +121,6 @@ export default function ShareableResultScreen({
         dialogTitle: 'Share your result',
       });
     } catch {
-      setIsCapturing(false);
       Alert.alert('Could not share', 'Please try again.');
     }
   }, []);
@@ -188,80 +182,89 @@ export default function ShareableResultScreen({
   const miniRect = Skia.XYWHRect(miniCx - miniR, miniCx - miniR, miniR * 2, miniR * 2);
   const miniTrackPath = Skia.Path.Make();
   miniTrackPath.addArc(miniRect, AGE_RING_START, AGE_RING_SWEEP);
+  const renderHeroCard = (showBranding: boolean) => (
+    <>
+      <View style={styles.header}>
+        {showBranding ? (
+          <View style={styles.brandRow}>
+            <Text style={styles.brandWordmark}>Azora</Text>
+          </View>
+        ) : null}
+        <Text style={styles.title}>Nice work!</Text>
+        {showBranding ? (
+          <Text style={styles.dateLabel}>{formatTodayLabel()}</Text>
+        ) : null}
+      </View>
+
+      <View style={styles.heroCardWrap}>
+        <View style={styles.heroCard}>
+          <View style={styles.ageRingWrap}>
+            <Canvas style={StyleSheet.absoluteFill}>
+              <Path
+                path={trackPath}
+                style="stroke"
+                strokeWidth={AGE_RING_STROKE}
+                strokeCap="round"
+                color={health.color + '26'}
+              />
+              <Path
+                path={arcPath}
+                style="stroke"
+                strokeWidth={AGE_RING_STROKE}
+                strokeCap="round"
+                color={health.color}
+              />
+            </Canvas>
+            <View style={styles.ageRingCenter} pointerEvents="none">
+              <Text style={styles.ageRingCaption}>Lung Age</Text>
+              <Text style={styles.ageRingValue}>{lungEstimate.age}</Text>
+              <Text style={[styles.ageRingTier, { color: health.color }]}>
+                {health.label}
+              </Text>
+            </View>
+          </View>
+          <Text style={styles.benchmarkText}>{benchmark.sentence}</Text>
+        </View>
+      </View>
+    </>
+  );
+
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
-      {!isCapturing ? (
-        <>
-          <Pressable
-            style={[styles.closeButton, { top: insets.top + padding.screen.vertical }]}
-            onPress={() => navigation.navigate('MainTabs', { screen: 'Home' })}
-          >
-            <MaterialCommunityIcons name="close" size={22} color={colors.text.secondary} />
-          </Pressable>
-          <Pressable
-            style={[styles.shareButton, { top: insets.top + padding.screen.vertical }]}
-            onPress={handleShare}
-          >
-            <MaterialCommunityIcons
-              name="share-variant"
-              size={20}
-              color={colors.primary.blue600}
-            />
-          </Pressable>
-        </>
-      ) : null}
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
+      <Pressable
+        style={[styles.closeButton, { top: insets.top + padding.screen.vertical }]}
+        onPress={() => navigation.navigate('MainTabs', { screen: 'Home' })}
+      >
+        <MaterialCommunityIcons name="close" size={22} color={colors.text.secondary} />
+      </Pressable>
+      <Pressable
+        style={[styles.shareButton, { top: insets.top + padding.screen.vertical }]}
+        onPress={handleShare}
+      >
+        <MaterialCommunityIcons
+          name="share-variant"
+          size={20}
+          color={colors.primary.blue600}
+        />
+      </Pressable>
+      <View
+        pointerEvents="none"
+        style={styles.offscreenArtifactWrap}
+        collapsable={false}
       >
         <ViewShot
           ref={artifactRef}
           options={{ format: 'png', quality: 0.95, result: 'tmpfile' }}
-          style={styles.artifact}
+          style={[styles.artifact, { width: SCREEN_WIDTH, paddingTop: insets.top }]}
         >
-          <View style={styles.header}>
-            {isCapturing ? (
-              <View style={styles.brandRow}>
-                <Text style={styles.brandWordmark}>Azora</Text>
-              </View>
-            ) : null}
-            <Text style={styles.title}>Nice work!</Text>
-            {isCapturing ? (
-              <Text style={styles.dateLabel}>{formatTodayLabel()}</Text>
-            ) : null}
-          </View>
-
-        <View style={styles.heroCardWrap}>
-          <View style={styles.heroCard}>
-            <View style={styles.ageRingWrap}>
-              <Canvas style={StyleSheet.absoluteFill}>
-                <Path
-                  path={trackPath}
-                  style="stroke"
-                  strokeWidth={AGE_RING_STROKE}
-                  strokeCap="round"
-                  color={health.color + '26'}
-                />
-                <Path
-                  path={arcPath}
-                  style="stroke"
-                  strokeWidth={AGE_RING_STROKE}
-                  strokeCap="round"
-                  color={health.color}
-                />
-              </Canvas>
-              <View style={styles.ageRingCenter} pointerEvents="none">
-                <Text style={styles.ageRingCaption}>Lung Age</Text>
-                <Text style={styles.ageRingValue}>{lungEstimate.age}</Text>
-                <Text style={[styles.ageRingTier, { color: health.color }]}>
-                  {health.label}
-                </Text>
-              </View>
-            </View>
-            <Text style={styles.benchmarkText}>{benchmark.sentence}</Text>
-          </View>
-        </View>
+          {renderHeroCard(true)}
         </ViewShot>
+      </View>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {renderHeroCard(false)}
 
         <View style={styles.statsHeader}>
           <SectionHeader title="Statistics" />
@@ -407,6 +410,12 @@ const styles = StyleSheet.create({
 
   artifact: {
     backgroundColor: colors.background.primary,
+  },
+  offscreenArtifactWrap: {
+    position: 'absolute',
+    left: -10000,
+    top: 0,
+    opacity: 0,
   },
   header: {
     paddingHorizontal: padding.screen.horizontal,
