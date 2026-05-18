@@ -39,7 +39,7 @@ export type RootStackParamList = {
     cycles: number;
     targetCycles: number;
     avgBpm?: number;
-    hrSamples?: Array<{ t: number; bpm: number }>;
+    hrSamples?: Array<{ offsetMs: number; bpm: number }>;
   };
   DailyExercise: undefined;
   Settings: undefined;

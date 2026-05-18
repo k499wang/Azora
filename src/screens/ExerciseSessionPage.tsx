@@ -32,6 +32,8 @@ import { usePostHog } from 'posthog-react-native';
 import type { ExerciseSessionScreenProps } from '../app/navigation';
 import { captureException } from '../services/analytics/errorTracking';
 import { AnalyticsEvent } from '../services/analytics/events';
+import { useAuthStore } from '../stores/authStore';
+import { useCompleteBreathingSessionMutation } from '../queries/tracking/useCompleteBreathingSessionMutation';
 
 const MIN_ROUNDS = 1;
 const MAX_ROUNDS = 20;
@@ -91,8 +93,9 @@ export default function ExerciseSessionPage({
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const remainingRef = useRef(0);
   const onDoneRef = useRef<(() => void) | null>(null);
-  const hrSamplesRef = useRef<Array<{ t: number; bpm: number }>>([]);
+  const hrSamplesRef = useRef<Array<{ offsetMs: number; bpm: number }>>([]);
   const sessionStartMsRef = useRef<number>(0);
+  const savedSessionRef = useRef(false);
   const [phase, setPhase] = useState<Phase>('idle');
   const [round, setRound] = useState(0);
   const [elapsed, setElapsed] = useState(0);
@@ -166,6 +169,8 @@ export default function ExerciseSessionPage({
   }, [hudOpacity]);
 
   const posthog = usePostHog();
+  const userId = useAuthStore((state) => state.user?.id ?? null);
+  const completeBreathingSessionMutation = useCompleteBreathingSessionMutation(userId);
   const exerciseAudioActive =
     isFocused &&
     !paused &&
@@ -195,7 +200,7 @@ export default function ExerciseSessionPage({
     if (pulse.beatTick <= 0) return;
     if (sessionStartMsRef.current > 0 && pulse.currentBpm != null && pulse.currentBpm > 0) {
       hrSamplesRef.current.push({
-        t: (Date.now() - sessionStartMsRef.current) / 1000,
+        offsetMs: Date.now() - sessionStartMsRef.current,
         bpm: pulse.currentBpm,
       });
     }
@@ -311,6 +316,8 @@ export default function ExerciseSessionPage({
       if (!flow.isActive()) return;
 
       if (currentRound > rounds) {
+        if (savedSessionRef.current) return;
+        savedSessionRef.current = true;
         flow.cancel();
         setPhase('done');
         stopPulse();
@@ -323,9 +330,20 @@ export default function ExerciseSessionPage({
           samples.length > 0
             ? samples.reduce((sum, s) => sum + s.bpm, 0) / samples.length
             : undefined;
+        const minBpm =
+          samples.length > 0
+            ? samples.reduce((m, s) => (s.bpm < m ? s.bpm : m), samples[0].bpm)
+            : null;
+        const maxBpm =
+          samples.length > 0
+            ? samples.reduce((m, s) => (s.bpm > m ? s.bpm : m), samples[0].bpm)
+            : null;
+        const endedAtMs = Date.now();
+        const startedAtMs =
+          sessionStartMsRef.current > 0 ? sessionStartMsRef.current : endedAtMs;
         const actualDurationSec =
           sessionStartMsRef.current > 0
-            ? Math.round((Date.now() - sessionStartMsRef.current) / 1000)
+            ? Math.round((endedAtMs - sessionStartMsRef.current) / 1000)
             : elapsed;
 
         posthog.capture(AnalyticsEvent.ExerciseSessionCompleted, {
@@ -337,18 +355,51 @@ export default function ExerciseSessionPage({
           hr_monitoring_enabled: hrEnabled,
         });
 
-        navigation.replace('SessionComplete', {
+        const navigateToComplete = () => {
+          navigation.replace('SessionComplete', {
+            techniqueId: technique.id,
+            techniqueName: technique.name,
+            breathCount: rounds,
+            targetBreaths: rounds,
+            durationSec: actualDurationSec,
+            targetSec: targetSeconds,
+            cycles: rounds,
+            targetCycles: rounds,
+            avgBpm,
+            hrSamples: samples,
+          });
+        };
+
+        if (userId == null) {
+          navigateToComplete();
+          return;
+        }
+
+        void completeBreathingSessionMutation.mutateAsync({
           techniqueId: technique.id,
-          techniqueName: technique.name,
-          breathCount: rounds,
-          targetBreaths: rounds,
-          durationSec: actualDurationSec,
-          targetSec: targetSeconds,
-          cycles: rounds,
-          targetCycles: rounds,
-          avgBpm,
-          hrSamples: samples,
-        });
+          startedAt: new Date(startedAtMs).toISOString(),
+          endedAt: new Date(endedAtMs).toISOString(),
+          durationSeconds: actualDurationSec,
+          roundsCompleted: rounds,
+          targetRounds: rounds,
+          avgBpm: avgBpm ?? null,
+          minBpm,
+          maxBpm,
+          completed: true,
+          samples: samples.map((sample) => ({
+            offsetMs: sample.offsetMs,
+            bpm: sample.bpm,
+            signalQuality: null,
+          })),
+        })
+          .catch((error) => {
+            captureException(error, {
+              flow: 'breathing_exercise',
+              action: 'complete_breathing_session',
+              technique_id: technique.id,
+            });
+          })
+          .finally(navigateToComplete);
         return;
       }
 
@@ -364,7 +415,17 @@ export default function ExerciseSessionPage({
         });
       });
     },
-    [flow, runPhase, posthog, technique, elapsed, hrEnabled],
+    [
+      flow,
+      runPhase,
+      posthog,
+      technique,
+      elapsed,
+      hrEnabled,
+      userId,
+      completeBreathingSessionMutation,
+      navigation,
+    ],
   );
 
   const handlePause = () => {
@@ -418,6 +479,7 @@ export default function ExerciseSessionPage({
       setRound(0);
       hrSamplesRef.current = [];
       sessionStartMsRef.current = Date.now();
+      savedSessionRef.current = false;
       requestAnimationFrame(() => circleRef.current?.reset());
       posthog.capture(AnalyticsEvent.ExerciseSessionStarted, {
         technique_id: technique.id,

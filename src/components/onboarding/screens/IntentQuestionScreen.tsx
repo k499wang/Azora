@@ -1,4 +1,10 @@
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
 import * as Haptics from 'expo-haptics';
 import Icon from '../../common/icons/Icon';
 import { colors } from '../../../theme/colors';
@@ -17,7 +23,7 @@ interface IntentQuestionScreenProps {
   errorMessage: string | null;
   stepIndex: number;
   stepCount: number;
-  onSelect: (intentId: string) => void;
+  onSelect: (intentId: string | null) => void;
   onCustomIntentChange: (value: string) => void;
   onContinue: () => void;
 }
@@ -133,8 +139,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
-    marginTop: spacing.xs,
-    marginBottom: spacing.sm,
+    marginTop: -spacing.lg,
+    marginBottom: spacing.xs,
   },
   timeHintText: {
     ...typography.body.small,
@@ -142,7 +148,7 @@ const styles = StyleSheet.create({
     color: colors.text.tertiary,
   },
   options: {
-    marginTop: spacing.xs,
+    marginTop: 0,
   },
   customIntentBlock: {
     gap: spacing.sm,
