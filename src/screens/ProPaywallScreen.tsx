@@ -39,7 +39,9 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(18)).current;
   const exitSlideAnim = useRef(new Animated.Value(0)).current;
+  const closeFadeAnim = useRef(new Animated.Value(0)).current;
   const [isExiting, setIsExiting] = useState(false);
+  const [closeEnabled, setCloseEnabled] = useState(false);
 
   useEffect(() => {
     Animated.parallel([
@@ -56,7 +58,18 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
         useNativeDriver: true,
       }),
     ]).start();
-  }, [fadeAnim, slideAnim]);
+
+    const timeout = setTimeout(() => {
+      setCloseEnabled(true);
+      Animated.timing(closeFadeAnim, {
+        toValue: 1,
+        duration: 220,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }).start();
+    }, 2000);
+    return () => clearTimeout(timeout);
+  }, [closeFadeAnim, fadeAnim, slideAnim]);
 
   const annualPackage = paywall.offering?.packages.find((pkg) => pkg.id === 'annual');
   const weeklyPackage = paywall.offering?.packages.find((pkg) => pkg.id === 'weekly');
@@ -117,20 +130,22 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
       >
         <View style={styles.header}>
           <View style={styles.headerSpacer} />
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Close paywall"
-            hitSlop={12}
-            disabled={isBusy || isExiting}
-            onPress={closePaywall}
-            style={({ pressed }) => [
-              styles.headerButton,
-              pressed && styles.subtlePressed,
-              (isBusy || isExiting) && styles.disabled,
-            ]}
-          >
-            <Text style={styles.closeText}>×</Text>
-          </Pressable>
+          <Animated.View style={{ opacity: closeFadeAnim }} pointerEvents={closeEnabled ? 'auto' : 'none'}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Close paywall"
+              hitSlop={12}
+              disabled={isBusy || isExiting || !closeEnabled}
+              onPress={closePaywall}
+              style={({ pressed }) => [
+                styles.headerButton,
+                pressed && styles.subtlePressed,
+                (isBusy || isExiting) && styles.disabled,
+              ]}
+            >
+              <Text style={styles.closeText}>×</Text>
+            </Pressable>
+          </Animated.View>
         </View>
 
         <ScrollView

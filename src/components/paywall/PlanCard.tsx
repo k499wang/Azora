@@ -28,7 +28,7 @@ export function PlanCard({
   const isAnnual = pkg.id === 'annual';
   const perWeek = computePerWeek(pkg);
   const headline = isAnnual ? 'Annual' : 'Weekly';
-  const secondary = isAnnual ? `${pkg.priceString}/year` : `${pkg.priceString}/week`;
+  const secondary = isAnnual ? `${pkg.priceString}/year` : 'billed weekly';
   const planDetail = pkg.trialLabel ?? (isAnnual ? 'Annual subscription' : 'Weekly subscription');
 
   return (
@@ -59,7 +59,7 @@ export function PlanCard({
           </View>
         </View>
         <View style={styles.planCardRight}>
-          {perWeek ? <Text style={styles.planCardPerWeek}>{perWeek}/wk</Text> : null}
+          {perWeek ? <Text style={styles.planCardPerWeek}>{perWeek}/week</Text> : null}
           <Text style={styles.planCardSecondary}>{secondary}</Text>
         </View>
       </View>
@@ -191,15 +191,20 @@ const styles = StyleSheet.create({
   },
   savingsBadge: {
     position: 'absolute',
-    top: -10,
+    top: -12,
     right: spacing.md,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 3,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: 999,
-    backgroundColor: colors.primary.blue600,
+    backgroundColor: colors.orange[500],
+    shadowColor: colors.orange[700],
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 3,
   },
   savingsBadgeText: {
-    ...typography.caption.caption2,
+    ...typography.caption.caption1,
     fontFamily: fonts.semibold,
     fontWeight: '600',
     color: colors.text.inverse,
