@@ -7,12 +7,7 @@ import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import { card } from '../../theme/card';
 
-interface HRVChartProps {
-  /**
-   * Inter-beat intervals (RR / IBI) in milliseconds, captured during today's
-   * breath hold via the PPG signal pipeline. Plotted as a labeled time series
-   * with y-axis ticks (RR ms) and x-axis ticks (seconds).
-   */
+interface BPMChartProps {
   ibiMs: number[];
   height?: number;
   color?: string;
@@ -21,17 +16,17 @@ interface HRVChartProps {
 const PADDING = { top: 14, right: 8, bottom: 8, left: 8 };
 const Y_TICK_HEIGHT = 14;
 
-const HRV_INFO = {
-  title: 'Heart Rate Variability',
+const BPM_INFO = {
+  title: 'Heart Rate',
   message:
-    'HRV is the variation in time between consecutive heartbeats. The chart shows your RR intervals (in milliseconds) over the session — wider swings mean more variability and stronger vagal tone.\n\nHealthy resting RR intervals fall roughly between 700–1100 ms, with visible beat-to-beat variation. Higher variability generally indicates better recovery and cardiovascular health.',
+    'Your instantaneous beats per minute over the session, derived from each beat-to-beat interval (BPM = 60000 / RR).\n\nResting BPM typically falls between 60–90. Lower trends during a hold often reflect parasympathetic activation and good recovery.',
 };
 
-export default function HRVChart({
+export default function BPMChart({
   ibiMs,
   height = 170,
-  color = colors.primary.blue500,
-}: HRVChartProps) {
+  color = colors.error[500],
+}: BPMChartProps) {
   const [width, setWidth] = useState(0);
 
   const onLayout = (e: LayoutChangeEvent) => {
@@ -39,32 +34,43 @@ export default function HRVChart({
     if (w !== width) setWidth(w);
   };
 
+  const series = useMemo(() => {
+    if (ibiMs.length < 2) return [];
+    let t = 0;
+    return ibiMs.map((ms) => {
+      t += ms;
+      return { tSec: t / 1000, bpm: 60000 / ms };
+    });
+  }, [ibiMs]);
+
   const durationSec = useMemo(
-    () => Math.round(ibiMs.reduce((sum, ms) => sum + ms, 0) / 1000),
-    [ibiMs],
+    () => (series.length > 0 ? Math.round(series[series.length - 1].tSec) : 0),
+    [series],
   );
 
   const yBounds = useMemo(() => {
-    if (ibiMs.length < 2) return null;
-    const max = Math.max(...ibiMs);
-    const min = Math.min(...ibiMs);
+    if (series.length < 2) return null;
+    const values = series.map((p) => p.bpm);
+    const max = Math.max(...values);
+    const min = Math.min(...values);
     const range = max - min || 1;
     return {
       pMax: max + range * 0.15,
       pMin: min - range * 0.15,
     };
-  }, [ibiMs]);
+  }, [series]);
 
   const chart = useMemo(() => {
-    if (width <= 0 || ibiMs.length < 2 || !yBounds) return null;
+    if (width <= 0 || series.length < 2 || !yBounds) return null;
     const pRange = yBounds.pMax - yBounds.pMin;
+    const totalT = series[series.length - 1].tSec || 1;
 
     const innerW = width - PADDING.left - PADDING.right;
     const innerH = height - PADDING.top - PADDING.bottom;
 
-    const points = ibiMs.map((v, i) => {
-      const x = PADDING.left + (i / (ibiMs.length - 1)) * innerW;
-      const y = PADDING.top + (1 - (v - yBounds.pMin) / pRange) * innerH;
+    const points = series.map((p) => {
+      const x = PADDING.left + (p.tSec / totalT) * innerW;
+      const y = PADDING.top + (1 - (p.bpm - yBounds.pMin) / pRange) * innerH;
       return { x, y };
     });
 
@@ -79,7 +85,7 @@ export default function HRVChart({
 
     const last = points[points.length - 1];
     return { line, last };
-  }, [ibiMs, width, height, yBounds]);
+  }, [series, width, height, yBounds]);
 
   const xTicks = useMemo(() => {
     if (durationSec <= 0) return [];
@@ -107,7 +113,7 @@ export default function HRVChart({
     <View style={styles.card}>
       <Pressable
         hitSlop={10}
-        onPress={() => Alert.alert(HRV_INFO.title, HRV_INFO.message)}
+        onPress={() => Alert.alert(BPM_INFO.title, BPM_INFO.message)}
         style={styles.infoButton}
       >
         <MaterialCommunityIcons
@@ -116,7 +122,7 @@ export default function HRVChart({
           color={colors.text.tertiary}
         />
       </Pressable>
-      <Text style={styles.title}>Heart rate variability</Text>
+      <Text style={styles.title}>Heart rate</Text>
 
       <View style={styles.plotRow}>
         <View style={[styles.yAxis, { height }]}>
@@ -184,19 +190,19 @@ export default function HRVChart({
                   cx={chart.last.x}
                   cy={chart.last.y}
                   r={6}
-                  fill={colors.primary.blue500}
+                  fill={colors.error[500]}
                   opacity={0.18}
                 />
                 <Circle
                   cx={chart.last.x}
                   cy={chart.last.y}
                   r={3}
-                  fill={colors.primary.blue500}
+                  fill={colors.error[500]}
                 />
               </Svg>
             ) : (
               <View style={[styles.emptyChart, { height }]}>
-                <Text style={styles.emptyText}>Complete today's hold to see your HRV</Text>
+                <Text style={styles.emptyText}>Complete today's hold to see your BPM</Text>
               </View>
             )}
           </View>

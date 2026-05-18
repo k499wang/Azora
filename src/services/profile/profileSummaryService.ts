@@ -43,8 +43,8 @@ export interface ProfileSummaryPartialErrors {
   breathHoldTrend: boolean;
 }
 
-const RECENT_TREND_SESSION_LIMIT = 30;
-const TREND_POINT_LIMIT = 8;
+const RECENT_TREND_SESSION_LIMIT = 90;
+const TREND_POINT_LIMIT = 30;
 
 function getMonthRange(date: Date): { start: string; end: string } {
   const year = date.getFullYear();
