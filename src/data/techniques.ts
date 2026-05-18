@@ -1,4 +1,5 @@
 import type { ComponentProps } from 'react';
+import type { ImageSourcePropType } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 type TechniqueIconName = NonNullable<ComponentProps<typeof MaterialCommunityIcons>['name']>;
@@ -12,6 +13,7 @@ export interface BreathingTechnique {
   category: 'calm' | 'focus' | 'energy' | 'sleep' | 'balance';
   icon: TechniqueIconName;
   duration: string;
+  backgroundImage: ImageSourcePropType;
 }
 
 /**
@@ -29,6 +31,7 @@ const TECHNIQUES: BreathingTechnique[] = [
     category: 'focus',
     icon: 'checkbox-blank-outline',
     duration: '~2 min',
+    backgroundImage: require('../../assets/exercises/grass.jpg'),
   },
   {
     id: '478',
@@ -40,6 +43,7 @@ const TECHNIQUES: BreathingTechnique[] = [
     category: 'sleep',
     icon: 'moon-waning-crescent',
     duration: '~1 min',
+    backgroundImage: require('../../assets/exercises/lights.jpg'),
   },
   {
     id: 'wimhof',
@@ -51,6 +55,7 @@ const TECHNIQUES: BreathingTechnique[] = [
     category: 'energy',
     icon: 'flash-outline',
     duration: '~2 min',
+    backgroundImage: require('../../assets/exercises/rocks.jpg'),
   },
   {
     id: 'resonance',
@@ -62,6 +67,7 @@ const TECHNIQUES: BreathingTechnique[] = [
     category: 'balance',
     icon: 'waves',
     duration: '~2 min',
+    backgroundImage: require('../../assets/exercises/sea.jpg'),
   },
   {
     id: 'relaxing',
@@ -73,6 +79,7 @@ const TECHNIQUES: BreathingTechnique[] = [
     category: 'calm',
     icon: 'leaf',
     duration: '~1 min',
+    backgroundImage: require('../../assets/exercises/flowers.jpg'),
   },
 ];
 
