@@ -17,6 +17,10 @@ const SDNN_INFO = {
 interface HeartHealthSectionProps {
   rmssd?: number | null;
   sdnn?: number | null;
+  avgRmssd?: number | null;
+  avgSdnn?: number | null;
+  maxRmssd?: number | null;
+  maxSdnn?: number | null;
   locked?: boolean;
   onPressUpgrade?: () => void;
 }
@@ -24,11 +28,19 @@ interface HeartHealthSectionProps {
 export default function HeartHealthSection({
   rmssd,
   sdnn,
+  avgRmssd,
+  avgSdnn,
+  maxRmssd,
+  maxSdnn,
   locked = false,
   onPressUpgrade,
 }: HeartHealthSectionProps) {
   const rmssdValue = rmssd ?? (locked ? 48 : null);
   const sdnnValue = sdnn ?? (locked ? 42 : null);
+  const avgRmssdValue = avgRmssd ?? (locked ? 46 : null);
+  const avgSdnnValue = avgSdnn ?? (locked ? 40 : null);
+  const maxRmssdValue = maxRmssd ?? (locked ? 62 : null);
+  const maxSdnnValue = maxSdnn ?? (locked ? 55 : null);
 
   return (
     <View style={styles.section}>
@@ -45,6 +57,8 @@ export default function HeartHealthSection({
           <HRVTrackStatCard
             label="RMSSD"
             value={rmssdValue}
+            avgValue={avgRmssdValue}
+            bestValue={maxRmssdValue}
             unit="ms"
             max={80}
             lowBound={20}
@@ -54,6 +68,8 @@ export default function HeartHealthSection({
           <HRVTrackStatCard
             label="Avg HRV"
             value={sdnnValue}
+            avgValue={avgSdnnValue}
+            bestValue={maxSdnnValue}
             unit="ms"
             max={80}
             lowBound={20}

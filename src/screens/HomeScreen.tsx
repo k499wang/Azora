@@ -379,6 +379,10 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         <HeartHealthSection
           rmssd={stats?.hrv.rmssd ?? null}
           sdnn={stats?.hrv.sdnn ?? null}
+          avgRmssd={stats?.hrv.avgRmssd ?? null}
+          avgSdnn={stats?.hrv.avgSdnn ?? null}
+          maxRmssd={stats?.hrv.maxRmssd ?? null}
+          maxSdnn={stats?.hrv.maxSdnn ?? null}
           locked={advancedStatsLocked}
           onPressUpgrade={() => {
             showProPaywall(

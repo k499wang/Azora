@@ -23,6 +23,10 @@ export interface HomeHrvStats {
   hrDrop: number | null;
   stress: number | null;
   beatCount: number | null;
+  avgRmssd: number | null;
+  avgSdnn: number | null;
+  maxRmssd: number | null;
+  maxSdnn: number | null;
 }
 
 export interface HomeStats {
@@ -71,7 +75,34 @@ function getCompletedDaysAgo(activity: DailyActivitySummary[]): number[] {
     .filter((daysAgo) => daysAgo >= 0 && daysAgo < 28);
 }
 
-function buildHrvStats(breathHold: BreathHoldSummary | null): HomeHrvStats {
+function aggregateField(
+  history: TodayHeartRateSummary[],
+  field: 'rmssd' | 'sdnn',
+): { avg: number | null; max: number | null } {
+  let sum = 0;
+  let count = 0;
+  let max = -Infinity;
+  for (const entry of history) {
+    const v = entry[field];
+    if (v != null && Number.isFinite(v)) {
+      sum += v;
+      count += 1;
+      if (v > max) max = v;
+    }
+  }
+  return {
+    avg: count === 0 ? null : sum / count,
+    max: count === 0 ? null : max,
+  };
+}
+
+function buildHrvStats(
+  breathHold: BreathHoldSummary | null,
+  history: TodayHeartRateSummary[],
+): HomeHrvStats {
+  const rmssdAgg = aggregateField(history, 'rmssd');
+  const sdnnAgg = aggregateField(history, 'sdnn');
+
   if (breathHold == null) {
     return {
       rmssd: null,
@@ -80,6 +111,10 @@ function buildHrvStats(breathHold: BreathHoldSummary | null): HomeHrvStats {
       hrDrop: null,
       stress: null,
       beatCount: null,
+      avgRmssd: rmssdAgg.avg,
+      avgSdnn: sdnnAgg.avg,
+      maxRmssd: rmssdAgg.max,
+      maxSdnn: sdnnAgg.max,
     };
   }
 
@@ -92,6 +127,10 @@ function buildHrvStats(breathHold: BreathHoldSummary | null): HomeHrvStats {
       breathHold.stress ??
       deriveStressFromStoredSummary(breathHold.rmssd, breathHold.avgBpm),
     beatCount: breathHold.beatCount ?? null,
+    avgRmssd: rmssdAgg.avg,
+    avgSdnn: sdnnAgg.avg,
+    maxRmssd: rmssdAgg.max,
+    maxSdnn: sdnnAgg.max,
   };
 }
 
@@ -169,7 +208,7 @@ export async function getHomeStats(
     dailyActivity,
     completedDaysAgo: getCompletedDaysAgo(dailyActivity),
     ibiSeries: breathHoldIbiSeries,
-    hrv: buildHrvStats(todayBreathHold),
+    hrv: buildHrvStats(todayBreathHold, stressHistorySource),
     partialErrors,
   };
 }

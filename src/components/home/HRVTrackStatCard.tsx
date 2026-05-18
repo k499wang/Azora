@@ -64,6 +64,8 @@ function getZone(
 interface HRVTrackStatCardProps {
   label: string;
   value: number | null;
+  avgValue?: number | null;
+  bestValue?: number | null;
   unit: string;
   min?: number;
   max: number;
@@ -75,6 +77,8 @@ interface HRVTrackStatCardProps {
 export default function HRVTrackStatCard({
   label,
   value,
+  avgValue,
+  bestValue,
   unit,
   min = 0,
   max,
@@ -82,7 +86,10 @@ export default function HRVTrackStatCard({
   highBound,
   info,
 }: HRVTrackStatCardProps) {
+  const hasAvg = avgValue != null && Number.isFinite(avgValue);
+  const hasBest = bestValue != null && Number.isFinite(bestValue);
   const hasValue = value != null && Number.isFinite(value);
+  const multiStat = hasAvg || hasBest;
   const clamped = hasValue ? Math.max(min, Math.min(max, value!)) : null;
   const progress = clamped != null ? (clamped - min) / (max - min) : null;
   const zone = clamped != null ? getZone(clamped, lowBound, highBound) : null;
@@ -130,20 +137,56 @@ export default function HRVTrackStatCard({
       ) : null}
 
       <View style={styles.left}>
-        <Text style={styles.label}>{label}</Text>
-
-        <View style={styles.valueRow}>
-          <Text style={styles.value}>{hasValue ? Math.round(value!) : '--'}</Text>
-          <Text style={styles.unit}>{unit}</Text>
+        <View style={styles.headerRow}>
+          <Text style={styles.label}>{label}</Text>
+          {zone != null ? (
+            <View
+              style={[styles.zonePill, { backgroundColor: `${zone.color}18` }]}
+            >
+              <Text style={[styles.zonePillText, { color: zone.color }]}>
+                {zone.label}
+              </Text>
+            </View>
+          ) : null}
         </View>
 
-        {zone != null ? (
-          <View style={[styles.zonePill, { backgroundColor: `${zone.color}18` }]}>
-            <Text style={[styles.zonePillText, { color: zone.color }]}>
-              {zone.label}
-            </Text>
+        <View style={styles.statsRow}>
+          <View style={styles.statCell}>
+            <Text style={[styles.statLabel, !multiStat && styles.statLabelLarge]}>Today</Text>
+            <View style={styles.statValueRow}>
+              <Text style={[styles.statValue, !multiStat && styles.statValueLarge]}>
+                {hasValue ? Math.round(value!) : '--'}
+              </Text>
+              <Text style={[styles.statUnit, !multiStat && styles.statUnitLarge]}>{unit}</Text>
+            </View>
           </View>
-        ) : null}
+
+          {hasAvg ? (
+            <>
+              <View style={styles.statDivider} />
+              <View style={styles.statCell}>
+                <Text style={styles.statLabel}>Avg</Text>
+                <View style={styles.statValueRow}>
+                  <Text style={styles.statValue}>{Math.round(avgValue!)}</Text>
+                  <Text style={styles.statUnit}>{unit}</Text>
+                </View>
+              </View>
+            </>
+          ) : null}
+
+          {hasBest ? (
+            <>
+              <View style={styles.statDivider} />
+              <View style={styles.statCell}>
+                <Text style={styles.statLabel}>Best</Text>
+                <View style={styles.statValueRow}>
+                  <Text style={styles.statValue}>{Math.round(bestValue!)}</Text>
+                  <Text style={styles.statUnit}>{unit}</Text>
+                </View>
+              </View>
+            </>
+          ) : null}
+        </View>
       </View>
 
       <View style={styles.ringSurface}>
@@ -204,39 +247,80 @@ const styles = StyleSheet.create({
   },
   left: {
     flex: 1,
-    justifyContent: 'center',
+    alignSelf: 'stretch',
+    justifyContent: 'flex-start',
   },
   label: {
     ...typography.body.small,
     color: colors.text.secondary,
-    marginBottom: 2,
   },
-  valueRow: {
+  headerRow: {
     flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 3,
+    alignItems: 'center',
+    gap: spacing.xs + 2,
     marginBottom: spacing.sm,
   },
-  value: {
-    ...typography.title.title1,
-    fontSize: 38,
-    lineHeight: 42,
-    letterSpacing: -0.5,
-    color: colors.text.primary,
+  statsRow: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    gap: spacing.md,
+    paddingRight: spacing.md,
+  },
+  statCell: {
+    alignItems: 'flex-start',
+    gap: 4,
+  },
+  statDivider: {
+    width: 1,
+    height: 32,
+    backgroundColor: colors.neutral[200],
+  },
+  statLabel: {
+    ...typography.label.small,
+    fontFamily: fonts.semibold,
+    fontSize: 10,
+    color: colors.text.tertiary,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+  },
+  statValueRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 2,
+  },
+  statValue: {
+    ...typography.title.title3,
     fontFamily: fonts.semibold,
     fontWeight: '600',
+    color: colors.text.primary,
     fontVariant: ['tabular-nums'],
+    letterSpacing: -0.3,
   },
-  unit: {
+  statUnit: {
     ...typography.label.small,
-    fontSize: 15,
+    fontSize: 11,
     color: colors.text.tertiary,
     fontFamily: fonts.semibold,
   },
+  statLabelLarge: {
+    fontSize: 11,
+  },
+  statValueLarge: {
+    ...typography.title.title1,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    color: colors.text.primary,
+    fontVariant: ['tabular-nums'],
+    letterSpacing: -0.3,
+  },
+  statUnitLarge: {
+    fontSize: 14,
+  },
   zonePill: {
-    alignSelf: 'flex-start',
     paddingHorizontal: spacing.sm,
-    paddingVertical: 3,
+    paddingVertical: 2,
     borderRadius: 20,
   },
   zonePillText: {
