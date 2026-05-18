@@ -46,7 +46,6 @@ export default function HeartHealthSection({
             label="RMSSD"
             value={rmssdValue}
             unit="ms"
-            icon="stat-rmssd-wave"
             max={80}
             lowBound={20}
             highBound={50}
@@ -56,7 +55,6 @@ export default function HeartHealthSection({
             label="Avg HRV"
             value={sdnnValue}
             unit="ms"
-            icon="stat-hrv-curve"
             max={80}
             lowBound={20}
             highBound={45}

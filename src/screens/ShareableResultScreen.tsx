@@ -353,7 +353,6 @@ export default function ShareableResultScreen({
                       : null
                 }
                 unit="ms"
-                icon="stat-rmssd-wave"
                 max={80}
                 lowBound={20}
                 highBound={50}
@@ -368,7 +367,6 @@ export default function ShareableResultScreen({
                       : null
                 }
                 unit="ms"
-                icon="stat-hrv-curve"
                 max={100}
                 lowBound={30}
                 highBound={70}

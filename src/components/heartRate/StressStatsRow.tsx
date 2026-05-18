@@ -52,7 +52,10 @@ interface StatCellProps {
 function StatCell({ label, value }: StatCellProps) {
   return (
     <View style={styles.cell}>
-      <Text style={styles.cellValue}>{value}</Text>
+      <View style={styles.valueRow}>
+        <Text style={styles.cellValue}>{value}</Text>
+        {value !== '--' ? <Text style={styles.cellMax}>/100</Text> : null}
+      </View>
       <Text style={styles.cellLabel}>{label}</Text>
     </View>
   );
@@ -81,11 +84,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 2,
   },
+  valueRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 1,
+  },
   cellValue: {
     ...typography.title.title3,
     fontFamily: fonts.semibold,
     color: colors.text.primary,
     letterSpacing: -0.4,
+    fontVariant: ['tabular-nums'],
+  },
+  cellMax: {
+    ...typography.caption.caption2,
+    fontFamily: fonts.semibold,
+    fontSize: 10,
+    color: colors.text.tertiary,
   },
   cellLabel: {
     ...typography.caption.caption2,
