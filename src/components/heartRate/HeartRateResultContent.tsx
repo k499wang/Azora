@@ -251,7 +251,6 @@ export function HeartRateResultContent({
                   label="RMSSD"
                   value={rmssdNumeric}
                   unit="ms"
-                  icon="stat-rmssd-wave"
                   max={80}
                   lowBound={20}
                   highBound={50}
@@ -260,7 +259,6 @@ export function HeartRateResultContent({
                   label="Avg HRV"
                   value={sdnnNumeric}
                   unit="ms"
-                  icon="stat-hrv-curve"
                   max={100}
                   lowBound={30}
                   highBound={70}

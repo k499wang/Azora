@@ -141,9 +141,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   title: {
-    ...typography.heading.heading1,
+    ...typography.body.small,
     color: colors.text.secondary,
-    fontFamily: fonts.semibold,
     alignSelf: 'flex-start',
     marginBottom: spacing.sm,
   },

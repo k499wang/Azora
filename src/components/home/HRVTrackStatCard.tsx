@@ -5,7 +5,6 @@ import { colors } from '../../theme/colors';
 import { typography, fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import { card } from '../../theme/card';
-import Icon, { type IconName } from '../common/icons/Icon';
 
 const SIZE = 112;
 const CX = SIZE / 2;
@@ -66,8 +65,6 @@ interface HRVTrackStatCardProps {
   label: string;
   value: number | null;
   unit: string;
-  icon: IconName;
-  iconColor?: string;
   min?: number;
   max: number;
   lowBound: number;
@@ -79,8 +76,6 @@ export default function HRVTrackStatCard({
   label,
   value,
   unit,
-  icon,
-  iconColor,
   min = 0,
   max,
   lowBound,
@@ -118,8 +113,6 @@ export default function HRVTrackStatCard({
     return path;
   })();
 
-  const resolvedIconColor = iconColor ?? zone?.color ?? colors.primary.blue500;
-
   return (
     <View style={styles.card}>
       {info ? (
@@ -137,10 +130,7 @@ export default function HRVTrackStatCard({
       ) : null}
 
       <View style={styles.left}>
-        <View style={styles.labelRow}>
-          <Text style={styles.label}>{label}</Text>
-          <Icon name={icon} size={26} color={resolvedIconColor} />
-        </View>
+        <Text style={styles.label}>{label}</Text>
 
         <View style={styles.valueRow}>
           <Text style={styles.value}>{hasValue ? Math.round(value!) : '--'}</Text>
@@ -214,32 +204,34 @@ const styles = StyleSheet.create({
   },
   left: {
     flex: 1,
-    gap: spacing.sm,
-  },
-  labelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
+    justifyContent: 'center',
   },
   label: {
-    ...typography.heading.heading1,
+    ...typography.body.small,
     color: colors.text.secondary,
-    fontFamily: fonts.semibold,
+    marginBottom: 2,
   },
   valueRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
+    alignItems: 'baseline',
+    gap: 3,
+    marginBottom: spacing.sm,
   },
   value: {
     ...typography.title.title1,
-    fontFamily: fonts.semibold,
+    fontSize: 38,
+    lineHeight: 42,
+    letterSpacing: -0.5,
     color: colors.text.primary,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    fontVariant: ['tabular-nums'],
   },
   unit: {
-    ...typography.body.medium,
-    fontFamily: fonts.semibold,
+    ...typography.label.small,
+    fontSize: 15,
     color: colors.text.tertiary,
+    fontFamily: fonts.semibold,
   },
   zonePill: {
     alignSelf: 'flex-start',
