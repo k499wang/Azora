@@ -2,6 +2,7 @@ import { ReactNode, useEffect, useRef } from 'react';
 import {
   Animated,
   Easing,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -38,6 +39,14 @@ export default function OnboardingScreenLayout({
 }: OnboardingScreenLayoutProps) {
   const fade = useRef(new Animated.Value(0)).current;
   const slide = useRef(new Animated.Value(16)).current;
+  const scrollRef = useRef<ScrollView>(null);
+  useEffect(() => {
+    if (!keyboardAvoiding) return;
+    const show = Keyboard.addListener('keyboardDidShow', () => {
+      scrollRef.current?.scrollToEnd({ animated: true });
+    });
+    return () => show.remove();
+  }, [keyboardAvoiding]);
 
   useEffect(() => {
     Animated.parallel([
@@ -87,6 +96,7 @@ export default function OnboardingScreenLayout({
       </View>
 
       <ScrollView
+        ref={scrollRef}
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={true}

@@ -119,14 +119,17 @@ const styles = StyleSheet.create({
   planCard: {
     ...card.base,
     ...card.shadow,
+    backgroundColor: 'rgba(30, 99, 214, 0.72)',
+    borderColor: 'rgba(100, 180, 255, 0.3)',
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
     position: 'relative',
   },
   planCardSelected: {
-    borderColor: PRO_INK,
+    backgroundColor: 'rgba(30, 99, 214, 0.92)',
+    borderColor: colors.primary.blue300,
     borderWidth: 2,
-    shadowOpacity: 0.16,
+    shadowOpacity: 0.28,
   },
   planCardPressed: {
     opacity: 0.85,
@@ -153,22 +156,22 @@ const styles = StyleSheet.create({
     ...typography.heading.heading2,
     fontFamily: fonts.semibold,
     fontWeight: '600',
-    color: colors.text.primary,
+    color: colors.neutral[0],
   },
   planCardTrial: {
     ...typography.caption.caption1,
-    color: colors.text.secondary,
+    color: 'rgba(255,255,255,0.7)',
     marginTop: 2,
   },
   planCardPerWeek: {
     ...typography.heading.heading2,
     fontFamily: fonts.semibold,
     fontWeight: '600',
-    color: colors.text.primary,
+    color: colors.neutral[0],
   },
   planCardSecondary: {
     ...typography.caption.caption2,
-    color: colors.text.tertiary,
+    color: 'rgba(255,255,255,0.6)',
     marginTop: 2,
   },
   radio: {
@@ -176,18 +179,18 @@ const styles = StyleSheet.create({
     height: 22,
     borderRadius: 11,
     borderWidth: 2,
-    borderColor: colors.neutral[300],
+    borderColor: 'rgba(255,255,255,0.45)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   radioSelected: {
-    borderColor: PRO_INK,
+    borderColor: colors.neutral[0],
   },
   radioInner: {
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: PRO_INK,
+    backgroundColor: colors.neutral[0],
   },
   savingsBadge: {
     position: 'absolute',
