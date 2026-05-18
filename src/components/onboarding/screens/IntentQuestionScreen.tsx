@@ -71,7 +71,7 @@ export default function IntentQuestionScreen({
           size={14}
           color={colors.text.tertiary}
         />
-        <Text style={styles.timeHintText}>Takes about 2 minutes</Text>
+        <Text style={styles.timeHintText}>Takes about 5 minutes</Text>
       </View>
 
       <View style={styles.options}>
