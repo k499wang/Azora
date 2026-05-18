@@ -1,9 +1,19 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import {
+  LayoutChangeEvent,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
-import { typography } from '../../theme/typography';
+import { typography, fonts } from '../../theme/typography';
 import RingStatCard from './RingStatCard';
 import HRVChart from './HRVChart';
+import BPMChart from './BPMChart';
 
 const HEALTH_INFO = {
   title: 'Health Score',
@@ -36,6 +46,20 @@ export default function SessionStatsPager({
   const bpmValue = avgBpm == null ? '--' : `${Math.round(avgBpm)}`;
   const holdValue = formatHold(holdSeconds);
   const healthValue = healthScore == null ? '--' : `${Math.round(healthScore)}`;
+
+  const [pagerWidth, setPagerWidth] = useState(0);
+  const [page, setPage] = useState(0);
+
+  const onPagerLayout = (e: LayoutChangeEvent) => {
+    const w = Math.round(e.nativeEvent.layout.width);
+    if (w !== pagerWidth) setPagerWidth(w);
+  };
+
+  const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    if (pagerWidth <= 0) return;
+    const next = Math.round(e.nativeEvent.contentOffset.x / pagerWidth);
+    if (next !== page) setPage(next);
+  };
 
   return (
     <View style={styles.page}>
@@ -72,7 +96,44 @@ export default function SessionStatsPager({
           info={HEALTH_INFO}
         />
       </View>
-      <HRVChart ibiMs={ibiMs} color={colors.error[500]} />
+
+      <View onLayout={onPagerLayout}>
+        <ScrollView
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          onScroll={onScroll}
+          scrollEventThrottle={16}
+          decelerationRate="fast"
+        >
+          {pagerWidth > 0 ? (
+            <>
+              <View style={{ width: pagerWidth }}>
+                <HRVChart ibiMs={ibiMs} color={colors.error[500]} />
+              </View>
+              <View style={{ width: pagerWidth }}>
+                <BPMChart ibiMs={ibiMs} color={colors.primary.blue500} />
+              </View>
+            </>
+          ) : null}
+        </ScrollView>
+
+        <Text style={styles.swipeHint}>
+          {page === 0 ? 'Swipe for heart rate →' : '← Swipe for HRV'}
+        </Text>
+
+        <View style={styles.dots}>
+          {[0, 1].map((i) => (
+            <View
+              key={i}
+              style={[
+                styles.dot,
+                i === page ? styles.dotActive : styles.dotInactive,
+              ]}
+            />
+          ))}
+        </View>
+      </View>
     </View>
   );
 }
@@ -88,5 +149,29 @@ const styles = StyleSheet.create({
   smallRingsRow: {
     flexDirection: 'row',
     gap: spacing.sm,
+  },
+  swipeHint: {
+    ...typography.caption.caption1,
+    color: colors.text.tertiary,
+    textAlign: 'center',
+    marginTop: spacing.sm,
+    fontFamily: fonts.semibold,
+  },
+  dots: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 6,
+    marginTop: 6,
+  },
+  dot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  dotActive: {
+    backgroundColor: colors.text.primary,
+  },
+  dotInactive: {
+    backgroundColor: colors.neutral[300],
   },
 });

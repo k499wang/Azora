@@ -184,14 +184,14 @@ export default function HRVChart({
                   cx={chart.last.x}
                   cy={chart.last.y}
                   r={6}
-                  fill={colors.error[500]}
+                  fill={colors.primary.blue500}
                   opacity={0.18}
                 />
                 <Circle
                   cx={chart.last.x}
                   cy={chart.last.y}
                   r={3}
-                  fill={colors.error[500]}
+                  fill={colors.primary.blue500}
                 />
               </Svg>
             ) : (

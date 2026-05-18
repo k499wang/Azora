@@ -258,10 +258,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs + 2,
-    marginBottom: spacing.sm,
+    marginBottom: spacing.md,
   },
   statsRow: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-start',
@@ -280,7 +279,7 @@ const styles = StyleSheet.create({
   statLabel: {
     ...typography.label.small,
     fontFamily: fonts.semibold,
-    fontSize: 10,
+    fontSize: 11,
     color: colors.text.tertiary,
     letterSpacing: 0.8,
     textTransform: 'uppercase',
@@ -297,10 +296,11 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     fontVariant: ['tabular-nums'],
     letterSpacing: -0.3,
+    fontSize: 22,
   },
   statUnit: {
     ...typography.label.small,
-    fontSize: 11,
+    fontSize: 12,
     color: colors.text.tertiary,
     fontFamily: fonts.semibold,
   },

@@ -92,7 +92,7 @@ function TechniqueCard({
             />
             {recommended ? (
               <View style={styles.recommendedPill}>
-                <Text style={styles.recommendedText}>For you</Text>
+                <Text style={styles.recommendedText}>Recommended</Text>
               </View>
             ) : null}
           </View>
