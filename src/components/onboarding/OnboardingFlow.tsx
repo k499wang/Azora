@@ -36,6 +36,9 @@ import { trackNotificationPermissionResult } from '../../services/analytics/trac
 import type { NotificationPreferences } from '../../services/notifications/types';
 import { useUpdateNotificationPreferencesMutation } from '../../queries/notifications/useUpdateNotificationPreferencesMutation';
 
+// Set to true to re-enable the intent reflection screen between intent selection and name entry.
+const INTENT_REFLECTION_ENABLED = false;
+
 export interface OnboardingFlowResult {
   onboardingGoal: string;
   displayName: string | null;
@@ -132,7 +135,7 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
       return;
     }
 
-    setStep(selectedIntent === 'other' ? 'name' : 'intentReflection');
+    setStep(selectedIntent === 'other' || !INTENT_REFLECTION_ENABLED ? 'name' : 'intentReflection');
   };
 
   const finish = async () => {

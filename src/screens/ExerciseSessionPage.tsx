@@ -36,7 +36,7 @@ import { useAuthStore } from '../stores/authStore';
 import { useCompleteBreathingSessionMutation } from '../queries/tracking/useCompleteBreathingSessionMutation';
 
 const MIN_ROUNDS = 1;
-const MAX_ROUNDS = 20;
+const MAX_ROUNDS = 30;
 const PLACEMENT_GOOD_DURATION_MS = 1500;
 
 function placementHint(p: FingerPlacementState): string {

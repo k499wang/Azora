@@ -36,6 +36,7 @@ export interface IntentValuePoint {
 }
 
 export interface PersonalizedIntentOption extends IntentOption {
+  hook: string;
   reflectionHeadline: string;
   reflectionBody: string;
   valuePoints: IntentValuePoint[];
