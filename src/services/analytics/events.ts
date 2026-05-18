@@ -30,6 +30,7 @@ export const AnalyticsEvent = {
   HeartRateCaptureFailed: 'heart_rate_capture_failed',
   HeartRateResultAction: 'heart_rate_result_action',
   PaywallViewed: 'paywall_viewed',
+  PaywallPackageSelected: 'paywall_package_selected',
   PaywallPurchaseStarted: 'paywall_purchase_started',
   PaywallPurchaseCompleted: 'paywall_purchase_completed',
   PaywallPurchaseCancelled: 'paywall_purchase_cancelled',

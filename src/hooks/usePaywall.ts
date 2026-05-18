@@ -22,12 +22,14 @@ import { getUserEntitlementQueryKey } from '../queries/subscriptions/useUserEnti
 interface UsePaywallOptions {
   placement: PaywallPlacementValue;
   sourceScreen?: string;
+  sourceAction?: string;
   enabled?: boolean;
 }
 
 export function usePaywall({
   placement,
   sourceScreen,
+  sourceAction,
   enabled = true,
 }: UsePaywallOptions) {
   const queryClient = useQueryClient();
@@ -45,16 +47,42 @@ export function usePaywall({
   >({ weekly: null, annual: null });
   const [selectedPackageId, setSelectedPackageId] =
     useState<PaywallPackageId>('annual');
+  const [paywallViewId, setPaywallViewId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const buildCurrentPaywallEventProperties = (options?: {
+    paywallViewId?: string | null;
+    offering?: PaywallOffering | null;
+  }) =>
+    buildPaywallEventProperties({
+      placement,
+      sourceScreen,
+      sourceAction,
+      paywallViewId: options?.paywallViewId ?? paywallViewId,
+      offeringIdentifier:
+        options?.offering?.offeringIdentifier ??
+        offering?.offeringIdentifier ??
+        null,
+      experimentId:
+        options?.offering?.experimentId ??
+        offering?.experimentId ??
+        null,
+      experimentVariant:
+        options?.offering?.experimentVariant ??
+        offering?.experimentVariant ??
+        null,
+      packages: options?.offering?.packages ?? offering?.packages,
+    });
 
   useEffect(() => {
     let isActive = true;
 
     if (!enabled) {
       setIsLoading(false);
+      setPaywallViewId(null);
       return () => {
         isActive = false;
       };
@@ -65,6 +93,7 @@ export function usePaywall({
     if (userId == null) {
       setOffering(null);
       setRevenueCatPackages({ weekly: null, annual: null });
+      setPaywallViewId(null);
       setErrorMessage('Sign in to view subscription options.');
       setIsLoading(false);
       return () => {
@@ -74,6 +103,7 @@ export function usePaywall({
 
     setIsLoading(true);
     setErrorMessage(null);
+    setPaywallViewId(null);
 
     if (revenueCatStatus === 'idle' || revenueCatStatus === 'signed_out') {
       void ensureRevenueCatIdentityForCurrentUser();
@@ -119,26 +149,53 @@ export function usePaywall({
 
         if (result.offering == null) {
           setErrorMessage('Subscription options are unavailable right now.');
+          posthog.capture(AnalyticsEvent.PaywallFailed, {
+            ...buildPaywallEventProperties({
+              placement,
+              sourceScreen,
+              sourceAction,
+            }),
+            stage: 'load_offering',
+            error_code: 'missing_offering',
+            error_message: 'Subscription options are unavailable right now.',
+          });
           return;
         }
+
+        const nextPaywallViewId = createPaywallViewId();
+        setPaywallViewId(nextPaywallViewId);
 
         posthog.capture(
           AnalyticsEvent.PaywallViewed,
           buildPaywallEventProperties({
             placement,
             sourceScreen,
+            sourceAction,
+            paywallViewId: nextPaywallViewId,
             offeringIdentifier: result.offering.offeringIdentifier,
+            experimentId: result.offering.experimentId,
+            experimentVariant: result.offering.experimentVariant,
             packages: result.offering.packages,
           }),
         );
       })
       .catch((error: unknown) => {
         if (!isActive) return;
-        setErrorMessage(
+        const message =
           error instanceof Error
             ? error.message
-            : 'Subscription options are unavailable right now.',
-        );
+            : 'Subscription options are unavailable right now.';
+        setErrorMessage(message);
+        posthog.capture(AnalyticsEvent.PaywallFailed, {
+          ...buildPaywallEventProperties({
+            placement,
+            sourceScreen,
+            sourceAction,
+          }),
+          stage: 'load_offering',
+          error_code: 'load_offering_failed',
+          error_message: message,
+        });
       })
       .finally(() => {
         if (isActive) {
@@ -156,9 +213,22 @@ export function usePaywall({
     revenueCatLastError,
     revenueCatStatus,
     revenueCatUnavailableReason,
+    sourceAction,
     sourceScreen,
     userId,
   ]);
+
+  const selectPackage = (packageId: PaywallPackageId) => {
+    if (packageId === selectedPackageId) {
+      return;
+    }
+
+    setSelectedPackageId(packageId);
+    posthog.capture(AnalyticsEvent.PaywallPackageSelected, {
+      ...buildCurrentPaywallEventProperties(),
+      selected_package_id: packageId,
+    });
+  };
 
   const purchaseSelectedPackage = async (): Promise<PaywallResult> => {
     const selectedPackage = revenueCatPackages[selectedPackageId];
@@ -167,13 +237,9 @@ export function usePaywall({
     setErrorMessage(null);
 
     posthog.capture(AnalyticsEvent.PaywallPurchaseStarted, {
-      ...buildPaywallEventProperties({
-        placement,
-        sourceScreen,
-        offeringIdentifier: offering?.offeringIdentifier ?? null,
-        packages: offering?.packages,
-      }),
+      ...buildCurrentPaywallEventProperties(),
       package_type: selectedPackageId,
+      selected_package_id: selectedPackageId,
     });
 
     const result = await purchasePaywallPackage(selectedPackage);
@@ -189,13 +255,9 @@ export function usePaywall({
       }
 
       posthog.capture(AnalyticsEvent.PaywallPurchaseCompleted, {
-        ...buildPaywallEventProperties({
-          placement,
-          sourceScreen,
-          offeringIdentifier: offering?.offeringIdentifier ?? null,
-          packages: offering?.packages,
-        }),
+        ...buildCurrentPaywallEventProperties(),
         package_type: selectedPackageId,
+        selected_package_id: selectedPackageId,
         is_pro: result.isPro,
       });
       return result;
@@ -203,13 +265,9 @@ export function usePaywall({
 
     if (result.status === 'cancelled') {
       posthog.capture(AnalyticsEvent.PaywallPurchaseCancelled, {
-        ...buildPaywallEventProperties({
-          placement,
-          sourceScreen,
-          offeringIdentifier: offering?.offeringIdentifier ?? null,
-          packages: offering?.packages,
-        }),
+        ...buildCurrentPaywallEventProperties(),
         package_type: selectedPackageId,
+        selected_package_id: selectedPackageId,
         cancel_reason: 'store_cancelled',
       });
       return result;
@@ -218,12 +276,8 @@ export function usePaywall({
     if (result.status === 'failed') {
       setErrorMessage(result.message);
       posthog.capture(AnalyticsEvent.PaywallFailed, {
-        ...buildPaywallEventProperties({
-          placement,
-          sourceScreen,
-          offeringIdentifier: offering?.offeringIdentifier ?? null,
-          packages: offering?.packages,
-        }),
+        ...buildCurrentPaywallEventProperties(),
+        stage: 'purchase',
         error_code: result.errorCode,
         error_message: result.message,
       });
@@ -231,7 +285,14 @@ export function usePaywall({
     }
 
     if (result.status === 'not_presented') {
-      setErrorMessage(getNotPresentedMessage(result.reason));
+      const message = getNotPresentedMessage(result.reason);
+      setErrorMessage(message);
+      posthog.capture(AnalyticsEvent.PaywallFailed, {
+        ...buildCurrentPaywallEventProperties(),
+        stage: 'purchase',
+        error_code: result.reason,
+        error_message: message,
+      });
     }
 
     return result;
@@ -244,12 +305,7 @@ export function usePaywall({
 
     posthog.capture(
       AnalyticsEvent.PaywallRestoreStarted,
-      buildPaywallEventProperties({
-        placement,
-        sourceScreen,
-        offeringIdentifier: offering?.offeringIdentifier ?? null,
-        packages: offering?.packages,
-      }),
+      buildCurrentPaywallEventProperties(),
     );
 
     const result = await restorePaywallPurchases();
@@ -261,12 +317,7 @@ export function usePaywall({
       });
 
       posthog.capture(AnalyticsEvent.PaywallRestoreCompleted, {
-        ...buildPaywallEventProperties({
-          placement,
-          sourceScreen,
-          offeringIdentifier: offering?.offeringIdentifier ?? null,
-          packages: offering?.packages,
-        }),
+        ...buildCurrentPaywallEventProperties(),
         is_pro: result.isPro,
       });
 
@@ -279,19 +330,22 @@ export function usePaywall({
     if (result.status === 'failed') {
       setErrorMessage(result.message);
       posthog.capture(AnalyticsEvent.PaywallFailed, {
-        ...buildPaywallEventProperties({
-          placement,
-          sourceScreen,
-          offeringIdentifier: offering?.offeringIdentifier ?? null,
-          packages: offering?.packages,
-        }),
+        ...buildCurrentPaywallEventProperties(),
+        stage: 'restore',
         error_code: result.errorCode,
         error_message: result.message,
       });
     }
 
     if (result.status === 'not_presented') {
-      setErrorMessage(getNotPresentedMessage(result.reason));
+      const message = getNotPresentedMessage(result.reason);
+      setErrorMessage(message);
+      posthog.capture(AnalyticsEvent.PaywallFailed, {
+        ...buildCurrentPaywallEventProperties(),
+        stage: 'restore',
+        error_code: result.reason,
+        error_message: message,
+      });
     }
 
     return result;
@@ -300,12 +354,7 @@ export function usePaywall({
   const trackDismissed = () => {
     posthog.capture(
       AnalyticsEvent.PaywallDismissed,
-      buildPaywallEventProperties({
-        placement,
-        sourceScreen,
-        offeringIdentifier: offering?.offeringIdentifier ?? null,
-        packages: offering?.packages,
-      }),
+      buildCurrentPaywallEventProperties(),
     );
   };
 
@@ -323,12 +372,18 @@ export function usePaywall({
     isPurchasing,
     isRestoring,
     errorMessage,
-    setSelectedPackageId,
+    selectPackage,
     purchaseSelectedPackage,
     restorePurchases,
     trackDismissed,
     retryRevenueCatSync,
   };
+}
+
+function createPaywallViewId(): string {
+  return `paywall_${Date.now().toString(36)}_${Math.random()
+    .toString(36)
+    .slice(2, 10)}`;
 }
 
 function getNotPresentedMessage(

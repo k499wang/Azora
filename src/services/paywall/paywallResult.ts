@@ -6,7 +6,9 @@ export interface PaywallPackageOption {
   productIdentifier: string;
   title: string;
   priceString: string;
+  priceCents: number | null;
   pricePerMonthString: string | null;
+  currencyCode: string | null;
   subscriptionPeriod: string | null;
   trialLabel: string | null;
   isRecommended: boolean;
@@ -14,6 +16,8 @@ export interface PaywallPackageOption {
 
 export interface PaywallOffering {
   offeringIdentifier: string;
+  experimentId: string | null;
+  experimentVariant: string | null;
   packages: PaywallPackageOption[];
 }
 

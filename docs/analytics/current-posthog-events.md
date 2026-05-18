@@ -148,6 +148,72 @@ It is based on the actual `posthog.capture(...)` calls in the codebase.
 - `position`
 - `item_count`
 
+## Paywall
+
+- `paywall_viewed`
+- `paywall_package_selected`
+- `paywall_purchase_started`
+- `paywall_purchase_completed`
+- `paywall_purchase_cancelled`
+- `paywall_restore_started`
+- `paywall_restore_completed`
+- `paywall_dismissed`
+- `paywall_failed`
+
+### Paywall Shared Properties
+
+These properties are emitted through the shared paywall event builder when
+available:
+
+- `placement`
+- `source_screen`
+- `source_action`
+- `paywall_view_id`
+- `offering_id`
+- `experiment_id`
+- `experiment_variant`
+- `weekly_product_id`
+- `weekly_price`
+- `weekly_price_cents`
+- `annual_product_id`
+- `annual_price`
+- `annual_price_cents`
+- `currency`
+- `has_trial`
+
+### Paywall Event-Specific Properties
+
+`paywall_package_selected`
+
+- `selected_package_id`
+
+`paywall_purchase_started`
+
+- `package_type`
+- `selected_package_id`
+
+`paywall_purchase_completed`
+
+- `package_type`
+- `selected_package_id`
+- `is_pro`
+
+`paywall_purchase_cancelled`
+
+- `package_type`
+- `selected_package_id`
+- `cancel_reason`
+
+`paywall_restore_completed`
+
+- `is_pro`
+
+`paywall_failed`
+
+- `stage`
+- `error_code`
+- `error_message`
+
 ## Profile
 
 - `profile_action`
