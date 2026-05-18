@@ -119,7 +119,7 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     [selectedIntent],
   );
 
-  const selectIntent = (intentId: string) => {
+  const selectIntent = (intentId: string | null) => {
     if (isSubmitting) return;
     setSelectedIntent(intentId);
     setErrorMessage(null);

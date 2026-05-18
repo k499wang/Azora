@@ -7,7 +7,7 @@ import { card } from '../../theme/card';
 import LineGraph, { type DataPoint } from '../analytics/LineGraph';
 
 interface HRSample {
-  t: number;
+  offsetMs: number;
   bpm: number;
 }
 
@@ -27,7 +27,7 @@ function downsample(samples: HRSample[], maxPoints: number): DataPoint[] {
   if (samples.length === 0) return [];
   if (samples.length <= maxPoints) {
     return samples.map((s) => ({
-      label: formatTime(s.t),
+      label: formatTime(s.offsetMs / 1000),
       value: Math.round(s.bpm),
     }));
   }
@@ -35,7 +35,7 @@ function downsample(samples: HRSample[], maxPoints: number): DataPoint[] {
   const out: DataPoint[] = [];
   for (let i = 0; i < maxPoints; i += 1) {
     const s = samples[Math.round(i * step)];
-    out.push({ label: formatTime(s.t), value: Math.round(s.bpm) });
+    out.push({ label: formatTime(s.offsetMs / 1000), value: Math.round(s.bpm) });
   }
   return out;
 }

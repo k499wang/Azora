@@ -36,6 +36,7 @@ When adding a mutation, find every field it writes, then look up every query abo
 | `useUpdateProfileDisplayNameMutation` | `profiles.display_name` | `ProfileSummary` (uses `setQueryData` — equivalent) |
 | `useUploadProfileAvatarMutation` | `profiles.avatar_url` | `ProfileSummary` (uses `setQueryData`) |
 | `useCompleteBreathHoldMutation` | `breath_hold_sessions`, `daily_activity` for `localDate` | `HomeStats(localDate)`, `DailyFeatureUsage(userId, localDate)`, `ProfileSummary` |
+| `useCompleteBreathingSessionMutation` | `breathing_sessions`, `daily_activity` for `localDate` | `HomeStats(localDate)`, `DailyFeatureUsage(userId, localDate)`, `ProfileSummary` |
 | `useCompleteHeartRateSessionMutation` | `heart_rate_sessions`, `daily_activity` for `usageDate` | `HomeStats(usageDate)`, `DailyFeatureUsage(userId, usageDate)`, `ProfileSummary` |
 | `useUpdateNotificationPreferencesMutation` | notification preferences | `NotificationPreferences` |
 
