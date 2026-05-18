@@ -24,8 +24,8 @@ export default function NameScreen({
 }: NameScreenProps) {
   return (
     <OnboardingScreenLayout
-      title="Add a name?"
-      subtitle="This is optional and only used to personalize your experience."
+      title="What's your name?"
+      subtitle="Let Azora know a little more about you!"
       progress={stepIndex / stepCount}
       onBack={onBack}
       keyboardAvoiding
@@ -61,6 +61,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.elevated,
     paddingHorizontal: spacing.md,
     ...typography.input.text,
+    lineHeight: undefined,
     color: colors.text.primary,
   },
   hint: {
