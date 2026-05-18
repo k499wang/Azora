@@ -17,43 +17,43 @@ import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 
 interface IntentQuestionScreenProps {
-  selectedIntent: string | null;
+  selectedIntents: string[];
   customIntent: string;
   isSubmitting: boolean;
   errorMessage: string | null;
   stepIndex: number;
   stepCount: number;
-  onSelect: (intentId: string | null) => void;
+  onToggle: (intentId: string) => void;
   onCustomIntentChange: (value: string) => void;
   onContinue: () => void;
 }
 
 export default function IntentQuestionScreen({
-  selectedIntent,
+  selectedIntents,
   customIntent,
   isSubmitting,
   errorMessage,
   stepIndex,
   stepCount,
-  onSelect,
+  onToggle,
   onCustomIntentChange,
   onContinue,
 }: IntentQuestionScreenProps) {
-  const needsCustomIntent = selectedIntent === 'other';
+  const needsCustomIntent = selectedIntents.includes('other');
   const canContinue =
-    selectedIntent != null &&
+    selectedIntents.length > 0 &&
     !isSubmitting &&
     (!needsCustomIntent || customIntent.trim().length > 0);
 
-  const handleSelect = (intentId: string) => {
+  const handleToggle = (intentId: string) => {
     if (isHapticsEnabled()) Haptics.selectionAsync().catch(() => {});
-    onSelect(intentId);
+    onToggle(intentId);
   };
 
   return (
     <OnboardingScreenLayout
       title="What's on your mind?"
-      subtitle="Pick what feels closest right now — Azora will tune to it."
+      subtitle="Pick as many as feel right — Azora will tune to them."
       progress={stepIndex / stepCount}
       keyboardAvoiding={needsCustomIntent}
       footer={
@@ -76,16 +76,16 @@ export default function IntentQuestionScreen({
 
       <View style={styles.options}>
         {INTENT_OPTIONS.map((option, index) => {
-          const selected = selectedIntent === option.id;
+          const selected = selectedIntents.includes(option.id);
           const isFirst = index === 0;
 
           return (
             <Pressable
               key={option.id}
-              accessibilityRole="button"
-              accessibilityState={{ selected, disabled: isSubmitting }}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: selected, disabled: isSubmitting }}
               disabled={isSubmitting}
-              onPress={() => handleSelect(option.id)}
+              onPress={() => handleToggle(option.id)}
               style={({ pressed }) => [
                 styles.option,
                 !isFirst && styles.optionDivider,
@@ -104,6 +104,23 @@ export default function IntentQuestionScreen({
               >
                 {option.title}
               </Text>
+              <View
+                style={[
+                  styles.checkbox,
+                  selected && {
+                    backgroundColor: option.accent,
+                    borderColor: option.accent,
+                  },
+                ]}
+              >
+                {selected ? (
+                  <MaterialCommunityIcons
+                    name="check"
+                    size={14}
+                    color={colors.background.primary}
+                  />
+                ) : null}
+              </View>
             </Pressable>
           );
         })}
@@ -182,6 +199,15 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semibold,
     fontWeight: '600',
     color: colors.text.primary,
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 1.5,
+    borderColor: colors.border.default,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   input: {
     minHeight: 156,

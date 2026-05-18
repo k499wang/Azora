@@ -83,8 +83,12 @@ const STEP_INDEX: Record<OnboardingStep, number> = {
 export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   const userId = useAuthStore((state) => state.user?.id ?? null);
   const [step, setStep] = useState<OnboardingStep>('intent');
-  const [selectedIntent, setSelectedIntent] = useState<string | null>(null);
+  const [selectedIntents, setSelectedIntents] = useState<string[]>([]);
   const [customIntent, setCustomIntent] = useState('');
+  const primaryIntent = useMemo(() => {
+    const nonOther = selectedIntents.find((id) => id !== 'other');
+    return nonOther ?? selectedIntents[0] ?? null;
+  }, [selectedIntents]);
   const [name, setName] = useState('');
   const [stressLevel, setStressLevel] = useState(5);
   const [sleepQuality, setSleepQuality] = useState(5);
@@ -118,28 +122,46 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   });
 
   const selectedOption = useMemo(
-    () => PERSONALIZED_INTENT_OPTIONS.find((option) => option.id === selectedIntent) ?? null,
-    [selectedIntent],
+    () => PERSONALIZED_INTENT_OPTIONS.find((option) => option.id === primaryIntent) ?? null,
+    [primaryIntent],
   );
 
-  const selectIntent = (intentId: string | null) => {
+  const toggleIntent = (intentId: string) => {
     if (isSubmitting) return;
-    setSelectedIntent(intentId);
+    setSelectedIntents((prev) =>
+      prev.includes(intentId) ? prev.filter((id) => id !== intentId) : [...prev, intentId],
+    );
     setErrorMessage(null);
   };
 
   const goFromIntent = () => {
-    if (selectedIntent == null || isSubmitting) return;
-    if (selectedIntent === 'other' && customIntent.trim().length === 0) {
+    if (selectedIntents.length === 0 || isSubmitting) return;
+    if (selectedIntents.includes('other') && customIntent.trim().length === 0) {
       setErrorMessage('Please share a few words.');
       return;
     }
 
-    setStep(selectedIntent === 'other' || !INTENT_REFLECTION_ENABLED ? 'name' : 'intentReflection');
+    const onlyOther = selectedIntents.length === 1 && selectedIntents[0] === 'other';
+    setStep(onlyOther || !INTENT_REFLECTION_ENABLED ? 'name' : 'intentReflection');
+  };
+
+  const buildOnboardingGoal = () => {
+    const parts: string[] = [];
+    for (const id of selectedIntents) {
+      if (id === 'other') {
+        const trimmed = customIntent.trim();
+        if (trimmed.length > 0) parts.push(trimmed);
+        continue;
+      }
+      const option = PERSONALIZED_INTENT_OPTIONS.find((o) => o.id === id);
+      if (option) parts.push(option.title);
+      else parts.push(id);
+    }
+    return parts.join(', ');
   };
 
   const finish = async () => {
-    const goal = selectedIntent === 'other' ? customIntent.trim() : (selectedIntent ?? '');
+    const goal = buildOnboardingGoal();
     if (isSubmitting || goal.length === 0) return;
 
     setIsSubmitting(true);
@@ -157,7 +179,7 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         gender,
         dailyMinutes,
         defaultTechniqueId:
-          selectedIntent != null ? INTENT_TO_TECHNIQUE[selectedIntent] ?? null : null,
+          primaryIntent != null ? INTENT_TO_TECHNIQUE[primaryIntent] ?? null : null,
       });
     } catch (error) {
       setErrorMessage(getErrorMessage(error));
@@ -401,11 +423,11 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
 
   if (step === 'recommendation') {
     const intentTitle =
-      selectedIntent === 'other'
+      primaryIntent === 'other' || primaryIntent == null
         ? customIntent.trim() || 'reach your goal'
         : selectedOption?.title ?? 'reach your goal';
     const techniqueId =
-      selectedIntent != null ? INTENT_TO_TECHNIQUE[selectedIntent] ?? 'box' : 'box';
+      primaryIntent != null ? INTENT_TO_TECHNIQUE[primaryIntent] ?? 'box' : 'box';
 
     return (
       <RecommendationScreen
@@ -454,7 +476,7 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
 
   if (step === 'pact') {
     const intentTitle =
-      selectedIntent === 'other'
+      primaryIntent === 'other' || primaryIntent == null
         ? customIntent.trim() || 'reach your goal'
         : selectedOption?.title ?? 'reach your goal';
 
@@ -478,7 +500,7 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   if (step === 'paywall') {
     const personalization = buildPaywallPersonalization({
       displayName: name.trim() || null,
-      intentId: selectedIntent,
+      intentId: primaryIntent,
       stressLevel,
       sleepQuality,
       dailyMinutes,
@@ -511,13 +533,13 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
 
   return (
     <IntentQuestionScreen
-      selectedIntent={selectedIntent}
+      selectedIntents={selectedIntents}
       customIntent={customIntent}
       isSubmitting={isSubmitting}
       errorMessage={errorMessage}
       stepIndex={stepIndex}
       stepCount={STEP_COUNT}
-      onSelect={selectIntent}
+      onToggle={toggleIntent}
       onCustomIntentChange={setCustomIntent}
       onContinue={goFromIntent}
     />

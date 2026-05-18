@@ -17,6 +17,7 @@ import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import { isHapticsEnabled } from '../../services/preferences/hapticsPreference';
+import AmbientBackground from '../common/AmbientBackground';
 
 interface OnboardingScreenLayoutProps {
   title: string;
@@ -124,18 +125,21 @@ export default function OnboardingScreenLayout({
   );
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
-      {keyboardAvoiding ? (
-        <KeyboardAvoidingView
-          style={styles.keyboard}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        >
-          {inner}
-        </KeyboardAvoidingView>
-      ) : (
-        inner
-      )}
-    </SafeAreaView>
+    <View style={styles.screen}>
+      <AmbientBackground />
+      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+        {keyboardAvoiding ? (
+          <KeyboardAvoidingView
+            style={styles.keyboard}
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          >
+            {inner}
+          </KeyboardAvoidingView>
+        ) : (
+          inner
+        )}
+      </SafeAreaView>
+    </View>
   );
 }
 
@@ -143,6 +147,10 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: colors.background.primary,
+  },
+  safeArea: {
+    flex: 1,
+    backgroundColor: 'transparent',
   },
   keyboard: {
     flex: 1,
