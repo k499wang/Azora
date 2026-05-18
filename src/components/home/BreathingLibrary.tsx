@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { usePostHog } from 'posthog-react-native';
 import { colors } from '../../theme/colors';
@@ -42,6 +43,7 @@ function TechniqueCard({
   const navigation = useNavigation<MainTabNavigationProp<'Home'>>();
   const posthog = usePostHog();
   const cat = CATEGORY_CONFIG[technique.category];
+  const textColor = colors.text.inverse;
 
   const handlePress = () => {
     posthog.capture(AnalyticsEvent.BreathingTechniqueSelected, {
@@ -74,25 +76,35 @@ function TechniqueCard({
           pressed && styles.cardPressed,
         ]}
       >
-        <View style={styles.cardTop}>
-          <MaterialCommunityIcons
-            name={technique.icon}
-            size={26}
-            color={cat.color}
-            style={styles.icon}
-          />
-          {recommended ? (
-            <View style={styles.recommendedPill}>
-              <Text style={styles.recommendedText}>For you</Text>
-            </View>
-          ) : null}
-        </View>
-        <View style={styles.textBlock}>
-          <Text style={styles.techniqueName} numberOfLines={2}>
-            {technique.name}
-          </Text>
-          <Text style={styles.category}>{cat.label}</Text>
-          <Text style={styles.pattern}>{formatPattern(technique.pattern)}</Text>
+        <Image source={technique.backgroundImage} style={styles.cardImage} resizeMode="cover" />
+        <LinearGradient
+          colors={['rgba(0,0,0,0.10)', 'rgba(0,0,0,0.55)']}
+          locations={[0.35, 1]}
+          style={styles.cardScrim}
+        />
+        <View style={styles.cardContent}>
+          <View style={styles.cardTop}>
+            <MaterialCommunityIcons
+              name={technique.icon}
+              size={26}
+              color={textColor}
+              style={styles.icon}
+            />
+            {recommended ? (
+              <View style={styles.recommendedPill}>
+                <Text style={styles.recommendedText}>For you</Text>
+              </View>
+            ) : null}
+          </View>
+          <View style={styles.textBlock}>
+            <Text style={[styles.techniqueName, { color: textColor }]} numberOfLines={2}>
+              {technique.name}
+            </Text>
+            <Text style={[styles.category, { color: textColor, opacity: 0.85 }]}>{cat.label}</Text>
+            <Text style={[styles.pattern, { color: textColor, opacity: 0.8 }]}>
+              {formatPattern(technique.pattern)}
+            </Text>
+          </View>
         </View>
       </Pressable>
     </View>
@@ -168,6 +180,18 @@ const styles = StyleSheet.create({
     ...card.base,
     width: CARD_WIDTH,
     height: CARD_HEIGHT,
+    overflow: 'hidden',
+  },
+  cardImage: {
+    ...StyleSheet.absoluteFillObject,
+    width: '100%',
+    height: '100%',
+  },
+  cardScrim: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  cardContent: {
+    flex: 1,
     padding: spacing.lg,
     justifyContent: 'space-between',
   },
@@ -187,14 +211,14 @@ const styles = StyleSheet.create({
   },
   recommendedPill: {
     borderRadius: 999,
-    backgroundColor: colors.primary.blue100,
+    backgroundColor: 'rgba(0,0,0,0.35)',
     paddingHorizontal: spacing.sm,
     paddingVertical: 3,
   },
   recommendedText: {
     ...typography.label.small,
     fontFamily: fonts.semibold,
-    color: colors.primary.blue700,
+    color: colors.text.inverse,
   },
   textBlock: {
     gap: spacing.xs,
@@ -206,7 +230,7 @@ const styles = StyleSheet.create({
   techniqueName: {
     ...typography.heading.heading1,
     fontFamily: fonts.semibold,
-    color: colors.text.primary,
+    color: colors.primary.blue700,
   },
   category: {
     ...typography.label.small,
@@ -217,6 +241,6 @@ const styles = StyleSheet.create({
     ...typography.label.medium,
     fontFamily: fonts.semibold,
     color: colors.text.primary,
-    opacity: 0.6,
+    opacity: 0.7,
   },
 });
