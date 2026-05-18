@@ -23,7 +23,7 @@ export default function PaywallFeatureList({
       {features.map((feature) => (
         <View key={feature} style={styles.row}>
           <View style={styles.check}>
-            <Icon name="check" size={14} color={colors.text.inverse} />
+            <Icon name="check" size={12} color="rgba(255,255,255,0.9)" />
           </View>
           <Text style={styles.text}>{feature}</Text>
         </View>
@@ -48,11 +48,13 @@ const styles = StyleSheet.create({
     borderRadius: 11,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.primary.blue600,
+    backgroundColor: 'transparent',
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.75)',
   },
   text: {
     flex: 1,
     ...typography.body.medium,
-    color: colors.text.primary,
+    color: colors.neutral[0],
   },
 });

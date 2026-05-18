@@ -22,7 +22,11 @@ import { fonts, typography } from '../../theme/typography';
 import { card } from '../../theme/card';
 import type { NotificationPermissionStatus } from '../../services/notifications/types';
 
-export default function PaywallTrialReminderToggle() {
+interface PaywallTrialReminderToggleProps {
+  dark?: boolean;
+}
+
+export default function PaywallTrialReminderToggle({ dark = false }: PaywallTrialReminderToggleProps) {
   const userId = useAuthStore((state) => state.user?.id ?? null);
   const preferencesQuery = useNotificationPreferencesQuery(userId);
   const updatePreferences = useUpdateNotificationPreferencesMutation(userId);
@@ -78,16 +82,16 @@ export default function PaywallTrialReminderToggle() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.row}>
-        <Text style={styles.label}>Notify me before trial ends</Text>
+      <View style={[styles.row, dark && styles.rowDark]}>
+        <Text style={[styles.label, dark && styles.labelDark]}>Notify me before trial ends</Text>
         <Switch
           value={enabled}
           disabled={isBusy || userId == null}
           onValueChange={(value) => {
             void handleToggle(value);
           }}
-          trackColor={{ false: colors.neutral[300], true: colors.primary.blue300 }}
-          thumbColor={enabled ? colors.primary.blue600 : colors.neutral[50]}
+          trackColor={{ false: dark ? 'rgba(255,255,255,0.2)' : colors.neutral[300], true: colors.primary.blue300 }}
+          thumbColor={enabled ? colors.primary.blue400 : dark ? colors.neutral[200] : colors.neutral[50]}
           style={styles.switch}
         />
       </View>
@@ -99,7 +103,7 @@ export default function PaywallTrialReminderToggle() {
           }}
           style={({ pressed }) => [styles.hint, pressed && styles.hintPressed]}
         >
-          <Text style={styles.hintText}>
+          <Text style={[styles.hintText, dark && styles.hintTextDark]}>
             Notifications are off in system settings. Tap to enable.
           </Text>
         </Pressable>
@@ -122,12 +126,21 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
   },
+  rowDark: {
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderColor: 'rgba(255,255,255,0.12)',
+    shadowOpacity: 0,
+    elevation: 0,
+  },
   label: {
     ...typography.heading.heading2,
     fontFamily: fonts.semibold,
     fontWeight: '600',
     color: colors.text.primary,
     flex: 1,
+  },
+  labelDark: {
+    color: colors.neutral[0],
   },
   switch: {},
   hint: {
@@ -140,5 +153,8 @@ const styles = StyleSheet.create({
     ...typography.caption.caption2,
     color: colors.warning[700],
     textAlign: 'center',
+  },
+  hintTextDark: {
+    color: colors.warning[500],
   },
 });

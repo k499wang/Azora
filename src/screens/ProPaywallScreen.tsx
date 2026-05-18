@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Animated,
   Easing,
+  ImageBackground,
   Linking,
   Pressable,
   ScrollView,
@@ -12,6 +13,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { usePaywall } from '../hooks/usePaywall';
 import { PaywallPlacement } from '../services/paywall';
 import type { RootStackScreenProps } from '../app/navigation';
@@ -124,6 +126,21 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
 
   return (
     <Animated.View style={[styles.screen, { transform: [{ translateY: exitSlideAnim }] }]}>
+      <ImageBackground
+        source={require('../../assets/backgrounds/sunset.jpg')}
+        style={styles.background}
+        resizeMode="cover"
+      >
+        <LinearGradient
+          colors={[
+            'rgba(0,0,0,0)',
+            'rgba(0,0,0,0.08)',
+            'rgba(0,0,0,0.38)',
+          ]}
+          locations={[0, 0.5, 1]}
+          style={StyleSheet.absoluteFill}
+          pointerEvents="none"
+        />
       <SafeAreaView
         style={[styles.screenBody, { paddingTop: insets.top + spacing.sm }]}
         edges={['left', 'right']}
@@ -160,7 +177,9 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
             ]}
           >
             <View style={styles.headerCopy}>
-              <Text style={styles.title}>{copy.title}</Text>
+              <Text style={styles.eyebrow}>Your plan is ready.</Text>
+              <Text style={styles.title}>Unlock Azora for free</Text>
+              <View style={styles.titleDivider} />
               <Text style={styles.subtitle}>{copy.subtitle}</Text>
               {selectedPackageHasTrial ? (
                 <Text style={styles.trialNote}>Try free for 3 days — no charge until day 3</Text>
@@ -168,8 +187,6 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
             </View>
 
             <PaywallFeatureList />
-
-            {selectedPackageHasTrial ? <PaywallTrialReminderToggle /> : null}
 
             {paywall.isLoading ? (
               <View style={styles.cardsLoading}>
@@ -218,7 +235,9 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
           </Animated.View>
         </ScrollView>
 
-        <View style={styles.footer}>
+        <View style={[styles.tray, { paddingBottom: insets.bottom + spacing.md }]}>
+          <View style={styles.trayHandle} />
+          {selectedPackageHasTrial ? <PaywallTrialReminderToggle dark /> : null}
           <OnboardingPrimaryButton
             label={ctaLabel}
             onPress={() => {
@@ -264,6 +283,7 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
           </Text>
         </View>
       </SafeAreaView>
+      </ImageBackground>
     </Animated.View>
   );
 }
@@ -301,10 +321,14 @@ function getPaywallCopy(feature: RootStackScreenProps<'ProPaywall'>['route']['pa
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: colors.background.primary,
+    backgroundColor: colors.neutral[900],
+  },
+  background: {
+    flex: 1,
   },
   screenBody: {
     flex: 1,
+    backgroundColor: 'transparent',
   },
   header: {
     minHeight: 56,
@@ -328,7 +352,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 32,
     lineHeight: 32,
-    color: colors.text.primary,
+    color: colors.neutral[0],
   },
   scroll: {
     flex: 1,
@@ -341,28 +365,42 @@ const styles = StyleSheet.create({
     gap: spacing.lg,
   },
   headerCopy: {
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: spacing.xs,
     paddingHorizontal: spacing.sm,
+  },
+  eyebrow: {
+    ...typography.body.medium,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.75)',
+    textAlign: 'left',
   },
   title: {
     ...typography.display.display3,
     fontFamily: fonts.semibold,
     fontWeight: '600',
-    color: colors.text.primary,
-    textAlign: 'center',
+    color: colors.neutral[0],
+    textAlign: 'left',
+  },
+  titleDivider: {
+    alignSelf: 'stretch',
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: 'rgba(255,255,255,0.35)',
+    marginTop: spacing.xs,
+    marginBottom: spacing.xs,
   },
   subtitle: {
     ...typography.body.medium,
-    color: colors.text.secondary,
-    textAlign: 'center',
+    color: 'rgba(255,255,255,0.75)',
+    textAlign: 'left',
   },
   trialNote: {
     ...typography.caption.caption1,
     fontFamily: fonts.semibold,
     fontWeight: '600',
-    color: colors.primary.blue600,
-    textAlign: 'center',
+    color: colors.primary.blue200,
+    textAlign: 'left',
     marginTop: spacing.xs,
   },
   cardsLoading: {
@@ -371,7 +409,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   planCards: {
-    gap: spacing.sm,
+    gap: spacing.md,
     marginTop: spacing.xs,
   },
   errorBlock: {
@@ -398,12 +436,26 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.error[700],
   },
-  footer: {
-    gap: spacing.xs,
+  tray: {
+    gap: spacing.sm,
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.lg,
-    backgroundColor: colors.background.primary,
+    paddingTop: spacing.md,
+    backgroundColor: 'rgba(10, 28, 68, 0.92)',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 12,
+  },
+  trayHandle: {
+    alignSelf: 'center',
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    marginBottom: spacing.xs,
   },
   restoreButton: {
     alignSelf: 'center',
@@ -414,16 +466,16 @@ const styles = StyleSheet.create({
     ...typography.button.small,
     fontFamily: fonts.semibold,
     fontWeight: '600',
-    color: colors.text.brand,
+    color: colors.neutral[0],
   },
   legal: {
     ...typography.caption.caption2,
-    color: colors.text.tertiary,
+    color: 'rgba(255,255,255,0.55)',
     textAlign: 'center',
     lineHeight: 15,
   },
   legalLink: {
-    color: colors.text.brand,
+    color: 'rgba(255,255,255,0.85)',
     fontFamily: fonts.semibold,
     fontWeight: '600',
   },
