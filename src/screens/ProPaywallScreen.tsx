@@ -181,7 +181,7 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
                   <PlanCard
                     pkg={annualPackage}
                     isSelected={paywall.selectedPackageId === 'annual'}
-                    onSelect={paywall.setSelectedPackageId}
+                    onSelect={paywall.selectPackage}
                     savingsPercent={savingsPercent}
                   />
                 ) : null}
@@ -189,7 +189,7 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
                   <PlanCard
                     pkg={weeklyPackage}
                     isSelected={paywall.selectedPackageId === 'weekly'}
-                    onSelect={paywall.setSelectedPackageId}
+                    onSelect={paywall.selectPackage}
                     savingsPercent={null}
                   />
                 ) : null}

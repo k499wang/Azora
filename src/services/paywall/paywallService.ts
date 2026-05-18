@@ -98,6 +98,8 @@ export async function getPaywallOffering(
   return {
     offering: {
       offeringIdentifier: offering.identifier,
+      experimentId: getMetadataString(offering.metadata, 'experiment_id'),
+      experimentVariant: getMetadataString(offering.metadata, 'experiment_variant'),
       packages,
     },
     revenueCatPackages: { weekly, annual },
@@ -190,7 +192,11 @@ function toPaywallPackageOption(
     productIdentifier: pkg.product.identifier,
     title: isAnnual ? 'Annual' : 'Weekly',
     priceString: pkg.product.priceString,
+    priceCents: Number.isFinite(pkg.product.price)
+      ? Math.round(pkg.product.price * 100)
+      : null,
     pricePerMonthString: pkg.product.pricePerMonthString,
+    currencyCode: pkg.product.currencyCode ?? null,
     subscriptionPeriod: pkg.product.subscriptionPeriod,
     trialLabel: isAnnual
       ? formatEligibleTrialLabel({
@@ -200,6 +206,14 @@ function toPaywallPackageOption(
       : null,
     isRecommended: isAnnual,
   };
+}
+
+function getMetadataString(
+  metadata: PurchasesOffering['metadata'],
+  key: string,
+): string | null {
+  const value = metadata[key];
+  return typeof value === 'string' && value.length > 0 ? value : null;
 }
 
 async function getTrialEligibilityStatus(

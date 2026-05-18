@@ -491,7 +491,7 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         isRestoring={paywall.isRestoring}
         errorMessage={paywall.errorMessage ?? errorMessage}
         personalization={personalization}
-        onSelectPackage={paywall.setSelectedPackageId}
+        onSelectPackage={paywall.selectPackage}
         onPurchase={() => {
           void purchaseSelectedPackage();
         }}
