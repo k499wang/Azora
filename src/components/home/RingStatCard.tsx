@@ -1,5 +1,5 @@
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
-import { Canvas, Path, Skia } from '@shopify/react-native-skia';
+import { Canvas, LinearGradient, Path, Skia, vec } from '@shopify/react-native-skia';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
 import { typography, fonts } from '../../theme/typography';
@@ -13,6 +13,7 @@ interface RingStatCardProps {
   target?: string;
   progress: number; // 0..1
   color?: string;
+  gradientTo?: string;
   trackColor?: string;
   icon: IconName;
   trend?: {
@@ -32,6 +33,7 @@ export default function RingStatCard({
   target,
   progress,
   color = colors.neutral[900],
+  gradientTo,
   trackColor = colors.neutral[100],
   icon,
   trend,
@@ -93,7 +95,13 @@ export default function RingStatCard({
                 strokeWidth={STROKE}
                 strokeCap="round"
                 color={color}
-              />
+              >
+                <LinearGradient
+                  start={vec(cx - r, cy - r)}
+                  end={vec(cx + r, cy + r)}
+                  colors={[gradientTo ?? color, color]}
+                />
+              </Path>
             )}
           </Canvas>
           <View style={styles.iconCenter} pointerEvents="none">
