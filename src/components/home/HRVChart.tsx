@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Alert, LayoutChangeEvent, Pressable, StyleSheet, Text, View } from 'react-native';
-import Svg, { Line, Path } from 'react-native-svg';
+import Svg, { Circle, Line, Path } from 'react-native-svg';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
@@ -77,7 +77,8 @@ export default function HRVChart({
       line += ` C ${c.x + dx * t} ${c.y}, ${n.x - dx * t} ${n.y}, ${n.x} ${n.y}`;
     }
 
-    return { line };
+    const last = points[points.length - 1];
+    return { line, last };
   }, [ibiMs, width, height, yBounds]);
 
   const xTicks = useMemo(() => {
@@ -156,10 +157,41 @@ export default function HRVChart({
                 <Path
                   d={chart.line}
                   stroke={color}
+                  strokeWidth={8}
+                  fill="none"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  opacity={0.04}
+                />
+                <Path
+                  d={chart.line}
+                  stroke={color}
+                  strokeWidth={5}
+                  fill="none"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  opacity={0.09}
+                />
+                <Path
+                  d={chart.line}
+                  stroke={color}
                   strokeWidth={2.5}
                   fill="none"
                   strokeLinecap="round"
                   strokeLinejoin="round"
+                />
+                <Circle
+                  cx={chart.last.x}
+                  cy={chart.last.y}
+                  r={6}
+                  fill={colors.error[500]}
+                  opacity={0.18}
+                />
+                <Circle
+                  cx={chart.last.x}
+                  cy={chart.last.y}
+                  r={3}
+                  fill={colors.error[500]}
                 />
               </Svg>
             ) : (
