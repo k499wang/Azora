@@ -22,6 +22,7 @@ import { usePhaseChime } from '../hooks/usePhaseChime';
 import {
   AudioSettingsSheet,
   ThemePickerSection,
+  useAudioPreferences,
 } from '../features/audioSettings';
 import { HeartRateCameraPreview } from '../components/heartRate/HeartRateCameraPreview';
 import type { FingerPlacementState } from '../lib/heartRate/types';
@@ -77,7 +78,13 @@ export default function ExerciseSessionPage({
   const techniqueId = route.params?.techniqueId;
   const initialTechnique = TECHNIQUES.find((t) => t.id === techniqueId) ?? TECHNIQUES[0];
 
-  const [activeTheme, setActiveTheme] = useState<ExerciseDarkTheme>(EXERCISE_DARK_THEMES[0]);
+  const { preferences: audioPreferences, setThemeId } = useAudioPreferences();
+  const activeTheme = useMemo<ExerciseDarkTheme>(
+    () =>
+      EXERCISE_DARK_THEMES.find((t) => t.id === audioPreferences.themeId) ??
+      EXERCISE_DARK_THEMES[0],
+    [audioPreferences.themeId],
+  );
   const [audioSettingsOpen, setAudioSettingsOpen] = useState(false);
 
   const circleRef = useRef<BreathingCircleRef>(null);
@@ -779,7 +786,7 @@ export default function ExerciseSessionPage({
         extraSectionsTop={
           <ThemePickerSection
             activeThemeId={activeTheme.id}
-            onSelect={setActiveTheme}
+            onSelect={(theme) => setThemeId(theme.id)}
           />
         }
       />

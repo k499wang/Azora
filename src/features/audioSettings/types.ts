@@ -25,11 +25,14 @@ export interface AudioCategory {
   options: AudioOption[];
 }
 
+import type { ExerciseDarkTheme } from '../../theme/exerciseDarkThemes';
+
 export interface AudioPreferences {
   voice: string | null;
   ambient: string | null;
   chime: string | null;
   ambientVolume: number;
+  themeId: ExerciseDarkTheme['id'];
 }
 
 export const OFF_OPTION_ID = '__off__';

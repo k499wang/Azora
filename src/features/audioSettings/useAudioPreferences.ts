@@ -4,8 +4,10 @@ import {
   resetAudioPreferences,
   setAmbientVolume,
   setAudioSelection,
+  setExerciseThemeId,
   subscribeAudioPreferences,
 } from './preferences';
+import type { ExerciseDarkTheme } from '../../theme/exerciseDarkThemes';
 import type { AudioCategoryId, AudioPreferences } from './types';
 
 export function useAudioPreferences() {
@@ -29,9 +31,13 @@ export function useAudioPreferences() {
     setAmbientVolume(volume).catch(() => {});
   }, []);
 
+  const setThemeId = useCallback((themeId: ExerciseDarkTheme['id']) => {
+    setExerciseThemeId(themeId).catch(() => {});
+  }, []);
+
   const reset = useCallback(() => {
     resetAudioPreferences().catch(() => {});
   }, []);
 
-  return { preferences, select, setVolume, reset };
+  return { preferences, select, setVolume, setThemeId, reset };
 }
