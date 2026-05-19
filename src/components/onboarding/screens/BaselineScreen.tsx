@@ -4,16 +4,8 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import BaselineHero from '../BaselineHero';
 import * as Haptics from 'expo-haptics';
-import BreathingCircle, {
-  type BreathingCircleRef,
-} from '../../exercise/BreathingCircle';
-import { HeartRateCameraPreview } from '../../heartRate/HeartRateCameraPreview';
+import { PersistentCameraRing } from '../../heartRate/PersistentCameraRing';
 import { useHeartRateStream } from '../../../hooks/useHeartRateStream';
-import { useBreathPhaseAudio } from '../../../hooks/useBreathPhaseAudio';
-import {
-  startInhaleVibration,
-  stopInhaleVibration,
-} from '../../../native/inhaleVibration';
 import type { FingerPlacementState } from '../../../lib/heartRate/types';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
@@ -41,14 +33,14 @@ interface BaselineScreenProps {
 
 type Phase = 'intro' | 'placement' | 'running' | 'done';
 
-const SESSION_MS = 60_000;
-const HALF_BREATH_SEC = 5.5;
+const SESSION_MS = 20_000;
+const SESSION_SEC = SESSION_MS / 1000;
 const PLACEMENT_GOOD_DURATION_MS = 2500;
 
 const STEPS: { num: string; label: string }[] = [
   { num: '1', label: 'Get relaxed in a comfortable place.' },
   { num: '2', label: 'Cover the back camera and flash with your fingertip.' },
-  { num: '3', label: 'Breathe with the circle while staying still.' },
+  { num: '3', label: 'Stay still while your pulse is measured.' },
 ];
 
 const READING_TIPS = [
@@ -90,16 +82,13 @@ export default function BaselineScreen({
   const insets = useSafeAreaInsets();
   const stream = useHeartRateStream();
   const [phase, setPhase] = useState<Phase>('intro');
-  const [breathLabel, setBreathLabel] = useState<'Inhale' | 'Exhale'>('Inhale');
   const [progress, setProgress] = useState(0);
 
-  const circleRef = useRef<BreathingCircleRef>(null);
   const startedAtRef = useRef<number | null>(null);
   const earlyBpmsRef = useRef<number[]>([]);
   const lateBpmsRef = useRef<number[]>([]);
   const allBpmsRef = useRef<number[]>([]);
   const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const breathTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const hudOpacity = useRef(new Animated.Value(1)).current;
   const [hudVisible, setHudVisible] = useState(true);
@@ -165,10 +154,6 @@ export default function BaselineScreen({
     }, 3000);
   }, [hudOpacity]);
 
-  useBreathPhaseAudio(
-    phase === 'running' ? (breathLabel === 'Inhale' ? 'inhale' : 'exhale') : null,
-  );
-
   const cameraProps = useMemo(() => {
     if (stream.device == null) return null;
     return {
@@ -188,16 +173,8 @@ export default function BaselineScreen({
     phase,
   ]);
 
-  const cameraSlot =
-    (phase === 'placement' || phase === 'running') && cameraProps != null ? (
-      <HeartRateCameraPreview {...cameraProps} />
-    ) : null;
-
   const finishCapture = (completed: boolean) => {
     if (tickRef.current) clearInterval(tickRef.current);
-    if (breathTimerRef.current) clearInterval(breathTimerRef.current);
-    stopInhaleVibration();
-    circleRef.current?.reset();
     stream.stopStream();
     setPhase('done');
 
@@ -230,9 +207,7 @@ export default function BaselineScreen({
   useEffect(() => {
     return () => {
       if (tickRef.current) clearInterval(tickRef.current);
-      if (breathTimerRef.current) clearInterval(breathTimerRef.current);
       if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
-      stopInhaleVibration();
       stream.stopStream();
     };
   }, []);
@@ -259,7 +234,6 @@ export default function BaselineScreen({
       lateBpmsRef.current = [];
       allBpmsRef.current = [];
       setProgress(0);
-      setBreathLabel('Inhale');
       setPhase('running');
     }, PLACEMENT_GOOD_DURATION_MS);
     return () => clearTimeout(t);
@@ -282,27 +256,6 @@ export default function BaselineScreen({
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     }
 
-    let inhale = false;
-    const startBreath = () => {
-      circleRef.current?.expand(HALF_BREATH_SEC);
-      setBreathLabel('Inhale');
-      startInhaleVibration(HALF_BREATH_SEC * 1000);
-    };
-    const raf = requestAnimationFrame(startBreath);
-
-    breathTimerRef.current = setInterval(() => {
-      if (inhale) {
-        circleRef.current?.expand(HALF_BREATH_SEC);
-        setBreathLabel('Inhale');
-        startInhaleVibration(HALF_BREATH_SEC * 1000);
-      } else {
-        circleRef.current?.contract(HALF_BREATH_SEC);
-        setBreathLabel('Exhale');
-        stopInhaleVibration();
-      }
-      inhale = !inhale;
-    }, HALF_BREATH_SEC * 1000);
-
     tickRef.current = setInterval(() => {
       const started = startedAtRef.current ?? Date.now();
       const elapsed = Date.now() - started;
@@ -312,9 +265,6 @@ export default function BaselineScreen({
     }, 100);
 
     return () => {
-      cancelAnimationFrame(raf);
-      stopInhaleVibration();
-      if (breathTimerRef.current) clearInterval(breathTimerRef.current);
       if (tickRef.current) clearInterval(tickRef.current);
     };
   }, [phase]);
@@ -331,7 +281,7 @@ export default function BaselineScreen({
     stream.startStream();
   };
 
-  const remainingSec = Math.max(0, Math.ceil((1 - progress) * 60));
+  const remainingSec = Math.max(0, Math.ceil((1 - progress) * SESSION_SEC));
 
   if (phase === 'placement' || phase === 'running') {
     const isRunning = phase === 'running';
@@ -350,15 +300,14 @@ export default function BaselineScreen({
 
           <View style={styles.center}>
             <View style={styles.centerStack}>
-              <BreathingCircle
-                ref={circleRef}
-                cameraSlot={cameraSlot}
+              <PersistentCameraRing
+                ringColor={placementCfg.ringColor}
+                progress={isRunning ? progress : 0}
+                cameraProps={cameraProps ?? undefined}
                 beatTick={visibleBeatTick}
-              >
-                {isRunning ? (
-                  <Text style={styles.phaseLabel}>{breathLabel}</Text>
-                ) : null}
-              </BreathingCircle>
+                showHeartIcon={isRunning}
+                smoothProgress
+              />
               <View style={styles.belowSlot}>
                 {!isRunning ? (
                   <Text
@@ -471,7 +420,7 @@ export default function BaselineScreen({
   return (
     <OnboardingScreenLayout
       title="Read your baseline"
-      subtitle="A 60-second breathing check so we can tune your plan. Make sure you're relaxed and in a comfortable place."
+      subtitle={`A ${SESSION_SEC}-second heart-rate check so we can tune your plan. Make sure you're relaxed and in a comfortable place.`}
       progress={stepIndex / stepCount}
       onBack={onBack}
       footer={
@@ -689,15 +638,6 @@ const styles = StyleSheet.create({
   timeValue: {
     ...typography.caption.caption1,
     color: colors.text.secondary,
-  },
-  phaseLabel: {
-    fontFamily: fonts.semibold,
-    fontWeight: '600',
-    fontSize: 22,
-    lineHeight: 26,
-    letterSpacing: 1.2,
-    color: colors.neutral[50],
-    textAlign: 'center',
   },
   progressBar: {
     height: 3,

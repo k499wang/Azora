@@ -40,13 +40,20 @@ const SCIENCE_STEPS: ScienceStep[] = [
     detail:
       'The camera reads those tiny shifts 30 times a second — the same method clinical pulse oximeters use.',
   },
+  {
+    icon: 'timer',
+    title: 'This check uses live BPM',
+    detail:
+      'Onboarding uses the live pulse stream to compare your early and late BPM ' +
+      'during the reading. The full heart-rate tool runs a longer capture to calculate HRV stats.',
+  },
 ];
 
 const TIPS = [
   'Warm, dry hands give the cleanest signal',
   'Cover the lens and flash fully with one fingertip',
   'Gentle pressure — enough to seal the lens, not enough to cut off blood flow',
-  'Stay still and quiet for the full 60 seconds',
+  'Stay still and quiet for the full 20 seconds',
 ];
 
 export default function BaselineScienceScreen({
