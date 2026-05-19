@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef } from 'react';
-import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
+import { Animated, Easing, StyleSheet, Text } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import Icon, { type IconName } from '../../common/icons/Icon';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
+import { card } from '../../../theme/card';
 import { isHapticsEnabled } from '../../../services/preferences/hapticsPreference';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
@@ -23,122 +23,79 @@ interface AssessmentReflectionScreenProps {
   onBack: () => void;
 }
 
-interface Insight {
-  icon: IconName;
-  accent: string;
-  headline: string;
-  body: string;
-}
-
-function buildInsights(
+function buildSynthesis(
   stress: number,
   sleep: number,
-  agreementResponses: Record<string, AgreementValue | null>,
   experience: ExperienceLevel | null,
-): Insight[] {
-  const insights: Insight[] = [];
+): string {
+  const stressHigh = stress >= 7;
+  const stressMid = stress >= 4 && stress < 7;
+  const sleepLow = sleep <= 4;
+  const sleepMid = sleep > 4 && sleep <= 7;
 
-  if (stress >= 7) {
-    insights.push({
-      icon: 'breath-timer',
-      accent: colors.warning[500],
-      headline: 'Your stress is running hot',
-      body: `You're at ${stress}/10 — Azora's plan starts with quick down-regulation breathwork.`,
-    });
-  } else if (stress >= 4) {
-    insights.push({
-      icon: 'waves',
-      accent: colors.primary.blue600,
-      headline: 'Mid-range tension',
-      body: `${stress}/10 stress is the most common starting point — small daily resets compound fast.`,
-    });
+  let opener: string;
+  if (stressHigh && sleepLow) {
+    opener =
+      'Your stress is running hot and your sleep is light — the two feed each other.';
+  } else if (stressHigh && sleepMid) {
+    opener =
+      'Stress is the loudest signal right now, and it’s starting to show up in your sleep.';
+  } else if (stressHigh) {
+    opener =
+      'Stress is running hot, but you’re still sleeping well — a good base to work from.';
+  } else if (stressMid && sleepLow) {
+    opener =
+      'Stress is manageable, but light sleep is making it harder to recover between days.';
+  } else if (stressMid) {
+    opener =
+      'You’re carrying the kind of low-grade tension small daily resets are built for.';
+  } else if (sleepLow) {
+    opener =
+      'You’re calm during the day, but sleep is the lever that’s holding you back.';
   } else {
-    insights.push({
-      icon: 'sparkle',
-      accent: colors.success[500],
-      headline: "You're starting from a calm base",
-      body: `${stress}/10 stress — we'll focus on focus, performance, and keeping you steady.`,
-    });
+    opener =
+      'You’re starting from a steady base — we’ll protect that and sharpen focus from here.';
   }
 
-  if (sleep <= 4) {
-    insights.push({
-      icon: 'moon',
-      accent: colors.primary.blue700,
-      headline: 'Sleep is the lever to pull',
-      body: `${sleep}/10 rested — slow exhale breathing before bed can shift this within 2 weeks.`,
-    });
-  } else if (sleep <= 7) {
-    insights.push({
-      icon: 'moon',
-      accent: colors.primary.blue600,
-      headline: 'Sleep has room to grow',
-      body: `${sleep}/10 — wind-down breathing will give you deeper, more recoverable nights.`,
-    });
+  let plan: string;
+  if (sleepLow || (stressHigh && sleepMid)) {
+    plan = 'We’ll start with evening wind-down work.';
+  } else if (stressHigh) {
+    plan = 'We’ll start with quick down-regulation breathwork.';
+  } else if (stressMid) {
+    plan = 'We’ll start with short daily resets you can do anywhere.';
   } else {
-    insights.push({
-      icon: 'sun',
-      accent: colors.orange[500],
-      headline: 'Your sleep is solid',
-      body: `${sleep}/10 — we'll protect that and build calm and focus during the day.`,
-    });
+    plan = 'We’ll start with focus and performance sessions.';
   }
 
-  const agreeCount = Object.values(agreementResponses).filter(
-    (v) => v === 'agree',
-  ).length;
-  if (agreeCount >= 2) {
-    insights.push({
-      icon: 'heart',
-      accent: colors.error[500],
-      headline: "You're not alone in this",
-      body: '78% of new users agree with at least two of those statements. The right practice changes it.',
-    });
-  } else if (agreeCount === 1) {
-    insights.push({
-      icon: 'heart',
-      accent: colors.primary.blue600,
-      headline: 'You know what you want to shift',
-      body: 'Naming the pattern is half the work. Daily practice does the rest.',
-    });
-  }
-
+  let experienceLine = '';
   if (experience === 'never') {
-    insights.push({
-      icon: 'streak',
-      accent: colors.success[500],
-      headline: "We'll start gentle",
-      body: "Since you're new, your first week is short, guided, and forgiving.",
-    });
+    experienceLine = ' Since this is new, your first week is short and guided.';
   } else if (experience === 'regular') {
-    insights.push({
-      icon: 'streak',
-      accent: colors.success[500],
-      headline: "You'll feel right at home",
-      body: "We'll skip the basics and tune Azora to push your practice further.",
-    });
+    experienceLine = ' Since you’ve practiced before, we’ll skip the basics.';
   }
 
-  return insights.slice(0, 4);
+  return `${opener} ${plan}${experienceLine}`;
 }
 
 export default function AssessmentReflectionScreen({
   name,
   stressLevel,
   sleepQuality,
-  agreementResponses,
+  agreementResponses: _agreementResponses,
   experienceLevel,
   stepIndex,
   stepCount,
   onContinue,
   onBack,
 }: AssessmentReflectionScreenProps) {
-  const insights = useMemo(
-    () =>
-      buildInsights(stressLevel, sleepQuality, agreementResponses, experienceLevel),
-    [stressLevel, sleepQuality, agreementResponses, experienceLevel],
+  const synthesis = useMemo(
+    () => buildSynthesis(stressLevel, sleepQuality, experienceLevel),
+    [stressLevel, sleepQuality, experienceLevel],
   );
-  const anims = useRef(insights.map(() => new Animated.Value(0))).current;
+
+  const fade = useRef(new Animated.Value(0)).current;
+  const lift = useRef(new Animated.Value(8)).current;
 
   useEffect(() => {
     if (isHapticsEnabled()) {
@@ -146,18 +103,21 @@ export default function AssessmentReflectionScreen({
         () => {},
       );
     }
-    Animated.stagger(
-      140,
-      anims.map((anim) =>
-        Animated.timing(anim, {
-          toValue: 1,
-          duration: 460,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: true,
-        }),
-      ),
-    ).start();
-  }, [anims]);
+    Animated.parallel([
+      Animated.timing(fade, {
+        toValue: 1,
+        duration: 520,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(lift, {
+        toValue: 0,
+        duration: 520,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [fade, lift]);
 
   const trimmedName = name.trim();
   const title = trimmedName
@@ -167,84 +127,57 @@ export default function AssessmentReflectionScreen({
   return (
     <OnboardingScreenLayout
       title={title}
-      subtitle="Based on your answers, this is where Azora will start with you."
+      subtitle="Based on your answers, here's what Azora knows."
       progress={stepIndex / stepCount}
       onBack={onBack}
       footer={
         <OnboardingPrimaryButton label="Sounds about right" onPress={onContinue} />
       }
     >
-      <View style={styles.list}>
-        {insights.map((insight, index) => (
-          <Animated.View
-            key={`${insight.headline}-${index}`}
-            style={[
-              styles.row,
-              index !== 0 && styles.rowDivider,
-              {
-                opacity: anims[index],
-                transform: [
-                  {
-                    translateY: anims[index].interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [10, 0],
-                    }),
-                  },
-                ],
-              },
-            ]}
-          >
-            <View style={[styles.iconWrap, { backgroundColor: `${insight.accent}14` }]}>
-              <Icon name={insight.icon} size={22} color={insight.accent} />
-            </View>
-            <View style={styles.text}>
-              <Text style={styles.headline}>{insight.headline}</Text>
-              <Text style={styles.body}>{insight.body}</Text>
-            </View>
-          </Animated.View>
-        ))}
-      </View>
+      <Animated.View
+        style={[
+          styles.quoteCard,
+          card.base,
+          card.shadow,
+          { opacity: fade, transform: [{ translateY: lift }] },
+        ]}
+      >
+        <Text style={styles.quoteMark}>“</Text>
+        <Text style={styles.quote}>{synthesis}</Text>
+        <Text style={styles.signature}>— Azora</Text>
+      </Animated.View>
     </OnboardingScreenLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  list: {
-    marginTop: spacing.xs,
+  quoteCard: {
+    marginTop: spacing.lg,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.lg,
   },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.md,
-    paddingVertical: spacing.lg,
-  },
-  rowDivider: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border.default,
-  },
-  iconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 2,
-  },
-  text: {
-    flex: 1,
-    gap: spacing.xs,
-  },
-  headline: {
+  quoteMark: {
     fontFamily: fonts.semibold,
     fontWeight: '600',
-    fontSize: 15,
-    lineHeight: 20,
+    fontSize: 56,
+    lineHeight: 56,
+    color: colors.primary.blue600,
+    marginBottom: -spacing.sm,
+  },
+  quote: {
+    ...typography.body.large,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    fontSize: 17,
+    lineHeight: 26,
     color: colors.text.primary,
   },
-  body: {
+  signature: {
     ...typography.body.small,
-    fontSize: 13,
-    lineHeight: 19,
-    color: colors.text.secondary,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    color: colors.text.tertiary,
+    marginTop: spacing.md,
   },
 });

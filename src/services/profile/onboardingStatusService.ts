@@ -1,7 +1,7 @@
 import { requireSupabaseClient, type SupabaseClientLike } from '../supabase';
 import { ensureUserProfile } from './profileBootstrapService';
 
-type AgreementResponses = Record<string, 'disagree' | 'neutral' | 'agree' | null>;
+type AgreementResponses = Record<string, 'agree' | 'disagree' | null>;
 
 interface OnboardingDatabase {
   public: {
