@@ -32,24 +32,24 @@ interface RecommendationScreenProps {
   onBack: () => void;
 }
 
-function buildBpmSeries(history: number[]): DataPoint[] {
+function buildBpmSeries(history: number[], durationSec: number): DataPoint[] {
   if (history.length === 0) return [];
   const step = Math.max(1, Math.floor(history.length / 12));
   const points: DataPoint[] = [];
   for (let i = 0; i < history.length; i += step) {
     const value = history[i];
-    const second = Math.round((i / history.length) * 60);
+    const second = Math.round((i / history.length) * durationSec);
     points.push({ label: `${second}s`, value });
   }
   // Always include the last point
   if (points.length === 0 || points[points.length - 1].value !== history[history.length - 1]) {
-    points.push({ label: '60s', value: history[history.length - 1] });
+    points.push({ label: `${durationSec}s`, value: history[history.length - 1] });
   }
   return points;
 }
 
 const PERSONALIZING_STEPS = [
-  'Analyzing your breathing pattern…',
+  'Analyzing your heart-rate pattern…',
   'Matching technique to your goal…',
   'Calibrating session length…',
 ];
@@ -95,7 +95,7 @@ export default function RecommendationScreen({
   const hrDropPositive = hrCompleted && drop > 1;
 
   const bpmSeries = baseline?.bpmHistory?.length
-    ? buildBpmSeries(baseline.bpmHistory)
+    ? buildBpmSeries(baseline.bpmHistory, Math.max(1, baseline.durationSec || 20))
     : [];
   const hasGraph = bpmSeries.length >= 2;
 
@@ -261,7 +261,7 @@ export default function RecommendationScreen({
               <View style={styles.graphWrap}>
                 <LineGraph
                   data={bpmSeries}
-                  subtitle="BPM during breathing"
+                  subtitle="BPM during reading"
                   unit=""
                   height={140}
                   lineColor={colors.primary.blue500}
