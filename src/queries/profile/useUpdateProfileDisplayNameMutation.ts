@@ -2,7 +2,6 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { updateProfileDisplayName } from '../../services/profile/profileService';
 import { getProfileSummaryQueryKey } from './useProfileSummaryQuery';
 import type { ProfileSummary } from '../../services/profile/profileSummaryService';
-import { requireSupabaseClient } from '../../services/supabase';
 
 export function useUpdateProfileDisplayNameMutation(userId: string | null) {
   const queryClient = useQueryClient();
@@ -16,7 +15,6 @@ export function useUpdateProfileDisplayNameMutation(userId: string | null) {
       return updateProfileDisplayName(userId, displayName);
     },
     onSuccess: (displayName) => {
-      void requireSupabaseClient().auth.updateUser({ data: { display_name: displayName } });
       queryClient.setQueryData<ProfileSummary>(
         getProfileSummaryQueryKey(userId),
         (current) => {
