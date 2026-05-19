@@ -38,6 +38,7 @@ import { requestNotificationPermissions } from '../../services/notifications/not
 import { trackNotificationPermissionResult } from '../../services/analytics/tracking';
 import type { NotificationPreferences } from '../../services/notifications/types';
 import { useUpdateNotificationPreferencesMutation } from '../../queries/notifications/useUpdateNotificationPreferencesMutation';
+import { requireSupabaseClient } from '../../services/supabase';
 
 // Set to true to re-enable the intent reflection screen between intent selection and name entry.
 const INTENT_REFLECTION_ENABLED = false;
@@ -177,9 +178,11 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     setErrorMessage(null);
 
     try {
+      const trimmedName = name.trim() || null;
+      void requireSupabaseClient().auth.updateUser({ data: { display_name: trimmedName } });
       await onComplete({
         onboardingGoal: goal,
-        displayName: name.trim() || null,
+        displayName: trimmedName,
         stressLevel,
         sleepQuality,
         agreementResponses,
