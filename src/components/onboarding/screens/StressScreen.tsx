@@ -44,7 +44,7 @@ export default function StressScreen({
   return (
     <OnboardingScreenLayout
       title="How stressed have you felt this past week?"
-      subtitle="Be honest — there's no wrong answer. Azora tunes your plan to it."
+      subtitle="There's no wrong answer. Azora tunes your plan to it."
       progress={stepIndex / stepCount}
       onBack={onBack}
       footer={<OnboardingPrimaryButton label="Continue" onPress={onContinue} />}

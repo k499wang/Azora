@@ -4,6 +4,7 @@ export type OnboardingStep =
   | 'intent'
   | 'intentReflection'
   | 'name'
+  | 'greeting'
   | 'stress'
   | 'sleep'
   | 'agreement'
