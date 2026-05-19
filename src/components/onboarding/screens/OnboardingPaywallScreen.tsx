@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Animated,
   Easing,
+  ImageBackground,
   Linking,
   Pressable,
   ScrollView,
@@ -12,6 +13,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import type {
   PaywallOffering,
   PaywallPackageId,
@@ -166,8 +168,30 @@ export default function OnboardingPaywallScreen({
     outputRange: [14, 0],
   });
 
+  const isFinal = step === STEP_COUNT - 1;
+
   return (
-    <Animated.View style={[styles.screen, { transform: [{ translateY: exitSlideAnim }] }]}>
+    <Animated.View
+      style={[
+        styles.screen,
+        isFinal ? styles.screenDark : styles.screenLight,
+        { transform: [{ translateY: exitSlideAnim }] },
+      ]}
+    >
+      {isFinal ? (
+        <ImageBackground
+          source={require('../../../../assets/backgrounds/sunset.jpg')}
+          style={StyleSheet.absoluteFill}
+          resizeMode="cover"
+        >
+          <LinearGradient
+            colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.08)', 'rgba(0,0,0,0.38)']}
+            locations={[0, 0.5, 1]}
+            style={StyleSheet.absoluteFill}
+            pointerEvents="none"
+          />
+        </ImageBackground>
+      ) : null}
       <SafeAreaView
         style={[styles.screenBody, { paddingTop: insets.top + spacing.sm }]}
         edges={['left', 'right']}
@@ -186,12 +210,12 @@ export default function OnboardingPaywallScreen({
                 (isBusy || isExiting) && styles.disabled,
               ]}
             >
-              <Text style={styles.backText}>‹</Text>
+              <Text style={[styles.backText, !isFinal && styles.headerTextLight]}>‹</Text>
             </Pressable>
           ) : (
             <View style={styles.headerButton} />
           )}
-          <StepDots count={STEP_COUNT} current={step} />
+          <StepDots count={STEP_COUNT} current={step} dark={isFinal} />
           {step === STEP_COUNT - 1 ? (
             <Pressable
               accessibilityRole="button"
@@ -205,7 +229,7 @@ export default function OnboardingPaywallScreen({
                 (isBusy || isExiting) && styles.disabled,
               ]}
             >
-              <Text style={styles.closeText}>×</Text>
+              <Text style={[styles.closeText, !isFinal && styles.headerTextLight]}>×</Text>
             </Pressable>
           ) : (
             <View style={styles.headerButton} />
@@ -276,7 +300,7 @@ export default function OnboardingPaywallScreen({
           </Animated.View>
         </ScrollView>
 
-        <View style={styles.footer}>
+        <View style={[styles.footer, isFinal ? styles.footerDark : styles.footerLight]}>
           {step < STEP_COUNT - 1 ? (
             <OnboardingPrimaryButton
               label="Continue"
@@ -580,8 +604,8 @@ function StepChoose({
   return (
     <View style={styles.stepContainer}>
       <View style={styles.stepHeader}>
-        <Text style={styles.stepTitle}>Start Breathing Better</Text>
-        <Text style={styles.stepSubtitle}>
+        <Text style={[styles.stepTitle, styles.stepTitleDark]}>Start Breathing Better</Text>
+        <Text style={[styles.stepSubtitle, styles.stepSubtitleDark]}>
           {selectedPackageHasTrial
             ? 'Get a 3 day free trial, on us.'
             : 'Pick a plan to unlock everything.'}
@@ -590,7 +614,7 @@ function StepChoose({
 
       <PaywallFeatureList />
 
-      {selectedPackageHasTrial ? <PaywallTrialReminderToggle /> : null}
+      {selectedPackageHasTrial ? <PaywallTrialReminderToggle dark /> : null}
 
       {isLoading ? (
         <View style={styles.cardsLoading}>
@@ -646,7 +670,7 @@ function TimelineStep({ icon, label, title, body, showLine = false }: TimelineSt
   );
 }
 
-function StepDots({ count, current }: { count: number; current: number }) {
+function StepDots({ count, current, dark }: { count: number; current: number; dark: boolean }) {
   return (
     <View style={styles.stepDots}>
       {Array.from({ length: count }, (_, i) => (
@@ -654,8 +678,9 @@ function StepDots({ count, current }: { count: number; current: number }) {
           key={i}
           style={[
             styles.stepDot,
-            i === current && styles.stepDotActive,
-            i < current && styles.stepDotPast,
+            dark ? styles.stepDotDark : styles.stepDotLight,
+            i === current && (dark ? styles.stepDotActiveDark : styles.stepDotActiveLight),
+            i < current && (dark ? styles.stepDotPastDark : styles.stepDotPastLight),
           ]}
         />
       ))}
@@ -666,10 +691,16 @@ function StepDots({ count, current }: { count: number; current: number }) {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
+  },
+  screenLight: {
     backgroundColor: colors.background.primary,
+  },
+  screenDark: {
+    backgroundColor: colors.neutral[900],
   },
   screenBody: {
     flex: 1,
+    backgroundColor: 'transparent',
   },
   header: {
     minHeight: 56,
@@ -689,13 +720,16 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 34,
     lineHeight: 34,
-    color: colors.text.primary,
+    color: colors.neutral[0],
   },
   closeText: {
     fontFamily: fonts.semibold,
     fontWeight: '600',
     fontSize: 32,
     lineHeight: 32,
+    color: colors.neutral[0],
+  },
+  headerTextLight: {
     color: colors.text.primary,
   },
   stepDots: {
@@ -707,14 +741,26 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
+  },
+  stepDotLight: {
     backgroundColor: colors.neutral[300],
   },
-  stepDotPast: {
+  stepDotDark: {
+    backgroundColor: 'rgba(255,255,255,0.35)',
+  },
+  stepDotPastLight: {
     backgroundColor: colors.neutral[400],
   },
-  stepDotActive: {
+  stepDotPastDark: {
+    backgroundColor: 'rgba(255,255,255,0.6)',
+  },
+  stepDotActiveLight: {
     width: 22,
     backgroundColor: PRO_INK,
+  },
+  stepDotActiveDark: {
+    width: 22,
+    backgroundColor: colors.neutral[0],
   },
   scroll: {
     flex: 1,
@@ -749,10 +795,16 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     textAlign: 'center',
   },
+  stepTitleDark: {
+    color: colors.neutral[0],
+  },
   stepSubtitle: {
     ...typography.body.medium,
     color: colors.text.secondary,
     textAlign: 'center',
+  },
+  stepSubtitleDark: {
+    color: 'rgba(255,255,255,0.75)',
   },
   valueHeader: {
     alignItems: 'center',
@@ -963,6 +1015,9 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: spacing.xs,
   },
+  trialNoteDark: {
+    color: colors.primary.blue200,
+  },
   valueGrid: {
     gap: spacing.sm,
   },
@@ -1068,7 +1123,7 @@ const styles = StyleSheet.create({
     ...typography.button.medium,
     fontFamily: fonts.semibold,
     fontWeight: '600',
-    color: colors.text.brand,
+    color: colors.neutral[0],
   },
   errorBlock: {
     alignItems: 'center',
@@ -1095,11 +1150,25 @@ const styles = StyleSheet.create({
     color: colors.error[700],
   },
   footer: {
-    gap: spacing.xs,
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.sm,
     paddingBottom: spacing.lg,
+  },
+  footerLight: {
+    gap: spacing.xs,
+    paddingTop: spacing.sm,
     backgroundColor: colors.background.primary,
+  },
+  footerDark: {
+    gap: spacing.sm,
+    paddingTop: spacing.md,
+    backgroundColor: 'rgba(10, 28, 68, 0.92)',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 12,
   },
   freeButton: {
     alignSelf: 'center',
@@ -1110,16 +1179,16 @@ const styles = StyleSheet.create({
     ...typography.button.small,
     fontFamily: fonts.semibold,
     fontWeight: '600',
-    color: colors.text.secondary,
+    color: 'rgba(255,255,255,0.75)',
   },
   legal: {
     ...typography.caption.caption2,
-    color: colors.text.tertiary,
+    color: 'rgba(255,255,255,0.55)',
     textAlign: 'center',
     lineHeight: 15,
   },
   legalLink: {
-    color: colors.text.brand,
+    color: 'rgba(255,255,255,0.85)',
     fontFamily: fonts.semibold,
     fontWeight: '600',
   },
