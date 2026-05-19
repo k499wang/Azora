@@ -246,10 +246,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const posthog = usePostHog();
   const user = useAuthStore((state) => state.user);
   const profileSummaryQuery = useProfileSummaryQuery(user?.id ?? null);
-  const displayName =
-    (user?.user_metadata?.display_name as string | undefined) ??
-    profileSummaryQuery.data?.profile?.displayName ??
-    null;
+  const displayName = profileSummaryQuery.data?.profile?.displayName ?? null;
   const dailyExerciseAccess = useFeatureAccess(FeatureKey.DailyExercise);
   const advancedStatsAccess = useFeatureAccess(FeatureKey.AdvancedStats);
   const sessionHistoryAccess = useFeatureAccess(FeatureKey.SessionHistory);
