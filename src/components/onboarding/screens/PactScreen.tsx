@@ -179,8 +179,6 @@ function StampButton({
 
   return (
     <View style={stampStyles.wrapper}>
-      <View style={stampStyles.halo} pointerEvents="none" />
-      <View style={stampStyles.haloInner} pointerEvents="none" />
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={isSealed ? 'Commitment sealed' : 'Press and hold to seal your pact'}
@@ -223,22 +221,6 @@ const stampStyles = StyleSheet.create({
     justifyContent: 'center',
     width: 160,
     height: 160,
-  },
-  halo: {
-    position: 'absolute',
-    width: 156,
-    height: 156,
-    borderRadius: 78,
-    borderWidth: 1,
-    borderColor: 'rgba(204,106,0,0.12)',
-  },
-  haloInner: {
-    position: 'absolute',
-    width: 128,
-    height: 128,
-    borderRadius: 64,
-    borderWidth: 1,
-    borderColor: 'rgba(204,106,0,0.18)',
   },
   pressable: {
     width: STAMP_SIZE,
