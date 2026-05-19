@@ -42,17 +42,6 @@ function WaveHandIllustration() {
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-      <Path
-        d="M49.8 115.6c8.2 2.8 17.5 2.9 26.1-.4 4.1-1.6 7.7-3.7 10.8-6.5l5.7 12H54.1l-4.3-5.1Z"
-        fill={colors.primary.blue600}
-      />
-      <Path
-        d="M50.9 114.7c8 3.6 17.4 3.8 25 .6"
-        fill="none"
-        stroke="#9D5A2E"
-        strokeWidth={5}
-        strokeLinecap="round"
-      />
     </Svg>
   );
 }

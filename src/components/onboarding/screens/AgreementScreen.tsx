@@ -1,11 +1,11 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
 import { isHapticsEnabled } from '../../../services/preferences/hapticsPreference';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
-import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 
 export type AgreementValue = 'disagree' | 'neutral' | 'agree';
 
@@ -15,11 +15,13 @@ export const AGREEMENT_STATEMENTS: { id: string; text: string }[] = [
   { id: 'reactive', text: 'Small things stress me out more than they should.' },
 ];
 
-const OPTIONS: { value: AgreementValue; label: string }[] = [
-  { value: 'disagree', label: 'Disagree' },
-  { value: 'neutral', label: 'Neutral' },
-  { value: 'agree', label: 'Agree' },
+const SCALE: { value: AgreementValue; label: string; size: number }[] = [
+  { value: 'disagree', label: 'Disagree', size: 56 },
+  { value: 'neutral', label: 'Neutral', size: 44 },
+  { value: 'agree', label: 'Agree', size: 56 },
 ];
+
+const ADVANCE_DELAY_MS = 320;
 
 interface AgreementScreenProps {
   responses: Record<string, AgreementValue | null>;
@@ -38,114 +40,192 @@ export default function AgreementScreen({
   onContinue,
   onBack,
 }: AgreementScreenProps) {
-  const allAnswered = AGREEMENT_STATEMENTS.every((s) => responses[s.id] != null);
+  const firstUnanswered = AGREEMENT_STATEMENTS.findIndex(
+    (s) => responses[s.id] == null,
+  );
+  const [currentIdx, setCurrentIdx] = useState(
+    firstUnanswered === -1 ? 0 : firstUnanswered,
+  );
+  const advanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const handleSelect = (id: string, value: AgreementValue) => {
-    if (isHapticsEnabled()) Haptics.selectionAsync().catch(() => {});
-    onChange(id, value);
+  const fade = useRef(new Animated.Value(1)).current;
+  const slide = useRef(new Animated.Value(0)).current;
+
+  const total = AGREEMENT_STATEMENTS.length;
+  const statement = AGREEMENT_STATEMENTS[currentIdx];
+  const currentValue = responses[statement.id];
+
+  useEffect(() => {
+    fade.setValue(0);
+    slide.setValue(12);
+    Animated.parallel([
+      Animated.timing(fade, {
+        toValue: 1,
+        duration: 320,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(slide, {
+        toValue: 0,
+        duration: 360,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [currentIdx, fade, slide]);
+
+  useEffect(
+    () => () => {
+      if (advanceTimer.current) clearTimeout(advanceTimer.current);
+    },
+    [],
+  );
+
+  const goToNext = () => {
+    if (currentIdx < total - 1) {
+      setCurrentIdx(currentIdx + 1);
+    } else {
+      onContinue();
+    }
   };
+
+  const handleSelect = (value: AgreementValue) => {
+    if (isHapticsEnabled()) Haptics.selectionAsync().catch(() => {});
+    onChange(statement.id, value);
+    if (advanceTimer.current) clearTimeout(advanceTimer.current);
+    advanceTimer.current = setTimeout(goToNext, ADVANCE_DELAY_MS);
+  };
+
+  const handleBack = () => {
+    if (advanceTimer.current) clearTimeout(advanceTimer.current);
+    if (currentIdx === 0) {
+      onBack();
+    } else {
+      setCurrentIdx(currentIdx - 1);
+    }
+  };
+
+  const subProgress = (stepIndex + currentIdx / total) / stepCount;
 
   return (
     <OnboardingScreenLayout
       title="Does any of this sound like you?"
-      subtitle="Tap how much each statement fits."
-      progress={stepIndex / stepCount}
-      onBack={onBack}
-      footer={
-        <OnboardingPrimaryButton
-          label="Continue"
-          onPress={onContinue}
-          disabled={!allAnswered}
-        />
-      }
+      subtitle={`${currentIdx + 1} of ${total}`}
+      progress={subProgress}
+      onBack={handleBack}
+      footer={<View />}
     >
-      <View style={styles.list}>
-        {AGREEMENT_STATEMENTS.map((statement, index) => (
-          <View
-            key={statement.id}
-            style={[styles.row, index !== 0 && styles.rowDivider]}
-          >
-            <Text style={styles.statement}>{statement.text}</Text>
-            <View style={styles.options}>
-              {OPTIONS.map((option) => {
-                const selected = responses[statement.id] === option.value;
-                return (
-                  <Pressable
-                    key={option.value}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected }}
-                    onPress={() => handleSelect(statement.id, option.value)}
-                    style={({ pressed }) => [
-                      styles.chip,
-                      selected && styles.chipSelected,
-                      pressed && !selected && styles.chipPressed,
+      <Animated.View
+        style={[
+          styles.stage,
+          { opacity: fade, transform: [{ translateY: slide }] },
+        ]}
+      >
+        <View style={styles.statementWrap}>
+          <Text style={styles.statement}>{statement.text}</Text>
+        </View>
+
+        <View style={styles.scaleWrap}>
+          <View style={styles.axis}>
+            {SCALE.map((opt) => {
+              const selected = currentValue === opt.value;
+              return (
+                <Pressable
+                  key={opt.value}
+                  accessibilityRole="button"
+                  accessibilityLabel={opt.label}
+                  accessibilityState={{ selected }}
+                  hitSlop={10}
+                  onPress={() => handleSelect(opt.value)}
+                  style={styles.dotColumn}
+                >
+                  <View
+                    style={[
+                      styles.dot,
+                      {
+                        width: opt.size,
+                        height: opt.size,
+                        borderRadius: opt.size / 2,
+                      },
+                      selected && styles.dotSelected,
                     ]}
                   >
-                    <Text
-                      style={[
-                        styles.chipLabel,
-                        selected && styles.chipLabelSelected,
-                      ]}
-                    >
-                      {option.label}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </View>
+                    {selected ? <View style={styles.dotInner} /> : null}
+                  </View>
+                  <Text
+                    style={[styles.dotLabel, selected && styles.dotLabelSelected]}
+                  >
+                    {opt.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
           </View>
-        ))}
-      </View>
+        </View>
+      </Animated.View>
     </OnboardingScreenLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  list: {
-    marginTop: spacing.xs,
+  stage: {
+    flex: 1,
+    justifyContent: 'center',
+    gap: spacing['3xl'],
+    paddingVertical: spacing['2xl'],
   },
-  row: {
-    paddingVertical: spacing.lg,
-    gap: spacing.md,
-  },
-  rowDivider: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border.default,
+  statementWrap: {
+    alignItems: 'center',
+    paddingHorizontal: spacing.md,
   },
   statement: {
-    ...typography.body.medium,
+    ...typography.title.title1,
     fontFamily: fonts.semibold,
     fontWeight: '600',
+    fontSize: 28,
+    lineHeight: 36,
+    letterSpacing: -0.4,
     color: colors.text.primary,
-    lineHeight: 22,
+    textAlign: 'center',
   },
-  options: {
+  scaleWrap: {
+    alignItems: 'center',
+  },
+  axis: {
     flexDirection: 'row',
-    gap: spacing.sm,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+    paddingHorizontal: spacing.lg,
   },
-  chip: {
-    flex: 1,
-    paddingVertical: spacing.sm,
-    borderRadius: 12,
-    borderWidth: 1,
+  dotColumn: {
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  dot: {
+    borderWidth: 1.5,
     borderColor: colors.border.default,
     backgroundColor: colors.background.elevated,
     alignItems: 'center',
+    justifyContent: 'center',
   },
-  chipSelected: {
-    backgroundColor: colors.primary.blue600,
+  dotSelected: {
     borderColor: colors.primary.blue600,
+    backgroundColor: colors.primary.blue600,
   },
-  chipPressed: {
-    opacity: 0.6,
+  dotInner: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: colors.text.inverse,
   },
-  chipLabel: {
+  dotLabel: {
     ...typography.body.small,
     fontFamily: fonts.semibold,
     fontWeight: '600',
     color: colors.text.secondary,
   },
-  chipLabelSelected: {
-    color: colors.text.inverse,
+  dotLabelSelected: {
+    color: colors.text.primary,
   },
 });

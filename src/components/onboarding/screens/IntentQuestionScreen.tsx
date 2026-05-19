@@ -96,7 +96,7 @@ export default function IntentQuestionScreen({
               <Icon
                 name={option.icon}
                 size={22}
-                color={selected ? option.accent : colors.text.tertiary}
+                color={selected ? colors.primary.blue600 : colors.text.tertiary}
               />
               <Text
                 style={[styles.optionTitle, selected && styles.optionTitleSelected]}
@@ -107,12 +107,12 @@ export default function IntentQuestionScreen({
               <View
                 style={[
                   styles.radio,
-                  selected && { borderColor: option.accent },
+                  selected && { borderColor: colors.primary.blue600 },
                 ]}
               >
                 {selected ? (
                   <View
-                    style={[styles.radioInner, { backgroundColor: option.accent }]}
+                    style={[styles.radioInner, { backgroundColor: colors.primary.blue600 }]}
                   />
                 ) : null}
               </View>
