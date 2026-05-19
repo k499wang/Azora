@@ -1,7 +1,7 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
-import Icon from '../../common/icons/Icon';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
@@ -17,6 +17,31 @@ interface BaselineIntroScreenProps {
   onBack: () => void;
 }
 
+const ECG_WIDTH = 320;
+const ECG_HEIGHT = 140;
+const BASELINE = ECG_HEIGHT / 2;
+const CYCLE = 80;
+const CYCLES_VISIBLE = ECG_WIDTH / CYCLE;
+const CYCLES_TOTAL = CYCLES_VISIBLE * 2;
+
+function buildEcgPath(): string {
+  let d = `M 0 ${BASELINE}`;
+  for (let i = 0; i < CYCLES_TOTAL; i++) {
+    const x = i * CYCLE;
+    d += ` L ${x + 18} ${BASELINE}`;
+    d += ` Q ${x + 20} ${BASELINE - 5} ${x + 22} ${BASELINE}`;
+    d += ` L ${x + 30} ${BASELINE}`;
+    d += ` L ${x + 32} ${BASELINE + 3}`;
+    d += ` L ${x + 34} ${BASELINE - 44}`;
+    d += ` L ${x + 36} ${BASELINE + 26}`;
+    d += ` L ${x + 38} ${BASELINE}`;
+    d += ` L ${x + 44} ${BASELINE}`;
+    d += ` Q ${x + 47} ${BASELINE - 8} ${x + 50} ${BASELINE}`;
+    d += ` L ${x + CYCLE} ${BASELINE}`;
+  }
+  return d;
+}
+
 export default function BaselineIntroScreen({
   stepIndex,
   stepCount,
@@ -24,11 +49,11 @@ export default function BaselineIntroScreen({
   onContinue,
   onBack,
 }: BaselineIntroScreenProps) {
-  const pulse = useRef(new Animated.Value(0)).current;
-  const ring1 = useRef(new Animated.Value(0)).current;
-  const ring2 = useRef(new Animated.Value(0)).current;
-  const heroFade = useRef(new Animated.Value(0)).current;
-  const heroSlide = useRef(new Animated.Value(20)).current;
+  const scroll = useRef(new Animated.Value(0)).current;
+  const fade = useRef(new Animated.Value(0)).current;
+  const rise = useRef(new Animated.Value(16)).current;
+
+  const ecgPath = useMemo(() => buildEcgPath(), []);
 
   useEffect(() => {
     if (isHapticsEnabled()) {
@@ -38,156 +63,96 @@ export default function BaselineIntroScreen({
     }
 
     Animated.parallel([
-      Animated.timing(heroFade, {
+      Animated.timing(fade, {
         toValue: 1,
-        duration: 600,
+        duration: 520,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
-      Animated.timing(heroSlide, {
+      Animated.timing(rise, {
         toValue: 0,
-        duration: 700,
+        duration: 620,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
     ]).start();
 
-    const pulseLoop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulse, {
-          toValue: 1,
-          duration: 700,
-          easing: Easing.inOut(Easing.quad),
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulse, {
-          toValue: 0,
-          duration: 700,
-          easing: Easing.inOut(Easing.quad),
-          useNativeDriver: true,
-        }),
-      ]),
+    const loop = Animated.loop(
+      Animated.timing(scroll, {
+        toValue: 1,
+        duration: 3200,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      }),
     );
-    pulseLoop.start();
+    loop.start();
+    return () => loop.stop();
+  }, [scroll, fade, rise]);
 
-    const rippleLoop = (anim: Animated.Value, delay: number) =>
-      Animated.loop(
-        Animated.sequence([
-          Animated.delay(delay),
-          Animated.timing(anim, {
-            toValue: 1,
-            duration: 2200,
-            easing: Easing.out(Easing.cubic),
-            useNativeDriver: true,
-          }),
-          Animated.timing(anim, {
-            toValue: 0,
-            duration: 0,
-            useNativeDriver: true,
-          }),
-        ]),
-      );
-    const r1 = rippleLoop(ring1, 0);
-    const r2 = rippleLoop(ring2, 1100);
-    r1.start();
-    r2.start();
-
-    return () => {
-      pulseLoop.stop();
-      r1.stop();
-      r2.stop();
-    };
-  }, [pulse, ring1, ring2, heroFade, heroSlide]);
+  const translateX = scroll.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, -ECG_WIDTH],
+  });
 
   const trimmed = name.trim();
-  const lead = trimmed
-    ? `Let's read your heart, ${trimmed}.`
-    : "Let's read your heart.";
+  const title = trimmed
+    ? `Let’s read your heart,\n${trimmed}.`
+    : 'Let’s read your heart.';
 
   return (
     <OnboardingScreenLayout
       title=""
       progress={stepIndex / stepCount}
       onBack={onBack}
-      footer={<OnboardingPrimaryButton label="I'm ready" onPress={onContinue} />}
+      footer={<OnboardingPrimaryButton label="I’m ready" onPress={onContinue} />}
     >
-      <View style={styles.stage}>
-        <View style={styles.visualWrap}>
-          <Animated.View
-            style={[
-              styles.ripple,
-              {
-                opacity: ring1.interpolate({
-                  inputRange: [0, 0.6, 1],
-                  outputRange: [0.5, 0.15, 0],
-                }),
-                transform: [
-                  {
-                    scale: ring1.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [0.8, 1.9],
-                    }),
-                  },
-                ],
-              },
-            ]}
-          />
-          <Animated.View
-            style={[
-              styles.ripple,
-              {
-                opacity: ring2.interpolate({
-                  inputRange: [0, 0.6, 1],
-                  outputRange: [0.4, 0.12, 0],
-                }),
-                transform: [
-                  {
-                    scale: ring2.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [0.8, 1.9],
-                    }),
-                  },
-                ],
-              },
-            ]}
-          />
+      <Animated.View
+        style={[
+          styles.stage,
+          { opacity: fade, transform: [{ translateY: rise }] },
+        ]}
+      >
+        <View style={styles.monitor}>
+          <View style={styles.gridLineTop} />
+          <View style={styles.gridLineMid} />
+          <View style={styles.gridLineBottom} />
 
           <Animated.View
             style={[
-              styles.heart,
-              {
-                transform: [
-                  {
-                    scale: pulse.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [1, 1.1],
-                    }),
-                  },
-                ],
-              },
+              styles.ecgTrack,
+              { transform: [{ translateX }] },
             ]}
           >
-            <Icon name="heart-glow" size={86} color={colors.error[500]} />
+            <Svg width={ECG_WIDTH * 2} height={ECG_HEIGHT}>
+              <Path
+                d={ecgPath}
+                stroke={colors.primary.blue200}
+                strokeWidth={4}
+                strokeOpacity={0.35}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                fill="none"
+              />
+              <Path
+                d={ecgPath}
+                stroke={colors.primary.blue600}
+                strokeWidth={2.4}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                fill="none"
+              />
+            </Svg>
           </Animated.View>
+
         </View>
 
-        <Animated.View
-          style={[
-            styles.copy,
-            {
-              opacity: heroFade,
-              transform: [{ translateY: heroSlide }],
-            },
-          ]}
-        >
-          <Text style={styles.kicker}>NEXT UP</Text>
-          <Text style={styles.headline}>{lead}</Text>
+        <View style={styles.copy}>
+          <Text style={styles.headline}>{title}</Text>
           <Text style={styles.sub}>
-            Sixty seconds with the back camera — and your plan tunes itself to
-            you.
+            A quick reading so your plan tunes itself to you.
           </Text>
-        </Animated.View>
-      </View>
+        </View>
+      </Animated.View>
     </OnboardingScreenLayout>
   );
 }
@@ -197,54 +162,54 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: spacing['2xl'],
     gap: spacing['2xl'],
+    paddingBottom: spacing['2xl'],
   },
-  visualWrap: {
-    width: 220,
-    height: 220,
-    alignItems: 'center',
+  monitor: {
+    width: ECG_WIDTH,
+    height: ECG_HEIGHT,
+    overflow: 'hidden',
     justifyContent: 'center',
   },
-  ripple: {
+  ecgTrack: {
+    width: ECG_WIDTH * 2,
+    height: ECG_HEIGHT,
+  },
+  gridLineTop: {
     position: 'absolute',
-    width: 180,
-    height: 180,
-    borderRadius: 999,
-    borderWidth: 2,
-    borderColor: colors.error[500],
+    left: 0,
+    right: 0,
+    top: BASELINE - 44,
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.primary.blue100,
   },
-  heart: {
-    width: 160,
-    height: 160,
-    borderRadius: 999,
-    backgroundColor: colors.error[100],
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: colors.error[500],
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.18,
-    shadowRadius: 24,
-    elevation: 8,
+  gridLineMid: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: BASELINE,
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.primary.blue200,
+    opacity: 0.6,
+  },
+  gridLineBottom: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: BASELINE + 28,
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.primary.blue100,
   },
   copy: {
     alignItems: 'center',
     gap: spacing.sm,
     paddingHorizontal: spacing.lg,
   },
-  kicker: {
-    ...typography.caption.caption2,
-    fontFamily: fonts.semibold,
-    fontWeight: '600',
-    fontSize: 11,
-    letterSpacing: 2.4,
-    color: colors.text.tertiary,
-  },
   headline: {
     fontFamily: fonts.semibold,
     fontWeight: '600',
-    fontSize: 32,
-    lineHeight: 38,
+    fontSize: 34,
+    lineHeight: 40,
     letterSpacing: -0.6,
     color: colors.text.primary,
     textAlign: 'center',
