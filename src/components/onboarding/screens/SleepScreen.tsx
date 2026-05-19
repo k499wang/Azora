@@ -47,6 +47,7 @@ export default function SleepScreen({
       subtitle="Sleep shapes everything including your stress, focus, and mood."
       progress={stepIndex / stepCount}
       onBack={onBack}
+      centerBody
       footer={<OnboardingPrimaryButton label="Continue" onPress={onContinue} />}
     >
       <View style={styles.content}>
@@ -84,7 +85,7 @@ const styles = StyleSheet.create({
   scaleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: spacing.lg,
     marginTop: -spacing.sm,
   },
   scaleLabel: {

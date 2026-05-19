@@ -27,6 +27,7 @@ interface OnboardingScreenLayoutProps {
   footer: ReactNode;
   children: ReactNode;
   keyboardAvoiding?: boolean;
+  centerBody?: boolean;
 }
 
 export default function OnboardingScreenLayout({
@@ -37,6 +38,7 @@ export default function OnboardingScreenLayout({
   footer,
   children,
   keyboardAvoiding = false,
+  centerBody = false,
 }: OnboardingScreenLayoutProps) {
   const fade = useRef(new Animated.Value(0)).current;
   const slide = useRef(new Animated.Value(16)).current;
@@ -106,6 +108,7 @@ export default function OnboardingScreenLayout({
         <Animated.View
           style={[
             styles.content,
+            centerBody && styles.contentCentered,
             { opacity: fade, transform: [{ translateY: slide }] },
           ]}
         >
@@ -116,7 +119,13 @@ export default function OnboardingScreenLayout({
             </View>
           ) : null}
 
-          <View style={styles.body}>{children}</View>
+          {centerBody ? (
+            <View style={styles.bodyCenteredOverlay} pointerEvents="box-none">
+              <View style={styles.bodyCenteredInner}>{children}</View>
+            </View>
+          ) : (
+            <View style={styles.body}>{children}</View>
+          )}
         </Animated.View>
       </ScrollView>
 
@@ -205,6 +214,20 @@ const styles = StyleSheet.create({
   },
   copy: {
     gap: spacing.sm,
+  },
+  contentCentered: {
+    gap: 0,
+  },
+  bodyCenteredOverlay: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    justifyContent: 'center',
+  },
+  bodyCenteredInner: {
+    width: '100%',
   },
   title: {
     ...typography.title.title1,
