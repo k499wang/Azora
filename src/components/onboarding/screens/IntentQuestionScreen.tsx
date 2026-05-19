@@ -106,18 +106,13 @@ export default function IntentQuestionScreen({
               </Text>
               <View
                 style={[
-                  styles.checkbox,
-                  selected && {
-                    backgroundColor: option.accent,
-                    borderColor: option.accent,
-                  },
+                  styles.radio,
+                  selected && { borderColor: option.accent },
                 ]}
               >
                 {selected ? (
-                  <MaterialCommunityIcons
-                    name="check"
-                    size={14}
-                    color={colors.background.primary}
+                  <View
+                    style={[styles.radioInner, { backgroundColor: option.accent }]}
                   />
                 ) : null}
               </View>
@@ -200,14 +195,19 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.text.primary,
   },
-  checkbox: {
+  radio: {
     width: 22,
     height: 22,
-    borderRadius: 6,
-    borderWidth: 1.5,
+    borderRadius: 11,
+    borderWidth: 2,
     borderColor: colors.border.default,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  radioInner: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
   },
   input: {
     minHeight: 156,

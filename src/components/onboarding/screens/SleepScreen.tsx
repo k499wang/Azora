@@ -44,7 +44,7 @@ export default function SleepScreen({
   return (
     <OnboardingScreenLayout
       title="How rested do you feel most mornings?"
-      subtitle="Sleep shapes everything — your stress, focus, and mood."
+      subtitle="Sleep shapes everything including your stress, focus, and mood."
       progress={stepIndex / stepCount}
       onBack={onBack}
       footer={<OnboardingPrimaryButton label="Continue" onPress={onContinue} />}

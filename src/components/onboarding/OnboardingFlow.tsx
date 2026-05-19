@@ -17,6 +17,7 @@ import ExperienceScreen, {
   type ExperienceLevel,
 } from './screens/ExperienceScreen';
 import NameScreen from './screens/NameScreen';
+import GreetingScreen from './screens/GreetingScreen';
 import PactScreen from './screens/PactScreen';
 import NotificationPermissionScreen from './screens/NotificationPermissionScreen';
 import SleepScreen from './screens/SleepScreen';
@@ -57,27 +58,28 @@ interface OnboardingFlowProps {
 }
 
 
-const STEP_COUNT = 19;
+const STEP_COUNT = 20;
 const STEP_INDEX: Record<OnboardingStep, number> = {
   intent: 1,
   intentReflection: 2,
   name: 3,
-  stress: 4,
-  sleep: 5,
-  agreement: 6,
-  experience: 7,
-  assessmentReflection: 8,
-  age: 9,
-  gender: 10,
-  dailyTime: 11,
-  scienceResearch: 12,
-  baselineIntro: 13,
-  baseline: 14,
-  recommendation: 15,
-  notifications: 16,
-  scienceCredibility: 17,
-  pact: 18,
-  paywall: 19,
+  greeting: 4,
+  stress: 5,
+  sleep: 6,
+  agreement: 7,
+  experience: 8,
+  assessmentReflection: 9,
+  age: 10,
+  gender: 11,
+  dailyTime: 12,
+  scienceResearch: 13,
+  baselineIntro: 14,
+  baseline: 15,
+  recommendation: 16,
+  notifications: 17,
+  scienceCredibility: 18,
+  pact: 19,
+  paywall: 20,
 };
 
 export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
@@ -269,8 +271,20 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         stepIndex={stepIndex}
         stepCount={STEP_COUNT}
         onChange={setName}
-        onContinue={() => setStep('stress')}
+        onContinue={() => setStep(name.trim() ? 'greeting' : 'stress')}
         onBack={() => setStep('intent')}
+      />
+    );
+  }
+
+  if (step === 'greeting') {
+    return (
+      <GreetingScreen
+        name={name}
+        stepIndex={stepIndex}
+        stepCount={STEP_COUNT}
+        onContinue={() => setStep('stress')}
+        onBack={() => setStep('name')}
       />
     );
   }
@@ -283,7 +297,7 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         stepCount={STEP_COUNT}
         onChange={setStressLevel}
         onContinue={() => setStep('sleep')}
-        onBack={() => setStep('name')}
+        onBack={() => setStep(name.trim() ? 'greeting' : 'name')}
       />
     );
   }
