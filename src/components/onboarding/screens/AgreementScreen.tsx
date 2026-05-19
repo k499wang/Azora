@@ -1,24 +1,49 @@
 import { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+  Animated,
+  Easing,
+  Image,
+  type ImageSourcePropType,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
+import { LinearGradient } from 'expo-linear-gradient';
 import { isHapticsEnabled } from '../../../services/preferences/hapticsPreference';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 
-export type AgreementValue = 'disagree' | 'neutral' | 'agree';
+export type AgreementValue = 'agree' | 'disagree';
 
-export const AGREEMENT_STATEMENTS: { id: string; text: string }[] = [
-  { id: 'exhausted', text: 'I often feel mentally exhausted.' },
-  { id: 'racing', text: 'I struggle to slow my mind down.' },
-  { id: 'reactive', text: 'Small things stress me out more than they should.' },
+export const AGREEMENT_STATEMENTS: {
+  id: string;
+  text: string;
+  image?: ImageSourcePropType;
+}[] = [
+  {
+    id: 'exhausted',
+    text: 'I often feel mentally exhausted.',
+    image: require('../../../../assets/questions/q1.png'),
+  },
+  {
+    id: 'racing',
+    text: 'I struggle to slow my mind down.',
+    image: require('../../../../assets/questions/q2.png'),
+  },
+  {
+    id: 'reactive',
+    text: 'Small things stress me out more than they should.',
+    image: require('../../../../assets/questions/q3.png'),
+  },
 ];
 
-const SCALE: { value: AgreementValue; label: string; size: number }[] = [
-  { value: 'disagree', label: 'Disagree', size: 56 },
-  { value: 'neutral', label: 'Neutral', size: 44 },
-  { value: 'agree', label: 'Agree', size: 56 },
+const CHOICES: { value: AgreementValue; label: string }[] = [
+  { value: 'disagree', label: 'No' },
+  { value: 'agree', label: 'Yes' },
 ];
 
 const ADVANCE_DELAY_MS = 320;
@@ -48,8 +73,8 @@ export default function AgreementScreen({
   );
   const advanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const fade = useRef(new Animated.Value(1)).current;
-  const slide = useRef(new Animated.Value(0)).current;
+  const fade = useRef(new Animated.Value(0)).current;
+  const slide = useRef(new Animated.Value(16)).current;
 
   const total = AGREEMENT_STATEMENTS.length;
   const statement = AGREEMENT_STATEMENTS[currentIdx];
@@ -57,17 +82,17 @@ export default function AgreementScreen({
 
   useEffect(() => {
     fade.setValue(0);
-    slide.setValue(12);
+    slide.setValue(16);
     Animated.parallel([
       Animated.timing(fade, {
         toValue: 1,
-        duration: 320,
+        duration: 380,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
       Animated.timing(slide, {
         toValue: 0,
-        duration: 360,
+        duration: 420,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
@@ -107,13 +132,44 @@ export default function AgreementScreen({
 
   const subProgress = (stepIndex + currentIdx / total) / stepCount;
 
+  const choicesRow = (
+    <View style={styles.choices}>
+      {CHOICES.map((opt) => {
+        const selected = currentValue === opt.value;
+        return (
+          <Pressable
+            key={opt.value}
+            accessibilityRole="button"
+            accessibilityLabel={opt.label}
+            accessibilityState={{ selected }}
+            onPress={() => handleSelect(opt.value)}
+            style={({ pressed }) => [
+              styles.choice,
+              selected && styles.choiceSelected,
+              pressed && !selected && styles.choicePressed,
+            ]}
+          >
+            <Text
+              style={[
+                styles.choiceLabel,
+                selected && styles.choiceLabelSelected,
+              ]}
+            >
+              {opt.label}
+            </Text>
+          </Pressable>
+        );
+      })}
+    </View>
+  );
+
   return (
     <OnboardingScreenLayout
-      title="Does any of this sound like you?"
+      title="Do you agree with the statement below?"
       subtitle={`${currentIdx + 1} of ${total}`}
       progress={subProgress}
       onBack={handleBack}
-      footer={<View />}
+      footer={choicesRow}
     >
       <Animated.View
         style={[
@@ -121,46 +177,24 @@ export default function AgreementScreen({
           { opacity: fade, transform: [{ translateY: slide }] },
         ]}
       >
-        <View style={styles.statementWrap}>
-          <Text style={styles.statement}>{statement.text}</Text>
-        </View>
-
-        <View style={styles.scaleWrap}>
-          <View style={styles.axis}>
-            {SCALE.map((opt) => {
-              const selected = currentValue === opt.value;
-              return (
-                <Pressable
-                  key={opt.value}
-                  accessibilityRole="button"
-                  accessibilityLabel={opt.label}
-                  accessibilityState={{ selected }}
-                  hitSlop={10}
-                  onPress={() => handleSelect(opt.value)}
-                  style={styles.dotColumn}
-                >
-                  <View
-                    style={[
-                      styles.dot,
-                      {
-                        width: opt.size,
-                        height: opt.size,
-                        borderRadius: opt.size / 2,
-                      },
-                      selected && styles.dotSelected,
-                    ]}
-                  >
-                    {selected ? <View style={styles.dotInner} /> : null}
-                  </View>
-                  <Text
-                    style={[styles.dotLabel, selected && styles.dotLabelSelected]}
-                  >
-                    {opt.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
+        <View style={styles.card}>
+          <LinearGradient
+            colors={['#FFFFFF', '#FFFFFF', 'rgba(255,255,255,0)']}
+            locations={[0, 0.55, 1]}
+            style={StyleSheet.absoluteFill}
+            pointerEvents="none"
+          />
+          <Text style={styles.statement}>“{statement.text}”</Text>
+          {statement.image ? (
+            <View style={styles.arch}>
+              <Image
+                source={statement.image}
+                style={styles.illustration}
+                resizeMode="cover"
+                accessible={false}
+              />
+            </View>
+          ) : null}
         </View>
       </Animated.View>
     </OnboardingScreenLayout>
@@ -169,63 +203,77 @@ export default function AgreementScreen({
 
 const styles = StyleSheet.create({
   stage: {
-    flex: 1,
-    justifyContent: 'center',
-    gap: spacing['3xl'],
-    paddingVertical: spacing['2xl'],
-  },
-  statementWrap: {
+    paddingTop: spacing.lg,
     alignItems: 'center',
-    paddingHorizontal: spacing.md,
+  },
+  card: {
+    width: '100%',
+    borderRadius: 28,
+    paddingTop: spacing['2xl'],
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing.xl,
+    alignItems: 'center',
+    gap: spacing.xl,
+    overflow: 'hidden',
   },
   statement: {
-    ...typography.title.title1,
     fontFamily: fonts.semibold,
     fontWeight: '600',
-    fontSize: 28,
-    lineHeight: 36,
-    letterSpacing: -0.4,
+    fontSize: 22,
+    lineHeight: 30,
+    letterSpacing: -0.3,
     color: colors.text.primary,
     textAlign: 'center',
+    paddingHorizontal: spacing.sm,
   },
-  scaleWrap: {
-    alignItems: 'center',
-  },
-  axis: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+  arch: {
     width: '100%',
-    paddingHorizontal: spacing.lg,
+    aspectRatio: 0.78,
+    maxHeight: 380,
+    borderTopLeftRadius: 180,
+    borderTopRightRadius: 180,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+    borderWidth: 4,
+    borderColor: colors.primary.blue100,
+    overflow: 'hidden',
+    backgroundColor: colors.background.accentSoft,
   },
-  dotColumn: {
-    alignItems: 'center',
+  illustration: {
+    width: '100%',
+    height: '100%',
+  },
+  choices: {
+    flexDirection: 'row',
     gap: spacing.md,
+    justifyContent: 'center',
   },
-  dot: {
+  choice: {
+    minWidth: 112,
+    paddingVertical: spacing.sm + 2,
+    paddingHorizontal: spacing.lg,
+    borderRadius: 999,
     borderWidth: 1.5,
     borderColor: colors.border.default,
     backgroundColor: colors.background.elevated,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  dotSelected: {
-    borderColor: colors.primary.blue600,
+  choicePressed: {
+    backgroundColor: colors.background.secondary,
+  },
+  choiceSelected: {
+    borderWidth: 0,
     backgroundColor: colors.primary.blue600,
   },
-  dotInner: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: colors.text.inverse,
-  },
-  dotLabel: {
-    ...typography.body.small,
+  choiceLabel: {
+    ...typography.body.medium,
     fontFamily: fonts.semibold,
     fontWeight: '600',
-    color: colors.text.secondary,
-  },
-  dotLabelSelected: {
+    fontSize: 15,
     color: colors.text.primary,
+  },
+  choiceLabelSelected: {
+    color: colors.text.inverse,
   },
 });
