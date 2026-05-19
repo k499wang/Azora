@@ -46,7 +46,7 @@ const CHOICES: { value: AgreementValue; label: string }[] = [
   { value: 'agree', label: 'Yes' },
 ];
 
-const ADVANCE_DELAY_MS = 320;
+const ADVANCE_DELAY_MS = 0;
 
 interface AgreementScreenProps {
   responses: Record<string, AgreementValue | null>;
@@ -203,7 +203,7 @@ export default function AgreementScreen({
 
 const styles = StyleSheet.create({
   stage: {
-    paddingTop: spacing.lg,
+    paddingTop: spacing.sm,
     alignItems: 'center',
   },
   card: {

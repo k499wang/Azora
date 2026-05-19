@@ -150,7 +150,7 @@ export default function RecommendationScreen({
   if (!showingResult) {
     return (
       <OnboardingScreenLayout
-        title="Recommended for you"
+        title="Your Mindmap"
         subtitle="We're building your personalized exercise based on your responses."
         progress={stepIndex / stepCount}
         onBack={onBack}
@@ -179,7 +179,7 @@ export default function RecommendationScreen({
 
   return (
     <OnboardingScreenLayout
-      title="Recommended for you"
+      title="Your Mindmap"
       subtitle={`Tailored to ${intentTitle.toLowerCase()}, your age, and how your body responded.`}
       progress={stepIndex / stepCount}
       onBack={onBack}
