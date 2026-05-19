@@ -1,13 +1,13 @@
 import { useMemo, useState } from 'react';
 import AgeScreen from './screens/AgeScreen';
 import ScienceCredibilityScreen from './screens/ScienceCredibilityScreen';
-import ScienceResearchScreen from './screens/ScienceResearchScreen';
 import BaselineScreen, { type BaselineResult } from './screens/BaselineScreen';
 import BaselineIntroScreen from './screens/BaselineIntroScreen';
 import DailyTimeScreen from './screens/DailyTimeScreen';
 import GenderScreen from './screens/GenderScreen';
 import IntentQuestionScreen from './screens/IntentQuestionScreen';
 import IntentReflectionScreen from './screens/IntentReflectionScreen';
+import IntentProjectionScreen from './screens/IntentProjectionScreen';
 import AgreementScreen, {
   AGREEMENT_STATEMENTS,
   type AgreementValue,
@@ -62,18 +62,18 @@ const STEP_COUNT = 20;
 const STEP_INDEX: Record<OnboardingStep, number> = {
   intent: 1,
   intentReflection: 2,
-  name: 3,
-  greeting: 4,
-  stress: 5,
-  sleep: 6,
-  agreement: 7,
-  scienceCredibility: 8,
-  experience: 9,
-  assessmentReflection: 10,
-  age: 11,
-  gender: 12,
-  dailyTime: 13,
-  scienceResearch: 14,
+  intentProjection: 3,
+  name: 4,
+  greeting: 5,
+  stress: 6,
+  sleep: 7,
+  agreement: 8,
+  scienceCredibility: 9,
+  experience: 10,
+  assessmentReflection: 11,
+  age: 12,
+  gender: 13,
+  dailyTime: 14,
   baselineIntro: 15,
   baseline: 16,
   recommendation: 17,
@@ -144,7 +144,11 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     }
 
     const onlyOther = selectedIntents.length === 1 && selectedIntents[0] === 'other';
-    setStep(onlyOther || !INTENT_REFLECTION_ENABLED ? 'name' : 'intentReflection');
+    if (INTENT_REFLECTION_ENABLED && !onlyOther) {
+      setStep('intentReflection');
+      return;
+    }
+    setStep(onlyOther ? 'name' : 'intentProjection');
   };
 
   const buildOnboardingGoal = () => {
@@ -258,6 +262,18 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         stepIndex={stepIndex}
         stepCount={STEP_COUNT}
         isSubmitting={isSubmitting}
+        onContinue={() => setStep('intentProjection')}
+        onBack={() => setStep('intent')}
+      />
+    );
+  }
+
+  if (step === 'intentProjection') {
+    return (
+      <IntentProjectionScreen
+        selectedIntents={selectedIntents}
+        stepIndex={stepIndex}
+        stepCount={STEP_COUNT}
         onContinue={() => setStep('name')}
         onBack={() => setStep('intent')}
       />
@@ -272,7 +288,7 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         stepCount={STEP_COUNT}
         onChange={setName}
         onContinue={() => setStep(name.trim() ? 'greeting' : 'stress')}
-        onBack={() => setStep('intent')}
+        onBack={() => setStep('intentProjection')}
       />
     );
   }
@@ -392,19 +408,8 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         stepIndex={stepIndex}
         stepCount={STEP_COUNT}
         onChange={setDailyMinutes}
-        onContinue={() => setStep('scienceResearch')}
-        onBack={() => setStep('gender')}
-      />
-    );
-  }
-
-  if (step === 'scienceResearch') {
-    return (
-      <ScienceResearchScreen
-        stepIndex={stepIndex}
-        stepCount={STEP_COUNT}
         onContinue={() => setStep('baselineIntro')}
-        onBack={() => setStep('dailyTime')}
+        onBack={() => setStep('gender')}
       />
     );
   }
@@ -416,7 +421,7 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         stepCount={STEP_COUNT}
         name={name}
         onContinue={() => setStep('baseline')}
-        onBack={() => setStep('scienceResearch')}
+        onBack={() => setStep('dailyTime')}
       />
     );
   }
