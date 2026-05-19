@@ -24,7 +24,7 @@ interface OnboardingHapticSliderProps {
   onChange: (value: number) => void;
 }
 
-const TICK_WIDTH = 14;
+const TICK_WIDTH = 22;
 const MAJOR_EVERY = 5;
 
 export default function OnboardingHapticSlider({

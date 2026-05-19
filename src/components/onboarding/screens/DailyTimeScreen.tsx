@@ -47,6 +47,7 @@ export default function DailyTimeScreen({
       subtitle="A few minutes a day is enough to see real change."
       progress={stepIndex / stepCount}
       onBack={onBack}
+      centerBody
       footer={<OnboardingPrimaryButton label="Continue" onPress={onContinue} />}
     >
       <View style={styles.content}>
@@ -85,7 +86,7 @@ const styles = StyleSheet.create({
   scaleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: spacing.lg,
     marginTop: -spacing.sm,
   },
   scaleLabel: {

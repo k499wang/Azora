@@ -25,6 +25,7 @@ export default function AgeScreen({
       subtitle="Azora tunes guidance to your age."
       progress={stepIndex / stepCount}
       onBack={onBack}
+      centerBody
       footer={<OnboardingPrimaryButton label="Continue" onPress={onContinue} />}
     >
       <OnboardingHapticSlider
