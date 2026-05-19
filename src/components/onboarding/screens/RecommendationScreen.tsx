@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { card } from '../../../theme/card';
@@ -8,8 +8,13 @@ import { fonts, typography } from '../../../theme/typography';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import { TECHNIQUE_RECOMMENDATIONS } from '../data/techniqueRecommendations';
+import TECHNIQUES from '../../../data/techniques';
 import type { BaselineResult } from './BaselineScreen';
 import LineGraph, { type DataPoint } from '../../analytics/LineGraph';
+import MindMapRadar from '../MindMapRadar';
+import { computeMindMap } from '../../../lib/onboardingScores';
+import type { AgreementValue } from './AgreementScreen';
+import type { ExperienceLevel } from './ExperienceScreen';
 
 interface RecommendationScreenProps {
   techniqueId: string;
@@ -17,6 +22,10 @@ interface RecommendationScreenProps {
   age: number;
   dailyMinutes: number;
   baseline: BaselineResult | null;
+  stressLevel: number;
+  sleepQuality: number;
+  agreementResponses: Record<string, AgreementValue | null>;
+  experienceLevel: ExperienceLevel | null;
   stepIndex: number;
   stepCount: number;
   onContinue: () => void;
@@ -51,11 +60,25 @@ export default function RecommendationScreen({
   age,
   dailyMinutes,
   baseline,
+  stressLevel,
+  sleepQuality,
+  agreementResponses,
+  experienceLevel,
   stepIndex,
   stepCount,
   onContinue,
   onBack,
 }: RecommendationScreenProps) {
+  const mindMap = useMemo(
+    () =>
+      computeMindMap({
+        stressLevel,
+        sleepQuality,
+        agreementResponses,
+        experienceLevel,
+      }),
+    [stressLevel, sleepQuality, agreementResponses, experienceLevel],
+  );
   const [showingResult, setShowingResult] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
   const progressAnim = useRef(new Animated.Value(0)).current;
@@ -64,6 +87,8 @@ export default function RecommendationScreen({
 
   const technique =
     TECHNIQUE_RECOMMENDATIONS[techniqueId] ?? TECHNIQUE_RECOMMENDATIONS.box;
+  const nickname =
+    TECHNIQUES.find((t) => t.id === technique.id)?.recommendedName ?? null;
 
   const hrCompleted = baseline?.completed === true && baseline.avgBpm != null;
   const drop = baseline?.bpmDrop ?? 0;
@@ -166,6 +191,21 @@ export default function RecommendationScreen({
           { opacity: resultFade, transform: [{ translateY: resultSlide }] },
         ]}
       >
+        <View style={styles.mindMapWrap}>
+          <MindMapRadar scores={mindMap.scores} />
+        </View>
+
+        <Text style={styles.sectionSubtitle}>Your starting point</Text>
+
+        <View style={styles.techniqueCard}>
+          <Text style={styles.techniqueKicker}>RECOMMENDED TECHNIQUE</Text>
+          <Text style={styles.techniqueName}>{nickname ?? technique.name}</Text>
+          <Text style={styles.techniqueSubname}>{technique.name}</Text>
+          <Text style={styles.techniqueTagline}>{technique.tagline}</Text>
+          <View style={styles.divider} />
+          <Text style={styles.techniqueWhy}>{technique.why}</Text>
+        </View>
+
         {hrCompleted ? (
           <View style={styles.hrCard}>
             <View style={styles.hrCardHeader}>
@@ -232,14 +272,6 @@ export default function RecommendationScreen({
             ) : null}
           </View>
         ) : null}
-
-        <View style={styles.techniqueCard}>
-          <Text style={styles.techniqueKicker}>RECOMMENDED TECHNIQUE</Text>
-          <Text style={styles.techniqueName}>{technique.name}</Text>
-          <Text style={styles.techniqueTagline}>{technique.tagline}</Text>
-          <View style={styles.divider} />
-          <Text style={styles.techniqueWhy}>{technique.why}</Text>
-        </View>
       </Animated.View>
     </OnboardingScreenLayout>
   );
@@ -314,11 +346,12 @@ const styles = StyleSheet.create({
 
   // Result state
   resultBody: {
-    gap: spacing.md,
+    gap: 0,
+    marginTop: -spacing.xl,
   },
   hrCard: {
     ...card.base,
-    marginTop: spacing.md,
+    marginTop: spacing.sm,
     paddingVertical: spacing.lg,
     paddingHorizontal: spacing.lg,
     borderRadius: 18,
@@ -395,10 +428,25 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
 
+  mindMapWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 0,
+    marginHorizontal: -spacing.lg,
+  },
+  sectionSubtitle: {
+    ...typography.heading.heading2,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    fontSize: 22,
+    color: colors.text.primary,
+    marginTop: spacing.sm,
+    marginBottom: spacing.md,
+  },
   techniqueCard: {
     ...card.base,
     ...card.shadow,
-    marginTop: spacing.md,
+    marginTop: 0,
     paddingVertical: spacing.xl,
     paddingHorizontal: spacing.lg,
     borderRadius: 24,
@@ -420,9 +468,17 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     marginTop: spacing.xs,
   },
+  techniqueSubname: {
+    ...typography.body.small,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    color: colors.text.tertiary,
+    marginTop: 2,
+  },
   techniqueTagline: {
     ...typography.body.medium,
     color: colors.text.secondary,
+    marginTop: spacing.xs,
   },
   divider: {
     height: StyleSheet.hairlineWidth,

@@ -7,6 +7,7 @@ type TechniqueIconName = NonNullable<ComponentProps<typeof MaterialCommunityIcon
 export interface BreathingTechnique {
   id: string;
   name: string;
+  recommendedName: string;
   description: string;
   pattern: { inhale: number; holdIn: number; exhale: number; holdOut: number };
   defaultRounds: number;
@@ -24,6 +25,7 @@ const TECHNIQUES: BreathingTechnique[] = [
   {
     id: 'box',
     name: 'Box Breathing',
+    recommendedName: 'The Steady Sentinel',
     description:
       'A technique trusted by Navy SEALs, pilots, and elite athletes to stay razor-sharp under extreme pressure. By equalizing each phase of the breath, you stabilize your nervous system, slow your heart rate, and clear mental noise in seconds.',
     pattern: { inhale: 4, holdIn: 4, exhale: 4, holdOut: 4 },
@@ -36,6 +38,7 @@ const TECHNIQUES: BreathingTechnique[] = [
   {
     id: '478',
     name: '4-7-8 Breathing',
+    recommendedName: 'The Quiet Drift',
     description:
       "Developed by Dr. Andrew Weil as a natural tranquilizer for the nervous system. The extended exhale gently coaxes your body out of fight-or-flight and into deep rest. Many people use it to fall asleep faster or ease anxiety before a big moment.",
     pattern: { inhale: 4, holdIn: 7, exhale: 8, holdOut: 0 },
@@ -48,6 +51,7 @@ const TECHNIQUES: BreathingTechnique[] = [
   {
     id: 'wimhof',
     name: 'Wim Hof',
+    recommendedName: 'The Inner Spark',
     description:
       "Popularized by the 'Iceman,' this rapid cyclic breathing floods your body with oxygen, alkalizing the blood and energizing every cell. Research links it to reduced inflammation, stronger immunity, and a measurable boost in energy and mental clarity.",
     pattern: { inhale: 2, holdIn: 0, exhale: 2, holdOut: 0 },
@@ -60,6 +64,7 @@ const TECHNIQUES: BreathingTechnique[] = [
   {
     id: 'resonance',
     name: 'Resonance',
+    recommendedName: 'The Inner Tide',
     description:
       'Also known as coherent breathing, this rhythm matches your body\'s natural resonant frequency. At five to six breaths per minute, you maximize heart rate variability, improve autonomic balance, and train your nervous system to recover faster from stress.',
     pattern: { inhale: 5, holdIn: 0, exhale: 5, holdOut: 0 },
@@ -72,6 +77,7 @@ const TECHNIQUES: BreathingTechnique[] = [
   {
     id: 'relaxing',
     name: 'Relaxing Breath',
+    recommendedName: 'The Calm Explorer',
     description:
       'A simple but powerful pattern that activates the vagus nerve and triggers your parasympathetic relaxation response. By extending the exhale, you measurably lower heart rate and blood pressure, making this perfect for unwinding after a hectic day.',
     pattern: { inhale: 4, holdIn: 0, exhale: 6, holdOut: 0 },

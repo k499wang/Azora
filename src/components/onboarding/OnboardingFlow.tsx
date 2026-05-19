@@ -468,6 +468,10 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         age={age}
         dailyMinutes={dailyMinutes}
         baseline={baseline}
+        stressLevel={stressLevel}
+        sleepQuality={sleepQuality}
+        agreementResponses={agreementResponses}
+        experienceLevel={experienceLevel}
         stepIndex={stepIndex}
         stepCount={STEP_COUNT}
         onContinue={() => setStep('notifications')}

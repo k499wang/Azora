@@ -11,13 +11,13 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
-import { card } from '../../../theme/card';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
 import { isHapticsEnabled } from '../../../services/preferences/hapticsPreference';
 import { ContinuousHaptics } from '../../../native/continuousHaptics';
 import CelebrationOverlay from '../CelebrationOverlay';
+import AmbientBackground from '../../common/AmbientBackground';
 
 const HOLD_DURATION_MS = 2000;
 const STAMP_SIZE = 100;
@@ -47,14 +47,11 @@ function StampButton({
 }) {
   const [isPressing, setIsPressing] = useState(false);
   const holdProgress = useRef(new Animated.Value(0)).current;
-  const idlePulse = useRef(new Animated.Value(1)).current;
   const growScale = useRef(new Animated.Value(1)).current;
   const hasCompletedRef = useRef(false);
   const timeoutsRef = useRef<NodeJS.Timeout[]>([]);
   const progressRef = useRef(0);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
-
-  const combinedScale = Animated.multiply(idlePulse, growScale);
 
   /* track progress in a ref for the fallback haptic interval */
   useEffect(() => {
@@ -63,34 +60,6 @@ function StampButton({
     });
     return () => holdProgress.removeListener(id);
   }, [holdProgress]);
-
-  /* idle pulse when not pressing / not disabled */
-  useEffect(() => {
-    if (isPressing || disabled) {
-      idlePulse.stopAnimation();
-      idlePulse.setValue(1);
-      return;
-    }
-
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(idlePulse, {
-          toValue: 1.06,
-          duration: 900,
-          easing: Easing.inOut(Easing.sin),
-          useNativeDriver: true,
-        }),
-        Animated.timing(idlePulse, {
-          toValue: 1,
-          duration: 900,
-          easing: Easing.inOut(Easing.sin),
-          useNativeDriver: true,
-        }),
-      ]),
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [isPressing, disabled, idlePulse]);
 
   const clearAllTimeouts = useCallback(() => {
     timeoutsRef.current.forEach(clearTimeout);
@@ -210,6 +179,8 @@ function StampButton({
 
   return (
     <View style={stampStyles.wrapper}>
+      <View style={stampStyles.halo} pointerEvents="none" />
+      <View style={stampStyles.haloInner} pointerEvents="none" />
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={isSealed ? 'Commitment sealed' : 'Press and hold to seal your pact'}
@@ -225,7 +196,7 @@ function StampButton({
             isSealed && stampStyles.stampSealed,
             {
               transform: [
-                { scale: combinedScale },
+                { scale: growScale },
                 { translateY: isPressing ? 2 : 0 },
               ],
             },
@@ -253,6 +224,22 @@ const stampStyles = StyleSheet.create({
     width: 160,
     height: 160,
   },
+  halo: {
+    position: 'absolute',
+    width: 156,
+    height: 156,
+    borderRadius: 78,
+    borderWidth: 1,
+    borderColor: 'rgba(204,106,0,0.12)',
+  },
+  haloInner: {
+    position: 'absolute',
+    width: 128,
+    height: 128,
+    borderRadius: 64,
+    borderWidth: 1,
+    borderColor: 'rgba(204,106,0,0.18)',
+  },
   pressable: {
     width: STAMP_SIZE,
     height: STAMP_SIZE,
@@ -262,39 +249,39 @@ const stampStyles = StyleSheet.create({
     width: STAMP_SIZE,
     height: STAMP_SIZE,
     borderRadius: STAMP_SIZE / 2,
-    backgroundColor: colors.orange[500],
+    backgroundColor: colors.orange[700],
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: colors.orange[700],
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 8,
+    shadowColor: '#3A1F00',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.22,
+    shadowRadius: 22,
+    elevation: 10,
   },
   stampSealed: {
-    backgroundColor: colors.success[500],
-    shadowColor: colors.success[700],
+    backgroundColor: colors.success[700],
+    shadowColor: '#0A2A12',
   },
   stampInnerRing: {
     width: 80,
     height: 80,
     borderRadius: 40,
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.45)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.28)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   stampText: {
-    fontFamily: fonts.bold,
-    fontWeight: '700',
-    fontSize: 15,
-    letterSpacing: 1.5,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    fontSize: 13,
+    letterSpacing: 3,
     color: colors.text.inverse,
   },
   stampCheck: {
-    fontSize: 32,
-    fontFamily: fonts.bold,
-    fontWeight: '700',
+    fontSize: 30,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
     color: colors.text.inverse,
   },
 });
@@ -423,7 +410,9 @@ export default function PactScreen({
 
   return (
     <>
-      <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
+      <View style={styles.root}>
+        <AmbientBackground />
+        <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.backGlyph} onPress={onBack}>
@@ -478,11 +467,17 @@ export default function PactScreen({
                 </Animated.View>
               )}
 
+              <View style={styles.cardHeader}>
+                <View style={styles.headerRule} />
+                <Text style={styles.wordmark}>DAILY PACT</Text>
+                <View style={styles.headerRule} />
+              </View>
+
               <View style={styles.cardBody}>
                 <Text
                   style={[
                     typography.body.medium,
-                    { color: colors.text.secondary, lineHeight: 26 },
+                    { color: colors.text.secondary, lineHeight: 28 },
                   ]}
                 >
                   Every day, I will breathe for{' '}
@@ -494,32 +489,32 @@ export default function PactScreen({
                 <Text
                   style={[
                     typography.body.medium,
-                    { color: colors.text.secondary, lineHeight: 26 },
+                    { color: colors.text.secondary, lineHeight: 28 },
                   ]}
                 >
                   I choose progress over perfection.
                 </Text>
 
-                {displayName ? (
-                  <Text
-                    style={[
-                      typography.body.medium,
-                      { color: colors.text.secondary, lineHeight: 26 },
-                    ]}
-                  >
-                    — {displayName}
-                  </Text>
-                ) : null}
-
-                <View style={styles.dateRow}>
-                  <Text
-                    style={[
-                      typography.caption.caption2,
-                      { color: colors.text.tertiary },
-                    ]}
-                  >
-                    {today}
-                  </Text>
+                <View style={styles.signatureBlock}>
+                  <View style={styles.signatureRule} />
+                  <View style={styles.signatureRow}>
+                    <Text
+                      style={[
+                        typography.caption.caption2,
+                        { color: colors.text.tertiary, letterSpacing: 1 },
+                      ]}
+                    >
+                      {displayName ? displayName.toUpperCase() : 'SIGNED'}
+                    </Text>
+                    <Text
+                      style={[
+                        typography.caption.caption2,
+                        { color: colors.text.tertiary, letterSpacing: 1 },
+                      ]}
+                    >
+                      {today.toUpperCase()}
+                    </Text>
+                  </View>
                 </View>
               </View>
             </Animated.View>
@@ -549,7 +544,8 @@ export default function PactScreen({
             ) : null}
           </Animated.View>
         </ScrollView>
-      </SafeAreaView>
+        </SafeAreaView>
+      </View>
 
       {celebrating ? <CelebrationOverlay /> : null}
     </>
@@ -558,9 +554,13 @@ export default function PactScreen({
 
 /* ─── Styles ─── */
 const styles = StyleSheet.create({
-  screen: {
+  root: {
     flex: 1,
     backgroundColor: colors.background.primary,
+  },
+  screen: {
+    flex: 1,
+    backgroundColor: 'transparent',
   },
 
   /* Header */
@@ -608,21 +608,41 @@ const styles = StyleSheet.create({
 
   /* ── Pledge Card ── */
   card: {
-    ...card.base,
     width: '100%',
     borderRadius: 20,
-    backgroundColor: colors.background.elevated,
+    backgroundColor: colors.surface.welcome,
     overflow: 'hidden',
     position: 'relative',
-    borderWidth: 2,
-    shadowColor: colors.primary.blue700,
-    shadowOffset: { width: 0, height: 4 },
+    borderWidth: 1,
+    shadowColor: '#1A1206',
+    shadowOffset: { width: 0, height: 12 },
     shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 4,
+    shadowRadius: 28,
+    elevation: 6,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.lg,
+  },
+  headerRule: {
+    flex: 1,
+    height: 1,
+    backgroundColor: 'rgba(204,106,0,0.22)',
+  },
+  wordmark: {
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    fontSize: 10,
+    letterSpacing: 4,
+    color: colors.orange[700],
   },
   cardBody: {
-    padding: spacing.xl,
+    paddingHorizontal: spacing['2xl'],
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.xl,
     gap: spacing.md,
   },
   highlight: {
@@ -630,10 +650,18 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.text.primary,
   },
-  dateRow: {
+  signatureBlock: {
+    marginTop: spacing.lg,
+    gap: spacing.xs,
+  },
+  signatureRule: {
+    height: 1,
+    backgroundColor: colors.border.subtle,
+  },
+  signatureRow: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginTop: spacing.sm,
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
 
   /* Seal */
