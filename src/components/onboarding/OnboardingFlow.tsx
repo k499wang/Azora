@@ -67,17 +67,17 @@ const STEP_INDEX: Record<OnboardingStep, number> = {
   stress: 5,
   sleep: 6,
   agreement: 7,
-  experience: 8,
-  assessmentReflection: 9,
-  age: 10,
-  gender: 11,
-  dailyTime: 12,
-  scienceResearch: 13,
-  baselineIntro: 14,
-  baseline: 15,
-  recommendation: 16,
-  notifications: 17,
-  scienceCredibility: 18,
+  scienceCredibility: 8,
+  experience: 9,
+  assessmentReflection: 10,
+  age: 11,
+  gender: 12,
+  dailyTime: 13,
+  scienceResearch: 14,
+  baselineIntro: 15,
+  baseline: 16,
+  recommendation: 17,
+  notifications: 18,
   pact: 19,
   paywall: 20,
 };
@@ -241,7 +241,7 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         }
       }
 
-      setStep('scienceCredibility');
+      setStep('pact');
     } catch (error) {
       setNotificationErrorMessage(getErrorMessage(error));
     } finally {
@@ -324,7 +324,7 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         onChange={(id, value) =>
           setAgreementResponses((prev) => ({ ...prev, [id]: value }))
         }
-        onContinue={() => setStep('experience')}
+        onContinue={() => setStep('scienceCredibility')}
         onBack={() => setStep('sleep')}
       />
     );
@@ -338,7 +338,7 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         stepCount={STEP_COUNT}
         onSelect={setExperienceLevel}
         onContinue={() => setStep('assessmentReflection')}
-        onBack={() => setStep('agreement')}
+        onBack={() => setStep('scienceCredibility')}
       />
     );
   }
@@ -470,7 +470,7 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         }}
         onSkip={() => {
           setNotificationErrorMessage(null);
-          setStep('scienceCredibility');
+          setStep('pact');
         }}
         onBack={() => setStep('recommendation')}
       />
@@ -478,12 +478,18 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   }
 
   if (step === 'scienceCredibility') {
+    const scIntentTitle =
+      primaryIntent === 'other' || primaryIntent == null
+        ? null
+        : selectedOption?.title ?? null;
     return (
       <ScienceCredibilityScreen
         stepIndex={stepIndex}
         stepCount={STEP_COUNT}
-        onContinue={() => setStep('pact')}
-        onBack={() => setStep('notifications')}
+        name={name.trim() || null}
+        intentTitle={scIntentTitle}
+        onContinue={() => setStep('experience')}
+        onBack={() => setStep('agreement')}
       />
     );
   }
@@ -506,7 +512,7 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         onConfirm={() => {
           setTimeout(() => setStep('paywall'), 3500);
         }}
-        onBack={() => setStep('scienceCredibility')}
+        onBack={() => setStep('notifications')}
       />
     );
   }
