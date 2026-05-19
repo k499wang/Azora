@@ -15,6 +15,7 @@ export type OnboardingStep =
   | 'gender'
   | 'dailyTime'
   | 'baselineIntro'
+  | 'baselineScience'
   | 'baseline'
   | 'recommendation'
   | 'scienceCredibility'

@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-
-const BASELINE_ILLUSTRATION = require('../../../../assets/baseline.png');
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import BaselineHero from '../BaselineHero';
 import * as Haptics from 'expo-haptics';
 import BreathingCircle, {
   type BreathingCircleRef,
@@ -492,13 +491,7 @@ export default function BaselineScreen({
       }
     >
       <View style={styles.illustrationWrap}>
-        <Image
-          source={BASELINE_ILLUSTRATION}
-          style={styles.illustration}
-          resizeMode="contain"
-          accessible
-          accessibilityLabel="Place your fingertip over the back camera lens"
-        />
+        <BaselineHero />
       </View>
 
       <View style={styles.stepsRow}>
@@ -531,10 +524,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: spacing.sm,
-  },
-  illustration: {
-    width: '100%',
-    height: 200,
   },
   stepsRow: {
     marginTop: spacing.md,

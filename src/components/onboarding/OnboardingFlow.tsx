@@ -3,6 +3,7 @@ import AgeScreen from './screens/AgeScreen';
 import ScienceCredibilityScreen from './screens/ScienceCredibilityScreen';
 import BaselineScreen, { type BaselineResult } from './screens/BaselineScreen';
 import BaselineIntroScreen from './screens/BaselineIntroScreen';
+import BaselineScienceScreen from './screens/BaselineScienceScreen';
 import DailyTimeScreen from './screens/DailyTimeScreen';
 import GenderScreen from './screens/GenderScreen';
 import IntentQuestionScreen from './screens/IntentQuestionScreen';
@@ -58,7 +59,7 @@ interface OnboardingFlowProps {
 }
 
 
-const STEP_COUNT = 20;
+const STEP_COUNT = 21;
 const STEP_INDEX: Record<OnboardingStep, number> = {
   intent: 1,
   intentReflection: 2,
@@ -75,11 +76,12 @@ const STEP_INDEX: Record<OnboardingStep, number> = {
   gender: 13,
   dailyTime: 14,
   baselineIntro: 15,
-  baseline: 16,
-  recommendation: 17,
-  notifications: 18,
-  pact: 19,
-  paywall: 20,
+  baselineScience: 16,
+  baseline: 17,
+  recommendation: 18,
+  notifications: 19,
+  pact: 20,
+  paywall: 21,
 };
 
 export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
@@ -420,8 +422,19 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         stepIndex={stepIndex}
         stepCount={STEP_COUNT}
         name={name}
-        onContinue={() => setStep('baseline')}
+        onContinue={() => setStep('baselineScience')}
         onBack={() => setStep('dailyTime')}
+      />
+    );
+  }
+
+  if (step === 'baselineScience') {
+    return (
+      <BaselineScienceScreen
+        stepIndex={stepIndex}
+        stepCount={STEP_COUNT}
+        onContinue={() => setStep('baseline')}
+        onBack={() => setStep('baselineIntro')}
       />
     );
   }
@@ -435,7 +448,7 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
           setBaseline(result);
           setStep('recommendation');
         }}
-        onBack={() => setStep('baselineIntro')}
+        onBack={() => setStep('baselineScience')}
       />
     );
   }

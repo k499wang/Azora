@@ -208,6 +208,11 @@ export const ICON_PATHS = {
     <path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" d="M6 6l12 12M18 6L6 18"/>
   `,
 
+  camera: `
+    <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M4 8.5h3l1.6-2.3a1.5 1.5 0 0 1 1.2-.7h4.4c.5 0 .9.2 1.2.7L17 8.5h3a1.5 1.5 0 0 1 1.5 1.5v8a1.5 1.5 0 0 1-1.5 1.5H4A1.5 1.5 0 0 1 2.5 18v-8A1.5 1.5 0 0 1 4 8.5z"/>
+    <circle cx="12" cy="13.5" r="3.6" stroke="currentColor" stroke-width="1.8" fill="none"/>
+  `,
+
   journal: `
     <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M4 4h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/>
     <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M8 4v16"/>
