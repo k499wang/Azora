@@ -12,14 +12,6 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
-import Svg, {
-  Circle,
-  Defs,
-  LinearGradient as SvgLinearGradient,
-  Path,
-  Stop,
-} from 'react-native-svg';
 import type {
   PaywallOffering,
   PaywallPackageId,
@@ -38,10 +30,8 @@ import {
 } from '../../paywall/PlanCard';
 import PaywallFeatureList from '../../paywall/PaywallFeatureList';
 import PaywallTrialReminderToggle from '../../paywall/PaywallTrialReminderToggle';
-import type {
-  PaywallChartDirection,
-  PaywallPersonalization,
-} from '../../../lib/paywallPersonalization';
+import MindMapRadar from '../MindMapRadar';
+import type { PaywallPersonalization } from '../../../lib/paywallPersonalization';
 
 const TERMS_URL = 'https://www.tryazora.app/terms';
 const PRIVACY_URL = 'https://www.tryazora.app/privacy';
@@ -417,99 +407,85 @@ function StepPersonalizedPlan({
   personalization: PaywallPersonalization;
   hasAnnualTrial: boolean;
 }) {
+  const { displayName, baselineBpm, currentScores, targetScores } = personalization;
+  const greeting = displayName ? `${displayName}, your plan is ready!` : 'Your plan is ready!';
+
+  const milestones: Array<{ day: string; title: string; body: string }> = [
+    { day: 'Day 1', title: 'Start today', body: 'Your first guided session, paced to your baseline.' },
+    { day: 'Day 7', title: 'Momentum', body: 'Daily reps build the first signs of calmer breathing.' },
+    { day: 'Day 21', title: 'Past the hard part', body: 'The neuroscience-backed threshold where habits stick.' },
+    { day: 'Day 30', title: 'Habit locked in', body: 'A steadier baseline you can feel — and measure.' },
+  ];
+
   return (
     <View style={styles.stepContainer}>
       <View style={styles.valueHeader}>
-        <Text style={styles.planHeadline}>Your plan is ready!</Text>
+        <Text style={styles.planHeadline}>{greeting}</Text>
         <View style={styles.valueTitleUnderline} />
-        <Text style={styles.valueSubtitle}>{personalization.headline}</Text>
+        <Text style={styles.valueSubtitle}>Built around your baseline — 30 days to a steadier you.</Text>
         {hasAnnualTrial ? (
           <Text style={styles.trialNote}>Try free for 3 days — no charge until day 3</Text>
         ) : null}
       </View>
 
-      <View style={styles.planTargetCard}>
-        <Text style={styles.planMetricLabel}>{personalization.metricLabel}</Text>
-        <PlanProgressChart direction={personalization.chartDirection} />
-        <View style={styles.planTargetRow}>
-          <View style={styles.planTargetCol}>
-            <Text style={styles.planTargetValue}>{personalization.baselineValue}</Text>
-            <Text style={styles.planTargetCaption}>{personalization.baselineCaption}</Text>
+      {currentScores ? (
+        <View style={styles.radarBlock}>
+          <View style={styles.radarWrap}>
+            <MindMapRadar
+              scores={currentScores}
+              targetScores={targetScores ?? undefined}
+              size={300}
+            />
           </View>
-          <View style={styles.planTargetArrowWrap}>
-            <Text style={styles.planTargetArrow}>›</Text>
+          <View style={styles.radarLegend}>
+            <View style={styles.radarLegendItem}>
+              <View style={[styles.radarLegendDot, { backgroundColor: colors.primary.blue500 }]} />
+              <Text style={styles.radarLegendLabel}>Today</Text>
+            </View>
+            <View style={styles.radarLegendItem}>
+              <View style={[styles.radarLegendDot, styles.radarLegendDotTarget]} />
+              <Text style={styles.radarLegendLabel}>Day 30 target</Text>
+            </View>
           </View>
-          <View style={styles.planTargetCol}>
-            <Text style={[styles.planTargetValue, styles.planTargetValueAccent]}>
-              {personalization.targetValue}
-            </Text>
-            <Text style={styles.planTargetCaption}>{personalization.targetCaption}</Text>
+          {baselineBpm != null ? (
+            <View style={styles.radarFooter}>
+              <Text style={styles.radarFooterLabel}>Resting heart rate</Text>
+              <Text style={styles.radarFooterValue}>{baselineBpm} bpm</Text>
+            </View>
+          ) : null}
+        </View>
+      ) : baselineBpm != null ? (
+        <View style={styles.baselineStrip}>
+          <View style={styles.baselineChip}>
+            <Text style={styles.baselineChipValue}>{baselineBpm}</Text>
+            <Text style={styles.baselineChipLabel}>resting bpm</Text>
           </View>
         </View>
+      ) : null}
+
+      <Text style={styles.sectionTitle}>Your roadmap</Text>
+
+      <View style={styles.ladder}>
+        {milestones.map((m, index) => {
+          const isFinal = index === milestones.length - 1;
+          return (
+            <View key={m.day} style={styles.ladderRow}>
+              <View style={styles.ladderRail}>
+                <View style={[styles.ladderNode, isFinal && styles.ladderNodeFinal]}>
+                  {isFinal ? <View style={styles.ladderNodeInner} /> : null}
+                </View>
+                {index < milestones.length - 1 ? <View style={styles.ladderLine} /> : null}
+              </View>
+              <View style={styles.ladderCopy}>
+                <Text style={styles.ladderDay}>{m.day}</Text>
+                <Text style={styles.ladderTitle}>{m.title}</Text>
+                <Text style={styles.ladderBody}>{m.body}</Text>
+              </View>
+            </View>
+          );
+        })}
       </View>
 
-      <View style={styles.valueGrid}>
-        <View style={styles.valueTile}>
-          <View style={[styles.valueTileIcon, { backgroundColor: colors.primary.blue600 }]}>
-            <Icon name="breath-timer" size={22} color={colors.text.inverse} />
-          </View>
-          <View style={styles.valueTileCopy}>
-            <Text style={styles.valueTileTitle}>
-              {personalization.techniqueName} · {personalization.dailyMinutes} min/day
-            </Text>
-            <Text style={styles.valueTileBody}>{personalization.techniqueWhy}</Text>
-          </View>
-        </View>
-        <View style={styles.valueTile}>
-          <View style={[styles.valueTileIcon, { backgroundColor: colors.orange[500] }]}>
-            <Icon name="streak" size={22} color={colors.text.inverse} />
-          </View>
-          <View style={styles.valueTileCopy}>
-            <Text style={styles.valueTileTitle}>Daily challenge</Text>
-            <Text style={styles.valueTileBody}>{personalization.challenge}</Text>
-          </View>
-        </View>
-      </View>
-    </View>
-  );
-}
-
-function PlanProgressChart({ direction }: { direction: PaywallChartDirection }) {
-  const stroke = colors.primary.blue600;
-  const startFill = direction === 'down' ? colors.error[500] : colors.neutral[400];
-  const linePath =
-    direction === 'down'
-      ? 'M2,8 C22,10 38,22 60,30 S88,38 98,36'
-      : 'M2,36 C12,34 28,24 42,14 S72,4 98,8';
-  const fillPath = `${linePath} L98,42 L2,42 Z`;
-  const startPoint = direction === 'down' ? { x: 2, y: 8 } : { x: 2, y: 36 };
-  const endPoint = direction === 'down' ? { x: 98, y: 36 } : { x: 98, y: 8 };
-
-  return (
-    <View style={styles.planChartWrap}>
-      <Svg
-        width="100%"
-        height="100%"
-        viewBox="0 0 100 44"
-        preserveAspectRatio="none"
-      >
-        <Defs>
-          <SvgLinearGradient id="planChartFill" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor={stroke} stopOpacity="0.18" />
-            <Stop offset="1" stopColor={stroke} stopOpacity="0" />
-          </SvgLinearGradient>
-        </Defs>
-        <Path d={fillPath} fill="url(#planChartFill)" />
-        <Path
-          d={linePath}
-          stroke={stroke}
-          strokeWidth={2.4}
-          strokeLinecap="round"
-          fill="none"
-        />
-        <Circle cx={startPoint.x} cy={startPoint.y} r={3} fill={startFill} />
-        <Circle cx={endPoint.x} cy={endPoint.y} r={3.5} fill={stroke} />
-      </Svg>
     </View>
   );
 }
@@ -807,63 +783,171 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     letterSpacing: -0.3,
   },
-  planTargetCard: {
-    ...card.base,
-    ...card.shadow,
-    paddingVertical: spacing.lg,
-    paddingHorizontal: spacing.md,
-    backgroundColor: colors.background.elevated,
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  planMetricLabel: {
-    ...typography.caption.caption2,
+  sectionTitle: {
+    ...typography.heading.heading1,
     fontFamily: fonts.semibold,
     fontWeight: '600',
-    color: colors.text.brand,
-    letterSpacing: 1.4,
-    textTransform: 'uppercase',
+    color: colors.text.primary,
+    textAlign: 'center',
   },
-  planChartWrap: {
-    alignSelf: 'stretch',
-    height: 72,
-    paddingHorizontal: spacing.xs,
+  radarBlock: {
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.md,
   },
-  planTargetRow: {
+  radarLegend: {
+    flexDirection: 'row',
+    gap: spacing.lg,
+    alignSelf: 'center',
+    marginTop: spacing.lg,
+  },
+  radarLegendItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    alignSelf: 'stretch',
-    paddingHorizontal: spacing.md,
+    gap: 6,
   },
-  planTargetCol: {
-    flex: 1,
-    alignItems: 'center',
-    gap: 2,
+  radarLegendDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
   },
-  planTargetValue: {
-    ...typography.display.display2,
+  radarLegendDotTarget: {
+    backgroundColor: 'transparent',
+    borderWidth: 2,
+    borderColor: colors.orange[500],
+  },
+  radarLegendLabel: {
+    ...typography.caption.caption1,
     fontFamily: fonts.semibold,
     fontWeight: '600',
     color: colors.text.secondary,
-    letterSpacing: -0.6,
   },
-  planTargetValueAccent: {
-    color: colors.primary.blue600,
+  radarWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  planTargetCaption: {
+  radarFooter: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: spacing.xs,
+    alignSelf: 'center',
+    marginTop: spacing.xs,
+  },
+  radarFooterLabel: {
     ...typography.caption.caption1,
     color: colors.text.tertiary,
   },
-  planTargetArrowWrap: {
-    paddingHorizontal: spacing.sm,
-  },
-  planTargetArrow: {
+  radarFooterValue: {
+    ...typography.heading.heading2,
     fontFamily: fonts.semibold,
     fontWeight: '600',
-    fontSize: 36,
-    lineHeight: 36,
     color: colors.primary.blue600,
+  },
+  baselineStrip: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  baselineChip: {
+    ...card.base,
+    ...card.shadow,
+    flex: 1,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.sm,
+    backgroundColor: colors.background.elevated,
+    alignItems: 'center',
+    gap: 2,
+  },
+  baselineChipValue: {
+    ...typography.heading.heading1,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    color: colors.primary.blue600,
+    letterSpacing: -0.4,
+  },
+  baselineChipValueGrowth: {
+    color: colors.orange[500],
+  },
+  baselineChipLabel: {
+    ...typography.caption.caption2,
+    color: colors.text.tertiary,
+    textAlign: 'center',
+    textTransform: 'lowercase',
+  },
+  ladder: {
+    ...card.base,
+    ...card.shadow,
+    backgroundColor: colors.background.elevated,
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.md,
+  },
+  ladderRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  ladderRail: {
+    alignItems: 'center',
+    width: 24,
+  },
+  ladderNode: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    borderWidth: 2,
+    borderColor: colors.primary.blue600,
+    backgroundColor: colors.background.elevated,
+    marginTop: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ladderNodeFinal: {
+    backgroundColor: colors.primary.blue600,
+  },
+  ladderNodeInner: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.background.elevated,
+  },
+  ladderLine: {
+    width: 2,
+    flex: 1,
+    minHeight: 36,
+    backgroundColor: colors.primary.blue100,
+    marginTop: 2,
+  },
+  ladderCopy: {
+    flex: 1,
+    paddingBottom: spacing.md,
+  },
+  ladderDay: {
+    ...typography.caption.caption1,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    color: colors.text.brand,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+  },
+  ladderTitle: {
+    ...typography.body.medium,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    color: colors.text.primary,
+    marginTop: 2,
+  },
+  ladderBody: {
+    ...typography.body.small,
+    color: colors.text.secondary,
+    marginTop: 2,
+  },
+  commitmentTile: {
+    ...card.base,
+    ...card.shadow,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    backgroundColor: colors.background.elevated,
   },
   valueSubtitle: {
     ...typography.body.medium,

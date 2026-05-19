@@ -6,7 +6,9 @@ import type { MindMapScore } from '../../lib/onboardingScores';
 
 interface MindMapRadarProps {
   scores: MindMapScore[];
+  targetScores?: MindMapScore[];
   size?: number;
+  showValueOnLabel?: boolean;
 }
 
 const RINGS = [0.55, 1];
@@ -26,7 +28,12 @@ function pointOnAxis(
   return { x: cx + Math.cos(angle) * radius, y: cy + Math.sin(angle) * radius };
 }
 
-export default function MindMapRadar({ scores, size = 380 }: MindMapRadarProps) {
+export default function MindMapRadar({
+  scores,
+  targetScores,
+  size = 380,
+  showValueOnLabel = true,
+}: MindMapRadarProps) {
   const labelOffset = 20;
   const labelWidth = 72;
   const cx = size / 2;
@@ -49,6 +56,15 @@ export default function MindMapRadar({ scores, size = 380 }: MindMapRadarProps) 
       return `${p.x},${p.y}`;
     })
     .join(' ');
+
+  const targetPoints = targetScores
+    ? targetScores
+        .map((s, i) => {
+          const p = pointOnAxis(cx, cy, radius * (s.value / 100), i, total);
+          return `${p.x},${p.y}`;
+        })
+        .join(' ')
+    : null;
 
   return (
     <View style={{ width: size, height: size - 40, marginTop: -20 }}>
@@ -76,6 +92,16 @@ export default function MindMapRadar({ scores, size = 380 }: MindMapRadarProps) 
             />
           );
         })}
+        {targetPoints ? (
+          <Polygon
+            points={targetPoints}
+            fill={colors.orange[300]}
+            fillOpacity={0.25}
+            stroke={colors.orange[500]}
+            strokeWidth={2}
+            strokeDasharray="4,4"
+          />
+        ) : null}
         <Polygon
           points={dataPoints}
           fill={colors.primary.blue300}
@@ -95,6 +121,20 @@ export default function MindMapRadar({ scores, size = 380 }: MindMapRadarProps) 
             />
           );
         })}
+        {targetScores
+          ? targetScores.map((s, i) => {
+              const p = pointOnAxis(cx, cy, radius * (s.value / 100), i, total);
+              return (
+                <Circle
+                  key={`target-dot-${i}`}
+                  cx={p.x}
+                  cy={p.y}
+                  r={3}
+                  fill={colors.orange[500]}
+                />
+              );
+            })
+          : null}
       </Svg>
       {scores.map((s, i) => {
         const p = pointOnAxis(cx, cy, radius + labelOffset, i, total);
@@ -117,7 +157,16 @@ export default function MindMapRadar({ scores, size = 380 }: MindMapRadarProps) 
             style={[styles.labelWrap, { left, top: p.y - 18, width: labelWidth }]}
           >
             <Text style={[styles.labelTitle, { textAlign }]}>{s.label}</Text>
-            <Text style={[styles.labelValue, { textAlign }]}>{s.value}%</Text>
+            {showValueOnLabel ? (
+              targetScores ? (
+                <Text style={[styles.labelValue, { textAlign }]}>
+                  {s.value}
+                  <Text style={styles.labelValueTarget}> › {targetScores[i]?.value ?? s.value}</Text>
+                </Text>
+              ) : (
+                <Text style={[styles.labelValue, { textAlign }]}>{s.value}%</Text>
+              )
+            ) : null}
           </View>
         );
       })}
@@ -144,5 +193,8 @@ const styles = StyleSheet.create({
     fontSize: 11,
     lineHeight: 14,
     color: colors.text.tertiary,
+  },
+  labelValueTarget: {
+    color: colors.orange[500],
   },
 });

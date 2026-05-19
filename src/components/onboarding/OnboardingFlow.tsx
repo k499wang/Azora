@@ -32,6 +32,7 @@ import type { OnboardingStep } from './types';
 import { usePaywall } from '../../hooks/usePaywall';
 import { PaywallPlacement } from '../../services/paywall';
 import { buildPaywallPersonalization } from '../../lib/paywallPersonalization';
+import { computeMindMap } from '../../lib/onboardingScores';
 import { useAuthStore } from '../../stores/authStore';
 import { requestNotificationPermissions } from '../../services/notifications/notificationClient';
 import { trackNotificationPermissionResult } from '../../services/analytics/tracking';
@@ -75,11 +76,11 @@ const STEP_INDEX: Record<OnboardingStep, number> = {
   age: 12,
   gender: 13,
   dailyTime: 14,
-  baselineIntro: 15,
-  baselineScience: 16,
-  baseline: 17,
-  recommendation: 18,
-  notifications: 19,
+  notifications: 15,
+  baselineIntro: 16,
+  baselineScience: 17,
+  baseline: 18,
+  recommendation: 19,
   pact: 20,
   paywall: 21,
 };
@@ -247,7 +248,7 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         }
       }
 
-      setStep('pact');
+      setStep('baselineIntro');
     } catch (error) {
       setNotificationErrorMessage(getErrorMessage(error));
     } finally {
@@ -410,7 +411,7 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         stepIndex={stepIndex}
         stepCount={STEP_COUNT}
         onChange={setDailyMinutes}
-        onContinue={() => setStep('baselineIntro')}
+        onContinue={() => setStep('notifications')}
         onBack={() => setStep('gender')}
       />
     );
@@ -423,7 +424,7 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         stepCount={STEP_COUNT}
         name={name}
         onContinue={() => setStep('baselineScience')}
-        onBack={() => setStep('dailyTime')}
+        onBack={() => setStep('notifications')}
       />
     );
   }
@@ -474,7 +475,7 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         experienceLevel={experienceLevel}
         stepIndex={stepIndex}
         stepCount={STEP_COUNT}
-        onContinue={() => setStep('notifications')}
+        onContinue={() => setStep('pact')}
         onBack={() => setStep('baseline')}
       />
     );
@@ -492,9 +493,9 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         }}
         onSkip={() => {
           setNotificationErrorMessage(null);
-          setStep('pact');
+          setStep('baselineIntro');
         }}
-        onBack={() => setStep('recommendation')}
+        onBack={() => setStep('dailyTime')}
       />
     );
   }
@@ -534,18 +535,23 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         onConfirm={() => {
           setTimeout(() => setStep('paywall'), 3500);
         }}
-        onBack={() => setStep('notifications')}
+        onBack={() => setStep('recommendation')}
       />
     );
   }
 
   if (step === 'paywall') {
-    const personalization = buildPaywallPersonalization({
-      displayName: name.trim() || null,
-      intentId: primaryIntent,
+    const mindMap = computeMindMap({
       stressLevel,
       sleepQuality,
+      agreementResponses,
+      experienceLevel,
+    });
+    const personalization = buildPaywallPersonalization({
+      displayName: name.trim() || null,
       dailyMinutes,
+      baselineBpm: baseline?.avgBpm ?? null,
+      mindMap,
     });
     return (
       <OnboardingPaywallScreen
