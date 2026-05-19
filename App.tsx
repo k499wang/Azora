@@ -32,6 +32,7 @@ import {
   Sniglet_400Regular,
   Sniglet_800ExtraBold,
 } from '@expo-google-fonts/sniglet';
+import { Asset } from 'expo-asset';
 import {
   NavigationContainer,
   createNavigationContainerRef,
@@ -49,6 +50,8 @@ import { SplashScreen as WelcomeSplash } from './src/components/welcome/SplashSc
 import { WelcomeIntro } from './src/components/welcome/WelcomeIntro';
 import { colors } from './src/theme/colors';
 SplashScreen.preventAutoHideAsync();
+
+Asset.fromModule(require('./assets/backgrounds/sunset.jpg')).downloadAsync();
 
 const navigationRef = createNavigationContainerRef<RootStackParamList>();
 
