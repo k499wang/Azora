@@ -460,3 +460,38 @@ test('HeartRateManager: saturated frames do not feed live beat detection', () =>
   );
   assert.equal(manager.getCurrentBpm(), null, 'sustained clipping should stop live BPM publishing');
 });
+
+function makeBrownSurfaceFrame(timestamp) {
+  return {
+    timestamp,
+    rois: [
+      { id: 'roi-0', r: 95, g: 55, b: 25, saturatedPct: 0, darkPct: 0.05, variance: 5 },
+    ],
+  };
+}
+
+test('HeartRateManager: brown-surface frames are not classified as good', () => {
+  const manager = new HeartRateManager();
+  let t = 0;
+  let goodCount = 0;
+  for (let i = 0; i < 90; i++) {
+    const state = manager.processFrame(makeBrownSurfaceFrame(t));
+    if (state.fingerPlacement === 'good') goodCount += 1;
+    t += FRAME_SPACING_MS;
+  }
+  assert.equal(goodCount, 0, 'a brown table should never register as a finger');
+});
+
+test('HeartRateManager: locked-in finger that goes flat is invalidated', () => {
+  const manager = new HeartRateManager();
+  let t = runBeatTrain(manager, [24, 48, 72, 96, 120, 144]);
+  assert.equal(manager.getCurrentBpm(), 76);
+
+  let sawLost = false;
+  for (let i = 0; i < 240; i++) {
+    const state = manager.processFrame(makeFrame(t, BASELINE_WEIGHTED));
+    if (state.fingerPlacement === 'lost') sawLost = true;
+    t += FRAME_SPACING_MS;
+  }
+  assert.ok(sawLost, 'sustained flat signal after lock-in should force a lost state');
+});

@@ -1,5 +1,8 @@
 import type { FingerPlacementState, PpgFrameSample, PpgRoiSample } from './types';
 
+const MIN_ROI_RED = 80;
+const MIN_AVG_ROI_RED = 70;
+
 interface ClassifyState {
   previousState?: FingerPlacementState;
   goodSinceMs?: number;
@@ -50,10 +53,11 @@ function isCoveredByFinger(roi: PpgRoiSample): boolean {
   return (
     value >= 25 &&
     value <= 245 &&
+    roi.r >= MIN_ROI_RED &&
     roi.darkPct < 0.35 &&
     roi.saturatedPct < 0.45 &&
-    redToSum(roi) >= 0.65 &&
-    redToMaxChannel(roi) >= 1.18
+    redToSum(roi) >= 0.68 &&
+    redToMaxChannel(roi) >= 1.20
   );
 }
 
@@ -67,6 +71,7 @@ function classifyRecent(recent: PpgFrameSample[]): FingerPlacementState {
   const avgValue = mean(values);
   const avgSaturated = mean(rois.map((roi) => roi.saturatedPct));
   const avgDark = mean(rois.map((roi) => roi.darkPct));
+  const avgRed = mean(rois.map((roi) => roi.r));
   const avgRedToSum = mean(rois.map(redToSum));
   const avgRedToMax = mean(rois.map(redToMaxChannel));
   const avgCoverage = mean(
@@ -105,7 +110,12 @@ function classifyRecent(recent: PpgFrameSample[]): FingerPlacementState {
     return 'too_much_pressure';
   }
 
-  if (avgCoverage < 0.35 || avgRedToSum < 0.58 || avgRedToMax < 1.08) {
+  if (
+    avgCoverage < 0.35 ||
+    avgRedToSum < 0.62 ||
+    avgRedToMax < 1.15 ||
+    avgRed < MIN_AVG_ROI_RED
+  ) {
     return 'no_finger';
   }
 
