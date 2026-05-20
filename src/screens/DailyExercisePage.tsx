@@ -784,6 +784,8 @@ export default function DailyExercisePage({
                     outer: activeTheme.circleOuter,
                     outerOpacity: activeTheme.circleOuterOpacity,
                     inner: activeTheme.circleInner,
+                    beatPulse: activeTheme.beatPulse,
+                    beatFlush: activeTheme.beatFlush,
                   }}
                 />
                 <View style={styles.belowSlot}>
