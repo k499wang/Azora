@@ -36,6 +36,9 @@ const FLAT_SIGNAL_GRACE_MS = 2500;
 const FLAT_SIGNAL_AMPLITUDE_FLOOR = MIN_AMPLITUDE * 0.6;
 const MIN_ROI_RED = 120;
 const MIN_AVG_ROI_RED = 100;
+const RED_SATURATION_GREEN_FALLBACK = 0.08;
+const MAX_ROI_RED_SATURATION = 0.35;
+const MAX_AVG_RED_SATURATION = 0.45;
 const IBI_HISTORY_SIZE = 8;
 const MIN_LIVE_BPM_IBIS = 5;
 const MALIK_THRESHOLD = 0.2;
@@ -177,6 +180,16 @@ function weightedChannelValue(roi: PpgRoiSample): number {
   return roi.r * 0.67 + roi.g * 0.33;
 }
 
+function redSaturatedPct(roi: PpgRoiSample): number {
+  return roi.redSaturatedPct ?? 0;
+}
+
+function liveChannelValue(roi: PpgRoiSample): number {
+  return redSaturatedPct(roi) >= RED_SATURATION_GREEN_FALLBACK
+    ? roi.g
+    : weightedChannelValue(roi);
+}
+
 function redToSum(roi: PpgRoiSample): number {
   const total = roi.r + roi.g + roi.b;
   return total > 0 ? roi.r / total : 0;
@@ -187,13 +200,14 @@ function redToMax(roi: PpgRoiSample): number {
 }
 
 function isRoiCovered(roi: PpgRoiSample): boolean {
-  const value = weightedChannelValue(roi);
+  const value = liveChannelValue(roi);
   return (
     value >= 25 &&
     value <= 245 &&
     roi.r >= MIN_ROI_RED &&
     roi.darkPct < 0.35 &&
     roi.saturatedPct < 0.45 &&
+    redSaturatedPct(roi) < MAX_ROI_RED_SATURATION &&
     redToSum(roi) >= 0.66 &&
     redToMax(roi) >= 1.80
   );
@@ -210,13 +224,15 @@ function classifyFrame(sample: PpgFrameSample): {
   let weightedSum = 0;
   let darkSum = 0;
   let saturatedSum = 0;
+  let redSaturatedSum = 0;
   let coveredCount = 0;
   let redSum = 0;
 
   for (const roi of sample.rois) {
-    weightedSum += weightedChannelValue(roi);
+    weightedSum += liveChannelValue(roi);
     darkSum += roi.darkPct;
     saturatedSum += roi.saturatedPct;
+    redSaturatedSum += redSaturatedPct(roi);
     redSum += roi.r;
     if (isRoiCovered(roi)) coveredCount += 1;
   }
@@ -225,6 +241,7 @@ function classifyFrame(sample: PpgFrameSample): {
   const weightedAverage = weightedSum / count;
   const avgDark = darkSum / count;
   const avgSaturated = saturatedSum / count;
+  const avgRedSaturated = redSaturatedSum / count;
   const coverage = coveredCount / count;
   const avgRed = redSum / count;
 
@@ -234,7 +251,7 @@ function classifyFrame(sample: PpgFrameSample): {
   if (coverage < 0.55 || avgRed < MIN_AVG_ROI_RED) {
     return { placement: 'no_finger', weightedAverage };
   }
-  if (avgSaturated > 0.55 || coverage < 0.95) {
+  if (avgSaturated > 0.55 || avgRedSaturated > MAX_AVG_RED_SATURATION || coverage < 0.95) {
     return { placement: 'partial', weightedAverage };
   }
   return { placement: 'good', weightedAverage };

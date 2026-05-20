@@ -38,6 +38,9 @@ export interface PpgRoiSample {
   r: number;
   g: number;
   b: number;
+  redSaturatedPct?: number;
+  greenSaturatedPct?: number;
+  blueSaturatedPct?: number;
   saturatedPct: number;
   darkPct: number;
   variance: number;

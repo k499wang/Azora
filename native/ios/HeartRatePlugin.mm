@@ -50,6 +50,9 @@ static double HeartRateFrameTimestampMs(CMSampleBufferRef sampleBuffer) {
   double blueSum = 0;
   double redSquareSum = 0;
   size_t saturatedCount = 0;
+  size_t redSaturatedCount = 0;
+  size_t greenSaturatedCount = 0;
+  size_t blueSaturatedCount = 0;
   size_t darkCount = 0;
   size_t count = 0;
 
@@ -72,6 +75,15 @@ static double HeartRateFrameTimestampMs(CMSampleBufferRef sampleBuffer) {
       if (red >= 245 || green >= 245 || blue >= 245) {
         saturatedCount += 1;
       }
+      if (red >= 245) {
+        redSaturatedCount += 1;
+      }
+      if (green >= 245) {
+        greenSaturatedCount += 1;
+      }
+      if (blue >= 245) {
+        blueSaturatedCount += 1;
+      }
 
       if (red <= 10 && green <= 10 && blue <= 10) {
         darkCount += 1;
@@ -88,6 +100,9 @@ static double HeartRateFrameTimestampMs(CMSampleBufferRef sampleBuffer) {
       @"g": @0,
       @"b": @0,
       @"saturatedPct": @1,
+      @"redSaturatedPct": @1,
+      @"greenSaturatedPct": @1,
+      @"blueSaturatedPct": @1,
       @"darkPct": @1,
       @"variance": @0,
     };
@@ -102,6 +117,9 @@ static double HeartRateFrameTimestampMs(CMSampleBufferRef sampleBuffer) {
     @"g": @(greenSum / (double)count),
     @"b": @(blueSum / (double)count),
     @"saturatedPct": @((double)saturatedCount / (double)count),
+    @"redSaturatedPct": @((double)redSaturatedCount / (double)count),
+    @"greenSaturatedPct": @((double)greenSaturatedCount / (double)count),
+    @"blueSaturatedPct": @((double)blueSaturatedCount / (double)count),
     @"darkPct": @((double)darkCount / (double)count),
     @"variance": @(variance),
   };
