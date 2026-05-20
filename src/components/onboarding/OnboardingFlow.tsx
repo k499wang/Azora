@@ -230,7 +230,10 @@ export default function OnboardingFlow({
     setErrorMessage(null);
 
     try {
-      await onSaveProfile(result);
+      await Promise.all([
+        onSaveProfile(result),
+        new Promise<void>((resolve) => setTimeout(resolve, 3500)),
+      ]);
       setStep('paywall');
     } catch (error) {
       setErrorMessage(getErrorMessage(error));
@@ -604,9 +607,7 @@ export default function OnboardingFlow({
         isSubmitting={isSubmitting}
         errorMessage={errorMessage}
         onConfirm={() => {
-          setTimeout(() => {
-            void saveProfileAndShowPaywall();
-          }, 3500);
+          void saveProfileAndShowPaywall();
         }}
         onBack={() => setStep('recommendation')}
       />

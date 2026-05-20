@@ -421,14 +421,14 @@ export default function PactScreen({
           >
             {/* Title */}
             <View style={styles.copy}>
-              <Text style={typography.title.title1}>Your daily pact</Text>
+              <Text style={typography.title.title1}>Give it a fair chance: Do {dailyMinutes} of Azora every day</Text>
               <Text
                 style={[
                   typography.body.small,
                   { color: colors.text.secondary },
                 ]}
               >
-                A promise to yourself, sealed with intention.
+                Small steps add up to something real.
               </Text>
             </View>
 
@@ -454,7 +454,7 @@ export default function PactScreen({
 
               <View style={styles.cardHeader}>
                 <View style={styles.headerRule} />
-                <Text style={styles.wordmark}>DAILY PACT</Text>
+                <Text style={styles.wordmark}>MY COMMITMENT</Text>
                 <View style={styles.headerRule} />
               </View>
 
@@ -465,10 +465,9 @@ export default function PactScreen({
                     { color: colors.text.secondary, lineHeight: 28 },
                   ]}
                 >
-                  Every day, I will breathe for{' '}
+                  Just{' '}
                   <Text style={styles.highlight}>{dailyMinutes} minutes</Text>{' '}
-                  to focus on{' '}
-                  <Text style={styles.highlight}>{focusText}</Text>.
+                  a day. That's the whole plan.
                 </Text>
 
                 <Text
@@ -477,7 +476,7 @@ export default function PactScreen({
                     { color: colors.text.secondary, lineHeight: 28 },
                   ]}
                 >
-                  I choose progress over perfection.
+                  Showing up is enough. Small steps add up.
                 </Text>
 
                 <View style={styles.signatureBlock}>
