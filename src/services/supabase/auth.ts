@@ -1,6 +1,7 @@
 import {
   requireSupabaseClient,
   type SupabaseAuthChangeEvent,
+  type SupabaseClientLike,
   type SupabaseSession,
 } from './client';
 import {
@@ -36,6 +37,24 @@ export async function getCurrentUser(): Promise<SignedInUser | null> {
     id: session.user.id,
     email: session.user.email ?? null,
   };
+}
+
+export async function validateCurrentSession(
+  client?: Pick<SupabaseClientLike, 'auth'>,
+): Promise<boolean> {
+  const supabase = client ?? requireSupabaseClient();
+  logIdentitySyncDebug('supabase.validate_session_started');
+  const { error } = await supabase.auth.getUser();
+
+  if (error != null) {
+    logIdentitySyncDebug('supabase.validate_session_failed', {
+      error_message: error instanceof Error ? error.message : String(error),
+    });
+    return false;
+  }
+
+  logIdentitySyncDebug('supabase.validate_session_completed');
+  return true;
 }
 
 export async function signOut(): Promise<void> {

@@ -6,6 +6,7 @@ import {
   signOut as signOutSession,
   signOutGoogle,
   subscribeToAuthChanges,
+  validateCurrentSession,
 } from '../services/supabase';
 import type { SupabaseSession, SupabaseUser } from '../services/supabase';
 import { deleteAccount as deleteAccountService } from '../services/profile/deleteAccountService';
@@ -48,7 +49,28 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({ status: 'booting' });
 
     const session = await loadInitialSession(getCurrentSession);
-    applySession(session);
+
+    if (session != null) {
+      const isValid = await Promise.race([
+        validateCurrentSession(),
+        new Promise<boolean>((resolve) => {
+          setTimeout(() => {
+            console.warn('[auth] Session validation timed out');
+            resolve(false);
+          }, 5000);
+        }),
+      ]);
+
+      if (!isValid) {
+        console.warn('[auth] Session validation failed, signing out');
+        await signOutSession();
+        applySession(null);
+      } else {
+        applySession(session);
+      }
+    } else {
+      applySession(session);
+    }
 
     authSubscriptionUnsubscribe?.();
     try {
