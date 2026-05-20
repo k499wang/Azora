@@ -152,8 +152,8 @@ export default function BreathingLibrary() {
   );
 }
 
-const CARD_WIDTH = 210;
-const CARD_HEIGHT = 252;
+const CARD_WIDTH = 240;
+const CARD_HEIGHT = 288;
 
 const styles = StyleSheet.create({
   section: {

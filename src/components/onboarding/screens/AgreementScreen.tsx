@@ -185,16 +185,23 @@ export default function AgreementScreen({
             pointerEvents="none"
           />
           <Text style={styles.statement}>“{statement.text}”</Text>
-          {statement.image ? (
-            <View style={styles.arch}>
-              <Image
-                source={statement.image}
-                style={styles.illustration}
-                resizeMode="cover"
-                accessible={false}
-              />
-            </View>
-          ) : null}
+          <View style={styles.arch}>
+            {AGREEMENT_STATEMENTS.map((s, idx) =>
+              s.image ? (
+                <Image
+                  key={s.id}
+                  source={s.image}
+                  style={[
+                    styles.illustration,
+                    idx !== currentIdx && styles.illustrationHidden,
+                  ]}
+                  resizeMode="cover"
+                  accessible={false}
+                  fadeDuration={0}
+                />
+              ) : null,
+            )}
+          </View>
         </View>
       </Animated.View>
     </OnboardingScreenLayout>
@@ -240,8 +247,12 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.accentSoft,
   },
   illustration: {
+    ...StyleSheet.absoluteFillObject,
     width: '100%',
     height: '100%',
+  },
+  illustrationHidden: {
+    opacity: 0,
   },
   choices: {
     flexDirection: 'row',

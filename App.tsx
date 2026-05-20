@@ -50,11 +50,17 @@ import { SplashScreen as WelcomeSplash } from './src/components/welcome/SplashSc
 import { WelcomeIntro } from './src/components/welcome/WelcomeIntro';
 import { colors } from './src/theme/colors';
 import TECHNIQUES from './src/data/techniques';
+import { AGREEMENT_STATEMENTS } from './src/components/onboarding/screens/AgreementScreen';
 SplashScreen.preventAutoHideAsync();
 
 Asset.fromModule(require('./assets/backgrounds/sunset.jpg')).downloadAsync();
 TECHNIQUES.forEach((technique) => {
   Asset.fromModule(technique.backgroundImage as number).downloadAsync();
+});
+AGREEMENT_STATEMENTS.forEach((statement) => {
+  if (statement.image) {
+    Asset.fromModule(statement.image as number).downloadAsync();
+  }
 });
 
 const navigationRef = createNavigationContainerRef<RootStackParamList>();

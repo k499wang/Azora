@@ -17,6 +17,8 @@ import { getRevenueCatCustomerInfo } from '../services/subscriptions/revenueCatC
 import type { SettingsScreenProps } from '../app/navigation';
 
 const APP_STORE_SUBSCRIPTIONS_URL = 'https://apps.apple.com/account/subscriptions';
+const FEEDBACK_EMAIL = 'feedback@tryazora.app';
+const FEEDBACK_CC_EMAIL = 'kevin@tryazora.app';
 
 export default function SettingsScreen({ navigation }: SettingsScreenProps) {
   const insets = useSafeAreaInsets();
@@ -119,6 +121,32 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
     );
   };
 
+  const handleSendFeedback = async () => {
+    trackProfileAction('send_feedback_opened');
+    const subject = encodeURIComponent('Azora feedback');
+    const body = encodeURIComponent(
+      'Hi Azora team,\n\nI wanted to share some feedback:\n\n',
+    );
+    const cc = encodeURIComponent(FEEDBACK_CC_EMAIL);
+    const mailto = `mailto:${FEEDBACK_EMAIL}?cc=${cc}&subject=${subject}&body=${body}`;
+    try {
+      const supported = await Linking.canOpenURL(mailto);
+      if (!supported) {
+        Alert.alert(
+          'No mail app found',
+          `Please send feedback to ${FEEDBACK_EMAIL}.`,
+        );
+        return;
+      }
+      await Linking.openURL(mailto);
+    } catch {
+      Alert.alert(
+        'Could not open mail',
+        `Please send feedback to ${FEEDBACK_EMAIL}.`,
+      );
+    }
+  };
+
   const handleManageSubscription = async () => {
     trackProfileAction('manage_subscription_opened');
 
@@ -216,6 +244,22 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
                 label="Manage subscription"
                 onPress={() => {
                   void handleManageSubscription();
+                }}
+                isLast
+              />
+            </SettingsGroup>
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <SectionHeader title="Support" />
+          <View style={styles.sectionBody}>
+            <SettingsGroup>
+              <SettingsRow
+                icon="email-outline"
+                label="Send feedback"
+                onPress={() => {
+                  void handleSendFeedback();
                 }}
                 isLast
               />
