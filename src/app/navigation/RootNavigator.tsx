@@ -1,5 +1,6 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { StyleSheet, View, ActivityIndicator } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { DotsLoader } from '../../components/common/DotsLoader';
 import AuthLandingScreen from '../../screens/AuthLandingScreen';
 import DailyExercisePage from '../../screens/DailyExercisePage';
 import ExerciseSessionPage from '../../screens/ExerciseSessionPage';
@@ -96,7 +97,7 @@ export function RootNavigator() {
   if (gate.status === 'booting') {
     return (
       <View style={{ flex: 1, backgroundColor: colors.background.primary, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator color={colors.primary.blue600} />
+        <DotsLoader />
       </View>
     );
   }

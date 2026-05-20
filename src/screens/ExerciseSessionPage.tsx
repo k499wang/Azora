@@ -899,7 +899,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   belowSlot: {
-    height: 44,
+    minHeight: 52,
     marginTop: spacing.xs,
     alignItems: 'center',
     justifyContent: 'center',
@@ -915,7 +915,7 @@ const styles = StyleSheet.create({
   },
   metricStack: {
     alignItems: 'center',
-    gap: 4,
+    gap: spacing.sm,
   },
   bpmRow: {
     flexDirection: 'row',
