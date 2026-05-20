@@ -589,8 +589,13 @@ function StepChoose({
 }: StepChooseProps) {
   return (
     <View style={styles.stepContainer}>
-      <View style={styles.stepHeader}>
-        <Text style={[styles.stepTitle, styles.stepTitleDark]}>Start Breathing Better</Text>
+      <View style={styles.headerCopy}>
+        <Text style={styles.eyebrow}>Your plan is ready.</Text>
+        <Text style={styles.title}>Unlock Azora for free</Text>
+        <View style={styles.titleDivider} />
+        {selectedPackageHasTrial ? null : (
+          <Text style={[styles.trialNote, styles.trialNoteDark]}>Cancel anytime</Text>
+        )}
       </View>
 
       <PaywallFeatureList />
@@ -760,6 +765,32 @@ const styles = StyleSheet.create({
   },
   stepContainer: {
     gap: spacing.xl,
+  },
+  headerCopy: {
+    alignItems: 'flex-start',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.sm,
+  },
+  eyebrow: {
+    ...typography.body.medium,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.75)',
+    textAlign: 'left',
+  },
+  title: {
+    ...typography.display.display3,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    color: colors.neutral[0],
+    textAlign: 'left',
+  },
+  titleDivider: {
+    alignSelf: 'stretch',
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: 'rgba(255,255,255,0.35)',
+    marginTop: spacing.xs,
+    marginBottom: spacing.xs,
   },
   stepHeader: {
     alignItems: 'center',
@@ -1003,6 +1034,7 @@ const styles = StyleSheet.create({
   },
   trialNoteDark: {
     color: colors.primary.blue200,
+    textAlign: 'left',
   },
   valueGrid: {
     gap: spacing.sm,

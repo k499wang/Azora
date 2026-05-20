@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { CaptureResult, PpgFrameSample } from '../../lib/heartRate/types';
+import { buildNetworkFailureDiagnostics } from '../../services/debug/networkFailureDiagnostics';
 import {
   completeHeartRateSession,
 } from '../../services/tracking/heartRateService';
@@ -70,6 +71,15 @@ export function useCompleteHeartRateSessionMutation(userId: string | null) {
           elapsedMs: Date.now() - startedAt,
           errorMessage: getErrorMessage(error),
         });
+        console.warn(
+          '[heart-rate-save] mutation diagnostics',
+          await buildNetworkFailureDiagnostics({
+            userId,
+            elapsedMs: Date.now() - startedAt,
+            requestType: 'complete-heart-rate-session-mutation',
+            error,
+          }),
+        );
         throw error;
       }
     },

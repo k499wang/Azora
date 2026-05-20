@@ -1,3 +1,4 @@
+import { buildNetworkFailureDiagnostics } from '../debug/networkFailureDiagnostics';
 import { requireSupabaseClient } from '../supabase';
 import type { Database, Json } from '../supabase/database.types';
 import type {
@@ -125,6 +126,7 @@ function mapIbiSamples(
 export async function completeBreathHold(
   input: CompleteBreathHoldInput,
 ): Promise<string> {
+  const startedAt = Date.now();
   const supabase = requireSupabaseClient();
 
   const { data, error } = await supabase.rpc('complete_breath_hold', {
@@ -179,8 +181,24 @@ export async function completeBreathHold(
         }${underlying?.status != null ? ` (status=${underlying.status})` : ''}`,
       );
       (wrapped as Error & { cause?: unknown }).cause = error;
+      console.warn(
+        '[breath-hold-save] rpc request diagnostics',
+        await buildNetworkFailureDiagnostics({
+          elapsedMs: Date.now() - startedAt,
+          requestType: 'rpc.complete_breath_hold',
+          error: wrapped,
+        }),
+      );
       throw wrapped;
     }
+    console.warn(
+      '[breath-hold-save] rpc request diagnostics',
+      await buildNetworkFailureDiagnostics({
+        elapsedMs: Date.now() - startedAt,
+        requestType: 'rpc.complete_breath_hold',
+        error,
+      }),
+    );
     throw error;
   }
 
