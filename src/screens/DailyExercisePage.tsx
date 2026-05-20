@@ -84,9 +84,9 @@ type HoldPhase =
 const PHASE_LABELS: Record<HoldPhase, string> = {
   idle: '',
   placement: '',
-  preInhale: 'Slow inhale',
-  preExhale: 'Long exhale',
-  inhale: 'Final inhale',
+  preInhale: 'Inhale',
+  preExhale: 'Exhale',
+  inhale: 'Inhale',
   hold: 'Hold',
   processingResults: '',
   done: 'Done',
@@ -103,18 +103,43 @@ function getBreathingPhaseDuration(phase: HoldPhase): number {
   return 0;
 }
 
-function breathCue(phase: HoldPhase, prepCycle: number): string | null {
+interface BreathCuePart {
+  text: string;
+  emphasis?: boolean;
+}
+
+function buildBreathCueParts(phase: HoldPhase, prepCycle: number): BreathCuePart[] | null {
   if (phase === 'preInhale') {
-    return `Easy inhale through your nose - cycle ${prepCycle} of ${PRE_BREATH_CYCLES}`;
+    return [
+      { text: 'Easy ' },
+      { text: 'inhale', emphasis: true },
+      { text: ' through your nose — cycle ' },
+      { text: String(prepCycle) },
+      { text: ` of ${PRE_BREATH_CYCLES}` },
+    ];
   }
   if (phase === 'preExhale') {
-    return `Slow exhale. Relax your shoulders - cycle ${prepCycle} of ${PRE_BREATH_CYCLES}`;
+    return [
+      { text: 'Slow exhale. ' },
+      { text: 'Relax your shoulders', emphasis: true },
+      { text: ` — cycle ${prepCycle} of ${PRE_BREATH_CYCLES}` },
+    ];
   }
   if (phase === 'inhale') {
-    return 'Fill up gently, then stay relaxed';
+    return [
+      { text: 'Fill up gently, then ' },
+      { text: 'stay relaxed', emphasis: true },
+    ];
   }
   if (phase === 'hold') {
-    return 'Hold your breath for as long as you can. Relax your jaw and shoulders, then tap the screen when you need to breathe.';
+    return [
+      { text: 'Hold', emphasis: true },
+      { text: ' your breath for ' },
+      { text: 'as long as you can', emphasis: true },
+      { text: '. ' },
+      { text: 'Tap the screen', emphasis: true },
+      { text: ' when you need to breathe.' },
+    ];
   }
   return null;
 }
@@ -202,6 +227,10 @@ export default function DailyExercisePage({
 
   const bpmOpacity = useRef(new Animated.Value(0.6)).current;
   const heartScale = useRef(new Animated.Value(1)).current;
+
+  const cueOpacity = useRef(new Animated.Value(0)).current;
+  const cueTranslateY = useRef(new Animated.Value(10)).current;
+  const prevPhaseRef = useRef<HoldPhase>(phase);
 
   const transition = useRef(new Animated.Value(phase === 'idle' ? 0 : 1)).current;
 
@@ -692,7 +721,31 @@ export default function DailyExercisePage({
 
   const isPlacement = phase === 'placement';
   const isLive = isBreathingPhase(phase) || phase === 'hold';
-  const activeBreathCue = breathCue(phase, prepCycle);
+  const activeBreathCueParts = useMemo(() => buildBreathCueParts(phase, prepCycle), [phase, prepCycle]);
+
+  if (prevPhaseRef.current !== phase) {
+    prevPhaseRef.current = phase;
+    cueOpacity.setValue(0);
+    cueTranslateY.setValue(10);
+  }
+
+  useEffect(() => {
+    if (!isBreathingPhase(phase) && phase !== 'hold') return;
+    Animated.parallel([
+      Animated.timing(cueOpacity, {
+        toValue: 1,
+        duration: 450,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.timing(cueTranslateY, {
+        toValue: 0,
+        duration: 450,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [phase]);
 
   const primaryLabel = phase === 'idle' ? 'Start' : 'Try Again';
 
@@ -763,15 +816,27 @@ export default function DailyExercisePage({
                 ]}
               >
                 <View style={styles.phaseSlot}>
-                  {PHASE_LABELS[phase] ? (
-                    <View style={styles.phaseRow}>
-                      <Text style={[styles.phaseLabel, { color: activeTheme.textPrimary }]}>{PHASE_LABELS[phase]}</Text>
-                      {phase === 'hold' ? (
-                        <Text style={[styles.phaseTimer, { color: activeTheme.textPrimary }]}>
-                          {formatHoldTime(holdSeconds)}
-                        </Text>
-                      ) : null}
-                    </View>
+                  {activeBreathCueParts != null ? (
+                    <Animated.View
+                      style={[
+                        { opacity: cueOpacity, transform: [{ translateY: cueTranslateY }] },
+                      ]}
+                    >
+                      <Text style={[styles.holdMicroCopy, { color: activeTheme.textSecondary }]}>
+                        {activeBreathCueParts.map((part, i) => (
+                          <Text
+                            key={i}
+                            style={
+                              part.emphasis
+                                ? [styles.holdMicroCopyEmphasis, { color: activeTheme.textPrimary }]
+                                : undefined
+                            }
+                          >
+                            {part.text}
+                          </Text>
+                        ))}
+                      </Text>
+                    </Animated.View>
                   ) : null}
                 </View>
                 <BreathingCircle
@@ -787,7 +852,13 @@ export default function DailyExercisePage({
                     beatPulse: activeTheme.beatPulse,
                     beatFlush: activeTheme.beatFlush,
                   }}
-                />
+                >
+                  {PHASE_LABELS[phase] ? (
+                    <Text style={[styles.phaseLabelInside, { color: colors.neutral[50] }]}>
+                      {PHASE_LABELS[phase]}
+                    </Text>
+                  ) : null}
+                </BreathingCircle>
                 <View style={styles.belowSlot}>
                   {isPlacement ? (
                     <Text style={[styles.hintText, { color: activeTheme.textSecondary }]}>
@@ -795,8 +866,10 @@ export default function DailyExercisePage({
                     </Text>
                   ) : phase === 'hold' || isBreathingPhase(phase) ? (
                     <View style={styles.metricStack}>
-                      {activeBreathCue != null ? (
-                        <Text style={[styles.holdMicroCopy, { color: activeTheme.textSecondary }]}>{activeBreathCue}</Text>
+                      {phase === 'hold' ? (
+                        <Text style={[styles.phaseTimer, { color: activeTheme.textPrimary }]}>
+                          {formatHoldTime(holdSeconds)}
+                        </Text>
                       ) : null}
                       {bpmDisplay != null ? (
                         <View style={[styles.bpmRow, showSignalWarning && styles.bpmRowDim]}>
@@ -958,10 +1031,10 @@ const styles = StyleSheet.create({
     opacity: 0.85,
   },
   phaseSlot: {
-    height: 40,
+    minHeight: 48,
     alignItems: 'center',
     justifyContent: 'flex-end',
-    marginBottom: spacing.lg,
+    marginBottom: spacing.md,
   },
   phaseRow: {
     flexDirection: 'row',
@@ -989,6 +1062,15 @@ const styles = StyleSheet.create({
     opacity: 0.7,
     textAlign: 'center',
   },
+  phaseLabelInside: {
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    fontSize: 22,
+    lineHeight: 26,
+    letterSpacing: 1.2,
+    color: colors.neutral[50],
+    textAlign: 'center',
+  },
   belowSlot: {
     minHeight: 64,
     marginTop: spacing.xs,
@@ -1006,7 +1088,7 @@ const styles = StyleSheet.create({
   },
   metricStack: {
     alignItems: 'center',
-    gap: spacing.xs,
+    gap: spacing.sm,
   },
   bpmRow: {
     flexDirection: 'row',
@@ -1123,9 +1205,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   holdMicroCopy: {
-    ...typography.label.small,
+    ...typography.body.medium,
+    fontFamily: fonts.semibold,
     color: colors.text.secondary,
     textAlign: 'center',
-    marginBottom: spacing.xs,
+    paddingHorizontal: spacing.lg,
+    maxWidth: 320,
+  },
+  holdMicroCopyEmphasis: {
+    fontFamily: fonts.bold,
   },
 });
