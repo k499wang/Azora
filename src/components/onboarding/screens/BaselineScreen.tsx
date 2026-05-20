@@ -53,7 +53,7 @@ const READING_TIPS = [
 function placementConfig(p: FingerPlacementState): { ringColor: string; status: string } {
   switch (p) {
     case 'good':
-      return { ringColor: colors.success[500], status: 'Hold still…' };
+      return { ringColor: colors.primary.blue500, status: 'Hold still…' };
     case 'partial':
       return { ringColor: colors.warning[500], status: 'Cover the lens fully' };
     case 'too_much_pressure':
@@ -112,6 +112,9 @@ export default function BaselineScreen({
 
   useEffect(() => {
     if (visibleBeatTick <= 0) return;
+    if (phase === 'running' && isHapticsEnabled()) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    }
     bpmOpacity.setValue(0.95);
     Animated.timing(bpmOpacity, {
       toValue: 0.6,
@@ -130,7 +133,7 @@ export default function BaselineScreen({
         useNativeDriver: true,
       }),
     ]).start();
-  }, [visibleBeatTick, bpmOpacity, heartScale]);
+  }, [visibleBeatTick, phase, bpmOpacity, heartScale]);
 
   const showHud = useCallback(() => {
     if (hideTimerRef.current) {
@@ -161,7 +164,6 @@ export default function BaselineScreen({
       format: stream.format,
       frameProcessor: stream.frameProcessor,
       torchMode: stream.torchMode,
-      fingerPlacement: stream.fingerPlacement,
       isActive: phase === 'placement' || phase === 'running',
     };
   }, [
@@ -169,7 +171,6 @@ export default function BaselineScreen({
     stream.format,
     stream.frameProcessor,
     stream.torchMode,
-    stream.fingerPlacement,
     phase,
   ]);
 
@@ -304,6 +305,7 @@ export default function BaselineScreen({
                 ringColor={placementCfg.ringColor}
                 progress={isRunning ? progress : 0}
                 cameraProps={cameraProps ?? undefined}
+                fingerPlacement={stream.fingerPlacement}
                 beatTick={visibleBeatTick}
                 showHeartIcon={isRunning}
                 smoothProgress

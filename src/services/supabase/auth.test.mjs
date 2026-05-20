@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { validateCurrentSession } from './auth.ts';
+import { validateCurrentSession } from './sessionValidatorCore.ts';
 
 function createMockClient({ getUserResult }) {
   return {
