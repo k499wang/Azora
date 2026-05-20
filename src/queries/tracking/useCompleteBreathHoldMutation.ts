@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { buildNetworkFailureDiagnostics } from '../../services/debug/networkFailureDiagnostics';
 import {
   completeBreathHold,
   type CompleteBreathHoldInput,
@@ -37,17 +38,31 @@ export function useCompleteBreathHoldMutation(userId: string | null) {
 
   return useMutation({
     mutationFn: async (input: CompleteBreathHoldMutationInput) => {
+      const startedAt = Date.now();
       if (userId == null) {
         throw new Error('Cannot save a breath hold without a signed-in user.');
       }
 
       const timezone = getDeviceTimezone();
 
-      return completeBreathHold({
-        ...input,
-        timezone,
-        localDate: formatLocalDate(input.endedAt, timezone),
-      });
+      try {
+        return await completeBreathHold({
+          ...input,
+          timezone,
+          localDate: formatLocalDate(input.endedAt, timezone),
+        });
+      } catch (error) {
+        console.warn(
+          '[breath-hold-save] mutation diagnostics',
+          await buildNetworkFailureDiagnostics({
+            userId,
+            elapsedMs: Date.now() - startedAt,
+            requestType: 'complete-breath-hold-mutation',
+            error,
+          }),
+        );
+        throw error;
+      }
     },
     retry: (failureCount, error) => {
       if (failureCount >= 2) return false;

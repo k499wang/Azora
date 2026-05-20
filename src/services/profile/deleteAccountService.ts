@@ -1,3 +1,4 @@
+import { buildNetworkFailureDiagnostics } from '../debug/networkFailureDiagnostics';
 import { requireSupabaseClient } from '../supabase';
 import { supabaseConfig } from '../supabase/config';
 
@@ -10,7 +11,17 @@ export async function deleteAccount(): Promise<void> {
   try {
     console.log('[account-delete] reading current session');
     const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-    if (sessionError != null) throw sessionError;
+    if (sessionError != null) {
+      console.warn(
+        '[account-delete] session diagnostics',
+        await buildNetworkFailureDiagnostics({
+          elapsedMs: Date.now() - startedAt,
+          requestType: 'auth.getSession',
+          error: sessionError,
+        }),
+      );
+      throw sessionError;
+    }
 
     const jwt = sessionData.session?.access_token;
     console.log('[account-delete] current session read', {
@@ -52,6 +63,14 @@ export async function deleteAccount(): Promise<void> {
       elapsedMs: Date.now() - startedAt,
       errorMessage: getErrorMessage(error),
     });
+    console.warn(
+      '[account-delete] diagnostics',
+      await buildNetworkFailureDiagnostics({
+        elapsedMs: Date.now() - startedAt,
+        requestType: 'edge-function.delete-account',
+        error,
+      }),
+    );
     throw error;
   }
 }
