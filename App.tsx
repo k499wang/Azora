@@ -49,9 +49,13 @@ import { registerAuthIdentitySync } from './src/services/supabase';
 import { SplashScreen as WelcomeSplash } from './src/components/welcome/SplashScreen';
 import { WelcomeIntro } from './src/components/welcome/WelcomeIntro';
 import { colors } from './src/theme/colors';
+import TECHNIQUES from './src/data/techniques';
 SplashScreen.preventAutoHideAsync();
 
 Asset.fromModule(require('./assets/backgrounds/sunset.jpg')).downloadAsync();
+TECHNIQUES.forEach((technique) => {
+  Asset.fromModule(technique.backgroundImage as number).downloadAsync();
+});
 
 const navigationRef = createNavigationContainerRef<RootStackParamList>();
 
