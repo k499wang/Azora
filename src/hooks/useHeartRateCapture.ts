@@ -1,8 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
-import {
-  useFrameProcessor,
-  runAtTargetFps,
-} from 'react-native-vision-camera';
+import { useFrameProcessor } from 'react-native-vision-camera';
 import { useRunOnJS } from 'react-native-worklets-core';
 import type {
   CaptureState,
@@ -23,7 +20,6 @@ const CAPTURE_DURATION_SEC = CAPTURE_DURATION_MS / 1000;
 const MIN_GOOD_DURATION_MS = 2500;
 const PROGRESS_UPDATE_INTERVAL_MS = 200;
 const BPM_UPDATE_INTERVAL_MS = 1000;
-const FRAME_PROCESSING_FPS = 45;
 
 function isValidFrameSample(value: unknown): value is PpgFrameSample {
   if (value == null || typeof value !== 'object') return false;
@@ -217,13 +213,10 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
   const frameProcessor = useFrameProcessor(
     (frame) => {
       'worklet';
-      runAtTargetFps(FRAME_PROCESSING_FPS, () => {
-        'worklet';
-        const frameSample = heartRatePlugin(frame);
-        if (frameSample != null) {
-          addSample(frameSample);
-        }
-      });
+      const frameSample = heartRatePlugin(frame);
+      if (frameSample != null) {
+        addSample(frameSample);
+      }
     },
     [addSample],
   );
