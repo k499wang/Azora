@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { createNativeBottomTabNavigator } from '@react-navigation/bottom-tabs/unstable';
 import {
   Animated,
@@ -23,9 +23,9 @@ const canUseLiquidGlass = isLiquidGlassAvailable() && isGlassEffectAPIAvailable(
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import HomeScreen from '../../screens/HomeScreen';
 import ProfileScreen from '../../screens/ProfileScreen';
-import BreatheArcMenu, {
+import BreatheActionSheet, {
   type BreatheActionId,
-} from '../../components/common/BreatheArcMenu';
+} from '../../components/common/BreatheActionSheet';
 import Icon, { type IconName } from '../../components/common/icons/Icon';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
@@ -54,8 +54,6 @@ const DOCK_HEIGHT = 60;
 const NOTCH_RADIUS = FAB_RADIUS + 4; // 4px clearance so FAB doesn't kiss the notch edge
 const DOCK_HORIZONTAL_MARGIN = spacing.lg;
 
-const SLIDER_WIDTH = 96;
-const SLIDER_HEIGHT = 42;
 
 // ---------------------------------------------------------------------------
 // Tabs
@@ -86,13 +84,6 @@ export function MainTabs() {
 
   const dockWidth = screenWidth - DOCK_HORIZONTAL_MARGIN * 2;
   const tabAreaWidth = (dockWidth - NOTCH_RADIUS * 2) / 2;
-  const sliderPositions = useMemo<Record<number, number>>(
-    () => ({
-      0: (tabAreaWidth - SLIDER_WIDTH) / 2,
-      1: tabAreaWidth + NOTCH_RADIUS * 2 + (tabAreaWidth - SLIDER_WIDTH) / 2,
-    }),
-    [tabAreaWidth],
-  );
 
   const handleSheetClose = () => setSheetVisible(false);
 
@@ -216,7 +207,6 @@ export function MainTabs() {
             activeTab={activeTab}
             onPress={handleDockTabPress}
             tabAreaWidth={tabAreaWidth}
-            sliderPositions={sliderPositions}
           />
         </View>
 
@@ -231,16 +221,16 @@ export function MainTabs() {
               pressed && styles.fabPressed,
             ]}
           >
-            <View style={styles.fab}>
+            <GlassFab>
               <FloatingActionContent progress={fabProgress} />
-            </View>
+            </GlassFab>
           </Pressable>
         </View>
       </View>
 
-      <BreatheArcMenu
-        anchorBottomOffset={fabCenterBottom}
-        anchorHorizontalAlign="center"
+      <BreatheActionSheet
+        bottomOffset={fabCenterBottom + FAB_RADIUS + 8}
+        horizontalAnchor="center"
         visible={sheetVisible}
         onClose={handleSheetClose}
         onSelect={handleSelect}
@@ -338,37 +328,16 @@ function DockTabs({
   activeTab,
   onPress,
   tabAreaWidth,
-  sliderPositions,
 }: {
   activeTab: MainDockTabName;
   onPress: (tabName: MainDockTabName) => void;
   tabAreaWidth: number;
-  sliderPositions: Record<number, number>;
 }) {
-  const sliderX = useRef(new Animated.Value(sliderPositions[0])).current;
-
-  useEffect(() => {
-    const index = MAIN_DOCK_TABS.findIndex((t) => t.name === activeTab);
-    Animated.spring(sliderX, {
-      toValue: sliderPositions[index] ?? 0,
-      friction: 9,
-      tension: 120,
-      useNativeDriver: true,
-    }).start();
-  }, [activeTab, sliderPositions, sliderX]);
-
   const homeTab = MAIN_DOCK_TABS[0];
   const profileTab = MAIN_DOCK_TABS[1];
 
   return (
     <View style={styles.dockContent}>
-      <Animated.View
-        style={[
-          styles.slider,
-          { transform: [{ translateX: sliderX }] },
-        ]}
-      />
-
       <View style={{ width: tabAreaWidth }}>
         <DockTab tab={homeTab} activeTab={activeTab} onPress={onPress} />
       </View>
@@ -419,6 +388,30 @@ function DockTab({
 // ---------------------------------------------------------------------------
 // FAB content
 // ---------------------------------------------------------------------------
+
+function GlassFab({ children }: { children: ReactNode }) {
+  if (canUseLiquidGlass) {
+    return (
+      <GlassView
+        colorScheme="light"
+        glassEffectStyle="clear"
+        style={styles.fab}
+        tintColor={`${colors.primary.blue800}80`}
+      >
+        {children}
+      </GlassView>
+    );
+  }
+  return (
+    <BlurView
+      intensity={60}
+      tint="systemUltraThinMaterialLight"
+      style={[styles.fab, styles.fabFallback]}
+    >
+      {children}
+    </BlurView>
+  );
+}
 
 function FloatingActionContent({ progress }: { progress: Animated.Value }) {
   const meditationOpacity = progress.interpolate({
@@ -494,16 +487,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     position: 'relative',
   },
-  slider: {
-    position: 'absolute',
-    left: 0,
-    top: (DOCK_HEIGHT - SLIDER_HEIGHT) / 2,
-    width: SLIDER_WIDTH,
-    height: SLIDER_HEIGHT,
-    borderRadius: SLIDER_HEIGHT / 2,
-    backgroundColor: colors.text.inverse,
-    opacity: 0.5,
-  },
   dockTab: {
     height: DOCK_HEIGHT,
     alignItems: 'center',
@@ -547,7 +530,10 @@ const styles = StyleSheet.create({
     borderRadius: FLOATING_ACTION_SIZE / 2,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.primary.blue600,
+    overflow: 'hidden',
+  },
+  fabFallback: {
+    backgroundColor: `${colors.primary.blue800}80`,
   },
   fabIconWrap: {
     width: FLOATING_ACTION_SIZE,

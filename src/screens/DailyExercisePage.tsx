@@ -114,7 +114,7 @@ function breathCue(phase: HoldPhase, prepCycle: number): string | null {
     return 'Fill up gently, then stay relaxed';
   }
   if (phase === 'hold') {
-    return 'Relax your jaw and shoulders. Tap the screen when you need to breathe.';
+    return 'Hold your breath for as long as you can. Relax your jaw and shoulders, then tap the screen when you need to breathe.';
   }
   return null;
 }

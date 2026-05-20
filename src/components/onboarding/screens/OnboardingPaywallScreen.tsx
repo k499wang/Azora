@@ -187,7 +187,7 @@ export default function OnboardingPaywallScreen({
         )}
       </ImageBackground>
       <SafeAreaView
-        style={[styles.screenBody, { paddingTop: insets.top + spacing.sm }]}
+        style={[styles.screenBody, { paddingTop: insets.top }]}
         edges={['left', 'right']}
       >
         <View style={styles.header}>
@@ -252,12 +252,9 @@ export default function OnboardingPaywallScreen({
             >
               {step === 0 ? (
                 personalization ? (
-                  <StepPersonalizedPlan
-                    personalization={personalization}
-                    hasAnnualTrial={hasAnnualTrial}
-                  />
+                  <StepPersonalizedPlan personalization={personalization} />
                 ) : (
-                  <StepValue hasAnnualTrial={hasAnnualTrial} />
+                  <StepValue />
                 )
               ) : null}
               {step === 1 ? <StepTrial hasAnnualTrial={hasAnnualTrial} /> : null}
@@ -270,6 +267,7 @@ export default function OnboardingPaywallScreen({
                   onSelectPackage={onSelectPackage}
                   savingsPercent={savingsPercent}
                   selectedPackageHasTrial={selectedPackageHasTrial}
+                  hasAnnualTrial={hasAnnualTrial}
                 />
               ) : null}
             </Animated.View>
@@ -357,7 +355,7 @@ export default function OnboardingPaywallScreen({
   );
 }
 
-function StepValue({ hasAnnualTrial }: { hasAnnualTrial: boolean }) {
+function StepValue() {
   const benefits: Array<{
     icon: IconName;
     title: string;
@@ -396,9 +394,6 @@ function StepValue({ hasAnnualTrial }: { hasAnnualTrial: boolean }) {
         <Text style={styles.valueSubtitle}>
           Heart data, unlimited sessions, and a plan built around you.
         </Text>
-        {hasAnnualTrial ? (
-          <Text style={styles.trialNote}>Try free for 3 days — no charge until day 3</Text>
-        ) : null}
       </View>
 
       <View style={styles.valueGrid}>
@@ -420,10 +415,8 @@ function StepValue({ hasAnnualTrial }: { hasAnnualTrial: boolean }) {
 
 function StepPersonalizedPlan({
   personalization,
-  hasAnnualTrial,
 }: {
   personalization: PaywallPersonalization;
-  hasAnnualTrial: boolean;
 }) {
   const { displayName, baselineBpm, currentScores, targetScores } = personalization;
   const greeting = displayName ? `${displayName}, your plan is ready!` : 'Your plan is ready!';
@@ -441,9 +434,6 @@ function StepPersonalizedPlan({
         <Text style={styles.planHeadline}>{greeting}</Text>
         <View style={styles.valueTitleUnderline} />
         <Text style={styles.valueSubtitle}>Built around your baseline — 30 days to a steadier you.</Text>
-        {hasAnnualTrial ? (
-          <Text style={styles.trialNote}>Try free for 3 days — no charge until day 3</Text>
-        ) : null}
       </View>
 
       {currentScores ? (
@@ -584,6 +574,7 @@ interface StepChooseProps {
   onSelectPackage: (packageId: PaywallPackageId) => void;
   savingsPercent: number | null;
   selectedPackageHasTrial: boolean;
+  hasAnnualTrial: boolean;
 }
 
 function StepChoose({
@@ -594,21 +585,19 @@ function StepChoose({
   onSelectPackage,
   savingsPercent,
   selectedPackageHasTrial,
+  hasAnnualTrial,
 }: StepChooseProps) {
   return (
     <View style={styles.stepContainer}>
       <View style={styles.stepHeader}>
         <Text style={[styles.stepTitle, styles.stepTitleDark]}>Start Breathing Better</Text>
-        <Text style={[styles.stepSubtitle, styles.stepSubtitleDark]}>
-          {selectedPackageHasTrial
-            ? 'Get a 3 day free trial, on us.'
-            : 'Pick a plan to unlock everything.'}
-        </Text>
       </View>
 
       <PaywallFeatureList />
 
-      {selectedPackageHasTrial ? <PaywallTrialReminderToggle dark /> : null}
+      {hasAnnualTrial ? (
+        <PaywallTrialReminderToggle dark disabled={!selectedPackageHasTrial} />
+      ) : null}
 
       {isLoading ? (
         <View style={styles.cardsLoading}>
@@ -700,7 +689,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   header: {
-    minHeight: 56,
+    minHeight: 40,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',

@@ -34,7 +34,6 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
     placement,
     sourceScreen: route.params?.sourceScreen,
   });
-  const copy = getPaywallCopy(route.params?.feature);
   const insets = useSafeAreaInsets();
   const { height: windowHeight } = useWindowDimensions();
 
@@ -79,6 +78,7 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
     (pkg) => pkg.id === paywall.selectedPackageId,
   );
   const isAnnualSelected = paywall.selectedPackageId === 'annual';
+  const hasAnnualTrial = annualPackage?.trialLabel != null;
   const selectedPackageHasTrial = selectedPackage?.trialLabel != null;
   const isBusy = paywall.isLoading || paywall.isPurchasing || paywall.isRestoring;
 
@@ -142,7 +142,7 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
           pointerEvents="none"
         />
       <SafeAreaView
-        style={[styles.screenBody, { paddingTop: insets.top + spacing.sm }]}
+        style={[styles.screenBody, { paddingTop: insets.top }]}
         edges={['left', 'right']}
       >
         <View style={styles.header}>
@@ -180,13 +180,16 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
               <Text style={styles.eyebrow}>Your plan is ready.</Text>
               <Text style={styles.title}>Unlock Azora for free</Text>
               <View style={styles.titleDivider} />
-              <Text style={styles.subtitle}>{copy.subtitle}</Text>
-              {selectedPackageHasTrial ? (
-                <Text style={styles.trialNote}>Try free for 3 days — no charge until day 3</Text>
-              ) : null}
+              {selectedPackageHasTrial ? null : (
+                <Text style={styles.trialNote}>Cancel anytime</Text>
+              )}
             </View>
 
             <PaywallFeatureList />
+
+            {hasAnnualTrial ? (
+              <PaywallTrialReminderToggle dark disabled={!selectedPackageHasTrial} />
+            ) : null}
 
             {paywall.isLoading ? (
               <View style={styles.cardsLoading}>
@@ -237,7 +240,6 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
 
         <View style={[styles.tray, { paddingBottom: insets.bottom + spacing.md }]}>
           <View style={styles.trayHandle} />
-          {selectedPackageHasTrial ? <PaywallTrialReminderToggle dark /> : null}
           <OnboardingPrimaryButton
             label={ctaLabel}
             onPress={() => {
@@ -288,36 +290,6 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
   );
 }
 
-function getPaywallCopy(feature: RootStackScreenProps<'ProPaywall'>['route']['params']['feature']) {
-  switch (feature) {
-    case 'heart_rate_measurement':
-      return {
-        title: 'Measure without limits',
-        subtitle: 'Unlock unlimited heart-rate readings, HRV, stress, and recovery insights.',
-      };
-    case 'daily_exercise':
-      return {
-        title: 'Breath whenever, wherever',
-        subtitle: 'Unlock guided exercises and progress insights.',
-      };
-    case 'advanced_stats':
-      return {
-        title: 'Unlock your heart',
-        subtitle: 'See RMSSD, HRV, stress, recovery response, and deeper trends.',
-      };
-    case 'session_history':
-      return {
-        title: 'Open your full history',
-        subtitle: 'Detailed session history, graphs, and trend comparisons.',
-      };
-    default:
-      return {
-        title: 'Unlock the full experience',
-        subtitle: 'Unlimited sessions, advanced stats, and personalized progress insights.',
-      };
-  }
-}
-
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
@@ -331,7 +303,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   header: {
-    minHeight: 56,
+    minHeight: 40,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -389,11 +361,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.35)',
     marginTop: spacing.xs,
     marginBottom: spacing.xs,
-  },
-  subtitle: {
-    ...typography.body.medium,
-    color: 'rgba(255,255,255,0.75)',
-    textAlign: 'left',
   },
   trialNote: {
     ...typography.caption.caption1,
