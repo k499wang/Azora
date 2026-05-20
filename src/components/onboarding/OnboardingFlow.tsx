@@ -40,6 +40,7 @@ import { requestNotificationPermissions } from '../../services/notifications/not
 import { trackNotificationPermissionResult } from '../../services/analytics/tracking';
 import type { NotificationPreferences } from '../../services/notifications/types';
 import { useUpdateNotificationPreferencesMutation } from '../../queries/notifications/useUpdateNotificationPreferencesMutation';
+import { buildOnboardingSaveFailureDiagnostics } from '../../queries/profile/onboardingSaveDiagnostics';
 import type { SavedOnboardingProfile } from '../../services/profile/onboardingStatusService';
 
 // Set to true to re-enable the intent reflection screen between intent selection and name entry.
@@ -255,6 +256,16 @@ export default function OnboardingFlow({
         elapsedMs: Date.now() - startedAt,
         errorMessage: getErrorMessage(error),
       });
+      console.warn(
+        '[onboarding-seal] save diagnostics',
+        await buildOnboardingSaveFailureDiagnostics({
+          userId,
+          elapsedMs: Date.now() - startedAt,
+          requestType: 'onboarding-seal-flow',
+          retryAttempt: 0,
+          error,
+        }),
+      );
       setErrorMessage(getErrorMessage(error));
     } finally {
       setIsSubmitting(false);
