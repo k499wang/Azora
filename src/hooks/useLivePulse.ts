@@ -1,8 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
-import {
-  useFrameProcessor,
-  runAtTargetFps,
-} from 'react-native-vision-camera';
+import { useFrameProcessor } from 'react-native-vision-camera';
 import { useRunOnJS } from 'react-native-worklets-core';
 import type { FingerPlacementState, IbiSample, PpgFrameSample } from '../lib/heartRate/types';
 import { heartRatePlugin } from '../lib/heartRate/heartRatePlugin';
@@ -10,7 +7,6 @@ import { HeartRateManager } from '../lib/heartRate/heartRateManager';
 import { stabilizeBpmUpdate } from '../lib/heartRate/bpmSmoothing';
 import { useHeartRateCamera } from './useHeartRateCamera';
 
-const FRAME_PROCESSING_FPS = 45;
 const BPM_UPDATE_INTERVAL_MS = 1000;
 const FINGER_LOST_TIMEOUT_MS = 1500;
 
@@ -62,6 +58,7 @@ export function useLivePulse(): UseLivePulseReturn {
   const measurementActiveRef = useRef(false);
   const measurementSamplesRef = useRef<PpgFrameSample[]>([]);
   const publishedBpmRef = useRef<number | null>(null);
+  const fingerPlacementRef = useRef<FingerPlacementState>('no_finger');
 
   const { device, format, hasPermission, requestPermission } = useHeartRateCamera();
 
@@ -78,6 +75,7 @@ export function useLivePulse(): UseLivePulseReturn {
     measurementActiveRef.current = false;
     measurementSamplesRef.current = [];
     publishedBpmRef.current = null;
+    fingerPlacementRef.current = 'no_finger';
   }, []);
 
   const start = useCallback(() => {
@@ -87,6 +85,7 @@ export function useLivePulse(): UseLivePulseReturn {
     setActive(true);
     setCurrentBpm(null);
     setBeatTick(0);
+    fingerPlacementRef.current = 'no_finger';
     setFingerPlacement('no_finger');
   }, [resetStreamState]);
 
@@ -95,6 +94,7 @@ export function useLivePulse(): UseLivePulseReturn {
     setActive(false);
     resetStreamState();
     setCurrentBpm(null);
+    fingerPlacementRef.current = 'no_finger';
     setFingerPlacement('no_finger');
   }, [resetStreamState]);
 
@@ -111,7 +111,10 @@ export function useLivePulse(): UseLivePulseReturn {
       }
       const frameState = managerRef.current.processFrame(frameSample);
       lastFingerSeenAtRef.current = frameState.fingerPlacement === 'no_finger' ? lastFingerSeenAtRef.current : frameSample.timestamp;
-      setFingerPlacement(frameState.fingerPlacement);
+      if (frameState.fingerPlacement !== fingerPlacementRef.current) {
+        fingerPlacementRef.current = frameState.fingerPlacement;
+        setFingerPlacement(frameState.fingerPlacement);
+      }
 
       const bpm = managerRef.current.getCurrentBpm();
 
@@ -161,13 +164,10 @@ export function useLivePulse(): UseLivePulseReturn {
   const frameProcessor = useFrameProcessor(
     (frame) => {
       'worklet';
-      runAtTargetFps(FRAME_PROCESSING_FPS, () => {
-        'worklet';
-        const sample = heartRatePlugin(frame);
-        if (sample != null) {
-          addSample(sample);
-        }
-      });
+      const sample = heartRatePlugin(frame);
+      if (sample != null) {
+        addSample(sample);
+      }
     },
     [addSample],
   );
