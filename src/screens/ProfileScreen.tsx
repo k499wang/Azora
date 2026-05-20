@@ -24,12 +24,8 @@ import { formatProfileHoldTime } from '../services/profile/profileSummaryService
 import { useUploadProfileAvatarMutation } from '../queries/profile/useUploadProfileAvatarMutation';
 import { useUpdateProfileDisplayNameMutation } from '../queries/profile/useUpdateProfileDisplayNameMutation';
 
-function getFallbackDisplayName(email: string | undefined): string {
-  if (email == null) {
-    return 'Azora athlete';
-  }
-
-  return email.split('@')[0] || 'Azora athlete';
+function getFallbackDisplayName(_email: string | undefined): string {
+  return '—';
 }
 
 function getAvatarLabel(displayName: string): string {
@@ -38,7 +34,7 @@ function getAvatarLabel(displayName: string): string {
     .split(/\s+/)
     .filter(Boolean);
 
-  if (words.length === 0) {
+  if (words.length === 0 || (words.length === 1 && words[0] === '—')) {
     return 'A';
   }
 
