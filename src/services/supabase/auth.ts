@@ -8,6 +8,7 @@ import {
   getSessionDebugSnapshot,
   logIdentitySyncDebug,
 } from '../debug/identitySyncLogger.js';
+import { validateCurrentSession as validateSessionWithClient } from './sessionValidatorCore';
 
 export interface SignedInUser {
   id: string;
@@ -42,19 +43,7 @@ export async function getCurrentUser(): Promise<SignedInUser | null> {
 export async function validateCurrentSession(
   client?: Pick<SupabaseClientLike, 'auth'>,
 ): Promise<boolean> {
-  const supabase = client ?? requireSupabaseClient();
-  logIdentitySyncDebug('supabase.validate_session_started');
-  const { error } = await supabase.auth.getUser();
-
-  if (error != null) {
-    logIdentitySyncDebug('supabase.validate_session_failed', {
-      error_message: error instanceof Error ? error.message : String(error),
-    });
-    return false;
-  }
-
-  logIdentitySyncDebug('supabase.validate_session_completed');
-  return true;
+  return validateSessionWithClient(client ?? requireSupabaseClient());
 }
 
 export async function signOut(): Promise<void> {

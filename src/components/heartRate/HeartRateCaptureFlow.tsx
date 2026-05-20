@@ -305,11 +305,10 @@ export function HeartRateCaptureFlow({
         format,
         frameProcessor,
         torchMode,
-        fingerPlacement,
         isActive: captureState !== 'processing',
       }
       : undefined
-  ), [captureState, device, fingerPlacement, format, frameProcessor, torchMode]);
+  ), [captureState, device, format, frameProcessor, torchMode]);
 
   // Hold-steady progress for camera_check state
   const [holdProgress, setHoldProgress] = useState(0);
@@ -412,6 +411,7 @@ export function HeartRateCaptureFlow({
             trackColor={trackColor}
             progress={ringProgress}
             cameraProps={cameraProps}
+            fingerPlacement={fingerPlacement}
             beatTick={isMeasuring ? beatTick : 0}
             showHeartIcon={isMeasuring}
             hapticOnBeat={isMeasuring}

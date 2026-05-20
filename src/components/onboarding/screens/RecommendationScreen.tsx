@@ -103,7 +103,7 @@ export default function RecommendationScreen({
     // Animate progress bar over ~2.2s
     Animated.timing(progressAnim, {
       toValue: 1,
-      duration: 2200,
+      duration: 5600,
       easing: Easing.out(Easing.cubic),
       useNativeDriver: false,
     }).start();
@@ -114,7 +114,7 @@ export default function RecommendationScreen({
         const next = prev + 1;
         return next >= PERSONALIZING_STEPS.length ? prev : next;
       });
-    }, 650);
+    }, 1600);
 
     // Reveal result after loading
     const revealTimer = setTimeout(() => {
@@ -134,7 +134,7 @@ export default function RecommendationScreen({
           useNativeDriver: true,
         }),
       ]).start();
-    }, 2400);
+    }, 5800);
 
     return () => {
       clearInterval(stepInterval);

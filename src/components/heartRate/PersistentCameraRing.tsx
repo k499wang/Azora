@@ -1,4 +1,4 @@
-import { memo, useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
 import { Canvas, Path, Skia } from '@shopify/react-native-skia';
 import * as Haptics from 'expo-haptics';
@@ -7,12 +7,14 @@ import { colors } from '../../theme/colors';
 import { isHapticsEnabled } from '../../services/preferences/hapticsPreference';
 import { HeartRateCameraPreview } from './HeartRateCameraPreview';
 import type { HeartRateCameraPreviewProps } from './HeartRateCameraPreview';
+import type { FingerPlacementState } from '../../lib/heartRate/types';
 
 export interface PersistentCameraRingProps {
   ringColor: string;
   trackColor?: string;
   progress: number;
-  cameraProps?: HeartRateCameraPreviewProps;
+  cameraProps?: Omit<HeartRateCameraPreviewProps, 'fingerPlacement'>;
+  fingerPlacement?: FingerPlacementState;
   beatTick?: number;
   showHeartIcon?: boolean;
   hapticOnBeat?: boolean;
@@ -27,6 +29,7 @@ export const PersistentCameraRing = memo(function PersistentCameraRing({
   trackColor,
   progress,
   cameraProps,
+  fingerPlacement,
   beatTick = 0,
   showHeartIcon = false,
   hapticOnBeat = false,
@@ -99,12 +102,19 @@ export const PersistentCameraRing = memo(function PersistentCameraRing({
   const r = RING_SIZE / 2 - RING_STROKE / 2;
   const clamped = Math.max(0, Math.min(1, renderedProgress));
 
-  const track = Skia.Path.Make();
-  track.addCircle(cx, cy, r);
+  const track = useMemo(() => {
+    const path = Skia.Path.Make();
+    path.addCircle(cx, cy, r);
+    return path;
+  }, [cx, cy, r]);
 
-  const arc = Skia.Path.Make();
-  const rect = Skia.XYWHRect(cx - r, cy - r, r * 2, r * 2);
-  if (clamped > 0) arc.addArc(rect, -90, 360 * clamped);
+  const arc = useMemo(() => {
+    if (clamped <= 0) return null;
+    const path = Skia.Path.Make();
+    const rect = Skia.XYWHRect(cx - r, cy - r, r * 2, r * 2);
+    path.addArc(rect, -90, 360 * clamped);
+    return path;
+  }, [cx, cy, r, clamped]);
 
   return (
     <View style={styles.container}>
@@ -122,7 +132,7 @@ export const PersistentCameraRing = memo(function PersistentCameraRing({
             strokeWidth={RING_STROKE}
             color={trackColor ?? ringColor + '33'}
           />
-          {clamped > 0 && (
+          {arc != null && (
             <Path
               path={arc}
               style="stroke"
@@ -134,7 +144,7 @@ export const PersistentCameraRing = memo(function PersistentCameraRing({
         </Canvas>
         <View style={styles.previewClip}>
           {cameraProps != null ? (
-            <HeartRateCameraPreview {...cameraProps} />
+            <HeartRateCameraPreview {...cameraProps} fingerPlacement={fingerPlacement} />
           ) : (
             <View style={styles.previewPlaceholder} />
           )}
