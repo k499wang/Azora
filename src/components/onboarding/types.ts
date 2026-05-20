@@ -11,6 +11,7 @@ export type OnboardingStep =
   | 'agreement'
   | 'experience'
   | 'assessmentReflection'
+  | 'lungCapacity'
   | 'age'
   | 'gender'
   | 'dailyTime'

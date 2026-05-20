@@ -25,6 +25,8 @@ import SleepScreen from './screens/SleepScreen';
 import StressScreen from './screens/StressScreen';
 import RecommendationScreen from './screens/RecommendationScreen';
 import OnboardingPaywallScreen from './screens/OnboardingPaywallScreen';
+import LungCapacityScreen from './screens/LungCapacityScreen';
+import type { LungCapacityResult } from '../../lib/lungCapacity';
 import { PERSONALIZED_INTENT_OPTIONS } from './data/intentOptions';
 import { INTENT_TO_TECHNIQUE } from './data/techniqueRecommendations';
 import type { GenderOption } from './data/genderOptions';
@@ -53,6 +55,7 @@ export interface OnboardingFlowResult {
   gender: GenderOption['id'] | null;
   dailyMinutes: number | null;
   defaultTechniqueId: string | null;
+  lungCapacity: LungCapacityResult | null;
 }
 
 interface OnboardingFlowProps {
@@ -60,7 +63,7 @@ interface OnboardingFlowProps {
 }
 
 
-const STEP_COUNT = 21;
+const STEP_COUNT = 22;
 const STEP_INDEX: Record<OnboardingStep, number> = {
   intent: 1,
   intentReflection: 2,
@@ -73,16 +76,17 @@ const STEP_INDEX: Record<OnboardingStep, number> = {
   scienceCredibility: 9,
   experience: 10,
   assessmentReflection: 11,
-  age: 12,
-  gender: 13,
-  dailyTime: 14,
-  notifications: 15,
-  baselineIntro: 16,
-  baselineScience: 17,
-  baseline: 18,
-  recommendation: 19,
-  pact: 20,
-  paywall: 21,
+  lungCapacity: 12,
+  age: 13,
+  gender: 14,
+  dailyTime: 15,
+  notifications: 16,
+  baselineIntro: 17,
+  baselineScience: 18,
+  baseline: 19,
+  recommendation: 20,
+  pact: 21,
+  paywall: 22,
 };
 
 export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
@@ -115,6 +119,7 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
   const [gender, setGender] = useState<GenderOption['id'] | null>(null);
   const [dailyMinutes, setDailyMinutes] = useState(5);
   const [baseline, setBaseline] = useState<BaselineResult | null>(null);
+  const [lungCapacity, setLungCapacity] = useState<LungCapacityResult | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [notificationErrorMessage, setNotificationErrorMessage] = useState<string | null>(null);
   const [isNotificationSubmitting, setIsNotificationSubmitting] = useState(false);
@@ -189,6 +194,7 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         dailyMinutes,
         defaultTechniqueId:
           primaryIntent != null ? INTENT_TO_TECHNIQUE[primaryIntent] ?? null : null,
+        lungCapacity,
       });
     } catch (error) {
       setErrorMessage(getErrorMessage(error));
@@ -372,8 +378,22 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         experienceLevel={experienceLevel}
         stepIndex={stepIndex}
         stepCount={STEP_COUNT}
-        onContinue={() => setStep('age')}
+        onContinue={() => setStep('lungCapacity')}
         onBack={() => setStep('experience')}
+      />
+    );
+  }
+
+  if (step === 'lungCapacity') {
+    return (
+      <LungCapacityScreen
+        stepIndex={stepIndex}
+        stepCount={STEP_COUNT}
+        onContinue={(result) => {
+          setLungCapacity(result);
+          setStep('age');
+        }}
+        onBack={() => setStep('assessmentReflection')}
       />
     );
   }
@@ -386,7 +406,7 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         stepCount={STEP_COUNT}
         onChange={setAge}
         onContinue={() => setStep('gender')}
-        onBack={() => setStep('assessmentReflection')}
+        onBack={() => setStep('lungCapacity')}
       />
     );
   }
