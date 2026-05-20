@@ -29,8 +29,8 @@ export async function getStreakSummary(userId: string): Promise<StreakSummary | 
   const row = data as StreakRow;
 
   return {
-    currentStreak: row.current_streak,
-    longestStreak: row.longest_streak,
+    currentStreak: row.current_streak ?? 0,
+    longestStreak: row.longest_streak ?? 0,
     lastQualifiedDate: row.last_qualified_date,
   };
 }

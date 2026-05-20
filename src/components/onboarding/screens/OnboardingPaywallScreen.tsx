@@ -9,7 +9,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  useWindowDimensions,
   View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -47,6 +46,7 @@ interface OnboardingPaywallScreenProps {
   isLoading: boolean;
   isPurchasing: boolean;
   isRestoring: boolean;
+  isCompleting: boolean;
   errorMessage: string | null;
   personalization?: PaywallPersonalization | null;
   continueWithoutProLabel?: string;
@@ -63,6 +63,7 @@ export default function OnboardingPaywallScreen({
   isLoading,
   isPurchasing,
   isRestoring,
+  isCompleting,
   errorMessage,
   personalization,
   continueWithoutProLabel = 'Continue free',
@@ -72,14 +73,11 @@ export default function OnboardingPaywallScreen({
   onRetry,
   onContinueWithoutPro,
 }: OnboardingPaywallScreenProps) {
-  const { height: windowHeight } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const [step, setStep] = useState(0);
   const stepAnim = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(18)).current;
-  const exitSlideAnim = useRef(new Animated.Value(0)).current;
-  const [isExiting, setIsExiting] = useState(false);
 
   const selectedPackage = offering?.packages.find((pkg) => pkg.id === selectedPackageId);
   const annualPackage = offering?.packages.find((pkg) => pkg.id === 'annual');
@@ -87,7 +85,7 @@ export default function OnboardingPaywallScreen({
   const isAnnualSelected = selectedPackageId === 'annual';
   const hasAnnualTrial = annualPackage?.trialLabel != null;
   const selectedPackageHasTrial = selectedPackage?.trialLabel != null;
-  const isBusy = isLoading || isPurchasing || isRestoring;
+  const isBusy = isLoading || isPurchasing || isRestoring || isCompleting;
 
   const savingsPercent = useMemo(
     () => computeAnnualSavings(annualPackage, weeklyPackage),
@@ -136,17 +134,9 @@ export default function OnboardingPaywallScreen({
   }, [stepAnim]);
 
   const handleContinueWithoutPro = useCallback(() => {
-    if (isBusy || isExiting) return;
-    setIsExiting(true);
-    Animated.timing(exitSlideAnim, {
-      toValue: windowHeight,
-      duration: 340,
-      easing: Easing.in(Easing.cubic),
-      useNativeDriver: true,
-    }).start(({ finished }) => {
-      if (finished) onContinueWithoutPro();
-    });
-  }, [exitSlideAnim, isBusy, isExiting, onContinueWithoutPro, windowHeight]);
+    if (isBusy) return;
+    onContinueWithoutPro();
+  }, [isBusy, onContinueWithoutPro]);
 
   const handleNext = useCallback(() => {
     if (step < STEP_COUNT - 1) animateToStep(step + 1);
@@ -175,7 +165,6 @@ export default function OnboardingPaywallScreen({
       style={[
         styles.screen,
         isFinal ? styles.screenDark : styles.screenLight,
-        { transform: [{ translateY: exitSlideAnim }] },
       ]}
     >
       <ImageBackground
@@ -207,12 +196,12 @@ export default function OnboardingPaywallScreen({
               accessibilityRole="button"
               accessibilityLabel="Go back"
               hitSlop={12}
-              disabled={isBusy || isExiting}
+              disabled={isBusy}
               onPress={handleBack}
               style={({ pressed }) => [
                 styles.headerButton,
                 pressed && styles.subtlePressed,
-                (isBusy || isExiting) && styles.disabled,
+                isBusy && styles.disabled,
               ]}
             >
               <Text style={[styles.backText, !isFinal && styles.headerTextLight]}>‹</Text>
@@ -226,12 +215,12 @@ export default function OnboardingPaywallScreen({
               accessibilityRole="button"
               accessibilityLabel="Close paywall"
               hitSlop={12}
-              disabled={isBusy || isExiting}
+              disabled={isBusy}
               onPress={handleContinueWithoutPro}
               style={({ pressed }) => [
                 styles.headerButton,
                 pressed && styles.subtlePressed,
-                (isBusy || isExiting) && styles.disabled,
+                isBusy && styles.disabled,
               ]}
             >
               <Text style={[styles.closeText, !isFinal && styles.headerTextLight]}>×</Text>
@@ -290,12 +279,12 @@ export default function OnboardingPaywallScreen({
                 <Text style={styles.error}>{errorMessage}</Text>
                 <Pressable
                   accessibilityRole="button"
-                  disabled={isBusy || isExiting}
+                  disabled={isBusy}
                   onPress={onRetry}
                   style={({ pressed }) => [
                     styles.retryButton,
                     pressed && styles.subtlePressed,
-                    (isBusy || isExiting) && styles.disabled,
+                    isBusy && styles.disabled,
                   ]}
                 >
                   <Text style={styles.retryText}>Retry</Text>
@@ -310,24 +299,24 @@ export default function OnboardingPaywallScreen({
             <OnboardingPrimaryButton
               label="Continue"
               onPress={handleNext}
-              disabled={isExiting}
+              disabled={isBusy}
             />
           ) : (
             <>
               <OnboardingPrimaryButton
                 label={ctaLabel}
                 onPress={onPurchase}
-                loading={isPurchasing}
-                disabled={isLoading || selectedPackage == null || isRestoring || isExiting}
+                loading={isPurchasing || isCompleting}
+                disabled={isLoading || selectedPackage == null || isRestoring || isCompleting}
               />
               <Pressable
                 accessibilityRole="button"
-                disabled={isLoading || isPurchasing || isRestoring || isExiting}
+                disabled={isBusy}
                 onPress={onRestore}
                 style={({ pressed }) => [
                   styles.restoreButton,
                   pressed && styles.subtlePressed,
-                  (isLoading || isPurchasing || isRestoring || isExiting) && styles.disabled,
+                  isBusy && styles.disabled,
                 ]}
               >
                 <Text style={styles.restoreText}>
@@ -336,12 +325,12 @@ export default function OnboardingPaywallScreen({
               </Pressable>
               <Pressable
                 accessibilityRole="button"
-                disabled={isBusy || isExiting}
+                disabled={isBusy}
                 onPress={handleContinueWithoutPro}
                 style={({ pressed }) => [
                   styles.freeButton,
                   pressed && styles.subtlePressed,
-                  (isBusy || isExiting) && styles.disabled,
+                  isBusy && styles.disabled,
                 ]}
               >
                 <Text style={styles.freeButtonText}>{continueWithoutProLabel}</Text>

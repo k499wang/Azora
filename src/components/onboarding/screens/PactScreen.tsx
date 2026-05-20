@@ -313,7 +313,10 @@ export default function PactScreen({
   }, [fadeAnim, slideAnim]);
 
   useEffect(() => {
-    if (errorMessage) setCelebrating(false);
+    if (errorMessage) {
+      setCelebrating(false);
+      setHasConfirmed(false);
+    }
   }, [errorMessage]);
 
   /* confirmation animation */
