@@ -331,6 +331,28 @@ export async function getBreathHoldIbiSeries(
     }));
 }
 
+export async function getRecentBreathHoldSummaries(
+  userId: string,
+  limit = 15,
+): Promise<BreathHoldSummary[]> {
+  const supabase = requireSupabaseClient();
+
+  const { data, error } = await supabase
+    .from('breath_hold_sessions')
+    .select('id, started_at, ended_at, local_date, timezone, hold_seconds, avg_bpm, min_bpm, max_bpm, rmssd, sdnn, pnn50, hr_drop, beat_count, stress')
+    .eq('user_id', userId)
+    .order('started_at', { ascending: false })
+    .limit(limit);
+
+  if (error != null) {
+    throw error;
+  }
+
+  return ((data ?? []) as BreathHoldRow[])
+    .map(mapBreathHoldSummary)
+    .filter((s): s is BreathHoldSummary => s != null);
+}
+
 export async function getDailyActivityRange(
   userId: string,
   limit = 28,

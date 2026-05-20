@@ -3,6 +3,7 @@ import {
   getBreathHoldIbiSeries,
   getBreathHoldSummaryForDate,
   getDailyActivityRange,
+  getRecentBreathHoldSummaries,
 } from './breathHoldService';
 import {
   getHeartRateSummaryForDate,
@@ -14,6 +15,8 @@ import type {
   HeartRateIbiPoint,
   TodayHeartRateSummary,
 } from './types';
+
+type HrvHistoryEntry = { rmssd: number | null; sdnn: number | null };
 import type { StressHistoryEntry } from '../../lib/heartRate/stress';
 
 export interface HomeHrvStats {
@@ -76,7 +79,7 @@ function getCompletedDaysAgo(activity: DailyActivitySummary[]): number[] {
 }
 
 function aggregateField(
-  history: TodayHeartRateSummary[],
+  history: HrvHistoryEntry[],
   field: 'rmssd' | 'sdnn',
 ): { avg: number | null; max: number | null } {
   let sum = 0;
@@ -99,9 +102,11 @@ function aggregateField(
 function buildHrvStats(
   breathHold: BreathHoldSummary | null,
   history: TodayHeartRateSummary[],
+  breathHoldHistory: BreathHoldSummary[],
 ): HomeHrvStats {
-  const rmssdAgg = aggregateField(history, 'rmssd');
-  const sdnnAgg = aggregateField(history, 'sdnn');
+  const combined = [...history, ...breathHoldHistory];
+  const rmssdAgg = aggregateField(combined, 'rmssd');
+  const sdnnAgg = aggregateField(combined, 'sdnn');
 
   if (breathHold == null) {
     return {
@@ -163,13 +168,15 @@ export async function getHomeStats(
     recentHeartRatesResult,
     stressHistoryResult,
     dailyActivityResult,
+    recentBreathHoldsHrvResult,
   ] = await Promise.allSettled([
     getStreakSummary(userId),
     getBreathHoldSummaryForDate(userId, localDate),
     getHeartRateSummaryForDate(userId, localDate),
     getRecentHeartRateSummaries(userId, 3),
-    getRecentHeartRateSummaries(userId, 30),
+    getRecentHeartRateSummaries(userId, 15),
     getDailyActivityRange(userId, 28),
+    getRecentBreathHoldSummaries(userId, 15),
   ]);
 
   const streak = getSettledValue(streakResult, null);
@@ -179,6 +186,10 @@ export async function getHomeStats(
   const stressHistorySource = getSettledValue(
     stressHistoryResult,
     [] as TodayHeartRateSummary[],
+  );
+  const recentBreathHoldsHrv = getSettledValue(
+    recentBreathHoldsHrvResult,
+    [] as BreathHoldSummary[],
   );
   const stressHistory: StressHistoryEntry[] = stressHistorySource.map((s) => ({
     stress: s.stress ?? null,
@@ -208,7 +219,7 @@ export async function getHomeStats(
     dailyActivity,
     completedDaysAgo: getCompletedDaysAgo(dailyActivity),
     ibiSeries: breathHoldIbiSeries,
-    hrv: buildHrvStats(todayBreathHold, stressHistorySource),
+    hrv: buildHrvStats(todayBreathHold, stressHistorySource, recentBreathHoldsHrv),
     partialErrors,
   };
 }
