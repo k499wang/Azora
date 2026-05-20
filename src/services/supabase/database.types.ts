@@ -98,6 +98,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["user_id"]
           },
+          {
+            foreignKeyName: "breath_hold_sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_streaks_v"
+            referencedColumns: ["user_id"]
+          },
         ]
       }
       breathing_sessions: {
@@ -165,6 +172,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "breathing_sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_streaks_v"
             referencedColumns: ["user_id"]
           },
         ]
@@ -242,6 +256,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "daily_activity_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_streaks_v"
             referencedColumns: ["user_id"]
           },
         ]
@@ -323,6 +344,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["user_id"]
           },
+          {
+            foreignKeyName: "heart_rate_ibi_samples_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_streaks_v"
+            referencedColumns: ["user_id"]
+          },
         ]
       }
       heart_rate_samples: {
@@ -402,6 +430,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["user_id"]
           },
+          {
+            foreignKeyName: "heart_rate_samples_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_streaks_v"
+            referencedColumns: ["user_id"]
+          },
         ]
       }
       heart_rate_sessions: {
@@ -470,47 +505,66 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["user_id"]
           },
+          {
+            foreignKeyName: "heart_rate_sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_streaks_v"
+            referencedColumns: ["user_id"]
+          },
         ]
       }
       profiles: {
         Row: {
           age: number | null
+          agreement_responses: Json | null
           avatar_url: string | null
           created_at: string
           daily_minutes: number | null
           default_technique_id: string | null
           display_name: string | null
+          experience_level: string | null
           gender: string | null
           onboarding_completed_at: string | null
           onboarding_goal: string | null
+          sleep_quality: number | null
+          stress_level: number | null
           timezone: string
           updated_at: string
           user_id: string
         }
         Insert: {
           age?: number | null
+          agreement_responses?: Json | null
           avatar_url?: string | null
           created_at?: string
           daily_minutes?: number | null
           default_technique_id?: string | null
           display_name?: string | null
+          experience_level?: string | null
           gender?: string | null
           onboarding_completed_at?: string | null
           onboarding_goal?: string | null
+          sleep_quality?: number | null
+          stress_level?: number | null
           timezone?: string
           updated_at?: string
           user_id: string
         }
         Update: {
           age?: number | null
+          agreement_responses?: Json | null
           avatar_url?: string | null
           created_at?: string
           daily_minutes?: number | null
           default_technique_id?: string | null
           display_name?: string | null
+          experience_level?: string | null
           gender?: string | null
           onboarding_completed_at?: string | null
           onboarding_goal?: string | null
+          sleep_quality?: number | null
+          stress_level?: number | null
           timezone?: string
           updated_at?: string
           user_id?: string
@@ -548,6 +602,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "revenuecat_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_streaks_v"
             referencedColumns: ["user_id"]
           },
         ]
@@ -606,6 +667,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["user_id"]
           },
+          {
+            foreignKeyName: "subscriptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "user_streaks_v"
+            referencedColumns: ["user_id"]
+          },
         ]
       }
       user_preferences: {
@@ -641,31 +709,17 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["user_id"]
           },
+          {
+            foreignKeyName: "user_preferences_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "user_streaks_v"
+            referencedColumns: ["user_id"]
+          },
         ]
       }
     }
     Views: {
-      user_streaks_v: {
-        Row: {
-          current_streak: number
-          last_qualified_date: string | null
-          longest_streak: number
-          user_id: string
-        }
-        Insert: {
-          current_streak?: never
-          last_qualified_date?: never
-          longest_streak?: never
-          user_id?: never
-        }
-        Update: {
-          current_streak?: never
-          last_qualified_date?: never
-          longest_streak?: never
-          user_id?: never
-        }
-        Relationships: []
-      }
       user_entitlement_v: {
         Row: {
           current_period_ends_at: string | null
@@ -717,7 +771,23 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["user_id"]
           },
+          {
+            foreignKeyName: "subscriptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "user_streaks_v"
+            referencedColumns: ["user_id"]
+          },
         ]
+      }
+      user_streaks_v: {
+        Row: {
+          current_streak: number | null
+          last_qualified_date: string | null
+          longest_streak: number | null
+          user_id: string | null
+        }
+        Relationships: []
       }
       user_today_breath_hold_ibi_samples_v: {
         Row: {
@@ -749,6 +819,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "heart_rate_ibi_samples_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_streaks_v"
             referencedColumns: ["user_id"]
           },
         ]
@@ -787,6 +864,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["user_id"]
           },
+          {
+            foreignKeyName: "breath_hold_sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_streaks_v"
+            referencedColumns: ["user_id"]
+          },
         ]
       }
       user_today_heart_rate_ibi_samples_v: {
@@ -821,6 +905,13 @@ export type Database = {
             referencedRelation: "profiles"
             referencedColumns: ["user_id"]
           },
+          {
+            foreignKeyName: "heart_rate_ibi_samples_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_streaks_v"
+            referencedColumns: ["user_id"]
+          },
         ]
       }
       user_today_heart_rate_v: {
@@ -849,6 +940,13 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "heart_rate_sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_streaks_v"
             referencedColumns: ["user_id"]
           },
         ]
