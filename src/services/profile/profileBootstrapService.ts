@@ -34,7 +34,7 @@ export async function ensureUserProfile(userId: string): Promise<void> {
 
   const { error } = await supabase
     .from('profiles')
-    .upsert(profile, { onConflict: 'user_id' });
+    .upsert(profile, { onConflict: 'user_id', ignoreDuplicates: true });
 
   if (error != null) {
     throw error;

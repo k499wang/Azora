@@ -111,7 +111,11 @@ export function RootNavigator() {
         <AppStack />
         <View style={styles.onboardingOverlay}>
           <OnboardingFlow
-            onComplete={(result) => gate.completeOnboarding(result)}
+            initialSavedProfile={gate.savedOnboardingProfile}
+            isSavingProfile={gate.isSavingOnboardingProfile}
+            isCompletingOnboarding={gate.isCompletingOnboarding}
+            onSaveProfile={gate.saveOnboardingProfile}
+            onComplete={gate.completeOnboarding}
           />
         </View>
       </View>

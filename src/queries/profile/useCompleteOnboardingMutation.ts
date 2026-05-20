@@ -1,9 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import {
-  type CompleteOnboardingInput,
-  completeOnboarding,
-} from '../../services/profile/onboardingStatusService';
+import { markOnboardingCompleted } from '../../services/profile/onboardingStatusService';
 import { getOnboardingStatusQueryKey } from './useOnboardingStatusQuery';
+import { getProfileQueryKey } from './useProfileQuery';
 import { getProfileSummaryQueryKey } from './useProfileSummaryQuery';
 import { getUserDefaultTechniqueQueryKey } from './useUserDefaultTechniqueQuery';
 
@@ -11,26 +9,25 @@ export function useCompleteOnboardingMutation(userId: string | null) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (input?: CompleteOnboardingInput) => {
+    mutationFn: async () => {
       if (userId == null) {
         throw new Error('Cannot complete onboarding without a signed-in user.');
       }
 
-      await completeOnboarding(userId, input);
+      await markOnboardingCompleted(userId);
     },
-    onSuccess: async (_data, input) => {
-      if (input?.defaultTechniqueId !== undefined) {
-        queryClient.setQueryData(
-          getUserDefaultTechniqueQueryKey(userId),
-          input.defaultTechniqueId,
-        );
-      }
+    onSuccess: async () => {
+      queryClient.setQueryData(getOnboardingStatusQueryKey(userId), true);
+
       await Promise.all([
         queryClient.invalidateQueries({
           queryKey: getOnboardingStatusQueryKey(userId),
         }),
         queryClient.invalidateQueries({
           queryKey: getUserDefaultTechniqueQueryKey(userId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: getProfileQueryKey(userId),
         }),
         queryClient.invalidateQueries({
           queryKey: getProfileSummaryQueryKey(userId),

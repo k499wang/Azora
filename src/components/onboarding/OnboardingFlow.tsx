@@ -40,6 +40,7 @@ import { requestNotificationPermissions } from '../../services/notifications/not
 import { trackNotificationPermissionResult } from '../../services/analytics/tracking';
 import type { NotificationPreferences } from '../../services/notifications/types';
 import { useUpdateNotificationPreferencesMutation } from '../../queries/notifications/useUpdateNotificationPreferencesMutation';
+import type { SavedOnboardingProfile } from '../../services/profile/onboardingStatusService';
 
 // Set to true to re-enable the intent reflection screen between intent selection and name entry.
 const INTENT_REFLECTION_ENABLED = false;
@@ -59,7 +60,11 @@ export interface OnboardingFlowResult {
 }
 
 interface OnboardingFlowProps {
-  onComplete: (result: OnboardingFlowResult) => Promise<void>;
+  initialSavedProfile?: SavedOnboardingProfile | null;
+  isSavingProfile?: boolean;
+  isCompletingOnboarding?: boolean;
+  onSaveProfile: (result: OnboardingFlowResult) => Promise<void>;
+  onComplete: () => Promise<void>;
 }
 
 
@@ -89,35 +94,54 @@ const STEP_INDEX: Record<OnboardingStep, number> = {
   paywall: 22,
 };
 
-export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
+export default function OnboardingFlow({
+  initialSavedProfile = null,
+  isSavingProfile = false,
+  isCompletingOnboarding = false,
+  onSaveProfile,
+  onComplete,
+}: OnboardingFlowProps) {
   const userId = useAuthStore((state) => state.user?.id ?? null);
-  const [step, setStep] = useState<OnboardingStep>('intent');
+  const [step, setStep] = useState<OnboardingStep>(
+    initialSavedProfile == null ? 'intent' : 'paywall',
+  );
   const [selectedIntents, setSelectedIntents] = useState<string[]>([]);
-  const [customIntent, setCustomIntent] = useState('');
+  const [customIntent, setCustomIntent] = useState(
+    initialSavedProfile?.onboardingGoal ?? '',
+  );
   const primaryIntent = useMemo(() => {
     const nonOther = selectedIntents.find((id) => id !== 'other');
     return nonOther ?? selectedIntents[0] ?? null;
   }, [selectedIntents]);
-  const [name, setName] = useState('');
-  const [stressLevel, setStressLevel] = useState(5);
-  const [sleepQuality, setSleepQuality] = useState(5);
+  const [name, setName] = useState(initialSavedProfile?.displayName ?? '');
+  const [stressLevel, setStressLevel] = useState(
+    initialSavedProfile?.stressLevel ?? 5,
+  );
+  const [sleepQuality, setSleepQuality] = useState(
+    initialSavedProfile?.sleepQuality ?? 5,
+  );
   const [agreementResponses, setAgreementResponses] = useState<
     Record<string, AgreementValue | null>
   >(() =>
     AGREEMENT_STATEMENTS.reduce<Record<string, AgreementValue | null>>(
       (acc, statement) => {
-        acc[statement.id] = null;
+        acc[statement.id] =
+          initialSavedProfile?.agreementResponses?.[statement.id] ?? null;
         return acc;
       },
       {},
     ),
   );
   const [experienceLevel, setExperienceLevel] = useState<ExperienceLevel | null>(
-    null,
+    initialSavedProfile?.experienceLevel ?? null,
   );
-  const [age, setAge] = useState(25);
-  const [gender, setGender] = useState<GenderOption['id'] | null>(null);
-  const [dailyMinutes, setDailyMinutes] = useState(5);
+  const [age, setAge] = useState(initialSavedProfile?.age ?? 25);
+  const [gender, setGender] = useState<GenderOption['id'] | null>(
+    toGenderOptionId(initialSavedProfile?.gender),
+  );
+  const [dailyMinutes, setDailyMinutes] = useState(
+    initialSavedProfile?.dailyMinutes ?? 5,
+  );
   const [baseline, setBaseline] = useState<BaselineResult | null>(null);
   const [lungCapacity, setLungCapacity] = useState<LungCapacityResult | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -174,28 +198,55 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
     return parts.join(', ');
   };
 
-  const finish = async () => {
+  const buildOnboardingResult = (): OnboardingFlowResult | null => {
     const goal = buildOnboardingGoal();
-    if (isSubmitting || goal.length === 0) return;
+    if (goal.length === 0) return null;
+
+    return {
+      onboardingGoal: goal,
+      displayName: name.trim() || null,
+      stressLevel,
+      sleepQuality,
+      agreementResponses,
+      experienceLevel,
+      age,
+      gender,
+      dailyMinutes,
+      defaultTechniqueId:
+        primaryIntent != null
+          ? INTENT_TO_TECHNIQUE[primaryIntent] ?? null
+          : initialSavedProfile?.defaultTechniqueId ?? null,
+      lungCapacity,
+    };
+  };
+
+  const saveProfileAndShowPaywall = async () => {
+    if (isSubmitting) return;
+
+    const result = buildOnboardingResult();
+    if (result == null) return;
 
     setIsSubmitting(true);
     setErrorMessage(null);
 
     try {
-      await onComplete({
-        onboardingGoal: goal,
-        displayName: name.trim() || null,
-        stressLevel,
-        sleepQuality,
-        agreementResponses,
-        experienceLevel,
-        age,
-        gender,
-        dailyMinutes,
-        defaultTechniqueId:
-          primaryIntent != null ? INTENT_TO_TECHNIQUE[primaryIntent] ?? null : null,
-        lungCapacity,
-      });
+      await onSaveProfile(result);
+      setStep('paywall');
+    } catch (error) {
+      setErrorMessage(getErrorMessage(error));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const finish = async () => {
+    if (isSubmitting) return;
+
+    setIsSubmitting(true);
+    setErrorMessage(null);
+
+    try {
+      await onComplete();
     } catch (error) {
       setErrorMessage(getErrorMessage(error));
       setIsSubmitting(false);
@@ -553,7 +604,9 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         isSubmitting={isSubmitting}
         errorMessage={errorMessage}
         onConfirm={() => {
-          setTimeout(() => setStep('paywall'), 3500);
+          setTimeout(() => {
+            void saveProfileAndShowPaywall();
+          }, 3500);
         }}
         onBack={() => setStep('recommendation')}
       />
@@ -582,6 +635,7 @@ export default function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         isLoading={paywall.isLoading}
         isPurchasing={paywall.isPurchasing}
         isRestoring={paywall.isRestoring}
+        isCompleting={isSubmitting || isSavingProfile || isCompletingOnboarding}
         errorMessage={paywall.errorMessage ?? errorMessage}
         personalization={personalization}
         onSelectPackage={paywall.selectPackage}
@@ -629,4 +683,19 @@ function getErrorMessage(error: unknown): string {
   }
 
   return 'Please try again.';
+}
+
+function toGenderOptionId(
+  value: SavedOnboardingProfile['gender'] | undefined,
+): GenderOption['id'] | null {
+  if (
+    value === 'female' ||
+    value === 'male' ||
+    value === 'nonbinary' ||
+    value === 'prefer_not'
+  ) {
+    return value;
+  }
+
+  return null;
 }
