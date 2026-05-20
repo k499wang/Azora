@@ -228,14 +228,33 @@ export default function OnboardingFlow({
 
     setIsSubmitting(true);
     setErrorMessage(null);
+    const startedAt = Date.now();
+
+    console.log('[onboarding-seal] save started', {
+      userId,
+      selectedIntentCount: selectedIntents.length,
+      hasCustomIntent: customIntent.trim().length > 0,
+      hasDisplayName: result.displayName != null,
+      hasDefaultTechnique: result.defaultTechniqueId != null,
+      hasLungCapacity: result.lungCapacity != null,
+    });
 
     try {
       await Promise.all([
         onSaveProfile(result),
         new Promise<void>((resolve) => setTimeout(resolve, 3500)),
       ]);
+      console.log('[onboarding-seal] save succeeded', {
+        userId,
+        elapsedMs: Date.now() - startedAt,
+      });
       setStep('paywall');
     } catch (error) {
+      console.warn('[onboarding-seal] save failed', {
+        userId,
+        elapsedMs: Date.now() - startedAt,
+        errorMessage: getErrorMessage(error),
+      });
       setErrorMessage(getErrorMessage(error));
     } finally {
       setIsSubmitting(false);

@@ -94,8 +94,39 @@ export const useAuthStore = create<AuthState>((set) => ({
     await signOutSession();
   },
   deleteAccount: async () => {
-    await deleteAccountService();
-    await signOutGoogle();
-    applySession(null);
+    const startedAt = Date.now();
+    console.log('[account-delete] store action started');
+    try {
+      await deleteAccountService();
+      console.log('[account-delete] edge deletion complete, signing out Google identity');
+      await signOutGoogle();
+      applySession(null);
+      console.log('[account-delete] store action succeeded', {
+        elapsedMs: Date.now() - startedAt,
+      });
+    } catch (error) {
+      console.warn('[account-delete] store action failed', {
+        elapsedMs: Date.now() - startedAt,
+        errorMessage: getErrorMessage(error),
+      });
+      throw error;
+    }
   },
 }));
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  if (
+    typeof error === 'object' &&
+    error != null &&
+    'message' in error &&
+    typeof error.message === 'string'
+  ) {
+    return error.message;
+  }
+
+  return String(error);
+}

@@ -1,24 +1,35 @@
-import { useEffect, useRef, useState } from 'react';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { createNativeBottomTabNavigator } from '@react-navigation/bottom-tabs/unstable';
-import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+  Animated,
+  Easing,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
+} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import MaskedView from '@react-native-masked-view/masked-view';
 import { BlurView } from 'expo-blur';
 import {
   GlassView,
   isGlassEffectAPIAvailable,
   isLiquidGlassAvailable,
 } from 'expo-glass-effect';
+import Svg, { Path } from 'react-native-svg';
+
+const canUseLiquidGlass = isLiquidGlassAvailable() && isGlassEffectAPIAvailable();
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import HomeScreen from '../../screens/HomeScreen';
 import ProfileScreen from '../../screens/ProfileScreen';
-import BreatheActionSheet, {
+import BreatheArcMenu, {
   type BreatheActionId,
-} from '../../components/common/BreatheActionSheet';
-import Icon from '../../components/common/icons/Icon';
+} from '../../components/common/BreatheArcMenu';
+import Icon, { type IconName } from '../../components/common/icons/Icon';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
-import { typography } from '../../theme/typography';
+import { typography, fonts } from '../../theme/typography';
 import { useFeatureAccess } from '../../hooks/useFeatureAccess';
 import { PaywallPlacement } from '../../services/paywall';
 import { FeatureKey } from '../../services/subscriptions/featureAccess';
@@ -30,40 +41,69 @@ import type {
 } from './types';
 
 const Tab = createNativeBottomTabNavigator<MainTabParamList>();
-const canUseLiquidGlass = isLiquidGlassAvailable() && isGlassEffectAPIAvailable();
-const FLOATING_ACTION_SIZE = 62;
-const FLOATING_DOCK_BOTTOM_OFFSET = 14;
-const FLOATING_ACTION_TRAY_GAP = 10;
-const LEFT_DOCK_WIDTH = 188;
-const LEFT_DOCK_HEIGHT = FLOATING_ACTION_SIZE;
-const LEFT_DOCK_PADDING = 6;
-const LEFT_DOCK_SEGMENT_WIDTH = (LEFT_DOCK_WIDTH - LEFT_DOCK_PADDING * 2) / 2;
+
+// ---------------------------------------------------------------------------
+// Geometry
+// ---------------------------------------------------------------------------
+
+const FLOATING_ACTION_SIZE = 64;
+const FAB_RADIUS = FLOATING_ACTION_SIZE / 2;
+const FLOATING_DOCK_BOTTOM_OFFSET = 12;
+
+const DOCK_HEIGHT = 60;
+const NOTCH_RADIUS = FAB_RADIUS + 4; // 4px clearance so FAB doesn't kiss the notch edge
+const DOCK_HORIZONTAL_MARGIN = spacing.lg;
+
+const SLIDER_WIDTH = 96;
+const SLIDER_HEIGHT = 42;
+
+// ---------------------------------------------------------------------------
+// Tabs
+// ---------------------------------------------------------------------------
 
 type MainDockTabName = keyof MainTabParamList;
 
 const MAIN_DOCK_TABS: Array<{
   name: MainDockTabName;
   label: string;
-  icon: keyof typeof MaterialCommunityIcons.glyphMap;
+  icon: IconName;
 }> = [
-  { name: 'Home', label: 'Home', icon: 'home-outline' },
-  { name: 'Profile', label: 'Profile', icon: 'account-outline' },
+  { name: 'Home', label: 'Home', icon: 'home' },
+  { name: 'Profile', label: 'Profile', icon: 'profile' },
 ];
 
 export function MainTabs() {
   const navigation = useNavigation<RootStackNavigationProp<'MainTabs'>>();
   const insets = useSafeAreaInsets();
+  const { width: screenWidth } = useWindowDimensions();
   const [sheetVisible, setSheetVisible] = useState(false);
   const [activeTab, setActiveTab] = useState<MainDockTabName>('Home');
-  const dockIndicatorTranslateX = useRef(new Animated.Value(0)).current;
+  const fabProgress = useRef(new Animated.Value(0)).current;
   const heartRateAccess = useFeatureAccess(FeatureKey.HeartRateMeasurement);
   const exerciseAccess = useFeatureAccess(FeatureKey.DailyExercise);
   const userId = useAuthStore((s) => s.user?.id ?? null);
   const recommendedTechnique = useRecommendedTechnique(userId);
 
-  const handleSheetClose = () => {
-    setSheetVisible(false);
-  };
+  const dockWidth = screenWidth - DOCK_HORIZONTAL_MARGIN * 2;
+  const tabAreaWidth = (dockWidth - NOTCH_RADIUS * 2) / 2;
+  const sliderPositions = useMemo<Record<number, number>>(
+    () => ({
+      0: (tabAreaWidth - SLIDER_WIDTH) / 2,
+      1: tabAreaWidth + NOTCH_RADIUS * 2 + (tabAreaWidth - SLIDER_WIDTH) / 2,
+    }),
+    [tabAreaWidth],
+  );
+
+  const handleSheetClose = () => setSheetVisible(false);
+
+  useEffect(() => {
+    Animated.timing(fabProgress, {
+      toValue: sheetVisible ? 1 : 0,
+      duration: 220,
+      easing: Easing.inOut(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+  }, [sheetVisible, fabProgress]);
 
   const handleSelect = (id: BreatheActionId) => {
     setSheetVisible(false);
@@ -117,33 +157,22 @@ export function MainTabs() {
     }
   };
 
-  useEffect(() => {
-    Animated.spring(dockIndicatorTranslateX, {
-      toValue: activeTab === 'Home' ? 0 : LEFT_DOCK_SEGMENT_WIDTH,
-      damping: 18,
-      mass: 0.8,
-      stiffness: 180,
-      useNativeDriver: true,
-    }).start();
-  }, [activeTab, dockIndicatorTranslateX]);
-
   const handleDockTabPress = (tabName: MainDockTabName) => {
     setActiveTab(tabName);
     navigation.navigate('MainTabs', { screen: tabName });
   };
 
   const floatingActionBottom = insets.bottom + FLOATING_DOCK_BOTTOM_OFFSET;
-  const trayBottomOffset =
-    floatingActionBottom + FLOATING_ACTION_SIZE + FLOATING_ACTION_TRAY_GAP;
+  // FAB is half-sunk: its center sits at the top edge of the dock.
+  const fabCenterBottom = floatingActionBottom + DOCK_HEIGHT;
+  const anchorHeight = FAB_RADIUS + DOCK_HEIGHT;
 
   return (
     <>
       <Tab.Navigator
         screenOptions={{
           headerShown: false,
-          tabBarStyle: {
-            display: 'none',
-          },
+          tabBarStyle: { display: 'none' },
         }}
       >
         <Tab.Screen
@@ -156,9 +185,7 @@ export function MainTabs() {
               name: focused ? 'house.fill' : 'house',
             }),
           }}
-          listeners={{
-            focus: () => setActiveTab('Home'),
-          }}
+          listeners={{ focus: () => setActiveTab('Home') }}
         />
         <Tab.Screen
           name="Profile"
@@ -170,79 +197,50 @@ export function MainTabs() {
               name: focused ? 'person.crop.circle.fill' : 'person.crop.circle',
             }),
           }}
-          listeners={{
-            focus: () => setActiveTab('Profile'),
-          }}
+          listeners={{ focus: () => setActiveTab('Profile') }}
         />
       </Tab.Navigator>
 
+      {/* Notched dock with half-sunk FAB */}
       <View
         pointerEvents="box-none"
-        style={[styles.floatingDockAnchor, { bottom: floatingActionBottom }]}
+        style={[
+          styles.dockAnchor,
+          { bottom: floatingActionBottom, height: anchorHeight },
+        ]}
       >
-        <View style={styles.leftDockShadow}>
-          {canUseLiquidGlass ? (
-            <GlassView
-              colorScheme="light"
-              glassEffectStyle="clear"
-              style={styles.leftDock}
-              tintColor="rgba(255,255,255,0.46)"
-            >
-              <DockTabs
-                activeTab={activeTab}
-                indicatorTranslateX={dockIndicatorTranslateX}
-                onPress={handleDockTabPress}
-              />
-            </GlassView>
-          ) : (
-            <BlurView
-              intensity={76}
-              tint="systemUltraThinMaterialLight"
-              style={[styles.leftDock, styles.leftDockFallback]}
-            >
-              <DockTabs
-                activeTab={activeTab}
-                indicatorTranslateX={dockIndicatorTranslateX}
-                onPress={handleDockTabPress}
-              />
-            </BlurView>
-          )}
+        {/* Dock body: SVG path with notch + content overlay */}
+        <View style={[styles.dockShadow, { width: dockWidth }]}>
+          <NotchedBackground width={dockWidth} height={DOCK_HEIGHT} />
+          <DockTabs
+            activeTab={activeTab}
+            onPress={handleDockTabPress}
+            tabAreaWidth={tabAreaWidth}
+            sliderPositions={sliderPositions}
+          />
         </View>
 
-        <Pressable
-          accessibilityLabel="Open breathing actions"
-          accessibilityRole="button"
-          onPress={() => setSheetVisible(true)}
-          style={({ pressed }) => [
-            styles.floatingActionPressable,
-            pressed && styles.floatingActionPressed,
-          ]}
-        >
-          {canUseLiquidGlass ? (
-            <GlassView
-              colorScheme="light"
-              glassEffectStyle="clear"
-              isInteractive
-              style={styles.floatingAction}
-              tintColor="rgba(255,255,255,0.52)"
-            >
-              <FloatingActionContent />
-            </GlassView>
-          ) : (
-            <BlurView
-              intensity={76}
-              tint="systemUltraThinMaterialLight"
-              style={[styles.floatingAction, styles.floatingActionFallback]}
-            >
-              <FloatingActionContent />
-            </BlurView>
-          )}
-        </Pressable>
+        {/* FAB sits half-sunk into the notch */}
+        <View style={styles.fabAnchor} pointerEvents="box-none">
+          <Pressable
+            accessibilityLabel="Open breathing actions"
+            accessibilityRole="button"
+            onPress={() => setSheetVisible((v) => !v)}
+            style={({ pressed }) => [
+              styles.fabPressable,
+              pressed && styles.fabPressed,
+            ]}
+          >
+            <View style={styles.fab}>
+              <FloatingActionContent progress={fabProgress} />
+            </View>
+          </Pressable>
+        </View>
       </View>
 
-      <BreatheActionSheet
-        bottomOffset={trayBottomOffset}
-        horizontalAnchor="right"
+      <BreatheArcMenu
+        anchorBottomOffset={fabCenterBottom}
+        anchorHorizontalAlign="center"
         visible={sheetVisible}
         onClose={handleSheetClose}
         onSelect={handleSelect}
@@ -253,140 +251,311 @@ export function MainTabs() {
   );
 }
 
-function DockTabs({
-  activeTab,
-  indicatorTranslateX,
-  onPress,
-}: {
-  activeTab: MainDockTabName;
-  indicatorTranslateX: Animated.Value;
-  onPress: (tabName: MainDockTabName) => void;
-}) {
-  return (
-    <View style={styles.leftDockContent}>
-      <Animated.View
-        pointerEvents="none"
-        style={[
-          styles.leftDockIndicator,
-          { transform: [{ translateX: indicatorTranslateX }] },
-        ]}
-      />
-      {MAIN_DOCK_TABS.map((tab) => {
-        const selected = activeTab === tab.name;
-        const color = selected ? colors.primary.blue700 : colors.text.secondary;
+// ---------------------------------------------------------------------------
+// Notched dock background
+// ---------------------------------------------------------------------------
 
-        return (
-          <Pressable
-            key={tab.name}
-            accessibilityLabel={tab.label}
-            accessibilityRole="tab"
-            accessibilityState={{ selected }}
-            onPress={() => onPress(tab.name)}
-            style={({ pressed }) => [
-              styles.leftDockTab,
-              pressed && styles.leftDockTabPressed,
-            ]}
-          >
-            <MaterialCommunityIcons name={tab.icon} size={24} color={color} />
-            <Text style={[styles.leftDockTabText, { color }]}>{tab.label}</Text>
-          </Pressable>
-        );
-      })}
+function NotchedBackground({ width, height }: { width: number; height: number }) {
+  const pathD = useMemo(() => {
+    const cornerRadius = height / 2;
+    const centerX = width / 2;
+    const notchStart = centerX - NOTCH_RADIUS;
+    const notchEnd = centerX + NOTCH_RADIUS;
+
+    // Pill with a concave semicircular notch on the top edge.
+    // SVG y-down: sweep-flag=0 on the notch arc bulges DOWN into the shape.
+    return [
+      `M ${cornerRadius} 0`,
+      `L ${notchStart} 0`,
+      `A ${NOTCH_RADIUS} ${NOTCH_RADIUS} 0 0 0 ${notchEnd} 0`,
+      `L ${width - cornerRadius} 0`,
+      `A ${cornerRadius} ${cornerRadius} 0 0 1 ${width} ${cornerRadius}`,
+      `L ${width} ${height - cornerRadius}`,
+      `A ${cornerRadius} ${cornerRadius} 0 0 1 ${width - cornerRadius} ${height}`,
+      `L ${cornerRadius} ${height}`,
+      `A ${cornerRadius} ${cornerRadius} 0 0 1 0 ${height - cornerRadius}`,
+      `L 0 ${cornerRadius}`,
+      `A ${cornerRadius} ${cornerRadius} 0 0 1 ${cornerRadius} 0`,
+      'Z',
+    ].join(' ');
+  }, [width, height]);
+
+  // Mask: opaque-filled notched path; MaskedView uses its alpha to clip the glass.
+  const mask = (
+    <Svg width={width} height={height}>
+      <Path d={pathD} fill="black" />
+    </Svg>
+  );
+
+  return (
+    <View
+      style={[StyleSheet.absoluteFill, { width, height }]}
+      pointerEvents="none"
+    >
+      <MaskedView style={{ width, height }} maskElement={mask}>
+        {canUseLiquidGlass ? (
+          <GlassView
+            colorScheme="light"
+            glassEffectStyle="clear"
+            style={{ width, height }}
+            tintColor="rgba(255,255,255,0.46)"
+          />
+        ) : (
+          <BlurView
+            intensity={76}
+            tint="systemUltraThinMaterialLight"
+            style={{
+              width,
+              height,
+              backgroundColor: 'rgba(255,255,255,0.6)',
+            }}
+          />
+        )}
+      </MaskedView>
+      {/* Hairline edge along the notched outline */}
+      <Svg
+        width={width}
+        height={height}
+        style={StyleSheet.absoluteFill}
+        pointerEvents="none"
+      >
+        <Path
+          d={pathD}
+          fill="none"
+          stroke="rgba(255,255,255,0.7)"
+          strokeWidth={1}
+        />
+      </Svg>
     </View>
   );
 }
 
-function FloatingActionContent() {
+// ---------------------------------------------------------------------------
+// Dock tabs with sliding indicator
+// ---------------------------------------------------------------------------
+
+function DockTabs({
+  activeTab,
+  onPress,
+  tabAreaWidth,
+  sliderPositions,
+}: {
+  activeTab: MainDockTabName;
+  onPress: (tabName: MainDockTabName) => void;
+  tabAreaWidth: number;
+  sliderPositions: Record<number, number>;
+}) {
+  const sliderX = useRef(new Animated.Value(sliderPositions[0])).current;
+
+  useEffect(() => {
+    const index = MAIN_DOCK_TABS.findIndex((t) => t.name === activeTab);
+    Animated.spring(sliderX, {
+      toValue: sliderPositions[index] ?? 0,
+      friction: 9,
+      tension: 120,
+      useNativeDriver: true,
+    }).start();
+  }, [activeTab, sliderPositions, sliderX]);
+
+  const homeTab = MAIN_DOCK_TABS[0];
+  const profileTab = MAIN_DOCK_TABS[1];
+
   return (
-    <Icon name="meditation" size={30} color={colors.primary.blue600} />
+    <View style={styles.dockContent}>
+      <Animated.View
+        style={[
+          styles.slider,
+          { transform: [{ translateX: sliderX }] },
+        ]}
+      />
+
+      <View style={{ width: tabAreaWidth }}>
+        <DockTab tab={homeTab} activeTab={activeTab} onPress={onPress} />
+      </View>
+      <View style={{ width: NOTCH_RADIUS * 2 }} />
+      <View style={{ width: tabAreaWidth }}>
+        <DockTab tab={profileTab} activeTab={activeTab} onPress={onPress} />
+      </View>
+    </View>
   );
 }
 
+function DockTab({
+  tab,
+  activeTab,
+  onPress,
+}: {
+  tab: (typeof MAIN_DOCK_TABS)[number];
+  activeTab: MainDockTabName;
+  onPress: (tabName: MainDockTabName) => void;
+}) {
+  const selected = activeTab === tab.name;
+  const color = selected ? colors.primary.blue700 : colors.text.tertiary;
+
+  return (
+    <Pressable
+      accessibilityLabel={tab.label}
+      accessibilityRole="tab"
+      accessibilityState={{ selected }}
+      onPress={() => onPress(tab.name)}
+      style={({ pressed }) => [
+        styles.dockTab,
+        pressed && styles.dockTabPressed,
+      ]}
+    >
+      <Icon name={tab.icon} size={22} color={color} />
+      <Text
+        style={[
+          styles.dockTabText,
+          { color, fontFamily: selected ? fonts.semibold : fonts.regular },
+        ]}
+      >
+        {tab.label}
+      </Text>
+    </Pressable>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// FAB content
+// ---------------------------------------------------------------------------
+
+function FloatingActionContent({ progress }: { progress: Animated.Value }) {
+  const meditationOpacity = progress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 0],
+  });
+  const meditationRotate = progress.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '45deg'],
+  });
+  const closeOpacity = progress.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 1],
+  });
+  const closeRotate = progress.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['-45deg', '0deg'],
+  });
+
+  return (
+    <View style={styles.fabIconWrap}>
+      <Animated.View
+        style={[
+          styles.fabIcon,
+          {
+            opacity: meditationOpacity,
+            transform: [{ rotate: meditationRotate }],
+          },
+        ]}
+      >
+        <Icon name="meditation" size={28} color={colors.text.inverse} />
+      </Animated.View>
+      <Animated.View
+        style={[
+          styles.fabIcon,
+          {
+            opacity: closeOpacity,
+            transform: [{ rotate: closeRotate }],
+          },
+        ]}
+      >
+        <Icon name="close" size={24} color={colors.text.inverse} />
+      </Animated.View>
+    </View>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Styles
+// ---------------------------------------------------------------------------
+
 const styles = StyleSheet.create({
-  floatingDockAnchor: {
+  dockAnchor: {
     position: 'absolute',
-    left: spacing.lg,
-    right: spacing.lg,
-    flexDirection: 'row',
+    left: 0,
+    right: 0,
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
   },
-  leftDockShadow: {
-    width: LEFT_DOCK_WIDTH,
-    height: LEFT_DOCK_HEIGHT,
-    borderRadius: LEFT_DOCK_HEIGHT / 2,
+
+  // Dock body
+  dockShadow: {
+    height: DOCK_HEIGHT,
     shadowColor: colors.primary.blue700,
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.16,
-    shadowRadius: 18,
-    elevation: 8,
+    shadowRadius: 20,
+    elevation: 10,
   },
-  leftDock: {
-    width: LEFT_DOCK_WIDTH,
-    height: LEFT_DOCK_HEIGHT,
-    borderRadius: LEFT_DOCK_HEIGHT / 2,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.56)',
-  },
-  leftDockFallback: {
-    backgroundColor: 'rgba(255,255,255,0.72)',
-  },
-  leftDockContent: {
+  dockContent: {
     flex: 1,
     flexDirection: 'row',
-    padding: LEFT_DOCK_PADDING,
+    alignItems: 'center',
+    position: 'relative',
   },
-  leftDockIndicator: {
+  slider: {
     position: 'absolute',
-    left: LEFT_DOCK_PADDING,
-    top: LEFT_DOCK_PADDING,
-    width: LEFT_DOCK_SEGMENT_WIDTH,
-    height: LEFT_DOCK_HEIGHT - LEFT_DOCK_PADDING * 2,
-    borderRadius: (LEFT_DOCK_HEIGHT - LEFT_DOCK_PADDING * 2) / 2,
-    backgroundColor: 'rgba(255,255,255,0.58)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.68)',
+    left: 0,
+    top: (DOCK_HEIGHT - SLIDER_HEIGHT) / 2,
+    width: SLIDER_WIDTH,
+    height: SLIDER_HEIGHT,
+    borderRadius: SLIDER_HEIGHT / 2,
+    backgroundColor: colors.text.inverse,
+    opacity: 0.5,
   },
-  leftDockTab: {
-    width: LEFT_DOCK_SEGMENT_WIDTH,
-    height: LEFT_DOCK_HEIGHT - LEFT_DOCK_PADDING * 2,
-    borderRadius: (LEFT_DOCK_HEIGHT - LEFT_DOCK_PADDING * 2) / 2,
+  dockTab: {
+    height: DOCK_HEIGHT,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 1,
+    gap: 2,
   },
-  leftDockTabPressed: {
+  dockTabPressed: {
     opacity: 0.75,
   },
-  leftDockTabText: {
+  dockTabText: {
     ...typography.label.small,
   },
-  floatingActionPressable: {
+
+  // FAB — solid blue, half-sunk into the dock's notch.
+  fabAnchor: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    height: FLOATING_ACTION_SIZE,
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+  },
+  fabPressable: {
     width: FLOATING_ACTION_SIZE,
     height: FLOATING_ACTION_SIZE,
     borderRadius: FLOATING_ACTION_SIZE / 2,
     shadowColor: colors.primary.blue700,
     shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.3,
     shadowRadius: 18,
-    elevation: 10,
+    elevation: 12,
   },
-  floatingActionPressed: {
-    opacity: 0.9,
+  fabPressed: {
+    opacity: 0.95,
     transform: [{ scale: 0.96 }],
   },
-  floatingAction: {
+  fab: {
     width: FLOATING_ACTION_SIZE,
     height: FLOATING_ACTION_SIZE,
     borderRadius: FLOATING_ACTION_SIZE / 2,
     alignItems: 'center',
     justifyContent: 'center',
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.58)',
+    backgroundColor: colors.primary.blue600,
   },
-  floatingActionFallback: {
-    backgroundColor: 'rgba(255,255,255,0.74)',
+  fabIconWrap: {
+    width: FLOATING_ACTION_SIZE,
+    height: FLOATING_ACTION_SIZE,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  fabIcon: {
+    position: 'absolute',
   },
 });

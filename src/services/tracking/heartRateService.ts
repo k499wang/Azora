@@ -26,6 +26,13 @@ type HeartRateIbiSampleRow = Database['public']['Tables']['heart_rate_ibi_sample
 export async function completeHeartRateSession(
   input: CompleteHeartRateSessionInput,
 ): Promise<string> {
+  const startedAt = Date.now();
+  console.log('[heart-rate-save] service payload build started', {
+    sampleCount: input.captureSamples.length,
+    timezone: input.timezone,
+    hasReading: input.result.reading != null,
+  });
+
   const args = buildHeartRateSessionRpcPayload(
     input.captureSamples,
     input.result,
@@ -33,21 +40,57 @@ export async function completeHeartRateSession(
   );
 
   if (args == null) {
+    console.warn('[heart-rate-save] service payload build failed', {
+      elapsedMs: Date.now() - startedAt,
+    });
     throw new Error('Cannot persist a heart-rate session without a valid reading.');
   }
 
   const supabase = requireSupabaseClient();
 
+  console.log('[heart-rate-save] rpc request started', {
+    sampleCount: input.captureSamples.length,
+  });
+
+  const rpcStartedAt = Date.now();
   const { data, error } = await supabase.rpc('complete_heart_rate_session', {
     p_session: args.p_session as unknown as Json,
     p_samples: args.p_samples as unknown as Json,
   });
 
   if (error != null) {
+    console.warn('[heart-rate-save] rpc request failed', {
+      elapsedMs: Date.now() - rpcStartedAt,
+      totalElapsedMs: Date.now() - startedAt,
+      errorMessage: getErrorMessage(error),
+    });
     throw error;
   }
 
+  console.log('[heart-rate-save] rpc request succeeded', {
+    sessionId: data,
+    elapsedMs: Date.now() - rpcStartedAt,
+    totalElapsedMs: Date.now() - startedAt,
+  });
+
   return data;
+}
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  if (
+    typeof error === 'object' &&
+    error != null &&
+    'message' in error &&
+    typeof error.message === 'string'
+  ) {
+    return error.message;
+  }
+
+  return String(error);
 }
 
 function mapHeartRateSummary(
