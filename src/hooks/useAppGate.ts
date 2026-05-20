@@ -36,6 +36,79 @@ export type AppGate =
   | NeedsOnboardingGate
   | ReadyGate;
 
+interface OnboardingStatusQueryLike {
+  isPending: boolean;
+  isError: boolean;
+  data: boolean | undefined;
+}
+
+interface SavedOnboardingProfileQueryLike {
+  isPending: boolean;
+  isError: boolean;
+  data: SavedOnboardingProfile | null | undefined;
+}
+
+interface EntitlementQueryLike {
+  isPending: boolean;
+  data?: { isPro: boolean } | null | undefined;
+}
+
+export function computeAppGate(
+  authStatus: 'booting' | 'signed_out' | 'signed_in',
+  user: { id: string } | null,
+  onboardingStatusQuery: OnboardingStatusQueryLike,
+  savedOnboardingProfileQuery: SavedOnboardingProfileQueryLike,
+  entitlementQuery: EntitlementQueryLike,
+  isCompletingOnboarding: boolean,
+  autoCompleteFailedForUserId: string | null,
+  saveOnboardingProfile: (input: CompleteOnboardingInput) => Promise<void>,
+  completeOnboarding: () => Promise<void>,
+  isSavingOnboardingProfile: boolean,
+): AppGate {
+  if (authStatus === 'booting') {
+    return { status: 'booting' };
+  }
+
+  if (authStatus === 'signed_out' || user == null) {
+    return { status: 'signed_out' };
+  }
+
+  if (onboardingStatusQuery.isPending) {
+    return { status: 'booting' };
+  }
+
+  if (onboardingStatusQuery.isError || savedOnboardingProfileQuery.isError) {
+    return { status: 'signed_out' };
+  }
+
+  if (onboardingStatusQuery.data !== true) {
+    if (savedOnboardingProfileQuery.isPending) {
+      return { status: 'booting' };
+    }
+
+    if (
+      savedOnboardingProfileQuery.data != null &&
+      (entitlementQuery.isPending ||
+        (entitlementQuery.data?.isPro === true &&
+          autoCompleteFailedForUserId !== user.id) ||
+        isCompletingOnboarding)
+    ) {
+      return { status: 'booting' };
+    }
+
+    return {
+      status: 'needs_onboarding',
+      savedOnboardingProfile: savedOnboardingProfileQuery.data ?? null,
+      saveOnboardingProfile,
+      completeOnboarding,
+      isSavingOnboardingProfile,
+      isCompletingOnboarding,
+    };
+  }
+
+  return { status: 'ready' };
+}
+
 export function useAppGate(): AppGate {
   const authStatus = useAuthStore((state) => state.status);
   const user = useAuthStore((state) => state.user);
@@ -53,6 +126,13 @@ export function useAppGate(): AppGate {
   const autoCompleteAttemptedRef = useRef<string | null>(null);
   const [autoCompleteFailedForUserId, setAutoCompleteFailedForUserId] =
     useState<string | null>(null);
+
+  useEffect(() => {
+    if (onboardingStatusQuery.isError || savedOnboardingProfileQuery.isError) {
+      console.warn('[appGate] Onboarding query failed, signing out corrupted session');
+      void useAuthStore.getState().signOut();
+    }
+  }, [onboardingStatusQuery.isError, savedOnboardingProfileQuery.isError]);
 
   useEffect(() => {
     if (
@@ -79,44 +159,18 @@ export function useAppGate(): AppGate {
     userId,
   ]);
 
-  if (authStatus === 'booting') {
-    return { status: 'booting' };
-  }
-
-  if (authStatus === 'signed_out' || user == null) {
-    return { status: 'signed_out' };
-  }
-
-  if (onboardingStatusQuery.isPending) {
-    return { status: 'booting' };
-  }
-
-  if (onboardingStatusQuery.data !== true) {
-    if (savedOnboardingProfileQuery.isPending) {
-      return { status: 'booting' };
-    }
-
-    if (
-      savedOnboardingProfileQuery.data != null &&
-      (entitlementQuery.isPending ||
-        (entitlementQuery.data?.isPro === true &&
-          autoCompleteFailedForUserId !== userId) ||
-        isCompletingOnboarding)
-    ) {
-      return { status: 'booting' };
-    }
-
-    return {
-      status: 'needs_onboarding',
-      savedOnboardingProfile: savedOnboardingProfileQuery.data ?? null,
-      saveOnboardingProfile: async (input) => {
-        await saveOnboardingProfileMutation.mutateAsync(input);
-      },
-      completeOnboarding: () => completeOnboarding(),
-      isSavingOnboardingProfile: saveOnboardingProfileMutation.isPending,
-      isCompletingOnboarding,
-    };
-  }
-
-  return { status: 'ready' };
+  return computeAppGate(
+    authStatus,
+    user,
+    onboardingStatusQuery,
+    savedOnboardingProfileQuery,
+    entitlementQuery,
+    isCompletingOnboarding,
+    autoCompleteFailedForUserId,
+    async (input) => {
+      await saveOnboardingProfileMutation.mutateAsync(input);
+    },
+    () => completeOnboarding(),
+    saveOnboardingProfileMutation.isPending,
+  );
 }
