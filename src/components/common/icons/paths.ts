@@ -213,6 +213,17 @@ export const ICON_PATHS = {
     <circle cx="12" cy="13.5" r="3.6" stroke="currentColor" stroke-width="1.8" fill="none"/>
   `,
 
+  home: `
+    <path fill="currentColor" opacity="0.14" d="M4 11.2 12 4l8 7.2V19a1.5 1.5 0 0 1-1.5 1.5h-3.5V14h-6v6.5H5.5A1.5 1.5 0 0 1 4 19v-7.8Z"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" d="M4 11.2 12 4l8 7.2V19a1.5 1.5 0 0 1-1.5 1.5h-3.5V14h-6v6.5H5.5A1.5 1.5 0 0 1 4 19v-7.8Z"/>
+  `,
+
+  profile: `
+    <path fill="currentColor" opacity="0.14" d="M12 12.6a4.1 4.1 0 1 0 0-8.2 4.1 4.1 0 0 0 0 8.2Zm0 1.6c-3.6 0-7 1.9-7 4.6v1.7h14v-1.7c0-2.7-3.4-4.6-7-4.6Z"/>
+    <circle cx="12" cy="8.5" r="4.1" stroke="currentColor" stroke-width="1.9" fill="none"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" d="M5 20.5v-1.7c0-2.7 3.4-4.6 7-4.6s7 1.9 7 4.6v1.7"/>
+  `,
+
   journal: `
     <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M4 4h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/>
     <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M8 4v16"/>

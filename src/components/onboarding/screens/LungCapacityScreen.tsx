@@ -462,7 +462,7 @@ export default function LungCapacityScreen({
       <View style={styles.introStage}>
         <Text style={styles.lungEmoji}>🫁</Text>
         <View style={styles.introCopy}>
-          <Text style={styles.introHeadline}>Test your{'\n'}lung capacity.</Text>
+          <Text style={styles.introHeadline}>Lets measure your{'\n'}lung capacity.</Text>
           <Text style={styles.introSub}>
             A quick two-step test. First a deep inhale, then we&apos;ll time
             your exhale.

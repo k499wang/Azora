@@ -421,7 +421,7 @@ export default function PactScreen({
           >
             {/* Title */}
             <View style={styles.copy}>
-              <Text style={typography.title.title1}>Give it a fair chance: Do {dailyMinutes} of Azora every day</Text>
+              <Text style={typography.title.title1}>Give it a chance: Keep a habit of Azora every day</Text>
               <Text
                 style={[
                   typography.body.small,

@@ -40,20 +40,38 @@ export function useCompleteHeartRateSessionMutation(userId: string | null) {
 
   return useMutation({
     mutationFn: async (input: CompleteHeartRateSessionMutationInput) => {
-      console.log('[hr-gate] completeHeartRateSessionMutation: start', { userId, sampleCount: input.captureSamples.length });
+      const startedAt = Date.now();
+      console.log('[heart-rate-save] mutation started', {
+        userId,
+        sampleCount: input.captureSamples.length,
+        hasReading: input.result.reading != null,
+      });
       if (userId == null) {
         throw new Error('Cannot save a heart-rate reading without a signed-in user.');
       }
 
       const timezone = getDeviceTimezone();
 
-      const sessionId = await completeHeartRateSession({
-        captureSamples: input.captureSamples,
-        result: input.result,
-        timezone,
-      });
-      console.log('[hr-gate] completeHeartRateSessionMutation: RPC returned', { sessionId });
-      return sessionId;
+      try {
+        const sessionId = await completeHeartRateSession({
+          captureSamples: input.captureSamples,
+          result: input.result,
+          timezone,
+        });
+        console.log('[heart-rate-save] mutation succeeded', {
+          userId,
+          sessionId,
+          elapsedMs: Date.now() - startedAt,
+        });
+        return sessionId;
+      } catch (error) {
+        console.warn('[heart-rate-save] mutation failed', {
+          userId,
+          elapsedMs: Date.now() - startedAt,
+          errorMessage: getErrorMessage(error),
+        });
+        throw error;
+      }
     },
     onSuccess: (_sessionId, input) => {
       const timezone = getDeviceTimezone();
@@ -82,4 +100,21 @@ export function useCompleteHeartRateSessionMutation(userId: string | null) {
         });
     },
   });
+}
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  if (
+    typeof error === 'object' &&
+    error != null &&
+    'message' in error &&
+    typeof error.message === 'string'
+  ) {
+    return error.message;
+  }
+
+  return String(error);
 }

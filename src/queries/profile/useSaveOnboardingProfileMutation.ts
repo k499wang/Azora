@@ -21,7 +21,31 @@ export function useSaveOnboardingProfileMutation(userId: string | null) {
         throw new Error('Cannot save onboarding profile without a signed-in user.');
       }
 
-      await saveOnboardingProfile(userId, input);
+      const startedAt = Date.now();
+      console.log('[onboarding-profile] save mutation started', {
+        userId,
+        hasGoal: input.onboardingGoal != null && input.onboardingGoal.length > 0,
+        hasAge: input.age != null,
+        hasGender: input.gender != null,
+        hasDailyMinutes: input.dailyMinutes != null,
+        hasDefaultTechnique: input.defaultTechniqueId != null,
+      });
+
+      try {
+        await saveOnboardingProfile(userId, input);
+        console.log('[onboarding-profile] save mutation succeeded', {
+          userId,
+          elapsedMs: Date.now() - startedAt,
+        });
+      } catch (error) {
+        console.warn('[onboarding-profile] save mutation failed', {
+          userId,
+          elapsedMs: Date.now() - startedAt,
+          errorMessage: getErrorMessage(error),
+        });
+        throw error;
+      }
+
       return input;
     },
     onSuccess: async (input) => {
@@ -93,4 +117,21 @@ export function useSaveOnboardingProfileMutation(userId: string | null) {
       ]);
     },
   });
+}
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  if (
+    typeof error === 'object' &&
+    error != null &&
+    'message' in error &&
+    typeof error.message === 'string'
+  ) {
+    return error.message;
+  }
+
+  return String(error);
 }
