@@ -58,7 +58,6 @@ interface OnboardingDatabase {
 }
 
 type ProfileInsert = OnboardingDatabase['public']['Tables']['profiles']['Insert'];
-type ProfileUpdate = OnboardingDatabase['public']['Tables']['profiles']['Update'];
 
 export type OnboardingGender = 'female' | 'male' | 'nonbinary' | 'prefer_not';
 export type OnboardingExperienceLevel = 'never' | 'little' | 'regular';
@@ -133,16 +132,16 @@ export async function saveOnboardingProfile(
 
 export async function markOnboardingCompleted(userId: string): Promise<void> {
   const supabase = getOnboardingClient();
-  const profile: ProfileUpdate = {
-    onboarding_completed_at: new Date().toISOString(),
-  };
 
   const { error } = await supabase
     .from('profiles')
-    .update(profile)
-    .eq('user_id', userId)
-    .select('user_id')
-    .single();
+    .upsert(
+      {
+        user_id: userId,
+        onboarding_completed_at: new Date().toISOString(),
+      },
+      { onConflict: 'user_id' },
+    );
 
   if (error != null) {
     throw toError(error);

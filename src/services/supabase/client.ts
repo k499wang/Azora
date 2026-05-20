@@ -11,6 +11,7 @@ import {
 } from '@supabase/supabase-js';
 import type { Database } from './database.types';
 import { isSupabaseConfigured, supabaseConfig } from './config';
+import { fetchWithRetry } from './fetchWithRetry';
 
 export type SupabaseAuthChangeEvent = AuthChangeEvent;
 export type SupabaseSession = Session;
@@ -37,6 +38,9 @@ function createSupabaseClient(): SupabaseClientLike<Database> {
         persistSession: true,
         detectSessionInUrl: false,
         lock: processLock,
+      },
+      global: {
+        fetch: fetchWithRetry,
       },
     },
   );
