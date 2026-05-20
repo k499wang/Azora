@@ -12,6 +12,7 @@ interface NameScreenProps {
   onChange: (value: string) => void;
   onContinue: () => void;
   onBack: () => void;
+  onSkip?: () => void;
 }
 
 export default function NameScreen({
@@ -21,6 +22,7 @@ export default function NameScreen({
   onChange,
   onContinue,
   onBack,
+  onSkip,
 }: NameScreenProps) {
   return (
     <OnboardingScreenLayout
@@ -28,6 +30,7 @@ export default function NameScreen({
       subtitle="Let Azora know a little more about you!"
       progress={stepIndex / stepCount}
       onBack={onBack}
+      onSkip={onSkip}
       keyboardAvoiding
       footer={
         <OnboardingPrimaryButton label="Continue" onPress={onContinue} />

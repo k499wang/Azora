@@ -55,6 +55,7 @@ interface AgreementScreenProps {
   onChange: (id: string, value: AgreementValue) => void;
   onContinue: () => void;
   onBack: () => void;
+  onSkip?: () => void;
 }
 
 export default function AgreementScreen({
@@ -64,6 +65,7 @@ export default function AgreementScreen({
   onChange,
   onContinue,
   onBack,
+  onSkip,
 }: AgreementScreenProps) {
   const firstUnanswered = AGREEMENT_STATEMENTS.findIndex(
     (s) => responses[s.id] == null,
@@ -169,6 +171,7 @@ export default function AgreementScreen({
       subtitle={`${currentIdx + 1} of ${total}`}
       progress={subProgress}
       onBack={handleBack}
+      onSkip={onSkip}
       footer={choicesRow}
     >
       <Animated.View

@@ -13,6 +13,7 @@ interface SleepScreenProps {
   onChange: (value: number) => void;
   onContinue: () => void;
   onBack: () => void;
+  onSkip?: () => void;
 }
 
 function descriptorFor(value: number): string {
@@ -38,6 +39,7 @@ export default function SleepScreen({
   onChange,
   onContinue,
   onBack,
+  onSkip,
 }: SleepScreenProps) {
   const accent = accentForRestedness(value);
 
@@ -47,6 +49,7 @@ export default function SleepScreen({
       subtitle="Sleep shapes everything including your stress, focus, and mood."
       progress={stepIndex / stepCount}
       onBack={onBack}
+      onSkip={onSkip}
       centerBody
       footer={<OnboardingPrimaryButton label="Continue" onPress={onContinue} />}
     >

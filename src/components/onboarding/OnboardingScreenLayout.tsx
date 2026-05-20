@@ -24,6 +24,7 @@ interface OnboardingScreenLayoutProps {
   subtitle?: string;
   progress: number;
   onBack?: () => void;
+  onSkip?: () => void;
   footer: ReactNode;
   children: ReactNode;
   keyboardAvoiding?: boolean;
@@ -35,6 +36,7 @@ export default function OnboardingScreenLayout({
   subtitle,
   progress,
   onBack,
+  onSkip,
   footer,
   children,
   keyboardAvoiding = false,
@@ -74,6 +76,12 @@ export default function OnboardingScreenLayout({
     onBack();
   };
 
+  const handleSkip = () => {
+    if (!onSkip) return;
+    if (isHapticsEnabled()) Haptics.selectionAsync().catch(() => {});
+    onSkip();
+  };
+
   const clamped = Math.max(0, Math.min(1, progress));
 
   const inner = (
@@ -96,6 +104,20 @@ export default function OnboardingScreenLayout({
         <View style={styles.progressBar}>
           <View style={[styles.progressFill, { width: `${clamped * 100}%` }]} />
         </View>
+        {onSkip ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Skip"
+            hitSlop={12}
+            onPress={handleSkip}
+            style={({ pressed }) => [
+              styles.skipButton,
+              pressed && styles.skipButtonPressed,
+            ]}
+          >
+            <Text style={styles.skipLabel}>Skip</Text>
+          </Pressable>
+        ) : null}
       </View>
 
       <ScrollView
@@ -199,6 +221,19 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.text.primary,
     lineHeight: 24,
+  },
+  skipButton: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+  skipButtonPressed: {
+    opacity: 0.6,
+  },
+  skipLabel: {
+    ...typography.body.small,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    color: colors.text.secondary,
   },
   scroll: {
     flex: 1,

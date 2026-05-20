@@ -13,6 +13,7 @@ interface DailyTimeScreenProps {
   onChange: (value: number) => void;
   onContinue: () => void;
   onBack: () => void;
+  onSkip?: () => void;
 }
 
 function descriptorFor(value: number): string {
@@ -38,6 +39,7 @@ export default function DailyTimeScreen({
   onChange,
   onContinue,
   onBack,
+  onSkip,
 }: DailyTimeScreenProps) {
   const accent = accentForDailyTime(value);
 
@@ -47,6 +49,7 @@ export default function DailyTimeScreen({
       subtitle="A few minutes a day is enough to see real change."
       progress={stepIndex / stepCount}
       onBack={onBack}
+      onSkip={onSkip}
       centerBody
       footer={<OnboardingPrimaryButton label="Continue" onPress={onContinue} />}
     >

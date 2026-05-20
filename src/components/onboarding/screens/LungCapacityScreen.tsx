@@ -33,6 +33,7 @@ interface LungCapacityScreenProps {
   stepCount: number;
   onContinue: (result: LungCapacityResult) => void;
   onBack: () => void;
+  onSkip?: () => void;
 }
 
 type Phase = 'intro' | 'inhale' | 'exhale' | 'calibrating' | 'done';
@@ -68,6 +69,7 @@ export default function LungCapacityScreen({
   stepCount,
   onContinue,
   onBack,
+  onSkip,
 }: LungCapacityScreenProps) {
   const [phase, setPhase] = useState<Phase>('intro');
   const [inhaleRemaining, setInhaleRemaining] = useState(INHALE_SECONDS);
@@ -443,6 +445,7 @@ export default function LungCapacityScreen({
       title=""
       progress={stepIndex / stepCount}
       onBack={onBack}
+      onSkip={onSkip}
       footer={
         <View style={styles.introFooter}>
           <OnboardingPrimaryButton
