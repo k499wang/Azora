@@ -61,3 +61,16 @@ test('computeHRVStatsFromCleanIntervals computes stats without preprocessing aga
   assert.equal(stats.artifactRatio, 0.25);
   assert.equal(stats.rmssd, 4);
 });
+
+test('computeHRVStatsFromCleanIntervals computes SDNN from clean NN intervals without detrending', () => {
+  const cleaned = [800, 820, 840, 860, 880];
+  const stats = computeHRVStatsFromCleanIntervals({
+    ibi: cleaned,
+    adjacencyBreaks: cleaned.map(() => false),
+    artifactRatio: 0,
+    usable: true,
+  });
+
+  assert.equal(stats.rmssd, 20);
+  assert.equal(stats.sdnn, 32);
+});

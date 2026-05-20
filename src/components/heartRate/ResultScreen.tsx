@@ -247,6 +247,7 @@ export function ResultScreen({
                 confidence={reading.confidence}
                 sampleCount={reading.sampleCount}
                 rmssd={reading.rmssd ?? null}
+                sdnn={reading.sdnn ?? null}
                 hrDrop={reading.hrDrop ?? null}
                 stress={reading.stress ?? null}
                 hrvAvailabilityReason={reading.hrvAvailabilityReason}

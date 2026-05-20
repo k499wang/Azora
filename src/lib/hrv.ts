@@ -68,22 +68,6 @@ function stddev(values: number[]): number {
   return Math.sqrt(variance);
 }
 
-function linearDetrend(values: number[]): number[] {
-  const n = values.length;
-  if (n < 3) return values;
-  const xMean = (n - 1) / 2;
-  const yMean = mean(values);
-  let num = 0;
-  let den = 0;
-  for (let i = 0; i < n; i++) {
-    num += (i - xMean) * (values[i] - yMean);
-    den += (i - xMean) * (i - xMean);
-  }
-  if (den === 0) return values;
-  const slope = num / den;
-  return values.map((v, i) => v - slope * (i - xMean));
-}
-
 function medianAbsoluteDeviation(values: number[], center: number): number {
   if (values.length === 0) return 0;
   const deviations = values.map((value) => Math.abs(value - center));
@@ -337,7 +321,7 @@ export function computeHRVStatsFromCleanIntervals({
     nn50Pairs += 1;
   }
   const rmssd = pairs > 0 ? Math.round(Math.sqrt(sumSq / pairs)) : 0;
-  const sdnn = Math.round(stddev(linearDetrend(correctedIbi)));
+  const sdnn = Math.round(stddev(correctedIbi));
   const pnn50 = nn50Pairs > 0 ? Math.round((nn50 / nn50Pairs) * 100) : 0;
 
   const rmssdScore = Math.max(0, 100 - (rmssd / HRV_TARGET_RMSSD) * 100);
