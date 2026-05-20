@@ -34,6 +34,7 @@ import {
   AudioSettingsSheet,
   SettingsGearButton,
   ThemePickerSection,
+  useAudioPreferences,
 } from '../features/audioSettings';
 import { useCancellableFlow } from '../hooks/useCancellableFlow';
 import { useAuthStore } from '../stores/authStore';
@@ -221,7 +222,13 @@ export default function DailyExercisePage({
   const [hrEnabled, setHrEnabled] = useState(true);
   const [lastRelease, setLastRelease] = useState<HeartRateReleaseStats | null>(null);
   const [releaseAudioActive, setReleaseAudioActive] = useState(false);
-  const [activeTheme, setActiveTheme] = useState<ExerciseDarkTheme>(EXERCISE_DARK_THEMES[0]);
+  const { preferences: audioPreferences, setThemeId } = useAudioPreferences();
+  const activeTheme = useMemo<ExerciseDarkTheme>(
+    () =>
+      EXERCISE_DARK_THEMES.find((t) => t.id === audioPreferences.themeId) ??
+      EXERCISE_DARK_THEMES[0],
+    [audioPreferences.themeId],
+  );
   const [audioSettingsOpen, setAudioSettingsOpen] = useState(false);
   const isFocused = useIsFocused();
 
@@ -948,6 +955,21 @@ export default function DailyExercisePage({
                       <MaterialCommunityIcons name="close" size={26} color={activeTheme.iconPrimary} />
                     </Pressable>
                     <Pressable
+                      style={({ pressed }) => [
+                        styles.circleBtn,
+                        { backgroundColor: activeTheme.surface, borderColor: activeTheme.surfaceBorder },
+                        pressed && styles.circleBtnPressed,
+                      ]}
+                      onPress={() => setAudioSettingsOpen(true)}
+                      accessibilityLabel="Audio & voice"
+                    >
+                      <MaterialCommunityIcons
+                        name="cog-outline"
+                        size={26}
+                        color={activeTheme.iconPrimary}
+                      />
+                    </Pressable>
+                    <Pressable
                       onPress={() => {
                         setHrEnabled(false);
                         stopPulse();
@@ -962,21 +984,38 @@ export default function DailyExercisePage({
                     </Pressable>
                   </>
                 ) : (
-                  <Pressable
-                    style={({ pressed }) => [
-                      styles.circleBtn,
-                      { backgroundColor: activeTheme.surface, borderColor: activeTheme.surfaceBorder },
-                      pressed && styles.circleBtnPressed,
-                    ]}
-                    onPress={handlePrimaryPress}
-                    accessibilityLabel={primaryLabel}
-                  >
-                    <MaterialCommunityIcons
-                      name={phase === 'idle' || phase === 'done' ? 'play' : 'hand-back-left-outline'}
-                      size={28}
-                      color={activeTheme.iconPrimary}
-                    />
-                  </Pressable>
+                  <>
+                    <Pressable
+                      style={({ pressed }) => [
+                        styles.circleBtn,
+                        { backgroundColor: activeTheme.surface, borderColor: activeTheme.surfaceBorder },
+                        pressed && styles.circleBtnPressed,
+                      ]}
+                      onPress={handlePrimaryPress}
+                      accessibilityLabel={primaryLabel}
+                    >
+                      <MaterialCommunityIcons
+                        name={phase === 'idle' || phase === 'done' ? 'play' : 'hand-back-left-outline'}
+                        size={28}
+                        color={activeTheme.iconPrimary}
+                      />
+                    </Pressable>
+                    <Pressable
+                      style={({ pressed }) => [
+                        styles.circleBtn,
+                        { backgroundColor: activeTheme.surface, borderColor: activeTheme.surfaceBorder },
+                        pressed && styles.circleBtnPressed,
+                      ]}
+                      onPress={() => setAudioSettingsOpen(true)}
+                      accessibilityLabel="Audio & voice"
+                    >
+                      <MaterialCommunityIcons
+                        name="cog-outline"
+                        size={26}
+                        color={activeTheme.iconPrimary}
+                      />
+                    </Pressable>
+                  </>
                 )}
               </View>
             ) : null}
@@ -1010,7 +1049,7 @@ export default function DailyExercisePage({
         extraSectionsTop={
           <ThemePickerSection
             activeThemeId={activeTheme.id}
-            onSelect={setActiveTheme}
+            onSelect={(theme) => setThemeId(theme.id)}
           />
         }
       />

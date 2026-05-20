@@ -2,9 +2,9 @@ import type { FingerPlacementState, PpgFrameSample, PpgRoiSample } from './types
 
 const MIN_ROI_RED = 120;
 const MIN_AVG_ROI_RED = 100;
-const RED_SATURATION_GREEN_FALLBACK = 0.08;
-const MAX_ROI_RED_SATURATION = 0.35;
-const MAX_AVG_RED_SATURATION = 0.45;
+const RED_SATURATION_GREEN_FALLBACK = 0.15;
+const MAX_ROI_RED_SATURATION = 0.50;
+const MAX_AVG_RED_SATURATION = 0.60;
 
 interface ClassifyState {
   previousState?: FingerPlacementState;
