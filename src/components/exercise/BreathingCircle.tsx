@@ -28,6 +28,8 @@ interface BreathingThemeColors {
   outer: string;
   outerOpacity?: number;
   inner: string;
+  beatPulse: string;
+  beatFlush: string;
 }
 
 interface BreathingCircleProps {
@@ -168,6 +170,7 @@ const BreathingCircle = forwardRef<BreathingCircleRef, BreathingCircleProps>(
         <Animated.View
           style={[
             styles.beatRipple,
+            themeColors && { backgroundColor: themeColors.beatPulse },
             { transform: [{ scale: rippleScale }], opacity: rippleOpacity },
           ]}
           pointerEvents="none"
@@ -175,6 +178,7 @@ const BreathingCircle = forwardRef<BreathingCircleRef, BreathingCircleProps>(
         <Animated.View
           style={[
             styles.beatHalo,
+            themeColors && { backgroundColor: themeColors.beatPulse },
             { transform: [{ scale: beatScale }], opacity: beatOpacity },
           ]}
           pointerEvents="none"
@@ -187,7 +191,11 @@ const BreathingCircle = forwardRef<BreathingCircleRef, BreathingCircleProps>(
             <View style={StyleSheet.absoluteFillObject}>{cameraSlot}</View>
           ) : null}
           <Animated.View
-            style={[styles.innerFlush, { opacity: innerFlush }]}
+            style={[
+              styles.innerFlush,
+              themeColors && { backgroundColor: themeColors.beatFlush },
+              { opacity: innerFlush },
+            ]}
             pointerEvents="none"
           />
           {children ? (

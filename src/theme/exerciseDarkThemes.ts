@@ -10,6 +10,8 @@ export interface ExerciseDarkTheme {
   circleOuter: string;
   circleOuterOpacity: number;
   circleInner: string;
+  beatPulse: string;
+  beatFlush: string;
   progressTrack: string;
   progressFill: string;
   textPrimary: string;
@@ -32,6 +34,8 @@ export const EXERCISE_DARK_THEMES: ExerciseDarkTheme[] = [
     circleOuter: '#78B4FF',
     circleOuterOpacity: 0.28,
     circleInner: '#4A90F5',
+    beatPulse: '#BFD9FF',
+    beatFlush: '#2F7AEF',
     progressTrack: '#E2E8F0',
     progressFill: '#78B4FF',
     textPrimary: '#2e333a',
@@ -52,6 +56,8 @@ export const EXERCISE_DARK_THEMES: ExerciseDarkTheme[] = [
     circleOuter: '#4A6090',
     circleOuterOpacity: 0.42,
     circleInner: '#2A3F6B',
+    beatPulse: '#8AA8D8',
+    beatFlush: '#6A90C8',
     progressTrack: '#1C2130',
     progressFill: '#4A6090',
     textPrimary: '#C8D4E8',
@@ -71,7 +77,9 @@ export const EXERCISE_DARK_THEMES: ExerciseDarkTheme[] = [
     circleOutlineOpacity: 0.55,
     circleOuter: '#7A6A5E',
     circleOuterOpacity: 0.42,
-    circleInner: '#4A3E36',
+    circleInner: '#2E2620',
+    beatPulse: '#D8B890',
+    beatFlush: '#C8A880',
     progressTrack: '#1E1C1A',
     progressFill: '#7A6A5E',
     textPrimary: '#E0D8D0',
@@ -91,7 +99,9 @@ export const EXERCISE_DARK_THEMES: ExerciseDarkTheme[] = [
     circleOutlineOpacity: 0.55,
     circleOuter: '#4A7060',
     circleOuterOpacity: 0.42,
-    circleInner: '#1E3A32',
+    circleInner: '#0F241E',
+    beatPulse: '#8AC8A8',
+    beatFlush: '#6AB890',
     progressTrack: '#162018',
     progressFill: '#4A7060',
     textPrimary: '#C4D8D0',
