@@ -24,9 +24,10 @@ import type { NotificationPermissionStatus } from '../../services/notifications/
 
 interface PaywallTrialReminderToggleProps {
   dark?: boolean;
+  disabled?: boolean;
 }
 
-export default function PaywallTrialReminderToggle({ dark = false }: PaywallTrialReminderToggleProps) {
+export default function PaywallTrialReminderToggle({ dark = false, disabled = false }: PaywallTrialReminderToggleProps) {
   const userId = useAuthStore((state) => state.user?.id ?? null);
   const preferencesQuery = useNotificationPreferencesQuery(userId);
   const updatePreferences = useUpdateNotificationPreferencesMutation(userId);
@@ -78,20 +79,20 @@ export default function PaywallTrialReminderToggle({ dark = false }: PaywallTria
     [isBusy, permissionStatus, updatePreferences, userId],
   );
 
-  const showDeniedHint = permissionStatus === 'denied' && !enabled;
+  const showDeniedHint = permissionStatus === 'denied' && !enabled && !disabled;
 
   return (
     <View style={styles.container}>
-      <View style={[styles.row, dark && styles.rowDark]}>
-        <Text style={[styles.label, dark && styles.labelDark]}>Notify me before trial ends</Text>
+      <View style={[styles.row, dark && styles.rowDark, disabled && styles.rowDisabled]}>
+        <Text style={[styles.label, dark && styles.labelDark, disabled && styles.labelDisabled]}>Notify me before trial ends</Text>
         <Switch
-          value={enabled}
-          disabled={isBusy || userId == null}
+          value={disabled ? false : enabled}
+          disabled={disabled || isBusy || userId == null}
           onValueChange={(value) => {
             void handleToggle(value);
           }}
           trackColor={{ false: dark ? 'rgba(255,255,255,0.2)' : colors.neutral[300], true: colors.primary.blue300 }}
-          thumbColor={enabled ? colors.primary.blue400 : dark ? colors.neutral[200] : colors.neutral[50]}
+          thumbColor={enabled && !disabled ? colors.primary.blue400 : dark ? colors.neutral[200] : colors.neutral[50]}
           style={styles.switch}
         />
       </View>
@@ -123,7 +124,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: spacing.sm,
-    paddingVertical: spacing.md,
+    paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
   },
   rowDark: {
@@ -132,8 +133,14 @@ const styles = StyleSheet.create({
     shadowOpacity: 0,
     elevation: 0,
   },
+  rowDisabled: {
+    opacity: 0.45,
+  },
+  labelDisabled: {
+    opacity: 0.9,
+  },
   label: {
-    ...typography.heading.heading2,
+    ...typography.body.small,
     fontFamily: fonts.semibold,
     fontWeight: '600',
     color: colors.text.primary,
@@ -142,7 +149,9 @@ const styles = StyleSheet.create({
   labelDark: {
     color: colors.neutral[0],
   },
-  switch: {},
+  switch: {
+    transform: [{ scaleX: 0.85 }, { scaleY: 0.85 }],
+  },
   hint: {
     paddingHorizontal: spacing.sm,
   },

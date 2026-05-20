@@ -41,10 +41,10 @@ module.exports = {
     plugins: [
       'expo-font',
       'expo-asset',
-      'expo-notifications',
       'react-native-vision-camera',
       './plugins/with-heart-rate-plugin',
       './plugins/with-continuous-haptics-plugin',
+      './plugins/with-local-notifications-only-plugin',
       [
         'expo-audio',
         {

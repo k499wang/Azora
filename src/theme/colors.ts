@@ -7,6 +7,8 @@ export const colors = {
     blue500: '#4A90F5',
     blue600: '#2F7AEF',
     blue700: '#1E63D6',
+    blue800: '#154AAB',
+    blue900: '#0D3380',
   },
 
   neutral: {

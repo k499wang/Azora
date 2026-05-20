@@ -239,7 +239,7 @@ export default function LungCapacityScreen({
     const subhead = isInhale
       ? 'Fill your lungs completely.'
       : isHolding
-        ? 'Release when you cannot exhale any more.'
+        ? 'Hold your breath for as long as you can.'
         : 'Then exhale for as long as you can.';
 
     const inhaleEntryStyle = isInhale
