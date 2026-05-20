@@ -37,6 +37,10 @@ function isValidFrameSample(value: unknown): value is PpgFrameSample {
   );
 }
 
+interface UseHeartRateCaptureOptions {
+  onCaptureComplete?: (result: CaptureResult, captureSamples: PpgFrameSample[]) => void;
+}
+
 interface UseHeartRateCaptureReturn {
   captureState: CaptureState;
   fingerPlacement: FingerPlacementState;
@@ -58,7 +62,12 @@ interface UseHeartRateCaptureReturn {
   requestPermission: () => Promise<boolean>;
 }
 
-export function useHeartRateCapture(): UseHeartRateCaptureReturn {
+export function useHeartRateCapture(
+  options: UseHeartRateCaptureOptions = {},
+): UseHeartRateCaptureReturn {
+  const onCaptureCompleteRef = useRef(options.onCaptureComplete);
+  onCaptureCompleteRef.current = options.onCaptureComplete;
+
   const [captureState, setCaptureState] = useState<CaptureState>('idle');
   const [fingerPlacement, setFingerPlacement] = useState<FingerPlacementState>('no_finger');
   const [progress, setProgress] = useState(0);
@@ -124,6 +133,9 @@ export function useHeartRateCapture(): UseHeartRateCaptureReturn {
       const nextResult = buildCaptureResult(samples);
       setResult(nextResult);
       setCaptureStateAndRef(nextResult.reading == null ? 'error' : 'done');
+      if (nextResult.reading != null) {
+        onCaptureCompleteRef.current?.(nextResult, samples);
+      }
     });
   }, [setCaptureStateAndRef, updateProgress]);
 
