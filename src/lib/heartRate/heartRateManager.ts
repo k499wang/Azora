@@ -34,8 +34,8 @@ const REINIT_GAP_MS = 1000;
 const BAD_PLACEMENT_GRACE_MS = 500;
 const FLAT_SIGNAL_GRACE_MS = 2500;
 const FLAT_SIGNAL_AMPLITUDE_FLOOR = MIN_AMPLITUDE * 0.6;
-const MIN_ROI_RED = 80;
-const MIN_AVG_ROI_RED = 70;
+const MIN_ROI_RED = 120;
+const MIN_AVG_ROI_RED = 100;
 const IBI_HISTORY_SIZE = 8;
 const MIN_LIVE_BPM_IBIS = 5;
 const MALIK_THRESHOLD = 0.2;
@@ -194,8 +194,8 @@ function isRoiCovered(roi: PpgRoiSample): boolean {
     roi.r >= MIN_ROI_RED &&
     roi.darkPct < 0.35 &&
     roi.saturatedPct < 0.45 &&
-    redToSum(roi) >= 0.60 &&
-    redToMax(roi) >= 1.15
+    redToSum(roi) >= 0.66 &&
+    redToMax(roi) >= 1.80
   );
 }
 
@@ -231,10 +231,10 @@ function classifyFrame(sample: PpgFrameSample): {
   if (avgDark > 0.45 || weightedAverage < 12) {
     return { placement: 'too_much_pressure', weightedAverage };
   }
-  if (coverage < 0.35 || avgRed < MIN_AVG_ROI_RED) {
+  if (coverage < 0.55 || avgRed < MIN_AVG_ROI_RED) {
     return { placement: 'no_finger', weightedAverage };
   }
-  if (avgSaturated > 0.55 || coverage < 0.65) {
+  if (avgSaturated > 0.55 || coverage < 0.95) {
     return { placement: 'partial', weightedAverage };
   }
   return { placement: 'good', weightedAverage };
