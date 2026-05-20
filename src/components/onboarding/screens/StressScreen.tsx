@@ -13,6 +13,7 @@ interface StressScreenProps {
   onChange: (value: number) => void;
   onContinue: () => void;
   onBack: () => void;
+  onSkip?: () => void;
 }
 
 function descriptorFor(value: number): string {
@@ -38,6 +39,7 @@ export default function StressScreen({
   onChange,
   onContinue,
   onBack,
+  onSkip,
 }: StressScreenProps) {
   const accent = accentForStress(value);
 
@@ -47,6 +49,7 @@ export default function StressScreen({
       subtitle="There's no wrong answer. Azora tunes your plan to it."
       progress={stepIndex / stepCount}
       onBack={onBack}
+      onSkip={onSkip}
       centerBody
       footer={<OnboardingPrimaryButton label="Continue" onPress={onContinue} />}
     >

@@ -15,6 +15,7 @@ interface GenderScreenProps {
   onSelect: (id: GenderOption['id']) => void;
   onContinue: () => void;
   onBack: () => void;
+  onSkip?: () => void;
 }
 
 export default function GenderScreen({
@@ -24,6 +25,7 @@ export default function GenderScreen({
   onSelect,
   onContinue,
   onBack,
+  onSkip,
 }: GenderScreenProps) {
   const handleSelect = (id: GenderOption['id']) => {
     if (isHapticsEnabled()) Haptics.selectionAsync().catch(() => {});
@@ -36,6 +38,7 @@ export default function GenderScreen({
       subtitle="This helps Azora frame guidance more naturally."
       progress={stepIndex / stepCount}
       onBack={onBack}
+      onSkip={onSkip}
       footer={
         <OnboardingPrimaryButton
           label="Continue"

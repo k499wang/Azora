@@ -382,6 +382,10 @@ export default function OnboardingFlow({
         onChange={setName}
         onContinue={() => setStep(name.trim() ? 'greeting' : 'stress')}
         onBack={() => setStep('intentProjection')}
+        onSkip={() => {
+          setName('');
+          setStep('stress');
+        }}
       />
     );
   }
@@ -407,6 +411,7 @@ export default function OnboardingFlow({
         onChange={setStressLevel}
         onContinue={() => setStep('sleep')}
         onBack={() => setStep(name.trim() ? 'greeting' : 'name')}
+        onSkip={() => setStep('sleep')}
       />
     );
   }
@@ -420,6 +425,7 @@ export default function OnboardingFlow({
         onChange={setSleepQuality}
         onContinue={() => setStep('agreement')}
         onBack={() => setStep('stress')}
+        onSkip={() => setStep('agreement')}
       />
     );
   }
@@ -435,6 +441,7 @@ export default function OnboardingFlow({
         }
         onContinue={() => setStep('scienceCredibility')}
         onBack={() => setStep('sleep')}
+        onSkip={() => setStep('scienceCredibility')}
       />
     );
   }
@@ -448,6 +455,7 @@ export default function OnboardingFlow({
         onSelect={setExperienceLevel}
         onContinue={() => setStep('assessmentReflection')}
         onBack={() => setStep('scienceCredibility')}
+        onSkip={() => setStep('assessmentReflection')}
       />
     );
   }
@@ -478,6 +486,7 @@ export default function OnboardingFlow({
           setStep('age');
         }}
         onBack={() => setStep('assessmentReflection')}
+        onSkip={() => setStep('age')}
       />
     );
   }
@@ -491,6 +500,7 @@ export default function OnboardingFlow({
         onChange={setAge}
         onContinue={() => setStep('gender')}
         onBack={() => setStep('lungCapacity')}
+        onSkip={() => setStep('gender')}
       />
     );
   }
@@ -504,6 +514,7 @@ export default function OnboardingFlow({
         onSelect={setGender}
         onContinue={() => setStep('dailyTime')}
         onBack={() => setStep('age')}
+        onSkip={() => setStep('dailyTime')}
       />
     );
   }
@@ -517,6 +528,7 @@ export default function OnboardingFlow({
         onChange={setDailyMinutes}
         onContinue={() => setStep('notifications')}
         onBack={() => setStep('gender')}
+        onSkip={() => setStep('notifications')}
       />
     );
   }

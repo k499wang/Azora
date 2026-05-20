@@ -9,6 +9,7 @@ interface AgeScreenProps {
   onChange: (value: number) => void;
   onContinue: () => void;
   onBack: () => void;
+  onSkip?: () => void;
 }
 
 export default function AgeScreen({
@@ -18,6 +19,7 @@ export default function AgeScreen({
   onChange,
   onContinue,
   onBack,
+  onSkip,
 }: AgeScreenProps) {
   return (
     <OnboardingScreenLayout
@@ -25,6 +27,7 @@ export default function AgeScreen({
       subtitle="Azora tunes guidance to your age."
       progress={stepIndex / stepCount}
       onBack={onBack}
+      onSkip={onSkip}
       centerBody
       footer={<OnboardingPrimaryButton label="Continue" onPress={onContinue} />}
     >

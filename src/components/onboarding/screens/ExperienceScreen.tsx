@@ -43,6 +43,7 @@ interface ExperienceScreenProps {
   onSelect: (value: ExperienceLevel) => void;
   onContinue: () => void;
   onBack: () => void;
+  onSkip?: () => void;
 }
 
 export default function ExperienceScreen({
@@ -52,6 +53,7 @@ export default function ExperienceScreen({
   onSelect,
   onContinue,
   onBack,
+  onSkip,
 }: ExperienceScreenProps) {
   const handleSelect = (id: ExperienceLevel) => {
     if (isHapticsEnabled()) Haptics.selectionAsync().catch(() => {});
@@ -64,6 +66,7 @@ export default function ExperienceScreen({
       subtitle="We'll tailor the app to your experience."
       progress={stepIndex / stepCount}
       onBack={onBack}
+      onSkip={onSkip}
       footer={
         <OnboardingPrimaryButton
           label="Continue"
