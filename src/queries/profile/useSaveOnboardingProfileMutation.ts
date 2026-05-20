@@ -5,6 +5,7 @@ import {
 } from '../../services/profile/onboardingStatusService';
 import type { UserProfile } from '../../services/profile/profileService';
 import type { ProfileSummary } from '../../services/profile/profileSummaryService';
+import { buildOnboardingSaveFailureDiagnostics } from './onboardingSaveDiagnostics';
 import { getProfileQueryKey } from './useProfileQuery';
 import { getProfileSummaryQueryKey } from './useProfileSummaryQuery';
 import { getSavedOnboardingProfileQueryKey } from './useSavedOnboardingProfileQuery';
@@ -43,6 +44,16 @@ export function useSaveOnboardingProfileMutation(userId: string | null) {
           elapsedMs: Date.now() - startedAt,
           errorMessage: getErrorMessage(error),
         });
+        console.warn(
+          '[onboarding-profile] save mutation diagnostics',
+          await buildOnboardingSaveFailureDiagnostics({
+            userId,
+            elapsedMs: Date.now() - startedAt,
+            requestType: 'profiles.upsert',
+            retryAttempt: 0,
+            error,
+          }),
+        );
         throw error;
       }
 

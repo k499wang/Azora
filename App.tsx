@@ -46,7 +46,6 @@ import { trackAppOpened, trackScreenView } from './src/services/analytics/tracki
 import { bootstrapAnalytics } from './src/services/analytics/identity';
 import { registerAppSessionTracking } from './src/services/analytics/appSession';
 import { registerAuthIdentitySync } from './src/services/supabase';
-import { SplashScreen as WelcomeSplash } from './src/components/welcome/SplashScreen';
 import { WelcomeIntro } from './src/components/welcome/WelcomeIntro';
 import { colors } from './src/theme/colors';
 import TECHNIQUES from './src/data/techniques';
@@ -118,7 +117,6 @@ export default function App() {
     trackScreenView(currentRoute);
   }, []);
 
-  const [splashVisible, setSplashVisible] = useState(true);
   const [introVisible, setIntroVisible] = useState(true);
 
   if (!fontsLoaded) return null;
@@ -141,7 +139,6 @@ export default function App() {
         {introVisible ? (
           <WelcomeIntro onFinish={() => setIntroVisible(false)} />
         ) : null}
-        {splashVisible ? <WelcomeSplash onFinish={() => setSplashVisible(false)} /> : null}
       </View>
     </SafeAreaProvider>
   );
