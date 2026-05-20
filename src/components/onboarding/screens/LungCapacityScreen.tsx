@@ -536,7 +536,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   headingSlot: {
-    minHeight: 56,
+    minHeight: 72,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -544,8 +544,12 @@ const styles = StyleSheet.create({
     ...typography.title.title2,
     fontFamily: fonts.semibold,
     fontWeight: '600',
+    fontSize: 32,
+    lineHeight: 40,
+    letterSpacing: -0.5,
     color: colors.text.primary,
     textAlign: 'center',
+    paddingHorizontal: spacing.md,
   },
   bigTimer: {
     fontFamily: fonts.semibold,
@@ -562,9 +566,12 @@ const styles = StyleSheet.create({
     color: colors.primary.blue600,
   },
   phaseSub: {
-    ...typography.body.small,
+    ...typography.body.large,
+    fontSize: 18,
+    lineHeight: 26,
     color: colors.text.secondary,
     textAlign: 'center',
+    paddingHorizontal: spacing.md,
   },
   circleWrap: {
     width: CIRCLE_SIZE,
@@ -608,8 +615,8 @@ const styles = StyleSheet.create({
   gaugeStage: {
     flex: 1,
     alignItems: 'center',
-    gap: spacing.md,
-    paddingTop: spacing.lg,
+    gap: spacing['2xl'],
+    paddingTop: spacing['2xl'],
   },
   gaugeHeading: {
     ...typography.title.title2,
@@ -622,7 +629,7 @@ const styles = StyleSheet.create({
     ...typography.body.small,
     color: colors.text.secondary,
     textAlign: 'center',
-    marginBottom: spacing.sm,
+    marginTop: -spacing.xl,
   },
   gaugeSurface: {
     width: GAUGE_SIZE,
@@ -666,7 +673,7 @@ const styles = StyleSheet.create({
   gaugeMeta: {
     width: '100%',
     gap: spacing.md,
-    marginTop: spacing.lg,
+    marginTop: spacing['4xl'],
   },
   followup: {
     ...typography.body.small,

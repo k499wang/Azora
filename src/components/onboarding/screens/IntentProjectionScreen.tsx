@@ -17,7 +17,7 @@ import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 const CHART_HEIGHT = 230;
 const PAD_LEFT = 8;
 const PAD_RIGHT = 8;
-const PAD_TOP = 20;
+const PAD_TOP = 12;
 const PAD_BOTTOM = 28;
 const SAMPLE_COUNT = 64;
 const CURVE_K = 0.55;
@@ -131,10 +131,8 @@ export default function IntentProjectionScreen({
         style={styles.chartWrap}
         onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
       >
+        <Text style={styles.yAxisLabel}>Overall wellbeing</Text>
         <View style={{ width: '100%', height: CHART_HEIGHT }}>
-          <Text style={styles.yAxisLabel} pointerEvents="none">
-            Overall wellbeing
-          </Text>
           {width > 0 ? (
             <Canvas style={StyleSheet.absoluteFill}>
               <Path
@@ -207,6 +205,8 @@ const styles = StyleSheet.create({
   chartWrap: {
     width: '100%',
     gap: spacing.md,
+    marginTop: spacing.sm,
+    paddingHorizontal: spacing.md,
   },
   yAxisLabel: {
     ...typography.label.small,
@@ -215,10 +215,6 @@ const styles = StyleSheet.create({
     color: colors.neutral[700],
     letterSpacing: 0.6,
     textTransform: 'uppercase',
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
     textAlign: 'center',
   },
   weekAxis: {
@@ -247,7 +243,7 @@ const styles = StyleSheet.create({
     color: colors.text.tertiary,
     letterSpacing: 0.3,
     textAlign: 'center',
-    marginTop: spacing.xs,
+    marginTop: spacing.lg,
     paddingHorizontal: spacing.md,
   },
 });
