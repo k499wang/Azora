@@ -38,8 +38,8 @@ interface LungCapacityScreenProps {
 type Phase = 'intro' | 'inhale' | 'exhale' | 'calibrating' | 'done';
 
 const INHALE_SECONDS = 4;
-const CIRCLE_SIZE = 180;
-const CIRCLE_MIN_SCALE = 0.82;
+const CIRCLE_SIZE = 260;
+const CIRCLE_MIN_SCALE = 0.5;
 const CALIBRATION_MS = 2200;
 
 const GAUGE_SIZE = 240;

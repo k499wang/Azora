@@ -178,20 +178,25 @@ export default function OnboardingPaywallScreen({
         { transform: [{ translateY: exitSlideAnim }] },
       ]}
     >
-      {isFinal ? (
-        <ImageBackground
-          source={require('../../../../assets/backgrounds/sunset.jpg')}
-          style={StyleSheet.absoluteFill}
-          resizeMode="cover"
-        >
+      <ImageBackground
+        source={require('../../../../assets/backgrounds/sunset.jpg')}
+        style={StyleSheet.absoluteFill}
+        resizeMode="cover"
+      >
+        {isFinal ? (
           <LinearGradient
             colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.08)', 'rgba(0,0,0,0.38)']}
             locations={[0, 0.5, 1]}
             style={StyleSheet.absoluteFill}
             pointerEvents="none"
           />
-        </ImageBackground>
-      ) : null}
+        ) : (
+          <View
+            style={[StyleSheet.absoluteFill, styles.lightOverlay]}
+            pointerEvents="none"
+          />
+        )}
+      </ImageBackground>
       <SafeAreaView
         style={[styles.screenBody, { paddingTop: insets.top + spacing.sm }]}
         edges={['left', 'right']}
@@ -697,6 +702,9 @@ const styles = StyleSheet.create({
   },
   screenDark: {
     backgroundColor: colors.neutral[900],
+  },
+  lightOverlay: {
+    backgroundColor: colors.background.primary,
   },
   screenBody: {
     flex: 1,
