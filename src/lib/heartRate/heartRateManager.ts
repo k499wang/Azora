@@ -32,6 +32,10 @@ const SHORT_IBI_CONFIRMATION_TOLERANCE = 0.25;
 const WARMUP_FRAMES = 60;
 const REINIT_GAP_MS = 1000;
 const BAD_PLACEMENT_GRACE_MS = 500;
+const FLAT_SIGNAL_GRACE_MS = 2500;
+const FLAT_SIGNAL_AMPLITUDE_FLOOR = MIN_AMPLITUDE * 0.6;
+const MIN_ROI_RED = 80;
+const MIN_AVG_ROI_RED = 70;
 const IBI_HISTORY_SIZE = 8;
 const MIN_LIVE_BPM_IBIS = 5;
 const MALIK_THRESHOLD = 0.2;
@@ -187,10 +191,11 @@ function isRoiCovered(roi: PpgRoiSample): boolean {
   return (
     value >= 25 &&
     value <= 245 &&
+    roi.r >= MIN_ROI_RED &&
     roi.darkPct < 0.35 &&
     roi.saturatedPct < 0.45 &&
-    redToSum(roi) >= 0.54 &&
-    redToMax(roi) >= 1.05
+    redToSum(roi) >= 0.60 &&
+    redToMax(roi) >= 1.15
   );
 }
 
@@ -206,11 +211,13 @@ function classifyFrame(sample: PpgFrameSample): {
   let darkSum = 0;
   let saturatedSum = 0;
   let coveredCount = 0;
+  let redSum = 0;
 
   for (const roi of sample.rois) {
     weightedSum += weightedChannelValue(roi);
     darkSum += roi.darkPct;
     saturatedSum += roi.saturatedPct;
+    redSum += roi.r;
     if (isRoiCovered(roi)) coveredCount += 1;
   }
 
@@ -219,11 +226,12 @@ function classifyFrame(sample: PpgFrameSample): {
   const avgDark = darkSum / count;
   const avgSaturated = saturatedSum / count;
   const coverage = coveredCount / count;
+  const avgRed = redSum / count;
 
   if (avgDark > 0.45 || weightedAverage < 12) {
     return { placement: 'too_much_pressure', weightedAverage };
   }
-  if (coverage < 0.35) {
+  if (coverage < 0.35 || avgRed < MIN_AVG_ROI_RED) {
     return { placement: 'no_finger', weightedAverage };
   }
   if (avgSaturated > 0.55 || coverage < 0.65) {
@@ -255,6 +263,7 @@ export class HeartRateManager {
   private armedForPeak = true;
   private pendingShortPeakTs: number | null = null;
   private badPlacementSinceTs: number | null = null;
+  private flatSignalSinceTs: number | null = null;
   private polarity: 1 | -1 = 1;
   private polarityLocked = false;
   private polarityPositiveScore = 0;
@@ -283,6 +292,7 @@ export class HeartRateManager {
     this.armedForPeak = true;
     this.pendingShortPeakTs = null;
     this.badPlacementSinceTs = null;
+    this.flatSignalSinceTs = null;
     this.polarity = 1;
     this.polarityLocked = false;
     this.polarityPositiveScore = 0;
@@ -367,6 +377,7 @@ export class HeartRateManager {
       this.armedForPeak = true;
       this.pendingShortPeakTs = null;
       this.lastTickTs = 0;
+      this.flatSignalSinceTs = null;
       this.lastPlacement =
         placement === 'no_finger' && this.lastPlacement === 'good'
           ? 'lost'
@@ -387,6 +398,41 @@ export class HeartRateManager {
     }
 
     this.badPlacementSinceTs = null;
+
+    if (this.validFrameCounter > WARMUP_FRAMES) {
+      if (this.amplitude < FLAT_SIGNAL_AMPLITUDE_FLOOR) {
+        if (this.flatSignalSinceTs == null) {
+          this.flatSignalSinceTs = sample.timestamp;
+        } else if (
+          sample.timestamp - this.flatSignalSinceTs > FLAT_SIGNAL_GRACE_MS
+        ) {
+          this.validFrameCounter = 0;
+          this.amplitude = 0;
+          this.bpHp.reset();
+          this.bpLp.reset();
+          this.needsBandpassPrime = true;
+          this.prev1 = 0;
+          this.prev2 = 0;
+          this.prev1Ts = 0;
+          this.prev2Ts = 0;
+          this.armedForPeak = true;
+          this.pendingShortPeakTs = null;
+          this.lastTickTs = 0;
+          this.flatSignalSinceTs = null;
+          this.lastPlacement = 'lost';
+          return {
+            fingerPlacement: 'lost',
+            beatDetected: false,
+            readyForMeasurement: false,
+            signalText: 'Signal lost - hold steady',
+          };
+        }
+      } else {
+        this.flatSignalSinceTs = null;
+      }
+    } else {
+      this.flatSignalSinceTs = null;
+    }
 
     const gapMs = this.lastGoodTs === 0 ? 0 : sample.timestamp - this.lastGoodTs;
     if (!this.initialized || gapMs > REINIT_GAP_MS) {
