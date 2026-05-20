@@ -34,6 +34,8 @@ interface ResultScreenProps {
   onRetry: () => void;
   onDone: () => void | Promise<void>;
   isSaving?: boolean;
+  saveError?: boolean;
+  onRetrySave?: () => void;
   context?: string;
 }
 
@@ -154,6 +156,8 @@ export function ResultScreen({
   onRetry,
   onDone,
   isSaving = false,
+  saveError = false,
+  onRetrySave,
   context,
 }: ResultScreenProps) {
   const posthog = usePostHog();
@@ -261,6 +265,24 @@ export function ResultScreen({
         </ScrollView>
 
         <View style={[styles.successActions, { paddingBottom: insets.bottom + spacing.lg }]}>
+            {saveError && (
+              <View style={styles.saveErrorBanner}>
+                <MaterialCommunityIcons
+                  name="cloud-off-outline"
+                  size={18}
+                  color={colors.error[500]}
+                />
+                <Text style={styles.saveErrorText}>
+                  Couldn't save reading. Check your connection.
+                </Text>
+                <Pressable
+                  style={styles.saveErrorRetry}
+                  onPress={() => onRetrySave?.()}
+                >
+                  <Text style={styles.saveErrorRetryText}>Retry</Text>
+                </Pressable>
+              </View>
+            )}
             <TouchableOpacity
               style={styles.primaryButton}
               disabled={isSaving}
@@ -645,5 +667,32 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: padding.screen.horizontal,
     paddingTop: spacing.md,
+  },
+  saveErrorBanner: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: 12,
+    backgroundColor: colors.background.elevated,
+    borderWidth: 1,
+    borderColor: colors.error[500],
+  },
+  saveErrorText: {
+    ...typography.body.small,
+    color: colors.text.primary,
+    fontFamily: fonts.semibold,
+    flex: 1,
+  },
+  saveErrorRetry: {
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
+  },
+  saveErrorRetryText: {
+    ...typography.body.small,
+    color: colors.primary.blue600,
+    fontFamily: fonts.semibold,
   },
 });

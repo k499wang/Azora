@@ -91,6 +91,7 @@ test('buildHeartRateSessionRpcPayload matches complete_heart_rate_session RPC ar
       { offset_ms: 2_250, ibi_ms: 800, signal_quality: 0.4 },
       { offset_ms: 2_950, ibi_ms: 750, signal_quality: null },
     ],
+    idempotency_key: '2026-04-25T02:30:30.000Z:68:120:90000',
   });
 
   assert.deepEqual(payload.p_samples, [

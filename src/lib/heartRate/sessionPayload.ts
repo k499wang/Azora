@@ -18,6 +18,7 @@ export interface HeartRateSessionRpcSession {
   hr_drop: number | null;
   beat_count: number | null;
   stress: number | null;
+  idempotency_key: string;
 }
 
 export interface HeartRateSessionRpcSample {
@@ -211,6 +212,16 @@ export function buildHeartRateSessionRpcPayload(
   const endedAtMs = Number.isFinite(recordedAtMs) ? recordedAtMs : Date.now();
   const startedAtMs = endedAtMs - durationMs;
 
+  // Deterministic key from the reading's content: the same capture always
+  // produces the same key, so a retry after a network blip dedups server-side
+  // instead of inserting a duplicate row.
+  const idempotencyKey = [
+    reading.recordedAt,
+    reading.bpm,
+    reading.sampleCount,
+    reading.durationMs,
+  ].join(':');
+
   return {
     p_session: {
       started_at: new Date(startedAtMs).toISOString(),
@@ -228,6 +239,7 @@ export function buildHeartRateSessionRpcPayload(
       beat_count: reading.beatCount ?? null,
       stress: reading.stress ?? null,
       ibi_samples: ibiSamples,
+      idempotency_key: idempotencyKey,
     },
     p_samples: bpmSamples,
   };
