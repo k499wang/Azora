@@ -151,7 +151,7 @@ export default function RecommendationScreen({
     return (
       <OnboardingScreenLayout
         title="Your Mindmap"
-        subtitle="We're building your personalized exercise based on your responses."
+        subtitle="We're building your personalized mindmap and plan based on your responses."
         progress={stepIndex / stepCount}
         onBack={onBack}
         footer={

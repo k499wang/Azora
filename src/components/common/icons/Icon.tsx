@@ -8,8 +8,11 @@ interface IconProps {
 }
 
 export default function Icon({ name, size = 24, color = '#000' }: IconProps) {
-  const body = ICON_PATHS[name];
-  const xml = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="${size}" height="${size}" color="${color}">${body}</svg>`;
+  const entry = ICON_PATHS[name];
+  const body = typeof entry === 'string' ? entry : entry.body;
+  const viewBox =
+    typeof entry === 'string' ? '0 0 24 24' : entry.viewBox ?? '0 0 24 24';
+  const xml = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${viewBox}" width="${size}" height="${size}" color="${color}">${body}</svg>`;
   return <SvgXml xml={xml} width={size} height={size} />;
 }
 

@@ -53,6 +53,7 @@ import { AGREEMENT_STATEMENTS } from './src/components/onboarding/screens/Agreem
 SplashScreen.preventAutoHideAsync();
 
 Asset.fromModule(require('./assets/backgrounds/sunset.jpg')).downloadAsync();
+Asset.fromModule(require('./assets/onboarding/camerappg.png')).downloadAsync();
 TECHNIQUES.forEach((technique) => {
   Asset.fromModule(technique.backgroundImage as number).downloadAsync();
 });

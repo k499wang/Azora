@@ -3,7 +3,6 @@ import AgeScreen from './screens/AgeScreen';
 import ScienceCredibilityScreen from './screens/ScienceCredibilityScreen';
 import BaselineScreen, { type BaselineResult } from './screens/BaselineScreen';
 import BaselineIntroScreen from './screens/BaselineIntroScreen';
-import BaselineScienceScreen from './screens/BaselineScienceScreen';
 import DailyTimeScreen from './screens/DailyTimeScreen';
 import GenderScreen from './screens/GenderScreen';
 import IntentQuestionScreen from './screens/IntentQuestionScreen';
@@ -18,6 +17,7 @@ import ExperienceScreen, {
   type ExperienceLevel,
 } from './screens/ExperienceScreen';
 import NameScreen from './screens/NameScreen';
+import FounderVideoScreen from './screens/FounderVideoScreen';
 import GreetingScreen from './screens/GreetingScreen';
 import PactScreen from './screens/PactScreen';
 import NotificationPermissionScreen from './screens/NotificationPermissionScreen';
@@ -75,20 +75,20 @@ const STEP_INDEX: Record<OnboardingStep, number> = {
   intentReflection: 2,
   intentProjection: 3,
   name: 4,
-  greeting: 5,
-  stress: 6,
-  sleep: 7,
-  agreement: 8,
-  scienceCredibility: 9,
-  experience: 10,
-  assessmentReflection: 11,
-  lungCapacity: 12,
-  age: 13,
-  gender: 14,
-  dailyTime: 15,
-  notifications: 16,
-  baselineIntro: 17,
-  baselineScience: 18,
+  founderVideo: 5,
+  greeting: 6,
+  stress: 7,
+  sleep: 8,
+  agreement: 9,
+  scienceCredibility: 10,
+  experience: 11,
+  assessmentReflection: 12,
+  lungCapacity: 13,
+  age: 14,
+  gender: 15,
+  dailyTime: 16,
+  notifications: 17,
+  baselineIntro: 18,
   baseline: 19,
   recommendation: 20,
   pact: 21,
@@ -380,12 +380,25 @@ export default function OnboardingFlow({
         stepIndex={stepIndex}
         stepCount={STEP_COUNT}
         onChange={setName}
-        onContinue={() => setStep(name.trim() ? 'greeting' : 'stress')}
+        onContinue={() => setStep('founderVideo')}
         onBack={() => setStep('intentProjection')}
         onSkip={() => {
           setName('');
-          setStep('stress');
+          setStep('founderVideo');
         }}
+      />
+    );
+  }
+
+  if (step === 'founderVideo') {
+    const next = () => setStep(name.trim() ? 'greeting' : 'stress');
+    return (
+      <FounderVideoScreen
+        stepIndex={stepIndex}
+        stepCount={STEP_COUNT}
+        onContinue={next}
+        onSkip={next}
+        onBack={() => setStep('name')}
       />
     );
   }
@@ -397,7 +410,7 @@ export default function OnboardingFlow({
         stepIndex={stepIndex}
         stepCount={STEP_COUNT}
         onContinue={() => setStep('stress')}
-        onBack={() => setStep('name')}
+        onBack={() => setStep('founderVideo')}
       />
     );
   }
@@ -410,7 +423,7 @@ export default function OnboardingFlow({
         stepCount={STEP_COUNT}
         onChange={setStressLevel}
         onContinue={() => setStep('sleep')}
-        onBack={() => setStep(name.trim() ? 'greeting' : 'name')}
+        onBack={() => setStep(name.trim() ? 'greeting' : 'founderVideo')}
         onSkip={() => setStep('sleep')}
       />
     );
@@ -539,19 +552,8 @@ export default function OnboardingFlow({
         stepIndex={stepIndex}
         stepCount={STEP_COUNT}
         name={name}
-        onContinue={() => setStep('baselineScience')}
-        onBack={() => setStep('notifications')}
-      />
-    );
-  }
-
-  if (step === 'baselineScience') {
-    return (
-      <BaselineScienceScreen
-        stepIndex={stepIndex}
-        stepCount={STEP_COUNT}
         onContinue={() => setStep('baseline')}
-        onBack={() => setStep('baselineIntro')}
+        onBack={() => setStep('notifications')}
       />
     );
   }
@@ -565,7 +567,7 @@ export default function OnboardingFlow({
           setBaseline(result);
           setStep('recommendation');
         }}
-        onBack={() => setStep('baselineScience')}
+        onBack={() => setStep('baselineIntro')}
       />
     );
   }

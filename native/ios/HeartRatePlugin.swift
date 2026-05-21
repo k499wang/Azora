@@ -42,6 +42,9 @@ public class HeartRatePlugin: FrameProcessorPlugin {
       "g": 0,
       "b": 0,
       "saturatedPct": 1,
+      "redSaturatedPct": 1,
+      "greenSaturatedPct": 1,
+      "blueSaturatedPct": 1,
       "darkPct": 1,
       "variance": 0,
     ]
@@ -76,10 +79,14 @@ public class HeartRatePlugin: FrameProcessorPlugin {
 
     let satThresh: Float = isVideoRange ? 235 : 245
     let darkThresh: Float = isVideoRange ? 25 : 10
+    let channelSatThresh: Float = 250
 
     var ySum: Float = 0
     var ySqSum: Float = 0
     var saturatedCount: Int = 0
+    var redSaturatedCount: Int = 0
+    var greenSaturatedCount: Int = 0
+    var blueSaturatedCount: Int = 0
     var darkCount: Int = 0
 
     for row in 0..<yRoiH {
@@ -95,6 +102,31 @@ public class HeartRatePlugin: FrameProcessorPlugin {
         let v = rowPtr[i]
         if v >= satThresh { saturatedCount += 1 }
         if v <= darkThresh { darkCount += 1 }
+
+        let absoluteY = yStartY + row
+        let absoluteX = yStartX + i
+        let chromaX = min(cWidth - 1, Int((Double(absoluteX) / Double(yWidth)) * Double(cWidth)))
+        let chromaY = min(cHeight - 1, Int((Double(absoluteY) / Double(yHeight)) * Double(cHeight)))
+        let cb = cbPlane[chromaY * cWidth + chromaX]
+        let cr = crPlane[chromaY * cWidth + chromaX]
+
+        let pixelR: Float
+        let pixelG: Float
+        let pixelB: Float
+        if isVideoRange {
+          let yScaled = 1.164 * (v - 16)
+          pixelR = yScaled + 1.596 * (cr - 128)
+          pixelG = yScaled - 0.813 * (cr - 128) - 0.392 * (cb - 128)
+          pixelB = yScaled + 2.017 * (cb - 128)
+        } else {
+          pixelR = v + 1.402 * (cr - 128)
+          pixelG = v - 0.714 * (cr - 128) - 0.344 * (cb - 128)
+          pixelB = v + 1.772 * (cb - 128)
+        }
+
+        if pixelR >= channelSatThresh { redSaturatedCount += 1 }
+        if pixelG >= channelSatThresh { greenSaturatedCount += 1 }
+        if pixelB >= channelSatThresh { blueSaturatedCount += 1 }
       }
     }
 
@@ -142,6 +174,9 @@ public class HeartRatePlugin: FrameProcessorPlugin {
       "g": Double(min(255, max(0, g))),
       "b": Double(min(255, max(0, b))),
       "saturatedPct": Double(saturatedCount) / Double(yCount),
+      "redSaturatedPct": Double(redSaturatedCount) / Double(yCount),
+      "greenSaturatedPct": Double(greenSaturatedCount) / Double(yCount),
+      "blueSaturatedPct": Double(blueSaturatedCount) / Double(yCount),
       "darkPct": Double(darkCount) / Double(yCount),
       "variance": Double(variance),
     ]

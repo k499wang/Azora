@@ -2,6 +2,9 @@ import type { FingerPlacementState, PpgFrameSample, PpgRoiSample } from './types
 
 const MIN_ROI_RED = 120;
 const MIN_AVG_ROI_RED = 100;
+const RED_SATURATION_GREEN_FALLBACK = 0.15;
+const MAX_ROI_RED_SATURATION = 0.50;
+const MAX_AVG_RED_SATURATION = 0.60;
 
 interface ClassifyState {
   previousState?: FingerPlacementState;
@@ -13,6 +16,16 @@ let _goodSinceMs: number | undefined = undefined;
 
 function weightedValue(roi: PpgRoiSample): number {
   return roi.r * 0.67 + roi.g * 0.33;
+}
+
+function redSaturatedPct(roi: PpgRoiSample): number {
+  return roi.redSaturatedPct ?? 0;
+}
+
+function liveValue(roi: PpgRoiSample): number {
+  return redSaturatedPct(roi) >= RED_SATURATION_GREEN_FALLBACK
+    ? roi.g
+    : weightedValue(roi);
 }
 
 function mean(values: number[]): number {
@@ -44,11 +57,11 @@ function redToMaxChannel(roi: PpgRoiSample): number {
 }
 
 function weightedFrameValue(rois: PpgRoiSample[]): number {
-  return mean(rois.map(weightedValue));
+  return mean(rois.map(liveValue));
 }
 
 function isCoveredByFinger(roi: PpgRoiSample): boolean {
-  const value = weightedValue(roi);
+  const value = liveValue(roi);
 
   return (
     value >= 25 &&
@@ -56,6 +69,7 @@ function isCoveredByFinger(roi: PpgRoiSample): boolean {
     roi.r >= MIN_ROI_RED &&
     roi.darkPct < 0.35 &&
     roi.saturatedPct < 0.45 &&
+    redSaturatedPct(roi) < MAX_ROI_RED_SATURATION &&
     redToSum(roi) >= 0.70 &&
     redToMaxChannel(roi) >= 2.00
   );
@@ -67,9 +81,10 @@ function classifyRecent(recent: PpgFrameSample[]): FingerPlacementState {
   if (frameRois.length === 0) return 'no_finger';
 
   const rois = frameRois.flat();
-  const values = rois.map(weightedValue);
+  const values = rois.map(liveValue);
   const avgValue = mean(values);
   const avgSaturated = mean(rois.map((roi) => roi.saturatedPct));
+  const avgRedSaturated = mean(rois.map(redSaturatedPct));
   const avgDark = mean(rois.map((roi) => roi.darkPct));
   const avgRed = mean(rois.map((roi) => roi.r));
   const avgRedToSum = mean(rois.map(redToSum));
@@ -95,13 +110,13 @@ function classifyRecent(recent: PpgFrameSample[]): FingerPlacementState {
       const roiValues = recent
         .map((frame) => frame.rois.find((roi) => roi.id === roiId))
         .filter((roi): roi is PpgRoiSample => roi != null)
-        .map(weightedValue);
+        .map(liveValue);
       return standardDeviation(roiValues) / Math.max(1, mean(roiValues));
     }),
   );
   const avgSpatialCv = mean(
     frameRois.map((items) => {
-      const roiValues = items.map(weightedValue);
+      const roiValues = items.map(liveValue);
       return standardDeviation(roiValues) / Math.max(1, mean(roiValues));
     }),
   );
@@ -119,7 +134,7 @@ function classifyRecent(recent: PpgFrameSample[]): FingerPlacementState {
     return 'no_finger';
   }
 
-  if (avgSaturated > 0.55) {
+  if (avgSaturated > 0.55 || avgRedSaturated > MAX_AVG_RED_SATURATION) {
     return 'partial';
   }
 
