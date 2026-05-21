@@ -45,21 +45,21 @@ function makeSaturatedFrame(timestamp) {
   };
 }
 
-function makeRedClippedFrame(timestamp, green = 110, redSaturatedPct = 0.8) {
+function makeBrightTorchFrame(timestamp, weighted, saturatedPct = 0.7) {
+  const g = 45 + (weighted - BASELINE_WEIGHTED) * 0.15;
+  const b = 8;
+  const r = (weighted - g * 0.33) / 0.67;
   return {
     timestamp,
     rois: [
       {
         id: 'roi-0',
-        r: 255,
-        g: green,
-        b: 8,
-        saturatedPct: 0.04,
-        redSaturatedPct,
-        greenSaturatedPct: 0,
-        blueSaturatedPct: 0,
+        r,
+        g,
+        b,
+        saturatedPct,
         darkPct: 0,
-        variance: 80,
+        variance: 100,
       },
     ],
   };
@@ -174,20 +174,21 @@ test('HeartRateManager: produces ~800ms IBIs from a regular beat train', () => {
 
 test('HeartRateManager: waits for enough intervals before publishing live BPM', () => {
   const manager = new HeartRateManager();
-  runBeatTrain(manager, [24, 48, 72, 96, 120]);
+  runBeatTrain(manager, [24, 48, 72]);
   assert.equal(manager.getCurrentBpm(), null);
 
-  runBeatTrain(manager, [24, 48, 72, 96, 120, 144], 20_000);
+  runBeatTrain(manager, [24, 48, 72, 96], 20_000);
   assert.equal(manager.getCurrentBpm(), 76);
 });
 
-test('HeartRateManager: beginMeasurementWindow clears setup BPM history', () => {
+test('HeartRateManager: beginMeasurementWindow preserves live BPM history but clears persisted IBIs', () => {
   const manager = new HeartRateManager();
   runBeatTrain(manager, [11, 22, 33, 44, 55, 66, 77, 88]);
   assert.equal(manager.getCurrentBpm(), 165);
 
   manager.beginMeasurementWindow(15_000);
-  assert.equal(manager.getCurrentBpm(), null);
+  assert.equal(manager.getCurrentBpm(), 165);
+  assert.deepEqual(manager.getIbiSamples(), []);
 
   runBeatTrain(manager, [24, 48, 72, 96, 120, 144, 168], 15_000);
   assert.equal(manager.getCurrentBpm(), 76);
@@ -481,38 +482,66 @@ test('HeartRateManager: saturated frames do not feed live beat detection', () =>
   assert.equal(manager.getCurrentBpm(), null, 'sustained clipping should stop live BPM publishing');
 });
 
-test('HeartRateManager: red-clipped frames are not classified as good even when luma is not saturated', () => {
-  const manager = new HeartRateManager();
-  let t = 0;
-  let goodCount = 0;
-  let beatTicks = 0;
-
-  for (let i = 0; i < 120; i++) {
-    const state = manager.processFrame(makeRedClippedFrame(t, i % 24 === 0 ? 140 : 110, 0.8));
-    if (state.fingerPlacement === 'good') goodCount += 1;
-    if (state.beatDetected) beatTicks += 1;
-    t += FRAME_SPACING_MS;
-  }
-
-  assert.equal(goodCount, 0, 'heavily red-clipped frames should not become good placement');
-  assert.equal(beatTicks, 0, 'heavily red-clipped frames should not emit beats');
-  assert.equal(manager.getCurrentBpm(), null, 'heavily red-clipped frames should not publish live BPM');
-});
-
-test('HeartRateManager: moderately red-clipped frames can still track green-channel pulse', () => {
+test('HeartRateManager: bright torch partial saturation still tracks clear weighted beats', () => {
   const manager = new HeartRateManager();
   let t = 0;
   let beatTicks = 0;
   const periodMs = 24 * FRAME_SPACING_MS;
 
   for (let i = 0; i < 300; i++) {
-    const green = 100 + 10 * Math.sin((2 * Math.PI * t) / periodMs);
-    const state = manager.processFrame(makeRedClippedFrame(t, green, 0.2));
+    const weighted = BASELINE_WEIGHTED + 10 * Math.sin((2 * Math.PI * t) / periodMs);
+    const state = manager.processFrame(makeBrightTorchFrame(t, weighted));
+    assert.equal(state.fingerPlacement, 'good');
     if (state.beatDetected) beatTicks += 1;
     t += FRAME_SPACING_MS;
   }
 
-  assert.ok(beatTicks >= 4, `expected green-channel live beats under moderate red clipping, got ${beatTicks}`);
+  assert.ok(beatTicks >= 4, `expected live beats under partial torch saturation, got ${beatTicks}`);
+  assert.equal(manager.getCurrentBpm(), 76);
+});
+
+test('HeartRateManager: emitted bright torch beats populate live BPM history', () => {
+  const manager = new HeartRateManager();
+  let t = 0;
+  let beatTicks = 0;
+  let firstBpmAtTick = 0;
+  const periodMs = 24 * FRAME_SPACING_MS;
+
+  for (let i = 0; i < 360; i++) {
+    const weighted = BASELINE_WEIGHTED + 10 * Math.sin((2 * Math.PI * t) / periodMs);
+    const state = manager.processFrame(makeBrightTorchFrame(t, weighted));
+    if (state.beatDetected) {
+      beatTicks += 1;
+      if (firstBpmAtTick === 0 && manager.getCurrentBpm() != null) {
+        firstBpmAtTick = beatTicks;
+      }
+    }
+    t += FRAME_SPACING_MS;
+  }
+
+  assert.ok(beatTicks >= 7, `expected enough emitted beats, got ${beatTicks}`);
+  assert.ok(
+    firstBpmAtTick > 0 && firstBpmAtTick <= 7,
+    `expected live BPM soon after enough emitted beats, got tick ${firstBpmAtTick}`,
+  );
+  assert.equal(manager.getCurrentBpm(), 76);
+});
+
+test('HeartRateManager: very high torch saturation does not stall live BPM when weighted pulse is clear', () => {
+  const manager = new HeartRateManager();
+  let t = 0;
+  let beatTicks = 0;
+  const periodMs = 24 * FRAME_SPACING_MS;
+
+  for (let i = 0; i < 360; i++) {
+    const weighted = BASELINE_WEIGHTED + 10 * Math.sin((2 * Math.PI * t) / periodMs);
+    const state = manager.processFrame(makeBrightTorchFrame(t, weighted, 0.92));
+    assert.equal(state.fingerPlacement, 'good');
+    if (state.beatDetected) beatTicks += 1;
+    t += FRAME_SPACING_MS;
+  }
+
+  assert.ok(beatTicks >= 7, `expected enough beats under very high torch saturation, got ${beatTicks}`);
   assert.equal(manager.getCurrentBpm(), 76);
 });
 

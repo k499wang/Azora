@@ -8,9 +8,9 @@ import { card } from '../../../theme/card';
 import type { SetupScreenProps } from '../../../lib/heartRate/types';
 
 const STEPS = [
-  'Cover the rear camera with your fingertip',
-  'Apply gentle pressure',
-  'Stay still and breathe normally',
+  'Cover the rear camera with the fleshy pad of your finger, not your nail',
+  'Keep your phone and finger still',
+  'Use gentle pressure and breathe normally',
 ];
 
 export function DefaultInstructionScreen({ onNext }: SetupScreenProps) {

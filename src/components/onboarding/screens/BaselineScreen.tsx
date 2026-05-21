@@ -14,6 +14,7 @@ import * as Haptics from 'expo-haptics';
 import Icon from '../../common/icons/Icon';
 import { PersistentCameraRing } from '../../heartRate/PersistentCameraRing';
 import { useHeartRateStream } from '../../../hooks/useHeartRateStream';
+import { createBpmPresentationFilter } from '../../../lib/heartRate/bpmSmoothing';
 import type { FingerPlacementState } from '../../../lib/heartRate/types';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
@@ -59,32 +60,32 @@ type ReadingTip = {
 const READING_TIPS: ReadingTip[] = [
   {
     id: 'calm',
-    title: 'I’m can stay still',
-    detail: 'Sitting still in a quiet spot.',
+    title: 'Phone and finger stay still',
+    detail: 'Movement can shake the camera signal and brightness reading.',
   },
   {
     id: 'cover',
-    title: 'Lens is covered completely',
-    detail: 'One fingertip sealing both completely.',
+    title: 'Camera is fully covered',
+    detail: 'Use the fleshy pad at the end of your finger, not your fingernail, to cover the lens and flash.',
   },
   {
     id: 'pressure',
     title: 'Gentle, steady pressure',
-    detail: 'Firm enough to seal — light enough to feel my pulse.',
+    detail: 'Firm enough to seal, light enough to feel your pulse.',
   },
   {
     id: 'hold',
     title: 'Ready to hold for 20 seconds',
-    detail: 'Won’t move or talk until it’s done.',
+    detail: 'Stay quiet and avoid talking or moving until it’s done.',
   },
 ];
 
 function placementConfig(p: FingerPlacementState): { ringColor: string; status: string } {
   switch (p) {
     case 'good':
-      return { ringColor: colors.primary.blue500, status: 'Hold still…' };
+      return { ringColor: colors.primary.blue500, status: 'Hold phone and finger still' };
     case 'partial':
-      return { ringColor: colors.warning[500], status: 'Cover the lens fully' };
+      return { ringColor: colors.warning[500], status: 'Cover the camera fully' };
     case 'too_much_pressure':
       return { ringColor: colors.warning[500], status: 'Ease up slightly' };
     case 'no_finger':
@@ -92,7 +93,7 @@ function placementConfig(p: FingerPlacementState): { ringColor: string; status: 
     default:
       return {
         ringColor: colors.error[500],
-        status: 'Place your fingertip over the back camera',
+        status: 'Cover the back camera with your finger pad',
       };
   }
 }
@@ -115,6 +116,7 @@ export default function BaselineScreen({
   const [checkedTips, setCheckedTips] = useState<Set<string>>(() => new Set());
   const [scienceOpen, setScienceOpen] = useState(false);
   const [scienceContentHeight, setScienceContentHeight] = useState(0);
+  const [presentedBpm, setPresentedBpm] = useState<number | null>(null);
   const scienceAnim = useRef(new Animated.Value(0)).current;
   const allChecked = checkedTips.size === READING_TIPS.length;
 
@@ -145,6 +147,14 @@ export default function BaselineScreen({
   const earlyBpmsRef = useRef<number[]>([]);
   const lateBpmsRef = useRef<number[]>([]);
   const allBpmsRef = useRef<number[]>([]);
+  const bpmPresentationFilterRef = useRef(
+    createBpmPresentationFilter({
+      warmupMs: 6_000,
+      maxStepBpm: 4,
+      spikeThresholdBpm: 14,
+      spikeConfirmationBpm: 5,
+    }),
+  );
   const rafRef = useRef<number | null>(null);
 
   const hudOpacity = useRef(new Animated.Value(1)).current;
@@ -161,8 +171,8 @@ export default function BaselineScreen({
     stream.fingerPlacement === 'good' || stream.fingerPlacement === 'partial';
   const visibleBeatTick = hasUsableFingerSignal ? stream.beatTick : 0;
   const bpmDisplay =
-    phase === 'running' && stream.currentBpm != null && stream.currentBpm > 0
-      ? Math.round(stream.currentBpm)
+    phase === 'running' && presentedBpm != null && presentedBpm > 0
+      ? Math.round(presentedBpm)
       : null;
   const signalGood = stream.fingerPlacement === 'good';
   const showSignalWarning = phase === 'running' && !signalGood;
@@ -272,15 +282,27 @@ export default function BaselineScreen({
   }, []);
 
   useEffect(() => {
-    if (phase !== 'running' || !hasConfirmedSignal || stream.currentBpm == null) return;
+    if (phase !== 'running' || !hasConfirmedSignal || stream.currentBpm == null) {
+      setPresentedBpm(null);
+      return;
+    }
     const elapsed = startedAtRef.current
       ? Date.now() - startedAtRef.current
       : 0;
-    allBpmsRef.current.push(stream.currentBpm);
+    const nextBpm = bpmPresentationFilterRef.current.update({
+      elapsedMs: elapsed,
+      bpm: stream.currentBpm,
+    });
+    if (nextBpm == null) {
+      setPresentedBpm(null);
+      return;
+    }
+    setPresentedBpm(nextBpm);
+    allBpmsRef.current.push(nextBpm);
     if (elapsed < SESSION_MS / 2) {
-      earlyBpmsRef.current.push(stream.currentBpm);
+      earlyBpmsRef.current.push(nextBpm);
     } else {
-      lateBpmsRef.current.push(stream.currentBpm);
+      lateBpmsRef.current.push(nextBpm);
     }
   }, [stream.currentBpm, phase, hasConfirmedSignal]);
 
@@ -292,6 +314,8 @@ export default function BaselineScreen({
       earlyBpmsRef.current = [];
       lateBpmsRef.current = [];
       allBpmsRef.current = [];
+      bpmPresentationFilterRef.current.reset();
+      setPresentedBpm(null);
       setProgress(0);
       setPhase('running');
     }, PLACEMENT_GOOD_DURATION_MS);
