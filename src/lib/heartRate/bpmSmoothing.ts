@@ -18,8 +18,33 @@ export interface IbiValuePoint {
   ibiMs: number;
 }
 
+export interface BpmPresentationFilterOptions {
+  warmupMs: number;
+  minStableReadings: number;
+  stableRangeBpm: number;
+  maxStepBpm: number;
+  spikeThresholdBpm: number;
+  spikeConfirmationBpm: number;
+}
+
+export interface BpmPresentationSample {
+  elapsedMs: number;
+  bpm: number;
+}
+
 const MAX_SAMPLE_JUMP_BPM = 8;
 const GRAPH_BPM_MEDIAN_WINDOW = 5;
+const MIN_PRESENTATION_BPM = 20;
+const MAX_PRESENTATION_BPM = 240;
+
+const DEFAULT_PRESENTATION_FILTER_OPTIONS: BpmPresentationFilterOptions = {
+  warmupMs: 5_000,
+  minStableReadings: 3,
+  stableRangeBpm: 12,
+  maxStepBpm: 5,
+  spikeThresholdBpm: 14,
+  spikeConfirmationBpm: 6,
+};
 
 function clampStep(value: number, previous: number | null): number {
   if (previous == null) return value;
@@ -107,4 +132,85 @@ export function buildGraphBpmValuePointsFromIbis<T extends IbiValuePoint>(
     ));
 
   return smoothBpmValuePoints(points);
+}
+
+function isPresentationBpm(value: number): boolean {
+  return (
+    Number.isFinite(value) &&
+    value >= MIN_PRESENTATION_BPM &&
+    value <= MAX_PRESENTATION_BPM
+  );
+}
+
+function isRecentWindowStable(values: number[], rangeBpm: number): boolean {
+  if (values.length === 0) return false;
+  return Math.max(...values) - Math.min(...values) <= rangeBpm;
+}
+
+export class BpmPresentationFilter {
+  private readonly options: BpmPresentationFilterOptions;
+  private readonly rawReadings: number[] = [];
+  private previousDisplayedBpm: number | null = null;
+  private pendingSpikeBpm: number | null = null;
+
+  constructor(options: Partial<BpmPresentationFilterOptions> = {}) {
+    this.options = {
+      ...DEFAULT_PRESENTATION_FILTER_OPTIONS,
+      ...options,
+    };
+  }
+
+  reset(): void {
+    this.rawReadings.length = 0;
+    this.previousDisplayedBpm = null;
+    this.pendingSpikeBpm = null;
+  }
+
+  update(sample: BpmPresentationSample): number | null {
+    const rawBpm = Math.round(sample.bpm);
+    if (!isPresentationBpm(rawBpm)) return null;
+
+    this.rawReadings.push(rawBpm);
+    if (this.rawReadings.length > this.options.minStableReadings) {
+      this.rawReadings.shift();
+    }
+
+    if (this.previousDisplayedBpm == null) {
+      if (sample.elapsedMs < this.options.warmupMs) return null;
+      if (this.rawReadings.length < this.options.minStableReadings) return null;
+      if (!isRecentWindowStable(this.rawReadings, this.options.stableRangeBpm)) {
+        return null;
+      }
+      this.previousDisplayedBpm = rawBpm;
+      this.pendingSpikeBpm = null;
+      return rawBpm;
+    }
+
+    const deltaFromPrevious = rawBpm - this.previousDisplayedBpm;
+    if (Math.abs(deltaFromPrevious) > this.options.spikeThresholdBpm) {
+      const confirmed =
+        this.pendingSpikeBpm != null &&
+        Math.abs(rawBpm - this.pendingSpikeBpm) <= this.options.spikeConfirmationBpm;
+
+      if (!confirmed) {
+        this.pendingSpikeBpm = rawBpm;
+        return null;
+      }
+    }
+
+    this.pendingSpikeBpm = null;
+    const step =
+      Math.abs(deltaFromPrevious) <= this.options.maxStepBpm
+        ? deltaFromPrevious
+        : Math.sign(deltaFromPrevious) * this.options.maxStepBpm;
+    const displayedBpm = Math.round(this.previousDisplayedBpm + step);
+    this.previousDisplayedBpm = displayedBpm;
+    return displayedBpm;
+  }
+}
+
+export function createBpmPresentationFilter(
+  options: Partial<BpmPresentationFilterOptions> = {},
+): BpmPresentationFilter {
+  return new BpmPresentationFilter(options);
 }

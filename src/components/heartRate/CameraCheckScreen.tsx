@@ -30,11 +30,11 @@ interface StateConfig {
 const stateConfigs: Record<FingerPlacementState, StateConfig> = {
   no_finger: {
     ringColor: colors.error[500],
-    status: 'Place your fingertip over the camera',
+    status: 'Cover the camera with your finger pad',
   },
   partial: {
     ringColor: colors.warning[500],
-    status: 'Cover the lens fully',
+    status: 'Cover the camera fully',
   },
   too_much_pressure: {
     ringColor: '#8B5CF6',
@@ -42,11 +42,11 @@ const stateConfigs: Record<FingerPlacementState, StateConfig> = {
   },
   good: {
     ringColor: colors.success[500],
-    status: 'Hold still…',
+    status: 'Hold phone and finger still',
   },
   lost: {
     ringColor: colors.error[500],
-    status: 'Place your fingertip over the camera',
+    status: 'Cover the camera with your finger pad',
   },
 };
 

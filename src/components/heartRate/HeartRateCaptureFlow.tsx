@@ -47,15 +47,15 @@ function checkStateConfig(placement: FingerPlacementState): {
 } {
   switch (placement) {
     case 'good':
-      return { ringColor: colors.success[500], status: 'Hold still…' };
+      return { ringColor: colors.success[500], status: 'Hold phone and finger still' };
     case 'partial':
-      return { ringColor: colors.warning[500], status: 'Cover the lens fully' };
+      return { ringColor: colors.warning[500], status: 'Cover the camera fully' };
     case 'too_much_pressure':
       return { ringColor: '#8B5CF6', status: 'Ease up slightly' };
     case 'no_finger':
     case 'lost':
     default:
-      return { ringColor: colors.error[500], status: 'Place your fingertip over the camera' };
+      return { ringColor: colors.error[500], status: 'Cover the camera with your finger pad' };
   }
 }
 
