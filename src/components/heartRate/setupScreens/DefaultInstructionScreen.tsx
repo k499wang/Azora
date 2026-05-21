@@ -113,7 +113,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
     borderRadius: 18,
     overflow: 'hidden',
-    backgroundColor: colors.background.elevated,
   },
   visual: {
     width: '100%',
