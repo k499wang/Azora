@@ -13,6 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import Icon from '../../common/icons/Icon';
 import { PersistentCameraRing } from '../../heartRate/PersistentCameraRing';
+import { LiveSignalGraph } from '../../heartRate/LiveSignalGraph';
 import { useHeartRateStream } from '../../../hooks/useHeartRateStream';
 import { createBpmPresentationFilter } from '../../../lib/heartRate/bpmSmoothing';
 import type { FingerPlacementState } from '../../../lib/heartRate/types';
@@ -415,6 +416,14 @@ export default function BaselineScreen({
 
           <View style={styles.center}>
             <View style={styles.centerStack}>
+              {isRunning ? (
+                <View style={styles.liveSignalSlot}>
+                  <LiveSignalGraph
+                    samples={stream.liveSignalSamples}
+                    fingerPlacement={stream.fingerPlacement}
+                  />
+                </View>
+              ) : null}
               <PersistentCameraRing
                 ringColor={placementCfg.ringColor}
                 trackColor={isRunning ? undefined : placementCfg.ringColor + '33'}
@@ -856,8 +865,16 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   centerStack: {
+    width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  liveSignalSlot: {
+    width: '100%',
+    maxWidth: 320,
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+    paddingHorizontal: spacing.lg,
   },
   belowSlot: {
     minHeight: 64,

@@ -1,6 +1,7 @@
 import type {
   FingerPlacementState,
   IbiSample,
+  LivePpgSignalSample,
   PpgFrameSample,
   PpgRoiSample,
 } from './types';
@@ -46,6 +47,7 @@ const MALIK_WINDOW = 5;
 const MALIK_MIN_HISTORY = 3;
 const SIGNAL_QUALITY_REF = 0.02;
 const FILTER_GROUP_DELAY_MS = 65;
+const LIVE_SIGNAL_WINDOW_MS = 8000;
 
 const SAMPLE_RATE_HZ = 30;
 const BP_LOW_HZ = 0.7;
@@ -270,6 +272,7 @@ export class HeartRateManager {
   private polarityLocked = false;
   private polarityPositiveScore = 0;
   private polarityNegativeScore = 0;
+  private readonly liveSignalSamples: LivePpgSignalSample[] = [];
 
   reset(): void {
     this.baseline = 0;
@@ -299,6 +302,22 @@ export class HeartRateManager {
     this.polarityLocked = false;
     this.polarityPositiveScore = 0;
     this.polarityNegativeScore = 0;
+    this.liveSignalSamples.length = 0;
+  }
+
+  private pushLiveSignalSample(timestamp: number, value: number): void {
+    const quality = Math.min(
+      1,
+      Math.max(0, this.amplitude / SIGNAL_QUALITY_REF),
+    );
+    this.liveSignalSamples.push({ timestamp, value, quality });
+    const cutoff = timestamp - LIVE_SIGNAL_WINDOW_MS;
+    while (
+      this.liveSignalSamples.length > 0 &&
+      this.liveSignalSamples[0].timestamp < cutoff
+    ) {
+      this.liveSignalSamples.shift();
+    }
   }
 
   private pushAcceptedIbi(peakTs: number, ibi: number): void {
@@ -324,6 +343,7 @@ export class HeartRateManager {
 
   beginMeasurementWindow(startTimestamp: number): void {
     this.ibiSamples.length = 0;
+    this.liveSignalSamples.length = 0;
     this.sessionStartTs = startTimestamp;
     // Preserve the warmed detector, but avoid storing the first accepted
     // interval because it straddles the setup->measurement boundary.
@@ -501,6 +521,7 @@ export class HeartRateManager {
     }
 
     const ac = rawAc * this.polarity;
+    this.pushLiveSignalSample(sample.timestamp, ac);
     let beatDetected = false;
 
     if (readyForMeasurement && this.amplitude > MIN_AMPLITUDE) {
@@ -661,5 +682,17 @@ export class HeartRateManager {
 
   getIbiSamples(): IbiSample[] {
     return this.ibiSamples.map((sample) => ({ ...sample }));
+  }
+
+  getLiveSignalSamples(): LivePpgSignalSample[] {
+    return this.liveSignalSamples.map((sample) => ({ ...sample }));
+  }
+
+  getLatestLiveSignalTimestamp(): number | null {
+    return this.liveSignalSamples[this.liveSignalSamples.length - 1]?.timestamp ?? null;
+  }
+
+  clearLiveSignalSamples(): void {
+    this.liveSignalSamples.length = 0;
   }
 }

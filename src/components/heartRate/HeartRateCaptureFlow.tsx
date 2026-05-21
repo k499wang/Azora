@@ -8,8 +8,8 @@ import { ResultScreen } from './ResultScreen';
 import { DefaultInstructionScreen } from './setupScreens/DefaultInstructionScreen';
 import { PersistentCameraRing } from './PersistentCameraRing';
 import { AnimatedCalibratingText } from './AnimatedCalibratingText';
-import { RotatingSubtitle } from './RotatingSubtitle';
 import { HeartRateProcessingScreen } from './HeartRateProcessingScreen';
+import { LiveSignalGraph } from './LiveSignalGraph';
 import { colors } from '../../theme/colors';
 import { typography, fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
@@ -39,7 +39,6 @@ const DEFAULT_SETUP_SCREENS: React.ComponentType<SetupScreenProps>[] = [
 ];
 
 const CHECK_TIMEOUT_SECONDS = 10;
-const HOLD_DURATION_MS = 1500;
 
 function checkStateConfig(placement: FingerPlacementState): {
   ringColor: string;
@@ -79,6 +78,7 @@ export function HeartRateCaptureFlow({
     progress,
     currentBpm,
     beatTick,
+    liveSignalSamples,
     result,
     device,
     format,
@@ -231,29 +231,6 @@ export function HeartRateCaptureFlow({
       : undefined
   ), [captureState, device, format, frameProcessor, torchMode]);
 
-  // Hold-steady progress for camera_check state
-  const [holdProgress, setHoldProgress] = useState(0);
-  useEffect(() => {
-    if (captureState !== 'camera_check') {
-      setHoldProgress(0);
-      return;
-    }
-    if (fingerPlacement !== 'good') {
-      setHoldProgress(0);
-      return;
-    }
-    const start = Date.now();
-    let raf: number;
-    const tick = () => {
-      const elapsed = Date.now() - start;
-      const p = Math.min(1, elapsed / HOLD_DURATION_MS);
-      setHoldProgress(p);
-      if (p < 1) raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [captureState, fingerPlacement]);
-
   const [showStartAnyway, setShowStartAnyway] = useState(false);
   useEffect(() => {
     if (captureState !== 'camera_check') {
@@ -299,7 +276,7 @@ export function HeartRateCaptureFlow({
   const isFingerLost = fingerPlacement === 'lost' || fingerPlacement === 'no_finger';
 
   const ringColor = isMeasuring ? colors.primary.blue600 : checkConfig.ringColor;
-  const ringProgress = isMeasuring ? progress : holdProgress;
+  const ringProgress = isMeasuring ? progress : 0;
   const trackColor = isMeasuring ? colors.border.subtle : checkConfig.ringColor + '33';
 
   return (
@@ -307,6 +284,13 @@ export function HeartRateCaptureFlow({
       <View style={styles.container}>
         {/* Top: warning banner (measuring) or status text (check) */}
         <View style={styles.topArea}>
+          <TouchableOpacity
+            onPress={handleCancel}
+            activeOpacity={0.7}
+            style={styles.cancelTouchableTop}
+          >
+            <Text style={styles.cancelText}>Cancel</Text>
+          </TouchableOpacity>
           {isMeasuring && isFingerLost && (
             <View style={styles.warningBanner}>
               <MaterialCommunityIcons
@@ -324,7 +308,14 @@ export function HeartRateCaptureFlow({
               {checkConfig.status}
             </Text>
           )}
-          {isMeasuring && !isFingerLost && <RotatingSubtitle />}
+          {isMeasuring && !isFingerLost && (
+            <View style={styles.topSignalGraph}>
+              <LiveSignalGraph
+                samples={liveSignalSamples}
+                fingerPlacement={fingerPlacement}
+              />
+            </View>
+          )}
         </View>
 
         {/* Persistent ring + camera — never unmounts across check ↔ measuring */}
@@ -346,13 +337,12 @@ export function HeartRateCaptureFlow({
         <View style={styles.bottomArea}>
           {isMeasuring && (
             <View style={styles.bpmRow}>
-              <Text style={styles.bpmLabel}>Current BPM</Text>
               {currentBpm == null ? (
                 <AnimatedCalibratingText textStyle={styles.bpmCalibrating} />
               ) : (
                 <View style={styles.bpmValueRow}>
                   <Text style={styles.bpmValue}>{currentBpm}</Text>
-                  <Text style={styles.bpmUnit}>bpm</Text>
+                  <Text style={styles.bpmUnit}>BPM</Text>
                 </View>
               )}
             </View>
@@ -368,13 +358,6 @@ export function HeartRateCaptureFlow({
                 <Text style={styles.startAnywayText}>Start Anyway</Text>
               </TouchableOpacity>
             )}
-            <TouchableOpacity
-              onPress={handleCancel}
-              activeOpacity={0.7}
-              style={styles.cancelTouchable}
-            >
-              <Text style={styles.cancelText}>Cancel</Text>
-            </TouchableOpacity>
           </View>
         </View>
       </View>
@@ -400,6 +383,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'flex-end',
     paddingBottom: spacing.xl,
+  },
+  topSignalGraph: {
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: spacing.xl,
   },
   ringSlot: {
     alignItems: 'center',
@@ -436,15 +424,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
   },
   bpmRow: {
+    width: '100%',
     alignItems: 'center',
-    marginBottom: spacing.lg,
-  },
-  bpmLabel: {
-    ...typography.body.medium,
-    color: colors.text.secondary,
-    fontFamily: fonts.semibold,
-    fontWeight: '600',
-    marginBottom: spacing.xs,
+    marginBottom: spacing.xl,
   },
   bpmValueRow: {
     flexDirection: 'row',
@@ -459,13 +441,6 @@ const styles = StyleSheet.create({
     fontSize: 56,
     lineHeight: 60,
     minWidth: 64,
-    textAlign: 'right',
-  },
-  bpmCalibrating: {
-    ...typography.title.title3,
-    color: colors.text.primary,
-    fontFamily: fonts.semibold,
-    fontWeight: '600',
     textAlign: 'center',
   },
   bpmUnit: {
@@ -474,6 +449,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 20,
     marginLeft: spacing.xs,
+  },
+  bpmCalibrating: {
+    ...typography.title.title3,
+    color: colors.text.primary,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    textAlign: 'center',
   },
   actions: {
     width: '100%',
@@ -495,6 +477,14 @@ const styles = StyleSheet.create({
   },
   cancelTouchable: {
     paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+  },
+  cancelTouchableTop: {
+    position: 'absolute',
+    top: spacing.sm,
+    alignSelf: 'center',
+    zIndex: 20,
+    paddingVertical: spacing.xs,
     paddingHorizontal: spacing.md,
   },
   cancelText: {

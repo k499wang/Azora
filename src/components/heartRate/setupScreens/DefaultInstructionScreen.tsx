@@ -1,11 +1,15 @@
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image as RNImage, Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useMemo } from 'react';
 import { colors } from '../../../theme/colors';
 import { typography } from '../../../theme/typography';
 import { spacing } from '../../../theme/spacing';
 import { card } from '../../../theme/card';
 import type { SetupScreenProps } from '../../../lib/heartRate/types';
+
+const INSTRUCTION_IMAGE = require('../../../../assets/onboarding/camerappg.png');
 
 const STEPS = [
   'Cover the rear camera with the fleshy pad of your finger, not your nail',
@@ -34,11 +38,7 @@ export function DefaultInstructionScreen({ onNext }: SetupScreenProps) {
       </View>
 
       <View style={styles.visualFrame}>
-        <Image
-          source={require('../../../../assets/onboarding/camerappg.png')}
-          style={styles.visual}
-          resizeMode="cover"
-        />
+        <InstructionImage />
       </View>
 
       <View style={[card.base, card.shadow, styles.stepsCard]}>
@@ -72,6 +72,25 @@ export function DefaultInstructionScreen({ onNext }: SetupScreenProps) {
         <Text style={styles.primaryButtonText}>Begin</Text>
       </Pressable>
     </View>
+  );
+}
+
+function InstructionImage() {
+  const { width: screenWidth } = useWindowDimensions();
+  const resolved = useMemo(() => RNImage.resolveAssetSource(INSTRUCTION_IMAGE), []);
+
+  const aspect = resolved.height / resolved.width;
+  const frameWidth = screenWidth - spacing.lg * 2;
+  const frameHeight = frameWidth * aspect;
+
+  return (
+    <Image
+      source={INSTRUCTION_IMAGE}
+      style={{ width: frameWidth, height: frameHeight }}
+      contentFit="contain"
+      cachePolicy="memory-disk"
+      transition={0}
+    />
   );
 }
 
@@ -109,14 +128,9 @@ const styles = StyleSheet.create({
   },
   visualFrame: {
     width: '100%',
-    height: 156,
     marginBottom: spacing.lg,
     borderRadius: 18,
     overflow: 'hidden',
-  },
-  visual: {
-    width: '100%',
-    height: '100%',
   },
   stepsCard: {
     padding: spacing.md,

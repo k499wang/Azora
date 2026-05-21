@@ -42,11 +42,14 @@ export default function BPMChart({
       t += ms;
       return { offsetMs: t, ibiMs: ms };
     });
-    return buildGraphBpmValuePointsFromIbis(
+    const points = buildGraphBpmValuePointsFromIbis(
       ibiSamples,
       (sample) => `${Math.round(sample.offsetMs / 1000)}s`,
-    ).map((point) => ({
-      tSec: point.offsetMs / 1000,
+    );
+    const firstOffsetMs = points[0]?.offsetMs ?? 0;
+
+    return points.map((point) => ({
+      tSec: (point.offsetMs - firstOffsetMs) / 1000,
       bpm: point.value,
     }));
   }, [ibiMs]);

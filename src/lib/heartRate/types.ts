@@ -51,6 +51,12 @@ export interface PpgFrameSample {
   rois: PpgRoiSample[];
 }
 
+export interface LivePpgSignalSample {
+  timestamp: number;
+  value: number;
+  quality: number | null;
+}
+
 export interface HeartRateEstimate {
   bpm: number;
   confidence: number;
