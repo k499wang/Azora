@@ -587,18 +587,20 @@ function StepChoose({
   selectedPackageHasTrial,
   hasAnnualTrial,
 }: StepChooseProps) {
+  const showCancelAnytime = !selectedPackageHasTrial || selectedPackageId === 'annual';
+
   return (
     <View style={styles.stepContainer}>
       <View style={styles.headerCopy}>
         <Text style={styles.eyebrow}>Your plan is ready.</Text>
         <Text style={styles.title}>Unlock Azora for free</Text>
         <View style={styles.titleDivider} />
-        {selectedPackageHasTrial ? null : (
+        {showCancelAnytime ? (
           <Text style={[styles.trialNote, styles.trialNoteDark]}>Cancel anytime</Text>
-        )}
+        ) : null}
       </View>
 
-      <PaywallFeatureList />
+      <PaywallFeatureList hasAnnualTrial={hasAnnualTrial} />
 
       {hasAnnualTrial ? (
         <PaywallTrialReminderToggle dark disabled={!selectedPackageHasTrial} />

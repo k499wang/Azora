@@ -80,6 +80,7 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
   const isAnnualSelected = paywall.selectedPackageId === 'annual';
   const hasAnnualTrial = annualPackage?.trialLabel != null;
   const selectedPackageHasTrial = selectedPackage?.trialLabel != null;
+  const showCancelAnytime = !selectedPackageHasTrial || isAnnualSelected;
   const isBusy = paywall.isLoading || paywall.isPurchasing || paywall.isRestoring;
 
   const savingsPercent = useMemo(
@@ -180,12 +181,12 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
               <Text style={styles.eyebrow}>Your plan is ready.</Text>
               <Text style={styles.title}>Unlock Azora for free</Text>
               <View style={styles.titleDivider} />
-              {selectedPackageHasTrial ? null : (
+              {showCancelAnytime ? (
                 <Text style={styles.trialNote}>Cancel anytime</Text>
-              )}
+              ) : null}
             </View>
 
-            <PaywallFeatureList />
+            <PaywallFeatureList hasAnnualTrial={hasAnnualTrial} />
 
             {hasAnnualTrial ? (
               <PaywallTrialReminderToggle dark disabled={!selectedPackageHasTrial} />

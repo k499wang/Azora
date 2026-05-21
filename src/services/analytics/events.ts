@@ -9,6 +9,17 @@ export const AnalyticsEvent = {
   SessionEnded: 'session_ended',
   ScreenView: 'screen_view',
 
+  OnboardingStarted: 'onboarding_started',
+  OnboardingStepViewed: 'onboarding_step_viewed',
+  OnboardingStepCompleted: 'onboarding_step_completed',
+  OnboardingStepSkipped: 'onboarding_step_skipped',
+  OnboardingBackPressed: 'onboarding_back_pressed',
+  OnboardingIntentUpdated: 'onboarding_intent_updated',
+  OnboardingProfileSaveStarted: 'onboarding_profile_save_started',
+  OnboardingProfileSaveSucceeded: 'onboarding_profile_save_succeeded',
+  OnboardingProfileSaveFailed: 'onboarding_profile_save_failed',
+  OnboardingCompleted: 'onboarding_completed',
+
   DailyPlanStarted: 'daily_plan_started',
   DailyBreathHoldStarted: 'daily_breath_hold_started',
   DailyBreathHoldReleased: 'daily_breath_hold_released',

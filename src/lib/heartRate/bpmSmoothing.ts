@@ -40,6 +40,8 @@ export interface BpmPresentationSample {
 const MAX_SAMPLE_JUMP_BPM = 8;
 const GRAPH_MAX_SAMPLE_JUMP_BPM = 3;
 const GRAPH_BPM_MEDIAN_WINDOW = 9;
+const GRAPH_STARTUP_TRIM_IBIS = 3;
+const GRAPH_MIN_IBIS_AFTER_STARTUP_TRIM = 3;
 const GRAPH_STARTUP_TRIM_MS = 4_000;
 const GRAPH_MIN_POINTS_AFTER_TRIM = 3;
 const GRAPH_STARTUP_TRIM_BPM_DELTA = 8;
@@ -145,8 +147,12 @@ export function buildGraphBpmValuePointsFromIbis<T extends IbiValuePoint>(
   toLabel: (sample: T) => string,
 ): GraphBpmValuePoint[] {
   const filter = createBpmPresentationFilter(IBI_GRAPH_PRESENTATION_OPTIONS);
-  const startupSamples = samples.filter((sample) => sample.offsetMs < GRAPH_STARTUP_TRIM_MS);
-  const trimmedSamples = samples.filter((sample) => sample.offsetMs >= GRAPH_STARTUP_TRIM_MS);
+  const graphCandidateSamples =
+    samples.length >= GRAPH_STARTUP_TRIM_IBIS + GRAPH_MIN_IBIS_AFTER_STARTUP_TRIM
+      ? samples.slice(GRAPH_STARTUP_TRIM_IBIS)
+      : samples;
+  const startupSamples = graphCandidateSamples.filter((sample) => sample.offsetMs < GRAPH_STARTUP_TRIM_MS);
+  const trimmedSamples = graphCandidateSamples.filter((sample) => sample.offsetMs >= GRAPH_STARTUP_TRIM_MS);
   const startupBpm = bpmFromMedianIbi(startupSamples);
   const trimmedBpm = bpmFromMedianIbi(trimmedSamples);
   const shouldTrimStartup =
@@ -158,7 +164,7 @@ export function buildGraphBpmValuePointsFromIbis<T extends IbiValuePoint>(
   const graphSamples =
     shouldTrimStartup
       ? trimmedSamples
-      : samples;
+      : graphCandidateSamples;
 
   return graphSamples
     .map((sample, index) => {

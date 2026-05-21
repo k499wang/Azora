@@ -78,5 +78,17 @@ test('buildGraphBpmValuePointsFromIbis preserves sustained changes without full 
     (sample) => `${sample.offsetMs}`,
   );
 
-  assert.deepEqual(points.map((point) => point.value), [75, 75, 75, 78, 81]);
+  assert.deepEqual(points.map((point) => point.value), [97, 98, 98, 98, 99, 99]);
+});
+
+test('buildGraphBpmValuePointsFromIbis keeps startup IBIs for short graph series', () => {
+  const points = buildGraphBpmValuePointsFromIbis(
+    [800, 805, 810, 815, 820].map((ibiMs, index) => ({
+      offsetMs: (index + 1) * 1000,
+      ibiMs,
+    })),
+    (sample) => `${sample.offsetMs}`,
+  );
+
+  assert.equal(points[0]?.label, '3000');
 });
