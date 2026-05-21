@@ -16,10 +16,15 @@ import {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
+import Icon from '../../common/icons/Icon';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
 import { isHapticsEnabled } from '../../../services/preferences/hapticsPreference';
+import {
+  startInhaleVibration,
+  stopInhaleVibration,
+} from '../../../native/inhaleVibration';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import {
@@ -108,6 +113,7 @@ export default function LungCapacityScreen({
   useEffect(() => {
     return () => {
       if (tickRef.current) clearInterval(tickRef.current);
+      stopInhaleVibration();
     };
   }, []);
 
@@ -175,6 +181,7 @@ export default function LungCapacityScreen({
       const started = exhaleStartRef.current ?? Date.now();
       setExhaleSec((Date.now() - started) / 1000);
     }, 100);
+    startInhaleVibration(60_000);
   };
 
   const handleHoldEnd = () => {
@@ -184,6 +191,7 @@ export default function LungCapacityScreen({
       clearInterval(tickRef.current);
       tickRef.current = null;
     }
+    stopInhaleVibration();
     scale.stopAnimation();
     const started = exhaleStartRef.current ?? Date.now();
     const seconds = (Date.now() - started) / 1000;
@@ -241,7 +249,7 @@ export default function LungCapacityScreen({
     const subhead = isInhale
       ? 'Fill your lungs completely.'
       : isHolding
-        ? 'Hold your breath for as long as you can.'
+        ? 'Exhale for as long as you can.'
         : 'Then exhale for as long as you can.';
 
     const inhaleEntryStyle = isInhale
@@ -463,7 +471,9 @@ export default function LungCapacityScreen({
       }
     >
       <View style={styles.introStage}>
-        <Text style={styles.lungEmoji}>🫁</Text>
+        <View style={styles.lungIcon}>
+          <Icon name="lungs" size={140} color={colors.primary.blue600} />
+        </View>
         <View style={styles.introCopy}>
           <Text style={styles.introHeadline}>Lets measure your{'\n'}lung capacity.</Text>
           <Text style={styles.introSub}>
@@ -488,10 +498,9 @@ const styles = StyleSheet.create({
     gap: spacing['2xl'],
     paddingBottom: spacing['2xl'],
   },
-  lungEmoji: {
-    fontSize: 72,
-    lineHeight: 84,
-    textAlign: 'center',
+  lungIcon: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   introCopy: {
     alignItems: 'center',
