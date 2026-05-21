@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react';
 import {
-  ActivityIndicator,
   Animated,
   BackHandler,
   Easing,
@@ -10,6 +9,7 @@ import {
   View,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { DotsLoader } from '../common/DotsLoader';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
@@ -89,7 +89,9 @@ export function HeartRateProcessingScreen({
 
         <Text style={[styles.title, { color: titleColor }]}>{title}</Text>
         <Text style={[styles.message, { color: messageColor }]}>{message}</Text>
-        <ActivityIndicator color={accentColor} style={styles.spinner} />
+        <View style={styles.spinner}>
+          <DotsLoader color={accentColor} />
+        </View>
       </View>
     </SafeAreaView>
   );
