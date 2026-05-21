@@ -21,6 +21,7 @@ module.exports = {
         NSPhotoLibraryUsageDescription:
           'Allow $(PRODUCT_NAME) to choose a profile photo',
       },
+      
     },
     android: {
       adaptiveIcon: {

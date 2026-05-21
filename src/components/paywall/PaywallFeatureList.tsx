@@ -4,8 +4,11 @@ import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 import Icon from '../common/icons/Icon';
 
+const TRIAL_FEATURE = '3 day free trial for annual users.';
+const SUBSCRIPTION_FEATURE = 'Full Pro access across every breathing and heart-rate tool';
+
 const DEFAULT_FEATURES = [
-  "3 day free trial for annual users.",
+  TRIAL_FEATURE,
   'Heart rate, HRV & stress from your phone camera — no wearable needed',
   'Unlimited guided sessions',
   'Daily streak & progress insights',
@@ -13,14 +16,24 @@ const DEFAULT_FEATURES = [
 
 interface PaywallFeatureListProps {
   features?: string[];
+  hasAnnualTrial?: boolean;
 }
 
 export default function PaywallFeatureList({
-  features = DEFAULT_FEATURES,
+  features,
+  hasAnnualTrial = true,
 }: PaywallFeatureListProps) {
+  const resolvedFeatures =
+    features ??
+    DEFAULT_FEATURES.map((feature) =>
+      feature === TRIAL_FEATURE && !hasAnnualTrial
+        ? SUBSCRIPTION_FEATURE
+        : feature,
+    );
+
   return (
     <View style={styles.list}>
-      {features.map((feature) => (
+      {resolvedFeatures.map((feature) => (
         <View key={feature} style={styles.row}>
           <View style={styles.check}>
             <Icon name="check" size={12} color="rgba(255,255,255,0.9)" />
