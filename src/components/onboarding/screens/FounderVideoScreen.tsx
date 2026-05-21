@@ -197,7 +197,7 @@ function FounderVideoPlayer({ onFinish }: FounderVideoPlayerProps) {
             ]}
           >
             <Text style={playerStyles.endEyebrow}>Thanks for watching</Text>
-            <Text style={playerStyles.endTitle}>Ready to set your baseline?</Text>
+            <Text style={playerStyles.endTitle}>Ready to make it official?</Text>
             <View style={playerStyles.endActions}>
               <OnboardingPrimaryButton label="Continue" onPress={onFinish} />
               <Pressable

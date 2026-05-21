@@ -38,7 +38,7 @@ export interface BpmPresentationSample {
 }
 
 const MAX_SAMPLE_JUMP_BPM = 8;
-const GRAPH_MAX_SAMPLE_JUMP_BPM = 3;
+const GRAPH_MAX_SAMPLE_JUMP_BPM = 2;
 const GRAPH_BPM_MEDIAN_WINDOW = 9;
 const GRAPH_STARTUP_TRIM_IBIS = 3;
 const GRAPH_MIN_IBIS_AFTER_STARTUP_TRIM = 3;
