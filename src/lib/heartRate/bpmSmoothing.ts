@@ -57,6 +57,15 @@ const DEFAULT_PRESENTATION_FILTER_OPTIONS: BpmPresentationFilterOptions = {
   spikeConfirmationBpm: 6,
 };
 
+const LIVE_BPM_PRESENTATION_OPTIONS: BpmPresentationFilterOptions = {
+  warmupMs: 0,
+  minStableReadings: 1,
+  stableRangeBpm: 12,
+  maxStepBpm: 4,
+  spikeThresholdBpm: 12,
+  spikeConfirmationBpm: 5,
+};
+
 const IBI_GRAPH_PRESENTATION_OPTIONS: BpmPresentationFilterOptions = {
   warmupMs: 2_500,
   minStableReadings: 2,
@@ -276,4 +285,13 @@ export function createBpmPresentationFilter(
   options: Partial<BpmPresentationFilterOptions> = {},
 ): BpmPresentationFilter {
   return new BpmPresentationFilter(options);
+}
+
+export function createLiveBpmPresentationFilter(
+  options: Partial<BpmPresentationFilterOptions> = {},
+): BpmPresentationFilter {
+  return new BpmPresentationFilter({
+    ...LIVE_BPM_PRESENTATION_OPTIONS,
+    ...options,
+  });
 }

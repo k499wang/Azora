@@ -2,8 +2,25 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   buildGraphBpmValuePointsFromIbis,
+  createLiveBpmPresentationFilter,
   createBpmPresentationFilter,
 } from './bpmSmoothing.ts';
+
+function visibleLiveBpmSequence(samples) {
+  const filter = createLiveBpmPresentationFilter();
+  let visible = null;
+
+  return samples.map((bpm, index) => {
+    const next = filter.update({
+      elapsedMs: index * 1_000,
+      bpm,
+    });
+    if (next != null) {
+      visible = next;
+    }
+    return visible;
+  });
+}
 
 test('BpmPresentationFilter hides startup readings until the recent window is stable', () => {
   const filter = createBpmPresentationFilter({
@@ -47,6 +64,27 @@ test('BpmPresentationFilter rejects isolated spikes but accepts sustained jumps 
   assert.equal(filter.update({ elapsedMs: 2_000, bpm: 85 }), 85);
   assert.equal(filter.update({ elapsedMs: 3_000, bpm: 106 }), null);
   assert.equal(filter.update({ elapsedMs: 4_000, bpm: 108 }), 90);
+});
+
+test('Live BPM presentation filter uses the onboarding baseline display response', () => {
+  assert.deepEqual(
+    visibleLiveBpmSequence([101, 92, 84, 82, 83, 84]),
+    [101, 97, 97, 93, 89, 85],
+  );
+});
+
+test('Live BPM presentation filter holds through isolated collapse and rebound noise', () => {
+  assert.deepEqual(
+    visibleLiveBpmSequence([100, 101, 100, 99, 100, 50, 80, 101]),
+    [100, 101, 100, 99, 100, 100, 100, 101],
+  );
+});
+
+test('Live BPM presentation filter accepts sustained changes slowly', () => {
+  assert.deepEqual(
+    visibleLiveBpmSequence([80, 81, 80, 80, 96, 97, 98, 99, 100]),
+    [80, 81, 80, 80, 80, 84, 84, 88, 92],
+  );
 });
 
 test('buildGraphBpmValuePointsFromIbis trims high startup lock-on noise', () => {

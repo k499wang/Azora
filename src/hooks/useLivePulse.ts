@@ -4,7 +4,7 @@ import { useRunOnJS } from 'react-native-worklets-core';
 import type { FingerPlacementState, IbiSample, PpgFrameSample } from '../lib/heartRate/types';
 import { heartRatePlugin } from '../lib/heartRate/heartRatePlugin';
 import { HeartRateManager } from '../lib/heartRate/heartRateManager';
-import { stabilizeBpmUpdate } from '../lib/heartRate/bpmSmoothing';
+import { createLiveBpmPresentationFilter } from '../lib/heartRate/bpmSmoothing';
 import { useHeartRateCamera } from './useHeartRateCamera';
 
 const BPM_UPDATE_INTERVAL_MS = 1000;
@@ -55,10 +55,12 @@ export function useLivePulse(): UseLivePulseReturn {
   const lastBpmUpdateRef = useRef(0);
   const lastFingerSeenAtRef = useRef<number | null>(null);
   const lastFrameTimestampRef = useRef<number | null>(null);
+  const streamStartedAtRef = useRef<number | null>(null);
   const measurementActiveRef = useRef(false);
   const measurementSamplesRef = useRef<PpgFrameSample[]>([]);
   const publishedBpmRef = useRef<number | null>(null);
   const fingerPlacementRef = useRef<FingerPlacementState>('no_finger');
+  const liveBpmFilterRef = useRef(createLiveBpmPresentationFilter());
 
   const { device, format, hasPermission, requestPermission } = useHeartRateCamera();
 
@@ -72,10 +74,12 @@ export function useLivePulse(): UseLivePulseReturn {
     lastBpmUpdateRef.current = 0;
     lastFingerSeenAtRef.current = null;
     lastFrameTimestampRef.current = null;
+    streamStartedAtRef.current = null;
     measurementActiveRef.current = false;
     measurementSamplesRef.current = [];
     publishedBpmRef.current = null;
     fingerPlacementRef.current = 'no_finger';
+    liveBpmFilterRef.current.reset();
   }, []);
 
   const start = useCallback(() => {
@@ -105,6 +109,12 @@ export function useLivePulse(): UseLivePulseReturn {
         return;
       }
 
+      if (
+        streamStartedAtRef.current == null ||
+        frameSample.timestamp < streamStartedAtRef.current - 1_000
+      ) {
+        streamStartedAtRef.current = frameSample.timestamp;
+      }
       lastFrameTimestampRef.current = frameSample.timestamp;
       if (measurementActiveRef.current) {
         measurementSamplesRef.current.push(frameSample);
@@ -124,9 +134,15 @@ export function useLivePulse(): UseLivePulseReturn {
 
       if (bpm != null && frameSample.timestamp - lastBpmUpdateRef.current >= BPM_UPDATE_INTERVAL_MS) {
         lastBpmUpdateRef.current = frameSample.timestamp;
-        const stabilizedBpm = stabilizeBpmUpdate(bpm, publishedBpmRef.current);
-        publishedBpmRef.current = stabilizedBpm;
-        setCurrentBpm(stabilizedBpm);
+        const elapsedMs =
+          streamStartedAtRef.current == null
+            ? 0
+            : frameSample.timestamp - streamStartedAtRef.current;
+        const stabilizedBpm = liveBpmFilterRef.current.update({ elapsedMs, bpm });
+        if (stabilizedBpm != null) {
+          publishedBpmRef.current = stabilizedBpm;
+          setCurrentBpm(stabilizedBpm);
+        }
       }
 
       if (
@@ -135,6 +151,7 @@ export function useLivePulse(): UseLivePulseReturn {
         frameState.fingerPlacement === 'lost'
       ) {
         publishedBpmRef.current = null;
+        liveBpmFilterRef.current.reset();
         setCurrentBpm(null);
       }
     },
@@ -146,6 +163,8 @@ export function useLivePulse(): UseLivePulseReturn {
     measurementActiveRef.current = true;
     lastBpmUpdateRef.current = 0;
     publishedBpmRef.current = null;
+    streamStartedAtRef.current = lastFrameTimestampRef.current;
+    liveBpmFilterRef.current.reset();
     setCurrentBpm(null);
     setBeatTick(0);
     managerRef.current.beginMeasurementWindow(lastFrameTimestampRef.current ?? Date.now());

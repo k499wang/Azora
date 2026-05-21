@@ -5,6 +5,7 @@ import { typography, fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import { card } from '../../theme/card';
 import LineGraph, { type DataPoint } from '../analytics/LineGraph';
+import { smoothBpmValuePoints } from '../../lib/heartRate/bpmSmoothing';
 
 interface HRSample {
   offsetMs: number;
@@ -25,19 +26,22 @@ function formatTime(secs: number): string {
 
 function downsample(samples: HRSample[], maxPoints: number): DataPoint[] {
   if (samples.length === 0) return [];
+  let points: DataPoint[];
   if (samples.length <= maxPoints) {
-    return samples.map((s) => ({
+    points = samples.map((s) => ({
       label: formatTime(s.offsetMs / 1000),
       value: Math.round(s.bpm),
     }));
+  } else {
+    const step = (samples.length - 1) / (maxPoints - 1);
+    points = [];
+    for (let i = 0; i < maxPoints; i += 1) {
+      const s = samples[Math.round(i * step)];
+      points.push({ label: formatTime(s.offsetMs / 1000), value: Math.round(s.bpm) });
+    }
   }
-  const step = (samples.length - 1) / (maxPoints - 1);
-  const out: DataPoint[] = [];
-  for (let i = 0; i < maxPoints; i += 1) {
-    const s = samples[Math.round(i * step)];
-    out.push({ label: formatTime(s.offsetMs / 1000), value: Math.round(s.bpm) });
-  }
-  return out;
+  // Apply 3 BPM point-to-point clamp for calmer graph curves
+  return smoothBpmValuePoints(points);
 }
 
 export default function HRGraphCard({

@@ -104,7 +104,6 @@ export default function ExerciseSessionPage({
   const [technique] = useState<BreathingTechnique>(initialTechnique);
   const [totalRounds, setTotalRounds] = useState(initialTechnique.defaultRounds);
   const [hrEnabled, setHrEnabled] = useState(true);
-  const [displayBpm, setDisplayBpm] = useState<number | null>(null);
   const isFocused = useIsFocused();
 
   const hudOpacity = useRef(new Animated.Value(1)).current;
@@ -116,18 +115,9 @@ export default function ExerciseSessionPage({
   const bpmPresentationFilterRef = useRef(
     createBpmPresentationFilter({
       warmupMs: 5_000,
-      maxStepBpm: 5,
-      spikeThresholdBpm: 14,
-      spikeConfirmationBpm: 5,
-    }),
-  );
-  const bpmDisplayFilterRef = useRef(
-    createBpmPresentationFilter({
-      warmupMs: 0,
-      minStableReadings: 1,
-      maxStepBpm: 4,
+      maxStepBpm: 3,
       spikeThresholdBpm: 12,
-      spikeConfirmationBpm: 5,
+      spikeConfirmationBpm: 4,
     }),
   );
   const lastPresentationUpdateAtRef = useRef(0);
@@ -230,17 +220,7 @@ export default function ExerciseSessionPage({
         : 0;
 
     if (!isTrackingPhase || pulse.currentBpm == null || pulse.currentBpm <= 0) {
-      bpmDisplayFilterRef.current.reset();
-      setDisplayBpm(null);
       return;
-    }
-
-    const nextDisplayBpm = bpmDisplayFilterRef.current.update({
-      elapsedMs,
-      bpm: pulse.currentBpm,
-    });
-    if (nextDisplayBpm != null) {
-      setDisplayBpm(nextDisplayBpm);
     }
 
     if (now - lastPresentationUpdateAtRef.current < 900) return;
@@ -423,36 +403,34 @@ export default function ExerciseSessionPage({
           });
         };
 
-        if (userId == null) {
-          navigateToComplete();
-          return;
-        }
+        // Navigate immediately — don't wait for backend
+        navigateToComplete();
 
-        void completeBreathingSessionMutation.mutateAsync({
-          techniqueId: technique.id,
-          startedAt: new Date(startedAtMs).toISOString(),
-          endedAt: new Date(endedAtMs).toISOString(),
-          durationSeconds: actualDurationSec,
-          roundsCompleted: rounds,
-          targetRounds: rounds,
-          avgBpm: avgBpm ?? null,
-          minBpm,
-          maxBpm,
-          completed: true,
-          samples: samples.map((sample) => ({
-            offsetMs: sample.offsetMs,
-            bpm: sample.bpm,
-            signalQuality: null,
-          })),
-        })
-          .catch((error) => {
+        if (userId != null) {
+          void completeBreathingSessionMutation.mutateAsync({
+            techniqueId: technique.id,
+            startedAt: new Date(startedAtMs).toISOString(),
+            endedAt: new Date(endedAtMs).toISOString(),
+            durationSeconds: actualDurationSec,
+            roundsCompleted: rounds,
+            targetRounds: rounds,
+            avgBpm: avgBpm ?? null,
+            minBpm,
+            maxBpm,
+            completed: true,
+            samples: samples.map((sample) => ({
+              offsetMs: sample.offsetMs,
+              bpm: sample.bpm,
+              signalQuality: null,
+            })),
+          }).catch((error) => {
             captureException(error, {
               flow: 'breathing_exercise',
               action: 'complete_breathing_session',
               technique_id: technique.id,
             });
-          })
-          .finally(navigateToComplete);
+          });
+        }
         return;
       }
 
@@ -533,9 +511,7 @@ export default function ExerciseSessionPage({
       hrSamplesRef.current = [];
       sessionStartMsRef.current = Date.now();
       bpmPresentationFilterRef.current.reset();
-      bpmDisplayFilterRef.current.reset();
       lastPresentationUpdateAtRef.current = 0;
-      setDisplayBpm(null);
       savedSessionRef.current = false;
       requestAnimationFrame(() => circleRef.current?.reset());
       posthog.capture(AnalyticsEvent.ExerciseSessionStarted, {
@@ -660,8 +636,8 @@ export default function ExerciseSessionPage({
   const cameraSlot = showCamera ? <HeartRateCameraPreview {...cameraProps} /> : null;
 
   const bpmDisplay =
-    isActive && pulse.active && displayBpm != null && displayBpm > 0
-      ? Math.round(displayBpm)
+    isActive && pulse.active && pulse.currentBpm != null && pulse.currentBpm > 0
+      ? Math.round(pulse.currentBpm)
       : null;
   const signalGood = pulse.fingerPlacement === 'good';
   const showSignalWarning = isActive && pulse.active && !signalGood;

@@ -117,7 +117,6 @@ export default function BaselineScreen({
   const [checkedTips, setCheckedTips] = useState<Set<string>>(() => new Set());
   const [scienceOpen, setScienceOpen] = useState(false);
   const [scienceContentHeight, setScienceContentHeight] = useState(0);
-  const [displayBpm, setDisplayBpm] = useState<number | null>(null);
   const scienceAnim = useRef(new Animated.Value(0)).current;
   const allChecked = checkedTips.size === READING_TIPS.length;
 
@@ -156,15 +155,6 @@ export default function BaselineScreen({
       spikeConfirmationBpm: 5,
     }),
   );
-  const bpmDisplayFilterRef = useRef(
-    createBpmPresentationFilter({
-      warmupMs: 0,
-      minStableReadings: 1,
-      maxStepBpm: 4,
-      spikeThresholdBpm: 12,
-      spikeConfirmationBpm: 5,
-    }),
-  );
   const rafRef = useRef<number | null>(null);
 
   const hudOpacity = useRef(new Animated.Value(1)).current;
@@ -181,8 +171,8 @@ export default function BaselineScreen({
     stream.fingerPlacement === 'good' || stream.fingerPlacement === 'partial';
   const visibleBeatTick = hasUsableFingerSignal ? stream.beatTick : 0;
   const bpmDisplay =
-    phase === 'running' && displayBpm != null && displayBpm > 0
-      ? Math.round(displayBpm)
+    phase === 'running' && stream.currentBpm != null && stream.currentBpm > 0
+      ? Math.round(stream.currentBpm)
       : null;
   const signalGood = stream.fingerPlacement === 'good';
   const showSignalWarning = phase === 'running' && !signalGood;
@@ -302,17 +292,7 @@ export default function BaselineScreen({
       stream.currentBpm == null ||
       stream.currentBpm <= 0
     ) {
-      bpmDisplayFilterRef.current.reset();
-      setDisplayBpm(null);
       return;
-    }
-
-    const nextDisplayBpm = bpmDisplayFilterRef.current.update({
-      elapsedMs: elapsed,
-      bpm: stream.currentBpm,
-    });
-    if (nextDisplayBpm != null) {
-      setDisplayBpm(nextDisplayBpm);
     }
 
     if (!hasConfirmedSignal) return;
@@ -341,8 +321,6 @@ export default function BaselineScreen({
       lateBpmsRef.current = [];
       allBpmsRef.current = [];
       bpmPresentationFilterRef.current.reset();
-      bpmDisplayFilterRef.current.reset();
-      setDisplayBpm(null);
       setProgress(0);
       setPhase('running');
     }, PLACEMENT_GOOD_DURATION_MS);
