@@ -67,6 +67,7 @@ module.exports = {
       ],
       'expo-apple-authentication',
       '@react-native-community/datetimepicker',
+      'expo-video',
     ],
     extra: {
       eas: {

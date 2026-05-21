@@ -1,9 +1,17 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
+import {
+  Animated,
+  Easing,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import { Image } from 'expo-image';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import BaselineHero from '../BaselineHero';
 import * as Haptics from 'expo-haptics';
+import Icon from '../../common/icons/Icon';
 import { PersistentCameraRing } from '../../heartRate/PersistentCameraRing';
 import { useHeartRateStream } from '../../../hooks/useHeartRateStream';
 import type { FingerPlacementState } from '../../../lib/heartRate/types';
@@ -34,20 +42,41 @@ interface BaselineScreenProps {
 type Phase = 'intro' | 'placement' | 'running' | 'done';
 
 const SESSION_MS = 20_000;
+
+const CAMERA_PPG_ILLUSTRATION = require('../../../../assets/onboarding/camerappg.png');
+
+const SCIENCE_BODY_TEXT =
+  'When you cover the back camera with your fingertip, the flash lights your skin from the inside. Each heartbeat pushes a small wave of blood through the capillaries, changing how much light reflects back into the lens. We sample those brightness shifts about 30 times a second — the same optical method clinical pulse oximeters use — and turn them into your BPM.';
 const SESSION_SEC = SESSION_MS / 1000;
-const PLACEMENT_GOOD_DURATION_MS = 2500;
+const PLACEMENT_GOOD_DURATION_MS = 1500;
 
-const STEPS: { num: string; label: string }[] = [
-  { num: '1', label: 'Get relaxed in a comfortable place.' },
-  { num: '2', label: 'Cover the back camera and flash with your fingertip.' },
-  { num: '3', label: 'Stay still while your pulse is measured.' },
-];
+type ReadingTip = {
+  id: string;
+  title: string;
+  detail: string;
+};
 
-const READING_TIPS = [
-  'Warm, dry hands work best.',
-  'Use gentle pressure - enough to cover the lens, not enough to block blood flow.',
-  'Keep your phone and finger steady, and avoid talking during the reading.',
-  'If the signal drops, adjust until your fingertip fully covers the camera and flash.',
+const READING_TIPS: ReadingTip[] = [
+  {
+    id: 'calm',
+    title: 'I’m can stay still',
+    detail: 'Sitting still in a quiet spot.',
+  },
+  {
+    id: 'cover',
+    title: 'Lens is covered completely',
+    detail: 'One fingertip sealing both completely.',
+  },
+  {
+    id: 'pressure',
+    title: 'Gentle, steady pressure',
+    detail: 'Firm enough to seal — light enough to feel my pulse.',
+  },
+  {
+    id: 'hold',
+    title: 'Ready to hold for 20 seconds',
+    detail: 'Won’t move or talk until it’s done.',
+  },
 ];
 
 function placementConfig(p: FingerPlacementState): { ringColor: string; status: string } {
@@ -83,12 +112,40 @@ export default function BaselineScreen({
   const stream = useHeartRateStream();
   const [phase, setPhase] = useState<Phase>('intro');
   const [progress, setProgress] = useState(0);
+  const [checkedTips, setCheckedTips] = useState<Set<string>>(() => new Set());
+  const [scienceOpen, setScienceOpen] = useState(false);
+  const [scienceContentHeight, setScienceContentHeight] = useState(0);
+  const scienceAnim = useRef(new Animated.Value(0)).current;
+  const allChecked = checkedTips.size === READING_TIPS.length;
+
+  useEffect(() => {
+    Animated.timing(scienceAnim, {
+      toValue: scienceOpen ? 1 : 0,
+      duration: 280,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: false,
+    }).start();
+  }, [scienceOpen, scienceAnim]);
+
+  const scienceHeight = scienceAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, scienceContentHeight],
+  });
+  const toggleTip = (id: string) => {
+    setCheckedTips((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+    if (isHapticsEnabled()) Haptics.selectionAsync().catch(() => {});
+  };
 
   const startedAtRef = useRef<number | null>(null);
   const earlyBpmsRef = useRef<number[]>([]);
   const lateBpmsRef = useRef<number[]>([]);
   const allBpmsRef = useRef<number[]>([]);
-  const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const rafRef = useRef<number | null>(null);
 
   const hudOpacity = useRef(new Animated.Value(1)).current;
   const [hudVisible, setHudVisible] = useState(true);
@@ -175,7 +232,8 @@ export default function BaselineScreen({
   ]);
 
   const finishCapture = (completed: boolean) => {
-    if (tickRef.current) clearInterval(tickRef.current);
+    if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+    rafRef.current = null;
     stream.stopStream();
     setPhase('done');
 
@@ -207,7 +265,7 @@ export default function BaselineScreen({
 
   useEffect(() => {
     return () => {
-      if (tickRef.current) clearInterval(tickRef.current);
+      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
       if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
       stream.stopStream();
     };
@@ -257,16 +315,22 @@ export default function BaselineScreen({
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     }
 
-    tickRef.current = setInterval(() => {
+    const tick = () => {
       const started = startedAtRef.current ?? Date.now();
-      const elapsed = Date.now() - started;
-      const ratio = Math.min(1, elapsed / SESSION_MS);
+      const ratio = Math.min(1, (Date.now() - started) / SESSION_MS);
       setProgress(ratio);
-      if (ratio >= 1) finishCapture(true);
-    }, 100);
+      if (ratio >= 1) {
+        rafRef.current = null;
+        finishCapture(true);
+        return;
+      }
+      rafRef.current = requestAnimationFrame(tick);
+    };
+    rafRef.current = requestAnimationFrame(tick);
 
     return () => {
-      if (tickRef.current) clearInterval(tickRef.current);
+      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+      rafRef.current = null;
     };
   }, [phase]);
 
@@ -303,12 +367,12 @@ export default function BaselineScreen({
             <View style={styles.centerStack}>
               <PersistentCameraRing
                 ringColor={placementCfg.ringColor}
+                trackColor={isRunning ? undefined : placementCfg.ringColor + '33'}
                 progress={isRunning ? progress : 0}
                 cameraProps={cameraProps ?? undefined}
                 fingerPlacement={stream.fingerPlacement}
                 beatTick={visibleBeatTick}
                 showHeartIcon={isRunning}
-                smoothProgress
               />
               <View style={styles.belowSlot}>
                 {!isRunning ? (
@@ -337,6 +401,14 @@ export default function BaselineScreen({
                         >
                           {bpmDisplay}
                         </Animated.Text>
+                        <Text
+                          style={[
+                            styles.bpmUnit,
+                            showSignalWarning && styles.bpmUnitDim,
+                          ]}
+                        >
+                          bpm
+                        </Text>
                         <Animated.View
                           style={
                             showSignalWarning
@@ -421,13 +493,16 @@ export default function BaselineScreen({
 
   return (
     <OnboardingScreenLayout
-      title="Read your baseline"
-      subtitle={`A ${SESSION_SEC}-second heart-rate check so we can tune your plan. Make sure you're relaxed and in a comfortable place.`}
+      title=""
       progress={stepIndex / stepCount}
       onBack={onBack}
       footer={
         <View style={styles.introFooter}>
-          <OnboardingPrimaryButton label="Start" onPress={handleStart} />
+          <OnboardingPrimaryButton
+            label={allChecked ? 'I’m ready — start' : 'Check each step to start'}
+            onPress={handleStart}
+            disabled={!allChecked}
+          />
           <Pressable
             accessibilityRole="button"
             onPress={() => finishCapture(false)}
@@ -441,113 +516,269 @@ export default function BaselineScreen({
         </View>
       }
     >
+      <View style={styles.heading}>
+        <Text style={styles.headingTitle}>Read this first</Text>
+        <Text style={styles.headingSubtitle}>
+          A clean {SESSION_SEC}-second reading is what calibrates your plan.
+          Set yourself up with these four cues.
+        </Text>
+      </View>
+
       <View style={styles.illustrationWrap}>
-        <BaselineHero />
+        <Image
+          source={CAMERA_PPG_ILLUSTRATION}
+          style={styles.illustration}
+          contentFit="contain"
+          cachePolicy="memory-disk"
+          transition={0}
+          accessibilityLabel="Fingertip covering the back camera and flash"
+        />
       </View>
 
-      <View style={styles.stepsRow}>
-        {STEPS.map((step, index) => (
-          <View key={step.num} style={styles.stepItem}>
-            <View style={styles.stepBadge}>
-              <Text style={styles.stepBadgeText}>{step.num}</Text>
-            </View>
-            <Text style={styles.stepLabel}>{step.label}</Text>
-            {index < STEPS.length - 1 && <View style={styles.stepConnector} />}
+      <View style={styles.scienceWrap}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityState={{ expanded: scienceOpen }}
+          onPress={() => {
+            setScienceOpen((v) => !v);
+            if (isHapticsEnabled()) Haptics.selectionAsync().catch(() => {});
+          }}
+          style={({ pressed }) => [
+            styles.scienceButton,
+            pressed && styles.scienceButtonPressed,
+          ]}
+        >
+          <View style={styles.scienceButtonIcon}>
+            <Icon name="microscope" size={16} color={colors.primary.blue700} />
           </View>
-        ))}
+          <Text style={styles.scienceButtonLabel}>How it works</Text>
+          <Text style={styles.scienceButtonChevron}>
+            {scienceOpen ? '−' : '+'}
+          </Text>
+        </Pressable>
+        <View
+          style={styles.scienceMeasure}
+          pointerEvents="none"
+          aria-hidden
+        >
+          <Text
+            style={styles.scienceBody}
+            onLayout={(e) => {
+              const h = e.nativeEvent.layout.height;
+              if (h > 0 && Math.abs(h - scienceContentHeight) > 0.5) {
+                setScienceContentHeight(h);
+              }
+            }}
+          >
+            {SCIENCE_BODY_TEXT}
+          </Text>
+        </View>
+        <Animated.View
+          style={[
+            styles.scienceBodyClip,
+            { height: scienceHeight, opacity: scienceAnim },
+          ]}
+          pointerEvents={scienceOpen ? 'auto' : 'none'}
+        >
+          <Text style={styles.scienceBody}>{SCIENCE_BODY_TEXT}</Text>
+        </Animated.View>
       </View>
 
-      <View style={styles.tipsCard}>
-        <Text style={styles.tipsTitle}>For the cleanest reading</Text>
-        {READING_TIPS.map((tip) => (
-          <View key={tip} style={styles.tipRow}>
-            <View style={styles.tipDot} />
-            <Text style={styles.tipText}>{tip}</Text>
-          </View>
-        ))}
+      <View style={styles.checklistSection}>
+        <Text style={styles.checklistTitle}>Before you start</Text>
+        <Text style={styles.checklistSubtitle}>
+          Tap each one as you’re set up.
+        </Text>
+        <View style={styles.tipsList}>
+        {READING_TIPS.map((tip, i) => {
+          const checked = checkedTips.has(tip.id);
+          return (
+            <Pressable
+              key={tip.id}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked }}
+              accessibilityLabel={tip.title}
+              onPress={() => toggleTip(tip.id)}
+              style={({ pressed }) => [
+                styles.tipRow,
+                pressed && styles.tipRowPressed,
+              ]}
+            >
+              <View style={[styles.checkbox, checked && styles.checkboxChecked]}>
+                {checked ? (
+                  <Icon name="check" size={14} color={colors.text.inverse} />
+                ) : null}
+              </View>
+              <View style={styles.tipText}>
+                <Text
+                  style={[styles.tipTitle, checked && styles.tipTitleChecked]}
+                >
+                  {tip.title}
+                </Text>
+                <Text style={styles.tipDetail}>{tip.detail}</Text>
+              </View>
+              {i < READING_TIPS.length - 1 && <View style={styles.tipDivider} />}
+            </Pressable>
+          );
+        })}
+        </View>
       </View>
     </OnboardingScreenLayout>
   );
 }
 
 const styles = StyleSheet.create({
+  heading: {
+    gap: spacing.sm,
+    alignItems: 'flex-start',
+  },
+  headingTitle: {
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    fontSize: 28,
+    lineHeight: 32,
+    letterSpacing: -0.4,
+    color: colors.text.primary,
+  },
+  headingSubtitle: {
+    ...typography.body.small,
+    color: colors.text.secondary,
+  },
   illustrationWrap: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: spacing.sm,
+    marginHorizontal: -spacing.lg,
   },
-  stepsRow: {
-    marginTop: spacing.md,
-    flexDirection: 'row',
-    gap: spacing.sm,
+  illustration: {
+    width: '100%',
+    height: 200,
   },
-  stepItem: {
-    flex: 1,
-    alignItems: 'center',
-    gap: spacing.sm,
-    position: 'relative',
-  },
-  stepBadge: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.primary.blue100,
-  },
-  stepBadgeText: {
-    fontFamily: fonts.semibold,
-    fontWeight: '600',
-    fontSize: 14,
-    color: colors.primary.blue700,
-  },
-  stepLabel: {
-    ...typography.body.small,
-    fontSize: 12,
-    lineHeight: 17,
-    textAlign: 'center',
-    color: colors.text.secondary,
-  },
-  stepConnector: {
-    position: 'absolute',
-    top: 13,
-    right: -spacing.sm - 6,
-    width: 12,
-    height: 2,
-    borderRadius: 1,
-    backgroundColor: colors.border.subtle,
-  },
-  tipsCard: {
-    marginTop: spacing.lg,
-    gap: spacing.sm,
-    padding: spacing.md,
-    borderRadius: 20,
-    backgroundColor: colors.background.elevated,
-    borderWidth: 1,
-    borderColor: colors.border.subtle,
-  },
-  tipsTitle: {
-    ...typography.body.small,
-    fontFamily: fonts.semibold,
-    fontWeight: '600',
-    color: colors.text.primary,
-  },
-  tipRow: {
-    flexDirection: 'row',
+  scienceWrap: {
     alignItems: 'flex-start',
     gap: spacing.sm,
   },
-  tipDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    marginTop: 7,
-    backgroundColor: colors.primary.blue500,
+  scienceButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingVertical: 8,
+    paddingLeft: 8,
+    paddingRight: 14,
+    borderRadius: 999,
+    backgroundColor: colors.background.accentSoft,
+    borderWidth: 1,
+    borderColor: colors.primary.blue100,
+  },
+  scienceButtonPressed: {
+    opacity: 0.7,
+  },
+  scienceButtonIcon: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: colors.primary.blue100,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  scienceButtonLabel: {
+    ...typography.body.small,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    color: colors.primary.blue700,
+    letterSpacing: -0.1,
+  },
+  scienceButtonChevron: {
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    fontSize: 16,
+    lineHeight: 16,
+    color: colors.primary.blue700,
+    marginLeft: 2,
+  },
+  scienceBodyClip: {
+    overflow: 'hidden',
+    alignSelf: 'stretch',
+  },
+  scienceMeasure: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 0,
+    opacity: 0,
+  },
+  scienceBody: {
+    ...typography.body.small,
+    color: colors.text.secondary,
+    lineHeight: 20,
+    paddingHorizontal: spacing.xs,
+    paddingTop: spacing.xs,
+  },
+  checklistSection: {
+    gap: spacing.xs,
+  },
+  checklistTitle: {
+    ...typography.heading.heading2,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    fontSize: 22,
+    color: colors.text.primary,
+  },
+  checklistSubtitle: {
+    ...typography.body.small,
+    color: colors.text.secondary,
+  },
+  tipsList: {
+    marginTop: spacing.xs,
+  },
+  tipRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.md,
+    position: 'relative',
+  },
+  tipRowPressed: {
+    opacity: 0.6,
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 8,
+    borderWidth: 1.5,
+    borderColor: colors.border.strong,
+    backgroundColor: 'transparent',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  checkboxChecked: {
+    backgroundColor: colors.primary.blue600,
+    borderColor: colors.primary.blue600,
   },
   tipText: {
-    ...typography.body.small,
     flex: 1,
+    gap: 2,
+  },
+  tipTitle: {
+    ...typography.body.medium,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    color: colors.text.primary,
+    letterSpacing: -0.1,
+  },
+  tipTitleChecked: {
     color: colors.text.secondary,
+  },
+  tipDetail: {
+    ...typography.body.small,
+    color: colors.text.secondary,
+  },
+  tipDivider: {
+    position: 'absolute',
+    bottom: 0,
+    left: 24 + spacing.md,
+    right: 0,
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.border.subtle,
   },
 
   fill: {
@@ -611,6 +842,17 @@ const styles = StyleSheet.create({
     lineHeight: 30,
     letterSpacing: 0,
     color: colors.text.primary,
+  },
+  bpmUnit: {
+    ...typography.caption.caption1,
+    marginLeft: -4,
+    marginTop: 10,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    color: colors.text.secondary,
+  },
+  bpmUnitDim: {
+    color: colors.text.tertiary,
   },
   warningRow: {
     flexDirection: 'row',

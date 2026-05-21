@@ -45,6 +45,26 @@ function makeSaturatedFrame(timestamp) {
   };
 }
 
+function makeRedClippedFrame(timestamp, green = 110, redSaturatedPct = 0.8) {
+  return {
+    timestamp,
+    rois: [
+      {
+        id: 'roi-0',
+        r: 255,
+        g: green,
+        b: 8,
+        saturatedPct: 0.04,
+        redSaturatedPct,
+        greenSaturatedPct: 0,
+        blueSaturatedPct: 0,
+        darkPct: 0,
+        variance: 80,
+      },
+    ],
+  };
+}
+
 function runBeatTrain(manager, beatFrameOffsets, startTime = 0) {
   const beatSet = new Set(beatFrameOffsets);
   let t = startTime;
@@ -459,6 +479,41 @@ test('HeartRateManager: saturated frames do not feed live beat detection', () =>
     'clipped frames should not append IBIs',
   );
   assert.equal(manager.getCurrentBpm(), null, 'sustained clipping should stop live BPM publishing');
+});
+
+test('HeartRateManager: red-clipped frames are not classified as good even when luma is not saturated', () => {
+  const manager = new HeartRateManager();
+  let t = 0;
+  let goodCount = 0;
+  let beatTicks = 0;
+
+  for (let i = 0; i < 120; i++) {
+    const state = manager.processFrame(makeRedClippedFrame(t, i % 24 === 0 ? 140 : 110, 0.8));
+    if (state.fingerPlacement === 'good') goodCount += 1;
+    if (state.beatDetected) beatTicks += 1;
+    t += FRAME_SPACING_MS;
+  }
+
+  assert.equal(goodCount, 0, 'heavily red-clipped frames should not become good placement');
+  assert.equal(beatTicks, 0, 'heavily red-clipped frames should not emit beats');
+  assert.equal(manager.getCurrentBpm(), null, 'heavily red-clipped frames should not publish live BPM');
+});
+
+test('HeartRateManager: moderately red-clipped frames can still track green-channel pulse', () => {
+  const manager = new HeartRateManager();
+  let t = 0;
+  let beatTicks = 0;
+  const periodMs = 24 * FRAME_SPACING_MS;
+
+  for (let i = 0; i < 300; i++) {
+    const green = 100 + 10 * Math.sin((2 * Math.PI * t) / periodMs);
+    const state = manager.processFrame(makeRedClippedFrame(t, green, 0.2));
+    if (state.beatDetected) beatTicks += 1;
+    t += FRAME_SPACING_MS;
+  }
+
+  assert.ok(beatTicks >= 4, `expected green-channel live beats under moderate red clipping, got ${beatTicks}`);
+  assert.equal(manager.getCurrentBpm(), 76);
 });
 
 function makeBrownSurfaceFrame(timestamp) {
