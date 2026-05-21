@@ -11,7 +11,7 @@ export const AUTH_LANDING_SLIDES: AuthLandingSlide[] = [
   {
     id: 'health',
     source: require('../../assets/onboarding/IMG_0140.webp'),
-    title: 'See your heart health.',
+    title: 'Breath with ease.',
     body: 'Get a real-time window into your nervous system through live HRV biofeedback.',
   },
   {

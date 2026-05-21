@@ -1,6 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createBpmPresentationFilter } from './bpmSmoothing.ts';
+import {
+  buildGraphBpmValuePointsFromIbis,
+  createBpmPresentationFilter,
+} from './bpmSmoothing.ts';
 
 test('BpmPresentationFilter hides startup readings until the recent window is stable', () => {
   const filter = createBpmPresentationFilter({
@@ -44,4 +47,36 @@ test('BpmPresentationFilter rejects isolated spikes but accepts sustained jumps 
   assert.equal(filter.update({ elapsedMs: 2_000, bpm: 85 }), 85);
   assert.equal(filter.update({ elapsedMs: 3_000, bpm: 106 }), null);
   assert.equal(filter.update({ elapsedMs: 4_000, bpm: 108 }), 90);
+});
+
+test('buildGraphBpmValuePointsFromIbis trims high startup lock-on noise', () => {
+  const points = buildGraphBpmValuePointsFromIbis(
+    [550, 560, 840, 830, 825, 820, 815, 810].map((ibiMs, index) => ({
+      offsetMs: (index + 1) * 1000,
+      ibiMs,
+    })),
+    (sample) => `${sample.offsetMs}`,
+  );
+
+  assert.deepEqual(
+    points.map(({ label, value }) => ({ label, value })),
+    [
+    { label: '5000', value: 73 },
+    { label: '6000', value: 73 },
+    { label: '7000', value: 73 },
+    { label: '8000', value: 73 },
+    ],
+  );
+});
+
+test('buildGraphBpmValuePointsFromIbis preserves sustained changes without full beat-to-beat jumps', () => {
+  const points = buildGraphBpmValuePointsFromIbis(
+    [800, 805, 810, 620, 615, 610, 605, 600, 595, 590].map((ibiMs, index) => ({
+      offsetMs: (index + 1) * 1000,
+      ibiMs,
+    })),
+    (sample) => `${sample.offsetMs}`,
+  );
+
+  assert.deepEqual(points.map((point) => point.value), [75, 75, 75, 78, 81]);
 });

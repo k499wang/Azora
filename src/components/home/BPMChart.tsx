@@ -6,6 +6,7 @@ import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import { card } from '../../theme/card';
+import { buildGraphBpmValuePointsFromIbis } from '../../lib/heartRate/bpmSmoothing';
 
 interface BPMChartProps {
   ibiMs: number[];
@@ -37,10 +38,17 @@ export default function BPMChart({
   const series = useMemo(() => {
     if (ibiMs.length < 2) return [];
     let t = 0;
-    return ibiMs.map((ms) => {
+    const ibiSamples = ibiMs.map((ms) => {
       t += ms;
-      return { tSec: t / 1000, bpm: 60000 / ms };
+      return { offsetMs: t, ibiMs: ms };
     });
+    return buildGraphBpmValuePointsFromIbis(
+      ibiSamples,
+      (sample) => `${Math.round(sample.offsetMs / 1000)}s`,
+    ).map((point) => ({
+      tSec: point.offsetMs / 1000,
+      bpm: point.value,
+    }));
   }, [ibiMs]);
 
   const durationSec = useMemo(
