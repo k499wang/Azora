@@ -11,7 +11,7 @@ import type {
 import { heartRatePlugin } from '../lib/heartRate/heartRatePlugin';
 import { HeartRateManager } from '../lib/heartRate/heartRateManager';
 import { buildCaptureResult } from '../lib/heartRate/captureResult';
-import { stabilizeBpmUpdate } from '../lib/heartRate/bpmSmoothing';
+import { createLiveBpmPresentationFilter } from '../lib/heartRate/bpmSmoothing';
 import { runAfterNextPaint } from '../lib/ui/runAfterNextPaint';
 import { useMeasurementTimer } from './useMeasurementTimer';
 import { useHeartRateCamera } from './useHeartRateCamera';
@@ -87,10 +87,12 @@ export function useHeartRateCapture(
   const lastSignalGraphUpdateRef = useRef<number>(0);
   const lastPublishedSignalTimestampRef = useRef<number | null>(null);
   const lastFrameTimestampRef = useRef<number | null>(null);
+  const measurementStartedAtRef = useRef<number | null>(null);
   const currentBpmRef = useRef<number | null>(null);
   const captureStateRef = useRef<CaptureState>('idle');
   const fingerPlacementRef = useRef<FingerPlacementState>('no_finger');
   const managerRef = useRef(new HeartRateManager());
+  const liveBpmFilterRef = useRef(createLiveBpmPresentationFilter());
 
   const { device, format, hasPermission, requestPermission } = useHeartRateCamera();
 
@@ -111,6 +113,8 @@ export function useHeartRateCapture(
     lastBpmUpdateRef.current = 0;
     lastSignalGraphUpdateRef.current = 0;
     lastPublishedSignalTimestampRef.current = null;
+    measurementStartedAtRef.current = null;
+    liveBpmFilterRef.current.reset();
   }, []);
 
   const resetCaptureRefs = useCallback(() => {
@@ -161,10 +165,12 @@ export function useHeartRateCapture(
     stopMeasurementTimer();
     resetMeasurementRefs();
     const measurementStartTs = lastFrameTimestampRef.current;
+    measurementStartedAtRef.current = measurementStartTs;
     if (measurementStartTs != null) {
       managerRef.current.beginMeasurementWindow(measurementStartTs);
     }
     currentBpmRef.current = null;
+    liveBpmFilterRef.current.reset();
     setProgress(0);
     setSecondsRemaining(CAPTURE_DURATION_SEC);
     setBeatTick(0);
@@ -228,14 +234,21 @@ export function useHeartRateCapture(
         lastBpmUpdateRef.current = timestamp;
         const bpm = managerRef.current.getCurrentBpm();
         if (bpm != null) {
-          const stabilizedBpm = stabilizeBpmUpdate(bpm, currentBpmRef.current);
-          currentBpmRef.current = stabilizedBpm;
-          setCurrentBpm(stabilizedBpm);
+          const elapsedMs =
+            measurementStartedAtRef.current == null
+              ? 0
+              : timestamp - measurementStartedAtRef.current;
+          const stabilizedBpm = liveBpmFilterRef.current.update({ elapsedMs, bpm });
+          if (stabilizedBpm != null) {
+            currentBpmRef.current = stabilizedBpm;
+            setCurrentBpm(stabilizedBpm);
+          }
         }
       }
 
       if (frameState.fingerPlacement === 'lost' && currentBpmRef.current != null) {
         currentBpmRef.current = null;
+        liveBpmFilterRef.current.reset();
         setCurrentBpm(null);
       }
     },

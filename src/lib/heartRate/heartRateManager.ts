@@ -273,6 +273,8 @@ export class HeartRateManager {
   private polarityPositiveScore = 0;
   private polarityNegativeScore = 0;
   private readonly liveSignalSamples: LivePpgSignalSample[] = [];
+  private ibiEma: number | null = null;
+  private readonly IBI_EMA_ALPHA = 0.25;
 
   reset(): void {
     this.baseline = 0;
@@ -303,6 +305,7 @@ export class HeartRateManager {
     this.polarityPositiveScore = 0;
     this.polarityNegativeScore = 0;
     this.liveSignalSamples.length = 0;
+    this.ibiEma = null;
   }
 
   private pushLiveSignalSample(timestamp: number, value: number): void {
@@ -325,6 +328,19 @@ export class HeartRateManager {
     if (this.ibiHistory.length > IBI_HISTORY_SIZE) {
       this.ibiHistory.shift();
     }
+
+    // Update IBI EMA at beat cadence (not frame rate) for stable live BPM
+    if (this.ibiHistory.length >= MIN_LIVE_BPM_IBIS) {
+      const recentMedian = medianOfRecent(this.ibiHistory, IBI_HISTORY_SIZE);
+      if (recentMedian > 0) {
+        if (this.ibiEma == null) {
+          this.ibiEma = recentMedian;
+        } else {
+          this.ibiEma = this.ibiEma * (1 - this.IBI_EMA_ALPHA) + recentMedian * this.IBI_EMA_ALPHA;
+        }
+      }
+    }
+
     if (this.skipNextRecordedIbi) {
       this.skipNextRecordedIbi = false;
       return;
@@ -350,6 +366,8 @@ export class HeartRateManager {
     this.skipNextRecordedIbi = this.lastPeakTs !== 0;
     this.pendingShortPeakTs = null;
     this.lastTickTs = 0;
+    // Reset IBI EMA so measurement window starts with a fresh smoothed value
+    this.ibiEma = null;
   }
 
   private getExpectedIbiMs(): number {
@@ -668,14 +686,8 @@ export class HeartRateManager {
   getCurrentBpm(): number | null {
     if (this.lastPlacement !== 'good') return null;
     if (this.ibiHistory.length < MIN_LIVE_BPM_IBIS) return null;
-    const sorted = [...this.ibiHistory].sort((a, b) => a - b);
-    const middle = Math.floor(sorted.length / 2);
-    const medianMs =
-      sorted.length % 2 === 0
-        ? (sorted[middle - 1] + sorted[middle]) / 2
-        : sorted[middle];
-    if (medianMs <= 0) return null;
-    const bpm = Math.round(60000 / medianMs);
+    if (this.ibiEma == null || this.ibiEma <= 0) return null;
+    const bpm = Math.round(60000 / this.ibiEma);
     if (bpm < 40 || bpm > 180) return null;
     return bpm;
   }
