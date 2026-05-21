@@ -88,22 +88,22 @@ const STEP_INDEX: Record<OnboardingStep, number> = {
   intentReflection: 2,
   intentProjection: 3,
   name: 4,
-  founderVideo: 5,
-  greeting: 6,
-  stress: 7,
-  sleep: 8,
-  agreement: 9,
-  scienceCredibility: 10,
-  experience: 11,
-  assessmentReflection: 12,
-  lungCapacity: 13,
-  age: 14,
-  gender: 15,
-  dailyTime: 16,
-  notifications: 17,
-  baselineIntro: 18,
-  baseline: 19,
-  recommendation: 20,
+  greeting: 5,
+  stress: 6,
+  sleep: 7,
+  agreement: 8,
+  scienceCredibility: 9,
+  experience: 10,
+  assessmentReflection: 11,
+  lungCapacity: 12,
+  age: 13,
+  gender: 14,
+  dailyTime: 15,
+  notifications: 16,
+  baselineIntro: 17,
+  baseline: 18,
+  recommendation: 19,
+  founderVideo: 20,
   pact: 21,
   paywall: 22,
 };
@@ -509,27 +509,14 @@ export default function OnboardingFlow({
         stepIndex={stepIndex}
         stepCount={STEP_COUNT}
         onChange={setName}
-        onContinue={() => goToStep('founderVideo', 'continue', {
+        onContinue={() => goToStep('greeting', 'continue', {
           has_display_name: name.trim().length > 0,
         })}
         onBack={() => goToStep('intentProjection', 'back')}
         onSkip={() => {
           setName('');
-          goToStep('founderVideo', 'skip');
+          goToStep('greeting', 'skip');
         }}
-      />
-    );
-  }
-
-  if (step === 'founderVideo') {
-    const nextStep = name.trim() ? 'greeting' : 'stress';
-    return (
-      <FounderVideoScreen
-        stepIndex={stepIndex}
-        stepCount={STEP_COUNT}
-        onContinue={() => goToStep(nextStep, 'continue')}
-        onSkip={() => goToStep(nextStep, 'skip')}
-        onBack={() => goToStep('name', 'back')}
       />
     );
   }
@@ -541,7 +528,7 @@ export default function OnboardingFlow({
         stepIndex={stepIndex}
         stepCount={STEP_COUNT}
         onContinue={() => goToStep('stress', 'continue')}
-        onBack={() => goToStep('founderVideo', 'back')}
+        onBack={() => goToStep('name', 'back')}
       />
     );
   }
@@ -554,7 +541,7 @@ export default function OnboardingFlow({
         stepCount={STEP_COUNT}
         onChange={setStressLevel}
         onContinue={() => goToStep('sleep', 'continue', { has_stress_level: true })}
-        onBack={() => goToStep(name.trim() ? 'greeting' : 'founderVideo', 'back')}
+        onBack={() => goToStep(name.trim() ? 'greeting' : 'name', 'back')}
         onSkip={() => goToStep('sleep', 'skip')}
       />
     );
@@ -734,8 +721,20 @@ export default function OnboardingFlow({
         experienceLevel={experienceLevel}
         stepIndex={stepIndex}
         stepCount={STEP_COUNT}
-        onContinue={() => goToStep('pact', 'continue')}
+        onContinue={() => goToStep('founderVideo', 'continue')}
         onBack={() => goToStep('baseline', 'back')}
+      />
+    );
+  }
+
+  if (step === 'founderVideo') {
+    return (
+      <FounderVideoScreen
+        stepIndex={stepIndex}
+        stepCount={STEP_COUNT}
+        onContinue={() => goToStep('pact', 'continue')}
+        onSkip={() => goToStep('pact', 'skip')}
+        onBack={() => goToStep('recommendation', 'back')}
       />
     );
   }
@@ -794,7 +793,7 @@ export default function OnboardingFlow({
         onConfirm={() => {
           void saveProfileAndShowPaywall();
         }}
-        onBack={() => goToStep('recommendation', 'back')}
+        onBack={() => goToStep('founderVideo', 'back')}
       />
     );
   }

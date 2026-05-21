@@ -149,7 +149,8 @@ export default function BaselineScreen({
   const allBpmsRef = useRef<number[]>([]);
   const bpmPresentationFilterRef = useRef(
     createBpmPresentationFilter({
-      warmupMs: 6_000,
+      warmupMs: 4_500,
+      minStableReadings: 2,
       maxStepBpm: 4,
       spikeThresholdBpm: 14,
       spikeConfirmationBpm: 5,
@@ -310,7 +311,7 @@ export default function BaselineScreen({
     } else {
       lateBpmsRef.current.push(nextBpm);
     }
-  }, [stream.currentBpm, phase, hasUsableFingerSignal, hasConfirmedSignal]);
+  }, [stream.currentBpm, stream.beatTick, phase, hasUsableFingerSignal, hasConfirmedSignal]);
 
   useEffect(() => {
     if (phase !== 'placement') return;
