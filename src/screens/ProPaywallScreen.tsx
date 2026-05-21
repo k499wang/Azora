@@ -271,9 +271,7 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
             </Text>
           </Pressable>
           <Text style={styles.legal}>
-            {selectedPackageHasTrial
-              ? '3-day free trial, then auto-renews unless cancelled. Manage or cancel in App Store settings. '
-              : 'Auto-renews unless cancelled. Manage or cancel in App Store settings. '}
+            Subscriptions auto-renew unless cancelled. Manage or cancel in App Store settings.{' '}
             By continuing, you agree to the{' '}
             <Text style={styles.legalLink} onPress={() => void Linking.openURL(TERMS_URL)}>
               Terms
