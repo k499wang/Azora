@@ -112,7 +112,6 @@ export default function BaselineScreen({
   const stream = useHeartRateStream();
   const [phase, setPhase] = useState<Phase>('intro');
   const [progress, setProgress] = useState(0);
-  const [placementProgress, setPlacementProgress] = useState(0);
   const [checkedTips, setCheckedTips] = useState<Set<string>>(() => new Set());
   const [scienceOpen, setScienceOpen] = useState(false);
   const [scienceContentHeight, setScienceContentHeight] = useState(0);
@@ -286,22 +285,6 @@ export default function BaselineScreen({
   }, [stream.currentBpm, phase, hasConfirmedSignal]);
 
   useEffect(() => {
-    if (phase !== 'placement' || stream.fingerPlacement !== 'good') {
-      setPlacementProgress(0);
-      return;
-    }
-    const start = Date.now();
-    let raf: number;
-    const tick = () => {
-      const p = Math.min(1, (Date.now() - start) / PLACEMENT_GOOD_DURATION_MS);
-      setPlacementProgress(p);
-      if (p < 1) raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [phase, stream.fingerPlacement]);
-
-  useEffect(() => {
     if (phase !== 'placement') return;
     if (stream.fingerPlacement !== 'good') return;
     const t = setTimeout(() => {
@@ -385,7 +368,7 @@ export default function BaselineScreen({
               <PersistentCameraRing
                 ringColor={placementCfg.ringColor}
                 trackColor={isRunning ? undefined : placementCfg.ringColor + '33'}
-                progress={isRunning ? progress : placementProgress}
+                progress={isRunning ? progress : 0}
                 cameraProps={cameraProps ?? undefined}
                 fingerPlacement={stream.fingerPlacement}
                 beatTick={visibleBeatTick}
@@ -418,6 +401,14 @@ export default function BaselineScreen({
                         >
                           {bpmDisplay}
                         </Animated.Text>
+                        <Text
+                          style={[
+                            styles.bpmUnit,
+                            showSignalWarning && styles.bpmUnitDim,
+                          ]}
+                        >
+                          bpm
+                        </Text>
                         <Animated.View
                           style={
                             showSignalWarning
@@ -851,6 +842,17 @@ const styles = StyleSheet.create({
     lineHeight: 30,
     letterSpacing: 0,
     color: colors.text.primary,
+  },
+  bpmUnit: {
+    ...typography.caption.caption1,
+    marginLeft: -4,
+    marginTop: 10,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    color: colors.text.secondary,
+  },
+  bpmUnitDim: {
+    color: colors.text.tertiary,
   },
   warningRow: {
     flexDirection: 'row',
