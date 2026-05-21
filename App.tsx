@@ -49,11 +49,15 @@ import { registerAuthIdentitySync } from './src/services/supabase';
 import { WelcomeIntro } from './src/components/welcome/WelcomeIntro';
 import { colors } from './src/theme/colors';
 import TECHNIQUES from './src/data/techniques';
+import { AUTH_LANDING_SLIDES } from './src/data/authLandingSlides';
 import { AGREEMENT_STATEMENTS } from './src/components/onboarding/screens/AgreementScreen';
 SplashScreen.preventAutoHideAsync();
 
 Asset.fromModule(require('./assets/backgrounds/sunset.jpg')).downloadAsync();
 Asset.fromModule(require('./assets/onboarding/camerappg.png')).downloadAsync();
+AUTH_LANDING_SLIDES.forEach((slide) => {
+  Asset.fromModule(slide.source as number).downloadAsync();
+});
 TECHNIQUES.forEach((technique) => {
   Asset.fromModule(technique.backgroundImage as number).downloadAsync();
 });
