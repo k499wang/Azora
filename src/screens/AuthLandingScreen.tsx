@@ -2,18 +2,17 @@ import {
   Alert,
   Dimensions,
   FlatList,
-  Image,
   Linking,
   Platform,
   Pressable,
   StyleSheet,
   Text,
   View,
-  type ImageSourcePropType,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
   type ViewToken,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { useEffect, useRef, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon, { type IconName } from '../components/common/icons/Icon';
@@ -27,6 +26,7 @@ import {
 import { colors } from '../theme/colors';
 import { fonts } from '../theme/typography';
 import { spacing } from '../theme/spacing';
+import { AUTH_LANDING_SLIDES, type AuthLandingSlide } from '../data/authLandingSlides';
 
 function showTermsRequiredAlert() {
   Alert.alert(
@@ -34,40 +34,6 @@ function showTermsRequiredAlert() {
     "Please agree to Azora's Terms & Conditions and Privacy Policy to continue.",
   );
 }
-
-type SlideType = 'image' | 'mockup';
-
-interface Slide {
-  id: string;
-  type: SlideType;
-  source?: ImageSourcePropType;
-  title: string;
-  body: string;
-}
-
-const SLIDES: Slide[] = [
-  {
-    id: 'health',
-    type: 'image',
-    source: require('../../assets/onboarding/onboard1.png'),
-    title: 'See your heart health.',
-    body: 'Get a real-time window into your nervous system through live HRV biofeedback.',
-  },
-  {
-    id: 'performance',
-    type: 'image',
-    source: require('../../assets/onboarding/onboard3.webp'),
-    title: 'See your performance.',
-    body: 'Track how your body adapts over time and unlock insights into your recovery and readiness.',
-  },
-  {
-    id: 'measure',
-    type: 'image',
-    source: require('../../assets/onboarding/onboard4.webp'),
-    title: 'Measure your heart.',
-    body: 'Live HRV biofeedback shows the exact moment your nervous system shifts into recovery.',
-  },
-];
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -77,7 +43,7 @@ export default function AuthLandingScreen() {
   const [googleBusy, setGoogleBusy] = useState(false);
   const [appleBusy, setAppleBusy] = useState(false);
   const [appleAvailable, setAppleAvailable] = useState(Platform.OS === 'ios');
-  const listRef = useRef<FlatList<Slide>>(null);
+  const listRef = useRef<FlatList<AuthLandingSlide>>(null);
   const signInWithGoogle = useAuthStore((s) => s.signInWithGoogle);
   const signInWithApple = useAuthStore((s) => s.signInWithApple);
 
@@ -137,7 +103,7 @@ export default function AuthLandingScreen() {
       <SafeAreaView edges={['top']} style={styles.heroSafe}>
         <FlatList
           ref={listRef}
-          data={SLIDES}
+          data={AUTH_LANDING_SLIDES}
           keyExtractor={(item) => item.id}
           horizontal
           pagingEnabled
@@ -148,9 +114,13 @@ export default function AuthLandingScreen() {
           renderItem={({ item }) => (
             <View style={styles.slide}>
               <PhoneFrame>
-                {item.source ? (
-                  <Image source={item.source} style={styles.frameImage} resizeMode="contain" />
-                ) : null}
+                <Image
+                  source={item.source}
+                  style={styles.frameImage}
+                  contentFit="contain"
+                  cachePolicy="memory-disk"
+                  transition={0}
+                />
               </PhoneFrame>
               <View style={styles.copy}>
                 <Text style={styles.slideTitle}>{item.title}</Text>
@@ -160,7 +130,7 @@ export default function AuthLandingScreen() {
         />
 
         <View style={styles.dots}>
-          {SLIDES.map((_, i) => (
+          {AUTH_LANDING_SLIDES.map((_, i) => (
             <View key={i} style={[styles.dot, i === activeIndex && styles.dotActive]} />
           ))}
         </View>

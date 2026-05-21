@@ -15,9 +15,9 @@ import type {
   HeartRateIbiPoint,
   TodayHeartRateSummary,
 } from './types';
+import type { StressHistoryEntry } from '../../lib/heartRate/stress';
 
 type HrvHistoryEntry = { rmssd: number | null; sdnn: number | null };
-import type { StressHistoryEntry } from '../../lib/heartRate/stress';
 
 export interface HomeHrvStats {
   rmssd: number | null;
@@ -56,6 +56,7 @@ export interface HomeStatsPartialErrors {
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+const MIN_HRV_AGGREGATE_POINTS = 4;
 
 function toLocalDateOnly(value: Date): Date {
   return new Date(value.getFullYear(), value.getMonth(), value.getDate());
@@ -93,9 +94,14 @@ function aggregateField(
       if (v > max) max = v;
     }
   }
+
+  if (count < MIN_HRV_AGGREGATE_POINTS) {
+    return { avg: null, max: null };
+  }
+
   return {
-    avg: count === 0 ? null : sum / count,
-    max: count === 0 ? null : max,
+    avg: sum / count,
+    max,
   };
 }
 

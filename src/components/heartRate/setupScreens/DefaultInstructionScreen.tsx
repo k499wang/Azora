@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../../theme/colors';
@@ -31,6 +31,14 @@ export function DefaultInstructionScreen({ onNext }: SetupScreenProps) {
         <Text style={styles.introText}>
           Your phone's camera detects your pulse through the light passing through your fingertip.
         </Text>
+      </View>
+
+      <View style={styles.visualFrame}>
+        <Image
+          source={require('../../../../assets/onboarding/camerappg.png')}
+          style={styles.visual}
+          resizeMode="cover"
+        />
       </View>
 
       <View style={[card.base, card.shadow, styles.stepsCard]}>
@@ -98,6 +106,18 @@ const styles = StyleSheet.create({
     ...typography.body.small,
     color: colors.text.secondary,
     flex: 1,
+  },
+  visualFrame: {
+    width: '100%',
+    height: 156,
+    marginBottom: spacing.lg,
+    borderRadius: 18,
+    overflow: 'hidden',
+    backgroundColor: colors.background.elevated,
+  },
+  visual: {
+    width: '100%',
+    height: '100%',
   },
   stepsCard: {
     padding: spacing.md,

@@ -150,7 +150,7 @@ export default function HRVTrackStatCard({
           ) : null}
         </View>
 
-        <View style={styles.statsRow}>
+        <View style={[styles.statsRow, multiStat && styles.statsRowCompact]}>
           <View style={styles.statCell}>
             <Text style={[styles.statLabel, !multiStat && styles.statLabelLarge]}>Today</Text>
             <View style={styles.statValueRow}>
@@ -265,7 +265,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'flex-start',
     gap: spacing.md,
+    marginTop: 4,
     paddingRight: spacing.md,
+  },
+  statsRowCompact: {
+    gap: spacing.sm,
+    marginTop: 10,
+    paddingRight: spacing.sm,
   },
   statCell: {
     alignItems: 'flex-start',
