@@ -55,6 +55,7 @@ SplashScreen.preventAutoHideAsync();
 
 Asset.fromModule(require('./assets/backgrounds/sunset.jpg')).downloadAsync();
 Asset.fromModule(require('./assets/onboarding/camerappg.png')).downloadAsync();
+Asset.fromModule(require('./assets/onboarding/founder-intro-poster.jpg')).downloadAsync();
 AUTH_LANDING_SLIDES.forEach((slide) => {
   Asset.fromModule(slide.source as number).downloadAsync();
 });
@@ -68,6 +69,7 @@ AGREEMENT_STATEMENTS.forEach((statement) => {
 });
 
 const navigationRef = createNavigationContainerRef<RootStackParamList>();
+const STARTUP_BACKGROUND_COLOR = colors.orange[500];
 
 export default function App() {
   const [fontsLoaded] = useFonts({
@@ -124,12 +126,17 @@ export default function App() {
 
   const [introVisible, setIntroVisible] = useState(true);
 
-  if (!fontsLoaded) return null;
+  if (!fontsLoaded) {
+    return <View style={{ flex: 1, backgroundColor: STARTUP_BACKGROUND_COLOR }} />;
+  }
 
   return (
-    <SafeAreaProvider onLayout={onLayoutRootView}>
+    <SafeAreaProvider>
       <StatusBar style="dark" />
-      <View style={{ flex: 1, backgroundColor: colors.background.primary }}>
+      <View
+        style={{ flex: 1, backgroundColor: STARTUP_BACKGROUND_COLOR }}
+        onLayout={onLayoutRootView}
+      >
         <NavigationContainer
           ref={navigationRef}
           onReady={trackCurrentScreen}
@@ -137,7 +144,7 @@ export default function App() {
         >
           <PostHogProvider client={posthog} autocapture={{ captureTouches: false, captureScreens: false }}>
             <AppProviders>
-              <RootNavigator />
+              <RootNavigator allowBootPaywall={!introVisible} />
             </AppProviders>
           </PostHogProvider>
         </NavigationContainer>

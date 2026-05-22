@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { card } from '../../../theme/card';
@@ -21,6 +22,7 @@ import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 
 const VIDEO_SOURCE = require('../../../../assets/onboarding/founder-intro.mp4');
+const VIDEO_POSTER_SOURCE = require('../../../../assets/onboarding/founder-intro-poster.jpg');
 const SKIP_FADE_IN_MS = 4000;
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 const POSTER_HEIGHT = Math.min(500, Math.max(360, SCREEN_HEIGHT * 0.52));
@@ -44,11 +46,6 @@ export default function FounderVideoScreen({
 }: FounderVideoScreenProps) {
   const [isPlayerOpen, setIsPlayerOpen] = useState(false);
 
-  const posterPlayer = useVideoPlayer(VIDEO_SOURCE, (p: VideoPlayer) => {
-    p.muted = true;
-    p.loop = false;
-  });
-
   return (
     <OnboardingScreenLayout
       title="A word from the founder"
@@ -67,11 +64,10 @@ export default function FounderVideoScreen({
           pressed && styles.posterCardPressed,
         ]}
       >
-        <VideoView
+        <Image
+          source={VIDEO_POSTER_SOURCE}
           style={StyleSheet.absoluteFill}
-          player={posterPlayer}
           contentFit="cover"
-          nativeControls={false}
         />
         <LinearGradient
           colors={['rgba(0,0,0,0.05)', 'rgba(0,0,0,0.55)']}

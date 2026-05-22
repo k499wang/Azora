@@ -25,6 +25,7 @@ export type RootStackParamList = {
   ProPaywall: {
     placement: PaywallPlacementValue;
     sourceScreen?: string;
+    sourceAction?: string;
     feature?: FeatureKeyValue;
   };
   HeartRateSessionDetail: { sessionId: string };
