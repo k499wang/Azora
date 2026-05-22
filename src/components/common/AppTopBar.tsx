@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
 import type { StyleProp, ViewStyle } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
@@ -25,10 +25,10 @@ export default function AppTopBar({
 }: AppTopBarProps) {
   const leftContent = leftSlot ?? (
     <View style={styles.brandRow}>
-      <MaterialCommunityIcons
-        name="weather-windy"
-        size={24}
-        color={colors.text.primary}
+      <Image
+        source={require('../../../assets/iconApp.png')}
+        style={styles.brandLogo}
+        resizeMode="contain"
       />
       <Text style={styles.brandTitle}>{title}</Text>
     </View>
@@ -63,7 +63,11 @@ const styles = StyleSheet.create({
   brandRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs + 2,
+    gap: spacing.xs,
+  },
+  brandLogo: {
+    width: 32,
+    height: 32,
   },
   brandTitle: {
     ...typography.title.title2,
