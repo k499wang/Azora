@@ -147,6 +147,25 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
     }
   };
 
+  const handleHeartRateAccuracyHelp = () => {
+    trackProfileAction('heart_rate_accuracy_help_opened');
+    Alert.alert(
+      'Help, my heart rate isn\'t accurate',
+      [
+        'For the best reading:',
+        '',
+        '1. Place the soft pad of your fingertip over the rear camera and flash.',
+        '2. Cover the lens fully, but do not press hard.',
+        '3. Keep your finger and phone still for the full reading.',
+        '4. Rest your hand on a table or against your body if possible.',
+        '5. Breathe normally and stay relaxed until it finishes.',
+        '',
+        'Cold hands, wet fingers, bright light, movement, or too much pressure can make the reading jump around.',
+      ].join('\n'),
+      [{ text: 'Got it' }],
+    );
+  };
+
   const handleManageSubscription = async () => {
     trackProfileAction('manage_subscription_opened');
 
@@ -255,6 +274,11 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
           <SectionHeader title="Support" />
           <View style={styles.sectionBody}>
             <SettingsGroup>
+              <SettingsRow
+                icon="heart-pulse"
+                label="Help, my heart rate isn't accurate"
+                onPress={handleHeartRateAccuracyHelp}
+              />
               <SettingsRow
                 icon="email-outline"
                 label="Send feedback"
