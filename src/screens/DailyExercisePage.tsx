@@ -14,6 +14,7 @@ import BreathingCircle, {
 import ExerciseScaffold from '../components/exercise/ExerciseScaffold';
 import { useLivePulse } from '../hooks/useLivePulse';
 import { HeartRateCameraPreview } from '../components/heartRate/HeartRateCameraPreview';
+import { LiveSignalGraph } from '../components/heartRate/LiveSignalGraph';
 import { HeartRateProcessingScreen } from '../components/heartRate/HeartRateProcessingScreen';
 import type {
   CaptureResult,
@@ -39,6 +40,7 @@ import {
 import { useCancellableFlow } from '../hooks/useCancellableFlow';
 import { useAuthStore } from '../stores/authStore';
 import { useCompleteBreathHoldMutation } from '../queries/tracking/useCompleteBreathHoldMutation';
+import { useShowLiveSignalPreference } from '../hooks/useShowLiveSignalPreference';
 import { estimateLungAge } from '../lib/lungAge';
 import { buildCaptureResult } from '../lib/heartRate/captureResult';
 import { runAfterNextPaint } from '../lib/ui/runAfterNextPaint';
@@ -48,6 +50,7 @@ import {
   mapIbiSamples,
   summarizeBpmSamples as summarizeHeartRateBpmSamples,
 } from '../lib/heartRate/sessionPayload';
+import { createBpmPresentationFilter } from '../lib/heartRate/bpmSmoothing';
 
 const PLACEMENT_GOOD_DURATION_MS = 1500;
 const PRE_BREATH_CYCLES = 3;
@@ -222,6 +225,7 @@ export default function DailyExercisePage({
   const [hrEnabled, setHrEnabled] = useState(true);
   const [lastRelease, setLastRelease] = useState<HeartRateReleaseStats | null>(null);
   const [releaseAudioActive, setReleaseAudioActive] = useState(false);
+  const [presentedBpm, setPresentedBpm] = useState<number | null>(null);
   const { preferences: audioPreferences, setThemeId } = useAudioPreferences();
   const activeTheme = useMemo<ExerciseDarkTheme>(
     () =>
@@ -234,6 +238,15 @@ export default function DailyExercisePage({
 
   const bpmOpacity = useRef(new Animated.Value(0.6)).current;
   const heartScale = useRef(new Animated.Value(1)).current;
+  const bpmPresentationFilterRef = useRef(
+    createBpmPresentationFilter({
+      warmupMs: 5_000,
+      maxStepBpm: 3,
+      spikeThresholdBpm: 12,
+      spikeConfirmationBpm: 4,
+    }),
+  );
+  const lastPresentationUpdateAtRef = useRef(0);
 
   const cueOpacity = useRef(new Animated.Value(0)).current;
   const cueTranslateY = useRef(new Animated.Value(10)).current;
@@ -289,6 +302,7 @@ export default function DailyExercisePage({
     beginMeasurementWindow: beginPulseMeasurementWindow,
     getMeasurementSamples,
   } = pulse;
+  const { showLiveSignalEnabled } = useShowLiveSignalPreference();
 
   useEffect(() => {
     if (pulse.beatTick <= 0) return;
@@ -314,8 +328,29 @@ export default function DailyExercisePage({
 
   const currentBpmRef = useRef<number | null>(null);
   useEffect(() => {
-    currentBpmRef.current = currentBpm;
-  }, [currentBpm]);
+    currentBpmRef.current = presentedBpm;
+  }, [presentedBpm]);
+
+  useEffect(() => {
+    if (!isBreathingPhase(phase) && phase !== 'hold') return;
+    if (currentBpm == null || currentBpm <= 0) return;
+
+    const now = Date.now();
+    if (now - lastPresentationUpdateAtRef.current < 900) return;
+    lastPresentationUpdateAtRef.current = now;
+
+    const elapsedMs =
+      measurementStartAtRef.current > 0
+        ? now - measurementStartAtRef.current
+        : 0;
+    const nextBpm = bpmPresentationFilterRef.current.update({
+      elapsedMs,
+      bpm: currentBpm,
+    });
+    if (nextBpm != null) {
+      setPresentedBpm(nextBpm);
+    }
+  }, [currentBpm, phase, pulse.beatTick]);
 
   useEffect(() => {
     let cancelled = false;
@@ -427,6 +462,9 @@ export default function DailyExercisePage({
     savedSessionKeyRef.current = null;
     savingSessionKeyRef.current = null;
     measurementStartAtRef.current = 0;
+    setPresentedBpm(null);
+    bpmPresentationFilterRef.current.reset();
+    lastPresentationUpdateAtRef.current = 0;
     setReleaseAudioActive(false);
     setHoldSeconds(0);
     setPrepCycle(1);
@@ -612,15 +650,20 @@ export default function DailyExercisePage({
     void startPlacement();
   }, [isFocused, phase, startPlacement]);
 
+  const startPrepBreathingRef = useRef(startPrepBreathing);
+  useEffect(() => {
+    startPrepBreathingRef.current = startPrepBreathing;
+  }, [startPrepBreathing]);
+
   useEffect(() => {
     if (phase !== 'placement') return;
     if (pulse.fingerPlacement !== 'good') return;
     const t = setTimeout(() => {
       if (!flow.isActive()) return;
-      startPrepBreathing();
+      startPrepBreathingRef.current();
     }, PLACEMENT_GOOD_DURATION_MS);
     return () => clearTimeout(t);
-  }, [flow, phase, pulse.fingerPlacement, startPrepBreathing]);
+  }, [flow, phase, pulse.fingerPlacement]);
 
 
   const releaseHold = () => {
@@ -773,8 +816,8 @@ export default function DailyExercisePage({
   const cameraSlot = showCamera ? <HeartRateCameraPreview {...cameraProps} /> : null;
 
   const bpmDisplay =
-    isLive && pulse.active && pulse.currentBpm != null && pulse.currentBpm > 0
-      ? Math.round(pulse.currentBpm)
+    isLive && pulse.active && pulse.currentBpm != null && presentedBpm != null
+      ? Math.round(presentedBpm)
       : null;
   const signalGood = pulse.fingerPlacement === 'good';
   const showSignalWarning = isLive && pulse.active && !signalGood;
@@ -801,7 +844,20 @@ export default function DailyExercisePage({
       <ExerciseScaffold
         darkTheme={activeTheme}
         centerSlot={
-          <View style={styles.contentArea}>
+          <View style={styles.centerStack}>
+            {hrEnabled && pulse.active && (
+              <View style={styles.liveSignalGraphSlot} pointerEvents="none">
+                <LiveSignalGraph
+                  samples={pulse.liveSignalSamples}
+                  fingerPlacement={pulse.fingerPlacement}
+                  bpm={isLive ? presentedBpm : null}
+                  beatTick={pulse.beatTick}
+                  textColor={activeTheme.textPrimary}
+                  showLine={showLiveSignalEnabled}
+                />
+              </View>
+            )}
+            <View style={styles.contentArea}>
             <Animated.View
               style={[
                 styles.contentLayer,
@@ -878,36 +934,6 @@ export default function DailyExercisePage({
                           {formatHoldTime(holdSeconds)}
                         </Text>
                       ) : null}
-                      {bpmDisplay != null ? (
-                        <View style={[styles.bpmRow, showSignalWarning && styles.bpmRowDim]}>
-                          <Animated.Text
-                            style={[
-                              styles.bpmNumber,
-                              { color: activeTheme.textPrimary },
-                              showSignalWarning ? null : { opacity: bpmOpacity },
-                            ]}
-                          >
-                            {bpmDisplay}
-                          </Animated.Text>
-                          <Animated.View
-                            style={
-                              showSignalWarning
-                                ? null
-                                : { transform: [{ scale: heartScale }] }
-                            }
-                          >
-                            <MaterialCommunityIcons
-                              name="heart"
-                              size={18}
-                              color={
-                                showSignalWarning
-                                  ? colors.text.tertiary
-                                  : colors.error[500]
-                              }
-                            />
-                          </Animated.View>
-                        </View>
-                      ) : null}
                       {showSignalWarning ? (
                         <View style={styles.warningRow}>
                           <MaterialCommunityIcons
@@ -926,6 +952,7 @@ export default function DailyExercisePage({
               </Pressable>
             </Animated.View>
           </View>
+        </View>
         }
         bottomSlot={
           <View style={styles.bottomContainer}>
@@ -1237,6 +1264,13 @@ const styles = StyleSheet.create({
     height: 430,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  liveSignalGraphSlot: {
+    position: 'absolute',
+    top: -102,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
   },
   contentLayer: {
     ...StyleSheet.absoluteFillObject,
