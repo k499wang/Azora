@@ -17,7 +17,7 @@ interface LiveSignalGraphProps {
 }
 
 const GRAPH_HEIGHT = 78;
-const SIGNAL_WINDOW_MS = 8000;
+const SIGNAL_WINDOW_MS = 4000;
 const MIN_SIGNAL_RANGE = 0.002;
 
 interface PathBuildResult {
@@ -160,6 +160,26 @@ function LiveSignalGraphComponent({
 
   return (
     <View style={styles.container} onLayout={handleLayout}>
+      {overlayBpm != null && (
+        <View style={[styles.bpmRow, dim && styles.bpmRowDim]} pointerEvents="none">
+          <Animated.Text
+            style={[
+              styles.bpmNumber,
+              { color: numberColor },
+              dim ? null : { opacity: bpmOpacity },
+            ]}
+          >
+            {overlayBpm}
+          </Animated.Text>
+          <Animated.View style={dim ? null : { transform: [{ scale: heartScale }] }}>
+            <MaterialCommunityIcons
+              name="heart"
+              size={18}
+              color={dim ? colors.text.tertiary : colors.error[500]}
+            />
+          </Animated.View>
+        </View>
+      )}
       <View style={styles.graph}>
         {showLine && width > 0 && linePath != null && (
           <Canvas style={StyleSheet.absoluteFill}>
@@ -174,28 +194,6 @@ function LiveSignalGraphComponent({
             />
           </Canvas>
         )}
-        {overlayBpm != null && (
-          <View style={styles.overlay} pointerEvents="none">
-            <View style={[styles.bpmRow, dim && styles.bpmRowDim]}>
-              <Animated.Text
-                style={[
-                  styles.bpmNumber,
-                  { color: numberColor },
-                  dim ? null : { opacity: bpmOpacity },
-                ]}
-              >
-                {overlayBpm}
-              </Animated.Text>
-              <Animated.View style={dim ? null : { transform: [{ scale: heartScale }] }}>
-                <MaterialCommunityIcons
-                  name="heart"
-                  size={18}
-                  color={dim ? colors.text.tertiary : colors.error[500]}
-                />
-              </Animated.View>
-            </View>
-          </View>
-        )}
       </View>
     </View>
   );
@@ -208,20 +206,20 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 360,
     marginBottom: spacing.lg,
+    alignItems: 'center',
   },
   graph: {
+    width: '100%',
     height: GRAPH_HEIGHT,
     overflow: 'hidden',
   },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   bpmRow: {
+    position: 'absolute',
+    bottom: '100%',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    marginBottom: spacing.xs,
   },
   bpmRowDim: {
     opacity: 0.25,
