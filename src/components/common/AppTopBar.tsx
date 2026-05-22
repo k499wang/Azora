@@ -66,12 +66,12 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   brandLogo: {
-    width: 32,
-    height: 32,
+    width: 40,
+    height: 40,
   },
   brandTitle: {
     ...typography.title.title2,
-    color: colors.text.primary,
+    color: colors.primary.blue700,
     fontFamily: fonts.semibold,
     fontWeight: '600',
     letterSpacing: 0.2,
