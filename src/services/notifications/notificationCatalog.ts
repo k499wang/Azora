@@ -84,7 +84,7 @@ export function buildDailyReminderContent(
 
 export function buildTrialEndingContent(): NotificationContentDefinition {
   return {
-    title: 'Your Azora trial ends today',
+    title: 'Your Azora trial ends soon',
     body: 'Review your subscription before it renews.',
     data: {
       notification_kind: 'trial_ending',

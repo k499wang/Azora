@@ -27,8 +27,9 @@ export interface BuildNotificationScheduleInput {
   now?: Date;
 }
 
-const TRIAL_FINAL_DAY_HOUR = 9;
-const TRIAL_FINAL_DAY_MINUTE = 0;
+const TRIAL_REMINDER_DAYS_BEFORE_END = 1;
+const TRIAL_REMINDER_HOUR = 9;
+const TRIAL_REMINDER_MINUTE = 0;
 const MISSED_TRIAL_REMINDER_DELAY_MS = 5 * 60 * 1000;
 const DAILY_REMINDER_HORIZON_DAYS = 14;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -45,7 +46,7 @@ export function buildDesiredNotificationSchedule({
   }
 
   if (preferences.trialEndingReminder.enabled) {
-    const trialReminderDate = getTrialFinalMorningDate(trialEndsAt, now);
+    const trialReminderDate = getTrialEndingReminderDate(trialEndsAt, now);
     if (trialReminderDate != null) {
       const content = buildTrialEndingContent();
       desired.push({
@@ -114,7 +115,7 @@ export function parseTime(value: string): { hour: number; minute: number } {
   return { hour, minute };
 }
 
-export function getTrialFinalMorningDate(
+export function getTrialEndingReminderDate(
   trialEndsAt: string | null,
   now: Date,
 ): Date | null {
@@ -128,9 +129,9 @@ export function getTrialFinalMorningDate(
   const reminderDate = new Date(
     trialEnd.getFullYear(),
     trialEnd.getMonth(),
-    trialEnd.getDate(),
-    TRIAL_FINAL_DAY_HOUR,
-    TRIAL_FINAL_DAY_MINUTE,
+    trialEnd.getDate() - TRIAL_REMINDER_DAYS_BEFORE_END,
+    TRIAL_REMINDER_HOUR,
+    TRIAL_REMINDER_MINUTE,
     0,
     0,
   );

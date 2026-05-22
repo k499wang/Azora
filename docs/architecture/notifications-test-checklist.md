@@ -48,7 +48,7 @@ The system can't be tested fully in a simulator — push permission dialogs, sch
 
 ## 5. Trial-ending reminder
 
-- [ ] Set a test user with `trialEndsAt = tomorrow 09:00 local` → reconcile schedules one `azora:trial:ending` notification at 09:00 on the trial end date.
+- [ ] Set a test user with `trialEndsAt = two days from now 17:30 local` → reconcile schedules one `azora:trial:ending` notification at 09:00 one day before the trial end date.
 - [ ] Set `trialEndsAt = 30 minutes from now` (i.e. the 09:00 anchor is in the past) → reconcile schedules the catch-up reminder 5 minutes from now.
 - [ ] Set `trialEndsAt = null` → no trial notification.
 - [ ] Set `trialEndsAt` to a past date → no trial notification scheduled.
