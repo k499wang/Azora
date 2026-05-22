@@ -24,6 +24,7 @@ interface StressGaugeProps {
 }
 
 const SIZE = 220;
+const MIN_STRESS_STATS_POINTS = 4;
 const STROKE = 10;
 const CX = SIZE / 2;
 const CY = SIZE / 2;
@@ -125,7 +126,9 @@ export default function StressGauge({ value, zone, history }: StressGaugeProps) 
         </View>
       </View>
 
-      {stats != null && stats.count > 0 ? <StressStatsRow stats={stats} /> : null}
+      {stats != null && stats.count >= MIN_STRESS_STATS_POINTS ? (
+        <StressStatsRow stats={stats} />
+      ) : null}
     </View>
   );
 }

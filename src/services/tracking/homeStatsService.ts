@@ -197,7 +197,10 @@ export async function getHomeStats(
     recentBreathHoldsHrvResult,
     [] as BreathHoldSummary[],
   );
-  const stressHistory: StressHistoryEntry[] = stressHistorySource.map((s) => ({
+  const stressHistory: StressHistoryEntry[] = [
+    ...stressHistorySource,
+    ...recentBreathHoldsHrv,
+  ].map((s) => ({
     stress: s.stress ?? null,
     localDate: s.localDate,
   }));
