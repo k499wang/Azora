@@ -196,7 +196,7 @@ export default function HRVChart({
               </Svg>
             ) : (
               <View style={[styles.emptyChart, { height }]}>
-                <Text style={styles.emptyText}>Complete today's hold to see your HRV</Text>
+                <Text style={styles.emptyText}>Complete today's daily exercise to see your HRV</Text>
               </View>
             )}
           </View>
