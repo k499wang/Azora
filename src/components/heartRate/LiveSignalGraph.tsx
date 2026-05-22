@@ -1,13 +1,19 @@
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { LayoutChangeEvent, StyleSheet, View } from 'react-native';
+import { Animated, LayoutChangeEvent, StyleSheet, View } from 'react-native';
 import { Canvas, Path, Skia } from '@shopify/react-native-skia';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
+import { fonts } from '../../theme/typography';
 import type { FingerPlacementState, LivePpgSignalSample } from '../../lib/heartRate/types';
 
 interface LiveSignalGraphProps {
   samples: LivePpgSignalSample[];
   fingerPlacement: FingerPlacementState;
+  bpm?: number | null;
+  beatTick?: number;
+  textColor?: string;
+  showLine?: boolean;
 }
 
 const GRAPH_HEIGHT = 78;
@@ -32,7 +38,6 @@ function buildFastSignalPath(
   const lastTimestamp = samples[samples.length - 1].timestamp;
   const startTimestamp = lastTimestamp - SIGNAL_WINDOW_MS;
 
-  // Single pass for min / max
   let min = Infinity;
   let max = -Infinity;
   for (let i = 0; i < samples.length; i++) {
@@ -41,7 +46,6 @@ function buildFastSignalPath(
     if (v > max) max = v;
   }
 
-  // Stabilise vertical scale with a cheap EMA so the graph doesn't bounce
   const instantRange = Math.max(max - min, MIN_SIGNAL_RANGE);
   let rangeEma = prevRangeEma > 0 ? prevRangeEma : instantRange;
   rangeEma = rangeEma * 0.88 + instantRange * 0.12;
@@ -52,7 +56,6 @@ function buildFastSignalPath(
   const getX = (t: number) =>
     Math.max(0, Math.min(width, ((t - startTimestamp) / SIGNAL_WINDOW_MS) * width));
 
-  // Fast path build: moveTo + lineTo for every sample
   const path = Skia.Path.Make();
   path.moveTo(getX(samples[0].timestamp), getY(samples[0].value));
   for (let i = 1; i < samples.length; i++) {
@@ -62,7 +65,14 @@ function buildFastSignalPath(
   return { path, rangeEma };
 }
 
-function LiveSignalGraphComponent({ samples, fingerPlacement }: LiveSignalGraphProps) {
+function LiveSignalGraphComponent({
+  samples,
+  fingerPlacement,
+  bpm,
+  beatTick,
+  textColor,
+  showLine = true,
+}: LiveSignalGraphProps) {
   const [width, setWidth] = useState(0);
   const [renderTick, setRenderTick] = useState(0);
 
@@ -71,20 +81,13 @@ function LiveSignalGraphComponent({ samples, fingerPlacement }: LiveSignalGraphP
   const rangeEmaRef = useRef(0);
   const rafRef = useRef<number | null>(null);
 
-  // Keep the latest samples in a ref so the RAF closure always reads fresh data
   samplesRef.current = samples;
 
-  // Throttle expensive path rebuilds to the display refresh rate.
-  // Even if samples arrive at 30–60 Hz, we only regenerate the Skia path once per
-  // animation frame. Multiple sample updates in the same frame are coalesced.
   useEffect(() => {
     const latest = samplesRef.current;
     const lastTs = latest[latest.length - 1]?.timestamp ?? 0;
 
-    // No new data since last drawn frame
     if (lastTs === lastTimestampRef.current) return;
-
-    // Already scheduled for this frame
     if (rafRef.current != null) return;
 
     rafRef.current = requestAnimationFrame(() => {
@@ -105,6 +108,7 @@ function LiveSignalGraphComponent({ samples, fingerPlacement }: LiveSignalGraphP
     samples.length >= 2 &&
     fingerPlacement !== 'lost' &&
     fingerPlacement !== 'no_finger';
+  const signalGood = fingerPlacement === 'good';
 
   const linePath = useMemo(() => {
     if (width <= 0) return null;
@@ -118,14 +122,6 @@ function LiveSignalGraphComponent({ samples, fingerPlacement }: LiveSignalGraphP
     return result.path;
   }, [renderTick, width]);
 
-  const midlinePath = useMemo(() => {
-    if (width <= 0) return null;
-    const path = Skia.Path.Make();
-    path.moveTo(0, GRAPH_HEIGHT / 2);
-    path.lineTo(width, GRAPH_HEIGHT / 2);
-    return path;
-  }, [width]);
-
   const handleLayout = useCallback((event: LayoutChangeEvent) => {
     const nextWidth = event.nativeEvent.layout.width;
     setWidth((currentWidth) =>
@@ -133,26 +129,72 @@ function LiveSignalGraphComponent({ samples, fingerPlacement }: LiveSignalGraphP
     );
   }, []);
 
+  const bpmOpacity = useRef(new Animated.Value(0.6)).current;
+  const heartScale = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    if (beatTick == null || beatTick <= 0) return;
+    bpmOpacity.setValue(0.95);
+    Animated.timing(bpmOpacity, {
+      toValue: 0.6,
+      duration: 420,
+      useNativeDriver: true,
+    }).start();
+    Animated.sequence([
+      Animated.timing(heartScale, {
+        toValue: 1.28,
+        duration: 90,
+        useNativeDriver: true,
+      }),
+      Animated.timing(heartScale, {
+        toValue: 1,
+        duration: 240,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [beatTick, bpmOpacity, heartScale]);
+
+  const overlayBpm = bpm != null && bpm > 0 ? Math.round(bpm) : null;
+  const dim = !signalGood;
+  const numberColor = textColor ?? colors.text.primary;
+
   return (
     <View style={styles.container} onLayout={handleLayout}>
       <View style={styles.graph}>
-        {width > 0 && linePath != null && midlinePath != null && (
+        {showLine && width > 0 && linePath != null && (
           <Canvas style={StyleSheet.absoluteFill}>
-            <Path
-              path={midlinePath}
-              style="stroke"
-              strokeWidth={1}
-              color={colors.border.subtle}
-            />
             <Path
               path={linePath}
               style="stroke"
-              strokeWidth={2.5}
+              strokeWidth={1.5}
               strokeCap="round"
               strokeJoin="round"
-              color={isSignalAvailable ? colors.primary.blue600 : colors.text.tertiary}
+              color={isSignalAvailable ? colors.primary.blue400 : colors.text.tertiary}
+              opacity={isSignalAvailable ? 0.5 : 0.25}
             />
           </Canvas>
+        )}
+        {overlayBpm != null && (
+          <View style={styles.overlay} pointerEvents="none">
+            <View style={[styles.bpmRow, dim && styles.bpmRowDim]}>
+              <Animated.Text
+                style={[
+                  styles.bpmNumber,
+                  { color: numberColor },
+                  dim ? null : { opacity: bpmOpacity },
+                ]}
+              >
+                {overlayBpm}
+              </Animated.Text>
+              <Animated.View style={dim ? null : { transform: [{ scale: heartScale }] }}>
+                <MaterialCommunityIcons
+                  name="heart"
+                  size={18}
+                  color={dim ? colors.text.tertiary : colors.error[500]}
+                />
+              </Animated.View>
+            </View>
+          </View>
         )}
       </View>
     </View>
@@ -170,9 +212,25 @@ const styles = StyleSheet.create({
   graph: {
     height: GRAPH_HEIGHT,
     overflow: 'hidden',
-    borderRadius: 8,
-    backgroundColor: colors.background.secondary,
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: colors.border.subtle,
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bpmRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  bpmRowDim: {
+    opacity: 0.25,
+  },
+  bpmNumber: {
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    fontSize: 26,
+    lineHeight: 30,
+    letterSpacing: 0.5,
   },
 });

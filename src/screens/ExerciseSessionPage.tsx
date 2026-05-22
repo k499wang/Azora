@@ -25,6 +25,7 @@ import {
   useAudioPreferences,
 } from '../features/audioSettings';
 import { HeartRateCameraPreview } from '../components/heartRate/HeartRateCameraPreview';
+import { LiveSignalGraph } from '../components/heartRate/LiveSignalGraph';
 import { createBpmPresentationFilter } from '../lib/heartRate/bpmSmoothing';
 import type { FingerPlacementState } from '../lib/heartRate/types';
 import { startInhaleVibration, stopInhaleVibration } from '../native/inhaleVibration';
@@ -35,6 +36,7 @@ import { captureException } from '../services/analytics/errorTracking';
 import { AnalyticsEvent } from '../services/analytics/events';
 import { useAuthStore } from '../stores/authStore';
 import { useCompleteBreathingSessionMutation } from '../queries/tracking/useCompleteBreathingSessionMutation';
+import { useShowLiveSignalPreference } from '../hooks/useShowLiveSignalPreference';
 
 const MIN_ROUNDS = 1;
 const MAX_ROUNDS = 30;
@@ -104,6 +106,7 @@ export default function ExerciseSessionPage({
   const [technique] = useState<BreathingTechnique>(initialTechnique);
   const [totalRounds, setTotalRounds] = useState(initialTechnique.defaultRounds);
   const [hrEnabled, setHrEnabled] = useState(true);
+  const [presentedBpm, setPresentedBpm] = useState<number | null>(null);
   const isFocused = useIsFocused();
 
   const hudOpacity = useRef(new Animated.Value(1)).current;
@@ -205,6 +208,7 @@ export default function ExerciseSessionPage({
 
   const pulse = useLivePulse();
   const { start: startPulse, stop: stopPulse, hasPermission, requestPermission } = pulse;
+  const { showLiveSignalEnabled } = useShowLiveSignalPreference();
 
   useEffect(() => {
     const isTrackingPhase =
@@ -232,6 +236,7 @@ export default function ExerciseSessionPage({
         bpm: pulse.currentBpm,
       });
       if (nextBpm == null) return;
+      setPresentedBpm(nextBpm);
       hrSamplesRef.current.push({
         offsetMs: elapsedMs,
         bpm: nextBpm,
@@ -508,6 +513,7 @@ export default function ExerciseSessionPage({
       if (!flow.start()) return;
       setElapsed(0);
       setRound(0);
+      setPresentedBpm(null);
       hrSamplesRef.current = [];
       sessionStartMsRef.current = Date.now();
       bpmPresentationFilterRef.current.reset();
@@ -559,15 +565,20 @@ export default function ExerciseSessionPage({
     }
   };
 
+  const beginExerciseRef = useRef(beginExercise);
+  useEffect(() => {
+    beginExerciseRef.current = beginExercise;
+  }, [beginExercise]);
+
   useEffect(() => {
     if (phase !== 'placement') return;
     if (pulse.fingerPlacement !== 'good') return;
     const t = setTimeout(() => {
       if (!flow.isActive()) return;
-      beginExercise(true);
+      beginExerciseRef.current(true);
     }, PLACEMENT_GOOD_DURATION_MS);
     return () => clearTimeout(t);
-  }, [flow, phase, pulse.fingerPlacement, beginExercise]);
+  }, [flow, phase, pulse.fingerPlacement]);
 
   const handleClose = () => {
     flow.cancel();
@@ -636,8 +647,8 @@ export default function ExerciseSessionPage({
   const cameraSlot = showCamera ? <HeartRateCameraPreview {...cameraProps} /> : null;
 
   const bpmDisplay =
-    isActive && pulse.active && pulse.currentBpm != null && pulse.currentBpm > 0
-      ? Math.round(pulse.currentBpm)
+    isActive && pulse.active && pulse.currentBpm != null && presentedBpm != null
+      ? Math.round(presentedBpm)
       : null;
   const signalGood = pulse.fingerPlacement === 'good';
   const showSignalWarning = isActive && pulse.active && !signalGood;
@@ -659,6 +670,18 @@ export default function ExerciseSessionPage({
         darkTheme={activeTheme}
         centerSlot={
           <View style={styles.centerStack}>
+            {hrEnabled && pulse.active && (
+              <View style={styles.liveSignalGraphSlot} pointerEvents="none">
+                <LiveSignalGraph
+                  samples={pulse.liveSignalSamples}
+                  fingerPlacement={pulse.fingerPlacement}
+                  bpm={isActive ? presentedBpm : null}
+                  beatTick={pulse.beatTick}
+                  textColor={activeTheme.textPrimary}
+                  showLine={showLiveSignalEnabled}
+                />
+              </View>
+            )}
             <View style={styles.contentArea}>
               <Animated.View
                 style={[
@@ -724,50 +747,16 @@ export default function ExerciseSessionPage({
                 <Text style={[styles.hintText, { color: activeTheme.textSecondary }]}>
                   {placementHint(pulse.fingerPlacement)}
                 </Text>
-              ) : isActive && pulse.active ? (
-                <View style={styles.metricStack}>
-                  {bpmDisplay != null ? (
-                    <View style={[styles.bpmRow, showSignalWarning && styles.bpmRowDim]}>
-                      <Animated.Text
-                        style={[
-                          styles.bpmNumber,
-                          { color: activeTheme.textPrimary },
-                          showSignalWarning ? null : { opacity: bpmOpacity },
-                        ]}
-                      >
-                        {bpmDisplay}
-                      </Animated.Text>
-                      <Animated.View
-                        style={
-                          showSignalWarning
-                            ? null
-                            : { transform: [{ scale: heartScale }] }
-                        }
-                      >
-                        <MaterialCommunityIcons
-                          name="heart"
-                          size={18}
-                          color={
-                            showSignalWarning
-                              ? colors.text.tertiary
-                              : colors.error[500]
-                          }
-                        />
-                      </Animated.View>
-                    </View>
-                  ) : null}
-                  {showSignalWarning ? (
-                    <View style={styles.warningRow}>
-                      <MaterialCommunityIcons
-                        name="alert-circle-outline"
-                        size={12}
-                        color={colors.warning[500]}
-                      />
-                      <Text style={styles.warningText}>
-                        {placementHint(pulse.fingerPlacement)}
-                      </Text>
-                    </View>
-                  ) : null}
+              ) : isActive && pulse.active && showSignalWarning ? (
+                <View style={styles.warningRow}>
+                  <MaterialCommunityIcons
+                    name="alert-circle-outline"
+                    size={12}
+                    color={colors.warning[500]}
+                  />
+                  <Text style={styles.warningText}>
+                    {placementHint(pulse.fingerPlacement)}
+                  </Text>
                 </View>
               ) : null}
             </View>
@@ -915,6 +904,13 @@ const styles = StyleSheet.create({
     height: 300,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  liveSignalGraphSlot: {
+    position: 'absolute',
+    top: -102,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
   },
   contentLayer: {
     ...StyleSheet.absoluteFillObject,

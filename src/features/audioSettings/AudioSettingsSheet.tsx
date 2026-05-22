@@ -14,11 +14,13 @@ import { colors } from '../../theme/colors';
 import { padding, spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import AudioSettingsRow from './AudioSettingsRow';
+import LiveSignalToggleSection from './LiveSignalToggleSection';
 import { audioCategories } from './registry';
 import type { AudioCategory, AudioOption } from './types';
 import { OFF_OPTION_ID } from './types';
 import { useAudioPreferences } from './useAudioPreferences';
 import { useAudioPreview } from './useAudioPreview';
+import { useShowLiveSignalPreference } from '../../hooks/useShowLiveSignalPreference';
 
 interface AudioSettingsSheetProps {
   visible: boolean;
@@ -36,6 +38,7 @@ export default function AudioSettingsSheet({
   const insets = useSafeAreaInsets();
   const { preferences, select, reset } = useAudioPreferences();
   const { play, stop, previewingAsset } = useAudioPreview();
+  const { showLiveSignalEnabled, setShowLiveSignalEnabled } = useShowLiveSignalPreference();
 
   const handleClose = () => {
     stop();
@@ -72,6 +75,10 @@ export default function AudioSettingsSheet({
             showsVerticalScrollIndicator={false}
           >
             {extraSectionsTop}
+            <LiveSignalToggleSection
+              enabled={showLiveSignalEnabled}
+              onToggle={setShowLiveSignalEnabled}
+            />
             {audioCategories.map((category) => (
               <CategorySection
                 key={category.id}

@@ -1,7 +1,12 @@
 import { useCallback, useRef, useState } from 'react';
 import { useFrameProcessor } from 'react-native-vision-camera';
 import { useRunOnJS } from 'react-native-worklets-core';
-import type { FingerPlacementState, IbiSample, PpgFrameSample } from '../lib/heartRate/types';
+import type {
+  FingerPlacementState,
+  IbiSample,
+  LivePpgSignalSample,
+  PpgFrameSample,
+} from '../lib/heartRate/types';
 import { heartRatePlugin } from '../lib/heartRate/heartRatePlugin';
 import { HeartRateManager } from '../lib/heartRate/heartRateManager';
 import { createLiveBpmPresentationFilter } from '../lib/heartRate/bpmSmoothing';
@@ -9,20 +14,25 @@ import { useHeartRateCamera } from './useHeartRateCamera';
 
 const BPM_UPDATE_INTERVAL_MS = 1000;
 const FINGER_LOST_TIMEOUT_MS = 1500;
+const SIGNAL_GRAPH_UPDATE_INTERVAL_MS = 50;
 
 function isValidFrameSample(value: unknown): value is PpgFrameSample {
   if (value == null || typeof value !== 'object') return false;
   const s = value as Partial<PpgFrameSample>;
   if (!Number.isFinite(s.timestamp) || !Array.isArray(s.rois)) return false;
-  return s.rois.length > 0 && s.rois.every((roi) =>
-    roi != null &&
-    typeof roi.id === 'string' &&
-    Number.isFinite(roi.r) &&
-    Number.isFinite(roi.g) &&
-    Number.isFinite(roi.b) &&
-    Number.isFinite(roi.saturatedPct) &&
-    Number.isFinite(roi.darkPct) &&
-    Number.isFinite(roi.variance)
+  return (
+    s.rois.length > 0 &&
+    s.rois.every(
+      (roi) =>
+        roi != null &&
+        typeof roi.id === 'string' &&
+        Number.isFinite(roi.r) &&
+        Number.isFinite(roi.g) &&
+        Number.isFinite(roi.b) &&
+        Number.isFinite(roi.saturatedPct) &&
+        Number.isFinite(roi.darkPct) &&
+        Number.isFinite(roi.variance),
+    )
   );
 }
 
@@ -33,6 +43,7 @@ interface UseLivePulseReturn {
   fingerPlacement: FingerPlacementState;
   currentBpm: number | null;
   beatTick: number;
+  liveSignalSamples: LivePpgSignalSample[];
   device: ReturnType<typeof useHeartRateCamera>['device'];
   format: ReturnType<typeof useHeartRateCamera>['format'];
   frameProcessor: ReturnType<typeof useFrameProcessor>;
@@ -49,6 +60,7 @@ export function useLivePulse(): UseLivePulseReturn {
   const [fingerPlacement, setFingerPlacement] = useState<FingerPlacementState>('no_finger');
   const [currentBpm, setCurrentBpm] = useState<number | null>(null);
   const [beatTick, setBeatTick] = useState(0);
+  const [liveSignalSamples, setLiveSignalSamples] = useState<LivePpgSignalSample[]>([]);
 
   const activeRef = useRef(false);
   const managerRef = useRef(new HeartRateManager());
@@ -61,6 +73,8 @@ export function useLivePulse(): UseLivePulseReturn {
   const publishedBpmRef = useRef<number | null>(null);
   const fingerPlacementRef = useRef<FingerPlacementState>('no_finger');
   const liveBpmFilterRef = useRef(createLiveBpmPresentationFilter());
+  const lastSignalGraphUpdateRef = useRef<number>(0);
+  const lastPublishedSignalTimestampRef = useRef<number | null>(null);
 
   const { device, format, hasPermission, requestPermission } = useHeartRateCamera();
 
@@ -80,6 +94,9 @@ export function useLivePulse(): UseLivePulseReturn {
     publishedBpmRef.current = null;
     fingerPlacementRef.current = 'no_finger';
     liveBpmFilterRef.current.reset();
+    lastSignalGraphUpdateRef.current = 0;
+    lastPublishedSignalTimestampRef.current = null;
+    managerRef.current.clearLiveSignalSamples();
   }, []);
 
   const start = useCallback(() => {
@@ -89,6 +106,7 @@ export function useLivePulse(): UseLivePulseReturn {
     setActive(true);
     setCurrentBpm(null);
     setBeatTick(0);
+    setLiveSignalSamples([]);
     fingerPlacementRef.current = 'no_finger';
     setFingerPlacement('no_finger');
   }, [resetStreamState]);
@@ -98,6 +116,7 @@ export function useLivePulse(): UseLivePulseReturn {
     setActive(false);
     resetStreamState();
     setCurrentBpm(null);
+    setLiveSignalSamples([]);
     fingerPlacementRef.current = 'no_finger';
     setFingerPlacement('no_finger');
   }, [resetStreamState]);
@@ -120,7 +139,10 @@ export function useLivePulse(): UseLivePulseReturn {
         measurementSamplesRef.current.push(frameSample);
       }
       const frameState = managerRef.current.processFrame(frameSample);
-      lastFingerSeenAtRef.current = frameState.fingerPlacement === 'no_finger' ? lastFingerSeenAtRef.current : frameSample.timestamp;
+      lastFingerSeenAtRef.current =
+        frameState.fingerPlacement === 'no_finger'
+          ? lastFingerSeenAtRef.current
+          : frameSample.timestamp;
       if (frameState.fingerPlacement !== fingerPlacementRef.current) {
         fingerPlacementRef.current = frameState.fingerPlacement;
         setFingerPlacement(frameState.fingerPlacement);
@@ -132,7 +154,10 @@ export function useLivePulse(): UseLivePulseReturn {
         setBeatTick((tick) => tick + 1);
       }
 
-      if (bpm != null && frameSample.timestamp - lastBpmUpdateRef.current >= BPM_UPDATE_INTERVAL_MS) {
+      if (
+        bpm != null &&
+        frameSample.timestamp - lastBpmUpdateRef.current >= BPM_UPDATE_INTERVAL_MS
+      ) {
         lastBpmUpdateRef.current = frameSample.timestamp;
         const elapsedMs =
           streamStartedAtRef.current == null
@@ -142,6 +167,21 @@ export function useLivePulse(): UseLivePulseReturn {
         if (stabilizedBpm != null) {
           publishedBpmRef.current = stabilizedBpm;
           setCurrentBpm(stabilizedBpm);
+        }
+      }
+
+      if (
+        frameSample.timestamp - lastSignalGraphUpdateRef.current >=
+        SIGNAL_GRAPH_UPDATE_INTERVAL_MS
+      ) {
+        lastSignalGraphUpdateRef.current = frameSample.timestamp;
+        const latestSignalTimestamp = managerRef.current.getLatestLiveSignalTimestamp();
+        if (
+          latestSignalTimestamp != null &&
+          latestSignalTimestamp !== lastPublishedSignalTimestampRef.current
+        ) {
+          lastPublishedSignalTimestampRef.current = latestSignalTimestamp;
+          setLiveSignalSamples(managerRef.current.getLiveSignalSamples());
         }
       }
 
@@ -198,6 +238,7 @@ export function useLivePulse(): UseLivePulseReturn {
     fingerPlacement,
     currentBpm,
     beatTick,
+    liveSignalSamples,
     device,
     format,
     frameProcessor,
