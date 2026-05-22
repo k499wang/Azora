@@ -9,6 +9,7 @@ import {
   getHeartRateSummaryForDate,
   getRecentHeartRateSummaries,
 } from './heartRateService';
+import { buildStressHistory } from './homeStatsCore';
 import type {
   BreathHoldSummary,
   DailyActivitySummary,
@@ -197,13 +198,7 @@ export async function getHomeStats(
     recentBreathHoldsHrvResult,
     [] as BreathHoldSummary[],
   );
-  const stressHistory: StressHistoryEntry[] = [
-    ...stressHistorySource,
-    ...recentBreathHoldsHrv,
-  ].map((s) => ({
-    stress: s.stress ?? null,
-    localDate: s.localDate,
-  }));
+  const stressHistory = buildStressHistory(stressHistorySource, recentBreathHoldsHrv);
   const dailyActivity = getSettledValue(dailyActivityResult, []);
   const [breathHoldIbiSeriesResult] = await Promise.allSettled([
     getBreathHoldIbiSeries(userId, todayBreathHold?.sessionId ?? null),
