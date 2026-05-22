@@ -33,6 +33,7 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
   const paywall = usePaywall({
     placement,
     sourceScreen: route.params?.sourceScreen,
+    sourceAction: route.params?.sourceAction,
   });
   const insets = useSafeAreaInsets();
   const { height: windowHeight } = useWindowDimensions();

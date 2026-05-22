@@ -237,16 +237,12 @@ export default function RecommendationScreen({
                 <Text style={styles.statValue}>{baseline?.avgBpm}</Text>
                 <Text style={styles.statLabel}>Avg BPM</Text>
               </View>
-              {baseline?.earlyBpm != null ? (
+              {baseline?.bpmDrop != null ? (
                 <View style={styles.statItem}>
-                  <Text style={styles.statValue}>{baseline.earlyBpm}</Text>
-                  <Text style={styles.statLabel}>Early</Text>
-                </View>
-              ) : null}
-              {baseline?.lateBpm != null ? (
-                <View style={styles.statItem}>
-                  <Text style={styles.statValue}>{baseline.lateBpm}</Text>
-                  <Text style={styles.statLabel}>Late</Text>
+                  <Text style={styles.statValue}>
+                    {Math.abs(baseline.bpmDrop)}
+                  </Text>
+                  <Text style={styles.statLabel}>BPM range</Text>
                 </View>
               ) : null}
               {baseline?.durationSec != null && baseline.durationSec > 0 ? (

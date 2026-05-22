@@ -1,4 +1,6 @@
+import { useEffect, useRef } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { useNavigation } from '@react-navigation/native';
 import { StyleSheet, View } from 'react-native';
 import { DotsLoader } from '../../components/common/DotsLoader';
 import AuthLandingScreen from '../../screens/AuthLandingScreen';
@@ -11,17 +13,31 @@ import { ProPaywallScreen } from '../../screens/ProPaywallScreen';
 import SettingsScreen from '../../screens/SettingsScreen';
 import ShareableResultScreen from '../../screens/ShareableResultScreen';
 import { useAppGate } from '../../hooks/useAppGate';
+import { useUserEntitlementQuery } from '../../queries/subscriptions/useUserEntitlementQuery';
 import { OnboardingFlow } from '../../components/onboarding';
+import { PaywallPlacement } from '../../services/paywall';
+import { useAuthStore } from '../../stores/authStore';
 import { colors } from '../../theme/colors';
 import { MainTabs } from './MainTabs';
-import type { RootStackParamList } from './types';
+import type { RootStackNavigationProp, RootStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
-function AppStack() {
+interface AppStackProps {
+  showBootPaywall: boolean;
+}
+
+function AppStack({ showBootPaywall }: AppStackProps) {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="MainTabs" component={MainTabs} />
+      <Stack.Screen name="MainTabs">
+        {() => (
+          <>
+            {showBootPaywall ? <BootPaywallPresenter /> : null}
+            <MainTabs />
+          </>
+        )}
+      </Stack.Screen>
       <Stack.Screen
         name="HeartRate"
         component={HeartRateScreen}
@@ -91,7 +107,39 @@ function AppStack() {
   );
 }
 
-export function RootNavigator() {
+function BootPaywallPresenter() {
+  const navigation = useNavigation<RootStackNavigationProp<'MainTabs'>>();
+  const userId = useAuthStore((state) => state.user?.id ?? null);
+  const entitlementQuery = useUserEntitlementQuery(userId);
+  const hasPresentedRef = useRef(false);
+
+  useEffect(() => {
+    if (hasPresentedRef.current) return;
+    if (userId == null || entitlementQuery.isPending || entitlementQuery.isError) return;
+    if (entitlementQuery.data?.isPro === true) return;
+
+    hasPresentedRef.current = true;
+    navigation.navigate('ProPaywall', {
+      placement: PaywallPlacement.ProfileUpgrade,
+      sourceScreen: 'RootNavigator',
+      sourceAction: 'app_boot',
+    });
+  }, [
+    entitlementQuery.data?.isPro,
+    entitlementQuery.isError,
+    entitlementQuery.isPending,
+    navigation,
+    userId,
+  ]);
+
+  return null;
+}
+
+interface RootNavigatorProps {
+  allowBootPaywall?: boolean;
+}
+
+export function RootNavigator({ allowBootPaywall = true }: RootNavigatorProps) {
   const gate = useAppGate();
 
   if (gate.status === 'booting') {
@@ -109,7 +157,7 @@ export function RootNavigator() {
   if (gate.status === 'needs_onboarding') {
     return (
       <View style={styles.overlayRoot}>
-        <AppStack />
+        <AppStack showBootPaywall={false} />
         <View style={styles.onboardingOverlay}>
           <OnboardingFlow
             initialSavedProfile={gate.savedOnboardingProfile}
@@ -123,7 +171,7 @@ export function RootNavigator() {
     );
   }
 
-  return <AppStack />;
+  return <AppStack showBootPaywall={allowBootPaywall} />;
 }
 
 const styles = StyleSheet.create({
