@@ -213,7 +213,7 @@ export default function BPMChart({
               </Svg>
             ) : (
               <View style={[styles.emptyChart, { height }]}>
-                <Text style={styles.emptyText}>Complete today's hold to see your BPM</Text>
+                <Text style={styles.emptyText}>Complete today's daily exercise to see your BPM</Text>
               </View>
             )}
           </View>
