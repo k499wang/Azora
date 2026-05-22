@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   buildDesiredNotificationSchedule,
   getEpochDayIndex,
-  getTrialFinalMorningDate,
+  getTrialEndingReminderDate,
 } from './notificationSchedulerCore.ts';
 import {
   buildDailyReminderContent,
@@ -101,6 +101,23 @@ test('consecutive days produce different variants in the schedule', () => {
   );
 });
 
+test('buildDesiredNotificationSchedule includes the trial reminder one day before the trial ends', () => {
+  const now = new Date(2026, 4, 16, 8, 0, 0);
+  const trialEndsAt = new Date(2026, 4, 18, 17, 30, 0).toISOString();
+  const schedule = buildDesiredNotificationSchedule({
+    preferences: basePreferences,
+    trialEndsAt,
+    now,
+  });
+
+  assert.equal(schedule.length, 1);
+  assert.equal(schedule[0].stableId, 'azora:trial:ending');
+  assert.equal(schedule[0].kind, 'trial_ending');
+  assert.equal(schedule[0].trigger.date.getDate(), 17);
+  assert.equal(schedule[0].trigger.date.getHours(), 9);
+  assert.equal(schedule[0].trigger.date.getMinutes(), 0);
+});
+
 test('getEpochDayIndex returns stable UTC day counter', () => {
   const a = new Date('2026-05-16T05:00:00.000Z');
   const b = new Date('2026-05-16T23:30:00.000Z');
@@ -110,31 +127,31 @@ test('getEpochDayIndex returns stable UTC day counter', () => {
   assert.equal(getEpochDayIndex(c) - getEpochDayIndex(a), 1);
 });
 
-test('getTrialFinalMorningDate schedules the morning of the local final day', () => {
+test('getTrialEndingReminderDate schedules the morning before the trial ends', () => {
   const now = new Date(2026, 4, 16, 8, 0, 0);
   const trialEndsAt = new Date(2026, 4, 18, 17, 30, 0).toISOString();
-  const reminder = getTrialFinalMorningDate(trialEndsAt, now);
+  const reminder = getTrialEndingReminderDate(trialEndsAt, now);
 
   assert.ok(reminder);
   assert.equal(reminder.getFullYear(), 2026);
   assert.equal(reminder.getMonth(), 4);
-  assert.equal(reminder.getDate(), 18);
+  assert.equal(reminder.getDate(), 17);
   assert.equal(reminder.getHours(), 9);
   assert.equal(reminder.getMinutes(), 0);
 });
 
-test('getTrialFinalMorningDate catches up if final morning already passed', () => {
+test('getTrialEndingReminderDate catches up if the reminder time already passed', () => {
   const now = new Date(2026, 4, 18, 10, 0, 0);
   const trialEndsAt = new Date(2026, 4, 18, 17, 30, 0).toISOString();
-  const reminder = getTrialFinalMorningDate(trialEndsAt, now);
+  const reminder = getTrialEndingReminderDate(trialEndsAt, now);
 
   assert.ok(reminder);
   assert.equal(reminder.getTime(), now.getTime() + 5 * 60 * 1000);
 });
 
-test('getTrialFinalMorningDate skips expired trials', () => {
+test('getTrialEndingReminderDate skips expired trials', () => {
   const now = new Date(2026, 4, 18, 18, 0, 0);
   const trialEndsAt = new Date(2026, 4, 18, 17, 30, 0).toISOString();
 
-  assert.equal(getTrialFinalMorningDate(trialEndsAt, now), null);
+  assert.equal(getTrialEndingReminderDate(trialEndsAt, now), null);
 });
