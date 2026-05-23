@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
@@ -100,27 +101,29 @@ export default function App() {
   }
 
   return (
-    <SafeAreaProvider>
-      <StatusBar style="dark" />
-      <View
-        style={{ flex: 1, backgroundColor: STARTUP_BACKGROUND_COLOR }}
-        onLayout={onLayoutRootView}
-      >
-        <NavigationContainer
-          ref={navigationRef}
-          onReady={trackCurrentScreen}
-          onStateChange={trackCurrentScreen}
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <StatusBar style="dark" />
+        <View
+          style={{ flex: 1, backgroundColor: STARTUP_BACKGROUND_COLOR }}
+          onLayout={onLayoutRootView}
         >
-          <PostHogProvider client={posthog} autocapture={{ captureTouches: false, captureScreens: false }}>
-            <AppProviders>
-              <RootNavigator allowBootPaywall={!introVisible} />
-            </AppProviders>
-          </PostHogProvider>
-        </NavigationContainer>
-        {introVisible ? (
-          <WelcomeIntro onFinish={() => setIntroVisible(false)} />
-        ) : null}
-      </View>
-    </SafeAreaProvider>
+          <NavigationContainer
+            ref={navigationRef}
+            onReady={trackCurrentScreen}
+            onStateChange={trackCurrentScreen}
+          >
+            <PostHogProvider client={posthog} autocapture={{ captureTouches: false, captureScreens: false }}>
+              <AppProviders>
+                <RootNavigator allowBootPaywall={!introVisible} />
+              </AppProviders>
+            </PostHogProvider>
+          </NavigationContainer>
+          {introVisible ? (
+            <WelcomeIntro onFinish={() => setIntroVisible(false)} />
+          ) : null}
+        </View>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }

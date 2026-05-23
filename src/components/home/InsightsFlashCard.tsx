@@ -1,6 +1,13 @@
-import { useEffect, useRef, useState } from 'react';
-import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import {
+  Pressable,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import { BlurView } from 'expo-blur';
+import Carousel from 'react-native-reanimated-carousel';
 import { colors } from '../../theme/colors';
 import { spacing, padding } from '../../theme/spacing';
 import { typography, fonts } from '../../theme/typography';
@@ -15,7 +22,8 @@ interface Props {
   onStartTechnique?: (techniqueId: string) => void;
 }
 
-const TRANSITION_MS = 180;
+const FALLBACK_CARD_HEIGHT = 172;
+const CAROUSEL_CARD_GAP = 8;
 
 export default function InsightsFlashCard({
   insights,
@@ -24,10 +32,10 @@ export default function InsightsFlashCard({
   onStartTechnique,
 }: Props) {
   const [index, setIndex] = useState(0);
-  const [displayed, setDisplayed] = useState<Insight | null>(insights[0] ?? null);
   const [measuredHeights, setMeasuredHeights] = useState<Record<string, number>>({});
-  const opacity = useRef(new Animated.Value(1)).current;
-  const translateY = useRef(new Animated.Value(0)).current;
+  const { width: windowWidth } = useWindowDimensions();
+  const cardWidth = windowWidth - padding.screen.horizontal * 2;
+  const slideWidth = cardWidth + CAROUSEL_CARD_GAP * 2;
 
   const maxHeight = Object.values(measuredHeights).reduce(
     (max, h) => (h > max ? h : max),
@@ -36,86 +44,11 @@ export default function InsightsFlashCard({
   const allMeasured =
     insights.length > 0 &&
     insights.every((ins) => measuredHeights[ins.id] !== undefined);
-  const lockedHeight = allMeasured && maxHeight > 0 ? maxHeight : undefined;
+  const cardHeight = allMeasured && maxHeight > 0 ? maxHeight : FALLBACK_CARD_HEIGHT;
 
-  useEffect(() => {
-    if (insights.length === 0) {
-      setDisplayed(null);
-      return;
-    }
-    const safe = index % insights.length;
-    const next = insights[safe];
-    if (displayed && displayed.id === next.id) return;
-
-    Animated.parallel([
-      Animated.timing(opacity, {
-        toValue: 0,
-        duration: TRANSITION_MS,
-        easing: Easing.out(Easing.quad),
-        useNativeDriver: true,
-      }),
-      Animated.timing(translateY, {
-        toValue: -6,
-        duration: TRANSITION_MS,
-        easing: Easing.out(Easing.quad),
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      setDisplayed(next);
-      translateY.setValue(6);
-      Animated.parallel([
-        Animated.timing(opacity, {
-          toValue: 1,
-          duration: TRANSITION_MS,
-          easing: Easing.out(Easing.quad),
-          useNativeDriver: true,
-        }),
-        Animated.timing(translateY, {
-          toValue: 0,
-          duration: TRANSITION_MS,
-          easing: Easing.out(Easing.quad),
-          useNativeDriver: true,
-        }),
-      ]).start();
-    });
-  }, [index, insights, displayed, opacity, translateY]);
-
-  if (insights.length === 0 || !displayed) return null;
+  if (insights.length === 0) return null;
 
   const safeIndex = index % insights.length;
-  const advance = () => setIndex((i) => (i + 1) % insights.length);
-  const clearHeader = (
-    <>
-      <View style={styles.cardHeader}>
-        <Text style={styles.eyebrow}>{displayed.eyebrow}</Text>
-      </View>
-      <Text style={styles.tone}>{displayed.tone}</Text>
-    </>
-  );
-  const hasCta = !!(displayed.techniqueId && displayed.ctaLabel && onStartTechnique);
-  const unlockedContent = (
-    <Animated.View
-      style={[styles.contentRow, { opacity, transform: [{ translateY }] }]}
-    >
-      <View style={styles.textColumn}>
-        {clearHeader}
-        <Text style={styles.detail}>{displayed.detail}</Text>
-      </View>
-      {hasCta ? (
-        <Pressable
-          onPress={() => onStartTechnique!(displayed.techniqueId!)}
-          accessibilityRole="button"
-          accessibilityLabel={displayed.ctaLabel}
-          style={({ pressed }) => [
-            styles.startButton,
-            pressed && styles.ctaPressed,
-          ]}
-        >
-          <Icon name="play-triangle" size={18} color={colors.text.inverse} />
-        </Pressable>
-      ) : null}
-    </Animated.View>
-  );
 
   return (
     <View style={styles.wrap}>
@@ -125,7 +58,7 @@ export default function InsightsFlashCard({
           return (
             <View
               key={ins.id}
-              style={styles.card}
+              style={styles.measureCard}
               onLayout={(e) => {
                 const h = e.nativeEvent.layout.height;
                 setMeasuredHeights((prev) =>
@@ -147,48 +80,32 @@ export default function InsightsFlashCard({
           );
         })}
       </View>
-      {locked ? (
-        <View style={[styles.card, styles.lockedCard, lockedHeight ? { height: lockedHeight } : null]}>
-          <Animated.View
-            pointerEvents="none"
-            style={[styles.contentRow, { opacity, transform: [{ translateY }] }]}
-          >
-            <View style={styles.textColumn}>
-              <View style={styles.lockedHiddenHeader}>{clearHeader}</View>
-              <Text style={styles.detail}>{displayed.detail}</Text>
+      <View style={[styles.carouselFrame, { width: slideWidth }]}>
+        <Carousel
+          data={insights}
+          width={slideWidth}
+          height={cardHeight}
+          loop={false}
+          enabled={insights.length > 1}
+          mode="parallax"
+          modeConfig={{
+            parallaxScrollingScale: 1,
+            parallaxScrollingOffset: 28,
+            parallaxAdjacentItemScale: 0.9,
+          }}
+          onSnapToItem={setIndex}
+          renderItem={({ item }) => (
+            <View style={styles.carouselItem}>
+              <InsightCard
+                insight={item}
+                locked={locked}
+                onPressUpgrade={onPressUpgrade}
+                onStartTechnique={onStartTechnique}
+              />
             </View>
-            {hasCta ? <View style={styles.startButton} /> : null}
-          </Animated.View>
-          <BlurView
-            intensity={24}
-            tint="light"
-            pointerEvents="none"
-            style={StyleSheet.absoluteFill}
-          />
-          <View style={styles.clearOverlay} pointerEvents="box-none">
-            {clearHeader}
-          </View>
-          {onPressUpgrade ? (
-            <Pressable
-              accessibilityRole="button"
-              onPress={onPressUpgrade}
-              style={StyleSheet.absoluteFill}
-            />
-          ) : null}
-        </View>
-      ) : (
-        <Pressable
-          onPress={advance}
-          disabled={insights.length <= 1}
-          style={({ pressed }) => [
-            styles.card,
-            lockedHeight ? { height: lockedHeight } : null,
-            pressed && styles.cardPressed,
-          ]}
-        >
-          {unlockedContent}
-        </Pressable>
-      )}
+          )}
+        />
+      </View>
 
       {insights.length > 1 ? (
         <View style={styles.dots}>
@@ -207,9 +124,91 @@ export default function InsightsFlashCard({
   );
 }
 
+function InsightCard({
+  insight,
+  locked,
+  onPressUpgrade,
+  onStartTechnique,
+}: {
+  insight: Insight;
+  locked: boolean;
+  onPressUpgrade?: () => void;
+  onStartTechnique?: (techniqueId: string) => void;
+}) {
+  const hasCta = !!(insight.techniqueId && insight.ctaLabel && onStartTechnique);
+  const clearHeader = (
+    <>
+      <View style={styles.cardHeader}>
+        <Text style={styles.eyebrow}>{insight.eyebrow}</Text>
+      </View>
+      <Text style={styles.tone}>{insight.tone}</Text>
+    </>
+  );
+
+  const content = (
+    <View style={styles.contentRow}>
+      <View style={styles.textColumn}>
+        {locked ? (
+          <View style={styles.lockedHiddenHeader}>{clearHeader}</View>
+        ) : (
+          clearHeader
+        )}
+        <Text style={styles.detail}>{insight.detail}</Text>
+      </View>
+      {hasCta ? (
+        locked ? (
+          <View style={styles.startButton} />
+        ) : (
+          <Pressable
+            onPress={() => onStartTechnique!(insight.techniqueId!)}
+            accessibilityRole="button"
+            accessibilityLabel={insight.ctaLabel}
+            style={({ pressed }) => [
+              styles.startButton,
+              pressed && styles.ctaPressed,
+            ]}
+          >
+            <Icon name="play-triangle" size={18} color={colors.text.inverse} />
+          </Pressable>
+        )
+      ) : null}
+    </View>
+  );
+
+  if (!locked) {
+    return <View style={styles.card}>{content}</View>;
+  }
+
+  return (
+    <View style={[styles.card, styles.lockedCard]}>
+      <View pointerEvents="none">{content}</View>
+      <BlurView
+        intensity={24}
+        tint="light"
+        pointerEvents="none"
+        style={StyleSheet.absoluteFill}
+      />
+      <View style={styles.clearOverlay} pointerEvents="box-none">
+        {clearHeader}
+      </View>
+      {onPressUpgrade ? (
+        <Pressable
+          accessibilityRole="button"
+          onPress={onPressUpgrade}
+          style={StyleSheet.absoluteFill}
+        />
+      ) : null}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   wrap: {
     paddingHorizontal: padding.screen.horizontal,
+    overflow: 'visible',
+  },
+  carouselFrame: {
+    alignSelf: 'center',
   },
   measureLayer: {
     position: 'absolute',
@@ -217,18 +216,27 @@ const styles = StyleSheet.create({
     right: padding.screen.horizontal,
     opacity: 0,
   },
+  carouselItem: {
+    height: '100%',
+    paddingHorizontal: CAROUSEL_CARD_GAP,
+  },
+  measureCard: {
+    ...card.base,
+    ...card.shadow,
+    minHeight: 140,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.lg,
+  },
   card: {
     ...card.base,
     ...card.shadow,
-    minHeight: 120,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
+    height: '100%',
+    minHeight: 140,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.lg,
   },
   lockedCard: {
     overflow: 'hidden',
-  },
-  cardPressed: {
-    opacity: 0.85,
   },
   eyebrow: {
     ...typography.label.small,
@@ -257,8 +265,8 @@ const styles = StyleSheet.create({
   },
   clearOverlay: {
     ...StyleSheet.absoluteFillObject,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.lg,
   },
   lockedHiddenHeader: {
     opacity: 0,
@@ -283,7 +291,7 @@ const styles = StyleSheet.create({
   contentRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
+    gap: spacing.lg,
   },
   textColumn: {
     flex: 1,
