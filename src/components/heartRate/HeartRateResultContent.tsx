@@ -10,6 +10,7 @@ import { spacing, margin } from '../../theme/spacing';
 import { card } from '../../theme/card';
 import LineGraph, { type DataPoint } from '../analytics/LineGraph';
 import SectionHeader from '../common/SectionHeader';
+import ProUpgradeButton from '../common/ProUpgradeButton';
 import StressGauge from './StressGauge';
 import HRVTrackStatCard from '../home/HRVTrackStatCard';
 import { getStressZone } from '../../lib/heartRate/stress';
@@ -236,12 +237,23 @@ export function HeartRateResultContent({
       (showStress && stressZoneForDisplay != null && stressForDisplay != null) ? (
         <>
           <View style={styles.sectionHeaderWrap}>
-            <SectionHeader title="Statistics" />
+            <SectionHeader
+              title="Statistics"
+              right={
+                advancedStatsLocked ? (
+                  <ProUpgradeButton onPress={onPressUpgrade} />
+                ) : null
+              }
+            />
           </View>
-          <LockedOverlay locked={advancedStatsLocked} onPressUpgrade={onPressUpgrade}>
             {showStress && stressZoneForDisplay != null && stressForDisplay != null ? (
               <View style={styles.gaugeWrap}>
-                <StressGauge value={stressForDisplay} zone={stressZoneForDisplay} />
+                <StressGauge
+                  value={stressForDisplay}
+                  zone={stressZoneForDisplay}
+                  locked={advancedStatsLocked}
+                  onPressLocked={onPressUpgrade}
+                />
               </View>
             ) : null}
 
@@ -254,6 +266,8 @@ export function HeartRateResultContent({
                   max={80}
                   lowBound={20}
                   highBound={50}
+                  locked={advancedStatsLocked}
+                  onPressLocked={onPressUpgrade}
                 />
                 <HRVTrackStatCard
                   label="Avg HRV"
@@ -262,21 +276,28 @@ export function HeartRateResultContent({
                   max={100}
                   lowBound={30}
                   highBound={70}
+                  locked={advancedStatsLocked}
+                  onPressLocked={onPressUpgrade}
                 />
               </View>
             ) : null}
-          </LockedOverlay>
         </>
       ) : null}
 
       {showBpmGraph || showRrGraph ? (
         <>
           <View style={styles.sectionHeaderWrap}>
-            <SectionHeader title="Advanced statistics" />
+            <SectionHeader
+              title="Advanced statistics"
+              right={
+                advancedStatsLocked ? (
+                  <ProUpgradeButton onPress={onPressUpgrade} />
+                ) : null
+              }
+            />
           </View>
-          <LockedOverlay locked={advancedStatsLocked} onPressUpgrade={onPressUpgrade}>
             {showBpmGraph ? (
-              <View style={styles.graphCard}>
+              <View style={[styles.graphCard, advancedStatsLocked && styles.lockedGraphCard]}>
                 <Text style={styles.graphTitle}>Heart rate</Text>
                 <LineGraph
                   data={displayBpmSeries}
@@ -287,11 +308,31 @@ export function HeartRateResultContent({
                   dotColor={colors.primary.blue600}
                   highlightIndex={holdStartHighlightIndex}
                 />
+                {advancedStatsLocked ? (
+                  <>
+                    <BlurView
+                      intensity={24}
+                      tint="light"
+                      pointerEvents="none"
+                      style={StyleSheet.absoluteFill}
+                    />
+                    <Text style={[styles.graphTitle, styles.clearGraphTitle]}>
+                      Heart rate
+                    </Text>
+                    {onPressUpgrade ? (
+                      <Pressable
+                        accessibilityRole="button"
+                        onPress={onPressUpgrade}
+                        style={StyleSheet.absoluteFill}
+                      />
+                    ) : null}
+                  </>
+                ) : null}
               </View>
             ) : null}
 
             {showRrGraph ? (
-              <View style={styles.graphCard}>
+              <View style={[styles.graphCard, advancedStatsLocked && styles.lockedGraphCard]}>
                 <Text style={styles.graphTitle}>Heart rate variability</Text>
                 <LineGraph
                   data={displayRrSeries}
@@ -302,9 +343,28 @@ export function HeartRateResultContent({
                   dotColor={colors.error[500]}
                   highlightIndex={rrHoldStartHighlightIndex}
                 />
+                {advancedStatsLocked ? (
+                  <>
+                    <BlurView
+                      intensity={24}
+                      tint="light"
+                      pointerEvents="none"
+                      style={StyleSheet.absoluteFill}
+                    />
+                    <Text style={[styles.graphTitle, styles.clearGraphTitle]}>
+                      Heart rate variability
+                    </Text>
+                    {onPressUpgrade ? (
+                      <Pressable
+                        accessibilityRole="button"
+                        onPress={onPressUpgrade}
+                        style={StyleSheet.absoluteFill}
+                      />
+                    ) : null}
+                  </>
+                ) : null}
               </View>
             ) : null}
-          </LockedOverlay>
         </>
       ) : null}
 
@@ -499,11 +559,21 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     overflow: 'hidden',
   },
+  lockedGraphCard: {
+    position: 'relative',
+  },
   graphTitle: {
     ...typography.heading.heading1,
     color: colors.text.secondary,
     fontFamily: fonts.semibold,
     marginBottom: spacing.xs,
+  },
+  clearGraphTitle: {
+    position: 'absolute',
+    top: spacing.md,
+    left: spacing.md,
+    right: spacing.md,
+    zIndex: 2,
   },
   lockedWrap: {
     width: '100%',

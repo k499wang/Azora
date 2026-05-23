@@ -1,4 +1,5 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { BlurView } from 'expo-blur';
 import {
   Canvas,
   Circle,
@@ -21,6 +22,8 @@ interface StressGaugeProps {
   value: number | null;
   zone: { label: string; color: string } | null;
   history?: StressHistoryEntry[];
+  locked?: boolean;
+  onPressLocked?: () => void;
 }
 
 const SIZE = 220;
@@ -45,7 +48,13 @@ function tickPath(angleDeg: number) {
   return p;
 }
 
-export default function StressGauge({ value, zone, history }: StressGaugeProps) {
+export default function StressGauge({
+  value,
+  zone,
+  history,
+  locked = false,
+  onPressLocked,
+}: StressGaugeProps) {
   const stats = history != null ? getStressStats(history) : null;
   const hasValue = value != null && Number.isFinite(value);
   const clamped = hasValue ? Math.max(0, Math.min(100, value)) : null;
@@ -66,7 +75,7 @@ export default function StressGauge({ value, zone, history }: StressGaugeProps) 
   );
 
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, locked && styles.lockedCard]}>
       <Text style={styles.title}>Stress Index</Text>
 
       <View style={styles.ringSurface}>
@@ -129,6 +138,24 @@ export default function StressGauge({ value, zone, history }: StressGaugeProps) 
       {stats != null && stats.count >= MIN_STRESS_STATS_POINTS ? (
         <StressStatsRow stats={stats} />
       ) : null}
+      {locked ? (
+        <>
+          <BlurView
+            intensity={24}
+            tint="light"
+            pointerEvents="none"
+            style={StyleSheet.absoluteFill}
+          />
+          <Text style={[styles.title, styles.clearTitle]}>Stress Index</Text>
+          {onPressLocked ? (
+            <Pressable
+              accessibilityRole="button"
+              onPress={onPressLocked}
+              style={StyleSheet.absoluteFill}
+            />
+          ) : null}
+        </>
+      ) : null}
     </View>
   );
 }
@@ -142,6 +169,9 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.lg,
     paddingHorizontal: spacing.lg,
     alignItems: 'center',
+  },
+  lockedCard: {
+    overflow: 'hidden',
   },
   title: {
     ...typography.body.medium,
@@ -166,6 +196,12 @@ const styles = StyleSheet.create({
   },
   canvas: {
     ...StyleSheet.absoluteFillObject,
+  },
+  clearTitle: {
+    position: 'absolute',
+    top: spacing.md,
+    alignSelf: 'center',
+    zIndex: 2,
   },
   centerOverlay: {
     ...StyleSheet.absoluteFillObject,

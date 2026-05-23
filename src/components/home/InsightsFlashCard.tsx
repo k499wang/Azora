@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { colors } from '../../theme/colors';
 import { spacing, padding } from '../../theme/spacing';
 import { typography, fonts } from '../../theme/typography';
 import { card } from '../../theme/card';
-import ProLockedOverlay from './ProLockedOverlay';
 import type { Insight } from '../../lib/insights';
 
 interface Props {
@@ -73,52 +73,88 @@ export default function InsightsFlashCard({
 
   const safeIndex = index % insights.length;
   const advance = () => setIndex((i) => (i + 1) % insights.length);
+  const clearHeader = (
+    <>
+      <View style={styles.cardHeader}>
+        <Text style={styles.eyebrow}>{displayed.eyebrow}</Text>
+      </View>
+      <Text style={styles.tone}>{displayed.tone}</Text>
+    </>
+  );
+  const unlockedContent = (
+    <Animated.View style={{ opacity, transform: [{ translateY }] }}>
+      {clearHeader}
+      <Text style={styles.detail}>{displayed.detail}</Text>
+      {displayed.techniqueId && displayed.ctaLabel && onStartTechnique ? (
+        <Pressable
+          onPress={() => onStartTechnique(displayed.techniqueId!)}
+          style={({ pressed }) => [
+            styles.cta,
+            pressed && styles.ctaPressed,
+          ]}
+        >
+          <Text style={styles.ctaLabel}>{displayed.ctaLabel}</Text>
+        </Pressable>
+      ) : null}
+    </Animated.View>
+  );
 
   return (
     <View style={styles.wrap}>
-      <ProLockedOverlay
-        locked={locked}
-        onPressUpgrade={onPressUpgrade}
-        subtext="Personalized insights are part of Azora Pro."
-      >
-        <Pressable
-          onPress={advance}
-          disabled={locked || insights.length <= 1}
-          style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
-        >
-          <Animated.View style={{ opacity, transform: [{ translateY }] }}>
-            <Text style={styles.eyebrow}>{displayed.eyebrow}</Text>
-            <Text style={styles.tone}>{displayed.tone}</Text>
+      {locked ? (
+        <View style={[styles.card, styles.lockedCard]}>
+          <Animated.View
+            pointerEvents="none"
+            style={{ opacity, transform: [{ translateY }] }}
+          >
+            {clearHeader}
             <Text style={styles.detail}>{displayed.detail}</Text>
             {displayed.techniqueId && displayed.ctaLabel && onStartTechnique ? (
-              <Pressable
-                onPress={() => onStartTechnique(displayed.techniqueId!)}
-                disabled={locked}
-                style={({ pressed }) => [
-                  styles.cta,
-                  pressed && styles.ctaPressed,
-                ]}
-              >
+              <View style={styles.cta}>
                 <Text style={styles.ctaLabel}>{displayed.ctaLabel}</Text>
-              </Pressable>
+              </View>
             ) : null}
           </Animated.View>
-        </Pressable>
-
-        {insights.length > 1 ? (
-          <View style={styles.dots}>
-            {insights.map((ins, i) => (
-              <View
-                key={ins.id}
-                style={[
-                  styles.dot,
-                  i === safeIndex ? styles.dotActive : styles.dotInactive,
-                ]}
-              />
-            ))}
+          <BlurView
+            intensity={24}
+            tint="light"
+            pointerEvents="none"
+            style={StyleSheet.absoluteFill}
+          />
+          <View style={styles.clearOverlay} pointerEvents="box-none">
+            {clearHeader}
           </View>
-        ) : null}
-      </ProLockedOverlay>
+          {onPressUpgrade ? (
+            <Pressable
+              accessibilityRole="button"
+              onPress={onPressUpgrade}
+              style={StyleSheet.absoluteFill}
+            />
+          ) : null}
+        </View>
+      ) : (
+        <Pressable
+          onPress={advance}
+          disabled={insights.length <= 1}
+          style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+        >
+          {unlockedContent}
+        </Pressable>
+      )}
+
+      {insights.length > 1 ? (
+        <View style={styles.dots}>
+          {insights.map((ins, i) => (
+            <View
+              key={ins.id}
+              style={[
+                styles.dot,
+                i === safeIndex ? styles.dotActive : styles.dotInactive,
+              ]}
+            />
+          ))}
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -134,6 +170,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
   },
+  lockedCard: {
+    overflow: 'hidden',
+  },
   cardPressed: {
     opacity: 0.85,
   },
@@ -141,6 +180,13 @@ const styles = StyleSheet.create({
     ...typography.label.small,
     fontFamily: fonts.semibold,
     color: colors.primary.blue600,
+    flexShrink: 1,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
     marginBottom: spacing.xs,
   },
   tone: {
@@ -154,6 +200,11 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semibold,
     color: colors.text.secondary,
     lineHeight: 20,
+  },
+  clearOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
   },
   dots: {
     flexDirection: 'row',

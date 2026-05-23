@@ -1,4 +1,5 @@
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { Canvas, Circle, Path, Skia } from '@shopify/react-native-skia';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
@@ -72,6 +73,8 @@ interface HRVTrackStatCardProps {
   lowBound: number;
   highBound: number;
   info?: { title: string; message: string };
+  locked?: boolean;
+  onPressLocked?: () => void;
 }
 
 export default function HRVTrackStatCard({
@@ -85,6 +88,8 @@ export default function HRVTrackStatCard({
   lowBound,
   highBound,
   info,
+  locked = false,
+  onPressLocked,
 }: HRVTrackStatCardProps) {
   const hasAvg = avgValue != null && Number.isFinite(avgValue);
   const hasBest = bestValue != null && Number.isFinite(bestValue);
@@ -121,8 +126,8 @@ export default function HRVTrackStatCard({
   })();
 
   return (
-    <View style={styles.card}>
-      {info ? (
+    <View style={[styles.card, locked && styles.lockedCard]}>
+      {info && !locked ? (
         <Pressable
           hitSlop={12}
           onPress={() => Alert.alert(info.title, info.message)}
@@ -150,76 +155,104 @@ export default function HRVTrackStatCard({
           ) : null}
         </View>
 
-        <View style={[styles.statsRow, multiStat && styles.statsRowCompact]}>
-          <View style={styles.statCell}>
-            <Text style={[styles.statLabel, !multiStat && styles.statLabelLarge]}>Today</Text>
-            <View style={styles.statValueRow}>
-              <Text style={[styles.statValue, !multiStat && styles.statValueLarge]}>
-                {hasValue ? Math.round(value!) : '--'}
-              </Text>
-              <Text style={[styles.statUnit, !multiStat && styles.statUnitLarge]}>{unit}</Text>
+        <View style={styles.cardBody}>
+          <View style={[styles.statsRow, multiStat && styles.statsRowCompact]}>
+            <View style={styles.statCell}>
+              <Text style={[styles.statLabel, !multiStat && styles.statLabelLarge]}>Today</Text>
+              <View style={styles.statValueRow}>
+                <Text style={[styles.statValue, !multiStat && styles.statValueLarge]}>
+                  {hasValue ? Math.round(value!) : '--'}
+                </Text>
+                <Text style={[styles.statUnit, !multiStat && styles.statUnitLarge]}>{unit}</Text>
+              </View>
             </View>
+
+            {hasAvg ? (
+              <>
+                <View style={styles.statDivider} />
+                <View style={styles.statCell}>
+                  <Text style={styles.statLabel}>Avg</Text>
+                  <View style={styles.statValueRow}>
+                    <Text style={styles.statValue}>{Math.round(avgValue!)}</Text>
+                    <Text style={styles.statUnit}>{unit}</Text>
+                  </View>
+                </View>
+              </>
+            ) : null}
+
+            {hasBest ? (
+              <>
+                <View style={styles.statDivider} />
+                <View style={styles.statCell}>
+                  <Text style={styles.statLabel}>Best</Text>
+                  <View style={styles.statValueRow}>
+                    <Text style={styles.statValue}>{Math.round(bestValue!)}</Text>
+                    <Text style={styles.statUnit}>{unit}</Text>
+                  </View>
+                </View>
+              </>
+            ) : null}
           </View>
 
-          {hasAvg ? (
-            <>
-              <View style={styles.statDivider} />
-              <View style={styles.statCell}>
-                <Text style={styles.statLabel}>Avg</Text>
-                <View style={styles.statValueRow}>
-                  <Text style={styles.statValue}>{Math.round(avgValue!)}</Text>
-                  <Text style={styles.statUnit}>{unit}</Text>
-                </View>
-              </View>
-            </>
-          ) : null}
+          <View style={styles.ringSurface}>
+            <Canvas style={StyleSheet.absoluteFill}>
+              {TICKS.map((tick, i) => (
+                <Path
+                  key={i}
+                  path={tick.path}
+                  style="stroke"
+                  strokeWidth={TICK_WIDTH}
+                  strokeCap="round"
+                  color={tick.color}
+                  opacity={0.85}
+                />
+              ))}
 
-          {hasBest ? (
-            <>
-              <View style={styles.statDivider} />
-              <View style={styles.statCell}>
-                <Text style={styles.statLabel}>Best</Text>
-                <View style={styles.statValueRow}>
-                  <Text style={styles.statValue}>{Math.round(bestValue!)}</Text>
-                  <Text style={styles.statUnit}>{unit}</Text>
-                </View>
-              </View>
-            </>
-          ) : null}
+              <Circle cx={CX} cy={CY + 3} r={INNER_R + 3} color="rgba(15,23,42,0.04)" />
+              <Circle cx={CX} cy={CY + 1.5} r={INNER_R + 1.5} color="rgba(15,23,42,0.02)" />
+              <Circle cx={CX} cy={CY} r={INNER_R + 1} color={colors.neutral[200]} />
+              <Circle cx={CX} cy={CY} r={INNER_R} color={colors.background.elevated} />
+
+              {indPath != null ? (
+                <Path
+                  path={indPath}
+                  style="fill"
+                  color={colors.primary.blue500}
+                />
+              ) : null}
+            </Canvas>
+          </View>
         </View>
       </View>
-
-      <View style={styles.ringSurface}>
-        <Canvas style={StyleSheet.absoluteFill}>
-          {/* Outer gradient tick ring */}
-          {TICKS.map((tick, i) => (
-            <Path
-              key={i}
-              path={tick.path}
-              style="stroke"
-              strokeWidth={TICK_WIDTH}
-              strokeCap="round"
-              color={tick.color}
-              opacity={0.85}
-            />
-          ))}
-
-          {/* Inner white circle — shadow, border, fill */}
-          <Circle cx={CX} cy={CY + 3} r={INNER_R + 3} color="rgba(15,23,42,0.04)" />
-          <Circle cx={CX} cy={CY + 1.5} r={INNER_R + 1.5} color="rgba(15,23,42,0.02)" />
-          <Circle cx={CX} cy={CY} r={INNER_R + 1} color={colors.neutral[200]} />
-          <Circle cx={CX} cy={CY} r={INNER_R} color={colors.background.elevated} />
-
-          {/* Curved blue triangle indicator */}
-          {indPath != null ? (
-            <Path
-              path={indPath}
-              style="fill"
-              color={colors.primary.blue500}
+      {locked ? (
+        <>
+          <BlurView
+            intensity={24}
+            tint="light"
+            pointerEvents="none"
+            style={StyleSheet.absoluteFill}
+          />
+          <View style={styles.clearHeaderOverlay} pointerEvents="none">
+            <Text style={styles.label}>{label}</Text>
+            {zone != null ? (
+              <View
+                style={[styles.zonePill, { backgroundColor: `${zone.color}18` }]}
+              >
+                <Text style={[styles.zonePillText, { color: zone.color }]}>
+                  {zone.label}
+                </Text>
+              </View>
+            ) : null}
+          </View>
+          {onPressLocked ? (
+            <Pressable
+              accessibilityRole="button"
+              onPress={onPressLocked}
+              style={StyleSheet.absoluteFill}
             />
           ) : null}
-        </Canvas>
-      </View>
+        </>
+      ) : null}
     </View>
   );
 }
@@ -228,12 +261,13 @@ const styles = StyleSheet.create({
   card: {
     ...card.base,
     ...card.shadow,
-    flexDirection: 'row',
-    alignItems: 'center',
     paddingVertical: spacing.md,
     paddingLeft: spacing.md,
     paddingRight: spacing.md,
     position: 'relative',
+  },
+  lockedCard: {
+    overflow: 'hidden',
   },
   infoButton: {
     position: 'absolute',
@@ -246,9 +280,7 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   left: {
-    flex: 1,
-    alignSelf: 'stretch',
-    justifyContent: 'flex-start',
+    width: '100%',
   },
   label: {
     ...typography.body.medium,
@@ -260,6 +292,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.xs + 2,
     marginBottom: spacing.sm,
+  },
+  clearHeaderOverlay: {
+    position: 'absolute',
+    top: spacing.md,
+    left: spacing.md,
+    right: spacing.md,
+    zIndex: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs + 2,
+  },
+  cardBody: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+    borderRadius: 18,
   },
   statsRow: {
     flexDirection: 'row',
