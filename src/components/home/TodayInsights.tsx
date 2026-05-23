@@ -144,7 +144,6 @@ export default function TodayInsights({
           value={bpmValue}
           progress={avgBpm == null ? 0 : avgBpm / 130}
           color={colors.error[700]}
-          gradientTo={colors.error[100]}
           trackColor={colors.neutral[200]}
           icon="stat-heart-pulse"
         />
@@ -153,7 +152,6 @@ export default function TodayInsights({
           value={holdValue}
           progress={holdSeconds == null ? 0 : holdSeconds / 120}
           color={colors.primary.blue700}
-          gradientTo={colors.primary.blue300}
           trackColor={colors.neutral[200]}
           icon="stat-breath-flow"
         />
@@ -163,7 +161,6 @@ export default function TodayInsights({
           target="100"
           progress={healthScore == null ? 0 : healthScore / 100}
           color={colors.orange[700]}
-          gradientTo={colors.orange[200]}
           trackColor={colors.neutral[200]}
           icon="stat-health-spark"
           info={HEALTH_INFO}

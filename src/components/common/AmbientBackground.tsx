@@ -22,7 +22,7 @@ export default function AmbientBackground() {
 
   const bottomOrb = {
     cx: width * 0.85,
-    cy: height * 0.75,
+    cy: height * 0.2,
     r: width * 1.0,
     color: colors.orange[200],
     opacity: 0.35,
