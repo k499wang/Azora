@@ -1,4 +1,5 @@
-import { StyleSheet, Switch, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
+import AudioSettingsRow from './AudioSettingsRow';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
@@ -19,16 +20,16 @@ export default function LiveSignalToggleSection({
         Show the live PPG waveform above the breathing circle.
       </Text>
 
-      <View style={styles.row}>
-        <Text style={styles.label}>Show live signal graph</Text>
-        <Switch
-          value={enabled}
-          onValueChange={onToggle}
-          trackColor={{
-            false: colors.neutral[300],
-            true: colors.primary.blue300,
-          }}
-          thumbColor={enabled ? colors.primary.blue600 : colors.neutral[50]}
+      <View style={styles.list}>
+        <AudioSettingsRow
+          label="On"
+          selected={enabled}
+          onSelect={() => onToggle(true)}
+        />
+        <AudioSettingsRow
+          label="Off"
+          selected={!enabled}
+          onSelect={() => onToggle(false)}
         />
       </View>
     </View>
@@ -50,20 +51,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
     marginBottom: spacing.sm + 2,
   },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: spacing.sm + 2,
-    paddingHorizontal: spacing.md,
-    borderRadius: 14,
-    backgroundColor: colors.background.elevated,
-    gap: spacing.sm,
-  },
-  label: {
-    ...typography.body.medium,
-    fontFamily: fonts.semibold,
-    color: colors.text.primary,
-    flex: 1,
+  list: {
+    gap: spacing.xs + 2,
   },
 });
