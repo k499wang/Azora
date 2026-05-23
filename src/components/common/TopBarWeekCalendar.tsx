@@ -71,8 +71,8 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   dayLabel: {
-    fontSize: 12,
-    lineHeight: 16,
+    fontSize: 10,
+    lineHeight: 14,
     color: colors.text.tertiary,
     fontFamily: fonts.medium,
   },
