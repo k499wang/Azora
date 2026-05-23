@@ -6,11 +6,11 @@ import { typography, fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import { card } from '../../theme/card';
 
-const SIZE = 112;
+const SIZE = 96;
 const CX = SIZE / 2;
 const CY = SIZE / 2;
-const R = 46;           // outer tick ring radius
-const INNER_R = 26;     // inner white circle radius
+const R = 39;           // outer tick ring radius
+const INNER_R = 22;     // inner white circle radius
 const START_ANGLE = 135;
 const SWEEP = 270;
 
@@ -251,26 +251,27 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
   },
   label: {
-    ...typography.body.small,
+    ...typography.body.medium,
+    fontFamily: fonts.semibold,
     color: colors.text.secondary,
   },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs + 2,
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
   },
   statsRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-end',
     justifyContent: 'flex-start',
     gap: spacing.md,
     marginTop: 4,
     paddingRight: spacing.md,
   },
   statsRowCompact: {
-    gap: spacing.sm,
-    marginTop: 10,
+    gap: spacing.sm + 2,
+    marginTop: 8,
     paddingRight: spacing.sm,
   },
   statCell: {
@@ -297,12 +298,12 @@ const styles = StyleSheet.create({
   },
   statValue: {
     ...typography.title.title3,
-    fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontFamily: fonts.medium,
+    fontWeight: '500',
     color: colors.text.primary,
     fontVariant: ['tabular-nums'],
     letterSpacing: -0.3,
-    fontSize: 22,
+    fontSize: 19,
   },
   statUnit: {
     ...typography.label.small,
@@ -315,8 +316,8 @@ const styles = StyleSheet.create({
   },
   statValueLarge: {
     ...typography.title.title1,
-    fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontFamily: fonts.medium,
+    fontWeight: '500',
     color: colors.text.primary,
     fontVariant: ['tabular-nums'],
     letterSpacing: -0.3,

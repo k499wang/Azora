@@ -49,13 +49,16 @@ export default function DailyPlanCard({
   const hasHistory = lastHoldSeconds != null || todayHoldSeconds != null;
   const doneToday = todayHoldSeconds != null;
 
-  const displaySeconds = doneToday ? null : lastHoldSeconds;
-
-  const captionLabel = !hasHistory
+  const subtitle = !hasHistory
     ? 'Find your baseline'
     : doneToday
-      ? 'Done for today'
-      : 'Last hold';
+      ? `Done today · ${formatMmSs(todayHoldSeconds!)}`
+      : `Last hold ${formatMmSs(lastHoldSeconds!)}`;
+
+  const bestLabel =
+    bestHoldSeconds != null && bestHoldSeconds > 0
+      ? `Best ${formatMmSs(bestHoldSeconds)}`
+      : 'Best —';
 
   return (
     <View style={styles.container}>
@@ -66,23 +69,15 @@ export default function DailyPlanCard({
         resizeMode="cover"
       >
         <View style={styles.imageOverlay} />
+        <View style={styles.bestBadge} pointerEvents="none">
+          <Text style={styles.bestBadgeText}>{bestLabel}</Text>
+        </View>
         <View style={styles.cardContent}>
           <View style={styles.leftCol}>
             <View style={styles.metricBlock}>
-              {displaySeconds != null ? (
-                <Text style={styles.metric}>{formatMmSs(displaySeconds)}</Text>
-              ) : (
-                <Text style={styles.startTitle}>
-                  {doneToday ? 'Breathhold\nExercise' : 'Start your\nfirst hold'}
-                </Text>
-              )}
-
-              <Text style={styles.caption}>
-                {captionLabel}
-                {bestHoldSeconds != null && !doneToday && hasHistory
-                  ? `  ·  Best ${formatMmSs(bestHoldSeconds)}`
-                  : null}
-              </Text>
+              <Text style={styles.startTitle}>Breathhold</Text>
+              <Text style={styles.startTitle}>Exercise</Text>
+              <Text style={styles.caption}>{subtitle}</Text>
             </View>
           </View>
 
@@ -161,6 +156,7 @@ const styles = StyleSheet.create({
   },
   metricBlock: {
     gap: 2,
+    marginTop: spacing.md,
   },
   metric: {
     ...typography.display.display2,
@@ -178,6 +174,17 @@ const styles = StyleSheet.create({
     ...typography.label.medium,
     fontFamily: fonts.semibold,
     color: 'rgba(255,255,255,0.78)',
+  },
+  bestBadge: {
+    position: 'absolute',
+    top: spacing.md,
+    left: spacing.lg,
+  },
+  bestBadgeText: {
+    ...typography.label.small,
+    fontFamily: fonts.semibold,
+    color: colors.orange[300],
+    letterSpacing: 0.4,
   },
   playBtnShadow: {
     borderRadius: 999,

@@ -11,11 +11,55 @@ import {
 import { colors } from '../../theme/colors';
 import { spacing, padding } from '../../theme/spacing';
 import { typography, fonts } from '../../theme/typography';
+import { card } from '../../theme/card';
 import SectionHeader from '../common/SectionHeader';
 import HRVTrackStatCard from './HRVTrackStatCard';
 import ProLockedOverlay from './ProLockedOverlay';
 import HRVChart from './HRVChart';
 import BPMChart from './BPMChart';
+
+function ThermometerStatCard({
+  label,
+  value,
+  unit,
+  min,
+  max,
+  accent,
+}: {
+  label: string;
+  value: number | null | undefined;
+  unit: string;
+  min: number;
+  max: number;
+  accent: string;
+}) {
+  const hasValue = value != null && Number.isFinite(value);
+  const magnitude = hasValue ? Math.abs(value!) : null;
+  const clamped = magnitude != null ? Math.max(min, Math.min(max, magnitude)) : null;
+  const fillPct = clamped != null ? ((clamped - min) / (max - min)) * 100 : 0;
+
+  return (
+    <View style={styles.tile}>
+      <View style={styles.tileBody}>
+        <Text style={styles.tileLabel}>{label}</Text>
+        <View style={styles.tileValueRow}>
+          <Text style={styles.tileValue}>
+            {magnitude != null ? Math.round(magnitude) : '--'}
+          </Text>
+          <Text style={styles.tileUnit}>{unit}</Text>
+        </View>
+      </View>
+      <View style={styles.thermoTrack}>
+        <View
+          style={[
+            styles.thermoFill,
+            { height: `${fillPct}%`, backgroundColor: accent },
+          ]}
+        />
+      </View>
+    </View>
+  );
+}
 
 const RMSSD_INFO = {
   title: 'RMSSD',
@@ -34,6 +78,8 @@ interface HeartHealthSectionProps {
   avgSdnn?: number | null;
   maxRmssd?: number | null;
   maxSdnn?: number | null;
+  hrDrop?: number | null;
+  minBpm?: number | null;
   ibiMs?: number[];
   locked?: boolean;
   onPressUpgrade?: () => void;
@@ -46,6 +92,8 @@ export default function HeartHealthSection({
   avgSdnn,
   maxRmssd,
   maxSdnn,
+  hrDrop,
+  minBpm,
   ibiMs = [],
   locked = false,
   onPressUpgrade,
@@ -143,6 +191,25 @@ export default function HeartHealthSection({
               ))}
             </View>
           </View>
+
+          <View style={styles.tileRow}>
+            <ThermometerStatCard
+              label="HR drop"
+              value={hrDrop ?? (locked ? 18 : null)}
+              unit="bpm"
+              min={0}
+              max={40}
+              accent={colors.primary.blue500}
+            />
+            <ThermometerStatCard
+              label="Lowest HR"
+              value={minBpm ?? (locked ? 54 : null)}
+              unit="bpm"
+              min={40}
+              max={90}
+              accent={colors.error[500]}
+            />
+          </View>
         </View>
       </ProLockedOverlay>
     </View>
@@ -161,6 +228,62 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     gap: spacing.sm,
     paddingHorizontal: padding.screen.horizontal,
+  },
+  tileRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  tile: {
+    ...card.base,
+    ...card.shadow,
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    gap: spacing.md,
+  },
+  tileBody: {
+    flex: 1,
+    alignSelf: 'stretch',
+    justifyContent: 'space-between',
+  },
+  tileLabel: {
+    ...typography.body.medium,
+    fontFamily: fonts.semibold,
+    color: colors.text.secondary,
+  },
+  tileValueRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 2,
+  },
+  tileValue: {
+    fontSize: 28,
+    lineHeight: 32,
+    fontFamily: fonts.medium,
+    fontWeight: '500',
+    color: colors.text.primary,
+    fontVariant: ['tabular-nums'],
+    letterSpacing: -0.3,
+  },
+  tileUnit: {
+    ...typography.label.small,
+    fontSize: 12,
+    color: colors.text.tertiary,
+    fontFamily: fonts.semibold,
+  },
+  thermoTrack: {
+    width: 10,
+    height: 80,
+    borderRadius: 5,
+    backgroundColor: colors.neutral[100],
+    overflow: 'hidden',
+    justifyContent: 'flex-end',
+  },
+  thermoFill: {
+    width: '100%',
+    borderRadius: 5,
   },
   swipeHint: {
     ...typography.caption.caption1,

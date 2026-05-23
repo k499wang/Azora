@@ -1068,6 +1068,13 @@ export default function DailyExercisePage({
           accessibilityLabel="Tap anywhere to release hold"
         />
       ) : null}
+      {bestHoldSeconds > 0 ? (
+        <View style={styles.bestFooter} pointerEvents="none">
+          <Text style={styles.bestLabel}>
+            Best {formatHoldTime(bestHoldSeconds)}
+          </Text>
+        </View>
+      ) : null}
       <AudioSettingsSheet
         visible={audioSettingsOpen}
         onClose={() => setAudioSettingsOpen(false)}
@@ -1115,6 +1122,24 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     color: colors.text.primary,
     opacity: 0.55,
+    fontVariant: ['tabular-nums'],
+  },
+  bestFooter: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: spacing.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bestLabel: {
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    fontSize: 13,
+    lineHeight: 16,
+    letterSpacing: 0.6,
+    color: colors.orange[300],
+    opacity: 0.85,
     fontVariant: ['tabular-nums'],
   },
   phaseLabel: {

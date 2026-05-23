@@ -1,9 +1,7 @@
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
 import { spacing, padding } from '../../theme/spacing';
-import { typography } from '../../theme/typography';
-import { card } from '../../theme/card';
 import {
   getStressZone,
   type StressHistoryEntry,
@@ -19,75 +17,19 @@ const STRESS_INFO = {
 };
 
 interface RecoverySectionProps {
-  rmssd?: number | null;
-  sdnn?: number | null;
   stress?: number | null;
-  hrDrop?: number | null;
   stressHistory?: StressHistoryEntry[];
   locked?: boolean;
   onPressUpgrade?: () => void;
 }
 
-function buildInsight(rmssd: number | null, sdnn: number | null, hrDrop: number | null): {
-  tone: string;
-  detail: string;
-} {
-  if (rmssd == null || sdnn == null) {
-    return {
-      tone: 'No HRV for this day',
-      detail: 'Complete a breath hold with heart-rate tracking to unlock a recovery insight.',
-    };
-  }
-
-  if (rmssd >= 55 && sdnn >= 45) {
-    return {
-      tone: 'Strong recovery',
-      detail:
-        hrDrop != null && hrDrop > 0
-          ? `Your variability looks strong for this day and your heart rate settled by ${hrDrop} bpm during recovery.`
-          : 'Your variability looks strong for this day, with a stable recovery pattern through the session.',
-    };
-  }
-
-  if (rmssd >= 35 && sdnn >= 30) {
-    return {
-      tone: 'Balanced pattern',
-      detail:
-        hrDrop != null && hrDrop > 0
-          ? `Your breath hold shows a steady recovery response, with heart rate easing down by ${hrDrop} bpm.`
-          : 'Your variability sits in a balanced range for this day, though recovery looks more flat than usual.',
-    };
-  }
-
-  return {
-    tone: 'Recovery is muted',
-    detail:
-      hrDrop != null && hrDrop > 0
-        ? `Variability is on the lower side for this day. A ${hrDrop} bpm drop still shows some recovery, but the signal suggests stress or fatigue.`
-        : 'Variability is on the lower side for this day, which can happen when stress, fatigue, or inconsistent breathing is higher.',
-  };
-}
-
 export default function RecoverySection({
-  rmssd,
-  sdnn,
   stress,
-  hrDrop,
   stressHistory,
   locked = false,
   onPressUpgrade,
 }: RecoverySectionProps) {
-  const rmssdValue = rmssd ?? (locked ? 48 : null);
-  const sdnnValue = sdnn ?? (locked ? 42 : null);
   const stressValue = stress ?? (locked ? 38 : null);
-  const hrDropValue = hrDrop ?? (locked ? 9 : null);
-  const insight = locked
-    ? {
-        tone: 'Strong recovery',
-        detail:
-          'Your variability looks strong for this day, with a stable recovery pattern through the session.',
-      }
-    : buildInsight(rmssdValue, sdnnValue, hrDropValue);
 
   return (
     <View style={styles.section}>
@@ -116,12 +58,6 @@ export default function RecoverySection({
               history={locked ? undefined : stressHistory}
             />
           </View>
-        </View>
-
-        <View style={styles.insightCard}>
-          <Text style={styles.insightEyebrow}>Insight</Text>
-          <Text style={styles.insightTone}>{insight.tone}</Text>
-          <Text style={styles.insightDetail}>{insight.detail}</Text>
         </View>
       </ProLockedOverlay>
     </View>
@@ -152,28 +88,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 2,
-  },
-  insightCard: {
-    ...card.base,
-    ...card.shadow,
-    marginHorizontal: padding.screen.horizontal,
-    minHeight: 136,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    justifyContent: 'center',
-    gap: spacing.xs,
-  },
-  insightEyebrow: {
-    ...typography.label.small,
-    color: colors.primary.blue600,
-  },
-  insightTone: {
-    ...typography.title.title3,
-    color: colors.text.primary,
-  },
-  insightDetail: {
-    ...typography.body.small,
-    color: colors.text.secondary,
-    lineHeight: 20,
   },
 });
