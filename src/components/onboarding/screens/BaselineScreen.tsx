@@ -67,7 +67,7 @@ const READING_TIPS: ReadingTip[] = [
   {
     id: 'cover',
     title: 'Camera is fully covered',
-    detail: 'Use the fleshy pad at the end of your finger, not your fingernail, to cover the lens and flash.',
+    detail: 'Use the fleshy pad at the end of your finger, not your fingernail, to cover the camera lens',
   },
   {
     id: 'pressure',

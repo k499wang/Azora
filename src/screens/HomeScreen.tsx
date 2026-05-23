@@ -15,6 +15,8 @@ import SectionHeader from '../components/common/SectionHeader';
 import HeartHealthSection from '../components/home/HeartHealthSection';
 import RecoverySection from '../components/home/RecoverySection';
 import TodayInsights from '../components/home/TodayInsights';
+import InsightsFlashCard from '../components/home/InsightsFlashCard';
+import { buildInsights, SAMPLE_INSIGHTS } from '../lib/insights';
 import { estimateLungAge } from '../lib/lungAge';
 import EmptyStateCard from '../components/home/EmptyStateCard';
 import BreathingLibrary from '../components/home/BreathingLibrary';
@@ -155,7 +157,7 @@ function RecentHeartRateList({
         subtitle={
           hasError
             ? 'Stats could not load from Supabase.'
-            : 'Press the circle button on the bottom right to measure your heart rate.'
+            : 'Press the circle button on the bottom and click the measure heart rate button to log a reading.'
         }
       />
     );
@@ -427,6 +429,44 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           />
         </View>
 
+        <View style={styles.flashCardSection}>
+          <InsightsFlashCard
+            locked={advancedStatsLocked}
+            onPressUpgrade={() => {
+              showProPaywall(
+                FeatureKey.AdvancedStats,
+                PaywallPlacement.DailyResultProGate,
+              );
+            }}
+            onStartTechnique={(techniqueId) => {
+              if (!dailyExerciseAccess.allowed && !dailyExerciseAccess.isLoading) {
+                showProPaywall(
+                  FeatureKey.DailyExercise,
+                  PaywallPlacement.ExercisePremiumGate,
+                );
+                return;
+              }
+              navigation.navigate('ExerciseSession', { techniqueId });
+            }}
+            insights={
+              advancedStatsLocked
+                ? SAMPLE_INSIGHTS
+                : buildInsights({
+                    rmssd: stats?.hrv.rmssd ?? null,
+                    avgRmssd: stats?.hrv.avgRmssd ?? null,
+                    sdnn: stats?.hrv.sdnn ?? null,
+                    hrDrop: stats?.hrv.hrDrop ?? null,
+                    minBpm:
+                      todayBreathHold?.minBpm ?? todayHeartRate?.minBpm ?? null,
+                    stress: stats?.hrv.stress ?? null,
+                    stressHistory: stats?.stressHistory ?? [],
+                    todayHoldSeconds: todayBreathHold?.holdSeconds ?? null,
+                    bestHoldSeconds: holdStats.bestHoldSeconds,
+                  })
+            }
+          />
+        </View>
+
         <HeartHealthSection
           rmssd={stats?.hrv.rmssd ?? null}
           sdnn={stats?.hrv.sdnn ?? null}
@@ -434,6 +474,8 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           avgSdnn={stats?.hrv.avgSdnn ?? null}
           maxRmssd={stats?.hrv.maxRmssd ?? null}
           maxSdnn={stats?.hrv.maxSdnn ?? null}
+          hrDrop={stats?.hrv.hrDrop ?? null}
+          minBpm={todayBreathHold?.minBpm ?? todayHeartRate?.minBpm ?? null}
           ibiMs={ibiMs}
           locked={advancedStatsLocked}
           onPressUpgrade={() => {
@@ -445,10 +487,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         />
 
         <RecoverySection
-          rmssd={stats?.hrv.rmssd ?? null}
-          sdnn={stats?.hrv.sdnn ?? null}
           stress={stats?.hrv.stress ?? null}
-          hrDrop={stats?.hrv.hrDrop ?? null}
           stressHistory={stats?.stressHistory ?? []}
           locked={advancedStatsLocked}
           onPressUpgrade={() => {
@@ -509,6 +548,9 @@ const styles = StyleSheet.create({
   },
   section: {
     paddingHorizontal: padding.screen.horizontal,
+    marginTop: spacing.xl,
+  },
+  flashCardSection: {
     marginTop: spacing.md,
   },
   partialErrorText: {
