@@ -12,6 +12,7 @@ import BreathingCircle, {
   BreathingCircleRef,
 } from '../components/exercise/BreathingCircle';
 import ExerciseScaffold from '../components/exercise/ExerciseScaffold';
+import HoldProgressBar from '../components/exercise/HoldProgressBar';
 import { useLivePulse } from '../hooks/useLivePulse';
 import { HeartRateCameraPreview } from '../components/heartRate/HeartRateCameraPreview';
 import { LiveSignalGraph } from '../components/heartRate/LiveSignalGraph';
@@ -166,13 +167,6 @@ interface HeartRateReleaseStats {
   minBpm?: number;
   maxBpm?: number;
   holdStartOffsetSeconds?: number;
-}
-
-function formatHoldTime(totalSeconds: number): string {
-  const safe = Math.max(0, Math.floor(totalSeconds));
-  const minutes = Math.floor(safe / 60);
-  const seconds = safe % 60;
-  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
 }
 
 function buildStatsFromCaptureResult(result: CaptureResult): HeartRateReleaseStats {
@@ -858,13 +852,6 @@ export default function DailyExercisePage({
               </View>
             )}
             <View style={styles.contentArea}>
-              {phase === 'hold' ? (
-                <View style={styles.aboveSlot} pointerEvents="none">
-                  <Text style={[styles.phaseTimer, { color: activeTheme.textPrimary }]}>
-                    {formatHoldTime(holdSeconds)}
-                  </Text>
-                </View>
-              ) : null}
               <Animated.View
                 style={[
                   styles.contentLayer,
@@ -954,6 +941,15 @@ export default function DailyExercisePage({
         }
         bottomSlot={
           <View style={styles.bottomContainer}>
+            {phase === 'hold' ? (
+              <HoldProgressBar
+                holdSeconds={holdSeconds}
+                bestSeconds={bestHoldSeconds}
+                textColor={activeTheme.textPrimary}
+                trackColor={activeTheme.surface}
+                fillColor={activeTheme.textAccent}
+              />
+            ) : null}
             {showSettingsPill ? (
               <SettingsGearButton
                 onPress={() => setAudioSettingsOpen(true)}
@@ -1068,13 +1064,6 @@ export default function DailyExercisePage({
           accessibilityLabel="Tap anywhere to release hold"
         />
       ) : null}
-      {bestHoldSeconds > 0 ? (
-        <View style={styles.bestFooter} pointerEvents="none">
-          <Text style={styles.bestLabel}>
-            Best {formatHoldTime(bestHoldSeconds)}
-          </Text>
-        </View>
-      ) : null}
       <AudioSettingsSheet
         visible={audioSettingsOpen}
         onClose={() => setAudioSettingsOpen(false)}
@@ -1114,34 +1103,6 @@ const styles = StyleSheet.create({
     alignItems: 'baseline',
     gap: spacing.md,
   },
-  phaseTimer: {
-    fontFamily: fonts.semibold,
-    fontWeight: '600',
-    fontSize: 22,
-    lineHeight: 26,
-    letterSpacing: 1,
-    color: colors.text.primary,
-    opacity: 0.55,
-    fontVariant: ['tabular-nums'],
-  },
-  bestFooter: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: spacing.lg,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  bestLabel: {
-    fontFamily: fonts.semibold,
-    fontWeight: '600',
-    fontSize: 13,
-    lineHeight: 16,
-    letterSpacing: 0.6,
-    color: colors.orange[300],
-    opacity: 0.85,
-    fontVariant: ['tabular-nums'],
-  },
   phaseLabel: {
     ...typography.display.display2,
     fontFamily: fonts.semibold,
@@ -1161,15 +1122,6 @@ const styles = StyleSheet.create({
     letterSpacing: 1.2,
     color: colors.neutral[50],
     textAlign: 'center',
-  },
-  aboveSlot: {
-    position: 'absolute',
-    bottom: '100%',
-    left: 0,
-    right: 0,
-    marginBottom: spacing.xs,
-    alignItems: 'center',
-    justifyContent: 'flex-end',
   },
   belowSlot: {
     position: 'absolute',
