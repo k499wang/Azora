@@ -14,10 +14,12 @@ import TopBarWeekCalendar from '../components/common/TopBarWeekCalendar';
 import SectionHeader from '../components/common/SectionHeader';
 import HeartHealthSection from '../components/home/HeartHealthSection';
 import RecoverySection from '../components/home/RecoverySection';
-import SessionStatsPager from '../components/home/SessionStatsPager';
+import TodayInsights from '../components/home/TodayInsights';
+import { estimateLungAge } from '../lib/lungAge';
 import EmptyStateCard from '../components/home/EmptyStateCard';
 import BreathingLibrary from '../components/home/BreathingLibrary';
 import DailyPlanCard from '../components/home/DailyPlanCard';
+import MoodChipRow from '../components/home/MoodChipRow';
 import { useFeatureAccess } from '../hooks/useFeatureAccess';
 import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
 import { formatLocalDate } from '../lib/calendar/weekCalendarDays';
@@ -26,14 +28,7 @@ import { useHomeStatsQuery } from '../queries/tracking/useHomeStatsQuery';
 import { useAuthStore } from '../stores/authStore';
 import { PaywallPlacement } from '../services/paywall';
 import { FeatureKey } from '../services/subscriptions/featureAccess';
-import type { TodayHeartRateSummary } from '../services/tracking/types';
-
-function formatDuration(seconds: number | null | undefined): string {
-  if (seconds == null || seconds <= 0) return '2:00';
-  const minutes = Math.floor(seconds / 60);
-  const secs = seconds % 60;
-  return `${minutes}:${secs.toString().padStart(2, '0')}`;
-}
+import type { DailyActivitySummary, TodayHeartRateSummary } from '../services/tracking/types';
 
 function formatInsightTitle(localDate: string, todayLocalDate: string): string {
   const [year, month, day] = localDate.split('-').map(Number);
@@ -81,6 +76,41 @@ function formatReadingDuration(seconds: number): string {
   const m = Math.floor(seconds / 60);
   const s = seconds % 60;
   return s === 0 ? `${m}m` : `${m}m ${s}s`;
+}
+
+function deriveHoldStats(
+  dailyActivity: DailyActivitySummary[] | undefined,
+  todayLocalDate: string,
+): { lastHoldSeconds: number | null; bestHoldSeconds: number | null; avgHoldSeconds: number | null } {
+  if (!dailyActivity || dailyActivity.length === 0) {
+    return { lastHoldSeconds: null, bestHoldSeconds: null, avgHoldSeconds: null };
+  }
+
+  const sorted = [...dailyActivity].sort((a, b) =>
+    a.activityDate < b.activityDate ? 1 : a.activityDate > b.activityDate ? -1 : 0,
+  );
+
+  const lastEntry = sorted.find(
+    (row) => row.activityDate !== todayLocalDate && row.bestHoldSeconds != null,
+  );
+
+  let max: number | null = null;
+  let sum = 0;
+  let count = 0;
+  for (const row of sorted) {
+    if (row.bestHoldSeconds == null) continue;
+    if (max == null || row.bestHoldSeconds > max) max = row.bestHoldSeconds;
+    if (row.activityDate !== todayLocalDate && count < 7) {
+      sum += row.bestHoldSeconds;
+      count += 1;
+    }
+  }
+
+  return {
+    lastHoldSeconds: lastEntry?.bestHoldSeconds ?? null,
+    bestHoldSeconds: max,
+    avgHoldSeconds: count > 0 ? sum / count : null,
+  };
 }
 
 function computeStress(rmssd: number | null, avgBpm: number | null): number | null {
@@ -303,8 +333,17 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const currentStreak = stats?.streak?.currentStreak ?? 0;
   const avgBpm = todayBreathHold?.avgBpm ?? todayHeartRate?.avgBpm ?? null;
   const healthScore = stats?.hrv.stress == null ? null : 100 - stats.hrv.stress;
+  const lungEstimate =
+    todayBreathHold?.holdSeconds != null && todayBreathHold.holdSeconds > 0
+      ? estimateLungAge({
+          holdSeconds: todayBreathHold.holdSeconds,
+          avgBpm: todayBreathHold.avgBpm ?? undefined,
+          minBpm: todayBreathHold.minBpm ?? undefined,
+        })
+      : null;
   const advancedStatsLocked = !advancedStatsAccess.allowed && !advancedStatsAccess.isLoading;
   const hasPartialStatsError = stats != null && Object.values(stats.partialErrors).some(Boolean);
+  const holdStats = deriveHoldStats(stats?.dailyActivity, todayLocalDate);
   const showProPaywall = useCallback((
     feature: typeof FeatureKey[keyof typeof FeatureKey],
     placement: typeof PaywallPlacement[keyof typeof PaywallPlacement],
@@ -344,7 +383,9 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
               todayDone={todayBreathHold?.holdSeconds != null}
             />
             <DailyPlanCard
-              duration={formatDuration(todayBreathHold?.holdSeconds)}
+              todayHoldSeconds={todayBreathHold?.holdSeconds ?? null}
+              lastHoldSeconds={holdStats.lastHoldSeconds}
+              bestHoldSeconds={holdStats.bestHoldSeconds}
               streakDays={currentStreak}
               onPress={() => {
                 if (!dailyExerciseAccess.allowed && !dailyExerciseAccess.isLoading) {
@@ -363,18 +404,26 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
 
         <BreathingLibrary />
 
+        <View style={styles.moodChipSection}>
+          <View style={styles.moodHeader}>
+            <SectionHeader title="Mood" />
+          </View>
+          <MoodChipRow />
+        </View>
+
         <View style={styles.section}>
           {hasPartialStatsError || homeStatsQuery.isError ? (
             <Text style={styles.partialErrorText}>
               Some stats may be out of date.
             </Text>
           ) : null}
-          <SessionStatsPager
+          <TodayInsights
             title={formatInsightTitle(selectedLocalDate, todayLocalDate)}
             avgBpm={avgBpm}
             holdSeconds={todayBreathHold?.holdSeconds ?? null}
             healthScore={healthScore}
-            ibiMs={ibiMs}
+            lungAge={lungEstimate?.age ?? null}
+            lungAgeTier={lungEstimate?.key ?? null}
           />
         </View>
 
@@ -385,6 +434,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           avgSdnn={stats?.hrv.avgSdnn ?? null}
           maxRmssd={stats?.hrv.maxRmssd ?? null}
           maxSdnn={stats?.hrv.maxSdnn ?? null}
+          ibiMs={ibiMs}
           locked={advancedStatsLocked}
           onPressUpgrade={() => {
             showProPaywall(
@@ -471,6 +521,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: padding.screen.horizontal,
     marginTop: spacing.xl,
     gap: spacing.md,
+  },
+  moodChipSection: {
+    marginTop: spacing.lg,
+    gap: spacing.sm,
+  },
+  moodHeader: {
+    paddingHorizontal: padding.screen.horizontal,
   },
   greeting: {
     ...typography.title.title1,

@@ -83,4 +83,13 @@ export const colors = {
     light: '#FFFFFFCC',
     dark: '#0F172A66',
   },
+
+  mood: {
+    stressed: '#F59E0B',
+    anxious: '#7C3AED',
+    sleepless: '#1E40AF',
+    focus: '#2F7AEF',
+    angry: '#EF4444',
+    lowEnergy: '#F97316',
+  },
 } as const;

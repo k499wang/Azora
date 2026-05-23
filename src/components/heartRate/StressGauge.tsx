@@ -144,10 +144,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   title: {
-    ...typography.body.small,
+    ...typography.body.medium,
+    fontFamily: fonts.semibold,
     color: colors.text.secondary,
-    alignSelf: 'flex-start',
-    marginBottom: spacing.sm,
+    textAlign: 'center',
+    marginBottom: spacing.md,
   },
   ringSurface: {
     width: SIZE,
