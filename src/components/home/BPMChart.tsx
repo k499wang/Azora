@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Alert, LayoutChangeEvent, Pressable, StyleSheet, Text, View } from 'react-native';
+import { BlurView } from 'expo-blur';
 import Svg, { Circle, Line, Path } from 'react-native-svg';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
@@ -12,6 +13,8 @@ interface BPMChartProps {
   ibiMs: number[];
   height?: number;
   color?: string;
+  locked?: boolean;
+  onPressLocked?: () => void;
 }
 
 const PADDING = { top: 14, right: 8, bottom: 8, left: 8 };
@@ -27,6 +30,8 @@ export default function BPMChart({
   ibiMs,
   height = 170,
   color = colors.error[500],
+  locked = false,
+  onPressLocked,
 }: BPMChartProps) {
   const [width, setWidth] = useState(0);
 
@@ -121,18 +126,20 @@ export default function BPMChart({
   }, [yBounds]);
 
   return (
-    <View style={styles.card}>
-      <Pressable
-        hitSlop={10}
-        onPress={() => Alert.alert(BPM_INFO.title, BPM_INFO.message)}
-        style={styles.infoButton}
-      >
-        <MaterialCommunityIcons
-          name="information-outline"
-          size={16}
-          color={colors.text.tertiary}
-        />
-      </Pressable>
+    <View style={[styles.card, locked && styles.lockedCard]}>
+      {!locked ? (
+        <Pressable
+          hitSlop={10}
+          onPress={() => Alert.alert(BPM_INFO.title, BPM_INFO.message)}
+          style={styles.infoButton}
+        >
+          <MaterialCommunityIcons
+            name="information-outline"
+            size={16}
+            color={colors.text.tertiary}
+          />
+        </Pressable>
+      ) : null}
       <Text style={styles.title}>Heart rate</Text>
 
       <View style={styles.plotRow}>
@@ -229,6 +236,24 @@ export default function BPMChart({
           <Text style={styles.xLabel}>Time (s)</Text>
         </View>
       </View>
+      {locked ? (
+        <>
+          <BlurView
+            intensity={24}
+            tint="light"
+            pointerEvents="none"
+            style={StyleSheet.absoluteFill}
+          />
+          <Text style={[styles.title, styles.clearTitle]}>Heart rate</Text>
+          {onPressLocked ? (
+            <Pressable
+              accessibilityRole="button"
+              onPress={onPressLocked}
+              style={StyleSheet.absoluteFill}
+            />
+          ) : null}
+        </>
+      ) : null}
     </View>
   );
 }
@@ -240,11 +265,21 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
   },
+  lockedCard: {
+    overflow: 'hidden',
+  },
   title: {
     ...typography.heading.heading2,
     color: colors.text.primary,
     fontSize: 18,
     marginBottom: spacing.sm,
+  },
+  clearTitle: {
+    position: 'absolute',
+    top: spacing.md,
+    left: spacing.md,
+    right: spacing.md,
+    zIndex: 2,
   },
   plotRow: {
     flexDirection: 'row',

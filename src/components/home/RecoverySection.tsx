@@ -7,8 +7,8 @@ import {
   type StressHistoryEntry,
 } from '../../lib/heartRate/stress';
 import SectionHeader from '../common/SectionHeader';
+import ProUpgradeButton from '../common/ProUpgradeButton';
 import StressGauge from '../heartRate/StressGauge';
-import ProLockedOverlay from './ProLockedOverlay';
 
 const STRESS_INFO = {
   title: 'Stress Score',
@@ -34,15 +34,17 @@ export default function RecoverySection({
   return (
     <View style={styles.section}>
       <View style={styles.headerWrap}>
-        <SectionHeader title="Recovery" />
+        <SectionHeader
+          title="Recovery"
+          right={locked ? <ProUpgradeButton onPress={onPressUpgrade} /> : null}
+        />
       </View>
 
-      <ProLockedOverlay locked={locked} onPressUpgrade={onPressUpgrade}>
-        <View style={styles.gaugeWrap}>
-          <View style={styles.stressGaugeWrap}>
+      <View style={styles.gaugeWrap}>
+        <View style={styles.stressGaugeWrap}>
+          {!locked ? (
             <Pressable
               hitSlop={12}
-              disabled={locked}
               onPress={() => Alert.alert(STRESS_INFO.title, STRESS_INFO.message)}
               style={styles.stressInfoButton}
             >
@@ -52,14 +54,16 @@ export default function RecoverySection({
                 color={colors.text.tertiary}
               />
             </Pressable>
-            <StressGauge
-              value={stressValue}
-              zone={stressValue == null ? null : getStressZone(stressValue)}
-              history={locked ? undefined : stressHistory}
-            />
-          </View>
+          ) : null}
+          <StressGauge
+            value={stressValue}
+            zone={stressValue == null ? null : getStressZone(stressValue)}
+            history={locked ? undefined : stressHistory}
+            locked={locked}
+            onPressLocked={onPressUpgrade}
+          />
         </View>
-      </ProLockedOverlay>
+      </View>
     </View>
   );
 }

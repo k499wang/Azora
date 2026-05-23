@@ -72,13 +72,6 @@ function LungAgeRing({
   const arc = Skia.Path.Make();
   arc.addArc(rect, LUNG_ARC_START, LUNG_ARC_SWEEP * progress);
 
-  const arcColor =
-    progress >= 0.66
-      ? colors.success[500]
-      : progress >= 0.33
-        ? colors.orange[500]
-        : colors.error[500];
-
   const tierLabel =
     lungAgeTier == null
       ? ''
@@ -113,7 +106,7 @@ function LungAgeRing({
               style="stroke"
               strokeWidth={LUNG_RING_STROKE}
               strokeCap="round"
-              color={arcColor}
+              color={colors.primary.blue600}
             />
           )}
         </Canvas>

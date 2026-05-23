@@ -7,14 +7,16 @@ import {
   StyleSheet,
   Text,
   View,
+  Pressable,
 } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { colors } from '../../theme/colors';
 import { spacing, padding } from '../../theme/spacing';
 import { typography, fonts } from '../../theme/typography';
 import { card } from '../../theme/card';
 import SectionHeader from '../common/SectionHeader';
+import ProUpgradeButton from '../common/ProUpgradeButton';
 import HRVTrackStatCard from './HRVTrackStatCard';
-import ProLockedOverlay from './ProLockedOverlay';
 import HRVChart from './HRVChart';
 import BPMChart from './BPMChart';
 
@@ -25,6 +27,8 @@ function ThermometerStatCard({
   min,
   max,
   accent,
+  locked = false,
+  onPressLocked,
 }: {
   label: string;
   value: number | null | undefined;
@@ -32,6 +36,8 @@ function ThermometerStatCard({
   min: number;
   max: number;
   accent: string;
+  locked?: boolean;
+  onPressLocked?: () => void;
 }) {
   const hasValue = value != null && Number.isFinite(value);
   const magnitude = hasValue ? Math.abs(value!) : null;
@@ -39,24 +45,46 @@ function ThermometerStatCard({
   const fillPct = clamped != null ? ((clamped - min) / (max - min)) * 100 : 0;
 
   return (
-    <View style={styles.tile}>
-      <View style={styles.tileBody}>
-        <Text style={styles.tileLabel}>{label}</Text>
-        <View style={styles.tileValueRow}>
-          <Text style={styles.tileValue}>
-            {magnitude != null ? Math.round(magnitude) : '--'}
-          </Text>
-          <Text style={styles.tileUnit}>{unit}</Text>
+    <View style={[styles.tile, locked && styles.lockedTile]}>
+      <Text style={styles.tileLabel}>{label}</Text>
+      <View style={styles.tileContent}>
+        <View style={styles.tileBody}>
+          <View style={styles.tileValueRow}>
+            <Text style={styles.tileValue}>
+              {magnitude != null ? Math.round(magnitude) : '--'}
+            </Text>
+            <Text style={styles.tileUnit}>{unit}</Text>
+          </View>
+        </View>
+        <View style={styles.thermoTrack}>
+          <View
+            style={[
+              styles.thermoFill,
+              { height: `${fillPct}%`, backgroundColor: accent },
+            ]}
+          />
         </View>
       </View>
-      <View style={styles.thermoTrack}>
-        <View
-          style={[
-            styles.thermoFill,
-            { height: `${fillPct}%`, backgroundColor: accent },
-          ]}
-        />
-      </View>
+      {locked ? (
+        <>
+          <BlurView
+            intensity={24}
+            tint="light"
+            pointerEvents="none"
+            style={StyleSheet.absoluteFill}
+          />
+          <Text style={[styles.tileLabel, styles.clearTileLabel]}>
+            {label}
+          </Text>
+          {onPressLocked ? (
+            <Pressable
+              accessibilityRole="button"
+              onPress={onPressLocked}
+              style={StyleSheet.absoluteFill}
+            />
+          ) : null}
+        </>
+      ) : null}
     </View>
   );
 }
@@ -122,15 +150,13 @@ export default function HeartHealthSection({
   return (
     <View style={styles.section}>
       <View style={styles.headerWrap}>
-        <SectionHeader title="Heart health" />
+        <SectionHeader
+          title="Heart health"
+          right={locked ? <ProUpgradeButton onPress={onPressUpgrade} /> : null}
+        />
       </View>
 
-      <ProLockedOverlay
-        locked={locked}
-        onPressUpgrade={onPressUpgrade}
-        subtext="Advanced HRV metrics are part of Azora Pro."
-      >
-        <View style={styles.metricColumn}>
+      <View style={styles.metricColumn}>
           <HRVTrackStatCard
             label="RMSSD"
             value={rmssdValue}
@@ -141,6 +167,8 @@ export default function HeartHealthSection({
             lowBound={20}
             highBound={50}
             info={RMSSD_INFO}
+            locked={locked}
+            onPressLocked={onPressUpgrade}
           />
           <HRVTrackStatCard
             label="Avg HRV"
@@ -152,6 +180,8 @@ export default function HeartHealthSection({
             lowBound={20}
             highBound={45}
             info={SDNN_INFO}
+            locked={locked}
+            onPressLocked={onPressUpgrade}
           />
 
           <View onLayout={onPagerLayout}>
@@ -166,10 +196,20 @@ export default function HeartHealthSection({
               {pagerWidth > 0 ? (
                 <>
                   <View style={{ width: pagerWidth }}>
-                    <HRVChart ibiMs={ibiMs} color={colors.error[500]} />
+                    <HRVChart
+                      ibiMs={ibiMs}
+                      color={colors.error[500]}
+                      locked={locked}
+                      onPressLocked={onPressUpgrade}
+                    />
                   </View>
                   <View style={{ width: pagerWidth }}>
-                    <BPMChart ibiMs={ibiMs} color={colors.primary.blue500} />
+                    <BPMChart
+                      ibiMs={ibiMs}
+                      color={colors.primary.blue500}
+                      locked={locked}
+                      onPressLocked={onPressUpgrade}
+                    />
                   </View>
                 </>
               ) : null}
@@ -200,6 +240,8 @@ export default function HeartHealthSection({
               min={0}
               max={40}
               accent={colors.primary.blue500}
+              locked={locked}
+              onPressLocked={onPressUpgrade}
             />
             <ThermometerStatCard
               label="Lowest HR"
@@ -208,10 +250,11 @@ export default function HeartHealthSection({
               min={40}
               max={90}
               accent={colors.error[500]}
+              locked={locked}
+              onPressLocked={onPressUpgrade}
             />
           </View>
         </View>
-      </ProLockedOverlay>
     </View>
   );
 }
@@ -237,16 +280,29 @@ const styles = StyleSheet.create({
     ...card.base,
     ...card.shadow,
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
     gap: spacing.md,
   },
+  lockedTile: {
+    overflow: 'hidden',
+  },
+  clearTileLabel: {
+    position: 'absolute',
+    top: spacing.md,
+    left: spacing.md,
+    right: spacing.md,
+    zIndex: 2,
+  },
+  tileContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    borderRadius: 16,
+  },
   tileBody: {
     flex: 1,
-    alignSelf: 'stretch',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
   },
   tileLabel: {
     ...typography.body.medium,
