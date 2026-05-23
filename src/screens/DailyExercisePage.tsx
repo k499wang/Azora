@@ -844,7 +844,7 @@ export default function DailyExercisePage({
       <ExerciseScaffold
         darkTheme={activeTheme}
         centerSlot={
-          <View style={styles.centerStack}>
+          <View style={styles.centerSlotWrap}>
             {hrEnabled && pulse.active && (
               <View style={styles.liveSignalGraphSlot} pointerEvents="none">
                 <LiveSignalGraph
@@ -858,101 +858,99 @@ export default function DailyExercisePage({
               </View>
             )}
             <View style={styles.contentArea}>
-            <Animated.View
-              style={[
-                styles.contentLayer,
-                {
-                  opacity: circleOpacity,
-                  transform: [{ scale: circleScale }],
-                },
-              ]}
-              pointerEvents={phase === 'idle' ? 'none' : 'auto'}
-            >
-              <Pressable
-                onPress={handleCirclePress}
-                disabled={phase !== 'hold'}
-                accessibilityRole="button"
-                accessibilityLabel={phase === 'hold' ? 'Tap to release hold' : undefined}
-                style={({ pressed }) => [
-                  styles.centerStack,
-                  phase === 'hold' && pressed && styles.circleTapPressed,
+              {phase === 'hold' ? (
+                <View style={styles.aboveSlot} pointerEvents="none">
+                  <Text style={[styles.phaseTimer, { color: activeTheme.textPrimary }]}>
+                    {formatHoldTime(holdSeconds)}
+                  </Text>
+                </View>
+              ) : null}
+              <Animated.View
+                style={[
+                  styles.contentLayer,
+                  {
+                    opacity: circleOpacity,
+                    transform: [{ scale: circleScale }],
+                  },
                 ]}
+                pointerEvents={phase === 'idle' ? 'none' : 'auto'}
               >
-                <View style={styles.phaseSlot}>
-                  {activeBreathCueParts != null ? (
-                    <Animated.View
-                      style={[
-                        { opacity: cueOpacity, transform: [{ translateY: cueTranslateY }] },
-                      ]}
-                    >
-                      <Text style={[styles.holdMicroCopy, { color: activeTheme.textSecondary }]}>
-                        {activeBreathCueParts.map((part, i) => (
-                          <Text
-                            key={i}
-                            style={
-                              part.emphasis
-                                ? [styles.holdMicroCopyEmphasis, { color: activeTheme.textPrimary }]
-                                : undefined
-                            }
-                          >
-                            {part.text}
-                          </Text>
-                        ))}
-                      </Text>
-                    </Animated.View>
-                  ) : null}
-                </View>
-                <BreathingCircle
-                  ref={circleRef}
-                  cameraSlot={cameraSlot}
-                  beatTick={pulse.beatTick}
-                  themeColors={{
-                    outline: activeTheme.circleOutline,
-                    outlineOpacity: activeTheme.circleOutlineOpacity,
-                    outer: activeTheme.circleOuter,
-                    outerOpacity: activeTheme.circleOuterOpacity,
-                    inner: activeTheme.circleInner,
-                    beatPulse: activeTheme.beatPulse,
-                    beatFlush: activeTheme.beatFlush,
-                  }}
+                <Pressable
+                  onPress={handleCirclePress}
+                  disabled={phase !== 'hold'}
+                  accessibilityRole="button"
+                  accessibilityLabel={phase === 'hold' ? 'Tap to release hold' : undefined}
+                  style={({ pressed }) => [
+                    styles.centerStack,
+                    phase === 'hold' && pressed && styles.circleTapPressed,
+                  ]}
                 >
-                  {PHASE_LABELS[phase] ? (
-                    <Text style={[styles.phaseLabelInside, { color: colors.neutral[50] }]}>
-                      {PHASE_LABELS[phase]}
-                    </Text>
-                  ) : null}
-                </BreathingCircle>
-                <View style={styles.belowSlot}>
-                  {isPlacement ? (
-                    <Text style={[styles.hintText, { color: activeTheme.textSecondary }]}>
-                      {placementHint(pulse.fingerPlacement)}
-                    </Text>
-                  ) : phase === 'hold' || isBreathingPhase(phase) ? (
-                    <View style={styles.metricStack}>
-                      {phase === 'hold' ? (
-                        <Text style={[styles.phaseTimer, { color: activeTheme.textPrimary }]}>
-                          {formatHoldTime(holdSeconds)}
+                  <BreathingCircle
+                    ref={circleRef}
+                    cameraSlot={cameraSlot}
+                    beatTick={pulse.beatTick}
+                    themeColors={{
+                      outline: activeTheme.circleOutline,
+                      outlineOpacity: activeTheme.circleOutlineOpacity,
+                      outer: activeTheme.circleOuter,
+                      outerOpacity: activeTheme.circleOuterOpacity,
+                      inner: activeTheme.circleInner,
+                      beatPulse: activeTheme.beatPulse,
+                      beatFlush: activeTheme.beatFlush,
+                    }}
+                  >
+                    {PHASE_LABELS[phase] ? (
+                      <Text style={[styles.phaseLabelInside, { color: colors.neutral[50] }]}>
+                        {PHASE_LABELS[phase]}
+                      </Text>
+                    ) : null}
+                  </BreathingCircle>
+                </Pressable>
+              </Animated.View>
+              <View style={styles.belowSlot} pointerEvents="none">
+                {isPlacement ? (
+                  <Text style={[styles.hintText, { color: activeTheme.textSecondary }]}>
+                    {placementHint(pulse.fingerPlacement)}
+                  </Text>
+                ) : phase === 'hold' || isBreathingPhase(phase) ? (
+                  <View style={styles.metricStack}>
+                    {activeBreathCueParts != null ? (
+                      <Animated.View
+                        style={{ opacity: cueOpacity, transform: [{ translateY: cueTranslateY }] }}
+                      >
+                        <Text style={[styles.holdMicroCopy, { color: activeTheme.textSecondary }]}>
+                          {activeBreathCueParts.map((part, i) => (
+                            <Text
+                              key={i}
+                              style={
+                                part.emphasis
+                                  ? [styles.holdMicroCopyEmphasis, { color: activeTheme.textPrimary }]
+                                  : undefined
+                              }
+                            >
+                              {part.text}
+                            </Text>
+                          ))}
                         </Text>
-                      ) : null}
-                      {showSignalWarning ? (
-                        <View style={styles.warningRow}>
-                          <MaterialCommunityIcons
-                            name="alert-circle-outline"
-                            size={12}
-                            color={colors.warning[500]}
-                          />
-                          <Text style={styles.warningText}>
-                            {placementHint(pulse.fingerPlacement)}
-                          </Text>
-                        </View>
-                      ) : null}
-                    </View>
-                  ) : null}
-                </View>
-              </Pressable>
-            </Animated.View>
+                      </Animated.View>
+                    ) : null}
+                    {showSignalWarning ? (
+                      <View style={styles.warningRow}>
+                        <MaterialCommunityIcons
+                          name="alert-circle-outline"
+                          size={12}
+                          color={colors.warning[500]}
+                        />
+                        <Text style={styles.warningText}>
+                          {placementHint(pulse.fingerPlacement)}
+                        </Text>
+                      </View>
+                    ) : null}
+                  </View>
+                ) : null}
+              </View>
+            </View>
           </View>
-        </View>
         }
         bottomSlot={
           <View style={styles.bottomContainer}>
@@ -1097,10 +1095,12 @@ const styles = StyleSheet.create({
     opacity: 0.85,
   },
   phaseSlot: {
-    minHeight: 48,
+    position: 'absolute',
+    top: -52,
+    left: 0,
+    right: 0,
     alignItems: 'center',
     justifyContent: 'flex-end',
-    marginBottom: spacing.md,
   },
   phaseRow: {
     flexDirection: 'row',
@@ -1137,11 +1137,23 @@ const styles = StyleSheet.create({
     color: colors.neutral[50],
     textAlign: 'center',
   },
-  belowSlot: {
-    minHeight: 64,
-    marginTop: spacing.xs,
+  aboveSlot: {
+    position: 'absolute',
+    bottom: '100%',
+    left: 0,
+    right: 0,
+    marginBottom: spacing.xs,
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-end',
+  },
+  belowSlot: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    right: 0,
+    marginTop: spacing.lg,
+    alignItems: 'center',
+    justifyContent: 'flex-start',
   },
   hintText: {
     fontFamily: fonts.semibold,
@@ -1259,9 +1271,14 @@ const styles = StyleSheet.create({
     color: colors.primary.blue600,
   },
   contentArea: {
+    width: 340,
+    height: 300,
+    marginBottom: 52,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  centerSlotWrap: {
     width: '100%',
-    maxWidth: 360,
-    height: 430,
     alignItems: 'center',
     justifyContent: 'center',
   },

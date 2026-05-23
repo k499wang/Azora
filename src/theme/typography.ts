@@ -10,31 +10,33 @@ const weight = {
 };
 
 // Single app-wide font family. Switch to try any of:
-// 'Urbanist' | 'Fredoka' | 'Baloo2' | 'Unbounded' | 'Sniglet' | 'Nunito'
-const FONT_FAMILY = 'Urbanist';
+// 'Cormorant' | 'Raleway' | 'Outfit' | 'Manrope' | 'Urbanist' | 'Fredoka' | 'Baloo2' | 'Unbounded' | 'Sniglet' | 'Nunito'
+const FONT_FAMILY = 'Outfit';
 
 const fontBold = `${FONT_FAMILY}-Bold`;
 const fontSemiBold = `${FONT_FAMILY}-SemiBold`;
 const fontRegular = `${FONT_FAMILY}-Regular`;
 const fontMedium = `${FONT_FAMILY}-Medium`;
+const fontLight = `${FONT_FAMILY}-Light`;
+const fontExtraLight = `${FONT_FAMILY}-ExtraLight`;
 
 export const typography = {
   display: {
     display1: {
-      fontFamily: fontBold,
-      fontWeight: weight.bold,
+      fontFamily: fontSemiBold,
+      fontWeight: weight.semibold,
       fontSize: 48,
       lineHeight: 56,
     },
     display2: {
-      fontFamily: fontBold,
-      fontWeight: weight.bold,
+      fontFamily: fontSemiBold,
+      fontWeight: weight.semibold,
       fontSize: 40,
       lineHeight: 48,
     },
     display3: {
-      fontFamily: fontBold,
-      fontWeight: weight.bold,
+      fontFamily: fontSemiBold,
+      fontWeight: weight.semibold,
       fontSize: 32,
       lineHeight: 40,
     },
@@ -42,20 +44,20 @@ export const typography = {
 
   title: {
     title1: {
-      fontFamily: fontBold,
-      fontWeight: weight.bold,
+      fontFamily: fontSemiBold,
+      fontWeight: weight.semibold,
       fontSize: 28,
       lineHeight: 36,
     },
     title2: {
-      fontFamily: fontBold,
-      fontWeight: weight.bold,
+      fontFamily: fontSemiBold,
+      fontWeight: weight.semibold,
       fontSize: 24,
       lineHeight: 32,
     },
     title3: {
-      fontFamily: fontSemiBold,
-      fontWeight: weight.semibold,
+      fontFamily: fontMedium,
+      fontWeight: weight.medium,
       fontSize: 20,
       lineHeight: 28,
     },
@@ -63,14 +65,14 @@ export const typography = {
 
   heading: {
     heading1: {
-      fontFamily: fontSemiBold,
-      fontWeight: weight.semibold,
+      fontFamily: fontMedium,
+      fontWeight: weight.medium,
       fontSize: 18,
       lineHeight: 26,
     },
     heading2: {
-      fontFamily: fontSemiBold,
-      fontWeight: weight.semibold,
+      fontFamily: fontMedium,
+      fontWeight: weight.medium,
       fontSize: 16,
       lineHeight: 24,
     },
@@ -78,25 +80,25 @@ export const typography = {
 
   body: {
     large: {
-      fontFamily: fontRegular,
+      fontFamily: fontLight,
       fontWeight: weight.regular,
       fontSize: 18,
       lineHeight: 28,
     },
     medium: {
-      fontFamily: fontRegular,
+      fontFamily: fontLight,
       fontWeight: weight.regular,
       fontSize: 16,
       lineHeight: 24,
     },
     small: {
-      fontFamily: fontRegular,
+      fontFamily: fontLight,
       fontWeight: weight.regular,
       fontSize: 14,
       lineHeight: 22,
     },
     xsmall: {
-      fontFamily: fontRegular,
+      fontFamily: fontLight,
       fontWeight: weight.regular,
       fontSize: 12,
       lineHeight: 18,
@@ -105,20 +107,20 @@ export const typography = {
 
   label: {
     large: {
-      fontFamily: fontSemiBold,
-      fontWeight: weight.semibold,
+      fontFamily: fontRegular,
+      fontWeight: weight.regular,
       fontSize: 16,
       lineHeight: 20,
     },
     medium: {
-      fontFamily: fontMedium,
-      fontWeight: weight.medium,
+      fontFamily: fontRegular,
+      fontWeight: weight.regular,
       fontSize: 14,
       lineHeight: 18,
     },
     small: {
-      fontFamily: fontMedium,
-      fontWeight: weight.medium,
+      fontFamily: fontRegular,
+      fontWeight: weight.regular,
       fontSize: 12,
       lineHeight: 16,
     },
@@ -126,20 +128,20 @@ export const typography = {
 
   button: {
     large: {
-      fontFamily: fontSemiBold,
-      fontWeight: weight.semibold,
+      fontFamily: fontMedium,
+      fontWeight: weight.medium,
       fontSize: 16,
       lineHeight: 20,
     },
     medium: {
-      fontFamily: fontSemiBold,
-      fontWeight: weight.semibold,
+      fontFamily: fontMedium,
+      fontWeight: weight.medium,
       fontSize: 14,
       lineHeight: 18,
     },
     small: {
-      fontFamily: fontSemiBold,
-      fontWeight: weight.semibold,
+      fontFamily: fontMedium,
+      fontWeight: weight.medium,
       fontSize: 12,
       lineHeight: 16,
     },
@@ -147,19 +149,19 @@ export const typography = {
 
   input: {
     text: {
-      fontFamily: fontRegular,
+      fontFamily: fontLight,
       fontWeight: weight.regular,
       fontSize: 16,
       lineHeight: 24,
     },
     label: {
-      fontFamily: fontMedium,
-      fontWeight: weight.medium,
+      fontFamily: fontRegular,
+      fontWeight: weight.regular,
       fontSize: 14,
       lineHeight: 18,
     },
     helper: {
-      fontFamily: fontRegular,
+      fontFamily: fontLight,
       fontWeight: weight.regular,
       fontSize: 12,
       lineHeight: 16,
@@ -168,25 +170,25 @@ export const typography = {
 
   caption: {
     caption1: {
-      fontFamily: fontRegular,
+      fontFamily: fontLight,
       fontWeight: weight.regular,
       fontSize: 12,
       lineHeight: 16,
     },
     caption2: {
-      fontFamily: fontMedium,
-      fontWeight: weight.medium,
+      fontFamily: fontRegular,
+      fontWeight: weight.regular,
       fontSize: 11,
       lineHeight: 14,
     },
   },
 
   overline: {
-    fontFamily: fontSemiBold,
-    fontWeight: weight.semibold,
+    fontFamily: fontMedium,
+    fontWeight: weight.medium,
     fontSize: 10,
     lineHeight: 14,
   },
 } as const;
 
-export const fonts = { bold: fontBold, semibold: fontSemiBold, regular: fontRegular, medium: fontMedium };
+export const fonts = { bold: fontBold, semibold: fontSemiBold, regular: fontRegular, medium: fontMedium, light: fontLight };

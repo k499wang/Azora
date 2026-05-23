@@ -17,13 +17,24 @@ const canUseLiquidGlass = isLiquidGlassAvailable() && isGlassEffectAPIAvailable(
 const BREATHHOLD_CHALLENGE_BACKGROUND = require('../../../assets/back.avif');
 
 interface DailyPlanCardProps {
-  duration?: string;
+  todayHoldSeconds: number | null;
+  lastHoldSeconds: number | null;
+  bestHoldSeconds: number | null;
   streakDays?: number;
   onPress?: () => void;
 }
 
+function formatMmSs(seconds: number): string {
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return `${m}:${s.toString().padStart(2, '0')}`;
+}
+
 export default function DailyPlanCard({
-  streakDays = 7,
+  todayHoldSeconds,
+  lastHoldSeconds,
+  bestHoldSeconds,
+  streakDays = 0,
   onPress,
 }: DailyPlanCardProps) {
   const navigation = useNavigation<MainTabNavigationProp<'Home'>>();
@@ -34,6 +45,17 @@ export default function DailyPlanCard({
     if (onPress) return onPress();
     navigation.navigate('DailyExercise');
   };
+
+  const hasHistory = lastHoldSeconds != null || todayHoldSeconds != null;
+  const doneToday = todayHoldSeconds != null;
+
+  const displaySeconds = doneToday ? null : lastHoldSeconds;
+
+  const captionLabel = !hasHistory
+    ? 'Find your baseline'
+    : doneToday
+      ? 'Done for today'
+      : 'Last hold';
 
   return (
     <View style={styles.container}>
@@ -46,15 +68,21 @@ export default function DailyPlanCard({
         <View style={styles.imageOverlay} />
         <View style={styles.cardContent}>
           <View style={styles.leftCol}>
-            <View style={styles.titleArea}>
-              <View style={styles.labelChip}>
-                <Text style={styles.labelText}>Daily Exercise</Text>
-              </View>
-              <Text style={styles.title}>Breathhold{'\n'}Exercise</Text>
-            </View>
-            <View style={styles.timeBadge}>
-              <MaterialCommunityIcons name="clock-outline" size={14} color="rgba(255,255,255,0.82)" />
-              <Text style={styles.timeText}>~3 min</Text>
+            <View style={styles.metricBlock}>
+              {displaySeconds != null ? (
+                <Text style={styles.metric}>{formatMmSs(displaySeconds)}</Text>
+              ) : (
+                <Text style={styles.startTitle}>
+                  {doneToday ? 'Breathhold\nExercise' : 'Start your\nfirst hold'}
+                </Text>
+              )}
+
+              <Text style={styles.caption}>
+                {captionLabel}
+                {bestHoldSeconds != null && !doneToday && hasHistory
+                  ? `  ·  Best ${formatMmSs(bestHoldSeconds)}`
+                  : null}
+              </Text>
             </View>
           </View>
 
@@ -63,7 +91,7 @@ export default function DailyPlanCard({
               onPress={handlePress}
               style={({ pressed }) => [styles.playBtnShadow, pressed && styles.pressed]}
               accessibilityRole="button"
-              accessibilityLabel="Start your daily breath hold challenge"
+              accessibilityLabel={doneToday ? 'Try another breath hold' : 'Start your daily breath hold'}
             >
               {canUseLiquidGlass ? (
                 <GlassView
@@ -103,7 +131,7 @@ const styles = StyleSheet.create({
   },
   card: {
     minHeight: 176,
-    paddingTop: spacing.xl,
+    paddingTop: spacing.lg,
     paddingBottom: spacing.lg,
     paddingHorizontal: spacing.lg,
     borderRadius: 24,
@@ -115,9 +143,8 @@ const styles = StyleSheet.create({
   },
   imageOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(20, 26, 46, 0.16)',
+    backgroundColor: 'rgba(20, 26, 46, 0.22)',
   },
-
   cardContent: {
     flex: 1,
     flexDirection: 'row',
@@ -125,44 +152,32 @@ const styles = StyleSheet.create({
   },
   leftCol: {
     flex: 1,
-    justifyContent: 'space-between',
+    justifyContent: 'center',
+    gap: spacing.xs,
   },
   rightCol: {
     alignItems: 'center',
     justifyContent: 'center',
   },
-  titleArea: {
-    gap: spacing.sm,
+  metricBlock: {
+    gap: 2,
   },
-  labelChip: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 3,
-    borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.18)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.28)',
-  },
-  labelText: {
-    ...typography.label.small,
+  metric: {
+    ...typography.display.display2,
     fontFamily: fonts.semibold,
-    color: 'rgba(255,255,255,0.9)',
-    letterSpacing: 0.4,
+    color: colors.text.inverse,
+    lineHeight: 44,
+    includeFontPadding: false,
   },
-  title: {
+  startTitle: {
     ...typography.title.title2,
     fontFamily: fonts.semibold,
     color: colors.text.inverse,
   },
-  timeBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  timeText: {
+  caption: {
     ...typography.label.medium,
     fontFamily: fonts.semibold,
-    color: 'rgba(255,255,255,0.82)',
+    color: 'rgba(255,255,255,0.78)',
   },
   playBtnShadow: {
     borderRadius: 999,

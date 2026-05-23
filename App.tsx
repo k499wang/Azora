@@ -5,33 +5,13 @@ import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import {
   useFonts,
-  Urbanist_400Regular,
-  Urbanist_500Medium,
-  Urbanist_600SemiBold,
-  Urbanist_700Bold,
-} from '@expo-google-fonts/urbanist';
-import {
-  Nunito_400Regular,
-  Nunito_500Medium,
-  Nunito_600SemiBold,
-  Nunito_700Bold,
-} from '@expo-google-fonts/nunito';
-import {
-  Fredoka_600SemiBold,
-  Fredoka_700Bold,
-} from '@expo-google-fonts/fredoka';
-import {
-  Baloo2_600SemiBold,
-  Baloo2_700Bold,
-} from '@expo-google-fonts/baloo-2';
-import {
-  Unbounded_600SemiBold,
-  Unbounded_700Bold,
-} from '@expo-google-fonts/unbounded';
-import {
-  Sniglet_400Regular,
-  Sniglet_800ExtraBold,
-} from '@expo-google-fonts/sniglet';
+  Outfit_200ExtraLight,
+  Outfit_300Light,
+  Outfit_400Regular,
+  Outfit_500Medium,
+  Outfit_600SemiBold,
+  Outfit_700Bold,
+} from '@expo-google-fonts/outfit';
 import { Asset } from 'expo-asset';
 import {
   NavigationContainer,
@@ -73,23 +53,12 @@ const STARTUP_BACKGROUND_COLOR = colors.orange[500];
 
 export default function App() {
   const [fontsLoaded] = useFonts({
-    'Urbanist-Regular': Urbanist_400Regular,
-    'Urbanist-Medium': Urbanist_500Medium,
-    'Urbanist-SemiBold': Urbanist_600SemiBold,
-    'Urbanist-Bold': Urbanist_700Bold,
-    'Nunito-Regular': Nunito_400Regular,
-    'Nunito-Medium': Nunito_500Medium,
-    'Nunito-SemiBold': Nunito_600SemiBold,
-    'Nunito-Bold': Nunito_700Bold,
-    'Fredoka-SemiBold': Fredoka_600SemiBold,
-    'Fredoka-Bold': Fredoka_700Bold,
-    'Baloo2-SemiBold': Baloo2_600SemiBold,
-    'Baloo2-Bold': Baloo2_700Bold,
-    'Unbounded-SemiBold': Unbounded_600SemiBold,
-    'Unbounded-Bold': Unbounded_700Bold,
-    // Sniglet only ships Regular + ExtraBold; map to consistent -SemiBold/-Bold keys
-    'Sniglet-SemiBold': Sniglet_400Regular,
-    'Sniglet-Bold': Sniglet_800ExtraBold,
+    'Outfit-ExtraLight': Outfit_200ExtraLight,
+    'Outfit-Light': Outfit_300Light,
+    'Outfit-Regular': Outfit_400Regular,
+    'Outfit-Medium': Outfit_500Medium,
+    'Outfit-SemiBold': Outfit_600SemiBold,
+    'Outfit-Bold': Outfit_700Bold,
   });
 
   const onLayoutRootView = useCallback(async () => {
