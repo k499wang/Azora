@@ -142,7 +142,7 @@ export default function HRVTrackStatCard({
       ) : null}
 
       <View style={styles.left}>
-        <View style={styles.headerRow}>
+        <View style={[styles.headerRow, locked && styles.lockedHeaderRow]}>
           <Text style={styles.label}>{label}</Text>
           {zone != null ? (
             <View
@@ -292,6 +292,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.xs + 2,
     marginBottom: spacing.sm,
+  },
+  lockedHeaderRow: {
+    opacity: 0,
   },
   clearHeaderOverlay: {
     position: 'absolute',

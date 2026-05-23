@@ -46,7 +46,9 @@ function ThermometerStatCard({
 
   return (
     <View style={[styles.tile, locked && styles.lockedTile]}>
-      <Text style={styles.tileLabel}>{label}</Text>
+      <Text style={[styles.tileLabel, locked && styles.lockedTitleText]}>
+        {label}
+      </Text>
       <View style={styles.tileContent}>
         <View style={styles.tileBody}>
           <View style={styles.tileValueRow}>
@@ -308,6 +310,9 @@ const styles = StyleSheet.create({
     ...typography.body.medium,
     fontFamily: fonts.semibold,
     color: colors.text.secondary,
+  },
+  lockedTitleText: {
+    opacity: 0,
   },
   tileValueRow: {
     flexDirection: 'row',

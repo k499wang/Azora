@@ -298,7 +298,9 @@ export function HeartRateResultContent({
           </View>
             {showBpmGraph ? (
               <View style={[styles.graphCard, advancedStatsLocked && styles.lockedGraphCard]}>
-                <Text style={styles.graphTitle}>Heart rate</Text>
+                <Text style={[styles.graphTitle, advancedStatsLocked && styles.lockedTitleText]}>
+                  Heart rate
+                </Text>
                 <LineGraph
                   data={displayBpmSeries}
                   unit=""
@@ -333,7 +335,9 @@ export function HeartRateResultContent({
 
             {showRrGraph ? (
               <View style={[styles.graphCard, advancedStatsLocked && styles.lockedGraphCard]}>
-                <Text style={styles.graphTitle}>Heart rate variability</Text>
+                <Text style={[styles.graphTitle, advancedStatsLocked && styles.lockedTitleText]}>
+                  Heart rate variability
+                </Text>
                 <LineGraph
                   data={displayRrSeries}
                   unit=""
@@ -567,6 +571,9 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
     fontFamily: fonts.semibold,
     marginBottom: spacing.xs,
+  },
+  lockedTitleText: {
+    opacity: 0,
   },
   clearGraphTitle: {
     position: 'absolute',

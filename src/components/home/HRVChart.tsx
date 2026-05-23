@@ -123,7 +123,9 @@ export default function HRVChart({
           />
         </Pressable>
       ) : null}
-      <Text style={styles.title}>Heart rate variability</Text>
+      <Text style={[styles.title, locked && styles.lockedTitleText]}>
+        Heart rate variability
+      </Text>
 
       <View style={styles.plotRow}>
         <View style={[styles.yAxis, { height }]}>
@@ -258,6 +260,9 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     fontSize: 18,
     marginBottom: spacing.sm,
+  },
+  lockedTitleText: {
+    opacity: 0,
   },
   clearTitle: {
     position: 'absolute',
