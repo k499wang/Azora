@@ -5,6 +5,7 @@ import { colors } from '../../theme/colors';
 import { spacing, padding } from '../../theme/spacing';
 import { typography, fonts } from '../../theme/typography';
 import { card } from '../../theme/card';
+import Icon from '../common/icons/Icon';
 import type { Insight } from '../../lib/insights';
 
 interface Props {
@@ -24,8 +25,18 @@ export default function InsightsFlashCard({
 }: Props) {
   const [index, setIndex] = useState(0);
   const [displayed, setDisplayed] = useState<Insight | null>(insights[0] ?? null);
+  const [measuredHeights, setMeasuredHeights] = useState<Record<string, number>>({});
   const opacity = useRef(new Animated.Value(1)).current;
   const translateY = useRef(new Animated.Value(0)).current;
+
+  const maxHeight = Object.values(measuredHeights).reduce(
+    (max, h) => (h > max ? h : max),
+    0,
+  );
+  const allMeasured =
+    insights.length > 0 &&
+    insights.every((ins) => measuredHeights[ins.id] !== undefined);
+  const lockedHeight = allMeasured && maxHeight > 0 ? maxHeight : undefined;
 
   useEffect(() => {
     if (insights.length === 0) {
@@ -81,19 +92,26 @@ export default function InsightsFlashCard({
       <Text style={styles.tone}>{displayed.tone}</Text>
     </>
   );
+  const hasCta = !!(displayed.techniqueId && displayed.ctaLabel && onStartTechnique);
   const unlockedContent = (
-    <Animated.View style={{ opacity, transform: [{ translateY }] }}>
-      {clearHeader}
-      <Text style={styles.detail}>{displayed.detail}</Text>
-      {displayed.techniqueId && displayed.ctaLabel && onStartTechnique ? (
+    <Animated.View
+      style={[styles.contentRow, { opacity, transform: [{ translateY }] }]}
+    >
+      <View style={styles.textColumn}>
+        {clearHeader}
+        <Text style={styles.detail}>{displayed.detail}</Text>
+      </View>
+      {hasCta ? (
         <Pressable
-          onPress={() => onStartTechnique(displayed.techniqueId!)}
+          onPress={() => onStartTechnique!(displayed.techniqueId!)}
+          accessibilityRole="button"
+          accessibilityLabel={displayed.ctaLabel}
           style={({ pressed }) => [
-            styles.cta,
+            styles.startButton,
             pressed && styles.ctaPressed,
           ]}
         >
-          <Text style={styles.ctaLabel}>{displayed.ctaLabel}</Text>
+          <Icon name="play-triangle" size={18} color={colors.text.inverse} />
         </Pressable>
       ) : null}
     </Animated.View>
@@ -101,19 +119,45 @@ export default function InsightsFlashCard({
 
   return (
     <View style={styles.wrap}>
+      <View style={styles.measureLayer} pointerEvents="none" aria-hidden>
+        {insights.map((ins) => {
+          const insHasCta = !!(ins.techniqueId && ins.ctaLabel && onStartTechnique);
+          return (
+            <View
+              key={ins.id}
+              style={styles.card}
+              onLayout={(e) => {
+                const h = e.nativeEvent.layout.height;
+                setMeasuredHeights((prev) =>
+                  prev[ins.id] === h ? prev : { ...prev, [ins.id]: h },
+                );
+              }}
+            >
+              <View style={styles.contentRow}>
+                <View style={styles.textColumn}>
+                  <View style={styles.cardHeader}>
+                    <Text style={styles.eyebrow}>{ins.eyebrow}</Text>
+                  </View>
+                  <Text style={styles.tone}>{ins.tone}</Text>
+                  <Text style={styles.detail}>{ins.detail}</Text>
+                </View>
+                {insHasCta ? <View style={styles.startButton} /> : null}
+              </View>
+            </View>
+          );
+        })}
+      </View>
       {locked ? (
-        <View style={[styles.card, styles.lockedCard]}>
+        <View style={[styles.card, styles.lockedCard, lockedHeight ? { height: lockedHeight } : null]}>
           <Animated.View
             pointerEvents="none"
-            style={{ opacity, transform: [{ translateY }] }}
+            style={[styles.contentRow, { opacity, transform: [{ translateY }] }]}
           >
-            {clearHeader}
-            <Text style={styles.detail}>{displayed.detail}</Text>
-            {displayed.techniqueId && displayed.ctaLabel && onStartTechnique ? (
-              <View style={styles.cta}>
-                <Text style={styles.ctaLabel}>{displayed.ctaLabel}</Text>
-              </View>
-            ) : null}
+            <View style={styles.textColumn}>
+              <View style={styles.lockedHiddenHeader}>{clearHeader}</View>
+              <Text style={styles.detail}>{displayed.detail}</Text>
+            </View>
+            {hasCta ? <View style={styles.startButton} /> : null}
           </Animated.View>
           <BlurView
             intensity={24}
@@ -136,7 +180,11 @@ export default function InsightsFlashCard({
         <Pressable
           onPress={advance}
           disabled={insights.length <= 1}
-          style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+          style={({ pressed }) => [
+            styles.card,
+            lockedHeight ? { height: lockedHeight } : null,
+            pressed && styles.cardPressed,
+          ]}
         >
           {unlockedContent}
         </Pressable>
@@ -162,6 +210,12 @@ export default function InsightsFlashCard({
 const styles = StyleSheet.create({
   wrap: {
     paddingHorizontal: padding.screen.horizontal,
+  },
+  measureLayer: {
+    position: 'absolute',
+    left: padding.screen.horizontal,
+    right: padding.screen.horizontal,
+    opacity: 0,
   },
   card: {
     ...card.base,
@@ -206,6 +260,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
   },
+  lockedHiddenHeader: {
+    opacity: 0,
+  },
   dots: {
     flexDirection: 'row',
     justifyContent: 'center',
@@ -223,20 +280,23 @@ const styles = StyleSheet.create({
   dotInactive: {
     backgroundColor: colors.neutral[300],
   },
-  cta: {
-    alignSelf: 'flex-start',
-    marginTop: spacing.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: 999,
+  contentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  textColumn: {
+    flex: 1,
+  },
+  startButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: colors.primary.blue500,
   },
   ctaPressed: {
     opacity: 0.85,
-  },
-  ctaLabel: {
-    ...typography.label.small,
-    fontFamily: fonts.semibold,
-    color: colors.text.inverse,
   },
 });

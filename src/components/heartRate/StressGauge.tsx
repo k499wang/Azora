@@ -76,7 +76,9 @@ export default function StressGauge({
 
   return (
     <View style={[styles.card, locked && styles.lockedCard]}>
-      <Text style={styles.title}>Stress Index</Text>
+      <Text style={[styles.title, locked && styles.lockedTitleText]}>
+        Stress Index
+      </Text>
 
       <View style={styles.ringSurface}>
         <Canvas style={styles.canvas}>
@@ -179,6 +181,9 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
     textAlign: 'center',
     marginBottom: spacing.md,
+  },
+  lockedTitleText: {
+    opacity: 0,
   },
   ringSurface: {
     width: SIZE,

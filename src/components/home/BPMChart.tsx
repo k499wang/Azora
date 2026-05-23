@@ -140,7 +140,9 @@ export default function BPMChart({
           />
         </Pressable>
       ) : null}
-      <Text style={styles.title}>Heart rate</Text>
+      <Text style={[styles.title, locked && styles.lockedTitleText]}>
+        Heart rate
+      </Text>
 
       <View style={styles.plotRow}>
         <View style={[styles.yAxis, { height }]}>
@@ -273,6 +275,9 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     fontSize: 18,
     marginBottom: spacing.sm,
+  },
+  lockedTitleText: {
+    opacity: 0,
   },
   clearTitle: {
     position: 'absolute',
