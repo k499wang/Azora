@@ -148,11 +148,7 @@ function InsightCard({
   const content = (
     <View style={styles.contentRow}>
       <View style={styles.textColumn}>
-        {locked ? (
-          <View style={styles.lockedHiddenHeader}>{clearHeader}</View>
-        ) : (
-          clearHeader
-        )}
+        {clearHeader}
         <Text style={styles.detail}>{insight.detail}</Text>
       </View>
       {hasCta ? (
@@ -188,9 +184,6 @@ function InsightCard({
         pointerEvents="none"
         style={StyleSheet.absoluteFill}
       />
-      <View style={styles.clearOverlay} pointerEvents="box-none">
-        {clearHeader}
-      </View>
       {onPressUpgrade ? (
         <Pressable
           accessibilityRole="button"
@@ -262,14 +255,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semibold,
     color: colors.text.secondary,
     lineHeight: 20,
-  },
-  clearOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.lg,
-  },
-  lockedHiddenHeader: {
-    opacity: 0,
   },
   dots: {
     flexDirection: 'row',
