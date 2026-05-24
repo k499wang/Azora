@@ -33,8 +33,8 @@ Ranked by leverage for finger-contact PPG specifically:
 2. **Kubios threshold-based artifact correction** — ✅ implemented on this
    branch (detect-and-exclude only; not the full automatic classify-and-correct
    algorithm — see "Already done" for the exact scope).
-3. **Smoothness-priors detrending (Tarvainen 2002)** — universal in finger-PPG
-   HRV. See item 1.
+3. **Smoothness-priors detrending (Tarvainen 2002)** — ✅ implemented on this
+   branch. See item 1.
 4. **Peak timing refinement (cubic spline)** — directly improves RMSSD. See
    item 4.
 5. **ROI selection** — prefer a central ROI, avoid pressure-gradient edges,
@@ -82,6 +82,13 @@ These have been implemented and are live:
   more stable candidate selection.
 - **Sliding-mean BPM graph builder.** Replaced the 9-IBI median smoother
   that produced 70 → 58 stair-step jumps.
+- **Smoothness-priors detrending (Tarvainen 2002).** `src/lib/heartRate/detrend.ts`
+  replaces the rectangular moving-average detrend in `preprocess()`. The trend
+  is the Whittaker smoother `(I + λ²·D₂ᵀD₂)⁻¹·z`, solved with a banded
+  (pentadiagonal) Cholesky in O(n). λ is **derived from the sample rate** so the
+  half-gain cutoff is fixed at 0.4 Hz regardless of frame rate — the often-quoted
+  λ=500 is the Kubios RR-series value and would put the cutoff in the wrong place
+  on a 15-180 Hz PPG signal. Validated against a dense reference solve.
 - **Frame-rate-aware filter design (live detector).** Reverted on this branch
   — listed here as "tried and rolled back" for context.
 
@@ -89,7 +96,12 @@ These have been implemented and are live:
 
 ## Tier 1 — biggest evidence-based wins for HRV accuracy
 
-### 1. Smoothness-priors detrending (Tarvainen 2002)
+### 1. Smoothness-priors detrending (Tarvainen 2002) — ✅ DONE
+
+**Status:** Implemented in `src/lib/heartRate/detrend.ts`, wired into
+`preprocess()`. Banded (pentadiagonal) Cholesky solve, O(n). λ is derived from
+the sample rate to fix the half-gain cutoff at 0.4 Hz (not the RR-series λ=500).
+The original design notes below are retained for context.
 
 **What:** Replace the moving-average detrending in `signalProcessing.ts ::
 preprocess()` with smoothness-priors detrending. The formula:
