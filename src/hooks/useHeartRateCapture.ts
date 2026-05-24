@@ -12,6 +12,7 @@ import { heartRatePlugin } from '../lib/heartRate/heartRatePlugin';
 import { HeartRateManager } from '../lib/heartRate/heartRateManager';
 import { buildCaptureResult } from '../lib/heartRate/captureResult';
 import { createLiveBpmPresentationFilter } from '../lib/heartRate/bpmSmoothing';
+import { isValidFrameSample } from '../lib/heartRate/frameValidation';
 import { runAfterNextPaint } from '../lib/ui/runAfterNextPaint';
 import { useMeasurementTimer } from './useMeasurementTimer';
 import { useHeartRateCamera } from './useHeartRateCamera';
@@ -22,22 +23,6 @@ const MIN_GOOD_DURATION_MS = 2500;
 const PROGRESS_UPDATE_INTERVAL_MS = 200;
 const BPM_UPDATE_INTERVAL_MS = 1000;
 const SIGNAL_GRAPH_UPDATE_INTERVAL_MS = 50;
-
-function isValidFrameSample(value: unknown): value is PpgFrameSample {
-  if (value == null || typeof value !== 'object') return false;
-  const sample = value as Partial<PpgFrameSample>;
-  if (!Number.isFinite(sample.timestamp) || !Array.isArray(sample.rois)) return false;
-  return sample.rois.length > 0 && sample.rois.every((roi) =>
-    roi != null &&
-    typeof roi.id === 'string' &&
-    Number.isFinite(roi.r) &&
-    Number.isFinite(roi.g) &&
-    Number.isFinite(roi.b) &&
-    Number.isFinite(roi.saturatedPct) &&
-    Number.isFinite(roi.darkPct) &&
-    Number.isFinite(roi.variance)
-  );
-}
 
 interface UseHeartRateCaptureOptions {
   onCaptureComplete?: (result: CaptureResult, captureSamples: PpgFrameSample[]) => void;

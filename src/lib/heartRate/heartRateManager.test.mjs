@@ -177,8 +177,32 @@ test('HeartRateManager: waits for enough intervals before publishing live BPM', 
   runBeatTrain(manager, [24, 48, 72]);
   assert.equal(manager.getCurrentBpm(), null);
 
-  runBeatTrain(manager, [24, 48, 72, 96], 20_000);
+  runBeatTrain(manager, [24, 48, 72, 96, 120], 20_000);
   assert.equal(manager.getCurrentBpm(), 76);
+});
+
+test('HeartRateManager: adapts filter sample rate from frame timestamps', () => {
+  const manager = new HeartRateManager();
+  let t = 0;
+
+  for (let i = 0; i < 16; i++) {
+    manager.processFrame(makeFrame(t, BASELINE_WEIGHTED));
+    t += 50;
+  }
+
+  assert.equal(manager.getFilterSampleRateHz(), 20);
+});
+
+test('HeartRateManager: ignores tiny frame-rate drift around 30fps', () => {
+  const manager = new HeartRateManager();
+  let t = 0;
+
+  for (let i = 0; i < 16; i++) {
+    manager.processFrame(makeFrame(t, BASELINE_WEIGHTED));
+    t += 33;
+  }
+
+  assert.equal(manager.getFilterSampleRateHz(), 30);
 });
 
 test('HeartRateManager: beginMeasurementWindow preserves live BPM history but clears persisted IBIs', () => {

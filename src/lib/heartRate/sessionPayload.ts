@@ -1,7 +1,8 @@
 import type { CaptureResult, IbiSample, PpgFrameSample } from './types';
-
-const MAX_SAMPLE_JUMP_BPM = 8;
-const GRAPH_BPM_MEDIAN_WINDOW = 5;
+import {
+  buildPresentationBpmSeriesFromIbis,
+  summarizeBpmFromIbis,
+} from './bpmSmoothing';
 
 export interface HeartRateSessionRpcSession {
   started_at: string;
@@ -51,21 +52,6 @@ function isFiniteNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value);
 }
 
-function clampBpmStep(value: number, previous: number | null): number {
-  if (previous == null) return value;
-  if (Math.abs(value - previous) <= MAX_SAMPLE_JUMP_BPM) return value;
-  return previous + Math.sign(value - previous) * MAX_SAMPLE_JUMP_BPM;
-}
-
-function median(values: number[]): number {
-  if (values.length === 0) return 0;
-  const sorted = [...values].sort((a, b) => a - b);
-  const middle = Math.floor(sorted.length / 2);
-  return sorted.length % 2 === 0
-    ? (sorted[middle - 1] + sorted[middle]) / 2
-    : sorted[middle];
-}
-
 function clampQuality(value: number | null): number | null {
   if (!isFiniteNumber(value)) return null;
   return Math.min(1, Math.max(0, value));
@@ -109,35 +95,18 @@ export function mapIbiSamples(ibiSamples: IbiSample[]): HeartRateSessionRpcIbiSa
 export function buildBpmSamplesFromIbiSamples(
   ibiSamples: HeartRateSessionRpcIbiSample[],
 ): HeartRateSessionRpcSample[] {
-  const graphSamples = ibiSamples
-    .map((sample, index) => {
-      const windowStart = Math.max(0, index - GRAPH_BPM_MEDIAN_WINDOW + 1);
-      const recentIbis = ibiSamples
-        .slice(windowStart, index + 1)
-        .map((item) => item.ibi_ms)
-        .filter((ibiMs) => isFiniteNumber(ibiMs) && ibiMs > 0);
-
-      return {
-        offset_ms: sample.offset_ms,
-        bpm: Math.round(60000 / median(recentIbis)),
-        signal_quality: sample.signal_quality,
-      };
-    })
-    .filter((sample) => (
-      isFiniteNumber(sample.bpm) &&
-      sample.bpm >= 20 &&
-      sample.bpm <= 240
-    ));
-
-  let previousBpm: number | null = null;
-  return graphSamples.map((sample) => {
-    const bpm = Math.round(clampBpmStep(sample.bpm, previousBpm));
-    previousBpm = bpm;
-    return {
-      ...sample,
-      bpm,
-    };
-  });
+  return buildPresentationBpmSeriesFromIbis(
+    ibiSamples.map((sample) => ({
+      offsetMs: sample.offset_ms,
+      ibiMs: sample.ibi_ms,
+      signalQuality: sample.signal_quality,
+    })),
+    'restingResult',
+  ).map((sample) => ({
+    offset_ms: sample.offsetMs,
+    bpm: sample.bpm,
+    signal_quality: sample.signalQuality,
+  }));
 }
 
 export function buildInstantaneousBpmSamplesFromIbiSamples(
@@ -197,9 +166,8 @@ export function buildHeartRateSessionRpcPayload(
   }
 
   const ibiSamples = mapIbiSamples(result.ibiSamples);
-  const instantaneousBpmSamples = buildInstantaneousBpmSamplesFromIbiSamples(ibiSamples);
   const bpmSamples = buildBpmSamplesFromIbiSamples(ibiSamples);
-  const bpmSummary = summarizeBpmSamples(instantaneousBpmSamples);
+  const bpmSummary = summarizeBpmFromIbis(result.ibiSamples);
   const rawDurationMs = lastFrameTs - firstFrameTs;
   const durationMs =
     rawDurationMs > 0

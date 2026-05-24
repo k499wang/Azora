@@ -56,6 +56,7 @@ export type RootStackParamList = {
     stress?: number | null;
     confidence?: number;
     sampleCount?: number;
+    hrvConfidence?: import('../../lib/heartRate/types').HrvConfidence;
     hrvAvailabilityReason?: import('../../lib/heartRate/types').HrvAvailabilityReason;
     ibiSamples?: import('../../lib/heartRate/types').IbiSample[];
   };

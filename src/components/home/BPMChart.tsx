@@ -23,7 +23,7 @@ const Y_TICK_HEIGHT = 14;
 const BPM_INFO = {
   title: 'Heart Rate',
   message:
-    'Your instantaneous beats per minute over the session, derived from each beat-to-beat interval (BPM = 60000 / RR).\n\nResting BPM typically falls between 60–90. Lower trends during a hold often reflect parasympathetic activation and good recovery.',
+    'Your heart-rate trend over the session, derived from clean beat-to-beat intervals and smoothed for display.\n\nResting BPM typically falls between 60-90. Lower trends during a hold often reflect parasympathetic activation and good recovery.',
 };
 
 export default function BPMChart({

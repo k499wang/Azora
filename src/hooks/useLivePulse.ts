@@ -10,31 +10,12 @@ import type {
 import { heartRatePlugin } from '../lib/heartRate/heartRatePlugin';
 import { HeartRateManager } from '../lib/heartRate/heartRateManager';
 import { createLiveBpmPresentationFilter } from '../lib/heartRate/bpmSmoothing';
+import { isValidFrameSample } from '../lib/heartRate/frameValidation';
 import { useHeartRateCamera } from './useHeartRateCamera';
 
 const BPM_UPDATE_INTERVAL_MS = 1000;
 const FINGER_LOST_TIMEOUT_MS = 1500;
 const SIGNAL_GRAPH_UPDATE_INTERVAL_MS = 50;
-
-function isValidFrameSample(value: unknown): value is PpgFrameSample {
-  if (value == null || typeof value !== 'object') return false;
-  const s = value as Partial<PpgFrameSample>;
-  if (!Number.isFinite(s.timestamp) || !Array.isArray(s.rois)) return false;
-  return (
-    s.rois.length > 0 &&
-    s.rois.every(
-      (roi) =>
-        roi != null &&
-        typeof roi.id === 'string' &&
-        Number.isFinite(roi.r) &&
-        Number.isFinite(roi.g) &&
-        Number.isFinite(roi.b) &&
-        Number.isFinite(roi.saturatedPct) &&
-        Number.isFinite(roi.darkPct) &&
-        Number.isFinite(roi.variance),
-    )
-  );
-}
 
 interface UseLivePulseReturn {
   active: boolean;

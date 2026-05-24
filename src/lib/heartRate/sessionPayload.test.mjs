@@ -77,8 +77,8 @@ test('buildHeartRateSessionRpcPayload matches complete_heart_rate_session RPC ar
     timezone: 'America/Toronto',
     duration_seconds: 90,
     avg_bpm: 68,
-    min_bpm: 60,
-    max_bpm: 80,
+    min_bpm: 70,
+    max_bpm: 70,
     rmssd: 41,
     sdnn: 33,
     pnn50: 18,
@@ -95,14 +95,14 @@ test('buildHeartRateSessionRpcPayload matches complete_heart_rate_session RPC ar
   });
 
   assert.deepEqual(payload.p_samples, [
-    { offset_ms: 1_200, bpm: 60, signal_quality: 0.5 },
-    { offset_ms: 1_800, bpm: 63, signal_quality: 0.7 },
-    { offset_ms: 2_250, bpm: 67, signal_quality: 0.4 },
-    { offset_ms: 2_950, bpm: 71, signal_quality: null },
+    { offset_ms: 1_200, bpm: 70, signal_quality: 0.5 },
+    { offset_ms: 1_800, bpm: 70, signal_quality: 0.7 },
+    { offset_ms: 2_250, bpm: 70, signal_quality: 0.4 },
+    { offset_ms: 2_950, bpm: 70, signal_quality: null },
   ]);
 });
 
-test('buildHeartRateSessionRpcPayload uses rolling median BPM for graph samples only', () => {
+test('buildHeartRateSessionRpcPayload uses presentation BPM for graph samples and summary', () => {
   const startedAt = Date.parse('2026-04-25T02:29:00.000Z');
   const endedAt = Date.parse('2026-04-25T02:30:00.000Z');
 
@@ -134,9 +134,9 @@ test('buildHeartRateSessionRpcPayload uses rolling median BPM for graph samples 
   );
 
   assert.ok(payload, 'expected a payload');
-  assert.deepEqual(payload.p_samples.map((sample) => sample.bpm), [67, 67, 67, 67, 67, 67]);
-  assert.equal(payload.p_session.min_bpm, 66);
-  assert.equal(payload.p_session.max_bpm, 100);
+  assert.deepEqual(payload.p_samples.map((sample) => sample.bpm), [73, 71, 70, 70, 71, 72]);
+  assert.equal(payload.p_session.min_bpm, 70);
+  assert.equal(payload.p_session.max_bpm, 73);
 });
 
 test('buildHeartRateSessionRpcPayload falls back to the final reading when no BPM buckets can be derived', () => {

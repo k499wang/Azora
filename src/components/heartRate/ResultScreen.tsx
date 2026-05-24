@@ -254,6 +254,7 @@ export function ResultScreen({
                 sdnn={reading.sdnn ?? null}
                 hrDrop={reading.hrDrop ?? null}
                 stress={reading.stress ?? null}
+                hrvConfidence={reading.hrvConfidence}
                 hrvAvailabilityReason={reading.hrvAvailabilityReason}
                 ibiSamples={result.ibiSamples ?? []}
                 context={context}

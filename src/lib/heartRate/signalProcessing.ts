@@ -13,7 +13,7 @@ const STABILIZATION_MS = 2500;
 const MIN_RESAMPLED_SAMPLES = 96;
 const TARGET_SAMPLE_RATE_MIN = 15;
 const TARGET_SAMPLE_RATE_MAX = 30;
-const UPSAMPLE_TARGET_RATE = 180; // Hz — reduces beat timing quantization error
+const UPSAMPLE_TARGET_RATE = 180; // Hz - heuristic peak refinement, not true recovered camera sampling
 const FREQ_STEP = 0.01;
 const BPM_FREQ_MIN = 0.67; // 40 bpm
 const BPM_FREQ_MAX = 3.0; // 180 bpm
@@ -635,10 +635,9 @@ function analyzeCandidatePhaseB(
     durationMs,
   } = phaseA;
 
-  // Upsample to 180 Hz via cubic spline to reduce beat timing quantization
-  // error from ±16.7 ms (30 Hz) to ±2.8 ms (180 Hz). This directly improves
-  // HRV accuracy (RMSSD, SDNN) without affecting the frequency-domain BPM
-  // estimate, which is computed on the original resampled signal.
+  // Cubic-spline upsampling is a peak-refinement heuristic. It can make local
+  // peak picking smoother, but it cannot recover physiological information
+  // beyond the native camera sampling limit.
   const upsampled = upsampleCubicSpline(
     resampled.values,
     resampledTimestamps,
@@ -770,19 +769,11 @@ function candidatePriority(estimate: HeartRateEstimate): number {
       estimate.channel === 'green' ? 0.035 :
         estimate.channel === 'red' ? 0.025 : 0;
   const roiBonus =
-    estimate.roiId === 'full' ? 0.03 :
-      estimate.roiId === 'center' ? 0.025 : 0;
+    estimate.roiId === 'full' ? 0.06 :
+      estimate.roiId === 'center' ? 0.05 :
+        estimate.roiId === 'inner' ? 0.03 : 0;
 
   return estimate.confidence + estimate.snrDb / 25 + channelBonus + roiBonus;
-}
-
-function beatTimestampsFromPeaks(
-  peakIndexes: number[],
-  sampleRate: number,
-  stableStartTimestamp: number,
-): number[] {
-  const stepMs = 1000 / sampleRate;
-  return peakIndexes.map((peakIndex) => stableStartTimestamp + peakIndex * stepMs);
 }
 
 function interpolatePeakOffset(y1: number, y2: number, y3: number): number {

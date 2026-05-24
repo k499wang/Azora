@@ -25,7 +25,6 @@ import { FeatureKey } from '../services/subscriptions/featureAccess';
 import { useAuthStore } from '../stores/authStore';
 import { useProfileQuery } from '../queries/profile/useProfileQuery';
 import { getHoldBenchmark } from '../lib/breathHoldBenchmark';
-import { computeHRVStats } from '../lib/hrv';
 
 // ───────────��──────────────────────────────────────��─────────────────────────────
 
@@ -80,10 +79,12 @@ export default function ShareableResultScreen({
     avgBpm,
     minBpm,
     rmssd,
+    sdnn,
     hrDrop,
     stress,
     confidence,
     sampleCount,
+    hrvConfidence,
     hrvAvailabilityReason,
     ibiSamples = [],
   } = route.params;
@@ -91,9 +92,7 @@ export default function ShareableResultScreen({
   const health = LUNG_HEALTH_MAP[lungEstimate.key];
   const holdTime = formatTime(holdSeconds);
   const benchmark = getHoldBenchmark(holdSeconds, userAge);
-  const ibiMs = ibiSamples.map((s) => s.ibiMs);
-  const sdnnValue = ibiMs.length >= 2 ? computeHRVStats(ibiMs).sdnn : 0;
-  const sessionSdnn = sdnnValue > 0 && Number.isFinite(sdnnValue) ? sdnnValue : null;
+  const sessionSdnn = sdnn != null && Number.isFinite(sdnn) && sdnn > 0 ? sdnn : null;
 
   const ringCx = AGE_RING_SIZE / 2;
   const ringR = AGE_RING_SIZE / 2 - AGE_RING_STROKE;
@@ -383,6 +382,7 @@ export default function ShareableResultScreen({
             rmssd={rmssd}
             hrDrop={hrDrop}
             stress={stress}
+            hrvConfidence={hrvConfidence}
             hrvAvailabilityReason={hrvAvailabilityReason}
             ibiSamples={ibiSamples}
             showHero={false}

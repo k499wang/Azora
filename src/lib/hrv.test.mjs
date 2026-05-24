@@ -74,3 +74,16 @@ test('computeHRVStatsFromCleanIntervals computes SDNN from clean NN intervals wi
   assert.equal(stats.rmssd, 20);
   assert.equal(stats.sdnn, 32);
 });
+
+test('computeHRVStatsFromCleanIntervals also exposes linearly detrended SDNN', () => {
+  const cleaned = [800, 820, 840, 860, 880, 900];
+  const stats = computeHRVStatsFromCleanIntervals({
+    ibi: cleaned,
+    adjacencyBreaks: cleaned.map(() => false),
+    artifactRatio: 0,
+    usable: true,
+  });
+
+  assert.ok(stats.sdnn > 0);
+  assert.equal(stats.detrendedSdnn, 0);
+});

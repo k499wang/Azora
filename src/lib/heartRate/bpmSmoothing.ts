@@ -1,3 +1,5 @@
+import type { BpmSample, IbiSample } from './types';
+
 export interface BpmPoint {
   offsetMs: number;
   bpm: number;
@@ -39,7 +41,6 @@ export interface BpmPresentationSample {
 
 const MAX_SAMPLE_JUMP_BPM = 8;
 const GRAPH_MAX_SAMPLE_JUMP_BPM = 2;
-const GRAPH_BPM_MEDIAN_WINDOW = 9;
 const GRAPH_STARTUP_TRIM_IBIS = 3;
 const GRAPH_MIN_IBIS_AFTER_STARTUP_TRIM = 3;
 const GRAPH_STARTUP_TRIM_MS = 4_000;
@@ -47,6 +48,12 @@ const GRAPH_MIN_POINTS_AFTER_TRIM = 3;
 const GRAPH_STARTUP_TRIM_BPM_DELTA = 8;
 const MIN_PRESENTATION_BPM = 20;
 const MAX_PRESENTATION_BPM = 240;
+const RESTING_RESULT_RADIUS = 3;
+const BREATH_HOLD_RESULT_RADIUS = 2;
+const RESTING_RESULT_MAX_STEP_BPM = 3;
+const BREATH_HOLD_RESULT_MAX_STEP_BPM = 5;
+
+export type PresentationBpmPolicy = 'restingResult' | 'breathHoldResult';
 
 const DEFAULT_PRESENTATION_FILTER_OPTIONS: BpmPresentationFilterOptions = {
   warmupMs: 5_000,
@@ -64,15 +71,6 @@ const LIVE_BPM_PRESENTATION_OPTIONS: BpmPresentationFilterOptions = {
   maxStepBpm: 4,
   spikeThresholdBpm: 12,
   spikeConfirmationBpm: 5,
-};
-
-const IBI_GRAPH_PRESENTATION_OPTIONS: BpmPresentationFilterOptions = {
-  warmupMs: 2_500,
-  minStableReadings: 2,
-  stableRangeBpm: 10,
-  maxStepBpm: GRAPH_MAX_SAMPLE_JUMP_BPM,
-  spikeThresholdBpm: 8,
-  spikeConfirmationBpm: 3,
 };
 
 function clampStep(value: number, previous: number | null): number {
@@ -103,6 +101,100 @@ function bpmFromMedianIbi(samples: IbiValuePoint[]): number | null {
       .filter((ibiMs) => Number.isFinite(ibiMs) && ibiMs > 0),
   );
   return medianIbi > 0 ? Math.round(60000 / medianIbi) : null;
+}
+
+function mean(values: number[]): number {
+  if (values.length === 0) return 0;
+  return values.reduce((sum, value) => sum + value, 0) / values.length;
+}
+
+function clampPresentationStep(value: number, previous: number | null, maxStepBpm: number): number {
+  if (previous == null) return value;
+  if (Math.abs(value - previous) <= maxStepBpm) return value;
+  return previous + Math.sign(value - previous) * maxStepBpm;
+}
+
+function policySettings(policy: PresentationBpmPolicy): {
+  radius: number;
+  maxStepBpm: number;
+} {
+  return policy === 'breathHoldResult'
+    ? { radius: BREATH_HOLD_RESULT_RADIUS, maxStepBpm: BREATH_HOLD_RESULT_MAX_STEP_BPM }
+    : { radius: RESTING_RESULT_RADIUS, maxStepBpm: RESTING_RESULT_MAX_STEP_BPM };
+}
+
+export function buildPresentationBpmSeriesFromIbis(
+  ibiSamples: IbiSample[],
+  policy: PresentationBpmPolicy = 'restingResult',
+): BpmSample[] {
+  const ordered = [...ibiSamples]
+    .filter((sample) => (
+      Number.isFinite(sample.offsetMs) &&
+      Number.isFinite(sample.ibiMs) &&
+      sample.ibiMs > 0
+    ))
+    .sort((a, b) => a.offsetMs - b.offsetMs);
+
+  const { radius, maxStepBpm } = policySettings(policy);
+  let previousBpm: number | null = null;
+
+  return ordered.flatMap((sample, index) => {
+    const start = Math.max(0, index - radius);
+    const end = Math.min(ordered.length, index + radius + 1);
+    const windowIbis = ordered
+      .slice(start, end)
+      .map((item) => item.ibiMs)
+      .filter((ibiMs) => Number.isFinite(ibiMs) && ibiMs > 0);
+    if (windowIbis.length === 0) return [];
+
+    const meanIbi = mean(windowIbis);
+    const rawBpm = Math.round(60000 / meanIbi);
+    if (!isPresentationBpm(rawBpm)) return [];
+
+    const bpm = Math.round(clampPresentationStep(rawBpm, previousBpm, maxStepBpm));
+    previousBpm = bpm;
+    return [{
+      offsetMs: Math.round(sample.offsetMs),
+      bpm,
+      signalQuality: sample.signalQuality,
+    }];
+  });
+}
+
+export function buildRrSeriesFromIbis(ibiSamples: IbiSample[]): IbiSample[] {
+  return [...ibiSamples]
+    .filter((sample) => (
+      Number.isFinite(sample.offsetMs) &&
+      Number.isFinite(sample.ibiMs) &&
+      sample.ibiMs > 0
+    ))
+    .sort((a, b) => a.offsetMs - b.offsetMs)
+    .map((sample) => ({
+      offsetMs: Math.round(sample.offsetMs),
+      ibiMs: Math.round(sample.ibiMs),
+      signalQuality: sample.signalQuality,
+    }));
+}
+
+export function summarizeBpmFromIbis(ibiSamples: IbiSample[]): {
+  avgBpm: number | null;
+  minBpm: number | null;
+  maxBpm: number | null;
+} {
+  const bpmValues = buildPresentationBpmSeriesFromIbis(ibiSamples).map((sample) => sample.bpm);
+  if (bpmValues.length === 0) {
+    return {
+      avgBpm: null,
+      minBpm: null,
+      maxBpm: null,
+    };
+  }
+
+  return {
+    avgBpm: Math.round(mean(bpmValues)),
+    minBpm: Math.min(...bpmValues),
+    maxBpm: Math.max(...bpmValues),
+  };
 }
 
 export function stabilizeBpmUpdate(
@@ -155,7 +247,6 @@ export function buildGraphBpmValuePointsFromIbis<T extends IbiValuePoint>(
   samples: T[],
   toLabel: (sample: T) => string,
 ): GraphBpmValuePoint[] {
-  const filter = createBpmPresentationFilter(IBI_GRAPH_PRESENTATION_OPTIONS);
   const graphCandidateSamples =
     samples.length >= GRAPH_STARTUP_TRIM_IBIS + GRAPH_MIN_IBIS_AFTER_STARTUP_TRIM
       ? samples.slice(GRAPH_STARTUP_TRIM_IBIS)
@@ -175,35 +266,23 @@ export function buildGraphBpmValuePointsFromIbis<T extends IbiValuePoint>(
       ? trimmedSamples
       : graphCandidateSamples;
 
-  return graphSamples
-    .map((sample, index) => {
-      const windowStart = Math.max(0, index - GRAPH_BPM_MEDIAN_WINDOW + 1);
-      const recentIbis = graphSamples
-        .slice(windowStart, index + 1)
-        .map((item) => item.ibiMs)
-        .filter((ibiMs) => Number.isFinite(ibiMs) && ibiMs > 0);
-      const medianIbi = median(recentIbis);
-
+  const presentationSeries = buildPresentationBpmSeriesFromIbis(
+    graphSamples.map((sample) => {
       return {
-        label: toLabel(sample),
         offsetMs: sample.offsetMs,
-        value: medianIbi > 0 ? Math.round(60000 / medianIbi) : 0,
+        ibiMs: sample.ibiMs,
+        signalQuality: null,
       };
-    })
-    .filter((sample) => (
-      Number.isFinite(sample.value) &&
-      sample.value >= 20 &&
-      sample.value <= 240
-    ))
-    .flatMap((sample) => {
-      const value = filter.update({
-        elapsedMs: sample.offsetMs,
-        bpm: sample.value,
-      });
-      return value == null
-        ? []
-        : [{ label: sample.label, offsetMs: sample.offsetMs, value }];
-    });
+    }),
+    'restingResult',
+  );
+  const labelByOffset = new Map(graphSamples.map((sample) => [sample.offsetMs, toLabel(sample)]));
+
+  return presentationSeries.map((sample) => ({
+    label: labelByOffset.get(sample.offsetMs) ?? `${sample.offsetMs}`,
+    offsetMs: sample.offsetMs,
+    value: sample.bpm,
+  }));
 }
 
 function isPresentationBpm(value: number): boolean {

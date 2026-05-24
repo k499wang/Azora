@@ -14,12 +14,11 @@ import ProUpgradeButton from '../common/ProUpgradeButton';
 import StressGauge from './StressGauge';
 import HRVTrackStatCard from '../home/HRVTrackStatCard';
 import { getStressZone } from '../../lib/heartRate/stress';
-import { computeHRVStats } from '../../lib/hrv';
 import {
   buildGraphBpmValuePointsFromIbis,
   smoothBpmValuePoints,
 } from '../../lib/heartRate/bpmSmoothing';
-import type { HrvAvailabilityReason, IbiSample } from '../../lib/heartRate/types';
+import type { HrvAvailabilityReason, HrvConfidence, IbiSample } from '../../lib/heartRate/types';
 
 interface HeartRateResultContentProps {
   bpm: number | string;
@@ -29,6 +28,7 @@ interface HeartRateResultContentProps {
   sdnn?: number | null;
   hrDrop?: number | null;
   stress?: number | null;
+  hrvConfidence?: HrvConfidence;
   hrvAvailabilityReason?: HrvAvailabilityReason;
   ibiSamples?: IbiSample[];
   holdStartOffsetSeconds?: number;
@@ -107,6 +107,7 @@ export function HeartRateResultContent({
   sdnn,
   hrDrop,
   stress,
+  hrvConfidence,
   hrvAvailabilityReason,
   ibiSamples = [],
   holdStartOffsetSeconds,
@@ -128,6 +129,10 @@ export function HeartRateResultContent({
       : null;
   const stressValue = stress?.toString() ?? null;
   const hrvUnavailableMessage = getHrvUnavailableMessage(hrvAvailabilityReason);
+  const showLowHrvConfidence =
+    hrvConfidence === 'low' &&
+    hrvUnavailableMessage == null &&
+    (rmssdValue != null || sdnn != null);
 
   const rmssdNumeric =
     rmssd != null && Number.isFinite(rmssd)
@@ -137,14 +142,7 @@ export function HeartRateResultContent({
         : null;
   const sdnnFromProp =
     sdnn != null && Number.isFinite(sdnn) && sdnn > 0 ? sdnn : null;
-  const sdnnFromIbis =
-    ibiSamples.length >= 2
-      ? computeHRVStats(ibiSamples.map((s) => s.ibiMs)).sdnn
-      : 0;
-  const sdnnRaw =
-    sdnnFromProp ??
-    (sdnnFromIbis > 0 && Number.isFinite(sdnnFromIbis) ? sdnnFromIbis : null);
-  const sdnnNumeric = sdnnRaw ?? (advancedStatsLocked ? 55 : null);
+  const sdnnNumeric = sdnnFromProp ?? (advancedStatsLocked ? 55 : null);
   const resolvedBpmSeries = bpmSeries != null
     ? smoothBpmValuePoints(bpmSeries)
     : buildGraphBpmValuePointsFromIbis(
@@ -370,6 +368,18 @@ export function HeartRateResultContent({
               </View>
             ) : null}
         </>
+      ) : null}
+
+      {!advancedStatsLocked &&
+      showLowHrvConfidence ? (
+        <View style={styles.hrvUnavailableCard}>
+          <MaterialCommunityIcons
+            name="information-outline"
+            size={16}
+            color={colors.text.secondary}
+          />
+          <Text style={styles.hrvUnavailableText}>Lower confidence HRV reading.</Text>
+        </View>
       ) : null}
 
       {!advancedStatsLocked &&

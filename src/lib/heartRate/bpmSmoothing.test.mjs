@@ -99,6 +99,7 @@ test('buildGraphBpmValuePointsFromIbis trims high startup lock-on noise', () => 
   assert.deepEqual(
     points.map(({ label, value }) => ({ label, value })),
     [
+    { label: '4000', value: 73 },
     { label: '5000', value: 73 },
     { label: '6000', value: 73 },
     { label: '7000', value: 73 },
@@ -116,7 +117,7 @@ test('buildGraphBpmValuePointsFromIbis preserves sustained changes without full 
     (sample) => `${sample.offsetMs}`,
   );
 
-  assert.deepEqual(points.map((point) => point.value), [97, 98, 98, 98, 99, 99]);
+  assert.deepEqual(points.map((point) => point.value), [98, 98, 99, 99, 100, 100, 100]);
 });
 
 test('buildGraphBpmValuePointsFromIbis keeps startup IBIs for short graph series', () => {
@@ -128,5 +129,25 @@ test('buildGraphBpmValuePointsFromIbis keeps startup IBIs for short graph series
     (sample) => `${sample.offsetMs}`,
   );
 
-  assert.equal(points[0]?.label, '3000');
+  assert.equal(points[0]?.label, '1000');
+});
+
+test('buildPresentationBpmSeriesFromIbis uses sliding mean and caps scary drops', async () => {
+  const { buildPresentationBpmSeriesFromIbis } = await import('./bpmSmoothing.ts');
+  const points = buildPresentationBpmSeriesFromIbis(
+    [850, 860, 855, 1035, 850, 845, 840].map((ibiMs, index) => ({
+      offsetMs: (index + 1) * 1000,
+      ibiMs,
+      signalQuality: 0.8,
+    })),
+    'restingResult',
+  );
+
+  const values = points.map((point) => point.bpm);
+  for (let i = 1; i < values.length; i++) {
+    assert.ok(
+      Math.abs(values[i] - values[i - 1]) <= 3,
+      `expected max 3 BPM step, got ${values[i - 1]} -> ${values[i]}`,
+    );
+  }
 });

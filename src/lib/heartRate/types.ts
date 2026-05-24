@@ -24,6 +24,7 @@ export type FingerPlacementState =
 
 export type PpgQuality = 'good' | 'fair' | 'poor';
 export type HrvAvailabilityReason = 'not_enough_clean_beats' | 'low_signal_quality';
+export type HrvConfidence = 'good' | 'fair' | 'low' | 'unavailable';
 
 export type PpgChannel = 'weighted' | 'red' | 'green' | 'blue' | 'redRatio';
 
@@ -85,10 +86,12 @@ export interface HeartRateReading {
   source: 'camera-flash';
   rmssd?: number;
   sdnn?: number;
+  detrendedSdnn?: number;
   stress?: number;
   pnn50?: number;
   hrDrop?: number;
   beatCount?: number;
+  hrvConfidence?: HrvConfidence;
   hrvAvailabilityReason?: HrvAvailabilityReason;
 }
 
@@ -96,6 +99,28 @@ export interface CaptureResult {
   reading: HeartRateReading | null;
   error: 'low_confidence' | 'too_few_samples' | 'signal_lost' | 'camera_error' | null;
   ibiSamples: IbiSample[];
+  presentationBpmSeries?: BpmSample[];
+  rrSeries?: IbiSample[];
+  diagnostics?: HeartRateDiagnostics;
+}
+
+export interface BpmSample {
+  offsetMs: number;
+  bpm: number;
+  signalQuality: number | null;
+}
+
+export interface HeartRateDiagnostics {
+  roiId: string | null;
+  channel: PpgChannel | null;
+  snrDb: number | null;
+  frequencyBpm: number | null;
+  peakBpm: number | null;
+  rawIntervalCount: number;
+  rejectedIntervalCount: number;
+  retentionRatio: number | null;
+  artifactRatio: number | null;
+  rawSdnn: number | null;
 }
 
 export interface HeartRateStreamSummary {

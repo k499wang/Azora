@@ -14,30 +14,15 @@ import type {
 import { heartRatePlugin } from '../lib/heartRate/heartRatePlugin';
 import { HeartRateManager } from '../lib/heartRate/heartRateManager';
 import { createLiveBpmPresentationFilter } from '../lib/heartRate/bpmSmoothing';
+import { isValidFrameSample } from '../lib/heartRate/frameValidation';
 import { useHeartRateCamera } from './useHeartRateCamera';
 
 const ROLLING_WINDOW_MS = 15000;
 const BPM_UPDATE_INTERVAL_MS = 1000;
 const FINGER_LOST_TIMEOUT_MS = 30000;
 const WARMUP_DURATION_MS = 5000;
-const FRAME_PROCESSING_FPS = 20;
+const FRAME_PROCESSING_FPS = 30;
 const SIGNAL_GRAPH_UPDATE_INTERVAL_MS = 50;
-
-function isValidFrameSample(value: unknown): value is PpgFrameSample {
-  if (value == null || typeof value !== 'object') return false;
-  const sample = value as Partial<PpgFrameSample>;
-  if (!Number.isFinite(sample.timestamp) || !Array.isArray(sample.rois)) return false;
-  return sample.rois.length > 0 && sample.rois.every((roi) =>
-    roi != null &&
-    typeof roi.id === 'string' &&
-    Number.isFinite(roi.r) &&
-    Number.isFinite(roi.g) &&
-    Number.isFinite(roi.b) &&
-    Number.isFinite(roi.saturatedPct) &&
-    Number.isFinite(roi.darkPct) &&
-    Number.isFinite(roi.variance)
-  );
-}
 
 interface UseHeartRateStreamReturn {
   streamState: StreamState;

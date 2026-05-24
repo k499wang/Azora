@@ -40,7 +40,18 @@ const MIN_AVG_ROI_RED = 100;
 const MAX_ROI_SATURATION = 0.98;
 const MAX_AVG_SATURATION = 0.98;
 const IBI_HISTORY_SIZE = 8;
-const MIN_LIVE_BPM_IBIS = 4;
+const MIN_LIVE_BPM_IBIS = 5;
+// Cold-start gate: the first MIN_LIVE_BPM_IBIS IBIs must all agree with each
+// other within this fraction of their median before the live BPM EMA is
+// seeded. Prevents motion-induced false beats from producing wrong initial
+// readings. No physiological-range bounds — just internal consistency.
+const COLD_START_MAX_RELATIVE_DEVIATION = 0.25;
+// Drift reset: if the live BPM EMA moves by more than this fraction per beat
+// for IBI_EMA_DRIFT_RESET_STREAK consecutive beats, the original seed was
+// likely wrong (e.g., seeded during motion artifact at session start). Clear
+// the EMA so the cold-start gate re-seeds from the current IBI history.
+const IBI_EMA_DRIFT_RESET_THRESHOLD = 0.10;
+const IBI_EMA_DRIFT_RESET_STREAK = 3;
 const MALIK_THRESHOLD = 0.2;
 const MALIK_SHORT_THRESHOLD = 0.12;
 const MALIK_WINDOW = 5;
@@ -49,7 +60,12 @@ const SIGNAL_QUALITY_REF = 0.02;
 const FILTER_GROUP_DELAY_MS = 65;
 const LIVE_SIGNAL_WINDOW_MS = 8000;
 
-const SAMPLE_RATE_HZ = 30;
+const DEFAULT_SAMPLE_RATE_HZ = 30;
+const MIN_FILTER_SAMPLE_RATE_HZ = 15;
+const MAX_FILTER_SAMPLE_RATE_HZ = 60;
+const FRAME_DELTA_HISTORY_SIZE = 20;
+const MIN_FRAME_DELTAS_FOR_SAMPLE_RATE = 8;
+const SAMPLE_RATE_UPDATE_RELATIVE_THRESHOLD = 0.08;
 const BP_LOW_HZ = 0.7;
 const BP_HIGH_HZ = 3.5;
 
@@ -90,9 +106,6 @@ function designLowpass(fs: number, f0: number): BiquadCoeffs {
     a2: (1 - alpha) / a0,
   };
 }
-
-const HP_COEFFS = designHighpass(SAMPLE_RATE_HZ, BP_LOW_HZ);
-const LP_COEFFS = designLowpass(SAMPLE_RATE_HZ, BP_HIGH_HZ);
 
 class Biquad {
   private readonly coeffs: BiquadCoeffs;
@@ -146,11 +159,20 @@ export function interpolatePeakTimestamp(
 
 export function medianOfRecent(values: number[], window: number): number {
   const slice = values.slice(-window);
+  if (slice.length === 0) return 0;
   const sorted = [...slice].sort((a, b) => a - b);
   const mid = Math.floor(sorted.length / 2);
   return sorted.length % 2 === 0
     ? (sorted[mid - 1] + sorted[mid]) / 2
     : sorted[mid];
+}
+
+function clampSampleRate(sampleRateHz: number): number {
+  if (!Number.isFinite(sampleRateHz)) return DEFAULT_SAMPLE_RATE_HZ;
+  return Math.min(
+    MAX_FILTER_SAMPLE_RATE_HZ,
+    Math.max(MIN_FILTER_SAMPLE_RATE_HZ, sampleRateHz),
+  );
 }
 
 export function adaptivePeakThreshold(
@@ -247,8 +269,11 @@ function classifyFrame(sample: PpgFrameSample): {
 export class HeartRateManager {
   private baseline = 0;
   private amplitude = 0;
-  private readonly bpHp = new Biquad(HP_COEFFS);
-  private readonly bpLp = new Biquad(LP_COEFFS);
+  private sampleRateHz: number;
+  private bpHp: Biquad;
+  private bpLp: Biquad;
+  private readonly frameDeltaHistory: number[] = [];
+  private lastFrameTimestampForRate: number | null = null;
   private needsBandpassPrime = false;
   private prev1 = 0;
   private prev2 = 0;
@@ -274,7 +299,61 @@ export class HeartRateManager {
   private polarityNegativeScore = 0;
   private readonly liveSignalSamples: LivePpgSignalSample[] = [];
   private ibiEma: number | null = null;
+  private ibiEmaDriftStreak = 0;
+  private preservedLiveBpm: number | null = null;
   private readonly IBI_EMA_ALPHA = 0.25;
+
+  constructor(options: { sampleRateHz?: number } = {}) {
+    this.sampleRateHz = clampSampleRate(options.sampleRateHz ?? DEFAULT_SAMPLE_RATE_HZ);
+    this.bpHp = new Biquad(designHighpass(this.sampleRateHz, BP_LOW_HZ));
+    this.bpLp = new Biquad(designLowpass(this.sampleRateHz, BP_HIGH_HZ));
+  }
+
+  private rebuildBandpass(sampleRateHz: number): void {
+    this.sampleRateHz = clampSampleRate(sampleRateHz);
+    this.bpHp = new Biquad(designHighpass(this.sampleRateHz, BP_LOW_HZ));
+    this.bpLp = new Biquad(designLowpass(this.sampleRateHz, BP_HIGH_HZ));
+    this.needsBandpassPrime = true;
+    this.prev1 = 0;
+    this.prev2 = 0;
+    this.prev1Ts = 0;
+    this.prev2Ts = 0;
+    this.armedForPeak = true;
+    this.pendingShortPeakTs = null;
+  }
+
+  setSampleRateHz(sampleRateHz: number): void {
+    const nextSampleRateHz = clampSampleRate(sampleRateHz);
+    if (Math.abs(nextSampleRateHz - this.sampleRateHz) / this.sampleRateHz < SAMPLE_RATE_UPDATE_RELATIVE_THRESHOLD) {
+      return;
+    }
+    this.rebuildBandpass(nextSampleRateHz);
+  }
+
+  getFilterSampleRateHz(): number {
+    return this.sampleRateHz;
+  }
+
+  private observeFrameTimestamp(timestamp: number): void {
+    if (!Number.isFinite(timestamp)) return;
+
+    if (this.lastFrameTimestampForRate != null) {
+      const deltaMs = timestamp - this.lastFrameTimestampForRate;
+      if (deltaMs > 0 && deltaMs < 200) {
+        this.frameDeltaHistory.push(deltaMs);
+        if (this.frameDeltaHistory.length > FRAME_DELTA_HISTORY_SIZE) {
+          this.frameDeltaHistory.shift();
+        }
+      }
+    }
+
+    this.lastFrameTimestampForRate = timestamp;
+    if (this.frameDeltaHistory.length < MIN_FRAME_DELTAS_FOR_SAMPLE_RATE) return;
+
+    const medianDeltaMs = medianOfRecent(this.frameDeltaHistory, this.frameDeltaHistory.length);
+    if (medianDeltaMs <= 0) return;
+    this.setSampleRateHz(1000 / medianDeltaMs);
+  }
 
   reset(): void {
     this.baseline = 0;
@@ -306,6 +385,10 @@ export class HeartRateManager {
     this.polarityNegativeScore = 0;
     this.liveSignalSamples.length = 0;
     this.ibiEma = null;
+    this.ibiEmaDriftStreak = 0;
+    this.preservedLiveBpm = null;
+    this.frameDeltaHistory.length = 0;
+    this.lastFrameTimestampForRate = null;
   }
 
   private pushLiveSignalSample(timestamp: number, value: number): void {
@@ -324,6 +407,7 @@ export class HeartRateManager {
   }
 
   private pushAcceptedIbi(peakTs: number, ibi: number): void {
+    this.preservedLiveBpm = null;
     this.ibiHistory.push(ibi);
     if (this.ibiHistory.length > IBI_HISTORY_SIZE) {
       this.ibiHistory.shift();
@@ -333,10 +417,30 @@ export class HeartRateManager {
     if (this.ibiHistory.length >= MIN_LIVE_BPM_IBIS) {
       const recentMedian = medianOfRecent(this.ibiHistory, IBI_HISTORY_SIZE);
       if (recentMedian > 0) {
-        if (this.ibiEma == null) {
+        if (this.ibiEma != null) {
+          const previousIbiEma = this.ibiEma;
+          const nextIbiEma =
+            previousIbiEma * (1 - this.IBI_EMA_ALPHA) + recentMedian * this.IBI_EMA_ALPHA;
+          const driftRatio = Math.abs(nextIbiEma - previousIbiEma) / previousIbiEma;
+          if (driftRatio > IBI_EMA_DRIFT_RESET_THRESHOLD) {
+            this.ibiEmaDriftStreak += 1;
+            if (this.ibiEmaDriftStreak >= IBI_EMA_DRIFT_RESET_STREAK) {
+              // Sustained large drift => the original seed was wrong (likely
+              // motion artifact at session start). Drop the EMA so the
+              // cold-start gate re-seeds from the current IBI history once
+              // it becomes internally consistent again.
+              this.ibiEma = null;
+              this.ibiEmaDriftStreak = 0;
+            } else {
+              this.ibiEma = nextIbiEma;
+            }
+          } else {
+            this.ibiEma = nextIbiEma;
+            this.ibiEmaDriftStreak = 0;
+          }
+        } else if (this.isColdStartIbiStable(recentMedian)) {
           this.ibiEma = recentMedian;
-        } else {
-          this.ibiEma = this.ibiEma * (1 - this.IBI_EMA_ALPHA) + recentMedian * this.IBI_EMA_ALPHA;
+          this.ibiEmaDriftStreak = 0;
         }
       }
     }
@@ -358,6 +462,7 @@ export class HeartRateManager {
   }
 
   beginMeasurementWindow(startTimestamp: number): void {
+    this.preservedLiveBpm = this.getCurrentBpm();
     this.ibiSamples.length = 0;
     this.liveSignalSamples.length = 0;
     this.sessionStartTs = startTimestamp;
@@ -366,8 +471,21 @@ export class HeartRateManager {
     this.skipNextRecordedIbi = this.lastPeakTs !== 0;
     this.pendingShortPeakTs = null;
     this.lastTickTs = 0;
-    // Reset IBI EMA so measurement window starts with a fresh smoothed value
+    this.ibiHistory.length = 0;
     this.ibiEma = null;
+    this.ibiEmaDriftStreak = 0;
+  }
+
+  private isColdStartIbiStable(medianIbi: number): boolean {
+    if (medianIbi <= 0) return false;
+    const recent = this.ibiHistory.slice(-MIN_LIVE_BPM_IBIS);
+    if (recent.length < MIN_LIVE_BPM_IBIS) return false;
+    for (const ibi of recent) {
+      if (Math.abs(ibi - medianIbi) / medianIbi > COLD_START_MAX_RELATIVE_DEVIATION) {
+        return false;
+      }
+    }
+    return true;
   }
 
   private getExpectedIbiMs(): number {
@@ -381,6 +499,7 @@ export class HeartRateManager {
   }
 
   processFrame(sample: PpgFrameSample): HeartRateFrameState {
+    this.observeFrameTimestamp(sample.timestamp);
     const { placement, weightedAverage } = classifyFrame(sample);
 
     if (placement !== 'good') {
@@ -685,6 +804,7 @@ export class HeartRateManager {
 
   getCurrentBpm(): number | null {
     if (this.lastPlacement !== 'good') return null;
+    if (this.preservedLiveBpm != null) return this.preservedLiveBpm;
     if (this.ibiHistory.length < MIN_LIVE_BPM_IBIS) return null;
     if (this.ibiEma == null || this.ibiEma <= 0) return null;
     const bpm = Math.round(60000 / this.ibiEma);

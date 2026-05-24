@@ -28,15 +28,15 @@ function makeBeatSeries(ibiMs, overrides = {}) {
   };
 }
 
-test('deriveCaptureHrvResult returns unavailable HRV instead of zero stats for unstable intervals', () => {
+test('deriveCaptureHrvResult returns low-confidence HRV stats for marginal cleaned intervals', () => {
   const ibiMs = Array.from({ length: 18 }, (_, index) => 800 + (index % 4));
   ibiMs.splice(8, 2, 392, 805);
 
   const result = deriveCaptureHrvResult(makeBeatSeries(ibiMs));
 
-  assert.equal(result.hrvStats, null);
-  assert.deepEqual(result.correctedIbi, []);
-  assert.equal(result.hrvAvailabilityReason, 'low_signal_quality');
+  assert.ok(result.hrvStats, 'expected marginal HRV stats');
+  assert.equal(result.hrvConfidence, 'low');
+  assert.equal(result.hrvAvailabilityReason, null);
 });
 
 test('deriveCaptureHrvResult returns HRV stats for usable cleaned intervals', () => {

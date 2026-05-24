@@ -7,6 +7,7 @@
 export interface HRVStats {
   rmssd: number;       // ms — short-term variability (parasympathetic)
   sdnn: number;        // ms — overall variability
+  detrendedSdnn: number; // ms — SDNN after removing a linear IBI trend
   stress: number;      // 0..100 stress index
   pnn50: number;       // %  — pairs of beats differing by >50ms
   meanHr: number;      // bpm
@@ -66,6 +67,32 @@ function stddev(values: number[]): number {
   const variance =
     values.reduce((sum, v) => sum + (v - m) * (v - m), 0) / (values.length - 1);
   return Math.sqrt(variance);
+}
+
+export function detrendLinear(values: number[]): number[] {
+  if (values.length < 2) return values.map(() => 0);
+
+  const xMean = (values.length - 1) / 2;
+  const yMean = mean(values);
+  let numerator = 0;
+  let denominator = 0;
+
+  for (let i = 0; i < values.length; i++) {
+    const dx = i - xMean;
+    numerator += dx * (values[i] - yMean);
+    denominator += dx * dx;
+  }
+
+  if (denominator === 0) return values.map((value) => value - yMean);
+
+  const slope = numerator / denominator;
+  const intercept = yMean - slope * xMean;
+  return values.map((value, index) => value - (intercept + slope * index));
+}
+
+export function computeDetrendedSdnn(ibi: number[]): number {
+  if (ibi.length < 2) return 0;
+  return Math.round(stddev(detrendLinear(ibi)));
 }
 
 function medianAbsoluteDeviation(values: number[], center: number): number {
@@ -244,6 +271,7 @@ export function computeHRVStats(ibi: number[], adjacencyBreaks?: boolean[]): HRV
     return {
       rmssd: 0,
       sdnn: 0,
+      detrendedSdnn: 0,
       stress: 0,
       pnn50: 0,
       meanHr: 0,
@@ -287,6 +315,7 @@ export function computeHRVStatsFromCleanIntervals({
     return {
       rmssd: 0,
       sdnn: 0,
+      detrendedSdnn: 0,
       stress: 0,
       pnn50: 0,
       meanHr: meanIbiUnusable > 0 ? ibiToBpm(meanIbiUnusable) : 0,
@@ -322,6 +351,7 @@ export function computeHRVStatsFromCleanIntervals({
   }
   const rmssd = pairs > 0 ? Math.round(Math.sqrt(sumSq / pairs)) : 0;
   const sdnn = Math.round(stddev(correctedIbi));
+  const detrendedSdnn = computeDetrendedSdnn(correctedIbi);
   const pnn50 = nn50Pairs > 0 ? Math.round((nn50 / nn50Pairs) * 100) : 0;
 
   const rmssdScore = Math.max(0, 100 - (rmssd / HRV_TARGET_RMSSD) * 100);
@@ -349,6 +379,7 @@ export function computeHRVStatsFromCleanIntervals({
   return {
     rmssd,
     sdnn,
+    detrendedSdnn,
     stress,
     pnn50,
     meanHr,

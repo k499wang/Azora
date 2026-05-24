@@ -21,6 +21,7 @@ import type {
   CaptureResult,
   FingerPlacementState,
   HrvAvailabilityReason,
+  HrvConfidence,
   IbiSample,
 } from '../lib/heartRate/types';
 import { usePostHog } from 'posthog-react-native';
@@ -47,11 +48,12 @@ import { buildCaptureResult } from '../lib/heartRate/captureResult';
 import { runAfterNextPaint } from '../lib/ui/runAfterNextPaint';
 import {
   buildBpmSamplesFromIbiSamples,
-  buildInstantaneousBpmSamplesFromIbiSamples,
   mapIbiSamples,
-  summarizeBpmSamples as summarizeHeartRateBpmSamples,
 } from '../lib/heartRate/sessionPayload';
-import { createBpmPresentationFilter } from '../lib/heartRate/bpmSmoothing';
+import {
+  createBpmPresentationFilter,
+  summarizeBpmFromIbis,
+} from '../lib/heartRate/bpmSmoothing';
 
 const PLACEMENT_GOOD_DURATION_MS = 1500;
 const PRE_BREATH_CYCLES = 3;
@@ -162,6 +164,7 @@ interface HeartRateReleaseStats {
   stress: number | null;
   confidence?: number;
   sampleCount?: number;
+  hrvConfidence?: HrvConfidence;
   hrvAvailabilityReason?: HrvAvailabilityReason;
   avgBpm?: number;
   minBpm?: number;
@@ -171,10 +174,7 @@ interface HeartRateReleaseStats {
 
 function buildStatsFromCaptureResult(result: CaptureResult): HeartRateReleaseStats {
   const reading = result.reading;
-  const rpcIbiSamples = mapIbiSamples(result.ibiSamples);
-  const bpmSummary = summarizeHeartRateBpmSamples(
-    buildInstantaneousBpmSamplesFromIbiSamples(rpcIbiSamples),
-  );
+  const bpmSummary = summarizeBpmFromIbis(result.ibiSamples);
   const fallbackHrvReason: HrvAvailabilityReason | undefined =
     reading == null
       ? (result.error === 'too_few_samples'
@@ -190,6 +190,7 @@ function buildStatsFromCaptureResult(result: CaptureResult): HeartRateReleaseSta
     stress: reading?.stress ?? null,
     confidence: reading?.confidence,
     sampleCount: reading?.sampleCount,
+    hrvConfidence: reading?.hrvConfidence,
     hrvAvailabilityReason: fallbackHrvReason,
     avgBpm: reading?.bpm ?? undefined,
     minBpm: bpmSummary.minBpm ?? reading?.bpm ?? undefined,
@@ -509,9 +510,7 @@ export default function DailyExercisePage({
     const reading = result.reading;
     const rpcIbiSamples = mapIbiSamples(result.ibiSamples);
     const bpmSamples = buildBpmSamplesFromIbiSamples(rpcIbiSamples);
-    const bpmSummary = summarizeHeartRateBpmSamples(
-      buildInstantaneousBpmSamplesFromIbiSamples(rpcIbiSamples),
-    );
+    const bpmSummary = summarizeBpmFromIbis(result.ibiSamples);
     const avgBpm = reading?.bpm ?? null;
     const minBpm = bpmSummary.minBpm ?? reading?.bpm ?? null;
     const maxBpm = bpmSummary.maxBpm ?? reading?.bpm ?? null;
@@ -712,6 +711,7 @@ export default function DailyExercisePage({
         stress: release.stress,
         confidence: release.confidence,
         sampleCount: release.sampleCount,
+        hrvConfidence: release.hrvConfidence,
         hrvAvailabilityReason: release.hrvAvailabilityReason,
         ibiSamples: release.ibiSamples,
       });
@@ -752,6 +752,7 @@ export default function DailyExercisePage({
       stress: lastRelease?.stress ?? null,
       confidence: lastRelease?.confidence,
       sampleCount: lastRelease?.sampleCount,
+      hrvConfidence: lastRelease?.hrvConfidence,
       hrvAvailabilityReason: lastRelease?.hrvAvailabilityReason,
       ibiSamples: lastRelease?.ibiSamples ?? [],
     });
