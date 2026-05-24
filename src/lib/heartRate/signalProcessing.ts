@@ -213,16 +213,26 @@ function makeOddWindow(samples: number): number {
 function movingAverage(values: number[], windowSize: number): number[] {
   const window = makeOddWindow(windowSize);
   const half = Math.floor(window / 2);
-  const result: number[] = [];
+  const n = values.length;
+  const result: number[] = new Array(n);
+  if (n === 0) return result;
 
-  for (let i = 0; i < values.length; i++) {
-    const start = Math.max(0, i - half);
-    const end = Math.min(values.length, i + half + 1);
-    let sum = 0;
-    for (let j = start; j < end; j++) {
-      sum += values[j];
+  let sum = 0;
+  let currentStart = 0;
+  let currentEnd = 0;
+
+  for (let i = 0; i < n; i++) {
+    const targetStart = i - half < 0 ? 0 : i - half;
+    const targetEnd = i + half + 1 < n ? i + half + 1 : n;
+    while (currentEnd < targetEnd) {
+      sum += values[currentEnd];
+      currentEnd += 1;
     }
-    result.push(sum / (end - start));
+    while (currentStart < targetStart) {
+      sum -= values[currentStart];
+      currentStart += 1;
+    }
+    result[i] = sum / (currentEnd - currentStart);
   }
 
   return result;
@@ -360,12 +370,25 @@ function preprocess(values: number[], sampleRate: number): number[] {
   return movingAverage(detrended, sampleRate * 0.12);
 }
 
+const goertzelCoeffCache = new Map<number, Map<number, number>>();
+
+function goertzelCoeff(targetFreq: number, sampleRate: number): number {
+  let bySampleRate = goertzelCoeffCache.get(sampleRate);
+  if (bySampleRate == null) {
+    bySampleRate = new Map<number, number>();
+    goertzelCoeffCache.set(sampleRate, bySampleRate);
+  }
+  let coeff = bySampleRate.get(targetFreq);
+  if (coeff == null) {
+    coeff = 2 * Math.cos((2 * Math.PI * targetFreq) / sampleRate);
+    bySampleRate.set(targetFreq, coeff);
+  }
+  return coeff;
+}
+
 function goertzel(signal: number[], targetFreq: number, sampleRate: number): number {
   const n = signal.length;
-  const k = (targetFreq / sampleRate) * n;
-  const omega = (2 * Math.PI * k) / n;
-  const cosine = Math.cos(omega);
-  const coeff = 2 * cosine;
+  const coeff = goertzelCoeff(targetFreq, sampleRate);
 
   let prev1 = 0;
   let prev2 = 0;
@@ -527,10 +550,21 @@ function qualityFromEstimate(
   return 'poor';
 }
 
-function analyzeCandidate(
+interface CandidatePhaseA {
+  series: CandidateSeries;
+  stableSeries: CandidateSeries;
+  resampled: { values: number[]; sampleRate: number };
+  resampledTimestamps: number[];
+  freq: FrequencyResult;
+  qualityPenalty: number;
+  phaseAScore: number;
+  durationMs: number;
+}
+
+function analyzeCandidatePhaseA(
   series: CandidateSeries,
   options: ResolvedComputeBpmOptions,
-): CandidateAnalysis | null {
+): CandidatePhaseA | null {
   const stableStart = series.timestamps[0] + options.stabilizationMs;
   const stableSeries: CandidateSeries = {
     ...series,
@@ -549,29 +583,67 @@ function analyzeCandidate(
   if (resampled == null) return null;
   if (!lightingIsStable(resampled.values)) return null;
 
+  const frequencyProcessed = preprocess(resampled.values, resampled.sampleRate);
+  const freq = frequencyEstimate(frequencyProcessed, resampled.sampleRate);
+  if (freq == null || freq.snrDb < options.minSnrDb) return null;
+
+  // Uniform timestamps for the stabilized resampled signal. Must use the same
+  // origin as `stableSeries`, otherwise refined beat timestamps are shifted
+  // by the stabilization trim.
+  const resampledTimestamps: number[] = new Array(resampled.values.length);
+  const stepMs = 1000 / resampled.sampleRate;
+  const origin = stableSeries.timestamps[0];
+  for (let i = 0; i < resampled.values.length; i++) {
+    resampledTimestamps[i] = origin + i * stepMs;
+  }
+
+  const qualityPenalty = clamp(series.meanSaturatedPct + series.meanDarkPct, 0, 1) * 0.25;
+  const durationMs = stableSeries.timestamps[stableSeries.timestamps.length - 1] - origin;
+
+  const channelBonus =
+    series.channel === 'weighted' ? 0.04 :
+      series.channel === 'green' ? 0.035 :
+        series.channel === 'red' ? 0.025 : 0;
+  const roiBonus =
+    series.roiId === 'full' ? 0.03 :
+      series.roiId === 'center' ? 0.025 : 0;
+  const phaseAScore = freq.snrDb + (channelBonus + roiBonus) * 10 - qualityPenalty * 4;
+
+  return {
+    series,
+    stableSeries,
+    resampled,
+    resampledTimestamps,
+    freq,
+    qualityPenalty,
+    phaseAScore,
+    durationMs,
+  };
+}
+
+function analyzeCandidatePhaseB(
+  phaseA: CandidatePhaseA,
+  options: ResolvedComputeBpmOptions,
+): CandidateAnalysis | null {
+  const {
+    series,
+    stableSeries,
+    resampled,
+    resampledTimestamps,
+    freq,
+    qualityPenalty,
+    durationMs,
+  } = phaseA;
+
   // Upsample to 180 Hz via cubic spline to reduce beat timing quantization
   // error from ±16.7 ms (30 Hz) to ±2.8 ms (180 Hz). This directly improves
   // HRV accuracy (RMSSD, SDNN) without affecting the frequency-domain BPM
   // estimate, which is computed on the original resampled signal.
-  //
-  // Build uniform timestamps for the stabilized resampled signal. These must
-  // use the same origin as `stableSeries`, otherwise refined beat timestamps
-  // are shifted by the stabilization trim.
-  const resampledTimestamps: number[] = [];
-  const stepMs = 1000 / resampled.sampleRate;
-  for (let i = 0; i < resampled.values.length; i++) {
-    resampledTimestamps.push(stableSeries.timestamps[0] + i * stepMs);
-  }
-
   const upsampled = upsampleCubicSpline(
     resampled.values,
     resampledTimestamps,
     UPSAMPLE_TARGET_RATE,
   );
-
-  const frequencyProcessed = preprocess(resampled.values, resampled.sampleRate);
-  const freq = frequencyEstimate(frequencyProcessed, resampled.sampleRate);
-  if (freq == null || freq.snrDb < options.minSnrDb) return null;
 
   const processed = preprocess(upsampled.values, upsampled.sampleRate);
   const peaks = peakEstimate(processed, upsampled.sampleRate, freq.bpm);
@@ -584,7 +656,6 @@ function analyzeCandidate(
   const snrFactor = clamp((freq.snrDb - options.minSnrDb) / 10, 0, 1);
   const agreement = peakDiff == null ? 0.35 : clamp(1 - peakDiff / MAX_FREQ_PEAK_DIFF_BPM, 0, 1);
   const peakConsistency = peaks?.consistency ?? 0.35;
-  const qualityPenalty = clamp(series.meanSaturatedPct + series.meanDarkPct, 0, 1) * 0.25;
   const confidence = clamp(
     0.25 + snrFactor * 0.35 + agreement * 0.2 + peakConsistency * 0.25 - qualityPenalty,
     0,
@@ -592,8 +663,6 @@ function analyzeCandidate(
   );
 
   if (confidence < options.minConfidence) return null;
-
-  const durationMs = stableSeries.timestamps[stableSeries.timestamps.length - 1] - stableSeries.timestamps[0];
 
   return {
     estimate: {
@@ -615,54 +684,80 @@ function analyzeCandidate(
   };
 }
 
+function analyzeCandidate(
+  series: CandidateSeries,
+  options: ResolvedComputeBpmOptions,
+): CandidateAnalysis | null {
+  const phaseA = analyzeCandidatePhaseA(series, options);
+  if (phaseA == null) return null;
+  return analyzeCandidatePhaseB(phaseA, options);
+}
+
 function buildCandidates(frames: PpgFrameSample[]): CandidateSeries[] {
   const sortedFrames = [...frames]
     .filter((frame) => Number.isFinite(frame.timestamp) && Array.isArray(frame.rois))
     .sort((a, b) => a.timestamp - b.timestamp);
-  const roiIds = new Set<string>();
+
+  interface Accumulator {
+    timestamps: number[];
+    values: number[];
+    saturated: number[];
+    dark: number[];
+    lastTimestamp: number | null;
+  }
+
+  const accumulators = new Map<string, Map<PpgChannel, Accumulator>>();
+
+  const ensureChannelAccumulators = (roiId: string): Map<PpgChannel, Accumulator> => {
+    let channels = accumulators.get(roiId);
+    if (channels == null) {
+      channels = new Map<PpgChannel, Accumulator>();
+      for (const channel of CHANNELS) {
+        channels.set(channel, {
+          timestamps: [],
+          values: [],
+          saturated: [],
+          dark: [],
+          lastTimestamp: null,
+        });
+      }
+      accumulators.set(roiId, channels);
+    }
+    return channels;
+  };
 
   for (const frame of sortedFrames) {
     for (const roi of frame.rois) {
-      roiIds.add(roi.id);
+      if (roi.saturatedPct > 0.7 || roi.darkPct > 0.7) continue;
+
+      const channels = ensureChannelAccumulators(roi.id);
+      for (const channel of CHANNELS) {
+        const acc = channels.get(channel)!;
+        const value = channelValue(roi, channel);
+        if (!Number.isFinite(value)) continue;
+        if (acc.lastTimestamp != null && frame.timestamp <= acc.lastTimestamp) continue;
+
+        acc.timestamps.push(frame.timestamp);
+        acc.values.push(value);
+        acc.saturated.push(roi.saturatedPct);
+        acc.dark.push(roi.darkPct);
+        acc.lastTimestamp = frame.timestamp;
+      }
     }
   }
 
   const candidates: CandidateSeries[] = [];
-
-  for (const roiId of roiIds) {
-    for (const channel of CHANNELS) {
-      const timestamps: number[] = [];
-      const values: number[] = [];
-      const saturated: number[] = [];
-      const dark: number[] = [];
-
-      for (const frame of sortedFrames) {
-        const roi = frame.rois.find((item) => item.id === roiId);
-        if (roi == null) continue;
-        if (roi.saturatedPct > 0.7 || roi.darkPct > 0.7) continue;
-
-        const value = channelValue(roi, channel);
-        if (!Number.isFinite(value)) continue;
-
-        const previousTimestamp = timestamps[timestamps.length - 1];
-        if (previousTimestamp != null && frame.timestamp <= previousTimestamp) continue;
-
-        timestamps.push(frame.timestamp);
-        values.push(value);
-        saturated.push(roi.saturatedPct);
-        dark.push(roi.darkPct);
-      }
-
-      if (timestamps.length > 0) {
-        candidates.push({
-          roiId,
-          channel,
-          timestamps,
-          values,
-          meanSaturatedPct: mean(saturated),
-          meanDarkPct: mean(dark),
-        });
-      }
+  for (const [roiId, channels] of accumulators) {
+    for (const [channel, acc] of channels) {
+      if (acc.timestamps.length === 0) continue;
+      candidates.push({
+        roiId,
+        channel,
+        timestamps: acc.timestamps,
+        values: acc.values,
+        meanSaturatedPct: mean(acc.saturated),
+        meanDarkPct: mean(acc.dark),
+      });
     }
   }
 
@@ -1042,12 +1137,75 @@ export interface CaptureAnalysis {
   beatSeries: CaptureBeatSeries | null;
 }
 
+// Fast-path cap for the expensive upsample + preprocess + peak-detection pass.
+// If the shortlisted candidates do not produce a strong HRV beat series,
+// analyzeCapture falls back to all Phase A candidates to preserve HRV accuracy.
+const HRV_PHASE_B_TOP_K = 8;
+
+function runPhaseBAnalyses(
+  phaseAResults: CandidatePhaseA[],
+  options: ResolvedComputeBpmOptions,
+): CandidateAnalysis[] {
+  return phaseAResults
+    .map((result) => analyzeCandidatePhaseB(result, options))
+    .filter((analysis): analysis is CandidateAnalysis => analysis != null);
+}
+
+function pickBestBeatSeries(
+  analyses: CandidateAnalysis[],
+  captureEndTimestamp: number,
+): CaptureBeatSeries | null {
+  const peakAnalyses = analyses.filter(
+    (analysis): analysis is PeakCandidateAnalysis => analysis.peaks != null,
+  );
+  if (peakAnalyses.length === 0) return null;
+
+  const scoredCandidates = peakAnalyses
+    .map((analysis) => buildScoredCaptureBeatSeries(analysis, captureEndTimestamp))
+    .filter((candidate): candidate is ScoredCaptureBeatSeries => candidate != null);
+  if (scoredCandidates.length === 0) return null;
+
+  const best = [...scoredCandidates].sort((a, b) => b.hrvScore - a.hrvScore)[0];
+
+  return {
+    beatTimestamps: best.beatTimestamps,
+    ibiMs: best.ibiMs,
+    adjacencyBreaks: best.adjacencyBreaks,
+    roiId: best.roiId,
+    channel: best.channel,
+    confidence: best.confidence,
+    quality: best.quality,
+    snrDb: best.snrDb,
+    frequencyBpm: best.frequencyBpm,
+    peakBpm: best.peakBpm,
+    rawIntervalCount: best.rawIntervalCount,
+    rejectedIntervalCount: best.rejectedIntervalCount,
+  };
+}
+
+function isStrongHrvBeatSeries(beatSeries: CaptureBeatSeries | null): boolean {
+  if (beatSeries == null) return false;
+  if (beatSeries.ibiMs.length < 15) return false;
+  if (beatSeries.confidence < 0.55) return false;
+  if (beatSeries.snrDb < 4) return false;
+  if (beatSeries.quality === 'poor') return false;
+  if (beatSeries.rawIntervalCount <= 0) return false;
+
+  const retentionRatio =
+    (beatSeries.rawIntervalCount - beatSeries.rejectedIntervalCount) /
+    beatSeries.rawIntervalCount;
+
+  return retentionRatio >= 0.7;
+}
+
 /**
  * Single-pass capture analysis: runs the candidate pipeline once and derives
  * both the consensus BPM estimate and the best HRV beat series from the same
- * `analyzeCandidate` results. This avoids upsampling/peak-detecting every
- * candidate twice (which is what calling `computeBPM` and
- * `extractBestCaptureBeatSeries` separately does).
+ * candidate results. This avoids upsampling/peak-detecting every candidate
+ * twice (which is what calling `computeBPM` and `extractBestCaptureBeatSeries`
+ * separately does). Internally, candidates are filtered through a cheap
+ * frequency-domain Phase A first. A top-K shortlist pays for Phase B in the
+ * common case, with an all-candidate fallback when the HRV beat series is weak.
  */
 export function analyzeCapture(
   samples: PpgFrameSample[],
@@ -1056,41 +1214,29 @@ export function analyzeCapture(
   if (samples.length === 0) return { estimate: null, beatSeries: null };
 
   const resolvedOptions = resolveOptions(options);
-  const analyses = buildCandidates(samples)
-    .map((candidate) => analyzeCandidate(candidate, resolvedOptions))
-    .filter((analysis): analysis is CandidateAnalysis => analysis != null);
+  const phaseAResults = buildCandidates(samples)
+    .map((candidate) => analyzeCandidatePhaseA(candidate, resolvedOptions))
+    .filter((result): result is CandidatePhaseA => result != null);
+
+  if (phaseAResults.length === 0) return { estimate: null, beatSeries: null };
+
+  const rankedPhaseA = [...phaseAResults].sort((a, b) => b.phaseAScore - a.phaseAScore);
+  const captureEndTimestamp = samples[samples.length - 1]?.timestamp ?? 0;
+
+  let analyses = runPhaseBAnalyses(
+    rankedPhaseA.slice(0, HRV_PHASE_B_TOP_K),
+    resolvedOptions,
+  );
+  let beatSeries = pickBestBeatSeries(analyses, captureEndTimestamp);
+
+  if (!isStrongHrvBeatSeries(beatSeries) && rankedPhaseA.length > HRV_PHASE_B_TOP_K) {
+    analyses = runPhaseBAnalyses(rankedPhaseA, resolvedOptions);
+    beatSeries = pickBestBeatSeries(analyses, captureEndTimestamp);
+  }
 
   if (analyses.length === 0) return { estimate: null, beatSeries: null };
 
   const estimate = consensusEstimate(analyses.map((a) => a.estimate));
-
-  const peakAnalyses = analyses.filter(
-    (analysis): analysis is PeakCandidateAnalysis => analysis.peaks != null,
-  );
-  let beatSeries: CaptureBeatSeries | null = null;
-  if (peakAnalyses.length > 0) {
-    const captureEndTimestamp = samples[samples.length - 1]?.timestamp ?? 0;
-    const scoredCandidates = peakAnalyses
-      .map((analysis) => buildScoredCaptureBeatSeries(analysis, captureEndTimestamp))
-      .filter((candidate): candidate is ScoredCaptureBeatSeries => candidate != null);
-    if (scoredCandidates.length > 0) {
-      const best = [...scoredCandidates].sort((a, b) => b.hrvScore - a.hrvScore)[0];
-      beatSeries = {
-        beatTimestamps: best.beatTimestamps,
-        ibiMs: best.ibiMs,
-        adjacencyBreaks: best.adjacencyBreaks,
-        roiId: best.roiId,
-        channel: best.channel,
-        confidence: best.confidence,
-        quality: best.quality,
-        snrDb: best.snrDb,
-        frequencyBpm: best.frequencyBpm,
-        peakBpm: best.peakBpm,
-        rawIntervalCount: best.rawIntervalCount,
-        rejectedIntervalCount: best.rejectedIntervalCount,
-      };
-    }
-  }
 
   return { estimate, beatSeries };
 }

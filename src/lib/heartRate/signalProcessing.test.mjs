@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { computeHRVStats } from '../hrv.ts';
 import {
+  analyzeCapture,
   buildIbiSamplesFromCaptureBeatSeries,
   extractBestCaptureBeatSeries,
 } from './signalProcessing.ts';
@@ -100,6 +101,20 @@ test('batch beat series produces enough clean intervals for HRV stats', () => {
   assert.ok(
     stats.beatCount >= 12,
     `expected enough beats for HRV, got ${stats.beatCount}`,
+  );
+});
+
+test('analyzeCapture returns final BPM and HRV beat series from the optimized path', () => {
+  const samples = buildCaptureSamples();
+  const result = analyzeCapture(samples);
+
+  assert.ok(result.estimate, 'expected a final BPM estimate');
+  assert.ok(result.beatSeries, 'expected an HRV beat series');
+  assert.equal(result.beatSeries.roiId, 'center');
+  assert.equal(result.beatSeries.channel, 'weighted');
+  assert.ok(
+    result.beatSeries.ibiMs.length >= 20,
+    `expected many HRV intervals, got ${result.beatSeries.ibiMs.length}`,
   );
 });
 
