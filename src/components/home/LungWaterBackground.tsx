@@ -68,7 +68,7 @@ export default function LungWaterBackground({ fillLevel }: Props) {
     return size.h - clamped * size.h;
   }, [size, fillLevel]);
 
-  const slope = useDerivedValue(() => Math.tan(roll.value * MAX_TILT_RAD));
+  const slope = useDerivedValue(() => -Math.tan(roll.value * MAX_TILT_RAD));
 
   const buildWavePath = (
     width: number,
