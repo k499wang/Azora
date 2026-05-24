@@ -23,10 +23,12 @@ export interface HRVStats {
 
 const HRV_TARGET_RMSSD = 60;
 const HRV_ARTIFACT_WINDOW = 3;
-const HRV_ARTIFACT_RELATIVE_THRESHOLD = 0.28;
-const HRV_ARTIFACT_MAD_THRESHOLD = 3.5;
-const HRV_ARTIFACT_ABSOLUTE_THRESHOLD_MS = 40;
-const HRV_DRR_PAIR_THRESHOLD = 0.2;
+// Kubios "medium" artifact threshold on successive IBI differences (dRR).
+// An IBI is flagged as an artifact if either the incoming or outgoing dRR
+// exceeds max(absolute, relative * localMedian). This is the single
+// artifact-detection pass for the HRV pipeline.
+const HRV_KUBIOS_DRR_ABSOLUTE_MS = 250;
+const HRV_KUBIOS_DRR_RELATIVE = 0.30;
 const HRV_MAX_ARTIFACT_RUN = 2;
 const HRV_MAX_ARTIFACT_RATIO = 0.05;
 const HRV_MIN_CLEAN_ANCHORS = 4;
@@ -95,12 +97,6 @@ export function computeDetrendedSdnn(ibi: number[]): number {
   return Math.round(stddev(detrendLinear(ibi)));
 }
 
-function medianAbsoluteDeviation(values: number[], center: number): number {
-  if (values.length === 0) return 0;
-  const deviations = values.map((value) => Math.abs(value - center));
-  return median(deviations);
-}
-
 function getWindow(values: number[], index: number, radius: number): number[] {
   const start = Math.max(0, index - radius);
   const end = Math.min(values.length, index + radius + 1);
@@ -111,48 +107,24 @@ function detectHrvArtifacts(ibi: number[]): boolean[] {
   const artifactMask = new Array(ibi.length).fill(false);
   if (ibi.length < 3) return artifactMask;
 
+  // Kubios-style single-pass artifact detection on successive IBI differences.
+  // An IBI is flagged if either of its adjacent dRR values exceeds the
+  // local threshold = max(absolute, relative * localMedian). This replaces
+  // the previous MAD + relative + dRR-pair cocktail with a single principled
+  // check, so downstream HRV math can trust the cleaned series.
   for (let i = 0; i < ibi.length; i++) {
-    const windowStart = Math.max(0, i - HRV_ARTIFACT_WINDOW);
     const window = getWindow(ibi, i, HRV_ARTIFACT_WINDOW);
-    const centerIndex = i - windowStart;
-    const windowWithoutCurrent = window.filter((_, windowIndex) => windowIndex !== centerIndex);
-
-    const center = windowWithoutCurrent.length > 0 ? median(windowWithoutCurrent) : median(ibi);
-    const mad = medianAbsoluteDeviation(windowWithoutCurrent.length > 0 ? windowWithoutCurrent : ibi, center);
-    const scale = Math.max(
-      HRV_ARTIFACT_ABSOLUTE_THRESHOLD_MS,
-      center * HRV_ARTIFACT_RELATIVE_THRESHOLD,
-      mad * 1.4826 * HRV_ARTIFACT_MAD_THRESHOLD,
+    const localMedian = window.length > 0 ? median(window) : median(ibi);
+    const threshold = Math.max(
+      HRV_KUBIOS_DRR_ABSOLUTE_MS,
+      localMedian * HRV_KUBIOS_DRR_RELATIVE,
     );
 
-    if (Math.abs(ibi[i] - center) > scale) {
+    const incomingDrr = i > 0 ? Math.abs(ibi[i] - ibi[i - 1]) : 0;
+    const outgoingDrr = i < ibi.length - 1 ? Math.abs(ibi[i + 1] - ibi[i]) : 0;
+
+    if (incomingDrr > threshold || outgoingDrr > threshold) {
       artifactMask[i] = true;
-    }
-  }
-
-  for (let i = 1; i < ibi.length - 1; i++) {
-    const localCenter = median(getWindow(ibi, i, HRV_ARTIFACT_WINDOW));
-    const leftDelta = ibi[i] - ibi[i - 1];
-    const rightDelta = ibi[i + 1] - ibi[i];
-    const leftMagnitude = Math.abs(leftDelta);
-    const rightMagnitude = Math.abs(rightDelta);
-    const pairThreshold = Math.max(
-      HRV_ARTIFACT_ABSOLUTE_THRESHOLD_MS,
-      localCenter * HRV_DRR_PAIR_THRESHOLD,
-    );
-
-    const signReversal = Math.sign(leftDelta) !== Math.sign(rightDelta);
-    const hasStrongPair = leftMagnitude > pairThreshold && rightMagnitude > pairThreshold;
-    const shortLongPattern =
-      ibi[i] < localCenter * (1 - HRV_ARTIFACT_RELATIVE_THRESHOLD) &&
-      ibi[i + 1] > localCenter * (1 + HRV_ARTIFACT_RELATIVE_THRESHOLD);
-    const longShortPattern =
-      ibi[i] > localCenter * (1 + HRV_ARTIFACT_RELATIVE_THRESHOLD) &&
-      ibi[i + 1] < localCenter * (1 - HRV_ARTIFACT_RELATIVE_THRESHOLD);
-
-    if ((signReversal && hasStrongPair) || shortLongPattern || longShortPattern) {
-      artifactMask[i] = true;
-      artifactMask[i + 1] = true;
     }
   }
 
@@ -330,19 +302,14 @@ export function computeHRVStatsFromCleanIntervals({
     };
   }
 
+  // Trust the Kubios-style artifact correction done in preprocessHRVIntervals.
+  // No further per-pair gating here — the input is already the clean series.
   let sumSq = 0;
   let nn50 = 0;
   let pairs = 0;
   let nn50Pairs = 0;
   for (let i = 1; i < correctedIbi.length; i++) {
     if (cleanedAdjacencyBreaks[i]) continue;
-    const localStart = Math.max(0, i - 5);
-    const local = median(correctedIbi.slice(localStart, i + 1));
-    if (local <= 0) continue;
-    const dev = Math.abs(correctedIbi[i] - local) / local;
-    const devPrev = Math.abs(correctedIbi[i - 1] - local) / local;
-    if (dev > 0.35 || devPrev > 0.35) continue;
-
     const diff = correctedIbi[i] - correctedIbi[i - 1];
     sumSq += diff * diff;
     pairs += 1;
