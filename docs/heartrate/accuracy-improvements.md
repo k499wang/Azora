@@ -16,14 +16,63 @@ The catalog is organized by impact-per-effort, not by execution order.
 
 ---
 
+## Where finger-PPG accuracy actually comes from
+
+This app uses **finger-contact PPG** (finger on the lens, illuminated by the
+flash) — NOT remote/facial PPG (rPPG). The two are different problems with
+different solutions. Finger PPG has a strong signal (pulsatile AC is 1-10% of
+DC), so accuracy is gained from timing precision, artifact handling, and
+measurement protocol — NOT from signal-recovery techniques like ICA/CHROM/POS
+(those are rPPG methods; see item 16 for why they do not apply here).
+
+Ranked by leverage for finger-contact PPG specifically:
+
+1. **Measurement protocol** — stillness, consistent finger pressure, stable
+   lighting, consistent timing. HRV4Training's #1 lever; mostly product/UX, not
+   algorithm. The largest real-world source of day-to-day variance.
+2. **Kubios threshold-based artifact correction** — ✅ implemented on this
+   branch (detect-and-exclude only; not the full automatic classify-and-correct
+   algorithm — see "Already done" for the exact scope).
+3. **Smoothness-priors detrending (Tarvainen 2002)** — universal in finger-PPG
+   HRV. See item 1.
+4. **Peak timing refinement (cubic spline)** — directly improves RMSSD. See
+   item 4.
+5. **ROI selection** — prefer a central ROI, avoid pressure-gradient edges,
+   lock the ROI/channel after warmup. See items 2 and 5.
+6. **Exposure / white-balance lock** — prevents auto-exposure DC drift from
+   contaminating the AC signal. See item 15.
+7. **Capture duration + frame rate** — 60 s capture, 30+ FPS. See items 13-14.
+8. **Template-correlation beat validation (SQI)** — removes beats whose pulse
+   shape is distorted by slight movement (e.g., breathing motion) while
+   preserving genuine RSA. The right tool when the person moves slightly during
+   measurement. See item 20.
+
+Channel fusion (ICA/CHROM/POS) is deliberately absent from this list — it does
+not help finger PPG. The app's existing red-dominant multi-channel scoring is
+already the correct approach for this modality.
+
+---
+
 ## Already done on this branch
 
 These have been implemented and are live:
 
-- **Kubios-style single-pass artifact detection.** `detectHrvArtifacts` in
-  `src/lib/hrv.ts` uses the Kubios "medium" threshold:
-  `dRR > max(250 ms, 0.30 × localMedian)`. Replaced the prior MAD + relative
-  + dRR-pair cocktail.
+- **Kubios threshold-based artifact detection.** `detectHrvArtifacts` in
+  `src/lib/hrv.ts` flags a beat when it deviates from the local median (radius
+  3, excluding itself) by more than the Kubios "medium" threshold:
+  `|ibi − localMedian| > max(250 ms, 0.30 × localMedian)`. Replaced the prior
+  MAD + relative + dRR-pair cocktail.
+  - **Scope:** this is Kubios' *threshold-based* method (detect, then exclude
+    the beat and mark an adjacency break so RMSSD never spans the gap). It is
+    **not** the Kubios *automatic* correction (Lipponen & Tarvainen 2019),
+    which classifies beats as missed/extra/ectopic/long-short and corrects them
+    by interpolating or merging. Detect-and-exclude is the deliberate lean
+    choice — it never fabricates IBIs, which is the safer default for HRV.
+  - Using the median *excluding the beat under test* is slightly more robust
+    than Kubios' local average, which the outlier itself would contaminate.
+  - A causal interval sanity filter already runs upstream in `cleanBeatSeries`
+    (`signalProcessing.ts`); this is the offline HRV-grade pass on the assembled
+    series, not the only artifact handling in the pipeline.
 - **Single artifact-correction pass.** The redundant `dev > 0.35` gate inside
   `computeHRVStatsFromCleanIntervals` has been removed. RMSSD math now trusts
   the cleaned series from `preprocessHRVIntervals`.
@@ -395,25 +444,138 @@ detector stability. Most useful in variable-lighting environments.
 
 ---
 
+## Motion robustness — handling breathing-induced movement
+
+During a seated/standing HRV capture the person moves slightly as they breathe.
+This creates a subtle but important problem: breathing produces **both**
+- *real* respiratory sinus arrhythmia (RSA) — genuine beat-to-beat timing
+  variation we WANT to measure, and
+- *motion artifact* — small movement that distorts the optical signal and
+  corrupts beat timing, which we do NOT want.
+
+The key discriminator, well established in the PPG literature: **real RSA
+changes beat timing but preserves pulse morphology; motion distorts pulse
+morphology.** This is what makes the technique below the right tool — it
+removes motion-corrupted beats while keeping genuine RSA intact.
+
+### 20. Template-correlation beat validation (Signal Quality Index)
+
+**What:** During offline analysis, after peaks are detected:
+1. Extract a fixed-width window around each detected peak (e.g., ±0.3 s) from
+   the processed signal.
+2. Build an average/median beat template from all windows.
+3. Correlate each beat's window against the template.
+4. Reject beats whose correlation falls below a threshold (~0.8) before they
+   become IBIs.
+
+**Why it improves accuracy (and specifically handles breathing motion):** A
+beat corrupted by slight movement has a distorted shape → low correlation with
+the clean-beat template → excluded. A beat that is merely *early or late* due
+to genuine RSA still has a normal shape → high correlation → kept. So this
+filter removes motion artifacts **without** suppressing the real HRV signal —
+exactly the distinction that matters for the breathing-motion case. It also
+catches dicrotic-notch mis-detections and partial beats.
+
+**Why it fits this codebase (lean):** The offline analyzer already produces the
+detected peak indices (`analysis.peaks.peaks`) and the processed signal
+(`analysis.processed`) at the point beats are converted to IBIs
+(`buildScoredCaptureBeatSeries`). The check is a pure function over data that
+already exists — no new capture-time plumbing, no native dependency, no extra
+signal pass. Estimated ~50-70 LOC.
+
+**Used by:** Standard signal-quality methodology — Orphanidou et al. (2015,
+the canonical SQI paper, validated on both ECG and PPG) and Elgendi (2016,
+PPG-specific signal-quality indices). Widely used in wearable and clinical PPG
+to gate which beats enter HRV computation.
+
+**Expected impact:** Directly targets the user's stated concern (slight
+breathing movement). Removes morphology-distorted beats that the timing-only
+Kubios artifact pass (item B / dRR threshold) can miss — a beat can have a
+plausible IBI but a corrupted shape. Estimated meaningful RMSSD reproducibility
+improvement in real-world (non-perfectly-still) captures, which is the actual
+use case.
+
+**Verdict: RECOMMENDED.** This is the one motion-robustness technique that is
+(a) established in the literature, (b) specifically correct for distinguishing
+RSA from motion, (c) applicable to finger-contact PPG, and (d) lean enough to
+fit the codebase as a pure function on existing data. It complements — does not
+replace — the Kubios dRR artifact pass: Kubios catches bad *timing*, template
+correlation catches bad *morphology*. Together they cover both failure modes.
+
+### Accelerometer-based motion gating — considered, NOT recommended for now
+
+**What:** Read the phone IMU (`expo-sensors` Accelerometer) during capture,
+compute motion energy, and exclude high-motion windows or reject the capture.
+
+**Used by:** HRV4Training and most wrist wearables (which pair PPG with an
+accelerometer for adaptive motion cancellation).
+
+**Why it is NOT added here:** Three honest reasons against it for this app's
+"lean and clean" goal:
+1. **Heavier integration.** Requires a native sensor dependency plus
+   capture-flow plumbing to record timestamped accelerometer samples and align
+   them with PPG windows — a cross-cutting concern, not a pure function.
+2. **Template-correlation SQI (item 20) better targets the stated problem.**
+   Breathing micro-motion can be below the accelerometer's useful threshold
+   while still distorting the optical signal. Morphology correlation catches
+   that distortion directly; the accelerometer might not see it.
+3. **Diminishing returns.** It largely overlaps item 20 for the motion case
+   while costing more complexity.
+
+Revisit only if item 20 proves insufficient in real-world testing, or if a
+contactless/face-PPG mode is added (where accelerometer motion compensation
+becomes much more valuable).
+
+---
+
 ## Tier 5 — research-grade (probably overkill)
 
-### 16. ICA-based multi-channel pulse extraction
+### 16. Channel-fusion techniques (ICA / CHROM / POS) — NOT applicable to finger PPG
 
-**What:** Independent Component Analysis across R/G/B channels to extract
-the pure pulsatile cardiac component. Replaces the current multi-ROI ×
-channel candidate scoring with a single decomposed signal.
+**What they are:** Blind source separation and chrominance-projection methods
+that combine the R/G/B channels to extract a clean pulse signal:
+- **ICA** (Poh, McDuff & Picard 2010) — independent component analysis
+- **CHROM** (de Haan & Jeanne 2013) — chrominance-based projection
+- **POS** (Wang et al. 2017) — plane-orthogonal-to-skin projection
 
-**Used by:** Academic camera-PPG research gold standard (Verkruysse 2008,
-McDuff 2014, others).
+**Critical context — these are remote-PPG (rPPG) techniques, not finger-PPG
+techniques.** They were all developed for *contactless facial video* where the
+pulsatile signal is 0.1-1% of pixel intensity and buried in ambient-light and
+motion noise. CHROM and POS specifically project RGB onto a plane derived from
+the **skin-tone direction under broadband/ambient light** to cancel motion and
+specular reflection.
 
-**Effort:** Very high. ICA is ~300+ LOC. Component selection (which ICA
-output is the cardiac signal) requires heuristics. Computational cost is
-significant per capture.
+**Why they do NOT help finger-contact PPG (this app):**
 
-**Verdict:** Skip. Our multi-ROI × channel candidate scoring is a simpler
-approximation that captures most of the SNR benefit at much lower complexity.
-Only worth pursuing if all other improvements have been made and accuracy
-still feels insufficient.
+1. **Wrong problem.** ICA/CHROM/POS exist to recover a *weak* signal. Finger +
+   flash PPG produces a *strong* signal (AC is 1-10% of DC). Channel separation
+   is not the bottleneck — there is no weak signal to rescue.
+2. **Wrong color physics.** CHROM/POS assume diffuse reflection of broadband
+   light off skin with a known skin-tone vector. Finger PPG is *transmission
+   through tissue lit by the flash*, dominated by the red channel — a
+   completely different optical model. The skin-tone projection math is derived
+   for the wrong case and could degrade the signal.
+3. **Red dominates in finger PPG.** Flash light reaching the sensor after
+   passing through the finger is overwhelmingly red. The single best channel is
+   red (or red-weighted). Green-channel emphasis is an rPPG property and does
+   not transfer.
+
+**What finger-PPG apps actually use:** HRV4Training, and validated smartphone
+finger-PPG research (Scully et al. 2012; Gregoski et al. 2012), all use
+**red-channel (or red-weighted) spatial averaging + band-pass + peak detection
++ artifact correction.** None use blind source separation.
+
+**This app already does the right thing.** `channelValue` in
+`signalProcessing.ts` offers `red`, `weighted` (r×0.67 + g×0.33), and
+`redRatio` — all red-dominant — and the multi-ROI/channel candidate scoring
+picks whichever has the best SNR per capture. For finger+flash that lands on a
+red-dominant channel, which is exactly what the literature prescribes. No
+fancier channel fusion is needed or beneficial.
+
+**Verdict:** Do not implement ICA, CHROM, or POS. They are solving the rPPG
+problem, which this app does not have. They would add significant complexity
+and could reduce accuracy. The only scenario where they would matter is a
+future contactless/face-PPG mode — not finger-on-lens capture.
 
 ---
 
@@ -565,3 +727,17 @@ To meaningfully exceed this ceiling, the only paths are:
   using ambient light"
 - McDuff et al. (2014) — "Improvements in remote cardiopulmonary measurement
   using a five band digital camera"
+- Orphanidou et al. (2015) — "Signal-quality indices for the electrocardiogram
+  and photoplethysmogram: derivation and applications to wireless monitoring"
+  — canonical template-correlation SQI (ECG + PPG)
+- Elgendi (2016) — "Optimal signal quality index for photoplethysmogram
+  signals" — PPG-specific signal-quality indices
+- Poh, McDuff & Picard (2010) — "Non-contact, automated cardiac pulse
+  measurements using video imaging and blind source separation" — ICA (rPPG)
+- de Haan & Jeanne (2013) — "Robust pulse rate from chrominance-based rPPG"
+  — CHROM (rPPG)
+- Wang et al. (2017) — "Algorithmic principles of remote photoplethysmography"
+  — POS (rPPG)
+- Scully et al. (2012) — "Physiological parameter monitoring from optical
+  recordings with a mobile phone" — finger-contact PPG, red channel
+- Gregoski et al. (2012) — smartphone finger-PPG HRV validation

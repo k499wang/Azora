@@ -1,4 +1,5 @@
 import type { BpmSample, IbiSample } from './types';
+import { mean, median } from '../stats';
 
 export interface BpmPoint {
   offsetMs: number;
@@ -85,15 +86,6 @@ function clampGraphStep(value: number, previous: number | null): number {
   return previous + Math.sign(value - previous) * GRAPH_MAX_SAMPLE_JUMP_BPM;
 }
 
-function median(values: number[]): number {
-  if (values.length === 0) return 0;
-  const sorted = [...values].sort((a, b) => a - b);
-  const middle = Math.floor(sorted.length / 2);
-  return sorted.length % 2 === 0
-    ? (sorted[middle - 1] + sorted[middle]) / 2
-    : sorted[middle];
-}
-
 function bpmFromMedianIbi(samples: IbiValuePoint[]): number | null {
   const medianIbi = median(
     samples
@@ -101,11 +93,6 @@ function bpmFromMedianIbi(samples: IbiValuePoint[]): number | null {
       .filter((ibiMs) => Number.isFinite(ibiMs) && ibiMs > 0),
   );
   return medianIbi > 0 ? Math.round(60000 / medianIbi) : null;
-}
-
-function mean(values: number[]): number {
-  if (values.length === 0) return 0;
-  return values.reduce((sum, value) => sum + value, 0) / values.length;
 }
 
 function clampPresentationStep(value: number, previous: number | null, maxStepBpm: number): number {

@@ -21,8 +21,9 @@ test('preprocessHRVIntervals removes abnormal beat artifacts and marks adjacency
   input.splice(20, 1, 392, 805);
   const result = preprocessHRVIntervals(input);
 
-  assert.equal(result.correctedIbi.length, input.length - 2);
-  assert.deepEqual(result.artifactIndices, [20, 21]);
+  // Only the true outlier (392) is removed; the valid neighbour (805) is kept.
+  assert.equal(result.correctedIbi.length, input.length - 1);
+  assert.deepEqual(result.artifactIndices, [20]);
   assert.equal(result.correctedIbi.includes(392), false);
   assert.equal(result.adjacencyBreaks[20], true);
 });
@@ -45,7 +46,7 @@ test('computeHRVStats skips artifact intervals instead of interpolating fake IBI
   assert.ok(raw > 80, `expected raw RMSSD to be artifact-inflated, got ${raw}`);
   assert.ok(stats.rmssd < 60, `expected corrected RMSSD to stay physiologic, got ${stats.rmssd}`);
   assert.ok(stats.rmssd < raw / 4, `expected cleaned RMSSD to be much smaller than raw RMSSD, got ${stats.rmssd} vs ${raw}`);
-  assert.equal(stats.beatCount, input.length - 2);
+  assert.equal(stats.beatCount, input.length - 1);
 });
 
 test('computeHRVStatsFromCleanIntervals computes stats without preprocessing again', () => {

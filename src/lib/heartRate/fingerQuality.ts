@@ -1,4 +1,5 @@
 import type { FingerPlacementState, PpgFrameSample, PpgRoiSample } from './types';
+import { mean, populationStdDev as standardDeviation } from '../stats';
 
 const MIN_ROI_RED = 120;
 const MIN_AVG_ROI_RED = 100;
@@ -15,16 +16,6 @@ let _goodSinceMs: number | undefined = undefined;
 
 function weightedValue(roi: PpgRoiSample): number {
   return roi.r * 0.67 + roi.g * 0.33;
-}
-
-function mean(values: number[]): number {
-  return values.reduce((sum, value) => sum + value, 0) / values.length;
-}
-
-function standardDeviation(values: number[]): number {
-  if (values.length === 0) return 0;
-  const avg = mean(values);
-  return Math.sqrt(values.reduce((sum, value) => sum + Math.pow(value - avg, 2), 0) / values.length);
 }
 
 function finiteRois(frame: PpgFrameSample): PpgRoiSample[] {

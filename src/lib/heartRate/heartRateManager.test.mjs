@@ -177,7 +177,9 @@ test('HeartRateManager: waits for enough intervals before publishing live BPM', 
   runBeatTrain(manager, [24, 48, 72]);
   assert.equal(manager.getCurrentBpm(), null);
 
-  runBeatTrain(manager, [24, 48, 72, 96, 120], 20_000);
+  // MIN_LIVE_BPM_IBIS = 5 requires 5 clean intervals (6 beats) before the
+  // cold-start gate seeds the live BPM EMA.
+  runBeatTrain(manager, [24, 48, 72, 96, 120, 144], 20_000);
   assert.equal(manager.getCurrentBpm(), 76);
 });
 

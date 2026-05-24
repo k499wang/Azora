@@ -7,6 +7,7 @@ import type {
   PpgRoiSample,
 } from './types';
 import { upsampleCubicSpline } from './cubicSpline';
+import { clamp, mean, median, populationStdDev as standardDeviation } from '../stats';
 
 const MIN_DURATION_MS = 8000;
 const STABILIZATION_MS = 2500;
@@ -180,29 +181,6 @@ interface ScoredCaptureBeatSeries extends CaptureBeatSeries {
   hrvScore: number;
   rawIntervalCount: number;
   rejectedIntervalCount: number;
-}
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(max, Math.max(min, value));
-}
-
-function mean(values: number[]): number {
-  return values.reduce((sum, value) => sum + value, 0) / values.length;
-}
-
-function standardDeviation(values: number[]): number {
-  if (values.length === 0) return 0;
-  const avg = mean(values);
-  return Math.sqrt(values.reduce((sum, value) => sum + Math.pow(value - avg, 2), 0) / values.length);
-}
-
-function median(values: number[]): number {
-  if (values.length === 0) return 0;
-  const sorted = [...values].sort((a, b) => a - b);
-  const middle = Math.floor(sorted.length / 2);
-  return sorted.length % 2 === 0
-    ? (sorted[middle - 1] + sorted[middle]) / 2
-    : sorted[middle];
 }
 
 function makeOddWindow(samples: number): number {

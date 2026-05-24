@@ -3,6 +3,7 @@
  * PPG signal pipeline (HeartRateManager). All inputs are arrays of intervals
  * in milliseconds, in chronological order.
  */
+import { mean, median, sampleStdDev } from './stats';
 
 export interface HRVStats {
   rmssd: number;       // ms — short-term variability (parasympathetic)
@@ -23,12 +24,15 @@ export interface HRVStats {
 
 const HRV_TARGET_RMSSD = 60;
 const HRV_ARTIFACT_WINDOW = 3;
-// Kubios "medium" artifact threshold on successive IBI differences (dRR).
-// An IBI is flagged as an artifact if either the incoming or outgoing dRR
-// exceeds max(absolute, relative * localMedian). This is the single
-// artifact-detection pass for the HRV pipeline.
-const HRV_KUBIOS_DRR_ABSOLUTE_MS = 250;
-const HRV_KUBIOS_DRR_RELATIVE = 0.30;
+// Kubios threshold-based correction: an IBI is flagged as an artifact when it
+// deviates from the local median by more than max(absolute, relative *
+// localMedian). The absolute floor is Kubios' "medium" level (250 ms). The
+// relative term only loosens the threshold below ~72 bpm, where genuine RSA
+// swings are large in absolute ms — this protects real variability during slow
+// breathing from being over-corrected. This is the offline HRV-grade pass; a
+// causal interval sanity filter already runs upstream in cleanBeatSeries.
+const HRV_KUBIOS_DEVIATION_ABSOLUTE_MS = 250;
+const HRV_KUBIOS_DEVIATION_RELATIVE = 0.30;
 const HRV_MAX_ARTIFACT_RUN = 2;
 const HRV_MAX_ARTIFACT_RATIO = 0.05;
 const HRV_MIN_CLEAN_ANCHORS = 4;
@@ -47,28 +51,6 @@ export interface CleanHRVStatsInput {
   adjacencyBreaks?: boolean[];
   artifactRatio: number;
   usable: boolean;
-}
-
-function mean(values: number[]): number {
-  if (values.length === 0) return 0;
-  return values.reduce((sum, v) => sum + v, 0) / values.length;
-}
-
-function median(values: number[]): number {
-  if (values.length === 0) return 0;
-  const sorted = [...values].sort((a, b) => a - b);
-  const middle = Math.floor(sorted.length / 2);
-  return sorted.length % 2 === 0
-    ? (sorted[middle - 1] + sorted[middle]) / 2
-    : sorted[middle];
-}
-
-function stddev(values: number[]): number {
-  if (values.length < 2) return 0;
-  const m = mean(values);
-  const variance =
-    values.reduce((sum, v) => sum + (v - m) * (v - m), 0) / (values.length - 1);
-  return Math.sqrt(variance);
 }
 
 export function detrendLinear(values: number[]): number[] {
@@ -94,36 +76,37 @@ export function detrendLinear(values: number[]): number[] {
 
 export function computeDetrendedSdnn(ibi: number[]): number {
   if (ibi.length < 2) return 0;
-  return Math.round(stddev(detrendLinear(ibi)));
+  return Math.round(sampleStdDev(detrendLinear(ibi)));
 }
 
-function getWindow(values: number[], index: number, radius: number): number[] {
+function localMedianExcluding(ibi: number[], index: number, radius: number): number {
   const start = Math.max(0, index - radius);
-  const end = Math.min(values.length, index + radius + 1);
-  return values.slice(start, end);
+  const end = Math.min(ibi.length, index + radius + 1);
+  const neighbors: number[] = [];
+  for (let j = start; j < end; j++) {
+    if (j !== index) neighbors.push(ibi[j]);
+  }
+  return neighbors.length > 0 ? median(neighbors) : median(ibi);
 }
 
 function detectHrvArtifacts(ibi: number[]): boolean[] {
   const artifactMask = new Array(ibi.length).fill(false);
   if (ibi.length < 3) return artifactMask;
 
-  // Kubios-style single-pass artifact detection on successive IBI differences.
-  // An IBI is flagged if either of its adjacent dRR values exceeds the
-  // local threshold = max(absolute, relative * localMedian). This replaces
-  // the previous MAD + relative + dRR-pair cocktail with a single principled
-  // check, so downstream HRV math can trust the cleaned series.
+  // A beat is flagged when its value deviates from the local median by more
+  // than max(absolute, relative * localMedian). The median excludes the beat
+  // under test, so a single outlier cannot inflate its own threshold and the
+  // outlier's clean neighbours are not falsely flagged. This replaces the
+  // prior MAD + relative + dRR-pair cocktail so downstream HRV math can trust
+  // the cleaned series.
   for (let i = 0; i < ibi.length; i++) {
-    const window = getWindow(ibi, i, HRV_ARTIFACT_WINDOW);
-    const localMedian = window.length > 0 ? median(window) : median(ibi);
+    const localMedian = localMedianExcluding(ibi, i, HRV_ARTIFACT_WINDOW);
     const threshold = Math.max(
-      HRV_KUBIOS_DRR_ABSOLUTE_MS,
-      localMedian * HRV_KUBIOS_DRR_RELATIVE,
+      HRV_KUBIOS_DEVIATION_ABSOLUTE_MS,
+      localMedian * HRV_KUBIOS_DEVIATION_RELATIVE,
     );
 
-    const incomingDrr = i > 0 ? Math.abs(ibi[i] - ibi[i - 1]) : 0;
-    const outgoingDrr = i < ibi.length - 1 ? Math.abs(ibi[i + 1] - ibi[i]) : 0;
-
-    if (incomingDrr > threshold || outgoingDrr > threshold) {
+    if (Math.abs(ibi[i] - localMedian) > threshold) {
       artifactMask[i] = true;
     }
   }
@@ -317,7 +300,7 @@ export function computeHRVStatsFromCleanIntervals({
     nn50Pairs += 1;
   }
   const rmssd = pairs > 0 ? Math.round(Math.sqrt(sumSq / pairs)) : 0;
-  const sdnn = Math.round(stddev(correctedIbi));
+  const sdnn = Math.round(sampleStdDev(correctedIbi));
   const detrendedSdnn = computeDetrendedSdnn(correctedIbi);
   const pnn50 = nn50Pairs > 0 ? Math.round((nn50 / nn50Pairs) * 100) : 0;
 
