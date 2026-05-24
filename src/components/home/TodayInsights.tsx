@@ -6,6 +6,7 @@ import { spacing } from '../../theme/spacing';
 import { typography, fonts } from '../../theme/typography';
 import { card } from '../../theme/card';
 import RingStatCard from './RingStatCard';
+import LungWaterBackground from './LungWaterBackground';
 
 const HEALTH_INFO = {
   title: 'Health Score',
@@ -31,6 +32,7 @@ interface TodayInsightsProps {
   title?: string;
   avgBpm?: number | null;
   holdSeconds?: number | null;
+  bestHoldSeconds?: number | null;
   healthScore?: number | null;
   lungAge?: number | null;
   lungAgeTier?: string | null;
@@ -46,9 +48,13 @@ function formatHold(seconds: number | null | undefined): string {
 function LungAgeRing({
   lungAge,
   lungAgeTier,
+  holdSeconds,
+  bestHoldSeconds,
 }: {
   lungAge: number | null | undefined;
   lungAgeTier: string | null | undefined;
+  holdSeconds: number | null | undefined;
+  bestHoldSeconds: number | null | undefined;
 }) {
   const cx = LUNG_RING_SIZE / 2;
   const cy = LUNG_RING_SIZE / 2;
@@ -77,8 +83,14 @@ function LungAgeRing({
       ? ''
       : lungAgeTier.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 
+  const fillLevel =
+    holdSeconds == null || bestHoldSeconds == null || bestHoldSeconds <= 0
+      ? 0.35
+      : Math.max(0.15, Math.min(0.85, holdSeconds / bestHoldSeconds));
+
   return (
     <View style={styles.lungCard}>
+      <LungWaterBackground fillLevel={fillLevel} />
       <Pressable
         hitSlop={12}
         onPress={() => Alert.alert(LUNG_AGE_INFO.title, LUNG_AGE_INFO.message)}
@@ -129,6 +141,7 @@ export default function TodayInsights({
   healthScore,
   lungAge,
   lungAgeTier,
+  bestHoldSeconds,
 }: TodayInsightsProps) {
   const bpmValue = avgBpm == null ? '--' : `${Math.round(avgBpm)}`;
   const holdValue = formatHold(holdSeconds);
@@ -167,7 +180,12 @@ export default function TodayInsights({
         />
       </View>
 
-      <LungAgeRing lungAge={lungAge} lungAgeTier={lungAgeTier} />
+      <LungAgeRing
+        lungAge={lungAge}
+        lungAgeTier={lungAgeTier}
+        holdSeconds={holdSeconds}
+        bestHoldSeconds={bestHoldSeconds}
+      />
     </View>
   );
 }

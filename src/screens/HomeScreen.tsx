@@ -423,6 +423,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             title={formatInsightTitle(selectedLocalDate, todayLocalDate)}
             avgBpm={avgBpm}
             holdSeconds={todayBreathHold?.holdSeconds ?? null}
+            bestHoldSeconds={holdStats.bestHoldSeconds}
             healthScore={healthScore}
             lungAge={lungEstimate?.age ?? null}
             lungAgeTier={lungEstimate?.key ?? null}
