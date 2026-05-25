@@ -34,6 +34,10 @@ const HRV_INTERVAL_CLEANUP_THRESHOLD = 0.25;
 const HRV_INTERVAL_CLEANUP_WINDOW = 5;
 const HRV_INTERVAL_CLEANUP_MIN_HISTORY = 3;
 const HRV_INTERVAL_HISTORY_SIZE = 8;
+// Peak detection + cubic-spline upsampling is the expensive stage. Run it only
+// on the few candidates that rank highest in the cheap frequency pass; the HRV
+// winner is then chosen by hrvScore among them.
+const TOP_CANDIDATES_FOR_PEAKS = 3;
 
 export interface ComputeBpmOptions {
   minDurationMs?: number;
@@ -108,6 +112,18 @@ interface PeakResult {
   consistency: number;
   peaks: number[];
   polarity: 1 | -1;
+}
+
+// Output of the cheap first pass: enough to estimate BPM and to rank candidates
+// for the expensive peak-detection pass, without having upsampled anything yet.
+interface FrequencyAnalysis {
+  series: CandidateSeries;
+  resampledValues: number[];
+  sampleRate: number;
+  stableStartTimestamp: number;
+  stableDurationMs: number;
+  stableSampleCount: number;
+  freq: FrequencyResult;
 }
 
 interface CandidateAnalysis {
@@ -505,60 +521,16 @@ function qualityFromEstimate(
   return 'poor';
 }
 
-function analyzeCandidate(
+// Confidence blends frequency SNR with peak agreement/consistency. When peaks
+// are absent (cheap pass, or no peaks found) the peak terms fall back to neutral
+// defaults so a frequency-only estimate is still usable for the BPM consensus.
+function candidateConfidence(
+  freq: FrequencyResult,
+  peaks: PeakResult | null,
   series: CandidateSeries,
   options: ResolvedComputeBpmOptions,
-): CandidateAnalysis | null {
-  const stableStart = series.timestamps[0] + options.stabilizationMs;
-  const stableSeries: CandidateSeries = {
-    ...series,
-    timestamps: [],
-    values: [],
-  };
-
-  for (let i = 0; i < series.timestamps.length; i++) {
-    if (series.timestamps[i] >= stableStart) {
-      stableSeries.timestamps.push(series.timestamps[i]);
-      stableSeries.values.push(series.values[i]);
-    }
-  }
-
-  const resampled = resampleUniform(stableSeries, options);
-  if (resampled == null) return null;
-  if (!lightingIsStable(resampled.values)) return null;
-
-  // Upsample to 180 Hz via cubic spline to reduce beat timing quantization
-  // error from ±16.7 ms (30 Hz) to ±2.8 ms (180 Hz). This directly improves
-  // HRV accuracy (RMSSD, SDNN) without affecting the frequency-domain BPM
-  // estimate, which is computed on the original resampled signal.
-  //
-  // Build uniform timestamps for the stabilized resampled signal. These must
-  // use the same origin as `stableSeries`, otherwise refined beat timestamps
-  // are shifted by the stabilization trim.
-  const resampledTimestamps: number[] = [];
-  const stepMs = 1000 / resampled.sampleRate;
-  for (let i = 0; i < resampled.values.length; i++) {
-    resampledTimestamps.push(stableSeries.timestamps[0] + i * stepMs);
-  }
-
-  const upsampled = upsampleCubicSpline(
-    resampled.values,
-    resampledTimestamps,
-    UPSAMPLE_TARGET_RATE,
-  );
-
-  const frequencyProcessed = preprocess(resampled.values, resampled.sampleRate);
-  const freq = frequencyEstimate(frequencyProcessed, resampled.sampleRate);
-  if (freq == null || freq.snrDb < options.minSnrDb) return null;
-
-  const processed = preprocess(upsampled.values, upsampled.sampleRate);
-  const peaks = peakEstimate(processed, upsampled.sampleRate, freq.bpm);
+): { confidence: number; agreement: number; peakDiff: number | null } {
   const peakDiff = peaks != null ? Math.abs(freq.bpm - peaks.bpm) : null;
-  const hasPeakAgreement = peakDiff != null && peakDiff <= MAX_FREQ_PEAK_DIFF_BPM;
-
-  if (options.requirePeakAgreement && peaks != null && !hasPeakAgreement) return null;
-  if (peaks == null && freq.snrDb < options.fallbackSnrDbWithoutPeaks) return null;
-
   const snrFactor = clamp((freq.snrDb - options.minSnrDb) / 10, 0, 1);
   const agreement = peakDiff == null ? 0.35 : clamp(1 - peakDiff / MAX_FREQ_PEAK_DIFF_BPM, 0, 1);
   const peakConsistency = peaks?.consistency ?? 0.35;
@@ -568,29 +540,134 @@ function analyzeCandidate(
     0,
     0.99,
   );
+  return { confidence, agreement, peakDiff };
+}
 
-  if (confidence < options.minConfidence) return null;
+function buildHeartRateEstimate(
+  analysis: FrequencyAnalysis,
+  peaks: PeakResult | null,
+  confidence: number,
+  agreement: number,
+  options: ResolvedComputeBpmOptions,
+): HeartRateEstimate {
+  const { freq, series } = analysis;
+  return {
+    bpm: freq.bpm,
+    confidence,
+    quality: qualityFromEstimate(confidence, freq.snrDb, agreement, options),
+    sampleCount: analysis.stableSampleCount,
+    durationMs: analysis.stableDurationMs,
+    roiId: series.roiId,
+    channel: series.channel,
+    snrDb: freq.snrDb,
+    frequencyBpm: freq.bpm,
+    peakBpm: peaks?.bpm ?? null,
+  };
+}
 
-  const durationMs = stableSeries.timestamps[stableSeries.timestamps.length - 1] - stableSeries.timestamps[0];
+// Cheap first pass: trim to the stabilized window, resample, and run the
+// frequency-domain estimate. No upsampling or peak detection yet — that is the
+// expensive work, deferred to `analyzeCandidatePeaks` for the chosen few.
+function analyzeCandidateFrequency(
+  series: CandidateSeries,
+  options: ResolvedComputeBpmOptions,
+): FrequencyAnalysis | null {
+  const stableStart = series.timestamps[0] + options.stabilizationMs;
+  const stableTimestamps: number[] = [];
+  const stableValues: number[] = [];
+  for (let i = 0; i < series.timestamps.length; i++) {
+    if (series.timestamps[i] >= stableStart) {
+      stableTimestamps.push(series.timestamps[i]);
+      stableValues.push(series.values[i]);
+    }
+  }
+
+  const stableSeries: CandidateSeries = {
+    ...series,
+    timestamps: stableTimestamps,
+    values: stableValues,
+  };
+
+  const resampled = resampleUniform(stableSeries, options);
+  if (resampled == null) return null;
+  if (!lightingIsStable(resampled.values)) return null;
+
+  const frequencyProcessed = preprocess(resampled.values, resampled.sampleRate);
+  const freq = frequencyEstimate(frequencyProcessed, resampled.sampleRate);
+  if (freq == null || freq.snrDb < options.minSnrDb) return null;
 
   return {
-    estimate: {
-      bpm: freq.bpm,
-      confidence,
-      quality: qualityFromEstimate(confidence, freq.snrDb, agreement, options),
-      sampleCount: stableSeries.values.length,
-      durationMs,
-      roiId: series.roiId,
-      channel: series.channel,
-      snrDb: freq.snrDb,
-      frequencyBpm: freq.bpm,
-      peakBpm: peaks?.bpm ?? null,
-    },
-    stableStartTimestamp: stableSeries.timestamps[0],
+    series,
+    resampledValues: resampled.values,
+    sampleRate: resampled.sampleRate,
+    stableStartTimestamp: stableTimestamps[0],
+    stableDurationMs: stableTimestamps[stableTimestamps.length - 1] - stableTimestamps[0],
+    stableSampleCount: stableValues.length,
+    freq,
+  };
+}
+
+// Frequency-only estimate for the BPM consensus. BPM is frequency-derived, so
+// the rate does not require peak detection.
+function frequencyOnlyEstimate(
+  analysis: FrequencyAnalysis,
+  options: ResolvedComputeBpmOptions,
+): HeartRateEstimate {
+  const { confidence, agreement } = candidateConfidence(analysis.freq, null, analysis.series, options);
+  return buildHeartRateEstimate(analysis, null, confidence, agreement, options);
+}
+
+// Expensive second pass: upsample via cubic spline, then detect beats. Upsampling
+// to 180 Hz cuts beat-timing quantization error from ±16.7 ms (30 Hz) to ±2.8 ms,
+// improving HRV accuracy (RMSSD, SDNN). Uniform timestamps share the stabilized
+// window's origin, otherwise refined beat timestamps shift by the stabilization
+// trim. Applies the same peak-agreement and confidence gates as before.
+function analyzeCandidatePeaks(
+  analysis: FrequencyAnalysis,
+  options: ResolvedComputeBpmOptions,
+): CandidateAnalysis | null {
+  const stepMs = 1000 / analysis.sampleRate;
+  const resampledTimestamps = analysis.resampledValues.map(
+    (_, i) => analysis.stableStartTimestamp + i * stepMs,
+  );
+  const upsampled = upsampleCubicSpline(
+    analysis.resampledValues,
+    resampledTimestamps,
+    UPSAMPLE_TARGET_RATE,
+  );
+
+  const processed = preprocess(upsampled.values, upsampled.sampleRate);
+  const peaks = peakEstimate(processed, upsampled.sampleRate, analysis.freq.bpm);
+  const { confidence, agreement, peakDiff } = candidateConfidence(
+    analysis.freq,
+    peaks,
+    analysis.series,
+    options,
+  );
+  const hasPeakAgreement = peakDiff != null && peakDiff <= MAX_FREQ_PEAK_DIFF_BPM;
+
+  if (options.requirePeakAgreement && peaks != null && !hasPeakAgreement) return null;
+  if (peaks == null && analysis.freq.snrDb < options.fallbackSnrDbWithoutPeaks) return null;
+  if (confidence < options.minConfidence) return null;
+
+  return {
+    estimate: buildHeartRateEstimate(analysis, peaks, confidence, agreement, options),
+    stableStartTimestamp: analysis.stableStartTimestamp,
     sampleRate: upsampled.sampleRate,
     peaks,
     processed,
   };
+}
+
+// Full single-candidate analysis (frequency + peaks). Used by the live BPM path,
+// where peak agreement is a deliberate anti-jitter gate.
+function analyzeCandidate(
+  series: CandidateSeries,
+  options: ResolvedComputeBpmOptions,
+): CandidateAnalysis | null {
+  const frequency = analyzeCandidateFrequency(series, options);
+  if (frequency == null) return null;
+  return analyzeCandidatePeaks(frequency, options);
 }
 
 function buildCandidates(frames: PpgFrameSample[]): CandidateSeries[] {
@@ -657,15 +734,6 @@ function candidatePriority(estimate: HeartRateEstimate): number {
       estimate.roiId === 'center' ? 0.025 : 0;
 
   return estimate.confidence + estimate.snrDb / 25 + channelBonus + roiBonus;
-}
-
-function beatTimestampsFromPeaks(
-  peakIndexes: number[],
-  sampleRate: number,
-  stableStartTimestamp: number,
-): number[] {
-  const stepMs = 1000 / sampleRate;
-  return peakIndexes.map((peakIndex) => stableStartTimestamp + peakIndex * stepMs);
 }
 
 function interpolatePeakOffset(y1: number, y2: number, y3: number): number {
@@ -841,6 +909,50 @@ function buildScoredCaptureBeatSeries(
   };
 }
 
+function toCaptureBeatSeries(scored: ScoredCaptureBeatSeries): CaptureBeatSeries {
+  return {
+    beatTimestamps: scored.beatTimestamps,
+    ibiMs: scored.ibiMs,
+    adjacencyBreaks: scored.adjacencyBreaks,
+    roiId: scored.roiId,
+    channel: scored.channel,
+    confidence: scored.confidence,
+    quality: scored.quality,
+    snrDb: scored.snrDb,
+    frequencyBpm: scored.frequencyBpm,
+    peakBpm: scored.peakBpm,
+    rawIntervalCount: scored.rawIntervalCount,
+    rejectedIntervalCount: scored.rejectedIntervalCount,
+  };
+}
+
+// Runs the expensive peak pass on the top-ranked candidates only, then picks the
+// best resulting beat series by hrvScore. Candidates are ranked by their cheap
+// frequency-domain score, so the most promising few are the ones upsampled.
+function selectBestBeatSeries(
+  frequencyAnalyses: FrequencyAnalysis[],
+  options: ResolvedComputeBpmOptions,
+  captureEndTimestamp: number,
+): CaptureBeatSeries | null {
+  const topCandidates = [...frequencyAnalyses]
+    .sort(
+      (a, b) =>
+        candidatePriority(frequencyOnlyEstimate(b, options)) -
+        candidatePriority(frequencyOnlyEstimate(a, options)),
+    )
+    .slice(0, TOP_CANDIDATES_FOR_PEAKS);
+
+  const scored = topCandidates
+    .map((analysis) => analyzeCandidatePeaks(analysis, options))
+    .filter((analysis): analysis is PeakCandidateAnalysis => analysis != null && analysis.peaks != null)
+    .map((analysis) => buildScoredCaptureBeatSeries(analysis, captureEndTimestamp))
+    .filter((candidate): candidate is ScoredCaptureBeatSeries => candidate != null);
+  if (scored.length === 0) return null;
+
+  const best = [...scored].sort((a, b) => b.hrvScore - a.hrvScore)[0];
+  return toCaptureBeatSeries(best);
+}
+
 function consensusEstimate(estimates: HeartRateEstimate[]): HeartRateEstimate | null {
   if (estimates.length === 0) return null;
 
@@ -982,37 +1094,7 @@ export function extractBestCaptureBeatSeries(
   samples: PpgFrameSample[],
   options: ComputeBpmOptions = HRV_CAPTURE_OPTIONS,
 ): CaptureBeatSeries | null {
-  if (samples.length === 0) return null;
-
-  const resolvedOptions = resolveOptions(options);
-  const analyses = buildCandidates(samples)
-    .map((candidate) => analyzeCandidate(candidate, resolvedOptions))
-    .filter((analysis): analysis is PeakCandidateAnalysis => analysis != null && analysis.peaks != null);
-
-  if (analyses.length === 0) return null;
-
-  const captureEndTimestamp = samples[samples.length - 1]?.timestamp ?? 0;
-  const scoredCandidates = analyses
-    .map((analysis) => buildScoredCaptureBeatSeries(analysis, captureEndTimestamp))
-    .filter((candidate): candidate is ScoredCaptureBeatSeries => candidate != null);
-  if (scoredCandidates.length === 0) return null;
-
-  const best = [...scoredCandidates].sort((a, b) => b.hrvScore - a.hrvScore)[0];
-
-  return {
-    beatTimestamps: best.beatTimestamps,
-    ibiMs: best.ibiMs,
-    adjacencyBreaks: best.adjacencyBreaks,
-    roiId: best.roiId,
-    channel: best.channel,
-    confidence: best.confidence,
-    quality: best.quality,
-    snrDb: best.snrDb,
-    frequencyBpm: best.frequencyBpm,
-    peakBpm: best.peakBpm,
-    rawIntervalCount: best.rawIntervalCount,
-    rejectedIntervalCount: best.rejectedIntervalCount,
-  };
+  return analyzeCapture(samples, options).beatSeries;
 }
 
 export interface CaptureAnalysis {
@@ -1021,11 +1103,16 @@ export interface CaptureAnalysis {
 }
 
 /**
- * Single-pass capture analysis: runs the candidate pipeline once and derives
- * both the consensus BPM estimate and the best HRV beat series from the same
- * `analyzeCandidate` results. This avoids upsampling/peak-detecting every
- * candidate twice (which is what calling `computeBPM` and
- * `extractBestCaptureBeatSeries` separately does).
+ * Two-pass capture analysis.
+ *
+ * Pass 1 (cheap, every candidate): resample + frequency estimate. The BPM
+ * consensus reads from these frequency-only estimates, since the rate is
+ * frequency-derived and does not need peak detection.
+ *
+ * Pass 2 (expensive, top candidates only): upsample + peak detect the highest
+ * frequency-ranked candidates, then pick the best HRV beat series by hrvScore.
+ * This avoids upsampling/peak-detecting every ROI/channel candidate, which is
+ * the dominant cost for long captures.
  */
 export function analyzeCapture(
   samples: PpgFrameSample[],
@@ -1034,41 +1121,19 @@ export function analyzeCapture(
   if (samples.length === 0) return { estimate: null, beatSeries: null };
 
   const resolvedOptions = resolveOptions(options);
-  const analyses = buildCandidates(samples)
-    .map((candidate) => analyzeCandidate(candidate, resolvedOptions))
-    .filter((analysis): analysis is CandidateAnalysis => analysis != null);
+  const frequencyAnalyses = buildCandidates(samples)
+    .map((candidate) => analyzeCandidateFrequency(candidate, resolvedOptions))
+    .filter((analysis): analysis is FrequencyAnalysis => analysis != null);
 
-  if (analyses.length === 0) return { estimate: null, beatSeries: null };
+  if (frequencyAnalyses.length === 0) return { estimate: null, beatSeries: null };
 
-  const estimate = consensusEstimate(analyses.map((a) => a.estimate));
+  const estimates = frequencyAnalyses
+    .map((analysis) => frequencyOnlyEstimate(analysis, resolvedOptions))
+    .filter((estimate) => estimate.confidence >= resolvedOptions.minConfidence);
+  const estimate = consensusEstimate(estimates);
 
-  const peakAnalyses = analyses.filter(
-    (analysis): analysis is PeakCandidateAnalysis => analysis.peaks != null,
-  );
-  let beatSeries: CaptureBeatSeries | null = null;
-  if (peakAnalyses.length > 0) {
-    const captureEndTimestamp = samples[samples.length - 1]?.timestamp ?? 0;
-    const scoredCandidates = peakAnalyses
-      .map((analysis) => buildScoredCaptureBeatSeries(analysis, captureEndTimestamp))
-      .filter((candidate): candidate is ScoredCaptureBeatSeries => candidate != null);
-    if (scoredCandidates.length > 0) {
-      const best = [...scoredCandidates].sort((a, b) => b.hrvScore - a.hrvScore)[0];
-      beatSeries = {
-        beatTimestamps: best.beatTimestamps,
-        ibiMs: best.ibiMs,
-        adjacencyBreaks: best.adjacencyBreaks,
-        roiId: best.roiId,
-        channel: best.channel,
-        confidence: best.confidence,
-        quality: best.quality,
-        snrDb: best.snrDb,
-        frequencyBpm: best.frequencyBpm,
-        peakBpm: best.peakBpm,
-        rawIntervalCount: best.rawIntervalCount,
-        rejectedIntervalCount: best.rejectedIntervalCount,
-      };
-    }
-  }
+  const captureEndTimestamp = samples[samples.length - 1]?.timestamp ?? 0;
+  const beatSeries = selectBestBeatSeries(frequencyAnalyses, resolvedOptions, captureEndTimestamp);
 
   return { estimate, beatSeries };
 }
