@@ -17,7 +17,6 @@ import ExperienceScreen, {
   type ExperienceLevel,
 } from './screens/ExperienceScreen';
 import NameScreen from './screens/NameScreen';
-import FounderVideoScreen from './screens/FounderVideoScreen';
 import GreetingScreen from './screens/GreetingScreen';
 import PactScreen from './screens/PactScreen';
 import NotificationPermissionScreen from './screens/NotificationPermissionScreen';
@@ -82,7 +81,7 @@ interface OnboardingFlowProps {
 }
 
 
-const STEP_COUNT = 22;
+const STEP_COUNT = 21;
 const STEP_INDEX: Record<OnboardingStep, number> = {
   intent: 1,
   intentReflection: 2,
@@ -103,9 +102,8 @@ const STEP_INDEX: Record<OnboardingStep, number> = {
   baselineIntro: 17,
   baseline: 18,
   recommendation: 19,
-  founderVideo: 20,
-  pact: 21,
-  paywall: 22,
+  pact: 20,
+  paywall: 21,
 };
 
 type OnboardingTransitionAction = 'continue' | 'skip' | 'back' | 'auto';
@@ -721,20 +719,8 @@ export default function OnboardingFlow({
         experienceLevel={experienceLevel}
         stepIndex={stepIndex}
         stepCount={STEP_COUNT}
-        onContinue={() => goToStep('founderVideo', 'continue')}
-        onBack={() => goToStep('baseline', 'back')}
-      />
-    );
-  }
-
-  if (step === 'founderVideo') {
-    return (
-      <FounderVideoScreen
-        stepIndex={stepIndex}
-        stepCount={STEP_COUNT}
         onContinue={() => goToStep('pact', 'continue')}
-        onSkip={() => goToStep('pact', 'skip')}
-        onBack={() => goToStep('recommendation', 'back')}
+        onBack={() => goToStep('baseline', 'back')}
       />
     );
   }
@@ -793,7 +779,7 @@ export default function OnboardingFlow({
         onConfirm={() => {
           void saveProfileAndShowPaywall();
         }}
-        onBack={() => goToStep('founderVideo', 'back')}
+        onBack={() => goToStep('recommendation', 'back')}
       />
     );
   }

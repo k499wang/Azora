@@ -5,7 +5,6 @@ export type OnboardingStep =
   | 'intentReflection'
   | 'intentProjection'
   | 'name'
-  | 'founderVideo'
   | 'greeting'
   | 'stress'
   | 'sleep'
