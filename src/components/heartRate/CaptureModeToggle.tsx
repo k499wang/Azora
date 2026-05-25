@@ -13,16 +13,9 @@ interface CaptureModeToggleProps {
   value: HeartRateCaptureMode;
   onChange: (mode: HeartRateCaptureMode) => void;
   isPro: boolean;
-  /** Called when a Pro-only mode is tapped by a non-Pro user (e.g. to open the paywall). */
-  onLockedPress?: (mode: HeartRateCaptureMode) => void;
 }
 
-export function CaptureModeToggle({
-  value,
-  onChange,
-  isPro,
-  onLockedPress,
-}: CaptureModeToggleProps) {
+export function CaptureModeToggle({ value, onChange, isPro }: CaptureModeToggleProps) {
   return (
     <View style={styles.toggle}>
       {HEART_RATE_CAPTURE_MODE_ORDER.map((mode) => {
@@ -35,20 +28,17 @@ export function CaptureModeToggle({
             accessibilityRole="button"
             accessibilityState={{ selected }}
             accessibilityHint={locked ? 'Pro feature' : undefined}
-            onPress={() => (locked ? onLockedPress?.(mode) : onChange(mode))}
+            onPress={() => onChange(mode)}
             style={[styles.segment, selected && styles.segmentSelected]}
           >
+            <Text style={[styles.label, selected && styles.labelSelected]}>
+              {config.label}
+            </Text>
             {locked ? (
               <View style={styles.proBadge}>
                 <Text style={styles.proBadgeText}>PRO</Text>
               </View>
             ) : null}
-            <Text style={[styles.label, selected && styles.labelSelected]}>
-              {config.label}
-            </Text>
-            <Text style={[styles.subLabel, selected && styles.subLabelSelected]}>
-              {config.shortDescription}
-            </Text>
           </Pressable>
         );
       })}
@@ -59,24 +49,31 @@ export function CaptureModeToggle({
 const styles = StyleSheet.create({
   toggle: {
     flexDirection: 'row',
-    gap: spacing.sm,
+    alignSelf: 'center',
+    gap: spacing.xs,
+    padding: spacing.xs,
+    borderRadius: 999,
+    backgroundColor: colors.background.secondary,
   },
   segment: {
-    flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.sm,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: colors.border.subtle,
-    backgroundColor: colors.background.elevated,
+    justifyContent: 'center',
+    gap: spacing.xs,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    borderRadius: 999,
   },
   segmentSelected: {
-    borderColor: colors.primary.blue600,
-    backgroundColor: colors.primary.blue100,
+    backgroundColor: colors.background.elevated,
+    shadowColor: colors.neutral[900],
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.08,
+    shadowRadius: 3,
+    elevation: 2,
   },
   label: {
-    ...typography.body.medium,
+    ...typography.label.medium,
     fontFamily: fonts.semibold,
     fontWeight: '600',
     color: colors.text.secondary,
@@ -84,19 +81,7 @@ const styles = StyleSheet.create({
   labelSelected: {
     color: colors.primary.blue700,
   },
-  subLabel: {
-    ...typography.caption.caption2,
-    color: colors.text.tertiary,
-    marginTop: 2,
-    textAlign: 'center',
-  },
-  subLabelSelected: {
-    color: colors.primary.blue600,
-  },
   proBadge: {
-    position: 'absolute',
-    top: spacing.xs,
-    right: spacing.xs,
     paddingHorizontal: spacing.xs,
     paddingVertical: 1,
     borderRadius: 6,

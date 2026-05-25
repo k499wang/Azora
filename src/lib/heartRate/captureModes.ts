@@ -10,6 +10,8 @@ export interface HeartRateCaptureModeConfig {
   /** Whether this mode is reserved for Pro users (e.g. the longer HRV analysis). */
   requiresPro: boolean;
   shortDescription: string;
+  /** Short capability tags shown as chips under the mode toggle. */
+  perks: string[];
 }
 
 export const HEART_RATE_CAPTURE_MODES: Record<HeartRateCaptureMode, HeartRateCaptureModeConfig> = {
@@ -21,6 +23,7 @@ export const HEART_RATE_CAPTURE_MODES: Record<HeartRateCaptureMode, HeartRateCap
     captureFps: 20,
     requiresPro: false,
     shortDescription: 'Heart rate only · 25s',
+    perks: ['Heart rate', '25s'],
   },
   full: {
     id: 'full',
@@ -30,6 +33,7 @@ export const HEART_RATE_CAPTURE_MODES: Record<HeartRateCaptureMode, HeartRateCap
     captureFps: 30,
     requiresPro: true,
     shortDescription: 'Heart rate + HRV · 90s',
+    perks: ['Heart rate', 'HRV', 'Stress', 'Recovery', '90s'],
   },
 };
 

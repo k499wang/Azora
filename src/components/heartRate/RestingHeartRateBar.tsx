@@ -12,7 +12,7 @@ import {
 } from '../../lib/heartRate/restingHeartRate';
 
 interface RestingHeartRateBarProps {
-  bpm: number;
+  bpm: number | null;
   age: number | null;
   title?: string;
 }
@@ -22,28 +22,35 @@ export default function RestingHeartRateBar({
   age,
   title = 'Resting heart rate',
 }: RestingHeartRateBarProps) {
-  if (!Number.isFinite(bpm)) return null;
-
-  const zone = getRestingHeartRateZone(bpm, age);
-  const fraction = getRestingHeartRateMarkerFraction(bpm);
+  const hasBpm = bpm != null && Number.isFinite(bpm);
+  const zone = hasBpm ? getRestingHeartRateZone(bpm!, age) : null;
+  const fraction = hasBpm ? getRestingHeartRateMarkerFraction(bpm!) : null;
   const segments = getRestingHeartRateSegments(age);
 
   return (
     <View style={styles.card}>
       <View style={styles.header}>
         <Text style={styles.title}>{title}</Text>
-        <View style={[styles.zonePill, { backgroundColor: `${zone.color}18` }]}>
-          <Text style={[styles.zoneText, { color: zone.color }]}>{zone.label}</Text>
-        </View>
+        {zone ? (
+          <View style={[styles.zonePill, { backgroundColor: `${zone.color}18` }]}>
+            <Text style={[styles.zoneText, { color: zone.color }]}>{zone.label}</Text>
+          </View>
+        ) : (
+          <View style={[styles.zonePill, styles.zonePillEmpty]}>
+            <Text style={[styles.zoneText, styles.zoneTextEmpty]}>No data</Text>
+          </View>
+        )}
       </View>
 
       <View style={styles.markerTrack}>
-        <View style={[styles.markerColumn, { left: `${fraction * 100}%` }]}>
-          <View style={styles.triangle} />
-        </View>
+        {fraction != null ? (
+          <View style={[styles.markerColumn, { left: `${fraction * 100}%` }]}>
+            <View style={styles.triangle} />
+          </View>
+        ) : null}
       </View>
 
-      <View style={styles.bar}>
+      <View style={[styles.bar, !hasBpm && styles.barEmpty]}>
         {segments.map((segment) => (
           <View
             key={segment.zone}
@@ -54,7 +61,7 @@ export default function RestingHeartRateBar({
 
       <View style={styles.axisRow}>
         <Text style={styles.axisLabel}>{RESTING_HR_AXIS_MIN}</Text>
-        <Text style={styles.axisValue}>{Math.round(bpm)} bpm</Text>
+        <Text style={styles.axisValue}>{hasBpm ? `${Math.round(bpm!)} bpm` : '-- bpm'}</Text>
         <Text style={styles.axisLabel}>{RESTING_HR_AXIS_MAX}</Text>
       </View>
     </View>
@@ -92,6 +99,12 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semibold,
     fontSize: 11,
   },
+  zonePillEmpty: {
+    backgroundColor: colors.neutral[100],
+  },
+  zoneTextEmpty: {
+    color: colors.text.tertiary,
+  },
   markerTrack: {
     width: '100%',
     height: 9,
@@ -119,6 +132,9 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     marginTop: 2,
     overflow: 'hidden',
+  },
+  barEmpty: {
+    opacity: 0.4,
   },
   axisRow: {
     flexDirection: 'row',
