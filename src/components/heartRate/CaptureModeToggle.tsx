@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
   proBadgeText: {
     ...typography.caption.caption2,
     fontFamily: fonts.semibold,
-    fontWeight: '700',
+    fontWeight: '600',
     fontSize: 9,
     letterSpacing: 0.5,
     color: colors.text.inverse,
