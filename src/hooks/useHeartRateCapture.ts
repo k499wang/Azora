@@ -67,6 +67,7 @@ interface UseHeartRateCaptureReturn {
   format: ReturnType<typeof useHeartRateCamera>['format'];
   frameProcessor: ReturnType<typeof useFrameProcessor>;
   torchMode: 'on' | 'off';
+  cameraFps: number;
   startCapture: () => void;
   startMeasuring: () => void;
   cancel: () => void;
@@ -79,8 +80,10 @@ export function useHeartRateCapture(
   options: UseHeartRateCaptureOptions = {},
 ): UseHeartRateCaptureReturn {
   const mode = options.mode ?? DEFAULT_CAPTURE_MODE;
-  const captureDurationMs = getCaptureModeConfig(mode).durationMs;
+  const captureModeConfig = getCaptureModeConfig(mode);
+  const captureDurationMs = captureModeConfig.durationMs;
   const captureDurationSec = captureDurationMs / 1000;
+  const cameraFps = captureModeConfig.captureFps;
 
   const onCaptureCompleteRef = useRef(options.onCaptureComplete);
   onCaptureCompleteRef.current = options.onCaptureComplete;
@@ -350,6 +353,7 @@ export function useHeartRateCapture(
     format,
     frameProcessor,
     torchMode,
+    cameraFps,
     startCapture,
     startMeasuring,
     cancel,
