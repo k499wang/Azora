@@ -1,5 +1,6 @@
 import type { CaptureResult, PpgFrameSample } from '../../lib/heartRate/types';
 import { buildHeartRateSessionRpcPayload } from '../../lib/heartRate/sessionPayload';
+import { inferCaptureModeFromDurationSeconds } from '../../lib/heartRate/captureModes';
 import { logNetworkFailureDiagnostics } from '../debug/networkFailureDiagnostics';
 import { requireSupabaseClient } from '../supabase';
 import type { Database, Json } from '../supabase/database.types';
@@ -131,6 +132,7 @@ function mapHeartRateSummary(
     hrDrop: row.hr_drop,
     beatCount: row.beat_count,
     stress: row.stress ?? deriveStressFromStoredSummary(row.rmssd, row.avg_bpm),
+    mode: inferCaptureModeFromDurationSeconds(row.duration_seconds),
   };
 }
 

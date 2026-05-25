@@ -1,3 +1,5 @@
+import type { HeartRateCaptureMode } from '../../lib/heartRate/captureModes';
+
 export interface HeartRatePoint {
   offsetMs: number;
   bpm: number;
@@ -38,6 +40,7 @@ export interface TodayHeartRateSummary {
   hrDrop: number | null;
   beatCount: number | null;
   stress: number | null;
+  mode: HeartRateCaptureMode;
 }
 
 export interface HeartRateSessionDetail extends TodayHeartRateSummary {

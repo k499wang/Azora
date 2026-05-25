@@ -25,6 +25,8 @@ import { AnalyticsEvent } from '../../services/analytics/events';
 import { HeartRateResultContent } from './HeartRateResultContent';
 import { useNavigation } from '@react-navigation/native';
 import { useFeatureAccess } from '../../hooks/useFeatureAccess';
+import { useAuthStore } from '../../stores/authStore';
+import { useProfileQuery } from '../../queries/profile/useProfileQuery';
 import { PaywallPlacement } from '../../services/paywall';
 import { FeatureKey } from '../../services/subscriptions/featureAccess';
 import type { RootStackNavigationProp } from '../../app/navigation';
@@ -164,6 +166,8 @@ export function ResultScreen({
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<RootStackNavigationProp<'HeartRate'>>();
   const advancedStatsAccess = useFeatureAccess(FeatureKey.AdvancedStats);
+  const userId = useAuthStore((state) => state.user?.id ?? null);
+  const profileQuery = useProfileQuery(userId);
   const advancedStatsLocked =
     !advancedStatsAccess.allowed && !advancedStatsAccess.isLoading;
   const showAdvancedStatsPaywall = () => {
@@ -251,6 +255,8 @@ export function ResultScreen({
                 confidence={reading.confidence}
                 sampleCount={reading.sampleCount}
                 showHrv={result.mode !== 'quick'}
+                showRestingHealthBar={result.mode === 'quick'}
+                age={profileQuery.data?.age ?? null}
                 rmssd={reading.rmssd ?? null}
                 sdnn={reading.sdnn ?? null}
                 hrDrop={reading.hrDrop ?? null}
