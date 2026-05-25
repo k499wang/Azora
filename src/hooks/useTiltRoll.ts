@@ -3,7 +3,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useFrameCallback, useSharedValue } from 'react-native-reanimated';
 import { useDeviceTilt } from './useDeviceTilt';
 
-const FRAME_SMOOTHING = 0.32;
+const FRAME_SMOOTHING = 0.45;
 
 export function useTiltRoll() {
   const tilt = useDeviceTilt();

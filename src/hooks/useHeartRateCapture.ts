@@ -11,6 +11,7 @@ import type {
 import { heartRatePlugin } from '../lib/heartRate/heartRatePlugin';
 import { HeartRateManager } from '../lib/heartRate/heartRateManager';
 import { buildCaptureResult } from '../lib/heartRate/captureResult';
+import { LIVE_SIGNAL_GRAPH_UPDATE_INTERVAL_MS } from '../lib/heartRate/liveSignalGraphConfig';
 import {
   DEFAULT_CAPTURE_MODE,
   getCaptureModeConfig,
@@ -24,7 +25,6 @@ import { useHeartRateCamera } from './useHeartRateCamera';
 const MIN_GOOD_DURATION_MS = 2500;
 const PROGRESS_UPDATE_INTERVAL_MS = 200;
 const BPM_UPDATE_INTERVAL_MS = 1000;
-const SIGNAL_GRAPH_UPDATE_INTERVAL_MS = 50;
 
 function isValidFrameSample(value: unknown): value is PpgFrameSample {
   if (value == null || typeof value !== 'object') return false;
@@ -224,7 +224,7 @@ export function useHeartRateCapture(
         return;
       }
 
-      if (timestamp - lastSignalGraphUpdateRef.current >= SIGNAL_GRAPH_UPDATE_INTERVAL_MS) {
+      if (timestamp - lastSignalGraphUpdateRef.current >= LIVE_SIGNAL_GRAPH_UPDATE_INTERVAL_MS) {
         lastSignalGraphUpdateRef.current = timestamp;
         const latestSignalTimestamp = managerRef.current.getLatestLiveSignalTimestamp();
         if (

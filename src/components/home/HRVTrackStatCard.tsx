@@ -141,59 +141,63 @@ export default function HRVTrackStatCard({
         </Pressable>
       ) : null}
 
-      <View style={styles.left}>
-        <View style={[styles.headerRow, locked && styles.lockedHeaderRow]}>
-          <Text style={styles.label}>{label}</Text>
-          {zone != null ? (
-            <View
-              style={[styles.zonePill, { backgroundColor: `${zone.color}18` }]}
-            >
-              <Text style={[styles.zonePillText, { color: zone.color }]}>
-                {zone.label}
-              </Text>
-            </View>
-          ) : null}
-        </View>
-
-        <View style={styles.cardBody}>
-          <View style={[styles.statsRow, multiStat && styles.statsRowCompact]}>
-            <View style={styles.statCell}>
-              <Text style={[styles.statLabel, !multiStat && styles.statLabelLarge]}>Today</Text>
-              <View style={styles.statValueRow}>
-                <Text style={[styles.statValue, !multiStat && styles.statValueLarge]}>
-                  {hasValue ? Math.round(value!) : '--'}
+      <View style={styles.cardContent}>
+        <View style={styles.left}>
+          <View style={[styles.headerRow, locked && styles.lockedHeaderRow]}>
+            <Text style={styles.label}>{label}</Text>
+            {zone != null ? (
+              <View
+                style={[styles.zonePill, { backgroundColor: `${zone.color}18` }]}
+              >
+                <Text style={[styles.zonePillText, { color: zone.color }]}>
+                  {zone.label}
                 </Text>
-                <Text style={[styles.statUnit, !multiStat && styles.statUnitLarge]}>{unit}</Text>
               </View>
-            </View>
-
-            {hasAvg ? (
-              <>
-                <View style={styles.statDivider} />
-                <View style={styles.statCell}>
-                  <Text style={styles.statLabel}>Avg</Text>
-                  <View style={styles.statValueRow}>
-                    <Text style={styles.statValue}>{Math.round(avgValue!)}</Text>
-                    <Text style={styles.statUnit}>{unit}</Text>
-                  </View>
-                </View>
-              </>
-            ) : null}
-
-            {hasBest ? (
-              <>
-                <View style={styles.statDivider} />
-                <View style={styles.statCell}>
-                  <Text style={styles.statLabel}>Best</Text>
-                  <View style={styles.statValueRow}>
-                    <Text style={styles.statValue}>{Math.round(bestValue!)}</Text>
-                    <Text style={styles.statUnit}>{unit}</Text>
-                  </View>
-                </View>
-              </>
             ) : null}
           </View>
 
+          <View style={styles.statsColumn}>
+            <View style={[styles.statsRow, multiStat && styles.statsRowCompact]}>
+              <View style={styles.statCell}>
+                <Text style={[styles.statLabel, !multiStat && styles.statLabelLarge]}>Today</Text>
+                <View style={styles.statValueRow}>
+                  <Text style={[styles.statValue, !multiStat && styles.statValueLarge]}>
+                    {hasValue ? Math.round(value!) : '--'}
+                  </Text>
+                  <Text style={[styles.statUnit, !multiStat && styles.statUnitLarge]}>{unit}</Text>
+                </View>
+              </View>
+
+              {hasAvg ? (
+                <>
+                  <View style={styles.statDivider} />
+                  <View style={styles.statCell}>
+                    <Text style={styles.statLabel}>Avg</Text>
+                    <View style={styles.statValueRow}>
+                      <Text style={styles.statValue}>{Math.round(avgValue!)}</Text>
+                      <Text style={styles.statUnit}>{unit}</Text>
+                    </View>
+                  </View>
+                </>
+              ) : null}
+
+              {hasBest ? (
+                <>
+                  <View style={styles.statDivider} />
+                  <View style={styles.statCell}>
+                    <Text style={styles.statLabel}>Best</Text>
+                    <View style={styles.statValueRow}>
+                      <Text style={styles.statValue}>{Math.round(bestValue!)}</Text>
+                      <Text style={styles.statUnit}>{unit}</Text>
+                    </View>
+                  </View>
+                </>
+              ) : null}
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.gaugeColumn}>
           <View style={styles.ringSurface}>
             <Canvas style={StyleSheet.absoluteFill}>
               {TICKS.map((tick, i) => (
@@ -280,7 +284,8 @@ const styles = StyleSheet.create({
     zIndex: 2,
   },
   left: {
-    width: '100%',
+    flex: 1,
+    minHeight: SIZE,
   },
   label: {
     ...typography.body.medium,
@@ -306,25 +311,35 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.xs + 2,
   },
-  cardBody: {
+  cardContent: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'stretch',
     justifyContent: 'space-between',
     gap: spacing.md,
+    minHeight: SIZE,
     borderRadius: 18,
+  },
+  statsColumn: {
+    flex: 1,
+    justifyContent: 'center',
   },
   statsRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',
     justifyContent: 'flex-start',
     gap: spacing.md,
-    marginTop: 4,
     paddingRight: spacing.md,
   },
   statsRowCompact: {
     gap: spacing.sm + 2,
-    marginTop: 8,
+    marginTop: 2,
     paddingRight: spacing.sm,
+  },
+  gaugeColumn: {
+    width: SIZE,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexShrink: 0,
   },
   statCell: {
     alignItems: 'flex-start',

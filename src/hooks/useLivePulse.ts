@@ -10,11 +10,11 @@ import type {
 import { heartRatePlugin } from '../lib/heartRate/heartRatePlugin';
 import { HeartRateManager } from '../lib/heartRate/heartRateManager';
 import { createLiveBpmPresentationFilter } from '../lib/heartRate/bpmSmoothing';
+import { LIVE_SIGNAL_GRAPH_UPDATE_INTERVAL_MS } from '../lib/heartRate/liveSignalGraphConfig';
 import { useHeartRateCamera } from './useHeartRateCamera';
 
 const BPM_UPDATE_INTERVAL_MS = 1000;
 const FINGER_LOST_TIMEOUT_MS = 1500;
-const SIGNAL_GRAPH_UPDATE_INTERVAL_MS = 50;
 
 function isValidFrameSample(value: unknown): value is PpgFrameSample {
   if (value == null || typeof value !== 'object') return false;
@@ -172,7 +172,7 @@ export function useLivePulse(): UseLivePulseReturn {
 
       if (
         frameSample.timestamp - lastSignalGraphUpdateRef.current >=
-        SIGNAL_GRAPH_UPDATE_INTERVAL_MS
+        LIVE_SIGNAL_GRAPH_UPDATE_INTERVAL_MS
       ) {
         lastSignalGraphUpdateRef.current = frameSample.timestamp;
         const latestSignalTimestamp = managerRef.current.getLatestLiveSignalTimestamp();

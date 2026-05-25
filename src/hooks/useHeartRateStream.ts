@@ -14,6 +14,7 @@ import type {
 import { heartRatePlugin } from '../lib/heartRate/heartRatePlugin';
 import { HeartRateManager } from '../lib/heartRate/heartRateManager';
 import { createLiveBpmPresentationFilter } from '../lib/heartRate/bpmSmoothing';
+import { LIVE_SIGNAL_GRAPH_UPDATE_INTERVAL_MS } from '../lib/heartRate/liveSignalGraphConfig';
 import { useHeartRateCamera } from './useHeartRateCamera';
 
 const ROLLING_WINDOW_MS = 15000;
@@ -21,7 +22,6 @@ const BPM_UPDATE_INTERVAL_MS = 1000;
 const FINGER_LOST_TIMEOUT_MS = 30000;
 const WARMUP_DURATION_MS = 5000;
 const FRAME_PROCESSING_FPS = 20;
-const SIGNAL_GRAPH_UPDATE_INTERVAL_MS = 50;
 
 function isValidFrameSample(value: unknown): value is PpgFrameSample {
   if (value == null || typeof value !== 'object') return false;
@@ -208,7 +208,7 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
         setBeatTick((tick) => tick + 1);
       }
 
-      if ((state === 'streaming' || state === 'warming_up') && timestamp - lastSignalGraphUpdateRef.current >= SIGNAL_GRAPH_UPDATE_INTERVAL_MS) {
+      if ((state === 'streaming' || state === 'warming_up') && timestamp - lastSignalGraphUpdateRef.current >= LIVE_SIGNAL_GRAPH_UPDATE_INTERVAL_MS) {
         lastSignalGraphUpdateRef.current = timestamp;
         const latestSignalTimestamp = managerRef.current.getLatestLiveSignalTimestamp();
         if (
