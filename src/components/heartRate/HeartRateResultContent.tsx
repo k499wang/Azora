@@ -12,6 +12,7 @@ import LineGraph, { type DataPoint } from '../analytics/LineGraph';
 import SectionHeader from '../common/SectionHeader';
 import ProUpgradeButton from '../common/ProUpgradeButton';
 import StressGauge from './StressGauge';
+import RestingHeartRateBar from './RestingHeartRateBar';
 import HRVTrackStatCard from '../home/HRVTrackStatCard';
 import { getStressZone } from '../../lib/heartRate/stress';
 import { computeHRVStats } from '../../lib/hrv';
@@ -44,6 +45,8 @@ interface HeartRateResultContentProps {
   showRmssd?: boolean;
   showStress?: boolean;
   showHrv?: boolean;
+  showRestingHealthBar?: boolean;
+  age?: number | null;
 }
 
 const HERO_RING_SIZE = 240;
@@ -123,6 +126,8 @@ export function HeartRateResultContent({
   showRmssd = true,
   showStress = true,
   showHrv = true,
+  showRestingHealthBar = false,
+  age = null,
 }: HeartRateResultContentProps) {
   const rmssdValue =
     rmssd != null && Number.isFinite(rmssd)
@@ -233,6 +238,10 @@ export function HeartRateResultContent({
         ) : (
           heroRing
         )
+      ) : null}
+
+      {showRestingHealthBar && Number.isFinite(heroBpmNumber) ? (
+        <RestingHeartRateBar bpm={heroBpmNumber} age={age} />
       ) : null}
 
       {showHrv &&

@@ -41,6 +41,23 @@ export function getCaptureModeConfig(mode: HeartRateCaptureMode): HeartRateCaptu
   return HEART_RATE_CAPTURE_MODES[mode];
 }
 
+/** Infer which capture mode a saved session used from its stored duration. */
+export function inferCaptureModeFromDurationSeconds(
+  durationSeconds: number,
+): HeartRateCaptureMode {
+  const durationMs = durationSeconds * 1000;
+  let closest = HEART_RATE_CAPTURE_MODE_ORDER[0];
+  let closestDistance = Infinity;
+  for (const mode of HEART_RATE_CAPTURE_MODE_ORDER) {
+    const distance = Math.abs(HEART_RATE_CAPTURE_MODES[mode].durationMs - durationMs);
+    if (distance < closestDistance) {
+      closest = mode;
+      closestDistance = distance;
+    }
+  }
+  return closest;
+}
+
 /** A mode is locked when it requires Pro and the user is not entitled. */
 export function isCaptureModeLocked(mode: HeartRateCaptureMode, isPro: boolean): boolean {
   return getCaptureModeConfig(mode).requiresPro && !isPro;

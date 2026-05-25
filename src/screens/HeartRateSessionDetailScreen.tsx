@@ -9,6 +9,7 @@ import { HeartRateResultContent } from '../components/heartRate/HeartRateResultC
 import { useAuthStore } from '../stores/authStore';
 import { useFeatureAccess } from '../hooks/useFeatureAccess';
 import { useHeartRateSessionDetailQuery } from '../queries/tracking/useHeartRateSessionDetailQuery';
+import { useProfileQuery } from '../queries/profile/useProfileQuery';
 import { PaywallPlacement } from '../services/paywall';
 import { FeatureKey } from '../services/subscriptions/featureAccess';
 import type { HeartRateSessionDetailScreenProps } from '../app/navigation';
@@ -50,6 +51,7 @@ export function HeartRateSessionDetailScreen({
   const user = useAuthStore((state) => state.user);
   const sessionId = route.params.sessionId;
   const detailQuery = useHeartRateSessionDetailQuery(user?.id ?? null, sessionId);
+  const profileQuery = useProfileQuery(user?.id ?? null);
   const advancedStatsAccess = useFeatureAccess(FeatureKey.AdvancedStats);
   const detail = detailQuery.data ?? null;
   const advancedStatsLocked =
@@ -103,6 +105,9 @@ export function HeartRateSessionDetailScreen({
               <HeartRateResultContent
                 bpm={detail.avgBpm ?? '--'}
                 sampleCount={detail.bpmSeries.length || null}
+                showHrv={detail.mode !== 'quick'}
+                showRestingHealthBar={detail.mode === 'quick'}
+                age={profileQuery.data?.age ?? null}
                 rmssd={detail.rmssd}
                 sdnn={detail.sdnn}
                 hrDrop={detail.hrDrop}

@@ -19,6 +19,7 @@ import ProUpgradeButton from '../common/ProUpgradeButton';
 import HRVTrackStatCard from './HRVTrackStatCard';
 import HRVChart from './HRVChart';
 import BPMChart from './BPMChart';
+import RestingHeartRateBar from '../heartRate/RestingHeartRateBar';
 
 function ThermometerStatCard({
   label,
@@ -110,6 +111,8 @@ interface HeartHealthSectionProps {
   maxSdnn?: number | null;
   hrDrop?: number | null;
   minBpm?: number | null;
+  avgBpm?: number | null;
+  age?: number | null;
   ibiMs?: number[];
   locked?: boolean;
   onPressUpgrade?: () => void;
@@ -124,6 +127,8 @@ export default function HeartHealthSection({
   maxSdnn,
   hrDrop,
   minBpm,
+  avgBpm,
+  age,
   ibiMs = [],
   locked = false,
   onPressUpgrade,
@@ -185,6 +190,10 @@ export default function HeartHealthSection({
             locked={locked}
             onPressLocked={onPressUpgrade}
           />
+
+          {avgBpm != null ? (
+            <RestingHeartRateBar bpm={avgBpm} age={age ?? null} />
+          ) : null}
 
           <View onLayout={onPagerLayout}>
             <ScrollView

@@ -24,6 +24,7 @@ import DailyPlanCard from '../components/home/DailyPlanCard';
 import MoodChipRow from '../components/home/MoodChipRow';
 import { useFeatureAccess } from '../hooks/useFeatureAccess';
 import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
+import { useProfileQuery } from '../queries/profile/useProfileQuery';
 import { formatLocalDate } from '../lib/calendar/weekCalendarDays';
 import type { HomeScreenProps } from '../app/navigation';
 import { useHomeStatsQuery } from '../queries/tracking/useHomeStatsQuery';
@@ -278,6 +279,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const posthog = usePostHog();
   const user = useAuthStore((state) => state.user);
   const profileSummaryQuery = useProfileSummaryQuery(user?.id ?? null);
+  const profileQuery = useProfileQuery(user?.id ?? null);
   const displayName = profileSummaryQuery.data?.profile?.displayName ?? null;
   const dailyExerciseAccess = useFeatureAccess(FeatureKey.DailyExercise);
   const advancedStatsAccess = useFeatureAccess(FeatureKey.AdvancedStats);
@@ -408,7 +410,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
 
         <View style={styles.moodChipSection}>
           <View style={styles.moodHeader}>
-            <SectionHeader title="Mood" />
+            <SectionHeader title="How are you feeling?" />
           </View>
           <MoodChipRow />
         </View>
@@ -477,6 +479,8 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           maxSdnn={stats?.hrv.maxSdnn ?? null}
           hrDrop={stats?.hrv.hrDrop ?? null}
           minBpm={todayBreathHold?.minBpm ?? todayHeartRate?.minBpm ?? null}
+          avgBpm={avgBpm}
+          age={profileQuery.data?.age ?? null}
           ibiMs={ibiMs}
           locked={advancedStatsLocked}
           onPressUpgrade={() => {
