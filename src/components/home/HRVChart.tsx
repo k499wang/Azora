@@ -127,6 +127,13 @@ export default function HRVChart({
         Heart rate variability
       </Text>
 
+      {!chart ? (
+        <View style={[styles.emptyChart, { height }]} onLayout={onLayout}>
+          <Text style={styles.emptyText}>
+            Complete today's daily exercise to see your HRV
+          </Text>
+        </View>
+      ) : (
       <View style={styles.plotRow}>
         <View style={[styles.yAxis, { height }]}>
           {yTicks.map((t, i) => {
@@ -203,11 +210,7 @@ export default function HRVChart({
                   fill={colors.primary.blue500}
                 />
               </Svg>
-            ) : (
-              <View style={[styles.emptyChart, { height }]}>
-                <Text style={styles.emptyText}>Complete today's daily exercise to see your HRV</Text>
-              </View>
-            )}
+            ) : null}
           </View>
 
           {xTicks.length > 0 ? (
@@ -221,6 +224,7 @@ export default function HRVChart({
           <Text style={styles.xLabel}>Time (s)</Text>
         </View>
       </View>
+      )}
       {locked ? (
         <>
           <BlurView
@@ -316,10 +320,12 @@ const styles = StyleSheet.create({
   emptyChart: {
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: spacing.lg,
   },
   emptyText: {
     ...typography.body.small,
     color: colors.text.tertiary,
+    textAlign: 'center',
   },
   infoButton: {
     position: 'absolute',
