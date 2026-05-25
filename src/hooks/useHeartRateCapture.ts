@@ -11,13 +11,16 @@ import type {
 import { heartRatePlugin } from '../lib/heartRate/heartRatePlugin';
 import { HeartRateManager } from '../lib/heartRate/heartRateManager';
 import { buildCaptureResult } from '../lib/heartRate/captureResult';
+import {
+  DEFAULT_CAPTURE_MODE,
+  getCaptureModeConfig,
+  type HeartRateCaptureMode,
+} from '../lib/heartRate/captureModes';
 import { createLiveBpmPresentationFilter } from '../lib/heartRate/bpmSmoothing';
 import { runAfterNextPaint } from '../lib/ui/runAfterNextPaint';
 import { useMeasurementTimer } from './useMeasurementTimer';
 import { useHeartRateCamera } from './useHeartRateCamera';
 
-const CAPTURE_DURATION_MS = 45000;
-const CAPTURE_DURATION_SEC = CAPTURE_DURATION_MS / 1000;
 const MIN_GOOD_DURATION_MS = 2500;
 const PROGRESS_UPDATE_INTERVAL_MS = 200;
 const BPM_UPDATE_INTERVAL_MS = 1000;
@@ -40,6 +43,7 @@ function isValidFrameSample(value: unknown): value is PpgFrameSample {
 }
 
 interface UseHeartRateCaptureOptions {
+  mode?: HeartRateCaptureMode;
   onCaptureComplete?: (result: CaptureResult, captureSamples: PpgFrameSample[]) => void;
 }
 
@@ -68,13 +72,19 @@ interface UseHeartRateCaptureReturn {
 export function useHeartRateCapture(
   options: UseHeartRateCaptureOptions = {},
 ): UseHeartRateCaptureReturn {
+  const mode = options.mode ?? DEFAULT_CAPTURE_MODE;
+  const captureDurationMs = getCaptureModeConfig(mode).durationMs;
+  const captureDurationSec = captureDurationMs / 1000;
+
   const onCaptureCompleteRef = useRef(options.onCaptureComplete);
   onCaptureCompleteRef.current = options.onCaptureComplete;
+  const modeRef = useRef(mode);
+  modeRef.current = mode;
 
   const [captureState, setCaptureState] = useState<CaptureState>('idle');
   const [fingerPlacement, setFingerPlacement] = useState<FingerPlacementState>('no_finger');
   const [progress, setProgress] = useState(0);
-  const [secondsRemaining, setSecondsRemaining] = useState(CAPTURE_DURATION_SEC);
+  const [secondsRemaining, setSecondsRemaining] = useState(captureDurationSec);
   const [currentBpm, setCurrentBpm] = useState<number | null>(null);
   const [beatTick, setBeatTick] = useState(0);
   const [liveSignalSamples, setLiveSignalSamples] = useState<LivePpgSignalSample[]>([]);
@@ -125,15 +135,15 @@ export function useHeartRateCapture(
   }, [resetMeasurementRefs]);
 
   const updateProgress = useCallback((elapsedMs: number) => {
-    const clampedElapsed = Math.max(0, Math.min(CAPTURE_DURATION_MS, elapsedMs));
-    const prog = clampedElapsed / CAPTURE_DURATION_MS;
-    const remaining = Math.max(0, Math.ceil((CAPTURE_DURATION_MS - clampedElapsed) / 1000));
+    const clampedElapsed = Math.max(0, Math.min(captureDurationMs, elapsedMs));
+    const prog = clampedElapsed / captureDurationMs;
+    const remaining = Math.max(0, Math.ceil((captureDurationMs - clampedElapsed) / 1000));
     setProgress(prog);
     setSecondsRemaining(remaining);
-  }, []);
+  }, [captureDurationMs]);
 
   const finishMeasurement = useCallback(() => {
-    updateProgress(CAPTURE_DURATION_MS);
+    updateProgress(captureDurationMs);
     setCaptureStateAndRef('processing');
 
     const samples = [...samplesRef.current];
@@ -142,20 +152,20 @@ export function useHeartRateCapture(
     void runAfterNextPaint(() => {
       if (captureStateRef.current !== 'processing') return;
 
-      const nextResult = buildCaptureResult(samples);
+      const nextResult = buildCaptureResult(samples, modeRef.current);
       setResult(nextResult);
       setCaptureStateAndRef(nextResult.reading == null ? 'error' : 'done');
       if (nextResult.reading != null) {
         onCaptureCompleteRef.current?.(nextResult, samples);
       }
     });
-  }, [setCaptureStateAndRef, updateProgress]);
+  }, [captureDurationMs, setCaptureStateAndRef, updateProgress]);
 
   const {
     start: startMeasurementTimer,
     stop: stopMeasurementTimer,
   } = useMeasurementTimer({
-    durationMs: CAPTURE_DURATION_MS,
+    durationMs: captureDurationMs,
     intervalMs: PROGRESS_UPDATE_INTERVAL_MS,
     onTick: updateProgress,
     onComplete: finishMeasurement,
@@ -172,13 +182,13 @@ export function useHeartRateCapture(
     currentBpmRef.current = null;
     liveBpmFilterRef.current.reset();
     setProgress(0);
-    setSecondsRemaining(CAPTURE_DURATION_SEC);
+    setSecondsRemaining(captureDurationSec);
     setBeatTick(0);
     setCurrentBpm(null);
     setLiveSignalSamples([]);
     setCaptureStateAndRef('measuring');
     startMeasurementTimer();
-  }, [resetMeasurementRefs, setCaptureStateAndRef, startMeasurementTimer, stopMeasurementTimer]);
+  }, [captureDurationSec, resetMeasurementRefs, setCaptureStateAndRef, startMeasurementTimer, stopMeasurementTimer]);
 
   const addSample = useRunOnJS(
     (frameSample: unknown) => {
@@ -270,7 +280,7 @@ export function useHeartRateCapture(
     stopMeasurementTimer();
     resetCaptureRefs();
     setProgress(0);
-    setSecondsRemaining(CAPTURE_DURATION_SEC);
+    setSecondsRemaining(captureDurationSec);
     setResult(null);
     setCaptureSamples([]);
     setBeatTick(0);
@@ -279,20 +289,20 @@ export function useHeartRateCapture(
     fingerPlacementRef.current = 'no_finger';
     setFingerPlacement('no_finger');
     setCaptureStateAndRef('camera_check');
-  }, [resetCaptureRefs, setCaptureStateAndRef, stopMeasurementTimer]);
+  }, [captureDurationSec, resetCaptureRefs, setCaptureStateAndRef, stopMeasurementTimer]);
 
   const cancel = useCallback(() => {
     stopMeasurementTimer();
     resetCaptureRefs();
     setProgress(0);
-    setSecondsRemaining(CAPTURE_DURATION_SEC);
+    setSecondsRemaining(captureDurationSec);
     setBeatTick(0);
     setCurrentBpm(null);
     setLiveSignalSamples([]);
     fingerPlacementRef.current = 'no_finger';
     setFingerPlacement('no_finger');
     setCaptureStateAndRef('idle');
-  }, [resetCaptureRefs, setCaptureStateAndRef, stopMeasurementTimer]);
+  }, [captureDurationSec, resetCaptureRefs, setCaptureStateAndRef, stopMeasurementTimer]);
 
   const reset = useCallback(() => {
     cancel();

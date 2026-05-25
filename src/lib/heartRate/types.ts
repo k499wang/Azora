@@ -1,3 +1,5 @@
+import type { HeartRateCaptureMode } from './captureModes';
+
 export type CaptureState =
   | 'idle'
   | 'setup'
@@ -96,6 +98,7 @@ export interface CaptureResult {
   reading: HeartRateReading | null;
   error: 'low_confidence' | 'too_few_samples' | 'signal_lost' | 'camera_error' | null;
   ibiSamples: IbiSample[];
+  mode?: HeartRateCaptureMode;
 }
 
 export interface HeartRateStreamSummary {
@@ -108,6 +111,6 @@ export interface HeartRateStreamSummary {
 }
 
 export interface SetupScreenProps {
-  onNext: () => void;
+  onNext: (selection?: { mode: HeartRateCaptureMode }) => void;
   onCancel: () => void;
 }

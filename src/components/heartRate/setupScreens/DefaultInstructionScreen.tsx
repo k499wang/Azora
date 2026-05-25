@@ -2,12 +2,23 @@ import { Image as RNImage, Pressable, StyleSheet, Text, View, useWindowDimension
 import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import { useNavigation } from '@react-navigation/native';
 import { colors } from '../../../theme/colors';
 import { typography } from '../../../theme/typography';
 import { spacing } from '../../../theme/spacing';
 import { card } from '../../../theme/card';
 import type { SetupScreenProps } from '../../../lib/heartRate/types';
+import {
+  HEART_RATE_CAPTURE_MODES,
+  DEFAULT_CAPTURE_MODE,
+  type HeartRateCaptureMode,
+} from '../../../lib/heartRate/captureModes';
+import { CaptureModeToggle } from '../CaptureModeToggle';
+import type { RootStackNavigationProp } from '../../../app/navigation';
+import { useFeatureAccess } from '../../../hooks/useFeatureAccess';
+import { FeatureKey } from '../../../services/subscriptions/featureAccess';
+import { PaywallPlacement } from '../../../services/paywall';
 
 const INSTRUCTION_IMAGE = require('../../../../assets/onboarding/camerappg.png');
 
@@ -19,6 +30,19 @@ const STEPS = [
 
 export function DefaultInstructionScreen({ onNext }: SetupScreenProps) {
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation<RootStackNavigationProp<'HeartRate'>>();
+  const { isPro } = useFeatureAccess(FeatureKey.AdvancedStats);
+  const [mode, setMode] = useState<HeartRateCaptureMode>(DEFAULT_CAPTURE_MODE);
+  const durationSeconds = Math.round(HEART_RATE_CAPTURE_MODES[mode].durationMs / 1000);
+
+  const openPaywallForLockedMode = () => {
+    navigation.navigate('ProPaywall', {
+      placement: PaywallPlacement.HeartRateProGate,
+      sourceScreen: 'HeartRate',
+      sourceAction: 'capture_mode_full',
+      feature: FeatureKey.AdvancedStats,
+    });
+  };
 
   return (
     <View style={[styles.container, { paddingTop: insets.top + 56 }]}>
@@ -55,7 +79,7 @@ export function DefaultInstructionScreen({ onNext }: SetupScreenProps) {
       <View style={styles.metaRow}>
         <View style={styles.metaPill}>
           <MaterialCommunityIcons name="timer-outline" size={12} color={colors.text.tertiary} />
-          <Text style={styles.metaText}>~45s</Text>
+          <Text style={styles.metaText}>~{durationSeconds}s</Text>
         </View>
         <View style={styles.metaPill}>
           <MaterialCommunityIcons name="lock-outline" size={12} color={colors.text.tertiary} />
@@ -65,9 +89,18 @@ export function DefaultInstructionScreen({ onNext }: SetupScreenProps) {
 
       <View style={styles.spacer} />
 
+      <View style={styles.modeToggle}>
+        <CaptureModeToggle
+          value={mode}
+          onChange={setMode}
+          isPro={isPro}
+          onLockedPress={openPaywallForLockedMode}
+        />
+      </View>
+
       <Pressable
         style={({ pressed }) => [styles.primaryButton, pressed && styles.primaryButtonPressed]}
-        onPress={onNext}
+        onPress={() => onNext({ mode })}
       >
         <Text style={styles.primaryButtonText}>Begin</Text>
       </Pressable>
@@ -185,6 +218,9 @@ const styles = StyleSheet.create({
   metaText: {
     ...typography.caption.caption2,
     color: colors.text.tertiary,
+  },
+  modeToggle: {
+    marginBottom: spacing.md,
   },
   primaryButton: {
     alignItems: 'center',

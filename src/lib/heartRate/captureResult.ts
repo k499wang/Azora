@@ -6,6 +6,11 @@ import {
   buildIbiSamplesFromCaptureBeatSeries,
   type CaptureBeatSeries,
 } from './signalProcessing';
+import {
+  DEFAULT_CAPTURE_MODE,
+  getCaptureModeConfig,
+  type HeartRateCaptureMode,
+} from './captureModes';
 
 const MIN_HRV_BEAT_COUNT = 15;
 const MIN_HRV_CONFIDENCE = 0.55;
@@ -113,18 +118,16 @@ export function deriveCaptureHrvResult(
 
 export function buildCaptureResult(
   samples: PpgFrameSample[],
+  mode: HeartRateCaptureMode = DEFAULT_CAPTURE_MODE,
 ): CaptureResult {
+  const { computeHrv } = getCaptureModeConfig(mode);
   const { estimate: bpmResult, beatSeries: hrvBeatSeries } = analyzeCapture(samples);
-  const {
-    hrvStats,
-    correctedIbi,
-    hrvAvailabilityReason,
-  } = deriveCaptureHrvResult(hrvBeatSeries);
+  const hrv = computeHrv ? deriveCaptureHrvResult(hrvBeatSeries) : null;
   const startTs = samples[0]?.timestamp ?? 0;
   const endTs = samples[samples.length - 1]?.timestamp ?? 0;
   const finalIbiSamples =
-    hrvStats != null && hrvBeatSeries != null
-      ? buildIbiSamplesFromCaptureBeatSeries(hrvBeatSeries, startTs, correctedIbi)
+    hrv?.hrvStats != null && hrvBeatSeries != null
+      ? buildIbiSamplesFromCaptureBeatSeries(hrvBeatSeries, startTs, hrv.correctedIbi)
       : [];
   const windowDurationMs = endTs > startTs ? endTs - startTs : 0;
 
@@ -134,6 +137,7 @@ export function buildCaptureResult(
       reading: null,
       error: tooFew ? 'too_few_samples' : 'low_confidence',
       ibiSamples: [],
+      mode,
     };
   }
 
@@ -151,15 +155,16 @@ export function buildCaptureResult(
       durationMs: bpmResult.durationMs || windowDurationMs,
       recordedAt: new Date().toISOString(),
       source: 'camera-flash',
-      rmssd: hrvStats?.rmssd,
-      sdnn: hrvStats?.sdnn,
-      stress: hrvStats?.stress,
-      pnn50: hrvStats?.pnn50,
-      hrDrop: hrvStats?.hrDrop,
-      beatCount: hrvStats?.beatCount,
-      hrvAvailabilityReason: hrvAvailabilityReason ?? undefined,
+      rmssd: hrv?.hrvStats?.rmssd,
+      sdnn: hrv?.hrvStats?.sdnn,
+      stress: hrv?.hrvStats?.stress,
+      pnn50: hrv?.hrvStats?.pnn50,
+      hrDrop: hrv?.hrvStats?.hrDrop,
+      beatCount: hrv?.hrvStats?.beatCount,
+      hrvAvailabilityReason: hrv?.hrvAvailabilityReason ?? undefined,
     },
     error: null,
     ibiSamples: finalIbiSamples,
+    mode,
   };
 }
