@@ -448,6 +448,7 @@ export type Database = {
           ended_at: string | null
           hr_drop: number | null
           id: string
+          idempotency_key: string | null
           local_date: string
           max_bpm: number | null
           min_bpm: number | null
@@ -467,6 +468,7 @@ export type Database = {
           ended_at?: string | null
           hr_drop?: number | null
           id?: string
+          idempotency_key?: string | null
           local_date: string
           max_bpm?: number | null
           min_bpm?: number | null
@@ -486,6 +488,7 @@ export type Database = {
           ended_at?: string | null
           hr_drop?: number | null
           id?: string
+          idempotency_key?: string | null
           local_date?: string
           max_bpm?: number | null
           min_bpm?: number | null

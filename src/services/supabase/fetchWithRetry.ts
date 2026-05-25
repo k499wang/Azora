@@ -2,6 +2,7 @@ type Fetch = typeof fetch;
 
 const MAX_RETRIES_READS = 2;
 const MAX_RETRIES_UPSERT = 2;
+const MAX_RETRIES_IDEMPOTENT_RPC = 2;
 const BASE_DELAY_MS = 600;
 
 function isNetworkFailure(error: unknown): boolean {
@@ -10,6 +11,39 @@ function isNetworkFailure(error: unknown): boolean {
     typeof error.message === 'string' &&
     error.message.includes('Network request failed')
   );
+}
+
+function getRequestMethod(input: RequestInfo | URL, init?: RequestInit): string {
+  if (init?.method != null) {
+    return init.method.toUpperCase();
+  }
+
+  if (
+    typeof Request !== 'undefined' &&
+    input instanceof Request
+  ) {
+    return input.method.toUpperCase();
+  }
+
+  return 'GET';
+}
+
+function getRequestHeaders(
+  input: RequestInfo | URL,
+  init?: RequestInit,
+): HeadersInit | undefined {
+  if (init?.headers != null) {
+    return init.headers;
+  }
+
+  if (
+    typeof Request !== 'undefined' &&
+    input instanceof Request
+  ) {
+    return input.headers;
+  }
+
+  return undefined;
 }
 
 function getHeaderValue(
@@ -37,48 +71,79 @@ function getHeaderValue(
     : undefined;
 }
 
-function isUpsertRequest(init?: RequestInit): boolean {
-  const prefer = getHeaderValue(init?.headers, 'Prefer') ?? '';
+function isUpsertRequest(input: RequestInfo | URL, init?: RequestInit): boolean {
+  const prefer = getHeaderValue(getRequestHeaders(input, init), 'Prefer') ?? '';
   return (
     prefer.includes('resolution=merge-duplicates') ||
     prefer.includes('resolution=ignore-duplicates')
   );
 }
 
-function getMaxRetries(init?: RequestInit): number {
-  const method = (init?.method ?? 'GET').toUpperCase();
+function getEndpointPathname(input: RequestInfo | URL): string | null {
+  try {
+    const url =
+      typeof input === 'string'
+        ? input
+        : input instanceof URL
+          ? input.toString()
+          : typeof Request !== 'undefined' && input instanceof Request
+            ? input.url
+            : input.toString();
+    return new URL(url).pathname;
+  } catch {
+    return null;
+  }
+}
+
+function isIdempotentRpcRequest(input: RequestInfo | URL, init?: RequestInit): boolean {
+  const method = getRequestMethod(input, init);
+  if (method !== 'POST') return false;
+
+  return getEndpointPathname(input)?.endsWith('/rpc/complete_heart_rate_session') === true;
+}
+
+function getMaxRetries(input: RequestInfo | URL, init?: RequestInit): number {
+  const method = getRequestMethod(input, init);
 
   if (['GET', 'HEAD', 'OPTIONS'].includes(method)) {
     return MAX_RETRIES_READS;
   }
 
-  if (isUpsertRequest(init)) {
+  if (isUpsertRequest(input, init)) {
     return MAX_RETRIES_UPSERT;
+  }
+
+  if (isIdempotentRpcRequest(input, init)) {
+    return MAX_RETRIES_IDEMPOTENT_RPC;
   }
 
   return 0;
 }
 
 function getSafeEndpoint(input: RequestInfo | URL): string {
-  try {
-    const url = typeof input === 'string' ? input : input.toString();
-    const pathname = new URL(url).pathname;
-    // Limit length to avoid logging massive URLs
-    return pathname.length > 120 ? pathname.slice(0, 120) + '...' : pathname;
-  } catch {
-    return '<unknown>';
-  }
+  const pathname = getEndpointPathname(input);
+  if (pathname == null) return '<unknown>';
+
+  // Limit length to avoid logging massive URLs
+  return pathname.length > 120 ? pathname.slice(0, 120) + '...' : pathname;
 }
 
-function getRequestType(init?: RequestInit): 'read' | 'upsert' | 'other' {
-  const method = (init?.method ?? 'GET').toUpperCase();
+function getRequestType(
+  input: RequestInfo | URL,
+  init?: RequestInit,
+): 'read' | 'upsert' | 'idempotent_rpc' | 'other' {
+  const method = getRequestMethod(input, init);
 
   if (['GET', 'HEAD', 'OPTIONS'].includes(method)) {
     return 'read';
   }
 
-  if (isUpsertRequest(init)) {
+  if (isUpsertRequest(input, init)) {
     return 'upsert';
+  }
+
+  if (isIdempotentRpcRequest(input, init)) {
+    return 'idempotent_rpc';
   }
 
   return 'other';
@@ -91,13 +156,14 @@ function getRequestType(init?: RequestInit): 'read' | 'upsert' | 'other' {
  * - Retries safe methods (GET/HEAD/OPTIONS) up to 2 times.
  * - Retries upserts (detected by Prefer: resolution=merge-duplicates)
  *   up to 2 times.
+ * - Retries explicitly idempotent RPCs up to 2 times.
  * - Never retries regular inserts, updates, deletes, or storage uploads.
  */
 export const fetchWithRetry: Fetch = async (input, init) => {
-  const maxRetries = getMaxRetries(init);
+  const maxRetries = getMaxRetries(input, init);
   const endpoint = getSafeEndpoint(input);
-  const method = (init?.method ?? 'GET').toUpperCase();
-  const requestType = getRequestType(init);
+  const method = getRequestMethod(input, init);
+  const requestType = getRequestType(input, init);
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {

@@ -1,5 +1,5 @@
-import { useState, useCallback, useEffect, useMemo } from 'react';
-import { SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
+import { InteractionManager, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { usePostHog } from 'posthog-react-native';
@@ -17,6 +17,7 @@ import type {
   SetupScreenProps,
   CaptureResult,
   FingerPlacementState,
+  PpgFrameSample,
 } from '../../lib/heartRate/types';
 import {
   DEFAULT_CAPTURE_MODE,
@@ -43,6 +44,11 @@ const DEFAULT_SETUP_SCREENS: React.ComponentType<SetupScreenProps>[] = [
 ];
 
 const CHECK_TIMEOUT_SECONDS = 10;
+
+interface PendingHeartRateSave {
+  result: CaptureResult;
+  captureSamples: PpgFrameSample[];
+}
 
 function checkStateConfig(placement: FingerPlacementState): {
   ringColor: string;
@@ -76,6 +82,9 @@ export function HeartRateCaptureFlow({
   const [currentSetupIndex, setCurrentSetupIndex] = useState(0);
   const [pastSetup, setPastSetup] = useState(false);
   const [selectedMode, setSelectedMode] = useState<HeartRateCaptureMode>(DEFAULT_CAPTURE_MODE);
+  const [pendingSave, setPendingSave] = useState<PendingHeartRateSave | null>(null);
+  const completeHeartRateSessionMutationRef = useRef(completeHeartRateSessionMutation);
+  completeHeartRateSessionMutationRef.current = completeHeartRateSessionMutation;
 
   const {
     captureState,
@@ -99,12 +108,27 @@ export function HeartRateCaptureFlow({
   } = useHeartRateCapture({
     mode: selectedMode,
     onCaptureComplete: (capturedResult, samples) => {
-      completeHeartRateSessionMutation.mutate({
+      setPendingSave({
         result: capturedResult,
         captureSamples: samples,
       });
     },
   });
+
+  useEffect(() => {
+    if (captureState !== 'done' || pendingSave == null) return;
+
+    // Wait until the done screen has committed so the camera preview unmounts
+    // before the first network request starts.
+    const task = InteractionManager.runAfterInteractions(() => {
+      completeHeartRateSessionMutationRef.current.mutate(pendingSave);
+      setPendingSave(null);
+    });
+
+    return () => {
+      task.cancel();
+    };
+  }, [captureState, pendingSave]);
 
   const beginCapture = useCallback(async () => {
     try {
@@ -175,6 +199,7 @@ export function HeartRateCaptureFlow({
       });
       return;
     }
+    setPendingSave(null);
     completeHeartRateSessionMutation.reset();
     reset();
     setCurrentSetupIndex(0);
@@ -199,12 +224,19 @@ export function HeartRateCaptureFlow({
       onCancel();
       return;
     }
-    if (result.reading != null && completeHeartRateSessionMutation.isError) {
-      // The inline save-error banner is showing; user must Retry before leaving.
+    if (
+      result.reading != null &&
+      (pendingSave != null ||
+        completeHeartRateSessionMutation.isPending ||
+        completeHeartRateSessionMutation.isError)
+    ) {
+      // The save is still active, or the inline save-error banner is showing.
       return;
     }
     onComplete(result);
   }, [
+    pendingSave,
+    completeHeartRateSessionMutation.isPending,
     completeHeartRateSessionMutation.isError,
     result,
     onComplete,
@@ -212,6 +244,7 @@ export function HeartRateCaptureFlow({
   ]);
 
   const handleCancel = useCallback(() => {
+    setPendingSave(null);
     cancel();
     onCancel();
   }, [cancel, onCancel]);
@@ -269,7 +302,7 @@ export function HeartRateCaptureFlow({
         result={result}
         onRetry={handleRetry}
         onDone={handleDone}
-        isSaving={completeHeartRateSessionMutation.isPending}
+        isSaving={pendingSave != null || completeHeartRateSessionMutation.isPending}
         saveError={completeHeartRateSessionMutation.isError}
         onRetrySave={retrySave}
         context={context}
