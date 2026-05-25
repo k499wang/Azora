@@ -36,8 +36,9 @@ const HRV_INTERVAL_CLEANUP_MIN_HISTORY = 3;
 const HRV_INTERVAL_HISTORY_SIZE = 8;
 // Peak detection + cubic-spline upsampling is the expensive stage. Run it only
 // on the few candidates that rank highest in the cheap frequency pass; the HRV
-// winner is then chosen by hrvScore among them.
-const TOP_CANDIDATES_FOR_PEAKS = 3;
+// winner is then chosen by hrvScore among them. Kept generous (5) so a
+// lower-SNR candidate that yields cleaner beat timing still gets considered.
+const TOP_CANDIDATES_FOR_PEAKS = 5;
 
 export interface ComputeBpmOptions {
   minDurationMs?: number;
