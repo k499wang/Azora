@@ -1135,7 +1135,6 @@ export function analyzeCapture(
 
   const captureEndTimestamp = samples[samples.length - 1]?.timestamp ?? 0;
   const beatSeries = selectBestBeatSeries(frequencyAnalyses, resolvedOptions, captureEndTimestamp);
-µ 
   return { estimate, beatSeries };
 }
 

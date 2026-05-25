@@ -1,6 +1,6 @@
 import type { CaptureResult, PpgFrameSample } from '../../lib/heartRate/types';
 import { buildHeartRateSessionRpcPayload } from '../../lib/heartRate/sessionPayload';
-import { buildNetworkFailureDiagnostics } from '../debug/networkFailureDiagnostics';
+import { logNetworkFailureDiagnostics } from '../debug/networkFailureDiagnostics';
 import { requireSupabaseClient } from '../supabase';
 import type { Database, Json } from '../supabase/database.types';
 import type {
@@ -65,13 +65,13 @@ export async function completeHeartRateSession(
       totalElapsedMs: Date.now() - startedAt,
       errorMessage: getErrorMessage(error),
     });
-    console.warn(
+    await logNetworkFailureDiagnostics(
       '[heart-rate-save] rpc request diagnostics',
-      await buildNetworkFailureDiagnostics({
+      {
         elapsedMs: Date.now() - rpcStartedAt,
         requestType: 'rpc.complete_heart_rate_session',
         error,
-      }),
+      },
     );
     throw error;
   }
