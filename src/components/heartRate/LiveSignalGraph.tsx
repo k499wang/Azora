@@ -1,4 +1,10 @@
-import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  memo,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import { Animated, LayoutChangeEvent, StyleSheet, View } from 'react-native';
 import { Canvas, Path, Skia } from '@shopify/react-native-skia';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -17,52 +23,245 @@ interface LiveSignalGraphProps {
 }
 
 const GRAPH_HEIGHT = 78;
-const SIGNAL_WINDOW_MS = 8000;
+const SIGNAL_WINDOW_MS = 6000;
 const MIN_SIGNAL_RANGE = 0.002;
+const GRAPH_POINT_COUNT = 48;
+const MAX_GRAPH_DRAW_POINTS = 96;
+const GRAPH_VERTICAL_PADDING = 3;
+const SIGNAL_RENDER_FRAME_MS = 33;
+const SIGNAL_PLAYBACK_DELAY_MS = 300;
+const SIGNAL_VERTICAL_GAIN = 1.35;
+const RANGE_GROW_ALPHA = 0.12;
+const SIGNAL_DISPLAY_CENTER = 0;
 
-interface PathBuildResult {
-  path: ReturnType<typeof Skia.Path.Make>;
+interface SignalScale {
   rangeEma: number;
+  scaleReady: boolean;
 }
 
-function buildFastSignalPath(
+interface GraphPoint {
+  x: number;
+  y: number;
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value));
+}
+
+function percentile(sortedValues: number[], ratio: number): number {
+  if (sortedValues.length === 0) return 0;
+  const index = Math.round((sortedValues.length - 1) * ratio);
+  return sortedValues[clamp(index, 0, sortedValues.length - 1)];
+}
+
+function buildFlatSignalPath(width: number, height: number): ReturnType<typeof Skia.Path.Make> {
+  const path = Skia.Path.Make();
+  const y = height / 2;
+  path.moveTo(0, y);
+  for (let i = 1; i < GRAPH_POINT_COUNT; i++) {
+    path.lineTo((i / (GRAPH_POINT_COUNT - 1)) * width, y);
+  }
+  return path;
+}
+
+function sampleInterpolatedValue(
+  samples: LivePpgSignalSample[],
+  targetTimestamp: number,
+): number {
+  if (samples.length === 0) return 0;
+
+  if (targetTimestamp <= samples[0].timestamp) {
+    return samples[0].value;
+  }
+
+  let sourceIndex = 0;
+  while (
+    sourceIndex < samples.length - 2 &&
+    samples[sourceIndex + 1].timestamp < targetTimestamp
+  ) {
+    sourceIndex += 1;
+  }
+
+  const current = samples[sourceIndex];
+  const next = samples[sourceIndex + 1];
+  if (next == null || next.timestamp <= current.timestamp) {
+    return current.value;
+  }
+
+  const ratio = Math.max(
+    0,
+    Math.min(1, (targetTimestamp - current.timestamp) / (next.timestamp - current.timestamp)),
+  );
+  return current.value + (next.value - current.value) * ratio;
+}
+
+function capGraphPoints(points: GraphPoint[], maxPointCount: number): GraphPoint[] {
+  if (points.length <= maxPointCount) return points;
+  if (maxPointCount < 3) return [points[0], points[points.length - 1]];
+
+  const cappedPoints: GraphPoint[] = [points[0]];
+  const bucketSize = (points.length - 2) / (maxPointCount - 2);
+  let anchorIndex = 0;
+
+  for (let bucketIndex = 0; bucketIndex < maxPointCount - 2; bucketIndex++) {
+    const bucketStart = Math.floor(bucketIndex * bucketSize) + 1;
+    const bucketEnd = Math.floor((bucketIndex + 1) * bucketSize) + 1;
+    const nextBucketStart = Math.floor((bucketIndex + 1) * bucketSize) + 1;
+    const nextBucketEnd = Math.floor((bucketIndex + 2) * bucketSize) + 1;
+
+    const averageStart = Math.min(nextBucketStart, points.length - 1);
+    const averageEnd = Math.min(nextBucketEnd, points.length);
+    let averageX = 0;
+    let averageY = 0;
+    let averageCount = 0;
+
+    for (let i = averageStart; i < averageEnd; i++) {
+      averageX += points[i].x;
+      averageY += points[i].y;
+      averageCount += 1;
+    }
+
+    if (averageCount === 0) {
+      averageX = points[points.length - 1].x;
+      averageY = points[points.length - 1].y;
+      averageCount = 1;
+    }
+
+    averageX /= averageCount;
+    averageY /= averageCount;
+
+    const anchor = points[anchorIndex];
+    let selectedIndex = bucketStart;
+    let largestArea = -1;
+
+    for (let i = bucketStart; i < Math.min(bucketEnd, points.length - 1); i++) {
+      const point = points[i];
+      const area = Math.abs(
+        (anchor.x - averageX) * (point.y - anchor.y) -
+          (anchor.x - point.x) * (averageY - anchor.y),
+      );
+
+      if (area > largestArea) {
+        largestArea = area;
+        selectedIndex = i;
+      }
+    }
+
+    cappedPoints.push(points[selectedIndex]);
+    anchorIndex = selectedIndex;
+  }
+
+  cappedPoints.push(points[points.length - 1]);
+  return cappedPoints;
+}
+
+function updateSignalScale(
+  samples: LivePpgSignalSample[],
+  anchorTimestamp: number,
+  prevRangeEma: number,
+  scaleReady: boolean,
+): SignalScale {
+  if (samples.length < 2 || anchorTimestamp <= 0) {
+    return {
+      rangeEma: prevRangeEma,
+      scaleReady,
+    };
+  }
+
+  const startTimestamp = anchorTimestamp - SIGNAL_WINDOW_MS;
+  const visibleSamples = samples.filter(
+    (sample) => sample.timestamp >= startTimestamp && sample.timestamp <= anchorTimestamp,
+  );
+  const scaleSamples = visibleSamples.length >= 2 ? visibleSamples : samples;
+
+  const finiteValues: number[] = [];
+  for (let i = 0; i < scaleSamples.length; i++) {
+    const value = scaleSamples[i].value;
+    if (!Number.isFinite(value)) continue;
+    finiteValues.push(value);
+  }
+
+  if (finiteValues.length < 2) {
+    return {
+      rangeEma: prevRangeEma,
+      scaleReady,
+    };
+  }
+
+  finiteValues.sort((a, b) => a - b);
+  const low = percentile(finiteValues, 0.08);
+  const high = percentile(finiteValues, 0.92);
+  const instantRange = Math.max(Math.max(Math.abs(low), Math.abs(high)) * 2, MIN_SIGNAL_RANGE);
+  if (!scaleReady || prevRangeEma <= 0) {
+    return { rangeEma: instantRange, scaleReady: true };
+  }
+
+  if (instantRange <= prevRangeEma) {
+    return { rangeEma: prevRangeEma, scaleReady: true };
+  }
+
+  const rangeEma = Math.max(
+    MIN_SIGNAL_RANGE,
+    prevRangeEma * (1 - RANGE_GROW_ALPHA) + instantRange * RANGE_GROW_ALPHA,
+  );
+
+  return { rangeEma, scaleReady: true };
+}
+
+function buildSignalPath(
   samples: LivePpgSignalSample[],
   width: number,
   height: number,
-  prevRangeEma: number,
-): PathBuildResult {
-  if (samples.length < 2 || width <= 0) {
-    return { path: Skia.Path.Make(), rangeEma: prevRangeEma };
+  anchorTimestamp: number,
+  rangeEma: number,
+): ReturnType<typeof Skia.Path.Make> {
+  if (samples.length < 2 || width <= 0 || anchorTimestamp <= 0 || rangeEma <= 0) {
+    return buildFlatSignalPath(width, height);
   }
 
-  const lastTimestamp = samples[samples.length - 1].timestamp;
-  const startTimestamp = lastTimestamp - SIGNAL_WINDOW_MS;
+  const startTimestamp = anchorTimestamp - SIGNAL_WINDOW_MS;
+  const pxPerMs = width / SIGNAL_WINDOW_MS;
+  const scale = height * 0.42 * SIGNAL_VERTICAL_GAIN;
+  const getY = (value: number) => {
+    const y = height / 2 - ((value - SIGNAL_DISPLAY_CENTER) / rangeEma) * scale;
+    if (!Number.isFinite(y)) return height / 2;
+    return clamp(y, GRAPH_VERTICAL_PADDING, height - GRAPH_VERTICAL_PADDING);
+  };
 
-  let min = Infinity;
-  let max = -Infinity;
+  const points: GraphPoint[] = [
+    { x: 0, y: getY(sampleInterpolatedValue(samples, startTimestamp)) },
+  ];
+
   for (let i = 0; i < samples.length; i++) {
-    const v = samples[i].value;
-    if (v < min) min = v;
-    if (v > max) max = v;
+    const sample = samples[i];
+    if (sample.timestamp <= startTimestamp || sample.timestamp >= anchorTimestamp) continue;
+    points.push({
+      x: (sample.timestamp - startTimestamp) * pxPerMs,
+      y: getY(sample.value),
+    });
   }
 
-  const instantRange = Math.max(max - min, MIN_SIGNAL_RANGE);
-  let rangeEma = prevRangeEma > 0 ? prevRangeEma : instantRange;
-  rangeEma = rangeEma * 0.88 + instantRange * 0.12;
+  points.push({ x: width, y: getY(sampleInterpolatedValue(samples, anchorTimestamp)) });
 
-  const center = (min + max) / 2;
-  const scale = height * 0.42;
-  const getY = (v: number) => height / 2 - ((v - center) / rangeEma) * scale;
-  const getX = (t: number) =>
-    Math.max(0, Math.min(width, ((t - startTimestamp) / SIGNAL_WINDOW_MS) * width));
+  const cappedPoints = capGraphPoints(points, MAX_GRAPH_DRAW_POINTS);
+
+  if (cappedPoints.length < 2) {
+    return buildFlatSignalPath(width, height);
+  }
 
   const path = Skia.Path.Make();
-  path.moveTo(getX(samples[0].timestamp), getY(samples[0].value));
-  for (let i = 1; i < samples.length; i++) {
-    path.lineTo(getX(samples[i].timestamp), getY(samples[i].value));
+  path.moveTo(cappedPoints[0].x, cappedPoints[0].y);
+
+  for (let i = 1; i < cappedPoints.length - 1; i++) {
+    const current = cappedPoints[i];
+    const next = cappedPoints[i + 1];
+    path.quadTo(current.x, current.y, (current.x + next.x) / 2, (current.y + next.y) / 2);
   }
 
-  return { path, rangeEma };
+  const lastPoint = cappedPoints[cappedPoints.length - 1];
+  path.lineTo(lastPoint.x, lastPoint.y);
+
+  return path;
 }
 
 function LiveSignalGraphComponent({
@@ -74,35 +273,17 @@ function LiveSignalGraphComponent({
   showLine = true,
 }: LiveSignalGraphProps) {
   const [width, setWidth] = useState(0);
-  const [renderTick, setRenderTick] = useState(0);
+  const [linePath, setLinePath] = useState<ReturnType<typeof Skia.Path.Make> | null>(null);
 
   const samplesRef = useRef(samples);
-  const lastTimestampRef = useRef(0);
   const rangeEmaRef = useRef(0);
-  const rafRef = useRef<number | null>(null);
-
-  samplesRef.current = samples;
-
-  useEffect(() => {
-    const latest = samplesRef.current;
-    const lastTs = latest[latest.length - 1]?.timestamp ?? 0;
-
-    if (lastTs === lastTimestampRef.current) return;
-    if (rafRef.current != null) return;
-
-    rafRef.current = requestAnimationFrame(() => {
-      rafRef.current = null;
-      lastTimestampRef.current = lastTs;
-      setRenderTick((t) => t + 1);
-    });
-
-    return () => {
-      if (rafRef.current != null) {
-        cancelAnimationFrame(rafRef.current);
-        rafRef.current = null;
-      }
-    };
-  }, [samples]);
+  const scaleReadyRef = useRef(false);
+  const latestSampleTimestampRef = useRef(0);
+  const latestSampleReceivedAtRef = useRef(0);
+  const renderedAnchorTimestampRef = useRef(0);
+  const renderedWidthRef = useRef(0);
+  const lastRenderAtRef = useRef(0);
+  const animationFrameRef = useRef<number | null>(null);
 
   const isSignalAvailable =
     samples.length >= 2 &&
@@ -110,17 +291,88 @@ function LiveSignalGraphComponent({
     fingerPlacement !== 'no_finger';
   const signalGood = fingerPlacement === 'good';
 
-  const linePath = useMemo(() => {
-    if (width <= 0) return null;
-    const result = buildFastSignalPath(
-      samplesRef.current,
-      width,
-      GRAPH_HEIGHT,
-      rangeEmaRef.current,
-    );
-    rangeEmaRef.current = result.rangeEma;
-    return result.path;
-  }, [renderTick, width]);
+  useEffect(() => {
+    const latestTimestamp = samples[samples.length - 1]?.timestamp ?? 0;
+    samplesRef.current = samples;
+
+    if (latestTimestamp !== latestSampleTimestampRef.current) {
+      latestSampleTimestampRef.current = latestTimestamp;
+      latestSampleReceivedAtRef.current = Date.now();
+
+      const nextScale = updateSignalScale(
+        samples,
+        latestTimestamp,
+        rangeEmaRef.current,
+        scaleReadyRef.current,
+      );
+      rangeEmaRef.current = nextScale.rangeEma;
+      scaleReadyRef.current = nextScale.scaleReady;
+    }
+
+    if (samples.length < 2) {
+      scaleReadyRef.current = false;
+    }
+  }, [samples]);
+
+  useEffect(() => {
+    if (!showLine || width <= 0) return undefined;
+
+    const renderSignalFrame = () => {
+      const now = Date.now();
+
+      if (now - lastRenderAtRef.current >= SIGNAL_RENDER_FRAME_MS) {
+        lastRenderAtRef.current = now;
+
+        const currentSamples = samplesRef.current;
+        const latestTimestamp = latestSampleTimestampRef.current;
+
+        if (currentSamples.length < 2 || latestTimestamp <= 0) {
+          if (renderedWidthRef.current !== width || renderedAnchorTimestampRef.current !== 0) {
+            setLinePath(buildFlatSignalPath(width, GRAPH_HEIGHT));
+            renderedWidthRef.current = width;
+            renderedAnchorTimestampRef.current = 0;
+          }
+        } else {
+          const projectedLatestTimestamp =
+            latestTimestamp + Math.max(0, now - latestSampleReceivedAtRef.current);
+          const anchorTimestamp = Math.min(
+            latestTimestamp,
+            projectedLatestTimestamp - SIGNAL_PLAYBACK_DELAY_MS,
+          );
+
+          const shouldRenderSignal =
+            anchorTimestamp > 0 &&
+            (anchorTimestamp !== renderedAnchorTimestampRef.current ||
+              renderedWidthRef.current !== width);
+
+          if (shouldRenderSignal) {
+            const path = buildSignalPath(
+              currentSamples,
+              width,
+              GRAPH_HEIGHT,
+              anchorTimestamp,
+              rangeEmaRef.current,
+            );
+
+            renderedAnchorTimestampRef.current = anchorTimestamp;
+            renderedWidthRef.current = width;
+            setLinePath(path);
+          }
+        }
+      }
+
+      animationFrameRef.current = requestAnimationFrame(renderSignalFrame);
+    };
+
+    animationFrameRef.current = requestAnimationFrame(renderSignalFrame);
+
+    return () => {
+      if (animationFrameRef.current != null) {
+        cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
+    };
+  }, [showLine, width]);
 
   const handleLayout = useCallback((event: LayoutChangeEvent) => {
     const nextWidth = event.nativeEvent.layout.width;
