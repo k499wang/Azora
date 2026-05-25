@@ -250,6 +250,7 @@ export function ResultScreen({
                 bpm={reading.bpm}
                 confidence={reading.confidence}
                 sampleCount={reading.sampleCount}
+                showHrv={result.mode !== 'quick'}
                 rmssd={reading.rmssd ?? null}
                 sdnn={reading.sdnn ?? null}
                 hrDrop={reading.hrDrop ?? null}
