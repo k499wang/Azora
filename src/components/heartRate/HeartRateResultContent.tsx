@@ -43,6 +43,7 @@ interface HeartRateResultContentProps {
   onPressUpgrade?: () => void;
   showRmssd?: boolean;
   showStress?: boolean;
+  showHrv?: boolean;
 }
 
 const HERO_RING_SIZE = 240;
@@ -121,6 +122,7 @@ export function HeartRateResultContent({
   onPressUpgrade,
   showRmssd = true,
   showStress = true,
+  showHrv = true,
 }: HeartRateResultContentProps) {
   const rmssdValue =
     rmssd != null && Number.isFinite(rmssd)
@@ -233,8 +235,9 @@ export function HeartRateResultContent({
         )
       ) : null}
 
-      {showRmssd ||
-      (showStress && stressZoneForDisplay != null && stressForDisplay != null) ? (
+      {showHrv &&
+      (showRmssd ||
+      (showStress && stressZoneForDisplay != null && stressForDisplay != null)) ? (
         <>
           <View style={styles.sectionHeaderWrap}>
             <SectionHeader
@@ -284,7 +287,7 @@ export function HeartRateResultContent({
         </>
       ) : null}
 
-      {showBpmGraph || showRrGraph ? (
+      {showHrv && (showBpmGraph || showRrGraph) ? (
         <>
           <View style={styles.sectionHeaderWrap}>
             <SectionHeader
@@ -372,7 +375,8 @@ export function HeartRateResultContent({
         </>
       ) : null}
 
-      {!advancedStatsLocked &&
+      {showHrv &&
+      !advancedStatsLocked &&
       rmssdValue == null &&
       stressValue == null &&
       hrvUnavailableMessage != null ? (

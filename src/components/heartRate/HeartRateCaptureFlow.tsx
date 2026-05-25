@@ -18,6 +18,10 @@ import type {
   CaptureResult,
   FingerPlacementState,
 } from '../../lib/heartRate/types';
+import {
+  DEFAULT_CAPTURE_MODE,
+  type HeartRateCaptureMode,
+} from '../../lib/heartRate/captureModes';
 import type { RootStackNavigationProp } from '../../app/navigation';
 import { captureException } from '../../services/analytics/errorTracking';
 import { AnalyticsEvent } from '../../services/analytics/events';
@@ -71,6 +75,7 @@ export function HeartRateCaptureFlow({
   const heartRateAccess = useFeatureAccess(FeatureKey.HeartRateMeasurement);
   const [currentSetupIndex, setCurrentSetupIndex] = useState(0);
   const [pastSetup, setPastSetup] = useState(false);
+  const [selectedMode, setSelectedMode] = useState<HeartRateCaptureMode>(DEFAULT_CAPTURE_MODE);
 
   const {
     captureState,
@@ -91,6 +96,7 @@ export function HeartRateCaptureFlow({
     hasPermission,
     requestPermission,
   } = useHeartRateCapture({
+    mode: selectedMode,
     onCaptureComplete: (capturedResult, samples) => {
       completeHeartRateSessionMutation.mutate({
         result: capturedResult,
@@ -118,8 +124,11 @@ export function HeartRateCaptureFlow({
     }
   }, [hasPermission, requestPermission, startCapture, posthog, context]);
 
-  const handleSetupNext = useCallback(async () => {
+  const handleSetupNext = useCallback(async (selection?: { mode: HeartRateCaptureMode }) => {
     try {
+      if (selection?.mode != null) {
+        setSelectedMode(selection.mode);
+      }
       if (currentSetupIndex < setupScreens.length - 1) {
         setCurrentSetupIndex((i) => i + 1);
       } else {
