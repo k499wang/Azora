@@ -13,6 +13,7 @@ import { spacing, padding } from '../../theme/spacing';
 import { typography, fonts } from '../../theme/typography';
 import { card } from '../../theme/card';
 import Icon from '../common/icons/Icon';
+import ProUpgradeButton from '../common/ProUpgradeButton';
 import type { Insight } from '../../lib/insights';
 
 interface Props {
@@ -191,6 +192,9 @@ function InsightCard({
           style={StyleSheet.absoluteFill}
         />
       ) : null}
+      <View style={styles.lockedPill} pointerEvents="box-none">
+        <ProUpgradeButton onPress={onPressUpgrade} />
+      </View>
     </View>
   );
 }
@@ -230,6 +234,12 @@ const styles = StyleSheet.create({
   },
   lockedCard: {
     overflow: 'hidden',
+  },
+  lockedPill: {
+    position: 'absolute',
+    top: spacing.md,
+    right: spacing.md,
+    zIndex: 2,
   },
   eyebrow: {
     ...typography.label.small,

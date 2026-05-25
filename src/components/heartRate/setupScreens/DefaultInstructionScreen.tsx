@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
-import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useRef, useState } from 'react';
+import { Animated, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -11,6 +11,8 @@ import { card } from '../../../theme/card';
 import type { SetupScreenProps } from '../../../lib/heartRate/types';
 import {
   DEFAULT_CAPTURE_MODE,
+  HEART_RATE_CAPTURE_MODES,
+  isCaptureModeLocked,
   type HeartRateCaptureMode,
 } from '../../../lib/heartRate/captureModes';
 import { CaptureModeToggle } from '../CaptureModeToggle';
@@ -21,14 +23,11 @@ import { PaywallPlacement } from '../../../services/paywall';
 
 const STEPS = [
   'Cover the rear camera with the fleshy pad of your finger, not your nail',
-  'Keep your phone and finger still',
-  'Use gentle pressure and breathe normally',
+  'Rest your finger flat so it covers both the lens and the flash',
+  'Keep your phone and finger completely still',
+  'Use gentle, steady pressure — pressing too hard blocks the signal',
+  'Breathe normally and sit still until the reading finishes',
 ];
-
-// Soft glow rings layered with palette alpha — the same hex+alpha pattern used
-// elsewhere for ring tints (e.g. the result hero and capture ring).
-const GLOW_OUTER = colors.error[500] + '14';
-const GLOW_MID = colors.error[500] + '24';
 
 export function DefaultInstructionScreen({ onNext }: SetupScreenProps) {
   const insets = useSafeAreaInsets();
@@ -36,28 +35,9 @@ export function DefaultInstructionScreen({ onNext }: SetupScreenProps) {
   const { isPro } = useFeatureAccess(FeatureKey.AdvancedStats);
   const [mode, setMode] = useState<HeartRateCaptureMode>(DEFAULT_CAPTURE_MODE);
 
-  const heroIn = useRef(new Animated.Value(0)).current;
-  const bodyIn = useRef(new Animated.Value(0)).current;
-  const footerIn = useRef(new Animated.Value(0)).current;
-  const pulse = useRef(new Animated.Value(0)).current;
   const pressScale = useRef(new Animated.Value(1)).current;
 
-  useEffect(() => {
-    Animated.stagger(120, [
-      Animated.timing(heroIn, { toValue: 1, duration: 520, useNativeDriver: true }),
-      Animated.timing(bodyIn, { toValue: 1, duration: 520, useNativeDriver: true }),
-      Animated.timing(footerIn, { toValue: 1, duration: 520, useNativeDriver: true }),
-    ]).start();
-
-    const heartbeat = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulse, { toValue: 1, duration: 1700, useNativeDriver: true }),
-        Animated.timing(pulse, { toValue: 0, duration: 1700, useNativeDriver: true }),
-      ]),
-    );
-    heartbeat.start();
-    return () => heartbeat.stop();
-  }, [heroIn, bodyIn, footerIn, pulse]);
+  const locked = isCaptureModeLocked(mode, isPro);
 
   const openPaywallForLockedMode = () => {
     navigation.navigate('ProPaywall', {
@@ -68,16 +48,6 @@ export function DefaultInstructionScreen({ onNext }: SetupScreenProps) {
     });
   };
 
-  const rise = (value: Animated.Value) => ({
-    opacity: value,
-    transform: [
-      { translateY: value.interpolate({ inputRange: [0, 1], outputRange: [14, 0] }) },
-    ],
-  });
-
-  const pulseScale = pulse.interpolate({ inputRange: [0, 1], outputRange: [1, 1.14] });
-  const pulseOpacity = pulse.interpolate({ inputRange: [0, 1], outputRange: [0.55, 0.12] });
-
   return (
     <View
       style={[
@@ -85,30 +55,26 @@ export function DefaultInstructionScreen({ onNext }: SetupScreenProps) {
         { paddingTop: insets.top + spacing.xl, paddingBottom: insets.bottom + spacing.lg },
       ]}
     >
-      <Animated.View style={[styles.hero, rise(heroIn)]}>
-        <Text style={styles.eyebrow}>Private · On-device</Text>
-
-        <View style={styles.halo}>
-          <Animated.View
-            style={[
-              styles.ring,
-              styles.ringOuter,
-              { transform: [{ scale: pulseScale }], opacity: pulseOpacity },
-            ]}
-          />
-          <View style={[styles.ring, styles.ringMid]} />
-          <View style={styles.core}>
-            <MaterialCommunityIcons name="heart-pulse" size={34} color={colors.error[500]} />
-          </View>
-        </View>
-
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         <Text style={styles.title}>Measure Heart Rate</Text>
         <Text style={styles.subtitle}>
           Your camera reads your pulse from the light passing through your fingertip.
         </Text>
-      </Animated.View>
 
-      <Animated.View style={rise(bodyIn)}>
+        <View style={styles.modeBlock}>
+          <CaptureModeToggle value={mode} onChange={setMode} isPro={isPro} />
+          <View style={styles.perkRow}>
+            {HEART_RATE_CAPTURE_MODES[mode].perks.map((perk) => (
+              <View key={perk} style={styles.perkChip}>
+                <Text style={styles.perkText}>{perk}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+
         <View style={[card.base, card.shadow, styles.stepsCard]}>
           {STEPS.map((text, i) => (
             <View key={i} style={[styles.stepRow, i > 0 && styles.stepDivider]}>
@@ -119,21 +85,12 @@ export function DefaultInstructionScreen({ onNext }: SetupScreenProps) {
             </View>
           ))}
         </View>
-      </Animated.View>
+      </ScrollView>
 
-      <View style={styles.spacer} />
-
-      <Animated.View style={[styles.footer, rise(footerIn)]}>
-        <CaptureModeToggle
-          value={mode}
-          onChange={setMode}
-          isPro={isPro}
-          onLockedPress={openPaywallForLockedMode}
-        />
-
+      <View style={styles.footer}>
         <Pressable
           accessibilityRole="button"
-          onPress={() => onNext({ mode })}
+          onPress={() => (locked ? openPaywallForLockedMode() : onNext({ mode }))}
           onPressIn={() =>
             Animated.spring(pressScale, {
               toValue: 0.97,
@@ -158,12 +115,18 @@ export function DefaultInstructionScreen({ onNext }: SetupScreenProps) {
               end={{ x: 1, y: 1 }}
               style={styles.cta}
             >
-              <MaterialCommunityIcons name="heart-pulse" size={18} color={colors.text.inverse} />
-              <Text style={styles.ctaText}>Begin measurement</Text>
+              <MaterialCommunityIcons
+                name={locked ? 'lock-open-outline' : 'heart-pulse'}
+                size={18}
+                color={colors.text.inverse}
+              />
+              <Text style={styles.ctaText}>
+                {locked ? 'Unlock Full with Pro' : 'Begin measurement'}
+              </Text>
             </LinearGradient>
           </Animated.View>
         </Pressable>
-      </Animated.View>
+      </View>
     </View>
   );
 }
@@ -173,50 +136,8 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: spacing.lg,
   },
-  hero: {
-    alignItems: 'center',
-  },
-  eyebrow: {
-    ...typography.overline,
-    color: colors.text.tertiary,
-    letterSpacing: 2,
-    textTransform: 'uppercase',
-  },
-  halo: {
-    width: 168,
-    height: 168,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginVertical: spacing.lg,
-  },
-  ring: {
-    position: 'absolute',
-    borderRadius: 999,
-  },
-  ringOuter: {
-    width: 168,
-    height: 168,
-    backgroundColor: GLOW_OUTER,
-  },
-  ringMid: {
-    width: 116,
-    height: 116,
-    backgroundColor: GLOW_MID,
-  },
-  core: {
-    width: 78,
-    height: 78,
-    borderRadius: 39,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.background.elevated,
-    borderWidth: 1,
-    borderColor: colors.error[100],
-    shadowColor: colors.error[700],
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.18,
-    shadowRadius: 14,
-    elevation: 6,
+  scrollContent: {
+    paddingBottom: spacing.lg,
   },
   title: {
     ...typography.title.title1,
@@ -231,6 +152,31 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: spacing.sm,
     paddingHorizontal: spacing.md,
+  },
+  modeBlock: {
+    marginTop: spacing.xl,
+  },
+  perkRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    alignItems: 'center',
+    alignContent: 'center',
+    gap: spacing.xs,
+    marginTop: spacing.md,
+    minHeight: 60,
+  },
+  perkChip: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: 999,
+    backgroundColor: colors.background.secondary,
+  },
+  perkText: {
+    ...typography.caption.caption1,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    color: colors.text.secondary,
   },
   stepsCard: {
     paddingHorizontal: spacing.md,
@@ -266,12 +212,9 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     flex: 1,
   },
-  spacer: {
-    flex: 1,
-    minHeight: spacing.xl,
-  },
   footer: {
     gap: spacing.md,
+    paddingTop: spacing.md,
   },
   ctaShadow: {
     borderRadius: 16,

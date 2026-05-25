@@ -179,11 +179,15 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: spacing.md,
     left: spacing.lg,
+    backgroundColor: colors.orange[500],
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: 999,
   },
   bestBadgeText: {
     ...typography.label.small,
     fontFamily: fonts.semibold,
-    color: colors.orange[300],
+    color: colors.text.inverse,
     letterSpacing: 0.4,
   },
   playBtnShadow: {

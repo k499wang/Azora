@@ -191,9 +191,7 @@ export default function HeartHealthSection({
             onPressLocked={onPressUpgrade}
           />
 
-          {avgBpm != null ? (
-            <RestingHeartRateBar bpm={avgBpm} age={age ?? null} />
-          ) : null}
+          <RestingHeartRateBar bpm={avgBpm ?? null} age={age ?? null} title="Average heart rate" />
 
           <View onLayout={onPagerLayout}>
             <ScrollView
