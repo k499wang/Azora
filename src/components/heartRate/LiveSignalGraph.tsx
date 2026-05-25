@@ -17,7 +17,7 @@ interface LiveSignalGraphProps {
 }
 
 const GRAPH_HEIGHT = 78;
-const SIGNAL_WINDOW_MS = 6500;
+const SIGNAL_WINDOW_MS = 8000;
 const MIN_SIGNAL_RANGE = 0.002;
 
 interface PathBuildResult {

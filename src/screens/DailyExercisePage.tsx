@@ -667,7 +667,7 @@ export default function DailyExercisePage({
     setPhase('processingResults');
 
     void runAfterNextPaint(() => {
-      const captureResult = buildCaptureResult(captureSamples);
+      const captureResult = buildCaptureResult(captureSamples, 'full');
       flow.cancel();
       setReleaseAudioActive(false);
       const newBest = releasedHoldSeconds > bestHoldSeconds && releasedHoldSeconds > 0;

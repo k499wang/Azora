@@ -56,7 +56,7 @@ export function ContextInstructionScreen({ onNext, onCancel }: SetupScreenProps)
         <View style={styles.actions}>
           <TouchableOpacity
             style={styles.primaryButton}
-            onPress={onNext}
+            onPress={() => onNext()}
             activeOpacity={0.85}
           >
             <Text style={styles.primaryButtonText}>Start Measuring</Text>
