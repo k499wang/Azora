@@ -7,6 +7,7 @@ import type {
   PpgRoiSample,
 } from './types';
 import { upsampleCubicSpline } from './cubicSpline';
+import { movingAverage } from './movingAverage';
 
 const MIN_DURATION_MS = 8000;
 const STABILIZATION_MS = 2500;
@@ -203,29 +204,6 @@ function median(values: number[]): number {
   return sorted.length % 2 === 0
     ? (sorted[middle - 1] + sorted[middle]) / 2
     : sorted[middle];
-}
-
-function makeOddWindow(samples: number): number {
-  const rounded = Math.max(1, Math.round(samples));
-  return rounded % 2 === 0 ? rounded + 1 : rounded;
-}
-
-function movingAverage(values: number[], windowSize: number): number[] {
-  const window = makeOddWindow(windowSize);
-  const half = Math.floor(window / 2);
-  const result: number[] = [];
-
-  for (let i = 0; i < values.length; i++) {
-    const start = Math.max(0, i - half);
-    const end = Math.min(values.length, i + half + 1);
-    let sum = 0;
-    for (let j = start; j < end; j++) {
-      sum += values[j];
-    }
-    result.push(sum / (end - start));
-  }
-
-  return result;
 }
 
 function winsorize(values: number[], threshold = 5): number[] {
