@@ -7,7 +7,6 @@ import type {
   PpgRoiSample,
 } from './types';
 import { upsampleCubicSpline } from './cubicSpline';
-import { smoothnessPriorsDetrend } from './detrend';
 import { clamp, mean, median, populationStdDev as standardDeviation } from '../stats';
 
 const MIN_DURATION_MS = 8000;
@@ -344,7 +343,8 @@ function preprocess(values: number[], sampleRate: number): number[] {
     return (value - base) / base;
   });
   const clipped = winsorize(acDc);
-  const detrended = smoothnessPriorsDetrend(clipped, sampleRate);
+  const slowTrend = movingAverage(clipped, sampleRate * 2);
+  const detrended = clipped.map((value, index) => value - slowTrend[index]);
   return movingAverage(detrended, sampleRate * 0.12);
 }
 
