@@ -1,6 +1,9 @@
 import { useCallback, useRef, useState } from 'react';
-import { useFrameProcessor } from 'react-native-vision-camera';
-import { useRunOnJS } from 'react-native-worklets-core';
+import {
+  runAtTargetFps,
+  useFrameProcessor,
+} from 'react-native-vision-camera';
+import { useRunOnJS, useSharedValue } from 'react-native-worklets-core';
 import type {
   FingerPlacementState,
   IbiSample,
@@ -15,6 +18,9 @@ import { useHeartRateCamera } from './useHeartRateCamera';
 
 const BPM_UPDATE_INTERVAL_MS = 1000;
 const FINGER_LOST_TIMEOUT_MS = 1500;
+const OFFLINE_CAPTURE_FPS = 30;
+const LIVE_PROCESSING_FPS = 20;
+const LIVE_PROCESSING_INTERVAL_MS = 50;
 
 function isValidFrameSample(value: unknown): value is PpgFrameSample {
   if (value == null || typeof value !== 'object') return false;
@@ -75,6 +81,8 @@ export function useLivePulse(): UseLivePulseReturn {
   const liveBpmFilterRef = useRef(createLiveBpmPresentationFilter());
   const lastSignalGraphUpdateRef = useRef<number>(0);
   const lastPublishedSignalTimestampRef = useRef<number | null>(null);
+  const lastLiveProcessingTimestampRef = useRef<number>(0);
+  const offlineCaptureActive = useSharedValue(false);
 
   const { device, format, hasPermission, requestPermission } = useHeartRateCamera();
 
@@ -96,8 +104,10 @@ export function useLivePulse(): UseLivePulseReturn {
     liveBpmFilterRef.current.reset();
     lastSignalGraphUpdateRef.current = 0;
     lastPublishedSignalTimestampRef.current = null;
+    lastLiveProcessingTimestampRef.current = 0;
+    offlineCaptureActive.value = false;
     managerRef.current.clearLiveSignalSamples();
-  }, []);
+  }, [offlineCaptureActive]);
 
   const start = useCallback(() => {
     if (activeRef.current) return;
@@ -138,6 +148,15 @@ export function useLivePulse(): UseLivePulseReturn {
       if (measurementActiveRef.current) {
         measurementSamplesRef.current.push(frameSample);
       }
+
+      if (
+        frameSample.timestamp - lastLiveProcessingTimestampRef.current <
+        LIVE_PROCESSING_INTERVAL_MS
+      ) {
+        return;
+      }
+      lastLiveProcessingTimestampRef.current = frameSample.timestamp;
+
       const frameState = managerRef.current.processFrame(frameSample);
       lastFingerSeenAtRef.current =
         frameState.fingerPlacement === 'no_finger'
@@ -201,6 +220,7 @@ export function useLivePulse(): UseLivePulseReturn {
   const beginMeasurementWindow = useCallback(() => {
     measurementSamplesRef.current = [];
     measurementActiveRef.current = true;
+    offlineCaptureActive.value = true;
     lastBpmUpdateRef.current = 0;
     publishedBpmRef.current = null;
     streamStartedAtRef.current = lastFrameTimestampRef.current;
@@ -208,27 +228,32 @@ export function useLivePulse(): UseLivePulseReturn {
     setCurrentBpm(null);
     setBeatTick(0);
     managerRef.current.beginMeasurementWindow(lastFrameTimestampRef.current ?? Date.now());
-  }, []);
+  }, [offlineCaptureActive]);
 
   const getMeasurementSamples = useCallback(() => {
     measurementActiveRef.current = false;
+    offlineCaptureActive.value = false;
     return measurementSamplesRef.current.map((sample) => ({
       timestamp: sample.timestamp,
       rois: sample.rois.map((roi) => ({ ...roi })),
     }));
-  }, []);
+  }, [offlineCaptureActive]);
 
   const getIbiSamples = useCallback(() => managerRef.current.getIbiSamples(), []);
 
   const frameProcessor = useFrameProcessor(
     (frame) => {
       'worklet';
-      const sample = heartRatePlugin(frame);
-      if (sample != null) {
-        addSample(sample);
-      }
+      const targetFps = offlineCaptureActive.value ? OFFLINE_CAPTURE_FPS : LIVE_PROCESSING_FPS;
+      runAtTargetFps(targetFps, () => {
+        'worklet';
+        const sample = heartRatePlugin(frame);
+        if (sample != null) {
+          addSample(sample);
+        }
+      });
     },
-    [addSample],
+    [addSample, offlineCaptureActive],
   );
 
   return {

@@ -1,5 +1,6 @@
 import NetInfo from '@react-native-community/netinfo';
 import { AppState, Platform } from 'react-native';
+import { getSupabaseClient } from '../supabase/client';
 import { supabaseConfig } from '../supabase/config';
 
 interface NetworkFailureDiagnosticsInput {
@@ -18,6 +19,7 @@ export async function buildNetworkFailureDiagnostics({
   error,
 }: NetworkFailureDiagnosticsInput) {
   const networkState = await NetInfo.fetch();
+  const auth = await getAuthDiagnostics(userId);
 
   return {
     userId: userId ?? null,
@@ -27,6 +29,11 @@ export async function buildNetworkFailureDiagnostics({
     platform: Platform.OS,
     appState: AppState.currentState,
     supabaseHost: getSupabaseHost(),
+    supabaseConfigured: {
+      hasUrl: supabaseConfig.url != null,
+      hasPublishableKey: supabaseConfig.publishableKey != null,
+    },
+    auth,
     network: {
       type: networkState.type,
       isConnected: networkState.isConnected,
@@ -36,6 +43,67 @@ export async function buildNetworkFailureDiagnostics({
     },
     error: getErrorDiagnostics(error),
   };
+}
+
+export async function logNetworkFailureDiagnostics(
+  label: string,
+  input: NetworkFailureDiagnosticsInput,
+): Promise<void> {
+  const diagnostics = await buildNetworkFailureDiagnostics(input);
+  console.warn(label, safeStringify(diagnostics));
+}
+
+async function getAuthDiagnostics(expectedUserId?: string | null) {
+  const supabase = getSupabaseClient();
+
+  if (supabase == null) {
+    return {
+      hasClient: false,
+      hasSession: false,
+      hasUser: false,
+      userIdMatchesInput: expectedUserId == null ? null : false,
+      sessionExpiresAt: null,
+      sessionExpiresInSeconds: null,
+      authErrorMessage: null,
+    };
+  }
+
+  try {
+    const { data, error } = await supabase.auth.getSession();
+    const session = data.session;
+    const expiresAtMs =
+      typeof session?.expires_at === 'number'
+        ? session.expires_at * 1000
+        : null;
+    const sessionExpiresInSeconds =
+      expiresAtMs == null
+        ? null
+        : Math.round((expiresAtMs - Date.now()) / 1000);
+
+    return {
+      hasClient: true,
+      hasSession: session != null,
+      hasUser: session?.user != null,
+      userIdMatchesInput:
+        expectedUserId == null || session?.user?.id == null
+          ? null
+          : session.user.id === expectedUserId,
+      sessionExpiresAt:
+        expiresAtMs == null ? null : new Date(expiresAtMs).toISOString(),
+      sessionExpiresInSeconds,
+      authErrorMessage: error?.message ?? null,
+    };
+  } catch (error) {
+    return {
+      hasClient: true,
+      hasSession: null,
+      hasUser: null,
+      userIdMatchesInput: null,
+      sessionExpiresAt: null,
+      sessionExpiresInSeconds: null,
+      authErrorMessage: getErrorMessage(error),
+    };
+  }
 }
 
 function getSupabaseHost(): string | null {
@@ -141,4 +209,12 @@ function getErrorMessage(error: unknown): string {
   }
 
   return String(error);
+}
+
+function safeStringify(value: unknown): string {
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch {
+    return String(value);
+  }
 }
