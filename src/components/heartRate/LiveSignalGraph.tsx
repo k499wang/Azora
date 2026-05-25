@@ -26,12 +26,19 @@ const GRAPH_HEIGHT = 78;
 const SIGNAL_WINDOW_MS = 6000;
 const MIN_SIGNAL_RANGE = 0.002;
 const GRAPH_POINT_COUNT = 48;
-const MAX_GRAPH_DRAW_POINTS = 96;
+// Above the max samples a window can hold (SIGNAL_WINDOW_MS x sensor fps), so the
+// triangle downsampler stays off during normal scroll. It reselects different
+// vertices as its buckets slide over the data, which shows as vertical jitter.
+const MAX_GRAPH_DRAW_POINTS = 240;
 const GRAPH_VERTICAL_PADDING = 3;
 const SIGNAL_RENDER_FRAME_MS = 33;
 const SIGNAL_PLAYBACK_DELAY_MS = 300;
 const SIGNAL_VERTICAL_GAIN = 1.35;
 const RANGE_GROW_ALPHA = 0.12;
+const RANGE_SHRINK_ALPHA = 0.06;
+const SCALE_LOCK_MIN_SPAN_MS = 1000;
+const SCALE_LOW_PERCENTILE = 0.12;
+const SCALE_HIGH_PERCENTILE = 0.88;
 const SIGNAL_DISPLAY_CENTER = 0;
 
 interface SignalScale {
@@ -189,20 +196,27 @@ function updateSignalScale(
   }
 
   finiteValues.sort((a, b) => a - b);
-  const low = percentile(finiteValues, 0.08);
-  const high = percentile(finiteValues, 0.92);
+  const low = percentile(finiteValues, SCALE_LOW_PERCENTILE);
+  const high = percentile(finiteValues, SCALE_HIGH_PERCENTILE);
   const instantRange = Math.max(Math.max(Math.abs(low), Math.abs(high)) * 2, MIN_SIGNAL_RANGE);
+
+  // Defer the first scale lock until the window spans enough time that a brief
+  // finger-press transient can't define the scale on its own.
   if (!scaleReady || prevRangeEma <= 0) {
+    const windowSpanMs =
+      scaleSamples[scaleSamples.length - 1].timestamp - scaleSamples[0].timestamp;
+    if (windowSpanMs < SCALE_LOCK_MIN_SPAN_MS) {
+      return { rangeEma: prevRangeEma, scaleReady: false };
+    }
     return { rangeEma: instantRange, scaleReady: true };
   }
 
-  if (instantRange <= prevRangeEma) {
-    return { rangeEma: prevRangeEma, scaleReady: true };
-  }
-
+  // Grow quickly to fit larger excursions, relax slowly when they pass, so an
+  // early transient no longer permanently compresses later beats.
+  const alpha = instantRange > prevRangeEma ? RANGE_GROW_ALPHA : RANGE_SHRINK_ALPHA;
   const rangeEma = Math.max(
     MIN_SIGNAL_RANGE,
-    prevRangeEma * (1 - RANGE_GROW_ALPHA) + instantRange * RANGE_GROW_ALPHA,
+    prevRangeEma * (1 - alpha) + instantRange * alpha,
   );
 
   return { rangeEma, scaleReady: true };
