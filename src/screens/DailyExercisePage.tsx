@@ -1148,7 +1148,7 @@ const styles = StyleSheet.create({
   bpmRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: spacing.sm,
   },
   bpmRowDim: {
     opacity: 0.25,
@@ -1164,7 +1164,7 @@ const styles = StyleSheet.create({
   warningRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: spacing.xs,
     marginTop: 2,
   },
   warningText: {

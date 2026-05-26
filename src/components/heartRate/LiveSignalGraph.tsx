@@ -484,7 +484,7 @@ const styles = StyleSheet.create({
     bottom: '100%',
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: spacing.sm,
     marginBottom: spacing.xs,
   },
   bpmRowDim: {

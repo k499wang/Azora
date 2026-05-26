@@ -562,7 +562,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: colors.text.primary,
     lineHeight: 24,
-    padding: 4,
+    padding: spacing.xs,
   },
   progressBar: {
     flex: 1,

@@ -127,7 +127,7 @@ const styles = StyleSheet.create({
   lockedBadge: {
     borderRadius: 999,
     paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
+    paddingVertical: spacing.xs,
     backgroundColor: colors.primary.blue500,
   },
   lockedBadgeText: {

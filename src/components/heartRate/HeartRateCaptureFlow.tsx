@@ -510,7 +510,7 @@ const styles = StyleSheet.create({
     width: '100%',
     backgroundColor: colors.primary.blue600,
     borderRadius: 14,
-    paddingVertical: 16,
+    paddingVertical: spacing.md,
     alignItems: 'center',
   },
   startAnywayText: {

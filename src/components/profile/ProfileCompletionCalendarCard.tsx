@@ -162,7 +162,7 @@ const styles = StyleSheet.create({
   cellWrap: {
     width: '14.2857%',
     paddingHorizontal: 3,
-    paddingVertical: 4,
+    paddingVertical: spacing.xs,
   },
   dayCard: {
     height: 40,

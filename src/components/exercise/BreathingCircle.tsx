@@ -7,6 +7,7 @@ import {
 } from 'react';
 import { Animated, Easing, StyleSheet, View } from 'react-native';
 import { colors } from '../../theme/colors';
+import { spacing } from '../../theme/spacing';
 
 const OUTER_MAX_SIZE = 300;
 const INNER_SIZE = 108;
@@ -265,7 +266,7 @@ const styles = StyleSheet.create({
   innerContent: {
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 4,
-    paddingHorizontal: 16,
+    gap: spacing.xs,
+    paddingHorizontal: spacing.md,
   },
 });

@@ -241,7 +241,9 @@ export function HeartRateResultContent({
       ) : null}
 
       {showRestingHealthBar && Number.isFinite(heroBpmNumber) ? (
-        <RestingHeartRateBar bpm={heroBpmNumber} age={age} />
+        <View style={styles.restingBarWrap}>
+          <RestingHeartRateBar bpm={heroBpmNumber} age={age} showValue={false} />
+        </View>
       ) : null}
 
       {showHrv &&
@@ -475,6 +477,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '100%',
   },
+  restingBarWrap: {
+    width: '100%',
+    marginTop: spacing.sm,
+  },
   heroRingWrap: {
     width: HERO_RING_SIZE,
     height: HERO_RING_SIZE,
@@ -522,7 +528,7 @@ const styles = StyleSheet.create({
   proBadge: {
     borderRadius: 999,
     paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
+    paddingVertical: spacing.xs,
     backgroundColor: colors.neutral[900],
   },
   proBadgeText: {

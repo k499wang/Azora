@@ -238,7 +238,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     paddingHorizontal: 10,
-    paddingVertical: 4,
+    paddingVertical: spacing.xs,
     borderRadius: 999,
     borderWidth: StyleSheet.hairlineWidth,
     marginTop: spacing.xs,

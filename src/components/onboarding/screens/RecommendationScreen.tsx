@@ -379,7 +379,7 @@ const styles = StyleSheet.create({
   },
   hrBadge: {
     paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
+    paddingVertical: spacing.xs,
     borderRadius: 999,
     backgroundColor: colors.success[100],
     borderWidth: 1,

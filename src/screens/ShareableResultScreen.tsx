@@ -516,12 +516,12 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semibold,
     letterSpacing: 1.2,
     textTransform: 'uppercase',
-    marginBottom: 4,
+    marginBottom: spacing.xs,
   },
   ageRingTier: {
     ...typography.body.small,
     fontFamily: fonts.semibold,
-    marginTop: 4,
+    marginTop: spacing.xs,
   },
   benchmarkText: {
     ...typography.body.small,
