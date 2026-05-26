@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   buildCaptureResult,
   deriveCaptureHrvResult,
+  deriveIbiSampleHrvResult,
 } from './captureResult.ts';
 
 function makeBeatSeries(ibiMs, overrides = {}) {
@@ -48,6 +49,50 @@ test('deriveCaptureHrvResult returns HRV stats for usable cleaned intervals', ()
   assert.equal(result.hrvAvailabilityReason, null);
   assert.equal(result.correctedIbi.length, ibiMs.length);
   assert.ok(result.hrvStats.rmssd > 0);
+});
+
+test('deriveIbiSampleHrvResult accepts clean high-BPM live intervals', () => {
+  const ibiSamples = Array.from({ length: 36 }, (_, index) => {
+    const ibiMs = 600 + (index % 2 === 0 ? 10 : -6);
+    return {
+      offsetMs: (index + 1) * ibiMs,
+      ibiMs,
+      signalQuality: 0.88,
+    };
+  });
+
+  const result = deriveIbiSampleHrvResult(ibiSamples);
+
+  assert.ok(result.hrvStats, 'expected HRV stats');
+  assert.equal(result.hrvAvailabilityReason, null);
+  assert.equal(result.correctedIbi.length, ibiSamples.length);
+  assert.ok(result.hrvStats.meanHr >= 98 && result.hrvStats.meanHr <= 101);
+});
+
+test('deriveIbiSampleHrvResult rejects low-quality live intervals', () => {
+  const ibiSamples = Array.from({ length: 36 }, (_, index) => ({
+    offsetMs: (index + 1) * 600,
+    ibiMs: 600,
+    signalQuality: index % 3 === 0 ? 0.85 : 0.35,
+  }));
+
+  const result = deriveIbiSampleHrvResult(ibiSamples);
+
+  assert.equal(result.hrvStats, null);
+  assert.equal(result.hrvAvailabilityReason, 'low_signal_quality');
+});
+
+test('deriveIbiSampleHrvResult rejects artifact-heavy live intervals', () => {
+  const ibiSamples = Array.from({ length: 36 }, (_, index) => ({
+    offsetMs: (index + 1) * 600,
+    ibiMs: index % 8 === 0 ? 360 : 600,
+    signalQuality: 0.9,
+  }));
+
+  const result = deriveIbiSampleHrvResult(ibiSamples);
+
+  assert.equal(result.hrvStats, null);
+  assert.equal(result.hrvAvailabilityReason, 'low_signal_quality');
 });
 
 test('buildCaptureResult requires captured frame samples for the final analyzer', () => {
