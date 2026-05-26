@@ -161,12 +161,15 @@ export function useHeartRateCapture(
     setCaptureStateAndRef('processing');
 
     const samples = [...samplesRef.current];
+    const fallbackIbiSamples = managerRef.current.getIbiSamples();
     setCaptureSamples(samples);
 
     void runAfterNextPaint(() => {
       if (captureStateRef.current !== 'processing') return;
 
-      const nextResult = buildCaptureResult(samples, modeRef.current);
+      const nextResult = buildCaptureResult(samples, modeRef.current, {
+        fallbackIbiSamples,
+      });
       setResult(nextResult);
       setCaptureStateAndRef(nextResult.reading == null ? 'error' : 'done');
       if (nextResult.reading != null) {
@@ -220,9 +223,11 @@ export function useHeartRateCapture(
         samplesRef.current.push(frameSample);
       }
 
+      const shouldThrottleProcessing = state !== 'measuring';
       if (
+        shouldThrottleProcessing &&
         timestamp - lastLiveProcessingTimestampRef.current <
-        LIVE_PROCESSING_INTERVAL_MS
+          LIVE_PROCESSING_INTERVAL_MS
       ) {
         return;
       }
