@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.elevated,
     borderRadius: 22,
     paddingVertical: 14,
-    paddingHorizontal: 16,
+    paddingHorizontal: spacing.md,
     borderWidth: 1,
     borderColor: colors.neutral[200],
     shadowColor: colors.primary.blue700,

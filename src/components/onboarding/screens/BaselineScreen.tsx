@@ -699,8 +699,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
-    paddingVertical: 8,
-    paddingLeft: 8,
+    paddingVertical: spacing.sm,
+    paddingLeft: spacing.sm,
     paddingRight: 14,
     borderRadius: 999,
     backgroundColor: colors.background.accentSoft,
@@ -864,7 +864,7 @@ const styles = StyleSheet.create({
   },
   metricStack: {
     alignItems: 'center',
-    gap: 4,
+    gap: spacing.xs,
   },
   hintText: {
     fontFamily: fonts.semibold,
@@ -876,7 +876,7 @@ const styles = StyleSheet.create({
   bpmRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: spacing.sm,
   },
   bpmRowDim: {
     opacity: 0.25,
@@ -903,7 +903,7 @@ const styles = StyleSheet.create({
   warningRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: spacing.xs,
   },
   warningText: {
     ...typography.caption.caption1,

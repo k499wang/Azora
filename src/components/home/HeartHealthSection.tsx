@@ -191,8 +191,6 @@ export default function HeartHealthSection({
             onPressLocked={onPressUpgrade}
           />
 
-          <RestingHeartRateBar bpm={avgBpm ?? null} age={age ?? null} title="Average heart rate" />
-
           <View onLayout={onPagerLayout}>
             <ScrollView
               horizontal
@@ -263,6 +261,8 @@ export default function HeartHealthSection({
               onPressLocked={onPressUpgrade}
             />
           </View>
+
+          <RestingHeartRateBar bpm={avgBpm ?? null} age={age ?? null} title="Average heart rate" />
         </View>
     </View>
   );
@@ -270,7 +270,6 @@ export default function HeartHealthSection({
 
 const styles = StyleSheet.create({
   section: {
-    marginTop: spacing.xl,
     gap: spacing.md,
   },
   headerWrap: {

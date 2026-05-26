@@ -157,7 +157,6 @@ const CARD_HEIGHT = 288;
 
 const styles = StyleSheet.create({
   section: {
-    marginTop: spacing.xl,
     gap: spacing.md,
   },
   headerWrap: {

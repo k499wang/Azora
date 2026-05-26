@@ -432,43 +432,41 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           />
         </View>
 
-        <View style={styles.flashCardSection}>
-          <InsightsFlashCard
-            locked={advancedStatsLocked}
-            onPressUpgrade={() => {
+        <InsightsFlashCard
+          locked={advancedStatsLocked}
+          onPressUpgrade={() => {
+            showProPaywall(
+              FeatureKey.AdvancedStats,
+              PaywallPlacement.DailyResultProGate,
+            );
+          }}
+          onStartTechnique={(techniqueId) => {
+            if (!dailyExerciseAccess.allowed && !dailyExerciseAccess.isLoading) {
               showProPaywall(
-                FeatureKey.AdvancedStats,
-                PaywallPlacement.DailyResultProGate,
+                FeatureKey.DailyExercise,
+                PaywallPlacement.ExercisePremiumGate,
               );
-            }}
-            onStartTechnique={(techniqueId) => {
-              if (!dailyExerciseAccess.allowed && !dailyExerciseAccess.isLoading) {
-                showProPaywall(
-                  FeatureKey.DailyExercise,
-                  PaywallPlacement.ExercisePremiumGate,
-                );
-                return;
-              }
-              navigation.navigate('ExerciseSession', { techniqueId });
-            }}
-            insights={
-              advancedStatsLocked
-                ? SAMPLE_INSIGHTS
-                : buildInsights({
-                    rmssd: stats?.hrv.rmssd ?? null,
-                    avgRmssd: stats?.hrv.avgRmssd ?? null,
-                    sdnn: stats?.hrv.sdnn ?? null,
-                    hrDrop: stats?.hrv.hrDrop ?? null,
-                    minBpm:
-                      todayBreathHold?.minBpm ?? todayHeartRate?.minBpm ?? null,
-                    stress: stats?.hrv.stress ?? null,
-                    stressHistory: stats?.stressHistory ?? [],
-                    todayHoldSeconds: todayBreathHold?.holdSeconds ?? null,
-                    bestHoldSeconds: holdStats.bestHoldSeconds,
-                  })
+              return;
             }
-          />
-        </View>
+            navigation.navigate('ExerciseSession', { techniqueId });
+          }}
+          insights={
+            advancedStatsLocked
+              ? SAMPLE_INSIGHTS
+              : buildInsights({
+                  rmssd: stats?.hrv.rmssd ?? null,
+                  avgRmssd: stats?.hrv.avgRmssd ?? null,
+                  sdnn: stats?.hrv.sdnn ?? null,
+                  hrDrop: stats?.hrv.hrDrop ?? null,
+                  minBpm:
+                    todayBreathHold?.minBpm ?? todayHeartRate?.minBpm ?? null,
+                  stress: stats?.hrv.stress ?? null,
+                  stressHistory: stats?.stressHistory ?? [],
+                  todayHoldSeconds: todayBreathHold?.holdSeconds ?? null,
+                  bestHoldSeconds: holdStats.bestHoldSeconds,
+                })
+          }
+        />
 
         <HeartHealthSection
           rmssd={stats?.hrv.rmssd ?? null}
@@ -547,16 +545,13 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingBottom: spacing['7xl'] + spacing.xl,
+    gap: margin.sectionGap,
   },
   topSection: {
     paddingTop: spacing.md,
   },
   section: {
     paddingHorizontal: padding.screen.horizontal,
-    marginTop: spacing.xl,
-  },
-  flashCardSection: {
-    marginTop: spacing.md,
   },
   partialErrorText: {
     color: colors.text.tertiary,
@@ -570,7 +565,6 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   moodChipSection: {
-    marginTop: spacing.lg,
     gap: spacing.sm,
   },
   moodHeader: {
@@ -589,7 +583,6 @@ const styles = StyleSheet.create({
   },
   recentSection: {
     paddingHorizontal: padding.screen.horizontal,
-    marginTop: margin.sectionGap,
     gap: spacing.md,
   },
   recentList: {

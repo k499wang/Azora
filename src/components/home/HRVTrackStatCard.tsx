@@ -343,7 +343,7 @@ const styles = StyleSheet.create({
   },
   statCell: {
     alignItems: 'flex-start',
-    gap: 4,
+    gap: spacing.xs,
   },
   statDivider: {
     width: 1,

@@ -964,7 +964,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: colors.primary.blue600,
     backgroundColor: colors.background.elevated,
-    marginTop: 4,
+    marginTop: spacing.xs,
     alignItems: 'center',
     justifyContent: 'center',
   },

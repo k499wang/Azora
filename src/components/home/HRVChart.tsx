@@ -303,7 +303,7 @@ const styles = StyleSheet.create({
   xAxis: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 4,
+    marginTop: spacing.xs,
     paddingHorizontal: PADDING.left,
   },
   xTick: {
@@ -315,7 +315,7 @@ const styles = StyleSheet.create({
     ...typography.caption.caption1,
     color: colors.text.tertiary,
     textAlign: 'center',
-    marginTop: 4,
+    marginTop: spacing.xs,
   },
   emptyChart: {
     alignItems: 'center',

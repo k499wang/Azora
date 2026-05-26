@@ -70,7 +70,6 @@ export default function RecoverySection({
 
 const styles = StyleSheet.create({
   section: {
-    marginTop: spacing.xl,
     gap: spacing.md,
   },
   headerWrap: {
