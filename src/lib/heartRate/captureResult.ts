@@ -267,23 +267,8 @@ export function buildCaptureResult(
 ): CaptureResult {
   const { computeHrv } = getCaptureModeConfig(mode);
   const { estimate: bpmResult, beatSeries: hrvBeatSeries } = analyzeCapture(samples);
-  const hrv = computeHrv ? deriveCaptureHrvResult(hrvBeatSeries, bpmResult?.bpm) : null;
-  const fallbackHrv =
-    computeHrv &&
-    hrv?.hrvStats == null &&
-    options.fallbackIbiSamples != null &&
-    options.fallbackIbiSamples.length > 0
-      ? deriveIbiSampleHrvResult(options.fallbackIbiSamples)
-      : null;
-  const resolvedHrv = fallbackHrv?.hrvStats != null ? fallbackHrv : hrv;
   const startTs = samples[0]?.timestamp ?? 0;
   const endTs = samples[samples.length - 1]?.timestamp ?? 0;
-  const finalIbiSamples =
-    resolvedHrv?.hrvStats != null && hrvBeatSeries != null && fallbackHrv?.hrvStats == null
-      ? buildIbiSamplesFromCaptureBeatSeries(hrvBeatSeries, startTs, resolvedHrv.correctedIbi)
-      : resolvedHrv?.hrvStats != null
-        ? resolvedHrv.ibiSamples ?? []
-      : [];
   const windowDurationMs = endTs > startTs ? endTs - startTs : 0;
 
   if (bpmResult == null) {
@@ -295,6 +280,22 @@ export function buildCaptureResult(
       mode,
     };
   }
+
+  const hrv = computeHrv ? deriveCaptureHrvResult(hrvBeatSeries, bpmResult?.bpm) : null;
+  const fallbackHrv =
+    computeHrv &&
+    hrv?.hrvStats == null &&
+    options.fallbackIbiSamples != null &&
+    options.fallbackIbiSamples.length > 0
+      ? deriveIbiSampleHrvResult(options.fallbackIbiSamples)
+      : null;
+  const resolvedHrv = fallbackHrv?.hrvStats != null ? fallbackHrv : hrv;
+  const finalIbiSamples =
+    resolvedHrv?.hrvStats != null && hrvBeatSeries != null && fallbackHrv?.hrvStats == null
+      ? buildIbiSamplesFromCaptureBeatSeries(hrvBeatSeries, startTs, resolvedHrv.correctedIbi)
+      : resolvedHrv?.hrvStats != null
+        ? resolvedHrv.ibiSamples ?? []
+      : [];
 
   return {
     reading: {
