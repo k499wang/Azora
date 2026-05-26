@@ -835,11 +835,25 @@ function cleanBeatSeries(
     cleanedBeatTimestamps.push(beatTimestamp);
   }
 
+  const rawCount = Math.max(0, beatTimestamps.length - 1);
+  const rejectionRatio = rawCount > 0 ? rejectedIntervalCount / rawCount : 0;
+  if (rejectionRatio > 0.25) {
+    console.log('[hrv-capture] cleanBeatSeries high rejection', {
+      rawIntervals: rawCount,
+      rejectedIntervals: rejectedIntervalCount,
+      rejectionRatio,
+      ibiMean: ibiMs.length > 0 ? ibiMs.reduce((s, v) => s + v, 0) / ibiMs.length : 0,
+      ibiMin: ibiMs.length > 0 ? Math.min(...ibiMs) : 0,
+      ibiMax: ibiMs.length > 0 ? Math.max(...ibiMs) : 0,
+      cleanedCount: ibiMs.length,
+    });
+  }
+
   return {
     beatTimestamps: cleanedBeatTimestamps,
     ibiMs,
     adjacencyBreaks,
-    rawIntervalCount: Math.max(0, beatTimestamps.length - 1),
+    rawIntervalCount: rawCount,
     rejectedIntervalCount,
   };
 }
@@ -1121,8 +1135,16 @@ export function analyzeCapture(
 ): CaptureAnalysis {
   if (samples.length === 0) return { estimate: null, beatSeries: null };
 
+  const sortedFrames = [...samples].filter(
+    (frame) => Number.isFinite(frame.timestamp),
+  ).sort((a, b) => a.timestamp - b.timestamp);
+  const captureDurationMs =
+    sortedFrames.length >= 2
+      ? sortedFrames[sortedFrames.length - 1].timestamp - sortedFrames[0].timestamp
+      : 0;
   const resolvedOptions = resolveOptions(options);
-  const frequencyAnalyses = buildCandidates(samples)
+  const candidates = buildCandidates(samples);
+  const frequencyAnalyses = candidates
     .map((candidate) => analyzeCandidateFrequency(candidate, resolvedOptions))
     .filter((analysis): analysis is FrequencyAnalysis => analysis != null);
 
@@ -1135,6 +1157,29 @@ export function analyzeCapture(
 
   const captureEndTimestamp = samples[samples.length - 1]?.timestamp ?? 0;
   const beatSeries = selectBestBeatSeries(frequencyAnalyses, resolvedOptions, captureEndTimestamp);
+
+  console.log('[hrv-capture] analyzeCapture summary', {
+    totalSamples: samples.length,
+    captureDurationMs,
+    captureDurationSec: Math.round(captureDurationMs / 1000),
+    candidatesFound: candidates.length,
+    freqAnalysesPassed: frequencyAnalyses.length,
+    estimatesAboveConf: estimates.length,
+    consensusBpm: estimate?.bpm ?? null,
+    consensusConfidence: estimate?.confidence ?? null,
+    consensusSnrDb: estimate?.snrDb ?? null,
+    consensusQuality: estimate?.quality ?? null,
+    beatSeriesFound: beatSeries != null,
+    beatSeriesQuality: beatSeries?.quality ?? null,
+    beatSeriesConfidence: beatSeries?.confidence ?? null,
+    beatSeriesSnrDb: beatSeries?.snrDb ?? null,
+    beatSeriesIbiCount: beatSeries?.ibiMs.length ?? 0,
+    beatSeriesRawIntervals: beatSeries?.rawIntervalCount ?? 0,
+    beatSeriesRejected: beatSeries?.rejectedIntervalCount ?? 0,
+    minDurationMs: resolvedOptions.minDurationMs,
+    stabilizationMs: resolvedOptions.stabilizationMs,
+  });
+
   return { estimate, beatSeries };
 }
 

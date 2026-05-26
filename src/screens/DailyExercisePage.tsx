@@ -295,6 +295,7 @@ export default function DailyExercisePage({
     currentBpm,
     beginMeasurementWindow: beginPulseMeasurementWindow,
     getMeasurementSamples,
+    getIbiSamples,
   } = pulse;
   const { showLiveSignalEnabled } = useShowLiveSignalPreference();
 
@@ -663,11 +664,14 @@ export default function DailyExercisePage({
   const releaseHold = () => {
     const endedAtMs = Date.now();
     const captureSamples = getMeasurementSamples();
+    const liveIbiSamples = getIbiSamples();
     const releasedHoldSeconds = holdSeconds;
     setPhase('processingResults');
 
     void runAfterNextPaint(() => {
-      const captureResult = buildCaptureResult(captureSamples, 'full');
+      const captureResult = buildCaptureResult(captureSamples, 'full', {
+        fallbackIbiSamples: liveIbiSamples,
+      });
       flow.cancel();
       setReleaseAudioActive(false);
       const newBest = releasedHoldSeconds > bestHoldSeconds && releasedHoldSeconds > 0;

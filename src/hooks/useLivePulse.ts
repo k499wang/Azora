@@ -149,9 +149,11 @@ export function useLivePulse(): UseLivePulseReturn {
         measurementSamplesRef.current.push(frameSample);
       }
 
+      const shouldThrottleProcessing = !measurementActiveRef.current;
       if (
+        shouldThrottleProcessing &&
         frameSample.timestamp - lastLiveProcessingTimestampRef.current <
-        LIVE_PROCESSING_INTERVAL_MS
+          LIVE_PROCESSING_INTERVAL_MS
       ) {
         return;
       }
