@@ -42,11 +42,24 @@ Included in v1 migrations:
 - `user_streaks_v`
 - Session completion RPCs
 
-Derived HRV metrics for the launch breath-hold flow are stored directly on
-`breath_hold_sessions` (`rmssd`, `sdnn`, `pnn50`, `hr_drop`, `beat_count`).
 Use `user_today_breath_hold_v` to read the latest authenticated breath-hold
-session for the user's current local day. Use
-`user_today_breath_hold_ibi_samples_v` to read that session's IBI graph data.
+session for the user's current local day.
+
+Breath holds no longer derive HRV. The app release that ships this change stops
+sending HRV / IBI keys to the `complete_breath_hold` RPC; the existing RPC
+already stores NULL for any omitted column, so no migration is needed for new
+clients to behave correctly — pre-removal clients keep their full UI during
+the bake (their writes still populate the HRV columns, harmlessly).
+
+When pre-removal clients are effectively gone, apply
+`20260527000100_breath_hold_remove_hrv.sql` — a single contract migration that
+rewrites `complete_breath_hold` to ignore HRV / IBI, drops
+`user_today_breath_hold_ibi_samples_v`, drops the HRV columns
+(`rmssd`, `sdnn`, `pnn50`, `hr_drop`, `beat_count`, `stress`) from
+`breath_hold_sessions`, recreates `user_today_breath_hold_v` without them, and
+deletes historical breath-hold IBI rows. The step is irreversible — see the
+file's header for the precondition. HRV now comes solely from standalone
+heart-rate sessions.
 
 Standalone heart-rate sessions can also store `rmssd`, `sdnn`, `pnn50`,
 `hr_drop`, and `beat_count` on `heart_rate_sessions`. Use

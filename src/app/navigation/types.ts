@@ -46,18 +46,10 @@ export type RootStackParamList = {
   Settings: undefined;
   DailyResult: {
     holdSeconds: number;
-    holdStartOffsetSeconds?: number;
     avgBpm?: number;
     minBpm?: number;
     maxBpm?: number;
-    rmssd?: number | null;
-    sdnn?: number | null;
-    hrDrop?: number | null;
-    stress?: number | null;
-    confidence?: number;
-    sampleCount?: number;
-    hrvAvailabilityReason?: import('../../lib/heartRate/types').HrvAvailabilityReason;
-    ibiSamples?: import('../../lib/heartRate/types').IbiSample[];
+    bpmSamples?: { offsetMs: number; bpm: number }[];
   };
 };
 

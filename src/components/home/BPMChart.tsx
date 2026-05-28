@@ -147,7 +147,7 @@ export default function BPMChart({
       {!chart ? (
         <View style={[styles.emptyChart, { height }]} onLayout={onLayout}>
           <Text style={styles.emptyText}>
-            Complete today's daily exercise to see your BPM
+            Complete a full 90s heart rate measuring to see your BPM.
           </Text>
         </View>
       ) : (
