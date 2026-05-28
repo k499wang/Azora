@@ -91,7 +91,8 @@ const styles = StyleSheet.create({
     ...card.base,
     ...card.shadow,
     width: '100%',
-    padding: spacing.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
     gap: spacing.sm,
   },
   header: {
@@ -100,9 +101,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   title: {
-    ...typography.body.medium,
-    color: colors.text.secondary,
+    ...typography.heading.heading2,
+    color: colors.text.primary,
     fontFamily: fonts.semibold,
+    fontSize: 18,
   },
   zonePill: {
     borderRadius: 20,

@@ -266,8 +266,7 @@ const styles = StyleSheet.create({
     ...card.base,
     ...card.shadow,
     paddingVertical: spacing.md,
-    paddingLeft: spacing.md,
-    paddingRight: spacing.md,
+    paddingHorizontal: spacing.md,
     position: 'relative',
   },
   lockedCard: {
@@ -288,9 +287,10 @@ const styles = StyleSheet.create({
     minHeight: SIZE,
   },
   label: {
-    ...typography.body.medium,
+    ...typography.heading.heading2,
     fontFamily: fonts.semibold,
-    color: colors.text.secondary,
+    fontSize: 18,
+    color: colors.text.primary,
   },
   headerRow: {
     flexDirection: 'row',

@@ -4,7 +4,7 @@ import { BlurView } from 'expo-blur';
 import Svg, { Circle, Line, Path } from 'react-native-svg';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
-import { typography } from '../../theme/typography';
+import { typography, fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import { card } from '../../theme/card';
 
@@ -262,6 +262,7 @@ const styles = StyleSheet.create({
   title: {
     ...typography.heading.heading2,
     color: colors.text.primary,
+    fontFamily: fonts.semibold,
     fontSize: 18,
     marginBottom: spacing.sm,
   },
