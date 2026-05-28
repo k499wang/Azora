@@ -18,7 +18,7 @@ The most common bug pattern with TanStack Query (and the one AI tools repeatedly
 | `getProfileQueryKey` | `src/queries/profile/useProfileQuery.ts` | `profiles` | Raw profile row. |
 | `getOnboardingStatusQueryKey` | `src/queries/profile/useOnboardingStatusQuery.ts` | `profiles.onboarding_completed_at` | |
 | `getUserDefaultTechniqueQueryKey` | `src/queries/profile/useUserDefaultTechniqueQuery.ts` | `profiles.default_technique_id` | |
-| `getHomeStatsQueryKey` | `src/queries/tracking/useHomeStatsQuery.ts` | `daily_activity` for `localDate` | Per-day key — invalidate with the date that was written. |
+| `getHomeStatsQueryKey` / `getHomeStatsQueryKeyPrefix` | `src/queries/tracking/useHomeStatsQuery.ts` | `daily_activity`, `breath_hold_sessions`, `heart_rate_sessions`, `heart_rate_ibi_samples`, `user_streaks_v` | Mixed selected-date plus global Home aggregate. Active queries are keyed by selected `localDate`, but completion mutations invalidate the user prefix because Home also shows streaks, recent heart-rate data, stress history, 28-day activity, and today's IBI data. |
 | `getDailyFeatureUsageQueryKey` | `src/queries/subscriptions/useDailyFeatureUsageQuery.ts` | `daily_activity` for `localDate` | Per-day key. |
 | `getHeartRateSessionDetailQueryKey` | `src/queries/tracking/useHeartRateSessionDetailQuery.ts` | `heart_rate_sessions[id]` | Per-session key. |
 | `getUserEntitlementQueryKey` | `src/queries/subscriptions/useUserEntitlementQuery.ts` | Entitlement service (RevenueCat + Supabase) | |
@@ -32,12 +32,13 @@ When adding a mutation, find every field it writes, then look up every query abo
 
 | Mutation | Writes to | Must invalidate |
 |---|---|---|
-| `useCompleteOnboardingMutation` | `profiles` (display_name, onboarding_*, age, gender, daily_minutes, default_technique_id, stress_level, sleep_quality, agreement_responses, experience_level) | `OnboardingStatus`, `UserDefaultTechnique`, `ProfileSummary` |
-| `useUpdateProfileDisplayNameMutation` | `profiles.display_name` | `ProfileSummary` (uses `setQueryData` — equivalent) |
-| `useUploadProfileAvatarMutation` | `profiles.avatar_url` | `ProfileSummary` (uses `setQueryData`) |
-| `useCompleteBreathHoldMutation` | `breath_hold_sessions`, `daily_activity` for `localDate` | `HomeStats(localDate)`, `DailyFeatureUsage(userId, localDate)`, `ProfileSummary` |
-| `useCompleteBreathingSessionMutation` | `breathing_sessions`, `daily_activity` for `localDate` | `HomeStats(localDate)`, `DailyFeatureUsage(userId, localDate)`, `ProfileSummary` |
-| `useCompleteHeartRateSessionMutation` | `heart_rate_sessions`, `daily_activity` for `usageDate` | `HomeStats(usageDate)`, `DailyFeatureUsage(userId, usageDate)`, `ProfileSummary` |
+| `useSaveOnboardingProfileMutation` | `profiles` (display_name, onboarding_goal, age, gender, daily_minutes, default_technique_id, stress_level, sleep_quality, agreement_responses, experience_level) | `SavedOnboardingProfile`, `UserDefaultTechnique`, `ProfileQuery`, `ProfileSummary` (uses `setQueryData`, then invalidates server-backed profile queries) |
+| `useCompleteOnboardingMutation` | `profiles.onboarding_completed_at` | `OnboardingStatus`, `UserDefaultTechnique`, `ProfileQuery`, `ProfileSummary` |
+| `useUpdateProfileDisplayNameMutation` | `profiles.display_name` | `ProfileQuery`, `ProfileSummary` (uses `setQueryData`, then invalidates both) |
+| `useUploadProfileAvatarMutation` | `profiles.avatar_url` | `ProfileQuery`, `ProfileSummary` (uses `setQueryData`, then invalidates both) |
+| `useCompleteBreathHoldMutation` | `breath_hold_sessions`, `daily_activity` for `localDate` | `HomeStats` user prefix, `DailyFeatureUsage(userId, localDate)`, `ProfileSummary` |
+| `useCompleteBreathingSessionMutation` | `breathing_sessions`, `daily_activity` for `localDate` | `HomeStats` user prefix, `DailyFeatureUsage(userId, localDate)`, `ProfileSummary` |
+| `useCompleteHeartRateSessionMutation` | `heart_rate_sessions`, `heart_rate_ibi_samples`, `daily_activity` for `usageDate` | `HomeStats` user prefix, `DailyFeatureUsage(userId, usageDate)`, `ProfileSummary` |
 | `useUpdateNotificationPreferencesMutation` | notification preferences | `NotificationPreferences` |
 
 ---
@@ -46,9 +47,10 @@ When adding a mutation, find every field it writes, then look up every query abo
 
 1. **`ProfileSummary` is the big one.** It aggregates `profiles`, `breath_hold_sessions`, `daily_activity`, and `user_streaks_v`. Almost any user-data write invalidates it.
 2. **`setQueryData` counts as invalidation** *only* if you update every field a consumer reads. If you mutate one field and leave others stale, prefer `invalidateQueries`.
-3. **Per-day keys** (`HomeStats`, `DailyFeatureUsage`) include `localDate` — invalidate the exact date you wrote to, not "today" (timezone math has bitten us; use the same formatter the mutation already uses).
-4. **Don't invalidate a query you didn't change.** Over-invalidation causes re-fetch storms and flicker. The map is the source of truth: if a row isn't in this file, don't invalidate it speculatively.
-5. **If you add a query**, add a row to "Query → backing data" *and* update every mutation in "Mutation → required invalidations" that writes any of those fields. Both directions must stay in sync.
+3. **Per-day keys** (`DailyFeatureUsage`) include `localDate` — invalidate the exact date you wrote to, not "today" (timezone math has bitten us; use the same formatter the mutation already uses).
+4. **HomeStats is intentionally broader.** It is keyed by selected date, but it reads shared Home aggregates too. Use `getHomeStatsQueryKeyPrefix(userId)` for completion mutations unless the query is split into narrower caches.
+5. **Don't invalidate a query you didn't change.** Over-invalidation causes re-fetch storms and flicker. The map is the source of truth: if a row isn't in this file, don't invalidate it speculatively.
+6. **If you add a query**, add a row to "Query → backing data" *and* update every mutation in "Mutation → required invalidations" that writes any of those fields. Both directions must stay in sync.
 
 ---
 

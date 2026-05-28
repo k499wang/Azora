@@ -6,8 +6,12 @@ export function getHomeStatsQueryKey(
   localDate?: string | null,
 ) {
   return localDate == null
-    ? ['home-stats', userId] as const
+    ? getHomeStatsQueryKeyPrefix(userId)
     : ['home-stats', userId, localDate] as const;
+}
+
+export function getHomeStatsQueryKeyPrefix(userId: string | null) {
+  return ['home-stats', userId] as const;
 }
 
 export function useHomeStatsQuery(userId: string | null, localDate: string) {

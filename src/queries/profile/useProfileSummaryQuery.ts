@@ -12,7 +12,6 @@ export function useProfileSummaryQuery(userId: string | null) {
     queryFn: () => getProfileSummary(userId as string),
     staleTime: 1000 * 60 * 10,
     gcTime: 1000 * 60 * 30,
-    refetchOnMount: false,
     placeholderData: keepPreviousData,
   });
 }
