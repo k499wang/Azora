@@ -106,9 +106,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   tileLabel: {
-    ...typography.body.medium,
+    ...typography.heading.heading2,
     fontFamily: fonts.semibold,
-    color: colors.text.secondary,
+    fontSize: 18,
+    color: colors.text.primary,
   },
   lockedTitleText: {
     opacity: 0,
