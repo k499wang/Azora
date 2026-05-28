@@ -6,7 +6,7 @@ import {
 } from '../../services/tracking/heartRateService';
 import { getProfileSummaryQueryKey } from '../profile/useProfileSummaryQuery';
 import { getDailyFeatureUsageQueryKey } from '../subscriptions/useDailyFeatureUsageQuery';
-import { getHomeStatsQueryKey } from './useHomeStatsQuery';
+import { getHomeStatsQueryKeyPrefix } from './useHomeStatsQuery';
 
 interface CompleteHeartRateSessionMutationInput {
   captureSamples: PpgFrameSample[];
@@ -83,7 +83,7 @@ export function useCompleteHeartRateSessionMutation(userId: string | null) {
         throw error;
       }
     },
-    onSuccess: (_sessionId, input) => {
+    onSuccess: async (_sessionId, input) => {
       const timezone = getDeviceTimezone();
       // Frame timestamps are a monotonic clock, not wall-clock — use recordedAt for the date key.
       const recordedAtMs = Date.parse(input.result.reading?.recordedAt ?? '');
@@ -91,9 +91,9 @@ export function useCompleteHeartRateSessionMutation(userId: string | null) {
       const usageDate = formatLocalDate(endedAt, timezone);
       console.log('[hr-gate] mutation onSuccess: invalidating', { userId, usageDate, endedAt });
 
-      void Promise.all([
+      await Promise.all([
         queryClient.invalidateQueries({
-          queryKey: getHomeStatsQueryKey(userId),
+          queryKey: getHomeStatsQueryKeyPrefix(userId),
         }),
         queryClient.invalidateQueries({
           queryKey: getDailyFeatureUsageQueryKey(userId, usageDate),
@@ -101,13 +101,9 @@ export function useCompleteHeartRateSessionMutation(userId: string | null) {
         queryClient.invalidateQueries({
           queryKey: getProfileSummaryQueryKey(userId),
         }),
-      ])
-        .then(() => {
-          console.log('[hr-gate] mutation onSuccess: invalidate complete');
-        })
-        .catch((error) => {
-          console.warn('[hr-gate] mutation onSuccess: invalidate failed', error);
-        });
+      ]);
+
+      console.log('[hr-gate] mutation onSuccess: invalidate complete');
     },
   });
 }

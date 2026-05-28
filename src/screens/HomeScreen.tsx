@@ -12,7 +12,8 @@ import AmbientBackground from '../components/common/AmbientBackground';
 import AppTopBar from '../components/common/AppTopBar';
 import TopBarWeekCalendar from '../components/common/TopBarWeekCalendar';
 import SectionHeader from '../components/common/SectionHeader';
-import HeartHealthSection from '../components/home/HeartHealthSection';
+import HRVSection from '../components/home/HRVSection';
+import HeartRateSection from '../components/home/HeartRateSection';
 import RecoverySection from '../components/home/RecoverySection';
 import TodayInsights from '../components/home/TodayInsights';
 import InsightsFlashCard from '../components/home/InsightsFlashCard';
@@ -466,13 +467,24 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           }
         />
 
-        <HeartHealthSection
+        <HRVSection
           rmssd={stats?.hrv.rmssd ?? null}
           sdnn={stats?.hrv.sdnn ?? null}
           avgRmssd={stats?.hrv.avgRmssd ?? null}
           avgSdnn={stats?.hrv.avgSdnn ?? null}
           maxRmssd={stats?.hrv.maxRmssd ?? null}
           maxSdnn={stats?.hrv.maxSdnn ?? null}
+          ibiMs={ibiMs}
+          locked={advancedStatsLocked}
+          onPressUpgrade={() => {
+            showProPaywall(
+              FeatureKey.AdvancedStats,
+              PaywallPlacement.DailyResultProGate,
+            );
+          }}
+        />
+
+        <HeartRateSection
           hrDrop={stats?.hrv.hrDrop ?? null}
           minBpm={todayHeartRate?.minBpm ?? null}
           avgBpm={heartRateAvgBpm}

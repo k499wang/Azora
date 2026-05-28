@@ -1,6 +1,8 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { updateProfileDisplayName } from '../../services/profile/profileService';
+import { getProfileQueryKey } from './useProfileQuery';
 import { getProfileSummaryQueryKey } from './useProfileSummaryQuery';
+import type { UserProfile } from '../../services/profile/profileService';
 import type { ProfileSummary } from '../../services/profile/profileSummaryService';
 
 export function useUpdateProfileDisplayNameMutation(userId: string | null) {
@@ -14,7 +16,12 @@ export function useUpdateProfileDisplayNameMutation(userId: string | null) {
 
       return updateProfileDisplayName(userId, displayName);
     },
-    onSuccess: (displayName) => {
+    onSuccess: async (displayName) => {
+      queryClient.setQueryData<UserProfile | null>(
+        getProfileQueryKey(userId),
+        (current) => current == null ? current : { ...current, displayName },
+      );
+
       queryClient.setQueryData<ProfileSummary>(
         getProfileSummaryQueryKey(userId),
         (current) => {
@@ -32,6 +39,15 @@ export function useUpdateProfileDisplayNameMutation(userId: string | null) {
           };
         },
       );
+
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: getProfileQueryKey(userId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: getProfileSummaryQueryKey(userId),
+        }),
+      ]);
     },
   });
 }

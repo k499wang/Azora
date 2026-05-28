@@ -6,7 +6,7 @@ import {
 } from '../../services/tracking/breathHoldService';
 import { getProfileSummaryQueryKey } from '../profile/useProfileSummaryQuery';
 import { getDailyFeatureUsageQueryKey } from '../subscriptions/useDailyFeatureUsageQuery';
-import { getHomeStatsQueryKey } from './useHomeStatsQuery';
+import { getHomeStatsQueryKeyPrefix } from './useHomeStatsQuery';
 
 type CompleteBreathHoldMutationInput = Omit<CompleteBreathHoldInput, 'timezone' | 'localDate'>;
 
@@ -76,7 +76,7 @@ export function useCompleteBreathHoldMutation(userId: string | null) {
 
       await Promise.all([
         queryClient.invalidateQueries({
-          queryKey: getHomeStatsQueryKey(userId),
+          queryKey: getHomeStatsQueryKeyPrefix(userId),
         }),
         queryClient.invalidateQueries({
           queryKey: getDailyFeatureUsageQueryKey(userId, localDate),

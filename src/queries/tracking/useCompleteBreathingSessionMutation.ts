@@ -5,7 +5,7 @@ import {
 } from '../../services/tracking/breathingService';
 import { getProfileSummaryQueryKey } from '../profile/useProfileSummaryQuery';
 import { getDailyFeatureUsageQueryKey } from '../subscriptions/useDailyFeatureUsageQuery';
-import { getHomeStatsQueryKey } from './useHomeStatsQuery';
+import { getHomeStatsQueryKeyPrefix } from './useHomeStatsQuery';
 
 type CompleteBreathingSessionMutationInput = Omit<
   CompleteBreathingSessionInput,
@@ -64,7 +64,7 @@ export function useCompleteBreathingSessionMutation(userId: string | null) {
 
       await Promise.all([
         queryClient.invalidateQueries({
-          queryKey: getHomeStatsQueryKey(userId),
+          queryKey: getHomeStatsQueryKeyPrefix(userId),
         }),
         queryClient.invalidateQueries({
           queryKey: getDailyFeatureUsageQueryKey(userId, localDate),
