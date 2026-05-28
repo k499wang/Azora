@@ -13,6 +13,7 @@ import type {
 import { heartRatePlugin } from '../lib/heartRate/heartRatePlugin';
 import { HeartRateManager } from '../lib/heartRate/heartRateManager';
 import { createLiveBpmPresentationFilter } from '../lib/heartRate/bpmSmoothing';
+import { createBeatTickScheduler } from '../lib/heartRate/beatTickScheduler';
 import { LIVE_SIGNAL_GRAPH_UPDATE_INTERVAL_MS } from '../lib/heartRate/liveSignalGraphConfig';
 import { useHeartRateCamera } from './useHeartRateCamera';
 
@@ -79,6 +80,9 @@ export function useLivePulse(): UseLivePulseReturn {
   const publishedBpmRef = useRef<number | null>(null);
   const fingerPlacementRef = useRef<FingerPlacementState>('no_finger');
   const liveBpmFilterRef = useRef(createLiveBpmPresentationFilter());
+  const beatSchedulerRef = useRef(
+    createBeatTickScheduler({ onBeat: () => setBeatTick((tick) => tick + 1) }),
+  );
   const lastSignalGraphUpdateRef = useRef<number>(0);
   const lastPublishedSignalTimestampRef = useRef<number | null>(null);
   const lastLiveProcessingTimestampRef = useRef<number>(0);
@@ -102,6 +106,7 @@ export function useLivePulse(): UseLivePulseReturn {
     publishedBpmRef.current = null;
     fingerPlacementRef.current = 'no_finger';
     liveBpmFilterRef.current.reset();
+    beatSchedulerRef.current.reset();
     lastSignalGraphUpdateRef.current = 0;
     lastPublishedSignalTimestampRef.current = null;
     lastLiveProcessingTimestampRef.current = 0;
@@ -171,8 +176,8 @@ export function useLivePulse(): UseLivePulseReturn {
 
       const bpm = managerRef.current.getCurrentBpm();
 
-      if (frameState.beatDetected) {
-        setBeatTick((tick) => tick + 1);
+      if (frameState.beatDetected && frameState.beatPeakTs != null) {
+        beatSchedulerRef.current.schedule(frameState.beatPeakTs, frameSample.timestamp);
       }
 
       if (
@@ -227,6 +232,7 @@ export function useLivePulse(): UseLivePulseReturn {
     publishedBpmRef.current = null;
     streamStartedAtRef.current = lastFrameTimestampRef.current;
     liveBpmFilterRef.current.reset();
+    beatSchedulerRef.current.reset();
     setCurrentBpm(null);
     setBeatTick(0);
     managerRef.current.beginMeasurementWindow(lastFrameTimestampRef.current ?? Date.now());

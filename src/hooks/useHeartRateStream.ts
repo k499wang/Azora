@@ -14,6 +14,7 @@ import type {
 import { heartRatePlugin } from '../lib/heartRate/heartRatePlugin';
 import { HeartRateManager } from '../lib/heartRate/heartRateManager';
 import { createLiveBpmPresentationFilter } from '../lib/heartRate/bpmSmoothing';
+import { createBeatTickScheduler } from '../lib/heartRate/beatTickScheduler';
 import { LIVE_SIGNAL_GRAPH_UPDATE_INTERVAL_MS } from '../lib/heartRate/liveSignalGraphConfig';
 import { useHeartRateCamera } from './useHeartRateCamera';
 
@@ -82,6 +83,9 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
   const streamStateRef = useRef<StreamState>('idle');
   const managerRef = useRef(new HeartRateManager());
   const liveBpmFilterRef = useRef(createLiveBpmPresentationFilter());
+  const beatSchedulerRef = useRef(
+    createBeatTickScheduler({ onBeat: () => setBeatTick((tick) => tick + 1) }),
+  );
 
   const { device, format, hasPermission, requestPermission } = useHeartRateCamera();
 
@@ -135,6 +139,7 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
     fingerPlacementRef.current = 'no_finger';
     liveBpmFilterRef.current.reset();
     managerRef.current.reset();
+    beatSchedulerRef.current.reset();
 
     setStreamState('stopped');
     setLiveSignalSamples([]);
@@ -204,8 +209,12 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
         }
       }
 
-      if ((state === 'streaming' || state === 'warming_up') && frameState.beatDetected) {
-        setBeatTick((tick) => tick + 1);
+      if (
+        (state === 'streaming' || state === 'warming_up') &&
+        frameState.beatDetected &&
+        frameState.beatPeakTs != null
+      ) {
+        beatSchedulerRef.current.schedule(frameState.beatPeakTs, timestamp);
       }
 
       if ((state === 'streaming' || state === 'warming_up') && timestamp - lastSignalGraphUpdateRef.current >= LIVE_SIGNAL_GRAPH_UPDATE_INTERVAL_MS) {
@@ -274,6 +283,7 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
     warmupStartRef.current = null;
     fingerPlacementRef.current = 'no_finger';
     managerRef.current.reset();
+    beatSchedulerRef.current.reset();
 
     setCurrentBpm(null);
     setBeatTick(0);

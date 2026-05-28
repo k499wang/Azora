@@ -242,7 +242,7 @@ export function HeartRateResultContent({
 
       {showRestingHealthBar && Number.isFinite(heroBpmNumber) ? (
         <View style={styles.restingBarWrap}>
-          <RestingHeartRateBar bpm={heroBpmNumber} age={age} showValue={false} />
+          <RestingHeartRateBar bpm={heroBpmNumber} age={age} title="Average heart rate" />
         </View>
       ) : null}
 

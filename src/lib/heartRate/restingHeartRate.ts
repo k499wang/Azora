@@ -54,7 +54,7 @@ export function getRestingHeartRateZone(
     return { zone: 'low', label: 'Low', color: colors.error[500] };
   }
   if (bpm <= band.greenMax) {
-    return { zone: 'healthy', label: 'Healthy', color: colors.primary.blue500 };
+    return { zone: 'healthy', label: 'Healthy', color: colors.success[500] };
   }
   if (bpm <= band.yellowMax) {
     return { zone: 'elevated', label: 'Slightly elevated', color: colors.warning[500] };
@@ -85,7 +85,7 @@ export function getRestingHeartRateSegments(age: number | null): RestingHeartRat
 
   return [
     { zone: 'low', color: colors.error[500], flex: fracLow },
-    { zone: 'healthy', color: colors.primary.blue500, flex: fracGreen - fracLow },
+    { zone: 'healthy', color: colors.success[500], flex: fracGreen - fracLow },
     { zone: 'elevated', color: colors.warning[500], flex: fracYellow - fracGreen },
     { zone: 'high', color: colors.error[500], flex: 1 - fracYellow },
   ];
