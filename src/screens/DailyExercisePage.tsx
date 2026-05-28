@@ -45,9 +45,9 @@ import { buildCaptureResult } from '../lib/heartRate/captureResult';
 import { runAfterNextPaint } from '../lib/ui/runAfterNextPaint';
 import {
   buildBpmSamplesFromHoldSeconds,
-  summarizeBpmSamples as summarizeHeartRateBpmSamples,
   type HeartRateSessionRpcSample,
 } from '../lib/heartRate/sessionPayload';
+import { buildBpmSeries } from '../lib/heartRate/bpmSeries';
 import { createBpmPresentationFilter } from '../lib/heartRate/bpmSmoothing';
 
 const PLACEMENT_GOOD_DURATION_MS = 1500;
@@ -159,24 +159,25 @@ interface BreathHoldBpmStats {
 }
 
 // Breath holds no longer compute HRV. The result is derived entirely from the
-// aggregate BPM reading and the live per-second BPM series captured during the
-// hold — no inter-beat timing involved. The samples feed HRGraphCard, the same
-// heart-rate graph used by the breathing session summary.
+// live per-second BPM series captured during the hold — no inter-beat timing
+// involved. avg / min / max are taken from the SAME smoothed series that
+// HRGraphCard plots (via buildBpmSeries), so the numbers on the result screen
+// can never disagree with the graph next to them.
 function buildBreathHoldBpmStats(
-  result: CaptureResult,
+  _result: CaptureResult,
   holdBpmSamples: HeartRateSessionRpcSample[],
 ): BreathHoldBpmStats {
-  const summary = summarizeHeartRateBpmSamples(holdBpmSamples);
-  const avgBpm = result.reading?.bpm ?? summary.avgBpm;
+  const bpmSamples = holdBpmSamples.map((sample) => ({
+    offsetMs: sample.offset_ms,
+    bpm: sample.bpm,
+  }));
+  const { summary } = buildBpmSeries(bpmSamples);
 
   return {
-    avgBpm: avgBpm ?? null,
-    minBpm: summary.minBpm ?? avgBpm ?? null,
-    maxBpm: summary.maxBpm ?? avgBpm ?? null,
-    bpmSamples: holdBpmSamples.map((sample) => ({
-      offsetMs: sample.offset_ms,
-      bpm: sample.bpm,
-    })),
+    avgBpm: summary.avgBpm,
+    minBpm: summary.minBpm,
+    maxBpm: summary.maxBpm,
+    bpmSamples,
   };
 }
 

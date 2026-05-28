@@ -11,6 +11,7 @@ import { spacing, padding, margin } from '../theme/spacing';
 import { card } from '../theme/card';
 import { LockedOverlay } from '../components/heartRate/HeartRateResultContent';
 import HRGraphCard from '../components/exercise/HRGraphCard';
+import ShareCard from '../components/exercise/ShareCard';
 import SectionHeader from '../components/common/SectionHeader';
 import type { DailyResultScreenProps } from '../app/navigation';
 import { estimateLungAge, type LungHealthKey } from '../lib/lungAge';
@@ -34,6 +35,16 @@ const LUNG_HEALTH_MAP: Record<
   'below-average': { label: 'Below Average', color: colors.orange[500],     icon: 'alert-circle-outline' },
   'light-smoker':  { label: 'Could Improve', color: colors.orange[500],     icon: 'arrow-up-bold-circle-outline' },
   'heavy-smoker':  { label: 'Needs Work',    color: colors.orange[600],     icon: 'alert-circle-outline' },
+};
+
+const LUNG_COMPARISON: Record<LungHealthKey, string> = {
+  'elite':         'Lungs of a free-diver',
+  'very-healthy':  'Lungs of an athlete',
+  'healthy':       'Lungs of a non-smoker',
+  'average':       'Average lungs for your age',
+  'below-average': 'Lungs aging faster than they should',
+  'light-smoker':  'Lung age of a light smoker',
+  'heavy-smoker':  'Lung age of a heavy smoker',
 };
 
 function formatTodayLabel(): string {
@@ -73,10 +84,14 @@ export default function ShareableResultScreen({
     holdSeconds,
     avgBpm,
     minBpm,
+    maxBpm,
     bpmSamples = [],
   } = route.params;
+  const hrDropBpm =
+    minBpm != null && maxBpm != null ? Math.max(0, maxBpm - minBpm) : null;
   const lungEstimate = estimateLungAge({ holdSeconds, avgBpm, minBpm });
   const health = LUNG_HEALTH_MAP[lungEstimate.key];
+  const comparison = LUNG_COMPARISON[lungEstimate.key];
   const holdTime = formatTime(holdSeconds);
   const benchmark = getHoldBenchmark(holdSeconds, userAge);
 
@@ -145,12 +160,12 @@ export default function ShareableResultScreen({
           score: 0,
           unavailable: true,
         },
-    lungEstimate.hrDropBpm != null
+    hrDropBpm != null
       ? {
-          value: String(lungEstimate.hrDropBpm),
+          value: String(hrDropBpm),
           label: 'Max HR Drop',
           tint: colors.primary.blue500,
-          score: clamp01(lungEstimate.hrDropBpm / 20),
+          score: clamp01(hrDropBpm / 20),
         }
       : {
           value: '—',
@@ -166,18 +181,10 @@ export default function ShareableResultScreen({
   const miniRect = Skia.XYWHRect(miniCx - miniR, miniCx - miniR, miniR * 2, miniR * 2);
   const miniTrackPath = Skia.Path.Make();
   miniTrackPath.addArc(miniRect, AGE_RING_START, AGE_RING_SWEEP);
-  const renderHeroCard = (showBranding: boolean) => (
+  const renderHeroCard = () => (
     <>
       <View style={styles.header}>
-        {showBranding ? (
-          <View style={styles.brandRow}>
-            <Text style={styles.brandWordmark}>Azora</Text>
-          </View>
-        ) : null}
         <Text style={styles.title}>Nice work!</Text>
-        {showBranding ? (
-          <Text style={styles.dateLabel}>{formatTodayLabel()}</Text>
-        ) : null}
       </View>
 
       <View style={styles.heroCardWrap}>
@@ -207,6 +214,7 @@ export default function ShareableResultScreen({
               </Text>
             </View>
           </View>
+          <Text style={styles.comparisonText}>{comparison}</Text>
           <Text style={styles.benchmarkText}>{benchmark.sentence}</Text>
         </View>
       </View>
@@ -238,27 +246,35 @@ export default function ShareableResultScreen({
       >
         <ViewShot
           ref={artifactRef}
-          options={{ format: 'png', quality: 0.95, result: 'tmpfile' }}
-          style={[styles.artifact, { width: SCREEN_WIDTH, paddingTop: insets.top }]}
+          options={{ format: 'png', quality: 0.95, width: 1080, height: 1920, result: 'tmpfile' }}
         >
-          {renderHeroCard(true)}
+          <ShareCard
+            width={SCREEN_WIDTH}
+            lungAge={lungEstimate.age}
+            ageScore={ageScore}
+            tierLabel={health.label}
+            tierColor={health.color}
+            comparison={comparison}
+            holdTime={holdTime}
+            dateLabel={formatTodayLabel()}
+          />
         </ViewShot>
       </View>
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {renderHeroCard(false)}
+        {renderHeroCard()}
 
         <View style={styles.statsHeader}>
           <SectionHeader title="Statistics" />
         </View>
 
-        <View style={styles.statisticsSection}>
-          <LockedOverlay
-            locked={advancedStatsLocked}
-            onPressUpgrade={showAdvancedStatsPaywall}
-          >
+        <LockedOverlay
+          locked={advancedStatsLocked}
+          onPressUpgrade={showAdvancedStatsPaywall}
+        >
+          <View style={styles.statisticsSection}>
         <View style={styles.statTileRow}>
           {heroStats.map((stat, idx) => {
             const arc = Skia.Path.Make();
@@ -308,20 +324,23 @@ export default function ShareableResultScreen({
             );
           })}
         </View>
-
-          </LockedOverlay>
-        </View>
-
-        {bpmSamples.length >= 2 ? (
-          <View style={styles.heartHealthCard}>
-            <LockedOverlay
-              locked={advancedStatsLocked}
-              onPressUpgrade={showAdvancedStatsPaywall}
-            >
-              <HRGraphCard samples={bpmSamples} durationSec={holdSeconds} />
-            </LockedOverlay>
           </View>
-        ) : null}
+
+          {bpmSamples.length >= 2 ? (
+            <View style={styles.heartHealthCard}>
+              <HRGraphCard samples={bpmSamples} durationSec={holdSeconds} />
+            </View>
+          ) : null}
+        </LockedOverlay>
+
+        <Pressable style={styles.shareCta} onPress={handleShare}>
+          <MaterialCommunityIcons
+            name="share-variant"
+            size={20}
+            color={colors.text.inverse}
+          />
+          <Text style={styles.shareCtaLabel}>Share my result</Text>
+        </Pressable>
       </ScrollView>
     </View>
   );
@@ -336,9 +355,6 @@ const styles = StyleSheet.create({
     paddingBottom: spacing['5xl'],
   },
 
-  artifact: {
-    backgroundColor: colors.background.primary,
-  },
   offscreenArtifactWrap: {
     position: 'absolute',
     left: -10000,
@@ -376,32 +392,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     zIndex: 1,
   },
-  brandRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    marginBottom: spacing.sm,
-  },
-  brandWordmark: {
-    ...typography.body.medium,
-    color: colors.primary.blue600,
-    fontFamily: fonts.semibold,
-    fontWeight: '600',
-    letterSpacing: 0.5,
-  },
   title: {
     ...typography.title.title1,
     color: colors.text.primary,
     fontFamily: fonts.semibold,
     fontWeight: '600',
-  },
-  dateLabel: {
-    ...typography.caption.caption1,
-    color: colors.text.tertiary,
-    fontFamily: fonts.semibold,
-    letterSpacing: 1.2,
-    textTransform: 'uppercase',
-    marginTop: spacing.xs,
   },
 
   heroCardWrap: {
@@ -453,13 +448,40 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semibold,
     marginTop: spacing.xs,
   },
+  comparisonText: {
+    ...typography.title.title3,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    color: colors.text.primary,
+    textAlign: 'center',
+    marginTop: spacing.lg,
+    paddingHorizontal: spacing.md,
+  },
   benchmarkText: {
     ...typography.body.small,
     fontFamily: fonts.semibold,
     color: colors.text.secondary,
     textAlign: 'center',
-    marginTop: spacing.md,
+    marginTop: spacing.sm,
     paddingHorizontal: spacing.md,
+  },
+  shareCta: {
+    ...card.shadow,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    marginHorizontal: padding.screen.horizontal,
+    marginTop: margin.resultSection,
+    paddingVertical: spacing.md,
+    borderRadius: spacing.md,
+    backgroundColor: colors.primary.blue600,
+  },
+  shareCtaLabel: {
+    ...typography.body.medium,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    color: colors.text.inverse,
   },
   statsHeader: {
     paddingHorizontal: padding.screen.horizontal,
@@ -531,6 +553,6 @@ const styles = StyleSheet.create({
 
   heartHealthCard: {
     paddingHorizontal: padding.screen.horizontal,
-    marginTop: margin.resultSection,
+    marginTop: spacing.sm,
   },
 });

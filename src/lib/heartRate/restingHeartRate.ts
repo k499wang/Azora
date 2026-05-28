@@ -84,9 +84,9 @@ export function getRestingHeartRateSegments(age: number | null): RestingHeartRat
   const fracYellow = getRestingHeartRateMarkerFraction(band.yellowMax);
 
   return [
-    { zone: 'low', color: colors.error[500], flex: fracLow },
-    { zone: 'healthy', color: colors.success[500], flex: fracGreen - fracLow },
-    { zone: 'elevated', color: colors.warning[500], flex: fracYellow - fracGreen },
-    { zone: 'high', color: colors.error[500], flex: 1 - fracYellow },
+    { zone: 'low', color: colors.error[300], flex: fracLow },
+    { zone: 'healthy', color: colors.success[300], flex: fracGreen - fracLow },
+    { zone: 'elevated', color: colors.warning[300], flex: fracYellow - fracGreen },
+    { zone: 'high', color: colors.error[300], flex: 1 - fracYellow },
   ];
 }

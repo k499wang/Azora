@@ -14,6 +14,7 @@ import type { SessionCompleteScreenProps } from '../app/navigation';
 import { useAuthStore } from '../stores/authStore';
 import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
 import { buildAffirmation } from '../lib/affirmation';
+import { buildBpmSeries } from '../lib/heartRate/bpmSeries';
 
 const HERO_RING_SIZE = 260;
 const HERO_RING_STROKE = 16;
@@ -81,6 +82,14 @@ export default function SessionCompleteScreen({
   const miniTrackPath = Skia.Path.Make();
   miniTrackPath.addArc(miniRect, RING_START, RING_SWEEP);
 
+  // Derive Avg HR from the same smoothed series the graph plots so the stat
+  // and the line agree. Falls back to the raw session average when there are
+  // too few samples to build a series.
+  const displayAvgBpm =
+    (hrSamples.length > 0 ? buildBpmSeries(hrSamples).summary.avgBpm : null) ??
+    avgBpm ??
+    null;
+
   const stats: Array<{
     value: string;
     label: string;
@@ -100,12 +109,12 @@ export default function SessionCompleteScreen({
       tint: colors.success[500],
       score: clamp01(targetCycles > 0 ? cycles / targetCycles : 0),
     },
-    avgBpm != null
+    displayAvgBpm != null
       ? {
-          value: String(Math.round(avgBpm)),
+          value: String(Math.round(displayAvgBpm)),
           label: 'Avg HR',
           tint: colors.error[500],
-          score: clamp01((100 - avgBpm) / 50),
+          score: clamp01((100 - displayAvgBpm) / 50),
         }
       : {
           value: '—',
