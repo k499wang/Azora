@@ -17,8 +17,10 @@ interface RestingHeartRateBarProps {
 }
 
 const TRIANGLE_HALF_WIDTH = 6;
-const NUM_TICKS = 33;
-const TICK_WIDTH = 2.5;
+const NUM_TICKS = 56;
+const TICK_WIDTH = 2;
+const TICK_SELECTED_OPACITY = 1;
+const TICK_UNSELECTED_OPACITY = 0.26;
 
 interface TickMark {
   t: number;
@@ -89,7 +91,17 @@ export default function RestingHeartRateBar({
           {ticks.map((tick, i) => (
             <View
               key={i}
-              style={[styles.tick, { left: `${tick.t * 100}%`, backgroundColor: tick.color }]}
+              style={[
+                styles.tick,
+                {
+                  left: `${tick.t * 100}%`,
+                  backgroundColor: tick.color,
+                  opacity:
+                    fraction != null && tick.t > fraction
+                      ? TICK_UNSELECTED_OPACITY
+                      : TICK_SELECTED_OPACITY,
+                },
+              ]}
             />
           ))}
         </View>
