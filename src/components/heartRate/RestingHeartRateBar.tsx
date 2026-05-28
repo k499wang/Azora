@@ -16,7 +16,6 @@ interface RestingHeartRateBarProps {
   showValue?: boolean;
 }
 
-const TRIANGLE_HALF_WIDTH = 6;
 const NUM_TICKS = 56;
 const TICK_WIDTH = 2;
 const TICK_SELECTED_OPACITY = 1;
@@ -51,7 +50,6 @@ export default function RestingHeartRateBar({
   const fraction = hasBpm ? getRestingHeartRateMarkerFraction(bpm!) : null;
   const segments = getRestingHeartRateSegments(age);
   const ticks = buildTickMarks(segments);
-  const markerColor = zone?.color ?? colors.text.tertiary;
 
   return (
     <View style={styles.card}>
@@ -76,17 +74,6 @@ export default function RestingHeartRateBar({
       ) : null}
 
       <View style={styles.barWrap}>
-        <View style={styles.markerTrack}>
-          {fraction != null ? (
-            <View
-              pointerEvents="none"
-              style={[styles.markerColumn, { left: `${fraction * 100}%` }]}
-            >
-              <View style={[styles.triangle, { borderTopColor: markerColor }]} />
-            </View>
-          ) : null}
-        </View>
-
         <View style={[styles.tickTrack, !hasBpm && styles.tickTrackEmpty]}>
           {ticks.map((tick, i) => (
             <View
@@ -168,25 +155,6 @@ const styles = StyleSheet.create({
   barWrap: {
     width: '100%',
     marginTop: spacing.xs,
-  },
-  markerTrack: {
-    width: '100%',
-    height: 9,
-  },
-  markerColumn: {
-    position: 'absolute',
-    bottom: 0,
-    marginLeft: -TRIANGLE_HALF_WIDTH,
-    alignItems: 'center',
-  },
-  triangle: {
-    width: 0,
-    height: 0,
-    borderLeftWidth: TRIANGLE_HALF_WIDTH,
-    borderRightWidth: TRIANGLE_HALF_WIDTH,
-    borderTopWidth: 8,
-    borderLeftColor: 'transparent',
-    borderRightColor: 'transparent',
   },
   tickTrack: {
     position: 'relative',
