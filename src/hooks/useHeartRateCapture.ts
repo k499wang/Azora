@@ -21,6 +21,7 @@ import {
   type HeartRateCaptureMode,
 } from '../lib/heartRate/captureModes';
 import { createLiveBpmPresentationFilter } from '../lib/heartRate/bpmSmoothing';
+import { createBeatTickScheduler } from '../lib/heartRate/beatTickScheduler';
 import { runAfterNextPaint } from '../lib/ui/runAfterNextPaint';
 import { useMeasurementTimer } from './useMeasurementTimer';
 import { useHeartRateCamera } from './useHeartRateCamera';
@@ -113,6 +114,9 @@ export function useHeartRateCapture(
   const fingerPlacementRef = useRef<FingerPlacementState>('no_finger');
   const managerRef = useRef(new HeartRateManager());
   const liveBpmFilterRef = useRef(createLiveBpmPresentationFilter());
+  const beatSchedulerRef = useRef(
+    createBeatTickScheduler({ onBeat: () => setBeatTick((tick) => tick + 1) }),
+  );
   const offlineCaptureActive = useSharedValue(false);
 
   const { device, format, hasPermission, requestPermission } = useHeartRateCamera();
@@ -138,6 +142,7 @@ export function useHeartRateCapture(
     measurementStartedAtRef.current = null;
     offlineCaptureActive.value = false;
     liveBpmFilterRef.current.reset();
+    beatSchedulerRef.current.reset();
   }, [offlineCaptureActive]);
 
   const resetCaptureRefs = useCallback(() => {
@@ -266,8 +271,8 @@ export function useHeartRateCapture(
         }
       }
 
-      if (frameState.beatDetected) {
-        setBeatTick((tick) => tick + 1);
+      if (frameState.beatDetected && frameState.beatPeakTs != null) {
+        beatSchedulerRef.current.schedule(frameState.beatPeakTs, timestamp);
       }
 
       if (timestamp - lastBpmUpdateRef.current >= BPM_UPDATE_INTERVAL_MS) {

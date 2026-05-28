@@ -9,6 +9,11 @@ import type {
 export interface HeartRateFrameState {
   fingerPlacement: FingerPlacementState;
   beatDetected: boolean;
+  // Group-delay-compensated frame-clock timestamp of the detected beat's peak,
+  // or null when no beat fired this frame. Consumers schedule the live tick
+  // relative to this instead of detection time to remove frame-quantization
+  // jitter from the emitted pulse.
+  beatPeakTs: number | null;
   readyForMeasurement: boolean;
   signalText: string;
 }
@@ -393,6 +398,7 @@ export class HeartRateManager {
           return {
             fingerPlacement: this.lastPlacement,
             beatDetected: false,
+            beatPeakTs: null,
             readyForMeasurement: this.validFrameCounter > WARMUP_FRAMES,
             signalText:
               this.validFrameCounter > WARMUP_FRAMES
@@ -422,6 +428,7 @@ export class HeartRateManager {
       return {
         fingerPlacement: this.lastPlacement,
         beatDetected: false,
+        beatPeakTs: null,
         readyForMeasurement: false,
         signalText:
           placement === 'too_much_pressure'
@@ -460,6 +467,7 @@ export class HeartRateManager {
           return {
             fingerPlacement: 'lost',
             beatDetected: false,
+            beatPeakTs: null,
             readyForMeasurement: false,
             signalText: 'Signal lost - hold steady',
           };
@@ -541,6 +549,7 @@ export class HeartRateManager {
     const ac = rawAc * this.polarity;
     this.pushLiveSignalSample(sample.timestamp, ac);
     let beatDetected = false;
+    let beatPeakTs: number | null = null;
 
     if (readyForMeasurement && this.amplitude > MIN_AMPLITUDE) {
       const upperThreshold =
@@ -662,6 +671,7 @@ export class HeartRateManager {
           if (emitTick) {
             this.lastTickTs = peakTs;
             this.armedForPeak = false;
+            beatPeakTs = peakTs;
           }
           beatDetected = emitTick;
         }
@@ -678,6 +688,7 @@ export class HeartRateManager {
     return {
       fingerPlacement: placement,
       beatDetected,
+      beatPeakTs,
       readyForMeasurement,
       signalText: readyForMeasurement ? 'Measuring pulse' : 'Warm up and hold steady',
     };
