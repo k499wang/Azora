@@ -27,18 +27,21 @@ export const colors = {
 
   success: {
     100: '#DCFCE7',
+    300: '#86EFAC',
     500: '#22C55E',
     700: '#15803D',
   },
 
   warning: {
     100: '#FEF3C7',
+    300: '#FDE68A',
     500: '#F59E0B',
     700: '#B45309',
   },
 
   error: {
     100: '#FEE2E2',
+    300: '#FCA5A5',
     500: '#EF4444',
     700: '#B91C1C',
   },

@@ -4,8 +4,6 @@ import { typography, fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import { card } from '../../theme/card';
 import {
-  RESTING_HR_AXIS_MAX,
-  RESTING_HR_AXIS_MIN,
   getRestingHeartRateMarkerFraction,
   getRestingHeartRateSegments,
   getRestingHeartRateZone,
@@ -18,6 +16,28 @@ interface RestingHeartRateBarProps {
   showValue?: boolean;
 }
 
+const TRIANGLE_HALF_WIDTH = 6;
+const NUM_TICKS = 33;
+const TICK_WIDTH = 2.5;
+
+interface TickMark {
+  t: number;
+  color: string;
+}
+
+function buildTickMarks(segments: ReturnType<typeof getRestingHeartRateSegments>): TickMark[] {
+  let acc = 0;
+  const bounds = segments.map((segment) => {
+    acc += segment.flex;
+    return { max: acc, color: segment.color };
+  });
+  return Array.from({ length: NUM_TICKS }, (_, i) => {
+    const t = i / (NUM_TICKS - 1);
+    const band = bounds.find((b) => t <= b.max) ?? bounds[bounds.length - 1];
+    return { t, color: band.color };
+  });
+}
+
 export default function RestingHeartRateBar({
   bpm,
   age,
@@ -28,6 +48,7 @@ export default function RestingHeartRateBar({
   const zone = hasBpm ? getRestingHeartRateZone(bpm!, age) : null;
   const fraction = hasBpm ? getRestingHeartRateMarkerFraction(bpm!) : null;
   const segments = getRestingHeartRateSegments(age);
+  const ticks = buildTickMarks(segments);
   const markerColor = zone?.color ?? colors.text.tertiary;
 
   return (
@@ -55,36 +76,27 @@ export default function RestingHeartRateBar({
       <View style={styles.barWrap}>
         <View style={styles.markerTrack}>
           {fraction != null ? (
-            <View style={[styles.markerColumn, { left: `${fraction * 100}%` }]}>
+            <View
+              pointerEvents="none"
+              style={[styles.markerColumn, { left: `${fraction * 100}%` }]}
+            >
               <View style={[styles.triangle, { borderTopColor: markerColor }]} />
             </View>
           ) : null}
         </View>
 
-        <View style={[styles.bar, !hasBpm && styles.barEmpty]}>
-          {segments.map((segment) => (
+        <View style={[styles.tickTrack, !hasBpm && styles.tickTrackEmpty]}>
+          {ticks.map((tick, i) => (
             <View
-              key={segment.zone}
-              style={{ flex: segment.flex, backgroundColor: segment.color }}
+              key={i}
+              style={[styles.tick, { left: `${tick.t * 100}%`, backgroundColor: tick.color }]}
             />
           ))}
-        </View>
-
-        <View style={styles.axisRow}>
-          <Text style={styles.axisLabel}>{RESTING_HR_AXIS_MIN}</Text>
-          {showValue ? null : (
-            <Text style={styles.axisValue}>
-              {hasBpm ? `${Math.round(bpm!)} bpm` : '-- bpm'}
-            </Text>
-          )}
-          <Text style={styles.axisLabel}>{RESTING_HR_AXIS_MAX}</Text>
         </View>
       </View>
     </View>
   );
 }
-
-const TRIANGLE_HALF_WIDTH = 7;
 
 const styles = StyleSheet.create({
   card: {
@@ -109,7 +121,7 @@ const styles = StyleSheet.create({
   zonePill: {
     borderRadius: 20,
     paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
+    paddingVertical: 3,
   },
   zoneText: {
     ...typography.label.small,
@@ -125,7 +137,7 @@ const styles = StyleSheet.create({
   valueRow: {
     flexDirection: 'row',
     alignItems: 'baseline',
-    gap: 2,
+    gap: 4,
   },
   value: {
     ...typography.title.title1,
@@ -143,6 +155,7 @@ const styles = StyleSheet.create({
   },
   barWrap: {
     width: '100%',
+    marginTop: spacing.xs,
   },
   markerTrack: {
     width: '100%',
@@ -159,37 +172,25 @@ const styles = StyleSheet.create({
     height: 0,
     borderLeftWidth: TRIANGLE_HALF_WIDTH,
     borderRightWidth: TRIANGLE_HALF_WIDTH,
-    borderTopWidth: 9,
+    borderTopWidth: 8,
     borderLeftColor: 'transparent',
     borderRightColor: 'transparent',
   },
-  bar: {
-    flexDirection: 'row',
+  tickTrack: {
+    position: 'relative',
     width: '100%',
-    height: 12,
-    borderRadius: 999,
+    height: 16,
     marginTop: 2,
-    overflow: 'hidden',
   },
-  barEmpty: {
+  tickTrackEmpty: {
     opacity: 0.4,
   },
-  axisRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: spacing.xs,
-  },
-  axisLabel: {
-    ...typography.caption.caption1,
-    color: colors.text.tertiary,
-    fontFamily: fonts.semibold,
-    fontVariant: ['tabular-nums'],
-  },
-  axisValue: {
-    ...typography.body.small,
-    color: colors.text.primary,
-    fontFamily: fonts.semibold,
-    fontVariant: ['tabular-nums'],
+  tick: {
+    position: 'absolute',
+    top: 0,
+    width: TICK_WIDTH,
+    height: '100%',
+    marginLeft: -TICK_WIDTH / 2,
+    borderRadius: 999,
   },
 });
