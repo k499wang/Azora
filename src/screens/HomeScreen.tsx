@@ -335,8 +335,8 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   }, [homeStatsQuery.isLoading, posthog, recentHeartRates.length, recentHeartRatesError]);
   const ibiMs = stats?.ibiSeries.map((point) => point.ibiMs) ?? [];
   const currentStreak = stats?.streak?.currentStreak ?? 0;
-  const avgBpm = todayBreathHold?.avgBpm ?? todayHeartRate?.avgBpm ?? null;
-  const healthScore = stats?.hrv.stress == null ? null : 100 - stats.hrv.stress;
+  const breathHoldAvgBpm = todayBreathHold?.avgBpm ?? null;
+  const heartRateAvgBpm = todayHeartRate?.avgBpm ?? null;
   const lungEstimate =
     todayBreathHold?.holdSeconds != null && todayBreathHold.holdSeconds > 0
       ? estimateLungAge({
@@ -423,10 +423,9 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           ) : null}
           <TodayInsights
             title={formatInsightTitle(selectedLocalDate, todayLocalDate)}
-            avgBpm={avgBpm}
+            avgBpm={breathHoldAvgBpm}
             holdSeconds={todayBreathHold?.holdSeconds ?? null}
             bestHoldSeconds={holdStats.bestHoldSeconds}
-            healthScore={healthScore}
             lungAge={lungEstimate?.age ?? null}
             lungAgeTier={lungEstimate?.key ?? null}
           />
@@ -458,8 +457,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
                   avgRmssd: stats?.hrv.avgRmssd ?? null,
                   sdnn: stats?.hrv.sdnn ?? null,
                   hrDrop: stats?.hrv.hrDrop ?? null,
-                  minBpm:
-                    todayBreathHold?.minBpm ?? todayHeartRate?.minBpm ?? null,
+                  minBpm: todayHeartRate?.minBpm ?? null,
                   stress: stats?.hrv.stress ?? null,
                   stressHistory: stats?.stressHistory ?? [],
                   todayHoldSeconds: todayBreathHold?.holdSeconds ?? null,
@@ -476,8 +474,8 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           maxRmssd={stats?.hrv.maxRmssd ?? null}
           maxSdnn={stats?.hrv.maxSdnn ?? null}
           hrDrop={stats?.hrv.hrDrop ?? null}
-          minBpm={todayBreathHold?.minBpm ?? todayHeartRate?.minBpm ?? null}
-          avgBpm={avgBpm}
+          minBpm={todayHeartRate?.minBpm ?? null}
+          avgBpm={heartRateAvgBpm}
           age={profileQuery.data?.age ?? null}
           ibiMs={ibiMs}
           locked={advancedStatsLocked}

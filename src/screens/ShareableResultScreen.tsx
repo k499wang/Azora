@@ -9,23 +9,17 @@ import { colors } from '../theme/colors';
 import { typography, fonts } from '../theme/typography';
 import { spacing, padding, margin } from '../theme/spacing';
 import { card } from '../theme/card';
-import {
-  HeartRateResultContent,
-  LockedOverlay,
-} from '../components/heartRate/HeartRateResultContent';
-import HRVTrackStatCard from '../components/home/HRVTrackStatCard';
+import { LockedOverlay } from '../components/heartRate/HeartRateResultContent';
+import HRGraphCard from '../components/exercise/HRGraphCard';
 import SectionHeader from '../components/common/SectionHeader';
 import type { DailyResultScreenProps } from '../app/navigation';
 import { estimateLungAge, type LungHealthKey } from '../lib/lungAge';
-import { getStressZone } from '../lib/heartRate/stress';
-import StressGauge from '../components/heartRate/StressGauge';
 import { useFeatureAccess } from '../hooks/useFeatureAccess';
 import { PaywallPlacement } from '../services/paywall';
 import { FeatureKey } from '../services/subscriptions/featureAccess';
 import { useAuthStore } from '../stores/authStore';
 import { useProfileQuery } from '../queries/profile/useProfileQuery';
 import { getHoldBenchmark } from '../lib/breathHoldBenchmark';
-import { computeHRVStats } from '../lib/hrv';
 
 // ───────────��──────────────────────────────────────��─────────────────────────────
 
@@ -79,21 +73,12 @@ export default function ShareableResultScreen({
     holdSeconds,
     avgBpm,
     minBpm,
-    rmssd,
-    hrDrop,
-    stress,
-    confidence,
-    sampleCount,
-    hrvAvailabilityReason,
-    ibiSamples = [],
+    bpmSamples = [],
   } = route.params;
   const lungEstimate = estimateLungAge({ holdSeconds, avgBpm, minBpm });
   const health = LUNG_HEALTH_MAP[lungEstimate.key];
   const holdTime = formatTime(holdSeconds);
   const benchmark = getHoldBenchmark(holdSeconds, userAge);
-  const ibiMs = ibiSamples.map((s) => s.ibiMs);
-  const sdnnValue = ibiMs.length >= 2 ? computeHRVStats(ibiMs).sdnn : 0;
-  const sessionSdnn = sdnnValue > 0 && Number.isFinite(sdnnValue) ? sdnnValue : null;
 
   const ringCx = AGE_RING_SIZE / 2;
   const ringR = AGE_RING_SIZE / 2 - AGE_RING_STROKE;
@@ -175,7 +160,6 @@ export default function ShareableResultScreen({
           unavailable: true,
         },
   ];
-  const stressZone = stress != null ? getStressZone(stress) : null;
 
   const miniCx = MINI_RING_SIZE / 2;
   const miniR = MINI_RING_SIZE / 2 - MINI_RING_STROKE;
@@ -325,73 +309,19 @@ export default function ShareableResultScreen({
           })}
         </View>
 
-        {stressZone != null && stress != null ? (
-          <View style={styles.stressWrap}>
-            <StressGauge value={stress} zone={stressZone} />
+          </LockedOverlay>
+        </View>
+
+        {bpmSamples.length >= 2 ? (
+          <View style={styles.heartHealthCard}>
+            <LockedOverlay
+              locked={advancedStatsLocked}
+              onPressUpgrade={showAdvancedStatsPaywall}
+            >
+              <HRGraphCard samples={bpmSamples} durationSec={holdSeconds} />
+            </LockedOverlay>
           </View>
         ) : null}
-          </LockedOverlay>
-        </View>
-
-        <View style={styles.heartHealthHeader}>
-          <SectionHeader title="Heart Health" />
-        </View>
-
-        <View style={styles.heartHealthCard}>
-          <LockedOverlay
-            locked={advancedStatsLocked}
-            onPressUpgrade={showAdvancedStatsPaywall}
-          >
-            <View style={styles.heartHealthStack}>
-              <HRVTrackStatCard
-                label="RMSSD"
-                value={
-                  rmssd != null && Number.isFinite(rmssd)
-                    ? rmssd
-                    : advancedStatsLocked
-                      ? 48
-                      : null
-                }
-                unit="ms"
-                max={80}
-                lowBound={20}
-                highBound={50}
-              />
-              <HRVTrackStatCard
-                label="Avg HRV"
-                value={
-                  sessionSdnn != null
-                    ? sessionSdnn
-                    : advancedStatsLocked
-                      ? 55
-                      : null
-                }
-                unit="ms"
-                max={100}
-                lowBound={30}
-                highBound={70}
-              />
-            </View>
-          </LockedOverlay>
-        </View>
-
-        <View style={styles.heartResultSection}>
-          <HeartRateResultContent
-            bpm={avgBpm ?? '—'}
-            confidence={confidence}
-            sampleCount={sampleCount}
-            rmssd={rmssd}
-            hrDrop={hrDrop}
-            stress={stress}
-            hrvAvailabilityReason={hrvAvailabilityReason}
-            ibiSamples={ibiSamples}
-            showHero={false}
-            showRmssd={false}
-            showStress={false}
-            advancedStatsLocked={advancedStatsLocked}
-            onPressUpgrade={showAdvancedStatsPaywall}
-          />
-        </View>
       </ScrollView>
     </View>
   );
@@ -599,23 +529,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
 
-  heartHealthHeader: {
-    paddingHorizontal: padding.screen.horizontal,
-    marginTop: margin.resultSection,
-    marginBottom: spacing.sm,
-  },
   heartHealthCard: {
-    paddingHorizontal: padding.screen.horizontal,
-    marginTop: spacing.sm,
-  },
-  heartHealthStack: {
-    gap: spacing.sm,
-  },
-  stressWrap: {
-    paddingHorizontal: padding.screen.horizontal,
-    marginTop: spacing.md,
-  },
-  heartResultSection: {
     paddingHorizontal: padding.screen.horizontal,
     marginTop: margin.resultSection,
   },

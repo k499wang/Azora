@@ -130,7 +130,7 @@ export default function HRVChart({
       {!chart ? (
         <View style={[styles.emptyChart, { height }]} onLayout={onLayout}>
           <Text style={styles.emptyText}>
-            Complete today's daily exercise to see your HRV
+            Complete a full 90s heart rate measuring to see your HRV.
           </Text>
         </View>
       ) : (

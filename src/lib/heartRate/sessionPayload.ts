@@ -156,6 +156,42 @@ export function buildInstantaneousBpmSamplesFromIbiSamples(
     ));
 }
 
+export interface HoldBpmSample {
+  /** Whole seconds since the breath hold started. */
+  t: number;
+  bpm: number;
+}
+
+/**
+ * Build BPM graph/summary samples from the live per-second BPM readings taken
+ * during a breath hold. Unlike the IBI-derived builders this needs no
+ * inter-beat timing — it is the BPM-only path used now that breath holds no
+ * longer compute HRV.
+ */
+export function buildBpmSamplesFromHoldSeconds(
+  samples: HoldBpmSample[],
+): HeartRateSessionRpcSample[] {
+  let previousBpm: number | null = null;
+  return [...samples]
+    .filter((sample) => (
+      isFiniteNumber(sample.t) &&
+      sample.t >= 0 &&
+      isFiniteNumber(sample.bpm) &&
+      sample.bpm >= 20 &&
+      sample.bpm <= 240
+    ))
+    .sort((a, b) => a.t - b.t)
+    .map((sample) => {
+      const bpm = Math.round(clampBpmStep(sample.bpm, previousBpm));
+      previousBpm = bpm;
+      return {
+        offset_ms: Math.round(sample.t * 1000),
+        bpm,
+        signal_quality: null,
+      };
+    });
+}
+
 export function summarizeBpmSamples(samples: HeartRateSessionRpcSample[]): {
   avgBpm: number | null;
   minBpm: number | null;

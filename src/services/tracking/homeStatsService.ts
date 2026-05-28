@@ -1,13 +1,12 @@
 import { getStreakSummary, type StreakSummary } from '../streaks/streakService';
 import {
-  getBreathHoldIbiSeries,
   getBreathHoldSummaryForDate,
   getDailyActivityRange,
-  getRecentBreathHoldSummaries,
 } from './breathHoldService';
 import {
   getHeartRateSummaryForDate,
   getRecentHeartRateSummaries,
+  getTodayHeartRateIbiSeries,
 } from './heartRateService';
 import { buildStressHistory } from './homeStatsCore';
 import type {
@@ -53,7 +52,7 @@ export interface HomeStatsPartialErrors {
   recentHeartRates: boolean;
   stressHistory: boolean;
   dailyActivity: boolean;
-  breathHoldIbiSeries: boolean;
+  heartRateIbiSeries: boolean;
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -106,55 +105,28 @@ function aggregateField(
   };
 }
 
+// HRV-type stats come only from full (90s) heart-rate captures — never from
+// breath holds or quick captures. BPM-type stats are sourced separately on the
+// Home screen and may use any heart-rate capture.
 function buildHrvStats(
-  breathHold: BreathHoldSummary | null,
-  history: TodayHeartRateSummary[],
-  breathHoldHistory: BreathHoldSummary[],
+  todayFull: TodayHeartRateSummary | null,
+  fullHistory: TodayHeartRateSummary[],
 ): HomeHrvStats {
-  const combined = [...history, ...breathHoldHistory];
-  const rmssdAgg = aggregateField(combined, 'rmssd');
-  const sdnnAgg = aggregateField(combined, 'sdnn');
-
-  if (breathHold == null) {
-    return {
-      rmssd: null,
-      sdnn: null,
-      pnn50: null,
-      hrDrop: null,
-      stress: null,
-      beatCount: null,
-      avgRmssd: rmssdAgg.avg,
-      avgSdnn: sdnnAgg.avg,
-      maxRmssd: rmssdAgg.max,
-      maxSdnn: sdnnAgg.max,
-    };
-  }
+  const rmssdAgg = aggregateField(fullHistory, 'rmssd');
+  const sdnnAgg = aggregateField(fullHistory, 'sdnn');
 
   return {
-    rmssd: breathHold.rmssd ?? null,
-    sdnn: breathHold.sdnn ?? null,
-    pnn50: breathHold.pnn50 ?? null,
-    hrDrop: breathHold.hrDrop ?? null,
-    stress:
-      breathHold.stress ??
-      deriveStressFromStoredSummary(breathHold.rmssd, breathHold.avgBpm),
-    beatCount: breathHold.beatCount ?? null,
+    rmssd: todayFull?.rmssd ?? null,
+    sdnn: todayFull?.sdnn ?? null,
+    pnn50: todayFull?.pnn50 ?? null,
+    hrDrop: todayFull?.hrDrop ?? null,
+    stress: todayFull?.stress ?? null,
+    beatCount: todayFull?.beatCount ?? null,
     avgRmssd: rmssdAgg.avg,
     avgSdnn: sdnnAgg.avg,
     maxRmssd: rmssdAgg.max,
     maxSdnn: sdnnAgg.max,
   };
-}
-
-function deriveStressFromStoredSummary(
-  rmssd: number | null,
-  avgBpm: number | null,
-): number | null {
-  if (rmssd == null || avgBpm == null) return null;
-
-  const rmssdScore = Math.max(0, 100 - (rmssd / 60) * 100);
-  const hrScore = Math.max(0, ((avgBpm - 50) / 30) * 100);
-  return Math.max(0, Math.min(100, Math.round(rmssdScore * 0.7 + hrScore * 0.3)));
 }
 
 function getSettledValue<T>(
@@ -175,7 +147,7 @@ export async function getHomeStats(
     recentHeartRatesResult,
     stressHistoryResult,
     dailyActivityResult,
-    recentBreathHoldsHrvResult,
+    heartRateIbiSeriesResult,
   ] = await Promise.allSettled([
     getStreakSummary(userId),
     getBreathHoldSummaryForDate(userId, localDate),
@@ -183,27 +155,26 @@ export async function getHomeStats(
     getRecentHeartRateSummaries(userId, 3),
     getRecentHeartRateSummaries(userId, 15),
     getDailyActivityRange(userId, 28),
-    getRecentBreathHoldSummaries(userId, 15),
+    getTodayHeartRateIbiSeries(userId),
   ]);
 
   const streak = getSettledValue(streakResult, null);
   const todayBreathHold = getSettledValue(selectedBreathHoldResult, null);
   const todayHeartRate = getSettledValue(selectedHeartRateResult, null);
   const recentHeartRates = getSettledValue(recentHeartRatesResult, []);
-  const stressHistorySource = getSettledValue(
+  const heartRateHistory = getSettledValue(
     stressHistoryResult,
     [] as TodayHeartRateSummary[],
   );
-  const recentBreathHoldsHrv = getSettledValue(
-    recentBreathHoldsHrvResult,
-    [] as BreathHoldSummary[],
+  const fullHeartRateHistory = heartRateHistory.filter(
+    (session) => session.mode === 'full',
   );
-  const stressHistory = buildStressHistory(stressHistorySource, recentBreathHoldsHrv);
+  const todayFullHeartRate =
+    fullHeartRateHistory.find((session) => session.localDate === localDate) ??
+    null;
+  const stressHistory = buildStressHistory(fullHeartRateHistory);
   const dailyActivity = getSettledValue(dailyActivityResult, []);
-  const [breathHoldIbiSeriesResult] = await Promise.allSettled([
-    getBreathHoldIbiSeries(userId, todayBreathHold?.sessionId ?? null),
-  ]);
-  const breathHoldIbiSeries = getSettledValue(breathHoldIbiSeriesResult, []);
+  const ibiSeries = getSettledValue(heartRateIbiSeriesResult, []);
   const partialErrors: HomeStatsPartialErrors = {
     streak: streakResult.status === 'rejected',
     todayBreathHold: selectedBreathHoldResult.status === 'rejected',
@@ -211,7 +182,7 @@ export async function getHomeStats(
     recentHeartRates: recentHeartRatesResult.status === 'rejected',
     stressHistory: stressHistoryResult.status === 'rejected',
     dailyActivity: dailyActivityResult.status === 'rejected',
-    breathHoldIbiSeries: breathHoldIbiSeriesResult.status === 'rejected',
+    heartRateIbiSeries: heartRateIbiSeriesResult.status === 'rejected',
   };
 
   return {
@@ -222,8 +193,8 @@ export async function getHomeStats(
     stressHistory,
     dailyActivity,
     completedDaysAgo: getCompletedDaysAgo(dailyActivity),
-    ibiSeries: breathHoldIbiSeries,
-    hrv: buildHrvStats(todayBreathHold, stressHistorySource, recentBreathHoldsHrv),
+    ibiSeries,
+    hrv: buildHrvStats(todayFullHeartRate, fullHeartRateHistory),
     partialErrors,
   };
 }

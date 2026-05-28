@@ -8,10 +8,10 @@ import { card } from '../../theme/card';
 import RingStatCard from './RingStatCard';
 import LungWaterBackground from './LungWaterBackground';
 
-const HEALTH_INFO = {
-  title: 'Health Score',
+const LUNG_SCORE_INFO = {
+  title: 'Lung Score',
   message:
-    'A 0–100 composite score based on heart rate, HRV, breath hold, and recovery during the session. A higher score indicates better overall cardiorespiratory health.\n\n70+ is considered strong; 85+ is excellent.',
+    'A 0–100 daily lung score based on today\'s Daily Exercise breath hold duration and heart-rate response during the hold.\n\nThis is a heuristic estimate, not a clinical health score.',
 };
 
 const LUNG_AGE_INFO = {
@@ -33,7 +33,6 @@ interface TodayInsightsProps {
   avgBpm?: number | null;
   holdSeconds?: number | null;
   bestHoldSeconds?: number | null;
-  healthScore?: number | null;
   lungAge?: number | null;
   lungAgeTier?: string | null;
 }
@@ -43,6 +42,12 @@ function formatHold(seconds: number | null | undefined): string {
   const minutes = Math.floor(seconds / 60);
   const secs = seconds % 60;
   return `${minutes}:${secs.toString().padStart(2, '0')}`;
+}
+
+function scoreFromLungAge(lungAge: number | null | undefined): number | null {
+  if (lungAge == null) return null;
+  const score = ((LUNG_AGE_MAX - lungAge) / (LUNG_AGE_MAX - LUNG_AGE_MIN)) * 100;
+  return Math.max(0, Math.min(100, Math.round(score)));
 }
 
 function LungAgeRing({
@@ -138,14 +143,14 @@ export default function TodayInsights({
   title = 'Today\'s insights',
   avgBpm,
   holdSeconds,
-  healthScore,
   lungAge,
   lungAgeTier,
   bestHoldSeconds,
 }: TodayInsightsProps) {
   const bpmValue = avgBpm == null ? '--' : `${Math.round(avgBpm)}`;
   const holdValue = formatHold(holdSeconds);
-  const healthValue = healthScore == null ? '--' : `${Math.round(healthScore)}`;
+  const lungScore = scoreFromLungAge(lungAge);
+  const lungScoreValue = lungScore == null ? '--' : `${lungScore}`;
 
   return (
     <View style={styles.page}>
@@ -169,14 +174,14 @@ export default function TodayInsights({
           icon="stat-breath-flow"
         />
         <RingStatCard
-          label="Health"
-          value={healthValue}
+          label="Lungs"
+          value={lungScoreValue}
           target="100"
-          progress={healthScore == null ? 0 : healthScore / 100}
+          progress={lungScore == null ? 0 : lungScore / 100}
           color={colors.orange[700]}
           trackColor={colors.neutral[200]}
-          icon="stat-health-spark"
-          info={HEALTH_INFO}
+          icon="stat-lungs"
+          info={LUNG_SCORE_INFO}
         />
       </View>
 

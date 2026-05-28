@@ -58,12 +58,6 @@ export interface BreathHoldSummary {
   avgBpm: number | null;
   minBpm: number | null;
   maxBpm: number | null;
-  rmssd: number | null;
-  sdnn: number | null;
-  pnn50: number | null;
-  hrDrop: number | null;
-  beatCount: number | null;
-  stress: number | null;
 }
 
 export interface BreathingSessionSummary {

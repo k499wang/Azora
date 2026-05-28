@@ -127,6 +127,14 @@ export const ICON_PATHS = {
     <path fill="currentColor" d="M17.5 2.8l.25.95c.08.3.3.52.6.6l.95.25-.95.25a.88.88 0 0 0-.6.6l-.25.95-.25-.95a.88.88 0 0 0-.6-.6l-.95-.25.95-.25c.3-.08.52-.3.6-.6l.25-.95Z"/>
   `,
 
+  'stat-lungs': `
+    <path fill="currentColor" opacity="0.1" d="M10.1 10.3c-2.7.4-4.8 2.8-5.3 5.9-.3 1.9.9 3.5 2.8 3.5 1.5 0 2.8-.9 3.3-2.3.3-.9.3-2.4.2-4.5-.1-1.6-.3-2.4-1-2.6Zm3.8 0c2.7.4 4.8 2.8 5.3 5.9.3 1.9-.9 3.5-2.8 3.5-1.5 0-2.8-.9-3.3-2.3-.3-.9-.3-2.4-.2-4.5.1-1.6.3-2.4 1-2.6Z"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M12 4.3v7.2"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M12 11.5c-1.2 0-1.7.8-1.6 2.2.1 1.8 0 3-.3 3.8-.5 1.4-1.6 2.2-3.1 2.2-1.8 0-3-1.6-2.7-3.5.5-3.1 2.6-5.5 5.3-5.9"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M12 11.5c1.2 0 1.7.8 1.6 2.2-.1 1.8 0 3 .3 3.8.5 1.4 1.6 2.2 3.1 2.2 1.8 0 3-1.6 2.7-3.5-.5-3.1-2.6-5.5-5.3-5.9"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M9.4 7.4 12 10.6l2.6-3.2"/>
+  `,
+
   // --- Heart health section ---
   'heart-rmssd': `
 <path fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" d="M5 14h3l1.4 2.2L12 9l2.6 7.2L16 14h3"/>
