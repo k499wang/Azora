@@ -1,37 +1,28 @@
-import { Fragment, useEffect } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useEffect } from 'react';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Canvas, Path, Skia } from '@shopify/react-native-skia';
+import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { colors } from '../theme/colors';
 import { typography, fonts } from '../theme/typography';
 import { spacing, padding, margin } from '../theme/spacing';
-import { card } from '../theme/card';
 import SectionHeader from '../components/common/SectionHeader';
 import BPMChart from '../components/home/BPMChart';
+import GlassIconButton from '../components/common/GlassIconButton';
+import ThermometerStatCard from '../components/home/ThermometerStatCard';
+import BiologicalAgeRing from '../components/exercise/BiologicalAgeRing';
 import type { SessionCompleteScreenProps } from '../app/navigation';
 import { useAuthStore } from '../stores/authStore';
 import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
 import { buildAffirmation } from '../lib/affirmation';
 import { buildBpmSeries } from '../lib/heartRate/bpmSeries';
 
-const HERO_RING_SIZE = 260;
-const HERO_RING_STROKE = 16;
-const RING_START = 135;
-const RING_SWEEP = 270;
-
-const MINI_RING_SIZE = 76;
-const MINI_RING_STROKE = 6;
-
 function formatDuration(secs: number): string {
   const m = Math.floor(secs / 60);
   const s = secs % 60;
   return `${m}:${s.toString().padStart(2, '0')}`;
-}
-
-function clamp01(n: number): number {
-  return Math.max(0, Math.min(1, n));
 }
 
 export default function SessionCompleteScreen({
@@ -44,9 +35,6 @@ export default function SessionCompleteScreen({
     breathCount,
     targetBreaths,
     durationSec,
-    targetSec,
-    cycles,
-    targetCycles,
     avgBpm,
     hrSamples = [],
   } = route.params;
@@ -65,22 +53,7 @@ export default function SessionCompleteScreen({
     durationSec,
   });
 
-  const ringCx = HERO_RING_SIZE / 2;
-  const ringR = HERO_RING_SIZE / 2 - HERO_RING_STROKE;
-  const ringRect = Skia.XYWHRect(ringCx - ringR, ringCx - ringR, ringR * 2, ringR * 2);
-  const breathScore = clamp01(targetBreaths > 0 ? breathCount / targetBreaths : 0);
-  const heroTrackPath = Skia.Path.Make();
-  heroTrackPath.addArc(ringRect, RING_START, RING_SWEEP);
-  const heroArcPath = Skia.Path.Make();
-  heroArcPath.addArc(ringRect, RING_START, RING_SWEEP * breathScore);
-
-  const heroColor = colors.primary.blue500;
-
-  const miniCx = MINI_RING_SIZE / 2;
-  const miniR = MINI_RING_SIZE / 2 - MINI_RING_STROKE;
-  const miniRect = Skia.XYWHRect(miniCx - miniR, miniCx - miniR, miniR * 2, miniR * 2);
-  const miniTrackPath = Skia.Path.Make();
-  miniTrackPath.addArc(miniRect, RING_START, RING_SWEEP);
+  const breathScore = targetBreaths > 0 ? Math.max(0, Math.min(1, breathCount / targetBreaths)) : 0;
 
   // Derive Avg HR from the same smoothed series the graph plots so the stat
   // and the line agree. Falls back to the raw session average when there are
@@ -90,41 +63,6 @@ export default function SessionCompleteScreen({
     avgBpm ??
     null;
 
-  const stats: Array<{
-    value: string;
-    label: string;
-    tint: string;
-    score: number;
-    unavailable?: boolean;
-  }> = [
-    {
-      value: formatDuration(durationSec),
-      label: 'Duration',
-      tint: colors.primary.blue500,
-      score: clamp01(targetSec > 0 ? durationSec / targetSec : 0),
-    },
-    {
-      value: String(cycles),
-      label: 'Cycles',
-      tint: colors.success[500],
-      score: clamp01(targetCycles > 0 ? cycles / targetCycles : 0),
-    },
-    displayAvgBpm != null
-      ? {
-          value: String(Math.round(displayAvgBpm)),
-          label: 'Avg HR',
-          tint: colors.error[500],
-          score: clamp01((100 - displayAvgBpm) / 50),
-        }
-      : {
-          value: '—',
-          label: 'Avg HR',
-          tint: colors.error[500],
-          score: 0,
-          unavailable: true,
-        },
-  ];
-
   const showGraph = hrSamples.length >= 10;
 
   const handleClose = () => {
@@ -133,41 +71,44 @@ export default function SessionCompleteScreen({
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
+      {/* Fixed background image with quick fade to white */}
+      <Image
+        source={require('../../assets/backgrounds/2066.jpg')}
+        style={styles.bgImage}
+        contentFit="cover"
+        cachePolicy="memory-disk"
+        transition={0}
+      />
+      <LinearGradient
+        colors={[
+          'rgba(248,251,255,0)',
+          'rgba(248,251,255,0.55)',
+          'rgba(248,251,255,1)',
+        ]}
+        locations={[0, 0.25, 0.45]}
+        style={styles.bgGradient}
+        pointerEvents="none"
+      />
+
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
-          <Pressable style={styles.closeButton} onPress={handleClose}>
-            <MaterialCommunityIcons name="close" size={22} color={colors.text.secondary} />
-          </Pressable>
           <Text style={styles.title}>Nice work!</Text>
         </View>
 
         <View style={styles.heroWrap}>
           <View style={styles.heroCard}>
-            <View style={styles.ringWrap}>
-              <Canvas style={StyleSheet.absoluteFill}>
-                <Path
-                  path={heroTrackPath}
-                  style="stroke"
-                  strokeWidth={HERO_RING_STROKE}
-                  strokeCap="round"
-                  color={heroColor + '26'}
-                />
-                <Path
-                  path={heroArcPath}
-                  style="stroke"
-                  strokeWidth={HERO_RING_STROKE}
-                  strokeCap="round"
-                  color={heroColor}
-                />
-              </Canvas>
-              <View style={styles.ringCenter} pointerEvents="none">
-                <Text style={styles.ringValue}>{breathCount}</Text>
-                <Text style={styles.ringUnit}>breaths</Text>
-              </View>
-            </View>
+            <BiologicalAgeRing
+              lungAge={breathCount}
+              userAge={null}
+              caption="Breaths"
+              displayValue={breathCount}
+              score={breathScore}
+              ringColors={[colors.primary.blue400, colors.primary.blue600]}
+              gapLabel={null}
+            />
             <Text style={styles.techniqueName}>{techniqueName}</Text>
             <Text style={styles.affirmation}>{affirmation}</Text>
           </View>
@@ -177,54 +118,24 @@ export default function SessionCompleteScreen({
           <SectionHeader title="Statistics" />
         </View>
 
-        <View style={styles.statTileRow}>
-          {stats.map((stat, idx) => {
-            const arc = Skia.Path.Make();
-            arc.addArc(miniRect, RING_START, RING_SWEEP * stat.score);
-            const arcColor = stat.unavailable ? colors.neutral[200] : stat.tint;
-            return (
-              <Fragment key={stat.label}>
-                {idx > 0 && <View style={styles.statDivider} />}
-                <View
-                  style={[styles.statTile, stat.unavailable && styles.statTileUnavailable]}
-                >
-                  <View style={styles.miniRingWrap}>
-                    <Canvas style={StyleSheet.absoluteFill}>
-                      <Path
-                        path={miniTrackPath}
-                        style="stroke"
-                        strokeWidth={MINI_RING_STROKE}
-                        strokeCap="round"
-                        color={arcColor + '26'}
-                      />
-                      {stat.score > 0 && (
-                        <Path
-                          path={arc}
-                          style="stroke"
-                          strokeWidth={MINI_RING_STROKE}
-                          strokeCap="round"
-                          color={arcColor}
-                        />
-                      )}
-                    </Canvas>
-                    <View style={styles.miniRingCenter} pointerEvents="none">
-                      <Text
-                        style={[
-                          styles.statValue,
-                          stat.unavailable && styles.statValueUnavailable,
-                        ]}
-                        numberOfLines={1}
-                        adjustsFontSizeToFit
-                      >
-                        {stat.value}
-                      </Text>
-                    </View>
-                  </View>
-                  <Text style={styles.statLabel}>{stat.label}</Text>
-                </View>
-              </Fragment>
-            );
-          })}
+        <View style={styles.tileRow}>
+          <ThermometerStatCard
+            label="Duration"
+            value={durationSec}
+            unit=""
+            valueText={formatDuration(durationSec)}
+            min={30}
+            max={300}
+            accent={colors.primary.blue500}
+          />
+          <ThermometerStatCard
+            label="Avg HR"
+            value={displayAvgBpm}
+            unit="bpm"
+            min={40}
+            max={120}
+            accent={colors.error[500]}
+          />
         </View>
 
         {showGraph ? (
@@ -233,6 +144,14 @@ export default function SessionCompleteScreen({
           </View>
         ) : null}
       </ScrollView>
+
+      {/* Glassmorphic close button — fixed above the scroll */}
+      <GlassIconButton
+        style={[styles.closeButton, { top: insets.top + padding.screen.vertical }]}
+        onPress={handleClose}
+      >
+        <MaterialCommunityIcons name="close" size={22} color={colors.text.secondary} />
+      </GlassIconButton>
     </View>
   );
 }
@@ -241,6 +160,14 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: colors.background.primary,
+  },
+  bgImage: {
+    ...StyleSheet.absoluteFillObject,
+    width: undefined,
+    height: undefined,
+  },
+  bgGradient: {
+    ...StyleSheet.absoluteFillObject,
   },
   scrollContent: {
     paddingBottom: spacing['5xl'],
@@ -252,16 +179,7 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     position: 'absolute',
-    top: padding.screen.vertical,
     left: padding.screen.horizontal,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.background.elevated,
-    borderWidth: 1,
-    borderColor: colors.border.subtle,
-    alignItems: 'center',
-    justifyContent: 'center',
     zIndex: 1,
   },
   title: {
@@ -279,38 +197,6 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xl,
     paddingHorizontal: spacing.lg,
     alignItems: 'center',
-  },
-  ringWrap: {
-    width: HERO_RING_SIZE,
-    height: HERO_RING_SIZE,
-    borderRadius: HERO_RING_SIZE / 2,
-    backgroundColor: colors.background.elevated,
-    borderWidth: 1,
-    borderColor: colors.neutral[100],
-    shadowColor: colors.neutral[900],
-    shadowOpacity: 0.1,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 4,
-  },
-  ringCenter: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  ringValue: {
-    ...typography.display.display1,
-    fontSize: 72,
-    lineHeight: 78,
-    color: colors.text.primary,
-    fontFamily: fonts.semibold,
-    fontWeight: '600',
-  },
-  ringUnit: {
-    ...typography.body.small,
-    color: colors.text.tertiary,
-    fontFamily: fonts.semibold,
-    marginTop: 2,
   },
   techniqueName: {
     ...typography.body.small,
@@ -331,66 +217,13 @@ const styles = StyleSheet.create({
     marginTop: margin.resultSection,
     marginBottom: spacing.sm,
   },
-  statTileRow: {
-    ...card.base,
-    ...card.shadow,
+  tileRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    gap: spacing.sm,
     marginHorizontal: padding.screen.horizontal,
-    paddingVertical: spacing.sm,
-    overflow: 'visible',
-  },
-  statDivider: {
-    width: StyleSheet.hairlineWidth,
-    alignSelf: 'stretch',
-    backgroundColor: colors.neutral[200],
-    marginVertical: spacing.sm,
-  },
-  statTile: {
-    flex: 1,
-    paddingVertical: spacing.xs,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  miniRingWrap: {
-    width: MINI_RING_SIZE,
-    height: MINI_RING_SIZE,
-    borderRadius: MINI_RING_SIZE / 2,
-    backgroundColor: colors.background.elevated,
-    borderWidth: 1,
-    borderColor: colors.neutral[100],
-    shadowColor: colors.neutral[900],
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 5 },
-    elevation: 3,
-  },
-  miniRingCenter: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: spacing.xs,
-  },
-  statValue: {
-    ...typography.title.title3,
-    fontSize: 20,
-    color: colors.text.primary,
-    fontFamily: fonts.semibold,
-    fontWeight: '600',
-  },
-  statValueUnavailable: {
-    color: colors.text.tertiary,
-  },
-  statTileUnavailable: {
-    opacity: 0.75,
-  },
-  statLabel: {
-    ...typography.caption.caption1,
-    color: colors.text.tertiary,
-    fontFamily: fonts.semibold,
-    marginTop: spacing.xs,
   },
   graphWrap: {
     paddingHorizontal: padding.screen.horizontal,
+    marginTop: spacing.sm,
   },
 });

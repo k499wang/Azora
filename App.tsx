@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
+import { Image } from 'expo-image';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -34,7 +35,13 @@ import { AUTH_LANDING_SLIDES } from './src/data/authLandingSlides';
 import { AGREEMENT_STATEMENTS } from './src/components/onboarding/screens/AgreementScreen';
 SplashScreen.preventAutoHideAsync();
 
-Asset.fromModule(require('./assets/backgrounds/sunset.jpg')).downloadAsync();
+// ─── Critical background images (awaited before app render) ────────────
+const CRITICAL_BG_ASSETS = [
+  require('./assets/backgrounds/sunset.jpg'),
+  require('./assets/backgrounds/2066.jpg'),
+];
+
+// ─── Secondary asset preloads (fire-and-forget, non-blocking) ──────────
 Asset.fromModule(require('./assets/onboarding/camerappg.png')).downloadAsync();
 Asset.fromModule(require('./assets/onboarding/founder-intro-poster.jpg')).downloadAsync();
 AUTH_LANDING_SLIDES.forEach((slide) => {
@@ -62,11 +69,29 @@ export default function App() {
     'Outfit-Bold': Outfit_700Bold,
   });
 
+  const [criticalAssetsReady, setCriticalAssetsReady] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function preload() {
+      try {
+        await Asset.loadAsync(CRITICAL_BG_ASSETS);
+      } catch {
+        // proceed even on failure — worst case the image loads on-screen
+      }
+      if (!cancelled) setCriticalAssetsReady(true);
+    }
+    preload();
+    return () => { cancelled = true; };
+  }, []);
+
+  const appReady = fontsLoaded && criticalAssetsReady;
+
   const onLayoutRootView = useCallback(async () => {
-    if (fontsLoaded) {
+    if (appReady) {
       await SplashScreen.hideAsync();
     }
-  }, [fontsLoaded]);
+  }, [appReady]);
 
   const lastTrackedRouteNameRef = useRef<string | null>(null);
 
@@ -96,7 +121,7 @@ export default function App() {
 
   const [introVisible, setIntroVisible] = useState(true);
 
-  if (!fontsLoaded) {
+  if (!appReady) {
     return <View style={{ flex: 1, backgroundColor: STARTUP_BACKGROUND_COLOR }} />;
   }
 
@@ -122,6 +147,29 @@ export default function App() {
           {introVisible ? (
             <WelcomeIntro onFinish={() => setIntroVisible(false)} />
           ) : null}
+
+          {/* Hidden preloaders — force React Native to decode + cache these
+              images so they appear instantly on result screens. */}
+          <View
+            style={{
+              position: 'absolute',
+              width: 0,
+              height: 0,
+              overflow: 'hidden',
+              opacity: 0,
+            }}
+            pointerEvents="none"
+          >
+            {CRITICAL_BG_ASSETS.map((src, i) => (
+              <Image
+                key={i}
+                source={src}
+                style={{ width: 1, height: 1 }}
+                cachePolicy="memory-disk"
+                transition={0}
+              />
+            ))}
+          </View>
         </View>
       </SafeAreaProvider>
     </GestureHandlerRootView>
