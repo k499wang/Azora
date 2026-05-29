@@ -1,6 +1,8 @@
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image } from 'expo-image';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { colors } from '../theme/colors';
 import { spacing, padding, margin } from '../theme/spacing';
 import { typography, fonts } from '../theme/typography';
@@ -13,6 +15,7 @@ import { useProfileQuery } from '../queries/profile/useProfileQuery';
 import { PaywallPlacement } from '../services/paywall';
 import { FeatureKey } from '../services/subscriptions/featureAccess';
 import type { HeartRateSessionDetailScreenProps } from '../app/navigation';
+import GlassIconButton from '../components/common/GlassIconButton';
 
 function formatLoggedAt(value: string): string {
   return new Intl.DateTimeFormat(undefined, {
@@ -66,14 +69,30 @@ export function HeartRateSessionDetailScreen({
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
+      {/* Fixed background image with quick fade to white */}
+      <Image
+        source={require('../../assets/backgrounds/2066.jpg')}
+        style={styles.bgImage}
+        contentFit="cover"
+        cachePolicy="memory-disk"
+        transition={0}
+      />
+      <LinearGradient
+        colors={[
+          'rgba(248,251,255,0)',
+          'rgba(248,251,255,0.55)',
+          'rgba(248,251,255,1)',
+        ]}
+        locations={[0, 0.25, 0.45]}
+        style={styles.bgGradient}
+        pointerEvents="none"
+      />
+
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
-          <Pressable style={styles.closeButton} onPress={() => navigation.goBack()}>
-            <MaterialCommunityIcons name="close" size={22} color={colors.text.secondary} />
-          </Pressable>
           <Text style={styles.headerTitle}>Nice work!</Text>
         </View>
 
@@ -123,6 +142,14 @@ export function HeartRateSessionDetailScreen({
           </View>
         )}
       </ScrollView>
+
+      {/* Glassmorphic close button — fixed above the scroll */}
+      <GlassIconButton
+        style={[styles.closeButton, { top: insets.top + padding.screen.vertical }]}
+        onPress={() => navigation.goBack()}
+      >
+        <MaterialCommunityIcons name="close" size={22} color={colors.text.secondary} />
+      </GlassIconButton>
     </View>
   );
 }
@@ -131,6 +158,14 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: colors.background.primary,
+  },
+  bgImage: {
+    ...StyleSheet.absoluteFillObject,
+    width: undefined,
+    height: undefined,
+  },
+  bgGradient: {
+    ...StyleSheet.absoluteFillObject,
   },
   scrollContent: {
     paddingBottom: spacing['5xl'],
@@ -142,16 +177,7 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     position: 'absolute',
-    top: padding.screen.vertical,
     left: padding.screen.horizontal,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.background.elevated,
-    borderWidth: 1,
-    borderColor: colors.border.subtle,
-    alignItems: 'center',
-    justifyContent: 'center',
     zIndex: 1,
   },
   headerTitle: {

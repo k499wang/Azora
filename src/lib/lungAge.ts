@@ -77,6 +77,67 @@ function tierFromAge(age: number): LungHealthKey {
   return 'heavy-smoker';
 }
 
+// ─── Visual display helpers ───────────────────────────────────────────────────
+
+export interface AgeGap {
+  years: number;
+  direction: 'younger' | 'older' | 'same';
+  label: string;
+  ringColors: [string, string];
+  textColor: string;
+}
+
+const YOUNGER_COLORS: [string, string] = ['#22C55E', '#2F7AEF'];
+const SAME_COLORS: [string, string] = ['#4A90F5', '#78B4FF'];
+const OLDER_COLORS: [string, string] = ['#FF8C00', '#EF4444'];
+
+export function computeAgeGap(lungAge: number, userAge: number | null): AgeGap {
+  if (userAge == null || !Number.isFinite(userAge)) {
+    return {
+      years: 0,
+      direction: 'same',
+      label: `Lung age ${lungAge}`,
+      ringColors: SAME_COLORS,
+      textColor: '#4A90F5',
+    };
+  }
+
+  const delta = userAge - lungAge;
+  const absYears = Math.abs(delta);
+
+  if (delta >= 3) {
+    return {
+      years: absYears,
+      direction: 'younger',
+      label: `${absYears} year${absYears !== 1 ? 's' : ''} younger than you`,
+      ringColors: YOUNGER_COLORS,
+      textColor: '#22C55E',
+    };
+  }
+
+  if (delta <= -3) {
+    return {
+      years: absYears,
+      direction: 'older',
+      label: `${absYears} year${absYears !== 1 ? 's' : ''} older than you`,
+      ringColors: OLDER_COLORS,
+      textColor: '#FF8C00',
+    };
+  }
+
+  return {
+    years: absYears,
+    direction: 'same',
+    label: 'Matches your age',
+    ringColors: SAME_COLORS,
+    textColor: '#4A90F5',
+  };
+}
+
+export function ageScore(lungAge: number): number {
+  return Math.max(0, Math.min(1, (MAX_AGE - lungAge) / (MAX_AGE - MIN_AGE)));
+}
+
 export function estimateLungAge({
   holdSeconds,
   avgBpm,

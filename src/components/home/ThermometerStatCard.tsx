@@ -12,6 +12,8 @@ interface ThermometerStatCardProps {
   min: number;
   max: number;
   accent: string;
+  /** When set, renders this text as the primary black value and hides the grey unit. */
+  valueText?: string;
   locked?: boolean;
   onPressLocked?: () => void;
 }
@@ -23,6 +25,7 @@ export default function ThermometerStatCard({
   min,
   max,
   accent,
+  valueText,
   locked = false,
   onPressLocked,
 }: ThermometerStatCardProps) {
@@ -39,10 +42,16 @@ export default function ThermometerStatCard({
       <View style={styles.tileContent}>
         <View style={styles.tileBody}>
           <View style={styles.tileValueRow}>
-            <Text style={styles.tileValue}>
-              {magnitude != null ? Math.round(magnitude) : '--'}
-            </Text>
-            <Text style={styles.tileUnit}>{unit}</Text>
+            {valueText != null ? (
+              <Text style={styles.tileValue}>{valueText}</Text>
+            ) : (
+              <>
+                <Text style={styles.tileValue}>
+                  {magnitude != null ? Math.round(magnitude) : '--'}
+                </Text>
+                <Text style={styles.tileUnit}>{unit}</Text>
+              </>
+            )}
           </View>
         </View>
         <View style={styles.thermoTrack}>
