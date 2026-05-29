@@ -82,7 +82,10 @@ export default function RestingHeartRateBar({
                 styles.tick,
                 {
                   left: `${tick.t * 100}%`,
-                  backgroundColor: tick.color,
+                  backgroundColor:
+                    fraction != null && tick.t > fraction
+                      ? colors.neutral[300]
+                      : tick.color,
                   opacity:
                     fraction != null && tick.t > fraction
                       ? TICK_UNSELECTED_OPACITY

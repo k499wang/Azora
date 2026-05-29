@@ -8,18 +8,17 @@ import { colors } from '../../theme/colors';
 import { typography, fonts } from '../../theme/typography';
 import { spacing, margin } from '../../theme/spacing';
 import { card } from '../../theme/card';
-import LineGraph, { type DataPoint } from '../analytics/LineGraph';
+import { type DataPoint } from '../analytics/LineGraph';
 import SectionHeader from '../common/SectionHeader';
 import ProUpgradeButton from '../common/ProUpgradeButton';
 import StressGauge from './StressGauge';
 import RestingHeartRateBar from './RestingHeartRateBar';
 import HRVTrackStatCard from '../home/HRVTrackStatCard';
+import BPMChart from '../home/BPMChart';
+import HRVChart from '../home/HRVChart';
 import { getStressZone } from '../../lib/heartRate/stress';
 import { computeHRVStats } from '../../lib/hrv';
-import {
-  buildGraphBpmValuePointsFromIbis,
-  smoothBpmValuePoints,
-} from '../../lib/heartRate/bpmSmoothing';
+import type { BpmTimePoint } from '../../lib/heartRate/bpmSeries';
 import type { HrvAvailabilityReason, IbiSample } from '../../lib/heartRate/types';
 
 interface HeartRateResultContentProps {
@@ -32,8 +31,7 @@ interface HeartRateResultContentProps {
   stress?: number | null;
   hrvAvailabilityReason?: HrvAvailabilityReason;
   ibiSamples?: IbiSample[];
-  holdStartOffsetSeconds?: number;
-  bpmSeries?: DataPoint[];
+  bpmSamples?: BpmTimePoint[];
   rrSeries?: DataPoint[];
   context?: string;
   metaText?: string;
@@ -88,21 +86,6 @@ function downsampleIbi(
   return out;
 }
 
-function findClosestIbiIndex(samples: IbiSample[], offsetSeconds: number | undefined): number | undefined {
-  if (offsetSeconds == null || samples.length === 0) return undefined;
-  const offsetMs = offsetSeconds * 1000;
-  let bestIndex = 0;
-  let bestDistance = Math.abs(samples[0].offsetMs - offsetMs);
-  for (let i = 1; i < samples.length; i++) {
-    const distance = Math.abs(samples[i].offsetMs - offsetMs);
-    if (distance < bestDistance) {
-      bestIndex = i;
-      bestDistance = distance;
-    }
-  }
-  return bestIndex;
-}
-
 export function HeartRateResultContent({
   bpm,
   confidence,
@@ -113,8 +96,7 @@ export function HeartRateResultContent({
   stress,
   hrvAvailabilityReason,
   ibiSamples = [],
-  holdStartOffsetSeconds,
-  bpmSeries,
+  bpmSamples,
   rrSeries,
   context,
   metaText,
@@ -152,37 +134,14 @@ export function HeartRateResultContent({
     sdnnFromProp ??
     (sdnnFromIbis > 0 && Number.isFinite(sdnnFromIbis) ? sdnnFromIbis : null);
   const sdnnNumeric = sdnnRaw ?? (advancedStatsLocked ? 55 : null);
-  const resolvedBpmSeries = bpmSeries != null
-    ? smoothBpmValuePoints(bpmSeries)
-    : buildGraphBpmValuePointsFromIbis(
-        ibiSamples,
-        (sample) => `${Math.round(sample.offsetMs / 1000)}s`,
-      );
+  const bpmChartSamples =
+    bpmSamples != null && bpmSamples.length >= 2 ? bpmSamples : undefined;
+  const chartIbiMs = ibiSamples.map((sample) => sample.ibiMs);
   const resolvedRrSeries = rrSeries ?? downsampleIbi(ibiSamples, (s) => Math.round(s.ibiMs));
-  const holdStartHighlightIndex =
-    bpmSeries == null && resolvedBpmSeries.length >= 2
-      ? findClosestIbiIndex(ibiSamples, holdStartOffsetSeconds)
-      : undefined;
-  const rrHoldStartHighlightIndex =
-    rrSeries == null && resolvedRrSeries.length >= 2 && ibiSamples.length <= 24
-      ? holdStartHighlightIndex
-      : undefined;
-  const placeholderBpmSeries: DataPoint[] = Array.from({ length: 12 }, (_, i) => ({
-    label: `${i * 2}s`,
-    value: 72 + Math.round(Math.sin(i * 0.6) * 6),
-  }));
-  const placeholderRrSeries: DataPoint[] = Array.from({ length: 12 }, (_, i) => ({
-    label: `${i * 2}s`,
-    value: 820 + Math.round(Math.cos(i * 0.5) * 40),
-  }));
+  const rrChartIbiMs = resolvedRrSeries.map((point) => point.value);
   const showBpmGraph =
-    resolvedBpmSeries.length >= 2 || advancedStatsLocked;
-  const showRrGraph =
-    resolvedRrSeries.length >= 2 || advancedStatsLocked;
-  const displayBpmSeries =
-    resolvedBpmSeries.length >= 2 ? resolvedBpmSeries : placeholderBpmSeries;
-  const displayRrSeries =
-    resolvedRrSeries.length >= 2 ? resolvedRrSeries : placeholderRrSeries;
+    bpmChartSamples != null || chartIbiMs.length >= 2 || advancedStatsLocked;
+  const showRrGraph = rrChartIbiMs.length >= 2 || advancedStatsLocked;
   const stressForDisplay =
     stress != null ? stress : advancedStatsLocked ? 42 : null;
   const stressZoneForDisplay =
@@ -311,76 +270,25 @@ export function HeartRateResultContent({
             />
           </View>
             {showBpmGraph ? (
-              <View style={[styles.graphCard, advancedStatsLocked && styles.lockedGraphCard]}>
-                <Text style={[styles.graphTitle, advancedStatsLocked && styles.lockedTitleText]}>
-                  Heart rate
-                </Text>
-                <LineGraph
-                  data={displayBpmSeries}
-                  unit=""
-                  height={180}
-                  lineColor={colors.primary.blue500}
-                  fillColor={colors.primary.blue100}
-                  dotColor={colors.primary.blue600}
-                  highlightIndex={holdStartHighlightIndex}
+              <View style={styles.graphCardWrap}>
+                <BPMChart
+                  bpmSamples={bpmChartSamples}
+                  ibiMs={chartIbiMs}
+                  color={colors.primary.blue500}
+                  locked={advancedStatsLocked}
+                  onPressLocked={onPressUpgrade}
                 />
-                {advancedStatsLocked ? (
-                  <>
-                    <BlurView
-                      intensity={24}
-                      tint="light"
-                      pointerEvents="none"
-                      style={StyleSheet.absoluteFill}
-                    />
-                    <Text style={[styles.graphTitle, styles.clearGraphTitle]}>
-                      Heart rate
-                    </Text>
-                    {onPressUpgrade ? (
-                      <Pressable
-                        accessibilityRole="button"
-                        onPress={onPressUpgrade}
-                        style={StyleSheet.absoluteFill}
-                      />
-                    ) : null}
-                  </>
-                ) : null}
               </View>
             ) : null}
 
             {showRrGraph ? (
-              <View style={[styles.graphCard, advancedStatsLocked && styles.lockedGraphCard]}>
-                <Text style={[styles.graphTitle, advancedStatsLocked && styles.lockedTitleText]}>
-                  Heart rate variability
-                </Text>
-                <LineGraph
-                  data={displayRrSeries}
-                  unit=""
-                  height={180}
-                  lineColor={colors.error[500]}
-                  fillColor={`${colors.error[500]}1A`}
-                  dotColor={colors.error[500]}
-                  highlightIndex={rrHoldStartHighlightIndex}
+              <View style={styles.graphCardWrap}>
+                <HRVChart
+                  ibiMs={rrChartIbiMs}
+                  color={colors.error[500]}
+                  locked={advancedStatsLocked}
+                  onPressLocked={onPressUpgrade}
                 />
-                {advancedStatsLocked ? (
-                  <>
-                    <BlurView
-                      intensity={24}
-                      tint="light"
-                      pointerEvents="none"
-                      style={StyleSheet.absoluteFill}
-                    />
-                    <Text style={[styles.graphTitle, styles.clearGraphTitle]}>
-                      Heart rate variability
-                    </Text>
-                    {onPressUpgrade ? (
-                      <Pressable
-                        accessibilityRole="button"
-                        onPress={onPressUpgrade}
-                        style={StyleSheet.absoluteFill}
-                      />
-                    ) : null}
-                  </>
-                ) : null}
               </View>
             ) : null}
         </>
@@ -574,32 +482,9 @@ const styles = StyleSheet.create({
     width: '100%',
     marginTop: spacing.sm,
   },
-  graphCard: {
-    ...card.base,
-    ...card.shadow,
+  graphCardWrap: {
     width: '100%',
-    padding: spacing.md,
     marginTop: spacing.sm,
-    overflow: 'hidden',
-  },
-  lockedGraphCard: {
-    position: 'relative',
-  },
-  graphTitle: {
-    ...typography.heading.heading1,
-    color: colors.text.secondary,
-    fontFamily: fonts.semibold,
-    marginBottom: spacing.xs,
-  },
-  lockedTitleText: {
-    opacity: 0,
-  },
-  clearGraphTitle: {
-    position: 'absolute',
-    top: spacing.md,
-    left: spacing.md,
-    right: spacing.md,
-    zIndex: 2,
   },
   lockedWrap: {
     width: '100%',
