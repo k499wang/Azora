@@ -10,7 +10,7 @@ import { typography, fonts } from '../theme/typography';
 import { spacing, padding, margin } from '../theme/spacing';
 import { card } from '../theme/card';
 import { LockedOverlay } from '../components/heartRate/HeartRateResultContent';
-import HRGraphCard from '../components/exercise/HRGraphCard';
+import BPMChart from '../components/home/BPMChart';
 import ShareCard from '../components/exercise/ShareCard';
 import SectionHeader from '../components/common/SectionHeader';
 import type { DailyResultScreenProps } from '../app/navigation';
@@ -328,7 +328,7 @@ export default function ShareableResultScreen({
 
           {bpmSamples.length >= 2 ? (
             <View style={styles.heartHealthCard}>
-              <HRGraphCard samples={bpmSamples} durationSec={holdSeconds} />
+              <BPMChart bpmSamples={bpmSamples} color={colors.primary.blue500} />
             </View>
           ) : null}
         </LockedOverlay>

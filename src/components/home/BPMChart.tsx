@@ -8,9 +8,17 @@ import { typography, fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import { card } from '../../theme/card';
 import { buildGraphBpmValuePointsFromIbis } from '../../lib/heartRate/bpmSmoothing';
+import { buildBpmSeries, type BpmTimePoint } from '../../lib/heartRate/bpmSeries';
 
 interface BPMChartProps {
-  ibiMs: number[];
+  /** Inter-beat intervals (ms). Used when the source is raw beat detection. */
+  ibiMs?: number[];
+  /**
+   * Pre-measured BPM-over-time samples. Used when the source already produced
+   * beats-per-minute (e.g. breathing sessions, daily holds). Takes precedence
+   * over `ibiMs` when both are provided.
+   */
+  bpmSamples?: BpmTimePoint[];
   height?: number;
   color?: string;
   locked?: boolean;
@@ -28,6 +36,7 @@ const BPM_INFO = {
 
 export default function BPMChart({
   ibiMs,
+  bpmSamples,
   height = 170,
   color = colors.error[500],
   locked = false,
@@ -41,7 +50,16 @@ export default function BPMChart({
   };
 
   const series = useMemo(() => {
-    if (ibiMs.length < 2) return [];
+    if (bpmSamples && bpmSamples.length >= 2) {
+      const points = buildBpmSeries(bpmSamples).points;
+      if (points.length < 2) return [];
+      const firstOffsetMs = points[0].offsetMs;
+      return points.map((point) => ({
+        tSec: (point.offsetMs - firstOffsetMs) / 1000,
+        bpm: point.bpm,
+      }));
+    }
+    if (!ibiMs || ibiMs.length < 2) return [];
     let t = 0;
     const ibiSamples = ibiMs.map((ms) => {
       t += ms;
@@ -57,7 +75,7 @@ export default function BPMChart({
       tSec: (point.offsetMs - firstOffsetMs) / 1000,
       bpm: point.value,
     }));
-  }, [ibiMs]);
+  }, [ibiMs, bpmSamples]);
 
   const durationSec = useMemo(
     () => (series.length > 0 ? Math.round(series[series.length - 1].tSec) : 0),

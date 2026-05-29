@@ -57,12 +57,6 @@ export function HeartRateSessionDetailScreen({
   const advancedStatsLocked =
     !advancedStatsAccess.allowed && !advancedStatsAccess.isLoading;
 
-  const bpmSeries = detail == null
-    ? []
-    : downsample(detail.bpmSeries, (sample) => ({
-      label: fmt(sample.offsetMs),
-      value: sample.bpm,
-    }));
   const rrSeries = detail == null
     ? []
     : downsample(detail.ibiSeries, (sample) => ({
@@ -112,7 +106,7 @@ export function HeartRateSessionDetailScreen({
                 sdnn={detail.sdnn}
                 hrDrop={detail.hrDrop}
                 stress={detail.stress}
-                bpmSeries={bpmSeries}
+                bpmSamples={detail.bpmSeries}
                 rrSeries={rrSeries}
                 metaText={formatLoggedAt(detail.startedAt)}
                 showConfidence={false}

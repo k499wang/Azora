@@ -9,7 +9,7 @@ import { typography, fonts } from '../theme/typography';
 import { spacing, padding, margin } from '../theme/spacing';
 import { card } from '../theme/card';
 import SectionHeader from '../components/common/SectionHeader';
-import HRGraphCard from '../components/exercise/HRGraphCard';
+import BPMChart from '../components/home/BPMChart';
 import type { SessionCompleteScreenProps } from '../app/navigation';
 import { useAuthStore } from '../stores/authStore';
 import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
@@ -229,7 +229,7 @@ export default function SessionCompleteScreen({
 
         {showGraph ? (
           <View style={styles.graphWrap}>
-            <HRGraphCard samples={hrSamples} durationSec={durationSec} />
+            <BPMChart bpmSamples={hrSamples} color={colors.primary.blue500} />
           </View>
         ) : null}
       </ScrollView>
