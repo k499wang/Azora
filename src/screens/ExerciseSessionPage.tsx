@@ -725,7 +725,6 @@ export default function ExerciseSessionPage({
                     outer: activeTheme.circleOuter,
                     outerOpacity: activeTheme.circleOuterOpacity,
                     inner: activeTheme.circleInner,
-                    beatPulse: activeTheme.beatPulse,
                     beatFlush: activeTheme.beatFlush,
                   }}
                 >
