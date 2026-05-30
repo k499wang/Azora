@@ -69,6 +69,14 @@ module.exports = {
       'expo-apple-authentication',
       '@react-native-community/datetimepicker',
       'expo-video',
+      'react-native-appsflyer',
+      [
+        'expo-tracking-transparency',
+        {
+          userTrackingPermission:
+            'Allow $(PRODUCT_NAME) to measure ad performance so we can improve Azora.',
+        },
+      ],
     ],
     extra: {
       eas: {
@@ -85,6 +93,8 @@ module.exports = {
         process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
       revenueCatIosApiKey: process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY,
       revenueCatAndroidApiKey: process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_KEY,
+      appsFlyerDevKey: process.env.EXPO_PUBLIC_APPSFLYER_DEV_KEY,
+      appsFlyerAppId: process.env.EXPO_PUBLIC_APPSFLYER_APP_ID,
       googleWebClientId:
         '464959684647-og75a7kr59nc9siganhms2rlp8ph2afm.apps.googleusercontent.com',
       googleIosClientId:

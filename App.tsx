@@ -28,6 +28,8 @@ import { trackAppOpened, trackScreenView } from './src/services/analytics/tracki
 import { bootstrapAnalytics } from './src/services/analytics/identity';
 import { registerAppSessionTracking } from './src/services/analytics/appSession';
 import { registerAuthIdentitySync } from './src/services/supabase';
+import { initAppsFlyer } from './src/services/attribution/appsFlyerClient';
+import { logAppsFlyerDiagnostics } from './src/services/attribution/appsFlyerDiagnostics';
 import { WelcomeIntro } from './src/components/welcome/WelcomeIntro';
 import { colors } from './src/theme/colors';
 import TECHNIQUES from './src/data/techniques';
@@ -98,6 +100,7 @@ export default function App() {
   useEffect(() => {
     if (!fontsLoaded) return;
     bootstrapAnalytics();
+    void initAppsFlyer().then(() => logAppsFlyerDiagnostics());
     trackAppOpened();
     const unsubscribeSessionTracking = registerAppSessionTracking();
     const unsubscribeAuthIdentitySync = registerAuthIdentitySync();

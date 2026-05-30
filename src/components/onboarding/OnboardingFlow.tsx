@@ -36,6 +36,7 @@ import { buildPaywallPersonalization } from '../../lib/paywallPersonalization';
 import { computeMindMap } from '../../lib/onboardingScores';
 import { useAuthStore } from '../../stores/authStore';
 import { requestNotificationPermissions } from '../../services/notifications/notificationClient';
+import { requestAttPermissionOnce } from '../../services/attribution/attPrompt';
 import { trackNotificationPermissionResult } from '../../services/analytics/tracking';
 import {
   trackOnboardingBackPressed,
@@ -463,11 +464,25 @@ export default function OnboardingFlow({
         }
       }
 
+      await requestAttPermissionOnce();
+
       goToStep('baselineIntro', 'continue', {
         notification_status: permissionStatus,
       });
     } catch (error) {
       setNotificationErrorMessage(getErrorMessage(error));
+    } finally {
+      setIsNotificationSubmitting(false);
+    }
+  };
+
+  const skipNotifications = async () => {
+    if (isNotificationSubmitting) return;
+    setNotificationErrorMessage(null);
+    setIsNotificationSubmitting(true);
+    try {
+      await requestAttPermissionOnce();
+      goToStep('baselineIntro', 'skip');
     } finally {
       setIsNotificationSubmitting(false);
     }
@@ -736,8 +751,7 @@ export default function OnboardingFlow({
           void enableNotifications(preferences);
         }}
         onSkip={() => {
-          setNotificationErrorMessage(null);
-          goToStep('baselineIntro', 'skip');
+          void skipNotifications();
         }}
         onBack={() => goToStep('dailyTime', 'back')}
       />

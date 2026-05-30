@@ -14,7 +14,9 @@
         "EXPO_PUBLIC_REVENUECAT_IOS_KEY": "appl_rhUCjZlQHBdtNVjdQCTxwFyJBBR",
         "EXPO_PUBLIC_SUPABASE_URL": "https://hrficjtmtydiozshadva.supabase.co",
         "EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_TCMULuUIe2Dwh2ynHyYeyA_LvmPofQ8",
-        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_TCMULuUIe2Dwh2ynHyYeyA_LvmPofQ8"
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_TCMULuUIe2Dwh2ynHyYeyA_LvmPofQ8",
+        "EXPO_PUBLIC_APPSFLYER_DEV_KEY": "FXcfirktVyqDN3hBNpajcm",
+        "EXPO_PUBLIC_APPSFLYER_APP_ID": "id6763631574"
       }
     },
     "preview": {
@@ -25,7 +27,9 @@
         "EXPO_PUBLIC_REVENUECAT_IOS_KEY": "appl_rhUCjZlQHBdtNVjdQCTxwFyJBBR",
         "EXPO_PUBLIC_SUPABASE_URL": "https://hrficjtmtydiozshadva.supabase.co",
         "EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_TCMULuUIe2Dwh2ynHyYeyA_LvmPofQ8",
-        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_TCMULuUIe2Dwh2ynHyYeyA_LvmPofQ8"
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_TCMULuUIe2Dwh2ynHyYeyA_LvmPofQ8",
+        "EXPO_PUBLIC_APPSFLYER_DEV_KEY": "FXcfirktVyqDN3hBNpajcm",
+        "EXPO_PUBLIC_APPSFLYER_APP_ID": "id6763631574"
       }
     },
     "production": {
@@ -36,7 +40,9 @@
         "EXPO_PUBLIC_REVENUECAT_IOS_KEY": "appl_rhUCjZlQHBdtNVjdQCTxwFyJBBR",
         "EXPO_PUBLIC_SUPABASE_URL": "https://hrficjtmtydiozshadva.supabase.co",
         "EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_TCMULuUIe2Dwh2ynHyYeyA_LvmPofQ8",
-        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_TCMULuUIe2Dwh2ynHyYeyA_LvmPofQ8"
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_TCMULuUIe2Dwh2ynHyYeyA_LvmPofQ8",
+        "EXPO_PUBLIC_APPSFLYER_DEV_KEY": "FXcfirktVyqDN3hBNpajcm",
+        "EXPO_PUBLIC_APPSFLYER_APP_ID": "id6763631574"
       }
     }
   },

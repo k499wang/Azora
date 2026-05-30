@@ -100,6 +100,17 @@ export function getRevenueCatCustomerInfo(): Promise<CustomerInfo> {
   return revenueCatClient.getCustomerInfo() as Promise<CustomerInfo>;
 }
 
+// Lets the RevenueCat → AppsFlyer integration attribute server-side revenue
+// events back to the AppsFlyer install. Best-effort; never throws.
+export async function setRevenueCatAppsFlyerId(appsFlyerId: string): Promise<void> {
+  if (!isRevenueCatReady()) return;
+  try {
+    await Purchases.setAttributes({ $appsflyerId: appsFlyerId });
+  } catch {
+    // attribution metadata only — safe to drop
+  }
+}
+
 export function getRevenueCatOfferingForPlacement(
   placement: string,
 ): Promise<PurchasesOffering | null> {
