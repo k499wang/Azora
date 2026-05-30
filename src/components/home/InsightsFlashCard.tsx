@@ -13,6 +13,7 @@ import { spacing, padding } from '../../theme/spacing';
 import { typography, fonts } from '../../theme/typography';
 import { card } from '../../theme/card';
 import Icon from '../common/icons/Icon';
+import BinderRings from './BinderRings';
 import ProUpgradeButton from '../common/ProUpgradeButton';
 import type { Insight } from '../../lib/insights';
 
@@ -24,7 +25,7 @@ interface Props {
 }
 
 const FALLBACK_CARD_HEIGHT = 172;
-const CAROUSEL_CARD_GAP = 8;
+const CAROUSEL_CARD_GAP = 16;
 
 export default function InsightsFlashCard({
   insights,
@@ -173,11 +174,17 @@ function InsightCard({
   );
 
   if (!locked) {
-    return <View style={styles.card}>{content}</View>;
+    return (
+      <View style={styles.card}>
+        <BinderRings />
+        {content}
+      </View>
+    );
   }
 
   return (
     <View style={[styles.card, styles.lockedCard]}>
+      <BinderRings />
       <View pointerEvents="none">{content}</View>
       <BlurView
         intensity={24}
@@ -221,7 +228,8 @@ const styles = StyleSheet.create({
     ...card.base,
     ...card.shadow,
     minHeight: 140,
-    paddingHorizontal: spacing.lg,
+    paddingLeft: spacing.xl,
+    paddingRight: spacing.lg,
     paddingVertical: spacing.lg,
   },
   card: {
@@ -229,7 +237,8 @@ const styles = StyleSheet.create({
     ...card.shadow,
     height: '100%',
     minHeight: 140,
-    paddingHorizontal: spacing.lg,
+    paddingLeft: spacing.xl,
+    paddingRight: spacing.lg,
     paddingVertical: spacing.lg,
   },
   lockedCard: {

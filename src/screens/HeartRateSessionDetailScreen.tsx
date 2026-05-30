@@ -6,7 +6,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { colors } from '../theme/colors';
 import { spacing, padding, margin } from '../theme/spacing';
 import { typography, fonts } from '../theme/typography';
-import type { DataPoint } from '../components/analytics/LineGraph';
 import { HeartRateResultContent } from '../components/heartRate/HeartRateResultContent';
 import { useAuthStore } from '../stores/authStore';
 import { useFeatureAccess } from '../hooks/useFeatureAccess';
@@ -26,26 +25,6 @@ function formatLoggedAt(value: string): string {
   }).format(new Date(value));
 }
 
-function fmt(offsetMs: number): string {
-  return `${Math.round(offsetMs / 1000)}s`;
-}
-
-function downsample<T>(
-  samples: T[],
-  toDataPoint: (sample: T) => DataPoint,
-  maxPoints = 24,
-): DataPoint[] {
-  if (samples.length === 0) return [];
-  if (samples.length <= maxPoints) return samples.map(toDataPoint);
-
-  const step = (samples.length - 1) / (maxPoints - 1);
-  const out: DataPoint[] = [];
-  for (let i = 0; i < maxPoints; i++) {
-    out.push(toDataPoint(samples[Math.round(i * step)]));
-  }
-  return out;
-}
-
 export function HeartRateSessionDetailScreen({
   navigation,
   route,
@@ -59,13 +38,6 @@ export function HeartRateSessionDetailScreen({
   const detail = detailQuery.data ?? null;
   const advancedStatsLocked =
     !advancedStatsAccess.allowed && !advancedStatsAccess.isLoading;
-
-  const rrSeries = detail == null
-    ? []
-    : downsample(detail.ibiSeries, (sample) => ({
-      label: fmt(sample.offsetMs),
-      value: Math.round(sample.ibiMs),
-    }));
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
@@ -126,7 +98,7 @@ export function HeartRateSessionDetailScreen({
                 hrDrop={detail.hrDrop}
                 stress={detail.stress}
                 bpmSamples={detail.bpmSeries}
-                rrSeries={rrSeries}
+                ibiSamples={detail.ibiSeries}
                 metaText={formatLoggedAt(detail.startedAt)}
                 showConfidence={false}
                 advancedStatsLocked={advancedStatsLocked}

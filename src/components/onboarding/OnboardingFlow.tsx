@@ -234,6 +234,13 @@ export default function OnboardingFlow({
   };
 
   useEffect(() => {
+    // Fire ATT as early as possible so the IDFA decision lands inside AppsFlyer's
+    // install-postback hold window (timeToWaitForATTUserAuthorization). No-ops if
+    // already resolved, so it's safe on every onboarding entry.
+    void requestAttPermissionOnce();
+  }, []);
+
+  useEffect(() => {
     const eventInput = getStepEventInput(step);
 
     if (!hasTrackedStartRef.current) {
@@ -464,8 +471,6 @@ export default function OnboardingFlow({
         }
       }
 
-      await requestAttPermissionOnce();
-
       goToStep('baselineIntro', 'continue', {
         notification_status: permissionStatus,
       });
@@ -481,7 +486,6 @@ export default function OnboardingFlow({
     setNotificationErrorMessage(null);
     setIsNotificationSubmitting(true);
     try {
-      await requestAttPermissionOnce();
       goToStep('baselineIntro', 'skip');
     } finally {
       setIsNotificationSubmitting(false);

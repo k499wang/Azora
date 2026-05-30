@@ -137,8 +137,12 @@ export function HeartRateResultContent({
   const bpmChartSamples =
     bpmSamples != null && bpmSamples.length >= 2 ? bpmSamples : undefined;
   const chartIbiMs = ibiSamples.map((sample) => sample.ibiMs);
-  const resolvedRrSeries = rrSeries ?? downsampleIbi(ibiSamples, (s) => Math.round(s.ibiMs));
-  const rrChartIbiMs = resolvedRrSeries.map((point) => point.value);
+  const rrChartIbiMs =
+    chartIbiMs.length >= 2
+      ? chartIbiMs
+      : (rrSeries ?? downsampleIbi(ibiSamples, (s) => Math.round(s.ibiMs))).map(
+          (point) => point.value,
+        );
   const showBpmGraph =
     bpmChartSamples != null || chartIbiMs.length >= 2 || advancedStatsLocked;
   const showRrGraph = rrChartIbiMs.length >= 2 || advancedStatsLocked;
