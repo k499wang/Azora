@@ -18,6 +18,8 @@ module.exports = {
       usesAppleSignIn: true,
       infoPlist: {
         NSCameraUsageDescription: 'Allow $(PRODUCT_NAME) to access your camera. Azora uses your camera and flash to estimate your heart rate during breathing sessions by detecting color changes in your fingertip. Place your finger over the rear camera so Azora can show live BPM and breathing feedback. Azora does not take photos or store video.',
+        NSLocationWhenInUseUsageDescription:
+          'Allow $(PRODUCT_NAME) to access your approximate location while using the app to support attribution and diagnostics. Azora does not use location for breathwork sessions.',
         NSPhotoLibraryUsageDescription:
           'Allow $(PRODUCT_NAME) to choose a profile photo',
         // Keep in sync with AppsFlyer dashboard → SKAdNetwork → "Download SKAdNetwork IDs".
