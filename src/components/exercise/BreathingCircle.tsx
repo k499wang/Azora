@@ -29,7 +29,6 @@ interface BreathingThemeColors {
   outer: string;
   outerOpacity?: number;
   inner: string;
-  beatPulse: string;
   beatFlush: string;
 }
 
@@ -43,10 +42,6 @@ interface BreathingCircleProps {
 const BreathingCircle = forwardRef<BreathingCircleRef, BreathingCircleProps>(
   ({ children, cameraSlot, beatTick = 0, themeColors }, ref) => {
     const scale = useRef(new Animated.Value(OUTER_MIN_SCALE)).current;
-    const beatScale = useRef(new Animated.Value(1)).current;
-    const beatOpacity = useRef(new Animated.Value(0)).current;
-    const rippleScale = useRef(new Animated.Value(1)).current;
-    const rippleOpacity = useRef(new Animated.Value(0)).current;
     const innerFlush = useRef(new Animated.Value(0)).current;
 
     const animateTo = (toValue: number, duration: number) => {
@@ -61,53 +56,6 @@ const BreathingCircle = forwardRef<BreathingCircleRef, BreathingCircleProps>(
     useEffect(() => {
       if (beatTick <= 0) return;
 
-      beatScale.setValue(0.92);
-      beatOpacity.setValue(0.55);
-      Animated.sequence([
-        Animated.timing(beatScale, {
-          toValue: 1.18,
-          duration: 90,
-          useNativeDriver: true,
-        }),
-        Animated.parallel([
-          Animated.timing(beatScale, {
-            toValue: 1.45,
-            duration: 500,
-            useNativeDriver: true,
-          }),
-          Animated.timing(beatOpacity, {
-            toValue: 0,
-            duration: 500,
-            useNativeDriver: true,
-          }),
-        ]),
-      ]).start();
-
-      rippleScale.setValue(0.95);
-      rippleOpacity.setValue(0);
-      Animated.sequence([
-        Animated.delay(80),
-        Animated.parallel([
-          Animated.timing(rippleScale, {
-            toValue: 1.65,
-            duration: 600,
-            useNativeDriver: true,
-          }),
-          Animated.sequence([
-            Animated.timing(rippleOpacity, {
-              toValue: 0.3,
-              duration: 100,
-              useNativeDriver: true,
-            }),
-            Animated.timing(rippleOpacity, {
-              toValue: 0,
-              duration: 500,
-              useNativeDriver: true,
-            }),
-          ]),
-        ]),
-      ]).start();
-
       innerFlush.setValue(0);
       Animated.sequence([
         Animated.timing(innerFlush, {
@@ -121,7 +69,7 @@ const BreathingCircle = forwardRef<BreathingCircleRef, BreathingCircleProps>(
           useNativeDriver: true,
         }),
       ]).start();
-    }, [beatTick, beatScale, beatOpacity, rippleScale, rippleOpacity, innerFlush]);
+    }, [beatTick, innerFlush]);
 
     useImperativeHandle(ref, () => ({
       expand(duration: number) {
@@ -165,22 +113,6 @@ const BreathingCircle = forwardRef<BreathingCircleRef, BreathingCircleProps>(
               backgroundColor: themeColors.outer,
               opacity: themeColors.outerOpacity ?? 0.28,
             },
-          ]}
-          pointerEvents="none"
-        />
-        <Animated.View
-          style={[
-            styles.beatRipple,
-            themeColors && { backgroundColor: themeColors.beatPulse },
-            { transform: [{ scale: rippleScale }], opacity: rippleOpacity },
-          ]}
-          pointerEvents="none"
-        />
-        <Animated.View
-          style={[
-            styles.beatHalo,
-            themeColors && { backgroundColor: themeColors.beatPulse },
-            { transform: [{ scale: beatScale }], opacity: beatOpacity },
           ]}
           pointerEvents="none"
         />
@@ -235,20 +167,6 @@ const styles = StyleSheet.create({
     borderRadius: OUTER_MAX_SIZE / 2,
     backgroundColor: colors.primary.blue400,
     opacity: 0.28,
-  },
-  beatHalo: {
-    position: 'absolute',
-    width: INNER_SIZE,
-    height: INNER_SIZE,
-    borderRadius: INNER_SIZE / 2,
-    backgroundColor: colors.error[100],
-  },
-  beatRipple: {
-    position: 'absolute',
-    width: INNER_SIZE,
-    height: INNER_SIZE,
-    borderRadius: INNER_SIZE / 2,
-    backgroundColor: colors.error[100],
   },
   innerFlush: {
     ...StyleSheet.absoluteFillObject,
