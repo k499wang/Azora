@@ -838,7 +838,7 @@ function cleanBeatSeries(
   const rawCount = Math.max(0, beatTimestamps.length - 1);
   const rejectionRatio = rawCount > 0 ? rejectedIntervalCount / rawCount : 0;
   if (rejectionRatio > 0.25) {
-    console.log('[hrv-capture] cleanBeatSeries high rejection', {
+    if (__DEV__) console.log('[hrv-capture] cleanBeatSeries high rejection', {
       rawIntervals: rawCount,
       rejectedIntervals: rejectedIntervalCount,
       rejectionRatio,
@@ -1158,7 +1158,7 @@ export function analyzeCapture(
   const captureEndTimestamp = samples[samples.length - 1]?.timestamp ?? 0;
   const beatSeries = selectBestBeatSeries(frequencyAnalyses, resolvedOptions, captureEndTimestamp);
 
-  console.log('[hrv-capture] analyzeCapture summary', {
+  if (__DEV__) console.log('[hrv-capture] analyzeCapture summary', {
     totalSamples: samples.length,
     captureDurationMs,
     captureDurationSec: Math.round(captureDurationMs / 1000),
