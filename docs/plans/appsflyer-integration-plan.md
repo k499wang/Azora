@@ -1,8 +1,8 @@
 # AppsFlyer Integration Plan
 
-Status: **Proposed** — not yet implemented.
+Status: **Part B implemented** (SDK, identity, ATT, event bridge, deep-link hook). Pending: native dev-client rebuild + end-to-end verification (Section 4), OneLink-to-navigation wiring. See `docs/attribution.md` for the as-built reference.
 Owner: Kevin
-Last updated: 2026-05-28
+Last updated: 2026-05-29
 
 MMP decision: **AppsFlyer**. Chosen over Singular/Adjust/Tenjin/Branch for the most mature per-creator attribution (OneLink), the largest integration ecosystem, a free tier that covers our scale (~12k conversions/mo), and seamless scaling to enterprise with no re-migration. See `docs/plans/` discussion notes for the full comparison.
 
@@ -76,8 +76,10 @@ These are prerequisites. Code cannot be verified end-to-end without the keys fro
    default wellness/subscription template).
 
 ### A3. Connect the integrations (one-time, in dashboards)
-1. **AppsFlyer ↔ Meta:** AppsFlyer integrated-partner page → paste Meta App ID,
-   enable install + in-app event mapping. (TikTok later = same flow.)
+1. **AppsFlyer ↔ Meta:** set up from the **AppsFlyer** side (Partner Marketplace → Meta
+   ads → Set up integration): activate partner, paste the Meta App ID, enable in-app event
+   postbacks + event mapping. Full steps in `docs/attribution-setup.md` §3.1.
+   (TikTok later = same flow.)
 2. **RevenueCat → AppsFlyer:** RevenueCat dashboard → Integrations → AppsFlyer →
    paste AppsFlyer **Dev Key + App ID**. Enable trial/conversion/renewal events.
    This is the piece that pipes revenue into AppsFlyer attribution.

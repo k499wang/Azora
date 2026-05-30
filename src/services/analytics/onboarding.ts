@@ -1,4 +1,5 @@
 import { posthog } from '../../config/posthog';
+import { logAppsFlyerEvent } from '../attribution/appsFlyerClient';
 import { AnalyticsEvent, type AnalyticsEventName } from './events';
 
 type OnboardingAnalyticsValue = string | number | boolean | null;
@@ -159,5 +160,10 @@ export function trackOnboardingCompleted(input: StepEventInput & {
   capture(AnalyticsEvent.OnboardingCompleted, {
     ...stepProperties(input),
     completion_path: input.completion_path,
+  });
+  // Funnel signal AppsFlyer (and Meta) optimize against; revenue events arrive
+  // separately via the RevenueCat → AppsFlyer server-to-server integration.
+  void logAppsFlyerEvent('af_complete_registration', {
+    af_registration_method: input.completion_path,
   });
 }

@@ -1,6 +1,10 @@
 import { useAuthStore } from '../../stores/authStore';
 import { useRevenueCatIdentityStore } from '../../stores/revenueCatIdentityStore';
 import {
+  clearAppsFlyerIdentity,
+  syncAppsFlyerIdentityForUser,
+} from '../attribution/appsFlyerIdentitySync';
+import {
   getRevenueCatAvailability,
   getRevenueCatCustomerInfo,
   syncRevenueCatIdentity,
@@ -12,6 +16,7 @@ export async function ensureRevenueCatIdentityForCurrentUser(): Promise<boolean>
 
   if (user == null) {
     store.setSignedOut();
+    clearAppsFlyerIdentity();
     return false;
   }
 
@@ -29,6 +34,7 @@ export async function ensureRevenueCatIdentityForCurrentUser(): Promise<boolean>
       email: user.email ?? null,
     });
     store.setSynced(user.id);
+    void syncAppsFlyerIdentityForUser(user.id);
     return true;
   } catch (error) {
     store.setFailed(error, user.id);
