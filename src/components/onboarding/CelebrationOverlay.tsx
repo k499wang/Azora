@@ -279,7 +279,7 @@ const styles = StyleSheet.create({
     lineHeight: 72,
     color: colors.text.inverse,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   copy: {
     alignItems: 'center',
@@ -288,7 +288,7 @@ const styles = StyleSheet.create({
   title: {
     ...typography.title.title1,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     fontSize: 28,
     lineHeight: 34,
     color: colors.text.primary,

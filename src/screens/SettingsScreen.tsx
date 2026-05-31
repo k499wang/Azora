@@ -198,7 +198,6 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
       >
         <View style={[styles.topSection, { paddingTop: insets.top }]}>
           <AppTopBar
-            showStreak={false}
             leftSlot={
               <View style={styles.headerLeft}>
                 <Pressable
@@ -387,7 +386,7 @@ const styles = StyleSheet.create({
     ...typography.title.title2,
     color: colors.text.primary,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     letterSpacing: 0.2,
   },
   pressed: {

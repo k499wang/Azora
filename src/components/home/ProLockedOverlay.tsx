@@ -106,7 +106,7 @@ const styles = StyleSheet.create({
     ...typography.label.medium,
     color: colors.text.inverse,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   lockedSubtext: {
     ...typography.caption.caption1,
@@ -134,7 +134,7 @@ const styles = StyleSheet.create({
     ...typography.caption.caption2,
     color: colors.text.inverse,
     fontFamily: fonts.semibold,
-    fontWeight: '700',
+    fontWeight: '600',
     letterSpacing: 0.8,
   },
 });

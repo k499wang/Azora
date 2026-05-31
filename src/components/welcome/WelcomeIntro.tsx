@@ -257,7 +257,7 @@ const styles = StyleSheet.create({
   headline: {
     ...typography.display.display2,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     color: colors.text.primary,
     textAlign: 'center',
   },

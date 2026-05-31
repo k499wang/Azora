@@ -92,7 +92,7 @@ const styles = StyleSheet.create({
   },
   timer: {
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     fontSize: 16,
     letterSpacing: 0.6,
     fontVariant: ['tabular-nums'],
@@ -100,7 +100,7 @@ const styles = StyleSheet.create({
   },
   bestLabel: {
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     fontSize: 12,
     letterSpacing: 0.6,
     color: colors.yellow[400],

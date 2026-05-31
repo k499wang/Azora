@@ -919,7 +919,7 @@ const styles = StyleSheet.create({
 
   phaseLabel: {
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     fontSize: 22,
     lineHeight: 26,
     letterSpacing: 1.2,
@@ -934,7 +934,7 @@ const styles = StyleSheet.create({
   },
   hintText: {
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     fontSize: 14,
     color: colors.text.secondary,
     opacity: 0.6,
@@ -955,7 +955,7 @@ const styles = StyleSheet.create({
   },
   bpmNumber: {
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     fontSize: 26,
     lineHeight: 30,
     letterSpacing: 0.5,
@@ -968,7 +968,7 @@ const styles = StyleSheet.create({
   },
   warningText: {
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     fontSize: 11,
     letterSpacing: 0.5,
     color: colors.warning[500],
@@ -1001,7 +1001,7 @@ const styles = StyleSheet.create({
   progressLabel: {
     ...typography.caption.caption1,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     color: colors.text.tertiary,
     opacity: 0.6,
     letterSpacing: 1,
@@ -1017,7 +1017,7 @@ const styles = StyleSheet.create({
   },
   textLinkLabel: {
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     fontSize: 12,
     letterSpacing: 0.5,
     color: colors.text.tertiary,

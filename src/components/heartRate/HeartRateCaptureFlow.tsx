@@ -463,7 +463,7 @@ const styles = StyleSheet.create({
   status: {
     ...typography.title.title3,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     textAlign: 'center',
     paddingHorizontal: spacing.lg,
   },
@@ -481,7 +481,7 @@ const styles = StyleSheet.create({
   bpmValue: {
     color: colors.text.primary,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     fontSize: 56,
     lineHeight: 60,
     minWidth: 64,
@@ -490,7 +490,7 @@ const styles = StyleSheet.create({
   bpmUnit: {
     color: colors.text.secondary,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     fontSize: 20,
     marginLeft: spacing.xs,
   },
@@ -498,7 +498,7 @@ const styles = StyleSheet.create({
     ...typography.title.title3,
     color: colors.text.primary,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     textAlign: 'center',
   },
   actions: {
@@ -516,7 +516,7 @@ const styles = StyleSheet.create({
   startAnywayText: {
     ...typography.button.large,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     color: colors.text.inverse,
   },
   cancelTouchable: {

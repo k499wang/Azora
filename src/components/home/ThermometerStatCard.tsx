@@ -139,7 +139,7 @@ const styles = StyleSheet.create({
   },
   tileUnit: {
     ...typography.label.small,
-    fontSize: 12,
+    fontSize: 14,
     color: colors.text.tertiary,
     fontFamily: fonts.semibold,
   },

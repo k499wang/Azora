@@ -130,7 +130,7 @@ const styles = StyleSheet.create({
   title: {
     ...typography.title.title2,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     textAlign: 'center',
   },
   message: {

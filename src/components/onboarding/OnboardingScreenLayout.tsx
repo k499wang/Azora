@@ -218,7 +218,7 @@ const styles = StyleSheet.create({
   backGlyph: {
     fontSize: 22,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     color: colors.text.primary,
     lineHeight: 24,
   },
@@ -232,7 +232,7 @@ const styles = StyleSheet.create({
   skipLabel: {
     ...typography.body.small,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     color: colors.text.secondary,
   },
   scroll: {
@@ -267,7 +267,7 @@ const styles = StyleSheet.create({
   title: {
     ...typography.title.title1,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     fontSize: 26,
     lineHeight: 32,
     letterSpacing: -0.3,

@@ -149,7 +149,7 @@ const styles = StyleSheet.create({
   },
   titleSelected: {
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   body: {
     ...typography.body.small,

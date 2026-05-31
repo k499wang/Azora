@@ -155,7 +155,7 @@ const styles = StyleSheet.create({
   planCardTitle: {
     ...typography.heading.heading2,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     color: colors.neutral[0],
   },
   planCardTrial: {
@@ -166,7 +166,7 @@ const styles = StyleSheet.create({
   planCardPerWeek: {
     ...typography.heading.heading2,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     color: colors.neutral[0],
   },
   planCardSecondary: {
@@ -209,7 +209,7 @@ const styles = StyleSheet.create({
   savingsBadgeText: {
     ...typography.caption.caption1,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     color: colors.text.inverse,
     letterSpacing: 1,
   },
@@ -234,7 +234,7 @@ const styles = StyleSheet.create({
   urgencyText: {
     ...typography.caption.caption1,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     color: PRO_INK,
   },
 });

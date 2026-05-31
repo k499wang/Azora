@@ -80,7 +80,7 @@ const styles = StyleSheet.create({
   },
   descriptor: {
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     fontSize: 18,
     lineHeight: 22,
     color: colors.text.primary,

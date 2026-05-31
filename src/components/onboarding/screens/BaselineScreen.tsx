@@ -672,7 +672,7 @@ const styles = StyleSheet.create({
   },
   headingTitle: {
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     fontSize: 28,
     lineHeight: 32,
     letterSpacing: -0.4,
@@ -721,13 +721,13 @@ const styles = StyleSheet.create({
   scienceButtonLabel: {
     ...typography.body.small,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     color: colors.primary.blue700,
     letterSpacing: -0.1,
   },
   scienceButtonChevron: {
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     fontSize: 16,
     lineHeight: 16,
     color: colors.primary.blue700,
@@ -757,7 +757,7 @@ const styles = StyleSheet.create({
   checklistTitle: {
     ...typography.heading.heading2,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     fontSize: 22,
     color: colors.text.primary,
   },
@@ -799,7 +799,7 @@ const styles = StyleSheet.create({
   tipTitle: {
     ...typography.body.medium,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     color: colors.text.primary,
     letterSpacing: -0.1,
   },
@@ -868,7 +868,7 @@ const styles = StyleSheet.create({
   },
   hintText: {
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     fontSize: 14,
     textAlign: 'center',
     paddingHorizontal: spacing.lg,
@@ -883,7 +883,7 @@ const styles = StyleSheet.create({
   },
   bpmNumber: {
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     fontSize: 26,
     lineHeight: 30,
     letterSpacing: 0,
@@ -894,7 +894,7 @@ const styles = StyleSheet.create({
     marginLeft: -4,
     marginTop: 10,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     color: colors.text.secondary,
   },
   bpmUnitDim: {
@@ -961,7 +961,7 @@ const styles = StyleSheet.create({
   skipText: {
     ...typography.body.small,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     color: colors.text.secondary,
   },
 });

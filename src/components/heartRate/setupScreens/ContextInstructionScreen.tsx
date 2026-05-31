@@ -123,7 +123,7 @@ const styles = StyleSheet.create({
   },
   highlight: {
     color: colors.primary.blue600,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   divider: {
     height: 1,

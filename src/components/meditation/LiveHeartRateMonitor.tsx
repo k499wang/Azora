@@ -147,7 +147,7 @@ const styles = StyleSheet.create({
   },
   bpm: {
     ...typography.body.medium,
-    fontWeight: '600',
+    fontWeight: '500',
     color: colors.text.primary,
   },
   unit: {

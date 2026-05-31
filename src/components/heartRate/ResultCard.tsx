@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
   },
   bpmNumber: {
     fontSize: 28,
-    fontWeight: '700',
+    fontWeight: '600',
     color: colors.text.primary,
     lineHeight: 32,
   },
@@ -121,6 +121,6 @@ const styles = StyleSheet.create({
   },
   confidenceText: {
     ...typography.caption.caption2,
-    fontWeight: '600',
+    fontWeight: '500',
   },
 });

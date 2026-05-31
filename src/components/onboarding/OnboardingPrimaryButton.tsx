@@ -74,7 +74,7 @@ const styles = StyleSheet.create({
   text: {
     ...typography.button.large,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     color: colors.text.inverse,
   },
 });

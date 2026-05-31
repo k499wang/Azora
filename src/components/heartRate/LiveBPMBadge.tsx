@@ -145,7 +145,7 @@ const styles = StyleSheet.create({
   bpmText: {
     ...typography.body.medium,
     color: colors.text.primary,
-    fontWeight: '700',
+    fontWeight: '600',
   },
   stopHint: {
     marginTop: 2,

@@ -10,6 +10,8 @@ import { typography, fonts } from '../theme/typography';
 import { card } from '../theme/card';
 import AmbientBackground from '../components/common/AmbientBackground';
 import AppTopBar from '../components/common/AppTopBar';
+import GlassIconButton from '../components/common/GlassIconButton';
+import Icon from '../components/common/icons/Icon';
 import TopBarWeekCalendar from '../components/common/TopBarWeekCalendar';
 import SectionHeader from '../components/common/SectionHeader';
 import HRVSection from '../components/home/HRVSection';
@@ -370,14 +372,19 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
       >
         <View style={[styles.topSection, { paddingTop: insets.top }]}>
           <AppTopBar
-            streak={currentStreak}
             leftSlot={(
               <TopBarWeekCalendar
                 todayLocalDate={todayLocalDate}
                 selectedLocalDate={selectedLocalDate}
                 completedDaysAgo={stats?.completedDaysAgo ?? []}
+                streakDays={currentStreak}
                 onSelectDay={setSelectedLocalDate}
               />
+            )}
+            rightSlot={(
+              <GlassIconButton onPress={() => navigation.navigate('Settings')}>
+                <Icon name="settings" size={20} color={colors.text.primary} />
+              </GlassIconButton>
             )}
           />
 

@@ -1,12 +1,13 @@
 import { useMemo, useState } from 'react';
-import { Alert, Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, Linking, ScrollView, StyleSheet, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import { padding, spacing } from '../theme/spacing';
 import AmbientBackground from '../components/common/AmbientBackground';
 import AppTopBar from '../components/common/AppTopBar';
+import GlassIconButton from '../components/common/GlassIconButton';
+import Icon from '../components/common/icons/Icon';
 import SectionHeader from '../components/common/SectionHeader';
 import ProfileDisplayNameEditorDialog from '../components/profile/ProfileDisplayNameEditorDialog';
 import ProfileIdentityCard from '../components/profile/ProfileIdentityCard';
@@ -192,25 +193,15 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
       >
         <View style={[styles.topSection, { paddingTop: insets.top }]}>
           <AppTopBar
-            showStreak={false}
             rightSlot={
-              <Pressable
+              <GlassIconButton
                 onPress={() => {
                   trackProfileAction('settings_opened');
                   navigation.navigate('Settings');
                 }}
-                hitSlop={12}
-                style={({ pressed }) => [
-                  styles.settingsButton,
-                  pressed && styles.settingsButtonPressed,
-                ]}
               >
-                <MaterialCommunityIcons
-                  name="cog-outline"
-                  size={26}
-                  color={colors.text.primary}
-                />
-              </Pressable>
+                <Icon name="settings" size={20} color={colors.text.primary} />
+              </GlassIconButton>
             }
           />
 
@@ -292,14 +283,5 @@ const styles = StyleSheet.create({
   },
   sectionBody: {
     marginTop: spacing.xs,
-  },
-  settingsButton: {
-    width: 36,
-    height: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  settingsButtonPressed: {
-    opacity: 0.6,
   },
 });

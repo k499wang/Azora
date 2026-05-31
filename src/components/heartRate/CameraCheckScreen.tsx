@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
   status: {
     ...typography.title.title3,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     textAlign: 'center',
     marginBottom: spacing.xl,
     paddingHorizontal: spacing.lg,
@@ -238,7 +238,7 @@ const styles = StyleSheet.create({
   startAnywayText: {
     ...typography.button.large,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     color: colors.text.inverse,
   },
   cancelTouchable: {

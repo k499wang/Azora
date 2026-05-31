@@ -277,7 +277,7 @@ const styles = StyleSheet.create({
     ...typography.title.title2,
     color: colors.text.primary,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
   },
 
   heroCardWrap: {
@@ -326,7 +326,7 @@ const styles = StyleSheet.create({
   shareCtaLabel: {
     ...typography.body.medium,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     color: colors.text.inverse,
   },
   statsHeader: {

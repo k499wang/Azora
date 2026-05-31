@@ -207,7 +207,7 @@ const styles = StyleSheet.create({
   },
   headline: {
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     fontSize: 34,
     lineHeight: 40,
     letterSpacing: -0.6,

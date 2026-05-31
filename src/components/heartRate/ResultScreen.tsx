@@ -418,7 +418,7 @@ const styles = StyleSheet.create({
     ...typography.title.title1,
     color: colors.text.primary,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   heroWrap: {
     paddingHorizontal: padding.screen.horizontal,
@@ -495,7 +495,7 @@ const styles = StyleSheet.create({
   },
   confidenceText: {
     ...typography.caption.caption1,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   sectionHeaderWrap: {
     width: '100%',
@@ -549,7 +549,7 @@ const styles = StyleSheet.create({
   statCaption: {
     ...typography.caption.caption1,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   hrvUnavailableCard: {
     ...card.base,
@@ -636,7 +636,7 @@ const styles = StyleSheet.create({
   },
   tipsHeading: {
     ...typography.body.small,
-    fontWeight: '600',
+    fontWeight: '500',
     color: colors.text.primary,
     marginBottom: spacing.xs,
   },

@@ -199,6 +199,6 @@ const styles = StyleSheet.create({
   dayLabelCompleted: {
     color: colors.text.inverse,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
   },
 });

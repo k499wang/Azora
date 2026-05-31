@@ -251,7 +251,7 @@ const styles = StyleSheet.create({
   zoneLabel: {
     ...typography.caption.caption1,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     letterSpacing: 0.6,
     textTransform: 'uppercase',
   },

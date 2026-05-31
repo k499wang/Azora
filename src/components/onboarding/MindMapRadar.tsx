@@ -181,7 +181,7 @@ const styles = StyleSheet.create({
   labelTitle: {
     ...typography.label.small,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     fontSize: 12,
     lineHeight: 16,
     color: colors.text.secondary,
@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
   labelValue: {
     ...typography.label.small,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     fontSize: 11,
     lineHeight: 14,
     color: colors.text.tertiary,
