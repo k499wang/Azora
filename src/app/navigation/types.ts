@@ -4,9 +4,9 @@ import type {
   NavigatorScreenParams,
 } from '@react-navigation/native';
 import type {
-  BottomTabNavigationProp,
-  BottomTabScreenProps,
-} from '@react-navigation/bottom-tabs';
+  NativeBottomTabNavigationProp,
+  NativeBottomTabScreenProps,
+} from '@react-navigation/bottom-tabs/unstable';
 import type {
   NativeStackNavigationProp,
   NativeStackScreenProps,
@@ -58,7 +58,7 @@ export type RootStackScreenProps<Screen extends keyof RootStackParamList> =
 
 export type MainTabScreenProps<Screen extends keyof MainTabParamList> =
   CompositeScreenProps<
-    BottomTabScreenProps<MainTabParamList, Screen>,
+    NativeBottomTabScreenProps<MainTabParamList, Screen>,
     NativeStackScreenProps<RootStackParamList>
   >;
 
@@ -69,12 +69,12 @@ export type RootStackNavigationProp<
 export type MainTabNavigationProp<
   Screen extends keyof MainTabParamList = keyof MainTabParamList,
 > = CompositeNavigationProp<
-  BottomTabNavigationProp<MainTabParamList, Screen>,
+  NativeBottomTabNavigationProp<MainTabParamList, Screen>,
   NativeStackNavigationProp<RootStackParamList>
 >;
 
-export type HomeScreenProps = { navigation: RootStackNavigationProp };
-export type ProfileScreenProps = { navigation: RootStackNavigationProp };
+export type HomeScreenProps = MainTabScreenProps<'Home'>;
+export type ProfileScreenProps = MainTabScreenProps<'Profile'>;
 
 export type HeartRateScreenProps = RootStackScreenProps<'HeartRate'>;
 export type ProPaywallScreenProps = RootStackScreenProps<'ProPaywall'>;
