@@ -2,6 +2,8 @@ import { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { spacing } from '../../theme/spacing';
 
+const TOP_BAR_HEIGHT = 58;
+
 interface AppTopBarProps {
   leftSlot?: ReactNode;
   rightSlot?: ReactNode;
@@ -18,11 +20,11 @@ export default function AppTopBar({ leftSlot, rightSlot }: AppTopBarProps) {
 
 const styles = StyleSheet.create({
   container: {
+    height: TOP_BAR_HEIGHT,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.sm,
   },
   side: {},
 });
