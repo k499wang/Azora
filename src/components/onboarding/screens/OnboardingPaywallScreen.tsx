@@ -708,14 +708,14 @@ const styles = StyleSheet.create({
   },
   backText: {
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     fontSize: 34,
     lineHeight: 34,
     color: colors.neutral[0],
   },
   closeText: {
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     fontSize: 32,
     lineHeight: 32,
     color: colors.neutral[0],
@@ -774,14 +774,14 @@ const styles = StyleSheet.create({
   eyebrow: {
     ...typography.body.medium,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     color: 'rgba(255,255,255,0.75)',
     textAlign: 'left',
   },
   title: {
     ...typography.display.display3,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     color: colors.neutral[0],
     textAlign: 'left',
   },
@@ -800,7 +800,7 @@ const styles = StyleSheet.create({
   stepEyebrow: {
     ...typography.caption.caption1,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     color: colors.text.brand,
     letterSpacing: 1.2,
     textTransform: 'uppercase',
@@ -808,7 +808,7 @@ const styles = StyleSheet.create({
   stepTitle: {
     ...typography.display.display3,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     color: colors.text.primary,
     textAlign: 'center',
   },
@@ -831,7 +831,7 @@ const styles = StyleSheet.create({
   valueTitle: {
     ...typography.display.display1,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     color: colors.text.primary,
     textAlign: 'center',
     letterSpacing: -0.6,
@@ -847,7 +847,7 @@ const styles = StyleSheet.create({
   planHeadline: {
     ...typography.display.display3,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     color: colors.text.primary,
     textAlign: 'center',
     letterSpacing: -0.3,
@@ -855,7 +855,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     ...typography.heading.heading1,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     color: colors.text.primary,
     textAlign: 'center',
   },
@@ -888,7 +888,7 @@ const styles = StyleSheet.create({
   radarLegendLabel: {
     ...typography.caption.caption1,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     color: colors.text.secondary,
   },
   radarWrap: {
@@ -909,7 +909,7 @@ const styles = StyleSheet.create({
   radarFooterValue: {
     ...typography.heading.heading2,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     color: colors.primary.blue600,
   },
   baselineStrip: {
@@ -929,7 +929,7 @@ const styles = StyleSheet.create({
   baselineChipValue: {
     ...typography.heading.heading1,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     color: colors.primary.blue600,
     letterSpacing: -0.4,
   },
@@ -991,7 +991,7 @@ const styles = StyleSheet.create({
   ladderDay: {
     ...typography.caption.caption1,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     color: colors.text.brand,
     letterSpacing: 1,
     textTransform: 'uppercase',
@@ -999,7 +999,7 @@ const styles = StyleSheet.create({
   ladderTitle: {
     ...typography.body.medium,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     color: colors.text.primary,
     marginTop: 2,
   },
@@ -1027,7 +1027,7 @@ const styles = StyleSheet.create({
   trialNote: {
     ...typography.caption.caption1,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     color: colors.primary.blue600,
     textAlign: 'center',
     marginTop: spacing.xs,
@@ -1067,7 +1067,7 @@ const styles = StyleSheet.create({
   valueTileTitle: {
     ...typography.heading.heading2,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     color: colors.text.primary,
   },
   valueTileBody: {
@@ -1108,13 +1108,13 @@ const styles = StyleSheet.create({
   timelineLabel: {
     ...typography.heading.heading1,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     color: colors.text.primary,
   },
   timelineTitle: {
     ...typography.body.medium,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     color: colors.text.primary,
     marginTop: 2,
   },
@@ -1140,7 +1140,7 @@ const styles = StyleSheet.create({
   restoreText: {
     ...typography.button.medium,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     color: colors.neutral[0],
   },
   errorBlock: {
@@ -1164,7 +1164,7 @@ const styles = StyleSheet.create({
   retryText: {
     ...typography.button.small,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     color: colors.error[700],
   },
   footer: {
@@ -1196,7 +1196,7 @@ const styles = StyleSheet.create({
   freeButtonText: {
     ...typography.button.small,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     color: 'rgba(255,255,255,0.75)',
   },
   legal: {
@@ -1208,7 +1208,7 @@ const styles = StyleSheet.create({
   legalLink: {
     color: 'rgba(255,255,255,0.85)',
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   subtlePressed: {
     opacity: 0.65,

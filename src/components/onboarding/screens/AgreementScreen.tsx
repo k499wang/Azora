@@ -228,7 +228,7 @@ const styles = StyleSheet.create({
   },
   statement: {
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     fontSize: 22,
     lineHeight: 30,
     letterSpacing: -0.3,
@@ -283,7 +283,7 @@ const styles = StyleSheet.create({
   choiceLabel: {
     ...typography.body.medium,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     fontSize: 15,
     color: colors.text.primary,
   },

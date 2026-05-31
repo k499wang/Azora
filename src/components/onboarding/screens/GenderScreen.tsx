@@ -112,6 +112,6 @@ const styles = StyleSheet.create({
   },
   optionTitleSelected: {
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
   },
 });

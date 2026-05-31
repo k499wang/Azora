@@ -105,7 +105,7 @@ const styles = StyleSheet.create({
   cellLabel: {
     ...typography.caption.caption2,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     color: colors.text.tertiary,
     textTransform: 'uppercase',
     letterSpacing: 0.6,
@@ -118,7 +118,7 @@ const styles = StyleSheet.create({
   trend: {
     ...typography.caption.caption1,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     textAlign: 'center',
   },
 });

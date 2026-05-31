@@ -14,6 +14,7 @@ interface TopBarWeekCalendarProps {
   todayLocalDate: string;
   selectedLocalDate?: string;
   completedDaysAgo?: number[];
+  streakDays?: number;
   onSelectDay?: (localDate: string) => void;
 }
 
@@ -21,6 +22,7 @@ export default function TopBarWeekCalendar({
   todayLocalDate,
   selectedLocalDate = todayLocalDate,
   completedDaysAgo = [],
+  streakDays,
   onSelectDay,
 }: TopBarWeekCalendarProps) {
   const days = useMemo(
@@ -29,7 +31,13 @@ export default function TopBarWeekCalendar({
   );
 
   return (
-    <View style={styles.row}>
+    <View style={styles.container}>
+      {streakDays != null && streakDays > 0 && (
+        <Text style={styles.streakLabel}>
+          <Text style={styles.streakCount}>{streakDays} day</Text> streak
+        </Text>
+      )}
+      <View style={styles.row}>
       {days.map((day) => {
         const isSelected = day.localDate === selectedLocalDate;
         const disabled = onSelectDay == null;
@@ -54,15 +62,30 @@ export default function TopBarWeekCalendar({
           </Pressable>
         );
       })}
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  container: {
+    alignItems: 'flex-start',
+    gap: 4,
+  },
+  streakLabel: {
+    fontSize: 18,
+    lineHeight: 24,
+    color: colors.text.secondary,
+    fontFamily: fonts.semibold,
+    fontWeight: '500',
+  },
+  streakCount: {
+    color: colors.orange[500],
+  },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
+    gap: spacing.sm,
     height: CALENDAR_HEIGHT,
   },
   dayItem: {
@@ -79,12 +102,12 @@ const styles = StyleSheet.create({
   dayLabelCompleted: {
     color: colors.orange[500],
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   dayLabelSelected: {
     color: colors.text.primary,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   underline: {
     width: 12,

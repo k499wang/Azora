@@ -124,7 +124,7 @@ const styles = StyleSheet.create({
   },
   value: {
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     fontSize: 64,
     lineHeight: 70,
     letterSpacing: -1,

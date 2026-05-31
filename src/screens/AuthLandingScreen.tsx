@@ -237,7 +237,7 @@ const styles = StyleSheet.create({
   },
   slideTitle: {
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     fontSize: 24,
     lineHeight: 30,
     color: colors.text.primary,
@@ -333,13 +333,13 @@ const styles = StyleSheet.create({
   primaryButtonLabel: {
     color: colors.text.inverse,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     fontSize: 16,
   },
   secondaryButtonLabel: {
     color: colors.text.primary,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     fontSize: 16,
   },
   buttonPressed: {

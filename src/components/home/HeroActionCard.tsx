@@ -44,7 +44,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.primary.blue600,
     fontFamily: fonts.bold,
-    fontWeight: '700',
+    fontWeight: '600',
   },
   pressed: {
     transform: [{ scale: 0.97 }],

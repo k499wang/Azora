@@ -102,7 +102,7 @@ const styles = StyleSheet.create({
   bestLabel: {
     ...typography.caption.caption1,
     color: colors.orange[700],
-    fontWeight: '600',
+    fontWeight: '500',
   },
   bestValue: {
     ...typography.title.title3,

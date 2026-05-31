@@ -415,7 +415,7 @@ const styles = StyleSheet.create({
   heroRingValue: {
     ...typography.display.display1,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     fontSize: 72,
     lineHeight: 78,
     color: colors.text.primary,
@@ -447,7 +447,7 @@ const styles = StyleSheet.create({
     ...typography.caption.caption2,
     color: colors.text.inverse,
     fontFamily: fonts.semibold,
-    fontWeight: '700',
+    fontWeight: '600',
   },
   hrvUnavailableCard: {
     ...card.base,
@@ -523,7 +523,7 @@ const styles = StyleSheet.create({
     ...typography.label.medium,
     color: colors.text.inverse,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   lockedSubtext: {
     ...typography.caption.caption1,

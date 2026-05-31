@@ -509,7 +509,7 @@ const styles = StyleSheet.create({
   },
   introHeadline: {
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     fontSize: 34,
     lineHeight: 40,
     letterSpacing: -0.6,
@@ -532,7 +532,7 @@ const styles = StyleSheet.create({
   skipText: {
     ...typography.body.small,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     color: colors.text.secondary,
   },
 
@@ -555,7 +555,7 @@ const styles = StyleSheet.create({
   phaseHeading: {
     ...typography.title.title2,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     fontSize: 32,
     lineHeight: 40,
     letterSpacing: -0.5,
@@ -565,7 +565,7 @@ const styles = StyleSheet.create({
   },
   bigTimer: {
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     fontSize: 64,
     lineHeight: 72,
     color: colors.primary.blue700,
@@ -573,7 +573,7 @@ const styles = StyleSheet.create({
   },
   bigTimerUnit: {
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     fontSize: 28,
     color: colors.primary.blue600,
   },
@@ -614,7 +614,7 @@ const styles = StyleSheet.create({
   },
   countdown: {
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     fontSize: 56,
     lineHeight: 64,
     color: colors.primary.blue700,
@@ -633,7 +633,7 @@ const styles = StyleSheet.create({
   gaugeHeading: {
     ...typography.title.title2,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     color: colors.text.primary,
     textAlign: 'center',
   },
@@ -669,7 +669,7 @@ const styles = StyleSheet.create({
   },
   gaugeValue: {
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     fontSize: 60,
     lineHeight: 64,
     letterSpacing: -1.5,
@@ -678,7 +678,7 @@ const styles = StyleSheet.create({
   gaugeValueMax: {
     ...typography.body.small,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     color: colors.text.tertiary,
     letterSpacing: -0.2,
   },

@@ -59,11 +59,7 @@ export default function RestingHeartRateBar({
           <View style={[styles.zonePill, { backgroundColor: `${zone.color}18` }]}>
             <Text style={[styles.zoneText, { color: zone.color }]}>{zone.label}</Text>
           </View>
-        ) : (
-          <View style={[styles.zonePill, styles.zonePillEmpty]}>
-            <Text style={[styles.zoneText, styles.zoneTextEmpty]}>No data</Text>
-          </View>
-        )}
+        ) : null}
       </View>
 
       {showValue ? (
@@ -83,7 +79,9 @@ export default function RestingHeartRateBar({
                 {
                   left: `${tick.t * 100}%`,
                   backgroundColor:
-                    fraction != null && tick.t > fraction
+                    !hasBpm
+                      ? colors.neutral[300]
+                      : fraction != null && tick.t > fraction
                       ? colors.neutral[300]
                       : tick.color,
                   opacity:
@@ -129,12 +127,6 @@ const styles = StyleSheet.create({
     ...typography.label.small,
     fontFamily: fonts.semibold,
     fontSize: 11,
-  },
-  zonePillEmpty: {
-    backgroundColor: colors.neutral[100],
-  },
-  zoneTextEmpty: {
-    color: colors.text.tertiary,
   },
   valueRow: {
     flexDirection: 'row',

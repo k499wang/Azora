@@ -374,7 +374,7 @@ const styles = StyleSheet.create({
   hrCardTitle: {
     ...typography.body.medium,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     color: colors.text.primary,
   },
   hrBadge: {
@@ -392,7 +392,7 @@ const styles = StyleSheet.create({
   hrBadgeText: {
     ...typography.caption.caption2,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     color: colors.success[700],
   },
   hrBadgeTextSteady: {
@@ -409,7 +409,7 @@ const styles = StyleSheet.create({
   },
   statValue: {
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     fontSize: 28,
     lineHeight: 32,
     letterSpacing: -0.4,
@@ -433,7 +433,7 @@ const styles = StyleSheet.create({
   sectionSubtitle: {
     ...typography.heading.heading2,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     fontSize: 22,
     color: colors.text.primary,
     marginTop: spacing.sm,
@@ -451,13 +451,13 @@ const styles = StyleSheet.create({
   techniqueKicker: {
     ...typography.caption.caption2,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     letterSpacing: 2,
     color: colors.primary.blue600,
   },
   techniqueName: {
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     fontSize: 28,
     lineHeight: 32,
     letterSpacing: -0.4,
@@ -467,7 +467,7 @@ const styles = StyleSheet.create({
   techniqueSubname: {
     ...typography.body.small,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     color: colors.text.tertiary,
     marginTop: 2,
   },

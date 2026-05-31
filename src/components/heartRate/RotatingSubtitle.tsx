@@ -64,7 +64,7 @@ const styles = StyleSheet.create({
   text: {
     ...typography.title.title3,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     color: colors.text.secondary,
     textAlign: 'center',
   },

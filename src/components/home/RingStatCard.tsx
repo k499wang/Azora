@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
     lineHeight: 26,
     color: colors.text.primary,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   target: {
     ...typography.label.small,
@@ -152,7 +152,7 @@ const styles = StyleSheet.create({
     ...typography.caption.caption2,
     fontSize: 11,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   ringWrap: {
     alignItems: 'center',

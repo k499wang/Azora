@@ -159,7 +159,7 @@ const styles = StyleSheet.create({
   },
   quoteMark: {
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     fontSize: 56,
     lineHeight: 56,
     color: colors.primary.blue600,
@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
   quote: {
     ...typography.body.large,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     fontSize: 17,
     lineHeight: 26,
     color: colors.text.primary,
@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
   signature: {
     ...typography.body.small,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     color: colors.text.tertiary,
     marginTop: spacing.md,
   },

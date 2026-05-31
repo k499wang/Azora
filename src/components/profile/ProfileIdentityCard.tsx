@@ -113,7 +113,7 @@ const styles = StyleSheet.create({
     ...typography.display.display3,
     color: colors.text.inverse,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     fontSize: 30,
     lineHeight: 34,
   },
@@ -138,7 +138,7 @@ const styles = StyleSheet.create({
     ...typography.label.medium,
     color: colors.primary.blue700,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   headerCopy: {
     alignItems: 'center',
@@ -158,7 +158,7 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     textAlign: 'center',
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   editNameButton: {
     width: 34,

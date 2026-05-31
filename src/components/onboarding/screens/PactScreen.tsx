@@ -255,7 +255,7 @@ const stampStyles = StyleSheet.create({
   },
   stampText: {
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     fontSize: 13,
     letterSpacing: 3,
     color: colors.text.inverse,
@@ -263,7 +263,7 @@ const stampStyles = StyleSheet.create({
   stampCheck: {
     fontSize: 30,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     color: colors.text.inverse,
   },
 });
@@ -559,7 +559,7 @@ const styles = StyleSheet.create({
   backGlyph: {
     fontSize: 22,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     color: colors.text.primary,
     lineHeight: 24,
     padding: spacing.xs,
@@ -618,7 +618,7 @@ const styles = StyleSheet.create({
   },
   wordmark: {
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     fontSize: 10,
     letterSpacing: 4,
     color: colors.orange[700],
@@ -631,7 +631,7 @@ const styles = StyleSheet.create({
   },
   highlight: {
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     color: colors.text.primary,
   },
   signatureBlock: {
@@ -669,7 +669,7 @@ const styles = StyleSheet.create({
   sealCheck: {
     fontSize: 16,
     fontFamily: fonts.bold,
-    fontWeight: '700',
+    fontWeight: '600',
     color: colors.text.inverse,
   },
 

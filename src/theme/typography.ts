@@ -5,16 +5,16 @@ type FontWeight = TextStyle['fontWeight'];
 const weight = {
   regular: '400' as FontWeight,
   medium: '500' as FontWeight,
-  semibold: '600' as FontWeight,
-  bold: '700' as FontWeight,
+  semibold: '500' as FontWeight,
+  bold: '600' as FontWeight,
 };
 
 // Single app-wide font family. Switch to try any of:
 // 'Cormorant' | 'Raleway' | 'Outfit' | 'Manrope' | 'Urbanist' | 'Fredoka' | 'Baloo2' | 'Unbounded' | 'Sniglet' | 'Nunito'
 const FONT_FAMILY = 'Outfit';
 
-const fontBold = `${FONT_FAMILY}-Bold`;
-const fontSemiBold = `${FONT_FAMILY}-SemiBold`;
+const fontBold = `${FONT_FAMILY}-SemiBold`;
+const fontSemiBold = `${FONT_FAMILY}-Medium`;
 const fontRegular = `${FONT_FAMILY}-Regular`;
 const fontMedium = `${FONT_FAMILY}-Medium`;
 const fontLight = `${FONT_FAMILY}-Light`;

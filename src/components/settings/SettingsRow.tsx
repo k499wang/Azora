@@ -91,7 +91,7 @@ const styles = StyleSheet.create({
   label: {
     ...typography.body.medium,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     flex: 1,
   },
   labelCentered: {

@@ -142,7 +142,7 @@ const styles = StyleSheet.create({
   title: {
     ...typography.title.title1,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     color: colors.text.primary,
     textAlign: 'center',
   },
@@ -175,7 +175,7 @@ const styles = StyleSheet.create({
   perkText: {
     ...typography.caption.caption1,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     color: colors.text.secondary,
   },
   stepsCard: {
@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
   stepNumberText: {
     ...typography.label.small,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     color: colors.primary.blue700,
   },
   stepText: {
@@ -236,7 +236,7 @@ const styles = StyleSheet.create({
   ctaText: {
     ...typography.button.large,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     color: colors.text.inverse,
   },
 });

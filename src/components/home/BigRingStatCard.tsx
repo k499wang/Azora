@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     color: colors.text.primary,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   target: {
     ...typography.label.small,

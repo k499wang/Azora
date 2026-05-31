@@ -43,7 +43,7 @@ const styles = StyleSheet.create({
   },
   brand: {
     fontFamily: fonts.semibold,
-    fontWeight: '700',
+    fontWeight: '600',
     fontSize: 32,
     color: colors.text.primary,
   },
@@ -76,7 +76,7 @@ const styles = StyleSheet.create({
   primaryLabel: {
     color: colors.text.inverse,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     fontSize: 16,
   },
   secondaryButton: {
@@ -92,7 +92,7 @@ const styles = StyleSheet.create({
   secondaryLabel: {
     color: colors.text.primary,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     fontSize: 16,
   },
 });

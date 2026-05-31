@@ -321,7 +321,7 @@ const styles = StyleSheet.create({
   },
   closeText: {
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     fontSize: 32,
     lineHeight: 32,
     color: colors.neutral[0],
@@ -344,14 +344,14 @@ const styles = StyleSheet.create({
   eyebrow: {
     ...typography.body.medium,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     color: 'rgba(255,255,255,0.75)',
     textAlign: 'left',
   },
   title: {
     ...typography.display.display3,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     color: colors.neutral[0],
     textAlign: 'left',
   },
@@ -365,7 +365,7 @@ const styles = StyleSheet.create({
   trialNote: {
     ...typography.caption.caption1,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     color: colors.primary.blue200,
     textAlign: 'left',
     marginTop: spacing.xs,
@@ -400,7 +400,7 @@ const styles = StyleSheet.create({
   retryText: {
     ...typography.button.small,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     color: colors.error[700],
   },
   tray: {
@@ -432,7 +432,7 @@ const styles = StyleSheet.create({
   restoreText: {
     ...typography.button.small,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
     color: colors.neutral[0],
   },
   legal: {
@@ -444,7 +444,7 @@ const styles = StyleSheet.create({
   legalLink: {
     color: 'rgba(255,255,255,0.85)',
     fontFamily: fonts.semibold,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   subtlePressed: {
     opacity: 0.65,

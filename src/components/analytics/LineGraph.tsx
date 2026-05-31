@@ -199,7 +199,7 @@ export default function LineGraph({
                     },
                     isHighlighted && {
                       color: highlightColor,
-                      fontWeight: '700',
+                      fontWeight: '600',
                     },
                   ]}
                   numberOfLines={1}
@@ -263,7 +263,7 @@ const styles = StyleSheet.create({
     width: 40,
     textAlign: 'center',
     color: colors.text.primary,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   xLabel: {
     ...typography.caption.caption1,
