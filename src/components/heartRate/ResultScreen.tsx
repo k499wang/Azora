@@ -5,10 +5,11 @@ import {
   StyleSheet,
   TouchableOpacity,
   Animated,
-  SafeAreaView,
   ScrollView,
   Pressable,
 } from 'react-native';
+import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { usePostHog } from 'posthog-react-native';
@@ -153,6 +154,31 @@ function getHrvUnavailableMessage(
   }
 }
 
+function ResultBackground() {
+  return (
+    <>
+      {/* Fixed background image with quick fade to white */}
+      <Image
+        source={require('../../../assets/backgrounds/2066.jpg')}
+        style={styles.bgImage}
+        contentFit="cover"
+        cachePolicy="memory-disk"
+        transition={0}
+      />
+      <LinearGradient
+        colors={[
+          'rgba(248,251,255,0)',
+          'rgba(248,251,255,0.55)',
+          'rgba(248,251,255,1)',
+        ]}
+        locations={[0, 0.25, 0.45]}
+        style={styles.bgGradient}
+        pointerEvents="none"
+      />
+    </>
+  );
+}
+
 export function ResultScreen({
   result,
   onRetry,
@@ -217,6 +243,7 @@ export function ResultScreen({
     const reading = result.reading;
     return (
       <View style={[styles.screen, { paddingTop: insets.top }]}>
+        <ResultBackground />
         <ScrollView
           style={styles.scrollFlex}
           contentContainerStyle={styles.scrollContent}
@@ -316,7 +343,8 @@ export function ResultScreen({
   const errorInfo = getErrorMessage(result.error);
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <View style={[styles.screen, { paddingTop: insets.top }]}>
+      <ResultBackground />
       <View style={styles.container}>
         <Animated.View
           style={[
@@ -375,7 +403,7 @@ export function ResultScreen({
           </TouchableOpacity>
         </View>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -384,9 +412,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background.primary,
   },
-  safeArea: {
-    flex: 1,
-    backgroundColor: colors.background.primary,
+  bgImage: {
+    ...StyleSheet.absoluteFillObject,
+    width: undefined,
+    height: undefined,
+  },
+  bgGradient: {
+    ...StyleSheet.absoluteFillObject,
   },
   container: {
     flex: 1,

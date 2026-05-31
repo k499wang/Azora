@@ -6,8 +6,9 @@ import { colors } from '../theme/colors';
 import { padding, spacing } from '../theme/spacing';
 import AmbientBackground from '../components/common/AmbientBackground';
 import AppTopBar from '../components/common/AppTopBar';
+import BrandLockup from '../components/common/BrandLockup';
 import GlassIconButton from '../components/common/GlassIconButton';
-import Icon from '../components/common/icons/Icon';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import SectionHeader from '../components/common/SectionHeader';
 import ProfileDisplayNameEditorDialog from '../components/profile/ProfileDisplayNameEditorDialog';
 import ProfileIdentityCard from '../components/profile/ProfileIdentityCard';
@@ -193,6 +194,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
       >
         <View style={[styles.topSection, { paddingTop: insets.top }]}>
           <AppTopBar
+            leftSlot={<BrandLockup />}
             rightSlot={
               <GlassIconButton
                 onPress={() => {
@@ -200,7 +202,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
                   navigation.navigate('Settings');
                 }}
               >
-                <Icon name="settings" size={20} color={colors.text.primary} />
+                <MaterialCommunityIcons name="cog" size={20} color={colors.text.primary} />
               </GlassIconButton>
             }
           />

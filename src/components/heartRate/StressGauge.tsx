@@ -5,8 +5,6 @@ import {
   Circle,
   Path,
   Skia,
-  SweepGradient,
-  vec,
 } from '@shopify/react-native-skia';
 import { colors } from '../../theme/colors';
 import { typography, fonts } from '../../theme/typography';
@@ -95,14 +93,8 @@ export default function StressGauge({
               style="stroke"
               strokeWidth={STROKE}
               strokeCap="round"
-            >
-              <SweepGradient
-                c={vec(CX, CY)}
-                start={START_ANGLE}
-                end={START_ANGLE + SWEEP}
-                colors={[zone.color + '55', zone.color]}
-              />
-            </Path>
+              color={zone.color}
+            />
           ) : null}
           {ticks.map((p, i) => (
             <Path
