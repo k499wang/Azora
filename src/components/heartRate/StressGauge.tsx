@@ -169,8 +169,8 @@ const styles = StyleSheet.create({
   title: {
     ...typography.heading.heading2,
     fontFamily: fonts.semibold,
-    fontSize: 18,
-    color: colors.text.primary,
+    fontSize: 16,
+    color: colors.text.secondary,
     textAlign: 'center',
     marginBottom: spacing.sm,
   },

@@ -25,8 +25,8 @@ const LUNG_AGE_MAX = 80;
 const LUNG_RING_SIZE = 200;
 const LUNG_RING_STROKE = 14;
 const LUNG_RING_INSET = 14;
-const LUNG_ARC_START = 135;
-const LUNG_ARC_SWEEP = 270;
+const LUNG_ARC_START = -90;
+const LUNG_ARC_SWEEP = 360;
 
 interface TodayInsightsProps {
   title?: string;
@@ -78,10 +78,14 @@ function LungAgeRing({
         );
 
   const track = Skia.Path.Make();
-  track.addArc(rect, LUNG_ARC_START, LUNG_ARC_SWEEP);
+  track.addCircle(cx, cy, r);
 
   const arc = Skia.Path.Make();
-  arc.addArc(rect, LUNG_ARC_START, LUNG_ARC_SWEEP * progress);
+  if (progress >= 0.999) {
+    arc.addCircle(cx, cy, r);
+  } else if (progress > 0) {
+    arc.addArc(rect, LUNG_ARC_START, LUNG_ARC_SWEEP * progress);
+  }
 
   const tierLabel =
     lungAgeTier == null

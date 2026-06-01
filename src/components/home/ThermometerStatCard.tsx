@@ -117,8 +117,8 @@ const styles = StyleSheet.create({
   tileLabel: {
     ...typography.heading.heading2,
     fontFamily: fonts.semibold,
-    fontSize: 18,
-    color: colors.text.primary,
+    fontSize: 16,
+    color: colors.text.secondary,
   },
   lockedTitleText: {
     opacity: 0,
