@@ -3,7 +3,7 @@ import { colors } from './colors';
 
 export const card: { base: ViewStyle; shadow: ViewStyle } = {
   base: {
-    backgroundColor: colors.background.elevated,
+    backgroundColor: colors.background.card,
     borderRadius: 22,
     borderWidth: 1,
     borderColor: colors.neutral[200],

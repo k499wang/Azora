@@ -261,9 +261,9 @@ const styles = StyleSheet.create({
   },
   title: {
     ...typography.heading.heading2,
-    color: colors.text.primary,
+    color: colors.text.secondary,
     fontFamily: fonts.semibold,
-    fontSize: 18,
+    fontSize: 16,
     marginBottom: spacing.sm,
   },
   lockedTitleText: {

@@ -3,6 +3,8 @@ import { colors } from '../../theme/colors';
 import { typography, fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import { card } from '../../theme/card';
+import CardTitle from '../common/CardTitle';
+import PulseDot from '../common/PulseDot';
 import {
   getRestingHeartRateMarkerFraction,
   getRestingHeartRateSegments,
@@ -53,14 +55,17 @@ export default function RestingHeartRateBar({
 
   return (
     <View style={styles.card}>
-      <View style={styles.header}>
-        <Text style={styles.title}>{title}</Text>
-        {zone ? (
-          <View style={[styles.zonePill, { backgroundColor: `${zone.color}18` }]}>
-            <Text style={[styles.zoneText, { color: zone.color }]}>{zone.label}</Text>
-          </View>
-        ) : null}
-      </View>
+      <CardTitle
+        title={title}
+        leading={<PulseDot />}
+        right={
+          zone ? (
+            <View style={[styles.zonePill, { backgroundColor: `${zone.color}18` }]}>
+              <Text style={[styles.zoneText, { color: zone.color }]}>{zone.label}</Text>
+            </View>
+          ) : null
+        }
+      />
 
       {showValue ? (
         <View style={styles.valueRow}>
@@ -106,17 +111,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
     gap: spacing.sm,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  title: {
-    ...typography.heading.heading2,
-    color: colors.text.primary,
-    fontFamily: fonts.semibold,
-    fontSize: 18,
   },
   zonePill: {
     borderRadius: 20,

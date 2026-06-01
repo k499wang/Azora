@@ -289,8 +289,8 @@ const styles = StyleSheet.create({
   label: {
     ...typography.heading.heading2,
     fontFamily: fonts.semibold,
-    fontSize: 18,
-    color: colors.text.primary,
+    fontSize: 16,
+    color: colors.text.secondary,
   },
   headerRow: {
     flexDirection: 'row',

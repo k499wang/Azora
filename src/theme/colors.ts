@@ -67,6 +67,7 @@ export const colors = {
     primary: '#F8FBFF',
     secondary: '#EEF5FF',
     elevated: '#FFFFFF',
+    card: '#FAFCFF',
     accentSoft: '#EAF2FF',
   },
 

@@ -28,7 +28,7 @@ export default function GlassIconButton({ children, onPress, style }: Props) {
           colorScheme="light"
           glassEffectStyle="clear"
           style={styles.surface}
-          tintColor="rgba(255,255,255,0.06)"
+          tintColor="rgba(234,242,255,0.55)"
         >
           {children}
         </GlassView>
@@ -69,6 +69,6 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.96 }],
   },
   fallback: {
-    backgroundColor: 'rgba(255,255,255,0.35)',
+    backgroundColor: colors.background.accentSoft,
   },
 });
