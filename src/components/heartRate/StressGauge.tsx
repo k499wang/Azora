@@ -9,7 +9,7 @@ import {
 import { colors } from '../../theme/colors';
 import { typography, fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
-import { card } from '../../theme/card';
+import GlassSurface from '../common/GlassSurface';
 import {
   getStressStats,
   type StressHistoryEntry,
@@ -90,7 +90,7 @@ export default function StressGauge({
   );
 
   return (
-    <View style={[styles.card, locked && styles.lockedCard]}>
+    <GlassSurface style={styles.card}>
       <View style={styles.cardContent}>
         <View style={styles.left}>
           <View style={[styles.headerRow, locked && styles.lockedHeaderRow]}>
@@ -193,21 +193,15 @@ export default function StressGauge({
           ) : null}
         </>
       ) : null}
-    </View>
+    </GlassSurface>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    ...card.base,
-    ...card.shadow,
-    width: '100%',
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
     position: 'relative',
-  },
-  lockedCard: {
-    overflow: 'hidden',
   },
   cardContent: {
     flexDirection: 'row',

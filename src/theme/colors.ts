@@ -64,11 +64,38 @@ export const colors = {
   },
 
   background: {
-    primary: '#F8FBFF',
+    // Cool neutral canvas for the frosted/glass paradigm — glass surfaces refract
+    // against grey rather than blue tint.
+    primary: '#F4F5F7',
     secondary: '#EEF5FF',
     elevated: '#FFFFFF',
     card: '#FAFCFF',
     accentSoft: '#EAF2FF',
+  },
+
+  // Desaturated brand blue (slate-leaning) for the premium/greyish direction.
+  // Use in place of primary.blue* on surfaces being migrated to glass.
+  accent: {
+    100: '#EEF1F6',
+    200: '#D8E0EC',
+    300: '#B9C6DA',
+    500: '#5B7CA6',
+    600: '#4A6890',
+    700: '#3B5577',
+  },
+
+  // Frosted-glass tokens. fill sits over a BlurView; edge is the top highlight.
+  glass: {
+    fill: 'rgba(248,250,252,0.62)',
+    // Lighter tint for the 'clear' variant — over media / vibrant backgrounds.
+    fillClear: 'rgba(248,250,252,0.30)',
+    fillStrong: 'rgba(248,250,252,0.80)',
+    edge: 'rgba(255,255,255,0.55)',
+    edgeStrong: 'rgba(255,255,255,0.78)',
+    shadow: '#0F172A',
+    // Opaque scrim for the 'solid' glass fallback (Android), where a BlurView
+    // does not actually blur. Must obscure content behind lock/paywall overlays.
+    scrim: 'rgba(244,245,247,0.94)',
   },
 
   surface: {

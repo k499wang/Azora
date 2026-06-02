@@ -7,6 +7,8 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { BlurView } from 'expo-blur';
+import { colors } from '../../theme/colors';
+import { useGlassMode } from '../../hooks/useGlassMode';
 
 interface LockedContentBlurProps {
   locked?: boolean;
@@ -21,17 +23,26 @@ export default function LockedContentBlur({
   style,
   onPressLocked,
 }: LockedContentBlurProps) {
+  const glassMode = useGlassMode();
+
   return (
     <View style={[styles.wrap, style]}>
       {children}
       {locked ? (
         <>
-          <BlurView
-            intensity={24}
-            tint="light"
-            style={styles.bleedOverlay}
-            pointerEvents="none"
-          />
+          {glassMode === 'solid' ? (
+            <View
+              style={[styles.bleedOverlay, styles.solidScrim]}
+              pointerEvents="none"
+            />
+          ) : (
+            <BlurView
+              intensity={24}
+              tint="light"
+              style={styles.bleedOverlay}
+              pointerEvents="none"
+            />
+          )}
           {onPressLocked ? (
             <Pressable
               accessibilityRole="button"
@@ -56,6 +67,9 @@ const styles = StyleSheet.create({
     right: -5,
     bottom: -5,
     left: -5,
+  },
+  solidScrim: {
+    backgroundColor: colors.glass.scrim,
   },
   pressTarget: {
     ...StyleSheet.absoluteFillObject,
