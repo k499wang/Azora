@@ -10,7 +10,6 @@ import { colors } from '../../theme/colors';
 import { typography, fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import { card } from '../../theme/card';
-import StressStatsRow from './StressStatsRow';
 import {
   getStressStats,
   type StressHistoryEntry,
@@ -24,17 +23,17 @@ interface StressGaugeProps {
   onPressLocked?: () => void;
 }
 
-const SIZE = 220;
+const SIZE = 96;
 const MIN_STRESS_STATS_POINTS = 4;
-const STROKE = 10;
+const STROKE = 8;
 const CX = SIZE / 2;
 const CY = SIZE / 2;
-const R = SIZE / 2 - STROKE / 2 - 6;
+const R = SIZE / 2 - STROKE / 2 - 5;
 const START_ANGLE = 135;
 const SWEEP = 270;
-const TICK_INNER = R - STROKE / 2 - 6;
-const TICK_OUTER = R - STROKE / 2 - 2;
-const INNER_R = R - STROKE / 2 - 14;
+const TICK_INNER = R - STROKE / 2 - 4;
+const TICK_OUTER = R - STROKE / 2 - 1;
+const INNER_R = R - STROKE / 2 - 9;
 
 function tickPath(angleDeg: number) {
   const rad = (angleDeg * Math.PI) / 180;
@@ -46,6 +45,14 @@ function tickPath(angleDeg: number) {
   return p;
 }
 
+const TICKS = [0, 25, 50, 75, 100].map((t) =>
+  tickPath(START_ANGLE + (t / 100) * SWEEP),
+);
+
+function formatValue(value: number | null): string {
+  return value == null || !Number.isFinite(value) ? '--' : `${Math.round(value)}`;
+}
+
 export default function StressGauge({
   value,
   zone,
@@ -54,8 +61,9 @@ export default function StressGauge({
   onPressLocked,
 }: StressGaugeProps) {
   const stats = history != null ? getStressStats(history) : null;
+  const hasStats = stats != null && stats.count >= MIN_STRESS_STATS_POINTS;
   const hasValue = value != null && Number.isFinite(value);
-  const clamped = hasValue ? Math.max(0, Math.min(100, value)) : null;
+  const clamped = hasValue ? Math.max(0, Math.min(100, value!)) : null;
   const sweep = clamped != null ? (clamped / 100) * SWEEP : null;
 
   const rect = Skia.XYWHRect(CX - R, CY - R, R * 2, R * 2);
@@ -68,70 +76,103 @@ export default function StressGauge({
     progress.addArc(rect, START_ANGLE, sweep);
   }
 
-  const ticks = [0, 25, 50, 75, 100].map((t) =>
-    tickPath(START_ANGLE + (t / 100) * SWEEP),
+  const header = (
+    <>
+      <Text style={styles.label}>Stress Index</Text>
+      {zone != null ? (
+        <View style={[styles.zonePill, { backgroundColor: `${zone.color}18` }]}>
+          <Text style={[styles.zonePillText, { color: zone.color }]}>
+            {zone.label}
+          </Text>
+        </View>
+      ) : null}
+    </>
   );
 
   return (
     <View style={[styles.card, locked && styles.lockedCard]}>
-      <Text style={[styles.title, locked && styles.lockedTitleText]}>
-        Stress Index
-      </Text>
-
-      <View style={styles.ringSurface}>
-        <Canvas style={styles.canvas}>
-          <Path
-            path={track}
-            style="stroke"
-            strokeWidth={STROKE}
-            strokeCap="round"
-            color={colors.neutral[100]}
-          />
-          {zone != null ? (
-            <Path
-              path={progress}
-              style="stroke"
-              strokeWidth={STROKE}
-              strokeCap="round"
-              color={zone.color}
-            />
-          ) : null}
-          {ticks.map((p, i) => (
-            <Path
-              key={i}
-              path={p}
-              style="stroke"
-              strokeWidth={1.5}
-              strokeCap="round"
-              color={colors.neutral[200]}
-            />
-          ))}
-
-          <Circle cx={CX} cy={CY + 3} r={INNER_R + 3} color="rgba(15,23,42,0.04)" />
-          <Circle cx={CX} cy={CY + 1.5} r={INNER_R + 1.5} color="rgba(15,23,42,0.02)" />
-          <Circle cx={CX} cy={CY} r={INNER_R + 1} color={colors.neutral[200]} />
-          <Circle cx={CX} cy={CY} r={INNER_R} color={colors.background.elevated} />
-        </Canvas>
-
-        <View style={styles.centerOverlay} pointerEvents="none">
-          <View style={styles.valueRow}>
-            <Text style={styles.value}>{clamped ?? '--'}</Text>
-            <Text style={styles.valueMax}>/100</Text>
+      <View style={styles.cardContent}>
+        <View style={styles.left}>
+          <View style={[styles.headerRow, locked && styles.lockedHeaderRow]}>
+            {header}
           </View>
-          {zone != null ? (
-            <View style={[styles.zonePill, { borderColor: zone.color + '33' }]}>
-              <View style={[styles.zoneDot, { backgroundColor: zone.color }]} />
-              <Text style={[styles.zoneLabel, { color: zone.color }]}>
-                {zone.label}
-              </Text>
+
+          <View style={styles.statsColumn}>
+            <View style={[styles.statsRow, hasStats && styles.statsRowCompact]}>
+              <View style={styles.statCell}>
+                <View style={styles.statValueRow}>
+                  <Text style={[styles.statValue, !hasStats && styles.statValueLarge]}>
+                    {formatValue(clamped)}
+                  </Text>
+                  <Text style={[styles.statUnit, !hasStats && styles.statUnitLarge]}>/100</Text>
+                </View>
+                <Text style={[styles.statLabel, !hasStats && styles.statLabelLarge]}>Today</Text>
+              </View>
+
+              {hasStats ? (
+                <>
+                  <View style={styles.statDivider} />
+                  <View style={styles.statCell}>
+                    <View style={styles.statValueRow}>
+                      <Text style={styles.statValue}>{formatValue(stats!.avg)}</Text>
+                      <Text style={styles.statUnit}>/100</Text>
+                    </View>
+                    <Text style={styles.statLabel}>Avg</Text>
+                  </View>
+
+                  <View style={styles.statDivider} />
+                  <View style={styles.statCell}>
+                    <View style={styles.statValueRow}>
+                      <Text style={styles.statValue}>{formatValue(stats!.max)}</Text>
+                      <Text style={styles.statUnit}>/100</Text>
+                    </View>
+                    <Text style={styles.statLabel}>Highest</Text>
+                  </View>
+                </>
+              ) : null}
             </View>
-          ) : null}
+          </View>
+        </View>
+
+        <View style={styles.gaugeColumn}>
+          <View style={styles.ringSurface}>
+            <Canvas style={StyleSheet.absoluteFill}>
+              <Path
+                path={track}
+                style="stroke"
+                strokeWidth={STROKE}
+                strokeCap="round"
+                color={colors.neutral[100]}
+              />
+              {zone != null ? (
+                <Path
+                  path={progress}
+                  style="stroke"
+                  strokeWidth={STROKE}
+                  strokeCap="round"
+                  color={zone.color}
+                />
+              ) : null}
+              {TICKS.map((p, i) => (
+                <Path
+                  key={i}
+                  path={p}
+                  style="stroke"
+                  strokeWidth={1.5}
+                  strokeCap="round"
+                  color={colors.neutral[200]}
+                />
+              ))}
+
+              <Circle cx={CX} cy={CY + 3} r={INNER_R + 3} color="rgba(15,23,42,0.04)" />
+              <Circle cx={CX} cy={CY + 1.5} r={INNER_R + 1.5} color="rgba(15,23,42,0.02)" />
+              <Circle cx={CX} cy={CY} r={INNER_R + 1} color={colors.neutral[200]} />
+              <Circle cx={CX} cy={CY} r={INNER_R} color={colors.background.elevated} />
+            </Canvas>
+          </View>
         </View>
       </View>
 
-      {stats != null && stats.count >= MIN_STRESS_STATS_POINTS ? (
-        <StressStatsRow stats={stats} />
-      ) : null}
       {locked ? (
         <>
           <BlurView
@@ -140,7 +181,9 @@ export default function StressGauge({
             pointerEvents="none"
             style={StyleSheet.absoluteFill}
           />
-          <Text style={[styles.title, styles.clearTitle]}>Stress Index</Text>
+          <View style={styles.clearHeaderOverlay} pointerEvents="none">
+            {header}
+          </View>
           {onPressLocked ? (
             <Pressable
               accessibilityRole="button"
@@ -161,27 +204,136 @@ const styles = StyleSheet.create({
     width: '100%',
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
-    alignItems: 'center',
+    position: 'relative',
   },
   lockedCard: {
     overflow: 'hidden',
   },
-  title: {
+  cardContent: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+    minHeight: SIZE,
+    borderRadius: 18,
+  },
+  left: {
+    flex: 1,
+    minHeight: SIZE,
+  },
+  label: {
     ...typography.heading.heading2,
     fontFamily: fonts.semibold,
     fontSize: 16,
     color: colors.text.secondary,
-    textAlign: 'center',
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs + 2,
     marginBottom: spacing.sm,
   },
-  lockedTitleText: {
+  lockedHeaderRow: {
     opacity: 0,
+  },
+  clearHeaderOverlay: {
+    position: 'absolute',
+    top: spacing.md,
+    left: spacing.md,
+    right: spacing.md,
+    zIndex: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs + 2,
+  },
+  statsColumn: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  statsRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'flex-start',
+    gap: spacing.md,
+    paddingRight: spacing.md,
+  },
+  statsRowCompact: {
+    gap: spacing.sm + 2,
+    marginTop: 2,
+    paddingRight: spacing.sm,
+  },
+  gaugeColumn: {
+    width: SIZE,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexShrink: 0,
+  },
+  statCell: {
+    alignItems: 'flex-start',
+    gap: spacing.xs,
+  },
+  statDivider: {
+    width: 1,
+    height: 32,
+    backgroundColor: colors.neutral[200],
+  },
+  statLabel: {
+    ...typography.label.small,
+    fontFamily: fonts.semibold,
+    fontSize: 11,
+    color: colors.text.tertiary,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+  },
+  statValueRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 2,
+  },
+  statValue: {
+    ...typography.title.title3,
+    fontFamily: fonts.medium,
+    fontWeight: '500',
+    color: colors.text.primary,
+    fontVariant: ['tabular-nums'],
+    letterSpacing: -0.3,
+    fontSize: 19,
+  },
+  statUnit: {
+    ...typography.label.small,
+    fontSize: 12,
+    color: colors.text.tertiary,
+    fontFamily: fonts.semibold,
+  },
+  statLabelLarge: {
+    fontSize: 11,
+  },
+  statValueLarge: {
+    ...typography.title.title1,
+    fontFamily: fonts.medium,
+    fontWeight: '500',
+    color: colors.text.primary,
+    fontVariant: ['tabular-nums'],
+    letterSpacing: -0.3,
+  },
+  statUnitLarge: {
+    fontSize: 14,
+  },
+  zonePill: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: 20,
+  },
+  zonePillText: {
+    ...typography.label.small,
+    fontFamily: fonts.semibold,
+    fontSize: 11,
   },
   ringSurface: {
     width: SIZE,
     height: SIZE,
     borderRadius: SIZE / 2,
-    position: 'relative',
+    flexShrink: 0,
     backgroundColor: colors.background.elevated,
     borderWidth: 1,
     borderColor: colors.neutral[100],
@@ -190,61 +342,5 @@ const styles = StyleSheet.create({
     shadowRadius: 14,
     shadowOffset: { width: 0, height: 7 },
     elevation: 3,
-  },
-  canvas: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  clearTitle: {
-    position: 'absolute',
-    top: spacing.md,
-    alignSelf: 'center',
-    zIndex: 2,
-  },
-  centerOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  valueRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 2,
-  },
-  value: {
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    fontSize: 56,
-    lineHeight: 60,
-    letterSpacing: -1.5,
-    color: colors.text.primary,
-  },
-  valueMax: {
-    ...typography.body.small,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    color: colors.text.tertiary,
-    letterSpacing: -0.2,
-  },
-  zonePill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: spacing.xs,
-    borderRadius: 999,
-    borderWidth: StyleSheet.hairlineWidth,
-    marginTop: spacing.xs,
-  },
-  zoneDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  zoneLabel: {
-    ...typography.caption.caption1,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
   },
 });

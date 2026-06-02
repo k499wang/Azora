@@ -57,7 +57,7 @@ export default function RestingHeartRateBar({
     <View style={styles.card}>
       <CardTitle
         title={title}
-        leading={<PulseDot />}
+        leading={<PulseDot color={zone?.color} />}
         right={
           zone ? (
             <View style={[styles.zonePill, { backgroundColor: `${zone.color}18` }]}>

@@ -411,6 +411,58 @@ function frequencyEstimate(signal: number[], sampleRate: number): FrequencyResul
   };
 }
 
+function rollingMinBefore(values: number[], radius: number): number[] {
+  const result = new Array<number>(values.length);
+  const deque: number[] = [];
+  let head = 0;
+
+  for (let i = 0; i < values.length; i++) {
+    const minIndex = i - radius;
+    while (head < deque.length && deque[head] < minIndex) head += 1;
+
+    result[i] =
+      head < deque.length
+        ? Math.min(values[i], values[deque[head]])
+        : values[i];
+
+    while (
+      deque.length > head &&
+      values[deque[deque.length - 1]] >= values[i]
+    ) {
+      deque.pop();
+    }
+    deque.push(i);
+  }
+
+  return result;
+}
+
+function rollingMinAfter(values: number[], radius: number): number[] {
+  const result = new Array<number>(values.length);
+  const deque: number[] = [];
+  let head = 0;
+
+  for (let i = values.length - 1; i >= 0; i--) {
+    const maxIndex = i + radius;
+    while (head < deque.length && deque[head] > maxIndex) head += 1;
+
+    result[i] =
+      head < deque.length
+        ? Math.min(values[i], values[deque[head]])
+        : values[i];
+
+    while (
+      deque.length > head &&
+      values[deque[deque.length - 1]] >= values[i]
+    ) {
+      deque.pop();
+    }
+    deque.push(i);
+  }
+
+  return result;
+}
+
 function peakEstimateForPolarity(
   signal: number[],
   sampleRate: number,
@@ -431,6 +483,8 @@ function peakEstimateForPolarity(
   const refractoryMs =
     expectedIntervalMs == null ? 320 : clamp(expectedIntervalMs * 0.45, 280, 520);
   const refractorySamples = Math.max(1, Math.round(sampleRate * (refractoryMs / 1000)));
+  const leftProminenceMins = rollingMinBefore(oriented, prominenceWindowSamples);
+  const rightProminenceMins = rollingMinAfter(oriented, prominenceWindowSamples);
   const peaks: number[] = [];
 
   for (let index = 1; index < oriented.length - 1; index++) {
@@ -447,19 +501,9 @@ function peakEstimateForPolarity(
 
       if (oriented[peakIndex] <= minPeakHeight) continue;
 
-      const leftStart = Math.max(0, peakIndex - prominenceWindowSamples);
-      const rightEnd = Math.min(oriented.length - 1, peakIndex + prominenceWindowSamples);
-      let leftMin = oriented[peakIndex];
-      let rightMin = oriented[peakIndex];
-
-      for (let i = leftStart; i < peakIndex; i++) {
-        if (oriented[i] < leftMin) leftMin = oriented[i];
-      }
-      for (let i = peakIndex + 1; i <= rightEnd; i++) {
-        if (oriented[i] < rightMin) rightMin = oriented[i];
-      }
-
-      const prominence = oriented[peakIndex] - Math.max(leftMin, rightMin);
+      const prominence =
+        oriented[peakIndex] -
+        Math.max(leftProminenceMins[peakIndex], rightProminenceMins[peakIndex]);
       if (prominence < minProminence) continue;
 
       const lastPeak = peaks[peaks.length - 1];

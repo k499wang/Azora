@@ -159,24 +159,24 @@ export default function HRVTrackStatCard({
           <View style={styles.statsColumn}>
             <View style={[styles.statsRow, multiStat && styles.statsRowCompact]}>
               <View style={styles.statCell}>
-                <Text style={[styles.statLabel, !multiStat && styles.statLabelLarge]}>Today</Text>
                 <View style={styles.statValueRow}>
                   <Text style={[styles.statValue, !multiStat && styles.statValueLarge]}>
                     {hasValue ? Math.round(value!) : '--'}
                   </Text>
                   <Text style={[styles.statUnit, !multiStat && styles.statUnitLarge]}>{unit}</Text>
                 </View>
+                <Text style={[styles.statLabel, !multiStat && styles.statLabelLarge]}>Today</Text>
               </View>
 
               {hasAvg ? (
                 <>
                   <View style={styles.statDivider} />
                   <View style={styles.statCell}>
-                    <Text style={styles.statLabel}>Avg</Text>
                     <View style={styles.statValueRow}>
                       <Text style={styles.statValue}>{Math.round(avgValue!)}</Text>
                       <Text style={styles.statUnit}>{unit}</Text>
                     </View>
+                    <Text style={styles.statLabel}>Avg</Text>
                   </View>
                 </>
               ) : null}
@@ -185,11 +185,11 @@ export default function HRVTrackStatCard({
                 <>
                   <View style={styles.statDivider} />
                   <View style={styles.statCell}>
-                    <Text style={styles.statLabel}>Best</Text>
                     <View style={styles.statValueRow}>
                       <Text style={styles.statValue}>{Math.round(bestValue!)}</Text>
                       <Text style={styles.statUnit}>{unit}</Text>
                     </View>
+                    <Text style={styles.statLabel}>Best</Text>
                   </View>
                 </>
               ) : null}
