@@ -7,6 +7,7 @@ import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography, fonts } from '../../theme/typography';
 import { card } from '../../theme/card';
+import { useGlassMode } from '../../hooks/useGlassMode';
 
 interface ProLockedOverlayProps {
   locked: boolean;
@@ -21,6 +22,8 @@ export default function ProLockedOverlay({
   children,
   subtext = 'HRV, stress, and recovery insights are part of Azora Pro.',
 }: ProLockedOverlayProps) {
+  const glassMode = useGlassMode();
+
   if (!locked) {
     return <View style={styles.contentWrap}>{children}</View>;
   }
@@ -30,12 +33,19 @@ export default function ProLockedOverlay({
       <View pointerEvents="none" style={styles.contentWrap}>
         {children}
       </View>
-      <BlurView
-        intensity={18}
-        tint="light"
-        style={StyleSheet.absoluteFill}
-        pointerEvents="none"
-      />
+      {glassMode === 'solid' ? (
+        <View
+          style={[StyleSheet.absoluteFill, styles.solidScrim]}
+          pointerEvents="none"
+        />
+      ) : (
+        <BlurView
+          intensity={18}
+          tint="light"
+          style={StyleSheet.absoluteFill}
+          pointerEvents="none"
+        />
+      )}
       <LinearGradient
         pointerEvents="none"
         colors={[
@@ -81,6 +91,9 @@ const styles = StyleSheet.create({
   lockedWrap: {
     position: 'relative',
     overflow: 'hidden',
+  },
+  solidScrim: {
+    backgroundColor: colors.glass.scrim,
   },
   lockedCenter: {
     ...StyleSheet.absoluteFillObject,
