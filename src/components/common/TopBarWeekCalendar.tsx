@@ -6,7 +6,7 @@ import { fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 
 const TOP_BAR_DAYS = 7;
-const DAY_WIDTH = 18;
+const DAY_WIDTH = 22;
 const CALENDAR_HEIGHT = 30;
 const UNDERLINE_HEIGHT = 2;
 
@@ -85,8 +85,9 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: spacing.xs,
     height: CALENDAR_HEIGHT,
+    marginLeft: -((DAY_WIDTH - 9) / 2),
   },
   dayItem: {
     width: DAY_WIDTH,
@@ -94,8 +95,8 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   dayLabel: {
-    fontSize: 10,
-    lineHeight: 14,
+    fontSize: 13,
+    lineHeight: 18,
     color: colors.text.tertiary,
     fontFamily: fonts.medium,
   },

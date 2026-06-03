@@ -8,11 +8,12 @@ import {
 } from 'react-native';
 import { LockedScrim } from '../common/glass';
 import Carousel from 'react-native-reanimated-carousel';
+import MaskedView from '@react-native-masked-view/masked-view';
 import { colors } from '../../theme/colors';
 import { spacing, padding } from '../../theme/spacing';
 import { typography, fonts } from '../../theme/typography';
 import Icon from '../common/icons/Icon';
-import BinderRings from './BinderRings';
+import BinderRings, { BinderHoleMask } from './BinderRings';
 import ProUpgradeButton from '../common/ProUpgradeButton';
 import type { Insight } from '../../lib/insights';
 import CardSurface from '../common/CardSurface';
@@ -101,6 +102,8 @@ export default function InsightsFlashCard({
               <InsightCard
                 insight={item}
                 locked={locked}
+                cardWidth={cardWidth}
+                cardHeight={cardHeight}
                 onPressUpgrade={onPressUpgrade}
                 onStartTechnique={onStartTechnique}
               />
@@ -126,14 +129,20 @@ export default function InsightsFlashCard({
   );
 }
 
+const CARD_MASK_INSET = 16;
+
 function InsightCard({
   insight,
   locked,
+  cardWidth,
+  cardHeight,
   onPressUpgrade,
   onStartTechnique,
 }: {
   insight: Insight;
   locked: boolean;
+  cardWidth: number;
+  cardHeight: number;
   onPressUpgrade?: () => void;
   onStartTechnique?: (techniqueId: string) => void;
 }) {
@@ -173,22 +182,12 @@ function InsightCard({
     </View>
   );
 
-  if (!locked) {
-    return (
-      <CardSurface containerStyle={styles.cardContainer} style={styles.card}>
-        <BinderRings />
-        {content}
-      </CardSurface>
-    );
-  }
-
-  return (
-    <CardSurface
-      locked
-      containerStyle={styles.cardContainer}
-      style={styles.card}
-    >
-      <BinderRings />
+  const surface = !locked ? (
+    <CardSurface containerStyle={styles.cardContainerFill} style={styles.card}>
+      {content}
+    </CardSurface>
+  ) : (
+    <CardSurface locked containerStyle={styles.cardContainerFill} style={styles.card}>
       <View pointerEvents="none">{content}</View>
       <LockedScrim />
       {onPressUpgrade ? (
@@ -202,6 +201,30 @@ function InsightCard({
         <ProUpgradeButton onPress={onPressUpgrade} />
       </View>
     </CardSurface>
+  );
+
+  const maskWidth = cardWidth + CARD_MASK_INSET * 2;
+  const maskHeight = cardHeight + CARD_MASK_INSET * 2;
+
+  return (
+    <View style={styles.cardWrap}>
+      <MaskedView
+        style={[
+          styles.maskRoot,
+          { width: maskWidth, height: maskHeight },
+        ]}
+        maskElement={
+          <BinderHoleMask
+            width={maskWidth}
+            height={maskHeight}
+            inset={CARD_MASK_INSET}
+          />
+        }
+      >
+        <View style={styles.maskInner}>{surface}</View>
+      </MaskedView>
+      <BinderRings />
+    </View>
   );
 }
 
@@ -229,8 +252,21 @@ const styles = StyleSheet.create({
     paddingRight: spacing.lg,
     paddingVertical: spacing.lg,
   },
-  cardContainer: {
+  cardWrap: {
     height: '100%',
+    position: 'relative',
+  },
+  maskRoot: {
+    position: 'absolute',
+    top: -CARD_MASK_INSET,
+    left: -CARD_MASK_INSET,
+  },
+  maskInner: {
+    flex: 1,
+    padding: CARD_MASK_INSET,
+  },
+  cardContainerFill: {
+    flex: 1,
   },
   card: {
     height: '100%',

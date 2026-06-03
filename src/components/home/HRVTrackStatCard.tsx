@@ -233,15 +233,6 @@ export default function HRVTrackStatCard({
           <LockedScrim />
           <View style={styles.clearHeaderOverlay} pointerEvents="none">
             <Text style={styles.label}>{label}</Text>
-            {zone != null ? (
-              <View
-                style={[styles.zonePill, { backgroundColor: `${zone.color}18` }]}
-              >
-                <Text style={[styles.zonePillText, { color: zone.color }]}>
-                  {zone.label}
-                </Text>
-              </View>
-            ) : null}
           </View>
           {onPressLocked ? (
             <Pressable
