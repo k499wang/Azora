@@ -56,8 +56,10 @@ SKAN. The SDK already flags debug builds via `isDebug: __DEV__` in `appsFlyerCli
 
 ## Prerequisites
 
+- [ ] SKAN postback copies configured in `app.config.js` `ios.infoPlist`:
+      `NSAdvertisingAttributionReportEndpoint=https://appsflyer-skadnetwork.com/`.
 - [ ] `SKAdNetworkItems` present in `app.config.js` `ios.infoPlist` (done; sync the full
-      list from AppsFlyer → SKAdNetwork → Download SKAdNetwork IDs).
+      list from AppsFlyer -> SKAdNetwork -> Download SKAdNetwork IDs).
 - [ ] Native build shipped via `eas build` (SKAN does NOT work in Expo Go or OTA).
 - [ ] RevenueCat → AppsFlyer integration configured with production dev key + S2S token.
 - [ ] (For sandbox tests) RevenueCat sandbox dev key set, ideally pointing at a debug app.
