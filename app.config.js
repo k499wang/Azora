@@ -1,8 +1,23 @@
+const appsFlyerDevKey = process.env.EXPO_PUBLIC_APPSFLYER_DEV_KEY
+const appsFlyerAppId = process.env.EXPO_PUBLIC_APPSFLYER_APP_ID
+
+if (
+  (process.env.EAS_BUILD === 'true' || process.env.EAS_BUILD_PROFILE != null) &&
+  (appsFlyerDevKey == null ||
+    appsFlyerDevKey.length === 0 ||
+    appsFlyerAppId == null ||
+    appsFlyerAppId.length === 0)
+) {
+  throw new Error(
+    'Missing AppsFlyer EAS build env. Set EXPO_PUBLIC_APPSFLYER_DEV_KEY and EXPO_PUBLIC_APPSFLYER_APP_ID for this build profile.',
+  )
+}
+
 module.exports = {
   expo: {
     name: 'Azora',
     slug: 'Azora',
-    version: '1.0.3',
+    version: '1.0.4',
     orientation: 'portrait',
     icon: './assets/iconApp.png',
     userInterfaceStyle: 'light',
@@ -22,6 +37,13 @@ module.exports = {
           'Allow $(PRODUCT_NAME) to access your approximate location while using the app to support attribution and diagnostics. Azora does not use location for breathwork sessions.',
         NSPhotoLibraryUsageDescription:
           'Allow $(PRODUCT_NAME) to choose a profile photo',
+        // Send postback copies to AppsFlyer so it can validate conversion
+        // values and power SKAN reporting, on both attribution frameworks:
+        //   NSAdvertisingAttributionReportEndpoint → SKAdNetwork (iOS 15+)
+        //   AttributionCopyEndpoint               → AdAttributionKit (iOS 17.4+),
+        //     the raw key behind Xcode's "AdAttributionKit - Postback Copy URL".
+        NSAdvertisingAttributionReportEndpoint: 'https://appsflyer-skadnetwork.com/',
+        AttributionCopyEndpoint: 'https://appsflyer-skadnetwork.com/',
         // Keep in sync with AppsFlyer dashboard → SKAdNetwork → "Download SKAdNetwork IDs".
         // Required for Apple to deliver SKAN postbacks; Meta + AppsFlyer must be present.
         SKAdNetworkItems: [
@@ -251,8 +273,8 @@ module.exports = {
         process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
       revenueCatIosApiKey: process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY,
       revenueCatAndroidApiKey: process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_KEY,
-      appsFlyerDevKey: process.env.EXPO_PUBLIC_APPSFLYER_DEV_KEY,
-      appsFlyerAppId: process.env.EXPO_PUBLIC_APPSFLYER_APP_ID,
+      appsFlyerDevKey,
+      appsFlyerAppId,
       googleWebClientId:
         '464959684647-og75a7kr59nc9siganhms2rlp8ph2afm.apps.googleusercontent.com',
       googleIosClientId:
