@@ -11,16 +11,9 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import MaskedView from '@react-native-masked-view/masked-view';
-import { BlurView } from 'expo-blur';
-import {
-  GlassView,
-  isGlassEffectAPIAvailable,
-  isLiquidGlassAvailable,
-} from 'expo-glass-effect';
 import Svg, { Path } from 'react-native-svg';
-
-const canUseLiquidGlass = isLiquidGlassAvailable() && isGlassEffectAPIAvailable();
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import GlassSurface from '../../components/common/GlassSurface';
 import HomeScreen from '../../screens/HomeScreen';
 import ProfileScreen from '../../screens/ProfileScreen';
 import BreatheActionSheet, {
@@ -283,24 +276,16 @@ function NotchedBackground({ width, height }: { width: number; height: number })
       pointerEvents="none"
     >
       <MaskedView style={{ width, height }} maskElement={mask}>
-        {canUseLiquidGlass ? (
-          <GlassView
-            colorScheme="light"
-            glassEffectStyle="clear"
-            style={{ width, height }}
-            tintColor="rgba(255,255,255,0.46)"
-          />
-        ) : (
-          <BlurView
-            intensity={76}
-            tint="systemUltraThinMaterialLight"
-            style={{
-              width,
-              height,
-              backgroundColor: 'rgba(255,255,255,0.6)',
-            }}
-          />
-        )}
+        <GlassSurface
+          bare
+          variant="clear"
+          style={{ width, height }}
+          tintColor={colors.glass.navTint}
+          blurIntensity={76}
+          blurTint="systemUltraThinMaterialLight"
+          blurColor={colors.glass.navFill}
+          solidColor={colors.glass.navFill}
+        />
       </MaskedView>
       {/* Hairline edge along the notched outline */}
       <Svg
@@ -390,26 +375,20 @@ function DockTab({
 // ---------------------------------------------------------------------------
 
 function GlassFab({ children }: { children: ReactNode }) {
-  if (canUseLiquidGlass) {
-    return (
-      <GlassView
-        colorScheme="light"
-        glassEffectStyle="clear"
-        style={styles.fab}
-        tintColor={`${colors.primary.blue800}80`}
-      >
-        {children}
-      </GlassView>
-    );
-  }
+  const fabFill = `${colors.primary.blue800}80`;
   return (
-    <BlurView
-      intensity={60}
-      tint="systemUltraThinMaterialLight"
-      style={[styles.fab, styles.fabFallback]}
+    <GlassSurface
+      bare
+      variant="clear"
+      style={styles.fab}
+      tintColor={fabFill}
+      blurIntensity={60}
+      blurTint="systemUltraThinMaterialLight"
+      blurColor={fabFill}
+      solidColor={fabFill}
     >
       {children}
-    </BlurView>
+    </GlassSurface>
   );
 }
 
@@ -531,9 +510,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
-  },
-  fabFallback: {
-    backgroundColor: `${colors.primary.blue800}80`,
   },
   fabIconWrap: {
     width: FLOATING_ACTION_SIZE,

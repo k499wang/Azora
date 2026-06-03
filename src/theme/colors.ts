@@ -93,9 +93,18 @@ export const colors = {
     edge: 'rgba(255,255,255,0.55)',
     edgeStrong: 'rgba(255,255,255,0.78)',
     shadow: '#0F172A',
-    // Opaque scrim for the 'solid' glass fallback (Android), where a BlurView
-    // does not actually blur. Must obscure content behind lock/paywall overlays.
+    // Opaque scrim for the 'solid' glass fallback, used when Reduce
+    // Transparency asks us to avoid blur/translucency.
     scrim: 'rgba(244,245,247,0.94)',
+    lockedScrim: '#F4F5F7',
+    // Dark counterpart for colorScheme="dark" surfaces on the solid fallback.
+    scrimDark: 'rgba(15,23,42,0.94)',
+    // White-leaning fills for glass controls placed over imagery/vibrant media.
+    fillOnImage: 'rgba(255,255,255,0.68)',
+    tintOnImage: 'rgba(255,255,255,0.48)',
+    // Frosted white chrome for navigation surfaces (dock / tab bar).
+    navTint: 'rgba(255,255,255,0.46)',
+    navFill: 'rgba(255,255,255,0.6)',
   },
 
   surface: {

@@ -2,18 +2,13 @@ import { ImageBackground, Pressable, StyleSheet, Text, View } from 'react-native
 import { useNavigation } from '@react-navigation/native';
 import { usePostHog } from 'posthog-react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import {
-  GlassView,
-  isGlassEffectAPIAvailable,
-  isLiquidGlassAvailable,
-} from 'expo-glass-effect';
+import GlassSurface from '../common/GlassSurface';
 import { colors } from '../../theme/colors';
 import { fonts, typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import { AnalyticsEvent } from '../../services/analytics/events';
 import type { MainTabNavigationProp } from '../../app/navigation';
 
-const canUseLiquidGlass = isLiquidGlassAvailable() && isGlassEffectAPIAvailable();
 const BREATHHOLD_CHALLENGE_BACKGROUND = require('../../../assets/back.avif');
 
 interface DailyPlanCardProps {
@@ -88,21 +83,17 @@ export default function DailyPlanCard({
               accessibilityRole="button"
               accessibilityLabel={doneToday ? 'Try another breath hold' : 'Start your daily breath hold'}
             >
-              {canUseLiquidGlass ? (
-                <GlassView
-                  colorScheme="light"
-                  glassEffectStyle="clear"
-                  isInteractive
-                  style={styles.playBtn}
-                  tintColor="rgba(255,255,255,0.48)"
-                >
-                  <MaterialCommunityIcons name="play" size={30} color={colors.primary.blue600} />
-                </GlassView>
-              ) : (
-                <View style={[styles.playBtn, styles.playBtnFallback]}>
-                  <MaterialCommunityIcons name="play" size={30} color={colors.primary.blue600} />
-                </View>
-              )}
+              <GlassSurface
+                bare
+                interactive
+                variant="clear"
+                style={styles.playBtn}
+                tintColor={colors.glass.tintOnImage}
+                blurColor={colors.glass.fillOnImage}
+                solidColor={colors.glass.fillOnImage}
+              >
+                <MaterialCommunityIcons name="play" size={30} color={colors.primary.blue600} />
+              </GlassSurface>
             </Pressable>
           </View>
         </View>
@@ -205,8 +196,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
-  },
-  playBtnFallback: {
-    backgroundColor: 'rgba(255,255,255,0.68)',
   },
 });

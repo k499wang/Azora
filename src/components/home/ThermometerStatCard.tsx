@@ -1,5 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { BlurView } from 'expo-blur';
+import { LockedScrim } from '../common/glass';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography, fonts } from '../../theme/typography';
@@ -65,12 +65,7 @@ export default function ThermometerStatCard({
       </View>
       {locked ? (
         <>
-          <BlurView
-            intensity={24}
-            tint="light"
-            pointerEvents="none"
-            style={StyleSheet.absoluteFill}
-          />
+          <LockedScrim />
           <Text style={[styles.tileLabel, styles.clearTileLabel]}>{label}</Text>
           {onPressLocked ? (
             <Pressable

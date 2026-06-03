@@ -6,7 +6,7 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
-import { BlurView } from 'expo-blur';
+import { LockedScrim } from '../common/glass';
 import Carousel from 'react-native-reanimated-carousel';
 import { colors } from '../../theme/colors';
 import { spacing, padding } from '../../theme/spacing';
@@ -186,12 +186,7 @@ function InsightCard({
     <View style={[styles.card, styles.lockedCard]}>
       <BinderRings />
       <View pointerEvents="none">{content}</View>
-      <BlurView
-        intensity={24}
-        tint="light"
-        pointerEvents="none"
-        style={StyleSheet.absoluteFill}
-      />
+      <LockedScrim />
       {onPressUpgrade ? (
         <Pressable
           accessibilityRole="button"

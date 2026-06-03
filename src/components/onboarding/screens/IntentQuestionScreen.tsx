@@ -95,7 +95,7 @@ export default function IntentQuestionScreen({
             >
               <Icon
                 name={option.icon}
-                size={22}
+                size={20}
                 color={selected ? colors.primary.blue600 : colors.text.tertiary}
               />
               <Text
@@ -162,17 +162,10 @@ const styles = StyleSheet.create({
   options: {
     marginTop: 0,
   },
-  customIntentBlock: {
-    gap: spacing.sm,
-  },
-  customIntentLabel: {
-    ...typography.body.small,
-    color: colors.text.secondary,
-  },
   option: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.lg,
+    gap: spacing.md,
     paddingVertical: spacing.lg,
   },
   optionDivider: {
@@ -196,18 +189,25 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
   },
   radio: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     borderWidth: 2,
     borderColor: colors.border.default,
     alignItems: 'center',
     justifyContent: 'center',
   },
   radioInner: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+    width: 9,
+    height: 9,
+    borderRadius: 4.5,
+  },
+  customIntentBlock: {
+    gap: spacing.sm,
+  },
+  customIntentLabel: {
+    ...typography.body.small,
+    color: colors.text.secondary,
   },
   input: {
     minHeight: 156,

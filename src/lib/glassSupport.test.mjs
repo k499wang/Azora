@@ -35,14 +35,14 @@ test('iOS with liquid available but API unavailable falls back to blur', () => {
   );
 });
 
-test('Android always resolves to a solid scrim, never blur', () => {
+test('Android resolves to blur (real blur via dimezisBlurView)', () => {
   assert.equal(
     resolveGlassMode({
       platform: 'android',
       liquidGlassAvailable: true,
       glassApiAvailable: true,
     }),
-    'solid',
+    'blur',
   );
 });
 
@@ -58,13 +58,25 @@ test('forceFallback downgrades a glass-capable iOS device to blur', () => {
   );
 });
 
-test('forceFallback on Android stays solid', () => {
+test('forceFallback on Android resolves to blur', () => {
   assert.equal(
     resolveGlassMode({
       platform: 'android',
       liquidGlassAvailable: true,
       glassApiAvailable: true,
       forceFallback: true,
+    }),
+    'blur',
+  );
+});
+
+test('Reduce Transparency on Android forces a solid scrim', () => {
+  assert.equal(
+    resolveGlassMode({
+      platform: 'android',
+      liquidGlassAvailable: true,
+      glassApiAvailable: true,
+      reduceTransparency: true,
     }),
     'solid',
   );

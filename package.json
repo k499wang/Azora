@@ -16,7 +16,6 @@
     "@babel/plugin-proposal-nullish-coalescing-operator": "^7.18.6",
     "@babel/plugin-proposal-optional-chaining": "^7.21.0",
     "@babel/plugin-transform-template-literals": "^7.27.1",
-    "@callstack/liquid-glass": "^0.7.1",
     "@expo-google-fonts/baloo-2": "^0.4.2",
     "@expo-google-fonts/cormorant": "^0.4.2",
     "@expo-google-fonts/fredoka": "^0.4.1",
