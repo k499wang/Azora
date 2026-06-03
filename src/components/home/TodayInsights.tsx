@@ -1,5 +1,5 @@
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
-import { Canvas, Path, Skia } from '@shopify/react-native-skia';
+import { Canvas, LinearGradient, Path, Skia, vec } from '@shopify/react-native-skia';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
@@ -114,21 +114,49 @@ function LungAgeRing({
 
       <View style={styles.lungRingWrap}>
         <Canvas style={{ width: LUNG_RING_SIZE, height: LUNG_RING_SIZE }}>
+          {/* Outer recess — soft shadow carving the channel into the surface */}
           <Path
             path={track}
             style="stroke"
-            strokeWidth={LUNG_RING_STROKE}
+            strokeWidth={LUNG_RING_STROKE + 6}
             strokeCap="round"
-            color={colors.neutral[200]}
+            color="rgba(15,23,42,0.05)"
+          />
+          {/* Track — grey channel with a vertical shade for depth */}
+          <Path path={track} style="stroke" strokeWidth={LUNG_RING_STROKE} strokeCap="round">
+            <LinearGradient
+              start={vec(cx, cy - r)}
+              end={vec(cx, cy + r)}
+              colors={[colors.neutral[200], colors.neutral[100]]}
+            />
+          </Path>
+          {/* Inner recess shadow */}
+          <Path
+            path={track}
+            style="stroke"
+            strokeWidth={LUNG_RING_STROKE - 3}
+            strokeCap="round"
+            color="rgba(15,23,42,0.05)"
           />
           {progress > 0 && (
-            <Path
-              path={arc}
-              style="stroke"
-              strokeWidth={LUNG_RING_STROKE}
-              strokeCap="round"
-              color={colors.primary.blue600}
-            />
+            <>
+              {/* Colored arc — slightly wider to prevent AA bleed from track */}
+              <Path
+                path={arc}
+                style="stroke"
+                strokeWidth={LUNG_RING_STROKE + 0.5}
+                strokeCap="round"
+                color={colors.primary.blue600}
+              />
+              {/* Glossy highlight skimming the top of the arc */}
+              <Path
+                path={arc}
+                style="stroke"
+                strokeWidth={LUNG_RING_STROKE * 0.32}
+                strokeCap="round"
+                color="rgba(255,255,255,0.28)"
+              />
+            </>
           )}
         </Canvas>
         <View style={styles.lungCenter} pointerEvents="none">

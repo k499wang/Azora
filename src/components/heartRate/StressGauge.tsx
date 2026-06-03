@@ -180,7 +180,7 @@ export default function StressGauge({
         <>
           <LockedScrim />
           <View style={styles.clearHeaderOverlay} pointerEvents="none">
-            {header}
+            <Text style={styles.label}>Stress Index</Text>
           </View>
           {onPressLocked ? (
             <Pressable
