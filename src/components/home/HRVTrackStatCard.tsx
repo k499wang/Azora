@@ -5,7 +5,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
 import { typography, fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
-import { card } from '../../theme/card';
+import CardSurface from '../common/CardSurface';
 
 const SIZE = 96;
 const CX = SIZE / 2;
@@ -126,7 +126,7 @@ export default function HRVTrackStatCard({
   })();
 
   return (
-    <View style={[styles.card, locked && styles.lockedCard]}>
+    <CardSurface locked={locked} style={styles.card}>
       {info && !locked ? (
         <Pressable
           hitSlop={12}
@@ -252,20 +252,15 @@ export default function HRVTrackStatCard({
           ) : null}
         </>
       ) : null}
-    </View>
+    </CardSurface>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    ...card.base,
-    ...card.shadow,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
     position: 'relative',
-  },
-  lockedCard: {
-    overflow: 'hidden',
   },
   infoButton: {
     position: 'absolute',

@@ -8,8 +8,9 @@ import {
 import { colors } from '../../theme/colors';
 import { typography, fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
-import GlassSurface from '../common/GlassSurface';
 import LockedScrim from '../common/LockedScrim';
+import CardSurface from '../common/CardSurface';
+import type { CardSurfaceMode } from '../common/cardSurfaceConfig';
 import {
   getStressStats,
   type StressHistoryEntry,
@@ -21,6 +22,7 @@ interface StressGaugeProps {
   history?: StressHistoryEntry[];
   locked?: boolean;
   onPressLocked?: () => void;
+  surface?: CardSurfaceMode;
 }
 
 const SIZE = 96;
@@ -59,6 +61,7 @@ export default function StressGauge({
   history,
   locked = false,
   onPressLocked,
+  surface,
 }: StressGaugeProps) {
   const stats = history != null ? getStressStats(history) : null;
   const hasStats = stats != null && stats.count >= MIN_STRESS_STATS_POINTS;
@@ -89,8 +92,8 @@ export default function StressGauge({
     </>
   );
 
-  return (
-    <GlassSurface style={styles.card}>
+  const content = (
+    <>
       <View style={styles.cardContent}>
         <View style={styles.left}>
           <View style={[styles.headerRow, locked && styles.lockedHeaderRow]}>
@@ -188,7 +191,13 @@ export default function StressGauge({
           ) : null}
         </>
       ) : null}
-    </GlassSurface>
+    </>
+  );
+
+  return (
+    <CardSurface locked={locked} style={styles.card} surface={surface}>
+      {content}
+    </CardSurface>
   );
 }
 

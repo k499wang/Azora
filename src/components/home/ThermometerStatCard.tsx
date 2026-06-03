@@ -3,7 +3,7 @@ import { LockedScrim } from '../common/glass';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography, fonts } from '../../theme/typography';
-import { card } from '../../theme/card';
+import CardSurface from '../common/CardSurface';
 
 interface ThermometerStatCardProps {
   label: string;
@@ -35,7 +35,11 @@ export default function ThermometerStatCard({
   const fillPct = clamped != null ? ((clamped - min) / (max - min)) * 100 : 0;
 
   return (
-    <View style={[styles.tile, locked && styles.lockedTile]}>
+    <CardSurface
+      locked={locked}
+      containerStyle={styles.tileContainer}
+      style={styles.tile}
+    >
       <Text style={[styles.tileLabel, locked && styles.lockedTitleText]}>
         {label}
       </Text>
@@ -76,21 +80,18 @@ export default function ThermometerStatCard({
           ) : null}
         </>
       ) : null}
-    </View>
+    </CardSurface>
   );
 }
 
 const styles = StyleSheet.create({
-  tile: {
-    ...card.base,
-    ...card.shadow,
+  tileContainer: {
     flex: 1,
+  },
+  tile: {
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
     gap: spacing.md,
-  },
-  lockedTile: {
-    overflow: 'hidden',
   },
   clearTileLabel: {
     position: 'absolute',

@@ -4,8 +4,8 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
 import { typography, fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
-import { card } from '../../theme/card';
 import Icon, { type IconName } from '../common/icons/Icon';
+import CardSurface from '../common/CardSurface';
 
 interface BigRingStatCardProps {
   label: string;
@@ -45,7 +45,7 @@ export default function BigRingStatCard({
   arc.addArc(rect, -90, 360 * clamped);
 
   return (
-    <View style={styles.card}>
+    <CardSurface containerStyle={styles.cardContainer} style={styles.card}>
       {info ? (
         <Pressable
           hitSlop={12}
@@ -84,15 +84,15 @@ export default function BigRingStatCard({
         <Text style={styles.value}>{value}</Text>
         {target ? <Text style={styles.target}>/{target}</Text> : null}
       </View>
-    </View>
+    </CardSurface>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
-    ...card.base,
-    ...card.shadow,
+  cardContainer: {
     flex: 1,
+  },
+  card: {
     paddingVertical: spacing.lg,
     paddingHorizontal: spacing.md,
     alignItems: 'center',

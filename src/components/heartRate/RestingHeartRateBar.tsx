@@ -2,7 +2,8 @@ import { StyleSheet, Text, View } from 'react-native';
 import { colors } from '../../theme/colors';
 import { typography, fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
-import { card } from '../../theme/card';
+import CardSurface from '../common/CardSurface';
+import type { CardSurfaceMode } from '../common/cardSurfaceConfig';
 import CardTitle from '../common/CardTitle';
 import PulseDot from '../common/PulseDot';
 import {
@@ -16,6 +17,7 @@ interface RestingHeartRateBarProps {
   age: number | null;
   title?: string;
   showValue?: boolean;
+  surface?: CardSurfaceMode;
 }
 
 const NUM_TICKS = 56;
@@ -46,6 +48,7 @@ export default function RestingHeartRateBar({
   age,
   title = 'Resting heart rate',
   showValue = true,
+  surface,
 }: RestingHeartRateBarProps) {
   const hasBpm = bpm != null && Number.isFinite(bpm);
   const zone = hasBpm ? getRestingHeartRateZone(bpm!, age) : null;
@@ -54,7 +57,7 @@ export default function RestingHeartRateBar({
   const ticks = buildTickMarks(segments);
 
   return (
-    <View style={styles.card}>
+    <CardSurface style={styles.card} surface={surface}>
       <CardTitle
         title={title}
         leading={<PulseDot color={zone?.color} />}
@@ -99,14 +102,12 @@ export default function RestingHeartRateBar({
           ))}
         </View>
       </View>
-    </View>
+    </CardSurface>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    ...card.base,
-    ...card.shadow,
     width: '100%',
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,

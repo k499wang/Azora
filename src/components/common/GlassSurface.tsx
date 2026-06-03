@@ -16,6 +16,7 @@ type GlassVariant = 'regular' | 'clear';
 
 interface Props {
   children?: ReactNode;
+  containerStyle?: StyleProp<ViewStyle>;
   style?: StyleProp<ViewStyle>;
   radius?: number;
   interactive?: boolean;
@@ -38,6 +39,7 @@ interface Props {
 
 export default function GlassSurface({
   children,
+  containerStyle,
   style,
   radius = 24,
   interactive = false,
@@ -104,7 +106,7 @@ export default function GlassSurface({
     );
   }
 
-  const shadow = [styles.shadow, { borderRadius: radius }];
+  const shadow = [styles.shadow, { borderRadius: radius }, containerStyle];
   const pane = [styles.pane, { borderRadius: radius }, style];
 
   if (mode === 'liquid') {
