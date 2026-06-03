@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -8,6 +9,8 @@ import { spacing, padding } from '../../theme/spacing';
 import { AnalyticsEvent } from '../../services/analytics/events';
 import { MOODS, type Mood } from '../../data/moods';
 import type { MainTabNavigationProp } from '../../app/navigation';
+import GlassSurface from '../common/GlassSurface';
+import { DEFAULT_CARD_SURFACE } from '../common/cardSurfaceConfig';
 
 export default function MoodChipRow() {
   const navigation = useNavigation<MainTabNavigationProp<'Home'>>();
@@ -36,16 +39,36 @@ export default function MoodChipRow() {
           accessibilityRole="button"
           accessibilityLabel={`Breathwork for ${mood.label.toLowerCase()}`}
         >
-          <MaterialCommunityIcons
-            name={mood.icon}
-            size={26}
-            color={colors.primary.blue600}
-          />
-          <Text style={styles.label}>{mood.label}</Text>
+          <MoodChipSurface>
+            <MaterialCommunityIcons
+              name={mood.icon}
+              size={26}
+              color={colors.primary.blue600}
+            />
+            <Text style={styles.label}>{mood.label}</Text>
+          </MoodChipSurface>
         </Pressable>
       ))}
     </ScrollView>
   );
+}
+
+function MoodChipSurface({ children }: { children: ReactNode }) {
+  if (DEFAULT_CARD_SURFACE === 'glass') {
+    return (
+      <GlassSurface
+        bare
+        interactive
+        style={styles.chipSurface}
+        blurColor={colors.glass.fill}
+        solidColor={colors.glass.scrim}
+      >
+        {children}
+      </GlassSurface>
+    );
+  }
+
+  return <View style={[styles.chipSurface, styles.solidChipSurface]}>{children}</View>;
 }
 
 const styles = StyleSheet.create({
@@ -54,14 +77,21 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   chip: {
+    borderRadius: 999,
+  },
+  chipSurface: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
     borderRadius: 999,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.glass.edge,
+    overflow: 'hidden',
+  },
+  solidChipSurface: {
     backgroundColor: colors.background.elevated,
-    borderWidth: 1,
     borderColor: colors.border.subtle,
   },
   pressed: {

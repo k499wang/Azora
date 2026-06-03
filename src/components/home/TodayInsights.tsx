@@ -4,9 +4,9 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography, fonts } from '../../theme/typography';
-import { card } from '../../theme/card';
 import RingStatCard from './RingStatCard';
 import LungWaterBackground from './LungWaterBackground';
+import CardSurface from '../common/CardSurface';
 
 const LUNG_SCORE_INFO = {
   title: 'Lung Score',
@@ -98,7 +98,7 @@ function LungAgeRing({
       : Math.max(0.15, Math.min(0.85, holdSeconds / bestHoldSeconds));
 
   return (
-    <View style={styles.lungCard}>
+    <CardSurface style={styles.lungCard}>
       <LungWaterBackground fillLevel={fillLevel} />
       <Pressable
         hitSlop={12}
@@ -139,7 +139,7 @@ function LungAgeRing({
 
       <Text style={styles.lungLabel}>Lung age</Text>
       {tierLabel ? <Text style={styles.lungTier}>{tierLabel}</Text> : null}
-    </View>
+    </CardSurface>
   );
 }
 
@@ -212,8 +212,6 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   lungCard: {
-    ...card.base,
-    ...card.shadow,
     alignItems: 'center',
     paddingVertical: spacing.lg,
     paddingHorizontal: spacing.md,

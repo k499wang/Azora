@@ -16,6 +16,8 @@ import RestingHeartRateBar from './RestingHeartRateBar';
 import HRVTrackStatCard from '../home/HRVTrackStatCard';
 import BPMChart from '../home/BPMChart';
 import HRVChart from '../home/HRVChart';
+import CardSurface from '../common/CardSurface';
+import { DEFAULT_CARD_SURFACE } from '../common/cardSurfaceConfig';
 import { getStressZone } from '../../lib/heartRate/stress';
 import { computeHRVStats } from '../../lib/hrv';
 import type { BpmTimePoint } from '../../lib/heartRate/bpmSeries';
@@ -205,7 +207,12 @@ export function HeartRateResultContent({
 
       {showRestingHealthBar && Number.isFinite(heroBpmNumber) ? (
         <View style={styles.restingBarWrap}>
-          <RestingHeartRateBar bpm={heroBpmNumber} age={age} title="Average heart rate" />
+          <RestingHeartRateBar
+            bpm={heroBpmNumber}
+            age={age}
+            title="Average heart rate"
+            surface={DEFAULT_CARD_SURFACE}
+          />
         </View>
       ) : null}
 
@@ -230,6 +237,7 @@ export function HeartRateResultContent({
                   zone={stressZoneForDisplay}
                   locked={advancedStatsLocked}
                   onPressLocked={onPressUpgrade}
+                  surface={DEFAULT_CARD_SURFACE}
                 />
               </View>
             ) : null}
@@ -303,21 +311,21 @@ export function HeartRateResultContent({
       rmssdValue == null &&
       stressValue == null &&
       hrvUnavailableMessage != null ? (
-        <View style={styles.hrvUnavailableCard}>
+        <CardSurface style={styles.hrvUnavailableCard}>
           <MaterialCommunityIcons
             name="information-outline"
             size={16}
             color={colors.text.secondary}
           />
           <Text style={styles.hrvUnavailableText}>{hrvUnavailableMessage}</Text>
-        </View>
+        </CardSurface>
       ) : null}
 
       {context != null ? (
-        <View style={styles.contextCard}>
+        <CardSurface style={styles.contextCard}>
           <Text style={styles.contextLabel}>Context</Text>
           <Text style={styles.contextValue}>{context}</Text>
-        </View>
+        </CardSurface>
       ) : null}
     </View>
   );
@@ -445,7 +453,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   hrvUnavailableCard: {
-    ...card.base,
     width: '100%',
     flexDirection: 'row',
     alignItems: 'center',
@@ -460,7 +467,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   contextCard: {
-    ...card.base,
     width: '100%',
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,

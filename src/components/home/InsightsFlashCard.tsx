@@ -11,11 +11,11 @@ import Carousel from 'react-native-reanimated-carousel';
 import { colors } from '../../theme/colors';
 import { spacing, padding } from '../../theme/spacing';
 import { typography, fonts } from '../../theme/typography';
-import { card } from '../../theme/card';
 import Icon from '../common/icons/Icon';
 import BinderRings from './BinderRings';
 import ProUpgradeButton from '../common/ProUpgradeButton';
 import type { Insight } from '../../lib/insights';
+import CardSurface from '../common/CardSurface';
 
 interface Props {
   insights: Insight[];
@@ -175,15 +175,19 @@ function InsightCard({
 
   if (!locked) {
     return (
-      <View style={styles.card}>
+      <CardSurface containerStyle={styles.cardContainer} style={styles.card}>
         <BinderRings />
         {content}
-      </View>
+      </CardSurface>
     );
   }
 
   return (
-    <View style={[styles.card, styles.lockedCard]}>
+    <CardSurface
+      locked
+      containerStyle={styles.cardContainer}
+      style={styles.card}
+    >
       <BinderRings />
       <View pointerEvents="none">{content}</View>
       <LockedScrim />
@@ -197,7 +201,7 @@ function InsightCard({
       <View style={styles.lockedPill} pointerEvents="box-none">
         <ProUpgradeButton onPress={onPressUpgrade} />
       </View>
-    </View>
+    </CardSurface>
   );
 }
 
@@ -220,24 +224,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: CAROUSEL_CARD_GAP,
   },
   measureCard: {
-    ...card.base,
-    ...card.shadow,
     minHeight: 140,
     paddingLeft: spacing.xl,
     paddingRight: spacing.lg,
     paddingVertical: spacing.lg,
   },
+  cardContainer: {
+    height: '100%',
+  },
   card: {
-    ...card.base,
-    ...card.shadow,
     height: '100%',
     minHeight: 140,
     paddingLeft: spacing.xl,
     paddingRight: spacing.lg,
     paddingVertical: spacing.lg,
-  },
-  lockedCard: {
-    overflow: 'hidden',
   },
   lockedPill: {
     position: 'absolute',

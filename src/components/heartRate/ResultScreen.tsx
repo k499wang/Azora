@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -24,6 +24,11 @@ import { getStressZone } from '../../lib/heartRate/stress';
 import type { CaptureResult, HrvAvailabilityReason, IbiSample } from '../../lib/heartRate/types';
 import { AnalyticsEvent } from '../../services/analytics/events';
 import { HeartRateResultContent } from './HeartRateResultContent';
+import {
+  buildBpmSamplesFromIbiSamples,
+  mapIbiSamples,
+} from '../../lib/heartRate/sessionPayload';
+import type { BpmTimePoint } from '../../lib/heartRate/bpmSeries';
 import { useNavigation } from '@react-navigation/native';
 import { useFeatureAccess } from '../../hooks/useFeatureAccess';
 import { useAuthStore } from '../../stores/authStore';
@@ -179,6 +184,13 @@ function ResultBackground() {
   );
 }
 
+function buildResultBpmSamples(ibiSamples: IbiSample[]): BpmTimePoint[] {
+  return buildBpmSamplesFromIbiSamples(mapIbiSamples(ibiSamples)).map((sample) => ({
+    offsetMs: sample.offset_ms,
+    bpm: sample.bpm,
+  }));
+}
+
 export function ResultScreen({
   result,
   onRetry,
@@ -207,6 +219,10 @@ export function ResultScreen({
   const opacityAnim = useRef(new Animated.Value(0)).current;
 
   const isSuccess = result.reading != null;
+  const resultBpmSamples = useMemo(
+    () => buildResultBpmSamples(result.ibiSamples ?? []),
+    [result.ibiSamples],
+  );
 
   useEffect(() => {
     if (isSuccess && result.reading) {
@@ -271,12 +287,7 @@ export function ResultScreen({
           </View>
 
           <View style={styles.heroWrap}>
-            <Animated.View
-              style={[
-                styles.heroContent,
-                { transform: [{ scale: scaleAnim }], opacity: opacityAnim },
-              ]}
-            >
+            <View style={styles.heroContent}>
               <HeartRateResultContent
                 bpm={reading.bpm}
                 confidence={reading.confidence}
@@ -289,12 +300,14 @@ export function ResultScreen({
                 hrDrop={reading.hrDrop ?? null}
                 stress={reading.stress ?? null}
                 hrvAvailabilityReason={reading.hrvAvailabilityReason}
+                bpmSamples={resultBpmSamples}
                 ibiSamples={result.ibiSamples ?? []}
                 context={context}
+                heartScale={scaleAnim}
                 advancedStatsLocked={advancedStatsLocked}
                 onPressUpgrade={showAdvancedStatsPaywall}
               />
-            </Animated.View>
+            </View>
           </View>
         </ScrollView>
 

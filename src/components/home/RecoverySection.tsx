@@ -9,6 +9,7 @@ import {
 import SectionHeader from '../common/SectionHeader';
 import ProUpgradeButton from '../common/ProUpgradeButton';
 import StressGauge from '../heartRate/StressGauge';
+import { DEFAULT_CARD_SURFACE } from '../common/cardSurfaceConfig';
 
 const STRESS_INFO = {
   title: 'Stress Score',
@@ -61,6 +62,7 @@ export default function RecoverySection({
             history={locked ? undefined : stressHistory}
             locked={locked}
             onPressLocked={onPressUpgrade}
+            surface={DEFAULT_CARD_SURFACE}
           />
         </View>
       </View>

@@ -4,6 +4,7 @@ import Svg, { Defs, Line, LinearGradient, Path, Stop } from 'react-native-svg';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
+import CardSurface from '../common/CardSurface';
 
 interface ThinPPGChartProps {
   title: string;
@@ -75,7 +76,7 @@ export default function ThinPPGChart({
   }, [durationSec]);
 
   return (
-    <View style={styles.card}>
+    <CardSurface style={styles.card}>
       <Text style={styles.title}>{title}</Text>
 
       <View style={styles.chartWrap} onLayout={onLayout}>
@@ -123,23 +124,14 @@ export default function ThinPPGChart({
           ))}
         </View>
       ) : null}
-    </View>
+    </CardSurface>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.background.elevated,
-    borderRadius: 22,
     paddingVertical: 14,
     paddingHorizontal: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.neutral[200],
-    shadowColor: colors.primary.blue700,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 2,
   },
   title: {
     ...typography.heading.heading2,

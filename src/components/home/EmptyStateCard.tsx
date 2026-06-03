@@ -2,7 +2,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
-import { card } from '../../theme/card';
+import CardSurface from '../common/CardSurface';
 
 interface EmptyStateCardProps {
   title: string;
@@ -11,17 +11,15 @@ interface EmptyStateCardProps {
 
 export default function EmptyStateCard({ title, subtitle }: EmptyStateCardProps) {
   return (
-    <View style={styles.card}>
+    <CardSurface style={styles.card}>
       <Text style={styles.title}>{title}</Text>
       <Text style={styles.subtitle}>{subtitle}</Text>
-    </View>
+    </CardSurface>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    ...card.base,
-    ...card.shadow,
     paddingVertical: spacing.lg,
     paddingHorizontal: spacing.lg,
     alignItems: 'center',

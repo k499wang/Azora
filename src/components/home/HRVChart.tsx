@@ -6,7 +6,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
 import { typography, fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
-import { card } from '../../theme/card';
+import CardSurface from '../common/CardSurface';
 
 interface HRVChartProps {
   /**
@@ -109,7 +109,7 @@ export default function HRVChart({
   }, [yBounds]);
 
   return (
-    <View style={[styles.card, locked && styles.lockedCard]}>
+    <CardSurface locked={locked} style={styles.card}>
       {!locked ? (
         <Pressable
           hitSlop={10}
@@ -240,19 +240,14 @@ export default function HRVChart({
           ) : null}
         </>
       ) : null}
-    </View>
+    </CardSurface>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    ...card.base,
-    ...card.shadow,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
-  },
-  lockedCard: {
-    overflow: 'hidden',
   },
   title: {
     ...typography.heading.heading2,

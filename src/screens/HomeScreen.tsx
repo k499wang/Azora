@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AppState, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { AppState, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { usePostHog } from 'posthog-react-native';
 import { getStressZone } from '../lib/heartRate/stress';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -7,7 +7,6 @@ import { AnalyticsEvent } from '../services/analytics/events';
 import { colors } from '../theme/colors';
 import { spacing, padding, margin } from '../theme/spacing';
 import { typography, fonts } from '../theme/typography';
-import { card } from '../theme/card';
 import AmbientBackground from '../components/common/AmbientBackground';
 import AppTopBar from '../components/common/AppTopBar';
 import GlassIconButton from '../components/common/GlassIconButton';
@@ -24,6 +23,7 @@ import { estimateLungAge } from '../lib/lungAge';
 import EmptyStateCard from '../components/home/EmptyStateCard';
 import BreathingLibrary from '../components/home/BreathingLibrary';
 import DailyPlanCard from '../components/home/DailyPlanCard';
+import CardSurface from '../components/common/CardSurface';
 import MoodChipRow from '../components/home/MoodChipRow';
 import { useFeatureAccess } from '../hooks/useFeatureAccess';
 import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
@@ -196,13 +196,10 @@ function RecentHeartRateList({
         }
 
         return (
-          <Pressable
+          <CardSurface
             key={item.sessionId}
             onPress={() => onPressItem(item.sessionId, index)}
-            style={({ pressed }) => [
-              styles.recentCard,
-              pressed ? styles.recentCardPressed : null,
-            ]}
+            style={styles.recentCard}
           >
             <View style={styles.recentThumb}>
               <Text style={styles.recentThumbBpm}>{item.avgBpm ?? '--'}</Text>
@@ -231,7 +228,7 @@ function RecentHeartRateList({
                 </View>
               ) : null}
             </View>
-          </Pressable>
+          </CardSurface>
         );
       })}
     </View>
@@ -606,16 +603,11 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   recentCard: {
-    ...card.base,
-    ...card.shadow,
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
     gap: spacing.lg,
-  },
-  recentCardPressed: {
-    opacity: 0.75,
   },
   recentThumb: {
     alignItems: 'center',
