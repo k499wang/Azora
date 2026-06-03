@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Alert, LayoutChangeEvent, Pressable, StyleSheet, Text, View } from 'react-native';
-import { BlurView } from 'expo-blur';
+import { LockedScrim } from '../common/glass';
 import Svg, { Circle, Line, Path } from 'react-native-svg';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
@@ -262,12 +262,7 @@ export default function BPMChart({
       )}
       {locked ? (
         <>
-          <BlurView
-            intensity={24}
-            tint="light"
-            pointerEvents="none"
-            style={StyleSheet.absoluteFill}
-          />
+          <LockedScrim />
           <Text style={[styles.title, styles.clearTitle]}>Heart rate</Text>
           {onPressLocked ? (
             <Pressable

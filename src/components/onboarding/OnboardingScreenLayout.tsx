@@ -1,9 +1,12 @@
-import { ReactNode, useEffect, useRef } from 'react';
+import { ReactNode, useEffect, useRef, useState } from 'react';
 import {
   Animated,
   Easing,
   Keyboard,
   KeyboardAvoidingView,
+  LayoutChangeEvent,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
   Platform,
   Pressable,
   ScrollView,
@@ -11,6 +14,8 @@ import {
   Text,
   View,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import Icon from '../common/icons/Icon';
 import * as Haptics from 'expo-haptics';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../../theme/colors';
@@ -45,6 +50,71 @@ export default function OnboardingScreenLayout({
   const fade = useRef(new Animated.Value(0)).current;
   const slide = useRef(new Animated.Value(16)).current;
   const scrollRef = useRef<ScrollView>(null);
+
+  const scrollFade = useRef(new Animated.Value(0)).current;
+  const bounce = useRef(new Animated.Value(0)).current;
+  const viewportHeight = useRef(0);
+  const contentHeight = useRef(0);
+  const [hasOverflow, setHasOverflow] = useState(false);
+
+  useEffect(() => {
+    if (!hasOverflow) {
+      bounce.setValue(0);
+      return;
+    }
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(bounce, {
+          toValue: 5,
+          duration: 650,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.timing(bounce, {
+          toValue: 0,
+          duration: 650,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [hasOverflow, bounce]);
+
+  const setFadeVisible = (visible: boolean) => {
+    Animated.timing(scrollFade, {
+      toValue: visible ? 1 : 0,
+      duration: 180,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const recomputeOverflow = () => {
+    const overflow = contentHeight.current - viewportHeight.current > 1;
+    setHasOverflow(overflow);
+    setFadeVisible(overflow);
+  };
+
+  const handleViewportLayout = (event: LayoutChangeEvent) => {
+    viewportHeight.current = event.nativeEvent.layout.height;
+    recomputeOverflow();
+  };
+
+  const handleContentSizeChange = (_: number, height: number) => {
+    contentHeight.current = height;
+    recomputeOverflow();
+  };
+
+  const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    if (!hasOverflow) return;
+    const { contentOffset, contentSize, layoutMeasurement } =
+      event.nativeEvent;
+    const distanceToBottom =
+      contentSize.height - (contentOffset.y + layoutMeasurement.height);
+    setFadeVisible(distanceToBottom > 24);
+  };
   useEffect(() => {
     if (!keyboardAvoiding) return;
     const show = Keyboard.addListener('keyboardDidShow', () => {
@@ -120,36 +190,59 @@ export default function OnboardingScreenLayout({
         ) : null}
       </View>
 
-      <ScrollView
-        ref={scrollRef}
-        style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={true}
-        keyboardShouldPersistTaps="handled"
-      >
-        <Animated.View
-          style={[
-            styles.content,
-            centerBody && styles.contentCentered,
-            { opacity: fade, transform: [{ translateY: slide }] },
-          ]}
+      <View style={styles.scrollWrap}>
+        <ScrollView
+          ref={scrollRef}
+          style={styles.scroll}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={true}
+          keyboardShouldPersistTaps="handled"
+          scrollEventThrottle={16}
+          onLayout={handleViewportLayout}
+          onContentSizeChange={handleContentSizeChange}
+          onScroll={handleScroll}
         >
-          {title ? (
-            <View style={styles.copy}>
-              <Text style={styles.title}>{title}</Text>
-              {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
-            </View>
-          ) : null}
+          <Animated.View
+            style={[
+              styles.content,
+              centerBody && styles.contentCentered,
+              { opacity: fade, transform: [{ translateY: slide }] },
+            ]}
+          >
+            {title ? (
+              <View style={styles.copy}>
+                <Text style={styles.title}>{title}</Text>
+                {subtitle ? (
+                  <Text style={styles.subtitle}>{subtitle}</Text>
+                ) : null}
+              </View>
+            ) : null}
 
-          {centerBody ? (
-            <View style={styles.bodyCenteredOverlay} pointerEvents="box-none">
-              <View style={styles.bodyCenteredInner}>{children}</View>
-            </View>
-          ) : (
-            <View style={styles.body}>{children}</View>
-          )}
+            {centerBody ? (
+              <View style={styles.bodyCenteredOverlay} pointerEvents="box-none">
+                <View style={styles.bodyCenteredInner}>{children}</View>
+              </View>
+            ) : (
+              <View style={styles.body}>{children}</View>
+            )}
+          </Animated.View>
+        </ScrollView>
+
+        <Animated.View
+          pointerEvents="none"
+          style={[styles.scrollFade, { opacity: scrollFade }]}
+        >
+          <LinearGradient
+            colors={['#F4F5F700', colors.background.primary]}
+            style={styles.scrollFadeGradient}
+          />
+          <Animated.View
+            style={[styles.scrollHint, { transform: [{ translateY: bounce }] }]}
+          >
+            <Icon name="chevron-down" size={22} color={colors.text.tertiary} />
+          </Animated.View>
         </Animated.View>
-      </ScrollView>
+      </View>
 
       <View style={styles.bottom}>{footer}</View>
     </>
@@ -235,8 +328,26 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: colors.text.secondary,
   },
+  scrollWrap: {
+    flex: 1,
+  },
   scroll: {
     flex: 1,
+  },
+  scrollFade: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: spacing['4xl'],
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+  },
+  scrollFadeGradient: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  scrollHint: {
+    paddingBottom: spacing.xs,
   },
   scrollContent: {
     flexGrow: 1,

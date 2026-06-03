@@ -1,5 +1,4 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { BlurView } from 'expo-blur';
 import {
   Canvas,
   Circle,
@@ -10,6 +9,7 @@ import { colors } from '../../theme/colors';
 import { typography, fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import GlassSurface from '../common/GlassSurface';
+import LockedScrim from '../common/LockedScrim';
 import {
   getStressStats,
   type StressHistoryEntry,
@@ -175,12 +175,7 @@ export default function StressGauge({
 
       {locked ? (
         <>
-          <BlurView
-            intensity={24}
-            tint="light"
-            pointerEvents="none"
-            style={StyleSheet.absoluteFill}
-          />
+          <LockedScrim />
           <View style={styles.clearHeaderOverlay} pointerEvents="none">
             {header}
           </View>

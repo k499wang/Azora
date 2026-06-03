@@ -31,34 +31,6 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
     ],
   },
   {
-    id: 'breath_work',
-    icon: 'breath-timer',
-    accent: colors.primary.blue600,
-    title: 'Breath work',
-    body: 'Build a steady breathing practice you can return to daily.',
-    hook: 'A practice built to actually last.',
-    reflectionHeadline: 'Make breathwork part of your routine.',
-    reflectionBody:
-      'A few focused minutes a day trains calmer breathing — and real, measurable recovery.',
-    valuePoints: [
-      {
-        icon: 'breath-timer',
-        accent: colors.primary.blue600,
-        label: 'Short daily sessions are easier to keep',
-      },
-      {
-        icon: 'waves',
-        accent: colors.success[500],
-        label: 'Stress drops within a single 5-minute session',
-      },
-      {
-        icon: 'streak',
-        accent: colors.orange[500],
-        label: 'Results compound week over week',
-      },
-    ],
-  },
-  {
     id: 'sleep',
     icon: 'moon',
     accent: colors.primary.blue600,
@@ -87,10 +59,94 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
     ],
   },
   {
+    id: 'focus',
+    icon: 'meditation',
+    accent: colors.primary.blue600,
+    title: 'Focus & study',
+    body: 'Steady your mind for deep work and exams.',
+    hook: 'Clear head, sharper recall.',
+    reflectionHeadline: 'Find focus in a few breaths.',
+    reflectionBody:
+      'Paced breathing calms pre-exam nerves and pulls your attention back from the noise.',
+    valuePoints: [
+      {
+        icon: 'sparkle',
+        accent: colors.primary.blue600,
+        label: 'A 90-second reset sharpens attention fast',
+      },
+      {
+        icon: 'book',
+        accent: colors.success[500],
+        label: 'Lower anxiety improves memory and recall',
+      },
+      {
+        icon: 'streak',
+        accent: colors.orange[500],
+        label: 'Steadier focus across longer study sessions',
+      },
+    ],
+  },
+  {
+    id: 'energy',
+    icon: 'sun',
+    accent: colors.orange[500],
+    title: 'Boost energy',
+    body: 'Lift your state without caffeine.',
+    hook: 'A cleaner kind of energy.',
+    reflectionHeadline: 'Energize without the crash.',
+    reflectionBody:
+      'Active breathing raises alertness and oxygen flow — a natural lift you can repeat anytime.',
+    valuePoints: [
+      {
+        icon: 'sun',
+        accent: colors.orange[500],
+        label: 'Energizing breaths raise alertness in minutes',
+      },
+      {
+        icon: 'waves',
+        accent: colors.primary.blue600,
+        label: 'More oxygen flow, no caffeine crash',
+      },
+      {
+        icon: 'heart-glow',
+        accent: colors.error[500],
+        label: 'A repeatable lift you control any time of day',
+      },
+    ],
+  },
+  {
+    id: 'spiritual',
+    icon: 'lotus',
+    accent: colors.primary.blue600,
+    title: 'Deepen practice',
+    body: 'Use breath as a path to stillness and presence.',
+    hook: 'Breath as a way in.',
+    reflectionHeadline: 'Find stillness through the breath.',
+    reflectionBody:
+      'Breath has anchored meditation and prayer for millennia — a doorway to presence you carry everywhere.',
+    valuePoints: [
+      {
+        icon: 'lotus',
+        accent: colors.primary.blue600,
+        label: 'Slow breathing deepens meditative focus',
+      },
+      {
+        icon: 'meditation',
+        accent: colors.success[500],
+        label: 'Used in yoga and mindfulness for thousands of years',
+      },
+      {
+        icon: 'sparkle',
+        accent: colors.orange[500],
+        label: 'A few mindful breaths bring you back to now',
+      },
+    ],
+  },
+  {
     id: 'heart_health',
     icon: 'heart-bpm',
     accent: colors.error[500],
-    title: 'Track heart health',
+    title: 'Heart health',
     body: 'Measure HRV and recovery trends over time.',
     hook: 'Your heart has been waiting for this.',
     reflectionHeadline: 'See your heart, every day.',
@@ -118,12 +174,12 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
     id: 'daily_habit',
     icon: 'streak',
     accent: colors.orange[500],
-    title: 'Build a habit',
-    body: 'Make breathwork part of your daily routine.',
+    title: 'Daily habit',
+    body: 'Build a steady breathing practice you return to.',
     hook: 'Small reps. Real change.',
-    reflectionHeadline: 'Small daily reps, real change.',
+    reflectionHeadline: 'A practice built to actually last.',
     reflectionBody:
-      'Consistency always beats intensity. A few minutes a day compounds faster than you expect.',
+      'Consistency beats intensity. A few focused minutes a day compounds faster than you expect.',
     valuePoints: [
       {
         icon: 'streak',

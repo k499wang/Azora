@@ -1,5 +1,5 @@
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
-import { BlurView } from 'expo-blur';
+import { LockedScrim } from '../common/glass';
 import { Canvas, Circle, Path, Skia } from '@shopify/react-native-skia';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
@@ -230,12 +230,7 @@ export default function HRVTrackStatCard({
       </View>
       {locked ? (
         <>
-          <BlurView
-            intensity={24}
-            tint="light"
-            pointerEvents="none"
-            style={StyleSheet.absoluteFill}
-          />
+          <LockedScrim />
           <View style={styles.clearHeaderOverlay} pointerEvents="none">
             <Text style={styles.label}>{label}</Text>
             {zone != null ? (

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
-import { BlurView } from 'expo-blur';
+import { LockedScrim } from '../common/glass';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Canvas, Path, Skia } from '@shopify/react-native-skia';
@@ -338,12 +338,7 @@ export function LockedOverlay({ locked, onPressUpgrade, children }: LockedOverla
       <View pointerEvents="none" style={styles.lockedContent}>
         {children}
       </View>
-      <BlurView
-        intensity={18}
-        tint="light"
-        style={StyleSheet.absoluteFill}
-        pointerEvents="none"
-      />
+      <LockedScrim />
       <LinearGradient
         pointerEvents="none"
         colors={[
