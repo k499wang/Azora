@@ -164,7 +164,7 @@ export default function OnboardingPaywallScreen({
 
   const ctaLabel =
     isAnnualSelected && selectedPackageHasTrial
-      ? 'Start my 3-day free trial'
+      ? 'Start my free trial'
       : isAnnualSelected
         ? 'Subscribe yearly'
         : 'Continue with weekly';
@@ -594,17 +594,17 @@ function StepTrial({ hasAnnualTrial }: { hasAnnualTrial: boolean }) {
           icon: 'sparkle',
           label: 'Today',
           title: 'Unlock everything',
-          body: 'Start your 3-day free trial — all Pro features unlocked instantly.',
+          body: 'Start your free trial — all Pro features unlocked instantly.',
         },
         {
           icon: 'timer',
-          label: 'Day 2',
-          title: "We'll remind you 1 day before it ends",
-          body: 'A notification lands the day before billing starts — no surprises.',
+          label: 'Before it ends',
+          title: "We'll remind you before your trial ends",
+          body: 'A notification lands before billing starts — no surprises.',
         },
         {
           icon: 'heart',
-          label: 'Day 3',
+          label: 'Anytime',
           title: 'Cancel anytime',
           body: 'Cancel in App Store settings up to the moment billing starts.',
         },
@@ -634,11 +634,11 @@ function StepTrial({ hasAnnualTrial }: { hasAnnualTrial: boolean }) {
     <View style={styles.stepContainer}>
       <View style={styles.stepHeader}>
         <Text style={styles.stepTitle}>
-          {hasAnnualTrial ? '3 days free, fully cancellable' : 'Pro, on your terms'}
+          {hasAnnualTrial ? 'Free to try, fully cancellable' : 'Pro, on your terms'}
         </Text>
         <Text style={styles.stepSubtitle}>
           {hasAnnualTrial
-            ? "You won't be charged until day 3 — and we'll always remind you first."
+            ? "You won't be charged until your trial ends — and we'll always remind you first."
             : 'Cancel anytime in App Store settings — no questions asked.'}
         </Text>
       </View>

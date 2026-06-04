@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  ImageBackground,
   Linking,
   Pressable,
   ScrollView,
@@ -12,8 +11,13 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { usePaywall } from '../hooks/usePaywall';
-import { PaywallPlacement, type PaywallPackageOption } from '../services/paywall';
+import {
+  PaywallPlacement,
+  type PaywallPackageId,
+  type PaywallPackageOption,
+} from '../services/paywall';
 import PaywallTrialReminderToggle from '../components/paywall/PaywallTrialReminderToggle';
+import { computePerWeek, computeAnnualSavings } from '../components/paywall/PlanCard';
 import Icon from '../components/common/icons/Icon';
 import type { ExitOfferScreenProps } from '../app/navigation';
 import { colors } from '../theme/colors';
@@ -24,20 +28,17 @@ import { card } from '../theme/card';
 const TERMS_URL = 'https://www.tryazora.app/terms';
 const PRIVACY_URL = 'https://www.tryazora.app/privacy';
 const OFFER_DURATION_SECONDS = 5 * 60;
-const HERO_COLOR = colors.primary.blue900;
 
-const APP_STORE_RATING = '5.0';
-const LAUREL_SIZE = 92;
-const TESTIMONIALS: { quote: string; name: string }[] = [
+const TESTIMONIALS = [
   {
     quote:
-      'Breathwork through Azora has genuinely changed my life — my stress is down and my sleep has improved. Highly recommend.',
-    name: 'Jessica R.',
+      'I finally sleep through the night. Two weeks of morning breathwork and my resting heart rate actually dropped.',
+    name: 'Jake Sullivan',
   },
   {
     quote:
-      'Azora helps me calm down with ease, and I’ve been sleeping better than ever. Thank you, Azora!',
-    name: 'Jacob M.',
+      "I've tried every meditation app out there. This is the first one that actually stuck for me.",
+    name: 'Benny Marcs',
   },
 ];
 
@@ -66,23 +67,29 @@ export function ExitOfferScreen({ navigation }: ExitOfferScreenProps) {
     () => paywall.offering?.packages.find((pkg) => pkg.id === 'annual') ?? null,
     [paywall.offering],
   );
-  const anchorPriceString = useMemo(
+  const anchorAnnual = useMemo(
     () =>
-      anchorPaywall.offering?.packages.find((pkg) => pkg.id === 'annual')
-        ?.priceString ?? null,
+      anchorPaywall.offering?.packages.find((pkg) => pkg.id === 'annual') ?? null,
     [anchorPaywall.offering],
   );
   const discountPercent = useMemo(
-    () => computeDiscountPercent(anchorPriceString, annual?.priceString),
-    [anchorPriceString, annual],
+    () => computeDiscountPercent(anchorAnnual, annual),
+    [anchorAnnual, annual],
+  );
+  const weekly = useMemo(
+    () => paywall.offering?.packages.find((pkg) => pkg.id === 'weekly') ?? null,
+    [paywall.offering],
+  );
+  const savingsPercent = useMemo(
+    () => computeAnnualSavings(annual ?? undefined, weekly ?? undefined),
+    [annual, weekly],
   );
   const monthly = useMemo(() => (annual ? computeMonthly(annual) : null), [annual]);
-  const perWeek = useMemo(() => (annual ? computePerWeek(annual) : null), [annual]);
+  const anchorPriceString = anchorAnnual?.priceString ?? null;
 
   const hasTrial = annual?.trialLabel != null;
-  const isExpired = secondsLeft <= 0;
   const isBusy = paywall.isLoading || paywall.isPurchasing || paywall.isRestoring;
-  const canBuy = annual != null && !isExpired;
+  const canBuy = annual != null;
 
   const close = useCallback(() => {
     if (paywall.isPurchasing || paywall.isRestoring) return;
@@ -104,27 +111,21 @@ export function ExitOfferScreen({ navigation }: ExitOfferScreenProps) {
     }
   }, [navigation, paywall]);
 
-  const headline =
-    discountPercent != null ? `${discountPercent}% Off Forever` : 'Special Offer';
-  const ctaLabel = hasTrial ? 'Start My Free Trial' : 'Claim Offer';
+  const ctaLabel = hasTrial
+    ? 'Start My Free Trial →'
+    : monthly
+      ? `Continue — ${monthly}/mo`
+      : 'Claim Offer';
 
   return (
     <View style={styles.screen}>
       <View style={styles.heroWrap}>
-        <ImageBackground
-          source={require('../../assets/backgrounds/paywallbackground.jpg')}
-          resizeMode="cover"
+        <View
           style={[
             styles.heroShape,
             { borderBottomLeftRadius: width * 0.9, borderBottomRightRadius: width * 0.9 },
           ]}
-          imageStyle={{
-            borderBottomLeftRadius: width * 0.9,
-            borderBottomRightRadius: width * 0.9,
-          }}
-        >
-          <View style={styles.heroOverlay} />
-        </ImageBackground>
+        />
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Close offer"
@@ -138,109 +139,179 @@ export function ExitOfferScreen({ navigation }: ExitOfferScreenProps) {
         >
           <Text style={styles.closeIcon}>✕</Text>
         </Pressable>
-        <View style={styles.heroText}>
-          <Text style={styles.heroTitle}>One Time{'\n'}Offer</Text>
-          <Text style={styles.heroSubtitle}>You&apos;ll never see this again.</Text>
-        </View>
+        <Text style={styles.title}>Your one-time{'\n'}offer</Text>
+        <Text style={styles.heroSubtitle}>
+          A special price, today only — you won&apos;t see this again.
+        </Text>
       </View>
 
-      <View style={styles.content}>
-        <ScrollView
-          contentContainerStyle={styles.scroll}
-          showsVerticalScrollIndicator={false}
-        >
-          {paywall.isLoading ? (
-            <ActivityIndicator color={colors.text.primary} style={styles.loading} />
-          ) : (
-            <>
-              <Text style={styles.headline}>{headline}</Text>
-              {anchorPriceString || perWeek ? (
-                <View style={styles.priceLine}>
-                  {anchorPriceString ? (
-                    <Text style={styles.originalPrice}>{anchorPriceString}</Text>
-                  ) : null}
-                  {anchorPriceString && perWeek ? (
-                    <Text style={styles.dash}>—</Text>
-                  ) : null}
-                  {perWeek ? <Text style={styles.perWeek}>{perWeek}/week</Text> : null}
-                </View>
-              ) : null}
-              <View style={[styles.timerBlock, isExpired && styles.dim]}>
-                <Text style={styles.timerLabel}>
-                  {isExpired ? 'OFFER EXPIRED' : 'OFFER EXPIRES IN'}
-                </Text>
+      <ScrollView
+        contentContainerStyle={[
+          styles.scroll,
+          { paddingBottom: insets.bottom + spacing.lg },
+        ]}
+        showsVerticalScrollIndicator={false}
+      >
+        {paywall.isLoading ? (
+          <ActivityIndicator color={colors.text.primary} style={styles.loading} />
+        ) : (
+          <>
+            <View style={styles.offerBlock}>
+              <View style={styles.timerPill}>
+                <Icon name="timer" size={16} color={colors.primary.blue700} />
+                <Text style={styles.timerLabel}>OFFER EXPIRES IN</Text>
                 <Text style={styles.timerValue}>{formatClock(secondsLeft)}</Text>
               </View>
 
-              <View style={styles.social}>
-                <Icon name="laurel" size={LAUREL_SIZE} color={colors.text.primary} />
-                <View style={styles.reviewsCenter}>
-                  <Text style={styles.stars}>★★★★★</Text>
-                  <Text style={styles.ratingText}>{APP_STORE_RATING}</Text>
-                </View>
-                <View style={styles.laurelFlip}>
-                  <Icon name="laurel" size={LAUREL_SIZE} color={colors.text.primary} />
-                </View>
+              <View style={styles.badge}>
+                <Text style={styles.badgePercent}>
+                  {discountPercent != null ? `${discountPercent}% OFF` : 'OFFER'}
+                </Text>
+                <Text style={styles.badgeForever}>FOREVER</Text>
               </View>
 
-              <View style={styles.reviews}>
-                {TESTIMONIALS.map((testimonial) => (
-                  <View key={testimonial.name} style={styles.review}>
-                    <View style={styles.reviewMeta}>
-                      <Text style={styles.reviewName}>{testimonial.name}</Text>
-                      <Text style={styles.reviewStarsSmall}>★★★★★</Text>
-                    </View>
-                    <Text style={styles.reviewQuote}>{testimonial.quote}</Text>
-                  </View>
-                ))}
+              <View style={styles.priceRow}>
+                {anchorPriceString ? (
+                  <Text style={styles.priceAnchor}>{anchorPriceString}</Text>
+                ) : null}
+                {monthly ? (
+                  <Text style={styles.priceNow}>{monthly}/mo</Text>
+                ) : null}
               </View>
+            </View>
 
-              {paywall.errorMessage ? (
-                <Text style={styles.error}>{paywall.errorMessage}</Text>
+            <View style={styles.proofRow}>
+              <View style={styles.proofItem}>
+                <Icon name="laurel" size={72} color={colors.text.primary} />
+                <View style={styles.proofCenter}>
+                  <Text style={styles.proofStars}>★★★★★</Text>
+                  <Text style={styles.proofRatingLabel}>5 STAR RATING</Text>
+                </View>
+                <View style={styles.laurelMirror}>
+                  <Icon name="laurel" size={72} color={colors.text.primary} />
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.testimonials}>
+              {TESTIMONIALS.map((t) => (
+                <View key={t.name} style={styles.testimonial}>
+                  <Text style={styles.testimonialQuote}>{t.quote}</Text>
+                  <Text style={styles.testimonialName}>{t.name}</Text>
+                </View>
+              ))}
+            </View>
+
+            {paywall.errorMessage ? (
+              <Text style={styles.error}>{paywall.errorMessage}</Text>
+            ) : null}
+
+            <View style={styles.footer}>
+              {hasTrial && annual ? <PaywallTrialReminderToggle /> : null}
+
+              {annual ? (
+                <OfferPlanCard
+                  pkg={annual}
+                  isSelected={paywall.selectedPackageId === 'annual'}
+                  onSelect={paywall.selectPackage}
+                  savingsPercent={savingsPercent}
+                />
               ) : null}
-            </>
-          )}
-        </ScrollView>
 
-        <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.md }]}>
-          {hasTrial && annual ? (
-            <PaywallTrialReminderToggle disabled={isExpired} />
-          ) : null}
+              {weekly ? (
+                <OfferPlanCard
+                  pkg={weekly}
+                  isSelected={paywall.selectedPackageId === 'weekly'}
+                  onSelect={paywall.selectPackage}
+                  savingsPercent={null}
+                />
+              ) : null}
 
-          {annual ? (
-            <Text style={styles.fineprint}>
-              {hasTrial
-                ? `${annual.trialLabel}, then ${annual.priceString}/yr${monthly ? ` (${monthly}/mo)` : ''}. Cancel anytime.`
-                : `Unlimited access for ${annual.priceString}/yr${monthly ? ` (${monthly}/mo)` : ''}. Cancel anytime.`}
-            </Text>
-          ) : null}
+              {annual == null && !paywall.isLoading ? (
+                <PrimaryButton label="Try again" onPress={paywall.retryRevenueCatSync} disabled={isBusy} />
+              ) : (
+                <PrimaryButton
+                  label={ctaLabel}
+                  onPress={purchase}
+                  disabled={isBusy || !canBuy}
+                  loading={paywall.isPurchasing}
+                />
+              )}
 
-          {annual == null && !paywall.isLoading ? (
-            <PrimaryButton label="Try again" onPress={paywall.retryRevenueCatSync} disabled={isBusy} />
-          ) : isExpired ? (
-            <PrimaryButton label="Continue" onPress={close} disabled={isBusy} />
-          ) : (
-            <PrimaryButton
-              label={ctaLabel}
-              onPress={purchase}
-              disabled={isBusy || !canBuy}
-              loading={paywall.isPurchasing}
-            />
-          )}
+              <View style={styles.links}>
+                <Pressable hitSlop={6} disabled={isBusy} onPress={restore}>
+                  <Text style={styles.linkText}>Restore Purchases</Text>
+                </Pressable>
+                <Pressable hitSlop={6} onPress={() => Linking.openURL(TERMS_URL)}>
+                  <Text style={styles.linkText}>Terms &amp; Conditions</Text>
+                </Pressable>
+                <Pressable hitSlop={6} onPress={() => Linking.openURL(PRIVACY_URL)}>
+                  <Text style={styles.linkText}>Privacy Policy</Text>
+                </Pressable>
+              </View>
+            </View>
+          </>
+        )}
+      </ScrollView>
+    </View>
+  );
+}
 
-          <View style={styles.links}>
-            <Pressable hitSlop={6} disabled={isBusy} onPress={restore}>
-              <Text style={styles.linkText}>Restore Purchases</Text>
-            </Pressable>
-            <Pressable hitSlop={6} onPress={() => Linking.openURL(TERMS_URL)}>
-              <Text style={styles.linkText}>Terms &amp; Conditions</Text>
-            </Pressable>
-            <Pressable hitSlop={6} onPress={() => Linking.openURL(PRIVACY_URL)}>
-              <Text style={styles.linkText}>Privacy Policy</Text>
-            </Pressable>
+function OfferPlanCard({
+  pkg,
+  isSelected,
+  onSelect,
+  savingsPercent,
+}: {
+  pkg: PaywallPackageOption;
+  isSelected: boolean;
+  onSelect: (packageId: PaywallPackageId) => void;
+  savingsPercent: number | null;
+}) {
+  const isAnnual = pkg.id === 'annual';
+  const hasTrial = pkg.trialLabel != null;
+  const perWeek = computePerWeek(pkg);
+  const headline = isAnnual ? (hasTrial ? 'Try for free' : 'Annual') : 'Weekly';
+  const secondary = isAnnual ? `${pkg.priceString}/year` : 'billed weekly';
+  const planDetail = isAnnual
+    ? hasTrial
+      ? 'No charge today — cancel anytime'
+      : 'Annual subscription'
+    : 'Weekly subscription';
+
+  return (
+    <View style={styles.planCardWrap}>
+      {isAnnual && savingsPercent != null ? (
+        <View style={styles.savingsBadge}>
+          <Text style={styles.savingsBadgeText}>SAVE {savingsPercent}%</Text>
+        </View>
+      ) : null}
+      <Pressable
+        accessibilityRole="button"
+        accessibilityState={{ selected: isSelected }}
+        onPress={() => onSelect(pkg.id)}
+        style={({ pressed }) => [
+          styles.planCard,
+          isSelected && styles.planCardSelected,
+          pressed && styles.pressed,
+        ]}
+      >
+        {hasTrial ? (
+          <View style={styles.planBanner}>
+            <Text style={styles.planBannerText}>{pkg.trialLabel?.toUpperCase()}</Text>
+          </View>
+        ) : null}
+        <View style={styles.planBody}>
+          <View style={styles.planCopy}>
+            <Text style={styles.planName}>{headline}</Text>
+            <Text style={styles.planMeta}>{planDetail}</Text>
+          </View>
+          <View style={styles.planPriceCol}>
+            {perWeek ? <Text style={styles.planPerMonth}>{perWeek}/week</Text> : null}
+            <Text style={styles.planMeta}>{secondary}</Text>
           </View>
         </View>
-      </View>
+      </Pressable>
     </View>
   );
 }
@@ -284,40 +355,53 @@ function formatClock(totalSeconds: number): string {
 
 function parsePriceNumber(priceString: string | null | undefined): number | null {
   if (!priceString) return null;
-  const cleaned = priceString.replace(/[^\d.,]/g, '').replace(/,/g, '.');
-  const match = cleaned.match(/\d+(\.\d+)?/);
-  if (!match) return null;
-  const value = parseFloat(match[0]);
+  let cleaned = priceString.replace(/[^\d.,]/g, '');
+  if (!cleaned) return null;
+  const lastComma = cleaned.lastIndexOf(',');
+  const lastDot = cleaned.lastIndexOf('.');
+  const decimalSep = lastComma > lastDot ? ',' : lastDot > lastComma ? '.' : '';
+  if (decimalSep) {
+    const groupSep = decimalSep === ',' ? '.' : ',';
+    cleaned = cleaned.split(groupSep).join('').replace(decimalSep, '.');
+  } else {
+    cleaned = cleaned.replace(/[.,]/g, '');
+  }
+  const value = parseFloat(cleaned);
   return Number.isFinite(value) && value > 0 ? value : null;
 }
 
+// Exact minor units (cents). Prefer RevenueCat's integer priceCents; only fall
+// back to parsing the localized priceString when cents is unavailable.
+function packageCents(pkg: PaywallPackageOption | null): number | null {
+  if (pkg?.priceCents != null && pkg.priceCents > 0) return pkg.priceCents;
+  const dollars = parsePriceNumber(pkg?.priceString);
+  return dollars == null ? null : Math.round(dollars * 100);
+}
+
 function formatCurrencyLike(template: string, value: number): string {
-  const symbolMatch = template.match(/^[^\d.,\s-]+/);
-  const symbol = symbolMatch ? symbolMatch[0] : '$';
-  return `${symbol}${value.toFixed(2)}`;
+  const prefix = template.match(/^[^\d]+/)?.[0] ?? '';
+  const suffix = template.match(/[^\d]+$/)?.[0] ?? '';
+  const formatted = value.toFixed(2);
+  return prefix ? `${prefix}${formatted}` : `${formatted}${suffix || '$'}`;
 }
 
 function computeMonthly(pkg: PaywallPackageOption): string | null {
   if (pkg.pricePerMonthString) return pkg.pricePerMonthString;
-  const value = parsePriceNumber(pkg.priceString);
-  if (value == null) return null;
-  return formatCurrencyLike(pkg.priceString, value / 12);
-}
-
-function computePerWeek(pkg: PaywallPackageOption): string | null {
-  const value = parsePriceNumber(pkg.priceString);
-  if (value == null) return null;
-  return formatCurrencyLike(pkg.priceString, value / 52);
+  const cents = packageCents(pkg);
+  if (cents == null) return null;
+  return formatCurrencyLike(pkg.priceString, cents / 12 / 100);
 }
 
 function computeDiscountPercent(
-  anchorPriceString: string | null,
-  discountPriceString: string | null | undefined,
+  anchor: PaywallPackageOption | null,
+  discounted: PaywallPackageOption | null,
 ): number | null {
-  const anchor = parsePriceNumber(anchorPriceString);
-  const discount = parsePriceNumber(discountPriceString);
-  if (anchor == null || discount == null || discount >= anchor) return null;
-  return Math.round((1 - discount / anchor) * 100);
+  const anchorCents = packageCents(anchor);
+  const discountCents = packageCents(discounted);
+  if (anchorCents == null || discountCents == null || discountCents >= anchorCents) {
+    return null;
+  }
+  return Math.round((1 - discountCents / anchorCents) * 100);
 }
 
 const styles = StyleSheet.create({
@@ -326,33 +410,29 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.primary,
   },
   heroWrap: {
-    height: '32%',
+    height: '27%',
+    minHeight: 180,
     backgroundColor: colors.background.primary,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: spacing.xl,
     overflow: 'hidden',
   },
   heroShape: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: HERO_COLOR,
-    overflow: 'hidden',
+    backgroundColor: colors.primary.blue600,
     transform: [{ scaleX: 1.6 }],
-  },
-  heroOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: HERO_COLOR,
-    opacity: 0.4,
   },
   closeButton: {
     position: 'absolute',
-    right: spacing.lg,
+    left: spacing.lg,
     zIndex: 2,
     width: 34,
     height: 34,
     borderRadius: 17,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.primary.blue800,
+    backgroundColor: colors.primary.blue700,
   },
   closeIcon: {
     fontFamily: fonts.semibold,
@@ -361,168 +441,241 @@ const styles = StyleSheet.create({
     lineHeight: 19,
     color: colors.neutral[0],
   },
-  heroText: {
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-  },
-  heroTitle: {
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    fontSize: 48,
-    lineHeight: 52,
-    color: colors.neutral[0],
-    textAlign: 'center',
-  },
-  heroSubtitle: {
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    fontSize: 19,
-    lineHeight: 26,
-    color: colors.neutral[200],
-    marginTop: spacing.md,
-    textAlign: 'center',
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: spacing.lg,
-  },
   scroll: {
     flexGrow: 1,
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing.lg,
-    gap: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    gap: spacing.lg,
   },
   loading: {
     paddingVertical: spacing['2xl'],
   },
-  headline: {
+  title: {
     fontFamily: fonts.semibold,
     fontWeight: '500',
-    fontSize: 40,
-    lineHeight: 44,
-    color: colors.text.primary,
+    fontSize: 42,
+    lineHeight: 48,
+    color: colors.neutral[0],
     textAlign: 'center',
   },
-  priceLine: {
-    flexDirection: 'row',
+  heroSubtitle: {
+    ...typography.body.small,
+    fontFamily: fonts.semibold,
+    fontWeight: '500',
+    color: colors.primary.blue100,
+    textAlign: 'center',
+    marginTop: spacing.sm,
+  },
+  offerBlock: {
+    alignSelf: 'stretch',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
+    gap: spacing.md,
+    marginTop: spacing.xl,
+  },
+  badge: {
+    backgroundColor: colors.primary.blue600,
+    borderRadius: 28,
+    paddingVertical: spacing.xl,
+    paddingHorizontal: spacing['5xl'],
+    alignItems: 'center',
+    ...card.shadowElevated,
+  },
+  badgePercent: {
+    fontFamily: fonts.semibold,
+    fontWeight: '500',
+    fontSize: 52,
+    lineHeight: 56,
+    color: colors.neutral[0],
+    textAlign: 'center',
+  },
+  badgeForever: {
+    fontFamily: fonts.semibold,
+    fontWeight: '500',
+    fontSize: 20,
+    lineHeight: 24,
+    letterSpacing: 4,
+    color: colors.neutral[200],
     marginTop: spacing.xs,
   },
-  originalPrice: {
+  priceRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'center',
+    gap: spacing.sm,
+  },
+  priceAnchor: {
     ...typography.title.title3,
     fontFamily: fonts.semibold,
     fontWeight: '500',
-    color: colors.text.secondary,
+    color: colors.text.tertiary,
     textDecorationLine: 'line-through',
   },
-  dash: {
-    ...typography.title.title3,
-    color: colors.text.secondary,
-  },
-  perWeek: {
-    ...typography.title.title3,
+  priceNow: {
+    ...typography.title.title2,
     fontFamily: fonts.semibold,
     fontWeight: '500',
     color: colors.text.primary,
   },
-  timerBlock: {
+  timerPill: {
+    flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
-    marginTop: spacing.lg,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.md,
+    borderRadius: 999,
+    backgroundColor: colors.primary.blue100,
   },
   timerLabel: {
     ...typography.caption.caption2,
     fontFamily: fonts.semibold,
     fontWeight: '500',
-    letterSpacing: 2,
-    color: colors.text.secondary,
+    letterSpacing: 1,
+    color: colors.primary.blue700,
   },
   timerValue: {
+    ...typography.caption.caption1,
     fontFamily: fonts.semibold,
     fontWeight: '500',
-    fontSize: 68,
-    lineHeight: 72,
-    color: colors.text.primary,
+    color: colors.primary.blue700,
     fontVariant: ['tabular-nums'],
   },
-  dim: {
-    opacity: 0.45,
-  },
-  social: {
+  proofRow: {
+    flexDirection: 'row',
     alignSelf: 'stretch',
+    justifyContent: 'center',
+  },
+  proofItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 0,
-    marginTop: spacing.lg,
-  },
-  reviewsCenter: {
-    alignItems: 'center',
-    gap: spacing.xs,
-    marginHorizontal: -spacing.lg,
-  },
-  laurelFlip: {
-    transform: [{ scaleX: -1 }],
-  },
-  reviews: {
-    alignSelf: 'stretch',
-    alignItems: 'stretch',
-    gap: spacing.md,
-    marginTop: spacing.lg,
-  },
-  stars: {
-    fontSize: 36,
-    letterSpacing: 4,
-    color: colors.orange[500],
-  },
-  ratingText: {
-    ...typography.title.title3,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    color: colors.text.primary,
-  },
-  review: {
-    ...card.base,
-    ...card.shadow,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md,
     gap: spacing.sm,
   },
-  reviewMeta: {
-    gap: 2,
+  laurelMirror: {
+    transform: [{ scaleX: -1 }],
   },
-  reviewName: {
-    ...typography.body.small,
+  proofCenter: {
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  proofRatingLabel: {
+    ...typography.caption.caption1,
     fontFamily: fonts.semibold,
     fontWeight: '500',
+    letterSpacing: 1,
     color: colors.text.primary,
   },
-  reviewStarsSmall: {
-    fontSize: 12,
-    letterSpacing: 1.5,
-    color: colors.orange[500],
+  proofStars: {
+    fontSize: 26,
+    lineHeight: 30,
+    letterSpacing: 2,
+    color: colors.yellow[400],
   },
-  reviewQuote: {
+  testimonials: {
+    alignSelf: 'stretch',
+    gap: spacing.lg,
+  },
+  testimonial: {
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  testimonialQuote: {
     ...typography.body.small,
     color: colors.text.secondary,
+    textAlign: 'center',
+  },
+  testimonialName: {
+    ...typography.caption.caption1,
+    color: colors.text.tertiary,
+    textAlign: 'center',
   },
   error: {
     ...typography.body.small,
     color: colors.error[500],
     textAlign: 'center',
-    marginTop: spacing.sm,
   },
   footer: {
-    paddingTop: spacing.sm,
+    alignSelf: 'stretch',
+    paddingTop: spacing.md,
     gap: spacing.md,
   },
-  fineprint: {
+  planCardWrap: {
+    position: 'relative',
+  },
+  planCard: {
+    ...card.base,
+    ...card.shadow,
+    borderColor: colors.neutral[200],
+    overflow: 'hidden',
+  },
+  savingsBadge: {
+    position: 'absolute',
+    top: -12,
+    right: spacing.md,
+    zIndex: 2,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
+    backgroundColor: colors.orange[500],
+    shadowColor: colors.orange[700],
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  savingsBadgeText: {
+    ...typography.caption.caption1,
+    fontFamily: fonts.semibold,
+    fontWeight: '500',
+    letterSpacing: 1,
+    color: colors.text.inverse,
+  },
+  planCardSelected: {
+    borderColor: colors.primary.blue600,
+    borderWidth: 2,
+  },
+  planBanner: {
+    backgroundColor: colors.primary.blue600,
+    alignItems: 'center',
+    paddingVertical: spacing.xs,
+  },
+  planBannerText: {
+    ...typography.caption.caption2,
+    fontFamily: fonts.semibold,
+    fontWeight: '500',
+    letterSpacing: 2,
+    color: colors.neutral[0],
+  },
+  planBody: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+  },
+  planCopy: {
+    flex: 1,
+  },
+  planPriceCol: {
+    alignItems: 'flex-end',
+  },
+  planName: {
+    fontFamily: fonts.semibold,
+    fontWeight: '500',
+    fontSize: 18,
+    lineHeight: 22,
+    color: colors.text.primary,
+  },
+  planMeta: {
     ...typography.caption.caption1,
     color: colors.text.secondary,
-    textAlign: 'center',
+    marginTop: spacing.xs,
+  },
+  planPerMonth: {
+    fontFamily: fonts.semibold,
+    fontWeight: '500',
+    fontSize: 18,
+    lineHeight: 22,
+    color: colors.text.primary,
   },
   cta: {
     minHeight: 58,
