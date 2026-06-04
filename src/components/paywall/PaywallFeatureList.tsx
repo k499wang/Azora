@@ -4,7 +4,7 @@ import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 import Icon from '../common/icons/Icon';
 
-const TRIAL_FEATURE = '3 day free trial for annual users.';
+const TRIAL_FEATURE = 'Free trial on annual — no charge to start, cancel anytime';
 const SUBSCRIPTION_FEATURE = 'Full Pro access across every breathing and heart-rate tool';
 
 const DEFAULT_FEATURES = [

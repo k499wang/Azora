@@ -11,6 +11,17 @@ export const posthog = new PostHog(apiKey ?? 'placeholder_key', {
   captureAppLifecycleEvents: true,
   flushAt: 20,
   flushInterval: 10000,
+  enableSessionReplay: isPostHogConfigured,
+  enablePersistSessionIdAcrossRestart: true,
+  sessionReplayConfig: {
+    maskAllTextInputs: true,
+    maskAllImages: true,
+    maskAllSandboxedViews: true,
+    captureLog: true,
+    captureNetworkTelemetry: true,
+    androidDebouncerDelayMs: 1000,
+    iOSdebouncerDelayMs: 1000,
+  },
 })
 
 if (__DEV__) {

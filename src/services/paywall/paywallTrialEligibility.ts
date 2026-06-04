@@ -34,11 +34,9 @@ export function formatEligibleTrialLabel(options: {
     return null;
   }
 
-  return formatFreeTrialLabel(options.introPrice);
+  return FREE_TRIAL_LABEL;
 }
 
-function formatFreeTrialLabel(introPrice: TrialIntroPrice): string {
-  const unit = introPrice.periodUnit.toLowerCase();
-  const suffix = introPrice.periodNumberOfUnits === 1 ? unit : `${unit}s`;
-  return `${introPrice.periodNumberOfUnits} ${suffix} free`;
-}
+// Intentionally duration-free: surfacing a fixed trial length (e.g. "3 days
+// free") triggers trial anxiety, so we frame the offer as risk-free instead.
+const FREE_TRIAL_LABEL = 'Free trial';

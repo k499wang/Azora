@@ -121,7 +121,7 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
 
   const ctaLabel =
     isAnnualSelected && selectedPackageHasTrial
-      ? 'Start my 3-day free trial'
+      ? 'Start my free trial'
       : isAnnualSelected
         ? 'Subscribe yearly'
         : 'Continue with weekly';

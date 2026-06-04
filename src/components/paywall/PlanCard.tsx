@@ -26,10 +26,15 @@ export function PlanCard({
   savingsPercent,
 }: PlanCardProps) {
   const isAnnual = pkg.id === 'annual';
+  const hasTrial = pkg.trialLabel != null;
   const perWeek = computePerWeek(pkg);
-  const headline = isAnnual ? 'Annual' : 'Weekly';
+  const headline = isAnnual ? (hasTrial ? 'Try for free' : 'Annual') : 'Weekly';
   const secondary = isAnnual ? `${pkg.priceString}/year` : 'billed weekly';
-  const planDetail = pkg.trialLabel ?? (isAnnual ? 'Annual subscription' : 'Weekly subscription');
+  const planDetail = isAnnual
+    ? hasTrial
+      ? 'No charge today — cancel anytime'
+      : 'Annual subscription'
+    : 'Weekly subscription';
 
   return (
     <Pressable
