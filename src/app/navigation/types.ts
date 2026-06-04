@@ -43,6 +43,7 @@ export type RootStackParamList = {
     hrSamples?: Array<{ offsetMs: number; bpm: number }>;
   };
   DailyExercise: undefined;
+  ExitOffer: undefined;
   Settings: undefined;
   DailyResult: {
     holdSeconds: number;
@@ -84,3 +85,4 @@ export type SessionCompleteScreenProps = RootStackScreenProps<'SessionComplete'>
 export type DailyExerciseScreenProps = RootStackScreenProps<'DailyExercise'>;
 export type SettingsScreenProps = RootStackScreenProps<'Settings'>;
 export type DailyResultScreenProps = RootStackScreenProps<'DailyResult'>;
+export type ExitOfferScreenProps = RootStackScreenProps<'ExitOffer'>;

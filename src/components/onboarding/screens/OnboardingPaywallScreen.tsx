@@ -36,7 +36,8 @@ import type { PaywallPersonalization } from '../../../lib/paywallPersonalization
 
 const TERMS_URL = 'https://www.tryazora.app/terms';
 const PRIVACY_URL = 'https://www.tryazora.app/privacy';
-const STEP_COUNT = 3;
+const STEP_COUNT = 4;
+const STEP_SLIDE_DISTANCE = 40;
 
 interface OnboardingPaywallScreenProps {
   offering: PaywallOffering | null;
@@ -75,7 +76,8 @@ export default function OnboardingPaywallScreen({
 }: OnboardingPaywallScreenProps) {
   const insets = useSafeAreaInsets();
   const [step, setStep] = useState(0);
-  const stepAnim = useRef(new Animated.Value(0)).current;
+  const stepOpacity = useRef(new Animated.Value(1)).current;
+  const stepTranslateX = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(18)).current;
 
@@ -110,28 +112,42 @@ export default function OnboardingPaywallScreen({
   }, [fadeAnim, slideAnim]);
 
   const animateToStep = useCallback(
-    (next: number) => {
-      Animated.timing(stepAnim, {
-        toValue: 0,
-        duration: 180,
-        easing: Easing.in(Easing.cubic),
-        useNativeDriver: true,
-      }).start(() => {
-        setStep(next);
-        Animated.timing(stepAnim, {
-          toValue: 1,
-          duration: 260,
-          easing: Easing.out(Easing.cubic),
+    (next: number, direction: number) => {
+      Animated.parallel([
+        Animated.timing(stepOpacity, {
+          toValue: 0,
+          duration: 200,
+          easing: Easing.in(Easing.cubic),
           useNativeDriver: true,
-        }).start();
+        }),
+        Animated.timing(stepTranslateX, {
+          toValue: -direction * STEP_SLIDE_DISTANCE,
+          duration: 200,
+          easing: Easing.in(Easing.cubic),
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        setStep(next);
+        stepTranslateX.setValue(direction * STEP_SLIDE_DISTANCE);
+        Animated.parallel([
+          Animated.timing(stepOpacity, {
+            toValue: 1,
+            duration: 320,
+            easing: Easing.out(Easing.cubic),
+            useNativeDriver: true,
+          }),
+          Animated.spring(stepTranslateX, {
+            toValue: 0,
+            damping: 18,
+            stiffness: 140,
+            mass: 0.9,
+            useNativeDriver: true,
+          }),
+        ]).start();
       });
     },
-    [stepAnim],
+    [stepOpacity, stepTranslateX],
   );
-
-  useEffect(() => {
-    stepAnim.setValue(1);
-  }, [stepAnim]);
 
   const handleContinueWithoutPro = useCallback(() => {
     if (isBusy) return;
@@ -139,11 +155,11 @@ export default function OnboardingPaywallScreen({
   }, [isBusy, onContinueWithoutPro]);
 
   const handleNext = useCallback(() => {
-    if (step < STEP_COUNT - 1) animateToStep(step + 1);
+    if (step < STEP_COUNT - 1) animateToStep(step + 1, 1);
   }, [animateToStep, step]);
 
   const handleBack = useCallback(() => {
-    if (step > 0) animateToStep(step - 1);
+    if (step > 0) animateToStep(step - 1, -1);
   }, [animateToStep, step]);
 
   const ctaLabel =
@@ -153,18 +169,14 @@ export default function OnboardingPaywallScreen({
         ? 'Subscribe yearly'
         : 'Continue with weekly';
 
-  const stepContentTranslate = stepAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [14, 0],
-  });
-
   const isFinal = step === STEP_COUNT - 1;
+  const darkChrome = isFinal;
 
   return (
     <Animated.View
       style={[
         styles.screen,
-        isFinal ? styles.screenDark : styles.screenLight,
+        darkChrome ? styles.screenDark : styles.screenLight,
       ]}
     >
       <ImageBackground
@@ -172,7 +184,7 @@ export default function OnboardingPaywallScreen({
         style={StyleSheet.absoluteFill}
         resizeMode="cover"
       >
-        {isFinal ? (
+        {darkChrome ? (
           <LinearGradient
             colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.08)', 'rgba(0,0,0,0.38)']}
             locations={[0, 0.5, 1]}
@@ -204,12 +216,12 @@ export default function OnboardingPaywallScreen({
                 isBusy && styles.disabled,
               ]}
             >
-              <Text style={[styles.backText, !isFinal && styles.headerTextLight]}>‹</Text>
+              <Text style={[styles.backText, !darkChrome && styles.headerTextLight]}>‹</Text>
             </Pressable>
           ) : (
             <View style={styles.headerButton} />
           )}
-          <StepDots count={STEP_COUNT} current={step} dark={isFinal} />
+          <StepDots count={STEP_COUNT} current={step} dark={darkChrome} />
           {step === STEP_COUNT - 1 ? (
             <Pressable
               accessibilityRole="button"
@@ -223,7 +235,7 @@ export default function OnboardingPaywallScreen({
                 isBusy && styles.disabled,
               ]}
             >
-              <Text style={[styles.closeText, !isFinal && styles.headerTextLight]}>×</Text>
+              <Text style={[styles.closeText, !darkChrome && styles.headerTextLight]}>×</Text>
             </Pressable>
           ) : (
             <View style={styles.headerButton} />
@@ -246,8 +258,8 @@ export default function OnboardingPaywallScreen({
           >
             <Animated.View
               style={{
-                opacity: stepAnim,
-                transform: [{ translateY: stepContentTranslate }],
+                opacity: stepOpacity,
+                transform: [{ translateX: stepTranslateX }],
               }}
             >
               {step === 0 ? (
@@ -258,7 +270,8 @@ export default function OnboardingPaywallScreen({
                 )
               ) : null}
               {step === 1 ? <StepTrial hasAnnualTrial={hasAnnualTrial} /> : null}
-              {step === 2 ? (
+              {step === 2 ? <StepFreeTrialHero hasAnnualTrial={hasAnnualTrial} /> : null}
+              {step === 3 ? (
                 <StepChoose
                   isLoading={isLoading}
                   annualPackage={annualPackage}
@@ -272,7 +285,7 @@ export default function OnboardingPaywallScreen({
               ) : null}
             </Animated.View>
 
-            {step === 2 && errorMessage ? (
+            {step === 3 && errorMessage ? (
               <View style={styles.errorBlock}>
                 <Text style={styles.error}>{errorMessage}</Text>
                 <Pressable
@@ -292,13 +305,21 @@ export default function OnboardingPaywallScreen({
           </Animated.View>
         </ScrollView>
 
-        <View style={[styles.footer, isFinal ? styles.footerDark : styles.footerLight]}>
+        <View style={[styles.footer, darkChrome ? styles.footerDark : styles.footerLight]}>
           {step < STEP_COUNT - 1 ? (
-            <OnboardingPrimaryButton
-              label="Continue"
-              onPress={handleNext}
-              disabled={isBusy}
-            />
+            <>
+              {step === 2 ? (
+                <View style={styles.noPaymentRow}>
+                  <Icon name="check" size={18} color={colors.text.primary} />
+                  <Text style={styles.noPaymentText}>No Payment Due Now</Text>
+                </View>
+              ) : null}
+              <OnboardingPrimaryButton
+                label="Continue"
+                onPress={handleNext}
+                disabled={isBusy}
+              />
+            </>
           ) : (
             <>
               <OnboardingPrimaryButton
@@ -353,6 +374,74 @@ export default function OnboardingPaywallScreen({
   );
 }
 
+function StepFreeTrialHero(_: { hasAnnualTrial: boolean }) {
+  const swing = useRef(new Animated.Value(0)).current;
+  const badgePop = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const HALF_PERIOD = 150;
+    const pendulum = (toValue: number, duration: number) =>
+      Animated.timing(swing, {
+        toValue,
+        duration,
+        easing: Easing.inOut(Easing.sin),
+        useNativeDriver: true,
+      });
+
+    Animated.sequence([
+      Animated.delay(240),
+      Animated.spring(badgePop, {
+        toValue: 1,
+        friction: 4,
+        tension: 140,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    Animated.sequence([
+      Animated.delay(300),
+      pendulum(1, 120),
+      pendulum(-0.72, HALF_PERIOD),
+      pendulum(0.52, HALF_PERIOD),
+      pendulum(-0.37, HALF_PERIOD),
+      pendulum(0.26, HALF_PERIOD),
+      pendulum(-0.18, HALF_PERIOD),
+      pendulum(0.1, HALF_PERIOD),
+      pendulum(0, HALF_PERIOD),
+    ]).start();
+  }, [swing, badgePop]);
+
+  const rotate = swing.interpolate({
+    inputRange: [-1, 1],
+    outputRange: ['-12deg', '12deg'],
+  });
+
+  return (
+    <View style={styles.heroContainer}>
+      <View style={styles.stepHeader}>
+        <Text style={styles.stepTitle}>
+          We&apos;ll send you a reminder before your trial ends
+        </Text>
+      </View>
+
+      <View style={styles.bellWrap}>
+        <Animated.View
+          style={{
+            transform: [{ translateY: -110 }, { rotate }, { translateY: 110 }],
+          }}
+        >
+          <Icon name="bell" size={250} color={colors.primary.blue300} />
+          <Animated.View style={[styles.bellBadge, { transform: [{ scale: badgePop }] }]}>
+            <Text style={styles.bellBadgeText}>1</Text>
+          </Animated.View>
+        </Animated.View>
+      </View>
+
+      <Text style={styles.bellHint}>Please check your notifications and spam.</Text>
+    </View>
+  );
+}
+
 function StepValue() {
   const benefits: Array<{
     icon: IconName;
@@ -387,7 +476,7 @@ function StepValue() {
   return (
     <View style={styles.stepContainer}>
       <View style={styles.valueHeader}>
-        <Text style={styles.valueTitle}>Azora Pro</Text>
+        <Text style={styles.valueTitle}>Try your plan for free</Text>
         <View style={styles.valueTitleUnderline} />
         <Text style={styles.valueSubtitle}>
           Heart data, unlimited sessions, and a plan built around you.
@@ -417,7 +506,9 @@ function StepPersonalizedPlan({
   personalization: PaywallPersonalization;
 }) {
   const { displayName, baselineBpm, currentScores, targetScores } = personalization;
-  const greeting = displayName ? `${displayName}, your plan is ready!` : 'Your plan is ready!';
+  const greeting = displayName
+    ? `${displayName}, try your plan for free`
+    : 'Try your plan for free';
 
   const milestones: Array<{ day: string; title: string; body: string }> = [
     { day: 'Day 1', title: 'Start today', body: 'Your first guided session, paced to your baseline.' },
@@ -508,8 +599,8 @@ function StepTrial({ hasAnnualTrial }: { hasAnnualTrial: boolean }) {
         {
           icon: 'timer',
           label: 'Day 2',
-          title: "We'll send a reminder",
-          body: "You'll get a notification before your trial converts to a paid plan.",
+          title: "We'll remind you 1 day before it ends",
+          body: 'A notification lands the day before billing starts — no surprises.',
         },
         {
           icon: 'heart',
@@ -765,6 +856,51 @@ const styles = StyleSheet.create({
   },
   stepContainer: {
     gap: spacing.xl,
+  },
+  heroContainer: {
+    paddingTop: spacing['3xl'],
+    paddingHorizontal: spacing.sm,
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  bellWrap: {
+    marginTop: spacing.sm,
+  },
+  bellHint: {
+    ...typography.body.small,
+    color: colors.text.tertiary,
+    textAlign: 'center',
+  },
+  bellBadge: {
+    position: 'absolute',
+    top: 46,
+    right: 48,
+    minWidth: 52,
+    height: 52,
+    borderRadius: 26,
+    paddingHorizontal: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.error[500],
+  },
+  bellBadgeText: {
+    ...typography.heading.heading1,
+    fontFamily: fonts.semibold,
+    fontWeight: '500',
+    color: colors.neutral[0],
+  },
+  noPaymentRow: {
+    flexDirection: 'row',
+    alignSelf: 'center',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginBottom: spacing.xs,
+  },
+  noPaymentText: {
+    ...typography.body.medium,
+    fontFamily: fonts.semibold,
+    fontWeight: '500',
+    color: colors.text.primary,
   },
   headerCopy: {
     alignItems: 'flex-start',

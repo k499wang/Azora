@@ -315,6 +315,18 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
           </View>
         </View>
 
+        {__DEV__ ? (
+          <View style={styles.section}>
+            <SettingsGroup>
+              <SettingsRow
+                label="Preview exit offer (dev)"
+                onPress={() => navigation.navigate('ExitOffer')}
+                isLast
+              />
+            </SettingsGroup>
+          </View>
+        ) : null}
+
         <View style={styles.section}>
           <SettingsGroup>
             <SettingsRow label="Sign out" onPress={handleSignOut} centered isLast />
