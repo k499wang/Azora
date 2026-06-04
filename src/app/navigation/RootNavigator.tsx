@@ -10,6 +10,7 @@ import SessionCompleteScreen from '../../screens/SessionCompleteScreen';
 import { HeartRateScreen } from '../../screens/HeartRateScreen';
 import { HeartRateSessionDetailScreen } from '../../screens/HeartRateSessionDetailScreen';
 import { ProPaywallScreen } from '../../screens/ProPaywallScreen';
+import { ExitOfferScreen } from '../../screens/ExitOfferScreen';
 import SettingsScreen from '../../screens/SettingsScreen';
 import ShareableResultScreen from '../../screens/ShareableResultScreen';
 import { useAppGate } from '../../hooks/useAppGate';
@@ -17,6 +18,7 @@ import { useUserEntitlementQuery } from '../../queries/subscriptions/useUserEnti
 import { OnboardingFlow } from '../../components/onboarding';
 import { PaywallPlacement } from '../../services/paywall';
 import { useAuthStore } from '../../stores/authStore';
+import { useExitOfferStore } from '../../stores/exitOfferStore';
 import { colors } from '../../theme/colors';
 import { MainTabs } from './MainTabs';
 import type { RootStackNavigationProp, RootStackParamList } from './types';
@@ -31,12 +33,7 @@ function AppStack({ showBootPaywall }: AppStackProps) {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="MainTabs">
-        {() => (
-          <>
-            {showBootPaywall ? <BootPaywallPresenter /> : null}
-            <MainTabs />
-          </>
-        )}
+        {() => <MainTabsRoute showBootPaywall={showBootPaywall} />}
       </Stack.Screen>
       <Stack.Screen
         name="HeartRate"
@@ -51,6 +48,14 @@ function AppStack({ showBootPaywall }: AppStackProps) {
         component={ProPaywallScreen}
         options={{
           presentation: 'transparentModal',
+          animation: 'slide_from_bottom',
+        }}
+      />
+      <Stack.Screen
+        name="ExitOffer"
+        component={ExitOfferScreen}
+        options={{
+          presentation: 'modal',
           animation: 'slide_from_bottom',
         }}
       />
@@ -105,6 +110,43 @@ function AppStack({ showBootPaywall }: AppStackProps) {
       />
     </Stack.Navigator>
   );
+}
+
+function MainTabsRoute({ showBootPaywall }: AppStackProps) {
+  // Capture once at mount: a pending exit offer takes precedence over the boot
+  // paywall so the just-onboarded user never sees both.
+  const exitOfferPending = useRef(useExitOfferStore.getState().pending).current;
+
+  return (
+    <>
+      {exitOfferPending ? (
+        <ExitOfferPresenter />
+      ) : showBootPaywall ? (
+        <BootPaywallPresenter />
+      ) : null}
+      <MainTabs />
+    </>
+  );
+}
+
+function ExitOfferPresenter() {
+  const navigation = useNavigation<RootStackNavigationProp<'MainTabs'>>();
+  const setPending = useExitOfferStore((state) => state.setPending);
+  const hasPresentedRef = useRef(false);
+
+  useEffect(() => {
+    if (hasPresentedRef.current) return;
+    hasPresentedRef.current = true;
+
+    // Let Home paint first, then slide the offer up over it.
+    const id = setTimeout(() => {
+      setPending(false);
+      navigation.navigate('ExitOffer');
+    }, 450);
+    return () => clearTimeout(id);
+  }, [navigation, setPending]);
+
+  return null;
 }
 
 function BootPaywallPresenter() {

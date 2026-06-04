@@ -32,6 +32,8 @@ import type { GenderOption } from './data/genderOptions';
 import type { OnboardingStep } from './types';
 import { usePaywall } from '../../hooks/usePaywall';
 import { PaywallPlacement } from '../../services/paywall';
+import { useUserEntitlementQuery } from '../../queries/subscriptions/useUserEntitlementQuery';
+import { useExitOfferStore } from '../../stores/exitOfferStore';
 import { buildPaywallPersonalization } from '../../lib/paywallPersonalization';
 import { computeMindMap } from '../../lib/onboardingScores';
 import { useAuthStore } from '../../stores/authStore';
@@ -118,6 +120,7 @@ export default function OnboardingFlow({
   onComplete,
 }: OnboardingFlowProps) {
   const userId = useAuthStore((state) => state.user?.id ?? null);
+  const isPro = useUserEntitlementQuery(userId).data?.isPro === true;
   const [step, setStep] = useState<OnboardingStep>(
     initialSavedProfile == null ? 'intent' : 'paywall',
   );
@@ -170,6 +173,7 @@ export default function OnboardingFlow({
   );
   const hasTrackedStartRef = useRef(false);
   const previousViewedStepRef = useRef<OnboardingStep | null>(null);
+  const setExitOfferPending = useExitOfferStore((state) => state.setPending);
   const paywall = usePaywall({
     placement: PaywallPlacement.OnboardingComplete,
     sourceScreen: 'onboarding',
@@ -441,6 +445,13 @@ export default function OnboardingFlow({
     if (isSubmitting) return;
 
     paywall.trackDismissed();
+
+    // Queue the discounted exit offer to slide up over Home once onboarding
+    // finishes. Never offered to an existing subscriber.
+    if (!isPro) {
+      setExitOfferPending(true);
+    }
+
     await finish('continue_without_pro');
   };
 
