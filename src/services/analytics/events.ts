@@ -49,6 +49,9 @@ export const AnalyticsEvent = {
   PaywallRestoreCompleted: 'paywall_restore_completed',
   PaywallDismissed: 'paywall_dismissed',
   PaywallFailed: 'paywall_failed',
+  PaywallSpinViewed: 'paywall_spin_viewed',
+  PaywallSpinStarted: 'paywall_spin_started',
+  PaywallSpinCompleted: 'paywall_spin_completed',
   ProfileAction: 'profile_action',
 
   NotificationScheduled: 'notification_scheduled',

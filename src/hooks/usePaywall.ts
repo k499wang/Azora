@@ -358,6 +358,16 @@ export function usePaywall({
     );
   };
 
+  const trackEvent = (
+    event: string,
+    extra?: Record<string, string | number | boolean | null>,
+  ) => {
+    posthog.capture(event, {
+      ...buildCurrentPaywallEventProperties(),
+      ...extra,
+    });
+  };
+
   const retryRevenueCatSync = async () => {
     logRevenueCatDebugSnapshot('paywall_revenuecat_retry_started');
     setIsLoading(true);
@@ -376,6 +386,7 @@ export function usePaywall({
     purchaseSelectedPackage,
     restorePurchases,
     trackDismissed,
+    trackEvent,
     retryRevenueCatSync,
   };
 }

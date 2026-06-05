@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  ImageBackground,
   Linking,
   Pressable,
   ScrollView,
@@ -10,6 +11,12 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
+import Animated, {
+  FadeIn,
+  FadeInUp,
+  FadeOut,
+} from 'react-native-reanimated';
 import { usePaywall } from '../hooks/usePaywall';
 import {
   PaywallPlacement,
@@ -17,6 +24,15 @@ import {
   type PaywallPackageOption,
 } from '../services/paywall';
 import PaywallTrialReminderToggle from '../components/paywall/PaywallTrialReminderToggle';
+import {
+  DiscountWheel,
+  type DiscountWheelHandle,
+} from '../components/paywall/DiscountWheel';
+import {
+  buildDiscountSegments,
+  type WheelSegment,
+} from '../lib/paywall/discountWheel';
+import { AnalyticsEvent } from '../services/analytics/events';
 import { computePerWeek, computeAnnualSavings } from '../components/paywall/PlanCard';
 import Icon from '../components/common/icons/Icon';
 import type { ExitOfferScreenProps } from '../app/navigation';
@@ -28,6 +44,7 @@ import { card } from '../theme/card';
 const TERMS_URL = 'https://www.tryazora.app/terms';
 const PRIVACY_URL = 'https://www.tryazora.app/privacy';
 const OFFER_DURATION_SECONDS = 5 * 60;
+const REVEAL_DELAY_MS = 900;
 
 const TESTIMONIALS = [
   {
@@ -55,13 +72,25 @@ export function ExitOfferScreen({ navigation }: ExitOfferScreenProps) {
     sourceScreen: 'exit_offer_anchor',
   });
 
+  const wheelRef = useRef<DiscountWheelHandle>(null);
+  const allowDismissRef = useRef(false);
+  const [phase, setPhase] = useState<'wheel' | 'revealed'>('wheel');
+  const revealTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (revealTimer.current) clearTimeout(revealTimer.current);
+    },
+    [],
+  );
+
   const [secondsLeft, setSecondsLeft] = useState(OFFER_DURATION_SECONDS);
   useEffect(() => {
+    if (phase !== 'revealed') return;
     const id = setInterval(() => {
       setSecondsLeft((value) => (value <= 1 ? 0 : value - 1));
     }, 1000);
     return () => clearInterval(id);
-  }, []);
+  }, [phase]);
 
   const annual = useMemo(
     () => paywall.offering?.packages.find((pkg) => pkg.id === 'annual') ?? null,
@@ -76,6 +105,61 @@ export function ExitOfferScreen({ navigation }: ExitOfferScreenProps) {
     () => computeDiscountPercent(anchorAnnual, annual),
     [anchorAnnual, annual],
   );
+  const wheel = useMemo(
+    () => (discountPercent != null ? buildDiscountSegments(discountPercent) : null),
+    [discountPercent],
+  );
+  const isWaitingForWheelData =
+    phase === 'wheel' &&
+    wheel == null &&
+    (paywall.isLoading || (annual != null && anchorPaywall.isLoading));
+
+  // Nothing to spin for if the discount can't be derived — skip straight to the
+  // offer rather than showing a wheel with no real prize.
+  useEffect(() => {
+    if (
+      !paywall.isLoading &&
+      (annual == null || !anchorPaywall.isLoading) &&
+      wheel == null &&
+      phase === 'wheel'
+    ) {
+      setPhase('revealed');
+    }
+  }, [anchorPaywall.isLoading, annual, paywall.isLoading, wheel, phase]);
+
+  const spinViewedTracked = useRef(false);
+  useEffect(() => {
+    if (
+      phase === 'wheel' &&
+      wheel &&
+      !paywall.isLoading &&
+      !spinViewedTracked.current
+    ) {
+      spinViewedTracked.current = true;
+      paywall.trackEvent(AnalyticsEvent.PaywallSpinViewed, {
+        discount_percent: discountPercent,
+      });
+    }
+  }, [phase, wheel, paywall, discountPercent]);
+
+  const handleSpinStart = useCallback(() => {
+    paywall.trackEvent(AnalyticsEvent.PaywallSpinStarted, {
+      discount_percent: discountPercent,
+    });
+  }, [paywall, discountPercent]);
+
+  const reveal = useCallback(
+    (winner: WheelSegment) => {
+      paywall.trackEvent(AnalyticsEvent.PaywallSpinCompleted, {
+        discount_percent: discountPercent,
+        spin_outcome_id: winner.id,
+      });
+      // Hold on the landed prize for a beat so the win registers, then
+      // cross-fade into the offer.
+      revealTimer.current = setTimeout(() => setPhase('revealed'), REVEAL_DELAY_MS);
+    },
+    [paywall, discountPercent],
+  );
   const weekly = useMemo(
     () => paywall.offering?.packages.find((pkg) => pkg.id === 'weekly') ?? null,
     [paywall.offering],
@@ -88,18 +172,48 @@ export function ExitOfferScreen({ navigation }: ExitOfferScreenProps) {
   const anchorPriceString = anchorAnnual?.priceString ?? null;
 
   const hasTrial = annual?.trialLabel != null;
-  const isBusy = paywall.isLoading || paywall.isPurchasing || paywall.isRestoring;
-  const canBuy = annual != null;
+  const selectedPackage = useMemo(
+    () =>
+      paywall.offering?.packages.find(
+        (pkg) => pkg.id === paywall.selectedPackageId,
+      ) ?? null,
+    [paywall.offering, paywall.selectedPackageId],
+  );
+  const showInitialLoading =
+    (paywall.isLoading && paywall.offering == null) || isWaitingForWheelData;
+  const isBusy =
+    showInitialLoading ||
+    paywall.isLoading ||
+    paywall.isPurchasing ||
+    paywall.isRestoring;
+  const canBuy = selectedPackage != null;
 
-  const close = useCallback(() => {
-    if (paywall.isPurchasing || paywall.isRestoring) return;
-    paywall.trackDismissed();
-    navigation.goBack();
-  }, [navigation, paywall]);
+  useEffect(() => {
+    navigation.setOptions({ gestureEnabled: !isBusy });
+    return () => {
+      navigation.setOptions({ gestureEnabled: true });
+    };
+  }, [isBusy, navigation]);
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('beforeRemove', (event) => {
+      if (allowDismissRef.current) return;
+
+      if (isBusy) {
+        event.preventDefault();
+        return;
+      }
+
+      paywall.trackDismissed();
+    });
+
+    return unsubscribe;
+  }, [isBusy, navigation, paywall]);
 
   const purchase = useCallback(async () => {
     const result = await paywall.purchaseSelectedPackage();
     if (result.status === 'purchased' && result.isPro) {
+      allowDismissRef.current = true;
       navigation.goBack();
     }
   }, [navigation, paywall]);
@@ -107,6 +221,7 @@ export function ExitOfferScreen({ navigation }: ExitOfferScreenProps) {
   const restore = useCallback(async () => {
     const result = await paywall.restorePurchases();
     if (result.status === 'restored' && result.isPro) {
+      allowDismissRef.current = true;
       navigation.goBack();
     }
   }, [navigation, paywall]);
@@ -120,25 +235,28 @@ export function ExitOfferScreen({ navigation }: ExitOfferScreenProps) {
   return (
     <View style={styles.screen}>
       <View style={styles.heroWrap}>
-        <View
+        <ImageBackground
+          source={require('../../assets/backgrounds/sunset.jpg')}
+          resizeMode="cover"
           style={[
             styles.heroShape,
             { borderBottomLeftRadius: width * 0.9, borderBottomRightRadius: width * 0.9 },
           ]}
-        />
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Close offer"
-          hitSlop={12}
-          onPress={close}
-          style={({ pressed }) => [
-            styles.closeButton,
-            { top: insets.top + spacing.xs },
-            pressed && styles.pressed,
-          ]}
+          imageStyle={{
+            borderBottomLeftRadius: width * 0.9,
+            borderBottomRightRadius: width * 0.9,
+          }}
         >
-          <Text style={styles.closeIcon}>✕</Text>
-        </Pressable>
+          <LinearGradient
+            colors={[
+              'rgba(13,51,128,0.30)',
+              'rgba(13,51,128,0.55)',
+              'rgba(13,51,128,0.80)',
+            ]}
+            style={StyleSheet.absoluteFill}
+            pointerEvents="none"
+          />
+        </ImageBackground>
         <Text style={styles.title}>Your one-time{'\n'}offer</Text>
         <Text style={styles.heroSubtitle}>
           A special price, today only — you won&apos;t see this again.
@@ -152,11 +270,34 @@ export function ExitOfferScreen({ navigation }: ExitOfferScreenProps) {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        {paywall.isLoading ? (
+        {showInitialLoading ? (
           <ActivityIndicator color={colors.text.primary} style={styles.loading} />
+        ) : phase === 'wheel' && wheel ? (
+          <Animated.View style={styles.wheelPhase} exiting={FadeOut.duration(280)}>
+            <Text style={styles.wheelHeading}>
+              Spin to unlock{'\n'}your discount
+            </Text>
+            <DiscountWheel
+              ref={wheelRef}
+              segments={wheel.segments}
+              winningSegmentId={wheel.winningId}
+              onSpinStart={handleSpinStart}
+              onSpinComplete={reveal}
+            />
+            <PrimaryButton
+              label="Spin the wheel"
+              onPress={() => wheelRef.current?.spin()}
+            />
+          </Animated.View>
         ) : (
-          <>
-            <View style={styles.offerBlock}>
+          <Animated.View
+            style={styles.revealedWrap}
+            entering={FadeInUp.duration(460)}
+          >
+            <Animated.View
+              style={styles.offerBlock}
+              entering={FadeIn.delay(160).duration(420)}
+            >
               <View style={styles.timerPill}>
                 <Icon name="timer" size={16} color={colors.primary.blue700} />
                 <Text style={styles.timerLabel}>OFFER EXPIRES IN</Text>
@@ -178,7 +319,7 @@ export function ExitOfferScreen({ navigation }: ExitOfferScreenProps) {
                   <Text style={styles.priceNow}>{monthly}/mo</Text>
                 ) : null}
               </View>
-            </View>
+            </Animated.View>
 
             <View style={styles.proofRow}>
               <View style={styles.proofItem}>
@@ -250,7 +391,7 @@ export function ExitOfferScreen({ navigation }: ExitOfferScreenProps) {
                 </Pressable>
               </View>
             </View>
-          </>
+          </Animated.View>
         )}
       </ScrollView>
     </View>
@@ -420,26 +561,8 @@ const styles = StyleSheet.create({
   },
   heroShape: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: colors.primary.blue600,
+    overflow: 'hidden',
     transform: [{ scaleX: 1.6 }],
-  },
-  closeButton: {
-    position: 'absolute',
-    left: spacing.lg,
-    zIndex: 2,
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.primary.blue700,
-  },
-  closeIcon: {
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    fontSize: 17,
-    lineHeight: 19,
-    color: colors.neutral[0],
   },
   scroll: {
     flexGrow: 1,
@@ -449,6 +572,25 @@ const styles = StyleSheet.create({
   },
   loading: {
     paddingVertical: spacing['2xl'],
+  },
+  wheelPhase: {
+    alignSelf: 'stretch',
+    alignItems: 'center',
+    gap: spacing.xl,
+    paddingTop: spacing.xl,
+  },
+  wheelHeading: {
+    ...typography.title.title3,
+    fontFamily: fonts.semibold,
+    fontWeight: '500',
+    color: colors.text.primary,
+    textAlign: 'center',
+  },
+  revealedWrap: {
+    alignSelf: 'stretch',
+    width: '100%',
+    gap: spacing.xl,
+    paddingTop: spacing.xl,
   },
   title: {
     fontFamily: fonts.semibold,
@@ -470,7 +612,6 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
     alignItems: 'center',
     gap: spacing.md,
-    marginTop: spacing.xl,
   },
   badge: {
     backgroundColor: colors.primary.blue600,
@@ -571,14 +712,15 @@ const styles = StyleSheet.create({
   },
   testimonials: {
     alignSelf: 'stretch',
-    gap: spacing.lg,
+    gap: spacing.xl,
+    marginVertical: spacing.md,
   },
   testimonial: {
     alignItems: 'center',
     gap: spacing.xs,
   },
   testimonialQuote: {
-    ...typography.body.small,
+    ...typography.body.medium,
     color: colors.text.secondary,
     textAlign: 'center',
   },
@@ -594,7 +736,6 @@ const styles = StyleSheet.create({
   },
   footer: {
     alignSelf: 'stretch',
-    paddingTop: spacing.md,
     gap: spacing.md,
   },
   planCardWrap: {

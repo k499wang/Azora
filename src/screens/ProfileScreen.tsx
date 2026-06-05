@@ -197,6 +197,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
             leftSlot={<BrandLockup />}
             rightSlot={
               <GlassIconButton
+                tone="muted"
                 onPress={() => {
                   trackProfileAction('settings_opened');
                   navigation.navigate('Settings');

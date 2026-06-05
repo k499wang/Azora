@@ -57,6 +57,8 @@ function AppStack({ showBootPaywall }: AppStackProps) {
         options={{
           presentation: 'modal',
           animation: 'slide_from_bottom',
+          gestureEnabled: true,
+          gestureDirection: 'vertical',
         }}
       />
       <Stack.Screen
