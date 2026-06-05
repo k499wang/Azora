@@ -379,7 +379,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
               />
             )}
             rightSlot={(
-              <GlassIconButton onPress={() => navigation.navigate('Settings')}>
+              <GlassIconButton tone="muted" onPress={() => navigation.navigate('Settings')}>
                 <MaterialCommunityIcons name="cog" size={20} color={colors.text.primary} />
               </GlassIconButton>
             )}
