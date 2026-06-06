@@ -1,7 +1,9 @@
-import { ImageBackground, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { usePostHog } from 'posthog-react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useVideoPlayer, VideoView } from 'expo-video';
+import { LinearGradient } from 'expo-linear-gradient';
 import GlassSurface from '../common/GlassSurface';
 import { colors } from '../../theme/colors';
 import { fonts, typography } from '../../theme/typography';
@@ -9,7 +11,8 @@ import { spacing } from '../../theme/spacing';
 import { AnalyticsEvent } from '../../services/analytics/events';
 import type { MainTabNavigationProp } from '../../app/navigation';
 
-const BREATHHOLD_CHALLENGE_BACKGROUND = require('../../../assets/back.avif');
+const BREATHHOLD_CHALLENGE_BACKGROUND = require('../../../assets/daily-plan-background.mp4');
+const BREATHHOLD_CHALLENGE_POSTER = require('../../../assets/daily-plan-poster.jpg');
 
 interface DailyPlanCardProps {
   todayHoldSeconds: number | null;
@@ -35,6 +38,12 @@ export default function DailyPlanCard({
   const navigation = useNavigation<MainTabNavigationProp<'Home'>>();
   const posthog = usePostHog();
 
+  const player = useVideoPlayer(BREATHHOLD_CHALLENGE_BACKGROUND, (p) => {
+    p.loop = true;
+    p.muted = true;
+    p.play();
+  });
+
   const handlePress = () => {
     posthog.capture(AnalyticsEvent.DailyPlanStarted, { streak_days: streakDays });
     if (onPress) return onPress();
@@ -57,47 +66,64 @@ export default function DailyPlanCard({
 
   return (
     <View style={styles.container}>
-      <ImageBackground
-        source={BREATHHOLD_CHALLENGE_BACKGROUND}
-        style={styles.card}
-        imageStyle={styles.cardImage}
-        resizeMode="cover"
-      >
-        <View style={styles.imageOverlay} />
+      <View style={styles.card}>
+        <Image
+          source={BREATHHOLD_CHALLENGE_POSTER}
+          style={StyleSheet.absoluteFill}
+          resizeMode="cover"
+        />
+        <VideoView
+          style={StyleSheet.absoluteFill}
+          player={player}
+          contentFit="cover"
+          nativeControls={false}
+          pointerEvents="none"
+        />
+        <LinearGradient
+          colors={['transparent', 'rgba(12, 16, 33, 0.0)', 'rgba(12, 16, 33, 0.82)']}
+          locations={[0, 0.35, 1]}
+          style={StyleSheet.absoluteFill}
+          pointerEvents="none"
+        />
         <View style={styles.bestBadge} pointerEvents="none">
-          <Text style={styles.bestBadgeText}>{bestLabel}</Text>
+          <GlassSurface
+            bare
+            variant="clear"
+            style={styles.bestBadgeGlass}
+            tintColor={colors.glass.tintOnImage}
+            blurColor={colors.glass.fillOnImage}
+            solidColor={colors.glass.fillOnImage}
+          >
+            <Text style={styles.bestBadgeText}>{bestLabel}</Text>
+          </GlassSurface>
         </View>
         <View style={styles.cardContent}>
-          <View style={styles.leftCol}>
-            <View style={styles.metricBlock}>
-              <Text style={styles.startTitle}>Breathhold</Text>
-              <Text style={styles.startTitle}>Exercise</Text>
-              <Text style={styles.caption}>{subtitle}</Text>
-            </View>
+          <View style={styles.metricBlock}>
+            <Text style={styles.startTitle}>Breathhold</Text>
+            <Text style={styles.startTitle}>Exercise</Text>
           </View>
 
-          <View style={styles.rightCol}>
-            <Pressable
-              onPress={handlePress}
-              style={({ pressed }) => [styles.playBtnShadow, pressed && styles.pressed]}
-              accessibilityRole="button"
-              accessibilityLabel={doneToday ? 'Try another breath hold' : 'Start your daily breath hold'}
+          <Pressable
+            onPress={handlePress}
+            style={({ pressed }) => [styles.playBtnShadow, pressed && styles.pressed]}
+            accessibilityRole="button"
+            accessibilityLabel={doneToday ? 'Try another breath hold' : 'Start your daily breath hold'}
+          >
+            <GlassSurface
+              bare
+              interactive
+              variant="clear"
+              style={styles.playBtn}
+              tintColor={colors.glass.tintOnImage}
+              blurColor={colors.glass.fillOnImage}
+              solidColor={colors.glass.fillOnImage}
             >
-              <GlassSurface
-                bare
-                interactive
-                variant="clear"
-                style={styles.playBtn}
-                tintColor={colors.glass.tintOnImage}
-                blurColor={colors.glass.fillOnImage}
-                solidColor={colors.glass.fillOnImage}
-              >
-                <MaterialCommunityIcons name="play" size={30} color={colors.primary.blue600} />
-              </GlassSurface>
-            </Pressable>
-          </View>
+              <MaterialCommunityIcons name="play" size={30} color={colors.primary.blue600} />
+            </GlassSurface>
+          </Pressable>
         </View>
-      </ImageBackground>
+        <Text style={styles.caption} pointerEvents="none">{subtitle}</Text>
+      </View>
     </View>
   );
 }
@@ -124,44 +150,25 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: colors.primary.blue600,
   },
-  cardImage: {
-    borderRadius: 24,
-  },
-  imageOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(20, 26, 46, 0.22)',
-  },
   cardContent: {
     flex: 1,
     flexDirection: 'row',
-    alignItems: 'stretch',
-  },
-  leftCol: {
-    flex: 1,
-    justifyContent: 'center',
-    gap: spacing.xs,
-  },
-  rightCol: {
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
   },
   metricBlock: {
-    gap: 2,
-    marginTop: spacing.md,
-  },
-  metric: {
-    ...typography.display.display2,
-    fontFamily: fonts.semibold,
-    color: colors.text.inverse,
-    lineHeight: 44,
-    includeFontPadding: false,
+    flex: 1,
   },
   startTitle: {
     ...typography.title.title2,
     fontFamily: fonts.semibold,
     color: colors.text.inverse,
+    lineHeight: 26,
   },
   caption: {
+    position: 'absolute',
+    left: spacing.lg,
+    bottom: spacing.lg,
     ...typography.label.medium,
     fontFamily: fonts.semibold,
     color: 'rgba(255,255,255,0.78)',
@@ -170,18 +177,22 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: spacing.md,
     left: spacing.lg,
-    backgroundColor: colors.orange[500],
+    borderRadius: 999,
+  },
+  bestBadgeGlass: {
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
     borderRadius: 999,
+    overflow: 'hidden',
   },
   bestBadgeText: {
     ...typography.label.small,
     fontFamily: fonts.semibold,
-    color: colors.text.inverse,
+    color: colors.primary.blue800,
     letterSpacing: 0.4,
   },
   playBtnShadow: {
+    alignSelf: 'center',
     borderRadius: 999,
     shadowColor: colors.primary.blue700,
     shadowOffset: { width: 0, height: 6 },
