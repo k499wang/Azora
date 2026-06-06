@@ -40,6 +40,7 @@ export const INTENT_TO_TECHNIQUE: Record<string, string> = {
   sleep: '478',
   heart_health: 'resonance',
   daily_habit: 'box',
+  yoga: 'resonance',
   other: 'box',
 };
 

@@ -143,6 +143,34 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
     ],
   },
   {
+    id: 'yoga',
+    icon: 'breath-leaf',
+    accent: colors.primary.blue600,
+    title: 'Support my yoga',
+    body: 'Carry your breath off the mat — pranayama to steady every practice.',
+    hook: 'The breath half of your practice.',
+    reflectionHeadline: 'Bring your breath to the mat.',
+    reflectionBody:
+      'Pranayama is the breath side of yoga — the same slow, intentional breathing that steadies poses and deepens stillness.',
+    valuePoints: [
+      {
+        icon: 'breath-leaf',
+        accent: colors.primary.blue600,
+        label: 'Pranayama is the breath half of yoga, taught for millennia',
+      },
+      {
+        icon: 'waves',
+        accent: colors.success[500],
+        label: 'Slow breath steadies your transitions between poses',
+      },
+      {
+        icon: 'meditation',
+        accent: colors.orange[500],
+        label: 'A few minutes of breathwork deepens post-practice stillness',
+      },
+    ],
+  },
+  {
     id: 'heart_health',
     icon: 'heart-bpm',
     accent: colors.error[500],
