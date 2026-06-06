@@ -12,11 +12,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, {
-  FadeIn,
-  FadeInUp,
-  FadeOut,
-} from 'react-native-reanimated';
+import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
 import { usePaywall } from '../hooks/usePaywall';
 import {
   PaywallPlacement,
@@ -24,15 +20,6 @@ import {
   type PaywallPackageOption,
 } from '../services/paywall';
 import PaywallTrialReminderToggle from '../components/paywall/PaywallTrialReminderToggle';
-import {
-  DiscountWheel,
-  type DiscountWheelHandle,
-} from '../components/paywall/DiscountWheel';
-import {
-  buildDiscountSegments,
-  type WheelSegment,
-} from '../lib/paywall/discountWheel';
-import { AnalyticsEvent } from '../services/analytics/events';
 import { computePerWeek, computeAnnualSavings } from '../components/paywall/PlanCard';
 import Icon from '../components/common/icons/Icon';
 import type { ExitOfferScreenProps } from '../app/navigation';
@@ -44,7 +31,6 @@ import { card } from '../theme/card';
 const TERMS_URL = 'https://www.tryazora.app/terms';
 const PRIVACY_URL = 'https://www.tryazora.app/privacy';
 const OFFER_DURATION_SECONDS = 5 * 60;
-const REVEAL_DELAY_MS = 900;
 
 const TESTIMONIALS = [
   {
@@ -72,25 +58,15 @@ export function ExitOfferScreen({ navigation }: ExitOfferScreenProps) {
     sourceScreen: 'exit_offer_anchor',
   });
 
-  const wheelRef = useRef<DiscountWheelHandle>(null);
   const allowDismissRef = useRef(false);
-  const [phase, setPhase] = useState<'wheel' | 'revealed'>('wheel');
-  const revealTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(
-    () => () => {
-      if (revealTimer.current) clearTimeout(revealTimer.current);
-    },
-    [],
-  );
 
   const [secondsLeft, setSecondsLeft] = useState(OFFER_DURATION_SECONDS);
   useEffect(() => {
-    if (phase !== 'revealed') return;
     const id = setInterval(() => {
       setSecondsLeft((value) => (value <= 1 ? 0 : value - 1));
     }, 1000);
     return () => clearInterval(id);
-  }, [phase]);
+  }, []);
 
   const annual = useMemo(
     () => paywall.offering?.packages.find((pkg) => pkg.id === 'annual') ?? null,
@@ -104,61 +80,6 @@ export function ExitOfferScreen({ navigation }: ExitOfferScreenProps) {
   const discountPercent = useMemo(
     () => computeDiscountPercent(anchorAnnual, annual),
     [anchorAnnual, annual],
-  );
-  const wheel = useMemo(
-    () => (discountPercent != null ? buildDiscountSegments(discountPercent) : null),
-    [discountPercent],
-  );
-  const isWaitingForWheelData =
-    phase === 'wheel' &&
-    wheel == null &&
-    (paywall.isLoading || (annual != null && anchorPaywall.isLoading));
-
-  // Nothing to spin for if the discount can't be derived — skip straight to the
-  // offer rather than showing a wheel with no real prize.
-  useEffect(() => {
-    if (
-      !paywall.isLoading &&
-      (annual == null || !anchorPaywall.isLoading) &&
-      wheel == null &&
-      phase === 'wheel'
-    ) {
-      setPhase('revealed');
-    }
-  }, [anchorPaywall.isLoading, annual, paywall.isLoading, wheel, phase]);
-
-  const spinViewedTracked = useRef(false);
-  useEffect(() => {
-    if (
-      phase === 'wheel' &&
-      wheel &&
-      !paywall.isLoading &&
-      !spinViewedTracked.current
-    ) {
-      spinViewedTracked.current = true;
-      paywall.trackEvent(AnalyticsEvent.PaywallSpinViewed, {
-        discount_percent: discountPercent,
-      });
-    }
-  }, [phase, wheel, paywall, discountPercent]);
-
-  const handleSpinStart = useCallback(() => {
-    paywall.trackEvent(AnalyticsEvent.PaywallSpinStarted, {
-      discount_percent: discountPercent,
-    });
-  }, [paywall, discountPercent]);
-
-  const reveal = useCallback(
-    (winner: WheelSegment) => {
-      paywall.trackEvent(AnalyticsEvent.PaywallSpinCompleted, {
-        discount_percent: discountPercent,
-        spin_outcome_id: winner.id,
-      });
-      // Hold on the landed prize for a beat so the win registers, then
-      // cross-fade into the offer.
-      revealTimer.current = setTimeout(() => setPhase('revealed'), REVEAL_DELAY_MS);
-    },
-    [paywall, discountPercent],
   );
   const weekly = useMemo(
     () => paywall.offering?.packages.find((pkg) => pkg.id === 'weekly') ?? null,
@@ -179,8 +100,10 @@ export function ExitOfferScreen({ navigation }: ExitOfferScreenProps) {
       ) ?? null,
     [paywall.offering, paywall.selectedPackageId],
   );
+  const isWaitingForAnchorPricing =
+    annual != null && anchorAnnual == null && anchorPaywall.isLoading;
   const showInitialLoading =
-    (paywall.isLoading && paywall.offering == null) || isWaitingForWheelData;
+    (paywall.isLoading && paywall.offering == null) || isWaitingForAnchorPricing;
   const isBusy =
     showInitialLoading ||
     paywall.isLoading ||
@@ -226,10 +149,20 @@ export function ExitOfferScreen({ navigation }: ExitOfferScreenProps) {
     }
   }, [navigation, paywall]);
 
-  const ctaLabel = hasTrial
+  const selectedPriceLabel = useMemo(() => {
+    if (!selectedPackage) return null;
+    if (selectedPackage.id === 'annual') {
+      const perMonth = computeMonthly(selectedPackage);
+      return perMonth ? `${perMonth}/mo` : null;
+    }
+    const perWeek = computePerWeek(selectedPackage);
+    return perWeek ? `${perWeek}/week` : null;
+  }, [selectedPackage]);
+
+  const ctaLabel = selectedPackage?.trialLabel != null
     ? 'Start My Free Trial →'
-    : monthly
-      ? `Continue — ${monthly}/mo`
+    : selectedPriceLabel
+      ? `Continue — ${selectedPriceLabel}`
       : 'Claim Offer';
 
   return (
@@ -249,9 +182,9 @@ export function ExitOfferScreen({ navigation }: ExitOfferScreenProps) {
         >
           <LinearGradient
             colors={[
-              'rgba(13,51,128,0.30)',
-              'rgba(13,51,128,0.55)',
-              'rgba(13,51,128,0.80)',
+              'rgba(30,99,214,0.18)',
+              'rgba(21,74,171,0.46)',
+              'rgba(13,51,128,0.78)',
             ]}
             style={StyleSheet.absoluteFill}
             pointerEvents="none"
@@ -259,7 +192,7 @@ export function ExitOfferScreen({ navigation }: ExitOfferScreenProps) {
         </ImageBackground>
         <Text style={styles.title}>Your one-time{'\n'}offer</Text>
         <Text style={styles.heroSubtitle}>
-          A special price, today only — you won&apos;t see this again.
+          A special price, reserved for you today.
         </Text>
       </View>
 
@@ -272,64 +205,56 @@ export function ExitOfferScreen({ navigation }: ExitOfferScreenProps) {
       >
         {showInitialLoading ? (
           <ActivityIndicator color={colors.text.primary} style={styles.loading} />
-        ) : phase === 'wheel' && wheel ? (
-          <Animated.View style={styles.wheelPhase} exiting={FadeOut.duration(280)}>
-            <Text style={styles.wheelHeading}>
-              Spin to unlock{'\n'}your discount
-            </Text>
-            <DiscountWheel
-              ref={wheelRef}
-              segments={wheel.segments}
-              winningSegmentId={wheel.winningId}
-              onSpinStart={handleSpinStart}
-              onSpinComplete={reveal}
-            />
-            <PrimaryButton
-              label="Spin the wheel"
-              onPress={() => wheelRef.current?.spin()}
-            />
-          </Animated.View>
         ) : (
           <Animated.View
             style={styles.revealedWrap}
-            entering={FadeInUp.duration(460)}
+            entering={FadeInUp.duration(660)}
           >
             <Animated.View
               style={styles.offerBlock}
-              entering={FadeIn.delay(160).duration(420)}
+              entering={FadeIn.delay(240).duration(620)}
             >
-              <View style={styles.timerPill}>
-                <Icon name="timer" size={16} color={colors.primary.blue700} />
-                <Text style={styles.timerLabel}>OFFER EXPIRES IN</Text>
+              <View style={styles.timerRow}>
+                <Icon name="timer" size={14} color={colors.text.tertiary} />
+                <Text style={styles.timerLabel}>Offer ends in</Text>
                 <Text style={styles.timerValue}>{formatClock(secondsLeft)}</Text>
               </View>
 
-              <View style={styles.badge}>
-                <Text style={styles.badgePercent}>
-                  {discountPercent != null ? `${discountPercent}% OFF` : 'OFFER'}
-                </Text>
-                <Text style={styles.badgeForever}>FOREVER</Text>
-              </View>
-
-              <View style={styles.priceRow}>
-                {anchorPriceString ? (
-                  <Text style={styles.priceAnchor}>{anchorPriceString}</Text>
+              <View style={styles.priceBlock}>
+                {discountPercent != null ? (
+                  <View style={styles.discountPill}>
+                    <Text style={styles.discountPillText}>
+                      {discountPercent}% off, forever
+                    </Text>
+                  </View>
                 ) : null}
+
                 {monthly ? (
-                  <Text style={styles.priceNow}>{monthly}/mo</Text>
+                  <View style={styles.priceRow}>
+                    <Text style={styles.priceNow}>{monthly}</Text>
+                    <Text style={styles.priceUnit}>/mo</Text>
+                  </View>
+                ) : null}
+
+                {anchorPriceString ? (
+                  <Text style={styles.priceAnchor}>{anchorPriceString}/year</Text>
                 ) : null}
               </View>
             </Animated.View>
 
             <View style={styles.proofRow}>
               <View style={styles.proofItem}>
-                <Icon name="laurel" size={72} color={colors.text.primary} />
+                <Icon name="laurel" size={60} color={colors.primary.blue300} />
                 <View style={styles.proofCenter}>
-                  <Text style={styles.proofStars}>★★★★★</Text>
+                  <View style={styles.starsRow}>
+                    {[0, 1, 2, 3, 4].map((i) => (
+                      <Icon key={i} name="star" size={16} color={colors.yellow[400]} />
+                    ))}
+                  </View>
                   <Text style={styles.proofRatingLabel}>5 STAR RATING</Text>
                 </View>
                 <View style={styles.laurelMirror}>
-                  <Icon name="laurel" size={72} color={colors.text.primary} />
+                  <Icon name="laurel" size={60} color={colors.primary.blue300} />
                 </View>
               </View>
             </View>
@@ -573,32 +498,20 @@ const styles = StyleSheet.create({
   loading: {
     paddingVertical: spacing['2xl'],
   },
-  wheelPhase: {
-    alignSelf: 'stretch',
-    alignItems: 'center',
-    gap: spacing.xl,
-    paddingTop: spacing.xl,
-  },
-  wheelHeading: {
-    ...typography.title.title3,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    color: colors.text.primary,
-    textAlign: 'center',
-  },
   revealedWrap: {
     alignSelf: 'stretch',
     width: '100%',
-    gap: spacing.xl,
-    paddingTop: spacing.xl,
+    gap: spacing['2xl'],
+    paddingTop: spacing['2xl'],
   },
   title: {
     fontFamily: fonts.semibold,
     fontWeight: '500',
-    fontSize: 42,
-    lineHeight: 48,
+    fontSize: 46,
+    lineHeight: 52,
     color: colors.neutral[0],
     textAlign: 'center',
+    letterSpacing: 0.2,
   },
   heroSubtitle: {
     ...typography.body.small,
@@ -607,77 +520,79 @@ const styles = StyleSheet.create({
     color: colors.primary.blue100,
     textAlign: 'center',
     marginTop: spacing.sm,
+    letterSpacing: 0.3,
   },
   offerBlock: {
     alignSelf: 'stretch',
     alignItems: 'center',
-    gap: spacing.md,
+    gap: spacing.lg,
   },
-  badge: {
-    backgroundColor: colors.primary.blue600,
-    borderRadius: 28,
-    paddingVertical: spacing.xl,
-    paddingHorizontal: spacing['5xl'],
+  priceBlock: {
+    ...card.base,
+    ...card.shadow,
+    alignSelf: 'stretch',
     alignItems: 'center',
-    ...card.shadowElevated,
-  },
-  badgePercent: {
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    fontSize: 52,
-    lineHeight: 56,
-    color: colors.neutral[0],
-    textAlign: 'center',
-  },
-  badgeForever: {
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    fontSize: 20,
-    lineHeight: 24,
-    letterSpacing: 4,
-    color: colors.neutral[200],
-    marginTop: spacing.xs,
-  },
-  priceRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    justifyContent: 'center',
     gap: spacing.sm,
+    paddingVertical: spacing.xl,
+    paddingHorizontal: spacing.lg,
   },
-  priceAnchor: {
-    ...typography.title.title3,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    color: colors.text.tertiary,
-    textDecorationLine: 'line-through',
-  },
-  priceNow: {
-    ...typography.title.title2,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    color: colors.text.primary,
-  },
-  timerPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
+  discountPill: {
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.md,
     borderRadius: 999,
     backgroundColor: colors.primary.blue100,
   },
-  timerLabel: {
-    ...typography.caption.caption2,
+  discountPillText: {
+    ...typography.caption.caption1,
     fontFamily: fonts.semibold,
     fontWeight: '500',
-    letterSpacing: 1,
+    letterSpacing: 0.5,
     color: colors.primary.blue700,
+  },
+  priceRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'center',
+    gap: spacing.xs,
+  },
+  priceNow: {
+    fontFamily: fonts.semibold,
+    fontWeight: '500',
+    fontSize: 68,
+    lineHeight: 72,
+    color: colors.primary.blue900,
+    letterSpacing: 0.2,
+  },
+  priceUnit: {
+    ...typography.title.title2,
+    fontFamily: fonts.semibold,
+    fontWeight: '500',
+    color: colors.text.tertiary,
+  },
+  priceAnchor: {
+    ...typography.body.small,
+    fontFamily: fonts.semibold,
+    fontWeight: '500',
+    color: colors.text.tertiary,
+    textDecorationLine: 'line-through',
+  },
+  timerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  timerLabel: {
+    ...typography.caption.caption1,
+    fontFamily: fonts.semibold,
+    fontWeight: '500',
+    letterSpacing: 0.5,
+    color: colors.text.tertiary,
   },
   timerValue: {
     ...typography.caption.caption1,
     fontFamily: fonts.semibold,
     fontWeight: '500',
-    color: colors.primary.blue700,
+    color: colors.text.secondary,
     fontVariant: ['tabular-nums'],
   },
   proofRow: {
@@ -695,20 +610,18 @@ const styles = StyleSheet.create({
   },
   proofCenter: {
     alignItems: 'center',
-    gap: spacing.xs,
+    gap: spacing.sm,
   },
   proofRatingLabel: {
-    ...typography.caption.caption1,
+    ...typography.caption.caption2,
     fontFamily: fonts.semibold,
     fontWeight: '500',
-    letterSpacing: 1,
-    color: colors.text.primary,
-  },
-  proofStars: {
-    fontSize: 26,
-    lineHeight: 30,
     letterSpacing: 2,
-    color: colors.yellow[400],
+    color: colors.text.secondary,
+  },
+  starsRow: {
+    flexDirection: 'row',
+    gap: spacing.xs,
   },
   testimonials: {
     alignSelf: 'stretch',
@@ -770,8 +683,9 @@ const styles = StyleSheet.create({
     color: colors.text.inverse,
   },
   planCardSelected: {
-    borderColor: colors.primary.blue600,
+    borderColor: colors.primary.blue500,
     borderWidth: 2,
+    backgroundColor: colors.primary.blue100,
   },
   planBanner: {
     backgroundColor: colors.primary.blue600,
@@ -819,7 +733,7 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
   },
   cta: {
-    minHeight: 58,
+    minHeight: 60,
     borderRadius: 999,
     backgroundColor: colors.primary.blue600,
     alignItems: 'center',
@@ -838,6 +752,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semibold,
     fontWeight: '500',
     color: colors.text.inverse,
+    letterSpacing: 0.3,
   },
   links: {
     flexDirection: 'row',

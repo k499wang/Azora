@@ -1,5 +1,5 @@
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
-import { Canvas, LinearGradient, Path, Skia, vec } from '@shopify/react-native-skia';
+import { Canvas, Path, Skia } from '@shopify/react-native-skia';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
@@ -114,29 +114,21 @@ function LungAgeRing({
 
       <View style={styles.lungRingWrap}>
         <Canvas style={{ width: LUNG_RING_SIZE, height: LUNG_RING_SIZE }}>
-          {/* Outer recess — soft shadow carving the channel into the surface */}
+          {/* Track — solid grey channel */}
           <Path
             path={track}
             style="stroke"
-            strokeWidth={LUNG_RING_STROKE + 6}
+            strokeWidth={LUNG_RING_STROKE}
             strokeCap="round"
-            color="rgba(15,23,42,0.05)"
+            color={colors.neutral[200]}
           />
-          {/* Track — grey channel with a vertical shade for depth */}
-          <Path path={track} style="stroke" strokeWidth={LUNG_RING_STROKE} strokeCap="round">
-            <LinearGradient
-              start={vec(cx, cy - r)}
-              end={vec(cx, cy + r)}
-              colors={[colors.neutral[200], colors.neutral[100]]}
-            />
-          </Path>
-          {/* Inner recess shadow */}
+          {/* Inner lighter line along the channel */}
           <Path
             path={track}
             style="stroke"
-            strokeWidth={LUNG_RING_STROKE - 3}
+            strokeWidth={LUNG_RING_STROKE - 4}
             strokeCap="round"
-            color="rgba(15,23,42,0.05)"
+            color={colors.neutral[100]}
           />
           {progress > 0 && (
             <>
@@ -147,14 +139,6 @@ function LungAgeRing({
                 strokeWidth={LUNG_RING_STROKE + 0.5}
                 strokeCap="round"
                 color={colors.primary.blue600}
-              />
-              {/* Glossy highlight skimming the top of the arc */}
-              <Path
-                path={arc}
-                style="stroke"
-                strokeWidth={LUNG_RING_STROKE * 0.32}
-                strokeCap="round"
-                color="rgba(255,255,255,0.28)"
               />
             </>
           )}
