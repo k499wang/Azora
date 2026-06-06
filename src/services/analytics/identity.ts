@@ -11,6 +11,9 @@ type SignedInUser = {
 export function bootstrapAnalytics(): void {
   const superProperties = {
     app_version: Constants.expoConfig?.version ?? null,
+    analytics_env:
+      (Constants.expoConfig?.extra?.analyticsEnv as string | undefined) ??
+      (__DEV__ ? 'development' : 'production'),
     platform: Platform.OS,
     os_version: String(Platform.Version),
   };

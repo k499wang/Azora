@@ -437,7 +437,7 @@ function StepFreeTrialHero(_: { hasAnnualTrial: boolean }) {
         </Animated.View>
       </View>
 
-      <Text style={styles.bellHint}>Please check your notifications and spam.</Text>
+      <Text style={styles.bellHint}>Make sure your notifications are on.</Text>
     </View>
   );
 }
@@ -593,40 +593,36 @@ function StepTrial({ hasAnnualTrial }: { hasAnnualTrial: boolean }) {
         {
           icon: 'sparkle',
           label: 'Today',
-          title: 'Unlock everything',
-          body: 'Start your free trial — all Pro features unlocked instantly.',
+          body: 'Unlock all of the app’s features instantly, with every Pro tool ready to use right away.',
         },
         {
-          icon: 'timer',
-          label: 'Before it ends',
-          title: "We'll remind you before your trial ends",
-          body: 'A notification lands before billing starts — no surprises.',
+          icon: 'bell',
+          label: 'In 2 Days — Reminder',
+          body: 'We’ll send you a reminder that your trial is ending soon, as long as you’ve allowed us to notify you.',
+          lineColor: colors.neutral[300],
         },
         {
-          icon: 'heart',
-          label: 'Anytime',
-          title: 'Cancel anytime',
-          body: 'Cancel in App Store settings up to the moment billing starts.',
+          icon: 'star',
+          label: 'In 3 Days — Billing Starts',
+          body: 'You’ll be charged when your free trial ends, unless you cancel anytime before then.',
+          iconColor: colors.neutral[900],
         },
       ]
     : [
         {
           icon: 'sparkle',
           label: 'Today',
-          title: 'Unlock everything',
-          body: 'Subscribe to unlock every Pro feature instantly.',
+          body: 'Subscribe now to unlock every Pro feature instantly and start practicing right away.',
         },
         {
           icon: 'timer',
           label: 'Anytime',
-          title: 'Cancel in one tap',
-          body: 'Manage or cancel in App Store settings whenever you want.',
+          body: 'Manage or cancel your plan in App Store settings whenever you want, no questions asked.',
         },
         {
           icon: 'heart',
           label: 'Welcome back',
-          title: 'Pick up where you left off',
-          body: 'Your past progress and insights stay with you.',
+          body: 'All of your past progress and insights stay with you, ready whenever you return.',
         },
       ];
 
@@ -638,9 +634,12 @@ function StepTrial({ hasAnnualTrial }: { hasAnnualTrial: boolean }) {
         </Text>
         <Text style={styles.stepSubtitle}>
           {hasAnnualTrial
-            ? "You won't be charged until your trial ends — and we'll always remind you first."
+            ? "You won't be charged until your trial ends."
             : 'Cancel anytime in App Store settings — no questions asked.'}
         </Text>
+        {hasAnnualTrial ? (
+          <Text style={styles.stepFinePrint}>Make sure your notifications are on.</Text>
+        ) : null}
       </View>
       <View style={styles.timeline}>
         {steps.map((step, index) => (
@@ -726,23 +725,32 @@ function StepChoose({
 interface TimelineStepProps {
   icon: IconName;
   label: string;
-  title: string;
   body: string;
+  iconColor?: string;
+  lineColor?: string;
   showLine?: boolean;
 }
 
-function TimelineStep({ icon, label, title, body, showLine = false }: TimelineStepProps) {
+function TimelineStep({
+  icon,
+  label,
+  body,
+  iconColor = colors.primary.blue600,
+  lineColor = colors.primary.blue100,
+  showLine = false,
+}: TimelineStepProps) {
   return (
     <View style={styles.timelineRow}>
       <View style={styles.timelineRail}>
-        <View style={styles.timelineIcon}>
+        <View style={[styles.timelineIcon, { backgroundColor: iconColor }]}>
           <Icon name={icon} size={20} color={colors.text.inverse} />
         </View>
-        {showLine ? <View style={styles.timelineLine} /> : null}
+        {showLine ? (
+          <View style={[styles.timelineLine, { backgroundColor: lineColor }]} />
+        ) : null}
       </View>
       <View style={styles.timelineCopy}>
         <Text style={styles.timelineLabel}>{label}</Text>
-        <Text style={styles.timelineTitle}>{title}</Text>
         <Text style={styles.timelineBody}>{body}</Text>
       </View>
     </View>
@@ -955,6 +963,12 @@ const styles = StyleSheet.create({
     ...typography.body.medium,
     color: colors.text.secondary,
     textAlign: 'center',
+  },
+  stepFinePrint: {
+    ...typography.body.small,
+    color: colors.text.tertiary,
+    textAlign: 'center',
+    marginTop: spacing.xs,
   },
   stepSubtitleDark: {
     color: 'rgba(255,255,255,0.75)',
@@ -1234,12 +1248,12 @@ const styles = StyleSheet.create({
   timelineLine: {
     width: 6,
     flex: 1,
-    minHeight: 56,
+    minHeight: 80,
     backgroundColor: colors.primary.blue100,
   },
   timelineCopy: {
     flex: 1,
-    paddingBottom: spacing.lg,
+    paddingBottom: spacing['2xl'],
   },
   timelineLabel: {
     ...typography.heading.heading1,
@@ -1247,17 +1261,10 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: colors.text.primary,
   },
-  timelineTitle: {
-    ...typography.body.medium,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    color: colors.text.primary,
-    marginTop: 2,
-  },
   timelineBody: {
     ...typography.body.small,
     color: colors.text.secondary,
-    marginTop: 2,
+    marginTop: spacing.xs,
   },
   cardsLoading: {
     minHeight: 180,

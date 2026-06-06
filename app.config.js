@@ -1,5 +1,9 @@
 const appsFlyerDevKey = process.env.EXPO_PUBLIC_APPSFLYER_DEV_KEY
 const appsFlyerAppId = process.env.EXPO_PUBLIC_APPSFLYER_APP_ID
+const analyticsEnv =
+  process.env.ANALYTICS_ENV ??
+  process.env.EAS_BUILD_PROFILE ??
+  'development'
 
 if (
   (process.env.EAS_BUILD === 'true' || process.env.EAS_BUILD_PROFILE != null) &&
@@ -262,6 +266,7 @@ module.exports = {
       eas: {
         projectId: 'da7f6c59-bf84-4a19-b5a5-416fa73df15b',
       },
+      analyticsEnv,
       posthogProjectToken: process.env.POSTHOG_PROJECT_TOKEN,
       posthogHost: process.env.POSTHOG_HOST,
       supabaseUrl: process.env.EXPO_PUBLIC_SUPABASE_URL,
