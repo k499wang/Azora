@@ -23,7 +23,7 @@ interface RingStatCardProps {
 }
 
 const RING_SIZE = 92;
-const STROKE = 6;
+const STROKE = 7.5;
 const RING_INSET = 9;
 
 export default function RingStatCard({

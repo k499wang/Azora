@@ -3,6 +3,10 @@
 // ViewBox is always 24x24 so the Icon component can render at any size.
 
 export const ICON_PATHS = {
+  star: {
+    viewBox: '0 0 24 24',
+    body: `<path fill="currentColor" d="M12 2.6l2.9 5.88 6.49.94-4.7 4.58 1.11 6.46L12 17.9l-5.8 3.05 1.11-6.46-4.7-4.58 6.49-.94z"/>`,
+  },
   laurel: {
     viewBox: '0 0 244.14168 307.26953',
     body: `
