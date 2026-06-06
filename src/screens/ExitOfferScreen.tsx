@@ -248,7 +248,7 @@ export function ExitOfferScreen({ navigation }: ExitOfferScreenProps) {
                 <View style={styles.proofCenter}>
                   <View style={styles.starsRow}>
                     {[0, 1, 2, 3, 4].map((i) => (
-                      <Icon key={i} name="star" size={16} color={colors.yellow[400]} />
+                      <Icon key={i} name="star" size={28} color={colors.yellow[400]} />
                     ))}
                   </View>
                   <Text style={styles.proofRatingLabel}>5 STAR RATING</Text>
@@ -603,7 +603,7 @@ const styles = StyleSheet.create({
   proofItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: spacing.xs,
   },
   laurelMirror: {
     transform: [{ scaleX: -1 }],
