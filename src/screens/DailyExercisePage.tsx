@@ -39,7 +39,7 @@ import {
 import { useCancellableFlow } from '../hooks/useCancellableFlow';
 import { useAuthStore } from '../stores/authStore';
 import { useCompleteBreathHoldMutation } from '../queries/tracking/useCompleteBreathHoldMutation';
-import { useShowLiveSignalPreference } from '../hooks/useShowLiveSignalPreference';
+import { useHeartRateMonitoringPreference } from '../hooks/useHeartRateMonitoringPreference';
 import { estimateLungAge } from '../lib/lungAge';
 import { buildCaptureResult } from '../lib/heartRate/captureResult';
 import { runAfterNextPaint } from '../lib/ui/runAfterNextPaint';
@@ -280,7 +280,10 @@ export default function DailyExercisePage({
     beginMeasurementWindow: beginPulseMeasurementWindow,
     getMeasurementSamples,
   } = pulse;
-  const { showLiveSignalEnabled } = useShowLiveSignalPreference();
+  const {
+    heartRateMonitoringEnabled,
+    heartRateMonitoringPreferenceLoaded,
+  } = useHeartRateMonitoringPreference();
 
   useEffect(() => {
     if (pulse.beatTick <= 0) return;
@@ -409,12 +412,8 @@ export default function DailyExercisePage({
     const duration = getBreathingPhaseDuration(nextPhase);
     setPrepCycle(cycle);
     setPhase(nextPhase);
-    if (nextPhase === 'preExhale') {
-      stopInhaleVibration();
-    } else {
-      startInhaleVibration(duration * 1000);
-    }
-    inhaleTimeoutRef.current = setTimeout(() => {
+
+    const scheduleNextPhase = () => {
       if (!flow.isActive()) return;
       clearTimer();
       if (nextPhase === 'preInhale') {
@@ -430,7 +429,22 @@ export default function DailyExercisePage({
         return;
       }
       beginHold();
-    }, duration * 1000);
+    };
+
+    requestAnimationFrame(() => {
+      if (!flow.isActive()) return;
+      if (nextPhase === 'preExhale') {
+        stopInhaleVibration();
+        circleRef.current?.contract(duration);
+      } else {
+        if (nextPhase === 'preInhale' && cycle === 1) {
+          circleRef.current?.reset();
+        }
+        startInhaleVibration(duration * 1000);
+        circleRef.current?.expand(duration);
+      }
+      inhaleTimeoutRef.current = setTimeout(scheduleNextPhase, duration * 1000);
+    });
   }, [beginHold, flow]);
 
   const startPrepBreathing = useCallback((withHeartRate = hrEnabled) => {
@@ -560,23 +574,10 @@ export default function DailyExercisePage({
   }, [completeBreathHoldMutation]);
 
   useEffect(() => {
-    if (phase === 'preInhale') {
-      if (prepCycle === 1) circleRef.current?.reset();
-      circleRef.current?.expand(PRE_BREATH_INHALE_SECONDS);
-      return;
-    }
-    if (phase === 'preExhale') {
-      circleRef.current?.contract(PRE_BREATH_EXHALE_SECONDS);
-      return;
-    }
-    if (phase === 'inhale') {
-      circleRef.current?.expand(FINAL_INHALE_SECONDS);
-      return;
-    }
     if (phase === 'hold') {
       circleRef.current?.pause();
     }
-  }, [phase, prepCycle]);
+  }, [phase]);
 
   const startPlacement = useCallback(async () => {
     if (!flow.start()) return;
@@ -602,10 +603,27 @@ export default function DailyExercisePage({
     }
   }, [flow, hasPermission, requestPermission, startPrepBreathing, startPulse]);
 
+  const startDailyExercise = useCallback(() => {
+    if (!heartRateMonitoringPreferenceLoaded) return;
+    if (heartRateMonitoringEnabled) {
+      void startPlacement();
+      return;
+    }
+    if (!flow.start()) return;
+    setHrEnabled(false);
+    startPrepBreathing(false);
+  }, [
+    flow,
+    heartRateMonitoringEnabled,
+    heartRateMonitoringPreferenceLoaded,
+    startPlacement,
+    startPrepBreathing,
+  ]);
+
   useEffect(() => {
     if (!isFocused || phase !== 'idle') return;
-    void startPlacement();
-  }, [isFocused, phase, startPlacement]);
+    startDailyExercise();
+  }, [isFocused, phase, startDailyExercise]);
 
   const startPrepBreathingRef = useRef(startPrepBreathing);
   useEffect(() => {
@@ -614,13 +632,14 @@ export default function DailyExercisePage({
 
   useEffect(() => {
     if (phase !== 'placement') return;
+    if (!hrEnabled) return;
     if (pulse.fingerPlacement !== 'good') return;
     const t = setTimeout(() => {
       if (!flow.isActive()) return;
       startPrepBreathingRef.current();
     }, PLACEMENT_GOOD_DURATION_MS);
     return () => clearTimeout(t);
-  }, [flow, phase, pulse.fingerPlacement]);
+  }, [flow, hrEnabled, phase, pulse.fingerPlacement]);
 
 
   const releaseHold = () => {
@@ -678,7 +697,7 @@ export default function DailyExercisePage({
 
   const handlePrimaryPress = () => {
     if (phase === 'idle' || phase === 'done') {
-      void startPlacement();
+      startDailyExercise();
     }
   };
 
@@ -785,7 +804,6 @@ export default function DailyExercisePage({
                   bpm={isLive ? presentedBpm : null}
                   beatTick={pulse.beatTick}
                   textColor={activeTheme.textPrimary}
-                  showLine={showLiveSignalEnabled}
                 />
               </View>
             )}
@@ -890,7 +908,8 @@ export default function DailyExercisePage({
             {showSettingsPill ? (
               <SettingsGearButton
                 onPress={() => setAudioSettingsOpen(true)}
-                label="Audio & voice"
+                label="Session options"
+                iconName="tune-variant"
                 color={activeTheme.textPrimary}
                 backgroundColor={activeTheme.surface}
                 borderColor={activeTheme.surfaceBorder}
@@ -919,33 +938,13 @@ export default function DailyExercisePage({
                         pressed && styles.circleBtnPressed,
                       ]}
                       onPress={() => setAudioSettingsOpen(true)}
-                      accessibilityLabel="Audio & voice"
+                      accessibilityLabel="Session options"
                     >
                       <MaterialCommunityIcons
                         name="cog-outline"
                         size={26}
                         color={activeTheme.iconPrimary}
                       />
-                    </Pressable>
-                    <Pressable
-                      onPress={() => {
-                        setHrEnabled(false);
-                        stopPulse();
-                        startPrepBreathing(false);
-                      }}
-                      style={({ pressed }) => [
-                        styles.skipPill,
-                        { backgroundColor: activeTheme.surface, borderColor: activeTheme.surfaceBorder },
-                        pressed && styles.circleBtnPressed,
-                      ]}
-                      accessibilityLabel="Skip heart rate"
-                    >
-                      <MaterialCommunityIcons
-                        name="heart-off-outline"
-                        size={18}
-                        color={activeTheme.textTertiary}
-                      />
-                      <Text style={[styles.skipPillLabel, { color: activeTheme.textTertiary }]}>Skip heart rate</Text>
                     </Pressable>
                   </>
                 ) : (
@@ -972,7 +971,7 @@ export default function DailyExercisePage({
                         pressed && styles.circleBtnPressed,
                       ]}
                       onPress={() => setAudioSettingsOpen(true)}
-                      accessibilityLabel="Audio & voice"
+                      accessibilityLabel="Session options"
                     >
                       <MaterialCommunityIcons
                         name="cog-outline"
@@ -1011,6 +1010,8 @@ export default function DailyExercisePage({
       <AudioSettingsSheet
         visible={audioSettingsOpen}
         onClose={() => setAudioSettingsOpen(false)}
+        title="Session options"
+        heartRateMonitoringLocked={phase !== 'idle' && phase !== 'done'}
         extraSectionsTop={
           <ThemePickerSection
             activeThemeId={activeTheme.id}
@@ -1142,24 +1143,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     color: colors.text.tertiary,
     opacity: 0.7,
-  },
-  skipPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xs,
-    height: 48,
-    paddingHorizontal: spacing.lg,
-    borderRadius: 24,
-    borderWidth: 1,
-    backgroundColor: colors.neutral[100],
-    borderColor: colors.border.subtle,
-  },
-  skipPillLabel: {
-    fontFamily: fonts.semibold,
-    fontSize: 14,
-    letterSpacing: 0.3,
-    color: colors.text.tertiary,
   },
   btnRow: {
     flexDirection: 'row',

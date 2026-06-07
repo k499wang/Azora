@@ -4,20 +4,24 @@ import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 
-interface LiveSignalToggleSectionProps {
+interface HeartRateMonitoringSectionProps {
   enabled: boolean;
+  locked?: boolean;
   onToggle: (enabled: boolean) => void;
 }
 
-export default function LiveSignalToggleSection({
+export default function HeartRateMonitoringSection({
   enabled,
+  locked = false,
   onToggle,
-}: LiveSignalToggleSectionProps) {
+}: HeartRateMonitoringSectionProps) {
   return (
     <View style={styles.section}>
-      <Text style={styles.title}>Live signal graph</Text>
+      <Text style={styles.title}>Heart rate monitoring</Text>
       <Text style={styles.description}>
-        Show the live PPG waveform above the breathing circle.
+        {locked
+          ? 'End this session to change whether heart rate is measured.'
+          : 'Measure heart rate before supported breathing sessions.'}
       </Text>
 
       <View style={styles.list}>
@@ -25,11 +29,13 @@ export default function LiveSignalToggleSection({
           label="On"
           selected={enabled}
           onSelect={() => onToggle(true)}
+          disabled={locked}
         />
         <AudioSettingsRow
           label="Off"
           selected={!enabled}
           onSelect={() => onToggle(false)}
+          disabled={locked}
         />
       </View>
     </View>

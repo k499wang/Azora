@@ -205,7 +205,7 @@ const styles = StyleSheet.create({
   },
   recommendedCard: {
     borderColor: colors.primary.blue500,
-    borderWidth: 2,
+    borderWidth: 3,
   },
   cardTop: {
     minHeight: 30,
