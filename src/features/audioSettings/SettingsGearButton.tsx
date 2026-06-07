@@ -12,6 +12,7 @@ interface SettingsGearButtonProps {
   borderColor?: string;
   size?: number;
   label?: string;
+  iconName?: keyof typeof MaterialCommunityIcons.glyphMap;
   style?: StyleProp<ViewStyle>;
 }
 
@@ -24,6 +25,7 @@ export default function SettingsGearButton({
   borderColor = colors.border.subtle,
   size = DEFAULT_SIZE,
   label,
+  iconName = 'cog-outline',
   style,
 }: SettingsGearButtonProps) {
   const isPill = label != null;
@@ -57,7 +59,7 @@ export default function SettingsGearButton({
       ]}
     >
       <View style={styles.row}>
-        <MaterialCommunityIcons name="cog-outline" size={iconSize} color={color} />
+        <MaterialCommunityIcons name={iconName} size={iconSize} color={color} />
         {label ? <Text style={[styles.label, { color }]}>{label}</Text> : null}
       </View>
     </Pressable>

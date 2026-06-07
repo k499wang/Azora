@@ -21,6 +21,7 @@ import { useAmbientAudio } from '../hooks/useAmbientAudio';
 import { usePhaseChime } from '../hooks/usePhaseChime';
 import {
   AudioSettingsSheet,
+  SettingsGearButton,
   ThemePickerSection,
   useAudioPreferences,
 } from '../features/audioSettings';
@@ -36,7 +37,7 @@ import { captureException } from '../services/analytics/errorTracking';
 import { AnalyticsEvent } from '../services/analytics/events';
 import { useAuthStore } from '../stores/authStore';
 import { useCompleteBreathingSessionMutation } from '../queries/tracking/useCompleteBreathingSessionMutation';
-import { useShowLiveSignalPreference } from '../hooks/useShowLiveSignalPreference';
+import { useHeartRateMonitoringPreference } from '../hooks/useHeartRateMonitoringPreference';
 
 const MIN_ROUNDS = 1;
 const MAX_ROUNDS = 30;
@@ -208,7 +209,10 @@ export default function ExerciseSessionPage({
 
   const pulse = useLivePulse();
   const { start: startPulse, stop: stopPulse, hasPermission, requestPermission } = pulse;
-  const { showLiveSignalEnabled } = useShowLiveSignalPreference();
+  const {
+    heartRateMonitoringEnabled,
+    heartRateMonitoringPreferenceLoaded,
+  } = useHeartRateMonitoringPreference();
 
   useEffect(() => {
     const isTrackingPhase =
@@ -324,27 +328,35 @@ export default function ExerciseSessionPage({
         stopHoldHaptics();
       }
 
+      const startPhaseTimer = () => {
+        if (!flow.isActive()) return;
+        let remaining = secs;
+        remainingRef.current = remaining;
+        clearTimer();
+        timerRef.current = setInterval(() => {
+          remaining -= 1;
+          remainingRef.current = remaining;
+          setElapsed((current) => current + 1);
+
+          if (remaining <= 0) {
+            clearTimer();
+            if (!flow.isActive()) return;
+            onDone();
+          }
+        }, 1000);
+      };
+
       if (p === 'inhale' || p === 'exhale') {
         requestAnimationFrame(() => {
+          if (!flow.isActive()) return;
           if (p === 'inhale') circleRef.current?.expand(secs);
           else circleRef.current?.contract(secs);
+          startPhaseTimer();
         });
+        return;
       }
 
-      let remaining = secs;
-      remainingRef.current = remaining;
-      clearTimer();
-      timerRef.current = setInterval(() => {
-        remaining -= 1;
-        remainingRef.current = remaining;
-        setElapsed((current) => current + 1);
-
-        if (remaining <= 0) {
-          clearTimer();
-          if (!flow.isActive()) return;
-          onDone();
-        }
-      }, 1000);
+      startPhaseTimer();
     },
     [flow],
   );
@@ -561,7 +573,13 @@ export default function ExerciseSessionPage({
 
   const handleStart = () => {
     if (phase === 'idle' || phase === 'done') {
-      void startPlacement();
+      if (!heartRateMonitoringPreferenceLoaded) return;
+      if (heartRateMonitoringEnabled) {
+        void startPlacement();
+        return;
+      }
+      setHrEnabled(false);
+      beginExercise(false);
     }
   };
 
@@ -572,13 +590,14 @@ export default function ExerciseSessionPage({
 
   useEffect(() => {
     if (phase !== 'placement') return;
+    if (!hrEnabled) return;
     if (pulse.fingerPlacement !== 'good') return;
     const t = setTimeout(() => {
       if (!flow.isActive()) return;
       beginExerciseRef.current(true);
     }, PLACEMENT_GOOD_DURATION_MS);
     return () => clearTimeout(t);
-  }, [flow, phase, pulse.fingerPlacement]);
+  }, [flow, hrEnabled, phase, pulse.fingerPlacement]);
 
   const handleClose = () => {
     flow.cancel();
@@ -678,7 +697,6 @@ export default function ExerciseSessionPage({
                   bpm={isActive ? presentedBpm : null}
                   beatTick={pulse.beatTick}
                   textColor={activeTheme.textPrimary}
-                  showLine={showLiveSignalEnabled}
                 />
               </View>
             )}
@@ -802,48 +820,19 @@ export default function ExerciseSessionPage({
               >
                 <MaterialCommunityIcons name="stop" size={26} color={activeTheme.iconPrimary} />
               </Pressable>
-              <Pressable
-                style={({ pressed }) => [
-                  styles.circleBtn,
-                  { backgroundColor: activeTheme.surface, borderColor: activeTheme.surfaceBorder },
-                  pressed && styles.circleBtnPressed,
-                ]}
+              <SettingsGearButton
                 onPress={() => {
                   if (isActive) showHud();
                   setAudioSettingsOpen(true);
                 }}
-                accessibilityLabel="Audio & voice"
-              >
-                <MaterialCommunityIcons
-                  name="cog-outline"
-                  size={26}
-                  color={activeTheme.iconPrimary}
-                />
-              </Pressable>
-              {isPlacement ? (
-                <Pressable
-                  onPress={() => {
-                    setHrEnabled(false);
-                    stopPulse();
-                    beginExercise(false);
-                  }}
-                  style={({ pressed }) => [
-                    styles.skipPill,
-                    { backgroundColor: activeTheme.surface, borderColor: activeTheme.surfaceBorder },
-                    pressed && styles.circleBtnPressed,
-                  ]}
-                  accessibilityLabel="Skip heart rate"
-                >
-                  <MaterialCommunityIcons
-                    name="heart-off-outline"
-                    size={18}
-                    color={activeTheme.textTertiary}
-                  />
-                  <Text style={[styles.skipPillLabel, { color: activeTheme.textTertiary }]}>
-                    Skip heart rate
-                  </Text>
-                </Pressable>
-              ) : (
+                label={phase === 'idle' || phase === 'done' ? 'Session options' : undefined}
+                iconName={phase === 'idle' || phase === 'done' ? 'tune-variant' : 'cog-outline'}
+                color={activeTheme.iconPrimary}
+                backgroundColor={activeTheme.surface}
+                borderColor={activeTheme.surfaceBorder}
+                size={64}
+              />
+              {!isPlacement ? (
                 <Pressable
                   style={({ pressed }) => [
                     styles.circleBtn,
@@ -867,7 +856,7 @@ export default function ExerciseSessionPage({
                     color={activeTheme.iconPrimary}
                   />
                 </Pressable>
-              )}
+              ) : null}
             </View>
           </Animated.View>
         }
@@ -875,6 +864,8 @@ export default function ExerciseSessionPage({
       <AudioSettingsSheet
         visible={audioSettingsOpen}
         onClose={() => setAudioSettingsOpen(false)}
+        title="Session options"
+        heartRateMonitoringLocked={phase !== 'idle' && phase !== 'done'}
         extraSectionsTop={
           <ThemePickerSection
             activeThemeId={activeTheme.id}
@@ -1029,24 +1020,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     color: colors.text.tertiary,
     opacity: 0.7,
-  },
-  skipPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xs,
-    height: 48,
-    paddingHorizontal: spacing.lg,
-    borderRadius: 24,
-    borderWidth: 1,
-    backgroundColor: colors.neutral[100],
-    borderColor: colors.border.subtle,
-  },
-  skipPillLabel: {
-    fontFamily: fonts.semibold,
-    fontSize: 14,
-    letterSpacing: 0.3,
-    color: colors.text.tertiary,
   },
   btnRow: {
     flexDirection: 'row',

@@ -14,19 +14,20 @@ import { colors } from '../../theme/colors';
 import { padding, spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import AudioSettingsRow from './AudioSettingsRow';
-import LiveSignalToggleSection from './LiveSignalToggleSection';
+import HeartRateMonitoringSection from './HeartRateMonitoringSection';
 import { audioCategories } from './registry';
 import type { AudioCategory, AudioOption } from './types';
 import { OFF_OPTION_ID } from './types';
 import { useAudioPreferences } from './useAudioPreferences';
 import { useAudioPreview } from './useAudioPreview';
-import { useShowLiveSignalPreference } from '../../hooks/useShowLiveSignalPreference';
+import { useHeartRateMonitoringPreference } from '../../hooks/useHeartRateMonitoringPreference';
 
 interface AudioSettingsSheetProps {
   visible: boolean;
   onClose: () => void;
   title?: string;
   extraSectionsTop?: ReactNode;
+  heartRateMonitoringLocked?: boolean;
 }
 
 export default function AudioSettingsSheet({
@@ -34,11 +35,15 @@ export default function AudioSettingsSheet({
   onClose,
   title = 'Settings',
   extraSectionsTop,
+  heartRateMonitoringLocked = false,
 }: AudioSettingsSheetProps) {
   const insets = useSafeAreaInsets();
   const { preferences, select, reset } = useAudioPreferences();
   const { play, stop, previewingAsset } = useAudioPreview();
-  const { showLiveSignalEnabled, setShowLiveSignalEnabled } = useShowLiveSignalPreference();
+  const {
+    heartRateMonitoringEnabled,
+    setHeartRateMonitoringEnabled,
+  } = useHeartRateMonitoringPreference();
 
   const handleClose = () => {
     stop();
@@ -75,9 +80,10 @@ export default function AudioSettingsSheet({
             showsVerticalScrollIndicator={false}
           >
             {extraSectionsTop}
-            <LiveSignalToggleSection
-              enabled={showLiveSignalEnabled}
-              onToggle={setShowLiveSignalEnabled}
+            <HeartRateMonitoringSection
+              enabled={heartRateMonitoringEnabled}
+              locked={heartRateMonitoringLocked}
+              onToggle={setHeartRateMonitoringEnabled}
             />
             {audioCategories.map((category) => (
               <CategorySection

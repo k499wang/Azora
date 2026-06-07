@@ -12,6 +12,7 @@ interface AudioSettingsRowProps {
   previewing?: boolean;
   onPreview?: () => void;
   premiumLocked?: boolean;
+  disabled?: boolean;
 }
 
 export default function AudioSettingsRow({
@@ -22,14 +23,16 @@ export default function AudioSettingsRow({
   previewing = false,
   onPreview,
   premiumLocked = false,
+  disabled = false,
 }: AudioSettingsRowProps) {
   return (
-    <View style={[styles.row, selected && styles.rowSelected]}>
+    <View style={[styles.row, selected && styles.rowSelected, disabled && styles.rowDisabled]}>
       <Pressable
         onPress={onSelect}
+        disabled={disabled}
         style={styles.labelArea}
         accessibilityRole="button"
-        accessibilityState={{ selected }}
+        accessibilityState={{ selected, disabled }}
       >
         <View style={[styles.bullet, selected && styles.bulletSelected]}>
           {selected ? <Icon name="check" size={12} color={colors.text.inverse} /> : null}
@@ -74,6 +77,9 @@ const styles = StyleSheet.create({
   },
   rowSelected: {
     backgroundColor: colors.background.accentSoft,
+  },
+  rowDisabled: {
+    opacity: 0.45,
   },
   labelArea: {
     flex: 1,
