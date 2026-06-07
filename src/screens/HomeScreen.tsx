@@ -4,6 +4,7 @@ import { usePostHog } from 'posthog-react-native';
 import { getStressZone } from '../lib/heartRate/stress';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AnalyticsEvent } from '../services/analytics/events';
+import { trackFeatureGateHit } from '../services/analytics/tracking';
 import { colors } from '../theme/colors';
 import { spacing, padding, margin } from '../theme/spacing';
 import { typography, fonts } from '../theme/typography';
@@ -34,6 +35,10 @@ import { useHomeStatsQuery } from '../queries/tracking/useHomeStatsQuery';
 import { useAuthStore } from '../stores/authStore';
 import { PaywallPlacement } from '../services/paywall';
 import { FeatureKey } from '../services/subscriptions/featureAccess';
+import type {
+  FeatureAccessResult,
+  FeatureKeyValue,
+} from '../services/subscriptions/featureAccess';
 import type { DailyActivitySummary, TodayHeartRateSummary } from '../services/tracking/types';
 
 function formatInsightTitle(localDate: string, todayLocalDate: string): string {
@@ -349,12 +354,22 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const hasPartialStatsError = stats != null && Object.values(stats.partialErrors).some(Boolean);
   const holdStats = deriveHoldStats(stats?.dailyActivity, todayLocalDate);
   const showProPaywall = useCallback((
-    feature: typeof FeatureKey[keyof typeof FeatureKey],
+    feature: FeatureKeyValue,
     placement: typeof PaywallPlacement[keyof typeof PaywallPlacement],
+    access: FeatureAccessResult,
+    sourceAction?: string,
   ) => {
+    trackFeatureGateHit({
+      feature,
+      placement,
+      sourceScreen: 'Home',
+      sourceAction,
+      access,
+    });
     navigation.navigate('ProPaywall', {
       placement,
       sourceScreen: 'Home',
+      sourceAction,
       feature,
     });
   }, [navigation]);
@@ -401,6 +416,8 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
                   showProPaywall(
                     FeatureKey.DailyExercise,
                     PaywallPlacement.ExercisePremiumGate,
+                    dailyExerciseAccess,
+                    'daily_plan',
                   );
                   return;
                 }
@@ -442,6 +459,8 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             showProPaywall(
               FeatureKey.AdvancedStats,
               PaywallPlacement.DailyResultProGate,
+              advancedStatsAccess,
+              'insights_flash',
             );
           }}
           onStartTechnique={(techniqueId) => {
@@ -449,6 +468,8 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
               showProPaywall(
                 FeatureKey.DailyExercise,
                 PaywallPlacement.ExercisePremiumGate,
+                dailyExerciseAccess,
+                'insights_technique',
               );
               return;
             }
@@ -484,6 +505,8 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             showProPaywall(
               FeatureKey.AdvancedStats,
               PaywallPlacement.DailyResultProGate,
+              advancedStatsAccess,
+              'hrv_section',
             );
           }}
         />
@@ -499,6 +522,8 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             showProPaywall(
               FeatureKey.AdvancedStats,
               PaywallPlacement.DailyResultProGate,
+              advancedStatsAccess,
+              'heart_rate_section',
             );
           }}
         />
@@ -511,6 +536,8 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             showProPaywall(
               FeatureKey.AdvancedStats,
               PaywallPlacement.DailyResultProGate,
+              advancedStatsAccess,
+              'recovery_section',
             );
           }}
         />
@@ -536,6 +563,8 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
                 showProPaywall(
                   FeatureKey.SessionHistory,
                   PaywallPlacement.DailyResultProGate,
+                  sessionHistoryAccess,
+                  'recently_logged_history',
                 );
                 return;
               }

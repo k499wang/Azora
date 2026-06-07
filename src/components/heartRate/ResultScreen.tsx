@@ -23,6 +23,7 @@ import StressGauge from './StressGauge';
 import { getStressZone } from '../../lib/heartRate/stress';
 import type { CaptureResult, HrvAvailabilityReason, IbiSample } from '../../lib/heartRate/types';
 import { AnalyticsEvent } from '../../services/analytics/events';
+import { trackFeatureGateHit } from '../../services/analytics/tracking';
 import { HeartRateResultContent } from './HeartRateResultContent';
 import {
   buildBpmSamplesFromIbiSamples,
@@ -209,9 +210,17 @@ export function ResultScreen({
   const advancedStatsLocked =
     !advancedStatsAccess.allowed && !advancedStatsAccess.isLoading;
   const showAdvancedStatsPaywall = () => {
+    trackFeatureGateHit({
+      feature: FeatureKey.AdvancedStats,
+      placement: PaywallPlacement.DailyResultProGate,
+      sourceScreen: 'HeartRateResult',
+      sourceAction: 'result_stats',
+      access: advancedStatsAccess,
+    });
     navigation.navigate('ProPaywall', {
       placement: PaywallPlacement.DailyResultProGate,
       sourceScreen: 'HeartRateResult',
+      sourceAction: 'result_stats',
       feature: FeatureKey.AdvancedStats,
     });
   };

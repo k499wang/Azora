@@ -39,6 +39,7 @@ import { computeMindMap } from '../../lib/onboardingScores';
 import { useAuthStore } from '../../stores/authStore';
 import { requestNotificationPermissions } from '../../services/notifications/notificationClient';
 import { requestAttPermissionOnce } from '../../services/attribution/attPrompt';
+import { collectRevenueCatDeviceIdentifiers } from '../../services/subscriptions/revenueCatClient';
 import { trackNotificationPermissionResult } from '../../services/analytics/tracking';
 import {
   trackOnboardingBackPressed,
@@ -241,7 +242,7 @@ export default function OnboardingFlow({
     // Fire ATT as early as possible so the IDFA decision lands inside AppsFlyer's
     // install-postback hold window (timeToWaitForATTUserAuthorization). No-ops if
     // already resolved, so it's safe on every onboarding entry.
-    void requestAttPermissionOnce();
+    void requestAttPermissionOnce().then(() => collectRevenueCatDeviceIdentifiers());
   }, []);
 
   useEffect(() => {

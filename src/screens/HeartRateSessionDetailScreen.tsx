@@ -9,6 +9,7 @@ import { typography, fonts } from '../theme/typography';
 import { HeartRateResultContent } from '../components/heartRate/HeartRateResultContent';
 import { useAuthStore } from '../stores/authStore';
 import { useFeatureAccess } from '../hooks/useFeatureAccess';
+import { trackFeatureGateHit } from '../services/analytics/tracking';
 import { useHeartRateSessionDetailQuery } from '../queries/tracking/useHeartRateSessionDetailQuery';
 import { useProfileQuery } from '../queries/profile/useProfileQuery';
 import { PaywallPlacement } from '../services/paywall';
@@ -103,9 +104,17 @@ export function HeartRateSessionDetailScreen({
                 showConfidence={false}
                 advancedStatsLocked={advancedStatsLocked}
                 onPressUpgrade={() => {
+                  trackFeatureGateHit({
+                    feature: FeatureKey.AdvancedStats,
+                    placement: PaywallPlacement.DailyResultProGate,
+                    sourceScreen: 'HeartRateSessionDetail',
+                    sourceAction: 'session_detail_stats',
+                    access: advancedStatsAccess,
+                  });
                   navigation.navigate('ProPaywall', {
                     placement: PaywallPlacement.DailyResultProGate,
                     sourceScreen: 'HeartRateSessionDetail',
+                    sourceAction: 'session_detail_stats',
                     feature: FeatureKey.AdvancedStats,
                   });
                 }}

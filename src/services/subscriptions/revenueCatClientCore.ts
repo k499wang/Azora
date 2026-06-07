@@ -4,6 +4,7 @@ export interface RevenueCatIdentityUser {
 }
 
 export interface RevenueCatSdk {
+  collectDeviceIdentifiers?: () => Promise<void>;
   configure: (options: { apiKey: string; appUserID: string }) => void;
   getCustomerInfo: () => Promise<unknown>;
   getCurrentOfferingForPlacement?: (placement: string) => Promise<unknown>;
@@ -106,6 +107,16 @@ export function createRevenueCatClient(
     return currentAppUserId;
   }
 
+  async function collectDeviceIdentifiers(): Promise<void> {
+    if (!isReady() || dependencies.sdk.collectDeviceIdentifiers == null) return;
+
+    try {
+      await dependencies.sdk.collectDeviceIdentifiers();
+    } catch {
+      // Attribution metadata is best-effort and should never block the app.
+    }
+  }
+
   return {
     clearIdentity(): Promise<void> {
       return runSerial(async () => {
@@ -122,6 +133,7 @@ export function createRevenueCatClient(
       return currentAppUserId;
     },
     isReady,
+    collectDeviceIdentifiers,
     requireCurrentAppUserId,
     async getCustomerInfo(): Promise<unknown> {
       requireCurrentAppUserId();
@@ -181,6 +193,7 @@ export function createRevenueCatClient(
         await ensureConfigured(user.id);
         currentAppUserId = user.id;
         requireCurrentAppUserId();
+        await collectDeviceIdentifiers();
         logRevenueCat('revenuecat.set_email_started', {
           revenuecat_current_app_user_id: currentAppUserId,
           revenuecat_target_email: user.email ?? null,

@@ -4,6 +4,7 @@ import type { PurchasesPackage } from 'react-native-purchases';
 import { posthog } from '../config/posthog';
 import { AnalyticsEvent } from '../services/analytics/events';
 import { logRevenueCatDebugSnapshot } from '../services/debug/revenueCatDebugSnapshot';
+import { syncAppsFlyerIdentityForUser } from '../services/attribution/appsFlyerIdentitySync';
 import {
   buildPaywallEventProperties,
   getPaywallOffering,
@@ -15,12 +16,14 @@ import {
   type PaywallResult,
 } from '../services/paywall';
 import { ensureRevenueCatIdentityForCurrentUser } from '../services/subscriptions/revenueCatIdentitySync';
+import type { FeatureKeyValue } from '../services/subscriptions/featureAccess';
 import { useAuthStore } from '../stores/authStore';
 import { useRevenueCatIdentityStore } from '../stores/revenueCatIdentityStore';
 import { getUserEntitlementQueryKey } from '../queries/subscriptions/useUserEntitlementQuery';
 
 interface UsePaywallOptions {
   placement: PaywallPlacementValue;
+  feature?: FeatureKeyValue;
   sourceScreen?: string;
   sourceAction?: string;
   enabled?: boolean;
@@ -28,6 +31,7 @@ interface UsePaywallOptions {
 
 export function usePaywall({
   placement,
+  feature,
   sourceScreen,
   sourceAction,
   enabled = true,
@@ -59,6 +63,7 @@ export function usePaywall({
   }) =>
     buildPaywallEventProperties({
       placement,
+      feature,
       sourceScreen,
       sourceAction,
       paywallViewId: options?.paywallViewId ?? paywallViewId,
@@ -152,6 +157,7 @@ export function usePaywall({
           posthog.capture(AnalyticsEvent.PaywallFailed, {
             ...buildPaywallEventProperties({
               placement,
+              feature,
               sourceScreen,
               sourceAction,
             }),
@@ -169,6 +175,7 @@ export function usePaywall({
           AnalyticsEvent.PaywallViewed,
           buildPaywallEventProperties({
             placement,
+            feature,
             sourceScreen,
             sourceAction,
             paywallViewId: nextPaywallViewId,
@@ -189,6 +196,7 @@ export function usePaywall({
         posthog.capture(AnalyticsEvent.PaywallFailed, {
           ...buildPaywallEventProperties({
             placement,
+            feature,
             sourceScreen,
             sourceAction,
           }),
@@ -215,6 +223,7 @@ export function usePaywall({
     revenueCatUnavailableReason,
     sourceAction,
     sourceScreen,
+    feature,
     userId,
   ]);
 
@@ -241,6 +250,10 @@ export function usePaywall({
       package_type: selectedPackageId,
       selected_package_id: selectedPackageId,
     });
+
+    if (userId != null) {
+      await syncAppsFlyerIdentityForUser(userId).catch(() => {});
+    }
 
     const result = await purchasePaywallPackage(selectedPackage);
     setIsPurchasing(false);

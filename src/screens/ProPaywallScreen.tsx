@@ -32,6 +32,7 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
   const placement = route.params?.placement ?? PaywallPlacement.ProfileUpgrade;
   const paywall = usePaywall({
     placement,
+    feature: route.params?.feature,
     sourceScreen: route.params?.sourceScreen,
     sourceAction: route.params?.sourceAction,
   });

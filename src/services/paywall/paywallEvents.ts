@@ -1,9 +1,11 @@
 import type { PaywallPackageOption } from './paywallResult';
 import type { PaywallPlacementValue } from './paywallPlacements';
+import type { FeatureKeyValue } from '../subscriptions/featureAccess';
 
 export interface PaywallEventProperties {
   [key: string]: string | number | boolean | null;
   placement: PaywallPlacementValue;
+  feature: FeatureKeyValue | null;
   source_screen: string | null;
   source_action: string | null;
   paywall_view_id: string | null;
@@ -22,6 +24,7 @@ export interface PaywallEventProperties {
 
 export function buildPaywallEventProperties(options: {
   placement: PaywallPlacementValue;
+  feature?: FeatureKeyValue | null;
   sourceScreen?: string | null;
   sourceAction?: string | null;
   paywallViewId?: string | null;
@@ -35,6 +38,7 @@ export function buildPaywallEventProperties(options: {
 
   return {
     placement: options.placement,
+    feature: options.feature ?? null,
     source_screen: options.sourceScreen ?? null,
     source_action: options.sourceAction ?? null,
     paywall_view_id: options.paywallViewId ?? null,

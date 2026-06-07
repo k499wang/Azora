@@ -35,6 +35,8 @@ Why this matters:
 
 This shows which locked moments create purchase intent. For example, heart-rate limits, advanced stats, daily exercise limits, or session history may convert very differently.
 
+Status: implemented with `feature_gate_hit`.
+
 ## Priority 2: Include Feature On Paywall Events
 
 The app already passes a `feature` route param into `ProPaywall` in several places, but paywall analytics should include it directly.
@@ -56,6 +58,8 @@ paywall_failed
 Why this matters:
 
 This makes it possible to answer which locked feature or paywall trigger converts best.
+
+Status: implemented for shared paywall events.
 
 ## Priority 3: Persist Paywall Exposures Server-Side
 
@@ -223,13 +227,11 @@ This gives reliable account-level D1, D7, and D30 retention across reinstalls an
 
 ## Recommended Implementation Order
 
-1. Add `feature_gate_hit`.
-2. Add `feature` to shared paywall events.
-3. Persist `paywall_exposures` in Supabase.
-4. Normalize RevenueCat lifecycle events into `subscription_events`.
-5. Mirror current subscription state into PostHog person properties.
-6. Add onboarding segmentation buckets.
-7. Expand heart-rate and breath-hold event properties.
-8. Add account-level daily active tracking.
+1. Persist `paywall_exposures` in Supabase.
+2. Normalize RevenueCat lifecycle events into `subscription_events`.
+3. Mirror current subscription state into PostHog person properties.
+4. Add onboarding segmentation buckets.
+5. Expand heart-rate and breath-hold event properties.
+6. Add account-level daily active tracking.
 
-The first four items provide the largest improvement for conversion and revenue analysis.
+Feature-gate intent and paywall `feature` attribution are already implemented. The next two items provide the largest remaining improvement for conversion and revenue analysis.

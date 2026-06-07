@@ -1,5 +1,10 @@
 import { posthog } from '../../config/posthog';
 import { AnalyticsEvent } from './events';
+import type { PaywallPlacementValue } from '../paywall';
+import type {
+  FeatureAccessResult,
+  FeatureKeyValue,
+} from '../subscriptions/featureAccess';
 
 type ScreenRoute = {
   name: string;
@@ -74,5 +79,24 @@ export function trackProfileAction(
   posthog.capture(AnalyticsEvent.ProfileAction, {
     action,
     ...properties,
+  });
+}
+
+export function trackFeatureGateHit(props: {
+  feature: FeatureKeyValue;
+  placement: PaywallPlacementValue;
+  sourceScreen: string;
+  sourceAction?: string | null;
+  access: FeatureAccessResult;
+}) {
+  posthog.capture(AnalyticsEvent.FeatureGateHit, {
+    feature: props.feature,
+    placement: props.placement,
+    source_screen: props.sourceScreen,
+    source_action: props.sourceAction ?? null,
+    reason: props.access.reason,
+    used: props.access.used,
+    limit: props.access.limit,
+    is_pro: props.access.isPro,
   });
 }

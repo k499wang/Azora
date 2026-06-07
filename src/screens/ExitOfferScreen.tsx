@@ -12,7 +12,16 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { FadeIn, FadeInUp } from 'react-native-reanimated';
+import Animated, {
+  Easing,
+  FadeIn,
+  FadeInUp,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withRepeat,
+  withTiming,
+} from 'react-native-reanimated';
 import { usePaywall } from '../hooks/usePaywall';
 import {
   PaywallPlacement,
@@ -220,25 +229,32 @@ export function ExitOfferScreen({ navigation }: ExitOfferScreenProps) {
                 <Text style={styles.timerValue}>{formatClock(secondsLeft)}</Text>
               </View>
 
-              <View style={styles.priceBlock}>
-                {discountPercent != null ? (
-                  <View style={styles.discountPill}>
-                    <Text style={styles.discountPillText}>
-                      {discountPercent}% off, forever
-                    </Text>
-                  </View>
-                ) : null}
+              <View style={styles.priceCardWrap}>
+                <View style={styles.priceBlock}>
+                  {discountPercent != null ? (
+                    <View style={styles.discountPill}>
+                      <Text style={styles.discountPillText}>
+                        {discountPercent}% off, forever
+                      </Text>
+                    </View>
+                  ) : null}
 
-                {monthly ? (
-                  <View style={styles.priceRow}>
-                    <Text style={styles.priceNow}>{monthly}</Text>
-                    <Text style={styles.priceUnit}>/mo</Text>
-                  </View>
-                ) : null}
+                  {monthly ? (
+                    <View style={styles.priceRow}>
+                      <Text style={styles.priceNow}>{monthly}</Text>
+                      <Text style={styles.priceUnit}>/mo</Text>
+                    </View>
+                  ) : null}
 
-                {anchorPriceString ? (
-                  <Text style={styles.priceAnchor}>{anchorPriceString}/year</Text>
-                ) : null}
+                  {anchorPriceString ? (
+                    <Text style={styles.priceAnchor}>{anchorPriceString}/year</Text>
+                  ) : null}
+                </View>
+                <View style={StyleSheet.absoluteFill} pointerEvents="none">
+                  {SPARKLES.map((sparkle, i) => (
+                    <TwinkleStar key={i} {...sparkle} />
+                  ))}
+                </View>
               </View>
             </Animated.View>
 
@@ -320,6 +336,69 @@ export function ExitOfferScreen({ navigation }: ExitOfferScreenProps) {
         )}
       </ScrollView>
     </View>
+  );
+}
+
+type Sparkle = {
+  size: number;
+  color: string;
+  top?: number;
+  bottom?: number;
+  left?: number;
+  right?: number;
+  delay: number;
+  duration: number;
+  minOpacity: number;
+  rotate: number;
+};
+
+const SPARKLES: Sparkle[] = [
+  { size: 34, color: colors.primary.blue400, top: -20, left: -14, delay: 0, duration: 2100, minOpacity: 0.35, rotate: -18 },
+  { size: 16, color: colors.primary.blue200, top: 34, left: -20, delay: 1300, duration: 1600, minOpacity: 0.4, rotate: 12 },
+  { size: 22, color: colors.primary.blue300, bottom: -16, left: 28, delay: 520, duration: 2400, minOpacity: 0.3, rotate: 24 },
+  { size: 28, color: colors.primary.blue400, top: -24, right: 30, delay: 880, duration: 1900, minOpacity: 0.35, rotate: 8 },
+  { size: 40, color: colors.primary.blue300, top: 12, right: -22, delay: 1700, duration: 2600, minOpacity: 0.3, rotate: -14 },
+  { size: 14, color: colors.primary.blue200, bottom: 6, right: -10, delay: 320, duration: 1500, minOpacity: 0.45, rotate: 30 },
+  { size: 19, color: colors.primary.blue400, bottom: -12, right: 56, delay: 2050, duration: 2200, minOpacity: 0.35, rotate: -8 },
+];
+
+function TwinkleStar({
+  size,
+  color,
+  top,
+  bottom,
+  left,
+  right,
+  delay,
+  duration,
+  minOpacity,
+  rotate,
+}: Sparkle) {
+  const progress = useSharedValue(0);
+
+  useEffect(() => {
+    progress.value = withDelay(
+      delay,
+      withRepeat(
+        withTiming(1, { duration, easing: Easing.inOut(Easing.sin) }),
+        -1,
+        true,
+      ),
+    );
+  }, [delay, duration, progress]);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: minOpacity + progress.value * (1 - minOpacity),
+    transform: [
+      { rotate: `${rotate}deg` },
+      { scale: 0.78 + progress.value * 0.34 },
+    ],
+  }));
+
+  return (
+    <Animated.View style={[styles.sparkle, { top, bottom, left, right }, animatedStyle]}>
+      <Icon name="star" size={size} color={color} />
+    </Animated.View>
   );
 }
 
@@ -502,7 +581,7 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
     width: '100%',
     gap: spacing['2xl'],
-    paddingTop: spacing['2xl'],
+    paddingTop: spacing.sm,
   },
   title: {
     fontFamily: fonts.semibold,
@@ -527,6 +606,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.lg,
   },
+  priceCardWrap: {
+    alignSelf: 'stretch',
+    position: 'relative',
+  },
   priceBlock: {
     ...card.base,
     ...card.shadow,
@@ -535,6 +618,9 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     paddingVertical: spacing.xl,
     paddingHorizontal: spacing.lg,
+  },
+  sparkle: {
+    position: 'absolute',
   },
   discountPill: {
     paddingVertical: spacing.xs,

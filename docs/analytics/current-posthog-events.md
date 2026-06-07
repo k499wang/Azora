@@ -166,6 +166,7 @@ These properties are emitted through the shared paywall event builder when
 available:
 
 - `placement`
+- `feature`
 - `source_screen`
 - `source_action`
 - `paywall_view_id`
@@ -213,6 +214,23 @@ available:
 - `stage`
 - `error_code`
 - `error_message`
+
+## Feature Gates
+
+- `feature_gate_hit`
+
+### Feature Gate Properties
+
+`feature_gate_hit`
+
+- `feature`
+- `placement`
+- `source_screen`
+- `source_action`
+- `reason`
+- `used`
+- `limit`
+- `is_pro`
 
 ## Profile
 
