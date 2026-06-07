@@ -11,6 +11,7 @@ import { card } from '../../theme/card';
 import TECHNIQUES, { type BreathingTechnique } from '../../data/techniques';
 import SectionHeader from '../common/SectionHeader';
 import { AnalyticsEvent } from '../../services/analytics/events';
+import { trackFeatureGateHit } from '../../services/analytics/tracking';
 import { useAuthStore } from '../../stores/authStore';
 import { useFeatureAccess } from '../../hooks/useFeatureAccess';
 import { useRecommendedTechnique } from '../../hooks/useRecommendedTechnique';
@@ -55,9 +56,17 @@ function TechniqueCard({
     });
 
     if (!exerciseAccess.allowed && !exerciseAccess.isLoading) {
+      trackFeatureGateHit({
+        feature: FeatureKey.DailyExercise,
+        placement: PaywallPlacement.ExercisePremiumGate,
+        sourceScreen: 'Home',
+        sourceAction: 'breathing_library',
+        access: exerciseAccess,
+      });
       navigation.navigate('ProPaywall', {
         placement: PaywallPlacement.ExercisePremiumGate,
         sourceScreen: 'Home',
+        sourceAction: 'breathing_library',
         feature: FeatureKey.DailyExercise,
       });
       return;

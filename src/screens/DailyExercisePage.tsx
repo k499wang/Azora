@@ -934,11 +934,18 @@ export default function DailyExercisePage({
                         startPrepBreathing(false);
                       }}
                       style={({ pressed }) => [
-                        styles.inlineLink,
-                        pressed && styles.textLinkPressed,
+                        styles.skipPill,
+                        { backgroundColor: activeTheme.surface, borderColor: activeTheme.surfaceBorder },
+                        pressed && styles.circleBtnPressed,
                       ]}
+                      accessibilityLabel="Skip heart rate"
                     >
-                      <Text style={[styles.textLinkLabel, { color: activeTheme.textTertiary }]}>Skip heart rate</Text>
+                      <MaterialCommunityIcons
+                        name="heart-off-outline"
+                        size={18}
+                        color={activeTheme.textTertiary}
+                      />
+                      <Text style={[styles.skipPillLabel, { color: activeTheme.textTertiary }]}>Skip heart rate</Text>
                     </Pressable>
                   </>
                 ) : (
@@ -1135,6 +1142,24 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     color: colors.text.tertiary,
     opacity: 0.7,
+  },
+  skipPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    height: 48,
+    paddingHorizontal: spacing.lg,
+    borderRadius: 24,
+    borderWidth: 1,
+    backgroundColor: colors.neutral[100],
+    borderColor: colors.border.subtle,
+  },
+  skipPillLabel: {
+    fontFamily: fonts.semibold,
+    fontSize: 14,
+    letterSpacing: 0.3,
+    color: colors.text.tertiary,
   },
   btnRow: {
     flexDirection: 'row',

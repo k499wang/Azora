@@ -26,6 +26,7 @@ import {
 import type { RootStackNavigationProp } from '../../app/navigation';
 import { captureException } from '../../services/analytics/errorTracking';
 import { AnalyticsEvent } from '../../services/analytics/events';
+import { trackFeatureGateHit } from '../../services/analytics/tracking';
 import { useAuthStore } from '../../stores/authStore';
 import { useCompleteHeartRateSessionMutation } from '../../queries/tracking/useCompleteHeartRateSessionMutation';
 import { useFeatureAccess } from '../../hooks/useFeatureAccess';
@@ -192,9 +193,26 @@ export function HeartRateCaptureFlow({
     const blockedByCache =
       !heartRateAccess.isLoading && !heartRateAccess.allowed;
     if (blockedByLimit || blockedByCache) {
+      const access = blockedByLimit && heartRateAccess.allowed
+        ? {
+            ...heartRateAccess,
+            allowed: false,
+            reason: 'free_limit_reached' as const,
+            used: Math.max(heartRateAccess.used, heartRateAccess.limit ?? 1),
+            limit: heartRateAccess.limit ?? 1,
+          }
+        : heartRateAccess;
+      trackFeatureGateHit({
+        feature: FeatureKey.HeartRateMeasurement,
+        placement: PaywallPlacement.HeartRateProGate,
+        sourceScreen: 'HeartRate',
+        sourceAction: 'retry_after_free_capture',
+        access,
+      });
       navigation.replace('ProPaywall', {
         placement: PaywallPlacement.HeartRateProGate,
         sourceScreen: 'HeartRate',
+        sourceAction: 'retry_after_free_capture',
         feature: FeatureKey.HeartRateMeasurement,
       });
       return;

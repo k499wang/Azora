@@ -21,6 +21,7 @@ import GlassIconButton from '../components/common/GlassIconButton';
 import type { DailyResultScreenProps } from '../app/navigation';
 import { estimateLungAge } from '../lib/lungAge';
 import { useFeatureAccess } from '../hooks/useFeatureAccess';
+import { trackFeatureGateHit } from '../services/analytics/tracking';
 import { PaywallPlacement } from '../services/paywall';
 import { FeatureKey } from '../services/subscriptions/featureAccess';
 import { useAuthStore } from '../stores/authStore';
@@ -85,12 +86,20 @@ export default function ShareableResultScreen({
     }
   }, []);
   const showAdvancedStatsPaywall = useCallback(() => {
+    trackFeatureGateHit({
+      feature: FeatureKey.AdvancedStats,
+      placement: PaywallPlacement.DailyResultProGate,
+      sourceScreen: 'DailyResult',
+      sourceAction: 'result_stats',
+      access: advancedStatsAccess,
+    });
     navigation.navigate('ProPaywall', {
       placement: PaywallPlacement.DailyResultProGate,
       sourceScreen: 'DailyResult',
+      sourceAction: 'result_stats',
       feature: FeatureKey.AdvancedStats,
     });
-  }, [navigation]);
+  }, [advancedStatsAccess, navigation]);
 
   const renderHeroCard = () => (
     <View>

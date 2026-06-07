@@ -24,6 +24,7 @@ import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography, fonts } from '../../theme/typography';
 import { useFeatureAccess } from '../../hooks/useFeatureAccess';
+import { trackFeatureGateHit } from '../../services/analytics/tracking';
 import { PaywallPlacement } from '../../services/paywall';
 import { FeatureKey } from '../../services/subscriptions/featureAccess';
 import { useAuthStore } from '../../stores/authStore';
@@ -94,9 +95,17 @@ export function MainTabs() {
 
     if (id === 'daily') {
       if (!exerciseAccess.allowed && !exerciseAccess.isLoading) {
+        trackFeatureGateHit({
+          feature: FeatureKey.DailyExercise,
+          placement: PaywallPlacement.ExercisePremiumGate,
+          sourceScreen: 'MainTabs',
+          sourceAction: 'daily_action_sheet',
+          access: exerciseAccess,
+        });
         navigation.navigate('ProPaywall', {
           placement: PaywallPlacement.ExercisePremiumGate,
           sourceScreen: 'MainTabs',
+          sourceAction: 'daily_action_sheet',
           feature: FeatureKey.DailyExercise,
         });
         return;
@@ -108,9 +117,17 @@ export function MainTabs() {
       }
 
       if (!exerciseAccess.allowed && !exerciseAccess.isLoading) {
+        trackFeatureGateHit({
+          feature: FeatureKey.DailyExercise,
+          placement: PaywallPlacement.ExercisePremiumGate,
+          sourceScreen: 'MainTabs',
+          sourceAction: 'breathe_action_sheet',
+          access: exerciseAccess,
+        });
         navigation.navigate('ProPaywall', {
           placement: PaywallPlacement.ExercisePremiumGate,
           sourceScreen: 'MainTabs',
+          sourceAction: 'breathe_action_sheet',
           feature: FeatureKey.DailyExercise,
         });
         return;
@@ -129,9 +146,17 @@ export function MainTabs() {
       });
       if (!heartRateAccess.allowed && !heartRateAccess.isLoading) {
         console.log('[hr-gate] MainTabs HR: routing to ProPaywall');
+        trackFeatureGateHit({
+          feature: FeatureKey.HeartRateMeasurement,
+          placement: PaywallPlacement.HeartRateProGate,
+          sourceScreen: 'MainTabs',
+          sourceAction: 'heart_rate_action_sheet',
+          access: heartRateAccess,
+        });
         navigation.navigate('ProPaywall', {
           placement: PaywallPlacement.HeartRateProGate,
           sourceScreen: 'MainTabs',
+          sourceAction: 'heart_rate_action_sheet',
           feature: FeatureKey.HeartRateMeasurement,
         });
         return;

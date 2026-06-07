@@ -24,6 +24,7 @@ const revenueCatClient = createRevenueCatClient({
     configure: (options) => {
       Purchases.configure(options);
     },
+    collectDeviceIdentifiers: () => Purchases.collectDeviceIdentifiers(),
     getCustomerInfo: () => Purchases.getCustomerInfo(),
     getCurrentOfferingForPlacement: (placement) =>
       Purchases.getCurrentOfferingForPlacement(placement),
@@ -70,6 +71,10 @@ export function hasCurrentRevenueCatIdentity(): boolean {
 
 export function isRevenueCatReady(): boolean {
   return revenueCatClient.isReady();
+}
+
+export function collectRevenueCatDeviceIdentifiers(): Promise<void> {
+  return revenueCatClient.collectDeviceIdentifiers();
 }
 
 export function requireCurrentRevenueCatAppUserId(): string {

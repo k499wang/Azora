@@ -4,6 +4,7 @@ import {
   clearAppsFlyerCustomerUserId,
   getAppsFlyerAvailability,
   getAppsFlyerId,
+  initAppsFlyer,
   setAppsFlyerCustomerUserId,
 } from './appsFlyerClient';
 
@@ -23,6 +24,7 @@ function syncedKey(userId: string): string {
 export async function syncAppsFlyerIdentityForUser(userId: string): Promise<void> {
   if (getAppsFlyerAvailability().status !== 'ready') return;
 
+  await initAppsFlyer();
   setAppsFlyerCustomerUserId(userId);
   if (__DEV__) {
     console.log(`[appsflyer-diag] cuid set=${userId}`);

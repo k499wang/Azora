@@ -18,6 +18,7 @@ import {
 import { CaptureModeToggle } from '../CaptureModeToggle';
 import type { RootStackNavigationProp } from '../../../app/navigation';
 import { useFeatureAccess } from '../../../hooks/useFeatureAccess';
+import { trackFeatureGateHit } from '../../../services/analytics/tracking';
 import { FeatureKey } from '../../../services/subscriptions/featureAccess';
 import { PaywallPlacement } from '../../../services/paywall';
 
@@ -32,7 +33,8 @@ const STEPS = [
 export function DefaultInstructionScreen({ onNext }: SetupScreenProps) {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<RootStackNavigationProp<'HeartRate'>>();
-  const { isPro } = useFeatureAccess(FeatureKey.AdvancedStats);
+  const advancedStatsAccess = useFeatureAccess(FeatureKey.AdvancedStats);
+  const { isPro } = advancedStatsAccess;
   const [mode, setMode] = useState<HeartRateCaptureMode>(DEFAULT_CAPTURE_MODE);
 
   const pressScale = useRef(new Animated.Value(1)).current;
@@ -40,6 +42,13 @@ export function DefaultInstructionScreen({ onNext }: SetupScreenProps) {
   const locked = isCaptureModeLocked(mode, isPro);
 
   const openPaywallForLockedMode = () => {
+    trackFeatureGateHit({
+      feature: FeatureKey.AdvancedStats,
+      placement: PaywallPlacement.HeartRateProGate,
+      sourceScreen: 'HeartRate',
+      sourceAction: 'capture_mode_full',
+      access: advancedStatsAccess,
+    });
     navigation.navigate('ProPaywall', {
       placement: PaywallPlacement.HeartRateProGate,
       sourceScreen: 'HeartRate',

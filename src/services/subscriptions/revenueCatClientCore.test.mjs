@@ -16,6 +16,12 @@ function createHarness(options = {}) {
     isDev: options.isDev ?? false,
     isSupportedPlatform: options.isSupportedPlatform ?? true,
     sdk: {
+      collectDeviceIdentifiers: async () => {
+        calls.push({ fn: 'collectDeviceIdentifiers' });
+        if (options.collectDeviceIdentifiersError != null) {
+          throw options.collectDeviceIdentifiersError;
+        }
+      },
       configure: ({ apiKey, appUserID }) => {
         calls.push({ fn: 'configure', apiKey, appUserID });
         configured = true;
@@ -55,7 +61,7 @@ test('syncIdentity configures RevenueCat with the authenticated Supabase user id
   assert.equal(harness.client.getCurrentAppUserId(), 'user-1');
   assert.deepEqual(
     harness.calls.map((call) => call.fn),
-    ['setLogLevel', 'configure', 'setEmail', 'getCustomerInfo'],
+    ['setLogLevel', 'configure', 'collectDeviceIdentifiers', 'setEmail', 'getCustomerInfo'],
   );
   assert.deepEqual(harness.calls[1], {
     fn: 'configure',
@@ -89,10 +95,12 @@ test('switching between authenticated users uses RevenueCat logIn directly', asy
     [
       'setLogLevel',
       'logIn',
+      'collectDeviceIdentifiers',
       'setEmail',
       'getCustomerInfo',
       'setLogLevel',
       'logIn',
+      'collectDeviceIdentifiers',
       'setEmail',
       'getCustomerInfo',
     ],
@@ -101,8 +109,25 @@ test('switching between authenticated users uses RevenueCat logIn directly', asy
     fn: 'logIn',
     appUserId: 'user-1',
   });
-  assert.deepEqual(harness.calls[5], {
+  assert.deepEqual(harness.calls[6], {
     fn: 'logIn',
     appUserId: 'user-2',
   });
+});
+
+test('device identifier collection failures do not block identity sync', async () => {
+  const harness = createHarness({
+    collectDeviceIdentifiersError: new Error('native attribution unavailable'),
+  });
+
+  await harness.client.syncIdentity({
+    id: 'user-1',
+    email: 'user-1@example.com',
+  });
+
+  assert.equal(harness.client.getCurrentAppUserId(), 'user-1');
+  assert.deepEqual(
+    harness.calls.map((call) => call.fn),
+    ['setLogLevel', 'configure', 'collectDeviceIdentifiers', 'setEmail', 'getCustomerInfo'],
+  );
 });
