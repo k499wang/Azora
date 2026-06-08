@@ -144,7 +144,7 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
   },
   {
     id: 'yoga',
-    icon: 'breath-leaf',
+    icon: 'lotus',
     accent: colors.primary.blue600,
     title: 'Support my yoga',
     body: 'Carry your breath off the mat — pranayama to steady every practice.',
@@ -154,7 +154,7 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
       'Pranayama is the breath side of yoga — the same slow, intentional breathing that steadies poses and deepens stillness.',
     valuePoints: [
       {
-        icon: 'breath-leaf',
+        icon: 'lotus',
         accent: colors.primary.blue600,
         label: 'Pranayama is the breath half of yoga, taught for millennia',
       },

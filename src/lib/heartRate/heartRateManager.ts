@@ -364,7 +364,9 @@ export class HeartRateManager {
 
   beginMeasurementWindow(startTimestamp: number): void {
     this.ibiSamples.length = 0;
-    this.liveSignalSamples.length = 0;
+    // Keep liveSignalSamples intact so the PPG graph flows continuously from
+    // calibration into the hold instead of resetting to empty. The buffer
+    // self-trims to LIVE_SIGNAL_WINDOW_MS and is visual-only.
     this.sessionStartTs = startTimestamp;
     // Preserve the warmed detector, but avoid storing the first accepted
     // interval because it straddles the setup->measurement boundary.

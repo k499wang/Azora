@@ -12,6 +12,9 @@ import BreathingCircle, {
   BreathingCircleRef,
 } from '../components/exercise/BreathingCircle';
 import ExerciseScaffold from '../components/exercise/ExerciseScaffold';
+import BreathHoldIntro, {
+  type BreathHoldStep,
+} from '../components/exercise/BreathHoldIntro';
 import HoldProgressBar from '../components/exercise/HoldProgressBar';
 import { useLivePulse } from '../hooks/useLivePulse';
 import { HeartRateCameraPreview } from '../components/heartRate/HeartRateCameraPreview';
@@ -57,6 +60,18 @@ const PRE_BREATH_EXHALE_SECONDS = 6;
 const FINAL_INHALE_SECONDS = 4;
 const HOLD_RELEASE_GUARD_MS = 1000;
 const BEST_HOLD_KEY = 'daily_breath_hold_best_seconds';
+const SPRING_IN_DURATION_MS = 750;
+
+const INTRO_TITLE = 'Daily Breath Hold';
+const INTRO_DESCRIPTION =
+  `Take ${PRE_BREATH_CYCLES} slow breaths, one last deep inhale, then hold as long as you ` +
+  `comfortably can. Tap to release. Builds CO₂ tolerance, calms your nervous system, and ` +
+  `strengthens lung capacity. Over time it trains a steadier, more resilient breath.`;
+const INTRO_STEPS: BreathHoldStep[] = [
+  { icon: 'arrow-up-bold', value: `${PRE_BREATH_INHALE_SECONDS}s`, label: 'Inhale' },
+  { icon: 'arrow-down-bold', value: `${PRE_BREATH_EXHALE_SECONDS}s`, label: 'Exhale' },
+  { icon: 'pause', value: 'Max', label: 'Hold' },
+];
 
 function placementHint(p: FingerPlacementState): string {
   switch (p) {
@@ -75,6 +90,7 @@ function placementHint(p: FingerPlacementState): string {
 
 type HoldPhase =
   | 'idle'
+  | 'intro'
   | 'placement'
   | 'preInhale'
   | 'preExhale'
@@ -85,6 +101,7 @@ type HoldPhase =
 
 const PHASE_LABELS: Record<HoldPhase, string> = {
   idle: '',
+  intro: '',
   placement: '',
   preInhale: 'Inhale',
   preExhale: 'Exhale',
@@ -192,6 +209,7 @@ export default function DailyExercisePage({
   const circleRef = useRef<BreathingCircleRef>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const inhaleTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const introTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const releaseAudioTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const samplesRef = useRef<BpmSample[]>([]);
   const measurementStartAtRef = useRef<number>(0);
@@ -233,14 +251,17 @@ export default function DailyExercisePage({
   const transition = useRef(new Animated.Value(phase === 'idle' ? 0 : 1)).current;
 
   useEffect(() => {
+    if (phase === 'intro') {
+      transition.setValue(0);
+    }
     const toValue = phase === 'idle' ? 0 : 1;
     Animated.timing(transition, {
       toValue,
-      duration: 450,
+      duration: SPRING_IN_DURATION_MS,
       easing: Easing.inOut(Easing.ease),
       useNativeDriver: true,
     }).start();
-  }, [phase === 'idle']);
+  }, [phase, transition]);
 
   const circleOpacity = transition.interpolate({
     inputRange: [0, 0.45, 1],
@@ -249,6 +270,18 @@ export default function DailyExercisePage({
   const circleScale = transition.interpolate({
     inputRange: [0, 1],
     outputRange: [0.88, 1],
+  });
+  const introOpacity = transition.interpolate({
+    inputRange: [0, 0.55, 1],
+    outputRange: [1, 0.4, 0],
+  });
+  const introScale = transition.interpolate({
+    inputRange: [0, 1],
+    outputRange: [1, 0.96],
+  });
+  const introTranslateY = transition.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, -12],
   });
   const dailyAudioActive =
     isFocused && (isBreathingPhase(phase) || phase === 'hold');
@@ -353,6 +386,10 @@ export default function DailyExercisePage({
     if (inhaleTimeoutRef.current) {
       clearTimeout(inhaleTimeoutRef.current);
       inhaleTimeoutRef.current = null;
+    }
+    if (introTimeoutRef.current) {
+      clearTimeout(introTimeoutRef.current);
+      introTimeoutRef.current = null;
     }
     if (releaseAudioTimeoutRef.current) {
       clearTimeout(releaseAudioTimeoutRef.current);
@@ -611,7 +648,12 @@ export default function DailyExercisePage({
     }
     if (!flow.start()) return;
     setHrEnabled(false);
-    startPrepBreathing(false);
+    setPhase('intro');
+    clearTimer();
+    introTimeoutRef.current = setTimeout(() => {
+      if (!flow.isActive()) return;
+      startPrepBreathing(false);
+    }, SPRING_IN_DURATION_MS);
   }, [
     flow,
     heartRateMonitoringEnabled,
@@ -619,11 +661,6 @@ export default function DailyExercisePage({
     startPlacement,
     startPrepBreathing,
   ]);
-
-  useEffect(() => {
-    if (!isFocused || phase !== 'idle') return;
-    startDailyExercise();
-  }, [isFocused, phase, startDailyExercise]);
 
   const startPrepBreathingRef = useRef(startPrepBreathing);
   useEffect(() => {
@@ -808,6 +845,32 @@ export default function DailyExercisePage({
               </View>
             )}
             <View style={styles.contentArea}>
+              <Animated.View
+                style={[
+                  styles.contentLayer,
+                  {
+                    opacity: introOpacity,
+                    transform: [
+                      { scale: introScale },
+                      { translateY: introTranslateY },
+                    ],
+                  },
+                ]}
+                pointerEvents="none"
+              >
+                <BreathHoldIntro
+                  title={INTRO_TITLE}
+                  description={INTRO_DESCRIPTION}
+                  steps={INTRO_STEPS}
+                  textColors={{
+                    primary: activeTheme.textPrimary,
+                    secondary: activeTheme.textSecondary,
+                    tertiary: activeTheme.textTertiary,
+                    accent: activeTheme.textAccent,
+                  }}
+                />
+              </Animated.View>
+
               <Animated.View
                 style={[
                   styles.contentLayer,
