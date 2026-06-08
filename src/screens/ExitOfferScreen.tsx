@@ -158,21 +158,8 @@ export function ExitOfferScreen({ navigation }: ExitOfferScreenProps) {
     }
   }, [navigation, paywall]);
 
-  const selectedPriceLabel = useMemo(() => {
-    if (!selectedPackage) return null;
-    if (selectedPackage.id === 'annual') {
-      const perMonth = computeMonthly(selectedPackage);
-      return perMonth ? `${perMonth}/mo` : null;
-    }
-    const perWeek = computePerWeek(selectedPackage);
-    return perWeek ? `${perWeek}/week` : null;
-  }, [selectedPackage]);
-
-  const ctaLabel = selectedPackage?.trialLabel != null
-    ? 'Start My Free Trial →'
-    : selectedPriceLabel
-      ? `Continue — ${selectedPriceLabel}`
-      : 'Claim Offer';
+  const ctaLabel =
+    selectedPackage?.trialLabel != null ? 'Start My Free Trial →' : 'Continue';
 
   return (
     <View style={styles.screen}>
@@ -257,23 +244,6 @@ export function ExitOfferScreen({ navigation }: ExitOfferScreenProps) {
                 </View>
               </View>
             </Animated.View>
-
-            <View style={styles.proofRow}>
-              <View style={styles.proofItem}>
-                <Icon name="laurel" size={60} color={colors.primary.blue300} />
-                <View style={styles.proofCenter}>
-                  <View style={styles.starsRow}>
-                    {[0, 1, 2, 3, 4].map((i) => (
-                      <Icon key={i} name="star" size={28} color={colors.yellow[400]} />
-                    ))}
-                  </View>
-                  <Text style={styles.proofRatingLabel}>5 STAR RATING</Text>
-                </View>
-                <View style={styles.laurelMirror}>
-                  <Icon name="laurel" size={60} color={colors.primary.blue300} />
-                </View>
-              </View>
-            </View>
 
             <View style={styles.testimonials}>
               {TESTIMONIALS.map((t) => (
@@ -680,34 +650,6 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: colors.text.secondary,
     fontVariant: ['tabular-nums'],
-  },
-  proofRow: {
-    flexDirection: 'row',
-    alignSelf: 'stretch',
-    justifyContent: 'center',
-  },
-  proofItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  laurelMirror: {
-    transform: [{ scaleX: -1 }],
-  },
-  proofCenter: {
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  proofRatingLabel: {
-    ...typography.caption.caption2,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    letterSpacing: 2,
-    color: colors.text.secondary,
-  },
-  starsRow: {
-    flexDirection: 'row',
-    gap: spacing.xs,
   },
   testimonials: {
     alignSelf: 'stretch',

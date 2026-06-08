@@ -54,30 +54,17 @@ export default function NotificationPermissionScreen({
 
   return (
     <OnboardingScreenLayout
-      title="When do you want to carve time out for breathing?"
-      subtitle="Azora can send one gentle reminder a day so your practice does not slip."
+      title="Make it stick"
+      subtitle="A daily cue is the biggest reason people keep going. Pick a time and we'll send one gentle reminder. Nothing else."
       progress={stepIndex / stepCount}
       onBack={onBack}
+      onSkip={onSkip}
       footer={
-        <View style={styles.footer}>
-          <OnboardingPrimaryButton
-            label="Enable reminder"
-            loading={isSubmitting}
-            onPress={() => onEnable(preferences)}
-          />
-          <Pressable
-            accessibilityRole="button"
-            disabled={isSubmitting}
-            onPress={onSkip}
-            style={({ pressed }) => [
-              styles.skipButton,
-              pressed && styles.skipButtonPressed,
-              isSubmitting && styles.disabled,
-            ]}
-          >
-            <Text style={styles.skipText}>Not now</Text>
-          </Pressable>
-        </View>
+        <OnboardingPrimaryButton
+          label="Enable reminder"
+          loading={isSubmitting}
+          onPress={() => onEnable(preferences)}
+        />
       }
     >
       <View style={styles.content}>
@@ -87,6 +74,10 @@ export default function NotificationPermissionScreen({
           onToggle={setEnabled}
           onTimeChange={setTime}
         />
+
+        <Text style={styles.reassurance}>
+          You're in control. Change the time or turn it off anytime in Settings.
+        </Text>
 
         {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
       </View>
@@ -281,30 +272,16 @@ const styles = StyleSheet.create({
     color: colors.text.tertiary,
   },
 
+  reassurance: {
+    ...typography.body.small,
+    color: colors.text.tertiary,
+    textAlign: 'center',
+    paddingHorizontal: spacing.sm,
+  },
   errorText: {
     ...typography.body.small,
     color: colors.error[500],
     textAlign: 'center',
-  },
-  footer: {
-    gap: spacing.sm,
-  },
-  skipButton: {
-    minHeight: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  skipButtonPressed: {
-    opacity: 0.6,
-  },
-  skipText: {
-    ...typography.button.medium,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    color: colors.text.secondary,
-  },
-  disabled: {
-    opacity: 0.45,
   },
   backdrop: {
     flex: 1,

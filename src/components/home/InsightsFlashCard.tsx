@@ -25,7 +25,8 @@ interface Props {
   onStartTechnique?: (techniqueId: string) => void;
 }
 
-const FALLBACK_CARD_HEIGHT = 172;
+const CARD_HEIGHT = 172;
+const DETAIL_MAX_LINES = 3;
 const CAROUSEL_CARD_GAP = 16;
 
 export default function InsightsFlashCard({
@@ -35,19 +36,10 @@ export default function InsightsFlashCard({
   onStartTechnique,
 }: Props) {
   const [index, setIndex] = useState(0);
-  const [measuredHeights, setMeasuredHeights] = useState<Record<string, number>>({});
   const { width: windowWidth } = useWindowDimensions();
   const cardWidth = windowWidth - padding.screen.horizontal * 2;
   const slideWidth = cardWidth + CAROUSEL_CARD_GAP * 2;
-
-  const maxHeight = Object.values(measuredHeights).reduce(
-    (max, h) => (h > max ? h : max),
-    0,
-  );
-  const allMeasured =
-    insights.length > 0 &&
-    insights.every((ins) => measuredHeights[ins.id] !== undefined);
-  const cardHeight = allMeasured && maxHeight > 0 ? maxHeight : FALLBACK_CARD_HEIGHT;
+  const cardHeight = CARD_HEIGHT;
 
   if (insights.length === 0) return null;
 
@@ -55,34 +47,6 @@ export default function InsightsFlashCard({
 
   return (
     <View style={styles.wrap}>
-      <View style={styles.measureLayer} pointerEvents="none" aria-hidden>
-        {insights.map((ins) => {
-          const insHasCta = !!(ins.techniqueId && ins.ctaLabel && onStartTechnique);
-          return (
-            <View
-              key={ins.id}
-              style={styles.measureCard}
-              onLayout={(e) => {
-                const h = e.nativeEvent.layout.height;
-                setMeasuredHeights((prev) =>
-                  prev[ins.id] === h ? prev : { ...prev, [ins.id]: h },
-                );
-              }}
-            >
-              <View style={styles.contentRow}>
-                <View style={styles.textColumn}>
-                  <View style={styles.cardHeader}>
-                    <Text style={styles.eyebrow}>{ins.eyebrow}</Text>
-                  </View>
-                  <Text style={styles.tone}>{ins.tone}</Text>
-                  <Text style={styles.detail}>{ins.detail}</Text>
-                </View>
-                {insHasCta ? <View style={styles.startButton} /> : null}
-              </View>
-            </View>
-          );
-        })}
-      </View>
       <View style={[styles.carouselFrame, { width: slideWidth }]}>
         <Carousel
           data={insights}
@@ -150,9 +114,9 @@ function InsightCard({
   const clearHeader = (
     <>
       <View style={styles.cardHeader}>
-        <Text style={styles.eyebrow}>{insight.eyebrow}</Text>
+        <Text style={styles.eyebrow} numberOfLines={1}>{insight.eyebrow}</Text>
       </View>
-      <Text style={styles.tone}>{insight.tone}</Text>
+      <Text style={styles.tone} numberOfLines={1}>{insight.tone}</Text>
     </>
   );
 
@@ -160,7 +124,9 @@ function InsightCard({
     <View style={styles.contentRow}>
       <View style={styles.textColumn}>
         {clearHeader}
-        <Text style={styles.detail}>{insight.detail}</Text>
+        <Text style={styles.detail} numberOfLines={DETAIL_MAX_LINES} ellipsizeMode="tail">
+          {insight.detail}
+        </Text>
       </View>
       {hasCta ? (
         locked ? (
@@ -236,21 +202,9 @@ const styles = StyleSheet.create({
   carouselFrame: {
     alignSelf: 'center',
   },
-  measureLayer: {
-    position: 'absolute',
-    left: padding.screen.horizontal,
-    right: padding.screen.horizontal,
-    opacity: 0,
-  },
   carouselItem: {
     height: '100%',
     paddingHorizontal: CAROUSEL_CARD_GAP,
-  },
-  measureCard: {
-    minHeight: 140,
-    paddingLeft: spacing.xl,
-    paddingRight: spacing.lg,
-    paddingVertical: spacing.lg,
   },
   cardWrap: {
     height: '100%',
@@ -298,7 +252,7 @@ const styles = StyleSheet.create({
     ...typography.title.title3,
     fontFamily: fonts.semibold,
     color: colors.text.primary,
-    marginBottom: spacing.xs,
+    marginBottom: spacing.md,
   },
   detail: {
     ...typography.body.small,
@@ -324,12 +278,14 @@ const styles = StyleSheet.create({
     backgroundColor: colors.neutral[300],
   },
   contentRow: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.lg,
   },
   textColumn: {
     flex: 1,
+    justifyContent: 'center',
   },
   startButton: {
     width: 48,
