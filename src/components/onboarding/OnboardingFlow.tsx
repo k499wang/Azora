@@ -23,6 +23,7 @@ import NotificationPermissionScreen from './screens/NotificationPermissionScreen
 import SleepScreen from './screens/SleepScreen';
 import StressScreen from './screens/StressScreen';
 import RecommendationScreen from './screens/RecommendationScreen';
+import FounderNoteScreen from './screens/FounderNoteScreen';
 import OnboardingPaywallScreen from './screens/OnboardingPaywallScreen';
 import LungCapacityScreen from './screens/LungCapacityScreen';
 import type { LungCapacityResult } from '../../lib/lungCapacity';
@@ -85,7 +86,7 @@ interface OnboardingFlowProps {
 }
 
 
-const STEP_COUNT = 21;
+const STEP_COUNT = 22;
 const STEP_INDEX: Record<OnboardingStep, number> = {
   intent: 1,
   intentReflection: 2,
@@ -106,8 +107,9 @@ const STEP_INDEX: Record<OnboardingStep, number> = {
   baselineIntro: 17,
   baseline: 18,
   recommendation: 19,
-  pact: 20,
-  paywall: 21,
+  founderNote: 20,
+  pact: 21,
+  paywall: 22,
 };
 
 type OnboardingTransitionAction = 'continue' | 'skip' | 'back' | 'auto';
@@ -750,8 +752,26 @@ export default function OnboardingFlow({
         experienceLevel={experienceLevel}
         stepIndex={stepIndex}
         stepCount={STEP_COUNT}
-        onContinue={() => goToStep('pact', 'continue')}
+        onContinue={() => goToStep('founderNote', 'continue')}
         onBack={() => goToStep('baseline', 'back')}
+      />
+    );
+  }
+
+  if (step === 'founderNote') {
+    const intentTitle =
+      primaryIntent === 'other' || primaryIntent == null
+        ? customIntent.trim() || null
+        : selectedOption?.title ?? null;
+
+    return (
+      <FounderNoteScreen
+        name={name.trim() || null}
+        intentTitle={intentTitle}
+        stepIndex={stepIndex}
+        stepCount={STEP_COUNT}
+        onContinue={() => goToStep('pact', 'continue')}
+        onBack={() => goToStep('recommendation', 'back')}
       />
     );
   }
@@ -809,7 +829,7 @@ export default function OnboardingFlow({
         onConfirm={() => {
           void saveProfileAndShowPaywall();
         }}
-        onBack={() => goToStep('recommendation', 'back')}
+        onBack={() => goToStep('founderNote', 'back')}
       />
     );
   }

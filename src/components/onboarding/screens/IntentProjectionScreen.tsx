@@ -1,5 +1,12 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
+import {
+  Easing,
+  useDerivedValue,
+  useSharedValue,
+  withDelay,
+  withTiming,
+} from 'react-native-reanimated';
 import {
   Canvas,
   Circle,
@@ -19,6 +26,7 @@ const PAD_LEFT = 8;
 const PAD_RIGHT = 8;
 const PAD_TOP = 12;
 const PAD_BOTTOM = 28;
+const TOP_INSET = 10;
 const SAMPLE_COUNT = 64;
 const CURVE_K = 0.55;
 const WEEKS = [1, 2, 3, 4, 5, 6, 7, 8];
@@ -45,74 +53,85 @@ export default function IntentProjectionScreen({
     return Math.min(0.78 + (n - 1) * 0.04, 0.94);
   }, [selectedIntents]);
 
-  const progress = useRef(new Animated.Value(0)).current;
-  const [t, setT] = useState(0);
+  const progress = useSharedValue(0);
 
   useEffect(() => {
-    const id = progress.addListener(({ value }) => setT(value));
-    Animated.timing(progress, {
-      toValue: 1,
-      duration: 1400,
-      delay: 280,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: false,
-    }).start();
-    return () => progress.removeListener(id);
-  }, [progress]);
+    progress.value = 0;
+    progress.value = withDelay(
+      280,
+      withTiming(1, { duration: 1400, easing: Easing.out(Easing.cubic) }),
+    );
+  }, [progress, ceiling, width]);
 
   const innerW = Math.max(0, width - PAD_LEFT - PAD_RIGHT);
   const innerH = CHART_HEIGHT - PAD_TOP - PAD_BOTTOM;
 
-  const { line, fill, startX, startY, endX, endY } = useMemo(() => {
-    if (innerW <= 0) {
-      return { line: null, fill: null, startX: 0, startY: 0, endX: 0, endY: 0 };
-    }
-
+  const line = useDerivedValue(() => {
+    const p = Skia.Path.Make();
+    if (innerW <= 0) return p;
+    const t = progress.value;
     const normalizer = 1 - Math.exp(-CURVE_K * 8);
-    const curveAt = (u: number) => {
-      const raw = 1 - Math.exp(-CURVE_K * u * 8);
-      return (raw / normalizer) * ceiling;
-    };
-
-    const TOP_INSET = 10;
-    const xAt = (u: number) => PAD_LEFT + u * innerW;
-    const yAt = (v: number) =>
-      PAD_TOP + innerH - (v / ceiling) * (innerH - TOP_INSET);
-
     const visible = Math.max(2, Math.ceil(SAMPLE_COUNT * t));
-    const linePath = Skia.Path.Make();
-    const fillPath = Skia.Path.Make();
-
-    let lastX = xAt(0);
-    let lastY = yAt(curveAt(0));
-
     for (let i = 0; i < visible; i++) {
       const u = (i / (SAMPLE_COUNT - 1)) * t;
-      const x = xAt(u);
-      const y = yAt(curveAt(u));
+      const raw = 1 - Math.exp(-CURVE_K * u * 8);
+      const v = (raw / normalizer) * ceiling;
+      const x = PAD_LEFT + u * innerW;
+      const y = PAD_TOP + innerH - (v / ceiling) * (innerH - TOP_INSET);
+      if (i === 0) p.moveTo(x, y);
+      else p.lineTo(x, y);
+    }
+    return p;
+  }, [innerW, innerH, ceiling]);
+
+  const fill = useDerivedValue(() => {
+    const p = Skia.Path.Make();
+    if (innerW <= 0) return p;
+    const t = progress.value;
+    const baseline = PAD_TOP + innerH;
+    const normalizer = 1 - Math.exp(-CURVE_K * 8);
+    const visible = Math.max(2, Math.ceil(SAMPLE_COUNT * t));
+    let lastX = PAD_LEFT;
+    for (let i = 0; i < visible; i++) {
+      const u = (i / (SAMPLE_COUNT - 1)) * t;
+      const raw = 1 - Math.exp(-CURVE_K * u * 8);
+      const v = (raw / normalizer) * ceiling;
+      const x = PAD_LEFT + u * innerW;
+      const y = PAD_TOP + innerH - (v / ceiling) * (innerH - TOP_INSET);
       if (i === 0) {
-        linePath.moveTo(x, y);
-        fillPath.moveTo(x, PAD_TOP + innerH);
-        fillPath.lineTo(x, y);
+        p.moveTo(x, baseline);
+        p.lineTo(x, y);
       } else {
-        linePath.lineTo(x, y);
-        fillPath.lineTo(x, y);
+        p.lineTo(x, y);
       }
       lastX = x;
-      lastY = y;
     }
-    fillPath.lineTo(lastX, PAD_TOP + innerH);
-    fillPath.close();
+    p.lineTo(lastX, baseline);
+    p.close();
+    return p;
+  }, [innerW, innerH, ceiling]);
 
-    return {
-      line: linePath,
-      fill: fillPath,
-      startX: xAt(0),
-      startY: yAt(curveAt(0)),
-      endX: lastX,
-      endY: lastY,
-    };
-  }, [innerW, innerH, ceiling, t]);
+  const startX = PAD_LEFT;
+  const startY = PAD_TOP + innerH;
+
+  const endX = useDerivedValue(() => {
+    if (innerW <= 0) return 0;
+    const t = progress.value;
+    const visible = Math.max(2, Math.ceil(SAMPLE_COUNT * t));
+    const u = ((visible - 1) / (SAMPLE_COUNT - 1)) * t;
+    return PAD_LEFT + u * innerW;
+  }, [innerW]);
+
+  const endY = useDerivedValue(() => {
+    if (innerW <= 0) return 0;
+    const t = progress.value;
+    const normalizer = 1 - Math.exp(-CURVE_K * 8);
+    const visible = Math.max(2, Math.ceil(SAMPLE_COUNT * t));
+    const u = ((visible - 1) / (SAMPLE_COUNT - 1)) * t;
+    const raw = 1 - Math.exp(-CURVE_K * u * 8);
+    const v = (raw / normalizer) * ceiling;
+    return PAD_TOP + innerH - (v / ceiling) * (innerH - TOP_INSET);
+  }, [innerW, innerH, ceiling]);
 
   const lineColor = colors.primary.blue600;
   const dotColor = colors.primary.blue600;
@@ -149,36 +168,25 @@ export default function IntentProjectionScreen({
                 color={colors.neutral[300]}
               />
 
-              {fill ? (
-                <Path path={fill} style="fill">
-                  <LinearGradient
-                    start={vec(0, PAD_TOP)}
-                    end={vec(0, PAD_TOP + innerH)}
-                    colors={[
-                      `${lineColor}44`,
-                      `${lineColor}00`,
-                    ]}
-                  />
-                </Path>
-              ) : null}
-
-              {line ? (
-                <Path
-                  path={line}
-                  style="stroke"
-                  strokeWidth={4}
-                  strokeCap="round"
-                  strokeJoin="round"
-                  color={lineColor}
+              <Path path={fill} style="fill">
+                <LinearGradient
+                  start={vec(0, PAD_TOP)}
+                  end={vec(0, PAD_TOP + innerH)}
+                  colors={[`${lineColor}44`, `${lineColor}00`]}
                 />
-              ) : null}
+              </Path>
 
-              {line ? (
-                <>
-                  <Circle cx={startX} cy={startY} r={6} color={dotColor} />
-                  <Circle cx={endX} cy={endY} r={6} color={dotColor} />
-                </>
-              ) : null}
+              <Path
+                path={line}
+                style="stroke"
+                strokeWidth={4}
+                strokeCap="round"
+                strokeJoin="round"
+                color={lineColor}
+              />
+
+              <Circle cx={startX} cy={startY} r={6} color={dotColor} />
+              <Circle cx={endX} cy={endY} r={6} color={dotColor} />
             </Canvas>
           ) : null}
         </View>

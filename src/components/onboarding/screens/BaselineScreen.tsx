@@ -599,8 +599,8 @@ export default function BaselineScreen({
           pointerEvents="none"
           aria-hidden
         >
-          <Text
-            style={styles.scienceBody}
+          <View
+            style={styles.sciencePanel}
             onLayout={(e) => {
               const h = e.nativeEvent.layout.height;
               if (h > 0 && Math.abs(h - scienceContentHeight) > 0.5) {
@@ -608,8 +608,14 @@ export default function BaselineScreen({
               }
             }}
           >
-            {SCIENCE_BODY_TEXT}
-          </Text>
+            <View style={styles.sciencePanelHeader}>
+              <View style={styles.scienceButtonIcon}>
+                <Icon name="microscope" size={14} color={colors.primary.blue700} />
+              </View>
+              <Text style={styles.sciencePanelLabel}>Photoplethysmography</Text>
+            </View>
+            <Text style={styles.scienceBody}>{SCIENCE_BODY_TEXT}</Text>
+          </View>
         </View>
         <Animated.View
           style={[
@@ -618,7 +624,15 @@ export default function BaselineScreen({
           ]}
           pointerEvents={scienceOpen ? 'auto' : 'none'}
         >
-          <Text style={styles.scienceBody}>{SCIENCE_BODY_TEXT}</Text>
+          <View style={styles.sciencePanel}>
+            <View style={styles.sciencePanelHeader}>
+              <View style={styles.scienceButtonIcon}>
+                <Icon name="microscope" size={14} color={colors.primary.blue700} />
+              </View>
+              <Text style={styles.sciencePanelLabel}>Photoplethysmography</Text>
+            </View>
+            <Text style={styles.scienceBody}>{SCIENCE_BODY_TEXT}</Text>
+          </View>
         </Animated.View>
       </View>
 
@@ -744,12 +758,31 @@ const styles = StyleSheet.create({
     top: 0,
     opacity: 0,
   },
+  sciencePanel: {
+    gap: spacing.sm,
+    padding: spacing.md,
+    borderRadius: 16,
+    backgroundColor: colors.background.accentSoft,
+    borderWidth: 1,
+    borderColor: colors.primary.blue100,
+  },
+  sciencePanelHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  sciencePanelLabel: {
+    ...typography.label.small,
+    fontFamily: fonts.semibold,
+    fontWeight: '500',
+    color: colors.primary.blue700,
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+  },
   scienceBody: {
     ...typography.body.small,
     color: colors.text.secondary,
     lineHeight: 20,
-    paddingHorizontal: spacing.xs,
-    paddingTop: spacing.xs,
   },
   checklistSection: {
     gap: spacing.xs,

@@ -7,6 +7,10 @@ export const ICON_PATHS = {
     viewBox: '0 0 24 24',
     body: `<path fill="currentColor" d="M12 2.6l2.9 5.88 6.49.94-4.7 4.58 1.11 6.46L12 17.9l-5.8 3.05 1.11-6.46-4.7-4.58 6.49-.94z"/>`,
   },
+  message: {
+    viewBox: '0 0 24 24',
+    body: `<path fill="currentColor" d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/>`,
+  },
   laurel: {
     viewBox: '0 0 244.14168 307.26953',
     body: `

@@ -18,6 +18,7 @@ export type OnboardingStep =
   | 'baselineIntro'
   | 'baseline'
   | 'recommendation'
+  | 'founderNote'
   | 'scienceCredibility'
   | 'pact'
   | 'notifications'
