@@ -28,7 +28,7 @@ type PeriodType = 'TRIAL' | 'INTRO' | 'NORMAL' | 'PROMOTIONAL';
 interface RevenueCatEvent {
   id: string;
   type: RevenueCatEventType;
-  app_user_id: string;
+  app_user_id?: string;
   original_app_user_id?: string;
   aliases?: string[];
   environment: 'SANDBOX' | 'PRODUCTION';
@@ -156,13 +156,24 @@ Deno.serve(async (req) => {
   }
 
   const event = payload?.event;
-  if (!event?.id || !event.type || !event.app_user_id) {
+  if (!event?.id || !event.type) {
+    return new Response('missing event fields', { status: 400 });
+  }
+
+  // TEST, TRANSFER, and SUBSCRIBER_ALIAS are audit-only here. RevenueCat may
+  // send them without a single app_user_id, so only subscription-writing events
+  // require one.
+  const isAckOnlyType =
+    event.type === 'TEST' ||
+    event.type === 'TRANSFER' ||
+    event.type === 'SUBSCRIBER_ALIAS';
+  if (!isAckOnlyType && !event.app_user_id) {
     return new Response('missing event fields', { status: 400 });
   }
 
   let userId: string | null = null;
 
-  if (isUuid(event.app_user_id)) {
+  if (event.app_user_id && isUuid(event.app_user_id)) {
     const { data: profile, error: profileLookupError } = await supabase
       .from('profiles')
       .select('user_id')
@@ -192,7 +203,7 @@ Deno.serve(async (req) => {
     return new Response('event log failed', { status: 500 });
   }
 
-  if (event.type === 'TEST' || event.type === 'TRANSFER' || event.type === 'SUBSCRIBER_ALIAS') {
+  if (isAckOnlyType) {
     return new Response(JSON.stringify({ ok: true, logged: true }), {
       headers: { 'content-type': 'application/json' },
     });

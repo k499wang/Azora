@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Alert, Linking, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
@@ -7,7 +7,6 @@ import { padding, spacing } from '../theme/spacing';
 import AmbientBackground from '../components/common/AmbientBackground';
 import AppTopBar from '../components/common/AppTopBar';
 import BrandLockup from '../components/common/BrandLockup';
-import GlassIconButton from '../components/common/GlassIconButton';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import SectionHeader from '../components/common/SectionHeader';
 import ProfileDisplayNameEditorDialog from '../components/profile/ProfileDisplayNameEditorDialog';
@@ -196,15 +195,16 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
           <AppTopBar
             leftSlot={<BrandLockup />}
             rightSlot={
-              <GlassIconButton
-                tone="muted"
+              <Pressable
+                hitSlop={12}
                 onPress={() => {
                   trackProfileAction('settings_opened');
                   navigation.navigate('Settings');
                 }}
+                style={({ pressed }) => pressed && { opacity: 0.6 }}
               >
-                <MaterialCommunityIcons name="cog" size={20} color={colors.text.primary} />
-              </GlassIconButton>
+                <MaterialCommunityIcons name="cog-outline" size={28} color={colors.text.primary} />
+              </Pressable>
             }
           />
 
