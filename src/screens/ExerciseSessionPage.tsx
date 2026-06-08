@@ -42,6 +42,7 @@ import { useHeartRateMonitoringPreference } from '../hooks/useHeartRateMonitorin
 const MIN_ROUNDS = 1;
 const MAX_ROUNDS = 30;
 const PLACEMENT_GOOD_DURATION_MS = 1500;
+const SPRING_IN_DURATION_MS = 750;
 
 function placementHint(p: FingerPlacementState): string {
   switch (p) {
@@ -60,6 +61,7 @@ function placementHint(p: FingerPlacementState): string {
 
 type Phase =
   | 'idle'
+  | 'intro'
   | 'placement'
   | 'inhale'
   | 'holdIn'
@@ -69,6 +71,7 @@ type Phase =
 
 const PHASE_LABELS: Record<Phase, string> = {
   idle: '',
+  intro: '',
   placement: '',
   inhale: 'Inhale',
   holdIn: 'Hold',
@@ -95,6 +98,7 @@ export default function ExerciseSessionPage({
 
   const circleRef = useRef<BreathingCircleRef>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const introTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const remainingRef = useRef(0);
   const onDoneRef = useRef<(() => void) | null>(null);
   const hrSamplesRef = useRef<Array<{ offsetMs: number; bpm: number }>>([]);
@@ -132,7 +136,7 @@ export default function ExerciseSessionPage({
     const toValue = phase === 'idle' ? 0 : 1;
     Animated.timing(transition, {
       toValue,
-      duration: 450,
+      duration: SPRING_IN_DURATION_MS,
       easing: Easing.inOut(Easing.ease),
       useNativeDriver: true,
     }).start();
@@ -270,7 +274,8 @@ export default function ExerciseSessionPage({
     ]).start();
   }, [pulse.beatTick, bpmOpacity, heartScale]);
 
-  const isSessionActive = phase !== 'idle' && phase !== 'done' && !paused;
+  const isSessionActive =
+    phase !== 'idle' && phase !== 'done' && phase !== 'intro' && !paused;
 
   useEffect(() => {
     if (hrEnabled && isSessionActive) {
@@ -284,6 +289,10 @@ export default function ExerciseSessionPage({
     if (timerRef.current) {
       clearInterval(timerRef.current);
       timerRef.current = null;
+    }
+    if (introTimeoutRef.current) {
+      clearTimeout(introTimeoutRef.current);
+      introTimeoutRef.current = null;
     }
   };
 
@@ -578,8 +587,16 @@ export default function ExerciseSessionPage({
         void startPlacement();
         return;
       }
+      if (!flow.start()) return;
       setHrEnabled(false);
-      beginExercise(false);
+      setElapsed(0);
+      setRound(1);
+      setPhase('intro');
+      clearTimer();
+      introTimeoutRef.current = setTimeout(() => {
+        if (!flow.isActive()) return;
+        beginExercise(false);
+      }, SPRING_IN_DURATION_MS);
     }
   };
 
@@ -625,8 +642,12 @@ export default function ExerciseSessionPage({
   };
 
   const isActive =
-    phase !== 'idle' && phase !== 'done' && phase !== 'placement';
+    phase !== 'idle' &&
+    phase !== 'done' &&
+    phase !== 'placement' &&
+    phase !== 'intro';
   const isPlacement = phase === 'placement';
+  const showSessionControls = isActive || paused || phase === 'intro';
 
   useEffect(() => {
     if (isActive) {
@@ -783,7 +804,7 @@ export default function ExerciseSessionPage({
           <Animated.View
             style={[styles.bottomContainer, isActive ? { opacity: hudOpacity } : null]}
           >
-            {isActive || paused ? (
+            {showSessionControls ? (
               <View style={styles.progressWrap}>
                 <View style={[styles.progressTrack, { backgroundColor: activeTheme.progressTrack }]}>
                   <View
@@ -840,6 +861,7 @@ export default function ExerciseSessionPage({
                     pressed && styles.circleBtnPressed,
                   ]}
                   onPress={() => {
+                    if (phase === 'intro') return;
                     if (isActive) showHud();
                     if (phase === 'idle' || phase === 'done') {
                       handleStart();
@@ -851,7 +873,7 @@ export default function ExerciseSessionPage({
                   }}
                 >
                   <MaterialCommunityIcons
-                    name={isActive && !paused ? 'pause' : 'play'}
+                    name={showSessionControls && !paused ? 'pause' : 'play'}
                     size={28}
                     color={activeTheme.iconPrimary}
                   />
