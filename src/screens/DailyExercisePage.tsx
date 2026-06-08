@@ -1014,6 +1014,17 @@ export default function DailyExercisePage({
                   <>
                     <Pressable
                       style={({ pressed }) => [
+                        styles.squareBtn,
+                        { backgroundColor: activeTheme.surface, borderColor: activeTheme.surfaceBorder },
+                        pressed && styles.circleBtnPressed,
+                      ]}
+                      onPress={() => navigation.goBack()}
+                      accessibilityLabel="Stop"
+                    >
+                      <MaterialCommunityIcons name="stop" size={26} color={activeTheme.iconPrimary} />
+                    </Pressable>
+                    <Pressable
+                      style={({ pressed }) => [
                         styles.circleBtn,
                         { backgroundColor: activeTheme.surface, borderColor: activeTheme.surfaceBorder },
                         pressed && styles.circleBtnPressed,
@@ -1022,23 +1033,8 @@ export default function DailyExercisePage({
                       accessibilityLabel={primaryLabel}
                     >
                       <MaterialCommunityIcons
-                        name={phase === 'idle' || phase === 'done' ? 'play' : 'hand-back-left-outline'}
+                        name="play"
                         size={28}
-                        color={activeTheme.iconPrimary}
-                      />
-                    </Pressable>
-                    <Pressable
-                      style={({ pressed }) => [
-                        styles.circleBtn,
-                        { backgroundColor: activeTheme.surface, borderColor: activeTheme.surfaceBorder },
-                        pressed && styles.circleBtnPressed,
-                      ]}
-                      onPress={() => setAudioSettingsOpen(true)}
-                      accessibilityLabel="Session options"
-                    >
-                      <MaterialCommunityIcons
-                        name="cog-outline"
-                        size={26}
                         color={activeTheme.iconPrimary}
                       />
                     </Pressable>

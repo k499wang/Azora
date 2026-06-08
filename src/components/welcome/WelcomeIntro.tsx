@@ -3,15 +3,12 @@ import {
   Animated,
   Easing,
   Platform,
-  Pressable,
   StyleSheet,
-  Text,
   useWindowDimensions,
   Vibration,
   View,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ContinuousHaptics } from '../../native/continuousHaptics';
 import { isHapticsEnabled } from '../../services/preferences/hapticsPreference';
 import { colors } from '../../theme/colors';
@@ -26,7 +23,6 @@ const INHALE_MS = 1800;
 const EXHALE_MS = 2600;
 const FADE_MS = 280;
 const HEADLINE_FADE_MS = 380;
-const SKIP_FADE_MS = 1000;
 const INHALE_TEXT_VISIBLE_MS = HEADLINE_FADE_MS + INHALE_MS + HEADLINE_FADE_MS;
 
 const INHALE_GRADIENT: [string, string] = [colors.primary.blue400, colors.primary.blue700];
@@ -58,13 +54,11 @@ const PARTICLES: ParticleDef[] = [
 type Phase = 'inhale' | 'exhale';
 
 export function WelcomeIntro({ onFinish }: Props) {
-  const insets = useSafeAreaInsets();
   const { width: screenWidth, height: screenHeight } = useWindowDimensions();
   const [phase, setPhase] = useState<Phase>('inhale');
 
   const headlineOpacity = useRef(new Animated.Value(0)).current;
   const screenOpacity = useRef(new Animated.Value(1)).current;
-  const skipOpacity = useRef(new Animated.Value(1)).current;
   const gradientOpacity = useRef(new Animated.Value(0)).current;
   const gradientAnimRef = useRef<Animated.CompositeAnimation | null>(null);
   const particleAnims = useRef(PARTICLES.map(() => new Animated.Value(0))).current;
@@ -90,15 +84,6 @@ export function WelcomeIntro({ onFinish }: Props) {
       if (finished) onFinish();
     });
   };
-
-  useEffect(() => {
-    Animated.timing(skipOpacity, {
-      toValue: 0,
-      duration: 400,
-      delay: SKIP_FADE_MS,
-      useNativeDriver: true,
-    }).start();
-  }, [skipOpacity]);
 
   useEffect(() => {
     headlineOpacity.setValue(0);
@@ -210,17 +195,6 @@ export function WelcomeIntro({ onFinish }: Props) {
         ))}
       </View>
 
-      <Animated.View
-        style={[
-          styles.skip,
-          { top: insets.top + spacing.sm, opacity: skipOpacity },
-        ]}
-      >
-        <Pressable onPress={finish} hitSlop={12}>
-          <Text style={styles.skipText}>Skip intro</Text>
-        </Pressable>
-      </Animated.View>
-
       <View style={styles.copy}>
         <Animated.Text style={[styles.headline, { opacity: headlineOpacity }]}>
           {phase === 'inhale' ? 'Breathe in' : 'Breathe out'}
@@ -236,15 +210,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.primary,
     zIndex: 900,
     elevation: 900,
-  },
-  skip: {
-    position: 'absolute',
-    right: spacing.lg,
-    zIndex: 1,
-  },
-  skipText: {
-    ...typography.label.small,
-    color: colors.text.tertiary,
   },
   copy: {
     ...StyleSheet.absoluteFillObject,

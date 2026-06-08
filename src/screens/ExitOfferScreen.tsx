@@ -45,12 +45,12 @@ const TESTIMONIALS = [
   {
     quote:
       'I finally sleep through the night. Two weeks of morning breathwork and my resting heart rate actually dropped.',
-    name: 'Jake Sullivan',
+    name: 'Sunny W.',
   },
   {
     quote:
       "I've tried every meditation app out there. This is the first one that actually stuck for me.",
-    name: 'Benny Marcs',
+    name: 'Melody Z.',
   },
 ];
 

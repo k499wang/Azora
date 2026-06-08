@@ -103,8 +103,8 @@ export const colors = {
     fillOnImage: 'rgba(255,255,255,0.68)',
     tintOnImage: 'rgba(255,255,255,0.48)',
     // Frosted white chrome for navigation surfaces (dock / tab bar).
-    navTint: 'rgba(255,255,255,0.46)',
-    navFill: 'rgba(255,255,255,0.6)',
+    navTint: 'rgba(255,255,255,0.66)',
+    navFill: 'rgba(255,255,255,0.82)',
   },
 
   surface: {

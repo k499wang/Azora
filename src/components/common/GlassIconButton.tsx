@@ -1,13 +1,12 @@
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
-import { colors } from '../../theme/colors';
 import GlassSurface from './GlassSurface';
 
 const SIZE = 36;
 const MUTED_SURFACE = {
-  tintColor: 'rgba(203,213,225,0.20)',
-  blurColor: 'rgba(241,245,249,0.50)',
-  solidColor: colors.neutral[100],
+  tintColor: 'transparent',
+  blurColor: 'transparent',
+  solidColor: 'transparent',
 };
 
 interface Props {
@@ -18,7 +17,8 @@ interface Props {
 }
 
 export default function GlassIconButton({ children, onPress, style, tone = 'default' }: Props) {
-  const mutedSurface = tone === 'muted' ? MUTED_SURFACE : undefined;
+  const isMuted = tone === 'muted';
+  const mutedSurface = isMuted ? MUTED_SURFACE : undefined;
 
   return (
     <Pressable
@@ -32,6 +32,8 @@ export default function GlassIconButton({ children, onPress, style, tone = 'defa
         tintColor={mutedSurface?.tintColor}
         blurColor={mutedSurface?.blurColor}
         solidColor={mutedSurface?.solidColor}
+        blurIntensity={isMuted ? 20 : undefined}
+        forceFallback={isMuted}
       >
         {children}
       </GlassSurface>

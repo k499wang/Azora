@@ -20,6 +20,8 @@ The highest-risk areas are not the StoreKit purchase call itself. They are the d
 
 ## Issue 1: Cancellation Can Remove Pro Too Early
 
+Status: fixed in `supabase/functions/revenuecat-webhook/index.ts`. Cancellation without `expiration_at_ms` now preserves the existing `current_period_ends_at` instead of writing `now()`.
+
 ### User Flow
 
 1. User buys Pro.

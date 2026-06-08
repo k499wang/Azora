@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AppState, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { AppState, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { usePostHog } from 'posthog-react-native';
 import { getStressZone } from '../lib/heartRate/stress';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -10,7 +10,6 @@ import { spacing, padding, margin } from '../theme/spacing';
 import { typography, fonts } from '../theme/typography';
 import AmbientBackground from '../components/common/AmbientBackground';
 import AppTopBar from '../components/common/AppTopBar';
-import GlassIconButton from '../components/common/GlassIconButton';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import TopBarWeekCalendar from '../components/common/TopBarWeekCalendar';
 import SectionHeader from '../components/common/SectionHeader';
@@ -394,9 +393,13 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
               />
             )}
             rightSlot={(
-              <GlassIconButton tone="muted" onPress={() => navigation.navigate('Settings')}>
-                <MaterialCommunityIcons name="cog" size={20} color={colors.text.primary} />
-              </GlassIconButton>
+              <Pressable
+                hitSlop={12}
+                onPress={() => navigation.navigate('Settings')}
+                style={({ pressed }) => pressed && { opacity: 0.6 }}
+              >
+                <MaterialCommunityIcons name="cog-outline" size={28} color={colors.text.primary} />
+              </Pressable>
             )}
           />
 
