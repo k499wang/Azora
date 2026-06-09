@@ -136,6 +136,7 @@ async function sendMetaEvent(input: {
   fbc: string | null;
   clientUserAgent: string | null;
   clientIpAddress: string | null;
+  country: string | null;
   value: number | null;
   currency: string | null;
   eventId: string;
@@ -156,6 +157,8 @@ async function sendMetaEvent(input: {
   if (input.fbc) userData.fbc = input.fbc;
   if (input.clientUserAgent) userData.client_user_agent = input.clientUserAgent;
   if (input.clientIpAddress) userData.client_ip_address = input.clientIpAddress;
+  // country must be hashed lowercase ISO 3166-1 alpha-2 (sha256 lowercases).
+  if (input.country) userData.country = await sha256(input.country);
 
   const customData: Record<string, unknown> = {};
   if (typeof input.value === 'number') customData.value = input.value;
@@ -317,7 +320,7 @@ async function fireMetaEventForIntent(
   // user-agent + IP captured at landing (improves Meta match quality).
   const { data: session, error: sessionLookupError } = await supabase
     .from('web_funnel_sessions')
-    .select('user_agent, ip_address')
+    .select('user_agent, ip_address, ip_country')
     .eq('id', intent.session_id)
     .maybeSingle();
 
@@ -351,6 +354,7 @@ async function fireMetaEventForIntent(
     fbc: (attribution?.fbc as string) ?? null,
     clientUserAgent: (session?.user_agent as string) ?? null,
     clientIpAddress: (session?.ip_address as string) ?? null,
+    country: (session?.ip_country as string) ?? null,
     value: plan.value,
     currency: event.currency ?? null,
     eventId: `${eventIdPrefix}_${intent.id}`,
