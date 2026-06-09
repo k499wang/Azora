@@ -907,6 +907,7 @@ export type Database = {
           funnel_slug: string
           id: string
           initial_url: string
+          ip_address: string | null
           ip_country: string | null
           landing_path: string
           referrer: string | null
@@ -921,6 +922,7 @@ export type Database = {
           funnel_slug: string
           id?: string
           initial_url: string
+          ip_address?: string | null
           ip_country?: string | null
           landing_path: string
           referrer?: string | null
@@ -935,6 +937,7 @@ export type Database = {
           funnel_slug?: string
           id?: string
           initial_url?: string
+          ip_address?: string | null
           ip_country?: string | null
           landing_path?: string
           referrer?: string | null
