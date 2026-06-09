@@ -248,16 +248,29 @@ Deno.serve(async (req) => {
     });
   }
 
+  const { data: existing, error: existingError } = await supabase
+    .from('subscriptions')
+    .select('current_period_ends_at')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (existingError) {
+    console.error('subscriptions lookup failed', existingError);
+    return new Response('subscription lookup failed', { status: 500 });
+  }
+
   const { status, willRenew } = deriveStatus(event);
   const entitlement = event.entitlement_ids?.[0] ?? PRO_ENTITLEMENT;
-  // For access-terminating events, fall back to now() so that null doesn't
-  // accidentally satisfy the `current_period_ends_at IS NULL` branch of is_pro.
-  const isTerminatingEvent = event.type === 'CANCELLATION' || event.type === 'EXPIRATION';
+  // CANCELLATION turns off auto-renew but the user keeps access until the
+  // period ends, so preserve the known period end. EXPIRATION is true loss of
+  // access, so fall back to now() to drop is_pro immediately.
   const currentPeriodEndsAt = event.expiration_at_ms
     ? new Date(event.expiration_at_ms).toISOString()
-    : isTerminatingEvent
-      ? new Date().toISOString()
-      : null;
+    : event.type === 'CANCELLATION'
+      ? existing?.current_period_ends_at ?? new Date().toISOString()
+      : event.type === 'EXPIRATION'
+        ? new Date().toISOString()
+        : null;
   const trialEndsAt =
     event.period_type === 'TRIAL' && event.expiration_at_ms
       ? new Date(event.expiration_at_ms).toISOString()
