@@ -8,6 +8,11 @@
 // Configure in RevenueCat dashboard for web checkout events:
 //   - URL:     https://<project>.functions.supabase.co/revenuecat-web-checkout-webhook
 //   - Header:  Authorization: Bearer <REVENUECAT_WEB_CHECKOUT_WEBHOOK_SECRET>
+//
+// Required env (set on the Supabase function):
+//   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, REVENUECAT_WEB_CHECKOUT_WEBHOOK_SECRET
+//   META_PIXEL_ID, META_CAPI_ACCESS_TOKEN, SITE_URL
+//   META_TEST_EVENT_CODE (sandbox only — leave unset in production)
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -103,6 +108,175 @@ const SUBSCRIPTION_WRITING_EVENT_TYPES = new Set<RevenueCatEventType>([
 // endpoint owns web checkout, so ignore native-store events (the mobile
 // `revenuecat-webhook` handles those) to avoid double-mirroring `subscriptions`.
 const WEB_STORES = new Set(['RC_BILLING', 'STRIPE']);
+const WEB_PURCHASE_DEFAULT_TECHNIQUE_ID = '478';
+
+// ── Meta Conversions API (server-side Purchase) ──────────────────────────────
+const META_PIXEL_ID = Deno.env.get('META_PIXEL_ID');
+const META_CAPI_ACCESS_TOKEN = Deno.env.get('META_CAPI_ACCESS_TOKEN');
+const META_TEST_EVENT_CODE = Deno.env.get('META_TEST_EVENT_CODE'); // unset in prod
+const META_API_VERSION = 'v25.0';
+const SITE_URL = Deno.env.get('SITE_URL') ?? 'https://tryazora.app';
+
+async function sha256(value: string): Promise<string> {
+  const data = new TextEncoder().encode(value.toLowerCase().trim());
+  const digest = await crypto.subtle.digest('SHA-256', data);
+  return [...new Uint8Array(digest)]
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+// Fire a Meta CAPI Purchase. Best-effort: logs and returns, never throws.
+async function sendMetaPurchaseEvent(input: {
+  externalId: string;
+  email: string | null;
+  fbp: string | null;
+  fbc: string | null;
+  clientUserAgent: string | null;
+  value: number | null;
+  currency: string | null;
+  eventId: string;
+  eventTimeMs: number | null;
+  environment: RevenueCatEvent['environment'];
+}): Promise<boolean> {
+  if (!META_PIXEL_ID || !META_CAPI_ACCESS_TOKEN) {
+    console.warn('[meta-capi] META_PIXEL_ID / META_CAPI_ACCESS_TOKEN not set — skipping');
+    return false;
+  }
+
+  const userData: Record<string, string> = {};
+  // external_id hashed (SHA-256) per the attribution plan. Only this server
+  // sends external_id, so hashing here stays consistent across all events.
+  userData.external_id = await sha256(input.externalId);
+  if (input.email) userData.em = await sha256(input.email);
+  if (input.fbp) userData.fbp = input.fbp;
+  if (input.fbc) userData.fbc = input.fbc;
+  if (input.clientUserAgent) userData.client_user_agent = input.clientUserAgent;
+
+  const customData: Record<string, unknown> = {};
+  if (typeof input.value === 'number') customData.value = input.value;
+  if (input.currency) customData.currency = input.currency;
+
+  const body: Record<string, unknown> = {
+    data: [
+      {
+        event_name: 'Purchase',
+        event_time: Math.floor((input.eventTimeMs ?? Date.now()) / 1000),
+        action_source: 'website',
+        event_source_url: `${SITE_URL}/checkout/success`,
+        event_id: input.eventId,
+        user_data: userData,
+        ...(Object.keys(customData).length ? { custom_data: customData } : {}),
+      },
+    ],
+  };
+  if (input.environment !== 'PRODUCTION' && META_TEST_EVENT_CODE) {
+    body.test_event_code = META_TEST_EVENT_CODE;
+  }
+
+  const url = `https://graph.facebook.com/${META_API_VERSION}/${META_PIXEL_ID}/events?access_token=${META_CAPI_ACCESS_TOKEN}`;
+
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      const text = await res.text().catch(() => '');
+      console.error('[meta-capi] Purchase rejected:', res.status, text.slice(0, 500));
+      return false;
+    }
+    console.log('[meta-capi] Purchase sent', { eventId: input.eventId, status: res.status });
+    return true;
+  } catch (error) {
+    console.error('[meta-capi] Purchase request failed:', error);
+    return false;
+  }
+}
+
+// Gather attribution + identity for the CAPI Purchase, then attempt delivery.
+async function fireMetaPurchaseForIntent(
+  intent: { id: string; session_id: string },
+  event: RevenueCatEvent,
+  userId: string,
+): Promise<void> {
+  if (event.environment !== 'PRODUCTION' && !META_TEST_EVENT_CODE) {
+    console.log('[meta-capi] skipping sandbox Purchase without META_TEST_EVENT_CODE', {
+      revenuecat_event_id: event.id,
+      intent_id: intent.id,
+    });
+    return;
+  }
+
+  // fbp / fbc persisted at landing.
+  const { data: attribution, error: attributionError } = await supabase
+    .from('web_funnel_attribution')
+    .select('fbp, fbc')
+    .eq('session_id', intent.session_id)
+    .maybeSingle();
+
+  if (attributionError) {
+    console.error('[meta-capi] web_funnel_attribution lookup failed', {
+      error: attributionError,
+      session_id: intent.session_id,
+      intent_id: intent.id,
+    });
+  }
+
+  // user-agent captured at landing (improves Meta match quality).
+  const { data: session, error: sessionLookupError } = await supabase
+    .from('web_funnel_sessions')
+    .select('user_agent')
+    .eq('id', intent.session_id)
+    .maybeSingle();
+
+  if (sessionLookupError) {
+    console.error('[meta-capi] web_funnel_sessions lookup failed', {
+      error: sessionLookupError,
+      session_id: intent.session_id,
+      intent_id: intent.id,
+    });
+  }
+
+  // Email for hashed match key.
+  const { data: userRes, error: userLookupError } =
+    await supabase.auth.admin.getUserById(userId);
+
+  if (userLookupError) {
+    console.error('[meta-capi] auth user lookup failed', {
+      error: userLookupError,
+      user_id: userId,
+      intent_id: intent.id,
+    });
+  }
+
+  const ok = await sendMetaPurchaseEvent({
+    externalId: userId,
+    email: userRes?.user?.email ?? null,
+    fbp: (attribution?.fbp as string) ?? null,
+    fbc: (attribution?.fbc as string) ?? null,
+    clientUserAgent: (session?.user_agent as string) ?? null,
+    value: getPriceAmount(event),
+    currency: event.currency ?? null,
+    eventId: `purchase_${intent.id}`,
+    eventTimeMs: event.purchased_at_ms ?? event.event_timestamp_ms ?? null,
+    environment: event.environment,
+  });
+
+  if (ok) {
+    const { error: sentAtUpdateError } = await supabase
+      .from('web_checkout_intents')
+      .update({ meta_capi_sent_at: new Date().toISOString() })
+      .eq('id', intent.id);
+
+    if (sentAtUpdateError) {
+      console.error('[meta-capi] meta_capi_sent_at update failed', {
+        error: sentAtUpdateError,
+        intent_id: intent.id,
+      });
+    }
+  }
+}
 
 function isForeignStoreEvent(event: RevenueCatEvent): boolean {
   return (
@@ -236,6 +410,39 @@ function getPriceAmount(event: RevenueCatEvent): number | null {
   }
 
   return null;
+}
+
+function getPurchaseCompletedAt(event: RevenueCatEvent): string {
+  return (
+    toIsoString(event.purchased_at_ms) ??
+    toIsoString(event.event_timestamp_ms) ??
+    new Date().toISOString()
+  );
+}
+
+async function completeOnboardingForWebPurchase(
+  event: RevenueCatEvent,
+  userId: string,
+): Promise<boolean> {
+  if (!isPurchaseEvent(event)) {
+    return false;
+  }
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .update({
+      onboarding_completed_at: getPurchaseCompletedAt(event),
+      default_technique_id: WEB_PURCHASE_DEFAULT_TECHNIQUE_ID,
+    })
+    .eq('user_id', userId)
+    .is('onboarding_completed_at', null)
+    .select('user_id');
+
+  if (error) {
+    throw error;
+  }
+
+  return (data?.length ?? 0) > 0;
 }
 
 async function resolveUserId(event: RevenueCatEvent): Promise<string | null> {
@@ -393,7 +600,11 @@ async function reconcileWebCheckoutIntent(
     toIsoString(event.event_timestamp_ms) ??
     new Date().toISOString();
 
-  const { error: intentUpdateError } = await supabase
+  // Compare-and-swap: only flip the intent if it is STILL open. `.select()`
+  // returns the row only when this statement actually changed it, so a
+  // concurrent webhook retry that already claimed the same intent gets an empty
+  // result and bails out, so only the claim owner attempts the CAPI Purchase.
+  const { data: claimed, error: intentUpdateError } = await supabase
     .from('web_checkout_intents')
     .update({
       status: 'purchased',
@@ -406,10 +617,18 @@ async function reconcileWebCheckoutIntent(
       currency: event.currency ?? null,
       failure_reason: null,
     })
-    .eq('id', intent.id);
+    .eq('id', intent.id)
+    .in('status', ['created', 'redirected'])
+    .select('id');
 
   if (intentUpdateError) {
     throw intentUpdateError;
+  }
+
+  if (!claimed || claimed.length === 0) {
+    // Another concurrent invocation already claimed this intent; don't attempt
+    // CAPI delivery from this invocation.
+    return { matched: false };
   }
 
   const { error: sessionUpdateError } = await supabase
@@ -419,6 +638,18 @@ async function reconcileWebCheckoutIntent(
 
   if (sessionUpdateError) {
     console.error('web_funnel_sessions purchase status update failed', sessionUpdateError);
+  }
+
+  // We own the claim → attempt the authoritative Meta CAPI Purchase.
+  // Server-to-server, so it never depends on the user returning to the site.
+  try {
+    await fireMetaPurchaseForIntent(
+      { id: intent.id, session_id: intent.session_id },
+      event,
+      userId,
+    );
+  } catch (error) {
+    console.error('meta capi purchase failed', error);
   }
 
   return { matched: true };
@@ -496,6 +727,14 @@ Deno.serve(async (req) => {
     return new Response('subscription write failed', { status: 500 });
   }
 
+  let webPurchaseOnboardingUpdated = false;
+  try {
+    webPurchaseOnboardingUpdated = await completeOnboardingForWebPurchase(event, userId);
+  } catch (error) {
+    console.error('web purchase onboarding profile update failed', error);
+    return new Response('profile onboarding write failed', { status: 500 });
+  }
+
   let checkoutIntentMatched = false;
   try {
     const checkoutReconciliation = await reconcileWebCheckoutIntent(event, userId);
@@ -508,6 +747,7 @@ Deno.serve(async (req) => {
     ok: true,
     subscription_mirrored: subscriptionResult.mirrored,
     subscription_event_stale: subscriptionResult.stale,
+    web_purchase_onboarding_updated: webPurchaseOnboardingUpdated,
     web_checkout_intent_matched: checkoutIntentMatched,
   }), {
     headers: { 'content-type': 'application/json' },

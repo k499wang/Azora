@@ -705,6 +705,7 @@ export type Database = {
           environment: string
           failure_reason: string | null
           id: string
+          meta_capi_sent_at: string | null
           offer_id: string
           price_amount: number | null
           purchase_event_id: string | null
@@ -727,6 +728,7 @@ export type Database = {
           environment: string
           failure_reason?: string | null
           id?: string
+          meta_capi_sent_at?: string | null
           offer_id: string
           price_amount?: number | null
           purchase_event_id?: string | null
@@ -749,6 +751,7 @@ export type Database = {
           environment?: string
           failure_reason?: string | null
           id?: string
+          meta_capi_sent_at?: string | null
           offer_id?: string
           price_amount?: number | null
           purchase_event_id?: string | null
