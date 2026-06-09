@@ -19,6 +19,7 @@ type RevenueCatEventType =
   | 'EXPIRATION'
   | 'BILLING_ISSUE'
   | 'PRODUCT_CHANGE'
+  | 'INVOICE_ISSUANCE'
   | 'SUBSCRIBER_ALIAS'
   | 'TRANSFER'
   | 'TEST';
@@ -71,6 +72,32 @@ if (!SUPABASE_URL || !SERVICE_ROLE_KEY || !WEBHOOK_SECRET) {
 const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
   auth: { persistSession: false },
 });
+
+const PRO_ENTITLEMENT = 'Azora  Pro';
+const SUBSCRIPTION_WRITING_EVENT_TYPES = new Set<RevenueCatEventType>([
+  'INITIAL_PURCHASE',
+  'RENEWAL',
+  'CANCELLATION',
+  'UNCANCELLATION',
+  'NON_RENEWING_PURCHASE',
+  'EXPIRATION',
+  'BILLING_ISSUE',
+  'PRODUCT_CHANGE',
+]);
+
+// RevenueCat fans every project event out to every configured webhook; it can
+// only be filtered by environment, app, and event type — not by store. This
+// endpoint owns native-store mirroring, so ignore web checkout events (the
+// `revenuecat-web-checkout-webhook` handles those) to avoid double-mirroring.
+const WEB_STORES = new Set(['RC_BILLING', 'STRIPE']);
+
+function isWebStoreEvent(event: RevenueCatEvent): boolean {
+  return (
+    event.type !== 'TEST' &&
+    typeof event.store === 'string' &&
+    WEB_STORES.has(event.store)
+  );
+}
 
 function isUuid(value: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
@@ -125,7 +152,7 @@ function deriveStatus(
     case 'CANCELLATION':
       return { status: 'active', willRenew: false };
     case 'BILLING_ISSUE':
-      return { status: 'in_grace_period', willRenew: true };
+      return { status: 'expired', willRenew: false };
     case 'EXPIRATION':
       return { status: 'expired', willRenew: false };
     case 'TRANSFER':
@@ -135,6 +162,10 @@ function deriveStatus(
     default:
       return { status: 'unknown', willRenew: null };
   }
+}
+
+function isSubscriptionWritingEvent(event: RevenueCatEvent): boolean {
+  return SUBSCRIPTION_WRITING_EVENT_TYPES.has(event.type);
 }
 
 Deno.serve(async (req) => {
@@ -160,14 +191,15 @@ Deno.serve(async (req) => {
     return new Response('missing event fields', { status: 400 });
   }
 
-  // TEST, TRANSFER, and SUBSCRIBER_ALIAS are audit-only here. RevenueCat may
-  // send them without a single app_user_id, so only subscription-writing events
-  // require one.
-  const isAckOnlyType =
-    event.type === 'TEST' ||
-    event.type === 'TRANSFER' ||
-    event.type === 'SUBSCRIBER_ALIAS';
-  if (!isAckOnlyType && !event.app_user_id) {
+  if (isWebStoreEvent(event)) {
+    return new Response(JSON.stringify({ ok: true, ignored: 'web store' }), {
+      headers: { 'content-type': 'application/json' },
+    });
+  }
+
+  // Audit-only events can be logged without a single app_user_id. Only events
+  // that mutate subscription state require a known RevenueCat App User ID.
+  if (isSubscriptionWritingEvent(event) && !event.app_user_id) {
     return new Response('missing event fields', { status: 400 });
   }
 
@@ -203,7 +235,7 @@ Deno.serve(async (req) => {
     return new Response('event log failed', { status: 500 });
   }
 
-  if (isAckOnlyType) {
+  if (!isSubscriptionWritingEvent(event)) {
     return new Response(JSON.stringify({ ok: true, logged: true }), {
       headers: { 'content-type': 'application/json' },
     });
@@ -217,7 +249,7 @@ Deno.serve(async (req) => {
   }
 
   const { status, willRenew } = deriveStatus(event);
-  const entitlement = event.entitlement_ids?.[0] ?? 'pro';
+  const entitlement = event.entitlement_ids?.[0] ?? PRO_ENTITLEMENT;
   // For access-terminating events, fall back to now() so that null doesn't
   // accidentally satisfy the `current_period_ends_at IS NULL` branch of is_pro.
   const isTerminatingEvent = event.type === 'CANCELLATION' || event.type === 'EXPIRATION';

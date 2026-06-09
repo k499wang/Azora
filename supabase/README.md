@@ -38,9 +38,25 @@ Included in v1 migrations:
 - `daily_activity`
 - `subscriptions`
 - `revenuecat_events`
+- `web_funnel_sessions`
+- `web_funnel_attribution`
+- `web_funnel_answers`
+- `web_checkout_intents`
 - RLS policies
 - `user_streaks_v`
 - Session completion RPCs
+
+Web funnel commerce tables live here because the mobile/backend repo owns the
+shared Supabase contract for subscription identity and entitlement state. The
+separate web funnel repo should create sessions, attribution, answers, and
+checkout intents through server-side code using the agreed contract; it should
+not maintain a competing migration history for these shared tables.
+
+Web checkout RevenueCat events should use the separate
+`revenuecat-web-checkout-webhook` function with
+`REVENUECAT_WEB_CHECKOUT_WEBHOOK_SECRET`. The existing `revenuecat-webhook`
+function remains the mobile purchase mirror and is intentionally unchanged by
+the web funnel contract.
 
 Use `user_today_breath_hold_v` to read the latest authenticated breath-hold
 session for the user's current local day.
