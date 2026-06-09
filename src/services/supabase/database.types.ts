@@ -623,6 +623,12 @@ export type Database = {
           experiment_id: string | null
           experiment_variant: string | null
           initial_offering_id: string | null
+          last_revenuecat_event_id: string | null
+          last_revenuecat_event_received_at: string | null
+          last_revenuecat_event_timestamp_ms: number | null
+          last_revenuecat_event_type: string | null
+          last_revenuecat_original_transaction_id: string | null
+          last_revenuecat_transaction_id: string | null
           product_id: string | null
           revenuecat_app_user_id: string
           status: string
@@ -638,6 +644,12 @@ export type Database = {
           experiment_id?: string | null
           experiment_variant?: string | null
           initial_offering_id?: string | null
+          last_revenuecat_event_id?: string | null
+          last_revenuecat_event_received_at?: string | null
+          last_revenuecat_event_timestamp_ms?: number | null
+          last_revenuecat_event_type?: string | null
+          last_revenuecat_original_transaction_id?: string | null
+          last_revenuecat_transaction_id?: string | null
           product_id?: string | null
           revenuecat_app_user_id: string
           status: string
@@ -653,6 +665,12 @@ export type Database = {
           experiment_id?: string | null
           experiment_variant?: string | null
           initial_offering_id?: string | null
+          last_revenuecat_event_id?: string | null
+          last_revenuecat_event_received_at?: string | null
+          last_revenuecat_event_timestamp_ms?: number | null
+          last_revenuecat_event_type?: string | null
+          last_revenuecat_original_transaction_id?: string | null
+          last_revenuecat_transaction_id?: string | null
           product_id?: string | null
           revenuecat_app_user_id?: string
           status?: string
@@ -674,6 +692,266 @@ export type Database = {
             foreignKeyName: "subscriptions_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: true
+            referencedRelation: "user_streaks_v"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      web_checkout_intents: {
+        Row: {
+          checkout_event_id: string | null
+          created_at: string
+          currency: string | null
+          environment: string
+          failure_reason: string | null
+          id: string
+          offer_id: string
+          price_amount: number | null
+          purchase_event_id: string | null
+          purchased_at: string | null
+          revenuecat_app_user_id: string
+          revenuecat_event_id: string | null
+          revenuecat_original_transaction_id: string | null
+          revenuecat_product_id: string | null
+          revenuecat_purchase_url: string
+          revenuecat_transaction_id: string | null
+          session_id: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          checkout_event_id?: string | null
+          created_at?: string
+          currency?: string | null
+          environment: string
+          failure_reason?: string | null
+          id?: string
+          offer_id: string
+          price_amount?: number | null
+          purchase_event_id?: string | null
+          purchased_at?: string | null
+          revenuecat_app_user_id: string
+          revenuecat_event_id?: string | null
+          revenuecat_original_transaction_id?: string | null
+          revenuecat_product_id?: string | null
+          revenuecat_purchase_url: string
+          revenuecat_transaction_id?: string | null
+          session_id: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          checkout_event_id?: string | null
+          created_at?: string
+          currency?: string | null
+          environment?: string
+          failure_reason?: string | null
+          id?: string
+          offer_id?: string
+          price_amount?: number | null
+          purchase_event_id?: string | null
+          purchased_at?: string | null
+          revenuecat_app_user_id?: string
+          revenuecat_event_id?: string | null
+          revenuecat_original_transaction_id?: string | null
+          revenuecat_product_id?: string | null
+          revenuecat_purchase_url?: string
+          revenuecat_transaction_id?: string | null
+          session_id?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "web_checkout_intents_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "web_funnel_sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "web_checkout_intents_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "web_checkout_intents_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_streaks_v"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      web_funnel_answers: {
+        Row: {
+          answer: Json
+          created_at: string
+          id: string
+          session_id: string
+          step_id: string
+          updated_at: string
+        }
+        Insert: {
+          answer: Json
+          created_at?: string
+          id?: string
+          session_id: string
+          step_id: string
+          updated_at?: string
+        }
+        Update: {
+          answer?: Json
+          created_at?: string
+          id?: string
+          session_id?: string
+          step_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "web_funnel_answers_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "web_funnel_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      web_funnel_attribution: {
+        Row: {
+          appsflyer_c: string | null
+          appsflyer_deep_link_value: string | null
+          appsflyer_pid: string | null
+          checkout_event_id: string | null
+          created_at: string
+          fbc: string | null
+          fbclid: string | null
+          fbp: string | null
+          landing_event_id: string | null
+          lead_event_id: string | null
+          purchase_event_id: string | null
+          raw_params: Json
+          session_id: string
+          updated_at: string
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          utm_term: string | null
+        }
+        Insert: {
+          appsflyer_c?: string | null
+          appsflyer_deep_link_value?: string | null
+          appsflyer_pid?: string | null
+          checkout_event_id?: string | null
+          created_at?: string
+          fbc?: string | null
+          fbclid?: string | null
+          fbp?: string | null
+          landing_event_id?: string | null
+          lead_event_id?: string | null
+          purchase_event_id?: string | null
+          raw_params?: Json
+          session_id: string
+          updated_at?: string
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+        }
+        Update: {
+          appsflyer_c?: string | null
+          appsflyer_deep_link_value?: string | null
+          appsflyer_pid?: string | null
+          checkout_event_id?: string | null
+          created_at?: string
+          fbc?: string | null
+          fbclid?: string | null
+          fbp?: string | null
+          landing_event_id?: string | null
+          lead_event_id?: string | null
+          purchase_event_id?: string | null
+          raw_params?: Json
+          session_id?: string
+          updated_at?: string
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "web_funnel_attribution_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: true
+            referencedRelation: "web_funnel_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      web_funnel_sessions: {
+        Row: {
+          anonymous_id: string
+          created_at: string
+          funnel_slug: string
+          id: string
+          initial_url: string
+          ip_country: string | null
+          landing_path: string
+          referrer: string | null
+          status: string
+          updated_at: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          anonymous_id: string
+          created_at?: string
+          funnel_slug: string
+          id?: string
+          initial_url: string
+          ip_country?: string | null
+          landing_path: string
+          referrer?: string | null
+          status?: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          anonymous_id?: string
+          created_at?: string
+          funnel_slug?: string
+          id?: string
+          initial_url?: string
+          ip_country?: string | null
+          landing_path?: string
+          referrer?: string | null
+          status?: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "web_funnel_sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "web_funnel_sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "user_streaks_v"
             referencedColumns: ["user_id"]
           },
