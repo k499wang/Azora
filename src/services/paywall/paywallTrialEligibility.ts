@@ -37,6 +37,4 @@ export function formatEligibleTrialLabel(options: {
   return FREE_TRIAL_LABEL;
 }
 
-// Intentionally duration-free: surfacing a fixed trial length (e.g. "3 days
-// free") triggers trial anxiety, so we frame the offer as risk-free instead.
-const FREE_TRIAL_LABEL = 'Free trial';
+const FREE_TRIAL_LABEL = '7-day free trial';

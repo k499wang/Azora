@@ -597,13 +597,13 @@ function StepTrial({ hasAnnualTrial }: { hasAnnualTrial: boolean }) {
         },
         {
           icon: 'bell',
-          label: 'In 2 Days — Reminder',
+          label: 'In 6 Days — Reminder',
           body: 'We’ll send you a reminder that your trial is ending soon, as long as you’ve allowed us to notify you.',
           lineColor: colors.neutral[300],
         },
         {
           icon: 'star',
-          label: 'In 3 Days — Billing Starts',
+          label: 'In 7 Days — Billing Starts',
           body: 'You’ll be charged when your free trial ends, unless you cancel anytime before then.',
           iconColor: colors.neutral[900],
         },
