@@ -11,6 +11,13 @@ export const posthog = new PostHog(apiKey ?? 'placeholder_key', {
   captureAppLifecycleEvents: true,
   flushAt: 20,
   flushInterval: 10000,
+  errorTracking: {
+    autocapture: {
+      uncaughtExceptions: true,
+      unhandledRejections: true,
+      console: ['error'],
+    },
+  },
   enableSessionReplay: isPostHogConfigured,
   enablePersistSessionIdAcrossRestart: true,
   sessionReplayConfig: {
