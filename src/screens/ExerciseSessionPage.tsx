@@ -841,18 +841,17 @@ export default function ExerciseSessionPage({
               >
                 <MaterialCommunityIcons name="stop" size={26} color={activeTheme.iconPrimary} />
               </Pressable>
-              <SettingsGearButton
-                onPress={() => {
-                  if (isActive) showHud();
-                  setAudioSettingsOpen(true);
-                }}
-                label={phase === 'idle' || phase === 'done' ? 'Session options' : undefined}
-                iconName={phase === 'idle' || phase === 'done' ? 'tune-variant' : 'cog-outline'}
-                color={activeTheme.iconPrimary}
-                backgroundColor={activeTheme.surface}
-                borderColor={activeTheme.surfaceBorder}
-                size={64}
-              />
+              {phase === 'idle' || phase === 'done' ? (
+                <SettingsGearButton
+                  onPress={() => setAudioSettingsOpen(true)}
+                  label="Session options"
+                  iconName="tune-variant"
+                  color={activeTheme.iconPrimary}
+                  backgroundColor={activeTheme.surface}
+                  borderColor={activeTheme.surfaceBorder}
+                  size={64}
+                />
+              ) : null}
               {!isPlacement ? (
                 <Pressable
                   style={({ pressed }) => [

@@ -982,34 +982,17 @@ export default function DailyExercisePage({
             {showPrimaryButton ? (
               <View style={styles.btnRow}>
                 {isPlacement ? (
-                  <>
-                    <Pressable
-                      style={({ pressed }) => [
-                        styles.squareBtn,
-                        { backgroundColor: activeTheme.surface, borderColor: activeTheme.surfaceBorder },
-                        pressed && styles.circleBtnPressed,
-                      ]}
-                      onPress={cancelPlacement}
-                      accessibilityLabel="Cancel"
-                    >
-                      <MaterialCommunityIcons name="close" size={26} color={activeTheme.iconPrimary} />
-                    </Pressable>
-                    <Pressable
-                      style={({ pressed }) => [
-                        styles.circleBtn,
-                        { backgroundColor: activeTheme.surface, borderColor: activeTheme.surfaceBorder },
-                        pressed && styles.circleBtnPressed,
-                      ]}
-                      onPress={() => setAudioSettingsOpen(true)}
-                      accessibilityLabel="Session options"
-                    >
-                      <MaterialCommunityIcons
-                        name="cog-outline"
-                        size={26}
-                        color={activeTheme.iconPrimary}
-                      />
-                    </Pressable>
-                  </>
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.squareBtn,
+                      { backgroundColor: activeTheme.surface, borderColor: activeTheme.surfaceBorder },
+                      pressed && styles.circleBtnPressed,
+                    ]}
+                    onPress={cancelPlacement}
+                    accessibilityLabel="Cancel"
+                  >
+                    <MaterialCommunityIcons name="close" size={26} color={activeTheme.iconPrimary} />
+                  </Pressable>
                 ) : (
                   <>
                     <Pressable
