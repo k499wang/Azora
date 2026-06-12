@@ -4,12 +4,12 @@ import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 import Icon from '../common/icons/Icon';
 
-const TRIAL_FEATURE = 'Free trial on annual — no charge to start, cancel anytime';
+const TRIAL_FEATURE = '7-day free trial on annual, no charge to start, cancel anytime';
 const SUBSCRIPTION_FEATURE = 'Full Pro access across every breathing and heart-rate tool';
 
 const DEFAULT_FEATURES = [
   TRIAL_FEATURE,
-  'Heart rate, HRV & stress from your phone camera — no wearable needed',
+  'Heart rate, HRV & stress from your phone camera, no wearable needed',
   'Unlimited guided sessions',
   'Daily streak & progress insights',
 ];

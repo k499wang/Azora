@@ -25,7 +25,7 @@ test('eligible free intro offer gets a trial label', () => {
       introPrice: introPrice(),
       eligibilityStatus: ELIGIBLE,
     }),
-    'Free trial',
+    '7-day free trial',
   );
 });
 
