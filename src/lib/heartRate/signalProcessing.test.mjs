@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { computeHRVStats } from '../hrv.ts';
 import {
+  analyzeCapture,
   buildIbiSamplesFromCaptureBeatSeries,
   extractBestCaptureBeatSeries,
 } from './signalProcessing.ts';
@@ -85,6 +86,24 @@ test('extractBestCaptureBeatSeries chooses the strongest ROI/channel beat series
   assert.ok(
     Math.abs(medianIbi - 800) < 70,
     `expected median IBI near 800ms, got ${medianIbi}`,
+  );
+});
+
+test('analyzeCapture returns a frequency BPM estimate and matching HRV beat series', () => {
+  const samples = buildCaptureSamples();
+  const analysis = analyzeCapture(samples);
+
+  assert.ok(analysis.estimate, 'expected a BPM estimate');
+  assert.ok(analysis.beatSeries, 'expected an HRV beat series');
+  assert.equal(analysis.estimate.roiId, 'center');
+  assert.equal(analysis.beatSeries.roiId, 'center');
+  assert.ok(
+    analysis.estimate.bpm >= 68 && analysis.estimate.bpm <= 82,
+    `expected BPM near the synthetic 75 bpm capture, got ${analysis.estimate.bpm}`,
+  );
+  assert.ok(
+    Math.abs(analysis.estimate.frequencyBpm - analysis.beatSeries.frequencyBpm) <= 6,
+    `expected BPM and beat-series frequency to stay aligned, got ${analysis.estimate.frequencyBpm} and ${analysis.beatSeries.frequencyBpm}`,
   );
 });
 

@@ -177,17 +177,17 @@ test('HeartRateManager: waits for enough intervals before publishing live BPM', 
   runBeatTrain(manager, [24, 48, 72]);
   assert.equal(manager.getCurrentBpm(), null);
 
-  runBeatTrain(manager, [24, 48, 72, 96], 20_000);
+  runBeatTrain(manager, [24, 48, 72, 96, 120], 20_000);
   assert.equal(manager.getCurrentBpm(), 76);
 });
 
-test('HeartRateManager: beginMeasurementWindow preserves live BPM history but clears persisted IBIs', () => {
+test('HeartRateManager: beginMeasurementWindow clears persisted IBIs and restarts live BPM smoothing', () => {
   const manager = new HeartRateManager();
   runBeatTrain(manager, [11, 22, 33, 44, 55, 66, 77, 88]);
   assert.equal(manager.getCurrentBpm(), 165);
 
   manager.beginMeasurementWindow(15_000);
-  assert.equal(manager.getCurrentBpm(), 165);
+  assert.equal(manager.getCurrentBpm(), null);
   assert.deepEqual(manager.getIbiSamples(), []);
 
   runBeatTrain(manager, [24, 48, 72, 96, 120, 144, 168], 15_000);

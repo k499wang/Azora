@@ -140,8 +140,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semibold,
     fontSize: 11,
     color: colors.text.tertiary,
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
+    letterSpacing: 0.3,
   },
   labelRow: {
     flexDirection: 'row',

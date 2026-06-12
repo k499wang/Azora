@@ -54,7 +54,7 @@ export function deriveCaptureHrvResult(
           ? 'low_signal_quality'
           : null;
 
-  if (__DEV__) console.log('[hrv-gate] initial', {
+  if (typeof __DEV__ !== 'undefined' && __DEV__) console.log('[hrv-gate] initial', {
     captureBpm,
     beats: hrvEligibleIbis.length,
     minBeats: MIN_HRV_BEAT_COUNT,
@@ -92,7 +92,7 @@ export function deriveCaptureHrvResult(
   );
 
   if (hrvPreprocess.correctedIbi.length < MIN_HRV_BEAT_COUNT) {
-    if (__DEV__) console.log('[hrv-gate] postprocess fail: not_enough_clean_beats', {
+    if (typeof __DEV__ !== 'undefined' && __DEV__) console.log('[hrv-gate] postprocess fail: not_enough_clean_beats', {
       correctedLength: hrvPreprocess.correctedIbi.length,
       minBeats: MIN_HRV_BEAT_COUNT,
       artifactRatio: hrvPreprocess.artifactRatio,
@@ -105,7 +105,7 @@ export function deriveCaptureHrvResult(
   }
 
   if (!hrvPreprocess.usable) {
-    if (__DEV__) console.log('[hrv-gate] postprocess fail: low_signal_quality', {
+    if (typeof __DEV__ !== 'undefined' && __DEV__) console.log('[hrv-gate] postprocess fail: low_signal_quality', {
       correctedLength: hrvPreprocess.correctedIbi.length,
       artifactRatio: hrvPreprocess.artifactRatio,
     });
@@ -116,7 +116,7 @@ export function deriveCaptureHrvResult(
     };
   }
 
-  if (__DEV__) console.log('[hrv-gate] passed', {
+  if (typeof __DEV__ !== 'undefined' && __DEV__) console.log('[hrv-gate] passed', {
     correctedLength: hrvPreprocess.correctedIbi.length,
     artifactRatio: hrvPreprocess.artifactRatio,
   });
@@ -190,7 +190,7 @@ export function deriveIbiSampleHrvResult(
           ? 'not_enough_clean_beats'
           : null;
 
-  if (__DEV__) console.log('[hrv-gate] fallback initial', {
+  if (typeof __DEV__ !== 'undefined' && __DEV__) console.log('[hrv-gate] fallback initial', {
     beats: hrvEligibleIbis.length,
     minBeats: MIN_HRV_BEAT_COUNT,
     validSamples: validSamples.length,
@@ -213,7 +213,7 @@ export function deriveIbiSampleHrvResult(
   const hrvPreprocess = preprocessHRVIntervals(hrvEligibleIbis);
 
   if (hrvPreprocess.correctedIbi.length < MIN_HRV_BEAT_COUNT) {
-    if (__DEV__) console.log('[hrv-gate] fallback postprocess fail: not_enough_clean_beats', {
+    if (typeof __DEV__ !== 'undefined' && __DEV__) console.log('[hrv-gate] fallback postprocess fail: not_enough_clean_beats', {
       correctedLength: hrvPreprocess.correctedIbi.length,
       minBeats: MIN_HRV_BEAT_COUNT,
       artifactRatio: hrvPreprocess.artifactRatio,
@@ -227,7 +227,7 @@ export function deriveIbiSampleHrvResult(
   }
 
   if (!hrvPreprocess.usable) {
-    if (__DEV__) console.log('[hrv-gate] fallback postprocess fail: low_signal_quality', {
+    if (typeof __DEV__ !== 'undefined' && __DEV__) console.log('[hrv-gate] fallback postprocess fail: low_signal_quality', {
       correctedLength: hrvPreprocess.correctedIbi.length,
       artifactRatio: hrvPreprocess.artifactRatio,
     });
@@ -239,7 +239,7 @@ export function deriveIbiSampleHrvResult(
     };
   }
 
-  if (__DEV__) console.log('[hrv-gate] fallback passed', {
+  if (typeof __DEV__ !== 'undefined' && __DEV__) console.log('[hrv-gate] fallback passed', {
     correctedLength: hrvPreprocess.correctedIbi.length,
     artifactRatio: hrvPreprocess.artifactRatio,
   });
