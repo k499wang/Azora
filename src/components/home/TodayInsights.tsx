@@ -114,33 +114,21 @@ function LungAgeRing({
 
       <View style={styles.lungRingWrap}>
         <Canvas style={{ width: LUNG_RING_SIZE, height: LUNG_RING_SIZE }}>
-          {/* Track — solid grey channel */}
           <Path
             path={track}
             style="stroke"
             strokeWidth={LUNG_RING_STROKE}
             strokeCap="round"
-            color={colors.neutral[200]}
-          />
-          {/* Inner lighter line along the channel */}
-          <Path
-            path={track}
-            style="stroke"
-            strokeWidth={LUNG_RING_STROKE - 4}
-            strokeCap="round"
-            color={colors.neutral[100]}
+            color={colors.primary.blue100}
           />
           {progress > 0 && (
-            <>
-              {/* Colored arc — slightly wider to prevent AA bleed from track */}
-              <Path
-                path={arc}
-                style="stroke"
-                strokeWidth={LUNG_RING_STROKE + 0.5}
-                strokeCap="round"
-                color={colors.primary.blue600}
-              />
-            </>
+            <Path
+              path={arc}
+              style="stroke"
+              strokeWidth={LUNG_RING_STROKE + 0.5}
+              strokeCap="round"
+              color={colors.primary.blue500}
+            />
           )}
         </Canvas>
         <View style={styles.lungCenter} pointerEvents="none">
@@ -150,7 +138,11 @@ function LungAgeRing({
       </View>
 
       <Text style={styles.lungLabel}>Lung age</Text>
-      {tierLabel ? <Text style={styles.lungTier}>{tierLabel}</Text> : null}
+      {tierLabel ? (
+        <View style={styles.lungTierPill}>
+          <Text style={styles.lungTierText}>{tierLabel}</Text>
+        </View>
+      ) : null}
     </CardSurface>
   );
 }
@@ -177,16 +169,16 @@ export default function TodayInsights({
           label="BPM"
           value={bpmValue}
           progress={avgBpm == null ? 0 : avgBpm / 130}
-          color={colors.error[700]}
-          trackColor={colors.neutral[200]}
+          color={colors.primary.blue500}
+          trackColor={colors.primary.blue100}
           icon="stat-heart-pulse"
         />
         <RingStatCard
           label="Hold"
           value={holdValue}
           progress={holdSeconds == null ? 0 : holdSeconds / 120}
-          color={colors.primary.blue700}
-          trackColor={colors.neutral[200]}
+          color={colors.primary.blue500}
+          trackColor={colors.primary.blue100}
           icon="stat-breath-flow"
         />
         <RingStatCard
@@ -194,8 +186,8 @@ export default function TodayInsights({
           value={lungScoreValue}
           target="100"
           progress={lungScore == null ? 0 : lungScore / 100}
-          color={colors.orange[700]}
-          trackColor={colors.neutral[200]}
+          color={colors.primary.blue500}
+          trackColor={colors.primary.blue100}
           icon="stat-lungs"
           info={LUNG_SCORE_INFO}
         />
@@ -242,8 +234,9 @@ const styles = StyleSheet.create({
   lungValue: {
     fontSize: 56,
     lineHeight: 60,
-    fontFamily: fonts.semibold,
+    fontFamily: fonts.medium,
     color: colors.text.primary,
+    fontVariant: ['tabular-nums'],
     letterSpacing: -1.5,
   },
   lungUnit: {
@@ -254,16 +247,26 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   lungLabel: {
-    ...typography.body.medium,
+    ...typography.label.small,
     fontFamily: fonts.semibold,
-    color: colors.text.secondary,
+    fontSize: 11,
+    color: colors.text.tertiary,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
     marginTop: spacing.sm,
   },
-  lungTier: {
-    ...typography.caption.caption1,
+  lungTierPill: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: 20,
+    backgroundColor: `${colors.primary.blue500}18`,
+    marginTop: spacing.xs,
+  },
+  lungTierText: {
+    ...typography.label.small,
     fontFamily: fonts.semibold,
-    color: colors.text.tertiary,
-    marginTop: 2,
+    fontSize: 11,
+    color: colors.primary.blue500,
   },
   infoButton: {
     position: 'absolute',

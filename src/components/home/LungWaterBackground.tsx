@@ -21,15 +21,15 @@ const CARD_RADIUS = 22;
 const MAX_TILT_RAD = 1.1;
 const WAVE_SEGMENTS = 28;
 
-const BACK_AMPLITUDE = 10;
-const BACK_WAVELENGTH = 130;
-const BACK_SPEED = 0.0018;
-const BACK_OPACITY = 0.2;
+const BACK_AMPLITUDE = 6;
+const BACK_WAVELENGTH = 170;
+const BACK_SPEED = 0.0011;
+const BACK_OPACITY = 0.12;
 
-const FRONT_AMPLITUDE = 7;
-const FRONT_WAVELENGTH = 190;
-const FRONT_SPEED = -0.0024;
-const FRONT_OPACITY = 0.3;
+const FRONT_AMPLITUDE = 4;
+const FRONT_WAVELENGTH = 230;
+const FRONT_SPEED = -0.0015;
+const FRONT_OPACITY = 0.18;
 
 interface Props {
   fillLevel: number;
