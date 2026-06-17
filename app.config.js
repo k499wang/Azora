@@ -230,6 +230,7 @@ module.exports = {
       './plugins/with-heart-rate-plugin',
       './plugins/with-continuous-haptics-plugin',
       './plugins/with-local-notifications-only-plugin',
+      './plugins/with-google-modular-headers-plugin',
       [
         'expo-audio',
         {

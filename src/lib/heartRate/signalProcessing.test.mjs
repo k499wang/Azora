@@ -65,6 +65,43 @@ function buildCaptureSamples() {
   return samples;
 }
 
+function gaussianPhaseBump(phase, center, width) {
+  const delta = Math.atan2(Math.sin(phase - center), Math.cos(phase - center));
+  return Math.exp(-(delta * delta) / (2 * width * width));
+}
+
+function buildSecondaryPeakCaptureSamples() {
+  const samples = [];
+  const bpm = 90;
+  let phase = 0;
+
+  for (let timestamp = 0; timestamp <= CAPTURE_DURATION_MS; timestamp += FRAME_SPACING_MS) {
+    phase += 2 * Math.PI * (bpm / 60) * (FRAME_SPACING_MS / 1000);
+
+    const pulse =
+      1.3 * gaussianPhaseBump(phase, 0.1, 0.18) +
+      0.55 * gaussianPhaseBump(phase, Math.PI, 0.16) -
+      0.25 * gaussianPhaseBump(phase, 1.25, 0.25);
+
+    samples.push({
+      timestamp,
+      rois: [
+        {
+          id: 'center',
+          r: 130 + pulse * 32 + 2 * Math.sin(timestamp / 111),
+          g: 48 + pulse * 7,
+          b: 18,
+          saturatedPct: 0.02,
+          darkPct: 0.01,
+          variance: 100 + Math.abs(pulse) * 20,
+        },
+      ],
+    });
+  }
+
+  return samples;
+}
+
 test('extractBestCaptureBeatSeries chooses the strongest ROI/channel beat series for HRV', () => {
   const samples = buildCaptureSamples();
   const beatSeries = extractBestCaptureBeatSeries(samples);
@@ -104,6 +141,26 @@ test('analyzeCapture returns a frequency BPM estimate and matching HRV beat seri
   assert.ok(
     Math.abs(analysis.estimate.frequencyBpm - analysis.beatSeries.frequencyBpm) <= 6,
     `expected BPM and beat-series frequency to stay aligned, got ${analysis.estimate.frequencyBpm} and ${analysis.beatSeries.frequencyBpm}`,
+  );
+});
+
+test('analyzeCapture treats secondary post-beat peaks as one cardiac cycle', () => {
+  const samples = buildSecondaryPeakCaptureSamples();
+  const analysis = analyzeCapture(samples);
+
+  assert.ok(analysis.estimate, 'expected a BPM estimate');
+  assert.ok(analysis.beatSeries, 'expected an HRV beat series');
+  assert.ok(
+    analysis.estimate.bpm >= 86 && analysis.estimate.bpm <= 94,
+    `expected BPM near 90 despite secondary peaks, got ${analysis.estimate.bpm}`,
+  );
+  assert.ok(
+    analysis.beatSeries.peakBpm >= 86 && analysis.beatSeries.peakBpm <= 94,
+    `expected peak BPM near 90 despite secondary peaks, got ${analysis.beatSeries.peakBpm}`,
+  );
+  assert.ok(
+    Math.min(...analysis.beatSeries.ibiMs) > 600,
+    `expected secondary peaks to be ignored, got min IBI ${Math.min(...analysis.beatSeries.ibiMs)}`,
   );
 });
 
