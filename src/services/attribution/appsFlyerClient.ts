@@ -105,6 +105,27 @@ export function setAppsFlyerCustomerUserId(id: string): void {
   appsFlyer.setCustomerUserId(id);
 }
 
+// AppsFlyer's native EmailCryptType is NONE=0, SHA1=1, MD5=2, SHA256=3. The
+// bundled TS enum auto-numbers SHA256 as 1 (i.e. SHA1), so we pass the raw
+// native value — SHA256 is what Meta's advanced matching expects, and it lets
+// partners match installs by person when IDFA is unavailable (ATT denied).
+const APPSFLYER_EMAIL_CRYPT_SHA256 = 3;
+
+// Normalize before handing off so the SHA256 the SDK produces matches the
+// canonical form ad partners hash against (trimmed, lowercased).
+export function setAppsFlyerUserEmails(emails: string[]): void {
+  if (getAppsFlyerAvailability().status !== 'ready') return;
+  const normalized = emails
+    .map((email) => email.trim().toLowerCase())
+    .filter((email) => email.length > 0);
+  if (normalized.length === 0) return;
+  appsFlyer.setUserEmails(
+    { emails: normalized, emailsCryptType: APPSFLYER_EMAIL_CRYPT_SHA256 },
+    () => {},
+    () => {},
+  );
+}
+
 export function clearAppsFlyerCustomerUserId(): void {
   if (getAppsFlyerAvailability().status !== 'ready') return;
   appsFlyer.setCustomerUserId('');

@@ -6,6 +6,7 @@ import {
   getAppsFlyerId,
   initAppsFlyer,
   setAppsFlyerCustomerUserId,
+  setAppsFlyerUserEmails,
 } from './appsFlyerClient';
 
 // RevenueCat treats $appsflyerId as immutable: once a subscriber has it, the
@@ -21,11 +22,17 @@ function syncedKey(userId: string): string {
 // AppsFlyer / RevenueCat / PostHog all join on a single identity. Also pushes
 // the AppsFlyer device ID back into RevenueCat so its server-to-server revenue
 // postbacks attribute to the same install.
-export async function syncAppsFlyerIdentityForUser(userId: string): Promise<void> {
+export async function syncAppsFlyerIdentityForUser(
+  userId: string,
+  email?: string | null,
+): Promise<void> {
   if (getAppsFlyerAvailability().status !== 'ready') return;
 
   await initAppsFlyer();
   setAppsFlyerCustomerUserId(userId);
+  if (email != null && email.length > 0) {
+    setAppsFlyerUserEmails([email]);
+  }
   if (__DEV__) {
     console.log(`[appsflyer-diag] cuid set=${userId}`);
   }
