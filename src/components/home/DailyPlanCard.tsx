@@ -1,5 +1,6 @@
+import { useCallback } from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { usePostHog } from 'posthog-react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useVideoPlayer, VideoView } from 'expo-video';
@@ -43,6 +44,15 @@ export default function DailyPlanCard({
     p.muted = true;
     p.play();
   });
+
+  useFocusEffect(
+    useCallback(() => {
+      player.play();
+      return () => {
+        player.pause();
+      };
+    }, [player]),
+  );
 
   const handlePress = () => {
     posthog.capture(AnalyticsEvent.DailyPlanStarted, { streak_days: streakDays });
