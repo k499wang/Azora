@@ -159,7 +159,7 @@ export function ExitOfferScreen({ navigation }: ExitOfferScreenProps) {
   }, [navigation, paywall]);
 
   const ctaLabel =
-    selectedPackage?.trialLabel != null ? 'Start My Free Trial →' : 'Continue';
+    selectedPackage?.trialLabel != null ? 'Start My Free Trial' : 'Continue';
 
   return (
     <View style={styles.screen}>
@@ -248,6 +248,11 @@ export function ExitOfferScreen({ navigation }: ExitOfferScreenProps) {
             <View style={styles.testimonials}>
               {TESTIMONIALS.map((t) => (
                 <View key={t.name} style={styles.testimonial}>
+                  <View style={styles.testimonialStars}>
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <Icon key={i} name="star" size={20} color={colors.warning[500]} />
+                    ))}
+                  </View>
                   <Text style={styles.testimonialQuote}>{t.quote}</Text>
                   <Text style={styles.testimonialName}>{t.name}</Text>
                 </View>
@@ -658,6 +663,10 @@ const styles = StyleSheet.create({
   },
   testimonial: {
     alignItems: 'center',
+    gap: spacing.xs,
+  },
+  testimonialStars: {
+    flexDirection: 'row',
     gap: spacing.xs,
   },
   testimonialQuote: {
