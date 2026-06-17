@@ -258,7 +258,7 @@ module.exports = {
         'expo-tracking-transparency',
         {
           userTrackingPermission:
-            'Allow $(PRODUCT_NAME) to measure ad performance so we can improve Azora.',
+            'Allow $(PRODUCT_NAME) to tailor your experience and keep improving the app. Your sessions stay private.',
         },
       ],
     ],

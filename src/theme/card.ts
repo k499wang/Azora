@@ -3,6 +3,7 @@ import { colors } from './colors';
 
 export const card: {
   base: ViewStyle;
+  paper: ViewStyle;
   shadow: ViewStyle;
   shadowElevated: ViewStyle;
   glass: ViewStyle;
@@ -13,6 +14,19 @@ export const card: {
     borderRadius: 22,
     borderWidth: 1,
     borderColor: colors.neutral[200],
+  },
+  // Warm cream sheet for letter/note surfaces. Flatter corners + a soft, wide,
+  // low-opacity shadow so it reads as paper lying on the canvas, not a UI card.
+  paper: {
+    backgroundColor: colors.background.paper,
+    borderRadius: 10,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.neutral[200],
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.06,
+    shadowRadius: 18,
+    elevation: 3,
   },
   shadow: {
     shadowColor: colors.primary.blue700,

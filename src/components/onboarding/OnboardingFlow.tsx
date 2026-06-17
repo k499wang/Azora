@@ -18,6 +18,7 @@ import ExperienceScreen, {
 } from './screens/ExperienceScreen';
 import NameScreen from './screens/NameScreen';
 import GreetingScreen from './screens/GreetingScreen';
+import AttPrimingScreen from './screens/AttPrimingScreen';
 import PactScreen from './screens/PactScreen';
 import NotificationPermissionScreen from './screens/NotificationPermissionScreen';
 import SleepScreen from './screens/SleepScreen';
@@ -86,7 +87,7 @@ interface OnboardingFlowProps {
 }
 
 
-const STEP_COUNT = 22;
+const STEP_COUNT = 23;
 const STEP_INDEX: Record<OnboardingStep, number> = {
   intent: 1,
   intentReflection: 2,
@@ -107,9 +108,10 @@ const STEP_INDEX: Record<OnboardingStep, number> = {
   baselineIntro: 17,
   baseline: 18,
   recommendation: 19,
-  founderNote: 20,
-  pact: 21,
-  paywall: 22,
+  attPriming: 20,
+  founderNote: 21,
+  pact: 22,
+  paywall: 23,
 };
 
 type OnboardingTransitionAction = 'continue' | 'skip' | 'back' | 'auto';
@@ -241,10 +243,10 @@ export default function OnboardingFlow({
   };
 
   useEffect(() => {
-    // Fire ATT as early as possible so the IDFA decision lands inside AppsFlyer's
-    // install-postback hold window (timeToWaitForATTUserAuthorization). No-ops if
-    // already resolved, so it's safe on every onboarding entry.
-    void requestAttPermissionOnce().then(() => collectRevenueCatDeviceIdentifiers());
+    // IDFV is always available; IDFA only after ATT is granted. The ATT prompt
+    // itself is shown from the dedicated priming step so it gets a pre-prompt.
+    // Re-collecting later (after the prompt resolves) is a harmless no-op.
+    void collectRevenueCatDeviceIdentifiers();
   }, []);
 
   useEffect(() => {
@@ -752,8 +754,27 @@ export default function OnboardingFlow({
         experienceLevel={experienceLevel}
         stepIndex={stepIndex}
         stepCount={STEP_COUNT}
-        onContinue={() => goToStep('founderNote', 'continue')}
+        onContinue={() => goToStep('attPriming', 'continue')}
         onBack={() => goToStep('baseline', 'back')}
+      />
+    );
+  }
+
+  if (step === 'attPriming') {
+    return (
+      <AttPrimingScreen
+        stepIndex={stepIndex}
+        stepCount={STEP_COUNT}
+        onContinue={() => {
+          // Show Apple's ATT dialog right after the pre-prompt, then advance once
+          // the user has responded. requestAttPermissionOnce never rejects and
+          // no-ops if already resolved, so navigation always proceeds.
+          void requestAttPermissionOnce().then(() => {
+            void collectRevenueCatDeviceIdentifiers();
+            goToStep('founderNote', 'continue');
+          });
+        }}
+        onBack={() => goToStep('recommendation', 'back')}
       />
     );
   }
@@ -771,7 +792,7 @@ export default function OnboardingFlow({
         stepIndex={stepIndex}
         stepCount={STEP_COUNT}
         onContinue={() => goToStep('pact', 'continue')}
-        onBack={() => goToStep('recommendation', 'back')}
+        onBack={() => goToStep('attPriming', 'back')}
       />
     );
   }
