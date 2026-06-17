@@ -1,10 +1,24 @@
 import { Platform } from 'react-native';
-import appsFlyer from 'react-native-appsflyer';
+import appsFlyer, { type ConversionData } from 'react-native-appsflyer';
 import {
   getAppsFlyerAppId,
   getAppsFlyerDevKey,
   isAppsFlyerSupportedPlatform,
 } from './appsFlyerConfig';
+
+// Acquisition channel for an install, mapped onto RevenueCat's reserved
+// attribution attributes so revenue can be sliced by source/campaign.
+export interface AppsFlyerChannelAttribution {
+  mediaSource: string | null;
+  campaign: string | null;
+  adGroup: string | null;
+  ad: string | null;
+  keyword: string | null;
+}
+
+export type AppsFlyerConversionHandler = (
+  attribution: AppsFlyerChannelAttribution,
+) => void;
 
 export type AppsFlyerAvailability =
   | { status: 'ready' }
@@ -39,12 +53,57 @@ export function getAppsFlyerAvailability(): AppsFlyerAvailability {
 }
 
 let deepLinkHandler: AppsFlyerDeepLinkHandler | null = null;
+let conversionHandler: AppsFlyerConversionHandler | null = null;
+let lastChannelAttribution: AppsFlyerChannelAttribution | null = null;
 let initPromise: Promise<void> | null = null;
 
 // Settable before init so the listener (which must register *before* initSdk)
 // can forward to whatever the app wires up later.
 export function setAppsFlyerDeepLinkHandler(handler: AppsFlyerDeepLinkHandler): void {
   deepLinkHandler = handler;
+}
+
+export function setAppsFlyerConversionHandler(handler: AppsFlyerConversionHandler): void {
+  conversionHandler = handler;
+}
+
+// Install conversion data arrives once, async, shortly after first launch. We
+// cache it so a consumer that wires up (or a RevenueCat identity that
+// configures) *after* the callback fired can still apply it.
+export function getLastAppsFlyerChannelAttribution(): AppsFlyerChannelAttribution | null {
+  return lastChannelAttribution;
+}
+
+function asString(value: unknown): string | null {
+  return typeof value === 'string' && value.length > 0 ? value : null;
+}
+
+function parseConversionAttribution(
+  result: ConversionData,
+): AppsFlyerChannelAttribution | null {
+  if (result?.status !== 'success') return null;
+
+  // Android can hand back the payload as a JSON string; iOS sends an object.
+  const raw: unknown = result.data;
+  let data: Record<string, unknown>;
+  if (typeof raw === 'string') {
+    try {
+      data = JSON.parse(raw) as Record<string, unknown>;
+    } catch {
+      return null;
+    }
+  } else {
+    data = (raw ?? {}) as Record<string, unknown>;
+  }
+
+  const isOrganic = data.af_status === 'Organic';
+  return {
+    mediaSource: isOrganic ? 'organic' : asString(data.media_source),
+    campaign: asString(data.campaign),
+    adGroup: asString(data.af_adset ?? data.adset),
+    ad: asString(data.af_ad),
+    keyword: asString(data.af_keywords),
+  };
 }
 
 export function initAppsFlyer(): Promise<void> {
@@ -71,14 +130,20 @@ export function initAppsFlyer(): Promise<void> {
   // These fire once AppsFlyer's servers respond to the install postback, so a
   // log here is proof the device actually reached AppsFlyer (vs. just minting a
   // local UID). Silence in both = the install never landed.
-  if (__DEV__) {
-    appsFlyer.onInstallConversionData((data) => {
-      console.log('[appsflyer-diag] install conversion OK:', JSON.stringify(data));
-    });
-    appsFlyer.onInstallConversionFailure((error) => {
+  appsFlyer.onInstallConversionData((result) => {
+    if (__DEV__) {
+      console.log('[appsflyer-diag] install conversion OK:', JSON.stringify(result));
+    }
+    const attribution = parseConversionAttribution(result);
+    if (attribution == null) return;
+    lastChannelAttribution = attribution;
+    conversionHandler?.(attribution);
+  });
+  appsFlyer.onInstallConversionFailure((error) => {
+    if (__DEV__) {
       console.log('[appsflyer-diag] install conversion FAILED:', JSON.stringify(error));
-    });
-  }
+    }
+  });
 
   initPromise = appsFlyer
     .initSdk({
