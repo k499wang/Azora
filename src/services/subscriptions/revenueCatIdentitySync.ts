@@ -4,6 +4,7 @@ import {
   clearAppsFlyerIdentity,
   syncAppsFlyerIdentityForUser,
 } from '../attribution/appsFlyerIdentitySync';
+import { isAttPermissionResolved } from '../attribution/attPrompt';
 import {
   getRevenueCatAvailability,
   getRevenueCatCustomerInfo,
@@ -34,7 +35,10 @@ export async function ensureRevenueCatIdentityForCurrentUser(): Promise<boolean>
       email: user.email ?? null,
     });
     store.setSynced(user.id);
-    void syncAppsFlyerIdentityForUser(user.id, user.email ?? null);
+    void isAttPermissionResolved().then((isResolved) => {
+      if (!isResolved) return;
+      void syncAppsFlyerIdentityForUser(user.id, user.email ?? null);
+    });
     return true;
   } catch (error) {
     store.setFailed(error, user.id);

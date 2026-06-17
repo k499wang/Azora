@@ -30,6 +30,7 @@ import { registerAppSessionTracking } from './src/services/analytics/appSession'
 import { registerAuthIdentitySync } from './src/services/supabase';
 import { initAppsFlyer } from './src/services/attribution/appsFlyerClient';
 import { logAppsFlyerDiagnostics } from './src/services/attribution/appsFlyerDiagnostics';
+import { isAttPermissionResolved } from './src/services/attribution/attPrompt';
 import { WelcomeIntro } from './src/components/welcome/WelcomeIntro';
 import { colors } from './src/theme/colors';
 import TECHNIQUES from './src/data/techniques';
@@ -99,12 +100,19 @@ export default function App() {
 
   useEffect(() => {
     if (!fontsLoaded) return;
+    let cancelled = false;
     bootstrapAnalytics();
-    void initAppsFlyer().then(() => logAppsFlyerDiagnostics());
+    void isAttPermissionResolved().then((isResolved) => {
+      if (cancelled || !isResolved) return;
+      void initAppsFlyer().then(() => {
+        if (!cancelled) void logAppsFlyerDiagnostics();
+      });
+    });
     trackAppOpened();
     const unsubscribeSessionTracking = registerAppSessionTracking();
     const unsubscribeAuthIdentitySync = registerAuthIdentitySync();
     return () => {
+      cancelled = true;
       unsubscribeSessionTracking();
       unsubscribeAuthIdentitySync();
     };

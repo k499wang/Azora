@@ -17,3 +17,13 @@ export async function requestAttPermissionOnce(): Promise<void> {
     // Never block onboarding on ATT.
   }
 }
+
+export async function isAttPermissionResolved(): Promise<boolean> {
+  if (Platform.OS !== 'ios') return true;
+  try {
+    const current = await getTrackingPermissionsAsync();
+    return current.status !== 'undetermined';
+  } catch {
+    return true;
+  }
+}

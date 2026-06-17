@@ -41,6 +41,9 @@ import { computeMindMap } from '../../lib/onboardingScores';
 import { useAuthStore } from '../../stores/authStore';
 import { requestNotificationPermissions } from '../../services/notifications/notificationClient';
 import { requestAttPermissionOnce } from '../../services/attribution/attPrompt';
+import { initAppsFlyer } from '../../services/attribution/appsFlyerClient';
+import { logAppsFlyerDiagnostics } from '../../services/attribution/appsFlyerDiagnostics';
+import { syncAppsFlyerIdentityForUser } from '../../services/attribution/appsFlyerIdentitySync';
 import { collectRevenueCatDeviceIdentifiers } from '../../services/subscriptions/revenueCatClient';
 import { trackNotificationPermissionResult } from '../../services/analytics/tracking';
 import {
@@ -125,6 +128,7 @@ export default function OnboardingFlow({
   onComplete,
 }: OnboardingFlowProps) {
   const userId = useAuthStore((state) => state.user?.id ?? null);
+  const userEmail = useAuthStore((state) => state.user?.email ?? null);
   const isPro = useUserEntitlementQuery(userId).data?.isPro === true;
   const [step, setStep] = useState<OnboardingStep>(
     initialSavedProfile == null ? 'intent' : 'paywall',
@@ -769,7 +773,11 @@ export default function OnboardingFlow({
           // Show Apple's ATT dialog right after the pre-prompt, then advance once
           // the user has responded. requestAttPermissionOnce never rejects and
           // no-ops if already resolved, so navigation always proceeds.
-          void requestAttPermissionOnce().then(() => {
+          void requestAttPermissionOnce().then(() => initAppsFlyer()).then(() => {
+            void logAppsFlyerDiagnostics();
+            if (userId != null) {
+              void syncAppsFlyerIdentityForUser(userId, userEmail);
+            }
             void collectRevenueCatDeviceIdentifiers();
             goToStep('founderNote', 'continue');
           });
