@@ -27,6 +27,10 @@ import {
 } from '../features/audioSettings';
 import { HeartRateCameraPreview } from '../components/heartRate/HeartRateCameraPreview';
 import { LiveSignalGraph } from '../components/heartRate/LiveSignalGraph';
+import {
+  showCameraAccessNeededAlert,
+  showHeartRateCameraUnavailableAlert,
+} from '../components/heartRate/cameraAccessPrompts';
 import { createBpmPresentationFilter } from '../lib/heartRate/bpmSmoothing';
 import type { FingerPlacementState } from '../lib/heartRate/types';
 import { startInhaleVibration, stopInhaleVibration } from '../native/inhaleVibration';
@@ -559,8 +563,15 @@ export default function ExerciseSessionPage({
       const granted = hasPermission ? true : await requestPermission();
       if (!flow.isActive()) return;
       if (!granted) {
+        showCameraAccessNeededAlert();
         setHrEnabled(false);
-        beginExercise(false);
+        flow.cancel();
+        return;
+      }
+      if (pulse.device == null) {
+        showHeartRateCameraUnavailableAlert();
+        setHrEnabled(false);
+        flow.cancel();
         return;
       }
       setHrEnabled(true);
@@ -575,10 +586,11 @@ export default function ExerciseSessionPage({
         technique_id: technique.id,
         technique_name: technique.name,
       });
+      showHeartRateCameraUnavailableAlert();
       setHrEnabled(false);
-      beginExercise(false);
+      flow.cancel();
     }
-  }, [flow, hasPermission, requestPermission, startPulse, beginExercise, technique]);
+  }, [flow, hasPermission, pulse.device, requestPermission, startPulse, technique]);
 
   const handleStart = () => {
     if (phase === 'idle' || phase === 'done') {

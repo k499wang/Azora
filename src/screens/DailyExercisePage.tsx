@@ -20,6 +20,10 @@ import { useLivePulse } from '../hooks/useLivePulse';
 import { HeartRateCameraPreview } from '../components/heartRate/HeartRateCameraPreview';
 import { LiveSignalGraph } from '../components/heartRate/LiveSignalGraph';
 import { HeartRateProcessingScreen } from '../components/heartRate/HeartRateProcessingScreen';
+import {
+  showCameraAccessNeededAlert,
+  showHeartRateCameraUnavailableAlert,
+} from '../components/heartRate/cameraAccessPrompts';
 import type {
   CaptureResult,
   FingerPlacementState,
@@ -622,8 +626,15 @@ export default function DailyExercisePage({
       const granted = hasPermission ? true : await requestPermission();
       if (!flow.isActive()) return;
       if (!granted) {
+        showCameraAccessNeededAlert();
         setHrEnabled(false);
-        startPrepBreathing(false);
+        flow.cancel();
+        return;
+      }
+      if (pulse.device == null) {
+        showHeartRateCameraUnavailableAlert();
+        setHrEnabled(false);
+        flow.cancel();
         return;
       }
       setHrEnabled(true);
@@ -636,9 +647,11 @@ export default function DailyExercisePage({
         action: 'start_placement',
         screen_name: 'DailyExercise',
       });
-      startPrepBreathing(false);
+      showHeartRateCameraUnavailableAlert();
+      setHrEnabled(false);
+      flow.cancel();
     }
-  }, [flow, hasPermission, requestPermission, startPrepBreathing, startPulse]);
+  }, [flow, hasPermission, pulse.device, requestPermission, startPulse]);
 
   const startDailyExercise = useCallback(() => {
     if (!heartRateMonitoringPreferenceLoaded) return;

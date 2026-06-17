@@ -1,5 +1,12 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
-import { InteractionManager, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  InteractionManager,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { usePostHog } from 'posthog-react-native';
@@ -32,6 +39,10 @@ import { useCompleteHeartRateSessionMutation } from '../../queries/tracking/useC
 import { useFeatureAccess } from '../../hooks/useFeatureAccess';
 import { FeatureKey } from '../../services/subscriptions/featureAccess';
 import { PaywallPlacement } from '../../services/paywall';
+import {
+  showCameraAccessNeededAlert,
+  showHeartRateCameraUnavailableAlert,
+} from './cameraAccessPrompts';
 
 interface HeartRateCaptureFlowProps {
   setupScreens?: React.ComponentType<SetupScreenProps>[];
@@ -135,8 +146,17 @@ export function HeartRateCaptureFlow({
     try {
       if (!hasPermission) {
         const granted = await requestPermission();
-        if (!granted) return;
+        if (!granted) {
+          showCameraAccessNeededAlert();
+          return;
+        }
       }
+
+      if (device == null) {
+        showHeartRateCameraUnavailableAlert();
+        return;
+      }
+
       setPastSetup(true);
       posthog.capture(AnalyticsEvent.HeartRateCaptureStarted, { context: context ?? null });
       startCapture();
@@ -148,7 +168,7 @@ export function HeartRateCaptureFlow({
         context: context ?? null,
       });
     }
-  }, [hasPermission, requestPermission, startCapture, posthog, context]);
+  }, [device, hasPermission, requestPermission, startCapture, posthog, context]);
 
   const handleSetupNext = useCallback(async (selection?: { mode: HeartRateCaptureMode }) => {
     try {
