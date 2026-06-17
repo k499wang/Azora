@@ -277,7 +277,7 @@ export function usePaywall({
         is_pro: result.isPro,
       });
       if (selectedPackageOption?.trialLabel != null) {
-        void logAppsFlyerEvent('af_start_trial', {
+        void logAppsFlyerEvent('azora_skan_start_trial', {
           package_type: selectedPackageId,
           selected_package_id: selectedPackageId,
           product_id: selectedPackageOption.productIdentifier,
