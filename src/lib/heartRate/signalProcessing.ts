@@ -18,6 +18,8 @@ const UPSAMPLE_TARGET_RATE = 180; // Hz — reduces beat timing quantization err
 const FREQ_STEP = 0.01;
 const BPM_FREQ_MIN = 0.67; // 40 bpm
 const BPM_FREQ_MAX = 3.0; // 180 bpm
+const SUBHARMONIC_SCORE_RATIO = 0.45;
+const SUBHARMONIC_BASE_POWER_RATIO = 0.12;
 const MIN_SNR_DB = 2.5;
 const MIN_CONFIDENCE = 0.45;
 const MAX_FREQ_PEAK_DIFF_BPM = 12;
@@ -377,6 +379,7 @@ function goertzel(signal: number[], targetFreq: number, sampleRate: number): num
 function frequencyEstimate(signal: number[], sampleRate: number): FrequencyResult | null {
   const nyquist = sampleRate / 2;
   const frequencies: number[] = [];
+  const basePowers: number[] = [];
   const scores: number[] = [];
 
   for (let freq = BPM_FREQ_MIN; freq <= BPM_FREQ_MAX; freq += FREQ_STEP) {
@@ -386,6 +389,7 @@ function frequencyEstimate(signal: number[], sampleRate: number): FrequencyResul
     const harmonic2 = freq * 2 < nyquist ? goertzel(signal, freq * 2, sampleRate) * 0.5 : 0;
     const harmonic3 = freq * 3 < nyquist ? goertzel(signal, freq * 3, sampleRate) * 0.25 : 0;
     frequencies.push(freq);
+    basePowers.push(basePower);
     scores.push(basePower + harmonic2 + harmonic3);
   }
 
@@ -395,6 +399,29 @@ function frequencyEstimate(signal: number[], sampleRate: number): FrequencyResul
   for (let i = 1; i < scores.length; i++) {
     if (scores[i] > scores[peakIndex]) {
       peakIndex = i;
+    }
+  }
+
+  const halfPeakFreq = frequencies[peakIndex] / 2;
+  if (halfPeakFreq >= BPM_FREQ_MIN) {
+    let halfIndex = 0;
+    let halfDistance = Infinity;
+    for (let i = 0; i < frequencies.length; i++) {
+      const distance = Math.abs(frequencies[i] - halfPeakFreq);
+      if (distance < halfDistance) {
+        halfDistance = distance;
+        halfIndex = i;
+      }
+    }
+
+    const halfScoreRatio = scores[halfIndex] / Math.max(scores[peakIndex], Number.EPSILON);
+    const halfBasePowerRatio =
+      basePowers[halfIndex] / Math.max(basePowers[peakIndex], Number.EPSILON);
+    if (
+      halfScoreRatio >= SUBHARMONIC_SCORE_RATIO &&
+      halfBasePowerRatio >= SUBHARMONIC_BASE_POWER_RATIO
+    ) {
+      peakIndex = halfIndex;
     }
   }
 
@@ -481,7 +508,7 @@ function peakEstimateForPolarity(
   const expectedIntervalMs =
     expectedBpm != null && expectedBpm > 0 ? 60000 / expectedBpm : null;
   const refractoryMs =
-    expectedIntervalMs == null ? 320 : clamp(expectedIntervalMs * 0.45, 280, 520);
+    expectedIntervalMs == null ? 320 : clamp(expectedIntervalMs * 0.55, 280, 620);
   const refractorySamples = Math.max(1, Math.round(sampleRate * (refractoryMs / 1000)));
   const leftProminenceMins = rollingMinBefore(oriented, prominenceWindowSamples);
   const rightProminenceMins = rollingMinAfter(oriented, prominenceWindowSamples);
