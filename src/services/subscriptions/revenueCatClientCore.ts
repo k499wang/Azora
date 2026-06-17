@@ -5,6 +5,7 @@ export interface RevenueCatIdentityUser {
 
 export interface RevenueCatSdk {
   collectDeviceIdentifiers?: () => Promise<void>;
+  enableAdServicesAttributionTokenCollection?: () => Promise<void>;
   configure: (options: { apiKey: string; appUserID: string }) => void;
   getCustomerInfo: () => Promise<unknown>;
   getCurrentOfferingForPlacement?: (placement: string) => Promise<unknown>;
@@ -117,6 +118,18 @@ export function createRevenueCatClient(
     }
   }
 
+  async function enableAdServicesAttribution(): Promise<void> {
+    if (!isReady() || dependencies.sdk.enableAdServicesAttributionTokenCollection == null) {
+      return;
+    }
+
+    try {
+      await dependencies.sdk.enableAdServicesAttributionTokenCollection();
+    } catch {
+      // Apple Search Ads attribution is iOS-only and best-effort; never block.
+    }
+  }
+
   return {
     clearIdentity(): Promise<void> {
       return runSerial(async () => {
@@ -193,6 +206,7 @@ export function createRevenueCatClient(
         await ensureConfigured(user.id);
         currentAppUserId = user.id;
         requireCurrentAppUserId();
+        await enableAdServicesAttribution();
         await collectDeviceIdentifiers();
         logRevenueCat('revenuecat.set_email_started', {
           revenuecat_current_app_user_id: currentAppUserId,

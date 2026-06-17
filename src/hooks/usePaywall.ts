@@ -252,7 +252,7 @@ export function usePaywall({
     });
 
     if (userId != null) {
-      await syncAppsFlyerIdentityForUser(userId).catch(() => {});
+      await syncAppsFlyerIdentityForUser(userId, user?.email ?? null).catch(() => {});
     }
 
     const result = await purchasePaywallPackage(selectedPackage);

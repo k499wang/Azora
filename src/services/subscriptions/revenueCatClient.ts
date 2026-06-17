@@ -25,6 +25,8 @@ const revenueCatClient = createRevenueCatClient({
       Purchases.configure(options);
     },
     collectDeviceIdentifiers: () => Purchases.collectDeviceIdentifiers(),
+    enableAdServicesAttributionTokenCollection: () =>
+      Purchases.enableAdServicesAttributionTokenCollection(),
     getCustomerInfo: () => Purchases.getCustomerInfo(),
     getCurrentOfferingForPlacement: (placement) =>
       Purchases.getCurrentOfferingForPlacement(placement),

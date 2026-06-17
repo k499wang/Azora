@@ -34,7 +34,7 @@ export async function ensureRevenueCatIdentityForCurrentUser(): Promise<boolean>
       email: user.email ?? null,
     });
     store.setSynced(user.id);
-    void syncAppsFlyerIdentityForUser(user.id);
+    void syncAppsFlyerIdentityForUser(user.id, user.email ?? null);
     return true;
   } catch (error) {
     store.setFailed(error, user.id);

@@ -22,6 +22,12 @@ function createHarness(options = {}) {
           throw options.collectDeviceIdentifiersError;
         }
       },
+      enableAdServicesAttributionTokenCollection: async () => {
+        calls.push({ fn: 'enableAdServicesAttributionTokenCollection' });
+        if (options.enableAdServicesError != null) {
+          throw options.enableAdServicesError;
+        }
+      },
       configure: ({ apiKey, appUserID }) => {
         calls.push({ fn: 'configure', apiKey, appUserID });
         configured = true;
@@ -61,7 +67,14 @@ test('syncIdentity configures RevenueCat with the authenticated Supabase user id
   assert.equal(harness.client.getCurrentAppUserId(), 'user-1');
   assert.deepEqual(
     harness.calls.map((call) => call.fn),
-    ['setLogLevel', 'configure', 'collectDeviceIdentifiers', 'setEmail', 'getCustomerInfo'],
+    [
+      'setLogLevel',
+      'configure',
+      'enableAdServicesAttributionTokenCollection',
+      'collectDeviceIdentifiers',
+      'setEmail',
+      'getCustomerInfo',
+    ],
   );
   assert.deepEqual(harness.calls[1], {
     fn: 'configure',
@@ -95,11 +108,13 @@ test('switching between authenticated users uses RevenueCat logIn directly', asy
     [
       'setLogLevel',
       'logIn',
+      'enableAdServicesAttributionTokenCollection',
       'collectDeviceIdentifiers',
       'setEmail',
       'getCustomerInfo',
       'setLogLevel',
       'logIn',
+      'enableAdServicesAttributionTokenCollection',
       'collectDeviceIdentifiers',
       'setEmail',
       'getCustomerInfo',
@@ -109,7 +124,7 @@ test('switching between authenticated users uses RevenueCat logIn directly', asy
     fn: 'logIn',
     appUserId: 'user-1',
   });
-  assert.deepEqual(harness.calls[6], {
+  assert.deepEqual(harness.calls[7], {
     fn: 'logIn',
     appUserId: 'user-2',
   });
@@ -128,6 +143,13 @@ test('device identifier collection failures do not block identity sync', async (
   assert.equal(harness.client.getCurrentAppUserId(), 'user-1');
   assert.deepEqual(
     harness.calls.map((call) => call.fn),
-    ['setLogLevel', 'configure', 'collectDeviceIdentifiers', 'setEmail', 'getCustomerInfo'],
+    [
+      'setLogLevel',
+      'configure',
+      'enableAdServicesAttributionTokenCollection',
+      'collectDeviceIdentifiers',
+      'setEmail',
+      'getCustomerInfo',
+    ],
   );
 });
