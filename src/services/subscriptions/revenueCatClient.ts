@@ -118,6 +118,32 @@ export async function setRevenueCatAppsFlyerId(appsFlyerId: string): Promise<voi
   }
 }
 
+export interface RevenueCatChannelAttribution {
+  mediaSource: string | null;
+  campaign: string | null;
+  adGroup: string | null;
+  ad: string | null;
+  keyword: string | null;
+}
+
+// Tags the RevenueCat subscriber with its acquisition channel so revenue/LTV
+// reports break down by media source/campaign. Requires RC to be configured
+// (identity present); best-effort, never throws.
+export async function setRevenueCatChannelAttribution(
+  attribution: RevenueCatChannelAttribution,
+): Promise<void> {
+  if (!isRevenueCatReady() || !hasCurrentRevenueCatIdentity()) return;
+  try {
+    if (attribution.mediaSource != null) await Purchases.setMediaSource(attribution.mediaSource);
+    if (attribution.campaign != null) await Purchases.setCampaign(attribution.campaign);
+    if (attribution.adGroup != null) await Purchases.setAdGroup(attribution.adGroup);
+    if (attribution.ad != null) await Purchases.setAd(attribution.ad);
+    if (attribution.keyword != null) await Purchases.setKeyword(attribution.keyword);
+  } catch {
+    // attribution metadata only — safe to drop
+  }
+}
+
 export function getRevenueCatOfferingForPlacement(
   placement: string,
 ): Promise<PurchasesOffering | null> {

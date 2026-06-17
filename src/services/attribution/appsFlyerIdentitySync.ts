@@ -1,10 +1,15 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { setRevenueCatAppsFlyerId } from '../subscriptions/revenueCatClient';
+import {
+  setRevenueCatAppsFlyerId,
+  setRevenueCatChannelAttribution,
+} from '../subscriptions/revenueCatClient';
 import {
   clearAppsFlyerCustomerUserId,
   getAppsFlyerAvailability,
   getAppsFlyerId,
+  getLastAppsFlyerChannelAttribution,
   initAppsFlyer,
+  setAppsFlyerConversionHandler,
   setAppsFlyerCustomerUserId,
   setAppsFlyerUserEmails,
 } from './appsFlyerClient';
@@ -28,6 +33,12 @@ export async function syncAppsFlyerIdentityForUser(
 ): Promise<void> {
   if (getAppsFlyerAvailability().status !== 'ready') return;
 
+  // Register before init so the install-conversion callback can tag RevenueCat
+  // with the acquisition channel as soon as AppsFlyer attributes the install.
+  setAppsFlyerConversionHandler((attribution) => {
+    void setRevenueCatChannelAttribution(attribution);
+  });
+
   await initAppsFlyer();
   setAppsFlyerCustomerUserId(userId);
   if (email != null && email.length > 0) {
@@ -35,6 +46,13 @@ export async function syncAppsFlyerIdentityForUser(
   }
   if (__DEV__) {
     console.log(`[appsflyer-diag] cuid set=${userId}`);
+  }
+
+  // If conversion data already arrived before RevenueCat was configured, apply
+  // the cached channel now that an identity exists.
+  const cachedAttribution = getLastAppsFlyerChannelAttribution();
+  if (cachedAttribution != null) {
+    await setRevenueCatChannelAttribution(cachedAttribution);
   }
 
   const appsFlyerId = await getAppsFlyerId();
