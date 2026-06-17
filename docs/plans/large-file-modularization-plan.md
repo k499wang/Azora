@@ -55,6 +55,8 @@ Coverage now protecting refactors:
 
 ## Phase 1: Paywall Presentational Split
 
+Status: done.
+
 Target:
 
 - `src/components/onboarding/screens/OnboardingPaywallScreen.tsx`
@@ -78,7 +80,8 @@ Keep in the parent screen:
 
 Tests:
 
-- `npm test`
+- `npm test` passed.
+- `npx tsc --noEmit` passed.
 - Manual: paywall step navigation, package selection, disabled/loading states,
   restore, continue free, legal links.
 

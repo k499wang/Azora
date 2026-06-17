@@ -71,6 +71,8 @@ export const colors = {
     elevated: '#FFFFFF',
     card: '#FAFCFF',
     accentSoft: '#EAF2FF',
+    // Warm cream for paper/letter surfaces (FounderNoteScreen).
+    paper: '#FBF7EF',
   },
 
   // Desaturated brand blue (slate-leaning) for the premium/greyish direction.

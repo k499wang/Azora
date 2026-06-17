@@ -6,6 +6,7 @@ export type OnboardingStep =
   | 'intentProjection'
   | 'name'
   | 'greeting'
+  | 'attPriming'
   | 'stress'
   | 'sleep'
   | 'agreement'

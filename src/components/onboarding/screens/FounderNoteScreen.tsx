@@ -8,6 +8,11 @@ import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 
 const SIGNATURE_IMAGE = require('../../../../assets/signature.png');
 
+const LETTER_DATE = new Date().toLocaleDateString('en-US', {
+  month: 'long',
+  year: 'numeric',
+});
+
 interface FounderNoteScreenProps {
   name: string | null;
   intentTitle: string | null;
@@ -42,8 +47,11 @@ export default function FounderNoteScreen({
       onBack={onBack}
       footer={<OnboardingPrimaryButton label="Continue" onPress={onContinue} />}
     >
-      <View style={[card.base, card.shadow, styles.note]}>
-        <Text style={styles.fromLabel}>From the Azora team</Text>
+      <View style={[card.paper, styles.note]}>
+        <View style={styles.noteHead}>
+          <Text style={styles.fromLabel}>From Azora,</Text>
+          <Text style={styles.dateLabel}>{LETTER_DATE}</Text>
+        </View>
 
         <Text style={styles.paragraph}>
           We made Azora because breathing got us through things nothing else
@@ -73,6 +81,7 @@ export default function FounderNoteScreen({
             style={styles.signatureImage}
             resizeMode="contain"
           />
+          <Text style={styles.signName}>— The Azora team</Text>
         </View>
       </View>
     </OnboardingScreenLayout>
@@ -84,16 +93,24 @@ const styles = StyleSheet.create({
     padding: spacing.xl,
     gap: spacing.lg,
   },
+  noteHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
   fromLabel: {
-    ...typography.label.small,
+    ...typography.body.medium,
     fontFamily: fonts.semibold,
+    color: colors.text.primary,
+  },
+  dateLabel: {
+    ...typography.body.small,
     color: colors.text.tertiary,
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
   },
   paragraph: {
     ...typography.body.medium,
-    color: colors.text.secondary,
+    color: colors.text.primary,
+    lineHeight: 23,
   },
   bubble: {
     alignSelf: 'stretch',
@@ -122,5 +139,9 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 160,
     marginTop: spacing.xs,
+  },
+  signName: {
+    ...typography.body.small,
+    color: colors.text.secondary,
   },
 });
