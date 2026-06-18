@@ -29,6 +29,7 @@ import {
 const PRO_ENTITLEMENT = 'Azora  Pro';
 const PRO_ENTITLEMENT_REFRESH_ATTEMPTS = 4;
 const PRO_ENTITLEMENT_REFRESH_DELAY_MS = 750;
+type PaywallFlow = 'purchase' | 'restore';
 
 export async function getPaywallOffering(
   placement: PaywallPlacementValue,
@@ -129,7 +130,7 @@ export async function purchasePaywallPackage(
       }),
     };
   } catch (error) {
-    return toFailedPaywallResult(error);
+    return toFailedPaywallResult(error, 'purchase');
   }
 }
 
@@ -148,7 +149,7 @@ export async function restorePaywallPurchases(): Promise<PaywallResult> {
       }),
     };
   } catch (error) {
-    return toFailedPaywallResult(error);
+    return toFailedPaywallResult(error, 'restore');
   }
 }
 
@@ -294,7 +295,7 @@ function delay(milliseconds: number): Promise<void> {
   });
 }
 
-function toFailedPaywallResult(error: unknown): PaywallResult {
+function toFailedPaywallResult(error: unknown, flow: PaywallFlow): PaywallResult {
   if (error instanceof RevenueCatSignedOutError) {
     return { status: 'not_presented', reason: 'signed_out' };
   }
@@ -305,6 +306,14 @@ function toFailedPaywallResult(error: unknown): PaywallResult {
       error.code === PURCHASES_ERROR_CODE.PURCHASE_CANCELLED_ERROR
     ) {
       return { status: 'cancelled' };
+    }
+
+    if (error.code === PURCHASES_ERROR_CODE.INVALID_RECEIPT_ERROR) {
+      return {
+        status: 'failed',
+        errorCode: error.code,
+        message: getInvalidReceiptMessage(flow),
+      };
     }
 
     return {
@@ -319,6 +328,14 @@ function toFailedPaywallResult(error: unknown): PaywallResult {
     errorCode: null,
     message: error instanceof Error ? error.message : 'Purchase failed. Please try again.',
   };
+}
+
+function getInvalidReceiptMessage(flow: PaywallFlow): string {
+  if (flow === 'restore') {
+    return 'The App Store is still processing your receipt. Give it a moment, then try restoring purchases again.';
+  }
+
+  return 'The App Store is still processing your purchase. Give it a moment, then tap Restore Purchases to activate Azora Pro.';
 }
 
 function isRevenueCatError(error: unknown): error is {

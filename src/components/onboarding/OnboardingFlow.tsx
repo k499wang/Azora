@@ -788,15 +788,9 @@ export default function OnboardingFlow({
   }
 
   if (step === 'founderNote') {
-    const intentTitle =
-      primaryIntent === 'other' || primaryIntent == null
-        ? customIntent.trim() || null
-        : selectedOption?.title ?? null;
-
     return (
       <FounderNoteScreen
         name={name.trim() || null}
-        intentTitle={intentTitle}
         stepIndex={stepIndex}
         stepCount={STEP_COUNT}
         onContinue={() => goToStep('pact', 'continue')}

@@ -15,29 +15,20 @@ const LETTER_DATE = new Date().toLocaleDateString('en-US', {
 
 interface FounderNoteScreenProps {
   name: string | null;
-  intentTitle: string | null;
   stepIndex: number;
   stepCount: number;
   onContinue: () => void;
   onBack: () => void;
 }
 
-function toGoalPhrase(intentTitle: string | null): string {
-  const trimmed = intentTitle?.trim();
-  if (!trimmed) return 'feel calmer and more in control';
-  return trimmed.charAt(0).toLowerCase() + trimmed.slice(1);
-}
-
 export default function FounderNoteScreen({
   name,
-  intentTitle,
   stepIndex,
   stepCount,
   onContinue,
   onBack,
 }: FounderNoteScreenProps) {
   const title = name ? `${name}, before you start` : 'Before you start';
-  const goalPhrase = toGoalPhrase(intentTitle);
 
   return (
     <OnboardingScreenLayout
@@ -54,15 +45,26 @@ export default function FounderNoteScreen({
         </View>
 
         <Text style={styles.paragraph}>
-          We made Azora because breathing got us through things nothing else
-          touched, and it always bugged us that nobody really teaches you how to
-          do it.
+          Azora started less like a product and more like a note we kept leaving
+          ourselves: pause, breathe, give your body a second to catch up.
         </Text>
 
         <Text style={styles.paragraph}>
-          So we kept it small. A few real minutes a day, pointed at {goalPhrase}.
-          We cut the guilt trips and the clutter, because that stuff never kept us
-          coming back either.
+          Breathing was the thing we came back to when our heads were loud and
+          our bodies would not settle. Not because it fixed everything, but
+          because it gave us something real to do in the moment.
+        </Text>
+
+        <Text style={styles.paragraph}>
+          So we built Azora around that feeling: short sessions, clear guidance,
+          and a way to notice your body responding. We still make it closely,
+          word by word and session by session, trying to keep it human.
+        </Text>
+
+        <Text style={styles.paragraph}>
+          If Azora ever feels useful, that means a lot to us. If something feels
+          off, that matters too. We read what comes in because this only gets
+          better when real people tell us where it missed.
         </Text>
 
         <View style={styles.bubble}>

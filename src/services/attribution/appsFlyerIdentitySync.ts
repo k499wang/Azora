@@ -56,7 +56,7 @@ export async function syncAppsFlyerIdentityForUser(
   }
 
   const appsFlyerId = await getAppsFlyerId();
-  if (appsFlyerId == null) return;
+  if (appsFlyerId == null || appsFlyerId.length === 0) return;
 
   const alreadySynced = await AsyncStorage.getItem(syncedKey(userId)).catch(() => null);
   if (alreadySynced === appsFlyerId) return;
