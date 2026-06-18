@@ -201,6 +201,9 @@ export function useHeartRateCapture(
     if (measurementStartTs != null) {
       managerRef.current.beginMeasurementWindow(measurementStartTs);
     }
+    // Start the hold with a fresh PPG trace instead of inheriting the
+    // calibration-era signal the manager accumulated during camera_check.
+    managerRef.current.clearLiveSignalSamples();
     currentBpmRef.current = null;
     liveBpmFilterRef.current.reset();
     setProgress(0);
