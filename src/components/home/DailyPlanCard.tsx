@@ -47,9 +47,13 @@ export default function DailyPlanCard({
 
   useFocusEffect(
     useCallback(() => {
-      player.play();
+      try {
+        player.play();
+      } catch {}
       return () => {
-        player.pause();
+        try {
+          player.pause();
+        } catch {}
       };
     }, [player]),
   );

@@ -51,6 +51,7 @@ const SCIENCE_BODY_TEXT =
   'When you cover the back camera with your fingertip, the flash lights your skin from the inside. Each heartbeat pushes a small wave of blood through the capillaries, changing how much light reflects back into the lens. We sample those brightness shifts about 30 times a second — the same optical method clinical pulse oximeters use — and turn them into your BPM.';
 const SESSION_SEC = SESSION_MS / 1000;
 const PLACEMENT_GOOD_DURATION_MS = 1500;
+const PROGRESS_UPDATE_INTERVAL_MS = 200;
 
 type ReadingTip = {
   id: string;
@@ -345,10 +346,18 @@ export default function BaselineScreen({
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     }
 
+    let lastProgressUpdateAt = 0;
     const tick = () => {
-      const started = startedAtRef.current ?? Date.now();
-      const ratio = Math.min(1, (Date.now() - started) / SESSION_MS);
-      setProgress(ratio);
+      const now = Date.now();
+      const started = startedAtRef.current ?? now;
+      const ratio = Math.min(1, (now - started) / SESSION_MS);
+      if (
+        ratio >= 1 ||
+        now - lastProgressUpdateAt >= PROGRESS_UPDATE_INTERVAL_MS
+      ) {
+        lastProgressUpdateAt = now;
+        setProgress(ratio);
+      }
       if (ratio >= 1) {
         rafRef.current = null;
         finishCapture(true);
@@ -380,6 +389,9 @@ export default function BaselineScreen({
 
   if (phase === 'placement' || phase === 'running') {
     const isRunning = phase === 'running';
+    const isFingerLost =
+      stream.fingerPlacement === 'lost' || stream.fingerPlacement === 'no_finger';
+    const showInlineSignalWarning = showSignalWarning && !isFingerLost;
     return (
       <View style={styles.fill}>
         {isRunning && !hudVisible ? (
@@ -391,11 +403,31 @@ export default function BaselineScreen({
         ) : null}
 
         <View style={[styles.stage, { paddingTop: insets.top }]}>
-          <View style={styles.header} />
-
-          <View style={styles.center}>
-            <View style={styles.centerStack}>
-              {isRunning ? (
+          <View style={styles.measureContainer}>
+            <View style={styles.topArea}>
+              {isRunning && isFingerLost ? (
+                <View style={styles.warningBanner}>
+                  <MaterialCommunityIcons
+                    name="alert-outline"
+                    size={16}
+                    color={colors.warning[500]}
+                  />
+                  <Text style={styles.warningBannerText}>
+                    Finger moved - reposition and hold still
+                  </Text>
+                </View>
+              ) : null}
+              {!isRunning ? (
+                <Text
+                  style={[
+                    styles.hintText,
+                    { color: placementCfg.ringColor },
+                  ]}
+                >
+                  {placementCfg.status}
+                </Text>
+              ) : null}
+              {isRunning && !isFingerLost ? (
                 <View style={styles.liveSignalSlot}>
                   <LiveSignalGraph
                     samples={stream.liveSignalSamples}
@@ -403,6 +435,9 @@ export default function BaselineScreen({
                   />
                 </View>
               ) : null}
+            </View>
+
+            <View style={styles.ringSlot}>
               <PersistentCameraRing
                 ringColor={placementCfg.ringColor}
                 trackColor={isRunning ? undefined : placementCfg.ringColor + '33'}
@@ -411,119 +446,114 @@ export default function BaselineScreen({
                 fingerPlacement={stream.fingerPlacement}
                 beatTick={visibleBeatTick}
                 showHeartIcon={isRunning}
+                smoothProgress={isRunning}
               />
-              <View style={styles.belowSlot}>
-                {!isRunning ? (
-                  <Text
-                    style={[
-                      styles.hintText,
-                      { color: placementCfg.ringColor },
-                    ]}
-                  >
-                    {placementCfg.status}
-                  </Text>
-                ) : (
-                  <View style={styles.metricStack}>
-                    {bpmDisplay != null ? (
-                      <View
+            </View>
+
+            <View style={styles.bottomArea}>
+              {isRunning ? (
+                <View style={styles.metricStack}>
+                  {bpmDisplay != null ? (
+                    <View
+                      style={[
+                        styles.bpmRow,
+                        showSignalWarning && styles.bpmRowDim,
+                      ]}
+                    >
+                      <Animated.Text
                         style={[
-                          styles.bpmRow,
-                          showSignalWarning && styles.bpmRowDim,
+                          styles.bpmNumber,
+                          showSignalWarning ? null : { opacity: bpmOpacity },
                         ]}
                       >
-                        <Animated.Text
-                          style={[
-                            styles.bpmNumber,
-                            showSignalWarning ? null : { opacity: bpmOpacity },
-                          ]}
-                        >
-                          {bpmDisplay}
-                        </Animated.Text>
-                        <Text
-                          style={[
-                            styles.bpmUnit,
-                            showSignalWarning && styles.bpmUnitDim,
-                          ]}
-                        >
-                          bpm
-                        </Text>
-                        <Animated.View
-                          style={
-                            showSignalWarning
-                              ? null
-                              : { transform: [{ scale: heartScale }] }
-                          }
-                        >
-                          <MaterialCommunityIcons
-                            name="heart"
-                            size={18}
-                            color={
-                              showSignalWarning
-                                ? colors.text.tertiary
-                                : colors.error[500]
-                            }
-                          />
-                        </Animated.View>
-                      </View>
-                    ) : null}
-                    {showSignalWarning ? (
-                      <View style={styles.warningRow}>
+                        {bpmDisplay}
+                      </Animated.Text>
+                      <Text
+                        style={[
+                          styles.bpmUnit,
+                          showSignalWarning && styles.bpmUnitDim,
+                        ]}
+                      >
+                        bpm
+                      </Text>
+                      <Animated.View
+                        style={
+                          showSignalWarning
+                            ? null
+                            : { transform: [{ scale: heartScale }] }
+                        }
+                      >
                         <MaterialCommunityIcons
-                          name="alert-circle-outline"
-                          size={12}
-                          color={colors.warning[500]}
+                          name="heart"
+                          size={18}
+                          color={
+                            showSignalWarning
+                              ? colors.text.tertiary
+                              : colors.error[500]
+                          }
                         />
-                        <Text style={styles.warningText}>
-                          {placementCfg.status}
-                        </Text>
-                      </View>
-                    ) : null}
-                  </View>
-                )}
-              </View>
+                      </Animated.View>
+                    </View>
+                  ) : null}
+                  {showInlineSignalWarning ? (
+                    <View style={styles.warningRow}>
+                      <MaterialCommunityIcons
+                        name="alert-circle-outline"
+                        size={12}
+                        color={colors.warning[500]}
+                      />
+                      <Text style={styles.warningText}>
+                        {placementCfg.status}
+                      </Text>
+                    </View>
+                  ) : null}
+                </View>
+              ) : (
+                <View style={styles.metricPlaceholder} />
+              )}
+
+              <Animated.View
+                style={[
+                  styles.measureActions,
+                  isRunning ? { opacity: hudOpacity } : null,
+                ]}
+              >
+                <View
+                  style={[
+                    styles.timePill,
+                    !isRunning && styles.hiddenPlaceholder,
+                  ]}
+                >
+                  <Text style={styles.timeValue}>{remainingSec}s</Text>
+                </View>
+                <View
+                  style={[
+                    styles.progressBar,
+                    !isRunning && styles.hiddenPlaceholder,
+                  ]}
+                >
+                  <View
+                    style={[
+                      styles.progressFill,
+                      { width: `${progress * 100}%` },
+                    ]}
+                  />
+                </View>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => finishCapture(false)}
+                  style={({ pressed }) => [
+                    styles.cancel,
+                    pressed && styles.skipPressed,
+                  ]}
+                >
+                  <Text style={styles.skipText}>
+                    {isRunning ? 'End early' : 'Cancel'}
+                  </Text>
+                </Pressable>
+              </Animated.View>
             </View>
           </View>
-
-          <Animated.View
-            style={[
-              styles.bottom,
-              isRunning ? { opacity: hudOpacity } : null,
-            ]}
-          >
-            <View
-              style={[
-                styles.timePill,
-                !isRunning && styles.hiddenPlaceholder,
-              ]}
-            >
-              <Text style={styles.timeValue}>{remainingSec}s</Text>
-            </View>
-            <View
-              style={[
-                styles.progressBar,
-                !isRunning && styles.hiddenPlaceholder,
-              ]}
-            >
-              <View
-                style={[
-                  styles.progressFill,
-                  { width: `${progress * 100}%` },
-                ]}
-              />
-            </View>
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => finishCapture(false)}
-              style={({ pressed }) => [
-                styles.cancel,
-                pressed && styles.skipPressed,
-              ]}
-            >
-              <Text style={styles.skipText}>
-                {isRunning ? 'End early' : 'Cancel'}
-              </Text>
-            </Pressable>
-          </Animated.View>
         </View>
       </View>
     );
@@ -864,47 +894,67 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background.primary,
   },
-  header: {
-    minHeight: 56,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingTop: spacing.xl,
-    paddingHorizontal: spacing.lg,
-  },
-  center: {
+  measureContainer: {
     flex: 1,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.xl,
     alignItems: 'center',
-    justifyContent: 'center',
   },
-  centerStack: {
+  topArea: {
+    flex: 1,
     width: '100%',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-end',
+    paddingBottom: spacing.xl,
   },
   liveSignalSlot: {
     width: '100%',
-    maxWidth: 320,
     alignItems: 'center',
-    marginBottom: spacing.lg,
-    paddingHorizontal: spacing.lg,
+    marginBottom: spacing.xl,
   },
-  belowSlot: {
-    minHeight: 64,
-    marginTop: spacing.xs,
+  ringSlot: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: spacing.lg,
+  },
+  bottomArea: {
+    flex: 1,
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    paddingTop: spacing.xl,
   },
   metricStack: {
+    width: '100%',
+    minHeight: 48,
     alignItems: 'center',
     gap: spacing.xs,
   },
+  metricPlaceholder: {
+    minHeight: 48,
+  },
   hintText: {
+    ...typography.title.title3,
     fontFamily: fonts.semibold,
     fontWeight: '500',
-    fontSize: 14,
     textAlign: 'center',
     paddingHorizontal: spacing.lg,
+  },
+  warningBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    backgroundColor: '#FEF3C7',
+    borderRadius: 10,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    width: '100%',
+    marginBottom: spacing.md,
+  },
+  warningBannerText: {
+    ...typography.body.small,
+    color: '#92400E',
+    flex: 1,
   },
   bpmRow: {
     flexDirection: 'row',
@@ -943,12 +993,11 @@ const styles = StyleSheet.create({
     fontFamily: fonts.medium,
     color: colors.warning[700],
   },
-  bottom: {
+  measureActions: {
     width: '100%',
     alignItems: 'center',
     gap: spacing.md,
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xl,
+    marginTop: spacing.lg,
   },
   timePill: {
     paddingHorizontal: spacing.sm,
