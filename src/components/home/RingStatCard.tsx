@@ -1,5 +1,5 @@
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
-import { Canvas, Path, Skia } from '@shopify/react-native-skia';
+import { Canvas, Circle, Path, Skia } from '@shopify/react-native-skia';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
 import { typography, fonts } from '../../theme/typography';
@@ -23,8 +23,18 @@ interface RingStatCardProps {
 }
 
 const RING_SIZE = 92;
-const STROKE = 7.5;
-const RING_INSET = 9;
+const STROKE = 7;
+const CX = RING_SIZE / 2;
+const CY = RING_SIZE / 2;
+const R = RING_SIZE / 2 - STROKE / 2 - 4;
+const INNER_R = R - STROKE / 2 - 8;
+const START_ANGLE = 135;
+const SWEEP = 270;
+
+const RECT = Skia.XYWHRect(CX - R, CY - R, R * 2, R * 2);
+
+const TRACK_PATH = Skia.Path.Make();
+TRACK_PATH.addArc(RECT, START_ANGLE, SWEEP);
 
 export default function RingStatCard({
   label,
@@ -39,17 +49,12 @@ export default function RingStatCard({
 }: RingStatCardProps) {
   const trendColor = trend?.direction === 'up' ? colors.success[500] : colors.error[500];
   const trendIcon = trend?.direction === 'up' ? 'arrow-top-right' : 'arrow-bottom-right';
-  const cx = RING_SIZE / 2;
-  const cy = RING_SIZE / 2;
-  const r = RING_SIZE / 2 - RING_INSET - STROKE / 2;
   const clamped = Math.max(0, Math.min(1, progress));
 
-  const track = Skia.Path.Make();
-  track.addCircle(cx, cy, r);
-
-  const arc = Skia.Path.Make();
-  const rect = Skia.XYWHRect(cx - r, cy - r, r * 2, r * 2);
-  arc.addArc(rect, -90, 360 * clamped);
+  const progressPath = Skia.Path.Make();
+  if (clamped > 0) {
+    progressPath.addArc(RECT, START_ANGLE, SWEEP * clamped);
+  }
 
   return (
     <CardSurface containerStyle={styles.cardContainer} style={styles.card}>
@@ -85,19 +90,30 @@ export default function RingStatCard({
       <View style={styles.ringWrap}>
         <View style={styles.ringSurface}>
           <Canvas style={StyleSheet.absoluteFill}>
-            <Path path={track} style="stroke" strokeWidth={STROKE} color={trackColor} />
+            <Path
+              path={TRACK_PATH}
+              style="stroke"
+              strokeWidth={STROKE}
+              strokeCap="round"
+              color={trackColor}
+            />
             {clamped > 0 && (
               <Path
-                path={arc}
+                path={progressPath}
                 style="stroke"
                 strokeWidth={STROKE}
                 strokeCap="round"
                 color={color}
               />
             )}
+
+            <Circle cx={CX} cy={CY + 3} r={INNER_R + 3} color="rgba(15,23,42,0.04)" />
+            <Circle cx={CX} cy={CY + 1.5} r={INNER_R + 1.5} color="rgba(15,23,42,0.02)" />
+            <Circle cx={CX} cy={CY} r={INNER_R + 1} color={colors.neutral[200]} />
+            <Circle cx={CX} cy={CY} r={INNER_R} color={colors.background.elevated} />
           </Canvas>
           <View style={styles.iconCenter} pointerEvents="none">
-            <Icon name={icon} size={34} color={color} />
+            <Icon name={icon} size={30} color={color} />
           </View>
         </View>
       </View>
@@ -138,7 +154,7 @@ const styles = StyleSheet.create({
   label: {
     ...typography.label.small,
     fontFamily: fonts.semibold,
-    fontSize: 11,
+    fontSize: 13,
     color: colors.text.tertiary,
     letterSpacing: 0.3,
   },
