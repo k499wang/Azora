@@ -76,6 +76,7 @@ export default function OnboardingPaywallScreen({
   const stepTranslateX = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(18)).current;
+  const isInitialStep = useRef(true);
 
   const selectedPackage = offering?.packages.find((pkg) => pkg.id === selectedPackageId);
   const annualPackage = offering?.packages.find((pkg) => pkg.id === 'annual');
@@ -123,27 +124,34 @@ export default function OnboardingPaywallScreen({
           useNativeDriver: true,
         }),
       ]).start(() => {
-        setStep(next);
         stepTranslateX.setValue(direction * STEP_SLIDE_DISTANCE);
-        Animated.parallel([
-          Animated.timing(stepOpacity, {
-            toValue: 1,
-            duration: 320,
-            easing: Easing.out(Easing.cubic),
-            useNativeDriver: true,
-          }),
-          Animated.spring(stepTranslateX, {
-            toValue: 0,
-            damping: 18,
-            stiffness: 140,
-            mass: 0.9,
-            useNativeDriver: true,
-          }),
-        ]).start();
+        setStep(next);
       });
     },
     [stepOpacity, stepTranslateX],
   );
+
+  useEffect(() => {
+    if (isInitialStep.current) {
+      isInitialStep.current = false;
+      return;
+    }
+    Animated.parallel([
+      Animated.timing(stepOpacity, {
+        toValue: 1,
+        duration: 320,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+      Animated.spring(stepTranslateX, {
+        toValue: 0,
+        damping: 18,
+        stiffness: 140,
+        mass: 0.9,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [step, stepOpacity, stepTranslateX]);
 
   const handleContinueWithoutPro = useCallback(() => {
     if (isBusy) return;
