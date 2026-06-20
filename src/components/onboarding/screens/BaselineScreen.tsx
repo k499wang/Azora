@@ -1,19 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
-  Easing,
   Pressable,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
-import { Image } from 'expo-image';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
-import Icon from '../../common/icons/Icon';
-import { PersistentCameraRing } from '../../heartRate/PersistentCameraRing';
-import { LiveSignalGraph } from '../../heartRate/LiveSignalGraph';
 import { useHeartRateStream } from '../../../hooks/useHeartRateStream';
 import { createBpmPresentationFilter } from '../../../lib/heartRate/bpmSmoothing';
 import type { FingerPlacementState } from '../../../lib/heartRate/types';
@@ -23,6 +16,11 @@ import { fonts, typography } from '../../../theme/typography';
 import { isHapticsEnabled } from '../../../services/preferences/hapticsPreference';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
+import { BaselineCaptureStage } from '../baseline/BaselineCaptureStage';
+import { BaselineChecklist } from '../baseline/BaselineChecklist';
+import type { BaselineReadingTip } from '../baseline/BaselineChecklist';
+import { BaselineIntroContent } from '../baseline/BaselineIntroContent';
+import { BaselineSciencePanel } from '../baseline/BaselineSciencePanel';
 
 export interface BaselineResult {
   completed: boolean;
@@ -45,21 +43,11 @@ type Phase = 'intro' | 'placement' | 'running' | 'done';
 
 const SESSION_MS = 20_000;
 
-const CAMERA_PPG_ILLUSTRATION = require('../../../../assets/onboarding/camerappg.png');
-
-const SCIENCE_BODY_TEXT =
-  'When you cover the back camera with your fingertip, the flash lights your skin from the inside. Each heartbeat pushes a small wave of blood through the capillaries, changing how much light reflects back into the lens. We sample those brightness shifts about 30 times a second — the same optical method clinical pulse oximeters use — and turn them into your BPM.';
 const SESSION_SEC = SESSION_MS / 1000;
 const PLACEMENT_GOOD_DURATION_MS = 1500;
 const PROGRESS_UPDATE_INTERVAL_MS = 200;
 
-type ReadingTip = {
-  id: string;
-  title: string;
-  detail: string;
-};
-
-const READING_TIPS: ReadingTip[] = [
+const READING_TIPS: BaselineReadingTip[] = [
   {
     id: 'calm',
     title: 'Phone and finger stay still',
@@ -111,29 +99,12 @@ export default function BaselineScreen({
   onContinue,
   onBack,
 }: BaselineScreenProps) {
-  const insets = useSafeAreaInsets();
   const stream = useHeartRateStream();
   const [phase, setPhase] = useState<Phase>('intro');
   const [progress, setProgress] = useState(0);
   const [checkedTips, setCheckedTips] = useState<Set<string>>(() => new Set());
-  const [scienceOpen, setScienceOpen] = useState(false);
-  const [scienceContentHeight, setScienceContentHeight] = useState(0);
-  const scienceAnim = useRef(new Animated.Value(0)).current;
   const allChecked = checkedTips.size === READING_TIPS.length;
 
-  useEffect(() => {
-    Animated.timing(scienceAnim, {
-      toValue: scienceOpen ? 1 : 0,
-      duration: 280,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: false,
-    }).start();
-  }, [scienceOpen, scienceAnim]);
-
-  const scienceHeight = scienceAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, scienceContentHeight],
-  });
   const toggleTip = (id: string) => {
     setCheckedTips((prev) => {
       const next = new Set(prev);
@@ -389,173 +360,25 @@ export default function BaselineScreen({
 
   if (phase === 'placement' || phase === 'running') {
     const isRunning = phase === 'running';
-    const isFingerLost =
-      stream.fingerPlacement === 'lost' || stream.fingerPlacement === 'no_finger';
-    const showInlineSignalWarning = showSignalWarning && !isFingerLost;
     return (
-      <View style={styles.fill}>
-        {isRunning && !hudVisible ? (
-          <Pressable
-            style={styles.tapToRevealLayer}
-            onPress={showHud}
-            accessibilityLabel="Show controls"
-          />
-        ) : null}
-
-        <View style={[styles.stage, { paddingTop: insets.top }]}>
-          <View style={styles.measureContainer}>
-            <View style={styles.topArea}>
-              {isRunning && isFingerLost ? (
-                <View style={styles.warningBanner}>
-                  <MaterialCommunityIcons
-                    name="alert-outline"
-                    size={16}
-                    color={colors.warning[500]}
-                  />
-                  <Text style={styles.warningBannerText}>
-                    Finger moved - reposition and hold still
-                  </Text>
-                </View>
-              ) : null}
-              {!isRunning ? (
-                <Text
-                  style={[
-                    styles.hintText,
-                    { color: placementCfg.ringColor },
-                  ]}
-                >
-                  {placementCfg.status}
-                </Text>
-              ) : null}
-              {isRunning && !isFingerLost ? (
-                <View style={styles.liveSignalSlot}>
-                  <LiveSignalGraph
-                    samples={stream.liveSignalSamples}
-                    fingerPlacement={stream.fingerPlacement}
-                  />
-                </View>
-              ) : null}
-            </View>
-
-            <View style={styles.ringSlot}>
-              <PersistentCameraRing
-                ringColor={placementCfg.ringColor}
-                trackColor={isRunning ? undefined : placementCfg.ringColor + '33'}
-                progress={isRunning ? progress : 0}
-                cameraProps={cameraProps ?? undefined}
-                fingerPlacement={stream.fingerPlacement}
-                beatTick={visibleBeatTick}
-                showHeartIcon={isRunning}
-                smoothProgress={isRunning}
-              />
-            </View>
-
-            <View style={styles.bottomArea}>
-              {isRunning ? (
-                <View style={styles.metricStack}>
-                  {bpmDisplay != null ? (
-                    <View
-                      style={[
-                        styles.bpmRow,
-                        showSignalWarning && styles.bpmRowDim,
-                      ]}
-                    >
-                      <Animated.Text
-                        style={[
-                          styles.bpmNumber,
-                          showSignalWarning ? null : { opacity: bpmOpacity },
-                        ]}
-                      >
-                        {bpmDisplay}
-                      </Animated.Text>
-                      <Text
-                        style={[
-                          styles.bpmUnit,
-                          showSignalWarning && styles.bpmUnitDim,
-                        ]}
-                      >
-                        bpm
-                      </Text>
-                      <Animated.View
-                        style={
-                          showSignalWarning
-                            ? null
-                            : { transform: [{ scale: heartScale }] }
-                        }
-                      >
-                        <MaterialCommunityIcons
-                          name="heart"
-                          size={18}
-                          color={
-                            showSignalWarning
-                              ? colors.text.tertiary
-                              : colors.error[500]
-                          }
-                        />
-                      </Animated.View>
-                    </View>
-                  ) : null}
-                  {showInlineSignalWarning ? (
-                    <View style={styles.warningRow}>
-                      <MaterialCommunityIcons
-                        name="alert-circle-outline"
-                        size={12}
-                        color={colors.warning[500]}
-                      />
-                      <Text style={styles.warningText}>
-                        {placementCfg.status}
-                      </Text>
-                    </View>
-                  ) : null}
-                </View>
-              ) : (
-                <View style={styles.metricPlaceholder} />
-              )}
-
-              <Animated.View
-                style={[
-                  styles.measureActions,
-                  isRunning ? { opacity: hudOpacity } : null,
-                ]}
-              >
-                <View
-                  style={[
-                    styles.timePill,
-                    !isRunning && styles.hiddenPlaceholder,
-                  ]}
-                >
-                  <Text style={styles.timeValue}>{remainingSec}s</Text>
-                </View>
-                <View
-                  style={[
-                    styles.progressBar,
-                    !isRunning && styles.hiddenPlaceholder,
-                  ]}
-                >
-                  <View
-                    style={[
-                      styles.progressFill,
-                      { width: `${progress * 100}%` },
-                    ]}
-                  />
-                </View>
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={() => finishCapture(false)}
-                  style={({ pressed }) => [
-                    styles.cancel,
-                    pressed && styles.skipPressed,
-                  ]}
-                >
-                  <Text style={styles.skipText}>
-                    {isRunning ? 'End early' : 'Cancel'}
-                  </Text>
-                </Pressable>
-              </Animated.View>
-            </View>
-          </View>
-        </View>
-      </View>
+      <BaselineCaptureStage
+        bpmDisplay={bpmDisplay}
+        bpmOpacity={bpmOpacity}
+        cameraProps={cameraProps ?? undefined}
+        fingerPlacement={stream.fingerPlacement}
+        heartScale={heartScale}
+        hudOpacity={hudOpacity}
+        hudVisible={hudVisible}
+        isRunning={isRunning}
+        liveSignalSamples={stream.liveSignalSamples}
+        onCancel={() => finishCapture(false)}
+        onShowHud={showHud}
+        placement={placementCfg}
+        progress={progress}
+        remainingSec={remainingSec}
+        showSignalWarning={showSignalWarning}
+        visibleBeatTick={visibleBeatTick}
+      />
     );
   }
 
@@ -584,456 +407,22 @@ export default function BaselineScreen({
         </View>
       }
     >
-      <View style={styles.heading}>
-        <Text style={styles.headingTitle}>Read this first</Text>
-        <Text style={styles.headingSubtitle}>
-          A clean {SESSION_SEC}-second reading is what calibrates your plan.
-          Set yourself up with these four cues.
-        </Text>
-      </View>
-
-      <View style={styles.illustrationWrap}>
-        <Image
-          source={CAMERA_PPG_ILLUSTRATION}
-          style={styles.illustration}
-          contentFit="contain"
-          cachePolicy="memory-disk"
-          transition={0}
-          accessibilityLabel="Fingertip covering the back camera and flash"
-        />
-      </View>
-
-      <View style={styles.scienceWrap}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityState={{ expanded: scienceOpen }}
-          onPress={() => {
-            setScienceOpen((v) => !v);
-            if (isHapticsEnabled()) Haptics.selectionAsync().catch(() => {});
-          }}
-          style={({ pressed }) => [
-            styles.scienceButton,
-            pressed && styles.scienceButtonPressed,
-          ]}
-        >
-          <View style={styles.scienceButtonIcon}>
-            <Icon name="microscope" size={16} color={colors.primary.blue700} />
-          </View>
-          <Text style={styles.scienceButtonLabel}>How it works</Text>
-          <Text style={styles.scienceButtonChevron}>
-            {scienceOpen ? '−' : '+'}
-          </Text>
-        </Pressable>
-        <View
-          style={styles.scienceMeasure}
-          pointerEvents="none"
-          aria-hidden
-        >
-          <View
-            style={styles.sciencePanel}
-            onLayout={(e) => {
-              const h = e.nativeEvent.layout.height;
-              if (h > 0 && Math.abs(h - scienceContentHeight) > 0.5) {
-                setScienceContentHeight(h);
-              }
-            }}
-          >
-            <View style={styles.sciencePanelHeader}>
-              <View style={styles.scienceButtonIcon}>
-                <Icon name="microscope" size={14} color={colors.primary.blue700} />
-              </View>
-              <Text style={styles.sciencePanelLabel}>Photoplethysmography</Text>
-            </View>
-            <Text style={styles.scienceBody}>{SCIENCE_BODY_TEXT}</Text>
-          </View>
-        </View>
-        <Animated.View
-          style={[
-            styles.scienceBodyClip,
-            { height: scienceHeight, opacity: scienceAnim },
-          ]}
-          pointerEvents={scienceOpen ? 'auto' : 'none'}
-        >
-          <View style={styles.sciencePanel}>
-            <View style={styles.sciencePanelHeader}>
-              <View style={styles.scienceButtonIcon}>
-                <Icon name="microscope" size={14} color={colors.primary.blue700} />
-              </View>
-              <Text style={styles.sciencePanelLabel}>Photoplethysmography</Text>
-            </View>
-            <Text style={styles.scienceBody}>{SCIENCE_BODY_TEXT}</Text>
-          </View>
-        </Animated.View>
-      </View>
-
-      <View style={styles.checklistSection}>
-        <Text style={styles.checklistTitle}>Before you start</Text>
-        <Text style={styles.checklistSubtitle}>
-          Tap each one as you’re set up.
-        </Text>
-        <View style={styles.tipsList}>
-        {READING_TIPS.map((tip, i) => {
-          const checked = checkedTips.has(tip.id);
-          return (
-            <Pressable
-              key={tip.id}
-              accessibilityRole="checkbox"
-              accessibilityState={{ checked }}
-              accessibilityLabel={tip.title}
-              onPress={() => toggleTip(tip.id)}
-              style={({ pressed }) => [
-                styles.tipRow,
-                pressed && styles.tipRowPressed,
-              ]}
-            >
-              <View style={[styles.checkbox, checked && styles.checkboxChecked]}>
-                {checked ? (
-                  <Icon name="check" size={14} color={colors.text.inverse} />
-                ) : null}
-              </View>
-              <View style={styles.tipText}>
-                <Text
-                  style={[styles.tipTitle, checked && styles.tipTitleChecked]}
-                >
-                  {tip.title}
-                </Text>
-                <Text style={styles.tipDetail}>{tip.detail}</Text>
-              </View>
-              {i < READING_TIPS.length - 1 && <View style={styles.tipDivider} />}
-            </Pressable>
-          );
-        })}
-        </View>
-      </View>
+      <BaselineIntroContent sessionSec={SESSION_SEC} />
+      <BaselineSciencePanel />
+      <BaselineChecklist
+        tips={READING_TIPS}
+        checkedTipIds={checkedTips}
+        onToggleTip={toggleTip}
+      />
     </OnboardingScreenLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  heading: {
-    gap: spacing.sm,
-    alignItems: 'flex-start',
-  },
-  headingTitle: {
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    fontSize: 28,
-    lineHeight: 32,
-    letterSpacing: -0.4,
-    color: colors.text.primary,
-  },
-  headingSubtitle: {
-    ...typography.body.small,
-    color: colors.text.secondary,
-  },
-  illustrationWrap: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginHorizontal: -spacing.lg,
-  },
-  illustration: {
-    width: '100%',
-    height: 200,
-  },
-  scienceWrap: {
-    alignItems: 'flex-start',
-    gap: spacing.sm,
-  },
-  scienceButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    paddingVertical: spacing.sm,
-    paddingLeft: spacing.sm,
-    paddingRight: 14,
-    borderRadius: 999,
-    backgroundColor: colors.background.accentSoft,
-    borderWidth: 1,
-    borderColor: colors.primary.blue100,
-  },
-  scienceButtonPressed: {
-    opacity: 0.7,
-  },
-  scienceButtonIcon: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: colors.primary.blue100,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  scienceButtonLabel: {
-    ...typography.body.small,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    color: colors.primary.blue700,
-    letterSpacing: -0.1,
-  },
-  scienceButtonChevron: {
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    fontSize: 16,
-    lineHeight: 16,
-    color: colors.primary.blue700,
-    marginLeft: 2,
-  },
-  scienceBodyClip: {
-    overflow: 'hidden',
-    alignSelf: 'stretch',
-  },
-  scienceMeasure: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    opacity: 0,
-  },
-  sciencePanel: {
-    gap: spacing.sm,
-    padding: spacing.md,
-    borderRadius: 16,
-    backgroundColor: colors.background.accentSoft,
-    borderWidth: 1,
-    borderColor: colors.primary.blue100,
-  },
-  sciencePanelHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  sciencePanelLabel: {
-    ...typography.label.small,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    color: colors.primary.blue700,
-    letterSpacing: 0.4,
-    textTransform: 'uppercase',
-  },
-  scienceBody: {
-    ...typography.body.small,
-    color: colors.text.secondary,
-    lineHeight: 20,
-  },
-  checklistSection: {
-    gap: spacing.xs,
-  },
-  checklistTitle: {
-    ...typography.heading.heading2,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    fontSize: 22,
-    color: colors.text.primary,
-  },
-  checklistSubtitle: {
-    ...typography.body.small,
-    color: colors.text.secondary,
-  },
-  tipsList: {
-    marginTop: spacing.xs,
-  },
-  tipRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    paddingVertical: spacing.md,
-    position: 'relative',
-  },
-  tipRowPressed: {
-    opacity: 0.6,
-  },
-  checkbox: {
-    width: 24,
-    height: 24,
-    borderRadius: 8,
-    borderWidth: 1.5,
-    borderColor: colors.border.strong,
-    backgroundColor: 'transparent',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  checkboxChecked: {
-    backgroundColor: colors.primary.blue600,
-    borderColor: colors.primary.blue600,
-  },
-  tipText: {
-    flex: 1,
-    gap: 2,
-  },
-  tipTitle: {
-    ...typography.body.medium,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    color: colors.text.primary,
-    letterSpacing: -0.1,
-  },
-  tipTitleChecked: {
-    color: colors.text.secondary,
-  },
-  tipDetail: {
-    ...typography.body.small,
-    color: colors.text.secondary,
-  },
-  tipDivider: {
-    position: 'absolute',
-    bottom: 0,
-    left: 24 + spacing.md,
-    right: 0,
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.border.subtle,
-  },
-
-  fill: {
-    flex: 1,
-    backgroundColor: colors.background.primary,
-  },
-  tapToRevealLayer: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 1,
-  },
-  stage: {
-    flex: 1,
-    backgroundColor: colors.background.primary,
-  },
-  measureContainer: {
-    flex: 1,
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.xl,
-    alignItems: 'center',
-  },
-  topArea: {
-    flex: 1,
-    width: '100%',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    paddingBottom: spacing.xl,
-  },
-  liveSignalSlot: {
-    width: '100%',
-    alignItems: 'center',
-    marginBottom: spacing.xl,
-  },
-  ringSlot: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  bottomArea: {
-    flex: 1,
-    width: '100%',
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    paddingTop: spacing.xl,
-  },
-  metricStack: {
-    width: '100%',
-    minHeight: 48,
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  metricPlaceholder: {
-    minHeight: 48,
-  },
-  hintText: {
-    ...typography.title.title3,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    textAlign: 'center',
-    paddingHorizontal: spacing.lg,
-  },
-  warningBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    backgroundColor: '#FEF3C7',
-    borderRadius: 10,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    width: '100%',
-    marginBottom: spacing.md,
-  },
-  warningBannerText: {
-    ...typography.body.small,
-    color: '#92400E',
-    flex: 1,
-  },
-  bpmRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  bpmRowDim: {
-    opacity: 0.25,
-  },
-  bpmNumber: {
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    fontSize: 26,
-    lineHeight: 30,
-    letterSpacing: 0,
-    color: colors.text.primary,
-  },
-  bpmUnit: {
-    ...typography.caption.caption1,
-    marginLeft: -4,
-    marginTop: 10,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    color: colors.text.secondary,
-  },
-  bpmUnitDim: {
-    color: colors.text.tertiary,
-  },
-  warningRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  warningText: {
-    ...typography.caption.caption1,
-    fontFamily: fonts.medium,
-    color: colors.warning[700],
-  },
-  measureActions: {
-    width: '100%',
-    alignItems: 'center',
-    gap: spacing.md,
-    marginTop: spacing.lg,
-  },
-  timePill: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 6,
-    borderRadius: 999,
-    backgroundColor: colors.background.elevated,
-    borderWidth: 1,
-    borderColor: colors.border.subtle,
-  },
-  timeValue: {
-    ...typography.caption.caption1,
-    color: colors.text.secondary,
-  },
-  progressBar: {
-    height: 3,
-    width: '70%',
-    borderRadius: 999,
-    backgroundColor: colors.primary.blue100,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: 999,
-    backgroundColor: colors.primary.blue600,
-  },
-  hiddenPlaceholder: {
-    opacity: 0,
-  },
   introFooter: {
     gap: spacing.sm,
   },
   skip: {
-    alignItems: 'center',
-    paddingVertical: spacing.sm,
-  },
-  cancel: {
     alignItems: 'center',
     paddingVertical: spacing.sm,
   },
