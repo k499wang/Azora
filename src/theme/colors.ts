@@ -73,6 +73,9 @@ export const colors = {
     accentSoft: '#EAF2FF',
     // Warm cream for paper/letter surfaces (FounderNoteScreen).
     paper: '#FBF7EF',
+    // Matches the top of assets/backgrounds/sunset.jpg so the one-frame image
+    // decode on the paywall is invisible instead of flashing dark navy.
+    sunset: '#042B62',
   },
 
   // Desaturated brand blue (slate-leaning) for the premium/greyish direction.
