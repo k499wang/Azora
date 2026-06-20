@@ -3,7 +3,6 @@ import {
   ActivityIndicator,
   Animated,
   Easing,
-  ImageBackground,
   Linking,
   Pressable,
   ScrollView,
@@ -13,6 +12,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ImageBackground } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { usePaywall } from '../hooks/usePaywall';
 import { PaywallPlacement } from '../services/paywall';
@@ -132,7 +132,9 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
       <ImageBackground
         source={require('../../assets/backgrounds/sunset.jpg')}
         style={styles.background}
-        resizeMode="cover"
+        contentFit="cover"
+        cachePolicy="memory-disk"
+        transition={0}
       >
         <LinearGradient
           colors={[
@@ -294,7 +296,7 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: colors.neutral[900],
+    backgroundColor: colors.background.sunset,
   },
   background: {
     flex: 1,

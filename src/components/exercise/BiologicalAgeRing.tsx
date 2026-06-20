@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
+import { Animated, Easing, InteractionManager, StyleSheet, Text, View } from 'react-native';
 import {
   Canvas,
   Circle,
@@ -136,28 +136,35 @@ export default function BiologicalAgeRing({
     return p;
   });
 
-  // ── Entrance animation (runs once on mount) ────────────────────────────
+  // ── Entrance animation (runs once, after the screen transition settles) ──
+  // Gated behind runAfterInteractions so the native screen slide-in completes
+  // on a quiet JS/UI thread before the Skia arc + count-up start. Kicking these
+  // off during the transition is what made exercise→result feel laggy.
 
   useEffect(() => {
     if (didMountRef.current) return;
     didMountRef.current = true;
 
-    Animated.parallel([
-      Animated.timing(entranceScale, {
-        toValue: 1,
-        duration: ENTRANCE_DURATION_MS,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-      Animated.timing(entranceOpacity, {
-        toValue: 1,
-        duration: ENTRANCE_DURATION_MS * 0.85,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-    ]).start(() => {
-      setEntranceComplete(true);
+    const handle = InteractionManager.runAfterInteractions(() => {
+      Animated.parallel([
+        Animated.timing(entranceScale, {
+          toValue: 1,
+          duration: ENTRANCE_DURATION_MS,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.timing(entranceOpacity, {
+          toValue: 1,
+          duration: ENTRANCE_DURATION_MS * 0.85,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        setEntranceComplete(true);
+      });
     });
+
+    return () => handle.cancel();
     // Only run once — no deps needed
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
