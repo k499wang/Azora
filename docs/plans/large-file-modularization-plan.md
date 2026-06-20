@@ -87,29 +87,78 @@ Tests:
 
 ## Phase 2: Baseline Screen Split
 
+Status: implemented; automated checks passed, manual Expo smoke pending.
+
 Target:
 
 - `src/components/onboarding/screens/BaselineScreen.tsx`
 
-Extract:
+Goal:
 
-- `BaselineIntroChecklist`
-- `BaselineSciencePanel`
-- `BaselineCaptureStage`
-- pure helpers for placement copy and baseline result averaging
+- Improve readability and future maintainability without chasing a specific
+  line-count target.
+- Stop once the screen reads as clear composition plus workflow orchestration.
 
-Keep in parent at first:
+Preferred home for extracted baseline-specific UI:
 
+- `src/components/onboarding/baseline/`
+
+Extract in small steps:
+
+1. Intro-only content:
+   - `BaselineIntroContent`
+   - includes the heading copy and camera PPG illustration.
+2. Science accordion:
+   - `BaselineSciencePanel`
+   - owns its own open/closed animation and measured height because that state
+     is purely visual.
+3. Checklist UI:
+   - `BaselineChecklist`
+   - keep checklist completion easy for the parent to read so the start button
+     remains explicit.
+4. Capture UI:
+   - consider `BaselineCaptureStage` only after the intro/science/checklist
+     pieces are out.
+   - if the stage needs a large or unclear prop list, extract smaller pieces
+     first, such as `BaselineCaptureMetric`, `BaselineSignalWarning`, or
+     `BaselineCaptureActions`.
+
+Keep in parent:
+
+- phase transitions
 - `useHeartRateStream`
+- camera permission handling
+- capture start/stop
 - `finishCapture`
 - stream cleanup
 - placement-to-running delay
 - result contract passed to `OnboardingFlow`
 
+Do not change:
+
+- capture duration
+- BPM smoothing config
+- placement good delay
+- haptic timing
+- permission-denied behavior
+- skip behavior
+- `BaselineResult` object shape
+
+Pure helper guidance:
+
+- Do not move a generic `average(values)` helper to `src/lib`.
+- If result-building logic moves, prefer a specific helper such as
+  `buildBaselineResult` or `computeBaselineBpmSummary`.
+- Only promote placement/status mapping to `src/lib/heartRate/` if Phase 3 will
+  reuse it across baseline, exercise sessions, and daily breath-hold screens.
+
 Tests:
 
-- Add pure helper tests if averaging or placement mapping moves to `src/lib`.
+- UI-only extraction does not require new tests beyond existing coverage.
+- Add focused pure helper tests if baseline result-building or placement/status
+  mapping moves out of the screen.
 - `npm test`
+- `npx tsc --noEmit`
 - Manual: skip baseline, deny camera permission, start capture, end early,
   completed capture flows into recommendation.
 
