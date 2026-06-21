@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { Alert, LayoutChangeEvent, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useMemo, useRef, useState } from 'react';
+import { Alert, Animated, Easing, LayoutChangeEvent, Pressable, StyleSheet, Text, View } from 'react-native';
 import { LockedScrim } from '../common/glass';
 import Svg, { Circle, Line, Path } from 'react-native-svg';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -34,6 +34,44 @@ const BPM_INFO = {
   message:
     'Your instantaneous beats per minute over the session, derived from each beat-to-beat interval (BPM = 60000 / RR).\n\nResting BPM typically falls between 60–90. Lower trends during a hold often reflect parasympathetic activation and good recovery.',
 };
+
+function buildBpmInsight(series: { tSec: number; bpm: number }[]): string | null {
+  if (series.length < 2) return null;
+  const values = series.map((p) => p.bpm);
+  const avg = Math.round(values.reduce((a, b) => a + b, 0) / values.length);
+  const min = Math.round(Math.min(...values));
+  const max = Math.round(Math.max(...values));
+  const range = max - min;
+
+  const windowSize = Math.max(1, Math.floor(series.length * 0.15));
+  const startAvg = values.slice(0, windowSize).reduce((a, b) => a + b, 0) / windowSize;
+  const endAvg = values.slice(-windowSize).reduce((a, b) => a + b, 0) / windowSize;
+  const drop = Math.round(startAvg - endAvg);
+
+  const zoneDesc =
+    avg <= 55
+      ? `${avg} bpm is an excellent resting rate — typically seen in well-trained or highly recovered individuals`
+      : avg <= 70
+        ? `${avg} bpm sits in a strong resting range, reflecting good cardiovascular health`
+        : avg <= 85
+          ? `${avg} bpm is within a normal resting range for most adults`
+          : `${avg} bpm is on the higher side for a resting measurement — hydration, stress, and caffeine can all push this up`;
+
+  const rangeDesc =
+    range <= 8
+      ? `The narrow ${min}–${max} bpm window points to a well-regulated, stable session`
+      : range <= 18
+        ? `A ${min}–${max} bpm spread is normal — your heart was adapting naturally throughout`
+        : `The wider ${min}–${max} bpm range suggests your heart was actively responding to something, whether that's breathing pattern, movement, or nervous system shifts`;
+
+  if (drop >= 6) {
+    return `A ${drop} bpm drop over your session is a good sign — your parasympathetic nervous system engaged and guided your body toward a calmer state. ${zoneDesc}. ${rangeDesc}.`;
+  }
+  if (drop <= -6) {
+    return `Your heart rate climbed ${Math.abs(drop)} bpm over the session, which can happen when you're fatigued, under-recovered, or slightly dehydrated. ${zoneDesc}. If this pattern repeats, take a closer look at sleep and stress.`;
+  }
+  return `Your heart rate stayed consistent throughout — a sign of a stable, well-regulated session. ${zoneDesc}. ${rangeDesc}.`;
+}
 
 export default function BPMChart({
   ibiMs,
@@ -143,6 +181,21 @@ export default function BPMChart({
     }
     return ticks;
   }, [yBounds]);
+
+  const bpmInsight = useMemo(() => buildBpmInsight(series), [series]);
+  const [insightExpanded, setInsightExpanded] = useState(true);
+  const animMaxHeight = useRef(new Animated.Value(300)).current;
+
+  const toggleInsight = () => {
+    const toValue = insightExpanded ? 0 : 300;
+    Animated.timing(animMaxHeight, {
+      toValue,
+      duration: 450,
+      easing: Easing.inOut(Easing.ease),
+      useNativeDriver: false,
+    }).start();
+    setInsightExpanded((v) => !v);
+  };
 
   return (
     <CardSurface locked={locked} style={styles.card}>
@@ -262,6 +315,19 @@ export default function BPMChart({
         </View>
       </View>
       )}
+      {chart && !locked && bpmInsight ? (
+        <View style={styles.insightsSection}>
+          <View style={styles.insightsDivider} />
+          <Pressable style={styles.insightsHeader} onPress={toggleInsight}>
+            <Icon name="sparkle" size={16} color={colors.error[500]} />
+            <Text style={styles.insightsTitle}>Insights</Text>
+            <Text style={styles.insightsToggle}>{insightExpanded ? '−' : '+'}</Text>
+          </Pressable>
+          <Animated.View style={{ maxHeight: animMaxHeight, overflow: 'hidden' }}>
+            <Text style={styles.insightText}>{bpmInsight}</Text>
+          </Animated.View>
+        </View>
+      ) : null}
       {locked ? (
         <>
           <LockedScrim />
@@ -359,7 +425,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
   },
   emptyText: {
-    ...typography.body.small,
+    ...typography.body.medium,
     color: colors.text.tertiary,
     textAlign: 'center',
   },
@@ -373,5 +439,37 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 2,
+  },
+  insightsSection: {
+    marginTop: spacing.md,
+  },
+  insightsDivider: {
+    height: 1,
+    backgroundColor: colors.neutral[200],
+    marginBottom: spacing.md,
+  },
+  insightsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginBottom: spacing.sm,
+  },
+  insightsTitle: {
+    ...typography.label.medium,
+    color: colors.error[500],
+    fontFamily: fonts.semibold,
+    flex: 1,
+  },
+  insightsToggle: {
+    color: colors.text.tertiary,
+    fontFamily: fonts.semibold,
+    fontSize: 26,
+    lineHeight: 26,
+  },
+  insightText: {
+    ...typography.body.medium,
+    color: colors.text.secondary,
+    fontFamily: fonts.semibold,
+    lineHeight: 20,
   },
 });
