@@ -1,13 +1,14 @@
-import { useMemo, useRef, useState } from 'react';
-import { Alert, Animated, Easing, LayoutChangeEvent, Pressable, StyleSheet, Text, View } from 'react-native';
-import { LockedScrim } from '../common/glass';
+import { useMemo, useState } from 'react';
+import { Alert, LayoutChangeEvent, Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Line, Path } from 'react-native-svg';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
 import { typography, fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import CardSurface from '../common/CardSurface';
+import LockedContentBlur from '../common/LockedContentBlur';
 import Icon from '../common/icons/Icon';
+import ChartInsightsSection from './ChartInsightsSection';
 import {
   buildHrvInsight,
   type HrvInsightSummary,
@@ -119,20 +120,6 @@ export default function HRVChart({
     () => buildHrvInsight(insightSummary),
     [insightSummary],
   );
-  const [insightExpanded, setInsightExpanded] = useState(true);
-  const animMaxHeight = useRef(new Animated.Value(300)).current;
-
-  const toggleInsight = () => {
-    const toValue = insightExpanded ? 0 : 300;
-    Animated.timing(animMaxHeight, {
-      toValue,
-      duration: 450,
-      easing: Easing.inOut(Easing.ease),
-      useNativeDriver: false,
-    }).start();
-    setInsightExpanded((v) => !v);
-  };
-
   return (
     <CardSurface locked={locked} style={styles.card}>
       {!locked ? (
@@ -148,12 +135,17 @@ export default function HRVChart({
           />
         </Pressable>
       ) : null}
-      <View style={[styles.titleRow, locked && styles.lockedTitleText]}>
+      <View style={styles.titleRow}>
         <Icon name="stat-hrv-curve" size={28} color={colors.primary.blue500} />
         <Text style={styles.title}>Heart rate variability</Text>
       </View>
 
-      {!chart ? (
+      <LockedContentBlur locked={locked}>
+        <View
+          accessibilityElementsHidden={locked}
+          importantForAccessibility={locked ? 'no-hide-descendants' : 'auto'}
+        >
+        {!chart ? (
         <View style={[styles.emptyChart, { height }]} onLayout={onLayout}>
           <Text style={styles.emptyText}>
             Complete a full 90s heart rate measuring to see your HRV.
@@ -250,30 +242,22 @@ export default function HRVChart({
           <Text style={styles.xLabel}>Time (s)</Text>
         </View>
       </View>
-      )}
-      {chart && !locked && hrvInsight ? (
-        <View style={styles.insightsSection}>
-          <View style={styles.insightsDivider} />
-          <Pressable style={styles.insightsHeader} onPress={toggleInsight}>
-            <Icon name="sparkle" size={16} color={colors.primary.blue500} />
-            <Text style={styles.insightsTitle}>Insights</Text>
-            <Text style={styles.insightsToggle}>{insightExpanded ? '−' : '+'}</Text>
-          </Pressable>
-          <Animated.View style={{ maxHeight: animMaxHeight, overflow: 'hidden' }}>
-            <Text style={styles.insightText}>{hrvInsight}</Text>
-          </Animated.View>
+        )}
         </View>
-      ) : null}
+      </LockedContentBlur>
+      <ChartInsightsSection
+        accentColor={colors.primary.blue500}
+        insight={chart ? hrvInsight : null}
+        locked={locked}
+        lockedPlaceholder="Your HRV is 14% higher than your 30-day baseline, indicating your parasympathetic nervous system is in a strong recovery state. This pattern often follows consistent sleep and low-stress days — your nervous system is ready for higher-intensity effort. If this trend holds through tomorrow, it may be a good window to push a harder session."
+      />
       {locked ? (
         <>
-          <LockedScrim />
-          <View style={[styles.titleRow, styles.clearTitle]}>
-            <Icon name="stat-hrv-curve" size={28} color={colors.primary.blue500} />
-            <Text style={styles.title}>Heart rate variability</Text>
-          </View>
           {onPressLocked ? (
             <Pressable
               accessibilityRole="button"
+              accessibilityLabel="Unlock HRV insights"
+              accessibilityHint="Opens the Pro upgrade screen"
               onPress={onPressLocked}
               style={StyleSheet.absoluteFill}
             />
@@ -301,17 +285,6 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
     fontFamily: fonts.semibold,
     fontSize: 16,
-  },
-  lockedTitleText: {
-    opacity: 0,
-  },
-  clearTitle: {
-    position: 'absolute',
-    top: spacing.md,
-    left: spacing.md,
-    right: spacing.md,
-    zIndex: 2,
-    marginLeft: -spacing.xs,
   },
   plotRow: {
     flexDirection: 'row',
@@ -375,37 +348,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 2,
-  },
-  insightsSection: {
-    marginTop: spacing.md,
-  },
-  insightsDivider: {
-    height: 1,
-    backgroundColor: colors.neutral[200],
-    marginBottom: spacing.md,
-  },
-  insightsHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    marginBottom: spacing.sm,
-  },
-  insightsTitle: {
-    ...typography.heading.heading2,
-    color: colors.primary.blue500,
-    fontFamily: fonts.semibold,
-    flex: 1,
-  },
-  insightsToggle: {
-    color: colors.text.tertiary,
-    fontFamily: fonts.semibold,
-    fontSize: 26,
-    lineHeight: 26,
-  },
-  insightText: {
-    ...typography.body.small,
-    color: colors.text.secondary,
-    fontFamily: fonts.semibold,
-    lineHeight: 20,
   },
 });
