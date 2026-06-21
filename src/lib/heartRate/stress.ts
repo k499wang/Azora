@@ -28,6 +28,16 @@ export interface StressStats {
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+export function computeStress(
+  rmssd: number | null,
+  avgBpm: number | null,
+): number | null {
+  if (rmssd == null || avgBpm == null) return null;
+  const rmssdScore = Math.max(0, 100 - (rmssd / 60) * 100);
+  const hrScore = Math.max(0, ((avgBpm - 50) / 30) * 100);
+  return Math.max(0, Math.min(100, Math.round(rmssdScore * 0.7 + hrScore * 0.3)));
+}
+
 function parseLocalDate(value: string): number {
   const [y, m, d] = value.split('-').map(Number);
   return new Date(y, (m ?? 1) - 1, d ?? 1).getTime();

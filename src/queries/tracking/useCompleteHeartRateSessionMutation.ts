@@ -7,6 +7,7 @@ import {
 import { getProfileSummaryQueryKey } from '../profile/useProfileSummaryQuery';
 import { getDailyFeatureUsageQueryKey } from '../subscriptions/useDailyFeatureUsageQuery';
 import { getHomeStatsQueryKeyPrefix } from './useHomeStatsQuery';
+import { getHeartRateStatsQueryKey } from './useHeartRateStatsQuery';
 
 interface CompleteHeartRateSessionMutationInput {
   captureSamples: PpgFrameSample[];
@@ -94,6 +95,9 @@ export function useCompleteHeartRateSessionMutation(userId: string | null) {
       await Promise.all([
         queryClient.invalidateQueries({
           queryKey: getHomeStatsQueryKeyPrefix(userId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: getHeartRateStatsQueryKey(userId),
         }),
         queryClient.invalidateQueries({
           queryKey: getDailyFeatureUsageQueryKey(userId, usageDate),

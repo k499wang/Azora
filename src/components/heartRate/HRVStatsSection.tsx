@@ -39,7 +39,7 @@ interface HRVSectionProps {
   onPressUpgrade?: () => void;
 }
 
-export default function HRVSection({
+export default function HRVStatsSection({
   rmssd,
   sdnn,
   avgRmssd,

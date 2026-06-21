@@ -4,7 +4,7 @@ import { spacing, padding } from '../../theme/spacing';
 import SectionHeader from '../common/SectionHeader';
 import ProUpgradeButton from '../common/ProUpgradeButton';
 import BPMChart from './BPMChart';
-import RestingHeartRateBar from '../heartRate/RestingHeartRateBar';
+import RestingHeartRateBar from './RestingHeartRateBar';
 import ThermometerStatCard from './ThermometerStatCard';
 
 const LOCKED_PLACEHOLDERS = {
@@ -22,7 +22,7 @@ interface HeartRateSectionProps {
   onPressUpgrade?: () => void;
 }
 
-export default function HeartRateSection({
+export default function HeartRateStatsSection({
   hrDrop,
   minBpm,
   avgBpm,

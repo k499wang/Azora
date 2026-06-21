@@ -1,9 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { AppState, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { usePostHog } from 'posthog-react-native';
-import { getStressZone } from '../lib/heartRate/stress';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { AnalyticsEvent } from '../services/analytics/events';
 import { trackFeatureGateHit } from '../services/analytics/tracking';
 import { colors } from '../theme/colors';
 import { spacing, padding, margin } from '../theme/spacing';
@@ -12,21 +9,15 @@ import AmbientBackground from '../components/common/AmbientBackground';
 import AppTopBar from '../components/common/AppTopBar';
 import TopBarWeekCalendar from '../components/common/TopBarWeekCalendar';
 import SectionHeader from '../components/common/SectionHeader';
-import HRVSection from '../components/home/HRVSection';
-import HeartRateSection from '../components/home/HeartRateSection';
-import RecoverySection from '../components/home/RecoverySection';
 import TodayInsights from '../components/home/TodayInsights';
 import InsightsFlashCard from '../components/home/InsightsFlashCard';
 import { buildInsights, SAMPLE_INSIGHTS } from '../lib/insights';
 import { estimateLungAge } from '../lib/lungAge';
-import EmptyStateCard from '../components/home/EmptyStateCard';
 import BreathingLibrary from '../components/home/BreathingLibrary';
 import DailyPlanCard from '../components/home/DailyPlanCard';
-import CardSurface from '../components/common/CardSurface';
 import MoodChipRow from '../components/home/MoodChipRow';
 import { useFeatureAccess } from '../hooks/useFeatureAccess';
 import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
-import { useProfileQuery } from '../queries/profile/useProfileQuery';
 import { formatLocalDate } from '../lib/calendar/weekCalendarDays';
 import type { HomeScreenProps } from '../app/navigation';
 import { useHomeStatsQuery } from '../queries/tracking/useHomeStatsQuery';
@@ -37,7 +28,7 @@ import type {
   FeatureAccessResult,
   FeatureKeyValue,
 } from '../services/subscriptions/featureAccess';
-import type { DailyActivitySummary, TodayHeartRateSummary } from '../services/tracking/types';
+import type { DailyActivitySummary } from '../services/tracking/types';
 
 function formatInsightTitle(localDate: string, todayLocalDate: string): string {
   const [year, month, day] = localDate.split('-').map(Number);
@@ -59,32 +50,6 @@ function getMsUntilNextLocalDay(): number {
   nextDay.setHours(24, 0, 1, 0);
 
   return Math.max(1000, nextDay.getTime() - now.getTime());
-}
-
-function formatRelativeDay(value: string): string {
-  const date = new Date(value);
-  const now = new Date();
-  const startOfDay = (d: Date) =>
-    new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
-  const days = Math.round((startOfDay(now) - startOfDay(date)) / 86400000);
-  if (days === 0) return 'Today';
-  if (days === 1) return 'Yesterday';
-  if (days < 7) return new Intl.DateTimeFormat(undefined, { weekday: 'long' }).format(date);
-  return new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' }).format(date);
-}
-
-function formatTime(value: string): string {
-  return new Intl.DateTimeFormat(undefined, {
-    hour: 'numeric',
-    minute: '2-digit',
-  }).format(new Date(value));
-}
-
-function formatReadingDuration(seconds: number): string {
-  if (seconds < 60) return `${seconds}s`;
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return s === 0 ? `${m}m` : `${m}m ${s}s`;
 }
 
 function deriveHoldStats(
@@ -120,122 +85,6 @@ function deriveHoldStats(
     bestHoldSeconds: max,
     avgHoldSeconds: count > 0 ? sum / count : null,
   };
-}
-
-function computeStress(rmssd: number | null, avgBpm: number | null): number | null {
-  if (rmssd == null || avgBpm == null) return null;
-  const rmssdScore = Math.max(0, 100 - (rmssd / 60) * 100);
-  const hrScore = Math.max(0, ((avgBpm - 50) / 30) * 100);
-  return Math.max(0, Math.min(100, Math.round(rmssdScore * 0.7 + hrScore * 0.3)));
-}
-
-function MetricInline({
-  iconColor,
-  iconBg,
-  value,
-}: {
-  iconColor: string;
-  iconBg: string;
-  value: string;
-}) {
-  return (
-    <View style={styles.metricInline}>
-      <View style={[styles.metricDot, { backgroundColor: iconBg }]}>
-        <View style={[styles.metricDotInner, { backgroundColor: iconColor }]} />
-      </View>
-      <Text style={styles.metricInlineValue}>{value}</Text>
-    </View>
-  );
-}
-
-function RecentHeartRateList({
-  items,
-  hasError,
-  onPressItem,
-}: {
-  items: TodayHeartRateSummary[];
-  hasError: boolean;
-  onPressItem: (sessionId: string, position: number) => void;
-}) {
-  if (items.length === 0) {
-    return (
-      <EmptyStateCard
-        title="No heart rate logged yet"
-        subtitle={
-          hasError
-            ? 'Stats could not load from Supabase.'
-            : 'Press the circle button on the bottom and click the measure heart rate button to log a reading.'
-        }
-      />
-    );
-  }
-
-  return (
-    <View style={styles.recentList}>
-      {items.map((item, index) => {
-        const stress = computeStress(item.rmssd, item.avgBpm);
-        const stressZone = stress == null ? null : getStressZone(stress);
-        const metrics: {
-          key: string;
-          iconColor: string;
-          iconBg: string;
-          value: string;
-        }[] = [];
-        if (stress != null && stressZone != null) {
-          metrics.push({
-            key: 'stress',
-            iconColor: stressZone.color,
-            iconBg: stressZone.color + '22',
-            value: `${stressZone.label} stress`,
-          });
-        }
-        if (item.hrDrop != null) {
-          metrics.push({
-            key: 'hrDrop',
-            iconColor: colors.primary.blue600,
-            iconBg: colors.primary.blue100,
-            value: `${item.hrDrop} HR drop`,
-          });
-        }
-
-        return (
-          <CardSurface
-            key={item.sessionId}
-            onPress={() => onPressItem(item.sessionId, index)}
-            style={styles.recentCard}
-          >
-            <View style={styles.recentThumb}>
-              <Text style={styles.recentThumbBpm}>{item.avgBpm ?? '--'}</Text>
-              <Text style={styles.recentThumbUnit}>bpm</Text>
-            </View>
-            <View style={styles.recentBody}>
-              <View style={styles.recentRowTop}>
-                <Text style={styles.recentLabel}>
-                  {formatRelativeDay(item.startedAt)}
-                </Text>
-                <Text style={styles.recentTime}>{formatTime(item.startedAt)}</Text>
-              </View>
-              <Text style={styles.recentDuration}>
-                {formatReadingDuration(item.durationSeconds)} reading
-              </Text>
-              {metrics.length > 0 ? (
-                <View style={styles.metricRow}>
-                  {metrics.map((m) => (
-                    <MetricInline
-                      key={m.key}
-                      iconColor={m.iconColor}
-                      iconBg={m.iconBg}
-                      value={m.value}
-                    />
-                  ))}
-                </View>
-              ) : null}
-            </View>
-          </CardSurface>
-        );
-      })}
-    </View>
-  );
 }
 
 function StreakNudge({
@@ -279,14 +128,11 @@ function Greeting({ displayName }: { displayName: string | null | undefined }) {
 
 export default function HomeScreen({ navigation }: HomeScreenProps) {
   const insets = useSafeAreaInsets();
-  const posthog = usePostHog();
   const user = useAuthStore((state) => state.user);
   const profileSummaryQuery = useProfileSummaryQuery(user?.id ?? null);
-  const profileQuery = useProfileQuery(user?.id ?? null);
   const displayName = profileSummaryQuery.data?.profile?.displayName ?? null;
   const dailyExerciseAccess = useFeatureAccess(FeatureKey.DailyExercise);
   const advancedStatsAccess = useFeatureAccess(FeatureKey.AdvancedStats);
-  const sessionHistoryAccess = useFeatureAccess(FeatureKey.SessionHistory);
   const [todayLocalDate, setTodayLocalDate] = useState(() => formatLocalDate(new Date()));
   const [selectedLocalDate, setSelectedLocalDate] = useState(todayLocalDate);
   const refreshTodayLocalDate = useCallback(() => {
@@ -307,10 +153,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const stats = homeStatsQuery.data;
   const todayBreathHold = stats?.todayBreathHold ?? null;
   const todayHeartRate = stats?.todayHeartRate ?? null;
-  const recentHeartRates = stats?.recentHeartRates ?? [];
-  const recentHeartRatesError =
-    homeStatsQuery.isError || stats?.partialErrors.recentHeartRates === true;
-  const recentlyLoggedViewedRef = useRef(false);
   useEffect(() => {
     const timeout = setTimeout(refreshTodayLocalDate, getMsUntilNextLocalDay());
 
@@ -327,19 +169,11 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     return () => subscription.remove();
   }, [refreshTodayLocalDate]);
 
-  useEffect(() => {
-    if (recentlyLoggedViewedRef.current) return;
-    if (homeStatsQuery.isLoading) return;
-    recentlyLoggedViewedRef.current = true;
-    posthog.capture(AnalyticsEvent.RecentlyLoggedViewed, {
-      item_count: recentHeartRates.length,
-      has_error: recentHeartRatesError,
-    });
-  }, [homeStatsQuery.isLoading, posthog, recentHeartRates.length, recentHeartRatesError]);
-  const ibiMs = stats?.ibiSeries.map((point) => point.ibiMs) ?? [];
+  // The recently-logged list and its analytics now live on the Heart tab
+  // (see RecentlyLoggedSection — it uses useIsFocused to gate the view event).
+
   const currentStreak = stats?.streak?.currentStreak ?? 0;
   const breathHoldAvgBpm = todayBreathHold?.avgBpm ?? null;
-  const heartRateAvgBpm = todayHeartRate?.avgBpm ?? null;
   const lungEstimate =
     todayBreathHold?.holdSeconds != null && todayBreathHold.holdSeconds > 0
       ? estimateLungAge({
@@ -484,87 +318,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
                 })
           }
         />
-
-        <HRVSection
-          rmssd={stats?.hrv.rmssd ?? null}
-          sdnn={stats?.hrv.sdnn ?? null}
-          avgRmssd={stats?.hrv.avgRmssd ?? null}
-          avgSdnn={stats?.hrv.avgSdnn ?? null}
-          maxRmssd={stats?.hrv.maxRmssd ?? null}
-          maxSdnn={stats?.hrv.maxSdnn ?? null}
-          ibiMs={ibiMs}
-          locked={advancedStatsLocked}
-          onPressUpgrade={() => {
-            showProPaywall(
-              FeatureKey.AdvancedStats,
-              PaywallPlacement.DailyResultProGate,
-              advancedStatsAccess,
-              'hrv_section',
-            );
-          }}
-        />
-
-        <HeartRateSection
-          hrDrop={stats?.hrv.hrDrop ?? null}
-          minBpm={todayHeartRate?.minBpm ?? null}
-          avgBpm={heartRateAvgBpm}
-          age={profileQuery.data?.age ?? null}
-          ibiMs={ibiMs}
-          locked={advancedStatsLocked}
-          onPressUpgrade={() => {
-            showProPaywall(
-              FeatureKey.AdvancedStats,
-              PaywallPlacement.DailyResultProGate,
-              advancedStatsAccess,
-              'heart_rate_section',
-            );
-          }}
-        />
-
-        <RecoverySection
-          stress={stats?.hrv.stress ?? null}
-          stressHistory={stats?.stressHistory ?? []}
-          locked={advancedStatsLocked}
-          onPressUpgrade={() => {
-            showProPaywall(
-              FeatureKey.AdvancedStats,
-              PaywallPlacement.DailyResultProGate,
-              advancedStatsAccess,
-              'recovery_section',
-            );
-          }}
-        />
-
-        <View style={styles.recentSection}>
-          <SectionHeader title="Recently logged" />
-          <RecentHeartRateList
-            items={recentHeartRates}
-            hasError={recentHeartRatesError}
-            onPressItem={(sessionId, position) => {
-              posthog.capture(AnalyticsEvent.RecentlyLoggedSessionOpened, {
-                session_id: sessionId,
-                position,
-                item_count: recentHeartRates.length,
-              });
-              if (sessionHistoryAccess.isLoading) return;
-
-              if (
-                position > 0 &&
-                !sessionHistoryAccess.allowed &&
-                !sessionHistoryAccess.isLoading
-              ) {
-                showProPaywall(
-                  FeatureKey.SessionHistory,
-                  PaywallPlacement.DailyResultProGate,
-                  sessionHistoryAccess,
-                  'recently_logged_history',
-                );
-                return;
-              }
-              navigation.navigate('HeartRateSessionDetail', { sessionId });
-            }}
-          />
-        </View>
       </ScrollView>
     </View>
   );
@@ -616,89 +369,5 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semibold,
     color: colors.text.tertiary,
     marginTop: -spacing.xs,
-  },
-  recentSection: {
-    paddingHorizontal: padding.screen.horizontal,
-    gap: spacing.md,
-  },
-  recentList: {
-    gap: spacing.sm,
-  },
-  recentCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
-    gap: spacing.lg,
-  },
-  recentThumb: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    minWidth: 56,
-  },
-  recentThumbBpm: {
-    fontSize: 32,
-    lineHeight: 34,
-    fontFamily: fonts.semibold,
-    color: colors.error[500],
-    letterSpacing: -0.8,
-  },
-  recentThumbUnit: {
-    ...typography.caption.caption2,
-    fontFamily: fonts.semibold,
-    color: colors.error[500],
-    marginTop: 1,
-    letterSpacing: 0.5,
-  },
-  recentBody: {
-    flex: 1,
-    gap: spacing.xs,
-  },
-  recentRowTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  recentLabel: {
-    ...typography.body.medium,
-    fontFamily: fonts.semibold,
-    color: colors.text.primary,
-  },
-  recentTime: {
-    ...typography.caption.caption1,
-    fontFamily: fonts.semibold,
-    color: colors.text.tertiary,
-  },
-  recentDuration: {
-    ...typography.body.small,
-    fontFamily: fonts.semibold,
-    color: colors.text.tertiary,
-  },
-  metricRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.md,
-  },
-  metricInline: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  metricDot: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  metricDotInner: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  metricInlineValue: {
-    ...typography.caption.caption1,
-    fontFamily: fonts.semibold,
-    color: colors.text.secondary,
   },
 });

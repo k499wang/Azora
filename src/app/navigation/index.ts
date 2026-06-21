@@ -6,6 +6,7 @@ export type {
   ExitOfferScreenProps,
   HeartRateSessionDetailScreenProps,
   HeartRateScreenProps,
+  HeartTabScreenProps,
   HomeScreenProps,
   MainTabNavigationProp,
   MainTabParamList,
