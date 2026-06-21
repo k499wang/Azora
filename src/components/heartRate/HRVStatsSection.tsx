@@ -21,19 +21,12 @@ const SDNN_INFO = {
 const LOCKED_PLACEHOLDERS = {
   rmssd: 48,
   sdnn: 42,
-  avgRmssd: 46,
-  avgSdnn: 40,
-  maxRmssd: 62,
-  maxSdnn: 55,
 } as const;
 
 interface HRVSectionProps {
   rmssd?: number | null;
   sdnn?: number | null;
-  avgRmssd?: number | null;
-  avgSdnn?: number | null;
-  maxRmssd?: number | null;
-  maxSdnn?: number | null;
+  avgBpm?: number | null;
   ibiMs?: number[];
   locked?: boolean;
   onPressUpgrade?: () => void;
@@ -43,10 +36,7 @@ interface HRVSectionProps {
 export default function HRVStatsSection({
   rmssd,
   sdnn,
-  avgRmssd,
-  avgSdnn,
-  maxRmssd,
-  maxSdnn,
+  avgBpm,
   ibiMs = [],
   locked = false,
   onPressUpgrade,
@@ -54,10 +44,6 @@ export default function HRVStatsSection({
 }: HRVSectionProps) {
   const rmssdValue = rmssd ?? (locked ? LOCKED_PLACEHOLDERS.rmssd : null);
   const sdnnValue = sdnn ?? (locked ? LOCKED_PLACEHOLDERS.sdnn : null);
-  const avgRmssdValue = avgRmssd ?? (locked ? LOCKED_PLACEHOLDERS.avgRmssd : null);
-  const avgSdnnValue = avgSdnn ?? (locked ? LOCKED_PLACEHOLDERS.avgSdnn : null);
-  const maxRmssdValue = maxRmssd ?? (locked ? LOCKED_PLACEHOLDERS.maxRmssd : null);
-  const maxSdnnValue = maxSdnn ?? (locked ? LOCKED_PLACEHOLDERS.maxSdnn : null);
 
   return (
     <View style={styles.section}>
@@ -74,8 +60,6 @@ export default function HRVStatsSection({
           icon="heart-rmssd"
           iconColor={colors.primary.blue500}
           value={rmssdValue}
-          avgValue={avgRmssdValue}
-          bestValue={maxRmssdValue}
           unit="ms"
           max={80}
           lowBound={20}
@@ -90,8 +74,6 @@ export default function HRVStatsSection({
           icon="heart-sdnn"
           iconColor={colors.primary.blue500}
           value={sdnnValue}
-          avgValue={avgSdnnValue}
-          bestValue={maxSdnnValue}
           unit="ms"
           max={80}
           lowBound={20}
@@ -103,6 +85,11 @@ export default function HRVStatsSection({
         />
         <HRVChart
           ibiMs={ibiMs}
+          insightSummary={{
+            rmssd: rmssd ?? null,
+            sdnn: sdnn ?? null,
+            avgBpm: avgBpm ?? null,
+          }}
           color={colors.error[500]}
           locked={locked}
           onPressLocked={onPressUpgrade}

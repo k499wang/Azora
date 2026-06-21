@@ -5,6 +5,7 @@ import {
   computeHRVStatsFromCleanIntervals,
   preprocessHRVIntervals,
 } from './hrv.ts';
+import { buildHrvInsight } from './heartRate/hrvInsight.ts';
 
 function rawRmssd(ibi) {
   if (ibi.length < 2) return 0;
@@ -73,4 +74,16 @@ test('computeHRVStatsFromCleanIntervals computes SDNN from clean NN intervals wi
 
   assert.equal(stats.rmssd, 20);
   assert.equal(stats.sdnn, 32);
+});
+
+test('HRV insight uses authoritative saved summary values', () => {
+  const insight = buildHrvInsight({ rmssd: 42, sdnn: 51, avgBpm: 68 });
+
+  assert.match(insight, /RMSSD of 42 ms/);
+  assert.match(insight, /SDNN was 51 ms/);
+  assert.match(insight, /average heart rate was 68 bpm/);
+});
+
+test('HRV insight does not fabricate values when a saved summary field is missing', () => {
+  assert.equal(buildHrvInsight({ rmssd: 42, sdnn: null, avgBpm: 68 }), null);
 });

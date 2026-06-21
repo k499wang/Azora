@@ -71,6 +71,8 @@ interface HRVTrackStatCardProps {
   value: number | null;
   avgValue?: number | null;
   bestValue?: number | null;
+  avgLabel?: string;
+  bestLabel?: string;
   unit: string;
   min?: number;
   max: number;
@@ -89,6 +91,8 @@ export default function HRVTrackStatCard({
   value,
   avgValue,
   bestValue,
+  avgLabel = 'Avg',
+  bestLabel = 'Best',
   unit,
   min = 0,
   max,
@@ -189,7 +193,7 @@ export default function HRVTrackStatCard({
                       <Text style={styles.statValue}>{Math.round(avgValue!)}</Text>
                       <Text style={styles.statUnit}>{unit}</Text>
                     </View>
-                    <Text style={styles.statLabel}>Avg</Text>
+                    <Text style={styles.statLabel}>{avgLabel}</Text>
                   </View>
                 </>
               ) : null}
@@ -202,7 +206,7 @@ export default function HRVTrackStatCard({
                       <Text style={styles.statValue}>{Math.round(bestValue!)}</Text>
                       <Text style={styles.statUnit}>{unit}</Text>
                     </View>
-                    <Text style={styles.statLabel}>Best</Text>
+                    <Text style={styles.statLabel}>{bestLabel}</Text>
                   </View>
                 </>
               ) : null}

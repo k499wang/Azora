@@ -135,6 +135,7 @@ export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
         <HeartRateStatsSection
           hrDrop={canonicalSession == null ? null : stats?.hrv.hrDrop ?? null}
           minBpm={canonicalSession?.minBpm ?? null}
+          maxBpm={canonicalSession?.maxBpm ?? null}
           avgBpm={canonicalSession?.avgBpm ?? null}
           age={profileQuery.data?.age ?? null}
           bpmSamples={bpmSamples}
@@ -152,10 +153,7 @@ export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
         <HRVStatsSection
           rmssd={stats?.hrv.rmssd ?? null}
           sdnn={stats?.hrv.sdnn ?? null}
-          avgRmssd={stats?.hrv.avgRmssd ?? null}
-          avgSdnn={stats?.hrv.avgSdnn ?? null}
-          maxRmssd={stats?.hrv.maxRmssd ?? null}
-          maxSdnn={stats?.hrv.maxSdnn ?? null}
+          avgBpm={canonicalSession?.avgBpm ?? null}
           ibiMs={ibiMs}
           locked={advancedStatsLocked}
           onPressUpgrade={() =>

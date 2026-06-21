@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { buildBpmSeries, summarizeBpmSeries } from './bpmSeries.ts';
+import { buildBpmInsight } from './bpmInsight.ts';
 
 function ramp(count, startBpm, stepBpm, stepMs = 1000) {
   return Array.from({ length: count }, (_, i) => ({
@@ -81,4 +82,25 @@ test('labels are formatted as m:ss', () => {
   ]);
   assert.equal(points[0].label, '0:00');
   assert.equal(points[1].label, '1:05');
+});
+
+test('BPM insight uses saved summary fields instead of plotted extrema', () => {
+  const insight = buildBpmInsight(
+    [{ bpm: 70 }, { bpm: 72 }],
+    { avgBpm: 81, minBpm: 61, maxBpm: 99, hrDrop: 12 },
+  );
+
+  assert.match(insight, /12 bpm drop/);
+  assert.match(insight, /81 bpm/);
+  assert.match(insight, /61-99 bpm/);
+});
+
+test('BPM insight preserves a saved negative HR drop as a climb', () => {
+  const insight = buildBpmInsight(
+    [{ bpm: 70 }, { bpm: 72 }],
+    { avgBpm: 71, minBpm: 68, maxBpm: 75, hrDrop: -7 },
+  );
+
+  assert.match(insight, /climbed 7 bpm/);
+  assert.doesNotMatch(insight, /7 bpm drop/);
 });
