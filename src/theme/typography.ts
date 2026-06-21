@@ -3,21 +3,21 @@ import { TextStyle } from 'react-native';
 type FontWeight = TextStyle['fontWeight'];
 
 const weight = {
-  regular: '400' as FontWeight,
-  medium: '500' as FontWeight,
-  semibold: '500' as FontWeight,
-  bold: '600' as FontWeight,
+  regular: '300' as FontWeight,
+  medium: '400' as FontWeight,
+  semibold: '400' as FontWeight,
+  bold: '500' as FontWeight,
 };
 
 // Single app-wide font family. Switch to try any of:
 // 'Cormorant' | 'Raleway' | 'Outfit' | 'Manrope' | 'Urbanist' | 'Fredoka' | 'Baloo2' | 'Unbounded' | 'Sniglet' | 'Nunito'
 const FONT_FAMILY = 'Outfit';
 
-const fontBold = `${FONT_FAMILY}-SemiBold`;
-const fontSemiBold = `${FONT_FAMILY}-Medium`;
-const fontRegular = `${FONT_FAMILY}-Regular`;
-const fontMedium = `${FONT_FAMILY}-Medium`;
-const fontLight = `${FONT_FAMILY}-Light`;
+const fontBold = `${FONT_FAMILY}-Medium`;
+const fontSemiBold = `${FONT_FAMILY}-Regular`;
+const fontRegular = `${FONT_FAMILY}-Light`;
+const fontMedium = `${FONT_FAMILY}-Regular`;
+const fontLight = `${FONT_FAMILY}-ExtraLight`;
 const fontExtraLight = `${FONT_FAMILY}-ExtraLight`;
 
 export const typography = {
