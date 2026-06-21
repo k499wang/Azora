@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { Alert, LayoutChangeEvent, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useMemo, useRef, useState } from 'react';
+import { Alert, Animated, Easing, LayoutChangeEvent, Pressable, StyleSheet, Text, View } from 'react-native';
 import { LockedScrim } from '../common/glass';
 import Svg, { Circle, Line, Path } from 'react-native-svg';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -30,6 +30,28 @@ const HRV_INFO = {
   message:
     'HRV is the variation in time between consecutive heartbeats. The chart shows your RR intervals (in milliseconds) over the session — wider swings mean more variability and stronger vagal tone.\n\nHealthy resting RR intervals fall roughly between 700–1100 ms, with visible beat-to-beat variation. Higher variability generally indicates better recovery and cardiovascular health.',
 };
+
+function buildHrvInsight(ibiMs: number[]): string | null {
+  if (ibiMs.length < 4) return null;
+
+  const avg = Math.round(ibiMs.reduce((a, b) => a + b, 0) / ibiMs.length);
+  const avgBpm = Math.round(60000 / avg);
+
+  let sumSq = 0;
+  for (let i = 1; i < ibiMs.length; i++) {
+    const diff = ibiMs[i] - ibiMs[i - 1];
+    sumSq += diff * diff;
+  }
+  const rmssd = Math.round(Math.sqrt(sumSq / (ibiMs.length - 1)));
+
+  if (rmssd >= 50) {
+    return `An RMSSD of ${rmssd} ms is excellent. Your parasympathetic nervous system is clearly dominant — your body is primed for recovery and handling stress efficiently. At an average of ${avgBpm} bpm with this level of variability, your nervous system is in a well-recovered, high-performance state.`;
+  }
+  if (rmssd >= 30) {
+    return `An RMSSD of ${rmssd} ms is in a solid resting range. Your autonomic nervous system is balanced — not overwhelmed by stress, not suppressed by fatigue. Your average of ${avgBpm} bpm alongside this variability suggests a comfortable, sustainable baseline.`;
+  }
+  return `An RMSSD of ${rmssd} ms is on the lower side, usually reflecting elevated sympathetic activity — your nervous system may be in a mild stress or fatigue state. Poor sleep, high training load, caffeine, and emotional stress are the most common culprits. Try measuring again after a proper night's rest and see if the number shifts.`;
+}
 
 export default function HRVChart({
   ibiMs,
@@ -108,6 +130,21 @@ export default function HRVChart({
     }
     return ticks;
   }, [yBounds]);
+
+  const hrvInsight = useMemo(() => buildHrvInsight(ibiMs), [ibiMs]);
+  const [insightExpanded, setInsightExpanded] = useState(true);
+  const animMaxHeight = useRef(new Animated.Value(300)).current;
+
+  const toggleInsight = () => {
+    const toValue = insightExpanded ? 0 : 300;
+    Animated.timing(animMaxHeight, {
+      toValue,
+      duration: 450,
+      easing: Easing.inOut(Easing.ease),
+      useNativeDriver: false,
+    }).start();
+    setInsightExpanded((v) => !v);
+  };
 
   return (
     <CardSurface locked={locked} style={styles.card}>
@@ -227,6 +264,19 @@ export default function HRVChart({
         </View>
       </View>
       )}
+      {chart && !locked && hrvInsight ? (
+        <View style={styles.insightsSection}>
+          <View style={styles.insightsDivider} />
+          <Pressable style={styles.insightsHeader} onPress={toggleInsight}>
+            <Icon name="sparkle" size={16} color={colors.primary.blue500} />
+            <Text style={styles.insightsTitle}>Insights</Text>
+            <Text style={styles.insightsToggle}>{insightExpanded ? '−' : '+'}</Text>
+          </Pressable>
+          <Animated.View style={{ maxHeight: animMaxHeight, overflow: 'hidden' }}>
+            <Text style={styles.insightText}>{hrvInsight}</Text>
+          </Animated.View>
+        </View>
+      ) : null}
       {locked ? (
         <>
           <LockedScrim />
@@ -324,7 +374,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
   },
   emptyText: {
-    ...typography.body.small,
+    ...typography.body.medium,
     color: colors.text.tertiary,
     textAlign: 'center',
   },
@@ -338,5 +388,37 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 2,
+  },
+  insightsSection: {
+    marginTop: spacing.md,
+  },
+  insightsDivider: {
+    height: 1,
+    backgroundColor: colors.neutral[200],
+    marginBottom: spacing.md,
+  },
+  insightsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginBottom: spacing.sm,
+  },
+  insightsTitle: {
+    ...typography.label.medium,
+    color: colors.primary.blue500,
+    fontFamily: fonts.semibold,
+    flex: 1,
+  },
+  insightsToggle: {
+    color: colors.text.tertiary,
+    fontFamily: fonts.semibold,
+    fontSize: 26,
+    lineHeight: 26,
+  },
+  insightText: {
+    ...typography.body.medium,
+    color: colors.text.secondary,
+    fontFamily: fonts.semibold,
+    lineHeight: 20,
   },
 });
