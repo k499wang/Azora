@@ -5,13 +5,18 @@ import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import { card } from '../../theme/card';
 import LineGraph, { type DataPoint } from '../analytics/LineGraph';
+import LockedContentBlur from '../common/LockedContentBlur';
 
 interface ProfileBreathHoldTrendCardProps {
   data: DataPoint[];
+  locked?: boolean;
+  onPressLocked?: () => void;
 }
 
 export default function ProfileBreathHoldTrendCard({
   data,
+  locked = false,
+  onPressLocked,
 }: ProfileBreathHoldTrendCardProps) {
   const bestIndex = useMemo(() => {
     if (data.length === 0) return undefined;
@@ -33,14 +38,21 @@ export default function ProfileBreathHoldTrendCard({
     <View style={styles.card}>
       <Text style={styles.title}>Average hold over time</Text>
 
-      <LineGraph
-        data={data}
-        unit="s"
-        highlightIndex={bestIndex}
-        lineColor={colors.primary.blue600}
-        fillColor={colors.primary.blue100}
-        dotColor={colors.primary.blue700}
-      />
+      <LockedContentBlur locked={locked} onPressLocked={onPressLocked}>
+        <View
+          accessibilityElementsHidden={locked}
+          importantForAccessibility={locked ? 'no-hide-descendants' : 'auto'}
+        >
+          <LineGraph
+            data={data}
+            unit="s"
+            highlightIndex={bestIndex}
+            lineColor={colors.primary.blue600}
+            fillColor={colors.primary.blue100}
+            dotColor={colors.primary.blue700}
+          />
+        </View>
+      </LockedContentBlur>
     </View>
   );
 }
