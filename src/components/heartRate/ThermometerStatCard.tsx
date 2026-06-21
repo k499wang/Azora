@@ -4,6 +4,8 @@ import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography, fonts } from '../../theme/typography';
 import CardSurface from '../common/CardSurface';
+import Icon from '../common/icons/Icon';
+import type { IconName } from '../common/icons/paths';
 
 interface ThermometerStatCardProps {
   label: string;
@@ -12,6 +14,8 @@ interface ThermometerStatCardProps {
   min: number;
   max: number;
   accent: string;
+  icon?: IconName;
+  iconColor?: string;
   /** When set, renders this text as the primary black value and hides the grey unit. */
   valueText?: string;
   locked?: boolean;
@@ -25,6 +29,8 @@ export default function ThermometerStatCard({
   min,
   max,
   accent,
+  icon,
+  iconColor = colors.text.secondary,
   valueText,
   locked = false,
   onPressLocked,
@@ -40,9 +46,12 @@ export default function ThermometerStatCard({
       containerStyle={styles.tileContainer}
       style={styles.tile}
     >
-      <Text style={[styles.tileLabel, locked && styles.lockedTitleText]}>
-        {label}
-      </Text>
+      <View style={[styles.tileHeader, locked && styles.lockedTitleText]}>
+        {icon ? (
+          <Icon name={icon} size={28} color={iconColor} />
+        ) : null}
+        <Text style={styles.tileLabel}>{label}</Text>
+      </View>
       <View style={styles.tileContent}>
         <View style={styles.tileBody}>
           <View style={styles.tileValueRow}>
@@ -70,7 +79,12 @@ export default function ThermometerStatCard({
       {locked ? (
         <>
           <LockedScrim />
-          <Text style={[styles.tileLabel, styles.clearTileLabel]}>{label}</Text>
+          <View style={styles.tileHeader}>
+            {icon ? (
+              <Icon name={icon} size={28} color={iconColor} />
+            ) : null}
+            <Text style={styles.tileLabel}>{label}</Text>
+          </View>
           {onPressLocked ? (
             <Pressable
               accessibilityRole="button"
@@ -92,7 +106,11 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
   },
-  clearTileLabel: {
+  tileHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginLeft: -spacing.xs,
     position: 'absolute',
     top: spacing.md,
     left: spacing.md,
@@ -116,11 +134,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semibold,
     fontSize: 16,
     color: colors.text.secondary,
-    position: 'absolute',
-    top: spacing.md,
-    left: spacing.md,
-    right: spacing.md,
-    zIndex: 2,
   },
   lockedTitleText: {
     opacity: 0,

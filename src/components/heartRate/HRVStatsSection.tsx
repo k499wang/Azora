@@ -69,6 +69,8 @@ export default function HRVStatsSection({
       <View style={styles.metricColumn}>
         <HRVTrackStatCard
           label="RMSSD"
+          icon="heart-rmssd"
+          iconColor={colors.primary.blue500}
           value={rmssdValue}
           avgValue={avgRmssdValue}
           bestValue={maxRmssdValue}
@@ -82,6 +84,8 @@ export default function HRVStatsSection({
         />
         <HRVTrackStatCard
           label="Avg HRV"
+          icon="heart-sdnn"
+          iconColor={colors.primary.blue500}
           value={sdnnValue}
           avgValue={avgSdnnValue}
           bestValue={maxSdnnValue}

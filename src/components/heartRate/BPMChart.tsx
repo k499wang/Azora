@@ -9,6 +9,7 @@ import { spacing } from '../../theme/spacing';
 import { buildGraphBpmValuePointsFromIbis } from '../../lib/heartRate/bpmSmoothing';
 import { buildBpmSeries, type BpmTimePoint } from '../../lib/heartRate/bpmSeries';
 import CardSurface from '../common/CardSurface';
+import Icon from '../common/icons/Icon';
 
 interface BPMChartProps {
   /** Inter-beat intervals (ms). Used when the source is raw beat detection. */
@@ -158,9 +159,10 @@ export default function BPMChart({
           />
         </Pressable>
       ) : null}
-      <Text style={[styles.title, locked && styles.lockedTitleText]}>
-        Heart rate
-      </Text>
+      <View style={[styles.titleRow, locked && styles.lockedTitleText]}>
+        <Icon name="heart-plain" size={28} color={colors.error[500]} />
+        <Text style={styles.title}>Heart rate</Text>
+      </View>
 
       {!chart ? (
         <View style={[styles.emptyChart, { height }]} onLayout={onLayout}>
@@ -263,7 +265,10 @@ export default function BPMChart({
       {locked ? (
         <>
           <LockedScrim />
-          <Text style={[styles.title, styles.clearTitle]}>Heart rate</Text>
+          <View style={[styles.titleRow, styles.clearTitle]}>
+            <Icon name="heart-plain" size={28} color={colors.error[500]} />
+            <Text style={styles.title}>Heart rate</Text>
+          </View>
           {onPressLocked ? (
             <Pressable
               accessibilityRole="button"
@@ -282,12 +287,18 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
   },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginLeft: -spacing.xs,
+    marginBottom: spacing.sm,
+  },
   title: {
     ...typography.heading.heading2,
     color: colors.text.secondary,
     fontFamily: fonts.semibold,
     fontSize: 16,
-    marginBottom: spacing.sm,
   },
   lockedTitleText: {
     opacity: 0,
@@ -298,6 +309,7 @@ const styles = StyleSheet.create({
     left: spacing.md,
     right: spacing.md,
     zIndex: 2,
+    marginLeft: -spacing.xs,
   },
   plotRow: {
     flexDirection: 'row',

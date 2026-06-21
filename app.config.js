@@ -23,7 +23,7 @@ module.exports = {
     slug: 'Azora',
     version: '1.0.4',
     orientation: 'portrait',
-    icon: './assets/iconApp.png',
+    icon: './assets/iconApp.webp',
     userInterfaceStyle: 'light',
     newArchEnabled: true,
     splash: {
