@@ -8,6 +8,10 @@ import { typography, fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import { buildGraphBpmValuePointsFromIbis } from '../../lib/heartRate/bpmSmoothing';
 import { buildBpmSeries, type BpmTimePoint } from '../../lib/heartRate/bpmSeries';
+import {
+  buildBpmInsight,
+  type BpmInsightSummary,
+} from '../../lib/heartRate/bpmInsight';
 import CardSurface from '../common/CardSurface';
 import Icon from '../common/icons/Icon';
 
@@ -24,6 +28,7 @@ interface BPMChartProps {
   color?: string;
   locked?: boolean;
   onPressLocked?: () => void;
+  insightSummary?: BpmInsightSummary;
 }
 
 const PADDING = { top: 14, right: 8, bottom: 8, left: 8 };
@@ -35,44 +40,6 @@ const BPM_INFO = {
     'Your instantaneous beats per minute over the session, derived from each beat-to-beat interval (BPM = 60000 / RR).\n\nResting BPM typically falls between 60–90. Lower trends during a hold often reflect parasympathetic activation and good recovery.',
 };
 
-function buildBpmInsight(series: { tSec: number; bpm: number }[]): string | null {
-  if (series.length < 2) return null;
-  const values = series.map((p) => p.bpm);
-  const avg = Math.round(values.reduce((a, b) => a + b, 0) / values.length);
-  const min = Math.round(Math.min(...values));
-  const max = Math.round(Math.max(...values));
-  const range = max - min;
-
-  const windowSize = Math.max(1, Math.floor(series.length * 0.15));
-  const startAvg = values.slice(0, windowSize).reduce((a, b) => a + b, 0) / windowSize;
-  const endAvg = values.slice(-windowSize).reduce((a, b) => a + b, 0) / windowSize;
-  const drop = Math.round(startAvg - endAvg);
-
-  const zoneDesc =
-    avg <= 55
-      ? `${avg} bpm is an excellent resting rate — typically seen in well-trained or highly recovered individuals`
-      : avg <= 70
-        ? `${avg} bpm sits in a strong resting range, reflecting good cardiovascular health`
-        : avg <= 85
-          ? `${avg} bpm is within a normal resting range for most adults`
-          : `${avg} bpm is on the higher side for a resting measurement — hydration, stress, and caffeine can all push this up`;
-
-  const rangeDesc =
-    range <= 8
-      ? `The narrow ${min}–${max} bpm window points to a well-regulated, stable session`
-      : range <= 18
-        ? `A ${min}–${max} bpm spread is normal — your heart was adapting naturally throughout`
-        : `The wider ${min}–${max} bpm range suggests your heart was actively responding to something, whether that's breathing pattern, movement, or nervous system shifts`;
-
-  if (drop >= 6) {
-    return `A ${drop} bpm drop over your session is a good sign — your parasympathetic nervous system engaged and guided your body toward a calmer state. ${zoneDesc}. ${rangeDesc}.`;
-  }
-  if (drop <= -6) {
-    return `Your heart rate climbed ${Math.abs(drop)} bpm over the session, which can happen when you're fatigued, under-recovered, or slightly dehydrated. ${zoneDesc}. If this pattern repeats, take a closer look at sleep and stress.`;
-  }
-  return `Your heart rate stayed consistent throughout — a sign of a stable, well-regulated session. ${zoneDesc}. ${rangeDesc}.`;
-}
-
 export default function BPMChart({
   ibiMs,
   bpmSamples,
@@ -80,6 +47,7 @@ export default function BPMChart({
   color = colors.error[500],
   locked = false,
   onPressLocked,
+  insightSummary,
 }: BPMChartProps) {
   const [width, setWidth] = useState(0);
 
@@ -182,7 +150,10 @@ export default function BPMChart({
     return ticks;
   }, [yBounds]);
 
-  const bpmInsight = useMemo(() => buildBpmInsight(series), [series]);
+  const bpmInsight = useMemo(
+    () => buildBpmInsight(series, insightSummary),
+    [insightSummary, series],
+  );
   const [insightExpanded, setInsightExpanded] = useState(true);
   const animMaxHeight = useRef(new Animated.Value(300)).current;
 

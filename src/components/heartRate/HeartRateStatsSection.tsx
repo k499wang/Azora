@@ -16,6 +16,7 @@ const LOCKED_PLACEHOLDERS = {
 interface HeartRateSectionProps {
   hrDrop?: number | null;
   minBpm?: number | null;
+  maxBpm?: number | null;
   avgBpm?: number | null;
   age?: number | null;
   bpmSamples?: BpmTimePoint[];
@@ -26,12 +27,15 @@ interface HeartRateSectionProps {
 export default function HeartRateStatsSection({
   hrDrop,
   minBpm,
+  maxBpm,
   avgBpm,
   age,
   bpmSamples = [],
   locked = false,
   onPressUpgrade,
 }: HeartRateSectionProps) {
+  const heartRateIncreased = hrDrop != null && hrDrop < 0;
+
   return (
     <View style={styles.section}>
       <View style={styles.headerWrap}>
@@ -44,8 +48,8 @@ export default function HeartRateStatsSection({
       <View style={styles.metricColumn}>
         <View style={styles.tileRow}>
           <ThermometerStatCard
-            label="HR drop"
-            icon="chevron-down"
+            label={heartRateIncreased ? 'HR increase' : 'HR drop'}
+            icon={heartRateIncreased ? 'stat-heart-pulse' : 'chevron-down'}
             iconColor={colors.error[500]}
             value={hrDrop ?? (locked ? LOCKED_PLACEHOLDERS.hrDrop : null)}
             unit="bpm"
@@ -77,6 +81,12 @@ export default function HeartRateStatsSection({
 
         <BPMChart
           bpmSamples={bpmSamples}
+          insightSummary={{
+            avgBpm: avgBpm ?? null,
+            minBpm: minBpm ?? null,
+            maxBpm: maxBpm ?? null,
+            hrDrop: hrDrop ?? null,
+          }}
           color={colors.primary.blue500}
           locked={locked}
           onPressLocked={onPressUpgrade}

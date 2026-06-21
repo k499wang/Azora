@@ -19,7 +19,6 @@ import HRVChart from './HRVChart';
 import CardSurface from '../common/CardSurface';
 import { DEFAULT_CARD_SURFACE } from '../common/cardSurfaceConfig';
 import { getStressZone } from '../../lib/heartRate/stress';
-import { computeHRVStats } from '../../lib/hrv';
 import type { BpmTimePoint } from '../../lib/heartRate/bpmSeries';
 import type { HrvAvailabilityReason, IbiSample } from '../../lib/heartRate/types';
 
@@ -128,13 +127,7 @@ export function HeartRateResultContent({
         : null;
   const sdnnFromProp =
     sdnn != null && Number.isFinite(sdnn) && sdnn > 0 ? sdnn : null;
-  const sdnnFromIbis =
-    ibiSamples.length >= 2
-      ? computeHRVStats(ibiSamples.map((s) => s.ibiMs)).sdnn
-      : 0;
-  const sdnnRaw =
-    sdnnFromProp ??
-    (sdnnFromIbis > 0 && Number.isFinite(sdnnFromIbis) ? sdnnFromIbis : null);
+  const sdnnRaw = sdnnFromProp;
   const sdnnNumeric = sdnnRaw ?? (advancedStatsLocked ? 55 : null);
   const bpmChartSamples =
     bpmSamples != null && bpmSamples.length >= 2 ? bpmSamples : undefined;
@@ -297,6 +290,11 @@ export function HeartRateResultContent({
               <View style={styles.graphCardWrap}>
                 <HRVChart
                   ibiMs={rrChartIbiMs}
+                  insightSummary={{
+                    rmssd: rmssd ?? null,
+                    sdnn: sdnn ?? null,
+                    avgBpm: Number.isFinite(heroBpmNumber) ? heroBpmNumber : null,
+                  }}
                   color={colors.error[500]}
                   locked={advancedStatsLocked}
                   onPressLocked={onPressUpgrade}

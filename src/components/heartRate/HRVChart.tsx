@@ -8,11 +8,15 @@ import { typography, fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import CardSurface from '../common/CardSurface';
 import Icon from '../common/icons/Icon';
+import {
+  buildHrvInsight,
+  type HrvInsightSummary,
+} from '../../lib/heartRate/hrvInsight';
 
 interface HRVChartProps {
   /**
-   * Inter-beat intervals (RR / IBI) in milliseconds, captured during today's
-   * breath hold via the PPG signal pipeline. Plotted as a labeled time series
+   * Inter-beat intervals (RR / IBI) in milliseconds from the selected heart-rate
+   * measurement. Plotted as a labeled time series
    * with y-axis ticks (RR ms) and x-axis ticks (seconds).
    */
   ibiMs: number[];
@@ -20,6 +24,7 @@ interface HRVChartProps {
   color?: string;
   locked?: boolean;
   onPressLocked?: () => void;
+  insightSummary: HrvInsightSummary;
 }
 
 const PADDING = { top: 14, right: 8, bottom: 8, left: 8 };
@@ -31,34 +36,13 @@ const HRV_INFO = {
     'HRV is the variation in time between consecutive heartbeats. The chart shows your RR intervals (in milliseconds) over the session — wider swings mean more variability and stronger vagal tone.\n\nHealthy resting RR intervals fall roughly between 700–1100 ms, with visible beat-to-beat variation. Higher variability generally indicates better recovery and cardiovascular health.',
 };
 
-function buildHrvInsight(ibiMs: number[]): string | null {
-  if (ibiMs.length < 4) return null;
-
-  const avg = Math.round(ibiMs.reduce((a, b) => a + b, 0) / ibiMs.length);
-  const avgBpm = Math.round(60000 / avg);
-
-  let sumSq = 0;
-  for (let i = 1; i < ibiMs.length; i++) {
-    const diff = ibiMs[i] - ibiMs[i - 1];
-    sumSq += diff * diff;
-  }
-  const rmssd = Math.round(Math.sqrt(sumSq / (ibiMs.length - 1)));
-
-  if (rmssd >= 50) {
-    return `An RMSSD of ${rmssd} ms is excellent. Your parasympathetic nervous system is clearly dominant — your body is primed for recovery and handling stress efficiently. At an average of ${avgBpm} bpm with this level of variability, your nervous system is in a well-recovered, high-performance state.`;
-  }
-  if (rmssd >= 30) {
-    return `An RMSSD of ${rmssd} ms is in a solid resting range. Your autonomic nervous system is balanced — not overwhelmed by stress, not suppressed by fatigue. Your average of ${avgBpm} bpm alongside this variability suggests a comfortable, sustainable baseline.`;
-  }
-  return `An RMSSD of ${rmssd} ms is on the lower side, usually reflecting elevated sympathetic activity — your nervous system may be in a mild stress or fatigue state. Poor sleep, high training load, caffeine, and emotional stress are the most common culprits. Try measuring again after a proper night's rest and see if the number shifts.`;
-}
-
 export default function HRVChart({
   ibiMs,
   height = 170,
   color = colors.primary.blue500,
   locked = false,
   onPressLocked,
+  insightSummary,
 }: HRVChartProps) {
   const [width, setWidth] = useState(0);
 
@@ -131,7 +115,10 @@ export default function HRVChart({
     return ticks;
   }, [yBounds]);
 
-  const hrvInsight = useMemo(() => buildHrvInsight(ibiMs), [ibiMs]);
+  const hrvInsight = useMemo(
+    () => buildHrvInsight(insightSummary),
+    [insightSummary],
+  );
   const [insightExpanded, setInsightExpanded] = useState(true);
   const animMaxHeight = useRef(new Animated.Value(300)).current;
 
