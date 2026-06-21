@@ -425,7 +425,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
   },
   emptyText: {
-    ...typography.body.medium,
+    ...typography.body.small,
     color: colors.text.tertiary,
     textAlign: 'center',
   },
@@ -455,7 +455,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   insightsTitle: {
-    ...typography.label.medium,
+    ...typography.heading.heading2,
     color: colors.error[500],
     fontFamily: fonts.semibold,
     flex: 1,
@@ -467,7 +467,7 @@ const styles = StyleSheet.create({
     lineHeight: 26,
   },
   insightText: {
-    ...typography.body.medium,
+    ...typography.body.small,
     color: colors.text.secondary,
     fontFamily: fonts.semibold,
     lineHeight: 20,

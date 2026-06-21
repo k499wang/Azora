@@ -1,4 +1,5 @@
 import {
+  getHeartRateBpmSeriesForSession,
   getHeartRateIbiSeriesForSession,
   getRecentHeartRateSummaries,
 } from './heartRateService';
@@ -15,6 +16,7 @@ export { pickHrSource } from './heartRateStatsCore';
 export function getHeartRateStats(userId: string, todayLocalDate: string) {
   return getHeartRateStatsCore(userId, todayLocalDate, {
     getRecentHeartRateSummaries,
+    getHeartRateBpmSeriesForSession,
     getHeartRateIbiSeriesForSession,
   });
 }
