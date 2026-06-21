@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
   Easing,
-  ImageBackground,
   Linking,
   Pressable,
   ScrollView,
@@ -20,6 +19,7 @@ import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
 import Icon from '../../common/icons/Icon';
+import { SunsetBackground } from '../../common/SunsetBackground';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import { computeAnnualSavings } from '../../paywall/PlanCard';
 import { PaywallChoosePlanStep } from '../paywall/PaywallChoosePlanStep';
@@ -183,11 +183,7 @@ export default function OnboardingPaywallScreen({
         darkChrome ? styles.screenDark : styles.screenLight,
       ]}
     >
-      <ImageBackground
-        source={require('../../../../assets/backgrounds/sunset.jpg')}
-        style={StyleSheet.absoluteFill}
-        resizeMode="cover"
-      >
+      <SunsetBackground style={StyleSheet.absoluteFill}>
         {darkChrome ? (
           <LinearGradient
             colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.08)', 'rgba(0,0,0,0.38)']}
@@ -201,7 +197,7 @@ export default function OnboardingPaywallScreen({
             pointerEvents="none"
           />
         )}
-      </ImageBackground>
+      </SunsetBackground>
       <SafeAreaView
         style={[styles.screenBody, { paddingTop: insets.top }]}
         edges={['left', 'right']}

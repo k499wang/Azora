@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Image } from 'expo-image';
+import { Background2066 } from '../components/common/Background2066';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -72,13 +72,7 @@ export default function SessionCompleteScreen({
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
       {/* Fixed background image with quick fade to white */}
-      <Image
-        source={require('../../assets/backgrounds/2066.jpg')}
-        style={styles.bgImage}
-        contentFit="cover"
-        cachePolicy="memory-disk"
-        transition={0}
-      />
+      <Background2066 style={styles.bgImage} />
       <LinearGradient
         colors={[
           'rgba(248,251,255,0)',

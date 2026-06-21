@@ -76,6 +76,9 @@ export const colors = {
     // Matches the top of assets/backgrounds/sunset.jpg so the one-frame image
     // decode on the paywall is invisible instead of flashing dark navy.
     sunset: '#042B62',
+    // Average tone of assets/backgrounds/2066.jpg — fallback under the result
+    // screens' blurhash placeholder so a cache miss never flashes a hard edge.
+    dawn: '#FCBF9B',
   },
 
   // Desaturated brand blue (slate-leaning) for the premium/greyish direction.

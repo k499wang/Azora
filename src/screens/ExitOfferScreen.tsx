@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  ImageBackground,
   Linking,
   Pressable,
   ScrollView,
@@ -31,6 +30,7 @@ import {
 import PaywallTrialReminderToggle from '../components/paywall/PaywallTrialReminderToggle';
 import { computePerWeek, computeAnnualSavings } from '../components/paywall/PlanCard';
 import Icon from '../components/common/icons/Icon';
+import { SunsetBackground } from '../components/common/SunsetBackground';
 import type { ExitOfferScreenProps } from '../app/navigation';
 import { colors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
@@ -164,9 +164,7 @@ export function ExitOfferScreen({ navigation }: ExitOfferScreenProps) {
   return (
     <View style={styles.screen}>
       <View style={styles.heroWrap}>
-        <ImageBackground
-          source={require('../../assets/backgrounds/sunset.jpg')}
-          resizeMode="cover"
+        <SunsetBackground
           style={[
             styles.heroShape,
             { borderBottomLeftRadius: width * 0.9, borderBottomRightRadius: width * 0.9 },
@@ -185,7 +183,7 @@ export function ExitOfferScreen({ navigation }: ExitOfferScreenProps) {
             style={StyleSheet.absoluteFill}
             pointerEvents="none"
           />
-        </ImageBackground>
+        </SunsetBackground>
         <Text style={styles.title}>Your one-time{'\n'}offer</Text>
         <Text style={styles.heroSubtitle}>
           A special price, reserved for you today.

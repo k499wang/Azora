@@ -1,6 +1,6 @@
 import { useCallback, useRef } from 'react';
 import { Alert, Dimensions, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { Image } from 'expo-image';
+import { Background2066 } from '../components/common/Background2066';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ViewShot from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
@@ -131,13 +131,7 @@ export default function ShareableResultScreen({
   return (
     <View style={styles.screen}>
       {/* Fixed background image with quick fade to white */}
-      <Image
-        source={require('../../assets/backgrounds/2066.jpg')}
-        style={styles.bgImage}
-        contentFit="cover"
-        cachePolicy="memory-disk"
-        transition={0}
-      />
+      <Background2066 style={styles.bgImage} />
       <LinearGradient
         colors={[
           'rgba(248,251,255,0)',
