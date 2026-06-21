@@ -23,6 +23,7 @@ interface RecoverySectionProps {
   stressHistory?: StressHistoryEntry[];
   locked?: boolean;
   onPressUpgrade?: () => void;
+  lastMeasuredLabel?: string;
 }
 
 export default function RecoveryStatsSection({
@@ -30,6 +31,7 @@ export default function RecoveryStatsSection({
   stressHistory,
   locked = false,
   onPressUpgrade,
+  lastMeasuredLabel,
 }: RecoverySectionProps) {
   const stressValue = stress ?? (locked ? 38 : null);
 
@@ -64,6 +66,7 @@ export default function RecoveryStatsSection({
             locked={locked}
             onPressLocked={onPressUpgrade}
             surface={DEFAULT_CARD_SURFACE}
+            lastMeasuredLabel={lastMeasuredLabel}
           />
         </View>
       </View>

@@ -4,15 +4,8 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography, fonts } from '../../theme/typography';
-import RingStatCard from './RingStatCard';
 import LungWaterBackground from './LungWaterBackground';
 import CardSurface from '../common/CardSurface';
-
-const LUNG_SCORE_INFO = {
-  title: 'Lung Score',
-  message:
-    'A 0–100 daily lung score based on today\'s Daily Exercise breath hold duration and heart-rate response during the hold.\n\nThis is a heuristic estimate, not a clinical health score.',
-};
 
 const LUNG_AGE_INFO = {
   title: 'Lung Age',
@@ -30,25 +23,12 @@ const LUNG_ARC_SWEEP = 360;
 
 interface TodayInsightsProps {
   title?: string;
-  avgBpm?: number | null;
   holdSeconds?: number | null;
   bestHoldSeconds?: number | null;
   lungAge?: number | null;
   lungAgeTier?: string | null;
 }
 
-function formatHold(seconds: number | null | undefined): string {
-  if (seconds == null || seconds <= 0) return '--';
-  const minutes = Math.floor(seconds / 60);
-  const secs = seconds % 60;
-  return `${minutes}:${secs.toString().padStart(2, '0')}`;
-}
-
-function scoreFromLungAge(lungAge: number | null | undefined): number | null {
-  if (lungAge == null) return null;
-  const score = ((LUNG_AGE_MAX - lungAge) / (LUNG_AGE_MAX - LUNG_AGE_MIN)) * 100;
-  return Math.max(0, Math.min(100, Math.round(score)));
-}
 
 function LungAgeRing({
   lungAge,
@@ -149,49 +129,14 @@ function LungAgeRing({
 
 export default function TodayInsights({
   title = 'Today\'s insights',
-  avgBpm,
   holdSeconds,
   lungAge,
   lungAgeTier,
   bestHoldSeconds,
 }: TodayInsightsProps) {
-  const bpmValue = avgBpm == null ? '--' : `${Math.round(avgBpm)}`;
-  const holdValue = formatHold(holdSeconds);
-  const lungScore = scoreFromLungAge(lungAge);
-  const lungScoreValue = lungScore == null ? '--' : `${lungScore}`;
-
   return (
     <View style={styles.page}>
       <Text style={styles.title}>{title}</Text>
-
-      <View style={styles.smallRingsRow}>
-        <RingStatCard
-          label="BPM"
-          value={bpmValue}
-          progress={avgBpm == null ? 0 : avgBpm / 130}
-          color={colors.primary.blue500}
-          trackColor={colors.primary.blue100}
-          icon="stat-heart-pulse"
-        />
-        <RingStatCard
-          label="Hold"
-          value={holdValue}
-          progress={holdSeconds == null ? 0 : holdSeconds / 120}
-          color={colors.primary.blue500}
-          trackColor={colors.primary.blue100}
-          icon="stat-breath-flow"
-        />
-        <RingStatCard
-          label="Lungs"
-          value={lungScoreValue}
-          target="100"
-          progress={lungScore == null ? 0 : lungScore / 100}
-          color={colors.primary.blue500}
-          trackColor={colors.primary.blue100}
-          icon="stat-lungs"
-          info={LUNG_SCORE_INFO}
-        />
-      </View>
 
       <LungAgeRing
         lungAge={lungAge}
@@ -210,10 +155,6 @@ const styles = StyleSheet.create({
   title: {
     ...typography.title.title3,
     color: colors.text.primary,
-  },
-  smallRingsRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
   },
   lungCard: {
     alignItems: 'center',

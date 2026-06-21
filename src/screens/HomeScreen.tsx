@@ -173,7 +173,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   // (see RecentlyLoggedSection — it uses useIsFocused to gate the view event).
 
   const currentStreak = stats?.streak?.currentStreak ?? 0;
-  const breathHoldAvgBpm = todayBreathHold?.avgBpm ?? null;
   const lungEstimate =
     todayBreathHold?.holdSeconds != null && todayBreathHold.holdSeconds > 0
       ? estimateLungAge({
@@ -272,7 +271,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           ) : null}
           <TodayInsights
             title={formatInsightTitle(selectedLocalDate, todayLocalDate)}
-            avgBpm={breathHoldAvgBpm}
             holdSeconds={todayBreathHold?.holdSeconds ?? null}
             bestHoldSeconds={holdStats.bestHoldSeconds}
             lungAge={lungEstimate?.age ?? null}

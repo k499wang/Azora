@@ -24,6 +24,17 @@ import type {
 } from '../services/subscriptions/featureAccess';
 import type { HeartTabScreenProps } from '../app/navigation';
 
+function formatLocalDate(localDate: string): string {
+  const [year, month, day] = localDate.split('-').map(Number);
+  const date = new Date(year, month - 1, day);
+  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
+function formatMeasuredTime(isoString: string): string {
+  const date = new Date(isoString);
+  return date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+}
+
 export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
   const insets = useSafeAreaInsets();
   const user = useAuthStore((state) => state.user);
@@ -33,6 +44,7 @@ export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
 
   const stats = heartRateStatsQuery.data;
   const recentHeartRates = stats?.recent ?? [];
+  const lastMeasuredDate = recentHeartRates[0]?.localDate ?? null;
   const stressHistory = stats?.stressHistory ?? [];
   const ibiMs = stats?.ibiSeries.map((point) => point.ibiMs) ?? [];
   const advancedStatsLocked =
@@ -46,6 +58,9 @@ export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
     (stats?.partialErrors.recent ?? false);
   const hrvSource = stats?.hrvSource;
   const canonicalSession = hrvSource?.session ?? null;
+  const lastMeasuredLabel = canonicalSession?.startedAt
+    ? `last measured at ${formatMeasuredTime(canonicalSession.startedAt)}`
+    : undefined;
   // Eyebrow string rendered above the Measure hero card to tell the user how
   // old the full reading the stats reflect is. Today's reading and the
   // no-recent-reading cases render nothing.
@@ -103,6 +118,11 @@ export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
             <Text style={styles.heroEyebrow}>{measureEyebrow}</Text>
           ) : null}
           <MeasureHeroCard onPress={openMeasure} />
+          {lastMeasuredDate ? (
+            <Text style={styles.lastMeasuredText}>
+              Last measured {formatLocalDate(lastMeasuredDate)}
+            </Text>
+          ) : null}
         </View>
 
         {partialStatsError || heartRateStatsQuery.isError ? (
@@ -145,6 +165,7 @@ export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
               'hrv_section',
             )
           }
+          lastMeasuredLabel={lastMeasuredLabel}
         />
 
         <RecoveryStatsSection
@@ -159,6 +180,7 @@ export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
               'recovery_section',
             )
           }
+          lastMeasuredLabel={lastMeasuredLabel}
         />
 
         <RecentlyLoggedSection
@@ -202,6 +224,13 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginHorizontal: padding.screen.horizontal,
     marginBottom: spacing.xs,
+  },
+  lastMeasuredText: {
+    ...typography.caption.caption2,
+    fontFamily: fonts.semibold,
+    color: colors.text.tertiary,
+    textAlign: 'center',
+    marginTop: spacing.sm,
   },
   partialErrorText: {
     color: colors.text.tertiary,
