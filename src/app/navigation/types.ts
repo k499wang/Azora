@@ -16,6 +16,7 @@ import type { FeatureKeyValue } from '../../services/subscriptions/featureAccess
 
 export type MainTabParamList = {
   Home: undefined;
+  Heart: undefined;
   Profile: undefined;
 };
 
@@ -75,6 +76,7 @@ export type MainTabNavigationProp<
 >;
 
 export type HomeScreenProps = MainTabScreenProps<'Home'>;
+export type HeartTabScreenProps = MainTabScreenProps<'Heart'>;
 export type ProfileScreenProps = MainTabScreenProps<'Profile'>;
 
 export type HeartRateScreenProps = RootStackScreenProps<'HeartRate'>;

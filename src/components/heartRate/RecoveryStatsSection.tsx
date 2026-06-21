@@ -2,6 +2,7 @@ import { Alert, Pressable, StyleSheet, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
 import { spacing, padding } from '../../theme/spacing';
+import { typography, fonts } from '../../theme/typography';
 import {
   getStressZone,
   type StressHistoryEntry,
@@ -24,7 +25,7 @@ interface RecoverySectionProps {
   onPressUpgrade?: () => void;
 }
 
-export default function RecoverySection({
+export default function RecoveryStatsSection({
   stress,
   stressHistory,
   locked = false,

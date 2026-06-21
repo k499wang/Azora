@@ -22,7 +22,6 @@ type HeartRateRow =
   | Database['public']['Tables']['heart_rate_sessions']['Row'];
 type HeartRateSessionRow = Database['public']['Tables']['heart_rate_sessions']['Row'];
 type HeartRateSampleRow = Database['public']['Tables']['heart_rate_samples']['Row'];
-type HeartRateIbiRow = Database['public']['Views']['user_today_heart_rate_ibi_samples_v']['Row'];
 type HeartRateIbiSampleRow = Database['public']['Tables']['heart_rate_ibi_samples']['Row'];
 
 export async function completeHeartRateSession(
@@ -291,26 +290,25 @@ export async function getHeartRateSessionDetail(
   };
 }
 
-export async function getTodayHeartRateIbiSeries(
+export async function getHeartRateIbiSeriesForSession(
   userId: string,
+  sessionId: string,
 ): Promise<HeartRateIbiPoint[]> {
   const supabase = requireSupabaseClient();
-
   const { data, error } = await supabase
-    .from('user_today_heart_rate_ibi_samples_v')
+    .from('heart_rate_ibi_samples')
     .select('offset_ms, ibi_ms, signal_quality')
     .eq('user_id', userId)
+    .eq('heart_rate_session_id', sessionId)
     .order('offset_ms', { ascending: true });
 
-  if (error != null) {
-    throw error;
-  }
+  if (error != null) throw error;
 
-  return ((data ?? []) as HeartRateIbiRow[])
+  return ((data ?? []) as HeartRateIbiSampleRow[])
     .filter((row) => row.offset_ms != null && row.ibi_ms != null)
     .map((row) => ({
-      offsetMs: row.offset_ms as number,
-      ibiMs: row.ibi_ms as number,
+      offsetMs: row.offset_ms,
+      ibiMs: row.ibi_ms,
       signalQuality: row.signal_quality,
     }));
 }
