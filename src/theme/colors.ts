@@ -73,11 +73,8 @@ export const colors = {
     accentSoft: '#EAF2FF',
     // Warm cream for paper/letter surfaces (FounderNoteScreen).
     paper: '#FBF7EF',
-    // Matches the top of assets/backgrounds/sunset.jpg so the one-frame image
-    // decode on the paywall is invisible instead of flashing dark navy.
+    // Asset-matched fallbacks used while native background images decode.
     sunset: '#042B62',
-    // Average tone of assets/backgrounds/2066.jpg — fallback under the result
-    // screens' blurhash placeholder so a cache miss never flashes a hard edge.
     dawn: '#FCBF9B',
   },
 

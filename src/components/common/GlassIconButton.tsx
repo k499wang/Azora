@@ -11,19 +11,32 @@ const MUTED_SURFACE = {
 
 interface Props {
   children: ReactNode;
+  disabled?: boolean;
   onPress: () => void;
   style?: StyleProp<ViewStyle>;
   tone?: 'default' | 'muted';
 }
 
-export default function GlassIconButton({ children, onPress, style, tone = 'default' }: Props) {
+export default function GlassIconButton({
+  children,
+  disabled = false,
+  onPress,
+  style,
+  tone = 'default',
+}: Props) {
   const isMuted = tone === 'muted';
   const mutedSurface = isMuted ? MUTED_SURFACE : undefined;
 
   return (
     <Pressable
+      disabled={disabled}
       onPress={onPress}
-      style={({ pressed }) => [styles.outer, pressed && styles.pressed, style]}
+      style={({ pressed }) => [
+        styles.outer,
+        disabled && styles.disabled,
+        pressed && styles.pressed,
+        style,
+      ]}
     >
       <GlassSurface
         variant="clear"
@@ -55,5 +68,8 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.75,
     transform: [{ scale: 0.96 }],
+  },
+  disabled: {
+    opacity: 0.5,
   },
 });

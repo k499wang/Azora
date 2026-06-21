@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { Alert, Dimensions, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Background2066 } from '../components/common/Background2066';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -67,7 +67,9 @@ export default function ShareableResultScreen({
   const advancedStatsLocked =
     !advancedStatsAccess.allowed && !advancedStatsAccess.isLoading;
   const artifactRef = useRef<ViewShot>(null);
+  const [shareArtifactReady, setShareArtifactReady] = useState(false);
   const handleShare = useCallback(async () => {
+    if (!shareArtifactReady) return;
     try {
       const node = artifactRef.current;
       if (node?.capture == null) return;
@@ -84,7 +86,7 @@ export default function ShareableResultScreen({
     } catch {
       Alert.alert('Could not share', 'Please try again.');
     }
-  }, []);
+  }, [shareArtifactReady]);
   const showAdvancedStatsPaywall = useCallback(() => {
     trackFeatureGateHit({
       feature: FeatureKey.AdvancedStats,
@@ -184,7 +186,11 @@ export default function ShareableResultScreen({
             ) : null}
           </LockedOverlay>
 
-          <Pressable style={styles.shareCta} onPress={handleShare}>
+          <Pressable
+            disabled={!shareArtifactReady}
+            style={[styles.shareCta, !shareArtifactReady && styles.shareDisabled]}
+            onPress={handleShare}
+          >
             <MaterialCommunityIcons
               name="share-variant"
               size={20}
@@ -202,6 +208,7 @@ export default function ShareableResultScreen({
           <MaterialCommunityIcons name="close" size={22} color={colors.text.secondary} />
         </GlassIconButton>
         <GlassIconButton
+          disabled={!shareArtifactReady}
           style={[styles.shareButton, { top: insets.top + padding.screen.vertical }]}
           onPress={handleShare}
         >
@@ -226,6 +233,7 @@ export default function ShareableResultScreen({
               width={SCREEN_WIDTH}
               lungAge={lungEstimate.age}
               userAge={userAge}
+              onBackgroundDisplay={() => setShareArtifactReady(true)}
             />
           </ViewShot>
         </View>
@@ -331,6 +339,9 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semibold,
     fontWeight: '500',
     color: colors.text.inverse,
+  },
+  shareDisabled: {
+    opacity: 0.5,
   },
   statsHeader: {
     paddingHorizontal: padding.screen.horizontal,
