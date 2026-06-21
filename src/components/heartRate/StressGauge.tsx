@@ -10,6 +10,7 @@ import { typography, fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import LockedScrim from '../common/LockedScrim';
 import CardSurface from '../common/CardSurface';
+import Icon from '../common/icons/Icon';
 import type { CardSurfaceMode } from '../common/cardSurfaceConfig';
 import {
   getStressStats,
@@ -81,6 +82,7 @@ export default function StressGauge({
 
   const header = (
     <>
+      <Icon name="stat-stress-battery" size={28} color={colors.success[500]} />
       <Text style={styles.label}>Stress Index</Text>
       {zone != null ? (
         <View style={[styles.zonePill, { backgroundColor: `${zone.color}18` }]}>
@@ -180,6 +182,7 @@ export default function StressGauge({
         <>
           <LockedScrim />
           <View style={styles.clearHeaderOverlay} pointerEvents="none">
+            <Icon name="stat-stress-battery" size={28} color={colors.success[500]} />
             <Text style={styles.label}>Stress Index</Text>
           </View>
           {onPressLocked ? (
