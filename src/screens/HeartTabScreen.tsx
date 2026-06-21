@@ -46,6 +46,7 @@ export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
   const recentHeartRates = stats?.recent ?? [];
   const lastMeasuredDate = recentHeartRates[0]?.localDate ?? null;
   const stressHistory = stats?.stressHistory ?? [];
+  const bpmSamples = stats?.bpmSeries ?? [];
   const ibiMs = stats?.ibiSeries.map((point) => point.ibiMs) ?? [];
   const advancedStatsLocked =
     !advancedStatsAccess.allowed && !advancedStatsAccess.isLoading;
@@ -136,7 +137,7 @@ export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
           minBpm={canonicalSession?.minBpm ?? null}
           avgBpm={canonicalSession?.avgBpm ?? null}
           age={profileQuery.data?.age ?? null}
-          ibiMs={ibiMs}
+          bpmSamples={bpmSamples}
           locked={advancedStatsLocked}
           onPressUpgrade={() =>
             openProPaywall(

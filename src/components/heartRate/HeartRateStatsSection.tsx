@@ -6,6 +6,7 @@ import ProUpgradeButton from '../common/ProUpgradeButton';
 import BPMChart from './BPMChart';
 import RestingHeartRateBar from './RestingHeartRateBar';
 import ThermometerStatCard from './ThermometerStatCard';
+import type { BpmTimePoint } from '../../lib/heartRate/bpmSeries';
 
 const LOCKED_PLACEHOLDERS = {
   hrDrop: 18,
@@ -17,7 +18,7 @@ interface HeartRateSectionProps {
   minBpm?: number | null;
   avgBpm?: number | null;
   age?: number | null;
-  ibiMs?: number[];
+  bpmSamples?: BpmTimePoint[];
   locked?: boolean;
   onPressUpgrade?: () => void;
 }
@@ -27,7 +28,7 @@ export default function HeartRateStatsSection({
   minBpm,
   avgBpm,
   age,
-  ibiMs = [],
+  bpmSamples = [],
   locked = false,
   onPressUpgrade,
 }: HeartRateSectionProps) {
@@ -75,7 +76,7 @@ export default function HeartRateStatsSection({
         />
 
         <BPMChart
-          ibiMs={ibiMs}
+          bpmSamples={bpmSamples}
           color={colors.primary.blue500}
           locked={locked}
           onPressLocked={onPressUpgrade}

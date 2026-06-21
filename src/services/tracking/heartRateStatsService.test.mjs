@@ -60,10 +60,11 @@ test('pickHrSource prefers today, falls back seven days, then returns empty', ()
   );
 });
 
-test('getHeartRateStats loads IBI samples for the selected full session only', async () => {
+test('getHeartRateStats loads BPM and IBI samples for the selected full session only', async () => {
   const quick = makeSession({ id: 'quick', mode: 'quick' });
   const full = makeSession({ id: 'full', localDate: '2026-06-19' });
   const ibiCalls = [];
+  const bpmCalls = [];
   const dependencies = {
     getRecentHeartRateSummaries: async (_userId, limit) =>
       limit === 3 ? [quick, full] : [quick, full],
@@ -71,14 +72,42 @@ test('getHeartRateStats loads IBI samples for the selected full session only', a
       ibiCalls.push({ userId, sessionId });
       return [{ offsetMs: 900, ibiMs: 900, signalQuality: 1 }];
     },
+    getHeartRateBpmSeriesForSession: async (userId, sessionId) => {
+      bpmCalls.push({ userId, sessionId });
+      return [
+        { offsetMs: 900, bpm: 67, signalQuality: 1 },
+        { offsetMs: 1800, bpm: 68, signalQuality: 1 },
+      ];
+    },
   };
 
   const result = await getHeartRateStatsCore('user-1', TODAY, dependencies);
 
   assert.equal(result.hrvSource.session?.sessionId, 'full');
   assert.equal(result.hrv.rmssd, full.rmssd);
+  assert.deepEqual(bpmCalls, [{ userId: 'user-1', sessionId: 'full' }]);
   assert.deepEqual(ibiCalls, [{ userId: 'user-1', sessionId: 'full' }]);
+  assert.deepEqual(result.bpmSeries.map((sample) => sample.bpm), [67, 68]);
   assert.equal(result.ibiSeries[0].ibiMs, 900);
+});
+
+test('getHeartRateStats rebuilds missing BPM samples with the result-screen conversion', async () => {
+  const full = makeSession({ id: 'full' });
+  const dependencies = {
+    getRecentHeartRateSummaries: async () => [full],
+    getHeartRateBpmSeriesForSession: async () => [],
+    getHeartRateIbiSeriesForSession: async () => [
+      { offsetMs: 900, ibiMs: 900, signalQuality: 1 },
+      { offsetMs: 1800, ibiMs: 1000, signalQuality: 0.9 },
+    ],
+  };
+
+  const result = await getHeartRateStatsCore('user-1', TODAY, dependencies);
+
+  assert.deepEqual(result.bpmSeries, [
+    { offsetMs: 900, bpm: 67, signalQuality: 1 },
+    { offsetMs: 1800, bpm: 63, signalQuality: 0.9 },
+  ]);
 });
 
 test('getHeartRateStats preserves available data and reports partial failures', async () => {
@@ -91,6 +120,9 @@ test('getHeartRateStats preserves available data and reports partial failures', 
     getHeartRateIbiSeriesForSession: async () => {
       throw new Error('IBI samples unavailable');
     },
+    getHeartRateBpmSeriesForSession: async () => {
+      throw new Error('BPM samples unavailable');
+    },
   };
 
   const result = await getHeartRateStatsCore('user-1', TODAY, dependencies);
@@ -98,16 +130,19 @@ test('getHeartRateStats preserves available data and reports partial failures', 
   assert.deepEqual(result.recent, []);
   assert.equal(result.hrvSource.session?.sessionId, 'full');
   assert.equal(result.hrv.rmssd, full.rmssd);
+  assert.deepEqual(result.bpmSeries, []);
   assert.deepEqual(result.ibiSeries, []);
   assert.deepEqual(result.partialErrors, {
     recent: true,
     stressHistory: false,
+    bpmSeries: true,
     ibiSeries: true,
   });
 });
 
-test('getHeartRateStats skips IBI loading when history fails', async () => {
+test('getHeartRateStats skips sample loading when history fails', async () => {
   let ibiCalled = false;
+  let bpmCalled = false;
   const dependencies = {
     getRecentHeartRateSummaries: async (_userId, limit) => {
       if (limit === 15) throw new Error('history unavailable');
@@ -117,16 +152,22 @@ test('getHeartRateStats skips IBI loading when history fails', async () => {
       ibiCalled = true;
       return [];
     },
+    getHeartRateBpmSeriesForSession: async () => {
+      bpmCalled = true;
+      return [];
+    },
   };
 
   const result = await getHeartRateStatsCore('user-1', TODAY, dependencies);
 
   assert.equal(result.hrvSource.kind, 'no_recent_full');
   assert.equal(result.hrv.rmssd, null);
+  assert.equal(bpmCalled, false);
   assert.equal(ibiCalled, false);
   assert.deepEqual(result.partialErrors, {
     recent: false,
     stressHistory: true,
+    bpmSeries: false,
     ibiSeries: false,
   });
 });

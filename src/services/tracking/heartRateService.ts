@@ -312,3 +312,26 @@ export async function getHeartRateIbiSeriesForSession(
       signalQuality: row.signal_quality,
     }));
 }
+
+export async function getHeartRateBpmSeriesForSession(
+  userId: string,
+  sessionId: string,
+): Promise<HeartRatePoint[]> {
+  const supabase = requireSupabaseClient();
+  const { data, error } = await supabase
+    .from('heart_rate_samples')
+    .select('offset_ms, bpm, signal_quality')
+    .eq('user_id', userId)
+    .eq('heart_rate_session_id', sessionId)
+    .order('offset_ms', { ascending: true });
+
+  if (error != null) throw error;
+
+  return ((data ?? []) as HeartRateSampleRow[])
+    .filter((row) => row.offset_ms != null && row.bpm != null)
+    .map((row) => ({
+      offsetMs: row.offset_ms,
+      bpm: row.bpm,
+      signalQuality: row.signal_quality,
+    }));
+}

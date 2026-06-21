@@ -1,10 +1,15 @@
 import { buildHrvStats, buildStressHistory } from './homeStatsCore';
 import type { HomeHrvStats } from './homeStatsCore';
 import type {
+  HeartRatePoint,
   HeartRateIbiPoint,
   TodayHeartRateSummary,
 } from './types';
 import type { StressHistoryEntry } from '../../lib/heartRate/stress';
+import {
+  buildBpmSamplesFromIbiSamples,
+  mapIbiSamples,
+} from '../../lib/heartRate/sessionPayload';
 
 export type HrSourcePick =
   | { kind: 'today_full'; session: TodayHeartRateSummary; ageDays: 0 }
@@ -15,6 +20,7 @@ export interface HeartRateStats {
   hrvSource: HrSourcePick;
   recent: TodayHeartRateSummary[];
   stressHistory: StressHistoryEntry[];
+  bpmSeries: HeartRatePoint[];
   ibiSeries: HeartRateIbiPoint[];
   hrv: HomeHrvStats;
   partialErrors: HeartRateStatsPartialErrors;
@@ -23,6 +29,7 @@ export interface HeartRateStats {
 export interface HeartRateStatsPartialErrors {
   recent: boolean;
   stressHistory: boolean;
+  bpmSeries: boolean;
   ibiSeries: boolean;
 }
 
@@ -35,6 +42,10 @@ export interface HeartRateStatsDependencies {
     userId: string,
     sessionId: string,
   ) => Promise<HeartRateIbiPoint[]>;
+  getHeartRateBpmSeriesForSession: (
+    userId: string,
+    sessionId: string,
+  ) => Promise<HeartRatePoint[]>;
 }
 
 const HRV_FALLBACK_DAYS = 7;
@@ -112,7 +123,13 @@ export async function getHeartRateStatsCore(
   const stressHistory = buildStressHistory(fullHistory);
   const hrv = buildHrvStats(canonicalSession, fullHistory);
 
-  const [ibiResult] = await Promise.allSettled([
+  const [bpmResult, ibiResult] = await Promise.allSettled([
+    canonicalSession == null
+      ? Promise.resolve([] as HeartRatePoint[])
+      : dependencies.getHeartRateBpmSeriesForSession(
+          userId,
+          canonicalSession.sessionId,
+        ),
     canonicalSession == null
       ? Promise.resolve([] as HeartRateIbiPoint[])
       : dependencies.getHeartRateIbiSeriesForSession(
@@ -121,15 +138,27 @@ export async function getHeartRateStatsCore(
         ),
   ]);
 
+  const ibiSeries = getSettledValue(ibiResult, []);
+  const savedBpmSeries = getSettledValue(bpmResult, []);
+  const bpmSeries = savedBpmSeries.length >= 2
+    ? savedBpmSeries
+    : buildBpmSamplesFromIbiSamples(mapIbiSamples(ibiSeries)).map((sample) => ({
+        offsetMs: sample.offset_ms,
+        bpm: sample.bpm,
+        signalQuality: sample.signal_quality,
+      }));
+
   return {
     hrvSource,
     recent,
     stressHistory,
-    ibiSeries: getSettledValue(ibiResult, []),
+    bpmSeries,
+    ibiSeries,
     hrv,
     partialErrors: {
       recent: recentResult.status === 'rejected',
       stressHistory: historyResult.status === 'rejected',
+      bpmSeries: bpmResult.status === 'rejected',
       ibiSeries: ibiResult.status === 'rejected',
     },
   };
