@@ -9,7 +9,7 @@ export default function BrandLockup() {
   return (
     <View style={styles.row}>
       <Image
-        source={require('../../../assets/iconApp.png')}
+        source={require('../../../assets/iconApp.webp')}
         style={styles.mark}
       />
       <Text style={styles.wordmark}>Azora</Text>

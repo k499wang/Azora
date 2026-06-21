@@ -6,6 +6,8 @@ import { colors } from '../../theme/colors';
 import { typography, fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import CardSurface from '../common/CardSurface';
+import Icon from '../common/icons/Icon';
+import type { IconName } from '../common/icons/paths';
 
 const SIZE = 96;
 const CX = SIZE / 2;
@@ -64,6 +66,8 @@ function getZone(
 
 interface HRVTrackStatCardProps {
   label: string;
+  icon?: IconName;
+  iconColor?: string;
   value: number | null;
   avgValue?: number | null;
   bestValue?: number | null;
@@ -79,6 +83,8 @@ interface HRVTrackStatCardProps {
 
 export default function HRVTrackStatCard({
   label,
+  icon,
+  iconColor = colors.text.secondary,
   value,
   avgValue,
   bestValue,
@@ -144,6 +150,9 @@ export default function HRVTrackStatCard({
       <View style={styles.cardContent}>
         <View style={styles.left}>
           <View style={[styles.headerRow, locked && styles.lockedHeaderRow]}>
+            {icon ? (
+              <Icon name={icon} size={28} color={iconColor} />
+            ) : null}
             <Text style={styles.label}>{label}</Text>
             {zone != null ? (
               <View
@@ -232,6 +241,9 @@ export default function HRVTrackStatCard({
         <>
           <LockedScrim />
           <View style={styles.clearHeaderOverlay} pointerEvents="none">
+            {icon ? (
+              <Icon name={icon} size={28} color={iconColor} />
+            ) : null}
             <Text style={styles.label}>{label}</Text>
           </View>
           {onPressLocked ? (
@@ -277,6 +289,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs + 2,
+    marginLeft: -spacing.xs,
     marginBottom: spacing.sm,
   },
   lockedHeaderRow: {
@@ -291,6 +304,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs + 2,
+    marginLeft: -spacing.xs,
   },
   cardContent: {
     flexDirection: 'row',
