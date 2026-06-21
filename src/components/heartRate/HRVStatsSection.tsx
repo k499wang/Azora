@@ -37,6 +37,7 @@ interface HRVSectionProps {
   ibiMs?: number[];
   locked?: boolean;
   onPressUpgrade?: () => void;
+  lastMeasuredLabel?: string;
 }
 
 export default function HRVStatsSection({
@@ -49,6 +50,7 @@ export default function HRVStatsSection({
   ibiMs = [],
   locked = false,
   onPressUpgrade,
+  lastMeasuredLabel,
 }: HRVSectionProps) {
   const rmssdValue = rmssd ?? (locked ? LOCKED_PLACEHOLDERS.rmssd : null);
   const sdnnValue = sdnn ?? (locked ? LOCKED_PLACEHOLDERS.sdnn : null);
@@ -81,6 +83,7 @@ export default function HRVStatsSection({
           info={RMSSD_INFO}
           locked={locked}
           onPressLocked={onPressUpgrade}
+          lastMeasuredLabel={lastMeasuredLabel}
         />
         <HRVTrackStatCard
           label="Avg HRV"
@@ -96,6 +99,7 @@ export default function HRVStatsSection({
           info={SDNN_INFO}
           locked={locked}
           onPressLocked={onPressUpgrade}
+          lastMeasuredLabel={lastMeasuredLabel}
         />
         <HRVChart
           ibiMs={ibiMs}

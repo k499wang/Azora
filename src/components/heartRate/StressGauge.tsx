@@ -24,6 +24,7 @@ interface StressGaugeProps {
   locked?: boolean;
   onPressLocked?: () => void;
   surface?: CardSurfaceMode;
+  lastMeasuredLabel?: string;
 }
 
 const SIZE = 96;
@@ -63,6 +64,7 @@ export default function StressGauge({
   locked = false,
   onPressLocked,
   surface,
+  lastMeasuredLabel,
 }: StressGaugeProps) {
   const stats = history != null ? getStressStats(history) : null;
   const hasStats = stats != null && stats.count >= MIN_STRESS_STATS_POINTS;
@@ -111,7 +113,9 @@ export default function StressGauge({
                   </Text>
                   <Text style={[styles.statUnit, !hasStats && styles.statUnitLarge]}>/100</Text>
                 </View>
-                <Text style={[styles.statLabel, !hasStats && styles.statLabelLarge]}>Today</Text>
+                <Text style={[styles.statLabel, !hasStats && styles.statLabelLarge]}>
+                  {lastMeasuredLabel ?? 'Today'}
+                </Text>
               </View>
 
               {hasStats ? (
@@ -281,10 +285,9 @@ const styles = StyleSheet.create({
   statLabel: {
     ...typography.label.small,
     fontFamily: fonts.semibold,
-    fontSize: 11,
+    fontSize: 10,
     color: colors.text.tertiary,
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
+    letterSpacing: 0,
   },
   statValueRow: {
     flexDirection: 'row',

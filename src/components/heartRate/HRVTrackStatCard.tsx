@@ -79,6 +79,7 @@ interface HRVTrackStatCardProps {
   info?: { title: string; message: string };
   locked?: boolean;
   onPressLocked?: () => void;
+  lastMeasuredLabel?: string;
 }
 
 export default function HRVTrackStatCard({
@@ -96,6 +97,7 @@ export default function HRVTrackStatCard({
   info,
   locked = false,
   onPressLocked,
+  lastMeasuredLabel,
 }: HRVTrackStatCardProps) {
   const hasAvg = avgValue != null && Number.isFinite(avgValue);
   const hasBest = bestValue != null && Number.isFinite(bestValue);
@@ -174,7 +176,9 @@ export default function HRVTrackStatCard({
                   </Text>
                   <Text style={[styles.statUnit, !multiStat && styles.statUnitLarge]}>{unit}</Text>
                 </View>
-                <Text style={[styles.statLabel, !multiStat && styles.statLabelLarge]}>Today</Text>
+                <Text style={[styles.statLabel, !multiStat && styles.statLabelLarge]}>
+                  {lastMeasuredLabel ?? 'Today'}
+                </Text>
               </View>
 
               {hasAvg ? (
@@ -348,10 +352,9 @@ const styles = StyleSheet.create({
   statLabel: {
     ...typography.label.small,
     fontFamily: fonts.semibold,
-    fontSize: 11,
+    fontSize: 10,
     color: colors.text.tertiary,
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
+    letterSpacing: 0,
   },
   statValueRow: {
     flexDirection: 'row',
