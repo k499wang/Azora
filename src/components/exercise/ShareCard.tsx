@@ -11,9 +11,15 @@ interface Props {
   width: number;
   lungAge: number;
   userAge: number | null;
+  onBackgroundDisplay?: () => void;
 }
 
-export default function ShareCard({ width, lungAge, userAge }: Props) {
+export default function ShareCard({
+  width,
+  lungAge,
+  userAge,
+  onBackgroundDisplay,
+}: Props) {
   const height = width;
   const ringSize = width * 0.62;
   const stroke = ringSize * 0.06;
@@ -41,7 +47,7 @@ export default function ShareCard({ width, lungAge, userAge }: Props) {
   return (
     <View style={[styles.card, { width, height }]}>
       {/* Background image with quick fade to white */}
-      <Background2066 style={styles.bgImage} />
+      <Background2066 style={styles.bgImage} onDisplay={onBackgroundDisplay} />
       <LinearGradient
         colors={[
           'rgba(248,251,255,0)',

@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { View } from 'react-native';
-import { Image } from 'expo-image';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
@@ -22,8 +21,6 @@ import {
 import { PostHogProvider } from 'posthog-react-native';
 import { RootNavigator } from './src/app/navigation';
 import type { RootStackParamList } from './src/app/navigation';
-import { SUNSET_BACKGROUND } from './src/components/common/SunsetBackground';
-import { BACKGROUND_2066 } from './src/components/common/Background2066';
 import { AppProviders } from './src/app/providers/AppProviders';
 import { posthog } from './src/config/posthog';
 import { trackAppOpened, trackScreenView } from './src/services/analytics/tracking';
@@ -38,10 +35,8 @@ import { colors } from './src/theme/colors';
 import TECHNIQUES from './src/data/techniques';
 import { AUTH_LANDING_SLIDES } from './src/data/authLandingSlides';
 import { AGREEMENT_STATEMENTS } from './src/components/onboarding/screens/AgreementScreen';
+import { loadCriticalBackgroundImages } from './src/services/images/backgroundImageCache';
 SplashScreen.preventAutoHideAsync();
-
-// ─── Critical background images (awaited before app render) ────────────
-const CRITICAL_BG_ASSETS = [SUNSET_BACKGROUND, BACKGROUND_2066];
 
 // ─── Secondary asset preloads (fire-and-forget, non-blocking) ──────────
 Asset.fromModule(require('./assets/onboarding/camerappg.png')).downloadAsync();
@@ -70,24 +65,19 @@ export default function App() {
     'Outfit-SemiBold': Outfit_600SemiBold,
     'Outfit-Bold': Outfit_700Bold,
   });
-
-  const [criticalAssetsReady, setCriticalAssetsReady] = useState(false);
+  const [backgroundImagesReady, setBackgroundImagesReady] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
-    async function preload() {
-      try {
-        await Asset.loadAsync(CRITICAL_BG_ASSETS);
-      } catch {
-        // proceed even on failure — worst case the image loads on-screen
-      }
-      if (!cancelled) setCriticalAssetsReady(true);
-    }
-    preload();
-    return () => { cancelled = true; };
+    void loadCriticalBackgroundImages().then(() => {
+      if (!cancelled) setBackgroundImagesReady(true);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  const appReady = fontsLoaded && criticalAssetsReady;
+  const appReady = fontsLoaded && backgroundImagesReady;
 
   const onLayoutRootView = useCallback(async () => {
     if (appReady) {
@@ -157,29 +147,6 @@ export default function App() {
           {introVisible ? (
             <WelcomeIntro onFinish={() => setIntroVisible(false)} />
           ) : null}
-
-          {/* Hidden preloaders — force React Native to decode + cache these
-              images so they appear instantly on result screens. */}
-          <View
-            style={{
-              position: 'absolute',
-              width: 0,
-              height: 0,
-              overflow: 'hidden',
-              opacity: 0,
-            }}
-            pointerEvents="none"
-          >
-            {CRITICAL_BG_ASSETS.map((src, i) => (
-              <Image
-                key={i}
-                source={src}
-                style={{ width: 1, height: 1 }}
-                cachePolicy="memory-disk"
-                transition={0}
-              />
-            ))}
-          </View>
         </View>
       </SafeAreaProvider>
     </GestureHandlerRootView>

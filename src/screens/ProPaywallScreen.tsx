@@ -14,6 +14,7 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SunsetBackground } from '../components/common/SunsetBackground';
+import { SUNSET_BACKGROUND_ASSET } from '../data/backgroundAssets';
 import { usePaywall } from '../hooks/usePaywall';
 import { PaywallPlacement } from '../services/paywall';
 import type { RootStackScreenProps } from '../app/navigation';
@@ -290,7 +291,7 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: colors.background.sunset,
+    backgroundColor: SUNSET_BACKGROUND_ASSET.fallbackColor,
   },
   background: {
     flex: 1,
