@@ -46,19 +46,17 @@ export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
     (stats?.partialErrors.recent ?? false);
   const hrvSource = stats?.hrvSource;
   const canonicalSession = hrvSource?.session ?? null;
-  // Eyebrow string rendered above the Measure hero card so the user knows
-  // whether the stats below reflect today's full reading, an older full
-  // reading, or that there's no recent full reading at all.
+  // Eyebrow string rendered above the Measure hero card to tell the user how
+  // old the full reading the stats reflect is. Today's reading and the
+  // no-recent-reading cases render nothing.
   const measureEyebrow =
-    hrvSource == null
-      ? 'No recent full reading'
-      : hrvSource.kind === 'no_recent_full'
-        ? 'No recent full reading'
-        : hrvSource.kind === 'today_full'
-          ? undefined
-          : hrvSource.ageDays === 1
-            ? 'Yesterday'
-            : `${hrvSource.ageDays} days ago`;
+    hrvSource == null || hrvSource.kind === 'no_recent_full'
+      ? undefined
+      : hrvSource.kind === 'today_full'
+        ? undefined
+        : hrvSource.ageDays === 1
+          ? 'Yesterday'
+          : `${hrvSource.ageDays} days ago`;
 
   const openProPaywall = useCallback(
     (
@@ -97,13 +95,7 @@ export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
         showsVerticalScrollIndicator={false}
       >
         <View style={[styles.topSection, { paddingTop: insets.top }]}>
-          <AppTopBar leftSlot={<View />} />
-          <View style={styles.titleSection}>
-            <Text style={styles.title}>Heart</Text>
-            <Text style={styles.subtitle}>
-              Measure, track, and understand your heart.
-            </Text>
-          </View>
+          <AppTopBar leftSlot={<Text style={styles.title}></Text>} />
         </View>
 
         <View style={styles.heroSection}>
@@ -195,26 +187,13 @@ const styles = StyleSheet.create({
   topSection: {
     paddingTop: spacing.md,
   },
-  titleSection: {
-    paddingHorizontal: padding.screen.horizontal,
-    marginTop: spacing.xl,
-    gap: spacing.xs,
-  },
   title: {
-    fontSize: 32,
-    lineHeight: 36,
-    fontFamily: 'Outfit-SemiBold',
+    fontFamily: fonts.semibold,
+    fontSize: 22,
     color: colors.text.primary,
-    letterSpacing: -0.4,
-  },
-  subtitle: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: colors.text.tertiary,
-    fontFamily: 'Outfit-Medium',
   },
   heroSection: {
-    marginTop: spacing.xs,
+    marginTop: -spacing.xl,
   },
   heroEyebrow: {
     ...typography.caption.caption2,

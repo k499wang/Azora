@@ -42,6 +42,7 @@ export const colors = {
   error: {
     100: '#FEE2E2',
     300: '#FCA5A5',
+    400: '#F87171',
     500: '#EF4444',
     700: '#B91C1C',
   },

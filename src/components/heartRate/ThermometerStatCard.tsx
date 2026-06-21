@@ -91,7 +91,6 @@ const styles = StyleSheet.create({
   tile: {
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
-    gap: spacing.md,
   },
   clearTileLabel: {
     position: 'absolute',
@@ -105,16 +104,23 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.md,
     borderRadius: 16,
+    minHeight: 92,
   },
   tileBody: {
     flex: 1,
     justifyContent: 'center',
+    marginTop: spacing.md,
   },
   tileLabel: {
     ...typography.heading.heading2,
     fontFamily: fonts.semibold,
     fontSize: 16,
     color: colors.text.secondary,
+    position: 'absolute',
+    top: spacing.md,
+    left: spacing.md,
+    right: spacing.md,
+    zIndex: 2,
   },
   lockedTitleText: {
     opacity: 0,
@@ -144,8 +150,16 @@ const styles = StyleSheet.create({
     height: 80,
     borderRadius: 5,
     backgroundColor: colors.neutral[100],
+    borderWidth: 1,
+    borderColor: colors.neutral[200],
     overflow: 'hidden',
     justifyContent: 'flex-end',
+    alignSelf: 'center',
+    shadowColor: colors.primary.blue700,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.14,
+    shadowRadius: 3,
+    elevation: 2,
   },
   thermoFill: {
     width: '100%',
