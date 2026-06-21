@@ -22,6 +22,8 @@ import {
 import { PostHogProvider } from 'posthog-react-native';
 import { RootNavigator } from './src/app/navigation';
 import type { RootStackParamList } from './src/app/navigation';
+import { SUNSET_BACKGROUND } from './src/components/common/SunsetBackground';
+import { BACKGROUND_2066 } from './src/components/common/Background2066';
 import { AppProviders } from './src/app/providers/AppProviders';
 import { posthog } from './src/config/posthog';
 import { trackAppOpened, trackScreenView } from './src/services/analytics/tracking';
@@ -39,10 +41,7 @@ import { AGREEMENT_STATEMENTS } from './src/components/onboarding/screens/Agreem
 SplashScreen.preventAutoHideAsync();
 
 // ─── Critical background images (awaited before app render) ────────────
-const CRITICAL_BG_ASSETS = [
-  require('./assets/backgrounds/sunset.jpg'),
-  require('./assets/backgrounds/2066.jpg'),
-];
+const CRITICAL_BG_ASSETS = [SUNSET_BACKGROUND, BACKGROUND_2066];
 
 // ─── Secondary asset preloads (fire-and-forget, non-blocking) ──────────
 Asset.fromModule(require('./assets/onboarding/camerappg.png')).downloadAsync();

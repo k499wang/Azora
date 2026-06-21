@@ -8,7 +8,7 @@ import {
   ScrollView,
   Pressable,
 } from 'react-native';
-import { Image } from 'expo-image';
+import { Background2066 } from '../common/Background2066';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -164,13 +164,7 @@ function ResultBackground() {
   return (
     <>
       {/* Fixed background image with quick fade to white */}
-      <Image
-        source={require('../../../assets/backgrounds/2066.jpg')}
-        style={styles.bgImage}
-        contentFit="cover"
-        cachePolicy="memory-disk"
-        transition={0}
-      />
+      <Background2066 style={styles.bgImage} />
       <LinearGradient
         colors={[
           'rgba(248,251,255,0)',
