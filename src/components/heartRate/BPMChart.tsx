@@ -1,6 +1,5 @@
-import { useMemo, useRef, useState } from 'react';
-import { Alert, Animated, Easing, LayoutChangeEvent, Pressable, StyleSheet, Text, View } from 'react-native';
-import { LockedScrim } from '../common/glass';
+import { useMemo, useState } from 'react';
+import { Alert, LayoutChangeEvent, Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Line, Path } from 'react-native-svg';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
@@ -13,7 +12,9 @@ import {
   type BpmInsightSummary,
 } from '../../lib/heartRate/bpmInsight';
 import CardSurface from '../common/CardSurface';
+import LockedContentBlur from '../common/LockedContentBlur';
 import Icon from '../common/icons/Icon';
+import ChartInsightsSection from './ChartInsightsSection';
 
 interface BPMChartProps {
   /** Inter-beat intervals (ms). Used when the source is raw beat detection. */
@@ -154,20 +155,6 @@ export default function BPMChart({
     () => buildBpmInsight(series, insightSummary),
     [insightSummary, series],
   );
-  const [insightExpanded, setInsightExpanded] = useState(true);
-  const animMaxHeight = useRef(new Animated.Value(300)).current;
-
-  const toggleInsight = () => {
-    const toValue = insightExpanded ? 0 : 300;
-    Animated.timing(animMaxHeight, {
-      toValue,
-      duration: 450,
-      easing: Easing.inOut(Easing.ease),
-      useNativeDriver: false,
-    }).start();
-    setInsightExpanded((v) => !v);
-  };
-
   return (
     <CardSurface locked={locked} style={styles.card}>
       {!locked ? (
@@ -183,12 +170,17 @@ export default function BPMChart({
           />
         </Pressable>
       ) : null}
-      <View style={[styles.titleRow, locked && styles.lockedTitleText]}>
+      <View style={styles.titleRow}>
         <Icon name="heart-plain" size={28} color={colors.error[500]} />
         <Text style={styles.title}>Heart rate</Text>
       </View>
 
-      {!chart ? (
+      <LockedContentBlur locked={locked}>
+        <View
+          accessibilityElementsHidden={locked}
+          importantForAccessibility={locked ? 'no-hide-descendants' : 'auto'}
+        >
+        {!chart ? (
         <View style={[styles.emptyChart, { height }]} onLayout={onLayout}>
           <Text style={styles.emptyText}>
             Complete a full 90s heart rate measuring to see your BPM.
@@ -285,30 +277,22 @@ export default function BPMChart({
           <Text style={styles.xLabel}>Time (s)</Text>
         </View>
       </View>
-      )}
-      {chart && !locked && bpmInsight ? (
-        <View style={styles.insightsSection}>
-          <View style={styles.insightsDivider} />
-          <Pressable style={styles.insightsHeader} onPress={toggleInsight}>
-            <Icon name="sparkle" size={16} color={colors.error[500]} />
-            <Text style={styles.insightsTitle}>Insights</Text>
-            <Text style={styles.insightsToggle}>{insightExpanded ? '−' : '+'}</Text>
-          </Pressable>
-          <Animated.View style={{ maxHeight: animMaxHeight, overflow: 'hidden' }}>
-            <Text style={styles.insightText}>{bpmInsight}</Text>
-          </Animated.View>
+        )}
         </View>
-      ) : null}
+      </LockedContentBlur>
+      <ChartInsightsSection
+        accentColor={colors.error[500]}
+        insight={chart ? bpmInsight : null}
+        locked={locked}
+        lockedPlaceholder="Your resting heart rate is tracking slightly below your weekly average, which typically signals good cardiovascular recovery. Today's peak of 112 bpm occurred during your afternoon session — well within your normal exertion range. Over the past 7 days, your recovery windows have been shortening, suggesting your body is adapting positively to recent activity."
+      />
       {locked ? (
         <>
-          <LockedScrim />
-          <View style={[styles.titleRow, styles.clearTitle]}>
-            <Icon name="heart-plain" size={28} color={colors.error[500]} />
-            <Text style={styles.title}>Heart rate</Text>
-          </View>
           {onPressLocked ? (
             <Pressable
               accessibilityRole="button"
+              accessibilityLabel="Unlock heart rate insights"
+              accessibilityHint="Opens the Pro upgrade screen"
               onPress={onPressLocked}
               style={StyleSheet.absoluteFill}
             />
@@ -336,17 +320,6 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
     fontFamily: fonts.semibold,
     fontSize: 16,
-  },
-  lockedTitleText: {
-    opacity: 0,
-  },
-  clearTitle: {
-    position: 'absolute',
-    top: spacing.md,
-    left: spacing.md,
-    right: spacing.md,
-    zIndex: 2,
-    marginLeft: -spacing.xs,
   },
   plotRow: {
     flexDirection: 'row',
@@ -410,37 +383,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 2,
-  },
-  insightsSection: {
-    marginTop: spacing.md,
-  },
-  insightsDivider: {
-    height: 1,
-    backgroundColor: colors.neutral[200],
-    marginBottom: spacing.md,
-  },
-  insightsHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    marginBottom: spacing.sm,
-  },
-  insightsTitle: {
-    ...typography.heading.heading2,
-    color: colors.error[500],
-    fontFamily: fonts.semibold,
-    flex: 1,
-  },
-  insightsToggle: {
-    color: colors.text.tertiary,
-    fontFamily: fonts.semibold,
-    fontSize: 26,
-    lineHeight: 26,
-  },
-  insightText: {
-    ...typography.body.small,
-    color: colors.text.secondary,
-    fontFamily: fonts.semibold,
-    lineHeight: 20,
   },
 });
