@@ -162,8 +162,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     borderRadius: 24,
     overflow: 'hidden',
-    borderWidth: 3,
-    borderColor: colors.primary.blue500,
     backgroundColor: colors.primary.blue600,
   },
   cardContent: {

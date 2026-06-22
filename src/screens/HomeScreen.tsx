@@ -1,5 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
-import { AppState, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  AppState,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
+import MaskedView from '@react-native-masked-view/masked-view';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { trackFeatureGateHit } from '../services/analytics/tracking';
 import { colors } from '../theme/colors';
@@ -7,11 +16,11 @@ import { spacing, padding, margin } from '../theme/spacing';
 import { typography, fonts } from '../theme/typography';
 import AmbientBackground from '../components/common/AmbientBackground';
 import AppTopBar from '../components/common/AppTopBar';
-import TopBarWeekCalendar from '../components/common/TopBarWeekCalendar';
 import SectionHeader from '../components/common/SectionHeader';
+import TopBarWeekCalendar from '../components/common/TopBarWeekCalendar';
 import BreathingLibrary from '../components/home/BreathingLibrary';
 import DailyPlanCard from '../components/home/DailyPlanCard';
-import MoodChipRow from '../components/home/MoodChipRow';
+import TodayRibbon from '../components/home/TodayRibbon';
 import { useFeatureAccess } from '../hooks/useFeatureAccess';
 import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
 import { formatLocalDate } from '../lib/calendar/weekCalendarDays';
@@ -25,6 +34,8 @@ import type {
   FeatureAccessResult,
   FeatureKeyValue,
 } from '../services/subscriptions/featureAccess';
+
+const HERO_FRAME_ASPECT_RATIO = 1.1;
 
 function getMsUntilNextLocalDay(): number {
   const now = new Date();
@@ -63,12 +74,20 @@ function StreakNudge({
   );
 }
 
+function getTimeOfDayGreeting(): string {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Good morning';
+  if (hour < 17) return 'Good afternoon';
+  if (hour < 21) return 'Good evening';
+  return 'Good night';
+}
+
 function Greeting({ displayName }: { displayName: string | null | undefined }) {
   const firstName = displayName?.trim().split(/\s+/)[0];
-  if (!firstName) return null;
+  const greeting = getTimeOfDayGreeting();
   return (
     <Text style={styles.greeting} numberOfLines={1} ellipsizeMode="tail">
-      Hi, {firstName}
+      {firstName ? `${greeting}, ${firstName}` : greeting}
     </Text>
   );
 }
@@ -149,6 +168,25 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         showsVerticalScrollIndicator={false}
       >
         <View style={[styles.topSection, { paddingTop: insets.top }]}>
+          <View style={styles.heroBackdrop} pointerEvents="none">
+            <MaskedView
+              style={StyleSheet.absoluteFill}
+              maskElement={(
+                <LinearGradient
+                  colors={['black', 'black', 'transparent']}
+                  locations={[0, 0.65, 1]}
+                  style={StyleSheet.absoluteFill}
+                />
+              )}
+            >
+              <Image
+                source={require('../../assets/wide-panoramic-view-mediterranean-sea-portofino-coastline.jpg')}
+                style={StyleSheet.absoluteFill}
+                contentFit="cover"
+                contentPosition="center"
+              />
+            </MaskedView>
+          </View>
           <AppTopBar
             leftSlot={(
               <TopBarWeekCalendar
@@ -161,42 +199,46 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             )}
           />
 
-          <View style={styles.planSection}>
+          <View style={styles.heroTextSection}>
             <Greeting displayName={displayName} />
             <StreakNudge
               streakDays={currentStreak}
               todayDone={todayBreathHold?.holdSeconds != null}
             />
-            <DailyPlanCard
-              todayHoldSeconds={todayBreathHold?.holdSeconds ?? null}
-              lastHoldSeconds={holdStats.lastHoldSeconds}
-              bestHoldSeconds={holdStats.bestHoldSeconds}
-              streakDays={currentStreak}
-              onPress={() => {
-                if (!dailyExerciseAccess.allowed && !dailyExerciseAccess.isLoading) {
-                  showProPaywall(
-                    FeatureKey.DailyExercise,
-                    PaywallPlacement.ExercisePremiumGate,
-                    dailyExerciseAccess,
-                    'daily_plan',
-                  );
-                  return;
-                }
-
-                navigation.navigate('DailyExercise');
-              }}
-            />
           </View>
+        </View>
+
+        <View style={styles.moodCheckInSection}>
+          <TodayRibbon
+            streakDays={currentStreak}
+            todayDone={todayBreathHold?.holdSeconds != null}
+          />
+        </View>
+
+        <View style={styles.dailyBreathholdSection}>
+          <SectionHeader title="Daily Breathhold" />
+          <DailyPlanCard
+            todayHoldSeconds={todayBreathHold?.holdSeconds ?? null}
+            lastHoldSeconds={holdStats.lastHoldSeconds}
+            bestHoldSeconds={holdStats.bestHoldSeconds}
+            streakDays={currentStreak}
+            onPress={() => {
+              if (!dailyExerciseAccess.allowed && !dailyExerciseAccess.isLoading) {
+                showProPaywall(
+                  FeatureKey.DailyExercise,
+                  PaywallPlacement.ExercisePremiumGate,
+                  dailyExerciseAccess,
+                  'daily_plan',
+                );
+                return;
+              }
+
+              navigation.navigate('DailyExercise');
+            }}
+          />
         </View>
 
         <BreathingLibrary />
-
-        <View style={styles.moodChipSection}>
-          <View style={styles.moodHeader}>
-            <SectionHeader title="How are you feeling?" />
-          </View>
-          <MoodChipRow />
-        </View>
       </ScrollView>
     </View>
   );
@@ -216,18 +258,30 @@ const styles = StyleSheet.create({
     gap: margin.sectionGap,
   },
   topSection: {
-    paddingTop: spacing.md,
+    position: 'relative',
+    paddingBottom: spacing.xl,
   },
-  planSection: {
+  heroBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    aspectRatio: HERO_FRAME_ASPECT_RATIO,
+    overflow: 'hidden',
+  },
+  heroTextSection: {
     paddingHorizontal: padding.screen.horizontal,
     marginTop: spacing.xl,
     gap: spacing.md,
   },
-  moodChipSection: {
-    gap: spacing.sm,
-  },
-  moodHeader: {
+  moodCheckInSection: {
     paddingHorizontal: padding.screen.horizontal,
+    marginTop: -spacing['2xl'],
+  },
+  dailyBreathholdSection: {
+    paddingHorizontal: padding.screen.horizontal,
+    marginTop: -spacing.sm,
+    gap: spacing.md,
   },
   greeting: {
     ...typography.title.title1,
@@ -238,7 +292,7 @@ const styles = StyleSheet.create({
   streakNudge: {
     ...typography.body.small,
     fontFamily: fonts.semibold,
-    color: colors.text.tertiary,
+    color: colors.neutral[600],
     marginTop: -spacing.xs,
     textAlign: 'center',
   },
