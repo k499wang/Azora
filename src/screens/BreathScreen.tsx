@@ -16,12 +16,14 @@ import InsightsFlashCard from '../components/home/InsightsFlashCard';
 import ProUpgradeButton from '../components/common/ProUpgradeButton';
 import ProfileBreathHoldTrendCard from '../components/profile/ProfileBreathHoldTrendCard';
 import BreathHoldStatsRow from '../components/exercise/BreathHoldStatsRow';
+import HeartRateStatsSection from '../components/heartRate/HeartRateStatsSection';
 import { buildInsights, SAMPLE_INSIGHTS } from '../lib/insights';
 import { estimateLungAge } from '../lib/lungAge';
 import { deriveHoldStats } from '../lib/holdStats';
 import { formatLocalDate } from '../lib/calendar/weekCalendarDays';
 import { useFeatureAccess } from '../hooks/useFeatureAccess';
 import { useHomeStatsQuery } from '../queries/tracking/useHomeStatsQuery';
+import { useBreathHoldBpmSeriesQuery } from '../queries/tracking/useBreathHoldBpmSeriesQuery';
 import { useProfileQuery } from '../queries/profile/useProfileQuery';
 import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
 import { useAuthStore } from '../stores/authStore';
@@ -47,6 +49,10 @@ export default function BreathScreen({ navigation }: BreathTabScreenProps) {
 
   const stats = homeStatsQuery.data;
   const todayBreathHold = stats?.todayBreathHold ?? null;
+  const breathHoldBpmSeriesQuery = useBreathHoldBpmSeriesQuery(
+    user?.id ?? null,
+    todayBreathHold?.sessionId ?? null,
+  );
   const todayHeartRate = stats?.todayHeartRate ?? null;
   const holdStats = deriveHoldStats(stats?.dailyActivity, todayLocalDate);
   const breathHoldTrend = profileSummaryQuery.data?.breathHoldTrend ?? [];
@@ -184,6 +190,19 @@ export default function BreathScreen({ navigation }: BreathTabScreenProps) {
             todayHoldSeconds={todayBreathHold?.holdSeconds ?? null}
           />
         </View>
+
+        <HeartRateStatsSection
+          hrDrop={lungEstimate?.hrDropBpm ?? null}
+          minBpm={todayBreathHold?.minBpm ?? null}
+          maxBpm={todayBreathHold?.maxBpm ?? null}
+          avgBpm={todayBreathHold?.avgBpm ?? null}
+          age={userAge}
+          bpmSamples={breathHoldBpmSeriesQuery.data ?? []}
+          locked={advancedStatsLocked}
+          onPressUpgrade={openTrendPaywall}
+          emptyChartMessage="Complete today's breath hold with heart rate enabled to see your BPM."
+          insightContext="breath-hold"
+        />
 
         <View style={styles.section}>
           <SectionHeader

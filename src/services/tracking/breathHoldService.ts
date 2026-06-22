@@ -4,6 +4,7 @@ import type { Database, Json } from '../supabase/database.types';
 import type {
   BreathHoldSummary,
   DailyActivitySummary,
+  HeartRatePoint,
 } from './types';
 
 export interface BreathHoldBpmSampleInput {
@@ -251,6 +252,30 @@ export async function getRecentBreathHoldSummaries(
   return ((data ?? []) as BreathHoldRow[])
     .map(mapBreathHoldSummary)
     .filter((s): s is BreathHoldSummary => s != null);
+}
+
+export async function getBreathHoldBpmSeriesForSession(
+  userId: string,
+  sessionId: string,
+): Promise<HeartRatePoint[]> {
+  const supabase = requireSupabaseClient();
+
+  const { data, error } = await supabase
+    .from('heart_rate_samples')
+    .select('offset_ms, bpm, signal_quality')
+    .eq('user_id', userId)
+    .eq('breath_hold_session_id', sessionId)
+    .order('offset_ms', { ascending: true });
+
+  if (error != null) {
+    throw error;
+  }
+
+  return (data ?? []).map((row) => ({
+    offsetMs: row.offset_ms,
+    bpm: row.bpm,
+    signalQuality: row.signal_quality,
+  }));
 }
 
 export async function getDailyActivityRange(

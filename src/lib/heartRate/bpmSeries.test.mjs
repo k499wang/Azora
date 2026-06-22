@@ -104,3 +104,27 @@ test('BPM insight preserves a saved negative HR drop as a climb', () => {
   assert.match(insight, /climbed 7 bpm/);
   assert.doesNotMatch(insight, /7 bpm drop/);
 });
+
+test('BPM insight explains a pronounced breath-hold diving reflex', () => {
+  const insight = buildBpmInsight(
+    [{ bpm: 82 }, { bpm: 63 }],
+    { avgBpm: 72, minBpm: 61, maxBpm: 84, hrDrop: 16 },
+    'breath-hold',
+  );
+
+  assert.match(insight, /pronounced diving-reflex response/);
+  assert.match(insight, /parasympathetic engagement/);
+  assert.match(insight, /61 to 84 bpm/);
+  assert.doesNotMatch(insight, /resting rate/);
+});
+
+test('BPM insight contextualizes minimal breath-hold slowing', () => {
+  const insight = buildBpmInsight(
+    [{ bpm: 75 }, { bpm: 74 }],
+    { avgBpm: 74, minBpm: 73, maxBpm: 76, hrDrop: 1 },
+    'breath-hold',
+  );
+
+  assert.match(insight, /changed very little/);
+  assert.match(insight, /look for a pattern across several sessions/);
+});
