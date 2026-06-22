@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, InteractionManager, StyleSheet, Text, View } from 'react-native';
 import {
   Canvas,
@@ -10,7 +10,11 @@ import {
   vec,
 } from '@shopify/react-native-skia';
 import {
+  cancelAnimation,
   Easing as RNREasing,
+  runOnJS,
+  type SharedValue,
+  useAnimatedReaction,
   useDerivedValue,
   useSharedValue,
   withTiming,
@@ -53,6 +57,32 @@ const ARC_DURATION_MS = 1100;
 const SETTLE_DURATION_MS = 400;
 const GAP_FADE_DURATION_MS = 500;
 
+// ─── Count-up number ────────────────────────────────────────────────────────
+// Isolated so the per-frame setState during the count-up only re-renders this
+// <Text>, never the parent's Skia Canvas (which would stutter the arc sweep).
+
+interface CountUpAgeProps {
+  progress: SharedValue<number>;
+  target: number;
+  active: boolean;
+}
+
+const CountUpAge = memo(function CountUpAge({ progress, target, active }: CountUpAgeProps) {
+  const [value, setValue] = useState(COUNT_START);
+
+  useAnimatedReaction(
+    () => active
+      ? COUNT_START + Math.round(progress.value * (target - COUNT_START))
+      : COUNT_START,
+    (next, previous) => {
+      if (next !== previous) runOnJS(setValue)(next);
+    },
+    [active, target],
+  );
+
+  return <Text style={styles.ageValue}>{value}</Text>;
+});
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function BiologicalAgeRing({
@@ -76,10 +106,14 @@ export default function BiologicalAgeRing({
   const resolvedGapLabel = gapLabelOverride !== undefined ? gapLabelOverride : gap.label;
   const resolvedGapTextColor = gapTextColorOverride ?? gap.textColor;
   const countUpTarget = displayValue ?? lungAge;
-  const [displayedAge, setDisplayedAge] = useState(COUNT_START);
   const [revealComplete, setRevealComplete] = useState(false);
   const [entranceComplete, setEntranceComplete] = useState(false);
   const didMountRef = useRef(false);
+  const onAnimationCompleteRef = useRef(onAnimationComplete);
+
+  useEffect(() => {
+    onAnimationCompleteRef.current = onAnimationComplete;
+  }, [onAnimationComplete]);
 
   // ── Entrance animation refs ────────────────────────────────────────────
 
@@ -89,10 +123,6 @@ export default function BiologicalAgeRing({
   // ── Ring settle animation ref (gentle scale pop on reveal) ───────────
 
   const settleScale = useRef(new Animated.Value(1)).current;
-
-  // ── Count-up animation ref ─────────────────────────────────────────────
-
-  const countUpAnim = useRef(new Animated.Value(0)).current;
 
   // ── Gap text animation refs ────────────────────────────────────────────
 
@@ -121,20 +151,24 @@ export default function BiologicalAgeRing({
     return p;
   }, [cx, cy, r]);
 
-  // ── Animated arc (reanimated for 60fps) ────────────────────────────────
+  // ── Animated arc (one static path, trimmed by a shared UI-thread clock) ─
 
-  const arcProgress = useSharedValue(0);
+  const revealProgress = useSharedValue(0);
 
-  const arcPath = useDerivedValue(() => {
+  const arcPath = useMemo(() => {
     const p = Skia.Path.Make();
-    const ratio = Math.max(0, Math.min(1, arcProgress.value));
-    if (ratio >= 0.999) {
-      p.addCircle(cx, cy, r);
-    } else if (ratio > 0) {
-      p.addArc(arcRect, -90, 360 * ratio);
-    }
+    p.addArc(arcRect, -90, 360);
     return p;
-  });
+  }, [arcRect]);
+
+  const arcEnd = useDerivedValue(
+    () => revealProgress.value * Math.max(0, Math.min(1, resolvedScore)),
+  );
+
+  const handleRevealComplete = useCallback(() => {
+    setRevealComplete(true);
+    onAnimationCompleteRef.current?.();
+  }, []);
 
   // ── Entrance animation (runs once, after the screen transition settles) ──
   // Gated behind runAfterInteractions so the native screen slide-in completes
@@ -169,47 +203,28 @@ export default function BiologicalAgeRing({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── Arc sweep (starts after entrance completes) ────────────────────────
+  // ── Arc sweep and count-up (start together after entrance completes) ───
 
   useEffect(() => {
     if (!entranceComplete) return;
-    arcProgress.value = withTiming(resolvedScore, {
+
+    revealProgress.value = 0;
+    setRevealComplete(false);
+    revealProgress.value = withTiming(1, {
       duration: ARC_DURATION_MS,
       easing: RNREasing.inOut(RNREasing.cubic),
-    });
-  }, [entranceComplete, resolvedScore, arcProgress]);
-
-  // ── Count-up animation (starts after entrance completes) ───────────────
-
-  useEffect(() => {
-    if (!entranceComplete) return;
-
-    countUpAnim.setValue(0);
-    setDisplayedAge(COUNT_START);
-    setRevealComplete(false);
-
-    const listenerId = countUpAnim.addListener(({ value }) => {
-      const current = COUNT_START + Math.round(value * (countUpTarget - COUNT_START));
-      setDisplayedAge(current);
+    }, (finished) => {
+      if (finished) runOnJS(handleRevealComplete)();
     });
 
-    Animated.timing(countUpAnim, {
-      toValue: 1,
-      duration: ARC_DURATION_MS,
-      easing: Easing.inOut(Easing.cubic),
-      useNativeDriver: false,
-    }).start(({ finished }) => {
-      if (!finished) return;
-      setDisplayedAge(countUpTarget);
-      setRevealComplete(true);
-      onAnimationComplete?.();
-    });
-
-    return () => {
-      countUpAnim.removeListener(listenerId);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [entranceComplete, countUpTarget]);
+    return () => cancelAnimation(revealProgress);
+  }, [
+    countUpTarget,
+    entranceComplete,
+    handleRevealComplete,
+    resolvedScore,
+    revealProgress,
+  ]);
 
   // ── Ring settle animation (triggers on reveal complete) ───────────────
 
@@ -269,6 +284,9 @@ export default function BiologicalAgeRing({
     >
       <Animated.View style={{ transform: [{ scale: settleScale }] }}>
         <View style={[styles.ringWrap, { width: size, height: size, borderRadius: size / 2 }]}>
+          {/* Static layers — track, recesses, inner disc + gradients. These never
+              animate, so they live in their own Canvas that paints once instead of
+              being re-rasterized on every arc frame. */}
           <Canvas style={StyleSheet.absoluteFill}>
             {/* Outer recess — soft drop shadow around the whole channel */}
             <Path
@@ -294,22 +312,6 @@ export default function BiologicalAgeRing({
               strokeCap="round"
               color="rgba(15,23,42,0.05)"
             />
-            {/* Colored arc — slightly wider to prevent AA bleed from track */}
-            <Path
-              path={arcPath}
-              style="stroke"
-              strokeWidth={STROKE + 0.5}
-              strokeCap="round"
-              color={arcColor}
-            />
-            {/* Glossy highlight skimming the top of the arc */}
-            <Path
-              path={arcPath}
-              style="stroke"
-              strokeWidth={STROKE * 0.32}
-              strokeCap="round"
-              color="rgba(255,255,255,0.28)"
-            />
             {/* Nested inner disc — layered drop shadow then a lit dome */}
             <Circle cx={cx} cy={cy + 5} r={innerR + 3} color="rgba(15,23,42,0.07)" />
             <Circle cx={cx} cy={cy + 2.5} r={innerR + 1.5} color="rgba(15,23,42,0.04)" />
@@ -324,10 +326,38 @@ export default function BiologicalAgeRing({
             </Circle>
           </Canvas>
 
+          {/* Animated layer — only the colored arc + gloss repaint each frame. The
+              arc sits at radius r (outside the inner disc), so stacking it above the
+              static Canvas is visually identical to the original single-layer order. */}
+          <Canvas style={StyleSheet.absoluteFill}>
+            {/* Colored arc — slightly wider to prevent AA bleed from track */}
+            <Path
+              path={arcPath}
+              end={arcEnd}
+              style="stroke"
+              strokeWidth={STROKE + 0.5}
+              strokeCap="round"
+              color={arcColor}
+            />
+            {/* Glossy highlight skimming the top of the arc */}
+            <Path
+              path={arcPath}
+              end={arcEnd}
+              style="stroke"
+              strokeWidth={STROKE * 0.32}
+              strokeCap="round"
+              color="rgba(255,255,255,0.28)"
+            />
+          </Canvas>
+
           {/* Center content */}
           <View style={styles.ringCenter} pointerEvents="none">
             <Text style={styles.caption}>{caption}</Text>
-            <Text style={styles.ageValue}>{displayedAge}</Text>
+            <CountUpAge
+              progress={revealProgress}
+              target={countUpTarget}
+              active={entranceComplete}
+            />
           </View>
         </View>
       </Animated.View>
