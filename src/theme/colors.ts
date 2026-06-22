@@ -145,4 +145,11 @@ export const colors = {
     angry: '#EF4444',
     lowEnergy: '#F97316',
   },
+
+  // Loading placeholder tones. `base` is the resting block fill, `highlight`
+  // the lighter sweep used by the shimmer gradient.
+  skeleton: {
+    base: '#E2E8F0',
+    highlight: '#FFFFFF',
+  },
 } as const;

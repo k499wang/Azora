@@ -16,7 +16,6 @@ import ProfileStatsGrid, {
   type ProfileStatHero,
 } from '../components/profile/ProfileStatsGrid';
 import ProfileCompletionCalendarCard from '../components/profile/ProfileCompletionCalendarCard';
-import ProfileBreathHoldTrendCard from '../components/profile/ProfileBreathHoldTrendCard';
 import { useAuthStore } from '../stores/authStore';
 import type { ProfileScreenProps } from '../app/navigation';
 import { trackProfileAction } from '../services/analytics/tracking';
@@ -233,13 +232,6 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
           <SectionHeader title="Consistency" />
           <View style={styles.sectionBody}>
             <ProfileCompletionCalendarCard completedDays={profileSummary?.completedDays ?? []} />
-          </View>
-        </View>
-
-        <View style={styles.section}>
-          <SectionHeader title="Breath Statistics" />
-          <View style={styles.sectionBody}>
-            <ProfileBreathHoldTrendCard data={profileSummary?.breathHoldTrend ?? []} />
           </View>
         </View>
 
