@@ -136,17 +136,15 @@ export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
             <Text style={styles.heroEyebrow}>{measureEyebrow}</Text>
           ) : null}
           <MeasureHeroCard onPress={openMeasure} />
-          {heartRateStatsQuery.isLoading ? (
-            <View style={styles.lastMeasuredSlot}>
+          <View style={styles.lastMeasuredSlot}>
+            {heartRateStatsQuery.isLoading ? (
               <Skeleton width={120} height={10} radius={5} />
-            </View>
-          ) : lastMeasuredDate ? (
-            <View style={styles.lastMeasuredSlot}>
+            ) : lastMeasuredDate ? (
               <Text style={styles.lastMeasuredText}>
                 Last measured {formatLocalDate(lastMeasuredDate)}
               </Text>
-            </View>
-          ) : null}
+            ) : null}
+          </View>
         </View>
 
         {partialStatsError || heartRateStatsQuery.isError ? (
