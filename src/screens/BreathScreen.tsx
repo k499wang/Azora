@@ -299,7 +299,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   statsSection: {
-    marginTop: spacing.md,
+    marginTop: -spacing.sm,
   },
   heroSection: {
     paddingHorizontal: padding.screen.horizontal,

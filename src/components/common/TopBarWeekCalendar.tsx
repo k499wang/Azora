@@ -97,16 +97,16 @@ const styles = StyleSheet.create({
   dayLabel: {
     fontSize: 13,
     lineHeight: 18,
-    color: colors.text.tertiary,
+    color: colors.neutral[600],
     fontFamily: fonts.medium,
   },
   dayLabelCompleted: {
-    color: colors.orange[500],
+    color: colors.neutral[600],
     fontFamily: fonts.semibold,
     fontWeight: '500',
   },
   dayLabelSelected: {
-    color: colors.text.primary,
+    color: colors.neutral[600],
     fontFamily: fonts.semibold,
     fontWeight: '500',
   },
@@ -117,6 +117,6 @@ const styles = StyleSheet.create({
   },
   underlineSelected: {
     borderRadius: UNDERLINE_HEIGHT / 2,
-    backgroundColor: colors.text.primary,
+    backgroundColor: colors.neutral[600],
   },
 });

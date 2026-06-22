@@ -81,7 +81,6 @@ function TechniqueCard({
         onPress={handlePress}
         style={({ pressed }) => [
           styles.card,
-          recommended && styles.recommendedCard,
           pressed && styles.cardPressed,
         ]}
       >
@@ -188,6 +187,7 @@ const styles = StyleSheet.create({
     ...card.base,
     width: CARD_WIDTH,
     height: CARD_HEIGHT,
+    borderWidth: 0,
     overflow: 'hidden',
   },
   cardImage: {
@@ -202,10 +202,6 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: spacing.lg,
     justifyContent: 'space-between',
-  },
-  recommendedCard: {
-    borderColor: colors.primary.blue500,
-    borderWidth: 3,
   },
   cardTop: {
     minHeight: 30,
