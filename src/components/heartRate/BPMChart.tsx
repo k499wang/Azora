@@ -9,6 +9,7 @@ import { buildGraphBpmValuePointsFromIbis } from '../../lib/heartRate/bpmSmoothi
 import { buildBpmSeries, type BpmTimePoint } from '../../lib/heartRate/bpmSeries';
 import {
   buildBpmInsight,
+  type BpmInsightContext,
   type BpmInsightSummary,
 } from '../../lib/heartRate/bpmInsight';
 import CardSurface from '../common/CardSurface';
@@ -31,6 +32,8 @@ interface BPMChartProps {
   locked?: boolean;
   onPressLocked?: () => void;
   insightSummary?: BpmInsightSummary;
+  emptyMessage?: string;
+  insightContext?: BpmInsightContext;
 }
 
 const PADDING = { top: 14, right: 8, bottom: 8, left: 8 };
@@ -50,6 +53,8 @@ export default function BPMChart({
   locked = false,
   onPressLocked,
   insightSummary,
+  emptyMessage = 'Complete a full 90s heart rate measuring to see your BPM.',
+  insightContext = 'resting',
 }: BPMChartProps) {
   const [width, setWidth] = useState(0);
   const [infoVisible, setInfoVisible] = useState(false);
@@ -154,8 +159,8 @@ export default function BPMChart({
   }, [yBounds]);
 
   const bpmInsight = useMemo(
-    () => buildBpmInsight(series, insightSummary),
-    [insightSummary, series],
+    () => buildBpmInsight(series, insightSummary, insightContext),
+    [insightContext, insightSummary, series],
   );
   return (
     <CardSurface locked={locked} style={styles.card}>
@@ -193,7 +198,7 @@ export default function BPMChart({
         {!chart ? (
         <View style={[styles.emptyChart, { height }]} onLayout={onLayout}>
           <Text style={styles.emptyText}>
-            Complete a full 90s heart rate measuring to see your BPM.
+            {emptyMessage}
           </Text>
         </View>
       ) : (
@@ -294,7 +299,11 @@ export default function BPMChart({
         accentColor={colors.error[500]}
         insight={chart ? bpmInsight : null}
         locked={locked}
-        lockedPlaceholder="Your resting heart rate is tracking slightly below your weekly average, which typically signals good cardiovascular recovery. Today's peak of 112 bpm occurred during your afternoon session — well within your normal exertion range. Over the past 7 days, your recovery windows have been shortening, suggesting your body is adapting positively to recent activity."
+        lockedPlaceholder={
+          insightContext === 'breath-hold'
+            ? 'Your heart rate slowed during the hold as your diving reflex engaged. Tracking this response over repeated holds can show how consistently your nervous system shifts toward oxygen conservation.'
+            : "Your resting heart rate is tracking slightly below your weekly average, which typically signals good cardiovascular recovery. Today's peak of 112 bpm occurred during your afternoon session — well within your normal exertion range. Over the past 7 days, your recovery windows have been shortening, suggesting your body is adapting positively to recent activity."
+        }
       />
       {locked ? (
         <>

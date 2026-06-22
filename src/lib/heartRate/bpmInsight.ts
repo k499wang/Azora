@@ -9,6 +9,8 @@ export interface BpmInsightSummary {
   hrDrop: number | null;
 }
 
+export type BpmInsightContext = 'resting' | 'breath-hold';
+
 function isFiniteNumber(value: number | null): value is number {
   return value != null && Number.isFinite(value);
 }
@@ -32,6 +34,7 @@ function summarizePlottedSeries(series: BpmInsightPoint[]): BpmInsightSummary | 
 export function buildBpmInsight(
   series: BpmInsightPoint[],
   savedSummary?: BpmInsightSummary,
+  context: BpmInsightContext = 'resting',
 ): string | null {
   const summary = savedSummary ?? summarizePlottedSeries(series);
   if (
@@ -48,6 +51,24 @@ export function buildBpmInsight(
   const max = Math.round(summary.maxBpm);
   const range = max - min;
   const drop = isFiniteNumber(summary.hrDrop) ? Math.round(summary.hrDrop) : null;
+
+  if (context === 'breath-hold') {
+    const rangeDesc = `Your heart rate ranged from ${min} to ${max} bpm, averaging ${avg} bpm during the hold`;
+
+    if (drop == null) {
+      return `${rangeDesc}. A consistent downward pattern across future holds can help show how reliably your diving reflex engages.`;
+    }
+    if (drop >= 15) {
+      return `Your heart rate slowed by ${drop} bpm during the hold, a pronounced diving-reflex response. This suggests strong parasympathetic engagement as your body worked to conserve oxygen. ${rangeDesc}.`;
+    }
+    if (drop >= 8) {
+      return `Your heart rate slowed by ${drop} bpm during the hold, showing a clear diving-reflex response and parasympathetic activation. ${rangeDesc}. Compare holds under similar conditions to track how consistently this response appears.`;
+    }
+    if (drop >= 3) {
+      return `Your heart rate slowed by ${drop} bpm during the hold, a mild diving-reflex response. ${rangeDesc}. A calm start and relaxed posture may help the slowing become more pronounced over time.`;
+    }
+    return `Your heart rate changed very little during this hold. ${rangeDesc}. The diving reflex varies with hold length, comfort, movement, and measurement quality, so look for a pattern across several sessions rather than judging one result.`;
+  }
 
   const zoneDesc =
     avg <= 55

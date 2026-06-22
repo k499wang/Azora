@@ -7,6 +7,7 @@ import BPMChart from './BPMChart';
 import RestingHeartRateBar from './RestingHeartRateBar';
 import ThermometerStatCard from './ThermometerStatCard';
 import type { BpmTimePoint } from '../../lib/heartRate/bpmSeries';
+import type { BpmInsightContext } from '../../lib/heartRate/bpmInsight';
 
 const LOCKED_PLACEHOLDERS = {
   hrDrop: 18,
@@ -22,6 +23,8 @@ interface HeartRateSectionProps {
   bpmSamples?: BpmTimePoint[];
   locked?: boolean;
   onPressUpgrade?: () => void;
+  emptyChartMessage?: string;
+  insightContext?: BpmInsightContext;
 }
 
 export default function HeartRateStatsSection({
@@ -33,14 +36,17 @@ export default function HeartRateStatsSection({
   bpmSamples = [],
   locked = false,
   onPressUpgrade,
+  emptyChartMessage,
+  insightContext,
 }: HeartRateSectionProps) {
   const heartRateIncreased = hrDrop != null && hrDrop < 0;
+  const isBreathHold = insightContext === 'breath-hold';
 
   return (
     <View style={styles.section}>
       <View style={styles.headerWrap}>
         <SectionHeader
-          title="Heart rate"
+          title={isBreathHold ? 'Hold Statistics' : 'Heart rate'}
           right={locked ? <ProUpgradeButton onPress={onPressUpgrade} /> : null}
         />
       </View>
@@ -90,6 +96,8 @@ export default function HeartRateStatsSection({
           color={colors.primary.blue500}
           locked={locked}
           onPressLocked={onPressUpgrade}
+          emptyMessage={emptyChartMessage}
+          insightContext={insightContext}
         />
       </View>
     </View>
