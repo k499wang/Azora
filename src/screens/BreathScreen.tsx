@@ -15,6 +15,7 @@ import BiologicalAgeRing from '../components/exercise/BiologicalAgeRing';
 import InsightsFlashCard from '../components/home/InsightsFlashCard';
 import ProUpgradeButton from '../components/common/ProUpgradeButton';
 import ProfileBreathHoldTrendCard from '../components/profile/ProfileBreathHoldTrendCard';
+import BreathHoldStatsRow from '../components/exercise/BreathHoldStatsRow';
 import { buildInsights, SAMPLE_INSIGHTS } from '../lib/insights';
 import { estimateLungAge } from '../lib/lungAge';
 import { deriveHoldStats } from '../lib/holdStats';
@@ -145,12 +146,13 @@ export default function BreathScreen({ navigation }: BreathTabScreenProps) {
               gapLabel={null}
             />
           ) : (
-            <CardSurface style={styles.emptyCard}>
-              <Text style={styles.emptyTitle}>Lung age</Text>
-              <Text style={styles.emptyText}>
-                Complete a breath hold today to see your estimated lung age.
-              </Text>
-            </CardSurface>
+            <BiologicalAgeRing
+              lungAge={0}
+              userAge={userAge}
+              size={240}
+              placeholder
+              gapLabel={null}
+            />
           )}
         </View>
 
@@ -165,10 +167,22 @@ export default function BreathScreen({ navigation }: BreathTabScreenProps) {
               <View style={styles.measureIconWrap}>
                 <Icon name="breath-hold" size={24} color={colors.primary.blue600} />
               </View>
-              <Text style={styles.measureTitle}>Ready to beat your record?</Text>
+              <Text style={styles.measureTitle}>
+                {lungEstimate
+                  ? 'Ready to beat your record?'
+                  : 'Tap to start your breath hold today'}
+              </Text>
               <Icon name="chevron-right" size={22} color={colors.text.tertiary} />
             </CardSurface>
           </Pressable>
+        </View>
+
+        <View style={[styles.section, styles.statsSection]}>
+          <BreathHoldStatsRow
+            bestHoldSeconds={holdStats.bestHoldSeconds}
+            avgHoldSeconds={holdStats.avgHoldSeconds}
+            todayHoldSeconds={todayBreathHold?.holdSeconds ?? null}
+          />
         </View>
 
         <View style={styles.section}>
@@ -265,31 +279,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: padding.screen.horizontal,
     gap: spacing.md,
   },
+  statsSection: {
+    marginTop: spacing.md,
+  },
   heroSection: {
     paddingHorizontal: padding.screen.horizontal,
     alignItems: 'center',
-  },
-  emptyCard: {
-    width: '100%',
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingVertical: spacing['2xl'],
-    paddingHorizontal: spacing.lg,
-  },
-  emptyTitle: {
-    ...typography.label.small,
-    fontFamily: fonts.semibold,
-    fontSize: 11,
-    color: colors.text.tertiary,
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
-  },
-  emptyText: {
-    ...typography.body.small,
-    fontFamily: fonts.semibold,
-    color: colors.text.secondary,
-    textAlign: 'center',
-    lineHeight: 20,
   },
   measureCard: {
     flexDirection: 'row',

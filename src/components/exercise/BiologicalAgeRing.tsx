@@ -37,12 +37,14 @@ interface BiologicalAgeRingProps {
   displayValue?: number;
   /** Override the arc fill ratio (0–1). Defaults to ageScore(lungAge). */
   score?: number;
-  /** Override the sweep gradient colors. Defaults to gap.ringColors. */
+  /** Override the ring color. Defaults to the brand blue. */
   ringColors?: string[];
   /** Override the gap label text. Pass null to hide the gap row entirely. */
   gapLabel?: string | null;
   /** Override the gap label text color. */
   gapTextColor?: string;
+  /** Render an empty/placeholder ring: no arc fill, a "–" in place of the age. */
+  placeholder?: boolean;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -96,13 +98,13 @@ export default function BiologicalAgeRing({
   ringColors: ringColorsOverride,
   gapLabel: gapLabelOverride,
   gapTextColor: gapTextColorOverride,
+  placeholder = false,
 }: BiologicalAgeRingProps) {
   const gap = useMemo(() => computeAgeGap(lungAge, userAge), [lungAge, userAge]);
   const targetScore = useMemo(() => ageScore(lungAge), [lungAge]);
-  const resolvedScore = scoreOverride ?? targetScore;
-  const baseRingColors = ringColorsOverride ?? gap.ringColors;
-  // Single uniform color across the whole ring (the primary tone).
-  const arcColor = baseRingColors[0];
+  const resolvedScore = placeholder ? 0 : scoreOverride ?? targetScore;
+  // Keep the default ring visually stable regardless of the computed age gap.
+  const arcColor = ringColorsOverride?.[0] ?? colors.primary.blue500;
   const resolvedGapLabel = gapLabelOverride !== undefined ? gapLabelOverride : gap.label;
   const resolvedGapTextColor = gapTextColorOverride ?? gap.textColor;
   const countUpTarget = displayValue ?? lungAge;
@@ -353,11 +355,15 @@ export default function BiologicalAgeRing({
           {/* Center content */}
           <View style={styles.ringCenter} pointerEvents="none">
             <Text style={styles.caption}>{caption}</Text>
-            <CountUpAge
-              progress={revealProgress}
-              target={countUpTarget}
-              active={entranceComplete}
-            />
+            {placeholder ? (
+              <Text style={styles.ageValue}>–</Text>
+            ) : (
+              <CountUpAge
+                progress={revealProgress}
+                target={countUpTarget}
+                active={entranceComplete}
+              />
+            )}
           </View>
         </View>
       </Animated.View>
@@ -373,12 +379,12 @@ export default function BiologicalAgeRing({
             },
           ]}
         >
-          {resolvedGapLabel !== '' && gap.direction === 'younger' && (
+          {!placeholder && resolvedGapLabel !== '' && gap.direction === 'younger' && (
             <View style={[styles.gapBadge, { backgroundColor: colors.success[100] }]}>
               <View style={[styles.gapDot, { backgroundColor: colors.success[500] }]} />
             </View>
           )}
-          {resolvedGapLabel !== '' && gap.direction === 'older' && (
+          {!placeholder && resolvedGapLabel !== '' && gap.direction === 'older' && (
             <View style={[styles.gapBadge, { backgroundColor: colors.orange[100] }]}>
               <View style={[styles.gapDot, { backgroundColor: colors.orange[500] }]} />
             </View>
