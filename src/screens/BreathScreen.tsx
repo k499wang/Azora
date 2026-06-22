@@ -144,10 +144,15 @@ export default function BreathScreen({ navigation }: BreathTabScreenProps) {
             onPress={measureHold}
             accessibilityRole="button"
             accessibilityLabel="Measure breath hold"
-            style={({ pressed }) => [styles.measureButton, pressed && styles.measurePressed]}
+            style={({ pressed }) => pressed && styles.measurePressed}
           >
-            <Icon name="breath-hold" size={24} color={colors.text.inverse} />
-            <Text style={styles.measureText}>Measure breath hold</Text>
+            <CardSurface style={styles.measureCard}>
+              <View style={styles.measureIconWrap}>
+                <Icon name="breath-hold" size={24} color={colors.primary.blue600} />
+              </View>
+              <Text style={styles.measureTitle}>Ready to beat your record?</Text>
+              <Icon name="chevron-right" size={22} color={colors.text.tertiary} />
+            </CardSurface>
           </Pressable>
         </View>
 
@@ -265,28 +270,31 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 20,
   },
-  measureButton: {
+  measureCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
     gap: spacing.sm,
-    backgroundColor: colors.primary.blue600,
-    paddingVertical: spacing.lg,
-    borderRadius: 999,
-    shadowColor: colors.primary.blue700,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.22,
-    shadowRadius: 18,
-    elevation: 4,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderWidth: 1.5,
+    borderColor: colors.primary.blue500,
+  },
+  measureIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primary.blue100,
+  },
+  measureTitle: {
+    ...typography.body.medium,
+    fontFamily: fonts.semibold,
+    color: colors.text.primary,
+    flex: 1,
   },
   measurePressed: {
-    opacity: 0.9,
-    transform: [{ scale: 0.98 }],
-  },
-  measureText: {
-    ...typography.title.title3,
-    fontFamily: fonts.semibold,
-    color: colors.text.inverse,
+    opacity: 0.85,
   },
   insightsHeader: {
     paddingHorizontal: padding.screen.horizontal,

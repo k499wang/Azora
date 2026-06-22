@@ -9,6 +9,7 @@ import HeartRateStatsSection from '../components/heartRate/HeartRateStatsSection
 import HRVStatsSection from '../components/heartRate/HRVStatsSection';
 import RecoveryStatsSection from '../components/heartRate/RecoveryStatsSection';
 import { RecentlyLoggedSection } from '../components/heartRate/RecentlyLoggedSection';
+import Skeleton from '../components/common/Skeleton';
 import { colors } from '../theme/colors';
 import { spacing, padding, margin } from '../theme/spacing';
 import { useAuthStore } from '../stores/authStore';
@@ -119,10 +120,16 @@ export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
             <Text style={styles.heroEyebrow}>{measureEyebrow}</Text>
           ) : null}
           <MeasureHeroCard onPress={openMeasure} />
-          {lastMeasuredDate ? (
-            <Text style={styles.lastMeasuredText}>
-              Last measured {formatLocalDate(lastMeasuredDate)}
-            </Text>
+          {heartRateStatsQuery.isLoading ? (
+            <View style={styles.lastMeasuredSlot}>
+              <Skeleton width={120} height={10} radius={5} />
+            </View>
+          ) : lastMeasuredDate ? (
+            <View style={styles.lastMeasuredSlot}>
+              <Text style={styles.lastMeasuredText}>
+                Last measured {formatLocalDate(lastMeasuredDate)}
+              </Text>
+            </View>
           ) : null}
         </View>
 
@@ -224,12 +231,17 @@ const styles = StyleSheet.create({
     marginHorizontal: padding.screen.horizontal,
     marginBottom: spacing.xs,
   },
+  lastMeasuredSlot: {
+    marginTop: spacing.sm,
+    height: typography.caption.caption2.lineHeight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   lastMeasuredText: {
     ...typography.caption.caption2,
     fontFamily: fonts.semibold,
     color: colors.text.tertiary,
     textAlign: 'center',
-    marginTop: spacing.sm,
   },
   partialErrorText: {
     color: colors.text.tertiary,
