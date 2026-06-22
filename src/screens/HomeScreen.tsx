@@ -284,7 +284,9 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   greeting: {
-    ...typography.title.title1,
+    ...typography.display.display3,
+    fontSize: 30,
+    lineHeight: 38,
     fontFamily: fonts.semibold,
     color: colors.text.primary,
     textAlign: 'center',
