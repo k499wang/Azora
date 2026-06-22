@@ -1,4 +1,5 @@
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Canvas, Path, Skia } from '@shopify/react-native-skia';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
@@ -6,6 +7,7 @@ import { typography, fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import Icon, { type IconName } from '../common/icons/Icon';
 import CardSurface from '../common/CardSurface';
+import FeatureInfoDialog from '../common/FeatureInfoDialog';
 
 interface BigRingStatCardProps {
   label: string;
@@ -32,6 +34,7 @@ export default function BigRingStatCard({
   icon,
   info,
 }: BigRingStatCardProps) {
+  const [infoVisible, setInfoVisible] = useState(false);
   const cx = RING_SIZE / 2;
   const cy = RING_SIZE / 2;
   const r = RING_SIZE / 2 - RING_INSET - STROKE / 2;
@@ -47,17 +50,25 @@ export default function BigRingStatCard({
   return (
     <CardSurface containerStyle={styles.cardContainer} style={styles.card}>
       {info ? (
-        <Pressable
-          hitSlop={12}
-          onPress={() => Alert.alert(info.title, info.message)}
-          style={styles.infoButton}
-        >
-          <MaterialCommunityIcons
-            name="information-outline"
-            size={16}
-            color={colors.text.tertiary}
+        <>
+          <Pressable
+            hitSlop={12}
+            onPress={() => setInfoVisible(true)}
+            style={styles.infoButton}
+          >
+            <MaterialCommunityIcons
+              name="information-outline"
+              size={16}
+              color={colors.text.tertiary}
+            />
+          </Pressable>
+          <FeatureInfoDialog
+            visible={infoVisible}
+            onClose={() => setInfoVisible(false)}
+            title={info.title}
+            intro={info.message}
           />
-        </Pressable>
+        </>
       ) : null}
       <View style={styles.ringWrap}>
         <View style={styles.ringSurface}>

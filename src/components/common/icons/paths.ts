@@ -114,6 +114,12 @@ export const ICON_PATHS = {
     <path d="M9.5 6l6 6-6 6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none" />
   `,
 
+  info: `
+    <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8" fill="none" />
+    <path d="M12 11v5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none" />
+    <circle cx="12" cy="7.8" r="1.1" fill="currentColor" />
+  `,
+
   // --- Today's insights (stat rings) ---
   'heart-bpm': `
     <path d="M12 20.2c-.3 0-.6-.1-.8-.3C6.7 16.5 4 13.9 4 10.4 4 7.9 5.9 6 8.3 6c1.5 0 2.8.7 3.7 1.9C12.9 6.7 14.2 6 15.7 6 18.1 6 20 7.9 20 10.4c0 3.5-2.7 6.1-7.2 9.5-.2.2-.5.3-.8.3Z" fill="currentColor" opacity="0.18"/> <path d="M12 18.8c-4.1-3.1-6.6-5.4-6.6-8.4 0-1.9 1.4-3.3 3.1-3.3 1.3 0 2.4.7 3.1 1.9.2.3.5.5.8.5s.6-.2.8-.5c.7-1.2 1.8-1.9 3.1-1.9 1.7 0 3.1 1.4 3.1 3.3 0 3-2.5 5.3-6.6 8.4Z" fill="currentColor" opacity="0.25"/> <path d="M6.2 12h3.1l1.1-2.2 1.7 4.5 1.5-2.3h4.2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/> <path d="M12 18.8c-4.1-3.1-6.6-5.4-6.6-8.4 0-1.9 1.4-3.3 3.1-3.3 1.3 0 2.4.7 3.1 1.9.2.3.5.5.8.5s.6-.2.8-.5c.7-1.2 1.8-1.9 3.1-1.9 1.7 0 3.1 1.4 3.1 3.3 0 3-2.5 5.3-6.6 8.4Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>

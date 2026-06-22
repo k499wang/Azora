@@ -1,14 +1,15 @@
-import { Alert, Pressable, StyleSheet, View } from 'react-native';
+import { useState } from 'react';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
 import { spacing, padding } from '../../theme/spacing';
-import { typography, fonts } from '../../theme/typography';
 import {
   getStressZone,
   type StressHistoryEntry,
 } from '../../lib/heartRate/stress';
 import SectionHeader from '../common/SectionHeader';
 import ProUpgradeButton from '../common/ProUpgradeButton';
+import FeatureInfoDialog from '../common/FeatureInfoDialog';
 import StressGauge from '../heartRate/StressGauge';
 import { DEFAULT_CARD_SURFACE } from '../common/cardSurfaceConfig';
 
@@ -34,6 +35,7 @@ export default function RecoveryStatsSection({
   lastMeasuredLabel,
 }: RecoverySectionProps) {
   const stressValue = stress ?? (locked ? 38 : null);
+  const [infoVisible, setInfoVisible] = useState(false);
 
   return (
     <View style={styles.section}>
@@ -49,7 +51,7 @@ export default function RecoveryStatsSection({
           {!locked ? (
             <Pressable
               hitSlop={12}
-              onPress={() => Alert.alert(STRESS_INFO.title, STRESS_INFO.message)}
+              onPress={() => setInfoVisible(true)}
               style={styles.stressInfoButton}
             >
               <MaterialCommunityIcons
@@ -70,6 +72,13 @@ export default function RecoveryStatsSection({
           />
         </View>
       </View>
+
+      <FeatureInfoDialog
+        visible={infoVisible}
+        onClose={() => setInfoVisible(false)}
+        title={STRESS_INFO.title}
+        intro={STRESS_INFO.message}
+      />
     </View>
   );
 }
