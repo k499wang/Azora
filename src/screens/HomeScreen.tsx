@@ -233,11 +233,13 @@ const styles = StyleSheet.create({
     ...typography.title.title1,
     fontFamily: fonts.semibold,
     color: colors.text.primary,
+    textAlign: 'center',
   },
   streakNudge: {
     ...typography.body.small,
     fontFamily: fonts.semibold,
     color: colors.text.tertiary,
     marginTop: -spacing.xs,
+    textAlign: 'center',
   },
 });
