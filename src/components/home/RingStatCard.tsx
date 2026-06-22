@@ -1,4 +1,5 @@
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Canvas, Circle, Path, Skia } from '@shopify/react-native-skia';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
@@ -6,6 +7,7 @@ import { typography, fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import Icon, { type IconName } from '../common/icons/Icon';
 import CardSurface from '../common/CardSurface';
+import FeatureInfoDialog from '../common/FeatureInfoDialog';
 
 interface RingStatCardProps {
   label: string;
@@ -47,6 +49,7 @@ export default function RingStatCard({
   trend,
   info,
 }: RingStatCardProps) {
+  const [infoVisible, setInfoVisible] = useState(false);
   const trendColor = trend?.direction === 'up' ? colors.success[500] : colors.error[500];
   const trendIcon = trend?.direction === 'up' ? 'arrow-top-right' : 'arrow-bottom-right';
   const clamped = Math.max(0, Math.min(1, progress));
@@ -59,17 +62,25 @@ export default function RingStatCard({
   return (
     <CardSurface containerStyle={styles.cardContainer} style={styles.card}>
       {info ? (
-        <Pressable
-          hitSlop={10}
-          onPress={() => Alert.alert(info.title, info.message)}
-          style={styles.infoButton}
-        >
-          <MaterialCommunityIcons
-            name="information-outline"
-            size={14}
-            color={colors.text.tertiary}
+        <>
+          <Pressable
+            hitSlop={10}
+            onPress={() => setInfoVisible(true)}
+            style={styles.infoButton}
+          >
+            <MaterialCommunityIcons
+              name="information-outline"
+              size={14}
+              color={colors.text.tertiary}
+            />
+          </Pressable>
+          <FeatureInfoDialog
+            visible={infoVisible}
+            onClose={() => setInfoVisible(false)}
+            title={info.title}
+            intro={info.message}
           />
-        </Pressable>
+        </>
       ) : null}
       <View style={styles.valueRow}>
         <Text style={styles.value}>{value}</Text>

@@ -7,6 +7,7 @@ import { spacing, padding, margin } from '../theme/spacing';
 import { typography, fonts } from '../theme/typography';
 import AmbientBackground from '../components/common/AmbientBackground';
 import AppTopBar from '../components/common/AppTopBar';
+import FeatureInfoDialog from '../components/common/FeatureInfoDialog';
 import SectionHeader from '../components/common/SectionHeader';
 import CardSurface from '../components/common/CardSurface';
 import Icon from '../components/common/icons/Icon';
@@ -35,6 +36,7 @@ export default function BreathScreen({ navigation }: BreathTabScreenProps) {
   const insets = useSafeAreaInsets();
   const user = useAuthStore((state) => state.user);
   const [todayLocalDate] = useState(() => formatLocalDate(new Date()));
+  const [infoVisible, setInfoVisible] = useState(false);
 
   const homeStatsQuery = useHomeStatsQuery(user?.id ?? null, todayLocalDate);
   const profileSummaryQuery = useProfileSummaryQuery(user?.id ?? null);
@@ -118,7 +120,20 @@ export default function BreathScreen({ navigation }: BreathTabScreenProps) {
         showsVerticalScrollIndicator={false}
       >
         <View style={[styles.topSection, { paddingTop: insets.top }]}>
-          <AppTopBar leftSlot={<Text style={styles.title}></Text>} />
+          <AppTopBar
+            leftSlot={<Text style={styles.title}>Breath Holds</Text>}
+            rightSlot={
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="About breath holds"
+                hitSlop={12}
+                onPress={() => setInfoVisible(true)}
+                style={({ pressed }) => pressed && styles.infoPressed}
+              >
+                <Icon name="info" size={24} color={colors.text.tertiary} />
+              </Pressable>
+            }
+          />
         </View>
 
         <View style={styles.heroSection}>
@@ -214,6 +229,13 @@ export default function BreathScreen({ navigation }: BreathTabScreenProps) {
           }
         />
       </ScrollView>
+
+      <FeatureInfoDialog
+        visible={infoVisible}
+        onClose={() => setInfoVisible(false)}
+        title="Breath Holds"
+        intro="A breath hold is the fastest way to reset your mind — pausing your breath calms your nervous system, melts stress, and pulls you out of your head and into the present in under a minute. It's also an honest measure of fitness: longer holds signal greater lung capacity, better oxygen efficiency, and a steadier stress response, which is why divers and elite athletes train it. We turn each hold into an estimated lung age and compare it to your real age, so you can watch your lungs perform younger over time. Every hold is logged, and most people add seconds within their first week. Take a minute, hold your breath, and feel the reset — then beat your record and use the personalized insights to go further."
+      />
     </View>
   );
 }
@@ -246,7 +268,6 @@ const styles = StyleSheet.create({
   heroSection: {
     paddingHorizontal: padding.screen.horizontal,
     alignItems: 'center',
-    marginTop: -spacing.xl,
   },
   emptyCard: {
     width: '100%',
@@ -295,6 +316,9 @@ const styles = StyleSheet.create({
   },
   measurePressed: {
     opacity: 0.85,
+  },
+  infoPressed: {
+    opacity: 0.6,
   },
   insightsHeader: {
     paddingHorizontal: padding.screen.horizontal,

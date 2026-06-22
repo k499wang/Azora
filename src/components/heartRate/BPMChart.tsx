@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Alert, LayoutChangeEvent, Pressable, StyleSheet, Text, View } from 'react-native';
+import { LayoutChangeEvent, Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle, Line, Path } from 'react-native-svg';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
@@ -12,6 +12,7 @@ import {
   type BpmInsightSummary,
 } from '../../lib/heartRate/bpmInsight';
 import CardSurface from '../common/CardSurface';
+import FeatureInfoDialog from '../common/FeatureInfoDialog';
 import LockedContentBlur from '../common/LockedContentBlur';
 import Icon from '../common/icons/Icon';
 import ChartInsightsSection from './ChartInsightsSection';
@@ -51,6 +52,7 @@ export default function BPMChart({
   insightSummary,
 }: BPMChartProps) {
   const [width, setWidth] = useState(0);
+  const [infoVisible, setInfoVisible] = useState(false);
 
   const onLayout = (e: LayoutChangeEvent) => {
     const w = Math.round(e.nativeEvent.layout.width);
@@ -158,17 +160,25 @@ export default function BPMChart({
   return (
     <CardSurface locked={locked} style={styles.card}>
       {!locked ? (
-        <Pressable
-          hitSlop={10}
-          onPress={() => Alert.alert(BPM_INFO.title, BPM_INFO.message)}
-          style={styles.infoButton}
-        >
-          <MaterialCommunityIcons
-            name="information-outline"
-            size={16}
-            color={colors.text.tertiary}
+        <>
+          <Pressable
+            hitSlop={10}
+            onPress={() => setInfoVisible(true)}
+            style={styles.infoButton}
+          >
+            <MaterialCommunityIcons
+              name="information-outline"
+              size={16}
+              color={colors.text.tertiary}
+            />
+          </Pressable>
+          <FeatureInfoDialog
+            visible={infoVisible}
+            onClose={() => setInfoVisible(false)}
+            title={BPM_INFO.title}
+            intro={BPM_INFO.message}
           />
-        </Pressable>
+        </>
       ) : null}
       <View style={styles.titleRow}>
         <Icon name="heart-plain" size={28} color={colors.error[500]} />

@@ -1,4 +1,5 @@
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Canvas, Path, Skia } from '@shopify/react-native-skia';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
@@ -6,6 +7,7 @@ import { spacing } from '../../theme/spacing';
 import { typography, fonts } from '../../theme/typography';
 import LungWaterBackground from './LungWaterBackground';
 import CardSurface from '../common/CardSurface';
+import FeatureInfoDialog from '../common/FeatureInfoDialog';
 
 const LUNG_AGE_INFO = {
   title: 'Lung Age',
@@ -41,6 +43,7 @@ function LungAgeRing({
   holdSeconds: number | null | undefined;
   bestHoldSeconds: number | null | undefined;
 }) {
+  const [infoVisible, setInfoVisible] = useState(false);
   const cx = LUNG_RING_SIZE / 2;
   const cy = LUNG_RING_SIZE / 2;
   const r = LUNG_RING_SIZE / 2 - LUNG_RING_INSET - LUNG_RING_STROKE / 2;
@@ -82,7 +85,7 @@ function LungAgeRing({
       <LungWaterBackground fillLevel={fillLevel} />
       <Pressable
         hitSlop={12}
-        onPress={() => Alert.alert(LUNG_AGE_INFO.title, LUNG_AGE_INFO.message)}
+        onPress={() => setInfoVisible(true)}
         style={styles.infoButton}
       >
         <MaterialCommunityIcons
@@ -91,6 +94,12 @@ function LungAgeRing({
           color={colors.text.tertiary}
         />
       </Pressable>
+      <FeatureInfoDialog
+        visible={infoVisible}
+        onClose={() => setInfoVisible(false)}
+        title={LUNG_AGE_INFO.title}
+        intro={LUNG_AGE_INFO.message}
+      />
 
       <View style={styles.lungRingWrap}>
         <Canvas style={{ width: LUNG_RING_SIZE, height: LUNG_RING_SIZE }}>

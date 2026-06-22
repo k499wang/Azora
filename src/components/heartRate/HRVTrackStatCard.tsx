@@ -1,4 +1,5 @@
-import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { LockedScrim } from '../common/glass';
 import { Canvas, Circle, Path, Skia } from '@shopify/react-native-skia';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -6,6 +7,7 @@ import { colors } from '../../theme/colors';
 import { typography, fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import CardSurface from '../common/CardSurface';
+import FeatureInfoDialog from '../common/FeatureInfoDialog';
 import Icon from '../common/icons/Icon';
 import type { IconName } from '../common/icons/paths';
 
@@ -103,6 +105,7 @@ export default function HRVTrackStatCard({
   onPressLocked,
   lastMeasuredLabel,
 }: HRVTrackStatCardProps) {
+  const [infoVisible, setInfoVisible] = useState(false);
   const hasAvg = avgValue != null && Number.isFinite(avgValue);
   const hasBest = bestValue != null && Number.isFinite(bestValue);
   const hasValue = value != null && Number.isFinite(value);
@@ -140,17 +143,25 @@ export default function HRVTrackStatCard({
   return (
     <CardSurface locked={locked} style={styles.card}>
       {info && !locked ? (
-        <Pressable
-          hitSlop={12}
-          onPress={() => Alert.alert(info.title, info.message)}
-          style={styles.infoButton}
-        >
-          <MaterialCommunityIcons
-            name="information-outline"
-            size={16}
-            color={colors.text.tertiary}
+        <>
+          <Pressable
+            hitSlop={12}
+            onPress={() => setInfoVisible(true)}
+            style={styles.infoButton}
+          >
+            <MaterialCommunityIcons
+              name="information-outline"
+              size={16}
+              color={colors.text.tertiary}
+            />
+          </Pressable>
+          <FeatureInfoDialog
+            visible={infoVisible}
+            onClose={() => setInfoVisible(false)}
+            title={info.title}
+            intro={info.message}
           />
-        </Pressable>
+        </>
       ) : null}
 
       <View style={styles.cardContent}>
