@@ -153,6 +153,21 @@ export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
           </Text>
         ) : null}
 
+        <RecoveryStatsSection
+          stress={canonicalSession == null ? null : stats?.hrv.stress ?? null}
+          stressHistory={stressHistory}
+          locked={advancedStatsLocked}
+          onPressUpgrade={() =>
+            openProPaywall(
+              FeatureKey.AdvancedStats,
+              PaywallPlacement.DailyResultProGate,
+              advancedStatsAccess,
+              'recovery_section',
+            )
+          }
+          lastMeasuredLabel={lastMeasuredLabel}
+        />
+
         <HeartRateStatsSection
           hrDrop={canonicalSession == null ? null : stats?.hrv.hrDrop ?? null}
           minBpm={canonicalSession?.minBpm ?? null}
@@ -183,21 +198,6 @@ export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
               PaywallPlacement.DailyResultProGate,
               advancedStatsAccess,
               'hrv_section',
-            )
-          }
-          lastMeasuredLabel={lastMeasuredLabel}
-        />
-
-        <RecoveryStatsSection
-          stress={canonicalSession == null ? null : stats?.hrv.stress ?? null}
-          stressHistory={stressHistory}
-          locked={advancedStatsLocked}
-          onPressUpgrade={() =>
-            openProPaywall(
-              FeatureKey.AdvancedStats,
-              PaywallPlacement.DailyResultProGate,
-              advancedStatsAccess,
-              'recovery_section',
             )
           }
           lastMeasuredLabel={lastMeasuredLabel}

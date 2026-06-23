@@ -12,12 +12,10 @@ import SectionHeader from '../components/common/SectionHeader';
 import CardSurface from '../components/common/CardSurface';
 import Icon from '../components/common/icons/Icon';
 import BiologicalAgeRing from '../components/exercise/BiologicalAgeRing';
-import InsightsFlashCard from '../components/home/InsightsFlashCard';
 import ProUpgradeButton from '../components/common/ProUpgradeButton';
 import ProfileBreathHoldTrendCard from '../components/profile/ProfileBreathHoldTrendCard';
 import BreathHoldStatsRow from '../components/exercise/BreathHoldStatsRow';
 import HeartRateStatsSection from '../components/heartRate/HeartRateStatsSection';
-import { buildInsights, SAMPLE_INSIGHTS } from '../lib/insights';
 import { estimateLungAge } from '../lib/lungAge';
 import { deriveHoldStats } from '../lib/holdStats';
 import { formatLocalDate } from '../lib/calendar/weekCalendarDays';
@@ -53,7 +51,6 @@ export default function BreathScreen({ navigation }: BreathTabScreenProps) {
     user?.id ?? null,
     todayBreathHold?.sessionId ?? null,
   );
-  const todayHeartRate = stats?.todayHeartRate ?? null;
   const holdStats = deriveHoldStats(stats?.dailyActivity, todayLocalDate);
   const breathHoldTrend = profileSummaryQuery.data?.breathHoldTrend ?? [];
   const userAge = profileQuery.data?.age ?? null;
@@ -219,48 +216,6 @@ export default function BreathScreen({ navigation }: BreathTabScreenProps) {
             onPressLocked={openTrendPaywall}
           />
         </View>
-
-        <View style={styles.insightsHeader}>
-          <SectionHeader title="Insights" />
-        </View>
-        <InsightsFlashCard
-          locked={advancedStatsLocked}
-          onPressUpgrade={() => {
-            showProPaywall(
-              FeatureKey.AdvancedStats,
-              PaywallPlacement.DailyResultProGate,
-              advancedStatsAccess,
-              'insights_flash',
-            );
-          }}
-          onStartTechnique={(techniqueId) => {
-            if (!dailyExerciseAccess.allowed && !dailyExerciseAccess.isLoading) {
-              showProPaywall(
-                FeatureKey.DailyExercise,
-                PaywallPlacement.ExercisePremiumGate,
-                dailyExerciseAccess,
-                'insights_technique',
-              );
-              return;
-            }
-            navigation.navigate('ExerciseSession', { techniqueId });
-          }}
-          insights={
-            advancedStatsLocked
-              ? SAMPLE_INSIGHTS
-              : buildInsights({
-                  rmssd: stats?.hrv.rmssd ?? null,
-                  avgRmssd: stats?.hrv.avgRmssd ?? null,
-                  sdnn: stats?.hrv.sdnn ?? null,
-                  hrDrop: stats?.hrv.hrDrop ?? null,
-                  minBpm: todayHeartRate?.minBpm ?? null,
-                  stress: stats?.hrv.stress ?? null,
-                  stressHistory: stats?.stressHistory ?? [],
-                  todayHoldSeconds: todayBreathHold?.holdSeconds ?? null,
-                  bestHoldSeconds: holdStats.bestHoldSeconds,
-                })
-          }
-        />
       </ScrollView>
 
       <FeatureInfoDialog
@@ -333,8 +288,5 @@ const styles = StyleSheet.create({
   },
   infoPressed: {
     opacity: 0.6,
-  },
-  insightsHeader: {
-    paddingHorizontal: padding.screen.horizontal,
   },
 });
