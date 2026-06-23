@@ -20,7 +20,7 @@ import SectionHeader from '../components/common/SectionHeader';
 import TopBarWeekCalendar from '../components/common/TopBarWeekCalendar';
 import BreathingLibrary from '../components/home/BreathingLibrary';
 import DailyPlanCard from '../components/home/DailyPlanCard';
-import TodayRibbon from '../components/home/TodayRibbon';
+import EmotionRow from '../components/home/EmotionRow';
 import { useFeatureAccess } from '../hooks/useFeatureAccess';
 import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
 import { formatLocalDate } from '../lib/calendar/weekCalendarDays';
@@ -208,13 +208,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           </View>
         </View>
 
-        <View style={styles.moodCheckInSection}>
-          <TodayRibbon
-            streakDays={currentStreak}
-            todayDone={todayBreathHold?.holdSeconds != null}
-          />
-        </View>
-
         <View style={styles.dailyBreathholdSection}>
           <SectionHeader title="Daily Breathhold" />
           <DailyPlanCard
@@ -236,6 +229,11 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
               navigation.navigate('DailyExercise');
             }}
           />
+        </View>
+
+        <View style={styles.feelingSection}>
+          <SectionHeader title="How are you feeling?" />
+          <EmotionRow />
         </View>
 
         <BreathingLibrary />
@@ -274,13 +272,13 @@ const styles = StyleSheet.create({
     marginTop: spacing.xl,
     gap: spacing.md,
   },
-  moodCheckInSection: {
-    paddingHorizontal: padding.screen.horizontal,
-    marginTop: -spacing['2xl'],
-  },
   dailyBreathholdSection: {
     paddingHorizontal: padding.screen.horizontal,
-    marginTop: -spacing.sm,
+    marginTop: spacing['4xl'],
+    gap: spacing.md,
+  },
+  feelingSection: {
+    paddingHorizontal: padding.screen.horizontal,
     gap: spacing.md,
   },
   greeting: {

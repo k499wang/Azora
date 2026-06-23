@@ -326,6 +326,49 @@ export const ICON_PATHS = {
     <path fill="currentColor" d="M12 2.4c-.78 0-1.4.62-1.4 1.4v.74C7.5 5.2 5.4 7.86 5.4 11v4.1l-1.78 2.1a1.1 1.1 0 0 0 .84 1.8h15.08a1.1 1.1 0 0 0 .84-1.8L18.6 15.1V11c0-3.14-2.1-5.8-5.2-6.46V3.8c0-.78-.62-1.4-1.4-1.4Z"/>
     <path fill="currentColor" d="M9.4 20a2.6 2.6 0 0 0 5.2 0H9.4Z"/>
   `,
+
+  'face-calm': `
+    <circle cx="12" cy="12" r="9.25" fill="currentColor" opacity="0.1"/>
+    <circle cx="12" cy="12" r="8.4" fill="none" stroke="currentColor" stroke-width="1.35" opacity="0.8"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" d="M7.4 10.5c.7.65 1.8.65 2.5 0m4.2 0c.7.65 1.8.65 2.5 0M9.3 14.6c1.5 1 3.9 1 5.4 0"/>
+  `,
+
+  'face-happy': `
+    <circle cx="12" cy="12" r="9.25" fill="currentColor" opacity="0.1"/>
+    <circle cx="12" cy="12" r="8.4" fill="none" stroke="currentColor" stroke-width="1.35" opacity="0.8"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" d="M7.4 10.7c.7-.75 1.8-.75 2.5 0m4.2 0c.7-.75 1.8-.75 2.5 0M8.7 14c1.4 2.1 5.2 2.1 6.6 0"/>
+  `,
+
+  'face-sad': `
+    <circle cx="12" cy="12" r="9.25" fill="currentColor" opacity="0.1"/>
+    <circle cx="12" cy="12" r="8.4" fill="none" stroke="currentColor" stroke-width="1.35" opacity="0.8"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" d="M7.4 10.6c.7-.5 1.8-.5 2.5 0m4.2 0c.7-.5 1.8-.5 2.5 0M9 16c1.5-1.7 4.5-1.7 6 0"/>
+    <circle cx="8.65" cy="11.9" r=".72" fill="currentColor"/>
+    <circle cx="15.35" cy="11.9" r=".72" fill="currentColor"/>
+  `,
+
+  'face-angry': `
+    <circle cx="12" cy="12" r="9.25" fill="currentColor" opacity="0.1"/>
+    <circle cx="12" cy="12" r="8.4" fill="none" stroke="currentColor" stroke-width="1.35" opacity="0.8"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" d="m7.3 9.6 2.8.9m6.6-.9-2.8.9M9 16c1.5-1.4 4.5-1.4 6 0"/>
+    <circle cx="8.8" cy="12" r=".72" fill="currentColor"/>
+    <circle cx="15.2" cy="12" r=".72" fill="currentColor"/>
+  `,
+
+  'face-anxious': `
+    <circle cx="12" cy="12" r="9.25" fill="currentColor" opacity="0.1"/>
+    <circle cx="12" cy="12" r="8.4" fill="none" stroke="currentColor" stroke-width="1.35" opacity="0.8"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" d="m7.4 9.8 2.5-.7m4.2 0 2.5.7"/>
+    <circle cx="8.8" cy="11.7" r=".72" fill="currentColor"/>
+    <circle cx="15.2" cy="11.7" r=".72" fill="currentColor"/>
+    <ellipse cx="12" cy="15.4" rx="1.65" ry="1.25" fill="none" stroke="currentColor" stroke-width="1.45"/>
+  `,
+
+  'face-tired': `
+    <circle cx="12" cy="12" r="9.25" fill="currentColor" opacity="0.1"/>
+    <circle cx="12" cy="12" r="8.4" fill="none" stroke="currentColor" stroke-width="1.35" opacity="0.8"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.55" stroke-linecap="round" d="M7.3 11.2h2.8m3.8 0h2.8M9.5 15.5h5"/>
+  `,
 } as const;
 
 export type IconName = keyof typeof ICON_PATHS;
