@@ -32,8 +32,8 @@ interface ScoreRingProps {
   fill: number;
   size?: number;
   onAnimationComplete?: () => void;
-  /** Caption above the number. Defaults to "Azora Score". */
-  caption?: string;
+  /** Caption above the number. Defaults to "Azora Score". Pass null to hide it. */
+  caption?: string | null;
   /** Override the ring color. Defaults to the brand blue. */
   ringColors?: string[];
   /** Label below the ring. Pass null to hide the row entirely. */
@@ -46,6 +46,8 @@ interface ScoreRingProps {
   gapDirection?: 'positive' | 'negative' | 'neutral';
   /** Render an empty/placeholder ring: no arc fill, a "–" in place of the value. */
   placeholder?: boolean;
+  /** Optional colored pill rendered below the value (e.g. tier label). */
+  pill?: { label: string; textColor: string; backgroundColor: string } | null;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -100,6 +102,7 @@ export default function ScoreRing({
   gapDirection = 'neutral',
   onInfoPress,
   placeholder = false,
+  pill,
 }: ScoreRingProps) {
   const resolvedScore = placeholder ? 0 : fill;
   const arcColor = ringColors?.[0] ?? colors.primary.blue500;
@@ -355,19 +358,21 @@ export default function ScoreRing({
             style={styles.ringCenter}
             pointerEvents={onInfoPress ? 'box-none' : 'none'}
           >
-            <View style={styles.captionRow} pointerEvents="box-none">
-              <Text style={styles.caption}>{caption}</Text>
-              {onInfoPress && (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={`About ${caption}`}
-                  hitSlop={10}
-                  onPress={onInfoPress}
-                >
-                  <Icon name="info" size={14} color={colors.text.tertiary} />
-                </Pressable>
-              )}
-            </View>
+            {(caption || onInfoPress) && (
+              <View style={styles.captionRow} pointerEvents="box-none">
+                {caption && <Text style={styles.caption}>{caption}</Text>}
+                {onInfoPress && (
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={`About ${caption ?? 'score'}`}
+                    hitSlop={10}
+                    onPress={onInfoPress}
+                  >
+                    <Icon name="info" size={14} color={colors.text.tertiary} />
+                  </Pressable>
+                )}
+              </View>
+            )}
             {placeholder ? (
               <Text style={styles.ageValue}>–</Text>
             ) : (
@@ -376,6 +381,11 @@ export default function ScoreRing({
                 target={countUpTarget}
                 active={entranceComplete}
               />
+            )}
+            {!placeholder && pill && (
+              <Text style={[styles.pillLabel, { color: pill.textColor }]}>
+                {pill.label}
+              </Text>
             )}
           </View>
         </View>
@@ -455,6 +465,14 @@ const styles = StyleSheet.create({
     lineHeight: 90,
     color: colors.text.primary,
     marginTop: 2,
+  },
+  pillLabel: {
+    position: 'absolute',
+    bottom: '28%',
+    alignSelf: 'center',
+    ...typography.body.small,
+    fontFamily: fonts.semibold,
+    letterSpacing: 0.5,
   },
   gapRow: {
     flexDirection: 'row',

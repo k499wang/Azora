@@ -81,6 +81,7 @@ export interface AzoraTierMeta {
   label: string;
   ringColors: [string, string];
   textColor: string;
+  pillBg: string;
   direction: 'positive' | 'neutral';
 }
 
@@ -89,12 +90,12 @@ const NEUTRAL_COLORS: [string, string] = [colors.primary.blue500, colors.primary
 const LOW_COLORS: [string, string] = [colors.orange[500], colors.error[500]];
 
 const TIER_META: Record<AzoraTierKey, AzoraTierMeta> = {
-  elite: { label: 'Elite', ringColors: STRONG_COLORS, textColor: colors.success[500], direction: 'positive' },
-  strong: { label: 'Strong', ringColors: STRONG_COLORS, textColor: colors.success[500], direction: 'positive' },
-  solid: { label: 'Solid', ringColors: NEUTRAL_COLORS, textColor: colors.primary.blue500, direction: 'neutral' },
-  steady: { label: 'Steady', ringColors: NEUTRAL_COLORS, textColor: colors.primary.blue500, direction: 'neutral' },
-  building: { label: 'Building up', ringColors: LOW_COLORS, textColor: colors.orange[500], direction: 'neutral' },
-  beginner: { label: 'Just starting', ringColors: LOW_COLORS, textColor: colors.orange[500], direction: 'neutral' },
+  elite: { label: 'Elite', ringColors: STRONG_COLORS, textColor: colors.success[500], pillBg: colors.success[100], direction: 'positive' },
+  strong: { label: 'Strong', ringColors: STRONG_COLORS, textColor: colors.success[500], pillBg: colors.success[100], direction: 'positive' },
+  solid: { label: 'Solid', ringColors: NEUTRAL_COLORS, textColor: colors.primary.blue500, pillBg: colors.primary.blue100, direction: 'neutral' },
+  steady: { label: 'Steady', ringColors: NEUTRAL_COLORS, textColor: colors.primary.blue500, pillBg: colors.primary.blue100, direction: 'neutral' },
+  building: { label: 'Building up', ringColors: LOW_COLORS, textColor: colors.orange[500], pillBg: colors.orange[100], direction: 'neutral' },
+  beginner: { label: 'Just starting', ringColors: LOW_COLORS, textColor: colors.orange[500], pillBg: colors.orange[100], direction: 'neutral' },
 };
 
 export function azoraTierMeta(key: AzoraTierKey): AzoraTierMeta {
