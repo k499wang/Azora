@@ -185,6 +185,11 @@ export default function FiveMinutesScreen({
         </View>
 
         <Text style={styles.caption}>Sessions on Azora</Text>
+
+        <Text style={styles.note}>
+          Users report feeling better for longer when they practice consistently
+          — just 5 minutes a day on Azora.
+        </Text>
       </View>
     </OnboardingScreenLayout>
   );
@@ -224,5 +229,12 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.text.tertiary,
     textAlign: 'center',
+  },
+  note: {
+    ...typography.body.small,
+    color: colors.text.secondary,
+    textAlign: 'center',
+    marginTop: -spacing.sm,
+    paddingHorizontal: spacing.sm,
   },
 });
