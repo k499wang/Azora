@@ -24,6 +24,7 @@ interface RecommendationScreenProps {
   baseline: BaselineResult | null;
   stressLevel: number;
   sleepQuality: number;
+  racingLevel: number;
   agreementResponses: Record<string, AgreementValue | null>;
   experienceLevel: ExperienceLevel | null;
   stepIndex: number;
@@ -62,6 +63,7 @@ export default function RecommendationScreen({
   baseline,
   stressLevel,
   sleepQuality,
+  racingLevel,
   agreementResponses,
   experienceLevel,
   stepIndex,
@@ -74,10 +76,11 @@ export default function RecommendationScreen({
       computeMindMap({
         stressLevel,
         sleepQuality,
+        racingLevel,
         agreementResponses,
         experienceLevel,
       }),
-    [stressLevel, sleepQuality, agreementResponses, experienceLevel],
+    [stressLevel, sleepQuality, racingLevel, agreementResponses, experienceLevel],
   );
   const [showingResult, setShowingResult] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);

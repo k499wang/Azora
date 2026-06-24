@@ -366,7 +366,7 @@ export default function LungCapacityScreen({
           <Text style={styles.gaugeSub}>
             {isCalibrating
               ? 'Analyzing your exhale.'
-              : 'A snapshot of how your lung strength.'}
+              : 'A snapshot of your lung strength.'}
           </Text>
 
           <View style={styles.gaugeSurface}>

@@ -12,7 +12,6 @@ import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 interface BaselineIntroScreenProps {
   stepIndex: number;
   stepCount: number;
-  name: string;
   onContinue: () => void;
   onBack: () => void;
 }
@@ -45,7 +44,6 @@ function buildEcgPath(): string {
 export default function BaselineIntroScreen({
   stepIndex,
   stepCount,
-  name,
   onContinue,
   onBack,
 }: BaselineIntroScreenProps) {
@@ -94,10 +92,7 @@ export default function BaselineIntroScreen({
     outputRange: [0, -ECG_WIDTH],
   });
 
-  const trimmed = name.trim();
-  const title = trimmed
-    ? `Let’s read your heart,\n${trimmed}.`
-    : 'Let’s read your heart.';
+  const title = 'Let’s read your heart.';
 
   return (
     <OnboardingScreenLayout
