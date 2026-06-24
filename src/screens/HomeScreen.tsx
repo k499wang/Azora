@@ -21,6 +21,7 @@ import TopBarWeekCalendar from '../components/common/TopBarWeekCalendar';
 import BreathingLibrary from '../components/home/BreathingLibrary';
 import DailyPlanCard from '../components/home/DailyPlanCard';
 import EmotionRow from '../components/home/EmotionRow';
+import { getBackgroundImageSource } from '../services/images/backgroundImageCache';
 import { useFeatureAccess } from '../hooks/useFeatureAccess';
 import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
 import { formatLocalDate } from '../lib/calendar/weekCalendarDays';
@@ -180,7 +181,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
               )}
             >
               <Image
-                source={require('../../assets/breath-hero-background.png')}
+                source={getBackgroundImageSource('homeHero')}
                 style={StyleSheet.absoluteFill}
                 contentFit="cover"
                 contentPosition="center"
