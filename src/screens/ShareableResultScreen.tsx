@@ -14,12 +14,13 @@ import { card } from '../theme/card';
 import { LockedOverlay } from '../components/heartRate/HeartRateResultContent';
 import BPMChart from '../components/heartRate/BPMChart';
 import ShareCard from '../components/exercise/ShareCard';
-import BiologicalAgeRing from '../components/exercise/BiologicalAgeRing';
+import ScoreRing from '../components/exercise/ScoreRing';
+import AzoraScoreInfoDialog from '../components/exercise/AzoraScoreInfoDialog';
 import SectionHeader from '../components/common/SectionHeader';
 import ThermometerStatCard from '../components/heartRate/ThermometerStatCard';
 import GlassIconButton from '../components/common/GlassIconButton';
 import type { DailyResultScreenProps } from '../app/navigation';
-import { estimateLungAge } from '../lib/lungAge';
+import { estimateAzoraScore, azoraScoreFill, azoraTierMeta } from '../lib/azoraScore';
 import { useFeatureAccess } from '../hooks/useFeatureAccess';
 import { trackFeatureGateHit } from '../services/analytics/tracking';
 import { PaywallPlacement } from '../services/paywall';
@@ -52,7 +53,9 @@ export default function ShareableResultScreen({
   } = route.params;
   const hrDropBpm =
     minBpm != null && maxBpm != null ? Math.max(0, maxBpm - minBpm) : null;
-  const lungEstimate = estimateLungAge({ holdSeconds, avgBpm, minBpm });
+  const azoraEstimate = estimateAzoraScore({ holdSeconds, avgBpm, minBpm });
+  const azoraTier = azoraTierMeta(azoraEstimate.key);
+  const [infoVisible, setInfoVisible] = useState(false);
   const benchmark = getHoldBenchmark(holdSeconds, userAge);
 
   const benchmarkCard = (() => {
@@ -111,9 +114,12 @@ export default function ShareableResultScreen({
 
       <View style={styles.heroCardWrap}>
         <View style={styles.heroCard}>
-          <BiologicalAgeRing
-            lungAge={lungEstimate.age}
-            userAge={userAge}
+          <ScoreRing
+            value={azoraEstimate.score}
+            fill={azoraScoreFill(azoraEstimate.score)}
+            ringColors={azoraTier.ringColors}
+            gapLabel={null}
+            onInfoPress={() => setInfoVisible(true)}
           />
           <View style={styles.benchmarkCard}>
             <View style={styles.benchmarkIconWrap}>
@@ -231,13 +237,19 @@ export default function ShareableResultScreen({
           >
             <ShareCard
               width={SCREEN_WIDTH}
-              lungAge={lungEstimate.age}
-              userAge={userAge}
+              azoraScore={azoraEstimate.score}
+              tierLabel={azoraTier.label}
+              ringColors={azoraTier.ringColors}
               onBackgroundDisplay={() => setShareArtifactReady(true)}
             />
           </ViewShot>
         </View>
       </View>
+
+      <AzoraScoreInfoDialog
+        visible={infoVisible}
+        onClose={() => setInfoVisible(false)}
+      />
     </View>
   );
 }

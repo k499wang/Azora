@@ -5,28 +5,29 @@ import { Canvas, Circle, Path, Skia } from '@shopify/react-native-skia';
 import { colors } from '../../theme/colors';
 import { typography, fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
-import { computeAgeGap, ageScore } from '../../lib/lungAge';
+import { azoraScoreFill } from '../../lib/azoraScore';
 
 interface Props {
   width: number;
-  lungAge: number;
-  userAge: number | null;
+  azoraScore: number;
+  tierLabel: string;
+  ringColors: string[];
   onBackgroundDisplay?: () => void;
 }
 
 export default function ShareCard({
   width,
-  lungAge,
-  userAge,
+  azoraScore,
+  tierLabel,
+  ringColors,
   onBackgroundDisplay,
 }: Props) {
   const height = width;
   const ringSize = width * 0.62;
   const stroke = ringSize * 0.06;
   const ageFontSize = Math.round(ringSize * 0.3);
-  const score = ageScore(lungAge);
-  const gap = computeAgeGap(lungAge, userAge);
-  const arcColor = gap.ringColors[0];
+  const score = azoraScoreFill(azoraScore);
+  const arcColor = ringColors[0];
 
   const cx = ringSize / 2;
   const cy = ringSize / 2;
@@ -101,15 +102,16 @@ export default function ShareCard({
             <Circle cx={cx} cy={cy} r={innerR} color={colors.background.elevated} />
           </Canvas>
           <View style={styles.ringCenter} pointerEvents="none">
-            <Text style={styles.caption}>Lung Age</Text>
+            <Text style={styles.caption}>Azora Score</Text>
             <Text
               style={[
                 styles.ageValue,
                 { fontSize: ageFontSize, lineHeight: Math.round(ageFontSize * 1.08) },
               ]}
             >
-              {lungAge}
+              {azoraScore}
             </Text>
+            <Text style={styles.tier}>{tierLabel}</Text>
           </View>
         </View>
       </View>
@@ -170,6 +172,14 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     fontFamily: fonts.semibold,
     fontWeight: '500',
+  },
+  tier: {
+    ...typography.caption.caption1,
+    color: colors.text.tertiary,
+    fontFamily: fonts.semibold,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    marginTop: spacing.xs,
   },
   watermark: {
     ...typography.title.title3,

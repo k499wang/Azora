@@ -12,7 +12,7 @@ import SectionHeader from '../components/common/SectionHeader';
 import BPMChart from '../components/heartRate/BPMChart';
 import GlassIconButton from '../components/common/GlassIconButton';
 import ThermometerStatCard from '../components/heartRate/ThermometerStatCard';
-import BiologicalAgeRing from '../components/exercise/BiologicalAgeRing';
+import ScoreRing from '../components/exercise/ScoreRing';
 import type { SessionCompleteScreenProps } from '../app/navigation';
 import { useAuthStore } from '../stores/authStore';
 import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
@@ -94,12 +94,10 @@ export default function SessionCompleteScreen({
 
         <View style={styles.heroWrap}>
           <View style={styles.heroCard}>
-            <BiologicalAgeRing
-              lungAge={breathCount}
-              userAge={null}
+            <ScoreRing
+              value={breathCount}
+              fill={breathScore}
               caption="Breaths"
-              displayValue={breathCount}
-              score={breathScore}
               ringColors={[colors.primary.blue400, colors.primary.blue600]}
               gapLabel={null}
             />

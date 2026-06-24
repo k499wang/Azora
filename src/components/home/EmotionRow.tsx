@@ -78,7 +78,7 @@ export default function EmotionRow() {
             pressed && styles.pressed,
           ]}
         >
-          <Icon name={emotion.icon} size={60} color={emotion.color} />
+          <Icon name={emotion.icon} size={70} color={emotion.color} />
           <Text style={styles.label} numberOfLines={1}>
             {emotion.label}
           </Text>
@@ -94,7 +94,7 @@ const styles = StyleSheet.create({
     paddingRight: spacing.lg,
   },
   item: {
-    width: 60,
+    width: 70,
     alignItems: 'center',
     gap: spacing.xs,
   },
