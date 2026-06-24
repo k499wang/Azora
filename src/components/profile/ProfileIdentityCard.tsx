@@ -1,5 +1,6 @@
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import Icon from '../common/icons/Icon';
 import { colors } from '../../theme/colors';
 import { typography, fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
@@ -8,6 +9,8 @@ interface ProfileIdentityCardProps {
   displayName: string;
   avatarLabel: string;
   avatarUrl?: string | null;
+  subtitle?: string | null;
+  isUploading?: boolean;
   onChangePhoto?: () => void;
   onEditDisplayName?: () => void;
 }
@@ -16,68 +19,76 @@ export default function ProfileIdentityCard({
   displayName,
   avatarLabel,
   avatarUrl,
+  subtitle,
+  isUploading = false,
   onChangePhoto,
   onEditDisplayName,
 }: ProfileIdentityCardProps) {
+  const canChangePhoto = onChangePhoto != null;
+
   return (
     <View style={styles.container}>
-      <View style={styles.headerCopy}>
-        <View style={styles.nameRow}>
-          <Text style={styles.name}>{displayName}</Text>
-          {onEditDisplayName != null ? (
-            <Pressable
-              accessibilityLabel="Edit display name"
-              accessibilityRole="button"
-              onPress={onEditDisplayName}
-              style={({ pressed }) => [
-                styles.editNameButton,
-                pressed && styles.iconButtonPressed,
-              ]}
-            >
-              <MaterialCommunityIcons
-                name="pencil-outline"
-                size={18}
-                color={colors.text.secondary}
-              />
-            </Pressable>
+      <Pressable
+        accessibilityLabel="Change profile photo"
+        accessibilityRole="button"
+        onPress={onChangePhoto}
+        disabled={!canChangePhoto || isUploading}
+        style={({ pressed }) => [
+          styles.avatarShell,
+          pressed && canChangePhoto && styles.avatarPressed,
+        ]}
+      >
+        <View style={styles.avatar}>
+          {avatarUrl ? (
+            <Image source={{ uri: avatarUrl }} style={styles.avatarImage} />
+          ) : (
+            <Text style={styles.avatarLabel}>{avatarLabel}</Text>
+          )}
+          {isUploading ? (
+            <View style={styles.avatarUploading}>
+              <ActivityIndicator color={colors.text.inverse} />
+            </View>
           ) : null}
         </View>
-      </View>
 
-      <View style={styles.avatarSection}>
-        <View style={styles.avatarShell}>
-          <View style={styles.avatar}>
-            {avatarUrl ? (
-              <Image source={{ uri: avatarUrl }} style={styles.avatarImage} />
-            ) : (
-              <Text style={styles.avatarLabel}>{avatarLabel}</Text>
-            )}
+        {canChangePhoto ? (
+          <View style={styles.cameraBadge}>
+            <Icon name="camera" size={16} color={colors.text.inverse} />
           </View>
-        </View>
+        ) : null}
+      </Pressable>
 
-        <Pressable
-          onPress={onChangePhoto}
-          disabled={onChangePhoto == null}
-          style={({ pressed }) => [
-            styles.changePhotoButton,
-            pressed && onChangePhoto != null && styles.changePhotoPressed,
-            onChangePhoto == null && styles.changePhotoDisabled,
-          ]}
-        >
-          <MaterialCommunityIcons name="camera-outline" size={14} color={colors.primary.blue700} />
-          <Text style={styles.changePhotoText}>Change photo</Text>
-        </Pressable>
+      <View style={styles.nameRow}>
+        <Text style={styles.name} numberOfLines={1}>
+          {displayName}
+        </Text>
+        {onEditDisplayName != null ? (
+          <Pressable
+            accessibilityLabel="Edit display name"
+            accessibilityRole="button"
+            hitSlop={8}
+            onPress={onEditDisplayName}
+            style={({ pressed }) => [
+              styles.editNameButton,
+              pressed && styles.iconButtonPressed,
+            ]}
+          >
+            <MaterialCommunityIcons
+              name="pencil-outline"
+              size={18}
+              color={colors.text.secondary}
+            />
+          </Pressable>
+        ) : null}
       </View>
+
+      {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  avatarSection: {
     alignItems: 'center',
     gap: spacing.sm,
   },
@@ -96,6 +107,9 @@ const styles = StyleSheet.create({
     shadowRadius: 18,
     elevation: 6,
   },
+  avatarPressed: {
+    opacity: 0.92,
+  },
   avatar: {
     width: 104,
     height: 104,
@@ -109,6 +123,12 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
+  avatarUploading: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.overlay.dark,
+  },
   avatarLabel: {
     ...typography.display.display3,
     color: colors.text.inverse,
@@ -117,33 +137,18 @@ const styles = StyleSheet.create({
     fontSize: 30,
     lineHeight: 34,
   },
-  changePhotoButton: {
-    flexDirection: 'row',
+  cameraBadge: {
+    position: 'absolute',
+    right: 6,
+    bottom: 6,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.primary.blue600,
     alignItems: 'center',
-    gap: spacing.xs,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: 999,
-    backgroundColor: colors.overlay.light,
-    borderWidth: 1,
-    borderColor: colors.border.brand,
-  },
-  changePhotoPressed: {
-    opacity: 0.92,
-  },
-  changePhotoDisabled: {
-    opacity: 0.7,
-  },
-  changePhotoText: {
-    ...typography.label.medium,
-    color: colors.primary.blue700,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-  },
-  headerCopy: {
-    alignItems: 'center',
-    gap: spacing.xs,
-    width: '100%',
+    justifyContent: 'center',
+    borderWidth: 3,
+    borderColor: colors.background.elevated,
   },
   nameRow: {
     maxWidth: '100%',
@@ -151,11 +156,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.xs,
+    marginTop: spacing.xs,
   },
   name: {
     ...typography.title.title3,
     flexShrink: 1,
     color: colors.text.primary,
+    textAlign: 'center',
+    fontFamily: fonts.semibold,
+    fontWeight: '500',
+  },
+  subtitle: {
+    ...typography.body.small,
+    color: colors.text.tertiary,
     textAlign: 'center',
     fontFamily: fonts.semibold,
     fontWeight: '500',

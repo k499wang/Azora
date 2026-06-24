@@ -140,7 +140,7 @@ export default function BreathScreen({ navigation }: BreathTabScreenProps) {
               )}
             >
               <Image
-                source={require('../../assets/breath-hero-background.png')}
+                source={require('../../assets/home-hero-meadow.png')}
                 style={StyleSheet.absoluteFill}
                 contentFit="cover"
                 contentPosition="center"

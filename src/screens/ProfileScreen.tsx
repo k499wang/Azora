@@ -17,6 +17,7 @@ import ProfileIdentityCard from '../components/profile/ProfileIdentityCard';
 import ProfileCompletionCalendarCard from '../components/profile/ProfileCompletionCalendarCard';
 import { useAuthStore } from '../stores/authStore';
 import type { ProfileScreenProps } from '../app/navigation';
+import type { ProfileSummary } from '../services/profile/profileSummaryService';
 import { trackProfileAction } from '../services/analytics/tracking';
 import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
 import { useUploadProfileAvatarMutation } from '../queries/profile/useUploadProfileAvatarMutation';
@@ -24,6 +25,22 @@ import { useUpdateProfileDisplayNameMutation } from '../queries/profile/useUpdat
 
 function getFallbackDisplayName(_email: string | undefined): string {
   return '—';
+}
+
+function getIdentitySubtitle(summary: ProfileSummary | undefined): string | null {
+  if (summary == null) {
+    return null;
+  }
+
+  if (summary.currentStreak > 0) {
+    return `${summary.currentStreak}-day streak`;
+  }
+
+  if (summary.breathHoldCount > 0) {
+    return `${summary.breathHoldCount} breath ${summary.breathHoldCount === 1 ? 'hold' : 'holds'}`;
+  }
+
+  return 'New here';
 }
 
 function getAvatarLabel(displayName: string): string {
@@ -55,6 +72,8 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
   const displayName =
     profileSummary?.profile?.displayName ?? getFallbackDisplayName(user?.email);
   const avatarLabel = getAvatarLabel(displayName);
+  const avatarUrl = profileSummary?.profile?.avatarUrl;
+  const subtitle = getIdentitySubtitle(profileSummary);
 
   const handleChangePhoto = async () => {
     if (uploadAvatarMutation.isPending) {
@@ -191,7 +210,9 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
             <ProfileIdentityCard
               displayName={displayName}
               avatarLabel={avatarLabel}
-              avatarUrl={profileSummary?.profile?.avatarUrl}
+              avatarUrl={avatarUrl}
+              subtitle={subtitle}
+              isUploading={uploadAvatarMutation.isPending}
               onChangePhoto={handleChangePhoto}
               onEditDisplayName={() => {
                 trackProfileAction('profile_name_edit_opened');

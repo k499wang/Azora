@@ -180,7 +180,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
               )}
             >
               <Image
-                source={require('../../assets/home-hero-meadow.png')}
+                source={require('../../assets/breath-hero-background.png')}
                 style={StyleSheet.absoluteFill}
                 contentFit="cover"
                 contentPosition="center"
