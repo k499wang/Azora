@@ -1,6 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Alert, Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
+import MaskedView from '@react-native-masked-view/masked-view';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import { padding, spacing } from '../theme/spacing';
@@ -11,16 +14,11 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import SectionHeader from '../components/common/SectionHeader';
 import ProfileDisplayNameEditorDialog from '../components/profile/ProfileDisplayNameEditorDialog';
 import ProfileIdentityCard from '../components/profile/ProfileIdentityCard';
-import ProfileStatsGrid, {
-  type ProfileStatBadge,
-  type ProfileStatHero,
-} from '../components/profile/ProfileStatsGrid';
 import ProfileCompletionCalendarCard from '../components/profile/ProfileCompletionCalendarCard';
 import { useAuthStore } from '../stores/authStore';
 import type { ProfileScreenProps } from '../app/navigation';
 import { trackProfileAction } from '../services/analytics/tracking';
 import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
-import { formatProfileHoldTime } from '../services/profile/profileSummaryService';
 import { useUploadProfileAvatarMutation } from '../queries/profile/useUploadProfileAvatarMutation';
 import { useUpdateProfileDisplayNameMutation } from '../queries/profile/useUpdateProfileDisplayNameMutation';
 
@@ -57,43 +55,6 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
   const displayName =
     profileSummary?.profile?.displayName ?? getFallbackDisplayName(user?.email);
   const avatarLabel = getAvatarLabel(displayName);
-
-  const profileHero: ProfileStatHero = useMemo(() => {
-    const longestHoldSeconds = profileSummary?.longestHoldSeconds ?? null;
-    const trend = profileSummary?.breathHoldTrend.map((point) => point.value) ?? [];
-
-    return {
-      label: 'Longest hold',
-      value: formatProfileHoldTime(longestHoldSeconds),
-      detail: longestHoldSeconds == null ? 'No breath holds yet' : 'Personal best',
-      icon: 'breath-hold',
-      trend,
-    };
-  }, [profileSummary]);
-
-  const profileSecondary: ProfileStatBadge[] = useMemo(
-    () => [
-      {
-        label: 'Best streak',
-        value: String(profileSummary?.longestStreak ?? 0),
-        detail: 'days',
-        icon: 'streak',
-      },
-      {
-        label: 'Breath holds',
-        value: String(profileSummary?.breathHoldCount ?? 0),
-        detail: 'sessions',
-        icon: 'timer',
-      },
-      {
-        label: 'Active days',
-        value: String(profileSummary?.activeDays ?? 0),
-        detail: 'tracked',
-        icon: 'sparkle',
-      },
-    ],
-    [profileSummary],
-  );
 
   const handleChangePhoto = async () => {
     if (uploadAvatarMutation.isPending) {
@@ -191,6 +152,25 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
         showsVerticalScrollIndicator={false}
       >
         <View style={[styles.topSection, { paddingTop: insets.top }]}>
+          <View style={styles.heroBackdrop} pointerEvents="none">
+            <MaskedView
+              style={StyleSheet.absoluteFill}
+              maskElement={(
+                <LinearGradient
+                  colors={['black', 'black', 'transparent']}
+                  locations={[0, 0.65, 1]}
+                  style={StyleSheet.absoluteFill}
+                />
+              )}
+            >
+              <Image
+                source={require('../../assets/profile-hero-background.png')}
+                style={StyleSheet.absoluteFill}
+                contentFit="cover"
+                contentPosition="center"
+              />
+            </MaskedView>
+          </View>
           <AppTopBar
             leftSlot={<BrandLockup />}
             rightSlot={
@@ -218,13 +198,6 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
                 setEditingDisplayName(true);
               }}
             />
-          </View>
-        </View>
-
-        <View style={styles.section}>
-          <SectionHeader title="All-time statistics" />
-          <View style={styles.sectionBody}>
-            <ProfileStatsGrid hero={profileHero} secondary={profileSecondary} />
           </View>
         </View>
 
@@ -263,8 +236,17 @@ const styles = StyleSheet.create({
     paddingBottom: spacing['7xl'] + spacing.xl,
   },
   topSection: {
+    position: 'relative',
     paddingTop: spacing.md,
     paddingBottom: spacing.xl,
+    overflow: 'hidden',
+  },
+  heroBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    aspectRatio: 1.1,
     overflow: 'hidden',
   },
   heroCardWrap: {

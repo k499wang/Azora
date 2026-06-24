@@ -1,5 +1,8 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
+import MaskedView from '@react-native-masked-view/masked-view';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { trackFeatureGateHit } from '../services/analytics/tracking';
 import { colors } from '../theme/colors';
@@ -15,9 +18,12 @@ import ScoreRing from '../components/exercise/ScoreRing';
 import AzoraScoreInfoDialog from '../components/exercise/AzoraScoreInfoDialog';
 import ProUpgradeButton from '../components/common/ProUpgradeButton';
 import ProfileBreathHoldTrendCard from '../components/profile/ProfileBreathHoldTrendCard';
-import BreathHoldStatsRow from '../components/exercise/BreathHoldStatsRow';
+import ProfileStatsGrid, {
+  type ProfileStatBadge,
+  type ProfileStatHero,
+} from '../components/profile/ProfileStatsGrid';
 import HeartRateStatsSection from '../components/heartRate/HeartRateStatsSection';
-import { estimateAzoraScore, azoraScoreFill } from '../lib/azoraScore';
+import { estimateAzoraScore, azoraScoreFill, azoraTierMeta } from '../lib/azoraScore';
 import { deriveHoldStats } from '../lib/holdStats';
 import { formatLocalDate } from '../lib/calendar/weekCalendarDays';
 import { useFeatureAccess } from '../hooks/useFeatureAccess';
@@ -25,6 +31,7 @@ import { useHomeStatsQuery } from '../queries/tracking/useHomeStatsQuery';
 import { useBreathHoldBpmSeriesQuery } from '../queries/tracking/useBreathHoldBpmSeriesQuery';
 import { useProfileQuery } from '../queries/profile/useProfileQuery';
 import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
+import { formatProfileHoldTime } from '../services/profile/profileSummaryService';
 import { useAuthStore } from '../stores/authStore';
 import { PaywallPlacement } from '../services/paywall';
 import { FeatureKey } from '../services/subscriptions/featureAccess';
@@ -54,8 +61,46 @@ export default function BreathScreen({ navigation }: BreathTabScreenProps) {
     todayBreathHold?.sessionId ?? null,
   );
   const holdStats = deriveHoldStats(stats?.dailyActivity, todayLocalDate);
-  const breathHoldTrend = profileSummaryQuery.data?.breathHoldTrend ?? [];
+  const profileSummary = profileSummaryQuery.data;
+  const breathHoldTrend = profileSummary?.breathHoldTrend ?? [];
   const userAge = profileQuery.data?.age ?? null;
+
+  const profileHero: ProfileStatHero = useMemo(() => {
+    const longestHoldSeconds = profileSummary?.longestHoldSeconds ?? null;
+    const trend = profileSummary?.breathHoldTrend.map((point) => point.value) ?? [];
+
+    return {
+      label: 'Longest hold',
+      value: formatProfileHoldTime(longestHoldSeconds),
+      detail: longestHoldSeconds == null ? 'No breath holds yet' : 'Personal best',
+      icon: 'breath-hold',
+      trend,
+    };
+  }, [profileSummary]);
+
+  const profileSecondary: ProfileStatBadge[] = useMemo(
+    () => [
+      {
+        label: 'Best streak',
+        value: String(profileSummary?.longestStreak ?? 0),
+        detail: 'days',
+        icon: 'streak',
+      },
+      {
+        label: 'Breath holds',
+        value: String(profileSummary?.breathHoldCount ?? 0),
+        detail: 'sessions',
+        icon: 'timer',
+      },
+      {
+        label: 'Active days',
+        value: String(profileSummary?.activeDays ?? 0),
+        detail: 'tracked',
+        icon: 'sparkle',
+      },
+    ],
+    [profileSummary],
+  );
 
   const azoraEstimate =
     todayBreathHold?.holdSeconds != null && todayBreathHold.holdSeconds > 0
@@ -126,8 +171,26 @@ export default function BreathScreen({ navigation }: BreathTabScreenProps) {
         showsVerticalScrollIndicator={false}
       >
         <View style={[styles.topSection, { paddingTop: insets.top }]}>
+          <View style={styles.heroBackdrop} pointerEvents="none">
+            <MaskedView
+              style={StyleSheet.absoluteFill}
+              maskElement={(
+                <LinearGradient
+                  colors={['black', 'black', 'transparent']}
+                  locations={[0, 0.65, 1]}
+                  style={StyleSheet.absoluteFill}
+                />
+              )}
+            >
+              <Image
+                source={require('../../assets/breath-hero-background.png')}
+                style={StyleSheet.absoluteFill}
+                contentFit="cover"
+                contentPosition="center"
+              />
+            </MaskedView>
+          </View>
           <AppTopBar
-            leftSlot={<Text style={styles.title}>Breath Holds</Text>}
             rightSlot={
               <Pressable
                 accessibilityRole="button"
@@ -143,22 +206,39 @@ export default function BreathScreen({ navigation }: BreathTabScreenProps) {
         </View>
 
         <View style={styles.heroSection}>
+          <View style={styles.ringHeader}>
+            <Text style={styles.ringHeaderLabel}>Azora Score</Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="About Azora Score"
+              hitSlop={10}
+              onPress={() => setAzoraInfoVisible(true)}
+              style={({ pressed }) => pressed && styles.infoPressed}
+            >
+              <Icon name="info" size={16} color={colors.text.tertiary} />
+            </Pressable>
+          </View>
           {azoraEstimate ? (
             <ScoreRing
               value={azoraEstimate.score}
               fill={azoraScoreFill(azoraEstimate.score)}
-              size={240}
+              size={235}
+              caption={null}
               gapLabel={null}
-              onInfoPress={() => setAzoraInfoVisible(true)}
+              pill={{
+                label: azoraTierMeta(azoraEstimate.key).label,
+                textColor: azoraTierMeta(azoraEstimate.key).textColor,
+                backgroundColor: azoraTierMeta(azoraEstimate.key).pillBg,
+              }}
             />
           ) : (
             <ScoreRing
               value={0}
               fill={0}
-              size={240}
+              size={235}
               placeholder
+              caption={null}
               gapLabel={null}
-              onInfoPress={() => setAzoraInfoVisible(true)}
             />
           )}
         </View>
@@ -182,14 +262,6 @@ export default function BreathScreen({ navigation }: BreathTabScreenProps) {
               <Icon name="chevron-right" size={22} color={colors.text.tertiary} />
             </CardSurface>
           </Pressable>
-        </View>
-
-        <View style={[styles.section, styles.statsSection]}>
-          <BreathHoldStatsRow
-            bestHoldSeconds={holdStats.bestHoldSeconds}
-            avgHoldSeconds={holdStats.avgHoldSeconds}
-            todayHoldSeconds={todayBreathHold?.holdSeconds ?? null}
-          />
         </View>
 
         <HeartRateStatsSection
@@ -216,9 +288,16 @@ export default function BreathScreen({ navigation }: BreathTabScreenProps) {
           />
           <ProfileBreathHoldTrendCard
             data={breathHoldTrend}
+            bestHoldSeconds={holdStats.bestHoldSeconds}
+            avgHoldSeconds={holdStats.avgHoldSeconds}
             locked={advancedStatsLocked}
             onPressLocked={openTrendPaywall}
           />
+        </View>
+
+        <View style={styles.section}>
+          <SectionHeader title="All-time statistics" />
+          <ProfileStatsGrid hero={profileHero} secondary={profileSecondary} />
         </View>
       </ScrollView>
 
@@ -251,23 +330,39 @@ const styles = StyleSheet.create({
     gap: margin.sectionGap,
   },
   topSection: {
+    position: 'relative',
     paddingTop: spacing.md,
   },
-  title: {
-    fontFamily: fonts.semibold,
-    fontSize: 22,
-    color: colors.text.primary,
+  heroBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    aspectRatio: 1.1,
+    overflow: 'hidden',
   },
   section: {
     paddingHorizontal: padding.screen.horizontal,
     gap: spacing.md,
   },
-  statsSection: {
-    marginTop: -spacing.sm,
-  },
   heroSection: {
     paddingHorizontal: padding.screen.horizontal,
     alignItems: 'center',
+    marginTop: -margin.sectionGap,
+  },
+  ringHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginTop: -spacing.xl,
+    marginBottom: spacing.md,
+  },
+  ringHeaderLabel: {
+    ...typography.caption.caption1,
+    color: colors.text.tertiary,
+    fontFamily: fonts.semibold,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
   },
   measureCard: {
     flexDirection: 'row',

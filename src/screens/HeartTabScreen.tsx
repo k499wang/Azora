@@ -1,5 +1,8 @@
 import { useCallback, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
+import MaskedView from '@react-native-masked-view/masked-view';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { typography, fonts } from '../theme/typography';
 import AmbientBackground from '../components/common/AmbientBackground';
@@ -115,8 +118,26 @@ export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
         showsVerticalScrollIndicator={false}
       >
         <View style={[styles.topSection, { paddingTop: insets.top }]}>
+          <View style={styles.heroBackdrop} pointerEvents="none">
+            <MaskedView
+              style={StyleSheet.absoluteFill}
+              maskElement={(
+                <LinearGradient
+                  colors={['black', 'black', 'transparent']}
+                  locations={[0, 0.65, 1]}
+                  style={StyleSheet.absoluteFill}
+                />
+              )}
+            >
+              <Image
+                source={require('../../assets/heart-hero-background.png')}
+                style={StyleSheet.absoluteFill}
+                contentFit="cover"
+                contentPosition="center"
+              />
+            </MaskedView>
+          </View>
           <AppTopBar
-            leftSlot={<Text style={styles.title}>Heart Rate</Text>}
             rightSlot={
               <Pressable
                 accessibilityRole="button"
@@ -234,12 +255,16 @@ const styles = StyleSheet.create({
     gap: margin.sectionGap,
   },
   topSection: {
+    position: 'relative',
     paddingTop: spacing.md,
   },
-  title: {
-    fontFamily: fonts.semibold,
-    fontSize: 22,
-    color: colors.text.primary,
+  heroBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    aspectRatio: 1.1,
+    overflow: 'hidden',
   },
   infoPressed: {
     opacity: 0.6,

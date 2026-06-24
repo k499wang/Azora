@@ -6,15 +6,20 @@ import { spacing } from '../../theme/spacing';
 import { card } from '../../theme/card';
 import LineGraph, { type DataPoint } from '../analytics/LineGraph';
 import LockedContentBlur from '../common/LockedContentBlur';
+import BreathHoldStatsRow from '../exercise/BreathHoldStatsRow';
 
 interface ProfileBreathHoldTrendCardProps {
   data: DataPoint[];
+  bestHoldSeconds: number | null;
+  avgHoldSeconds: number | null;
   locked?: boolean;
   onPressLocked?: () => void;
 }
 
 export default function ProfileBreathHoldTrendCard({
   data,
+  bestHoldSeconds,
+  avgHoldSeconds,
   locked = false,
   onPressLocked,
 }: ProfileBreathHoldTrendCardProps) {
@@ -40,12 +45,14 @@ export default function ProfileBreathHoldTrendCard({
 
       <LockedContentBlur locked={locked} onPressLocked={onPressLocked}>
         <View
+          style={styles.graph}
           accessibilityElementsHidden={locked}
           importantForAccessibility={locked ? 'no-hide-descendants' : 'auto'}
         >
           <LineGraph
             data={data}
             unit="s"
+            height={150}
             highlightIndex={bestIndex}
             lineColor={colors.primary.blue600}
             fillColor={colors.primary.blue100}
@@ -53,6 +60,13 @@ export default function ProfileBreathHoldTrendCard({
           />
         </View>
       </LockedContentBlur>
+
+      <View style={styles.divider} />
+
+      <BreathHoldStatsRow
+        bestHoldSeconds={bestHoldSeconds}
+        avgHoldSeconds={avgHoldSeconds}
+      />
     </View>
   );
 }
@@ -61,12 +75,22 @@ const styles = StyleSheet.create({
   card: {
     ...card.base,
     ...card.shadow,
-    padding: spacing.md,
-    gap: spacing.sm,
+    padding: spacing.lg,
   },
   title: {
     ...typography.heading.heading2,
     color: colors.text.primary,
     fontSize: 18,
+    marginBottom: spacing.lg,
+  },
+  graph: {
+    marginHorizontal: -spacing.xs,
+  },
+  divider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.border.subtle,
+    marginHorizontal: -spacing.lg,
+    marginTop: spacing.lg,
+    marginBottom: spacing.lg,
   },
 });
