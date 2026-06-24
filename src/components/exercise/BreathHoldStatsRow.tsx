@@ -4,6 +4,7 @@ import { fonts, typography } from '../../theme/typography';
 
 interface Props {
   bestHoldSeconds: number | null;
+  todayHoldSeconds: number | null;
   avgHoldSeconds: number | null;
 }
 
@@ -16,6 +17,7 @@ function formatHoldTime(totalSeconds: number): string {
 
 export default function BreathHoldStatsRow({
   bestHoldSeconds,
+  todayHoldSeconds,
   avgHoldSeconds,
 }: Props) {
   return (
@@ -23,6 +25,10 @@ export default function BreathHoldStatsRow({
       <Stat
         label="Best"
         value={bestHoldSeconds != null ? formatHoldTime(bestHoldSeconds) : '—'}
+      />
+      <Stat
+        label="Today"
+        value={todayHoldSeconds != null ? formatHoldTime(todayHoldSeconds) : '—'}
       />
       <Stat
         label="7-day avg"
@@ -57,14 +63,10 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   value: {
-    ...typography.title.title3,
-    fontSize: 23,
-    lineHeight: 28,
-    fontFamily: fonts.medium,
-    fontWeight: '500',
+    ...typography.heading.heading2,
+    fontSize: 18,
     fontVariant: ['tabular-nums'],
-    letterSpacing: -0.3,
-    color: colors.text.primary,
+    color: colors.text.secondary,
   },
   label: {
     ...typography.label.small,

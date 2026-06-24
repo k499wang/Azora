@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -18,10 +18,6 @@ import ScoreRing from '../components/exercise/ScoreRing';
 import AzoraScoreInfoDialog from '../components/exercise/AzoraScoreInfoDialog';
 import ProUpgradeButton from '../components/common/ProUpgradeButton';
 import ProfileBreathHoldTrendCard from '../components/profile/ProfileBreathHoldTrendCard';
-import ProfileStatsGrid, {
-  type ProfileStatBadge,
-  type ProfileStatHero,
-} from '../components/profile/ProfileStatsGrid';
 import HeartRateStatsSection from '../components/heartRate/HeartRateStatsSection';
 import { estimateAzoraScore, azoraScoreFill, azoraTierMeta } from '../lib/azoraScore';
 import { deriveHoldStats } from '../lib/holdStats';
@@ -30,9 +26,7 @@ import { useFeatureAccess } from '../hooks/useFeatureAccess';
 import { useHomeStatsQuery } from '../queries/tracking/useHomeStatsQuery';
 import { useBreathHoldBpmSeriesQuery } from '../queries/tracking/useBreathHoldBpmSeriesQuery';
 import { useProfileQuery } from '../queries/profile/useProfileQuery';
-import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
-import { formatProfileHoldTime } from '../services/profile/profileSummaryService';
-import { useAuthStore } from '../stores/authStore';
+import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';import { useAuthStore } from '../stores/authStore';
 import { PaywallPlacement } from '../services/paywall';
 import { FeatureKey } from '../services/subscriptions/featureAccess';
 import type {
@@ -64,43 +58,6 @@ export default function BreathScreen({ navigation }: BreathTabScreenProps) {
   const profileSummary = profileSummaryQuery.data;
   const breathHoldTrend = profileSummary?.breathHoldTrend ?? [];
   const userAge = profileQuery.data?.age ?? null;
-
-  const profileHero: ProfileStatHero = useMemo(() => {
-    const longestHoldSeconds = profileSummary?.longestHoldSeconds ?? null;
-    const trend = profileSummary?.breathHoldTrend.map((point) => point.value) ?? [];
-
-    return {
-      label: 'Longest hold',
-      value: formatProfileHoldTime(longestHoldSeconds),
-      detail: longestHoldSeconds == null ? 'No breath holds yet' : 'Personal best',
-      icon: 'breath-hold',
-      trend,
-    };
-  }, [profileSummary]);
-
-  const profileSecondary: ProfileStatBadge[] = useMemo(
-    () => [
-      {
-        label: 'Best streak',
-        value: String(profileSummary?.longestStreak ?? 0),
-        detail: 'days',
-        icon: 'streak',
-      },
-      {
-        label: 'Breath holds',
-        value: String(profileSummary?.breathHoldCount ?? 0),
-        detail: 'sessions',
-        icon: 'timer',
-      },
-      {
-        label: 'Active days',
-        value: String(profileSummary?.activeDays ?? 0),
-        detail: 'tracked',
-        icon: 'sparkle',
-      },
-    ],
-    [profileSummary],
-  );
 
   const azoraEstimate =
     todayBreathHold?.holdSeconds != null && todayBreathHold.holdSeconds > 0
@@ -223,6 +180,7 @@ export default function BreathScreen({ navigation }: BreathTabScreenProps) {
               value={azoraEstimate.score}
               fill={azoraScoreFill(azoraEstimate.score)}
               size={235}
+              valueFontSize={78}
               caption={null}
               gapLabel={null}
               pill={{
@@ -236,6 +194,7 @@ export default function BreathScreen({ navigation }: BreathTabScreenProps) {
               value={0}
               fill={0}
               size={235}
+              valueFontSize={78}
               placeholder
               caption={null}
               gapLabel={null}
@@ -289,15 +248,11 @@ export default function BreathScreen({ navigation }: BreathTabScreenProps) {
           <ProfileBreathHoldTrendCard
             data={breathHoldTrend}
             bestHoldSeconds={holdStats.bestHoldSeconds}
+            todayHoldSeconds={todayBreathHold?.holdSeconds ?? null}
             avgHoldSeconds={holdStats.avgHoldSeconds}
             locked={advancedStatsLocked}
             onPressLocked={openTrendPaywall}
           />
-        </View>
-
-        <View style={styles.section}>
-          <SectionHeader title="All-time statistics" />
-          <ProfileStatsGrid hero={profileHero} secondary={profileSecondary} />
         </View>
       </ScrollView>
 
@@ -371,7 +326,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
     borderWidth: 1.5,
-    borderColor: colors.primary.blue500,
+    borderColor: colors.primary.blue200,
   },
   measureIconWrap: {
     width: 40,

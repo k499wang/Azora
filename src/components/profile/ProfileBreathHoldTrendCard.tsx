@@ -11,6 +11,7 @@ import BreathHoldStatsRow from '../exercise/BreathHoldStatsRow';
 interface ProfileBreathHoldTrendCardProps {
   data: DataPoint[];
   bestHoldSeconds: number | null;
+  todayHoldSeconds: number | null;
   avgHoldSeconds: number | null;
   locked?: boolean;
   onPressLocked?: () => void;
@@ -19,6 +20,7 @@ interface ProfileBreathHoldTrendCardProps {
 export default function ProfileBreathHoldTrendCard({
   data,
   bestHoldSeconds,
+  todayHoldSeconds,
   avgHoldSeconds,
   locked = false,
   onPressLocked,
@@ -65,6 +67,7 @@ export default function ProfileBreathHoldTrendCard({
 
       <BreathHoldStatsRow
         bestHoldSeconds={bestHoldSeconds}
+        todayHoldSeconds={todayHoldSeconds}
         avgHoldSeconds={avgHoldSeconds}
       />
     </View>

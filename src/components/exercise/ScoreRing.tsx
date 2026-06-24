@@ -1,5 +1,5 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Easing, InteractionManager, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, type DimensionValue, Easing, InteractionManager, Pressable, StyleSheet, Text, View } from 'react-native';
 import {
   Canvas,
   Circle,
@@ -48,6 +48,10 @@ interface ScoreRingProps {
   placeholder?: boolean;
   /** Optional colored pill rendered below the value (e.g. tier label). */
   pill?: { label: string; textColor: string; backgroundColor: string } | null;
+  /** Override the center number font size. Defaults to 84. */
+  valueFontSize?: number;
+  /** Distance of the pill from the bottom of the ring. Defaults to '28%'. */
+  pillBottom?: DimensionValue;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -70,9 +74,10 @@ interface CountUpAgeProps {
   progress: SharedValue<number>;
   target: number;
   active: boolean;
+  fontStyle?: { fontSize: number; lineHeight: number };
 }
 
-const CountUpAge = memo(function CountUpAge({ progress, target, active }: CountUpAgeProps) {
+const CountUpAge = memo(function CountUpAge({ progress, target, active, fontStyle }: CountUpAgeProps) {
   const [value, setValue] = useState(COUNT_START);
 
   useAnimatedReaction(
@@ -85,7 +90,7 @@ const CountUpAge = memo(function CountUpAge({ progress, target, active }: CountU
     [active, target],
   );
 
-  return <Text style={styles.ageValue}>{value}</Text>;
+  return <Text style={[styles.ageValue, fontStyle]}>{value}</Text>;
 });
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -103,7 +108,12 @@ export default function ScoreRing({
   onInfoPress,
   placeholder = false,
   pill,
+  valueFontSize,
+  pillBottom,
 }: ScoreRingProps) {
+  const valueFontStyle = valueFontSize
+    ? { fontSize: valueFontSize, lineHeight: Math.round(valueFontSize * 1.07) }
+    : undefined;
   const resolvedScore = placeholder ? 0 : fill;
   const arcColor = ringColors?.[0] ?? colors.primary.blue500;
   const resolvedGapLabel = gapLabel ?? null;
@@ -374,16 +384,23 @@ export default function ScoreRing({
               </View>
             )}
             {placeholder ? (
-              <Text style={styles.ageValue}>–</Text>
+              <Text style={[styles.ageValue, valueFontStyle]}>–</Text>
             ) : (
               <CountUpAge
                 progress={revealProgress}
                 target={countUpTarget}
                 active={entranceComplete}
+                fontStyle={valueFontStyle}
               />
             )}
             {!placeholder && pill && (
-              <Text style={[styles.pillLabel, { color: pill.textColor }]}>
+              <Text
+                style={[
+                  styles.pillLabel,
+                  { color: pill.textColor },
+                  pillBottom != null && { bottom: pillBottom },
+                ]}
+              >
                 {pill.label}
               </Text>
             )}
@@ -463,7 +480,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     fontSize: 84,
     lineHeight: 90,
-    color: colors.text.primary,
+    color: colors.text.secondary,
     marginTop: 2,
   },
   pillLabel: {

@@ -11,13 +11,10 @@ import { colors } from '../theme/colors';
 import { typography, fonts } from '../theme/typography';
 import { spacing, padding, margin } from '../theme/spacing';
 import { card } from '../theme/card';
-import { LockedOverlay } from '../components/heartRate/HeartRateResultContent';
-import BPMChart from '../components/heartRate/BPMChart';
+import HeartRateStatsSection from '../components/heartRate/HeartRateStatsSection';
 import ShareCard from '../components/exercise/ShareCard';
 import ScoreRing from '../components/exercise/ScoreRing';
 import AzoraScoreInfoDialog from '../components/exercise/AzoraScoreInfoDialog';
-import SectionHeader from '../components/common/SectionHeader';
-import ThermometerStatCard from '../components/heartRate/ThermometerStatCard';
 import GlassIconButton from '../components/common/GlassIconButton';
 import type { DailyResultScreenProps } from '../app/navigation';
 import { estimateAzoraScore, azoraScoreFill, azoraTierMeta } from '../lib/azoraScore';
@@ -119,6 +116,12 @@ export default function ShareableResultScreen({
             fill={azoraScoreFill(azoraEstimate.score)}
             ringColors={azoraTier.ringColors}
             gapLabel={null}
+            pill={{
+              label: azoraTier.label,
+              textColor: azoraTier.textColor,
+              backgroundColor: azoraTier.pillBg,
+            }}
+            pillBottom="26%"
             onInfoPress={() => setInfoVisible(true)}
           />
           <View style={styles.benchmarkCard}>
@@ -158,39 +161,20 @@ export default function ShareableResultScreen({
         >
           {renderHeroCard()}
 
-          <View style={styles.statsHeader}>
-            <SectionHeader title="Statistics" />
+          <View style={styles.statsSection}>
+            <HeartRateStatsSection
+              hrDrop={hrDropBpm}
+              minBpm={minBpm ?? null}
+              maxBpm={maxBpm ?? null}
+              avgBpm={avgBpm ?? null}
+              age={userAge}
+              bpmSamples={bpmSamples}
+              locked={advancedStatsLocked}
+              onPressUpgrade={showAdvancedStatsPaywall}
+              emptyChartMessage="Complete your breath hold with heart rate enabled to see your BPM."
+              insightContext="breath-hold"
+            />
           </View>
-
-          <LockedOverlay
-            locked={advancedStatsLocked}
-            onPressUpgrade={showAdvancedStatsPaywall}
-          >
-            <View style={styles.tileRow}>
-              <ThermometerStatCard
-                label="Avg HR"
-                value={avgBpm}
-                unit="bpm"
-                min={40}
-                max={120}
-                accent={colors.error[500]}
-              />
-              <ThermometerStatCard
-                label="HR drop"
-                value={hrDropBpm}
-                unit="bpm"
-                min={0}
-                max={30}
-                accent={colors.primary.blue500}
-              />
-            </View>
-
-            {bpmSamples.length >= 2 ? (
-              <View style={styles.heartHealthCard}>
-                <BPMChart bpmSamples={bpmSamples} color={colors.primary.blue500} />
-              </View>
-            ) : null}
-          </LockedOverlay>
 
           <Pressable
             disabled={!shareArtifactReady}
@@ -355,19 +339,7 @@ const styles = StyleSheet.create({
   shareDisabled: {
     opacity: 0.5,
   },
-  statsHeader: {
-    paddingHorizontal: padding.screen.horizontal,
+  statsSection: {
     marginTop: margin.resultSection,
-    marginBottom: spacing.sm,
-  },
-  tileRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    marginHorizontal: padding.screen.horizontal,
-  },
-
-  heartHealthCard: {
-    paddingHorizontal: padding.screen.horizontal,
-    marginTop: spacing.sm,
   },
 });
