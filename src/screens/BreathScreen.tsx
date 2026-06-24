@@ -173,7 +173,7 @@ export default function BreathScreen({ navigation }: BreathTabScreenProps) {
               onPress={() => setAzoraInfoVisible(true)}
               style={({ pressed }) => pressed && styles.infoPressed}
             >
-              <Icon name="info" size={16} color={colors.text.tertiary} />
+              <Icon name="info" size={16} color={colors.text.inverse} />
             </Pressable>
           </View>
           {azoraEstimate ? (
@@ -217,7 +217,7 @@ export default function BreathScreen({ navigation }: BreathTabScreenProps) {
               <Text style={styles.measureTitle}>
                 {azoraEstimate
                   ? 'Ready to beat your record?'
-                  : 'Tap to start your breath hold'}
+                  : 'Tap to start your measure your score'}
               </Text>
               <Icon name="chevron-right" size={22} color={colors.text.tertiary} />
             </CardSurface>
@@ -315,10 +315,11 @@ const styles = StyleSheet.create({
   },
   ringHeaderLabel: {
     ...typography.caption.caption1,
-    color: colors.text.tertiary,
+    fontSize: 18,
+    lineHeight: 24,
+    color: colors.text.inverse,
     fontFamily: fonts.semibold,
-    letterSpacing: 1.2,
-    textTransform: 'uppercase',
+    letterSpacing: 0,
   },
   measureCard: {
     flexDirection: 'row',
