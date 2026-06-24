@@ -180,7 +180,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
               )}
             >
               <Image
-                source={require('../../assets/wide-panoramic-view-mediterranean-sea-portofino-coastline.jpg')}
+                source={require('../../assets/home-hero-meadow.png')}
                 style={StyleSheet.absoluteFill}
                 contentFit="cover"
                 contentPosition="center"
