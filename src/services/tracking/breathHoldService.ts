@@ -23,7 +23,7 @@ export interface CompleteBreathHoldInput {
   avgBpm: number | null;
   minBpm: number | null;
   maxBpm: number | null;
-  lungAge: number | null;
+  azoraScore: number | null;
   samples?: BreathHoldBpmSampleInput[];
 }
 
@@ -46,10 +46,10 @@ function nullableBpm(value: number | null): number | null {
   return rounded >= 20 && rounded <= 240 ? rounded : null;
 }
 
-function nullableLungAge(value: number | null): number | null {
+function nullableAzoraScore(value: number | null): number | null {
   if (!isFiniteNumber(value)) return null;
   const rounded = Math.round(value);
-  return rounded >= 1 && rounded <= 120 ? rounded : null;
+  return rounded >= 0 && rounded <= 100 ? rounded : null;
 }
 
 function mapSamples(
@@ -92,7 +92,7 @@ export async function completeBreathHold(
       min_bpm: nullableBpm(input.minBpm),
       max_bpm: nullableBpm(input.maxBpm),
       health_score: null,
-      lung_age: nullableLungAge(input.lungAge),
+      lung_age: nullableAzoraScore(input.azoraScore),
       score_version: 1,
       notes: null,
     } as unknown as Json,

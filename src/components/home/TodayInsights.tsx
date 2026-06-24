@@ -9,14 +9,12 @@ import LungWaterBackground from './LungWaterBackground';
 import CardSurface from '../common/CardSurface';
 import FeatureInfoDialog from '../common/FeatureInfoDialog';
 
-const LUNG_AGE_INFO = {
-  title: 'Lung Age',
+const AZORA_SCORE_INFO = {
+  title: 'Azora Score',
   message:
-    'An estimated cardio-respiratory age based on today\'s breath hold duration, average heart rate, and the diving-reflex bradycardia (HR drop during the hold).\n\nThis is a heuristic estimate, not a clinical lung age. Younger estimates reflect stronger breath control and autonomic function.',
+    'A 0–100 score from today\'s breath hold, based on hold duration, average heart rate, and the diving-reflex bradycardia (HR drop during the hold).\n\nThis is a heuristic, not a medical metric. Higher scores reflect stronger breath control and autonomic function.',
 };
 
-const LUNG_AGE_MIN = 18;
-const LUNG_AGE_MAX = 80;
 const LUNG_RING_SIZE = 200;
 const LUNG_RING_STROKE = 14;
 const LUNG_RING_INSET = 14;
@@ -27,19 +25,19 @@ interface TodayInsightsProps {
   title?: string;
   holdSeconds?: number | null;
   bestHoldSeconds?: number | null;
-  lungAge?: number | null;
-  lungAgeTier?: string | null;
+  azoraScore?: number | null;
+  azoraTier?: string | null;
 }
 
 
-function LungAgeRing({
-  lungAge,
-  lungAgeTier,
+function AzoraScoreRing({
+  azoraScore,
+  azoraTier,
   holdSeconds,
   bestHoldSeconds,
 }: {
-  lungAge: number | null | undefined;
-  lungAgeTier: string | null | undefined;
+  azoraScore: number | null | undefined;
+  azoraTier: string | null | undefined;
   holdSeconds: number | null | undefined;
   bestHoldSeconds: number | null | undefined;
 }) {
@@ -50,15 +48,7 @@ function LungAgeRing({
   const rect = Skia.XYWHRect(cx - r, cy - r, r * 2, r * 2);
 
   const progress =
-    lungAge == null
-      ? 0
-      : Math.max(
-          0,
-          Math.min(
-            1,
-            (LUNG_AGE_MAX - lungAge) / (LUNG_AGE_MAX - LUNG_AGE_MIN),
-          ),
-        );
+    azoraScore == null ? 0 : Math.max(0, Math.min(1, azoraScore / 100));
 
   const track = Skia.Path.Make();
   track.addCircle(cx, cy, r);
@@ -71,9 +61,9 @@ function LungAgeRing({
   }
 
   const tierLabel =
-    lungAgeTier == null
+    azoraTier == null
       ? ''
-      : lungAgeTier.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+      : azoraTier.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 
   const fillLevel =
     holdSeconds == null || bestHoldSeconds == null || bestHoldSeconds <= 0
@@ -97,8 +87,8 @@ function LungAgeRing({
       <FeatureInfoDialog
         visible={infoVisible}
         onClose={() => setInfoVisible(false)}
-        title={LUNG_AGE_INFO.title}
-        intro={LUNG_AGE_INFO.message}
+        title={AZORA_SCORE_INFO.title}
+        intro={AZORA_SCORE_INFO.message}
       />
 
       <View style={styles.lungRingWrap}>
@@ -121,12 +111,12 @@ function LungAgeRing({
           )}
         </Canvas>
         <View style={styles.lungCenter} pointerEvents="none">
-          <Text style={styles.lungValue}>{lungAge == null ? '--' : lungAge}</Text>
-          <Text style={styles.lungUnit}>years</Text>
+          <Text style={styles.lungValue}>{azoraScore == null ? '--' : azoraScore}</Text>
+          <Text style={styles.lungUnit}>/ 100</Text>
         </View>
       </View>
 
-      <Text style={styles.lungLabel}>Lung age</Text>
+      <Text style={styles.lungLabel}>Azora score</Text>
       {tierLabel ? (
         <View style={styles.lungTierPill}>
           <Text style={styles.lungTierText}>{tierLabel}</Text>
@@ -139,17 +129,17 @@ function LungAgeRing({
 export default function TodayInsights({
   title = 'Today\'s insights',
   holdSeconds,
-  lungAge,
-  lungAgeTier,
+  azoraScore,
+  azoraTier,
   bestHoldSeconds,
 }: TodayInsightsProps) {
   return (
     <View style={styles.page}>
       <Text style={styles.title}>{title}</Text>
 
-      <LungAgeRing
-        lungAge={lungAge}
-        lungAgeTier={lungAgeTier}
+      <AzoraScoreRing
+        azoraScore={azoraScore}
+        azoraTier={azoraTier}
         holdSeconds={holdSeconds}
         bestHoldSeconds={bestHoldSeconds}
       />

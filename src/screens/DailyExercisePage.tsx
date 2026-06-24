@@ -47,7 +47,7 @@ import { useCancellableFlow } from '../hooks/useCancellableFlow';
 import { useAuthStore } from '../stores/authStore';
 import { useCompleteBreathHoldMutation } from '../queries/tracking/useCompleteBreathHoldMutation';
 import { useHeartRateMonitoringPreference } from '../hooks/useHeartRateMonitoringPreference';
-import { estimateLungAge } from '../lib/lungAge';
+import { estimateAzoraScore } from '../lib/azoraScore';
 import { buildCaptureResult } from '../lib/heartRate/captureResult';
 import { runAfterNextPaint } from '../lib/ui/runAfterNextPaint';
 import {
@@ -546,11 +546,11 @@ export default function DailyExercisePage({
 
     const reading = result.reading;
     const { avgBpm, minBpm, maxBpm } = buildBreathHoldBpmStats(result, holdBpmSamples);
-    const lungAge = estimateLungAge({
+    const azoraScore = estimateAzoraScore({
       holdSeconds: completedHoldSeconds,
       avgBpm: avgBpm ?? undefined,
       minBpm: minBpm ?? undefined,
-    }).age;
+    }).score;
 
     savingSessionKeyRef.current = sessionKey;
     try {
@@ -562,7 +562,7 @@ export default function DailyExercisePage({
         avgBpm,
         minBpm,
         maxBpm,
-        lungAge,
+        azoraScore,
         samples: holdBpmSamples.map((sample) => ({
           offsetMs: sample.offset_ms,
           bpm: sample.bpm,

@@ -1,5 +1,5 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Easing, InteractionManager, StyleSheet, Text, View } from 'react-native';
+import { Animated, Easing, InteractionManager, Pressable, StyleSheet, Text, View } from 'react-native';
 import {
   Canvas,
   Circle,
@@ -22,28 +22,29 @@ import {
 import { colors } from '../../theme/colors';
 import { typography, fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
-import { computeAgeGap, ageScore, type AgeGap } from '../../lib/lungAge';
-
+import Icon from '../common/icons/Icon';
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-interface BiologicalAgeRingProps {
-  lungAge: number;
-  userAge: number | null;
+interface ScoreRingProps {
+  /** Number shown in the center (count-up target). */
+  value: number;
+  /** Arc fill ratio, 0–1. */
+  fill: number;
   size?: number;
   onAnimationComplete?: () => void;
-  /** Override the caption above the number. Defaults to "Lung Age". */
+  /** Caption above the number. Defaults to "Azora Score". */
   caption?: string;
-  /** Override the number displayed (e.g. breath count). Defaults to lungAge. */
-  displayValue?: number;
-  /** Override the arc fill ratio (0–1). Defaults to ageScore(lungAge). */
-  score?: number;
   /** Override the ring color. Defaults to the brand blue. */
   ringColors?: string[];
-  /** Override the gap label text. Pass null to hide the gap row entirely. */
+  /** Label below the ring. Pass null to hide the row entirely. */
   gapLabel?: string | null;
-  /** Override the gap label text color. */
+  /** Color for the gap label text. */
   gapTextColor?: string;
-  /** Render an empty/placeholder ring: no arc fill, a "–" in place of the age. */
+  /** When provided, renders an info icon next to the caption. */
+  onInfoPress?: () => void;
+  /** Controls the colored dot beside the gap label. */
+  gapDirection?: 'positive' | 'negative' | 'neutral';
+  /** Render an empty/placeholder ring: no arc fill, a "–" in place of the value. */
   placeholder?: boolean;
 }
 
@@ -87,27 +88,24 @@ const CountUpAge = memo(function CountUpAge({ progress, target, active }: CountU
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function BiologicalAgeRing({
-  lungAge,
-  userAge,
+export default function ScoreRing({
+  value,
+  fill,
   size = DEFAULT_SIZE,
   onAnimationComplete,
-  caption = 'Lung Age',
-  displayValue,
-  score: scoreOverride,
-  ringColors: ringColorsOverride,
-  gapLabel: gapLabelOverride,
-  gapTextColor: gapTextColorOverride,
+  caption = 'Azora Score',
+  ringColors,
+  gapLabel,
+  gapTextColor,
+  gapDirection = 'neutral',
+  onInfoPress,
   placeholder = false,
-}: BiologicalAgeRingProps) {
-  const gap = useMemo(() => computeAgeGap(lungAge, userAge), [lungAge, userAge]);
-  const targetScore = useMemo(() => ageScore(lungAge), [lungAge]);
-  const resolvedScore = placeholder ? 0 : scoreOverride ?? targetScore;
-  // Keep the default ring visually stable regardless of the computed age gap.
-  const arcColor = ringColorsOverride?.[0] ?? colors.primary.blue500;
-  const resolvedGapLabel = gapLabelOverride !== undefined ? gapLabelOverride : gap.label;
-  const resolvedGapTextColor = gapTextColorOverride ?? gap.textColor;
-  const countUpTarget = displayValue ?? lungAge;
+}: ScoreRingProps) {
+  const resolvedScore = placeholder ? 0 : fill;
+  const arcColor = ringColors?.[0] ?? colors.primary.blue500;
+  const resolvedGapLabel = gapLabel ?? null;
+  const resolvedGapTextColor = gapTextColor ?? colors.text.secondary;
+  const countUpTarget = value;
   const [revealComplete, setRevealComplete] = useState(false);
   const [entranceComplete, setEntranceComplete] = useState(false);
   const didMountRef = useRef(false);
@@ -353,8 +351,23 @@ export default function BiologicalAgeRing({
           </Canvas>
 
           {/* Center content */}
-          <View style={styles.ringCenter} pointerEvents="none">
-            <Text style={styles.caption}>{caption}</Text>
+          <View
+            style={styles.ringCenter}
+            pointerEvents={onInfoPress ? 'box-none' : 'none'}
+          >
+            <View style={styles.captionRow} pointerEvents="box-none">
+              <Text style={styles.caption}>{caption}</Text>
+              {onInfoPress && (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`About ${caption}`}
+                  hitSlop={10}
+                  onPress={onInfoPress}
+                >
+                  <Icon name="info" size={14} color={colors.text.tertiary} />
+                </Pressable>
+              )}
+            </View>
             {placeholder ? (
               <Text style={styles.ageValue}>–</Text>
             ) : (
@@ -379,12 +392,12 @@ export default function BiologicalAgeRing({
             },
           ]}
         >
-          {!placeholder && resolvedGapLabel !== '' && gap.direction === 'younger' && (
+          {!placeholder && resolvedGapLabel !== '' && gapDirection === 'positive' && (
             <View style={[styles.gapBadge, { backgroundColor: colors.success[100] }]}>
               <View style={[styles.gapDot, { backgroundColor: colors.success[500] }]} />
             </View>
           )}
-          {!placeholder && resolvedGapLabel !== '' && gap.direction === 'older' && (
+          {!placeholder && resolvedGapLabel !== '' && gapDirection === 'negative' && (
             <View style={[styles.gapBadge, { backgroundColor: colors.orange[100] }]}>
               <View style={[styles.gapDot, { backgroundColor: colors.orange[500] }]} />
             </View>
@@ -421,13 +434,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  captionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginBottom: spacing.xs,
+  },
   caption: {
     ...typography.caption.caption1,
     color: colors.text.tertiary,
     fontFamily: fonts.semibold,
     letterSpacing: 1.2,
     textTransform: 'uppercase',
-    marginBottom: spacing.xs,
   },
   ageValue: {
     ...typography.display.display1,
