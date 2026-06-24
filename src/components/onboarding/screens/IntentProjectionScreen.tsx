@@ -23,7 +23,7 @@ import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 
 const CHART_HEIGHT = 230;
 const PAD_LEFT = 8;
-const PAD_RIGHT = 8;
+const PAD_RIGHT = 16;
 const PAD_TOP = 12;
 const PAD_BOTTOM = 28;
 const TOP_INSET = 10;
@@ -59,7 +59,7 @@ export default function IntentProjectionScreen({
     progress.value = 0;
     progress.value = withDelay(
       280,
-      withTiming(1, { duration: 1400, easing: Easing.out(Easing.cubic) }),
+      withTiming(1, { duration: 1600, easing: Easing.inOut(Easing.cubic) }),
     );
   }, [progress, ceiling, width]);
 
@@ -71,8 +71,7 @@ export default function IntentProjectionScreen({
     if (innerW <= 0) return p;
     const t = progress.value;
     const normalizer = 1 - Math.exp(-CURVE_K * 8);
-    const visible = Math.max(2, Math.ceil(SAMPLE_COUNT * t));
-    for (let i = 0; i < visible; i++) {
+    for (let i = 0; i < SAMPLE_COUNT; i++) {
       const u = (i / (SAMPLE_COUNT - 1)) * t;
       const raw = 1 - Math.exp(-CURVE_K * u * 8);
       const v = (raw / normalizer) * ceiling;
@@ -90,9 +89,8 @@ export default function IntentProjectionScreen({
     const t = progress.value;
     const baseline = PAD_TOP + innerH;
     const normalizer = 1 - Math.exp(-CURVE_K * 8);
-    const visible = Math.max(2, Math.ceil(SAMPLE_COUNT * t));
     let lastX = PAD_LEFT;
-    for (let i = 0; i < visible; i++) {
+    for (let i = 0; i < SAMPLE_COUNT; i++) {
       const u = (i / (SAMPLE_COUNT - 1)) * t;
       const raw = 1 - Math.exp(-CURVE_K * u * 8);
       const v = (raw / normalizer) * ceiling;
@@ -116,19 +114,13 @@ export default function IntentProjectionScreen({
 
   const endX = useDerivedValue(() => {
     if (innerW <= 0) return 0;
-    const t = progress.value;
-    const visible = Math.max(2, Math.ceil(SAMPLE_COUNT * t));
-    const u = ((visible - 1) / (SAMPLE_COUNT - 1)) * t;
-    return PAD_LEFT + u * innerW;
+    return PAD_LEFT + progress.value * innerW;
   }, [innerW]);
 
   const endY = useDerivedValue(() => {
     if (innerW <= 0) return 0;
-    const t = progress.value;
     const normalizer = 1 - Math.exp(-CURVE_K * 8);
-    const visible = Math.max(2, Math.ceil(SAMPLE_COUNT * t));
-    const u = ((visible - 1) / (SAMPLE_COUNT - 1)) * t;
-    const raw = 1 - Math.exp(-CURVE_K * u * 8);
+    const raw = 1 - Math.exp(-CURVE_K * progress.value * 8);
     const v = (raw / normalizer) * ceiling;
     return PAD_TOP + innerH - (v / ceiling) * (innerH - TOP_INSET);
   }, [innerW, innerH, ceiling]);
@@ -146,12 +138,12 @@ export default function IntentProjectionScreen({
         <OnboardingPrimaryButton label="Continue" onPress={onContinue} />
       }
     >
-      <View
-        style={styles.chartWrap}
-        onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
-      >
+      <View style={styles.chartWrap}>
         <Text style={styles.yAxisLabel}>Overall wellbeing</Text>
-        <View style={{ width: '100%', height: CHART_HEIGHT }}>
+        <View
+          style={{ width: '100%', height: CHART_HEIGHT }}
+          onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
+        >
           {width > 0 ? (
             <Canvas style={StyleSheet.absoluteFill}>
               <Path
@@ -186,6 +178,7 @@ export default function IntentProjectionScreen({
               />
 
               <Circle cx={startX} cy={startY} r={6} color={dotColor} />
+              <Circle cx={endX} cy={endY} r={9} color={colors.neutral[0]} />
               <Circle cx={endX} cy={endY} r={6} color={dotColor} />
             </Canvas>
           ) : null}

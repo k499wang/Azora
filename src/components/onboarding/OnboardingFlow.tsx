@@ -4,6 +4,7 @@ import ScienceCredibilityScreen from './screens/ScienceCredibilityScreen';
 import BaselineScreen, { type BaselineResult } from './screens/BaselineScreen';
 import BaselineIntroScreen from './screens/BaselineIntroScreen';
 import DailyTimeScreen from './screens/DailyTimeScreen';
+import ConsistencyScreen from './screens/ConsistencyScreen';
 import GenderScreen from './screens/GenderScreen';
 import IntentQuestionScreen from './screens/IntentQuestionScreen';
 import IntentReflectionScreen from './screens/IntentReflectionScreen';
@@ -23,8 +24,10 @@ import PactScreen from './screens/PactScreen';
 import NotificationPermissionScreen from './screens/NotificationPermissionScreen';
 import SleepScreen from './screens/SleepScreen';
 import StressScreen from './screens/StressScreen';
+import MindRacingScreen from './screens/MindRacingScreen';
 import RecommendationScreen from './screens/RecommendationScreen';
 import FounderNoteScreen from './screens/FounderNoteScreen';
+import FiveMinutesScreen from './screens/FiveMinutesScreen';
 import OnboardingPaywallScreen from './screens/OnboardingPaywallScreen';
 import LungCapacityScreen from './screens/LungCapacityScreen';
 import type { LungCapacityResult } from '../../lib/lungCapacity';
@@ -90,7 +93,7 @@ interface OnboardingFlowProps {
 }
 
 
-const STEP_COUNT = 23;
+const STEP_COUNT = 26;
 const STEP_INDEX: Record<OnboardingStep, number> = {
   intent: 1,
   intentReflection: 2,
@@ -98,23 +101,26 @@ const STEP_INDEX: Record<OnboardingStep, number> = {
   name: 4,
   greeting: 5,
   stress: 6,
-  sleep: 7,
-  agreement: 8,
-  scienceCredibility: 9,
+  mindRacing: 7,
+  sleep: 8,
+  agreement: 9,
   experience: 10,
   assessmentReflection: 11,
-  lungCapacity: 12,
-  age: 13,
-  gender: 14,
-  dailyTime: 15,
-  notifications: 16,
-  baselineIntro: 17,
-  baseline: 18,
-  recommendation: 19,
-  attPriming: 20,
-  founderNote: 21,
-  pact: 22,
-  paywall: 23,
+  scienceCredibility: 12,
+  lungCapacity: 13,
+  age: 14,
+  gender: 15,
+  consistency: 16,
+  dailyTime: 17,
+  notifications: 18,
+  baselineIntro: 19,
+  baseline: 20,
+  recommendation: 21,
+  attPriming: 22,
+  fiveMinutes: 23,
+  founderNote: 24,
+  pact: 25,
+  paywall: 26,
 };
 
 type OnboardingTransitionAction = 'continue' | 'skip' | 'back' | 'auto';
@@ -148,6 +154,7 @@ export default function OnboardingFlow({
   const [sleepQuality, setSleepQuality] = useState(
     initialSavedProfile?.sleepQuality ?? 5,
   );
+  const [racingLevel, setRacingLevel] = useState(5);
   const [agreementResponses, setAgreementResponses] = useState<
     Record<string, AgreementValue | null>
   >(() =>
@@ -577,8 +584,22 @@ export default function OnboardingFlow({
         stepIndex={stepIndex}
         stepCount={STEP_COUNT}
         onChange={setStressLevel}
-        onContinue={() => goToStep('sleep', 'continue', { has_stress_level: true })}
+        onContinue={() => goToStep('mindRacing', 'continue', { has_stress_level: true })}
         onBack={() => goToStep(name.trim() ? 'greeting' : 'name', 'back')}
+        onSkip={() => goToStep('mindRacing', 'skip')}
+      />
+    );
+  }
+
+  if (step === 'mindRacing') {
+    return (
+      <MindRacingScreen
+        value={racingLevel}
+        stepIndex={stepIndex}
+        stepCount={STEP_COUNT}
+        onChange={setRacingLevel}
+        onContinue={() => goToStep('sleep', 'continue', { has_racing_level: true })}
+        onBack={() => goToStep('stress', 'back')}
         onSkip={() => goToStep('sleep', 'skip')}
       />
     );
@@ -592,7 +613,7 @@ export default function OnboardingFlow({
         stepCount={STEP_COUNT}
         onChange={setSleepQuality}
         onContinue={() => goToStep('agreement', 'continue', { has_sleep_quality: true })}
-        onBack={() => goToStep('stress', 'back')}
+        onBack={() => goToStep('mindRacing', 'back')}
         onSkip={() => goToStep('agreement', 'skip')}
       />
     );
@@ -607,13 +628,13 @@ export default function OnboardingFlow({
         onChange={(id, value) =>
           setAgreementResponses((prev) => ({ ...prev, [id]: value }))
         }
-        onContinue={() => goToStep('scienceCredibility', 'continue', {
+        onContinue={() => goToStep('experience', 'continue', {
           agreement_response_count: Object.values(agreementResponses).filter(
             (value) => value != null,
           ).length,
         })}
         onBack={() => goToStep('sleep', 'back')}
-        onSkip={() => goToStep('scienceCredibility', 'skip')}
+        onSkip={() => goToStep('experience', 'skip')}
       />
     );
   }
@@ -628,7 +649,7 @@ export default function OnboardingFlow({
         onContinue={() => goToStep('assessmentReflection', 'continue', {
           has_experience_level: experienceLevel != null,
         })}
-        onBack={() => goToStep('scienceCredibility', 'back')}
+        onBack={() => goToStep('agreement', 'back')}
         onSkip={() => goToStep('assessmentReflection', 'skip')}
       />
     );
@@ -644,7 +665,7 @@ export default function OnboardingFlow({
         experienceLevel={experienceLevel}
         stepIndex={stepIndex}
         stepCount={STEP_COUNT}
-        onContinue={() => goToStep('lungCapacity', 'continue')}
+        onContinue={() => goToStep('scienceCredibility', 'continue')}
         onBack={() => goToStep('experience', 'back')}
       />
     );
@@ -659,7 +680,7 @@ export default function OnboardingFlow({
           setLungCapacity(result);
           goToStep('age', 'continue', { has_lung_capacity: true });
         }}
-        onBack={() => goToStep('assessmentReflection', 'back')}
+        onBack={() => goToStep('scienceCredibility', 'back')}
         onSkip={() => goToStep('age', 'skip')}
       />
     );
@@ -686,9 +707,20 @@ export default function OnboardingFlow({
         stepIndex={stepIndex}
         stepCount={STEP_COUNT}
         onSelect={setGender}
-        onContinue={() => goToStep('dailyTime', 'continue', { has_gender: gender != null })}
+        onContinue={() => goToStep('consistency', 'continue', { has_gender: gender != null })}
         onBack={() => goToStep('age', 'back')}
-        onSkip={() => goToStep('dailyTime', 'skip')}
+        onSkip={() => goToStep('consistency', 'skip')}
+      />
+    );
+  }
+
+  if (step === 'consistency') {
+    return (
+      <ConsistencyScreen
+        stepIndex={stepIndex}
+        stepCount={STEP_COUNT}
+        onContinue={() => goToStep('dailyTime', 'continue')}
+        onBack={() => goToStep('gender', 'back')}
       />
     );
   }
@@ -701,7 +733,7 @@ export default function OnboardingFlow({
         stepCount={STEP_COUNT}
         onChange={setDailyMinutes}
         onContinue={() => goToStep('notifications', 'continue', { has_daily_minutes: true })}
-        onBack={() => goToStep('gender', 'back')}
+        onBack={() => goToStep('consistency', 'back')}
         onSkip={() => goToStep('notifications', 'skip')}
       />
     );
@@ -712,7 +744,6 @@ export default function OnboardingFlow({
       <BaselineIntroScreen
         stepIndex={stepIndex}
         stepCount={STEP_COUNT}
-        name={name}
         onContinue={() => goToStep('baseline', 'continue')}
         onBack={() => goToStep('notifications', 'back')}
       />
@@ -754,6 +785,7 @@ export default function OnboardingFlow({
         baseline={baseline}
         stressLevel={stressLevel}
         sleepQuality={sleepQuality}
+        racingLevel={racingLevel}
         agreementResponses={agreementResponses}
         experienceLevel={experienceLevel}
         stepIndex={stepIndex}
@@ -779,10 +811,21 @@ export default function OnboardingFlow({
               void syncAppsFlyerIdentityForUser(userId, userEmail);
             }
             void collectRevenueCatDeviceIdentifiers();
-            goToStep('founderNote', 'continue');
+            goToStep('fiveMinutes', 'continue');
           });
         }}
         onBack={() => goToStep('recommendation', 'back')}
+      />
+    );
+  }
+
+  if (step === 'fiveMinutes') {
+    return (
+      <FiveMinutesScreen
+        stepIndex={stepIndex}
+        stepCount={STEP_COUNT}
+        onContinue={() => goToStep('founderNote', 'continue')}
+        onBack={() => goToStep('attPriming', 'back')}
       />
     );
   }
@@ -794,7 +837,7 @@ export default function OnboardingFlow({
         stepIndex={stepIndex}
         stepCount={STEP_COUNT}
         onContinue={() => goToStep('pact', 'continue')}
-        onBack={() => goToStep('attPriming', 'back')}
+        onBack={() => goToStep('fiveMinutes', 'back')}
       />
     );
   }
@@ -828,8 +871,8 @@ export default function OnboardingFlow({
         stepCount={STEP_COUNT}
         name={name.trim() || null}
         intentTitle={scIntentTitle}
-        onContinue={() => goToStep('experience', 'continue')}
-        onBack={() => goToStep('agreement', 'back')}
+        onContinue={() => goToStep('lungCapacity', 'continue')}
+        onBack={() => goToStep('assessmentReflection', 'back')}
       />
     );
   }
@@ -861,6 +904,7 @@ export default function OnboardingFlow({
     const mindMap = computeMindMap({
       stressLevel,
       sleepQuality,
+      racingLevel,
       agreementResponses,
       experienceLevel,
     });
