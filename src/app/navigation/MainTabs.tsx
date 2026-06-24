@@ -4,6 +4,7 @@ import BreathScreen from '../../screens/BreathScreen';
 import HeartTabScreen from '../../screens/HeartTabScreen';
 import ProfileScreen from '../../screens/ProfileScreen';
 import type { MainTabParamList } from './types';
+import { fonts } from '../../theme/typography';
 
 const Tab = createNativeBottomTabNavigator<MainTabParamList>();
 
@@ -14,6 +15,7 @@ export function MainTabs() {
         headerShown: false,
         tabBarControllerMode: 'tabBar',
         tabBarMinimizeBehavior: 'auto',
+        tabBarLabelStyle: { fontFamily: fonts.semibold },
       }}
     >
       <Tab.Screen

@@ -217,7 +217,7 @@ export default function BreathScreen({ navigation }: BreathTabScreenProps) {
               <Text style={styles.measureTitle}>
                 {azoraEstimate
                   ? 'Ready to beat your record?'
-                  : 'Tap to start your measure your score'}
+                  : 'Tap to measure your Azora score'}
               </Text>
               <Icon name="chevron-right" size={22} color={colors.text.tertiary} />
             </CardSurface>
@@ -341,7 +341,7 @@ const styles = StyleSheet.create({
   measureTitle: {
     ...typography.body.medium,
     fontFamily: fonts.semibold,
-    color: colors.text.primary,
+    color: colors.text.secondary,
     flex: 1,
   },
   measurePressed: {
