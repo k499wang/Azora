@@ -9,7 +9,6 @@ interface ProfileIdentityCardProps {
   displayName: string;
   avatarLabel: string;
   avatarUrl?: string | null;
-  subtitle?: string | null;
   isUploading?: boolean;
   onChangePhoto?: () => void;
   onEditDisplayName?: () => void;
@@ -19,7 +18,6 @@ export default function ProfileIdentityCard({
   displayName,
   avatarLabel,
   avatarUrl,
-  subtitle,
   isUploading = false,
   onChangePhoto,
   onEditDisplayName,
@@ -59,6 +57,7 @@ export default function ProfileIdentityCard({
       </Pressable>
 
       <View style={styles.nameRow}>
+        {onEditDisplayName != null ? <View style={styles.editNameButton} /> : null}
         <Text style={styles.name} numberOfLines={1}>
           {displayName}
         </Text>
@@ -81,8 +80,6 @@ export default function ProfileIdentityCard({
           </Pressable>
         ) : null}
       </View>
-
-      {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
     </View>
   );
 }
@@ -162,13 +159,6 @@ const styles = StyleSheet.create({
     ...typography.title.title3,
     flexShrink: 1,
     color: colors.text.primary,
-    textAlign: 'center',
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-  },
-  subtitle: {
-    ...typography.body.small,
-    color: colors.text.tertiary,
     textAlign: 'center',
     fontFamily: fonts.semibold,
     fontWeight: '500',

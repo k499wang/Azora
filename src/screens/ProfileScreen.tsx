@@ -17,30 +17,14 @@ import ProfileIdentityCard from '../components/profile/ProfileIdentityCard';
 import ProfileCompletionCalendarCard from '../components/profile/ProfileCompletionCalendarCard';
 import { useAuthStore } from '../stores/authStore';
 import type { ProfileScreenProps } from '../app/navigation';
-import type { ProfileSummary } from '../services/profile/profileSummaryService';
 import { trackProfileAction } from '../services/analytics/tracking';
 import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
 import { useUploadProfileAvatarMutation } from '../queries/profile/useUploadProfileAvatarMutation';
 import { useUpdateProfileDisplayNameMutation } from '../queries/profile/useUpdateProfileDisplayNameMutation';
+import { getBackgroundImageSource } from '../services/images/backgroundImageCache';
 
 function getFallbackDisplayName(_email: string | undefined): string {
   return '—';
-}
-
-function getIdentitySubtitle(summary: ProfileSummary | undefined): string | null {
-  if (summary == null) {
-    return null;
-  }
-
-  if (summary.currentStreak > 0) {
-    return `${summary.currentStreak}-day streak`;
-  }
-
-  if (summary.breathHoldCount > 0) {
-    return `${summary.breathHoldCount} breath ${summary.breathHoldCount === 1 ? 'hold' : 'holds'}`;
-  }
-
-  return 'New here';
 }
 
 function getAvatarLabel(displayName: string): string {
@@ -73,7 +57,6 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
     profileSummary?.profile?.displayName ?? getFallbackDisplayName(user?.email);
   const avatarLabel = getAvatarLabel(displayName);
   const avatarUrl = profileSummary?.profile?.avatarUrl;
-  const subtitle = getIdentitySubtitle(profileSummary);
 
   const handleChangePhoto = async () => {
     if (uploadAvatarMutation.isPending) {
@@ -183,7 +166,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
               )}
             >
               <Image
-                source={require('../../assets/profile-hero-background.png')}
+                source={getBackgroundImageSource('profileHero')}
                 style={StyleSheet.absoluteFill}
                 contentFit="cover"
                 contentPosition="center"
@@ -211,7 +194,6 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
               displayName={displayName}
               avatarLabel={avatarLabel}
               avatarUrl={avatarUrl}
-              subtitle={subtitle}
               isUploading={uploadAvatarMutation.isPending}
               onChangePhoto={handleChangePhoto}
               onEditDisplayName={() => {
@@ -260,7 +242,6 @@ const styles = StyleSheet.create({
     position: 'relative',
     paddingTop: spacing.md,
     paddingBottom: spacing.xl,
-    overflow: 'hidden',
   },
   heroBackdrop: {
     position: 'absolute',

@@ -20,6 +20,7 @@ import { spacing, padding, margin } from '../theme/spacing';
 import { useAuthStore } from '../stores/authStore';
 import { useProfileQuery } from '../queries/profile/useProfileQuery';
 import { useHeartRateStatsQuery } from '../queries/tracking/useHeartRateStatsQuery';
+import { getBackgroundImageSource } from '../services/images/backgroundImageCache';
 import { useFeatureAccess } from '../hooks/useFeatureAccess';
 import { FeatureKey } from '../services/subscriptions/featureAccess';
 import { PaywallPlacement } from '../services/paywall';
@@ -130,7 +131,7 @@ export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
               )}
             >
               <Image
-                source={require('../../assets/heart-hero-background.png')}
+                source={getBackgroundImageSource('heartHero')}
                 style={StyleSheet.absoluteFill}
                 contentFit="cover"
                 contentPosition="center"

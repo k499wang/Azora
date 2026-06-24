@@ -19,6 +19,7 @@ import AzoraScoreInfoDialog from '../components/exercise/AzoraScoreInfoDialog';
 import ProUpgradeButton from '../components/common/ProUpgradeButton';
 import ProfileBreathHoldTrendCard from '../components/profile/ProfileBreathHoldTrendCard';
 import HeartRateStatsSection from '../components/heartRate/HeartRateStatsSection';
+import { getBackgroundImageSource } from '../services/images/backgroundImageCache';
 import { estimateAzoraScore, azoraScoreFill, azoraTierMeta } from '../lib/azoraScore';
 import { deriveHoldStats } from '../lib/holdStats';
 import { formatLocalDate } from '../lib/calendar/weekCalendarDays';
@@ -140,7 +141,7 @@ export default function BreathScreen({ navigation }: BreathTabScreenProps) {
               )}
             >
               <Image
-                source={require('../../assets/home-hero-meadow.png')}
+                source={getBackgroundImageSource('breathHero')}
                 style={StyleSheet.absoluteFill}
                 contentFit="cover"
                 contentPosition="center"
