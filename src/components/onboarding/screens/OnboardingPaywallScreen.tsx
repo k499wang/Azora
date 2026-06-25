@@ -36,6 +36,7 @@ const STEP_COUNT = 4;
 const STEP_SLIDE_DISTANCE = 40;
 const ENTRANCE_EASING = Easing.bezier(0.22, 1, 0.36, 1);
 const ENTRANCE_INITIAL_SCALE = 0.992;
+type StepTransitionPhase = 'idle' | 'exiting' | 'entering';
 
 interface OnboardingPaywallScreenProps {
   offering: PaywallOffering | null;
@@ -74,6 +75,7 @@ export default function OnboardingPaywallScreen({
 }: OnboardingPaywallScreenProps) {
   const insets = useSafeAreaInsets();
   const [step, setStep] = useState(0);
+  const stepRef = useRef(step);
   const stepOpacity = useRef(new Animated.Value(1)).current;
   const stepTranslateX = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -83,7 +85,15 @@ export default function OnboardingPaywallScreen({
   const entranceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasStartedEntranceRef = useRef(false);
   const stepTransitionRef = useRef<{ stop: () => void } | null>(null);
-  const isStepTransitioningRef = useRef(false);
+  const stepTransitionVersionRef = useRef(0);
+  const stepTransitionPhaseRef = useRef<StepTransitionPhase>('idle');
+  const pendingStepTransitionRef = useRef<{
+    next: number;
+    direction: number;
+  } | null>(null);
+  const animateToStepRef = useRef<(next: number, direction: number) => void>(
+    () => {},
+  );
 
   const selectedPackage = offering?.packages.find((pkg) => pkg.id === selectedPackageId);
   const annualPackage = offering?.packages.find((pkg) => pkg.id === 'annual');
@@ -97,6 +107,22 @@ export default function OnboardingPaywallScreen({
     () => computeAnnualSavings(annualPackage, weeklyPackage),
     [annualPackage, weeklyPackage],
   );
+
+  useEffect(() => {
+    stepRef.current = step;
+  }, [step]);
+
+  const flushPendingStepTransition = useCallback(() => {
+    const pendingTransition = pendingStepTransitionRef.current;
+    pendingStepTransitionRef.current = null;
+    if (!pendingTransition || pendingTransition.next === stepRef.current) {
+      return;
+    }
+    animateToStepRef.current(
+      pendingTransition.next,
+      pendingTransition.direction,
+    );
+  }, []);
 
   const startEntranceAnimation = useCallback(() => {
     if (hasStartedEntranceRef.current) return;
@@ -139,9 +165,16 @@ export default function OnboardingPaywallScreen({
 
   const animateToStep = useCallback(
     (next: number, direction: number) => {
-      if (isStepTransitioningRef.current) return;
-      isStepTransitioningRef.current = true;
+      if (next === stepRef.current) return;
+      if (stepTransitionPhaseRef.current !== 'idle') {
+        pendingStepTransitionRef.current = { next, direction };
+        return;
+      }
+
+      const transitionVersion = stepTransitionVersionRef.current + 1;
+      stepTransitionVersionRef.current = transitionVersion;
       stepTransitionRef.current?.stop();
+      stepTransitionPhaseRef.current = 'exiting';
 
       const exitAnimation = Animated.parallel([
         Animated.timing(stepOpacity, {
@@ -160,22 +193,31 @@ export default function OnboardingPaywallScreen({
 
       stepTransitionRef.current = exitAnimation;
       exitAnimation.start(({ finished }) => {
+        if (transitionVersion !== stepTransitionVersionRef.current) return;
         if (!finished) {
-          isStepTransitioningRef.current = false;
+          stepTransitionPhaseRef.current = 'idle';
+          stepTransitionRef.current = null;
           return;
         }
         stepTranslateX.setValue(direction * STEP_SLIDE_DISTANCE);
+        stepRef.current = next;
         setStep(next);
       });
     },
     [stepOpacity, stepTranslateX],
   );
 
+  animateToStepRef.current = animateToStep;
+
   useEffect(() => {
     if (isInitialStep.current) {
       isInitialStep.current = false;
       return;
     }
+
+    const transitionVersion = stepTransitionVersionRef.current + 1;
+    stepTransitionVersionRef.current = transitionVersion;
+    stepTransitionPhaseRef.current = 'entering';
 
     const enterAnimation = Animated.parallel([
       Animated.timing(stepOpacity, {
@@ -195,18 +237,23 @@ export default function OnboardingPaywallScreen({
 
     stepTransitionRef.current = enterAnimation;
     enterAnimation.start(({ finished }) => {
-      if (finished) {
-        isStepTransitioningRef.current = false;
-        stepTransitionRef.current = null;
+      if (transitionVersion !== stepTransitionVersionRef.current) return;
+      if (!finished) {
+        stepTransitionPhaseRef.current = 'idle';
+        return;
       }
+      stepTransitionPhaseRef.current = 'idle';
+      stepTransitionRef.current = null;
+      flushPendingStepTransition();
     });
 
     return () => enterAnimation.stop();
-  }, [step, stepOpacity, stepTranslateX]);
+  }, [flushPendingStepTransition, step, stepOpacity, stepTranslateX]);
 
   useEffect(
     () => () => {
-      isStepTransitioningRef.current = false;
+      stepTransitionPhaseRef.current = 'idle';
+      pendingStepTransitionRef.current = null;
       stepTransitionRef.current?.stop();
       stepTransitionRef.current = null;
     },
