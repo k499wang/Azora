@@ -34,7 +34,7 @@ export function buildPaywallPersonalization(
 
 function toTarget(score: MindMapScore): MindMapScore {
   const bump =
-    score.value <= 40 ? 25 : score.value <= 60 ? 18 : score.value <= 80 ? 12 : 6;
+    score.value <= 40 ? 35 : score.value <= 60 ? 28 : score.value <= 80 ? 20 : 10;
   return { ...score, value: Math.min(100, score.value + bump) };
 }
 

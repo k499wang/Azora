@@ -96,9 +96,9 @@ export default function MindMapRadar({
           <Polygon
             points={targetPoints}
             fill={colors.orange[300]}
-            fillOpacity={0.25}
+            fillOpacity={0.3}
             stroke={colors.orange[500]}
-            strokeWidth={2}
+            strokeWidth={3}
             strokeDasharray="4,4"
           />
         ) : null}
@@ -129,7 +129,7 @@ export default function MindMapRadar({
                   key={`target-dot-${i}`}
                   cx={p.x}
                   cy={p.y}
-                  r={3}
+                  r={4.5}
                   fill={colors.orange[500]}
                 />
               );
