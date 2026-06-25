@@ -271,7 +271,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   heroSection: {
-    marginTop: 0,
+    marginTop: -spacing.xl,
   },
   heroEyebrow: {
     ...typography.caption.caption2,

@@ -47,7 +47,7 @@ export default function ConsistencyScreen({
 
   return (
     <OnboardingScreenLayout
-      title="Consistency is the key to unlocking these benefits."
+      title="Consistency is what creates real change."
       subtitle="A few minutes every day compounds. Each session builds on the last to steadily lift your wellbeing."
       progress={stepIndex / stepCount}
       onBack={onBack}
@@ -99,7 +99,7 @@ export default function ConsistencyScreen({
           })}
         </View>
 
-        <Text style={styles.caption}>Sessions on Azora</Text>
+        <Text style={styles.caption}>Your first week</Text>
       </View>
     </OnboardingScreenLayout>
   );
@@ -124,7 +124,6 @@ const styles = StyleSheet.create({
     height: CHART_HEIGHT + 24,
     paddingTop: 24,
     paddingLeft: spacing.sm,
-    borderLeftWidth: 1.5,
     borderBottomWidth: 1.5,
     borderColor: colors.neutral[300],
   },

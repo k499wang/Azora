@@ -1,12 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
-import {
-  Animated,
+import { useEffect, useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import Animated, {
   Easing,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import Icon from '../../common/icons/Icon';
 import { colors } from '../../../theme/colors';
@@ -19,32 +18,24 @@ const SCIENCE_BODY_TEXT =
 
 export function BaselineSciencePanel() {
   const [open, setOpen] = useState(false);
-  const [contentHeight, setContentHeight] = useState(0);
-  const heightAnim = useRef(new Animated.Value(0)).current;
-  const contentAnim = useRef(new Animated.Value(0)).current;
+  const progress = useSharedValue(0);
+  const contentHeight = useSharedValue(0);
 
   useEffect(() => {
-    Animated.parallel([
-      Animated.timing(heightAnim, {
-        toValue: open ? contentHeight : 0,
-        duration: open ? 320 : 220,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: false,
-      }),
-      Animated.timing(contentAnim, {
-        toValue: open ? 1 : 0,
-        duration: open ? 220 : 140,
-        delay: open ? 60 : 0,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [contentAnim, contentHeight, heightAnim, open]);
+    progress.value = withTiming(open ? 1 : 0, {
+      duration: open ? 300 : 220,
+      easing: Easing.out(Easing.cubic),
+    });
+  }, [open, progress]);
 
-  const contentTranslateY = contentAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [-8, 0],
-  });
+  const clipStyle = useAnimatedStyle(() => ({
+    height: progress.value * contentHeight.value,
+  }));
+
+  const innerStyle = useAnimatedStyle(() => ({
+    opacity: progress.value,
+    transform: [{ translateY: (1 - progress.value) * -8 }],
+  }));
 
   const toggleOpen = () => {
     setOpen((value) => !value);
@@ -69,33 +60,16 @@ export function BaselineSciencePanel() {
         <Text style={styles.scienceButtonChevron}>{open ? '−' : '+'}</Text>
       </Pressable>
 
-      <View style={styles.scienceMeasure} pointerEvents="none" aria-hidden>
-        <ScienceBody
-          onLayoutHeight={(height) => {
-            if (height > 0 && Math.abs(height - contentHeight) > 0.5) {
-              setContentHeight(height);
-            }
-          }}
-        />
-      </View>
-
       <Animated.View
-        style={[
-          styles.scienceBodyClip,
-          { height: heightAnim },
-        ]}
+        style={[styles.scienceBodyClip, clipStyle]}
         pointerEvents={open ? 'auto' : 'none'}
       >
-        <Animated.View
-          style={[
-            styles.scienceBodyInner,
-            {
-              opacity: contentAnim,
-              transform: [{ translateY: contentTranslateY }],
-            },
-          ]}
-        >
-          <ScienceBody />
+        <Animated.View style={[styles.scienceBodyInner, innerStyle]}>
+          <ScienceBody
+            onLayoutHeight={(height) => {
+              contentHeight.value = height;
+            }}
+          />
         </Animated.View>
       </Animated.View>
     </View>
@@ -105,18 +79,14 @@ export function BaselineSciencePanel() {
 export default BaselineSciencePanel;
 
 interface ScienceBodyProps {
-  onLayoutHeight?: (height: number) => void;
+  onLayoutHeight: (height: number) => void;
 }
 
 function ScienceBody({ onLayoutHeight }: ScienceBodyProps) {
   return (
     <View
       style={styles.sciencePanel}
-      onLayout={
-        onLayoutHeight
-          ? (event) => onLayoutHeight(event.nativeEvent.layout.height)
-          : undefined
-      }
+      onLayout={(event) => onLayoutHeight(event.nativeEvent.layout.height)}
     >
       <View style={styles.sciencePanelHeader}>
         <View style={styles.scienceButtonIcon}>
@@ -178,13 +148,6 @@ const styles = StyleSheet.create({
   },
   scienceBodyInner: {
     alignSelf: 'stretch',
-  },
-  scienceMeasure: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    top: 0,
-    opacity: 0,
   },
   sciencePanel: {
     gap: spacing.sm,

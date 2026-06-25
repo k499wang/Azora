@@ -90,6 +90,9 @@ export default function RecommendationScreen({
   const barAnims = useRef(
     PERSONALIZING_STEPS.map(() => new Animated.Value(0)),
   ).current;
+  const checkAnims = useRef(
+    PERSONALIZING_STEPS.map(() => new Animated.Value(0)),
+  ).current;
   const resultFade = useRef(new Animated.Value(0)).current;
   const resultSlide = useRef(new Animated.Value(16)).current;
 
@@ -121,6 +124,14 @@ export default function RecommendationScreen({
       buildBarAnimation(barAnims[i], STEP_DURATION_MS).start(({ finished }) => {
         if (!finished || cancelled) return;
         setCompletedSteps(i + 1);
+        // Pop the checkmark in with a little overshoot the moment its bar lands.
+        Animated.spring(checkAnims[i], {
+          toValue: 1,
+          damping: 9,
+          stiffness: 190,
+          mass: 0.6,
+          useNativeDriver: true,
+        }).start();
         if (i + 1 < barAnims.length) {
           runStep(i + 1);
         } else {
@@ -133,9 +144,10 @@ export default function RecommendationScreen({
     return () => {
       cancelled = true;
       barAnims.forEach((anim) => anim.stopAnimation());
+      checkAnims.forEach((anim) => anim.stopAnimation());
       clearTimeout(revealTimer);
     };
-  }, [barAnims, resultFade, resultSlide]);
+  }, [barAnims, checkAnims, resultFade, resultSlide]);
 
   if (!showingResult) {
     return (
@@ -163,9 +175,14 @@ export default function RecommendationScreen({
                       {label}
                     </Text>
                     {done ? (
-                      <View style={styles.stepCheck}>
+                      <Animated.View
+                        style={[
+                          styles.stepCheck,
+                          { transform: [{ scale: checkAnims[i] }] },
+                        ]}
+                      >
                         <Icon name="check" size={12} color={colors.text.inverse} />
-                      </View>
+                      </Animated.View>
                     ) : (
                       <View style={styles.stepCheckPending} />
                     )}

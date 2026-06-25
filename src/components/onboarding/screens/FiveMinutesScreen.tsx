@@ -42,6 +42,14 @@ interface FiveMinutesScreenProps {
   onBack: () => void;
 }
 
+const TARGET_DAYS = 30;
+
+function formatTargetDate(daysAhead: number): string {
+  const date = new Date();
+  date.setDate(date.getDate() + daysAhead);
+  return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+}
+
 export default function FiveMinutesScreen({
   stepIndex,
   stepCount,
@@ -49,6 +57,7 @@ export default function FiveMinutesScreen({
   onBack,
 }: FiveMinutesScreenProps) {
   const [width, setWidth] = useState(0);
+  const targetDate = formatTargetDate(TARGET_DAYS);
 
   const progress = useSharedValue(0);
 
@@ -125,8 +134,8 @@ export default function FiveMinutesScreen({
 
   return (
     <OnboardingScreenLayout
-      title="Just 5 minutes a day."
-      subtitle="Just 5 minutes a day is enough to see real improvements in your wellbeing."
+      title={`Feel calmer by ${targetDate}.`}
+      subtitle="See real results from just 5 minutes a day, backed by research on breathing and stress."
       progress={stepIndex / stepCount}
       onBack={onBack}
       footer={<OnboardingPrimaryButton label="Continue" onPress={onContinue} />}
@@ -187,8 +196,8 @@ export default function FiveMinutesScreen({
         <Text style={styles.caption}>Sessions on Azora</Text>
 
         <Text style={styles.note}>
-          Users report feeling better for longer when they practice consistently
-          — just 5 minutes a day on Azora.
+          The gains compound with consistency. Miss a day and you reset, so the
+          habit matters more than any single session.
         </Text>
       </View>
     </OnboardingScreenLayout>

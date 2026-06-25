@@ -60,14 +60,14 @@ export default function RecommendedExerciseScreen({
 
   return (
     <OnboardingScreenLayout
-      title="Your Recommended Exercise"
-      subtitle="Do this once a day — most people feel the difference within a week."
+      title="What we recommend for you."
+      subtitle="Shaped around your answers and your heart rate. Return to it each day to see better results."
       progress={stepIndex / stepCount}
       onBack={onBack}
       footer={<OnboardingPrimaryButton label="Sounds good" onPress={onContinue} />}
     >
       <View style={styles.techniqueCard}>
-        <Text style={styles.techniqueKicker}>RECOMMENDED TECHNIQUE</Text>
+        <Text style={styles.techniqueKicker}>RECOMMENDED FOR YOU</Text>
         <Text style={styles.techniqueName}>{nickname ?? technique.name}</Text>
         <Text style={styles.techniqueSubname}>{technique.name}</Text>
         <Text style={styles.techniqueTagline}>{technique.tagline}</Text>
@@ -135,7 +135,7 @@ export default function RecommendedExerciseScreen({
           ) : null}
 
           <Text style={styles.hrFootnote}>
-            Practice daily and watch this drop over your first week.
+            This is today. Come back every day and watch it improve.
           </Text>
         </View>
       ) : null}

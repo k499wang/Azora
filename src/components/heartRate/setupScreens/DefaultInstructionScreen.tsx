@@ -24,7 +24,7 @@ import { PaywallPlacement } from '../../../services/paywall';
 
 const STEPS = [
   'Cover the rear camera with the fleshy pad of your finger, not your nail',
-  'Rest your finger flat so it covers both the lens and the flash',
+  'Rest your finger flat so it fully covers the camera lens',
   'Keep your phone and finger completely still',
   'Use gentle, steady pressure — pressing too hard blocks the signal',
   'Breathe normally and sit still until the reading finishes',

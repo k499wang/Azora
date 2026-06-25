@@ -21,7 +21,7 @@ import { fonts, typography } from '../../../theme/typography';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 
-const CHART_HEIGHT = 230;
+const CHART_HEIGHT = 252;
 const PAD_LEFT = 8;
 const PAD_RIGHT = 16;
 const PAD_TOP = 12;
@@ -130,8 +130,8 @@ export default function IntentProjectionScreen({
 
   return (
     <OnboardingScreenLayout
-      title="Breathing is your most underused system."
-      subtitle={`It's the only autonomic system you can steer directly. A few minutes a day cuts stress within weeks.`}
+      title="Breathing is a skill that no one has taught you."
+      subtitle={`Most people run on autopilot. Learn to breathe right, and a few minutes a day improves everything.`}
       progress={stepIndex / stepCount}
       onBack={onBack}
       footer={
@@ -140,6 +140,9 @@ export default function IntentProjectionScreen({
     >
       <View style={styles.chartWrap}>
         <Text style={styles.yAxisLabel}>Overall wellbeing</Text>
+        <Text style={styles.citation}>
+          Adapted from Fincham et al., 2023 · Scientific Reports
+        </Text>
         <View
           style={{ width: '100%', height: CHART_HEIGHT }}
           onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
@@ -192,10 +195,6 @@ export default function IntentProjectionScreen({
         </View>
 
         <Text style={styles.caption}>Weeks of daily practice</Text>
-        <Text style={styles.citation}>
-          Projected wellbeing · adapted from Fincham et al., 2023 ·
-          Scientific Reports
-        </Text>
       </View>
     </OnboardingScreenLayout>
   );
@@ -205,7 +204,7 @@ const styles = StyleSheet.create({
   chartWrap: {
     width: '100%',
     gap: spacing.md,
-    marginTop: spacing.sm,
+    marginTop: -spacing.xs,
     paddingHorizontal: spacing.md,
   },
   yAxisLabel: {
@@ -243,7 +242,7 @@ const styles = StyleSheet.create({
     color: colors.text.tertiary,
     letterSpacing: 0.3,
     textAlign: 'center',
-    marginTop: spacing.lg,
+    marginTop: -spacing.sm,
     paddingHorizontal: spacing.md,
   },
 });

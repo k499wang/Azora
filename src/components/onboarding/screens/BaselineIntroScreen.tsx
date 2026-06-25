@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
+import { LinearGradient } from 'expo-linear-gradient';
+import MaskedView from '@react-native-masked-view/masked-view';
 import * as Haptics from 'expo-haptics';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
@@ -107,7 +109,23 @@ export default function BaselineIntroScreen({
           { opacity: fade, transform: [{ translateY: rise }] },
         ]}
       >
-        <View style={styles.monitor}>
+        <MaskedView
+          style={styles.monitor}
+          maskElement={
+            <LinearGradient
+              colors={[
+                'transparent',
+                '#000',
+                '#000',
+                'transparent',
+              ]}
+              locations={[0, 0.18, 0.82, 1]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={StyleSheet.absoluteFill}
+            />
+          }
+        >
           <View style={styles.gridLineTop} />
           <View style={styles.gridLineMid} />
           <View style={styles.gridLineBottom} />
@@ -138,13 +156,12 @@ export default function BaselineIntroScreen({
               />
             </Svg>
           </Animated.View>
-
-        </View>
+        </MaskedView>
 
         <View style={styles.copy}>
           <Text style={styles.headline}>{title}</Text>
           <Text style={styles.sub}>
-            A quick reading so your plan tunes itself to you.
+            Azora uses PPG to read your heart rate and build a custom plan.
           </Text>
         </View>
       </Animated.View>
