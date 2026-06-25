@@ -479,14 +479,14 @@ export default function PactScreen({
           >
             {/* Title */}
             <View style={styles.copy}>
-              <Text style={typography.title.title1}>Give it a chance: Keep a habit of Azora every day</Text>
+              <Text style={typography.title.title1}>Make a promise to yourself to show up every day</Text>
               <Text
                 style={[
                   typography.body.small,
                   { color: colors.text.secondary },
                 ]}
               >
-                Small steps add up to something real.
+                Consistency beats intensity. Every day matters more than any one session.
               </Text>
             </View>
 
