@@ -45,7 +45,7 @@ export default function BrainScienceScreen({
 
   return (
     <OnboardingScreenLayout
-      title="Breathing is neuroscience."
+      title="Breathing is a neuroscience."
       subtitle="Azora uses proven breathing science to reset your nervous system in seconds."
       progress={stepIndex / stepCount}
       onBack={onBack}
@@ -78,12 +78,12 @@ export default function BrainScienceScreen({
         <View style={styles.pillRow}>
           <View style={[styles.pillCol, styles.pillColBefore]}>
             <View style={styles.pill}>
-              <Text style={styles.pillLabel}>before Azora</Text>
+              <Text style={styles.pillLabel}>Before Azora</Text>
             </View>
           </View>
           <View style={[styles.pillCol, styles.pillColAfter]}>
             <View style={styles.pill}>
-              <Text style={styles.pillLabel}>after Azora</Text>
+              <Text style={styles.pillLabel}>After Azora</Text>
             </View>
           </View>
         </View>
