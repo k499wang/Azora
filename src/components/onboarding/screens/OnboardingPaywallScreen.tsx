@@ -34,6 +34,8 @@ const TERMS_URL = 'https://www.tryazora.app/terms';
 const PRIVACY_URL = 'https://www.tryazora.app/privacy';
 const STEP_COUNT = 4;
 const STEP_SLIDE_DISTANCE = 40;
+const ENTRANCE_EASING = Easing.bezier(0.22, 1, 0.36, 1);
+const ENTRANCE_INITIAL_SCALE = 0.992;
 
 interface OnboardingPaywallScreenProps {
   offering: PaywallOffering | null;
@@ -75,8 +77,13 @@ export default function OnboardingPaywallScreen({
   const stepOpacity = useRef(new Animated.Value(1)).current;
   const stepTranslateX = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(18)).current;
+  const scaleAnim = useRef(new Animated.Value(ENTRANCE_INITIAL_SCALE)).current;
   const isInitialStep = useRef(true);
+  const entranceAnimationRef = useRef<{ stop: () => void } | null>(null);
+  const entranceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hasStartedEntranceRef = useRef(false);
+  const stepTransitionRef = useRef<{ stop: () => void } | null>(null);
+  const isStepTransitioningRef = useRef(false);
 
   const selectedPackage = offering?.packages.find((pkg) => pkg.id === selectedPackageId);
   const annualPackage = offering?.packages.find((pkg) => pkg.id === 'annual');
@@ -91,26 +98,52 @@ export default function OnboardingPaywallScreen({
     [annualPackage, weeklyPackage],
   );
 
-  useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 420,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 460,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [fadeAnim, slideAnim]);
+  const startEntranceAnimation = useCallback(() => {
+    if (hasStartedEntranceRef.current) return;
+    hasStartedEntranceRef.current = true;
+
+    entranceTimeoutRef.current = setTimeout(() => {
+      const entranceAnimation = Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 680,
+          easing: ENTRANCE_EASING,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scaleAnim, {
+          toValue: 1,
+          duration: 760,
+          easing: ENTRANCE_EASING,
+          useNativeDriver: true,
+        }),
+      ]);
+
+      entranceAnimationRef.current = entranceAnimation;
+      entranceAnimation.start(({ finished }) => {
+        if (finished) entranceAnimationRef.current = null;
+      });
+    }, 80);
+  }, [fadeAnim, scaleAnim]);
+
+  useEffect(
+    () => () => {
+      if (entranceTimeoutRef.current) {
+        clearTimeout(entranceTimeoutRef.current);
+        entranceTimeoutRef.current = null;
+      }
+      entranceAnimationRef.current?.stop();
+      entranceAnimationRef.current = null;
+    },
+    [],
+  );
 
   const animateToStep = useCallback(
     (next: number, direction: number) => {
-      Animated.parallel([
+      if (isStepTransitioningRef.current) return;
+      isStepTransitioningRef.current = true;
+      stepTransitionRef.current?.stop();
+
+      const exitAnimation = Animated.parallel([
         Animated.timing(stepOpacity, {
           toValue: 0,
           duration: 200,
@@ -123,7 +156,14 @@ export default function OnboardingPaywallScreen({
           easing: Easing.in(Easing.cubic),
           useNativeDriver: true,
         }),
-      ]).start(() => {
+      ]);
+
+      stepTransitionRef.current = exitAnimation;
+      exitAnimation.start(({ finished }) => {
+        if (!finished) {
+          isStepTransitioningRef.current = false;
+          return;
+        }
         stepTranslateX.setValue(direction * STEP_SLIDE_DISTANCE);
         setStep(next);
       });
@@ -136,7 +176,8 @@ export default function OnboardingPaywallScreen({
       isInitialStep.current = false;
       return;
     }
-    Animated.parallel([
+
+    const enterAnimation = Animated.parallel([
       Animated.timing(stepOpacity, {
         toValue: 1,
         duration: 320,
@@ -150,8 +191,27 @@ export default function OnboardingPaywallScreen({
         mass: 0.9,
         useNativeDriver: true,
       }),
-    ]).start();
+    ]);
+
+    stepTransitionRef.current = enterAnimation;
+    enterAnimation.start(({ finished }) => {
+      if (finished) {
+        isStepTransitioningRef.current = false;
+        stepTransitionRef.current = null;
+      }
+    });
+
+    return () => enterAnimation.stop();
   }, [step, stepOpacity, stepTranslateX]);
+
+  useEffect(
+    () => () => {
+      isStepTransitioningRef.current = false;
+      stepTransitionRef.current?.stop();
+      stepTransitionRef.current = null;
+    },
+    [],
+  );
 
   const handleContinueWithoutPro = useCallback(() => {
     if (isBusy) return;
@@ -202,6 +262,10 @@ export default function OnboardingPaywallScreen({
         style={[styles.screenBody, { paddingTop: insets.top }]}
         edges={['left', 'right']}
       >
+        <Animated.View
+          onLayout={startEntranceAnimation}
+          style={[styles.entrance, { opacity: fadeAnim }]}
+        >
         <View style={styles.header}>
           {step > 0 ? (
             <Pressable
@@ -251,8 +315,7 @@ export default function OnboardingPaywallScreen({
             style={[
               styles.content,
               {
-                opacity: fadeAnim,
-                transform: [{ translateY: slideAnim }],
+                transform: [{ scale: scaleAnim }],
               },
             ]}
           >
@@ -369,6 +432,7 @@ export default function OnboardingPaywallScreen({
             </>
           )}
         </View>
+        </Animated.View>
       </SafeAreaView>
     </Animated.View>
   );
@@ -390,6 +454,9 @@ const styles = StyleSheet.create({
   screenBody: {
     flex: 1,
     backgroundColor: 'transparent',
+  },
+  entrance: {
+    flex: 1,
   },
   header: {
     minHeight: 40,

@@ -21,6 +21,7 @@ export type OnboardingStep =
   | 'baselineIntro'
   | 'baseline'
   | 'recommendation'
+  | 'recommendedExercise'
   | 'fiveMinutes'
   | 'founderNote'
   | 'scienceCredibility'

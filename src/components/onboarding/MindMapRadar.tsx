@@ -31,14 +31,14 @@ function pointOnAxis(
 export default function MindMapRadar({
   scores,
   targetScores,
-  size = 380,
+  size = 420,
   showValueOnLabel = true,
 }: MindMapRadarProps) {
   const labelOffset = 20;
-  const labelWidth = 72;
+  const labelWidth = 84;
   const cx = size / 2;
   const cy = size / 2;
-  const radius = 112;
+  const radius = 120;
   const total = scores.length;
 
   const ringPolygons = RINGS.map((scale) =>
@@ -75,7 +75,7 @@ export default function MindMapRadar({
             points={points}
             fill="none"
             stroke={colors.neutral[400]}
-            strokeWidth={1.25}
+            strokeWidth={2}
           />
         ))}
         {scores.map((_, i) => {
@@ -107,7 +107,7 @@ export default function MindMapRadar({
           fill={colors.primary.blue300}
           fillOpacity={0.55}
           stroke={colors.primary.blue500}
-          strokeWidth={2}
+          strokeWidth={2.5}
         />
         {scores.map((s, i) => {
           const p = pointOnAxis(cx, cy, radius * (s.value / 100), i, total);
@@ -150,11 +150,19 @@ export default function MindMapRadar({
             textAlign = 'right';
           }
         }
+        // Keep labels inside the canvas so the phone edge never clips them.
+        left = Math.max(0, Math.min(left, size - labelWidth));
+        // Lift the two upper-side labels so they sit clear of the pentagon.
+        const topNudge =
+          s.axis === 'breathEase' || s.axis === 'recovery' ? -20 : 0;
         return (
           <View
             key={`label-${s.axis}`}
             pointerEvents="none"
-            style={[styles.labelWrap, { left, top: p.y - 18, width: labelWidth }]}
+            style={[
+              styles.labelWrap,
+              { left, top: p.y - 18 + topNudge, width: labelWidth },
+            ]}
           >
             <Text style={[styles.labelTitle, { textAlign }]}>{s.label}</Text>
             {showValueOnLabel ? (
@@ -182,8 +190,8 @@ const styles = StyleSheet.create({
     ...typography.label.small,
     fontFamily: fonts.semibold,
     fontWeight: '500',
-    fontSize: 12,
-    lineHeight: 16,
+    fontSize: 14,
+    lineHeight: 18,
     color: colors.text.secondary,
   },
   labelValue: {

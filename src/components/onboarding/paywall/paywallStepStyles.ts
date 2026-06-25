@@ -160,6 +160,7 @@ export const paywallStepStyles = StyleSheet.create({
   radarWrap: {
     alignItems: 'center',
     justifyContent: 'center',
+    marginTop: -spacing.xl,
   },
   radarFooter: {
     flexDirection: 'row',
