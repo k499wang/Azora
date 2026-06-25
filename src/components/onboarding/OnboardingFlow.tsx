@@ -132,14 +132,6 @@ const BASE_STEP_INDEX = STEP_ORDER.reduce<Record<OnboardingStep, number>>(
   },
   {} as Record<OnboardingStep, number>,
 );
-const VISUAL_PROGRESS_STEP_COUNT = 100;
-const FRONT_LOADED_PROGRESS_EXPONENT = 0.65;
-
-function computeFrontLoadedProgress(stepIndex: number, stepCount: number) {
-  if (stepCount <= 0) return 0;
-  const rawProgress = Math.max(0, Math.min(1, stepIndex / stepCount));
-  return Math.pow(rawProgress, FRONT_LOADED_PROGRESS_EXPONENT);
-}
 
 type OnboardingTransitionAction = 'continue' | 'skip' | 'back' | 'auto';
 type OnboardingAnalyticsProperties = Record<string, string | number | boolean | null>;
@@ -570,16 +562,13 @@ export default function OnboardingFlow({
   };
 
   const stepIndex = stepIndexMap[step] ?? BASE_STEP_INDEX[step];
-  const visualStepIndex =
-    computeFrontLoadedProgress(stepIndex, stepCount) * VISUAL_PROGRESS_STEP_COUNT;
-  const visualStepCount = VISUAL_PROGRESS_STEP_COUNT;
 
   if (step === 'intentReflection' && selectedOption) {
     return (
       <IntentReflectionScreen
         option={selectedOption}
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
+        stepIndex={stepIndex}
+        stepCount={stepCount}
         isSubmitting={isSubmitting}
         onContinue={() => goToStep('intentProjection', 'continue')}
         onBack={() => goToStep('intent', 'back')}
@@ -591,8 +580,8 @@ export default function OnboardingFlow({
     return (
       <IntentProjectionScreen
         selectedIntents={selectedIntents}
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
+        stepIndex={stepIndex}
+        stepCount={stepCount}
         onContinue={() => goToStep('brainScience', 'continue')}
         onBack={() =>
           goToStep(INTENT_REFLECTION_ENABLED ? 'intentReflection' : 'intent', 'back')
@@ -604,8 +593,8 @@ export default function OnboardingFlow({
   if (step === 'brainScience') {
     return (
       <BrainScienceScreen
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
+        stepIndex={stepIndex}
+        stepCount={stepCount}
         onContinue={() => goToStep('name', 'continue')}
         onBack={() => goToStep('intentProjection', 'back')}
       />
@@ -616,8 +605,8 @@ export default function OnboardingFlow({
     return (
       <NameScreen
         value={name}
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
+        stepIndex={stepIndex}
+        stepCount={stepCount}
         onChange={setName}
         onContinue={() => goToStep('greeting', 'continue', {
           has_display_name: name.trim().length > 0,
@@ -637,8 +626,8 @@ export default function OnboardingFlow({
     return (
       <GreetingScreen
         name={name}
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
+        stepIndex={stepIndex}
+        stepCount={stepCount}
         onContinue={() => goToStep('stress', 'continue')}
         onBack={() => goToStep('name', 'back')}
       />
@@ -649,8 +638,8 @@ export default function OnboardingFlow({
     return (
       <StressScreen
         value={stressLevel}
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
+        stepIndex={stepIndex}
+        stepCount={stepCount}
         onChange={setStressLevel}
         onContinue={() => goToStep('mindRacing', 'continue', { has_stress_level: true })}
         onBack={() => goToStep('greeting', 'back')}
@@ -663,8 +652,8 @@ export default function OnboardingFlow({
     return (
       <MindRacingScreen
         value={racingLevel}
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
+        stepIndex={stepIndex}
+        stepCount={stepCount}
         onChange={setRacingLevel}
         onContinue={() => goToStep('sleep', 'continue', { has_racing_level: true })}
         onBack={() => goToStep('stress', 'back')}
@@ -677,8 +666,8 @@ export default function OnboardingFlow({
     return (
       <SleepScreen
         value={sleepQuality}
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
+        stepIndex={stepIndex}
+        stepCount={stepCount}
         onChange={setSleepQuality}
         onContinue={() => goToStep('agreement', 'continue', { has_sleep_quality: true })}
         onBack={() => goToStep('mindRacing', 'back')}
@@ -691,8 +680,8 @@ export default function OnboardingFlow({
     return (
       <AgreementScreen
         responses={agreementResponses}
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
+        stepIndex={stepIndex}
+        stepCount={stepCount}
         onChange={(id, value) =>
           setAgreementResponses((prev) => ({ ...prev, [id]: value }))
         }
@@ -711,8 +700,8 @@ export default function OnboardingFlow({
     return (
       <ExperienceScreen
         value={experienceLevel}
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
+        stepIndex={stepIndex}
+        stepCount={stepCount}
         onSelect={setExperienceLevel}
         onContinue={() => goToStep('assessmentReflection', 'continue', {
           has_experience_level: experienceLevel != null,
@@ -731,8 +720,8 @@ export default function OnboardingFlow({
         sleepQuality={sleepQuality}
         agreementResponses={agreementResponses}
         experienceLevel={experienceLevel}
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
+        stepIndex={stepIndex}
+        stepCount={stepCount}
         onContinue={() => goToStep('scienceCredibility', 'continue')}
         onBack={() => goToStep('experience', 'back')}
       />
@@ -742,8 +731,8 @@ export default function OnboardingFlow({
   if (step === 'lungCapacity') {
     return (
       <LungCapacityScreen
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
+        stepIndex={stepIndex}
+        stepCount={stepCount}
         onContinue={(result) => {
           setLungCapacity(result);
           goToStep('age', 'continue', { has_lung_capacity: true });
@@ -758,8 +747,8 @@ export default function OnboardingFlow({
     return (
       <AgeScreen
         value={age}
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
+        stepIndex={stepIndex}
+        stepCount={stepCount}
         onChange={setAge}
         onContinue={() => goToStep('gender', 'continue', { has_age: true })}
         onBack={() => goToStep('lungCapacity', 'back')}
@@ -772,8 +761,8 @@ export default function OnboardingFlow({
     return (
       <GenderScreen
         value={gender}
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
+        stepIndex={stepIndex}
+        stepCount={stepCount}
         onSelect={setGender}
         onContinue={() => goToStep('consistency', 'continue', { has_gender: gender != null })}
         onBack={() => goToStep('age', 'back')}
@@ -785,8 +774,8 @@ export default function OnboardingFlow({
   if (step === 'consistency') {
     return (
       <ConsistencyScreen
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
+        stepIndex={stepIndex}
+        stepCount={stepCount}
         onContinue={() => goToStep('dailyTime', 'continue')}
         onBack={() => goToStep('gender', 'back')}
       />
@@ -797,8 +786,8 @@ export default function OnboardingFlow({
     return (
       <DailyTimeScreen
         value={dailyMinutes}
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
+        stepIndex={stepIndex}
+        stepCount={stepCount}
         onChange={setDailyMinutes}
         onContinue={() => goToStep('notifications', 'continue', { has_daily_minutes: true })}
         onBack={() => goToStep('consistency', 'back')}
@@ -810,8 +799,8 @@ export default function OnboardingFlow({
   if (step === 'baselineIntro') {
     return (
       <BaselineIntroScreen
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
+        stepIndex={stepIndex}
+        stepCount={stepCount}
         onContinue={() => goToStep('baseline', 'continue')}
         onBack={() => goToStep('notifications', 'back')}
       />
@@ -821,8 +810,8 @@ export default function OnboardingFlow({
   if (step === 'baseline') {
     return (
       <BaselineScreen
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
+        stepIndex={stepIndex}
+        stepCount={stepCount}
         onContinue={(result) => {
           setBaseline(result);
           goToStep('recommendation', 'continue', {
@@ -850,8 +839,8 @@ export default function OnboardingFlow({
         racingLevel={racingLevel}
         agreementResponses={agreementResponses}
         experienceLevel={experienceLevel}
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
+        stepIndex={stepIndex}
+        stepCount={stepCount}
         onContinue={() => goToStep('recommendedExercise', 'continue')}
         onBack={() => goToStep('baseline', 'back')}
       />
@@ -866,8 +855,8 @@ export default function OnboardingFlow({
       <RecommendedExerciseScreen
         techniqueId={techniqueId}
         baseline={baseline}
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
+        stepIndex={stepIndex}
+        stepCount={stepCount}
         onContinue={() => goToStep('attPriming', 'continue')}
         onBack={() => goToStep('recommendation', 'back')}
       />
@@ -877,8 +866,8 @@ export default function OnboardingFlow({
   if (step === 'attPriming') {
     return (
       <AttPrimingScreen
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
+        stepIndex={stepIndex}
+        stepCount={stepCount}
         onContinue={() => {
           // Show Apple's ATT dialog right after the pre-prompt, then advance once
           // the user has responded. requestAttPermissionOnce never rejects and
@@ -900,8 +889,8 @@ export default function OnboardingFlow({
   if (step === 'fiveMinutes') {
     return (
       <FiveMinutesScreen
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
+        stepIndex={stepIndex}
+        stepCount={stepCount}
         onContinue={() => goToStep('founderNote', 'continue')}
         onBack={() => goToStep('attPriming', 'back')}
       />
@@ -912,8 +901,8 @@ export default function OnboardingFlow({
     return (
       <FounderNoteScreen
         name={name.trim() || null}
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
+        stepIndex={stepIndex}
+        stepCount={stepCount}
         onContinue={() => goToStep('pact', 'continue')}
         onBack={() => goToStep('fiveMinutes', 'back')}
       />
@@ -923,8 +912,8 @@ export default function OnboardingFlow({
   if (step === 'notifications') {
     return (
       <NotificationPermissionScreen
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
+        stepIndex={stepIndex}
+        stepCount={stepCount}
         isSubmitting={isNotificationSubmitting}
         errorMessage={notificationErrorMessage}
         onEnable={(preferences) => {
@@ -945,8 +934,8 @@ export default function OnboardingFlow({
         : selectedOption?.title ?? null;
     return (
       <ScienceCredibilityScreen
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
+        stepIndex={stepIndex}
+        stepCount={stepCount}
         name={name.trim() || null}
         intentTitle={scIntentTitle}
         onContinue={() => goToStep('lungCapacity', 'continue')}
@@ -966,8 +955,8 @@ export default function OnboardingFlow({
         intentTitle={intentTitle}
         displayName={name.trim() || null}
         dailyMinutes={dailyMinutes}
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
+        stepIndex={stepIndex}
+        stepCount={stepCount}
         isSubmitting={isSubmitting}
         errorMessage={errorMessage}
         onConfirm={() => {
@@ -996,8 +985,8 @@ export default function OnboardingFlow({
       <OnboardingPaywallScreen
         offering={paywall.offering}
         selectedPackageId={paywall.selectedPackageId}
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
+        stepIndex={stepIndex}
+        stepCount={stepCount}
         isLoading={paywall.isLoading}
         isPurchasing={paywall.isPurchasing}
         isRestoring={paywall.isRestoring}
@@ -1025,8 +1014,8 @@ export default function OnboardingFlow({
       customIntent={customIntent}
       isSubmitting={isSubmitting}
       errorMessage={errorMessage}
-      stepIndex={visualStepIndex}
-      stepCount={visualStepCount}
+      stepIndex={stepIndex}
+      stepCount={stepCount}
       onToggle={toggleIntent}
       onCustomIntentChange={setCustomIntent}
       onContinue={goFromIntent}

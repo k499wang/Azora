@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { StyleSheet, Text, type LayoutChangeEvent, View } from 'react-native';
 import {
   Easing,
   useDerivedValue,
@@ -10,6 +10,7 @@ import {
 import {
   Canvas,
   Circle,
+  Group,
   LinearGradient,
   Path,
   Skia,
@@ -29,6 +30,8 @@ const PAD_BOTTOM = 28;
 const TOP_INSET = 10;
 const SAMPLE_COUNT = 64;
 const CURVE_K = 0.55;
+const REVEAL_DELAY_MS = 650;
+const REVEAL_DURATION_MS = 1600;
 const WEEKS = [1, 2, 3, 4, 5, 6, 7, 8];
 
 interface IntentProjectionScreenProps {
@@ -56,58 +59,78 @@ export default function IntentProjectionScreen({
   const progress = useSharedValue(0);
 
   useEffect(() => {
+    if (width <= 0) return;
     progress.value = 0;
     progress.value = withDelay(
-      280,
-      withTiming(1, { duration: 1600, easing: Easing.inOut(Easing.cubic) }),
+      REVEAL_DELAY_MS,
+      withTiming(1, {
+        duration: REVEAL_DURATION_MS,
+        easing: Easing.inOut(Easing.cubic),
+      }),
     );
   }, [progress, ceiling, width]);
+
+  const handleChartLayout = useCallback((event: LayoutChangeEvent) => {
+    const nextWidth = event.nativeEvent.layout.width;
+    setWidth((currentWidth) =>
+      Math.abs(currentWidth - nextWidth) < 1 ? currentWidth : nextWidth,
+    );
+  }, []);
 
   const innerW = Math.max(0, width - PAD_LEFT - PAD_RIGHT);
   const innerH = CHART_HEIGHT - PAD_TOP - PAD_BOTTOM;
 
-  const line = useDerivedValue(() => {
+  const curveY = (u: number) => {
+    const normalizer = 1 - Math.exp(-CURVE_K * 8);
+    const raw = 1 - Math.exp(-CURVE_K * u * 8);
+    const v = (raw / normalizer) * ceiling;
+    return PAD_TOP + innerH - (v / ceiling) * (innerH - TOP_INSET);
+  };
+
+  const line = useMemo(() => {
     const p = Skia.Path.Make();
     if (innerW <= 0) return p;
-    const t = progress.value;
-    const normalizer = 1 - Math.exp(-CURVE_K * 8);
     for (let i = 0; i < SAMPLE_COUNT; i++) {
-      const u = (i / (SAMPLE_COUNT - 1)) * t;
-      const raw = 1 - Math.exp(-CURVE_K * u * 8);
-      const v = (raw / normalizer) * ceiling;
+      const u = i / (SAMPLE_COUNT - 1);
       const x = PAD_LEFT + u * innerW;
-      const y = PAD_TOP + innerH - (v / ceiling) * (innerH - TOP_INSET);
+      const y = curveY(u);
       if (i === 0) p.moveTo(x, y);
       else p.lineTo(x, y);
     }
     return p;
   }, [innerW, innerH, ceiling]);
 
-  const fill = useDerivedValue(() => {
+  const fill = useMemo(() => {
     const p = Skia.Path.Make();
     if (innerW <= 0) return p;
-    const t = progress.value;
     const baseline = PAD_TOP + innerH;
-    const normalizer = 1 - Math.exp(-CURVE_K * 8);
-    let lastX = PAD_LEFT;
     for (let i = 0; i < SAMPLE_COUNT; i++) {
-      const u = (i / (SAMPLE_COUNT - 1)) * t;
-      const raw = 1 - Math.exp(-CURVE_K * u * 8);
-      const v = (raw / normalizer) * ceiling;
+      const u = i / (SAMPLE_COUNT - 1);
       const x = PAD_LEFT + u * innerW;
-      const y = PAD_TOP + innerH - (v / ceiling) * (innerH - TOP_INSET);
+      const y = curveY(u);
       if (i === 0) {
         p.moveTo(x, baseline);
         p.lineTo(x, y);
       } else {
         p.lineTo(x, y);
       }
-      lastX = x;
     }
-    p.lineTo(lastX, baseline);
+    p.lineTo(PAD_LEFT + innerW, baseline);
     p.close();
     return p;
   }, [innerW, innerH, ceiling]);
+
+  const revealClip = useDerivedValue(
+    () => Skia.XYWHRect(PAD_LEFT, 0, Math.max(0, progress.value * innerW), CHART_HEIGHT),
+    [innerW],
+  );
+
+  const axis = useMemo(() => {
+    const p = Skia.Path.Make();
+    p.moveTo(PAD_LEFT, PAD_TOP + innerH);
+    p.lineTo(PAD_LEFT + innerW, PAD_TOP + innerH);
+    return p;
+  }, [innerW, innerH]);
 
   const startX = PAD_LEFT;
   const startY = PAD_TOP + innerH;
@@ -145,39 +168,36 @@ export default function IntentProjectionScreen({
         </Text>
         <View
           style={{ width: '100%', height: CHART_HEIGHT }}
-          onLayout={(e) => setWidth(e.nativeEvent.layout.width)}
+          onLayout={handleChartLayout}
         >
           {width > 0 ? (
             <Canvas style={StyleSheet.absoluteFill}>
               <Path
-                path={(() => {
-                  const p = Skia.Path.Make();
-                  p.moveTo(PAD_LEFT, PAD_TOP + innerH);
-                  p.lineTo(PAD_LEFT + innerW, PAD_TOP + innerH);
-                  return p;
-                })()}
+                path={axis}
                 style="stroke"
                 strokeWidth={1.5}
                 strokeCap="round"
                 color={colors.neutral[300]}
               />
 
-              <Path path={fill} style="fill">
-                <LinearGradient
-                  start={vec(0, PAD_TOP)}
-                  end={vec(0, PAD_TOP + innerH)}
-                  colors={[`${lineColor}44`, `${lineColor}00`]}
-                />
-              </Path>
+              <Group clip={revealClip}>
+                <Path path={fill} style="fill">
+                  <LinearGradient
+                    start={vec(0, PAD_TOP)}
+                    end={vec(0, PAD_TOP + innerH)}
+                    colors={[`${lineColor}44`, `${lineColor}00`]}
+                  />
+                </Path>
 
-              <Path
-                path={line}
-                style="stroke"
-                strokeWidth={4}
-                strokeCap="round"
-                strokeJoin="round"
-                color={lineColor}
-              />
+                <Path
+                  path={line}
+                  style="stroke"
+                  strokeWidth={4}
+                  strokeCap="round"
+                  strokeJoin="round"
+                  color={lineColor}
+                />
+              </Group>
 
               <Circle cx={startX} cy={startY} r={6} color={dotColor} />
               <Circle cx={endX} cy={endY} r={6} color={dotColor} />
