@@ -4,6 +4,7 @@ export type OnboardingStep =
   | 'intent'
   | 'intentReflection'
   | 'intentProjection'
+  | 'brainScience'
   | 'name'
   | 'greeting'
   | 'attPriming'

@@ -67,7 +67,7 @@ export default function RecommendedExerciseScreen({
       footer={<OnboardingPrimaryButton label="Sounds good" onPress={onContinue} />}
     >
       <View style={styles.techniqueCard}>
-        <Text style={styles.techniqueKicker}>RECOMMENDED FOR YOU</Text>
+        <Text style={styles.techniqueKicker}>Recommended for you</Text>
         <Text style={styles.techniqueName}>{nickname ?? technique.name}</Text>
         <Text style={styles.techniqueSubname}>{technique.name}</Text>
         <Text style={styles.techniqueTagline}>{technique.tagline}</Text>
@@ -156,7 +156,7 @@ const styles = StyleSheet.create({
     ...typography.caption.caption2,
     fontFamily: fonts.semibold,
     fontWeight: '500',
-    letterSpacing: 2,
+    letterSpacing: 0.3,
     color: colors.primary.blue600,
   },
   techniqueName: {

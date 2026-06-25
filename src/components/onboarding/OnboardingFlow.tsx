@@ -9,6 +9,7 @@ import GenderScreen from './screens/GenderScreen';
 import IntentQuestionScreen from './screens/IntentQuestionScreen';
 import IntentReflectionScreen from './screens/IntentReflectionScreen';
 import IntentProjectionScreen from './screens/IntentProjectionScreen';
+import BrainScienceScreen from './screens/BrainScienceScreen';
 import AgreementScreen, {
   AGREEMENT_STATEMENTS,
   type AgreementValue,
@@ -97,6 +98,7 @@ const STEP_ORDER: OnboardingStep[] = [
   'intent',
   'intentReflection',
   'intentProjection',
+  'brainScience',
   'name',
   'greeting',
   'stress',
@@ -225,7 +227,10 @@ export default function OnboardingFlow({
         if (!INTENT_REFLECTION_ENABLED && candidate === 'intentReflection') {
           return false;
         }
-        if (isOnlyCustomIntent && candidate === 'intentProjection') {
+        if (
+          isOnlyCustomIntent &&
+          (candidate === 'intentProjection' || candidate === 'brainScience')
+        ) {
           return false;
         }
         return true;
@@ -588,10 +593,21 @@ export default function OnboardingFlow({
         selectedIntents={selectedIntents}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('name', 'continue')}
+        onContinue={() => goToStep('brainScience', 'continue')}
         onBack={() =>
           goToStep(INTENT_REFLECTION_ENABLED ? 'intentReflection' : 'intent', 'back')
         }
+      />
+    );
+  }
+
+  if (step === 'brainScience') {
+    return (
+      <BrainScienceScreen
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onContinue={() => goToStep('name', 'continue')}
+        onBack={() => goToStep('intentProjection', 'back')}
       />
     );
   }
@@ -607,14 +623,7 @@ export default function OnboardingFlow({
           has_display_name: name.trim().length > 0,
         })}
         onBack={() =>
-          goToStep(
-            isOnlyCustomIntent
-              ? 'intent'
-              : INTENT_REFLECTION_ENABLED
-                ? 'intentReflection'
-                : 'intentProjection',
-            'back',
-          )
+          goToStep(isOnlyCustomIntent ? 'intent' : 'brainScience', 'back')
         }
         onSkip={() => {
           setName('');

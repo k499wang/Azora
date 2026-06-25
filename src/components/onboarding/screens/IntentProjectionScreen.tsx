@@ -130,8 +130,8 @@ export default function IntentProjectionScreen({
 
   return (
     <OnboardingScreenLayout
-      title="Breathing is a skill that no one has taught you."
-      subtitle={`Most people run on autopilot. Learn to breathe right, and a few minutes a day improves everything.`}
+      title="Your breath is a superpower you've never used."
+      subtitle="Train it a few minutes a day and the benefits build, week after week."
       progress={stepIndex / stepCount}
       onBack={onBack}
       footer={
@@ -152,8 +152,7 @@ export default function IntentProjectionScreen({
               <Path
                 path={(() => {
                   const p = Skia.Path.Make();
-                  p.moveTo(PAD_LEFT, PAD_TOP);
-                  p.lineTo(PAD_LEFT, PAD_TOP + innerH);
+                  p.moveTo(PAD_LEFT, PAD_TOP + innerH);
                   p.lineTo(PAD_LEFT + innerW, PAD_TOP + innerH);
                   return p;
                 })()}
@@ -210,10 +209,9 @@ const styles = StyleSheet.create({
   yAxisLabel: {
     ...typography.label.small,
     fontFamily: fonts.semibold,
-    fontSize: 11,
-    color: colors.neutral[700],
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
+    fontSize: 14,
+    color: colors.text.primary,
+    letterSpacing: 0.3,
     textAlign: 'center',
   },
   weekAxis: {
