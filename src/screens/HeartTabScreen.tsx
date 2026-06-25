@@ -14,7 +14,6 @@ import HeartRateStatsSection from '../components/heartRate/HeartRateStatsSection
 import HRVStatsSection from '../components/heartRate/HRVStatsSection';
 import RecoveryStatsSection from '../components/heartRate/RecoveryStatsSection';
 import { RecentlyLoggedSection } from '../components/heartRate/RecentlyLoggedSection';
-import Skeleton from '../components/common/Skeleton';
 import { colors } from '../theme/colors';
 import { spacing, padding, margin } from '../theme/spacing';
 import { useAuthStore } from '../stores/authStore';
@@ -159,9 +158,7 @@ export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
           ) : null}
           <MeasureHeroCard onPress={openMeasure} />
           <View style={styles.lastMeasuredSlot}>
-            {heartRateStatsQuery.isLoading ? (
-              <Skeleton width={120} height={10} radius={5} />
-            ) : lastMeasuredDate ? (
+            {lastMeasuredDate ? (
               <Text style={styles.lastMeasuredText}>
                 Last measured {formatLocalDate(lastMeasuredDate)}
               </Text>

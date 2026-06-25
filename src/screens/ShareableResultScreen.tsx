@@ -16,6 +16,7 @@ import ShareCard from '../components/exercise/ShareCard';
 import ScoreRing from '../components/exercise/ScoreRing';
 import AzoraScoreInfoDialog from '../components/exercise/AzoraScoreInfoDialog';
 import GlassIconButton from '../components/common/GlassIconButton';
+import Icon from '../components/common/icons/Icon';
 import type { DailyResultScreenProps } from '../app/navigation';
 import { estimateAzoraScore, azoraScoreFill, azoraTierMeta } from '../lib/azoraScore';
 import { useFeatureAccess } from '../hooks/useFeatureAccess';
@@ -111,10 +112,22 @@ export default function ShareableResultScreen({
 
       <View style={styles.heroCardWrap}>
         <View style={styles.heroCard}>
+          <View style={styles.scoreCaptionRow}>
+            <Text style={styles.scoreCaption}>Azora Score</Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="About Azora Score"
+              hitSlop={10}
+              onPress={() => setInfoVisible(true)}
+            >
+              <Icon name="info" size={14} color={colors.text.tertiary} />
+            </Pressable>
+          </View>
           <ScoreRing
             value={azoraEstimate.score}
             fill={azoraScoreFill(azoraEstimate.score)}
             ringColors={azoraTier.ringColors}
+            caption={null}
             gapLabel={null}
             pill={{
               label: azoraTier.label,
@@ -122,7 +135,6 @@ export default function ShareableResultScreen({
               backgroundColor: azoraTier.pillBg,
             }}
             pillBottom="26%"
-            onInfoPress={() => setInfoVisible(true)}
           />
           <View style={styles.benchmarkCard}>
             <View style={styles.benchmarkIconWrap}>
@@ -296,6 +308,19 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xl,
     paddingHorizontal: spacing.lg,
     alignItems: 'center',
+  },
+  scoreCaptionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginBottom: spacing.md,
+  },
+  scoreCaption: {
+    ...typography.caption.caption1,
+    color: colors.text.tertiary,
+    fontFamily: fonts.semibold,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
   },
   benchmarkCard: {
     ...card.base,

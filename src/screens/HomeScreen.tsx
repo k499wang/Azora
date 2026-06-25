@@ -20,7 +20,6 @@ import SectionHeader from '../components/common/SectionHeader';
 import TopBarWeekCalendar from '../components/common/TopBarWeekCalendar';
 import BreathingLibrary from '../components/home/BreathingLibrary';
 import DailyPlanCard from '../components/home/DailyPlanCard';
-import EmotionRow from '../components/home/EmotionRow';
 import { getBackgroundImageSource } from '../services/images/backgroundImageCache';
 import { useFeatureAccess } from '../hooks/useFeatureAccess';
 import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
@@ -232,11 +231,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           />
         </View>
 
-        <View style={styles.feelingSection}>
-          <SectionHeader title="How are you feeling?" />
-          <EmotionRow />
-        </View>
-
         <BreathingLibrary />
       </ScrollView>
     </View>
@@ -276,10 +270,6 @@ const styles = StyleSheet.create({
   dailyBreathholdSection: {
     paddingHorizontal: padding.screen.horizontal,
     marginTop: spacing['4xl'],
-    gap: spacing.md,
-  },
-  feelingSection: {
-    paddingHorizontal: padding.screen.horizontal,
     gap: spacing.md,
   },
   greeting: {

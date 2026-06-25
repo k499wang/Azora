@@ -135,7 +135,7 @@ export default function FiveMinutesScreen({
   return (
     <OnboardingScreenLayout
       title={`Feel calmer by ${targetDate}.`}
-      subtitle="See real results from just 5 minutes a day, backed by research on breathing and stress."
+      subtitle="Show up daily until then to feel real results, backed by research."
       progress={stepIndex / stepCount}
       onBack={onBack}
       footer={<OnboardingPrimaryButton label="Continue" onPress={onContinue} />}

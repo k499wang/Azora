@@ -55,7 +55,7 @@ export default function AttPrimingScreen({
   return (
     <OnboardingScreenLayout
       title="Keep Azora yours"
-      subtitle="You’ll see this in a moment. Tap Allow and Azora learns what actually works for you — the more you breathe, the better it gets."
+      subtitle="You’ll see this in just a moment. Tap Allow and Azora learns what actually works for you."
       progress={stepIndex / stepCount}
       onBack={onBack}
       footer={<OnboardingPrimaryButton label="Continue" onPress={onContinue} />}
