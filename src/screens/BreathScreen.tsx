@@ -217,25 +217,12 @@ export default function BreathScreen({ navigation }: BreathTabScreenProps) {
               <Text style={styles.measureTitle}>
                 {azoraEstimate
                   ? 'Ready to beat your record?'
-                  : 'Tap to measure your Azora score'}
+                  : 'Tap to measure your score'}
               </Text>
               <Icon name="chevron-right" size={22} color={colors.text.tertiary} />
             </CardSurface>
           </Pressable>
         </View>
-
-        <HeartRateStatsSection
-          hrDrop={azoraEstimate?.hrDropBpm ?? null}
-          minBpm={todayBreathHold?.minBpm ?? null}
-          maxBpm={todayBreathHold?.maxBpm ?? null}
-          avgBpm={todayBreathHold?.avgBpm ?? null}
-          age={userAge}
-          bpmSamples={breathHoldBpmSeriesQuery.data ?? []}
-          locked={advancedStatsLocked}
-          onPressUpgrade={openTrendPaywall}
-          emptyChartMessage="Complete today's breath hold with heart rate enabled to see your BPM."
-          insightContext="breath-hold"
-        />
 
         <View style={styles.section}>
           <SectionHeader
@@ -255,6 +242,19 @@ export default function BreathScreen({ navigation }: BreathTabScreenProps) {
             onPressLocked={openTrendPaywall}
           />
         </View>
+
+        <HeartRateStatsSection
+          hrDrop={azoraEstimate?.hrDropBpm ?? null}
+          minBpm={todayBreathHold?.minBpm ?? null}
+          maxBpm={todayBreathHold?.maxBpm ?? null}
+          avgBpm={todayBreathHold?.avgBpm ?? null}
+          age={userAge}
+          bpmSamples={breathHoldBpmSeriesQuery.data ?? []}
+          locked={advancedStatsLocked}
+          onPressUpgrade={openTrendPaywall}
+          emptyChartMessage="Complete today's breath hold with heart rate enabled to see your BPM."
+          insightContext="breath-hold"
+        />
       </ScrollView>
 
       <FeatureInfoDialog

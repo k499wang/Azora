@@ -61,7 +61,7 @@ export default function RecommendedExerciseScreen({
   return (
     <OnboardingScreenLayout
       title="What we recommend for you."
-      subtitle="Shaped around your answers and your heart rate. Return to it each day to see better results."
+      subtitle="Chosen just for you. Give it a try once you're in the app."
       progress={stepIndex / stepCount}
       onBack={onBack}
       footer={<OnboardingPrimaryButton label="Sounds good" onPress={onContinue} />}
