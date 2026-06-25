@@ -24,6 +24,9 @@ import { fonts, typography } from '../../theme/typography';
 import { isHapticsEnabled } from '../../services/preferences/hapticsPreference';
 import AmbientBackground from '../common/AmbientBackground';
 
+const ENTRANCE_EASING = Easing.bezier(0.22, 1, 0.36, 1);
+const ENTRANCE_INITIAL_SCALE = 0.992;
+
 interface OnboardingScreenLayoutProps {
   title: string;
   subtitle?: string;
@@ -47,8 +50,13 @@ export default function OnboardingScreenLayout({
   keyboardAvoiding = false,
   centerBody = false,
 }: OnboardingScreenLayoutProps) {
+  const clampedProgress = Math.max(0, Math.min(1, progress));
   const fade = useRef(new Animated.Value(0)).current;
-  const slide = useRef(new Animated.Value(16)).current;
+  const scale = useRef(new Animated.Value(ENTRANCE_INITIAL_SCALE)).current;
+  const progressFill = useRef(new Animated.Value(clampedProgress)).current;
+  const entranceAnimation = useRef<{ stop: () => void } | null>(null);
+  const entranceTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hasStartedEntrance = useRef(false);
   const scrollRef = useRef<ScrollView>(null);
 
   const scrollFade = useRef(new Animated.Value(0)).current;
@@ -124,21 +132,54 @@ export default function OnboardingScreenLayout({
   }, [keyboardAvoiding]);
 
   useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fade, {
-        toValue: 1,
-        duration: 380,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-      Animated.timing(slide, {
-        toValue: 0,
-        duration: 420,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [fade, slide]);
+    const animation = Animated.timing(progressFill, {
+      toValue: clampedProgress,
+      duration: 520,
+      easing: ENTRANCE_EASING,
+      useNativeDriver: false,
+    });
+
+    animation.start();
+    return () => animation.stop();
+  }, [clampedProgress, progressFill]);
+
+  const startEntranceAnimation = () => {
+    if (hasStartedEntrance.current) return;
+    hasStartedEntrance.current = true;
+
+    entranceTimeout.current = setTimeout(() => {
+      const animation = Animated.parallel([
+        Animated.timing(fade, {
+          toValue: 1,
+          duration: 680,
+          easing: ENTRANCE_EASING,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scale, {
+          toValue: 1,
+          duration: 760,
+          easing: ENTRANCE_EASING,
+          useNativeDriver: true,
+        }),
+      ]);
+
+      entranceAnimation.current = animation;
+      animation.start(({ finished }) => {
+        if (finished) entranceAnimation.current = null;
+      });
+    }, 80);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (entranceTimeout.current) {
+        clearTimeout(entranceTimeout.current);
+        entranceTimeout.current = null;
+      }
+      entranceAnimation.current?.stop();
+      entranceAnimation.current = null;
+    };
+  }, []);
 
   const handleBack = () => {
     if (!onBack) return;
@@ -152,10 +193,16 @@ export default function OnboardingScreenLayout({
     onSkip();
   };
 
-  const clamped = Math.max(0, Math.min(1, progress));
+  const progressWidth = progressFill.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0%', '100%'],
+  });
 
   const inner = (
-    <>
+    <Animated.View
+      onLayout={startEntranceAnimation}
+      style={[styles.entrance, { opacity: fade }]}
+    >
       <View style={styles.header}>
         {onBack ? (
           <Pressable
@@ -172,7 +219,7 @@ export default function OnboardingScreenLayout({
           </Pressable>
         ) : null}
         <View style={styles.progressBar}>
-          <View style={[styles.progressFill, { width: `${clamped * 100}%` }]} />
+          <Animated.View style={[styles.progressFill, { width: progressWidth }]} />
         </View>
         {onSkip ? (
           <Pressable
@@ -206,7 +253,7 @@ export default function OnboardingScreenLayout({
             style={[
               styles.content,
               centerBody && styles.contentCentered,
-              { opacity: fade, transform: [{ translateY: slide }] },
+              { transform: [{ scale }] },
             ]}
           >
             {title ? (
@@ -245,7 +292,7 @@ export default function OnboardingScreenLayout({
       </View>
 
       <View style={styles.bottom}>{footer}</View>
-    </>
+    </Animated.View>
   );
 
   return (
@@ -277,6 +324,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   keyboard: {
+    flex: 1,
+  },
+  entrance: {
     flex: 1,
   },
   header: {

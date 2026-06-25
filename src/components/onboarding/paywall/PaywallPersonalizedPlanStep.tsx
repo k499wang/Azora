@@ -1,4 +1,4 @@
-import { Text, View } from 'react-native';
+import { Text, useWindowDimensions, View } from 'react-native';
 import type { PaywallPersonalization } from '../../../lib/paywallPersonalization';
 import { colors } from '../../../theme/colors';
 import MindMapRadar from '../MindMapRadar';
@@ -18,6 +18,7 @@ interface PaywallPersonalizedPlanStepProps {
 export function PaywallPersonalizedPlanStep({
   personalization,
 }: PaywallPersonalizedPlanStepProps) {
+  const { width } = useWindowDimensions();
   const { displayName, baselineBpm, currentScores, targetScores } = personalization;
   const greeting = displayName
     ? `${displayName}, try your plan for free`
@@ -37,7 +38,7 @@ export function PaywallPersonalizedPlanStep({
             <MindMapRadar
               scores={currentScores}
               targetScores={targetScores ?? undefined}
-              size={300}
+              size={width}
             />
           </View>
           <View style={styles.radarLegend}>

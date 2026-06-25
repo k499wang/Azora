@@ -1,27 +1,25 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { card } from '../../../theme/card';
+import {
+  Animated,
+  Easing,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native';
+import Icon from '../../common/icons/Icon';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
-import { TECHNIQUE_RECOMMENDATIONS } from '../data/techniqueRecommendations';
-import TECHNIQUES from '../../../data/techniques';
-import type { BaselineResult } from './BaselineScreen';
-import LineGraph, { type DataPoint } from '../../analytics/LineGraph';
 import MindMapRadar from '../MindMapRadar';
 import { computeMindMap } from '../../../lib/onboardingScores';
 import type { AgreementValue } from './AgreementScreen';
 import type { ExperienceLevel } from './ExperienceScreen';
 
 interface RecommendationScreenProps {
-  techniqueId: string;
   intentTitle: string;
-  age: number;
-  dailyMinutes: number;
-  baseline: BaselineResult | null;
   stressLevel: number;
   sleepQuality: number;
   racingLevel: number;
@@ -33,34 +31,38 @@ interface RecommendationScreenProps {
   onBack: () => void;
 }
 
-function buildBpmSeries(history: number[], durationSec: number): DataPoint[] {
-  if (history.length === 0) return [];
-  const step = Math.max(1, Math.floor(history.length / 12));
-  const points: DataPoint[] = [];
-  for (let i = 0; i < history.length; i += step) {
-    const value = history[i];
-    const second = Math.round((i / history.length) * durationSec);
-    points.push({ label: `${second}s`, value });
-  }
-  // Always include the last point
-  if (points.length === 0 || points[points.length - 1].value !== history[history.length - 1]) {
-    points.push({ label: `${durationSec}s`, value: history[history.length - 1] });
-  }
-  return points;
-}
-
 const PERSONALIZING_STEPS = [
-  'Analyzing your heart-rate pattern…',
-  'Matching technique to your goal…',
-  'Calibrating session length…',
+  'Analyzing your heart-rate pattern',
+  'Mapping your stress & sleep signals',
+  'Matching technique to your goal',
+  'Calibrating your session length',
 ];
 
+const STEP_DURATION_MS = 2200;
+const REVEAL_DELAY_MS = 700;
+
+// One continuous curve with no segment junctions => no velocity dips at all,
+// the smoothest possible fill. An ease-in-out curve makes each bar start slow,
+// build through the middle, then settle into the finish — still reads as real
+// loading. A small per-bar duration jitter keeps the four bars from feeling
+// identical.
+function buildBarAnimation(
+  anim: Animated.Value,
+  totalMs: number,
+): Animated.CompositeAnimation {
+  const jitter = (base: number, amount: number) =>
+    base + (Math.random() * 2 - 1) * amount;
+
+  return Animated.timing(anim, {
+    toValue: 1,
+    duration: jitter(totalMs, totalMs * 0.12),
+    easing: Easing.bezier(0.5, 0, 0.2, 1),
+    useNativeDriver: true,
+  });
+}
+
 export default function RecommendationScreen({
-  techniqueId,
   intentTitle,
-  age,
-  dailyMinutes,
-  baseline,
   stressLevel,
   sleepQuality,
   racingLevel,
@@ -71,6 +73,7 @@ export default function RecommendationScreen({
   onContinue,
   onBack,
 }: RecommendationScreenProps) {
+  const { width } = useWindowDimensions();
   const mindMap = useMemo(
     () =>
       computeMindMap({
@@ -83,45 +86,18 @@ export default function RecommendationScreen({
     [stressLevel, sleepQuality, racingLevel, agreementResponses, experienceLevel],
   );
   const [showingResult, setShowingResult] = useState(false);
-  const [loadingStep, setLoadingStep] = useState(0);
-  const progressAnim = useRef(new Animated.Value(0)).current;
+  const [completedSteps, setCompletedSteps] = useState(0);
+  const barAnims = useRef(
+    PERSONALIZING_STEPS.map(() => new Animated.Value(0)),
+  ).current;
   const resultFade = useRef(new Animated.Value(0)).current;
   const resultSlide = useRef(new Animated.Value(16)).current;
 
-  const technique =
-    TECHNIQUE_RECOMMENDATIONS[techniqueId] ?? TECHNIQUE_RECOMMENDATIONS.box;
-  const nickname =
-    TECHNIQUES.find((t) => t.id === technique.id)?.recommendedName ?? null;
-
-  const hrCompleted = baseline?.completed === true && baseline.avgBpm != null;
-  const drop = baseline?.bpmDrop ?? 0;
-  const hrDropPositive = hrCompleted && drop > 1;
-
-  const bpmSeries = baseline?.bpmHistory?.length
-    ? buildBpmSeries(baseline.bpmHistory, Math.max(1, baseline.durationSec || 20))
-    : [];
-  const hasGraph = bpmSeries.length >= 2;
-
   useEffect(() => {
-    // Animate progress bar over ~2.2s
-    Animated.timing(progressAnim, {
-      toValue: 1,
-      duration: 5600,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: false,
-    }).start();
+    let cancelled = false;
+    let revealTimer: ReturnType<typeof setTimeout>;
 
-    // Cycle through step labels
-    const stepInterval = setInterval(() => {
-      setLoadingStep((prev) => {
-        const next = prev + 1;
-        return next >= PERSONALIZING_STEPS.length ? prev : next;
-      });
-    }, 1600);
-
-    // Reveal result after loading
-    const revealTimer = setTimeout(() => {
-      clearInterval(stepInterval);
+    const reveal = () => {
       setShowingResult(true);
       Animated.parallel([
         Animated.timing(resultFade, {
@@ -137,18 +113,29 @@ export default function RecommendationScreen({
           useNativeDriver: true,
         }),
       ]).start();
-    }, 5800);
+    };
+
+    // Fill each bar in sequence; mark complete exactly when its fill lands so
+    // the checkmark never drifts from the animation.
+    const runStep = (i: number) => {
+      buildBarAnimation(barAnims[i], STEP_DURATION_MS).start(({ finished }) => {
+        if (!finished || cancelled) return;
+        setCompletedSteps(i + 1);
+        if (i + 1 < barAnims.length) {
+          runStep(i + 1);
+        } else {
+          revealTimer = setTimeout(reveal, REVEAL_DELAY_MS);
+        }
+      });
+    };
+    runStep(0);
 
     return () => {
-      clearInterval(stepInterval);
+      cancelled = true;
+      barAnims.forEach((anim) => anim.stopAnimation());
       clearTimeout(revealTimer);
     };
-  }, [progressAnim, resultFade, resultSlide]);
-
-  const progressWidth = progressAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0%', '100%'],
-  });
+  }, [barAnims, resultFade, resultSlide]);
 
   if (!showingResult) {
     return (
@@ -157,23 +144,43 @@ export default function RecommendationScreen({
         subtitle="We're building your personalized mindmap and plan based on your responses."
         progress={stepIndex / stepCount}
         onBack={onBack}
-        footer={
-          <View style={styles.loadingFooter}>
-            <View style={styles.progressTrack}>
-              <Animated.View style={[styles.progressFillBar, { width: progressWidth }]} />
-            </View>
-            <Text style={styles.loadingStep}>{PERSONALIZING_STEPS[loadingStep]}</Text>
-          </View>
-        }
+        footer={<View />}
       >
         <View style={styles.loadingBody}>
-          {/* Pulsing technique card placeholder */}
-          <View style={styles.ghostCard}>
-            <View style={styles.ghostKicker} />
-            <View style={styles.ghostTitle} />
-            <View style={styles.ghostTagline} />
-            <View style={styles.ghostDivider} />
-            <View style={styles.ghostBody} />
+          <View style={styles.stepsList}>
+            {PERSONALIZING_STEPS.map((label, i) => {
+              const done = completedSteps > i;
+              const active = completedSteps === i;
+              return (
+                <View key={label} style={styles.stepRow}>
+                  <View style={styles.stepHeader}>
+                    <Text
+                      style={[
+                        styles.stepLabel,
+                        (done || active) && styles.stepLabelActive,
+                      ]}
+                    >
+                      {label}
+                    </Text>
+                    {done ? (
+                      <View style={styles.stepCheck}>
+                        <Icon name="check" size={12} color={colors.text.inverse} />
+                      </View>
+                    ) : (
+                      <View style={styles.stepCheckPending} />
+                    )}
+                  </View>
+                  <View style={styles.stepTrack}>
+                    <Animated.View
+                      style={[
+                        styles.stepFill,
+                        { transform: [{ scaleX: barAnims[i] }] },
+                      ]}
+                    />
+                  </View>
+                </View>
+              );
+            })}
           </View>
         </View>
       </OnboardingScreenLayout>
@@ -195,82 +202,14 @@ export default function RecommendationScreen({
         ]}
       >
         <View style={styles.mindMapWrap}>
-          <MindMapRadar scores={mindMap.scores} />
+          <MindMapRadar scores={mindMap.scores} size={width} />
         </View>
 
-        <Text style={styles.sectionSubtitle}>Your starting point</Text>
-
-        <View style={styles.techniqueCard}>
-          <Text style={styles.techniqueKicker}>RECOMMENDED TECHNIQUE</Text>
-          <Text style={styles.techniqueName}>{nickname ?? technique.name}</Text>
-          <Text style={styles.techniqueSubname}>{technique.name}</Text>
-          <Text style={styles.techniqueTagline}>{technique.tagline}</Text>
-          <View style={styles.divider} />
-          <Text style={styles.techniqueWhy}>{technique.why}</Text>
-        </View>
-
-        {hrCompleted ? (
-          <View style={styles.hrCard}>
-            <View style={styles.hrCardHeader}>
-              <View style={styles.hrCardTitleRow}>
-                <View style={styles.hrIconWrap}>
-                  <MaterialCommunityIcons
-                    name="heart-pulse"
-                    size={18}
-                    color={colors.error[500]}
-                  />
-                </View>
-                <Text style={styles.hrCardTitle}>Heart response</Text>
-              </View>
-              {hrDropPositive ? (
-                <View style={styles.hrBadge}>
-                  <Text style={styles.hrBadgeText}>↓ {drop} bpm</Text>
-                </View>
-              ) : (
-                <View style={[styles.hrBadge, styles.hrBadgeSteady]}>
-                  <Text style={[styles.hrBadgeText, styles.hrBadgeTextSteady]}>
-                    Steady
-                  </Text>
-                </View>
-              )}
-            </View>
-
-            <View style={styles.statsRow}>
-              <View style={styles.statItem}>
-                <Text style={styles.statValue}>{baseline?.avgBpm}</Text>
-                <Text style={styles.statLabel}>Avg BPM</Text>
-              </View>
-              {baseline?.bpmDrop != null ? (
-                <View style={styles.statItem}>
-                  <Text style={styles.statValue}>
-                    {Math.abs(baseline.bpmDrop)}
-                  </Text>
-                  <Text style={styles.statLabel}>BPM range</Text>
-                </View>
-              ) : null}
-              {baseline?.durationSec != null && baseline.durationSec > 0 ? (
-                <View style={styles.statItem}>
-                  <Text style={styles.statValue}>{baseline.durationSec}s</Text>
-                  <Text style={styles.statLabel}>Duration</Text>
-                </View>
-              ) : null}
-            </View>
-
-            {hasGraph ? (
-              <View style={styles.graphWrap}>
-                <LineGraph
-                  data={bpmSeries}
-                  subtitle="BPM during reading"
-                  unit=""
-                  height={140}
-                  lineColor={colors.primary.blue500}
-                  fillColor={colors.primary.blue100}
-                  dotColor={colors.primary.blue600}
-                />
-              </View>
-            ) : null}
-          </View>
-        ) : null}
+        <Text style={styles.mindMapCaption}>
+          This is your baseline across the five areas that matter most. As you
+          practice, we'll show you exactly how to strengthen each one inside the
+          app.
+        </Text>
       </Animated.View>
     </OnboardingScreenLayout>
   );
@@ -280,67 +219,59 @@ const styles = StyleSheet.create({
   // Loading state
   loadingBody: {
     flex: 1,
+    justifyContent: 'flex-start',
+    paddingTop: spacing.lg,
+  },
+  stepsList: {
+    gap: spacing['3xl'],
+  },
+  stepRow: {
+    gap: spacing.sm,
+  },
+  stepHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  stepLabel: {
+    ...typography.body.medium,
+    color: colors.text.tertiary,
+    flex: 1,
+  },
+  stepLabelActive: {
+    fontFamily: fonts.semibold,
+    fontWeight: '500',
+    color: colors.text.secondary,
+  },
+  stepCheck: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: colors.primary.blue600,
+    alignItems: 'center',
     justifyContent: 'center',
   },
-  loadingFooter: {
-    gap: spacing.sm,
-    alignItems: 'center',
+  stepCheckPending: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: colors.border.default,
   },
-  progressTrack: {
+  stepTrack: {
     width: '100%',
-    height: 4,
+    height: 8,
     borderRadius: 999,
     backgroundColor: colors.primary.blue100,
     overflow: 'hidden',
   },
-  progressFillBar: {
+  stepFill: {
+    width: '100%',
     height: '100%',
     borderRadius: 999,
     backgroundColor: colors.primary.blue600,
-  },
-  loadingStep: {
-    ...typography.body.small,
-    color: colors.text.tertiary,
-    textAlign: 'center',
-  },
-  ghostCard: {
-    ...card.base,
-    ...card.shadow,
-    paddingVertical: spacing.xl,
-    paddingHorizontal: spacing.lg,
-    borderRadius: 24,
-    gap: spacing.sm,
-    opacity: 0.45,
-  },
-  ghostKicker: {
-    width: 140,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: colors.primary.blue200,
-  },
-  ghostTitle: {
-    width: 200,
-    height: 28,
-    borderRadius: 8,
-    backgroundColor: colors.neutral[200],
-    marginTop: spacing.xs,
-  },
-  ghostTagline: {
-    width: 160,
-    height: 16,
-    borderRadius: 6,
-    backgroundColor: colors.neutral[200],
-  },
-  ghostDivider: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.border.default,
-    marginVertical: spacing.md,
-  },
-  ghostBody: {
-    width: '100%',
-    height: 40,
-    borderRadius: 8,
-    backgroundColor: colors.neutral[100],
+    transformOrigin: 'left',
   },
 
   // Result state
@@ -348,145 +279,16 @@ const styles = StyleSheet.create({
     gap: 0,
     marginTop: -spacing.xl,
   },
-  hrCard: {
-    ...card.base,
-    marginTop: spacing.sm,
-    paddingVertical: spacing.lg,
-    paddingHorizontal: spacing.lg,
-    borderRadius: 18,
-    gap: spacing.md,
-  },
-  hrCardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  hrCardTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  hrIconWrap: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.error[100],
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  hrCardTitle: {
-    ...typography.body.medium,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    color: colors.text.primary,
-  },
-  hrBadge: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    borderRadius: 999,
-    backgroundColor: colors.success[100],
-    borderWidth: 1,
-    borderColor: colors.success[100],
-  },
-  hrBadgeSteady: {
-    backgroundColor: colors.neutral[100],
-    borderColor: colors.border.subtle,
-  },
-  hrBadgeText: {
-    ...typography.caption.caption2,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    color: colors.success[700],
-  },
-  hrBadgeTextSteady: {
-    color: colors.text.secondary,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.lg,
-  },
-  statItem: {
-    flex: 1,
-    gap: spacing.xs,
-  },
-  statValue: {
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    fontSize: 28,
-    lineHeight: 32,
-    letterSpacing: -0.4,
-    color: colors.text.primary,
-  },
-  statLabel: {
-    ...typography.caption.caption2,
-    color: colors.text.tertiary,
-  },
-  graphWrap: {
-    marginTop: spacing.xs,
-    overflow: 'hidden',
-  },
-
   mindMapWrap: {
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 0,
     marginHorizontal: -spacing.lg,
   },
-  sectionSubtitle: {
-    ...typography.heading.heading2,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    fontSize: 22,
-    color: colors.text.primary,
-    marginTop: spacing.sm,
-    marginBottom: spacing.md,
-  },
-  techniqueCard: {
-    ...card.base,
-    ...card.shadow,
-    marginTop: 0,
-    paddingVertical: spacing.xl,
-    paddingHorizontal: spacing.lg,
-    borderRadius: 24,
-    gap: spacing.xs,
-  },
-  techniqueKicker: {
-    ...typography.caption.caption2,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    letterSpacing: 2,
-    color: colors.primary.blue600,
-  },
-  techniqueName: {
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    fontSize: 28,
-    lineHeight: 32,
-    letterSpacing: -0.4,
-    color: colors.text.primary,
-    marginTop: spacing.xs,
-  },
-  techniqueSubname: {
-    ...typography.body.small,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    color: colors.text.tertiary,
-    marginTop: 2,
-  },
-  techniqueTagline: {
-    ...typography.body.medium,
-    color: colors.text.secondary,
-    marginTop: spacing.xs,
-  },
-  divider: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.border.default,
-    marginVertical: spacing.md,
-  },
-  techniqueWhy: {
+  mindMapCaption: {
     ...typography.body.small,
     color: colors.text.secondary,
-    lineHeight: 20,
+    textAlign: 'center',
+    marginTop: spacing.lg,
   },
 });

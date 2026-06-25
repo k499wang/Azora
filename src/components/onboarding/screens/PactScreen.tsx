@@ -22,6 +22,8 @@ import AmbientBackground from '../../common/AmbientBackground';
 const HOLD_DURATION_MS = 2000;
 const STAMP_SIZE = 100;
 const HAPTIC_RAMP_STEPS = 20;
+const ENTRANCE_EASING = Easing.bezier(0.22, 1, 0.36, 1);
+const ENTRANCE_INITIAL_SCALE = 0.992;
 
 interface PactScreenProps {
   intentTitle: string;
@@ -282,35 +284,75 @@ export default function PactScreen({
 }: PactScreenProps) {
   const [celebrating, setCelebrating] = useState(false);
   const [hasConfirmed, setHasConfirmed] = useState(false);
+  const progress = stepIndex / stepCount;
+  const clampedProgress = Math.max(0, Math.min(1, progress));
 
   /* animated values */
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(30)).current;
+  const scaleAnim = useRef(new Animated.Value(ENTRANCE_INITIAL_SCALE)).current;
+  const progressFill = useRef(new Animated.Value(clampedProgress)).current;
+  const entranceAnimationRef = useRef<{ stop: () => void } | null>(null);
+  const entranceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hasStartedEntranceRef = useRef(false);
   const sealScale = useRef(new Animated.Value(0)).current;
   const cardBorder = useRef(new Animated.Value(0)).current;
   const cardScale = useRef(new Animated.Value(1)).current;
 
-  /* entrance */
   useEffect(() => {
     if (isHapticsEnabled()) {
       Haptics.selectionAsync().catch(() => {});
     }
+  }, []);
 
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 800,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 900,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [fadeAnim, slideAnim]);
+  useEffect(() => {
+    const animation = Animated.timing(progressFill, {
+      toValue: clampedProgress,
+      duration: 520,
+      easing: ENTRANCE_EASING,
+      useNativeDriver: false,
+    });
+
+    animation.start();
+    return () => animation.stop();
+  }, [clampedProgress, progressFill]);
+
+  const startEntranceAnimation = useCallback(() => {
+    if (hasStartedEntranceRef.current) return;
+    hasStartedEntranceRef.current = true;
+
+    entranceTimeoutRef.current = setTimeout(() => {
+      const entranceAnimation = Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 680,
+          easing: ENTRANCE_EASING,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scaleAnim, {
+          toValue: 1,
+          duration: 760,
+          easing: ENTRANCE_EASING,
+          useNativeDriver: true,
+        }),
+      ]);
+
+      entranceAnimationRef.current = entranceAnimation;
+      entranceAnimation.start(({ finished }) => {
+        if (finished) entranceAnimationRef.current = null;
+      });
+    }, 80);
+  }, [fadeAnim, scaleAnim]);
+
+  useEffect(() => {
+    return () => {
+      if (entranceTimeoutRef.current) {
+        clearTimeout(entranceTimeoutRef.current);
+        entranceTimeoutRef.current = null;
+      }
+      entranceAnimationRef.current?.stop();
+      entranceAnimationRef.current = null;
+    };
+  }, []);
 
   useEffect(() => {
     if (errorMessage) {
@@ -323,23 +365,23 @@ export default function PactScreen({
   useEffect(() => {
     if (hasConfirmed) {
       /* seal pops onto card */
-      Animated.timing(sealScale, {
+      const sealAnimation = Animated.timing(sealScale, {
         toValue: 1,
         duration: 400,
         easing: Easing.out(Easing.back(1.6)),
         useNativeDriver: true,
-      }).start();
+      });
 
       /* card border turns green */
-      Animated.timing(cardBorder, {
+      const borderAnimation = Animated.timing(cardBorder, {
         toValue: 1,
         duration: 500,
         easing: Easing.out(Easing.cubic),
         useNativeDriver: false,
-      }).start();
+      });
 
       /* card "thump" from the stamp impression */
-      Animated.sequence([
+      const cardAnimation = Animated.sequence([
         Animated.timing(cardScale, {
           toValue: 0.985,
           duration: 100,
@@ -352,7 +394,17 @@ export default function PactScreen({
           tension: 300,
           useNativeDriver: true,
         }),
-      ]).start();
+      ]);
+
+      sealAnimation.start();
+      borderAnimation.start();
+      cardAnimation.start();
+
+      return () => {
+        sealAnimation.stop();
+        borderAnimation.stop();
+        cardAnimation.stop();
+      };
     } else {
       sealScale.setValue(0);
       cardBorder.setValue(0);
@@ -381,8 +433,10 @@ export default function PactScreen({
     year: 'numeric',
   });
 
-  const progress = stepIndex / stepCount;
-  const clamped = Math.max(0, Math.min(1, progress));
+  const progressWidth = progressFill.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0%', '100%'],
+  });
   const focusText =
     intentTitle.trim().toLowerCase() === 'sleep better'
       ? 'sleeping better'
@@ -398,13 +452,17 @@ export default function PactScreen({
       <View style={styles.root}>
         <AmbientBackground />
         <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
+        <Animated.View
+          onLayout={startEntranceAnimation}
+          style={[styles.entrance, { opacity: fadeAnim }]}
+        >
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.backGlyph} onPress={onBack}>
             ←
           </Text>
           <View style={styles.progressBar}>
-            <View style={[styles.progressFill, { width: `${clamped * 100}%` }]} />
+            <Animated.View style={[styles.progressFill, { width: progressWidth }]} />
           </View>
         </View>
 
@@ -416,7 +474,7 @@ export default function PactScreen({
           <Animated.View
             style={[
               styles.content,
-              { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
+              { transform: [{ scale: scaleAnim }] },
             ]}
           >
             {/* Title */}
@@ -528,6 +586,7 @@ export default function PactScreen({
             ) : null}
           </Animated.View>
         </ScrollView>
+        </Animated.View>
         </SafeAreaView>
       </View>
 
@@ -545,6 +604,9 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: 'transparent',
+  },
+  entrance: {
+    flex: 1,
   },
 
   /* Header */

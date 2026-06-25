@@ -178,7 +178,6 @@ export default function IntentProjectionScreen({
               />
 
               <Circle cx={startX} cy={startY} r={6} color={dotColor} />
-              <Circle cx={endX} cy={endY} r={9} color={colors.neutral[0]} />
               <Circle cx={endX} cy={endY} r={6} color={dotColor} />
             </Canvas>
           ) : null}
