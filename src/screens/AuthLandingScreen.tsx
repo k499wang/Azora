@@ -117,7 +117,8 @@ export default function AuthLandingScreen() {
                 <Image
                   source={item.source}
                   style={styles.frameImage}
-                  contentFit="contain"
+                  contentFit="cover"
+                  contentPosition="top center"
                   cachePolicy="memory-disk"
                   transition={0}
                 />
