@@ -31,7 +31,6 @@ import {
   showCameraAccessNeededAlert,
   showHeartRateCameraUnavailableAlert,
 } from '../components/heartRate/cameraAccessPrompts';
-import { createBpmPresentationFilter } from '../lib/heartRate/bpmSmoothing';
 import type { FingerPlacementState } from '../lib/heartRate/types';
 import { startInhaleVibration, stopInhaleVibration } from '../native/inhaleVibration';
 import { startHoldHaptics, stopHoldHaptics } from '../native/holdHaptics';
@@ -115,7 +114,6 @@ export default function ExerciseSessionPage({
   const [technique] = useState<BreathingTechnique>(initialTechnique);
   const [totalRounds, setTotalRounds] = useState(initialTechnique.defaultRounds);
   const [hrEnabled, setHrEnabled] = useState(true);
-  const [presentedBpm, setPresentedBpm] = useState<number | null>(null);
   const isFocused = useIsFocused();
 
   const hudOpacity = useRef(new Animated.Value(1)).current;
@@ -124,14 +122,6 @@ export default function ExerciseSessionPage({
 
   const bpmOpacity = useRef(new Animated.Value(0.6)).current;
   const heartScale = useRef(new Animated.Value(1)).current;
-  const bpmPresentationFilterRef = useRef(
-    createBpmPresentationFilter({
-      warmupMs: 5_000,
-      maxStepBpm: 3,
-      spikeThresholdBpm: 12,
-      spikeConfirmationBpm: 4,
-    }),
-  );
   const lastPresentationUpdateAtRef = useRef(0);
 
   const transition = useRef(new Animated.Value(phase === 'idle' ? 0 : 1)).current;
@@ -215,8 +205,9 @@ export default function ExerciseSessionPage({
   });
   usePhaseChime(phase, { active: phaseCueAudioActive });
 
-  const pulse = useLivePulse();
+  const pulse = useLivePulse({ presentationMode: 'breathExercise' });
   const { start: startPulse, stop: stopPulse, hasPermission, requestPermission } = pulse;
+  const presentedBpm = pulse.currentBpm;
   const {
     heartRateMonitoringEnabled,
     heartRateMonitoringPreferenceLoaded,
@@ -235,26 +226,20 @@ export default function ExerciseSessionPage({
         ? now - sessionStartMsRef.current
         : 0;
 
-    if (!isTrackingPhase || pulse.currentBpm == null || pulse.currentBpm <= 0) {
+    if (!isTrackingPhase || presentedBpm == null || presentedBpm <= 0) {
       return;
     }
 
     if (now - lastPresentationUpdateAtRef.current < 900) return;
     lastPresentationUpdateAtRef.current = now;
 
-    if (sessionStartMsRef.current > 0) {
-      const nextBpm = bpmPresentationFilterRef.current.update({
-        elapsedMs,
-        bpm: pulse.currentBpm,
-      });
-      if (nextBpm == null) return;
-      setPresentedBpm(nextBpm);
+    if (sessionStartMsRef.current > 0 && presentedBpm != null) {
       hrSamplesRef.current.push({
         offsetMs: elapsedMs,
-        bpm: nextBpm,
+        bpm: presentedBpm,
       });
     }
-  }, [phase, pulse.beatTick, pulse.currentBpm]);
+  }, [phase, pulse.beatTick, presentedBpm]);
 
   useEffect(() => {
     if (pulse.beatTick <= 0) return;
@@ -538,10 +523,8 @@ export default function ExerciseSessionPage({
       if (!flow.start()) return;
       setElapsed(0);
       setRound(0);
-      setPresentedBpm(null);
       hrSamplesRef.current = [];
       sessionStartMsRef.current = Date.now();
-      bpmPresentationFilterRef.current.reset();
       lastPresentationUpdateAtRef.current = 0;
       savedSessionRef.current = false;
       requestAnimationFrame(() => circleRef.current?.reset());
@@ -699,7 +682,7 @@ export default function ExerciseSessionPage({
   const cameraSlot = showCamera ? <HeartRateCameraPreview {...cameraProps} /> : null;
 
   const bpmDisplay =
-    isActive && pulse.active && pulse.currentBpm != null && presentedBpm != null
+    isActive && pulse.active && presentedBpm != null
       ? Math.round(presentedBpm)
       : null;
   const signalGood = pulse.fingerPlacement === 'good';

@@ -12,7 +12,10 @@ import type {
 } from '../lib/heartRate/types';
 import { heartRatePlugin } from '../lib/heartRate/heartRatePlugin';
 import { HeartRateManager } from '../lib/heartRate/heartRateManager';
-import { createLiveBpmPresentationFilter } from '../lib/heartRate/bpmSmoothing';
+import {
+  createBreathExerciseBpmPresentationFilter,
+  createLiveBpmPresentationFilter,
+} from '../lib/heartRate/bpmSmoothing';
 import { createBeatTickScheduler } from '../lib/heartRate/beatTickScheduler';
 import { LIVE_SIGNAL_GRAPH_UPDATE_INTERVAL_MS } from '../lib/heartRate/liveSignalGraphConfig';
 import { useHeartRateCamera } from './useHeartRateCamera';
@@ -62,7 +65,22 @@ interface UseLivePulseReturn {
   getIbiSamples: () => IbiSample[];
 }
 
-export function useLivePulse(): UseLivePulseReturn {
+type LivePulsePresentationMode = 'default' | 'breathExercise';
+
+interface UseLivePulseOptions {
+  presentationMode?: LivePulsePresentationMode;
+}
+
+function createLivePulseBpmFilter(mode: LivePulsePresentationMode) {
+  return mode === 'breathExercise'
+    ? createBreathExerciseBpmPresentationFilter()
+    : createLiveBpmPresentationFilter();
+}
+
+export function useLivePulse(
+  options: UseLivePulseOptions = {},
+): UseLivePulseReturn {
+  const presentationMode = options.presentationMode ?? 'default';
   const [active, setActive] = useState(false);
   const [fingerPlacement, setFingerPlacement] = useState<FingerPlacementState>('no_finger');
   const [currentBpm, setCurrentBpm] = useState<number | null>(null);
@@ -79,7 +97,7 @@ export function useLivePulse(): UseLivePulseReturn {
   const measurementSamplesRef = useRef<PpgFrameSample[]>([]);
   const publishedBpmRef = useRef<number | null>(null);
   const fingerPlacementRef = useRef<FingerPlacementState>('no_finger');
-  const liveBpmFilterRef = useRef(createLiveBpmPresentationFilter());
+  const liveBpmFilterRef = useRef(createLivePulseBpmFilter(presentationMode));
   const beatSchedulerRef = useRef(
     createBeatTickScheduler({ onBeat: () => setBeatTick((tick) => tick + 1) }),
   );

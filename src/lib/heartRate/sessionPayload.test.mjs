@@ -1,6 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildHeartRateSessionRpcPayload } from './sessionPayload.ts';
+import {
+  buildBpmSamplesFromHoldSeconds,
+  buildHeartRateSessionRpcPayload,
+} from './sessionPayload.ts';
 
 function makeFrame(timestamp) {
   return {
@@ -31,6 +34,22 @@ test('buildHeartRateSessionRpcPayload returns null when the capture result has n
   );
 
   assert.equal(payload, null);
+});
+
+test('buildBpmSamplesFromHoldSeconds caps saved breath-hold sample jumps', () => {
+  const samples = buildBpmSamplesFromHoldSeconds([
+    { t: 1, bpm: 72 },
+    { t: 2, bpm: 83 },
+    { t: 3, bpm: 84 },
+    { t: 4, bpm: 70 },
+  ]);
+
+  assert.deepEqual(samples, [
+    { offset_ms: 1_000, bpm: 72, signal_quality: null },
+    { offset_ms: 2_000, bpm: 75, signal_quality: null },
+    { offset_ms: 3_000, bpm: 78, signal_quality: null },
+    { offset_ms: 4_000, bpm: 75, signal_quality: null },
+  ]);
 });
 
 test('buildHeartRateSessionRpcPayload matches complete_heart_rate_session RPC arg shape', () => {

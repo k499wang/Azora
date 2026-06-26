@@ -55,7 +55,6 @@ import {
   type HeartRateSessionRpcSample,
 } from '../lib/heartRate/sessionPayload';
 import { buildBpmSeries } from '../lib/heartRate/bpmSeries';
-import { createBpmPresentationFilter } from '../lib/heartRate/bpmSmoothing';
 
 const PLACEMENT_GOOD_DURATION_MS = 1500;
 const PRE_BREATH_CYCLES = 3;
@@ -225,7 +224,6 @@ export default function DailyExercisePage({
   const [hrEnabled, setHrEnabled] = useState(true);
   const [lastRelease, setLastRelease] = useState<BreathHoldBpmStats | null>(null);
   const [releaseAudioActive, setReleaseAudioActive] = useState(false);
-  const [presentedBpm, setPresentedBpm] = useState<number | null>(null);
   const { preferences: audioPreferences, setThemeId } = useAudioPreferences();
   const activeTheme = useMemo<ExerciseDarkTheme>(
     () =>
@@ -238,15 +236,6 @@ export default function DailyExercisePage({
 
   const bpmOpacity = useRef(new Animated.Value(0.6)).current;
   const heartScale = useRef(new Animated.Value(1)).current;
-  const bpmPresentationFilterRef = useRef(
-    createBpmPresentationFilter({
-      warmupMs: 5_000,
-      maxStepBpm: 3,
-      spikeThresholdBpm: 12,
-      spikeConfirmationBpm: 4,
-    }),
-  );
-  const lastPresentationUpdateAtRef = useRef(0);
 
   const cueOpacity = useRef(new Animated.Value(0)).current;
   const cueTranslateY = useRef(new Animated.Value(10)).current;
@@ -307,16 +296,16 @@ export default function DailyExercisePage({
   });
   usePhaseChime(phase, { active: phaseCueAudioActive });
 
-  const pulse = useLivePulse();
+  const pulse = useLivePulse({ presentationMode: 'breathExercise' });
   const {
     start: startPulse,
     stop: stopPulse,
     hasPermission,
     requestPermission,
-    currentBpm,
     beginMeasurementWindow: beginPulseMeasurementWindow,
     getMeasurementSamples,
   } = pulse;
+  const presentedBpm = pulse.currentBpm;
   const {
     heartRateMonitoringEnabled,
     heartRateMonitoringPreferenceLoaded,
@@ -348,27 +337,6 @@ export default function DailyExercisePage({
   useEffect(() => {
     currentBpmRef.current = presentedBpm;
   }, [presentedBpm]);
-
-  useEffect(() => {
-    if (!isBreathingPhase(phase) && phase !== 'hold') return;
-    if (currentBpm == null || currentBpm <= 0) return;
-
-    const now = Date.now();
-    if (now - lastPresentationUpdateAtRef.current < 900) return;
-    lastPresentationUpdateAtRef.current = now;
-
-    const elapsedMs =
-      measurementStartAtRef.current > 0
-        ? now - measurementStartAtRef.current
-        : 0;
-    const nextBpm = bpmPresentationFilterRef.current.update({
-      elapsedMs,
-      bpm: currentBpm,
-    });
-    if (nextBpm != null) {
-      setPresentedBpm(nextBpm);
-    }
-  }, [currentBpm, phase, pulse.beatTick]);
 
   useEffect(() => {
     let cancelled = false;
@@ -495,9 +463,6 @@ export default function DailyExercisePage({
     savedSessionKeyRef.current = null;
     savingSessionKeyRef.current = null;
     measurementStartAtRef.current = 0;
-    setPresentedBpm(null);
-    bpmPresentationFilterRef.current.reset();
-    lastPresentationUpdateAtRef.current = 0;
     setReleaseAudioActive(false);
     setHoldSeconds(0);
     setPrepCycle(1);
@@ -817,7 +782,7 @@ export default function DailyExercisePage({
   const cameraSlot = showCamera ? <HeartRateCameraPreview {...cameraProps} /> : null;
 
   const bpmDisplay =
-    isLive && pulse.active && pulse.currentBpm != null && presentedBpm != null
+    isLive && pulse.active && presentedBpm != null
       ? Math.round(presentedBpm)
       : null;
   const signalGood = pulse.fingerPlacement === 'good';
