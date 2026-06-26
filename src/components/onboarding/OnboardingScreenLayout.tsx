@@ -172,37 +172,41 @@ export default function OnboardingScreenLayout({
   const inner = (
     <Animated.View style={[styles.entrance, { opacity: fade }]}>
       <View style={styles.header}>
-        {onBack ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Back"
-            hitSlop={12}
-            onPress={handleBack}
-            style={({ pressed }) => [
-              styles.backButton,
-              pressed && styles.backButtonPressed,
-            ]}
-          >
-            <Text style={styles.backGlyph}>←</Text>
-          </Pressable>
-        ) : null}
+        <View style={styles.headerSlotLeft}>
+          {onBack ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Back"
+              hitSlop={12}
+              onPress={handleBack}
+              style={({ pressed }) => [
+                styles.backButton,
+                pressed && styles.backButtonPressed,
+              ]}
+            >
+              <Text style={styles.backGlyph}>←</Text>
+            </Pressable>
+          ) : null}
+        </View>
         <View style={styles.progressBar}>
           <View style={[styles.progressFill, { width: `${clampedProgress * 100}%` }]} />
         </View>
-        {onSkip ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Skip"
-            hitSlop={12}
-            onPress={handleSkip}
-            style={({ pressed }) => [
-              styles.skipButton,
-              pressed && styles.skipButtonPressed,
-            ]}
-          >
-            <Text style={styles.skipLabel}>Skip</Text>
-          </Pressable>
-        ) : null}
+        <View style={styles.headerSlotRight}>
+          {onSkip ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Skip"
+              hitSlop={12}
+              onPress={handleSkip}
+              style={({ pressed }) => [
+                styles.skipButton,
+                pressed && styles.skipButtonPressed,
+              ]}
+            >
+              <Text style={styles.skipLabel}>Skip</Text>
+            </Pressable>
+          ) : null}
+        </View>
       </View>
 
       <View style={styles.scrollWrap}>
@@ -312,6 +316,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,
     paddingBottom: spacing['2xl'],
+  },
+  headerSlotLeft: {
+    width: 32,
+    height: 32,
+    justifyContent: 'center',
+  },
+  headerSlotRight: {
+    width: 48,
+    height: 32,
+    alignItems: 'flex-end',
+    justifyContent: 'center',
   },
   progressBar: {
     flex: 1,

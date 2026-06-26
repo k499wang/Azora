@@ -58,7 +58,7 @@ AGREEMENT_STATEMENTS.forEach((statement) => {
 });
 
 const navigationRef = createNavigationContainerRef<RootStackParamList>();
-const STARTUP_BACKGROUND_COLOR = colors.orange[500];
+const STARTUP_BACKGROUND_COLOR = colors.neutral[0];
 
 export default function App() {
   const [fontsLoaded] = useFonts({

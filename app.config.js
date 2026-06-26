@@ -27,7 +27,7 @@ module.exports = {
     userInterfaceStyle: 'light',
     newArchEnabled: true,
     splash: {
-      image: './assets/splash-icon.png',
+      image: './assets/splash-lockup.png',
       resizeMode: 'contain',
       backgroundColor: '#FFFFFF',
     },
