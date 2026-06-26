@@ -44,7 +44,7 @@ const MIN_ROI_RED = 120;
 const MIN_AVG_ROI_RED = 100;
 const MAX_ROI_SATURATION = 0.98;
 const MAX_AVG_SATURATION = 0.98;
-const IBI_HISTORY_SIZE = 8;
+const IBI_HISTORY_SIZE = 6;
 const MIN_LIVE_BPM_IBIS = 4;
 const MALIK_THRESHOLD = 0.2;
 const MALIK_SHORT_THRESHOLD = 0.12;
@@ -279,7 +279,7 @@ export class HeartRateManager {
   private polarityNegativeScore = 0;
   private readonly liveSignalSamples: LivePpgSignalSample[] = [];
   private ibiEma: number | null = null;
-  private readonly IBI_EMA_ALPHA = 0.25;
+  private readonly IBI_EMA_ALPHA = 0.3;
 
   reset(): void {
     this.baseline = 0;
