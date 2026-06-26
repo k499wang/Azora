@@ -44,6 +44,7 @@ SplashScreen.preventAutoHideAsync();
 // ─── Secondary asset preloads (fire-and-forget, non-blocking) ──────────
 Asset.fromModule(require('./assets/onboarding/camerappg.png')).downloadAsync();
 Asset.fromModule(require('./assets/onboarding/founder-intro-poster.jpg')).downloadAsync();
+Asset.fromModule(require('./assets/onboarding/brain-scan-comparison.webp')).downloadAsync();
 AUTH_LANDING_SLIDES.forEach((slide) => {
   Asset.fromModule(slide.source as number).downloadAsync();
 });

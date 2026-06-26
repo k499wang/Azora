@@ -8,7 +8,7 @@ import { isHapticsEnabled } from '../../../services/preferences/hapticsPreferenc
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 
-const BRAIN_SCANS = require('../../../../assets/onboarding/brain-scan-comparison.png');
+const BRAIN_SCANS = require('../../../../assets/onboarding/brain-scan-comparison.webp');
 const BRAIN_SCAN_ASPECT_RATIO = 3 / 2;
 const BRAIN_SCAN_CONTENT_OFFSET = -10;
 const RIGHT_BRAIN_LABEL_OFFSET = 12;
