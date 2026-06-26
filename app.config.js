@@ -23,13 +23,13 @@ module.exports = {
     slug: 'Azora',
     version: '1.0.4',
     orientation: 'portrait',
-    icon: './assets/iconApp.webp',
+    icon: './assets/icon.png',
     userInterfaceStyle: 'light',
     newArchEnabled: true,
     splash: {
       image: './assets/splash-icon.png',
       resizeMode: 'contain',
-      backgroundColor: '#FF8C00',
+      backgroundColor: '#FFFFFF',
     },
     ios: {
       supportsTablet: true,
@@ -210,7 +210,7 @@ module.exports = {
     android: {
       adaptiveIcon: {
         foregroundImage: './assets/adaptive-icon.png',
-        backgroundColor: '#FF8C00',
+        backgroundColor: '#FFFFFF',
       },
       edgeToEdgeEnabled: true,
       predictiveBackGestureEnabled: false,

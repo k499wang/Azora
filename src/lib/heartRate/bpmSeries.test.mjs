@@ -84,20 +84,21 @@ test('labels are formatted as m:ss', () => {
   assert.equal(points[1].label, '1:05');
 });
 
-test('BPM insight uses saved summary fields instead of plotted extrema', () => {
+test('BPM insight prefers plotted graph values over saved summary fields', () => {
   const insight = buildBpmInsight(
-    [{ bpm: 70 }, { bpm: 72 }],
+    [{ bpm: 70 }, { bpm: 72 }, { bpm: 78 }],
     { avgBpm: 81, minBpm: 61, maxBpm: 99, hrDrop: 12 },
   );
 
-  assert.match(insight, /12 bpm drop/);
-  assert.match(insight, /81 bpm/);
-  assert.match(insight, /61-99 bpm/);
+  assert.match(insight, /climbed 8 bpm/);
+  assert.match(insight, /73 bpm/);
+  assert.doesNotMatch(insight, /12 bpm drop/);
+  assert.doesNotMatch(insight, /61-99 bpm/);
 });
 
-test('BPM insight preserves a saved negative HR drop as a climb', () => {
+test('BPM insight falls back to saved summary when graph values are unavailable', () => {
   const insight = buildBpmInsight(
-    [{ bpm: 70 }, { bpm: 72 }],
+    [],
     { avgBpm: 71, minBpm: 68, maxBpm: 75, hrDrop: -7 },
   );
 
@@ -114,7 +115,7 @@ test('BPM insight explains a pronounced breath-hold diving reflex', () => {
 
   assert.match(insight, /pronounced diving-reflex response/);
   assert.match(insight, /parasympathetic engagement/);
-  assert.match(insight, /61 to 84 bpm/);
+  assert.match(insight, /63 to 82 bpm/);
   assert.doesNotMatch(insight, /resting rate/);
 });
 
@@ -127,4 +128,62 @@ test('BPM insight contextualizes minimal breath-hold slowing', () => {
 
   assert.match(insight, /changed very little/);
   assert.match(insight, /look for a pattern across several sessions/);
+});
+
+test('BPM insight explains a breathing exercise graph downshift', () => {
+  const insight = buildBpmInsight(
+    [{ bpm: 82 }, { bpm: 76 }, { bpm: 70 }],
+    undefined,
+    'breathing-exercise',
+  );
+
+  assert.match(insight, /breathing graph/);
+  assert.match(insight, /eased by 12 bpm/);
+  assert.match(insight, /parasympathetic engagement/);
+  assert.doesNotMatch(insight, /resting rate/);
+});
+
+test('BPM insight explains a breathing exercise graph increase', () => {
+  const insight = buildBpmInsight(
+    [{ bpm: 68 }, { bpm: 74 }, { bpm: 79 }],
+    undefined,
+    'breathing-exercise',
+  );
+
+  assert.match(insight, /rose 11 bpm/);
+  assert.match(insight, /breathing graph/);
+  assert.match(insight, /rhythm is challenging/);
+});
+
+test('BPM insight mentions repeated breathing exercise graph swings', () => {
+  const insight = buildBpmInsight(
+    [{ bpm: 70 }, { bpm: 76 }, { bpm: 71 }, { bpm: 77 }, { bpm: 72 }, { bpm: 78 }],
+    undefined,
+    'breathing-exercise',
+  );
+
+  assert.match(insight, /moved up and down several times/);
+  assert.match(insight, /breathing rhythm/);
+});
+
+test('BPM insight mentions repeated breath-hold graph swings', () => {
+  const insight = buildBpmInsight(
+    [{ bpm: 82 }, { bpm: 75 }, { bpm: 80 }, { bpm: 74 }, { bpm: 79 }, { bpm: 73 }],
+    undefined,
+    'breath-hold',
+  );
+
+  assert.match(insight, /repeated up-and-down swings/);
+  assert.match(insight, /diving-reflex response comes in waves/);
+});
+
+test('BPM insight ignores tiny graph wiggles', () => {
+  const insight = buildBpmInsight(
+    [{ bpm: 70 }, { bpm: 72 }, { bpm: 69 }, { bpm: 71 }, { bpm: 68 }, { bpm: 70 }],
+    undefined,
+    'breathing-exercise',
+  );
+
+  assert.doesNotMatch(insight, /moved up and down several times/);
+  assert.doesNotMatch(insight, /one smooth trend/);
 });
