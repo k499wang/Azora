@@ -2,6 +2,7 @@ import { ReactNode, useEffect, useRef, useState } from 'react';
 import {
   Animated,
   Easing,
+  InteractionManager,
   Keyboard,
   KeyboardAvoidingView,
   LayoutChangeEvent,
@@ -22,7 +23,6 @@ import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import { isHapticsEnabled } from '../../services/preferences/hapticsPreference';
-import AmbientBackground from '../common/AmbientBackground';
 
 const ENTRANCE_EASING = Easing.bezier(0.22, 1, 0.36, 1);
 const ENTRANCE_INITIAL_SCALE = 0.992;
@@ -54,9 +54,6 @@ export default function OnboardingScreenLayout({
   const clampedProgress = Math.max(0, Math.min(1, progress));
   const fade = useRef(new Animated.Value(0)).current;
   const scale = useRef(new Animated.Value(ENTRANCE_INITIAL_SCALE)).current;
-  const entranceAnimation = useRef<{ stop: () => void } | null>(null);
-  const entranceTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const hasStartedEntrance = useRef(false);
   const scrollRef = useRef<ScrollView>(null);
 
   const scrollFade = useRef(new Animated.Value(0)).current;
@@ -131,12 +128,13 @@ export default function OnboardingScreenLayout({
     return () => show.remove();
   }, [keyboardAvoiding]);
 
-  const startEntranceAnimation = () => {
-    if (hasStartedEntrance.current) return;
-    hasStartedEntrance.current = true;
+  useEffect(() => {
+    let animation: Animated.CompositeAnimation | null = null;
 
-    entranceTimeout.current = setTimeout(() => {
-      const animation = Animated.parallel([
+    // Gate the entrance behind runAfterInteractions so the native-driven fade
+    // starts on an idle UI thread instead of racing the freshly-mounted screen.
+    const handle = InteractionManager.runAfterInteractions(() => {
+      animation = Animated.parallel([
         Animated.timing(fade, {
           toValue: 1,
           duration: 680,
@@ -150,24 +148,14 @@ export default function OnboardingScreenLayout({
           useNativeDriver: true,
         }),
       ]);
+      animation.start();
+    });
 
-      entranceAnimation.current = animation;
-      animation.start(({ finished }) => {
-        if (finished) entranceAnimation.current = null;
-      });
-    }, 80);
-  };
-
-  useEffect(() => {
     return () => {
-      if (entranceTimeout.current) {
-        clearTimeout(entranceTimeout.current);
-        entranceTimeout.current = null;
-      }
-      entranceAnimation.current?.stop();
-      entranceAnimation.current = null;
+      handle.cancel();
+      animation?.stop();
     };
-  }, []);
+  }, [fade, scale]);
 
   const handleBack = () => {
     if (!onBack) return;
@@ -182,10 +170,7 @@ export default function OnboardingScreenLayout({
   };
 
   const inner = (
-    <Animated.View
-      onLayout={startEntranceAnimation}
-      style={[styles.entrance, { opacity: fade }]}
-    >
+    <Animated.View style={[styles.entrance, { opacity: fade }]}>
       <View style={styles.header}>
         {onBack ? (
           <Pressable
@@ -280,7 +265,6 @@ export default function OnboardingScreenLayout({
 
   return (
     <View style={styles.screen}>
-      <AmbientBackground />
       <View
         style={[
           styles.safeArea,
@@ -309,7 +293,7 @@ export default function OnboardingScreenLayout({
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: colors.background.primary,
+    backgroundColor: 'transparent',
   },
   safeArea: {
     flex: 1,
