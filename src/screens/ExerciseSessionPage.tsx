@@ -104,6 +104,7 @@ export default function ExerciseSessionPage({
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const introTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const remainingRef = useRef(0);
+  const phaseRunIdRef = useRef(0);
   const onDoneRef = useRef<(() => void) | null>(null);
   const hrSamplesRef = useRef<Array<{ offsetMs: number; bpm: number }>>([]);
   const sessionStartMsRef = useRef<number>(0);
@@ -288,6 +289,7 @@ export default function ExerciseSessionPage({
 
   const flow = useCancellableFlow(
     useCallback(() => {
+      phaseRunIdRef.current += 1;
       clearTimer();
       stopInhaleVibration();
       stopHoldHaptics();
@@ -313,6 +315,9 @@ export default function ExerciseSessionPage({
         return;
       }
 
+      const phaseRunId = phaseRunIdRef.current + 1;
+      phaseRunIdRef.current = phaseRunId;
+      const isMotionPhase = p === 'inhale' || p === 'exhale';
       onDoneRef.current = onDone;
       setPhase(p);
       setPaused(false);
@@ -327,35 +332,52 @@ export default function ExerciseSessionPage({
         stopHoldHaptics();
       }
 
-      const startPhaseTimer = () => {
+      const completePhase = () => {
+        if (phaseRunIdRef.current !== phaseRunId || !flow.isActive()) return;
+        const remaining = Math.max(0, remainingRef.current);
+        clearTimer();
+        if (remaining > 0) {
+          remainingRef.current = 0;
+          setElapsed((current) => current + remaining);
+        }
+        onDone();
+      };
+
+      const startPhaseTimer = (advanceOnTimerEnd: boolean) => {
         if (!flow.isActive()) return;
         let remaining = secs;
         remainingRef.current = remaining;
         clearTimer();
         timerRef.current = setInterval(() => {
-          remaining -= 1;
+          remaining = Math.max(0, remaining - 1);
           remainingRef.current = remaining;
           setElapsed((current) => current + 1);
 
           if (remaining <= 0) {
             clearTimer();
-            if (!flow.isActive()) return;
-            onDone();
+            if (advanceOnTimerEnd) {
+              completePhase();
+            }
           }
         }, 1000);
       };
 
-      if (p === 'inhale' || p === 'exhale') {
+      if (isMotionPhase) {
         requestAnimationFrame(() => {
           if (!flow.isActive()) return;
-          if (p === 'inhale') circleRef.current?.expand(secs);
-          else circleRef.current?.contract(secs);
-          startPhaseTimer();
+          const circle = circleRef.current;
+          if (!circle) {
+            startPhaseTimer(true);
+            return;
+          }
+          if (p === 'inhale') circle.expand(secs, completePhase);
+          else circle.contract(secs, completePhase);
+          startPhaseTimer(false);
         });
         return;
       }
 
-      startPhaseTimer();
+      startPhaseTimer(true);
     },
     [flow],
   );
@@ -494,13 +516,35 @@ export default function ExerciseSessionPage({
     if (!onDoneRef.current) return;
     const remaining = remainingRef.current;
     const onDone = onDoneRef.current;
+    const isMotionPhase = currentPhase === 'inhale' || currentPhase === 'exhale';
+    const phaseRunId = phaseRunIdRef.current;
     setPaused(false);
 
+    const completePhase = () => {
+      if (phaseRunIdRef.current !== phaseRunId || !flow.isActive()) return;
+      const leftover = Math.max(0, remainingRef.current);
+      clearTimer();
+      if (leftover > 0) {
+        remainingRef.current = 0;
+        setElapsed((current) => current + leftover);
+      }
+      onDone();
+    };
+
+    let motionHandledByCircle = false;
     if (currentPhase === 'inhale') {
-      circleRef.current?.resumeExpand(remaining);
+      const circle = circleRef.current;
+      if (circle) {
+        motionHandledByCircle = true;
+        circle.resumeExpand(remaining, completePhase);
+      }
       startInhaleVibration(remaining * 1000);
     } else if (currentPhase === 'exhale') {
-      circleRef.current?.resumeContract(remaining);
+      const circle = circleRef.current;
+      if (circle) {
+        motionHandledByCircle = true;
+        circle.resumeContract(remaining, completePhase);
+      }
     } else if (currentPhase === 'holdIn' || currentPhase === 'holdOut') {
       startHoldHaptics();
     }
@@ -508,13 +552,15 @@ export default function ExerciseSessionPage({
     let rem = remaining;
     clearTimer();
     timerRef.current = setInterval(() => {
-      rem -= 1;
+      rem = Math.max(0, rem - 1);
       remainingRef.current = rem;
       setElapsed((current) => current + 1);
       if (rem <= 0) {
         clearTimer();
-        if (!flow.isActive()) return;
-        onDone();
+        if (!isMotionPhase || !motionHandledByCircle) {
+          if (!flow.isActive()) return;
+          onDone();
+        }
       }
     }, 1000);
   };
