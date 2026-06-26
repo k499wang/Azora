@@ -1,6 +1,6 @@
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PersistentCameraRing } from '../../heartRate/PersistentCameraRing';
 import { LiveSignalGraph } from '../../heartRate/LiveSignalGraph';
 import type { HeartRateCameraPreviewProps } from '../../heartRate/HeartRateCameraPreview';
@@ -54,11 +54,20 @@ export function BaselineCaptureStage({
   showSignalWarning,
   visibleBeatTick,
 }: BaselineCaptureStageProps) {
+  const insets = useSafeAreaInsets();
   const isFingerLost = fingerPlacement === 'lost' || fingerPlacement === 'no_finger';
   const showInlineSignalWarning = showSignalWarning && !isFingerLost;
 
   return (
-    <SafeAreaView style={styles.fill} edges={['top', 'bottom']}>
+    <View
+      style={[
+        styles.fill,
+        {
+          paddingTop: insets.top,
+          paddingBottom: insets.bottom,
+        },
+      ]}
+    >
       {isRunning && !hudVisible ? (
         <Pressable
           style={styles.tapToRevealLayer}
@@ -167,7 +176,7 @@ export function BaselineCaptureStage({
           </Animated.View>
         </View>
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 

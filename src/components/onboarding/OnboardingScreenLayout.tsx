@@ -17,7 +17,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import Icon from '../common/icons/Icon';
 import * as Haptics from 'expo-haptics';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
@@ -50,6 +50,7 @@ export default function OnboardingScreenLayout({
   keyboardAvoiding = false,
   centerBody = false,
 }: OnboardingScreenLayoutProps) {
+  const insets = useSafeAreaInsets();
   const clampedProgress = Math.max(0, Math.min(1, progress));
   const fade = useRef(new Animated.Value(0)).current;
   const scale = useRef(new Animated.Value(ENTRANCE_INITIAL_SCALE)).current;
@@ -280,7 +281,16 @@ export default function OnboardingScreenLayout({
   return (
     <View style={styles.screen}>
       <AmbientBackground />
-      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+      <View
+        style={[
+          styles.safeArea,
+          {
+            paddingTop: insets.top,
+            paddingLeft: insets.left,
+            paddingRight: insets.right,
+          },
+        ]}
+      >
         {keyboardAvoiding ? (
           <KeyboardAvoidingView
             style={styles.keyboard}
@@ -291,7 +301,7 @@ export default function OnboardingScreenLayout({
         ) : (
           inner
         )}
-      </SafeAreaView>
+      </View>
     </View>
   );
 }
