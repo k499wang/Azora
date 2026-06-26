@@ -14,12 +14,20 @@ const INNER_SIZE = 108;
 const OUTER_MIN_SIZE = INNER_SIZE;
 const OUTER_MIN_SCALE = OUTER_MIN_SIZE / OUTER_MAX_SIZE;
 
+type AnimationCompletionCallback = () => void;
+
 export interface BreathingCircleRef {
-  expand: (duration: number) => void;
-  contract: (duration: number) => void;
+  expand: (duration: number, onComplete?: AnimationCompletionCallback) => void;
+  contract: (duration: number, onComplete?: AnimationCompletionCallback) => void;
   pause: () => void;
-  resumeExpand: (remainingSecs: number) => void;
-  resumeContract: (remainingSecs: number) => void;
+  resumeExpand: (
+    remainingSecs: number,
+    onComplete?: AnimationCompletionCallback,
+  ) => void;
+  resumeContract: (
+    remainingSecs: number,
+    onComplete?: AnimationCompletionCallback,
+  ) => void;
   reset: () => void;
 }
 
@@ -44,13 +52,21 @@ const BreathingCircle = forwardRef<BreathingCircleRef, BreathingCircleProps>(
     const scale = useRef(new Animated.Value(OUTER_MIN_SCALE)).current;
     const innerFlush = useRef(new Animated.Value(0)).current;
 
-    const animateTo = (toValue: number, duration: number) => {
+    const animateTo = (
+      toValue: number,
+      duration: number,
+      onComplete?: AnimationCompletionCallback,
+    ) => {
       Animated.timing(scale, {
         toValue,
         duration: duration * 1000,
         easing: Easing.linear,
         useNativeDriver: true,
-      }).start();
+      }).start(({ finished }) => {
+        if (finished) {
+          onComplete?.();
+        }
+      });
     };
 
     useEffect(() => {
@@ -72,20 +88,26 @@ const BreathingCircle = forwardRef<BreathingCircleRef, BreathingCircleProps>(
     }, [beatTick, innerFlush]);
 
     useImperativeHandle(ref, () => ({
-      expand(duration: number) {
-        animateTo(1, duration);
+      expand(duration: number, onComplete?: AnimationCompletionCallback) {
+        animateTo(1, duration, onComplete);
       },
-      contract(duration: number) {
-        animateTo(OUTER_MIN_SCALE, duration);
+      contract(duration: number, onComplete?: AnimationCompletionCallback) {
+        animateTo(OUTER_MIN_SCALE, duration, onComplete);
       },
       pause() {
         scale.stopAnimation();
       },
-      resumeExpand(remainingSecs: number) {
-        animateTo(1, remainingSecs);
+      resumeExpand(
+        remainingSecs: number,
+        onComplete?: AnimationCompletionCallback,
+      ) {
+        animateTo(1, remainingSecs, onComplete);
       },
-      resumeContract(remainingSecs: number) {
-        animateTo(OUTER_MIN_SCALE, remainingSecs);
+      resumeContract(
+        remainingSecs: number,
+        onComplete?: AnimationCompletionCallback,
+      ) {
+        animateTo(OUTER_MIN_SCALE, remainingSecs, onComplete);
       },
       reset() {
         scale.stopAnimation();

@@ -211,9 +211,9 @@ export default function DailyExercisePage({
   const completeBreathHoldMutation = useCompleteBreathHoldMutation(user?.id ?? null);
   const circleRef = useRef<BreathingCircleRef>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const inhaleTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const introTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const releaseAudioTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const prepPhaseRunIdRef = useRef(0);
   const samplesRef = useRef<BpmSample[]>([]);
   const measurementStartAtRef = useRef<number>(0);
   const holdStartAtRef = useRef<number>(0);
@@ -355,10 +355,6 @@ export default function DailyExercisePage({
       clearInterval(timerRef.current);
       timerRef.current = null;
     }
-    if (inhaleTimeoutRef.current) {
-      clearTimeout(inhaleTimeoutRef.current);
-      inhaleTimeoutRef.current = null;
-    }
     if (introTimeoutRef.current) {
       clearTimeout(introTimeoutRef.current);
       introTimeoutRef.current = null;
@@ -371,6 +367,7 @@ export default function DailyExercisePage({
 
   const flow = useCancellableFlow(
     useCallback(() => {
+      prepPhaseRunIdRef.current += 1;
       clearTimer();
       stopInhaleVibration();
       stopPulse();
@@ -418,12 +415,14 @@ export default function DailyExercisePage({
   const startBreathPhase = useCallback((nextPhase: 'preInhale' | 'preExhale' | 'inhale', cycle: number) => {
     if (!flow.isActive()) return;
     clearTimer();
+    const prepPhaseRunId = prepPhaseRunIdRef.current + 1;
+    prepPhaseRunIdRef.current = prepPhaseRunId;
     const duration = getBreathingPhaseDuration(nextPhase);
     setPrepCycle(cycle);
     setPhase(nextPhase);
 
     const scheduleNextPhase = () => {
-      if (!flow.isActive()) return;
+      if (prepPhaseRunIdRef.current !== prepPhaseRunId || !flow.isActive()) return;
       clearTimer();
       if (nextPhase === 'preInhale') {
         startBreathPhase('preExhale', cycle);
@@ -442,17 +441,21 @@ export default function DailyExercisePage({
 
     requestAnimationFrame(() => {
       if (!flow.isActive()) return;
+      const circle = circleRef.current;
+      if (!circle) {
+        scheduleNextPhase();
+        return;
+      }
       if (nextPhase === 'preExhale') {
         stopInhaleVibration();
-        circleRef.current?.contract(duration);
+        circle.contract(duration, scheduleNextPhase);
       } else {
         if (nextPhase === 'preInhale' && cycle === 1) {
-          circleRef.current?.reset();
+          circle.reset();
         }
         startInhaleVibration(duration * 1000);
-        circleRef.current?.expand(duration);
+        circle.expand(duration, scheduleNextPhase);
       }
-      inhaleTimeoutRef.current = setTimeout(scheduleNextPhase, duration * 1000);
     });
   }, [beginHold, flow]);
 
