@@ -35,6 +35,18 @@ export function useAppGate(): AppGate {
   const autoCompleteAttemptedRef = useRef<string | null>(null);
   const [autoCompleteFailedForUserId, setAutoCompleteFailedForUserId] =
     useState<string | null>(null);
+  const [isAutoCompletingOnboarding, setIsAutoCompletingOnboarding] =
+    useState(false);
+  const shouldStartAutoCompleteOnboarding =
+    onboardingStatusQuery.data === false &&
+    savedOnboardingProfileQuery.data != null &&
+    entitlementQuery.data?.isPro === true &&
+    !isCompletingOnboarding &&
+    userId != null &&
+    autoCompleteAttemptedRef.current !== userId &&
+    autoCompleteFailedForUserId !== userId;
+  const shouldWaitForAutoCompleteOnboarding =
+    shouldStartAutoCompleteOnboarding || isAutoCompletingOnboarding;
 
   useEffect(() => {
     if (onboardingStatusQuery.isError || savedOnboardingProfileQuery.isError) {
@@ -44,27 +56,22 @@ export function useAppGate(): AppGate {
   }, [onboardingStatusQuery.isError, savedOnboardingProfileQuery.isError]);
 
   useEffect(() => {
-    if (
-      onboardingStatusQuery.data === false &&
-      savedOnboardingProfileQuery.data != null &&
-      entitlementQuery.data?.isPro === true &&
-      !isCompletingOnboarding &&
-      userId != null &&
-      autoCompleteAttemptedRef.current !== userId &&
-      autoCompleteFailedForUserId !== userId
-    ) {
-      autoCompleteAttemptedRef.current = userId;
-      void completeOnboarding().catch(() => {
-        setAutoCompleteFailedForUserId(userId);
-      });
+    if (!shouldStartAutoCompleteOnboarding || userId == null) {
+      return;
     }
+
+    autoCompleteAttemptedRef.current = userId;
+    setIsAutoCompletingOnboarding(true);
+    void completeOnboarding()
+      .catch(() => {
+        setAutoCompleteFailedForUserId(userId);
+      })
+      .finally(() => {
+        setIsAutoCompletingOnboarding(false);
+      });
   }, [
-    autoCompleteFailedForUserId,
     completeOnboarding,
-    entitlementQuery.data?.isPro,
-    isCompletingOnboarding,
-    onboardingStatusQuery.data,
-    savedOnboardingProfileQuery.data,
+    shouldStartAutoCompleteOnboarding,
     userId,
   ]);
 
@@ -75,6 +82,7 @@ export function useAppGate(): AppGate {
     savedOnboardingProfileQuery,
     entitlementQuery,
     isCompletingOnboarding,
+    shouldWaitForAutoCompleteOnboarding,
     autoCompleteFailedForUserId,
     async (input) => {
       await saveOnboardingProfileMutation.mutateAsync(input);

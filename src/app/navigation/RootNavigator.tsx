@@ -13,7 +13,7 @@ import { ProPaywallScreen } from '../../screens/ProPaywallScreen';
 import { ExitOfferScreen } from '../../screens/ExitOfferScreen';
 import SettingsScreen from '../../screens/SettingsScreen';
 import ShareableResultScreen from '../../screens/ShareableResultScreen';
-import { useAppGate } from '../../hooks/useAppGate';
+import { useAppGate, type AppGate } from '../../hooks/useAppGate';
 import { useUserEntitlementQuery } from '../../queries/subscriptions/useUserEntitlementQuery';
 import { OnboardingFlow } from '../../components/onboarding';
 import AmbientBackground from '../../components/common/AmbientBackground';
@@ -25,6 +25,8 @@ import { MainTabs } from './MainTabs';
 import type { RootStackNavigationProp, RootStackParamList } from './types';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
+type OnboardingGate = Extract<AppGate, { status: 'needs_onboarding' }>;
+type LastStableGateStatus = 'signed_out' | 'needs_onboarding' | 'ready' | null;
 
 interface AppStackProps {
   showBootPaywall: boolean;
@@ -184,35 +186,55 @@ interface RootNavigatorProps {
   allowBootPaywall?: boolean;
 }
 
+function OnboardingOverlay({ gate }: { gate: OnboardingGate }) {
+  return (
+    <View style={styles.overlayRoot}>
+      <AppStack showBootPaywall={false} />
+      <View style={styles.onboardingOverlay}>
+        <AmbientBackground />
+        <OnboardingFlow
+          initialSavedProfile={gate.savedOnboardingProfile}
+          isSavingProfile={gate.isSavingOnboardingProfile}
+          isCompletingOnboarding={gate.isCompletingOnboarding}
+          onSaveProfile={gate.saveOnboardingProfile}
+          onComplete={gate.completeOnboarding}
+        />
+      </View>
+    </View>
+  );
+}
+
 export function RootNavigator({ allowBootPaywall = true }: RootNavigatorProps) {
   const gate = useAppGate();
+  const lastStableGateStatusRef = useRef<LastStableGateStatus>(null);
+  const lastOnboardingGateRef = useRef<OnboardingGate | null>(null);
 
   if (gate.status === 'booting') {
+    if (lastOnboardingGateRef.current != null) {
+      return <OnboardingOverlay gate={lastOnboardingGateRef.current} />;
+    }
+
+    if (lastStableGateStatusRef.current === 'signed_out') {
+      return <AuthLandingScreen />;
+    }
+
     return <BrandSplash />;
   }
 
   if (gate.status === 'signed_out') {
+    lastStableGateStatusRef.current = 'signed_out';
+    lastOnboardingGateRef.current = null;
     return <AuthLandingScreen />;
   }
 
   if (gate.status === 'needs_onboarding') {
-    return (
-      <View style={styles.overlayRoot}>
-        <AppStack showBootPaywall={false} />
-        <View style={styles.onboardingOverlay}>
-          <AmbientBackground />
-          <OnboardingFlow
-            initialSavedProfile={gate.savedOnboardingProfile}
-            isSavingProfile={gate.isSavingOnboardingProfile}
-            isCompletingOnboarding={gate.isCompletingOnboarding}
-            onSaveProfile={gate.saveOnboardingProfile}
-            onComplete={gate.completeOnboarding}
-          />
-        </View>
-      </View>
-    );
+    lastStableGateStatusRef.current = 'needs_onboarding';
+    lastOnboardingGateRef.current = gate;
+    return <OnboardingOverlay gate={gate} />;
   }
 
+  lastStableGateStatusRef.current = 'ready';
+  lastOnboardingGateRef.current = null;
   return <AppStack showBootPaywall={allowBootPaywall} />;
 }
 

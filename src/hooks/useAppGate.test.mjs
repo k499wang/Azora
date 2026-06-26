@@ -37,6 +37,7 @@ test('returns booting when authStatus is booting', () => {
     savedOnboardingProfileQuery,
     entitlementQuery,
     false,
+    false,
     null,
     noop,
     noop,
@@ -57,6 +58,7 @@ test('returns signed_out when authStatus is signed_out', () => {
     savedOnboardingProfileQuery,
     entitlementQuery,
     false,
+    false,
     null,
     noop,
     noop,
@@ -76,6 +78,7 @@ test('returns signed_out when user is null', () => {
     onboardingStatusQuery,
     savedOnboardingProfileQuery,
     entitlementQuery,
+    false,
     false,
     null,
     noop,
@@ -99,6 +102,7 @@ test('returns booting when onboardingStatusQuery is pending', () => {
     savedOnboardingProfileQuery,
     entitlementQuery,
     false,
+    false,
     null,
     noop,
     noop,
@@ -120,6 +124,7 @@ test('returns signed_out when onboardingStatusQuery is error', () => {
     onboardingStatusQuery,
     savedOnboardingProfileQuery,
     entitlementQuery,
+    false,
     false,
     null,
     noop,
@@ -144,6 +149,7 @@ test('returns signed_out when savedOnboardingProfileQuery is error', () => {
     savedOnboardingProfileQuery,
     entitlementQuery,
     false,
+    false,
     null,
     noop,
     noop,
@@ -167,6 +173,7 @@ test('returns booting when savedOnboardingProfileQuery is pending', () => {
     savedOnboardingProfileQuery,
     entitlementQuery,
     false,
+    false,
     null,
     noop,
     noop,
@@ -188,6 +195,7 @@ test('returns needs_onboarding when onboarding is incomplete and no saved profil
     onboardingStatusQuery,
     savedOnboardingProfileQuery,
     entitlementQuery,
+    false,
     false,
     null,
     noop,
@@ -211,6 +219,7 @@ test('returns ready when onboarding is completed', () => {
     onboardingStatusQuery,
     savedOnboardingProfileQuery,
     entitlementQuery,
+    false,
     false,
     null,
     noop,
@@ -240,6 +249,36 @@ test('returns booting when pro user has saved profile and entitlement is pending
     savedOnboardingProfileQuery,
     entitlementQuery,
     false,
+    false,
+    null,
+    noop,
+    noop,
+    false,
+  );
+
+  assert.equal(result.status, 'booting');
+});
+
+test('returns booting when pro user has saved profile and auto-complete should start', () => {
+  const { onboardingStatusQuery, savedOnboardingProfileQuery, entitlementQuery } =
+    createBaseQueries({
+      onboardingStatusQuery: { isPending: false, isError: false, data: false },
+      savedOnboardingProfileQuery: {
+        isPending: false,
+        isError: false,
+        data: { onboardingGoal: 'stress', age: 30, gender: 'male', dailyMinutes: 10 },
+      },
+      entitlementQuery: { isPending: false, data: { isPro: true } },
+    });
+
+  const result = computeAppGate(
+    'signed_in',
+    { id: 'user-1' },
+    onboardingStatusQuery,
+    savedOnboardingProfileQuery,
+    entitlementQuery,
+    false,
+    true,
     null,
     noop,
     noop,
@@ -267,6 +306,7 @@ test('returns booting when pro user has saved profile and auto-complete is in pr
     onboardingStatusQuery,
     savedOnboardingProfileQuery,
     entitlementQuery,
+    false,
     true,
     null,
     noop,
@@ -275,6 +315,70 @@ test('returns booting when pro user has saved profile and auto-complete is in pr
   );
 
   assert.equal(result.status, 'booting');
+});
+
+test('returns needs_onboarding when manual completion is pending for pro user', () => {
+  const savedProfile = { onboardingGoal: 'stress', age: 30, gender: 'male', dailyMinutes: 10 };
+  const { onboardingStatusQuery, savedOnboardingProfileQuery, entitlementQuery } =
+    createBaseQueries({
+      onboardingStatusQuery: { isPending: false, isError: false, data: false },
+      savedOnboardingProfileQuery: {
+        isPending: false,
+        isError: false,
+        data: savedProfile,
+      },
+      entitlementQuery: { isPending: false, data: { isPro: true } },
+    });
+
+  const result = computeAppGate(
+    'signed_in',
+    { id: 'user-1' },
+    onboardingStatusQuery,
+    savedOnboardingProfileQuery,
+    entitlementQuery,
+    true,
+    false,
+    null,
+    noop,
+    noop,
+    false,
+  );
+
+  assert.equal(result.status, 'needs_onboarding');
+  assert.equal(result.isCompletingOnboarding, true);
+  assert.deepEqual(result.savedOnboardingProfile, savedProfile);
+});
+
+test('returns needs_onboarding when manual completion is pending and entitlement is pending', () => {
+  const savedProfile = { onboardingGoal: 'stress', age: 30, gender: 'male', dailyMinutes: 10 };
+  const { onboardingStatusQuery, savedOnboardingProfileQuery, entitlementQuery } =
+    createBaseQueries({
+      onboardingStatusQuery: { isPending: false, isError: false, data: false },
+      savedOnboardingProfileQuery: {
+        isPending: false,
+        isError: false,
+        data: savedProfile,
+      },
+      entitlementQuery: { isPending: true, data: undefined },
+    });
+
+  const result = computeAppGate(
+    'signed_in',
+    { id: 'user-1' },
+    onboardingStatusQuery,
+    savedOnboardingProfileQuery,
+    entitlementQuery,
+    true,
+    false,
+    null,
+    noop,
+    noop,
+    false,
+  );
+
+  assert.equal(result.status, 'needs_onboarding');
+  assert.equal(result.isCompletingOnboarding, true);
+  assert.deepEqual(result.savedOnboardingProfile, savedProfile);
 });
 
 test('returns needs_onboarding when auto-complete previously failed for this user', () => {
@@ -296,6 +400,7 @@ test('returns needs_onboarding when auto-complete previously failed for this use
     onboardingStatusQuery,
     savedOnboardingProfileQuery,
     entitlementQuery,
+    false,
     false,
     'user-1',
     noop,
