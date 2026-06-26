@@ -16,6 +16,7 @@ import ShareableResultScreen from '../../screens/ShareableResultScreen';
 import { useAppGate } from '../../hooks/useAppGate';
 import { useUserEntitlementQuery } from '../../queries/subscriptions/useUserEntitlementQuery';
 import { OnboardingFlow } from '../../components/onboarding';
+import AmbientBackground from '../../components/common/AmbientBackground';
 import { PaywallPlacement } from '../../services/paywall';
 import { useAuthStore } from '../../stores/authStore';
 import { useExitOfferStore } from '../../stores/exitOfferStore';
@@ -203,6 +204,7 @@ export function RootNavigator({ allowBootPaywall = true }: RootNavigatorProps) {
       <View style={styles.overlayRoot}>
         <AppStack showBootPaywall={false} />
         <View style={styles.onboardingOverlay}>
+          <AmbientBackground />
           <OnboardingFlow
             initialSavedProfile={gate.savedOnboardingProfile}
             isSavingProfile={gate.isSavingOnboardingProfile}
@@ -225,5 +227,6 @@ const styles = StyleSheet.create({
   },
   onboardingOverlay: {
     ...StyleSheet.absoluteFillObject,
+    backgroundColor: colors.background.primary,
   },
 });
