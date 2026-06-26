@@ -53,7 +53,6 @@ export default function OnboardingScreenLayout({
   const clampedProgress = Math.max(0, Math.min(1, progress));
   const fade = useRef(new Animated.Value(0)).current;
   const scale = useRef(new Animated.Value(ENTRANCE_INITIAL_SCALE)).current;
-  const progressFill = useRef(new Animated.Value(clampedProgress)).current;
   const entranceAnimation = useRef<{ stop: () => void } | null>(null);
   const entranceTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasStartedEntrance = useRef(false);
@@ -131,18 +130,6 @@ export default function OnboardingScreenLayout({
     return () => show.remove();
   }, [keyboardAvoiding]);
 
-  useEffect(() => {
-    const animation = Animated.timing(progressFill, {
-      toValue: clampedProgress,
-      duration: 520,
-      easing: ENTRANCE_EASING,
-      useNativeDriver: false,
-    });
-
-    animation.start();
-    return () => animation.stop();
-  }, [clampedProgress, progressFill]);
-
   const startEntranceAnimation = () => {
     if (hasStartedEntrance.current) return;
     hasStartedEntrance.current = true;
@@ -193,11 +180,6 @@ export default function OnboardingScreenLayout({
     onSkip();
   };
 
-  const progressWidth = progressFill.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0%', '100%'],
-  });
-
   const inner = (
     <Animated.View
       onLayout={startEntranceAnimation}
@@ -219,7 +201,7 @@ export default function OnboardingScreenLayout({
           </Pressable>
         ) : null}
         <View style={styles.progressBar}>
-          <Animated.View style={[styles.progressFill, { width: progressWidth }]} />
+          <View style={[styles.progressFill, { width: `${clampedProgress * 100}%` }]} />
         </View>
         {onSkip ? (
           <Pressable

@@ -290,7 +290,6 @@ export default function PactScreen({
   /* animated values */
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const scaleAnim = useRef(new Animated.Value(ENTRANCE_INITIAL_SCALE)).current;
-  const progressFill = useRef(new Animated.Value(clampedProgress)).current;
   const entranceAnimationRef = useRef<{ stop: () => void } | null>(null);
   const entranceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasStartedEntranceRef = useRef(false);
@@ -303,18 +302,6 @@ export default function PactScreen({
       Haptics.selectionAsync().catch(() => {});
     }
   }, []);
-
-  useEffect(() => {
-    const animation = Animated.timing(progressFill, {
-      toValue: clampedProgress,
-      duration: 520,
-      easing: ENTRANCE_EASING,
-      useNativeDriver: false,
-    });
-
-    animation.start();
-    return () => animation.stop();
-  }, [clampedProgress, progressFill]);
 
   const startEntranceAnimation = useCallback(() => {
     if (hasStartedEntranceRef.current) return;
@@ -433,10 +420,6 @@ export default function PactScreen({
     year: 'numeric',
   });
 
-  const progressWidth = progressFill.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0%', '100%'],
-  });
   const focusText =
     intentTitle.trim().toLowerCase() === 'sleep better'
       ? 'sleeping better'
@@ -462,7 +445,7 @@ export default function PactScreen({
             ←
           </Text>
           <View style={styles.progressBar}>
-            <Animated.View style={[styles.progressFill, { width: progressWidth }]} />
+            <View style={[styles.progressFill, { width: `${clampedProgress * 100}%` }]} />
           </View>
         </View>
 
