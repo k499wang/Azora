@@ -132,7 +132,11 @@ export default function SessionCompleteScreen({
 
         {showGraph ? (
           <View style={styles.graphWrap}>
-            <BPMChart bpmSamples={hrSamples} color={colors.primary.blue500} />
+            <BPMChart
+              bpmSamples={hrSamples}
+              color={colors.primary.blue500}
+              insightContext="breathing-exercise"
+            />
           </View>
         ) : null}
       </ScrollView>
