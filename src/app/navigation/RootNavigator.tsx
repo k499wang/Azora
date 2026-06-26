@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
 import { StyleSheet, View } from 'react-native';
-import { DotsLoader } from '../../components/common/DotsLoader';
+import { BrandSplash } from '../../components/welcome/BrandSplash';
 import AuthLandingScreen from '../../screens/AuthLandingScreen';
 import DailyExercisePage from '../../screens/DailyExercisePage';
 import ExerciseSessionPage from '../../screens/ExerciseSessionPage';
@@ -188,11 +188,7 @@ export function RootNavigator({ allowBootPaywall = true }: RootNavigatorProps) {
   const gate = useAppGate();
 
   if (gate.status === 'booting') {
-    return (
-      <View style={{ flex: 1, backgroundColor: colors.background.primary, justifyContent: 'center', alignItems: 'center' }}>
-        <DotsLoader />
-      </View>
-    );
+    return <BrandSplash />;
   }
 
   if (gate.status === 'signed_out') {

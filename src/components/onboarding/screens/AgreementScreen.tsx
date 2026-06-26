@@ -132,8 +132,6 @@ export default function AgreementScreen({
     }
   };
 
-  const subProgress = (stepIndex + currentIdx / total) / stepCount;
-
   const choicesRow = (
     <View style={styles.choices}>
       {CHOICES.map((opt) => {
@@ -169,7 +167,7 @@ export default function AgreementScreen({
     <OnboardingScreenLayout
       title="Do you agree with the statement below?"
       subtitle={`${currentIdx + 1} of ${total}`}
-      progress={subProgress}
+      progress={stepIndex / stepCount}
       onBack={handleBack}
       onSkip={onSkip}
       footer={choicesRow}
