@@ -28,6 +28,8 @@ export interface BpmPresentationFilterOptions {
   minStableReadings: number;
   stableRangeBpm: number;
   maxStepBpm: number;
+  maxIncreaseBpm: number;
+  maxDecreaseBpm: number;
   spikeThresholdBpm: number;
   spikeConfirmationBpm: number;
 }
@@ -53,6 +55,8 @@ const DEFAULT_PRESENTATION_FILTER_OPTIONS: BpmPresentationFilterOptions = {
   minStableReadings: 3,
   stableRangeBpm: 12,
   maxStepBpm: 5,
+  maxIncreaseBpm: 5,
+  maxDecreaseBpm: 5,
   spikeThresholdBpm: 14,
   spikeConfirmationBpm: 6,
 };
@@ -62,8 +66,21 @@ const LIVE_BPM_PRESENTATION_OPTIONS: BpmPresentationFilterOptions = {
   minStableReadings: 1,
   stableRangeBpm: 12,
   maxStepBpm: 4,
+  maxIncreaseBpm: 4,
+  maxDecreaseBpm: 4,
   spikeThresholdBpm: 12,
   spikeConfirmationBpm: 5,
+};
+
+const BREATH_EXERCISE_BPM_PRESENTATION_OPTIONS: BpmPresentationFilterOptions = {
+  warmupMs: 0,
+  minStableReadings: 1,
+  stableRangeBpm: 10,
+  maxStepBpm: 3,
+  maxIncreaseBpm: 2,
+  maxDecreaseBpm: 3,
+  spikeThresholdBpm: 12,
+  spikeConfirmationBpm: 4,
 };
 
 const IBI_GRAPH_PRESENTATION_OPTIONS: BpmPresentationFilterOptions = {
@@ -71,6 +88,8 @@ const IBI_GRAPH_PRESENTATION_OPTIONS: BpmPresentationFilterOptions = {
   minStableReadings: 2,
   stableRangeBpm: 10,
   maxStepBpm: GRAPH_MAX_SAMPLE_JUMP_BPM,
+  maxIncreaseBpm: GRAPH_MAX_SAMPLE_JUMP_BPM,
+  maxDecreaseBpm: GRAPH_MAX_SAMPLE_JUMP_BPM,
   spikeThresholdBpm: 8,
   spikeConfirmationBpm: 3,
 };
@@ -226,9 +245,16 @@ export class BpmPresentationFilter {
   private pendingSpikeBpm: number | null = null;
 
   constructor(options: Partial<BpmPresentationFilterOptions> = {}) {
-    this.options = {
+    const merged = {
       ...DEFAULT_PRESENTATION_FILTER_OPTIONS,
       ...options,
+    };
+    this.options = {
+      ...merged,
+      maxIncreaseBpm:
+        options.maxIncreaseBpm ?? options.maxStepBpm ?? merged.maxIncreaseBpm,
+      maxDecreaseBpm:
+        options.maxDecreaseBpm ?? options.maxStepBpm ?? merged.maxDecreaseBpm,
     };
   }
 
@@ -271,10 +297,14 @@ export class BpmPresentationFilter {
     }
 
     this.pendingSpikeBpm = null;
+    const maxStep =
+      deltaFromPrevious > 0
+        ? this.options.maxIncreaseBpm
+        : this.options.maxDecreaseBpm;
     const step =
-      Math.abs(deltaFromPrevious) <= this.options.maxStepBpm
+      Math.abs(deltaFromPrevious) <= maxStep
         ? deltaFromPrevious
-        : Math.sign(deltaFromPrevious) * this.options.maxStepBpm;
+        : Math.sign(deltaFromPrevious) * maxStep;
     const displayedBpm = Math.round(this.previousDisplayedBpm + step);
     this.previousDisplayedBpm = displayedBpm;
     return displayedBpm;
@@ -292,6 +322,15 @@ export function createLiveBpmPresentationFilter(
 ): BpmPresentationFilter {
   return new BpmPresentationFilter({
     ...LIVE_BPM_PRESENTATION_OPTIONS,
+    ...options,
+  });
+}
+
+export function createBreathExerciseBpmPresentationFilter(
+  options: Partial<BpmPresentationFilterOptions> = {},
+): BpmPresentationFilter {
+  return new BpmPresentationFilter({
+    ...BREATH_EXERCISE_BPM_PRESENTATION_OPTIONS,
     ...options,
   });
 }

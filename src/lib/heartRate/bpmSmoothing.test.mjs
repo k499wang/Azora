@@ -2,12 +2,29 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   buildGraphBpmValuePointsFromIbis,
+  createBreathExerciseBpmPresentationFilter,
   createLiveBpmPresentationFilter,
   createBpmPresentationFilter,
 } from './bpmSmoothing.ts';
 
 function visibleLiveBpmSequence(samples) {
   const filter = createLiveBpmPresentationFilter();
+  let visible = null;
+
+  return samples.map((bpm, index) => {
+    const next = filter.update({
+      elapsedMs: index * 1_000,
+      bpm,
+    });
+    if (next != null) {
+      visible = next;
+    }
+    return visible;
+  });
+}
+
+function visibleBreathExerciseBpmSequence(samples) {
+  const filter = createBreathExerciseBpmPresentationFilter();
   let visible = null;
 
   return samples.map((bpm, index) => {
@@ -84,6 +101,27 @@ test('Live BPM presentation filter accepts sustained changes slowly', () => {
   assert.deepEqual(
     visibleLiveBpmSequence([80, 81, 80, 80, 96, 97, 98, 99, 100]),
     [80, 81, 80, 80, 80, 84, 84, 88, 92],
+  );
+});
+
+test('breath exercise BPM presentation filter caps isolated upward jumps', () => {
+  assert.deepEqual(
+    visibleBreathExerciseBpmSequence([76, 77, 76, 87, 76, 77]),
+    [76, 77, 76, 78, 76, 77],
+  );
+});
+
+test('breath exercise BPM presentation filter lets sustained increases rise gradually', () => {
+  assert.deepEqual(
+    visibleBreathExerciseBpmSequence([76, 77, 76, 87, 88, 89, 90, 91]),
+    [76, 77, 76, 78, 80, 82, 84, 86],
+  );
+});
+
+test('breath exercise BPM presentation filter holds very large spikes for confirmation', () => {
+  assert.deepEqual(
+    visibleBreathExerciseBpmSequence([76, 77, 76, 96, 76, 77, 96, 98]),
+    [76, 77, 76, 76, 76, 77, 77, 79],
   );
 });
 

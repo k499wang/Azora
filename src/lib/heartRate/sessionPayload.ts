@@ -1,6 +1,7 @@
 import type { CaptureResult, IbiSample, PpgFrameSample } from './types';
 
 const MAX_SAMPLE_JUMP_BPM = 8;
+const HOLD_MAX_SAMPLE_JUMP_BPM = 3;
 const GRAPH_BPM_MEDIAN_WINDOW = 5;
 
 export interface HeartRateSessionRpcSession {
@@ -55,6 +56,12 @@ function clampBpmStep(value: number, previous: number | null): number {
   if (previous == null) return value;
   if (Math.abs(value - previous) <= MAX_SAMPLE_JUMP_BPM) return value;
   return previous + Math.sign(value - previous) * MAX_SAMPLE_JUMP_BPM;
+}
+
+function clampHoldBpmStep(value: number, previous: number | null): number {
+  if (previous == null) return value;
+  if (Math.abs(value - previous) <= HOLD_MAX_SAMPLE_JUMP_BPM) return value;
+  return previous + Math.sign(value - previous) * HOLD_MAX_SAMPLE_JUMP_BPM;
 }
 
 function median(values: number[]): number {
@@ -182,7 +189,7 @@ export function buildBpmSamplesFromHoldSeconds(
     ))
     .sort((a, b) => a.t - b.t)
     .map((sample) => {
-      const bpm = Math.round(clampBpmStep(sample.bpm, previousBpm));
+      const bpm = Math.round(clampHoldBpmStep(sample.bpm, previousBpm));
       previousBpm = bpm;
       return {
         offset_ms: Math.round(sample.t * 1000),
