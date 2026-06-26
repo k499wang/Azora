@@ -45,6 +45,7 @@ export function computeAppGate(
   savedOnboardingProfileQuery: SavedOnboardingProfileQueryLike,
   entitlementQuery: EntitlementQueryLike,
   isCompletingOnboarding: boolean,
+  shouldWaitForAutoCompleteOnboarding: boolean,
   autoCompleteFailedForUserId: string | null,
   saveOnboardingProfile: (input: CompleteOnboardingInput) => Promise<void>,
   completeOnboarding: () => Promise<void>,
@@ -73,10 +74,9 @@ export function computeAppGate(
 
     if (
       savedOnboardingProfileQuery.data != null &&
-      (entitlementQuery.isPending ||
-        (entitlementQuery.data?.isPro === true &&
-          autoCompleteFailedForUserId !== user.id) ||
-        isCompletingOnboarding)
+      ((entitlementQuery.isPending && !isCompletingOnboarding) ||
+        (shouldWaitForAutoCompleteOnboarding &&
+          autoCompleteFailedForUserId !== user.id))
     ) {
       return { status: 'booting' };
     }
