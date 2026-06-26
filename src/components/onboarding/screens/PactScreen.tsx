@@ -9,7 +9,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
@@ -282,6 +282,7 @@ export default function PactScreen({
   onConfirm,
   onBack,
 }: PactScreenProps) {
+  const insets = useSafeAreaInsets();
   const [celebrating, setCelebrating] = useState(false);
   const [hasConfirmed, setHasConfirmed] = useState(false);
   const progress = stepIndex / stepCount;
@@ -434,7 +435,16 @@ export default function PactScreen({
     <>
       <View style={styles.root}>
         <AmbientBackground />
-        <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
+        <View
+          style={[
+            styles.screen,
+            {
+              paddingTop: insets.top,
+              paddingLeft: insets.left,
+              paddingRight: insets.right,
+            },
+          ]}
+        >
         <Animated.View
           onLayout={startEntranceAnimation}
           style={[styles.entrance, { opacity: fadeAnim }]}
@@ -570,7 +580,7 @@ export default function PactScreen({
           </Animated.View>
         </ScrollView>
         </Animated.View>
-        </SafeAreaView>
+        </View>
       </View>
 
       {celebrating ? <CelebrationOverlay /> : null}

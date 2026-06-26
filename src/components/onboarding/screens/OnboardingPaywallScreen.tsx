@@ -9,7 +9,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import type {
   PaywallOffering,
@@ -305,9 +305,15 @@ export default function OnboardingPaywallScreen({
           />
         )}
       </SunsetBackground>
-      <SafeAreaView
-        style={[styles.screenBody, { paddingTop: insets.top }]}
-        edges={['left', 'right']}
+      <View
+        style={[
+          styles.screenBody,
+          {
+            paddingTop: insets.top,
+            paddingLeft: insets.left,
+            paddingRight: insets.right,
+          },
+        ]}
       >
         <Animated.View
           onLayout={startEntranceAnimation}
@@ -480,7 +486,7 @@ export default function OnboardingPaywallScreen({
           )}
         </View>
         </Animated.View>
-      </SafeAreaView>
+      </View>
     </Animated.View>
   );
 }
