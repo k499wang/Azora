@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useIsFocused } from '@react-navigation/native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import Icon from '../components/common/icons/Icon';
 import { colors } from '../theme/colors';
 import { typography, fonts } from '../theme/typography';
 import { spacing } from '../theme/spacing';
@@ -825,7 +826,7 @@ export default function ExerciseSessionPage({
             <View style={styles.btnRow}>
               <Pressable
                 style={({ pressed }) => [
-                  styles.squareBtn,
+                  styles.exitBtn,
                   { backgroundColor: activeTheme.surface, borderColor: activeTheme.surfaceBorder },
                   pressed && styles.circleBtnPressed,
                 ]}
@@ -834,7 +835,7 @@ export default function ExerciseSessionPage({
                   handleClose();
                 }}
               >
-                <MaterialCommunityIcons name="stop" size={26} color={activeTheme.iconPrimary} />
+                <Icon name="close" size={26} color={activeTheme.iconPrimary} />
               </Pressable>
               {phase === 'idle' || phase === 'done' ? (
                 <SettingsGearButton
@@ -1043,7 +1044,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: spacing.md,
   },
-  squareBtn: {
+  exitBtn: {
     width: 64,
     height: 64,
     borderRadius: 32,

@@ -3,14 +3,13 @@ import { colors } from '../../theme/colors';
 import { fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 
-const MARK_HEIGHT = 28;
-const MARK_ASPECT = 317 / 249;
+const MARK_SIZE = 28;
 
 export default function BrandLockup() {
   return (
     <View style={styles.row}>
       <Image
-        source={require('../../../assets/blue_river_logo_transparent.png')}
+        source={require('../../../assets/azora_app_logo_transparent_1024.png')}
         style={styles.mark}
         resizeMode="contain"
       />
@@ -26,8 +25,8 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   mark: {
-    width: MARK_HEIGHT * MARK_ASPECT,
-    height: MARK_HEIGHT,
+    width: MARK_SIZE,
+    height: MARK_SIZE,
   },
   wordmark: {
     fontFamily: fonts.semibold,
