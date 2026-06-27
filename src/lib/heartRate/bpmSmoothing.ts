@@ -63,7 +63,7 @@ const DEFAULT_PRESENTATION_FILTER_OPTIONS: BpmPresentationFilterOptions = {
 
 const LIVE_BPM_PRESENTATION_OPTIONS: BpmPresentationFilterOptions = {
   warmupMs: 0,
-  minStableReadings: 3,
+  minStableReadings: 1,
   stableRangeBpm: 8,
   maxStepBpm: 2,
   maxIncreaseBpm: 2,

@@ -179,8 +179,24 @@ function ResultBackground() {
   );
 }
 
-function buildResultBpmSamples(ibiSamples: IbiSample[]): BpmTimePoint[] {
-  return buildBpmSamplesFromIbiSamples(mapIbiSamples(ibiSamples)).map((sample) => ({
+function buildResultBpmSamples(result: CaptureResult): BpmTimePoint[] {
+  const presentationSamples = result.bpmSamples ?? [];
+  if (presentationSamples.length >= 2) {
+    return presentationSamples
+      .filter((sample) => (
+        Number.isFinite(sample.offsetMs) &&
+        sample.offsetMs >= 0 &&
+        Number.isFinite(sample.bpm) &&
+        sample.bpm >= 20 &&
+        sample.bpm <= 240
+      ))
+      .map((sample) => ({
+        offsetMs: Math.round(sample.offsetMs),
+        bpm: Math.round(sample.bpm),
+      }));
+  }
+
+  return buildBpmSamplesFromIbiSamples(mapIbiSamples(result.ibiSamples ?? [])).map((sample) => ({
     offsetMs: sample.offset_ms,
     bpm: sample.bpm,
   }));
@@ -223,8 +239,8 @@ export function ResultScreen({
 
   const isSuccess = result.reading != null;
   const resultBpmSamples = useMemo(
-    () => buildResultBpmSamples(result.ibiSamples ?? []),
-    [result.ibiSamples],
+    () => buildResultBpmSamples(result),
+    [result],
   );
 
   useEffect(() => {

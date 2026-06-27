@@ -102,6 +102,7 @@ export function useHeartRateCapture(
   const [captureSamples, setCaptureSamples] = useState<PpgFrameSample[]>([]);
 
   const samplesRef = useRef<PpgFrameSample[]>([]);
+  const presentationBpmSamplesRef = useRef<Array<{ offsetMs: number; bpm: number }>>([]);
   const goodSinceRef = useRef<number | null>(null);
   const lastBpmUpdateRef = useRef<number>(0);
   const lastSignalGraphUpdateRef = useRef<number>(0);
@@ -134,6 +135,7 @@ export function useHeartRateCapture(
 
   const resetMeasurementRefs = useCallback(() => {
     samplesRef.current = [];
+    presentationBpmSamplesRef.current = [];
     goodSinceRef.current = null;
     lastBpmUpdateRef.current = 0;
     lastSignalGraphUpdateRef.current = 0;
@@ -174,6 +176,7 @@ export function useHeartRateCapture(
 
       const nextResult = buildCaptureResult(samples, modeRef.current, {
         fallbackIbiSamples,
+        presentationBpmSamples: presentationBpmSamplesRef.current,
       });
       setResult(nextResult);
       setCaptureStateAndRef(nextResult.reading == null ? 'error' : 'done');
@@ -288,6 +291,10 @@ export function useHeartRateCapture(
               : timestamp - measurementStartedAtRef.current;
           const stabilizedBpm = liveBpmFilterRef.current.update({ elapsedMs, bpm });
           if (stabilizedBpm != null) {
+            presentationBpmSamplesRef.current.push({
+              offsetMs: Math.max(0, Math.round(elapsedMs)),
+              bpm: stabilizedBpm,
+            });
             currentBpmRef.current = stabilizedBpm;
             setCurrentBpm(stabilizedBpm);
           }

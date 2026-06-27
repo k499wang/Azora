@@ -163,6 +163,27 @@ export function buildInstantaneousBpmSamplesFromIbiSamples(
     ));
 }
 
+function mapPresentationBpmSamples(
+  samples: CaptureResult['bpmSamples'],
+): HeartRateSessionRpcSample[] {
+  if (samples == null) return [];
+
+  return samples
+    .filter((sample) => (
+      isFiniteNumber(sample.offsetMs) &&
+      sample.offsetMs >= 0 &&
+      isFiniteNumber(sample.bpm) &&
+      sample.bpm >= 20 &&
+      sample.bpm <= 240
+    ))
+    .sort((a, b) => a.offsetMs - b.offsetMs)
+    .map((sample) => ({
+      offset_ms: Math.round(sample.offsetMs),
+      bpm: Math.round(sample.bpm),
+      signal_quality: null,
+    }));
+}
+
 export interface HoldBpmSample {
   /** Whole seconds since the breath hold started. */
   t: number;
@@ -241,8 +262,14 @@ export function buildHeartRateSessionRpcPayload(
 
   const ibiSamples = mapIbiSamples(result.ibiSamples);
   const instantaneousBpmSamples = buildInstantaneousBpmSamplesFromIbiSamples(ibiSamples);
-  const bpmSamples = buildBpmSamplesFromIbiSamples(ibiSamples);
-  const bpmSummary = summarizeBpmSamples(instantaneousBpmSamples);
+  const presentationBpmSamples = mapPresentationBpmSamples(result.bpmSamples);
+  const bpmSamples =
+    presentationBpmSamples.length >= 2
+      ? presentationBpmSamples
+      : buildBpmSamplesFromIbiSamples(ibiSamples);
+  const bpmSummary = summarizeBpmSamples(
+    presentationBpmSamples.length >= 2 ? presentationBpmSamples : instantaneousBpmSamples,
+  );
   const rawDurationMs = lastFrameTs - firstFrameTs;
   const durationMs =
     rawDurationMs > 0

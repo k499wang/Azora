@@ -158,6 +158,50 @@ test('buildHeartRateSessionRpcPayload uses rolling median BPM for graph samples 
   assert.equal(payload.p_session.max_bpm, 100);
 });
 
+test('buildHeartRateSessionRpcPayload prefers captured presentation BPM samples for graph and summary', () => {
+  const startedAt = Date.parse('2026-04-25T02:29:00.000Z');
+  const endedAt = Date.parse('2026-04-25T02:30:00.000Z');
+
+  const payload = buildHeartRateSessionRpcPayload(
+    [
+      makeFrame(startedAt),
+      makeFrame(endedAt),
+    ],
+    {
+      reading: {
+        bpm: 74,
+        confidence: 0.9,
+        sampleCount: 120,
+        durationMs: 60_000,
+        recordedAt: '2026-04-25T02:30:00.000Z',
+        source: 'camera-flash',
+      },
+      error: null,
+      ibiSamples: [
+        { offsetMs: 1_000, ibiMs: 500, signalQuality: 0.8 },
+        { offsetMs: 2_000, ibiMs: 500, signalQuality: 0.8 },
+        { offsetMs: 3_000, ibiMs: 500, signalQuality: 0.8 },
+      ],
+      bpmSamples: [
+        { offsetMs: 2_000, bpm: 72 },
+        { offsetMs: 3_000, bpm: 74 },
+        { offsetMs: 4_000, bpm: 76 },
+      ],
+    },
+    { timezone: 'UTC' },
+  );
+
+  assert.ok(payload, 'expected a payload');
+  assert.deepEqual(payload.p_samples, [
+    { offset_ms: 2_000, bpm: 72, signal_quality: null },
+    { offset_ms: 3_000, bpm: 74, signal_quality: null },
+    { offset_ms: 4_000, bpm: 76, signal_quality: null },
+  ]);
+  assert.equal(payload.p_session.avg_bpm, 74);
+  assert.equal(payload.p_session.min_bpm, 72);
+  assert.equal(payload.p_session.max_bpm, 76);
+});
+
 test('buildHeartRateSessionRpcPayload falls back to the final reading when no BPM buckets can be derived', () => {
   const payload = buildHeartRateSessionRpcPayload(
     [
