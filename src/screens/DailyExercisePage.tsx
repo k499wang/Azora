@@ -28,6 +28,7 @@ import type {
   CaptureResult,
   FingerPlacementState,
 } from '../lib/heartRate/types';
+import type { MotionStabilityState } from '../lib/heartRate/motionStability';
 import { usePostHog } from 'posthog-react-native';
 import { AnalyticsEvent } from '../services/analytics/events';
 import { captureException } from '../services/analytics/errorTracking';
@@ -76,7 +77,14 @@ const INTRO_STEPS: BreathHoldStep[] = [
   { icon: 'pause', value: 'Max', label: 'Hold' },
 ];
 
-function placementHint(p: FingerPlacementState): string {
+function placementHint(
+  p: FingerPlacementState,
+  motionState: MotionStabilityState = 'stable',
+): string {
+  if (p === 'good' && motionState === 'moving') {
+    return "Hold still, don't move phone";
+  }
+
   switch (p) {
     case 'good':
       return 'Hold still';
@@ -789,7 +797,8 @@ export default function DailyExercisePage({
       ? Math.round(presentedBpm)
       : null;
   const signalGood = pulse.fingerPlacement === 'good';
-  const showSignalWarning = isLive && pulse.active && !signalGood;
+  const showSignalWarning =
+    isLive && pulse.active && (!signalGood || pulse.motionState === 'moving');
 
   const showSettingsPill = phase === 'idle' || phase === 'done';
   const showPrimaryButton = phase === 'idle' || phase === 'done' || isPlacement;
@@ -896,7 +905,7 @@ export default function DailyExercisePage({
               <View style={styles.belowSlot} pointerEvents="none">
                 {isPlacement ? (
                   <Text style={[styles.hintText, { color: activeTheme.textSecondary }]}>
-                    {placementHint(pulse.fingerPlacement)}
+                    {placementHint(pulse.fingerPlacement, pulse.motionState)}
                   </Text>
                 ) : phase === 'hold' || isBreathingPhase(phase) ? (
                   <View style={styles.metricStack}>
@@ -928,7 +937,7 @@ export default function DailyExercisePage({
                           color={colors.warning[500]}
                         />
                         <Text style={styles.warningText}>
-                          {placementHint(pulse.fingerPlacement)}
+                          {placementHint(pulse.fingerPlacement, pulse.motionState)}
                         </Text>
                       </View>
                     ) : null}

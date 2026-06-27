@@ -26,6 +26,7 @@ import type {
   FingerPlacementState,
   PpgFrameSample,
 } from '../../lib/heartRate/types';
+import type { MotionStabilityState } from '../../lib/heartRate/motionStability';
 import {
   DEFAULT_CAPTURE_MODE,
   type HeartRateCaptureMode,
@@ -62,10 +63,14 @@ interface PendingHeartRateSave {
   captureSamples: PpgFrameSample[];
 }
 
-function checkStateConfig(placement: FingerPlacementState): {
+function checkStateConfig(placement: FingerPlacementState, motionState: MotionStabilityState): {
   ringColor: string;
   status: string;
 } {
+  if (placement === 'good' && motionState === 'moving') {
+    return { ringColor: colors.warning[500], status: "Hold still, don't move phone" };
+  }
+
   switch (placement) {
     case 'good':
       return { ringColor: colors.success[500], status: 'Hold phone and finger still' };
@@ -101,6 +106,7 @@ export function HeartRateCaptureFlow({
   const {
     captureState,
     fingerPlacement,
+    motionState,
     progress,
     currentBpm,
     beatTick,
@@ -354,8 +360,12 @@ export function HeartRateCaptureFlow({
 
   const isMeasuring = captureState === 'measuring';
   const isCheck = captureState === 'camera_check';
-  const checkConfig = checkStateConfig(fingerPlacement);
+  const checkConfig = checkStateConfig(fingerPlacement, motionState);
   const isFingerLost = fingerPlacement === 'lost' || fingerPlacement === 'no_finger';
+  const measuringMotionPrompt =
+    isMeasuring && currentBpm == null && motionState !== 'stable'
+      ? "Hold still, don't move phone"
+      : null;
 
   const ringColor = isMeasuring ? colors.primary.blue600 : checkConfig.ringColor;
   const ringProgress = isMeasuring ? progress : 0;
@@ -419,7 +429,9 @@ export function HeartRateCaptureFlow({
         <View style={styles.bottomArea}>
           {isMeasuring && (
             <View style={styles.bpmRow}>
-              {currentBpm == null ? (
+              {measuringMotionPrompt != null ? (
+                <Text style={styles.bpmCalibrating}>{measuringMotionPrompt}</Text>
+              ) : currentBpm == null ? (
                 <AnimatedCalibratingText textStyle={styles.bpmCalibrating} />
               ) : (
                 <View style={styles.bpmValueRow}>
