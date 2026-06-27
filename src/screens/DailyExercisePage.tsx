@@ -66,6 +66,8 @@ const FINAL_INHALE_SECONDS = 4;
 const HOLD_RELEASE_GUARD_MS = 1000;
 const BEST_HOLD_KEY = 'daily_breath_hold_best_seconds';
 const SPRING_IN_DURATION_MS = 750;
+const CUE_FADE_OUT_MS = 280;
+const CUE_FADE_IN_MS = 360;
 
 const INTRO_TITLE = 'Daily Breath Hold';
 const INTRO_DESCRIPTION =
@@ -240,8 +242,8 @@ export default function DailyExercisePage({
   const heartScale = useRef(new Animated.Value(1)).current;
 
   const cueOpacity = useRef(new Animated.Value(0)).current;
-  const cueTranslateY = useRef(new Animated.Value(10)).current;
-  const prevPhaseRef = useRef<HoldPhase>(phase);
+  const [displayedCue, setDisplayedCue] = useState<BreathCuePart[] | null>(null);
+  const displayedCueKeyRef = useRef<string | null>(null);
 
   const transition = useRef(new Animated.Value(phase === 'idle' ? 0 : 1)).current;
 
@@ -486,6 +488,9 @@ export default function DailyExercisePage({
     setReleaseAudioActive(false);
     setHoldSeconds(0);
     setPrepCycle(1);
+    displayedCueKeyRef.current = null;
+    setDisplayedCue(null);
+    cueOpacity.setValue(0);
     const shouldMeasureHeartRate = withHeartRate && heartRateMonitoringAllowed;
     if (withHeartRate && heartRateMonitoringProLocked) {
       setHeartRateMonitoringEnabled(false);
@@ -809,30 +814,51 @@ export default function DailyExercisePage({
   const isPlacement = phase === 'placement';
   const isLive = isBreathingPhase(phase) || phase === 'hold';
   const activeBreathCueParts = useMemo(() => buildBreathCueParts(phase, prepCycle), [phase, prepCycle]);
+  const activeCueKey = useMemo(
+    () => (activeBreathCueParts ? activeBreathCueParts.map((part) => part.text).join('') : null),
+    [activeBreathCueParts],
+  );
 
-  if (prevPhaseRef.current !== phase) {
-    prevPhaseRef.current = phase;
-    cueOpacity.setValue(0);
-    cueTranslateY.setValue(10);
-  }
-
+  // Sequential calming fade: the current instruction fades fully out before the
+  // next fades in, so two cues are never on screen at once (pure opacity, no slide).
   useEffect(() => {
-    if (!isBreathingPhase(phase) && phase !== 'hold') return;
-    Animated.parallel([
+    if (activeCueKey === displayedCueKeyRef.current) return;
+
+    if (displayedCueKeyRef.current === null) {
+      displayedCueKeyRef.current = activeCueKey;
+      setDisplayedCue(activeBreathCueParts);
+      cueOpacity.setValue(0);
       Animated.timing(cueOpacity, {
         toValue: 1,
-        duration: 450,
-        easing: Easing.out(Easing.cubic),
+        duration: CUE_FADE_IN_MS,
+        easing: Easing.inOut(Easing.ease),
         useNativeDriver: true,
-      }),
-      Animated.timing(cueTranslateY, {
-        toValue: 0,
-        duration: 450,
-        easing: Easing.out(Easing.cubic),
+      }).start();
+      return;
+    }
+
+    let cancelled = false;
+    Animated.timing(cueOpacity, {
+      toValue: 0,
+      duration: CUE_FADE_OUT_MS,
+      easing: Easing.inOut(Easing.ease),
+      useNativeDriver: true,
+    }).start(({ finished }) => {
+      if (!finished || cancelled) return;
+      displayedCueKeyRef.current = activeCueKey;
+      setDisplayedCue(activeBreathCueParts);
+      if (activeCueKey === null) return;
+      Animated.timing(cueOpacity, {
+        toValue: 1,
+        duration: CUE_FADE_IN_MS,
+        easing: Easing.inOut(Easing.ease),
         useNativeDriver: true,
-      }),
-    ]).start();
-  }, [phase]);
+      }).start();
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [activeCueKey, activeBreathCueParts, cueOpacity]);
 
   const primaryLabel = phase === 'idle' ? 'Start' : 'Try Again';
 
@@ -968,12 +994,10 @@ export default function DailyExercisePage({
                   </Text>
                 ) : phase === 'hold' || isBreathingPhase(phase) ? (
                   <View style={styles.metricStack}>
-                    {activeBreathCueParts != null ? (
-                      <Animated.View
-                        style={{ opacity: cueOpacity, transform: [{ translateY: cueTranslateY }] }}
-                      >
+                    {displayedCue != null ? (
+                      <Animated.View style={{ opacity: cueOpacity }}>
                         <Text style={[styles.holdMicroCopy, { color: activeTheme.textSecondary }]}>
-                          {activeBreathCueParts.map((part, i) => (
+                          {displayedCue.map((part, i) => (
                             <Text
                               key={i}
                               style={
