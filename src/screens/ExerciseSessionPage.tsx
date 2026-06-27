@@ -42,6 +42,8 @@ import { AnalyticsEvent } from '../services/analytics/events';
 import { useAuthStore } from '../stores/authStore';
 import { useCompleteBreathingSessionMutation } from '../queries/tracking/useCompleteBreathingSessionMutation';
 import { useHeartRateMonitoringPreference } from '../hooks/useHeartRateMonitoringPreference';
+import { useFeatureAccess } from '../hooks/useFeatureAccess';
+import { FeatureKey } from '../services/subscriptions/featureAccess';
 
 const MIN_ROUNDS = 1;
 const MAX_ROUNDS = 30;
@@ -213,7 +215,22 @@ export default function ExerciseSessionPage({
   const {
     heartRateMonitoringEnabled,
     heartRateMonitoringPreferenceLoaded,
+    setHeartRateMonitoringEnabled,
   } = useHeartRateMonitoringPreference();
+  const heartRateMonitoringAccess = useFeatureAccess(FeatureKey.BreathingHeartRateMonitoring);
+  const heartRateMonitoringAllowed = heartRateMonitoringAccess.allowed;
+  const heartRateMonitoringAccessLoading = heartRateMonitoringAccess.isLoading;
+  const heartRateMonitoringProLocked =
+    !heartRateMonitoringAllowed && !heartRateMonitoringAccessLoading;
+
+  useEffect(() => {
+    if (!heartRateMonitoringProLocked || !heartRateMonitoringEnabled) return;
+    setHeartRateMonitoringEnabled(false);
+  }, [
+    heartRateMonitoringEnabled,
+    heartRateMonitoringProLocked,
+    setHeartRateMonitoringEnabled,
+  ]);
 
   useEffect(() => {
     const isTrackingPhase =
@@ -269,12 +286,12 @@ export default function ExerciseSessionPage({
     phase !== 'idle' && phase !== 'done' && phase !== 'intro' && !paused;
 
   useEffect(() => {
-    if (hrEnabled && isSessionActive) {
+    if (hrEnabled && heartRateMonitoringAllowed && isSessionActive) {
       startPulse();
     } else {
       stopPulse();
     }
-  }, [hrEnabled, isSessionActive, startPulse, stopPulse]);
+  }, [heartRateMonitoringAllowed, hrEnabled, isSessionActive, startPulse, stopPulse]);
 
   const clearTimer = () => {
     if (timerRef.current) {
@@ -568,6 +585,11 @@ export default function ExerciseSessionPage({
   const beginExercise = useCallback(
     (withHr: boolean) => {
       if (!flow.start()) return;
+      const shouldMeasureHeartRate = withHr && heartRateMonitoringAllowed;
+      if (withHr && heartRateMonitoringProLocked) {
+        setHeartRateMonitoringEnabled(false);
+        setHrEnabled(false);
+      }
       setElapsed(0);
       setRound(0);
       hrSamplesRef.current = [];
@@ -580,14 +602,31 @@ export default function ExerciseSessionPage({
         technique_name: technique.name,
         technique_category: technique.category,
         total_rounds: totalRounds,
-        hr_monitoring_enabled: withHr,
+        hr_monitoring_enabled: shouldMeasureHeartRate,
       });
       startCycle(1, technique.pattern, totalRounds);
     },
-    [flow, posthog, technique, totalRounds, startCycle],
+    [
+      flow,
+      heartRateMonitoringAllowed,
+      heartRateMonitoringProLocked,
+      posthog,
+      setHeartRateMonitoringEnabled,
+      technique,
+      totalRounds,
+      startCycle,
+    ],
   );
 
   const startPlacement = useCallback(async () => {
+    if (heartRateMonitoringAccessLoading) return;
+    if (!heartRateMonitoringAllowed) {
+      if (heartRateMonitoringProLocked) {
+        setHeartRateMonitoringEnabled(false);
+      }
+      setHrEnabled(false);
+      return;
+    }
     if (!flow.start()) return;
     try {
       const granted = hasPermission ? true : await requestPermission();
@@ -620,12 +659,39 @@ export default function ExerciseSessionPage({
       setHrEnabled(false);
       flow.cancel();
     }
-  }, [flow, hasPermission, pulse.device, requestPermission, startPulse, technique]);
+  }, [
+    flow,
+    hasPermission,
+    heartRateMonitoringAccessLoading,
+    heartRateMonitoringAllowed,
+    heartRateMonitoringProLocked,
+    pulse.device,
+    requestPermission,
+    setHeartRateMonitoringEnabled,
+    startPulse,
+    technique,
+  ]);
 
   const handleStart = () => {
     if (phase === 'idle' || phase === 'done') {
       if (!heartRateMonitoringPreferenceLoaded) return;
       if (heartRateMonitoringEnabled) {
+        if (heartRateMonitoringAccessLoading || !heartRateMonitoringAllowed) {
+          if (heartRateMonitoringProLocked) {
+            setHeartRateMonitoringEnabled(false);
+          }
+          if (!flow.start()) return;
+          setHrEnabled(false);
+          setElapsed(0);
+          setRound(1);
+          setPhase('intro');
+          clearTimer();
+          introTimeoutRef.current = setTimeout(() => {
+            if (!flow.isActive()) return;
+            beginExercise(false);
+          }, SPRING_IN_DURATION_MS);
+          return;
+        }
         void startPlacement();
         return;
       }
