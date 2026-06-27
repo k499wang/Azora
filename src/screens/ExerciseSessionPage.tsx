@@ -33,7 +33,6 @@ import {
   showHeartRateCameraUnavailableAlert,
 } from '../components/heartRate/cameraAccessPrompts';
 import type { FingerPlacementState } from '../lib/heartRate/types';
-import type { MotionStabilityState } from '../lib/heartRate/motionStability';
 import { startInhaleVibration, stopInhaleVibration } from '../native/inhaleVibration';
 import { startHoldHaptics, stopHoldHaptics } from '../native/holdHaptics';
 import { usePostHog } from 'posthog-react-native';
@@ -49,14 +48,7 @@ const MAX_ROUNDS = 30;
 const PLACEMENT_GOOD_DURATION_MS = 1500;
 const SPRING_IN_DURATION_MS = 750;
 
-function placementHint(
-  p: FingerPlacementState,
-  motionState: MotionStabilityState = 'stable',
-): string {
-  if (p === 'good' && motionState === 'moving') {
-    return "Hold still, don't move phone";
-  }
-
+function placementHint(p: FingerPlacementState): string {
   switch (p) {
     case 'good':
       return 'Hold still';
@@ -741,8 +733,7 @@ export default function ExerciseSessionPage({
       ? Math.round(presentedBpm)
       : null;
   const signalGood = pulse.fingerPlacement === 'good';
-  const showSignalWarning =
-    isActive && pulse.active && (!signalGood || pulse.motionState === 'moving');
+  const showSignalWarning = isActive && pulse.active && !signalGood;
 
   const handleScreenTap = () => {
     if (isActive) showHud();
@@ -834,7 +825,7 @@ export default function ExerciseSessionPage({
             <View style={styles.belowSlot}>
               {isPlacement ? (
                 <Text style={[styles.hintText, { color: activeTheme.textSecondary }]}>
-                  {placementHint(pulse.fingerPlacement, pulse.motionState)}
+                  {placementHint(pulse.fingerPlacement)}
                 </Text>
               ) : isActive && pulse.active && showSignalWarning ? (
                 <View style={styles.warningRow}>
@@ -844,7 +835,7 @@ export default function ExerciseSessionPage({
                     color={colors.warning[500]}
                   />
                   <Text style={styles.warningText}>
-                    {placementHint(pulse.fingerPlacement, pulse.motionState)}
+                    {placementHint(pulse.fingerPlacement)}
                   </Text>
                 </View>
               ) : null}

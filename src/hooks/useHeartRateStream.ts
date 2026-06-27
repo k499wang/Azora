@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import {
   useFrameProcessor,
   runAtTargetFps,
@@ -16,20 +16,13 @@ import { HeartRateManager } from '../lib/heartRate/heartRateManager';
 import { createLiveBpmPresentationFilter } from '../lib/heartRate/bpmSmoothing';
 import { createBeatTickScheduler } from '../lib/heartRate/beatTickScheduler';
 import { LIVE_SIGNAL_GRAPH_UPDATE_INTERVAL_MS } from '../lib/heartRate/liveSignalGraphConfig';
-import {
-  classifyFingerPlacementStateless,
-  type FingerPlacementClassifyState,
-} from '../lib/heartRate/fingerQuality';
-import type { MotionStabilityState } from '../lib/heartRate/motionStability';
 import { useHeartRateCamera } from './useHeartRateCamera';
-import { useHeartRateMotionStability } from './useHeartRateMotionStability';
 
 const ROLLING_WINDOW_MS = 15000;
 const BPM_UPDATE_INTERVAL_MS = 1000;
 const FINGER_LOST_TIMEOUT_MS = 30000;
 const WARMUP_DURATION_MS = 5000;
 const FRAME_PROCESSING_FPS = 20;
-const FINGER_QUALITY_WINDOW_MS = 1000;
 
 function isValidFrameSample(value: unknown): value is PpgFrameSample {
   if (value == null || typeof value !== 'object') return false;
@@ -50,7 +43,6 @@ function isValidFrameSample(value: unknown): value is PpgFrameSample {
 interface UseHeartRateStreamReturn {
   streamState: StreamState;
   fingerPlacement: FingerPlacementState;
-  motionState: MotionStabilityState;
   currentBpm: number | null;
   beatTick: number;
   bpmHistory: number[];
@@ -75,11 +67,8 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
   const [bpmHistory, setBpmHistory] = useState<number[]>([]);
   const [liveSignalSamples, setLiveSignalSamples] = useState<LivePpgSignalSample[]>([]);
   const [sessionSummary, setSessionSummary] = useState<HeartRateStreamSummary | null>(null);
-  const motion = useHeartRateMotionStability(streamState !== 'idle' && streamState !== 'stopped');
 
   const bufferRef = useRef<PpgFrameSample[]>([]);
-  const fingerQualitySamplesRef = useRef<PpgFrameSample[]>([]);
-  const fingerQualityStateRef = useRef<FingerPlacementClassifyState>({});
   const streamStartRef = useRef<number | null>(null);
   const lastBpmUpdateRef = useRef<number>(0);
   const lastSignalGraphUpdateRef = useRef<number>(0);
@@ -91,8 +80,6 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
   const bpmHistoryRef = useRef<number[]>([]);
   const publishedBpmRef = useRef<number | null>(null);
   const fingerPlacementRef = useRef<FingerPlacementState>('no_finger');
-  const signalReadPausedRef = useRef(false);
-  const motionStateRef = useRef<MotionStabilityState>('stable');
   const streamStateRef = useRef<StreamState>('idle');
   const managerRef = useRef(new HeartRateManager());
   const liveBpmFilterRef = useRef(createLiveBpmPresentationFilter());
@@ -107,27 +94,6 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
     needsIllumination && device?.hasTorch === true
       ? 'on'
       : 'off';
-
-  useEffect(() => {
-    motionStateRef.current = motion.state;
-  }, [motion.state]);
-
-  const updateFingerQuality = useCallback((frameSample: PpgFrameSample): FingerPlacementState => {
-    const timestamp = frameSample.timestamp;
-    fingerQualitySamplesRef.current.push(frameSample);
-    const cutoff = timestamp - FINGER_QUALITY_WINDOW_MS;
-    fingerQualitySamplesRef.current = fingerQualitySamplesRef.current.filter(
-      (sample) => sample.timestamp >= cutoff,
-    );
-
-    const result = classifyFingerPlacementStateless(
-      fingerQualitySamplesRef.current,
-      FINGER_QUALITY_WINDOW_MS,
-      fingerQualityStateRef.current,
-    );
-    fingerQualityStateRef.current = result.state;
-    return result.placement;
-  }, []);
 
   const startStreaming = useCallback((startTimestamp?: number) => {
     warmupStartRef.current = startTimestamp ?? null;
@@ -168,12 +134,9 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
     fingerLostSinceRef.current = null;
     goodSinceRef.current = null;
     warmupStartRef.current = null;
-    fingerQualitySamplesRef.current = [];
-    fingerQualityStateRef.current = {};
     bpmHistoryRef.current = [];
     publishedBpmRef.current = null;
     fingerPlacementRef.current = 'no_finger';
-    signalReadPausedRef.current = false;
     liveBpmFilterRef.current.reset();
     managerRef.current.reset();
     beatSchedulerRef.current.reset();
@@ -193,47 +156,18 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
       const state = streamStateRef.current;
       if (state === 'idle' || state === 'stopped') return;
 
-      const qualityPlacement = updateFingerQuality(frameSample);
-      const isMotionMoving = motionStateRef.current === 'moving';
-
-      if (isMotionMoving) {
-        if (qualityPlacement !== fingerPlacementRef.current) {
-          fingerPlacementRef.current = qualityPlacement;
-          setFingerPlacement(qualityPlacement);
-        }
-        goodSinceRef.current = null;
-        if (!signalReadPausedRef.current) {
-          signalReadPausedRef.current = true;
-          publishedBpmRef.current = null;
-          liveBpmStartedAtRef.current = null;
-          lastPublishedSignalTimestampRef.current = null;
-          liveBpmFilterRef.current.reset();
-          beatSchedulerRef.current.reset();
-          managerRef.current.clearLiveSignalSamples();
-          setCurrentBpm(null);
-          setLiveSignalSamples([]);
-        }
-        return;
-      }
-
-      signalReadPausedRef.current = false;
-
       bufferRef.current.push(frameSample);
       const cutoff60 = timestamp - 60000;
       bufferRef.current = bufferRef.current.filter((s) => s.timestamp >= cutoff60);
 
       const frameState = managerRef.current.processFrame(frameSample);
-      const placement = frameState.fingerPlacement === 'too_much_pressure'
-        ? 'too_much_pressure'
-        : qualityPlacement;
-
-      if (placement !== fingerPlacementRef.current) {
-        fingerPlacementRef.current = placement;
-        setFingerPlacement(placement);
+      if (frameState.fingerPlacement !== fingerPlacementRef.current) {
+        fingerPlacementRef.current = frameState.fingerPlacement;
+        setFingerPlacement(frameState.fingerPlacement);
       }
 
       if (state === 'camera_check') {
-        if (placement === 'good' && motionStateRef.current === 'stable') {
+        if (frameState.fingerPlacement === 'good') {
           if (goodSinceRef.current == null) {
             goodSinceRef.current = timestamp;
           } else if (timestamp - goodSinceRef.current >= 1500) {
@@ -256,7 +190,7 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
       }
 
       if (state === 'streaming' || state === 'warming_up' || state === 'finger_lost') {
-        if (placement === 'lost' || (placement !== 'good' && placement !== 'partial')) {
+        if (frameState.fingerPlacement === 'lost' || (frameState.fingerPlacement !== 'good' && frameState.fingerPlacement !== 'partial')) {
           if (state !== 'finger_lost') {
             fingerLostSinceRef.current = timestamp;
             publishedBpmRef.current = null;
@@ -283,10 +217,7 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
         beatSchedulerRef.current.schedule(frameState.beatPeakTs, timestamp);
       }
 
-      if (
-        (state === 'streaming' || state === 'warming_up') &&
-        timestamp - lastSignalGraphUpdateRef.current >= LIVE_SIGNAL_GRAPH_UPDATE_INTERVAL_MS
-      ) {
+      if ((state === 'streaming' || state === 'warming_up') && timestamp - lastSignalGraphUpdateRef.current >= LIVE_SIGNAL_GRAPH_UPDATE_INTERVAL_MS) {
         lastSignalGraphUpdateRef.current = timestamp;
         const latestSignalTimestamp = managerRef.current.getLatestLiveSignalTimestamp();
         if (
@@ -296,16 +227,6 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
           lastPublishedSignalTimestampRef.current = latestSignalTimestamp;
           setLiveSignalSamples(managerRef.current.getLiveSignalSamples());
         }
-      }
-
-      if (placement !== 'good') {
-        if (publishedBpmRef.current != null) {
-          publishedBpmRef.current = null;
-          setCurrentBpm(null);
-        }
-        liveBpmStartedAtRef.current = null;
-        liveBpmFilterRef.current.reset();
-        return;
       }
 
       if ((state === 'streaming' || state === 'warming_up') && timestamp - lastBpmUpdateRef.current >= BPM_UPDATE_INTERVAL_MS) {
@@ -333,7 +254,7 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
         }
       }
     },
-    [finishStream, startStreaming, updateFingerQuality],
+    [finishStream, startStreaming],
   );
 
   const frameProcessor = useFrameProcessor(
@@ -361,9 +282,6 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
     goodSinceRef.current = null;
     warmupStartRef.current = null;
     fingerPlacementRef.current = 'no_finger';
-    signalReadPausedRef.current = false;
-    fingerQualitySamplesRef.current = [];
-    fingerQualityStateRef.current = {};
     managerRef.current.reset();
     beatSchedulerRef.current.reset();
 
@@ -387,7 +305,6 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
   return {
     streamState,
     fingerPlacement,
-    motionState: motion.state,
     currentBpm,
     beatTick,
     bpmHistory,
