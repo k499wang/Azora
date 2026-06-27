@@ -68,6 +68,7 @@ import type { NotificationPreferences } from '../../services/notifications/types
 import { useUpdateNotificationPreferencesMutation } from '../../queries/notifications/useUpdateNotificationPreferencesMutation';
 import { buildOnboardingSaveFailureDiagnostics } from '../../queries/profile/onboardingSaveDiagnostics';
 import type { SavedOnboardingProfile } from '../../services/profile/onboardingStatusService';
+import { requestStoreReview } from '../../services/reviews/storeReview';
 
 // Set to true to re-enable the intent reflection screen between intent selection and name entry.
 const INTENT_REFLECTION_ENABLED = false;
@@ -964,7 +965,9 @@ export default function OnboardingFlow({
         name={name.trim() || null}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('pact', 'continue')}
+        onContinue={() => {
+          void requestStoreReview().finally(() => goToStep('pact', 'continue'));
+        }}
         onBack={() => goToStep('fiveMinutes', 'back')}
       />
     );
