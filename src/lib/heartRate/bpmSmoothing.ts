@@ -63,13 +63,13 @@ const DEFAULT_PRESENTATION_FILTER_OPTIONS: BpmPresentationFilterOptions = {
 
 const LIVE_BPM_PRESENTATION_OPTIONS: BpmPresentationFilterOptions = {
   warmupMs: 0,
-  minStableReadings: 1,
-  stableRangeBpm: 12,
-  maxStepBpm: 4,
-  maxIncreaseBpm: 4,
-  maxDecreaseBpm: 4,
-  spikeThresholdBpm: 12,
-  spikeConfirmationBpm: 5,
+  minStableReadings: 3,
+  stableRangeBpm: 8,
+  maxStepBpm: 2,
+  maxIncreaseBpm: 2,
+  maxDecreaseBpm: 2,
+  spikeThresholdBpm: 10,
+  spikeConfirmationBpm: 4,
 };
 
 const BREATH_EXERCISE_BPM_PRESENTATION_OPTIONS: BpmPresentationFilterOptions = {

@@ -86,21 +86,21 @@ test('BpmPresentationFilter rejects isolated spikes but accepts sustained jumps 
 test('Live BPM presentation filter uses the onboarding baseline display response', () => {
   assert.deepEqual(
     visibleLiveBpmSequence([101, 92, 84, 82, 83, 84]),
-    [101, 97, 97, 93, 89, 85],
+    [null, null, null, null, 83, 84],
   );
 });
 
 test('Live BPM presentation filter holds through isolated collapse and rebound noise', () => {
   assert.deepEqual(
     visibleLiveBpmSequence([100, 101, 100, 99, 100, 50, 80, 101]),
-    [100, 101, 100, 99, 100, 100, 100, 101],
+    [null, null, 100, 99, 100, 100, 100, 101],
   );
 });
 
 test('Live BPM presentation filter accepts sustained changes slowly', () => {
   assert.deepEqual(
     visibleLiveBpmSequence([80, 81, 80, 80, 96, 97, 98, 99, 100]),
-    [80, 81, 80, 80, 80, 84, 84, 88, 92],
+    [null, null, 80, 80, 80, 82, 82, 84, 84],
   );
 });
 
