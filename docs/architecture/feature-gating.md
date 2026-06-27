@@ -86,9 +86,9 @@ A "Retry" button on a result screen is a fresh `start_action` and must gate. See
 
 Say we want to add `MeditationTimer` with a 1/day free limit.
 
-### 1. Add the key + limit
+### 1. Add the key + access rule
 
-`src/services/subscriptions/featureAccess.ts`:
+`src/services/subscriptions/featureAccessCore.ts` (re-exported by `featureAccess.ts`):
 
 ```ts
 export const FeatureKey = {
@@ -105,7 +105,7 @@ const FREE_DAILY_LIMITS: Partial<Record<FeatureKeyValue, number>> = {
 };
 ```
 
-If the new feature is Pro-only (no free quota), leave it out of `FREE_DAILY_LIMITS` — `getFeatureAccess` will return `pro_only`.
+If the new feature is Pro-only (no free quota), add it to `PRO_ONLY_FEATURES` instead of `FREE_DAILY_LIMITS` so `getFeatureAccess` returns `pro_only`.
 
 ### 2. Add a counter column on `daily_activity` (if it has a daily limit)
 

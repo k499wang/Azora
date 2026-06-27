@@ -47,6 +47,8 @@ import { useCancellableFlow } from '../hooks/useCancellableFlow';
 import { useAuthStore } from '../stores/authStore';
 import { useCompleteBreathHoldMutation } from '../queries/tracking/useCompleteBreathHoldMutation';
 import { useHeartRateMonitoringPreference } from '../hooks/useHeartRateMonitoringPreference';
+import { useFeatureAccess } from '../hooks/useFeatureAccess';
+import { FeatureKey } from '../services/subscriptions/featureAccess';
 import { estimateAzoraScore } from '../lib/azoraScore';
 import { buildCaptureResult } from '../lib/heartRate/captureResult';
 import { runAfterNextPaint } from '../lib/ui/runAfterNextPaint';
@@ -309,7 +311,22 @@ export default function DailyExercisePage({
   const {
     heartRateMonitoringEnabled,
     heartRateMonitoringPreferenceLoaded,
+    setHeartRateMonitoringEnabled,
   } = useHeartRateMonitoringPreference();
+  const heartRateMonitoringAccess = useFeatureAccess(FeatureKey.BreathingHeartRateMonitoring);
+  const heartRateMonitoringAllowed = heartRateMonitoringAccess.allowed;
+  const heartRateMonitoringAccessLoading = heartRateMonitoringAccess.isLoading;
+  const heartRateMonitoringProLocked =
+    !heartRateMonitoringAllowed && !heartRateMonitoringAccessLoading;
+
+  useEffect(() => {
+    if (!heartRateMonitoringProLocked || !heartRateMonitoringEnabled) return;
+    setHeartRateMonitoringEnabled(false);
+  }, [
+    heartRateMonitoringEnabled,
+    heartRateMonitoringProLocked,
+    setHeartRateMonitoringEnabled,
+  ]);
 
   useEffect(() => {
     if (pulse.beatTick <= 0) return;
@@ -469,7 +486,12 @@ export default function DailyExercisePage({
     setReleaseAudioActive(false);
     setHoldSeconds(0);
     setPrepCycle(1);
-    if (withHeartRate) {
+    const shouldMeasureHeartRate = withHeartRate && heartRateMonitoringAllowed;
+    if (withHeartRate && heartRateMonitoringProLocked) {
+      setHeartRateMonitoringEnabled(false);
+      setHrEnabled(false);
+    }
+    if (shouldMeasureHeartRate) {
       measurementStartAtRef.current = Date.now();
       startPulse();
       beginPulseMeasurementWindow();
@@ -481,7 +503,17 @@ export default function DailyExercisePage({
       final_inhale_seconds: FINAL_INHALE_SECONDS,
     });
     startBreathPhase('preInhale', 1);
-  }, [beginPulseMeasurementWindow, flow, hrEnabled, posthog, startBreathPhase, startPulse]);
+  }, [
+    beginPulseMeasurementWindow,
+    flow,
+    heartRateMonitoringAllowed,
+    heartRateMonitoringProLocked,
+    hrEnabled,
+    posthog,
+    setHeartRateMonitoringEnabled,
+    startBreathPhase,
+    startPulse,
+  ]);
 
   const saveCompletedHold = useCallback(async (
     completedHoldSeconds: number,
@@ -589,6 +621,14 @@ export default function DailyExercisePage({
   }, [phase]);
 
   const startPlacement = useCallback(async () => {
+    if (heartRateMonitoringAccessLoading) return;
+    if (!heartRateMonitoringAllowed) {
+      if (heartRateMonitoringProLocked) {
+        setHeartRateMonitoringEnabled(false);
+      }
+      setHrEnabled(false);
+      return;
+    }
     if (!flow.start()) return;
     try {
       const granted = hasPermission ? true : await requestPermission();
@@ -619,11 +659,35 @@ export default function DailyExercisePage({
       setHrEnabled(false);
       flow.cancel();
     }
-  }, [flow, hasPermission, pulse.device, requestPermission, startPulse]);
+  }, [
+    flow,
+    hasPermission,
+    heartRateMonitoringAccessLoading,
+    heartRateMonitoringAllowed,
+    heartRateMonitoringProLocked,
+    pulse.device,
+    requestPermission,
+    setHeartRateMonitoringEnabled,
+    startPulse,
+  ]);
 
   const startDailyExercise = useCallback(() => {
     if (!heartRateMonitoringPreferenceLoaded) return;
     if (heartRateMonitoringEnabled) {
+      if (heartRateMonitoringAccessLoading || !heartRateMonitoringAllowed) {
+        if (heartRateMonitoringProLocked) {
+          setHeartRateMonitoringEnabled(false);
+        }
+        if (!flow.start()) return;
+        setHrEnabled(false);
+        setPhase('intro');
+        clearTimer();
+        introTimeoutRef.current = setTimeout(() => {
+          if (!flow.isActive()) return;
+          startPrepBreathing(false);
+        }, SPRING_IN_DURATION_MS);
+        return;
+      }
       void startPlacement();
       return;
     }
@@ -637,8 +701,12 @@ export default function DailyExercisePage({
     }, SPRING_IN_DURATION_MS);
   }, [
     flow,
+    heartRateMonitoringAccessLoading,
+    heartRateMonitoringAllowed,
     heartRateMonitoringEnabled,
     heartRateMonitoringPreferenceLoaded,
+    heartRateMonitoringProLocked,
+    setHeartRateMonitoringEnabled,
     startPlacement,
     startPrepBreathing,
   ]);

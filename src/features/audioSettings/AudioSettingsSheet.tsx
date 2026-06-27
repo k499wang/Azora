@@ -1,4 +1,4 @@
-import { useMemo, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, type ReactNode } from 'react';
 import {
   Modal,
   Pressable,
@@ -8,7 +8,9 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
 import Icon from '../../components/common/icons/Icon';
+import type { RootStackNavigationProp } from '../../app/navigation';
 import { card } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { padding, spacing } from '../../theme/spacing';
@@ -21,6 +23,10 @@ import { OFF_OPTION_ID } from './types';
 import { useAudioPreferences } from './useAudioPreferences';
 import { useAudioPreview } from './useAudioPreview';
 import { useHeartRateMonitoringPreference } from '../../hooks/useHeartRateMonitoringPreference';
+import { useFeatureAccess } from '../../hooks/useFeatureAccess';
+import { trackFeatureGateHit } from '../../services/analytics/tracking';
+import { PaywallPlacement } from '../../services/paywall';
+import { FeatureKey } from '../../services/subscriptions/featureAccess';
 
 interface AudioSettingsSheetProps {
   visible: boolean;
@@ -38,12 +44,58 @@ export default function AudioSettingsSheet({
   heartRateMonitoringLocked = false,
 }: AudioSettingsSheetProps) {
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation<RootStackNavigationProp>();
   const { preferences, select, reset } = useAudioPreferences();
   const { play, stop, previewingAsset } = useAudioPreview();
+  const heartRateMonitoringAccess = useFeatureAccess(FeatureKey.BreathingHeartRateMonitoring);
   const {
     heartRateMonitoringEnabled,
     setHeartRateMonitoringEnabled,
   } = useHeartRateMonitoringPreference();
+  const heartRateMonitoringProLocked =
+    !heartRateMonitoringAccess.allowed && !heartRateMonitoringAccess.isLoading;
+  const effectiveHeartRateMonitoringEnabled =
+    heartRateMonitoringProLocked ? false : heartRateMonitoringEnabled;
+
+  useEffect(() => {
+    if (!heartRateMonitoringProLocked || !heartRateMonitoringEnabled) return;
+    setHeartRateMonitoringEnabled(false);
+  }, [
+    heartRateMonitoringEnabled,
+    heartRateMonitoringProLocked,
+    setHeartRateMonitoringEnabled,
+  ]);
+
+  const openHeartRateMonitoringPaywall = useCallback(() => {
+    trackFeatureGateHit({
+      feature: FeatureKey.BreathingHeartRateMonitoring,
+      placement: PaywallPlacement.HeartRateProGate,
+      sourceScreen: 'AudioSettings',
+      sourceAction: 'heart_rate_monitoring_toggle',
+      access: heartRateMonitoringAccess,
+    });
+    navigation.navigate('ProPaywall', {
+      placement: PaywallPlacement.HeartRateProGate,
+      sourceScreen: 'AudioSettings',
+      sourceAction: 'heart_rate_monitoring_toggle',
+      feature: FeatureKey.BreathingHeartRateMonitoring,
+    });
+  }, [heartRateMonitoringAccess, navigation]);
+
+  const handleHeartRateMonitoringToggle = useCallback(
+    (enabled: boolean) => {
+      if (enabled && heartRateMonitoringProLocked) {
+        openHeartRateMonitoringPaywall();
+        return;
+      }
+      setHeartRateMonitoringEnabled(enabled);
+    },
+    [
+      heartRateMonitoringProLocked,
+      openHeartRateMonitoringPaywall,
+      setHeartRateMonitoringEnabled,
+    ],
+  );
 
   const handleClose = () => {
     stop();
@@ -81,9 +133,10 @@ export default function AudioSettingsSheet({
           >
             {extraSectionsTop}
             <HeartRateMonitoringSection
-              enabled={heartRateMonitoringEnabled}
+              enabled={effectiveHeartRateMonitoringEnabled}
               locked={heartRateMonitoringLocked}
-              onToggle={setHeartRateMonitoringEnabled}
+              proLocked={heartRateMonitoringProLocked}
+              onToggle={handleHeartRateMonitoringToggle}
             />
             {audioCategories.map((category) => (
               <CategorySection

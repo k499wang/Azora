@@ -7,12 +7,14 @@ import { fonts, typography } from '../../theme/typography';
 interface HeartRateMonitoringSectionProps {
   enabled: boolean;
   locked?: boolean;
+  proLocked?: boolean;
   onToggle: (enabled: boolean) => void;
 }
 
 export default function HeartRateMonitoringSection({
   enabled,
   locked = false,
+  proLocked = false,
   onToggle,
 }: HeartRateMonitoringSectionProps) {
   return (
@@ -21,7 +23,9 @@ export default function HeartRateMonitoringSection({
       <Text style={styles.description}>
         {locked
           ? 'End this session to change whether heart rate is measured.'
-          : 'Measure heart rate before supported breathing sessions.'}
+          : proLocked
+            ? 'Measure heart rate during breathing sessions with Pro.'
+            : 'Measure heart rate before supported breathing sessions.'}
       </Text>
 
       <View style={styles.list}>
@@ -30,6 +34,7 @@ export default function HeartRateMonitoringSection({
           selected={enabled}
           onSelect={() => onToggle(true)}
           disabled={locked}
+          premiumLocked={proLocked}
         />
         <AudioSettingsRow
           label="Off"
