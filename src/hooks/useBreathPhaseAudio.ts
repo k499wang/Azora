@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { MutableRefObject } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
-import { setAudioModeAsync, useAudioPlayer } from 'expo-audio';
-import type { AudioPlayer } from 'expo-audio';
+import { setAudioModeAsync, useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
+import type { AudioPlayer, AudioSource } from 'expo-audio';
 import { audioMix } from '../features/audioSettings/audioMix';
 import { getAudioOption } from '../features/audioSettings/registry';
 import { useAudioPreferences } from '../features/audioSettings/useAudioPreferences';
@@ -17,10 +17,27 @@ const FADE_STEP_MS = 50;
 const FADE_IN_MS = 450;
 const PHASE_SWITCH_FADE_OUT_MS = 350;
 const HOLD_RELEASE_FADE_OUT_MS = 1400;
+const CUE_PLAY_RETRY_MS = 120;
+const CUE_PLAY_RETRY_WINDOW_MS = 1200;
+const CUE_PREWARM_STOP_MS = 80;
+const CUE_PLAYER_OPTIONS = {
+  updateInterval: 250,
+  keepAudioSessionActive: true,
+};
+
+type TimerRef = MutableRefObject<ReturnType<typeof setInterval> | null>;
+type TimeoutRef = MutableRefObject<ReturnType<typeof setTimeout> | null>;
 
 function clearRamp(ref: MutableRefObject<ReturnType<typeof setInterval> | null>) {
   if (ref.current) {
     clearInterval(ref.current);
+    ref.current = null;
+  }
+}
+
+function clearTimeoutRef(ref: TimeoutRef) {
+  if (ref.current) {
+    clearTimeout(ref.current);
     ref.current = null;
   }
 }
@@ -61,8 +78,40 @@ function stopImmediately(player: AudioPlayer) {
   });
 }
 
+function prewarmPlayer(player: AudioPlayer, stopRef: TimeoutRef) {
+  clearTimeoutRef(stopRef);
+  safely(() => {
+    player.loop = false;
+    player.volume = 0;
+  });
+  safely(() => {
+    player.seekTo(0).catch(() => {});
+  });
+  safely(() => {
+    player.play();
+  });
+
+  stopRef.current = setTimeout(() => {
+    clearTimeoutRef(stopRef);
+    stopImmediately(player);
+  }, CUE_PREWARM_STOP_MS);
+}
+
 function isActiveAppState(state: AppStateStatus) {
   return state === 'active';
+}
+
+function hasPhaseAsset(
+  phase: BreathAudioPhase,
+  inhaleAsset: AudioSource,
+  exhaleAsset: AudioSource,
+  holdAsset: AudioSource,
+) {
+  return (
+    (phase === 'inhale' && inhaleAsset != null) ||
+    (phase === 'exhale' && exhaleAsset != null) ||
+    (phase === 'hold' && holdAsset != null)
+  );
 }
 
 export function useBreathPhaseAudio(
@@ -82,53 +131,23 @@ export function useBreathPhaseAudio(
   const [appActive, setAppActive] = useState(() =>
     isActiveAppState(AppState.currentState),
   );
-  const inhalePlayer = useAudioPlayer(undefined, {
-    updateInterval: 1000,
-    keepAudioSessionActive: true,
-  });
-  const exhalePlayer = useAudioPlayer(undefined, {
-    updateInterval: 1000,
-    keepAudioSessionActive: true,
-  });
-  const holdPlayer = useAudioPlayer(undefined, {
-    updateInterval: 1000,
-    keepAudioSessionActive: true,
-  });
-
-  useEffect(() => {
-    if (inhaleAsset == null) {
-      stopImmediately(inhalePlayer);
-      return;
-    }
-
-    safely(() => {
-      inhalePlayer.replace(inhaleAsset);
-    });
-  }, [inhaleAsset, inhalePlayer]);
-
-  useEffect(() => {
-    if (exhaleAsset == null) {
-      stopImmediately(exhalePlayer);
-      return;
-    }
-
-    safely(() => {
-      exhalePlayer.replace(exhaleAsset);
-    });
-  }, [exhaleAsset, exhalePlayer]);
-  useEffect(() => {
-    if (holdAsset == null) {
-      stopImmediately(holdPlayer);
-      return;
-    }
-
-    safely(() => {
-      holdPlayer.replace(holdAsset);
-    });
-  }, [holdAsset, holdPlayer]);
+  const inhalePlayer = useAudioPlayer(inhaleAsset ?? null, CUE_PLAYER_OPTIONS);
+  const exhalePlayer = useAudioPlayer(exhaleAsset ?? null, CUE_PLAYER_OPTIONS);
+  const holdPlayer = useAudioPlayer(holdAsset ?? null, CUE_PLAYER_OPTIONS);
+  const inhaleStatus = useAudioPlayerStatus(inhalePlayer);
+  const exhaleStatus = useAudioPlayerStatus(exhalePlayer);
+  const holdStatus = useAudioPlayerStatus(holdPlayer);
   const inhaleRampRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const exhaleRampRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const holdRampRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const inhalePlayRetryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const exhalePlayRetryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const holdPlayRetryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const prewarmedPlayerIdsRef = useRef({
+    inhale: null as number | null,
+    exhale: null as number | null,
+    hold: null as number | null,
+  });
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (nextState) => {
@@ -159,10 +178,12 @@ export function useBreathPhaseAudio(
   const fadeOut = useCallback(
     (
       player: AudioPlayer,
-      rampRef: MutableRefObject<ReturnType<typeof setInterval> | null>,
+      rampRef: TimerRef,
+      playRetryRef: TimeoutRef,
       durationMs = PHASE_SWITCH_FADE_OUT_MS,
     ) => {
       clearRamp(rampRef);
+      clearTimeoutRef(playRetryRef);
       const startVolume = getPlayerNumber(() => player.volume);
       const isPlaying = getPlayerBoolean(() => player.playing);
       if (startVolume <= 0 || !isPlaying) {
@@ -191,10 +212,12 @@ export function useBreathPhaseAudio(
   const fadeIn = useCallback(
     (
       player: AudioPlayer,
-      rampRef: MutableRefObject<ReturnType<typeof setInterval> | null>,
+      rampRef: TimerRef,
+      playRetryRef: TimeoutRef,
       targetVolume: number,
     ) => {
       clearRamp(rampRef);
+      clearTimeoutRef(playRetryRef);
       safely(() => {
         player.loop = false;
         player.volume = 0;
@@ -202,9 +225,20 @@ export function useBreathPhaseAudio(
       safely(() => {
         player.seekTo(0).catch(() => {});
       });
-      safely(() => {
-        player.play();
-      });
+
+      const startedAt = Date.now();
+      const tryPlay = () => {
+        clearTimeoutRef(playRetryRef);
+        safely(() => {
+          player.play();
+        });
+        if (getPlayerBoolean(() => player.playing)) return;
+        if (Date.now() - startedAt >= CUE_PLAY_RETRY_WINDOW_MS) return;
+        playRetryRef.current = setTimeout(() => {
+          tryPlay();
+        }, CUE_PLAY_RETRY_MS);
+      };
+      tryPlay();
 
       const steps = Math.max(1, Math.ceil(FADE_IN_MS / FADE_STEP_MS));
       let step = 0;
@@ -222,56 +256,159 @@ export function useBreathPhaseAudio(
     [],
   );
 
-  const canPlayPhase =
-    (phase === 'inhale' && inhaleAsset != null) ||
-    (phase === 'exhale' && exhaleAsset != null) ||
-    (phase === 'hold' && holdAsset != null);
-  const shouldPlayAudio = active && appActive && canPlayPhase;
+  const phaseHasAsset = hasPhaseAsset(phase, inhaleAsset, exhaleAsset, holdAsset);
+  const phaseLoaded =
+    (phase === 'inhale' && inhaleStatus.isLoaded) ||
+    (phase === 'exhale' && exhaleStatus.isLoaded) ||
+    (phase === 'hold' && holdStatus.isLoaded);
+  const shouldPlayAudio = active && appActive && phaseHasAsset && phaseLoaded;
+  const waitingForPhaseAudio =
+    active && appActive && phaseHasAsset && !phaseLoaded;
   const effectivePhase = shouldPlayAudio ? phase : null;
 
   useEffect(() => {
+    if (!appActive || shouldPlayAudio || waitingForPhaseAudio) return;
+
+    if (
+      inhaleAsset != null &&
+      inhaleStatus.isLoaded &&
+      prewarmedPlayerIdsRef.current.inhale !== inhalePlayer.id
+    ) {
+      prewarmedPlayerIdsRef.current.inhale = inhalePlayer.id;
+      prewarmPlayer(inhalePlayer, inhalePlayRetryRef);
+    }
+
+    if (
+      exhaleAsset != null &&
+      exhaleStatus.isLoaded &&
+      prewarmedPlayerIdsRef.current.exhale !== exhalePlayer.id
+    ) {
+      prewarmedPlayerIdsRef.current.exhale = exhalePlayer.id;
+      prewarmPlayer(exhalePlayer, exhalePlayRetryRef);
+    }
+
+    if (
+      holdAsset != null &&
+      holdStatus.isLoaded &&
+      prewarmedPlayerIdsRef.current.hold !== holdPlayer.id
+    ) {
+      prewarmedPlayerIdsRef.current.hold = holdPlayer.id;
+      prewarmPlayer(holdPlayer, holdPlayRetryRef);
+    }
+  }, [
+    appActive,
+    exhaleAsset,
+    exhalePlayer,
+    exhaleStatus.isLoaded,
+    holdAsset,
+    holdPlayer,
+    holdStatus.isLoaded,
+    inhaleAsset,
+    inhalePlayer,
+    inhaleStatus.isLoaded,
+    shouldPlayAudio,
+    waitingForPhaseAudio,
+  ]);
+
+  useEffect(() => {
+    if (waitingForPhaseAudio) {
+      if (phase === 'inhale') {
+        fadeOut(exhalePlayer, exhaleRampRef, exhalePlayRetryRef);
+        fadeOut(holdPlayer, holdRampRef, holdPlayRetryRef);
+        clearRamp(inhaleRampRef);
+        clearTimeoutRef(inhalePlayRetryRef);
+        safely(() => {
+          inhalePlayer.volume = 0;
+        });
+        return;
+      }
+
+      if (phase === 'exhale') {
+        fadeOut(inhalePlayer, inhaleRampRef, inhalePlayRetryRef);
+        fadeOut(holdPlayer, holdRampRef, holdPlayRetryRef);
+        clearRamp(exhaleRampRef);
+        clearTimeoutRef(exhalePlayRetryRef);
+        safely(() => {
+          exhalePlayer.volume = 0;
+        });
+        return;
+      }
+
+      if (phase === 'hold') {
+        fadeOut(inhalePlayer, inhaleRampRef, inhalePlayRetryRef);
+        fadeOut(exhalePlayer, exhaleRampRef, exhalePlayRetryRef);
+        clearRamp(holdRampRef);
+        clearTimeoutRef(holdPlayRetryRef);
+        safely(() => {
+          holdPlayer.volume = 0;
+        });
+        return;
+      }
+    }
+
     if (effectivePhase === 'inhale') {
-      fadeOut(exhalePlayer, exhaleRampRef);
-      fadeOut(holdPlayer, holdRampRef);
-      fadeIn(inhalePlayer, inhaleRampRef, audioMix.voice.inhale);
+      fadeOut(exhalePlayer, exhaleRampRef, exhalePlayRetryRef);
+      fadeOut(holdPlayer, holdRampRef, holdPlayRetryRef);
+      fadeIn(inhalePlayer, inhaleRampRef, inhalePlayRetryRef, audioMix.voice.inhale);
       return;
     }
 
     if (effectivePhase === 'exhale') {
-      fadeOut(inhalePlayer, inhaleRampRef);
-      fadeOut(holdPlayer, holdRampRef);
-      fadeIn(exhalePlayer, exhaleRampRef, audioMix.voice.exhale);
+      fadeOut(inhalePlayer, inhaleRampRef, inhalePlayRetryRef);
+      fadeOut(holdPlayer, holdRampRef, holdPlayRetryRef);
+      fadeIn(exhalePlayer, exhaleRampRef, exhalePlayRetryRef, audioMix.voice.exhale);
       return;
     }
 
     if (effectivePhase === 'hold') {
-      fadeOut(inhalePlayer, inhaleRampRef);
-      fadeOut(exhalePlayer, exhaleRampRef);
-      fadeIn(holdPlayer, holdRampRef, audioMix.voice.hold);
+      fadeOut(inhalePlayer, inhaleRampRef, inhalePlayRetryRef);
+      fadeOut(exhalePlayer, exhaleRampRef, exhalePlayRetryRef);
+      fadeIn(holdPlayer, holdRampRef, holdPlayRetryRef, audioMix.voice.hold);
       return;
     }
 
-    fadeOut(inhalePlayer, inhaleRampRef, HOLD_RELEASE_FADE_OUT_MS);
-    fadeOut(exhalePlayer, exhaleRampRef, HOLD_RELEASE_FADE_OUT_MS);
-    fadeOut(holdPlayer, holdRampRef, HOLD_RELEASE_FADE_OUT_MS);
-  }, [effectivePhase, exhalePlayer, fadeIn, fadeOut, holdPlayer, inhalePlayer]);
+    fadeOut(inhalePlayer, inhaleRampRef, inhalePlayRetryRef, HOLD_RELEASE_FADE_OUT_MS);
+    fadeOut(exhalePlayer, exhaleRampRef, exhalePlayRetryRef, HOLD_RELEASE_FADE_OUT_MS);
+    fadeOut(holdPlayer, holdRampRef, holdPlayRetryRef, HOLD_RELEASE_FADE_OUT_MS);
+  }, [
+    effectivePhase,
+    exhalePlayer,
+    fadeIn,
+    fadeOut,
+    holdPlayer,
+    inhalePlayer,
+    phase,
+    waitingForPhaseAudio,
+  ]);
 
   useEffect(() => {
-    if (shouldPlayAudio) return;
+    if (shouldPlayAudio || waitingForPhaseAudio) return;
 
     clearRamp(inhaleRampRef);
     clearRamp(exhaleRampRef);
     clearRamp(holdRampRef);
+    clearTimeoutRef(inhalePlayRetryRef);
+    clearTimeoutRef(exhalePlayRetryRef);
+    clearTimeoutRef(holdPlayRetryRef);
     stopImmediately(inhalePlayer);
     stopImmediately(exhalePlayer);
     stopImmediately(holdPlayer);
-  }, [exhalePlayer, holdPlayer, inhalePlayer, shouldPlayAudio]);
+  }, [
+    exhalePlayer,
+    holdPlayer,
+    inhalePlayer,
+    shouldPlayAudio,
+    waitingForPhaseAudio,
+  ]);
 
   useEffect(
     () => () => {
       clearRamp(inhaleRampRef);
       clearRamp(exhaleRampRef);
       clearRamp(holdRampRef);
+      clearTimeoutRef(inhalePlayRetryRef);
+      clearTimeoutRef(exhalePlayRetryRef);
+      clearTimeoutRef(holdPlayRetryRef);
       stopImmediately(inhalePlayer);
       stopImmediately(exhalePlayer);
       stopImmediately(holdPlayer);
