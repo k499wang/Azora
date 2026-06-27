@@ -28,6 +28,10 @@ interface CaptureHrvResult {
 
 interface BuildCaptureResultOptions {
   fallbackIbiSamples?: IbiSample[];
+  presentationBpmSamples?: Array<{
+    offsetMs: number;
+    bpm: number;
+  }>;
 }
 
 export function deriveCaptureHrvResult(
@@ -135,6 +139,26 @@ export function deriveCaptureHrvResult(
 
 function isFiniteNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value);
+}
+
+function normalizePresentationBpmSamples(
+  samples: BuildCaptureResultOptions['presentationBpmSamples'],
+): NonNullable<CaptureResult['bpmSamples']> {
+  if (samples == null) return [];
+
+  return samples
+    .filter((sample) => (
+      isFiniteNumber(sample.offsetMs) &&
+      sample.offsetMs >= 0 &&
+      isFiniteNumber(sample.bpm) &&
+      sample.bpm >= 20 &&
+      sample.bpm <= 240
+    ))
+    .sort((a, b) => a.offsetMs - b.offsetMs)
+    .map((sample) => ({
+      offsetMs: Math.round(sample.offsetMs),
+      bpm: Math.round(sample.bpm),
+    }));
 }
 
 function buildCorrectedIbiSamples(
@@ -277,6 +301,7 @@ export function buildCaptureResult(
       reading: null,
       error: tooFew ? 'too_few_samples' : 'low_confidence',
       ibiSamples: [],
+      bpmSamples: normalizePresentationBpmSamples(options.presentationBpmSamples),
       mode,
     };
   }
@@ -321,6 +346,7 @@ export function buildCaptureResult(
     },
     error: null,
     ibiSamples: finalIbiSamples,
+    bpmSamples: normalizePresentationBpmSamples(options.presentationBpmSamples),
     mode,
   };
 }
