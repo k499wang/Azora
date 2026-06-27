@@ -15,6 +15,7 @@ export function HeartRateOverlay({ onStreamStopped, onClose }: HeartRateOverlayP
   const {
     streamState,
     fingerPlacement,
+    motionState,
     currentBpm,
     beatTick,
     sessionSummary,
@@ -113,6 +114,7 @@ export function HeartRateOverlay({ onStreamStopped, onClose }: HeartRateOverlayP
         <View style={styles.flex}>
           <CameraCheckScreen
             fingerPlacement={fingerPlacement}
+            motionState={motionState}
             onStartAnyway={handleStartAnyway}
             onCancel={handleCancelSetup}
             timeoutSeconds={10}

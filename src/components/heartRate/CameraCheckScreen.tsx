@@ -11,11 +11,13 @@ import { colors } from '../../theme/colors';
 import { typography, fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import type { FingerPlacementState } from '../../lib/heartRate/types';
+import type { MotionStabilityState } from '../../lib/heartRate/motionStability';
 import { HeartRateCameraPreview } from './HeartRateCameraPreview';
 import type { HeartRateCameraPreviewProps } from './HeartRateCameraPreview';
 
 interface CameraCheckScreenProps {
   fingerPlacement: FingerPlacementState;
+  motionState?: MotionStabilityState;
   onStartAnyway: () => void;
   onCancel: () => void;
   timeoutSeconds?: number;
@@ -55,6 +57,7 @@ const RING_STROKE = 10;
 
 export function CameraCheckScreen({
   fingerPlacement,
+  motionState = 'stable',
   onStartAnyway,
   onCancel,
   timeoutSeconds = 10,
@@ -64,6 +67,7 @@ export function CameraCheckScreen({
   const [holdProgress, setHoldProgress] = useState(0);
   const rafRef = useRef<number | null>(null);
   const startTimeRef = useRef<number | null>(null);
+  const canHold = fingerPlacement === 'good' && motionState !== 'moving';
 
   useEffect(() => {
     const t = setTimeout(() => setShowStartAnyway(true), timeoutSeconds * 1000);
@@ -71,7 +75,7 @@ export function CameraCheckScreen({
   }, [timeoutSeconds]);
 
   useEffect(() => {
-    if (fingerPlacement !== 'good') {
+    if (!canHold) {
       if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
       startTimeRef.current = null;
@@ -98,9 +102,12 @@ export function CameraCheckScreen({
       if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
       rafRef.current = null;
     };
-  }, [fingerPlacement]);
+  }, [canHold]);
 
-  const config = stateConfigs[fingerPlacement];
+  const config =
+    fingerPlacement === 'good' && motionState === 'moving'
+      ? { ringColor: colors.warning[500], status: "Hold still, don't move phone" }
+      : stateConfigs[fingerPlacement];
 
   const cx = RING_SIZE / 2;
   const cy = RING_SIZE / 2;
@@ -111,7 +118,7 @@ export function CameraCheckScreen({
 
   const arc = Skia.Path.Make();
   const rect = Skia.XYWHRect(cx - r, cy - r, r * 2, r * 2);
-  const arcSweep = fingerPlacement === 'good' ? 360 * holdProgress : 0;
+  const arcSweep = canHold ? 360 * holdProgress : 0;
   if (arcSweep > 0) {
     arc.addArc(rect, -90, arcSweep);
   }
