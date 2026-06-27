@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import {
   runAtTargetFps,
   useFrameProcessor,
@@ -22,15 +22,9 @@ import {
 } from '../lib/heartRate/captureModes';
 import { createLiveBpmPresentationFilter } from '../lib/heartRate/bpmSmoothing';
 import { createBeatTickScheduler } from '../lib/heartRate/beatTickScheduler';
-import {
-  classifyFingerPlacementStateless,
-  type FingerPlacementClassifyState,
-} from '../lib/heartRate/fingerQuality';
-import type { MotionStabilityState } from '../lib/heartRate/motionStability';
 import { runAfterNextPaint } from '../lib/ui/runAfterNextPaint';
 import { useMeasurementTimer } from './useMeasurementTimer';
 import { useHeartRateCamera } from './useHeartRateCamera';
-import { useHeartRateMotionStability } from './useHeartRateMotionStability';
 
 const MIN_GOOD_DURATION_MS = 2500;
 const PROGRESS_UPDATE_INTERVAL_MS = 200;
@@ -38,7 +32,6 @@ const BPM_UPDATE_INTERVAL_MS = 1000;
 const OFFLINE_CAPTURE_FPS = 30;
 const LIVE_PROCESSING_FPS = 20;
 const LIVE_PROCESSING_INTERVAL_MS = 50;
-const FINGER_QUALITY_WINDOW_MS = 1000;
 
 function isValidFrameSample(value: unknown): value is PpgFrameSample {
   if (value == null || typeof value !== 'object') return false;
@@ -64,7 +57,6 @@ interface UseHeartRateCaptureOptions {
 interface UseHeartRateCaptureReturn {
   captureState: CaptureState;
   fingerPlacement: FingerPlacementState;
-  motionState: MotionStabilityState;
   progress: number;
   secondsRemaining: number;
   currentBpm: number | null;
@@ -108,14 +100,9 @@ export function useHeartRateCapture(
   const [liveSignalSamples, setLiveSignalSamples] = useState<LivePpgSignalSample[]>([]);
   const [result, setResult] = useState<CaptureResult | null>(null);
   const [captureSamples, setCaptureSamples] = useState<PpgFrameSample[]>([]);
-  const motion = useHeartRateMotionStability(
-    captureState === 'camera_check' || captureState === 'measuring',
-  );
 
   const samplesRef = useRef<PpgFrameSample[]>([]);
   const presentationBpmSamplesRef = useRef<Array<{ offsetMs: number; bpm: number }>>([]);
-  const fingerQualitySamplesRef = useRef<PpgFrameSample[]>([]);
-  const fingerQualityStateRef = useRef<FingerPlacementClassifyState>({});
   const goodSinceRef = useRef<number | null>(null);
   const lastBpmUpdateRef = useRef<number>(0);
   const lastSignalGraphUpdateRef = useRef<number>(0);
@@ -124,10 +111,8 @@ export function useHeartRateCapture(
   const lastFrameTimestampRef = useRef<number | null>(null);
   const measurementStartedAtRef = useRef<number | null>(null);
   const currentBpmRef = useRef<number | null>(null);
-  const signalReadPausedRef = useRef(false);
   const captureStateRef = useRef<CaptureState>('idle');
   const fingerPlacementRef = useRef<FingerPlacementState>('no_finger');
-  const motionStateRef = useRef<MotionStabilityState>('stable');
   const managerRef = useRef(new HeartRateManager());
   const liveBpmFilterRef = useRef(createLiveBpmPresentationFilter());
   const beatSchedulerRef = useRef(
@@ -143,10 +128,6 @@ export function useHeartRateCapture(
       ? 'on'
       : 'off';
 
-  useEffect(() => {
-    motionStateRef.current = motion.state;
-  }, [motion.state]);
-
   const setCaptureStateAndRef = useCallback((next: CaptureState) => {
     captureStateRef.current = next;
     setCaptureState(next);
@@ -161,7 +142,6 @@ export function useHeartRateCapture(
     lastPublishedSignalTimestampRef.current = null;
     lastLiveProcessingTimestampRef.current = 0;
     measurementStartedAtRef.current = null;
-    signalReadPausedRef.current = false;
     offlineCaptureActive.value = false;
     liveBpmFilterRef.current.reset();
     beatSchedulerRef.current.reset();
@@ -169,29 +149,10 @@ export function useHeartRateCapture(
 
   const resetCaptureRefs = useCallback(() => {
     resetMeasurementRefs();
-    fingerQualitySamplesRef.current = [];
-    fingerQualityStateRef.current = {};
     lastFrameTimestampRef.current = null;
     currentBpmRef.current = null;
     managerRef.current.reset();
   }, [resetMeasurementRefs]);
-
-  const updateFingerQuality = useCallback((frameSample: PpgFrameSample): FingerPlacementState => {
-    const timestamp = frameSample.timestamp;
-    fingerQualitySamplesRef.current.push(frameSample);
-    const cutoff = timestamp - FINGER_QUALITY_WINDOW_MS;
-    fingerQualitySamplesRef.current = fingerQualitySamplesRef.current.filter(
-      (sample) => sample.timestamp >= cutoff,
-    );
-
-    const result = classifyFingerPlacementStateless(
-      fingerQualitySamplesRef.current,
-      FINGER_QUALITY_WINDOW_MS,
-      fingerQualityStateRef.current,
-    );
-    fingerQualityStateRef.current = result.state;
-    return result.placement;
-  }, []);
 
   const updateProgress = useCallback((elapsedMs: number) => {
     const clampedElapsed = Math.max(0, Math.min(captureDurationMs, elapsedMs));
@@ -269,6 +230,10 @@ export function useHeartRateCapture(
       const state = captureStateRef.current;
       if (state !== 'camera_check' && state !== 'measuring') return;
 
+      if (state === 'measuring') {
+        samplesRef.current.push(frameSample);
+      }
+
       const shouldThrottleProcessing = state !== 'measuring';
       if (
         shouldThrottleProcessing &&
@@ -279,46 +244,14 @@ export function useHeartRateCapture(
       }
       lastLiveProcessingTimestampRef.current = timestamp;
 
-      const qualityPlacement = updateFingerQuality(frameSample);
-      const isMotionMoving = motionStateRef.current === 'moving';
-
-      if (isMotionMoving) {
-        if (qualityPlacement !== fingerPlacementRef.current) {
-          fingerPlacementRef.current = qualityPlacement;
-          setFingerPlacement(qualityPlacement);
-        }
-        goodSinceRef.current = null;
-        if (!signalReadPausedRef.current) {
-          signalReadPausedRef.current = true;
-          currentBpmRef.current = null;
-          lastPublishedSignalTimestampRef.current = null;
-          liveBpmFilterRef.current.reset();
-          beatSchedulerRef.current.reset();
-          managerRef.current.clearLiveSignalSamples();
-          setCurrentBpm(null);
-          setLiveSignalSamples([]);
-        }
-        return;
-      }
-
-      signalReadPausedRef.current = false;
-
-      if (state === 'measuring') {
-        samplesRef.current.push(frameSample);
-      }
-
       const frameState = managerRef.current.processFrame(frameSample);
-      const placement = frameState.fingerPlacement === 'too_much_pressure'
-        ? 'too_much_pressure'
-        : qualityPlacement;
-
-      if (placement !== fingerPlacementRef.current) {
-        fingerPlacementRef.current = placement;
-        setFingerPlacement(placement);
+      if (frameState.fingerPlacement !== fingerPlacementRef.current) {
+        fingerPlacementRef.current = frameState.fingerPlacement;
+        setFingerPlacement(frameState.fingerPlacement);
       }
 
       if (state === 'camera_check') {
-        if (placement !== 'good' || motionStateRef.current === 'moving') {
+        if (frameState.fingerPlacement !== 'good') {
           goodSinceRef.current = null;
           return;
         }
@@ -348,15 +281,6 @@ export function useHeartRateCapture(
         beatSchedulerRef.current.schedule(frameState.beatPeakTs, timestamp);
       }
 
-      if (placement !== 'good') {
-        if (currentBpmRef.current != null) {
-          currentBpmRef.current = null;
-          setCurrentBpm(null);
-        }
-        liveBpmFilterRef.current.reset();
-        return;
-      }
-
       if (timestamp - lastBpmUpdateRef.current >= BPM_UPDATE_INTERVAL_MS) {
         lastBpmUpdateRef.current = timestamp;
         const bpm = managerRef.current.getCurrentBpm();
@@ -376,8 +300,14 @@ export function useHeartRateCapture(
           }
         }
       }
+
+      if (frameState.fingerPlacement === 'lost' && currentBpmRef.current != null) {
+        currentBpmRef.current = null;
+        liveBpmFilterRef.current.reset();
+        setCurrentBpm(null);
+      }
     },
-    [startMeasuring, updateFingerQuality],
+    [startMeasuring],
   );
 
   const frameProcessor = useFrameProcessor(
@@ -432,7 +362,6 @@ export function useHeartRateCapture(
   return {
     captureState,
     fingerPlacement,
-    motionState: motion.state,
     progress,
     secondsRemaining,
     currentBpm,

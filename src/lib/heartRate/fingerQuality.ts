@@ -5,7 +5,7 @@ const MIN_AVG_ROI_RED = 100;
 const MAX_ROI_SATURATION = 0.98;
 const MAX_AVG_SATURATION = 0.98;
 
-export interface FingerPlacementClassifyState {
+interface ClassifyState {
   previousState?: FingerPlacementState;
   goodSinceMs?: number;
 }
@@ -168,8 +168,8 @@ export function classifyFingerPlacement(
 export function classifyFingerPlacementStateless(
   samples: PpgFrameSample[],
   windowMs: number = 1000,
-  state: FingerPlacementClassifyState = {},
-): { placement: FingerPlacementState; state: FingerPlacementClassifyState } {
+  state: ClassifyState = {},
+): { placement: FingerPlacementState; state: ClassifyState } {
   if (samples.length === 0) {
     return {
       placement: 'no_finger',
