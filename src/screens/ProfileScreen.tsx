@@ -184,7 +184,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
                 }}
                 style={({ pressed }) => pressed && { opacity: 0.6 }}
               >
-                <MaterialCommunityIcons name="cog-outline" size={28} color={colors.text.tertiary} />
+                <MaterialCommunityIcons name="cog-outline" size={28} color={colors.text.primary} />
               </Pressable>
             }
           />

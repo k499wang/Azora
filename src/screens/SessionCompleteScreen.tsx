@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Background2066 } from '../components/common/Background2066';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -32,6 +32,7 @@ export default function SessionCompleteScreen({
   const insets = useSafeAreaInsets();
   const {
     techniqueName,
+    techniqueBpmResponse,
     breathCount,
     targetBreaths,
     durationSec,
@@ -64,6 +65,16 @@ export default function SessionCompleteScreen({
     null;
 
   const showGraph = hrSamples.length >= 10;
+  const breathingTechniqueProfile = useMemo(
+    () =>
+      techniqueBpmResponse == null
+        ? null
+        : {
+            name: techniqueName,
+            response: techniqueBpmResponse,
+          },
+    [techniqueBpmResponse, techniqueName],
+  );
 
   const handleClose = () => {
     navigation.navigate('MainTabs', { screen: 'Home' });
@@ -136,6 +147,7 @@ export default function SessionCompleteScreen({
               bpmSamples={hrSamples}
               color={colors.primary.blue500}
               insightContext="breathing-exercise"
+              breathingTechniqueProfile={breathingTechniqueProfile}
             />
           </View>
         ) : null}

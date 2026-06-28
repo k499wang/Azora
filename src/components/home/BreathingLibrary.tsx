@@ -114,6 +114,9 @@ function TechniqueCard({
             </Text>
           </View>
         </View>
+        {recommended ? (
+          <View pointerEvents="none" style={styles.recommendedOutline} />
+        ) : null}
       </Pressable>
     </View>
   );
@@ -189,6 +192,12 @@ const styles = StyleSheet.create({
     height: CARD_HEIGHT,
     borderWidth: 0,
     overflow: 'hidden',
+  },
+  recommendedOutline: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 22,
+    borderWidth: 3,
+    borderColor: colors.primary.blue500,
   },
   cardImage: {
     ...StyleSheet.absoluteFillObject,

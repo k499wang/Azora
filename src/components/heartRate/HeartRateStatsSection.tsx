@@ -7,7 +7,10 @@ import BPMChart from './BPMChart';
 import RestingHeartRateBar from './RestingHeartRateBar';
 import ThermometerStatCard from './ThermometerStatCard';
 import type { BpmTimePoint } from '../../lib/heartRate/bpmSeries';
-import type { BpmInsightContext } from '../../lib/heartRate/bpmInsight';
+import type {
+  BpmInsightContext,
+  BreathingTechniqueBpmProfile,
+} from '../../lib/heartRate/bpmInsight';
 
 const LOCKED_PLACEHOLDERS = {
   hrDrop: 18,
@@ -25,6 +28,7 @@ interface HeartRateSectionProps {
   onPressUpgrade?: () => void;
   emptyChartMessage?: string;
   insightContext?: BpmInsightContext;
+  breathingTechniqueProfile?: BreathingTechniqueBpmProfile | null;
 }
 
 export default function HeartRateStatsSection({
@@ -38,6 +42,7 @@ export default function HeartRateStatsSection({
   onPressUpgrade,
   emptyChartMessage,
   insightContext,
+  breathingTechniqueProfile,
 }: HeartRateSectionProps) {
   const heartRateIncreased = hrDrop != null && hrDrop < 0;
   const isBreathHold = insightContext === 'breath-hold';
@@ -98,6 +103,7 @@ export default function HeartRateStatsSection({
           onPressLocked={onPressUpgrade}
           emptyMessage={emptyChartMessage}
           insightContext={insightContext}
+          breathingTechniqueProfile={breathingTechniqueProfile}
         />
       </View>
     </View>

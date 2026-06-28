@@ -120,7 +120,7 @@ export default function ShareableResultScreen({
               hitSlop={10}
               onPress={() => setInfoVisible(true)}
             >
-              <Icon name="info" size={14} color={colors.text.tertiary} />
+              <Icon name="info" size={14} color={colors.text.primary} />
             </Pressable>
           </View>
           <ScoreRing
@@ -317,7 +317,7 @@ const styles = StyleSheet.create({
   },
   scoreCaption: {
     ...typography.caption.caption1,
-    color: colors.text.tertiary,
+    color: colors.text.primary,
     fontFamily: fonts.semibold,
     letterSpacing: 1.2,
     textTransform: 'uppercase',
