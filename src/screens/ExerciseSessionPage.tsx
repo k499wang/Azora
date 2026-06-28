@@ -447,6 +447,7 @@ export default function ExerciseSessionPage({
           navigation.replace('SessionComplete', {
             techniqueId: technique.id,
             techniqueName: technique.name,
+            techniqueBpmResponse: technique.heartRateResponse,
             breathCount: rounds,
             targetBreaths: rounds,
             durationSec: actualDurationSec,

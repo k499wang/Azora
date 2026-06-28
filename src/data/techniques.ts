@@ -1,6 +1,7 @@
 import type { ComponentProps } from 'react';
 import type { ImageSourcePropType } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import type { BreathingTechniqueBpmResponse } from '../lib/heartRate/bpmInsight';
 
 type TechniqueIconName = NonNullable<ComponentProps<typeof MaterialCommunityIcons>['name']>;
 
@@ -12,6 +13,7 @@ export interface BreathingTechnique {
   pattern: { inhale: number; holdIn: number; exhale: number; holdOut: number };
   defaultRounds: number;
   category: 'calm' | 'focus' | 'energy' | 'sleep' | 'balance';
+  heartRateResponse: BreathingTechniqueBpmResponse;
   icon: TechniqueIconName;
   duration: string;
   backgroundImage: ImageSourcePropType;
@@ -19,7 +21,9 @@ export interface BreathingTechnique {
 
 /**
  * To add a new exercise, just add an entry here.
- * The picker and session will pick it up automatically.
+ * The picker and session will pick it up automatically. Choose
+ * heartRateResponse based on the intended cardiovascular effect so the
+ * post-session HR graph can interpret rises and drops correctly.
  */
 const TECHNIQUES: BreathingTechnique[] = [
   {
@@ -31,6 +35,7 @@ const TECHNIQUES: BreathingTechnique[] = [
     pattern: { inhale: 4, holdIn: 4, exhale: 4, holdOut: 4 },
     defaultRounds: 8,
     category: 'focus',
+    heartRateResponse: 'stabilize',
     icon: 'checkbox-blank-outline',
     duration: '~2 min',
     backgroundImage: require('../../assets/exercises/grass.jpg'),
@@ -44,6 +49,7 @@ const TECHNIQUES: BreathingTechnique[] = [
     pattern: { inhale: 4, holdIn: 7, exhale: 8, holdOut: 0 },
     defaultRounds: 4,
     category: 'sleep',
+    heartRateResponse: 'downshift',
     icon: 'moon-waning-crescent',
     duration: '~1 min',
     backgroundImage: require('../../assets/exercises/lights.jpg'),
@@ -57,6 +63,7 @@ const TECHNIQUES: BreathingTechnique[] = [
     pattern: { inhale: 2, holdIn: 0, exhale: 2, holdOut: 0 },
     defaultRounds: 30,
     category: 'energy',
+    heartRateResponse: 'energize',
     icon: 'flash-outline',
     duration: '~2 min',
     backgroundImage: require('../../assets/exercises/rocks.jpg'),
@@ -70,6 +77,7 @@ const TECHNIQUES: BreathingTechnique[] = [
     pattern: { inhale: 5, holdIn: 0, exhale: 5, holdOut: 0 },
     defaultRounds: 10,
     category: 'balance',
+    heartRateResponse: 'resonance',
     icon: 'waves',
     duration: '~2 min',
     backgroundImage: require('../../assets/exercises/sea.jpg'),
@@ -83,6 +91,7 @@ const TECHNIQUES: BreathingTechnique[] = [
     pattern: { inhale: 4, holdIn: 0, exhale: 6, holdOut: 0 },
     defaultRounds: 6,
     category: 'calm',
+    heartRateResponse: 'downshift',
     icon: 'leaf',
     duration: '~1 min',
     backgroundImage: require('../../assets/exercises/flowers.jpg'),

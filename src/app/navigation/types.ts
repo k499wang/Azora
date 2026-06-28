@@ -13,6 +13,7 @@ import type {
 } from '@react-navigation/native-stack';
 import type { PaywallPlacementValue } from '../../services/paywall';
 import type { FeatureKeyValue } from '../../services/subscriptions/featureAccess';
+import type { BreathingTechniqueBpmResponse } from '../../lib/heartRate/bpmInsight';
 
 export type MainTabParamList = {
   Home: undefined;
@@ -35,6 +36,7 @@ export type RootStackParamList = {
   SessionComplete: {
     techniqueId: string;
     techniqueName: string;
+    techniqueBpmResponse?: BreathingTechniqueBpmResponse;
     breathCount: number;
     targetBreaths: number;
     durationSec: number;

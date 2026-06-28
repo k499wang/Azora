@@ -9,8 +9,10 @@ import { buildGraphBpmValuePointsFromIbis } from '../../lib/heartRate/bpmSmoothi
 import { buildBpmSeries, type BpmTimePoint } from '../../lib/heartRate/bpmSeries';
 import {
   buildBpmInsight,
+  buildBpmLockedInsightPlaceholder,
   type BpmInsightContext,
   type BpmInsightSummary,
+  type BreathingTechniqueBpmProfile,
 } from '../../lib/heartRate/bpmInsight';
 import CardSurface from '../common/CardSurface';
 import FeatureInfoDialog from '../common/FeatureInfoDialog';
@@ -34,6 +36,7 @@ interface BPMChartProps {
   insightSummary?: BpmInsightSummary;
   emptyMessage?: string;
   insightContext?: BpmInsightContext;
+  breathingTechniqueProfile?: BreathingTechniqueBpmProfile | null;
 }
 
 const PADDING = { top: 14, right: 8, bottom: 8, left: 8 };
@@ -43,6 +46,20 @@ const BPM_INFO = {
   title: 'Heart Rate',
   message:
     'Your instantaneous beats per minute over the session, derived from each beat-to-beat interval (BPM = 60000 / RR).\n\nResting BPM typically falls between 60–90. Lower trends during a hold often reflect parasympathetic activation and good recovery.',
+};
+
+const BPM_CONTEXT_INFO: Record<BpmInsightContext, { title: string; message: string }> = {
+  resting: BPM_INFO,
+  'breath-hold': {
+    title: 'Heart Rate',
+    message:
+      'Your instantaneous beats per minute over the hold. A lower trend during a breath hold can reflect the diving reflex and parasympathetic activation, though movement and signal quality can affect the graph.',
+  },
+  'breathing-exercise': {
+    title: 'Heart Rate',
+    message:
+      'Your instantaneous beats per minute over the breathing session. Different techniques can intentionally settle, energize, stabilize, or rhythmically vary your heart rate, so the insight interprets the graph against the exercise you completed.',
+  },
 };
 
 export default function BPMChart({
@@ -55,6 +72,7 @@ export default function BPMChart({
   insightSummary,
   emptyMessage = 'Complete a full 90s heart rate measuring to see your BPM.',
   insightContext = 'resting',
+  breathingTechniqueProfile = null,
 }: BPMChartProps) {
   const [width, setWidth] = useState(0);
   const [infoVisible, setInfoVisible] = useState(false);
@@ -159,9 +177,14 @@ export default function BPMChart({
   }, [yBounds]);
 
   const bpmInsight = useMemo(
-    () => buildBpmInsight(series, insightSummary, insightContext),
-    [insightContext, insightSummary, series],
+    () => buildBpmInsight(series, insightSummary, insightContext, breathingTechniqueProfile),
+    [breathingTechniqueProfile, insightContext, insightSummary, series],
   );
+  const lockedInsightPlaceholder = useMemo(
+    () => buildBpmLockedInsightPlaceholder(insightContext, breathingTechniqueProfile),
+    [breathingTechniqueProfile, insightContext],
+  );
+  const info = BPM_CONTEXT_INFO[insightContext];
   return (
     <CardSurface locked={locked} style={styles.card}>
       {!locked ? (
@@ -180,8 +203,8 @@ export default function BPMChart({
           <FeatureInfoDialog
             visible={infoVisible}
             onClose={() => setInfoVisible(false)}
-            title={BPM_INFO.title}
-            intro={BPM_INFO.message}
+            title={info.title}
+            intro={info.message}
           />
         </>
       ) : null}
@@ -299,11 +322,7 @@ export default function BPMChart({
         accentColor={colors.error[500]}
         insight={chart ? bpmInsight : null}
         locked={locked}
-        lockedPlaceholder={
-          insightContext === 'breath-hold'
-            ? 'Your heart rate slowed during the hold as your diving reflex engaged. Tracking this response over repeated holds can show how consistently your nervous system shifts toward oxygen conservation.'
-            : "Your resting heart rate is tracking slightly below your weekly average, which typically signals good cardiovascular recovery. Today's peak of 112 bpm occurred during your afternoon session — well within your normal exertion range. Over the past 7 days, your recovery windows have been shortening, suggesting your body is adapting positively to recent activity."
-        }
+        lockedPlaceholder={lockedInsightPlaceholder}
       />
       {locked ? (
         <>

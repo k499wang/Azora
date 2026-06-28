@@ -1,7 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { buildBpmSeries, summarizeBpmSeries } from './bpmSeries.ts';
-import { buildBpmInsight } from './bpmInsight.ts';
+import {
+  buildBpmInsight,
+  buildBpmLockedInsightPlaceholder,
+} from './bpmInsight.ts';
 
 function ramp(count, startBpm, stepBpm, stepMs = 1000) {
   return Array.from({ length: count }, (_, i) => ({
@@ -9,6 +12,10 @@ function ramp(count, startBpm, stepBpm, stepMs = 1000) {
     bpm: startBpm + i * stepBpm,
   }));
 }
+
+const WIM_HOF_PROFILE = { name: 'Wim Hof', response: 'energize' };
+const RELAXING_PROFILE = { name: 'Relaxing Breath', response: 'downshift' };
+const RESONANCE_PROFILE = { name: 'Resonance', response: 'resonance' };
 
 test('empty input yields no points and null summary', () => {
   const { points, summary } = buildBpmSeries([]);
@@ -153,6 +160,65 @@ test('BPM insight explains a breathing exercise graph increase', () => {
   assert.match(insight, /rose 11 bpm/);
   assert.match(insight, /breathing graph/);
   assert.match(insight, /rhythm is challenging/);
+});
+
+test('BPM insight treats a Wim Hof heart-rate increase as intended activation', () => {
+  const insight = buildBpmInsight(
+    [{ bpm: 68 }, { bpm: 74 }, { bpm: 80 }],
+    undefined,
+    'breathing-exercise',
+    WIM_HOF_PROFILE,
+  );
+
+  assert.match(insight, /Wim Hof/);
+  assert.match(insight, /energizing intent/);
+  assert.match(insight, /rather than a failed calming response/);
+  assert.doesNotMatch(insight, /rhythm is challenging/);
+});
+
+test('BPM insight treats Relaxing Breath heart-rate drop as technique-specific downshift', () => {
+  const insight = buildBpmInsight(
+    [{ bpm: 82 }, { bpm: 76 }, { bpm: 70 }],
+    undefined,
+    'breathing-exercise',
+    RELAXING_PROFILE,
+  );
+
+  assert.match(insight, /Relaxing Breath/);
+  assert.match(insight, /down-regulating intent/);
+  assert.match(insight, /longer exhale pattern/);
+});
+
+test('BPM insight explains steady resonance breathing as coherent breathing', () => {
+  const insight = buildBpmInsight(
+    [{ bpm: 70 }, { bpm: 71 }, { bpm: 70 }],
+    undefined,
+    'breathing-exercise',
+    RESONANCE_PROFILE,
+  );
+
+  assert.match(insight, /Resonance/);
+  assert.match(insight, /coherent breathing/);
+});
+
+test('BPM insight falls back to generic breathing copy without a technique profile', () => {
+  const insight = buildBpmInsight(
+    [{ bpm: 68 }, { bpm: 74 }, { bpm: 79 }],
+    undefined,
+    'breathing-exercise',
+    null,
+  );
+
+  assert.match(insight, /rhythm is challenging/);
+  assert.doesNotMatch(insight, /future-technique/);
+});
+
+test('locked BPM placeholder uses technique-specific breathing copy', () => {
+  const insight = buildBpmLockedInsightPlaceholder('breathing-exercise', WIM_HOF_PROFILE);
+
+  assert.match(insight, /Wim Hof/);
+  assert.match(insight, /heart-rate rise/);
+  assert.doesNotMatch(insight, /resting heart rate/);
 });
 
 test('BPM insight mentions repeated breathing exercise graph swings', () => {

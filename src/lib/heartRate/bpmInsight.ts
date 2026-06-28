@@ -11,6 +11,17 @@ export interface BpmInsightSummary {
 
 export type BpmInsightContext = 'resting' | 'breath-hold' | 'breathing-exercise';
 
+export type BreathingTechniqueBpmResponse =
+  | 'downshift'
+  | 'energize'
+  | 'stabilize'
+  | 'resonance';
+
+export interface BreathingTechniqueBpmProfile {
+  name: string;
+  response: BreathingTechniqueBpmResponse;
+}
+
 type TrendDirection = -1 | 0 | 1;
 
 const MIN_OSCILLATION_POINTS = 5;
@@ -104,10 +115,137 @@ function buildOscillationInsight(
   return 'The graph also moved up and down several times. Repeated swings can reflect breathing pattern changes, movement, stress shifts, or signal quality, so it is most useful when the same pattern shows up across multiple sessions.';
 }
 
+function buildTechniqueBreathingExerciseInsight({
+  avg,
+  min,
+  max,
+  drop,
+  profile,
+  withOscillationInsight,
+}: {
+  avg: number;
+  min: number;
+  max: number;
+  drop: number | null;
+  profile: BreathingTechniqueBpmProfile;
+  withOscillationInsight: (insight: string) => string;
+}): string | null {
+  const rangeDesc = `The graph ranged from ${min} to ${max} bpm and averaged ${avg} bpm`;
+
+  if (drop == null) {
+    return withOscillationInsight(
+      `${rangeDesc}. Add a few more heart-rate-enabled ${profile.name} sessions to learn your typical response to this technique.`,
+    );
+  }
+
+  const increase = Math.abs(drop);
+
+  if (profile.response === 'energize') {
+    if (drop <= -10) {
+      return withOscillationInsight(
+        `Your heart rate rose ${increase} bpm during ${profile.name}, which fits this technique's energizing intent. ${rangeDesc}. For rapid cyclic breathing, a higher finish can reflect sympathetic activation and increased alertness rather than a failed calming response.`,
+      );
+    }
+    if (drop <= -4) {
+      return withOscillationInsight(
+        `Your heart rate ticked up ${increase} bpm during ${profile.name}, a mild energizing response for this faster breathing pattern. ${rangeDesc}. Compare a few sessions to learn how strongly your body responds to this technique.`,
+      );
+    }
+    if (drop >= 4) {
+      return withOscillationInsight(
+        `Your heart rate eased by ${drop} bpm during ${profile.name}. ${rangeDesc}. Even with an energizing technique, some sessions settle if you start activated, keep the rhythm controlled, or finish more relaxed than you began.`,
+      );
+    }
+    return withOscillationInsight(
+      `Your heart rate stayed steady during ${profile.name}. ${rangeDesc}. A stable line can mean your body handled the faster rhythm without a large cardiovascular swing.`,
+    );
+  }
+
+  if (profile.response === 'downshift') {
+    if (drop >= 10) {
+      return withOscillationInsight(
+        `Your heart rate eased by ${drop} bpm during ${profile.name}, which matches this technique's down-regulating intent. ${rangeDesc}. The longer exhale pattern likely helped shift your body toward a calmer finish.`,
+      );
+    }
+    if (drop >= 4) {
+      return withOscillationInsight(
+        `Your heart rate eased by ${drop} bpm during ${profile.name}. ${rangeDesc}. That is the direction this slower, exhale-led pattern is meant to encourage.`,
+      );
+    }
+    if (drop <= -4) {
+      return withOscillationInsight(
+        `Your heart rate rose ${increase} bpm during ${profile.name}. ${rangeDesc}. This can happen if the holds or pacing felt effortful, so compare it with another session using a softer inhale and relaxed shoulders.`,
+      );
+    }
+    return withOscillationInsight(
+      `Your heart rate stayed steady during ${profile.name}. ${rangeDesc}. For a calming technique, steady can still be useful if you started settled or the session prevented your heart rate from climbing.`,
+    );
+  }
+
+  if (profile.response === 'resonance') {
+    if (drop >= 4) {
+      return withOscillationInsight(
+        `Your heart rate eased by ${drop} bpm during ${profile.name}. ${rangeDesc}. Resonance breathing often creates gentle breath-linked rises and falls while nudging the overall session toward balance.`,
+      );
+    }
+    if (drop <= -4) {
+      return withOscillationInsight(
+        `Your heart rate rose ${increase} bpm during ${profile.name}. ${rangeDesc}. That can happen while your body adapts to the slow rhythm; over time, the more useful signal is whether the graph becomes smoother and more breath-linked.`,
+      );
+    }
+    return withOscillationInsight(
+      `Your heart rate stayed steady during ${profile.name}. ${rangeDesc}. A steady average with small breath-linked waves is a normal response for coherent breathing.`,
+    );
+  }
+
+  if (drop >= 6) {
+    return withOscillationInsight(
+      `Your heart rate eased by ${drop} bpm during ${profile.name}. ${rangeDesc}. For this balanced pattern, that suggests you finished more settled than you began.`,
+    );
+  }
+  if (drop <= -6) {
+    return withOscillationInsight(
+      `Your heart rate rose ${increase} bpm during ${profile.name}. ${rangeDesc}. Box-style holds can feel effortful at first, so use repeated sessions to see whether the pattern becomes steadier.`,
+    );
+  }
+  return withOscillationInsight(
+    `Your heart rate stayed steady during ${profile.name}. ${rangeDesc}. That is a useful response for an equal-phase technique designed to stabilize attention and breathing rhythm.`,
+  );
+}
+
+export function buildBpmLockedInsightPlaceholder(
+  context: BpmInsightContext = 'resting',
+  breathingTechniqueProfile?: BreathingTechniqueBpmProfile | null,
+): string {
+  if (context === 'breath-hold') {
+    return 'Your heart rate slowed during the hold as your diving reflex engaged. Tracking this response over repeated holds can show how consistently your nervous system shifts toward oxygen conservation.';
+  }
+
+  if (context === 'breathing-exercise') {
+    const profile = breathingTechniqueProfile;
+    if (profile?.response === 'energize') {
+      return `${profile.name} is designed as an energizing breath pattern, so a heart-rate rise can be part of the intended response. Compare several sessions to see how strongly your body activates and how quickly it settles afterward.`;
+    }
+    if (profile?.response === 'downshift') {
+      return `${profile.name} is designed to help your body downshift. A heart-rate drop or steadier finish can show the longer exhale pattern nudging your nervous system toward calm.`;
+    }
+    if (profile?.response === 'resonance') {
+      return `${profile.name} often creates breath-linked rises and falls in heart rate. The useful pattern is whether the graph becomes smoother and more rhythmic across repeated sessions.`;
+    }
+    if (profile?.response === 'stabilize') {
+      return `${profile.name} is designed to stabilize your breathing rhythm and attention. A steady graph or mild settling response can be a useful sign that your body tolerated the pattern smoothly.`;
+    }
+    return 'Your breathing-session graph can show whether this exercise tends to settle, raise, stabilize, or rhythmically vary your heart rate across repeated sessions.';
+  }
+
+  return "Your resting heart rate is tracking slightly below your weekly average, which typically signals good cardiovascular recovery. Today's peak of 112 bpm occurred during your afternoon session — well within your normal exertion range. Over the past 7 days, your recovery windows have been shortening, suggesting your body is adapting positively to recent activity.";
+}
+
 export function buildBpmInsight(
   series: BpmInsightPoint[],
   savedSummary?: BpmInsightSummary,
   context: BpmInsightContext = 'resting',
+  breathingTechniqueProfile?: BreathingTechniqueBpmProfile | null,
 ): string | null {
   const summary = summarizePlottedSeries(series) ?? savedSummary;
   if (
@@ -157,6 +295,20 @@ export function buildBpmInsight(
   }
 
   if (context === 'breathing-exercise') {
+    if (breathingTechniqueProfile != null) {
+      const techniqueInsight = buildTechniqueBreathingExerciseInsight({
+        avg,
+        min,
+        max,
+        drop,
+        profile: breathingTechniqueProfile,
+        withOscillationInsight,
+      });
+      if (techniqueInsight != null) {
+        return techniqueInsight;
+      }
+    }
+
     const rangeDesc = `The graph ranged from ${min} to ${max} bpm and averaged ${avg} bpm`;
 
     if (drop == null) {
