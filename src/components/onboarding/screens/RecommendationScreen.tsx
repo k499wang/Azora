@@ -43,17 +43,6 @@ const PERSONALIZING_STEPS = [
 const STEP_DURATION_MS = 2200;
 const REVEAL_DELAY_MS = 700;
 
-// Subtle haptic "buzz" under each filling bar: impact ticks that step up in
-// intensity as the bar fills, so loading reads as physical. The climax tick
-// fires from the completion callback so it lands exactly on the checkmark.
-const HAPTIC_TICKS: { at: number; style: Haptics.ImpactFeedbackStyle }[] = [
-  { at: 0.15, style: Haptics.ImpactFeedbackStyle.Light },
-  { at: 0.35, style: Haptics.ImpactFeedbackStyle.Light },
-  { at: 0.55, style: Haptics.ImpactFeedbackStyle.Medium },
-  { at: 0.72, style: Haptics.ImpactFeedbackStyle.Medium },
-  { at: 0.88, style: Haptics.ImpactFeedbackStyle.Heavy },
-];
-
 function fireImpact(style: Haptics.ImpactFeedbackStyle) {
   if (!isHapticsEnabled()) return;
   Haptics.impactAsync(style).catch(() => {});
@@ -117,7 +106,6 @@ export default function RecommendationScreen({
   useEffect(() => {
     let cancelled = false;
     let revealTimer: ReturnType<typeof setTimeout>;
-    let tickTimers: ReturnType<typeof setTimeout>[] = [];
 
     const reveal = () => {
       setShowingResult(true);
@@ -145,14 +133,10 @@ export default function RecommendationScreen({
     // Fill each bar in sequence; mark complete exactly when its fill lands so
     // the checkmark never drifts from the animation.
     const runStep = (i: number) => {
-      tickTimers = HAPTIC_TICKS.map(({ at, style }) =>
-        setTimeout(() => fireImpact(style), STEP_DURATION_MS * at),
-      );
       buildBarAnimation(barAnims[i], STEP_DURATION_MS).start(({ finished }) => {
-        tickTimers.forEach(clearTimeout);
         if (!finished || cancelled) return;
-        // Climax tick lands exactly with the checkmark.
-        fireImpact(Haptics.ImpactFeedbackStyle.Heavy);
+        // A single tap lands exactly when the bar fills and the checkmark pops.
+        fireImpact(Haptics.ImpactFeedbackStyle.Medium);
         setCompletedSteps(i + 1);
         // Pop the checkmark in with a little overshoot the moment its bar lands.
         Animated.spring(checkAnims[i], {
@@ -175,7 +159,6 @@ export default function RecommendationScreen({
       cancelled = true;
       barAnims.forEach((anim) => anim.stopAnimation());
       checkAnims.forEach((anim) => anim.stopAnimation());
-      tickTimers.forEach(clearTimeout);
       clearTimeout(revealTimer);
     };
   }, [barAnims, checkAnims, resultFade, resultSlide]);

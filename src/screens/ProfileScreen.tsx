@@ -152,6 +152,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
         style={styles.scrollView}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
+        bounces={false}
       >
         <View style={[styles.topSection, { paddingTop: insets.top }]}>
           <View style={styles.heroBackdrop} pointerEvents="none">
