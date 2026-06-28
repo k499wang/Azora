@@ -116,6 +116,7 @@ export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        bounces={false}
       >
         <View style={[styles.topSection, { paddingTop: insets.top }]}>
           <View style={styles.heroBackdrop} pointerEvents="none">
