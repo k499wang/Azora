@@ -172,8 +172,8 @@ export default function OnboardingScreenLayout({
   const inner = (
     <Animated.View style={[styles.entrance, { opacity: fade }]}>
       <View style={styles.header}>
-        <View style={styles.headerSlotLeft}>
-          {onBack ? (
+        {onBack ? (
+          <View style={styles.headerSlotLeft}>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Back"
@@ -186,13 +186,13 @@ export default function OnboardingScreenLayout({
             >
               <Text style={styles.backGlyph}>←</Text>
             </Pressable>
-          ) : null}
-        </View>
+          </View>
+        ) : null}
         <View style={styles.progressBar}>
           <View style={[styles.progressFill, { width: `${clampedProgress * 100}%` }]} />
         </View>
-        <View style={styles.headerSlotRight}>
-          {onSkip ? (
+        {onSkip ? (
+          <View style={styles.headerSlotRight}>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Skip"
@@ -205,8 +205,8 @@ export default function OnboardingScreenLayout({
             >
               <Text style={styles.skipLabel}>Skip</Text>
             </Pressable>
-          ) : null}
-        </View>
+          </View>
+        ) : null}
       </View>
 
       <View style={styles.scrollWrap}>
