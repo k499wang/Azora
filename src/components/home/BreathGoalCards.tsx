@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { usePostHog } from 'posthog-react-native';
 import Icon, { type IconName } from '../common/icons/Icon';
+import GlassSurface from '../common/GlassSurface';
 import { colors } from '../../theme/colors';
 import { fonts, typography } from '../../theme/typography';
 import { spacing, padding } from '../../theme/spacing';
@@ -81,10 +82,18 @@ function GoalCard({
       accessibilityRole="button"
       accessibilityLabel={`${goal.label} breathing exercise`}
     >
-      <View style={styles.card}>
-        <Icon name={goal.icon} size={28} color={colors.primary.blue600} />
+      <GlassSurface
+        bare
+        interactive
+        variant="clear"
+        style={styles.card}
+        tintColor={colors.glass.tintOnImage}
+        blurColor={colors.glass.fillOnImage}
+        solidColor={colors.glass.fillOnImage}
+      >
+        <Icon name={goal.icon} size={30} color={colors.primary.blue400} />
         <Text style={styles.label}>{goal.label}</Text>
-      </View>
+      </GlassSurface>
     </Pressable>
   );
 }
@@ -138,13 +147,11 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     paddingHorizontal: spacing.sm,
     borderRadius: 26,
-    borderWidth: 1.5,
-    borderColor: colors.primary.blue200,
-    backgroundColor: colors.glass.fillOnImage,
+    overflow: 'hidden',
   },
   label: {
     ...typography.label.medium,
     fontFamily: fonts.semibold,
-    color: colors.text.primary,
+    color: colors.text.secondary,
   },
 });
