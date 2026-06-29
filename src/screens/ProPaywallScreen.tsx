@@ -188,15 +188,17 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
             <PaywallFeatureList hasAnnualTrial={hasAnnualTrial} />
 
             {hasAnnualTrial ? (
-              <PaywallTrialReminderToggle dark disabled={!selectedPackageHasTrial} />
+              <View style={styles.reminderToggleWrap}>
+                <PaywallTrialReminderToggle dark disabled={!selectedPackageHasTrial} />
+              </View>
             ) : null}
 
             {paywall.isLoading ? (
-              <View style={styles.cardsLoading}>
+              <View style={[styles.cardsLoading, !hasAnnualTrial && styles.planCardsNoTrial]}>
                 <ActivityIndicator color={colors.primary.blue600} />
               </View>
             ) : (
-              <View style={styles.planCards}>
+              <View style={[styles.planCards, !hasAnnualTrial && styles.planCardsNoTrial]}>
                 {annualPackage ? (
                   <PlanCard
                     pkg={annualPackage}
@@ -239,7 +241,6 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
         </ScrollView>
 
         <View style={[styles.tray, { paddingBottom: insets.bottom + spacing.md }]}>
-          <View style={styles.trayHandle} />
           <OnboardingPrimaryButton
             label={ctaLabel}
             onPress={() => {
@@ -332,7 +333,7 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xl,
   },
   content: {
-    gap: spacing.lg,
+    gap: spacing.sm,
   },
   headerCopy: {
     alignItems: 'flex-start',
@@ -373,9 +374,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  reminderToggleWrap: {
+    marginTop: spacing.md,
+    marginBottom: spacing.xs,
+  },
   planCards: {
-    gap: spacing.md,
-    marginTop: spacing.xs,
+    gap: spacing.sm,
+  },
+  planCardsNoTrial: {
+    marginTop: spacing.lg,
   },
   errorBlock: {
     alignItems: 'center',
@@ -413,14 +420,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 12,
     elevation: 12,
-  },
-  trayHandle: {
-    alignSelf: 'center',
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: 'rgba(255,255,255,0.25)',
-    marginBottom: spacing.xs,
   },
   restoreButton: {
     alignSelf: 'center',

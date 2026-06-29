@@ -22,9 +22,9 @@ import { fonts, typography } from '../../../theme/typography';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 
-const CHART_HEIGHT = 252;
+const CHART_HEIGHT = 290;
 const PAD_LEFT = 8;
-const PAD_RIGHT = 16;
+const PAD_RIGHT = 8;
 const PAD_TOP = 12;
 const PAD_BOTTOM = 28;
 const TOP_INSET = 10;
@@ -32,7 +32,6 @@ const SAMPLE_COUNT = 64;
 const CURVE_K = 0.55;
 const REVEAL_DELAY_MS = 650;
 const REVEAL_DURATION_MS = 1600;
-const WEEKS = [1, 2, 3, 4, 5, 6, 7, 8];
 
 interface IntentProjectionScreenProps {
   selectedIntents: string[];
@@ -204,16 +203,6 @@ export default function IntentProjectionScreen({
             </Canvas>
           ) : null}
         </View>
-
-        <View style={styles.weekAxis}>
-          {WEEKS.map((w) => (
-            <Text key={w} style={styles.weekLabel}>
-              {w}
-            </Text>
-          ))}
-        </View>
-
-        <Text style={styles.caption}>Weeks of daily practice</Text>
       </View>
     </OnboardingScreenLayout>
   );
@@ -232,25 +221,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.text.primary,
     letterSpacing: 0.3,
-    textAlign: 'center',
-  },
-  weekAxis: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: PAD_LEFT,
-    marginTop: -spacing.sm,
-  },
-  weekLabel: {
-    ...typography.label.small,
-    fontFamily: fonts.semibold,
-    fontSize: 12,
-    color: colors.text.tertiary,
-    fontVariant: ['tabular-nums'],
-  },
-  caption: {
-    ...typography.body.small,
-    fontSize: 13,
-    color: colors.text.tertiary,
     textAlign: 'center',
   },
   citation: {
