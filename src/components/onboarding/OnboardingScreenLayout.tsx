@@ -52,6 +52,7 @@ export default function OnboardingScreenLayout({
 }: OnboardingScreenLayoutProps) {
   const insets = useSafeAreaInsets();
   const clampedProgress = Math.max(0, Math.min(1, progress));
+  const hasNav = Boolean(onBack || onSkip);
   const fade = useRef(new Animated.Value(0)).current;
   const scale = useRef(new Animated.Value(ENTRANCE_INITIAL_SCALE)).current;
   const scrollRef = useRef<ScrollView>(null);
@@ -172,39 +173,43 @@ export default function OnboardingScreenLayout({
   const inner = (
     <Animated.View style={[styles.entrance, { opacity: fade }]}>
       <View style={styles.header}>
-        {onBack ? (
+        {hasNav ? (
           <View style={styles.headerSlotLeft}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Back"
-              hitSlop={12}
-              onPress={handleBack}
-              style={({ pressed }) => [
-                styles.backButton,
-                pressed && styles.backButtonPressed,
-              ]}
-            >
-              <Text style={styles.backGlyph}>←</Text>
-            </Pressable>
+            {onBack ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Back"
+                hitSlop={12}
+                onPress={handleBack}
+                style={({ pressed }) => [
+                  styles.backButton,
+                  pressed && styles.backButtonPressed,
+                ]}
+              >
+                <Text style={styles.backGlyph}>←</Text>
+              </Pressable>
+            ) : null}
           </View>
         ) : null}
         <View style={styles.progressBar}>
           <View style={[styles.progressFill, { width: `${clampedProgress * 100}%` }]} />
         </View>
-        {onSkip ? (
+        {hasNav ? (
           <View style={styles.headerSlotRight}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Skip"
-              hitSlop={12}
-              onPress={handleSkip}
-              style={({ pressed }) => [
-                styles.skipButton,
-                pressed && styles.skipButtonPressed,
-              ]}
-            >
-              <Text style={styles.skipLabel}>Skip</Text>
-            </Pressable>
+            {onSkip ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Skip"
+                hitSlop={12}
+                onPress={handleSkip}
+                style={({ pressed }) => [
+                  styles.skipButton,
+                  pressed && styles.skipButtonPressed,
+                ]}
+              >
+                <Text style={styles.skipLabel}>Skip</Text>
+              </Pressable>
+            ) : null}
           </View>
         ) : null}
       </View>
