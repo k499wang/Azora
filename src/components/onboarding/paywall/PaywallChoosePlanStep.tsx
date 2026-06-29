@@ -35,7 +35,7 @@ export function PaywallChoosePlanStep({
   const showCancelAnytime = !selectedPackageHasTrial || selectedPackageId === 'annual';
 
   return (
-    <View style={styles.stepContainer}>
+    <View style={styles.choosePlanContainer}>
       <View style={styles.headerCopy}>
         <Text style={styles.eyebrow}>Your plan is ready.</Text>
         <Text style={styles.title}>Unlock Azora for free</Text>
@@ -48,15 +48,17 @@ export function PaywallChoosePlanStep({
       <PaywallFeatureList hasAnnualTrial={hasAnnualTrial} />
 
       {hasAnnualTrial ? (
-        <PaywallTrialReminderToggle dark disabled={!selectedPackageHasTrial} />
+        <View style={styles.reminderToggleWrap}>
+          <PaywallTrialReminderToggle dark disabled={!selectedPackageHasTrial} />
+        </View>
       ) : null}
 
       {isLoading ? (
-        <View style={styles.cardsLoading}>
+        <View style={[styles.cardsLoading, !hasAnnualTrial && styles.planCardsNoTrial]}>
           <ActivityIndicator color={colors.primary.blue600} />
         </View>
       ) : (
-        <View style={styles.planCards}>
+        <View style={[styles.planCards, !hasAnnualTrial && styles.planCardsNoTrial]}>
           {annualPackage ? (
             <PlanCard
               pkg={annualPackage}

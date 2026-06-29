@@ -8,6 +8,9 @@ export const paywallStepStyles = StyleSheet.create({
   stepContainer: {
     gap: spacing.xl,
   },
+  choosePlanContainer: {
+    gap: spacing.sm,
+  },
   heroContainer: {
     paddingTop: spacing['3xl'],
     paddingHorizontal: spacing.sm,
@@ -375,8 +378,14 @@ export const paywallStepStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  reminderToggleWrap: {
+    marginTop: spacing.md,
+    marginBottom: spacing.xs,
+  },
   planCards: {
     gap: spacing.sm,
-    marginTop: spacing.xs,
+  },
+  planCardsNoTrial: {
+    marginTop: spacing.lg,
   },
 });

@@ -22,7 +22,7 @@ import { fonts, typography } from '../../../theme/typography';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 
-const CHART_HEIGHT = 230;
+const CHART_HEIGHT = 290;
 const PAD_LEFT = 8;
 const PAD_RIGHT = 8;
 const PAD_TOP = 12;
@@ -34,7 +34,6 @@ const CURVE_K = 9;
 const CURVE_MID = 0.32;
 const REVEAL_DELAY_MS = 650;
 const REVEAL_DURATION_MS = 1400;
-const SESSIONS = [1, 2, 3, 4, 5, 6, 7, 8];
 const SIG_F0 = 1 / (1 + Math.exp(-CURVE_K * (0 - CURVE_MID)));
 const SIG_F1 = 1 / (1 + Math.exp(-CURVE_K * (1 - CURVE_MID)));
 
@@ -165,7 +164,6 @@ export default function FiveMinutesScreen({
       footer={<OnboardingPrimaryButton label="Continue" onPress={onContinue} />}
     >
       <View style={styles.chartWrap}>
-        <Text style={styles.yAxisLabel}>Overall wellbeing</Text>
         <View
           style={{ width: '100%', height: CHART_HEIGHT }}
           onLayout={handleChartLayout}
@@ -205,15 +203,7 @@ export default function FiveMinutesScreen({
           ) : null}
         </View>
 
-        <View style={styles.weekAxis}>
-          {SESSIONS.map((s) => (
-            <Text key={s} style={styles.weekLabel}>
-              {s}
-            </Text>
-          ))}
-        </View>
-
-        <Text style={styles.caption}>Sessions on Azora</Text>
+        <Text style={styles.yAxisLabel}>Your wellbeing</Text>
 
         <Text style={styles.note}>
           The gains compound with consistency. Miss a day and you reset, so the
@@ -238,31 +228,13 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     letterSpacing: 0.3,
     textAlign: 'center',
-  },
-  weekAxis: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: PAD_LEFT,
-    marginTop: -spacing.sm,
-  },
-  weekLabel: {
-    ...typography.label.small,
-    fontFamily: fonts.semibold,
-    fontSize: 12,
-    color: colors.text.tertiary,
-    fontVariant: ['tabular-nums'],
-  },
-  caption: {
-    ...typography.body.small,
-    fontSize: 13,
-    color: colors.text.tertiary,
-    textAlign: 'center',
+    marginTop: -spacing.lg,
   },
   note: {
     ...typography.body.small,
     color: colors.text.secondary,
     textAlign: 'center',
-    marginTop: -spacing.sm,
+    marginTop: spacing.md,
     paddingHorizontal: spacing.sm,
   },
 });

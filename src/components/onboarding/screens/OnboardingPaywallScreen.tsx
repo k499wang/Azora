@@ -49,7 +49,6 @@ interface OnboardingPaywallScreenProps {
   isCompleting: boolean;
   errorMessage: string | null;
   personalization?: PaywallPersonalization | null;
-  continueWithoutProLabel?: string;
   onSelectPackage: (packageId: PaywallPackageId) => void;
   onPurchase: () => void;
   onRestore: () => void;
@@ -66,7 +65,6 @@ export default function OnboardingPaywallScreen({
   isCompleting,
   errorMessage,
   personalization,
-  continueWithoutProLabel = 'Continue free',
   onSelectPackage,
   onPurchase,
   onRestore,
@@ -458,18 +456,6 @@ export default function OnboardingPaywallScreen({
                   {isRestoring ? 'Restoring...' : 'Restore Purchase'}
                 </Text>
               </Pressable>
-              <Pressable
-                accessibilityRole="button"
-                disabled={isBusy}
-                onPress={handleContinueWithoutPro}
-                style={({ pressed }) => [
-                  styles.freeButton,
-                  pressed && styles.subtlePressed,
-                  isBusy && styles.disabled,
-                ]}
-              >
-                <Text style={styles.freeButtonText}>{continueWithoutProLabel}</Text>
-              </Pressable>
               <Text style={styles.legal}>
                 Subscriptions auto-renew unless cancelled. Manage or cancel in App Store settings.{' '}
                 By continuing, you agree to the{' '}
@@ -619,17 +605,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 12,
     elevation: 12,
-  },
-  freeButton: {
-    alignSelf: 'center',
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.md,
-  },
-  freeButtonText: {
-    ...typography.button.small,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    color: 'rgba(255,255,255,0.75)',
   },
   legal: {
     ...typography.caption.caption2,
