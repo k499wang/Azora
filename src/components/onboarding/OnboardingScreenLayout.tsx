@@ -37,6 +37,7 @@ interface OnboardingScreenLayoutProps {
   children: ReactNode;
   keyboardAvoiding?: boolean;
   centerBody?: boolean;
+  fullWidthProgress?: boolean;
 }
 
 export default function OnboardingScreenLayout({
@@ -49,10 +50,13 @@ export default function OnboardingScreenLayout({
   children,
   keyboardAvoiding = false,
   centerBody = false,
+  fullWidthProgress = false,
 }: OnboardingScreenLayoutProps) {
   const insets = useSafeAreaInsets();
   const clampedProgress = Math.max(0, Math.min(1, progress));
-  const hasNav = Boolean(onBack || onSkip);
+  // First step runs the bar full width; every other step reserves the back and
+  // skip slots so the bar stays put even on screens that have no skip action.
+  const showNavSlots = !fullWidthProgress;
   const fade = useRef(new Animated.Value(0)).current;
   const scale = useRef(new Animated.Value(ENTRANCE_INITIAL_SCALE)).current;
   const scrollRef = useRef<ScrollView>(null);
@@ -173,7 +177,7 @@ export default function OnboardingScreenLayout({
   const inner = (
     <Animated.View style={[styles.entrance, { opacity: fade }]}>
       <View style={styles.header}>
-        {hasNav ? (
+        {showNavSlots ? (
           <View style={styles.headerSlotLeft}>
             {onBack ? (
               <Pressable
@@ -194,7 +198,7 @@ export default function OnboardingScreenLayout({
         <View style={styles.progressBar}>
           <View style={[styles.progressFill, { width: `${clampedProgress * 100}%` }]} />
         </View>
-        {hasNav ? (
+        {showNavSlots ? (
           <View style={styles.headerSlotRight}>
             {onSkip ? (
               <Pressable

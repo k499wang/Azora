@@ -55,6 +55,7 @@ export default function IntentQuestionScreen({
       title="What's on your mind?"
       subtitle="Pick as many as feel right — Azora will tune to them."
       progress={stepIndex / stepCount}
+      fullWidthProgress
       keyboardAvoiding={needsCustomIntent}
       footer={
         <OnboardingPrimaryButton
