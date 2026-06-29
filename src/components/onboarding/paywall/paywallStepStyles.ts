@@ -380,7 +380,7 @@ export const paywallStepStyles = StyleSheet.create({
   },
   reminderToggleWrap: {
     marginTop: spacing.md,
-    marginBottom: spacing.xs,
+    marginBottom: spacing.md,
   },
   planCards: {
     gap: spacing.sm,

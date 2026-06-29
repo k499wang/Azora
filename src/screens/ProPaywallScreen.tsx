@@ -376,7 +376,7 @@ const styles = StyleSheet.create({
   },
   reminderToggleWrap: {
     marginTop: spacing.md,
-    marginBottom: spacing.xs,
+    marginBottom: spacing.md,
   },
   planCards: {
     gap: spacing.sm,
