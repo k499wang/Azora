@@ -4,6 +4,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { Image } from 'expo-image';
@@ -37,6 +38,7 @@ import type {
 } from '../services/subscriptions/featureAccess';
 
 const HERO_FRAME_ASPECT_RATIO = 1.1;
+const HERO_OVERSCROLL_BLEED = 120;
 
 function getMsUntilNextLocalDay(): number {
   const now = new Date();
@@ -95,6 +97,7 @@ function Greeting({ displayName }: { displayName: string | null | undefined }) {
 
 export default function HomeScreen({ navigation }: HomeScreenProps) {
   const insets = useSafeAreaInsets();
+  const { width: windowWidth } = useWindowDimensions();
   const user = useAuthStore((state) => state.user);
   const profileSummaryQuery = useProfileSummaryQuery(user?.id ?? null);
   const displayName = profileSummaryQuery.data?.profile?.displayName ?? null;
@@ -160,6 +163,8 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     });
   }, [navigation]);
 
+  const heroBackdropHeight = windowWidth / HERO_FRAME_ASPECT_RATIO + HERO_OVERSCROLL_BLEED;
+
   return (
     <View style={styles.screen}>
       <AmbientBackground />
@@ -167,16 +172,21 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
-        bounces={false}
+        bounces
+        alwaysBounceVertical
+        overScrollMode="always"
       >
         <View style={[styles.topSection, { paddingTop: insets.top }]}>
-          <View style={styles.heroBackdrop} pointerEvents="none">
+          <View
+            style={[styles.heroBackdrop, { height: heroBackdropHeight }]}
+            pointerEvents="none"
+          >
             <MaskedView
               style={StyleSheet.absoluteFill}
               maskElement={(
                 <LinearGradient
-                  colors={['black', 'black', 'transparent']}
-                  locations={[0, 0.65, 1]}
+                  colors={['transparent', 'black', 'black', 'transparent']}
+                  locations={[0, 0.34, 0.65, 1]}
                   style={StyleSheet.absoluteFill}
                 />
               )}
@@ -260,10 +270,9 @@ const styles = StyleSheet.create({
   },
   heroBackdrop: {
     position: 'absolute',
-    top: 0,
+    top: -HERO_OVERSCROLL_BLEED,
     left: 0,
     right: 0,
-    aspectRatio: HERO_FRAME_ASPECT_RATIO,
     overflow: 'hidden',
   },
   heroTextSection: {

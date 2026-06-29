@@ -1,5 +1,12 @@
 import { useCallback, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import MaskedView from '@react-native-masked-view/masked-view';
@@ -30,6 +37,9 @@ import type {
 } from '../services/subscriptions/featureAccess';
 import type { HeartTabScreenProps } from '../app/navigation';
 
+const HERO_FRAME_ASPECT_RATIO = 1.1;
+const HERO_OVERSCROLL_BLEED = 120;
+
 function formatLocalDate(localDate: string): string {
   const [year, month, day] = localDate.split('-').map(Number);
   const date = new Date(year, month - 1, day);
@@ -43,6 +53,7 @@ function formatMeasuredTime(isoString: string): string {
 
 export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
   const insets = useSafeAreaInsets();
+  const { width: windowWidth } = useWindowDimensions();
   const user = useAuthStore((state) => state.user);
   const heartRateStatsQuery = useHeartRateStatsQuery(user?.id ?? null);
   const profileQuery = useProfileQuery(user?.id ?? null);
@@ -108,6 +119,7 @@ export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
   const openMeasure = useCallback(() => {
     navigation.navigate('HeartRate');
   }, [navigation]);
+  const heroBackdropHeight = windowWidth / HERO_FRAME_ASPECT_RATIO + HERO_OVERSCROLL_BLEED;
 
   return (
     <View style={styles.screen}>
@@ -116,16 +128,21 @@ export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
-        bounces={false}
+        bounces
+        alwaysBounceVertical
+        overScrollMode="always"
       >
         <View style={[styles.topSection, { paddingTop: insets.top }]}>
-          <View style={styles.heroBackdrop} pointerEvents="none">
+          <View
+            style={[styles.heroBackdrop, { height: heroBackdropHeight }]}
+            pointerEvents="none"
+          >
             <MaskedView
               style={StyleSheet.absoluteFill}
               maskElement={(
                 <LinearGradient
-                  colors={['black', 'black', 'transparent']}
-                  locations={[0, 0.65, 1]}
+                  colors={['transparent', 'black', 'black', 'transparent']}
+                  locations={[0, 0.34, 0.65, 1]}
                   style={StyleSheet.absoluteFill}
                 />
               )}
@@ -259,10 +276,9 @@ const styles = StyleSheet.create({
   },
   heroBackdrop: {
     position: 'absolute',
-    top: 0,
+    top: -HERO_OVERSCROLL_BLEED,
     left: 0,
     right: 0,
-    aspectRatio: 1.1,
     overflow: 'hidden',
   },
   infoPressed: {

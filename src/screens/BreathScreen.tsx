@@ -1,5 +1,12 @@
 import { useCallback, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import MaskedView from '@react-native-masked-view/masked-view';
@@ -36,8 +43,12 @@ import type {
 } from '../services/subscriptions/featureAccess';
 import type { BreathTabScreenProps } from '../app/navigation';
 
+const HERO_FRAME_ASPECT_RATIO = 1.1;
+const HERO_OVERSCROLL_BLEED = 120;
+
 export default function BreathScreen({ navigation }: BreathTabScreenProps) {
   const insets = useSafeAreaInsets();
+  const { width: windowWidth } = useWindowDimensions();
   const user = useAuthStore((state) => state.user);
   const [todayLocalDate] = useState(() => formatLocalDate(new Date()));
   const [infoVisible, setInfoVisible] = useState(false);
@@ -119,6 +130,7 @@ export default function BreathScreen({ navigation }: BreathTabScreenProps) {
       ),
     [showProPaywall, advancedStatsAccess],
   );
+  const heroBackdropHeight = windowWidth / HERO_FRAME_ASPECT_RATIO + HERO_OVERSCROLL_BLEED;
 
   return (
     <View style={styles.screen}>
@@ -127,16 +139,21 @@ export default function BreathScreen({ navigation }: BreathTabScreenProps) {
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
-        bounces={false}
+        bounces
+        alwaysBounceVertical
+        overScrollMode="always"
       >
         <View style={[styles.topSection, { paddingTop: insets.top }]}>
-          <View style={styles.heroBackdrop} pointerEvents="none">
+          <View
+            style={[styles.heroBackdrop, { height: heroBackdropHeight }]}
+            pointerEvents="none"
+          >
             <MaskedView
               style={StyleSheet.absoluteFill}
               maskElement={(
                 <LinearGradient
-                  colors={['black', 'black', 'transparent']}
-                  locations={[0, 0.65, 1]}
+                  colors={['transparent', 'black', 'black', 'transparent']}
+                  locations={[0, 0.34, 0.65, 1]}
                   style={StyleSheet.absoluteFill}
                 />
               )}
@@ -174,7 +191,7 @@ export default function BreathScreen({ navigation }: BreathTabScreenProps) {
               onPress={() => setAzoraInfoVisible(true)}
               style={({ pressed }) => pressed && styles.infoPressed}
             >
-              <Icon name="info" size={16} color={colors.text.inverse} />
+              <Icon name="info" size={16} color={colors.text.primary} />
             </Pressable>
           </View>
           {azoraEstimate ? (
@@ -292,10 +309,9 @@ const styles = StyleSheet.create({
   },
   heroBackdrop: {
     position: 'absolute',
-    top: 0,
+    top: -HERO_OVERSCROLL_BLEED,
     left: 0,
     right: 0,
-    aspectRatio: 1.1,
     overflow: 'hidden',
   },
   section: {
@@ -318,7 +334,7 @@ const styles = StyleSheet.create({
     ...typography.caption.caption1,
     fontSize: 18,
     lineHeight: 24,
-    color: colors.text.inverse,
+    color: colors.text.primary,
     fontFamily: fonts.semibold,
     letterSpacing: 0,
   },
