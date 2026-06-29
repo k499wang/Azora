@@ -1,5 +1,13 @@
 import { useState } from 'react';
-import { Alert, Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import {
+  Alert,
+  Linking,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -22,6 +30,9 @@ import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuer
 import { useUploadProfileAvatarMutation } from '../queries/profile/useUploadProfileAvatarMutation';
 import { useUpdateProfileDisplayNameMutation } from '../queries/profile/useUpdateProfileDisplayNameMutation';
 import { getBackgroundImageSource } from '../services/images/backgroundImageCache';
+
+const HERO_FRAME_ASPECT_RATIO = 1.1;
+const HERO_OVERSCROLL_BLEED = 120;
 
 function getFallbackDisplayName(_email: string | undefined): string {
   return '—';
@@ -46,6 +57,7 @@ function getAvatarLabel(displayName: string): string {
 
 export default function ProfileScreen({ navigation }: ProfileScreenProps) {
   const insets = useSafeAreaInsets();
+  const { width: windowWidth } = useWindowDimensions();
   const user = useAuthStore((s) => s.user);
   const [editingDisplayName, setEditingDisplayName] = useState(false);
   const profileSummaryQuery = useProfileSummaryQuery(user?.id ?? null);
@@ -144,6 +156,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
     await handleUpdateDisplayName(nextDisplayName);
     setEditingDisplayName(false);
   };
+  const heroBackdropHeight = windowWidth / HERO_FRAME_ASPECT_RATIO + HERO_OVERSCROLL_BLEED;
 
   return (
     <View style={styles.screen}>
@@ -152,16 +165,21 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
         style={styles.scrollView}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
-        bounces={false}
+        bounces
+        alwaysBounceVertical
+        overScrollMode="always"
       >
         <View style={[styles.topSection, { paddingTop: insets.top }]}>
-          <View style={styles.heroBackdrop} pointerEvents="none">
+          <View
+            style={[styles.heroBackdrop, { height: heroBackdropHeight }]}
+            pointerEvents="none"
+          >
             <MaskedView
               style={StyleSheet.absoluteFill}
               maskElement={(
                 <LinearGradient
-                  colors={['black', 'black', 'transparent']}
-                  locations={[0, 0.65, 1]}
+                  colors={['transparent', 'black', 'black', 'transparent']}
+                  locations={[0, 0.34, 0.65, 1]}
                   style={StyleSheet.absoluteFill}
                 />
               )}
@@ -246,10 +264,9 @@ const styles = StyleSheet.create({
   },
   heroBackdrop: {
     position: 'absolute',
-    top: 0,
+    top: -HERO_OVERSCROLL_BLEED,
     left: 0,
     right: 0,
-    aspectRatio: 1.1,
     overflow: 'hidden',
   },
   heroCardWrap: {
