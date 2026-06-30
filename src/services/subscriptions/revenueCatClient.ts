@@ -13,6 +13,7 @@ import {
   RevenueCatSignedOutError,
   type RevenueCatIdentityUser,
 } from './revenueCatClientCore';
+import { isRevenueCatAppsFlyerIdImmutableError } from './revenueCatAttributionErrors';
 
 const revenueCatClient = createRevenueCatClient({
   apiKey: getRevenueCatApiKey(),
@@ -108,13 +109,23 @@ export function getRevenueCatCustomerInfo(): Promise<CustomerInfo> {
 }
 
 // Lets the RevenueCat → AppsFlyer integration attribute server-side revenue
-// events back to the AppsFlyer install. Best-effort; never throws.
-export async function setRevenueCatAppsFlyerId(appsFlyerId: string): Promise<void> {
-  if (!isRevenueCatReady()) return;
+// events back to the AppsFlyer install. Requires RC to be configured (identity
+// present) — calling setAttributes before configure throws. Returns whether the
+// caller should persist its local sync marker: either the write landed, or RC
+// says the immutable value is already set and future writes will always fail.
+export async function setRevenueCatAppsFlyerId(appsFlyerId: string): Promise<boolean> {
+  if (!isRevenueCatReady() || !hasCurrentRevenueCatIdentity()) return false;
   try {
     await Purchases.setAttributes({ $appsflyerId: appsFlyerId });
-  } catch {
-    // attribution metadata only — safe to drop
+    return true;
+  } catch (error) {
+    // RevenueCat treats this reserved attribute as immutable. Once it already
+    // exists, retries cannot succeed, so callers should cache the terminal state.
+    if (isRevenueCatAppsFlyerIdImmutableError(error)) return true;
+
+    // Other attribution failures may be premature/transient, so report the miss
+    // and let the caller retry instead of caching it as synced.
+    return false;
   }
 }
 

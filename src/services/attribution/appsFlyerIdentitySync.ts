@@ -61,7 +61,11 @@ export async function syncAppsFlyerIdentityForUser(
   const alreadySynced = await AsyncStorage.getItem(syncedKey(userId)).catch(() => null);
   if (alreadySynced === appsFlyerId) return;
 
-  await setRevenueCatAppsFlyerId(appsFlyerId);
+  // Only persist the marker if the write actually landed; otherwise a premature
+  // attempt (RC not yet configured) would be cached as done and never retried,
+  // leaving the subscriber permanently without $appsflyerId.
+  const didSync = await setRevenueCatAppsFlyerId(appsFlyerId);
+  if (!didSync) return;
   await AsyncStorage.setItem(syncedKey(userId), appsFlyerId).catch(() => {});
 }
 
