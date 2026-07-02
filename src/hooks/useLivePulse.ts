@@ -20,6 +20,7 @@ import {
 import { createBeatTickScheduler } from '../lib/heartRate/beatTickScheduler';
 import { LIVE_SIGNAL_GRAPH_UPDATE_INTERVAL_MS } from '../lib/heartRate/liveSignalGraphConfig';
 import { useHeartRateCamera } from './useHeartRateCamera';
+import { useDeviceMotionFeed } from './useDeviceMotionFeed';
 
 const BPM_UPDATE_INTERVAL_MS = 1000;
 const FINGER_LOST_TIMEOUT_MS = 1500;
@@ -111,6 +112,8 @@ export function useLivePulse(
   const offlineCaptureActive = useSharedValue(false);
 
   const { device, format, hasPermission, requestPermission } = useHeartRateCamera();
+
+  useDeviceMotionFeed(managerRef, active);
 
   const torchMode: 'on' | 'off' =
     active && device?.hasTorch === true

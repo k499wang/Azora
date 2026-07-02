@@ -53,6 +53,11 @@ const MAX_ROI_SATURATION = 0.98;
 const MAX_AVG_SATURATION = 0.98;
 const IBI_HISTORY_SIZE = 6;
 const MIN_LIVE_BPM_IBIS = 4;
+// Fresh accepted beats required since a measurement window began before the
+// motion detector is trusted. Slightly more than MIN_LIVE_BPM_IBIS so the pulse
+// is genuinely locked (past the settling inhale/hand-settle), not just barely
+// showing a first number.
+const MIN_MOTION_LOCK_BEATS = 5;
 const MALIK_THRESHOLD = 0.2;
 const MALIK_SHORT_THRESHOLD = 0.12;
 const MALIK_WINDOW = 5;
@@ -60,6 +65,14 @@ const MALIK_MIN_HISTORY = 3;
 const SIGNAL_QUALITY_REF = 0.02;
 const FILTER_GROUP_DELAY_MS = 65;
 const LIVE_SIGNAL_WINDOW_MS = 8000;
+// The PPG graph plots by timestamp, so a freeze (motion/no-pulse — while we stop
+// feeding samples) leaves a time gap. Left as-is, the graph would fast-forward on
+// resume to catch up to the newest timestamp. We instead collapse any gap larger
+// than a couple of frames down to a single nominal frame, keeping the graph clock
+// continuous so it resumes exactly where it froze. Visual-only — real frame
+// timestamps used for beat/HR timing are untouched.
+const LIVE_SIGNAL_FREEZE_GAP_MS = 250;
+const LIVE_SIGNAL_RESUME_GAP_MS = 50;
 const MOTION_WINDOW_MS = 1000;
 const MOTION_MIN_FRAMES = 10;
 // Motion shows up two ways the bandpassed pulse can't hide, and either one
@@ -75,7 +88,20 @@ const MOTION_MIN_FRAMES = 10;
 const MOTION_RAW_DEV_THRESHOLD = 0.06;
 const MOTION_DISTURBED_FRACTION = 0.3;
 const MOTION_REVERSAL_FRACTION = 0.35;
+// Direction reversals only count as motion when the pulse has real amplitude.
+// A weak signal (e.g. the low-perfusion part of a breath) reverses from noise,
+// not movement — that should read as calibrating, not "keep still". Expressed as
+// a fraction of the quality reference (amplitude / SIGNAL_QUALITY_REF).
+const MOTION_REVERSAL_MIN_QUALITY = 0.15;
 const MOTION_HOLD_MS = 1200;
+// Accelerometer-based device motion — orthogonal to the optical signal, so it
+// catches phone movement the camera-based detector can miss (its whole weakness
+// is that motion overlaps the pulse band). Magnitude is in g (~1.0 at rest);
+// subtracting the window mean removes gravity, so the std-dev is ~0 when still
+// and rises with movement regardless of orientation.
+const ACCEL_WINDOW_MS = 600;
+const ACCEL_MIN_SAMPLES = 8;
+const ACCEL_MOTION_STD_THRESHOLD = 0.06;
 // Rapid finger placement flip-flopping (good↔partial↔no_finger) is what a shake
 // looks like when the finger keeps lifting off the lens — a different signature
 // from the in-place motion above, so it is tracked separately.
@@ -314,6 +340,8 @@ export class HeartRateManager {
   private polarityPositiveScore = 0;
   private polarityNegativeScore = 0;
   private readonly liveSignalSamples: LivePpgSignalSample[] = [];
+  private lastGraphRealTs: number | null = null;
+  private graphTimeShift = 0;
   private readonly motionFrames: {
     timestamp: number;
     disturbed: boolean;
@@ -323,6 +351,11 @@ export class HeartRateManager {
   private motionPrevAc = 0;
   private motionPrevSlopeSign = 0;
   private motionHasPrevAc = false;
+  private pulseLockedThisWindow = false;
+  private lockBeatCount = 0;
+  private readonly accelSamples: { timestamp: number; magnitude: number }[] = [];
+  private accelMovingUntil = 0;
+  private accelMoving = false;
   private readonly placementChangeTimes: number[] = [];
   private lastTrackedPlacement: FingerPlacementState = 'no_finger';
   private liveSignalStable = false;
@@ -359,11 +392,18 @@ export class HeartRateManager {
     this.polarityPositiveScore = 0;
     this.polarityNegativeScore = 0;
     this.liveSignalSamples.length = 0;
+    this.lastGraphRealTs = null;
+    this.graphTimeShift = 0;
     this.motionFrames.length = 0;
     this.motionUntilTs = 0;
     this.motionPrevAc = 0;
     this.motionPrevSlopeSign = 0;
     this.motionHasPrevAc = false;
+    this.pulseLockedThisWindow = false;
+    this.lockBeatCount = 0;
+    this.accelSamples.length = 0;
+    this.accelMovingUntil = 0;
+    this.accelMoving = false;
     this.placementChangeTimes.length = 0;
     this.lastTrackedPlacement = 'no_finger';
     this.liveSignalStable = false;
@@ -397,12 +437,18 @@ export class HeartRateManager {
   // either one over a large fraction of the window flags motion. Held briefly so
   // the warning does not flicker at the detection boundary.
   private trackMotion(timestamp: number, ac: number, rawDev: number): boolean {
+    const strongEnoughForReversal =
+      this.amplitude >= SIGNAL_QUALITY_REF * MOTION_REVERSAL_MIN_QUALITY;
     let reversal = false;
     if (this.motionHasPrevAc) {
       const slope = ac - this.motionPrevAc;
       const slopeSign = slope > 0 ? 1 : slope < 0 ? -1 : 0;
       if (slopeSign !== 0) {
-        if (this.motionPrevSlopeSign !== 0 && slopeSign !== this.motionPrevSlopeSign) {
+        if (
+          strongEnoughForReversal &&
+          this.motionPrevSlopeSign !== 0 &&
+          slopeSign !== this.motionPrevSlopeSign
+        ) {
           reversal = true;
         }
         this.motionPrevSlopeSign = slopeSign;
@@ -444,6 +490,35 @@ export class HeartRateManager {
     this.motionPrevAc = 0;
     this.motionPrevSlopeSign = 0;
     this.motionHasPrevAc = false;
+    this.pulseLockedThisWindow = false;
+    this.lockBeatCount = 0;
+  }
+
+  // Feed device acceleration magnitude (in g) from the accelerometer. Kept in the
+  // manager's own clock (the caller's timestamps) so the hold window compares
+  // like-for-like; `accelMoving` is a plain flag the frame loop reads, avoiding
+  // any cross-clock comparison with camera frame timestamps.
+  pushAccelSample(timestamp: number, magnitude: number): void {
+    if (!Number.isFinite(timestamp) || !Number.isFinite(magnitude)) return;
+    this.accelSamples.push({ timestamp, magnitude });
+    const cutoff = timestamp - ACCEL_WINDOW_MS;
+    while (this.accelSamples.length > 0 && this.accelSamples[0].timestamp < cutoff) {
+      this.accelSamples.shift();
+    }
+
+    if (this.accelSamples.length >= ACCEL_MIN_SAMPLES) {
+      let sum = 0;
+      for (const s of this.accelSamples) sum += s.magnitude;
+      const mean = sum / this.accelSamples.length;
+      let variance = 0;
+      for (const s of this.accelSamples) variance += (s.magnitude - mean) ** 2;
+      variance /= this.accelSamples.length;
+      if (Math.sqrt(variance) > ACCEL_MOTION_STD_THRESHOLD) {
+        this.accelMovingUntil = timestamp + MOTION_HOLD_MS;
+      }
+    }
+
+    this.accelMoving = timestamp < this.accelMovingUntil;
   }
 
   private pushLiveSignalSample(timestamp: number, value: number): void {
@@ -451,8 +526,19 @@ export class HeartRateManager {
       1,
       Math.max(0, this.amplitude / SIGNAL_QUALITY_REF),
     );
-    this.liveSignalSamples.push({ timestamp, value, quality });
-    const cutoff = timestamp - LIVE_SIGNAL_WINDOW_MS;
+    // Collapse any large gap since the last fed sample (a freeze) so the graph's
+    // timeline stays continuous and doesn't fast-forward on resume.
+    if (this.lastGraphRealTs != null) {
+      const gap = timestamp - this.lastGraphRealTs;
+      if (gap > LIVE_SIGNAL_FREEZE_GAP_MS) {
+        this.graphTimeShift += gap - LIVE_SIGNAL_RESUME_GAP_MS;
+      }
+    }
+    this.lastGraphRealTs = timestamp;
+    const graphTimestamp = timestamp - this.graphTimeShift;
+
+    this.liveSignalSamples.push({ timestamp: graphTimestamp, value, quality });
+    const cutoff = graphTimestamp - LIVE_SIGNAL_WINDOW_MS;
     while (
       this.liveSignalSamples.length > 0 &&
       this.liveSignalSamples[0].timestamp < cutoff
@@ -463,6 +549,7 @@ export class HeartRateManager {
 
   private pushAcceptedIbi(peakTs: number, ibi: number): void {
     this.consecutiveLongGaps = 0;
+    this.lockBeatCount += 1;
     this.ibiHistory.push(ibi);
     if (this.ibiHistory.length > IBI_HISTORY_SIZE) {
       this.ibiHistory.shift();
@@ -509,6 +596,10 @@ export class HeartRateManager {
     this.lastTickTs = 0;
     // Reset IBI EMA so measurement window starts with a fresh smoothed value
     this.ibiEma = null;
+    // Re-require a fresh pulse lock before trusting motion, so the opening inhale
+    // / hand-settle at the start of a hold isn't misread as "keep still".
+    this.pulseLockedThisWindow = false;
+    this.lockBeatCount = 0;
   }
 
   private getExpectedIbiMs(): number {
@@ -715,9 +806,30 @@ export class HeartRateManager {
     const rawDev =
       Math.abs(weightedAverage - this.baseline) / Math.max(this.baseline, 1);
     const excursionMotion = this.trackMotion(sample.timestamp, ac, rawDev);
-    const inMotion = readyForMeasurement && (placementChurn || excursionMotion);
+    // Only trust the motion detector once a real pulse has locked at least once
+    // this measurement window. Before that everything is a settling transient —
+    // the opening inhale of a breathing exercise, the hand settling onto the
+    // phone — which should read as calibrating, not "keep still". The latch is
+    // one-way (reset on measurement restart / placement loss) so that once
+    // locked, motion still surfaces even as it disrupts the pulse.
+    if (this.ibiEma != null && this.lockBeatCount >= MIN_MOTION_LOCK_BEATS) {
+      this.pulseLockedThisWindow = true;
+    }
+    const inMotion =
+      readyForMeasurement &&
+      this.pulseLockedThisWindow &&
+      (placementChurn || excursionMotion || this.accelMoving);
+    const noPulse =
+      readyForMeasurement &&
+      this.flatSignalSinceTs != null &&
+      sample.timestamp - this.flatSignalSinceTs > NO_PULSE_NOTICE_MS;
+    // Any surfaced signal problem freezes the graph and mutes beats: while it is
+    // active we neither feed the PPG trace (it holds the last clean waveform) nor
+    // emit beat ticks (which drive the pulse animation and haptics). Internal
+    // interval tracking below still runs so the BPM can hold its last value.
+    const signalError = inMotion || noPulse;
 
-    if (!inMotion) {
+    if (!signalError) {
       this.pushLiveSignalSample(sample.timestamp, ac);
     }
     let beatDetected = false;
@@ -866,13 +978,9 @@ export class HeartRateManager {
     this.lastGoodTs = sample.timestamp;
     this.lastPlacement = placement;
 
-    // `inMotion` was computed above (before the graph feed). Surfacing it is
-    // gated on warm-up there: the settling ramp is legitimately noisy and a still
-    // finger should read as calibrating, not "keep still".
-    const noPulse =
-      readyForMeasurement &&
-      this.flatSignalSinceTs != null &&
-      sample.timestamp - this.flatSignalSinceTs > NO_PULSE_NOTICE_MS;
+    // `inMotion` / `noPulse` / `signalError` were computed above (before the
+    // graph feed). Motion surfacing is gated on warm-up there: the settling ramp
+    // is legitimately noisy and a still finger should read as calibrating.
     const signalStatus: SignalStatus = noPulse
       ? 'no_pulse'
       : inMotion
@@ -885,8 +993,8 @@ export class HeartRateManager {
 
     return {
       fingerPlacement: placement,
-      beatDetected,
-      beatPeakTs,
+      beatDetected: signalError ? false : beatDetected,
+      beatPeakTs: signalError ? null : beatPeakTs,
       readyForMeasurement,
       signalText:
         signalStatus === 'no_pulse'
@@ -925,5 +1033,7 @@ export class HeartRateManager {
 
   clearLiveSignalSamples(): void {
     this.liveSignalSamples.length = 0;
+    this.lastGraphRealTs = null;
+    this.graphTimeShift = 0;
   }
 }

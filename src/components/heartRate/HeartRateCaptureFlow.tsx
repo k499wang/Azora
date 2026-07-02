@@ -81,30 +81,6 @@ function checkStateConfig(placement: FingerPlacementState): {
   }
 }
 
-// Short cue shown in the BPM slot in place of "Calibrating" when the signal has
-// a specific problem. `lostLock` is true when a live BPM had already been shown
-// this run and then dropped out — with the finger still placed and no other
-// classified issue, that is almost always movement, so we surface "Keep still"
-// instead of a bare "Calibrating…". Returns null only for the genuine initial
-// warm-up (never locked yet), where the animated "Calibrating…" is right.
-function calibratingCue(status: SignalStatus, lostLock: boolean): string | null {
-  switch (status) {
-    case 'excessive_motion':
-      return 'Keep still';
-    case 'no_pulse':
-      return 'No pulse detected';
-    case 'partial_coverage':
-      return 'Cover the lens';
-    case 'too_much_pressure':
-      return 'Ease up';
-    case 'no_finger':
-    case 'signal_lost':
-      return 'Place finger on lens';
-    default:
-      return lostLock ? 'Keep still' : null;
-  }
-}
-
 function measuringWarning(status: SignalStatus): string | null {
   switch (status) {
     case 'no_finger':
@@ -367,18 +343,6 @@ export function HeartRateCaptureFlow({
     return () => clearTimeout(t);
   }, [captureState]);
 
-  // Whether a live BPM has been shown at least once in the current measurement.
-  // Used to distinguish the genuine initial warm-up from a mid-measurement
-  // dropout (which, finger still placed, almost always means movement).
-  const [hasLockedThisRun, setHasLockedThisRun] = useState(false);
-  useEffect(() => {
-    if (captureState !== 'measuring') {
-      setHasLockedThisRun(false);
-    } else if (currentBpm != null) {
-      setHasLockedThisRun(true);
-    }
-  }, [captureState, currentBpm]);
-
   // Setup screens
   if (!pastSetup) {
     const SetupScreen = setupScreens[currentSetupIndex];
@@ -476,11 +440,7 @@ export function HeartRateCaptureFlow({
           {isMeasuring && (
             <View style={styles.bpmRow}>
               {currentBpm == null ? (
-                <AnimatedCalibratingText
-                  textStyle={styles.bpmCalibrating}
-                  label={calibratingCue(signalStatus, hasLockedThisRun) ?? undefined}
-                  animateDots={calibratingCue(signalStatus, hasLockedThisRun) == null}
-                />
+                <AnimatedCalibratingText textStyle={styles.bpmCalibrating} />
               ) : (
                 <View style={styles.bpmValueRow}>
                   <Text style={styles.bpmValue}>{currentBpm}</Text>
