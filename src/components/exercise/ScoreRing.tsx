@@ -32,8 +32,12 @@ interface ScoreRingProps {
   fill: number;
   size?: number;
   onAnimationComplete?: () => void;
-  /** Caption above the number. Defaults to "Azora Score". Pass null to hide it. */
+  /** Caption around the number. Defaults to "Azora Score". Pass null to hide it. */
   caption?: string | null;
+  /** Where to render the caption relative to the number. Defaults to above. */
+  captionPosition?: 'top' | 'bottom';
+  /** Text casing for the caption. Defaults to uppercase for existing score rings. */
+  captionTextTransform?: 'uppercase' | 'none';
   /** Override the ring color. Defaults to the brand blue. */
   ringColors?: string[];
   /** Label below the ring. Pass null to hide the row entirely. */
@@ -101,6 +105,8 @@ export default function ScoreRing({
   size = DEFAULT_SIZE,
   onAnimationComplete,
   caption = 'Azora Score',
+  captionPosition = 'top',
+  captionTextTransform = 'uppercase',
   ringColors,
   gapLabel,
   gapTextColor,
@@ -123,6 +129,31 @@ export default function ScoreRing({
   const [entranceComplete, setEntranceComplete] = useState(false);
   const didMountRef = useRef(false);
   const onAnimationCompleteRef = useRef(onAnimationComplete);
+  const captionRow = (caption || onInfoPress) ? (
+    <View
+      style={[
+        styles.captionRow,
+        captionPosition === 'bottom' && styles.captionRowBottom,
+      ]}
+      pointerEvents="box-none"
+    >
+      {caption && (
+        <Text style={[styles.caption, { textTransform: captionTextTransform }]}>
+          {caption}
+        </Text>
+      )}
+      {onInfoPress && (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`About ${caption ?? 'score'}`}
+          hitSlop={10}
+          onPress={onInfoPress}
+        >
+          <Icon name="info" size={14} color={colors.text.tertiary} />
+        </Pressable>
+      )}
+    </View>
+  ) : null;
 
   useEffect(() => {
     onAnimationCompleteRef.current = onAnimationComplete;
@@ -368,21 +399,7 @@ export default function ScoreRing({
             style={styles.ringCenter}
             pointerEvents={onInfoPress ? 'box-none' : 'none'}
           >
-            {(caption || onInfoPress) && (
-              <View style={styles.captionRow} pointerEvents="box-none">
-                {caption && <Text style={styles.caption}>{caption}</Text>}
-                {onInfoPress && (
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={`About ${caption ?? 'score'}`}
-                    hitSlop={10}
-                    onPress={onInfoPress}
-                  >
-                    <Icon name="info" size={14} color={colors.text.tertiary} />
-                  </Pressable>
-                )}
-              </View>
-            )}
+            {captionPosition === 'top' && captionRow}
             {placeholder ? (
               <Text style={[styles.ageValue, valueFontStyle]}>–</Text>
             ) : (
@@ -393,6 +410,7 @@ export default function ScoreRing({
                 fontStyle={valueFontStyle}
               />
             )}
+            {captionPosition === 'bottom' && captionRow}
             {!placeholder && pill && (
               <Text
                 style={[
@@ -466,6 +484,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.xs,
     marginBottom: spacing.xs,
+  },
+  captionRowBottom: {
+    marginTop: -spacing.xs,
+    marginBottom: 0,
   },
   caption: {
     ...typography.caption.caption1,

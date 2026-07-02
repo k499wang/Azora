@@ -1,6 +1,14 @@
 import { computeHRVStatsFromCleanIntervals, preprocessHRVIntervals } from '../hrv';
 import type { HRVStats } from '../hrv';
-import type { CaptureResult, HrvAvailabilityReason, IbiSample, PpgFrameSample } from './types';
+import type {
+  CaptureResult,
+  HeartRateReading,
+  HrvAvailabilityReason,
+  IbiSample,
+  PpgFrameSample,
+  PpgQuality,
+  PpgRoiSample,
+} from './types';
 import {
   analyzeCapture,
   buildIbiSamplesFromCaptureBeatSeries,
@@ -18,6 +26,42 @@ const MIN_HRV_SNR_DB = 4;
 const MIN_HRV_RETENTION_RATIO = 0.7;
 const MIN_FALLBACK_IBI_SIGNAL_QUALITY = 0.6;
 const MIN_FALLBACK_IBI_QUALITY_RATIO = 0.85;
+// A finger on the lens under torch is strongly red-dominant and bright. Without
+// one, the frequency estimator will still latch onto low-frequency noise near
+// the bottom of the band (~40-45 bpm), so the capture must be gated on actual
+// finger coverage before any reading is trusted.
+const MIN_FINGER_COVERAGE_RATIO = 0.5;
+
+function isRoiFingerCovered(roi: PpgRoiSample): boolean {
+  if (!Number.isFinite(roi.r) || !Number.isFinite(roi.g) || !Number.isFinite(roi.b)) {
+    return false;
+  }
+  const value = roi.r * 0.67 + roi.g * 0.33;
+  const total = roi.r + roi.g + roi.b;
+  const redToSum = total > 0 ? roi.r / total : 0;
+  const redToMax = roi.r / Math.max(1, roi.g, roi.b);
+  return (
+    value >= 25 &&
+    value <= 245 &&
+    roi.r >= 120 &&
+    roi.darkPct < 0.35 &&
+    roi.saturatedPct < 0.98 &&
+    redToSum >= 0.66 &&
+    redToMax >= 1.8
+  );
+}
+
+function fingerCoverageRatio(samples: PpgFrameSample[]): number {
+  let covered = 0;
+  let total = 0;
+  for (const frame of samples) {
+    for (const roi of frame.rois) {
+      total += 1;
+      if (isRoiFingerCovered(roi)) covered += 1;
+    }
+  }
+  return total > 0 ? covered / total : 0;
+}
 
 interface CaptureHrvResult {
   hrvStats: HRVStats | null;
@@ -161,6 +205,52 @@ function normalizePresentationBpmSamples(
     }));
 }
 
+const MIN_QUICK_LIVE_SAMPLES = 3;
+
+function median(values: number[]): number {
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 === 0
+    ? (sorted[mid - 1] + sorted[mid]) / 2
+    : sorted[mid];
+}
+
+// Quick mode's final BPM is the median of what the live detector actually
+// reported during the capture, rather than a fresh offline re-analysis — so the
+// saved number matches what the user watched. Returns null when the live path
+// never produced enough readings, so the caller can fall back to the offline
+// estimator.
+function buildQuickLiveReading(
+  presentationBpmSamples: BuildCaptureResultOptions['presentationBpmSamples'],
+  sampleCount: number,
+  durationMs: number,
+): HeartRateReading | null {
+  const bpms = (presentationBpmSamples ?? [])
+    .map((sample) => sample.bpm)
+    .filter((bpm) => isFiniteNumber(bpm) && bpm >= 20 && bpm <= 240);
+  if (bpms.length < MIN_QUICK_LIVE_SAMPLES) return null;
+
+  const bpm = Math.round(median(bpms));
+  const spread = Math.max(...bpms) - Math.min(...bpms);
+  const confidence =
+    bpms.length >= 6 && spread <= 10
+      ? 0.85
+      : bpms.length >= 4 && spread <= 16
+        ? 0.72
+        : 0.6;
+  const quality: PpgQuality = confidence >= 0.75 ? 'good' : confidence >= 0.6 ? 'fair' : 'poor';
+
+  return {
+    bpm,
+    confidence,
+    quality,
+    sampleCount,
+    durationMs,
+    recordedAt: new Date().toISOString(),
+    source: 'camera-flash',
+  };
+}
+
 function buildCorrectedIbiSamples(
   correctedIbi: number[],
   sourceSamples: IbiSample[],
@@ -290,10 +380,43 @@ export function buildCaptureResult(
   options: BuildCaptureResultOptions = {},
 ): CaptureResult {
   const { computeHrv } = getCaptureModeConfig(mode);
-  const { estimate: bpmResult, beatSeries: hrvBeatSeries } = analyzeCapture(samples);
+
+  // No finger for (most of) the capture: reject before trusting a frequency
+  // estimate, which would otherwise report ~40-45 bpm from low-frequency noise.
+  if (fingerCoverageRatio(samples) < MIN_FINGER_COVERAGE_RATIO) {
+    return {
+      reading: null,
+      error: samples.length < 60 ? 'too_few_samples' : 'no_finger',
+      ibiSamples: [],
+      bpmSamples: normalizePresentationBpmSamples(options.presentationBpmSamples),
+      mode,
+    };
+  }
+
   const startTs = samples[0]?.timestamp ?? 0;
   const endTs = samples[samples.length - 1]?.timestamp ?? 0;
   const windowDurationMs = endTs > startTs ? endTs - startTs : 0;
+
+  // Quick mode reports the live-analysis BPM as the final reading. Falls through
+  // to the offline estimator only when the live path never locked on.
+  if (mode === 'quick') {
+    const liveReading = buildQuickLiveReading(
+      options.presentationBpmSamples,
+      samples.length,
+      windowDurationMs,
+    );
+    if (liveReading != null) {
+      return {
+        reading: liveReading,
+        error: null,
+        ibiSamples: [],
+        bpmSamples: normalizePresentationBpmSamples(options.presentationBpmSamples),
+        mode,
+      };
+    }
+  }
+
+  const { estimate: bpmResult, beatSeries: hrvBeatSeries } = analyzeCapture(samples);
 
   if (bpmResult == null) {
     const tooFew = samples.length < 60;

@@ -22,12 +22,11 @@ import SectionHeader from '../components/common/SectionHeader';
 import CardSurface from '../components/common/CardSurface';
 import Icon from '../components/common/icons/Icon';
 import ScoreRing from '../components/exercise/ScoreRing';
-import AzoraScoreInfoDialog from '../components/exercise/AzoraScoreInfoDialog';
 import ProUpgradeButton from '../components/common/ProUpgradeButton';
 import ProfileBreathHoldTrendCard from '../components/profile/ProfileBreathHoldTrendCard';
 import HeartRateStatsSection from '../components/heartRate/HeartRateStatsSection';
 import { getBackgroundImageSource } from '../services/images/backgroundImageCache';
-import { estimateAzoraScore, azoraScoreFill, azoraTierMeta } from '../lib/azoraScore';
+import { estimateAzoraScore, azoraScoreFill } from '../lib/azoraScore';
 import { deriveHoldStats } from '../lib/holdStats';
 import { formatLocalDate } from '../lib/calendar/weekCalendarDays';
 import { useFeatureAccess } from '../hooks/useFeatureAccess';
@@ -52,7 +51,6 @@ export default function BreathScreen({ navigation }: BreathTabScreenProps) {
   const user = useAuthStore((state) => state.user);
   const [todayLocalDate] = useState(() => formatLocalDate(new Date()));
   const [infoVisible, setInfoVisible] = useState(false);
-  const [azoraInfoVisible, setAzoraInfoVisible] = useState(false);
 
   const homeStatsQuery = useHomeStatsQuery(user?.id ?? null, todayLocalDate);
   const profileSummaryQuery = useProfileSummaryQuery(user?.id ?? null);
@@ -182,31 +180,16 @@ export default function BreathScreen({ navigation }: BreathTabScreenProps) {
         </View>
 
         <View style={styles.heroSection}>
-          <View style={styles.ringHeader}>
-            <Text style={styles.ringHeaderLabel}>Azora Score</Text>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="About Azora Score"
-              hitSlop={10}
-              onPress={() => setAzoraInfoVisible(true)}
-              style={({ pressed }) => pressed && styles.infoPressed}
-            >
-              <Icon name="info" size={16} color={colors.text.primary} />
-            </Pressable>
-          </View>
           {azoraEstimate ? (
             <ScoreRing
               value={azoraEstimate.score}
               fill={azoraScoreFill(azoraEstimate.score)}
               size={235}
               valueFontSize={78}
-              caption={null}
+              caption="Azora Score"
+              captionPosition="bottom"
+              captionTextTransform="none"
               gapLabel={null}
-              pill={{
-                label: azoraTierMeta(azoraEstimate.key).label,
-                textColor: azoraTierMeta(azoraEstimate.key).textColor,
-                backgroundColor: azoraTierMeta(azoraEstimate.key).pillBg,
-              }}
             />
           ) : (
             <ScoreRing
@@ -215,7 +198,9 @@ export default function BreathScreen({ navigation }: BreathTabScreenProps) {
               size={235}
               valueFontSize={78}
               placeholder
-              caption={null}
+              caption="Azora Score"
+              captionPosition="bottom"
+              captionTextTransform="none"
               gapLabel={null}
             />
           )}
@@ -281,11 +266,6 @@ export default function BreathScreen({ navigation }: BreathTabScreenProps) {
         title="Breath Holds"
         intro="A breath hold is the fastest way to reset your mind — pausing your breath calms your nervous system, melts stress, and pulls you out of your head and into the present in under a minute. It's also an honest measure of fitness: longer holds signal greater lung capacity, better oxygen efficiency, and a steadier stress response, which is why divers and elite athletes train it. We turn each hold into an Azora Score from 0 to 100 — longer holds and a bigger heart-rate drop score higher — so you can watch it climb over time. Every hold is logged, and most people add seconds within their first week. Take a minute, hold your breath, and feel the reset — then beat your record and use the personalized insights to go further."
       />
-
-      <AzoraScoreInfoDialog
-        visible={azoraInfoVisible}
-        onClose={() => setAzoraInfoVisible(false)}
-      />
     </View>
   );
 }
@@ -322,21 +302,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: padding.screen.horizontal,
     alignItems: 'center',
     marginTop: -margin.sectionGap,
-  },
-  ringHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    marginTop: -spacing.xl,
-    marginBottom: spacing.md,
-  },
-  ringHeaderLabel: {
-    ...typography.caption.caption1,
-    fontSize: 18,
-    lineHeight: 24,
-    color: colors.text.primary,
-    fontFamily: fonts.semibold,
-    letterSpacing: 0,
   },
   measureCard: {
     flexDirection: 'row',

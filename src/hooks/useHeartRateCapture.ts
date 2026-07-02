@@ -10,6 +10,7 @@ import type {
   CaptureResult,
   FingerPlacementState,
   LivePpgSignalSample,
+  SignalStatus,
 } from '../lib/heartRate/types';
 import { heartRatePlugin } from '../lib/heartRate/heartRatePlugin';
 import { HeartRateManager } from '../lib/heartRate/heartRateManager';
@@ -57,6 +58,7 @@ interface UseHeartRateCaptureOptions {
 interface UseHeartRateCaptureReturn {
   captureState: CaptureState;
   fingerPlacement: FingerPlacementState;
+  signalStatus: SignalStatus;
   progress: number;
   secondsRemaining: number;
   currentBpm: number | null;
@@ -93,6 +95,7 @@ export function useHeartRateCapture(
 
   const [captureState, setCaptureState] = useState<CaptureState>('idle');
   const [fingerPlacement, setFingerPlacement] = useState<FingerPlacementState>('no_finger');
+  const [signalStatus, setSignalStatus] = useState<SignalStatus>('no_finger');
   const [progress, setProgress] = useState(0);
   const [secondsRemaining, setSecondsRemaining] = useState(captureDurationSec);
   const [currentBpm, setCurrentBpm] = useState<number | null>(null);
@@ -113,6 +116,7 @@ export function useHeartRateCapture(
   const currentBpmRef = useRef<number | null>(null);
   const captureStateRef = useRef<CaptureState>('idle');
   const fingerPlacementRef = useRef<FingerPlacementState>('no_finger');
+  const signalStatusRef = useRef<SignalStatus>('no_finger');
   const managerRef = useRef(new HeartRateManager());
   const liveBpmFilterRef = useRef(createLiveBpmPresentationFilter());
   const beatSchedulerRef = useRef(
@@ -249,6 +253,10 @@ export function useHeartRateCapture(
         fingerPlacementRef.current = frameState.fingerPlacement;
         setFingerPlacement(frameState.fingerPlacement);
       }
+      if (frameState.signalStatus !== signalStatusRef.current) {
+        signalStatusRef.current = frameState.signalStatus;
+        setSignalStatus(frameState.signalStatus);
+      }
 
       if (state === 'camera_check') {
         if (frameState.fingerPlacement !== 'good') {
@@ -298,6 +306,13 @@ export function useHeartRateCapture(
             currentBpmRef.current = stabilizedBpm;
             setCurrentBpm(stabilizedBpm);
           }
+        } else if (currentBpmRef.current != null) {
+          // The manager withheld a reading (weak/degrading signal). Drop back to
+          // the calibrating state instead of freezing on the last number, which
+          // is what let a stale subharmonic (e.g. 40/52) stay on screen.
+          currentBpmRef.current = null;
+          liveBpmFilterRef.current.reset();
+          setCurrentBpm(null);
         }
       }
 
@@ -337,6 +352,8 @@ export function useHeartRateCapture(
     setLiveSignalSamples([]);
     fingerPlacementRef.current = 'no_finger';
     setFingerPlacement('no_finger');
+    signalStatusRef.current = 'no_finger';
+    setSignalStatus('no_finger');
     setCaptureStateAndRef('camera_check');
   }, [captureDurationSec, resetCaptureRefs, setCaptureStateAndRef, stopMeasurementTimer]);
 
@@ -350,6 +367,8 @@ export function useHeartRateCapture(
     setLiveSignalSamples([]);
     fingerPlacementRef.current = 'no_finger';
     setFingerPlacement('no_finger');
+    signalStatusRef.current = 'no_finger';
+    setSignalStatus('no_finger');
     setCaptureStateAndRef('idle');
   }, [captureDurationSec, resetCaptureRefs, setCaptureStateAndRef, stopMeasurementTimer]);
 
@@ -362,6 +381,7 @@ export function useHeartRateCapture(
   return {
     captureState,
     fingerPlacement,
+    signalStatus,
     progress,
     secondsRemaining,
     currentBpm,

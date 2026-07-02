@@ -3,27 +3,39 @@ import { StyleProp, StyleSheet, Text, TextStyle, View } from 'react-native';
 
 interface AnimatedCalibratingTextProps {
   textStyle: StyleProp<TextStyle>;
+  // Defaults to the animated "Calibrating…". Pass a signal message (e.g.
+  // "Keep still") to show that instead; the trailing dots are only animated for
+  // the calibrating state.
+  label?: string;
+  animateDots?: boolean;
 }
 
-export function AnimatedCalibratingText({ textStyle }: AnimatedCalibratingTextProps) {
+export function AnimatedCalibratingText({
+  textStyle,
+  label = 'Calibrating',
+  animateDots = true,
+}: AnimatedCalibratingTextProps) {
   const [dotCount, setDotCount] = useState(1);
 
   useEffect(() => {
+    if (!animateDots) return;
     const interval = setInterval(() => {
       setDotCount((count) => (count === 3 ? 1 : count + 1));
     }, 450);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [animateDots]);
 
   return (
     <View
       style={styles.row}
-      accessibilityLabel="Calibrating"
+      accessibilityLabel={label}
       accessibilityRole="text"
     >
-      <Text style={textStyle}>Calibrating</Text>
-      <Text style={[textStyle, styles.dots]}>{'.'.repeat(dotCount)}</Text>
+      <Text style={textStyle}>{label}</Text>
+      {animateDots && (
+        <Text style={[textStyle, styles.dots]}>{'.'.repeat(dotCount)}</Text>
+      )}
     </View>
   );
 }

@@ -68,6 +68,11 @@ function getErrorMessage(
         title: 'Finger Moved',
         message: 'Your finger moved during measurement. Try to keep it still for the full 45 seconds.',
       };
+    case 'no_finger':
+      return {
+        title: 'No Finger Detected',
+        message: 'We couldn\'t detect your finger. Cover the camera and flash fully, then try again.',
+      };
     case 'too_few_samples':
       return {
         title: 'Not Enough Data',

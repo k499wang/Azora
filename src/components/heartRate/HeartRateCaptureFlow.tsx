@@ -24,6 +24,7 @@ import type {
   SetupScreenProps,
   CaptureResult,
   FingerPlacementState,
+  SignalStatus,
   PpgFrameSample,
 } from '../../lib/heartRate/types';
 import {
@@ -80,6 +81,48 @@ function checkStateConfig(placement: FingerPlacementState): {
   }
 }
 
+// Short cue shown in the BPM slot in place of "Calibrating" when the signal has
+// a specific problem. `lostLock` is true when a live BPM had already been shown
+// this run and then dropped out — with the finger still placed and no other
+// classified issue, that is almost always movement, so we surface "Keep still"
+// instead of a bare "Calibrating…". Returns null only for the genuine initial
+// warm-up (never locked yet), where the animated "Calibrating…" is right.
+function calibratingCue(status: SignalStatus, lostLock: boolean): string | null {
+  switch (status) {
+    case 'excessive_motion':
+      return 'Keep still';
+    case 'no_pulse':
+      return 'No pulse detected';
+    case 'partial_coverage':
+      return 'Cover the lens';
+    case 'too_much_pressure':
+      return 'Ease up';
+    case 'no_finger':
+    case 'signal_lost':
+      return 'Place finger on lens';
+    default:
+      return lostLock ? 'Keep still' : null;
+  }
+}
+
+function measuringWarning(status: SignalStatus): string | null {
+  switch (status) {
+    case 'no_finger':
+    case 'signal_lost':
+      return 'Finger moved — reposition and hold still';
+    case 'partial_coverage':
+      return 'Cover the camera and flash fully';
+    case 'too_much_pressure':
+      return 'Pressing too hard — ease up slightly';
+    case 'excessive_motion':
+      return 'Too much movement — keep your hand steady';
+    case 'no_pulse':
+      return 'No pulse detected — adjust your finger position';
+    default:
+      return null;
+  }
+}
+
 export function HeartRateCaptureFlow({
   setupScreens = DEFAULT_SETUP_SCREENS,
   onComplete,
@@ -101,6 +144,7 @@ export function HeartRateCaptureFlow({
   const {
     captureState,
     fingerPlacement,
+    signalStatus,
     progress,
     currentBpm,
     beatTick,
@@ -323,6 +367,18 @@ export function HeartRateCaptureFlow({
     return () => clearTimeout(t);
   }, [captureState]);
 
+  // Whether a live BPM has been shown at least once in the current measurement.
+  // Used to distinguish the genuine initial warm-up from a mid-measurement
+  // dropout (which, finger still placed, almost always means movement).
+  const [hasLockedThisRun, setHasLockedThisRun] = useState(false);
+  useEffect(() => {
+    if (captureState !== 'measuring') {
+      setHasLockedThisRun(false);
+    } else if (currentBpm != null) {
+      setHasLockedThisRun(true);
+    }
+  }, [captureState, currentBpm]);
+
   // Setup screens
   if (!pastSetup) {
     const SetupScreen = setupScreens[currentSetupIndex];
@@ -356,6 +412,7 @@ export function HeartRateCaptureFlow({
   const isCheck = captureState === 'camera_check';
   const checkConfig = checkStateConfig(fingerPlacement);
   const isFingerLost = fingerPlacement === 'lost' || fingerPlacement === 'no_finger';
+  const warningMessage = isMeasuring ? measuringWarning(signalStatus) : null;
 
   const ringColor = isMeasuring ? colors.primary.blue600 : checkConfig.ringColor;
   const ringProgress = isMeasuring ? progress : 0;
@@ -373,29 +430,28 @@ export function HeartRateCaptureFlow({
           >
             <Text style={styles.cancelText}>Cancel</Text>
           </TouchableOpacity>
-          {isMeasuring && isFingerLost && (
-            <View style={styles.warningBanner}>
-              <MaterialCommunityIcons
-                name="alert-outline"
-                size={16}
-                color={colors.warning[500]}
-              />
-              <Text style={styles.warningText}>
-                Finger moved — reposition and hold still
-              </Text>
-            </View>
-          )}
           {isCheck && (
             <Text style={[styles.status, { color: checkConfig.ringColor }]}>
               {checkConfig.status}
             </Text>
           )}
-          {isMeasuring && !isFingerLost && (
-            <View style={styles.topSignalGraph}>
-              <LiveSignalGraph
-                samples={liveSignalSamples}
-                fingerPlacement={fingerPlacement}
-              />
+          {isMeasuring && (
+            <View style={styles.measuringTopSlot}>
+              {warningMessage != null ? (
+                <View style={styles.warningBanner}>
+                  <MaterialCommunityIcons
+                    name="alert-outline"
+                    size={16}
+                    color={colors.warning[500]}
+                  />
+                  <Text style={styles.warningText}>{warningMessage}</Text>
+                </View>
+              ) : (
+                <LiveSignalGraph
+                  samples={liveSignalSamples}
+                  fingerPlacement={fingerPlacement}
+                />
+              )}
             </View>
           )}
         </View>
@@ -420,7 +476,11 @@ export function HeartRateCaptureFlow({
           {isMeasuring && (
             <View style={styles.bpmRow}>
               {currentBpm == null ? (
-                <AnimatedCalibratingText textStyle={styles.bpmCalibrating} />
+                <AnimatedCalibratingText
+                  textStyle={styles.bpmCalibrating}
+                  label={calibratingCue(signalStatus, hasLockedThisRun) ?? undefined}
+                  animateDots={calibratingCue(signalStatus, hasLockedThisRun) == null}
+                />
               ) : (
                 <View style={styles.bpmValueRow}>
                   <Text style={styles.bpmValue}>{currentBpm}</Text>
@@ -466,9 +526,11 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     paddingBottom: spacing.xl,
   },
-  topSignalGraph: {
+  measuringTopSlot: {
     width: '100%',
+    height: 78,
     alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: spacing.xl,
   },
   ringSlot: {
@@ -491,7 +553,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
     width: '100%',
-    marginBottom: spacing.md,
   },
   warningText: {
     ...typography.body.small,

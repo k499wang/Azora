@@ -102,3 +102,57 @@ test('buildCaptureResult requires captured frame samples for the final analyzer'
   assert.equal(result.error, 'too_few_samples');
   assert.deepEqual(result.ibiSamples, []);
 });
+
+function makeCoveredFrames(count = 100) {
+  const frames = [];
+  for (let i = 0; i < count; i++) {
+    frames.push({
+      timestamp: i * 33,
+      rois: [{ id: 'center', r: 200, g: 20, b: 20, saturatedPct: 0, darkPct: 0, variance: 50 }],
+    });
+  }
+  return frames;
+}
+
+test('buildCaptureResult quick mode uses the live BPM median as the final reading', () => {
+  const presentationBpmSamples = [70, 71, 72, 72, 73, 74].map((bpm, i) => ({
+    offsetMs: (i + 1) * 1000,
+    bpm,
+  }));
+
+  const result = buildCaptureResult(makeCoveredFrames(), 'quick', { presentationBpmSamples });
+
+  assert.equal(result.error, null);
+  assert.ok(result.reading);
+  assert.equal(result.reading.bpm, 72);
+});
+
+test('buildCaptureResult quick mode falls back to the offline estimator when live never locked', () => {
+  // Covered frames but a flat (pulseless) signal and no live samples: the live
+  // path yields nothing, so it falls through to the offline analyzer, which also
+  // finds no pulse and reports low confidence rather than a live number.
+  const result = buildCaptureResult(makeCoveredFrames(), 'quick', { presentationBpmSamples: [] });
+
+  assert.equal(result.reading, null);
+  assert.equal(result.error, 'low_confidence');
+});
+
+test('buildCaptureResult rejects a no-finger capture instead of reporting noise BPM', () => {
+  // Frames with no red-dominant finger signal (e.g. lens open to a room), with
+  // a slow brightness drift the frequency estimator could latch onto near the
+  // bottom of the band.
+  const samples = [];
+  for (let i = 0; i < 900; i++) {
+    const t = i * 33;
+    const green = 90 + 20 * Math.sin((2 * Math.PI * t) / 1400);
+    samples.push({
+      timestamp: t,
+      rois: [{ id: 'center', r: 70, g: green, b: 80, saturatedPct: 0, darkPct: 0, variance: 50 }],
+    });
+  }
+
+  const result = buildCaptureResult(samples);
+
+  assert.equal(result.reading, null);
+  assert.equal(result.error, 'no_finger');
+});

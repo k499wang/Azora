@@ -4,6 +4,7 @@ import type {
   LivePpgSignalSample,
   PpgFrameSample,
   PpgRoiSample,
+  SignalStatus,
 } from './types';
 
 export interface HeartRateFrameState {
@@ -16,6 +17,7 @@ export interface HeartRateFrameState {
   beatPeakTs: number | null;
   readyForMeasurement: boolean;
   signalText: string;
+  signalStatus: SignalStatus;
 }
 
 const BASELINE_ALPHA = 0.02;
@@ -30,6 +32,11 @@ const DEFAULT_EXPECTED_IBI_MS = 800;
 const MIN_AMPLITUDE = 0.0004;
 const MIN_IBI_MS = 320;
 const MAX_IBI_MS = 1500;
+// How many consecutive over-long gaps (missed beats) to tolerate while holding
+// the last live BPM before giving up and clearing the interval history to
+// re-lock. A single miss is normal during breathing; a run of them means the
+// pulse was genuinely lost.
+const MAX_CONSECUTIVE_LONG_GAPS = 3;
 const ADAPTIVE_REFRACTORY_FRACTION = 0.5;
 const TROUGH_REARM_FACTOR = 0.05;
 const FORCE_REARM_AFTER_MS = 600;
@@ -53,6 +60,34 @@ const MALIK_MIN_HISTORY = 3;
 const SIGNAL_QUALITY_REF = 0.02;
 const FILTER_GROUP_DELAY_MS = 65;
 const LIVE_SIGNAL_WINDOW_MS = 8000;
+const MOTION_WINDOW_MS = 1000;
+const MOTION_MIN_FRAMES = 10;
+// Motion shows up two ways the bandpassed pulse can't hide, and either one
+// sustained across the window is movement:
+//  - Raw luminance jumps away from its slow baseline. Shifting the finger/phone
+//    changes optical coupling and contact pressure, so the raw (pre-bandpass)
+//    brightness deviates far more than a pulse's ~1-3% AC. Catches both a fast
+//    jerk and a slow reposition, and unlike the pulse amplitude this reference
+//    (the baseline) is too slow to self-calibrate the motion away.
+//  - The filtered trace stops being a smooth once-per-beat bump and reverses
+//    direction on a large fraction of frames — the "erratic ups and downs" of a
+//    corrupted signal. A clean pulse reverses only at its peak and trough.
+const MOTION_RAW_DEV_THRESHOLD = 0.06;
+const MOTION_DISTURBED_FRACTION = 0.3;
+const MOTION_REVERSAL_FRACTION = 0.35;
+const MOTION_HOLD_MS = 1200;
+// Rapid finger placement flip-flopping (good↔partial↔no_finger) is what a shake
+// looks like when the finger keeps lifting off the lens — a different signature
+// from the in-place motion above, so it is tracked separately.
+const PLACEMENT_CHURN_WINDOW_MS = 1500;
+const PLACEMENT_CHURN_MIN_CHANGES = 4;
+const NO_PULSE_NOTICE_MS = 1200;
+// Live BPM quality gate — kept just above the beat-detection amplitude floor
+// (MIN_AMPLITUDE ≈ quality 0.02) so it only rejects near-flat signal, not a
+// weak-but-real pulse. A higher floor created a dead zone where low-perfusion
+// fingers (cold hands, light contact) detected consistent beats yet never
+// cleared the gate, leaving the reading stuck on "calibrating".
+const LIVE_BPM_MIN_QUALITY = 0.03;
 
 const SAMPLE_RATE_HZ = 30;
 const BP_LOW_HZ = 0.7;
@@ -266,6 +301,7 @@ export class HeartRateManager {
   private initialized = false;
   private lastPlacement: FingerPlacementState = 'no_finger';
   private readonly ibiHistory: number[] = [];
+  private consecutiveLongGaps = 0;
   private readonly ibiSamples: IbiSample[] = [];
   private sessionStartTs: number | null = null;
   private skipNextRecordedIbi = false;
@@ -278,6 +314,18 @@ export class HeartRateManager {
   private polarityPositiveScore = 0;
   private polarityNegativeScore = 0;
   private readonly liveSignalSamples: LivePpgSignalSample[] = [];
+  private readonly motionFrames: {
+    timestamp: number;
+    disturbed: boolean;
+    reversal: boolean;
+  }[] = [];
+  private motionUntilTs = 0;
+  private motionPrevAc = 0;
+  private motionPrevSlopeSign = 0;
+  private motionHasPrevAc = false;
+  private readonly placementChangeTimes: number[] = [];
+  private lastTrackedPlacement: FingerPlacementState = 'no_finger';
+  private liveSignalStable = false;
   private ibiEma: number | null = null;
   private readonly IBI_EMA_ALPHA = 0.3;
 
@@ -298,6 +346,7 @@ export class HeartRateManager {
     this.initialized = false;
     this.lastPlacement = 'no_finger';
     this.ibiHistory.length = 0;
+    this.consecutiveLongGaps = 0;
     this.ibiSamples.length = 0;
     this.sessionStartTs = null;
     this.skipNextRecordedIbi = false;
@@ -310,7 +359,91 @@ export class HeartRateManager {
     this.polarityPositiveScore = 0;
     this.polarityNegativeScore = 0;
     this.liveSignalSamples.length = 0;
+    this.motionFrames.length = 0;
+    this.motionUntilTs = 0;
+    this.motionPrevAc = 0;
+    this.motionPrevSlopeSign = 0;
+    this.motionHasPrevAc = false;
+    this.placementChangeTimes.length = 0;
+    this.lastTrackedPlacement = 'no_finger';
+    this.liveSignalStable = false;
     this.ibiEma = null;
+  }
+
+  // Counts transitions of the *committed* placement (after the grace window has
+  // de-flickered brief dips). A steady finger commits one placement; a finger
+  // that keeps genuinely lifting and reseating past the grace window churns the
+  // committed placement, which is movement. Tracking the raw per-frame placement
+  // instead would false-trigger on the normal coverage flicker that grace masks.
+  private trackPlacementChurn(timestamp: number, committedPlacement: FingerPlacementState): boolean {
+    if (committedPlacement !== this.lastTrackedPlacement) {
+      this.placementChangeTimes.push(timestamp);
+      this.lastTrackedPlacement = committedPlacement;
+    }
+    const cutoff = timestamp - PLACEMENT_CHURN_WINDOW_MS;
+    while (
+      this.placementChangeTimes.length > 0 &&
+      this.placementChangeTimes[0] < cutoff
+    ) {
+      this.placementChangeTimes.shift();
+    }
+    return this.placementChangeTimes.length >= PLACEMENT_CHURN_MIN_CHANGES;
+  }
+
+  // Flags in-place motion (finger/phone moved but still on the lens) from two
+  // signatures over a short window: the raw luminance deviating far from its slow
+  // baseline (`rawDev`), and the filtered trace reversing direction erratically
+  // instead of tracing one smooth bump per beat. A resting pulse trips neither;
+  // either one over a large fraction of the window flags motion. Held briefly so
+  // the warning does not flicker at the detection boundary.
+  private trackMotion(timestamp: number, ac: number, rawDev: number): boolean {
+    let reversal = false;
+    if (this.motionHasPrevAc) {
+      const slope = ac - this.motionPrevAc;
+      const slopeSign = slope > 0 ? 1 : slope < 0 ? -1 : 0;
+      if (slopeSign !== 0) {
+        if (this.motionPrevSlopeSign !== 0 && slopeSign !== this.motionPrevSlopeSign) {
+          reversal = true;
+        }
+        this.motionPrevSlopeSign = slopeSign;
+      }
+    }
+    this.motionPrevAc = ac;
+    this.motionHasPrevAc = true;
+
+    this.motionFrames.push({
+      timestamp,
+      disturbed: rawDev > MOTION_RAW_DEV_THRESHOLD,
+      reversal,
+    });
+    const cutoff = timestamp - MOTION_WINDOW_MS;
+    while (this.motionFrames.length > 0 && this.motionFrames[0].timestamp < cutoff) {
+      this.motionFrames.shift();
+    }
+
+    if (this.motionFrames.length >= MOTION_MIN_FRAMES) {
+      const n = this.motionFrames.length;
+      const disturbedFraction =
+        this.motionFrames.filter((frame) => frame.disturbed).length / n;
+      const reversalFraction =
+        this.motionFrames.filter((frame) => frame.reversal).length / n;
+      if (
+        disturbedFraction > MOTION_DISTURBED_FRACTION ||
+        reversalFraction > MOTION_REVERSAL_FRACTION
+      ) {
+        this.motionUntilTs = timestamp + MOTION_HOLD_MS;
+      }
+    }
+
+    return timestamp < this.motionUntilTs;
+  }
+
+  private clearMotion(): void {
+    this.motionFrames.length = 0;
+    this.motionUntilTs = 0;
+    this.motionPrevAc = 0;
+    this.motionPrevSlopeSign = 0;
+    this.motionHasPrevAc = false;
   }
 
   private pushLiveSignalSample(timestamp: number, value: number): void {
@@ -329,6 +462,7 @@ export class HeartRateManager {
   }
 
   private pushAcceptedIbi(peakTs: number, ibi: number): void {
+    this.consecutiveLongGaps = 0;
     this.ibiHistory.push(ibi);
     if (this.ibiHistory.length > IBI_HISTORY_SIZE) {
       this.ibiHistory.shift();
@@ -406,6 +540,8 @@ export class HeartRateManager {
               this.validFrameCounter > WARMUP_FRAMES
                 ? 'Measuring pulse'
                 : 'Warm up and hold steady',
+            signalStatus:
+              this.validFrameCounter > WARMUP_FRAMES ? 'measuring' : 'warming_up',
           };
         }
       }
@@ -423,23 +559,38 @@ export class HeartRateManager {
       this.pendingShortPeakTs = null;
       this.lastTickTs = 0;
       this.flatSignalSinceTs = null;
+      this.clearMotion();
+      this.ibiHistory.length = 0;
+      this.ibiEma = null;
+      this.liveSignalStable = false;
       this.lastPlacement =
         placement === 'no_finger' && this.lastPlacement === 'good'
           ? 'lost'
           : placement;
+      const placementChurn = this.trackPlacementChurn(sample.timestamp, this.lastPlacement);
       return {
         fingerPlacement: this.lastPlacement,
         beatDetected: false,
         beatPeakTs: null,
         readyForMeasurement: false,
-        signalText:
-          placement === 'too_much_pressure'
+        signalText: placementChurn
+          ? 'Too much movement - hold still'
+          : placement === 'too_much_pressure'
             ? 'Ease up on the pressure'
             : placement === 'partial'
               ? 'Adjust finger coverage'
             : this.lastPlacement === 'lost'
               ? 'Signal lost - hold steady'
               : 'Cover the back camera and flash',
+        signalStatus: placementChurn
+          ? 'excessive_motion'
+          : placement === 'too_much_pressure'
+            ? 'too_much_pressure'
+            : placement === 'partial'
+              ? 'partial_coverage'
+            : this.lastPlacement === 'lost'
+              ? 'signal_lost'
+              : 'no_finger',
       };
     }
 
@@ -465,13 +616,18 @@ export class HeartRateManager {
           this.pendingShortPeakTs = null;
           this.lastTickTs = 0;
           this.flatSignalSinceTs = null;
+          this.clearMotion();
+          this.ibiHistory.length = 0;
+          this.ibiEma = null;
+          this.liveSignalStable = false;
           this.lastPlacement = 'lost';
           return {
             fingerPlacement: 'lost',
             beatDetected: false,
             beatPeakTs: null,
             readyForMeasurement: false,
-            signalText: 'Signal lost - hold steady',
+            signalText: 'No pulse detected - adjust your finger',
+            signalStatus: 'no_pulse',
           };
         }
       } else {
@@ -549,7 +705,21 @@ export class HeartRateManager {
     }
 
     const ac = rawAc * this.polarity;
-    this.pushLiveSignalSample(sample.timestamp, ac);
+
+    // Motion classification is computed here (before the beat detector) so the
+    // PPG graph can freeze during movement: while motion is active we stop
+    // feeding it samples, holding the last clean waveform instead of drawing the
+    // erratic disturbance. Bad placement already skips this whole path, so the
+    // graph freezes for no-finger/lost/partial too.
+    const placementChurn = this.trackPlacementChurn(sample.timestamp, placement);
+    const rawDev =
+      Math.abs(weightedAverage - this.baseline) / Math.max(this.baseline, 1);
+    const excursionMotion = this.trackMotion(sample.timestamp, ac, rawDev);
+    const inMotion = readyForMeasurement && (placementChurn || excursionMotion);
+
+    if (!inMotion) {
+      this.pushLiveSignalSample(sample.timestamp, ac);
+    }
     let beatDetected = false;
     let beatPeakTs: number | null = null;
 
@@ -629,7 +799,16 @@ export class HeartRateManager {
 
             if (!handledInterval) {
               if (ibi > MAX_IBI_MS) {
-                this.ibiHistory.length = 0;
+                // A single over-long gap is almost always one missed beat during
+                // breathing, not signal loss. Skip the anomalous interval but keep
+                // the history and EMA so the live BPM holds its last real value
+                // instead of blanking and rebuilding four beats from scratch. Only
+                // clear and re-lock after several consecutive long gaps.
+                this.consecutiveLongGaps += 1;
+                if (this.consecutiveLongGaps >= MAX_CONSECUTIVE_LONG_GAPS) {
+                  this.ibiHistory.length = 0;
+                  this.ibiEma = null;
+                }
                 emitTick = true;
               } else if (
                 this.ibiHistory.length < MALIK_MIN_HISTORY &&
@@ -687,17 +866,44 @@ export class HeartRateManager {
     this.lastGoodTs = sample.timestamp;
     this.lastPlacement = placement;
 
+    // `inMotion` was computed above (before the graph feed). Surfacing it is
+    // gated on warm-up there: the settling ramp is legitimately noisy and a still
+    // finger should read as calibrating, not "keep still".
+    const noPulse =
+      readyForMeasurement &&
+      this.flatSignalSinceTs != null &&
+      sample.timestamp - this.flatSignalSinceTs > NO_PULSE_NOTICE_MS;
+    const signalStatus: SignalStatus = noPulse
+      ? 'no_pulse'
+      : inMotion
+        ? 'excessive_motion'
+        : readyForMeasurement
+          ? 'measuring'
+          : 'warming_up';
+
+    this.liveSignalStable = signalStatus === 'measuring';
+
     return {
       fingerPlacement: placement,
       beatDetected,
       beatPeakTs,
       readyForMeasurement,
-      signalText: readyForMeasurement ? 'Measuring pulse' : 'Warm up and hold steady',
+      signalText:
+        signalStatus === 'no_pulse'
+          ? 'No pulse detected - adjust your finger'
+          : signalStatus === 'excessive_motion'
+            ? 'Too much movement - hold still'
+            : readyForMeasurement
+              ? 'Measuring pulse'
+              : 'Warm up and hold steady',
+      signalStatus,
     };
   }
 
   getCurrentBpm(): number | null {
     if (this.lastPlacement !== 'good') return null;
+    if (!this.liveSignalStable) return null;
+    if (this.amplitude / SIGNAL_QUALITY_REF < LIVE_BPM_MIN_QUALITY) return null;
     if (this.ibiHistory.length < MIN_LIVE_BPM_IBIS) return null;
     if (this.ibiEma == null || this.ibiEma <= 0) return null;
     const bpm = Math.round(60000 / this.ibiEma);

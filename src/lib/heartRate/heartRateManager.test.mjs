@@ -172,6 +172,200 @@ test('HeartRateManager: produces ~800ms IBIs from a regular beat train', () => {
   }
 });
 
+test('HeartRateManager: a steady regular pulse never reports excessive motion', () => {
+  const manager = new HeartRateManager();
+  // One long, continuous, regular ~792ms beat train: warm up then feed many
+  // aligned beats and confirm the excursion detector never mistakes the sharp
+  // pulse peaks for movement once the pulse is established.
+  let t = 0;
+  for (let i = 0; i < WARMUP_FRAMES; i++) {
+    manager.processFrame(makeFrame(t, BASELINE_WEIGHTED));
+    t += FRAME_SPACING_MS;
+  }
+
+  const statuses = new Set();
+  const totalFrames = 24 * 12;
+  for (let i = 0; i < totalFrames; i++) {
+    const weighted = i % 24 === 0 ? BEAT_WEIGHTED : BASELINE_WEIGHTED;
+    const status = manager.processFrame(makeFrame(t, weighted)).signalStatus;
+    // Only judge once the pulse has had time to lock (past the first few beats).
+    if (i >= 24 * 4) statuses.add(status);
+    t += FRAME_SPACING_MS;
+  }
+
+  assert.ok(
+    !statuses.has('excessive_motion'),
+    `steady pulse should not flag motion, saw ${JSON.stringify([...statuses])}`,
+  );
+});
+
+function warmAndLock(manager) {
+  let t = 0;
+  for (let i = 0; i < WARMUP_FRAMES; i++) {
+    manager.processFrame(makeFrame(t, BASELINE_WEIGHTED));
+    t += FRAME_SPACING_MS;
+  }
+  for (let i = 0; i < 24 * 6; i++) {
+    manager.processFrame(makeFrame(t, i % 24 === 0 ? BEAT_WEIGHTED : BASELINE_WEIGHTED));
+    t += FRAME_SPACING_MS;
+  }
+  return t;
+}
+
+test('HeartRateManager: erratic in-place signal reports motion while placement stays good', () => {
+  const manager = new HeartRateManager();
+  let t = warmAndLock(manager);
+
+  // Finger stays fully on the lens (placement never leaves "good"), but the
+  // luminance jumps around frame-to-frame — the erratic trace you see when the
+  // phone is moved. This must trip motion via the raw/reversal detector, not
+  // placement churn.
+  let seed = 1;
+  const rnd = () => {
+    seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+    return seed / 0x7fffffff;
+  };
+  const placements = new Set();
+  let sawMotion = false;
+  for (let i = 0; i < 40; i++) {
+    const frameState = manager.processFrame(makeFrame(t, 70 + rnd() * 60));
+    placements.add(frameState.fingerPlacement);
+    if (frameState.signalStatus === 'excessive_motion') sawMotion = true;
+    t += FRAME_SPACING_MS;
+  }
+
+  assert.ok(sawMotion, 'erratic in-place signal should report excessive_motion');
+  assert.deepEqual([...placements], ['good'], 'placement should stay good');
+});
+
+test('HeartRateManager: slow luminance drift reports motion while placement stays good', () => {
+  const manager = new HeartRateManager();
+  let t = warmAndLock(manager);
+
+  // A slow reposition: brightness ramps steadily away from the baseline while
+  // the finger keeps full coverage. The baseline is too slow to chase it, so the
+  // raw-deviation detector should flag it.
+  const placements = new Set();
+  let sawMotion = false;
+  for (let i = 0; i < 40; i++) {
+    const frameState = manager.processFrame(makeFrame(t, BASELINE_WEIGHTED + i * 1.2));
+    placements.add(frameState.fingerPlacement);
+    if (frameState.signalStatus === 'excessive_motion') sawMotion = true;
+    t += FRAME_SPACING_MS;
+  }
+
+  assert.ok(sawMotion, 'slow drift should report excessive_motion');
+  assert.deepEqual([...placements], ['good'], 'placement should stay good');
+});
+
+test('HeartRateManager: PPG graph stops gathering samples during motion', () => {
+  const manager = new HeartRateManager();
+  let t = warmAndLock(manager);
+
+  let seed = 1;
+  const rnd = () => {
+    seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+    return seed / 0x7fffffff;
+  };
+  const feedErratic = (frames) => {
+    for (let i = 0; i < frames; i++) {
+      manager.processFrame(makeFrame(t, 70 + rnd() * 60));
+      t += FRAME_SPACING_MS;
+    }
+  };
+
+  // Enter and hold motion, then confirm the graph feed has frozen: no new live
+  // signal samples are appended while movement continues.
+  feedErratic(20);
+  const frozenTimestamp = manager.getLatestLiveSignalTimestamp();
+  const frozenCount = manager.getLiveSignalSamples().length;
+
+  feedErratic(20);
+  assert.equal(
+    manager.getLatestLiveSignalTimestamp(),
+    frozenTimestamp,
+    'no new samples should be gathered during sustained motion',
+  );
+  assert.equal(manager.getLiveSignalSamples().length, frozenCount);
+});
+
+test('HeartRateManager: repeated finger lift/reseat reports excessive motion', () => {
+  const manager = new HeartRateManager();
+  // Warm up on a clean signal so the manager is initialized and measuring.
+  runBeatTrain(manager, [24, 48, 72, 96, 120]);
+
+  // Simulate the finger repeatedly lifting off the lens: short good contact then
+  // an off-period longer than the 500ms grace window, so each cycle commits a
+  // real good->lost->good transition (not the flicker grace absorbs).
+  let t = 30_000;
+  const statuses = new Set();
+  for (let cycle = 0; cycle < 5; cycle++) {
+    manager.processFrame(makeFrame(t, BASELINE_WEIGHTED));
+    t += FRAME_SPACING_MS;
+    for (let i = 0; i < 17; i++) {
+      statuses.add(manager.processFrame(makeNoFingerFrame(t)).signalStatus);
+      t += FRAME_SPACING_MS;
+    }
+  }
+
+  assert.ok(
+    statuses.has('excessive_motion'),
+    `expected excessive_motion from repeated lifts, saw ${JSON.stringify([...statuses])}`,
+  );
+});
+
+test('HeartRateManager: withholds live BPM after the finger is removed', () => {
+  const manager = new HeartRateManager();
+  runBeatTrain(manager, [24, 48, 72, 96, 120]);
+  assert.equal(manager.getCurrentBpm(), 76);
+
+  // Finger off for well past the bad-placement grace window.
+  let t = 30_000;
+  for (let i = 0; i < 40; i++) {
+    manager.processFrame(makeNoFingerFrame(t));
+    t += FRAME_SPACING_MS;
+  }
+
+  assert.equal(manager.getCurrentBpm(), null);
+});
+
+function makeContinuousBeatFeeder(manager) {
+  let t = 0;
+  for (let i = 0; i < WARMUP_FRAMES; i++) {
+    manager.processFrame(makeFrame(t, BASELINE_WEIGHTED));
+    t += FRAME_SPACING_MS;
+  }
+  let frame = 0;
+  const beatEvery = 24;
+  return function feed(beatCount, skipBeatIndices = new Set()) {
+    const endFrame = frame + beatCount * beatEvery;
+    for (; frame < endFrame; frame++) {
+      const beatIndex = frame / beatEvery;
+      const isBeat = frame % beatEvery === 0 && !skipBeatIndices.has(beatIndex);
+      manager.processFrame(makeFrame(t, isBeat ? BEAT_WEIGHTED : BASELINE_WEIGHTED));
+      t += FRAME_SPACING_MS;
+    }
+  };
+}
+
+test('HeartRateManager: a missed beat holds the live BPM instead of nulling', () => {
+  const manager = new HeartRateManager();
+  const feed = makeContinuousBeatFeeder(manager);
+  feed(6);
+  const locked = manager.getCurrentBpm();
+  assert.ok(locked != null, 'expected a locked BPM before the missed beat');
+
+  // Drop several beats so a single over-long gap (> MAX_IBI_MS) really occurs.
+  // The last real BPM must hold across the gap rather than blanking and
+  // rebuilding four intervals from scratch (the pre-fix behavior).
+  feed(8, new Set([7, 8, 9]));
+  assert.equal(
+    manager.getCurrentBpm(),
+    locked,
+    'a missed beat should hold the last BPM, not blank',
+  );
+});
+
 test('HeartRateManager: waits for enough intervals before publishing live BPM', () => {
   const manager = new HeartRateManager();
   runBeatTrain(manager, [24, 48, 72]);
