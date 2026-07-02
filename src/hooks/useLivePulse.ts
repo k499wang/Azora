@@ -9,6 +9,7 @@ import type {
   IbiSample,
   LivePpgSignalSample,
   PpgFrameSample,
+  SignalStatus,
 } from '../lib/heartRate/types';
 import { heartRatePlugin } from '../lib/heartRate/heartRatePlugin';
 import { HeartRateManager } from '../lib/heartRate/heartRateManager';
@@ -51,6 +52,7 @@ interface UseLivePulseReturn {
   start: () => void;
   stop: () => void;
   fingerPlacement: FingerPlacementState;
+  signalStatus: SignalStatus;
   currentBpm: number | null;
   beatTick: number;
   liveSignalSamples: LivePpgSignalSample[];
@@ -83,6 +85,7 @@ export function useLivePulse(
   const presentationMode = options.presentationMode ?? 'default';
   const [active, setActive] = useState(false);
   const [fingerPlacement, setFingerPlacement] = useState<FingerPlacementState>('no_finger');
+  const [signalStatus, setSignalStatus] = useState<SignalStatus>('no_finger');
   const [currentBpm, setCurrentBpm] = useState<number | null>(null);
   const [beatTick, setBeatTick] = useState(0);
   const [liveSignalSamples, setLiveSignalSamples] = useState<LivePpgSignalSample[]>([]);
@@ -97,6 +100,7 @@ export function useLivePulse(
   const measurementSamplesRef = useRef<PpgFrameSample[]>([]);
   const publishedBpmRef = useRef<number | null>(null);
   const fingerPlacementRef = useRef<FingerPlacementState>('no_finger');
+  const signalStatusRef = useRef<SignalStatus>('no_finger');
   const liveBpmFilterRef = useRef(createLivePulseBpmFilter(presentationMode));
   const beatSchedulerRef = useRef(
     createBeatTickScheduler({ onBeat: () => setBeatTick((tick) => tick + 1) }),
@@ -123,6 +127,7 @@ export function useLivePulse(
     measurementSamplesRef.current = [];
     publishedBpmRef.current = null;
     fingerPlacementRef.current = 'no_finger';
+    signalStatusRef.current = 'no_finger';
     liveBpmFilterRef.current.reset();
     beatSchedulerRef.current.reset();
     lastSignalGraphUpdateRef.current = 0;
@@ -142,6 +147,8 @@ export function useLivePulse(
     setLiveSignalSamples([]);
     fingerPlacementRef.current = 'no_finger';
     setFingerPlacement('no_finger');
+    signalStatusRef.current = 'no_finger';
+    setSignalStatus('no_finger');
   }, [resetStreamState]);
 
   const stop = useCallback(() => {
@@ -152,6 +159,8 @@ export function useLivePulse(
     setLiveSignalSamples([]);
     fingerPlacementRef.current = 'no_finger';
     setFingerPlacement('no_finger');
+    signalStatusRef.current = 'no_finger';
+    setSignalStatus('no_finger');
   }, [resetStreamState]);
 
   const addSample = useRunOnJS(
@@ -190,6 +199,10 @@ export function useLivePulse(
       if (frameState.fingerPlacement !== fingerPlacementRef.current) {
         fingerPlacementRef.current = frameState.fingerPlacement;
         setFingerPlacement(frameState.fingerPlacement);
+      }
+      if (frameState.signalStatus !== signalStatusRef.current) {
+        signalStatusRef.current = frameState.signalStatus;
+        setSignalStatus(frameState.signalStatus);
       }
 
       const bpm = managerRef.current.getCurrentBpm();
@@ -287,6 +300,7 @@ export function useLivePulse(
     start,
     stop,
     fingerPlacement,
+    signalStatus,
     currentBpm,
     beatTick,
     liveSignalSamples,

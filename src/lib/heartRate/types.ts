@@ -24,6 +24,16 @@ export type FingerPlacementState =
   | 'good'
   | 'lost';
 
+export type SignalStatus =
+  | 'warming_up'
+  | 'measuring'
+  | 'no_finger'
+  | 'partial_coverage'
+  | 'too_much_pressure'
+  | 'signal_lost'
+  | 'no_pulse'
+  | 'excessive_motion';
+
 export type PpgQuality = 'good' | 'fair' | 'poor';
 export type HrvAvailabilityReason = 'not_enough_clean_beats' | 'low_signal_quality';
 
@@ -96,7 +106,7 @@ export interface HeartRateReading {
 
 export interface CaptureResult {
   reading: HeartRateReading | null;
-  error: 'low_confidence' | 'too_few_samples' | 'signal_lost' | 'camera_error' | null;
+  error: 'low_confidence' | 'too_few_samples' | 'signal_lost' | 'camera_error' | 'no_finger' | null;
   ibiSamples: IbiSample[];
   bpmSamples?: Array<{
     offsetMs: number;

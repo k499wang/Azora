@@ -2,15 +2,45 @@ import React, { useEffect, useRef } from 'react';
 import { Animated, StyleSheet, Text, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { useLivePulse } from '../../hooks/useLivePulse';
+import type { FingerPlacementState, SignalStatus } from '../../lib/heartRate/types';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import { HeartRateCameraPreview } from '../heartRate/HeartRateCameraPreview';
 
+// Short cue shown in the pill while no BPM is available, so the exercise flows
+// give the same coaching as the standalone capture screen.
+function livePulsePrompt(
+  status: SignalStatus,
+  fingerPlacement: FingerPlacementState,
+): string {
+  switch (status) {
+    case 'excessive_motion':
+      return 'Keep still';
+    case 'no_pulse':
+      return 'No pulse - adjust finger';
+    case 'partial_coverage':
+      return 'Cover the camera fully';
+    case 'too_much_pressure':
+      return 'Ease up slightly';
+    case 'no_finger':
+      return 'Place finger on rear camera';
+    case 'signal_lost':
+      return 'Signal lost - hold steady';
+    default:
+      return fingerPlacement === 'lost'
+        ? 'Signal lost - hold steady'
+        : fingerPlacement === 'good' || fingerPlacement === 'partial'
+          ? 'Stabilizing signal'
+          : 'Place finger on rear camera';
+  }
+}
+
 type Props = Pick<
   ReturnType<typeof useLivePulse>,
   | 'active'
   | 'fingerPlacement'
+  | 'signalStatus'
   | 'currentBpm'
   | 'beatTick'
   | 'device'
@@ -26,6 +56,7 @@ type Props = Pick<
 export function LiveHeartRateMonitor({
   active,
   fingerPlacement,
+  signalStatus,
   currentBpm,
   beatTick,
   device,
@@ -101,11 +132,7 @@ export function LiveHeartRateMonitor({
         </>
       ) : (
         <Text style={styles.prompt}>
-          {fingerPlacement === 'lost'
-            ? 'Signal lost - hold steady'
-            : hasFinger
-              ? 'Stabilizing signal'
-            : 'Place finger on rear camera'}
+          {livePulsePrompt(signalStatus, fingerPlacement)}
         </Text>
       )}
     </View>
