@@ -9,7 +9,7 @@ import {
 import * as Haptics from 'expo-haptics';
 import { useHeartRateStream } from '../../../hooks/useHeartRateStream';
 import { createBpmPresentationFilter } from '../../../lib/heartRate/bpmSmoothing';
-import type { FingerPlacementState } from '../../../lib/heartRate/types';
+import type { FingerPlacementState, SignalStatus } from '../../../lib/heartRate/types';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
@@ -88,6 +88,30 @@ function placementConfig(p: FingerPlacementState): { ringColor: string; status: 
   }
 }
 
+// Warning shown while measuring: prefers the specific signal problem (motion,
+// no pulse) over the coarser finger-placement hint so the baseline capture
+// coaches the same way the standalone capture screen does.
+function measuringWarning(
+  status: SignalStatus,
+  placement: FingerPlacementState,
+): string | null {
+  switch (status) {
+    case 'excessive_motion':
+      return 'Too much movement — keep your hand steady';
+    case 'no_pulse':
+      return 'No pulse detected — adjust your finger position';
+    case 'partial_coverage':
+      return 'Cover the camera and flash fully';
+    case 'too_much_pressure':
+      return 'Pressing too hard — ease up slightly';
+    case 'no_finger':
+    case 'signal_lost':
+      return 'Finger moved — reposition and hold still';
+    default:
+      return placement === 'good' ? null : placementConfig(placement).status;
+  }
+}
+
 function average(values: number[]): number | null {
   if (values.length === 0) return null;
   return Math.round(values.reduce((s, v) => s + v, 0) / values.length);
@@ -147,8 +171,10 @@ export default function BaselineScreen({
     phase === 'running' && stream.currentBpm != null && stream.currentBpm > 0
       ? Math.round(stream.currentBpm)
       : null;
-  const signalGood = stream.fingerPlacement === 'good';
-  const showSignalWarning = phase === 'running' && !signalGood;
+  const signalWarning =
+    phase === 'running'
+      ? measuringWarning(stream.signalStatus, stream.fingerPlacement)
+      : null;
 
   useEffect(() => {
     if (visibleBeatTick <= 0) return;
@@ -376,7 +402,7 @@ export default function BaselineScreen({
         placement={placementCfg}
         progress={progress}
         remainingSec={remainingSec}
-        showSignalWarning={showSignalWarning}
+        signalWarning={signalWarning}
         visibleBeatTick={visibleBeatTick}
       />
     );

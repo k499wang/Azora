@@ -127,10 +127,7 @@ export function useHeartRateCapture(
 
   const { device, format, hasPermission, requestPermission } = useHeartRateCamera();
 
-  useDeviceMotionFeed(
-    managerRef,
-    captureState === 'camera_check' || captureState === 'measuring',
-  );
+  useDeviceMotionFeed(managerRef);
 
   const needsIllumination = captureState === 'camera_check' || captureState === 'measuring';
   const torchMode: 'on' | 'off' =
