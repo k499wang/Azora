@@ -806,19 +806,22 @@ export class HeartRateManager {
     const rawDev =
       Math.abs(weightedAverage - this.baseline) / Math.max(this.baseline, 1);
     const excursionMotion = this.trackMotion(sample.timestamp, ac, rawDev);
-    // Only trust the motion detector once a real pulse has locked at least once
-    // this measurement window. Before that everything is a settling transient —
-    // the opening inhale of a breathing exercise, the hand settling onto the
-    // phone — which should read as calibrating, not "keep still". The latch is
-    // one-way (reset on measurement restart / placement loss) so that once
-    // locked, motion still surfaces even as it disrupts the pulse.
+    // Only trust the optical motion detectors once a real pulse has locked at
+    // least once this measurement window. Before that everything is a settling
+    // transient — the opening inhale of a breathing exercise, the hand settling
+    // onto the phone — which should read as calibrating, not "keep still". The
+    // latch is one-way (reset on measurement restart / placement loss) so that
+    // once locked, motion still surfaces even as it disrupts the pulse. The
+    // accelerometer is exempt from the latch: device shake is unambiguous
+    // movement regardless of pulse state, so it surfaces at any time.
     if (this.ibiEma != null && this.lockBeatCount >= MIN_MOTION_LOCK_BEATS) {
       this.pulseLockedThisWindow = true;
     }
     const inMotion =
-      readyForMeasurement &&
-      this.pulseLockedThisWindow &&
-      (placementChurn || excursionMotion || this.accelMoving);
+      this.accelMoving ||
+      (readyForMeasurement &&
+        this.pulseLockedThisWindow &&
+        (placementChurn || excursionMotion));
     const noPulse =
       readyForMeasurement &&
       this.flatSignalSinceTs != null &&
