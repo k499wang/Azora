@@ -90,8 +90,8 @@ const styles = StyleSheet.create({
   },
   label: {
     ...typography.body.medium,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
+    fontFamily: fonts.regular,
+    fontWeight: '400',
     flex: 1,
   },
   labelCentered: {

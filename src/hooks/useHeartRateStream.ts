@@ -10,6 +10,7 @@ import type {
   FingerPlacementState,
   HeartRateStreamSummary,
   LivePpgSignalSample,
+  SignalStatus,
 } from '../lib/heartRate/types';
 import { heartRatePlugin } from '../lib/heartRate/heartRatePlugin';
 import { HeartRateManager } from '../lib/heartRate/heartRateManager';
@@ -44,6 +45,7 @@ function isValidFrameSample(value: unknown): value is PpgFrameSample {
 interface UseHeartRateStreamReturn {
   streamState: StreamState;
   fingerPlacement: FingerPlacementState;
+  signalStatus: SignalStatus;
   currentBpm: number | null;
   beatTick: number;
   bpmHistory: number[];
@@ -63,6 +65,7 @@ interface UseHeartRateStreamReturn {
 export function useHeartRateStream(): UseHeartRateStreamReturn {
   const [streamState, setStreamState] = useState<StreamState>('idle');
   const [fingerPlacement, setFingerPlacement] = useState<FingerPlacementState>('no_finger');
+  const [signalStatus, setSignalStatus] = useState<SignalStatus>('no_finger');
   const [currentBpm, setCurrentBpm] = useState<number | null>(null);
   const [beatTick, setBeatTick] = useState(0);
   const [bpmHistory, setBpmHistory] = useState<number[]>([]);
@@ -81,6 +84,7 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
   const bpmHistoryRef = useRef<number[]>([]);
   const publishedBpmRef = useRef<number | null>(null);
   const fingerPlacementRef = useRef<FingerPlacementState>('no_finger');
+  const signalStatusRef = useRef<SignalStatus>('no_finger');
   const streamStateRef = useRef<StreamState>('idle');
   const managerRef = useRef(new HeartRateManager());
   const liveBpmFilterRef = useRef(createLiveBpmPresentationFilter());
@@ -92,7 +96,7 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
 
   const needsIllumination = streamState !== 'idle' && streamState !== 'stopped';
 
-  useDeviceMotionFeed(managerRef, needsIllumination);
+  useDeviceMotionFeed(managerRef);
   const torchMode: 'on' | 'off' =
     needsIllumination && device?.hasTorch === true
       ? 'on'
@@ -140,6 +144,8 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
     bpmHistoryRef.current = [];
     publishedBpmRef.current = null;
     fingerPlacementRef.current = 'no_finger';
+    signalStatusRef.current = 'no_finger';
+    setSignalStatus('no_finger');
     liveBpmFilterRef.current.reset();
     managerRef.current.reset();
     beatSchedulerRef.current.reset();
@@ -167,6 +173,10 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
       if (frameState.fingerPlacement !== fingerPlacementRef.current) {
         fingerPlacementRef.current = frameState.fingerPlacement;
         setFingerPlacement(frameState.fingerPlacement);
+      }
+      if (frameState.signalStatus !== signalStatusRef.current) {
+        signalStatusRef.current = frameState.signalStatus;
+        setSignalStatus(frameState.signalStatus);
       }
 
       if (state === 'camera_check') {
@@ -285,6 +295,8 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
     goodSinceRef.current = null;
     warmupStartRef.current = null;
     fingerPlacementRef.current = 'no_finger';
+    signalStatusRef.current = 'no_finger';
+    setSignalStatus('no_finger');
     managerRef.current.reset();
     beatSchedulerRef.current.reset();
 
@@ -308,6 +320,7 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
   return {
     streamState,
     fingerPlacement,
+    signalStatus,
     currentBpm,
     beatTick,
     bpmHistory,

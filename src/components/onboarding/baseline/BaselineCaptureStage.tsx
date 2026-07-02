@@ -32,7 +32,7 @@ interface BaselineCaptureStageProps {
   placement: BaselinePlacementConfig;
   progress: number;
   remainingSec: number;
-  showSignalWarning: boolean;
+  signalWarning: string | null;
   visibleBeatTick: number;
 }
 
@@ -51,12 +51,12 @@ export function BaselineCaptureStage({
   placement,
   progress,
   remainingSec,
-  showSignalWarning,
+  signalWarning,
   visibleBeatTick,
 }: BaselineCaptureStageProps) {
   const insets = useSafeAreaInsets();
   const isFingerLost = fingerPlacement === 'lost' || fingerPlacement === 'no_finger';
-  const showInlineSignalWarning = showSignalWarning && !isFingerLost;
+  const showInlineSignalWarning = signalWarning != null && !isFingerLost;
 
   return (
     <View
@@ -126,7 +126,7 @@ export function BaselineCaptureStage({
                   bpm={bpmDisplay}
                   bpmOpacity={bpmOpacity}
                   heartScale={heartScale}
-                  dimmed={showSignalWarning}
+                  dimmed={signalWarning != null}
                 />
               ) : null}
               {showInlineSignalWarning ? (
@@ -136,7 +136,7 @@ export function BaselineCaptureStage({
                     size={12}
                     color={colors.warning[500]}
                   />
-                  <Text style={styles.warningText}>{placement.status}</Text>
+                  <Text style={styles.warningText}>{signalWarning}</Text>
                 </View>
               ) : null}
             </View>

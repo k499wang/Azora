@@ -90,7 +90,8 @@ const styles = StyleSheet.create({
   },
   description: {
     ...typography.body.large,
-    fontFamily: fonts.semibold,
+    fontFamily: fonts.regular,
+    fontWeight: '400',
     color: colors.text.secondary,
     textAlign: 'center',
     opacity: 0.8,
