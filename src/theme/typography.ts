@@ -3,21 +3,23 @@ import { TextStyle } from 'react-native';
 type FontWeight = TextStyle['fontWeight'];
 
 const weight = {
-  regular: '300' as FontWeight,
-  medium: '400' as FontWeight,
-  semibold: '400' as FontWeight,
-  bold: '500' as FontWeight,
+  light: '300' as FontWeight,
+  regular: '400' as FontWeight,
+  medium: '500' as FontWeight,
+  semibold: '600' as FontWeight,
+  // App rule: SemiBold is the heaviest face the app renders.
+  bold: '600' as FontWeight,
 };
 
 // Single app-wide font family. Switch to try any of:
 // 'Cormorant' | 'Raleway' | 'Outfit' | 'Manrope' | 'Urbanist' | 'Fredoka' | 'Baloo2' | 'Unbounded' | 'Sniglet' | 'Nunito'
 const FONT_FAMILY = 'Outfit';
 
-const fontBold = `${FONT_FAMILY}-Medium`;
-const fontSemiBold = `${FONT_FAMILY}-Regular`;
-const fontRegular = `${FONT_FAMILY}-Light`;
-const fontMedium = `${FONT_FAMILY}-Regular`;
-const fontLight = `${FONT_FAMILY}-ExtraLight`;
+const fontBold = `${FONT_FAMILY}-SemiBold`;
+const fontSemiBold = `${FONT_FAMILY}-SemiBold`;
+const fontRegular = `${FONT_FAMILY}-Regular`;
+const fontMedium = `${FONT_FAMILY}-Medium`;
+const fontLight = `${FONT_FAMILY}-Light`;
 const fontExtraLight = `${FONT_FAMILY}-ExtraLight`;
 
 export const typography = {
@@ -56,8 +58,8 @@ export const typography = {
       lineHeight: 32,
     },
     title3: {
-      fontFamily: fontMedium,
-      fontWeight: weight.medium,
+      fontFamily: fontSemiBold,
+      fontWeight: weight.semibold,
       fontSize: 20,
       lineHeight: 28,
     },
@@ -81,25 +83,25 @@ export const typography = {
   body: {
     large: {
       fontFamily: fontLight,
-      fontWeight: weight.regular,
+      fontWeight: weight.light,
       fontSize: 18,
       lineHeight: 28,
     },
     medium: {
       fontFamily: fontLight,
-      fontWeight: weight.regular,
+      fontWeight: weight.light,
       fontSize: 16,
       lineHeight: 24,
     },
     small: {
       fontFamily: fontLight,
-      fontWeight: weight.regular,
+      fontWeight: weight.light,
       fontSize: 14,
       lineHeight: 22,
     },
     xsmall: {
       fontFamily: fontLight,
-      fontWeight: weight.regular,
+      fontWeight: weight.light,
       fontSize: 12,
       lineHeight: 18,
     },
@@ -150,7 +152,7 @@ export const typography = {
   input: {
     text: {
       fontFamily: fontLight,
-      fontWeight: weight.regular,
+      fontWeight: weight.light,
       fontSize: 16,
       lineHeight: 24,
     },
@@ -162,7 +164,7 @@ export const typography = {
     },
     helper: {
       fontFamily: fontLight,
-      fontWeight: weight.regular,
+      fontWeight: weight.light,
       fontSize: 12,
       lineHeight: 16,
     },
@@ -171,7 +173,7 @@ export const typography = {
   caption: {
     caption1: {
       fontFamily: fontLight,
-      fontWeight: weight.regular,
+      fontWeight: weight.light,
       fontSize: 12,
       lineHeight: 16,
     },
@@ -186,8 +188,10 @@ export const typography = {
   overline: {
     fontFamily: fontMedium,
     fontWeight: weight.medium,
-    fontSize: 10,
+    fontSize: 11,
     lineHeight: 14,
+    letterSpacing: 1.4,
+    textTransform: 'uppercase' as TextStyle['textTransform'],
   },
 } as const;
 

@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { colors } from '../../theme/colors';
-import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import { card } from '../../theme/card';
 import LineGraph, { type DataPoint } from '../analytics/LineGraph';
@@ -43,8 +42,6 @@ export default function ProfileBreathHoldTrendCard({
 
   return (
     <View style={styles.card}>
-      <Text style={styles.title}>Average hold over time</Text>
-
       <LockedContentBlur locked={locked} onPressLocked={onPressLocked}>
         <View
           style={styles.graph}
@@ -54,11 +51,13 @@ export default function ProfileBreathHoldTrendCard({
           <LineGraph
             data={data}
             unit="s"
-            height={150}
+            height={210}
             highlightIndex={bestIndex}
             lineColor={colors.primary.blue600}
             fillColor={colors.primary.blue100}
             dotColor={colors.primary.blue700}
+            showXAxisLabels={false}
+            valuePaddingRatio={0.04}
           />
         </View>
       </LockedContentBlur>
@@ -79,12 +78,6 @@ const styles = StyleSheet.create({
     ...card.base,
     ...card.shadow,
     padding: spacing.lg,
-  },
-  title: {
-    ...typography.heading.heading2,
-    color: colors.text.primary,
-    fontSize: 18,
-    marginBottom: spacing.lg,
   },
   graph: {
     marginHorizontal: -spacing.xs,

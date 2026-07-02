@@ -113,7 +113,7 @@ export default function StressGauge({
                   </Text>
                   <Text style={[styles.statUnit, !hasStats && styles.statUnitLarge]}>/100</Text>
                 </View>
-                <Text style={[styles.statLabel, !hasStats && styles.statLabelLarge]}>
+                <Text style={[styles.statLabel, !hasStats && styles.statLabelLarge, styles.currentStatLabel]}>
                   {lastMeasuredLabel ?? 'Today'}
                 </Text>
               </View>
@@ -228,9 +228,10 @@ const styles = StyleSheet.create({
   },
   label: {
     ...typography.heading.heading2,
-    fontFamily: fonts.semibold,
-    fontSize: 16,
-    color: colors.text.secondary,
+    fontFamily: fonts.regular,
+    fontWeight: '400',
+    fontSize: 17,
+    color: colors.text.primary,
   },
   headerRow: {
     flexDirection: 'row',
@@ -289,6 +290,12 @@ const styles = StyleSheet.create({
     color: colors.text.tertiary,
     letterSpacing: 0,
   },
+  currentStatLabel: {
+    fontFamily: fonts.regular,
+    fontWeight: '400',
+    fontSize: 13,
+    lineHeight: 16,
+  },
   statValueRow: {
     flexDirection: 'row',
     alignItems: 'baseline',
@@ -307,7 +314,8 @@ const styles = StyleSheet.create({
     ...typography.label.small,
     fontSize: 12,
     color: colors.text.tertiary,
-    fontFamily: fonts.semibold,
+    fontFamily: fonts.regular,
+    fontWeight: '400',
   },
   statLabelLarge: {
     fontSize: 11,
@@ -330,7 +338,8 @@ const styles = StyleSheet.create({
   },
   zonePillText: {
     ...typography.label.small,
-    fontFamily: fonts.semibold,
+    fontFamily: fonts.medium,
+    fontWeight: '500',
     fontSize: 11,
   },
   ringSurface: {

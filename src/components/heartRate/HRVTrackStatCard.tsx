@@ -191,7 +191,7 @@ export default function HRVTrackStatCard({
                   </Text>
                   <Text style={[styles.statUnit, !multiStat && styles.statUnitLarge]}>{unit}</Text>
                 </View>
-                <Text style={[styles.statLabel, !multiStat && styles.statLabelLarge]}>
+                <Text style={[styles.statLabel, !multiStat && styles.statLabelLarge, styles.currentStatLabel]}>
                   {lastMeasuredLabel ?? 'Today'}
                 </Text>
               </View>
@@ -300,9 +300,10 @@ const styles = StyleSheet.create({
   },
   label: {
     ...typography.heading.heading2,
-    fontFamily: fonts.semibold,
-    fontSize: 16,
-    color: colors.text.secondary,
+    fontFamily: fonts.regular,
+    fontWeight: '400',
+    fontSize: 17,
+    color: colors.text.primary,
   },
   headerRow: {
     flexDirection: 'row',
@@ -370,6 +371,12 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: colors.text.tertiary,
     letterSpacing: 0,
+  },
+  currentStatLabel: {
+    fontFamily: fonts.regular,
+    fontWeight: '400',
+    fontSize: 13,
+    lineHeight: 16,
   },
   statValueRow: {
     flexDirection: 'row',

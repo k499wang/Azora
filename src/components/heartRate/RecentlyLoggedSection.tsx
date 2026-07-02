@@ -266,7 +266,8 @@ const styles = StyleSheet.create({
   },
   duration: {
     ...typography.body.small,
-    fontFamily: fonts.semibold,
+    fontFamily: fonts.regular,
+    fontWeight: '400',
     color: colors.text.tertiary,
   },
   metricRow: {

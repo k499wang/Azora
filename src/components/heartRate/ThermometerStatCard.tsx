@@ -131,9 +131,10 @@ const styles = StyleSheet.create({
   },
   tileLabel: {
     ...typography.heading.heading2,
-    fontFamily: fonts.semibold,
-    fontSize: 16,
-    color: colors.text.secondary,
+    fontFamily: fonts.regular,
+    fontWeight: '400',
+    fontSize: 17,
+    color: colors.text.primary,
   },
   lockedTitleText: {
     opacity: 0,
@@ -156,7 +157,8 @@ const styles = StyleSheet.create({
     ...typography.label.small,
     fontSize: 14,
     color: colors.text.tertiary,
-    fontFamily: fonts.semibold,
+    fontFamily: fonts.regular,
+    fontWeight: '400',
   },
   thermoTrack: {
     width: 10,

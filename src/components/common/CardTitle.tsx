@@ -39,8 +39,9 @@ const styles = StyleSheet.create({
   },
   title: {
     ...typography.heading.heading2,
-    color: colors.text.secondary,
-    fontFamily: fonts.semibold,
-    fontSize: 16,
+    color: colors.text.primary,
+    fontFamily: fonts.regular,
+    fontWeight: '400',
+    fontSize: 17,
   },
 });

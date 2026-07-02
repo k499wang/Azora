@@ -100,8 +100,9 @@ const styles = StyleSheet.create({
   },
   text: {
     ...typography.body.small,
-    color: colors.text.secondary,
-    fontFamily: fonts.semibold,
+    color: colors.text.primary,
+    fontFamily: fonts.regular,
+    fontWeight: '400',
     lineHeight: 20,
   },
 });

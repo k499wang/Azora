@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { colors } from '../../theme/colors';
-import { typography } from '../../theme/typography';
+import { fonts, typography } from '../../theme/typography';
 
 interface SectionHeaderProps {
   title: string;
@@ -25,6 +25,8 @@ const styles = StyleSheet.create({
   },
   title: {
     ...typography.title.title3,
+    fontFamily: fonts.regular,
+    fontWeight: '400',
     color: colors.text.primary,
   },
 });

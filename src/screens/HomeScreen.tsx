@@ -14,7 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { trackFeatureGateHit } from '../services/analytics/tracking';
 import { colors } from '../theme/colors';
 import { spacing, padding, margin } from '../theme/spacing';
-import { typography } from '../theme/typography';
+import { fonts, typography } from '../theme/typography';
 import AmbientBackground from '../components/common/AmbientBackground';
 import AppTopBar from '../components/common/AppTopBar';
 import SectionHeader from '../components/common/SectionHeader';
@@ -253,6 +253,8 @@ const styles = StyleSheet.create({
   },
   greeting: {
     ...typography.title.title3,
+    fontFamily: fonts.regular,
+    fontWeight: '400',
     fontSize: 22,
     color: colors.text.primary,
     textAlign: 'center',

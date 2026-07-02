@@ -80,18 +80,6 @@ export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
   const lastMeasuredLabel = canonicalSession?.startedAt
     ? `last measured at ${formatMeasuredTime(canonicalSession.startedAt)}`
     : undefined;
-  // Eyebrow string rendered above the Measure hero card to tell the user how
-  // old the full reading the stats reflect is. Today's reading and the
-  // no-recent-reading cases render nothing.
-  const measureEyebrow =
-    hrvSource == null || hrvSource.kind === 'no_recent_full'
-      ? undefined
-      : hrvSource.kind === 'today_full'
-        ? undefined
-        : hrvSource.ageDays === 1
-          ? 'Yesterday'
-          : `${hrvSource.ageDays} days ago`;
-
   const openProPaywall = useCallback(
     (
       feature: FeatureKeyValue,
@@ -171,9 +159,6 @@ export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
         </View>
 
         <View style={styles.heroSection}>
-          {measureEyebrow ? (
-            <Text style={styles.heroEyebrow}>{measureEyebrow}</Text>
-          ) : null}
           <MeasureHeroCard onPress={openMeasure} />
           <View style={styles.lastMeasuredSlot}>
             {lastMeasuredDate ? (
@@ -286,14 +271,6 @@ const styles = StyleSheet.create({
   },
   heroSection: {
     marginTop: -spacing.xl,
-  },
-  heroEyebrow: {
-    ...typography.caption.caption2,
-    fontFamily: fonts.semibold,
-    color: colors.text.tertiary,
-    textAlign: 'center',
-    marginHorizontal: padding.screen.horizontal,
-    marginBottom: spacing.xs,
   },
   lastMeasuredSlot: {
     marginTop: spacing.sm,
