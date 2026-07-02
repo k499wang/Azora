@@ -156,29 +156,7 @@ interface BreathCuePart {
   emphasis?: boolean;
 }
 
-function buildBreathCueParts(phase: HoldPhase, prepCycle: number): BreathCuePart[] | null {
-  if (phase === 'preInhale') {
-    return [
-      { text: 'Easy ' },
-      { text: 'inhale', emphasis: true },
-      { text: ' through your nose — cycle ' },
-      { text: String(prepCycle) },
-      { text: ` of ${PRE_BREATH_CYCLES}` },
-    ];
-  }
-  if (phase === 'preExhale') {
-    return [
-      { text: 'Slow exhale. ' },
-      { text: 'Relax your shoulders', emphasis: true },
-      { text: ` — cycle ${prepCycle} of ${PRE_BREATH_CYCLES}` },
-    ];
-  }
-  if (phase === 'inhale') {
-    return [
-      { text: 'Fill up gently, then ' },
-      { text: 'stay relaxed', emphasis: true },
-    ];
-  }
+function buildBreathCueParts(phase: HoldPhase): BreathCuePart[] | null {
   if (phase === 'hold') {
     return [
       { text: 'Hold', emphasis: true },
@@ -835,7 +813,7 @@ export default function DailyExercisePage({
 
   const isPlacement = phase === 'placement';
   const isLive = isBreathingPhase(phase) || phase === 'hold';
-  const activeBreathCueParts = useMemo(() => buildBreathCueParts(phase, prepCycle), [phase, prepCycle]);
+  const activeBreathCueParts = useMemo(() => buildBreathCueParts(phase), [phase]);
   const activeCueKey = useMemo(
     () => (activeBreathCueParts ? activeBreathCueParts.map((part) => part.text).join('') : null),
     [activeBreathCueParts],

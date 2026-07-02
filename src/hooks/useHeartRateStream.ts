@@ -17,6 +17,7 @@ import { createLiveBpmPresentationFilter } from '../lib/heartRate/bpmSmoothing';
 import { createBeatTickScheduler } from '../lib/heartRate/beatTickScheduler';
 import { LIVE_SIGNAL_GRAPH_UPDATE_INTERVAL_MS } from '../lib/heartRate/liveSignalGraphConfig';
 import { useHeartRateCamera } from './useHeartRateCamera';
+import { useDeviceMotionFeed } from './useDeviceMotionFeed';
 
 const ROLLING_WINDOW_MS = 15000;
 const BPM_UPDATE_INTERVAL_MS = 1000;
@@ -90,6 +91,8 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
   const { device, format, hasPermission, requestPermission } = useHeartRateCamera();
 
   const needsIllumination = streamState !== 'idle' && streamState !== 'stopped';
+
+  useDeviceMotionFeed(managerRef, needsIllumination);
   const torchMode: 'on' | 'off' =
     needsIllumination && device?.hasTorch === true
       ? 'on'

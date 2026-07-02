@@ -26,6 +26,7 @@ import { createBeatTickScheduler } from '../lib/heartRate/beatTickScheduler';
 import { runAfterNextPaint } from '../lib/ui/runAfterNextPaint';
 import { useMeasurementTimer } from './useMeasurementTimer';
 import { useHeartRateCamera } from './useHeartRateCamera';
+import { useDeviceMotionFeed } from './useDeviceMotionFeed';
 
 const MIN_GOOD_DURATION_MS = 2500;
 const PROGRESS_UPDATE_INTERVAL_MS = 200;
@@ -125,6 +126,11 @@ export function useHeartRateCapture(
   const offlineCaptureActive = useSharedValue(false);
 
   const { device, format, hasPermission, requestPermission } = useHeartRateCamera();
+
+  useDeviceMotionFeed(
+    managerRef,
+    captureState === 'camera_check' || captureState === 'measuring',
+  );
 
   const needsIllumination = captureState === 'camera_check' || captureState === 'measuring';
   const torchMode: 'on' | 'off' =
@@ -306,14 +312,12 @@ export function useHeartRateCapture(
             currentBpmRef.current = stabilizedBpm;
             setCurrentBpm(stabilizedBpm);
           }
-        } else if (currentBpmRef.current != null) {
-          // The manager withheld a reading (weak/degrading signal). Drop back to
-          // the calibrating state instead of freezing on the last number, which
-          // is what let a stale subharmonic (e.g. 40/52) stay on screen.
-          currentBpmRef.current = null;
-          liveBpmFilterRef.current.reset();
-          setCurrentBpm(null);
         }
+        // When the manager withholds a reading (motion / no pulse / weak signal)
+        // the last number is intentionally held on screen — the top warning
+        // banner already communicates the problem, so we show the stale BPM
+        // rather than a second "keep still" cue in the number slot. A fully
+        // removed finger (below) is the one case that still clears.
       }
 
       if (frameState.fingerPlacement === 'lost' && currentBpmRef.current != null) {

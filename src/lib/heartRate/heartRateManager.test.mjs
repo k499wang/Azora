@@ -212,6 +212,126 @@ function warmAndLock(manager) {
   return t;
 }
 
+test('HeartRateManager: accelerometer motion flags on an otherwise clean pulse', () => {
+  const manager = new HeartRateManager();
+  let t = warmAndLock(manager);
+
+  // The optical signal stays a clean, steady pulse (no in-place motion, no
+  // placement change), but the device is shaking. Only the accelerometer path
+  // can catch this, proving it is orthogonal to the camera detector.
+  let seed = 1;
+  const rnd = () => {
+    seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+    return seed / 0x7fffffff;
+  };
+  const placements = new Set();
+  let sawMotion = false;
+  for (let i = 0; i < 24 * 3; i++) {
+    manager.pushAccelSample(t, 1.0 + (rnd() - 0.5) * 0.4);
+    manager.pushAccelSample(t + 16, 1.0 + (rnd() - 0.5) * 0.4);
+    const frameState = manager.processFrame(
+      makeFrame(t, i % 24 === 0 ? BEAT_WEIGHTED : BASELINE_WEIGHTED),
+    );
+    placements.add(frameState.fingerPlacement);
+    if (frameState.signalStatus === 'excessive_motion') sawMotion = true;
+    t += FRAME_SPACING_MS;
+  }
+
+  assert.ok(sawMotion, 'device shake should report motion via the accelerometer');
+  assert.deepEqual([...placements], ['good'], 'placement should stay good');
+});
+
+test('HeartRateManager: graph timeline stays continuous across a freeze (no fast-forward)', () => {
+  const manager = new HeartRateManager();
+  let t = warmAndLock(manager);
+
+  let seed = 1;
+  const rnd = () => {
+    seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+    return seed / 0x7fffffff;
+  };
+
+  // Freeze the graph with a long device shake (clean optical, so only the feed is
+  // gated), then let it recover fully.
+  for (let i = 0; i < 90; i++) {
+    manager.pushAccelSample(t, 1.0 + (rnd() - 0.5) * 0.4);
+    manager.pushAccelSample(t + 16, 1.0 + (rnd() - 0.5) * 0.4);
+    manager.processFrame(makeFrame(t, i % 24 === 0 ? BEAT_WEIGHTED : BASELINE_WEIGHTED));
+    t += FRAME_SPACING_MS;
+  }
+  const frozenTs = manager.getLatestLiveSignalTimestamp();
+
+  // Recover: find the first frame that actually feeds the graph again and measure
+  // how far the graph clock jumps. It must be one nominal frame, not the multi-
+  // second frozen gap that would fast-forward the trace.
+  let firstAdvance = null;
+  for (let i = 0; i < 80 && firstAdvance == null; i++) {
+    manager.pushAccelSample(t, 1.0);
+    manager.pushAccelSample(t + 16, 1.0);
+    manager.processFrame(makeFrame(t, i % 24 === 0 ? BEAT_WEIGHTED : BASELINE_WEIGHTED));
+    const cur = manager.getLatestLiveSignalTimestamp();
+    if (cur !== frozenTs) firstAdvance = cur - frozenTs;
+    t += FRAME_SPACING_MS;
+  }
+
+  assert.ok(firstAdvance != null, 'graph should resume feeding after recovery');
+  assert.ok(
+    firstAdvance <= 100,
+    `graph should resume by ~one frame, not fast-forward the frozen gap (got ${firstAdvance}ms)`,
+  );
+});
+
+test('HeartRateManager: emits no beat ticks while motion is active', () => {
+  const manager = new HeartRateManager();
+  let t = warmAndLock(manager);
+
+  // Clean optical pulse but the device is shaking. Beats must not be emitted
+  // while motion is flagged, so the pulse animation and haptics go quiet.
+  let seed = 1;
+  const rnd = () => {
+    seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+    return seed / 0x7fffffff;
+  };
+  let motionFrames = 0;
+  let beatsDuringMotion = 0;
+  for (let i = 0; i < 24 * 3; i++) {
+    manager.pushAccelSample(t, 1.0 + (rnd() - 0.5) * 0.4);
+    manager.pushAccelSample(t + 16, 1.0 + (rnd() - 0.5) * 0.4);
+    const frameState = manager.processFrame(
+      makeFrame(t, i % 24 === 0 ? BEAT_WEIGHTED : BASELINE_WEIGHTED),
+    );
+    if (frameState.signalStatus === 'excessive_motion') {
+      motionFrames += 1;
+      if (frameState.beatDetected) beatsDuringMotion += 1;
+    }
+    t += FRAME_SPACING_MS;
+  }
+
+  assert.ok(motionFrames > 0, 'expected the device shake to register as motion');
+  assert.equal(beatsDuringMotion, 0, 'no beats should be emitted during motion');
+});
+
+test('HeartRateManager: a still accelerometer does not flag motion on a clean pulse', () => {
+  const manager = new HeartRateManager();
+  let t = warmAndLock(manager);
+
+  const statuses = new Set();
+  for (let i = 0; i < 24 * 3; i++) {
+    manager.pushAccelSample(t, 1.0);
+    manager.pushAccelSample(t + 16, 1.0);
+    statuses.add(
+      manager.processFrame(makeFrame(t, i % 24 === 0 ? BEAT_WEIGHTED : BASELINE_WEIGHTED))
+        .signalStatus,
+    );
+    t += FRAME_SPACING_MS;
+  }
+
+  assert.ok(
+    !statuses.has('excessive_motion'),
+    `a still device should not flag motion, saw ${JSON.stringify([...statuses])}`,
+  );
+});
+
 test('HeartRateManager: erratic in-place signal reports motion while placement stays good', () => {
   const manager = new HeartRateManager();
   let t = warmAndLock(manager);
@@ -256,6 +376,57 @@ test('HeartRateManager: slow luminance drift reports motion while placement stay
 
   assert.ok(sawMotion, 'slow drift should report excessive_motion');
   assert.deepEqual([...placements], ['good'], 'placement should stay good');
+});
+
+test('HeartRateManager: does not report motion at the start of a measurement window', () => {
+  const manager = new HeartRateManager();
+  let t = warmAndLock(manager);
+  // Start of a hold: the latch is reset, so the opening inhale / hand-settle
+  // (here an immediately erratic signal) must NOT read as "keep still" until a
+  // fresh pulse re-locks.
+  manager.beginMeasurementWindow(t);
+
+  let seed = 1;
+  const rnd = () => {
+    seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+    return seed / 0x7fffffff;
+  };
+  const statuses = new Set();
+  for (let i = 0; i < 20; i++) {
+    statuses.add(manager.processFrame(makeFrame(t, 70 + rnd() * 60)).signalStatus);
+    t += FRAME_SPACING_MS;
+  }
+
+  assert.ok(
+    !statuses.has('excessive_motion'),
+    `no motion before re-lock, saw ${JSON.stringify([...statuses])}`,
+  );
+});
+
+test('HeartRateManager: reports motion after the pulse re-locks in a new window', () => {
+  const manager = new HeartRateManager();
+  let t = warmAndLock(manager);
+  manager.beginMeasurementWindow(t);
+  // Feed clean beats to re-lock the pulse in the new window.
+  for (let i = 0; i < 24 * 7; i++) {
+    manager.processFrame(makeFrame(t, i % 24 === 0 ? BEAT_WEIGHTED : BASELINE_WEIGHTED));
+    t += FRAME_SPACING_MS;
+  }
+
+  let seed = 1;
+  const rnd = () => {
+    seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+    return seed / 0x7fffffff;
+  };
+  let sawMotion = false;
+  for (let i = 0; i < 40; i++) {
+    if (manager.processFrame(makeFrame(t, 70 + rnd() * 60)).signalStatus === 'excessive_motion') {
+      sawMotion = true;
+    }
+    t += FRAME_SPACING_MS;
+  }
+
+  assert.ok(sawMotion, 'motion should fire once the pulse has re-locked');
 });
 
 test('HeartRateManager: PPG graph stops gathering samples during motion', () => {
