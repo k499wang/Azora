@@ -273,7 +273,8 @@ const styles = StyleSheet.create({
   },
   title: {
     ...typography.title.title2,
-    fontFamily: fonts.semibold,
+    fontFamily: fonts.regular,
+    fontWeight: '400',
     color: colors.text.primary,
   },
   closeBtn: {

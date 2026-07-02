@@ -79,7 +79,8 @@ const styles = StyleSheet.create({
   },
   label: {
     ...typography.body.small,
-    fontFamily: fonts.semibold,
+    fontFamily: fonts.regular,
+    fontWeight: '400',
   },
   pressed: {
     opacity: 0.75,

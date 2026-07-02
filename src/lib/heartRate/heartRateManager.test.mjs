@@ -241,6 +241,56 @@ test('HeartRateManager: accelerometer motion flags on an otherwise clean pulse',
   assert.deepEqual([...placements], ['good'], 'placement should stay good');
 });
 
+test('HeartRateManager: accelerometer motion surfaces before the pulse locks', () => {
+  const manager = new HeartRateManager();
+  // Good finger contact but still warming up — no beats yet, so the optical
+  // motion latch never sets. A device shake must still surface as motion; the
+  // accelerometer path is exempt from the pulse-lock latch.
+  let seed = 1;
+  const rnd = () => {
+    seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+    return seed / 0x7fffffff;
+  };
+  let t = 0;
+  let sawMotion = false;
+  for (let i = 0; i < 30; i++) {
+    manager.pushAccelSample(t, 1.0 + (rnd() - 0.5) * 0.4);
+    manager.pushAccelSample(t + 16, 1.0 + (rnd() - 0.5) * 0.4);
+    if (manager.processFrame(makeFrame(t, BASELINE_WEIGHTED)).signalStatus === 'excessive_motion') {
+      sawMotion = true;
+    }
+    t += FRAME_SPACING_MS;
+  }
+
+  assert.ok(sawMotion, 'device shake during warm-up should report motion');
+});
+
+test('HeartRateManager: accelerometer motion surfaces at the start of a measurement window', () => {
+  const manager = new HeartRateManager();
+  let t = warmAndLock(manager);
+  // Start of a hold resets the optical motion latch, but a device shake is
+  // unambiguous and must still warn before the pulse re-locks.
+  manager.beginMeasurementWindow(t);
+
+  let seed = 1;
+  const rnd = () => {
+    seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+    return seed / 0x7fffffff;
+  };
+  let sawMotion = false;
+  for (let i = 0; i < 30; i++) {
+    manager.pushAccelSample(t, 1.0 + (rnd() - 0.5) * 0.4);
+    manager.pushAccelSample(t + 16, 1.0 + (rnd() - 0.5) * 0.4);
+    const frameState = manager.processFrame(
+      makeFrame(t, i % 24 === 0 ? BEAT_WEIGHTED : BASELINE_WEIGHTED),
+    );
+    if (frameState.signalStatus === 'excessive_motion') sawMotion = true;
+    t += FRAME_SPACING_MS;
+  }
+
+  assert.ok(sawMotion, 'device shake at window start should report motion');
+});
+
 test('HeartRateManager: graph timeline stays continuous across a freeze (no fast-forward)', () => {
   const manager = new HeartRateManager();
   let t = warmAndLock(manager);
