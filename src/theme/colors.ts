@@ -137,6 +137,14 @@ export const colors = {
     dark: '#0F172A66',
   },
 
+  // Single scrim treatment for text over nature photography — every photo
+  // card fades to the same deep blue-black so imagery reads as one atmosphere.
+  photoScrim: {
+    transparent: 'rgba(12,16,33,0)',
+    soft: 'rgba(12,16,33,0.35)',
+    strong: 'rgba(12,16,33,0.82)',
+  },
+
   mood: {
     stressed: '#F59E0B',
     anxious: '#7C3AED',

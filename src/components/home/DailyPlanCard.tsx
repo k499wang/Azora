@@ -94,7 +94,7 @@ export default function DailyPlanCard({
           pointerEvents="none"
         />
         <LinearGradient
-          colors={['transparent', 'rgba(12, 16, 33, 0.0)', 'rgba(12, 16, 33, 0.82)']}
+          colors={[colors.photoScrim.transparent, colors.photoScrim.transparent, colors.photoScrim.strong]}
           locations={[0, 0.35, 1]}
           style={StyleSheet.absoluteFill}
           pointerEvents="none"
