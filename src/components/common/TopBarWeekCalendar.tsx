@@ -76,8 +76,8 @@ const styles = StyleSheet.create({
     fontSize: 18,
     lineHeight: 24,
     color: colors.text.secondary,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
+    fontFamily: fonts.regular,
+    fontWeight: '400',
   },
   streakCount: {
     color: colors.orange[500],

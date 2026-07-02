@@ -120,7 +120,8 @@ const styles = StyleSheet.create({
   },
   zoneText: {
     ...typography.label.small,
-    fontFamily: fonts.semibold,
+    fontFamily: fonts.medium,
+    fontWeight: '500',
     fontSize: 11,
   },
   valueRow: {
@@ -140,7 +141,8 @@ const styles = StyleSheet.create({
     ...typography.label.small,
     fontSize: 14,
     color: colors.text.tertiary,
-    fontFamily: fonts.semibold,
+    fontFamily: fonts.regular,
+    fontWeight: '400',
   },
   barWrap: {
     width: '100%',

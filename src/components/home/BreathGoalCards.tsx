@@ -143,7 +143,8 @@ const styles = StyleSheet.create({
   },
   label: {
     ...typography.label.medium,
-    fontFamily: fonts.semibold,
+    fontFamily: fonts.regular,
+    fontWeight: '400',
     color: colors.text.primary,
   },
 });

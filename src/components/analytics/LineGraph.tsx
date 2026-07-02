@@ -20,6 +20,8 @@ interface LineGraphProps {
   dotColor?: string;
   highlightIndex?: number;
   highlightColor?: string;
+  showXAxisLabels?: boolean;
+  valuePaddingRatio?: number;
 }
 
 const CHART_PADDING = {
@@ -39,6 +41,8 @@ export default function LineGraph({
   dotColor = colors.primary.blue600,
   highlightIndex,
   highlightColor = colors.orange[400],
+  showXAxisLabels = true,
+  valuePaddingRatio = 0.15,
 }: LineGraphProps) {
   const [containerWidth, setContainerWidth] = useState(0);
 
@@ -59,19 +63,24 @@ export default function LineGraph({
     const minIndex = values.indexOf(minValue);
     const lastIndex = data.length - 1;
     const range = maxValue - minValue || 1;
-    const paddedMax = maxValue + range * 0.15;
-    const paddedMin = minValue - range * 0.15;
+    const safeValuePaddingRatio = Math.max(0, valuePaddingRatio);
+    const paddedMax = maxValue + range * safeValuePaddingRatio;
+    const paddedMin = minValue - range * safeValuePaddingRatio;
     const paddedRange = paddedMax - paddedMin;
+    const chartPadding = {
+      ...CHART_PADDING,
+      bottom: showXAxisLabels ? CHART_PADDING.bottom : 8,
+    };
 
-    const innerWidth = containerWidth - CHART_PADDING.left - CHART_PADDING.right;
-    const innerHeight = height - CHART_PADDING.top - CHART_PADDING.bottom;
+    const innerWidth = containerWidth - chartPadding.left - chartPadding.right;
+    const innerHeight = height - chartPadding.top - chartPadding.bottom;
 
     const points = data.map((point, index) => {
       const x =
         data.length === 1
-          ? CHART_PADDING.left + innerWidth / 2
-          : CHART_PADDING.left + (index / (data.length - 1)) * innerWidth;
-      const y = CHART_PADDING.top + (1 - (point.value - paddedMin) / paddedRange) * innerHeight;
+          ? chartPadding.left + innerWidth / 2
+          : chartPadding.left + (index / (data.length - 1)) * innerWidth;
+      const y = chartPadding.top + (1 - (point.value - paddedMin) / paddedRange) * innerHeight;
       return { ...point, x, y };
     });
 
@@ -88,7 +97,7 @@ export default function LineGraph({
     }
 
     // Fill path (line path closed to bottom)
-    const fillBottom = CHART_PADDING.top + innerHeight;
+    const fillBottom = chartPadding.top + innerHeight;
     const fillPath =
       linePath +
       ` L ${points[points.length - 1].x} ${fillBottom}` +
@@ -129,7 +138,7 @@ export default function LineGraph({
       minIndex,
       maxIndex,
     };
-  }, [data, height, containerWidth, highlightIndex]);
+  }, [data, height, containerWidth, highlightIndex, showXAxisLabels, valuePaddingRatio]);
 
   return (
     <View style={styles.wrapper}>
@@ -210,26 +219,27 @@ export default function LineGraph({
               );
             })}
 
-            {/* X-axis labels — first, middle, last only */}
-            {chart.points.map((point, index) => {
-              if (!chart.xLabelIndices.has(index)) return null;
-              const isFirst = index === 0;
-              const isLast = index === chart.points.length - 1;
-              const positionStyle = isFirst
-                ? { left: 0, textAlign: 'left' as const }
-                : isLast
-                  ? { right: 0, textAlign: 'right' as const }
-                  : { left: point.x - 24, textAlign: 'center' as const };
-              return (
-                <Text
-                  key={`label-${index}`}
-                  style={[styles.xLabel, positionStyle, { bottom: 0 }]}
-                  numberOfLines={1}
-                >
-                  {point.label}
-                </Text>
-              );
-            })}
+            {showXAxisLabels
+              ? chart.points.map((point, index) => {
+                  if (!chart.xLabelIndices.has(index)) return null;
+                  const isFirst = index === 0;
+                  const isLast = index === chart.points.length - 1;
+                  const positionStyle = isFirst
+                    ? { left: 0, textAlign: 'left' as const }
+                    : isLast
+                      ? { right: 0, textAlign: 'right' as const }
+                      : { left: point.x - 24, textAlign: 'center' as const };
+                  return (
+                    <Text
+                      key={`label-${index}`}
+                      style={[styles.xLabel, positionStyle, { bottom: 0 }]}
+                      numberOfLines={1}
+                    >
+                      {point.label}
+                    </Text>
+                  );
+                })
+              : null}
           </View>
         ) : (
           <View style={styles.placeholder}>

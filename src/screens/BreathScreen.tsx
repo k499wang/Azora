@@ -322,8 +322,9 @@ const styles = StyleSheet.create({
   },
   measureTitle: {
     ...typography.body.medium,
-    fontFamily: fonts.semibold,
-    color: colors.text.secondary,
+    fontFamily: fonts.regular,
+    fontWeight: '400',
+    color: colors.text.primary,
     flex: 1,
   },
   measurePressed: {

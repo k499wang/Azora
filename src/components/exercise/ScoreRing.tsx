@@ -498,7 +498,7 @@ const styles = StyleSheet.create({
   },
   ageValue: {
     ...typography.display.display1,
-    fontFamily: fonts.semibold,
+    fontFamily: fonts.medium,
     fontWeight: '500',
     fontSize: 84,
     lineHeight: 90,

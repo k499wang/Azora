@@ -26,10 +26,12 @@ export default function BreathHoldStatsRow({
         label="Best"
         value={bestHoldSeconds != null ? formatHoldTime(bestHoldSeconds) : '—'}
       />
+      <View style={styles.divider} />
       <Stat
         label="Today"
         value={todayHoldSeconds != null ? formatHoldTime(todayHoldSeconds) : '—'}
       />
+      <View style={styles.divider} />
       <Stat
         label="7-day avg"
         value={avgHoldSeconds != null ? formatHoldTime(avgHoldSeconds) : '—'}
@@ -57,6 +59,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'stretch',
   },
+  divider: {
+    width: StyleSheet.hairlineWidth,
+    backgroundColor: colors.border.subtle,
+    marginHorizontal: 8,
+  },
   stat: {
     flex: 1,
     alignItems: 'center',
@@ -64,13 +71,16 @@ const styles = StyleSheet.create({
   },
   value: {
     ...typography.heading.heading2,
+    fontFamily: fonts.regular,
+    fontWeight: '400',
     fontSize: 18,
     fontVariant: ['tabular-nums'],
-    color: colors.text.secondary,
+    color: colors.text.primary,
   },
   label: {
     ...typography.label.small,
-    fontFamily: fonts.semibold,
+    fontFamily: fonts.regular,
+    fontWeight: '400',
     fontSize: 13,
     color: colors.text.tertiary,
     letterSpacing: 0.2,

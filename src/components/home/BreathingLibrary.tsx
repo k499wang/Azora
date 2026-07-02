@@ -105,10 +105,13 @@ function TechniqueCard({
             ) : null}
           </View>
           <View style={styles.textBlock}>
+            <Text style={[styles.category, { color: textColor, opacity: 0.75 }]}>{cat.label}</Text>
             <Text style={[styles.techniqueName, { color: textColor }]} numberOfLines={2}>
               {technique.name}
             </Text>
-            <Text style={[styles.category, { color: textColor, opacity: 0.85 }]}>{cat.label}</Text>
+            <Text style={[styles.meta, { color: textColor, opacity: 0.8 }]}>
+              {technique.duration} · {formatPattern(technique.pattern)}
+            </Text>
           </View>
         </View>
         {recommended ? (
@@ -243,8 +246,11 @@ const styles = StyleSheet.create({
     color: colors.primary.blue700,
   },
   category: {
-    ...typography.label.small,
-    fontFamily: fonts.semibold,
+    ...typography.overline,
+    color: colors.text.tertiary,
+  },
+  meta: {
+    ...typography.caption.caption1,
     color: colors.text.tertiary,
   },
 });
