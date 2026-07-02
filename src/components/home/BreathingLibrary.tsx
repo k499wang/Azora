@@ -86,7 +86,7 @@ function TechniqueCard({
       >
         <Image source={technique.backgroundImage} style={styles.cardImage} resizeMode="cover" />
         <LinearGradient
-          colors={['rgba(0,0,0,0.10)', 'rgba(0,0,0,0.55)']}
+          colors={[colors.photoScrim.transparent, colors.photoScrim.strong]}
           locations={[0.35, 1]}
           style={styles.cardScrim}
         />
@@ -109,9 +109,6 @@ function TechniqueCard({
               {technique.name}
             </Text>
             <Text style={[styles.category, { color: textColor, opacity: 0.85 }]}>{cat.label}</Text>
-            <Text style={[styles.pattern, { color: textColor, opacity: 0.8 }]}>
-              {formatPattern(technique.pattern)}
-            </Text>
           </View>
         </View>
         {recommended ? (
@@ -249,11 +246,5 @@ const styles = StyleSheet.create({
     ...typography.label.small,
     fontFamily: fonts.semibold,
     color: colors.text.tertiary,
-  },
-  pattern: {
-    ...typography.label.medium,
-    fontFamily: fonts.semibold,
-    color: colors.text.primary,
-    opacity: 0.7,
   },
 });

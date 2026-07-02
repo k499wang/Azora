@@ -3,8 +3,8 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { usePostHog } from 'posthog-react-native';
 import Icon, { type IconName } from '../common/icons/Icon';
-import GlassSurface from '../common/GlassSurface';
 import { colors } from '../../theme/colors';
+import { card } from '../../theme/card';
 import { fonts, typography } from '../../theme/typography';
 import { spacing, padding } from '../../theme/spacing';
 import TECHNIQUES, { type BreathingTechnique } from '../../data/techniques';
@@ -82,18 +82,10 @@ function GoalCard({
       accessibilityRole="button"
       accessibilityLabel={`${goal.label} breathing exercise`}
     >
-      <GlassSurface
-        bare
-        interactive
-        variant="clear"
-        style={styles.card}
-        tintColor={colors.glass.tintOnImage}
-        blurColor={colors.glass.fillOnImage}
-        solidColor={colors.glass.fillOnImage}
-      >
-        <Icon name={goal.icon} size={30} color={colors.primary.blue400} />
+      <View style={styles.card}>
+        <Icon name={goal.icon} size={30} color={colors.primary.blue600} />
         <Text style={styles.label}>{goal.label}</Text>
-      </GlassSurface>
+      </View>
     </Pressable>
   );
 }
@@ -131,7 +123,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingHorizontal: padding.screen.horizontal,
     gap: spacing.md,
-    marginTop: -spacing.xl,
   },
   cardWrap: {
     flex: 1,
@@ -141,17 +132,18 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.97 }],
   },
   card: {
+    ...card.base,
+    ...card.shadow,
+    backgroundColor: colors.glass.fillStrong,
     aspectRatio: 1.25,
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
     paddingHorizontal: spacing.sm,
-    borderRadius: 26,
-    overflow: 'hidden',
   },
   label: {
     ...typography.label.medium,
     fontFamily: fonts.semibold,
-    color: colors.text.secondary,
+    color: colors.text.primary,
   },
 });

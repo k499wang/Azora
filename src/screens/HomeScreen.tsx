@@ -14,7 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { trackFeatureGateHit } from '../services/analytics/tracking';
 import { colors } from '../theme/colors';
 import { spacing, padding, margin } from '../theme/spacing';
-import { typography, fonts } from '../theme/typography';
+import { typography } from '../theme/typography';
 import AmbientBackground from '../components/common/AmbientBackground';
 import AppTopBar from '../components/common/AppTopBar';
 import SectionHeader from '../components/common/SectionHeader';
@@ -46,35 +46,6 @@ function getMsUntilNextLocalDay(): number {
   nextDay.setHours(24, 0, 1, 0);
 
   return Math.max(1000, nextDay.getTime() - now.getTime());
-}
-
-function StreakNudge({
-  streakDays,
-  todayDone,
-}: {
-  streakDays: number;
-  todayDone: boolean;
-}) {
-  let message: string;
-  if (todayDone) {
-    if (streakDays <= 0) return null;
-    message =
-      streakDays === 1
-        ? 'Day 1 locked in — see you tomorrow'
-        : `${streakDays}-day streak locked in for today`;
-  } else if (streakDays <= 0) {
-    message = 'Start your streak with today’s hold';
-  } else if (streakDays === 1) {
-    message = 'Day 1 in the books — keep it going today';
-  } else {
-    message = `${streakDays}-day streak — don’t break it today`;
-  }
-
-  return (
-    <Text style={styles.streakNudge} numberOfLines={1} ellipsizeMode="tail">
-      {message}
-    </Text>
-  );
 }
 
 function getTimeOfDayGreeting(): string {
@@ -213,10 +184,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
 
           <View style={styles.heroTextSection}>
             <Greeting displayName={displayName} />
-            <StreakNudge
-              streakDays={currentStreak}
-              todayDone={todayBreathHold?.holdSeconds != null}
-            />
           </View>
         </View>
 
@@ -266,7 +233,7 @@ const styles = StyleSheet.create({
   },
   topSection: {
     position: 'relative',
-    paddingBottom: spacing.xl,
+    paddingBottom: spacing.xs,
   },
   heroBackdrop: {
     position: 'absolute',
@@ -285,18 +252,9 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   greeting: {
-    ...typography.display.display3,
-    fontSize: 30,
-    lineHeight: 38,
-    fontFamily: fonts.semibold,
+    ...typography.title.title3,
+    fontSize: 22,
     color: colors.text.primary,
-    textAlign: 'center',
-  },
-  streakNudge: {
-    ...typography.body.small,
-    fontFamily: fonts.semibold,
-    color: colors.neutral[600],
-    marginTop: -spacing.xs,
     textAlign: 'center',
   },
 });

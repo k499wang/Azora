@@ -14,9 +14,7 @@ import { card } from '../theme/card';
 import HeartRateStatsSection from '../components/heartRate/HeartRateStatsSection';
 import ShareCard from '../components/exercise/ShareCard';
 import ScoreRing from '../components/exercise/ScoreRing';
-import AzoraScoreInfoDialog from '../components/exercise/AzoraScoreInfoDialog';
 import GlassIconButton from '../components/common/GlassIconButton';
-import Icon from '../components/common/icons/Icon';
 import type { DailyResultScreenProps } from '../app/navigation';
 import { estimateAzoraScore, azoraScoreFill, azoraTierMeta } from '../lib/azoraScore';
 import { useFeatureAccess } from '../hooks/useFeatureAccess';
@@ -25,7 +23,6 @@ import { PaywallPlacement } from '../services/paywall';
 import { FeatureKey } from '../services/subscriptions/featureAccess';
 import { useAuthStore } from '../stores/authStore';
 import { useProfileQuery } from '../queries/profile/useProfileQuery';
-import { getHoldBenchmark } from '../lib/breathHoldBenchmark';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -53,17 +50,6 @@ export default function ShareableResultScreen({
     minBpm != null && maxBpm != null ? Math.max(0, maxBpm - minBpm) : null;
   const azoraEstimate = estimateAzoraScore({ holdSeconds, avgBpm, minBpm });
   const azoraTier = azoraTierMeta(azoraEstimate.key);
-  const [infoVisible, setInfoVisible] = useState(false);
-  const benchmark = getHoldBenchmark(holdSeconds, userAge);
-
-  const benchmarkCard = (() => {
-    const b = benchmark.percentileBucket;
-    if (b === 'top10') return { icon: 'trophy' as const, accent: '#F59E0B' };
-    if (b === 'top25') return { icon: 'star' as const, accent: '#10B981' };
-    if (b === 'aboveAverage') return { icon: 'arrow-up-bold' as const, accent: colors.primary.blue500 };
-    if (b === 'average') return { icon: 'equal' as const, accent: colors.neutral[500] };
-    return { icon: 'target' as const, accent: '#F97316' };
-  })();
 
   const advancedStatsLocked =
     !advancedStatsAccess.allowed && !advancedStatsAccess.isLoading;
@@ -112,40 +98,15 @@ export default function ShareableResultScreen({
 
       <View style={styles.heroCardWrap}>
         <View style={styles.heroCard}>
-          <View style={styles.scoreCaptionRow}>
-            <Text style={styles.scoreCaption}>Azora Score</Text>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="About Azora Score"
-              hitSlop={10}
-              onPress={() => setInfoVisible(true)}
-            >
-              <Icon name="info" size={14} color={colors.text.primary} />
-            </Pressable>
-          </View>
           <ScoreRing
             value={azoraEstimate.score}
             fill={azoraScoreFill(azoraEstimate.score)}
             ringColors={azoraTier.ringColors}
-            caption={null}
+            caption="Azora Score"
+            captionPosition="bottom"
+            captionTextTransform="none"
             gapLabel={null}
-            pill={{
-              label: azoraTier.label,
-              textColor: azoraTier.textColor,
-              backgroundColor: azoraTier.pillBg,
-            }}
-            pillBottom="26%"
           />
-          <View style={styles.benchmarkCard}>
-            <View style={styles.benchmarkIconWrap}>
-              <MaterialCommunityIcons
-                name={benchmarkCard.icon}
-                size={18}
-                color={benchmarkCard.accent}
-              />
-            </View>
-            <Text style={styles.benchmarkSentence}>{benchmark.sentence}</Text>
-          </View>
         </View>
       </View>
     </View>
@@ -242,10 +203,6 @@ export default function ShareableResultScreen({
         </View>
       </View>
 
-      <AzoraScoreInfoDialog
-        visible={infoVisible}
-        onClose={() => setInfoVisible(false)}
-      />
     </View>
   );
 }
@@ -308,40 +265,6 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xl,
     paddingHorizontal: spacing.lg,
     alignItems: 'center',
-  },
-  scoreCaptionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    marginBottom: spacing.md,
-  },
-  scoreCaption: {
-    ...typography.caption.caption1,
-    color: colors.text.primary,
-    fontFamily: fonts.semibold,
-    letterSpacing: 1.2,
-    textTransform: 'uppercase',
-  },
-  benchmarkCard: {
-    ...card.base,
-    ...card.shadow,
-    marginTop: spacing.lg,
-    borderRadius: 14,
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.sm,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md,
-  },
-  benchmarkIconWrap: {
-    marginTop: 2,
-  },
-  benchmarkSentence: {
-    ...typography.body.small,
-    fontFamily: fonts.semibold,
-    color: colors.text.primary,
-    flex: 1,
-    lineHeight: 20,
   },
   shareCta: {
     ...card.shadow,
