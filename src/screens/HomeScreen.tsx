@@ -233,7 +233,7 @@ const styles = StyleSheet.create({
   },
   topSection: {
     position: 'relative',
-    paddingBottom: spacing.xs,
+    paddingBottom: spacing['2xl'],
   },
   heroBackdrop: {
     position: 'absolute',
@@ -255,7 +255,8 @@ const styles = StyleSheet.create({
     ...typography.title.title3,
     fontFamily: fonts.regular,
     fontWeight: '400',
-    fontSize: 22,
+    fontSize: 28,
+    lineHeight: 36,
     color: colors.text.primary,
     textAlign: 'center',
   },

@@ -318,6 +318,23 @@ export default function OnboardingFlow({
   }, []);
 
   useEffect(() => {
+    // Resumed onboarding starts at the paywall, past the attPriming step, so a
+    // reinstalled user (ATT reset by iOS) or a pre-attPriming-version user
+    // would reach the paywall with ATT undetermined — the SDK wouldn't start
+    // and their trial/registration events would be dropped. Prompt here
+    // instead, mirroring attPriming's post-prompt sequence.
+    if (initialSavedProfile == null) return;
+    void requestAttPermissionOnce().then(() => initAppsFlyer()).then(() => {
+      void logAppsFlyerDiagnostics();
+      if (userId != null) {
+        void syncAppsFlyerIdentityForUser(userId, userEmail);
+      }
+      void collectRevenueCatDeviceIdentifiers();
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
     const eventInput = getStepEventInput(step);
 
     if (!hasTrackedStartRef.current) {

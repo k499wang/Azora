@@ -32,7 +32,7 @@ export function PlanCard({
   const secondary = isAnnual ? `${pkg.priceString}/year` : 'billed weekly';
   const planDetail = isAnnual
     ? hasTrial
-      ? 'No charge today — cancel anytime'
+      ? 'No charge today'
       : 'Annual subscription'
     : 'Weekly subscription';
 
