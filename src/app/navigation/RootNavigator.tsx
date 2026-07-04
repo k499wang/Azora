@@ -14,6 +14,14 @@ import { ExitOfferScreen } from '../../screens/ExitOfferScreen';
 import SettingsScreen from '../../screens/SettingsScreen';
 import ShareableResultScreen from '../../screens/ShareableResultScreen';
 import { useAppGate, type AppGate } from '../../hooks/useAppGate';
+import {
+  isAttPermissionResolved,
+  requestAttPermissionOnce,
+} from '../../services/attribution/attPrompt';
+import { initAppsFlyer } from '../../services/attribution/appsFlyerClient';
+import { logAppsFlyerDiagnostics } from '../../services/attribution/appsFlyerDiagnostics';
+import { syncAppsFlyerIdentityForUser } from '../../services/attribution/appsFlyerIdentitySync';
+import { collectRevenueCatDeviceIdentifiers } from '../../services/subscriptions/revenueCatClient';
 import { useUserEntitlementQuery } from '../../queries/subscriptions/useUserEntitlementQuery';
 import { OnboardingFlow } from '../../components/onboarding';
 import AmbientBackground from '../../components/common/AmbientBackground';
@@ -182,6 +190,34 @@ function BootPaywallPresenter() {
   return null;
 }
 
+// Fallback for users who are already past onboarding with ATT still
+// undetermined (installed before the attPriming step existed). Without a
+// resolved ATT status the AppsFlyer SDK never starts (see initAppsFlyer), so
+// their events would otherwise be dropped forever. Mirrors the post-prompt
+// sequence in OnboardingFlow's attPriming step.
+function AttFallbackPresenter() {
+  const hasRunRef = useRef(false);
+
+  useEffect(() => {
+    if (hasRunRef.current) return;
+    hasRunRef.current = true;
+
+    void (async () => {
+      if (await isAttPermissionResolved()) return;
+      await requestAttPermissionOnce();
+      await initAppsFlyer();
+      void logAppsFlyerDiagnostics();
+      const user = useAuthStore.getState().user;
+      if (user != null) {
+        void syncAppsFlyerIdentityForUser(user.id, user.email ?? null);
+      }
+      void collectRevenueCatDeviceIdentifiers();
+    })();
+  }, []);
+
+  return null;
+}
+
 interface RootNavigatorProps {
   allowBootPaywall?: boolean;
 }
@@ -235,7 +271,12 @@ export function RootNavigator({ allowBootPaywall = true }: RootNavigatorProps) {
 
   lastStableGateStatusRef.current = 'ready';
   lastOnboardingGateRef.current = null;
-  return <AppStack showBootPaywall={allowBootPaywall} />;
+  return (
+    <>
+      <AttFallbackPresenter />
+      <AppStack showBootPaywall={allowBootPaywall} />
+    </>
+  );
 }
 
 const styles = StyleSheet.create({
