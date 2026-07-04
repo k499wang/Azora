@@ -5,6 +5,7 @@ import {
   getAppsFlyerDevKey,
   isAppsFlyerSupportedPlatform,
 } from './appsFlyerConfig';
+import { isAttPermissionResolved } from './attPrompt';
 
 // Acquisition channel for an install, mapped onto RevenueCat's reserved
 // attribution attributes so revenue can be sliced by source/campaign.
@@ -56,6 +57,7 @@ let deepLinkHandler: AppsFlyerDeepLinkHandler | null = null;
 let conversionHandler: AppsFlyerConversionHandler | null = null;
 let lastChannelAttribution: AppsFlyerChannelAttribution | null = null;
 let initPromise: Promise<void> | null = null;
+let sdkStarted = false;
 
 // Settable before init so the listener (which must register *before* initSdk)
 // can forward to whatever the app wires up later.
@@ -114,6 +116,21 @@ export function initAppsFlyer(): Promise<void> {
     return initPromise;
   }
 
+  // Never start the SDK while ATT is still undetermined: the install postback
+  // and any queued events would go out without a valid Advertiser Tracking
+  // Enabled flag, which Meta rejects ("ATE parameter out of range"). Re-arm so
+  // the init call made after the prompt resolves actually starts the SDK.
+  initPromise = isAttPermissionResolved().then((isResolved) => {
+    if (!isResolved) {
+      initPromise = null;
+      return;
+    }
+    return startAppsFlyerSdk();
+  });
+  return initPromise;
+}
+
+function startAppsFlyerSdk(): Promise<void> {
   // Listeners must register BEFORE initSdk or the first callback is lost.
   appsFlyer.onDeepLink((result) => {
     if (deepLinkHandler == null) return;
@@ -145,24 +162,24 @@ export function initAppsFlyer(): Promise<void> {
     }
   });
 
-  initPromise = appsFlyer
+  return appsFlyer
     .initSdk({
       devKey: getAppsFlyerDevKey() as string,
       appId: Platform.OS === 'ios' ? (resolveIosAppId() ?? undefined) : undefined,
       isDebug: __DEV__,
       onInstallConversionDataListener: true,
       onDeepLinkListener: true,
-      // iOS only: hold the install postback until ATT is resolved (or timeout).
-      // Short in dev so testing doesn't stall a full minute per launch.
+      // Safety net only: init is gated on ATT being resolved, so the SDK never
+      // actually waits. Short in dev so a regression doesn't stall testing.
       timeToWaitForATTUserAuthorization: Platform.OS === 'ios' ? (__DEV__ ? 10 : 60) : undefined,
     })
-    .then(() => undefined)
+    .then(() => {
+      sdkStarted = true;
+    })
     .catch(() => {
       // Re-arm so a later call can retry rather than caching a failed init.
       initPromise = null;
     });
-
-  return initPromise;
 }
 
 export function setAppsFlyerCustomerUserId(id: string): void {
@@ -202,6 +219,9 @@ export async function logAppsFlyerEvent(
 ): Promise<void> {
   if (getAppsFlyerAvailability().status !== 'ready') return;
   await initAppsFlyer();
+  // If ATT is still undetermined the SDK never started; dropping the event is
+  // deliberate — it would reach Meta with an invalid ATE flag anyway.
+  if (!sdkStarted) return;
   try {
     // Promise form (no callbacks) — the callback form silently drops the
     // result on Android due to the SDK's WeakReference CallbackGuard.
