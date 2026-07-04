@@ -5,8 +5,8 @@ import {
 } from 'expo-tracking-transparency';
 
 // Shows Apple's ATT dialog exactly once (only while still undetermined), and
-// never on Android/web. AppsFlyer's init holds its install postback for
-// `timeToWaitForATTUserAuthorization` seconds so the result is captured.
+// never on Android/web. AppsFlyer starts after this resolves so Meta receives a
+// valid Advertiser Tracking Enabled state.
 export async function requestAttPermissionOnce(): Promise<void> {
   if (Platform.OS !== 'ios') return;
   try {

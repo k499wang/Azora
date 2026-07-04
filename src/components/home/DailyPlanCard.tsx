@@ -99,8 +99,13 @@ export default function DailyPlanCard({
           style={StyleSheet.absoluteFill}
           pointerEvents="none"
         />
-        <View style={styles.challengeIcon} pointerEvents="none">
-          <MaterialCommunityIcons name="lungs" size={24} color={colors.text.inverse} />
+        <View style={styles.challengeHeader} pointerEvents="none">
+          <View style={styles.challengeIcon}>
+            <MaterialCommunityIcons name="lungs" size={24} color={colors.text.inverse} />
+          </View>
+          <View style={styles.dailyPill}>
+            <Text style={styles.dailyPillText}>Check-in</Text>
+          </View>
         </View>
         <View style={styles.cardContent}>
           <View style={styles.metricBlock}>
@@ -175,14 +180,32 @@ const styles = StyleSheet.create({
   overlineSpacer: {
     height: typography.overline.lineHeight,
   },
-  challengeIcon: {
+  challengeHeader: {
     position: 'absolute',
     top: spacing.md,
     left: spacing.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  challengeIcon: {
     width: 28,
     height: 28,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  dailyPill: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: 999,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.26)',
+  },
+  dailyPillText: {
+    ...typography.caption.caption2,
+    fontFamily: fonts.medium,
+    color: colors.text.inverse,
   },
   meta: {
     ...typography.label.medium,
