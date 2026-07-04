@@ -184,6 +184,9 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
 
           <View style={styles.heroTextSection}>
             <Greeting displayName={displayName} />
+            <Text style={styles.greetingSubtitle}>
+              Take a minute to check in with your breath.
+            </Text>
           </View>
         </View>
 
@@ -233,7 +236,7 @@ const styles = StyleSheet.create({
   },
   topSection: {
     position: 'relative',
-    paddingBottom: spacing['2xl'],
+    paddingBottom: spacing.md,
   },
   heroBackdrop: {
     position: 'absolute',
@@ -258,6 +261,11 @@ const styles = StyleSheet.create({
     fontSize: 28,
     lineHeight: 36,
     color: colors.text.primary,
+    textAlign: 'center',
+  },
+  greetingSubtitle: {
+    ...typography.body.medium,
+    color: colors.text.secondary,
     textAlign: 'center',
   },
 });

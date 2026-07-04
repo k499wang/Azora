@@ -33,15 +33,18 @@ EAS cloud builds never see the gitignored `.env`).
 
 ## Init & ATT timing
 
-- `initAppsFlyer()` runs at app launch (`App.tsx`). The `onDeepLink` listener is
-  registered **before** `initSdk` — required, or the first deep link is lost.
-- iOS init passes `timeToWaitForATTUserAuthorization: 60`, so the SDK holds its
-  install postback up to 60s waiting for the ATT result.
-- The ATT prompt fires when leaving the onboarding **notifications** step
+- `initAppsFlyer()` runs at app launch (`App.tsx`). The `onDeepLink` and install
+  conversion listeners are registered **before** `initSdk` — required, or the
+  first deep link / conversion callback can be lost.
+- iOS initializes AppsFlyer in `manualStart` mode. This configures the SDK early
+  but does **not** send the launch/install payload until ATT is no longer
+  `undetermined`, so Meta receives a valid Advertiser Tracking Enabled state.
+- iOS init still passes `timeToWaitForATTUserAuthorization: 60` as a native SDK
+  safety net. In the normal flow, JS starts the SDK only after ATT resolves.
+- The ATT prompt fires when leaving the dedicated onboarding **attPriming** step
   (`OnboardingFlow.tsx`), after value is demonstrated — not on cold launch.
-- **Caveat:** if a new user takes longer than 60s to reach that step, the
-  install postback may send before ATT resolves. If opt-in attribution quality
-  matters more than prompt placement, move `requestAttPermissionOnce()` earlier.
+- Users already past onboarding go through `AttFallbackPresenter`, which mirrors
+  the post-prompt init/start sequence before regular app events are sent.
 
 ## Events
 

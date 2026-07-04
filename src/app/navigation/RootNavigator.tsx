@@ -192,9 +192,9 @@ function BootPaywallPresenter() {
 
 // Fallback for users who are already past onboarding with ATT still
 // undetermined (installed before the attPriming step existed). Without a
-// resolved ATT status the AppsFlyer SDK never starts (see initAppsFlyer), so
-// their events would otherwise be dropped forever. Mirrors the post-prompt
-// sequence in OnboardingFlow's attPriming step.
+// resolved ATT status the AppsFlyer SDK remains in manual-start mode, so their
+// events would otherwise be dropped forever. Mirrors the post-prompt sequence
+// in OnboardingFlow's attPriming step.
 function AttFallbackPresenter() {
   const hasRunRef = useRef(false);
 

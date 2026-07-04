@@ -81,8 +81,8 @@ differently, so test them individually.
 ### C2. Allow and Deny both work
 - **Do:** test a fresh install on the **Allow** path and another on **Deny**.
 - **Verify correct:** onboarding completes either way; AppsFlyer still records an install
-  on both. The install postback was held up to `timeToWaitForATTUserAuthorization` then
-  fired.
+  on both. The SDK initializes in manual-start mode, then starts after ATT resolves so
+  the install is sent with the resolved tracking state.
 - **Watch (`__DEV__`):** console `[appsflyer-diag] install conversion OK` confirms the
   device reached AppsFlyer's servers.
 

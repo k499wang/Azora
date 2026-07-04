@@ -57,7 +57,9 @@ let deepLinkHandler: AppsFlyerDeepLinkHandler | null = null;
 let conversionHandler: AppsFlyerConversionHandler | null = null;
 let lastChannelAttribution: AppsFlyerChannelAttribution | null = null;
 let initPromise: Promise<void> | null = null;
+let sdkInitialized = false;
 let sdkStarted = false;
+let listenersRegistered = false;
 
 // Settable before init so the listener (which must register *before* initSdk)
 // can forward to whatever the app wires up later.
@@ -108,29 +110,20 @@ function parseConversionAttribution(
   };
 }
 
-export function initAppsFlyer(): Promise<void> {
-  if (initPromise != null) return initPromise;
-
+export async function initAppsFlyer(): Promise<void> {
   if (getAppsFlyerAvailability().status !== 'ready') {
-    initPromise = Promise.resolve();
-    return initPromise;
+    return;
   }
 
-  // Never start the SDK while ATT is still undetermined: the install postback
-  // and any queued events would go out without a valid Advertiser Tracking
-  // Enabled flag, which Meta rejects ("ATE parameter out of range"). Re-arm so
-  // the init call made after the prompt resolves actually starts the SDK.
-  initPromise = isAttPermissionResolved().then((isResolved) => {
-    if (!isResolved) {
-      initPromise = null;
-      return;
-    }
-    return startAppsFlyerSdk();
-  });
-  return initPromise;
+  await initializeAppsFlyerSdk();
+  if (!sdkInitialized) return;
+  await startAppsFlyerSdkIfReady();
 }
 
-function startAppsFlyerSdk(): Promise<void> {
+function registerAppsFlyerListeners(): void {
+  if (listenersRegistered) return;
+  listenersRegistered = true;
+
   // Listeners must register BEFORE initSdk or the first callback is lost.
   appsFlyer.onDeepLink((result) => {
     if (deepLinkHandler == null) return;
@@ -161,25 +154,53 @@ function startAppsFlyerSdk(): Promise<void> {
       console.log('[appsflyer-diag] install conversion FAILED:', JSON.stringify(error));
     }
   });
+}
 
-  return appsFlyer
+function initializeAppsFlyerSdk(): Promise<void> {
+  if (sdkInitialized) return Promise.resolve();
+  if (initPromise != null) return initPromise;
+
+  registerAppsFlyerListeners();
+
+  // On iOS, initialize early but use manual start until ATT is resolved. That
+  // gives AppsFlyer its listeners/config at launch without sending Meta-bound
+  // install/session payloads while Advertiser Tracking Enabled is unavailable.
+  initPromise = appsFlyer
     .initSdk({
       devKey: getAppsFlyerDevKey() as string,
       appId: Platform.OS === 'ios' ? (resolveIosAppId() ?? undefined) : undefined,
       isDebug: __DEV__,
       onInstallConversionDataListener: true,
       onDeepLinkListener: true,
-      // Safety net only: init is gated on ATT being resolved, so the SDK never
-      // actually waits. Short in dev so a regression doesn't stall testing.
+      manualStart: Platform.OS === 'ios',
       timeToWaitForATTUserAuthorization: Platform.OS === 'ios' ? (__DEV__ ? 10 : 60) : undefined,
     })
     .then(() => {
-      sdkStarted = true;
+      sdkInitialized = true;
+      sdkStarted = Platform.OS !== 'ios';
     })
     .catch(() => {
       // Re-arm so a later call can retry rather than caching a failed init.
       initPromise = null;
+      sdkInitialized = false;
     });
+  return initPromise;
+}
+
+async function startAppsFlyerSdkIfReady(): Promise<void> {
+  if (sdkStarted) return;
+
+  if (Platform.OS === 'ios') {
+    const isResolved = await isAttPermissionResolved();
+    if (!isResolved) return;
+  }
+
+  try {
+    appsFlyer.startSdk();
+    sdkStarted = true;
+  } catch {
+    // Attribution is best-effort. Keep sdkStarted false so a later call retries.
+  }
 }
 
 export function setAppsFlyerCustomerUserId(id: string): void {
@@ -217,17 +238,90 @@ export async function logAppsFlyerEvent(
   eventName: string,
   eventValues: Record<string, unknown> = {},
 ): Promise<void> {
-  if (getAppsFlyerAvailability().status !== 'ready') return;
+  const availability = getAppsFlyerAvailability();
+  if (__DEV__) {
+    logAppsFlyerEventDiagnostic('event requested', {
+      eventName,
+      eventValues,
+      availability: availability.status,
+      sdkInitialized,
+      sdkStarted,
+      platform: Platform.OS,
+    });
+  }
+
+  if (availability.status !== 'ready') {
+    if (__DEV__) {
+      logAppsFlyerEventDiagnostic('event dropped', {
+        eventName,
+        reason: availability.reason,
+      });
+    }
+    return;
+  }
+
   await initAppsFlyer();
-  // If ATT is still undetermined the SDK never started; dropping the event is
-  // deliberate — it would reach Meta with an invalid ATE flag anyway.
-  if (!sdkStarted) return;
+  // If ATT is still undetermined the SDK remains in manual-start mode; dropping
+  // the event is deliberate because Meta would reject the missing ATE state.
+  if (!sdkStarted) {
+    if (__DEV__) {
+      logAppsFlyerEventDiagnostic('event dropped', {
+        eventName,
+        reason: 'sdk_not_started',
+        sdkInitialized,
+        sdkStarted,
+        platform: Platform.OS,
+      });
+    }
+    return;
+  }
+
   try {
     // Promise form (no callbacks) — the callback form silently drops the
     // result on Android due to the SDK's WeakReference CallbackGuard.
     await appsFlyer.logEvent(eventName, eventValues);
-  } catch {
+    if (__DEV__) {
+      logAppsFlyerEventDiagnostic('event sent', {
+        eventName,
+        eventValues,
+        sdkInitialized,
+        sdkStarted,
+        platform: Platform.OS,
+      });
+    }
+  } catch (error) {
+    if (__DEV__) {
+      logAppsFlyerEventDiagnostic('event failed', {
+        eventName,
+        eventValues,
+        error: getErrorMessage(error),
+        sdkInitialized,
+        sdkStarted,
+        platform: Platform.OS,
+      });
+    }
     // Attribution events are best-effort; never surface to the user.
+  }
+}
+
+function logAppsFlyerEventDiagnostic(
+  label: string,
+  payload: Record<string, unknown>,
+): void {
+  try {
+    console.log(`[appsflyer-diag] ${label}:`, JSON.stringify(payload));
+  } catch {
+    console.log(`[appsflyer-diag] ${label}:`, '[unserializable payload]');
+  }
+}
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (typeof error === 'string') return error;
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return 'Unknown AppsFlyer event error';
   }
 }
 
