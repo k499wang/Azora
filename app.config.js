@@ -21,7 +21,7 @@ module.exports = {
   expo: {
     name: 'Azora',
     slug: 'Azora',
-    version: '1.0.7',
+    version: '1.0.8',
     orientation: 'portrait',
     icon: './assets/icon.png',
     userInterfaceStyle: 'light',
@@ -41,6 +41,7 @@ module.exports = {
           'Allow $(PRODUCT_NAME) to access your approximate location while using the app to support attribution and diagnostics. Azora does not use location for breathwork sessions.',
         NSPhotoLibraryUsageDescription:
           'Allow $(PRODUCT_NAME) to choose a profile photo',
+        ITSAppUsesNonExemptEncryption: false,
         // Send postback copies to AppsFlyer so it can validate conversion
         // values and power SKAN reporting, on both attribution frameworks:
         //   NSAdvertisingAttributionReportEndpoint → SKAdNetwork (iOS 15+)
