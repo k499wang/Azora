@@ -20,14 +20,15 @@ import {
 } from '../../services/attribution/attPrompt';
 import { initAppsFlyer } from '../../services/attribution/appsFlyerClient';
 import { logAppsFlyerDiagnostics } from '../../services/attribution/appsFlyerDiagnostics';
-import { syncAppsFlyerIdentityForUser } from '../../services/attribution/appsFlyerIdentitySync';
-import { collectRevenueCatDeviceIdentifiers } from '../../services/subscriptions/revenueCatClient';
 import { useUserEntitlementQuery } from '../../queries/subscriptions/useUserEntitlementQuery';
 import { OnboardingFlow } from '../../components/onboarding';
 import AmbientBackground from '../../components/common/AmbientBackground';
 import { PaywallPlacement } from '../../services/paywall';
 import { getPaywallOffering, type PaywallMode } from '../../services/paywall';
-import { ensureRevenueCatIdentityForCurrentUser } from '../../services/subscriptions/revenueCatIdentitySync';
+import {
+  ensureRevenueCatIdentityForCurrentUser,
+  syncRevenueCatAttributionForCurrentUser,
+} from '../../services/subscriptions/revenueCatIdentitySync';
 import { useAuthStore } from '../../stores/authStore';
 import { useExitOfferStore } from '../../stores/exitOfferStore';
 import { useRevenueCatIdentityStore } from '../../stores/revenueCatIdentityStore';
@@ -260,15 +261,15 @@ function AttFallbackPresenter() {
     hasRunRef.current = true;
 
     void (async () => {
-      if (await isAttPermissionResolved()) return;
-      await requestAttPermissionOnce();
-      await initAppsFlyer();
-      void logAppsFlyerDiagnostics();
-      const user = useAuthStore.getState().user;
-      if (user != null) {
-        void syncAppsFlyerIdentityForUser(user.id, user.email ?? null);
+      try {
+        if (await isAttPermissionResolved()) return;
+        await requestAttPermissionOnce();
+        await initAppsFlyer();
+        void logAppsFlyerDiagnostics();
+        await syncRevenueCatAttributionForCurrentUser();
+      } catch {
+        // Attribution is best-effort and must never block the app shell.
       }
-      void collectRevenueCatDeviceIdentifiers();
     })();
   }, []);
 

@@ -6,6 +6,11 @@ import {
 } from 'expo-tracking-transparency';
 
 export type AttPermissionResolution = 'resolved' | 'undetermined' | 'error';
+export type RevenueCatAttConsentStatus =
+  | 'authorized'
+  | 'denied'
+  | 'restricted'
+  | 'notDetermined';
 
 let hasResolvedAttThisSession = Platform.OS !== 'ios';
 
@@ -56,4 +61,21 @@ export async function getAttPermissionResolution(): Promise<AttPermissionResolut
 
 export async function isAttPermissionResolved(): Promise<boolean> {
   return (await getAttPermissionResolution()) === 'resolved';
+}
+
+export async function getRevenueCatAttConsentStatus(): Promise<RevenueCatAttConsentStatus> {
+  if (Platform.OS !== 'ios') return 'authorized';
+  try {
+    const current = await getTrackingPermissionsAsync();
+    switch (current.status) {
+      case 'granted':
+        return 'authorized';
+      case 'denied':
+        return 'denied';
+      default:
+        return 'notDetermined';
+    }
+  } catch {
+    return 'notDetermined';
+  }
 }

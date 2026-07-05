@@ -4,14 +4,27 @@ import {
   clearAppsFlyerIdentity,
   syncAppsFlyerIdentityForUser,
 } from '../attribution/appsFlyerIdentitySync';
-import { getAttPermissionResolution } from '../attribution/attPrompt';
 import {
+  getAttPermissionResolution,
+  getRevenueCatAttConsentStatus,
+} from '../attribution/attPrompt';
+import {
+  collectRevenueCatDeviceIdentifiers,
   getRevenueCatAvailability,
   getRevenueCatCustomerInfo,
+  setRevenueCatAttConsentStatus,
+  syncRevenueCatSubscriberAttributes,
   syncRevenueCatIdentity,
 } from './revenueCatClient';
 
-export async function ensureRevenueCatIdentityForCurrentUser(): Promise<boolean> {
+interface EnsureRevenueCatIdentityOptions {
+  syncAppsFlyer?: boolean;
+}
+
+export async function ensureRevenueCatIdentityForCurrentUser(
+  options: EnsureRevenueCatIdentityOptions = {},
+): Promise<boolean> {
+  const shouldSyncAppsFlyer = options.syncAppsFlyer ?? true;
   const user = useAuthStore.getState().user;
   const store = useRevenueCatIdentityStore.getState();
 
@@ -35,15 +48,42 @@ export async function ensureRevenueCatIdentityForCurrentUser(): Promise<boolean>
       email: user.email ?? null,
     });
     store.setSynced(user.id);
-    void getAttPermissionResolution().then((resolution) => {
-      if (resolution === 'undetermined') return;
-      void syncAppsFlyerIdentityForUser(user.id, user.email ?? null);
-    });
+    if (shouldSyncAppsFlyer) {
+      void getAttPermissionResolution().then((resolution) => {
+        if (resolution === 'undetermined') return;
+        void syncAppsFlyerIdentityForUser(user.id, user.email ?? null);
+      });
+    }
     return true;
   } catch (error) {
     store.setFailed(error, user.id);
     return false;
   }
+}
+
+export async function syncRevenueCatAttributionForCurrentUser(): Promise<boolean> {
+  const user = useAuthStore.getState().user;
+  if (user == null) {
+    useRevenueCatIdentityStore.getState().setSignedOut();
+    clearAppsFlyerIdentity();
+    return false;
+  }
+
+  const didSyncRevenueCat = await ensureRevenueCatIdentityForCurrentUser({
+    syncAppsFlyer: false,
+  });
+  const didSyncAppsFlyer = await syncAppsFlyerIdentityForUser(
+    user.id,
+    user.email ?? null,
+  ).catch(() => false);
+  if (!didSyncRevenueCat) return false;
+
+  const attStatus = await getRevenueCatAttConsentStatus();
+  const didSyncAttConsent = await setRevenueCatAttConsentStatus(attStatus);
+  await collectRevenueCatDeviceIdentifiers();
+  const didSyncAttributes = await syncRevenueCatSubscriberAttributes();
+
+  return didSyncAttConsent && didSyncAttributes && didSyncAppsFlyer;
 }
 
 export async function refreshRevenueCatCustomerInfoForCurrentUser(): Promise<boolean> {

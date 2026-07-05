@@ -13,6 +13,7 @@ import {
   RevenueCatSignedOutError,
   type RevenueCatIdentityUser,
 } from './revenueCatClientCore';
+import type { RevenueCatAttConsentStatus } from '../attribution/attPrompt';
 
 const revenueCatClient = createRevenueCatClient({
   apiKey: getRevenueCatApiKey(),
@@ -79,6 +80,16 @@ export function collectRevenueCatDeviceIdentifiers(): Promise<void> {
   return revenueCatClient.collectDeviceIdentifiers();
 }
 
+export async function syncRevenueCatSubscriberAttributes(): Promise<boolean> {
+  if (!isRevenueCatReady() || !hasCurrentRevenueCatIdentity()) return false;
+  try {
+    await Purchases.syncAttributesAndOfferingsIfNeeded();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function requireCurrentRevenueCatAppUserId(): string {
   return revenueCatClient.requireCurrentAppUserId();
 }
@@ -116,9 +127,24 @@ export async function setRevenueCatAppsFlyerId(appsFlyerId: string): Promise<boo
   try {
     await Purchases.setAttributes({ $appsflyerId: appsFlyerId });
     return true;
-  } catch {
+  } catch (error) {
+    if (getErrorMessage(error).toLowerCase().includes('cannot be modified')) {
+      return true;
+    }
     // Attribution failures may be premature/transient, so report the miss and
     // let the caller retry instead of caching it as synced.
+    return false;
+  }
+}
+
+export async function setRevenueCatAttConsentStatus(
+  status: RevenueCatAttConsentStatus,
+): Promise<boolean> {
+  if (!isRevenueCatReady() || !hasCurrentRevenueCatIdentity()) return false;
+  try {
+    await Purchases.setAttributes({ $attConsentStatus: status });
+    return true;
+  } catch {
     return false;
   }
 }
@@ -175,3 +201,13 @@ export async function checkRevenueCatTrialEligibility(
 
 export { INTRO_ELIGIBILITY_STATUS };
 export type { IntroEligibility };
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (typeof error === 'string') return error;
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return 'Unknown RevenueCat error';
+  }
+}
