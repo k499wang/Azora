@@ -135,9 +135,9 @@ export const paywallStepStyles = StyleSheet.create({
   },
   radarLegend: {
     flexDirection: 'row',
-    gap: spacing.lg,
+    gap: spacing.md,
     alignSelf: 'center',
-    marginTop: spacing.lg,
+    marginTop: -spacing.sm,
   },
   radarLegendItem: {
     flexDirection: 'row',
