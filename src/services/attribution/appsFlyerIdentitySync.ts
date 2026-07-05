@@ -30,8 +30,8 @@ function syncedKey(userId: string): string {
 export async function syncAppsFlyerIdentityForUser(
   userId: string,
   email?: string | null,
-): Promise<void> {
-  if (getAppsFlyerAvailability().status !== 'ready') return;
+): Promise<boolean> {
+  if (getAppsFlyerAvailability().status !== 'ready') return false;
 
   // Register before init so the install-conversion callback can tag RevenueCat
   // with the acquisition channel as soon as AppsFlyer attributes the install.
@@ -56,17 +56,18 @@ export async function syncAppsFlyerIdentityForUser(
   }
 
   const appsFlyerId = await getAppsFlyerId();
-  if (appsFlyerId == null || appsFlyerId.length === 0) return;
+  if (appsFlyerId == null || appsFlyerId.length === 0) return false;
 
   const alreadySynced = await AsyncStorage.getItem(syncedKey(userId)).catch(() => null);
-  if (alreadySynced === appsFlyerId) return;
+  if (alreadySynced === appsFlyerId) return true;
 
   // Only persist the marker if the write actually landed; otherwise a premature
   // attempt (RC not yet configured) would be cached as done and never retried,
   // leaving the subscriber permanently without $appsflyerId.
   const didSync = await setRevenueCatAppsFlyerId(appsFlyerId);
-  if (!didSync) return;
+  if (!didSync) return false;
   await AsyncStorage.setItem(syncedKey(userId), appsFlyerId).catch(() => {});
+  return true;
 }
 
 export function clearAppsFlyerIdentity(): void {

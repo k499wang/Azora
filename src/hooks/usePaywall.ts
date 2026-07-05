@@ -4,7 +4,6 @@ import type { PurchasesPackage } from 'react-native-purchases';
 import { posthog } from '../config/posthog';
 import { AnalyticsEvent } from '../services/analytics/events';
 import { logRevenueCatDebugSnapshot } from '../services/debug/revenueCatDebugSnapshot';
-import { syncAppsFlyerIdentityForUser } from '../services/attribution/appsFlyerIdentitySync';
 import {
   buildPaywallEventProperties,
   getPaywallOffering,
@@ -15,7 +14,10 @@ import {
   type PaywallPlacementValue,
   type PaywallResult,
 } from '../services/paywall';
-import { ensureRevenueCatIdentityForCurrentUser } from '../services/subscriptions/revenueCatIdentitySync';
+import {
+  ensureRevenueCatIdentityForCurrentUser,
+  syncRevenueCatAttributionForCurrentUser,
+} from '../services/subscriptions/revenueCatIdentitySync';
 import type { FeatureKeyValue } from '../services/subscriptions/featureAccess';
 import { useAuthStore } from '../stores/authStore';
 import { useRevenueCatIdentityStore } from '../stores/revenueCatIdentityStore';
@@ -252,7 +254,7 @@ export function usePaywall({
     });
 
     if (userId != null) {
-      await syncAppsFlyerIdentityForUser(userId, user?.email ?? null).catch(() => {});
+      await syncRevenueCatAttributionForCurrentUser().catch(() => false);
     }
 
     const result = await purchasePaywallPackage(selectedPackage);

@@ -49,8 +49,8 @@ import { requestNotificationPermissions } from '../../services/notifications/not
 import { requestAttPermissionOnce } from '../../services/attribution/attPrompt';
 import { initAppsFlyer } from '../../services/attribution/appsFlyerClient';
 import { logAppsFlyerDiagnostics } from '../../services/attribution/appsFlyerDiagnostics';
-import { syncAppsFlyerIdentityForUser } from '../../services/attribution/appsFlyerIdentitySync';
 import { collectRevenueCatDeviceIdentifiers } from '../../services/subscriptions/revenueCatClient';
+import { syncRevenueCatAttributionForCurrentUser } from '../../services/subscriptions/revenueCatIdentitySync';
 import { trackNotificationPermissionResult } from '../../services/analytics/tracking';
 import {
   trackOnboardingBackPressed,
@@ -87,6 +87,15 @@ export interface OnboardingFlowResult {
   dailyMinutes: number | null;
   defaultTechniqueId: string | null;
   lungCapacity: LungCapacityResult | null;
+}
+
+async function syncPostAttAttribution(): Promise<void> {
+  try {
+    void logAppsFlyerDiagnostics();
+    await syncRevenueCatAttributionForCurrentUser();
+  } catch {
+    // Attribution is best-effort and must never block onboarding.
+  }
 }
 
 interface OnboardingFlowProps {
@@ -161,7 +170,6 @@ export default function OnboardingFlow({
   onComplete,
 }: OnboardingFlowProps) {
   const userId = useAuthStore((state) => state.user?.id ?? null);
-  const userEmail = useAuthStore((state) => state.user?.email ?? null);
   const isPro = useUserEntitlementQuery(userId).data?.isPro === true;
   const [step, setStep] = useState<OnboardingStep>(
     initialSavedProfile == null ? 'intent' : 'paywall',
@@ -217,6 +225,7 @@ export default function OnboardingFlow({
     initialSavedProfile == null ? 'new' : 'saved_profile',
   );
   const hasTrackedStartRef = useRef(false);
+  const resumedAttributionSyncedUserRef = useRef<string | null>(null);
   const previousViewedStepRef = useRef<OnboardingStep | null>(null);
   const setExitOfferPending = useExitOfferStore((state) => state.setPending);
   const paywall = usePaywall({
@@ -339,16 +348,13 @@ export default function OnboardingFlow({
     // would reach the paywall with ATT undetermined — the SDK would remain in
     // manual-start mode and their trial/registration events would be dropped.
     // Prompt here instead, mirroring attPriming's post-prompt sequence.
-    if (initialSavedProfile == null) return;
-    void requestAttPermissionOnce().then(() => initAppsFlyer()).then(() => {
-      void logAppsFlyerDiagnostics();
-      if (userId != null) {
-        void syncAppsFlyerIdentityForUser(userId, userEmail);
-      }
-      void collectRevenueCatDeviceIdentifiers();
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (initialSavedProfile == null || userId == null) return;
+    if (resumedAttributionSyncedUserRef.current === userId) return;
+    resumedAttributionSyncedUserRef.current = userId;
+    void requestAttPermissionOnce()
+      .then(() => initAppsFlyer())
+      .then(() => syncPostAttAttribution());
+  }, [initialSavedProfile, userId]);
 
   useEffect(() => {
     const eventInput = getStepEventInput(step);
@@ -1007,14 +1013,12 @@ export default function OnboardingFlow({
           // Show Apple's ATT dialog right after the pre-prompt, then advance once
           // the user has responded. requestAttPermissionOnce never rejects and
           // no-ops if already resolved, so navigation always proceeds.
-          void requestAttPermissionOnce().then(() => initAppsFlyer()).then(() => {
-            void logAppsFlyerDiagnostics();
-            if (userId != null) {
-              void syncAppsFlyerIdentityForUser(userId, userEmail);
-            }
-            void collectRevenueCatDeviceIdentifiers();
-            goToStep('fiveMinutes', 'continue');
-          });
+          void requestAttPermissionOnce()
+            .then(() => initAppsFlyer())
+            .then(() => syncPostAttAttribution())
+            .then(() => {
+              goToStep('fiveMinutes', 'continue');
+            });
         }}
         onBack={() => goToStep('recommendedExercise', 'back')}
       />
