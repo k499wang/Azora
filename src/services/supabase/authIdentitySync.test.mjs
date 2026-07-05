@@ -50,6 +50,9 @@ function createHarness(initialSession) {
   };
 
   const dependencies = {
+    clearAppsFlyerIdentity: () => {
+      events.push({ event: 'APPSFLYER_SIGNED_OUT', session: null });
+    },
     clearRevenueCatIdentity: async () => {
       events.push({ event: 'SIGNED_OUT', session: null });
     },
@@ -189,6 +192,7 @@ test('registerAuthIdentitySync clears state on SIGNED_OUT', async () => {
       'SIGNED_IN',
       'USER_UPDATED',
       'PASSWORD_RECOVERY',
+      'APPSFLYER_SIGNED_OUT',
       'SIGNED_OUT',
     ],
   );

@@ -3,6 +3,7 @@ import {
   onUserSignedIn as identifyPostHogUser,
   onUserSignedOut as resetPostHogUser,
 } from '../analytics/identity';
+import { clearAppsFlyerIdentity } from '../attribution/appsFlyerIdentitySync';
 import {
   clearRevenueCatIdentity as clearRevenueCatIdentityState,
   getCurrentRevenueCatAppUserId,
@@ -19,6 +20,7 @@ import {
 } from './authIdentitySyncCore';
 
 const defaultDependencies: AuthIdentitySyncDependencies = {
+  clearAppsFlyerIdentity,
   clearRevenueCatIdentity: clearRevenueCatIdentityState,
   ensureProfile: ensureUserProfile,
   getSupabaseClient,
