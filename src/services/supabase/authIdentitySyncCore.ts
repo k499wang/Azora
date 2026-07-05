@@ -6,6 +6,7 @@ import {
 } from '../debug/identitySyncLogger.js';
 
 export interface AuthIdentitySyncDependencies {
+  clearAppsFlyerIdentity?: () => void;
   clearRevenueCatIdentity: () => Promise<void>;
   ensureProfile: (userId: string) => Promise<void>;
   getSupabaseClient: () => SupabaseClientLike | null;
@@ -122,6 +123,7 @@ export function registerAuthIdentitySync(
         revenuecat_current_app_user_id: dependencies.getRevenueCatAppUserId?.() ?? null,
       });
       dependencies.onUserSignedOut();
+      dependencies.clearAppsFlyerIdentity?.();
       await dependencies.clearRevenueCatIdentity();
       dependencies.onRevenueCatSignedOut?.();
       logIdentitySyncDebug('supabase.identity_sync_sign_out_completed', {
