@@ -30,6 +30,7 @@ export type RootStackParamList = {
     sourceScreen?: string;
     sourceAction?: string;
     feature?: FeatureKeyValue;
+    isBlocking?: boolean;
   };
   HeartRateSessionDetail: { sessionId: string };
   ExerciseSession: { techniqueId: string };
