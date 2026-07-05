@@ -101,6 +101,10 @@ export async function getPaywallOffering(
       offeringIdentifier: offering.identifier,
       experimentId: getMetadataString(offering.metadata, 'experiment_id'),
       experimentVariant: getMetadataString(offering.metadata, 'experiment_variant'),
+      paywallMode:
+        getMetadataString(offering.metadata, 'paywall_mode') === 'hard'
+          ? 'hard'
+          : 'soft',
       packages,
     },
     revenueCatPackages: { weekly, annual },
@@ -216,7 +220,6 @@ function getMetadataString(
   const value = metadata[key];
   return typeof value === 'string' && value.length > 0 ? value : null;
 }
-
 async function getTrialEligibilityStatus(
   pkg: PurchasesPackage | null,
 ): Promise<TrialEligibilityStatus> {

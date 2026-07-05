@@ -31,6 +31,7 @@ import RecommendedExerciseScreen from './screens/RecommendedExerciseScreen';
 import FounderNoteScreen from './screens/FounderNoteScreen';
 import FiveMinutesScreen from './screens/FiveMinutesScreen';
 import OnboardingPaywallScreen from './screens/OnboardingPaywallScreen';
+import ExitOfferSheet from '../paywall/ExitOfferSheet';
 import LungCapacityScreen from './screens/LungCapacityScreen';
 import type { LungCapacityResult } from '../../lib/lungCapacity';
 import { PERSONALIZED_INTENT_OPTIONS } from './data/intentOptions';
@@ -59,6 +60,7 @@ import {
   trackOnboardingProfileSaveFailed,
   trackOnboardingProfileSaveStarted,
   trackOnboardingProfileSaveSucceeded,
+  trackOnboardingRegistrationCompleted,
   trackOnboardingStarted,
   trackOnboardingStepCompleted,
   trackOnboardingStepSkipped,
@@ -136,6 +138,7 @@ const BASE_STEP_INDEX = STEP_ORDER.reduce<Record<OnboardingStep, number>>(
 const VISUAL_PROGRESS_STEP_COUNT = 100;
 const FRONT_LOADED_PROGRESS_EXPONENT = 0.65;
 const PROGRESS_ANIMATION_MS = 520;
+const EXIT_OFFER_IDLE_MS = 20_000;
 
 function computeFrontLoadedProgress(stepIndex: number, stepCount: number) {
   if (stepCount <= 0) return 0;
@@ -221,6 +224,19 @@ export default function OnboardingFlow({
     sourceScreen: 'onboarding',
     enabled: step === 'paywall',
   });
+  // Fail-soft: a missing/unloadable offering means we can't sell anything, so
+  // the free path must stay available.
+  const paywallMode = paywall.offering?.paywallMode ?? 'soft';
+  const [isExitOfferVisible, setIsExitOfferVisible] = useState(false);
+  const [hasReachedPlanStep, setHasReachedPlanStep] = useState(false);
+  // Auto triggers (idle, cancelled purchase) fire at most once per session;
+  // the explicit "Maybe later" tap can always reopen the offer.
+  const hasAutoShownExitOfferRef = useRef(false);
+
+  const showExitOffer = () => {
+    hasAutoShownExitOfferRef.current = true;
+    setIsExitOfferVisible(true);
+  };
 
   const selectedOption = useMemo(
     () => PERSONALIZED_INTENT_OPTIONS.find((option) => option.id === primaryIntent) ?? null,
@@ -352,6 +368,33 @@ export default function OnboardingFlow({
     previousViewedStepRef.current = step;
   }, [step]);
 
+  useEffect(() => {
+    // Hard-paywall idle trigger: lingering on the plan step ("Unlock Azora
+    // for free") without acting is exit intent, so slide the one-time offer
+    // up. The countdown never runs while a purchase/restore/completion is in
+    // flight (the store sheet being open must not count as idling) and
+    // restarts from zero when that activity ends.
+    if (step !== 'paywall' || paywallMode !== 'hard' || isPro) return;
+    if (!hasReachedPlanStep) return;
+    if (hasAutoShownExitOfferRef.current || isExitOfferVisible) return;
+    if (paywall.isPurchasing || paywall.isRestoring || isSubmitting) return;
+
+    const id = setTimeout(() => {
+      hasAutoShownExitOfferRef.current = true;
+      setIsExitOfferVisible(true);
+    }, EXIT_OFFER_IDLE_MS);
+    return () => clearTimeout(id);
+  }, [
+    step,
+    paywallMode,
+    isPro,
+    hasReachedPlanStep,
+    isExitOfferVisible,
+    paywall.isPurchasing,
+    paywall.isRestoring,
+    isSubmitting,
+  ]);
+
   const toggleIntent = (intentId: string) => {
     if (isSubmitting) return;
     const isSelected = selectedIntents.includes(intentId);
@@ -461,6 +504,7 @@ export default function OnboardingFlow({
         elapsed_ms: Date.now() - startedAt,
         ...buildProfileAnalyticsProperties(result),
       });
+      trackOnboardingRegistrationCompleted();
       console.log('[onboarding-seal] save succeeded', {
         userId,
         elapsedMs: Date.now() - startedAt,
@@ -516,6 +560,18 @@ export default function OnboardingFlow({
     if (isSubmitting) return;
 
     const result = await paywall.purchaseSelectedPackage();
+
+    // Cancelling the store sheet is exit intent — counter with the offer.
+    if (
+      result.status === 'cancelled' &&
+      paywallMode === 'hard' &&
+      !isPro &&
+      !hasAutoShownExitOfferRef.current
+    ) {
+      showExitOffer();
+      return;
+    }
+
     if (result.status === 'purchased' && result.isPro) {
       await finish('purchase');
     }
@@ -1063,29 +1119,47 @@ export default function OnboardingFlow({
       mindMap,
     });
     return (
-      <OnboardingPaywallScreen
-        offering={paywall.offering}
-        selectedPackageId={paywall.selectedPackageId}
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
-        isLoading={paywall.isLoading}
-        isPurchasing={paywall.isPurchasing}
-        isRestoring={paywall.isRestoring}
-        isCompleting={isSubmitting || isSavingProfile || isCompletingOnboarding}
-        errorMessage={paywall.errorMessage ?? errorMessage}
-        personalization={personalization}
-        onSelectPackage={paywall.selectPackage}
-        onPurchase={() => {
-          void purchaseSelectedPackage();
-        }}
-        onRestore={() => {
-          void restorePurchases();
-        }}
-        onRetry={() => {
-          void paywall.retryRevenueCatSync();
-        }}
-        onContinueWithoutPro={continueWithoutPro}
-      />
+      <>
+        <OnboardingPaywallScreen
+          offering={paywall.offering}
+          selectedPackageId={paywall.selectedPackageId}
+          stepIndex={visualStepIndex}
+          stepCount={visualStepCount}
+          isLoading={paywall.isLoading}
+          isPurchasing={paywall.isPurchasing}
+          isRestoring={paywall.isRestoring}
+          isCompleting={isSubmitting || isSavingProfile || isCompletingOnboarding}
+          errorMessage={paywall.errorMessage ?? errorMessage}
+          personalization={personalization}
+          onSelectPackage={paywall.selectPackage}
+          onPurchase={() => {
+            void purchaseSelectedPackage();
+          }}
+          onRestore={() => {
+            void restorePurchases();
+          }}
+          onRetry={() => {
+            void paywall.retryRevenueCatSync();
+          }}
+          onContinueWithoutPro={
+            paywallMode === 'hard' && !isPro ? undefined : continueWithoutPro
+          }
+          onFinalStepReached={() => setHasReachedPlanStep(true)}
+        />
+        <ExitOfferSheet
+          visible={isExitOfferVisible}
+          sourceScreen="onboarding_exit_offer"
+          onPurchased={() => {
+            setIsExitOfferVisible(false);
+            void finish('purchase');
+          }}
+          onRestored={() => {
+            setIsExitOfferVisible(false);
+            void finish('restore');
+          }}
+          onDismiss={() => setIsExitOfferVisible(false)}
+        />
+      </>
     );
   }
 

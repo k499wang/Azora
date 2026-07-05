@@ -161,9 +161,15 @@ export function trackOnboardingCompleted(input: StepEventInput & {
     ...stepProperties(input),
     completion_path: input.completion_path,
   });
-  // Funnel signal AppsFlyer (and Meta) optimize against; revenue events arrive
-  // separately via the RevenueCat → AppsFlyer server-to-server integration.
+}
+
+// Funnel signal AppsFlyer (and Meta) optimize against. Fires when the quiz
+// profile is saved (seal screen), before the paywall, so its volume is
+// independent of paywall mode — under a hard paywall decliners never complete
+// onboarding. Revenue events arrive separately via the RevenueCat → AppsFlyer
+// server-to-server integration.
+export function trackOnboardingRegistrationCompleted() {
   void logAppsFlyerEvent('af_complete_registration', {
-    af_registration_method: input.completion_path,
+    af_registration_method: 'onboarding_profile_saved',
   });
 }

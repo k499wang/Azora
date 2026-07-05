@@ -54,7 +54,7 @@ double-count. The app logs only funnel milestones RC does not send:
 
 | App event | Fired from | Meta mapping |
 |-----------|-----------|--------------|
-| `af_complete_registration` | `trackOnboardingCompleted` | `CompleteRegistration` |
+| `af_complete_registration` | `trackOnboardingRegistrationCompleted` (profile save on the seal screen, before the paywall — independent of paywall mode) | `CompleteRegistration` |
 
 Add new app events beside their PostHog `capture(...)` call so AppsFlyer and
 PostHog stay in lockstep. Always use `logAppsFlyerEvent` (Promise form — the
