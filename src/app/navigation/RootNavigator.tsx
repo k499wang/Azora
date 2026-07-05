@@ -26,8 +26,8 @@ import { useUserEntitlementQuery } from '../../queries/subscriptions/useUserEnti
 import { OnboardingFlow } from '../../components/onboarding';
 import AmbientBackground from '../../components/common/AmbientBackground';
 import { PaywallPlacement } from '../../services/paywall';
-import { HardPaywallGate } from '../../components/paywall/HardPaywallGate';
 import { getPaywallOffering, type PaywallMode } from '../../services/paywall';
+import { ensureRevenueCatIdentityForCurrentUser } from '../../services/subscriptions/revenueCatIdentitySync';
 import { useAuthStore } from '../../stores/authStore';
 import { useExitOfferStore } from '../../stores/exitOfferStore';
 import { useRevenueCatIdentityStore } from '../../stores/revenueCatIdentityStore';
@@ -137,7 +137,7 @@ function MainTabsRoute({ showBootPaywall }: AppStackProps) {
     <>
       {exitOfferPending ? <ExitOfferPresenter /> : null}
       <MainTabs />
-      {/* After MainTabs so the hard gate overlay covers it. */}
+      {/* After MainTabs so the boot paywall can present over the app. */}
       {!exitOfferPending && showBootPaywall ? <BootPaywallGate /> : null}
     </>
   );
@@ -175,6 +175,7 @@ function BootPaywallGate() {
     if (revenueCatStatus !== 'synced' || revenueCatAppUserId !== userId) {
       // Identity still syncing — fail soft if it doesn't settle so non-Pro
       // users are never left with no paywall at all.
+      void ensureRevenueCatIdentityForCurrentUser();
       const id = setTimeout(() => setPaywallMode('soft'), 6000);
       return () => clearTimeout(id);
     }
@@ -193,8 +194,7 @@ function BootPaywallGate() {
   }, [shouldGate, paywallMode, revenueCatStatus, revenueCatAppUserId, userId]);
 
   if (!shouldGate || paywallMode == null) return null;
-  if (paywallMode === 'hard') return <HardPaywallGate />;
-  return <BootPaywallPresenter />;
+  return <BootPaywallPresenter isBlocking={paywallMode === 'hard'} />;
 }
 
 function ExitOfferPresenter() {
@@ -217,7 +217,7 @@ function ExitOfferPresenter() {
   return null;
 }
 
-function BootPaywallPresenter() {
+function BootPaywallPresenter({ isBlocking = false }: { isBlocking?: boolean }) {
   const navigation = useNavigation<RootStackNavigationProp<'MainTabs'>>();
   const userId = useAuthStore((state) => state.user?.id ?? null);
   const entitlementQuery = useUserEntitlementQuery(userId);
@@ -233,11 +233,13 @@ function BootPaywallPresenter() {
       placement: PaywallPlacement.ProfileUpgrade,
       sourceScreen: 'RootNavigator',
       sourceAction: 'app_boot',
+      isBlocking,
     });
   }, [
     entitlementQuery.data?.isPro,
     entitlementQuery.isError,
     entitlementQuery.isPending,
+    isBlocking,
     navigation,
     userId,
   ]);

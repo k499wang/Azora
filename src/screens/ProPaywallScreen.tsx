@@ -31,6 +31,7 @@ const PRIVACY_URL = 'https://www.tryazora.app/privacy';
 
 export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'ProPaywall'>) {
   const placement = route.params?.placement ?? PaywallPlacement.ProfileUpgrade;
+  const isBlocking = route.params?.isBlocking === true;
   const paywall = usePaywall({
     placement,
     feature: route.params?.feature,
@@ -46,6 +47,7 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
   const closeFadeAnim = useRef(new Animated.Value(0)).current;
   const [isExiting, setIsExiting] = useState(false);
   const [closeEnabled, setCloseEnabled] = useState(false);
+  const allowDismissRef = useRef(false);
 
   useEffect(() => {
     Animated.parallel([
@@ -63,6 +65,8 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
       }),
     ]).start();
 
+    if (isBlocking) return;
+
     const timeout = setTimeout(() => {
       setCloseEnabled(true);
       Animated.timing(closeFadeAnim, {
@@ -73,7 +77,25 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
       }).start();
     }, 2000);
     return () => clearTimeout(timeout);
-  }, [closeFadeAnim, fadeAnim, slideAnim]);
+  }, [closeFadeAnim, fadeAnim, isBlocking, slideAnim]);
+
+  useEffect(() => {
+    navigation.setOptions({ gestureEnabled: !isBlocking });
+    return () => {
+      navigation.setOptions({ gestureEnabled: true });
+    };
+  }, [isBlocking, navigation]);
+
+  useEffect(() => {
+    if (!isBlocking) return;
+
+    const unsubscribe = navigation.addListener('beforeRemove', (event) => {
+      if (allowDismissRef.current) return;
+      event.preventDefault();
+    });
+
+    return unsubscribe;
+  }, [isBlocking, navigation]);
 
   const annualPackage = paywall.offering?.packages.find((pkg) => pkg.id === 'annual');
   const weeklyPackage = paywall.offering?.packages.find((pkg) => pkg.id === 'weekly');
@@ -92,6 +114,7 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
   );
 
   const closePaywall = useCallback(() => {
+    if (isBlocking) return;
     if (isBusy || isExiting) return;
     setIsExiting(true);
     Animated.timing(exitSlideAnim, {
@@ -105,11 +128,12 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
         navigation.goBack();
       }
     });
-  }, [exitSlideAnim, isBusy, isExiting, navigation, paywall, windowHeight]);
+  }, [exitSlideAnim, isBlocking, isBusy, isExiting, navigation, paywall, windowHeight]);
 
   const purchaseSelectedPackage = useCallback(async () => {
     const result = await paywall.purchaseSelectedPackage();
     if (result.status === 'purchased' && result.isPro) {
+      allowDismissRef.current = true;
       navigation.goBack();
     }
   }, [navigation, paywall]);
@@ -117,6 +141,7 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
   const restorePurchases = useCallback(async () => {
     const result = await paywall.restorePurchases();
     if (result.status === 'restored' && result.isPro) {
+      allowDismissRef.current = true;
       navigation.goBack();
     }
   }, [navigation, paywall]);
@@ -147,22 +172,26 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
       >
         <View style={styles.header}>
           <View style={styles.headerSpacer} />
-          <Animated.View style={{ opacity: closeFadeAnim }} pointerEvents={closeEnabled ? 'auto' : 'none'}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Close paywall"
-              hitSlop={12}
-              disabled={isBusy || isExiting || !closeEnabled}
-              onPress={closePaywall}
-              style={({ pressed }) => [
-                styles.headerButton,
-                pressed && styles.subtlePressed,
-                (isBusy || isExiting) && styles.disabled,
-              ]}
-            >
-              <Text style={styles.closeText}>×</Text>
-            </Pressable>
-          </Animated.View>
+          {isBlocking ? (
+            <View style={styles.headerSpacer} />
+          ) : (
+            <Animated.View style={{ opacity: closeFadeAnim }} pointerEvents={closeEnabled ? 'auto' : 'none'}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Close paywall"
+                hitSlop={12}
+                disabled={isBusy || isExiting || !closeEnabled}
+                onPress={closePaywall}
+                style={({ pressed }) => [
+                  styles.headerButton,
+                  pressed && styles.subtlePressed,
+                  (isBusy || isExiting) && styles.disabled,
+                ]}
+              >
+                <Text style={styles.closeText}>×</Text>
+              </Pressable>
+            </Animated.View>
+          )}
         </View>
 
         <ScrollView
