@@ -1,4 +1,4 @@
-import { requireSupabaseClient, type SupabaseClientLike } from '../supabase';
+import { requireSupabaseClient, type SupabaseClientLike } from '../supabase/client';
 
 interface ProfileBootstrapDatabase {
   public: {

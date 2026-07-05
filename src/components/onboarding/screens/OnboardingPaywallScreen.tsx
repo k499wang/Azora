@@ -53,7 +53,10 @@ interface OnboardingPaywallScreenProps {
   onPurchase: () => void;
   onRestore: () => void;
   onRetry: () => void;
-  onContinueWithoutPro: () => void;
+  // Absent under the hard paywall: no self-serve decline; exit intent
+  // (cancelled purchase / idling on the plan step) drives the exit offer.
+  onContinueWithoutPro?: () => void;
+  onFinalStepReached?: () => void;
 }
 
 export default function OnboardingPaywallScreen({
@@ -70,6 +73,7 @@ export default function OnboardingPaywallScreen({
   onRestore,
   onRetry,
   onContinueWithoutPro,
+  onFinalStepReached,
 }: OnboardingPaywallScreenProps) {
   const insets = useSafeAreaInsets();
   const [step, setStep] = useState(0);
@@ -259,9 +263,15 @@ export default function OnboardingPaywallScreen({
   );
 
   const handleContinueWithoutPro = useCallback(() => {
-    if (isBusy) return;
+    if (isBusy || onContinueWithoutPro == null) return;
     onContinueWithoutPro();
   }, [isBusy, onContinueWithoutPro]);
+
+  useEffect(() => {
+    if (step === STEP_COUNT - 1) {
+      onFinalStepReached?.();
+    }
+  }, [step, onFinalStepReached]);
 
   const handleNext = useCallback(() => {
     if (step < STEP_COUNT - 1) animateToStep(step + 1, 1);
@@ -337,24 +347,7 @@ export default function OnboardingPaywallScreen({
             <View style={styles.headerButton} />
           )}
           <PaywallStepDots count={STEP_COUNT} current={step} dark={darkChrome} />
-          {step === STEP_COUNT - 1 ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Close paywall"
-              hitSlop={12}
-              disabled={isBusy}
-              onPress={handleContinueWithoutPro}
-              style={({ pressed }) => [
-                styles.headerButton,
-                pressed && styles.subtlePressed,
-                isBusy && styles.disabled,
-              ]}
-            >
-              <Text style={[styles.closeText, !darkChrome && styles.headerTextLight]}>×</Text>
-            </Pressable>
-          ) : (
-            <View style={styles.headerButton} />
-          )}
+          <View style={styles.headerButton} />
         </View>
 
         <ScrollView
@@ -456,6 +449,21 @@ export default function OnboardingPaywallScreen({
                   {isRestoring ? 'Restoring...' : 'Restore Purchase'}
                 </Text>
               </Pressable>
+              {onContinueWithoutPro != null ? (
+                <Pressable
+                  accessibilityRole="button"
+                  disabled={isBusy}
+                  onPress={handleContinueWithoutPro}
+                  hitSlop={8}
+                  style={({ pressed }) => [
+                    styles.maybeLaterButton,
+                    pressed && styles.subtlePressed,
+                    isBusy && styles.disabled,
+                  ]}
+                >
+                  <Text style={styles.maybeLaterText}>Maybe later</Text>
+                </Pressable>
+              ) : null}
               <Text style={styles.legal}>
                 Subscriptions auto-renew unless cancelled. Manage or cancel in App Store settings.{' '}
                 By continuing, you agree to the{' '}
@@ -517,12 +525,16 @@ const styles = StyleSheet.create({
     lineHeight: 34,
     color: colors.neutral[0],
   },
-  closeText: {
+  maybeLaterButton: {
+    alignSelf: 'center',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+  },
+  maybeLaterText: {
+    ...typography.caption.caption1,
     fontFamily: fonts.semibold,
     fontWeight: '500',
-    fontSize: 32,
-    lineHeight: 32,
-    color: colors.neutral[0],
+    color: colors.primary.blue200,
   },
   headerTextLight: {
     color: colors.text.primary,

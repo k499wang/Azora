@@ -14,10 +14,17 @@ export interface PaywallPackageOption {
   isRecommended: boolean;
 }
 
+// Remote-controlled via the offering's `paywall_mode` metadata key. 'hard'
+// removes the free path out of the onboarding paywall; anything else (or a
+// missing/unloadable offering) falls back to 'soft' so a config or network
+// problem can never lock users out of the app.
+export type PaywallMode = 'hard' | 'soft';
+
 export interface PaywallOffering {
   offeringIdentifier: string;
   experimentId: string | null;
   experimentVariant: string | null;
+  paywallMode: PaywallMode;
   packages: PaywallPackageOption[];
 }
 

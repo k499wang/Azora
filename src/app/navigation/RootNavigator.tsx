@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
 import { StyleSheet, View } from 'react-native';
@@ -26,8 +26,11 @@ import { useUserEntitlementQuery } from '../../queries/subscriptions/useUserEnti
 import { OnboardingFlow } from '../../components/onboarding';
 import AmbientBackground from '../../components/common/AmbientBackground';
 import { PaywallPlacement } from '../../services/paywall';
+import { HardPaywallGate } from '../../components/paywall/HardPaywallGate';
+import { getPaywallOffering, type PaywallMode } from '../../services/paywall';
 import { useAuthStore } from '../../stores/authStore';
 import { useExitOfferStore } from '../../stores/exitOfferStore';
+import { useRevenueCatIdentityStore } from '../../stores/revenueCatIdentityStore';
 import { colors } from '../../theme/colors';
 import { MainTabs } from './MainTabs';
 import type { RootStackNavigationProp, RootStackParamList } from './types';
@@ -132,14 +135,66 @@ function MainTabsRoute({ showBootPaywall }: AppStackProps) {
 
   return (
     <>
-      {exitOfferPending ? (
-        <ExitOfferPresenter />
-      ) : showBootPaywall ? (
-        <BootPaywallPresenter />
-      ) : null}
+      {exitOfferPending ? <ExitOfferPresenter /> : null}
       <MainTabs />
+      {/* After MainTabs so the hard gate overlay covers it. */}
+      {!exitOfferPending && showBootPaywall ? <BootPaywallGate /> : null}
     </>
   );
+}
+
+// Decides how non-Pro users meet the paywall on boot: hard mode renders a
+// blocking full-screen gate; soft mode (or any failure resolving the mode)
+// falls back to the dismissible ProPaywall modal.
+function BootPaywallGate() {
+  const userId = useAuthStore((state) => state.user?.id ?? null);
+  const entitlementQuery = useUserEntitlementQuery(userId);
+  const revenueCatStatus = useRevenueCatIdentityStore((state) => state.status);
+  const revenueCatAppUserId = useRevenueCatIdentityStore((state) => state.appUserId);
+  const [paywallMode, setPaywallMode] = useState<PaywallMode | null>(null);
+
+  const isPro = entitlementQuery.data?.isPro === true;
+  const shouldGate =
+    userId != null &&
+    !entitlementQuery.isPending &&
+    !entitlementQuery.isError &&
+    !isPro;
+
+  useEffect(() => {
+    if (!shouldGate || paywallMode != null) return;
+
+    if (
+      revenueCatStatus === 'unavailable' ||
+      revenueCatStatus === 'failed' ||
+      revenueCatStatus === 'signed_out'
+    ) {
+      setPaywallMode('soft');
+      return;
+    }
+
+    if (revenueCatStatus !== 'synced' || revenueCatAppUserId !== userId) {
+      // Identity still syncing — fail soft if it doesn't settle so non-Pro
+      // users are never left with no paywall at all.
+      const id = setTimeout(() => setPaywallMode('soft'), 6000);
+      return () => clearTimeout(id);
+    }
+
+    let isActive = true;
+    getPaywallOffering(PaywallPlacement.ProfileUpgrade)
+      .then((result) => {
+        if (isActive) setPaywallMode(result.offering?.paywallMode ?? 'soft');
+      })
+      .catch(() => {
+        if (isActive) setPaywallMode('soft');
+      });
+    return () => {
+      isActive = false;
+    };
+  }, [shouldGate, paywallMode, revenueCatStatus, revenueCatAppUserId, userId]);
+
+  if (!shouldGate || paywallMode == null) return null;
+  if (paywallMode === 'hard') return <HardPaywallGate />;
+  return <BootPaywallPresenter />;
 }
 
 function ExitOfferPresenter() {
