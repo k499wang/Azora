@@ -5,7 +5,6 @@ import { posthog } from '../config/posthog';
 import { AnalyticsEvent } from '../services/analytics/events';
 import { logRevenueCatDebugSnapshot } from '../services/debug/revenueCatDebugSnapshot';
 import { syncAppsFlyerIdentityForUser } from '../services/attribution/appsFlyerIdentitySync';
-import { logAppsFlyerEvent } from '../services/attribution/appsFlyerClient';
 import {
   buildPaywallEventProperties,
   getPaywallOffering,
@@ -242,8 +241,6 @@ export function usePaywall({
 
   const purchaseSelectedPackage = async (): Promise<PaywallResult> => {
     const selectedPackage = revenueCatPackages[selectedPackageId];
-    const selectedPackageOption =
-      offering?.packages.find((pkg) => pkg.id === selectedPackageId) ?? null;
     logRevenueCatDebugSnapshot('paywall_purchase_started');
     setIsPurchasing(true);
     setErrorMessage(null);
@@ -276,20 +273,6 @@ export function usePaywall({
         selected_package_id: selectedPackageId,
         is_pro: result.isPro,
       });
-      if (selectedPackageOption?.trialLabel != null) {
-        void logAppsFlyerEvent('azora_skan_start_trial', {
-          package_type: selectedPackageId,
-          selected_package_id: selectedPackageId,
-          product_id: selectedPackageOption.productIdentifier,
-          placement,
-          feature: feature ?? null,
-          source_screen: sourceScreen ?? null,
-          source_action: sourceAction ?? null,
-          offering_id: offering?.offeringIdentifier ?? null,
-          experiment_id: offering?.experimentId ?? null,
-          experiment_variant: offering?.experimentVariant ?? null,
-        });
-      }
       return result;
     }
 

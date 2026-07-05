@@ -1,11 +1,14 @@
-import { Platform } from 'react-native';
+import { AppState, Platform, type AppStateStatus } from 'react-native';
 import appsFlyer, { type ConversionData } from 'react-native-appsflyer';
 import {
   getAppsFlyerAppId,
   getAppsFlyerDevKey,
   isAppsFlyerSupportedPlatform,
 } from './appsFlyerConfig';
-import { isAttPermissionResolved } from './attPrompt';
+import {
+  getAttPermissionResolution,
+  type AttPermissionResolution,
+} from './attPrompt';
 
 // Acquisition channel for an install, mapped onto RevenueCat's reserved
 // attribution attributes so revenue can be sliced by source/campaign.
@@ -60,6 +63,8 @@ let initPromise: Promise<void> | null = null;
 let sdkInitialized = false;
 let sdkStarted = false;
 let listenersRegistered = false;
+let attRetrySubscription: { remove: () => void } | null = null;
+let attRetryTimeout: ReturnType<typeof setTimeout> | null = null;
 
 // Settable before init so the listener (which must register *before* initSdk)
 // can forward to whatever the app wires up later.
@@ -191,15 +196,52 @@ async function startAppsFlyerSdkIfReady(): Promise<void> {
   if (sdkStarted) return;
 
   if (Platform.OS === 'ios') {
-    const isResolved = await isAttPermissionResolved();
-    if (!isResolved) return;
+    const resolution = await getAttPermissionResolution();
+    if (sdkStarted) return;
+    if (resolution !== 'resolved') {
+      scheduleAppsFlyerStartRetry(resolution);
+      return;
+    }
   }
 
   try {
     appsFlyer.startSdk();
     sdkStarted = true;
+    clearAppsFlyerStartRetry();
   } catch {
     // Attribution is best-effort. Keep sdkStarted false so a later call retries.
+  }
+}
+
+function scheduleAppsFlyerStartRetry(reason: Exclude<AttPermissionResolution, 'resolved'>): void {
+  if (Platform.OS !== 'ios' || sdkStarted) return;
+
+  if (attRetrySubscription == null) {
+    attRetrySubscription = AppState.addEventListener('change', handleAppsFlyerRetryAppState);
+  }
+
+  // Transient permission-service failures can recover while the app remains
+  // active. Do one short retry in addition to the app-active retry.
+  if (reason === 'error' && attRetryTimeout == null) {
+    attRetryTimeout = setTimeout(() => {
+      attRetryTimeout = null;
+      void initAppsFlyer();
+    }, 1500);
+  }
+}
+
+function handleAppsFlyerRetryAppState(nextState: AppStateStatus): void {
+  if (nextState !== 'active') return;
+  clearAppsFlyerStartRetry();
+  void initAppsFlyer();
+}
+
+function clearAppsFlyerStartRetry(): void {
+  attRetrySubscription?.remove();
+  attRetrySubscription = null;
+  if (attRetryTimeout != null) {
+    clearTimeout(attRetryTimeout);
+    attRetryTimeout = null;
   }
 }
 
