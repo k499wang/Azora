@@ -994,3 +994,70 @@ test('HeartRateManager: locked-in finger that goes flat is invalidated', () => {
   }
   assert.ok(sawLost, 'sustained flat signal after lock-in should force a lost state');
 });
+
+test('HeartRateManager: cold-start echo peaks never publish a doubled BPM', () => {
+  // Each 30-frame (~990ms) cycle has the real beat plus a same-height echo
+  // bump ~429ms later (a dicrotic notch the startup threshold fails to
+  // reject). The resulting intervals alternate ~429/~561ms — before the
+  // cold-start pair confirmation these seeded the history and published a
+  // near-doubled first BPM that then bled down on screen.
+  const manager = new HeartRateManager();
+  let t = 0;
+  for (let i = 0; i < WARMUP_FRAMES; i++) {
+    manager.processFrame(makeFrame(t, BASELINE_WEIGHTED));
+    t += FRAME_SPACING_MS;
+  }
+
+  const reported = [];
+  const totalFrames = 30 * 14;
+  for (let i = 0; i < totalFrames; i++) {
+    const phase = i % 30;
+    const weighted =
+      phase === 0 || phase === 13 ? BEAT_WEIGHTED : BASELINE_WEIGHTED;
+    manager.processFrame(makeFrame(t, weighted));
+    const bpm = manager.getCurrentBpm();
+    if (bpm != null) reported.push(bpm);
+    t += FRAME_SPACING_MS;
+  }
+
+  for (const bpm of reported) {
+    assert.ok(
+      bpm <= 70,
+      `echo train must never read near-doubled BPM, got ${bpm} (true ~61)`,
+    );
+  }
+});
+
+test('HeartRateManager: first BPM lock waits until recent intervals agree', () => {
+  // Two ~495ms intervals from startup noise followed by the real ~990ms
+  // rhythm: the first four history entries disagree, so the EMA must not
+  // seed from their median (~81 BPM). It should stay unpublished and later
+  // lock onto the true rhythm.
+  const manager = new HeartRateManager();
+  const beatFrames = new Set([10, 25, 40]);
+  for (let f = 70; f <= 70 + 30 * 16; f += 30) beatFrames.add(f);
+
+  let t = 0;
+  for (let i = 0; i < WARMUP_FRAMES; i++) {
+    manager.processFrame(makeFrame(t, BASELINE_WEIGHTED));
+    t += FRAME_SPACING_MS;
+  }
+
+  const reported = [];
+  const totalFrames = 70 + 30 * 16 + 15;
+  for (let i = 0; i < totalFrames; i++) {
+    const weighted = beatFrames.has(i) ? BEAT_WEIGHTED : BASELINE_WEIGHTED;
+    manager.processFrame(makeFrame(t, weighted));
+    const bpm = manager.getCurrentBpm();
+    if (bpm != null) reported.push(bpm);
+    t += FRAME_SPACING_MS;
+  }
+
+  assert.ok(reported.length > 0, 'expected the true rhythm to lock eventually');
+  for (const bpm of reported) {
+    assert.ok(
+      bpm >= 55 && bpm <= 68,
+      `BPM must only publish once locked on the true ~61 rhythm, got ${bpm}`,
+    );
+  }
+});

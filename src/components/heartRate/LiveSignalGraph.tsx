@@ -487,8 +487,11 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     marginBottom: spacing.xs,
   },
+  // Imperfect placement mutes the reading rather than hiding it: the number
+  // must stay legible through the brief placement flaps that normal finger
+  // pressure shifts cause, while still signalling reduced confidence.
   bpmRowDim: {
-    opacity: 0.25,
+    opacity: 0.55,
   },
   bpmNumber: {
     fontFamily: fonts.semibold,

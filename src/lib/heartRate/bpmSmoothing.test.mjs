@@ -93,35 +93,35 @@ test('Live BPM presentation filter uses the onboarding baseline display response
 test('Live BPM presentation filter holds through isolated collapse and rebound noise', () => {
   assert.deepEqual(
     visibleLiveBpmSequence([100, 101, 100, 99, 100, 50, 80, 101]),
-    [100, 101, 100, 99, 100, 100, 100, 101],
+    [100, 100, 100, 100, 100, 100, 100, 100],
   );
 });
 
 test('Live BPM presentation filter accepts sustained changes slowly', () => {
   assert.deepEqual(
     visibleLiveBpmSequence([80, 81, 80, 80, 96, 97, 98, 99, 100]),
-    [80, 81, 80, 80, 80, 82, 82, 84, 84],
+    [80, 80, 80, 80, 80, 82, 82, 84, 84],
   );
 });
 
 test('breath exercise BPM presentation filter caps isolated upward jumps', () => {
   assert.deepEqual(
     visibleBreathExerciseBpmSequence([76, 77, 76, 87, 76, 77]),
-    [76, 77, 76, 78, 76, 77],
+    [76, 76, 76, 78, 78, 78],
   );
 });
 
 test('breath exercise BPM presentation filter lets sustained increases rise gradually', () => {
   assert.deepEqual(
     visibleBreathExerciseBpmSequence([76, 77, 76, 87, 88, 89, 90, 91]),
-    [76, 77, 76, 78, 80, 82, 84, 86],
+    [76, 76, 76, 78, 80, 82, 84, 86],
   );
 });
 
 test('breath exercise BPM presentation filter holds very large spikes for confirmation', () => {
   assert.deepEqual(
     visibleBreathExerciseBpmSequence([76, 77, 76, 96, 76, 77, 96, 98]),
-    [76, 77, 76, 76, 76, 77, 77, 79],
+    [76, 76, 76, 76, 76, 76, 76, 78],
   );
 });
 
@@ -167,4 +167,33 @@ test('buildGraphBpmValuePointsFromIbis keeps startup IBIs for short graph series
   );
 
   assert.equal(points[0]?.label, '3000');
+});
+
+test('presentation filter: deadband holds the displayed BPM through small wiggle', () => {
+  const filter = createBreathExerciseBpmPresentationFilter();
+  const first = filter.update({ elapsedMs: 0, bpm: 70 });
+  assert.equal(first, 70);
+
+  // Reading oscillates ±2 around the displayed value (detector timing
+  // jitter at rest) — the number must not move.
+  for (const [i, bpm] of [71, 69, 72, 68, 70].entries()) {
+    assert.equal(
+      filter.update({ elapsedMs: (i + 1) * 1_000, bpm }),
+      70,
+      `reading ${bpm} within the deadband should hold the display at 70`,
+    );
+  }
+});
+
+test('presentation filter: deadband still tracks a genuine trend', () => {
+  const filter = createBreathExerciseBpmPresentationFilter();
+  filter.update({ elapsedMs: 0, bpm: 70 });
+
+  // A sustained real drop keeps exceeding the deadband and the display
+  // follows at the decrease rate, settling within the deadband of the target.
+  const shown = [];
+  for (const [i, bpm] of [64, 62, 60, 60, 60, 60].entries()) {
+    shown.push(filter.update({ elapsedMs: (i + 1) * 1_000, bpm }));
+  }
+  assert.deepEqual(shown, [67, 64, 61, 61, 61, 61]);
 });

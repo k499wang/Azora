@@ -26,7 +26,7 @@ export default function AudioSettingsRow({
   disabled = false,
 }: AudioSettingsRowProps) {
   return (
-    <View style={[styles.row, selected && styles.rowSelected, disabled && styles.rowDisabled]}>
+    <View style={[styles.row, disabled && styles.rowDisabled]}>
       <Pressable
         onPress={onSelect}
         disabled={disabled}
@@ -72,11 +72,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm + 2,
     paddingHorizontal: spacing.md,
     borderRadius: 14,
-    backgroundColor: colors.background.elevated,
     gap: spacing.sm,
-  },
-  rowSelected: {
-    backgroundColor: colors.background.accentSoft,
   },
   rowDisabled: {
     opacity: 0.45,

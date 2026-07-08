@@ -19,6 +19,7 @@ import HoldProgressBar from '../components/exercise/HoldProgressBar';
 import { useLivePulse } from '../hooks/useLivePulse';
 import { HeartRateCameraPreview } from '../components/heartRate/HeartRateCameraPreview';
 import { LiveSignalGraph } from '../components/heartRate/LiveSignalGraph';
+import { FindingPulseHint } from '../components/heartRate/FindingPulseHint';
 import { HeartRateProcessingScreen } from '../components/heartRate/HeartRateProcessingScreen';
 import {
   showCameraAccessNeededAlert,
@@ -59,7 +60,13 @@ import {
 } from '../lib/heartRate/sessionPayload';
 import { buildBpmSeries } from '../lib/heartRate/bpmSeries';
 
-const PLACEMENT_GOOD_DURATION_MS = 1500;
+// Placement waits for the first locked BPM so the hold starts with a real
+// reading instead of calibrating through the prep breaths. On lock the prep
+// breathing starts right away (the BPM number itself is the confirmation). If
+// the pulse never locks (cold fingers, low perfusion), fall back to starting
+// anyway after a bounded wait — the gate must never hard-block the exercise.
+const PLACEMENT_LOCKED_START_DELAY_MS = 250;
+const PLACEMENT_LOCK_TIMEOUT_MS = 15000;
 const PRE_BREATH_CYCLES = 3;
 const PRE_BREATH_INHALE_SECONDS = 3;
 const PRE_BREATH_EXHALE_SECONDS = 6;
@@ -721,6 +728,8 @@ export default function DailyExercisePage({
     startPrepBreathingRef.current = startPrepBreathing;
   }, [startPrepBreathing]);
 
+  const placementBpmLocked = pulse.currentBpm != null;
+
   useEffect(() => {
     if (phase !== 'placement') return;
     if (!hrEnabled) return;
@@ -728,9 +737,9 @@ export default function DailyExercisePage({
     const t = setTimeout(() => {
       if (!flow.isActive()) return;
       startPrepBreathingRef.current();
-    }, PLACEMENT_GOOD_DURATION_MS);
+    }, placementBpmLocked ? PLACEMENT_LOCKED_START_DELAY_MS : PLACEMENT_LOCK_TIMEOUT_MS);
     return () => clearTimeout(t);
-  }, [flow, hrEnabled, phase, pulse.fingerPlacement]);
+  }, [flow, hrEnabled, phase, pulse.fingerPlacement, placementBpmLocked]);
 
 
   const releaseHold = () => {
@@ -878,10 +887,6 @@ export default function DailyExercisePage({
   const showCamera = (isPlacement || isLive) && pulse.active && cameraProps != null;
   const cameraSlot = showCamera ? <HeartRateCameraPreview {...cameraProps} /> : null;
 
-  const bpmDisplay =
-    isLive && pulse.active && presentedBpm != null
-      ? Math.round(presentedBpm)
-      : null;
   const signalGood =
     pulse.fingerPlacement === 'good' &&
     (pulse.signalStatus === 'measuring' || pulse.signalStatus === 'warming_up');
@@ -915,7 +920,7 @@ export default function DailyExercisePage({
                 <LiveSignalGraph
                   samples={pulse.liveSignalSamples}
                   fingerPlacement={pulse.fingerPlacement}
-                  bpm={isLive ? presentedBpm : null}
+                  bpm={presentedBpm}
                   beatTick={pulse.beatTick}
                   textColor={activeTheme.textPrimary}
                 />
@@ -991,9 +996,20 @@ export default function DailyExercisePage({
               </Animated.View>
               <View style={styles.belowSlot} pointerEvents="none">
                 {isPlacement ? (
-                  <Text style={[styles.hintText, { color: activeTheme.textSecondary }]}>
-                    {placementHint(pulse.fingerPlacement)}
-                  </Text>
+                  pulse.signalStatus === 'excessive_motion' ||
+                  pulse.signalStatus === 'no_pulse' ? (
+                    <Text style={[styles.hintText, { color: activeTheme.textSecondary }]}>
+                      {signalHint(pulse.signalStatus, pulse.fingerPlacement)}
+                    </Text>
+                  ) : pulse.fingerPlacement !== 'good' ? (
+                    <Text style={[styles.hintText, { color: activeTheme.textSecondary }]}>
+                      {placementHint(pulse.fingerPlacement)}
+                    </Text>
+                  ) : (
+                    <FindingPulseHint
+                      textStyle={[styles.hintText, { color: activeTheme.textSecondary }]}
+                    />
+                  )
                 ) : phase === 'hold' || isBreathingPhase(phase) ? (
                   <View style={styles.metricStack}>
                     {displayedCue != null ? (
