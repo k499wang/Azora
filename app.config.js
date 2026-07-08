@@ -21,7 +21,7 @@ module.exports = {
   expo: {
     name: 'Azora',
     slug: 'Azora',
-    version: '1.0.8',
+    version: '1.0.9',
     orientation: 'portrait',
     icon: './assets/icon.png',
     userInterfaceStyle: 'light',
