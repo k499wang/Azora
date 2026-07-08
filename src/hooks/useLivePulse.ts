@@ -263,11 +263,12 @@ export function useLivePulse(
     measurementActiveRef.current = true;
     offlineCaptureActive.value = true;
     lastBpmUpdateRef.current = 0;
-    publishedBpmRef.current = null;
     streamStartedAtRef.current = lastFrameTimestampRef.current;
-    liveBpmFilterRef.current.reset();
+    // The displayed BPM and its presentation filter deliberately survive this
+    // boundary: the manager restarts its measurement fresh, but the shown
+    // number glides from its current value to the new reading instead of
+    // blanking and re-seeding with a visible jump.
     beatSchedulerRef.current.reset();
-    setCurrentBpm(null);
     setBeatTick(0);
     managerRef.current.beginMeasurementWindow(lastFrameTimestampRef.current ?? Date.now());
   }, [offlineCaptureActive]);

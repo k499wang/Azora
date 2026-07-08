@@ -6,22 +6,18 @@ interface Props {
   onFinish: () => void;
 }
 
-const FADE_IN_MS = 320;
 const HOLD_MS = 2200;
 const FADE_OUT_MS = 360;
 
 export function WelcomeIntro({ onFinish }: Props) {
-  const opacity = useRef(new Animated.Value(0)).current;
+  // Starts fully opaque so the handoff from the native splash (same lockup)
+  // is seamless and the screen underneath never flashes through.
+  const opacity = useRef(new Animated.Value(1)).current;
   const onFinishRef = useRef(onFinish);
   onFinishRef.current = onFinish;
 
   useEffect(() => {
     const animation = Animated.sequence([
-      Animated.timing(opacity, {
-        toValue: 1,
-        duration: FADE_IN_MS,
-        useNativeDriver: true,
-      }),
       Animated.delay(HOLD_MS),
       Animated.timing(opacity, {
         toValue: 0,

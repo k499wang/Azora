@@ -28,6 +28,7 @@ import {
 } from '../features/audioSettings';
 import { HeartRateCameraPreview } from '../components/heartRate/HeartRateCameraPreview';
 import { LiveSignalGraph } from '../components/heartRate/LiveSignalGraph';
+import { FindingPulseHint } from '../components/heartRate/FindingPulseHint';
 import {
   showCameraAccessNeededAlert,
   showHeartRateCameraUnavailableAlert,
@@ -47,7 +48,13 @@ import { FeatureKey } from '../services/subscriptions/featureAccess';
 
 const MIN_ROUNDS = 1;
 const MAX_ROUNDS = 30;
-const PLACEMENT_GOOD_DURATION_MS = 1500;
+// Placement waits for the first locked BPM so the exercise starts with a real
+// reading instead of calibrating through the first breath. On lock the
+// exercise starts right away (the BPM number itself is the confirmation). If
+// the pulse never locks (cold fingers, low perfusion), fall back to starting
+// anyway after a bounded wait — the gate must never hard-block the exercise.
+const PLACEMENT_LOCKED_START_DELAY_MS = 250;
+const PLACEMENT_LOCK_TIMEOUT_MS = 15000;
 const SPRING_IN_DURATION_MS = 750;
 
 function placementHint(p: FingerPlacementState): string {
@@ -735,6 +742,8 @@ export default function ExerciseSessionPage({
     beginExerciseRef.current = beginExercise;
   }, [beginExercise]);
 
+  const placementBpmLocked = pulse.currentBpm != null;
+
   useEffect(() => {
     if (phase !== 'placement') return;
     if (!hrEnabled) return;
@@ -742,9 +751,9 @@ export default function ExerciseSessionPage({
     const t = setTimeout(() => {
       if (!flow.isActive()) return;
       beginExerciseRef.current(true);
-    }, PLACEMENT_GOOD_DURATION_MS);
+    }, placementBpmLocked ? PLACEMENT_LOCKED_START_DELAY_MS : PLACEMENT_LOCK_TIMEOUT_MS);
     return () => clearTimeout(t);
-  }, [flow, hrEnabled, phase, pulse.fingerPlacement]);
+  }, [flow, hrEnabled, phase, pulse.fingerPlacement, placementBpmLocked]);
 
   const handleClose = () => {
     flow.cancel();
@@ -816,10 +825,6 @@ export default function ExerciseSessionPage({
   const showCamera = (isPlacement || isActive) && pulse.active && cameraProps != null;
   const cameraSlot = showCamera ? <HeartRateCameraPreview {...cameraProps} /> : null;
 
-  const bpmDisplay =
-    isActive && pulse.active && presentedBpm != null
-      ? Math.round(presentedBpm)
-      : null;
   const signalGood =
     pulse.fingerPlacement === 'good' &&
     (pulse.signalStatus === 'measuring' || pulse.signalStatus === 'warming_up');
@@ -829,15 +834,15 @@ export default function ExerciseSessionPage({
     if (isActive) showHud();
   };
 
+  // Touch listener lives on the root container instead of an invisible
+  // overlay: touch events bubble up from every child (camera preview, Skia
+  // graph, circle), so nothing can sit above it and swallow the tap while
+  // the controls are hidden.
   return (
-    <View style={[styles.fill, { backgroundColor: activeTheme.screen }]}>
-      {isActive && !hudVisible ? (
-        <Pressable
-          style={styles.tapToRevealLayer}
-          onPress={handleScreenTap}
-          accessibilityLabel="Show controls"
-        />
-      ) : null}
+    <View
+      style={[styles.fill, { backgroundColor: activeTheme.screen }]}
+      onTouchStart={handleScreenTap}
+    >
       <ExerciseScaffold
         darkTheme={activeTheme}
         centerSlot={
@@ -847,7 +852,7 @@ export default function ExerciseSessionPage({
                 <LiveSignalGraph
                   samples={pulse.liveSignalSamples}
                   fingerPlacement={pulse.fingerPlacement}
-                  bpm={isActive ? presentedBpm : null}
+                  bpm={presentedBpm}
                   beatTick={pulse.beatTick}
                   textColor={activeTheme.textPrimary}
                 />
@@ -914,9 +919,20 @@ export default function ExerciseSessionPage({
 
             <View style={styles.belowSlot}>
               {isPlacement ? (
-                <Text style={[styles.hintText, { color: activeTheme.textSecondary }]}>
-                  {placementHint(pulse.fingerPlacement)}
-                </Text>
+                pulse.signalStatus === 'excessive_motion' ||
+                pulse.signalStatus === 'no_pulse' ? (
+                  <Text style={[styles.hintText, { color: activeTheme.textSecondary }]}>
+                    {signalHint(pulse.signalStatus, pulse.fingerPlacement)}
+                  </Text>
+                ) : pulse.fingerPlacement !== 'good' ? (
+                  <Text style={[styles.hintText, { color: activeTheme.textSecondary }]}>
+                    {placementHint(pulse.fingerPlacement)}
+                  </Text>
+                ) : (
+                  <FindingPulseHint
+                    textStyle={[styles.hintText, { color: activeTheme.textSecondary }]}
+                  />
+                )
               ) : isActive && pulse.active && showSignalWarning ? (
                 <View style={styles.warningRow}>
                   <MaterialCommunityIcons
@@ -935,6 +951,7 @@ export default function ExerciseSessionPage({
         bottomSlot={
           <Animated.View
             style={[styles.bottomContainer, isActive ? { opacity: hudOpacity } : null]}
+            pointerEvents={isActive && !hudVisible ? 'none' : 'auto'}
           >
             {showSessionControls ? (
               <View style={styles.progressWrap}>
@@ -1033,10 +1050,6 @@ export default function ExerciseSessionPage({
 const styles = StyleSheet.create({
   fill: {
     flex: 1,
-  },
-  tapToRevealLayer: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 1,
   },
   centerStack: {
     alignItems: 'center',

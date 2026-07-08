@@ -31,7 +31,7 @@ export default function ThemePickerSection({
               onPress={() => onSelect(t)}
               accessibilityRole="button"
               accessibilityState={{ selected }}
-              style={[styles.row, selected && styles.rowSelected]}
+              style={styles.row}
             >
               <View style={[styles.swatch, { backgroundColor: t.dotColor }]} />
               <Text style={[styles.label, selected && styles.labelSelected]}>
@@ -72,11 +72,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm + 2,
     paddingHorizontal: spacing.md,
     borderRadius: 14,
-    backgroundColor: colors.background.elevated,
     gap: spacing.sm,
-  },
-  rowSelected: {
-    backgroundColor: colors.background.accentSoft,
   },
   swatch: {
     width: 20,

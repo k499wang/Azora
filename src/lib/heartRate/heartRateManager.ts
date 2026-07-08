@@ -62,6 +62,21 @@ const MALIK_THRESHOLD = 0.2;
 const MALIK_SHORT_THRESHOLD = 0.12;
 const MALIK_WINDOW = 5;
 const MALIK_MIN_HISTORY = 3;
+// Cold start (fewer than MALIK_MIN_HISTORY intervals): there is no rhythm to
+// judge an interval against, so accept one only once the next interval agrees
+// with it within this tolerance. A real rhythm produces two similar intervals
+// in a row; a dicrotic-notch double-count or a noise peak produces mismatched
+// ones, which would otherwise seed the history — and the first displayed BPM —
+// too fast. On a clean signal this defers nothing but the push (pairs are
+// committed together), so lock time is unchanged.
+const COLD_START_IBI_TOLERANCE = 0.2;
+// The first published BPM seeds the IBI EMA, so require the intervals it is
+// derived from to agree within this spread before seeding. A contaminated cold
+// start shows up as a wide spread, and seeding from it locks in a wrong first
+// reading that the display then slowly bleeds down from. Applies only to the
+// initial seed: once locked, slow breathing legitimately swings IBIs more than
+// this and must not blank an established reading.
+const INITIAL_LOCK_MAX_IBI_SPREAD = 0.2;
 const SIGNAL_QUALITY_REF = 0.02;
 const FILTER_GROUP_DELAY_MS = 65;
 const LIVE_SIGNAL_WINDOW_MS = 8000;
@@ -333,6 +348,7 @@ export class HeartRateManager {
   private skipNextRecordedIbi = false;
   private armedForPeak = true;
   private pendingShortPeakTs: number | null = null;
+  private coldStartPendingIbi: { peakTs: number; ibiMs: number } | null = null;
   private badPlacementSinceTs: number | null = null;
   private flatSignalSinceTs: number | null = null;
   private polarity: 1 | -1 = 1;
@@ -360,7 +376,11 @@ export class HeartRateManager {
   private lastTrackedPlacement: FingerPlacementState = 'no_finger';
   private liveSignalStable = false;
   private ibiEma: number | null = null;
-  private readonly IBI_EMA_ALPHA = 0.3;
+  // Slow enough that respiratory sinus arrhythmia (HR genuinely swinging
+  // ~10 BPM within each slow breath) mostly averages out instead of dragging
+  // the live number up and down every breath; still converges on a real HR
+  // change within a handful of beats.
+  private readonly IBI_EMA_ALPHA = 0.2;
 
   reset(): void {
     this.baseline = 0;
@@ -385,6 +405,7 @@ export class HeartRateManager {
     this.skipNextRecordedIbi = false;
     this.armedForPeak = true;
     this.pendingShortPeakTs = null;
+    this.coldStartPendingIbi = null;
     this.badPlacementSinceTs = null;
     this.flatSignalSinceTs = null;
     this.polarity = 1;
@@ -547,6 +568,16 @@ export class HeartRateManager {
     }
   }
 
+  // Gate for the *initial* EMA seed only (see INITIAL_LOCK_MAX_IBI_SPREAD):
+  // the last MIN_LIVE_BPM_IBIS intervals must agree before the first BPM locks.
+  private recentIbisConsistent(): boolean {
+    if (this.ibiHistory.length < MIN_LIVE_BPM_IBIS) return false;
+    const recent = this.ibiHistory.slice(-MIN_LIVE_BPM_IBIS);
+    const min = Math.min(...recent);
+    const max = Math.max(...recent);
+    return min > 0 && (max - min) / min <= INITIAL_LOCK_MAX_IBI_SPREAD;
+  }
+
   private pushAcceptedIbi(peakTs: number, ibi: number): void {
     this.consecutiveLongGaps = 0;
     this.lockBeatCount += 1;
@@ -560,7 +591,9 @@ export class HeartRateManager {
       const recentMedian = medianOfRecent(this.ibiHistory, IBI_HISTORY_SIZE);
       if (recentMedian > 0) {
         if (this.ibiEma == null) {
-          this.ibiEma = recentMedian;
+          if (this.recentIbisConsistent()) {
+            this.ibiEma = recentMedian;
+          }
         } else {
           this.ibiEma = this.ibiEma * (1 - this.IBI_EMA_ALPHA) + recentMedian * this.IBI_EMA_ALPHA;
         }
@@ -593,6 +626,7 @@ export class HeartRateManager {
     // interval because it straddles the setup->measurement boundary.
     this.skipNextRecordedIbi = this.lastPeakTs !== 0;
     this.pendingShortPeakTs = null;
+    this.coldStartPendingIbi = null;
     this.lastTickTs = 0;
     // Reset IBI EMA so measurement window starts with a fresh smoothed value
     this.ibiEma = null;
@@ -653,6 +687,7 @@ export class HeartRateManager {
       this.clearMotion();
       this.ibiHistory.length = 0;
       this.ibiEma = null;
+      this.coldStartPendingIbi = null;
       this.liveSignalStable = false;
       this.lastPlacement =
         placement === 'no_finger' && this.lastPlacement === 'good'
@@ -710,6 +745,7 @@ export class HeartRateManager {
           this.clearMotion();
           this.ibiHistory.length = 0;
           this.ibiEma = null;
+          this.coldStartPendingIbi = null;
           this.liveSignalStable = false;
           this.lastPlacement = 'lost';
           return {
@@ -749,6 +785,7 @@ export class HeartRateManager {
       this.initialized = true;
       this.armedForPeak = true;
       this.pendingShortPeakTs = null;
+      this.coldStartPendingIbi = null;
     }
 
     if (this.needsBandpassPrime) {
@@ -920,6 +957,7 @@ export class HeartRateManager {
                 // instead of blanking and rebuilding four beats from scratch. Only
                 // clear and re-lock after several consecutive long gaps.
                 this.consecutiveLongGaps += 1;
+                this.coldStartPendingIbi = null;
                 if (this.consecutiveLongGaps >= MAX_CONSECUTIVE_LONG_GAPS) {
                   this.ibiHistory.length = 0;
                   this.ibiEma = null;
@@ -935,6 +973,42 @@ export class HeartRateManager {
                 // peak is real or a dicrotic notch.
                 this.pendingShortPeakTs = peakTs;
                 advanceAnchor = false;
+              } else if (this.ibiHistory.length === 0) {
+                // Cold start, plausible interval: hold it until the next
+                // interval agrees, then commit both. Mismatched neighbours
+                // (echo peaks, settling noise) keep replacing the pending
+                // interval and never contaminate the history.
+                emitTick = true;
+                const pending = this.coldStartPendingIbi;
+                if (
+                  pending != null &&
+                  Math.abs(ibi - pending.ibiMs) / pending.ibiMs <=
+                    COLD_START_IBI_TOLERANCE
+                ) {
+                  this.coldStartPendingIbi = null;
+                  this.pushAcceptedIbi(pending.peakTs, pending.ibiMs);
+                  this.pushAcceptedIbi(peakTs, ibi);
+                } else {
+                  this.coldStartPendingIbi = { peakTs, ibiMs: ibi };
+                }
+              } else if (this.ibiHistory.length < MALIK_MIN_HISTORY) {
+                // Partial history: the committed intervals were already
+                // pair-confirmed, so trust them over the incoming one — a
+                // Malik-style consistency gate before Malik has enough
+                // history to run. Rejections keep the anchor (like ectopic
+                // rejection) so a split beat can't derail the rhythm; if the
+                // committed rhythm itself was wrong, the long-gap path
+                // clears it and cold start re-pairs.
+                emitTick = true;
+                const med = medianOfRecent(this.ibiHistory, MALIK_WINDOW);
+                if (
+                  med > 0 &&
+                  Math.abs(ibi - med) / med <= COLD_START_IBI_TOLERANCE
+                ) {
+                  this.pushAcceptedIbi(peakTs, ibi);
+                } else {
+                  advanceAnchor = false;
+                }
               } else {
                 emitTick = true;
                 const ectopic =

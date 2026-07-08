@@ -32,6 +32,11 @@ export interface BpmPresentationFilterOptions {
   maxDecreaseBpm: number;
   spikeThresholdBpm: number;
   spikeConfirmationBpm: number;
+  // Deadband: hold the displayed value when the reading is within this many
+  // BPM of it, so the number sits still through small oscillations (breathing
+  // swing, measurement noise) instead of wiggling every update. Real trends
+  // exceed the band and still track via the step limits above.
+  minChangeBpm: number;
 }
 
 export interface BpmPresentationSample {
@@ -59,6 +64,7 @@ const DEFAULT_PRESENTATION_FILTER_OPTIONS: BpmPresentationFilterOptions = {
   maxDecreaseBpm: 5,
   spikeThresholdBpm: 14,
   spikeConfirmationBpm: 6,
+  minChangeBpm: 0,
 };
 
 const LIVE_BPM_PRESENTATION_OPTIONS: BpmPresentationFilterOptions = {
@@ -70,6 +76,7 @@ const LIVE_BPM_PRESENTATION_OPTIONS: BpmPresentationFilterOptions = {
   maxDecreaseBpm: 2,
   spikeThresholdBpm: 10,
   spikeConfirmationBpm: 4,
+  minChangeBpm: 2,
 };
 
 const BREATH_EXERCISE_BPM_PRESENTATION_OPTIONS: BpmPresentationFilterOptions = {
@@ -81,6 +88,7 @@ const BREATH_EXERCISE_BPM_PRESENTATION_OPTIONS: BpmPresentationFilterOptions = {
   maxDecreaseBpm: 3,
   spikeThresholdBpm: 12,
   spikeConfirmationBpm: 4,
+  minChangeBpm: 2,
 };
 
 const IBI_GRAPH_PRESENTATION_OPTIONS: BpmPresentationFilterOptions = {
@@ -92,6 +100,7 @@ const IBI_GRAPH_PRESENTATION_OPTIONS: BpmPresentationFilterOptions = {
   maxDecreaseBpm: GRAPH_MAX_SAMPLE_JUMP_BPM,
   spikeThresholdBpm: 8,
   spikeConfirmationBpm: 3,
+  minChangeBpm: 0,
 };
 
 function clampStep(value: number, previous: number | null): number {
@@ -297,6 +306,9 @@ export class BpmPresentationFilter {
     }
 
     this.pendingSpikeBpm = null;
+    if (Math.abs(deltaFromPrevious) <= this.options.minChangeBpm) {
+      return this.previousDisplayedBpm;
+    }
     const maxStep =
       deltaFromPrevious > 0
         ? this.options.maxIncreaseBpm
