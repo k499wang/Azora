@@ -79,20 +79,21 @@ export default function PaywallTrialReminderToggle({ dark = false, disabled = fa
     [isBusy, permissionStatus, updatePreferences, userId],
   );
 
-  const showDeniedHint = permissionStatus === 'denied' && !enabled;
+  const reminderOn = enabled && permissionStatus !== 'denied';
+  const showDeniedHint = permissionStatus === 'denied';
 
   return (
     <View style={styles.container}>
       <View style={[styles.row, dark && styles.rowDark, disabled && styles.rowDisabled]}>
         <Text style={[styles.label, dark && styles.labelDark, disabled && styles.labelDisabled]}>Notify me before trial ends</Text>
         <Switch
-          value={disabled ? false : enabled}
+          value={disabled ? false : reminderOn}
           disabled={disabled || isBusy || userId == null}
           onValueChange={(value) => {
             void handleToggle(value);
           }}
           trackColor={{ false: dark ? 'rgba(255,255,255,0.2)' : colors.neutral[300], true: colors.primary.blue300 }}
-          thumbColor={enabled && !disabled ? colors.primary.blue400 : dark ? colors.neutral[200] : colors.neutral[50]}
+          thumbColor={reminderOn && !disabled ? colors.primary.blue400 : dark ? colors.neutral[200] : colors.neutral[50]}
           style={styles.switch}
         />
       </View>
@@ -105,7 +106,7 @@ export default function PaywallTrialReminderToggle({ dark = false, disabled = fa
           style={({ pressed }) => [styles.hint, pressed && styles.hintPressed]}
         >
           <Text style={[styles.hintText, dark && styles.hintTextDark]}>
-            Notifications are off in system settings. Tap to enable.
+            Notifications are off in system settings.
           </Text>
         </Pressable>
       ) : null}
