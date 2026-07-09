@@ -79,7 +79,7 @@ export default function PaywallTrialReminderToggle({ dark = false, disabled = fa
     [isBusy, permissionStatus, updatePreferences, userId],
   );
 
-  const showDeniedHint = permissionStatus === 'denied' && !enabled && !disabled;
+  const showDeniedHint = permissionStatus === 'denied' && !enabled;
 
   return (
     <View style={styles.container}>
