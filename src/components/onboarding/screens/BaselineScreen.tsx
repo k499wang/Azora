@@ -44,12 +44,7 @@ type Phase = 'intro' | 'placement' | 'running' | 'done';
 const SESSION_MS = 20_000;
 
 const SESSION_SEC = SESSION_MS / 1000;
-// Placement waits for the first locked BPM so the baseline window measures a
-// settled pulse from its first second. If the pulse never locks (cold fingers,
-// low perfusion), fall back to starting anyway after a bounded wait — the gate
-// must never hard-block the capture on a bad signal.
-const PLACEMENT_LOCKED_START_DELAY_MS = 800;
-const PLACEMENT_LOCK_TIMEOUT_MS = 15000;
+const PLACEMENT_GOOD_DURATION_MS = 1500;
 const PROGRESS_UPDATE_INTERVAL_MS = 200;
 
 const READING_TIPS: BaselineReadingTip[] = [
@@ -165,16 +160,7 @@ export default function BaselineScreen({
   const bpmOpacity = useRef(new Animated.Value(0.6)).current;
   const heartScale = useRef(new Animated.Value(1)).current;
 
-  const placementCfg =
-    stream.fingerPlacement === 'good'
-      ? {
-          ...placementConfig('good'),
-          status:
-            stream.currentBpm != null && stream.currentBpm > 0
-              ? `${Math.round(stream.currentBpm)} BPM — starting`
-              : 'Finding your pulse…',
-        }
-      : placementConfig(stream.fingerPlacement);
+  const placementCfg = placementConfig(stream.fingerPlacement);
   const hasConfirmedSignal =
     stream.streamState === 'streaming' &&
     (stream.fingerPlacement === 'good' || stream.fingerPlacement === 'partial');
@@ -325,8 +311,6 @@ export default function BaselineScreen({
     }
   }, [stream.currentBpm, stream.beatTick, phase, hasUsableFingerSignal, hasConfirmedSignal]);
 
-  const placementBpmLocked = stream.currentBpm != null && stream.currentBpm > 0;
-
   useEffect(() => {
     if (phase !== 'placement') return;
     if (stream.fingerPlacement !== 'good') return;
@@ -338,9 +322,9 @@ export default function BaselineScreen({
       bpmPresentationFilterRef.current.reset();
       setProgress(0);
       setPhase('running');
-    }, placementBpmLocked ? PLACEMENT_LOCKED_START_DELAY_MS : PLACEMENT_LOCK_TIMEOUT_MS);
+    }, PLACEMENT_GOOD_DURATION_MS);
     return () => clearTimeout(t);
-  }, [phase, stream.fingerPlacement, placementBpmLocked]);
+  }, [phase, stream.fingerPlacement]);
 
   useEffect(() => {
     if (phase === 'running') {
