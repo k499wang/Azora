@@ -84,9 +84,10 @@ export default function BPMChart({
 
   const series = useMemo(() => {
     if (bpmSamples && bpmSamples.length >= 2) {
-      const points = buildBpmSeries(bpmSamples, {
-        mode: insightContext === 'resting' ? 'default' : 'exercise',
-      }).points;
+      // BPM-over-time samples have already passed the capture pipeline's
+      // acceptance gates. Preserve their local peaks and troughs for every
+      // rendered chart, including standalone/resting measurements.
+      const points = buildBpmSeries(bpmSamples, { mode: 'exercise' }).points;
       if (points.length < 2) return [];
       const firstOffsetMs = points[0].offsetMs;
       return points.map((point) => ({
@@ -110,7 +111,7 @@ export default function BPMChart({
       tSec: (point.offsetMs - firstOffsetMs) / 1000,
       bpm: point.value,
     }));
-  }, [ibiMs, bpmSamples, insightContext]);
+  }, [ibiMs, bpmSamples]);
 
   const durationSec = useMemo(
     () => (series.length > 0 ? Math.round(series[series.length - 1].tSec) : 0),

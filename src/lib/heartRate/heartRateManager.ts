@@ -148,8 +148,8 @@ const LIVE_BPM_PROFILE_CONFIG = {
   },
   responsive: {
     minIbis: 5,
-    medianWindow: 3,
-    emaAlpha: 0.42,
+    medianWindow: 4,
+    emaAlpha: 0.45,
   },
 } as const;
 
