@@ -676,17 +676,23 @@ test('HeartRateManager: fast legitimate rhythm is captured after cold start', ()
   assert.equal(manager.getCurrentBpm(), 165);
 });
 
-test('HeartRateManager: responsive profile follows accepted rhythm changes sooner', () => {
-  const beatFrames = [24, 48, 72, 96];
+test('HeartRateManager: responsive profile waits for five accepted startup intervals', () => {
   const stable = new HeartRateManager();
-  const responsive = new HeartRateManager({ liveBpmProfile: 'responsive' });
+  const responsiveGathering = new HeartRateManager({ liveBpmProfile: 'responsive' });
+  const responsiveLocked = new HeartRateManager({ liveBpmProfile: 'responsive' });
 
-  runBeatTrain(stable, beatFrames);
-  runBeatTrain(responsive, beatFrames);
+  runBeatTrain(stable, [24, 48, 72, 96, 120]);
+  runBeatTrain(responsiveGathering, [24, 48, 72, 96, 120]);
+  runBeatTrain(responsiveLocked, [24, 48, 72, 96, 120, 144]);
 
   const stableBpm = stable.getCurrentBpm();
-  const responsiveSnapshot = responsive.getCurrentBpmSnapshot();
-  assert.equal(stableBpm, null, 'stable profile should still be gathering its fourth IBI');
+  const responsiveSnapshot = responsiveLocked.getCurrentBpmSnapshot();
+  assert.equal(stableBpm, 76, 'standalone stable profile should retain its four-IBI startup');
+  assert.equal(
+    responsiveGathering.getCurrentBpm(),
+    null,
+    'responsive exercise profile should still be gathering its fifth IBI',
+  );
   assert.ok(responsiveSnapshot != null);
   assert.equal(responsiveSnapshot.bpm, 76);
   assert.ok(responsiveSnapshot.timestamp > 0);

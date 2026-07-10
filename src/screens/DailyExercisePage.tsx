@@ -55,7 +55,6 @@ import { estimateAzoraScore } from '../lib/azoraScore';
 import { buildCaptureResult } from '../lib/heartRate/captureResult';
 import { runAfterNextPaint } from '../lib/ui/runAfterNextPaint';
 import {
-  buildBpmSamplesFromHoldSeconds,
   type HeartRateSessionRpcSample,
 } from '../lib/heartRate/sessionPayload';
 import { buildBpmSeries } from '../lib/heartRate/bpmSeries';
@@ -177,11 +176,6 @@ function buildBreathCueParts(phase: HoldPhase): BreathCuePart[] | null {
   return null;
 }
 
-interface BpmSample {
-  t: number;
-  bpm: number;
-}
-
 interface BreathHoldBpmStats {
   avgBpm: number | null;
   minBpm: number | null;
@@ -225,7 +219,6 @@ export default function DailyExercisePage({
   const introTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const releaseAudioTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prepPhaseRunIdRef = useRef(0);
-  const samplesRef = useRef<BpmSample[]>([]);
   const measurementStartAtRef = useRef<number>(0);
   const holdStartAtRef = useRef<number>(0);
   const [phase, setPhase] = useState<HoldPhase>('idle');
@@ -313,6 +306,7 @@ export default function DailyExercisePage({
     stop: stopPulse,
     hasPermission,
     requestPermission,
+    isBpmReady,
     beginMeasurementWindow: beginPulseMeasurementWindow,
     getMeasurementSamples,
     beginBpmSampleCollection,
@@ -360,11 +354,6 @@ export default function DailyExercisePage({
       }),
     ]).start();
   }, [pulse.beatTick, bpmOpacity, heartScale]);
-
-  const currentBpmRef = useRef<number | null>(null);
-  useEffect(() => {
-    currentBpmRef.current = presentedBpm;
-  }, [presentedBpm]);
 
   useEffect(() => {
     let cancelled = false;
@@ -421,7 +410,6 @@ export default function DailyExercisePage({
     if (!flow.isActive()) return;
     clearTimer();
     stopInhaleVibration();
-    samplesRef.current = [];
     beginBpmSampleCollection();
     holdStartAtRef.current = Date.now();
     setHoldSeconds(0);
@@ -430,14 +418,7 @@ export default function DailyExercisePage({
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
     }
     timerRef.current = setInterval(() => {
-      setHoldSeconds((current) => {
-        const next = current + 1;
-        const bpm = currentBpmRef.current;
-        if (bpm != null && Number.isFinite(bpm)) {
-          samplesRef.current.push({ t: next, bpm });
-        }
-        return next;
-      });
+      setHoldSeconds((current) => current + 1);
     }, 1000);
   }, [beginBpmSampleCollection, flow]);
 
@@ -491,7 +472,6 @@ export default function DailyExercisePage({
   const startPrepBreathing = useCallback((withHeartRate = hrEnabled) => {
     if (!flow.isActive()) return;
     clearTimer();
-    samplesRef.current = [];
     savedSessionKeyRef.current = null;
     savingSessionKeyRef.current = null;
     measurementStartAtRef.current = 0;
@@ -731,7 +711,8 @@ export default function DailyExercisePage({
     startPrepBreathingRef.current = startPrepBreathing;
   }, [startPrepBreathing]);
 
-  const placementBpmLocked = pulse.currentBpm != null;
+  const placementBpmLocked =
+    isBpmReady && pulse.signalStatus === 'measuring';
 
   useEffect(() => {
     if (phase !== 'placement') return;
@@ -749,13 +730,13 @@ export default function DailyExercisePage({
     const endedAtMs = Date.now();
     const captureSamples = getMeasurementSamples();
     const collectedBpmSamples = getBpmSamples();
-    const holdBpmSamples = collectedBpmSamples.length >= 2
-      ? collectedBpmSamples.map((sample) => ({
-          offset_ms: sample.offsetMs,
-          bpm: sample.bpm,
-          signal_quality: sample.signalQuality,
-        }))
-      : buildBpmSamplesFromHoldSeconds(samplesRef.current);
+    const holdBpmSamples = (collectedBpmSamples.length >= 2
+      ? collectedBpmSamples
+      : []).map((sample) => ({
+        offset_ms: sample.offsetMs,
+        bpm: sample.bpm,
+        signal_quality: sample.signalQuality,
+      }));
     const releasedHoldSeconds = holdSeconds;
     setPhase('processingResults');
 

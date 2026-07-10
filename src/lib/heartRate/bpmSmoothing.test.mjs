@@ -5,7 +5,64 @@ import {
   createBreathExerciseBpmPresentationFilter,
   createLiveBpmPresentationFilter,
   createBpmPresentationFilter,
+  isBpmStartupReady,
 } from './bpmSmoothing.ts';
+
+test('exercise BPM startup requires two strong, agreeing estimates over time', () => {
+  const first = { timestamp: 1_000, bpm: 82, signalQuality: 0.3 };
+
+  assert.equal(isBpmStartupReady([first]), false);
+  assert.equal(
+    isBpmStartupReady([first, { timestamp: 1_700, bpm: 83, signalQuality: 0.3 }]),
+    false,
+    'estimates less than 750ms apart are too close to confirm startup',
+  );
+  assert.equal(
+    isBpmStartupReady([first, { timestamp: 1_800, bpm: 91, signalQuality: 0.3 }]),
+    false,
+    'estimates more than 8 BPM apart are not stable',
+  );
+  assert.equal(
+    isBpmStartupReady([first, { timestamp: 1_800, bpm: 84, signalQuality: 0.14 }]),
+    false,
+    'weak estimates cannot confirm startup',
+  );
+  assert.equal(
+    isBpmStartupReady([first, { timestamp: 1_800, bpm: 84, signalQuality: 0.3 }]),
+    true,
+  );
+});
+
+test('exercise BPM startup can confirm fast rhythms and discard a high first estimate', () => {
+  assert.equal(
+    isBpmStartupReady([
+      { timestamp: 1_000, bpm: 170, signalQuality: 0.3 },
+      { timestamp: 1_350, bpm: 169, signalQuality: 0.3 },
+      { timestamp: 1_700, bpm: 171, signalQuality: 0.3 },
+      { timestamp: 2_050, bpm: 170, signalQuality: 0.3 },
+    ]),
+    true,
+    'several fast beats should be able to cover the 750ms confirmation span',
+  );
+  assert.equal(
+    isBpmStartupReady([
+      { timestamp: 1_000, bpm: 132, signalQuality: 0.3 },
+      { timestamp: 1_400, bpm: 81, signalQuality: 0.3 },
+      { timestamp: 2_200, bpm: 82, signalQuality: 0.3 },
+    ]),
+    true,
+    'a later stable pair should not be blocked by an exaggerated first estimate',
+  );
+  assert.equal(
+    isBpmStartupReady([
+      { timestamp: 1_000, bpm: 130, signalQuality: 0.3 },
+      { timestamp: 1_400, bpm: 82, signalQuality: 0.3 },
+      { timestamp: 2_000, bpm: 130, signalQuality: 0.3 },
+    ]),
+    false,
+    'matching endpoints must not hide an unstable estimate between them',
+  );
+});
 
 function visibleLiveBpmSequence(samples) {
   const filter = createLiveBpmPresentationFilter();

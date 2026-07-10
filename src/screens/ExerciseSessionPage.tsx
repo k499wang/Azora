@@ -137,7 +137,6 @@ export default function ExerciseSessionPage({
   const remainingRef = useRef(0);
   const phaseRunIdRef = useRef(0);
   const onDoneRef = useRef<(() => void) | null>(null);
-  const hrSamplesRef = useRef<Array<{ offsetMs: number; bpm: number }>>([]);
   const sessionStartMsRef = useRef<number>(0);
   const savedSessionRef = useRef(false);
   const [phase, setPhase] = useState<Phase>('idle');
@@ -155,7 +154,6 @@ export default function ExerciseSessionPage({
 
   const bpmOpacity = useRef(new Animated.Value(0.6)).current;
   const heartScale = useRef(new Animated.Value(1)).current;
-  const lastPresentationUpdateAtRef = useRef(0);
 
   const transition = useRef(new Animated.Value(phase === 'idle' ? 0 : 1)).current;
 
@@ -244,6 +242,7 @@ export default function ExerciseSessionPage({
     stop: stopPulse,
     hasPermission,
     requestPermission,
+    isBpmReady,
     beginBpmSampleCollection,
     getBpmSamples,
   } = pulse;
@@ -267,34 +266,6 @@ export default function ExerciseSessionPage({
     heartRateMonitoringProLocked,
     setHeartRateMonitoringEnabled,
   ]);
-
-  useEffect(() => {
-    const isTrackingPhase =
-      phase === 'inhale' ||
-      phase === 'holdIn' ||
-      phase === 'exhale' ||
-      phase === 'holdOut';
-
-    const now = Date.now();
-    const elapsedMs =
-      sessionStartMsRef.current > 0
-        ? now - sessionStartMsRef.current
-        : 0;
-
-    if (!isTrackingPhase || presentedBpm == null || presentedBpm <= 0) {
-      return;
-    }
-
-    if (now - lastPresentationUpdateAtRef.current < 900) return;
-    lastPresentationUpdateAtRef.current = now;
-
-    if (sessionStartMsRef.current > 0 && presentedBpm != null) {
-      hrSamplesRef.current.push({
-        offsetMs: elapsedMs,
-        bpm: presentedBpm,
-      });
-    }
-  }, [phase, pulse.beatTick, presentedBpm]);
 
   useEffect(() => {
     if (pulse.beatTick <= 0) return;
@@ -443,9 +414,7 @@ export default function ExerciseSessionPage({
         if (savedSessionRef.current) return;
         savedSessionRef.current = true;
         const collectedSamples = getBpmSamples();
-        const samples = collectedSamples.length >= 2
-          ? collectedSamples
-          : hrSamplesRef.current.map((sample) => ({ ...sample, signalQuality: null }));
+        const samples = collectedSamples.length >= 2 ? collectedSamples : [];
         flow.cancel();
         setPhase('done');
         stopPulse();
@@ -622,9 +591,7 @@ export default function ExerciseSessionPage({
       }
       setElapsed(0);
       setRound(0);
-      hrSamplesRef.current = [];
       sessionStartMsRef.current = Date.now();
-      lastPresentationUpdateAtRef.current = 0;
       savedSessionRef.current = false;
       if (shouldMeasureHeartRate) {
         beginBpmSampleCollection();
@@ -747,7 +714,8 @@ export default function ExerciseSessionPage({
     beginExerciseRef.current = beginExercise;
   }, [beginExercise]);
 
-  const placementBpmLocked = pulse.currentBpm != null;
+  const placementBpmLocked =
+    isBpmReady && pulse.signalStatus === 'measuring';
 
   useEffect(() => {
     if (phase !== 'placement') return;
