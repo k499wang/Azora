@@ -699,6 +699,26 @@ test('HeartRateManager: responsive profile waits for five accepted startup inter
   assert.ok(responsiveSnapshot.signalQuality >= 0 && responsiveSnapshot.signalQuality <= 1);
 });
 
+test('HeartRateManager: responsive tracking ignores a one-interval transient with median four', () => {
+  const responsive = new HeartRateManager({ liveBpmProfile: 'responsive' });
+  // Lock at ~76 BPM (24 frames per interval), then briefly shorten one
+  // interval to ~83 BPM. It is plausible enough to pass the IBI acceptance
+  // gate, but it cannot move the middle pair of the ongoing four-interval
+  // median or pull the displayed estimate upward.
+  runBeatTrain(responsive, [24, 48, 72, 96, 120, 144, 166]);
+
+  const recentIbi = responsive.getIbiSamples().at(-1)?.ibiMs;
+  assert.ok(
+    recentIbi != null && Math.abs(recentIbi - 22 * FRAME_SPACING_MS) < 40,
+    `expected the plausible transient interval to be accepted, got ${String(recentIbi)}`,
+  );
+  assert.equal(
+    responsive.getCurrentBpm(),
+    76,
+    'one transient interval must not move the four-interval median',
+  );
+});
+
 test('HeartRateManager: ectopic beats emit live ticks but stay out of IBI history', () => {
   const manager = new HeartRateManager();
   const beatFrames = [24, 48, 72, 96, 108, 120, 144, 168];
