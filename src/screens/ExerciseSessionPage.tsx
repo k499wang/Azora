@@ -1072,7 +1072,7 @@ const styles = StyleSheet.create({
   hintText: {
     fontFamily: fonts.semibold,
     fontWeight: '500',
-    fontSize: 14,
+    fontSize: 15,
     color: colors.text.secondary,
     opacity: 0.6,
     textAlign: 'center',
@@ -1106,7 +1106,7 @@ const styles = StyleSheet.create({
   warningText: {
     fontFamily: fonts.semibold,
     fontWeight: '500',
-    fontSize: 11,
+    fontSize: 15,
     letterSpacing: 0.5,
     color: colors.warning[500],
     opacity: 0.85,
