@@ -60,7 +60,9 @@ export default function SessionCompleteScreen({
   // and the line agree. Falls back to the raw session average when there are
   // too few samples to build a series.
   const displayAvgBpm =
-    (hrSamples.length > 0 ? buildBpmSeries(hrSamples).summary.avgBpm : null) ??
+    (hrSamples.length > 0
+      ? buildBpmSeries(hrSamples, { mode: 'exercise' }).summary.avgBpm
+      : null) ??
     avgBpm ??
     null;
 

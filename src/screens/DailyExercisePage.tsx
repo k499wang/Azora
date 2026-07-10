@@ -202,7 +202,7 @@ function buildBreathHoldBpmStats(
     offsetMs: sample.offset_ms,
     bpm: sample.bpm,
   }));
-  const { summary } = buildBpmSeries(bpmSamples);
+  const { summary } = buildBpmSeries(bpmSamples, { mode: 'exercise' });
 
   return {
     avgBpm: summary.avgBpm,
@@ -315,6 +315,8 @@ export default function DailyExercisePage({
     requestPermission,
     beginMeasurementWindow: beginPulseMeasurementWindow,
     getMeasurementSamples,
+    beginBpmSampleCollection,
+    getBpmSamples,
   } = pulse;
   const presentedBpm = pulse.currentBpm;
   const {
@@ -420,6 +422,7 @@ export default function DailyExercisePage({
     clearTimer();
     stopInhaleVibration();
     samplesRef.current = [];
+    beginBpmSampleCollection();
     holdStartAtRef.current = Date.now();
     setHoldSeconds(0);
     setPhase('hold');
@@ -436,7 +439,7 @@ export default function DailyExercisePage({
         return next;
       });
     }, 1000);
-  }, [flow]);
+  }, [beginBpmSampleCollection, flow]);
 
   const startBreathPhase = useCallback((nextPhase: 'preInhale' | 'preExhale' | 'inhale', cycle: number) => {
     if (!flow.isActive()) return;
@@ -745,7 +748,14 @@ export default function DailyExercisePage({
   const releaseHold = () => {
     const endedAtMs = Date.now();
     const captureSamples = getMeasurementSamples();
-    const holdBpmSamples = buildBpmSamplesFromHoldSeconds(samplesRef.current);
+    const collectedBpmSamples = getBpmSamples();
+    const holdBpmSamples = collectedBpmSamples.length >= 2
+      ? collectedBpmSamples.map((sample) => ({
+          offset_ms: sample.offsetMs,
+          bpm: sample.bpm,
+          signal_quality: sample.signalQuality,
+        }))
+      : buildBpmSamplesFromHoldSeconds(samplesRef.current);
     const releasedHoldSeconds = holdSeconds;
     setPhase('processingResults');
 

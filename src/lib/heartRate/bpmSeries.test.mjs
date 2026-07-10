@@ -16,6 +16,7 @@ function ramp(count, startBpm, stepBpm, stepMs = 1000) {
 const WIM_HOF_PROFILE = { name: 'Wim Hof', response: 'energize' };
 const RELAXING_PROFILE = { name: 'Relaxing Breath', response: 'downshift' };
 const RESONANCE_PROFILE = { name: 'Resonance', response: 'resonance' };
+const BOX_PROFILE = { name: 'Box Breathing', response: 'stabilize' };
 
 test('empty input yields no points and null summary', () => {
   const { points, summary } = buildBpmSeries([]);
@@ -69,6 +70,47 @@ test('samples are sorted by offset before processing', () => {
 test('downsamples to at most maxPoints', () => {
   const { points } = buildBpmSeries(ramp(200, 60, 0), { maxPoints: 24 });
   assert.ok(points.length <= 24);
+});
+
+test('exercise series preserves ordinary beat-to-beat variation', () => {
+  const raw = [72, 73, 71, 74, 70, 72].map((bpm, index) => ({
+    offsetMs: index * 1_000,
+    bpm,
+  }));
+
+  const { points, summary } = buildBpmSeries(raw, { mode: 'exercise' });
+
+  assert.deepEqual(points.map((point) => point.bpm), [72, 73, 71, 74, 70, 72]);
+  assert.equal(summary.minBpm, 70);
+  assert.equal(summary.maxBpm, 74);
+});
+
+test('exercise downsampling retains local peaks and troughs', () => {
+  const raw = Array.from({ length: 80 }, (_, index) => ({
+    offsetMs: index * 1_000,
+    bpm: index === 20 ? 84 : index === 55 ? 62 : 72,
+  }));
+
+  const { points } = buildBpmSeries(raw, { mode: 'exercise', maxPoints: 12 });
+  const values = points.map((point) => point.bpm);
+
+  assert.ok(points.length <= 12);
+  assert.ok(values.includes(84), 'local peak should survive downsampling');
+  assert.ok(values.includes(62), 'local trough should survive downsampling');
+});
+
+test('exercise summary uses the full series instead of extrema-biased chart points', () => {
+  const raw = Array.from({ length: 80 }, (_, index) => ({
+    offsetMs: index * 1_000,
+    bpm: index === 20 ? 92 : index === 55 ? 52 : 72,
+  }));
+
+  const { points, summary } = buildBpmSeries(raw, { mode: 'exercise', maxPoints: 12 });
+
+  assert.ok(points.length <= 12);
+  assert.equal(summary.avgBpm, 72);
+  assert.equal(summary.minBpm, 52);
+  assert.equal(summary.maxBpm, 92);
 });
 
 test('hrDropBpm is peak-to-trough and never negative', () => {
@@ -137,6 +179,31 @@ test('BPM insight contextualizes minimal breath-hold slowing', () => {
   assert.match(insight, /look for a pattern across several sessions/);
 });
 
+test('BPM insight accurately describes a large breath-hold heart-rate rise', () => {
+  const insight = buildBpmInsight(
+    [{ bpm: 68 }, { bpm: 80 }],
+    undefined,
+    'breath-hold',
+  );
+
+  assert.match(insight, /rose 12 bpm during the hold/);
+  assert.match(insight, /effort of the hold, movement, or measurement quality/);
+  assert.doesNotMatch(insight, /changed very little/);
+});
+
+test('BPM insight applies breath-hold rise thresholds before the steady fallback', () => {
+  const buildSavedSummaryInsight = (hrDrop) =>
+    buildBpmInsight(
+      [],
+      { avgBpm: 74, minBpm: 68, maxBpm: 82, hrDrop },
+      'breath-hold',
+    );
+
+  assert.match(buildSavedSummaryInsight(-8), /rose 8 bpm during the hold/);
+  assert.match(buildSavedSummaryInsight(-3), /rose 3 bpm during the hold, a mild increase/);
+  assert.match(buildSavedSummaryInsight(-2), /changed very little/);
+});
+
 test('BPM insight explains a breathing exercise graph downshift', () => {
   const insight = buildBpmInsight(
     [{ bpm: 82 }, { bpm: 76 }, { bpm: 70 }],
@@ -201,6 +268,26 @@ test('BPM insight explains steady resonance breathing as coherent breathing', ()
   assert.match(insight, /coherent breathing/);
 });
 
+test('BPM insight treats Box Breathing as a stabilizing technique, not hardcoded box-specific text', () => {
+  const insight = buildBpmInsight(
+    [{ bpm: 82 }, { bpm: 76 }, { bpm: 70 }],
+    undefined,
+    'breathing-exercise',
+    BOX_PROFILE,
+  );
+
+  assert.match(insight, /Box Breathing/);
+  assert.match(insight, /stabilizing technique/);
+  assert.doesNotMatch(insight, /Box-style/);
+});
+
+test('locked BPM placeholder describes a stabilizing technique generically', () => {
+  const insight = buildBpmLockedInsightPlaceholder('breathing-exercise', BOX_PROFILE);
+
+  assert.match(insight, /Box Breathing/);
+  assert.match(insight, /stabilize your breathing rhythm/);
+});
+
 test('BPM insight falls back to generic breathing copy without a technique profile', () => {
   const insight = buildBpmInsight(
     [{ bpm: 68 }, { bpm: 74 }, { bpm: 79 }],
@@ -241,6 +328,39 @@ test('BPM insight mentions repeated breath-hold graph swings', () => {
 
   assert.match(insight, /repeated up-and-down swings/);
   assert.match(insight, /diving-reflex response comes in waves/);
+});
+
+test('BPM insight calls out an isolated mid-session spike', () => {
+  const insight = buildBpmInsight(
+    [{ bpm: 70 }, { bpm: 71 }, { bpm: 90 }, { bpm: 72 }, { bpm: 71 }],
+    undefined,
+    'breathing-exercise',
+  );
+
+  assert.match(insight, /briefly spiked mid-session/);
+  assert.doesNotMatch(insight, /moved up and down several times/);
+});
+
+test('BPM insight calls out an isolated mid-hold dip', () => {
+  const insight = buildBpmInsight(
+    [{ bpm: 80 }, { bpm: 79 }, { bpm: 60 }, { bpm: 78 }, { bpm: 79 }],
+    undefined,
+    'breath-hold',
+  );
+
+  assert.match(insight, /briefly dipped mid-hold/);
+  assert.doesNotMatch(insight, /repeated up-and-down swings/);
+});
+
+test('BPM insight prefers the oscillation insight over a single-excursion insight when the graph swings repeatedly', () => {
+  const insight = buildBpmInsight(
+    [{ bpm: 70 }, { bpm: 90 }, { bpm: 71 }, { bpm: 91 }, { bpm: 72 }, { bpm: 92 }],
+    undefined,
+    'breathing-exercise',
+  );
+
+  assert.match(insight, /moved up and down several times/);
+  assert.doesNotMatch(insight, /briefly spiked/);
 });
 
 test('BPM insight ignores tiny graph wiggles', () => {

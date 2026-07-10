@@ -27,6 +27,13 @@ const FINGER_LOST_TIMEOUT_MS = 1500;
 const OFFLINE_CAPTURE_FPS = 30;
 const LIVE_PROCESSING_FPS = 20;
 const LIVE_PROCESSING_INTERVAL_MS = 50;
+const SESSION_BPM_SAMPLE_INTERVAL_MS = 750;
+
+export interface LivePulseBpmSample {
+  offsetMs: number;
+  bpm: number;
+  signalQuality: number | null;
+}
 
 function isValidFrameSample(value: unknown): value is PpgFrameSample {
   if (value == null || typeof value !== 'object') return false;
@@ -66,6 +73,8 @@ interface UseLivePulseReturn {
   beginMeasurementWindow: () => void;
   getMeasurementSamples: () => PpgFrameSample[];
   getIbiSamples: () => IbiSample[];
+  beginBpmSampleCollection: () => void;
+  getBpmSamples: () => LivePulseBpmSample[];
 }
 
 type LivePulsePresentationMode = 'default' | 'breathExercise';
@@ -92,7 +101,9 @@ export function useLivePulse(
   const [liveSignalSamples, setLiveSignalSamples] = useState<LivePpgSignalSample[]>([]);
 
   const activeRef = useRef(false);
-  const managerRef = useRef(new HeartRateManager());
+  const managerRef = useRef(new HeartRateManager({
+    liveBpmProfile: presentationMode === 'breathExercise' ? 'responsive' : 'stable',
+  }));
   const lastBpmUpdateRef = useRef(0);
   const lastFingerSeenAtRef = useRef<number | null>(null);
   const lastFrameTimestampRef = useRef<number | null>(null);
@@ -110,6 +121,10 @@ export function useLivePulse(
   const lastPublishedSignalTimestampRef = useRef<number | null>(null);
   const lastLiveProcessingTimestampRef = useRef<number>(0);
   const offlineCaptureActive = useSharedValue(false);
+  const bpmSampleCollectionActiveRef = useRef(false);
+  const bpmSampleCollectionStartedAtRef = useRef<number | null>(null);
+  const lastCollectedBpmAtRef = useRef(0);
+  const collectedBpmSamplesRef = useRef<LivePulseBpmSample[]>([]);
 
   const { device, format, hasPermission, requestPermission } = useHeartRateCamera();
 
@@ -137,6 +152,10 @@ export function useLivePulse(
     lastPublishedSignalTimestampRef.current = null;
     lastLiveProcessingTimestampRef.current = 0;
     offlineCaptureActive.value = false;
+    bpmSampleCollectionActiveRef.current = false;
+    bpmSampleCollectionStartedAtRef.current = null;
+    lastCollectedBpmAtRef.current = 0;
+    collectedBpmSamplesRef.current = [];
     managerRef.current.clearLiveSignalSamples();
   }, [offlineCaptureActive]);
 
@@ -208,16 +227,22 @@ export function useLivePulse(
         setSignalStatus(frameState.signalStatus);
       }
 
-      const bpm = managerRef.current.getCurrentBpm();
+      const bpmSnapshot = managerRef.current.getCurrentBpmSnapshot();
+      const bpm = bpmSnapshot?.bpm ?? null;
 
       if (frameState.beatDetected && frameState.beatPeakTs != null) {
         beatSchedulerRef.current.schedule(frameState.beatPeakTs, frameSample.timestamp);
       }
 
-      if (
-        bpm != null &&
-        frameSample.timestamp - lastBpmUpdateRef.current >= BPM_UPDATE_INTERVAL_MS
-      ) {
+      const hasFreshExerciseEstimate =
+        presentationMode === 'breathExercise' &&
+        bpmSnapshot != null &&
+        bpmSnapshot.timestamp > lastBpmUpdateRef.current;
+      const shouldPublishBpm = presentationMode === 'breathExercise'
+        ? hasFreshExerciseEstimate
+        : frameSample.timestamp - lastBpmUpdateRef.current >= BPM_UPDATE_INTERVAL_MS;
+
+      if (bpm != null && shouldPublishBpm) {
         lastBpmUpdateRef.current = frameSample.timestamp;
         const elapsedMs =
           streamStartedAtRef.current == null
@@ -227,6 +252,24 @@ export function useLivePulse(
         if (stabilizedBpm != null) {
           publishedBpmRef.current = stabilizedBpm;
           setCurrentBpm(stabilizedBpm);
+        }
+
+        if (
+          hasFreshExerciseEstimate &&
+          bpmSnapshot != null &&
+          bpmSampleCollectionActiveRef.current &&
+          frameSample.timestamp - lastCollectedBpmAtRef.current >= SESSION_BPM_SAMPLE_INTERVAL_MS
+        ) {
+          if (bpmSampleCollectionStartedAtRef.current == null) {
+            bpmSampleCollectionStartedAtRef.current = frameSample.timestamp;
+          }
+          const startedAt = bpmSampleCollectionStartedAtRef.current;
+          lastCollectedBpmAtRef.current = frameSample.timestamp;
+          collectedBpmSamplesRef.current.push({
+            offsetMs: Math.max(0, Math.round(frameSample.timestamp - startedAt)),
+            bpm: bpmSnapshot.bpm,
+            signalQuality: bpmSnapshot.signalQuality,
+          });
         }
       }
 
@@ -255,7 +298,7 @@ export function useLivePulse(
         setCurrentBpm(null);
       }
     },
-    [],
+    [presentationMode],
   );
 
   const beginMeasurementWindow = useCallback(() => {
@@ -283,6 +326,18 @@ export function useLivePulse(
   }, [offlineCaptureActive]);
 
   const getIbiSamples = useCallback(() => managerRef.current.getIbiSamples(), []);
+
+  const beginBpmSampleCollection = useCallback(() => {
+    collectedBpmSamplesRef.current = [];
+    bpmSampleCollectionStartedAtRef.current = lastFrameTimestampRef.current;
+    lastCollectedBpmAtRef.current = 0;
+    bpmSampleCollectionActiveRef.current = true;
+  }, []);
+
+  const getBpmSamples = useCallback(() => {
+    bpmSampleCollectionActiveRef.current = false;
+    return collectedBpmSamplesRef.current.map((sample) => ({ ...sample }));
+  }, []);
 
   const frameProcessor = useFrameProcessor(
     (frame) => {
@@ -317,5 +372,7 @@ export function useLivePulse(
     beginMeasurementWindow,
     getMeasurementSamples,
     getIbiSamples,
+    beginBpmSampleCollection,
+    getBpmSamples,
   };
 }
