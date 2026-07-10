@@ -83,12 +83,12 @@ const BREATH_EXERCISE_BPM_PRESENTATION_OPTIONS: BpmPresentationFilterOptions = {
   warmupMs: 0,
   minStableReadings: 1,
   stableRangeBpm: 10,
-  maxStepBpm: 3,
-  maxIncreaseBpm: 2,
-  maxDecreaseBpm: 3,
-  spikeThresholdBpm: 12,
+  maxStepBpm: 5,
+  maxIncreaseBpm: 4,
+  maxDecreaseBpm: 5,
+  spikeThresholdBpm: 10,
   spikeConfirmationBpm: 4,
-  minChangeBpm: 2,
+  minChangeBpm: 0,
 };
 
 const IBI_GRAPH_PRESENTATION_OPTIONS: BpmPresentationFilterOptions = {

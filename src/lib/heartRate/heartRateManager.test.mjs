@@ -676,6 +676,23 @@ test('HeartRateManager: fast legitimate rhythm is captured after cold start', ()
   assert.equal(manager.getCurrentBpm(), 165);
 });
 
+test('HeartRateManager: responsive profile follows accepted rhythm changes sooner', () => {
+  const beatFrames = [24, 48, 72, 96];
+  const stable = new HeartRateManager();
+  const responsive = new HeartRateManager({ liveBpmProfile: 'responsive' });
+
+  runBeatTrain(stable, beatFrames);
+  runBeatTrain(responsive, beatFrames);
+
+  const stableBpm = stable.getCurrentBpm();
+  const responsiveSnapshot = responsive.getCurrentBpmSnapshot();
+  assert.equal(stableBpm, null, 'stable profile should still be gathering its fourth IBI');
+  assert.ok(responsiveSnapshot != null);
+  assert.equal(responsiveSnapshot.bpm, 76);
+  assert.ok(responsiveSnapshot.timestamp > 0);
+  assert.ok(responsiveSnapshot.signalQuality >= 0 && responsiveSnapshot.signalQuality <= 1);
+});
+
 test('HeartRateManager: ectopic beats emit live ticks but stay out of IBI history', () => {
   const manager = new HeartRateManager();
   const beatFrames = [24, 48, 72, 96, 108, 120, 144, 168];

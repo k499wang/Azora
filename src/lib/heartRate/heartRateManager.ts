@@ -20,6 +20,18 @@ export interface HeartRateFrameState {
   signalStatus: SignalStatus;
 }
 
+export type HeartRateLiveBpmProfile = 'stable' | 'responsive';
+
+export interface HeartRateBpmSnapshot {
+  bpm: number;
+  timestamp: number;
+  signalQuality: number;
+}
+
+export interface HeartRateManagerOptions {
+  liveBpmProfile?: HeartRateLiveBpmProfile;
+}
+
 const BASELINE_ALPHA = 0.02;
 const AMPLITUDE_ALPHA = 0.10;
 const INITIAL_PEAK_THRESHOLD_FACTOR = 0.3;
@@ -52,11 +64,9 @@ const MIN_AVG_ROI_RED = 100;
 const MAX_ROI_SATURATION = 0.98;
 const MAX_AVG_SATURATION = 0.98;
 const IBI_HISTORY_SIZE = 6;
-const MIN_LIVE_BPM_IBIS = 4;
 // Fresh accepted beats required since a measurement window began before the
-// motion detector is trusted. Slightly more than MIN_LIVE_BPM_IBIS so the pulse
-// is genuinely locked (past the settling inhale/hand-settle), not just barely
-// showing a first number.
+// motion detector is trusted. This is slightly more than either BPM profile
+// needs, so motion is not trusted when the pulse has only barely locked.
 const MIN_MOTION_LOCK_BEATS = 5;
 const MALIK_THRESHOLD = 0.2;
 const MALIK_SHORT_THRESHOLD = 0.12;
@@ -129,6 +139,19 @@ const NO_PULSE_NOTICE_MS = 1200;
 // fingers (cold hands, light contact) detected consistent beats yet never
 // cleared the gate, leaving the reading stuck on "calibrating".
 const LIVE_BPM_MIN_QUALITY = 0.03;
+
+const LIVE_BPM_PROFILE_CONFIG = {
+  stable: {
+    minIbis: 4,
+    medianWindow: 6,
+    emaAlpha: 0.2,
+  },
+  responsive: {
+    minIbis: 3,
+    medianWindow: 3,
+    emaAlpha: 0.42,
+  },
+} as const;
 
 const SAMPLE_RATE_HZ = 30;
 const BP_LOW_HZ = 0.7;
@@ -326,6 +349,7 @@ function classifyFrame(sample: PpgFrameSample): {
 }
 
 export class HeartRateManager {
+  private readonly liveBpmConfig: (typeof LIVE_BPM_PROFILE_CONFIG)[HeartRateLiveBpmProfile];
   private baseline = 0;
   private amplitude = 0;
   private readonly bpHp = new Biquad(HP_COEFFS);
@@ -376,11 +400,11 @@ export class HeartRateManager {
   private lastTrackedPlacement: FingerPlacementState = 'no_finger';
   private liveSignalStable = false;
   private ibiEma: number | null = null;
-  // Slow enough that respiratory sinus arrhythmia (HR genuinely swinging
-  // ~10 BPM within each slow breath) mostly averages out instead of dragging
-  // the live number up and down every breath; still converges on a real HR
-  // change within a handful of beats.
-  private readonly IBI_EMA_ALPHA = 0.2;
+  private latestBpmSnapshot: HeartRateBpmSnapshot | null = null;
+
+  constructor(options: HeartRateManagerOptions = {}) {
+    this.liveBpmConfig = LIVE_BPM_PROFILE_CONFIG[options.liveBpmProfile ?? 'stable'];
+  }
 
   reset(): void {
     this.baseline = 0;
@@ -429,6 +453,7 @@ export class HeartRateManager {
     this.lastTrackedPlacement = 'no_finger';
     this.liveSignalStable = false;
     this.ibiEma = null;
+    this.latestBpmSnapshot = null;
   }
 
   // Counts transitions of the *committed* placement (after the grace window has
@@ -569,10 +594,10 @@ export class HeartRateManager {
   }
 
   // Gate for the *initial* EMA seed only (see INITIAL_LOCK_MAX_IBI_SPREAD):
-  // the last MIN_LIVE_BPM_IBIS intervals must agree before the first BPM locks.
+  // the profile's minimum interval window must agree before the first BPM locks.
   private recentIbisConsistent(): boolean {
-    if (this.ibiHistory.length < MIN_LIVE_BPM_IBIS) return false;
-    const recent = this.ibiHistory.slice(-MIN_LIVE_BPM_IBIS);
+    if (this.ibiHistory.length < this.liveBpmConfig.minIbis) return false;
+    const recent = this.ibiHistory.slice(-this.liveBpmConfig.minIbis);
     const min = Math.min(...recent);
     const max = Math.max(...recent);
     return min > 0 && (max - min) / min <= INITIAL_LOCK_MAX_IBI_SPREAD;
@@ -586,18 +611,37 @@ export class HeartRateManager {
       this.ibiHistory.shift();
     }
 
-    // Update IBI EMA at beat cadence (not frame rate) for stable live BPM
-    if (this.ibiHistory.length >= MIN_LIVE_BPM_IBIS) {
-      const recentMedian = medianOfRecent(this.ibiHistory, IBI_HISTORY_SIZE);
+    // Update the selected profile's IBI EMA at beat cadence (not frame rate).
+    let bpmEstimateUpdated = false;
+    if (this.ibiHistory.length >= this.liveBpmConfig.minIbis) {
+      const recentMedian = medianOfRecent(
+        this.ibiHistory,
+        this.liveBpmConfig.medianWindow,
+      );
       if (recentMedian > 0) {
         if (this.ibiEma == null) {
           if (this.recentIbisConsistent()) {
             this.ibiEma = recentMedian;
+            bpmEstimateUpdated = true;
           }
         } else {
-          this.ibiEma = this.ibiEma * (1 - this.IBI_EMA_ALPHA) + recentMedian * this.IBI_EMA_ALPHA;
+          const alpha = this.liveBpmConfig.emaAlpha;
+          this.ibiEma = this.ibiEma * (1 - alpha) + recentMedian * alpha;
+          bpmEstimateUpdated = true;
         }
       }
+    }
+
+    const quality = Math.min(
+      1,
+      Math.max(0, this.amplitude / SIGNAL_QUALITY_REF),
+    );
+    if (bpmEstimateUpdated && this.ibiEma != null && this.ibiEma > 0) {
+      this.latestBpmSnapshot = {
+        bpm: Math.round(60000 / this.ibiEma),
+        timestamp: peakTs,
+        signalQuality: quality,
+      };
     }
 
     if (this.skipNextRecordedIbi) {
@@ -605,10 +649,6 @@ export class HeartRateManager {
       return;
     }
     const anchorTs = this.sessionStartTs ?? peakTs;
-    const quality = Math.min(
-      1,
-      Math.max(0, this.amplitude / SIGNAL_QUALITY_REF),
-    );
     this.ibiSamples.push({
       offsetMs: Math.max(0, Math.round(peakTs - anchorTs)),
       ibiMs: Math.round(ibi),
@@ -630,6 +670,7 @@ export class HeartRateManager {
     this.lastTickTs = 0;
     // Reset IBI EMA so measurement window starts with a fresh smoothed value
     this.ibiEma = null;
+    this.latestBpmSnapshot = null;
     // Re-require a fresh pulse lock before trusting motion, so the opening inhale
     // / hand-settle at the start of a hold isn't misread as "keep still".
     this.pulseLockedThisWindow = false;
@@ -1086,14 +1127,18 @@ export class HeartRateManager {
   }
 
   getCurrentBpm(): number | null {
+    return this.getCurrentBpmSnapshot()?.bpm ?? null;
+  }
+
+  getCurrentBpmSnapshot(): HeartRateBpmSnapshot | null {
     if (this.lastPlacement !== 'good') return null;
     if (!this.liveSignalStable) return null;
     if (this.amplitude / SIGNAL_QUALITY_REF < LIVE_BPM_MIN_QUALITY) return null;
-    if (this.ibiHistory.length < MIN_LIVE_BPM_IBIS) return null;
+    if (this.ibiHistory.length < this.liveBpmConfig.minIbis) return null;
     if (this.ibiEma == null || this.ibiEma <= 0) return null;
-    const bpm = Math.round(60000 / this.ibiEma);
-    if (bpm < 40 || bpm > 180) return null;
-    return bpm;
+    if (this.latestBpmSnapshot == null) return null;
+    if (this.latestBpmSnapshot.bpm < 40 || this.latestBpmSnapshot.bpm > 180) return null;
+    return { ...this.latestBpmSnapshot };
   }
 
   getIbiSamples(): IbiSample[] {

@@ -1,11 +1,12 @@
 /**
  * Single source of truth for turning a raw per-sample heart-rate series into
- * the canonical smoothed points shown on a graph AND the summary stats
- * (avg / min / max / drop) derived from those exact points.
+ * graph points and matching summary stats. The default mode summarizes its
+ * smoothed trend points; exercise mode summarizes the full quality-gated
+ * series so extrema-preserving chart downsampling cannot bias the average.
  *
- * Both outputs come from one pipeline so the numbers a user reads can never
- * drift from the line they see. Any feature that plots a BPM-over-time graph
- * and also surfaces summary numbers next to it should build both from here.
+ * Both outputs come from one pipeline. Any feature that plots a BPM-over-time
+ * graph and also surfaces summary numbers next to it should build both here so
+ * they use the same validation and presentation policy.
  */
 
 import { smoothBpmValuePoints } from './bpmSmoothing';
@@ -36,9 +37,16 @@ export interface BpmSeries {
 
 export interface BuildBpmSeriesOptions {
   maxPoints?: number;
+  /**
+   * Exercise samples have already passed through the live pulse quality and
+   * presentation gates. Preserve their physiological movement instead of
+   * applying the additional resting/trend graph smoothing.
+   */
+  mode?: 'default' | 'exercise';
 }
 
 const DEFAULT_MAX_POINTS = 24;
+const EXERCISE_DEFAULT_MAX_POINTS = 48;
 const MIN_VALID_BPM = 20;
 const MAX_VALID_BPM = 240;
 
@@ -87,6 +95,51 @@ function downsampleByWindowMedian(
   return points;
 }
 
+/**
+ * Keep local highs and lows when a longer exercise must be shortened for the
+ * chart. Window medians are useful for a stable trend, but they erase the
+ * breathing-related oscillation these sessions are intended to show.
+ */
+function downsampleByExtrema(
+  samples: BpmTimePoint[],
+  maxPoints: number,
+): BpmSeriesPoint[] {
+  if (samples.length <= maxPoints) {
+    return samples.map(toSeriesPoint);
+  }
+  if (maxPoints < 4) {
+    return downsampleByWindowMedian(samples, maxPoints);
+  }
+
+  const points: BpmSeriesPoint[] = [toSeriesPoint(samples[0])];
+  const interior = samples.slice(1, -1);
+  const bucketCount = Math.max(1, Math.floor((maxPoints - 2) / 2));
+
+  for (let bucket = 0; bucket < bucketCount; bucket += 1) {
+    const start = Math.floor((bucket * interior.length) / bucketCount);
+    const end = Math.floor(((bucket + 1) * interior.length) / bucketCount);
+    const bucketSamples = interior.slice(start, Math.max(start + 1, end));
+    if (bucketSamples.length === 0) continue;
+
+    let minIndex = 0;
+    let maxIndex = 0;
+    for (let index = 1; index < bucketSamples.length; index += 1) {
+      if (bucketSamples[index].bpm < bucketSamples[minIndex].bpm) minIndex = index;
+      if (bucketSamples[index].bpm > bucketSamples[maxIndex].bpm) maxIndex = index;
+    }
+
+    const selected = minIndex === maxIndex
+      ? [bucketSamples[minIndex]]
+      : minIndex < maxIndex
+        ? [bucketSamples[minIndex], bucketSamples[maxIndex]]
+        : [bucketSamples[maxIndex], bucketSamples[minIndex]];
+    points.push(...selected.map(toSeriesPoint));
+  }
+
+  points.push(toSeriesPoint(samples[samples.length - 1]));
+  return points.slice(0, maxPoints);
+}
+
 export function summarizeBpmSeries(points: BpmSeriesPoint[]): BpmSeriesSummary {
   if (points.length === 0) {
     return { avgBpm: null, minBpm: null, maxBpm: null, hrDropBpm: null };
@@ -104,7 +157,10 @@ export function buildBpmSeries(
   raw: BpmTimePoint[],
   options: BuildBpmSeriesOptions = {},
 ): BpmSeries {
-  const maxPoints = options.maxPoints ?? DEFAULT_MAX_POINTS;
+  const mode = options.mode ?? 'default';
+  const maxPoints = options.maxPoints ?? (
+    mode === 'exercise' ? EXERCISE_DEFAULT_MAX_POINTS : DEFAULT_MAX_POINTS
+  );
   const valid = raw
     .filter(
       (sample) =>
@@ -120,12 +176,20 @@ export function buildBpmSeries(
     return { points: [], summary: summarizeBpmSeries([]) };
   }
 
-  const points = smoothBpmValuePoints(
-    downsampleByWindowMedian(valid, maxPoints).map((point) => ({
-      ...point,
-      value: point.bpm,
-    })),
-  ).map(({ offsetMs, label, value }) => ({ offsetMs, label, bpm: value }));
+  const downsampled = mode === 'exercise'
+    ? downsampleByExtrema(valid, maxPoints)
+    : downsampleByWindowMedian(valid, maxPoints);
+  const points = mode === 'exercise'
+    ? downsampled
+    : smoothBpmValuePoints(
+        downsampled.map((point) => ({
+          ...point,
+          value: point.bpm,
+        })),
+      ).map(({ offsetMs, label, value }) => ({ offsetMs, label, bpm: value }));
 
-  return { points, summary: summarizeBpmSeries(points) };
+  const summaryPoints = mode === 'exercise'
+    ? valid.map(toSeriesPoint)
+    : points;
+  return { points, summary: summarizeBpmSeries(summaryPoints) };
 }

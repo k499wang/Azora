@@ -84,7 +84,9 @@ export default function BPMChart({
 
   const series = useMemo(() => {
     if (bpmSamples && bpmSamples.length >= 2) {
-      const points = buildBpmSeries(bpmSamples).points;
+      const points = buildBpmSeries(bpmSamples, {
+        mode: insightContext === 'resting' ? 'default' : 'exercise',
+      }).points;
       if (points.length < 2) return [];
       const firstOffsetMs = points[0].offsetMs;
       return points.map((point) => ({
@@ -108,7 +110,7 @@ export default function BPMChart({
       tSec: (point.offsetMs - firstOffsetMs) / 1000,
       bpm: point.value,
     }));
-  }, [ibiMs, bpmSamples]);
+  }, [ibiMs, bpmSamples, insightContext]);
 
   const durationSec = useMemo(
     () => (series.length > 0 ? Math.round(series[series.length - 1].tSec) : 0),

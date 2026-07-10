@@ -45,6 +45,7 @@ import { useCompleteBreathingSessionMutation } from '../queries/tracking/useComp
 import { useHeartRateMonitoringPreference } from '../hooks/useHeartRateMonitoringPreference';
 import { useFeatureAccess } from '../hooks/useFeatureAccess';
 import { FeatureKey } from '../services/subscriptions/featureAccess';
+import { buildBpmSeries } from '../lib/heartRate/bpmSeries';
 
 const MIN_ROUNDS = 1;
 const MAX_ROUNDS = 30;
@@ -238,7 +239,14 @@ export default function ExerciseSessionPage({
   usePhaseChime(phase, { active: phaseCueAudioActive });
 
   const pulse = useLivePulse({ presentationMode: 'breathExercise' });
-  const { start: startPulse, stop: stopPulse, hasPermission, requestPermission } = pulse;
+  const {
+    start: startPulse,
+    stop: stopPulse,
+    hasPermission,
+    requestPermission,
+    beginBpmSampleCollection,
+    getBpmSamples,
+  } = pulse;
   const presentedBpm = pulse.currentBpm;
   const {
     heartRateMonitoringEnabled,
@@ -434,6 +442,10 @@ export default function ExerciseSessionPage({
       if (currentRound > rounds) {
         if (savedSessionRef.current) return;
         savedSessionRef.current = true;
+        const collectedSamples = getBpmSamples();
+        const samples = collectedSamples.length >= 2
+          ? collectedSamples
+          : hrSamplesRef.current.map((sample) => ({ ...sample, signalQuality: null }));
         flow.cancel();
         setPhase('done');
         stopPulse();
@@ -441,19 +453,11 @@ export default function ExerciseSessionPage({
         const cycleSeconds =
           pattern.inhale + pattern.holdIn + pattern.exhale + pattern.holdOut;
         const targetSeconds = cycleSeconds * rounds;
-        const samples = hrSamplesRef.current;
-        const avgBpm =
-          samples.length > 0
-            ? samples.reduce((sum, s) => sum + s.bpm, 0) / samples.length
-            : undefined;
-        const minBpm =
-          samples.length > 0
-            ? samples.reduce((m, s) => (s.bpm < m ? s.bpm : m), samples[0].bpm)
-            : null;
-        const maxBpm =
-          samples.length > 0
-            ? samples.reduce((m, s) => (s.bpm > m ? s.bpm : m), samples[0].bpm)
-            : null;
+        const graphSamples = samples.map(({ offsetMs, bpm }) => ({ offsetMs, bpm }));
+        const summary = buildBpmSeries(graphSamples, { mode: 'exercise' }).summary;
+        const avgBpm = summary.avgBpm ?? undefined;
+        const minBpm = summary.minBpm;
+        const maxBpm = summary.maxBpm;
         const endedAtMs = Date.now();
         const startedAtMs =
           sessionStartMsRef.current > 0 ? sessionStartMsRef.current : endedAtMs;
@@ -483,7 +487,7 @@ export default function ExerciseSessionPage({
             cycles: rounds,
             targetCycles: rounds,
             avgBpm,
-            hrSamples: samples,
+            hrSamples: graphSamples,
           });
         };
 
@@ -502,11 +506,7 @@ export default function ExerciseSessionPage({
             minBpm,
             maxBpm,
             completed: true,
-            samples: samples.map((sample) => ({
-              offsetMs: sample.offsetMs,
-              bpm: sample.bpm,
-              signalQuality: null,
-            })),
+            samples,
           }).catch((error) => {
             captureException(error, {
               flow: 'breathing_exercise',
@@ -540,6 +540,7 @@ export default function ExerciseSessionPage({
       userId,
       completeBreathingSessionMutation,
       navigation,
+      getBpmSamples,
     ],
   );
 
@@ -625,6 +626,9 @@ export default function ExerciseSessionPage({
       sessionStartMsRef.current = Date.now();
       lastPresentationUpdateAtRef.current = 0;
       savedSessionRef.current = false;
+      if (shouldMeasureHeartRate) {
+        beginBpmSampleCollection();
+      }
       requestAnimationFrame(() => circleRef.current?.reset());
       posthog.capture(AnalyticsEvent.ExerciseSessionStarted, {
         technique_id: technique.id,
@@ -644,6 +648,7 @@ export default function ExerciseSessionPage({
       technique,
       totalRounds,
       startCycle,
+      beginBpmSampleCollection,
     ],
   );
 
