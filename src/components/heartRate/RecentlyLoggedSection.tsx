@@ -122,7 +122,7 @@ export function RecentlyLoggedSection({
   return (
     <View style={styles.section}>
       <View style={styles.headerWrap}>
-        <SectionHeader title="Recently logged" />
+        <SectionHeader title="Recently Logged" />
       </View>
       {items.length === 0 ? (
         <View style={styles.emptyWrap}>

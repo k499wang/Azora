@@ -141,7 +141,7 @@ export default function BreathingLibrary() {
   return (
     <View style={styles.section}>
       <View style={styles.headerWrap}>
-        <SectionHeader title="Breathing exercises" />
+        <SectionHeader title="Breathing Exercises" />
       </View>
       <ScrollView
         horizontal
@@ -247,6 +247,10 @@ const styles = StyleSheet.create({
   },
   category: {
     ...typography.overline,
+    textTransform: 'none',
+    letterSpacing: 0,
+    fontSize: 13,
+    lineHeight: 16,
     color: colors.text.tertiary,
   },
   meta: {
