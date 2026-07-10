@@ -147,7 +147,7 @@ const LIVE_BPM_PROFILE_CONFIG = {
     emaAlpha: 0.2,
   },
   responsive: {
-    minIbis: 3,
+    minIbis: 5,
     medianWindow: 3,
     emaAlpha: 0.42,
   },
@@ -616,7 +616,9 @@ export class HeartRateManager {
     if (this.ibiHistory.length >= this.liveBpmConfig.minIbis) {
       const recentMedian = medianOfRecent(
         this.ibiHistory,
-        this.liveBpmConfig.medianWindow,
+        this.ibiEma == null
+          ? this.liveBpmConfig.minIbis
+          : this.liveBpmConfig.medianWindow,
       );
       if (recentMedian > 0) {
         if (this.ibiEma == null) {

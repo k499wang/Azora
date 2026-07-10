@@ -3,7 +3,7 @@ import {
   runAtTargetFps,
   useFrameProcessor,
 } from 'react-native-vision-camera';
-import { useRunOnJS, useSharedValue } from 'react-native-worklets-core';
+import { useRunOnJS } from 'react-native-worklets-core';
 import type {
   FingerPlacementState,
   IbiSample,
@@ -14,8 +14,11 @@ import type {
 import { heartRatePlugin } from '../lib/heartRate/heartRatePlugin';
 import { HeartRateManager } from '../lib/heartRate/heartRateManager';
 import {
+  EXERCISE_BPM_MIN_SIGNAL_QUALITY,
   createBreathExerciseBpmPresentationFilter,
   createLiveBpmPresentationFilter,
+  isBpmStartupReady,
+  type BpmStartupSample,
 } from '../lib/heartRate/bpmSmoothing';
 import { createBeatTickScheduler } from '../lib/heartRate/beatTickScheduler';
 import { LIVE_SIGNAL_GRAPH_UPDATE_INTERVAL_MS } from '../lib/heartRate/liveSignalGraphConfig';
@@ -24,9 +27,7 @@ import { useDeviceMotionFeed } from './useDeviceMotionFeed';
 
 const BPM_UPDATE_INTERVAL_MS = 1000;
 const FINGER_LOST_TIMEOUT_MS = 1500;
-const OFFLINE_CAPTURE_FPS = 30;
-const LIVE_PROCESSING_FPS = 20;
-const LIVE_PROCESSING_INTERVAL_MS = 50;
+const HEART_RATE_PROCESSING_FPS = 30;
 const SESSION_BPM_SAMPLE_INTERVAL_MS = 750;
 
 export interface LivePulseBpmSample {
@@ -62,6 +63,7 @@ interface UseLivePulseReturn {
   fingerPlacement: FingerPlacementState;
   signalStatus: SignalStatus;
   currentBpm: number | null;
+  isBpmReady: boolean;
   beatTick: number;
   liveSignalSamples: LivePpgSignalSample[];
   device: ReturnType<typeof useHeartRateCamera>['device'];
@@ -97,6 +99,7 @@ export function useLivePulse(
   const [fingerPlacement, setFingerPlacement] = useState<FingerPlacementState>('no_finger');
   const [signalStatus, setSignalStatus] = useState<SignalStatus>('no_finger');
   const [currentBpm, setCurrentBpm] = useState<number | null>(null);
+  const [isBpmReady, setIsBpmReady] = useState(false);
   const [beatTick, setBeatTick] = useState(0);
   const [liveSignalSamples, setLiveSignalSamples] = useState<LivePpgSignalSample[]>([]);
 
@@ -119,12 +122,12 @@ export function useLivePulse(
   );
   const lastSignalGraphUpdateRef = useRef<number>(0);
   const lastPublishedSignalTimestampRef = useRef<number | null>(null);
-  const lastLiveProcessingTimestampRef = useRef<number>(0);
-  const offlineCaptureActive = useSharedValue(false);
   const bpmSampleCollectionActiveRef = useRef(false);
   const bpmSampleCollectionStartedAtRef = useRef<number | null>(null);
   const lastCollectedBpmAtRef = useRef(0);
   const collectedBpmSamplesRef = useRef<LivePulseBpmSample[]>([]);
+  const bpmReadyRef = useRef(false);
+  const bpmStartupSamplesRef = useRef<BpmStartupSample[]>([]);
 
   const { device, format, hasPermission, requestPermission } = useHeartRateCamera();
 
@@ -150,14 +153,14 @@ export function useLivePulse(
     beatSchedulerRef.current.reset();
     lastSignalGraphUpdateRef.current = 0;
     lastPublishedSignalTimestampRef.current = null;
-    lastLiveProcessingTimestampRef.current = 0;
-    offlineCaptureActive.value = false;
     bpmSampleCollectionActiveRef.current = false;
     bpmSampleCollectionStartedAtRef.current = null;
     lastCollectedBpmAtRef.current = 0;
     collectedBpmSamplesRef.current = [];
+    bpmReadyRef.current = false;
+    bpmStartupSamplesRef.current = [];
     managerRef.current.clearLiveSignalSamples();
-  }, [offlineCaptureActive]);
+  }, []);
 
   const start = useCallback(() => {
     if (activeRef.current) return;
@@ -165,6 +168,7 @@ export function useLivePulse(
     activeRef.current = true;
     setActive(true);
     setCurrentBpm(null);
+    setIsBpmReady(false);
     setBeatTick(0);
     setLiveSignalSamples([]);
     fingerPlacementRef.current = 'no_finger';
@@ -178,6 +182,7 @@ export function useLivePulse(
     setActive(false);
     resetStreamState();
     setCurrentBpm(null);
+    setIsBpmReady(false);
     setLiveSignalSamples([]);
     fingerPlacementRef.current = 'no_finger';
     setFingerPlacement('no_finger');
@@ -203,19 +208,10 @@ export function useLivePulse(
         measurementSamplesRef.current.push(frameSample);
       }
 
-      const shouldThrottleProcessing = !measurementActiveRef.current;
-      if (
-        shouldThrottleProcessing &&
-        frameSample.timestamp - lastLiveProcessingTimestampRef.current <
-          LIVE_PROCESSING_INTERVAL_MS
-      ) {
-        return;
-      }
-      lastLiveProcessingTimestampRef.current = frameSample.timestamp;
-
       const frameState = managerRef.current.processFrame(frameSample);
       lastFingerSeenAtRef.current =
-        frameState.fingerPlacement === 'no_finger'
+        frameState.fingerPlacement === 'no_finger' ||
+        frameState.fingerPlacement === 'lost'
           ? lastFingerSeenAtRef.current
           : frameSample.timestamp;
       if (frameState.fingerPlacement !== fingerPlacementRef.current) {
@@ -227,7 +223,45 @@ export function useLivePulse(
         setSignalStatus(frameState.signalStatus);
       }
 
-      const bpmSnapshot = managerRef.current.getCurrentBpmSnapshot();
+      const managerBpmSnapshot = managerRef.current.getCurrentBpmSnapshot();
+      if (
+        presentationMode === 'breathExercise' &&
+        !bpmReadyRef.current &&
+        (frameState.fingerPlacement !== 'good' || frameState.signalStatus !== 'measuring')
+      ) {
+        bpmStartupSamplesRef.current = [];
+      }
+      if (
+        presentationMode === 'breathExercise' &&
+        !bpmReadyRef.current &&
+        managerBpmSnapshot != null
+      ) {
+        const lastCandidate = bpmStartupSamplesRef.current.at(-1);
+        const hasFreshCandidate =
+          lastCandidate == null || managerBpmSnapshot.timestamp > lastCandidate.timestamp;
+        const hasCleanSignal =
+          frameState.fingerPlacement === 'good' &&
+          frameState.signalStatus === 'measuring' &&
+          managerBpmSnapshot.signalQuality >= EXERCISE_BPM_MIN_SIGNAL_QUALITY;
+
+        if (hasFreshCandidate && hasCleanSignal) {
+          bpmStartupSamplesRef.current.push(managerBpmSnapshot);
+          if (bpmStartupSamplesRef.current.length > 8) {
+            bpmStartupSamplesRef.current.shift();
+          }
+          if (isBpmStartupReady(bpmStartupSamplesRef.current)) {
+            bpmReadyRef.current = true;
+            setIsBpmReady(true);
+          }
+        } else if (hasFreshCandidate && !hasCleanSignal) {
+          bpmStartupSamplesRef.current = [];
+        }
+      }
+
+      const bpmSnapshot =
+        presentationMode === 'breathExercise' && !bpmReadyRef.current
+          ? null
+          : managerBpmSnapshot;
       const bpm = bpmSnapshot?.bpm ?? null;
 
       if (frameState.beatDetected && frameState.beatPeakTs != null) {
@@ -255,18 +289,21 @@ export function useLivePulse(
         }
 
         if (
+          stabilizedBpm != null &&
           hasFreshExerciseEstimate &&
           bpmSnapshot != null &&
+          bpmReadyRef.current &&
+          bpmSnapshot.signalQuality >= EXERCISE_BPM_MIN_SIGNAL_QUALITY &&
           bpmSampleCollectionActiveRef.current &&
-          frameSample.timestamp - lastCollectedBpmAtRef.current >= SESSION_BPM_SAMPLE_INTERVAL_MS
+          bpmSnapshot.timestamp - lastCollectedBpmAtRef.current >= SESSION_BPM_SAMPLE_INTERVAL_MS
         ) {
           if (bpmSampleCollectionStartedAtRef.current == null) {
-            bpmSampleCollectionStartedAtRef.current = frameSample.timestamp;
+            bpmSampleCollectionStartedAtRef.current = bpmSnapshot.timestamp;
           }
           const startedAt = bpmSampleCollectionStartedAtRef.current;
-          lastCollectedBpmAtRef.current = frameSample.timestamp;
+          lastCollectedBpmAtRef.current = bpmSnapshot.timestamp;
           collectedBpmSamplesRef.current.push({
-            offsetMs: Math.max(0, Math.round(frameSample.timestamp - startedAt)),
+            offsetMs: Math.max(0, Math.round(bpmSnapshot.timestamp - startedAt)),
             bpm: bpmSnapshot.bpm,
             signalQuality: bpmSnapshot.signalQuality,
           });
@@ -296,6 +333,9 @@ export function useLivePulse(
         publishedBpmRef.current = null;
         liveBpmFilterRef.current.reset();
         setCurrentBpm(null);
+        bpmReadyRef.current = false;
+        bpmStartupSamplesRef.current = [];
+        setIsBpmReady(false);
       }
     },
     [presentationMode],
@@ -304,7 +344,6 @@ export function useLivePulse(
   const beginMeasurementWindow = useCallback(() => {
     measurementSamplesRef.current = [];
     measurementActiveRef.current = true;
-    offlineCaptureActive.value = true;
     lastBpmUpdateRef.current = 0;
     streamStartedAtRef.current = lastFrameTimestampRef.current;
     // The displayed BPM and its presentation filter deliberately survive this
@@ -314,16 +353,15 @@ export function useLivePulse(
     beatSchedulerRef.current.reset();
     setBeatTick(0);
     managerRef.current.beginMeasurementWindow(lastFrameTimestampRef.current ?? Date.now());
-  }, [offlineCaptureActive]);
+  }, []);
 
   const getMeasurementSamples = useCallback(() => {
     measurementActiveRef.current = false;
-    offlineCaptureActive.value = false;
     return measurementSamplesRef.current.map((sample) => ({
       timestamp: sample.timestamp,
       rois: sample.rois.map((roi) => ({ ...roi })),
     }));
-  }, [offlineCaptureActive]);
+  }, []);
 
   const getIbiSamples = useCallback(() => managerRef.current.getIbiSamples(), []);
 
@@ -342,8 +380,7 @@ export function useLivePulse(
   const frameProcessor = useFrameProcessor(
     (frame) => {
       'worklet';
-      const targetFps = offlineCaptureActive.value ? OFFLINE_CAPTURE_FPS : LIVE_PROCESSING_FPS;
-      runAtTargetFps(targetFps, () => {
+      runAtTargetFps(HEART_RATE_PROCESSING_FPS, () => {
         'worklet';
         const sample = heartRatePlugin(frame);
         if (sample != null) {
@@ -351,7 +388,7 @@ export function useLivePulse(
         }
       });
     },
-    [addSample, offlineCaptureActive],
+    [addSample],
   );
 
   return {
@@ -361,6 +398,7 @@ export function useLivePulse(
     fingerPlacement,
     signalStatus,
     currentBpm,
+    isBpmReady,
     beatTick,
     liveSignalSamples,
     device,
