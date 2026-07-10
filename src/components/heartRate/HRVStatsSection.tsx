@@ -49,7 +49,7 @@ export default function HRVStatsSection({
     <View style={styles.section}>
       <View style={styles.headerWrap}>
         <SectionHeader
-          title="Heart rate variability"
+          title="Heart Rate Variability"
           right={locked ? <ProUpgradeButton onPress={onPressUpgrade} /> : null}
         />
       </View>

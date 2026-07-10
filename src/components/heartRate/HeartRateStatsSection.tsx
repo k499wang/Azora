@@ -51,7 +51,7 @@ export default function HeartRateStatsSection({
     <View style={styles.section}>
       <View style={styles.headerWrap}>
         <SectionHeader
-          title={isBreathHold ? 'Hold Statistics' : 'Heart rate'}
+          title={isBreathHold ? 'Hold Statistics' : 'Heart Rate'}
           right={locked ? <ProUpgradeButton onPress={onPressUpgrade} /> : null}
         />
       </View>
