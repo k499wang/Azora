@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
+  hasStoredHeartRateMonitoringPreference,
   isHeartRateMonitoringEnabled,
   loadHeartRateMonitoringEnabled,
   setHeartRateMonitoringEnabled,
@@ -38,6 +39,7 @@ export function useHeartRateMonitoringPreference() {
   return {
     heartRateMonitoringEnabled: enabled,
     heartRateMonitoringPreferenceLoaded: loaded,
+    heartRateMonitoringPreferenceIsUnset: !hasStoredHeartRateMonitoringPreference(),
     setHeartRateMonitoringEnabled: updateEnabled,
   };
 }
