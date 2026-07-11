@@ -64,7 +64,6 @@ export default function RecoveryStatsSection({
           <StressGauge
             value={stressValue}
             zone={stressValue == null ? null : getStressZone(stressValue)}
-            history={locked ? undefined : stressHistory}
             locked={locked}
             onPressLocked={onPressUpgrade}
             surface={DEFAULT_CARD_SURFACE}
