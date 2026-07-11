@@ -250,6 +250,7 @@ export default function ExerciseSessionPage({
   const {
     heartRateMonitoringEnabled,
     heartRateMonitoringPreferenceLoaded,
+    heartRateMonitoringPreferenceIsUnset,
     setHeartRateMonitoringEnabled,
   } = useHeartRateMonitoringPreference();
   const heartRateMonitoringAccess = useFeatureAccess(FeatureKey.BreathingHeartRateMonitoring);
@@ -264,6 +265,25 @@ export default function ExerciseSessionPage({
   }, [
     heartRateMonitoringEnabled,
     heartRateMonitoringProLocked,
+    setHeartRateMonitoringEnabled,
+  ]);
+
+  // Pro users get heart rate monitoring on by default until they explicitly set a preference.
+  useEffect(() => {
+    if (
+      !heartRateMonitoringPreferenceLoaded ||
+      !heartRateMonitoringPreferenceIsUnset ||
+      !heartRateMonitoringAllowed ||
+      heartRateMonitoringEnabled
+    ) {
+      return;
+    }
+    setHeartRateMonitoringEnabled(true);
+  }, [
+    heartRateMonitoringAllowed,
+    heartRateMonitoringEnabled,
+    heartRateMonitoringPreferenceLoaded,
+    heartRateMonitoringPreferenceIsUnset,
     setHeartRateMonitoringEnabled,
   ]);
 
@@ -677,7 +697,8 @@ export default function ExerciseSessionPage({
     if (phase === 'idle' || phase === 'done') {
       if (!heartRateMonitoringPreferenceLoaded) return;
       if (heartRateMonitoringEnabled) {
-        if (heartRateMonitoringAccessLoading || !heartRateMonitoringAllowed) {
+        if (heartRateMonitoringAccessLoading) return;
+        if (!heartRateMonitoringAllowed) {
           if (heartRateMonitoringProLocked) {
             setHeartRateMonitoringEnabled(false);
           }
