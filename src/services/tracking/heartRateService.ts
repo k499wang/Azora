@@ -222,72 +222,9 @@ export async function getHeartRateSessionDetail(
   userId: string,
   sessionId: string,
 ): Promise<HeartRateSessionDetail | null> {
-  const supabase = requireSupabaseClient();
-
-  const { data: sessionData, error: sessionError } = await supabase
-    .from('heart_rate_sessions')
-    .select('id, started_at, ended_at, local_date, timezone, duration_seconds, avg_bpm, min_bpm, max_bpm, rmssd, sdnn, pnn50, hr_drop, beat_count, stress')
-    .eq('user_id', userId)
-    .eq('id', sessionId)
-    .maybeSingle();
-
-  if (sessionError != null) {
-    throw sessionError;
-  }
-
-  if (sessionData == null) {
-    return null;
-  }
-
-  const summary = mapHeartRateSummary(sessionData as HeartRateSessionRow);
-  if (summary == null) {
-    return null;
-  }
-
-  const [bpmResult, ibiResult] = await Promise.all([
-    supabase
-      .from('heart_rate_samples')
-      .select('offset_ms, bpm, signal_quality')
-      .eq('user_id', userId)
-      .eq('heart_rate_session_id', sessionId)
-      .order('offset_ms', { ascending: true }),
-    supabase
-      .from('heart_rate_ibi_samples')
-      .select('offset_ms, ibi_ms, signal_quality')
-      .eq('user_id', userId)
-      .eq('heart_rate_session_id', sessionId)
-      .order('offset_ms', { ascending: true }),
-  ]);
-
-  if (bpmResult.error != null) {
-    throw bpmResult.error;
-  }
-
-  if (ibiResult.error != null) {
-    throw ibiResult.error;
-  }
-
-  const bpmSeries: HeartRatePoint[] = ((bpmResult.data ?? []) as HeartRateSampleRow[])
-    .filter((row) => row.offset_ms != null && row.bpm != null)
-    .map((row) => ({
-      offsetMs: row.offset_ms,
-      bpm: row.bpm,
-      signalQuality: row.signal_quality,
-    }));
-
-  const ibiSeries: HeartRateIbiPoint[] = ((ibiResult.data ?? []) as HeartRateIbiSampleRow[])
-    .filter((row) => row.offset_ms != null && row.ibi_ms != null)
-    .map((row) => ({
-      offsetMs: row.offset_ms,
-      ibiMs: row.ibi_ms,
-      signalQuality: row.signal_quality,
-    }));
-
-  return {
-    ...summary,
-    bpmSeries,
-    ibiSeries,
-  };
+  void userId;
+  const { getMockHeartRateSessionDetail } = await import('../../dev/mockScreenshotData');
+  return getMockHeartRateSessionDetail(sessionId);
 }
 
 export async function getHeartRateIbiSeriesForSession(

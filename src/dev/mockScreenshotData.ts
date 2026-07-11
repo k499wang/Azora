@@ -16,6 +16,8 @@ import type { UserProfile } from '../services/profile/profileService';
 import type { HeartRateStats, HrSourcePick } from '../services/tracking/heartRateStatsCore';
 import type { StressHistoryEntry } from '../lib/heartRate/stress';
 import type { StreakSummary } from '../services/streaks/streakService';
+import type { CaptureResult, IbiSample } from '../lib/heartRate/types';
+import { getCaptureModeConfig, type HeartRateCaptureMode } from '../lib/heartRate/captureModes';
 
 const TODAY = new Date();
 
@@ -231,6 +233,106 @@ const MOCK_HR_SOURCE: HrSourcePick = {
   session: MOCK_TODAY_HEART_RATE,
   ageDays: 0,
 };
+
+function buildMockCaptureIbiSamples(durationMs: number, baselineMs: number): IbiSample[] {
+  const samples: IbiSample[] = [];
+  let value = baselineMs;
+  let offsetMs = 0;
+  while (offsetMs < durationMs) {
+    const meanPull = (baselineMs - value) * 0.12;
+    const swing = Math.sin(offsetMs / 4000) * 30;
+    const noise = (Math.random() - 0.5) * 80;
+    value = Math.max(650, Math.min(1100, value + meanPull + swing + noise));
+    samples.push({
+      offsetMs,
+      ibiMs: Math.round(value),
+      signalQuality: 0.82 + Math.random() * 0.15,
+    });
+    offsetMs += Math.round(value);
+  }
+  return samples;
+}
+
+export function buildMockCaptureResult(mode: HeartRateCaptureMode): CaptureResult {
+  const config = getCaptureModeConfig(mode);
+  const baselineMs = 940;
+  const ibiSamples = buildMockCaptureIbiSamples(config.durationMs, baselineMs);
+  const bpmSamples = ibiSamples.map((sample) => ({
+    offsetMs: sample.offsetMs,
+    bpm: Math.round(60000 / sample.ibiMs),
+  }));
+  const avgBpm = Math.round(
+    bpmSamples.reduce((sum, sample) => sum + sample.bpm, 0) / Math.max(1, bpmSamples.length),
+  );
+
+  return {
+    reading: {
+      bpm: avgBpm,
+      confidence: 0.94,
+      sampleCount: ibiSamples.length,
+      durationMs: config.durationMs,
+      recordedAt: new Date().toISOString(),
+      source: 'camera-flash',
+      ...(config.computeHrv
+        ? {
+            rmssd: 56,
+            sdnn: 62,
+            stress: 22,
+            pnn50: 29,
+            hrDrop: 13,
+            beatCount: ibiSamples.length,
+          }
+        : {}),
+    },
+    error: null,
+    ibiSamples,
+    bpmSamples,
+    mode,
+  };
+}
+
+function buildMockSessionDetail(
+  summary: TodayHeartRateSummary,
+): TodayHeartRateSummary & { bpmSeries: HeartRatePoint[]; ibiSeries: HeartRateIbiPoint[] } {
+  const ibiSeries = buildMockIbiSeries(Math.round(summary.durationSeconds / 1.2));
+  const bpmSeries: HeartRatePoint[] = ibiSeries.map((sample) => ({
+    offsetMs: sample.offsetMs,
+    bpm: Math.round(60000 / sample.ibiMs),
+    signalQuality: sample.signalQuality,
+  }));
+  return { ...summary, bpmSeries, ibiSeries };
+}
+
+const MOCK_SESSION_DETAILS_BY_ID = new Map(
+  [MOCK_TODAY_HEART_RATE, ...MOCK_RECENT_HEART_RATE].map((summary) => [
+    summary.sessionId,
+    buildMockSessionDetail(summary),
+  ]),
+);
+
+export function getMockHeartRateSessionDetail(sessionId: string) {
+  return (
+    MOCK_SESSION_DETAILS_BY_ID.get(sessionId) ??
+    buildMockSessionDetail(MOCK_TODAY_HEART_RATE)
+  );
+}
+
+/** Fallback BPM samples for the breathing-exercise results screen when the
+ * live (mocked) capture ran too short to collect a real-looking series. */
+export function buildMockExerciseBpmSamples(
+  durationSec: number,
+): Array<{ offsetMs: number; bpm: number }> {
+  const samples: Array<{ offsetMs: number; bpm: number }> = [];
+  const durationMs = Math.max(10_000, durationSec * 1000);
+  let bpm = 72;
+  for (let offsetMs = 0; offsetMs <= durationMs; offsetMs += 1000) {
+    const meanPull = (66 - bpm) * 0.08;
+    const noise = (Math.random() - 0.5) * 2.5;
+    bpm = Math.max(52, Math.min(84, bpm + meanPull + noise));
+    samples.push({ offsetMs, bpm: Math.round(bpm) });
+  }
+  return samples;
+}
 
 export const MOCK_HEART_RATE_STATS: HeartRateStats = {
   hrvSource: MOCK_HR_SOURCE,

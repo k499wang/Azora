@@ -320,18 +320,7 @@ export function HeartRateCaptureFlow({
     }
   }, [context, startMeasuring]);
 
-  const cameraProps = useMemo(() => (
-    device != null
-      ? {
-        device,
-        format,
-        frameProcessor,
-        torchMode,
-        fps: cameraFps,
-        isActive: captureState !== 'processing',
-      }
-      : undefined
-  ), [captureState, device, format, frameProcessor, torchMode, cameraFps]);
+  const cameraProps = undefined;
 
   const [showStartAnyway, setShowStartAnyway] = useState(false);
   useEffect(() => {

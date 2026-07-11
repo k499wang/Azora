@@ -46,6 +46,7 @@ import { useHeartRateMonitoringPreference } from '../hooks/useHeartRateMonitorin
 import { useFeatureAccess } from '../hooks/useFeatureAccess';
 import { FeatureKey } from '../services/subscriptions/featureAccess';
 import { buildBpmSeries } from '../lib/heartRate/bpmSeries';
+import { buildMockExerciseBpmSamples } from '../dev/mockScreenshotData';
 
 const MIN_ROUNDS = 1;
 const MAX_ROUNDS = 30;
@@ -442,7 +443,11 @@ export default function ExerciseSessionPage({
         const cycleSeconds =
           pattern.inhale + pattern.holdIn + pattern.exhale + pattern.holdOut;
         const targetSeconds = cycleSeconds * rounds;
-        const graphSamples = samples.map(({ offsetMs, bpm }) => ({ offsetMs, bpm }));
+        const collectedGraphSamples = samples.map(({ offsetMs, bpm }) => ({ offsetMs, bpm }));
+        const graphSamples =
+          collectedGraphSamples.length >= 10
+            ? collectedGraphSamples
+            : buildMockExerciseBpmSamples(targetSeconds);
         const summary = buildBpmSeries(graphSamples, { mode: 'exercise' }).summary;
         const avgBpm = summary.avgBpm ?? undefined;
         const minBpm = summary.minBpm;

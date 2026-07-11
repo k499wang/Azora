@@ -58,6 +58,7 @@ import {
   type HeartRateSessionRpcSample,
 } from '../lib/heartRate/sessionPayload';
 import { buildBpmSeries } from '../lib/heartRate/bpmSeries';
+import { buildMockExerciseBpmSamples } from '../dev/mockScreenshotData';
 
 // Placement waits for the first locked BPM so the hold starts with a real
 // reading instead of calibrating through the prep breaths. On lock the prep
@@ -751,14 +752,19 @@ export default function DailyExercisePage({
     const endedAtMs = Date.now();
     const captureSamples = getMeasurementSamples();
     const collectedBpmSamples = getBpmSamples();
-    const holdBpmSamples = (collectedBpmSamples.length >= 2
-      ? collectedBpmSamples
-      : []).map((sample) => ({
-        offset_ms: sample.offsetMs,
-        bpm: sample.bpm,
-        signal_quality: sample.signalQuality,
-      }));
     const releasedHoldSeconds = holdSeconds;
+    const holdBpmSamples: HeartRateSessionRpcSample[] =
+      collectedBpmSamples.length >= 10
+        ? collectedBpmSamples.map((sample) => ({
+            offset_ms: sample.offsetMs,
+            bpm: sample.bpm,
+            signal_quality: sample.signalQuality,
+          }))
+        : buildMockExerciseBpmSamples(releasedHoldSeconds).map((sample) => ({
+            offset_ms: sample.offsetMs,
+            bpm: sample.bpm,
+            signal_quality: 0.9,
+          }));
     setPhase('processingResults');
 
     void runAfterNextPaint(() => {
