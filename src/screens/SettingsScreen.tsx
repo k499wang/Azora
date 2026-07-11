@@ -13,10 +13,8 @@ import NotificationsSettingsSheet from '../features/notifications/NotificationsS
 import { useAuthStore } from '../stores/authStore';
 import { useHapticsPreference } from '../hooks/useHapticsPreference';
 import { trackProfileAction } from '../services/analytics/tracking';
-import { getRevenueCatCustomerInfo } from '../services/subscriptions/revenueCatClient';
 import type { SettingsScreenProps } from '../app/navigation';
 
-const APP_STORE_SUBSCRIPTIONS_URL = 'https://apps.apple.com/account/subscriptions';
 const FEEDBACK_EMAIL = 'feedback@tryazora.app';
 const FEEDBACK_CC_EMAIL = 'kevin@tryazora.app';
 
@@ -166,29 +164,6 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
     );
   };
 
-  const handleManageSubscription = async () => {
-    trackProfileAction('manage_subscription_opened');
-
-    try {
-      const customerInfo = await getRevenueCatCustomerInfo();
-      const managementUrl = customerInfo.managementURL ?? APP_STORE_SUBSCRIPTIONS_URL;
-      await Linking.openURL(managementUrl);
-    } catch (err) {
-      trackProfileAction('manage_subscription_failed', {
-        error_message: err instanceof Error ? err.message : 'unknown_error',
-      });
-
-      try {
-        await Linking.openURL(APP_STORE_SUBSCRIPTIONS_URL);
-      } catch {
-        Alert.alert(
-          'Could not open subscriptions',
-          'Open App Store account settings to manage your subscription.',
-        );
-      }
-    }
-  };
-
   return (
     <View style={styles.screen}>
       <ScrollView
@@ -248,22 +223,6 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
                     thumbColor={hapticsEnabled ? colors.primary.blue600 : colors.neutral[50]}
                   />
                 }
-              />
-            </SettingsGroup>
-          </View>
-        </View>
-
-        <View style={styles.section}>
-          <SectionHeader title="Subscription" />
-          <View style={styles.sectionBody}>
-            <SettingsGroup>
-              <SettingsRow
-                icon="star-four-points-outline"
-                label="Manage subscription"
-                onPress={() => {
-                  void handleManageSubscription();
-                }}
-                isLast
               />
             </SettingsGroup>
           </View>
