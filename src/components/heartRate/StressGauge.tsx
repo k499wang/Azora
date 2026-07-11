@@ -12,15 +12,10 @@ import LockedScrim from '../common/LockedScrim';
 import CardSurface from '../common/CardSurface';
 import Icon from '../common/icons/Icon';
 import type { CardSurfaceMode } from '../common/cardSurfaceConfig';
-import {
-  getStressStats,
-  type StressHistoryEntry,
-} from '../../lib/heartRate/stress';
 
 interface StressGaugeProps {
   value: number | null;
   zone: { label: string; color: string } | null;
-  history?: StressHistoryEntry[];
   locked?: boolean;
   onPressLocked?: () => void;
   surface?: CardSurfaceMode;
@@ -28,7 +23,6 @@ interface StressGaugeProps {
 }
 
 const SIZE = 96;
-const MIN_STRESS_STATS_POINTS = 4;
 const STROKE = 8;
 const CX = SIZE / 2;
 const CY = SIZE / 2;
@@ -60,14 +54,11 @@ function formatValue(value: number | null): string {
 export default function StressGauge({
   value,
   zone,
-  history,
   locked = false,
   onPressLocked,
   surface,
   lastMeasuredLabel,
 }: StressGaugeProps) {
-  const stats = history != null ? getStressStats(history) : null;
-  const hasStats = stats != null && stats.count >= MIN_STRESS_STATS_POINTS;
   const hasValue = value != null && Number.isFinite(value);
   const clamped = hasValue ? Math.max(0, Math.min(100, value!)) : null;
   const sweep = clamped != null ? (clamped / 100) * SWEEP : null;
@@ -105,40 +96,18 @@ export default function StressGauge({
           </View>
 
           <View style={styles.statsColumn}>
-            <View style={[styles.statsRow, hasStats && styles.statsRowCompact]}>
+            <View style={styles.statsRow}>
               <View style={styles.statCell}>
                 <View style={styles.statValueRow}>
-                  <Text style={[styles.statValue, !hasStats && styles.statValueLarge]}>
+                  <Text style={[styles.statValue, styles.statValueLarge]}>
                     {formatValue(clamped)}
                   </Text>
-                  <Text style={[styles.statUnit, !hasStats && styles.statUnitLarge]}>/100</Text>
+                  <Text style={[styles.statUnit, styles.statUnitLarge]}>/100</Text>
                 </View>
-                <Text style={[styles.statLabel, !hasStats && styles.statLabelLarge, styles.currentStatLabel]}>
+                <Text style={[styles.statLabel, styles.statLabelLarge, styles.currentStatLabel]}>
                   {lastMeasuredLabel ?? 'Today'}
                 </Text>
               </View>
-
-              {hasStats ? (
-                <>
-                  <View style={styles.statDivider} />
-                  <View style={styles.statCell}>
-                    <View style={styles.statValueRow}>
-                      <Text style={styles.statValue}>{formatValue(stats!.avg)}</Text>
-                      <Text style={styles.statUnit}>/100</Text>
-                    </View>
-                    <Text style={styles.statLabel}>Avg</Text>
-                  </View>
-
-                  <View style={styles.statDivider} />
-                  <View style={styles.statCell}>
-                    <View style={styles.statValueRow}>
-                      <Text style={styles.statValue}>{formatValue(stats!.max)}</Text>
-                      <Text style={styles.statUnit}>/100</Text>
-                    </View>
-                    <Text style={styles.statLabel}>Highest</Text>
-                  </View>
-                </>
-              ) : null}
             </View>
           </View>
         </View>
@@ -263,11 +232,6 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     paddingRight: spacing.md,
   },
-  statsRowCompact: {
-    gap: spacing.sm + 2,
-    marginTop: 2,
-    paddingRight: spacing.sm,
-  },
   gaugeColumn: {
     width: SIZE,
     justifyContent: 'center',
@@ -277,11 +241,6 @@ const styles = StyleSheet.create({
   statCell: {
     alignItems: 'flex-start',
     gap: spacing.xs,
-  },
-  statDivider: {
-    width: 1,
-    height: 32,
-    backgroundColor: colors.neutral[200],
   },
   statLabel: {
     ...typography.label.small,
