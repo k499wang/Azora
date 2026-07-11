@@ -894,7 +894,7 @@ export default function ExerciseSessionPage({
                     outlineOpacity: activeTheme.circleOutlineOpacity,
                     outer: activeTheme.circleOuter,
                     outerOpacity: activeTheme.circleOuterOpacity,
-                    inner: activeTheme.circleInner,
+                    inner: colors.primary.blue500,
                     beatFlush: activeTheme.beatFlush,
                   }}
                 >

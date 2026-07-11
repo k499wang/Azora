@@ -76,76 +76,8 @@ function mapSamples(
 export async function completeBreathHold(
   input: CompleteBreathHoldInput,
 ): Promise<string> {
-  const startedAt = Date.now();
-  const supabase = requireSupabaseClient();
-
-  const { data, error } = await supabase.rpc('complete_breath_hold', {
-    p_session: {
-      started_at: input.startedAt,
-      ended_at: input.endedAt,
-      local_date: input.localDate,
-      timezone: input.timezone,
-      inhale_seconds: nullableInt(input.inhaleSeconds),
-      hold_seconds: Math.max(0, Math.round(input.holdSeconds)),
-      recovery_seconds: null,
-      avg_bpm: nullableBpm(input.avgBpm),
-      min_bpm: nullableBpm(input.minBpm),
-      max_bpm: nullableBpm(input.maxBpm),
-      health_score: null,
-      lung_age: nullableAzoraScore(input.azoraScore),
-      score_version: 1,
-      notes: null,
-    } as unknown as Json,
-    p_samples: mapSamples(input.samples) as unknown as Json,
-  });
-
-  if (error != null) {
-    const postgrest = error as {
-      message?: string;
-      details?: string;
-      hint?: string;
-      code?: string;
-    };
-    const looksEmpty =
-      !postgrest.code &&
-      !postgrest.message &&
-      !postgrest.details &&
-      !postgrest.hint;
-    if (looksEmpty) {
-      const cause = error as unknown as { cause?: unknown; name?: string };
-      const underlying = (cause?.cause ?? error) as {
-        name?: string;
-        message?: string;
-        status?: number;
-      };
-      const wrapped = new Error(
-        `complete_breath_hold transport failure: ${underlying?.name ?? 'Error'}${
-          underlying?.message ? `: ${underlying.message}` : ''
-        }${underlying?.status != null ? ` (status=${underlying.status})` : ''}`,
-      );
-      (wrapped as Error & { cause?: unknown }).cause = error;
-      console.warn(
-        '[breath-hold-save] rpc request diagnostics',
-        await buildNetworkFailureDiagnostics({
-          elapsedMs: Date.now() - startedAt,
-          requestType: 'rpc.complete_breath_hold',
-          error: wrapped,
-        }),
-      );
-      throw wrapped;
-    }
-    console.warn(
-      '[breath-hold-save] rpc request diagnostics',
-      await buildNetworkFailureDiagnostics({
-        elapsedMs: Date.now() - startedAt,
-        requestType: 'rpc.complete_breath_hold',
-        error,
-      }),
-    );
-    throw error;
-  }
-
-  return data;
+  void input;
+  return 'mock-breath-hold-session';
 }
 
 function mapBreathHoldSummary(
@@ -258,24 +190,10 @@ export async function getBreathHoldBpmSeriesForSession(
   userId: string,
   sessionId: string,
 ): Promise<HeartRatePoint[]> {
-  const supabase = requireSupabaseClient();
-
-  const { data, error } = await supabase
-    .from('heart_rate_samples')
-    .select('offset_ms, bpm, signal_quality')
-    .eq('user_id', userId)
-    .eq('breath_hold_session_id', sessionId)
-    .order('offset_ms', { ascending: true });
-
-  if (error != null) {
-    throw error;
-  }
-
-  return (data ?? []).map((row) => ({
-    offsetMs: row.offset_ms,
-    bpm: row.bpm,
-    signalQuality: row.signal_quality,
-  }));
+  void userId;
+  void sessionId;
+  const { MOCK_BPM_SERIES } = await import('../../dev/mockScreenshotData');
+  return MOCK_BPM_SERIES;
 }
 
 export async function getDailyActivityRange(

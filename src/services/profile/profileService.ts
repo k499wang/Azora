@@ -46,37 +46,9 @@ export interface UpdatePreferencesInput {
 }
 
 export async function getProfile(userId: string): Promise<UserProfile | null> {
-  const supabase = requireSupabaseClient();
-
-  const { data, error } = await supabase
-    .from('profiles')
-    .select(
-      'user_id, display_name, avatar_url, timezone, onboarding_goal, onboarding_completed_at, age, gender, daily_minutes, default_technique_id',
-    )
-    .eq('user_id', userId)
-    .maybeSingle();
-
-  if (error != null) {
-    throw error;
-  }
-
-  if (data == null) {
-    return null;
-  }
-
-  const row = data as ProfileRow;
-  return {
-    userId: row.user_id,
-    displayName: row.display_name,
-    avatarUrl: row.avatar_url,
-    timezone: row.timezone,
-    onboardingGoal: row.onboarding_goal,
-    onboardingCompletedAt: row.onboarding_completed_at,
-    age: row.age,
-    gender: row.gender as UserGender | null,
-    dailyMinutes: row.daily_minutes,
-    defaultTechniqueId: row.default_technique_id,
-  };
+  void userId;
+  const { MOCK_PROFILE } = await import('../../dev/mockScreenshotData');
+  return MOCK_PROFILE;
 }
 
 export async function updateProfile(

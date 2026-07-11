@@ -1,10 +1,3 @@
-import {
-  getHeartRateBpmSeriesForSession,
-  getHeartRateIbiSeriesForSession,
-  getRecentHeartRateSummaries,
-} from './heartRateService';
-import { getHeartRateStatsCore } from './heartRateStatsCore';
-
 export type {
   HeartRateStats,
   HeartRateStatsPartialErrors,
@@ -13,10 +6,9 @@ export type {
 export { pickHrSource } from './heartRateStatsCore';
 
 /** Load the data required by the dedicated Heart tab. */
-export function getHeartRateStats(userId: string, todayLocalDate: string) {
-  return getHeartRateStatsCore(userId, todayLocalDate, {
-    getRecentHeartRateSummaries,
-    getHeartRateBpmSeriesForSession,
-    getHeartRateIbiSeriesForSession,
-  });
+export async function getHeartRateStats(userId: string, todayLocalDate: string) {
+  void userId;
+  void todayLocalDate;
+  const { MOCK_HEART_RATE_STATS } = await import('../../dev/mockScreenshotData');
+  return MOCK_HEART_RATE_STATS;
 }
