@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const HEART_RATE_MONITORING_KEY = 'settings:heart_rate_monitoring_enabled';
 
-let heartRateMonitoringEnabled = false;
+let heartRateMonitoringEnabled = true;
 const listeners = new Set<(enabled: boolean) => void>();
 
 function emit() {
@@ -24,7 +24,7 @@ export function subscribeHeartRateMonitoringEnabled(
 
 export async function loadHeartRateMonitoringEnabled(): Promise<boolean> {
   const raw = await AsyncStorage.getItem(HEART_RATE_MONITORING_KEY);
-  const next = raw == null ? false : raw === 'true';
+  const next = raw == null ? true : raw === 'true';
   if (next !== heartRateMonitoringEnabled) {
     heartRateMonitoringEnabled = next;
     emit();
