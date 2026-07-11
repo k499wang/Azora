@@ -174,7 +174,7 @@ export function ExitOfferContent({
               entering={FadeIn.delay(240).duration(620)}
             >
               <View style={styles.timerRow}>
-                <Icon name="timer" size={14} color={colors.text.tertiary} />
+                <Icon name="timer" size={20} color={colors.error[700]} />
                 <Text style={styles.timerLabel}>Offer ends in</Text>
                 <Text style={styles.timerValue}>{formatClock(secondsLeft)}</Text>
               </View>
@@ -614,20 +614,25 @@ const styles = StyleSheet.create({
   timerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
+    gap: spacing.sm,
+    marginTop: spacing.md,
+    backgroundColor: colors.error[100],
+    borderRadius: 999,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
   },
   timerLabel: {
-    ...typography.caption.caption1,
+    ...typography.body.medium,
     fontFamily: fonts.semibold,
     fontWeight: '500',
-    letterSpacing: 0.5,
-    color: colors.text.tertiary,
+    letterSpacing: 0.3,
+    color: colors.error[700],
   },
   timerValue: {
-    ...typography.caption.caption1,
+    ...typography.title.title3,
     fontFamily: fonts.semibold,
     fontWeight: '500',
-    color: colors.text.secondary,
+    color: colors.error[700],
     fontVariant: ['tabular-nums'],
   },
   testimonials: {
