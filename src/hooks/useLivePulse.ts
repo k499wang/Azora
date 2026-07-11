@@ -52,7 +52,6 @@ interface UseLivePulseOptions {
 }
 
 const MOCK_BASELINE_BPM = 70;
-const MOCK_READY_DELAY_MS = 1500;
 const MOCK_BPM_TICK_MS = 1000;
 const MOCK_BEAT_TICK_MS = 850;
 const MOCK_SIGNAL_TICK_MS = 40;
@@ -99,16 +98,10 @@ export function useLivePulse(
     lastSignalFlushRef.current = 0;
     setActive(true);
     setFingerPlacement('good');
-    setSignalStatus('warming_up');
-    setCurrentBpm(null);
-    setIsBpmReady(false);
+    setSignalStatus('measuring');
+    setCurrentBpm(MOCK_BASELINE_BPM);
+    setIsBpmReady(true);
     setLiveSignalSamples([]);
-
-    const readyTimer = setTimeout(() => {
-      setSignalStatus('measuring');
-      setIsBpmReady(true);
-      setCurrentBpm(MOCK_BASELINE_BPM);
-    }, MOCK_READY_DELAY_MS);
 
     const bpmTimer = setInterval(() => {
       const elapsedSec = (Date.now() - startedAtRef.current) / 1000;
@@ -153,7 +146,7 @@ export function useLivePulse(
       }
     }, MOCK_SIGNAL_TICK_MS);
 
-    timersRef.current = [readyTimer, bpmTimer, beatTimer, signalTimer];
+    timersRef.current = [bpmTimer, beatTimer, signalTimer];
   }, [clearTimers]);
 
   const stop = useCallback(() => {

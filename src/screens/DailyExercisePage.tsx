@@ -896,8 +896,7 @@ export default function DailyExercisePage({
       : undefined
   ), [pulse.active, pulse.device, pulse.fingerPlacement, pulse.format, pulse.frameProcessor, pulse.torchMode]);
 
-  const showCamera = (isPlacement || isLive) && pulse.active && cameraProps != null;
-  const cameraSlot = showCamera ? <HeartRateCameraPreview {...cameraProps} /> : null;
+  const cameraSlot = null;
 
   const signalGood =
     pulse.fingerPlacement === 'good' &&
