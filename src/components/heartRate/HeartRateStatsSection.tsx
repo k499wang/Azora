@@ -44,7 +44,6 @@ export default function HeartRateStatsSection({
   insightContext,
   breathingTechniqueProfile,
 }: HeartRateSectionProps) {
-  const heartRateIncreased = hrDrop != null && hrDrop < 0;
   const isBreathHold = insightContext === 'breath-hold';
 
   return (
@@ -59,8 +58,8 @@ export default function HeartRateStatsSection({
       <View style={styles.metricColumn}>
         <View style={styles.tileRow}>
           <ThermometerStatCard
-            label={heartRateIncreased ? 'HR increase' : 'HR drop'}
-            icon={heartRateIncreased ? 'stat-heart-pulse' : 'chevron-down'}
+            label="HR change"
+            icon="stat-heart-pulse"
             iconColor={colors.error[500]}
             value={hrDrop ?? (locked ? LOCKED_PLACEHOLDERS.hrDrop : null)}
             unit="bpm"
