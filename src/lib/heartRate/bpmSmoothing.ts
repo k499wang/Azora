@@ -44,16 +44,13 @@ export interface BpmPresentationSample {
   bpm: number;
 }
 
-export interface BpmStartupSample {
-  timestamp: number;
+export interface ExerciseBpmSnapshot {
   bpm: number;
+  timestamp: number;
   signalQuality: number;
 }
 
 export const EXERCISE_BPM_MIN_SIGNAL_QUALITY = 0.15;
-const EXERCISE_BPM_READY_SAMPLE_COUNT = 2;
-const EXERCISE_BPM_READY_MIN_SPAN_MS = 750;
-const EXERCISE_BPM_READY_MAX_SPREAD = 8;
 
 const MAX_SAMPLE_JUMP_BPM = 8;
 const GRAPH_MAX_SAMPLE_JUMP_BPM = 2;
@@ -258,28 +255,15 @@ function isRecentWindowStable(values: number[], rangeBpm: number): boolean {
   return Math.max(...values) - Math.min(...values) <= rangeBpm;
 }
 
-export function isBpmStartupReady(samples: BpmStartupSample[]): boolean {
-  if (samples.length < EXERCISE_BPM_READY_SAMPLE_COUNT) return false;
-  const latest = samples[samples.length - 1];
-  if (latest.signalQuality < EXERCISE_BPM_MIN_SIGNAL_QUALITY) return false;
-
-  for (let index = samples.length - 2; index >= 0; index -= 1) {
-    const candidate = samples[index];
-    if (latest.timestamp - candidate.timestamp < EXERCISE_BPM_READY_MIN_SPAN_MS) {
-      continue;
-    }
-    const window = samples.slice(index);
-    if (window.some(
-      (sample) => sample.signalQuality < EXERCISE_BPM_MIN_SIGNAL_QUALITY,
-    )) {
-      continue;
-    }
-    const bpms = window.map((sample) => sample.bpm);
-    if (Math.max(...bpms) - Math.min(...bpms) <= EXERCISE_BPM_READY_MAX_SPREAD) {
-      return true;
-    }
-  }
-  return false;
+export function isExerciseBpmSnapshotReady(
+  snapshot: ExerciseBpmSnapshot | null,
+): boolean {
+  return (
+    snapshot != null &&
+    Number.isFinite(snapshot.bpm) &&
+    Number.isFinite(snapshot.timestamp) &&
+    snapshot.signalQuality >= EXERCISE_BPM_MIN_SIGNAL_QUALITY
+  );
 }
 
 export class BpmPresentationFilter {

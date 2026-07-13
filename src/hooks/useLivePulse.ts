@@ -17,8 +17,7 @@ import {
   EXERCISE_BPM_MIN_SIGNAL_QUALITY,
   createBreathExerciseBpmPresentationFilter,
   createLiveBpmPresentationFilter,
-  isBpmStartupReady,
-  type BpmStartupSample,
+  isExerciseBpmSnapshotReady,
 } from '../lib/heartRate/bpmSmoothing';
 import { createBeatTickScheduler } from '../lib/heartRate/beatTickScheduler';
 import { recordDevFrame } from '../services/dev/heartRateFrameRecorder';
@@ -128,7 +127,6 @@ export function useLivePulse(
   const lastCollectedBpmAtRef = useRef(0);
   const collectedBpmSamplesRef = useRef<LivePulseBpmSample[]>([]);
   const bpmReadyRef = useRef(false);
-  const bpmStartupSamplesRef = useRef<BpmStartupSample[]>([]);
 
   const { device, format, hasPermission, requestPermission } = useHeartRateCamera();
 
@@ -159,7 +157,6 @@ export function useLivePulse(
     lastCollectedBpmAtRef.current = 0;
     collectedBpmSamplesRef.current = [];
     bpmReadyRef.current = false;
-    bpmStartupSamplesRef.current = [];
     managerRef.current.clearLiveSignalSamples();
   }, []);
 
@@ -229,35 +226,17 @@ export function useLivePulse(
       if (
         presentationMode === 'breathExercise' &&
         !bpmReadyRef.current &&
-        (frameState.fingerPlacement !== 'good' || frameState.signalStatus !== 'measuring')
+        managerBpmSnapshot != null &&
+        frameState.fingerPlacement === 'good' &&
+        frameState.signalStatus === 'measuring' &&
+        isExerciseBpmSnapshotReady(managerBpmSnapshot)
       ) {
-        bpmStartupSamplesRef.current = [];
-      }
-      if (
-        presentationMode === 'breathExercise' &&
-        !bpmReadyRef.current &&
-        managerBpmSnapshot != null
-      ) {
-        const lastCandidate = bpmStartupSamplesRef.current.at(-1);
-        const hasFreshCandidate =
-          lastCandidate == null || managerBpmSnapshot.timestamp > lastCandidate.timestamp;
-        const hasCleanSignal =
-          frameState.fingerPlacement === 'good' &&
-          frameState.signalStatus === 'measuring' &&
-          managerBpmSnapshot.signalQuality >= EXERCISE_BPM_MIN_SIGNAL_QUALITY;
-
-        if (hasFreshCandidate && hasCleanSignal) {
-          bpmStartupSamplesRef.current.push(managerBpmSnapshot);
-          if (bpmStartupSamplesRef.current.length > 8) {
-            bpmStartupSamplesRef.current.shift();
-          }
-          if (isBpmStartupReady(bpmStartupSamplesRef.current)) {
-            bpmReadyRef.current = true;
-            setIsBpmReady(true);
-          }
-        } else if (hasFreshCandidate && !hasCleanSignal) {
-          bpmStartupSamplesRef.current = [];
-        }
+        // The responsive manager only publishes after five accepted, consistent
+        // IBIs. Once that estimate also clears the exercise quality gate, it is
+        // already a reliable startup lock; waiting for another snapshot adds a
+        // redundant beat-cycle delay before the exercise can begin.
+        bpmReadyRef.current = true;
+        setIsBpmReady(true);
       }
 
       const bpmSnapshot =
@@ -336,7 +315,6 @@ export function useLivePulse(
         liveBpmFilterRef.current.reset();
         setCurrentBpm(null);
         bpmReadyRef.current = false;
-        bpmStartupSamplesRef.current = [];
         setIsBpmReady(false);
       }
     },
@@ -368,9 +346,25 @@ export function useLivePulse(
   const getIbiSamples = useCallback(() => managerRef.current.getIbiSamples(), []);
 
   const beginBpmSampleCollection = useCallback(() => {
-    collectedBpmSamplesRef.current = [];
+    const lockedSnapshot = managerRef.current.getCurrentBpmSnapshot();
+    const canSeedLockedBaseline =
+      bpmReadyRef.current &&
+      fingerPlacementRef.current === 'good' &&
+      signalStatusRef.current === 'measuring' &&
+      lockedSnapshot != null &&
+      lockedSnapshot.signalQuality >= EXERCISE_BPM_MIN_SIGNAL_QUALITY;
+
+    collectedBpmSamplesRef.current = canSeedLockedBaseline
+      ? [{
+          offsetMs: 0,
+          bpm: lockedSnapshot.bpm,
+          signalQuality: lockedSnapshot.signalQuality,
+        }]
+      : [];
     bpmSampleCollectionStartedAtRef.current = lastFrameTimestampRef.current;
-    lastCollectedBpmAtRef.current = 0;
+    lastCollectedBpmAtRef.current = canSeedLockedBaseline
+      ? lockedSnapshot.timestamp
+      : 0;
     bpmSampleCollectionActiveRef.current = true;
   }, []);
 
