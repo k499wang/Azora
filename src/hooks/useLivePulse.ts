@@ -21,6 +21,7 @@ import {
   type BpmStartupSample,
 } from '../lib/heartRate/bpmSmoothing';
 import { createBeatTickScheduler } from '../lib/heartRate/beatTickScheduler';
+import { recordDevFrame } from '../services/dev/heartRateFrameRecorder';
 import { LIVE_SIGNAL_GRAPH_UPDATE_INTERVAL_MS } from '../lib/heartRate/liveSignalGraphConfig';
 import { useHeartRateCamera } from './useHeartRateCamera';
 import { useDeviceMotionFeed } from './useDeviceMotionFeed';
@@ -196,6 +197,7 @@ export function useLivePulse(
       if (!isValidFrameSample(frameSample)) {
         return;
       }
+      if (__DEV__) recordDevFrame(frameSample);
 
       if (
         streamStartedAtRef.current == null ||

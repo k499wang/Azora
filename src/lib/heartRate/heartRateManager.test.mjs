@@ -1104,3 +1104,98 @@ test('HeartRateManager: first BPM lock waits until recent intervals agree', () =
     );
   }
 });
+
+test('HeartRateManager: dicrotic notch at slow HR does not double-tick or block lock', () => {
+  // ~55 BPM (33-frame cycle, ~1089ms) with a half-height dicrotic bump ~429ms
+  // after each systolic peak. The notch clears the 320ms cold-start refractory,
+  // so without the small-early-peak gate every cycle ticked twice and the
+  // alternating ~429/~660ms intervals deadlocked the cold-start pairing: the
+  // pulse animation double-beat forever while the BPM stayed on "calibrating".
+  const manager = new HeartRateManager();
+  let t = 0;
+  for (let i = 0; i < WARMUP_FRAMES; i++) {
+    manager.processFrame(makeFrame(t, BASELINE_WEIGHTED));
+    t += FRAME_SPACING_MS;
+  }
+
+  const cycleFrames = 33;
+  const totalFrames = cycleFrames * 14;
+  let ticks = 0;
+  const reported = [];
+  for (let i = 0; i < totalFrames; i++) {
+    const phase = i % cycleFrames;
+    const weighted =
+      phase === 0
+        ? BEAT_WEIGHTED
+        : phase === 13
+          ? (BASELINE_WEIGHTED + BEAT_WEIGHTED) / 2
+          : BASELINE_WEIGHTED;
+    const state = manager.processFrame(makeFrame(t, weighted));
+    if (state.beatDetected) ticks += 1;
+    const bpm = manager.getCurrentBpm();
+    if (bpm != null) reported.push(bpm);
+    t += FRAME_SPACING_MS;
+  }
+
+  assert.ok(
+    ticks <= 14,
+    `notch bumps must not double the tick count (14 true beats, got ${ticks})`,
+  );
+  assert.ok(reported.length > 0, 'BPM should lock despite the notch');
+  for (const bpm of reported) {
+    assert.ok(
+      bpm >= 50 && bpm <= 62,
+      `published BPM must reflect the true ~55 rhythm, got ${bpm}`,
+    );
+  }
+});
+
+test('HeartRateManager: frequency cross-check suppresses a noise-driven wrong lock', () => {
+  // Realistic ~58 BPM pulse (wide systolic bump + half-height dicrotic bump)
+  // buried in deterministic sensor noise at ~20% of the AC amplitude. The
+  // time-domain detector picks up enough noise peaks to lock a rhythm around
+  // ~90 BPM and would defend it; the spectral cross-check reads the true ~58
+  // fundamental at high SNR and must veto every doubled/inflated reading —
+  // showing nothing is acceptable here, showing ~90 is not.
+  const manager = new HeartRateManager();
+  let seed = 42;
+  const mulberry = () => {
+    seed |= 0;
+    seed = (seed + 0x6d2b79f5) | 0;
+    let x = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x;
+    return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
+  };
+  const gauss = () => {
+    const u = Math.max(1e-9, mulberry());
+    return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * mulberry());
+  };
+
+  const ibiMs = 1034;
+  const beatTimes = [];
+  for (let bt = 300; bt < 45_000; bt += ibiMs) beatTimes.push(bt);
+  const pulse = (t) => {
+    let v = 0;
+    for (const bt of beatTimes) {
+      const dt = t - bt;
+      if (dt < -400 || dt > 1600) continue;
+      v += 0.02 * Math.exp(-((dt / 70) ** 2));
+      v += 0.01 * Math.exp(-((((dt - 350)) / 90) ** 2));
+    }
+    return 150 * (1 + v + 0.004 * gauss());
+  };
+
+  const reported = [];
+  for (let t = 0; t <= 45_000; t += FRAME_SPACING_MS) {
+    manager.processFrame(makeFrame(t, pulse(t)));
+    const bpm = manager.getCurrentBpm();
+    if (bpm != null && t > 10_000) reported.push(bpm);
+  }
+
+  for (const bpm of reported) {
+    assert.ok(
+      bpm <= 75,
+      `spectral veto must block inflated readings on a noisy ~58 BPM pulse, got ${bpm}`,
+    );
+  }
+});
