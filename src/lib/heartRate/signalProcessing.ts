@@ -104,7 +104,7 @@ interface CandidateSeries {
   meanDarkPct: number;
 }
 
-interface FrequencyResult {
+export interface FrequencyResult {
   bpm: number;
   snrDb: number;
   score: number;
@@ -376,7 +376,9 @@ function goertzel(signal: number[], targetFreq: number, sampleRate: number): num
   return prev1 * prev1 + prev2 * prev2 - prev1 * prev2 * coeff;
 }
 
-function frequencyEstimate(signal: number[], sampleRate: number): FrequencyResult | null {
+// Exported for the live estimator's frequency cross-check (heartRateManager):
+// expects a zero-mean, band-limited signal (bandpassed or preprocessed).
+export function frequencyEstimate(signal: number[], sampleRate: number): FrequencyResult | null {
   const nyquist = sampleRate / 2;
   const frequencies: number[] = [];
   const basePowers: number[] = [];

@@ -6,6 +6,7 @@ import type {
   PpgRoiSample,
   SignalStatus,
 } from './types';
+import { frequencyEstimate } from './signalProcessing';
 
 export interface HeartRateFrameState {
   fingerPlacement: FingerPlacementState;
@@ -50,8 +51,44 @@ const MAX_IBI_MS = 1500;
 // pulse was genuinely lost.
 const MAX_CONSECUTIVE_LONG_GAPS = 3;
 const ADAPTIVE_REFRACTORY_FRACTION = 0.5;
-const TROUGH_REARM_FACTOR = 0.05;
+// Re-arm only after the trace dips meaningfully below zero. The shallow dip
+// between a systolic peak and its dicrotic notch does not reach this, so the
+// detector stays disarmed through the notch; the true inter-beat trough does.
+// FORCE_REARM_AFTER_MS remains the safety net for slow rhythms.
+const TROUGH_REARM_FACTOR = 0.25;
 const FORCE_REARM_AFTER_MS = 600;
+// Dicrotic-notch gate: a notch is both EARLY (well before the expected next
+// beat) and SMALL (a fraction of the systolic peak height). A peak that is
+// early but full-height — a real ectopic beat — still passes and ticks. Below
+// ~62 BPM the notch clears the 320ms cold-start refractory, which double-counts
+// every beat and (because the alternating short/long intervals never agree)
+// deadlocks the cold-start pairing so the BPM never locks at all.
+const PEAK_HEIGHT_EMA_ALPHA = 0.3;
+const EARLY_PEAK_WINDOW_FRACTION = 0.7;
+const MIN_EARLY_PEAK_HEIGHT_RATIO = 0.55;
+// Frequency cross-check: the time-domain detector can lock onto a wrong rhythm
+// (notch double-count → ~2x, missed alternate beats → ~0.5x) and then defend it,
+// because the Malik gate judges intervals against the locked rhythm itself. A
+// periodic Goertzel sweep over the recent bandpassed signal is immune to that
+// feedback: when a confident spectral estimate disagrees with the IBI-derived
+// BPM, the live reading is withheld, and a repeat disagreement clears the
+// interval history so the detector re-locks (with the notch gate above making
+// the re-lock land on the true rhythm).
+const FREQ_WINDOW_MS = 8000;
+const FREQ_CHECK_INTERVAL_MS = 1000;
+// 4s of signal is coarse but plenty for a 2x/0.5x sanity check, and starting
+// the sweep earlier both shortens the window in which a wrong cold-start lock
+// can display and gets the cold-start seed (getFreqSeededIbiMs) available
+// while the first intervals are still being paired.
+const FREQ_CHECK_MIN_SPAN_MS = 4000;
+const FREQ_MIN_SNR_DB = 4;
+const FREQ_DISAGREE_BPM = 12;
+const FREQ_DISAGREE_CHECKS_TO_RESEED = 2;
+// How long a confident spectral estimate keeps vetoing publication. Without
+// this, a wrong re-lock publishes for up to a check interval before the next
+// sweep flags it again; with it, the IBI-derived BPM must agree with the last
+// confident spectrum before any number is shown.
+const FREQ_ESTIMATE_FRESH_MS = 5000;
 const SHORT_IBI_CONFIRMATION_MS = 360;
 const SHORT_IBI_CONFIRMATION_TOLERANCE = 0.25;
 const WARMUP_FRAMES = 60;
@@ -400,6 +437,11 @@ export class HeartRateManager {
   private lastTrackedPlacement: FingerPlacementState = 'no_finger';
   private liveSignalStable = false;
   private ibiEma: number | null = null;
+  private peakHeightEma: number | null = null;
+  private readonly freqWindow: { timestamp: number; ac: number }[] = [];
+  private lastFreqCheckTs = 0;
+  private freqDisagreeCount = 0;
+  private lastFreqEstimate: { bpm: number; timestamp: number } | null = null;
   private latestBpmSnapshot: HeartRateBpmSnapshot | null = null;
 
   constructor(options: HeartRateManagerOptions = {}) {
@@ -453,6 +495,11 @@ export class HeartRateManager {
     this.lastTrackedPlacement = 'no_finger';
     this.liveSignalStable = false;
     this.ibiEma = null;
+    this.peakHeightEma = null;
+    this.freqWindow.length = 0;
+    this.lastFreqCheckTs = 0;
+    this.freqDisagreeCount = 0;
+    this.lastFreqEstimate = null;
     this.latestBpmSnapshot = null;
   }
 
@@ -672,11 +719,75 @@ export class HeartRateManager {
     this.lastTickTs = 0;
     // Reset IBI EMA so measurement window starts with a fresh smoothed value
     this.ibiEma = null;
+    this.freqDisagreeCount = 0;
     this.latestBpmSnapshot = null;
     // Re-require a fresh pulse lock before trusting motion, so the opening inhale
     // / hand-settle at the start of a hold isn't misread as "keep still".
     this.pulseLockedThisWindow = false;
     this.lockBeatCount = 0;
+  }
+
+  private pushFreqSample(timestamp: number, ac: number): void {
+    this.freqWindow.push({ timestamp, ac });
+    const cutoff = timestamp - FREQ_WINDOW_MS;
+    while (this.freqWindow.length > 0 && this.freqWindow[0].timestamp < cutoff) {
+      this.freqWindow.shift();
+    }
+  }
+
+  private runFrequencyCrossCheck(timestamp: number): void {
+    if (timestamp - this.lastFreqCheckTs < FREQ_CHECK_INTERVAL_MS) return;
+    if (this.freqWindow.length < 2) return;
+    const spanMs =
+      this.freqWindow[this.freqWindow.length - 1].timestamp -
+      this.freqWindow[0].timestamp;
+    if (spanMs < FREQ_CHECK_MIN_SPAN_MS) return;
+    this.lastFreqCheckTs = timestamp;
+
+    const sampleRate = ((this.freqWindow.length - 1) / spanMs) * 1000;
+    if (!Number.isFinite(sampleRate) || sampleRate < 10) return;
+
+    const estimate = frequencyEstimate(
+      this.freqWindow.map((sample) => sample.ac),
+      sampleRate,
+    );
+    // An unconfident spectrum says nothing either way; leave the counter as-is.
+    if (estimate == null || estimate.snrDb < FREQ_MIN_SNR_DB) return;
+    this.lastFreqEstimate = { bpm: estimate.bpm, timestamp };
+    if (this.ibiEma == null || this.ibiEma <= 0) {
+      this.freqDisagreeCount = 0;
+      return;
+    }
+
+    const ibiBpm = 60000 / this.ibiEma;
+    if (Math.abs(ibiBpm - estimate.bpm) > FREQ_DISAGREE_BPM) {
+      this.freqDisagreeCount += 1;
+      if (this.freqDisagreeCount >= FREQ_DISAGREE_CHECKS_TO_RESEED) {
+        this.ibiHistory.length = 0;
+        this.ibiEma = null;
+        this.coldStartPendingIbi = null;
+        this.latestBpmSnapshot = null;
+        this.freqDisagreeCount = 0;
+      }
+    } else {
+      this.freqDisagreeCount = 0;
+    }
+  }
+
+  // A fresh, confident spectral estimate converted to an interval. Used to
+  // seed rhythm expectations during cold start, when there is no interval
+  // history yet: the spectrum knows the rate several beats before the
+  // time-domain pairing can commit one.
+  private getFreqSeededIbiMs(): number | null {
+    if (this.lastFreqEstimate == null) return null;
+    if (this.lastGoodTs - this.lastFreqEstimate.timestamp > FREQ_ESTIMATE_FRESH_MS) {
+      return null;
+    }
+    if (this.lastFreqEstimate.bpm <= 0) return null;
+    return Math.min(
+      MAX_IBI_MS,
+      Math.max(MIN_IBI_MS, 60000 / this.lastFreqEstimate.bpm),
+    );
   }
 
   private getExpectedIbiMs(): number {
@@ -686,7 +797,7 @@ export class HeartRateManager {
         Math.max(MIN_IBI_MS, medianOfRecent(this.ibiHistory, MALIK_WINDOW)),
       );
     }
-    return DEFAULT_EXPECTED_IBI_MS;
+    return this.getFreqSeededIbiMs() ?? DEFAULT_EXPECTED_IBI_MS;
   }
 
   processFrame(sample: PpgFrameSample): HeartRateFrameState {
@@ -730,6 +841,10 @@ export class HeartRateManager {
       this.clearMotion();
       this.ibiHistory.length = 0;
       this.ibiEma = null;
+      this.peakHeightEma = null;
+      this.freqWindow.length = 0;
+      this.freqDisagreeCount = 0;
+      this.lastFreqEstimate = null;
       this.coldStartPendingIbi = null;
       this.liveSignalStable = false;
       this.lastPlacement =
@@ -788,6 +903,10 @@ export class HeartRateManager {
           this.clearMotion();
           this.ibiHistory.length = 0;
           this.ibiEma = null;
+          this.peakHeightEma = null;
+          this.freqWindow.length = 0;
+          this.freqDisagreeCount = 0;
+          this.lastFreqEstimate = null;
           this.coldStartPendingIbi = null;
           this.liveSignalStable = false;
           this.lastPlacement = 'lost';
@@ -824,6 +943,10 @@ export class HeartRateManager {
       this.lastPeakTs = 0;
       this.lastTickTs = 0;
       this.ibiHistory.length = 0;
+      this.peakHeightEma = null;
+      this.freqWindow.length = 0;
+      this.freqDisagreeCount = 0;
+      this.lastFreqEstimate = null;
       this.validFrameCounter = 0;
       this.initialized = true;
       this.armedForPeak = true;
@@ -876,6 +999,7 @@ export class HeartRateManager {
     }
 
     const ac = rawAc * this.polarity;
+    this.pushFreqSample(sample.timestamp, ac);
 
     // Motion classification is computed here (before the beat detector) so the
     // PPG graph can freeze during movement: while motion is active we stop
@@ -955,6 +1079,13 @@ export class HeartRateManager {
               )
             : this.prev1Ts;
         const peakTs = rawPeakTs - FILTER_GROUP_DELAY_MS;
+        const timeSincePeakMs =
+          this.lastPeakTs === 0 ? Infinity : peakTs - this.lastPeakTs;
+        const smallEarlyPeak =
+          this.peakHeightEma != null &&
+          timeSincePeakMs < this.getExpectedIbiMs() * EARLY_PEAK_WINDOW_FRACTION &&
+          this.prev1 < this.peakHeightEma * MIN_EARLY_PEAK_HEIGHT_RATIO;
+        const freqSeededIbi = this.getFreqSeededIbiMs();
         const adaptiveMinIbi =
           this.ibiHistory.length >= MALIK_MIN_HISTORY
             ? Math.max(
@@ -962,10 +1093,12 @@ export class HeartRateManager {
                 ADAPTIVE_REFRACTORY_FRACTION *
                   medianOfRecent(this.ibiHistory, MALIK_WINDOW),
               )
-            : MIN_IBI_MS;
+            : freqSeededIbi != null
+              ? Math.max(MIN_IBI_MS, ADAPTIVE_REFRACTORY_FRACTION * freqSeededIbi)
+              : MIN_IBI_MS;
         const refractoryOk =
           this.lastPeakTs === 0 || peakTs - this.lastPeakTs >= adaptiveMinIbi;
-        if (refractoryOk) {
+        if (!smallEarlyPeak && refractoryOk) {
           let advanceAnchor = true;
           let emitTick = this.lastPeakTs === 0;
           if (this.lastPeakTs !== 0) {
@@ -1073,6 +1206,11 @@ export class HeartRateManager {
           }
           if (advanceAnchor) {
             this.lastPeakTs = peakTs;
+            this.peakHeightEma =
+              this.peakHeightEma == null
+                ? this.prev1
+                : this.peakHeightEma * (1 - PEAK_HEIGHT_EMA_ALPHA) +
+                  this.prev1 * PEAK_HEIGHT_EMA_ALPHA;
           }
           if (
             emitTick &&
@@ -1089,6 +1227,10 @@ export class HeartRateManager {
           beatDetected = emitTick;
         }
       }
+    }
+
+    if (readyForMeasurement) {
+      this.runFrequencyCrossCheck(sample.timestamp);
     }
 
     this.prev2 = this.prev1;
@@ -1138,8 +1280,18 @@ export class HeartRateManager {
     if (this.amplitude / SIGNAL_QUALITY_REF < LIVE_BPM_MIN_QUALITY) return null;
     if (this.ibiHistory.length < this.liveBpmConfig.minIbis) return null;
     if (this.ibiEma == null || this.ibiEma <= 0) return null;
+    // A fresh, confident spectral disagreement means the interval rhythm is
+    // suspect (likely a 2x/0.5x lock) — withhold rather than show a wrong number.
+    if (this.freqDisagreeCount > 0) return null;
     if (this.latestBpmSnapshot == null) return null;
     if (this.latestBpmSnapshot.bpm < 40 || this.latestBpmSnapshot.bpm > 180) return null;
+    if (
+      this.lastFreqEstimate != null &&
+      this.lastGoodTs - this.lastFreqEstimate.timestamp <= FREQ_ESTIMATE_FRESH_MS &&
+      Math.abs(this.latestBpmSnapshot.bpm - this.lastFreqEstimate.bpm) > FREQ_DISAGREE_BPM
+    ) {
+      return null;
+    }
     return { ...this.latestBpmSnapshot };
   }
 
