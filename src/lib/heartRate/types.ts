@@ -106,7 +106,14 @@ export interface HeartRateReading {
 
 export interface CaptureResult {
   reading: HeartRateReading | null;
-  error: 'low_confidence' | 'too_few_samples' | 'signal_lost' | 'camera_error' | 'no_finger' | null;
+  error:
+    | 'low_confidence'
+    | 'too_few_samples'
+    | 'signal_lost'
+    | 'camera_error'
+    | 'no_finger'
+    | 'not_enough_signal'
+    | null;
   ibiSamples: IbiSample[];
   bpmSamples?: Array<{
     offsetMs: number;

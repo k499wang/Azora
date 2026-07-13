@@ -127,14 +127,13 @@ test('buildCaptureResult quick mode uses the live BPM median as the final readin
   assert.equal(result.reading.bpm, 72);
 });
 
-test('buildCaptureResult quick mode falls back to the offline estimator when live never locked', () => {
-  // Covered frames but a flat (pulseless) signal and no live samples: the live
-  // path yields nothing, so it falls through to the offline analyzer, which also
-  // finds no pulse and reports low confidence rather than a live number.
+test('buildCaptureResult quick mode rejects captures when live never locked', () => {
+  // Covered frames but no live samples: quick mode should not fall back to an
+  // offline frequency estimate that can report low-end noise as a BPM.
   const result = buildCaptureResult(makeCoveredFrames(), 'quick', { presentationBpmSamples: [] });
 
   assert.equal(result.reading, null);
-  assert.equal(result.error, 'low_confidence');
+  assert.equal(result.error, 'not_enough_signal');
 });
 
 test('buildCaptureResult rejects a no-finger capture instead of reporting noise BPM', () => {
