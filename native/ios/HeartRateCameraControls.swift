@@ -13,24 +13,25 @@ public class HeartRateCameraControls: NSObject {
   //
   // Exposure duration cap: continuous AE in dim conditions extends exposure
   // toward the frame duration, which drops the real frame rate and blurs beat
-  // timing. Capping at 1/60s keeps the 30fps cadence honest; the lost
+  // timing. Capping at 1/60s preserves PPG brightness/SNR while preventing
+  // exposure from dropping the 30fps fallback cadence; the lost
   // brightness is compensated with ISO so the JS finger-detection thresholds
   // see the same image.
   private static let maxExposureSeconds = 1.0 / 60.0
-  private static let targetFrameDuration = CMTime(value: 1, timescale: 30)
 
   @objc static func requiresMainQueueSetup() -> Bool { return false }
 
-  // The JS pipeline's band-pass coefficients and group-delay compensation
-  // assume exactly 30 samples/s; an AE-driven frame-rate drop silently breaks
-  // both. Pinned defensively even though the fps camera prop requests 30.
-  private func pinFrameRate(_ device: AVCaptureDevice) {
-    let supports30 = device.activeFormat.videoSupportedFrameRateRanges.contains {
-      $0.minFrameRate <= 30 && 30 <= $0.maxFrameRate
+  // Pin the active format to the rate selected by JS. Full HRV capture requests
+  // 60 only after VisionCamera has selected a format that supports it; every
+  // other heart-rate path continues to request 30.
+  private func pinFrameRate(_ device: AVCaptureDevice, targetFps: Int32) {
+    let supportsTarget = device.activeFormat.videoSupportedFrameRateRanges.contains {
+      $0.minFrameRate <= Double(targetFps) && Double(targetFps) <= $0.maxFrameRate
     }
-    guard supports30 else { return }
-    device.activeVideoMinFrameDuration = HeartRateCameraControls.targetFrameDuration
-    device.activeVideoMaxFrameDuration = HeartRateCameraControls.targetFrameDuration
+    guard supportsTarget else { return }
+    let targetFrameDuration = CMTime(value: 1, timescale: targetFps)
+    device.activeVideoMinFrameDuration = targetFrameDuration
+    device.activeVideoMaxFrameDuration = targetFrameDuration
   }
 
   // Freeze exposure at a chosen operating point instead of `.locked`, which
@@ -60,9 +61,10 @@ public class HeartRateCameraControls: NSObject {
     device.setExposureModeCustom(duration: duration, iso: iso, completionHandler: nil)
   }
 
-  @objc(lockForHeartRate:)
-  func lockForHeartRate(_ deviceId: NSString) {
+  @objc(lockForHeartRate:targetFps:)
+  func lockForHeartRate(_ deviceId: NSString, targetFps: NSNumber) {
     let id = deviceId as String
+    let requestedFps: Int32 = targetFps.int32Value >= 60 ? 60 : 30
 
     queue.async {
       guard let device = AVCaptureDevice(uniqueID: id) else { return }
@@ -71,7 +73,7 @@ public class HeartRateCameraControls: NSObject {
         try device.lockForConfiguration()
         defer { device.unlockForConfiguration() }
 
-        self.pinFrameRate(device)
+        self.pinFrameRate(device, targetFps: requestedFps)
         if device.isWhiteBalanceModeSupported(.locked) {
           device.whiteBalanceMode = .locked
         }

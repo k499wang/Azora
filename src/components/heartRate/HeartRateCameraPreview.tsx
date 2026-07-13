@@ -40,6 +40,7 @@ export const HeartRateCameraPreview = memo(function HeartRateCameraPreview({
     isActive,
     torchMode,
     fingerPlacement,
+    fps,
   });
 
   return (

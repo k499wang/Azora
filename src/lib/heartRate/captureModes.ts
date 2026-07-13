@@ -5,7 +5,7 @@ export interface HeartRateCaptureModeConfig {
   label: string;
   durationMs: number;
   computeHrv: boolean;
-  /** Sensor capture rate. HRV needs fine IBI timing (30); BPM-only tolerates 20. */
+  /** Preferred sensor rate. The camera hook safely falls back when unsupported. */
   captureFps: number;
   /** Whether this mode is reserved for Pro users (e.g. the longer HRV analysis). */
   requiresPro: boolean;
@@ -20,7 +20,7 @@ export const HEART_RATE_CAPTURE_MODES: Record<HeartRateCaptureMode, HeartRateCap
     label: 'Quick',
     durationMs: 25_000,
     computeHrv: false,
-    captureFps: 20,
+    captureFps: 30,
     requiresPro: false,
     shortDescription: 'Heart rate only · 25s',
     perks: ['Heart rate', '25s'],
@@ -30,7 +30,7 @@ export const HEART_RATE_CAPTURE_MODES: Record<HeartRateCaptureMode, HeartRateCap
     label: 'Full',
     durationMs: 90_000,
     computeHrv: true,
-    captureFps: 30,
+    captureFps: 60,
     requiresPro: true,
     shortDescription: 'Heart rate + HRV · 90s',
     perks: ['Heart rate', 'HRV', 'Stress', 'Recovery', '90s'],
@@ -43,6 +43,14 @@ export const HEART_RATE_CAPTURE_MODE_ORDER: HeartRateCaptureMode[] = ['quick', '
 
 export function getCaptureModeConfig(mode: HeartRateCaptureMode): HeartRateCaptureModeConfig {
   return HEART_RATE_CAPTURE_MODES[mode];
+}
+
+export function resolveCaptureFps(
+  mode: HeartRateCaptureMode,
+  format: { minFps: number; maxFps: number } | null | undefined,
+): number {
+  if (mode !== 'full') return getCaptureModeConfig(mode).captureFps;
+  return format != null && format.minFps <= 60 && format.maxFps >= 60 ? 60 : 30;
 }
 
 /** Infer which capture mode a saved session used from its stored duration. */

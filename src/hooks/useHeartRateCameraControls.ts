@@ -10,6 +10,7 @@ interface UseHeartRateCameraControlsOptions {
   isActive: boolean;
   torchMode: 'on' | 'off';
   fingerPlacement?: FingerPlacementState;
+  fps: number;
 }
 
 export function useHeartRateCameraControls({
@@ -17,6 +18,7 @@ export function useHeartRateCameraControls({
   isActive,
   torchMode,
   fingerPlacement,
+  fps,
 }: UseHeartRateCameraControlsOptions): void {
   const deviceId = device?.id;
   const lockedRef = useRef(false);
@@ -46,7 +48,7 @@ export function useHeartRateCameraControls({
 
       stableTimerRef.current = setTimeout(() => {
         stableTimerRef.current = null;
-        HeartRateCameraControls.lock(deviceId);
+        HeartRateCameraControls.lock(deviceId, fps);
         lockedRef.current = true;
       }, STABLE_GOOD_DURATION_MS);
       return;
@@ -60,7 +62,7 @@ export function useHeartRateCameraControls({
       HeartRateCameraControls.unlock(deviceId);
       lockedRef.current = false;
     }
-  }, [deviceId, isActive, torchMode, fingerPlacement]);
+  }, [deviceId, isActive, torchMode, fingerPlacement, fps]);
 
   useEffect(() => {
     return () => {
