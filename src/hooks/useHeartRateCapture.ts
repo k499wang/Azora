@@ -19,6 +19,7 @@ import { LIVE_SIGNAL_GRAPH_UPDATE_INTERVAL_MS } from '../lib/heartRate/liveSigna
 import {
   DEFAULT_CAPTURE_MODE,
   getCaptureModeConfig,
+  resolveCaptureFps,
   type HeartRateCaptureMode,
 } from '../lib/heartRate/captureModes';
 import { createLiveBpmPresentationFilter } from '../lib/heartRate/bpmSmoothing';
@@ -31,7 +32,6 @@ import { useDeviceMotionFeed } from './useDeviceMotionFeed';
 const MIN_GOOD_DURATION_MS = 2500;
 const PROGRESS_UPDATE_INTERVAL_MS = 200;
 const BPM_UPDATE_INTERVAL_MS = 1000;
-const OFFLINE_CAPTURE_FPS = 30;
 const LIVE_PROCESSING_FPS = 20;
 const LIVE_PROCESSING_INTERVAL_MS = 50;
 
@@ -87,7 +87,9 @@ export function useHeartRateCapture(
   const captureModeConfig = getCaptureModeConfig(mode);
   const captureDurationMs = captureModeConfig.durationMs;
   const captureDurationSec = captureDurationMs / 1000;
-  const cameraFps = captureModeConfig.captureFps;
+  const preferredCameraFps = mode === 'full' ? 60 : 30;
+  const camera = useHeartRateCamera(preferredCameraFps);
+  const cameraFps = resolveCaptureFps(mode, camera.format);
 
   const onCaptureCompleteRef = useRef(options.onCaptureComplete);
   onCaptureCompleteRef.current = options.onCaptureComplete;
@@ -125,7 +127,7 @@ export function useHeartRateCapture(
   );
   const offlineCaptureActive = useSharedValue(false);
 
-  const { device, format, hasPermission, requestPermission } = useHeartRateCamera();
+  const { device, format, hasPermission, requestPermission } = camera;
 
   useDeviceMotionFeed(managerRef);
 
@@ -241,11 +243,18 @@ export function useHeartRateCapture(
         samplesRef.current.push(frameSample);
       }
 
-      const shouldThrottleProcessing = state !== 'measuring';
+      // Full capture stores every available 60 fps frame for offline HRV, but
+      // keeps the existing live detector at its designed 30 Hz cadence.
+      const shouldThrottleProcessing =
+        state !== 'measuring' || modeRef.current === 'full';
+      const liveProcessingIntervalMs =
+        state === 'measuring' && modeRef.current === 'full'
+          ? 1000 / 30
+          : LIVE_PROCESSING_INTERVAL_MS;
       if (
         shouldThrottleProcessing &&
         timestamp - lastLiveProcessingTimestampRef.current <
-          LIVE_PROCESSING_INTERVAL_MS
+          liveProcessingIntervalMs
       ) {
         return;
       }
@@ -329,7 +338,9 @@ export function useHeartRateCapture(
   const frameProcessor = useFrameProcessor(
     (frame) => {
       'worklet';
-      const targetFps = offlineCaptureActive.value ? OFFLINE_CAPTURE_FPS : LIVE_PROCESSING_FPS;
+      const targetFps = offlineCaptureActive.value
+        ? cameraFps
+        : LIVE_PROCESSING_FPS;
       runAtTargetFps(targetFps, () => {
         'worklet';
         const frameSample = heartRatePlugin(frame);
@@ -338,7 +349,7 @@ export function useHeartRateCapture(
         }
       });
     },
-    [addSample, offlineCaptureActive],
+    [addSample, cameraFps, offlineCaptureActive],
   );
 
   const startCapture = useCallback(() => {

@@ -18,13 +18,13 @@ function median(values) {
     : sorted[middle];
 }
 
-function buildCaptureSamples() {
+function buildCaptureSamples(frameSpacingMs = FRAME_SPACING_MS) {
   const samples = [];
   let phase = 0;
 
-  for (let timestamp = 0; timestamp <= CAPTURE_DURATION_MS; timestamp += FRAME_SPACING_MS) {
+  for (let timestamp = 0; timestamp <= CAPTURE_DURATION_MS; timestamp += frameSpacingMs) {
     const bpm = 75 + 4.5 * Math.sin(timestamp / 4200) + 2.5 * Math.sin(timestamp / 1650);
-    phase += 2 * Math.PI * (bpm / 60) * (FRAME_SPACING_MS / 1000);
+    phase += 2 * Math.PI * (bpm / 60) * (frameSpacingMs / 1000);
 
     const pulse =
       Math.sin(phase) +
@@ -142,6 +142,17 @@ test('analyzeCapture returns a frequency BPM estimate and matching HRV beat seri
     Math.abs(analysis.estimate.frequencyBpm - analysis.beatSeries.frequencyBpm) <= 6,
     `expected BPM and beat-series frequency to stay aligned, got ${analysis.estimate.frequencyBpm} and ${analysis.beatSeries.frequencyBpm}`,
   );
+});
+
+test('analyzeCapture retains a stable 60 fps source cadence for Full HRV analysis', () => {
+  const analysis = analyzeCapture(buildCaptureSamples(1000 / 60));
+
+  assert.ok(analysis.estimate, 'expected a BPM estimate');
+  assert.ok(
+    analysis.estimate.sampleCount > 2000,
+    `expected 60 fps analysis samples, got ${analysis.estimate.sampleCount}`,
+  );
+  assert.ok(analysis.beatSeries, 'expected an HRV beat series');
 });
 
 test('analyzeCapture treats secondary post-beat peaks as one cardiac cycle', () => {

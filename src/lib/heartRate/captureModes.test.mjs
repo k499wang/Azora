@@ -6,6 +6,7 @@ import {
   DEFAULT_CAPTURE_MODE,
   getCaptureModeConfig,
   isCaptureModeLocked,
+  resolveCaptureFps,
 } from './captureModes.ts';
 
 test('quick mode is heart-rate only and free; full mode adds HRV and is Pro-only', () => {
@@ -17,6 +18,8 @@ test('quick mode is heart-rate only and free; full mode adds HRV and is Pro-only
 
   assert.equal(full.computeHrv, true);
   assert.equal(full.requiresPro, true);
+  assert.equal(full.captureFps, 60);
+  assert.equal(quick.captureFps, 30);
 
   // The longer analysis must take longer than the quick one.
   assert.ok(full.durationMs > quick.durationMs);
@@ -45,4 +48,15 @@ test('getCaptureModeConfig returns the config matching the requested id', () => 
   for (const mode of HEART_RATE_CAPTURE_MODE_ORDER) {
     assert.equal(getCaptureModeConfig(mode).id, mode);
   }
+});
+
+test('full capture uses 60 fps only for a supporting format and otherwise falls back to 30', () => {
+  assert.equal(resolveCaptureFps('full', { minFps: 1, maxFps: 60 }), 60);
+  assert.equal(resolveCaptureFps('full', { minFps: 1, maxFps: 30 }), 30);
+  assert.equal(resolveCaptureFps('full', undefined), 30);
+});
+
+test('quick capture uses 30 fps regardless of higher format capability', () => {
+  assert.equal(resolveCaptureFps('quick', { minFps: 1, maxFps: 60 }), 30);
+  assert.equal(resolveCaptureFps('quick', { minFps: 1, maxFps: 30 }), 30);
 });

@@ -16,7 +16,7 @@ function shouldUseTelephotoCameraForHeartRate(modelName: string | null): boolean
   return modelName != null && TELEPHOTO_CAMERA_MODEL_NAMES.has(modelName);
 }
 
-export function useHeartRateCamera() {
+export function useHeartRateCamera(preferredFps: 30 | 60 = 30) {
   const { hasPermission, requestPermission } = useCameraPermission();
   const physicalDevices = useMemo(
     () => shouldUseTelephotoCameraForHeartRate(Device.modelName)
@@ -33,7 +33,7 @@ export function useHeartRateCamera() {
     { physicalDevices },
   );
   const format = useCameraFormat(device, [
-    { fps: 30 },
+    { fps: preferredFps },
     { videoResolution: { width: 320, height: 240 } },
     { videoHdr: false },
     { photoHdr: false },

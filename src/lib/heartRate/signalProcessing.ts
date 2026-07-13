@@ -13,7 +13,7 @@ const MIN_DURATION_MS = 8000;
 const STABILIZATION_MS = 2500;
 const MIN_RESAMPLED_SAMPLES = 96;
 const TARGET_SAMPLE_RATE_MIN = 15;
-const TARGET_SAMPLE_RATE_MAX = 30;
+const TARGET_SAMPLE_RATE_MAX = 60;
 const UPSAMPLE_TARGET_RATE = 180; // Hz — reduces beat timing quantization error
 const FREQ_STEP = 0.01;
 const BPM_FREQ_MIN = 0.67; // 40 bpm
@@ -692,7 +692,8 @@ function frequencyOnlyEstimate(
 }
 
 // Expensive second pass: upsample via cubic spline, then detect beats. Upsampling
-// to 180 Hz cuts beat-timing quantization error from ±16.7 ms (30 Hz) to ±2.8 ms,
+// to 180 Hz refines beat timing from the source cadence (up to 60 Hz) to a
+// uniform ±2.8 ms grid,
 // improving HRV accuracy (RMSSD, SDNN). Uniform timestamps share the stabilized
 // window's origin, otherwise refined beat timestamps shift by the stabilization
 // trim. Applies the same peak-agreement and confidence gates as before.
