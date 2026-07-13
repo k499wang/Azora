@@ -78,6 +78,11 @@ function getErrorMessage(
         title: 'Not Enough Data',
         message: 'Not enough data was collected. Make sure your finger covers the camera and flash.',
       };
+    case 'not_enough_signal':
+      return {
+        title: 'Not Enough Signal',
+        message: 'Not enough signal was detected to calculate your heart rate. Cover the camera and flash fully, then try again.',
+      };
     case 'camera_error':
       return {
         title: 'Camera Error',

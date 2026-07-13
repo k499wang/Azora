@@ -8,6 +8,7 @@ const NATIVE_IOS_DIR = path.join('native', 'ios');
 const SWIFT_SOURCE_FILES = [
   'HeartRatePlugin.swift',
   'HeartRatePlugin.m',
+  'HeartRateCameraControls.swift',
   'HeartRateCameraControls.m',
 ];
 const OBJC_SOURCE_FILES = ['HeartRatePlugin.mm'];

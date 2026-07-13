@@ -216,10 +216,8 @@ function median(values: number[]): number {
 }
 
 // Quick mode's final BPM is the median of what the live detector actually
-// reported during the capture, rather than a fresh offline re-analysis — so the
-// saved number matches what the user watched. Returns null when the live path
-// never produced enough readings, so the caller can fall back to the offline
-// estimator.
+// reported during the capture, rather than a fresh offline re-analysis, so the
+// saved number matches what the user watched.
 function buildQuickLiveReading(
   presentationBpmSamples: BuildCaptureResultOptions['presentationBpmSamples'],
   sampleCount: number,
@@ -397,8 +395,8 @@ export function buildCaptureResult(
   const endTs = samples[samples.length - 1]?.timestamp ?? 0;
   const windowDurationMs = endTs > startTs ? endTs - startTs : 0;
 
-  // Quick mode reports the live-analysis BPM as the final reading. Falls through
-  // to the offline estimator only when the live path never locked on.
+  // Quick mode reports the live-analysis BPM as the final reading. If the live
+  // path never locked on, do not invent a final number from offline noise.
   if (mode === 'quick') {
     const liveReading = buildQuickLiveReading(
       options.presentationBpmSamples,
@@ -414,6 +412,14 @@ export function buildCaptureResult(
         mode,
       };
     }
+
+    return {
+      reading: null,
+      error: 'not_enough_signal',
+      ibiSamples: [],
+      bpmSamples: normalizePresentationBpmSamples(options.presentationBpmSamples),
+      mode,
+    };
   }
 
   const { estimate: bpmResult, beatSeries: hrvBeatSeries } = analyzeCapture(samples);
