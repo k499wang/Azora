@@ -4,6 +4,7 @@ const analyticsEnv =
   process.env.ANALYTICS_ENV ??
   process.env.EAS_BUILD_PROFILE ??
   'development'
+const isProductionBuild = process.env.EAS_BUILD_PROFILE === 'production'
 
 if (
   (process.env.EAS_BUILD === 'true' || process.env.EAS_BUILD_PROFILE != null) &&
@@ -17,11 +18,48 @@ if (
   )
 }
 
+if (isProductionBuild) {
+  const requiredProductionEnv = [
+    'POSTHOG_PROJECT_TOKEN',
+    'POSTHOG_HOST',
+    'EXPO_PUBLIC_REVENUECAT_IOS_KEY',
+    'EXPO_PUBLIC_SUPABASE_URL',
+    'EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY',
+    'EXPO_PUBLIC_APPSFLYER_DEV_KEY',
+    'EXPO_PUBLIC_APPSFLYER_APP_ID',
+  ]
+  const missingProductionEnv = requiredProductionEnv.filter(
+    (name) =>
+      process.env[name] == null || process.env[name].trim().length === 0,
+  )
+
+  if (missingProductionEnv.length > 0) {
+    throw new Error(
+      `Missing iOS production build env: ${missingProductionEnv.join(', ')}.`,
+    )
+  }
+
+  if (analyticsEnv !== 'production') {
+    throw new Error(
+      'Production EAS builds require ANALYTICS_ENV=production.',
+    )
+  }
+
+  if (
+    process.env.EXPO_PUBLIC_FORCE_GLASS_MODE != null ||
+    process.env.EXPO_PUBLIC_FORCE_GLASS_FALLBACK != null
+  ) {
+    throw new Error(
+      'Visual QA overrides are not allowed in production EAS builds.',
+    )
+  }
+}
+
 module.exports = {
   expo: {
     name: 'Azora',
     slug: 'Azora',
-    version: '1.0.12',
+    version: '1.0.13',
     orientation: 'portrait',
     icon: './assets/icon.png',
     userInterfaceStyle: 'light',
