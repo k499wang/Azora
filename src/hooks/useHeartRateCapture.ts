@@ -338,10 +338,19 @@ export function useHeartRateCapture(
   const frameProcessor = useFrameProcessor(
     (frame) => {
       'worklet';
-      const targetFps = offlineCaptureActive.value
-        ? cameraFps
-        : LIVE_PROCESSING_FPS;
-      runAtTargetFps(targetFps, () => {
+      if (offlineCaptureActive.value) {
+        // Preserve every frame delivered by the camera during measurement.
+        // Throttling at the nominal source rate can still drop frames due to
+        // normal scheduling jitter; live Full-mode processing is limited to
+        // 30 Hz separately in addSample after the frame has been recorded.
+        const frameSample = heartRatePlugin(frame);
+        if (frameSample != null) {
+          addSample(frameSample);
+        }
+        return;
+      }
+
+      runAtTargetFps(LIVE_PROCESSING_FPS, () => {
         'worklet';
         const frameSample = heartRatePlugin(frame);
         if (frameSample != null) {
@@ -349,7 +358,7 @@ export function useHeartRateCapture(
         }
       });
     },
-    [addSample, cameraFps, offlineCaptureActive],
+    [addSample, offlineCaptureActive],
   );
 
   const startCapture = useCallback(() => {
