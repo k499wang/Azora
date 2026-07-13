@@ -61,9 +61,8 @@ import { buildBpmSeries } from '../lib/heartRate/bpmSeries';
 
 // Placement waits for the first locked BPM so the hold starts with a real
 // reading instead of calibrating through the prep breaths. On lock the prep
-// breathing starts right away (the BPM number itself is the confirmation). If
-// the pulse never locks (cold fingers, low perfusion), fall back to starting
-// anyway after a bounded wait — the gate must never hard-block the exercise.
+// breathing starts after a short clean-signal dwell. If a pulse cannot lock,
+// a bounded fallback keeps heart-rate monitoring from blocking the exercise.
 const PLACEMENT_LOCKED_START_DELAY_MS = 250;
 const PLACEMENT_LOCK_TIMEOUT_MS = 15000;
 const PRE_BREATH_CYCLES = 3;
@@ -733,7 +732,7 @@ export default function DailyExercisePage({
   }, [startPrepBreathing]);
 
   const placementBpmLocked =
-    isBpmReady && pulse.signalStatus === 'measuring';
+    isBpmReady && presentedBpm != null && pulse.signalStatus === 'measuring';
 
   useEffect(() => {
     if (phase !== 'placement') return;

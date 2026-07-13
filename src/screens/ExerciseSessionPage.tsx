@@ -51,9 +51,8 @@ const MIN_ROUNDS = 1;
 const MAX_ROUNDS = 30;
 // Placement waits for the first locked BPM so the exercise starts with a real
 // reading instead of calibrating through the first breath. On lock the
-// exercise starts right away (the BPM number itself is the confirmation). If
-// the pulse never locks (cold fingers, low perfusion), fall back to starting
-// anyway after a bounded wait — the gate must never hard-block the exercise.
+// exercise starts after a short clean-signal dwell. If a pulse cannot lock,
+// a bounded fallback keeps heart-rate monitoring from blocking the exercise.
 const PLACEMENT_LOCKED_START_DELAY_MS = 250;
 const PLACEMENT_LOCK_TIMEOUT_MS = 15000;
 const SPRING_IN_DURATION_MS = 750;
@@ -736,7 +735,7 @@ export default function ExerciseSessionPage({
   }, [beginExercise]);
 
   const placementBpmLocked =
-    isBpmReady && pulse.signalStatus === 'measuring';
+    isBpmReady && presentedBpm != null && pulse.signalStatus === 'measuring';
 
   useEffect(() => {
     if (phase !== 'placement') return;
