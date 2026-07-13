@@ -8,6 +8,7 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
+      "environment": "development",
       "env": {
         "ANALYTICS_ENV": "development",
         "POSTHOG_PROJECT_TOKEN": "phc_wcHDAapgg4KyNqovvwAYKdvMRsTTtZjDChx9j8hFJfud",
@@ -22,6 +23,7 @@
     },
     "preview": {
       "distribution": "internal",
+      "environment": "preview",
       "env": {
         "ANALYTICS_ENV": "preview",
         "POSTHOG_PROJECT_TOKEN": "phc_wcHDAapgg4KyNqovvwAYKdvMRsTTtZjDChx9j8hFJfud",
@@ -36,6 +38,7 @@
     },
     "production": {
       "autoIncrement": true,
+      "environment": "production",
       "env": {
         "ANALYTICS_ENV": "production",
         "POSTHOG_PROJECT_TOKEN": "phc_npfsG4fcCPk5MVN4sVCa7dCypCY9zuCaxurusQc2jy7v",
