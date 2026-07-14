@@ -24,7 +24,9 @@ const ROLLING_WINDOW_MS = 15000;
 const BPM_UPDATE_INTERVAL_MS = 1000;
 const FINGER_LOST_TIMEOUT_MS = 30000;
 const WARMUP_DURATION_MS = 5000;
-const FRAME_PROCESSING_FPS = 20;
+// Matches the manager's 30 Hz bandpass design (SAMPLE_RATE_HZ in
+// heartRateManager.ts) and the other live flows, so the graph looks the same.
+const FRAME_PROCESSING_FPS = 30;
 
 function isValidFrameSample(value: unknown): value is PpgFrameSample {
   if (value == null || typeof value !== 'object') return false;

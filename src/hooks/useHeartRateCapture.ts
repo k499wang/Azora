@@ -32,8 +32,11 @@ import { useDeviceMotionFeed } from './useDeviceMotionFeed';
 const MIN_GOOD_DURATION_MS = 2500;
 const PROGRESS_UPDATE_INTERVAL_MS = 200;
 const BPM_UPDATE_INTERVAL_MS = 1000;
-const LIVE_PROCESSING_FPS = 20;
-const LIVE_PROCESSING_INTERVAL_MS = 50;
+// The manager's bandpass coefficients are designed for 30 Hz
+// (SAMPLE_RATE_HZ in heartRateManager.ts) — feed it at that rate so the
+// filter band and the live graph match the exercise flows.
+const LIVE_PROCESSING_FPS = 30;
+const LIVE_PROCESSING_INTERVAL_MS = 1000 / 30;
 
 function isValidFrameSample(value: unknown): value is PpgFrameSample {
   if (value == null || typeof value !== 'object') return false;
@@ -244,17 +247,15 @@ export function useHeartRateCapture(
       }
 
       // Full capture stores every available 60 fps frame for offline HRV, but
-      // keeps the existing live detector at its designed 30 Hz cadence.
+      // keeps the live detector at its designed 30 Hz cadence. Quick mode and
+      // camera check arrive pre-throttled to 30 Hz by the frame processor, so
+      // this gate only drops the extra Full-mode frames.
       const shouldThrottleProcessing =
         state !== 'measuring' || modeRef.current === 'full';
-      const liveProcessingIntervalMs =
-        state === 'measuring' && modeRef.current === 'full'
-          ? 1000 / 30
-          : LIVE_PROCESSING_INTERVAL_MS;
       if (
         shouldThrottleProcessing &&
         timestamp - lastLiveProcessingTimestampRef.current <
-          liveProcessingIntervalMs
+          LIVE_PROCESSING_INTERVAL_MS
       ) {
         return;
       }

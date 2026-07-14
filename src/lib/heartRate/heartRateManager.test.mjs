@@ -658,6 +658,30 @@ test('HeartRateManager: split-beat anchor preservation recovers rhythm', () => {
   );
 });
 
+test('HeartRateManager: stable spectrum does not rescue an isolated short IBI', () => {
+  const manager = new HeartRateManager({ liveBpmProfile: 'responsive' });
+  const beatFrames = [];
+  for (let frame = 24; frame <= 288; frame += 24) {
+    beatFrames.push(frame);
+  }
+  // After enough steady beats for a fresh ~76 BPM spectral estimate, inject a
+  // lone ~91 BPM interval. It exceeds the 12% short-Malik band, but the stable
+  // spectrum has not moved with it, so spectral rescue must not admit it.
+  beatFrames.push(308, 336, 360);
+
+  runBeatTrain(manager, beatFrames);
+  const samples = manager.getIbiSamples();
+  const isolatedShortIbi = samples.find(
+    (sample) => Math.abs(sample.ibiMs - 20 * FRAME_SPACING_MS) < 40,
+  );
+
+  assert.equal(
+    isolatedShortIbi,
+    undefined,
+    `stable spectrum must not rescue an isolated short IBI, got ${JSON.stringify(samples)}`,
+  );
+});
+
 test('HeartRateManager: fast legitimate rhythm is captured after cold start', () => {
   const manager = new HeartRateManager();
   runBeatTrain(manager, [11, 22, 33, 44, 55, 66, 77, 88, 99, 110]);
@@ -699,23 +723,41 @@ test('HeartRateManager: responsive profile waits for five accepted startup inter
   assert.ok(responsiveSnapshot.signalQuality >= 0 && responsiveSnapshot.signalQuality <= 1);
 });
 
-test('HeartRateManager: responsive tracking ignores a one-interval transient with median four', () => {
+test('HeartRateManager: responsive tracking uses the median of the last five intervals', () => {
   const responsive = new HeartRateManager({ liveBpmProfile: 'responsive' });
-  // Lock at ~76 BPM (24 frames per interval), then briefly shorten one
-  // interval to ~83 BPM. It is plausible enough to pass the IBI acceptance
-  // gate, but it cannot move the middle pair of the ongoing four-interval
-  // median or pull the displayed estimate upward.
-  runBeatTrain(responsive, [24, 48, 72, 96, 120, 144, 166]);
+  // Lock at ~76 BPM (24 frames per interval), then shorten two intervals to
+  // ~83 BPM. Both are plausible enough to pass the IBI acceptance gate. They
+  // would move a four-interval median to 23 frames, but remain a minority in
+  // the five-interval window and therefore must not move the display.
+  runBeatTrain(responsive, [24, 48, 72, 96, 120, 144, 166, 188]);
 
-  const recentIbi = responsive.getIbiSamples().at(-1)?.ibiMs;
+  const recentIbis = responsive.getIbiSamples().slice(-2);
   assert.ok(
-    recentIbi != null && Math.abs(recentIbi - 22 * FRAME_SPACING_MS) < 40,
-    `expected the plausible transient interval to be accepted, got ${String(recentIbi)}`,
+    recentIbis.length === 2 &&
+      recentIbis.every(
+        ({ ibiMs }) => Math.abs(ibiMs - 22 * FRAME_SPACING_MS) < 40,
+      ),
+    `expected both plausible shorter intervals to be accepted, got ${JSON.stringify(recentIbis)}`,
   );
   assert.equal(
     responsive.getCurrentBpm(),
     76,
-    'one transient interval must not move the four-interval median',
+    'two shorter intervals must not move the five-interval median',
+  );
+});
+
+test('HeartRateManager: responsive tracking damps a changed median with alpha 0.3', () => {
+  const responsive = new HeartRateManager({ liveBpmProfile: 'responsive' });
+  // After locking on five 24-frame intervals, three accepted 22-frame
+  // intervals make 22 frames the new five-beat median. One EMA update at
+  // alpha 0.3 produces 23.4 frames: round(60000 / (23.4 * 33)) = 78 BPM.
+  // The former alpha 0.45 would produce 79 BPM on this same sequence.
+  runBeatTrain(responsive, [24, 48, 72, 96, 120, 144, 166, 188, 210]);
+
+  assert.equal(
+    responsive.getCurrentBpm(),
+    78,
+    'the new median should influence only 30% of the next live estimate',
   );
 });
 
@@ -1164,6 +1206,64 @@ test('HeartRateManager: breathing swing (RSA) locks fast and never blanks for lo
   );
 });
 
+test('HeartRateManager: tracks a genuine post-lock heart-rate rise without blanking', () => {
+  // Lock at ~76 BPM (24-frame IBIs), then the rhythm genuinely speeds up to
+  // ~96 BPM (19-frame IBIs, ~21% shorter). Every faster interval exceeds the
+  // 12% short-Malik band against the lagging median, so without the post-lock
+  // spectral rescue the display sticks at 76, the cross-check wipes the lock,
+  // and the reading blanks through a full cold-start relock. The spectrum
+  // tracks the real rise, so rescued intervals must carry the display up.
+  const manager = new HeartRateManager({ liveBpmProfile: 'responsive' });
+  const beatFrames = new Set();
+  let f = 24;
+  for (let i = 0; i < 12; i++) {
+    beatFrames.add(f);
+    f += 24;
+  }
+  const stepFrame = f;
+  for (let i = 0; i < 16; i++) {
+    beatFrames.add(f);
+    f += 19;
+  }
+
+  let t = 0;
+  for (let i = 0; i < WARMUP_FRAMES; i++) {
+    manager.processFrame(makeFrame(t, BASELINE_WEIGHTED));
+    t += FRAME_SPACING_MS;
+  }
+
+  let lastReportedFrame = null;
+  let longestGapFrames = 0;
+  let reachedNewRateFrame = null;
+  const totalFrames = f + 15;
+  for (let i = 0; i < totalFrames; i++) {
+    const weighted = beatFrames.has(i) ? BEAT_WEIGHTED : BASELINE_WEIGHTED;
+    manager.processFrame(makeFrame(t, weighted));
+    const bpm = manager.getCurrentBpm();
+    if (bpm != null) {
+      if (lastReportedFrame != null && i >= stepFrame) {
+        longestGapFrames = Math.max(longestGapFrames, i - lastReportedFrame);
+      }
+      lastReportedFrame = i;
+      if (reachedNewRateFrame == null && bpm >= 90) reachedNewRateFrame = i;
+    }
+    t += FRAME_SPACING_MS;
+  }
+
+  assert.ok(
+    reachedNewRateFrame != null,
+    'display must reach the new ~96 BPM rate',
+  );
+  assert.ok(
+    reachedNewRateFrame - stepFrame <= 240,
+    `display must reach ~96 BPM within ~8s of the rise, took ${reachedNewRateFrame - stepFrame} frames`,
+  );
+  assert.ok(
+    longestGapFrames <= 75,
+    `reading must not blank for >~2.5s during a genuine rise, gap of ${longestGapFrames} frames`,
+  );
+});
+
 test('HeartRateManager: dicrotic notch at slow HR does not double-tick or block lock', () => {
   // ~55 BPM (33-frame cycle, ~1089ms) with a half-height dicrotic bump ~429ms
   // after each systolic peak. The notch clears the 320ms cold-start refractory,
@@ -1207,6 +1307,47 @@ test('HeartRateManager: dicrotic notch at slow HR does not double-tick or block 
       `published BPM must reflect the true ~55 rhythm, got ${bpm}`,
     );
   }
+});
+
+test('HeartRateManager: moderately tall startup notch never seeds an inflated exercise BPM', () => {
+  // True rhythm is ~61 BPM (30 frames). While camera exposure settles, the
+  // first seven cycles contain a 60%-height secondary wave 14 frames after the
+  // systolic peak. Those near-half-cycle intervals are mutually consistent and
+  // previously seeded a false ~120 BPM exercise reading that slowly bled down
+  // long after the secondary wave disappeared.
+  const manager = new HeartRateManager({ liveBpmProfile: 'responsive' });
+  let t = 0;
+  for (let i = 0; i < WARMUP_FRAMES; i++) {
+    manager.processFrame(makeFrame(t, BASELINE_WEIGHTED));
+    t += FRAME_SPACING_MS;
+  }
+
+  const reported = [];
+  const cycleFrames = 30;
+  for (let i = 0; i < cycleFrames * 32; i++) {
+    const cycle = Math.floor(i / cycleFrames);
+    const phase = i % cycleFrames;
+    const weighted =
+      phase === 0
+        ? BEAT_WEIGHTED
+        : phase === 14 && cycle < 7
+          ? BASELINE_WEIGHTED + (BEAT_WEIGHTED - BASELINE_WEIGHTED) * 0.6
+          : BASELINE_WEIGHTED;
+    manager.processFrame(makeFrame(t, weighted));
+    const bpm = manager.getCurrentBpm();
+    if (bpm != null) reported.push(bpm);
+    t += FRAME_SPACING_MS;
+  }
+
+  assert.ok(reported.length > 0, 'the clean true rhythm should eventually lock');
+  assert.ok(
+    reported.every((bpm) => bpm <= 75),
+    `startup secondary waves must never publish an inflated BPM, got ${JSON.stringify([...new Set(reported)])}`,
+  );
+  assert.ok(
+    reported.slice(-30).every((bpm) => bpm >= 55 && bpm <= 68),
+    `the reading should converge near the true ~61 BPM, got ${JSON.stringify(reported.slice(-10))}`,
+  );
 });
 
 test('HeartRateManager: frequency cross-check suppresses a noise-driven wrong lock', () => {

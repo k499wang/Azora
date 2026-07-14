@@ -65,7 +65,10 @@ const FORCE_REARM_AFTER_MS = 600;
 // deadlocks the cold-start pairing so the BPM never locks at all.
 const PEAK_HEIGHT_EMA_ALPHA = 0.3;
 const EARLY_PEAK_WINDOW_FRACTION = 0.7;
-const MIN_EARLY_PEAK_HEIGHT_RATIO = 0.55;
+// A dicrotic wave can retain roughly 60% of the systolic peak while the finger
+// and camera exposure settle. Treat those moderately tall early echoes as
+// secondary waves; a genuinely early beat remains close to full peak height.
+const MIN_EARLY_PEAK_HEIGHT_RATIO = 0.65;
 // Frequency cross-check: the time-domain detector can lock onto a wrong rhythm
 // (notch double-count → ~2x, missed alternate beats → ~0.5x) and then defend it,
 // because the Malik gate judges intervals against the locked rhythm itself. A
@@ -117,11 +120,11 @@ const MALIK_MIN_HISTORY = 3;
 // too fast. On a clean signal this defers nothing but the push (pairs are
 // committed together), so lock time is unchanged.
 const COLD_START_IBI_TOLERANCE = 0.2;
-// Pre-lock only: how far an interval may sit from the fresh spectral rhythm and
-// still be accepted when the interval-median gates reject it (see
-// freqRescuesColdStartIbi). Wide enough for real breathing swing around the
-// spectral mean, nowhere near the 2x/0.5x error modes the median gates target.
-const FREQ_INTERVAL_RESCUE_TOLERANCE = 0.25;
+// Pre-lock breathing swing may legitimately spread individual intervals around
+// the spectral mean. Once locked, require much tighter candidate/spectrum
+// agreement so an isolated split beat cannot borrow a stable spectral estimate.
+const COLD_START_FREQ_RESCUE_TOLERANCE = 0.25;
+const LOCKED_FREQ_RESCUE_TOLERANCE = 0.1;
 // The first published BPM seeds the IBI EMA, so require the intervals it is
 // derived from to agree within this spread before seeding. A contaminated cold
 // start shows up as a wide spread, and seeding from it locks in a wrong first
@@ -192,8 +195,8 @@ const LIVE_BPM_PROFILE_CONFIG = {
   },
   responsive: {
     minIbis: 5,
-    medianWindow: 4,
-    emaAlpha: 0.45,
+    medianWindow: 5,
+    emaAlpha: 0.3,
   },
 } as const;
 
@@ -660,20 +663,40 @@ export class HeartRateManager {
     return Math.abs(60000 / recentMedianIbi - 60000 / freqIbi) <= FREQ_DISAGREE_BPM;
   }
 
-  // While no BPM has locked yet (ibiEma == null), an interval matching the
-  // fresh spectral rhythm is accepted even when the interval median rejects it.
-  // Under breathing swing (RSA) the median gates otherwise reject the whole
-  // decelerating half of each breath (each rejection keeps the anchor, so the
-  // following interval reads as an over-long gap and is discarded too). The
-  // phase-biased history that survives reads fast, the spectral cross-check
-  // then wipes it, and the lock restarts — "finding pulse" can take tens of
-  // seconds on a clean signal. Established locks are untouched: HRV-grade
-  // ectopic filtering still applies once the EMA is seeded.
+  // Before the first lock, a fresh spectrum can confirm breathing-driven IBI
+  // spread that the interval history is still too short to understand.
   private freqRescuesColdStartIbi(ibiMs: number): boolean {
     if (this.ibiEma != null) return false;
     const freqIbi = this.getFreqSeededIbiMs();
     if (freqIbi == null) return false;
-    return Math.abs(ibiMs - freqIbi) / freqIbi <= FREQ_INTERVAL_RESCUE_TOLERANCE;
+    return (
+      Math.abs(ibiMs - freqIbi) / freqIbi <=
+      COLD_START_FREQ_RESCUE_TOLERANCE
+    );
+  }
+
+  // Once locked, rescue a Malik-rejected interval only when the spectrum also
+  // shows a rate change beyond the same Malik band. Candidate and spectrum
+  // must tightly agree and move to the same side of the established median;
+  // this lets a sustained real change through without admitting a lone split.
+  private freqRescuesLockedIbi(ibiMs: number, medianIbiMs: number): boolean {
+    if (this.ibiEma == null || medianIbiMs <= 0) return false;
+    const freqIbi = this.getFreqSeededIbiMs();
+    if (freqIbi == null) return false;
+    if (
+      Math.abs(ibiMs - freqIbi) / freqIbi >
+      LOCKED_FREQ_RESCUE_TOLERANCE
+    ) {
+      return false;
+    }
+
+    const candidateDelta = ibiMs - medianIbiMs;
+    const freqDelta = freqIbi - medianIbiMs;
+    if (candidateDelta * freqDelta <= 0) return false;
+
+    const threshold =
+      freqIbi < medianIbiMs ? MALIK_SHORT_THRESHOLD : MALIK_THRESHOLD;
+    return Math.abs(freqDelta) / medianIbiMs > threshold;
   }
 
   // Gate for the *initial* EMA seed only (see INITIAL_LOCK_MAX_IBI_SPREAD):
@@ -799,7 +822,12 @@ export class HeartRateManager {
     }
 
     const ibiBpm = 60000 / this.ibiEma;
-    if (Math.abs(ibiBpm - estimate.bpm) > FREQ_DISAGREE_BPM) {
+    const emaDisagrees =
+      Math.abs(ibiBpm - estimate.bpm) > FREQ_DISAGREE_BPM;
+    if (
+      emaDisagrees &&
+      !this.recentIbiMedianAgreesWithFreshSpectrum()
+    ) {
       this.freqDisagreeCount += 1;
       if (this.freqDisagreeCount >= FREQ_DISAGREE_CHECKS_TO_RESEED) {
         this.ibiHistory.length = 0;
@@ -826,6 +854,24 @@ export class HeartRateManager {
     return Math.min(
       MAX_IBI_MS,
       Math.max(MIN_IBI_MS, 60000 / this.lastFreqEstimate.bpm),
+    );
+  }
+
+  // A slowly moving EMA may temporarily lag a genuine rate change. Treat the
+  // fresh spectrum as corroborated only when a full profile-sized recent IBI
+  // window independently agrees with it; a lone false beat cannot do this.
+  private recentIbiMedianAgreesWithFreshSpectrum(): boolean {
+    if (this.ibiHistory.length < this.liveBpmConfig.minIbis) return false;
+    const freqIbi = this.getFreqSeededIbiMs();
+    if (freqIbi == null) return false;
+    const recentMedianIbi = medianOfRecent(
+      this.ibiHistory,
+      this.liveBpmConfig.medianWindow,
+    );
+    if (recentMedianIbi <= 0) return false;
+    return (
+      Math.abs(60000 / recentMedianIbi - 60000 / freqIbi) <=
+      FREQ_DISAGREE_BPM
     );
   }
 
@@ -1227,17 +1273,23 @@ export class HeartRateManager {
                 }
               } else {
                 emitTick = true;
+                const med = medianOfRecent(this.ibiHistory, MALIK_WINDOW);
+                const threshold =
+                  ibi < med ? MALIK_SHORT_THRESHOLD : MALIK_THRESHOLD;
                 const ectopic =
-                  this.ibiHistory.length >= MALIK_MIN_HISTORY &&
-                  (() => {
-                    const med = medianOfRecent(this.ibiHistory, MALIK_WINDOW);
-                    if (med <= 0) return false;
-                    const threshold =
-                      ibi < med ? MALIK_SHORT_THRESHOLD : MALIK_THRESHOLD;
-                    return Math.abs(ibi - med) / med > threshold;
-                  })();
-                if (!ectopic || this.freqRescuesColdStartIbi(ibi)) {
+                  med > 0 && Math.abs(ibi - med) / med > threshold;
+                const freqRescuesEctopic =
+                  this.ibiEma == null
+                    ? this.freqRescuesColdStartIbi(ibi)
+                    : this.freqRescuesLockedIbi(ibi, med);
+                if (!ectopic || freqRescuesEctopic) {
                   this.pushAcceptedIbi(peakTs, ibi);
+                  if (freqRescuesEctopic && this.ibiEma != null) {
+                    // The time-domain candidate independently confirms that the
+                    // spectral disagreement is a real transition, not a bad
+                    // lock, so do not let the stale EMA trigger a full reseed.
+                    this.freqDisagreeCount = 0;
+                  }
                 } else {
                   advanceAnchor = false;
                 }
@@ -1322,13 +1374,17 @@ export class HeartRateManager {
     if (this.ibiEma == null || this.ibiEma <= 0) return null;
     // A fresh, confident spectral disagreement means the interval rhythm is
     // suspect (likely a 2x/0.5x lock) — withhold rather than show a wrong number.
-    if (this.freqDisagreeCount > 0) return null;
+    const recentMedianConfirmsSpectrum =
+      this.recentIbiMedianAgreesWithFreshSpectrum();
+    if (this.freqDisagreeCount > 0 && !recentMedianConfirmsSpectrum) return null;
     if (this.latestBpmSnapshot == null) return null;
     if (this.latestBpmSnapshot.bpm < 40 || this.latestBpmSnapshot.bpm > 180) return null;
     if (
       this.lastFreqEstimate != null &&
       this.lastGoodTs - this.lastFreqEstimate.timestamp <= FREQ_ESTIMATE_FRESH_MS &&
-      Math.abs(this.latestBpmSnapshot.bpm - this.lastFreqEstimate.bpm) > FREQ_DISAGREE_BPM
+      Math.abs(this.latestBpmSnapshot.bpm - this.lastFreqEstimate.bpm) >
+        FREQ_DISAGREE_BPM &&
+      !recentMedianConfirmsSpectrum
     ) {
       return null;
     }

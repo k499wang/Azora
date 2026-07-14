@@ -37,6 +37,9 @@ export interface BpmPresentationFilterOptions {
   // swing, measurement noise) instead of wiggling every update. Real trends
   // exceed the band and still track via the step limits above.
   minChangeBpm: number;
+  // Optional elapsed-time limit for presentation movement. This complements
+  // the per-update limits above for surfaces whose update cadence varies.
+  maxChangeBpmPerSecond?: number | null;
 }
 
 export interface BpmPresentationSample {
@@ -95,14 +98,15 @@ const LIVE_BPM_PRESENTATION_OPTIONS: BpmPresentationFilterOptions = {
 
 const BREATH_EXERCISE_BPM_PRESENTATION_OPTIONS: BpmPresentationFilterOptions = {
   warmupMs: 0,
-  minStableReadings: 1,
-  stableRangeBpm: 10,
+  minStableReadings: 3,
+  stableRangeBpm: 6,
   maxStepBpm: 5,
-  maxIncreaseBpm: 4,
+  maxIncreaseBpm: 5,
   maxDecreaseBpm: 5,
   spikeThresholdBpm: 10,
   spikeConfirmationBpm: 4,
   minChangeBpm: 0,
+  maxChangeBpmPerSecond: 4,
 };
 
 const IBI_GRAPH_PRESENTATION_OPTIONS: BpmPresentationFilterOptions = {
@@ -277,6 +281,7 @@ export class BpmPresentationFilter {
   private readonly rawReadings: number[] = [];
   private previousDisplayedBpm: number | null = null;
   private pendingSpikeBpm: number | null = null;
+  private lastProcessedElapsedMs: number | null = null;
 
   constructor(options: Partial<BpmPresentationFilterOptions> = {}) {
     const merged = {
@@ -296,11 +301,15 @@ export class BpmPresentationFilter {
     this.rawReadings.length = 0;
     this.previousDisplayedBpm = null;
     this.pendingSpikeBpm = null;
+    this.lastProcessedElapsedMs = null;
   }
 
   update(sample: BpmPresentationSample): number | null {
     const rawBpm = Math.round(sample.bpm);
     if (!isPresentationBpm(rawBpm)) return null;
+
+    const previousProcessedElapsedMs = this.lastProcessedElapsedMs;
+    this.lastProcessedElapsedMs = sample.elapsedMs;
 
     this.rawReadings.push(rawBpm);
     if (this.rawReadings.length > this.options.minStableReadings) {
@@ -338,13 +347,19 @@ export class BpmPresentationFilter {
       deltaFromPrevious > 0
         ? this.options.maxIncreaseBpm
         : this.options.maxDecreaseBpm;
+    const elapsedTimeLimit =
+      this.options.maxChangeBpmPerSecond != null &&
+      previousProcessedElapsedMs != null
+        ? this.options.maxChangeBpmPerSecond *
+          Math.max(0, sample.elapsedMs - previousProcessedElapsedMs) / 1_000
+        : Number.POSITIVE_INFINITY;
+    const allowedStep = Math.min(maxStep, elapsedTimeLimit);
     const step =
-      Math.abs(deltaFromPrevious) <= maxStep
+      Math.abs(deltaFromPrevious) <= allowedStep
         ? deltaFromPrevious
-        : Math.sign(deltaFromPrevious) * maxStep;
-    const displayedBpm = Math.round(this.previousDisplayedBpm + step);
-    this.previousDisplayedBpm = displayedBpm;
-    return displayedBpm;
+        : Math.sign(deltaFromPrevious) * allowedStep;
+    this.previousDisplayedBpm += step;
+    return Math.round(this.previousDisplayedBpm);
   }
 }
 
