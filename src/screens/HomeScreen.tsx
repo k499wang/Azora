@@ -1,12 +1,7 @@
+import { Text } from '../components/common/Text';
 import { useCallback, useEffect, useState } from 'react';
 import {
-  AppState,
-  ScrollView,
-  StyleSheet,
-  Text,
-  useWindowDimensions,
-  View,
-} from 'react-native';
+  AppState, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import MaskedView from '@react-native-masked-view/masked-view';
@@ -60,7 +55,13 @@ function Greeting({ displayName }: { displayName: string | null | undefined }) {
   const firstName = displayName?.trim().split(/\s+/)[0];
   const greeting = getTimeOfDayGreeting();
   return (
-    <Text style={styles.greeting} numberOfLines={1} ellipsizeMode="tail">
+    <Text
+      style={styles.greeting}
+      numberOfLines={2}
+      ellipsizeMode="tail"
+      adjustsFontSizeToFit
+      minimumFontScale={0.7}
+    >
       {firstName ? `${greeting}, ${firstName}` : greeting}
     </Text>
   );

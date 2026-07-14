@@ -1,5 +1,6 @@
+import { Text } from '../common/Text';
 import React, { useEffect, useRef } from 'react';
-import { Animated, StyleSheet, Text, View } from 'react-native';
+import { Animated, StyleSheet, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import type { useLivePulse } from '../../hooks/useLivePulse';
 import type { FingerPlacementState, SignalStatus } from '../../lib/heartRate/types';

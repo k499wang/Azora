@@ -1,5 +1,6 @@
+import { Text } from '../common/Text';
 import { useCallback } from 'react';
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, View } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { usePostHog } from 'posthog-react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';

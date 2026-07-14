@@ -1,5 +1,6 @@
+import { Text } from '../common/Text';
 import { useMemo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { usePostHog } from 'posthog-react-native';
 import Icon, { type IconName } from '../common/icons/Icon';

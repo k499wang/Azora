@@ -1,4 +1,5 @@
-import { StyleSheet, Text, View, ViewStyle } from 'react-native';
+import { Text } from './Text';
+import { StyleSheet, View, ViewStyle } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
 import { typography } from '../../theme/typography';

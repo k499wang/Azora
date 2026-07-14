@@ -1,11 +1,7 @@
+import { Text } from '../common/Text';
 import { useEffect, useRef, useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  SafeAreaView,
-} from 'react-native';
+  View, StyleSheet, TouchableOpacity, SafeAreaView } from 'react-native';
 import { Canvas, Path, Skia } from '@shopify/react-native-skia';
 import { colors } from '../../theme/colors';
 import { typography, fonts } from '../../theme/typography';

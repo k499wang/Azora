@@ -1,5 +1,6 @@
+import { Text } from '../../common/Text';
 import { useEffect, useRef } from 'react';
-import { Animated, Easing, Text, View } from 'react-native';
+import { Animated, Easing, View } from 'react-native';
 import { colors } from '../../../theme/colors';
 import Icon from '../../common/icons/Icon';
 import { paywallStepStyles as styles } from './paywallStepStyles';

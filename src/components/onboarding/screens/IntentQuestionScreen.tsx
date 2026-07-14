@@ -1,10 +1,5 @@
-import {
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { Text, TextInput } from '../../common/Text';
+import { Pressable, StyleSheet, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import Icon from '../../common/icons/Icon';
 import { colors } from '../../../theme/colors';

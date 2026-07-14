@@ -1,5 +1,6 @@
+import { Text } from '../../common/Text';
 import { useEffect, useMemo, useRef } from 'react';
-import { Animated, Easing, StyleSheet, Text } from 'react-native';
+import { Animated, Easing, StyleSheet } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';

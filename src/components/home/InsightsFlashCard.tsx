@@ -1,11 +1,7 @@
+import { Text } from '../common/Text';
 import { useState } from 'react';
 import {
-  Pressable,
-  StyleSheet,
-  Text,
-  useWindowDimensions,
-  View,
-} from 'react-native';
+  Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { LockedScrim } from '../common/glass';
 import Carousel from 'react-native-reanimated-carousel';
 import MaskedView from '@react-native-masked-view/masked-view';

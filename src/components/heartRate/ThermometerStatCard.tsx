@@ -1,4 +1,5 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Text } from '../common/Text';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { LockedScrim } from '../common/glass';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';

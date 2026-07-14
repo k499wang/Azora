@@ -1,12 +1,7 @@
+import { Text } from './Text';
 import { useMemo, useState } from 'react';
 import {
-  Modal,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+  Modal, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import DateTimePicker, {
   DateTimePickerAndroid,

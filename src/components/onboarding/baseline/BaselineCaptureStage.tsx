@@ -1,4 +1,5 @@
-import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Text, AnimatedText } from '../../common/Text';
+import { Animated, Pressable, StyleSheet, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PersistentCameraRing } from '../../heartRate/PersistentCameraRing';
@@ -197,14 +198,14 @@ function BaselineCaptureMetric({
 }: BaselineCaptureMetricProps) {
   return (
     <View style={[styles.bpmRow, dimmed && styles.bpmRowDim]}>
-      <Animated.Text
+      <AnimatedText
         style={[
           styles.bpmNumber,
           dimmed ? null : { opacity: bpmOpacity },
         ]}
       >
         {bpm}
-      </Animated.Text>
+      </AnimatedText>
       <Text style={[styles.bpmUnit, dimmed && styles.bpmUnitDim]}>bpm</Text>
       <Animated.View
         style={dimmed ? null : { transform: [{ scale: heartScale }] }}

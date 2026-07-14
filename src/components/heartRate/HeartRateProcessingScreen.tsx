@@ -1,11 +1,7 @@
+import { Text } from '../common/Text';
 import { useEffect } from 'react';
 import {
-  BackHandler,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+  BackHandler, SafeAreaView, StyleSheet, View } from 'react-native';
 import Reanimated, {
   cancelAnimation,
   Easing,

@@ -1,3 +1,4 @@
+import { AnimatedText } from '../../common/Text';
 import { useEffect, useMemo, useRef } from 'react';
 import { Animated, Easing, StyleSheet, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
@@ -135,7 +136,7 @@ export default function GreetingScreen({
     >
       <View style={styles.stage}>
         <View style={styles.copy}>
-          <Animated.Text
+          <AnimatedText
             numberOfLines={1}
             adjustsFontSizeToFit
             style={[
@@ -147,11 +148,11 @@ export default function GreetingScreen({
             ]}
           >
             Hey, {displayName}.
-          </Animated.Text>
+          </AnimatedText>
 
-          <Animated.Text style={[styles.subtitle, { opacity: textEnter }]}>
+          <AnimatedText style={[styles.subtitle, { opacity: textEnter }]}>
             It's good to meet you! We'll ask you a few questions to make your experience better.
-          </Animated.Text>
+          </AnimatedText>
         </View>
 
         <Animated.View

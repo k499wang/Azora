@@ -1,12 +1,7 @@
+import { Text } from '../common/Text';
 import { useCallback, useEffect, useState } from 'react';
 import {
-  Linking,
-  Pressable,
-  StyleSheet,
-  Switch,
-  Text,
-  View,
-} from 'react-native';
+  Linking, Pressable, StyleSheet, Switch, View } from 'react-native';
 import { useAuthStore } from '../../stores/authStore';
 import { useNotificationPreferencesQuery } from '../../queries/notifications/useNotificationPreferencesQuery';
 import { useUpdateNotificationPreferencesMutation } from '../../queries/notifications/useUpdateNotificationPreferencesMutation';

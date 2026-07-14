@@ -1,4 +1,5 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Text } from '../../components/common/Text';
+import { Pressable, StyleSheet, View } from 'react-native';
 import Icon from '../../components/common/icons/Icon';
 import { colors } from '../../theme/colors';
 import { fonts, typography } from '../../theme/typography';

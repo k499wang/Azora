@@ -1,17 +1,7 @@
+import { Text } from '../../components/common/Text';
 import { useEffect, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  Animated,
-  Easing,
-  Linking,
-  Modal,
-  Pressable,
-  StyleSheet,
-  Switch,
-  Text,
-  View,
-} from 'react-native';
+  ActivityIndicator, Alert, Animated, Easing, Linking, Modal, Pressable, StyleSheet, Switch, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../theme/colors';

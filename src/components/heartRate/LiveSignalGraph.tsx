@@ -1,3 +1,4 @@
+import { AnimatedText } from '../common/Text';
 import React, {
   memo,
   useCallback,
@@ -428,7 +429,7 @@ function LiveSignalGraphComponent({
     <View style={styles.container} onLayout={handleLayout}>
       {overlayBpm != null && (
         <View style={[styles.bpmRow, dim && styles.bpmRowDim]} pointerEvents="none">
-          <Animated.Text
+          <AnimatedText
             style={[
               styles.bpmNumber,
               { color: numberColor },
@@ -436,7 +437,7 @@ function LiveSignalGraphComponent({
             ]}
           >
             {overlayBpm}
-          </Animated.Text>
+          </AnimatedText>
           <Animated.View style={dim ? null : { transform: [{ scale: heartScale }] }}>
             <MaterialCommunityIcons
               name="heart"
