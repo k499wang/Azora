@@ -50,7 +50,13 @@ export interface ExerciseBpmSnapshot {
   signalQuality: number;
 }
 
-export const EXERCISE_BPM_MIN_SIGNAL_QUALITY = 0.15;
+// Kept just above the manager's own publish floor (LIVE_BPM_MIN_QUALITY 0.03).
+// Quality is bandpassed amplitude / SIGNAL_QUALITY_REF and the live PPG graph
+// autoscales, so a low-perfusion finger (cold hands, light contact, torch still
+// warming the fingertip) can draw a clean sine wave while quality sits well
+// below a high floor. At 0.15 that created a dead zone where the manager held a
+// locked BPM but the exercise never left "finding pulse".
+export const EXERCISE_BPM_MIN_SIGNAL_QUALITY = 0.05;
 
 const MAX_SAMPLE_JUMP_BPM = 8;
 const GRAPH_MAX_SAMPLE_JUMP_BPM = 2;
