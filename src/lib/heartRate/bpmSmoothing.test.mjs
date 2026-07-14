@@ -11,11 +11,11 @@ import {
 test('exercise BPM startup accepts the first concrete manager snapshot above the quality gate', () => {
   assert.equal(isExerciseBpmSnapshotReady(null), false);
   assert.equal(
-    isExerciseBpmSnapshotReady({ timestamp: 1_000, bpm: 82, signalQuality: 0.14 }),
+    isExerciseBpmSnapshotReady({ timestamp: 1_000, bpm: 82, signalQuality: 0.04 }),
     false,
   );
   assert.equal(
-    isExerciseBpmSnapshotReady({ timestamp: 1_000, bpm: 82, signalQuality: 0.15 }),
+    isExerciseBpmSnapshotReady({ timestamp: 1_000, bpm: 82, signalQuality: 0.05 }),
     true,
   );
 });

@@ -117,12 +117,19 @@ const MALIK_MIN_HISTORY = 3;
 // too fast. On a clean signal this defers nothing but the push (pairs are
 // committed together), so lock time is unchanged.
 const COLD_START_IBI_TOLERANCE = 0.2;
+// Pre-lock only: how far an interval may sit from the fresh spectral rhythm and
+// still be accepted when the interval-median gates reject it (see
+// freqRescuesColdStartIbi). Wide enough for real breathing swing around the
+// spectral mean, nowhere near the 2x/0.5x error modes the median gates target.
+const FREQ_INTERVAL_RESCUE_TOLERANCE = 0.25;
 // The first published BPM seeds the IBI EMA, so require the intervals it is
 // derived from to agree within this spread before seeding. A contaminated cold
 // start shows up as a wide spread, and seeding from it locks in a wrong first
 // reading that the display then slowly bleeds down from. Applies only to the
 // initial seed: once locked, slow breathing legitimately swings IBIs more than
-// this and must not blank an established reading.
+// this and must not blank an established reading. Breathing swing can also hold
+// this gate open before the first lock, so a fresh spectral estimate that
+// agrees with the interval median (freqConfirmsIbiMedian) seeds regardless.
 const INITIAL_LOCK_MAX_IBI_SPREAD = 0.2;
 const SIGNAL_QUALITY_REF = 0.02;
 const FILTER_GROUP_DELAY_MS = 65;
@@ -640,6 +647,35 @@ export class HeartRateManager {
     }
   }
 
+  // Spectral confirmation can stand in for interval consistency when seeding:
+  // breathing swing (RSA) legitimately spreads real IBIs past
+  // INITIAL_LOCK_MAX_IBI_SPREAD, which otherwise defers the first lock beat
+  // after beat on a clean signal. A fresh confident spectral estimate agreeing
+  // with the interval median is independent evidence the rhythm is real — the
+  // same agreement getCurrentBpmSnapshot requires before publishing.
+  private freqConfirmsIbiMedian(recentMedianIbi: number): boolean {
+    if (recentMedianIbi <= 0) return false;
+    const freqIbi = this.getFreqSeededIbiMs();
+    if (freqIbi == null) return false;
+    return Math.abs(60000 / recentMedianIbi - 60000 / freqIbi) <= FREQ_DISAGREE_BPM;
+  }
+
+  // While no BPM has locked yet (ibiEma == null), an interval matching the
+  // fresh spectral rhythm is accepted even when the interval median rejects it.
+  // Under breathing swing (RSA) the median gates otherwise reject the whole
+  // decelerating half of each breath (each rejection keeps the anchor, so the
+  // following interval reads as an over-long gap and is discarded too). The
+  // phase-biased history that survives reads fast, the spectral cross-check
+  // then wipes it, and the lock restarts — "finding pulse" can take tens of
+  // seconds on a clean signal. Established locks are untouched: HRV-grade
+  // ectopic filtering still applies once the EMA is seeded.
+  private freqRescuesColdStartIbi(ibiMs: number): boolean {
+    if (this.ibiEma != null) return false;
+    const freqIbi = this.getFreqSeededIbiMs();
+    if (freqIbi == null) return false;
+    return Math.abs(ibiMs - freqIbi) / freqIbi <= FREQ_INTERVAL_RESCUE_TOLERANCE;
+  }
+
   // Gate for the *initial* EMA seed only (see INITIAL_LOCK_MAX_IBI_SPREAD):
   // the profile's minimum interval window must agree before the first BPM locks.
   private recentIbisConsistent(): boolean {
@@ -669,7 +705,10 @@ export class HeartRateManager {
       );
       if (recentMedian > 0) {
         if (this.ibiEma == null) {
-          if (this.recentIbisConsistent()) {
+          if (
+            this.recentIbisConsistent() ||
+            this.freqConfirmsIbiMedian(recentMedian)
+          ) {
             this.ibiEma = recentMedian;
             bpmEstimateUpdated = true;
           }
@@ -1178,8 +1217,9 @@ export class HeartRateManager {
                 emitTick = true;
                 const med = medianOfRecent(this.ibiHistory, MALIK_WINDOW);
                 if (
-                  med > 0 &&
-                  Math.abs(ibi - med) / med <= COLD_START_IBI_TOLERANCE
+                  (med > 0 &&
+                    Math.abs(ibi - med) / med <= COLD_START_IBI_TOLERANCE) ||
+                  this.freqRescuesColdStartIbi(ibi)
                 ) {
                   this.pushAcceptedIbi(peakTs, ibi);
                 } else {
@@ -1196,7 +1236,7 @@ export class HeartRateManager {
                       ibi < med ? MALIK_SHORT_THRESHOLD : MALIK_THRESHOLD;
                     return Math.abs(ibi - med) / med > threshold;
                   })();
-                if (!ectopic) {
+                if (!ectopic || this.freqRescuesColdStartIbi(ibi)) {
                   this.pushAcceptedIbi(peakTs, ibi);
                 } else {
                   advanceAnchor = false;

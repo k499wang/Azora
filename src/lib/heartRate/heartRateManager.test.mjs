@@ -1105,6 +1105,65 @@ test('HeartRateManager: first BPM lock waits until recent intervals agree', () =
   }
 });
 
+test('HeartRateManager: breathing swing (RSA) locks fast and never blanks for long', () => {
+  // Sinusoidal IBI swing around ~891ms (±~130ms, breath period 8 beats): every
+  // interval is real, but the interval-median gates alone reject the whole
+  // decelerating half of each breath, producing a slow, fast-phase-biased lock
+  // that the spectral cross-check then wipes — on this train the old behavior
+  // locked ~8s after warmup at a biased 78 BPM and blanked for ~9s mid-run.
+  // With spectral rescue + spectral-confirmed seeding the lock lands within
+  // ~5s of warmup near the true ~67 BPM mean and never disappears for long.
+  const manager = new HeartRateManager();
+  const beatFrames = new Set();
+  let f = 5;
+  for (let i = 0; i < 40; i++) {
+    beatFrames.add(f);
+    f += Math.round(27 + 4 * Math.sin((2 * Math.PI * i) / 8));
+  }
+
+  let t = 0;
+  for (let i = 0; i < WARMUP_FRAMES; i++) {
+    manager.processFrame(makeFrame(t, BASELINE_WEIGHTED));
+    t += FRAME_SPACING_MS;
+  }
+
+  let firstLockFrame = null;
+  let lastReportedFrame = null;
+  let longestGapFrames = 0;
+  const reported = [];
+  const totalFrames = f + 15;
+  for (let i = 0; i < totalFrames; i++) {
+    const weighted = beatFrames.has(i) ? BEAT_WEIGHTED : BASELINE_WEIGHTED;
+    manager.processFrame(makeFrame(t, weighted));
+    const bpm = manager.getCurrentBpm();
+    if (bpm != null) {
+      if (firstLockFrame == null) firstLockFrame = i;
+      if (lastReportedFrame != null) {
+        longestGapFrames = Math.max(longestGapFrames, i - lastReportedFrame);
+      }
+      lastReportedFrame = i;
+      reported.push(bpm);
+    }
+    t += FRAME_SPACING_MS;
+  }
+
+  assert.ok(firstLockFrame != null, 'RSA train must lock');
+  assert.ok(
+    firstLockFrame <= 160,
+    `RSA lock must land within ~5s of warmup, got frame ${firstLockFrame}`,
+  );
+  for (const bpm of reported) {
+    assert.ok(
+      bpm >= 55 && bpm <= 75,
+      `published BPM must stay near the true ~67 mean, got ${bpm}`,
+    );
+  }
+  assert.ok(
+    longestGapFrames <= 75,
+    `an established RSA reading must not blank for >~2.5s, gap of ${longestGapFrames} frames`,
+  );
+});
+
 test('HeartRateManager: dicrotic notch at slow HR does not double-tick or block lock', () => {
   // ~55 BPM (33-frame cycle, ~1089ms) with a half-height dicrotic bump ~429ms
   // after each systolic peak. The notch clears the 320ms cold-start refractory,
