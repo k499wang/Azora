@@ -904,7 +904,15 @@ export default function ExerciseSessionPage({
                       color={colors.neutral[50]}
                     />
                   ) : PHASE_LABELS[phase] ? (
-                    <Text style={styles.phaseLabel}>{PHASE_LABELS[phase]}</Text>
+                    <Text
+                      style={styles.phaseLabel}
+                      numberOfLines={1}
+                      adjustsFontSizeToFit
+                      minimumFontScale={0.7}
+                      maxFontSizeMultiplier={1.2}
+                    >
+                      {PHASE_LABELS[phase]}
+                    </Text>
                   ) : null}
                 </BreathingCircle>
               </Animated.View>
