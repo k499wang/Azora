@@ -1,20 +1,7 @@
+import { Text } from '../common/Text';
 import { ReactNode, useEffect, useRef, useState } from 'react';
 import {
-  Animated,
-  Easing,
-  InteractionManager,
-  Keyboard,
-  KeyboardAvoidingView,
-  LayoutChangeEvent,
-  NativeScrollEvent,
-  NativeSyntheticEvent,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+  Animated, Easing, InteractionManager, Keyboard, KeyboardAvoidingView, LayoutChangeEvent, NativeScrollEvent, NativeSyntheticEvent, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Icon from '../common/icons/Icon';
 import * as Haptics from 'expo-haptics';

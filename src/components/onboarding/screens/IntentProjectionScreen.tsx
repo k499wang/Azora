@@ -1,5 +1,6 @@
+import { Text } from '../../common/Text';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { StyleSheet, Text, type LayoutChangeEvent, View } from 'react-native';
+import { StyleSheet, type LayoutChangeEvent, View } from 'react-native';
 import {
   Easing,
   useDerivedValue,

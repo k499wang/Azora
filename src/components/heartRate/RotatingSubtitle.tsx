@@ -1,5 +1,6 @@
+import { Text, AnimatedText } from '../common/Text';
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, StyleSheet, Text, View } from 'react-native';
+import { Animated, StyleSheet, View } from 'react-native';
 import { colors } from '../../theme/colors';
 import { typography, fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
@@ -47,9 +48,9 @@ export function RotatingSubtitle() {
 
   return (
     <View style={styles.container} pointerEvents="none">
-      <Animated.Text style={[styles.text, { opacity }]} numberOfLines={2}>
+      <AnimatedText style={[styles.text, { opacity }]} numberOfLines={2}>
         {MESSAGES[index]}
-      </Animated.Text>
+      </AnimatedText>
     </View>
   );
 }

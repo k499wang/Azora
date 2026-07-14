@@ -1,5 +1,6 @@
+import { Text } from '../common/Text';
 import { useEffect, useRef } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useIsFocused, useNavigation } from '@react-navigation/native';
 import { usePostHog } from 'posthog-react-native';
 import CardSurface from '../common/CardSurface';

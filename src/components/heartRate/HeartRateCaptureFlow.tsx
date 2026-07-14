@@ -1,12 +1,7 @@
+import { Text } from '../common/Text';
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import {
-  InteractionManager,
-  SafeAreaView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native';
+  InteractionManager, SafeAreaView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { usePostHog } from 'posthog-react-native';

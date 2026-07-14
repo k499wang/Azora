@@ -1,10 +1,7 @@
+import { Text, AnimatedText } from '../common/Text';
 import { useEffect, useRef } from 'react';
 import {
-  Animated,
-  Text,
-  type StyleProp,
-  type TextStyle,
-} from 'react-native';
+  Animated, type StyleProp, type TextStyle } from 'react-native';
 
 const DOT_COUNT = 3;
 const DOT_STEP_MS = 260;
@@ -47,9 +44,9 @@ export function FindingPulseHint({ textStyle }: FindingPulseHintProps) {
     <Text style={textStyle}>
       {'Finding your pulse'}
       {dotOpacities.map((opacity, index) => (
-        <Animated.Text key={index} style={{ opacity }}>
+        <AnimatedText key={index} style={{ opacity }}>
           {'.'}
-        </Animated.Text>
+        </AnimatedText>
       ))}
     </Text>
   );

@@ -1,4 +1,5 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Text } from '../../components/common/Text';
+import { StyleSheet, View } from 'react-native';
 import AudioSettingsRow from './AudioSettingsRow';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';

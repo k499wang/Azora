@@ -1,4 +1,5 @@
-import { Text, useWindowDimensions, View } from 'react-native';
+import { Text } from '../../common/Text';
+import { useWindowDimensions, View } from 'react-native';
 import type { PaywallPersonalization } from '../../../lib/paywallPersonalization';
 import { colors } from '../../../theme/colors';
 import MindMapRadar from '../MindMapRadar';

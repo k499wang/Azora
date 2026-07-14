@@ -1,5 +1,6 @@
+import { Text } from './Text';
 import { useMemo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { buildWeekCalendarDays } from '../../lib/calendar/weekCalendarDays';
 import { colors } from '../../theme/colors';
 import { fonts } from '../../theme/typography';

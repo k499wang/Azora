@@ -1,4 +1,5 @@
-import { ActivityIndicator, Text, View } from 'react-native';
+import { Text } from '../../common/Text';
+import { ActivityIndicator, View } from 'react-native';
 import type {
   PaywallPackageId,
   PaywallPackageOption,

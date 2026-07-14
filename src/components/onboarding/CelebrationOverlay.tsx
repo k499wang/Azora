@@ -1,5 +1,6 @@
+import { Text, AnimatedText } from '../common/Text';
 import { useEffect, useRef } from 'react';
-import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
+import { Animated, Easing, StyleSheet, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
@@ -211,14 +212,14 @@ export default function CelebrationOverlay({
           <Animated.View
             style={[styles.ring, { transform: [{ scale: ringScale }] }]}
           >
-            <Animated.Text
+            <AnimatedText
               style={[
                 styles.check,
                 { opacity: checkOpacity, transform: [{ scale: checkScale }] },
               ]}
             >
               ✓
-            </Animated.Text>
+            </AnimatedText>
           </Animated.View>
         </View>
 

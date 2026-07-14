@@ -1,4 +1,5 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Text } from '../../common/Text';
+import { StyleSheet, View } from 'react-native';
 import { Image } from 'expo-image';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';

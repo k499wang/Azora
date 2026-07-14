@@ -1,5 +1,6 @@
+import { Text } from '../common/Text';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, type DimensionValue, Easing, InteractionManager, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, type DimensionValue, Easing, InteractionManager, Pressable, StyleSheet, View } from 'react-native';
 import {
   Canvas,
   Circle,

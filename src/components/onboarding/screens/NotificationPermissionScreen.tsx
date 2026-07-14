@@ -1,13 +1,7 @@
+import { Text } from '../../common/Text';
 import { useMemo, useState } from 'react';
 import {
-  Modal,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Switch,
-  Text,
-  View,
-} from 'react-native';
+  Modal, Platform, Pressable, StyleSheet, Switch, View } from 'react-native';
 import DateTimePicker, {
   DateTimePickerAndroid,
   type DateTimePickerEvent,

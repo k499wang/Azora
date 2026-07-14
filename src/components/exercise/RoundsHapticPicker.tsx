@@ -1,5 +1,6 @@
+import { Text, AnimatedText } from '../common/Text';
 import { useRef } from 'react';
-import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
 import { spacing } from '../../theme/spacing';
@@ -72,15 +73,14 @@ export default function RoundsHapticPicker({
           onPress={() => step(-1)}
         />
 
-        <Animated.Text
-          allowFontScaling={false}
+        <AnimatedText
           style={[
             styles.value,
             { color: theme.textPrimary, transform: [{ scale }] },
           ]}
         >
           {value}
-        </Animated.Text>
+        </AnimatedText>
 
         <Chevron
           direction="right"

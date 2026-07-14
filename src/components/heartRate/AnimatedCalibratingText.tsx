@@ -1,5 +1,6 @@
+import { Text } from '../common/Text';
 import { useEffect, useState } from 'react';
-import { StyleProp, StyleSheet, Text, TextStyle, View } from 'react-native';
+import { StyleProp, StyleSheet, TextStyle, View } from 'react-native';
 
 interface AnimatedCalibratingTextProps {
   textStyle: StyleProp<TextStyle>;

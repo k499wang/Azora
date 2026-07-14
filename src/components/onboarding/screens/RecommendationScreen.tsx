@@ -1,12 +1,7 @@
+import { Text } from '../../common/Text';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Animated,
-  Easing,
-  StyleSheet,
-  Text,
-  useWindowDimensions,
-  View,
-} from 'react-native';
+  Animated, Easing, StyleSheet, useWindowDimensions, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { isHapticsEnabled } from '../../../services/preferences/hapticsPreference';
 import Icon from '../../common/icons/Icon';

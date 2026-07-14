@@ -21,9 +21,9 @@ export const posthog = new PostHog(apiKey ?? 'placeholder_key', {
   enableSessionReplay: isPostHogConfigured,
   enablePersistSessionIdAcrossRestart: true,
   sessionReplayConfig: {
-    maskAllTextInputs: true,
-    maskAllImages: true,
-    maskAllSandboxedViews: true,
+    maskAllTextInputs: false,
+    maskAllImages: false,
+    maskAllSandboxedViews: false,
     captureLog: true,
     captureNetworkTelemetry: true,
     androidDebouncerDelayMs: 1000,

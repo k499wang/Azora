@@ -1,4 +1,5 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Text } from '../common/Text';
+import { StyleSheet, View } from 'react-native';
 import { Background2066 } from '../common/Background2066';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Canvas, Circle, Path, Skia } from '@shopify/react-native-skia';

@@ -1,4 +1,5 @@
-import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Text } from '../common/Text';
+import { ActivityIndicator, Image, Pressable, StyleSheet, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Icon from '../common/icons/Icon';
 import { colors } from '../../theme/colors';

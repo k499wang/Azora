@@ -1,12 +1,6 @@
+import { Text } from '../common/Text';
 import React, { useEffect, useRef, useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Animated,
-  SafeAreaView,
-} from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Animated, SafeAreaView } from 'react-native';
 import { Canvas, Path, Skia } from '@shopify/react-native-skia';
 import * as Haptics from 'expo-haptics';
 import { MaterialCommunityIcons } from '@expo/vector-icons';

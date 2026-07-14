@@ -1,4 +1,5 @@
-import { Text, View } from 'react-native';
+import { Text } from '../../common/Text';
+import { View } from 'react-native';
 import { colors } from '../../../theme/colors';
 import Icon, { type IconName } from '../../common/icons/Icon';
 import { paywallStepStyles as styles } from './paywallStepStyles';

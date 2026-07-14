@@ -1,13 +1,6 @@
+import { Text } from '../common/Text';
 import React, { useEffect, useMemo, useRef } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Animated,
-  ScrollView,
-  Pressable,
-} from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Animated, ScrollView, Pressable } from 'react-native';
 import { Background2066 } from '../common/Background2066';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';

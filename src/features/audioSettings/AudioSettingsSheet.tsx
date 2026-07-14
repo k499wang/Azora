@@ -1,12 +1,7 @@
+import { Text } from '../../components/common/Text';
 import { useCallback, useEffect, useMemo, type ReactNode } from 'react';
 import {
-  Modal,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+  Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import Icon from '../../components/common/icons/Icon';

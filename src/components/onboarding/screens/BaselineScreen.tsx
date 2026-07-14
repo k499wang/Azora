@@ -1,11 +1,7 @@
+import { Text } from '../../common/Text';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Animated,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+  Animated, Pressable, StyleSheet, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useHeartRateStream } from '../../../hooks/useHeartRateStream';
 import { createBpmPresentationFilter } from '../../../lib/heartRate/bpmSmoothing';
