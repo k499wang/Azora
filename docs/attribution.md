@@ -74,3 +74,23 @@ navigation — when launching creators, set a handler that routes on
   needed — separate effort, currently out of scope.
 - **Android:** config is in place; validate during the Android pass (no `appId`
   on Android — the client already only passes it on iOS).
+
+## Meta AEM eligibility warnings
+
+These warnings are not fixed by adding an `advertiser_tracking_enabled` field to
+app events. AppsFlyer supplies that flag for its Meta postbacks.
+
+- **Advertiser Tracking Enabled parameter volume out-of-range:** this means the
+  Meta/AppsFlyer traffic has too many events from users without an IDFA (usually
+  ATT denied or not resolved). In AppsFlyer, enable Advanced Data Sharing and
+  disable IP masking for this app. In the Meta integration, map the required
+  events with **Values and revenue** and **All media sources, including organic**.
+- **Install ID not detected or insufficient coverage:** verify that the Meta
+  integration's Facebook App ID exactly matches the Meta app, the Meta app is
+  Live, and the campaign selects the app from Meta's app picker (not a pasted
+  App Store URL). New installs are required after changing these settings.
+
+Meta can take 2–3 days to recalculate eligibility. The app also waits on the
+AppsFlyer SDK's started signal (bounded, `waitForAppsFlyerStart`) before the
+AppsFlyer-to-RevenueCat install-ID handoff, because the native UID read can
+race SDK startup.

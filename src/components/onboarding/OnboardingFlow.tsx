@@ -1012,11 +1012,13 @@ export default function OnboardingFlow({
         onContinue={() => {
           // Show Apple's ATT dialog right after the pre-prompt, then advance once
           // the user has responded. requestAttPermissionOnce never rejects and
-          // no-ops if already resolved, so navigation always proceeds.
+          // no-ops if already resolved, so navigation always proceeds. The
+          // attribution sync runs in the background — it can wait on the SDK
+          // start and must not hold the funnel.
           void requestAttPermissionOnce()
             .then(() => initAppsFlyer())
-            .then(() => syncPostAttAttribution())
             .then(() => {
+              void syncPostAttAttribution();
               goToStep('fiveMinutes', 'continue');
             });
         }}

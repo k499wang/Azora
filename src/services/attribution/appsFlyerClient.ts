@@ -65,6 +65,31 @@ let sdkStarted = false;
 let listenersRegistered = false;
 let attRetrySubscription: { remove: () => void } | null = null;
 let attRetryTimeout: ReturnType<typeof setTimeout> | null = null;
+let resolveSdkStarted: (() => void) | null = null;
+const sdkStartedPromise = new Promise<void>((resolve) => {
+  resolveSdkStarted = resolve;
+});
+
+function markSdkStarted(): void {
+  sdkStarted = true;
+  resolveSdkStarted?.();
+  resolveSdkStarted = null;
+}
+
+// Resolves true once the SDK has actually started — including via the
+// ATT/AppState retry paths — or false after timeoutMs. This is the one place
+// that knows when the native UID becomes reliable; consumers should await it
+// instead of polling getAppsFlyerId.
+export function waitForAppsFlyerStart(timeoutMs: number): Promise<boolean> {
+  if (sdkStarted) return Promise.resolve(true);
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => resolve(false), timeoutMs);
+    void sdkStartedPromise.then(() => {
+      clearTimeout(timer);
+      resolve(true);
+    });
+  });
+}
 
 // Settable before init so the listener (which must register *before* initSdk)
 // can forward to whatever the app wires up later.
@@ -182,7 +207,7 @@ function initializeAppsFlyerSdk(): Promise<void> {
     })
     .then(() => {
       sdkInitialized = true;
-      sdkStarted = Platform.OS !== 'ios';
+      if (Platform.OS !== 'ios') markSdkStarted();
     })
     .catch(() => {
       // Re-arm so a later call can retry rather than caching a failed init.
@@ -206,7 +231,7 @@ async function startAppsFlyerSdkIfReady(): Promise<void> {
 
   try {
     appsFlyer.startSdk();
-    sdkStarted = true;
+    markSdkStarted();
     clearAppsFlyerStartRetry();
   } catch {
     // Attribution is best-effort. Keep sdkStarted false so a later call retries.

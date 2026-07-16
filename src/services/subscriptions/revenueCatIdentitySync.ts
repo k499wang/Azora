@@ -72,11 +72,11 @@ export async function syncRevenueCatAttributionForCurrentUser(): Promise<boolean
   const didSyncRevenueCat = await ensureRevenueCatIdentityForCurrentUser({
     syncAppsFlyer: false,
   });
+  if (!didSyncRevenueCat) return false;
   const didSyncAppsFlyer = await syncAppsFlyerIdentityForUser(
     user.id,
     user.email ?? null,
   ).catch(() => false);
-  if (!didSyncRevenueCat) return false;
 
   const attStatus = await getRevenueCatAttConsentStatus();
   const didSyncAttConsent = await setRevenueCatAttConsentStatus(attStatus);

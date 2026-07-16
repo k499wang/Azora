@@ -31,8 +31,8 @@ function AttPromptPreview() {
           websites?
         </Text>
         <Text style={styles.promptBody}>
-          This lets Azora learn what works for you and keep getting better. Your
-          breathing stays private.
+          Allowing this keeps your experience tailored to you as Azora keeps
+          getting better.
         </Text>
       </View>
       <View style={styles.promptDivider} />
@@ -55,8 +55,8 @@ export default function AttPrimingScreen({
 }: AttPrimingScreenProps) {
   return (
     <OnboardingScreenLayout
-      title="Keep Azora yours"
-      subtitle="You’ll see this in just a moment. Tap Allow and Azora learns what actually works for you."
+      title="Make Azora better for you"
+      subtitle="You’ll see this in just a moment. Tap Allow so Azora keeps working around you."
       progress={stepIndex / stepCount}
       onBack={onBack}
       footer={<OnboardingPrimaryButton label="Continue" onPress={onContinue} />}
@@ -70,8 +70,8 @@ export default function AttPrimingScreen({
         </View>
 
         <Text style={styles.reassurance}>
-          Your breathing stays private — always. We never sell your data, and
-          you can turn this off anytime in Settings.
+          Allowing this keeps what you see relevant to you — and you can change
+          it anytime in Settings.
         </Text>
       </View>
     </OnboardingScreenLayout>
