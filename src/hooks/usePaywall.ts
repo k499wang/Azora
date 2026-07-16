@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import type { PurchasesPackage } from 'react-native-purchases';
 import { posthog } from '../config/posthog';
@@ -58,6 +58,17 @@ export function usePaywall({
   const [isPurchasing, setIsPurchasing] = useState(false);
   const [isRestoring, setIsRestoring] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const attributionSyncRef = useRef<Promise<boolean> | null>(null);
+
+  // Prewarm the attribution sync (AppsFlyer ID, ATT consent, device
+  // identifiers) while the user is looking at the paywall, so the purchase tap
+  // only awaits an already-settled promise instead of paying the sync latency
+  // between tap and the StoreKit sheet.
+  useEffect(() => {
+    if (!enabled || userId == null) return;
+    attributionSyncRef.current =
+      syncRevenueCatAttributionForCurrentUser().catch(() => false);
+  }, [enabled, userId]);
 
   const buildCurrentPaywallEventProperties = (options?: {
     paywallViewId?: string | null;
@@ -254,7 +265,8 @@ export function usePaywall({
     });
 
     if (userId != null) {
-      await syncRevenueCatAttributionForCurrentUser().catch(() => false);
+      await (attributionSyncRef.current ??
+        syncRevenueCatAttributionForCurrentUser().catch(() => false));
     }
 
     const result = await purchasePaywallPackage(selectedPackage);

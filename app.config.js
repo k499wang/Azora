@@ -298,7 +298,7 @@ module.exports = {
         'expo-tracking-transparency',
         {
           userTrackingPermission:
-            'Allow $(PRODUCT_NAME) to tailor your experience and keep improving the app. Your sessions stay private.',
+            'Allowing this keeps your experience tailored to you as $(PRODUCT_NAME) keeps getting better.',
         },
       ],
     ],
