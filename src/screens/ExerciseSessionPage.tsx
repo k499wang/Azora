@@ -47,13 +47,10 @@ import { useHeartRateMonitoringPreference } from '../hooks/useHeartRateMonitorin
 import { useFeatureAccess } from '../hooks/useFeatureAccess';
 import { FeatureKey } from '../services/subscriptions/featureAccess';
 import { buildBpmSeries } from '../lib/heartRate/bpmSeries';
+import { getBreathExercisePlacementStartDelayMs } from '../lib/heartRate/measurementTimer';
 
 const MIN_ROUNDS = 1;
 const MAX_ROUNDS = 30;
-// Start quickly once a clean BPM locks; otherwise use a bounded fallback so
-// heart-rate monitoring cannot block the exercise indefinitely.
-const PLACEMENT_LOCKED_START_DELAY_MS = 250;
-const PLACEMENT_LOCK_TIMEOUT_MS = 20000;
 const SPRING_IN_DURATION_MS = 750;
 
 function placementHint(p: FingerPlacementState): string {
@@ -735,28 +732,22 @@ export default function ExerciseSessionPage({
 
   const placementBpmLocked =
     isBpmReady && presentedBpm != null && pulse.signalStatus === 'measuring';
+  const placementStartDelayMs = getBreathExercisePlacementStartDelayMs({
+    fingerPlacement: pulse.fingerPlacement,
+    signalStatus: pulse.signalStatus,
+    bpmLocked: placementBpmLocked,
+  });
 
   useEffect(() => {
     if (phase !== 'placement') return;
     if (!hrEnabled) return;
-    if (pulse.fingerPlacement !== 'good') return;
+    if (placementStartDelayMs == null) return;
     const t = setTimeout(() => {
       if (!flow.isActive()) return;
       beginExerciseRef.current(true);
-    }, placementBpmLocked ? PLACEMENT_LOCKED_START_DELAY_MS : PLACEMENT_LOCK_TIMEOUT_MS);
+    }, placementStartDelayMs);
     return () => clearTimeout(t);
-  }, [flow, hrEnabled, phase, pulse.fingerPlacement, placementBpmLocked]);
-
-  useEffect(() => {
-    if (phase !== 'placement' || !hrEnabled) return;
-    const fingerLost =
-      pulse.fingerPlacement === 'no_finger' ||
-      pulse.fingerPlacement === 'lost' ||
-      pulse.signalStatus === 'signal_lost';
-    if (pulse.signalStatus === 'excessive_motion' || fingerLost) {
-      pulse.restartCalibration();
-    }
-  }, [hrEnabled, phase, pulse.fingerPlacement, pulse.restartCalibration, pulse.signalStatus]);
+  }, [flow, hrEnabled, phase, placementStartDelayMs]);
 
   const handleClose = () => {
     flow.cancel();
