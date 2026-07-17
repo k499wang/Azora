@@ -50,12 +50,10 @@ import { buildBpmSeries } from '../lib/heartRate/bpmSeries';
 
 const MIN_ROUNDS = 1;
 const MAX_ROUNDS = 30;
-// Placement waits for the first locked BPM so the exercise starts with a real
-// reading instead of calibrating through the first breath. On lock the
-// exercise starts after a short clean-signal dwell. If a pulse cannot lock,
-// a bounded fallback keeps heart-rate monitoring from blocking the exercise.
+// Start quickly once a clean BPM locks; otherwise use a bounded fallback so
+// heart-rate monitoring cannot block the exercise indefinitely.
 const PLACEMENT_LOCKED_START_DELAY_MS = 250;
-const PLACEMENT_LOCK_TIMEOUT_MS = 15000;
+const PLACEMENT_LOCK_TIMEOUT_MS = 20000;
 const SPRING_IN_DURATION_MS = 750;
 
 function placementHint(p: FingerPlacementState): string {
@@ -748,6 +746,17 @@ export default function ExerciseSessionPage({
     }, placementBpmLocked ? PLACEMENT_LOCKED_START_DELAY_MS : PLACEMENT_LOCK_TIMEOUT_MS);
     return () => clearTimeout(t);
   }, [flow, hrEnabled, phase, pulse.fingerPlacement, placementBpmLocked]);
+
+  useEffect(() => {
+    if (phase !== 'placement' || !hrEnabled) return;
+    const fingerLost =
+      pulse.fingerPlacement === 'no_finger' ||
+      pulse.fingerPlacement === 'lost' ||
+      pulse.signalStatus === 'signal_lost';
+    if (pulse.signalStatus === 'excessive_motion' || fingerLost) {
+      pulse.restartCalibration();
+    }
+  }, [hrEnabled, phase, pulse.fingerPlacement, pulse.restartCalibration, pulse.signalStatus]);
 
   const handleClose = () => {
     flow.cancel();

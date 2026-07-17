@@ -146,21 +146,21 @@ test('Live BPM presentation filter accepts sustained changes slowly', () => {
 test('breath exercise BPM presentation filter caps isolated upward jumps', () => {
   assert.deepEqual(
     visibleBreathExerciseBpmSequence([76, 77, 76, 87, 76, 77]),
-    [76, 76, 76, 76, 76, 76],
+    [76, 77, 76, 76, 76, 77],
   );
 });
 
 test('breath exercise BPM presentation filter lets sustained increases rise gradually', () => {
   assert.deepEqual(
     visibleBreathExerciseBpmSequence([76, 77, 76, 87, 88, 89, 90, 91]),
-    [76, 76, 76, 76, 79, 82, 85, 88],
+    [76, 77, 76, 76, 79, 82, 85, 88],
   );
 });
 
 test('breath exercise BPM presentation filter holds very large spikes for confirmation', () => {
   assert.deepEqual(
     visibleBreathExerciseBpmSequence([76, 77, 76, 96, 76, 77, 96, 98]),
-    [76, 76, 76, 76, 76, 76, 76, 79],
+    [76, 77, 76, 76, 76, 77, 77, 80],
   );
 });
 
@@ -208,27 +208,25 @@ test('buildGraphBpmValuePointsFromIbis keeps startup IBIs for short graph series
   assert.equal(points[0]?.label, '3000');
 });
 
-test('breath exercise deadband holds small physiological variation steady', () => {
+test('breath exercise presentation filter preserves small physiological variation', () => {
   const filter = createBreathExerciseBpmPresentationFilter();
   seedBreathExerciseFilter(filter, 70);
 
-  // Breathing-driven wiggle within the deadband must not move the number.
   const shown = [71, 69, 72, 68, 70].map((bpm, index) =>
     filter.update({ elapsedMs: (index + 1) * 1_000, bpm }));
-  assert.deepEqual(shown, [70, 70, 70, 70, 70]);
+  assert.deepEqual(shown, [71, 69, 72, 69, 70]);
 });
 
-test('presentation filter: deadband still tracks a genuine trend', () => {
+test('presentation filter: rate limit still tracks a genuine trend', () => {
   const filter = createBreathExerciseBpmPresentationFilter();
   seedBreathExerciseFilter(filter, 70);
 
-  // A sustained real drop keeps exceeding the deadband and the display
-  // follows at the decrease rate, settling within the deadband of the target.
+  // A sustained real drop follows at the decrease rate and settles on target.
   const shown = [];
   for (const [i, bpm] of [64, 62, 60, 60, 60, 60].entries()) {
     shown.push(filter.update({ elapsedMs: (i + 1) * 1_000, bpm }));
   }
-  assert.deepEqual(shown, [67, 64, 61, 61, 61, 61]);
+  assert.deepEqual(shown, [67, 64, 61, 60, 60, 60]);
 });
 
 test('breath exercise applies rate-limited movement at irregular update intervals', () => {

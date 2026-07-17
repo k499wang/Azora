@@ -59,6 +59,7 @@ function isValidFrameSample(value: unknown): value is PpgFrameSample {
 interface UseLivePulseReturn {
   active: boolean;
   start: () => void;
+  restartCalibration: () => void;
   stop: () => void;
   fingerPlacement: FingerPlacementState;
   signalStatus: SignalStatus;
@@ -172,6 +173,21 @@ export function useLivePulse(
   const stop = useCallback(() => {
     activeRef.current = false;
     setActive(false);
+    resetStreamState();
+    setCurrentBpm(null);
+    setIsBpmReady(false);
+    setLiveSignalSamples([]);
+    fingerPlacementRef.current = 'no_finger';
+    setFingerPlacement('no_finger');
+    signalStatusRef.current = 'no_finger';
+    setSignalStatus('no_finger');
+  }, [resetStreamState]);
+
+  // Keep the camera mounted while throwing away the current calibration. This
+  // lets placement failures restart the calibration tier without restarting
+  // the surrounding breathing flow or toggling the preview.
+  const restartCalibration = useCallback(() => {
+    if (!activeRef.current) return;
     resetStreamState();
     setCurrentBpm(null);
     setIsBpmReady(false);
@@ -381,6 +397,7 @@ export function useLivePulse(
   return {
     active,
     start,
+    restartCalibration,
     stop,
     fingerPlacement,
     signalStatus,
