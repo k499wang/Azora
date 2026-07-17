@@ -11,8 +11,8 @@ const SUBSCRIPTION_FEATURE = 'Full Pro access across every breathing and heart-r
 const DEFAULT_FEATURES = [
   TRIAL_FEATURE,
   'Heart rate, HRV & stress from your phone camera, no wearable needed',
-  'Unlimited guided sessions',
-  'Daily streak & progress insights',
+ 'Lower stress & better sleep instantly',
+  'Feel energized in seconds',
 ];
 
 interface PaywallFeatureListProps {

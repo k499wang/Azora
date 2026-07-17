@@ -37,11 +37,11 @@ export async function signInWithApple(): Promise<SupabaseSession> {
       ],
     });
   } catch (err) {
-    if (
-      err != null &&
-      typeof err === 'object' &&
-      (err as { code?: string }).code === 'ERR_REQUEST_CANCELED'
-    ) {
+    const code =
+      err != null && typeof err === 'object'
+        ? (err as { code?: string }).code
+        : undefined;
+    if (code === 'ERR_REQUEST_CANCELED' || code === 'ERR_CANCELED') {
       throw new AppleSignInCancelledError();
     }
     throw err;

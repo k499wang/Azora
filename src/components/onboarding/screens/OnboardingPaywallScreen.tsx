@@ -18,6 +18,7 @@ import { computeAnnualSavings } from '../../paywall/PlanCard';
 import { PaywallChoosePlanStep } from '../paywall/PaywallChoosePlanStep';
 import { PaywallFreeTrialHeroStep } from '../paywall/PaywallFreeTrialHeroStep';
 import { PaywallPersonalizedPlanStep } from '../paywall/PaywallPersonalizedPlanStep';
+import { PaywallSocialProof } from '../paywall/PaywallSocialProof';
 import { PaywallStepDots } from '../paywall/PaywallStepDots';
 import { PaywallTrialStep } from '../paywall/PaywallTrialStep';
 import { PaywallValueStep } from '../paywall/PaywallValueStep';
@@ -276,7 +277,7 @@ export default function OnboardingPaywallScreen({
 
   const ctaLabel =
     isAnnualSelected && selectedPackageHasTrial
-      ? 'Start my free trial'
+      ? 'Start my 7-day free trial'
       : isAnnualSelected
         ? 'Subscribe yearly'
         : 'Continue with weekly';
@@ -363,11 +364,14 @@ export default function OnboardingPaywallScreen({
               }}
             >
               {step === 0 ? (
-                personalization ? (
-                  <PaywallPersonalizedPlanStep personalization={personalization} />
-                ) : (
-                  <PaywallValueStep />
-                )
+                <>
+                  {personalization ? (
+                    <PaywallPersonalizedPlanStep personalization={personalization} />
+                  ) : (
+                    <PaywallValueStep />
+                  )}
+                  <PaywallSocialProof />
+                </>
               ) : null}
               {step === 1 ? <PaywallTrialStep hasAnnualTrial={hasAnnualTrial} /> : null}
               {step === 2 ? <PaywallFreeTrialHeroStep /> : null}
@@ -422,6 +426,14 @@ export default function OnboardingPaywallScreen({
             </>
           ) : (
             <>
+              <View style={styles.riskReversalRow}>
+                <Icon name="check" size={16} color={colors.neutral[0]} />
+                <Text style={styles.riskReversalText}>
+                  {selectedPackageHasTrial
+                    ? 'No payment due now · Cancel anytime'
+                    : 'Cancel anytime in seconds'}
+                </Text>
+              </View>
               <OnboardingPrimaryButton
                 label={ctaLabel}
                 onPress={onPurchase}
@@ -458,7 +470,7 @@ export default function OnboardingPaywallScreen({
                 </Pressable>
               ) : null}
               <Text style={styles.legal}>
-                Subscriptions auto-renew unless cancelled. Manage or cancel in App Store settings.{' '}
+                Manage or cancel in App Store settings.{' '}
                 By continuing, you agree to the{' '}
                 <Text style={styles.legalLink} onPress={() => void Linking.openURL(TERMS_URL)}>
                   Terms
@@ -610,6 +622,18 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 12,
     elevation: 12,
+  },
+  riskReversalRow: {
+    flexDirection: 'row',
+    alignSelf: 'center',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  riskReversalText: {
+    ...typography.caption.caption1,
+    fontFamily: fonts.semibold,
+    fontWeight: '500',
+    color: colors.neutral[0],
   },
   legal: {
     ...typography.caption.caption2,

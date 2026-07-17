@@ -48,7 +48,11 @@ export function PlanCard({
         pressed && styles.planCardPressed,
       ]}
     >
-      {isAnnual && savingsPercent != null ? (
+      {isAnnual && hasTrial ? (
+        <View style={styles.savingsBadge}>
+          <Text style={styles.savingsBadgeText}>7-DAY FREE TRIAL</Text>
+        </View>
+      ) : isAnnual && savingsPercent != null ? (
         <View style={styles.savingsBadge}>
           <Text style={styles.savingsBadgeText}>SAVE {savingsPercent}%</Text>
         </View>
