@@ -103,25 +103,21 @@ function mapCompletedDaysAgo(rows: DailyActivityRow[], today: Date): number[] {
 }
 
 function mapTrend(rows: BreathHoldRow[]): ProfileSummary['breathHoldTrend'] {
-  const byDate = new Map<string, { totalSeconds: number; count: number }>();
+  const byDate = new Map<string, number>();
 
   rows
     .slice()
     .reverse()
     .forEach((row) => {
-      const current = byDate.get(row.local_date) ?? { totalSeconds: 0, count: 0 };
-
-      byDate.set(row.local_date, {
-        totalSeconds: current.totalSeconds + row.hold_seconds,
-        count: current.count + 1,
-      });
+      const currentBest = byDate.get(row.local_date) ?? 0;
+      byDate.set(row.local_date, Math.max(currentBest, row.hold_seconds));
     });
 
   return Array.from(byDate.entries())
     .slice(-TREND_POINT_LIMIT)
     .map(([date, summary]) => ({
       label: String(Number(date.slice(8, 10))),
-      value: Math.round(summary.totalSeconds / summary.count),
+      value: summary,
     }));
 }
 

@@ -96,17 +96,22 @@ const LIVE_BPM_PRESENTATION_OPTIONS: BpmPresentationFilterOptions = {
   minChangeBpm: 2,
 };
 
+// Deadband + asymmetric caps: deep breathing swings the true rate (RSA) every
+// few seconds, and tracking each swing reads as instability. The deadband sits
+// out small oscillations entirely; increases are capped tighter than decreases
+// so the number declines calmly during the exercise without chasing every
+// inhale back up.
 const BREATH_EXERCISE_BPM_PRESENTATION_OPTIONS: BpmPresentationFilterOptions = {
   warmupMs: 0,
   minStableReadings: 3,
   stableRangeBpm: 6,
   maxStepBpm: 5,
-  maxIncreaseBpm: 5,
+  maxIncreaseBpm: 3,
   maxDecreaseBpm: 5,
   spikeThresholdBpm: 10,
   spikeConfirmationBpm: 4,
-  minChangeBpm: 0,
-  maxChangeBpmPerSecond: 4,
+  minChangeBpm: 2,
+  maxChangeBpmPerSecond: 3,
 };
 
 const IBI_GRAPH_PRESENTATION_OPTIONS: BpmPresentationFilterOptions = {

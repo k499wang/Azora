@@ -25,7 +25,10 @@ interface LiveSignalGraphProps {
 
 const GRAPH_HEIGHT = 78;
 const SIGNAL_WINDOW_MS = 6000;
-const MIN_SIGNAL_RANGE = 0.002;
+// Samples arrive gain-normalized from HeartRateManager (ac / amplitude EMA), so
+// a real pulse spans roughly ±1-3. This floor keeps near-flat noise from being
+// autoscaled to full height, mirroring the old 0.002 floor in raw-ac units.
+const MIN_SIGNAL_RANGE = 1.5;
 const GRAPH_POINT_COUNT = 48;
 // Above the max samples a window can hold (SIGNAL_WINDOW_MS x sensor fps), so the
 // triangle downsampler stays off during normal scroll. It reselects different

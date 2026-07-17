@@ -200,6 +200,11 @@ const LIVE_BPM_PROFILE_CONFIG = {
   },
 } as const;
 
+// Visual gain EMA for the live PPG graph. Slow enough (~1s time constant) not
+// to wobble within a beat, fast enough to track the breathing-cycle amplitude
+// modulation (4-10s period) that otherwise renders beats tall-then-tiny.
+const GRAPH_GAIN_ALPHA = 0.03;
+
 const SAMPLE_RATE_HZ = 30;
 const BP_LOW_HZ = 0.7;
 const BP_HIGH_HZ = 3.5;
@@ -399,7 +404,14 @@ export class HeartRateManager {
   private readonly liveBpmConfig: (typeof LIVE_BPM_PROFILE_CONFIG)[HeartRateLiveBpmProfile];
   private baseline = 0;
   private amplitude = 0;
+  private graphGain = 0;
   private readonly bpHp = new Biquad(HP_COEFFS);
+  // Extra highpass stage for the graph feed only. The single 2nd-order stage
+  // leaves deep-breathing luminance wander (10-30% swings at 0.1-0.25 Hz) at
+  // pulse-comparable amplitude, which visibly bends the drawn baseline. The
+  // beat detector keeps the original 2nd-order path — its thresholds and gates
+  // are tuned to that impulse response.
+  private readonly graphHp = new Biquad(HP_COEFFS);
   private readonly bpLp = new Biquad(LP_COEFFS);
   private needsBandpassPrime = false;
   private prev1 = 0;
@@ -458,11 +470,25 @@ export class HeartRateManager {
     this.liveBpmConfig = LIVE_BPM_PROFILE_CONFIG[options.liveBpmProfile ?? 'stable'];
   }
 
+  private resetBandpass(): void {
+    this.bpHp.reset();
+    this.graphHp.reset();
+    this.bpLp.reset();
+  }
+
+  private primeBandpass(x0: number): void {
+    this.bpHp.prime(x0, 0);
+    // The graph stage sees the already-highpassed signal, whose steady state
+    // under constant input is zero.
+    this.graphHp.prime(0, 0);
+    this.bpLp.prime(0, 1);
+  }
+
   reset(): void {
     this.baseline = 0;
     this.amplitude = 0;
-    this.bpHp.reset();
-    this.bpLp.reset();
+    this.graphGain = 0;
+    this.resetBandpass();
     this.needsBandpassPrime = false;
     this.prev1 = 0;
     this.prev2 = 0;
@@ -912,8 +938,7 @@ export class HeartRateManager {
 
       this.validFrameCounter = 0;
       this.amplitude = 0;
-      this.bpHp.reset();
-      this.bpLp.reset();
+      this.resetBandpass();
       this.needsBandpassPrime = true;
       this.prev1 = 0;
       this.prev2 = 0;
@@ -974,8 +999,7 @@ export class HeartRateManager {
         ) {
           this.validFrameCounter = 0;
           this.amplitude = 0;
-          this.bpHp.reset();
-          this.bpLp.reset();
+          this.resetBandpass();
           this.needsBandpassPrime = true;
           this.prev1 = 0;
           this.prev2 = 0;
@@ -1017,8 +1041,7 @@ export class HeartRateManager {
         this.sessionStartTs = sample.timestamp;
       }
       this.baseline = weightedAverage;
-      this.bpHp.prime(weightedAverage, 0);
-      this.bpLp.prime(0, 1);
+      this.primeBandpass(weightedAverage);
       this.needsBandpassPrime = false;
       this.amplitude = 0;
       this.prev1 = 0;
@@ -1043,8 +1066,7 @@ export class HeartRateManager {
       // After a brief placement loss, re-seed the band-pass on the next
       // valid frame so stale filter state cannot distort the first beats.
       this.baseline = weightedAverage;
-      this.bpHp.prime(weightedAverage, 0);
-      this.bpLp.prime(0, 1);
+      this.primeBandpass(weightedAverage);
       this.amplitude = 0;
       this.needsBandpassPrime = false;
       this.armedForPeak = true;
@@ -1056,7 +1078,9 @@ export class HeartRateManager {
     const bp = this.bpLp.process(hp);
     const denom = Math.max(this.baseline, 1);
     const rawAc = bp / denom;
+    const rawGraphAc = this.graphHp.process(bp) / denom;
     this.amplitude += AMPLITUDE_ALPHA * (Math.abs(rawAc) - this.amplitude);
+    this.graphGain += GRAPH_GAIN_ALPHA * (Math.abs(rawGraphAc) - this.graphGain);
 
     if (!this.polarityLocked && this.amplitude > MIN_AMPLITUDE) {
       const excursionThreshold =
@@ -1122,7 +1146,13 @@ export class HeartRateManager {
     const signalError = inMotion || noPulse;
 
     if (!signalError) {
-      this.pushLiveSignalSample(sample.timestamp, ac);
+      // Feed the graph gain-normalized so breathing-cycle amplitude modulation
+      // does not render beats tall-then-tiny; the graph autoscales, so only the
+      // relative height consistency matters.
+      this.pushLiveSignalSample(
+        sample.timestamp,
+        (rawGraphAc * this.polarity) / Math.max(this.graphGain, MIN_AMPLITUDE),
+      );
     }
     let beatDetected = false;
     let beatPeakTs: number | null = null;
