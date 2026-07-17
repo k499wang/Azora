@@ -39,7 +39,7 @@ export function PaywallChoosePlanStep({
   return (
     <View style={styles.choosePlanContainer}>
       <View style={styles.headerCopy}>
-        <Text style={styles.eyebrow}>Your plan is ready.</Text>
+        <Text style={styles.eyebrow}>Your free plan is ready.</Text>
         <Text style={styles.title}>
           {hasAnnualTrial ? 'Your 7-day Free Trial' : 'Unlock Azora Pro'}
         </Text>

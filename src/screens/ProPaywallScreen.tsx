@@ -197,7 +197,7 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
             ]}
           >
             <View style={styles.headerCopy}>
-              <Text style={styles.eyebrow}>Your plan is ready.</Text>
+              <Text style={styles.eyebrow}>Your free plan is ready.</Text>
               <Text style={styles.title}>Unlock Azora for free</Text>
               <View style={styles.titleDivider} />
               {showCancelAnytime ? (
