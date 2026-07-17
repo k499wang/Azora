@@ -1,4 +1,34 @@
+import type { FingerPlacementState, SignalStatus } from './types';
+
 type MeasurementTimerHandle = ReturnType<typeof globalThis.setInterval>;
+
+export const BREATH_EXERCISE_PLACEMENT_LOCKED_DELAY_MS = 250;
+export const BREATH_EXERCISE_PLACEMENT_FALLBACK_DELAY_MS = 20_000;
+
+interface BreathExercisePlacementStartState {
+  fingerPlacement: FingerPlacementState;
+  signalStatus: SignalStatus;
+  bpmLocked: boolean;
+}
+
+export function getBreathExercisePlacementStartDelayMs({
+  fingerPlacement,
+  signalStatus,
+  bpmLocked,
+}: BreathExercisePlacementStartState): number | null {
+  if (
+    fingerPlacement !== 'good' ||
+    signalStatus === 'excessive_motion' ||
+    signalStatus === 'no_finger' ||
+    signalStatus === 'signal_lost'
+  ) {
+    return null;
+  }
+
+  return bpmLocked
+    ? BREATH_EXERCISE_PLACEMENT_LOCKED_DELAY_MS
+    : BREATH_EXERCISE_PLACEMENT_FALLBACK_DELAY_MS;
+}
 
 export interface MeasurementTimerOptions {
   durationMs: number;

@@ -1,6 +1,88 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createMeasurementTimer } from './measurementTimer.ts';
+import {
+  BREATH_EXERCISE_PLACEMENT_FALLBACK_DELAY_MS,
+  BREATH_EXERCISE_PLACEMENT_LOCKED_DELAY_MS,
+  createMeasurementTimer,
+  getBreathExercisePlacementStartDelayMs,
+} from './measurementTimer.ts';
+
+function placementDelay(overrides = {}) {
+  return getBreathExercisePlacementStartDelayMs({
+    fingerPlacement: 'good',
+    signalStatus: 'warming_up',
+    bpmLocked: false,
+    ...overrides,
+  });
+}
+
+test('breath exercise placement uses the fallback until a BPM locks', () => {
+  assert.equal(BREATH_EXERCISE_PLACEMENT_FALLBACK_DELAY_MS, 20000);
+  assert.equal(BREATH_EXERCISE_PLACEMENT_LOCKED_DELAY_MS, 250);
+  assert.equal(
+    placementDelay(),
+    BREATH_EXERCISE_PLACEMENT_FALLBACK_DELAY_MS,
+  );
+  assert.equal(
+    placementDelay({ signalStatus: 'measuring', bpmLocked: true }),
+    BREATH_EXERCISE_PLACEMENT_LOCKED_DELAY_MS,
+  );
+});
+
+test('breath exercise placement pauses for motion and restarts the fallback after recovery', () => {
+  assert.equal(
+    placementDelay({ signalStatus: 'excessive_motion', bpmLocked: true }),
+    null,
+  );
+  assert.equal(
+    placementDelay({ signalStatus: 'warming_up' }),
+    BREATH_EXERCISE_PLACEMENT_FALLBACK_DELAY_MS,
+  );
+});
+
+test('breath exercise placement pauses for finger removal and restarts after replacement', () => {
+  assert.equal(
+    placementDelay({
+      fingerPlacement: 'lost',
+      signalStatus: 'signal_lost',
+      bpmLocked: true,
+    }),
+    null,
+  );
+  assert.equal(
+    placementDelay({ fingerPlacement: 'no_finger', signalStatus: 'no_finger' }),
+    null,
+  );
+  assert.equal(
+    placementDelay({ fingerPlacement: 'good', signalStatus: 'warming_up' }),
+    BREATH_EXERCISE_PLACEMENT_FALLBACK_DELAY_MS,
+  );
+});
+
+test('breath exercise placement blocks invalid coverage but keeps the no-pulse fallback', () => {
+  assert.equal(
+    placementDelay({ fingerPlacement: 'partial', signalStatus: 'partial_coverage' }),
+    null,
+  );
+  assert.equal(
+    placementDelay({
+      fingerPlacement: 'too_much_pressure',
+      signalStatus: 'too_much_pressure',
+    }),
+    null,
+  );
+  assert.equal(
+    placementDelay({ signalStatus: 'no_pulse' }),
+    BREATH_EXERCISE_PLACEMENT_FALLBACK_DELAY_MS,
+  );
+});
+
+test('published BPM can start immediately after motion or finger recovery', () => {
+  assert.equal(
+    placementDelay({ signalStatus: 'measuring', bpmLocked: true }),
+    BREATH_EXERCISE_PLACEMENT_LOCKED_DELAY_MS,
+  );
+});
 
 class FakeClock {
   nowMs = 0;
