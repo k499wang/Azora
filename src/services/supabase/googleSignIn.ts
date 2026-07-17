@@ -3,6 +3,7 @@ import {
   GoogleSignin,
   statusCodes,
   isErrorWithCode,
+  isSuccessResponse,
 } from '@react-native-google-signin/google-signin';
 import { requireSupabaseClient, type SupabaseSession } from './client';
 import { logIdentitySyncDebug } from '../debug/identitySyncLogger.js';
@@ -42,16 +43,21 @@ export async function signInWithGoogle(): Promise<SupabaseSession> {
 
   await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
 
-  let idToken: string | null | undefined;
+  let result: Awaited<ReturnType<typeof GoogleSignin.signIn>>;
   try {
-    const result = await GoogleSignin.signIn();
-    idToken = result.data?.idToken ?? (result as unknown as { idToken?: string }).idToken;
+    result = await GoogleSignin.signIn();
   } catch (err) {
     if (isErrorWithCode(err) && err.code === statusCodes.SIGN_IN_CANCELLED) {
       throw new GoogleSignInCancelledError();
     }
     throw err;
   }
+
+  // Since v13 the SDK resolves with { type: 'cancelled' } instead of throwing.
+  if (!isSuccessResponse(result)) {
+    throw new GoogleSignInCancelledError();
+  }
+  const idToken = result.data.idToken;
 
   if (idToken == null) {
     throw new Error('Google sign-in did not return an idToken');

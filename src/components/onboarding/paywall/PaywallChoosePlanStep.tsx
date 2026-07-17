@@ -1,5 +1,5 @@
 import { Text } from '../../common/Text';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, ScrollView, View } from 'react-native';
 import type {
   PaywallPackageId,
   PaywallPackageOption,
@@ -10,6 +10,7 @@ import {
 } from '../../paywall/PlanCard';
 import PaywallFeatureList from '../../paywall/PaywallFeatureList';
 import PaywallTrialReminderToggle from '../../paywall/PaywallTrialReminderToggle';
+import { sampleReviews, Stars } from './PaywallSocialProof';
 import { paywallStepStyles as styles } from './paywallStepStyles';
 
 interface PaywallChoosePlanStepProps {
@@ -39,7 +40,9 @@ export function PaywallChoosePlanStep({
     <View style={styles.choosePlanContainer}>
       <View style={styles.headerCopy}>
         <Text style={styles.eyebrow}>Your plan is ready.</Text>
-        <Text style={styles.title}>Unlock Azora for free</Text>
+        <Text style={styles.title}>
+          {hasAnnualTrial ? 'Your 7-day Free Trial' : 'Unlock Azora Pro'}
+        </Text>
         <View style={styles.titleDivider} />
         {showCancelAnytime ? (
           <Text style={[styles.trialNote, styles.trialNoteDark]}>Cancel anytime</Text>
@@ -78,6 +81,24 @@ export function PaywallChoosePlanStep({
           ) : null}
         </View>
       )}
+
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.planTestimonialsRow}
+      >
+        {sampleReviews.map((review) => (
+          <View key={review.name} style={styles.planTestimonialCard}>
+            <View style={styles.planTestimonialRatingRow}>
+              <Stars size={20} />
+              <Text style={styles.planTestimonialRating}>5.0</Text>
+            </View>
+            <Text style={styles.planTestimonialTitle}>{review.title}</Text>
+            <Text style={styles.planTestimonialQuote}>“{review.quote}”</Text>
+            <Text style={styles.planTestimonialName}>{review.name}</Text>
+          </View>
+        ))}
+      </ScrollView>
     </View>
   );
 }

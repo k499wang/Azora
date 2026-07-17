@@ -28,7 +28,7 @@ export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
     time: '08:00',
   },
   trialEndingReminder: {
-    enabled: true,
+    enabled: false,
   },
 };
 
@@ -38,6 +38,6 @@ export const ONBOARDING_NOTIFICATION_PREFERENCES: NotificationPreferences = {
     time: '08:00',
   },
   trialEndingReminder: {
-    enabled: true,
+    enabled: false,
   },
 };

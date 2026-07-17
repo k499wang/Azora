@@ -41,7 +41,7 @@ export default function NotificationPermissionScreen({
   const preferences = useMemo<NotificationPreferences>(
     () => ({
       dailyReminder: { enabled, time },
-      trialEndingReminder: { enabled: true },
+      trialEndingReminder: { enabled: false },
     }),
     [enabled, time],
   );

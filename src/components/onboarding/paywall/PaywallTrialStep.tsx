@@ -50,13 +50,13 @@ export function PaywallTrialStep({ hasAnnualTrial }: { hasAnnualTrial: boolean }
         {
           icon: 'bell',
           label: 'In 6 Days — Reminder',
-          body: 'We’ll send you a reminder that your trial is ending soon, as long as you’ve allowed us to notify you.',
+          body: 'We’ll remind you the day before your trial ends — nothing happens without you knowing.',
           lineColor: colors.neutral[300],
         },
         {
           icon: 'star',
           label: 'In 7 Days — Billing Starts',
-          body: 'You’ll be charged when your free trial ends, unless you cancel anytime before then.',
+          body: 'Your membership starts. Cancel any time before this and you pay nothing.',
           iconColor: colors.neutral[900],
         },
       ]
@@ -82,7 +82,7 @@ export function PaywallTrialStep({ hasAnnualTrial }: { hasAnnualTrial: boolean }
     <View style={styles.stepContainer}>
       <View style={styles.stepHeader}>
         <Text style={styles.stepTitle}>
-          {hasAnnualTrial ? 'Free to try, fully cancellable' : 'Pro, on your terms'}
+          {hasAnnualTrial ? 'How your free trial works' : 'Pro, on your terms'}
         </Text>
         <Text style={styles.stepSubtitle}>
           {hasAnnualTrial
