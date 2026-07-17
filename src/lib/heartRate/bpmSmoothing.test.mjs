@@ -146,21 +146,21 @@ test('Live BPM presentation filter accepts sustained changes slowly', () => {
 test('breath exercise BPM presentation filter caps isolated upward jumps', () => {
   assert.deepEqual(
     visibleBreathExerciseBpmSequence([76, 77, 76, 87, 76, 77]),
-    [76, 77, 76, 76, 76, 77],
+    [76, 76, 76, 76, 76, 76],
   );
 });
 
 test('breath exercise BPM presentation filter lets sustained increases rise gradually', () => {
   assert.deepEqual(
     visibleBreathExerciseBpmSequence([76, 77, 76, 87, 88, 89, 90, 91]),
-    [76, 77, 76, 76, 80, 84, 88, 91],
+    [76, 76, 76, 76, 79, 82, 85, 88],
   );
 });
 
 test('breath exercise BPM presentation filter holds very large spikes for confirmation', () => {
   assert.deepEqual(
     visibleBreathExerciseBpmSequence([76, 77, 76, 96, 76, 77, 96, 98]),
-    [76, 77, 76, 76, 76, 77, 77, 81],
+    [76, 76, 76, 76, 76, 76, 76, 79],
   );
 });
 
@@ -208,13 +208,14 @@ test('buildGraphBpmValuePointsFromIbis keeps startup IBIs for short graph series
   assert.equal(points[0]?.label, '3000');
 });
 
-test('breath exercise presentation filter preserves small physiological variation', () => {
+test('breath exercise deadband holds small physiological variation steady', () => {
   const filter = createBreathExerciseBpmPresentationFilter();
   seedBreathExerciseFilter(filter, 70);
 
+  // Breathing-driven wiggle within the deadband must not move the number.
   const shown = [71, 69, 72, 68, 70].map((bpm, index) =>
     filter.update({ elapsedMs: (index + 1) * 1_000, bpm }));
-  assert.deepEqual(shown, [71, 69, 72, 68, 70]);
+  assert.deepEqual(shown, [70, 70, 70, 70, 70]);
 });
 
 test('presentation filter: deadband still tracks a genuine trend', () => {
@@ -227,33 +228,33 @@ test('presentation filter: deadband still tracks a genuine trend', () => {
   for (const [i, bpm] of [64, 62, 60, 60, 60, 60].entries()) {
     shown.push(filter.update({ elapsedMs: (i + 1) * 1_000, bpm }));
   }
-  assert.deepEqual(shown, [66, 62, 60, 60, 60, 60]);
+  assert.deepEqual(shown, [67, 64, 61, 61, 61, 61]);
 });
 
-test('breath exercise applies symmetric four BPM/s movement at irregular update intervals', () => {
+test('breath exercise applies rate-limited movement at irregular update intervals', () => {
   const filter = createBreathExerciseBpmPresentationFilter();
   seedBreathExerciseFilter(filter, 70);
   assert.equal(filter.update({ elapsedMs: 500, bpm: 82 }), null);
-  // Confirmation arrives 250ms later, allowing exactly one BPM upward.
+  // Confirmation arrives 250ms later, allowing 0.75 BPM upward (3 BPM/s).
   assert.equal(filter.update({ elapsedMs: 750, bpm: 83 }), 71);
   assert.equal(filter.update({ elapsedMs: 1_250, bpm: 58 }), null);
-  // Downward confirmation arrives 500ms later, allowing exactly two BPM.
+  // Downward confirmation arrives 500ms later, allowing 1.5 BPM.
   assert.equal(filter.update({ elapsedMs: 1_750, bpm: 57 }), 69);
 });
 
-test('breath exercise presentation moves symmetrically at four BPM per second', () => {
+test('breath exercise presentation moves at three BPM per second', () => {
   const rising = createBreathExerciseBpmPresentationFilter();
   const falling = createBreathExerciseBpmPresentationFilter();
   seedBreathExerciseFilter(rising, 70);
   seedBreathExerciseFilter(falling, 90);
 
   // A typical 75 BPM cadence is one snapshot every 800ms rather than on exact
-  // one-second boundaries. Four BPM/s permits equal 3.2-BPM internal movement
-  // in either direction (rounded only for display).
-  assert.equal(rising.update({ elapsedMs: 800, bpm: 79 }), 73);
-  assert.equal(falling.update({ elapsedMs: 800, bpm: 81 }), 87);
-  assert.equal(rising.update({ elapsedMs: 1_600, bpm: 79 }), 76);
-  assert.equal(falling.update({ elapsedMs: 1_600, bpm: 81 }), 84);
+  // one-second boundaries. Three BPM/s permits 2.4-BPM internal movement per
+  // update in either direction (rounded only for display).
+  assert.equal(rising.update({ elapsedMs: 800, bpm: 79 }), 72);
+  assert.equal(falling.update({ elapsedMs: 800, bpm: 81 }), 88);
+  assert.equal(rising.update({ elapsedMs: 1_600, bpm: 79 }), 75);
+  assert.equal(falling.update({ elapsedMs: 1_600, bpm: 81 }), 85);
 });
 
 test('breath exercise rejected spikes do not bank presentation catch-up time', () => {
@@ -274,5 +275,5 @@ test('breath exercise re-anchors immediately after elapsed time moves backwards'
   const filter = createBreathExerciseBpmPresentationFilter();
   seedBreathExerciseFilter(filter, 70, 5_000);
   assert.equal(filter.update({ elapsedMs: 0, bpm: 75 }), 70);
-  assert.equal(filter.update({ elapsedMs: 1_000, bpm: 75 }), 74);
+  assert.equal(filter.update({ elapsedMs: 1_000, bpm: 75 }), 73);
 });
