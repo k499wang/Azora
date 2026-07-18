@@ -1,19 +1,15 @@
-import { Text } from '../components/common/Text';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
+import { Animated, StyleSheet, View } from 'react-native';
 import { useIsFocused } from '@react-navigation/native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import Icon from '../components/common/icons/Icon';
-import { colors } from '../theme/colors';
-import { typography, fonts } from '../theme/typography';
-import { spacing } from '../theme/spacing';
 import { EXERCISE_DARK_THEMES, type ExerciseDarkTheme } from '../theme/exerciseDarkThemes';
-import BreathingCircle, {
-  BreathingCircleRef,
-} from '../components/exercise/BreathingCircle';
+import type { BreathingCircleRef } from '../components/exercise/BreathingCircle';
 import ExerciseScaffold from '../components/exercise/ExerciseScaffold';
-import TechniqueIntro from '../components/exercise/TechniqueIntro';
-import RoundsHapticPicker from '../components/exercise/RoundsHapticPicker';
+import { ExerciseSessionHud } from '../components/exercise/ExerciseSessionHud';
+import {
+  EXERCISE_SESSION_INTRO_DURATION_MS,
+  ExerciseSessionPresentation,
+  type ExerciseSessionPhase,
+} from '../components/exercise/ExerciseSessionPresentation';
 import TECHNIQUES from '../data/techniques';
 import type { BreathingTechnique } from '../data/techniques';
 import { useCancellableFlow } from '../hooks/useCancellableFlow';
@@ -21,94 +17,37 @@ import { useLivePulse } from '../hooks/useLivePulse';
 import { useBreathPhaseAudio } from '../hooks/useBreathPhaseAudio';
 import { useAmbientAudio } from '../hooks/useAmbientAudio';
 import { usePhaseChime } from '../hooks/usePhaseChime';
+import { useHeartRatePlacementFlow } from '../hooks/useHeartRatePlacementFlow';
+import { useBreathingHeartRateMonitoringAccess } from '../hooks/useBreathingHeartRateMonitoringAccess';
 import {
   AudioSettingsSheet,
-  SettingsGearButton,
   ThemePickerSection,
   useAudioPreferences,
 } from '../features/audioSettings';
-import { HeartRateCameraPreview } from '../components/heartRate/HeartRateCameraPreview';
-import { LiveSignalGraph } from '../components/heartRate/LiveSignalGraph';
-import { FindingPulseHint } from '../components/heartRate/FindingPulseHint';
 import {
   showCameraAccessNeededAlert,
   showHeartRateCameraUnavailableAlert,
 } from '../components/heartRate/cameraAccessPrompts';
-import type { FingerPlacementState, SignalStatus } from '../lib/heartRate/types';
-import { startInhaleVibration, stopInhaleVibration } from '../native/inhaleVibration';
-import { startHoldHaptics, stopHoldHaptics } from '../native/holdHaptics';
 import { usePostHog } from 'posthog-react-native';
 import type { ExerciseSessionScreenProps } from '../app/navigation';
 import { captureException } from '../services/analytics/errorTracking';
 import { AnalyticsEvent } from '../services/analytics/events';
 import { useAuthStore } from '../stores/authStore';
 import { useCompleteBreathingSessionMutation } from '../queries/tracking/useCompleteBreathingSessionMutation';
-import { useHeartRateMonitoringPreference } from '../hooks/useHeartRateMonitoringPreference';
-import { useFeatureAccess } from '../hooks/useFeatureAccess';
-import { FeatureKey } from '../services/subscriptions/featureAccess';
-import { buildBpmSeries } from '../lib/heartRate/bpmSeries';
-import { getBreathExercisePlacementStartDelayMs } from '../lib/heartRate/measurementTimer';
+import { useBreathingPhaseRunner } from '../hooks/useBreathingPhaseRunner';
+import {
+  useBreathingSessionFlow,
+  type BreathingSessionSequenceCompletion,
+} from '../hooks/useBreathingSessionFlow';
+import { buildBreathingSessionCompletion } from '../lib/breathingSessionCompletion';
+import {
+  getBreathingSessionProgress,
+  getBreathingSessionTargetSeconds,
+} from '../lib/breathingSessionTiming';
+import { resolveBreathingSessionStart } from '../lib/breathingSessionStart';
 
 const MIN_ROUNDS = 1;
 const MAX_ROUNDS = 30;
-const SPRING_IN_DURATION_MS = 750;
-
-function placementHint(p: FingerPlacementState): string {
-  switch (p) {
-    case 'good':
-      return 'Hold still';
-    case 'partial':
-      return 'Cover the lens fully';
-    case 'too_much_pressure':
-      return 'Ease up slightly';
-    case 'no_finger':
-    case 'lost':
-    default:
-      return 'Rest your fingertip on the camera';
-  }
-}
-
-// Warning shown while measuring: prefers the specific signal problem (motion,
-// no pulse) over the coarser finger-placement hint so the exercise flow coaches
-// the same way the standalone capture screen does.
-function signalHint(status: SignalStatus, placement: FingerPlacementState): string {
-  switch (status) {
-    case 'excessive_motion':
-      return 'Too much movement — keep still';
-    case 'no_pulse':
-      return 'No pulse — adjust your finger';
-    case 'partial_coverage':
-      return 'Cover the lens fully';
-    case 'too_much_pressure':
-      return 'Ease up slightly';
-    case 'no_finger':
-    case 'signal_lost':
-      return 'Rest your fingertip on the camera';
-    default:
-      return placementHint(placement);
-  }
-}
-
-type Phase =
-  | 'idle'
-  | 'intro'
-  | 'placement'
-  | 'inhale'
-  | 'holdIn'
-  | 'exhale'
-  | 'holdOut'
-  | 'done';
-
-const PHASE_LABELS: Record<Phase, string> = {
-  idle: '',
-  intro: '',
-  placement: '',
-  inhale: 'Inhale',
-  holdIn: 'Hold',
-  exhale: 'Exhale',
-  holdOut: 'Hold',
-  done: 'Well done',
-};
 
 export default function ExerciseSessionPage({
   navigation,
@@ -127,17 +66,24 @@ export default function ExerciseSessionPage({
   const [audioSettingsOpen, setAudioSettingsOpen] = useState(false);
 
   const circleRef = useRef<BreathingCircleRef>(null);
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const introTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const remainingRef = useRef(0);
-  const phaseRunIdRef = useRef(0);
-  const onDoneRef = useRef<(() => void) | null>(null);
   const sessionStartMsRef = useRef<number>(0);
   const savedSessionRef = useRef(false);
-  const [phase, setPhase] = useState<Phase>('idle');
+  const [phase, setPhase] = useState<ExerciseSessionPhase>('idle');
   const [round, setRound] = useState(0);
-  const [elapsed, setElapsed] = useState(0);
-  const [paused, setPaused] = useState(false);
+  const {
+    elapsedSeconds: elapsed,
+    paused,
+    runPhase,
+    pause: pausePhase,
+    resume: resumePhase,
+    resetElapsed,
+    getElapsedSeconds,
+    cancel: cancelPhase,
+  } = useBreathingPhaseRunner({
+    circleRef,
+    onPhaseChange: setPhase,
+  });
   const [technique] = useState<BreathingTechnique>(initialTechnique);
   const [totalRounds, setTotalRounds] = useState(initialTechnique.defaultRounds);
   const [hrEnabled, setHrEnabled] = useState(true);
@@ -146,43 +92,6 @@ export default function ExerciseSessionPage({
   const hudOpacity = useRef(new Animated.Value(1)).current;
   const [hudVisible, setHudVisible] = useState(true);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const bpmOpacity = useRef(new Animated.Value(0.6)).current;
-  const heartScale = useRef(new Animated.Value(1)).current;
-
-  const transition = useRef(new Animated.Value(phase === 'idle' ? 0 : 1)).current;
-
-  useEffect(() => {
-    const toValue = phase === 'idle' ? 0 : 1;
-    Animated.timing(transition, {
-      toValue,
-      duration: SPRING_IN_DURATION_MS,
-      easing: Easing.inOut(Easing.ease),
-      useNativeDriver: true,
-    }).start();
-  }, [phase === 'idle']);
-
-  const introOpacity = transition.interpolate({
-    inputRange: [0, 0.55, 1],
-    outputRange: [1, 0.4, 0],
-  });
-  const introScale = transition.interpolate({
-    inputRange: [0, 1],
-    outputRange: [1, 0.96],
-  });
-  const introTranslateY = transition.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, -12],
-  });
-
-  const circleOpacity = transition.interpolate({
-    inputRange: [0, 0.45, 1],
-    outputRange: [0, 0.3, 1],
-  });
-  const circleScale = transition.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.88, 1],
-  });
 
   const showHud = useCallback(() => {
     if (hideTimerRef.current) {
@@ -209,11 +118,7 @@ export default function ExerciseSessionPage({
   const posthog = usePostHog();
   const userId = useAuthStore((state) => state.user?.id ?? null);
   const completeBreathingSessionMutation = useCompleteBreathingSessionMutation(userId);
-  const exerciseAudioActive =
-    isFocused &&
-    !paused &&
-    (phase === 'inhale' || phase === 'holdIn' || phase === 'exhale' || phase === 'holdOut');
-  const phaseCueAudioActive =
+  const breathingAudioActive =
     isFocused &&
     !paused &&
     (phase === 'inhale' || phase === 'holdIn' || phase === 'exhale' || phase === 'holdOut');
@@ -224,12 +129,12 @@ export default function ExerciseSessionPage({
       : !paused && (phase === 'holdIn' || phase === 'holdOut')
         ? 'hold'
         : null,
-    { active: phaseCueAudioActive },
+    { active: breathingAudioActive },
   );
   useAmbientAudio({
-    active: exerciseAudioActive,
+    active: breathingAudioActive,
   });
-  usePhaseChime(phase, { active: phaseCueAudioActive });
+  usePhaseChime(phase, { active: breathingAudioActive });
 
   const pulse = useLivePulse({ presentationMode: 'breathExercise' });
   const {
@@ -245,64 +150,11 @@ export default function ExerciseSessionPage({
   const {
     heartRateMonitoringEnabled,
     heartRateMonitoringPreferenceLoaded,
-    heartRateMonitoringPreferenceIsUnset,
-    setHeartRateMonitoringEnabled,
-  } = useHeartRateMonitoringPreference();
-  const heartRateMonitoringAccess = useFeatureAccess(FeatureKey.BreathingHeartRateMonitoring);
-  const heartRateMonitoringAllowed = heartRateMonitoringAccess.allowed;
-  const heartRateMonitoringAccessLoading = heartRateMonitoringAccess.isLoading;
-  const heartRateMonitoringProLocked =
-    !heartRateMonitoringAllowed && !heartRateMonitoringAccessLoading;
-
-  useEffect(() => {
-    if (!heartRateMonitoringProLocked || !heartRateMonitoringEnabled) return;
-    setHeartRateMonitoringEnabled(false);
-  }, [
-    heartRateMonitoringEnabled,
+    heartRateMonitoringAllowed,
+    heartRateMonitoringAccessLoading,
     heartRateMonitoringProLocked,
     setHeartRateMonitoringEnabled,
-  ]);
-
-  // Pro users get heart rate monitoring on by default until they explicitly set a preference.
-  useEffect(() => {
-    if (
-      !heartRateMonitoringPreferenceLoaded ||
-      !heartRateMonitoringPreferenceIsUnset ||
-      !heartRateMonitoringAllowed ||
-      heartRateMonitoringEnabled
-    ) {
-      return;
-    }
-    setHeartRateMonitoringEnabled(true);
-  }, [
-    heartRateMonitoringAllowed,
-    heartRateMonitoringEnabled,
-    heartRateMonitoringPreferenceLoaded,
-    heartRateMonitoringPreferenceIsUnset,
-    setHeartRateMonitoringEnabled,
-  ]);
-
-  useEffect(() => {
-    if (pulse.beatTick <= 0) return;
-    bpmOpacity.setValue(0.95);
-    Animated.timing(bpmOpacity, {
-      toValue: 0.6,
-      duration: 420,
-      useNativeDriver: true,
-    }).start();
-    Animated.sequence([
-      Animated.timing(heartScale, {
-        toValue: 1.28,
-        duration: 90,
-        useNativeDriver: true,
-      }),
-      Animated.timing(heartScale, {
-        toValue: 1,
-        duration: 240,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [pulse.beatTick, bpmOpacity, heartScale]);
+  } = useBreathingHeartRateMonitoringAccess();
 
   const isSessionActive =
     phase !== 'idle' && phase !== 'done' && phase !== 'intro' && !paused;
@@ -315,225 +167,121 @@ export default function ExerciseSessionPage({
     }
   }, [heartRateMonitoringAllowed, hrEnabled, isSessionActive, startPulse, stopPulse]);
 
-  const clearTimer = () => {
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
+  const clearIntroTimeout = useCallback(() => {
     if (introTimeoutRef.current) {
       clearTimeout(introTimeoutRef.current);
       introTimeoutRef.current = null;
     }
-  };
+  }, []);
 
   const flow = useCancellableFlow(
     useCallback(() => {
-      phaseRunIdRef.current += 1;
-      clearTimer();
-      stopInhaleVibration();
-      stopHoldHaptics();
+      cancelPhase();
+      clearIntroTimeout();
       stopPulse();
       if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
-    }, [stopPulse]),
+    }, [cancelPhase, clearIntroTimeout, stopPulse]),
   );
 
   useEffect(() => {
     if (isFocused || phase === 'done') return;
 
-    setPaused(false);
     setPhase('idle');
   }, [isFocused, phase]);
 
-  const runPhase = useCallback(
-    (p: Phase, secs: number, onDone: () => void) => {
-      if (!flow.isActive()) return;
+  const handleSessionCompleted = useCallback(
+    ({
+      pattern,
+      totalRounds: completedRounds,
+      elapsedSeconds,
+    }: BreathingSessionSequenceCompletion) => {
+      if (savedSessionRef.current) return;
+      savedSessionRef.current = true;
 
-      if (secs === 0) {
-        if (!flow.isActive()) return;
-        onDone();
-        return;
-      }
+      // Finish sampling before cancellation stops the pulse workflow.
+      const collectedBpmSamples = getBpmSamples();
+      flow.cancel();
+      setPhase('done');
+      stopPulse();
 
-      const phaseRunId = phaseRunIdRef.current + 1;
-      phaseRunIdRef.current = phaseRunId;
-      const isMotionPhase = p === 'inhale' || p === 'exhale';
-      onDoneRef.current = onDone;
-      setPhase(p);
-      setPaused(false);
-      if (p === 'inhale') {
-        startInhaleVibration(secs * 1000);
-        stopHoldHaptics();
-      } else if (p === 'holdIn' || p === 'holdOut') {
-        stopInhaleVibration();
-        startHoldHaptics();
-      } else {
-        stopInhaleVibration();
-        stopHoldHaptics();
-      }
-
-      const completePhase = () => {
-        if (phaseRunIdRef.current !== phaseRunId || !flow.isActive()) return;
-        const remaining = Math.max(0, remainingRef.current);
-        clearTimer();
-        if (remaining > 0) {
-          remainingRef.current = 0;
-          setElapsed((current) => current + remaining);
-        }
-        onDone();
-      };
-
-      const startPhaseTimer = (advanceOnTimerEnd: boolean) => {
-        if (!flow.isActive()) return;
-        let remaining = secs;
-        remainingRef.current = remaining;
-        clearTimer();
-        timerRef.current = setInterval(() => {
-          remaining = Math.max(0, remaining - 1);
-          remainingRef.current = remaining;
-          setElapsed((current) => current + 1);
-
-          if (remaining <= 0) {
-            clearTimer();
-            if (advanceOnTimerEnd) {
-              completePhase();
-            }
-          }
-        }, 1000);
-      };
-
-      if (isMotionPhase) {
-        requestAnimationFrame(() => {
-          if (!flow.isActive()) return;
-          const circle = circleRef.current;
-          if (!circle) {
-            startPhaseTimer(true);
-            return;
-          }
-          if (p === 'inhale') circle.expand(secs, completePhase);
-          else circle.contract(secs, completePhase);
-          startPhaseTimer(false);
-        });
-        return;
-      }
-
-      startPhaseTimer(true);
-    },
-    [flow],
-  );
-
-  const startCycle = useCallback(
-    (currentRound: number, pattern: BreathingTechnique['pattern'], rounds: number) => {
-      if (!flow.isActive()) return;
-
-      if (currentRound > rounds) {
-        if (savedSessionRef.current) return;
-        savedSessionRef.current = true;
-        const collectedSamples = getBpmSamples();
-        const samples = collectedSamples.length >= 2 ? collectedSamples : [];
-        flow.cancel();
-        setPhase('done');
-        stopPulse();
-
-        const cycleSeconds =
-          pattern.inhale + pattern.holdIn + pattern.exhale + pattern.holdOut;
-        const targetSeconds = cycleSeconds * rounds;
-        const graphSamples = samples.map(({ offsetMs, bpm }) => ({ offsetMs, bpm }));
-        const summary = buildBpmSeries(graphSamples, { mode: 'exercise' }).summary;
-        const avgBpm = summary.avgBpm ?? undefined;
-        const minBpm = summary.minBpm;
-        const maxBpm = summary.maxBpm;
-        const endedAtMs = Date.now();
-        const startedAtMs =
-          sessionStartMsRef.current > 0 ? sessionStartMsRef.current : endedAtMs;
-        const actualDurationSec =
-          sessionStartMsRef.current > 0
-            ? Math.round((endedAtMs - sessionStartMsRef.current) / 1000)
-            : elapsed;
-
-        posthog.capture(AnalyticsEvent.ExerciseSessionCompleted, {
-          technique_id: technique.id,
-          technique_name: technique.name,
-          technique_category: technique.category,
-          total_rounds: rounds,
-          elapsed_seconds: actualDurationSec,
-          hr_monitoring_enabled: hrEnabled,
-        });
-
-        const navigateToComplete = () => {
-          navigation.replace('SessionComplete', {
-            techniqueId: technique.id,
-            techniqueName: technique.name,
-            techniqueBpmResponse: technique.heartRateResponse,
-            breathCount: rounds,
-            targetBreaths: rounds,
-            durationSec: actualDurationSec,
-            targetSec: targetSeconds,
-            cycles: rounds,
-            targetCycles: rounds,
-            avgBpm,
-            hrSamples: graphSamples,
-          });
-        };
-
-        // Navigate immediately — don't wait for backend
-        navigateToComplete();
-
-        if (userId != null) {
-          void completeBreathingSessionMutation.mutateAsync({
-            techniqueId: technique.id,
-            startedAt: new Date(startedAtMs).toISOString(),
-            endedAt: new Date(endedAtMs).toISOString(),
-            durationSeconds: actualDurationSec,
-            roundsCompleted: rounds,
-            targetRounds: rounds,
-            avgBpm: avgBpm ?? null,
-            minBpm,
-            maxBpm,
-            completed: true,
-            samples,
-          }).catch((error) => {
-            captureException(error, {
-              flow: 'breathing_exercise',
-              action: 'complete_breathing_session',
-              technique_id: technique.id,
-            });
-          });
-        }
-        return;
-      }
-
-      setRound(currentRound);
-
-      runPhase('inhale', pattern.inhale, () => {
-        runPhase('holdIn', pattern.holdIn, () => {
-          runPhase('exhale', pattern.exhale, () => {
-            runPhase('holdOut', pattern.holdOut, () => {
-              startCycle(currentRound + 1, pattern, rounds);
-            });
-          });
-        });
+      const completion = buildBreathingSessionCompletion({
+        pattern,
+        rounds: completedRounds,
+        startedAtMs: sessionStartMsRef.current,
+        endedAtMs: Date.now(),
+        fallbackElapsedSeconds: elapsedSeconds,
+        bpmSamples: collectedBpmSamples,
       });
+
+      posthog.capture(AnalyticsEvent.ExerciseSessionCompleted, {
+        technique_id: technique.id,
+        technique_name: technique.name,
+        technique_category: technique.category,
+        total_rounds: completedRounds,
+        elapsed_seconds: completion.durationSeconds,
+        hr_monitoring_enabled: hrEnabled,
+      });
+
+      // Navigate immediately — don't wait for backend persistence.
+      navigation.replace('SessionComplete', {
+        techniqueId: technique.id,
+        techniqueName: technique.name,
+        techniqueBpmResponse: technique.heartRateResponse,
+        breathCount: completedRounds,
+        targetBreaths: completedRounds,
+        durationSec: completion.durationSeconds,
+        targetSec: completion.targetSeconds,
+        cycles: completedRounds,
+        targetCycles: completedRounds,
+        avgBpm: completion.bpmSummary.avgBpm ?? undefined,
+        hrSamples: completion.graphSamples,
+      });
+
+      if (userId != null) {
+        void completeBreathingSessionMutation.mutateAsync({
+          techniqueId: technique.id,
+          startedAt: new Date(completion.startedAtMs).toISOString(),
+          endedAt: new Date(completion.endedAtMs).toISOString(),
+          durationSeconds: completion.durationSeconds,
+          roundsCompleted: completedRounds,
+          targetRounds: completedRounds,
+          avgBpm: completion.bpmSummary.avgBpm,
+          minBpm: completion.bpmSummary.minBpm,
+          maxBpm: completion.bpmSummary.maxBpm,
+          completed: true,
+          samples: completion.bpmSamples,
+        }).catch((error) => {
+          captureException(error, {
+            flow: 'breathing_exercise',
+            action: 'complete_breathing_session',
+            technique_id: technique.id,
+          });
+        });
+      }
     },
     [
-      flow,
-      runPhase,
-      posthog,
-      technique,
-      elapsed,
-      hrEnabled,
-      userId,
       completeBreathingSessionMutation,
-      navigation,
+      flow,
       getBpmSamples,
+      hrEnabled,
+      navigation,
+      posthog,
+      stopPulse,
+      technique,
+      userId,
     ],
   );
 
+  const startSessionFlow = useBreathingSessionFlow({
+    isActive: flow.isActive,
+    runPhase,
+    getElapsedSeconds,
+    onRoundChange: setRound,
+    onComplete: handleSessionCompleted,
+  });
+
   const handlePause = () => {
-    clearTimer();
-    circleRef.current?.pause();
-    stopInhaleVibration();
-    stopHoldHaptics();
-    setPaused(true);
+    pausePhase();
     posthog.capture(AnalyticsEvent.ExerciseSessionPaused, {
       technique_id: technique.id,
       technique_name: technique.name,
@@ -543,58 +291,7 @@ export default function ExerciseSessionPage({
     });
   };
 
-  const handleResume = (currentPhase: Phase) => {
-    if (!onDoneRef.current) return;
-    const remaining = remainingRef.current;
-    const onDone = onDoneRef.current;
-    const isMotionPhase = currentPhase === 'inhale' || currentPhase === 'exhale';
-    const phaseRunId = phaseRunIdRef.current;
-    setPaused(false);
-
-    const completePhase = () => {
-      if (phaseRunIdRef.current !== phaseRunId || !flow.isActive()) return;
-      const leftover = Math.max(0, remainingRef.current);
-      clearTimer();
-      if (leftover > 0) {
-        remainingRef.current = 0;
-        setElapsed((current) => current + leftover);
-      }
-      onDone();
-    };
-
-    let motionHandledByCircle = false;
-    if (currentPhase === 'inhale') {
-      const circle = circleRef.current;
-      if (circle) {
-        motionHandledByCircle = true;
-        circle.resumeExpand(remaining, completePhase);
-      }
-      startInhaleVibration(remaining * 1000);
-    } else if (currentPhase === 'exhale') {
-      const circle = circleRef.current;
-      if (circle) {
-        motionHandledByCircle = true;
-        circle.resumeContract(remaining, completePhase);
-      }
-    } else if (currentPhase === 'holdIn' || currentPhase === 'holdOut') {
-      startHoldHaptics();
-    }
-
-    let rem = remaining;
-    clearTimer();
-    timerRef.current = setInterval(() => {
-      rem = Math.max(0, rem - 1);
-      remainingRef.current = rem;
-      setElapsed((current) => current + 1);
-      if (rem <= 0) {
-        clearTimer();
-        if (!isMotionPhase || !motionHandledByCircle) {
-          if (!flow.isActive()) return;
-          onDone();
-        }
-      }
-    }, 1000);
-  };
+  const handleResume = () => resumePhase();
 
   const beginExercise = useCallback(
     (withHr: boolean) => {
@@ -604,7 +301,7 @@ export default function ExerciseSessionPage({
         setHeartRateMonitoringEnabled(false);
         setHrEnabled(false);
       }
-      setElapsed(0);
+      resetElapsed();
       setRound(0);
       sessionStartMsRef.current = Date.now();
       savedSessionRef.current = false;
@@ -619,7 +316,7 @@ export default function ExerciseSessionPage({
         total_rounds: totalRounds,
         hr_monitoring_enabled: shouldMeasureHeartRate,
       });
-      startCycle(1, technique.pattern, totalRounds);
+      startSessionFlow(technique.pattern, totalRounds);
     },
     [
       flow,
@@ -629,41 +326,41 @@ export default function ExerciseSessionPage({
       setHeartRateMonitoringEnabled,
       technique,
       totalRounds,
-      startCycle,
+      startSessionFlow,
       beginBpmSampleCollection,
+      resetElapsed,
     ],
   );
 
-  const startPlacement = useCallback(async () => {
-    if (heartRateMonitoringAccessLoading) return;
-    if (!heartRateMonitoringAllowed) {
+  const { startPlacement } = useHeartRatePlacementFlow({
+    flow,
+    accessLoading: heartRateMonitoringAccessLoading,
+    accessAllowed: heartRateMonitoringAllowed,
+    hasPermission,
+    requestPermission,
+    cameraAvailable: pulse.device != null,
+    placementActive: phase === 'placement',
+    heartRateEnabled: hrEnabled,
+    fingerPlacement: pulse.fingerPlacement,
+    signalStatus: pulse.signalStatus,
+    bpmLocked:
+      isBpmReady && presentedBpm != null && pulse.signalStatus === 'measuring',
+    onAccessDenied: () => {
       if (heartRateMonitoringProLocked) {
         setHeartRateMonitoringEnabled(false);
       }
       setHrEnabled(false);
-      return;
-    }
-    if (!flow.start()) return;
-    try {
-      const granted = hasPermission ? true : await requestPermission();
-      if (!flow.isActive()) return;
-      if (!granted) {
-        showCameraAccessNeededAlert();
-        setHrEnabled(false);
-        flow.cancel();
-        return;
-      }
-      if (pulse.device == null) {
-        showHeartRateCameraUnavailableAlert();
-        setHrEnabled(false);
-        flow.cancel();
-        return;
-      }
+    },
+    onPlacementStarted: () => {
       setHrEnabled(true);
       setPhase('placement');
       startPulse();
-    } catch (error) {
-      if (!flow.isActive()) return;
+    },
+    onPlacementReady: () => beginExercise(true),
+    onHeartRateDisabled: () => setHrEnabled(false),
+    onPermissionDenied: showCameraAccessNeededAlert,
+    onCameraUnavailable: showHeartRateCameraUnavailableAlert,
+    onUnexpectedError: (error) => {
       captureException(error, {
         flow: 'exercise_session',
         action: 'start_placement',
@@ -671,95 +368,53 @@ export default function ExerciseSessionPage({
         technique_id: technique.id,
         technique_name: technique.name,
       });
-      showHeartRateCameraUnavailableAlert();
-      setHrEnabled(false);
-      flow.cancel();
-    }
-  }, [
-    flow,
-    hasPermission,
-    heartRateMonitoringAccessLoading,
-    heartRateMonitoringAllowed,
-    heartRateMonitoringProLocked,
-    pulse.device,
-    requestPermission,
-    setHeartRateMonitoringEnabled,
-    startPulse,
-    technique,
-  ]);
-
-  const handleStart = () => {
-    if (phase === 'idle' || phase === 'done') {
-      if (!heartRateMonitoringPreferenceLoaded) return;
-      if (heartRateMonitoringEnabled) {
-        if (heartRateMonitoringAccessLoading) return;
-        if (!heartRateMonitoringAllowed) {
-          if (heartRateMonitoringProLocked) {
-            setHeartRateMonitoringEnabled(false);
-          }
-          if (!flow.start()) return;
-          setHrEnabled(false);
-          setElapsed(0);
-          setRound(1);
-          setPhase('intro');
-          clearTimer();
-          introTimeoutRef.current = setTimeout(() => {
-            if (!flow.isActive()) return;
-            beginExercise(false);
-          }, SPRING_IN_DURATION_MS);
-          return;
-        }
-        void startPlacement();
-        return;
-      }
-      if (!flow.start()) return;
-      setHrEnabled(false);
-      setElapsed(0);
-      setRound(1);
-      setPhase('intro');
-      clearTimer();
-      introTimeoutRef.current = setTimeout(() => {
-        if (!flow.isActive()) return;
-        beginExercise(false);
-      }, SPRING_IN_DURATION_MS);
-    }
-  };
-
-  const beginExerciseRef = useRef(beginExercise);
-  useEffect(() => {
-    beginExerciseRef.current = beginExercise;
-  }, [beginExercise]);
-
-  const placementBpmLocked =
-    isBpmReady && presentedBpm != null && pulse.signalStatus === 'measuring';
-  const placementStartDelayMs = getBreathExercisePlacementStartDelayMs({
-    fingerPlacement: pulse.fingerPlacement,
-    signalStatus: pulse.signalStatus,
-    bpmLocked: placementBpmLocked,
+    },
   });
 
-  useEffect(() => {
-    if (phase !== 'placement') return;
-    if (!hrEnabled) return;
-    if (placementStartDelayMs == null) return;
-    const t = setTimeout(() => {
+  const startIntroWithoutHeartRate = useCallback(() => {
+    if (!flow.start()) return;
+
+    setHrEnabled(false);
+    resetElapsed();
+    setRound(1);
+    setPhase('intro');
+    clearIntroTimeout();
+    introTimeoutRef.current = setTimeout(() => {
       if (!flow.isActive()) return;
-      beginExerciseRef.current(true);
-    }, placementStartDelayMs);
-    return () => clearTimeout(t);
-  }, [flow, hrEnabled, phase, placementStartDelayMs]);
+      beginExercise(false);
+    }, EXERCISE_SESSION_INTRO_DURATION_MS);
+  }, [beginExercise, clearIntroTimeout, flow, resetElapsed]);
+
+  const handleStart = () => {
+    if (phase !== 'idle' && phase !== 'done') return;
+
+    const decision = resolveBreathingSessionStart({
+      heartRatePreferenceLoaded: heartRateMonitoringPreferenceLoaded,
+      heartRateMonitoringEnabled,
+      heartRateAccessLoading: heartRateMonitoringAccessLoading,
+      heartRateAccessAllowed: heartRateMonitoringAllowed,
+    });
+
+    if (decision.type === 'not_ready') return;
+    if (decision.type === 'start_heart_rate_placement') {
+      void startPlacement();
+      return;
+    }
+
+    if (decision.disableHeartRatePreference) {
+      setHeartRateMonitoringEnabled(false);
+    }
+    startIntroWithoutHeartRate();
+  };
 
   const handleClose = () => {
     flow.cancel();
-    setPaused(false);
     setPhase('idle');
     if (phase !== 'idle' && phase !== 'done') {
-      const cycleSeconds =
-        technique.pattern.inhale +
-        technique.pattern.holdIn +
-        technique.pattern.exhale +
-        technique.pattern.holdOut;
-      const targetSeconds = cycleSeconds * totalRounds;
+      const targetSeconds = getBreathingSessionTargetSeconds(
+        technique.pattern,
+        totalRounds,
+      );
       posthog.capture(AnalyticsEvent.ExerciseSessionAbandoned, {
         technique_id: technique.id,
         technique_name: technique.name,
@@ -792,37 +447,15 @@ export default function ExerciseSessionPage({
     }
   }, [isActive, showHud, hudOpacity]);
 
-  const cycleSeconds =
-    technique.pattern.inhale +
-    technique.pattern.holdIn +
-    technique.pattern.exhale +
-    technique.pattern.holdOut;
-  const totalSeconds = Math.max(1, cycleSeconds * totalRounds);
-  const progress = Math.min(
-    1,
-    phase === 'done' ? 1 : elapsed / totalSeconds,
+  const targetSeconds = getBreathingSessionTargetSeconds(
+    technique.pattern,
+    totalRounds,
   );
-
-  const cameraProps = useMemo(() => (
-    pulse.device != null
-      ? {
-          device: pulse.device,
-          format: pulse.format,
-          frameProcessor: pulse.frameProcessor,
-          torchMode: pulse.torchMode,
-          fingerPlacement: pulse.fingerPlacement,
-          isActive: pulse.active,
-        }
-      : undefined
-  ), [pulse.active, pulse.device, pulse.fingerPlacement, pulse.format, pulse.frameProcessor, pulse.torchMode]);
-
-  const showCamera = (isPlacement || isActive) && pulse.active && cameraProps != null;
-  const cameraSlot = showCamera ? <HeartRateCameraPreview {...cameraProps} /> : null;
-
-  const signalGood =
-    pulse.fingerPlacement === 'good' &&
-    (pulse.signalStatus === 'measuring' || pulse.signalStatus === 'warming_up');
-  const showSignalWarning = isActive && pulse.active && !signalGood;
+  const progress = getBreathingSessionProgress(
+    elapsed,
+    targetSeconds,
+    phase === 'done',
+  );
 
   const handleScreenTap = () => {
     if (isActive) showHud();
@@ -840,196 +473,66 @@ export default function ExerciseSessionPage({
       <ExerciseScaffold
         darkTheme={activeTheme}
         centerSlot={
-          <View style={styles.centerStack}>
-            {hrEnabled && pulse.active && (
-              <View style={styles.liveSignalGraphSlot} pointerEvents="none">
-                <LiveSignalGraph
-                  samples={pulse.liveSignalSamples}
-                  fingerPlacement={pulse.fingerPlacement}
-                  bpm={presentedBpm}
-                  beatTick={pulse.beatTick}
-                  textColor={activeTheme.textPrimary}
-                />
-              </View>
-            )}
-            <View style={styles.contentArea}>
-              <Animated.View
-                style={[
-                  styles.contentLayer,
-                  {
-                    opacity: introOpacity,
-                    transform: [
-                      { scale: introScale },
-                      { translateY: introTranslateY },
-                    ],
-                  },
-                ]}
-              >
-                <TechniqueIntro
-                  technique={technique}
-                  textColors={{
-                    primary: activeTheme.textPrimary,
-                    secondary: activeTheme.textSecondary,
-                    tertiary: activeTheme.textTertiary,
-                    accent: activeTheme.textAccent,
-                  }}
-                />
-              </Animated.View>
-
-              <Animated.View
-                style={[
-                  styles.contentLayer,
-                  {
-                    opacity: circleOpacity,
-                    transform: [{ scale: circleScale }],
-                  },
-                ]}
-              >
-                <BreathingCircle
-                  ref={circleRef}
-                  cameraSlot={cameraSlot}
-                  beatTick={pulse.beatTick}
-                  themeColors={{
-                    outline: activeTheme.circleOutline,
-                    outlineOpacity: activeTheme.circleOutlineOpacity,
-                    outer: activeTheme.circleOuter,
-                    outerOpacity: activeTheme.circleOuterOpacity,
-                    inner: activeTheme.circleInner,
-                    beatFlush: activeTheme.beatFlush,
-                  }}
-                >
-                  {phase === 'done' ? (
-                    <MaterialCommunityIcons
-                      name="check-circle-outline"
-                      size={32}
-                      color={colors.neutral[50]}
-                    />
-                  ) : PHASE_LABELS[phase] ? (
-                    <Text
-                      style={styles.phaseLabel}
-                      numberOfLines={1}
-                      adjustsFontSizeToFit
-                      minimumFontScale={0.7}
-                      maxFontSizeMultiplier={1.2}
-                    >
-                      {PHASE_LABELS[phase]}
-                    </Text>
-                  ) : null}
-                </BreathingCircle>
-              </Animated.View>
-            </View>
-
-            <View style={styles.belowSlot}>
-              {isPlacement ? (
-                pulse.signalStatus === 'excessive_motion' ||
-                pulse.signalStatus === 'no_pulse' ? (
-                  <Text style={[styles.hintText, { color: activeTheme.textSecondary }]}>
-                    {signalHint(pulse.signalStatus, pulse.fingerPlacement)}
-                  </Text>
-                ) : pulse.fingerPlacement !== 'good' ? (
-                  <Text style={[styles.hintText, { color: activeTheme.textSecondary }]}>
-                    {placementHint(pulse.fingerPlacement)}
-                  </Text>
-                ) : (
-                  <FindingPulseHint
-                    textStyle={[styles.hintText, { color: activeTheme.textSecondary }]}
-                  />
-                )
-              ) : isActive && pulse.active && showSignalWarning ? (
-                <View style={styles.warningRow}>
-                  <MaterialCommunityIcons
-                    name="alert-circle-outline"
-                    size={12}
-                    color={colors.warning[500]}
-                  />
-                  <Text style={styles.warningText}>
-                    {signalHint(pulse.signalStatus, pulse.fingerPlacement)}
-                  </Text>
-                </View>
-              ) : null}
-            </View>
-          </View>
+          <ExerciseSessionPresentation
+            ref={circleRef}
+            phase={phase}
+            technique={technique}
+            theme={activeTheme}
+            heartRate={{
+              enabled: hrEnabled,
+              active: pulse.active,
+              bpm: presentedBpm,
+              beatTick: pulse.beatTick,
+              samples: pulse.liveSignalSamples,
+              fingerPlacement: pulse.fingerPlacement,
+              signalStatus: pulse.signalStatus,
+              camera:
+                pulse.device == null
+                  ? undefined
+                  : {
+                      device: pulse.device,
+                      format: pulse.format,
+                      frameProcessor: pulse.frameProcessor,
+                      torchMode: pulse.torchMode,
+                    },
+            }}
+          />
         }
         bottomSlot={
           <Animated.View
-            style={[styles.bottomContainer, isActive ? { opacity: hudOpacity } : null]}
+            style={isActive ? { opacity: hudOpacity } : undefined}
             pointerEvents={isActive && !hudVisible ? 'none' : 'auto'}
           >
-            {showSessionControls ? (
-              <View style={styles.progressWrap}>
-                <View style={[styles.progressTrack, { backgroundColor: activeTheme.progressTrack }]}>
-                  <View
-                    style={[
-                      styles.progressFill,
-                      { width: `${progress * 100}%`, backgroundColor: activeTheme.progressFill },
-                    ]}
-                  />
-                </View>
-                <Text style={[styles.progressLabel, { color: activeTheme.textTertiary }]}>
-                  Round {Math.min(round, totalRounds)} of {totalRounds}
-                </Text>
-              </View>
-            ) : isPlacement ? null : (
-              <RoundsHapticPicker
-                value={totalRounds}
-                min={MIN_ROUNDS}
-                max={MAX_ROUNDS}
-                onChange={setTotalRounds}
-                theme={activeTheme}
-              />
-            )}
-            <View style={styles.btnRow}>
-              <Pressable
-                style={({ pressed }) => [
-                  styles.exitBtn,
-                  { backgroundColor: activeTheme.surface, borderColor: activeTheme.surfaceBorder },
-                  pressed && styles.circleBtnPressed,
-                ]}
-                onPress={() => {
-                  if (isActive) showHud();
-                  handleClose();
-                }}
-              >
-                <Icon name="close" size={26} color={activeTheme.iconPrimary} />
-              </Pressable>
-              {phase === 'idle' || phase === 'done' ? (
-                <SettingsGearButton
-                  onPress={() => setAudioSettingsOpen(true)}
-                  label="Session options"
-                  iconName="tune-variant"
-                  color={activeTheme.iconPrimary}
-                  backgroundColor={activeTheme.surface}
-                  borderColor={activeTheme.surfaceBorder}
-                  size={64}
-                />
-              ) : null}
-              {!isPlacement ? (
-                <Pressable
-                  style={({ pressed }) => [
-                    styles.circleBtn,
-                    { backgroundColor: activeTheme.surface, borderColor: activeTheme.surfaceBorder },
-                    pressed && styles.circleBtnPressed,
-                  ]}
-                  onPress={() => {
-                    if (phase === 'intro') return;
-                    if (isActive) showHud();
-                    if (phase === 'idle' || phase === 'done') {
-                      handleStart();
-                    } else if (paused) {
-                      handleResume(phase);
-                    } else {
-                      handlePause();
-                    }
-                  }}
-                >
-                  <MaterialCommunityIcons
-                    name={showSessionControls && !paused ? 'pause' : 'play'}
-                    size={28}
-                    color={activeTheme.iconPrimary}
-                  />
-                </Pressable>
-              ) : null}
-            </View>
+            <ExerciseSessionHud
+              theme={activeTheme}
+              showProgress={showSessionControls}
+              progress={progress}
+              currentRound={round}
+              totalRounds={totalRounds}
+              showRoundsPicker={!showSessionControls && !isPlacement}
+              minRounds={MIN_ROUNDS}
+              maxRounds={MAX_ROUNDS}
+              onRoundsChange={setTotalRounds}
+              showSettingsButton={phase === 'idle' || phase === 'done'}
+              onSettingsPress={() => setAudioSettingsOpen(true)}
+              showPrimaryButton={!isPlacement}
+              primaryIcon={showSessionControls && !paused ? 'pause' : 'play'}
+              onPrimaryPress={() => {
+                if (phase === 'intro') return;
+                if (isActive) showHud();
+                if (phase === 'idle' || phase === 'done') {
+                  handleStart();
+                } else if (paused) {
+                  handleResume();
+                } else {
+                  handlePause();
+                }
+              }}
+              onClosePress={() => {
+                if (isActive) showHud();
+                handleClose();
+              }}
+            />
           </Animated.View>
         }
       />
@@ -1052,171 +555,5 @@ export default function ExerciseSessionPage({
 const styles = StyleSheet.create({
   fill: {
     flex: 1,
-  },
-  centerStack: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  phaseSlot: {
-    height: 40,
-    alignSelf: 'stretch',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    marginBottom: spacing.sm,
-  },
-  contentArea: {
-    width: 340,
-    height: 300,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  liveSignalGraphSlot: {
-    position: 'absolute',
-    top: -102,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-  },
-  contentLayer: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  phaseLabel: {
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    fontSize: 22,
-    lineHeight: 26,
-    letterSpacing: 1.2,
-    color: colors.neutral[50],
-    textAlign: 'center',
-  },
-  belowSlot: {
-    minHeight: 52,
-    marginTop: spacing.xs,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  hintText: {
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    fontSize: 15,
-    color: colors.text.secondary,
-    opacity: 0.6,
-    textAlign: 'center',
-    paddingHorizontal: spacing.lg,
-  },
-  metricStack: {
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  bpmRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  bpmRowDim: {
-    opacity: 0.25,
-  },
-  bpmNumber: {
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    fontSize: 26,
-    lineHeight: 30,
-    letterSpacing: 0.5,
-    color: colors.text.primary,
-  },
-  warningRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  warningText: {
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    fontSize: 15,
-    letterSpacing: 0.5,
-    color: colors.warning[500],
-    opacity: 0.85,
-  },
-  bottomContainer: {
-    alignItems: 'center',
-    gap: spacing.lg,
-    marginBottom: spacing['4xl'],
-  },
-  progressWrap: {
-    width: '100%',
-    alignItems: 'center',
-    gap: spacing.xs,
-    paddingHorizontal: spacing.lg,
-  },
-  progressTrack: {
-    width: '100%',
-    height: 2,
-    borderRadius: 1,
-    backgroundColor: colors.border.subtle,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: colors.primary.blue400,
-    opacity: 0.6,
-    borderRadius: 1,
-  },
-  progressLabel: {
-    ...typography.caption.caption1,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    color: colors.text.tertiary,
-    opacity: 0.6,
-    letterSpacing: 1,
-  },
-  inlineLink: {
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  textLinkPressed: {
-    opacity: 0.5,
-  },
-  textLinkLabel: {
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    fontSize: 12,
-    letterSpacing: 0.5,
-    color: colors.text.tertiary,
-    opacity: 0.7,
-  },
-  btnRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.md,
-  },
-  exitBtn: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.neutral[100],
-    borderWidth: 1,
-    borderColor: colors.border.subtle,
-  },
-  circleBtn: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.neutral[100],
-    borderWidth: 1,
-    borderColor: colors.border.subtle,
-  },
-  circleBtnPressed: {
-    opacity: 0.75,
-    transform: [{ scale: 0.96 }],
   },
 });
