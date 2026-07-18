@@ -337,6 +337,7 @@ export default function DailyExercisePage({
       setLastRelease(completion);
       navigation.navigate('DailyResult', {
         holdSeconds: releasedHoldSeconds,
+        heartRateResultStatus: completion.heartRateResultStatus,
         avgBpm: completion.avgBpm ?? undefined,
         minBpm: completion.minBpm ?? undefined,
         maxBpm: completion.maxBpm ?? undefined,
@@ -369,6 +370,7 @@ export default function DailyExercisePage({
     });
     navigation.navigate('DailyResult', {
       holdSeconds,
+      heartRateResultStatus: lastRelease?.heartRateResultStatus,
       avgBpm: lastRelease?.avgBpm ?? undefined,
       minBpm: lastRelease?.minBpm ?? undefined,
       maxBpm: lastRelease?.maxBpm ?? undefined,

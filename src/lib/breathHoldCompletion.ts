@@ -13,6 +13,11 @@ interface BuildBreathHoldCompletionInput {
   bpmSamples: HeartRateSessionRpcSample[];
 }
 
+export type BreathHoldHeartRateResultStatus =
+  | 'not_measured'
+  | 'insufficient_beats'
+  | 'available';
+
 export interface BreathHoldCompletion {
   holdSeconds: number;
   startedAtMs: number | null;
@@ -24,6 +29,7 @@ export interface BreathHoldCompletion {
   avgBpm: number | null;
   minBpm: number | null;
   maxBpm: number | null;
+  heartRateResultStatus: BreathHoldHeartRateResultStatus;
   azoraScore: number;
   graphSamples: { offsetMs: number; bpm: number }[];
   persistenceSamples: {
@@ -56,6 +62,12 @@ export function buildBreathHoldCompletion({
     bpm: sample.bpm,
   }));
   const { summary } = buildBpmSeries(graphSamples, { mode: 'exercise' });
+  const heartRateResultStatus =
+    summary.avgBpm != null
+      ? 'available'
+      : measuredStartedAtMs > 0
+        ? 'insufficient_beats'
+        : 'not_measured';
   const isNewBest = holdSeconds > previousBestSeconds && holdSeconds > 0;
   const bestHoldSeconds = Math.max(previousBestSeconds, holdSeconds);
   const azoraScore = estimateAzoraScore({
@@ -84,6 +96,7 @@ export function buildBreathHoldCompletion({
     avgBpm: summary.avgBpm,
     minBpm: summary.minBpm,
     maxBpm: summary.maxBpm,
+    heartRateResultStatus,
     azoraScore,
     graphSamples,
     persistenceSamples: bpmSamples.map((sample) => ({

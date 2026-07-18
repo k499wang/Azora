@@ -32,6 +32,7 @@ test('builds one completion model for navigation and persistence', () => {
     },
     { avgBpm: 78, minBpm: 72, maxBpm: 84 },
   );
+  assert.equal(completion.heartRateResultStatus, 'available');
   assert.deepEqual(completion.graphSamples, [
     { offsetMs: 0, bpm: 72 },
     { offsetMs: 1_000, bpm: 78 },
@@ -61,6 +62,23 @@ test('uses hold start when camera measurement did not start earlier', () => {
   assert.equal(completion.isNewBest, false);
   assert.equal(completion.bestHoldSeconds, 30);
   assert.equal(completion.avgBpm, null);
+  assert.equal(completion.heartRateResultStatus, 'not_measured');
+});
+
+test('distinguishes an attempted measurement with too few reliable beats', () => {
+  const completion = buildBreathHoldCompletion({
+    holdSeconds: 20,
+    previousBestSeconds: 0,
+    measuredStartedAtMs: 1_000,
+    holdStartedAtMs: 5_000,
+    endedAtMs: 25_000,
+    hasReading: false,
+    captureSampleCount: 20,
+    bpmSamples: [],
+  });
+
+  assert.equal(completion.avgBpm, null);
+  assert.equal(completion.heartRateResultStatus, 'insufficient_beats');
 });
 
 test('marks invalid timing as non-persistable without losing result data', () => {
