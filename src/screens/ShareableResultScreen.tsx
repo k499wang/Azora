@@ -42,6 +42,7 @@ export default function ShareableResultScreen({
   const userAge = profileQuery.data?.age ?? null;
   const {
     holdSeconds,
+    heartRateResultStatus = 'not_measured',
     avgBpm,
     minBpm,
     maxBpm,
@@ -145,7 +146,11 @@ export default function ShareableResultScreen({
               bpmSamples={bpmSamples}
               locked={advancedStatsLocked}
               onPressUpgrade={showAdvancedStatsPaywall}
-              emptyChartMessage="Complete your breath hold with heart rate enabled to see your BPM."
+              emptyChartMessage={
+                heartRateResultStatus === 'insufficient_beats'
+                  ? 'Not enough reliable heartbeats were detected during this hold to show heart-rate results.'
+                  : 'Complete your breath hold with heart rate enabled to see your BPM.'
+              }
               insightContext="breath-hold"
             />
           </View>

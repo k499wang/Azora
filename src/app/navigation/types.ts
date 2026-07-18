@@ -14,6 +14,7 @@ import type {
 import type { PaywallPlacementValue } from '../../services/paywall';
 import type { FeatureKeyValue } from '../../services/subscriptions/featureAccess';
 import type { BreathingTechniqueBpmResponse } from '../../lib/heartRate/bpmInsight';
+import type { BreathHoldHeartRateResultStatus } from '../../lib/breathHoldCompletion';
 
 export type MainTabParamList = {
   Home: undefined;
@@ -52,6 +53,7 @@ export type RootStackParamList = {
   Settings: undefined;
   DailyResult: {
     holdSeconds: number;
+    heartRateResultStatus?: BreathHoldHeartRateResultStatus;
     avgBpm?: number;
     minBpm?: number;
     maxBpm?: number;
