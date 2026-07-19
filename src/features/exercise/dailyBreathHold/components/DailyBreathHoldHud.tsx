@@ -39,12 +39,13 @@ export function DailyBreathHoldHud({
 }: DailyBreathHoldHudProps) {
   const showSettings = phase === 'idle' || phase === 'done';
   const showStart = phase === 'idle' || phase === 'done';
-  const canPause = isBreathHoldBreathingPhase(phase) || phase === 'hold';
+  const canPause = isBreathHoldBreathingPhase(phase);
   const showControls = showStart || canPause || phase === 'placement' || phase === 'intro';
+  const keepControlsRaised = showControls && phase !== 'done';
   const primaryLabel = phase === 'idle' ? 'Start' : 'Try Again';
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, keepControlsRaised && styles.raisedControlsContainer]}>
       {phase === 'hold' ? (
         <HoldProgressBar
           holdSeconds={holdSeconds}
@@ -143,6 +144,9 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
     gap: spacing.lg,
+  },
+  raisedControlsContainer: {
+    marginBottom: spacing['6xl'],
   },
   settingsPill: {
     alignSelf: 'center',
