@@ -14,7 +14,6 @@ import AudioSettingsRow from './AudioSettingsRow';
 import HeartRateMonitoringSection from './HeartRateMonitoringSection';
 import { audioCategories } from './registry';
 import type { AudioCategory, AudioOption } from './types';
-import { OFF_OPTION_ID } from './types';
 import { useAudioPreferences } from './useAudioPreferences';
 import { useAudioPreview } from './useAudioPreview';
 import { useHeartRateMonitoringPreference } from '../../hooks/useHeartRateMonitoringPreference';

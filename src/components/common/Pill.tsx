@@ -22,7 +22,7 @@ export default function Pill({
 }: PillProps) {
   return (
     <View style={[styles.container, { backgroundColor }, style]}>
-      <MaterialCommunityIcons name={"fire"} size={18} color={textColor} />
+      <MaterialCommunityIcons name={icon} size={18} color={textColor} />
       <Text style={[styles.label, { color: textColor }]}>{label}</Text>
     </View>
   );

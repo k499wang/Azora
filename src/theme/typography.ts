@@ -20,7 +20,6 @@ const fontSemiBold = `${FONT_FAMILY}-SemiBold`;
 const fontRegular = `${FONT_FAMILY}-Regular`;
 const fontMedium = `${FONT_FAMILY}-Medium`;
 const fontLight = `${FONT_FAMILY}-Light`;
-const fontExtraLight = `${FONT_FAMILY}-ExtraLight`;
 
 export const typography = {
   display: {

@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { logDevDiagnostic } from '../../services/debug/devLogger';
 import {
   getDailyFeatureUsage,
   getLocalDate,
@@ -18,9 +19,12 @@ export function useDailyFeatureUsageQuery(userId: string | null) {
     queryKey: getDailyFeatureUsageQueryKey(userId, localDate),
     enabled: userId != null,
     queryFn: async () => {
-      console.log('[hr-gate] useDailyFeatureUsageQuery: fetching from supabase', { userId, localDate });
+      logDevDiagnostic(
+        '[hr-gate] useDailyFeatureUsageQuery: fetching from supabase',
+        { localDate },
+      );
       const data = await getDailyFeatureUsage(userId as string, localDate);
-      console.log('[hr-gate] useDailyFeatureUsageQuery: got', data);
+      logDevDiagnostic('[hr-gate] useDailyFeatureUsageQuery: succeeded');
       return data;
     },
     staleTime: 1000 * 60,

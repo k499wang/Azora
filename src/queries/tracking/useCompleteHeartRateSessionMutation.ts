@@ -2,6 +2,10 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import type { CaptureResult, PpgFrameSample } from '../../lib/heartRate/types';
 import { logNetworkFailureDiagnostics } from '../../services/debug/networkFailureDiagnostics';
 import {
+  logDevDiagnostic,
+  warnDevDiagnostic,
+} from '../../services/debug/devLogger';
+import {
   completeHeartRateSession,
 } from '../../services/tracking/heartRateService';
 import { getProfileSummaryQueryKey } from '../profile/useProfileSummaryQuery';
@@ -43,8 +47,7 @@ export function useCompleteHeartRateSessionMutation(userId: string | null) {
   return useMutation({
     mutationFn: async (input: CompleteHeartRateSessionMutationInput) => {
       const startedAt = Date.now();
-      console.log('[heart-rate-save] mutation started', {
-        userId,
+      logDevDiagnostic('[heart-rate-save] mutation started', {
         sampleCount: input.captureSamples.length,
         hasReading: input.result.reading != null,
       });
@@ -60,15 +63,12 @@ export function useCompleteHeartRateSessionMutation(userId: string | null) {
           result: input.result,
           timezone,
         });
-        console.log('[heart-rate-save] mutation succeeded', {
-          userId,
-          sessionId,
+        logDevDiagnostic('[heart-rate-save] mutation succeeded', {
           elapsedMs: Date.now() - startedAt,
         });
         return sessionId;
       } catch (error) {
-        console.warn('[heart-rate-save] mutation failed', {
-          userId,
+        warnDevDiagnostic('[heart-rate-save] mutation failed', {
           elapsedMs: Date.now() - startedAt,
           errorMessage: getErrorMessage(error),
         });
@@ -90,7 +90,9 @@ export function useCompleteHeartRateSessionMutation(userId: string | null) {
       const recordedAtMs = Date.parse(input.result.reading?.recordedAt ?? '');
       const endedAt = Number.isFinite(recordedAtMs) ? recordedAtMs : Date.now();
       const usageDate = formatLocalDate(endedAt, timezone);
-      console.log('[hr-gate] mutation onSuccess: invalidating', { userId, usageDate, endedAt });
+      logDevDiagnostic('[hr-gate] mutation onSuccess: invalidating', {
+        usageDate,
+      });
 
       await Promise.all([
         queryClient.invalidateQueries({
@@ -107,7 +109,7 @@ export function useCompleteHeartRateSessionMutation(userId: string | null) {
         }),
       ]);
 
-      console.log('[hr-gate] mutation onSuccess: invalidate complete');
+      logDevDiagnostic('[hr-gate] mutation onSuccess: invalidate complete');
     },
   });
 }

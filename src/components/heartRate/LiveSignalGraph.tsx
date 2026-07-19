@@ -1,5 +1,5 @@
 import { AnimatedText } from '../common/Text';
-import React, {
+import {
   memo,
   useCallback,
   useEffect,

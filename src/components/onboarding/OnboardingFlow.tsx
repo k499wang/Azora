@@ -1088,14 +1088,8 @@ export default function OnboardingFlow({
   }
 
   if (step === 'pact') {
-    const intentTitle =
-      primaryIntent === 'other' || primaryIntent == null
-        ? customIntent.trim() || 'reach your goal'
-        : selectedOption?.title ?? 'reach your goal';
-
     return (
       <PactScreen
-        intentTitle={intentTitle}
         displayName={name.trim() || null}
         dailyMinutes={dailyMinutes}
         stepIndex={visualStepIndex}

@@ -2,6 +2,10 @@ import type { CaptureResult, PpgFrameSample } from '../../lib/heartRate/types';
 import { buildHeartRateSessionRpcPayload } from '../../lib/heartRate/sessionPayload';
 import { inferCaptureModeFromDurationSeconds } from '../../lib/heartRate/captureModes';
 import { logNetworkFailureDiagnostics } from '../debug/networkFailureDiagnostics';
+import {
+  logDevDiagnostic,
+  warnDevDiagnostic,
+} from '../debug/devLogger';
 import { requireSupabaseClient } from '../supabase';
 import type { Database, Json } from '../supabase/database.types';
 import type {
@@ -28,7 +32,7 @@ export async function completeHeartRateSession(
   input: CompleteHeartRateSessionInput,
 ): Promise<string> {
   const startedAt = Date.now();
-  console.log('[heart-rate-save] service payload build started', {
+  logDevDiagnostic('[heart-rate-save] service payload build started', {
     sampleCount: input.captureSamples.length,
     timezone: input.timezone,
     hasReading: input.result.reading != null,
@@ -41,7 +45,7 @@ export async function completeHeartRateSession(
   );
 
   if (args == null) {
-    console.warn('[heart-rate-save] service payload build failed', {
+    warnDevDiagnostic('[heart-rate-save] service payload build failed', {
       elapsedMs: Date.now() - startedAt,
     });
     throw new Error('Cannot persist a heart-rate session without a valid reading.');
@@ -49,7 +53,7 @@ export async function completeHeartRateSession(
 
   const supabase = requireSupabaseClient();
 
-  console.log('[heart-rate-save] rpc request started', {
+  logDevDiagnostic('[heart-rate-save] rpc request started', {
     sampleCount: input.captureSamples.length,
   });
 
@@ -60,7 +64,7 @@ export async function completeHeartRateSession(
   });
 
   if (error != null) {
-    console.warn('[heart-rate-save] rpc request failed', {
+    warnDevDiagnostic('[heart-rate-save] rpc request failed', {
       elapsedMs: Date.now() - rpcStartedAt,
       totalElapsedMs: Date.now() - startedAt,
       errorMessage: getErrorMessage(error),
@@ -76,8 +80,7 @@ export async function completeHeartRateSession(
     throw error;
   }
 
-  console.log('[heart-rate-save] rpc request succeeded', {
-    sessionId: data,
+  logDevDiagnostic('[heart-rate-save] rpc request succeeded', {
     elapsedMs: Date.now() - rpcStartedAt,
     totalElapsedMs: Date.now() - startedAt,
   });

@@ -1,5 +1,5 @@
 import { Text } from '../common/Text';
-import React, { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { View, StyleSheet, TouchableOpacity, Animated, ScrollView, Pressable } from 'react-native';
 import { Background2066 } from '../common/Background2066';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -9,12 +9,7 @@ import { usePostHog } from 'posthog-react-native';
 import { colors } from '../../theme/colors';
 import { typography, fonts } from '../../theme/typography';
 import { spacing, padding, margin } from '../../theme/spacing';
-import { card } from '../../theme/card';
-import LineGraph, { DataPoint } from '../analytics/LineGraph';
-import SectionHeader from '../common/SectionHeader';
-import StressGauge from './StressGauge';
-import { getStressZone } from '../../lib/heartRate/stress';
-import type { CaptureResult, HrvAvailabilityReason, IbiSample } from '../../lib/heartRate/types';
+import type { CaptureResult } from '../../lib/heartRate/types';
 import { AnalyticsEvent } from '../../services/analytics/events';
 import { trackFeatureGateHit } from '../../services/analytics/tracking';
 import { HeartRateResultContent } from './HeartRateResultContent';
@@ -41,12 +36,6 @@ interface ResultScreenProps {
   context?: string;
 }
 
-function getConfidenceLabel(confidence: number): { label: string; color: string } {
-  if (confidence > 0.7) return { label: 'High Confidence', color: colors.success[500] };
-  if (confidence > 0.4) return { label: 'Moderate Confidence', color: colors.warning[500] };
-  return { label: 'Low Confidence', color: colors.error[500] };
-}
-
 function getErrorMessage(
   error: CaptureResult['error'],
 ): { title: string; message: string } {
@@ -59,7 +48,7 @@ function getErrorMessage(
     case 'signal_lost':
       return {
         title: 'Finger Moved',
-        message: 'Your finger moved during measurement. Try to keep it still for the full 45 seconds.',
+        message: 'Your finger moved during measurement. Try to keep it still until the reading is complete.',
       };
     case 'no_finger':
       return {
@@ -86,80 +75,6 @@ function getErrorMessage(
         title: 'Reading Unclear',
         message: 'We were unable to get a clear reading. Please try again.',
       };
-  }
-}
-
-function downsampleIbi(
-  samples: IbiSample[],
-  toDataPoint: (s: IbiSample) => number,
-  maxPoints = 24,
-): DataPoint[] {
-  if (samples.length === 0) return [];
-  const fmt = (offsetMs: number) => `${Math.round(offsetMs / 1000)}s`;
-  if (samples.length <= maxPoints) {
-    return samples.map((s) => ({ label: fmt(s.offsetMs), value: toDataPoint(s) }));
-  }
-  const step = (samples.length - 1) / (maxPoints - 1);
-  const out: DataPoint[] = [];
-  for (let i = 0; i < maxPoints; i++) {
-    const s = samples[Math.round(i * step)];
-    out.push({ label: fmt(s.offsetMs), value: toDataPoint(s) });
-  }
-  return out;
-}
-
-interface StatCardProps {
-  icon: keyof typeof MaterialCommunityIcons.glyphMap;
-  label: string;
-  value: string;
-  unit?: string;
-  iconColor?: string;
-  caption?: string;
-  captionColor?: string;
-}
-
-function StatCard({
-  icon,
-  label,
-  value,
-  unit,
-  iconColor,
-  caption,
-  captionColor,
-}: StatCardProps) {
-  return (
-    <View style={styles.statCard}>
-      <View style={styles.statCardTop}>
-        <MaterialCommunityIcons
-          name={icon}
-          size={18}
-          color={iconColor ?? colors.primary.blue600}
-        />
-        <Text style={styles.statLabel}>{label}</Text>
-      </View>
-      <View style={styles.statValueRow}>
-        <Text style={styles.statValue}>{value}</Text>
-        {unit ? <Text style={styles.statUnit}>{unit}</Text> : null}
-        {caption ? (
-          <Text style={[styles.statCaption, captionColor ? { color: captionColor } : null]}>
-            {caption}
-          </Text>
-        ) : null}
-      </View>
-    </View>
-  );
-}
-
-function getHrvUnavailableMessage(
-  reason: HrvAvailabilityReason | undefined,
-): string | null {
-  switch (reason) {
-    case 'not_enough_clean_beats':
-      return 'HRV unavailable: not enough clean beats';
-    case 'low_signal_quality':
-      return 'HRV unavailable: low signal quality';
-    default:
-      return null;
   }
 }
 
@@ -312,14 +227,11 @@ export function ResultScreen({
             <View style={styles.heroContent}>
               <HeartRateResultContent
                 bpm={reading.bpm}
-                confidence={reading.confidence}
-                sampleCount={reading.sampleCount}
                 showHrv={result.mode !== 'quick'}
                 showRestingHealthBar={result.mode === 'quick'}
                 age={profileQuery.data?.age ?? null}
                 rmssd={reading.rmssd ?? null}
                 sdnn={reading.sdnn ?? null}
-                hrDrop={reading.hrDrop ?? null}
                 stress={reading.stress ?? null}
                 hrvAvailabilityReason={reading.hrvAvailabilityReason}
                 bpmSamples={resultBpmSamples}
@@ -413,7 +325,7 @@ export function ResultScreen({
             </View>
             <View style={styles.tipRow}>
               <MaterialCommunityIcons name="circle-small" size={16} color={colors.text.tertiary} />
-              <Text style={styles.tipText}>Stay still for the full 45 seconds</Text>
+              <Text style={styles.tipText}>Stay still until the reading is complete</Text>
             </View>
           </View>
         </Animated.View>
@@ -500,15 +412,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '100%',
   },
-  heartIconContainer: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: '#FFF5F5',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.lg,
-  },
   errorIconContainer: {
     width: 100,
     height: 100,
@@ -527,154 +430,12 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
     marginBottom: spacing.sm,
   },
-  bpmContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    marginBottom: spacing.md,
-    gap: spacing.xs,
-  },
-  bpmNumber: {
-    ...typography.display.display1,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    fontSize: 72,
-    lineHeight: 80,
-    color: colors.text.primary,
-  },
-  bpmUnit: {
-    ...typography.heading.heading1,
-    color: colors.text.secondary,
-    marginBottom: 12,
-  },
-  confidenceBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    borderRadius: 20,
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.sm,
-    marginBottom: spacing.lg,
-  },
-  confidenceDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  confidenceText: {
-    ...typography.caption.caption1,
-    fontWeight: '500',
-  },
-  sectionHeaderWrap: {
-    width: '100%',
-    marginTop: margin.resultSection,
-    marginBottom: spacing.sm,
-  },
-  statsGrid: {
-    width: '100%',
-    gap: spacing.sm,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  statCard: {
-    ...card.base,
-    ...card.shadow,
-    flex: 1,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md,
-    gap: spacing.sm,
-  },
-  statCardSpacer: {
-    flex: 1,
-  },
-  statCardTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  statLabel: {
-    ...typography.label.medium,
-    color: colors.text.secondary,
-    fontFamily: fonts.medium,
-  },
-  statValueRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: spacing.xs,
-  },
-  statValue: {
-    ...typography.display.display3,
-    color: colors.text.primary,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-  },
-  statUnit: {
-    ...typography.caption.caption1,
-    color: colors.text.tertiary,
-  },
-  statCaption: {
-    ...typography.caption.caption1,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-  },
-  hrvUnavailableCard: {
-    ...card.base,
-    width: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    marginTop: spacing.sm,
-  },
-  hrvUnavailableText: {
-    ...typography.body.small,
-    color: colors.text.secondary,
-    flex: 1,
-  },
-  contextCard: {
-    ...card.base,
-    width: '100%',
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    marginTop: spacing.sm,
-    gap: 2,
-  },
-  contextLabel: {
-    ...typography.label.medium,
-    color: colors.text.secondary,
-    fontFamily: fonts.medium,
-  },
-  contextValue: {
-    ...typography.body.small,
-    color: colors.text.primary,
-    fontFamily: fonts.semibold,
-  },
   scrollFlex: {
     flex: 1,
     width: '100%',
   },
   scrollContent: {
     paddingBottom: spacing.lg,
-  },
-  gaugeWrap: {
-    width: '100%',
-    marginTop: spacing.sm,
-  },
-  graphCard: {
-    ...card.base,
-    ...card.shadow,
-    width: '100%',
-    padding: spacing.md,
-    marginTop: spacing.sm,
-    overflow: 'hidden',
-  },
-  graphTitle: {
-    ...typography.heading.heading2,
-    color: colors.text.primary,
-    fontFamily: fonts.semibold,
-    marginBottom: spacing.xs,
   },
   errorTitle: {
     ...typography.heading.heading1,

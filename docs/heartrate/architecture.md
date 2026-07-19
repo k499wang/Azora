@@ -4,7 +4,7 @@ This document explains how the current heart-rate stack works end to end:
 
 - how the camera data enters the app
 - how live pulse / live BPM work
-- how the final 30-second capture result works
+- how Quick and Full capture results work
 - how final BPM differs from final HRV
 - why there are multiple pipelines instead of one
 
@@ -15,9 +15,10 @@ This is a description of the current code, not an aspirational design.
 Core data and orchestration:
 
 - `src/lib/heartRate/types.ts`
-- `src/lib/heartRate/heartRatePlugin.ts`
+- `src/lib/heartRate/heartRatePlugin.ts` (current JS frame-processor bridge)
 - `src/hooks/useLivePulse.ts`
 - `src/hooks/useHeartRateCapture.ts`
+- `src/hooks/useHeartRateStream.ts`
 - `src/lib/heartRate/captureResult.ts`
 
 Live detector:
@@ -29,12 +30,14 @@ Batch / offline capture analysis:
 - `src/lib/heartRate/signalProcessing.ts`
 - `src/lib/hrv.ts`
 
-Native frame timestamps:
+Authored native frame processor sources:
 
-- `ios/HeartRatePlugin.swift`
-- `ios/HeartRatePlugin.mm`
 - `native/ios/HeartRatePlugin.swift`
 - `native/ios/HeartRatePlugin.mm`
+
+`plugins/with-heart-rate-plugin.js` copies the selected implementation into the
+generated, gitignored `ios/` project during Expo prebuild. Do not edit the
+generated copies.
 
 ## High-Level Mental Model
 
@@ -47,7 +50,7 @@ There are really **three related outputs** in this feature:
    This is the live number shown during streaming / capture.
 
 3. Final reading
-   This is the result after the 30-second capture finishes:
+   This is the result after the selected capture finishes:
    - final BPM
    - confidence / quality
    - RMSSD / SDNN / pNN50 / HR drop
@@ -67,25 +70,28 @@ Camera frame
   -> native frame processor plugin
   -> PpgFrameSample { timestamp, rois[] }
 
-Then two main JS/TS paths use those samples:
+Three orchestration consumers use those samples, with two final-analysis modes:
 
-1. Live / streaming path
-   useLivePulse / useHeartRateCapture
+1. Live / streaming consumers
+   useLivePulse / useHeartRateStream / useHeartRateCapture
    -> HeartRateManager.processFrame(...)
    -> beatTick + live BPM + live IBI stream
 
-2. Final batch capture path
-   buildCaptureResult(samples, ibiSamples)
-   -> computeBPM(samples)
-   -> extractBestCaptureBeatSeries(samples)
-   -> computeHRVStats(ibiMs)
+2. Final capture path
+   buildCaptureResult(samples, mode, options)
+   -> Quick: validated live presentation BPM samples
+   -> Full: analyzeCapture(samples)
+      -> batch BPM estimate
+      -> best capture beat series
+      -> HRV statistics
 ```
 
 The important part is:
 
 - **live BPM** comes from `HeartRateManager`
-- **final BPM** comes from `computeBPM(samples)`
-- **final HRV** now comes from `extractBestCaptureBeatSeries(samples)` plus `computeHRVStats(...)`
+- **Quick final BPM** comes from validated live presentation BPM samples
+- **Full final BPM** comes from the batch analysis in `analyzeCapture(samples)`
+- **Full final HRV** comes from the selected capture beat series plus HRV analysis
 
 ## The Raw Input Type
 
@@ -352,7 +358,8 @@ It does **not** mean it is the best source for final HRV.
 
 ## `useLivePulse.ts`
 
-`useLivePulse.ts` is a thin orchestration hook around `HeartRateManager`.
+`useLivePulse.ts` is the exercise/live-session orchestrator around
+`HeartRateManager`.
 
 It:
 
@@ -361,19 +368,22 @@ It:
 - calls `heartRatePlugin(frame)`
 - validates the returned `PpgFrameSample`
 - feeds it to `HeartRateManager`
+- applies the selected publication and presentation profile
+- owns measurement and persisted BPM sample windows
+- coordinates suspend/resume lifecycle for exercise sessions
 - updates:
   - `fingerPlacement`
   - `beatTick`
   - `currentBpm`
 
-So:
-
-- `useLivePulse.ts` does not calculate BPM itself
-- it delegates all signal logic to `HeartRateManager`
+The manager owns signal classification, beat detection, and the raw live BPM
+estimate. The hook owns when that estimate is published, how it is presented,
+and which samples belong to an exercise measurement.
 
 ## Capture Flow Architecture
 
-The 30-second guided measurement lives in `useHeartRateCapture.ts`.
+Standalone Quick and Full measurements live in `useHeartRateCapture.ts`. Their
+durations and sensor-rate preferences are defined in `captureModes.ts`.
 
 It is a state machine around:
 
@@ -444,19 +454,24 @@ Why:
 When the measurement finishes, `useHeartRateCapture.ts` calls:
 
 ```ts
-buildCaptureResult(samples, ibiSamples)
+buildCaptureResult(samples, mode, {
+  fallbackIbiSamples,
+  presentationBpmSamples,
+})
 ```
 
 Where:
 
-- `samples` = every stored `PpgFrameSample` from the 30-second session
-- `ibiSamples` = the live manager’s captured beat intervals
+- `samples` = every stored `PpgFrameSample` from the selected capture window
+- `mode` = `quick` or `full`
+- `presentationBpmSamples` = BPM values actually accepted by the live UI path
+- `fallbackIbiSamples` = live manager intervals retained as a guarded fallback
 
-Even though both are passed in, they are **not used equally anymore**.
+These inputs are intentionally used differently by Quick and Full modes.
 
-## Final BPM Path
+## Full-Mode Final BPM Path
 
-Final BPM comes from:
+Full-mode final BPM comes from:
 
 - `computeBPM(samples)` in `signalProcessing.ts`
 
@@ -501,7 +516,7 @@ Current channels considered:
 
 8. Rank candidates and choose a consensus estimate
 
-So final BPM is not just:
+So Full-mode final BPM is not just:
 
 - "take the live BPM at the end"
 
@@ -509,11 +524,13 @@ It is:
 
 - "analyze the whole capture offline, across multiple ROI/channel candidates, and choose a robust pulse-rate estimate"
 
-That is why final BPM and live BPM are different architectural products.
+That is why Full-mode final BPM and live BPM are different architectural
+products. Quick mode intentionally promotes the validated live presentation
+reading instead.
 
-## Final HRV Path
+## Full-Mode HRV Path
 
-Final HRV now comes from:
+Full-mode HRV comes from:
 
 - `extractBestCaptureBeatSeries(samples)` in `signalProcessing.ts`
 - then `computeHRVStats(ibiMs)` in `hrv.ts`
@@ -530,7 +547,9 @@ Now:
 
 - HRV depends on a **batch-selected beat series** derived from the final capture samples
 
-That means HRV is now tied to the same rich batch analysis family as final BPM, instead of depending on the streaming detector’s persisted IBIs.
+That means Full-mode HRV is tied to the same rich batch analysis family as
+Full-mode final BPM, instead of depending on the streaming detector’s persisted
+IBIs.
 
 ### What `extractBestCaptureBeatSeries(samples)` does
 
@@ -621,7 +640,7 @@ If you remember one thing, remember this:
 - rolling median BPM
 - good for responsiveness
 
-### Final BPM path
+### Full-mode final BPM path
 
 `computeBPM(samples)`
 
@@ -631,7 +650,7 @@ If you remember one thing, remember this:
 - spectral estimate + peak estimate + candidate ranking
 - good for robust final BPM
 
-### Final HRV path
+### Full-mode final HRV path
 
 `extractBestCaptureBeatSeries(samples)` -> `computeHRVStats(ibiMs)`
 
@@ -639,28 +658,29 @@ If you remember one thing, remember this:
 - but preserves beat timestamps / intervals
 - good for final RMSSD / SDNN
 
-## Why Final BPM And Final HRV Still Use Different Final Functions
+## Why Full-Mode BPM And HRV Still Use Different Final Functions
 
 This is a subtle but important point.
 
-Even though final BPM and final HRV both now come from the batch world, they still use **different final products**:
+Even though Full-mode BPM and HRV both come from the batch world, they use
+**different final products**:
 
-- final BPM uses `computeBPM(samples)`
-- final HRV uses `extractBestCaptureBeatSeries(samples)`
+- Full-mode BPM uses `computeBPM(samples)`
+- Full-mode HRV uses `extractBestCaptureBeatSeries(samples)`
 
 Why not force both to be exactly the same function?
 
 Because they answer different questions:
 
-- final BPM: "what is the most robust estimate of pulse rate over this capture?"
-- final HRV: "what is the best beat-to-beat interval series we can extract from this capture?"
+- Full-mode BPM: "what is the most robust estimate of pulse rate over this capture?"
+- Full-mode HRV: "what is the best beat-to-beat interval series we can extract from this capture?"
 
 Sometimes those align perfectly.
 Sometimes the best "rate estimate" and the best "beat series" are not identical optimization targets.
 
 So the architecture intentionally allows:
 
-- one batch function to optimize for final BPM
+- one batch function to optimize for Full-mode final BPM
 - another batch function to optimize for HRV beat intervals
 
 That is a reasonable design.
@@ -702,7 +722,8 @@ Source:
 
 Source:
 
-- `computeBPM(samples)`
+- Quick: validated live presentation BPM samples
+- Full: `computeBPM(samples)` through `analyzeCapture(samples)`
 
 ### Final RMSSD / SDNN
 
@@ -738,13 +759,15 @@ So the split is justified.
 
 The current architecture is better than a single shared simplistic pipeline, but it still has tradeoffs:
 
-1. Live BPM and final BPM can differ.
-   That is expected because they are different estimators.
+1. Live BPM and Full-mode final BPM can differ.
+   That is expected because they are different estimators. Quick mode uses the
+   validated live presentation readings for its final BPM.
 
 2. Live beat ticks can fire on peaks that never become trusted HRV intervals.
    Also expected. Live UI favors responsiveness.
 
-3. Final BPM and final HRV are from the same batch family now, but not from one single unified "reading object".
+3. Full-mode final BPM and HRV are from the same batch family, but not from one
+   single unified "reading object".
    That is okay, but future work could unify them more tightly if needed.
 
 4. The live detector still uses a simpler single aggregated signal.
@@ -763,7 +786,8 @@ The biggest next architectural improvements would be:
    - rejected candidate count
    - confidence / SNR
 
-3. Potentially let final BPM optionally derive from the same chosen beat series when that proves more stable on device testing.
+3. Potentially let Full-mode final BPM derive from the same chosen beat series
+   when that proves more stable on device testing.
 
 4. Improve live-path candidate selection if live BPM becomes a priority.
 
@@ -777,9 +801,9 @@ If you want the simplest possible summary:
   - beat ticks
   - live BPM
   - a streaming IBI list
-- The final result uses the stored capture samples for stronger batch analysis.
-- Final BPM comes from `computeBPM(samples)`.
-- Final HRV comes from a best ROI/channel batch beat series via `extractBestCaptureBeatSeries(samples)`.
+- Quick final BPM comes from validated live presentation readings.
+- Full final BPM uses stored capture samples for stronger batch analysis.
+- Full HRV comes from a best ROI/channel batch beat series via
+  `extractBestCaptureBeatSeries(samples)`.
 
 That is the core architecture.
-

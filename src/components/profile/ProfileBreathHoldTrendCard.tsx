@@ -1,4 +1,3 @@
-import { Text } from '../common/Text';
 import { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { colors } from '../../theme/colors';

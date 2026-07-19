@@ -6,7 +6,7 @@ import { usePostHog } from 'posthog-react-native';
 import CardSurface from '../common/CardSurface';
 import EmptyStateCard from '../home/EmptyStateCard';
 import SectionHeader from '../common/SectionHeader';
-import { computeStress, getStressZone } from '../../lib/heartRate/stress';
+import { getStressZone } from '../../lib/heartRate/stress';
 import { AnalyticsEvent } from '../../services/analytics/events';
 import { trackFeatureGateHit } from '../../services/analytics/tracking';
 import { colors } from '../../theme/colors';

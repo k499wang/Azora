@@ -1,6 +1,6 @@
 import { Text } from '../../common/Text';
 import { useEffect, useRef } from 'react';
-import { Animated, Easing, StyleSheet, View } from 'react-native';
+import { Animated, StyleSheet, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
@@ -60,7 +60,7 @@ export default function ConsistencyScreen({
 
         <View style={styles.plot}>
           <View style={styles.bars}>
-            {DAYS.map((label, index) => {
+            {DAYS.map((_, index) => {
               const anim = barAnims[index];
               const isPeak = index === DAYS.length - 1;
               return (

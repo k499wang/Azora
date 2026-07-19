@@ -11,8 +11,8 @@ test, and revert independently.
 | `src/services/supabase/database.types.ts` | Generated Supabase schema types | Low | Leave generated. Do not hand-edit. |
 | `src/components/onboarding/screens/OnboardingPaywallScreen.tsx` | Onboarding paywall UI, package selection, trial copy | Low-medium | Split presentational paywall step components. |
 | `src/components/onboarding/screens/BaselineScreen.tsx` | Onboarding baseline intro and heart-rate capture | Medium | Split intro/checklist UI from live capture UI first. |
-| `src/features/exercise/guidedBreathing/GuidedBreathingSessionScreen.tsx` | Guided breathing session workflow | High | Extract pure helpers and presentational sections before hooks. |
-| `src/features/exercise/dailyBreathHold/DailyBreathHoldScreen.tsx` | Daily breath-hold workflow | High | Extract pure helpers and presentational sections before hooks. |
+| `src/features/exercise/guidedBreathing/GuidedBreathingSessionScreen.tsx` | Guided breathing session composition | High | Continue only at clear orchestration or presentation seams; the first decomposition is complete. |
+| `src/features/exercise/dailyBreathHold/DailyBreathHoldScreen.tsx` | Daily breath-hold composition | High | Continue only at clear orchestration or persistence seams; the first decomposition is complete. |
 | `src/lib/heartRate/signalProcessing.ts` | Batch PPG analysis and HRV beat selection | High | Split last, only behind green heart-rate tests. |
 | `src/components/onboarding/OnboardingFlow.tsx` | Onboarding state, analytics, save, notifications, paywall | Medium-high | Refactor after child screens are smaller. |
 
@@ -164,6 +164,8 @@ Tests:
 
 ## Phase 3: Shared Heart-Rate UI
 
+Status: pending; this is the next heart-rate stabilization seam.
+
 Targets:
 
 - `BaselineScreen`
@@ -197,6 +199,10 @@ Tests:
 
 ## Phase 4: Exercise Session Decomposition
 
+Status: implemented in `0893ff7`; automated checks passed and targeted device
+smoke testing was performed. Keep the manual scenarios below as regression
+coverage for future changes.
+
 Target first:
 
 - `src/features/exercise/guidedBreathing/GuidedBreathingSessionScreen.tsx`
@@ -224,6 +230,10 @@ Tests:
   backend failure does not block completion screen.
 
 ## Phase 5: Daily Breath-Hold Decomposition
+
+Status: implemented in `0893ff7`; automated checks passed and targeted device
+smoke testing was performed. Keep the manual scenarios below as regression
+coverage for future changes.
 
 Target:
 

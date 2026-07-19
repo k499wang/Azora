@@ -31,7 +31,7 @@ For this app, that is much better than trying to remote-control subscription UI 
 
 ## What This App Already Assumes
 
-The current backend plan already defines the subscription model:
+The current RevenueCat and Supabase contract defines the subscription model:
 
 - entitlement: `pro`
 - offering: `default`
@@ -41,7 +41,7 @@ The current backend plan already defines the subscription model:
 
 See:
 
-- [Phase 4: RevenueCat and Paywall](/Users/k3vinwvng/Documents/Azora/Azora/docs/backend-plan/phase-4-revenuecat-paywall.md:1)
+- [RevenueCat, Supabase, And The Paywall Flow](../revenuecat-supabase-paywall-guide.md)
 
 That means the right next step is not inventing a new monetization model. It is wiring RevenueCat cleanly into the app.
 

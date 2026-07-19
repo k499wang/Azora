@@ -19,7 +19,6 @@ const ENTRANCE_EASING = Easing.bezier(0.22, 1, 0.36, 1);
 const ENTRANCE_INITIAL_SCALE = 0.992;
 
 interface PactScreenProps {
-  intentTitle: string;
   displayName: string | null;
   dailyMinutes: number;
   stepIndex: number;
@@ -265,7 +264,6 @@ const stampStyles = StyleSheet.create({
 
 /* ─── PactScreen ─── */
 export default function PactScreen({
-  intentTitle,
   displayName,
   dailyMinutes,
   stepIndex,
@@ -413,11 +411,6 @@ export default function PactScreen({
     day: 'numeric',
     year: 'numeric',
   });
-
-  const focusText =
-    intentTitle.trim().toLowerCase() === 'sleep better'
-      ? 'sleeping better'
-      : intentTitle.trim().toLowerCase();
 
   const borderColor = cardBorder.interpolate({
     inputRange: [0, 1],

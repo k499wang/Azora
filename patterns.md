@@ -661,7 +661,9 @@ Examples:
 - `docs/auth-onboarding-navigation-architecture.md`
 - `docs/heartrate/architecture.md`
 - `docs/analytics/current-posthog-events.md`
-- `docs/backend-plan/*`
+- `docs/architecture/*`
+- `docs/heartrate/*`
+- `docs/revenuecat-supabase-paywall-guide.md`
 
 Use this when a feature spans:
 

@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import { memo } from 'react';
 import { StyleSheet } from 'react-native';
 import { Camera } from 'react-native-vision-camera';
 import type {

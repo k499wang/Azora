@@ -8,6 +8,7 @@ import {
 import { useAuthStore } from '../stores/authStore';
 import { useUserEntitlementQuery } from '../queries/subscriptions/useUserEntitlementQuery';
 import { useDailyFeatureUsageQuery } from '../queries/subscriptions/useDailyFeatureUsageQuery';
+import { logDevDiagnostic } from '../services/debug/devLogger';
 
 export function useFeatureAccess(feature: FeatureKeyValue): FeatureAccessResult & {
   isLoading: boolean;
@@ -37,19 +38,16 @@ export function useFeatureAccess(feature: FeatureKeyValue): FeatureAccessResult 
       (needsUsage && usageQuery.isPending),
   };
 
-  console.log('[hr-gate] useFeatureAccess', {
+  logDevDiagnostic('[hr-gate] useFeatureAccess', {
     feature,
-    userId,
     isPro,
     entitlementStatus: {
       isPending: entitlementQuery.isPending,
       isFetching: entitlementQuery.isFetching,
-      data: entitlementQuery.data,
     },
     usageStatus: {
       isPending: usageQuery.isPending,
       isFetching: usageQuery.isFetching,
-      data: usageQuery.data,
     },
     decision: result,
   });
