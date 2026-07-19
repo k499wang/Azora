@@ -6,8 +6,7 @@ export type DailyBreathHoldPhase =
   | 'preExhale'
   | 'inhale'
   | 'hold'
-  | 'processingResults'
-  | 'done';
+  | 'processingResults';
 
 export function isBreathHoldBreathingPhase(
   phase: DailyBreathHoldPhase,

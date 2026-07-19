@@ -1,5 +1,5 @@
 import { forwardRef, useEffect, useMemo, useRef } from 'react';
-import { Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
+import { Animated, Easing, StyleSheet, View } from 'react-native';
 import { Text } from '../../../../components/common/Text';
 import BreathingCircle, { type BreathingCircleRef } from '../../shared/components/BreathingCircle';
 import BreathHoldIntro, { type BreathHoldStep } from './BreathHoldIntro';
@@ -34,7 +34,6 @@ const PHASE_LABELS: Record<DailyBreathHoldPhase, string> = {
   inhale: 'Inhale',
   hold: 'Hold',
   processingResults: '',
-  done: 'Done',
 };
 
 type DailyBreathHoldCamera = Pick<
@@ -58,8 +57,9 @@ interface DailyBreathHoldPresentationProps {
   paused: boolean;
   theme: ExerciseDarkTheme;
   protocol: DailyBreathHoldProtocol;
+  holdSeconds: number;
+  bestHoldSeconds: number;
   heartRate: DailyBreathHoldHeartRatePresentation;
-  onReleasePress: () => void;
 }
 
 export const DailyBreathHoldPresentation = forwardRef<
@@ -71,15 +71,15 @@ export const DailyBreathHoldPresentation = forwardRef<
     paused,
     theme,
     protocol,
+    holdSeconds,
+    bestHoldSeconds,
     heartRate,
-    onReleasePress,
   },
   circleRef,
 ) {
   const isPlacement = phase === 'placement';
   const breathingActive = isBreathHoldBreathingPhase(phase);
   const isLive = breathingActive || phase === 'hold';
-  const canReleaseHold = phase === 'hold' && !paused;
   const transition = useRef(new Animated.Value(phase === 'idle' ? 0 : 1)).current;
   const { prepCycles, prepExhaleSeconds, prepInhaleSeconds } = protocol;
   const introDescription =
@@ -151,21 +151,7 @@ export const DailyBreathHoldPresentation = forwardRef<
         </View>
       ) : null}
 
-      <Pressable
-        style={({ pressed }) => [
-          styles.contentArea,
-          canReleaseHold && pressed && styles.releasePressed,
-        ]}
-        disabled={!canReleaseHold}
-        onPress={onReleasePress}
-        accessible={canReleaseHold}
-        accessibilityRole="button"
-        accessibilityLabel={canReleaseHold ? 'End breath hold' : undefined}
-        accessibilityHint={
-          canReleaseHold ? 'Ends the hold and opens your results' : undefined
-        }
-        accessibilityState={{ disabled: !canReleaseHold }}
-      >
+      <View style={styles.contentArea}>
         <Animated.View
           style={[
             styles.contentLayer,
@@ -210,9 +196,7 @@ export const DailyBreathHoldPresentation = forwardRef<
                 beatFlush: theme.beatFlush,
               }}
             >
-              {paused ? (
-                <Text style={styles.phaseLabel}>Paused</Text>
-              ) : PHASE_LABELS[phase] ? (
+              {PHASE_LABELS[phase] ? (
                 <Text style={styles.phaseLabel}>{PHASE_LABELS[phase]}</Text>
               ) : null}
             </BreathingCircle>
@@ -222,13 +206,16 @@ export const DailyBreathHoldPresentation = forwardRef<
         <DailyBreathHoldGuidance
           placementActive={isPlacement}
           liveActive={isLive}
+          holdProgressVisible={phase === 'hold'}
           holdActive={phase === 'hold' && !paused}
+          holdSeconds={holdSeconds}
+          bestHoldSeconds={bestHoldSeconds}
           theme={theme}
           heartRateActive={heartRate.active}
           fingerPlacement={heartRate.fingerPlacement}
           signalStatus={heartRate.signalStatus}
         />
-      </Pressable>
+      </View>
     </View>
   );
 });
@@ -261,9 +248,6 @@ const styles = StyleSheet.create({
   centerStack: {
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  releasePressed: {
-    opacity: 0.85,
   },
   phaseLabel: {
     fontFamily: fonts.semibold,
