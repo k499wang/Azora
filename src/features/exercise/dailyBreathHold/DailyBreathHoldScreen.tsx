@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, StyleSheet, View } from 'react-native';
+import { Animated, Pressable, StyleSheet, View } from 'react-native';
 import { useIsFocused } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -43,10 +43,7 @@ import {
   isBreathHoldBreathingPhase,
   type DailyBreathHoldPhase,
 } from './domain/breathHoldPhases';
-import {
-  buildBreathHoldCompletion,
-  type BreathHoldCompletion,
-} from './domain/breathHoldCompletion';
+import { buildBreathHoldCompletion } from './domain/breathHoldCompletion';
 import {
   DAILY_BREATH_HOLD_PROTOCOL,
   isBreathHoldReleaseAllowed,
@@ -76,7 +73,6 @@ export default function DailyBreathHoldScreen({
   const [phase, setPhase] = useState<DailyBreathHoldPhase>('idle');
   const [bestHoldSeconds, setBestHoldSeconds] = useState(0);
   const [hrEnabled, setHrEnabled] = useState(true);
-  const [lastRelease, setLastRelease] = useState<BreathHoldCompletion | null>(null);
   const { preferences: audioPreferences, setThemeId } = useAudioPreferences();
   const activeTheme = useMemo<ExerciseDarkTheme>(
     () =>
@@ -225,7 +221,7 @@ export default function DailyBreathHoldScreen({
   );
 
   useEffect(() => {
-    if (isFocused || phase === 'done') return;
+    if (isFocused) return;
 
     setPhase('idle');
   }, [isFocused, phase]);
@@ -318,6 +314,7 @@ export default function DailyBreathHoldScreen({
     setPhase('intro');
     clearIntroTimeout();
     introTimeoutRef.current = setTimeout(() => {
+      introTimeoutRef.current = null;
       if (!flow.isActive()) return;
       startPrepBreathing(false);
     }, DAILY_BREATH_HOLD_INTRO_DURATION_MS);
@@ -379,7 +376,6 @@ export default function DailyBreathHoldScreen({
       });
       flow.cancel();
       setBestHoldSeconds(completion.bestHoldSeconds);
-      setPhase('done');
       if (completion.isNewBest) {
         AsyncStorage.setItem(BEST_HOLD_KEY, String(completion.bestHoldSeconds)).catch(() => {});
       }
@@ -394,8 +390,7 @@ export default function DailyBreathHoldScreen({
       });
       void saveCompletedHold(completion);
 
-      setLastRelease(completion);
-      navigation.navigate('DailyResult', {
+      navigation.replace('DailyResult', {
         holdSeconds: releasedHoldSeconds,
         heartRateResultStatus: completion.heartRateResultStatus,
         avgBpm: completion.avgBpm ?? undefined,
@@ -421,28 +416,16 @@ export default function DailyBreathHoldScreen({
   };
 
   const handlePrimaryPress = () => {
-    if (phase === 'idle' || phase === 'done') {
+    if (phase === 'idle') {
       startDailyExercise();
     }
   };
 
   const handlePauseResume = () => {
+    if (phase === 'intro') return;
+
     if (paused) resumePhaseSequence();
     else pausePhaseSequence();
-  };
-
-  const handleViewResults = () => {
-    posthog.capture(AnalyticsEvent.DailyResultsViewed, {
-      hr_monitoring_enabled: lastRelease?.avgBpm != null,
-    });
-    navigation.navigate('DailyResult', {
-      holdSeconds,
-      heartRateResultStatus: lastRelease?.heartRateResultStatus,
-      avgBpm: lastRelease?.avgBpm ?? undefined,
-      minBpm: lastRelease?.minBpm ?? undefined,
-      maxBpm: lastRelease?.maxBpm ?? undefined,
-      bpmSamples: lastRelease?.graphSamples,
-    });
   };
 
   const handleExit = useCallback(() => {
@@ -483,7 +466,8 @@ export default function DailyBreathHoldScreen({
             paused={paused}
             theme={activeTheme}
             protocol={DAILY_BREATH_HOLD_PROTOCOL}
-            onReleasePress={tryReleaseHold}
+            holdSeconds={holdSeconds}
+            bestHoldSeconds={bestHoldSeconds}
             heartRate={{
               enabled: hrEnabled,
               active: pulse.active,
@@ -509,26 +493,35 @@ export default function DailyBreathHoldScreen({
             style={shouldAutoHideHud ? { opacity: hudOpacity } : undefined}
             pointerEvents={shouldAutoHideHud && !hudVisible ? 'none' : 'auto'}
           >
-            <DailyBreathHoldHud
-              phase={phase}
-              paused={paused}
-              theme={activeTheme}
-              holdSeconds={holdSeconds}
-              bestHoldSeconds={bestHoldSeconds}
-              onSettingsPress={() => setAudioSettingsOpen(true)}
-              onExit={handleExit}
-              onStart={handlePrimaryPress}
-              onPauseResume={handlePauseResume}
-              onViewResults={handleViewResults}
-            />
+            {phase !== 'hold' ? (
+              <DailyBreathHoldHud
+                phase={phase}
+                paused={paused}
+                theme={activeTheme}
+                onSettingsPress={() => setAudioSettingsOpen(true)}
+                onExit={handleExit}
+                onStart={handlePrimaryPress}
+                onPauseResume={handlePauseResume}
+              />
+            ) : null}
           </Animated.View>
         }
       />
+      {phase === 'hold' && !paused ? (
+        <Pressable
+          style={styles.holdReleaseTarget}
+          onPress={tryReleaseHold}
+          accessible
+          accessibilityRole="button"
+          accessibilityLabel="Stop breath hold"
+          accessibilityHint="Stops the hold and opens your results"
+        />
+      ) : null}
       <AudioSettingsSheet
         visible={audioSettingsOpen}
         onClose={() => setAudioSettingsOpen(false)}
         title="Session options"
-        heartRateMonitoringLocked={phase !== 'idle' && phase !== 'done'}
+        heartRateMonitoringLocked={phase !== 'idle'}
         extraSectionsTop={
           <ThemePickerSection
             activeThemeId={activeTheme.id}
@@ -543,5 +536,9 @@ export default function DailyBreathHoldScreen({
 const styles = StyleSheet.create({
   fill: {
     flex: 1,
+  },
+  holdReleaseTarget: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 20,
   },
 });

@@ -91,14 +91,17 @@ Preserve these when changing exercise orchestration:
 - cancellation is checked between phases
 - pause and resume retain the remaining phase duration
 - guided heart-rate samples survive pause and resume; paused time is excluded from sample offsets
+- daily Pause is visible during the no-HR entrance animation but remains inert until the first timed preparation phase begins
 - daily preparation and hold clocks freeze while paused and resume without repeating a step
 - daily heart-rate capture continues uninterrupted while its exercise clock is paused
 - completion is delivered once
 - heart-rate samples are collected before pulse cleanup
 - completion navigation does not wait for backend persistence
 - daily hold release is ignored while paused and during the first active second
+- after that guard, the active daily hold uses the whole screen as its release target
 - daily exit cancels the flow without saving or opening a result
 - result processing disables the back gesture
+- successful daily hold processing replaces the exercise route with the result route, so Back cannot reopen a completed hold
 - save failures do not discard the locally computed result
 
 ## Verification

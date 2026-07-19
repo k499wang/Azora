@@ -10,6 +10,7 @@ import type { ExerciseDarkTheme } from '../../../../theme/exerciseDarkThemes';
 import { colors } from '../../../../theme/colors';
 import { fonts, typography } from '../../../../theme/typography';
 import { spacing } from '../../../../theme/spacing';
+import HoldProgressBar from './HoldProgressBar';
 
 const CUE_FADE_OUT_MS = 280;
 const CUE_FADE_IN_MS = 360;
@@ -24,14 +25,17 @@ const HOLD_CUE_PARTS: BreathCuePart[] = [
   { text: ' your breath for ' },
   { text: 'as long as you can', emphasis: true },
   { text: '. ' },
-  { text: 'Tap the center area', emphasis: true },
-  { text: ' to end the hold when you need to breathe.' },
+  { text: 'Tap the screen to stop', emphasis: true },
+  { text: ' when you need to breathe.' },
 ];
 
 interface DailyBreathHoldGuidanceProps {
   placementActive: boolean;
   liveActive: boolean;
+  holdProgressVisible: boolean;
   holdActive: boolean;
+  holdSeconds: number;
+  bestHoldSeconds: number;
   theme: ExerciseDarkTheme;
   heartRateActive: boolean;
   fingerPlacement: FingerPlacementState;
@@ -41,7 +45,10 @@ interface DailyBreathHoldGuidanceProps {
 export function DailyBreathHoldGuidance({
   placementActive,
   liveActive,
+  holdProgressVisible,
   holdActive,
+  holdSeconds,
+  bestHoldSeconds,
   theme,
   heartRateActive,
   fingerPlacement,
@@ -103,6 +110,17 @@ export function DailyBreathHoldGuidance({
         />
       ) : liveActive ? (
         <View style={styles.metricStack}>
+          {holdProgressVisible ? (
+            <View style={styles.holdProgressWrap}>
+              <HoldProgressBar
+                holdSeconds={holdSeconds}
+                bestSeconds={bestHoldSeconds}
+                textColor={theme.textPrimary}
+                trackColor={theme.surface}
+                fillColor={theme.textAccent}
+              />
+            </View>
+          ) : null}
           {displayedCue != null ? (
             <Animated.View style={{ opacity: cueOpacity }}>
               <Text style={[styles.holdMicroCopy, { color: theme.textSecondary }]}>
@@ -144,8 +162,13 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
   },
   metricStack: {
+    width: '100%',
     alignItems: 'center',
     gap: spacing.sm,
+  },
+  holdProgressWrap: {
+    width: '100%',
+    marginBottom: spacing.sm,
   },
   warningSpacing: {
     marginTop: 2,
