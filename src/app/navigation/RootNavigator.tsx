@@ -4,8 +4,8 @@ import { useNavigation } from '@react-navigation/native';
 import { StyleSheet, View } from 'react-native';
 import { BrandSplash } from '../../components/welcome/BrandSplash';
 import AuthLandingScreen from '../../screens/AuthLandingScreen';
-import DailyExercisePage from '../../screens/DailyExercisePage';
-import ExerciseSessionPage from '../../screens/ExerciseSessionPage';
+import DailyBreathHoldScreen from '../../features/exercise/dailyBreathHold/DailyBreathHoldScreen';
+import GuidedBreathingSessionScreen from '../../features/exercise/guidedBreathing/GuidedBreathingSessionScreen';
 import SessionCompleteScreen from '../../screens/SessionCompleteScreen';
 import { HeartRateScreen } from '../../screens/HeartRateScreen';
 import { HeartRateSessionDetailScreen } from '../../screens/HeartRateSessionDetailScreen';
@@ -86,7 +86,7 @@ function AppStack({ showBootPaywall }: AppStackProps) {
       />
       <Stack.Screen
         name="ExerciseSession"
-        component={ExerciseSessionPage}
+        component={GuidedBreathingSessionScreen}
         options={{
           presentation: 'card',
           animation: 'slide_from_right',
@@ -103,7 +103,7 @@ function AppStack({ showBootPaywall }: AppStackProps) {
       />
       <Stack.Screen
         name="DailyExercise"
-        component={DailyExercisePage}
+        component={DailyBreathHoldScreen}
         options={{
           presentation: 'card',
           animation: 'slide_from_right',

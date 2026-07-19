@@ -50,7 +50,7 @@ Example: a "Coach phrases" category that speaks short motivational lines between
 4. Add a default value for the new key in `preferences.ts` (default to `null`).
 5. **Bump the storage key version**: `settings:audio_v1` → `settings:audio_v2`, and add a one-shot migration in `preferences.ts` that reads `_v1` and writes a `_v2` blob with the new field filled in. This is the only file where storage-shape changes belong.
 6. Write a hook to consume it (e.g. `useCoachPhrases`) modeled after `useAmbientAudio` or `usePhaseChime` depending on whether it loops or fires on events.
-7. Mount that hook inside `DailyExercisePage` / `ExerciseSessionPage` next to the existing audio hooks.
+7. Mount that hook inside `DailyBreathHoldScreen` / `GuidedBreathingSessionScreen` next to the existing audio hooks.
 
 The sheet UI requires **zero changes** — it iterates `audioCategories`.
 

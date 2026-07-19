@@ -8,7 +8,7 @@ import { colors } from '../../theme/colors';
 import { card } from '../../theme/card';
 import { fonts, typography } from '../../theme/typography';
 import { spacing, padding } from '../../theme/spacing';
-import TECHNIQUES, { type BreathingTechnique } from '../../data/techniques';
+import TECHNIQUES, { type BreathingTechnique } from '../../features/exercise/guidedBreathing/techniques';
 import { AnalyticsEvent } from '../../services/analytics/events';
 import { trackFeatureGateHit } from '../../services/analytics/tracking';
 import { useFeatureAccess } from '../../hooks/useFeatureAccess';

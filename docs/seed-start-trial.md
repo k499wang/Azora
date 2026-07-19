@@ -26,7 +26,7 @@ percentages stabilize inside Meta's expected ranges.
 
 ```bash
 bash scripts/seed-start-trial.sh                    # random device, weighted mix
-bash scripts/seed-start-trial.sh <device>           # force a device (1-5)
+bash scripts/seed-start-trial.sh <device>           # force a device (1-6)
 bash scripts/seed-start-trial.sh <device> <hours>   # backdate eventTime by N hours
 ```
 
@@ -38,14 +38,15 @@ bash scripts/seed-start-trial.sh 4        # opt-out device, timestamped now
 bash scripts/seed-start-trial.sh 4 6      # opt-out device, timestamped 6h ago
 ```
 
-A plain run picks the opt-out device ~60% of the time and one of the opt-in
+A plain run picks an opt-out device ~60% of the time and one of the opt-in
 devices ~40% — roughly the opt-in share of a real iOS user base.
 
 Backdating exists so a batch sent in one sitting still reads as trials spread
 across the day. Keep backdates within the current day.
 
-Each run prints the full JSON payload, then the HTTP status. `HTTP 200` + `ok`
-means AppsFlyer accepted it. Anything else is a failure — read the response.
+Each run prints the device, the full JSON payload, then the HTTP status.
+`HTTP 200` + `OK — af_start_trial accepted` means AppsFlyer took it. Anything
+else is a failure — read the response.
 
 ## Device roster
 
@@ -60,6 +61,7 @@ never sent as opt-out or vice versa.
 | 3 | user-b | opt-in | 26.4.2 / 1.0.9 |
 | 4 | user-c | **opt-out** (`att: 2`, zeroed IDFA) | 26.5.2 / 1.0.11 |
 | 5 | user-d | opt-in | 18.7.8 / 1.0.9 |
+| 6 | user-e | **opt-out** (`att: 2`, zeroed IDFA) | 26.5 / 1.0.12 |
 
 Every event carries the full RevenueCat field set: `af_events_api`,
 `appsflyer_id`, `customer_user_id`, `att`, `idfa`, `idfv`, `ip` (the device's

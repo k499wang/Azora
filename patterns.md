@@ -172,8 +172,8 @@ Examples:
 
 Heavier screens do exist:
 
-- `src/screens/ExerciseSessionPage.tsx`
-- `src/screens/DailyExercisePage.tsx`
+- `src/features/exercise/guidedBreathing/GuidedBreathingSessionScreen.tsx`
+- `src/features/exercise/dailyBreathHold/DailyBreathHoldScreen.tsx`
 
 These contain more workflow logic today. When extending them, prefer extracting reusable orchestration into hooks or lib functions rather than adding more inline state machines.
 
@@ -200,7 +200,7 @@ Reusable feature scaffolds use explicit slots instead of hidden children magic.
 
 Examples:
 
-- `src/components/exercise/ExerciseScaffold.tsx`
+- `src/features/exercise/shared/components/ExerciseScaffold.tsx`
 - `src/components/common/AppTopBar.tsx`
 
 Why this works well here:
@@ -600,7 +600,7 @@ Small product-owned content lives close to the feature or under `src/data/`.
 
 Examples:
 
-- breathing techniques in `src/data/techniques.ts`
+- breathing techniques in `src/features/exercise/guidedBreathing/techniques.ts`
 - screen-local arrays and display constants inside screen files
 
 Use `src/data/` when:

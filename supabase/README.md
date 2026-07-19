@@ -4,7 +4,8 @@ This folder contains the launch database migrations for the Azora backend plan.
 
 ## Technique Storage Decision
 
-Keep built-in breathing techniques in `src/data/techniques.ts` for v1.
+Keep built-in breathing techniques in
+`src/features/exercise/guidedBreathing/techniques.ts` for v1.
 
 Why:
 

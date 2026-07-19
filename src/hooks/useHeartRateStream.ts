@@ -14,6 +14,7 @@ import type {
 } from '../lib/heartRate/types';
 import { heartRatePlugin } from '../lib/heartRate/heartRatePlugin';
 import { HeartRateManager } from '../lib/heartRate/heartRateManager';
+import { isPpgFrameSample } from '../lib/heartRate/isPpgFrameSample';
 import { createLiveBpmPresentationFilter } from '../lib/heartRate/bpmSmoothing';
 import { createBeatTickScheduler } from '../lib/heartRate/beatTickScheduler';
 import { LIVE_SIGNAL_GRAPH_UPDATE_INTERVAL_MS } from '../lib/heartRate/liveSignalGraphConfig';
@@ -27,22 +28,6 @@ const WARMUP_DURATION_MS = 5000;
 // Matches the manager's 30 Hz bandpass design (SAMPLE_RATE_HZ in
 // heartRateManager.ts) and the other live flows, so the graph looks the same.
 const FRAME_PROCESSING_FPS = 30;
-
-function isValidFrameSample(value: unknown): value is PpgFrameSample {
-  if (value == null || typeof value !== 'object') return false;
-  const sample = value as Partial<PpgFrameSample>;
-  if (!Number.isFinite(sample.timestamp) || !Array.isArray(sample.rois)) return false;
-  return sample.rois.length > 0 && sample.rois.every((roi) =>
-    roi != null &&
-    typeof roi.id === 'string' &&
-    Number.isFinite(roi.r) &&
-    Number.isFinite(roi.g) &&
-    Number.isFinite(roi.b) &&
-    Number.isFinite(roi.saturatedPct) &&
-    Number.isFinite(roi.darkPct) &&
-    Number.isFinite(roi.variance)
-  );
-}
 
 interface UseHeartRateStreamReturn {
   streamState: StreamState;
@@ -159,7 +144,7 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
 
   const addSample = useRunOnJS(
     (frameSample: unknown) => {
-      if (!isValidFrameSample(frameSample)) {
+      if (!isPpgFrameSample(frameSample)) {
         return;
       }
 

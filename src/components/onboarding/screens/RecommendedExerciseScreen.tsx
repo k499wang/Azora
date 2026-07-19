@@ -8,7 +8,7 @@ import { fonts, typography } from '../../../theme/typography';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import { TECHNIQUE_RECOMMENDATIONS } from '../data/techniqueRecommendations';
-import TECHNIQUES from '../../../data/techniques';
+import TECHNIQUES from '../../../features/exercise/guidedBreathing/techniques';
 import type { BaselineResult } from './BaselineScreen';
 import LineGraph, { type DataPoint } from '../../analytics/LineGraph';
 

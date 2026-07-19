@@ -1,4 +1,4 @@
-import TECHNIQUES from '../../data/techniques';
+import TECHNIQUES from '../../features/exercise/guidedBreathing/techniques';
 import type { InsightContext } from './index';
 
 /**
@@ -7,11 +7,11 @@ import type { InsightContext } from './index';
  *
  * To add a new rule:
  *   1. Push an entry onto RECOMMENDATION_RULES below.
- *   2. Point `techniqueId` at any id in src/data/techniques.ts.
+ *   2. Point `techniqueId` at any id in the guided breathing technique catalog.
  *   3. (Optional) write a short `reason` string explaining the *why*.
  *
  * To add a new technique:
- *   - Add it to src/data/techniques.ts. It will automatically be
+ *   - Add it to src/features/exercise/guidedBreathing/techniques.ts. It will automatically be
  *     selectable here by id with no further changes.
  */
 export interface RecommendationRule {
