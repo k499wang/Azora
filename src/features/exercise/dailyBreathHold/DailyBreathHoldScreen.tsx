@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Animated, StyleSheet, View } from 'react-native';
 import { useIsFocused } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -53,6 +53,9 @@ import {
 } from './domain/dailyBreathHoldProtocol';
 
 const BEST_HOLD_KEY = 'daily_breath_hold_best_seconds';
+const HUD_HIDE_DELAY_MS = 3000;
+const HUD_FADE_IN_DURATION_MS = 200;
+const HUD_FADE_OUT_DURATION_MS = 600;
 
 export default function DailyBreathHoldScreen({
   navigation,
@@ -83,6 +86,45 @@ export default function DailyBreathHoldScreen({
   );
   const [audioSettingsOpen, setAudioSettingsOpen] = useState(false);
   const isFocused = useIsFocused();
+  const hudOpacity = useRef(new Animated.Value(1)).current;
+  const [hudVisible, setHudVisible] = useState(true);
+  const hudHideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearHudHideTimer = useCallback(() => {
+    if (hudHideTimerRef.current == null) return;
+    clearTimeout(hudHideTimerRef.current);
+    hudHideTimerRef.current = null;
+  }, []);
+
+  const resetHud = useCallback(() => {
+    clearHudHideTimer();
+    hudOpacity.stopAnimation();
+    setHudVisible(true);
+    hudOpacity.setValue(1);
+  }, [clearHudHideTimer, hudOpacity]);
+
+  const showHud = useCallback(() => {
+    clearHudHideTimer();
+    hudOpacity.stopAnimation();
+    setHudVisible(true);
+    Animated.timing(hudOpacity, {
+      toValue: 1,
+      duration: HUD_FADE_IN_DURATION_MS,
+      useNativeDriver: true,
+    }).start();
+
+    hudHideTimerRef.current = setTimeout(() => {
+      hudHideTimerRef.current = null;
+      hudOpacity.stopAnimation();
+      Animated.timing(hudOpacity, {
+        toValue: 0,
+        duration: HUD_FADE_OUT_DURATION_MS,
+        useNativeDriver: true,
+      }).start(({ finished }) => {
+        if (finished) setHudVisible(false);
+      });
+    }, HUD_HIDE_DELAY_MS);
+  }, [clearHudHideTimer, hudOpacity]);
 
   const pulse = useLivePulse({ initialProfile: 'dailyBreathHold' });
   const {
@@ -120,6 +162,20 @@ export default function DailyBreathHoldScreen({
     onPhaseChange: setPhase,
     onHoldStarted: beginBpmSampleCollection,
   });
+  const shouldAutoHideHud = isBreathHoldBreathingPhase(phase) && !paused;
+
+  useEffect(() => {
+    if (shouldAutoHideHud) showHud();
+    else resetHud();
+  }, [resetHud, shouldAutoHideHud, showHud]);
+
+  useEffect(
+    () => () => {
+      clearHudHideTimer();
+      hudOpacity.stopAnimation();
+    },
+    [clearHudHideTimer, hudOpacity],
+  );
 
   const breathHoldAudioActive =
     isFocused &&
@@ -396,6 +452,10 @@ export default function DailyBreathHoldScreen({
     navigation.goBack();
   }, [flow, navigation]);
 
+  const handleScreenTouchStart = useCallback(() => {
+    if (shouldAutoHideHud) showHud();
+  }, [shouldAutoHideHud, showHud]);
+
   if (phase === 'processingResults') {
     return (
       <HeartRateProcessingScreen
@@ -410,7 +470,10 @@ export default function DailyBreathHoldScreen({
   }
 
   return (
-    <View style={[styles.fill, { backgroundColor: activeTheme.screen }]}>
+    <View
+      style={[styles.fill, { backgroundColor: activeTheme.screen }]}
+      onTouchStart={shouldAutoHideHud ? handleScreenTouchStart : undefined}
+    >
       <ExerciseScaffold
         darkTheme={activeTheme}
         centerSlot={
@@ -442,18 +505,23 @@ export default function DailyBreathHoldScreen({
           />
         }
         bottomSlot={
-          <DailyBreathHoldHud
-            phase={phase}
-            paused={paused}
-            theme={activeTheme}
-            holdSeconds={holdSeconds}
-            bestHoldSeconds={bestHoldSeconds}
-            onSettingsPress={() => setAudioSettingsOpen(true)}
-            onExit={handleExit}
-            onStart={handlePrimaryPress}
-            onPauseResume={handlePauseResume}
-            onViewResults={handleViewResults}
-          />
+          <Animated.View
+            style={shouldAutoHideHud ? { opacity: hudOpacity } : undefined}
+            pointerEvents={shouldAutoHideHud && !hudVisible ? 'none' : 'auto'}
+          >
+            <DailyBreathHoldHud
+              phase={phase}
+              paused={paused}
+              theme={activeTheme}
+              holdSeconds={holdSeconds}
+              bestHoldSeconds={bestHoldSeconds}
+              onSettingsPress={() => setAudioSettingsOpen(true)}
+              onExit={handleExit}
+              onStart={handlePrimaryPress}
+              onPauseResume={handlePauseResume}
+              onViewResults={handleViewResults}
+            />
+          </Animated.View>
         }
       />
       <AudioSettingsSheet
