@@ -58,7 +58,6 @@ export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
   const stats = heartRateStatsQuery.data;
   const recentHeartRates = stats?.recent ?? [];
   const lastMeasuredDate = recentHeartRates[0]?.localDate ?? null;
-  const stressHistory = stats?.stressHistory ?? [];
   const bpmSamples = stats?.bpmSeries ?? [];
   const ibiMs = stats?.ibiSeries.map((point) => point.ibiMs) ?? [];
   const advancedStatsLocked =
@@ -172,7 +171,6 @@ export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
 
         <RecoveryStatsSection
           stress={canonicalSession == null ? null : stats?.hrv.stress ?? null}
-          stressHistory={stressHistory}
           locked={advancedStatsLocked}
           onPressUpgrade={() =>
             openProPaywall(

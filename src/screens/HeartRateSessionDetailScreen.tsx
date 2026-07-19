@@ -18,15 +18,6 @@ import { FeatureKey } from '../services/subscriptions/featureAccess';
 import type { HeartRateSessionDetailScreenProps } from '../app/navigation';
 import GlassIconButton from '../components/common/GlassIconButton';
 
-function formatLoggedAt(value: string): string {
-  return new Intl.DateTimeFormat(undefined, {
-    month: 'long',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  }).format(new Date(value));
-}
-
 export function HeartRateSessionDetailScreen({
   navigation,
   route,
@@ -85,18 +76,14 @@ export function HeartRateSessionDetailScreen({
             <View style={styles.heroContent}>
               <HeartRateResultContent
                 bpm={detail.avgBpm ?? '--'}
-                sampleCount={detail.bpmSeries.length || null}
                 showHrv={detail.mode !== 'quick'}
                 showRestingHealthBar={detail.mode === 'quick'}
                 age={profileQuery.data?.age ?? null}
                 rmssd={detail.rmssd}
                 sdnn={detail.sdnn}
-                hrDrop={detail.hrDrop}
                 stress={detail.stress}
                 bpmSamples={detail.bpmSeries}
                 ibiSamples={detail.ibiSeries}
-                metaText={formatLoggedAt(detail.startedAt)}
-                showConfidence={false}
                 advancedStatsLocked={advancedStatsLocked}
                 onPressUpgrade={() => {
                   trackFeatureGateHit({

@@ -9,17 +9,20 @@ Project-specific guide for Claude Code. Complements `AGENTS.md` — read that fi
 - **Expo** (React Native) + **TypeScript** (strict mode on)
 - **Navigation:** `@react-navigation/native` (native stack + bottom tabs)
 - **Rendering:** `@shopify/react-native-skia` for progress rings, `react-native-svg` for custom icons
-- **Fonts:** `@expo-google-fonts/*` (Nunito, Fredoka, Baloo2, Unbounded, Sniglet — all loaded, only one active at a time)
+- **Fonts:** Outfit via `@expo-google-fonts/outfit`, loaded in `App.tsx`
 - **Targets:** iOS now, Android soon — all new code must work on both
 
 ## Commands
 
 - `npm start` — Expo dev server
 - `npm run ios` / `npm run android` — native runs for local platform testing
-- `npm test` — current lightweight test suite
-- `npx tsc --noEmit` — type-check (run before finishing any non-trivial change)
+- `npm test` — domain and service test suite
+- `npm run typecheck` — strict TypeScript check
+- `npm run check` — type-check and test (default verification command)
 
-The current test coverage is minimal, not nonexistent. Treat `npm test` and `npx tsc --noEmit` as the default verification baseline, then add targeted tests when changing logic.
+Domain and core-service coverage is substantial; UI and native integration still
+depend on focused device testing. Treat `npm run check` as the automated
+verification baseline, then add targeted tests when changing logic.
 
 ---
 
@@ -56,11 +59,13 @@ src/
   components/
     analytics/      analytics-only UI
     common/         reusable primitives (Icon, Pill, AppTopBar, SectionHeader)
-    exercise/       exercise flow UI
+    exercise/       legacy/shared exercise UI
     heartRate/      heart-rate flow UI
     home/           home-screen UI
-    meditation/     live session monitor UI
-  data/             static config (techniques.ts)
+    meditation/     meditation-specific UI
+  features/
+    exercise/       guided breathing and daily breath-hold sessions
+  data/             app-wide static content
   screens/          top-level route components — thin
   hooks/            reusable React behavior and feature orchestration
   lib/              pure domain logic (e.g. hrv.ts)
@@ -87,7 +92,8 @@ src/
 ## React Native Patterns Already In Use
 
 - **Function components with typed `interface Props`** — no `React.FC`, no inline prop types.
-- **Pressable** for all touchables (cross-platform-safe).
+- Prefer **Pressable** for new touch interactions; existing screens still contain
+  `TouchableOpacity` and can migrate when they are already being changed.
 - **`useSafeAreaInsets()`** from `react-native-safe-area-context` for safe areas.
 - **Skia for arc drawing** (see `RingStatCard.tsx`, `BigRingStatCard.tsx`) — reuse the pattern, don't introduce `react-native-svg` arc math.
 - **SVG for vector illustrations** via `Icon` wrapper — don't use Skia for simple shapes.

@@ -3,7 +3,7 @@ import { Alert, Dimensions, FlatList, Linking, Platform, Pressable, StyleSheet, 
 import { Image } from 'expo-image';
 import { useEffect, useRef, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Icon, { type IconName } from '../components/common/icons/Icon';
+import Icon from '../components/common/icons/Icon';
 import PhoneFrame from '../components/common/PhoneFrame';
 import { useAuthStore } from '../stores/authStore';
 import {

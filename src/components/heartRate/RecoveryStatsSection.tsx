@@ -5,7 +5,6 @@ import { colors } from '../../theme/colors';
 import { spacing, padding } from '../../theme/spacing';
 import {
   getStressZone,
-  type StressHistoryEntry,
 } from '../../lib/heartRate/stress';
 import SectionHeader from '../common/SectionHeader';
 import ProUpgradeButton from '../common/ProUpgradeButton';
@@ -21,7 +20,6 @@ const STRESS_INFO = {
 
 interface RecoverySectionProps {
   stress?: number | null;
-  stressHistory?: StressHistoryEntry[];
   locked?: boolean;
   onPressUpgrade?: () => void;
   lastMeasuredLabel?: string;
@@ -29,7 +27,6 @@ interface RecoverySectionProps {
 
 export default function RecoveryStatsSection({
   stress,
-  stressHistory,
   locked = false,
   onPressUpgrade,
   lastMeasuredLabel,

@@ -21,7 +21,6 @@ import { LIVE_SIGNAL_GRAPH_UPDATE_INTERVAL_MS } from '../lib/heartRate/liveSigna
 import { useHeartRateCamera } from './useHeartRateCamera';
 import { useDeviceMotionFeed } from './useDeviceMotionFeed';
 
-const ROLLING_WINDOW_MS = 15000;
 const BPM_UPDATE_INTERVAL_MS = 1000;
 const FINGER_LOST_TIMEOUT_MS = 30000;
 const WARMUP_DURATION_MS = 5000;

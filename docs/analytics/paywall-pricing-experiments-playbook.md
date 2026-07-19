@@ -10,7 +10,8 @@ and the *instrumentation contract* for pricing tests specifically.
 
 ## What this guide assumes
 
-- Phase 4 backend is applied (see `docs/backend-plan/phase-4-revenuecat-paywall.md`).
+- The subscription mirror and webhook contract in
+  `docs/revenuecat-supabase-paywall-guide.md` is implemented.
 - `subscriptions.initial_offering_id`, `subscriptions.experiment_id`, and
   `subscriptions.experiment_variant` exist (migration `20260424000300`).
 - `user_entitlement_v` exposes those columns.

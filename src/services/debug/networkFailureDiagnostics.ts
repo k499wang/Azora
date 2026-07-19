@@ -22,7 +22,7 @@ export async function buildNetworkFailureDiagnostics({
   const auth = await getAuthDiagnostics(userId);
 
   return {
-    userId: userId ?? null,
+    hasExpectedUserId: userId != null,
     elapsedMs,
     requestType,
     retryAttempt,
@@ -39,7 +39,6 @@ export async function buildNetworkFailureDiagnostics({
       isConnected: networkState.isConnected,
       isInternetReachable: networkState.isInternetReachable,
       isWifiEnabled: networkState.isWifiEnabled,
-      details: networkState.details,
     },
     error: getErrorDiagnostics(error),
   };
@@ -49,6 +48,7 @@ export async function logNetworkFailureDiagnostics(
   label: string,
   input: NetworkFailureDiagnosticsInput,
 ): Promise<void> {
+  if (typeof __DEV__ === 'undefined' || !__DEV__) return;
   const diagnostics = await buildNetworkFailureDiagnostics(input);
   console.warn(label, safeStringify(diagnostics));
 }

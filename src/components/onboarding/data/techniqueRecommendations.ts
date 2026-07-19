@@ -43,13 +43,3 @@ export const INTENT_TO_TECHNIQUE: Record<string, string> = {
   yoga: 'resonance',
   other: 'box',
 };
-
-export function progressionCopy(age: number, dailyMinutes: number): string {
-  if (age < 30) {
-    return '';
-  }
-  if (age < 50) {
-    return `Steady progression — we'll reassess your plan after 2 weeks.`;
-  }
-  return `Gentle pacing — gentle holds added in week 3 once your rhythm feels easy.`;
-}

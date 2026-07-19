@@ -20,6 +20,7 @@ The most common bug pattern with TanStack Query (and the one AI tools repeatedly
 | `getUserDefaultTechniqueQueryKey` | `src/queries/profile/useUserDefaultTechniqueQuery.ts` | `profiles.default_technique_id` | |
 | `getHomeStatsQueryKey` / `getHomeStatsQueryKeyPrefix` | `src/queries/tracking/useHomeStatsQuery.ts` | `daily_activity`, `breath_hold_sessions`, `heart_rate_sessions`, `heart_rate_ibi_samples`, `user_streaks_v` | Mixed selected-date plus global Home aggregate. Active queries are keyed by selected `localDate`, but completion mutations invalidate the user prefix because Home also shows streaks, recent heart-rate data, stress history, 28-day activity, and today's IBI data. |
 | `getDailyFeatureUsageQueryKey` | `src/queries/subscriptions/useDailyFeatureUsageQuery.ts` | `daily_activity` for `localDate` | Per-day key. |
+| `getHeartRateStatsQueryKey` | `src/queries/tracking/useHeartRateStatsQuery.ts` | `heart_rate_sessions`, `heart_rate_samples`, `heart_rate_ibi_samples` | Heart-tab aggregate and chart data. |
 | `getHeartRateSessionDetailQueryKey` | `src/queries/tracking/useHeartRateSessionDetailQuery.ts` | `heart_rate_sessions[id]` | Per-session key. |
 | `getUserEntitlementQueryKey` | `src/queries/subscriptions/useUserEntitlementQuery.ts` | Entitlement service (RevenueCat + Supabase) | |
 | `getNotificationPreferencesQueryKey` | `src/queries/notifications/useNotificationPreferencesQuery.ts` | Notification preferences | |
@@ -38,7 +39,7 @@ When adding a mutation, find every field it writes, then look up every query abo
 | `useUploadProfileAvatarMutation` | `profiles.avatar_url` | `ProfileQuery`, `ProfileSummary` (uses `setQueryData`, then invalidates both) |
 | `useCompleteBreathHoldMutation` | `breath_hold_sessions`, `daily_activity` for `localDate` | `HomeStats` user prefix, `DailyFeatureUsage(userId, localDate)`, `ProfileSummary` |
 | `useCompleteBreathingSessionMutation` | `breathing_sessions`, `daily_activity` for `localDate` | `HomeStats` user prefix, `DailyFeatureUsage(userId, localDate)`, `ProfileSummary` |
-| `useCompleteHeartRateSessionMutation` | `heart_rate_sessions`, `heart_rate_ibi_samples`, `daily_activity` for `usageDate` | `HomeStats` user prefix, `DailyFeatureUsage(userId, usageDate)`, `ProfileSummary` |
+| `useCompleteHeartRateSessionMutation` | `heart_rate_sessions`, `heart_rate_samples`, `heart_rate_ibi_samples`, `daily_activity` for `usageDate` | `HomeStats` user prefix, `HeartRateStats`, `DailyFeatureUsage(userId, usageDate)`, `ProfileSummary` |
 | `useUpdateNotificationPreferencesMutation` | notification preferences | `NotificationPreferences` |
 
 ---
@@ -68,3 +69,4 @@ When adding a mutation, find every field it writes, then look up every query abo
 |---|---|---|
 | 2026-05-17 | `useCompleteOnboardingMutation` didn't invalidate `ProfileSummary` → display name saved to DB but HomeScreen/ProfileScreen kept showing email-derived fallback. | Added `ProfileSummary` invalidation. |
 | 2026-05-17 | `useCompleteHeartRateSessionMutation` didn't invalidate `ProfileSummary` → streak/activeDays/completedDays didn't reflect HR captures until next cold load. | Added `ProfileSummary` invalidation. |
+| 2026-07-19 | Heart-rate mutation documentation omitted the `heart_rate_samples` write and `HeartRateStats` invalidation already present in code. | Updated both sides of the cache map. |

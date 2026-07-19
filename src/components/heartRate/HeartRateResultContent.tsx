@@ -25,20 +25,15 @@ import type { HrvAvailabilityReason, IbiSample } from '../../lib/heartRate/types
 
 interface HeartRateResultContentProps {
   bpm: number | string;
-  confidence?: number;
-  sampleCount?: number | null;
   rmssd?: number | null;
   sdnn?: number | null;
-  hrDrop?: number | null;
   stress?: number | null;
   hrvAvailabilityReason?: HrvAvailabilityReason;
   ibiSamples?: IbiSample[];
   bpmSamples?: BpmTimePoint[];
   rrSeries?: DataPoint[];
   context?: string;
-  metaText?: string;
   heartScale?: Animated.Value;
-  showConfidence?: boolean;
   showHero?: boolean;
   advancedStatsLocked?: boolean;
   onPressUpgrade?: () => void;
@@ -90,20 +85,15 @@ function downsampleIbi(
 
 export function HeartRateResultContent({
   bpm,
-  confidence,
-  sampleCount,
   rmssd,
   sdnn,
-  hrDrop,
   stress,
   hrvAvailabilityReason,
   ibiSamples = [],
   bpmSamples,
   rrSeries,
   context,
-  metaText,
   heartScale,
-  showConfidence = true,
   showHero = true,
   advancedStatsLocked = false,
   onPressUpgrade,

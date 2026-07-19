@@ -370,7 +370,6 @@ export function HeartRateCaptureFlow({
   const isMeasuring = captureState === 'measuring';
   const isCheck = captureState === 'camera_check';
   const checkConfig = checkStateConfig(fingerPlacement);
-  const isFingerLost = fingerPlacement === 'lost' || fingerPlacement === 'no_finger';
   const warningMessage = isMeasuring ? measuringWarning(signalStatus) : null;
 
   const ringColor = isMeasuring ? colors.primary.blue600 : checkConfig.ringColor;
