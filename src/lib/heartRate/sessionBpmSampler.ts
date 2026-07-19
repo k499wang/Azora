@@ -20,11 +20,13 @@ function isValidReading(reading: SessionBpmReading | null): reading is SessionBp
 /**
  * Samples the latest published BPM on a frame-timestamp cadence. Missed or
  * ineligible slots are advanced without later backfill, so graph offsets stay
- * tied to when the exercise actually displayed each value.
+ * tied to when the exercise actually displayed each value. Suspending shifts
+ * the session clock on resume, preserving the cadence while excluding pauses.
  */
 export class SessionBpmSampler {
   private readonly intervalMs: number;
   private startedAtMs: number | null = null;
+  private suspendedAtMs: number | null = null;
   private nextOffsetMs = 0;
   private samples: SessionBpmSample[] = [];
 
@@ -37,6 +39,7 @@ export class SessionBpmSampler {
   start(timestampMs: number, initialReading: SessionBpmReading | null): void {
     this.samples = [];
     this.startedAtMs = Number.isFinite(timestampMs) ? timestampMs : null;
+    this.suspendedAtMs = null;
     this.nextOffsetMs = this.intervalMs;
 
     if (this.startedAtMs != null && isValidReading(initialReading)) {
@@ -47,6 +50,7 @@ export class SessionBpmSampler {
   observe(timestampMs: number, reading: SessionBpmReading | null): void {
     if (
       this.startedAtMs == null ||
+      this.suspendedAtMs != null ||
       !Number.isFinite(timestampMs) ||
       timestampMs < this.startedAtMs
     ) {
@@ -65,6 +69,33 @@ export class SessionBpmSampler {
     }
   }
 
+  suspend(timestampMs: number): void {
+    if (
+      this.startedAtMs == null ||
+      this.suspendedAtMs != null ||
+      !Number.isFinite(timestampMs) ||
+      timestampMs < this.startedAtMs
+    ) {
+      return;
+    }
+
+    this.suspendedAtMs = timestampMs;
+  }
+
+  resume(timestampMs: number): void {
+    if (
+      this.startedAtMs == null ||
+      this.suspendedAtMs == null ||
+      !Number.isFinite(timestampMs) ||
+      timestampMs < this.suspendedAtMs
+    ) {
+      return;
+    }
+
+    this.startedAtMs += timestampMs - this.suspendedAtMs;
+    this.suspendedAtMs = null;
+  }
+
   finish(): SessionBpmSample[] {
     const result = this.samples.map((sample) => ({ ...sample }));
     this.reset();
@@ -73,6 +104,7 @@ export class SessionBpmSampler {
 
   reset(): void {
     this.startedAtMs = null;
+    this.suspendedAtMs = null;
     this.nextOffsetMs = 0;
     this.samples = [];
   }

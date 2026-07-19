@@ -7,14 +7,14 @@ The wizard has completed a deep integration of PostHog analytics into the Azora 
 |---|---|---|
 | `breathing_technique_selected` | User taps a technique card in the breathing library | `src/components/home/BreathingLibrary.tsx` |
 | `daily_plan_started` | User taps the daily plan card to begin the breath hold exercise | `src/components/home/DailyPlanCard.tsx` |
-| `exercise_session_started` | User starts a breathing technique session | `src/screens/ExerciseSessionPage.tsx` |
-| `exercise_session_paused` | User pauses an in-progress breathing session | `src/screens/ExerciseSessionPage.tsx` |
-| `exercise_session_completed` | All rounds completed successfully | `src/screens/ExerciseSessionPage.tsx` |
-| `exercise_session_abandoned` | User closes the session before completion | `src/screens/ExerciseSessionPage.tsx` |
-| `heart_rate_monitoring_toggled` | User toggles real-time HR monitoring during a session | `src/screens/ExerciseSessionPage.tsx` |
-| `daily_breath_hold_started` | User begins the daily breath hold inhale phase | `src/screens/DailyExercisePage.tsx` |
-| `daily_breath_hold_released` | User releases the hold; records hold duration | `src/screens/DailyExercisePage.tsx` |
-| `daily_results_viewed` | User navigates to the shareable result screen | `src/screens/DailyExercisePage.tsx` |
+| `exercise_session_started` | User starts a breathing technique session | `src/features/exercise/guidedBreathing/GuidedBreathingSessionScreen.tsx` |
+| `exercise_session_paused` | User pauses an in-progress breathing session | `src/features/exercise/guidedBreathing/GuidedBreathingSessionScreen.tsx` |
+| `exercise_session_completed` | All rounds completed successfully | `src/features/exercise/guidedBreathing/GuidedBreathingSessionScreen.tsx` |
+| `exercise_session_abandoned` | User closes the session before completion | `src/features/exercise/guidedBreathing/GuidedBreathingSessionScreen.tsx` |
+| `heart_rate_monitoring_toggled` | User toggles real-time HR monitoring during a session | `src/features/exercise/guidedBreathing/GuidedBreathingSessionScreen.tsx` |
+| `daily_breath_hold_started` | User begins the daily breath hold inhale phase | `src/features/exercise/dailyBreathHold/DailyBreathHoldScreen.tsx` |
+| `daily_breath_hold_released` | User releases the hold; records hold duration | `src/features/exercise/dailyBreathHold/DailyBreathHoldScreen.tsx` |
+| `daily_results_viewed` | User navigates to the shareable result screen | `src/features/exercise/dailyBreathHold/DailyBreathHoldScreen.tsx` |
 | `heart_rate_capture_started` | Heart rate camera capture session initiated | `src/components/heartRate/HeartRateCaptureFlow.tsx` |
 | `heart_rate_capture_completed` | Measurement succeeded; records bpm, confidence, rmssd, sdnn | `src/components/heartRate/ResultScreen.tsx` |
 | `heart_rate_capture_failed` | Measurement failed; records error type | `src/components/heartRate/ResultScreen.tsx` |

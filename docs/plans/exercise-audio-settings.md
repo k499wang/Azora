@@ -5,7 +5,7 @@ Owner: kevin
 Date: 2026-05-14
 
 ## Decisions locked in
-- **Entry:** gear icon in `AppTopBar` `rightSlot` on `DailyExercisePage` + `ExerciseSessionPage`, opens a bottom-sheet modal.
+- **Entry:** gear icon in `AppTopBar` `rightSlot` on `DailyBreathHoldScreen` + `GuidedBreathingSessionScreen`, opens a bottom-sheet modal.
 - **Scope:** global preferences shared across all exercises.
 - **v1 features:** voice cues (inhale/exhale/hold), background sounds, phase chimes.
 - **Persistence:** AsyncStorage, mirroring the existing `services/preferences/hapticsPreference.ts` pattern (singleton + load/get/set + hook).
@@ -96,7 +96,7 @@ Stored as a single JSON blob under `settings:audio_v1`. Versioning the key now (
 - `useBreathPhaseAudio` reads the selected voice pack from `useAudioPreferences()` and chooses the asset accordingly. Falls back to current bell/bowl when voice is null. Existing fade/ramp logic is untouched.
 - `useAmbientAudio({ active })` — new hook, mirrors the structure of `useBreathPhaseAudio` (expo-audio, looped, fade in/out on mount/unmount, AppState aware).
 - `usePhaseChime(phase)` — one-shot, fires on phase edge.
-- `DailyExercisePage` and `ExerciseSessionPage` each call these three hooks with `active` tied to session state. Each hook is a no-op when its preference is null.
+- `DailyBreathHoldScreen` and `GuidedBreathingSessionScreen` each call these three hooks with `active` tied to session state. Each hook is a no-op when its preference is null.
 
 ## Definition of done for v1
 - Gear icon on both exercise screens opens the sheet.

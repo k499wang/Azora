@@ -19,7 +19,7 @@ The flashcard lives in `src/screens/HomeScreen.tsx` directly under `TodayInsight
 
 ## 1. Add a new breathing technique
 
-Edit only `src/data/techniques.ts`:
+Edit only `src/features/exercise/guidedBreathing/techniques.ts`:
 
 ```ts
 {

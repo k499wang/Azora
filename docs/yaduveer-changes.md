@@ -46,7 +46,7 @@ This is the canonical plan. Update it as steps land.
 
 - **In-app heart rate reading** — `useHeartRateCapture`, `HeartRateScreen`, full BPM/HRV
   pipeline (`src/lib/heartRate/`). The HR half of the check-in already exists.
-- **Exercise engine** — `ExerciseSessionPage`, `BreathingCircle`, `ExerciseScaffold` run
+- **Exercise engine** — `GuidedBreathingSessionScreen`, `BreathingCircle`, `ExerciseScaffold` run
   any technique defined by an inhale/hold/exhale/hold `pattern`.
 - **Ambient audio** — `useAmbientAudio` (expo-audio) + sound registry. Adding sounds is a
   content task.
@@ -55,7 +55,7 @@ This is the canonical plan. Update it as steps land.
 
 ## The three real gaps
 
-1. **Content** — `src/data/techniques.ts` has 5 generic techniques, none of the 10
+1. **Content** — `src/features/exercise/guidedBreathing/techniques.ts` has 5 generic techniques, none of the 10
    pranayama ones. Needs a schema extension + the 10 entries.
 2. **Daily check-in → recommendation** — entirely new flow + recommendation engine.
 3. **Coach video/voiceover layer** — no video player infra yet (only `DailyPlanCard`
@@ -70,7 +70,7 @@ This is the canonical plan. Update it as steps land.
 **Goal:** data foundation everything else hangs off.
 
 - [ ] Decide: replace the 5 generic techniques or add pranayama as a second category.
-- [ ] Extend `BreathingTechnique` in `src/data/techniques.ts` with:
+- [ ] Extend `BreathingTechnique` in `src/features/exercise/guidedBreathing/techniques.ts` with:
   - `traditionalName: string`
   - `writtenInstructions: string` (or structured steps)
   - `videoSource?: ...` (optional until assets arrive)

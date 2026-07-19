@@ -13,6 +13,12 @@ import type {
 } from '../lib/heartRate/types';
 import { heartRatePlugin } from '../lib/heartRate/heartRatePlugin';
 import { HeartRateManager } from '../lib/heartRate/heartRateManager';
+import { isPpgFrameSample } from '../lib/heartRate/isPpgFrameSample';
+import {
+  getLivePulseProfile,
+  type LivePulseProfile,
+  type LivePulseProfileId,
+} from '../lib/heartRate/livePulseProfiles';
 import {
   EXERCISE_BPM_MIN_SIGNAL_QUALITY,
   createBreathExerciseBpmPresentationFilter,
@@ -36,29 +42,10 @@ export interface LivePulseBpmSample {
   signalQuality: number | null;
 }
 
-function isValidFrameSample(value: unknown): value is PpgFrameSample {
-  if (value == null || typeof value !== 'object') return false;
-  const s = value as Partial<PpgFrameSample>;
-  if (!Number.isFinite(s.timestamp) || !Array.isArray(s.rois)) return false;
-  return (
-    s.rois.length > 0 &&
-    s.rois.every(
-      (roi) =>
-        roi != null &&
-        typeof roi.id === 'string' &&
-        Number.isFinite(roi.r) &&
-        Number.isFinite(roi.g) &&
-        Number.isFinite(roi.b) &&
-        Number.isFinite(roi.saturatedPct) &&
-        Number.isFinite(roi.darkPct) &&
-        Number.isFinite(roi.variance),
-    )
-  );
-}
-
 interface UseLivePulseReturn {
   active: boolean;
   start: () => void;
+  suspend: () => void;
   stop: () => void;
   fingerPlacement: FingerPlacementState;
   signalStatus: SignalStatus;
@@ -79,14 +66,12 @@ interface UseLivePulseReturn {
   getBpmSamples: () => LivePulseBpmSample[];
 }
 
-type LivePulsePresentationMode = 'default' | 'breathExercise';
-
 interface UseLivePulseOptions {
-  presentationMode?: LivePulsePresentationMode;
+  initialProfile?: LivePulseProfileId;
 }
 
-function createLivePulseBpmFilter(mode: LivePulsePresentationMode) {
-  return mode === 'breathExercise'
+function createLivePulseBpmFilter(profile: LivePulseProfile) {
+  return profile.presentationFilter === 'breathExercise'
     ? createBreathExerciseBpmPresentationFilter()
     : createLiveBpmPresentationFilter();
 }
@@ -94,7 +79,11 @@ function createLivePulseBpmFilter(mode: LivePulsePresentationMode) {
 export function useLivePulse(
   options: UseLivePulseOptions = {},
 ): UseLivePulseReturn {
-  const presentationMode = options.presentationMode ?? 'default';
+  const profileRef = useRef(
+    getLivePulseProfile(options.initialProfile ?? 'continuousMonitoring'),
+  );
+  const profile = profileRef.current;
+  const { publicationPolicy, startupPolicy } = profile;
   const [active, setActive] = useState(false);
   const [fingerPlacement, setFingerPlacement] = useState<FingerPlacementState>('no_finger');
   const [signalStatus, setSignalStatus] = useState<SignalStatus>('no_finger');
@@ -105,7 +94,7 @@ export function useLivePulse(
 
   const activeRef = useRef(false);
   const managerRef = useRef(new HeartRateManager({
-    liveBpmProfile: presentationMode === 'breathExercise' ? 'responsive' : 'stable',
+    liveBpmProfile: profile.managerBpmProfile,
   }));
   const lastBpmUpdateRef = useRef(0);
   const lastFingerSeenAtRef = useRef<number | null>(null);
@@ -116,13 +105,14 @@ export function useLivePulse(
   const publishedBpmRef = useRef<number | null>(null);
   const fingerPlacementRef = useRef<FingerPlacementState>('no_finger');
   const signalStatusRef = useRef<SignalStatus>('no_finger');
-  const liveBpmFilterRef = useRef(createLivePulseBpmFilter(presentationMode));
+  const liveBpmFilterRef = useRef(createLivePulseBpmFilter(profile));
   const beatSchedulerRef = useRef(
     createBeatTickScheduler({ onBeat: () => setBeatTick((tick) => tick + 1) }),
   );
   const lastSignalGraphUpdateRef = useRef<number>(0);
   const lastPublishedSignalTimestampRef = useRef<number | null>(null);
   const sessionBpmSamplerRef = useRef(createSessionBpmSampler());
+  const resumeSessionSamplerOnNextFrameRef = useRef(false);
   const bpmReadyRef = useRef(false);
 
   const { device, format, hasPermission, requestPermission } = useHeartRateCamera();
@@ -134,7 +124,7 @@ export function useLivePulse(
       ? 'on'
       : 'off';
 
-  const resetStreamState = useCallback(() => {
+  const resetPulseRuntimeState = useCallback(() => {
     managerRef.current.reset();
     lastBpmUpdateRef.current = 0;
     lastFingerSeenAtRef.current = null;
@@ -149,14 +139,23 @@ export function useLivePulse(
     beatSchedulerRef.current.reset();
     lastSignalGraphUpdateRef.current = 0;
     lastPublishedSignalTimestampRef.current = null;
-    sessionBpmSamplerRef.current.reset();
     bpmReadyRef.current = false;
     managerRef.current.clearLiveSignalSamples();
   }, []);
 
+  const resetAllStreamState = useCallback(() => {
+    resetPulseRuntimeState();
+    sessionBpmSamplerRef.current.reset();
+    resumeSessionSamplerOnNextFrameRef.current = false;
+  }, [resetPulseRuntimeState]);
+
   const start = useCallback(() => {
     if (activeRef.current) return;
-    resetStreamState();
+    if (resumeSessionSamplerOnNextFrameRef.current) {
+      resetPulseRuntimeState();
+    } else {
+      resetAllStreamState();
+    }
     activeRef.current = true;
     setActive(true);
     setCurrentBpm(null);
@@ -167,12 +166,30 @@ export function useLivePulse(
     setFingerPlacement('no_finger');
     signalStatusRef.current = 'no_finger';
     setSignalStatus('no_finger');
-  }, [resetStreamState]);
+  }, [resetAllStreamState, resetPulseRuntimeState]);
+
+  const suspend = useCallback(() => {
+    if (!activeRef.current) return;
+
+    sessionBpmSamplerRef.current.suspend(lastFrameTimestampRef.current ?? Number.NaN);
+    resumeSessionSamplerOnNextFrameRef.current = true;
+    activeRef.current = false;
+    setActive(false);
+    resetPulseRuntimeState();
+    setCurrentBpm(null);
+    setIsBpmReady(false);
+    setBeatTick(0);
+    setLiveSignalSamples([]);
+    fingerPlacementRef.current = 'no_finger';
+    setFingerPlacement('no_finger');
+    signalStatusRef.current = 'no_finger';
+    setSignalStatus('no_finger');
+  }, [resetPulseRuntimeState]);
 
   const stop = useCallback(() => {
     activeRef.current = false;
     setActive(false);
-    resetStreamState();
+    resetAllStreamState();
     setCurrentBpm(null);
     setIsBpmReady(false);
     setLiveSignalSamples([]);
@@ -180,13 +197,17 @@ export function useLivePulse(
     setFingerPlacement('no_finger');
     signalStatusRef.current = 'no_finger';
     setSignalStatus('no_finger');
-  }, [resetStreamState]);
+  }, [resetAllStreamState]);
 
   const addSample = useRunOnJS(
     (frameSample: unknown) => {
       if (!activeRef.current) return;
-      if (!isValidFrameSample(frameSample)) {
+      if (!isPpgFrameSample(frameSample)) {
         return;
+      }
+      if (resumeSessionSamplerOnNextFrameRef.current) {
+        sessionBpmSamplerRef.current.resume(frameSample.timestamp);
+        resumeSessionSamplerOnNextFrameRef.current = false;
       }
       if (__DEV__) recordDevFrame(frameSample);
 
@@ -218,14 +239,14 @@ export function useLivePulse(
 
       const managerBpmSnapshot = managerRef.current.getCurrentBpmSnapshot();
       const isEligibleExerciseStartupSnapshot =
-        presentationMode === 'breathExercise' &&
+        startupPolicy === 'qualifiedManagerSnapshot' &&
         managerBpmSnapshot != null &&
         frameState.fingerPlacement === 'good' &&
         frameState.signalStatus === 'measuring' &&
         isExerciseBpmSnapshotReady(managerBpmSnapshot);
 
       const bpmSnapshot =
-        presentationMode === 'breathExercise' && !bpmReadyRef.current
+        startupPolicy === 'qualifiedManagerSnapshot' && !bpmReadyRef.current
           ? isEligibleExerciseStartupSnapshot
             ? managerBpmSnapshot
             : null
@@ -236,12 +257,12 @@ export function useLivePulse(
         beatSchedulerRef.current.schedule(frameState.beatPeakTs, frameSample.timestamp);
       }
 
-      const hasFreshExerciseEstimate =
-        presentationMode === 'breathExercise' &&
+      const hasFreshManagerEstimate =
+        publicationPolicy === 'freshManagerSnapshot' &&
         bpmSnapshot != null &&
         bpmSnapshot.timestamp > lastBpmUpdateRef.current;
-      const shouldPublishBpm = presentationMode === 'breathExercise'
-        ? hasFreshExerciseEstimate
+      const shouldPublishBpm = publicationPolicy === 'freshManagerSnapshot'
+        ? hasFreshManagerEstimate
         : frameSample.timestamp - lastBpmUpdateRef.current >= BPM_UPDATE_INTERVAL_MS;
 
       if (bpm != null && shouldPublishBpm) {
@@ -255,7 +276,7 @@ export function useLivePulse(
           publishedBpmRef.current = stabilizedBpm;
           setCurrentBpm(stabilizedBpm);
           if (
-            presentationMode === 'breathExercise' &&
+            startupPolicy === 'qualifiedManagerSnapshot' &&
             !bpmReadyRef.current
           ) {
             // Only expose readiness once the presentation filter has observed
@@ -312,7 +333,7 @@ export function useLivePulse(
         setIsBpmReady(false);
       }
     },
-    [presentationMode],
+    [publicationPolicy, startupPolicy],
   );
 
   const beginMeasurementWindow = useCallback(() => {
@@ -381,6 +402,7 @@ export function useLivePulse(
   return {
     active,
     start,
+    suspend,
     stop,
     fingerPlacement,
     signalStatus,

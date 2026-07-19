@@ -14,7 +14,7 @@ import type {
 import type { PaywallPlacementValue } from '../../services/paywall';
 import type { FeatureKeyValue } from '../../services/subscriptions/featureAccess';
 import type { BreathingTechniqueBpmResponse } from '../../lib/heartRate/bpmInsight';
-import type { BreathHoldHeartRateResultStatus } from '../../lib/breathHoldCompletion';
+import type { BreathHoldHeartRateResultStatus } from '../../features/exercise/dailyBreathHold/domain/breathHoldCompletion';
 
 export type MainTabParamList = {
   Home: undefined;

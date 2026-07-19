@@ -34,7 +34,7 @@ import { initAppsFlyer } from './src/services/attribution/appsFlyerClient';
 import { logAppsFlyerDiagnostics } from './src/services/attribution/appsFlyerDiagnostics';
 import { WelcomeIntro } from './src/components/welcome/WelcomeIntro';
 import { colors } from './src/theme/colors';
-import TECHNIQUES from './src/data/techniques';
+import TECHNIQUES from './src/features/exercise/guidedBreathing/techniques';
 import { AUTH_LANDING_SLIDES } from './src/data/authLandingSlides';
 import { AGREEMENT_STATEMENTS } from './src/components/onboarding/screens/AgreementScreen';
 import { loadCriticalBackgroundImages } from './src/services/images/backgroundImageCache';

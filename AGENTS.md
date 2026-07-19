@@ -212,6 +212,7 @@ Use these as default collaboration preferences when the active coding agent supp
 - Keep heart-rate signal processing logic in domain-oriented files, not inside screens.
 - Keep camera/native plugin access behind a narrow boundary.
 - Keep static breathing techniques simple until there is a real need for user-authored or backend-driven techniques.
+- Guided breathing, daily breath hold, and their shared session primitives live under `src/features/exercise/`; follow `docs/architecture/exercise-sessions.md` before changing their behavior or ownership boundaries.
 - Backend work should preserve the documented Supabase data model and Android portability goals in `docs/backend-plan/`.
 - In the current layout, feature-specific UI can stay under `src/components/<feature>/`, shared primitives belong in `src/components/common/`, and pure heart-rate logic belongs in `src/lib/heartRate/`.
 

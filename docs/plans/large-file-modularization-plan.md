@@ -11,8 +11,8 @@ test, and revert independently.
 | `src/services/supabase/database.types.ts` | Generated Supabase schema types | Low | Leave generated. Do not hand-edit. |
 | `src/components/onboarding/screens/OnboardingPaywallScreen.tsx` | Onboarding paywall UI, package selection, trial copy | Low-medium | Split presentational paywall step components. |
 | `src/components/onboarding/screens/BaselineScreen.tsx` | Onboarding baseline intro and heart-rate capture | Medium | Split intro/checklist UI from live capture UI first. |
-| `src/screens/ExerciseSessionPage.tsx` | Guided breathing session workflow | High | Extract pure helpers and presentational sections before hooks. |
-| `src/screens/DailyExercisePage.tsx` | Daily breath-hold workflow | High | Extract pure helpers and presentational sections before hooks. |
+| `src/features/exercise/guidedBreathing/GuidedBreathingSessionScreen.tsx` | Guided breathing session workflow | High | Extract pure helpers and presentational sections before hooks. |
+| `src/features/exercise/dailyBreathHold/DailyBreathHoldScreen.tsx` | Daily breath-hold workflow | High | Extract pure helpers and presentational sections before hooks. |
 | `src/lib/heartRate/signalProcessing.ts` | Batch PPG analysis and HRV beat selection | High | Split last, only behind green heart-rate tests. |
 | `src/components/onboarding/OnboardingFlow.tsx` | Onboarding state, analytics, save, notifications, paywall | Medium-high | Refactor after child screens are smaller. |
 
@@ -167,8 +167,8 @@ Tests:
 Targets:
 
 - `BaselineScreen`
-- `ExerciseSessionPage`
-- `DailyExercisePage`
+- `GuidedBreathingSessionScreen`
+- `DailyBreathHoldScreen`
 
 Extract reusable UI only:
 
@@ -199,14 +199,14 @@ Tests:
 
 Target first:
 
-- `src/screens/ExerciseSessionPage.tsx`
+- `src/features/exercise/guidedBreathing/GuidedBreathingSessionScreen.tsx`
 
 Order:
 
 1. Extract pure completion payload/stat builders.
 2. Extract HUD and controls components.
 3. Extract heart-rate display section.
-4. Consider `useBreathingSessionFlow` only after the render tree is smaller.
+4. Consider `useGuidedBreathingFlow` only after the render tree is smaller.
 
 Preserve carefully:
 
@@ -227,7 +227,7 @@ Tests:
 
 Target:
 
-- `src/screens/DailyExercisePage.tsx`
+- `src/features/exercise/dailyBreathHold/DailyBreathHoldScreen.tsx`
 
 Order:
 

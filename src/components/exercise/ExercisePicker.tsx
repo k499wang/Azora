@@ -5,7 +5,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
 import { fonts, typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
-import type { BreathingTechnique } from '../../data/techniques';
+import type { BreathingTechnique } from '../../features/exercise/guidedBreathing/techniques';
 
 function formatPattern(p: BreathingTechnique['pattern']) {
   return [p.inhale, p.holdIn, p.exhale, p.holdOut].filter((v) => v > 0).join('-');
