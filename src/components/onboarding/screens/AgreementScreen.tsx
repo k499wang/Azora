@@ -1,13 +1,17 @@
 import { Text } from '../../common/Text';
 import { useEffect, useRef, useState } from 'react';
-import {
-  Animated, Easing, Image, type ImageSourcePropType, Pressable, StyleSheet, View } from 'react-native';
+import { Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
+import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
 import { LinearGradient } from 'expo-linear-gradient';
 import { isHapticsEnabled } from '../../../services/preferences/hapticsPreference';
+import {
+  getOnboardingImageSource,
+  type OnboardingImageKey,
+} from '../../../services/images/onboardingImageCache';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 
 export type AgreementValue = 'agree' | 'disagree';
@@ -15,22 +19,22 @@ export type AgreementValue = 'agree' | 'disagree';
 export const AGREEMENT_STATEMENTS: {
   id: string;
   text: string;
-  image?: ImageSourcePropType;
+  imageKey?: OnboardingImageKey;
 }[] = [
   {
     id: 'exhausted',
     text: 'I often feel mentally exhausted.',
-    image: require('../../../../assets/questions/q1.png'),
+    imageKey: 'agreementQ1',
   },
   {
     id: 'racing',
     text: 'I struggle to slow my mind down.',
-    image: require('../../../../assets/questions/q2.png'),
+    imageKey: 'agreementQ2',
   },
   {
     id: 'reactive',
     text: 'Small things stress me out more than they should.',
-    image: require('../../../../assets/questions/q3.png'),
+    imageKey: 'agreementQ3',
   },
 ];
 
@@ -181,17 +185,18 @@ export default function AgreementScreen({
           <Text style={styles.statement}>“{statement.text}”</Text>
           <View style={styles.arch}>
             {AGREEMENT_STATEMENTS.map((s, idx) =>
-              s.image ? (
+              s.imageKey ? (
                 <Image
                   key={s.id}
-                  source={s.image}
+                  source={getOnboardingImageSource(s.imageKey)}
                   style={[
                     styles.illustration,
                     idx !== currentIdx && styles.illustrationHidden,
                   ]}
-                  resizeMode="cover"
+                  contentFit="cover"
+                  cachePolicy="memory-disk"
+                  transition={0}
                   accessible={false}
-                  fadeDuration={0}
                 />
               ) : null,
             )}

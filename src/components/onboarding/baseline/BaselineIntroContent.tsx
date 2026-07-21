@@ -4,8 +4,7 @@ import { Image } from 'expo-image';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
-
-const CAMERA_PPG_ILLUSTRATION = require('../../../../assets/onboarding/camerappg.png');
+import { getOnboardingImageSource } from '../../../services/images/onboardingImageCache';
 
 interface BaselineIntroContentProps {
   sessionSec: number;
@@ -24,7 +23,7 @@ export function BaselineIntroContent({ sessionSec }: BaselineIntroContentProps) 
 
       <View style={styles.illustrationWrap}>
         <Image
-          source={CAMERA_PPG_ILLUSTRATION}
+          source={getOnboardingImageSource('cameraPpg')}
           style={styles.illustration}
           contentFit="contain"
           cachePolicy="memory-disk"

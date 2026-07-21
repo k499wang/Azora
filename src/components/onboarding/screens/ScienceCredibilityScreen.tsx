@@ -1,9 +1,14 @@
 import { useEffect, useRef } from 'react';
-import { Animated, Easing, Image, StyleSheet, View } from 'react-native';
+import { Animated, Easing, StyleSheet, View } from 'react-native';
+import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { isHapticsEnabled } from '../../../services/preferences/hapticsPreference';
+import {
+  getOnboardingImageSource,
+  type OnboardingImageKey,
+} from '../../../services/images/onboardingImageCache';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import HarvardLogo from '../../../../assets/logos/harvard.svg';
@@ -21,15 +26,31 @@ type LogoEntry = {
   id: string;
   height: number;
   aspectRatio: number;
-  source?: number;
+  imageKey?: OnboardingImageKey;
   Component?: React.FC<{ width: number; height: number; viewBox?: string }>;
   viewBox?: string;
 };
 
 const LOGOS: LogoEntry[] = [
-  { id: 'harvard', Component: HarvardLogo, height: 72, aspectRatio: 600 / 165, viewBox: '0 0 600 165' },
-  { id: 'oxford', source: require('../../../../assets/logos/oxford.png'), height: 72, aspectRatio: 823 / 257 },
-  { id: 'cambridge', source: require('../../../../assets/logos/cambridge.png'), height: 60, aspectRatio: 1558 / 332 },
+  {
+    id: 'harvard',
+    Component: HarvardLogo,
+    height: 72,
+    aspectRatio: 600 / 165,
+    viewBox: '0 0 600 165',
+  },
+  {
+    id: 'oxford',
+    imageKey: 'oxfordLogo',
+    height: 72,
+    aspectRatio: 823 / 257,
+  },
+  {
+    id: 'cambridge',
+    imageKey: 'cambridgeLogo',
+    height: 60,
+    aspectRatio: 1558 / 332,
+  },
 ];
 
 export default function ScienceCredibilityScreen({
@@ -69,7 +90,7 @@ export default function ScienceCredibilityScreen({
       footer={<OnboardingPrimaryButton label="Continue" onPress={onContinue} />}
     >
       <View style={styles.container}>
-        {LOGOS.map(({ id, source, Component, height, aspectRatio, viewBox }, i) => (
+        {LOGOS.map(({ id, imageKey, Component, height, aspectRatio, viewBox }, i) => (
           <Animated.View
             key={id}
             style={[
@@ -88,14 +109,20 @@ export default function ScienceCredibilityScreen({
             ]}
           >
             {Component ? (
-              <Component width={height * aspectRatio} height={height} viewBox={viewBox} />
-            ) : (
-              <Image
-                source={source}
-                style={[styles.logo, { height, aspectRatio }]}
-                resizeMode="contain"
+              <Component
+                width={height * aspectRatio}
+                height={height}
+                viewBox={viewBox}
               />
-            )}
+            ) : imageKey ? (
+              <Image
+                source={getOnboardingImageSource(imageKey)}
+                style={[styles.logo, { height, aspectRatio }]}
+                contentFit="contain"
+                cachePolicy="memory-disk"
+                transition={0}
+              />
+            ) : null}
             {i < LOGOS.length - 1 && <View style={styles.divider} />}
           </Animated.View>
         ))}

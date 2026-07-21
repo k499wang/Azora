@@ -1,15 +1,16 @@
 import { Text } from '../../common/Text';
 import { useEffect, useRef } from 'react';
-import { Animated, Easing, Image, StyleSheet, View } from 'react-native';
+import { Animated, Easing, StyleSheet, View } from 'react-native';
+import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { typography } from '../../../theme/typography';
 import { isHapticsEnabled } from '../../../services/preferences/hapticsPreference';
+import { getOnboardingImageSource } from '../../../services/images/onboardingImageCache';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 
-const BRAIN_SCANS = require('../../../../assets/onboarding/brain-scan-comparison.webp');
 const BRAIN_SCAN_ASPECT_RATIO = 3 / 2;
 const BRAIN_SCAN_CONTENT_OFFSET = -10;
 const RIGHT_BRAIN_LABEL_OFFSET = 12;
@@ -70,9 +71,11 @@ export default function BrainScienceScreen({
       >
         <View style={styles.scanFrame}>
           <Image
-            source={BRAIN_SCANS}
+            source={getOnboardingImageSource('brainScan')}
             style={styles.scans}
-            resizeMode="cover"
+            contentFit="cover"
+            cachePolicy="memory-disk"
+            transition={0}
           />
         </View>
 
