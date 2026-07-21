@@ -9,6 +9,7 @@ export const paywallStepStyles = StyleSheet.create({
     gap: spacing.xl,
   },
   choosePlanContainer: {
+    paddingTop: spacing.md,
     gap: spacing.sm,
   },
   heroContainer: {
@@ -390,48 +391,6 @@ export const paywallStepStyles = StyleSheet.create({
   planCardsNoTrial: {
     marginTop: spacing.lg,
   },
-  planTestimonialsRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    marginTop: spacing.md,
-  },
-  planTestimonialCard: {
-    ...card.base,
-    width: 220,
-    minHeight: 180,
-    backgroundColor: colors.primary.blue800,
-    borderColor: colors.primary.blue700,
-    paddingVertical: spacing.lg,
-    paddingHorizontal: spacing.md,
-    gap: spacing.sm,
-  },
-  planTestimonialRatingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  planTestimonialRating: {
-    ...typography.body.small,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    color: 'rgba(255,255,255,0.85)',
-  },
-  planTestimonialTitle: {
-    ...typography.body.medium,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    color: colors.neutral[0],
-  },
-  planTestimonialQuote: {
-    ...typography.body.small,
-    color: 'rgba(255,255,255,0.85)',
-  },
-  planTestimonialName: {
-    ...typography.body.small,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    color: 'rgba(255,255,255,0.6)',
-  },
   socialProof: {
     gap: spacing.sm,
     marginTop: spacing.xl,
@@ -452,40 +411,5 @@ export const paywallStepStyles = StyleSheet.create({
     fontWeight: '500',
     color: colors.text.primary,
     textAlign: 'center',
-  },
-  socialProofCard: {
-    ...card.base,
-    ...card.shadow,
-    backgroundColor: colors.background.elevated,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md,
-    gap: spacing.xs,
-  },
-  socialProofCardRatingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  socialProofCardRating: {
-    ...typography.body.small,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    color: colors.text.secondary,
-  },
-  socialProofCardTitle: {
-    ...typography.body.medium,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    color: colors.text.primary,
-  },
-  socialProofQuote: {
-    ...typography.body.small,
-    color: colors.text.secondary,
-  },
-  socialProofName: {
-    ...typography.caption.caption1,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    color: colors.text.tertiary,
   },
 });

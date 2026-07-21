@@ -70,7 +70,7 @@ function AppStack({ showBootPaywall }: AppStackProps) {
         name="ExitOffer"
         component={ExitOfferScreen}
         options={{
-          presentation: 'modal',
+          presentation: 'fullScreenModal',
           animation: 'slide_from_bottom',
           gestureEnabled: true,
           gestureDirection: 'vertical',
