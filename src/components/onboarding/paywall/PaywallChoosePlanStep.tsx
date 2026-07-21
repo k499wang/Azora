@@ -1,5 +1,5 @@
 import { Text } from '../../common/Text';
-import { ActivityIndicator, ScrollView, View } from 'react-native';
+import { ActivityIndicator, View } from 'react-native';
 import type {
   PaywallPackageId,
   PaywallPackageOption,
@@ -10,7 +10,6 @@ import {
 } from '../../paywall/PlanCard';
 import PaywallFeatureList from '../../paywall/PaywallFeatureList';
 import PaywallTrialReminderToggle from '../../paywall/PaywallTrialReminderToggle';
-import { sampleReviews, Stars } from './PaywallSocialProof';
 import { paywallStepStyles as styles } from './paywallStepStyles';
 
 interface PaywallChoosePlanStepProps {
@@ -81,24 +80,6 @@ export function PaywallChoosePlanStep({
           ) : null}
         </View>
       )}
-
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.planTestimonialsRow}
-      >
-        {sampleReviews.map((review) => (
-          <View key={review.name} style={styles.planTestimonialCard}>
-            <View style={styles.planTestimonialRatingRow}>
-              <Stars size={20} />
-              <Text style={styles.planTestimonialRating}>5.0</Text>
-            </View>
-            <Text style={styles.planTestimonialTitle}>{review.title}</Text>
-            <Text style={styles.planTestimonialQuote}>“{review.quote}”</Text>
-            <Text style={styles.planTestimonialName}>{review.name}</Text>
-          </View>
-        ))}
-      </ScrollView>
     </View>
   );
 }

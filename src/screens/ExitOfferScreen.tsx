@@ -65,6 +65,13 @@ export function ExitOfferScreen({ navigation }: ExitOfferScreenProps) {
     }
   }, [navigation, paywall]);
 
+  const decline = useCallback(() => {
+    if (isBusy) return;
+    paywall.trackDismissed();
+    allowDismissRef.current = true;
+    navigation.goBack();
+  }, [isBusy, navigation, paywall]);
+
   return (
     <ExitOfferContent
       paywall={paywall}
@@ -75,6 +82,7 @@ export function ExitOfferScreen({ navigation }: ExitOfferScreenProps) {
       onRestore={() => {
         void restore();
       }}
+      onDecline={decline}
     />
   );
 }

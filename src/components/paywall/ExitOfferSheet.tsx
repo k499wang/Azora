@@ -59,7 +59,7 @@ export default function ExitOfferSheet({
     <Modal
       visible={visible}
       animationType="slide"
-      presentationStyle="pageSheet"
+      presentationStyle="fullScreen"
       onRequestClose={decline}
       onDismiss={onDismiss}
     >

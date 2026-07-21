@@ -1,9 +1,8 @@
 import { Text } from '../common/Text';
 import { useEffect, useMemo, useState } from 'react';
 import {
-  ActivityIndicator, Linking, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
+  ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   Easing,
   FadeIn,
@@ -22,28 +21,12 @@ import type {
 import PaywallTrialReminderToggle from './PaywallTrialReminderToggle';
 import { computePerWeek, computeAnnualSavings } from './PlanCard';
 import Icon from '../common/icons/Icon';
-import { SunsetBackground } from '../common/SunsetBackground';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import { card } from '../../theme/card';
 
-const TERMS_URL = 'https://www.tryazora.app/terms';
-const PRIVACY_URL = 'https://www.tryazora.app/privacy';
 const OFFER_DURATION_SECONDS = 5 * 60;
-
-const TESTIMONIALS = [
-  {
-    quote:
-      'I finally sleep through the night. Two weeks of morning breathwork and my resting heart rate actually dropped.',
-    name: 'Sunny W.',
-  },
-  {
-    quote:
-      "I've tried every meditation app out there. This is the first one that actually stuck for me.",
-    name: 'Melody Z.',
-  },
-];
 
 export type ExitOfferPaywall = ReturnType<typeof usePaywall>;
 
@@ -59,11 +42,9 @@ export function ExitOfferContent({
   paywall,
   anchorPaywall,
   onPurchase,
-  onRestore,
   onDecline,
 }: ExitOfferContentProps) {
   const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
 
   const [secondsLeft, setSecondsLeft] = useState(OFFER_DURATION_SECONDS);
   useEffect(() => {
@@ -121,32 +102,16 @@ export function ExitOfferContent({
 
   return (
     <View style={styles.screen}>
-      <View style={styles.heroWrap}>
-        <SunsetBackground
-          style={[
-            styles.heroShape,
-            { borderBottomLeftRadius: width * 0.9, borderBottomRightRadius: width * 0.9 },
-          ]}
-          imageStyle={{
-            borderBottomLeftRadius: width * 0.9,
-            borderBottomRightRadius: width * 0.9,
-          }}
+      {onDecline != null ? (
+        <Pressable
+          hitSlop={8}
+          disabled={isBusy}
+          onPress={onDecline}
+          style={[styles.closeButton, { top: insets.top + spacing.sm }]}
         >
-          <LinearGradient
-            colors={[
-              'rgba(30,99,214,0.18)',
-              'rgba(21,74,171,0.46)',
-              'rgba(13,51,128,0.78)',
-            ]}
-            style={StyleSheet.absoluteFill}
-            pointerEvents="none"
-          />
-        </SunsetBackground>
-        <Text style={styles.title}>Your one-time{'\n'}offer</Text>
-        <Text style={styles.heroSubtitle}>
-          A special price, reserved for you today.
-        </Text>
-      </View>
+          <Icon name="close" size={24} color={colors.text.primary} />
+        </Pressable>
+      ) : null}
 
       <ScrollView
         contentContainerStyle={[
@@ -155,6 +120,20 @@ export function ExitOfferContent({
         ]}
         showsVerticalScrollIndicator={false}
       >
+        <View style={styles.heroWrap}>
+          <Text
+            style={[styles.title, { marginTop: insets.top + spacing['5xl'] }]}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+          >
+            Your one-time offer
+          </Text>
+          <Text style={styles.heroSubtitle}>
+            A one-time special price for new users. Close this and it&apos;s
+            gone for good.
+          </Text>
+        </View>
+
         {showInitialLoading ? (
           <ActivityIndicator color={colors.text.primary} style={styles.loading} />
         ) : (
@@ -175,23 +154,20 @@ export function ExitOfferContent({
               <View style={styles.priceCardWrap}>
                 <View style={styles.priceBlock}>
                   {discountPercent != null ? (
-                    <View style={styles.discountPill}>
-                      <Text style={styles.discountPillText}>
-                        {discountPercent}% off, forever
-                      </Text>
-                    </View>
+                    <Text style={styles.discountHeadline}>{discountPercent}% OFF</Text>
                   ) : null}
 
-                  {monthly ? (
-                    <View style={styles.priceRow}>
-                      <Text style={styles.priceNow}>{monthly}</Text>
-                      <Text style={styles.priceUnit}>/mo</Text>
-                    </View>
-                  ) : null}
-
-                  {anchorPriceString ? (
-                    <Text style={styles.priceAnchor}>{anchorPriceString}/year</Text>
-                  ) : null}
+                  <View style={styles.priceRow}>
+                    {anchorPriceString ? (
+                      <Text style={styles.priceAnchor}>{anchorPriceString}/year</Text>
+                    ) : null}
+                    {monthly ? (
+                      <>
+                        <Text style={styles.priceSecondary}>{monthly}</Text>
+                        <Text style={styles.priceUnitSecondary}>/mo</Text>
+                      </>
+                    ) : null}
+                  </View>
                 </View>
                 <View style={StyleSheet.absoluteFill} pointerEvents="none">
                   {SPARKLES.map((sparkle, i) => (
@@ -200,20 +176,6 @@ export function ExitOfferContent({
                 </View>
               </View>
             </Animated.View>
-
-            <View style={styles.testimonials}>
-              {TESTIMONIALS.map((t) => (
-                <View key={t.name} style={styles.testimonial}>
-                  <View style={styles.testimonialStars}>
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <Icon key={i} name="star" size={20} color={colors.warning[500]} />
-                    ))}
-                  </View>
-                  <Text style={styles.testimonialQuote}>{t.quote}</Text>
-                  <Text style={styles.testimonialName}>{t.name}</Text>
-                </View>
-              ))}
-            </View>
 
             {paywall.errorMessage ? (
               <Text style={styles.error}>{paywall.errorMessage}</Text>
@@ -231,15 +193,6 @@ export function ExitOfferContent({
                 />
               ) : null}
 
-              {weekly ? (
-                <OfferPlanCard
-                  pkg={weekly}
-                  isSelected={paywall.selectedPackageId === 'weekly'}
-                  onSelect={paywall.selectPackage}
-                  savingsPercent={null}
-                />
-              ) : null}
-
               {annual == null && !paywall.isLoading ? (
                 <PrimaryButton label="Try again" onPress={paywall.retryRevenueCatSync} disabled={isBusy} />
               ) : (
@@ -251,28 +204,9 @@ export function ExitOfferContent({
                 />
               )}
 
-              <View style={styles.links}>
-                <Pressable hitSlop={6} disabled={isBusy} onPress={onRestore}>
-                  <Text style={styles.linkText}>Restore Purchases</Text>
-                </Pressable>
-                <Pressable hitSlop={6} onPress={() => Linking.openURL(TERMS_URL)}>
-                  <Text style={styles.linkText}>Terms &amp; Conditions</Text>
-                </Pressable>
-                <Pressable hitSlop={6} onPress={() => Linking.openURL(PRIVACY_URL)}>
-                  <Text style={styles.linkText}>Privacy Policy</Text>
-                </Pressable>
+              <View style={styles.commitmentRow}>
+                <Text style={styles.commitmentText}>No commitment — cancel anytime</Text>
               </View>
-
-              {onDecline != null ? (
-                <Pressable
-                  hitSlop={8}
-                  disabled={isBusy}
-                  onPress={onDecline}
-                  style={styles.declineButton}
-                >
-                  <Text style={styles.declineText}>No thanks</Text>
-                </Pressable>
-              ) : null}
             </View>
           </Animated.View>
         )}
@@ -362,7 +296,7 @@ function OfferPlanCard({
   const secondary = isAnnual ? `${pkg.priceString}/year` : 'billed weekly';
   const planDetail = isAnnual
     ? hasTrial
-      ? 'No charge today — cancel anytime'
+      ? 'No charge today'
       : 'Annual subscription'
     : 'Weekly subscription';
 
@@ -496,25 +430,27 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background.primary,
   },
-  heroWrap: {
-    height: '27%',
-    minHeight: 180,
-    backgroundColor: colors.background.primary,
+  closeButton: {
+    position: 'absolute',
+    left: spacing.lg,
+    zIndex: 10,
+    width: 36,
+    height: 36,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: spacing.xl,
-    overflow: 'hidden',
   },
-  heroShape: {
-    ...StyleSheet.absoluteFillObject,
-    overflow: 'hidden',
-    transform: [{ scaleX: 1.6 }],
+  heroWrap: {
+    alignSelf: 'stretch',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.xs,
+    paddingBottom: spacing.xs,
   },
   scroll: {
     flexGrow: 1,
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
-    gap: spacing.lg,
+    gap: spacing.sm,
   },
   loading: {
     paddingVertical: spacing['2xl'],
@@ -528,17 +464,16 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: fonts.semibold,
     fontWeight: '500',
-    fontSize: 46,
-    lineHeight: 52,
-    color: colors.neutral[0],
+    fontSize: 56,
+    lineHeight: 62,
+    color: colors.text.primary,
     textAlign: 'center',
-    letterSpacing: 0.2,
   },
   heroSubtitle: {
     ...typography.body.small,
     fontFamily: fonts.semibold,
     fontWeight: '500',
-    color: colors.primary.blue100,
+    color: colors.text.secondary,
     textAlign: 'center',
     marginTop: spacing.sm,
     letterSpacing: 0.3,
@@ -557,25 +492,24 @@ const styles = StyleSheet.create({
     ...card.shadow,
     alignSelf: 'stretch',
     alignItems: 'center',
-    gap: spacing.sm,
-    paddingVertical: spacing.xl,
+    justifyContent: 'center',
+    gap: spacing.xs,
+    paddingVertical: spacing['2xl'],
     paddingHorizontal: spacing.lg,
   },
   sparkle: {
     position: 'absolute',
   },
-  discountPill: {
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.md,
-    borderRadius: 999,
-    backgroundColor: colors.primary.blue100,
-  },
-  discountPillText: {
-    ...typography.caption.caption1,
+  discountHeadline: {
     fontFamily: fonts.semibold,
     fontWeight: '500',
-    letterSpacing: 0.5,
+    fontSize: 56,
+    lineHeight: 56,
     color: colors.primary.blue700,
+    textAlign: 'center',
+    textAlignVertical: 'center',
+    letterSpacing: 0.2,
+    paddingTop: spacing.md,
   },
   priceRow: {
     flexDirection: 'row',
@@ -583,16 +517,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: spacing.xs,
   },
-  priceNow: {
+  priceSecondary: {
+    ...typography.title.title3,
     fontFamily: fonts.semibold,
     fontWeight: '500',
-    fontSize: 68,
-    lineHeight: 72,
-    color: colors.primary.blue900,
-    letterSpacing: 0.2,
+    color: colors.text.secondary,
   },
-  priceUnit: {
-    ...typography.title.title2,
+  priceUnitSecondary: {
+    ...typography.body.small,
     fontFamily: fonts.semibold,
     fontWeight: '500',
     color: colors.text.tertiary,
@@ -627,29 +559,6 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: colors.error[700],
     fontVariant: ['tabular-nums'],
-  },
-  testimonials: {
-    alignSelf: 'stretch',
-    gap: spacing.xl,
-    marginVertical: spacing.md,
-  },
-  testimonial: {
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  testimonialStars: {
-    flexDirection: 'row',
-    gap: spacing.xs,
-  },
-  testimonialQuote: {
-    ...typography.body.medium,
-    color: colors.text.secondary,
-    textAlign: 'center',
-  },
-  testimonialName: {
-    ...typography.caption.caption1,
-    color: colors.text.tertiary,
-    textAlign: 'center',
   },
   error: {
     ...typography.body.small,
@@ -763,23 +672,16 @@ const styles = StyleSheet.create({
     color: colors.text.inverse,
     letterSpacing: 0.3,
   },
-  links: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.xs,
+  commitmentRow: {
+    alignSelf: 'stretch',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  linkText: {
-    ...typography.caption.caption1,
+  commitmentText: {
+    ...typography.body.small,
+    fontFamily: fonts.semibold,
+    fontWeight: '500',
     color: colors.text.secondary,
-  },
-  declineButton: {
-    alignSelf: 'center',
-    paddingVertical: spacing.xs,
-  },
-  declineText: {
-    ...typography.caption.caption1,
-    color: colors.text.tertiary,
-    textDecorationLine: 'underline',
   },
   pressed: {
     opacity: 0.6,
