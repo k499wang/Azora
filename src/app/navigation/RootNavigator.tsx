@@ -282,21 +282,9 @@ interface RootNavigatorProps {
 }
 
 function OnboardingOverlay({ gate }: { gate: OnboardingGate }) {
-  const [imagesReady, setImagesReady] = useState(false);
-
   useEffect(() => {
-    let cancelled = false;
-
-    void loadCriticalOnboardingImages().finally(() => {
-      if (!cancelled) setImagesReady(true);
-    });
-
-    return () => {
-      cancelled = true;
-    };
+    void loadCriticalOnboardingImages();
   }, []);
-
-  if (!imagesReady) return <BrandSplash />;
 
   return (
     <View style={styles.overlayRoot}>
