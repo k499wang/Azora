@@ -63,6 +63,8 @@ interface UseLivePulseReturn {
   getMeasurementSamples: () => PpgFrameSample[];
   getIbiSamples: () => IbiSample[];
   beginBpmSampleCollection: () => void;
+  pauseBpmSampleCollection: () => void;
+  resumeBpmSampleCollection: () => void;
   getBpmSamples: () => LivePulseBpmSample[];
 }
 
@@ -381,6 +383,17 @@ export function useLivePulse(
     );
   }, []);
 
+  const pauseBpmSampleCollection = useCallback(() => {
+    resumeSessionSamplerOnNextFrameRef.current = false;
+    sessionBpmSamplerRef.current.suspend(
+      lastFrameTimestampRef.current ?? Number.NaN,
+    );
+  }, []);
+
+  const resumeBpmSampleCollection = useCallback(() => {
+    resumeSessionSamplerOnNextFrameRef.current = true;
+  }, []);
+
   const getBpmSamples = useCallback(() => {
     return sessionBpmSamplerRef.current.finish();
   }, []);
@@ -420,6 +433,8 @@ export function useLivePulse(
     getMeasurementSamples,
     getIbiSamples,
     beginBpmSampleCollection,
+    pauseBpmSampleCollection,
+    resumeBpmSampleCollection,
     getBpmSamples,
   };
 }
