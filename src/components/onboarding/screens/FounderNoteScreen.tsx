@@ -1,13 +1,13 @@
 import { Text } from '../../common/Text';
-import { Image, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Image } from 'expo-image';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { card } from '../../../theme/card';
 import { fonts, typography } from '../../../theme/typography';
+import { getOnboardingImageSource } from '../../../services/images/onboardingImageCache';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
-
-const SIGNATURE_IMAGE = require('../../../../assets/signature.png');
 
 const LETTER_DATE = new Date().toLocaleDateString('en-US', {
   month: 'long',
@@ -80,9 +80,11 @@ export default function FounderNoteScreen({
         <View style={styles.signature}>
           <Text style={styles.signOff}>Breathe easy,</Text>
           <Image
-            source={SIGNATURE_IMAGE}
+            source={getOnboardingImageSource('signature')}
             style={styles.signatureImage}
-            resizeMode="contain"
+            contentFit="contain"
+            cachePolicy="memory-disk"
+            transition={0}
           />
           <Text style={styles.signName}>— The Azora team</Text>
         </View>

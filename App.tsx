@@ -36,26 +36,16 @@ import { WelcomeIntro } from './src/components/welcome/WelcomeIntro';
 import { colors } from './src/theme/colors';
 import TECHNIQUES from './src/features/exercise/guidedBreathing/techniques';
 import { AUTH_LANDING_SLIDES } from './src/data/authLandingSlides';
-import { AGREEMENT_STATEMENTS } from './src/components/onboarding/screens/AgreementScreen';
 import { loadCriticalBackgroundImages } from './src/services/images/backgroundImageCache';
 SplashScreen.preventAutoHideAsync();
 
 // ─── Secondary asset preloads (fire-and-forget, non-blocking) ──────────
-Asset.fromModule(require('./assets/onboarding/camerappg.png')).downloadAsync();
-Asset.fromModule(require('./assets/onboarding/founder-intro-poster.jpg')).downloadAsync();
-Asset.fromModule(require('./assets/onboarding/brain-scan-comparison.webp')).downloadAsync();
 AUTH_LANDING_SLIDES.forEach((slide) => {
   Asset.fromModule(slide.source as number).downloadAsync();
 });
 TECHNIQUES.forEach((technique) => {
   Asset.fromModule(technique.backgroundImage as number).downloadAsync();
 });
-AGREEMENT_STATEMENTS.forEach((statement) => {
-  if (statement.image) {
-    Asset.fromModule(statement.image as number).downloadAsync();
-  }
-});
-
 const navigationRef = createNavigationContainerRef<RootStackParamList>();
 const STARTUP_BACKGROUND_COLOR = colors.neutral[0];
 

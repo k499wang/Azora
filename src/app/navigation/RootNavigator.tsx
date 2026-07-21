@@ -32,6 +32,7 @@ import {
 import { useAuthStore } from '../../stores/authStore';
 import { useExitOfferStore } from '../../stores/exitOfferStore';
 import { useRevenueCatIdentityStore } from '../../stores/revenueCatIdentityStore';
+import { loadCriticalOnboardingImages } from '../../services/images/onboardingImageCache';
 import { colors } from '../../theme/colors';
 import { MainTabs } from './MainTabs';
 import type { RootStackNavigationProp, RootStackParamList } from './types';
@@ -281,6 +282,22 @@ interface RootNavigatorProps {
 }
 
 function OnboardingOverlay({ gate }: { gate: OnboardingGate }) {
+  const [imagesReady, setImagesReady] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    void loadCriticalOnboardingImages().finally(() => {
+      if (!cancelled) setImagesReady(true);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (!imagesReady) return <BrandSplash />;
+
   return (
     <View style={styles.overlayRoot}>
       <AppStack showBootPaywall={false} />
