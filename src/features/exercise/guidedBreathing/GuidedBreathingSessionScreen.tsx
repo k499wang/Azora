@@ -139,12 +139,13 @@ export default function GuidedBreathingSessionScreen({
   const pulse = useLivePulse({ initialProfile: 'guidedBreathing' });
   const {
     start: startPulse,
-    suspend: suspendPulse,
     stop: stopPulse,
     hasPermission,
     requestPermission,
     isBpmReady,
     beginBpmSampleCollection,
+    pauseBpmSampleCollection,
+    resumeBpmSampleCollection,
     getBpmSamples,
   } = pulse;
   const presentedBpm = pulse.currentBpm;
@@ -157,10 +158,7 @@ export default function GuidedBreathingSessionScreen({
     setHeartRateMonitoringEnabled,
   } = useBreathingHeartRateMonitoringAccess();
 
-  const isSessionActive =
-    phase !== 'idle' && phase !== 'done' && phase !== 'intro' && !paused;
-  const isSessionPaused =
-    paused &&
+  const isTimedSession =
     phase !== 'idle' &&
     phase !== 'done' &&
     phase !== 'intro' &&
@@ -169,21 +167,17 @@ export default function GuidedBreathingSessionScreen({
   useEffect(() => {
     if (!hrEnabled || !heartRateMonitoringAllowed) {
       stopPulse();
-    } else if (isSessionActive) {
+    } else if (isTimedSession) {
       startPulse();
-    } else if (isSessionPaused) {
-      suspendPulse();
     } else {
       stopPulse();
     }
   }, [
     heartRateMonitoringAllowed,
     hrEnabled,
-    isSessionActive,
-    isSessionPaused,
+    isTimedSession,
     startPulse,
     stopPulse,
-    suspendPulse,
   ]);
 
   const clearIntroTimeout = useCallback(() => {
@@ -301,6 +295,7 @@ export default function GuidedBreathingSessionScreen({
 
   const handlePause = () => {
     pausePhase();
+    pauseBpmSampleCollection();
     posthog.capture(AnalyticsEvent.ExerciseSessionPaused, {
       technique_id: technique.id,
       technique_name: technique.name,
@@ -310,7 +305,10 @@ export default function GuidedBreathingSessionScreen({
     });
   };
 
-  const handleResume = () => resumePhase();
+  const handleResume = () => {
+    resumeBpmSampleCollection();
+    resumePhase();
+  };
 
   const beginExercise = useCallback(
     (withHr: boolean) => {

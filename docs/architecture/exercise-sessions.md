@@ -90,7 +90,9 @@ Preserve these when changing exercise orchestration:
 
 - cancellation is checked between phases
 - pause and resume retain the remaining phase duration
-- guided heart-rate samples survive pause and resume; paused time is excluded from sample offsets
+- guided heart-rate capture and live presentation continue through pause, while
+  persisted BPM sampling pauses; collected samples survive resume and paused
+  time is excluded from their offsets
 - daily Pause is visible during the no-HR entrance animation but remains inert until the first timed preparation phase begins
 - daily preparation and hold clocks freeze while paused and resume without repeating a step
 - daily heart-rate capture continues uninterrupted while its exercise clock is paused
