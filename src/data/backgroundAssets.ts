@@ -25,6 +25,11 @@ export const HEART_HERO_BACKGROUND_ASSET = {
   fallbackColor: colors.background.primary,
 } as const;
 
+export const DAILY_PLAN_BACKGROUND_ASSET = {
+  source: require('../../assets/backgrounds/daily-plan-underwater.jpg'),
+  fallbackColor: colors.background.lagoon,
+} as const;
+
 export const PROFILE_HERO_BACKGROUND_ASSET = {
   source: require('../../assets/profile-hero-background.jpg'),
   fallbackColor: colors.background.primary,

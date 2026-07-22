@@ -1,20 +1,18 @@
 import { Text } from '../common/Text';
-import { useCallback } from 'react';
-import { Image, Pressable, StyleSheet, View } from 'react-native';
-import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { Image } from 'expo-image';
+import { useNavigation } from '@react-navigation/native';
 import { usePostHog } from 'posthog-react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useVideoPlayer, VideoView } from 'expo-video';
 import { LinearGradient } from 'expo-linear-gradient';
 import GlassSurface from '../common/GlassSurface';
 import { colors } from '../../theme/colors';
 import { fonts, typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import { AnalyticsEvent } from '../../services/analytics/events';
+import { DAILY_PLAN_BACKGROUND_ASSET } from '../../data/backgroundAssets';
+import { getBackgroundImageSource } from '../../services/images/backgroundImageCache';
 import type { MainTabNavigationProp } from '../../app/navigation';
-
-const BREATHHOLD_CHALLENGE_BACKGROUND = require('../../../assets/daily-plan-background.mp4');
-const BREATHHOLD_CHALLENGE_POSTER = require('../../../assets/daily-plan-poster.jpg');
 
 interface DailyPlanCardProps {
   todayHoldSeconds: number | null;
@@ -40,25 +38,6 @@ export default function DailyPlanCard({
   const navigation = useNavigation<MainTabNavigationProp<'Home'>>();
   const posthog = usePostHog();
 
-  const player = useVideoPlayer(BREATHHOLD_CHALLENGE_BACKGROUND, (p) => {
-    p.loop = true;
-    p.muted = true;
-    p.play();
-  });
-
-  useFocusEffect(
-    useCallback(() => {
-      try {
-        player.play();
-      } catch {}
-      return () => {
-        try {
-          player.pause();
-        } catch {}
-      };
-    }, [player]),
-  );
-
   const handlePress = () => {
     posthog.capture(AnalyticsEvent.DailyPlanStarted, { streak_days: streakDays });
     if (onPress) return onPress();
@@ -83,19 +62,19 @@ export default function DailyPlanCard({
     <View style={styles.container}>
       <View style={styles.card}>
         <Image
-          source={BREATHHOLD_CHALLENGE_POSTER}
+          source={getBackgroundImageSource('dailyPlan')}
           style={StyleSheet.absoluteFill}
-          resizeMode="cover"
-        />
-        <VideoView
-          style={StyleSheet.absoluteFill}
-          player={player}
           contentFit="cover"
-          nativeControls={false}
-          pointerEvents="none"
+          contentPosition="center"
+          transition={0}
+          cachePolicy="memory-disk"
         />
         <LinearGradient
-          colors={[colors.photoScrim.transparent, colors.photoScrim.transparent, colors.photoScrim.strong]}
+          colors={[
+            colors.photoScrim.transparent,
+            colors.photoScrim.transparent,
+            colors.photoScrim.medium,
+          ]}
           locations={[0, 0.35, 1]}
           style={StyleSheet.absoluteFill}
           pointerEvents="none"
@@ -161,7 +140,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     borderRadius: 24,
     overflow: 'hidden',
-    backgroundColor: colors.primary.blue600,
+    backgroundColor: DAILY_PLAN_BACKGROUND_ASSET.fallbackColor,
   },
   cardContent: {
     flex: 1,
@@ -185,9 +164,10 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: spacing.md,
     left: spacing.lg,
+    right: spacing.lg,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    justifyContent: 'space-between',
   },
   challengeIcon: {
     width: 28,

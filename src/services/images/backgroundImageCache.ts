@@ -1,6 +1,7 @@
 import { Image, type ImageLoadOptions, type ImageRef } from 'expo-image';
 import {
   BREATH_HERO_BACKGROUND_ASSET,
+  DAILY_PLAN_BACKGROUND_ASSET,
   HEART_HERO_BACKGROUND_ASSET,
   HOME_HERO_BACKGROUND_ASSET,
   PROFILE_HERO_BACKGROUND_ASSET,
@@ -14,7 +15,8 @@ export type BackgroundImageKey =
   | 'homeHero'
   | 'breathHero'
   | 'heartHero'
-  | 'profileHero';
+  | 'profileHero'
+  | 'dailyPlan';
 
 const sources: Record<BackgroundImageKey, number> = {
   result: RESULT_BACKGROUND_ASSET.source,
@@ -23,6 +25,7 @@ const sources: Record<BackgroundImageKey, number> = {
   breathHero: BREATH_HERO_BACKGROUND_ASSET.source,
   heartHero: HEART_HERO_BACKGROUND_ASSET.source,
   profileHero: PROFILE_HERO_BACKGROUND_ASSET.source,
+  dailyPlan: DAILY_PLAN_BACKGROUND_ASSET.source,
 };
 
 const loadOptions: Partial<Record<BackgroundImageKey, ImageLoadOptions>> = {
@@ -33,6 +36,7 @@ const loadOptions: Partial<Record<BackgroundImageKey, ImageLoadOptions>> = {
   breathHero: { maxWidth: 1400 },
   heartHero: { maxWidth: 1400 },
   profileHero: { maxWidth: 1400 },
+  dailyPlan: { maxWidth: 1400 },
 };
 
 const retainedImages: Partial<Record<BackgroundImageKey, ImageRef>> = {};
@@ -66,6 +70,7 @@ export async function loadCriticalBackgroundImages(): Promise<void> {
     'breathHero',
     'heartHero',
     'profileHero',
+    'dailyPlan',
   ];
   const results = await Promise.allSettled(
     criticalKeys.map((key) => loadBackgroundImage(key)),
