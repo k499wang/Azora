@@ -16,6 +16,7 @@ interface GreetingScreenProps {
   stepCount: number;
   onContinue: () => void;
   onBack: () => void;
+  onSkip: () => void;
 }
 
 const WAVE_SIZE = 256;
@@ -53,6 +54,7 @@ export default function GreetingScreen({
   stepCount,
   onContinue,
   onBack,
+  onSkip,
 }: GreetingScreenProps) {
   const displayName = useMemo(() => {
     const trimmed = name.trim();
@@ -132,6 +134,7 @@ export default function GreetingScreen({
       title=""
       progress={stepIndex / stepCount}
       onBack={onBack}
+      onSkip={onSkip}
       footer={<OnboardingPrimaryButton label="Let's begin" onPress={onContinue} />}
     >
       <View style={styles.stage}>

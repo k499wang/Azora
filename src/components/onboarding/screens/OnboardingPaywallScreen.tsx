@@ -4,6 +4,7 @@ import {
   Animated, Easing, Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import * as Haptics from 'expo-haptics';
 import type {
   PaywallOffering,
   PaywallPackageId,
@@ -23,6 +24,7 @@ import { PaywallStepDots } from '../paywall/PaywallStepDots';
 import { PaywallTrialStep } from '../paywall/PaywallTrialStep';
 import { PaywallValueStep } from '../paywall/PaywallValueStep';
 import type { PaywallPersonalization } from '../../../lib/paywallPersonalization';
+import { isHapticsEnabled } from '../../../services/preferences/hapticsPreference';
 
 const TERMS_URL = 'https://www.tryazora.app/terms';
 const PRIVACY_URL = 'https://www.tryazora.app/privacy';
@@ -50,6 +52,7 @@ interface OnboardingPaywallScreenProps {
   // Absent under the hard paywall: no self-serve decline; exit intent
   // (cancelled purchase / idling on the plan step) drives the exit offer.
   onContinueWithoutPro?: () => void;
+  onStepSkipped?: (fromStep: number, toStep: number | null) => void;
   onFinalStepReached?: () => void;
 }
 
@@ -67,6 +70,7 @@ export default function OnboardingPaywallScreen({
   onRestore,
   onRetry,
   onContinueWithoutPro,
+  onStepSkipped,
   onFinalStepReached,
 }: OnboardingPaywallScreenProps) {
   const insets = useSafeAreaInsets();
@@ -271,6 +275,26 @@ export default function OnboardingPaywallScreen({
     if (step < STEP_COUNT - 1) animateToStep(step + 1, 1);
   }, [animateToStep, step]);
 
+  const handleSkip = useCallback(() => {
+    if (isBusy) return;
+    if (isHapticsEnabled()) Haptics.selectionAsync().catch(() => {});
+    if (step >= STEP_COUNT - 1) {
+      if (onContinueWithoutPro == null) return;
+      onStepSkipped?.(step, null);
+      handleContinueWithoutPro();
+      return;
+    }
+    onStepSkipped?.(step, step + 1);
+    animateToStep(step + 1, 1);
+  }, [
+    animateToStep,
+    handleContinueWithoutPro,
+    isBusy,
+    onContinueWithoutPro,
+    onStepSkipped,
+    step,
+  ]);
+
   const handleBack = useCallback(() => {
     if (step > 0) animateToStep(step - 1, -1);
   }, [animateToStep, step]);
@@ -341,7 +365,26 @@ export default function OnboardingPaywallScreen({
             <View style={styles.headerButton} />
           )}
           <PaywallStepDots count={STEP_COUNT} current={step} dark={darkChrome} />
-          <View style={styles.headerButton} />
+          {!isFinal || onContinueWithoutPro != null ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Skip"
+              hitSlop={12}
+              disabled={isBusy}
+              onPress={handleSkip}
+              style={({ pressed }) => [
+                styles.headerButton,
+                pressed && styles.subtlePressed,
+                isBusy && styles.disabled,
+              ]}
+            >
+              <Text style={[styles.skipText, darkChrome && styles.skipTextDark]}>
+                Skip
+              </Text>
+            </Pressable>
+          ) : (
+            <View style={styles.headerButton} />
+          )}
         </View>
 
         <ScrollView
@@ -454,21 +497,6 @@ export default function OnboardingPaywallScreen({
                   {isRestoring ? 'Restoring...' : 'Restore Purchase'}
                 </Text>
               </Pressable>
-              {onContinueWithoutPro != null ? (
-                <Pressable
-                  accessibilityRole="button"
-                  disabled={isBusy}
-                  onPress={handleContinueWithoutPro}
-                  hitSlop={8}
-                  style={({ pressed }) => [
-                    styles.maybeLaterButton,
-                    pressed && styles.subtlePressed,
-                    isBusy && styles.disabled,
-                  ]}
-                >
-                  <Text style={styles.maybeLaterText}>Maybe later</Text>
-                </Pressable>
-              ) : null}
               <Text style={styles.legal}>
                 Manage or cancel in App Store settings.{' '}
                 By continuing, you agree to the{' '}
@@ -518,10 +546,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
   },
   headerButton: {
-    width: 36,
+    width: 44,
     height: 36,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  skipText: {
+    ...typography.body.small,
+    fontFamily: fonts.semibold,
+    fontWeight: '500',
+    color: colors.text.secondary,
+  },
+  skipTextDark: {
+    color: colors.primary.blue200,
   },
   backText: {
     fontFamily: fonts.semibold,
@@ -529,17 +566,6 @@ const styles = StyleSheet.create({
     fontSize: 34,
     lineHeight: 34,
     color: colors.neutral[0],
-  },
-  maybeLaterButton: {
-    alignSelf: 'center',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-  },
-  maybeLaterText: {
-    ...typography.caption.caption1,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    color: colors.primary.blue200,
   },
   headerTextLight: {
     color: colors.text.primary,

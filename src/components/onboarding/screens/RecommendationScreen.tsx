@@ -26,6 +26,7 @@ interface RecommendationScreenProps {
   stepCount: number;
   onContinue: () => void;
   onBack: () => void;
+  onSkip: () => void;
 }
 
 const PERSONALIZING_STEPS = [
@@ -74,6 +75,7 @@ export default function RecommendationScreen({
   stepCount,
   onContinue,
   onBack,
+  onSkip,
 }: RecommendationScreenProps) {
   const { width } = useWindowDimensions();
   const mindMap = useMemo(
@@ -165,6 +167,7 @@ export default function RecommendationScreen({
         subtitle="We're building your personalized mindmap and plan based on your responses."
         progress={stepIndex / stepCount}
         onBack={onBack}
+        onSkip={onSkip}
         footer={<View />}
       >
         <View style={styles.loadingBody}>
@@ -219,6 +222,7 @@ export default function RecommendationScreen({
       subtitle={`Tailored to ${intentTitle.toLowerCase()}, your age, and how your body responded.`}
       progress={stepIndex / stepCount}
       onBack={onBack}
+      onSkip={onSkip}
       footer={<OnboardingPrimaryButton label="Sounds good" onPress={onContinue} />}
     >
       <Animated.View

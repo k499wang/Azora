@@ -20,6 +20,7 @@ interface FounderNoteScreenProps {
   stepCount: number;
   onContinue: () => void;
   onBack: () => void;
+  onSkip: () => void;
 }
 
 export default function FounderNoteScreen({
@@ -28,6 +29,7 @@ export default function FounderNoteScreen({
   stepCount,
   onContinue,
   onBack,
+  onSkip,
 }: FounderNoteScreenProps) {
   const title = name ? `${name}, before you start` : 'Before you start';
 
@@ -37,6 +39,7 @@ export default function FounderNoteScreen({
       subtitle="We wanted to say one thing first."
       progress={stepIndex / stepCount}
       onBack={onBack}
+      onSkip={onSkip}
       footer={<OnboardingPrimaryButton label="Continue" onPress={onContinue} />}
     >
       <View style={[card.paper, styles.note]}>

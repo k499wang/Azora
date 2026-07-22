@@ -27,6 +27,7 @@ interface PactScreenProps {
   errorMessage: string | null;
   onConfirm: () => void;
   onBack: () => void;
+  onSkip: () => void;
 }
 
 /* ─── StampButton ─── */
@@ -272,6 +273,7 @@ export default function PactScreen({
   errorMessage,
   onConfirm,
   onBack,
+  onSkip,
 }: PactScreenProps) {
   const insets = useSafeAreaInsets();
   const [celebrating, setCelebrating] = useState(false);
@@ -406,6 +408,12 @@ export default function PactScreen({
     onConfirm();
   }, [celebrating, isSubmitting, onConfirm]);
 
+  const handleSkip = useCallback(() => {
+    if (celebrating || isSubmitting) return;
+    if (isHapticsEnabled()) Haptics.selectionAsync().catch(() => {});
+    onSkip();
+  }, [celebrating, isSubmitting, onSkip]);
+
   const today = new Date().toLocaleDateString('en-US', {
     month: 'long',
     day: 'numeric',
@@ -437,12 +445,34 @@ export default function PactScreen({
         >
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.backGlyph} onPress={onBack}>
-            ←
-          </Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Back"
+            disabled={celebrating || isSubmitting}
+            hitSlop={12}
+            onPress={onBack}
+            style={styles.headerButton}
+          >
+            <Text style={styles.backGlyph}>←</Text>
+          </Pressable>
           <View style={styles.progressBar}>
             <View style={[styles.progressFill, { width: `${clampedProgress * 100}%` }]} />
           </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Skip"
+            disabled={celebrating || isSubmitting}
+            hitSlop={12}
+            onPress={handleSkip}
+            style={({ pressed }) => [
+              styles.headerButton,
+              styles.skipButton,
+              pressed && styles.skipButtonPressed,
+              (celebrating || isSubmitting) && styles.headerButtonDisabled,
+            ]}
+          >
+            <Text style={styles.skipLabel}>Skip</Text>
+          </Pressable>
         </View>
 
         <ScrollView
@@ -604,6 +634,27 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     lineHeight: 24,
     padding: spacing.xs,
+  },
+  headerButton: {
+    minWidth: 44,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerButtonDisabled: {
+    opacity: 0.45,
+  },
+  skipButton: {
+    borderRadius: 999,
+  },
+  skipButtonPressed: {
+    backgroundColor: colors.neutral[100],
+  },
+  skipLabel: {
+    ...typography.body.small,
+    fontFamily: fonts.semibold,
+    fontWeight: '500',
+    color: colors.text.secondary,
   },
   progressBar: {
     flex: 1,
