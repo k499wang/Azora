@@ -77,6 +77,7 @@ export const colors = {
     // Asset-matched fallbacks used while native background images decode.
     sunset: '#042B62',
     dawn: '#FCBF9B',
+    lagoon: '#1B708C',
   },
 
   // Desaturated brand blue (slate-leaning) for the premium/greyish direction.
@@ -142,6 +143,7 @@ export const colors = {
   photoScrim: {
     transparent: 'rgba(12,16,33,0)',
     soft: 'rgba(12,16,33,0.35)',
+    medium: 'rgba(12,16,33,0.6)',
     strong: 'rgba(12,16,33,0.82)',
   },
 
