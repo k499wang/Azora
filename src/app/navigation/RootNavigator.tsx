@@ -156,9 +156,13 @@ function BootPaywallGate() {
   const [paywallMode, setPaywallMode] = useState<PaywallMode | null>(null);
 
   const isPro = entitlementQuery.data?.isPro === true;
+  // isFetching matters as much as isPending: this gate mounts right after
+  // onboarding finishes, when a just-purchased user's entitlement is still
+  // being refetched and the cached value still reads non-Pro.
   const shouldGate =
     userId != null &&
     !entitlementQuery.isPending &&
+    !entitlementQuery.isFetching &&
     !entitlementQuery.isError &&
     !isPro;
 
@@ -228,6 +232,7 @@ function BootPaywallPresenter({ isBlocking = false }: { isBlocking?: boolean }) 
   useEffect(() => {
     if (hasPresentedRef.current) return;
     if (userId == null || entitlementQuery.isPending || entitlementQuery.isError) return;
+    if (entitlementQuery.isFetching) return;
     if (entitlementQuery.data?.isPro === true) return;
 
     hasPresentedRef.current = true;
@@ -240,6 +245,7 @@ function BootPaywallPresenter({ isBlocking = false }: { isBlocking?: boolean }) 
   }, [
     entitlementQuery.data?.isPro,
     entitlementQuery.isError,
+    entitlementQuery.isFetching,
     entitlementQuery.isPending,
     isBlocking,
     navigation,
