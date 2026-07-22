@@ -23,6 +23,8 @@ import { useAuthStore } from '../stores/authStore';
 import { useRevenueCatIdentityStore } from '../stores/revenueCatIdentityStore';
 import { getUserEntitlementQueryKey } from '../queries/subscriptions/useUserEntitlementQuery';
 
+const ENTITLEMENT_REFRESH_TIMEOUT_MS = 6000;
+
 interface UsePaywallOptions {
   placement: PaywallPlacementValue;
   feature?: FeatureKeyValue;
@@ -252,6 +254,22 @@ export function usePaywall({
     });
   };
 
+  // Capped so a slow or failing entitlement read can never strand the user on
+  // the paywall after the store has already charged them.
+  const refreshEntitlement = async (): Promise<void> => {
+    await Promise.race([
+      queryClient
+        .refetchQueries({
+          queryKey: getUserEntitlementQueryKey(userId),
+          type: 'all',
+        })
+        .catch(() => undefined),
+      new Promise<void>((resolve) =>
+        setTimeout(resolve, ENTITLEMENT_REFRESH_TIMEOUT_MS),
+      ),
+    ]);
+  };
+
   const purchaseSelectedPackage = async (): Promise<PaywallResult> => {
     const selectedPackage = revenueCatPackages[selectedPackageId];
     logRevenueCatDebugSnapshot('paywall_purchase_started');
@@ -270,12 +288,13 @@ export function usePaywall({
     }
 
     const result = await purchasePaywallPackage(selectedPackage);
-    setIsPurchasing(false);
 
     if (result.status === 'purchased') {
-      void queryClient.invalidateQueries({
-        queryKey: getUserEntitlementQueryKey(userId),
-      });
+      // Settle the entitlement cache before returning: callers finish
+      // onboarding on this result, and a stale non-Pro cache would make the
+      // boot paywall re-present over Home moments after a successful purchase.
+      await refreshEntitlement();
+      setIsPurchasing(false);
 
       if (!result.isPro) {
         setErrorMessage('Purchase completed, but Pro access was not activated yet. Please try restoring purchases.');
@@ -289,6 +308,8 @@ export function usePaywall({
       });
       return result;
     }
+
+    setIsPurchasing(false);
 
     if (result.status === 'cancelled') {
       posthog.capture(AnalyticsEvent.PaywallPurchaseCancelled, {
@@ -336,12 +357,10 @@ export function usePaywall({
     );
 
     const result = await restorePaywallPurchases();
-    setIsRestoring(false);
 
     if (result.status === 'restored') {
-      void queryClient.invalidateQueries({
-        queryKey: getUserEntitlementQueryKey(userId),
-      });
+      await refreshEntitlement();
+      setIsRestoring(false);
 
       posthog.capture(AnalyticsEvent.PaywallRestoreCompleted, {
         ...buildCurrentPaywallEventProperties(),
@@ -353,6 +372,8 @@ export function usePaywall({
       }
       return result;
     }
+
+    setIsRestoring(false);
 
     if (result.status === 'failed') {
       setErrorMessage(result.message);
