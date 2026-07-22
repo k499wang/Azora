@@ -919,7 +919,6 @@ export default function OnboardingFlow({
         stepCount={visualStepCount}
         onContinue={() => goToStep('dailyTime', 'continue')}
         onBack={() => goToStep('gender', 'back')}
-        onSkip={() => goToStep('dailyTime', 'skip')}
       />
     );
   }
