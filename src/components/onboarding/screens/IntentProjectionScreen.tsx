@@ -40,6 +40,7 @@ interface IntentProjectionScreenProps {
   stepCount: number;
   onContinue: () => void;
   onBack: () => void;
+  onSkip: () => void;
 }
 
 export default function IntentProjectionScreen({
@@ -48,6 +49,7 @@ export default function IntentProjectionScreen({
   stepCount,
   onContinue,
   onBack,
+  onSkip,
 }: IntentProjectionScreenProps) {
   const [width, setWidth] = useState(0);
 
@@ -157,6 +159,7 @@ export default function IntentProjectionScreen({
       subtitle="Train it a few minutes a day and the benefits build, week after week."
       progress={stepIndex / stepCount}
       onBack={onBack}
+      onSkip={onSkip}
       footer={
         <OnboardingPrimaryButton label="Continue" onPress={onContinue} />
       }

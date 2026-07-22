@@ -74,6 +74,7 @@ import { requestStoreReview } from '../../services/reviews/storeReview';
 
 // Set to true to re-enable the intent reflection screen between intent selection and name entry.
 const INTENT_REFLECTION_ENABLED = false;
+const DEFAULT_ONBOARDING_TECHNIQUE_ID = 'box';
 
 export interface OnboardingFlowResult {
   onboardingGoal: string;
@@ -455,9 +456,8 @@ export default function OnboardingFlow({
     return parts.join(', ');
   };
 
-  const buildOnboardingResult = (): OnboardingFlowResult | null => {
+  const buildOnboardingResult = (): OnboardingFlowResult => {
     const goal = buildOnboardingGoal();
-    if (goal.length === 0) return null;
 
     return {
       onboardingGoal: goal,
@@ -471,17 +471,18 @@ export default function OnboardingFlow({
       dailyMinutes,
       defaultTechniqueId:
         primaryIntent != null
-          ? INTENT_TO_TECHNIQUE[primaryIntent] ?? null
-          : initialSavedProfile?.defaultTechniqueId ?? null,
+          ? INTENT_TO_TECHNIQUE[primaryIntent] ?? DEFAULT_ONBOARDING_TECHNIQUE_ID
+          : initialSavedProfile?.defaultTechniqueId ?? DEFAULT_ONBOARDING_TECHNIQUE_ID,
       lungCapacity,
     };
   };
 
-  const saveProfileAndShowPaywall = async () => {
+  const saveProfileAndShowPaywall = async (
+    action: Extract<OnboardingTransitionAction, 'continue' | 'skip'> = 'continue',
+  ) => {
     if (isSubmitting) return;
 
     const result = buildOnboardingResult();
-    if (result == null) return;
 
     setIsSubmitting(true);
     setErrorMessage(null);
@@ -515,7 +516,7 @@ export default function OnboardingFlow({
         userId,
         elapsedMs: Date.now() - startedAt,
       });
-      goToStep('paywall', 'continue', buildProfileAnalyticsProperties(result));
+      goToStep('paywall', action, buildProfileAnalyticsProperties(result));
     } catch (error) {
       trackOnboardingProfileSaveFailed({
         ...getStepEventInput(),
@@ -713,6 +714,7 @@ export default function OnboardingFlow({
         isSubmitting={isSubmitting}
         onContinue={() => goToStep('intentProjection', 'continue')}
         onBack={() => goToStep('intent', 'back')}
+        onSkip={() => goToStep('intentProjection', 'skip')}
       />
     );
   }
@@ -727,6 +729,7 @@ export default function OnboardingFlow({
         onBack={() =>
           goToStep(INTENT_REFLECTION_ENABLED ? 'intentReflection' : 'intent', 'back')
         }
+        onSkip={() => goToStep('brainScience', 'skip')}
       />
     );
   }
@@ -738,6 +741,7 @@ export default function OnboardingFlow({
         stepCount={visualStepCount}
         onContinue={() => goToStep('name', 'continue')}
         onBack={() => goToStep('intentProjection', 'back')}
+        onSkip={() => goToStep('name', 'skip')}
       />
     );
   }
@@ -753,7 +757,10 @@ export default function OnboardingFlow({
           has_display_name: name.trim().length > 0,
         })}
         onBack={() =>
-          goToStep(isOnlyCustomIntent ? 'intent' : 'brainScience', 'back')
+          goToStep(
+            primaryIntent == null || isOnlyCustomIntent ? 'intent' : 'brainScience',
+            'back',
+          )
         }
         onSkip={() => {
           setName('');
@@ -771,6 +778,7 @@ export default function OnboardingFlow({
         stepCount={visualStepCount}
         onContinue={() => goToStep('stress', 'continue')}
         onBack={() => goToStep('name', 'back')}
+        onSkip={() => goToStep('stress', 'skip')}
       />
     );
   }
@@ -865,6 +873,7 @@ export default function OnboardingFlow({
         stepCount={visualStepCount}
         onContinue={() => goToStep('scienceCredibility', 'continue')}
         onBack={() => goToStep('experience', 'back')}
+        onSkip={() => goToStep('scienceCredibility', 'skip')}
       />
     );
   }
@@ -919,6 +928,7 @@ export default function OnboardingFlow({
         stepCount={visualStepCount}
         onContinue={() => goToStep('dailyTime', 'continue')}
         onBack={() => goToStep('gender', 'back')}
+        onSkip={() => goToStep('dailyTime', 'skip')}
       />
     );
   }
@@ -944,6 +954,7 @@ export default function OnboardingFlow({
         stepCount={visualStepCount}
         onContinue={() => goToStep('baseline', 'continue')}
         onBack={() => goToStep('notifications', 'back')}
+        onSkip={() => goToStep('baseline', 'skip')}
       />
     );
   }
@@ -962,6 +973,14 @@ export default function OnboardingFlow({
           });
         }}
         onBack={() => goToStep('baselineIntro', 'back')}
+        onSkip={() => {
+          setBaseline(null);
+          goToStep('recommendation', 'skip', {
+            baseline_completed: false,
+            has_baseline_bpm: false,
+            has_baseline_drop: false,
+          });
+        }}
       />
     );
   }
@@ -984,13 +1003,16 @@ export default function OnboardingFlow({
         stepCount={visualStepCount}
         onContinue={() => goToStep('recommendedExercise', 'continue')}
         onBack={() => goToStep('baseline', 'back')}
+        onSkip={() => goToStep('recommendedExercise', 'skip')}
       />
     );
   }
 
   if (step === 'recommendedExercise') {
     const techniqueId =
-      primaryIntent != null ? INTENT_TO_TECHNIQUE[primaryIntent] ?? 'box' : 'box';
+      primaryIntent != null
+        ? INTENT_TO_TECHNIQUE[primaryIntent] ?? DEFAULT_ONBOARDING_TECHNIQUE_ID
+        : DEFAULT_ONBOARDING_TECHNIQUE_ID;
 
     return (
       <RecommendedExerciseScreen
@@ -1000,6 +1022,7 @@ export default function OnboardingFlow({
         stepCount={visualStepCount}
         onContinue={() => goToStep('attPriming', 'continue')}
         onBack={() => goToStep('recommendation', 'back')}
+        onSkip={() => goToStep('attPriming', 'skip')}
       />
     );
   }
@@ -1023,6 +1046,7 @@ export default function OnboardingFlow({
             });
         }}
         onBack={() => goToStep('recommendedExercise', 'back')}
+        onSkip={() => goToStep('fiveMinutes', 'skip')}
       />
     );
   }
@@ -1034,6 +1058,7 @@ export default function OnboardingFlow({
         stepCount={visualStepCount}
         onContinue={() => goToStep('founderNote', 'continue')}
         onBack={() => goToStep('attPriming', 'back')}
+        onSkip={() => goToStep('founderNote', 'skip')}
       />
     );
   }
@@ -1048,6 +1073,7 @@ export default function OnboardingFlow({
           void requestStoreReview().finally(() => goToStep('pact', 'continue'));
         }}
         onBack={() => goToStep('fiveMinutes', 'back')}
+        onSkip={() => goToStep('pact', 'skip')}
       />
     );
   }
@@ -1083,6 +1109,7 @@ export default function OnboardingFlow({
         intentTitle={scIntentTitle}
         onContinue={() => goToStep('lungCapacity', 'continue')}
         onBack={() => goToStep('assessmentReflection', 'back')}
+        onSkip={() => goToStep('lungCapacity', 'skip')}
       />
     );
   }
@@ -1100,6 +1127,9 @@ export default function OnboardingFlow({
           void saveProfileAndShowPaywall();
         }}
         onBack={() => goToStep('founderNote', 'back')}
+        onSkip={() => {
+          void saveProfileAndShowPaywall('skip');
+        }}
       />
     );
   }
@@ -1144,6 +1174,17 @@ export default function OnboardingFlow({
           onContinueWithoutPro={
             paywallMode === 'hard' && !isPro ? undefined : continueWithoutPro
           }
+          onStepSkipped={(fromStep, toStep) => {
+            trackOnboardingStepSkipped({
+              ...getStepEventInput('paywall'),
+              nextStep: 'paywall',
+              action: 'skip',
+              properties: {
+                paywall_page_index: fromStep,
+                next_paywall_page_index: toStep,
+              },
+            });
+          }}
           onFinalStepReached={() => setHasReachedPlanStep(true)}
         />
         <ExitOfferSheet
@@ -1174,6 +1215,16 @@ export default function OnboardingFlow({
       onToggle={toggleIntent}
       onCustomIntentChange={setCustomIntent}
       onContinue={goFromIntent}
+      onSkip={() => {
+        setSelectedIntents([]);
+        setCustomIntent('');
+        setErrorMessage(null);
+        goToStep('name', 'skip', {
+          selected_intent_count: 0,
+          has_custom_intent: false,
+          only_custom_intent: false,
+        });
+      }}
     />
   );
 }

@@ -20,6 +20,7 @@ interface AttPrimingScreenProps {
   stepCount: number;
   onContinue: () => void;
   onBack: () => void;
+  onSkip: () => void;
 }
 
 function AttPromptPreview() {
@@ -52,6 +53,7 @@ export default function AttPrimingScreen({
   stepCount,
   onContinue,
   onBack,
+  onSkip,
 }: AttPrimingScreenProps) {
   return (
     <OnboardingScreenLayout
@@ -59,6 +61,7 @@ export default function AttPrimingScreen({
       subtitle="You’ll see this in just a moment. Tap Allow so Azora keeps working around you."
       progress={stepIndex / stepCount}
       onBack={onBack}
+      onSkip={onSkip}
       footer={<OnboardingPrimaryButton label="Continue" onPress={onContinue} />}
     >
       <View style={styles.body}>
