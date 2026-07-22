@@ -15,12 +15,10 @@ import LineGraph, { type DataPoint } from '../../analytics/LineGraph';
 interface RecommendedExerciseScreenProps {
   techniqueId: string;
   baseline: BaselineResult | null;
-  isPersonalized: boolean;
   stepIndex: number;
   stepCount: number;
   onContinue: () => void;
   onBack: () => void;
-  onSkip?: () => void;
 }
 
 function buildBpmSeries(history: number[], durationSec: number): DataPoint[] {
@@ -42,12 +40,10 @@ function buildBpmSeries(history: number[], durationSec: number): DataPoint[] {
 export default function RecommendedExerciseScreen({
   techniqueId,
   baseline,
-  isPersonalized,
   stepIndex,
   stepCount,
   onContinue,
   onBack,
-  onSkip,
 }: RecommendedExerciseScreenProps) {
   const technique =
     TECHNIQUE_RECOMMENDATIONS[techniqueId] ?? TECHNIQUE_RECOMMENDATIONS.box;
@@ -66,20 +62,13 @@ export default function RecommendedExerciseScreen({
   return (
     <OnboardingScreenLayout
       title="What we recommend for you."
-      subtitle={
-        isPersonalized
-          ? "Chosen just for you. Give it a try once you're in the app!"
-          : "A simple place to start. Give it a try once you're in the app!"
-      }
+      subtitle="Chosen just for you. Give it a try once you're in the app!"
       progress={stepIndex / stepCount}
       onBack={onBack}
-      onSkip={onSkip}
       footer={<OnboardingPrimaryButton label="Sounds good" onPress={onContinue} />}
     >
       <View style={styles.techniqueCard}>
-        <Text style={styles.techniqueKicker}>
-          {isPersonalized ? 'Recommended for you' : 'A good place to start'}
-        </Text>
+        <Text style={styles.techniqueKicker}>Recommended for you</Text>
         <Text style={styles.techniqueName}>{nickname ?? technique.name}</Text>
         <Text style={styles.techniqueSubname}>{technique.name}</Text>
         <Text style={styles.techniqueTagline}>{technique.tagline}</Text>

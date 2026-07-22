@@ -1,6 +1,5 @@
 import { requireSupabaseClient, type SupabaseClientLike } from '../supabase';
 import { ensureUserProfile } from './profileBootstrapService';
-import { hasRecoverableOnboardingProfile } from './onboardingStatusCore';
 
 type AgreementResponses = Record<string, 'agree' | 'disagree' | null>;
 
@@ -12,7 +11,6 @@ interface OnboardingDatabase {
           user_id: string;
           onboarding_goal: string | null;
           onboarding_completed_at: string | null;
-          onboarding_profile_saved_at: string | null;
           age: number | null;
           gender: string | null;
           daily_minutes: number | null;
@@ -27,7 +25,6 @@ interface OnboardingDatabase {
           user_id: string;
           onboarding_goal?: string | null;
           onboarding_completed_at?: string | null;
-          onboarding_profile_saved_at?: string | null;
           age?: number | null;
           gender?: string | null;
           daily_minutes?: number | null;
@@ -42,7 +39,6 @@ interface OnboardingDatabase {
           user_id?: string;
           onboarding_goal?: string | null;
           onboarding_completed_at?: string | null;
-          onboarding_profile_saved_at?: string | null;
           age?: number | null;
           gender?: string | null;
           daily_minutes?: number | null;
@@ -114,7 +110,6 @@ export async function saveOnboardingProfile(
   const profile: ProfileInsert = {
     user_id: userId,
     onboarding_goal: input.onboardingGoal ?? null,
-    onboarding_profile_saved_at: new Date().toISOString(),
     age: input.age ?? null,
     gender: input.gender ?? null,
     daily_minutes: input.dailyMinutes ?? null,
@@ -161,7 +156,7 @@ export async function getSavedOnboardingProfile(
   const { data, error } = await supabase
     .from('profiles')
     .select(
-      'onboarding_profile_saved_at, onboarding_goal, age, gender, daily_minutes, default_technique_id, display_name, stress_level, sleep_quality, agreement_responses, experience_level',
+      'onboarding_goal, age, gender, daily_minutes, default_technique_id, display_name, stress_level, sleep_quality, agreement_responses, experience_level',
     )
     .eq('user_id', userId)
     .maybeSingle();
@@ -186,6 +181,21 @@ export async function getSavedOnboardingProfile(
     agreementResponses: toAgreementResponses(data.agreement_responses),
     experienceLevel: data.experience_level as OnboardingExperienceLevel | null,
   };
+}
+
+function hasRecoverableOnboardingProfile(data: {
+  onboarding_goal: string | null;
+  age: number | null;
+  gender: string | null;
+  daily_minutes: number | null;
+}): boolean {
+  return (
+    data.onboarding_goal != null &&
+    data.onboarding_goal.length > 0 &&
+    data.age != null &&
+    data.gender != null &&
+    data.daily_minutes != null
+  );
 }
 
 function toAgreementResponses(value: unknown): AgreementResponses | null {

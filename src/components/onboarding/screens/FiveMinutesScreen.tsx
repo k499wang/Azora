@@ -43,7 +43,6 @@ interface FiveMinutesScreenProps {
   stepCount: number;
   onContinue: () => void;
   onBack: () => void;
-  onSkip?: () => void;
 }
 
 const TARGET_DAYS = 30;
@@ -59,7 +58,6 @@ export default function FiveMinutesScreen({
   stepCount,
   onContinue,
   onBack,
-  onSkip,
 }: FiveMinutesScreenProps) {
   const [width, setWidth] = useState(0);
   const targetDate = formatTargetDate(TARGET_DAYS);
@@ -164,7 +162,6 @@ export default function FiveMinutesScreen({
       subtitle="Show up daily until then to feel real results, backed by research."
       progress={stepIndex / stepCount}
       onBack={onBack}
-      onSkip={onSkip}
       footer={<OnboardingPrimaryButton label="Continue" onPress={onContinue} />}
     >
       <View style={styles.chartWrap}>

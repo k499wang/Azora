@@ -17,16 +17,15 @@ import type { ExperienceLevel } from './ExperienceScreen';
 
 interface RecommendationScreenProps {
   intentTitle: string;
-  stressLevel: number | null;
-  sleepQuality: number | null;
-  racingLevel: number | null;
+  stressLevel: number;
+  sleepQuality: number;
+  racingLevel: number;
   agreementResponses: Record<string, AgreementValue | null>;
   experienceLevel: ExperienceLevel | null;
   stepIndex: number;
   stepCount: number;
   onContinue: () => void;
   onBack: () => void;
-  onSkip?: () => void;
 }
 
 const PERSONALIZING_STEPS = [
@@ -75,7 +74,6 @@ export default function RecommendationScreen({
   stepCount,
   onContinue,
   onBack,
-  onSkip,
 }: RecommendationScreenProps) {
   const { width } = useWindowDimensions();
   const mindMap = useMemo(
@@ -89,8 +87,6 @@ export default function RecommendationScreen({
       }),
     [stressLevel, sleepQuality, racingLevel, agreementResponses, experienceLevel],
   );
-  const usedFallbacks =
-    stressLevel == null || sleepQuality == null || racingLevel == null;
   const [showingResult, setShowingResult] = useState(false);
   const [completedSteps, setCompletedSteps] = useState(0);
   const barAnims = useRef(
@@ -169,7 +165,6 @@ export default function RecommendationScreen({
         subtitle="We're building your personalized mindmap and plan based on your responses."
         progress={stepIndex / stepCount}
         onBack={onBack}
-        onSkip={onSkip}
         footer={<View />}
       >
         <View style={styles.loadingBody}>
@@ -221,14 +216,9 @@ export default function RecommendationScreen({
   return (
     <OnboardingScreenLayout
       title="Your Mindmap"
-      subtitle={
-        usedFallbacks
-          ? `Built around ${intentTitle.toLowerCase()} using what you chose to share.`
-          : `Tailored to ${intentTitle.toLowerCase()} and how your body responded.`
-      }
+      subtitle={`Tailored to ${intentTitle.toLowerCase()}, your age, and how your body responded.`}
       progress={stepIndex / stepCount}
       onBack={onBack}
-      onSkip={onSkip}
       footer={<OnboardingPrimaryButton label="Sounds good" onPress={onContinue} />}
     >
       <Animated.View
