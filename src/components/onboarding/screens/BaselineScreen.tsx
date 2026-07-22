@@ -33,6 +33,7 @@ interface BaselineScreenProps {
   stepCount: number;
   onContinue: (result: BaselineResult) => void;
   onBack: () => void;
+  onSkip: () => void;
 }
 
 type Phase = 'intro' | 'placement' | 'running' | 'done';
@@ -118,6 +119,7 @@ export default function BaselineScreen({
   stepCount,
   onContinue,
   onBack,
+  onSkip,
 }: BaselineScreenProps) {
   const stream = useHeartRateStream();
   const [phase, setPhase] = useState<Phase>('intro');
@@ -393,7 +395,7 @@ export default function BaselineScreen({
         hudVisible={hudVisible}
         isRunning={isRunning}
         liveSignalSamples={stream.liveSignalSamples}
-        onCancel={() => finishCapture(false)}
+        onCancel={onSkip}
         onShowHud={showHud}
         placement={placementCfg}
         progress={progress}
@@ -418,7 +420,7 @@ export default function BaselineScreen({
           />
           <Pressable
             accessibilityRole="button"
-            onPress={() => finishCapture(false)}
+            onPress={onSkip}
             style={({ pressed }) => [
               styles.skip,
               pressed && styles.skipPressed,

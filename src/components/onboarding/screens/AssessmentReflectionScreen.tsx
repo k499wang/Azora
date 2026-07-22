@@ -14,21 +14,40 @@ import type { ExperienceLevel } from './ExperienceScreen';
 
 interface AssessmentReflectionScreenProps {
   name: string;
-  stressLevel: number;
-  sleepQuality: number;
+  stressLevel: number | null;
+  sleepQuality: number | null;
   agreementResponses: Record<string, AgreementValue | null>;
   experienceLevel: ExperienceLevel | null;
   stepIndex: number;
   stepCount: number;
   onContinue: () => void;
   onBack: () => void;
+  onSkip?: () => void;
 }
 
 function buildSynthesis(
-  stress: number,
-  sleep: number,
+  stress: number | null,
+  sleep: number | null,
   experience: ExperienceLevel | null,
 ): string {
+  if (stress == null && sleep == null) {
+    return experience === 'regular'
+      ? 'We’ll build from the experience you already have and keep your plan focused.'
+      : 'We’ll start with short, guided resets and adapt the plan as Azora learns what helps.';
+  }
+
+  if (stress == null) {
+    return sleep != null && sleep <= 4
+      ? 'Light sleep is the clearest signal you shared. We’ll start with evening wind-down work.'
+      : 'Your sleep gives us a useful starting point. We’ll begin with a balanced daily reset.';
+  }
+
+  if (sleep == null) {
+    return stress >= 7
+      ? 'Stress is the clearest signal you shared. We’ll start with quick down-regulation breathwork.'
+      : 'Your stress level gives us a useful starting point. We’ll begin with short daily resets.';
+  }
+
   const stressHigh = stress >= 7;
   const stressMid = stress >= 4 && stress < 7;
   const sleepLow = sleep <= 4;
@@ -89,6 +108,7 @@ export default function AssessmentReflectionScreen({
   stepCount,
   onContinue,
   onBack,
+  onSkip,
 }: AssessmentReflectionScreenProps) {
   const synthesis = useMemo(
     () => buildSynthesis(stressLevel, sleepQuality, experienceLevel),
@@ -131,6 +151,7 @@ export default function AssessmentReflectionScreen({
       subtitle="Based on your answers, here's what Azora knows."
       progress={stepIndex / stepCount}
       onBack={onBack}
+      onSkip={onSkip}
       footer={
         <OnboardingPrimaryButton label="Sounds about right" onPress={onContinue} />
       }

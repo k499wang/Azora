@@ -17,6 +17,7 @@ interface BaselineIntroScreenProps {
   stepCount: number;
   onContinue: () => void;
   onBack: () => void;
+  onSkip?: () => void;
 }
 
 const ECG_WIDTH = 320;
@@ -49,6 +50,7 @@ export default function BaselineIntroScreen({
   stepCount,
   onContinue,
   onBack,
+  onSkip,
 }: BaselineIntroScreenProps) {
   const scroll = useRef(new Animated.Value(0)).current;
   const fade = useRef(new Animated.Value(0)).current;
@@ -102,6 +104,7 @@ export default function BaselineIntroScreen({
       title=""
       progress={stepIndex / stepCount}
       onBack={onBack}
+      onSkip={onSkip}
       footer={<OnboardingPrimaryButton label="I’m ready" onPress={onContinue} />}
     >
       <Animated.View

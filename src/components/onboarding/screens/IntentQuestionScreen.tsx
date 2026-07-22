@@ -21,6 +21,7 @@ interface IntentQuestionScreenProps {
   onToggle: (intentId: string) => void;
   onCustomIntentChange: (value: string) => void;
   onContinue: () => void;
+  onSkip: () => void;
 }
 
 export default function IntentQuestionScreen({
@@ -33,6 +34,7 @@ export default function IntentQuestionScreen({
   onToggle,
   onCustomIntentChange,
   onContinue,
+  onSkip,
 }: IntentQuestionScreenProps) {
   const needsCustomIntent = selectedIntents.includes('other');
   const canContinue =
@@ -50,7 +52,7 @@ export default function IntentQuestionScreen({
       title="What's on your mind?"
       subtitle="Pick as many as feel right — Azora will tune to them."
       progress={stepIndex / stepCount}
-      fullWidthProgress
+      onSkip={onSkip}
       keyboardAvoiding={needsCustomIntent}
       footer={
         <OnboardingPrimaryButton
