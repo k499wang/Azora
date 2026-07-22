@@ -129,8 +129,8 @@ const STEP_ORDER: OnboardingStep[] = [
   'baseline',
   'recommendation',
   'recommendedExercise',
-  'notifications',
   'attPriming',
+  'notifications',
   'fiveMinutes',
   'founderNote',
   'pact',
@@ -633,7 +633,7 @@ export default function OnboardingFlow({
         }
       }
 
-      goToStep('attPriming', 'continue', {
+      goToStep('fiveMinutes', 'continue', {
         notification_status: permissionStatus,
       });
     } catch (error) {
@@ -648,7 +648,7 @@ export default function OnboardingFlow({
     setNotificationErrorMessage(null);
     setIsNotificationSubmitting(true);
     try {
-      goToStep('attPriming', 'skip');
+      goToStep('fiveMinutes', 'skip');
     } finally {
       setIsNotificationSubmitting(false);
     }
@@ -998,7 +998,7 @@ export default function OnboardingFlow({
         baseline={baseline}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('notifications', 'continue')}
+        onContinue={() => goToStep('attPriming', 'continue')}
         onBack={() => goToStep('recommendation', 'back')}
       />
     );
@@ -1019,10 +1019,10 @@ export default function OnboardingFlow({
             .then(() => initAppsFlyer())
             .then(() => {
               void syncPostAttAttribution();
-              goToStep('fiveMinutes', 'continue');
+              goToStep('notifications', 'continue');
             });
         }}
-        onBack={() => goToStep('notifications', 'back')}
+        onBack={() => goToStep('recommendedExercise', 'back')}
       />
     );
   }
@@ -1033,7 +1033,7 @@ export default function OnboardingFlow({
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goToStep('founderNote', 'continue')}
-        onBack={() => goToStep('attPriming', 'back')}
+        onBack={() => goToStep('notifications', 'back')}
       />
     );
   }
@@ -1065,7 +1065,7 @@ export default function OnboardingFlow({
         onSkip={() => {
           void skipNotifications();
         }}
-        onBack={() => goToStep('recommendedExercise', 'back')}
+        onBack={() => goToStep('attPriming', 'back')}
       />
     );
   }
