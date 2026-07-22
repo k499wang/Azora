@@ -46,9 +46,9 @@ function agreementWeight(response: AgreementValue | null | undefined): number {
 }
 
 interface ScoreInputs {
-  stressLevel: number | null;
-  sleepQuality: number | null;
-  racingLevel?: number | null;
+  stressLevel: number;
+  sleepQuality: number;
+  racingLevel?: number;
   agreementResponses: Record<string, AgreementValue | null>;
   experienceLevel: ExperienceLevel | null;
 }
@@ -60,8 +60,8 @@ export function computeMindMap({
   agreementResponses,
   experienceLevel,
 }: ScoreInputs): MindMapResult {
-  const stress01 = clamp(stressLevel ?? 5, 1, 10) / 10;
-  const sleep01 = clamp(sleepQuality ?? 5, 1, 10) / 10;
+  const stress01 = clamp(stressLevel, 1, 10) / 10;
+  const sleep01 = clamp(sleepQuality, 1, 10) / 10;
   const exhausted = agreementWeight(agreementResponses.exhausted);
   const racingAgreement = agreementWeight(agreementResponses.racing);
   const racing =

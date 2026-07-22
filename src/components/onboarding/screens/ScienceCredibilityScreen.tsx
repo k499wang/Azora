@@ -20,7 +20,6 @@ interface ScienceCredibilityScreenProps {
   intentTitle: string | null;
   onContinue: () => void;
   onBack: () => void;
-  onSkip?: () => void;
 }
 
 type LogoEntry = {
@@ -60,7 +59,6 @@ export default function ScienceCredibilityScreen({
   name,
   onContinue,
   onBack,
-  onSkip,
 }: ScienceCredibilityScreenProps) {
   const greeting = name ? `${name}, you're` : "You're";
   const rowAnims = useRef(LOGOS.map(() => new Animated.Value(0))).current;
@@ -89,7 +87,6 @@ export default function ScienceCredibilityScreen({
       subtitle="We're backed by science from the world's most respected research institutions."
       progress={stepIndex / stepCount}
       onBack={onBack}
-      onSkip={onSkip}
       footer={<OnboardingPrimaryButton label="Continue" onPress={onContinue} />}
     >
       <View style={styles.container}>
