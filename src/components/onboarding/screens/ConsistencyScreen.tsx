@@ -14,7 +14,6 @@ interface ConsistencyScreenProps {
   stepCount: number;
   onContinue: () => void;
   onBack: () => void;
-  onSkip: () => void;
 }
 
 const DAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
@@ -26,7 +25,6 @@ export default function ConsistencyScreen({
   stepCount,
   onContinue,
   onBack,
-  onSkip,
 }: ConsistencyScreenProps) {
   const barAnims = useRef(DAYS.map(() => new Animated.Value(0))).current;
 
@@ -54,7 +52,6 @@ export default function ConsistencyScreen({
       subtitle="Consistency is where you'll actually see results. Each session builds on the last."
       progress={stepIndex / stepCount}
       onBack={onBack}
-      onSkip={onSkip}
       centerBody
       footer={<OnboardingPrimaryButton label="Continue" onPress={onContinue} />}
     >

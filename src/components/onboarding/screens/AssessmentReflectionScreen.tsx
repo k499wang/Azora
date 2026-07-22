@@ -22,7 +22,6 @@ interface AssessmentReflectionScreenProps {
   stepCount: number;
   onContinue: () => void;
   onBack: () => void;
-  onSkip: () => void;
 }
 
 function buildSynthesis(
@@ -90,7 +89,6 @@ export default function AssessmentReflectionScreen({
   stepCount,
   onContinue,
   onBack,
-  onSkip,
 }: AssessmentReflectionScreenProps) {
   const synthesis = useMemo(
     () => buildSynthesis(stressLevel, sleepQuality, experienceLevel),
@@ -133,7 +131,6 @@ export default function AssessmentReflectionScreen({
       subtitle="Based on your answers, here's what Azora knows."
       progress={stepIndex / stepCount}
       onBack={onBack}
-      onSkip={onSkip}
       footer={
         <OnboardingPrimaryButton label="Sounds about right" onPress={onContinue} />
       }
