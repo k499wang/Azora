@@ -530,6 +530,7 @@ export type Database = {
           gender: string | null
           onboarding_completed_at: string | null
           onboarding_goal: string | null
+          onboarding_profile_saved_at: string | null
           sleep_quality: number | null
           stress_level: number | null
           timezone: string
@@ -548,6 +549,7 @@ export type Database = {
           gender?: string | null
           onboarding_completed_at?: string | null
           onboarding_goal?: string | null
+          onboarding_profile_saved_at?: string | null
           sleep_quality?: number | null
           stress_level?: number | null
           timezone?: string
@@ -566,6 +568,7 @@ export type Database = {
           gender?: string | null
           onboarding_completed_at?: string | null
           onboarding_goal?: string | null
+          onboarding_profile_saved_at?: string | null
           sleep_quality?: number | null
           stress_level?: number | null
           timezone?: string

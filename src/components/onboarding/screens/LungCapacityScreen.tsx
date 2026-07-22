@@ -39,7 +39,7 @@ interface LungCapacityScreenProps {
   stepCount: number;
   onContinue: (result: LungCapacityResult) => void;
   onBack: () => void;
-  onSkip?: () => void;
+  onSkip: () => void;
 }
 
 type Phase = 'intro' | 'inhale' | 'exhale' | 'calibrating' | 'done';
@@ -463,7 +463,7 @@ export default function LungCapacityScreen({
           />
           <Pressable
             accessibilityRole="button"
-            onPress={() => onContinue(scoreExhale(0))}
+            onPress={onSkip}
             style={({ pressed }) => [styles.skip, pressed && styles.skipPressed]}
           >
             <Text style={styles.skipText}>Skip for now</Text>

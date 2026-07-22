@@ -76,11 +76,11 @@ import { requestStoreReview } from '../../services/reviews/storeReview';
 const INTENT_REFLECTION_ENABLED = false;
 
 export interface OnboardingFlowResult {
-  onboardingGoal: string;
+  onboardingGoal: string | null;
   displayName: string | null;
   stressLevel: number | null;
   sleepQuality: number | null;
-  agreementResponses: Record<string, AgreementValue | null>;
+  agreementResponses: Record<string, AgreementValue | null> | null;
   experienceLevel: ExperienceLevel | null;
   age: number | null;
   gender: GenderOption['id'] | null;
@@ -185,13 +185,13 @@ export default function OnboardingFlow({
   const isOnlyCustomIntent =
     selectedIntents.length === 1 && selectedIntents[0] === 'other';
   const [name, setName] = useState(initialSavedProfile?.displayName ?? '');
-  const [stressLevel, setStressLevel] = useState(
-    initialSavedProfile?.stressLevel ?? 5,
+  const [stressLevel, setStressLevel] = useState<number | null>(
+    initialSavedProfile == null ? 5 : initialSavedProfile.stressLevel ?? null,
   );
-  const [sleepQuality, setSleepQuality] = useState(
-    initialSavedProfile?.sleepQuality ?? 5,
+  const [sleepQuality, setSleepQuality] = useState<number | null>(
+    initialSavedProfile == null ? 5 : initialSavedProfile.sleepQuality ?? null,
   );
-  const [racingLevel, setRacingLevel] = useState(5);
+  const [racingLevel, setRacingLevel] = useState<number | null>(5);
   const [agreementResponses, setAgreementResponses] = useState<
     Record<string, AgreementValue | null>
   >(() =>
@@ -207,14 +207,17 @@ export default function OnboardingFlow({
   const [experienceLevel, setExperienceLevel] = useState<ExperienceLevel | null>(
     initialSavedProfile?.experienceLevel ?? null,
   );
-  const [age, setAge] = useState(initialSavedProfile?.age ?? 25);
+  const [age, setAge] = useState<number | null>(
+    initialSavedProfile == null ? 25 : initialSavedProfile.age ?? null,
+  );
   const [gender, setGender] = useState<GenderOption['id'] | null>(
     toGenderOptionId(initialSavedProfile?.gender),
   );
-  const [dailyMinutes, setDailyMinutes] = useState(
-    initialSavedProfile?.dailyMinutes ?? 5,
+  const [dailyMinutes, setDailyMinutes] = useState<number | null>(
+    initialSavedProfile == null ? 5 : initialSavedProfile.dailyMinutes ?? null,
   );
   const [baseline, setBaseline] = useState<BaselineResult | null>(null);
+  const [baselineWasSkipped, setBaselineWasSkipped] = useState(false);
   const [lungCapacity, setLungCapacity] = useState<LungCapacityResult | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [notificationErrorMessage, setNotificationErrorMessage] = useState<string | null>(null);
@@ -455,16 +458,19 @@ export default function OnboardingFlow({
     return parts.join(', ');
   };
 
-  const buildOnboardingResult = (): OnboardingFlowResult | null => {
+  const buildOnboardingResult = (): OnboardingFlowResult => {
     const goal = buildOnboardingGoal();
-    if (goal.length === 0) return null;
 
     return {
-      onboardingGoal: goal,
+      onboardingGoal: goal.length > 0 ? goal : null,
       displayName: name.trim() || null,
       stressLevel,
       sleepQuality,
-      agreementResponses,
+      agreementResponses: Object.values(agreementResponses).every(
+        (value) => value == null,
+      )
+        ? null
+        : agreementResponses,
       experienceLevel,
       age,
       gender,
@@ -481,7 +487,6 @@ export default function OnboardingFlow({
     if (isSubmitting) return;
 
     const result = buildOnboardingResult();
-    if (result == null) return;
 
     setIsSubmitting(true);
     setErrorMessage(null);
@@ -753,7 +758,7 @@ export default function OnboardingFlow({
           has_display_name: name.trim().length > 0,
         })}
         onBack={() =>
-          goToStep(isOnlyCustomIntent ? 'intent' : 'brainScience', 'back')
+          goToStep(primaryIntent == null || isOnlyCustomIntent ? 'intent' : 'brainScience', 'back')
         }
         onSkip={() => {
           setName('');
@@ -771,6 +776,7 @@ export default function OnboardingFlow({
         stepCount={visualStepCount}
         onContinue={() => goToStep('stress', 'continue')}
         onBack={() => goToStep('name', 'back')}
+        onSkip={() => goToStep('stress', 'skip')}
       />
     );
   }
@@ -778,13 +784,19 @@ export default function OnboardingFlow({
   if (step === 'stress') {
     return (
       <StressScreen
-        value={stressLevel}
+        value={stressLevel ?? 5}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onChange={setStressLevel}
-        onContinue={() => goToStep('mindRacing', 'continue', { has_stress_level: true })}
+        onContinue={() => {
+          setStressLevel((value) => value ?? 5);
+          goToStep('mindRacing', 'continue', { has_stress_level: true });
+        }}
         onBack={() => goToStep('greeting', 'back')}
-        onSkip={() => goToStep('mindRacing', 'skip')}
+        onSkip={() => {
+          setStressLevel(null);
+          goToStep('mindRacing', 'skip');
+        }}
       />
     );
   }
@@ -792,13 +804,19 @@ export default function OnboardingFlow({
   if (step === 'mindRacing') {
     return (
       <MindRacingScreen
-        value={racingLevel}
+        value={racingLevel ?? 5}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onChange={setRacingLevel}
-        onContinue={() => goToStep('sleep', 'continue', { has_racing_level: true })}
+        onContinue={() => {
+          setRacingLevel((value) => value ?? 5);
+          goToStep('sleep', 'continue', { has_racing_level: true });
+        }}
         onBack={() => goToStep('stress', 'back')}
-        onSkip={() => goToStep('sleep', 'skip')}
+        onSkip={() => {
+          setRacingLevel(null);
+          goToStep('sleep', 'skip');
+        }}
       />
     );
   }
@@ -806,13 +824,19 @@ export default function OnboardingFlow({
   if (step === 'sleep') {
     return (
       <SleepScreen
-        value={sleepQuality}
+        value={sleepQuality ?? 5}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onChange={setSleepQuality}
-        onContinue={() => goToStep('agreement', 'continue', { has_sleep_quality: true })}
+        onContinue={() => {
+          setSleepQuality((value) => value ?? 5);
+          goToStep('agreement', 'continue', { has_sleep_quality: true });
+        }}
         onBack={() => goToStep('mindRacing', 'back')}
-        onSkip={() => goToStep('agreement', 'skip')}
+        onSkip={() => {
+          setSleepQuality(null);
+          goToStep('agreement', 'skip');
+        }}
       />
     );
   }
@@ -832,7 +856,18 @@ export default function OnboardingFlow({
           ).length,
         })}
         onBack={() => goToStep('sleep', 'back')}
-        onSkip={() => goToStep('experience', 'skip')}
+        onSkip={() => {
+          setAgreementResponses(
+            AGREEMENT_STATEMENTS.reduce<Record<string, AgreementValue | null>>(
+              (responses, statement) => {
+                responses[statement.id] = null;
+                return responses;
+              },
+              {},
+            ),
+          );
+          goToStep('experience', 'skip');
+        }}
       />
     );
   }
@@ -848,7 +883,10 @@ export default function OnboardingFlow({
           has_experience_level: experienceLevel != null,
         })}
         onBack={() => goToStep('agreement', 'back')}
-        onSkip={() => goToStep('assessmentReflection', 'skip')}
+        onSkip={() => {
+          setExperienceLevel(null);
+          goToStep('assessmentReflection', 'skip');
+        }}
       />
     );
   }
@@ -865,6 +903,7 @@ export default function OnboardingFlow({
         stepCount={visualStepCount}
         onContinue={() => goToStep('scienceCredibility', 'continue')}
         onBack={() => goToStep('experience', 'back')}
+        onSkip={() => goToStep('scienceCredibility', 'skip')}
       />
     );
   }
@@ -879,7 +918,10 @@ export default function OnboardingFlow({
           goToStep('age', 'continue', { has_lung_capacity: true });
         }}
         onBack={() => goToStep('scienceCredibility', 'back')}
-        onSkip={() => goToStep('age', 'skip')}
+        onSkip={() => {
+          setLungCapacity(null);
+          goToStep('age', 'skip');
+        }}
       />
     );
   }
@@ -887,13 +929,19 @@ export default function OnboardingFlow({
   if (step === 'age') {
     return (
       <AgeScreen
-        value={age}
+        value={age ?? 25}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onChange={setAge}
-        onContinue={() => goToStep('gender', 'continue', { has_age: true })}
+        onContinue={() => {
+          setAge((value) => value ?? 25);
+          goToStep('gender', 'continue', { has_age: true });
+        }}
         onBack={() => goToStep('lungCapacity', 'back')}
-        onSkip={() => goToStep('gender', 'skip')}
+        onSkip={() => {
+          setAge(null);
+          goToStep('gender', 'skip');
+        }}
       />
     );
   }
@@ -907,7 +955,10 @@ export default function OnboardingFlow({
         onSelect={setGender}
         onContinue={() => goToStep('consistency', 'continue', { has_gender: gender != null })}
         onBack={() => goToStep('age', 'back')}
-        onSkip={() => goToStep('consistency', 'skip')}
+        onSkip={() => {
+          setGender(null);
+          goToStep('consistency', 'skip');
+        }}
       />
     );
   }
@@ -919,6 +970,7 @@ export default function OnboardingFlow({
         stepCount={visualStepCount}
         onContinue={() => goToStep('dailyTime', 'continue')}
         onBack={() => goToStep('gender', 'back')}
+        onSkip={() => goToStep('dailyTime', 'skip')}
       />
     );
   }
@@ -926,13 +978,19 @@ export default function OnboardingFlow({
   if (step === 'dailyTime') {
     return (
       <DailyTimeScreen
-        value={dailyMinutes}
+        value={dailyMinutes ?? 5}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onChange={setDailyMinutes}
-        onContinue={() => goToStep('notifications', 'continue', { has_daily_minutes: true })}
+        onContinue={() => {
+          setDailyMinutes((value) => value ?? 5);
+          goToStep('notifications', 'continue', { has_daily_minutes: true });
+        }}
         onBack={() => goToStep('consistency', 'back')}
-        onSkip={() => goToStep('notifications', 'skip')}
+        onSkip={() => {
+          setDailyMinutes(null);
+          goToStep('notifications', 'skip');
+        }}
       />
     );
   }
@@ -942,8 +1000,16 @@ export default function OnboardingFlow({
       <BaselineIntroScreen
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('baseline', 'continue')}
+        onContinue={() => {
+          setBaselineWasSkipped(false);
+          goToStep('baseline', 'continue');
+        }}
         onBack={() => goToStep('notifications', 'back')}
+        onSkip={() => {
+          setBaseline(null);
+          setBaselineWasSkipped(true);
+          goToStep('recommendation', 'skip');
+        }}
       />
     );
   }
@@ -955,6 +1021,7 @@ export default function OnboardingFlow({
         stepCount={visualStepCount}
         onContinue={(result) => {
           setBaseline(result);
+          setBaselineWasSkipped(false);
           goToStep('recommendation', 'continue', {
             baseline_completed: result.completed,
             has_baseline_bpm: result.avgBpm != null,
@@ -962,6 +1029,11 @@ export default function OnboardingFlow({
           });
         }}
         onBack={() => goToStep('baselineIntro', 'back')}
+        onSkip={() => {
+          setBaseline(null);
+          setBaselineWasSkipped(true);
+          goToStep('recommendation', 'skip');
+        }}
       />
     );
   }
@@ -969,8 +1041,8 @@ export default function OnboardingFlow({
   if (step === 'recommendation') {
     const intentTitle =
       primaryIntent === 'other' || primaryIntent == null
-        ? customIntent.trim() || 'reach your goal'
-        : selectedOption?.title ?? 'reach your goal';
+        ? customIntent.trim() || 'your wellbeing'
+        : selectedOption?.title ?? 'your wellbeing';
 
     return (
       <RecommendationScreen
@@ -983,7 +1055,10 @@ export default function OnboardingFlow({
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goToStep('recommendedExercise', 'continue')}
-        onBack={() => goToStep('baseline', 'back')}
+        onBack={() =>
+          goToStep(baselineWasSkipped ? 'baselineIntro' : 'baseline', 'back')
+        }
+        onSkip={() => goToStep('recommendedExercise', 'skip')}
       />
     );
   }
@@ -996,10 +1071,12 @@ export default function OnboardingFlow({
       <RecommendedExerciseScreen
         techniqueId={techniqueId}
         baseline={baseline}
+        isPersonalized={primaryIntent != null}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goToStep('attPriming', 'continue')}
         onBack={() => goToStep('recommendation', 'back')}
+        onSkip={() => goToStep('attPriming', 'skip')}
       />
     );
   }
@@ -1023,6 +1100,14 @@ export default function OnboardingFlow({
             });
         }}
         onBack={() => goToStep('recommendedExercise', 'back')}
+        onSkip={() => {
+          void requestAttPermissionOnce()
+            .then(() => initAppsFlyer())
+            .then(() => {
+              void syncPostAttAttribution();
+              goToStep('fiveMinutes', 'skip');
+            });
+        }}
       />
     );
   }
@@ -1034,6 +1119,7 @@ export default function OnboardingFlow({
         stepCount={visualStepCount}
         onContinue={() => goToStep('founderNote', 'continue')}
         onBack={() => goToStep('attPriming', 'back')}
+        onSkip={() => goToStep('founderNote', 'skip')}
       />
     );
   }
@@ -1083,6 +1169,7 @@ export default function OnboardingFlow({
         intentTitle={scIntentTitle}
         onContinue={() => goToStep('lungCapacity', 'continue')}
         onBack={() => goToStep('assessmentReflection', 'back')}
+        onSkip={() => goToStep('lungCapacity', 'skip')}
       />
     );
   }
@@ -1091,7 +1178,7 @@ export default function OnboardingFlow({
     return (
       <PactScreen
         displayName={name.trim() || null}
-        dailyMinutes={dailyMinutes}
+        dailyMinutes={dailyMinutes ?? 5}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         isSubmitting={isSubmitting}
@@ -1174,6 +1261,15 @@ export default function OnboardingFlow({
       onToggle={toggleIntent}
       onCustomIntentChange={setCustomIntent}
       onContinue={goFromIntent}
+      onSkip={() => {
+        setSelectedIntents([]);
+        setCustomIntent('');
+        setErrorMessage(null);
+        goToStep('name', 'skip', {
+          selected_intent_count: 0,
+          has_custom_intent: false,
+        });
+      }}
     />
   );
 }
