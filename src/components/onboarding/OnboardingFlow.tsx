@@ -125,11 +125,11 @@ const STEP_ORDER: OnboardingStep[] = [
   'gender',
   'consistency',
   'dailyTime',
-  'notifications',
   'baselineIntro',
   'baseline',
   'recommendation',
   'recommendedExercise',
+  'notifications',
   'attPriming',
   'fiveMinutes',
   'founderNote',
@@ -633,7 +633,7 @@ export default function OnboardingFlow({
         }
       }
 
-      goToStep('baselineIntro', 'continue', {
+      goToStep('attPriming', 'continue', {
         notification_status: permissionStatus,
       });
     } catch (error) {
@@ -648,7 +648,7 @@ export default function OnboardingFlow({
     setNotificationErrorMessage(null);
     setIsNotificationSubmitting(true);
     try {
-      goToStep('baselineIntro', 'skip');
+      goToStep('attPriming', 'skip');
     } finally {
       setIsNotificationSubmitting(false);
     }
@@ -930,9 +930,9 @@ export default function OnboardingFlow({
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onChange={setDailyMinutes}
-        onContinue={() => goToStep('notifications', 'continue', { has_daily_minutes: true })}
+        onContinue={() => goToStep('baselineIntro', 'continue', { has_daily_minutes: true })}
         onBack={() => goToStep('consistency', 'back')}
-        onSkip={() => goToStep('notifications', 'skip')}
+        onSkip={() => goToStep('baselineIntro', 'skip')}
       />
     );
   }
@@ -943,7 +943,7 @@ export default function OnboardingFlow({
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goToStep('baseline', 'continue')}
-        onBack={() => goToStep('notifications', 'back')}
+        onBack={() => goToStep('dailyTime', 'back')}
       />
     );
   }
@@ -998,7 +998,7 @@ export default function OnboardingFlow({
         baseline={baseline}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('attPriming', 'continue')}
+        onContinue={() => goToStep('notifications', 'continue')}
         onBack={() => goToStep('recommendation', 'back')}
       />
     );
@@ -1022,7 +1022,7 @@ export default function OnboardingFlow({
               goToStep('fiveMinutes', 'continue');
             });
         }}
-        onBack={() => goToStep('recommendedExercise', 'back')}
+        onBack={() => goToStep('notifications', 'back')}
       />
     );
   }
@@ -1065,7 +1065,7 @@ export default function OnboardingFlow({
         onSkip={() => {
           void skipNotifications();
         }}
-        onBack={() => goToStep('dailyTime', 'back')}
+        onBack={() => goToStep('recommendedExercise', 'back')}
       />
     );
   }
