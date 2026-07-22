@@ -1,4 +1,5 @@
 import { requireSupabaseClient, type SupabaseClientLike } from '../supabase';
+import { hasRecoverableOnboardingProfile } from './onboardingProfileRecovery';
 import { ensureUserProfile } from './profileBootstrapService';
 
 type AgreementResponses = Record<string, 'agree' | 'disagree' | null>;
@@ -183,20 +184,6 @@ export async function getSavedOnboardingProfile(
   };
 }
 
-function hasRecoverableOnboardingProfile(data: {
-  onboarding_goal: string | null;
-  age: number | null;
-  gender: string | null;
-  daily_minutes: number | null;
-}): boolean {
-  return (
-    data.onboarding_goal != null &&
-    data.onboarding_goal.length > 0 &&
-    data.age != null &&
-    data.gender != null &&
-    data.daily_minutes != null
-  );
-}
 
 function toAgreementResponses(value: unknown): AgreementResponses | null {
   if (typeof value !== 'object' || value == null || Array.isArray(value)) {
