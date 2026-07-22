@@ -349,8 +349,6 @@ export default function LungCapacityScreen({
       <OnboardingScreenLayout
         title=""
         progress={stepIndex / stepCount}
-        onBack={isCalibrating ? undefined : onBack}
-        onSkip={isCalibrating ? undefined : onSkip}
         footer={
           isCalibrating ? (
             <View />
@@ -458,10 +456,19 @@ export default function LungCapacityScreen({
       onBack={onBack}
       onSkip={onSkip}
       footer={
-        <OnboardingPrimaryButton
-          label="Start"
-          onPress={() => setPhase('inhale')}
-        />
+        <View style={styles.introFooter}>
+          <OnboardingPrimaryButton
+            label="Start"
+            onPress={() => setPhase('inhale')}
+          />
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => onContinue(scoreExhale(0))}
+            style={({ pressed }) => [styles.skip, pressed && styles.skipPressed]}
+          >
+            <Text style={styles.skipText}>Skip for now</Text>
+          </Pressable>
+        </View>
       }
     >
       <View style={styles.introStage}>
@@ -482,6 +489,9 @@ export default function LungCapacityScreen({
 }
 
 const styles = StyleSheet.create({
+  introFooter: {
+    gap: spacing.sm,
+  },
   introStage: {
     flex: 1,
     alignItems: 'center',

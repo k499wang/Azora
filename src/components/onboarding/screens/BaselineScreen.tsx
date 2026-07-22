@@ -1,10 +1,14 @@
+import { Text } from '../../common/Text';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Animated } from 'react-native';
+import {
+  Animated, Pressable, StyleSheet, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useHeartRateStream } from '../../../hooks/useHeartRateStream';
 import { createBpmPresentationFilter } from '../../../lib/heartRate/bpmSmoothing';
 import type { FingerPlacementState, SignalStatus } from '../../../lib/heartRate/types';
 import { colors } from '../../../theme/colors';
+import { spacing } from '../../../theme/spacing';
+import { fonts, typography } from '../../../theme/typography';
 import { isHapticsEnabled } from '../../../services/preferences/hapticsPreference';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
@@ -29,7 +33,6 @@ interface BaselineScreenProps {
   stepCount: number;
   onContinue: (result: BaselineResult) => void;
   onBack: () => void;
-  onSkip: () => void;
 }
 
 type Phase = 'intro' | 'placement' | 'running' | 'done';
@@ -115,7 +118,6 @@ export default function BaselineScreen({
   stepCount,
   onContinue,
   onBack,
-  onSkip,
 }: BaselineScreenProps) {
   const stream = useHeartRateStream();
   const [phase, setPhase] = useState<Phase>('intro');
@@ -407,13 +409,24 @@ export default function BaselineScreen({
       title=""
       progress={stepIndex / stepCount}
       onBack={onBack}
-      onSkip={onSkip}
       footer={
-        <OnboardingPrimaryButton
-          label={allChecked ? 'I’m ready — start' : 'Check each step to start'}
-          onPress={handleStart}
-          disabled={!allChecked}
-        />
+        <View style={styles.introFooter}>
+          <OnboardingPrimaryButton
+            label={allChecked ? 'I’m ready — start' : 'Check each step to start'}
+            onPress={handleStart}
+            disabled={!allChecked}
+          />
+          <Pressable
+            accessibilityRole="button"
+            onPress={() => finishCapture(false)}
+            style={({ pressed }) => [
+              styles.skip,
+              pressed && styles.skipPressed,
+            ]}
+          >
+            <Text style={styles.skipText}>Skip for now</Text>
+          </Pressable>
+        </View>
       }
     >
       <BaselineIntroContent sessionSec={SESSION_SEC} />
@@ -426,3 +439,22 @@ export default function BaselineScreen({
     </OnboardingScreenLayout>
   );
 }
+
+const styles = StyleSheet.create({
+  introFooter: {
+    gap: spacing.sm,
+  },
+  skip: {
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+  },
+  skipPressed: {
+    opacity: 0.6,
+  },
+  skipText: {
+    ...typography.body.small,
+    fontFamily: fonts.semibold,
+    fontWeight: '500',
+    color: colors.text.secondary,
+  },
+});

@@ -19,7 +19,6 @@ interface RecommendedExerciseScreenProps {
   stepCount: number;
   onContinue: () => void;
   onBack: () => void;
-  onSkip: () => void;
 }
 
 function buildBpmSeries(history: number[], durationSec: number): DataPoint[] {
@@ -45,7 +44,6 @@ export default function RecommendedExerciseScreen({
   stepCount,
   onContinue,
   onBack,
-  onSkip,
 }: RecommendedExerciseScreenProps) {
   const technique =
     TECHNIQUE_RECOMMENDATIONS[techniqueId] ?? TECHNIQUE_RECOMMENDATIONS.box;
@@ -67,7 +65,6 @@ export default function RecommendedExerciseScreen({
       subtitle="Chosen just for you. Give it a try once you're in the app!"
       progress={stepIndex / stepCount}
       onBack={onBack}
-      onSkip={onSkip}
       footer={<OnboardingPrimaryButton label="Sounds good" onPress={onContinue} />}
     >
       <View style={styles.techniqueCard}>

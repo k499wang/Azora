@@ -20,7 +20,6 @@ interface BrainScienceScreenProps {
   stepCount: number;
   onContinue: () => void;
   onBack: () => void;
-  onSkip: () => void;
 }
 
 export default function BrainScienceScreen({
@@ -28,7 +27,6 @@ export default function BrainScienceScreen({
   stepCount,
   onContinue,
   onBack,
-  onSkip,
 }: BrainScienceScreenProps) {
   const reveal = useRef(new Animated.Value(0)).current;
 
@@ -53,7 +51,6 @@ export default function BrainScienceScreen({
       subtitle="Azora uses proven breathing science to reset your nervous system in seconds."
       progress={stepIndex / stepCount}
       onBack={onBack}
-      onSkip={onSkip}
       footer={<OnboardingPrimaryButton label="Continue" onPress={onContinue} />}
     >
       <Animated.View

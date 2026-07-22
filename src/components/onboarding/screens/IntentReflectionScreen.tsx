@@ -23,7 +23,6 @@ interface IntentReflectionScreenProps {
   isSubmitting: boolean;
   onContinue: () => void;
   onBack: () => void;
-  onSkip: () => void;
 }
 
 export default function IntentReflectionScreen({
@@ -33,7 +32,6 @@ export default function IntentReflectionScreen({
   isSubmitting,
   onContinue,
   onBack,
-  onSkip,
 }: IntentReflectionScreenProps) {
   const cardAnims = useRef(
     option.valuePoints.map(() => ({
@@ -77,7 +75,6 @@ export default function IntentReflectionScreen({
       subtitle={option.reflectionBody}
       progress={stepIndex / stepCount}
       onBack={onBack}
-      onSkip={onSkip}
       footer={
         <OnboardingPrimaryButton
           label="I'm ready"
