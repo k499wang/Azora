@@ -6,6 +6,7 @@ import BaselineIntroScreen from './screens/BaselineIntroScreen';
 import DailyTimeScreen from './screens/DailyTimeScreen';
 import ConsistencyScreen from './screens/ConsistencyScreen';
 import GenderScreen from './screens/GenderScreen';
+import HookScreen, { type HookBeat } from './screens/HookScreen';
 import IntentQuestionScreen from './screens/IntentQuestionScreen';
 import IntentReflectionScreen from './screens/IntentReflectionScreen';
 import IntentProjectionScreen from './screens/IntentProjectionScreen';
@@ -24,6 +25,7 @@ import AttPrimingScreen from './screens/AttPrimingScreen';
 import PactScreen from './screens/PactScreen';
 import NotificationPermissionScreen from './screens/NotificationPermissionScreen';
 import SleepScreen from './screens/SleepScreen';
+import HeartWorryScreen from './screens/HeartWorryScreen';
 import StressScreen from './screens/StressScreen';
 import MindRacingScreen from './screens/MindRacingScreen';
 import RecommendationScreen from './screens/RecommendationScreen';
@@ -107,6 +109,9 @@ interface OnboardingFlowProps {
 }
 
 const STEP_ORDER: OnboardingStep[] = [
+  'hook',
+  'hookLever',
+  'hookLoop',
   'intent',
   'intentReflection',
   'intentProjection',
@@ -116,6 +121,7 @@ const STEP_ORDER: OnboardingStep[] = [
   'stress',
   'mindRacing',
   'sleep',
+  'heartWorry',
   'agreement',
   'experience',
   'assessmentReflection',
@@ -136,6 +142,15 @@ const STEP_ORDER: OnboardingStep[] = [
   'pact',
   'paywall',
 ];
+
+const HOOK_BEATS: Record<
+  'hook' | 'hookLever' | 'hookLoop',
+  { beat: HookBeat; next: OnboardingStep }
+> = {
+  hook: { beat: 'system', next: 'hookLever' },
+  hookLever: { beat: 'lever', next: 'hookLoop' },
+  hookLoop: { beat: 'loop', next: 'intent' },
+};
 
 const BASE_STEP_INDEX = STEP_ORDER.reduce<Record<OnboardingStep, number>>(
   (acc, step, index) => {
@@ -172,7 +187,7 @@ export default function OnboardingFlow({
   const userId = useAuthStore((state) => state.user?.id ?? null);
   const isPro = useUserEntitlementQuery(userId).data?.isPro === true;
   const [step, setStep] = useState<OnboardingStep>(
-    initialSavedProfile == null ? 'intent' : 'paywall',
+    initialSavedProfile == null ? 'hook' : 'paywall',
   );
   const [selectedIntents, setSelectedIntents] = useState<string[]>([]);
   const [customIntent, setCustomIntent] = useState(
@@ -192,6 +207,7 @@ export default function OnboardingFlow({
     initialSavedProfile?.sleepQuality ?? 5,
   );
   const [racingLevel, setRacingLevel] = useState(5);
+  const [heartWorryLevel, setHeartWorryLevel] = useState(5);
   const [agreementResponses, setAgreementResponses] = useState<
     Record<string, AgreementValue | null>
   >(() =>
@@ -212,7 +228,7 @@ export default function OnboardingFlow({
     toGenderOptionId(initialSavedProfile?.gender),
   );
   const [dailyMinutes, setDailyMinutes] = useState(
-    initialSavedProfile?.dailyMinutes ?? 5,
+    initialSavedProfile?.dailyMinutes ?? 3,
   );
   const [baseline, setBaseline] = useState<BaselineResult | null>(null);
   const [lungCapacity, setLungCapacity] = useState<LungCapacityResult | null>(null);
@@ -468,7 +484,8 @@ export default function OnboardingFlow({
       experienceLevel,
       age,
       gender,
-      dailyMinutes,
+      // The slider's 0 stop means "30 seconds"; the DB column holds whole minutes.
+      dailyMinutes: Math.max(1, dailyMinutes),
       defaultTechniqueId:
         primaryIntent != null
           ? INTENT_TO_TECHNIQUE[primaryIntent] ?? null
@@ -704,6 +721,18 @@ export default function OnboardingFlow({
   const visualStepIndex = displayedProgress * VISUAL_PROGRESS_STEP_COUNT;
   const visualStepCount = VISUAL_PROGRESS_STEP_COUNT;
 
+  if (step === 'hook' || step === 'hookLever' || step === 'hookLoop') {
+    const { beat, next } = HOOK_BEATS[step];
+    return (
+      <HookScreen
+        beat={beat}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onContinue={() => goToStep(next, 'continue')}
+      />
+    );
+  }
+
   if (step === 'intentReflection' && selectedOption) {
     return (
       <IntentReflectionScreen
@@ -810,8 +839,22 @@ export default function OnboardingFlow({
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onChange={setSleepQuality}
-        onContinue={() => goToStep('agreement', 'continue', { has_sleep_quality: true })}
+        onContinue={() => goToStep('heartWorry', 'continue', { has_sleep_quality: true })}
         onBack={() => goToStep('mindRacing', 'back')}
+        onSkip={() => goToStep('heartWorry', 'skip')}
+      />
+    );
+  }
+
+  if (step === 'heartWorry') {
+    return (
+      <HeartWorryScreen
+        value={heartWorryLevel}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onChange={setHeartWorryLevel}
+        onContinue={() => goToStep('agreement', 'continue', { has_heart_worry_level: true })}
+        onBack={() => goToStep('sleep', 'back')}
         onSkip={() => goToStep('agreement', 'skip')}
       />
     );
@@ -831,7 +874,7 @@ export default function OnboardingFlow({
             (value) => value != null,
           ).length,
         })}
-        onBack={() => goToStep('sleep', 'back')}
+        onBack={() => goToStep('heartWorry', 'back')}
         onSkip={() => goToStep('experience', 'skip')}
       />
     );

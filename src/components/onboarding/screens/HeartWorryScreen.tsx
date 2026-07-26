@@ -1,13 +1,13 @@
 import { Text } from '../../common/Text';
 import { StyleSheet, View } from 'react-native';
-import OnboardingScreenLayout from '../OnboardingScreenLayout';
-import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
-import OnboardingHapticSlider from '../OnboardingHapticSlider';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
+import OnboardingScreenLayout from '../OnboardingScreenLayout';
+import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
+import OnboardingHapticSlider from '../OnboardingHapticSlider';
 
-interface DailyTimeScreenProps {
+interface HeartWorryScreenProps {
   value: number;
   stepIndex: number;
   stepCount: number;
@@ -18,23 +18,22 @@ interface DailyTimeScreenProps {
 }
 
 function descriptorFor(value: number): string {
-  if (value === 0) return 'Even 30 seconds counts';
-  if (value <= 3) return 'I just want a quick break';
-  if (value <= 7) return 'I can make this a small daily reset';
-  if (value <= 15) return 'I want a steady routine';
-  if (value <= 24) return 'I’m serious about building this habit';
-  return 'I’m really dedicated to this';
+  if (value <= 2) return 'Rarely crosses my mind';
+  if (value <= 4) return 'Now and then';
+  if (value <= 6) return 'More than I’d like';
+  if (value <= 8) return 'Often on my mind';
+  return 'It weighs on me';
 }
 
-function accentForDailyTime(value: number): string {
-  if (value <= 3) return colors.primary.blue500;
-  if (value <= 7) return colors.success[500];
-  if (value <= 15) return colors.warning[500];
-  if (value <= 24) return colors.orange[500];
+function accentForWorry(value: number): string {
+  if (value <= 2) return colors.success[500];
+  if (value <= 4) return colors.primary.blue500;
+  if (value <= 6) return colors.warning[500];
+  if (value <= 8) return colors.orange[500];
   return colors.error[500];
 }
 
-export default function DailyTimeScreen({
+export default function HeartWorryScreen({
   value,
   stepIndex,
   stepCount,
@@ -42,13 +41,13 @@ export default function DailyTimeScreen({
   onContinue,
   onBack,
   onSkip,
-}: DailyTimeScreenProps) {
-  const accent = accentForDailyTime(value);
+}: HeartWorryScreenProps) {
+  const accent = accentForWorry(value);
 
   return (
     <OnboardingScreenLayout
-      title="How much time can you give?"
-      subtitle="Even 30 seconds a day makes a difference. Most people start tiny."
+      title="How much do you worry about your heart health?"
+      subtitle="There's no wrong answer. Azora tunes your plan to it."
       progress={stepIndex / stepCount}
       onBack={onBack}
       onSkip={onSkip}
@@ -59,18 +58,16 @@ export default function DailyTimeScreen({
         <Text style={[styles.descriptor, { color: accent }]}>{descriptorFor(value)}</Text>
 
         <OnboardingHapticSlider
-          min={0}
-          max={30}
+          min={1}
+          max={10}
           value={value}
-          unit={value === 0 ? 'sec / day' : 'min / day'}
-          formatValue={(v) => (v === 0 ? '30' : `${v}`)}
           accent={accent}
           onChange={onChange}
         />
 
         <View style={styles.scaleRow}>
-          <Text style={styles.scaleLabel}>30 sec</Text>
-          <Text style={styles.scaleLabel}>Deep practice</Text>
+          <Text style={styles.scaleLabel}>Rarely</Text>
+          <Text style={styles.scaleLabel}>Constantly</Text>
         </View>
       </View>
     </OnboardingScreenLayout>

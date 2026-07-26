@@ -1,0 +1,73 @@
+AZORA ONBOARDING COPY
+
+WELCOME
+Title: Breathe better. Feel the difference.
+Body: Azora uses guided breathing and heart-rate feedback to help you calm, focus, and recover.
+Button: Get started
+
+1. GOAL
+Question: What would you like help with?
+Helper: Pick the one that matters most right now.
+Options:
+- Reduce stress
+- Sleep better
+- Improve focus
+- Boost energy
+- Support heart health
+Button: Continue
+
+2. STRESS
+Question: How stressed have you felt lately?
+Helper: There’s no wrong answer.
+Options:
+- Calm
+- A little stressed
+- Somewhat stressed
+- Very stressed
+- Overwhelmed
+Button: Continue
+
+3. SLEEP
+Question: How rested do you feel most mornings?
+Options:
+- Exhausted
+- Tired
+- Okay
+- Rested
+- Recharged
+Button: Continue
+
+4. EXPERIENCE
+Question: Have you tried breathwork before?
+Options:
+- I’m new to it
+- I’ve tried it a few times
+- I practice regularly
+Button: Continue
+
+5. DAILY TIME
+Question: How much time can you give each day?
+Helper: A few minutes is enough to get started.
+Options:
+- 2 minutes
+- 5 minutes
+- 10 minutes
+- 15+ minutes
+Button: Build my plan
+
+PLAN
+Title: Your plan is ready.
+Body: Start with [technique] for [minutes] a day. We’ll adjust as you go.
+Button: Try my first session
+
+HEART-RATE INTRO
+Title: Let’s read your heart.
+Body: Place your fingertip over the camera and flash. Hold still and breathe normally.
+Button: I’m ready
+Text link: Skip for now
+
+REMINDER (after the first session)
+Title: Want a gentle reminder?
+Body: Choose a time and Azora will remind you once a day.
+Button: Set reminder
+Text link: Not now
