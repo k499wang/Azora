@@ -15,6 +15,7 @@ interface OnboardingHapticSliderProps {
   value: number;
   unit?: string;
   accent?: string;
+  formatValue?: (value: number) => string;
   onChange: (value: number) => void;
 }
 
@@ -28,6 +29,7 @@ export default function OnboardingHapticSlider({
   value,
   unit,
   accent = colors.primary.blue600,
+  formatValue,
   onChange,
 }: OnboardingHapticSliderProps) {
   const scrollRef = useRef<ScrollView>(null);
@@ -64,7 +66,9 @@ export default function OnboardingHapticSlider({
   return (
     <View style={styles.wrap} onLayout={handleLayout}>
       <View style={styles.readout}>
-        <Text style={[styles.value, { color: accent }]}>{value}</Text>
+        <Text style={[styles.value, { color: accent }]}>
+          {formatValue ? formatValue(value) : value}
+        </Text>
         {unit ? <Text style={styles.unit}>{unit}</Text> : null}
       </View>
 

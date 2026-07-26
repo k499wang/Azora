@@ -503,7 +503,13 @@ export default function PactScreen({
                   ]}
                 >
                   Just{' '}
-                  <Text style={styles.highlight}>{dailyMinutes} minutes</Text>{' '}
+                  <Text style={styles.highlight}>
+                    {dailyMinutes === 0
+                      ? '30 seconds'
+                      : dailyMinutes === 1
+                        ? '1 minute'
+                        : `${dailyMinutes} minutes`}
+                  </Text>{' '}
                   a day. That's the whole plan.
                 </Text>
 

@@ -31,6 +31,34 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
     ],
   },
   {
+    id: 'calm_fast',
+    icon: 'timer',
+    accent: colors.orange[500],
+    title: 'Calm down fast',
+    body: 'Settle spikes of stress or nerves in the moment.',
+    hook: 'Relief in under a minute.',
+    reflectionHeadline: 'Calm, on demand.',
+    reflectionBody:
+      'One round of slow exhales can pull your body out of alarm mode in about a minute.',
+    valuePoints: [
+      {
+        icon: 'timer',
+        accent: colors.orange[500],
+        label: 'A minute of slow exhales settles the alarm response',
+      },
+      {
+        icon: 'waves',
+        accent: colors.primary.blue600,
+        label: 'Heart rate starts dropping within seconds',
+      },
+      {
+        icon: 'sparkle',
+        accent: colors.success[500],
+        label: 'Works anywhere — before a call, mid-argument, on the train',
+      },
+    ],
+  },
+  {
     id: 'sleep',
     icon: 'moon',
     accent: colors.primary.blue600,

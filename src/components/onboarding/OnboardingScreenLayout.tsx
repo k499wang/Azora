@@ -25,6 +25,7 @@ interface OnboardingScreenLayoutProps {
   keyboardAvoiding?: boolean;
   centerBody?: boolean;
   fullWidthProgress?: boolean;
+  animateCopy?: boolean;
 }
 
 export default function OnboardingScreenLayout({
@@ -38,6 +39,7 @@ export default function OnboardingScreenLayout({
   keyboardAvoiding = false,
   centerBody = false,
   fullWidthProgress = false,
+  animateCopy = false,
 }: OnboardingScreenLayoutProps) {
   const insets = useSafeAreaInsets();
   const clampedProgress = Math.max(0, Math.min(1, progress));
@@ -46,6 +48,8 @@ export default function OnboardingScreenLayout({
   const showNavSlots = !fullWidthProgress;
   const fade = useRef(new Animated.Value(0)).current;
   const scale = useRef(new Animated.Value(ENTRANCE_INITIAL_SCALE)).current;
+  const titleEnter = useRef(new Animated.Value(animateCopy ? 0 : 1)).current;
+  const subtitleEnter = useRef(new Animated.Value(animateCopy ? 0 : 1)).current;
   const scrollRef = useRef<ScrollView>(null);
 
   const scrollFade = useRef(new Animated.Value(0)).current;
@@ -139,6 +143,23 @@ export default function OnboardingScreenLayout({
           easing: ENTRANCE_EASING,
           useNativeDriver: true,
         }),
+        ...(animateCopy
+          ? [
+              Animated.timing(titleEnter, {
+                toValue: 1,
+                duration: 640,
+                easing: ENTRANCE_EASING,
+                useNativeDriver: true,
+              }),
+              Animated.timing(subtitleEnter, {
+                toValue: 1,
+                duration: 640,
+                delay: 220,
+                easing: ENTRANCE_EASING,
+                useNativeDriver: true,
+              }),
+            ]
+          : []),
       ]);
       animation.start();
     });
@@ -226,9 +247,37 @@ export default function OnboardingScreenLayout({
           >
             {title ? (
               <View style={styles.copy}>
-                <Text style={styles.title}>{title}</Text>
+                <Animated.View
+                  style={{
+                    opacity: titleEnter,
+                    transform: [
+                      {
+                        translateY: titleEnter.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [18, 0],
+                        }),
+                      },
+                    ],
+                  }}
+                >
+                  <Text style={styles.title}>{title}</Text>
+                </Animated.View>
                 {subtitle ? (
-                  <Text style={styles.subtitle}>{subtitle}</Text>
+                  <Animated.View
+                    style={{
+                      opacity: subtitleEnter,
+                      transform: [
+                        {
+                          translateY: subtitleEnter.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: [14, 0],
+                          }),
+                        },
+                      ],
+                    }}
+                  >
+                    <Text style={styles.subtitle}>{subtitle}</Text>
+                  </Animated.View>
                 ) : null}
               </View>
             ) : null}

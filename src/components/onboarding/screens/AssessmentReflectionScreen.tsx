@@ -60,13 +60,17 @@ function buildSynthesis(
 
   let plan: string;
   if (sleepLow || (stressHigh && sleepMid)) {
-    plan = 'We’ll start with evening wind-down work.';
+    plan =
+      'We’ll start with evening wind-down work — slow exhales switch your nervous system into rest mode, which is exactly what deep sleep needs.';
   } else if (stressHigh) {
-    plan = 'We’ll start with quick down-regulation breathwork.';
+    plan =
+      'We’ll start with quick down-regulation breathwork — extending your exhale is the one manual switch you have on a stressed nervous system, and it works in minutes.';
   } else if (stressMid) {
-    plan = 'We’ll start with short daily resets you can do anywhere.';
+    plan =
+      'We’ll start with short daily resets you can do anywhere — a few slow breaths shift your body out of stress mode faster than anything else you can do at a desk.';
   } else {
-    plan = 'We’ll start with focus and performance sessions.';
+    plan =
+      'We’ll start with focus and performance sessions — steady breathing keeps your heart rate even, and an even heart rate is what a focused brain runs on.';
   }
 
   let experienceLine = '';

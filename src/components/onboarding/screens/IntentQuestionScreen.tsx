@@ -1,5 +1,6 @@
 import { Text, TextInput } from '../../common/Text';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { useEffect, useRef } from 'react';
+import { Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import Icon from '../../common/icons/Icon';
 import { colors } from '../../../theme/colors';
@@ -34,6 +35,27 @@ export default function IntentQuestionScreen({
   onCustomIntentChange,
   onContinue,
 }: IntentQuestionScreenProps) {
+  const rowAnims = useRef(
+    INTENT_OPTIONS.map(() => new Animated.Value(0)),
+  ).current;
+
+  useEffect(() => {
+    const animation = Animated.stagger(
+      45,
+      rowAnims.map((anim) =>
+        Animated.timing(anim, {
+          toValue: 1,
+          duration: 420,
+          delay: 260,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+      ),
+    );
+    animation.start();
+    return () => animation.stop();
+  }, [rowAnims]);
+
   const needsCustomIntent = selectedIntents.includes('other');
   const canContinue =
     selectedIntents.length > 0 &&
@@ -51,6 +73,7 @@ export default function IntentQuestionScreen({
       subtitle="Pick as many as feel right — Azora will tune to them."
       progress={stepIndex / stepCount}
       fullWidthProgress
+      animateCopy
       keyboardAvoiding={needsCustomIntent}
       footer={
         <OnboardingPrimaryButton
@@ -75,44 +98,60 @@ export default function IntentQuestionScreen({
           const selected = selectedIntents.includes(option.id);
           const isFirst = index === 0;
 
+          const anim = rowAnims[index];
+
           return (
-            <Pressable
+            <Animated.View
               key={option.id}
-              accessibilityRole="checkbox"
-              accessibilityState={{ checked: selected, disabled: isSubmitting }}
-              disabled={isSubmitting}
-              onPress={() => handleToggle(option.id)}
-              style={({ pressed }) => [
-                styles.option,
-                !isFirst && styles.optionDivider,
-                pressed && styles.optionPressed,
-                isSubmitting && !selected && styles.optionDisabled,
-              ]}
+              style={{
+                opacity: anim,
+                transform: [
+                  {
+                    translateY: anim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [14, 0],
+                    }),
+                  },
+                ],
+              }}
             >
-              <Icon
-                name={option.icon}
-                size={20}
-                color={selected ? colors.primary.blue600 : colors.text.tertiary}
-              />
-              <Text
-                style={[styles.optionTitle, selected && styles.optionTitleSelected]}
-                numberOfLines={1}
-              >
-                {option.title}
-              </Text>
-              <View
-                style={[
-                  styles.radio,
-                  selected && { borderColor: colors.primary.blue600 },
+              <Pressable
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: selected, disabled: isSubmitting }}
+                disabled={isSubmitting}
+                onPress={() => handleToggle(option.id)}
+                style={({ pressed }) => [
+                  styles.option,
+                  !isFirst && styles.optionDivider,
+                  pressed && styles.optionPressed,
+                  isSubmitting && !selected && styles.optionDisabled,
                 ]}
               >
-                {selected ? (
-                  <View
-                    style={[styles.radioInner, { backgroundColor: colors.primary.blue600 }]}
-                  />
-                ) : null}
-              </View>
-            </Pressable>
+                <Icon
+                  name={option.icon}
+                  size={20}
+                  color={selected ? colors.primary.blue600 : colors.text.tertiary}
+                />
+                <Text
+                  style={[styles.optionTitle, selected && styles.optionTitleSelected]}
+                  numberOfLines={1}
+                >
+                  {option.title}
+                </Text>
+                <View
+                  style={[
+                    styles.radio,
+                    selected && { borderColor: colors.primary.blue600 },
+                  ]}
+                >
+                  {selected ? (
+                    <View
+                      style={[styles.radioInner, { backgroundColor: colors.primary.blue600 }]}
+                    />
+                  ) : null}
+                </View>
+              </Pressable>
+            </Animated.View>
           );
         })}
       </View>

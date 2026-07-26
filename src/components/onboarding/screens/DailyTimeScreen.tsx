@@ -18,6 +18,7 @@ interface DailyTimeScreenProps {
 }
 
 function descriptorFor(value: number): string {
+  if (value === 0) return 'Even 30 seconds counts';
   if (value <= 3) return 'I just want a quick break';
   if (value <= 7) return 'I can make this a small daily reset';
   if (value <= 15) return 'I want a steady routine';
@@ -47,7 +48,7 @@ export default function DailyTimeScreen({
   return (
     <OnboardingScreenLayout
       title="How much time can you give?"
-      subtitle="A few minutes a day is enough to see real change."
+      subtitle="Even 30 seconds a day makes a difference. Most people start tiny."
       progress={stepIndex / stepCount}
       onBack={onBack}
       onSkip={onSkip}
@@ -58,16 +59,17 @@ export default function DailyTimeScreen({
         <Text style={[styles.descriptor, { color: accent }]}>{descriptorFor(value)}</Text>
 
         <OnboardingHapticSlider
-          min={1}
+          min={0}
           max={30}
           value={value}
-          unit="min / day"
+          unit={value === 0 ? 'sec / day' : 'min / day'}
+          formatValue={(v) => (v === 0 ? '30' : `${v}`)}
           accent={accent}
           onChange={onChange}
         />
 
         <View style={styles.scaleRow}>
-          <Text style={styles.scaleLabel}>Quick break</Text>
+          <Text style={styles.scaleLabel}>30 sec</Text>
           <Text style={styles.scaleLabel}>Deep practice</Text>
         </View>
       </View>

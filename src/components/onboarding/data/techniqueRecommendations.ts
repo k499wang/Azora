@@ -34,6 +34,7 @@ export const TECHNIQUE_RECOMMENDATIONS: Record<string, TechniqueRecommendation> 
 
 export const INTENT_TO_TECHNIQUE: Record<string, string> = {
   stress_relief: 'relaxing',
+  calm_fast: 'relaxing',
   focus: 'box',
   energy: 'box',
   spiritual: 'resonance',
