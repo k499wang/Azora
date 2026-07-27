@@ -110,8 +110,8 @@ interface OnboardingFlowProps {
 
 const STEP_ORDER: OnboardingStep[] = [
   'hook',
-  'hookLever',
-  'hookLoop',
+  'hookBenefits',
+  'hookReveal',
   'intent',
   'intentReflection',
   'intentProjection',
@@ -144,12 +144,12 @@ const STEP_ORDER: OnboardingStep[] = [
 ];
 
 const HOOK_BEATS: Record<
-  'hook' | 'hookLever' | 'hookLoop',
+  'hook' | 'hookBenefits' | 'hookReveal',
   { beat: HookBeat; next: OnboardingStep }
 > = {
-  hook: { beat: 'system', next: 'hookLever' },
-  hookLever: { beat: 'lever', next: 'hookLoop' },
-  hookLoop: { beat: 'loop', next: 'intent' },
+  hook: { beat: 'setup', next: 'hookBenefits' },
+  hookBenefits: { beat: 'benefits', next: 'hookReveal' },
+  hookReveal: { beat: 'reveal', next: 'intent' },
 };
 
 const BASE_STEP_INDEX = STEP_ORDER.reduce<Record<OnboardingStep, number>>(
@@ -721,13 +721,14 @@ export default function OnboardingFlow({
   const visualStepIndex = displayedProgress * VISUAL_PROGRESS_STEP_COUNT;
   const visualStepCount = VISUAL_PROGRESS_STEP_COUNT;
 
-  if (step === 'hook' || step === 'hookLever' || step === 'hookLoop') {
+  if (step === 'hook' || step === 'hookBenefits' || step === 'hookReveal') {
     const { beat, next } = HOOK_BEATS[step];
     return (
+      // Keyed per beat so the layout's entrance animation replays on each one
+      // instead of React reusing the mounted screen and swapping copy in place.
       <HookScreen
+        key={beat}
         beat={beat}
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
         onContinue={() => goToStep(next, 'continue')}
       />
     );

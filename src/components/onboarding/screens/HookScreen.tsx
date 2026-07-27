@@ -1,7 +1,7 @@
 import { AnimatedText } from '../../common/Text';
-import { useEffect, useRef, type ReactElement } from 'react';
-import { Animated, Easing, StyleSheet, View } from 'react-native';
-import Svg, { Circle, Path } from 'react-native-svg';
+import { useCallback, useEffect, useRef, useState, type ReactElement } from 'react';
+import { Animated, Dimensions, Easing, StyleSheet, View } from 'react-native';
+import Svg, { Line, Path } from 'react-native-svg';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
@@ -9,115 +9,65 @@ import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 
 const AnimatedPath = Animated.createAnimatedComponent(Path);
-const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+const AnimatedLine = Animated.createAnimatedComponent(Line);
 
 const STAGE_WIDTH = 190;
 const STAGE_HEIGHT = 114;
 
-// Midline perimeter of the rounded rect below: 2×52 + 2×12 + 4×(π/2×18).
-const PERIMETER = 241.097;
-// Perimeter holds exactly 18 dash cycles, so the pattern is seamless at the
-// path seam and the loop only has to travel one cycle to repeat exactly.
-const DASH_CYCLE = PERIMETER / 18;
-const DASH_ON = 6.2;
-const DASH_OFF = DASH_CYCLE - DASH_ON;
+const CAPSULE_PATH =
+  'M22 16 H78 A14 14 0 0 1 78 44 H22 A14 14 0 0 1 22 16 Z';
+// Rounded-rect perimeter: 2×56 straight + 2π×14 for the two end caps.
+const CAPSULE_LENGTH = 200;
+const CAPSULE_DRAW_MS = 900;
 
-function CycleRectangle() {
-  const flow = useRef(new Animated.Value(0)).current;
+// Strokes itself in once on arrival, then holds. One-shot on purpose — a loop
+// would keep pulling focus off copy the user is still reading.
+function Capsule() {
+  const draw = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    // JS-driven on purpose: native-driver loops have been unreliable here.
-    const loop = Animated.loop(
-      Animated.timing(flow, {
-        toValue: 1,
-        duration: 1000,
-        easing: Easing.linear,
-        useNativeDriver: false,
-      }),
-      { resetBeforeIteration: true },
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [flow]);
+    // JS-driven: strokeDashoffset isn't a native-driver-able prop.
+    const animation = Animated.timing(draw, {
+      toValue: 1,
+      duration: CAPSULE_DRAW_MS,
+      delay: 120,
+      easing: Easing.inOut(Easing.cubic),
+      useNativeDriver: false,
+    });
+    animation.start();
+    return () => animation.stop();
+  }, [draw]);
 
-  const dashOffset = flow.interpolate({
+  const dashOffset = draw.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, -DASH_CYCLE],
+    outputRange: [CAPSULE_LENGTH, 0],
+  });
+  // Held back until the outline has almost closed, so the seam reads as the
+  // last stroke rather than as part of the shape arriving.
+  const seamOpacity = draw.interpolate({
+    inputRange: [0, 0.8, 1],
+    outputRange: [0, 0, 1],
   });
 
   return (
     <Svg width={STAGE_WIDTH} height={STAGE_HEIGHT} viewBox="0 0 100 60">
       <AnimatedPath
-        d="M24 6 H76 A18 18 0 0 1 94 24 V36 A18 18 0 0 1 76 54 H24 A18 18 0 0 1 6 36 V24 A18 18 0 0 1 24 6 Z"
-        stroke={colors.primary.blue300}
+        d={CAPSULE_PATH}
+        stroke={colors.primary.blue600}
         strokeWidth={2.5}
         strokeLinecap="round"
-        strokeDasharray={[DASH_ON, DASH_OFF]}
+        strokeDasharray={[CAPSULE_LENGTH, CAPSULE_LENGTH]}
         strokeDashoffset={dashOffset}
         fill="none"
       />
-    </Svg>
-  );
-}
-
-const BREATH_IN_MS = 4000;
-const BREATH_OUT_MS = 6000;
-
-function BreathCircle() {
-  const breath = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(breath, {
-          toValue: 1,
-          duration: BREATH_IN_MS,
-          easing: Easing.inOut(Easing.sin),
-          useNativeDriver: false,
-        }),
-        Animated.timing(breath, {
-          toValue: 0,
-          duration: BREATH_OUT_MS,
-          easing: Easing.inOut(Easing.sin),
-          useNativeDriver: false,
-        }),
-      ]),
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [breath]);
-
-  const coreRadius = breath.interpolate({
-    inputRange: [0, 1],
-    outputRange: [13, 23],
-  });
-  const haloRadius = breath.interpolate({
-    inputRange: [0, 1],
-    outputRange: [19, 28],
-  });
-  const haloOpacity = breath.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.25, 0.6],
-  });
-
-  return (
-    <Svg width={STAGE_WIDTH} height={STAGE_HEIGHT} viewBox="0 0 100 60">
-      <AnimatedCircle
-        cx={50}
-        cy={30}
-        r={haloRadius}
-        stroke={colors.primary.blue300}
-        strokeOpacity={haloOpacity}
-        strokeWidth={1.5}
-        fill="none"
-      />
-      <AnimatedCircle
-        cx={50}
-        cy={30}
-        r={coreRadius}
-        stroke={colors.primary.blue500}
+      <AnimatedLine
+        x1={50}
+        y1={16}
+        x2={50}
+        y2={44}
+        stroke={colors.primary.blue600}
         strokeWidth={2.5}
-        fill="none"
+        opacity={seamOpacity}
       />
     </Svg>
   );
@@ -179,117 +129,214 @@ function CalmingTrace() {
   );
 }
 
-export type HookBeat = 'system' | 'lever' | 'loop';
+const BENEFIT_STAGGER_MS = 320;
 
-interface HookBeatContent {
-  Visual: () => ReactElement;
-  headingLead: string;
-  headingAccent: string;
-  subtitle: string;
+function BenefitList({ items }: { items: string[] }) {
+  const entries = useRef(items.map(() => new Animated.Value(0))).current;
+
+  useEffect(() => {
+    const animation = Animated.stagger(
+      BENEFIT_STAGGER_MS,
+      entries.map((entry) =>
+        Animated.timing(entry, {
+          toValue: 1,
+          duration: 520,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+      ),
+    );
+    animation.start();
+    return () => animation.stop();
+  }, [entries]);
+
+  return (
+    <View style={styles.benefitList}>
+      {items.map((item, index) => (
+        <Animated.View
+          key={item}
+          style={{
+            opacity: entries[index],
+            transform: [
+              {
+                translateY: entries[index].interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [16, 0],
+                }),
+              },
+            ],
+          }}
+        >
+          <AnimatedText style={styles.benefitItem}>{item}</AnimatedText>
+        </Animated.View>
+      ))}
+    </View>
+  );
 }
 
+export type HookBeat = 'setup' | 'benefits' | 'reveal';
+
+interface HookBeatContent {
+  Visual?: () => ReactElement;
+  headingLead?: string;
+  headingAccent?: string;
+  items?: string[];
+  subtitle?: string;
+  ctaLabel: string;
+}
+
+// The beats are deliberately one unfinished sentence: each trails off so the tap
+// is driven by the open clause, not by persuasion. The middle beat withholds the
+// subject and lets the benefits land on their own.
 const BEATS: Record<HookBeat, HookBeatContent> = {
-  system: {
-    Visual: CycleRectangle,
-    headingLead: 'Your heart rate, sleep, and stress all run on ',
-    headingAccent: 'one system.',
-    subtitle:
-      'One nervous system sets all three. They wind up together, and they settle together.',
+  setup: {
+    Visual: Capsule,
+    headingLead: 'Imagine I told you there was a drug that ',
+    headingAccent: 'gave you…',
+    subtitle: 'Stay with me for ten seconds.',
+    ctaLabel: 'Next',
   },
-  lever: {
-    Visual: BreathCircle,
-    headingLead: 'Your breath is the only part of it you can ',
-    headingAccent: 'control directly.',
-    subtitle:
-      "You can't slow your pulse on command. You can slow your exhale — and your pulse follows it down.",
+  benefits: {
+    items: [
+      'Calm, in about five minutes',
+      'A better mood than meditation',
+      'Sleep that comes faster',
+      'Steadier focus, without caffeine',
+      'No cost. No side effects.',
+    ],
+    ctaLabel: 'Next',
   },
-  loop: {
+  reveal: {
     Visual: CalmingTrace,
-    headingLead: 'Azora reads where you are, then brings it down. ',
-    headingAccent: 'Same minute.',
-    subtitle:
-      'A tracker shows you the number and stops there. This is the part that changes it.',
+    headingLead: 'That drug is the way ',
+    headingAccent: 'you exhale.',
+    subtitle: 'Most people feel it on the first one.',
+    ctaLabel: 'Show me how',
   },
 };
 
 interface HookScreenProps {
   beat: HookBeat;
-  stepIndex: number;
-  stepCount: number;
   onContinue: () => void;
 }
 
-export default function HookScreen({
-  beat,
-  stepIndex,
-  stepCount,
-  onContinue,
-}: HookScreenProps) {
-  const enter = useRef(new Animated.Value(0)).current;
-  const subtitleEnter = useRef(new Animated.Value(0)).current;
-  const { Visual, headingLead, headingAccent, subtitle } = BEATS[beat];
+const ENTRANCE_MS = 620;
+
+function useEntrance(beat: HookBeat, delay: number, distance: number) {
+  const value = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    enter.setValue(0);
-    subtitleEnter.setValue(0);
-
-    const animation = Animated.parallel([
-      Animated.timing(enter, {
-        toValue: 1,
-        duration: 620,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-      Animated.timing(subtitleEnter, {
-        toValue: 1,
-        duration: 620,
-        delay: 260,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-    ]);
+    value.setValue(0);
+    const animation = Animated.timing(value, {
+      toValue: 1,
+      duration: ENTRANCE_MS,
+      delay,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    });
     animation.start();
-
     return () => animation.stop();
-  }, [beat, enter, subtitleEnter]);
+  }, [beat, value, delay]);
 
-  const lift = enter.interpolate({
-    inputRange: [0, 1],
-    outputRange: [18, 0],
-  });
-  const subtitleLift = subtitleEnter.interpolate({
-    inputRange: [0, 1],
-    outputRange: [14, 0],
-  });
+  return {
+    opacity: value,
+    transform: [
+      {
+        translateY: value.interpolate({
+          inputRange: [0, 1],
+          outputRange: [distance, 0],
+        }),
+      },
+    ],
+  };
+}
+
+export default function HookScreen({ beat, onContinue }: HookScreenProps) {
+  const { Visual, headingLead, headingAccent, items, subtitle, ctaLabel } =
+    BEATS[beat];
+
+  // The layout's body box isn't centred on the screen — the header is taller
+  // than the footer by the top safe-area inset — so centring inside it leaves
+  // the title low. Measure the heading itself against the window and shift the
+  // whole group by the difference instead of hardcoding the layout's paddings.
+  const headingRef = useRef<View>(null);
+  const offsetRef = useRef(0);
+  const [centerOffset, setCenterOffset] = useState(0);
+
+  const measureHeading = useCallback(() => {
+    headingRef.current?.measureInWindow((_x, y, _width, height) => {
+      if (height <= 0) return;
+      // measureInWindow reports the position with the current shift already
+      // applied, so fold it back in to get the correction in one pass.
+      const delta = Dimensions.get('window').height / 2 - (y + height / 2);
+      if (Math.abs(delta) < 0.5) return;
+      const next = offsetRef.current + delta;
+      offsetRef.current = next;
+      setCenterOffset(next);
+    });
+  }, []);
+
+  // Staggered so the screen assembles itself rather than appearing at once.
+  const visualEntrance = useEntrance(beat, 0, 14);
+  const headingEntrance = useEntrance(beat, 180, 18);
+  const subtitleEntrance = useEntrance(beat, 400, 14);
+  const ctaEntrance = useEntrance(beat, items ? 1400 : 600, 12);
 
   return (
     <OnboardingScreenLayout
       title=""
-      progress={stepIndex / stepCount}
+      progress={0}
+      hideProgress
       fullWidthProgress
-      footer={<OnboardingPrimaryButton label="Continue" onPress={onContinue} />}
-    >
-      <View style={styles.stage}>
-        <Animated.View style={[styles.visual, { opacity: enter }]}>
-          <Visual />
+      footer={
+        <Animated.View style={ctaEntrance}>
+          <OnboardingPrimaryButton label={ctaLabel} onPress={onContinue} />
         </Animated.View>
-        <AnimatedText
+      }
+    >
+      {/* Three slots with equal flex above and below: the heading sits in the
+          middle one and the visual and subtitle hang off it without shifting
+          it. The inner view then translates the whole group until the heading's
+          centre coincides with the screen's. */}
+      <View onLayout={measureHeading} style={styles.stage}>
+        <View
           style={[
-            styles.heading,
-            { opacity: enter, transform: [{ translateY: lift }] },
+            styles.stageInner,
+            { transform: [{ translateY: centerOffset }] },
           ]}
         >
-          {headingLead}
-          <AnimatedText style={styles.headingAccent}>{headingAccent}</AnimatedText>
-        </AnimatedText>
-        <AnimatedText
-          style={[
-            styles.subtitle,
-            { opacity: subtitleEnter, transform: [{ translateY: subtitleLift }] },
-          ]}
-        >
-          {subtitle}
-        </AnimatedText>
+          <View style={styles.aboveSlot}>
+            {Visual ? (
+              <Animated.View style={[styles.visual, visualEntrance]}>
+                <Visual />
+              </Animated.View>
+            ) : null}
+          </View>
+
+          <View
+            ref={headingRef}
+            onLayout={measureHeading}
+            style={styles.centerSlot}
+          >
+            {headingLead ? (
+              <AnimatedText style={[styles.heading, headingEntrance]}>
+                {headingLead}
+                <AnimatedText style={styles.headingAccent}>
+                  {headingAccent}
+                </AnimatedText>
+              </AnimatedText>
+            ) : null}
+            {items ? <BenefitList items={items} /> : null}
+          </View>
+
+          <View style={styles.belowSlot}>
+            {subtitle ? (
+              <AnimatedText style={[styles.subtitle, subtitleEntrance]}>
+                {subtitle}
+              </AnimatedText>
+            ) : null}
+          </View>
+        </View>
       </View>
     </OnboardingScreenLayout>
   );
@@ -298,14 +345,27 @@ export default function HookScreen({
 const styles = StyleSheet.create({
   stage: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.lg,
     paddingHorizontal: spacing.md,
-    paddingBottom: spacing['3xl'],
+  },
+  stageInner: {
+    flex: 1,
+  },
+  aboveSlot: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    paddingBottom: spacing.xl,
+  },
+  centerSlot: {
+    alignSelf: 'stretch',
+    alignItems: 'stretch',
+  },
+  belowSlot: {
+    flex: 1,
+    alignItems: 'center',
+    paddingTop: spacing.lg,
   },
   visual: {
-    marginBottom: spacing.sm,
     width: STAGE_WIDTH,
     height: STAGE_HEIGHT,
     alignItems: 'center',
@@ -336,5 +396,19 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
     textAlign: 'center',
     paddingHorizontal: spacing.sm,
+  },
+  benefitList: {
+    gap: spacing.lg,
+    paddingHorizontal: spacing.sm,
+  },
+  benefitItem: {
+    ...typography.title.title3,
+    fontFamily: fonts.semibold,
+    fontWeight: '500',
+    fontSize: 24,
+    lineHeight: 30,
+    letterSpacing: -0.4,
+    color: colors.text.primary,
+    textAlign: 'center',
   },
 });

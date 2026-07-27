@@ -143,8 +143,139 @@ inevitably create.
 
 ---
 
+## The hook: withheld-subject reveal
+
+Modelled on RISE Sleep, which opens its **47-step** onboarding with a drug
+metaphor before revealing the subject is sleep. Framing originates with Matthew
+Walker's *Why We Sleep*.
+
+RISE's actual three screens:
+
+1. *"Imagine I told you there was a drug that gave you…"* — pill icon, `NEXT`
+2. *"That drug is Sleep."* / "There's a lot out there about sleep.
+   But based on science…" — `NEXT`
+3. *"That one thing is called Sleep Debt."* — `FIND MY SLEEP DEBT`
+
+**The beats are one unfinished sentence.** Every screen trails off; the third
+completes it. The tap is driven by the open clause, not by persuasion — this is
+the mechanism, and it's easy to miss. Also note: first-person narrator ("Imagine
+*I told you*"), almost no body copy (screen 1 is nine words, screen 3 is six),
+and the CTA turns into the promise on the final beat rather than staying
+"Continue".
+
+Four mechanics:
+
+1. **Withhold the subject.** State the effects before naming the thing. Named,
+   the claim gets filed under "yeah, I know"; unnamed, it gets evaluated fresh.
+2. **Borrow a high-value category.** Potent, prescribed, expensive, regulated —
+   attach those associations to something free.
+3. **The reveal is a deliberate anticlimax.** "You already have it" is the
+   reframe: the problem isn't access, it's management. That's what creates room
+   for a product.
+4. **Hand over the proprietary noun.** RISE hands over *sleep debt*; Azora hands
+   over the *Azora Score*.
+
+**Warning from the same teardown:** sleep debt proved hard to communicate and
+caused measurable onboarding drop-off. The named metric must be self-evident on
+sight — Azora Score (0–100) clears that bar better than sleep debt does, and
+should stay that simple.
+
+**Azora's reveal is the exhale, not "breathing."** "Breathe" is advice everyone
+has already ignored, so it deflates into a shrug instead of a reframe. The
+exhale is narrow enough to be news, mechanically true (heart rate rises on the
+inhale, falls on the exhale — respiratory sinus arrhythmia), and yields a
+concrete instruction: make the out-breath longer than the in-breath.
+
+**Don't lead with heart rate or with the Azora Score.** Nobody wakes up wanting
+a lower BPM, and a proprietary metric has to be earned before it means anything.
+The payoff people want is mood and calm; the number is how we prove it later.
+
+Shipped copy in `screens/HookScreen.tsx`, three beats forming one sentence:
+
+1. "Imagine I told you there was a drug that **worked in five minutes**…" · `Next`
+2. "…lifted your mood more than meditation, and **cost nothing.**" /
+   "Stanford ran that trial in 2023. Breathing won." · `Next`
+3. "That drug is the way **you exhale.**" /
+   "Most people feel it on the first one." · `Show me how`
+
+### Evidence behind it
+
+- **Stanford / Cell Reports Medicine, Jan 2023** — 108 adults, randomized, three
+  breathwork patterns vs. mindfulness meditation, 5 min/day for a month.
+  Breathwork beat meditation on mood improvement; **cyclic sighing** (the
+  exhale-emphasized pattern) won outright, with effects after a single session.
+  Caveat: n=108, mostly Stanford undergrads — "one study", not settled science.
+- **James Nestor, *Breath*** — ~25,000 breaths a day is usable. His "90% of
+  people breathe wrong" figure is a book claim rather than a trial result; don't
+  put it in copy.
+- "Cyclic sighing" is available as a named technique if a future beat needs a
+  concrete noun to hand over (the structural equivalent of RISE's Sleep Debt).
+
+## North Star
+
+**% of new trial starters who complete 5+ breathing sessions within their first
+7 days.** Measured weekly, by install cohort.
+
+**No valid baseline yet.** The hard paywall landed the week of **2026-07-05**
+(non-payer sessions go 34 → 14 → 10 → 5 → 0 and stay at 0 from that week on).
+Every cohort old enough to measure a 30-day outcome predates it, so the numbers
+below describe a free-access product that no longer exists. The provisional
+figure — 64%, 16/25 purchasers — comes from people who paid when they didn't
+have to, a much higher-intent group than today's payers. **Re-baseline from
+2026-08-09**, when the first post-paywall cohort turns 30 days old.
+
+One simplification from the change: post-paywall, `onboarding_completed` fires
+essentially only for payers, so "completers" and "trial starters" are now the
+same denominator.
+
+Why this one:
+
+- It cannot be gamed by a harder paywall or by more ad spend. Low-quality
+  installs push it *down*, which is the correct signal.
+- Revenue, installs, trial starts and onboarding completion rate are all vanity
+  metrics here — each can rise while the product gets worse.
+- 5 sessions in the first week is the point where week-4 survival stops being
+  zero. Below it, one session and no sessions have identical outcomes.
+
+**Caveat on the threshold.** The 5-session cut was derived across payers and
+non-payers combined, and under a hard paywall that split is mostly an *access*
+difference, not a behavioural one. Within payers alone, 64% already clear it
+while only 12% reach week 4 — so it does not yet discriminate where it matters.
+Re-derive the threshold on payers only once the cohort reaches n≈150.
+
+Supporting metrics (not North Stars):
+
+| Metric | Value | Era |
+|---|---|---|
+| Onboarding start → paywall reached | 82% | current |
+| Paywall → purchase | ~35% | current |
+| Engaged in week 1 (all completers) | 36.7% | pre-paywall |
+| Engaged in week 4 (all completers) | 4.6% | pre-paywall |
+| Engaged in week 4 (payers) | 12.0% | pre-paywall |
+| Median time to first completed session | not instrumented | — |
+
+Only the first two survive the paywall change. The rest are historical.
+
+---
+
 ## Measurement
 
-At ~45 steps the leak can't be eyeballed. Per-step drop-off in PostHog, then
-prune or reorder the specific screens that bleed. Long funnels improve by data,
-not by design intuition.
+At ~45 steps the leak can't be eyeballed — but as of 2026-07-26 the per-step
+funnel is not where the loss is. Last 21 days, `onboarding_step_viewed` by index:
+105 at `intent` → 86 at `paywall`, roughly one user lost per screen. There is
+headroom for the additions above.
+
+In the pre-paywall era the loss was entirely post-onboarding: 63% of completers
+never performed a single breathing action and week-4 engagement was 4.6% — an
+activation failure, not a retention failure. Whether that still holds under the
+hard paywall is unknown until 2026-08-09; the population changed, so the number
+must be re-measured rather than assumed.
+
+Two known blind spots: no Android cohort yet, so the OS retention split is
+unavailable; and monthly vs. yearly cohorts have not been split, so annual
+subscribers currently look retained whether or not they open the app.
+
+`onboarding_completed` is unreliable as an activation event — the 2026-07-19
+cohort shows 47 started / 5 completed / 36 paywall-reached, so it fires on a
+path most users don't take. Fix its firing condition before trusting it
+anywhere.
