@@ -59,18 +59,10 @@ export default function RecommendedExerciseScreen({
     : [];
   const hasGraph = bpmSeries.length >= 2;
 
-  const durationSec = baseline?.durationSec || 20;
-  const title = hrDropPositive
-    ? `Your heart slowed ${drop} bpm in ${durationSec} seconds.`
-    : 'What we recommend for you.';
-  const subtitle = hrDropPositive
-    ? "That's your nervous system responding in real time. Trained breathing makes that response bigger, faster, and on-demand."
-    : "Chosen just for you. Give it a try once you're in the app!";
-
   return (
     <OnboardingScreenLayout
-      title={title}
-      subtitle={subtitle}
+      title="What we recommend for you."
+      subtitle="Chosen from your answers and the reading we just took."
       progress={stepIndex / stepCount}
       onBack={onBack}
       footer={<OnboardingPrimaryButton label="Sounds good" onPress={onContinue} />}

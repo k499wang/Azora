@@ -1,35 +1,20 @@
-import {
-  useImperativeHandle,
-  forwardRef,
-  useRef,
-  ReactNode,
-  useEffect,
-} from 'react';
-import { Animated, Easing, StyleSheet, View } from 'react-native';
+import { ReactNode, useEffect } from 'react';
+import { StyleSheet, View } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSequence,
+  withTiming,
+  type SharedValue,
+} from 'react-native-reanimated';
 import { colors } from '../../../../theme/colors';
 import { spacing } from '../../../../theme/spacing';
+import { BREATH_EXHALED } from '../breathEnvelope';
 
 const OUTER_MAX_SIZE = 300;
 const INNER_SIZE = 108;
 const OUTER_MIN_SIZE = INNER_SIZE;
 const OUTER_MIN_SCALE = OUTER_MIN_SIZE / OUTER_MAX_SIZE;
-
-type AnimationCompletionCallback = () => void;
-
-export interface BreathingCircleRef {
-  expand: (duration: number, onComplete?: AnimationCompletionCallback) => void;
-  contract: (duration: number, onComplete?: AnimationCompletionCallback) => void;
-  pause: () => void;
-  resumeExpand: (
-    remainingSecs: number,
-    onComplete?: AnimationCompletionCallback,
-  ) => void;
-  resumeContract: (
-    remainingSecs: number,
-    onComplete?: AnimationCompletionCallback,
-  ) => void;
-  reset: () => void;
-}
 
 interface BreathingThemeColors {
   outline: string;
@@ -41,130 +26,89 @@ interface BreathingThemeColors {
 }
 
 interface BreathingCircleProps {
+  envelope: SharedValue<number>;
   children?: ReactNode;
   cameraSlot?: ReactNode;
   beatTick?: number;
   themeColors?: BreathingThemeColors;
 }
 
-const BreathingCircle = forwardRef<BreathingCircleRef, BreathingCircleProps>(
-  ({ children, cameraSlot, beatTick = 0, themeColors }, ref) => {
-    const scale = useRef(new Animated.Value(OUTER_MIN_SCALE)).current;
-    const innerFlush = useRef(new Animated.Value(0)).current;
+export default function BreathingCircle({
+  envelope,
+  children,
+  cameraSlot,
+  beatTick = 0,
+  themeColors,
+}: BreathingCircleProps) {
+  const innerFlush = useSharedValue(0);
 
-    const animateTo = (
-      toValue: number,
-      duration: number,
-      onComplete?: AnimationCompletionCallback,
-    ) => {
-      Animated.timing(scale, {
-        toValue,
-        duration: duration * 1000,
-        easing: Easing.linear,
-        useNativeDriver: true,
-      }).start(({ finished }) => {
-        if (finished) {
-          onComplete?.();
-        }
-      });
-    };
+  useEffect(() => {
+    if (beatTick <= 0) return;
 
-    useEffect(() => {
-      if (beatTick <= 0) return;
+    innerFlush.value = 0;
+    innerFlush.value = withSequence(
+      withTiming(0.22, { duration: 80 }),
+      withTiming(0, { duration: 280 }),
+    );
+  }, [beatTick, innerFlush]);
 
-      innerFlush.setValue(0);
-      Animated.sequence([
-        Animated.timing(innerFlush, {
-          toValue: 0.22,
-          duration: 80,
-          useNativeDriver: true,
-        }),
-        Animated.timing(innerFlush, {
-          toValue: 0,
-          duration: 280,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    }, [beatTick, innerFlush]);
+  const outerStyle = useAnimatedStyle(() => ({
+    transform: [
+      {
+        scale:
+          OUTER_MIN_SCALE +
+          (envelope.value - BREATH_EXHALED) * (1 - OUTER_MIN_SCALE),
+      },
+    ],
+  }));
 
-    useImperativeHandle(ref, () => ({
-      expand(duration: number, onComplete?: AnimationCompletionCallback) {
-        animateTo(1, duration, onComplete);
-      },
-      contract(duration: number, onComplete?: AnimationCompletionCallback) {
-        animateTo(OUTER_MIN_SCALE, duration, onComplete);
-      },
-      pause() {
-        scale.stopAnimation();
-      },
-      resumeExpand(
-        remainingSecs: number,
-        onComplete?: AnimationCompletionCallback,
-      ) {
-        animateTo(1, remainingSecs, onComplete);
-      },
-      resumeContract(
-        remainingSecs: number,
-        onComplete?: AnimationCompletionCallback,
-      ) {
-        animateTo(OUTER_MIN_SCALE, remainingSecs, onComplete);
-      },
-      reset() {
-        scale.stopAnimation();
-        scale.setValue(OUTER_MIN_SCALE);
-      },
-    }));
+  const innerFlushStyle = useAnimatedStyle(() => ({
+    opacity: innerFlush.value,
+  }));
 
-    return (
-      <View style={styles.wrapper}>
-        <View
-          style={[
-            styles.outline,
-            themeColors && {
-              borderColor: themeColors.outline,
-              opacity: themeColors.outlineOpacity ?? 0.5,
-            },
-          ]}
-          pointerEvents="none"
-        />
+  return (
+    <View style={styles.wrapper}>
+      <View
+        style={[
+          styles.outline,
+          themeColors && {
+            borderColor: themeColors.outline,
+            opacity: themeColors.outlineOpacity ?? 0.5,
+          },
+        ]}
+        pointerEvents="none"
+      />
+      <Animated.View
+        style={[
+          styles.outer,
+          outerStyle,
+          themeColors && {
+            backgroundColor: themeColors.outer,
+            opacity: themeColors.outerOpacity ?? 0.28,
+          },
+        ]}
+        pointerEvents="none"
+      />
+      <View
+        style={[styles.inner, themeColors && { backgroundColor: themeColors.inner }]}
+        pointerEvents="none"
+      >
+        {cameraSlot ? (
+          <View style={StyleSheet.absoluteFillObject}>{cameraSlot}</View>
+        ) : null}
         <Animated.View
           style={[
-            styles.outer,
-            { transform: [{ scale }] },
-            themeColors && {
-              backgroundColor: themeColors.outer,
-              opacity: themeColors.outerOpacity ?? 0.28,
-            },
+            styles.innerFlush,
+            themeColors && { backgroundColor: themeColors.beatFlush },
+            innerFlushStyle,
           ]}
           pointerEvents="none"
         />
-        <View
-          style={[styles.inner, themeColors && { backgroundColor: themeColors.inner }]}
-          pointerEvents="none"
-        >
-          {cameraSlot ? (
-            <View style={StyleSheet.absoluteFillObject}>{cameraSlot}</View>
-          ) : null}
-          <Animated.View
-            style={[
-              styles.innerFlush,
-              themeColors && { backgroundColor: themeColors.beatFlush },
-              { opacity: innerFlush },
-            ]}
-            pointerEvents="none"
-          />
-          {children ? (
-            <View style={styles.innerContent}>{children}</View>
-          ) : null}
-        </View>
+        {children ? <View style={styles.innerContent}>{children}</View> : null}
       </View>
-    );
-  },
-);
-
-BreathingCircle.displayName = 'BreathingCircle';
-
-export default BreathingCircle;
+    </View>
+  );
+}
 
 const styles = StyleSheet.create({
   wrapper: {

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
 import * as Haptics from 'expo-haptics';
-import type { BreathingCircleRef } from '../../shared/components/BreathingCircle';
+import type { BreathEnvelopeController } from '../../shared/breathEnvelope';
 import {
   buildDailyBreathHoldPreparationPlan,
   type DailyBreathHoldPreparationStep,
@@ -14,7 +14,7 @@ import { isHapticsEnabled } from '../../../../services/preferences/hapticsPrefer
 const HOLD_DISPLAY_REFRESH_MS = 200;
 
 interface UseBreathHoldPhaseSequenceOptions {
-  circleRef: RefObject<BreathingCircleRef | null>;
+  envelopeRef: RefObject<BreathEnvelopeController | null>;
   protocol: DailyBreathHoldProtocol;
   onPhaseChange: (phase: DailyBreathHoldPhase) => void;
   onHoldStarted: () => void;
@@ -28,7 +28,7 @@ interface ActivePreparationStep {
 }
 
 export function useBreathHoldPhaseSequence({
-  circleRef,
+  envelopeRef,
   protocol,
   onPhaseChange,
   onHoldStarted,
@@ -115,25 +115,25 @@ export function useBreathHoldPhaseSequence({
         return;
       }
 
-      const circle = circleRef.current;
-      if (circle == null) return;
+      const envelope = envelopeRef.current;
+      if (envelope == null) return;
 
       const remainingSeconds = boundedRemainingMs / 1000;
       if (activeStep.step.phase === 'preExhale') {
         stopInhaleVibration();
-        if (resuming) circle.resumeContract(remainingSeconds, completeCurrentSchedule);
-        else circle.contract(remainingSeconds, completeCurrentSchedule);
+        if (resuming) envelope.resumeContract(remainingSeconds, completeCurrentSchedule);
+        else envelope.contract(remainingSeconds, completeCurrentSchedule);
         return;
       }
 
       if (!resuming && activeStep.step.phase === 'preInhale' && activeStep.step.cycle === 1) {
-        circle.reset();
+        envelope.reset();
       }
       startInhaleVibration(boundedRemainingMs);
-      if (resuming) circle.resumeExpand(remainingSeconds, completeCurrentSchedule);
-      else circle.expand(remainingSeconds, completeCurrentSchedule);
+      if (resuming) envelope.resumeExpand(remainingSeconds, completeCurrentSchedule);
+      else envelope.expand(remainingSeconds, completeCurrentSchedule);
     });
-  }, [circleRef, clearPreparationTimer]);
+  }, [envelopeRef, clearPreparationTimer]);
 
   const cancel = useCallback(() => {
     runIdRef.current += 1;
@@ -146,10 +146,10 @@ export function useBreathHoldPhaseSequence({
     preparationClockRef.current.reset();
     holdClockRef.current.reset();
     holdStartedAtMsRef.current = 0;
-    circleRef.current?.pause();
+    envelopeRef.current?.pause();
     stopInhaleVibration();
     if (mountedRef.current) setPaused(false);
-  }, [circleRef, clearHoldTicker, clearPreparationTimer]);
+  }, [envelopeRef, clearHoldTicker, clearPreparationTimer]);
 
   const start = useCallback(() => {
     cancel();
@@ -164,7 +164,7 @@ export function useBreathHoldPhaseSequence({
       activePreparationStepRef.current = null;
       preparationClockRef.current.reset();
       stopInhaleVibration();
-      circleRef.current?.pause();
+      envelopeRef.current?.pause();
       holdActiveRef.current = true;
       holdStartedAtMsRef.current = Date.now();
       holdClockRef.current.start(holdStartedAtMsRef.current);
@@ -221,7 +221,7 @@ export function useBreathHoldPhaseSequence({
     runPreparationStep(0);
   }, [
     cancel,
-    circleRef,
+    envelopeRef,
     clearPreparationTimer,
     protocol,
     schedulePreparationStep,
@@ -239,7 +239,7 @@ export function useBreathHoldPhaseSequence({
       preparationClockRef.current.pause(nowMs);
       preparationScheduleIdRef.current += 1;
       clearPreparationTimer();
-      circleRef.current?.pause();
+      envelopeRef.current?.pause();
       stopInhaleVibration();
     } else {
       holdClockRef.current.pause(nowMs);
@@ -247,7 +247,7 @@ export function useBreathHoldPhaseSequence({
       updateDisplayedHoldSeconds();
     }
     setPaused(true);
-  }, [circleRef, clearHoldTicker, clearPreparationTimer, updateDisplayedHoldSeconds]);
+  }, [envelopeRef, clearHoldTicker, clearPreparationTimer, updateDisplayedHoldSeconds]);
 
   const resume = useCallback(() => {
     if (!pausedRef.current) return;
