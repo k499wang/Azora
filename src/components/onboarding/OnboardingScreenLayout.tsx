@@ -25,6 +25,7 @@ interface OnboardingScreenLayoutProps {
   keyboardAvoiding?: boolean;
   centerBody?: boolean;
   fullWidthProgress?: boolean;
+  hideProgress?: boolean;
   animateCopy?: boolean;
 }
 
@@ -39,12 +40,15 @@ export default function OnboardingScreenLayout({
   keyboardAvoiding = false,
   centerBody = false,
   fullWidthProgress = false,
+  hideProgress = false,
   animateCopy = false,
 }: OnboardingScreenLayoutProps) {
   const insets = useSafeAreaInsets();
   const clampedProgress = Math.max(0, Math.min(1, progress));
   // First step runs the bar full width; every other step reserves the back and
   // skip slots so the bar stays put even on screens that have no skip action.
+  // The slots always keep their height so the bar sits at the same vertical
+  // position on every screen — only their width collapses.
   const showNavSlots = !fullWidthProgress;
   const fade = useRef(new Animated.Value(0)).current;
   const scale = useRef(new Animated.Value(ENTRANCE_INITIAL_SCALE)).current;
@@ -185,45 +189,55 @@ export default function OnboardingScreenLayout({
   const inner = (
     <Animated.View style={[styles.entrance, { opacity: fade }]}>
       <View style={styles.header}>
-        {showNavSlots ? (
-          <View style={styles.headerSlotLeft}>
-            {onBack ? (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Back"
-                hitSlop={12}
-                onPress={handleBack}
-                style={({ pressed }) => [
-                  styles.backButton,
-                  pressed && styles.backButtonPressed,
-                ]}
-              >
-                <Text style={styles.backGlyph}>←</Text>
-              </Pressable>
-            ) : null}
-          </View>
-        ) : null}
-        <View style={styles.progressBar}>
-          <View style={[styles.progressFill, { width: `${clampedProgress * 100}%` }]} />
+        <View
+          style={[
+            styles.headerSlotLeft,
+            !showNavSlots && styles.headerSlotCollapsed,
+          ]}
+        >
+          {showNavSlots && onBack ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Back"
+              hitSlop={12}
+              onPress={handleBack}
+              style={({ pressed }) => [
+                styles.backButton,
+                pressed && styles.backButtonPressed,
+              ]}
+            >
+              <Text style={styles.backGlyph}>←</Text>
+            </Pressable>
+          ) : null}
         </View>
-        {showNavSlots ? (
-          <View style={styles.headerSlotRight}>
-            {onSkip ? (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Skip"
-                hitSlop={12}
-                onPress={handleSkip}
-                style={({ pressed }) => [
-                  styles.skipButton,
-                  pressed && styles.skipButtonPressed,
-                ]}
-              >
-                <Text style={styles.skipLabel}>Skip</Text>
-              </Pressable>
-            ) : null}
+        {hideProgress ? (
+          <View style={styles.progressSpacer} />
+        ) : (
+          <View style={styles.progressBar}>
+            <View style={[styles.progressFill, { width: `${clampedProgress * 100}%` }]} />
           </View>
-        ) : null}
+        )}
+        <View
+          style={[
+            styles.headerSlotRight,
+            !showNavSlots && styles.headerSlotCollapsed,
+          ]}
+        >
+          {showNavSlots && onSkip ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Skip"
+              hitSlop={12}
+              onPress={handleSkip}
+              style={({ pressed }) => [
+                styles.skipButton,
+                pressed && styles.skipButtonPressed,
+              ]}
+            >
+              <Text style={styles.skipLabel}>Skip</Text>
+            </Pressable>
+          ) : null}
+        </View>
       </View>
 
       <View style={styles.scrollWrap}>
@@ -357,7 +371,6 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,
     paddingBottom: spacing['2xl'],
@@ -366,12 +379,21 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     justifyContent: 'center',
+    marginRight: spacing.sm,
   },
   headerSlotRight: {
     width: 48,
     height: 32,
     alignItems: 'flex-end',
     justifyContent: 'center',
+    marginLeft: spacing.sm,
+  },
+  // Keeps the 32pt row height so the bar never shifts vertically between
+  // screens, while letting it run edge to edge.
+  headerSlotCollapsed: {
+    width: 0,
+    marginLeft: 0,
+    marginRight: 0,
   },
   progressBar: {
     flex: 1,
@@ -379,6 +401,11 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: colors.primary.blue100,
     overflow: 'hidden',
+  },
+  // Holds the bar's slot open so hiding it doesn't move anything else.
+  progressSpacer: {
+    flex: 1,
+    height: 6,
   },
   progressFill: {
     height: '100%',
