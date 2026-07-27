@@ -1,7 +1,8 @@
-import { forwardRef, useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { Animated, Easing, StyleSheet, View } from 'react-native';
 import { Text } from '../../../../components/common/Text';
-import BreathingCircle, { type BreathingCircleRef } from '../../shared/components/BreathingCircle';
+import type { SharedValue } from 'react-native-reanimated';
+import BreathingCircle from '../../shared/components/BreathingCircle';
 import BreathHoldIntro, { type BreathHoldStep } from './BreathHoldIntro';
 import { HeartRateCameraPreview } from '../../../../components/heartRate/HeartRateCameraPreview';
 import type { HeartRateCameraPreviewProps } from '../../../../components/heartRate/HeartRateCameraPreview';
@@ -54,6 +55,7 @@ interface DailyBreathHoldHeartRatePresentation {
 
 interface DailyBreathHoldPresentationProps {
   phase: DailyBreathHoldPhase;
+  breathEnvelope: SharedValue<number>;
   paused: boolean;
   theme: ExerciseDarkTheme;
   protocol: DailyBreathHoldProtocol;
@@ -62,21 +64,16 @@ interface DailyBreathHoldPresentationProps {
   heartRate: DailyBreathHoldHeartRatePresentation;
 }
 
-export const DailyBreathHoldPresentation = forwardRef<
-  BreathingCircleRef,
-  DailyBreathHoldPresentationProps
->(function DailyBreathHoldPresentation(
-  {
-    phase,
-    paused,
-    theme,
-    protocol,
-    holdSeconds,
-    bestHoldSeconds,
-    heartRate,
-  },
-  circleRef,
-) {
+export function DailyBreathHoldPresentation({
+  phase,
+  breathEnvelope,
+  paused,
+  theme,
+  protocol,
+  holdSeconds,
+  bestHoldSeconds,
+  heartRate,
+}: DailyBreathHoldPresentationProps) {
   const isPlacement = phase === 'placement';
   const breathingActive = isBreathHoldBreathingPhase(phase);
   const isLive = breathingActive || phase === 'hold';
@@ -184,7 +181,7 @@ export const DailyBreathHoldPresentation = forwardRef<
         >
           <View style={styles.centerStack}>
             <BreathingCircle
-              ref={circleRef}
+              envelope={breathEnvelope}
               cameraSlot={cameraSlot}
               beatTick={heartRate.beatTick}
               themeColors={{
@@ -218,7 +215,7 @@ export const DailyBreathHoldPresentation = forwardRef<
       </View>
     </View>
   );
-});
+}
 
 const styles = StyleSheet.create({
   centerSlotWrap: {

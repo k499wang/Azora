@@ -1,8 +1,9 @@
 import { Text } from '../../../../components/common/Text';
-import { forwardRef, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { Animated, Easing, StyleSheet, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import BreathingCircle, { type BreathingCircleRef } from '../../shared/components/BreathingCircle';
+import type { SharedValue } from 'react-native-reanimated';
+import BreathingCircle from '../../shared/components/BreathingCircle';
 import TechniqueIntro from './TechniqueIntro';
 import { HeartRateCameraPreview } from '../../../../components/heartRate/HeartRateCameraPreview';
 import type { HeartRateCameraPreviewProps } from '../../../../components/heartRate/HeartRateCameraPreview';
@@ -46,6 +47,7 @@ interface GuidedBreathingHeartRatePresentation {
 
 interface GuidedBreathingPresentationProps {
   phase: GuidedBreathingPhase;
+  breathEnvelope: SharedValue<number>;
   technique: BreathingTechnique;
   theme: ExerciseDarkTheme;
   heartRate: GuidedBreathingHeartRatePresentation;
@@ -62,13 +64,13 @@ const PHASE_LABELS: Record<GuidedBreathingPhase, string> = {
   done: 'Well done',
 };
 
-export const GuidedBreathingPresentation = forwardRef<
-  BreathingCircleRef,
-  GuidedBreathingPresentationProps
->(function GuidedBreathingPresentation(
-  { phase, technique, theme, heartRate },
-  circleRef,
-) {
+export function GuidedBreathingPresentation({
+  phase,
+  breathEnvelope,
+  technique,
+  theme,
+  heartRate,
+}: GuidedBreathingPresentationProps) {
   const isIdle = phase === 'idle';
   const isPlacement = phase === 'placement';
   const isBreathing =
@@ -163,7 +165,7 @@ export const GuidedBreathingPresentation = forwardRef<
           ]}
         >
           <BreathingCircle
-            ref={circleRef}
+            envelope={breathEnvelope}
             cameraSlot={cameraSlot}
             beatTick={heartRate.beatTick}
             themeColors={{
@@ -206,7 +208,7 @@ export const GuidedBreathingPresentation = forwardRef<
       />
     </View>
   );
-});
+}
 
 const styles = StyleSheet.create({
   centerStack: {
