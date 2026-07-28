@@ -4,6 +4,8 @@ export type OnboardingStep =
   | 'hook'
   | 'hookBenefits'
   | 'hookReveal'
+  | 'hookCamera'
+  | 'profileIntro'
   | 'intent'
   | 'intentReflection'
   | 'intentProjection'
