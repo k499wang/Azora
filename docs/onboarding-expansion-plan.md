@@ -78,8 +78,8 @@ each feel short.
 
 Positioning spine: **measure, then fix — same app, same minute**. It's true for
 sleep, stress, rage, and heart health equally, so it's the one hook that carries
-every angle. `HookScreen` currently states the system ("heart rate, sleep and
-stress run on one system") without stating what the app *does*.
+every angle. The opening should make that action clear before asking the user to
+invest in a longer assessment.
 
 ---
 
@@ -140,76 +140,6 @@ keep energy up.
 
 **Email capture** — near the end; recovers the abandons that added length will
 inevitably create.
-
----
-
-## The hook: withheld-subject reveal
-
-Modelled on RISE Sleep, which opens its **47-step** onboarding with a drug
-metaphor before revealing the subject is sleep. Framing originates with Matthew
-Walker's *Why We Sleep*.
-
-RISE's actual three screens:
-
-1. *"Imagine I told you there was a drug that gave you…"* — pill icon, `NEXT`
-2. *"That drug is Sleep."* / "There's a lot out there about sleep.
-   But based on science…" — `NEXT`
-3. *"That one thing is called Sleep Debt."* — `FIND MY SLEEP DEBT`
-
-**The beats are one unfinished sentence.** Every screen trails off; the third
-completes it. The tap is driven by the open clause, not by persuasion — this is
-the mechanism, and it's easy to miss. Also note: first-person narrator ("Imagine
-*I told you*"), almost no body copy (screen 1 is nine words, screen 3 is six),
-and the CTA turns into the promise on the final beat rather than staying
-"Continue".
-
-Four mechanics:
-
-1. **Withhold the subject.** State the effects before naming the thing. Named,
-   the claim gets filed under "yeah, I know"; unnamed, it gets evaluated fresh.
-2. **Borrow a high-value category.** Potent, prescribed, expensive, regulated —
-   attach those associations to something free.
-3. **The reveal is a deliberate anticlimax.** "You already have it" is the
-   reframe: the problem isn't access, it's management. That's what creates room
-   for a product.
-4. **Hand over the proprietary noun.** RISE hands over *sleep debt*; Azora hands
-   over the *Azora Score*.
-
-**Warning from the same teardown:** sleep debt proved hard to communicate and
-caused measurable onboarding drop-off. The named metric must be self-evident on
-sight — Azora Score (0–100) clears that bar better than sleep debt does, and
-should stay that simple.
-
-**Azora's reveal is the exhale, not "breathing."** "Breathe" is advice everyone
-has already ignored, so it deflates into a shrug instead of a reframe. The
-exhale is narrow enough to be news, mechanically true (heart rate rises on the
-inhale, falls on the exhale — respiratory sinus arrhythmia), and yields a
-concrete instruction: make the out-breath longer than the in-breath.
-
-**Don't lead with heart rate or with the Azora Score.** Nobody wakes up wanting
-a lower BPM, and a proprietary metric has to be earned before it means anything.
-The payoff people want is mood and calm; the number is how we prove it later.
-
-Shipped copy in `screens/HookScreen.tsx`, three beats forming one sentence:
-
-1. "Imagine I told you there was a drug that **worked in five minutes**…" · `Next`
-2. "…lifted your mood more than meditation, and **cost nothing.**" /
-   "Stanford ran that trial in 2023. Breathing won." · `Next`
-3. "That drug is the way **you exhale.**" /
-   "Most people feel it on the first one." · `Show me how`
-
-### Evidence behind it
-
-- **Stanford / Cell Reports Medicine, Jan 2023** — 108 adults, randomized, three
-  breathwork patterns vs. mindfulness meditation, 5 min/day for a month.
-  Breathwork beat meditation on mood improvement; **cyclic sighing** (the
-  exhale-emphasized pattern) won outright, with effects after a single session.
-  Caveat: n=108, mostly Stanford undergrads — "one study", not settled science.
-- **James Nestor, *Breath*** — ~25,000 breaths a day is usable. His "90% of
-  people breathe wrong" figure is a book claim rather than a trial result; don't
-  put it in copy.
-- "Cyclic sighing" is available as a named technique if a future beat needs a
-  concrete noun to hand over (the structural equivalent of RISE's Sleep Debt).
 
 ## North Star
 

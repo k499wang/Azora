@@ -261,7 +261,7 @@ const OTHER_INTENT_OPTION: IntentOption = {
   icon: 'sparkle',
   accent: colors.warning[500],
   title: 'Something else',
-  body: 'Tell Azora what brought you here in your own words.',
+  body: 'Something outside these — Azora keeps the basics covered.',
 };
 
 export const INTENT_OPTIONS: IntentOption[] = [

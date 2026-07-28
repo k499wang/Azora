@@ -1,4 +1,4 @@
-import { Text, TextInput } from '../../common/Text';
+import { Text } from '../../common/Text';
 import { useEffect, useRef } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
@@ -14,25 +14,21 @@ import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 
 interface IntentQuestionScreenProps {
   selectedIntents: string[];
-  customIntent: string;
   isSubmitting: boolean;
   errorMessage: string | null;
   stepIndex: number;
   stepCount: number;
   onToggle: (intentId: string) => void;
-  onCustomIntentChange: (value: string) => void;
   onContinue: () => void;
 }
 
 export default function IntentQuestionScreen({
   selectedIntents,
-  customIntent,
   isSubmitting,
   errorMessage,
   stepIndex,
   stepCount,
   onToggle,
-  onCustomIntentChange,
   onContinue,
 }: IntentQuestionScreenProps) {
   const rowAnims = useRef(
@@ -56,11 +52,7 @@ export default function IntentQuestionScreen({
     return () => animation.stop();
   }, [rowAnims]);
 
-  const needsCustomIntent = selectedIntents.includes('other');
-  const canContinue =
-    selectedIntents.length > 0 &&
-    !isSubmitting &&
-    (!needsCustomIntent || customIntent.trim().length > 0);
+  const canContinue = selectedIntents.length > 0 && !isSubmitting;
 
   const handleToggle = (intentId: string) => {
     if (isHapticsEnabled()) Haptics.selectionAsync().catch(() => {});
@@ -74,7 +66,6 @@ export default function IntentQuestionScreen({
       progress={stepIndex / stepCount}
       fullWidthProgress
       animateCopy
-      keyboardAvoiding={needsCustomIntent}
       footer={
         <OnboardingPrimaryButton
           label="Continue"
@@ -156,26 +147,6 @@ export default function IntentQuestionScreen({
         })}
       </View>
 
-      {needsCustomIntent ? (
-        <View style={styles.customIntentBlock}>
-          <Text style={styles.customIntentLabel}>Tell us more</Text>
-          <TextInput
-            accessibilityLabel="Tell us more"
-            autoCapitalize="sentences"
-            autoCorrect
-            editable={!isSubmitting}
-            multiline
-            onChangeText={onCustomIntentChange}
-            placeholder="Example: I want a short breathing reset before meetings."
-            placeholderTextColor={colors.text.tertiary}
-            returnKeyType="done"
-            style={styles.input}
-            textAlignVertical="top"
-            value={customIntent}
-          />
-        </View>
-      ) : null}
-
       {errorMessage ? <Text style={styles.error}>{errorMessage}</Text> : null}
     </OnboardingScreenLayout>
   );
@@ -236,24 +207,6 @@ const styles = StyleSheet.create({
     width: 9,
     height: 9,
     borderRadius: 4.5,
-  },
-  customIntentBlock: {
-    gap: spacing.sm,
-  },
-  customIntentLabel: {
-    ...typography.body.small,
-    color: colors.text.secondary,
-  },
-  input: {
-    minHeight: 156,
-    borderWidth: 1,
-    borderColor: colors.border.default,
-    borderRadius: 20,
-    backgroundColor: colors.background.elevated,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    ...typography.input.text,
-    color: colors.text.primary,
   },
   error: {
     ...typography.body.small,
