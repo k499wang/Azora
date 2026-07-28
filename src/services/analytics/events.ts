@@ -15,6 +15,7 @@ export const AnalyticsEvent = {
   OnboardingStepSkipped: 'onboarding_step_skipped',
   OnboardingBackPressed: 'onboarding_back_pressed',
   OnboardingIntentUpdated: 'onboarding_intent_updated',
+  OnboardingAttributionAnswered: 'onboarding_attribution_answered',
   OnboardingProfileSaveStarted: 'onboarding_profile_save_started',
   OnboardingProfileSaveSucceeded: 'onboarding_profile_save_succeeded',
   OnboardingProfileSaveFailed: 'onboarding_profile_save_failed',

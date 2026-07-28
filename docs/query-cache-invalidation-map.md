@@ -41,6 +41,7 @@ When adding a mutation, find every field it writes, then look up every query abo
 | `useCompleteBreathingSessionMutation` | `breathing_sessions`, `daily_activity` for `localDate` | `HomeStats` user prefix, `DailyFeatureUsage(userId, localDate)`, `ProfileSummary` |
 | `useCompleteHeartRateSessionMutation` | `heart_rate_sessions`, `heart_rate_samples`, `heart_rate_ibi_samples`, `daily_activity` for `usageDate` | `HomeStats` user prefix, `HeartRateStats`, `DailyFeatureUsage(userId, usageDate)`, `ProfileSummary` |
 | `useUpdateNotificationPreferencesMutation` | notification preferences | `NotificationPreferences` |
+| `useSaveOnboardingSurveyMutation` | `profiles.acquisition_source` | Nothing — no query reads this column; it exists for analysis only. |
 
 ---
 

@@ -124,6 +124,22 @@ export function trackOnboardingIntentUpdated(input: StepEventInput & {
   });
 }
 
+// The person property is what makes this worth collecting: every existing
+// funnel — onboarding drop-off, trial start, activation — can then be broken
+// down by channel without new instrumentation.
+export function trackOnboardingAttributionAnswered(input: StepEventInput & {
+  acquisitionSource: string;
+}) {
+  capture(AnalyticsEvent.OnboardingAttributionAnswered, {
+    ...stepProperties(input),
+    acquisition_source: input.acquisitionSource,
+  });
+
+  posthog.capture('$set', {
+    $set: { acquisition_source: input.acquisitionSource },
+  });
+}
+
 export function trackOnboardingProfileSaveStarted(
   input: StepEventInput & OnboardingAnalyticsProperties,
 ) {

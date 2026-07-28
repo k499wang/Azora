@@ -118,6 +118,15 @@ export const colors = {
     welcome: '#FAF6F0',
   },
 
+  // Official third-party brand colors, used only to tint the acquisition-source
+  // logos in onboarding. Not part of the Azora palette — never reuse for UI.
+  channel: {
+    instagram: '#FF0069',
+    facebook: '#0866FF',
+    reddit: '#FF4500',
+    appStore: '#0D96F6',
+  },
+
   text: {
     primary: '#3A434F',
     secondary: '#5B6675',
