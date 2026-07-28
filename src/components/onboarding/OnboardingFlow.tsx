@@ -6,7 +6,6 @@ import BaselineIntroScreen from './screens/BaselineIntroScreen';
 import DailyTimeScreen from './screens/DailyTimeScreen';
 import ConsistencyScreen from './screens/ConsistencyScreen';
 import GenderScreen from './screens/GenderScreen';
-import HookScreen, { type HookBeat } from './screens/HookScreen';
 import IntentQuestionScreen from './screens/IntentQuestionScreen';
 import IntentReflectionScreen from './screens/IntentReflectionScreen';
 import IntentProjectionScreen from './screens/IntentProjectionScreen';
@@ -35,7 +34,10 @@ import FiveMinutesScreen from './screens/FiveMinutesScreen';
 import OnboardingPaywallScreen from './screens/OnboardingPaywallScreen';
 import ExitOfferSheet from '../paywall/ExitOfferSheet';
 import BreathHoldScreen from './screens/BreathHoldScreen';
-import { PERSONALIZED_INTENT_OPTIONS } from './data/intentOptions';
+import {
+  INTENT_OPTIONS,
+  PERSONALIZED_INTENT_OPTIONS,
+} from './data/intentOptions';
 import { INTENT_TO_TECHNIQUE } from './data/techniqueRecommendations';
 import type { GenderOption } from './data/genderOptions';
 import type { AcquisitionSourceId } from './data/acquisitionOptions';
@@ -112,11 +114,6 @@ interface OnboardingFlowProps {
 }
 
 const STEP_ORDER: OnboardingStep[] = [
-  'hook',
-  'hookBenefits',
-  'hookReveal',
-  'hookCamera',
-  'profileIntro',
   'intent',
   'intentReflection',
   'intentProjection',
@@ -148,17 +145,6 @@ const STEP_ORDER: OnboardingStep[] = [
   'pact',
   'paywall',
 ];
-
-const HOOK_BEATS: Record<
-  'hook' | 'hookBenefits' | 'hookReveal' | 'hookCamera' | 'profileIntro',
-  { beat: HookBeat; next: OnboardingStep }
-> = {
-  hook: { beat: 'setup', next: 'hookBenefits' },
-  hookBenefits: { beat: 'benefits', next: 'hookReveal' },
-  hookReveal: { beat: 'reveal', next: 'hookCamera' },
-  hookCamera: { beat: 'camera', next: 'profileIntro' },
-  profileIntro: { beat: 'profile', next: 'intent' },
-};
 
 const BASE_STEP_INDEX = STEP_ORDER.reduce<Record<OnboardingStep, number>>(
   (acc, step, index) => {
@@ -195,12 +181,9 @@ export default function OnboardingFlow({
   const userId = useAuthStore((state) => state.user?.id ?? null);
   const isPro = useUserEntitlementQuery(userId).data?.isPro === true;
   const [step, setStep] = useState<OnboardingStep>(
-    initialSavedProfile == null ? 'hook' : 'paywall',
+    initialSavedProfile == null ? 'intent' : 'paywall',
   );
   const [selectedIntents, setSelectedIntents] = useState<string[]>([]);
-  const [customIntent, setCustomIntent] = useState(
-    initialSavedProfile?.onboardingGoal ?? '',
-  );
   const primaryIntent = useMemo(() => {
     const nonOther = selectedIntents.find((id) => id !== 'other');
     return nonOther ?? selectedIntents[0] ?? null;
@@ -322,7 +305,6 @@ export default function OnboardingFlow({
     const profile = result ?? buildOnboardingResult();
     return {
       selected_intent_count: selectedIntents.length,
-      has_custom_intent: customIntent.trim().length > 0,
       has_display_name: (profile?.displayName ?? null) != null,
       has_default_technique: (profile?.defaultTechniqueId ?? null) != null,
       has_stress_level: (profile?.stressLevel ?? null) != null,
@@ -441,22 +423,15 @@ export default function OnboardingFlow({
       intentId,
       selected: !isSelected,
       selectedIntentCount: nextSelectedIntents.length,
-      hasCustomIntent: customIntent.trim().length > 0,
     });
     setErrorMessage(null);
   };
 
   const goFromIntent = () => {
     if (selectedIntents.length === 0 || isSubmitting) return;
-    if (selectedIntents.includes('other') && customIntent.trim().length === 0) {
-      setErrorMessage('Please share a few words.');
-      return;
-    }
-
     const nextStep = isOnlyCustomIntent ? 'name' : 'intentProjection';
     const properties = {
       selected_intent_count: selectedIntents.length,
-      has_custom_intent: customIntent.trim().length > 0,
       only_custom_intent: isOnlyCustomIntent,
     };
 
@@ -470,12 +445,7 @@ export default function OnboardingFlow({
   const buildOnboardingGoal = () => {
     const parts: string[] = [];
     for (const id of selectedIntents) {
-      if (id === 'other') {
-        const trimmed = customIntent.trim();
-        if (trimmed.length > 0) parts.push(trimmed);
-        continue;
-      }
-      const option = PERSONALIZED_INTENT_OPTIONS.find((o) => o.id === id);
+      const option = INTENT_OPTIONS.find((o) => o.id === id);
       if (option) parts.push(option.title);
       else parts.push(id);
     }
@@ -544,7 +514,6 @@ export default function OnboardingFlow({
     console.log('[onboarding-seal] save started', {
       userId,
       selectedIntentCount: selectedIntents.length,
-      hasCustomIntent: customIntent.trim().length > 0,
       hasDisplayName: result.displayName != null,
       hasDefaultTechnique: result.defaultTechniqueId != null,
       hasLungCapacity: result.breathHold != null,
@@ -757,25 +726,6 @@ export default function OnboardingFlow({
 
   const visualStepIndex = displayedProgress * VISUAL_PROGRESS_STEP_COUNT;
   const visualStepCount = VISUAL_PROGRESS_STEP_COUNT;
-
-  if (
-    step === 'hook' ||
-    step === 'hookBenefits' ||
-    step === 'hookReveal' ||
-    step === 'hookCamera' ||
-    step === 'profileIntro'
-  ) {
-    const { beat, next } = HOOK_BEATS[step];
-    return (
-      // Keyed per beat so the layout's entrance animation replays on each one
-      // instead of React reusing the mounted screen and swapping copy in place.
-      <HookScreen
-        key={beat}
-        beat={beat}
-        onContinue={() => goToStep(next, 'continue')}
-      />
-    );
-  }
 
   if (step === 'intentReflection' && selectedOption) {
     return (
@@ -1077,7 +1027,7 @@ export default function OnboardingFlow({
   if (step === 'recommendation') {
     const intentTitle =
       primaryIntent === 'other' || primaryIntent == null
-        ? customIntent.trim() || 'reach your goal'
+        ? 'reach your goal'
         : selectedOption?.title ?? 'reach your goal';
 
     return (
@@ -1274,13 +1224,11 @@ export default function OnboardingFlow({
   return (
     <IntentQuestionScreen
       selectedIntents={selectedIntents}
-      customIntent={customIntent}
       isSubmitting={isSubmitting}
       errorMessage={errorMessage}
       stepIndex={visualStepIndex}
       stepCount={visualStepCount}
       onToggle={toggleIntent}
-      onCustomIntentChange={setCustomIntent}
       onContinue={goFromIntent}
     />
   );

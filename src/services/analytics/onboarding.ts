@@ -113,14 +113,12 @@ export function trackOnboardingIntentUpdated(input: StepEventInput & {
   intentId: string;
   selected: boolean;
   selectedIntentCount: number;
-  hasCustomIntent: boolean;
 }) {
   capture(AnalyticsEvent.OnboardingIntentUpdated, {
     ...stepProperties(input),
     intent_id: input.intentId,
     selected: input.selected,
     selected_intent_count: input.selectedIntentCount,
-    has_custom_intent: input.hasCustomIntent,
   });
 }
 

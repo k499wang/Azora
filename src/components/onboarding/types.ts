@@ -1,11 +1,6 @@
 import type { IconName } from '../common/icons/Icon';
 
 export type OnboardingStep =
-  | 'hook'
-  | 'hookBenefits'
-  | 'hookReveal'
-  | 'hookCamera'
-  | 'profileIntro'
   | 'intent'
   | 'intentReflection'
   | 'intentProjection'
