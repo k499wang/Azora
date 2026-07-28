@@ -5,7 +5,7 @@ ones AppsFlyer structurally cannot see (podcasts, creators, word of mouth) —
 without touching auth, registration, onboarding completion, or paywall gating.
 
 Decisions taken 2026-07-28: **one question only** ("how did you first hear about
-Azora?"); typed columns on `profiles` + one `jsonb` for future survey expansion;
+Azora?"); one typed column on `profiles`;
 incremental write at answer time via a **separate** service function; screen
 placed right after `greeting`; **single-select, no free-text follow-up**.
 
@@ -37,14 +37,12 @@ every screen and the incremental write needs no anonymous path.
 
 ```sql
 alter table public.profiles
-  add column if not exists acquisition_source text,
-  add column if not exists acquisition_source_detail text,
-  add column if not exists survey_responses jsonb;
+  add column if not exists acquisition_source text;
 
 alter table public.profiles
   add constraint profiles_acquisition_source_check
     check (acquisition_source is null or acquisition_source in (
-      'instagram','tiktok','youtube','facebook','reddit','podcast',
+      'instagram','tiktok','facebook','reddit',
       'app_store_search','google_search','friend_or_family','other','skipped'
     )) not valid;
 alter table public.profiles validate constraint profiles_acquisition_source_check;
@@ -57,13 +55,9 @@ Notes:
 - `'skipped'` is a real stored value so "asked and declined" is distinguishable
   from "never asked" (`null`, i.e. every pre-existing user). No extra timestamp
   column needed.
-- `acquisition_source_detail` ships nullable and **unwritten**. The chosen
-  design is single-select only; the column exists so adding the "which
-  creator/podcast?" follow-up later — the thing that actually identifies a
-  compounding content partnership — is a code change, not a migration.
-- `survey_responses jsonb` is the home for the ~12 questions in
-  `docs/onboarding-expansion-plan.md` that don't deserve their own column.
-  Unused by this change beyond being created.
+- One column only. No speculative `*_detail` or `survey_responses jsonb` — a
+  free-text follow-up or the expansion-plan questions can add their own columns
+  when they're actually built.
 
 ## 2. Service layer
 
@@ -88,17 +82,15 @@ Implementation: `profiles.upsert({ user_id, ...only the supplied keys },
 so this cannot clobber `onboarding_goal`, `onboarding_completed_at`, or any
 assessment field. Keys absent from `answers` are omitted, not set to `null`.
 
-Read path: extend `getSavedOnboardingProfile`'s select list and
-`SavedOnboardingProfile` so a resuming user sees their previous answers
-pre-selected. `hasRecoverableOnboardingProfile` is **not** changed — a user who
-answered only the survey and quit still restarts at step 1, which is correct.
+No read path. Nothing in the app renders the answer, so
+`getSavedOnboardingProfile` and `hasRecoverableOnboardingProfile` are untouched
+— a user who answered only the survey and quit still restarts at step 1, which
+is correct, and re-answering simply overwrites.
 
 ## 3. Query layer
 
-`src/queries/profile/useSaveOnboardingSurveyMutation.ts` — mirrors
-`useSaveOnboardingProfileMutation` but narrower: on success, merge the answers
-into the cached `getSavedOnboardingProfileQueryKey(userId)` entry (no
-`setQueryData` for profile/summary/technique — none of them read these fields).
+`src/queries/profile/useSaveOnboardingSurveyMutation.ts` — write-only, with no
+`setQueryData` and no invalidations, because no query reads the column.
 
 Failure policy: **fire-and-forget with a logged warning, never blocking**. The
 survey is telemetry, not a prerequisite; a Supabase hiccup must not strand a
@@ -120,13 +112,9 @@ inserted into `STEP_ORDER` (`OnboardingFlow.tsx:111`) directly after
 Option data in `src/components/onboarding/data/acquisitionOptions.ts`
 (alongside `genderOptions.ts`).
 
-**Channel — "How did you first hear about Azora?"** (single-select, 10 options,
-each with an `IconName` and accent, ordered by expected volume):
-Instagram · TikTok · YouTube · Facebook · Reddit · A podcast · Searched the App
-Store · Google search · A friend or family member · Somewhere else.
-
-Ten cards will scroll on smaller devices — confirm `OnboardingScreenLayout`'s
-content area scrolls before finalizing the count; trim to 8 if not.
+**"How did you first hear about Azora?"** (single-select, 8 options):
+Instagram · TikTok · Facebook · Reddit · Searching the App Store · A Google
+search · A friend or family member · Somewhere else.
 
 The selection handler calls the mutation immediately (no Continue press
 required to persist) and also fires the analytics below.

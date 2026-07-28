@@ -12,6 +12,7 @@ export type OnboardingStep =
   | 'brainScience'
   | 'name'
   | 'greeting'
+  | 'acquisitionSource'
   | 'attPriming'
   | 'stress'
   | 'mindRacing'
@@ -35,6 +36,11 @@ export type OnboardingStep =
   | 'pact'
   | 'notifications'
   | 'paywall';
+
+export interface OnboardingBreathHoldResult {
+  holdSeconds: number;
+  score: number;
+}
 
 export interface IntentOption {
   id: string;

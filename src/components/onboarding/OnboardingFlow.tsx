@@ -34,12 +34,14 @@ import FounderNoteScreen from './screens/FounderNoteScreen';
 import FiveMinutesScreen from './screens/FiveMinutesScreen';
 import OnboardingPaywallScreen from './screens/OnboardingPaywallScreen';
 import ExitOfferSheet from '../paywall/ExitOfferSheet';
-import LungCapacityScreen from './screens/LungCapacityScreen';
-import type { LungCapacityResult } from '../../lib/lungCapacity';
+import BreathHoldScreen from './screens/BreathHoldScreen';
 import { PERSONALIZED_INTENT_OPTIONS } from './data/intentOptions';
 import { INTENT_TO_TECHNIQUE } from './data/techniqueRecommendations';
 import type { GenderOption } from './data/genderOptions';
-import type { OnboardingStep } from './types';
+import type { AcquisitionSourceId } from './data/acquisitionOptions';
+import AcquisitionSourceScreen from './screens/AcquisitionSourceScreen';
+import { useSaveOnboardingSurveyMutation } from '../../queries/profile/useSaveOnboardingSurveyMutation';
+import type { OnboardingBreathHoldResult, OnboardingStep } from './types';
 import { usePaywall } from '../../hooks/usePaywall';
 import { PaywallPlacement } from '../../services/paywall';
 import { useUserEntitlementQuery } from '../../queries/subscriptions/useUserEntitlementQuery';
@@ -55,6 +57,7 @@ import { collectRevenueCatDeviceIdentifiers } from '../../services/subscriptions
 import { syncRevenueCatAttributionForCurrentUser } from '../../services/subscriptions/revenueCatIdentitySync';
 import { trackNotificationPermissionResult } from '../../services/analytics/tracking';
 import {
+  trackOnboardingAttributionAnswered,
   trackOnboardingBackPressed,
   trackOnboardingCompleted,
   type OnboardingCompletionPath,
@@ -88,7 +91,7 @@ export interface OnboardingFlowResult {
   gender: GenderOption['id'] | null;
   dailyMinutes: number | null;
   defaultTechniqueId: string | null;
-  lungCapacity: LungCapacityResult | null;
+  breathHold: OnboardingBreathHoldResult | null;
 }
 
 async function syncPostAttAttribution(): Promise<void> {
@@ -120,6 +123,7 @@ const STEP_ORDER: OnboardingStep[] = [
   'brainScience',
   'name',
   'greeting',
+  'acquisitionSource',
   'stress',
   'mindRacing',
   'sleep',
@@ -234,13 +238,16 @@ export default function OnboardingFlow({
   const [dailyMinutes, setDailyMinutes] = useState(
     initialSavedProfile?.dailyMinutes ?? 3,
   );
+  const [acquisitionSource, setAcquisitionSource] =
+    useState<AcquisitionSourceId | null>(null);
   const [baseline, setBaseline] = useState<BaselineResult | null>(null);
-  const [lungCapacity, setLungCapacity] = useState<LungCapacityResult | null>(null);
+  const [breathHold, setBreathHold] = useState<OnboardingBreathHoldResult | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [notificationErrorMessage, setNotificationErrorMessage] = useState<string | null>(null);
   const [isNotificationSubmitting, setIsNotificationSubmitting] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const updateNotificationPreferences = useUpdateNotificationPreferencesMutation(userId);
+  const saveOnboardingSurvey = useSaveOnboardingSurveyMutation(userId);
   const entryStateRef = useRef<'new' | 'saved_profile'>(
     initialSavedProfile == null ? 'new' : 'saved_profile',
   );
@@ -327,7 +334,7 @@ export default function OnboardingFlow({
       has_age: (profile?.age ?? null) != null,
       has_gender: (profile?.gender ?? null) != null,
       has_daily_minutes: (profile?.dailyMinutes ?? null) != null,
-      has_lung_capacity: (profile?.lungCapacity ?? null) != null,
+      has_lung_capacity: (profile?.breathHold ?? null) != null,
       has_baseline: baseline != null,
     };
   };
@@ -475,6 +482,32 @@ export default function OnboardingFlow({
     return parts.join(', ');
   };
 
+  // Persisted on tap rather than on continue so the answer survives an
+  // abandoned onboarding. Analytics-only data, so a failed write is logged and
+  // swallowed — it must never block the flow.
+  const recordAcquisitionSource = (source: AcquisitionSourceId | 'skipped') => {
+    if (source !== 'skipped') {
+      setAcquisitionSource(source);
+    }
+
+    trackOnboardingAttributionAnswered({
+      ...getStepEventInput(),
+      acquisitionSource: source,
+    });
+
+    saveOnboardingSurvey.mutate(
+      { acquisitionSource: source },
+      {
+        onError: (error) => {
+          console.warn(
+            '[onboarding-survey] acquisition source save failed',
+            getErrorMessage(error),
+          );
+        },
+      },
+    );
+  };
+
   const buildOnboardingResult = (): OnboardingFlowResult | null => {
     const goal = buildOnboardingGoal();
     if (goal.length === 0) return null;
@@ -494,7 +527,7 @@ export default function OnboardingFlow({
         primaryIntent != null
           ? INTENT_TO_TECHNIQUE[primaryIntent] ?? null
           : initialSavedProfile?.defaultTechniqueId ?? null,
-      lungCapacity,
+      breathHold,
     };
   };
 
@@ -514,7 +547,7 @@ export default function OnboardingFlow({
       hasCustomIntent: customIntent.trim().length > 0,
       hasDisplayName: result.displayName != null,
       hasDefaultTechnique: result.defaultTechniqueId != null,
-      hasLungCapacity: result.lungCapacity != null,
+      hasLungCapacity: result.breathHold != null,
     });
 
     try {
@@ -809,8 +842,29 @@ export default function OnboardingFlow({
         name={name}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('stress', 'continue')}
+        onContinue={() => goToStep('acquisitionSource', 'continue')}
         onBack={() => goToStep('name', 'back')}
+      />
+    );
+  }
+
+  if (step === 'acquisitionSource') {
+    return (
+      <AcquisitionSourceScreen
+        value={acquisitionSource}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onSelect={recordAcquisitionSource}
+        onContinue={() =>
+          goToStep('stress', 'continue', {
+            acquisition_source: acquisitionSource,
+          })
+        }
+        onBack={() => goToStep('greeting', 'back')}
+        onSkip={() => {
+          recordAcquisitionSource('skipped');
+          goToStep('stress', 'skip');
+        }}
       />
     );
   }
@@ -823,7 +877,7 @@ export default function OnboardingFlow({
         stepCount={visualStepCount}
         onChange={setStressLevel}
         onContinue={() => goToStep('mindRacing', 'continue', { has_stress_level: true })}
-        onBack={() => goToStep('greeting', 'back')}
+        onBack={() => goToStep('acquisitionSource', 'back')}
         onSkip={() => goToStep('mindRacing', 'skip')}
       />
     );
@@ -925,11 +979,11 @@ export default function OnboardingFlow({
 
   if (step === 'lungCapacity') {
     return (
-      <LungCapacityScreen
+      <BreathHoldScreen
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={(result) => {
-          setLungCapacity(result);
+          setBreathHold(result);
           goToStep('age', 'continue', { has_lung_capacity: true });
         }}
         onBack={() => goToStep('scienceCredibility', 'back')}
