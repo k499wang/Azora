@@ -2,9 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
 import { useIsFocused } from '@react-navigation/native';
 import { EXERCISE_DARK_THEMES, type ExerciseDarkTheme } from '../../../theme/exerciseDarkThemes';
-import { useBreathEnvelope } from '../shared/breathEnvelope';
+import type { BreathingCircleRef } from '../shared/components/BreathingCircle';
 import ExerciseScaffold from '../shared/components/ExerciseScaffold';
-import BreathingAmbience from '../shared/components/BreathingAmbience';
 import { GuidedBreathingHud } from './components/GuidedBreathingHud';
 import {
   GUIDED_BREATHING_INTRO_DURATION_MS,
@@ -66,7 +65,7 @@ export default function GuidedBreathingSessionScreen({
   );
   const [audioSettingsOpen, setAudioSettingsOpen] = useState(false);
 
-  const { value: breathEnvelope, controllerRef: envelopeRef } = useBreathEnvelope();
+  const circleRef = useRef<BreathingCircleRef>(null);
   const introTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sessionStartMsRef = useRef<number>(0);
   const savedSessionRef = useRef(false);
@@ -82,7 +81,7 @@ export default function GuidedBreathingSessionScreen({
     getElapsedSeconds,
     cancel: cancelPhase,
   } = useBreathingPhaseRunner({
-    envelopeRef,
+    circleRef,
     onPhaseChange: setPhase,
   });
   const [technique] = useState<BreathingTechnique>(initialTechnique);
@@ -326,7 +325,7 @@ export default function GuidedBreathingSessionScreen({
       if (shouldMeasureHeartRate) {
         beginBpmSampleCollection();
       }
-      requestAnimationFrame(() => envelopeRef.current?.reset());
+      requestAnimationFrame(() => circleRef.current?.reset());
       posthog.capture(AnalyticsEvent.ExerciseSessionStarted, {
         technique_id: technique.id,
         technique_name: technique.name,
@@ -490,17 +489,10 @@ export default function GuidedBreathingSessionScreen({
     >
       <ExerciseScaffold
         darkTheme={activeTheme}
-        backgroundSlot={
-          <BreathingAmbience
-            envelope={breathEnvelope}
-            color={activeTheme.circleOutline}
-            active={isFocused && !paused}
-          />
-        }
         centerSlot={
           <GuidedBreathingPresentation
+            ref={circleRef}
             phase={phase}
-            breathEnvelope={breathEnvelope}
             technique={technique}
             theme={activeTheme}
             heartRate={{

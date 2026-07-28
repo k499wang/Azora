@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
-import type { BreathEnvelopeController } from '../../shared/breathEnvelope';
+import type { BreathingCircleRef } from '../../shared/components/BreathingCircle';
 import {
   startInhaleVibration,
   stopInhaleVibration,
@@ -15,12 +15,12 @@ export type RunBreathingPhase = (
 ) => void;
 
 interface UseBreathingPhaseRunnerOptions {
-  envelopeRef: RefObject<BreathEnvelopeController | null>;
+  circleRef: RefObject<BreathingCircleRef | null>;
   onPhaseChange: (phase: BreathingPhase) => void;
 }
 
 export function useBreathingPhaseRunner({
-  envelopeRef,
+  circleRef,
   onPhaseChange,
 }: UseBreathingPhaseRunnerOptions) {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -132,17 +132,17 @@ export function useBreathingPhaseRunner({
         requestAnimationFrame(() => {
           if (runIdRef.current !== runId) return;
 
-          const envelope = envelopeRef.current;
-          if (!envelope) {
+          const circle = circleRef.current;
+          if (!circle) {
             startTimer(true);
             return;
           }
 
           const finish = () => completePhase(runId);
-          if (phase === 'inhale') envelope.expand(durationSeconds, finish);
-          else envelope.contract(durationSeconds, finish);
+          if (phase === 'inhale') circle.expand(durationSeconds, finish);
+          else circle.contract(durationSeconds, finish);
 
-          // The envelope animation completes motion phases. This timer only
+          // The circle animation completes motion phases. This timer only
           // keeps elapsed time current while that animation is running.
           startTimer(false);
         });
@@ -151,18 +151,18 @@ export function useBreathingPhaseRunner({
 
       startTimer(true);
     },
-    [addElapsedSeconds, envelopeRef, clearTimer, completePhase],
+    [addElapsedSeconds, circleRef, clearTimer, completePhase],
   );
 
   const pause = useCallback(() => {
     if (!activePhaseRef.current || !onCompleteRef.current) return;
 
     clearTimer();
-    envelopeRef.current?.pause();
+    circleRef.current?.pause();
     stopInhaleVibration();
     stopHoldHaptics();
     setPaused(true);
-  }, [envelopeRef, clearTimer]);
+  }, [circleRef, clearTimer]);
 
   const resume = useCallback(() => {
     const phase = activePhaseRef.current;
@@ -171,22 +171,22 @@ export function useBreathingPhaseRunner({
     const runId = runIdRef.current;
     const remainingSeconds = remainingSecondsRef.current;
     const isMotionPhase = phase === 'inhale' || phase === 'exhale';
-    let motionHandledByEnvelope = false;
+    let motionHandledByCircle = false;
     setPaused(false);
 
     const finish = () => completePhase(runId);
     if (phase === 'inhale') {
-      const envelope = envelopeRef.current;
-      if (envelope) {
-        motionHandledByEnvelope = true;
-        envelope.resumeExpand(remainingSeconds, finish);
+      const circle = circleRef.current;
+      if (circle) {
+        motionHandledByCircle = true;
+        circle.resumeExpand(remainingSeconds, finish);
       }
       startInhaleVibration(remainingSeconds * 1000);
     } else if (phase === 'exhale') {
-      const envelope = envelopeRef.current;
-      if (envelope) {
-        motionHandledByEnvelope = true;
-        envelope.resumeContract(remainingSeconds, finish);
+      const circle = circleRef.current;
+      if (circle) {
+        motionHandledByCircle = true;
+        circle.resumeContract(remainingSeconds, finish);
       }
     } else {
       startHoldHaptics();
@@ -206,12 +206,12 @@ export function useBreathingPhaseRunner({
 
       if (remaining <= 0) {
         clearTimer();
-        if (!isMotionPhase || !motionHandledByEnvelope) {
+        if (!isMotionPhase || !motionHandledByCircle) {
           completePhase(runId);
         }
       }
     }, 1000);
-  }, [addElapsedSeconds, envelopeRef, clearTimer, completePhase]);
+  }, [addElapsedSeconds, circleRef, clearTimer, completePhase]);
 
   const resetElapsed = useCallback(() => {
     elapsedSecondsRef.current = 0;
