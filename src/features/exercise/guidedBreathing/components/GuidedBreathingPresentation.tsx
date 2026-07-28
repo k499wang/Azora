@@ -1,9 +1,8 @@
 import { Text } from '../../../../components/common/Text';
-import { useEffect, useRef } from 'react';
+import { forwardRef, useEffect, useRef } from 'react';
 import { Animated, Easing, StyleSheet, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import type { SharedValue } from 'react-native-reanimated';
-import BreathingCircle from '../../shared/components/BreathingCircle';
+import BreathingCircle, { type BreathingCircleRef } from '../../shared/components/BreathingCircle';
 import TechniqueIntro from './TechniqueIntro';
 import { HeartRateCameraPreview } from '../../../../components/heartRate/HeartRateCameraPreview';
 import type { HeartRateCameraPreviewProps } from '../../../../components/heartRate/HeartRateCameraPreview';
@@ -47,7 +46,6 @@ interface GuidedBreathingHeartRatePresentation {
 
 interface GuidedBreathingPresentationProps {
   phase: GuidedBreathingPhase;
-  breathEnvelope: SharedValue<number>;
   technique: BreathingTechnique;
   theme: ExerciseDarkTheme;
   heartRate: GuidedBreathingHeartRatePresentation;
@@ -64,13 +62,13 @@ const PHASE_LABELS: Record<GuidedBreathingPhase, string> = {
   done: 'Well done',
 };
 
-export function GuidedBreathingPresentation({
-  phase,
-  breathEnvelope,
-  technique,
-  theme,
-  heartRate,
-}: GuidedBreathingPresentationProps) {
+export const GuidedBreathingPresentation = forwardRef<
+  BreathingCircleRef,
+  GuidedBreathingPresentationProps
+>(function GuidedBreathingPresentation(
+  { phase, technique, theme, heartRate },
+  circleRef,
+) {
   const isIdle = phase === 'idle';
   const isPlacement = phase === 'placement';
   const isBreathing =
@@ -165,7 +163,7 @@ export function GuidedBreathingPresentation({
           ]}
         >
           <BreathingCircle
-            envelope={breathEnvelope}
+            ref={circleRef}
             cameraSlot={cameraSlot}
             beatTick={heartRate.beatTick}
             themeColors={{
@@ -208,7 +206,7 @@ export function GuidedBreathingPresentation({
       />
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   centerStack: {

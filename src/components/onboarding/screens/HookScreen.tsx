@@ -277,9 +277,9 @@ export default function HookScreen({ beat, onContinue }: HookScreenProps) {
   }, []);
 
   // Staggered so the screen assembles itself rather than appearing at once.
+  const visualEntrance = useEntrance(beat, 0, 14);
   const headingEntrance = useEntrance(beat, 180, 18);
-  const visualEntrance = useEntrance(beat, 400, 14);
-  const subtitleEntrance = useEntrance(beat, 620, 14);
+  const subtitleEntrance = useEntrance(beat, 400, 14);
   const ctaEntrance = useEntrance(beat, items ? 1400 : 600, 12);
 
   return (
@@ -305,7 +305,13 @@ export default function HookScreen({ beat, onContinue }: HookScreenProps) {
             { transform: [{ translateY: centerOffset }] },
           ]}
         >
-          <View style={styles.aboveSlot} />
+          <View style={styles.aboveSlot}>
+            {Visual ? (
+              <Animated.View style={[styles.visual, visualEntrance]}>
+                <Visual />
+              </Animated.View>
+            ) : null}
+          </View>
 
           <View
             ref={headingRef}
@@ -324,11 +330,6 @@ export default function HookScreen({ beat, onContinue }: HookScreenProps) {
           </View>
 
           <View style={styles.belowSlot}>
-            {Visual ? (
-              <Animated.View style={[styles.visual, visualEntrance]}>
-                <Visual />
-              </Animated.View>
-            ) : null}
             {subtitle ? (
               <AnimatedText style={[styles.subtitle, subtitleEntrance]}>
                 {subtitle}
@@ -351,6 +352,9 @@ const styles = StyleSheet.create({
   },
   aboveSlot: {
     flex: 1,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    paddingBottom: spacing.xl,
   },
   centerSlot: {
     alignSelf: 'stretch',
@@ -360,7 +364,6 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     paddingTop: spacing.lg,
-    gap: spacing.lg,
   },
   visual: {
     width: STAGE_WIDTH,
