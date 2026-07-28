@@ -24,6 +24,7 @@ interface OnboardingScreenLayoutProps {
   children: ReactNode;
   keyboardAvoiding?: boolean;
   centerBody?: boolean;
+  centerOnScreen?: boolean;
   fullWidthProgress?: boolean;
   hideProgress?: boolean;
   animateCopy?: boolean;
@@ -39,6 +40,7 @@ export default function OnboardingScreenLayout({
   children,
   keyboardAvoiding = false,
   centerBody = false,
+  centerOnScreen = false,
   fullWidthProgress = false,
   hideProgress = false,
   animateCopy = false,
@@ -55,6 +57,20 @@ export default function OnboardingScreenLayout({
   const titleEnter = useRef(new Animated.Value(animateCopy ? 0 : 1)).current;
   const subtitleEnter = useRef(new Animated.Value(animateCopy ? 0 : 1)).current;
   const scrollRef = useRef<ScrollView>(null);
+
+  // centerBody centres the body inside its own box, which sits lower than the
+  // screen's centre because the header block is taller than the footer. Measure
+  // both and pad the short side so the centred content lands on the true middle
+  // of the phone. Heights come from layout, so this settles without a transform.
+  const [headerHeight, setHeaderHeight] = useState(0);
+  const [footerHeight, setFooterHeight] = useState(0);
+  const blockDelta = insets.top + headerHeight - footerHeight;
+  const screenCenterStyle =
+    centerOnScreen && headerHeight > 0 && footerHeight > 0
+      ? blockDelta >= 0
+        ? { paddingBottom: blockDelta }
+        : { paddingTop: -blockDelta }
+      : null;
 
   const scrollFade = useRef(new Animated.Value(0)).current;
   const bounce = useRef(new Animated.Value(0)).current;
@@ -188,7 +204,10 @@ export default function OnboardingScreenLayout({
 
   const inner = (
     <Animated.View style={[styles.entrance, { opacity: fade }]}>
-      <View style={styles.header}>
+      <View
+        style={styles.header}
+        onLayout={(event) => setHeaderHeight(event.nativeEvent.layout.height)}
+      >
         <View
           style={[
             styles.headerSlotLeft,
@@ -297,7 +316,10 @@ export default function OnboardingScreenLayout({
             ) : null}
 
             {centerBody ? (
-              <View style={styles.bodyCenteredOverlay} pointerEvents="box-none">
+              <View
+                style={[styles.bodyCenteredOverlay, screenCenterStyle]}
+                pointerEvents="box-none"
+              >
                 <View style={styles.bodyCenteredInner}>{children}</View>
               </View>
             ) : (
@@ -322,7 +344,18 @@ export default function OnboardingScreenLayout({
         </Animated.View>
       </View>
 
-      <View style={styles.bottom}>{footer}</View>
+      <View
+        style={[
+          styles.bottom,
+          // The safe area's bottom inset was never applied, so the footer sat
+          // spacing.lg from the physical edge and ran under the home indicator's
+          // 34pt reserved band. Take whichever is larger.
+          { paddingBottom: Math.max(insets.bottom, spacing.lg) },
+        ]}
+        onLayout={(event) => setFooterHeight(event.nativeEvent.layout.height)}
+      >
+        {footer}
+      </View>
     </Animated.View>
   );
 
