@@ -6,97 +6,63 @@ import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
 import { card } from '../../../theme/card';
+import { buildAssessmentSynthesis } from '../../../lib/onboardingAssessmentReflection';
 import { isHapticsEnabled } from '../../../services/preferences/hapticsPreference';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
+import type { PersonalizedIntentOption } from '../types';
 import type { AgreementValue } from './AgreementScreen';
 import type { ExperienceLevel } from './ExperienceScreen';
 
 interface AssessmentReflectionScreenProps {
   name: string;
-  stressLevel: number;
-  sleepQuality: number;
+  stressLevel: number | null;
+  sleepQuality: number | null;
+  heartWorryLevel: number | null;
   agreementResponses: Record<string, AgreementValue | null>;
   experienceLevel: ExperienceLevel | null;
+  intentOption: PersonalizedIntentOption | null;
+  goalPhrases: readonly string[];
   stepIndex: number;
   stepCount: number;
   onContinue: () => void;
   onBack: () => void;
 }
 
-function buildSynthesis(
-  stress: number,
-  sleep: number,
-  experience: ExperienceLevel | null,
-): string {
-  const stressHigh = stress >= 7;
-  const stressMid = stress >= 4 && stress < 7;
-  const sleepLow = sleep <= 4;
-  const sleepMid = sleep > 4 && sleep <= 7;
-
-  let opener: string;
-  if (stressHigh && sleepLow) {
-    opener =
-      'Your stress is running hot and your sleep is light — the two feed each other.';
-  } else if (stressHigh && sleepMid) {
-    opener =
-      'Stress is the loudest signal right now, and it’s starting to show up in your sleep.';
-  } else if (stressHigh) {
-    opener =
-      'Stress is running hot, but you’re still sleeping well — a good base to work from.';
-  } else if (stressMid && sleepLow) {
-    opener =
-      'Stress is manageable, but light sleep is making it harder to recover between days.';
-  } else if (stressMid) {
-    opener =
-      'You’re carrying the kind of low-grade tension small daily resets are built for.';
-  } else if (sleepLow) {
-    opener =
-      'You’re calm during the day, but sleep is the lever that’s holding you back.';
-  } else {
-    opener =
-      'You’re starting from a steady base — we’ll protect that and sharpen focus from here.';
-  }
-
-  let plan: string;
-  if (sleepLow || (stressHigh && sleepMid)) {
-    plan =
-      'We’ll start with evening wind-down work — slow exhales switch your nervous system into rest mode, which is exactly what deep sleep needs.';
-  } else if (stressHigh) {
-    plan =
-      'We’ll start with quick down-regulation breathwork — extending your exhale is the one manual switch you have on a stressed nervous system, and it works in minutes.';
-  } else if (stressMid) {
-    plan =
-      'We’ll start with short daily resets you can do anywhere — a few slow breaths shift your body out of stress mode faster than anything else you can do at a desk.';
-  } else {
-    plan =
-      'We’ll start with focus and performance sessions — steady breathing keeps your heart rate even, and an even heart rate is what a focused brain runs on.';
-  }
-
-  let experienceLine = '';
-  if (experience === 'never') {
-    experienceLine = ' Since this is new, your first week is short and guided.';
-  } else if (experience === 'regular') {
-    experienceLine = ' Since you’ve practiced before, we’ll skip the basics.';
-  }
-
-  return `${opener} ${plan}${experienceLine}`;
-}
-
 export default function AssessmentReflectionScreen({
   name,
   stressLevel,
   sleepQuality,
-  agreementResponses: _agreementResponses,
+  heartWorryLevel,
+  agreementResponses,
   experienceLevel,
+  intentOption,
+  goalPhrases,
   stepIndex,
   stepCount,
   onContinue,
   onBack,
 }: AssessmentReflectionScreenProps) {
   const synthesis = useMemo(
-    () => buildSynthesis(stressLevel, sleepQuality, experienceLevel),
-    [stressLevel, sleepQuality, experienceLevel],
+    () =>
+      buildAssessmentSynthesis({
+        stress: stressLevel,
+        sleep: sleepQuality,
+        heartWorry: heartWorryLevel,
+        agreementResponses,
+        experience: experienceLevel,
+        primaryPlan: intentOption?.assessmentPlan ?? null,
+        goalPhrases,
+      }),
+    [
+      stressLevel,
+      sleepQuality,
+      heartWorryLevel,
+      agreementResponses,
+      experienceLevel,
+      intentOption,
+      goalPhrases,
+    ],
   );
 
   const fade = useRef(new Animated.Value(0)).current;
@@ -125,14 +91,12 @@ export default function AssessmentReflectionScreen({
   }, [fade, lift]);
 
   const trimmedName = name.trim();
-  const title = trimmedName
-    ? `Here's what we're hearing, ${trimmedName}.`
-    : "Here's what we're hearing.";
+  const title = `Here’s what we heard${trimmedName ? `, ${trimmedName}` : ''}.`;
 
   return (
     <OnboardingScreenLayout
       title={title}
-      subtitle="Based on your answers, here's what Azora knows."
+      subtitle="Your answers give us a clear place to start."
       progress={stepIndex / stepCount}
       onBack={onBack}
       footer={
@@ -149,7 +113,7 @@ export default function AssessmentReflectionScreen({
       >
         <Text style={styles.quoteMark}>“</Text>
         <Text style={styles.quote}>{synthesis}</Text>
-        <Text style={styles.signature}>— Azora</Text>
+        <Text style={styles.signature}>Azora</Text>
       </Animated.View>
     </OnboardingScreenLayout>
   );

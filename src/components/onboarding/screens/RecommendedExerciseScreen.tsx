@@ -1,284 +1,284 @@
 import { Text } from '../../common/Text';
-import { StyleSheet, View } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { card } from '../../../theme/card';
+import { useEffect, useRef } from 'react';
+import {
+  Animated, StyleSheet, useWindowDimensions, View } from 'react-native';
+import Icon, { type IconName } from '../../common/icons/Icon';
+import CardSurface from '../../common/CardSurface';
+import MindMapRadar from '../MindMapRadar';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
-import { TECHNIQUE_RECOMMENDATIONS } from '../data/techniqueRecommendations';
 import TECHNIQUES from '../../../features/exercise/guidedBreathing/techniques';
-import type { BaselineResult } from './BaselineScreen';
-import LineGraph, { type DataPoint } from '../../analytics/LineGraph';
+import {
+  formatPlanTime,
+  formatRetestDate,
+  type PlanAction,
+  type OnboardingPlan,
+} from '../../../lib/onboardingPlan';
+import type { MindMapScore } from '../../../lib/onboardingScores';
 
 interface RecommendedExerciseScreenProps {
-  techniqueId: string;
-  baseline: BaselineResult | null;
+  plan: OnboardingPlan;
+  name: string;
+  currentScores: MindMapScore[];
+  targetScores: MindMapScore[];
+  growthArea: MindMapScore;
   stepIndex: number;
   stepCount: number;
   onContinue: () => void;
   onBack: () => void;
 }
 
-function buildBpmSeries(history: number[], durationSec: number): DataPoint[] {
-  if (history.length === 0) return [];
-  const step = Math.max(1, Math.floor(history.length / 12));
-  const points: DataPoint[] = [];
-  for (let i = 0; i < history.length; i += step) {
-    const value = history[i];
-    const second = Math.round((i / history.length) * durationSec);
-    points.push({ label: `${second}s`, value });
-  }
-  // Always include the last point
-  if (points.length === 0 || points[points.length - 1].value !== history[history.length - 1]) {
-    points.push({ label: `${durationSec}s`, value: history[history.length - 1] });
-  }
-  return points;
+const ACTION_ICON: Record<string, IconName> = {
+  session: 'meditation',
+  checkIn: 'lungs',
+};
+
+function techniqueName(techniqueId: string | null): string | null {
+  if (!techniqueId) return null;
+  return TECHNIQUES.find((t) => t.id === techniqueId)?.name ?? null;
 }
 
 export default function RecommendedExerciseScreen({
-  techniqueId,
-  baseline,
+  plan,
+  name,
+  currentScores,
+  targetScores,
+  growthArea,
   stepIndex,
   stepCount,
   onContinue,
   onBack,
 }: RecommendedExerciseScreenProps) {
-  const technique =
-    TECHNIQUE_RECOMMENDATIONS[techniqueId] ?? TECHNIQUE_RECOMMENDATIONS.box;
-  const nickname =
-    TECHNIQUES.find((t) => t.id === technique.id)?.recommendedName ?? null;
-
-  const hrCompleted = baseline?.completed === true && baseline.avgBpm != null;
-  const drop = baseline?.bpmDrop ?? 0;
-  const hrDropPositive = hrCompleted && drop > 1;
-
-  const bpmSeries = baseline?.bpmHistory?.length
-    ? buildBpmSeries(baseline.bpmHistory, Math.max(1, baseline.durationSec || 20))
-    : [];
-  const hasGraph = bpmSeries.length >= 2;
-
-  const durationSec = baseline?.durationSec || 20;
-  const title = hrDropPositive
-    ? `Your heart slowed ${drop} bpm in ${durationSec} seconds.`
-    : 'What we recommend for you.';
-  const subtitle = hrDropPositive
-    ? "That's your nervous system responding in real time. Trained breathing makes that response bigger, faster, and on-demand."
-    : "Chosen just for you. Give it a try once you're in the app!";
+  const { width } = useWindowDimensions();
+  const projection = plan.projection;
+  const gain = projection
+    ? projection.highSeconds - projection.baselineSeconds
+    : null;
 
   return (
     <OnboardingScreenLayout
-      title={title}
-      subtitle={subtitle}
+      title={
+        name
+          ? `Congratulations ${name}, your custom plan is ready!`
+          : 'Congratulations, your custom plan is ready!'
+      }
       progress={stepIndex / stepCount}
       onBack={onBack}
-      footer={<OnboardingPrimaryButton label="Sounds good" onPress={onContinue} />}
+      centerCopy
+      titleStyle={styles.planTitle}
+      copyBadge={<PlanReadyBadge />}
+      footer={
+        <OnboardingPrimaryButton label="Start my plan" onPress={onContinue} />
+      }
     >
-      <View style={styles.techniqueCard}>
-        <Text style={styles.techniqueKicker}>Recommended for you</Text>
-        <Text style={styles.techniqueName}>{nickname ?? technique.name}</Text>
-        <Text style={styles.techniqueSubname}>{technique.name}</Text>
-        <Text style={styles.techniqueTagline}>{technique.tagline}</Text>
-        <View style={styles.divider} />
-        <Text style={styles.techniqueWhy}>{technique.why}</Text>
-      </View>
+      <View style={styles.page}>
+        {gain != null ? (
+          <View style={styles.goalPill}>
+            <Text style={styles.goalPillText}>
+              {`Add ${gain}s to your breath hold by ${formatRetestDate(new Date())}`}
+            </Text>
+          </View>
+        ) : null}
 
-      {hrCompleted ? (
-        <View style={styles.hrCard}>
-          <View style={styles.hrCardHeader}>
-            <View style={styles.hrCardTitleRow}>
-              <View style={styles.hrIconWrap}>
-                <MaterialCommunityIcons
-                  name="heart-pulse"
-                  size={18}
-                  color={colors.error[500]}
-                />
-              </View>
-              <Text style={styles.hrCardTitle}>Your starting point</Text>
-            </View>
-            {hrDropPositive ? (
-              <View style={styles.hrBadge}>
-                <Text style={styles.hrBadgeText}>↓ {drop} bpm</Text>
-              </View>
-            ) : (
-              <View style={[styles.hrBadge, styles.hrBadgeSteady]}>
-                <Text style={[styles.hrBadgeText, styles.hrBadgeTextSteady]}>
-                  Steady
-                </Text>
-              </View>
-            )}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Do this every day</Text>
+          {plan.actions.map((action) => (
+            <ActionCard key={action.id} action={action} />
+          ))}
+        </View>
+
+        {plan.responsivenessNote ? (
+          <Text style={styles.note}>{plan.responsivenessNote}</Text>
+        ) : null}
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>What this moves</Text>
+
+          <View style={styles.radarWrap}>
+            <MindMapRadar
+              scores={currentScores}
+              targetScores={targetScores}
+              size={width}
+            />
           </View>
 
-          <View style={styles.statsRow}>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>{baseline?.avgBpm}</Text>
-              <Text style={styles.statLabel}>Avg BPM</Text>
+          <View style={styles.legend}>
+            <View style={styles.legendItem}>
+              <View style={styles.legendDotToday} />
+              <Text style={styles.legendLabel}>Today</Text>
             </View>
-            {baseline?.bpmDrop != null ? (
-              <View style={styles.statItem}>
-                <Text style={styles.statValue}>{Math.abs(baseline.bpmDrop)}</Text>
-                <Text style={styles.statLabel}>BPM range</Text>
-              </View>
-            ) : null}
-            {baseline?.durationSec != null && baseline.durationSec > 0 ? (
-              <View style={styles.statItem}>
-                <Text style={styles.statValue}>{baseline.durationSec}s</Text>
-                <Text style={styles.statLabel}>Duration</Text>
-              </View>
-            ) : null}
+            <View style={styles.legendItem}>
+              <View style={styles.legendDotTarget} />
+              <Text style={styles.legendLabel}>With your plan</Text>
+            </View>
           </View>
 
-          {hasGraph ? (
-            <View style={styles.graphWrap}>
-              <LineGraph
-                data={bpmSeries}
-                subtitle="Today's baseline"
-                unit=""
-                height={140}
-                lineColor={colors.primary.blue500}
-                fillColor={colors.primary.blue100}
-                dotColor={colors.primary.blue600}
-              />
-            </View>
-          ) : null}
-
-          <Text style={styles.hrFootnote}>
-            This is today. Come back every day and watch it improve.
+          <Text style={styles.note}>
+            {`${growthArea.label} has the most room to move — both daily actions are chosen to lift it first.`}
           </Text>
         </View>
-      ) : null}
+      </View>
     </OnboardingScreenLayout>
   );
 }
 
+function ActionCard({ action }: { action: PlanAction }) {
+  const technique = techniqueName(action.techniqueId);
+
+  return (
+    <CardSurface style={styles.actionCard}>
+      <View style={styles.actionIcon}>
+        <Icon
+          name={ACTION_ICON[action.id]}
+          size={20}
+          color={colors.primary.blue500}
+        />
+      </View>
+      <View style={styles.actionHeading}>
+        <Text style={styles.actionTitle}>{technique ?? action.title}</Text>
+        <Text style={styles.actionMeta}>{`${action.minutes} min`}</Text>
+      </View>
+      <Text style={styles.actionTime}>
+        {formatPlanTime(action.minutesFromMidnight)}
+      </Text>
+    </CardSurface>
+  );
+}
+
+function PlanReadyBadge() {
+  const pop = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.spring(pop, {
+      toValue: 1,
+      damping: 12,
+      stiffness: 180,
+      mass: 0.7,
+      useNativeDriver: true,
+    }).start();
+  }, [pop]);
+
+  return (
+    <Animated.View style={[styles.badge, { transform: [{ scale: pop }] }]}>
+      <Icon name="check" size={18} color={colors.text.inverse} />
+    </Animated.View>
+  );
+}
+
 const styles = StyleSheet.create({
-  techniqueCard: {
-    ...card.base,
-    ...card.shadow,
-    paddingVertical: spacing.xl,
-    paddingHorizontal: spacing.lg,
-    borderRadius: 24,
-    gap: spacing.xs,
+  badge: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primary.blue500,
   },
-  techniqueKicker: {
-    ...typography.caption.caption2,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    letterSpacing: 0.3,
+  planTitle: {
+    fontSize: 32,
+    lineHeight: 39,
+    letterSpacing: -0.5,
+  },
+  page: {
+    gap: spacing.xl,
+  },
+  goalPill: {
+    alignSelf: 'center',
+    borderRadius: 20,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    backgroundColor: colors.primary.blue100,
+  },
+  goalPillText: {
+    ...typography.label.large,
+    textAlign: 'center',
     color: colors.primary.blue600,
   },
-  techniqueName: {
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    fontSize: 28,
-    lineHeight: 32,
-    letterSpacing: -0.4,
-    color: colors.text.primary,
-    marginTop: spacing.xs,
+  section: {
+    gap: spacing.md,
   },
-  techniqueSubname: {
-    ...typography.body.small,
+  sectionTitle: {
+    ...typography.title.title3,
+    color: colors.text.primary,
+  },
+  actionCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+  },
+  actionIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primary.blue100,
+  },
+  actionHeading: {
+    flex: 1,
+  },
+  actionTitle: {
+    ...typography.body.medium,
     fontFamily: fonts.semibold,
     fontWeight: '500',
+    color: colors.text.primary,
+  },
+  actionMeta: {
+    ...typography.caption.caption1,
     color: colors.text.tertiary,
     marginTop: 2,
   },
-  techniqueTagline: {
+  actionTime: {
     ...typography.body.medium,
-    color: colors.text.secondary,
-    marginTop: spacing.xs,
+    fontFamily: fonts.semibold,
+    fontWeight: '500',
+    fontVariant: ['tabular-nums'],
+    color: colors.text.primary,
   },
-  divider: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.border.default,
-    marginVertical: spacing.md,
-  },
-  techniqueWhy: {
-    ...typography.body.small,
-    color: colors.text.secondary,
-    lineHeight: 20,
-  },
-  hrCard: {
-    ...card.base,
-    paddingVertical: spacing.lg,
-    paddingHorizontal: spacing.lg,
-    borderRadius: 18,
-    gap: spacing.md,
-  },
-  hrCardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  hrCardTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  hrIconWrap: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.error[100],
+  radarWrap: {
     alignItems: 'center',
     justifyContent: 'center',
+    marginTop: -spacing.xl,
   },
-  hrCardTitle: {
-    ...typography.body.medium,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    color: colors.text.primary,
-  },
-  hrBadge: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    borderRadius: 999,
-    backgroundColor: colors.success[100],
-    borderWidth: 1,
-    borderColor: colors.success[100],
-  },
-  hrBadgeSteady: {
-    backgroundColor: colors.neutral[100],
-    borderColor: colors.border.subtle,
-  },
-  hrBadgeText: {
-    ...typography.caption.caption2,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    color: colors.success[700],
-  },
-  hrBadgeTextSteady: {
-    color: colors.text.secondary,
-  },
-  statsRow: {
+  legend: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.lg,
+    gap: spacing.md,
+    alignSelf: 'center',
+    marginTop: -spacing.sm,
   },
-  statItem: {
-    flex: 1,
-    gap: spacing.xs,
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
-  statValue: {
+  legendDotToday: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: colors.primary.blue500,
+  },
+  legendDotTarget: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    borderWidth: 2,
+    borderColor: colors.orange[500],
+  },
+  legendLabel: {
+    ...typography.caption.caption1,
     fontFamily: fonts.semibold,
     fontWeight: '500',
-    fontSize: 28,
-    lineHeight: 32,
-    letterSpacing: -0.4,
-    color: colors.text.primary,
-  },
-  statLabel: {
-    ...typography.caption.caption2,
-    color: colors.text.tertiary,
-  },
-  graphWrap: {
-    marginTop: spacing.xs,
-    overflow: 'hidden',
-  },
-  hrFootnote: {
-    ...typography.caption.caption2,
     color: colors.text.secondary,
-    lineHeight: 18,
+  },
+  note: {
+    ...typography.body.small,
+    textAlign: 'center',
+    color: colors.text.secondary,
+    lineHeight: 20,
   },
 });

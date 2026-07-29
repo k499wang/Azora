@@ -1,5 +1,5 @@
 import { Text } from '../../common/Text';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -8,11 +8,11 @@ import {
   Circle,
   Path,
   Skia,
-  SweepGradient,
-  vec,
 } from '@shopify/react-native-skia';
 import {
   Easing as RNREasing,
+  runOnJS,
+  useAnimatedReaction,
   useDerivedValue,
   useSharedValue,
   withTiming,
@@ -29,9 +29,18 @@ import {
   estimateAzoraScore,
   type AzoraTierKey,
 } from '../../../lib/azoraScore';
+import { benchmarkBreathHold } from '../../../lib/breathHoldPercentile';
+import {
+  estimateLungAge,
+  lungAgeGaugeFill,
+  MAX_LUNG_AGE,
+  MIN_LUNG_AGE,
+} from '../../../lib/lungAge';
+import { calibrationDurationMs } from '../../../lib/gaugeCalibration';
 import type { OnboardingBreathHoldResult } from '../types';
 
 interface BreathHoldScreenProps {
+  age: number;
   stepIndex: number;
   stepCount: number;
   onContinue: (result: OnboardingBreathHoldResult) => void;
@@ -43,14 +52,16 @@ type Phase = 'intro' | 'inhale' | 'hold' | 'calibrating' | 'done';
 
 interface ScoredHold extends OnboardingBreathHoldResult {
   tier: AzoraTierKey;
+  lungAgeYears: number;
+  percentile: number;
+  benchmarkLabel: string;
 }
 
 const INHALE_SECONDS = 4;
 const CIRCLE_SIZE = 260;
 const CIRCLE_MIN_SCALE = 0.5;
-const CALIBRATION_MS = 2200;
 
-const GAUGE_SIZE = 240;
+const GAUGE_SIZE = 250;
 const GAUGE_STROKE = 12;
 const GAUGE_CX = GAUGE_SIZE / 2;
 const GAUGE_CY = GAUGE_SIZE / 2;
@@ -71,6 +82,23 @@ function gaugeTickPath(angleDeg: number) {
   return p;
 }
 
+const GAUGE_RECT = Skia.XYWHRect(
+  GAUGE_CX - GAUGE_R,
+  GAUGE_CY - GAUGE_R,
+  GAUGE_R * 2,
+  GAUGE_R * 2,
+);
+
+const GAUGE_TRACK_PATH = (() => {
+  const p = Skia.Path.Make();
+  p.addArc(GAUGE_RECT, GAUGE_START, GAUGE_SWEEP);
+  return p;
+})();
+
+const GAUGE_TICK_PATHS = [0, 25, 50, 75, 100].map((t) =>
+  gaugeTickPath(GAUGE_START + (t / 100) * GAUGE_SWEEP),
+);
+
 function formatHold(seconds: number): string {
   const total = Math.floor(seconds);
   const minutes = Math.floor(total / 60);
@@ -78,16 +106,21 @@ function formatHold(seconds: number): string {
   return `${minutes}:${String(rest).padStart(2, '0')}`;
 }
 
-function scoreHold(holdSeconds: number): ScoredHold {
+function scoreHold(holdSeconds: number, age: number): ScoredHold {
   const estimate = estimateAzoraScore({ holdSeconds });
+  const benchmark = benchmarkBreathHold(holdSeconds, age);
   return {
     holdSeconds: Math.round(holdSeconds * 10) / 10,
     score: estimate.score,
     tier: estimate.key,
+    lungAgeYears: estimateLungAge(holdSeconds, age).years,
+    percentile: benchmark.percentile,
+    benchmarkLabel: benchmark.label,
   };
 }
 
 export default function BreathHoldScreen({
+  age,
   stepIndex,
   stepCount,
   onContinue,
@@ -102,28 +135,17 @@ export default function BreathHoldScreen({
 
   const scale = useRef(new Animated.Value(CIRCLE_MIN_SCALE)).current;
   const inhaleEnter = useRef(new Animated.Value(0)).current;
-  const scoreAnim = useRef(new Animated.Value(0)).current;
   const doneEnter = useRef(new Animated.Value(0)).current;
   const holdStartRef = useRef<number | null>(null);
   const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const [displayedScore, setDisplayedScore] = useState(0);
+  const [displayedLungAge, setDisplayedLungAge] = useState(0);
 
   const arcProgress = useSharedValue(0);
-  const arcRect = useMemo(
-    () =>
-      Skia.XYWHRect(
-        GAUGE_CX - GAUGE_R,
-        GAUGE_CY - GAUGE_R,
-        GAUGE_R * 2,
-        GAUGE_R * 2,
-      ),
-    [],
-  );
   const arcPath = useDerivedValue(() => {
     const p = Skia.Path.Make();
     const ratio = Math.max(0, Math.min(1, arcProgress.value / 100));
     if (ratio > 0) {
-      p.addArc(arcRect, GAUGE_START, GAUGE_SWEEP * ratio);
+      p.addArc(GAUGE_RECT, GAUGE_START, GAUGE_SWEEP * ratio);
     }
     return p;
   });
@@ -202,7 +224,7 @@ export default function BreathHoldScreen({
     }
     const started = holdStartRef.current ?? Date.now();
     const seconds = (Date.now() - started) / 1000;
-    const scored = scoreHold(seconds);
+    const scored = scoreHold(seconds, age);
     setResult(scored);
     if (isHapticsEnabled()) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
@@ -212,50 +234,60 @@ export default function BreathHoldScreen({
     setPhase('calibrating');
   };
 
+  // The counter reads off the same shared value as the ring, so both stay on the
+  // UI thread and React only re-renders when the whole year changes.
+  useAnimatedReaction(
+    () =>
+      Math.round(
+        MIN_LUNG_AGE + (arcProgress.value / 100) * (MAX_LUNG_AGE - MIN_LUNG_AGE),
+      ),
+    (years, previous) => {
+      if (years !== previous) {
+        runOnJS(setDisplayedLungAge)(years);
+      }
+    },
+  );
+
+  const finishCalibration = useCallback(() => {
+    doneEnter.setValue(0);
+    setPhase('done');
+    Animated.timing(doneEnter, {
+      toValue: 1,
+      duration: 460,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+    if (isHapticsEnabled()) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
+        () => {},
+      );
+    }
+  }, [doneEnter]);
+
   useEffect(() => {
     if (phase !== 'calibrating' || !result) return;
-    scoreAnim.setValue(0);
-    setDisplayedScore(0);
-    arcProgress.value = 0;
-    arcProgress.value = withTiming(result.score, {
-      duration: CALIBRATION_MS,
-      easing: RNREasing.out(RNREasing.cubic),
-    });
-    const id = scoreAnim.addListener(({ value }) => {
-      setDisplayedScore(Math.round(value * result.score));
-    });
-    Animated.timing(scoreAnim, {
-      toValue: 1,
-      duration: CALIBRATION_MS,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: false,
-    }).start(({ finished }) => {
-      if (!finished) return;
-      setDisplayedScore(result.score);
-      doneEnter.setValue(0);
-      setPhase('done');
-      Animated.timing(doneEnter, {
-        toValue: 1,
-        duration: 460,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }).start();
-      if (isHapticsEnabled()) {
-        Haptics.notificationAsync(
-          Haptics.NotificationFeedbackType.Success,
-        ).catch(() => {});
-      }
-    });
-    return () => {
-      scoreAnim.removeListener(id);
-    };
-  }, [phase, result, scoreAnim, doneEnter, arcProgress]);
+    // Always reveal from the gauge's low endpoint so younger results never
+    // make the arc retract from the user's chronological age.
+    const fromFill = lungAgeGaugeFill(MIN_LUNG_AGE);
+    const toFill = lungAgeGaugeFill(result.lungAgeYears);
+    arcProgress.value = fromFill;
+    arcProgress.value = withTiming(
+      toFill,
+      {
+        duration: calibrationDurationMs(fromFill, toFill),
+        easing: RNREasing.inOut(RNREasing.quad),
+      },
+      (finished) => {
+        if (finished) runOnJS(finishCalibration)();
+      },
+    );
+  }, [phase, result, arcProgress, finishCalibration]);
 
   if (phase === 'inhale' || phase === 'hold') {
     const isInhale = phase === 'inhale';
     const subhead = isInhale
       ? 'Fill your lungs completely.'
-      : 'Hold your breath as long as you can.';
+      : 'Now hold your breath as long as you can. Tap the circle when you need to breath.';
 
     const inhaleEntryStyle = isInhale
       ? {
@@ -325,11 +357,7 @@ export default function BreathHoldScreen({
   if ((phase === 'calibrating' || phase === 'done') && result) {
     const isCalibrating = phase === 'calibrating';
     const scoreColor = azoraTierMeta(result.tier).textColor;
-    const track = Skia.Path.Make();
-    track.addArc(arcRect, GAUGE_START, GAUGE_SWEEP);
-    const ticks = [0, 25, 50, 75, 100].map((t) =>
-      gaugeTickPath(GAUGE_START + (t / 100) * GAUGE_SWEEP),
-    );
+    const benchmark = benchmarkBreathHold(result.holdSeconds, age);
 
     const revealStyle = {
       opacity: doneEnter,
@@ -365,18 +393,16 @@ export default function BreathHoldScreen({
       >
         <View style={styles.gaugeStage}>
           <Text style={styles.gaugeHeading}>
-            {isCalibrating ? 'Calibrating…' : 'Your Azora Score'}
+            {isCalibrating ? 'Calibrating…' : 'Your lung age'}
           </Text>
           <Text style={styles.gaugeSub}>
-            {isCalibrating
-              ? 'Analyzing your hold.'
-              : `You held for ${formatHold(result.holdSeconds)}.`}
+            {isCalibrating ? 'Analyzing your hold.' : benchmark.label}
           </Text>
 
           <View style={styles.gaugeSurface}>
             <Canvas style={StyleSheet.absoluteFill}>
               <Path
-                path={track}
+                path={GAUGE_TRACK_PATH}
                 style="stroke"
                 strokeWidth={GAUGE_STROKE}
                 strokeCap="round"
@@ -387,15 +413,9 @@ export default function BreathHoldScreen({
                 style="stroke"
                 strokeWidth={GAUGE_STROKE}
                 strokeCap="round"
-              >
-                <SweepGradient
-                  c={vec(GAUGE_CX, GAUGE_CY)}
-                  start={GAUGE_START}
-                  end={GAUGE_START + GAUGE_SWEEP}
-                  colors={[scoreColor + '55', scoreColor]}
-                />
-              </Path>
-              {ticks.map((p, i) => (
+                color={scoreColor}
+              />
+              {GAUGE_TICK_PATHS.map((p, i) => (
                 <Path
                   key={i}
                   path={p}
@@ -433,8 +453,8 @@ export default function BreathHoldScreen({
 
             <View style={styles.gaugeCenter} pointerEvents="none">
               <View style={styles.gaugeValueRow}>
-                <Text style={styles.gaugeValue}>{displayedScore}</Text>
-                <Text style={styles.gaugeValueMax}>/100</Text>
+                <Text style={styles.gaugeValue}>{displayedLungAge}</Text>
+                <Text style={styles.gaugeValueMax}>years</Text>
               </View>
             </View>
           </View>
@@ -442,8 +462,7 @@ export default function BreathHoldScreen({
           {!isCalibrating ? (
             <Animated.View style={[styles.gaugeMeta, revealStyle]}>
               <Text style={styles.followup}>
-                This is your untrained baseline. We&apos;ll show you what it
-                means and how to move it after signing up.
+                Your untrained baseline. We&apos;ll show you how to move it.
               </Text>
             </Animated.View>
           ) : null}
@@ -464,13 +483,18 @@ export default function BreathHoldScreen({
             label="Start"
             onPress={() => setPhase('inhale')}
           />
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => onSkip?.()}
-            style={({ pressed }) => [styles.skip, pressed && styles.skipPressed]}
-          >
-            <Text style={styles.skipText}>Skip for now</Text>
-          </Pressable>
+          {onSkip ? (
+            <Pressable
+              accessibilityRole="button"
+              onPress={onSkip}
+              style={({ pressed }) => [
+                styles.skip,
+                pressed && styles.skipPressed,
+              ]}
+            >
+              <Text style={styles.skipText}>Skip for now</Text>
+            </Pressable>
+          ) : null}
         </View>
       }
     >
@@ -485,9 +509,6 @@ export default function BreathHoldScreen({
           <Text style={styles.introSub}>
             We measure it with a breath hold. Deep breath in, then hold as long
             as you can.
-          </Text>
-          <Text style={styles.introSafety}>
-            Sit down, and never do this in water.
           </Text>
         </View>
 
@@ -528,12 +549,6 @@ const styles = StyleSheet.create({
   introSub: {
     ...typography.body.medium,
     color: colors.text.secondary,
-    textAlign: 'center',
-    paddingHorizontal: spacing.md,
-  },
-  introSafety: {
-    ...typography.body.small,
-    color: colors.text.tertiary,
     textAlign: 'center',
     paddingHorizontal: spacing.md,
   },
@@ -647,21 +662,24 @@ const styles = StyleSheet.create({
   gaugeStage: {
     flex: 1,
     alignItems: 'center',
-    gap: spacing['2xl'],
-    paddingTop: spacing['2xl'],
+    gap: spacing.xl,
+    paddingTop: spacing.md,
   },
   gaugeHeading: {
-    ...typography.title.title2,
+    ...typography.title.title1,
     fontFamily: fonts.semibold,
     fontWeight: '500',
     color: colors.text.primary,
     textAlign: 'center',
+    paddingHorizontal: spacing.lg,
   },
   gaugeSub: {
-    ...typography.body.small,
-    color: colors.text.secondary,
+    ...typography.body.medium,
+    fontFamily: fonts.semibold,
+    fontWeight: '500',
+    color: colors.primary.blue600,
     textAlign: 'center',
-    marginTop: -spacing.xl,
+    marginTop: -spacing.lg,
   },
   gaugeSurface: {
     width: GAUGE_SIZE,
@@ -683,29 +701,28 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   gaugeValueRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 2,
+    alignItems: 'center',
   },
   gaugeValue: {
     fontFamily: fonts.semibold,
     fontWeight: '500',
-    fontSize: 60,
-    lineHeight: 64,
+    fontSize: 76,
+    lineHeight: 80,
     letterSpacing: -1.5,
     color: colors.text.primary,
   },
   gaugeValueMax: {
-    ...typography.body.small,
+    ...typography.body.medium,
     fontFamily: fonts.semibold,
     fontWeight: '500',
     color: colors.text.tertiary,
     letterSpacing: -0.2,
+    marginTop: -spacing.xs,
   },
   gaugeMeta: {
     width: '100%',
-    gap: spacing.md,
-    marginTop: spacing['4xl'],
+    alignItems: 'center',
+    marginTop: spacing.sm,
   },
   followup: {
     ...typography.body.small,

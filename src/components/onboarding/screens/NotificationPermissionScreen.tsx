@@ -17,6 +17,8 @@ import { card } from '../../../theme/card';
 import type { NotificationPreferences } from '../../../services/notifications/types';
 
 interface NotificationPermissionScreenProps {
+  /** The plan's first daily action, as `HH:MM`. */
+  planTime: string;
   stepIndex: number;
   stepCount: number;
   isSubmitting: boolean;
@@ -27,6 +29,7 @@ interface NotificationPermissionScreenProps {
 }
 
 export default function NotificationPermissionScreen({
+  planTime,
   stepIndex,
   stepCount,
   isSubmitting,
@@ -36,7 +39,7 @@ export default function NotificationPermissionScreen({
   onBack,
 }: NotificationPermissionScreenProps) {
   const [enabled, setEnabled] = useState(true);
-  const [time, setTime] = useState('08:00');
+  const [time, setTime] = useState(planTime);
 
   const preferences = useMemo<NotificationPreferences>(
     () => ({
@@ -48,8 +51,8 @@ export default function NotificationPermissionScreen({
 
   return (
     <OnboardingScreenLayout
-      title="Make it stick"
-      subtitle="A daily cue is the biggest reason people keep going. Pick a time and we'll send one gentle reminder. Nothing else."
+      title="Turn on your plan reminder"
+      subtitle={`Your plan starts at ${formatDisplay(planTime)} each day. We'll send one nudge at that time so it actually happens. Nothing else.`}
       progress={stepIndex / stepCount}
       onBack={onBack}
       onSkip={onSkip}

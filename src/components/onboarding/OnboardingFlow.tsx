@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import AgeScreen from './screens/AgeScreen';
 import ScienceCredibilityScreen from './screens/ScienceCredibilityScreen';
-import BaselineScreen, { type BaselineResult } from './screens/BaselineScreen';
+import BaselineScreen from './screens/BaselineScreen';
 import BaselineIntroScreen from './screens/BaselineIntroScreen';
 import DailyTimeScreen from './screens/DailyTimeScreen';
 import ConsistencyScreen from './screens/ConsistencyScreen';
@@ -10,6 +10,7 @@ import IntentQuestionScreen from './screens/IntentQuestionScreen';
 import IntentReflectionScreen from './screens/IntentReflectionScreen';
 import IntentProjectionScreen from './screens/IntentProjectionScreen';
 import BrainScienceScreen from './screens/BrainScienceScreen';
+import BreathPrimerScreen from './screens/BreathPrimerScreen';
 import AgreementScreen, {
   AGREEMENT_STATEMENTS,
   type AgreementValue,
@@ -26,11 +27,10 @@ import NotificationPermissionScreen from './screens/NotificationPermissionScreen
 import SleepScreen from './screens/SleepScreen';
 import HeartWorryScreen from './screens/HeartWorryScreen';
 import StressScreen from './screens/StressScreen';
-import MindRacingScreen from './screens/MindRacingScreen';
-import RecommendationScreen from './screens/RecommendationScreen';
+import PlanIntroScreen from './screens/PlanIntroScreen';
+import PlanLoadingScreen from './screens/PlanLoadingScreen';
 import RecommendedExerciseScreen from './screens/RecommendedExerciseScreen';
 import FounderNoteScreen from './screens/FounderNoteScreen';
-import FiveMinutesScreen from './screens/FiveMinutesScreen';
 import OnboardingPaywallScreen from './screens/OnboardingPaywallScreen';
 import ExitOfferSheet from '../paywall/ExitOfferSheet';
 import BreathHoldScreen from './screens/BreathHoldScreen';
@@ -39,16 +39,24 @@ import {
   PERSONALIZED_INTENT_OPTIONS,
 } from './data/intentOptions';
 import { INTENT_TO_TECHNIQUE } from './data/techniqueRecommendations';
+import { buildOnboardingPlan, toClockString } from '../../lib/onboardingPlan';
 import type { GenderOption } from './data/genderOptions';
 import type { AcquisitionSourceId } from './data/acquisitionOptions';
 import AcquisitionSourceScreen from './screens/AcquisitionSourceScreen';
 import { useSaveOnboardingSurveyMutation } from '../../queries/profile/useSaveOnboardingSurveyMutation';
-import type { OnboardingBreathHoldResult, OnboardingStep } from './types';
+import type {
+  CompletedOnboardingBaselineResult,
+  OnboardingBreathHoldResult,
+  OnboardingStep,
+} from './types';
 import { usePaywall } from '../../hooks/usePaywall';
 import { PaywallPlacement } from '../../services/paywall';
 import { useUserEntitlementQuery } from '../../queries/subscriptions/useUserEntitlementQuery';
 import { useExitOfferStore } from '../../stores/exitOfferStore';
-import { buildPaywallPersonalization } from '../../lib/paywallPersonalization';
+import {
+  buildPaywallPersonalization,
+  projectScores,
+} from '../../lib/paywallPersonalization';
 import { computeMindMap } from '../../lib/onboardingScores';
 import { useAuthStore } from '../../stores/authStore';
 import { requestNotificationPermissions } from '../../services/notifications/notificationClient';
@@ -117,30 +125,30 @@ const STEP_ORDER: OnboardingStep[] = [
   'intent',
   'intentReflection',
   'intentProjection',
-  'brainScience',
   'name',
   'greeting',
   'acquisitionSource',
   'stress',
-  'mindRacing',
   'sleep',
   'heartWorry',
   'agreement',
   'experience',
   'assessmentReflection',
+  'consistency',
+  'brainScience',
+  'breathPrimer',
   'scienceCredibility',
-  'lungCapacity',
   'age',
   'gender',
-  'consistency',
+  'lungCapacity',
   'dailyTime',
   'baselineIntro',
   'baseline',
-  'recommendation',
+  'planIntro',
+  'planLoading',
   'recommendedExercise',
   'attPriming',
   'notifications',
-  'fiveMinutes',
   'founderNote',
   'pact',
   'paywall',
@@ -194,11 +202,13 @@ export default function OnboardingFlow({
   const [stressLevel, setStressLevel] = useState(
     initialSavedProfile?.stressLevel ?? 5,
   );
+  const [hasAnsweredStress, setHasAnsweredStress] = useState(false);
   const [sleepQuality, setSleepQuality] = useState(
     initialSavedProfile?.sleepQuality ?? 5,
   );
-  const [racingLevel, setRacingLevel] = useState(5);
+  const [hasAnsweredSleep, setHasAnsweredSleep] = useState(false);
   const [heartWorryLevel, setHeartWorryLevel] = useState(5);
+  const [hasAnsweredHeartWorry, setHasAnsweredHeartWorry] = useState(false);
   const [agreementResponses, setAgreementResponses] = useState<
     Record<string, AgreementValue | null>
   >(() =>
@@ -223,7 +233,8 @@ export default function OnboardingFlow({
   );
   const [acquisitionSource, setAcquisitionSource] =
     useState<AcquisitionSourceId | null>(null);
-  const [baseline, setBaseline] = useState<BaselineResult | null>(null);
+  const [baseline, setBaseline] =
+    useState<CompletedOnboardingBaselineResult | null>(null);
   const [breathHold, setBreathHold] = useState<OnboardingBreathHoldResult | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [notificationErrorMessage, setNotificationErrorMessage] = useState<string | null>(null);
@@ -260,6 +271,17 @@ export default function OnboardingFlow({
   const selectedOption = useMemo(
     () => PERSONALIZED_INTENT_OPTIONS.find((option) => option.id === primaryIntent) ?? null,
     [primaryIntent],
+  );
+  const selectedGoalPhrases = useMemo(
+    () =>
+      selectedIntents.reduce<string[]>((phrases, intentId) => {
+        const option = PERSONALIZED_INTENT_OPTIONS.find(
+          (candidate) => candidate.id === intentId,
+        );
+        if (option) phrases.push(option.goalPhrase);
+        return phrases;
+      }, []),
+    [selectedIntents],
   );
 
   const visibleStepOrder = useMemo(
@@ -656,7 +678,7 @@ export default function OnboardingFlow({
         }
       }
 
-      goToStep('fiveMinutes', 'continue', {
+      goToStep('founderNote', 'continue', {
         notification_status: permissionStatus,
       });
     } catch (error) {
@@ -671,7 +693,7 @@ export default function OnboardingFlow({
     setNotificationErrorMessage(null);
     setIsNotificationSubmitting(true);
     try {
-      goToStep('fiveMinutes', 'skip');
+      goToStep('founderNote', 'skip');
     } finally {
       setIsNotificationSubmitting(false);
     }
@@ -746,7 +768,7 @@ export default function OnboardingFlow({
         selectedIntents={selectedIntents}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('brainScience', 'continue')}
+        onContinue={() => goToStep('name', 'continue')}
         onBack={() =>
           goToStep(INTENT_REFLECTION_ENABLED ? 'intentReflection' : 'intent', 'back')
         }
@@ -759,8 +781,8 @@ export default function OnboardingFlow({
       <BrainScienceScreen
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('name', 'continue')}
-        onBack={() => goToStep('intentProjection', 'back')}
+        onContinue={() => goToStep('breathPrimer', 'continue')}
+        onBack={() => goToStep('consistency', 'back')}
       />
     );
   }
@@ -776,7 +798,7 @@ export default function OnboardingFlow({
           has_display_name: name.trim().length > 0,
         })}
         onBack={() =>
-          goToStep(isOnlyCustomIntent ? 'intent' : 'brainScience', 'back')
+          goToStep(isOnlyCustomIntent ? 'intent' : 'intentProjection', 'back')
         }
         onSkip={() => {
           setName('');
@@ -826,23 +848,15 @@ export default function OnboardingFlow({
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onChange={setStressLevel}
-        onContinue={() => goToStep('mindRacing', 'continue', { has_stress_level: true })}
+        onContinue={() => {
+          setHasAnsweredStress(true);
+          goToStep('sleep', 'continue', { has_stress_level: true });
+        }}
         onBack={() => goToStep('acquisitionSource', 'back')}
-        onSkip={() => goToStep('mindRacing', 'skip')}
-      />
-    );
-  }
-
-  if (step === 'mindRacing') {
-    return (
-      <MindRacingScreen
-        value={racingLevel}
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
-        onChange={setRacingLevel}
-        onContinue={() => goToStep('sleep', 'continue', { has_racing_level: true })}
-        onBack={() => goToStep('stress', 'back')}
-        onSkip={() => goToStep('sleep', 'skip')}
+        onSkip={() => {
+          setHasAnsweredStress(false);
+          goToStep('sleep', 'skip');
+        }}
       />
     );
   }
@@ -854,9 +868,15 @@ export default function OnboardingFlow({
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onChange={setSleepQuality}
-        onContinue={() => goToStep('heartWorry', 'continue', { has_sleep_quality: true })}
-        onBack={() => goToStep('mindRacing', 'back')}
-        onSkip={() => goToStep('heartWorry', 'skip')}
+        onContinue={() => {
+          setHasAnsweredSleep(true);
+          goToStep('heartWorry', 'continue', { has_sleep_quality: true });
+        }}
+        onBack={() => goToStep('stress', 'back')}
+        onSkip={() => {
+          setHasAnsweredSleep(false);
+          goToStep('heartWorry', 'skip');
+        }}
       />
     );
   }
@@ -868,9 +888,15 @@ export default function OnboardingFlow({
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onChange={setHeartWorryLevel}
-        onContinue={() => goToStep('agreement', 'continue', { has_heart_worry_level: true })}
+        onContinue={() => {
+          setHasAnsweredHeartWorry(true);
+          goToStep('agreement', 'continue', { has_heart_worry_level: true });
+        }}
         onBack={() => goToStep('sleep', 'back')}
-        onSkip={() => goToStep('agreement', 'skip')}
+        onSkip={() => {
+          setHasAnsweredHeartWorry(false);
+          goToStep('agreement', 'skip');
+        }}
       />
     );
   }
@@ -915,13 +941,16 @@ export default function OnboardingFlow({
     return (
       <AssessmentReflectionScreen
         name={name}
-        stressLevel={stressLevel}
-        sleepQuality={sleepQuality}
+        stressLevel={hasAnsweredStress ? stressLevel : null}
+        sleepQuality={hasAnsweredSleep ? sleepQuality : null}
+        heartWorryLevel={hasAnsweredHeartWorry ? heartWorryLevel : null}
         agreementResponses={agreementResponses}
         experienceLevel={experienceLevel}
+        intentOption={selectedOption}
+        goalPhrases={selectedGoalPhrases}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('scienceCredibility', 'continue')}
+        onContinue={() => goToStep('consistency', 'continue')}
         onBack={() => goToStep('experience', 'back')}
       />
     );
@@ -930,14 +959,15 @@ export default function OnboardingFlow({
   if (step === 'lungCapacity') {
     return (
       <BreathHoldScreen
+        age={age}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={(result) => {
           setBreathHold(result);
-          goToStep('age', 'continue', { has_lung_capacity: true });
+          goToStep('dailyTime', 'continue', { has_lung_capacity: true });
         }}
-        onBack={() => goToStep('scienceCredibility', 'back')}
-        onSkip={() => goToStep('age', 'skip')}
+        onBack={() => goToStep('gender', 'back')}
+        onSkip={() => goToStep('dailyTime', 'skip')}
       />
     );
   }
@@ -950,7 +980,7 @@ export default function OnboardingFlow({
         stepCount={visualStepCount}
         onChange={setAge}
         onContinue={() => goToStep('gender', 'continue', { has_age: true })}
-        onBack={() => goToStep('lungCapacity', 'back')}
+        onBack={() => goToStep('scienceCredibility', 'back')}
         onSkip={() => goToStep('gender', 'skip')}
       />
     );
@@ -963,9 +993,9 @@ export default function OnboardingFlow({
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onSelect={setGender}
-        onContinue={() => goToStep('consistency', 'continue', { has_gender: gender != null })}
+        onContinue={() => goToStep('lungCapacity', 'continue', { has_gender: gender != null })}
         onBack={() => goToStep('age', 'back')}
-        onSkip={() => goToStep('consistency', 'skip')}
+        onSkip={() => goToStep('lungCapacity', 'skip')}
       />
     );
   }
@@ -975,8 +1005,10 @@ export default function OnboardingFlow({
       <ConsistencyScreen
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('dailyTime', 'continue')}
-        onBack={() => goToStep('gender', 'back')}
+        onContinue={() =>
+          goToStep(isOnlyCustomIntent ? 'breathPrimer' : 'brainScience', 'continue')
+        }
+        onBack={() => goToStep('assessmentReflection', 'back')}
       />
     );
   }
@@ -989,7 +1021,7 @@ export default function OnboardingFlow({
         stepCount={visualStepCount}
         onChange={setDailyMinutes}
         onContinue={() => goToStep('baselineIntro', 'continue', { has_daily_minutes: true })}
-        onBack={() => goToStep('consistency', 'back')}
+        onBack={() => goToStep('lungCapacity', 'back')}
         onSkip={() => goToStep('baselineIntro', 'skip')}
       />
     );
@@ -1009,14 +1041,24 @@ export default function OnboardingFlow({
   if (step === 'baseline') {
     return (
       <BaselineScreen
+        age={age}
+        gender={gender}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={(result) => {
           setBaseline(result);
-          goToStep('recommendation', 'continue', {
-            baseline_completed: result.completed,
-            has_baseline_bpm: result.avgBpm != null,
+          goToStep('planIntro', 'continue', {
+            baseline_completed: true,
+            has_baseline_bpm: true,
             has_baseline_drop: result.bpmDrop != null,
+          });
+        }}
+        onSkip={(attempt) => {
+          setBaseline(null);
+          goToStep('planIntro', attempt.completed ? 'continue' : 'skip', {
+            baseline_completed: attempt.completed,
+            has_baseline_bpm: false,
+            has_baseline_drop: false,
           });
         }}
         onBack={() => goToStep('baselineIntro', 'back')}
@@ -1024,40 +1066,52 @@ export default function OnboardingFlow({
     );
   }
 
-  if (step === 'recommendation') {
-    const intentTitle =
-      primaryIntent === 'other' || primaryIntent == null
-        ? 'reach your goal'
-        : selectedOption?.title ?? 'reach your goal';
-
+  if (step === 'planIntro') {
     return (
-      <RecommendationScreen
-        intentTitle={intentTitle}
-        stressLevel={stressLevel}
-        sleepQuality={sleepQuality}
-        racingLevel={racingLevel}
-        agreementResponses={agreementResponses}
-        experienceLevel={experienceLevel}
+      <PlanIntroScreen
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('recommendedExercise', 'continue')}
+        onContinue={() => goToStep('planLoading', 'continue')}
         onBack={() => goToStep('baseline', 'back')}
       />
     );
   }
 
+  const plan = buildOnboardingPlan({
+    intents: primaryIntent ? [primaryIntent, ...selectedIntents] : selectedIntents,
+    stressLevel,
+    sleepQuality,
+    age,
+    dailyMinutes,
+    breathHoldSeconds: breathHold?.holdSeconds ?? null,
+    bpmDrop: baseline?.bpmDrop ?? null,
+  });
+
+  if (step === 'planLoading') {
+    return (
+      <PlanLoadingScreen onDone={() => goToStep('recommendedExercise', 'auto')} />
+    );
+  }
+
   if (step === 'recommendedExercise') {
-    const techniqueId =
-      primaryIntent != null ? INTENT_TO_TECHNIQUE[primaryIntent] ?? 'box' : 'box';
+    const planMindMap = computeMindMap({
+      stressLevel,
+      sleepQuality,
+      agreementResponses,
+      experienceLevel,
+    });
 
     return (
       <RecommendedExerciseScreen
-        techniqueId={techniqueId}
-        baseline={baseline}
+        plan={plan}
+        name={name.trim()}
+        currentScores={planMindMap.scores}
+        targetScores={projectScores(planMindMap.scores)}
+        growthArea={planMindMap.growthArea}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goToStep('attPriming', 'continue')}
-        onBack={() => goToStep('recommendation', 'back')}
+        onBack={() => goToStep('planIntro', 'back')}
       />
     );
   }
@@ -1085,17 +1139,6 @@ export default function OnboardingFlow({
     );
   }
 
-  if (step === 'fiveMinutes') {
-    return (
-      <FiveMinutesScreen
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
-        onContinue={() => goToStep('founderNote', 'continue')}
-        onBack={() => goToStep('notifications', 'back')}
-      />
-    );
-  }
-
   if (step === 'founderNote') {
     return (
       <FounderNoteScreen
@@ -1105,7 +1148,7 @@ export default function OnboardingFlow({
         onContinue={() => {
           void requestStoreReview().finally(() => goToStep('pact', 'continue'));
         }}
-        onBack={() => goToStep('fiveMinutes', 'back')}
+        onBack={() => goToStep('notifications', 'back')}
       />
     );
   }
@@ -1113,6 +1156,7 @@ export default function OnboardingFlow({
   if (step === 'notifications') {
     return (
       <NotificationPermissionScreen
+        planTime={toClockString(plan.actions[0].minutesFromMidnight)}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         isSubmitting={isNotificationSubmitting}
@@ -1128,6 +1172,23 @@ export default function OnboardingFlow({
     );
   }
 
+  if (step === 'breathPrimer') {
+    return (
+      <BreathPrimerScreen
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onContinue={() => goToStep('scienceCredibility', 'continue')}
+        onBack={() =>
+          goToStep(
+            isOnlyCustomIntent ? 'consistency' : 'brainScience',
+            'back',
+          )
+        }
+        onSkip={() => goToStep('scienceCredibility', 'skip')}
+      />
+    );
+  }
+
   if (step === 'scienceCredibility') {
     const scIntentTitle =
       primaryIntent === 'other' || primaryIntent == null
@@ -1139,8 +1200,8 @@ export default function OnboardingFlow({
         stepCount={visualStepCount}
         name={name.trim() || null}
         intentTitle={scIntentTitle}
-        onContinue={() => goToStep('lungCapacity', 'continue')}
-        onBack={() => goToStep('assessmentReflection', 'back')}
+        onContinue={() => goToStep('age', 'continue')}
+        onBack={() => goToStep('breathPrimer', 'back')}
       />
     );
   }
@@ -1166,7 +1227,6 @@ export default function OnboardingFlow({
     const mindMap = computeMindMap({
       stressLevel,
       sleepQuality,
-      racingLevel,
       agreementResponses,
       experienceLevel,
     });
