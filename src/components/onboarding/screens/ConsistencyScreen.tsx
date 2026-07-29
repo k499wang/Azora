@@ -48,7 +48,7 @@ export default function ConsistencyScreen({
 
   return (
     <OnboardingScreenLayout
-      title="Consistency is what creates real change."
+      title="You have great potential to crush your goal."
       subtitle="Consistency is where you'll actually see results. Each session builds on the last."
       progress={stepIndex / stepCount}
       onBack={onBack}

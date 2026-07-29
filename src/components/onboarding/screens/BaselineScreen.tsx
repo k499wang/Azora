@@ -17,25 +17,24 @@ import { BaselineChecklist } from '../baseline/BaselineChecklist';
 import type { BaselineReadingTip } from '../baseline/BaselineChecklist';
 import { BaselineIntroContent } from '../baseline/BaselineIntroContent';
 import { BaselineSciencePanel } from '../baseline/BaselineSciencePanel';
-
-export interface BaselineResult {
-  completed: boolean;
-  avgBpm: number | null;
-  earlyBpm: number | null;
-  lateBpm: number | null;
-  bpmDrop: number | null;
-  durationSec: number;
-  bpmHistory: number[];
-}
+import BaselineHeartRateResult from '../baseline/BaselineHeartRateResult';
+import type { GenderOption } from '../data/genderOptions';
+import type {
+  CompletedOnboardingBaselineResult,
+  OnboardingBaselineResult,
+} from '../types';
 
 interface BaselineScreenProps {
+  age: number;
+  gender: GenderOption['id'] | null;
   stepIndex: number;
   stepCount: number;
-  onContinue: (result: BaselineResult) => void;
+  onContinue: (result: CompletedOnboardingBaselineResult) => void;
+  onSkip: (attempt: OnboardingBaselineResult) => void;
   onBack: () => void;
 }
 
-type Phase = 'intro' | 'placement' | 'running' | 'done';
+type Phase = 'intro' | 'placement' | 'running' | 'result';
 
 const SESSION_MS = 20_000;
 
@@ -114,13 +113,18 @@ function average(values: number[]): number | null {
 }
 
 export default function BaselineScreen({
+  age,
+  gender,
   stepIndex,
   stepCount,
   onContinue,
+  onSkip,
   onBack,
 }: BaselineScreenProps) {
   const stream = useHeartRateStream();
   const [phase, setPhase] = useState<Phase>('intro');
+  const [result, setResult] =
+    useState<CompletedOnboardingBaselineResult | null>(null);
   const [progress, setProgress] = useState(0);
   const [checkedTips, setCheckedTips] = useState<Set<string>>(() => new Set());
   const allChecked = checkedTips.size === READING_TIPS.length;
@@ -240,7 +244,6 @@ export default function BaselineScreen({
     if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
     rafRef.current = null;
     stream.stopStream();
-    setPhase('done');
 
     const earlyBpm = average(earlyBpmsRef.current);
     const lateBpm = average(lateBpmsRef.current);
@@ -251,13 +254,7 @@ export default function BaselineScreen({
       ? Math.round((Date.now() - startedAtRef.current) / 1000)
       : 0;
 
-    if (completed && isHapticsEnabled()) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
-        () => {}
-      );
-    }
-
-    onContinue({
+    const attempt: OnboardingBaselineResult = {
       completed,
       avgBpm,
       earlyBpm,
@@ -265,7 +262,26 @@ export default function BaselineScreen({
       bpmDrop,
       durationSec,
       bpmHistory: allBpmsRef.current.slice(),
-    });
+    };
+
+    if (completed && avgBpm != null) {
+      const completedResult: CompletedOnboardingBaselineResult = {
+        ...attempt,
+        completed: true,
+        avgBpm,
+      };
+      setResult(completedResult);
+      setPhase('result');
+
+      if (isHapticsEnabled()) {
+        Haptics.notificationAsync(
+          Haptics.NotificationFeedbackType.Success,
+        ).catch(() => {});
+      }
+      return;
+    }
+
+    onSkip(attempt);
   };
 
   useEffect(() => {
@@ -379,6 +395,19 @@ export default function BaselineScreen({
   };
 
   const remainingSec = Math.max(0, Math.ceil((1 - progress) * SESSION_SEC));
+
+  if (phase === 'result' && result != null) {
+    return (
+      <BaselineHeartRateResult
+        result={result}
+        age={age}
+        gender={gender}
+        stepIndex={stepIndex}
+        stepCount={stepCount}
+        onContinue={() => onContinue(result)}
+      />
+    );
+  }
 
   if (phase === 'placement' || phase === 'running') {
     const isRunning = phase === 'running';

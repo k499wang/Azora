@@ -9,6 +9,9 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
     title: 'Reduce stress',
     body: 'Use breathing to settle your nervous system.',
     hook: "Stress doesn't stand a chance.",
+    goalPhrase: 'reduce stress',
+    assessmentPlan:
+      'We’ll start with slow exhales and short daily resets.',
     reflectionHeadline: 'Lower stress in one session.',
     reflectionBody:
       "Your body is built to calm down. You're just giving it permission.",
@@ -37,6 +40,9 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
     title: 'Calm down fast',
     body: 'Settle spikes of stress or nerves in the moment.',
     hook: 'Relief in under a minute.',
+    goalPhrase: 'calm down quickly when stress spikes',
+    assessmentPlan:
+      'We’ll start with quick calming techniques for stressful moments.',
     reflectionHeadline: 'Calm, on demand.',
     reflectionBody:
       'One round of slow exhales can pull your body out of alarm mode in about a minute.',
@@ -65,6 +71,9 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
     title: 'Sleep better',
     body: 'Build a slower rhythm before rest.',
     hook: 'Tonight can already feel different.',
+    goalPhrase: 'sleep better',
+    assessmentPlan:
+      'We’ll start with gentle evening breathing that helps your body wind down.',
     reflectionHeadline: 'Fall asleep faster, sleep deeper.',
     reflectionBody:
       'A nightly wind-down teaches your body to slip into rest on cue — no willpower needed.',
@@ -93,6 +102,9 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
     title: 'Focus & study',
     body: 'Steady your mind for deep work and exams.',
     hook: 'Clear head, sharper recall.',
+    goalPhrase: 'focus more easily while working or studying',
+    assessmentPlan:
+      'We’ll start with steady breathing that quiets mental noise before work or study.',
     reflectionHeadline: 'Find focus in a few breaths.',
     reflectionBody:
       'Paced breathing calms pre-exam nerves and pulls your attention back from the noise.',
@@ -121,6 +133,9 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
     title: 'Boost energy',
     body: 'Lift your state without caffeine.',
     hook: 'A cleaner kind of energy.',
+    goalPhrase: 'boost your energy without caffeine',
+    assessmentPlan:
+      'We’ll start with energizing sessions that lift alertness without caffeine.',
     reflectionHeadline: 'Energize without the crash.',
     reflectionBody:
       'Active breathing raises alertness and oxygen flow — a natural lift you can repeat anytime.',
@@ -149,6 +164,9 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
     title: 'Deepen practice',
     body: 'Use breath as a path to stillness and presence.',
     hook: 'Breath as a way in.',
+    goalPhrase: 'deepen your spiritual practice',
+    assessmentPlan:
+      'We’ll start with mindful breathing that makes more room for stillness and presence.',
     reflectionHeadline: 'Find stillness through the breath.',
     reflectionBody:
       'Breath has anchored meditation and prayer for millennia — a doorway to presence you carry everywhere.',
@@ -177,6 +195,9 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
     title: 'Support my yoga',
     body: 'Carry your breath off the mat — pranayama to steady every practice.',
     hook: 'The breath half of your practice.',
+    goalPhrase: 'support your yoga practice through better breathing',
+    assessmentPlan:
+      'We’ll start with breath-led practices for steadier movement and deeper stillness.',
     reflectionHeadline: 'Bring your breath to the mat.',
     reflectionBody:
       'Pranayama is the breath side of yoga — the same slow, intentional breathing that steadies poses and deepens stillness.',
@@ -205,6 +226,9 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
     title: 'Heart health',
     body: 'Measure HRV and recovery trends over time.',
     hook: 'Your heart has been waiting for this.',
+    goalPhrase: 'support your heart health and recovery',
+    assessmentPlan:
+      'We’ll start with resonance breathing to support HRV and recovery.',
     reflectionHeadline: 'See your heart, every day.',
     reflectionBody:
       'HRV is the clearest window into recovery, stress, and long-term cardiovascular health.',
@@ -233,6 +257,9 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
     title: 'Daily habit',
     body: 'Build a steady breathing practice you return to.',
     hook: 'Small reps. Real change.',
+    goalPhrase: 'build a breathing habit that lasts',
+    assessmentPlan:
+      'We’ll start with short sessions designed to fit your day and build consistency.',
     reflectionHeadline: 'A practice built to actually last.',
     reflectionBody:
       'Consistency beats intensity. A few focused minutes a day compounds faster than you expect.',

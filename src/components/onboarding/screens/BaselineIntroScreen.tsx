@@ -4,11 +4,9 @@ import { Animated, Easing, StyleSheet, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
 import MaskedView from '@react-native-masked-view/masked-view';
-import * as Haptics from 'expo-haptics';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
-import { isHapticsEnabled } from '../../../services/preferences/hapticsPreference';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 
@@ -51,33 +49,10 @@ export default function BaselineIntroScreen({
   onBack,
 }: BaselineIntroScreenProps) {
   const scroll = useRef(new Animated.Value(0)).current;
-  const fade = useRef(new Animated.Value(0)).current;
-  const rise = useRef(new Animated.Value(16)).current;
 
   const ecgPath = useMemo(() => buildEcgPath(), []);
 
   useEffect(() => {
-    if (isHapticsEnabled()) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
-        () => {},
-      );
-    }
-
-    Animated.parallel([
-      Animated.timing(fade, {
-        toValue: 1,
-        duration: 520,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-      Animated.timing(rise, {
-        toValue: 0,
-        duration: 620,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-    ]).start();
-
     const loop = Animated.loop(
       Animated.timing(scroll, {
         toValue: 1,
@@ -88,7 +63,7 @@ export default function BaselineIntroScreen({
     );
     loop.start();
     return () => loop.stop();
-  }, [scroll, fade, rise]);
+  }, [scroll]);
 
   const translateX = scroll.interpolate({
     inputRange: [0, 1],
@@ -104,12 +79,7 @@ export default function BaselineIntroScreen({
       onBack={onBack}
       footer={<OnboardingPrimaryButton label="I’m ready" onPress={onContinue} />}
     >
-      <Animated.View
-        style={[
-          styles.stage,
-          { opacity: fade, transform: [{ translateY: rise }] },
-        ]}
-      >
+      <View style={styles.stage}>
         <MaskedView
           style={styles.monitor}
           maskElement={
@@ -165,7 +135,7 @@ export default function BaselineIntroScreen({
             Azora uses PPG to read your heart rate and build a custom plan.
           </Text>
         </View>
-      </Animated.View>
+      </View>
     </OnboardingScreenLayout>
   );
 }
@@ -175,7 +145,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing['2xl'],
+    gap: spacing.sm,
     paddingBottom: spacing['2xl'],
   },
   monitor: {

@@ -6,96 +6,11 @@ import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import { isHapticsEnabled } from '../../services/preferences/hapticsPreference';
+import ConfettiFall from './ConfettiFall';
 
 interface CelebrationOverlayProps {
   title?: string;
   subtitle?: string;
-}
-
-/* ─── Confetti ─── */
-const CONFETTI_COLORS = [
-  colors.primary.blue400,
-  colors.primary.blue600,
-  colors.success[500],
-  colors.orange[400],
-  colors.orange[500],
-  colors.primary.blue300,
-];
-
-const CONFETTI_COUNT = 26;
-
-const CONFETTI_CONFIG = Array.from({ length: CONFETTI_COUNT }, (_, i) => ({
-  xPercent: 15 + Math.random() * 70, // keep within middle 70%
-  color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
-  delay: Math.random() * 250,
-  duration: 1600 + Math.random() * 1400,
-  drift: (Math.random() - 0.5) * 280,
-  rotation: (Math.random() > 0.5 ? 1 : -1) * (200 + Math.random() * 400),
-  size: 6 + Math.random() * 6,
-}));
-
-function ConfettiPiece({
-  xPercent,
-  color,
-  delay,
-  duration,
-  drift,
-  rotation,
-  size,
-}: {
-  xPercent: number;
-  color: string;
-  delay: number;
-  duration: number;
-  drift: number;
-  rotation: number;
-  size: number;
-}) {
-  const anim = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    Animated.timing(anim, {
-      toValue: 1,
-      duration,
-      delay,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: true,
-    }).start();
-  }, [anim, delay, duration]);
-
-  const translateY = anim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [-40, 420],
-  });
-  const translateX = anim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, drift],
-  });
-  const rotate = anim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', `${rotation}deg`],
-  });
-  const opacity = anim.interpolate({
-    inputRange: [0, 0.6, 1],
-    outputRange: [1, 1, 0],
-  });
-
-  return (
-    <Animated.View
-      style={[
-        confettiStyles.piece,
-        {
-          left: `${xPercent}%`,
-          width: size,
-          height: size * 0.65,
-          borderRadius: size * 0.15,
-          backgroundColor: color,
-          opacity,
-          transform: [{ translateY }, { translateX }, { rotate }],
-        },
-      ]}
-    />
-  );
 }
 
 /* ─── CelebrationOverlay ─── */
@@ -194,12 +109,7 @@ export default function CelebrationOverlay({
       pointerEvents="none"
       style={[styles.overlay, { opacity: bgFade }]}
     >
-      {/* Confetti */}
-      <View style={styles.confettiWrap} pointerEvents="none">
-        {CONFETTI_CONFIG.map((c, i) => (
-          <ConfettiPiece key={i} {...c} />
-        ))}
-      </View>
+      <ConfettiFall />
 
       <View style={styles.center}>
         <View style={styles.ringWrap}>
@@ -245,10 +155,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.primary,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  confettiWrap: {
-    ...StyleSheet.absoluteFillObject,
-    overflow: 'hidden',
   },
   center: {
     alignItems: 'center',
@@ -297,12 +203,5 @@ const styles = StyleSheet.create({
   subtitle: {
     ...typography.body.medium,
     color: colors.text.secondary,
-  },
-});
-
-const confettiStyles = StyleSheet.create({
-  piece: {
-    position: 'absolute',
-    top: '15%',
   },
 });

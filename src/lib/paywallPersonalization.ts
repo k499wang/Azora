@@ -26,16 +26,19 @@ export function buildPaywallPersonalization(
     dailyMinutes: clampMinutes(input.dailyMinutes),
     baselineBpm: clampBpm(input.baselineBpm),
     currentScores,
-    targetScores: currentScores ? currentScores.map(toTarget) : null,
+    targetScores: currentScores ? projectScores(currentScores) : null,
     superpower: input.mindMap?.superpower ?? null,
     growthArea: input.mindMap?.growthArea ?? null,
   };
 }
 
-function toTarget(score: MindMapScore): MindMapScore {
-  const bump =
-    score.value <= 40 ? 35 : score.value <= 60 ? 28 : score.value <= 80 ? 20 : 10;
-  return { ...score, value: Math.min(100, score.value + bump) };
+/** Where each axis should sit once the plan has been followed. */
+export function projectScores(scores: MindMapScore[]): MindMapScore[] {
+  return scores.map((score) => {
+    const bump =
+      score.value <= 40 ? 35 : score.value <= 60 ? 28 : score.value <= 80 ? 20 : 10;
+    return { ...score, value: Math.min(100, score.value + bump) };
+  });
 }
 
 function clampMinutes(value: number | null): number {

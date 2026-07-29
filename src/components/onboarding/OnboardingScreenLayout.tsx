@@ -1,7 +1,7 @@
 import { Text } from '../common/Text';
 import { ReactNode, useEffect, useRef, useState } from 'react';
 import {
-  Animated, Easing, InteractionManager, Keyboard, KeyboardAvoidingView, LayoutChangeEvent, NativeScrollEvent, NativeSyntheticEvent, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+  Animated, Easing, InteractionManager, Keyboard, KeyboardAvoidingView, LayoutChangeEvent, NativeScrollEvent, NativeSyntheticEvent, Platform, Pressable, ScrollView, StyleProp, StyleSheet, TextStyle, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Icon from '../common/icons/Icon';
 import * as Haptics from 'expo-haptics';
@@ -25,6 +25,9 @@ interface OnboardingScreenLayoutProps {
   keyboardAvoiding?: boolean;
   centerBody?: boolean;
   centerOnScreen?: boolean;
+  centerCopy?: boolean;
+  copyBadge?: ReactNode;
+  titleStyle?: StyleProp<TextStyle>;
   fullWidthProgress?: boolean;
   hideProgress?: boolean;
   animateCopy?: boolean;
@@ -41,6 +44,9 @@ export default function OnboardingScreenLayout({
   keyboardAvoiding = false,
   centerBody = false,
   centerOnScreen = false,
+  centerCopy = false,
+  copyBadge,
+  titleStyle,
   fullWidthProgress = false,
   hideProgress = false,
   animateCopy = false,
@@ -293,7 +299,20 @@ export default function OnboardingScreenLayout({
                     ],
                   }}
                 >
-                  <Text style={styles.title}>{title}</Text>
+                  {copyBadge ? (
+                    <View style={centerCopy ? styles.badgeCentered : styles.badge}>
+                      {copyBadge}
+                    </View>
+                  ) : null}
+                  <Text
+                    style={[
+                      styles.title,
+                      centerCopy && styles.centeredCopy,
+                      titleStyle,
+                    ]}
+                  >
+                    {title}
+                  </Text>
                 </Animated.View>
                 {subtitle ? (
                   <Animated.View
@@ -309,7 +328,11 @@ export default function OnboardingScreenLayout({
                       ],
                     }}
                   >
-                    <Text style={styles.subtitle}>{subtitle}</Text>
+                    <Text
+                      style={[styles.subtitle, centerCopy && styles.centeredCopy]}
+                    >
+                      {subtitle}
+                    </Text>
                   </Animated.View>
                 ) : null}
               </View>
@@ -533,6 +556,21 @@ const styles = StyleSheet.create({
   subtitle: {
     ...typography.body.small,
     color: colors.text.secondary,
+  },
+  centeredCopy: {
+    textAlign: 'center',
+  },
+  // The scroll view clips to its bounds, so the badge needs headroom above it
+  // or an entrance that overshoots its resting size gets cut off at the top.
+  badge: {
+    alignItems: 'flex-start',
+    marginTop: spacing.md,
+    marginBottom: spacing.md,
+  },
+  badgeCentered: {
+    alignItems: 'center',
+    marginTop: spacing.md,
+    marginBottom: spacing.md,
   },
   body: {
     flex: 1,

@@ -5,12 +5,12 @@ export type OnboardingStep =
   | 'intentReflection'
   | 'intentProjection'
   | 'brainScience'
+  | 'breathPrimer'
   | 'name'
   | 'greeting'
   | 'acquisitionSource'
   | 'attPriming'
   | 'stress'
-  | 'mindRacing'
   | 'sleep'
   | 'heartWorry'
   | 'agreement'
@@ -23,9 +23,9 @@ export type OnboardingStep =
   | 'dailyTime'
   | 'baselineIntro'
   | 'baseline'
-  | 'recommendation'
+  | 'planIntro'
+  | 'planLoading'
   | 'recommendedExercise'
-  | 'fiveMinutes'
   | 'founderNote'
   | 'scienceCredibility'
   | 'pact'
@@ -35,6 +35,22 @@ export type OnboardingStep =
 export interface OnboardingBreathHoldResult {
   holdSeconds: number;
   score: number;
+}
+
+export interface OnboardingBaselineResult {
+  completed: boolean;
+  avgBpm: number | null;
+  earlyBpm: number | null;
+  lateBpm: number | null;
+  bpmDrop: number | null;
+  durationSec: number;
+  bpmHistory: number[];
+}
+
+export interface CompletedOnboardingBaselineResult
+  extends OnboardingBaselineResult {
+  completed: true;
+  avgBpm: number;
 }
 
 export interface IntentOption {
@@ -53,6 +69,8 @@ export interface IntentValuePoint {
 
 export interface PersonalizedIntentOption extends IntentOption {
   hook: string;
+  goalPhrase: string;
+  assessmentPlan: string;
   reflectionHeadline: string;
   reflectionBody: string;
   valuePoints: IntentValuePoint[];
