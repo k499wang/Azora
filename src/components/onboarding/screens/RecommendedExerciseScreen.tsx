@@ -44,10 +44,7 @@ export default function RecommendedExerciseScreen({
   onBack,
 }: RecommendedExerciseScreenProps) {
   const { width } = useWindowDimensions();
-  const projection = plan.projection;
-  const gain = projection
-    ? projection.highSeconds - projection.baselineSeconds
-    : null;
+  const lungAgeGoal = plan.lungAgeGoal;
 
   const biggestLift = useMemo(() => {
     const growthTarget = targetScores.find(
@@ -96,10 +93,12 @@ export default function RecommendedExerciseScreen({
           </Text>
         </View>
 
-        {gain != null ? (
+        {lungAgeGoal ? (
           <View style={styles.goalPill}>
             <Text style={styles.goalPillText}>
-              {`Add ${gain}s to your breath hold by ${formatRetestDate(new Date())}`}
+              {lungAgeGoal.mode === 'lower'
+                ? `Lower my lung age to ${lungAgeGoal.targetYears} by ${formatRetestDate(new Date())}`
+                : `Keep my lung age at ${lungAgeGoal.targetYears} through ${formatRetestDate(new Date())}`}
             </Text>
           </View>
         ) : null}

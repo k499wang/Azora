@@ -10,6 +10,8 @@
  * that lands later is invisible to someone deciding whether to keep the app.
  */
 
+import { estimateLungAge, MIN_LUNG_AGE } from './lungAge';
+
 export type PlanActionId = 'session' | 'checkIn';
 
 export interface PlanAction {
@@ -28,9 +30,22 @@ export interface PlanProjection {
   highSeconds: number;
 }
 
+export type LungAgeGoal =
+  | {
+      mode: 'lower';
+      currentYears: number;
+      targetYears: number;
+    }
+  | {
+      mode: 'maintain';
+      currentYears: typeof MIN_LUNG_AGE;
+      targetYears: typeof MIN_LUNG_AGE;
+    };
+
 export interface OnboardingPlan {
   actions: PlanAction[];
   projection: PlanProjection | null;
+  lungAgeGoal: LungAgeGoal | null;
   fullDailyMinutes: number;
 }
 
@@ -162,12 +177,36 @@ export function buildOnboardingPlan(inputs: PlanInputs): OnboardingPlan {
   ] satisfies PlanAction[];
   actions.sort((a, b) => a.minutesFromMidnight - b.minutesFromMidnight);
 
+  const projection =
+    inputs.breathHoldSeconds != null && inputs.breathHoldSeconds > 0
+      ? projectHold(Math.round(inputs.breathHoldSeconds))
+      : null;
+  let lungAgeGoal: LungAgeGoal | null = null;
+
+  if (projection && inputs.breathHoldSeconds != null) {
+    const currentYears = estimateLungAge(
+      inputs.breathHoldSeconds,
+      inputs.age,
+    ).years;
+    const targetYears = estimateLungAge(
+      projection.highSeconds,
+      inputs.age,
+    ).years;
+
+    if (targetYears < currentYears) {
+      lungAgeGoal = { mode: 'lower', currentYears, targetYears };
+    } else if (
+      currentYears === MIN_LUNG_AGE &&
+      targetYears === MIN_LUNG_AGE
+    ) {
+      lungAgeGoal = { mode: 'maintain', currentYears, targetYears };
+    }
+  }
+
   return {
     actions,
-    projection:
-      inputs.breathHoldSeconds != null && inputs.breathHoldSeconds > 0
-        ? projectHold(Math.round(inputs.breathHoldSeconds))
-        : null,
+    projection,
+    lungAgeGoal,
     fullDailyMinutes: minutes + CHECK_IN_MINUTES,
   };
 }
