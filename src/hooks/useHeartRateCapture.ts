@@ -29,8 +29,9 @@ import { runAfterNextPaint } from '../lib/ui/runAfterNextPaint';
 import { useMeasurementTimer } from './useMeasurementTimer';
 import { useHeartRateCamera } from './useHeartRateCamera';
 import { useDeviceMotionFeed } from './useDeviceMotionFeed';
+import { hasConfirmedPulse } from '../lib/heartRate/captureGuidance';
 
-const MIN_GOOD_DURATION_MS = 2500;
+const PULSE_CONFIRMATION_DURATION_MS = 500;
 const PROGRESS_UPDATE_INTERVAL_MS = 200;
 const BPM_UPDATE_INTERVAL_MS = 1000;
 // The manager's bandpass coefficients are designed for 30 Hz
@@ -48,6 +49,7 @@ interface UseHeartRateCaptureReturn {
   captureState: CaptureState;
   fingerPlacement: FingerPlacementState;
   signalStatus: SignalStatus;
+  isPulseConfirmed: boolean;
   progress: number;
   secondsRemaining: number;
   currentBpm: number | null;
@@ -61,7 +63,6 @@ interface UseHeartRateCaptureReturn {
   torchMode: 'on' | 'off';
   cameraFps: number;
   startCapture: () => void;
-  startMeasuring: () => void;
   cancel: () => void;
   reset: () => void;
   hasPermission: boolean;
@@ -87,6 +88,7 @@ export function useHeartRateCapture(
   const [captureState, setCaptureState] = useState<CaptureState>('idle');
   const [fingerPlacement, setFingerPlacement] = useState<FingerPlacementState>('no_finger');
   const [signalStatus, setSignalStatus] = useState<SignalStatus>('no_finger');
+  const [isPulseConfirmed, setIsPulseConfirmed] = useState(false);
   const [progress, setProgress] = useState(0);
   const [secondsRemaining, setSecondsRemaining] = useState(captureDurationSec);
   const [currentBpm, setCurrentBpm] = useState<number | null>(null);
@@ -108,6 +110,7 @@ export function useHeartRateCapture(
   const captureStateRef = useRef<CaptureState>('idle');
   const fingerPlacementRef = useRef<FingerPlacementState>('no_finger');
   const signalStatusRef = useRef<SignalStatus>('no_finger');
+  const pulseConfirmedRef = useRef(false);
   const managerRef = useRef(new HeartRateManager());
   const liveBpmFilterRef = useRef(createLiveBpmPresentationFilter());
   const beatSchedulerRef = useRef(
@@ -128,6 +131,12 @@ export function useHeartRateCapture(
   const setCaptureStateAndRef = useCallback((next: CaptureState) => {
     captureStateRef.current = next;
     setCaptureState(next);
+  }, []);
+
+  const setPulseConfirmation = useCallback((confirmed: boolean) => {
+    if (pulseConfirmedRef.current === confirmed) return;
+    pulseConfirmedRef.current = confirmed;
+    setIsPulseConfirmed(confirmed);
   }, []);
 
   const resetMeasurementRefs = useCallback(() => {
@@ -211,10 +220,11 @@ export function useHeartRateCapture(
     setBeatTick(0);
     setCurrentBpm(null);
     setLiveSignalSamples([]);
+    setPulseConfirmation(false);
     offlineCaptureActive.value = true;
     setCaptureStateAndRef('measuring');
     startMeasurementTimer();
-  }, [captureDurationSec, offlineCaptureActive, resetMeasurementRefs, setCaptureStateAndRef, startMeasurementTimer, stopMeasurementTimer]);
+  }, [captureDurationSec, offlineCaptureActive, resetMeasurementRefs, setCaptureStateAndRef, setPulseConfirmation, startMeasurementTimer, stopMeasurementTimer]);
 
   const addSample = useRunOnJS(
     (frameSample: unknown) => {
@@ -257,7 +267,14 @@ export function useHeartRateCapture(
       }
 
       if (state === 'camera_check') {
-        if (frameState.fingerPlacement !== 'good') {
+        const pulseConfirmed = hasConfirmedPulse({
+          fingerPlacement: frameState.fingerPlacement,
+          signalStatus: frameState.signalStatus,
+          bpm: managerRef.current.getCurrentBpmSnapshot()?.bpm ?? null,
+        });
+        setPulseConfirmation(pulseConfirmed);
+
+        if (!pulseConfirmed) {
           goodSinceRef.current = null;
           return;
         }
@@ -265,7 +282,10 @@ export function useHeartRateCapture(
           goodSinceRef.current = timestamp;
           return;
         }
-        if (timestamp - goodSinceRef.current >= MIN_GOOD_DURATION_MS) {
+        if (
+          timestamp - goodSinceRef.current >=
+          PULSE_CONFIRMATION_DURATION_MS
+        ) {
           startMeasuring();
         }
         return;
@@ -318,7 +338,7 @@ export function useHeartRateCapture(
         setCurrentBpm(null);
       }
     },
-    [startMeasuring],
+    [setPulseConfirmation, startMeasuring],
   );
 
   const frameProcessor = useFrameProcessor(
@@ -356,13 +376,14 @@ export function useHeartRateCapture(
     setCaptureSamples([]);
     setBeatTick(0);
     setCurrentBpm(null);
+    setPulseConfirmation(false);
     setLiveSignalSamples([]);
     fingerPlacementRef.current = 'no_finger';
     setFingerPlacement('no_finger');
     signalStatusRef.current = 'no_finger';
     setSignalStatus('no_finger');
     setCaptureStateAndRef('camera_check');
-  }, [captureDurationSec, resetCaptureRefs, setCaptureStateAndRef, stopMeasurementTimer]);
+  }, [captureDurationSec, resetCaptureRefs, setCaptureStateAndRef, setPulseConfirmation, stopMeasurementTimer]);
 
   const cancel = useCallback(() => {
     stopMeasurementTimer();
@@ -371,13 +392,14 @@ export function useHeartRateCapture(
     setSecondsRemaining(captureDurationSec);
     setBeatTick(0);
     setCurrentBpm(null);
+    setPulseConfirmation(false);
     setLiveSignalSamples([]);
     fingerPlacementRef.current = 'no_finger';
     setFingerPlacement('no_finger');
     signalStatusRef.current = 'no_finger';
     setSignalStatus('no_finger');
     setCaptureStateAndRef('idle');
-  }, [captureDurationSec, resetCaptureRefs, setCaptureStateAndRef, stopMeasurementTimer]);
+  }, [captureDurationSec, resetCaptureRefs, setCaptureStateAndRef, setPulseConfirmation, stopMeasurementTimer]);
 
   const reset = useCallback(() => {
     cancel();
@@ -389,6 +411,7 @@ export function useHeartRateCapture(
     captureState,
     fingerPlacement,
     signalStatus,
+    isPulseConfirmed,
     progress,
     secondsRemaining,
     currentBpm,
@@ -402,7 +425,6 @@ export function useHeartRateCapture(
     torchMode,
     cameraFps,
     startCapture,
-    startMeasuring,
     cancel,
     reset,
     hasPermission,

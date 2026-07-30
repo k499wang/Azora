@@ -108,10 +108,11 @@ const GAUGE_TICK_PATHS = [0, 25, 50, 75, 100].map((t) =>
 );
 
 function formatHold(seconds: number): string {
-  const total = Math.floor(seconds);
-  const minutes = Math.floor(total / 60);
-  const rest = total % 60;
-  return `${minutes}:${String(rest).padStart(2, '0')}`;
+  const totalTenths = Math.floor(Math.max(0, seconds) * 10);
+  const minutes = Math.floor(totalTenths / 600);
+  const rest = Math.floor((totalTenths % 600) / 10);
+  const tenths = totalTenths % 10;
+  return `${minutes}:${String(rest).padStart(2, '0')}.${tenths}`;
 }
 
 function scoreHold(holdSeconds: number, age: number): ScoredHold {
@@ -143,6 +144,7 @@ export default function BreathHoldScreen({
 
   const scale = useRef(new Animated.Value(CIRCLE_MIN_SCALE)).current;
   const inhaleEnter = useRef(new Animated.Value(0)).current;
+  const holdEnter = useRef(new Animated.Value(0)).current;
   const doneEnter = useRef(new Animated.Value(0)).current;
   const holdStartRef = useRef<number | null>(null);
   const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -164,10 +166,11 @@ export default function BreathHoldScreen({
       if (tickRef.current) clearInterval(tickRef.current);
       scale.stopAnimation();
       inhaleEnter.stopAnimation();
+      holdEnter.stopAnimation();
       doneEnter.stopAnimation();
       cancelAnimation(arcProgress);
     };
-  }, [arcProgress, doneEnter, inhaleEnter, scale]);
+  }, [arcProgress, doneEnter, holdEnter, inhaleEnter, scale]);
 
   useEffect(() => {
     if (phase !== 'inhale') return;
@@ -179,6 +182,19 @@ export default function BreathHoldScreen({
       useNativeDriver: true,
     }).start();
   }, [phase, inhaleEnter]);
+
+  useEffect(() => {
+    if (phase !== 'hold') return;
+    holdEnter.setValue(0);
+    const animation = Animated.timing(holdEnter, {
+      toValue: 1,
+      duration: 260,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    });
+    animation.start();
+    return () => animation.stop();
+  }, [phase, holdEnter]);
 
   useEffect(() => {
     if (phase !== 'inhale') return;
@@ -282,14 +298,16 @@ export default function BreathHoldScreen({
 
     scale.stopAnimation();
     inhaleEnter.stopAnimation();
+    holdEnter.stopAnimation();
     doneEnter.stopAnimation();
     scale.setValue(CIRCLE_MIN_SCALE);
     inhaleEnter.setValue(0);
+    holdEnter.setValue(0);
     doneEnter.setValue(0);
     cancelAnimation(arcProgress);
     arcProgress.value = lungAgeGaugeFill(MIN_LUNG_AGE);
     setPhase('inhale');
-  }, [arcProgress, doneEnter, inhaleEnter, scale]);
+  }, [arcProgress, doneEnter, holdEnter, inhaleEnter, scale]);
 
   // The counter reads off the same shared value as the ring, so both stay on the
   // UI thread and React only re-renders when the whole year changes.
@@ -344,11 +362,8 @@ export default function BreathHoldScreen({
 
   if (phase === 'inhale' || phase === 'hold') {
     const isInhale = phase === 'inhale';
-    const subhead = isInhale
-      ? 'Fill your lungs completely.'
-      : 'Hold now — the timer has started. Press the circle when you need to breathe.';
 
-    const inhaleEntryStyle = isInhale
+    const phaseEntryStyle = isInhale
       ? {
           opacity: inhaleEnter,
           transform: [
@@ -360,19 +375,34 @@ export default function BreathHoldScreen({
             },
           ],
         }
-      : null;
+      : {
+          opacity: holdEnter,
+          transform: [
+            {
+              scale: holdEnter.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0.97, 1],
+              }),
+            },
+          ],
+        };
 
     return (
       <View style={styles.fullScreen}>
-        <Animated.View style={[styles.fullCenter, inhaleEntryStyle]}>
+        <Animated.View style={[styles.fullCenter, phaseEntryStyle]}>
           <View style={styles.headingSlot}>
             {isInhale ? (
-              <Text style={styles.phaseHeading}>Breathe in deeply</Text>
+              <Text style={styles.phaseHeading}>Breathe in</Text>
             ) : (
-              <Text style={styles.bigTimer}>{formatHold(holdSec)}</Text>
+              <View style={styles.holdReadout}>
+                <Text style={styles.holdPhaseLabel}>HOLD</Text>
+                <Text style={styles.bigTimer}>{formatHold(holdSec)}</Text>
+              </View>
             )}
           </View>
-          <Text style={styles.phaseSub}>{subhead}</Text>
+          {isInhale ? (
+            <Text style={styles.phaseSub}>Hold when the circle is full.</Text>
+          ) : null}
 
           <View style={styles.circleWrap}>
             <Animated.View
@@ -617,7 +647,7 @@ export default function BreathHoldScreen({
             Let&apos;s estimate your{'\n'}lung age.
           </Text>
           <Text style={styles.introSub}>
-            Take a deep breath, then hold until you feel the need to breathe.
+            Take one deep breath. Hold until you need to breathe, then tap to end.
           </Text>
         </View>
 
@@ -707,7 +737,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   headingSlot: {
-    minHeight: 72,
+    minHeight: 96,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -721,6 +751,17 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     textAlign: 'center',
     paddingHorizontal: spacing.md,
+  },
+  holdReadout: {
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  holdPhaseLabel: {
+    ...typography.body.small,
+    fontFamily: fonts.semibold,
+    fontWeight: '500',
+    color: colors.text.tertiary,
+    letterSpacing: 1.6,
   },
   bigTimer: {
     fontFamily: fonts.semibold,

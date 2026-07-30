@@ -975,7 +975,7 @@ export class HeartRateManager {
               ? 'Adjust finger coverage'
             : this.lastPlacement === 'lost'
               ? 'Signal lost - hold steady'
-              : 'Cover the back camera and flash',
+              : 'Completely cover the active camera',
         signalStatus: placementChurn
           ? 'excessive_motion'
           : placement === 'too_much_pressure'

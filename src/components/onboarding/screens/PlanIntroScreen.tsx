@@ -1,7 +1,7 @@
 import { Text } from '../../common/Text';
 import { StyleSheet, View } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Svg, { Circle, Defs, Path, RadialGradient, Stop } from 'react-native-svg';
-import CardSurface from '../../common/CardSurface';
 import Icon from '../../common/icons/Icon';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
@@ -26,6 +26,44 @@ const SEGMENT_COLORS = [
   colors.primary.blue400,
   colors.primary.blue300,
 ];
+const SEAL_SIZE = 52;
+const SEAL_CENTER = SEAL_SIZE / 2;
+const SEAL_LOBE_COUNT = 12;
+
+interface SealPoint {
+  x: number;
+  y: number;
+}
+
+function midpoint(from: SealPoint, to: SealPoint): SealPoint {
+  return {
+    x: (from.x + to.x) / 2,
+    y: (from.y + to.y) / 2,
+  };
+}
+
+function createPersonalizationSealPath(): string {
+  const points = Array.from({ length: SEAL_LOBE_COUNT * 2 }, (_, index) => {
+    const angle = -Math.PI / 2 + (index * Math.PI) / SEAL_LOBE_COUNT;
+    const radius = index % 2 === 0 ? 25 : 22;
+    return {
+      x: SEAL_CENTER + Math.cos(angle) * radius,
+      y: SEAL_CENTER + Math.sin(angle) * radius,
+    };
+  });
+  const start = midpoint(points[points.length - 1], points[0]);
+  const curves = points
+    .map((point, index) => {
+      const end = midpoint(point, points[(index + 1) % points.length]);
+      return `Q ${point.x} ${point.y} ${end.x} ${end.y}`;
+    })
+    .join(' ');
+
+  return `M ${start.x} ${start.y} ${curves} Z`;
+}
+
+const PERSONALIZATION_SEAL_PATH = createPersonalizationSealPath();
+
 function polarPoint(angleDegrees: number) {
   const radians = (angleDegrees * Math.PI) / 180;
   return {
@@ -106,21 +144,37 @@ function PlanCelebrationVisual() {
   );
 }
 
+function PersonalizationSeal() {
+  return (
+    <View style={styles.personalizationSeal}>
+      <Svg width={SEAL_SIZE} height={SEAL_SIZE} viewBox="0 0 52 52">
+        <Path
+          d={PERSONALIZATION_SEAL_PATH}
+          fill={colors.neutral[50]}
+        />
+      </Svg>
+      <View style={styles.personalizationSealIcon}>
+        <MaterialCommunityIcons
+          name="account-circle"
+          size={28}
+          color={colors.primary.blue600}
+        />
+      </View>
+    </View>
+  );
+}
+
 function PersonalizedPlanCard() {
   return (
-    <View style={styles.planCardWrap}>
-      <CardSurface
-        containerStyle={styles.planCardContainer}
-        style={styles.planCard}
-      >
-        <Text style={styles.planCardTitle}>Personalized to your goals</Text>
-        <Text style={styles.planCardBody}>
-          We’ll use your answers to tailor your plan, targets, and
-          recommendations.
-        </Text>
-      </CardSurface>
-      <View style={styles.planCardBadge}>
-        <Icon name="profile" size={24} color={colors.primary.blue600} />
+    <View style={styles.planCardOuter}>
+      <View style={styles.planCardWrap}>
+        <View style={styles.planCard}>
+          <Text style={styles.planCardTitle}>Personalized to your goals</Text>
+          <Text style={styles.planCardBody}>
+            {'We’ll use your answers to tailor your plan, targets, and recommendations.'}
+          </Text>
+        </View>
+        <PersonalizationSeal />
       </View>
     </View>
   );
@@ -191,7 +245,6 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
     alignItems: 'center',
     gap: spacing.md,
-    paddingHorizontal: spacing.lg,
   },
   headline: {
     fontFamily: fonts.semibold,
@@ -201,43 +254,61 @@ const styles = StyleSheet.create({
     letterSpacing: -0.6,
     color: colors.text.primary,
     textAlign: 'center',
-  },
-  planCardWrap: {
-    alignSelf: 'stretch',
-    position: 'relative',
-  },
-  planCardContainer: {
-    width: '100%',
-    marginTop: spacing.lg,
-  },
-  planCard: {
-    paddingTop: spacing['2xl'],
-    paddingBottom: spacing.lg,
     paddingHorizontal: spacing.lg,
   },
-  planCardBadge: {
+  planCardOuter: {
+    alignSelf: 'stretch',
+    alignItems: 'center',
+  },
+  planCardWrap: {
+    width: '100%',
+    maxWidth: 310,
+    position: 'relative',
+    overflow: 'visible',
+  },
+  planCard: {
+    marginTop: spacing.xl,
+    borderRadius: 16,
+    paddingTop: spacing.lg,
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.sm + spacing.xs,
+    gap: spacing.xs,
+    backgroundColor: colors.background.elevated,
+    shadowColor: colors.neutral[900],
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.04,
+    shadowRadius: 14,
+    elevation: 1,
+  },
+  personalizationSeal: {
     position: 'absolute',
     top: 0,
     left: '50%',
-    marginLeft: -24,
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    marginLeft: -SEAL_CENTER,
+    width: SEAL_SIZE,
+    height: SEAL_SIZE,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.primary.blue100,
-    borderWidth: 4,
-    borderColor: colors.background.primary,
+    zIndex: 1,
+    elevation: 3,
+  },
+  personalizationSealIcon: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   planCardTitle: {
-    ...typography.heading.heading1,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    fontSize: 18,
+    lineHeight: 26,
     color: colors.text.primary,
     textAlign: 'center',
   },
   planCardBody: {
     ...typography.body.medium,
+    lineHeight: 22,
     color: colors.text.secondary,
     textAlign: 'center',
-    marginTop: spacing.sm,
   },
 });

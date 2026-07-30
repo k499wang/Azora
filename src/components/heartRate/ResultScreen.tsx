@@ -4,6 +4,7 @@ import { View, StyleSheet, TouchableOpacity, Animated, ScrollView, Pressable } f
 import { Background2066 } from '../common/Background2066';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as Device from 'expo-device';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { usePostHog } from 'posthog-react-native';
 import { colors } from '../../theme/colors';
@@ -25,6 +26,7 @@ import { useProfileQuery } from '../../queries/profile/useProfileQuery';
 import { PaywallPlacement } from '../../services/paywall';
 import { FeatureKey } from '../../services/subscriptions/featureAccess';
 import type { RootStackNavigationProp } from '../../app/navigation';
+import { getHeartRateCameraTarget } from '../../lib/heartRate/captureGuidance';
 
 interface ResultScreenProps {
   result: CaptureResult;
@@ -38,6 +40,7 @@ interface ResultScreenProps {
 
 function getErrorMessage(
   error: CaptureResult['error'],
+  cameraTarget: string,
 ): { title: string; message: string } {
   switch (error) {
     case 'low_confidence':
@@ -53,17 +56,17 @@ function getErrorMessage(
     case 'no_finger':
       return {
         title: 'No Finger Detected',
-        message: 'We couldn\'t detect your finger. Cover the camera and flash fully, then try again.',
+        message: `We couldn't detect your finger. Completely cover the ${cameraTarget}, then try again.`,
       };
     case 'too_few_samples':
       return {
         title: 'Not Enough Data',
-        message: 'Not enough data was collected. Make sure your finger covers the camera and flash.',
+        message: `Not enough data was collected. Make sure your finger completely covers the ${cameraTarget}.`,
       };
     case 'not_enough_signal':
       return {
         title: 'Not Enough Signal',
-        message: 'Not enough signal was detected to calculate your heart rate. Cover the camera and flash fully, then try again.',
+        message: `Not enough signal was detected to calculate your heart rate. Completely cover the ${cameraTarget}, then try again.`,
       };
     case 'camera_error':
       return {
@@ -135,6 +138,7 @@ export function ResultScreen({
   const advancedStatsAccess = useFeatureAccess(FeatureKey.AdvancedStats);
   const userId = useAuthStore((state) => state.user?.id ?? null);
   const profileQuery = useProfileQuery(userId);
+  const cameraTarget = getHeartRateCameraTarget(Device.modelName);
   const advancedStatsLocked =
     !advancedStatsAccess.allowed && !advancedStatsAccess.isLoading;
   const showAdvancedStatsPaywall = () => {
@@ -287,7 +291,7 @@ export function ResultScreen({
   }
 
   // Error state
-  const errorInfo = getErrorMessage(result.error);
+  const errorInfo = getErrorMessage(result.error, cameraTarget);
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
@@ -317,7 +321,7 @@ export function ResultScreen({
             <Text style={styles.tipsHeading}>Tips for a better reading:</Text>
             <View style={styles.tipRow}>
               <MaterialCommunityIcons name="circle-small" size={16} color={colors.text.tertiary} />
-              <Text style={styles.tipText}>Cover both the lens and flash fully</Text>
+              <Text style={styles.tipText}>Completely cover the {cameraTarget}</Text>
             </View>
             <View style={styles.tipRow}>
               <MaterialCommunityIcons name="circle-small" size={16} color={colors.text.tertiary} />

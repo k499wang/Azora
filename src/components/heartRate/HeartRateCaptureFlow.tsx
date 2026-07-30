@@ -3,6 +3,7 @@ import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import {
   InteractionManager, SafeAreaView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import * as Device from 'expo-device';
 import { useNavigation } from '@react-navigation/native';
 import { usePostHog } from 'posthog-react-native';
 import { useHeartRateCapture } from '../../hooks/useHeartRateCapture';
@@ -39,6 +40,11 @@ import {
   showCameraAccessNeededAlert,
   showHeartRateCameraUnavailableAlert,
 } from './cameraAccessPrompts';
+import {
+  getCameraCheckMessage,
+  getHeartRateCameraTarget,
+  getMeasurementCorrectionMessage,
+} from '../../lib/heartRate/captureGuidance';
 
 interface HeartRateCaptureFlowProps {
   setupScreens?: React.ComponentType<SetupScreenProps>[];
@@ -51,47 +57,52 @@ const DEFAULT_SETUP_SCREENS: React.ComponentType<SetupScreenProps>[] = [
   DefaultInstructionScreen,
 ];
 
-const CHECK_TIMEOUT_SECONDS = 10;
-
 interface PendingHeartRateSave {
   result: CaptureResult;
   captureSamples: PpgFrameSample[];
 }
 
-function checkStateConfig(placement: FingerPlacementState): {
+function checkStateConfig(
+  placement: FingerPlacementState,
+  signalStatus: SignalStatus,
+  pulseConfirmed: boolean,
+  cameraTarget: string,
+): {
   ringColor: string;
   status: string;
 } {
-  switch (placement) {
-    case 'good':
-      return { ringColor: colors.success[500], status: 'Hold phone and finger still' };
-    case 'partial':
-      return { ringColor: colors.warning[500], status: 'Cover the camera fully' };
-    case 'too_much_pressure':
-      return { ringColor: '#8B5CF6', status: 'Ease up slightly' };
-    case 'no_finger':
-    case 'lost':
-    default:
-      return { ringColor: colors.error[500], status: 'Cover the camera with your finger pad' };
-  }
+  const isMissing = placement === 'no_finger' || placement === 'lost';
+  const needsCorrection =
+    placement === 'partial' ||
+    placement === 'too_much_pressure' ||
+    signalStatus === 'partial_coverage' ||
+    signalStatus === 'too_much_pressure' ||
+    signalStatus === 'no_pulse' ||
+    signalStatus === 'excessive_motion';
+
+  return {
+    ringColor: pulseConfirmed
+      ? colors.success[500]
+      : isMissing
+        ? colors.error[500]
+        : needsCorrection
+          ? colors.warning[500]
+          : colors.primary.blue500,
+    status: getCameraCheckMessage({
+      fingerPlacement: placement,
+      signalStatus,
+      pulseConfirmed,
+      cameraTarget,
+    }),
+  };
 }
 
-function measuringWarning(status: SignalStatus): string | null {
-  switch (status) {
-    case 'no_finger':
-    case 'signal_lost':
-      return 'Finger moved — reposition and hold still';
-    case 'partial_coverage':
-      return 'Cover the camera and flash fully';
-    case 'too_much_pressure':
-      return 'Pressing too hard — ease up slightly';
-    case 'excessive_motion':
-      return 'Too much movement — keep your hand steady';
-    case 'no_pulse':
-      return 'No pulse detected — adjust your finger position';
-    default:
-      return null;
-  }
+function measuringWarning(
+  status: SignalStatus,
+  placement: FingerPlacementState,
+  cameraTarget: string,
+): string | null {
+  return getMeasurementCorrectionMessage(status, placement, cameraTarget);
 }
 
 export function HeartRateCaptureFlow({
@@ -109,6 +120,7 @@ export function HeartRateCaptureFlow({
   const [pastSetup, setPastSetup] = useState(false);
   const [selectedMode, setSelectedMode] = useState<HeartRateCaptureMode>(DEFAULT_CAPTURE_MODE);
   const [pendingSave, setPendingSave] = useState<PendingHeartRateSave | null>(null);
+  const cameraTarget = getHeartRateCameraTarget(Device.modelName);
   const completeHeartRateSessionMutationRef = useRef(completeHeartRateSessionMutation);
   completeHeartRateSessionMutationRef.current = completeHeartRateSessionMutation;
 
@@ -116,6 +128,7 @@ export function HeartRateCaptureFlow({
     captureState,
     fingerPlacement,
     signalStatus,
+    isPulseConfirmed,
     progress,
     currentBpm,
     beatTick,
@@ -127,7 +140,6 @@ export function HeartRateCaptureFlow({
     torchMode,
     cameraFps,
     startCapture,
-    startMeasuring,
     cancel,
     reset,
     hasPermission,
@@ -302,19 +314,6 @@ export function HeartRateCaptureFlow({
     onCancel();
   }, [cancel, onCancel]);
 
-  const handleStartAnyway = useCallback(() => {
-    try {
-      startMeasuring();
-    } catch (error) {
-      captureException(error, {
-        flow: 'heart_rate_capture',
-        action: 'start_anyway',
-        screen_name: 'HeartRate',
-        context: context ?? null,
-      });
-    }
-  }, [context, startMeasuring]);
-
   const cameraProps = useMemo(() => (
     device != null
       ? {
@@ -327,16 +326,6 @@ export function HeartRateCaptureFlow({
       }
       : undefined
   ), [captureState, device, format, frameProcessor, torchMode, cameraFps]);
-
-  const [showStartAnyway, setShowStartAnyway] = useState(false);
-  useEffect(() => {
-    if (captureState !== 'camera_check') {
-      setShowStartAnyway(false);
-      return;
-    }
-    const t = setTimeout(() => setShowStartAnyway(true), CHECK_TIMEOUT_SECONDS * 1000);
-    return () => clearTimeout(t);
-  }, [captureState]);
 
   // Setup screens
   if (!pastSetup) {
@@ -369,8 +358,15 @@ export function HeartRateCaptureFlow({
 
   const isMeasuring = captureState === 'measuring';
   const isCheck = captureState === 'camera_check';
-  const checkConfig = checkStateConfig(fingerPlacement);
-  const warningMessage = isMeasuring ? measuringWarning(signalStatus) : null;
+  const checkConfig = checkStateConfig(
+    fingerPlacement,
+    signalStatus,
+    isPulseConfirmed,
+    cameraTarget,
+  );
+  const warningMessage = isMeasuring
+    ? measuringWarning(signalStatus, fingerPlacement, cameraTarget)
+    : null;
 
   const ringColor = isMeasuring ? colors.primary.blue600 : checkConfig.ringColor;
   const ringProgress = isMeasuring ? progress : 0;
@@ -444,17 +440,6 @@ export function HeartRateCaptureFlow({
             </View>
           )}
 
-          <View style={styles.actions}>
-            {isCheck && showStartAnyway && (
-              <TouchableOpacity
-                style={styles.startAnywayButton}
-                onPress={handleStartAnyway}
-                activeOpacity={0.85}
-              >
-                <Text style={styles.startAnywayText}>Start Anyway</Text>
-              </TouchableOpacity>
-            )}
-          </View>
         </View>
       </View>
     </SafeAreaView>
@@ -553,24 +538,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semibold,
     fontWeight: '500',
     textAlign: 'center',
-  },
-  actions: {
-    width: '100%',
-    gap: spacing.sm,
-    alignItems: 'center',
-  },
-  startAnywayButton: {
-    width: '100%',
-    backgroundColor: colors.primary.blue600,
-    borderRadius: 14,
-    paddingVertical: spacing.md,
-    alignItems: 'center',
-  },
-  startAnywayText: {
-    ...typography.button.large,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    color: colors.text.inverse,
   },
   cancelTouchable: {
     paddingVertical: spacing.sm,

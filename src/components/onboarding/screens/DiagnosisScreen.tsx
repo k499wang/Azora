@@ -1,7 +1,6 @@
 import { Text } from '../../common/Text';
-import { useEffect, useMemo, useRef, type ReactNode } from 'react';
-import {
-  Animated, Easing, StyleProp, StyleSheet, useWindowDimensions, View, ViewStyle } from 'react-native';
+import { useMemo } from 'react';
+import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import CardSurface from '../../common/CardSurface';
 import MindMapRadar from '../MindMapRadar';
 import { colors } from '../../../theme/colors';
@@ -9,7 +8,6 @@ import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
-import { useScoreMorph } from '../../../hooks/useScoreMorph';
 import { benchmarkBreathHold } from '../../../lib/breathHoldPercentile';
 import type { MindMapAxis, MindMapScore } from '../../../lib/onboardingScores';
 
@@ -51,11 +49,6 @@ const GROWTH_COPY: Record<MindMapAxis, string> = {
   breathEase: 'Your breathing is running shallow and quick through most of the day.',
 };
 
-const REVEAL_DURATION_MS = 1100;
-const REVEAL_DELAY_MS = 220;
-const STAGGER_MS = 110;
-const ENTER_DURATION_MS = 420;
-
 export default function DiagnosisScreen({
   age,
   scores,
@@ -69,17 +62,6 @@ export default function DiagnosisScreen({
   onBack,
 }: DiagnosisScreenProps) {
   const { width } = useWindowDimensions();
-  const collapsed = useMemo(
-    () => scores.map((score) => ({ ...score, value: 0 })),
-    [scores],
-  );
-  const { scores: revealed } = useScoreMorph({
-    from: collapsed,
-    to: scores,
-    durationMs: REVEAL_DURATION_MS,
-    delayMs: REVEAL_DELAY_MS,
-  });
-
   const benchmark = useMemo(
     () => (holdSeconds != null ? benchmarkBreathHold(holdSeconds, age) : null),
     [holdSeconds, age],
@@ -137,12 +119,12 @@ export default function DiagnosisScreen({
       onBack={onBack}
       titleStyle={styles.screenTitle}
       centerCopy
-      animateCopy
+      disableEntranceAnimation
       footer={<OnboardingPrimaryButton label="See my plan" onPress={onContinue} />}
     >
       <View style={styles.page}>
         <View style={styles.radarWrap}>
-          <MindMapRadar scores={revealed} size={width} />
+          <MindMapRadar scores={scores} size={width} />
         </View>
 
         <Text style={styles.summary}>
@@ -155,68 +137,25 @@ export default function DiagnosisScreen({
         <Text style={styles.sectionTitle}>Your highlights</Text>
 
         <View style={styles.highlightList}>
-          {highlights.map((highlight, index) => (
-            <StaggeredEntrance key={highlight.id} index={index + 1}>
-              <CardSurface style={styles.highlightCard}>
-                <View style={styles.highlightHeader}>
-                  <Text style={styles.highlightRole}>{highlight.role}</Text>
-                  <View style={styles.highlightMeta}>
-                    <Text style={styles.highlightSubject}>{highlight.subject}</Text>
-                    <View
-                      style={[styles.highlightPill, { backgroundColor: highlight.pillColor }]}
-                    >
-                      <Text style={styles.highlightPillText}>{highlight.pill}</Text>
-                    </View>
+          {highlights.map((highlight) => (
+            <CardSurface key={highlight.id} style={styles.highlightCard}>
+              <View style={styles.highlightHeader}>
+                <Text style={styles.highlightRole}>{highlight.role}</Text>
+                <View style={styles.highlightMeta}>
+                  <Text style={styles.highlightSubject}>{highlight.subject}</Text>
+                  <View
+                    style={[styles.highlightPill, { backgroundColor: highlight.pillColor }]}
+                  >
+                    <Text style={styles.highlightPillText}>{highlight.pill}</Text>
                   </View>
                 </View>
-                <Text style={styles.highlightBody}>{highlight.body}</Text>
-              </CardSurface>
-            </StaggeredEntrance>
+              </View>
+              <Text style={styles.highlightBody}>{highlight.body}</Text>
+            </CardSurface>
           ))}
         </View>
       </View>
     </OnboardingScreenLayout>
-  );
-}
-
-interface StaggeredEntranceProps {
-  index: number;
-  style?: StyleProp<ViewStyle>;
-  children: ReactNode;
-}
-
-function StaggeredEntrance({ index, style, children }: StaggeredEntranceProps) {
-  const enter = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    Animated.timing(enter, {
-      toValue: 1,
-      delay: index * STAGGER_MS,
-      duration: ENTER_DURATION_MS,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: true,
-    }).start();
-  }, [enter, index]);
-
-  return (
-    <Animated.View
-      style={[
-        style,
-        {
-          opacity: enter,
-          transform: [
-            {
-              translateY: enter.interpolate({
-                inputRange: [0, 1],
-                outputRange: [14, 0],
-              }),
-            },
-          ],
-        },
-      ]}
-    >
-      {children}
-    </Animated.View>
   );
 }
 
