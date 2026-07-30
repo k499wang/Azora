@@ -40,6 +40,7 @@ export type OnboardingStep =
 export interface OnboardingBreathHoldResult {
   holdSeconds: number;
   score: number;
+  lungAgeYears: number;
 }
 
 export interface OnboardingBaselineResult {

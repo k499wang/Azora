@@ -1,7 +1,6 @@
 import { Text } from '../../common/Text';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, StyleSheet, View } from 'react-native';
-import * as Haptics from 'expo-haptics';
 import { Canvas, Circle, Path, Skia } from '@shopify/react-native-skia';
 import {
   Easing as RNREasing,
@@ -16,7 +15,6 @@ import {
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
-import { isHapticsEnabled } from '../../../services/preferences/hapticsPreference';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import {
@@ -150,11 +148,6 @@ export default function BaselineHeartRateResult({
       easing: Easing.out(Easing.cubic),
       useNativeDriver: true,
     }).start();
-    if (isHapticsEnabled()) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
-        () => {},
-      );
-    }
   }, [doneEnter]);
 
   useEffect(() => {

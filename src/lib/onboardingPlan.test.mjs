@@ -16,7 +16,6 @@ const baseInputs = {
   age: 30,
   dailyMinutes: 3,
   breathHoldSeconds: 40,
-  avgBpm: 72,
 };
 
 const actionById = (plan, id) => plan.actions.find((action) => action.id === id);
@@ -75,11 +74,20 @@ test('the check-in is never a guided technique', () => {
   assert.equal(actionById(buildOnboardingPlan(baseInputs), 'checkIn').techniqueId, null);
 });
 
-test('heart rate does not affect session duration', () => {
-  const minutes = (avgBpm) =>
-    actionById(buildOnboardingPlan({ ...baseInputs, avgBpm }), 'session').minutes;
-  assert.equal(minutes(45), minutes(120));
-  assert.equal(minutes(45), Math.round(baseInputs.dailyMinutes));
+test('session duration follows only the daily minute commitment', () => {
+  const minutes = (inputs) =>
+    actionById(buildOnboardingPlan(inputs), 'session').minutes;
+  assert.equal(minutes(baseInputs), Math.round(baseInputs.dailyMinutes));
+  assert.equal(
+    minutes({
+      ...baseInputs,
+      stressLevel: 10,
+      sleepQuality: 1,
+      age: 70,
+      breathHoldSeconds: null,
+    }),
+    Math.round(baseInputs.dailyMinutes),
+  );
 });
 
 test('daily total counts the session and the check-in', () => {
@@ -88,16 +96,6 @@ test('daily total counts the session and the check-in', () => {
     plan.fullDailyMinutes,
     actionById(plan, 'session').minutes + actionById(plan, 'checkIn').minutes,
   );
-});
-
-test('heart rate note reports the measured BPM at face value', () => {
-  const plan = buildOnboardingPlan({ ...baseInputs, avgBpm: 72.4 });
-  assert.equal(plan.heartRateNote, 'Your measured heart rate: 72 BPM.');
-});
-
-test('heart rate note is omitted without a baseline read', () => {
-  const plan = buildOnboardingPlan({ ...baseInputs, avgBpm: null });
-  assert.equal(plan.heartRateNote, null);
 });
 
 test('the projection is above baseline but stays conservative', () => {

@@ -6,12 +6,12 @@ import {
   useCameraPermission,
 } from 'react-native-vision-camera';
 import type { CameraPosition } from 'react-native-vision-camera';
-import { getHeartRateCameraProfile } from '../lib/heartRate/cameraProfile';
+import { getHeartRatePhysicalCamera } from '../lib/heartRate/cameraProfile';
 
 export function useHeartRateCamera(preferredFps: 30 | 60 = 30) {
   const { hasPermission, requestPermission } = useCameraPermission();
   const physicalDevices = useMemo(
-    () => [getHeartRateCameraProfile(Device.modelName).physicalCamera],
+    () => [getHeartRatePhysicalCamera(Device.modelName)],
     [],
   );
   const position: CameraPosition = useMemo(

@@ -59,7 +59,6 @@ type Phase =
 
 interface ScoredHold extends OnboardingBreathHoldResult {
   tier: AzoraTierKey;
-  lungAgeYears: number;
   percentile: number;
   topPercent: number;
   benchmarkLabel: string;
@@ -505,6 +504,7 @@ export default function BreathHoldScreen({
                   onContinue({
                     holdSeconds: result.holdSeconds,
                     score: result.score,
+                    lungAgeYears: result.lungAgeYears,
                   })
                 }
               />

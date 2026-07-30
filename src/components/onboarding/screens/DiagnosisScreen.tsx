@@ -8,6 +8,7 @@ import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
+import OnboardingMeasurementSummary from '../OnboardingMeasurementSummary';
 import { benchmarkBreathHold } from '../../../lib/breathHoldPercentile';
 import type { MindMapAxis, MindMapScore } from '../../../lib/onboardingScores';
 
@@ -17,6 +18,7 @@ interface DiagnosisScreenProps {
   superpower: MindMapScore;
   growthArea: MindMapScore;
   holdSeconds: number | null;
+  lungAgeYears: number | null;
   restingBpm: number | null;
   stepIndex: number;
   stepCount: number;
@@ -55,6 +57,7 @@ export default function DiagnosisScreen({
   superpower,
   growthArea,
   holdSeconds,
+  lungAgeYears,
   restingBpm,
   stepIndex,
   stepCount,
@@ -98,19 +101,8 @@ export default function DiagnosisScreen({
       });
     }
 
-    if (restingBpm != null) {
-      next.push({
-        id: 'restingBpm',
-        role: 'Resting heart rate',
-        subject: 'Your baseline',
-        pill: `${Math.round(restingBpm)} bpm`,
-        pillColor: colors.primary.blue600,
-        body: 'Measured from your fingertip before any breathing. Every future read compares back to this.',
-      });
-    }
-
     return next;
-  }, [benchmark, holdSeconds, restingBpm, superpower, growthArea]);
+  }, [benchmark, holdSeconds, superpower, growthArea]);
 
   return (
     <OnboardingScreenLayout
@@ -134,6 +126,11 @@ export default function DiagnosisScreen({
         </Text>
 
         <Text style={styles.sectionTitle}>Your highlights</Text>
+
+        <OnboardingMeasurementSummary
+          lungAgeYears={lungAgeYears}
+          restingBpm={restingBpm}
+        />
 
         <View style={styles.highlightList}>
           {highlights.map((highlight) => (

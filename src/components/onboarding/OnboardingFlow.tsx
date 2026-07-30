@@ -1138,7 +1138,6 @@ export default function OnboardingFlow({
           });
         }}
         onSkip={(attempt) => {
-          setBaseline(null);
           goToStep('planIntro', attempt.completed ? 'continue' : 'skip', {
             baseline_completed: attempt.completed,
             has_baseline_bpm: false,
@@ -1168,7 +1167,6 @@ export default function OnboardingFlow({
     age,
     dailyMinutes,
     breathHoldSeconds: breathHold?.holdSeconds ?? null,
-    avgBpm: baseline?.avgBpm ?? null,
   });
 
   const planMindMap = computeMindMap({
@@ -1189,6 +1187,7 @@ export default function OnboardingFlow({
         superpower={planMindMap.superpower}
         growthArea={planMindMap.growthArea}
         holdSeconds={breathHold?.holdSeconds ?? null}
+        lungAgeYears={breathHold?.lungAgeYears ?? null}
         restingBpm={baseline?.avgBpm ?? null}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
@@ -1205,6 +1204,8 @@ export default function OnboardingFlow({
         currentScores={planMindMap.scores}
         targetScores={projectScores(planMindMap.scores)}
         growthArea={planMindMap.growthArea}
+        lungAgeYears={breathHold?.lungAgeYears ?? null}
+        restingBpm={baseline?.avgBpm ?? null}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goToStep('attPriming', 'continue')}
