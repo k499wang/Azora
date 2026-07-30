@@ -1,6 +1,7 @@
 import { Text } from '../../common/Text';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, StyleSheet, View } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { Canvas, Circle, Path, Skia } from '@shopify/react-native-skia';
 import {
   Easing as RNREasing,
@@ -26,6 +27,7 @@ import {
   type RestingHeartRateSex,
 } from '../../../lib/restingHeartRate';
 import { calibrationDurationMs } from '../../../lib/gaugeCalibration';
+import { isHapticsEnabled } from '../../../services/preferences/hapticsPreference';
 import type { GenderOption } from '../data/genderOptions';
 import type { CompletedOnboardingBaselineResult } from '../types';
 
@@ -148,6 +150,11 @@ export default function BaselineHeartRateResult({
       easing: Easing.out(Easing.cubic),
       useNativeDriver: true,
     }).start();
+    if (isHapticsEnabled()) {
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
+        () => {},
+      );
+    }
   }, [doneEnter]);
 
   useEffect(() => {

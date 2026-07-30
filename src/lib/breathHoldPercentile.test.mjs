@@ -26,6 +26,29 @@ test('short holds report how many peers they beat', () => {
   assert.equal(result.label, `Ahead of ${result.percentile}% of people your age`);
 });
 
+test('a hold at half the peer median stays clear of the rail floor', () => {
+  const { peerMedianSeconds, percentile } = benchmarkBreathHold(22, 30);
+  assert.equal(peerMedianSeconds, 44);
+  assert.ok(percentile >= 8, `expected >= 8, got ${percentile}`);
+});
+
+test('below-median holds spread across the rail instead of pinning to it', () => {
+  const percentiles = [15, 20, 25, 30].map(
+    (hold) => benchmarkBreathHold(hold, 30).percentile,
+  );
+
+  for (let i = 1; i < percentiles.length; i += 1) {
+    assert.ok(
+      percentiles[i] > percentiles[i - 1],
+      `expected ${percentiles} to increase`,
+    );
+  }
+  assert.ok(
+    percentiles[percentiles.length - 1] - percentiles[0] >= 15,
+    `expected a spread of 15+ points, got ${percentiles}`,
+  );
+});
+
 test('percentiles stay inside 1-99 at the extremes', () => {
   assert.equal(benchmarkBreathHold(0, 30).percentile, 1);
   assert.equal(benchmarkBreathHold(600, 30).percentile, 99);

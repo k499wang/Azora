@@ -592,9 +592,12 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
     marginBottom: spacing.md,
   },
+  // Scrolling screens end flush against the footer without this, so the last
+  // card and the primary button sit almost touching at full scroll.
   body: {
     flex: 1,
     gap: spacing.lg,
+    paddingBottom: spacing.xl,
   },
   bottom: {
     paddingHorizontal: spacing.lg,

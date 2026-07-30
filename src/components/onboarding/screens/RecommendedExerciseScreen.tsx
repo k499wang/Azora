@@ -1,7 +1,6 @@
 import { Text } from '../../common/Text';
 import { useMemo } from 'react';
 import { StyleSheet, useWindowDimensions, View } from 'react-native';
-import Icon, { type IconName } from '../../common/icons/Icon';
 import CardSurface from '../../common/CardSurface';
 import MindMapRadar from '../MindMapRadar';
 import { colors } from '../../../theme/colors';
@@ -9,7 +8,6 @@ import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
-import OnboardingMeasurementSummary from '../OnboardingMeasurementSummary';
 import TECHNIQUES from '../../../features/exercise/guidedBreathing/techniques';
 import {
   formatPlanTime,
@@ -24,18 +22,11 @@ interface RecommendedExerciseScreenProps {
   currentScores: MindMapScore[];
   targetScores: MindMapScore[];
   growthArea: MindMapScore;
-  lungAgeYears: number | null;
-  restingBpm: number | null;
   stepIndex: number;
   stepCount: number;
   onContinue: () => void;
   onBack: () => void;
 }
-
-const ACTION_ICON: Record<string, IconName> = {
-  session: 'meditation',
-  checkIn: 'lungs',
-};
 
 function techniqueName(techniqueId: string | null): string | null {
   if (!techniqueId) return null;
@@ -47,8 +38,6 @@ export default function RecommendedExerciseScreen({
   currentScores,
   targetScores,
   growthArea,
-  lungAgeYears,
-  restingBpm,
   stepIndex,
   stepCount,
   onContinue,
@@ -107,11 +96,6 @@ export default function RecommendedExerciseScreen({
           </Text>
         </View>
 
-        <OnboardingMeasurementSummary
-          lungAgeYears={lungAgeYears}
-          restingBpm={restingBpm}
-        />
-
         {gain != null ? (
           <View style={styles.goalPill}>
             <Text style={styles.goalPillText}>
@@ -136,19 +120,21 @@ function ActionCard({ action }: { action: PlanAction }) {
 
   return (
     <CardSurface style={styles.actionCard}>
-      <View style={styles.actionIcon}>
-        <Icon
-          name={ACTION_ICON[action.id]}
-          size={20}
-          color={colors.primary.blue500}
-        />
+      <View style={styles.actionHeader}>
+        <Text style={styles.actionRole}>{technique ?? action.title}</Text>
+        <View style={styles.actionMeta}>
+          <Text style={styles.actionSubject}>{`${action.minutes} min`}</Text>
+          <View style={styles.actionPill}>
+            <Text style={styles.actionPillText}>
+              {formatPlanTime(action.minutesFromMidnight)}
+            </Text>
+          </View>
+        </View>
       </View>
-      <View style={styles.actionHeading}>
-        <Text style={styles.actionTitle}>{technique ?? action.title}</Text>
-        <Text style={styles.actionMeta}>{`${action.minutes} min`}</Text>
-      </View>
-      <Text style={styles.actionTime}>
-        {formatPlanTime(action.minutesFromMidnight)}
+      <Text style={styles.actionBody}>
+        {technique
+          ? 'Guided breathing, matched to the goals you picked.'
+          : 'A short hold to track how your breathing is changing.'}
       </Text>
     </CardSurface>
   );
@@ -180,43 +166,58 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     ...typography.title.title3,
+    fontFamily: fonts.semibold,
+    fontWeight: '500',
     color: colors.text.primary,
   },
   actionCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
+    gap: spacing.sm,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
   },
-  actionIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  actionHeader: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.primary.blue100,
+    justifyContent: 'space-between',
+    gap: spacing.sm,
   },
-  actionHeading: {
-    flex: 1,
+  actionRole: {
+    ...typography.heading.heading2,
+    fontFamily: fonts.semibold,
+    fontWeight: '500',
+    color: colors.primary.blue600,
+    flexShrink: 1,
   },
-  actionTitle: {
-    ...typography.body.medium,
+  actionMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    flexShrink: 1,
+  },
+  actionSubject: {
+    ...typography.heading.heading2,
     fontFamily: fonts.semibold,
     fontWeight: '500',
     color: colors.text.primary,
+    flexShrink: 1,
   },
-  actionMeta: {
-    ...typography.caption.caption1,
-    color: colors.text.tertiary,
-    marginTop: 2,
+  actionPill: {
+    borderRadius: 8,
+    paddingVertical: 3,
+    paddingHorizontal: spacing.sm,
+    backgroundColor: colors.primary.blue600,
   },
-  actionTime: {
-    ...typography.body.medium,
+  actionPillText: {
+    ...typography.body.small,
     fontFamily: fonts.semibold,
     fontWeight: '500',
     fontVariant: ['tabular-nums'],
-    color: colors.text.primary,
+    color: colors.neutral[0],
+  },
+  actionBody: {
+    ...typography.body.small,
+    color: colors.text.secondary,
+    lineHeight: 20,
   },
   radarWrap: {
     alignItems: 'center',

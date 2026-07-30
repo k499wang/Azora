@@ -14,6 +14,7 @@
  */
 
 import { colors } from '../theme/colors';
+import { interpolateCurve, type Curve } from './interpolate';
 
 export type AzoraTierKey =
   | 'elite'
@@ -40,31 +41,53 @@ export interface AzoraScoreEstimate {
 const MIN_SCORE = 0;
 const MAX_SCORE = 100;
 
-function baseScoreFromHold(holdSeconds: number): number {
-  if (holdSeconds >= 120) return 95;
-  if (holdSeconds >= 90) return 85;
-  if (holdSeconds >= 60) return 72;
-  if (holdSeconds >= 45) return 60;
-  if (holdSeconds >= 30) return 48;
-  if (holdSeconds >= 20) return 35;
-  return 22;
-}
+const BASE_SCORE_BY_HOLD: Curve = [
+  [0, 0],
+  [5, 8],
+  [10, 16],
+  [15, 26],
+  [20, 35],
+  [25, 42],
+  [30, 48],
+  [35, 52],
+  [40, 56],
+  [45, 60],
+  [50, 64],
+  [55, 68],
+  [60, 72],
+  [70, 77],
+  [80, 81],
+  [90, 85],
+  [100, 88],
+  [110, 92],
+  [120, 95],
+  [150, 98],
+  [180, 100],
+];
 
-function restingHrAdjustment(avgBpm: number): number {
-  if (avgBpm <= 55) return 5;
-  if (avgBpm <= 65) return 3;
-  if (avgBpm <= 75) return 0;
-  if (avgBpm <= 85) return -3;
-  return -5;
-}
+const RESTING_HR_ADJUST: Curve = [
+  [50, 5],
+  [55, 5],
+  [60, 4],
+  [65, 3],
+  [70, 1.5],
+  [75, 0],
+  [80, -1.5],
+  [85, -3],
+  [90, -4],
+  [95, -5],
+];
 
-function hrDropAdjustment(hrDropBpm: number): number {
-  if (hrDropBpm >= 15) return 5;
-  if (hrDropBpm >= 10) return 3;
-  if (hrDropBpm >= 5) return 0;
-  if (hrDropBpm >= 0) return -3;
-  return -5;
-}
+const HR_DROP_ADJUST: Curve = [
+  [0, -3],
+  [2, -2],
+  [4, -0.5],
+  [5, 0],
+  [7, 1.2],
+  [10, 3],
+  [12, 3.8],
+  [15, 5],
+];
 
 function tierFromScore(score: number): AzoraTierKey {
   if (score >= 90) return 'elite';
@@ -149,13 +172,15 @@ export function estimateAzoraScore({
   avgBpm,
   minBpm,
 }: AzoraScoreInputs): AzoraScoreEstimate {
-  const base = baseScoreFromHold(holdSeconds);
+  const base = interpolateCurve(BASE_SCORE_BY_HOLD, holdSeconds);
 
-  const restingHrAdjust = avgBpm != null ? restingHrAdjustment(avgBpm) : 0;
+  const restingHrAdjust =
+    avgBpm != null ? interpolateCurve(RESTING_HR_ADJUST, avgBpm) : 0;
 
   const hrDropBpm =
     avgBpm != null && minBpm != null ? Math.max(0, avgBpm - minBpm) : null;
-  const hrDropAdjust = hrDropBpm != null ? hrDropAdjustment(hrDropBpm) : 0;
+  const hrDropAdjust =
+    hrDropBpm != null ? interpolateCurve(HR_DROP_ADJUST, hrDropBpm) : 0;
 
   const score = Math.round(
     Math.max(MIN_SCORE, Math.min(MAX_SCORE, base + restingHrAdjust + hrDropAdjust)),
