@@ -213,7 +213,7 @@ export default function BPMChart({
         </>
       ) : null}
       <View style={styles.titleRow}>
-        <Icon name="heart-plain" size={28} color={colors.error[500]} />
+        <Icon name="stat-heart-rate-graph" size={24} color={colors.accent[600]} />
         <Text style={styles.title}>Heart rate</Text>
       </View>
 

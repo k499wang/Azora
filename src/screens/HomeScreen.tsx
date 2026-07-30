@@ -16,6 +16,7 @@ import SectionHeader from '../components/common/SectionHeader';
 import TopBarWeekCalendar from '../components/common/TopBarWeekCalendar';
 import BreathingLibrary from '../components/home/BreathingLibrary';
 import DailyPlanCard from '../components/home/DailyPlanCard';
+import HomeSurveyBanner from '../components/home/HomeSurveyBanner';
 import { getBackgroundImageSource } from '../services/images/backgroundImageCache';
 import { useFeatureAccess } from '../hooks/useFeatureAccess';
 import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
@@ -191,11 +192,11 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         </View>
 
         <View style={styles.dailyBreathholdSection}>
+          <HomeSurveyBanner />
           <SectionHeader title="Daily Breathhold" />
           <DailyPlanCard
             todayHoldSeconds={todayBreathHold?.holdSeconds ?? null}
             lastHoldSeconds={holdStats.lastHoldSeconds}
-            bestHoldSeconds={holdStats.bestHoldSeconds}
             streakDays={currentStreak}
             onPress={() => {
               if (!dailyExerciseAccess.allowed && !dailyExerciseAccess.isLoading) {

@@ -39,6 +39,8 @@ interface ScoreRingProps {
   captionPosition?: 'top' | 'bottom';
   /** Text casing for the caption. Defaults to uppercase for existing score rings. */
   captionTextTransform?: 'uppercase' | 'none';
+  /** Override the caption font size for a specific ring. */
+  captionFontSize?: number;
   /** Override the ring color. Defaults to the brand blue. */
   ringColors?: string[];
   /** Label below the ring. Pass null to hide the row entirely. */
@@ -108,6 +110,7 @@ export default function ScoreRing({
   caption = 'Azora Score',
   captionPosition = 'top',
   captionTextTransform = 'uppercase',
+  captionFontSize,
   ringColors,
   gapLabel,
   gapTextColor,
@@ -139,7 +142,15 @@ export default function ScoreRing({
       pointerEvents="box-none"
     >
       {caption && (
-        <Text style={[styles.caption, { textTransform: captionTextTransform }]}>
+        <Text
+          style={[
+            styles.caption,
+            { textTransform: captionTextTransform },
+            captionFontSize
+              ? { fontSize: captionFontSize, lineHeight: Math.round(captionFontSize * 1.25) }
+              : undefined,
+          ]}
+        >
           {caption}
         </Text>
       )}

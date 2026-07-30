@@ -59,8 +59,8 @@ export const typography = {
     title3: {
       fontFamily: fontSemiBold,
       fontWeight: weight.semibold,
-      fontSize: 20,
-      lineHeight: 28,
+      fontSize: 22,
+      lineHeight: 30,
     },
   },
 
