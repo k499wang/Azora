@@ -11,6 +11,7 @@ import {
 } from '@shopify/react-native-skia';
 import {
   Easing as RNREasing,
+  cancelAnimation,
   runOnJS,
   useAnimatedReaction,
   useDerivedValue,
@@ -48,7 +49,13 @@ interface BreathHoldScreenProps {
   onSkip?: () => void;
 }
 
-type Phase = 'intro' | 'inhale' | 'hold' | 'calibrating' | 'done';
+type Phase =
+  | 'intro'
+  | 'inhale'
+  | 'hold'
+  | 'earlyStop'
+  | 'calibrating'
+  | 'done';
 
 interface ScoredHold extends OnboardingBreathHoldResult {
   tier: AzoraTierKey;
@@ -58,6 +65,7 @@ interface ScoredHold extends OnboardingBreathHoldResult {
 }
 
 const INHALE_SECONDS = 4;
+const MIN_SCORABLE_HOLD_MS = 1000;
 const CIRCLE_SIZE = 260;
 const CIRCLE_MIN_SCALE = 0.5;
 
@@ -138,7 +146,8 @@ export default function BreathHoldScreen({
   const doneEnter = useRef(new Animated.Value(0)).current;
   const holdStartRef = useRef<number | null>(null);
   const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const [displayedLungAge, setDisplayedLungAge] = useState(0);
+  const releaseHandledRef = useRef(false);
+  const [displayedLungAge, setDisplayedLungAge] = useState(MIN_LUNG_AGE);
 
   const arcProgress = useSharedValue(0);
   const arcPath = useDerivedValue(() => {
@@ -153,8 +162,12 @@ export default function BreathHoldScreen({
   useEffect(() => {
     return () => {
       if (tickRef.current) clearInterval(tickRef.current);
+      scale.stopAnimation();
+      inhaleEnter.stopAnimation();
+      doneEnter.stopAnimation();
+      cancelAnimation(arcProgress);
     };
-  }, []);
+  }, [arcProgress, doneEnter, inhaleEnter, scale]);
 
   useEffect(() => {
     if (phase !== 'inhale') return;
@@ -204,6 +217,7 @@ export default function BreathHoldScreen({
 
   useEffect(() => {
     if (phase !== 'hold') return;
+    releaseHandledRef.current = false;
     setIsHolding(true);
     setHoldSec(0);
     holdStartRef.current = Date.now();
@@ -212,18 +226,37 @@ export default function BreathHoldScreen({
       setHoldSec((Date.now() - started) / 1000);
     }, 100);
     tickRef.current = interval;
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      if (tickRef.current === interval) tickRef.current = null;
+    };
   }, [phase]);
 
   const handleHoldRelease = () => {
-    if (phase !== 'hold' || !isHolding) return;
+    if (
+      phase !== 'hold' ||
+      !isHolding ||
+      releaseHandledRef.current
+    ) {
+      return;
+    }
+    releaseHandledRef.current = true;
     setIsHolding(false);
     if (tickRef.current) {
       clearInterval(tickRef.current);
       tickRef.current = null;
     }
     const started = holdStartRef.current ?? Date.now();
-    const seconds = (Date.now() - started) / 1000;
+    const elapsedMs = Date.now() - started;
+    setHoldSec(elapsedMs / 1000);
+
+    if (elapsedMs < MIN_SCORABLE_HOLD_MS) {
+      setResult(null);
+      setPhase('earlyStop');
+      return;
+    }
+
+    const seconds = elapsedMs / 1000;
     const scored = scoreHold(seconds, age);
     setResult(scored);
     if (isHapticsEnabled()) {
@@ -233,6 +266,30 @@ export default function BreathHoldScreen({
     }
     setPhase('calibrating');
   };
+
+  const restartHoldTest = useCallback(() => {
+    if (tickRef.current) {
+      clearInterval(tickRef.current);
+      tickRef.current = null;
+    }
+    releaseHandledRef.current = false;
+    holdStartRef.current = null;
+    setInhaleRemaining(INHALE_SECONDS);
+    setHoldSec(0);
+    setIsHolding(false);
+    setResult(null);
+    setDisplayedLungAge(MIN_LUNG_AGE);
+
+    scale.stopAnimation();
+    inhaleEnter.stopAnimation();
+    doneEnter.stopAnimation();
+    scale.setValue(CIRCLE_MIN_SCALE);
+    inhaleEnter.setValue(0);
+    doneEnter.setValue(0);
+    cancelAnimation(arcProgress);
+    arcProgress.value = lungAgeGaugeFill(MIN_LUNG_AGE);
+    setPhase('inhale');
+  }, [arcProgress, doneEnter, inhaleEnter, scale]);
 
   // The counter reads off the same shared value as the ring, so both stay on the
   // UI thread and React only re-renders when the whole year changes.
@@ -281,13 +338,15 @@ export default function BreathHoldScreen({
         if (finished) runOnJS(finishCalibration)();
       },
     );
+
+    return () => cancelAnimation(arcProgress);
   }, [phase, result, arcProgress, finishCalibration]);
 
   if (phase === 'inhale' || phase === 'hold') {
     const isInhale = phase === 'inhale';
     const subhead = isInhale
       ? 'Fill your lungs completely.'
-      : 'Now hold your breath as long as you can. Tap the circle when you need to breath.';
+      : 'Hold now — the timer has started. Press the circle when you need to breathe.';
 
     const inhaleEntryStyle = isInhale
       ? {
@@ -334,7 +393,7 @@ export default function BreathHoldScreen({
                     color={colors.primary.blue700}
                   />
                   <Text style={styles.releaseLabel}>
-                    Press here the moment{'\n'}you need to breathe
+                    I need to breathe
                   </Text>
                 </View>
               )}
@@ -345,12 +404,51 @@ export default function BreathHoldScreen({
                 style={styles.holdTarget}
                 onPress={handleHoldRelease}
                 accessibilityRole="button"
-                accessibilityLabel="Press to release your breath hold"
+                accessibilityLabel="End breath hold"
               />
             ) : null}
           </View>
         </Animated.View>
       </View>
+    );
+  }
+
+  if (phase === 'earlyStop') {
+    return (
+      <OnboardingScreenLayout
+        title=""
+        progress={stepIndex / stepCount}
+        onBack={onBack}
+        footer={
+          <View style={styles.introFooter}>
+            <OnboardingPrimaryButton
+              label="Try again"
+              onPress={restartHoldTest}
+            />
+            {onSkip ? (
+              <Pressable
+                accessibilityRole="button"
+                onPress={onSkip}
+                style={({ pressed }) => [
+                  styles.skip,
+                  pressed && styles.skipPressed,
+                ]}
+              >
+                <Text style={styles.skipText}>Skip for now</Text>
+              </Pressable>
+            ) : null}
+          </View>
+        }
+      >
+        <View style={styles.earlyStopStage}>
+          <Text style={styles.earlyStopHeading}>
+            That was too quick to estimate.
+          </Text>
+          <Text style={styles.earlyStopBody}>
+            No problem. Take a normal breath, then try again when you’re ready.
+          </Text>
+        </View>
+      </OnboardingScreenLayout>
     );
   }
 
@@ -379,21 +477,33 @@ export default function BreathHoldScreen({
           isCalibrating ? (
             <View />
           ) : (
-            <OnboardingPrimaryButton
-              label="Continue"
-              onPress={() =>
-                onContinue({
-                  holdSeconds: result.holdSeconds,
-                  score: result.score,
-                })
-              }
-            />
+            <View style={styles.introFooter}>
+              <OnboardingPrimaryButton
+                label="Continue"
+                onPress={() =>
+                  onContinue({
+                    holdSeconds: result.holdSeconds,
+                    score: result.score,
+                  })
+                }
+              />
+              <Pressable
+                accessibilityRole="button"
+                onPress={restartHoldTest}
+                style={({ pressed }) => [
+                  styles.skip,
+                  pressed && styles.skipPressed,
+                ]}
+              >
+                <Text style={styles.skipText}>Retake</Text>
+              </Pressable>
+            </View>
           )
         }
       >
         <View style={styles.gaugeStage}>
           <Text style={styles.gaugeHeading}>
-            {isCalibrating ? 'Calibrating…' : 'Your lung age'}
+            {isCalibrating ? 'Calibrating…' : 'Your lung age estimate'}
           </Text>
           <Text style={styles.gaugeSub}>
             {isCalibrating ? 'Analyzing your hold.' : benchmark.label}
@@ -504,11 +614,10 @@ export default function BreathHoldScreen({
         </View>
         <View style={styles.introCopy}>
           <Text style={styles.introHeadline}>
-            Let&apos;s measure your{'\n'}lung age.
+            Let&apos;s estimate your{'\n'}lung age.
           </Text>
           <Text style={styles.introSub}>
-            We measure it with a breath hold. Deep breath in, then hold as long
-            as you can.
+            Take a deep breath, then hold until you feel the need to breathe.
           </Text>
         </View>
 
@@ -564,6 +673,26 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semibold,
     fontWeight: '500',
     color: colors.text.secondary,
+  },
+  earlyStopStage: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing['2xl'],
+  },
+  earlyStopHeading: {
+    ...typography.title.title1,
+    fontFamily: fonts.semibold,
+    fontWeight: '500',
+    color: colors.text.primary,
+    textAlign: 'center',
+  },
+  earlyStopBody: {
+    ...typography.body.medium,
+    color: colors.text.secondary,
+    textAlign: 'center',
   },
 
   fullScreen: {

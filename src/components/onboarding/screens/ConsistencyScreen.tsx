@@ -117,7 +117,7 @@ const styles = StyleSheet.create({
   chartTitle: {
     ...typography.body.small,
     fontFamily: fonts.semibold,
-    color: colors.text.tertiary,
+    color: colors.text.primary,
     textAlign: 'center',
   },
   plot: {

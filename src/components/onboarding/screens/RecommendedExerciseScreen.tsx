@@ -1,6 +1,6 @@
 import { Text } from '../../common/Text';
-import { useEffect, useMemo, useRef } from 'react';
-import { Animated, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { useMemo } from 'react';
+import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import Icon, { type IconName } from '../../common/icons/Icon';
 import CardSurface from '../../common/CardSurface';
 import MindMapRadar from '../MindMapRadar';
@@ -10,7 +10,6 @@ import { fonts, typography } from '../../../theme/typography';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import TECHNIQUES from '../../../features/exercise/guidedBreathing/techniques';
-import { useScoreMorph } from '../../../hooks/useScoreMorph';
 import {
   formatPlanTime,
   formatRetestDate,
@@ -36,9 +35,6 @@ const ACTION_ICON: Record<string, IconName> = {
   checkIn: 'lungs',
 };
 
-const MORPH_DURATION_MS = 1400;
-const MORPH_DELAY_MS = 650;
-
 function techniqueName(techniqueId: string | null): string | null {
   if (!techniqueId) return null;
   return TECHNIQUES.find((t) => t.id === techniqueId)?.name ?? null;
@@ -61,13 +57,6 @@ export default function RecommendedExerciseScreen({
     ? projection.highSeconds - projection.baselineSeconds
     : null;
 
-  const { scores: morphed } = useScoreMorph({
-    from: currentScores,
-    to: targetScores,
-    durationMs: MORPH_DURATION_MS,
-    delayMs: MORPH_DELAY_MS,
-  });
-
   const biggestLift = useMemo(() => {
     const growthTarget = targetScores.find(
       (score) => score.axis === growthArea.axis,
@@ -86,37 +75,15 @@ export default function RecommendedExerciseScreen({
       onBack={onBack}
       centerCopy
       titleStyle={styles.planTitle}
-      copyBadge={<PlanReadyBadge />}
       footer={
         <OnboardingPrimaryButton label="Start my plan" onPress={onContinue} />
       }
     >
       <View style={styles.page}>
-        {gain != null ? (
-          <View style={styles.goalPill}>
-            <Text style={styles.goalPillText}>
-              {`Add ${gain}s to your breath hold by ${formatRetestDate(new Date())}`}
-            </Text>
-          </View>
-        ) : null}
-
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Do this every day</Text>
-          {plan.actions.map((action) => (
-            <ActionCard key={action.id} action={action} />
-          ))}
-        </View>
-
-        {plan.responsivenessNote ? (
-          <Text style={styles.note}>{plan.responsivenessNote}</Text>
-        ) : null}
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Where four weeks takes you</Text>
-
           <View style={styles.radarWrap}>
             <MindMapRadar
-              scores={morphed}
+              scores={currentScores}
               targetScores={targetScores}
               labelScores={currentScores}
               size={width}
@@ -136,10 +103,29 @@ export default function RecommendedExerciseScreen({
 
           <Text style={styles.note}>
             {biggestLift != null
-              ? `${growthArea.label} climbs the most — about ${biggestLift} points — because both daily actions are chosen to lift it first.`
+              ? `${growthArea.label} climbs the most, about ${biggestLift} points, because both daily actions are chosen to lift it first.`
               : `${growthArea.label} has the most room to move, so both daily actions are chosen to lift it first.`}
           </Text>
         </View>
+
+        {gain != null ? (
+          <View style={styles.goalPill}>
+            <Text style={styles.goalPillText}>
+              {`Add ${gain}s to your breath hold by ${formatRetestDate(new Date())}`}
+            </Text>
+          </View>
+        ) : null}
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Do this every day</Text>
+          {plan.actions.map((action) => (
+            <ActionCard key={action.id} action={action} />
+          ))}
+        </View>
+
+        {plan.responsivenessNote ? (
+          <Text style={styles.note}>{plan.responsivenessNote}</Text>
+        ) : null}
       </View>
     </OnboardingScreenLayout>
   );
@@ -168,35 +154,7 @@ function ActionCard({ action }: { action: PlanAction }) {
   );
 }
 
-function PlanReadyBadge() {
-  const pop = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    Animated.spring(pop, {
-      toValue: 1,
-      damping: 12,
-      stiffness: 180,
-      mass: 0.7,
-      useNativeDriver: true,
-    }).start();
-  }, [pop]);
-
-  return (
-    <Animated.View style={[styles.badge, { transform: [{ scale: pop }] }]}>
-      <Icon name="check" size={18} color={colors.text.inverse} />
-    </Animated.View>
-  );
-}
-
 const styles = StyleSheet.create({
-  badge: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.primary.blue500,
-  },
   planTitle: {
     fontSize: 32,
     lineHeight: 39,

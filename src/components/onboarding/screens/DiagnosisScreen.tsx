@@ -2,7 +2,6 @@ import { Text } from '../../common/Text';
 import { useEffect, useMemo, useRef, type ReactNode } from 'react';
 import {
   Animated, Easing, StyleProp, StyleSheet, useWindowDimensions, View, ViewStyle } from 'react-native';
-import Icon, { type IconName } from '../../common/icons/Icon';
 import CardSurface from '../../common/CardSurface';
 import MindMapRadar from '../MindMapRadar';
 import { colors } from '../../../theme/colors';
@@ -12,8 +11,7 @@ import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import { useScoreMorph } from '../../../hooks/useScoreMorph';
 import { benchmarkBreathHold } from '../../../lib/breathHoldPercentile';
-import { estimateLungAge } from '../../../lib/lungAge';
-import type { MindMapScore } from '../../../lib/onboardingScores';
+import type { MindMapAxis, MindMapScore } from '../../../lib/onboardingScores';
 
 interface DiagnosisScreenProps {
   age: number;
@@ -22,21 +20,36 @@ interface DiagnosisScreenProps {
   growthArea: MindMapScore;
   holdSeconds: number | null;
   restingBpm: number | null;
-  bpmDrop: number | null;
   stepIndex: number;
   stepCount: number;
   onContinue: () => void;
   onBack: () => void;
 }
 
-interface MetricCard {
+interface HighlightCard {
   id: string;
-  icon: IconName;
-  label: string;
-  value: string;
-  unit: string;
-  note: string;
+  role: string;
+  subject: string;
+  pill: string;
+  pillColor: string;
+  body: string;
 }
+
+const SUPERPOWER_COPY: Record<MindMapAxis, string> = {
+  calm: 'Traffic at a standstill? Your body settles before your head does.',
+  recovery: 'Long day behind you? You come back down faster than most people.',
+  focus: 'Deep work in front of you? You drop in and stay there.',
+  resilience: 'Plans fall apart? You steady yourself and keep moving.',
+  breathEase: 'Your breath already runs slow and easy without you thinking about it.',
+};
+
+const GROWTH_COPY: Record<MindMapAxis, string> = {
+  calm: 'Tense moment passes? The tension tends to stay with you long after.',
+  recovery: 'Rest is not landing yet. Your body is still running warm at night.',
+  focus: 'Halfway through a task and gone? Your attention is asking for a reset.',
+  resilience: 'Small things going wrong? They are landing harder than you would like.',
+  breathEase: 'Your breathing is running shallow and quick through most of the day.',
+};
 
 const REVEAL_DURATION_MS = 1100;
 const REVEAL_DELAY_MS = 220;
@@ -50,7 +63,6 @@ export default function DiagnosisScreen({
   growthArea,
   holdSeconds,
   restingBpm,
-  bpmDrop,
   stepIndex,
   stepCount,
   onContinue,
@@ -73,52 +85,57 @@ export default function DiagnosisScreen({
     [holdSeconds, age],
   );
 
-  const cards = useMemo<MetricCard[]>(() => {
-    const next: MetricCard[] = [];
+  const highlights = useMemo<HighlightCard[]>(() => {
+    const next: HighlightCard[] = [
+      {
+        id: 'superpower',
+        role: 'Superpower',
+        subject: superpower.label,
+        pill: `${Math.round(superpower.value)}%`,
+        pillColor: colors.success[500],
+        body: SUPERPOWER_COPY[superpower.axis],
+      },
+      {
+        id: 'growth',
+        role: 'Growth area',
+        subject: growthArea.label,
+        pill: `${Math.round(growthArea.value)}%`,
+        pillColor: colors.orange[500],
+        body: GROWTH_COPY[growthArea.axis],
+      },
+    ];
 
-    if (holdSeconds != null) {
-      const lungAge = estimateLungAge(holdSeconds, age);
+    if (benchmark && holdSeconds != null) {
       next.push({
-        id: 'lungAge',
-        icon: 'lungs',
-        label: 'Lung age',
-        value: `${lungAge.years}`,
-        unit: 'yrs',
-        note: lungAge.label,
+        id: 'peers',
+        role: 'Versus peers',
+        subject: 'Breath hold',
+        pill: `${holdSeconds}s`,
+        pillColor: colors.primary.blue600,
+        body: `${benchmark.label}. Most people your age hold around ${benchmark.peerMedianSeconds}s.`,
       });
     }
 
     if (restingBpm != null) {
       next.push({
         id: 'restingBpm',
-        icon: 'heart',
-        label: 'Resting heart rate',
-        value: `${Math.round(restingBpm)}`,
-        unit: 'bpm',
-        note: 'measured on your first read',
-      });
-    }
-
-    if (bpmDrop != null && bpmDrop >= 1) {
-      next.push({
-        id: 'bpmDrop',
-        icon: 'waves',
-        label: 'Heart rate settled',
-        value: `${Math.round(bpmDrop)}`,
-        unit: 'bpm',
-        note: 'in under two minutes of breathing',
+        role: 'Resting heart rate',
+        subject: 'Your baseline',
+        pill: `${Math.round(restingBpm)} bpm`,
+        pillColor: colors.primary.blue600,
+        body: 'Measured from your fingertip before any breathing. Every future read compares back to this.',
       });
     }
 
     return next;
-  }, [holdSeconds, age, restingBpm, bpmDrop]);
+  }, [benchmark, holdSeconds, restingBpm, superpower, growthArea]);
 
   return (
     <OnboardingScreenLayout
       title="Your breathing profile"
-      subtitle="Five dimensions, scored from your answers and your own measurements."
       progress={stepIndex / stepCount}
       onBack={onBack}
+      titleStyle={styles.screenTitle}
       centerCopy
       animateCopy
       footer={<OnboardingPrimaryButton label="See my plan" onPress={onContinue} />}
@@ -135,42 +152,24 @@ export default function DiagnosisScreen({
           {' has the most room to move.'}
         </Text>
 
-        {holdSeconds != null && benchmark ? (
-          <StaggeredEntrance index={0}>
-            <CardSurface style={styles.heroCard}>
-              <Text style={styles.heroLabel}>Breath hold</Text>
-              <View style={styles.heroValueRow}>
-                <Text style={styles.heroValue}>{holdSeconds}</Text>
-                <Text style={styles.heroUnit}>sec</Text>
-              </View>
-              <View style={styles.heroPill}>
-                <Icon name="laurel" size={16} color={colors.primary.blue600} />
-                <Text style={styles.heroPillText}>{benchmark.label}</Text>
-              </View>
-              <Text style={styles.heroNote}>
-                {`A typical untrained hold at ${age} is around ${benchmark.peerMedianSeconds}s.`}
-              </Text>
-            </CardSurface>
-          </StaggeredEntrance>
-        ) : null}
+        <Text style={styles.sectionTitle}>Your highlights</Text>
 
-        <View style={styles.grid}>
-          {cards.map((card, index) => (
-            <StaggeredEntrance
-              key={card.id}
-              index={index + 1}
-              style={styles.gridItem}
-            >
-              <CardSurface style={styles.metricCard}>
-                <View style={styles.metricIcon}>
-                  <Icon name={card.icon} size={18} color={colors.primary.blue500} />
+        <View style={styles.highlightList}>
+          {highlights.map((highlight, index) => (
+            <StaggeredEntrance key={highlight.id} index={index + 1}>
+              <CardSurface style={styles.highlightCard}>
+                <View style={styles.highlightHeader}>
+                  <Text style={styles.highlightRole}>{highlight.role}</Text>
+                  <View style={styles.highlightMeta}>
+                    <Text style={styles.highlightSubject}>{highlight.subject}</Text>
+                    <View
+                      style={[styles.highlightPill, { backgroundColor: highlight.pillColor }]}
+                    >
+                      <Text style={styles.highlightPillText}>{highlight.pill}</Text>
+                    </View>
+                  </View>
                 </View>
-                <Text style={styles.metricLabel}>{card.label}</Text>
-                <View style={styles.metricValueRow}>
-                  <Text style={styles.metricValue}>{card.value}</Text>
-                  <Text style={styles.metricUnit}>{card.unit}</Text>
-                </View>
-                <Text style={styles.metricNote}>{card.note}</Text>
+                <Text style={styles.highlightBody}>{highlight.body}</Text>
               </CardSurface>
             </StaggeredEntrance>
           ))}
@@ -222,6 +221,11 @@ function StaggeredEntrance({ index, style, children }: StaggeredEntranceProps) {
 }
 
 const styles = StyleSheet.create({
+  screenTitle: {
+    fontSize: 32,
+    lineHeight: 39,
+    letterSpacing: -0.5,
+  },
   page: {
     gap: spacing.sm,
   },
@@ -248,114 +252,62 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: colors.orange[600],
   },
-  heroCard: {
-    alignItems: 'center',
-    gap: spacing.xs,
-    paddingVertical: spacing.lg,
-    paddingHorizontal: spacing.md,
-  },
-  heroLabel: {
-    ...typography.label.medium,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-    color: colors.text.tertiary,
-  },
-  heroValueRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: spacing.xs,
-  },
-  heroValue: {
-    fontFamily: fonts.semibold,
-    fontWeight: '600',
-    fontSize: 68,
-    lineHeight: 74,
-    letterSpacing: -2,
-    fontVariant: ['tabular-nums'],
-    color: colors.text.primary,
-  },
-  heroUnit: {
+  sectionTitle: {
     ...typography.title.title3,
     fontFamily: fonts.semibold,
     fontWeight: '500',
-    color: colors.text.tertiary,
-    paddingBottom: spacing.sm,
+    color: colors.text.primary,
+    marginTop: spacing.lg,
+    marginBottom: spacing.xs,
   },
-  heroPill: {
+  highlightList: {
+    gap: spacing.sm,
+  },
+  highlightCard: {
+    gap: spacing.sm,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+  },
+  highlightHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    borderRadius: 20,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    backgroundColor: colors.primary.blue100,
+    justifyContent: 'space-between',
+    gap: spacing.sm,
   },
-  heroPillText: {
-    ...typography.label.large,
+  highlightRole: {
+    ...typography.heading.heading2,
     fontFamily: fonts.semibold,
     fontWeight: '500',
     color: colors.primary.blue600,
   },
-  heroNote: {
+  highlightMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    flexShrink: 1,
+  },
+  highlightSubject: {
+    ...typography.heading.heading2,
+    fontFamily: fonts.semibold,
+    fontWeight: '500',
+    color: colors.text.primary,
+    flexShrink: 1,
+  },
+  highlightPill: {
+    borderRadius: 8,
+    paddingVertical: 3,
+    paddingHorizontal: spacing.sm,
+  },
+  highlightPillText: {
     ...typography.body.small,
-    textAlign: 'center',
+    fontFamily: fonts.semibold,
+    fontWeight: '500',
+    fontVariant: ['tabular-nums'],
+    color: colors.neutral[0],
+  },
+  highlightBody: {
+    ...typography.body.small,
     color: colors.text.secondary,
     lineHeight: 20,
-  },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-  gridItem: {
-    flexGrow: 1,
-    flexBasis: '46%',
-  },
-  metricCard: {
-    gap: spacing.xs,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md,
-  },
-  metricIcon: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.primary.blue100,
-  },
-  metricLabel: {
-    ...typography.caption.caption1,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    color: colors.text.tertiary,
-  },
-  metricValueRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: 4,
-  },
-  metricValue: {
-    fontFamily: fonts.semibold,
-    fontWeight: '600',
-    fontSize: 30,
-    lineHeight: 34,
-    letterSpacing: -0.8,
-    fontVariant: ['tabular-nums'],
-    color: colors.text.primary,
-  },
-  metricUnit: {
-    ...typography.body.small,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    color: colors.text.tertiary,
-    paddingBottom: 3,
-  },
-  metricNote: {
-    ...typography.caption.caption1,
-    color: colors.text.secondary,
-    lineHeight: 17,
   },
 });

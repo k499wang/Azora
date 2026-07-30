@@ -15,6 +15,7 @@ import { fonts, typography } from '../theme/typography';
 import OnboardingPrimaryButton from '../components/onboarding/OnboardingPrimaryButton';
 import { PlanCard, computeAnnualSavings } from '../components/paywall/PlanCard';
 import PaywallFeatureList from '../components/paywall/PaywallFeatureList';
+import { PaywallFooterLinks } from '../components/paywall/PaywallFooterLinks';
 import PaywallTrialReminderToggle from '../components/paywall/PaywallTrialReminderToggle';
 
 
@@ -272,22 +273,13 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
               isExiting
             }
           />
-          <Pressable
-            accessibilityRole="button"
-            disabled={isBusy || isExiting}
-            onPress={() => {
+          <PaywallFooterLinks
+            isRestoring={paywall.isRestoring}
+            restoreDisabled={isBusy || isExiting}
+            onRestore={() => {
               void restorePurchases();
             }}
-            style={({ pressed }) => [
-              styles.restoreButton,
-              pressed && styles.subtlePressed,
-              (isBusy || isExiting) && styles.disabled,
-            ]}
-          >
-            <Text style={styles.restoreText}>
-              {paywall.isRestoring ? 'Restoring...' : 'Restore Purchase'}
-            </Text>
-          </Pressable>
+          />
         </View>
       </SafeAreaView>
       </SunsetBackground>
@@ -426,17 +418,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 12,
     elevation: 12,
-  },
-  restoreButton: {
-    alignSelf: 'center',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-  },
-  restoreText: {
-    ...typography.button.small,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    color: colors.neutral[0],
   },
   subtlePressed: {
     opacity: 0.65,

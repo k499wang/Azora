@@ -3,6 +3,7 @@ import AgeScreen from './screens/AgeScreen';
 import ScienceCredibilityScreen from './screens/ScienceCredibilityScreen';
 import BaselineScreen from './screens/BaselineScreen';
 import BaselineIntroScreen from './screens/BaselineIntroScreen';
+import HeartVariabilityScreen from './screens/HeartVariabilityScreen';
 import DailyTimeScreen from './screens/DailyTimeScreen';
 import ConsistencyScreen from './screens/ConsistencyScreen';
 import GenderScreen from './screens/GenderScreen';
@@ -36,6 +37,10 @@ import FounderNoteScreen from './screens/FounderNoteScreen';
 import OnboardingPaywallScreen from './screens/OnboardingPaywallScreen';
 import ExitOfferSheet from '../paywall/ExitOfferSheet';
 import BreathHoldScreen from './screens/BreathHoldScreen';
+import BreathHoldBenefitsScreen from './screens/BreathHoldBenefitsScreen';
+import DoctorReferralScreen, {
+  type DoctorReferral,
+} from './screens/DoctorReferralScreen';
 import {
   INTENT_OPTIONS,
   PERSONALIZED_INTENT_OPTIONS,
@@ -140,8 +145,11 @@ const STEP_ORDER: OnboardingStep[] = [
   'scienceCredibility',
   'age',
   'gender',
+  'breathHoldBenefits',
   'lungCapacity',
   'dailyTime',
+  'doctorReferral',
+  'heartVariability',
   'baselineIntro',
   'baseline',
   'planIntro',
@@ -236,6 +244,9 @@ export default function OnboardingFlow({
   );
   const [acquisitionSource, setAcquisitionSource] =
     useState<AcquisitionSourceId | null>(null);
+  const [doctorReferral, setDoctorReferral] = useState<DoctorReferral | null>(
+    null,
+  );
   const [baseline, setBaseline] =
     useState<CompletedOnboardingBaselineResult | null>(null);
   const [breathHold, setBreathHold] = useState<OnboardingBreathHoldResult | null>(null);
@@ -981,6 +992,18 @@ export default function OnboardingFlow({
     );
   }
 
+  if (step === 'breathHoldBenefits') {
+    return (
+      <BreathHoldBenefitsScreen
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onContinue={() => goToStep('lungCapacity', 'continue')}
+        onBack={() => goToStep('gender', 'back')}
+        onSkip={() => goToStep('lungCapacity', 'skip')}
+      />
+    );
+  }
+
   if (step === 'lungCapacity') {
     return (
       <BreathHoldScreen
@@ -991,7 +1014,7 @@ export default function OnboardingFlow({
           setBreathHold(result);
           goToStep('dailyTime', 'continue', { has_lung_capacity: true });
         }}
-        onBack={() => goToStep('gender', 'back')}
+        onBack={() => goToStep('breathHoldBenefits', 'back')}
         onSkip={() => goToStep('dailyTime', 'skip')}
       />
     );
@@ -1018,9 +1041,13 @@ export default function OnboardingFlow({
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onSelect={setGender}
-        onContinue={() => goToStep('lungCapacity', 'continue', { has_gender: gender != null })}
+        onContinue={() =>
+          goToStep('breathHoldBenefits', 'continue', {
+            has_gender: gender != null,
+          })
+        }
         onBack={() => goToStep('age', 'back')}
-        onSkip={() => goToStep('lungCapacity', 'skip')}
+        onSkip={() => goToStep('breathHoldBenefits', 'skip')}
       />
     );
   }
@@ -1045,8 +1072,40 @@ export default function OnboardingFlow({
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onChange={setDailyMinutes}
-        onContinue={() => goToStep('baselineIntro', 'continue', { has_daily_minutes: true })}
+        onContinue={() =>
+          goToStep('doctorReferral', 'continue', { has_daily_minutes: true })
+        }
         onBack={() => goToStep('lungCapacity', 'back')}
+        onSkip={() => goToStep('doctorReferral', 'skip')}
+      />
+    );
+  }
+
+  if (step === 'doctorReferral') {
+    return (
+      <DoctorReferralScreen
+        value={doctorReferral}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onSelect={setDoctorReferral}
+        onContinue={() =>
+          goToStep('heartVariability', 'continue', {
+            doctor_referral: doctorReferral,
+          })
+        }
+        onBack={() => goToStep('dailyTime', 'back')}
+        onSkip={() => goToStep('heartVariability', 'skip')}
+      />
+    );
+  }
+
+  if (step === 'heartVariability') {
+    return (
+      <HeartVariabilityScreen
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onContinue={() => goToStep('baselineIntro', 'continue')}
+        onBack={() => goToStep('doctorReferral', 'back')}
         onSkip={() => goToStep('baselineIntro', 'skip')}
       />
     );
@@ -1058,7 +1117,7 @@ export default function OnboardingFlow({
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goToStep('baseline', 'continue')}
-        onBack={() => goToStep('dailyTime', 'back')}
+        onBack={() => goToStep('heartVariability', 'back')}
       />
     );
   }
@@ -1131,7 +1190,6 @@ export default function OnboardingFlow({
         growthArea={planMindMap.growthArea}
         holdSeconds={breathHold?.holdSeconds ?? null}
         restingBpm={baseline?.avgBpm ?? null}
-        bpmDrop={baseline?.bpmDrop ?? null}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goToStep('recommendedExercise', 'continue')}

@@ -31,10 +31,6 @@ const DEFAULT_FEATURES: PaywallFeature[] = [
     text: 'Enjoy calmer nights with wind downs made for sleep',
   },
   {
-    icon: 'timer',
-    text: 'Remove session limits and practice as often as you like',
-  },
-  {
     icon: 'sparkle',
     text: 'Get a personalized plan that adapts as you improve',
   },

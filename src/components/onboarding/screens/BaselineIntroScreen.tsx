@@ -132,7 +132,8 @@ export default function BaselineIntroScreen({
         <View style={styles.copy}>
           <Text style={styles.headline}>{title}</Text>
           <Text style={styles.sub}>
-            Azora uses PPG to read your heart rate and build a custom plan.
+            Rest one finger on the camera for twenty seconds. That is your
+            baseline, and your plan is built on it.
           </Text>
         </View>
       </View>

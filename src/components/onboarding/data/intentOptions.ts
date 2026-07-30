@@ -102,7 +102,7 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
     title: 'Focus & study',
     body: 'Steady your mind for deep work and exams.',
     hook: 'Clear head, sharper recall.',
-    goalPhrase: 'focus more easily while working or studying',
+    goalPhrase: 'stay focused while you work or study',
     assessmentPlan:
       'We’ll start with steady breathing that quiets mental noise before work or study.',
     reflectionHeadline: 'Find focus in a few breaths.',
@@ -159,7 +159,7 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
   },
   {
     id: 'spiritual',
-    icon: 'lotus',
+    icon: 'arrow-up',
     accent: colors.primary.blue600,
     title: 'Deepen practice',
     body: 'Use breath as a path to stillness and presence.',
@@ -195,7 +195,7 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
     title: 'Support my yoga',
     body: 'Carry your breath off the mat — pranayama to steady every practice.',
     hook: 'The breath half of your practice.',
-    goalPhrase: 'support your yoga practice through better breathing',
+    goalPhrase: 'breathe better on the mat',
     assessmentPlan:
       'We’ll start with breath-led practices for steadier movement and deeper stillness.',
     reflectionHeadline: 'Bring your breath to the mat.',
@@ -226,7 +226,7 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
     title: 'Heart health',
     body: 'Measure HRV and recovery trends over time.',
     hook: 'Your heart has been waiting for this.',
-    goalPhrase: 'support your heart health and recovery',
+    goalPhrase: 'look after your heart and recovery',
     assessmentPlan:
       'We’ll start with resonance breathing to support HRV and recovery.',
     reflectionHeadline: 'See your heart, every day.',
@@ -288,7 +288,7 @@ const OTHER_INTENT_OPTION: IntentOption = {
   icon: 'sparkle',
   accent: colors.warning[500],
   title: 'Something else',
-  body: 'Something outside these — Azora keeps the basics covered.',
+  body: 'Something outside these. Azora keeps the basics covered.',
 };
 
 export const INTENT_OPTIONS: IntentOption[] = [

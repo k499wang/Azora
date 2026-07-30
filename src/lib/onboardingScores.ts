@@ -35,8 +35,14 @@ const EXPERIENCE_RESILIENCE_BONUS: Record<ExperienceLevel, number> = {
   never: 0,
 };
 
+const MIN_FINAL_MIND_MAP_SCORE = 5;
+
 function clamp(value: number, min = 0, max = 100): number {
   return Math.max(min, Math.min(max, value));
+}
+
+function finalMindMapScore(value: number): number {
+  return clamp(Math.round(value), MIN_FINAL_MIND_MAP_SCORE);
 }
 
 function agreementWeight(response: AgreementValue | null | undefined): number {
@@ -94,11 +100,19 @@ export function computeMindMap({
   );
 
   const scores: MindMapScore[] = [
-    { axis: 'calm', label: AXIS_LABEL.calm, value: Math.round(calm) },
-    { axis: 'recovery', label: AXIS_LABEL.recovery, value: Math.round(recovery) },
-    { axis: 'focus', label: AXIS_LABEL.focus, value: Math.round(focus) },
-    { axis: 'resilience', label: AXIS_LABEL.resilience, value: Math.round(resilience) },
-    { axis: 'breathEase', label: AXIS_LABEL.breathEase, value: Math.round(breathEase) },
+    { axis: 'calm', label: AXIS_LABEL.calm, value: finalMindMapScore(calm) },
+    { axis: 'recovery', label: AXIS_LABEL.recovery, value: finalMindMapScore(recovery) },
+    { axis: 'focus', label: AXIS_LABEL.focus, value: finalMindMapScore(focus) },
+    {
+      axis: 'resilience',
+      label: AXIS_LABEL.resilience,
+      value: finalMindMapScore(resilience),
+    },
+    {
+      axis: 'breathEase',
+      label: AXIS_LABEL.breathEase,
+      value: finalMindMapScore(breathEase),
+    },
   ];
 
   const sorted = [...scores].sort((a, b) => b.value - a.value);
