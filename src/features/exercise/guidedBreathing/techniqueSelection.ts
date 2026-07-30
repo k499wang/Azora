@@ -7,16 +7,13 @@ export type { OnboardingIntent };
 /**
  * Every "which exercise should we suggest here?" mapping in the app, in one
  * place. Each map is an exhaustive `Record` over its trigger ids, so adding a
- * new onboarding goal, mood chip, or home shortcut fails to compile until it
- * has an exercise, and a mistyped exercise id is a type error rather than a
+ * new onboarding goal or mood chip fails to compile until it has an
+ * exercise, and a mistyped exercise id is a type error rather than a
  * silent fall back to the first technique in the library.
  *
  * Stress- and HRV-driven suggestions are not here — those are ordered rules
  * rather than a lookup, and live in `src/lib/insights/recommendations.ts`.
  */
-
-/** Home-screen goal shortcuts — see `src/components/home/BreathGoalCards.tsx`. */
-export type BreathGoalKey = 'calm' | 'energy' | 'sleep';
 
 /** Used whenever no better signal is available about what to suggest. */
 export const FALLBACK_TECHNIQUE_ID: TechniqueId = 'box';
@@ -47,13 +44,6 @@ export const MOOD_TECHNIQUE: Record<Mood['id'], TechniqueId> = {
   focus: 'box',
   angry: 'sitali',
   lowEnergy: 'wimhof',
-};
-
-/** The three large goal shortcuts on the home screen. */
-export const GOAL_TECHNIQUE: Record<BreathGoalKey, TechniqueId> = {
-  calm: 'relaxing',
-  energy: 'wimhof',
-  sleep: '478',
 };
 
 export function isOnboardingIntent(value: string): value is OnboardingIntent {

@@ -157,7 +157,7 @@ export function PaywallTrialStep({ hasAnnualTrial }: { hasAnnualTrial: boolean }
           </Text>
         )}
       </View>
-      <View style={[styles.timeline, !hasAnnualTrial && styles.timelineNoTrial]}>
+      <View style={styles.timeline}>
         {steps.map((step, index) => (
           <TimelineStep
             key={step.label}

@@ -13,7 +13,7 @@ import { colors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
 import { fonts, typography } from '../theme/typography';
 import OnboardingPrimaryButton from '../components/onboarding/OnboardingPrimaryButton';
-import { PlanCard, computeAnnualSavings } from '../components/paywall/PlanCard';
+import { PlanCard, computeAnnualSavings, computePerWeek } from '../components/paywall/PlanCard';
 import PaywallFeatureList from '../components/paywall/PaywallFeatureList';
 import { PaywallFooterLinks } from '../components/paywall/PaywallFooterLinks';
 import PaywallTrialReminderToggle from '../components/paywall/PaywallTrialReminderToggle';
@@ -204,7 +204,7 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
               ) : null}
             </View>
 
-            <PaywallFeatureList hasAnnualTrial={hasAnnualTrial} />
+            <PaywallFeatureList />
 
             {hasAnnualTrial ? (
               <View style={styles.reminderToggleWrap}>
@@ -224,6 +224,7 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
                     isSelected={paywall.selectedPackageId === 'annual'}
                     onSelect={paywall.selectPackage}
                     savingsPercent={savingsPercent}
+                    comparePerWeek={weeklyPackage ? computePerWeek(weeklyPackage) : null}
                   />
                 ) : null}
                 {weeklyPackage ? (
@@ -342,7 +343,7 @@ const styles = StyleSheet.create({
     ...typography.body.medium,
     fontFamily: fonts.semibold,
     fontWeight: '500',
-    color: 'rgba(255,255,255,0.75)',
+    color: colors.paywall.textMuted,
     textAlign: 'left',
   },
   title: {
@@ -355,7 +356,7 @@ const styles = StyleSheet.create({
   titleDivider: {
     alignSelf: 'stretch',
     height: StyleSheet.hairlineWidth,
-    backgroundColor: 'rgba(255,255,255,0.35)',
+    backgroundColor: colors.paywall.divider,
     marginTop: spacing.xs,
     marginBottom: spacing.xs,
   },
@@ -410,7 +411,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,
-    backgroundColor: 'rgba(10, 28, 68, 0.92)',
+    backgroundColor: colors.paywall.tray,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     shadowColor: '#000',

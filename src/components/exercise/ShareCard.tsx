@@ -6,20 +6,21 @@ import { Canvas, Circle, Path, Skia } from '@shopify/react-native-skia';
 import { colors } from '../../theme/colors';
 import { typography, fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
-import { azoraScoreFill } from '../../lib/azoraScore';
+import { lungAgeRingFill } from '../../lib/lungAge';
 
 interface Props {
   width: number;
-  azoraScore: number;
-  tierLabel: string;
+  lungAgeYears: number;
+  /** How the lung age compares to the person's own age. Null when it is unknown. */
+  deltaLabel: string | null;
   ringColors: string[];
   onBackgroundDisplay?: () => void;
 }
 
 export default function ShareCard({
   width,
-  azoraScore,
-  tierLabel,
+  lungAgeYears,
+  deltaLabel,
   ringColors,
   onBackgroundDisplay,
 }: Props) {
@@ -27,7 +28,7 @@ export default function ShareCard({
   const ringSize = width * 0.62;
   const stroke = ringSize * 0.06;
   const ageFontSize = Math.round(ringSize * 0.3);
-  const score = azoraScoreFill(azoraScore);
+  const score = lungAgeRingFill(lungAgeYears);
   const arcColor = ringColors[0];
 
   const cx = ringSize / 2;
@@ -103,16 +104,16 @@ export default function ShareCard({
             <Circle cx={cx} cy={cy} r={innerR} color={colors.background.elevated} />
           </Canvas>
           <View style={styles.ringCenter} pointerEvents="none">
-            <Text style={styles.caption}>Azora Score</Text>
+            <Text style={styles.caption}>Lung age</Text>
             <Text
               style={[
                 styles.ageValue,
                 { fontSize: ageFontSize, lineHeight: Math.round(ageFontSize * 1.08) },
               ]}
             >
-              {azoraScore}
+              {lungAgeYears}
             </Text>
-            <Text style={styles.tier}>{tierLabel}</Text>
+            <Text style={styles.tier}>{deltaLabel ?? 'years'}</Text>
           </View>
         </View>
       </View>

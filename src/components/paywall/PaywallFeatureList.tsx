@@ -10,18 +10,11 @@ export interface PaywallFeature {
   text: string;
 }
 
-const TRIAL_FEATURE: PaywallFeature = {
-  icon: 'unlock',
-  text: 'Start 7 days free, cancel anytime before you are charged',
-};
-
-const SUBSCRIPTION_FEATURE: PaywallFeature = {
-  icon: 'unlock',
-  text: 'Unlock every breathing and heart-rate tool in Azora',
-};
-
 const DEFAULT_FEATURES: PaywallFeature[] = [
-  TRIAL_FEATURE,
+  {
+    icon: 'waves',
+    text: 'Reset your mind and sharpen focus by settling your nervous system',
+  },
   {
     icon: 'heart',
     text: 'Track heart rate, HRV, and stress with just your camera',
@@ -38,18 +31,10 @@ const DEFAULT_FEATURES: PaywallFeature[] = [
 
 interface PaywallFeatureListProps {
   features?: PaywallFeature[];
-  hasAnnualTrial?: boolean;
 }
 
-export default function PaywallFeatureList({
-  features,
-  hasAnnualTrial = true,
-}: PaywallFeatureListProps) {
-  const resolvedFeatures =
-    features ??
-    DEFAULT_FEATURES.map((feature) =>
-      feature === TRIAL_FEATURE && !hasAnnualTrial ? SUBSCRIPTION_FEATURE : feature,
-    );
+export default function PaywallFeatureList({ features }: PaywallFeatureListProps) {
+  const resolvedFeatures = features ?? DEFAULT_FEATURES;
 
   return (
     <View style={styles.list}>
@@ -81,7 +66,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.16)',
+    backgroundColor: colors.paywall.iconFill,
   },
   text: {
     flex: 1,

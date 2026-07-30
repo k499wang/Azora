@@ -87,7 +87,7 @@ export default function PaywallTrialReminderToggle({ dark = false, disabled = fa
           onValueChange={(value) => {
             void handleToggle(value);
           }}
-          trackColor={{ false: dark ? 'rgba(255,255,255,0.2)' : colors.neutral[300], true: colors.primary.blue300 }}
+          trackColor={{ false: dark ? colors.paywall.switchTrack : colors.neutral[300], true: colors.primary.blue300 }}
           thumbColor={reminderOn && !disabled ? colors.primary.blue400 : dark ? colors.neutral[200] : colors.neutral[50]}
           style={styles.switch}
         />
@@ -124,8 +124,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
   },
   rowDark: {
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: colors.paywall.toggleFill,
+    borderColor: colors.paywall.toggleEdge,
     shadowOpacity: 0,
     elevation: 0,
   },

@@ -114,6 +114,21 @@ export const colors = {
     navFill: 'rgba(255,255,255,0.82)',
   },
 
+  // Paywall chrome sits over the sunset photo, so its surfaces are translucent
+  // white/navy rather than the opaque background tokens.
+  paywall: {
+    cardEdge: 'rgba(160,196,255,0.35)',
+    tray: 'rgba(10,28,68,0.92)',
+    divider: 'rgba(255,255,255,0.35)',
+    iconFill: 'rgba(255,255,255,0.16)',
+    controlEdge: 'rgba(255,255,255,0.45)',
+    toggleFill: 'rgba(255,255,255,0.08)',
+    toggleEdge: 'rgba(255,255,255,0.12)',
+    switchTrack: 'rgba(255,255,255,0.20)',
+    textMuted: 'rgba(255,255,255,0.72)',
+    textFaint: 'rgba(255,255,255,0.58)',
+  },
+
   surface: {
     welcome: '#FAF6F0',
   },

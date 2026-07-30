@@ -14,7 +14,6 @@ import AmbientBackground from '../components/common/AmbientBackground';
 import AppTopBar from '../components/common/AppTopBar';
 import SectionHeader from '../components/common/SectionHeader';
 import TopBarWeekCalendar from '../components/common/TopBarWeekCalendar';
-import BreathGoalCards from '../components/home/BreathGoalCards';
 import BreathingLibrary from '../components/home/BreathingLibrary';
 import DailyPlanCard from '../components/home/DailyPlanCard';
 import { getBackgroundImageSource } from '../services/images/backgroundImageCache';
@@ -190,8 +189,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             </Text>
           </View>
         </View>
-
-        <BreathGoalCards />
 
         <View style={styles.dailyBreathholdSection}>
           <SectionHeader title="Daily Breathhold" />

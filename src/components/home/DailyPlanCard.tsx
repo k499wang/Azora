@@ -111,7 +111,7 @@ export default function DailyPlanCard({
                 blurColor={colors.glass.fillOnImage}
                 solidColor={colors.glass.fillOnImage}
               >
-                <MaterialCommunityIcons name="play" size={30} color={colors.primary.blue600} />
+                <MaterialCommunityIcons name="play" size={26} color={colors.primary.blue600} />
               </GlassSurface>
           </Pressable>
         </View>
@@ -153,9 +153,9 @@ const styles = StyleSheet.create({
   },
   titleBlock: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'flex-end',
     gap: spacing.xs,
-    paddingBottom: spacing.md,
+    paddingBottom: spacing.lg,
   },
   overlineSpacer: {
     height: typography.overline.lineHeight,
@@ -170,10 +170,15 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   challengeIcon: {
-    width: 28,
-    height: 28,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    transform: [{ translateX: -8 }],
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: 'rgba(12,16,33,0.52)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.20)',
   },
   dailyPill: {
     paddingHorizontal: spacing.sm,
@@ -203,7 +208,7 @@ const styles = StyleSheet.create({
     lineHeight: 26,
   },
   playBtnShadow: {
-    alignSelf: 'center',
+    alignSelf: 'flex-end',
     borderRadius: 999,
     shadowColor: colors.primary.blue700,
     shadowOffset: { width: 0, height: 6 },
@@ -212,9 +217,9 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   playBtn: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',

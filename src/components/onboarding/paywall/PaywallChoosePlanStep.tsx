@@ -5,9 +5,7 @@ import type {
   PaywallPackageOption,
 } from '../../../services/paywall';
 import { colors } from '../../../theme/colors';
-import {
-  PlanCard,
-} from '../../paywall/PlanCard';
+import { PlanCard, computePerWeek } from '../../paywall/PlanCard';
 import PaywallFeatureList from '../../paywall/PaywallFeatureList';
 import PaywallTrialReminderToggle from '../../paywall/PaywallTrialReminderToggle';
 import { paywallStepStyles as styles } from './paywallStepStyles';
@@ -48,7 +46,7 @@ export function PaywallChoosePlanStep({
         ) : null}
       </View>
 
-      <PaywallFeatureList hasAnnualTrial={hasAnnualTrial} />
+      <PaywallFeatureList />
 
       {hasAnnualTrial ? (
         <View style={styles.reminderToggleWrap}>
@@ -68,6 +66,7 @@ export function PaywallChoosePlanStep({
               isSelected={selectedPackageId === 'annual'}
               onSelect={onSelectPackage}
               savingsPercent={savingsPercent}
+              comparePerWeek={weeklyPackage ? computePerWeek(weeklyPackage) : null}
             />
           ) : null}
           {weeklyPackage ? (
