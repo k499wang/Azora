@@ -21,7 +21,13 @@ import ProUpgradeButton from '../components/common/ProUpgradeButton';
 import ProfileBreathHoldTrendCard from '../components/profile/ProfileBreathHoldTrendCard';
 import HeartRateStatsSection from '../components/heartRate/HeartRateStatsSection';
 import { getBackgroundImageSource } from '../services/images/backgroundImageCache';
-import { estimateAzoraScore, azoraScoreFill } from '../lib/azoraScore';
+import LungAgeInfoDialog from '../components/exercise/LungAgeInfoDialog';
+import { estimateAzoraScore } from '../lib/azoraScore';
+import {
+  estimateLungAge,
+  lungAgeRingFill,
+  lungAgeToneMeta,
+} from '../lib/lungAge';
 import { deriveHoldStats } from '../lib/holdStats';
 import { formatLocalDate } from '../lib/calendar/weekCalendarDays';
 import { useFeatureAccess } from '../hooks/useFeatureAccess';
@@ -46,6 +52,7 @@ export default function BreathScreen({ navigation }: BreathTabScreenProps) {
   const user = useAuthStore((state) => state.user);
   const [todayLocalDate] = useState(() => formatLocalDate(new Date()));
   const [infoVisible, setInfoVisible] = useState(false);
+  const [lungAgeInfoVisible, setLungAgeInfoVisible] = useState(false);
 
   const homeStatsQuery = useHomeStatsQuery(user?.id ?? null, todayLocalDate);
   const profileSummaryQuery = useProfileSummaryQuery(user?.id ?? null);
@@ -64,14 +71,23 @@ export default function BreathScreen({ navigation }: BreathTabScreenProps) {
   const breathHoldTrend = profileSummary?.breathHoldTrend ?? [];
   const userAge = profileQuery.data?.age ?? null;
 
-  const azoraEstimate =
+  const holdSeconds =
     todayBreathHold?.holdSeconds != null && todayBreathHold.holdSeconds > 0
+      ? todayBreathHold.holdSeconds
+      : null;
+
+  const azoraEstimate =
+    holdSeconds != null
       ? estimateAzoraScore({
-          holdSeconds: todayBreathHold.holdSeconds,
-          avgBpm: todayBreathHold.avgBpm ?? undefined,
-          minBpm: todayBreathHold.minBpm ?? undefined,
+          holdSeconds,
+          avgBpm: todayBreathHold?.avgBpm ?? undefined,
+          minBpm: todayBreathHold?.minBpm ?? undefined,
         })
       : null;
+
+  const lungAge =
+    holdSeconds != null ? estimateLungAge(holdSeconds, userAge) : null;
+  const lungAgeTone = lungAgeToneMeta(lungAge?.deltaYears ?? null);
 
   const advancedStatsLocked =
     !advancedStatsAccess.allowed && !advancedStatsAccess.isLoading;
@@ -175,30 +191,21 @@ export default function BreathScreen({ navigation }: BreathTabScreenProps) {
         </View>
 
         <View style={styles.heroSection}>
-          {azoraEstimate ? (
-            <ScoreRing
-              value={azoraEstimate.score}
-              fill={azoraScoreFill(azoraEstimate.score)}
-              size={235}
-              valueFontSize={78}
-              caption="Azora Score"
-              captionPosition="bottom"
-              captionTextTransform="none"
-              gapLabel={null}
-            />
-          ) : (
-            <ScoreRing
-              value={0}
-              fill={0}
-              size={235}
-              valueFontSize={78}
-              placeholder
-              caption="Azora Score"
-              captionPosition="bottom"
-              captionTextTransform="none"
-              gapLabel={null}
-            />
-          )}
+          <ScoreRing
+            value={lungAge?.years ?? 0}
+            fill={lungAge != null ? lungAgeRingFill(lungAge.years) : 0}
+            placeholder={lungAge == null}
+            size={235}
+            valueFontSize={78}
+            ringColors={lungAgeTone.ringColors}
+            caption="Lung age"
+            captionPosition="bottom"
+            captionTextTransform="none"
+            onInfoPress={() => setLungAgeInfoVisible(true)}
+            gapLabel={lungAge?.label ?? null}
+            gapTextColor={lungAgeTone.textColor}
+            gapDirection={lungAgeTone.direction}
+          />
         </View>
 
         <View style={styles.section}>
@@ -213,9 +220,9 @@ export default function BreathScreen({ navigation }: BreathTabScreenProps) {
                 <Icon name="breath-hold" size={24} color={colors.primary.blue600} />
               </View>
               <Text style={styles.measureTitle}>
-                {azoraEstimate
+                {lungAge
                   ? 'Ready to beat your record?'
-                  : 'Tap to measure your score'}
+                  : 'Tap to measure your lung age'}
               </Text>
               <Icon name="chevron-right" size={22} color={colors.text.tertiary} />
             </CardSurface>
@@ -259,7 +266,12 @@ export default function BreathScreen({ navigation }: BreathTabScreenProps) {
         visible={infoVisible}
         onClose={() => setInfoVisible(false)}
         title="Breath Holds"
-        intro="A breath hold is the fastest way to reset your mind — pausing your breath calms your nervous system, melts stress, and pulls you out of your head and into the present in under a minute. It's also an honest measure of fitness: longer holds signal greater lung capacity, better oxygen efficiency, and a steadier stress response, which is why divers and elite athletes train it. We turn each hold into an Azora Score from 0 to 100 — longer holds and a bigger heart-rate drop score higher — so you can watch it climb over time. Every hold is logged, and most people add seconds within their first week. Take a minute, hold your breath, and feel the reset — then beat your record and use the personalized insights to go further."
+        intro="A breath hold is the fastest way to reset your mind — pausing your breath calms your nervous system, melts stress, and pulls you out of your head and into the present in under a minute. It's also an honest measure of fitness: longer holds signal greater lung capacity, better oxygen efficiency, and a steadier stress response, which is why divers and elite athletes train it. We turn each hold into a lung age — the age whose typical breath hold matches yours — so you can watch that number come down over time. Every hold is logged, and most people add seconds within their first week. Take a minute, hold your breath, and feel the reset — then beat your record and use the personalized insights to go further."
+      />
+
+      <LungAgeInfoDialog
+        visible={lungAgeInfoVisible}
+        onClose={() => setLungAgeInfoVisible(false)}
       />
     </View>
   );

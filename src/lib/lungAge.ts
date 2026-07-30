@@ -1,7 +1,6 @@
 /**
  * Lung age — the chronological age whose typical untrained breath hold matches
- * yours. Distinct from the Azora Score: the score is a 0–100 performance rating,
- * this is a number of years.
+ * yours, in years.
  *
  * Peer medians decay roughly exponentially with age (vital capacity and CO2
  * tolerance both decline), so a hold maps back to an age by inverting that
@@ -9,6 +8,8 @@
  *
  * This is a heuristic, not a spirometry-derived clinical lung age.
  */
+
+import { colors } from '../theme/colors';
 
 export const MIN_LUNG_AGE = 18;
 export const MAX_LUNG_AGE = 90;
@@ -59,14 +60,16 @@ export function lungAgeFromGaugeFill(fill: number): number {
 export interface LungAgeEstimate {
   /** Estimated lung age in whole years. */
   years: number;
-  /** Negative when lungs read younger than the person's actual age. */
-  deltaYears: number;
-  label: string;
+  /** Negative when lungs read younger than the person's actual age. Null when their age is unknown. */
+  deltaYears: number | null;
+  label: string | null;
+  /** Same comparison as `label`, trimmed to fit inside a ring. */
+  shortLabel: string | null;
 }
 
 export function estimateLungAge(
   holdSeconds: number,
-  age: number,
+  age: number | null,
 ): LungAgeEstimate {
   const safeHold = Math.max(1, holdSeconds);
   const raw =
@@ -75,16 +78,85 @@ export function estimateLungAge(
   const years = Math.round(
     Math.min(MAX_LUNG_AGE, Math.max(MIN_LUNG_AGE, raw)),
   );
+  if (age == null) {
+    return { years, deltaYears: null, label: null, shortLabel: null };
+  }
+
   const deltaYears = years - Math.round(age);
 
   let label: string;
+  let shortLabel: string;
   if (deltaYears <= -1) {
     label = `${Math.abs(deltaYears)} years younger than you`;
+    shortLabel = `${Math.abs(deltaYears)} years younger`;
   } else if (deltaYears >= 1) {
     label = `${deltaYears} years older than you`;
+    shortLabel = `${deltaYears} years older`;
   } else {
     label = 'right on your age';
+    shortLabel = 'right on your age';
   }
 
-  return { years, deltaYears, label };
+  return { years, deltaYears, label, shortLabel };
+}
+
+// ─── Visual display helpers ───────────────────────────────────────────────────
+
+// The onboarding dial reads like a speedometer, so it grows with age. A progress
+// ring reads the opposite way — full means good — so the ring fill is inverted:
+// the youngest lung age fills it, the oldest nearly empties it.
+const RING_MIN_FILL = 0.08;
+
+/** Where a lung age sits on a 0–1 progress ring. Younger reads fuller. */
+export function lungAgeRingFill(years: number): number {
+  const span = MAX_LUNG_AGE - MIN_LUNG_AGE;
+  const clamped = Math.min(MAX_LUNG_AGE, Math.max(MIN_LUNG_AGE, years));
+  const youth = 1 - (clamped - MIN_LUNG_AGE) / span;
+  return RING_MIN_FILL + youth * (1 - RING_MIN_FILL);
+}
+
+export interface LungAgeToneMeta {
+  ringColors: [string, string];
+  textColor: string;
+  direction: 'positive' | 'neutral';
+}
+
+const YOUNGER_TONE: LungAgeToneMeta = {
+  ringColors: [colors.success[500], colors.primary.blue500],
+  textColor: colors.success[500],
+  direction: 'positive',
+};
+const ON_PACE_TONE: LungAgeToneMeta = {
+  ringColors: [colors.primary.blue500, colors.primary.blue400],
+  textColor: colors.primary.blue500,
+  direction: 'neutral',
+};
+const OLDER_TONE: LungAgeToneMeta = {
+  ringColors: [colors.orange[500], colors.error[500]],
+  textColor: colors.orange[500],
+  direction: 'neutral',
+};
+
+/** Coloring for a lung-age readout. A null delta means the age is unknown. */
+export function lungAgeToneMeta(deltaYears: number | null): LungAgeToneMeta {
+  if (deltaYears == null || deltaYears === 0) return ON_PACE_TONE;
+  return deltaYears < 0 ? YOUNGER_TONE : OLDER_TONE;
+}
+
+const REFERENCE_AGES = [20, 30, 40, 50, 60, 70];
+
+export interface LungAgeReference {
+  age: number;
+  medianSeconds: number;
+}
+
+/**
+ * Median hold at a spread of ages, so the in-app explainer quotes the same curve
+ * the estimate is inverted from rather than a hand-written copy of it.
+ */
+export function lungAgeReferenceHolds(): LungAgeReference[] {
+  return REFERENCE_AGES.map((age) => ({
+    age,
+    medianSeconds: Math.round(medianHoldForAge(age)),
+  }));
 }

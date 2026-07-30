@@ -14,12 +14,9 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import type { usePaywall } from '../../hooks/usePaywall';
-import type {
-  PaywallPackageId,
-  PaywallPackageOption,
-} from '../../services/paywall';
+import type { PaywallPackageOption } from '../../services/paywall';
 import PaywallTrialReminderToggle from './PaywallTrialReminderToggle';
-import { computePerWeek, computeAnnualSavings } from './PlanCard';
+import { PlanCard, computePerWeek, computeAnnualSavings } from './PlanCard';
 import Icon from '../common/icons/Icon';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
@@ -185,11 +182,13 @@ export function ExitOfferContent({
               {hasTrial && annual ? <PaywallTrialReminderToggle /> : null}
 
               {annual ? (
-                <OfferPlanCard
+                <PlanCard
                   pkg={annual}
                   isSelected={paywall.selectedPackageId === 'annual'}
                   onSelect={paywall.selectPackage}
                   savingsPercent={savingsPercent}
+                  comparePerWeek={weekly ? computePerWeek(weekly) : null}
+                  light
                 />
               ) : null}
 
@@ -275,65 +274,6 @@ function TwinkleStar({
     <Animated.View style={[styles.sparkle, { top, bottom, left, right }, animatedStyle]}>
       <Icon name="star" size={size} color={color} />
     </Animated.View>
-  );
-}
-
-function OfferPlanCard({
-  pkg,
-  isSelected,
-  onSelect,
-  savingsPercent,
-}: {
-  pkg: PaywallPackageOption;
-  isSelected: boolean;
-  onSelect: (packageId: PaywallPackageId) => void;
-  savingsPercent: number | null;
-}) {
-  const isAnnual = pkg.id === 'annual';
-  const hasTrial = pkg.trialLabel != null;
-  const perWeek = computePerWeek(pkg);
-  const headline = isAnnual ? (hasTrial ? 'Try for free' : 'Annual') : 'Weekly';
-  const secondary = isAnnual ? `${pkg.priceString}/year` : 'billed weekly';
-  const planDetail = isAnnual
-    ? hasTrial
-      ? 'No charge today'
-      : 'Annual subscription'
-    : 'Weekly subscription';
-
-  return (
-    <View style={styles.planCardWrap}>
-      {isAnnual && savingsPercent != null ? (
-        <View style={styles.savingsBadge}>
-          <Text style={styles.savingsBadgeText}>SAVE {savingsPercent}%</Text>
-        </View>
-      ) : null}
-      <Pressable
-        accessibilityRole="button"
-        accessibilityState={{ selected: isSelected }}
-        onPress={() => onSelect(pkg.id)}
-        style={({ pressed }) => [
-          styles.planCard,
-          isSelected && styles.planCardSelected,
-          pressed && styles.pressed,
-        ]}
-      >
-        {hasTrial ? (
-          <View style={styles.planBanner}>
-            <Text style={styles.planBannerText}>{pkg.trialLabel?.toUpperCase()}</Text>
-          </View>
-        ) : null}
-        <View style={styles.planBody}>
-          <View style={styles.planCopy}>
-            <Text style={styles.planName}>{headline}</Text>
-            <Text style={styles.planMeta}>{planDetail}</Text>
-          </View>
-          <View style={styles.planPriceCol}>
-            {perWeek ? <Text style={styles.planPerMonth}>{perWeek}/week</Text> : null}
-            <Text style={styles.planMeta}>{secondary}</Text>
-          </View>
-        </View>
-      </Pressable>
-    </View>
   );
 }
 
@@ -569,87 +509,6 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
     gap: spacing.md,
   },
-  planCardWrap: {
-    position: 'relative',
-  },
-  planCard: {
-    ...card.base,
-    ...card.shadow,
-    borderColor: colors.neutral[200],
-    overflow: 'hidden',
-  },
-  savingsBadge: {
-    position: 'absolute',
-    top: -12,
-    right: spacing.md,
-    zIndex: 2,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 999,
-    backgroundColor: colors.orange[500],
-    shadowColor: colors.orange[700],
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  savingsBadgeText: {
-    ...typography.caption.caption1,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    letterSpacing: 1,
-    color: colors.text.inverse,
-  },
-  planCardSelected: {
-    borderColor: colors.primary.blue500,
-    borderWidth: 2,
-    backgroundColor: colors.primary.blue100,
-  },
-  planBanner: {
-    backgroundColor: colors.primary.blue600,
-    alignItems: 'center',
-    paddingVertical: spacing.xs,
-  },
-  planBannerText: {
-    ...typography.caption.caption2,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    letterSpacing: 2,
-    color: colors.neutral[0],
-  },
-  planBody: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.md,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
-  },
-  planCopy: {
-    flex: 1,
-  },
-  planPriceCol: {
-    alignItems: 'flex-end',
-  },
-  planName: {
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    fontSize: 18,
-    lineHeight: 22,
-    color: colors.text.primary,
-  },
-  planMeta: {
-    ...typography.caption.caption1,
-    color: colors.text.secondary,
-    marginTop: spacing.xs,
-  },
-  planPerMonth: {
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    fontSize: 18,
-    lineHeight: 22,
-    color: colors.text.primary,
-  },
   cta: {
     minHeight: 60,
     borderRadius: 999,
@@ -682,8 +541,5 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semibold,
     fontWeight: '500',
     color: colors.text.secondary,
-  },
-  pressed: {
-    opacity: 0.6,
   },
 });

@@ -18,6 +18,10 @@ interface PlanCardProps {
   isSelected: boolean;
   onSelect: (packageId: PaywallPackageId) => void;
   savingsPercent: number | null;
+  /** Weekly plan's per-week price, struck through on the annual card. */
+  comparePerWeek?: string | null;
+  /** Light surfaces (exit offer) instead of the blue paywall background. */
+  light?: boolean;
 }
 
 export function PlanCard({
@@ -25,6 +29,8 @@ export function PlanCard({
   isSelected,
   onSelect,
   savingsPercent,
+  comparePerWeek,
+  light = false,
 }: PlanCardProps) {
   const isAnnual = pkg.id === 'annual';
   const hasTrial = pkg.trialLabel != null;
@@ -36,6 +42,16 @@ export function PlanCard({
       ? 'No charge today'
       : 'Annual subscription'
     : 'Weekly subscription';
+  const badgeText = isAnnual
+    ? hasTrial
+      ? savingsPercent != null
+        ? `7 DAYS FREE · SAVE ${savingsPercent}%`
+        : '7-DAY FREE TRIAL'
+      : savingsPercent != null
+        ? `SAVE ${savingsPercent}%`
+        : null
+    : null;
+  const strikePrice = isAnnual && savingsPercent != null ? comparePerWeek : null;
 
   return (
     <Pressable
@@ -44,33 +60,55 @@ export function PlanCard({
       onPress={() => onSelect(pkg.id)}
       style={({ pressed }) => [
         styles.planCard,
-        isSelected && styles.planCardSelected,
+        light && styles.planCardLight,
+        isSelected && (light ? styles.planCardSelectedLight : styles.planCardSelected),
         pressed && styles.planCardPressed,
       ]}
     >
-      {isAnnual && hasTrial ? (
+      {badgeText ? (
         <View style={styles.savingsBadge}>
-          <Text style={styles.savingsBadgeText}>7-DAY FREE TRIAL</Text>
-        </View>
-      ) : isAnnual && savingsPercent != null ? (
-        <View style={styles.savingsBadge}>
-          <Text style={styles.savingsBadgeText}>SAVE {savingsPercent}%</Text>
+          <Text style={styles.savingsBadgeText}>{badgeText}</Text>
         </View>
       ) : null}
 
       <View style={styles.planCardBody}>
         <View style={styles.planCardLeft}>
-          <View style={[styles.radio, isSelected && styles.radioSelected]}>
-            {isSelected ? <View style={styles.radioInner} /> : null}
+          <View
+            style={[
+              styles.radio,
+              light && styles.radioLight,
+              isSelected && (light ? styles.radioSelectedLight : styles.radioSelected),
+            ]}
+          >
+            {isSelected ? (
+              <View style={[styles.radioInner, light && styles.radioInnerLight]} />
+            ) : null}
           </View>
           <View style={styles.planCardCopy}>
-            <Text style={styles.planCardTitle}>{headline}</Text>
-            <Text style={styles.planCardTrial}>{planDetail}</Text>
+            <Text style={[styles.planCardTitle, light && styles.textPrimaryLight]}>
+              {headline}
+            </Text>
+            <Text style={[styles.planCardTrial, light && styles.textMutedLight]}>
+              {planDetail}
+            </Text>
           </View>
         </View>
         <View style={styles.planCardRight}>
-          {perWeek ? <Text style={styles.planCardPerWeek}>{perWeek}/week</Text> : null}
-          <Text style={styles.planCardSecondary}>{secondary}</Text>
+          {perWeek ? (
+            <View style={styles.planCardPriceRow}>
+              {strikePrice ? (
+                <Text style={[styles.planCardStrike, light && styles.textFaintLight]}>
+                  {strikePrice}
+                </Text>
+              ) : null}
+              <Text style={[styles.planCardPerWeek, light && styles.textPrimaryLight]}>
+                {perWeek}/week
+              </Text>
+            </View>
+          ) : null}
+          <Text style={[styles.planCardSecondary, light && styles.textFaintLight]}>
+            {secondary}
+          </Text>
         </View>
       </View>
     </Pressable>
@@ -129,17 +167,56 @@ const styles = StyleSheet.create({
   planCard: {
     ...card.base,
     ...card.shadow,
-    backgroundColor: 'rgba(30, 99, 214, 0.72)',
-    borderColor: 'rgba(100, 180, 255, 0.3)',
+    // Both states are opaque brand blue; selection reads as the brighter step
+    // plus the lit border and glow, never as a change in transparency.
+    backgroundColor: colors.primary.blue700,
+    borderColor: colors.paywall.cardEdge,
+    // Border width stays fixed across states so selecting a plan doesn't
+    // reflow the row — only the color changes.
+    borderWidth: 2,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
     position: 'relative',
   },
   planCardSelected: {
-    backgroundColor: 'rgba(30, 99, 214, 0.92)',
+    backgroundColor: colors.primary.blue600,
     borderColor: colors.primary.blue300,
-    borderWidth: 2,
-    shadowOpacity: 0.28,
+    shadowColor: colors.primary.blue300,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.5,
+    shadowRadius: 14,
+    elevation: 8,
+  },
+  planCardLight: {
+    backgroundColor: colors.background.card,
+    borderColor: colors.neutral[200],
+  },
+  planCardSelectedLight: {
+    backgroundColor: colors.primary.blue100,
+    borderColor: colors.primary.blue500,
+    shadowColor: colors.primary.blue500,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.22,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  textPrimaryLight: {
+    color: colors.text.primary,
+  },
+  textMutedLight: {
+    color: colors.text.secondary,
+  },
+  textFaintLight: {
+    color: colors.text.tertiary,
+  },
+  radioLight: {
+    borderColor: colors.neutral[300],
+  },
+  radioSelectedLight: {
+    borderColor: colors.primary.blue600,
+  },
+  radioInnerLight: {
+    backgroundColor: colors.primary.blue600,
   },
   planCardPressed: {
     opacity: 0.85,
@@ -170,8 +247,18 @@ const styles = StyleSheet.create({
   },
   planCardTrial: {
     ...typography.caption.caption1,
-    color: 'rgba(255,255,255,0.7)',
+    color: colors.paywall.textMuted,
     marginTop: 2,
+  },
+  planCardPriceRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: spacing.xs,
+  },
+  planCardStrike: {
+    ...typography.body.small,
+    color: colors.paywall.textFaint,
+    textDecorationLine: 'line-through',
   },
   planCardPerWeek: {
     ...typography.heading.heading2,
@@ -181,7 +268,7 @@ const styles = StyleSheet.create({
   },
   planCardSecondary: {
     ...typography.caption.caption2,
-    color: 'rgba(255,255,255,0.6)',
+    color: colors.paywall.textFaint,
     marginTop: 2,
   },
   radio: {
@@ -189,7 +276,7 @@ const styles = StyleSheet.create({
     height: 22,
     borderRadius: 11,
     borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.45)',
+    borderColor: colors.paywall.controlEdge,
     alignItems: 'center',
     justifyContent: 'center',
   },

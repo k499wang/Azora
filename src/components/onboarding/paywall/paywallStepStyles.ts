@@ -55,7 +55,7 @@ export const paywallStepStyles = StyleSheet.create({
     ...typography.body.medium,
     fontFamily: fonts.semibold,
     fontWeight: '500',
-    color: 'rgba(255,255,255,0.75)',
+    color: colors.paywall.textMuted,
     textAlign: 'left',
   },
   title: {
@@ -70,7 +70,7 @@ export const paywallStepStyles = StyleSheet.create({
   titleDivider: {
     alignSelf: 'stretch',
     height: StyleSheet.hairlineWidth,
-    backgroundColor: 'rgba(255,255,255,0.35)',
+    backgroundColor: colors.paywall.divider,
     marginTop: spacing.xs,
     marginBottom: spacing.xs,
   },
@@ -115,11 +115,8 @@ export const paywallStepStyles = StyleSheet.create({
   },
   timeline: {
     alignSelf: 'stretch',
-    paddingHorizontal: spacing.md,
+    paddingRight: spacing.md,
     marginTop: spacing.md,
-  },
-  timelineNoTrial: {
-    paddingLeft: 0,
   },
   timelineRow: {
     flexDirection: 'row',

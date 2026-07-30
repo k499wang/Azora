@@ -17,7 +17,12 @@ import ShareCard from '../components/exercise/ShareCard';
 import ScoreRing from '../components/exercise/ScoreRing';
 import GlassIconButton from '../components/common/GlassIconButton';
 import type { DailyResultScreenProps } from '../app/navigation';
-import { estimateAzoraScore, azoraScoreFill, azoraTierMeta } from '../lib/azoraScore';
+import LungAgeInfoDialog from '../components/exercise/LungAgeInfoDialog';
+import {
+  estimateLungAge,
+  lungAgeRingFill,
+  lungAgeToneMeta,
+} from '../lib/lungAge';
 import { useFeatureAccess } from '../hooks/useFeatureAccess';
 import { trackFeatureGateHit } from '../services/analytics/tracking';
 import { PaywallPlacement } from '../services/paywall';
@@ -50,8 +55,9 @@ export default function ShareableResultScreen({
   } = route.params;
   const hrDropBpm =
     minBpm != null && maxBpm != null ? Math.max(0, maxBpm - minBpm) : null;
-  const azoraEstimate = estimateAzoraScore({ holdSeconds, avgBpm, minBpm });
-  const azoraTier = azoraTierMeta(azoraEstimate.key);
+  const lungAge = estimateLungAge(holdSeconds, userAge);
+  const lungAgeTone = lungAgeToneMeta(lungAge.deltaYears);
+  const [lungAgeInfoVisible, setLungAgeInfoVisible] = useState(false);
 
   const advancedStatsLocked =
     !advancedStatsAccess.allowed && !advancedStatsAccess.isLoading;
@@ -101,13 +107,16 @@ export default function ShareableResultScreen({
       <View style={styles.heroCardWrap}>
         <View style={styles.heroCard}>
           <ScoreRing
-            value={azoraEstimate.score}
-            fill={azoraScoreFill(azoraEstimate.score)}
-            ringColors={azoraTier.ringColors}
-            caption="Azora Score"
+            value={lungAge.years}
+            fill={lungAgeRingFill(lungAge.years)}
+            ringColors={lungAgeTone.ringColors}
+            caption="Lung age"
             captionPosition="bottom"
             captionTextTransform="none"
-            gapLabel={null}
+            onInfoPress={() => setLungAgeInfoVisible(true)}
+            gapLabel={lungAge.label}
+            gapTextColor={lungAgeTone.textColor}
+            gapDirection={lungAgeTone.direction}
           />
         </View>
       </View>
@@ -200,15 +209,19 @@ export default function ShareableResultScreen({
           >
             <ShareCard
               width={SCREEN_WIDTH}
-              azoraScore={azoraEstimate.score}
-              tierLabel={azoraTier.label}
-              ringColors={azoraTier.ringColors}
+              lungAgeYears={lungAge.years}
+              deltaLabel={lungAge.shortLabel}
+              ringColors={lungAgeTone.ringColors}
               onBackgroundDisplay={() => setShareArtifactReady(true)}
             />
           </ViewShot>
         </View>
       </View>
 
+      <LungAgeInfoDialog
+        visible={lungAgeInfoVisible}
+        onClose={() => setLungAgeInfoVisible(false)}
+      />
     </View>
   );
 }

@@ -93,12 +93,13 @@ function TechniqueCard({
         />
         <View style={styles.cardContent}>
           <View style={styles.cardTop}>
-            <MaterialCommunityIcons
-              name={technique.icon}
-              size={26}
-              color={textColor}
-              style={styles.icon}
-            />
+            <View style={styles.iconBadge}>
+              <MaterialCommunityIcons
+                name={technique.icon}
+                size={24}
+                color={textColor}
+              />
+            </View>
             {recommended ? (
               <View style={styles.recommendedPill}>
                 <Text style={styles.recommendedText}>Recommended</Text>
@@ -220,8 +221,16 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: spacing.sm,
   },
-  icon: {
-    alignSelf: 'flex-start',
+  iconBadge: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    transform: [{ translateX: -8 }],
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(12,16,33,0.52)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.20)',
   },
   recommendedPill: {
     borderRadius: 999,
