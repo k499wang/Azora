@@ -33,8 +33,8 @@ import {
 import { benchmarkBreathHold } from '../../../lib/breathHoldPercentile';
 import {
   estimateLungAge,
+  lungAgeFromGaugeFill,
   lungAgeGaugeFill,
-  MAX_LUNG_AGE,
   MIN_LUNG_AGE,
 } from '../../../lib/lungAge';
 import { calibrationDurationMs } from '../../../lib/gaugeCalibration';
@@ -303,17 +303,14 @@ export default function BreathHoldScreen({
     inhaleEnter.setValue(0);
     doneEnter.setValue(0);
     cancelAnimation(arcProgress);
-    arcProgress.value = lungAgeGaugeFill(MIN_LUNG_AGE);
+    arcProgress.value = 0;
     setPhase('inhale');
   }, [arcProgress, doneEnter, inhaleEnter, scale]);
 
   // The counter reads off the same shared value as the ring, so both stay on the
   // UI thread and React only re-renders when the whole year changes.
   useAnimatedReaction(
-    () =>
-      Math.round(
-        MIN_LUNG_AGE + (arcProgress.value / 100) * (MAX_LUNG_AGE - MIN_LUNG_AGE),
-      ),
+    () => lungAgeFromGaugeFill(arcProgress.value),
     (years, previous) => {
       if (years !== previous) {
         runOnJS(setDisplayedLungAge)(years);
@@ -339,9 +336,9 @@ export default function BreathHoldScreen({
 
   useEffect(() => {
     if (phase !== 'calibrating' || !result) return;
-    // Always reveal from the gauge's low endpoint so younger results never
-    // make the arc retract from the user's chronological age.
-    const fromFill = lungAgeGaugeFill(MIN_LUNG_AGE);
+    // Always reveal from an empty arc so younger results never make the arc
+    // retract from the user's chronological age.
+    const fromFill = 0;
     const toFill = lungAgeGaugeFill(result.lungAgeYears);
     arcProgress.value = fromFill;
     arcProgress.value = withTiming(

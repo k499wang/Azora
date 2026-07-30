@@ -24,8 +24,15 @@ const AGE_NORMS: AgeNorm[] = [
   { maxAge: Infinity, medianSeconds: 28 },
 ];
 
-/** Spread of log(hold time) across untrained adults — a doubling is ~2 SD. */
-const LOG_SD = 0.42;
+/**
+ * Spread of log(hold time) across untrained adults.
+ *
+ * Fitted to the per-band quartiles in `breathHoldBenchmark.ts`: each of p25,
+ * p75 and p90 implies an SD via its z-score, and the eighteen resulting
+ * estimates average 0.56. The earlier 0.42 was tighter than that table allows,
+ * which pinned every below-average hold to the low single digits.
+ */
+const LOG_SD = 0.56;
 
 function medianForAge(age: number): number {
   const norm = AGE_NORMS.find((entry) => age <= entry.maxAge);

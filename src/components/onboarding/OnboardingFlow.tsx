@@ -1204,8 +1204,6 @@ export default function OnboardingFlow({
         currentScores={planMindMap.scores}
         targetScores={projectScores(planMindMap.scores)}
         growthArea={planMindMap.growthArea}
-        lungAgeYears={breathHold?.lungAgeYears ?? null}
-        restingBpm={baseline?.avgBpm ?? null}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goToStep('attPriming', 'continue')}
