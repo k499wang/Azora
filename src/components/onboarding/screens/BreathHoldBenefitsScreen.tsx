@@ -25,19 +25,19 @@ interface BreathHoldBenefit {
 const BENEFITS: BreathHoldBenefit[] = [
   {
     icon: 'timer',
-    text: 'Measure your current breath-hold time',
+    text: 'Estimate your lung age',
   },
   {
     icon: 'stat-breath-flow',
-    text: 'Notice when the urge to breathe begins',
+    text: 'Build tolerance to rising CO₂',
   },
   {
     icon: 'stat-stress-battery',
-    text: 'Practice staying composed as discomfort builds',
+    text: 'Support relaxation and stress regulation',
   },
   {
     icon: 'stat-hrv-curve',
-    text: 'Track changes under similar conditions over time',
+    text: 'Develop greater control over your breathing',
   },
 ];
 
@@ -50,12 +50,12 @@ export default function BreathHoldBenefitsScreen({
 }: BreathHoldBenefitsScreenProps) {
   return (
     <OnboardingScreenLayout
-      title="Why test your breath hold?"
-      subtitle="One guided hold gives you a personal baseline. Take the test now, then compare future sessions to see how your response changes."
+      title="The benefits of breath holds"
+      subtitle="A calm, guided session to establish your personal baseline."
       progress={stepIndex / stepCount}
       onBack={onBack}
       onSkip={onSkip}
-      footer={<OnboardingPrimaryButton label="Test my breath hold" onPress={onContinue} />}
+      footer={<OnboardingPrimaryButton label="Begin my breath hold" onPress={onContinue} />}
     >
       <View style={styles.list}>
         {BENEFITS.map((benefit, index) => (
@@ -84,7 +84,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    paddingVertical: spacing.md,
+    paddingVertical: spacing.md + spacing.xs,
     position: 'relative',
   },
   divider: {

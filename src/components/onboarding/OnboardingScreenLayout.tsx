@@ -31,6 +31,7 @@ interface OnboardingScreenLayoutProps {
   fullWidthProgress?: boolean;
   hideProgress?: boolean;
   animateCopy?: boolean;
+  disableEntranceAnimation?: boolean;
 }
 
 export default function OnboardingScreenLayout({
@@ -50,6 +51,7 @@ export default function OnboardingScreenLayout({
   fullWidthProgress = false,
   hideProgress = false,
   animateCopy = false,
+  disableEntranceAnimation = false,
 }: OnboardingScreenLayoutProps) {
   const insets = useSafeAreaInsets();
   const clampedProgress = Math.max(0, Math.min(1, progress));
@@ -58,10 +60,20 @@ export default function OnboardingScreenLayout({
   // The slots always keep their height so the bar sits at the same vertical
   // position on every screen — only their width collapses.
   const showNavSlots = !fullWidthProgress;
-  const fade = useRef(new Animated.Value(0)).current;
-  const scale = useRef(new Animated.Value(ENTRANCE_INITIAL_SCALE)).current;
-  const titleEnter = useRef(new Animated.Value(animateCopy ? 0 : 1)).current;
-  const subtitleEnter = useRef(new Animated.Value(animateCopy ? 0 : 1)).current;
+  const fade = useRef(
+    new Animated.Value(disableEntranceAnimation ? 1 : 0),
+  ).current;
+  const scale = useRef(
+    new Animated.Value(
+      disableEntranceAnimation ? 1 : ENTRANCE_INITIAL_SCALE,
+    ),
+  ).current;
+  const titleEnter = useRef(
+    new Animated.Value(disableEntranceAnimation || !animateCopy ? 1 : 0),
+  ).current;
+  const subtitleEnter = useRef(
+    new Animated.Value(disableEntranceAnimation || !animateCopy ? 1 : 0),
+  ).current;
   const scrollRef = useRef<ScrollView>(null);
 
   // centerBody centres the body inside its own box, which sits lower than the
@@ -151,6 +163,8 @@ export default function OnboardingScreenLayout({
   }, [keyboardAvoiding]);
 
   useEffect(() => {
+    if (disableEntranceAnimation) return;
+
     let animation: Animated.CompositeAnimation | null = null;
 
     // Gate the entrance behind runAfterInteractions so the native-driven fade
@@ -194,7 +208,7 @@ export default function OnboardingScreenLayout({
       handle.cancel();
       animation?.stop();
     };
-  }, [fade, scale]);
+  }, [animateCopy, disableEntranceAnimation, fade, scale, subtitleEnter, titleEnter]);
 
   const handleBack = () => {
     if (!onBack) return;

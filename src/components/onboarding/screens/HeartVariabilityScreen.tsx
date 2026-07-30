@@ -193,7 +193,7 @@ export default function HeartVariabilityScreen({
 
   return (
     <OnboardingScreenLayout
-      title="Heart Rate (BPM)"
+      title="Your breath sets the pace for your heart."
       subtitle="Slower, steadier breathing can encourage a calmer heartbeat and help your body relax."
       progress={stepIndex / stepCount}
       onBack={onBack}
@@ -201,7 +201,7 @@ export default function HeartVariabilityScreen({
       footer={<OnboardingPrimaryButton label="Continue" onPress={onContinue} />}
     >
       <View style={styles.chartWrap}>
-        <Text style={styles.yAxisLabel}>Heart rate</Text>
+        <Text style={styles.yAxisLabel}>Heart Rate (BPM)</Text>
         <View
           style={{ width: '100%', height: CHART_HEIGHT }}
           onLayout={handleChartLayout}

@@ -3,8 +3,16 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated, Pressable, StyleSheet, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
+import * as Device from 'expo-device';
 import { useHeartRateStream } from '../../../hooks/useHeartRateStream';
 import { createBpmPresentationFilter } from '../../../lib/heartRate/bpmSmoothing';
+import {
+  getCameraCheckMessage,
+  getHeartRateCameraTarget,
+  getHeartRatePlacementGuidance,
+  getMeasurementCorrectionMessage,
+  hasConfirmedPulse,
+} from '../../../lib/heartRate/captureGuidance';
 import type { FingerPlacementState, SignalStatus } from '../../../lib/heartRate/types';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
@@ -39,48 +47,62 @@ type Phase = 'intro' | 'placement' | 'running' | 'result';
 const SESSION_MS = 20_000;
 
 const SESSION_SEC = SESSION_MS / 1000;
-const PLACEMENT_GOOD_DURATION_MS = 1500;
+const PULSE_CONFIRMATION_DURATION_MS = 500;
 const PROGRESS_UPDATE_INTERVAL_MS = 200;
 
-const READING_TIPS: BaselineReadingTip[] = [
-  {
-    id: 'calm',
-    title: 'Phone and finger stay still',
-    detail: 'Movement can shake the camera signal and brightness reading.',
-  },
-  {
-    id: 'cover',
-    title: 'Camera is fully covered',
-    detail: 'Use the fleshy pad at the end of your finger, not your fingernail, to cover the camera lens',
-  },
-  {
-    id: 'pressure',
-    title: 'Gentle, steady pressure',
-    detail: 'Firm enough to seal, light enough to feel your pulse.',
-  },
-  {
-    id: 'hold',
-    title: 'Ready to hold for 20 seconds',
-    detail: 'Stay quiet and avoid talking or moving until it’s done.',
-  },
-];
+function getReadingTips(modelName: string | null): BaselineReadingTip[] {
+  const guidance = getHeartRatePlacementGuidance(modelName);
 
-function placementConfig(p: FingerPlacementState): { ringColor: string; status: string } {
-  switch (p) {
-    case 'good':
-      return { ringColor: colors.primary.blue500, status: 'Hold phone and finger still' };
-    case 'partial':
-      return { ringColor: colors.warning[500], status: 'Cover the camera fully' };
-    case 'too_much_pressure':
-      return { ringColor: colors.warning[500], status: 'Ease up slightly' };
-    case 'no_finger':
-    case 'lost':
-    default:
-      return {
-        ringColor: colors.error[500],
-        status: 'Cover the back camera with your finger pad',
-      };
-  }
+  return [
+    {
+      id: 'cover',
+      title: guidance.cues[0],
+      detail: 'Lay the soft center of your fingertip flat over the entire lens.',
+    },
+    {
+      id: 'pressure',
+      title: guidance.cues[1],
+      detail: 'Too much pressure can block the pulse signal.',
+    },
+    {
+      id: 'still',
+      title: guidance.cues[2],
+      detail: 'Rest your hand on a table or against your body.',
+    },
+  ];
+}
+
+function placementConfig(
+  fingerPlacement: FingerPlacementState,
+  signalStatus: SignalStatus,
+  pulseConfirmed: boolean,
+  cameraTarget: string,
+): { ringColor: string; status: string } {
+  const isPlacementError =
+    fingerPlacement === 'no_finger' || fingerPlacement === 'lost';
+  const needsCorrection =
+    fingerPlacement === 'partial' ||
+    fingerPlacement === 'too_much_pressure' ||
+    signalStatus === 'partial_coverage' ||
+    signalStatus === 'too_much_pressure' ||
+    signalStatus === 'no_pulse' ||
+    signalStatus === 'excessive_motion';
+
+  return {
+    ringColor: pulseConfirmed
+      ? colors.success[500]
+      : isPlacementError
+        ? colors.error[500]
+        : needsCorrection
+          ? colors.warning[500]
+          : colors.primary.blue500,
+    status: getCameraCheckMessage({
+      fingerPlacement,
+      signalStatus,
+      pulseConfirmed,
+      cameraTarget,
+    }),
+  };
 }
 
 // Warning shown while measuring: prefers the specific signal problem (motion,
@@ -89,22 +111,9 @@ function placementConfig(p: FingerPlacementState): { ringColor: string; status: 
 function measuringWarning(
   status: SignalStatus,
   placement: FingerPlacementState,
+  cameraTarget: string,
 ): string | null {
-  switch (status) {
-    case 'excessive_motion':
-      return 'Too much movement — keep your hand steady';
-    case 'no_pulse':
-      return 'No pulse detected — adjust your finger position';
-    case 'partial_coverage':
-      return 'Cover the camera and flash fully';
-    case 'too_much_pressure':
-      return 'Pressing too hard — ease up slightly';
-    case 'no_finger':
-    case 'signal_lost':
-      return 'Finger moved — reposition and hold still';
-    default:
-      return placement === 'good' ? null : placementConfig(placement).status;
-  }
+  return getMeasurementCorrectionMessage(status, placement, cameraTarget);
 }
 
 function average(values: number[]): number | null {
@@ -127,7 +136,9 @@ export default function BaselineScreen({
     useState<CompletedOnboardingBaselineResult | null>(null);
   const [progress, setProgress] = useState(0);
   const [checkedTips, setCheckedTips] = useState<Set<string>>(() => new Set());
-  const allChecked = checkedTips.size === READING_TIPS.length;
+  const cameraTarget = getHeartRateCameraTarget(Device.modelName);
+  const readingTips = getReadingTips(Device.modelName);
+  const allChecked = checkedTips.size === readingTips.length;
 
   const toggleTip = (id: string) => {
     setCheckedTips((prev) => {
@@ -160,10 +171,19 @@ export default function BaselineScreen({
   const bpmOpacity = useRef(new Animated.Value(0.6)).current;
   const heartScale = useRef(new Animated.Value(1)).current;
 
-  const placementCfg = placementConfig(stream.fingerPlacement);
   const hasConfirmedSignal =
     stream.streamState === 'streaming' &&
-    (stream.fingerPlacement === 'good' || stream.fingerPlacement === 'partial');
+    hasConfirmedPulse({
+      fingerPlacement: stream.fingerPlacement,
+      signalStatus: stream.signalStatus,
+      bpm: stream.currentBpm,
+    });
+  const placementCfg = placementConfig(
+    stream.fingerPlacement,
+    stream.signalStatus,
+    hasConfirmedSignal,
+    cameraTarget,
+  );
   const hasUsableFingerSignal =
     stream.fingerPlacement === 'good' || stream.fingerPlacement === 'partial';
   const visibleBeatTick = hasUsableFingerSignal ? stream.beatTick : 0;
@@ -173,7 +193,7 @@ export default function BaselineScreen({
       : null;
   const signalWarning =
     phase === 'running'
-      ? measuringWarning(stream.signalStatus, stream.fingerPlacement)
+      ? measuringWarning(stream.signalStatus, stream.fingerPlacement, cameraTarget)
       : null;
 
   useEffect(() => {
@@ -325,7 +345,7 @@ export default function BaselineScreen({
 
   useEffect(() => {
     if (phase !== 'placement') return;
-    if (stream.fingerPlacement !== 'good') return;
+    if (!hasConfirmedSignal) return;
     const t = setTimeout(() => {
       startedAtRef.current = Date.now();
       earlyBpmsRef.current = [];
@@ -334,9 +354,9 @@ export default function BaselineScreen({
       bpmPresentationFilterRef.current.reset();
       setProgress(0);
       setPhase('running');
-    }, PLACEMENT_GOOD_DURATION_MS);
+    }, PULSE_CONFIRMATION_DURATION_MS);
     return () => clearTimeout(t);
-  }, [phase, stream.fingerPlacement]);
+  }, [phase, hasConfirmedSignal]);
 
   useEffect(() => {
     if (phase === 'running') {
@@ -461,7 +481,7 @@ export default function BaselineScreen({
       <BaselineIntroContent sessionSec={SESSION_SEC} />
       <BaselineSciencePanel />
       <BaselineChecklist
-        tips={READING_TIPS}
+        tips={readingTips}
         checkedTipIds={checkedTips}
         onToggleTip={toggleTip}
       />

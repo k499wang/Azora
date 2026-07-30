@@ -87,7 +87,7 @@ export function BaselineCaptureStage({
                 color={colors.warning[500]}
               />
               <Text style={styles.warningBannerText}>
-                Finger moved - reposition and hold still
+                {placement.status}
               </Text>
             </View>
           ) : null}

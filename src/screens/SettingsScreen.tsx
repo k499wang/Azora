@@ -1,6 +1,7 @@
 import { Text } from '../components/common/Text';
 import { useState } from 'react';
 import { Alert, Linking, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
+import * as Device from 'expo-device';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
@@ -15,6 +16,7 @@ import { useAuthStore } from '../stores/authStore';
 import { useHapticsPreference } from '../hooks/useHapticsPreference';
 import { trackProfileAction } from '../services/analytics/tracking';
 import type { SettingsScreenProps } from '../app/navigation';
+import { getHeartRatePlacementGuidance } from '../lib/heartRate/captureGuidance';
 
 const FEEDBACK_EMAIL = 'feedback@tryazora.app';
 const FEEDBACK_CC_EMAIL = 'kevin@tryazora.app';
@@ -147,19 +149,18 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
   };
 
   const handleHeartRateAccuracyHelp = () => {
+    const placementGuidance = getHeartRatePlacementGuidance(Device.modelName);
     trackProfileAction('heart_rate_accuracy_help_opened');
     Alert.alert(
-      'Help, my heart rate isn\'t accurate',
+      placementGuidance.title,
       [
-        'For the best reading:',
+        placementGuidance.instruction,
         '',
-        '1. Place the soft pad of your fingertip over the rear camera and flash.',
-        '2. Cover the lens fully, but do not press hard.',
-        '3. Keep your finger and phone still for the full reading.',
-        '4. Rest your hand on a table or against your body if possible.',
-        '5. Breathe normally and stay relaxed until it finishes.',
+        placementGuidance.multiCameraWarning,
         '',
-        'Cold hands, wet fingers, bright light, movement, or too much pressure can make the reading jump around.',
+        ...placementGuidance.cues.map(
+          (cue, index) => `${index + 1}. ${cue}`,
+        ),
       ].join('\n'),
       [{ text: 'Got it' }],
     );

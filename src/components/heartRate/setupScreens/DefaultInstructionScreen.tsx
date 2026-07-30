@@ -3,6 +3,7 @@ import { useRef, useState } from 'react';
 import { Animated, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import * as Device from 'expo-device';
 import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors } from '../../../theme/colors';
@@ -22,14 +23,7 @@ import { useFeatureAccess } from '../../../hooks/useFeatureAccess';
 import { trackFeatureGateHit } from '../../../services/analytics/tracking';
 import { FeatureKey } from '../../../services/subscriptions/featureAccess';
 import { PaywallPlacement } from '../../../services/paywall';
-
-const STEPS = [
-  'Cover the rear camera with the fleshy pad of your finger, not your nail',
-  'Rest your finger flat so it fully covers the camera lens',
-  'Keep your phone and finger completely still',
-  'Use gentle, steady pressure — pressing too hard blocks the signal',
-  'Breathe normally and sit still until the reading finishes',
-];
+import { getHeartRatePlacementGuidance } from '../../../lib/heartRate/captureGuidance';
 
 export function DefaultInstructionScreen({ onNext }: SetupScreenProps) {
   const insets = useSafeAreaInsets();
@@ -37,6 +31,7 @@ export function DefaultInstructionScreen({ onNext }: SetupScreenProps) {
   const advancedStatsAccess = useFeatureAccess(FeatureKey.AdvancedStats);
   const { isPro } = advancedStatsAccess;
   const [mode, setMode] = useState<HeartRateCaptureMode>(DEFAULT_CAPTURE_MODE);
+  const placementGuidance = getHeartRatePlacementGuidance(Device.modelName);
 
   const pressScale = useRef(new Animated.Value(1)).current;
 
@@ -69,9 +64,12 @@ export function DefaultInstructionScreen({ onNext }: SetupScreenProps) {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.title}>Measure Heart Rate</Text>
+        <Text style={styles.title}>{placementGuidance.title}</Text>
         <Text style={styles.subtitle}>
-          Your camera reads your pulse from the light passing through your fingertip.
+          {placementGuidance.instruction}
+        </Text>
+        <Text style={styles.cameraWarning}>
+          {placementGuidance.multiCameraWarning}
         </Text>
 
         <View style={styles.modeBlock}>
@@ -86,7 +84,7 @@ export function DefaultInstructionScreen({ onNext }: SetupScreenProps) {
         </View>
 
         <View style={[card.base, card.shadow, styles.stepsCard]}>
-          {STEPS.map((text, i) => (
+          {placementGuidance.cues.map((text, i) => (
             <View key={i} style={[styles.stepRow, i > 0 && styles.stepDivider]}>
               <View style={styles.stepNumber}>
                 <Text style={styles.stepNumberText}>{i + 1}</Text>
@@ -159,6 +157,15 @@ const styles = StyleSheet.create({
   subtitle: {
     ...typography.body.small,
     color: colors.text.secondary,
+    textAlign: 'center',
+    marginTop: spacing.sm,
+    paddingHorizontal: spacing.md,
+  },
+  cameraWarning: {
+    ...typography.body.small,
+    fontFamily: fonts.semibold,
+    fontWeight: '500',
+    color: colors.text.primary,
     textAlign: 'center',
     marginTop: spacing.sm,
     paddingHorizontal: spacing.md,
