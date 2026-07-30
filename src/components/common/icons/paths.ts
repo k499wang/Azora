@@ -70,6 +70,12 @@ export const ICON_PATHS = {
     <path d="M5 12.5l4 4 10-10" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" fill="none" />
   `,
 
+  unlock: `
+    <rect x="4" y="10.5" width="16" height="10.5" rx="2.6" stroke="currentColor" stroke-width="2" stroke-linejoin="round" fill="none" />
+    <path d="M8 10.5V7.6a4 4 0 0 1 7.7-1.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none" />
+    <circle cx="12" cy="15.8" r="1.5" fill="currentColor" />
+  `,
+
   timer: `
     <path d="M10 3h4" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
     <path d="M12 3v3" stroke="currentColor" stroke-width="2" stroke-linecap="round" />

@@ -16,6 +16,7 @@
 #   bash scripts/seed-start-trial.sh 4      # user C (opt-out)
 #   bash scripts/seed-start-trial.sh 5      # user D (opt-in, iOS 18)
 #   bash scripts/seed-start-trial.sh 6      # user E (opt-out)
+#   bash scripts/seed-start-trial.sh 3 240  # user B, stamped 4 hours ago
 set -euo pipefail
 
 ENV_FILE="$(cd "$(dirname "$0")/.." && pwd)/.env"
@@ -114,10 +115,10 @@ case "$DEVICE" in
     ;;
 esac
 
-# Optional second arg: how many hours in the past to stamp eventTime, so a
+# Optional second arg: how many minutes in the past to stamp eventTime, so a
 # batch sent in one sitting still reads as trials spread across the day.
-HOURS_AGO=${2:-0}
-EVENT_TIME=$(date -u -v-"$HOURS_AGO"H +"%Y-%m-%d %H:%M:%S.000")
+MINUTES_AGO=${2:-0}
+EVENT_TIME=$(date -u -v-"$MINUTES_AGO"M +"%Y-%m-%d %H:%M:%S.000")
 ORDER_ID="seed-$(date -u +%s)-$DEVICE-$RANDOM"
 
 BODY=$(cat <<JSON

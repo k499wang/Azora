@@ -1,7 +1,7 @@
 import { Text } from '../../common/Text';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Animated, Easing, Linking, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+  Animated, Easing, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import type {
@@ -17,16 +17,9 @@ import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import { computeAnnualSavings } from '../../paywall/PlanCard';
 import { PaywallChoosePlanStep } from '../paywall/PaywallChoosePlanStep';
 import { PaywallFreeTrialHeroStep } from '../paywall/PaywallFreeTrialHeroStep';
-import { PaywallPersonalizedPlanStep } from '../paywall/PaywallPersonalizedPlanStep';
-import { PaywallSocialProof } from '../paywall/PaywallSocialProof';
-import { PaywallStepDots } from '../paywall/PaywallStepDots';
 import { PaywallTrialStep } from '../paywall/PaywallTrialStep';
-import { PaywallValueStep } from '../paywall/PaywallValueStep';
-import type { PaywallPersonalization } from '../../../lib/paywallPersonalization';
 
-const TERMS_URL = 'https://www.tryazora.app/terms';
-const PRIVACY_URL = 'https://www.tryazora.app/privacy';
-const STEP_COUNT = 4;
+const STEP_COUNT = 3;
 const STEP_SLIDE_DISTANCE = 40;
 const ENTRANCE_EASING = Easing.bezier(0.22, 1, 0.36, 1);
 const ENTRANCE_INITIAL_SCALE = 0.992;
@@ -42,7 +35,6 @@ interface OnboardingPaywallScreenProps {
   isRestoring: boolean;
   isCompleting: boolean;
   errorMessage: string | null;
-  personalization?: PaywallPersonalization | null;
   onSelectPackage: (packageId: PaywallPackageId) => void;
   onPurchase: () => void;
   onRestore: () => void;
@@ -61,7 +53,6 @@ export default function OnboardingPaywallScreen({
   isRestoring,
   isCompleting,
   errorMessage,
-  personalization,
   onSelectPackage,
   onPurchase,
   onRestore,
@@ -340,7 +331,6 @@ export default function OnboardingPaywallScreen({
           ) : (
             <View style={styles.headerButton} />
           )}
-          <PaywallStepDots count={STEP_COUNT} current={step} dark={darkChrome} />
           <View style={styles.headerButton} />
         </View>
 
@@ -363,19 +353,9 @@ export default function OnboardingPaywallScreen({
                 transform: [{ translateX: stepTranslateX }],
               }}
             >
-              {step === 0 ? (
-                <>
-                  {personalization ? (
-                    <PaywallPersonalizedPlanStep personalization={personalization} />
-                  ) : (
-                    <PaywallValueStep />
-                  )}
-                  <PaywallSocialProof />
-                </>
-              ) : null}
-              {step === 1 ? <PaywallTrialStep hasAnnualTrial={hasAnnualTrial} /> : null}
-              {step === 2 ? <PaywallFreeTrialHeroStep /> : null}
-              {step === 3 ? (
+              {step === 0 ? <PaywallTrialStep hasAnnualTrial={hasAnnualTrial} /> : null}
+              {step === 1 ? <PaywallFreeTrialHeroStep /> : null}
+              {step === 2 ? (
                 <PaywallChoosePlanStep
                   isLoading={isLoading}
                   annualPackage={annualPackage}
@@ -389,7 +369,7 @@ export default function OnboardingPaywallScreen({
               ) : null}
             </Animated.View>
 
-            {step === 3 && errorMessage ? (
+            {step === 2 && errorMessage ? (
               <View style={styles.errorBlock}>
                 <Text style={styles.error}>{errorMessage}</Text>
                 <Pressable
@@ -412,7 +392,7 @@ export default function OnboardingPaywallScreen({
         <View style={[styles.footer, darkChrome ? styles.footerDark : styles.footerLight]}>
           {step < STEP_COUNT - 1 ? (
             <>
-              {step === 2 ? (
+              {step === 0 || step === 1 ? (
                 <View style={styles.noPaymentRow}>
                   <Icon name="check" size={18} color={colors.text.primary} />
                   <Text style={styles.noPaymentText}>No Payment Due Now</Text>
@@ -469,18 +449,6 @@ export default function OnboardingPaywallScreen({
                   <Text style={styles.maybeLaterText}>Maybe later</Text>
                 </Pressable>
               ) : null}
-              <Text style={styles.legal}>
-                Manage or cancel in App Store settings.{' '}
-                By continuing, you agree to the{' '}
-                <Text style={styles.legalLink} onPress={() => void Linking.openURL(TERMS_URL)}>
-                  Terms
-                </Text>{' '}
-                and acknowledge the{' '}
-                <Text style={styles.legalLink} onPress={() => void Linking.openURL(PRIVACY_URL)}>
-                  Privacy Policy
-                </Text>
-                .
-              </Text>
             </>
           )}
         </View>
@@ -634,17 +602,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semibold,
     fontWeight: '500',
     color: colors.neutral[0],
-  },
-  legal: {
-    ...typography.caption.caption2,
-    color: 'rgba(255,255,255,0.55)',
-    textAlign: 'center',
-    lineHeight: 15,
-  },
-  legalLink: {
-    color: 'rgba(255,255,255,0.85)',
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
   },
   subtlePressed: {
     opacity: 0.65,

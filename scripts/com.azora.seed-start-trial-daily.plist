@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Runs scripts/seed-start-trial-daily.sh once a day at 14:10 local time.
+  Unlike cron, launchd fires a missed run when the Mac wakes from sleep.
+
+  Install:
+    cp scripts/com.azora.seed-start-trial-daily.plist ~/Library/LaunchAgents/
+    launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.azora.seed-start-trial-daily.plist
+
+  Check it is loaded:
+    launchctl print gui/$(id -u)/com.azora.seed-start-trial-daily
+
+  Fire it now without waiting for the schedule:
+    launchctl kickstart -p gui/$(id -u)/com.azora.seed-start-trial-daily
+
+  Uninstall:
+    launchctl bootout gui/$(id -u)/com.azora.seed-start-trial-daily
+    rm ~/Library/LaunchAgents/com.azora.seed-start-trial-daily.plist
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.azora.seed-start-trial-daily</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/bash</string>
+        <string>/Users/k3vinwvng/Documents/Azora/Azora/scripts/seed-start-trial-daily.sh</string>
+    </array>
+
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>14</integer>
+        <key>Minute</key>
+        <integer>10</integer>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>/Users/k3vinwvng/Documents/Azora/Azora/scripts/seed-start-trial-daily.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/k3vinwvng/Documents/Azora/Azora/scripts/seed-start-trial-daily.log</string>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/k3vinwvng/Documents/Azora/Azora</string>
+
+    <key>RunAtLoad</key>
+    <false/>
+</dict>
+</plist>

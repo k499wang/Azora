@@ -133,9 +133,9 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
     title: 'Boost energy',
     body: 'Lift your state without caffeine.',
     hook: 'A cleaner kind of energy.',
-    goalPhrase: 'boost your energy without caffeine',
+    goalPhrase: 'boost your energy',
     assessmentPlan:
-      'We’ll start with energizing sessions that lift alertness without caffeine.',
+      'We’ll start with energizing sessions that lift alertness in minutes.',
     reflectionHeadline: 'Energize without the crash.',
     reflectionBody:
       'Active breathing raises alertness and oxygen flow — a natural lift you can repeat anytime.',

@@ -4,6 +4,8 @@ import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
 
+export const TESTIMONIAL_CARD_WIDTH = 268;
+
 export const paywallStepStyles = StyleSheet.create({
   stepContainer: {
     gap: spacing.xl,
@@ -84,45 +86,13 @@ export const paywallStepStyles = StyleSheet.create({
     color: colors.text.primary,
     textAlign: 'center',
   },
+  stepTitleBrand: {
+    color: colors.primary.blue600,
+  },
   stepSubtitle: {
     ...typography.body.medium,
     color: colors.text.secondary,
     textAlign: 'center',
-  },
-  stepFinePrint: {
-    ...typography.body.small,
-    color: colors.text.tertiary,
-    textAlign: 'center',
-    marginTop: spacing.xs,
-  },
-  valueHeader: {
-    alignItems: 'center',
-    gap: spacing.xs,
-    paddingHorizontal: spacing.sm,
-  },
-  valueTitle: {
-    ...typography.display.display1,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    color: colors.text.primary,
-    textAlign: 'center',
-    letterSpacing: -0.6,
-  },
-  valueTitleUnderline: {
-    width: 56,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: colors.primary.blue600,
-    marginTop: spacing.xs,
-    marginBottom: spacing.xs,
-  },
-  planHeadline: {
-    ...typography.display.display3,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    color: colors.text.primary,
-    textAlign: 'center',
-    letterSpacing: -0.3,
   },
   sectionTitle: {
     ...typography.heading.heading1,
@@ -130,159 +100,6 @@ export const paywallStepStyles = StyleSheet.create({
     fontWeight: '500',
     color: colors.text.primary,
     textAlign: 'center',
-  },
-  radarBlock: {
-    alignItems: 'center',
-    gap: spacing.sm,
-    marginTop: spacing.md,
-  },
-  radarLegend: {
-    flexDirection: 'row',
-    gap: spacing.md,
-    alignSelf: 'center',
-    marginTop: -spacing.sm,
-  },
-  radarLegendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  radarLegendDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  },
-  radarLegendDotTarget: {
-    backgroundColor: 'transparent',
-    borderWidth: 2,
-    borderColor: colors.orange[500],
-  },
-  radarLegendLabel: {
-    ...typography.caption.caption1,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    color: colors.text.secondary,
-  },
-  radarWrap: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: -spacing.xl,
-  },
-  radarFooter: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: spacing.xs,
-    alignSelf: 'center',
-    marginTop: spacing.xs,
-  },
-  radarFooterLabel: {
-    ...typography.caption.caption1,
-    color: colors.text.tertiary,
-  },
-  radarFooterValue: {
-    ...typography.heading.heading2,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    color: colors.primary.blue600,
-  },
-  baselineStrip: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  baselineChip: {
-    ...card.base,
-    ...card.shadow,
-    flex: 1,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.sm,
-    backgroundColor: colors.background.elevated,
-    alignItems: 'center',
-    gap: 2,
-  },
-  baselineChipValue: {
-    ...typography.heading.heading1,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    color: colors.primary.blue600,
-    letterSpacing: -0.4,
-  },
-  baselineChipLabel: {
-    ...typography.caption.caption2,
-    color: colors.text.tertiary,
-    textAlign: 'center',
-    textTransform: 'lowercase',
-  },
-  ladder: {
-    ...card.base,
-    ...card.shadow,
-    backgroundColor: colors.background.elevated,
-    paddingVertical: spacing.lg,
-    paddingHorizontal: spacing.md,
-  },
-  ladderRow: {
-    flexDirection: 'row',
-    gap: spacing.md,
-  },
-  ladderRail: {
-    alignItems: 'center',
-    width: 24,
-  },
-  ladderNode: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    borderWidth: 2,
-    borderColor: colors.primary.blue600,
-    backgroundColor: colors.background.elevated,
-    marginTop: spacing.xs,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  ladderNodeFinal: {
-    backgroundColor: colors.primary.blue600,
-  },
-  ladderNodeInner: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: colors.background.elevated,
-  },
-  ladderLine: {
-    width: 2,
-    flex: 1,
-    minHeight: 36,
-    backgroundColor: colors.primary.blue100,
-    marginTop: 2,
-  },
-  ladderCopy: {
-    flex: 1,
-    paddingBottom: spacing.md,
-  },
-  ladderDay: {
-    ...typography.caption.caption1,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    color: colors.text.brand,
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-  },
-  ladderTitle: {
-    ...typography.body.medium,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    color: colors.text.primary,
-    marginTop: 2,
-  },
-  ladderBody: {
-    ...typography.body.small,
-    color: colors.text.secondary,
-    marginTop: 2,
-  },
-  valueSubtitle: {
-    ...typography.body.medium,
-    color: colors.text.secondary,
-    textAlign: 'center',
-    paddingHorizontal: spacing.md,
   },
   trialNote: {
     ...typography.caption.caption1,
@@ -296,48 +113,10 @@ export const paywallStepStyles = StyleSheet.create({
     color: colors.primary.blue200,
     textAlign: 'left',
   },
-  valueGrid: {
-    gap: spacing.sm,
-  },
-  valueTile: {
-    ...card.base,
-    ...card.shadow,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md,
-    backgroundColor: colors.background.elevated,
-  },
-  valueTileIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: colors.neutral[900],
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 10,
-    elevation: 3,
-  },
-  valueTileCopy: {
-    flex: 1,
-  },
-  valueTileTitle: {
-    ...typography.heading.heading2,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    color: colors.text.primary,
-  },
-  valueTileBody: {
-    ...typography.body.small,
-    color: colors.text.secondary,
-    marginTop: 2,
-  },
   timeline: {
     alignSelf: 'stretch',
     paddingHorizontal: spacing.md,
+    marginTop: spacing.md,
   },
   timelineRow: {
     flexDirection: 'row',
@@ -345,25 +124,31 @@ export const paywallStepStyles = StyleSheet.create({
   },
   timelineRail: {
     alignItems: 'center',
-    width: 42,
+    width: 38,
   },
   timelineIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.primary.blue600,
   },
+  timelineIconUpcoming: {
+    backgroundColor: colors.neutral[200],
+  },
   timelineLine: {
-    width: 6,
+    width: 12,
     flex: 1,
-    minHeight: 80,
-    backgroundColor: colors.primary.blue100,
+    minHeight: 36,
+    backgroundColor: colors.primary.blue300,
+  },
+  timelineLineUpcoming: {
+    backgroundColor: colors.neutral[200],
   },
   timelineCopy: {
     flex: 1,
-    paddingBottom: spacing['2xl'],
+    paddingBottom: spacing.lg,
   },
   timelineLabel: {
     ...typography.heading.heading1,
@@ -375,6 +160,66 @@ export const paywallStepStyles = StyleSheet.create({
     ...typography.body.small,
     color: colors.text.secondary,
     marginTop: spacing.xs,
+  },
+  testimonialScroll: {
+    marginHorizontal: -spacing.lg,
+  },
+  testimonialRow: {
+    gap: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.xs,
+  },
+  testimonialCard: {
+    ...card.base,
+    ...card.shadow,
+    width: TESTIMONIAL_CARD_WIDTH,
+    gap: spacing.sm,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    backgroundColor: colors.background.elevated,
+  },
+  testimonialRating: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  testimonialStars: {
+    flexDirection: 'row',
+    gap: 2,
+  },
+  testimonialRatingValue: {
+    ...typography.body.small,
+    fontFamily: fonts.semibold,
+    fontWeight: '500',
+    color: colors.text.primary,
+  },
+  testimonialTitle: {
+    ...typography.heading.heading2,
+    fontFamily: fonts.semibold,
+    fontWeight: '500',
+    color: colors.text.primary,
+  },
+  testimonialQuote: {
+    ...typography.body.small,
+    color: colors.text.secondary,
+    flex: 1,
+  },
+  testimonialAttribution: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  testimonialAvatar: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: colors.neutral[200],
+  },
+  testimonialAuthor: {
+    ...typography.body.medium,
+    fontFamily: fonts.semibold,
+    fontWeight: '500',
+    color: colors.text.primary,
   },
   cardsLoading: {
     minHeight: 180,
@@ -390,26 +235,5 @@ export const paywallStepStyles = StyleSheet.create({
   },
   planCardsNoTrial: {
     marginTop: spacing.lg,
-  },
-  socialProof: {
-    gap: spacing.sm,
-    marginTop: spacing.xl,
-  },
-  socialProofRatingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'center',
-    gap: spacing.xs,
-  },
-  socialProofStars: {
-    flexDirection: 'row',
-    gap: 2,
-  },
-  socialProofRatingText: {
-    ...typography.heading.heading1,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    color: colors.text.primary,
-    textAlign: 'center',
   },
 });

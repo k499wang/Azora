@@ -8,6 +8,8 @@ import type { MindMapScore } from '../../lib/onboardingScores';
 interface MindMapRadarProps {
   scores: MindMapScore[];
   targetScores?: MindMapScore[];
+  /** Values shown in the labels, when they should not track an animating polygon. */
+  labelScores?: MindMapScore[];
   size?: number;
   showValueOnLabel?: boolean;
 }
@@ -32,9 +34,11 @@ function pointOnAxis(
 export default function MindMapRadar({
   scores,
   targetScores,
+  labelScores,
   size = 420,
   showValueOnLabel = true,
 }: MindMapRadarProps) {
+  const labels = labelScores ?? scores;
   const labelOffset = 20;
   const labelWidth = 84;
   const cx = size / 2;
@@ -169,11 +173,13 @@ export default function MindMapRadar({
             {showValueOnLabel ? (
               targetScores ? (
                 <Text style={[styles.labelValue, { textAlign }]}>
-                  {s.value}
+                  {labels[i]?.value ?? s.value}
                   <Text style={styles.labelValueTarget}> › {targetScores[i]?.value ?? s.value}</Text>
                 </Text>
               ) : (
-                <Text style={[styles.labelValue, { textAlign }]}>{s.value}%</Text>
+                <Text style={[styles.labelValue, { textAlign }]}>
+                  {labels[i]?.value ?? s.value}%
+                </Text>
               )
             ) : null}
           </View>

@@ -1,7 +1,6 @@
 import { Text } from '../../common/Text';
-import { useEffect, useRef } from 'react';
-import {
-  Animated, StyleSheet, useWindowDimensions, View } from 'react-native';
+import { useEffect, useMemo, useRef } from 'react';
+import { Animated, StyleSheet, useWindowDimensions, View } from 'react-native';
 import Icon, { type IconName } from '../../common/icons/Icon';
 import CardSurface from '../../common/CardSurface';
 import MindMapRadar from '../MindMapRadar';
@@ -11,6 +10,7 @@ import { fonts, typography } from '../../../theme/typography';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import TECHNIQUES from '../../../features/exercise/guidedBreathing/techniques';
+import { useScoreMorph } from '../../../hooks/useScoreMorph';
 import {
   formatPlanTime,
   formatRetestDate,
@@ -36,6 +36,9 @@ const ACTION_ICON: Record<string, IconName> = {
   checkIn: 'lungs',
 };
 
+const MORPH_DURATION_MS = 1400;
+const MORPH_DELAY_MS = 650;
+
 function techniqueName(techniqueId: string | null): string | null {
   if (!techniqueId) return null;
   return TECHNIQUES.find((t) => t.id === techniqueId)?.name ?? null;
@@ -57,6 +60,20 @@ export default function RecommendedExerciseScreen({
   const gain = projection
     ? projection.highSeconds - projection.baselineSeconds
     : null;
+
+  const { scores: morphed } = useScoreMorph({
+    from: currentScores,
+    to: targetScores,
+    durationMs: MORPH_DURATION_MS,
+    delayMs: MORPH_DELAY_MS,
+  });
+
+  const biggestLift = useMemo(() => {
+    const growthTarget = targetScores.find(
+      (score) => score.axis === growthArea.axis,
+    );
+    return growthTarget ? growthTarget.value - growthArea.value : null;
+  }, [targetScores, growthArea]);
 
   return (
     <OnboardingScreenLayout
@@ -95,12 +112,13 @@ export default function RecommendedExerciseScreen({
         ) : null}
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>What this moves</Text>
+          <Text style={styles.sectionTitle}>Where four weeks takes you</Text>
 
           <View style={styles.radarWrap}>
             <MindMapRadar
-              scores={currentScores}
+              scores={morphed}
               targetScores={targetScores}
+              labelScores={currentScores}
               size={width}
             />
           </View>
@@ -117,7 +135,9 @@ export default function RecommendedExerciseScreen({
           </View>
 
           <Text style={styles.note}>
-            {`${growthArea.label} has the most room to move — both daily actions are chosen to lift it first.`}
+            {biggestLift != null
+              ? `${growthArea.label} climbs the most — about ${biggestLift} points — because both daily actions are chosen to lift it first.`
+              : `${growthArea.label} has the most room to move, so both daily actions are chosen to lift it first.`}
           </Text>
         </View>
       </View>

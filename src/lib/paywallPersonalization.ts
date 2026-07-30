@@ -1,36 +1,4 @@
-import type { MindMapResult, MindMapScore } from './onboardingScores';
-
-export interface PaywallPersonalizationInput {
-  displayName: string | null;
-  dailyMinutes: number | null;
-  baselineBpm: number | null;
-  mindMap: MindMapResult | null;
-}
-
-export interface PaywallPersonalization {
-  displayName: string | null;
-  dailyMinutes: number;
-  baselineBpm: number | null;
-  currentScores: MindMapScore[] | null;
-  targetScores: MindMapScore[] | null;
-  superpower: MindMapScore | null;
-  growthArea: MindMapScore | null;
-}
-
-export function buildPaywallPersonalization(
-  input: PaywallPersonalizationInput,
-): PaywallPersonalization {
-  const currentScores = input.mindMap?.scores ?? null;
-  return {
-    displayName: input.displayName,
-    dailyMinutes: clampMinutes(input.dailyMinutes),
-    baselineBpm: clampBpm(input.baselineBpm),
-    currentScores,
-    targetScores: currentScores ? projectScores(currentScores) : null,
-    superpower: input.mindMap?.superpower ?? null,
-    growthArea: input.mindMap?.growthArea ?? null,
-  };
-}
+import type { MindMapScore } from './onboardingScores';
 
 /** Where each axis should sit once the plan has been followed. */
 export function projectScores(scores: MindMapScore[]): MindMapScore[] {
@@ -39,15 +7,4 @@ export function projectScores(scores: MindMapScore[]): MindMapScore[] {
       score.value <= 40 ? 35 : score.value <= 60 ? 28 : score.value <= 80 ? 20 : 10;
     return { ...score, value: Math.min(100, score.value + bump) };
   });
-}
-
-function clampMinutes(value: number | null): number {
-  if (value == null || Number.isNaN(value)) return 5;
-  return Math.max(1, Math.min(60, Math.round(value)));
-}
-
-function clampBpm(value: number | null): number | null {
-  if (value == null || Number.isNaN(value)) return null;
-  if (value < 30 || value > 220) return null;
-  return Math.round(value);
 }
