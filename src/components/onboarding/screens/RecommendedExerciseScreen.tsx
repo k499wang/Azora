@@ -9,6 +9,7 @@ import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
+import OnboardingMeasurementSummary from '../OnboardingMeasurementSummary';
 import TECHNIQUES from '../../../features/exercise/guidedBreathing/techniques';
 import {
   formatPlanTime,
@@ -23,6 +24,8 @@ interface RecommendedExerciseScreenProps {
   currentScores: MindMapScore[];
   targetScores: MindMapScore[];
   growthArea: MindMapScore;
+  lungAgeYears: number | null;
+  restingBpm: number | null;
   stepIndex: number;
   stepCount: number;
   onContinue: () => void;
@@ -44,6 +47,8 @@ export default function RecommendedExerciseScreen({
   currentScores,
   targetScores,
   growthArea,
+  lungAgeYears,
+  restingBpm,
   stepIndex,
   stepCount,
   onContinue,
@@ -102,6 +107,11 @@ export default function RecommendedExerciseScreen({
           </Text>
         </View>
 
+        <OnboardingMeasurementSummary
+          lungAgeYears={lungAgeYears}
+          restingBpm={restingBpm}
+        />
+
         {gain != null ? (
           <View style={styles.goalPill}>
             <Text style={styles.goalPillText}>
@@ -116,10 +126,6 @@ export default function RecommendedExerciseScreen({
             <ActionCard key={action.id} action={action} />
           ))}
         </View>
-
-        {plan.heartRateNote ? (
-          <Text style={styles.note}>{plan.heartRateNote}</Text>
-        ) : null}
       </View>
     </OnboardingScreenLayout>
   );

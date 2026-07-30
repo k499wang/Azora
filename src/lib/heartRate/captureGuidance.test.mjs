@@ -64,8 +64,9 @@ test('placement steps explain coverage, pressure, and a steady posture', () => {
       detail: 'Pressing hard can weaken the signal.',
     },
     {
-      title: 'Stay still',
-      detail: 'Sit down, rest your hand, and breathe normally.',
+      title: 'Keep completely still',
+      detail:
+        'Keep your body, hand, phone, and finger completely still. Don’t talk or adjust your grip. Breathe normally. If possible, support your phone and hand on a stable surface.',
     },
   ]);
 });

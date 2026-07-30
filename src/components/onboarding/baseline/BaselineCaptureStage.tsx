@@ -94,7 +94,7 @@ export function BaselineCaptureStage({
               cameraProps={cameraProps}
               fingerPlacement={fingerPlacement}
               beatTick={visibleBeatTick}
-              showHeartIcon={isRunning}
+              showHeartIcon
               smoothProgress={isRunning}
             />
           </View>

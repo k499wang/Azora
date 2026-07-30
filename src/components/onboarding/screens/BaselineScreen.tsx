@@ -253,6 +253,11 @@ export default function BaselineScreen({
         completed: true,
         avgBpm,
       };
+      if (isHapticsEnabled()) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
+          () => {},
+        );
+      }
       setResult(completedResult);
       setPhase('result');
       return;

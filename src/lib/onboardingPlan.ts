@@ -31,7 +31,6 @@ export interface PlanProjection {
 export interface OnboardingPlan {
   actions: PlanAction[];
   projection: PlanProjection | null;
-  heartRateNote: string | null;
   fullDailyMinutes: number;
 }
 
@@ -44,8 +43,6 @@ export interface PlanInputs {
   age: number;
   dailyMinutes: number;
   breathHoldSeconds: number | null;
-  /** Average BPM from the baseline read. */
-  avgBpm: number | null;
 }
 
 const INTENT_TECHNIQUE: Record<string, string> = {
@@ -170,10 +167,6 @@ export function buildOnboardingPlan(inputs: PlanInputs): OnboardingPlan {
     projection:
       inputs.breathHoldSeconds != null && inputs.breathHoldSeconds > 0
         ? projectHold(Math.round(inputs.breathHoldSeconds))
-        : null,
-    heartRateNote:
-      inputs.avgBpm != null
-        ? `Your measured heart rate: ${Math.round(inputs.avgBpm)} BPM.`
         : null,
     fullDailyMinutes: minutes + CHECK_IN_MINUTES,
   };
