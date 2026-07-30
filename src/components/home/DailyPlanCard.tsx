@@ -80,9 +80,9 @@ export default function DailyPlanCard({
               style={StyleSheet.absoluteFill}
               pointerEvents="none"
             />
-            <Text style={styles.mediaTitle} pointerEvents="none">
-              Breathhold Exercise
-            </Text>
+            <View style={[styles.dailyPill, styles.originalPill]} pointerEvents="none">
+              <Text style={styles.dailyPillText}>Azora Original</Text>
+            </View>
             <View style={styles.mediaFooter} pointerEvents="none">
               <View style={styles.dailyPill}>
                 <Text style={styles.dailyPillText}>Check-in</Text>
@@ -91,18 +91,18 @@ export default function DailyPlanCard({
                 bare
                 variant="clear"
                 style={styles.playBtn}
-                tintColor={colors.glass.tintOnImage}
-                blurColor={colors.glass.fillOnImage}
-                solidColor={colors.glass.fillOnImage}
               >
-                <MaterialCommunityIcons name="play" size={22} color={colors.text.inverse} />
+                <MaterialCommunityIcons name="play" size={14} color={colors.text.inverse} />
               </GlassSurface>
             </View>
           </View>
         </View>
 
         <View style={styles.body}>
-          <Text style={styles.title}>Breathhold Exercise</Text>
+          <View style={styles.titleRow}>
+            <MaterialCommunityIcons name="play" size={18} color={colors.text.primary} />
+            <Text style={styles.title}>Breathhold Exercise</Text>
+          </View>
           <Text style={styles.meta}>{meta}</Text>
         </View>
       </Pressable>
@@ -129,15 +129,6 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     backgroundColor: DAILY_PLAN_BACKGROUND_ASSET.fallbackColor,
   },
-  mediaTitle: {
-    ...typography.heading.heading1,
-    position: 'absolute',
-    top: spacing.md,
-    left: spacing.md,
-    right: spacing.md,
-    fontFamily: fonts.semibold,
-    color: colors.text.inverse,
-  },
   mediaFooter: {
     position: 'absolute',
     left: spacing.md,
@@ -151,9 +142,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
     borderRadius: 999,
-    backgroundColor: 'rgba(255,255,255,0.18)',
+    backgroundColor: 'rgba(255,255,255,0.10)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.26)',
+    borderColor: 'rgba(255,255,255,0.18)',
+  },
+  originalPill: {
+    position: 'absolute',
+    top: spacing.md,
+    left: spacing.md,
+    backgroundColor: colors.primary.blue600,
+    borderWidth: 0,
   },
   dailyPillText: {
     ...typography.caption.caption2,
@@ -163,6 +161,11 @@ const styles = StyleSheet.create({
   body: {
     paddingTop: spacing.sm,
     paddingLeft: spacing.sm,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
   },
   title: {
     ...typography.heading.heading1,
@@ -175,9 +178,9 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
   },
   playBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
