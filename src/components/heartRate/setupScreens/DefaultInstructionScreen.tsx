@@ -23,6 +23,7 @@ import { trackFeatureGateHit } from '../../../services/analytics/tracking';
 import { FeatureKey } from '../../../services/subscriptions/featureAccess';
 import { PaywallPlacement } from '../../../services/paywall';
 import { getHeartRatePlacementGuidance } from '../../../lib/heartRate/captureGuidance';
+import { HeartRatePlacementIllustration } from '../HeartRatePlacementIllustration';
 import { HeartRatePlacementStepsCard } from '../HeartRatePlacementStepsCard';
 
 export function DefaultInstructionScreen({ onNext }: SetupScreenProps) {
@@ -68,10 +69,6 @@ export function DefaultInstructionScreen({ onNext }: SetupScreenProps) {
         <Text style={styles.subtitle}>
           {placementGuidance.instruction}
         </Text>
-        <Text style={styles.cameraWarning}>
-          {placementGuidance.multiCameraWarning}
-        </Text>
-
         <View style={styles.modeBlock}>
           <CaptureModeToggle value={mode} onChange={setMode} isPro={isPro} />
           <View style={styles.perkRow}>
@@ -83,8 +80,16 @@ export function DefaultInstructionScreen({ onNext }: SetupScreenProps) {
           </View>
         </View>
 
-        <View style={styles.stepsCard}>
-          <HeartRatePlacementStepsCard steps={placementGuidance.steps} />
+        <View style={styles.illustration}>
+          <HeartRatePlacementIllustration />
+        </View>
+
+        <View style={styles.steps}>
+          <HeartRatePlacementStepsCard
+            steps={placementGuidance.steps}
+            appearance="plain"
+            textSize="large"
+          />
         </View>
       </ScrollView>
 
@@ -154,15 +159,6 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     paddingHorizontal: spacing.md,
   },
-  cameraWarning: {
-    ...typography.body.small,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    color: colors.text.primary,
-    textAlign: 'center',
-    marginTop: spacing.sm,
-    paddingHorizontal: spacing.md,
-  },
   modeBlock: {
     marginTop: spacing.xl,
   },
@@ -188,8 +184,11 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: colors.text.secondary,
   },
-  stepsCard: {
+  illustration: {
     marginTop: spacing.xl,
+  },
+  steps: {
+    marginTop: spacing.lg,
   },
   footer: {
     gap: spacing.md,
