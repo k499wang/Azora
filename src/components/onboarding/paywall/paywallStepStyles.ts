@@ -118,6 +118,9 @@ export const paywallStepStyles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     marginTop: spacing.md,
   },
+  timelineNoTrial: {
+    paddingLeft: 0,
+  },
   timelineRow: {
     flexDirection: 'row',
     gap: spacing.md,

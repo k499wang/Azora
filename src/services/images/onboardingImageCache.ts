@@ -5,8 +5,8 @@ export type OnboardingImageKey =
   | 'agreementQ1'
   | 'agreementQ2'
   | 'agreementQ3'
-  | 'cameraPpg'
-  | 'cameraPpgTriple'
+  | 'cameraPlacementDual'
+  | 'cameraPlacementTriple'
   | 'signature'
   | 'oxfordLogo'
   | 'cambridgeLogo'
@@ -19,8 +19,8 @@ const sources: Record<OnboardingImageKey, number> = {
   agreementQ1: require('../../../assets/questions/q1.png'),
   agreementQ2: require('../../../assets/questions/q2.png'),
   agreementQ3: require('../../../assets/questions/q3.png'),
-  cameraPpg: require('../../../assets/onboarding/camerappg.png'),
-  cameraPpgTriple: require('../../../assets/onboarding/camerappg-triple.png'),
+  cameraPlacementDual: require('../../../assets/onboarding/camera-placement-dual.png'),
+  cameraPlacementTriple: require('../../../assets/onboarding/camera-placement-triple.png'),
   signature: require('../../../assets/signature.png'),
   oxfordLogo: require('../../../assets/logos/oxford.png'),
   cambridgeLogo: require('../../../assets/logos/cambridge.png'),
@@ -34,8 +34,8 @@ const loadOptions: Partial<Record<OnboardingImageKey, ImageLoadOptions>> = {
   agreementQ1: { maxWidth: 1080 },
   agreementQ2: { maxWidth: 1080 },
   agreementQ3: { maxWidth: 1080 },
-  cameraPpg: { maxWidth: 1200 },
-  cameraPpgTriple: { maxWidth: 1200 },
+  cameraPlacementDual: { maxWidth: 1200 },
+  cameraPlacementTriple: { maxWidth: 1200 },
   signature: { maxWidth: 1200 },
   cambridgeLogo: { maxWidth: 1200 },
   testimonialMaya: { maxWidth: 128 },

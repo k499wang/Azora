@@ -5,7 +5,6 @@ import {
   formatPlanTime,
   formatRetestDate,
   projectHold,
-  responsivenessFor,
   sessionTimeFor,
   toClockString,
 } from './onboardingPlan.ts';
@@ -17,7 +16,7 @@ const baseInputs = {
   age: 30,
   dailyMinutes: 3,
   breathHoldSeconds: 40,
-  bpmDrop: 5,
+  avgBpm: 72,
 };
 
 const actionById = (plan, id) => plan.actions.find((action) => action.id === id);
@@ -76,10 +75,11 @@ test('the check-in is never a guided technique', () => {
   assert.equal(actionById(buildOnboardingPlan(baseInputs), 'checkIn').techniqueId, null);
 });
 
-test('a fast responder gets a shorter session than a gradual one', () => {
-  const minutes = (bpmDrop) =>
-    actionById(buildOnboardingPlan({ ...baseInputs, bpmDrop }), 'session').minutes;
-  assert.ok(minutes(12) < minutes(1));
+test('heart rate does not affect session duration', () => {
+  const minutes = (avgBpm) =>
+    actionById(buildOnboardingPlan({ ...baseInputs, avgBpm }), 'session').minutes;
+  assert.equal(minutes(45), minutes(120));
+  assert.equal(minutes(45), Math.round(baseInputs.dailyMinutes));
 });
 
 test('daily total counts the session and the check-in', () => {
@@ -90,17 +90,14 @@ test('daily total counts the session and the check-in', () => {
   );
 });
 
-test('responsiveness note is omitted without a baseline read', () => {
-  const plan = buildOnboardingPlan({ ...baseInputs, bpmDrop: null });
-  assert.equal(plan.responsiveness, null);
-  assert.equal(plan.responsivenessNote, null);
+test('heart rate note reports the measured BPM at face value', () => {
+  const plan = buildOnboardingPlan({ ...baseInputs, avgBpm: 72.4 });
+  assert.equal(plan.heartRateNote, 'Your measured heart rate: 72 BPM.');
 });
 
-test('responsiveness bands', () => {
-  assert.equal(responsivenessFor(10), 'fast');
-  assert.equal(responsivenessFor(5), 'steady');
-  assert.equal(responsivenessFor(0), 'gradual');
-  assert.equal(responsivenessFor(null), null);
+test('heart rate note is omitted without a baseline read', () => {
+  const plan = buildOnboardingPlan({ ...baseInputs, avgBpm: null });
+  assert.equal(plan.heartRateNote, null);
 });
 
 test('the projection is above baseline but stays conservative', () => {

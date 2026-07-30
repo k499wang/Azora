@@ -32,7 +32,6 @@ interface BaselineCaptureStageProps {
   onShowHud: () => void;
   placement: BaselinePlacementConfig;
   progress: number;
-  remainingSec: number;
   signalWarning: string | null;
   visibleBeatTick: number;
 }
@@ -51,7 +50,6 @@ export function BaselineCaptureStage({
   onShowHud,
   placement,
   progress,
-  remainingSec,
   signalWarning,
   visibleBeatTick,
 }: BaselineCaptureStageProps) {
@@ -79,89 +77,76 @@ export function BaselineCaptureStage({
 
       <View style={styles.measureContainer}>
         <View style={styles.topArea}>
-          {isRunning && isFingerLost ? (
-            <View style={styles.warningBanner}>
-              <MaterialCommunityIcons
-                name="alert-outline"
-                size={16}
-                color={colors.warning[500]}
-              />
-              <Text style={styles.warningBannerText}>
-                {placement.status}
-              </Text>
-            </View>
-          ) : null}
-          {!isRunning ? (
-            <Text style={[styles.hintText, { color: placement.ringColor }]}>
-              {placement.status}
-            </Text>
-          ) : null}
-          {isRunning && !isFingerLost ? (
-            <View style={styles.liveSignalSlot}>
-              <LiveSignalGraph
-                samples={liveSignalSamples}
-                fingerPlacement={fingerPlacement}
-              />
-            </View>
-          ) : null}
+          <View style={styles.liveSignalSlot}>
+            <LiveSignalGraph
+              samples={liveSignalSamples}
+              fingerPlacement={fingerPlacement}
+            />
+          </View>
         </View>
 
-        <View style={styles.ringSlot}>
-          <PersistentCameraRing
-            ringColor={placement.ringColor}
-            trackColor={isRunning ? undefined : placement.ringColor + '33'}
-            progress={isRunning ? progress : 0}
-            cameraProps={cameraProps}
-            fingerPlacement={fingerPlacement}
-            beatTick={visibleBeatTick}
-            showHeartIcon={isRunning}
-            smoothProgress={isRunning}
-          />
+        <View style={styles.captureCore}>
+          <View style={styles.ringSlot}>
+            <PersistentCameraRing
+              ringColor={placement.ringColor}
+              trackColor={isRunning ? undefined : placement.ringColor + '33'}
+              progress={isRunning ? progress : 0}
+              cameraProps={cameraProps}
+              fingerPlacement={fingerPlacement}
+              beatTick={visibleBeatTick}
+              showHeartIcon={isRunning}
+              smoothProgress={isRunning}
+            />
+          </View>
+
+          <View style={styles.feedbackSlot}>
+            {isRunning && isFingerLost ? (
+              <View style={styles.warningBanner}>
+                <MaterialCommunityIcons
+                  name="alert-outline"
+                  size={16}
+                  color={colors.warning[500]}
+                />
+                <Text style={styles.warningBannerText}>
+                  {placement.status}
+                </Text>
+              </View>
+            ) : isRunning ? (
+              <View style={styles.metricStack}>
+                {bpmDisplay != null ? (
+                  <BaselineCaptureMetric
+                    bpm={bpmDisplay}
+                    bpmOpacity={bpmOpacity}
+                    heartScale={heartScale}
+                    dimmed={signalWarning != null}
+                  />
+                ) : null}
+                {showInlineSignalWarning ? (
+                  <View style={styles.warningRow}>
+                    <MaterialCommunityIcons
+                      name="alert-circle-outline"
+                      size={12}
+                      color={colors.warning[500]}
+                    />
+                    <Text style={styles.warningText}>{signalWarning}</Text>
+                  </View>
+                ) : null}
+              </View>
+            ) : (
+              <Text style={[styles.hintText, { color: placement.ringColor }]}>
+                {placement.status}
+              </Text>
+            )}
+          </View>
         </View>
 
         <View style={styles.bottomArea}>
-          {isRunning ? (
-            <View style={styles.metricStack}>
-              {bpmDisplay != null ? (
-                <BaselineCaptureMetric
-                  bpm={bpmDisplay}
-                  bpmOpacity={bpmOpacity}
-                  heartScale={heartScale}
-                  dimmed={signalWarning != null}
-                />
-              ) : null}
-              {showInlineSignalWarning ? (
-                <View style={styles.warningRow}>
-                  <MaterialCommunityIcons
-                    name="alert-circle-outline"
-                    size={12}
-                    color={colors.warning[500]}
-                  />
-                  <Text style={styles.warningText}>{signalWarning}</Text>
-                </View>
-              ) : null}
-            </View>
-          ) : (
-            <View style={styles.metricPlaceholder} />
-          )}
-
           <Animated.View
             style={[
               styles.measureActions,
               isRunning ? { opacity: hudOpacity } : null,
             ]}
           >
-            <View style={[styles.timePill, !isRunning && styles.hiddenPlaceholder]}>
-              <Text style={styles.timeValue}>{remainingSec}s</Text>
-            </View>
-            <View style={[styles.progressBar, !isRunning && styles.hiddenPlaceholder]}>
-              <View
-                style={[
-                  styles.progressFill,
-                  { width: `${progress * 100}%` },
-                ]}
-              />
-            </View>
             <Pressable
               accessibilityRole="button"
               onPress={onCancel}
@@ -252,21 +237,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  captureCore: {
+    width: '100%',
+    alignItems: 'center',
+    transform: [{ translateY: -spacing.lg }],
+  },
+  feedbackSlot: {
+    width: '100%',
+    minHeight: 64,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: spacing.lg,
+  },
   bottomArea: {
     flex: 1,
     width: '100%',
     alignItems: 'center',
-    justifyContent: 'flex-start',
-    paddingTop: spacing.xl,
+    justifyContent: 'flex-end',
   },
   metricStack: {
     width: '100%',
     minHeight: 48,
     alignItems: 'center',
     gap: spacing.xs,
-  },
-  metricPlaceholder: {
-    minHeight: 48,
   },
   hintText: {
     ...typography.title.title3,
@@ -284,7 +277,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
     width: '100%',
-    marginBottom: spacing.md,
   },
   warningBannerText: {
     ...typography.body.small,
@@ -332,34 +324,6 @@ const styles = StyleSheet.create({
     width: '100%',
     alignItems: 'center',
     gap: spacing.md,
-    marginTop: spacing.lg,
-  },
-  timePill: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 6,
-    borderRadius: 999,
-    backgroundColor: colors.background.elevated,
-    borderWidth: 1,
-    borderColor: colors.border.subtle,
-  },
-  timeValue: {
-    ...typography.caption.caption1,
-    color: colors.text.secondary,
-  },
-  progressBar: {
-    height: 3,
-    width: '70%',
-    borderRadius: 999,
-    backgroundColor: colors.primary.blue100,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: 999,
-    backgroundColor: colors.primary.blue600,
-  },
-  hiddenPlaceholder: {
-    opacity: 0,
   },
   cancel: {
     alignItems: 'center',

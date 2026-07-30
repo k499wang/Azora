@@ -11,6 +11,7 @@ interface OnboardingPrimaryButtonProps {
   onPress: () => void;
   disabled?: boolean;
   loading?: boolean;
+  enableHaptics?: boolean;
 }
 
 export default function OnboardingPrimaryButton({
@@ -18,12 +19,13 @@ export default function OnboardingPrimaryButton({
   onPress,
   disabled = false,
   loading = false,
+  enableHaptics = true,
 }: OnboardingPrimaryButtonProps) {
   const isDisabled = disabled || loading;
 
   const handlePress = () => {
     if (isDisabled) return;
-    if (isHapticsEnabled()) {
+    if (enableHaptics && isHapticsEnabled()) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
     }
     onPress();

@@ -385,6 +385,9 @@ and which samples belong to an exercise measurement.
 Standalone Quick and Full measurements live in `useHeartRateCapture.ts`. Their
 durations and sensor-rate preferences are defined in `captureModes.ts`.
 
+- Quick measures for 20 seconds.
+- Full measures for 90 seconds.
+
 It is a state machine around:
 
 - camera setup
@@ -405,13 +408,9 @@ Important states:
 
 ### `camera_check`
 
-The app watches the signal and waits until the finger has been `good` long enough.
-
-Current code waits for:
-
-- `MIN_GOOD_DURATION_MS = 2500`
-
-Only then does it start the actual timed measurement window.
+The app uses this state as a placement gate. The first frame classified with
+`fingerPlacement === 'good'` starts the actual timed measurement window. It
+does not wait for a live BPM estimate or add a separate confirmation delay.
 
 ### `measuring`
 

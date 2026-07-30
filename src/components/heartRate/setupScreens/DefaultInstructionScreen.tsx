@@ -9,7 +9,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { colors } from '../../../theme/colors';
 import { typography, fonts } from '../../../theme/typography';
 import { spacing } from '../../../theme/spacing';
-import { card } from '../../../theme/card';
 import type { SetupScreenProps } from '../../../lib/heartRate/types';
 import {
   DEFAULT_CAPTURE_MODE,
@@ -24,6 +23,7 @@ import { trackFeatureGateHit } from '../../../services/analytics/tracking';
 import { FeatureKey } from '../../../services/subscriptions/featureAccess';
 import { PaywallPlacement } from '../../../services/paywall';
 import { getHeartRatePlacementGuidance } from '../../../lib/heartRate/captureGuidance';
+import { HeartRatePlacementStepsCard } from '../HeartRatePlacementStepsCard';
 
 export function DefaultInstructionScreen({ onNext }: SetupScreenProps) {
   const insets = useSafeAreaInsets();
@@ -83,15 +83,8 @@ export function DefaultInstructionScreen({ onNext }: SetupScreenProps) {
           </View>
         </View>
 
-        <View style={[card.base, card.shadow, styles.stepsCard]}>
-          {placementGuidance.cues.map((text, i) => (
-            <View key={i} style={[styles.stepRow, i > 0 && styles.stepDivider]}>
-              <View style={styles.stepNumber}>
-                <Text style={styles.stepNumberText}>{i + 1}</Text>
-              </View>
-              <Text style={styles.stepText}>{text}</Text>
-            </View>
-          ))}
+        <View style={styles.stepsCard}>
+          <HeartRatePlacementStepsCard steps={placementGuidance.steps} />
         </View>
       </ScrollView>
 
@@ -196,38 +189,7 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
   },
   stepsCard: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
     marginTop: spacing.xl,
-  },
-  stepRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    paddingVertical: spacing.md,
-  },
-  stepDivider: {
-    borderTopWidth: 1,
-    borderTopColor: colors.border.subtle,
-  },
-  stepNumber: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    backgroundColor: colors.primary.blue100,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  stepNumberText: {
-    ...typography.label.small,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    color: colors.primary.blue700,
-  },
-  stepText: {
-    ...typography.body.small,
-    color: colors.text.primary,
-    flex: 1,
   },
   footer: {
     gap: spacing.md,

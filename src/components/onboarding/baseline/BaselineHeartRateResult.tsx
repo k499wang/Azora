@@ -201,7 +201,11 @@ export default function BaselineHeartRateResult({
         isCalibrating ? (
           <View />
         ) : (
-          <OnboardingPrimaryButton label="Continue" onPress={onContinue} />
+          <OnboardingPrimaryButton
+            label="Continue"
+            onPress={onContinue}
+            enableHaptics={false}
+          />
         )
       }
     >

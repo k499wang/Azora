@@ -15,7 +15,7 @@ import { fonts, typography } from '../../../theme/typography';
 import { isHapticsEnabled } from '../../../services/preferences/hapticsPreference';
 
 const SCIENCE_BODY_TEXT =
-  'When you cover the back camera with your fingertip, the flash lights your skin from the inside. Each heartbeat pushes a small wave of blood through the capillaries, changing how much light reflects back into the lens. We sample those brightness shifts about 30 times a second — the same optical method clinical pulse oximeters use — and turn them into your BPM.';
+  'When you cover the back camera with your fingertip, the flash illuminates your skin. The camera tracks tiny color changes in your illuminated fingertip as blood flow changes with each heartbeat, then uses that repeating pattern to estimate your BPM.';
 
 export function BaselineSciencePanel() {
   const [open, setOpen] = useState(false);

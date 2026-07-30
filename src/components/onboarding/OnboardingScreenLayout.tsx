@@ -32,6 +32,7 @@ interface OnboardingScreenLayoutProps {
   hideProgress?: boolean;
   animateCopy?: boolean;
   disableEntranceAnimation?: boolean;
+  enableNavigationHaptics?: boolean;
 }
 
 export default function OnboardingScreenLayout({
@@ -52,6 +53,7 @@ export default function OnboardingScreenLayout({
   hideProgress = false,
   animateCopy = false,
   disableEntranceAnimation = false,
+  enableNavigationHaptics = true,
 }: OnboardingScreenLayoutProps) {
   const insets = useSafeAreaInsets();
   const clampedProgress = Math.max(0, Math.min(1, progress));
@@ -212,13 +214,17 @@ export default function OnboardingScreenLayout({
 
   const handleBack = () => {
     if (!onBack) return;
-    if (isHapticsEnabled()) Haptics.selectionAsync().catch(() => {});
+    if (enableNavigationHaptics && isHapticsEnabled()) {
+      Haptics.selectionAsync().catch(() => {});
+    }
     onBack();
   };
 
   const handleSkip = () => {
     if (!onSkip) return;
-    if (isHapticsEnabled()) Haptics.selectionAsync().catch(() => {});
+    if (enableNavigationHaptics && isHapticsEnabled()) {
+      Haptics.selectionAsync().catch(() => {});
+    }
     onSkip();
   };
 

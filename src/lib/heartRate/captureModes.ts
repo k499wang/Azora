@@ -18,12 +18,12 @@ export const HEART_RATE_CAPTURE_MODES: Record<HeartRateCaptureMode, HeartRateCap
   quick: {
     id: 'quick',
     label: 'Quick',
-    durationMs: 25_000,
+    durationMs: 20_000,
     computeHrv: false,
     captureFps: 30,
     requiresPro: false,
-    shortDescription: 'Heart rate only · 25s',
-    perks: ['Heart rate', '25s'],
+    shortDescription: 'Heart rate only · 20s',
+    perks: ['Heart rate', '20s'],
   },
   full: {
     id: 'full',

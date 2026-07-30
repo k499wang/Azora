@@ -28,13 +28,10 @@ export interface PlanProjection {
   highSeconds: number;
 }
 
-export type Responsiveness = 'fast' | 'steady' | 'gradual';
-
 export interface OnboardingPlan {
   actions: PlanAction[];
   projection: PlanProjection | null;
-  responsiveness: Responsiveness | null;
-  responsivenessNote: string | null;
+  heartRateNote: string | null;
   fullDailyMinutes: number;
 }
 
@@ -47,8 +44,8 @@ export interface PlanInputs {
   age: number;
   dailyMinutes: number;
   breathHoldSeconds: number | null;
-  /** Early-to-late BPM drop across the baseline read. */
-  bpmDrop: number | null;
+  /** Average BPM from the baseline read. */
+  avgBpm: number | null;
 }
 
 const INTENT_TECHNIQUE: Record<string, string> = {
@@ -84,41 +81,8 @@ function primaryIntent(intents: string[]): string {
   return intents.find((intent) => INTENT_TECHNIQUE[intent]) ?? 'other';
 }
 
-export function responsivenessFor(bpmDrop: number | null): Responsiveness | null {
-  if (bpmDrop == null) return null;
-  if (bpmDrop >= 8) return 'fast';
-  if (bpmDrop >= 4) return 'steady';
-  return 'gradual';
-}
-
-function responsivenessNoteFor(
-  responsiveness: Responsiveness | null,
-  bpmDrop: number | null,
-  minutes: number,
-): string | null {
-  if (!responsiveness || bpmDrop == null) return null;
-  const drop = Math.round(bpmDrop);
-  switch (responsiveness) {
-    case 'fast':
-      return `Your heart rate dropped ${drop} BPM during the read — your body downshifts quickly, so ${minutes} minutes is enough to get the full effect.`;
-    case 'steady':
-      return `Your heart rate dropped ${drop} BPM during the read — a healthy response. ${minutes} minutes a session keeps that going.`;
-    case 'gradual':
-      return `Your heart rate dropped ${drop} BPM during the read — your body takes a little longer to settle, so your session runs ${minutes} minutes to give it the time it needs.`;
-  }
-}
-
-function sessionMinutes(
-  dailyMinutes: number,
-  responsiveness: Responsiveness | null,
-): number {
-  const adjustment =
-    responsiveness === 'fast' ? -1 : responsiveness === 'gradual' ? 1 : 0;
-  return clamp(
-    Math.round(dailyMinutes) + adjustment,
-    MIN_SESSION_MINUTES,
-    MAX_SESSION_MINUTES,
-  );
+function sessionMinutes(dailyMinutes: number): number {
+  return clamp(Math.round(dailyMinutes), MIN_SESSION_MINUTES, MAX_SESSION_MINUTES);
 }
 
 export function sessionTimeFor(intents: string[], sleepQuality: number): number {
@@ -176,8 +140,7 @@ export function toClockString(minutesFromMidnight: number): string {
 }
 
 export function buildOnboardingPlan(inputs: PlanInputs): OnboardingPlan {
-  const responsiveness = responsivenessFor(inputs.bpmDrop);
-  const minutes = sessionMinutes(inputs.dailyMinutes, responsiveness);
+  const minutes = sessionMinutes(inputs.dailyMinutes);
   const intent = primaryIntent(inputs.intents);
   const sessionAt = sessionTimeFor(inputs.intents, inputs.sleepQuality);
   // The check-in sits on the opposite end of the day from the session so the
@@ -208,12 +171,10 @@ export function buildOnboardingPlan(inputs: PlanInputs): OnboardingPlan {
       inputs.breathHoldSeconds != null && inputs.breathHoldSeconds > 0
         ? projectHold(Math.round(inputs.breathHoldSeconds))
         : null,
-    responsiveness,
-    responsivenessNote: responsivenessNoteFor(
-      responsiveness,
-      inputs.bpmDrop,
-      minutes,
-    ),
+    heartRateNote:
+      inputs.avgBpm != null
+        ? `Your measured heart rate: ${Math.round(inputs.avgBpm)} BPM.`
+        : null,
     fullDailyMinutes: minutes + CHECK_IN_MINUTES,
   };
 }

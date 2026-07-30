@@ -9,7 +9,6 @@ import { createBpmPresentationFilter } from '../../../lib/heartRate/bpmSmoothing
 import {
   getCameraCheckMessage,
   getHeartRateCameraTarget,
-  getHeartRatePlacementGuidance,
   getMeasurementCorrectionMessage,
   hasConfirmedPulse,
 } from '../../../lib/heartRate/captureGuidance';
@@ -21,10 +20,7 @@ import { isHapticsEnabled } from '../../../services/preferences/hapticsPreferenc
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import { BaselineCaptureStage } from '../baseline/BaselineCaptureStage';
-import { BaselineChecklist } from '../baseline/BaselineChecklist';
-import type { BaselineReadingTip } from '../baseline/BaselineChecklist';
 import { BaselineIntroContent } from '../baseline/BaselineIntroContent';
-import { BaselineSciencePanel } from '../baseline/BaselineSciencePanel';
 import BaselineHeartRateResult from '../baseline/BaselineHeartRateResult';
 import type { GenderOption } from '../data/genderOptions';
 import type {
@@ -44,33 +40,10 @@ interface BaselineScreenProps {
 
 type Phase = 'intro' | 'placement' | 'running' | 'result';
 
-const SESSION_MS = 20_000;
+const SESSION_MS = 10_000;
 
-const SESSION_SEC = SESSION_MS / 1000;
 const PULSE_CONFIRMATION_DURATION_MS = 500;
 const PROGRESS_UPDATE_INTERVAL_MS = 200;
-
-function getReadingTips(modelName: string | null): BaselineReadingTip[] {
-  const guidance = getHeartRatePlacementGuidance(modelName);
-
-  return [
-    {
-      id: 'cover',
-      title: guidance.cues[0],
-      detail: 'Lay the soft center of your fingertip flat over the entire lens.',
-    },
-    {
-      id: 'pressure',
-      title: guidance.cues[1],
-      detail: 'Too much pressure can block the pulse signal.',
-    },
-    {
-      id: 'still',
-      title: guidance.cues[2],
-      detail: 'Rest your hand on a table or against your body.',
-    },
-  ];
-}
 
 function placementConfig(
   fingerPlacement: FingerPlacementState,
@@ -135,28 +108,16 @@ export default function BaselineScreen({
   const [result, setResult] =
     useState<CompletedOnboardingBaselineResult | null>(null);
   const [progress, setProgress] = useState(0);
-  const [checkedTips, setCheckedTips] = useState<Set<string>>(() => new Set());
   const cameraTarget = getHeartRateCameraTarget(Device.modelName);
-  const readingTips = getReadingTips(Device.modelName);
-  const allChecked = checkedTips.size === readingTips.length;
-
-  const toggleTip = (id: string) => {
-    setCheckedTips((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-    if (isHapticsEnabled()) Haptics.selectionAsync().catch(() => {});
-  };
 
   const startedAtRef = useRef<number | null>(null);
   const earlyBpmsRef = useRef<number[]>([]);
   const lateBpmsRef = useRef<number[]>([]);
   const allBpmsRef = useRef<number[]>([]);
+  const lastSeenBeatTickRef = useRef(0);
   const bpmPresentationFilterRef = useRef(
     createBpmPresentationFilter({
-      warmupMs: 4_500,
+      warmupMs: 2_000,
       minStableReadings: 2,
       maxStepBpm: 4,
       spikeThresholdBpm: 14,
@@ -197,10 +158,12 @@ export default function BaselineScreen({
       : null;
 
   useEffect(() => {
-    if (visibleBeatTick <= 0) return;
-    if (phase === 'running' && isHapticsEnabled()) {
+    if (visibleBeatTick <= lastSeenBeatTickRef.current) return;
+    lastSeenBeatTickRef.current = visibleBeatTick;
+    if ((phase === 'placement' || phase === 'running') && isHapticsEnabled()) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     }
+    if (phase !== 'running') return;
     bpmOpacity.setValue(0.95);
     Animated.timing(bpmOpacity, {
       toValue: 0.6,
@@ -292,12 +255,6 @@ export default function BaselineScreen({
       };
       setResult(completedResult);
       setPhase('result');
-
-      if (isHapticsEnabled()) {
-        Haptics.notificationAsync(
-          Haptics.NotificationFeedbackType.Success,
-        ).catch(() => {});
-      }
       return;
     }
 
@@ -371,10 +328,6 @@ export default function BaselineScreen({
   useEffect(() => {
     if (phase !== 'running') return;
 
-    if (isHapticsEnabled()) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    }
-
     let lastProgressUpdateAt = 0;
     const tick = () => {
       const now = Date.now();
@@ -414,8 +367,6 @@ export default function BaselineScreen({
     stream.startStream();
   };
 
-  const remainingSec = Math.max(0, Math.ceil((1 - progress) * SESSION_SEC));
-
   if (phase === 'result' && result != null) {
     return (
       <BaselineHeartRateResult
@@ -446,7 +397,6 @@ export default function BaselineScreen({
         onShowHud={showHud}
         placement={placementCfg}
         progress={progress}
-        remainingSec={remainingSec}
         signalWarning={signalWarning}
         visibleBeatTick={visibleBeatTick}
       />
@@ -458,12 +408,13 @@ export default function BaselineScreen({
       title=""
       progress={stepIndex / stepCount}
       onBack={onBack}
+      enableNavigationHaptics={false}
       footer={
         <View style={styles.introFooter}>
           <OnboardingPrimaryButton
-            label={allChecked ? 'I’m ready — start' : 'Check each step to start'}
+            label="Check finger placement"
             onPress={handleStart}
-            disabled={!allChecked}
+            enableHaptics={false}
           />
           <Pressable
             accessibilityRole="button"
@@ -478,13 +429,7 @@ export default function BaselineScreen({
         </View>
       }
     >
-      <BaselineIntroContent sessionSec={SESSION_SEC} />
-      <BaselineSciencePanel />
-      <BaselineChecklist
-        tips={readingTips}
-        checkedTipIds={checkedTips}
-        onToggleTip={toggleTip}
-      />
+      <BaselineIntroContent />
     </OnboardingScreenLayout>
   );
 }

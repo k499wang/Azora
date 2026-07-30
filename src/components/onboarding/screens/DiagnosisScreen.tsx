@@ -119,7 +119,6 @@ export default function DiagnosisScreen({
       onBack={onBack}
       titleStyle={styles.screenTitle}
       centerCopy
-      disableEntranceAnimation
       footer={<OnboardingPrimaryButton label="See my plan" onPress={onContinue} />}
     >
       <View style={styles.page}>

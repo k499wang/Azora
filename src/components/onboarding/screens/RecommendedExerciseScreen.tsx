@@ -20,7 +20,6 @@ import type { MindMapScore } from '../../../lib/onboardingScores';
 
 interface RecommendedExerciseScreenProps {
   plan: OnboardingPlan;
-  name: string;
   currentScores: MindMapScore[];
   targetScores: MindMapScore[];
   growthArea: MindMapScore;
@@ -42,7 +41,6 @@ function techniqueName(techniqueId: string | null): string | null {
 
 export default function RecommendedExerciseScreen({
   plan,
-  name,
   currentScores,
   targetScores,
   growthArea,
@@ -66,11 +64,7 @@ export default function RecommendedExerciseScreen({
 
   return (
     <OnboardingScreenLayout
-      title={
-        name
-          ? `Congratulations ${name}, your custom plan is ready!`
-          : 'Congratulations, your custom plan is ready!'
-      }
+      title="Your custom plan is ready!"
       progress={stepIndex / stepCount}
       onBack={onBack}
       centerCopy
@@ -123,8 +117,8 @@ export default function RecommendedExerciseScreen({
           ))}
         </View>
 
-        {plan.responsivenessNote ? (
-          <Text style={styles.note}>{plan.responsivenessNote}</Text>
+        {plan.heartRateNote ? (
+          <Text style={styles.note}>{plan.heartRateNote}</Text>
         ) : null}
       </View>
     </OnboardingScreenLayout>

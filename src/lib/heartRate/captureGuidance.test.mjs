@@ -6,18 +6,68 @@ import {
   getHeartRatePlacementGuidance,
   getMeasurementCorrectionMessage,
   hasConfirmedPulse,
+  isHeartRatePlacementReady,
 } from './captureGuidance.ts';
+
+test('standalone capture starts as soon as finger placement is good', () => {
+  assert.equal(isHeartRatePlacementReady('good'), true);
+  assert.equal(isHeartRatePlacementReady('no_finger'), false);
+  assert.equal(isHeartRatePlacementReady('partial'), false);
+  assert.equal(isHeartRatePlacementReady('too_much_pressure'), false);
+  assert.equal(isHeartRatePlacementReady('lost'), false);
+});
 
 test('camera target matches the supported iPhone camera layout', () => {
   assert.equal(getHeartRateCameraTarget('iPhone 16'), 'bottom camera');
   assert.equal(
     getHeartRateCameraTarget('iPhone 16 Pro'),
-    'camera all the way to the right',
+    'rightmost camera',
   );
   assert.match(
     getHeartRatePlacementGuidance('iPhone 16 Pro Max').instruction,
-    /camera all the way to the right/,
+    /rightmost camera/,
   );
+  assert.match(
+    getHeartRatePlacementGuidance('iPhone 16').instruction,
+    /leave the flash uncovered/i,
+  );
+});
+
+test('unknown devices get generic guidance without a false camera claim', () => {
+  assert.equal(getHeartRateCameraTarget('iPhone 15'), 'camera lens');
+  assert.equal(getHeartRateCameraTarget(null), 'camera lens');
+  assert.equal(
+    getHeartRatePlacementGuidance(null).title,
+    'Cover the camera lens',
+  );
+  assert.doesNotMatch(
+    getHeartRatePlacementGuidance(null).instruction,
+    /bottom|rightmost/,
+  );
+  assert.doesNotMatch(
+    getHeartRatePlacementGuidance(null).steps[0].title,
+    /bottom|rightmost/,
+  );
+});
+
+test('placement steps explain coverage, pressure, and a steady posture', () => {
+  const guidance = getHeartRatePlacementGuidance('iPhone 16');
+
+  assert.deepEqual(guidance.steps, [
+    {
+      title: 'Cover the bottom camera completely',
+      detail:
+        'Lay the soft pad of your index finger flat over the lens. Keep the flash uncovered.',
+    },
+    {
+      title: 'Use a light touch',
+      detail: 'Pressing hard can weaken the signal.',
+    },
+    {
+      title: 'Stay still',
+      detail: 'Sit down, rest your hand, and breathe normally.',
+    },
+  ]);
 });
 
 function checkMessage(overrides = {}) {
@@ -40,7 +90,7 @@ test('camera check distinguishes finger coverage from pulse confirmation', () =>
 test('camera check gives a specific correction for each placement problem', () => {
   assert.equal(
     checkMessage({ fingerPlacement: 'no_finger', signalStatus: 'no_finger' }),
-    'Completely cover the bottom camera.',
+    'Completely cover the camera lens.',
   );
   assert.equal(
     checkMessage({ fingerPlacement: 'partial', signalStatus: 'partial_coverage' }),
@@ -59,22 +109,22 @@ test('camera check gives a specific correction for each placement problem', () =
   );
   assert.equal(
     checkMessage({ signalStatus: 'no_pulse' }),
-    'Center your fingertip pad over the bottom camera.',
+    'Center your fingertip pad over the camera lens.',
   );
   assert.equal(
     checkMessage({
       fingerPlacement: 'no_finger',
       signalStatus: 'no_finger',
-      cameraTarget: 'camera all the way to the right',
+      cameraTarget: 'rightmost camera',
     }),
-    'Completely cover the camera all the way to the right.',
+    'Completely cover the rightmost camera.',
   );
 });
 
 test('measurement corrections use the same specific guidance', () => {
   assert.equal(
     getMeasurementCorrectionMessage('signal_lost', 'lost'),
-    'Completely cover the bottom camera.',
+    'Completely cover the camera lens.',
   );
   assert.equal(
     getMeasurementCorrectionMessage('measuring', 'good'),
