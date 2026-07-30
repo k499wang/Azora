@@ -25,10 +25,12 @@ import AttPrimingScreen from './screens/AttPrimingScreen';
 import PactScreen from './screens/PactScreen';
 import NotificationPermissionScreen from './screens/NotificationPermissionScreen';
 import SleepScreen from './screens/SleepScreen';
+import BrainFogScreen from './screens/BrainFogScreen';
 import HeartWorryScreen from './screens/HeartWorryScreen';
 import StressScreen from './screens/StressScreen';
 import PlanIntroScreen from './screens/PlanIntroScreen';
 import PlanLoadingScreen from './screens/PlanLoadingScreen';
+import DiagnosisScreen from './screens/DiagnosisScreen';
 import RecommendedExerciseScreen from './screens/RecommendedExerciseScreen';
 import FounderNoteScreen from './screens/FounderNoteScreen';
 import OnboardingPaywallScreen from './screens/OnboardingPaywallScreen';
@@ -53,10 +55,7 @@ import { usePaywall } from '../../hooks/usePaywall';
 import { PaywallPlacement } from '../../services/paywall';
 import { useUserEntitlementQuery } from '../../queries/subscriptions/useUserEntitlementQuery';
 import { useExitOfferStore } from '../../stores/exitOfferStore';
-import {
-  buildPaywallPersonalization,
-  projectScores,
-} from '../../lib/paywallPersonalization';
+import { projectScores } from '../../lib/paywallPersonalization';
 import { computeMindMap } from '../../lib/onboardingScores';
 import { useAuthStore } from '../../stores/authStore';
 import { requestNotificationPermissions } from '../../services/notifications/notificationClient';
@@ -130,6 +129,7 @@ const STEP_ORDER: OnboardingStep[] = [
   'acquisitionSource',
   'stress',
   'sleep',
+  'brainFog',
   'heartWorry',
   'agreement',
   'experience',
@@ -146,6 +146,7 @@ const STEP_ORDER: OnboardingStep[] = [
   'baseline',
   'planIntro',
   'planLoading',
+  'diagnosis',
   'recommendedExercise',
   'attPriming',
   'notifications',
@@ -207,6 +208,8 @@ export default function OnboardingFlow({
     initialSavedProfile?.sleepQuality ?? 5,
   );
   const [hasAnsweredSleep, setHasAnsweredSleep] = useState(false);
+  const [brainFogLevel, setBrainFogLevel] = useState(5);
+  const [hasAnsweredBrainFog, setHasAnsweredBrainFog] = useState(false);
   const [heartWorryLevel, setHeartWorryLevel] = useState(5);
   const [hasAnsweredHeartWorry, setHasAnsweredHeartWorry] = useState(false);
   const [agreementResponses, setAgreementResponses] = useState<
@@ -331,6 +334,8 @@ export default function OnboardingFlow({
       has_default_technique: (profile?.defaultTechniqueId ?? null) != null,
       has_stress_level: (profile?.stressLevel ?? null) != null,
       has_sleep_quality: (profile?.sleepQuality ?? null) != null,
+      has_brain_fog_level: hasAnsweredBrainFog,
+      brain_fog_level: hasAnsweredBrainFog ? brainFogLevel : null,
       agreement_response_count: Object.values(agreementResponses).filter(
         (value) => value != null,
       ).length,
@@ -870,11 +875,31 @@ export default function OnboardingFlow({
         onChange={setSleepQuality}
         onContinue={() => {
           setHasAnsweredSleep(true);
-          goToStep('heartWorry', 'continue', { has_sleep_quality: true });
+          goToStep('brainFog', 'continue', { has_sleep_quality: true });
         }}
         onBack={() => goToStep('stress', 'back')}
         onSkip={() => {
           setHasAnsweredSleep(false);
+          goToStep('brainFog', 'skip');
+        }}
+      />
+    );
+  }
+
+  if (step === 'brainFog') {
+    return (
+      <BrainFogScreen
+        value={brainFogLevel}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onChange={setBrainFogLevel}
+        onContinue={() => {
+          setHasAnsweredBrainFog(true);
+          goToStep('heartWorry', 'continue', { has_brain_fog_level: true });
+        }}
+        onBack={() => goToStep('sleep', 'back')}
+        onSkip={() => {
+          setHasAnsweredBrainFog(false);
           goToStep('heartWorry', 'skip');
         }}
       />
@@ -892,7 +917,7 @@ export default function OnboardingFlow({
           setHasAnsweredHeartWorry(true);
           goToStep('agreement', 'continue', { has_heart_worry_level: true });
         }}
-        onBack={() => goToStep('sleep', 'back')}
+        onBack={() => goToStep('brainFog', 'back')}
         onSkip={() => {
           setHasAnsweredHeartWorry(false);
           goToStep('agreement', 'skip');
@@ -1087,20 +1112,35 @@ export default function OnboardingFlow({
     bpmDrop: baseline?.bpmDrop ?? null,
   });
 
+  const planMindMap = computeMindMap({
+    stressLevel,
+    sleepQuality,
+    agreementResponses,
+    experienceLevel,
+  });
   if (step === 'planLoading') {
+    return <PlanLoadingScreen onDone={() => goToStep('diagnosis', 'auto')} />;
+  }
+
+  if (step === 'diagnosis') {
     return (
-      <PlanLoadingScreen onDone={() => goToStep('recommendedExercise', 'auto')} />
+      <DiagnosisScreen
+        age={age}
+        scores={planMindMap.scores}
+        superpower={planMindMap.superpower}
+        growthArea={planMindMap.growthArea}
+        holdSeconds={breathHold?.holdSeconds ?? null}
+        restingBpm={baseline?.avgBpm ?? null}
+        bpmDrop={baseline?.bpmDrop ?? null}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onContinue={() => goToStep('recommendedExercise', 'continue')}
+        onBack={() => goToStep('planIntro', 'back')}
+      />
     );
   }
 
   if (step === 'recommendedExercise') {
-    const planMindMap = computeMindMap({
-      stressLevel,
-      sleepQuality,
-      agreementResponses,
-      experienceLevel,
-    });
-
     return (
       <RecommendedExerciseScreen
         plan={plan}
@@ -1111,7 +1151,7 @@ export default function OnboardingFlow({
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goToStep('attPriming', 'continue')}
-        onBack={() => goToStep('planIntro', 'back')}
+        onBack={() => goToStep('diagnosis', 'back')}
       />
     );
   }
@@ -1224,18 +1264,6 @@ export default function OnboardingFlow({
   }
 
   if (step === 'paywall') {
-    const mindMap = computeMindMap({
-      stressLevel,
-      sleepQuality,
-      agreementResponses,
-      experienceLevel,
-    });
-    const personalization = buildPaywallPersonalization({
-      displayName: name.trim() || null,
-      dailyMinutes,
-      baselineBpm: baseline?.avgBpm ?? null,
-      mindMap,
-    });
     return (
       <>
         <OnboardingPaywallScreen
@@ -1248,7 +1276,6 @@ export default function OnboardingFlow({
           isRestoring={paywall.isRestoring}
           isCompleting={isSubmitting || isSavingProfile || isCompletingOnboarding}
           errorMessage={paywall.errorMessage ?? errorMessage}
-          personalization={personalization}
           onSelectPackage={paywall.selectPackage}
           onPurchase={() => {
             void purchaseSelectedPackage();

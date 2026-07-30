@@ -1,7 +1,7 @@
 import { Text } from '../components/common/Text';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ActivityIndicator, Animated, Easing, Linking, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
+  ActivityIndicator, Animated, Easing, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SunsetBackground } from '../components/common/SunsetBackground';
@@ -17,8 +17,6 @@ import { PlanCard, computeAnnualSavings } from '../components/paywall/PlanCard';
 import PaywallFeatureList from '../components/paywall/PaywallFeatureList';
 import PaywallTrialReminderToggle from '../components/paywall/PaywallTrialReminderToggle';
 
-const TERMS_URL = 'https://www.tryazora.app/terms';
-const PRIVACY_URL = 'https://www.tryazora.app/privacy';
 
 export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'ProPaywall'>) {
   const placement = route.params?.placement ?? PaywallPlacement.ProfileUpgrade;
@@ -290,18 +288,6 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
               {paywall.isRestoring ? 'Restoring...' : 'Restore Purchase'}
             </Text>
           </Pressable>
-          <Text style={styles.legal}>
-            Subscriptions auto-renew unless cancelled. Manage or cancel in App Store settings.{' '}
-            By continuing, you agree to the{' '}
-            <Text style={styles.legalLink} onPress={() => void Linking.openURL(TERMS_URL)}>
-              Terms
-            </Text>{' '}
-            and acknowledge the{' '}
-            <Text style={styles.legalLink} onPress={() => void Linking.openURL(PRIVACY_URL)}>
-              Privacy Policy
-            </Text>
-            .
-          </Text>
         </View>
       </SafeAreaView>
       </SunsetBackground>
@@ -451,17 +437,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semibold,
     fontWeight: '500',
     color: colors.neutral[0],
-  },
-  legal: {
-    ...typography.caption.caption2,
-    color: 'rgba(255,255,255,0.55)',
-    textAlign: 'center',
-    lineHeight: 15,
-  },
-  legalLink: {
-    color: 'rgba(255,255,255,0.85)',
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
   },
   subtlePressed: {
     opacity: 0.65,
