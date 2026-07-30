@@ -59,8 +59,28 @@ export interface CompletedOnboardingBaselineResult
   avgBpm: number;
 }
 
+/**
+ * The goals a user can pick during onboarding, and the single source of truth
+ * for that set. Adding a goal here is what forces the rest of the app to
+ * account for it — most importantly `INTENT_TECHNIQUE` in
+ * `src/features/exercise/guidedBreathing/techniqueSelection.ts`, which will not
+ * compile until the new goal has an exercise. Without that chain a new goal
+ * silently falls through to the `other` default at runtime.
+ */
+export type OnboardingIntent =
+  | 'stress_relief'
+  | 'calm_fast'
+  | 'sleep'
+  | 'focus'
+  | 'energy'
+  | 'spiritual'
+  | 'yoga'
+  | 'heart_health'
+  | 'daily_habit'
+  | 'other';
+
 export interface IntentOption {
-  id: string;
+  id: OnboardingIntent;
   icon: IconName;
   accent: string;
   title: string;

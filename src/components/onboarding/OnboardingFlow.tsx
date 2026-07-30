@@ -45,7 +45,7 @@ import {
   INTENT_OPTIONS,
   PERSONALIZED_INTENT_OPTIONS,
 } from './data/intentOptions';
-import { INTENT_TO_TECHNIQUE } from './data/techniqueRecommendations';
+import { techniqueForIntent } from '../../features/exercise/guidedBreathing/techniqueSelection';
 import { buildOnboardingPlan, toClockString } from '../../lib/onboardingPlan';
 import type { GenderOption } from './data/genderOptions';
 import type { AcquisitionSourceId } from './data/acquisitionOptions';
@@ -533,7 +533,7 @@ export default function OnboardingFlow({
       dailyMinutes: Math.max(1, dailyMinutes),
       defaultTechniqueId:
         primaryIntent != null
-          ? INTENT_TO_TECHNIQUE[primaryIntent] ?? null
+          ? techniqueForIntent(primaryIntent)
           : initialSavedProfile?.defaultTechniqueId ?? null,
       breathHold,
     };

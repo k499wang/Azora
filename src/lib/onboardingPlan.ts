@@ -11,6 +11,12 @@
  */
 
 import { estimateLungAge, MIN_LUNG_AGE } from './lungAge';
+import {
+  INTENT_TECHNIQUE,
+  isOnboardingIntent,
+  type OnboardingIntent,
+} from '../features/exercise/guidedBreathing/techniqueSelection';
+import type { TechniqueId } from '../features/exercise/guidedBreathing/techniqueCatalog';
 
 export type PlanActionId = 'session' | 'checkIn';
 
@@ -18,7 +24,7 @@ export interface PlanAction {
   id: PlanActionId;
   title: string;
   /** Set for the breathing session; the check-in is not a guided technique. */
-  techniqueId: string | null;
+  techniqueId: TechniqueId | null;
   /** Minutes from midnight, so callers can format or schedule it. */
   minutesFromMidnight: number;
   minutes: number;
@@ -60,19 +66,6 @@ export interface PlanInputs {
   breathHoldSeconds: number | null;
 }
 
-const INTENT_TECHNIQUE: Record<string, string> = {
-  stress_relief: 'relaxing',
-  calm_fast: 'relaxing',
-  focus: 'box',
-  energy: 'box',
-  spiritual: 'resonance',
-  sleep: '478',
-  heart_health: 'resonance',
-  daily_habit: 'box',
-  yoga: 'resonance',
-  other: 'box',
-};
-
 const MORNING_MIN = 8 * 60;
 const EVENING_MIN = 18 * 60;
 const NIGHT_MIN = 21 * 60 + 30;
@@ -89,8 +82,8 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
-function primaryIntent(intents: string[]): string {
-  return intents.find((intent) => INTENT_TECHNIQUE[intent]) ?? 'other';
+function primaryIntent(intents: string[]): OnboardingIntent {
+  return intents.find(isOnboardingIntent) ?? 'other';
 }
 
 function sessionMinutes(dailyMinutes: number): number {
@@ -163,7 +156,7 @@ export function buildOnboardingPlan(inputs: PlanInputs): OnboardingPlan {
     {
       id: 'session',
       title: 'Guided breathing',
-      techniqueId: INTENT_TECHNIQUE[intent] ?? 'box',
+      techniqueId: INTENT_TECHNIQUE[intent],
       minutesFromMidnight: sessionAt,
       minutes,
     },
