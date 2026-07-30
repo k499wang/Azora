@@ -8,7 +8,6 @@ import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
-import OnboardingMeasurementSummary from '../OnboardingMeasurementSummary';
 import { benchmarkBreathHold } from '../../../lib/breathHoldPercentile';
 import type { MindMapAxis, MindMapScore } from '../../../lib/onboardingScores';
 
@@ -33,6 +32,27 @@ interface HighlightCard {
   pill: string;
   pillColor: string;
   body: string;
+}
+
+function HighlightCardList({ items }: { items: HighlightCard[] }) {
+  return (
+    <View style={styles.highlightList}>
+      {items.map((item) => (
+        <CardSurface key={item.id} style={styles.highlightCard}>
+          <View style={styles.highlightHeader}>
+            <Text style={styles.highlightRole}>{item.role}</Text>
+            <View style={styles.highlightMeta}>
+              <Text style={styles.highlightSubject}>{item.subject}</Text>
+              <View style={[styles.highlightPill, { backgroundColor: item.pillColor }]}>
+                <Text style={styles.highlightPillText}>{item.pill}</Text>
+              </View>
+            </View>
+          </View>
+          <Text style={styles.highlightBody}>{item.body}</Text>
+        </CardSurface>
+      ))}
+    </View>
+  );
 }
 
 const SUPERPOWER_COPY: Record<MindMapAxis, string> = {
@@ -71,7 +91,7 @@ export default function DiagnosisScreen({
   );
 
   const highlights = useMemo<HighlightCard[]>(() => {
-    const next: HighlightCard[] = [
+    return [
       {
         id: 'superpower',
         role: 'Superpower',
@@ -89,20 +109,35 @@ export default function DiagnosisScreen({
         body: GROWTH_COPY[growthArea.axis],
       },
     ];
+  }, [growthArea, superpower]);
 
-    if (benchmark && holdSeconds != null) {
+  const measurements = useMemo<HighlightCard[]>(() => {
+    const next: HighlightCard[] = [];
+
+    if (benchmark && holdSeconds != null && lungAgeYears != null) {
       next.push({
-        id: 'peers',
-        role: 'Versus peers',
-        subject: 'Breath hold',
-        pill: `${holdSeconds}s`,
+        id: 'lung-age',
+        role: 'Lung age',
+        subject: `Top ${benchmark.topPercent}%`,
+        pill: `${Math.round(lungAgeYears)} yrs`,
         pillColor: colors.primary.blue600,
-        body: `${benchmark.label}. Most people your age hold around ${benchmark.peerMedianSeconds}s.`,
+        body: `Based on your ${holdSeconds}s breath hold compared with people your age.`,
+      });
+    }
+
+    if (restingBpm != null) {
+      next.push({
+        id: 'resting-bpm',
+        role: 'Resting heart rate',
+        subject: 'Your result',
+        pill: `${Math.round(restingBpm)} BPM`,
+        pillColor: colors.primary.blue600,
+        body: 'Measured from your fingertip during onboarding.',
       });
     }
 
     return next;
-  }, [benchmark, holdSeconds, superpower, growthArea]);
+  }, [benchmark, holdSeconds, lungAgeYears, restingBpm]);
 
   return (
     <OnboardingScreenLayout
@@ -127,29 +162,14 @@ export default function DiagnosisScreen({
 
         <Text style={styles.sectionTitle}>Your highlights</Text>
 
-        <OnboardingMeasurementSummary
-          lungAgeYears={lungAgeYears}
-          restingBpm={restingBpm}
-        />
+        <HighlightCardList items={highlights} />
 
-        <View style={styles.highlightList}>
-          {highlights.map((highlight) => (
-            <CardSurface key={highlight.id} style={styles.highlightCard}>
-              <View style={styles.highlightHeader}>
-                <Text style={styles.highlightRole}>{highlight.role}</Text>
-                <View style={styles.highlightMeta}>
-                  <Text style={styles.highlightSubject}>{highlight.subject}</Text>
-                  <View
-                    style={[styles.highlightPill, { backgroundColor: highlight.pillColor }]}
-                  >
-                    <Text style={styles.highlightPillText}>{highlight.pill}</Text>
-                  </View>
-                </View>
-              </View>
-              <Text style={styles.highlightBody}>{highlight.body}</Text>
-            </CardSurface>
-          ))}
-        </View>
+        {measurements.length > 0 ? (
+          <>
+            <Text style={styles.sectionTitle}>Your measurements</Text>
+            <HighlightCardList items={measurements} />
+          </>
+        ) : null}
       </View>
     </OnboardingScreenLayout>
   );
