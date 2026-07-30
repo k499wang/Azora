@@ -9,6 +9,11 @@ import { card } from '../../theme/card';
 import { fonts, typography } from '../../theme/typography';
 import { spacing, padding } from '../../theme/spacing';
 import TECHNIQUES, { type BreathingTechnique } from '../../features/exercise/guidedBreathing/techniques';
+import {
+  GOAL_TECHNIQUE,
+  type BreathGoalKey,
+} from '../../features/exercise/guidedBreathing/techniqueSelection';
+import type { TechniqueId } from '../../features/exercise/guidedBreathing/techniqueCatalog';
 import { AnalyticsEvent } from '../../services/analytics/events';
 import { trackFeatureGateHit } from '../../services/analytics/tracking';
 import { useFeatureAccess } from '../../hooks/useFeatureAccess';
@@ -18,16 +23,16 @@ import type { FeatureAccessResult } from '../../services/subscriptions/featureAc
 import type { MainTabNavigationProp } from '../../app/navigation';
 
 interface BreathGoal {
-  key: string;
+  key: BreathGoalKey;
   label: string;
   icon: IconName;
-  techniqueId: string;
+  techniqueId: TechniqueId;
 }
 
 const GOALS: BreathGoal[] = [
-  { key: 'calm', label: 'Calm', icon: 'lotus', techniqueId: 'relaxing' },
-  { key: 'energy', label: 'Energy', icon: 'sun', techniqueId: 'wimhof' },
-  { key: 'sleep', label: 'Sleep', icon: 'moon', techniqueId: '478' },
+  { key: 'calm', label: 'Calm', icon: 'lotus', techniqueId: GOAL_TECHNIQUE.calm },
+  { key: 'energy', label: 'Energy', icon: 'sun', techniqueId: GOAL_TECHNIQUE.energy },
+  { key: 'sleep', label: 'Sleep', icon: 'moon', techniqueId: GOAL_TECHNIQUE.sleep },
 ];
 
 function formatPattern(p: BreathingTechnique['pattern']) {

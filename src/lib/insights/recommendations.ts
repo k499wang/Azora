@@ -1,27 +1,42 @@
-import TECHNIQUES from '../../features/exercise/guidedBreathing/techniques';
+import { getTechnique } from '../../features/exercise/guidedBreathing/techniques';
+import type { TechniqueId } from '../../features/exercise/guidedBreathing/techniqueCatalog';
 import type { InsightContext } from './index';
 
 /**
  * A recommendation rule. Evaluated top-to-bottom; the first rule whose
- * `match(ctx)` returns true wins.
+ * `match(ctx)` returns true wins, so order is the priority order — put
+ * narrower conditions above broader ones.
  *
  * To add a new rule:
- *   1. Push an entry onto RECOMMENDATION_RULES below.
- *   2. Point `techniqueId` at any id in the guided breathing technique catalog.
- *   3. (Optional) write a short `reason` string explaining the *why*.
+ *   1. Insert an entry into RECOMMENDATION_RULES below, at the priority you
+ *      want it evaluated.
+ *   2. Point `techniqueId` at any id in `techniqueCatalog.ts` — a typo is a
+ *      compile error rather than a silent fall back to the first exercise.
+ *   3. Write a short `reason` explaining the *why*; it is shown to the user
+ *      after "Try X — ".
  *
- * To add a new technique:
- *   - Add it to src/features/exercise/guidedBreathing/techniques.ts. It will automatically be
- *     selectable here by id with no further changes.
+ * To add a new exercise, see `techniques.ts`. It becomes selectable here by id
+ * with no further changes.
+ *
+ * Fixed, non-conditional suggestions (moods, onboarding goals, home shortcuts)
+ * are lookups rather than rules and live in
+ * `src/features/exercise/guidedBreathing/techniqueSelection.ts`.
  */
 export interface RecommendationRule {
   id: string;
   match: (ctx: InsightContext) => boolean;
-  techniqueId: string;
+  techniqueId: TechniqueId;
   reason: string;
 }
 
 export const RECOMMENDATION_RULES: RecommendationRule[] = [
+  {
+    id: 'acute-stress',
+    match: ({ stress }) => stress != null && stress > 85,
+    techniqueId: 'extended-exhale',
+    reason:
+      'your stress is running high, and an exhale twice the length of the inhale brings it down fastest',
+  },
   {
     id: 'high-stress',
     match: ({ stress }) => stress != null && stress > 66,
@@ -33,7 +48,7 @@ export const RECOMMENDATION_RULES: RecommendationRule[] = [
     id: 'hrv-below-baseline',
     match: ({ rmssd, avgRmssd }) =>
       rmssd != null && avgRmssd != null && avgRmssd > 0 && rmssd < avgRmssd * 0.85,
-    techniqueId: 'relaxing',
+    techniqueId: 'extended-exhale',
     reason: 'your HRV is below baseline — extended exhales rebuild vagal tone',
   },
   {
@@ -56,14 +71,14 @@ export const RECOMMENDATION_RULES: RecommendationRule[] = [
   },
 ];
 
-export const DEFAULT_RECOMMENDATION: { techniqueId: string; reason: string } = {
+export const DEFAULT_RECOMMENDATION: { techniqueId: TechniqueId; reason: string } = {
   techniqueId: 'resonance',
   reason: 'a balanced session to maintain your baseline',
 };
 
 export interface ResolvedRecommendation {
   ruleId: string;
-  techniqueId: string;
+  techniqueId: TechniqueId;
   techniqueName: string;
   duration: string;
   reason: string;
@@ -83,7 +98,7 @@ export function pickRecommendation(
     ? { ruleId: rule.id, techniqueId: rule.techniqueId, reason: rule.reason }
     : fallback;
 
-  const technique = TECHNIQUES.find((t) => t.id === chosen.techniqueId);
+  const technique = getTechnique(chosen.techniqueId);
   if (!technique) return null;
 
   return {

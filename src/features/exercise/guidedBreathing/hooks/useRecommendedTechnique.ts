@@ -1,9 +1,9 @@
 import { useMemo } from 'react';
-import TECHNIQUES, { type BreathingTechnique } from '../techniques';
+import TECHNIQUES, { getTechnique, type BreathingTechnique } from '../techniques';
+import { FALLBACK_TECHNIQUE_ID } from '../techniqueSelection';
 import { useUserDefaultTechniqueQuery } from '../../../../queries/profile/useUserDefaultTechniqueQuery';
 
-const FALLBACK_TECHNIQUE =
-  TECHNIQUES.find((technique) => technique.id === 'box') ?? TECHNIQUES[0];
+const FALLBACK_TECHNIQUE = getTechnique(FALLBACK_TECHNIQUE_ID) ?? TECHNIQUES[0];
 
 export type RecommendedTechniqueSource = 'profile' | 'fallback';
 
@@ -31,10 +31,7 @@ export function useRecommendedTechnique(userId: string | null): {
     }
 
     const savedTechniqueId = defaultTechniqueQuery.data ?? null;
-    const savedTechnique =
-      savedTechniqueId == null
-        ? null
-        : TECHNIQUES.find((technique) => technique.id === savedTechniqueId) ?? null;
+    const savedTechnique = getTechnique(savedTechniqueId);
 
     return {
       technique: savedTechnique ?? FALLBACK_TECHNIQUE,
