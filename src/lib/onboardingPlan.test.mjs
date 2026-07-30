@@ -8,6 +8,7 @@ import {
   sessionTimeFor,
   toClockString,
 } from './onboardingPlan.ts';
+import { estimateLungAge, MIN_LUNG_AGE } from './lungAge.ts';
 
 const baseInputs = {
   intents: ['stress_relief'],
@@ -113,6 +114,46 @@ test('short holds still get a meaningful range', () => {
 
 test('no projection without a recorded hold', () => {
   assert.equal(buildOnboardingPlan({ ...baseInputs, breathHoldSeconds: null }).projection, null);
+});
+
+test('the lung-age goal uses the projected high hold', () => {
+  const plan = buildOnboardingPlan(baseInputs);
+  const expectedTarget = estimateLungAge(
+    plan.projection.highSeconds,
+    baseInputs.age,
+  ).years;
+
+  assert.equal(plan.lungAgeGoal.mode, 'lower');
+  assert.equal(plan.lungAgeGoal.targetYears, expectedTarget);
+  assert.ok(plan.lungAgeGoal.targetYears < plan.lungAgeGoal.currentYears);
+});
+
+test('the current lung age uses the exact recorded hold', () => {
+  const breathHoldSeconds = 10.13;
+  const plan = buildOnboardingPlan({ ...baseInputs, breathHoldSeconds });
+
+  assert.equal(
+    plan.lungAgeGoal.currentYears,
+    estimateLungAge(breathHoldSeconds, baseInputs.age).years,
+  );
+  assert.equal(plan.projection.baselineSeconds, Math.round(breathHoldSeconds));
+});
+
+test('there is no lung-age goal without a positive recorded hold', () => {
+  for (const breathHoldSeconds of [null, 0, -1]) {
+    const plan = buildOnboardingPlan({ ...baseInputs, breathHoldSeconds });
+    assert.equal(plan.lungAgeGoal, null);
+  }
+});
+
+test('the youngest lung age gets a maintain goal', () => {
+  const plan = buildOnboardingPlan({ ...baseInputs, breathHoldSeconds: 60 });
+
+  assert.deepEqual(plan.lungAgeGoal, {
+    mode: 'maintain',
+    currentYears: MIN_LUNG_AGE,
+    targetYears: MIN_LUNG_AGE,
+  });
 });
 
 test('the re-test lands six days out, counting today as day one', () => {
