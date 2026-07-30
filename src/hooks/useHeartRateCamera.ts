@@ -6,22 +6,12 @@ import {
   useCameraPermission,
 } from 'react-native-vision-camera';
 import type { CameraPosition } from 'react-native-vision-camera';
-
-const TELEPHOTO_CAMERA_MODEL_NAMES = new Set([
-  'iPhone 17 Pro',
-  'iPhone 17 Pro Max',
-]);
-
-function shouldUseTelephotoCameraForHeartRate(modelName: string | null): boolean {
-  return modelName != null && TELEPHOTO_CAMERA_MODEL_NAMES.has(modelName);
-}
+import { getHeartRateCameraProfile } from '../lib/heartRate/cameraProfile';
 
 export function useHeartRateCamera(preferredFps: 30 | 60 = 30) {
   const { hasPermission, requestPermission } = useCameraPermission();
   const physicalDevices = useMemo(
-    () => shouldUseTelephotoCameraForHeartRate(Device.modelName)
-      ? ['telephoto-camera' as const]
-      : ['wide-angle-camera' as const],
+    () => [getHeartRateCameraProfile(Device.modelName).physicalCamera],
     [],
   );
   const position: CameraPosition = useMemo(

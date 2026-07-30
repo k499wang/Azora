@@ -50,7 +50,7 @@ export default function BreathHoldBenefitsScreen({
 }: BreathHoldBenefitsScreenProps) {
   return (
     <OnboardingScreenLayout
-      title="The benefits of breath holds"
+      title="Why Azorians practice breath holds."
       subtitle="A calm, guided session to establish your personal baseline."
       progress={stepIndex / stepCount}
       onBack={onBack}

@@ -158,8 +158,8 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
         '',
         placementGuidance.multiCameraWarning,
         '',
-        ...placementGuidance.cues.map(
-          (cue, index) => `${index + 1}. ${cue}`,
+        ...placementGuidance.steps.map(
+          (step, index) => `${index + 1}. ${step.title}: ${step.detail}`,
         ),
       ].join('\n'),
       [{ text: 'Got it' }],

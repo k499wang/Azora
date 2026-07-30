@@ -91,10 +91,6 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
   const startStreaming = useCallback((startTimestamp?: number) => {
     warmupStartRef.current = startTimestamp ?? null;
     goodSinceRef.current = null;
-    lastSignalGraphUpdateRef.current = 0;
-    lastPublishedSignalTimestampRef.current = null;
-    managerRef.current.clearLiveSignalSamples();
-    setLiveSignalSamples([]);
     setStreamState('warming_up');
     streamStateRef.current = 'warming_up';
   }, []);
@@ -165,6 +161,21 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
         setSignalStatus(frameState.signalStatus);
       }
 
+      if (
+        (state === 'camera_check' || state === 'streaming' || state === 'warming_up') &&
+        timestamp - lastSignalGraphUpdateRef.current >= LIVE_SIGNAL_GRAPH_UPDATE_INTERVAL_MS
+      ) {
+        lastSignalGraphUpdateRef.current = timestamp;
+        const latestSignalTimestamp = managerRef.current.getLatestLiveSignalTimestamp();
+        if (
+          latestSignalTimestamp != null &&
+          latestSignalTimestamp !== lastPublishedSignalTimestampRef.current
+        ) {
+          lastPublishedSignalTimestampRef.current = latestSignalTimestamp;
+          setLiveSignalSamples(managerRef.current.getLiveSignalSamples());
+        }
+      }
+
       if (state === 'camera_check') {
         if (frameState.fingerPlacement === 'good') {
           if (goodSinceRef.current == null) {
@@ -214,18 +225,6 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
         frameState.beatPeakTs != null
       ) {
         beatSchedulerRef.current.schedule(frameState.beatPeakTs, timestamp);
-      }
-
-      if ((state === 'streaming' || state === 'warming_up') && timestamp - lastSignalGraphUpdateRef.current >= LIVE_SIGNAL_GRAPH_UPDATE_INTERVAL_MS) {
-        lastSignalGraphUpdateRef.current = timestamp;
-        const latestSignalTimestamp = managerRef.current.getLatestLiveSignalTimestamp();
-        if (
-          latestSignalTimestamp != null &&
-          latestSignalTimestamp !== lastPublishedSignalTimestampRef.current
-        ) {
-          lastPublishedSignalTimestampRef.current = latestSignalTimestamp;
-          setLiveSignalSamples(managerRef.current.getLiveSignalSamples());
-        }
       }
 
       if ((state === 'streaming' || state === 'warming_up') && timestamp - lastBpmUpdateRef.current >= BPM_UPDATE_INTERVAL_MS) {

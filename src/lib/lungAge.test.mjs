@@ -26,9 +26,39 @@ test('a short hold reads older than the persons age', () => {
   assert.equal(result.label, `${result.years - 30} years older than you`);
 });
 
+test('short holds produce varied whole-year lung ages', () => {
+  const expectedYearsByHold = new Map([
+    [10, 90],
+    [12, 82],
+    [15, 72],
+    [18, 64],
+    [20, 59],
+  ]);
+
+  for (const [holdSeconds, expectedYears] of expectedYearsByHold) {
+    const result = estimateLungAge(holdSeconds, 30);
+    assert.equal(result.years, expectedYears);
+    assert.equal(Number.isInteger(result.years), true);
+  }
+});
+
+test('lung age decreases monotonically as short hold time improves', () => {
+  const years = Array.from(
+    { length: 11 },
+    (_, index) => estimateLungAge(10 + index, 30).years,
+  );
+
+  for (let index = 1; index < years.length; index += 1) {
+    assert.ok(years[index] < years[index - 1]);
+  }
+});
+
 test('lung age stays inside the 18-90 range at the extremes', () => {
   assert.equal(estimateLungAge(600, 30).years, 18);
   assert.equal(estimateLungAge(1, 30).years, 90);
+  assert.equal(estimateLungAge(9, 30).years, 90);
+  assert.equal(estimateLungAge(10, 30).years, 90);
+  assert.ok(estimateLungAge(11, 30).years < 90);
 });
 
 test('median hold flattens at and below the peak age', () => {

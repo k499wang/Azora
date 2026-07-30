@@ -77,7 +77,14 @@ export default function BaselineIntroScreen({
       title=""
       progress={stepIndex / stepCount}
       onBack={onBack}
-      footer={<OnboardingPrimaryButton label="I’m ready" onPress={onContinue} />}
+      enableNavigationHaptics={false}
+      footer={
+        <OnboardingPrimaryButton
+          label="I’m ready"
+          onPress={onContinue}
+          enableHaptics={false}
+        />
+      }
     >
       <View style={styles.stage}>
         <MaskedView
@@ -132,7 +139,7 @@ export default function BaselineIntroScreen({
         <View style={styles.copy}>
           <Text style={styles.headline}>{title}</Text>
           <Text style={styles.sub}>
-            Rest one finger on the camera for twenty seconds. That is your
+            Rest one finger on the camera for ten seconds. That is your
             baseline, and your plan is built on it.
           </Text>
         </View>

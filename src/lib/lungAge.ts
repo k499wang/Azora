@@ -13,10 +13,16 @@
 
 const PEAK_AGE = 22;
 const PEAK_MEDIAN_SECONDS = 46;
-const DECAY_PER_YEAR = 0.0125;
+const OLDEST_MEDIAN_SECONDS = 10;
 
 export const MIN_LUNG_AGE = 18;
 export const MAX_LUNG_AGE = 90;
+
+// Calibrate the curve across the full gauge so short holds do not all collapse
+// to the oldest result. The age-90 endpoint corresponds to a 10-second hold.
+const DECAY_PER_YEAR =
+  Math.log(PEAK_MEDIAN_SECONDS / OLDEST_MEDIAN_SECONDS) /
+  (MAX_LUNG_AGE - PEAK_AGE);
 
 /** Typical untrained hold, in seconds, for a healthy person of this age. */
 export function medianHoldForAge(age: number): number {

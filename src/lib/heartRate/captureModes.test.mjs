@@ -15,9 +15,13 @@ test('quick mode is heart-rate only and free; full mode adds HRV and is Pro-only
 
   assert.equal(quick.computeHrv, false);
   assert.equal(quick.requiresPro, false);
+  assert.equal(quick.durationMs, 20_000);
+  assert.equal(quick.shortDescription, 'Heart rate only · 20s');
+  assert.deepEqual(quick.perks, ['Heart rate', '20s']);
 
   assert.equal(full.computeHrv, true);
   assert.equal(full.requiresPro, true);
+  assert.equal(full.durationMs, 90_000);
   assert.equal(full.captureFps, 60);
   assert.equal(quick.captureFps, 30);
 

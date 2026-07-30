@@ -1,29 +1,55 @@
 import type { FingerPlacementState, SignalStatus } from './types';
-
-const RIGHT_CAMERA_IPHONE_MODELS = new Set([
-  'iPhone 16 Pro',
-  'iPhone 16 Pro Max',
-]);
+import { getHeartRateCameraProfile } from './cameraProfile';
 
 export function getHeartRateCameraTarget(modelName: string | null): string {
-  return modelName != null && RIGHT_CAMERA_IPHONE_MODELS.has(modelName)
-    ? 'camera all the way to the right'
-    : 'bottom camera';
+  return getHeartRateCameraProfile(modelName).target;
 }
 
-export function getHeartRatePlacementGuidance(modelName: string | null) {
-  const cameraTarget = getHeartRateCameraTarget(modelName);
+export interface HeartRatePlacementStep {
+  readonly title: string;
+  readonly detail: string;
+}
+
+export interface HeartRatePlacementGuidance {
+  readonly title: string;
+  readonly instruction: string;
+  readonly multiCameraWarning: string;
+  readonly steps: readonly HeartRatePlacementStep[];
+}
+
+export function getHeartRatePlacementGuidance(
+  modelName: string | null,
+): HeartRatePlacementGuidance {
+  const profile = getHeartRateCameraProfile(modelName);
+  const cameraTarget = profile.target;
+  const isKnownLayout = profile.layout !== 'unknown';
 
   return {
-    title: 'Place your finger correctly',
-    instruction: `Put the soft center of your index fingertip over the ${cameraTarget}. Lay it flat so the camera lens is completely covered.`,
-    multiCameraWarning: `Use the highlighted ${cameraTarget} — covering another lens will not work.`,
-    cues: [
-      `Completely cover the ${cameraTarget}`,
-      'Touch gently — don’t press hard',
-      'Rest your hand and hold completely still',
+    title: profile.title,
+    instruction: isKnownLayout
+      ? `Place the soft pad of your index finger flat over the ${cameraTarget} and cover it completely. Leave the flash uncovered.`
+      : 'Place the soft pad of your index finger flat over the lens shown in the live check and cover it completely. Leave the flash uncovered.',
+    multiCameraWarning: isKnownLayout
+      ? `Use the highlighted ${cameraTarget} — covering another lens will not work.`
+      : 'Use the lens shown during the live check — covering another lens will not work.',
+    steps: [
+      {
+        title: isKnownLayout
+          ? `Cover the ${cameraTarget} completely`
+          : 'Cover the lens shown in the live check',
+        detail:
+          'Lay the soft pad of your index finger flat over the lens. Keep the flash uncovered.',
+      },
+      {
+        title: 'Use a light touch',
+        detail: 'Pressing hard can weaken the signal.',
+      },
+      {
+        title: 'Stay still',
+        detail: 'Sit down, rest your hand, and breathe normally.',
+      },
     ],
-  } as const;
+  };
 }
 
 export const HEART_RATE_PLACEMENT_GUIDANCE =
@@ -40,6 +66,12 @@ interface PulseConfirmationOptions {
   fingerPlacement: FingerPlacementState;
   signalStatus: SignalStatus;
   bpm: number | null;
+}
+
+export function isHeartRatePlacementReady(
+  fingerPlacement: FingerPlacementState,
+): boolean {
+  return fingerPlacement === 'good';
 }
 
 export function hasConfirmedPulse({
@@ -60,7 +92,7 @@ export function getCameraCheckMessage({
   fingerPlacement,
   signalStatus,
   pulseConfirmed,
-  cameraTarget = 'bottom camera',
+  cameraTarget = 'camera lens',
 }: CameraCheckMessageOptions): string {
   if (fingerPlacement === 'no_finger' || fingerPlacement === 'lost') {
     return `Completely cover the ${cameraTarget}.`;
@@ -89,7 +121,7 @@ export function getCameraCheckMessage({
 export function getMeasurementCorrectionMessage(
   signalStatus: SignalStatus,
   fingerPlacement: FingerPlacementState,
-  cameraTarget: string = 'bottom camera',
+  cameraTarget: string = 'camera lens',
 ): string | null {
   if (
     signalStatus === 'no_finger' ||

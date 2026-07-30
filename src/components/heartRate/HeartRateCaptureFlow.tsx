@@ -65,13 +65,13 @@ interface PendingHeartRateSave {
 function checkStateConfig(
   placement: FingerPlacementState,
   signalStatus: SignalStatus,
-  pulseConfirmed: boolean,
   cameraTarget: string,
 ): {
   ringColor: string;
   status: string;
 } {
   const isMissing = placement === 'no_finger' || placement === 'lost';
+  const placementAccepted = placement === 'good';
   const needsCorrection =
     placement === 'partial' ||
     placement === 'too_much_pressure' ||
@@ -81,7 +81,7 @@ function checkStateConfig(
     signalStatus === 'excessive_motion';
 
   return {
-    ringColor: pulseConfirmed
+    ringColor: placementAccepted
       ? colors.success[500]
       : isMissing
         ? colors.error[500]
@@ -91,7 +91,7 @@ function checkStateConfig(
     status: getCameraCheckMessage({
       fingerPlacement: placement,
       signalStatus,
-      pulseConfirmed,
+      pulseConfirmed: placementAccepted,
       cameraTarget,
     }),
   };
@@ -128,7 +128,6 @@ export function HeartRateCaptureFlow({
     captureState,
     fingerPlacement,
     signalStatus,
-    isPulseConfirmed,
     progress,
     currentBpm,
     beatTick,
@@ -361,7 +360,6 @@ export function HeartRateCaptureFlow({
   const checkConfig = checkStateConfig(
     fingerPlacement,
     signalStatus,
-    isPulseConfirmed,
     cameraTarget,
   );
   const warningMessage = isMeasuring

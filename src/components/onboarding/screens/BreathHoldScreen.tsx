@@ -61,6 +61,7 @@ interface ScoredHold extends OnboardingBreathHoldResult {
   tier: AzoraTierKey;
   lungAgeYears: number;
   percentile: number;
+  topPercent: number;
   benchmarkLabel: string;
 }
 
@@ -108,11 +109,25 @@ const GAUGE_TICK_PATHS = [0, 25, 50, 75, 100].map((t) =>
 );
 
 function formatHold(seconds: number): string {
-  const totalTenths = Math.floor(Math.max(0, seconds) * 10);
-  const minutes = Math.floor(totalTenths / 600);
-  const rest = Math.floor((totalTenths % 600) / 10);
-  const tenths = totalTenths % 10;
-  return `${minutes}:${String(rest).padStart(2, '0')}.${tenths}`;
+  const total = Math.floor(Math.max(0, seconds));
+  const minutes = Math.floor(total / 60);
+  const rest = total % 60;
+  return `${minutes}:${String(rest).padStart(2, '0')}`;
+}
+
+function ordinal(value: number): string {
+  const mod100 = value % 100;
+  if (mod100 >= 11 && mod100 <= 13) return `${value}th`;
+  switch (value % 10) {
+    case 1:
+      return `${value}st`;
+    case 2:
+      return `${value}nd`;
+    case 3:
+      return `${value}rd`;
+    default:
+      return `${value}th`;
+  }
 }
 
 function scoreHold(holdSeconds: number, age: number): ScoredHold {
@@ -124,6 +139,7 @@ function scoreHold(holdSeconds: number, age: number): ScoredHold {
     tier: estimate.key,
     lungAgeYears: estimateLungAge(holdSeconds, age).years,
     percentile: benchmark.percentile,
+    topPercent: benchmark.topPercent,
     benchmarkLabel: benchmark.label,
   };
 }
@@ -144,7 +160,6 @@ export default function BreathHoldScreen({
 
   const scale = useRef(new Animated.Value(CIRCLE_MIN_SCALE)).current;
   const inhaleEnter = useRef(new Animated.Value(0)).current;
-  const holdEnter = useRef(new Animated.Value(0)).current;
   const doneEnter = useRef(new Animated.Value(0)).current;
   const holdStartRef = useRef<number | null>(null);
   const tickRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -166,11 +181,10 @@ export default function BreathHoldScreen({
       if (tickRef.current) clearInterval(tickRef.current);
       scale.stopAnimation();
       inhaleEnter.stopAnimation();
-      holdEnter.stopAnimation();
       doneEnter.stopAnimation();
       cancelAnimation(arcProgress);
     };
-  }, [arcProgress, doneEnter, holdEnter, inhaleEnter, scale]);
+  }, [arcProgress, doneEnter, inhaleEnter, scale]);
 
   useEffect(() => {
     if (phase !== 'inhale') return;
@@ -182,19 +196,6 @@ export default function BreathHoldScreen({
       useNativeDriver: true,
     }).start();
   }, [phase, inhaleEnter]);
-
-  useEffect(() => {
-    if (phase !== 'hold') return;
-    holdEnter.setValue(0);
-    const animation = Animated.timing(holdEnter, {
-      toValue: 1,
-      duration: 260,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: true,
-    });
-    animation.start();
-    return () => animation.stop();
-  }, [phase, holdEnter]);
 
   useEffect(() => {
     if (phase !== 'inhale') return;
@@ -298,16 +299,14 @@ export default function BreathHoldScreen({
 
     scale.stopAnimation();
     inhaleEnter.stopAnimation();
-    holdEnter.stopAnimation();
     doneEnter.stopAnimation();
     scale.setValue(CIRCLE_MIN_SCALE);
     inhaleEnter.setValue(0);
-    holdEnter.setValue(0);
     doneEnter.setValue(0);
     cancelAnimation(arcProgress);
     arcProgress.value = lungAgeGaugeFill(MIN_LUNG_AGE);
     setPhase('inhale');
-  }, [arcProgress, doneEnter, holdEnter, inhaleEnter, scale]);
+  }, [arcProgress, doneEnter, inhaleEnter, scale]);
 
   // The counter reads off the same shared value as the ring, so both stay on the
   // UI thread and React only re-renders when the whole year changes.
@@ -363,7 +362,7 @@ export default function BreathHoldScreen({
   if (phase === 'inhale' || phase === 'hold') {
     const isInhale = phase === 'inhale';
 
-    const phaseEntryStyle = isInhale
+    const inhaleEntryStyle = isInhale
       ? {
           opacity: inhaleEnter,
           transform: [
@@ -375,40 +374,29 @@ export default function BreathHoldScreen({
             },
           ],
         }
-      : {
-          opacity: holdEnter,
-          transform: [
-            {
-              scale: holdEnter.interpolate({
-                inputRange: [0, 1],
-                outputRange: [0.97, 1],
-              }),
-            },
-          ],
-        };
+      : null;
 
     return (
       <View style={styles.fullScreen}>
-        <Animated.View style={[styles.fullCenter, phaseEntryStyle]}>
+        <Animated.View style={[styles.fullCenter, inhaleEntryStyle]}>
           <View style={styles.headingSlot}>
+            <Text style={styles.phaseHeading}>
+              {isInhale ? 'Breathe in' : 'Hold your breath'}
+            </Text>
+          </View>
+          <View style={styles.phaseDetailSlot}>
             {isInhale ? (
-              <Text style={styles.phaseHeading}>Breathe in</Text>
+              <Text style={styles.phaseSub}>Hold when the circle is full.</Text>
             ) : (
-              <View style={styles.holdReadout}>
-                <Text style={styles.holdPhaseLabel}>HOLD</Text>
-                <Text style={styles.bigTimer}>{formatHold(holdSec)}</Text>
-              </View>
+              <Text style={styles.bigTimer}>{formatHold(holdSec)}</Text>
             )}
           </View>
-          {isInhale ? (
-            <Text style={styles.phaseSub}>Hold when the circle is full.</Text>
-          ) : null}
 
           <View style={styles.circleWrap}>
             <Animated.View
               style={[
                 styles.circle,
-                isInhale ? styles.circleInhale : styles.circleHold,
+                styles.circleInhale,
                 { transform: [{ scale }] },
               ]}
             />
@@ -423,7 +411,7 @@ export default function BreathHoldScreen({
                     color={colors.primary.blue700}
                   />
                   <Text style={styles.releaseLabel}>
-                    I need to breathe
+                    Tap when you need{'\n'}to breathe
                   </Text>
                 </View>
               )}
@@ -485,7 +473,9 @@ export default function BreathHoldScreen({
   if ((phase === 'calibrating' || phase === 'done') && result) {
     const isCalibrating = phase === 'calibrating';
     const scoreColor = azoraTierMeta(result.tier).textColor;
-    const benchmark = benchmarkBreathHold(result.holdSeconds, age);
+    const percentile = result.percentile;
+    const markerPercent = Math.max(2, Math.min(98, percentile));
+    const peerCopy = `You are in the top ${result.topPercent}% of people your age.`;
 
     const revealStyle = {
       opacity: doneEnter,
@@ -503,6 +493,7 @@ export default function BreathHoldScreen({
       <OnboardingScreenLayout
         title=""
         progress={stepIndex / stepCount}
+        hideProgress
         footer={
           isCalibrating ? (
             <View />
@@ -532,11 +523,11 @@ export default function BreathHoldScreen({
         }
       >
         <View style={styles.gaugeStage}>
-          <Text style={styles.gaugeHeading}>
-            {isCalibrating ? 'Calibrating…' : 'Your lung age estimate'}
+          <Text accessibilityRole="header" style={styles.gaugeHeading}>
+            {isCalibrating ? 'Calibrating…' : 'Your lung age'}
           </Text>
           <Text style={styles.gaugeSub}>
-            {isCalibrating ? 'Analyzing your hold.' : benchmark.label}
+            {isCalibrating ? 'Analyzing your hold.' : peerCopy}
           </Text>
 
           <View style={styles.gaugeSurface}>
@@ -601,8 +592,39 @@ export default function BreathHoldScreen({
 
           {!isCalibrating ? (
             <Animated.View style={[styles.gaugeMeta, revealStyle]}>
-              <Text style={styles.followup}>
-                Your untrained baseline. We&apos;ll show you how to move it.
+              <View
+                style={styles.percentileRailWrap}
+                accessible
+                accessibilityRole="image"
+                accessibilityLabel={`You are in the top ${result.topPercent}% of people your age. Your result is at the estimated ${ordinal(percentile)} percentile. The median is the 50th percentile.`}
+              >
+                <View style={styles.percentileTrack}>
+                  <View
+                    style={[styles.percentileFill, { width: `${percentile}%` }]}
+                  />
+                  <View style={styles.medianTick} />
+                  <View
+                    style={[styles.youMarker, { left: `${markerPercent}%` }]}
+                  >
+                    <Text style={styles.youMarkerLabel}>You</Text>
+                    <View style={styles.youMarkerLine} />
+                  </View>
+                </View>
+                <View style={styles.percentileLabels}>
+                  <Text style={[styles.percentileLabel, styles.percentileLabelStart]}>
+                    0
+                  </Text>
+                  <Text style={[styles.percentileLabel, styles.percentileLabelCenter]}>
+                    Median
+                  </Text>
+                  <Text style={[styles.percentileLabel, styles.percentileLabelEnd]}>
+                    100
+                  </Text>
+                </View>
+              </View>
+              <Text style={styles.resultReassurance}>
+                We’ll explain what this means—and how you can improve it—as you
+                try the exercises in the app.
               </Text>
             </Animated.View>
           ) : null}
@@ -752,16 +774,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingHorizontal: spacing.md,
   },
-  holdReadout: {
+  phaseDetailSlot: {
+    height: 72,
     alignItems: 'center',
-    gap: spacing.xs,
-  },
-  holdPhaseLabel: {
-    ...typography.body.small,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    color: colors.text.tertiary,
-    letterSpacing: 1.6,
+    justifyContent: 'center',
   },
   bigTimer: {
     fontFamily: fonts.semibold,
@@ -797,23 +813,19 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: colors.primary.blue500,
   },
-  circleHold: {
-    backgroundColor: colors.primary.blue200,
-    borderWidth: 2,
-    borderColor: colors.primary.blue600,
-  },
   circleContent: {
     alignItems: 'center',
     justifyContent: 'center',
   },
   releaseTarget: {
     alignItems: 'center',
-    gap: spacing.xs,
+    gap: spacing.sm,
   },
   releaseLabel: {
-    ...typography.body.small,
     fontFamily: fonts.semibold,
     fontWeight: '500',
+    fontSize: 18,
+    lineHeight: 24,
     color: colors.primary.blue700,
     textAlign: 'center',
   },
@@ -832,8 +844,8 @@ const styles = StyleSheet.create({
   gaugeStage: {
     flex: 1,
     alignItems: 'center',
-    gap: spacing.xl,
-    paddingTop: spacing.md,
+    gap: spacing.md,
+    paddingTop: spacing.sm,
   },
   gaugeHeading: {
     ...typography.title.title1,
@@ -849,7 +861,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: colors.primary.blue600,
     textAlign: 'center',
-    marginTop: -spacing.lg,
+    marginTop: -spacing.sm,
   },
   gaugeSurface: {
     width: GAUGE_SIZE,
@@ -892,12 +904,78 @@ const styles = StyleSheet.create({
   gaugeMeta: {
     width: '100%',
     alignItems: 'center',
+    gap: spacing.sm,
+  },
+  percentileRailWrap: {
+    width: '100%',
+    maxWidth: 300,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.xs,
+  },
+  percentileTrack: {
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.neutral[200],
+    position: 'relative',
+  },
+  percentileFill: {
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: colors.primary.blue500,
+  },
+  medianTick: {
+    position: 'absolute',
+    left: '50%',
+    top: -3,
+    width: 2,
+    height: 14,
+    borderRadius: 1,
+    backgroundColor: colors.neutral[500],
+  },
+  youMarker: {
+    position: 'absolute',
+    top: -21,
+    width: 40,
+    marginLeft: -20,
+    alignItems: 'center',
+  },
+  youMarkerLabel: {
+    ...typography.caption.caption2,
+    fontFamily: fonts.semibold,
+    color: colors.primary.blue700,
+    lineHeight: 14,
+    textAlign: 'center',
+  },
+  youMarkerLine: {
+    width: 3,
+    height: 18,
+    marginTop: 2,
+    borderRadius: 1.5,
+    backgroundColor: colors.primary.blue600,
+  },
+  percentileLabels: {
+    flexDirection: 'row',
     marginTop: spacing.sm,
   },
-  followup: {
+  percentileLabel: {
+    ...typography.caption.caption2,
+    color: colors.text.tertiary,
+    flex: 1,
+  },
+  percentileLabelStart: {
+    textAlign: 'left',
+  },
+  percentileLabelCenter: {
+    textAlign: 'center',
+  },
+  percentileLabelEnd: {
+    textAlign: 'right',
+  },
+  resultReassurance: {
     ...typography.body.small,
     color: colors.text.secondary,
     textAlign: 'center',
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.lg,
   },
 });

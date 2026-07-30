@@ -1168,7 +1168,7 @@ export default function OnboardingFlow({
     age,
     dailyMinutes,
     breathHoldSeconds: breathHold?.holdSeconds ?? null,
-    bpmDrop: baseline?.bpmDrop ?? null,
+    avgBpm: baseline?.avgBpm ?? null,
   });
 
   const planMindMap = computeMindMap({
@@ -1202,7 +1202,6 @@ export default function OnboardingFlow({
     return (
       <RecommendedExerciseScreen
         plan={plan}
-        name={name.trim()}
         currentScores={planMindMap.scores}
         targetScores={projectScores(planMindMap.scores)}
         growthArea={planMindMap.growthArea}
