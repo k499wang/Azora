@@ -59,8 +59,8 @@ export default function HeartRateStatsSection({
         <View style={styles.tileRow}>
           <ThermometerStatCard
             label="HR change"
-            icon="stat-heart-pulse"
-            iconColor={colors.error[500]}
+            icon="stat-heart-rate-change"
+            iconColor={colors.accent[600]}
             value={hrDrop ?? (locked ? LOCKED_PLACEHOLDERS.hrDrop : null)}
             unit="bpm"
             min={0}
@@ -71,8 +71,8 @@ export default function HeartRateStatsSection({
           />
           <ThermometerStatCard
             label="Lowest HR"
-            icon="moon"
-            iconColor={colors.error[500]}
+            icon="stat-lowest-heart-rate"
+            iconColor={colors.accent[600]}
             value={minBpm ?? (locked ? LOCKED_PLACEHOLDERS.minBpm : null)}
             unit="bpm"
             min={40}

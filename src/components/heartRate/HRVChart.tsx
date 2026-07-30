@@ -147,7 +147,7 @@ export default function HRVChart({
         </>
       ) : null}
       <View style={styles.titleRow}>
-        <Icon name="stat-hrv-curve" size={28} color={colors.primary.blue500} />
+        <Icon name="stat-average-hrv" size={24} color={colors.accent[600]} />
         <Text style={styles.title}>Heart rate variability</Text>
       </View>
 

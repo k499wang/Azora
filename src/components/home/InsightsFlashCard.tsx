@@ -21,7 +21,7 @@ interface Props {
   onStartTechnique?: (techniqueId: string) => void;
 }
 
-const CARD_HEIGHT = 172;
+const CARD_HEIGHT = 174;
 const DETAIL_MAX_LINES = 3;
 const CAROUSEL_CARD_GAP = 16;
 

@@ -1,7 +1,8 @@
 import { Text } from '../common/Text';
 import { useMemo } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { usePostHog } from 'posthog-react-native';
@@ -85,7 +86,14 @@ function TechniqueCard({
           pressed && styles.cardPressed,
         ]}
       >
-        <Image source={technique.backgroundImage} style={styles.cardImage} resizeMode="cover" />
+        <Image
+          source={technique.backgroundImage}
+          style={styles.cardImage}
+          contentFit="cover"
+          contentPosition="center"
+          cachePolicy="memory-disk"
+          transition={0}
+        />
         <LinearGradient
           colors={[colors.photoScrim.transparent, colors.photoScrim.strong]}
           locations={[0.35, 1]}

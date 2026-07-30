@@ -17,7 +17,6 @@ import ShareCard from '../components/exercise/ShareCard';
 import ScoreRing from '../components/exercise/ScoreRing';
 import GlassIconButton from '../components/common/GlassIconButton';
 import type { DailyResultScreenProps } from '../app/navigation';
-import LungAgeInfoDialog from '../components/exercise/LungAgeInfoDialog';
 import {
   estimateLungAge,
   lungAgeRingFill,
@@ -57,8 +56,6 @@ export default function ShareableResultScreen({
     minBpm != null && maxBpm != null ? Math.max(0, maxBpm - minBpm) : null;
   const lungAge = estimateLungAge(holdSeconds, userAge);
   const lungAgeTone = lungAgeToneMeta(lungAge.deltaYears);
-  const [lungAgeInfoVisible, setLungAgeInfoVisible] = useState(false);
-
   const advancedStatsLocked =
     !advancedStatsAccess.allowed && !advancedStatsAccess.isLoading;
   const artifactRef = useRef<ViewShot>(null);
@@ -110,10 +107,10 @@ export default function ShareableResultScreen({
             value={lungAge.years}
             fill={lungAgeRingFill(lungAge.years)}
             ringColors={lungAgeTone.ringColors}
-            caption="Lung age"
+            caption="Lung Age"
+            captionFontSize={18}
             captionPosition="bottom"
             captionTextTransform="none"
-            onInfoPress={() => setLungAgeInfoVisible(true)}
             gapLabel={lungAge.label}
             gapTextColor={lungAgeTone.textColor}
             gapDirection={lungAgeTone.direction}
@@ -217,11 +214,6 @@ export default function ShareableResultScreen({
           </ViewShot>
         </View>
       </View>
-
-      <LungAgeInfoDialog
-        visible={lungAgeInfoVisible}
-        onClose={() => setLungAgeInfoVisible(false)}
-      />
     </View>
   );
 }

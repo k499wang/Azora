@@ -12,7 +12,6 @@ import { spacing, padding, margin } from '../theme/spacing';
 import { typography, fonts } from '../theme/typography';
 import AmbientBackground from '../components/common/AmbientBackground';
 import AppTopBar from '../components/common/AppTopBar';
-import FeatureInfoDialog from '../components/common/FeatureInfoDialog';
 import SectionHeader from '../components/common/SectionHeader';
 import CardSurface from '../components/common/CardSurface';
 import Icon from '../components/common/icons/Icon';
@@ -21,8 +20,6 @@ import ProUpgradeButton from '../components/common/ProUpgradeButton';
 import ProfileBreathHoldTrendCard from '../components/profile/ProfileBreathHoldTrendCard';
 import HeartRateStatsSection from '../components/heartRate/HeartRateStatsSection';
 import { getBackgroundImageSource } from '../services/images/backgroundImageCache';
-import LungAgeInfoDialog from '../components/exercise/LungAgeInfoDialog';
-import { estimateAzoraScore } from '../lib/azoraScore';
 import {
   estimateLungAge,
   lungAgeRingFill,
@@ -51,8 +48,6 @@ export default function BreathScreen({ navigation }: BreathTabScreenProps) {
   const { width: windowWidth } = useWindowDimensions();
   const user = useAuthStore((state) => state.user);
   const [todayLocalDate] = useState(() => formatLocalDate(new Date()));
-  const [infoVisible, setInfoVisible] = useState(false);
-  const [lungAgeInfoVisible, setLungAgeInfoVisible] = useState(false);
 
   const homeStatsQuery = useHomeStatsQuery(user?.id ?? null, todayLocalDate);
   const profileSummaryQuery = useProfileSummaryQuery(user?.id ?? null);
@@ -76,13 +71,9 @@ export default function BreathScreen({ navigation }: BreathTabScreenProps) {
       ? todayBreathHold.holdSeconds
       : null;
 
-  const azoraEstimate =
-    holdSeconds != null
-      ? estimateAzoraScore({
-          holdSeconds,
-          avgBpm: todayBreathHold?.avgBpm ?? undefined,
-          minBpm: todayBreathHold?.minBpm ?? undefined,
-        })
+  const hrDropBpm =
+    todayBreathHold?.avgBpm != null && todayBreathHold.minBpm != null
+      ? Math.max(0, todayBreathHold.avgBpm - todayBreathHold.minBpm)
       : null;
 
   const lungAge =
@@ -175,19 +166,7 @@ export default function BreathScreen({ navigation }: BreathTabScreenProps) {
               />
             </MaskedView>
           </View>
-          <AppTopBar
-            rightSlot={
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="About breath holds"
-                hitSlop={12}
-                onPress={() => setInfoVisible(true)}
-                style={({ pressed }) => pressed && styles.infoPressed}
-              >
-                <Icon name="info" size={24} color={colors.text.tertiary} />
-              </Pressable>
-            }
-          />
+          <AppTopBar />
         </View>
 
         <View style={styles.heroSection}>
@@ -195,13 +174,13 @@ export default function BreathScreen({ navigation }: BreathTabScreenProps) {
             value={lungAge?.years ?? 0}
             fill={lungAge != null ? lungAgeRingFill(lungAge.years) : 0}
             placeholder={lungAge == null}
-            size={235}
-            valueFontSize={78}
+            size={250}
+            valueFontSize={90}
             ringColors={lungAgeTone.ringColors}
-            caption="Lung age"
+            caption="years"
             captionPosition="bottom"
             captionTextTransform="none"
-            onInfoPress={() => setLungAgeInfoVisible(true)}
+            captionFontSize={16}
             gapLabel={lungAge?.label ?? null}
             gapTextColor={lungAgeTone.textColor}
             gapDirection={lungAgeTone.direction}
@@ -216,9 +195,7 @@ export default function BreathScreen({ navigation }: BreathTabScreenProps) {
             style={({ pressed }) => pressed && styles.measurePressed}
           >
             <CardSurface style={styles.measureCard}>
-              <View style={styles.measureIconWrap}>
-                <Icon name="breath-hold" size={24} color={colors.primary.blue600} />
-              </View>
+              <Icon name="breath-hold" size={24} color={colors.accent[600]} />
               <Text style={styles.measureTitle}>
                 {lungAge
                   ? 'Ready to beat your record?'
@@ -249,7 +226,7 @@ export default function BreathScreen({ navigation }: BreathTabScreenProps) {
         </View>
 
         <HeartRateStatsSection
-          hrDrop={azoraEstimate?.hrDropBpm ?? null}
+          hrDrop={hrDropBpm}
           minBpm={todayBreathHold?.minBpm ?? null}
           maxBpm={todayBreathHold?.maxBpm ?? null}
           avgBpm={todayBreathHold?.avgBpm ?? null}
@@ -262,17 +239,6 @@ export default function BreathScreen({ navigation }: BreathTabScreenProps) {
         />
       </ScrollView>
 
-      <FeatureInfoDialog
-        visible={infoVisible}
-        onClose={() => setInfoVisible(false)}
-        title="Breath Holds"
-        intro="A breath hold is the fastest way to reset your mind — pausing your breath calms your nervous system, melts stress, and pulls you out of your head and into the present in under a minute. It's also an honest measure of fitness: longer holds signal greater lung capacity, better oxygen efficiency, and a steadier stress response, which is why divers and elite athletes train it. We turn each hold into a lung age — the age whose typical breath hold matches yours — so you can watch that number come down over time. Every hold is logged, and most people add seconds within their first week. Take a minute, hold your breath, and feel the reset — then beat your record and use the personalized insights to go further."
-      />
-
-      <LungAgeInfoDialog
-        visible={lungAgeInfoVisible}
-        onClose={() => setLungAgeInfoVisible(false)}
-      />
     </View>
   );
 }
@@ -313,19 +279,11 @@ const styles = StyleSheet.create({
   measureCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
-    paddingVertical: spacing.sm,
+    gap: spacing.md,
+    paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
     borderWidth: 1.5,
     borderColor: colors.primary.blue200,
-  },
-  measureIconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.primary.blue100,
   },
   measureTitle: {
     ...typography.body.medium,
@@ -336,8 +294,5 @@ const styles = StyleSheet.create({
   },
   measurePressed: {
     opacity: 0.85,
-  },
-  infoPressed: {
-    opacity: 0.6,
   },
 });

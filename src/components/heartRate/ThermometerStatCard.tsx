@@ -8,6 +8,8 @@ import CardSurface from '../common/CardSurface';
 import Icon from '../common/icons/Icon';
 import type { IconName } from '../common/icons/paths';
 
+const STAT_ICON_SIZE = 24;
+
 interface ThermometerStatCardProps {
   label: string;
   value: number | null | undefined;
@@ -49,7 +51,7 @@ export default function ThermometerStatCard({
     >
       <View style={[styles.tileHeader, locked && styles.lockedTitleText]}>
         {icon ? (
-          <Icon name={icon} size={28} color={iconColor} />
+          <Icon name={icon} size={STAT_ICON_SIZE} color={iconColor} />
         ) : null}
         <Text style={styles.tileLabel}>{label}</Text>
       </View>
@@ -82,7 +84,7 @@ export default function ThermometerStatCard({
           <LockedScrim />
           <View style={styles.tileHeader}>
             {icon ? (
-              <Icon name={icon} size={28} color={iconColor} />
+              <Icon name={icon} size={STAT_ICON_SIZE} color={iconColor} />
             ) : null}
             <Text style={styles.tileLabel}>{label}</Text>
           </View>

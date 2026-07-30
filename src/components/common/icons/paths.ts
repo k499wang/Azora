@@ -46,13 +46,8 @@ export const ICON_PATHS = {
   },
 
   'breath-hold': `
-    <path fill="currentColor" opacity="0.14" d="M12 3.2c-4.1 0-7.3 3.2-7.3 7.2 0 2.1.9 4 2.3 5.3-.8.5-1.6 1.3-2.1 2.2-.6 1-.9 2-.9 3.1h16c0-1.1-.3-2.2-.9-3.1-.5-.9-1.3-1.7-2.1-2.2 1.4-1.3 2.3-3.2 2.3-5.3 0-4-3.2-7.2-7.3-7.2Z"/>
-<path fill="currentColor" d="M12 4c-3.6 0-6.5 2.8-6.5 6.4 0 2.1 1 4 2.7 5.2.2.1.2.4.1.6l-.2.2c-.7.4-1.4 1-1.9 1.7-.5.7-.8 1.6-1 2.5a1 1 0 0 1-2-.2c.2-1.2.6-2.3 1.2-3.3.5-.8 1.2-1.5 2-2.1A8.3 8.3 0 0 1 3.5 10.4C3.5 5.7 7.3 2 12 2s8.5 3.7 8.5 8.4c0 1.8-.6 3.4-1.7 4.8-.5.7-1.1 1.3-1.8 1.8.8.5 1.5 1.3 2 2.1.6 1 1 2.1 1.2 3.3a1 1 0 0 1-2 .2c-.2-.9-.5-1.8-1-2.5s-1.2-1.3-1.9-1.7l-.2-.2c-.1-.2-.1-.5.1-.6 1.7-1.2 2.7-3.1 2.7-5.2C18.5 6.8 15.6 4 12 4Z"/>
-<path fill="currentColor" opacity="0.18" d="M8 11.8c.9 0 1.6.6 1.6 1.4S8.9 14.6 8 14.6s-1.6-.6-1.6-1.4.7-1.4 1.6-1.4Zm8 0c.9 0 1.6.6 1.6 1.4s-.7 1.4-1.6 1.4-1.6-.6-1.6-1.4.7-1.4 1.6-1.4Z"/>
-<path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M8.1 9.8c.5.5 1.2.5 1.8 0m4.2 0c.5.5 1.2.5 1.8 0"/>
-<path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M10.9 13.8c.5-.5 1.1-.7 1.1-.7s.6.2 1.1.7c.4.4.6.8.6 1.2 0 .8-.8 1.4-1.7 1.4s-1.7-.6-1.7-1.4c0-.4.2-.8.6-1.2Z"/>
-<path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M9.3 17.4c.8.5 1.7.8 2.7.8s1.9-.3 2.7-.8"/>
-<path fill="currentColor" opacity="0.22" d="M17.4 6.1c.7.2 1.3.8 1.3 1.6 0 .9-.7 1.7-1.7 2-.2.1-.4-.1-.4-.3 0-.3-.1-.6-.2-.9-.1-.4-.3-.7-.5-1-.1-.2 0-.4.2-.5.4-.3.8-.8 1.3-.9Z"/>  `,
+    <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M12 4v8M12 11c-1.6-2-3-3.2-4.4-3.2C5.3 7.8 4 12.2 4 16.8 4 18.8 5.2 20 7 20c3 0 5-2.2 5-5.5M12 11c1.6-2 3-3.2 4.4-3.2 2.3 0 3.6 4.4 3.6 9 0 2-1.2 3.2-3 3.2-3 0-5-2.2-5-5.5"/>
+  `,
 
   meditation: `
     <circle cx="12" cy="6" r="2.2" stroke="currentColor" stroke-width="2" fill="none" />
@@ -164,14 +159,16 @@ export const ICON_PATHS = {
 <path fill="currentColor" d="M18.1 2.9l.3 1.2c.1.3.3.5.6.6l1.2.3-1.2.3c-.3.1-.5.3-.6.6l-.3 1.2-.3-1.2a1 1 0 0 0-.6-.6L16 5l1.2-.3c.3-.1.5-.3.6-.6l.3-1.2Z"/>
   `,
 
-  'heart-plain': `
-    <path fill="currentColor" opacity="0.18" d="M12 20.2c-.3 0-.6-.1-.8-.3C6.7 16.5 4 13.9 4 10.4 4 7.9 5.9 6 8.3 6c1.5 0 2.8.7 3.7 1.9C12.9 6.7 14.2 6 15.7 6 18.1 6 20 7.9 20 10.4c0 3.5-2.7 6.1-7.2 9.5-.2.2-.5.3-.8.3Z"/><path fill="currentColor" opacity="0.25" d="M12 18.8c-4.1-3.1-6.6-5.4-6.6-8.4 0-1.9 1.4-3.3 3.1-3.3 1.3 0 2.4.7 3.1 1.9.2.3.5.5.8.5s.6-.2.8-.5c.7-1.2 1.8-1.9 3.1-1.9 1.7 0 3.1 1.4 3.1 3.3 0 3-2.5 5.3-6.6 8.4Z"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M12 18.8c-4.1-3.1-6.6-5.4-6.6-8.4 0-1.9 1.4-3.3 3.1-3.3 1.3 0 2.4.7 3.1 1.9.2.3.5.5.8.5s.6-.2.8-.5c.7-1.2 1.8-1.9 3.1-1.9 1.7 0 3.1 1.4 3.1 3.3 0 3-2.5 5.3-6.6 8.4Z"/>
+  'stat-heart-rate-graph': `
+    <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M3 12h4l2-4 3.4 8 2.6-5H21"/>
   `,
 
-  'stat-heart-pulse': `
-    <path fill="currentColor" opacity="0.1" d="M12 19.2c-4.3-3-6.9-5.5-6.9-8.7 0-2 1.5-3.6 3.4-3.6 1.3 0 2.5.7 3.1 1.8.2.3.6.3.8 0 .6-1.1 1.8-1.8 3.1-1.8 1.9 0 3.4 1.6 3.4 3.6 0 3.2-2.6 5.7-6.9 8.7Z"/>
-    <path fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" d="M12 19.2c-4.3-3-6.9-5.5-6.9-8.7 0-2 1.5-3.6 3.4-3.6 1.3 0 2.5.7 3.1 1.8.2.3.6.3.8 0 .6-1.1 1.8-1.8 3.1-1.8 1.9 0 3.4 1.6 3.4 3.6 0 3.2-2.6 5.7-6.9 8.7Z"/>
-    <path fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" d="M6.9 12.5h2.4l1.2-2.1 1.9 4.5 1.4-2.4h3.3"/>
+  'stat-heart-rate-change': `
+    <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M5 12l3-3M5 12l3 3M19 12l-3-3M19 12l-3 3"/>
+  `,
+
+  'stat-lowest-heart-rate': `
+    <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M4 8C7 8 7 16 12 16S17 8 20 8"/>
   `,
 
   'stat-breath-flow': `
@@ -199,6 +196,10 @@ export const ICON_PATHS = {
     <rect x="11.9" y="10.3" width="2" height="3.4" rx="0.6" fill="currentColor"/>
   `,
 
+  'stat-stress-index': `
+    <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M4 17a8 8 0 0 1 16 0M12 17l4.2-5.2"/>
+  `,
+
   'stat-lungs': `
     <path fill="currentColor" opacity="0.1" d="M10.1 10.3c-2.7.4-4.8 2.8-5.3 5.9-.3 1.9.9 3.5 2.8 3.5 1.5 0 2.8-.9 3.3-2.3.3-.9.3-2.4.2-4.5-.1-1.6-.3-2.4-1-2.6Zm3.8 0c2.7.4 4.8 2.8 5.3 5.9.3 1.9-.9 3.5-2.8 3.5-1.5 0-2.8-.9-3.3-2.3-.3-.9-.3-2.4-.2-4.5.1-1.6.3-2.4 1-2.6Z"/>
     <path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M12 4.3v7.2"/>
@@ -208,15 +209,12 @@ export const ICON_PATHS = {
   `,
 
   // --- Heart health section ---
-  'heart-rmssd': `
-<path fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" d="M5 14h3l1.4 2.2L12 9l2.6 7.2L16 14h3"/>
-    `,
+  'stat-rmssd': `
+    <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M3 14h3l1.5-4.5 2.7 9 2.8-13 2.2 8.5H21"/>
+  `,
 
-  'heart-sdnn': `
-    <path fill="currentColor" opacity="0.14" d="M4 18c1.8 0 2.7-1.7 3.6-4 .9-2.4 1.9-5.2 4.4-5.2s3.5 2.8 4.4 5.2c.9 2.3 1.8 4 3.6 4v1H4Z"/>
-<path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M3.5 18h17"/>
-<path fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" d="M4.2 18c1.7 0 2.5-1.7 3.3-4 .9-2.5 2-5.4 4.5-5.4s3.6 2.9 4.5 5.4c.8 2.3 1.6 4 3.3 4"/>
-<path fill="none" stroke="currentColor" opacity="0.7" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M12 8.6V18"/>
+  'stat-average-hrv': `
+    <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M3 13c1.5-4.5 3-4.5 4.5 0s3 4.5 4.5 0 3-4.5 4.5 0 3 4.5 4.5 0"/>
   `,
 
   'stat-rmssd-wave': `

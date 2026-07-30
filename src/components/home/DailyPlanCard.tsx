@@ -6,6 +6,7 @@ import { usePostHog } from 'posthog-react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import GlassSurface from '../common/GlassSurface';
+import { card } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { fonts, typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
@@ -14,10 +15,11 @@ import { DAILY_PLAN_BACKGROUND_ASSET } from '../../data/backgroundAssets';
 import { getBackgroundImageSource } from '../../services/images/backgroundImageCache';
 import type { MainTabNavigationProp } from '../../app/navigation';
 
+const SESSION_DURATION = '~2 min';
+
 interface DailyPlanCardProps {
   todayHoldSeconds: number | null;
   lastHoldSeconds: number | null;
-  bestHoldSeconds: number | null;
   streakDays?: number;
   onPress?: () => void;
 }
@@ -31,7 +33,6 @@ function formatMmSs(seconds: number): string {
 export default function DailyPlanCard({
   todayHoldSeconds,
   lastHoldSeconds,
-  bestHoldSeconds,
   streakDays = 0,
   onPress,
 }: DailyPlanCardProps) {
@@ -47,138 +48,104 @@ export default function DailyPlanCard({
   const hasHistory = lastHoldSeconds != null || todayHoldSeconds != null;
   const doneToday = todayHoldSeconds != null;
 
-  const subtitle = !hasHistory
-    ? 'Find your baseline'
+  const meta = !hasHistory
+    ? SESSION_DURATION
     : doneToday
-      ? `Done today · ${formatMmSs(todayHoldSeconds!)}`
+      ? `Done today ${formatMmSs(todayHoldSeconds!)}`
       : `Last hold ${formatMmSs(lastHoldSeconds!)}`;
-
-  const meta =
-    bestHoldSeconds != null && bestHoldSeconds > 0
-      ? `${subtitle} · Best ${formatMmSs(bestHoldSeconds)}`
-      : subtitle;
 
   return (
     <View style={styles.container}>
-      <View style={styles.card}>
-        <Image
-          source={getBackgroundImageSource('dailyPlan')}
-          style={StyleSheet.absoluteFill}
-          contentFit="cover"
-          contentPosition="center"
-          transition={0}
-          cachePolicy="memory-disk"
-        />
-        <LinearGradient
-          colors={[
-            colors.photoScrim.transparent,
-            colors.photoScrim.transparent,
-            colors.photoScrim.medium,
-          ]}
-          locations={[0, 0.35, 1]}
-          style={StyleSheet.absoluteFill}
-          pointerEvents="none"
-        />
-        <View style={styles.challengeHeader} pointerEvents="none">
-          <View style={styles.challengeIcon}>
-            <MaterialCommunityIcons name="lungs" size={24} color={colors.text.inverse} />
-          </View>
-          <View style={styles.dailyPill}>
-            <Text style={styles.dailyPillText}>Check-in</Text>
-          </View>
-        </View>
-        <View style={styles.cardContent}>
-          <View style={styles.metricBlock}>
-            <View style={styles.titleBlock}>
-              <View style={styles.overlineSpacer} />
-              <Text style={styles.startTitle}>Breathhold{'\n'}Exercise</Text>
-            </View>
-            <Text style={styles.meta}>{meta}</Text>
-          </View>
-
-          <Pressable
-              onPress={handlePress}
-              style={({ pressed }) => [styles.playBtnShadow, pressed && styles.pressed]}
-              accessibilityRole="button"
-              accessibilityLabel={doneToday ? 'Try another breath hold' : 'Start your daily breath hold'}
-            >
+      <Pressable
+        onPress={handlePress}
+        accessibilityRole="button"
+        accessibilityLabel={
+          doneToday ? 'Try another breath hold' : 'Start your daily breath hold'
+        }
+        style={({ pressed }) => pressed && styles.pressed}
+      >
+        <View style={styles.mediaShadow}>
+          <View style={styles.media}>
+            <Image
+              source={getBackgroundImageSource('dailyPlan')}
+              style={StyleSheet.absoluteFill}
+              contentFit="cover"
+              contentPosition="center"
+              transition={0}
+              cachePolicy="memory-disk"
+            />
+            <LinearGradient
+              colors={[colors.photoScrim.transparent, colors.photoScrim.medium]}
+              locations={[0.45, 1]}
+              style={StyleSheet.absoluteFill}
+              pointerEvents="none"
+            />
+            <Text style={styles.mediaTitle} pointerEvents="none">
+              Breathhold Exercise
+            </Text>
+            <View style={styles.mediaFooter} pointerEvents="none">
+              <View style={styles.dailyPill}>
+                <Text style={styles.dailyPillText}>Check-in</Text>
+              </View>
               <GlassSurface
                 bare
-                interactive
                 variant="clear"
                 style={styles.playBtn}
                 tintColor={colors.glass.tintOnImage}
                 blurColor={colors.glass.fillOnImage}
                 solidColor={colors.glass.fillOnImage}
               >
-                <MaterialCommunityIcons name="play" size={26} color={colors.primary.blue600} />
+                <MaterialCommunityIcons name="play" size={22} color={colors.text.inverse} />
               </GlassSurface>
-          </Pressable>
+            </View>
+          </View>
         </View>
-      </View>
+
+        <View style={styles.body}>
+          <Text style={styles.title}>Breathhold Exercise</Text>
+          <Text style={styles.meta}>{meta}</Text>
+        </View>
+      </Pressable>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: 24,
-    shadowColor: colors.primary.blue700,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.18,
-    shadowRadius: 18,
-    elevation: 4,
+    gap: spacing.sm,
   },
   pressed: {
-    transform: [{ scale: 0.96 }],
+    transform: [{ scale: 0.98 }],
     opacity: 0.9,
   },
-  card: {
-    minHeight: 176,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.lg,
-    paddingHorizontal: spacing.lg,
-    borderRadius: 24,
+  mediaShadow: {
+    ...card.shadow,
+    borderRadius: 22,
+    backgroundColor: DAILY_PLAN_BACKGROUND_ASSET.fallbackColor,
+  },
+  media: {
+    height: 176,
+    borderRadius: 22,
     overflow: 'hidden',
     backgroundColor: DAILY_PLAN_BACKGROUND_ASSET.fallbackColor,
   },
-  cardContent: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: spacing.md,
-  },
-  metricBlock: {
-    flex: 1,
-  },
-  titleBlock: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    gap: spacing.xs,
-    paddingBottom: spacing.lg,
-  },
-  overlineSpacer: {
-    height: typography.overline.lineHeight,
-  },
-  challengeHeader: {
+  mediaTitle: {
+    ...typography.heading.heading1,
     position: 'absolute',
     top: spacing.md,
-    left: spacing.lg,
-    right: spacing.lg,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    left: spacing.md,
+    right: spacing.md,
+    fontFamily: fonts.semibold,
+    color: colors.text.inverse,
   },
-  challengeIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    transform: [{ translateX: -8 }],
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(12,16,33,0.52)',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.20)',
+  mediaFooter: {
+    position: 'absolute',
+    left: spacing.md,
+    right: spacing.md,
+    bottom: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
   },
   dailyPill: {
     paddingHorizontal: spacing.sm,
@@ -193,33 +160,24 @@ const styles = StyleSheet.create({
     fontFamily: fonts.medium,
     color: colors.text.inverse,
   },
+  body: {
+    paddingTop: spacing.sm,
+    paddingLeft: spacing.sm,
+  },
+  title: {
+    ...typography.heading.heading1,
+    fontFamily: fonts.semibold,
+    color: colors.text.primary,
+  },
   meta: {
     ...typography.label.medium,
-    color: 'rgba(255,255,255,0.78)',
-    position: 'absolute',
-    left: 0,
-    bottom: 0,
-  },
-  startTitle: {
-    ...typography.title.title3,
-    fontFamily: fonts.semibold,
-    fontSize: 22,
-    color: colors.text.inverse,
-    lineHeight: 26,
-  },
-  playBtnShadow: {
-    alignSelf: 'flex-end',
-    borderRadius: 999,
-    shadowColor: colors.primary.blue700,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-    elevation: 4,
+    fontFamily: fonts.medium,
+    color: colors.text.secondary,
   },
   playBtn: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
