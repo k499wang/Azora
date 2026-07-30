@@ -19,16 +19,16 @@ import {
 } from '@shopify/react-native-skia';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
-import { fonts, typography } from '../../../theme/typography';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
+import { chart, chartText } from '../chartTokens';
 
-const CHART_HEIGHT = 290;
-const PAD_LEFT = 8;
-const PAD_RIGHT = 8;
-const PAD_TOP = 12;
-const PAD_BOTTOM = 28;
-const TOP_INSET = 10;
+const CHART_HEIGHT = chart.height;
+const PAD_LEFT = chart.padLeft;
+const PAD_RIGHT = chart.padRight;
+const PAD_TOP = chart.padTop;
+const PAD_BOTTOM = chart.padBottom;
+const TOP_INSET = chart.topInset;
 const SAMPLE_COUNT = 64;
 const CURVE_K = 0.55;
 const REVEAL_DELAY_MS = 650;
@@ -204,6 +204,7 @@ export default function IntentProjectionScreen({
             </Canvas>
           ) : null}
         </View>
+        <Text style={styles.xAxisLabel}>Sessions on Azora</Text>
       </View>
     </OnboardingScreenLayout>
   );
@@ -212,26 +213,11 @@ export default function IntentProjectionScreen({
 const styles = StyleSheet.create({
   chartWrap: {
     width: '100%',
-    gap: spacing.md,
+    gap: chart.gap,
     marginTop: -spacing.xs,
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: chart.horizontalPadding,
   },
-  yAxisLabel: {
-    ...typography.label.small,
-    fontFamily: fonts.semibold,
-    fontSize: 14,
-    color: colors.text.primary,
-    letterSpacing: 0.3,
-    textAlign: 'center',
-  },
-  citation: {
-    ...typography.label.small,
-    fontFamily: fonts.semibold,
-    fontSize: 11,
-    color: colors.text.tertiary,
-    letterSpacing: 0.3,
-    textAlign: 'center',
-    marginTop: -spacing.sm,
-    paddingHorizontal: spacing.md,
-  },
+  yAxisLabel: chartText.heading,
+  citation: chartText.note,
+  xAxisLabel: chartText.axisLabel,
 });

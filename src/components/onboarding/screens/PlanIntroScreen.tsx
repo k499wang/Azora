@@ -1,7 +1,7 @@
 import { Text } from '../../common/Text';
-import { useEffect, useRef } from 'react';
-import { Animated, Easing, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import Svg, { Circle, Defs, Path, RadialGradient, Stop } from 'react-native-svg';
+import CardSurface from '../../common/CardSurface';
 import Icon from '../../common/icons/Icon';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
@@ -26,9 +26,6 @@ const SEGMENT_COLORS = [
   colors.primary.blue400,
   colors.primary.blue300,
 ];
-const SEGMENT_STAGGER_MS = 260;
-const SEGMENT_DURATION_MS = 900;
-
 function polarPoint(angleDegrees: number) {
   const radians = (angleDegrees * Math.PI) / 180;
   return {
@@ -44,24 +41,6 @@ function arcPath(startAngle: number) {
 }
 
 function PlanCelebrationVisual() {
-  const segments = useRef(
-    SEGMENT_START_ANGLES.map(() => new Animated.Value(0)),
-  ).current;
-
-  useEffect(() => {
-    const animations = segments.map((value, index) =>
-      Animated.timing(value, {
-        toValue: 1,
-        delay: index * SEGMENT_STAGGER_MS,
-        duration: SEGMENT_DURATION_MS,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-    );
-    Animated.parallel(animations).start();
-    return () => segments.forEach((value) => value.stopAnimation());
-  }, [segments]);
-
   return (
     <View style={styles.visual}>
       <Svg
@@ -106,42 +85,42 @@ function PlanCelebrationVisual() {
           strokeOpacity={0.55}
           strokeWidth={12}
         />
-      </Svg>
 
-      {SEGMENT_START_ANGLES.map((startAngle, index) => (
-        <Animated.View
-          key={startAngle}
-          pointerEvents="none"
-          style={[
-            StyleSheet.absoluteFill,
-            {
-              opacity: segments[index],
-              transform: [
-                {
-                  rotate: segments[index].interpolate({
-                    inputRange: [0, 1],
-                    outputRange: ['-70deg', '0deg'],
-                  }),
-                },
-              ],
-            },
-          ]}
-        >
-          <Svg width={VISUAL_SIZE} height={VISUAL_SIZE}>
-            <Path
-              d={arcPath(startAngle)}
-              fill="none"
-              stroke={SEGMENT_COLORS[index]}
-              strokeWidth={12}
-              strokeLinecap="round"
-            />
-          </Svg>
-        </Animated.View>
-      ))}
+        {SEGMENT_START_ANGLES.map((startAngle, index) => (
+          <Path
+            key={startAngle}
+            d={arcPath(startAngle)}
+            fill="none"
+            stroke={SEGMENT_COLORS[index]}
+            strokeWidth={12}
+            strokeLinecap="round"
+          />
+        ))}
+      </Svg>
 
       <View style={styles.centerDisc} />
       <View style={styles.centerIcon}>
         <Icon name="sparkle" size={64} color={colors.primary.blue600} />
+      </View>
+    </View>
+  );
+}
+
+function PersonalizedPlanCard() {
+  return (
+    <View style={styles.planCardWrap}>
+      <CardSurface
+        containerStyle={styles.planCardContainer}
+        style={styles.planCard}
+      >
+        <Text style={styles.planCardTitle}>Personalized to your goals</Text>
+        <Text style={styles.planCardBody}>
+          We’ll use your answers to tailor your plan, targets, and
+          recommendations.
+        </Text>
+      </CardSurface>
+      <View style={styles.planCardBadge}>
+        <Icon name="profile" size={24} color={colors.primary.blue600} />
       </View>
     </View>
   );
@@ -164,9 +143,7 @@ export default function PlanIntroScreen({
         <PlanCelebrationVisual />
         <View style={styles.copy}>
           <Text style={styles.headline}>Time to generate your custom plan!</Text>
-          <Text style={styles.subhead}>
-            Built around your needs, from everything you just shared.
-          </Text>
+          <PersonalizedPlanCard />
         </View>
       </View>
     </OnboardingScreenLayout>
@@ -179,7 +156,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.md,
-    paddingBottom: spacing.xl,
+    paddingBottom: spacing['2xl'],
   },
   visual: {
     width: VISUAL_SIZE,
@@ -211,23 +188,56 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   copy: {
+    alignSelf: 'stretch',
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: spacing.md,
     paddingHorizontal: spacing.lg,
   },
   headline: {
     fontFamily: fonts.semibold,
-    fontWeight: '600',
-    fontSize: 36,
-    lineHeight: 42,
-    letterSpacing: -0.8,
+    fontWeight: '500',
+    fontSize: 34,
+    lineHeight: 40,
+    letterSpacing: -0.6,
     color: colors.text.primary,
     textAlign: 'center',
   },
-  subhead: {
+  planCardWrap: {
+    alignSelf: 'stretch',
+    position: 'relative',
+  },
+  planCardContainer: {
+    width: '100%',
+    marginTop: spacing.lg,
+  },
+  planCard: {
+    paddingTop: spacing['2xl'],
+    paddingBottom: spacing.lg,
+    paddingHorizontal: spacing.lg,
+  },
+  planCardBadge: {
+    position: 'absolute',
+    top: 0,
+    left: '50%',
+    marginLeft: -24,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primary.blue100,
+    borderWidth: 4,
+    borderColor: colors.background.primary,
+  },
+  planCardTitle: {
+    ...typography.heading.heading1,
+    color: colors.text.primary,
+    textAlign: 'center',
+  },
+  planCardBody: {
     ...typography.body.medium,
     color: colors.text.secondary,
     textAlign: 'center',
-    paddingHorizontal: spacing.sm,
+    marginTop: spacing.sm,
   },
 });

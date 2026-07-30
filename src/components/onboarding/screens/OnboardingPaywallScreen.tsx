@@ -18,6 +18,7 @@ import { computeAnnualSavings } from '../../paywall/PlanCard';
 import { PaywallChoosePlanStep } from '../paywall/PaywallChoosePlanStep';
 import { PaywallFreeTrialHeroStep } from '../paywall/PaywallFreeTrialHeroStep';
 import { PaywallTrialStep } from '../paywall/PaywallTrialStep';
+import { PaywallFooterLinks } from '../../paywall/PaywallFooterLinks';
 
 const STEP_COUNT = 3;
 const STEP_SLIDE_DISTANCE = 40;
@@ -420,20 +421,11 @@ export default function OnboardingPaywallScreen({
                 loading={isPurchasing || isCompleting}
                 disabled={isLoading || selectedPackage == null || isRestoring || isCompleting}
               />
-              <Pressable
-                accessibilityRole="button"
-                disabled={isBusy}
-                onPress={onRestore}
-                style={({ pressed }) => [
-                  styles.restoreButton,
-                  pressed && styles.subtlePressed,
-                  isBusy && styles.disabled,
-                ]}
-              >
-                <Text style={styles.restoreText}>
-                  {isRestoring ? 'Restoring...' : 'Restore Purchase'}
-                </Text>
-              </Pressable>
+              <PaywallFooterLinks
+                isRestoring={isRestoring}
+                restoreDisabled={isBusy}
+                onRestore={onRestore}
+              />
               {onContinueWithoutPro != null ? (
                 <Pressable
                   accessibilityRole="button"
@@ -534,17 +526,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semibold,
     fontWeight: '500',
     color: colors.text.primary,
-  },
-  restoreButton: {
-    alignSelf: 'center',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-  },
-  restoreText: {
-    ...typography.button.medium,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    color: colors.neutral[0],
   },
   errorBlock: {
     alignItems: 'center',

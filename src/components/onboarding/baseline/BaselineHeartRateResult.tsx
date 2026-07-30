@@ -5,11 +5,13 @@ import * as Haptics from 'expo-haptics';
 import { Canvas, Circle, Path, Skia } from '@shopify/react-native-skia';
 import {
   Easing as RNREasing,
+  cancelAnimation,
   runOnJS,
   useAnimatedReaction,
   useDerivedValue,
   useSharedValue,
   withTiming,
+  type SharedValue,
 } from 'react-native-reanimated';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
@@ -48,6 +50,7 @@ const GAUGE_SWEEP = 270;
 const GAUGE_TICK_INNER = GAUGE_R - GAUGE_STROKE / 2 - 6;
 const GAUGE_TICK_OUTER = GAUGE_R - GAUGE_STROKE / 2 - 2;
 const GAUGE_INNER_R = GAUGE_R - GAUGE_STROKE / 2 - 14;
+const MIN_BPM_CALIBRATION_MS = 1600;
 
 function gaugeTickPath(angleDeg: number) {
   const rad = (angleDeg * Math.PI) / 180;
@@ -87,6 +90,31 @@ function toSex(gender: GenderOption['id'] | null): RestingHeartRateSex {
   return 'unspecified';
 }
 
+function AnimatedBpmValue({ progress }: { progress: SharedValue<number> }) {
+  const [displayedBpm, setDisplayedBpm] = useState(MIN_GAUGE_BPM);
+
+  // Keep numeric ticks local so they do not re-render the Skia gauge while its
+  // arc is animating. Both visuals still read from the same shared value.
+  useAnimatedReaction(
+    () =>
+      Math.round(
+        MIN_GAUGE_BPM + (progress.value / 100) * (MAX_GAUGE_BPM - MIN_GAUGE_BPM),
+      ),
+    (bpm, previous) => {
+      if (bpm !== previous) {
+        runOnJS(setDisplayedBpm)(bpm);
+      }
+    },
+  );
+
+  return (
+    <View style={styles.gaugeValueRow}>
+      <Text style={styles.gaugeValue}>{displayedBpm}</Text>
+      <Text style={styles.gaugeValueMax}>bpm</Text>
+    </View>
+  );
+}
+
 export default function BaselineHeartRateResult({
   result,
   age,
@@ -102,7 +130,6 @@ export default function BaselineHeartRateResult({
   );
 
   const [isCalibrating, setIsCalibrating] = useState(true);
-  const [displayedBpm, setDisplayedBpm] = useState(0);
   const doneEnter = useRef(new Animated.Value(0)).current;
   const arcProgress = useSharedValue(0);
   const arcPath = useDerivedValue(() => {
@@ -113,20 +140,6 @@ export default function BaselineHeartRateResult({
     }
     return p;
   });
-
-  // The counter reads off the same shared value as the ring, so both stay on the
-  // UI thread and React only re-renders when the whole bpm changes.
-  useAnimatedReaction(
-    () =>
-      Math.round(
-        MIN_GAUGE_BPM + (arcProgress.value / 100) * (MAX_GAUGE_BPM - MIN_GAUGE_BPM),
-      ),
-    (bpm, previous) => {
-      if (bpm !== previous) {
-        runOnJS(setDisplayedBpm)(bpm);
-      }
-    },
-  );
 
   const finishCalibration = useCallback(() => {
     doneEnter.setValue(0);
@@ -153,14 +166,19 @@ export default function BaselineHeartRateResult({
     arcProgress.value = withTiming(
       toFill,
       {
-        duration: calibrationDurationMs(fromFill, toFill),
+        duration: Math.max(
+          MIN_BPM_CALIBRATION_MS,
+          calibrationDurationMs(fromFill, toFill),
+        ),
         easing: RNREasing.inOut(RNREasing.quad),
       },
       (finished) => {
         if (finished) runOnJS(finishCalibration)();
       },
     );
-  }, [context, avgBpm, arcProgress, finishCalibration]);
+
+    return () => cancelAnimation(arcProgress);
+  }, [avgBpm, arcProgress, finishCalibration]);
 
   const bandColor = BAND_COLOR[context.band];
   const revealStyle = {
@@ -248,10 +266,7 @@ export default function BaselineHeartRateResult({
           </Canvas>
 
           <View style={styles.gaugeCenter} pointerEvents="none">
-            <View style={styles.gaugeValueRow}>
-              <Text style={styles.gaugeValue}>{displayedBpm}</Text>
-              <Text style={styles.gaugeValueMax}>bpm</Text>
-            </View>
+            <AnimatedBpmValue progress={arcProgress} />
           </View>
         </View>
 
