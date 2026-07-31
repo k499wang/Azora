@@ -1,9 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  applyPlanTimeOverrides,
   buildOnboardingPlan,
   formatPlanTime,
   formatRetestDate,
+  fromClockString,
   projectHold,
   sessionTimeFor,
   toClockString,
@@ -225,6 +227,46 @@ test('clock strings are zero-padded twenty-four hour', () => {
   assert.equal(toClockString(21 * 60 + 30), '21:30');
   assert.equal(toClockString(8 * 60), '08:00');
   assert.equal(toClockString(0), '00:00');
+});
+
+test('clock strings parse back to minutes, rejecting invalid times', () => {
+  assert.equal(fromClockString('21:30'), 21 * 60 + 30);
+  assert.equal(fromClockString('00:00'), 0);
+  assert.equal(fromClockString('24:00'), null);
+  assert.equal(fromClockString('7:05'), null);
+  assert.equal(fromClockString('nope'), null);
+});
+
+test('overridden action times replace the defaults and re-sort the day', () => {
+  const plan = buildOnboardingPlan(baseInputs);
+  const overridden = applyPlanTimeOverrides(plan, {
+    session: 6 * 60,
+    checkIn: 22 * 60,
+  });
+
+  assert.equal(actionById(overridden, 'session').minutesFromMidnight, 6 * 60);
+  assert.equal(actionById(overridden, 'checkIn').minutesFromMidnight, 22 * 60);
+  assert.deepEqual(
+    overridden.actions.map((action) => action.id),
+    ['session', 'handPicked', 'checkIn'],
+  );
+  assert.equal(
+    actionById(overridden, 'handPicked').minutesFromMidnight,
+    actionById(plan, 'handPicked').minutesFromMidnight,
+  );
+});
+
+test('applying overrides leaves the source plan untouched', () => {
+  const plan = buildOnboardingPlan(baseInputs);
+  const sessionAt = actionById(plan, 'session').minutesFromMidnight;
+  applyPlanTimeOverrides(plan, { session: 6 * 60 });
+
+  assert.equal(actionById(plan, 'session').minutesFromMidnight, sessionAt);
+});
+
+test('an empty override set keeps the plan as built', () => {
+  const plan = buildOnboardingPlan(baseInputs);
+  assert.deepEqual(applyPlanTimeOverrides(plan, {}), plan);
 });
 
 test('times format in twelve-hour clock', () => {

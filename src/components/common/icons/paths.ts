@@ -306,6 +306,11 @@ export const ICON_PATHS = {
     <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8" fill="none"/>
   `,
 
+  pencil: `
+    <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M4 20l.7-3.9L15 5.8a2.4 2.4 0 0 1 3.4 3.4L8.1 19.5 4 20z"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M14.2 6.6l3.4 3.4"/>
+  `,
+
   'play-triangle': `
     <path fill="currentColor" d="M8 5.5a1 1 0 0 1 1.5-.87l9 5.5a1 1 0 0 1 0 1.74l-9 5.5A1 1 0 0 1 8 16.5v-11z"/>
   `,

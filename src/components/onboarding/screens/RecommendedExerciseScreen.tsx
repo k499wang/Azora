@@ -1,8 +1,10 @@
 import { Text } from '../../common/Text';
 import { useMemo } from 'react';
-import { StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 import CardSurface from '../../common/CardSurface';
+import Icon from '../../common/icons/Icon';
 import MindMapRadar from '../MindMapRadar';
+import { useTimePickerSheet } from '../../common/useTimePickerSheet';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
@@ -12,7 +14,10 @@ import TECHNIQUES from '../../../features/exercise/guidedBreathing/techniques';
 import {
   formatPlanTime,
   formatRetestDate,
+  fromClockString,
+  toClockString,
   type PlanAction,
+  type PlanActionId,
   type OnboardingPlan,
 } from '../../../lib/onboardingPlan';
 import type { MindMapScore } from '../../../lib/onboardingScores';
@@ -24,6 +29,10 @@ interface RecommendedExerciseScreenProps {
   growthArea: MindMapScore;
   stepIndex: number;
   stepCount: number;
+  onChangeActionTime: (
+    actionId: PlanActionId,
+    minutesFromMidnight: number,
+  ) => void;
   onContinue: () => void;
   onBack: () => void;
 }
@@ -40,6 +49,7 @@ export default function RecommendedExerciseScreen({
   growthArea,
   stepIndex,
   stepCount,
+  onChangeActionTime,
   onContinue,
   onBack,
 }: RecommendedExerciseScreenProps) {
@@ -106,7 +116,11 @@ export default function RecommendedExerciseScreen({
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Azora’s plan</Text>
           {plan.actions.map((action) => (
-            <ActionCard key={action.id} action={action} />
+            <ActionCard
+              key={action.id}
+              action={action}
+              onChangeTime={(minutes) => onChangeActionTime(action.id, minutes)}
+            />
           ))}
         </View>
       </View>
@@ -114,13 +128,19 @@ export default function RecommendedExerciseScreen({
   );
 }
 
-function ActionCard({ action }: { action: PlanAction }) {
+function ActionCard({
+  action,
+  onChangeTime,
+}: {
+  action: PlanAction;
+  onChangeTime: (minutesFromMidnight: number) => void;
+}) {
   const technique = techniqueName(action.techniqueId);
   const title =
     action.id === 'session'
       ? technique ?? action.title
       : action.id === 'handPicked'
-        ? 'Azora’s hand-picked exercise'
+        ? 'Azora’s exercise'
         : action.title;
   const body =
     action.id === 'session'
@@ -128,18 +148,39 @@ function ActionCard({ action }: { action: PlanAction }) {
       : action.id === 'handPicked'
         ? 'Based on your data, Azora planned a different exercise for each day of your custom plan.'
         : 'A short hold to track how your breathing is changing.';
+  const displayTime = formatPlanTime(action.minutesFromMidnight);
+
+  const { open, sheet } = useTimePickerSheet({
+    value: toClockString(action.minutesFromMidnight),
+    onChange: (next) => {
+      const minutes = fromClockString(next);
+      if (minutes != null) onChangeTime(minutes);
+    },
+    title: 'Set time',
+  });
 
   return (
     <CardSurface style={styles.actionCard}>
       <View style={styles.actionHeader}>
         <Text style={styles.actionRole}>{title}</Text>
-        <View style={styles.actionPill}>
-          <Text style={styles.actionPillText}>
-            {formatPlanTime(action.minutesFromMidnight)}
-          </Text>
-        </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Change time for ${title}, currently ${displayTime}`}
+          onPress={open}
+          hitSlop={8}
+          style={({ pressed }) => [
+            styles.actionTime,
+            pressed && styles.actionTimePressed,
+          ]}
+        >
+          <View style={styles.actionPill}>
+            <Text style={styles.actionPillText}>{displayTime}</Text>
+          </View>
+          <Icon name="pencil" size={16} color={colors.primary.blue600} />
+        </Pressable>
       </View>
       <Text style={styles.actionBody}>{body}</Text>
+      {sheet}
     </CardSurface>
   );
 }
@@ -191,6 +232,14 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: colors.primary.blue600,
     flexShrink: 1,
+  },
+  actionTime: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  actionTimePressed: {
+    opacity: 0.6,
   },
   actionPill: {
     borderRadius: 8,
