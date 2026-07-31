@@ -660,7 +660,7 @@ export default function BreathHoldScreen({
         <View style={styles.lungIcon}>
           <MaterialCommunityIcons
             name="lungs"
-            size={116}
+            size={170}
             color={colors.primary.blue600}
           />
         </View>
