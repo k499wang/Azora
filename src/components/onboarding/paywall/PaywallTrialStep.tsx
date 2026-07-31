@@ -32,7 +32,7 @@ const testimonials: Array<{
     title: 'The stress does not stack up now',
     quote:
       'I used to carry every bad meeting into the evening. One reset at my desk and my heart rate is back down before I get home.',
-    author: 'Daniel Koch',
+    author: 'Jackie Koch',
     avatar: 'testimonialDaniel',
   },
   {
