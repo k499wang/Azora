@@ -7,10 +7,13 @@ import { useRunOnJS } from 'react-native-worklets-core';
 import type {
   FingerPlacementState,
   IbiSample,
-  LivePpgSignalSample,
   PpgFrameSample,
   SignalStatus,
 } from '../lib/heartRate/types';
+import {
+  createLiveSignalSource,
+  type LiveSignalSource,
+} from '../lib/heartRate/liveSignalSource';
 import { heartRatePlugin } from '../lib/heartRate/heartRatePlugin';
 import { HeartRateManager } from '../lib/heartRate/heartRateManager';
 import { isPpgFrameSample } from '../lib/heartRate/isPpgFrameSample';
@@ -52,7 +55,7 @@ interface UseLivePulseReturn {
   currentBpm: number | null;
   isBpmReady: boolean;
   beatTick: number;
-  liveSignalSamples: LivePpgSignalSample[];
+  liveSignalSource: LiveSignalSource;
   device: ReturnType<typeof useHeartRateCamera>['device'];
   format: ReturnType<typeof useHeartRateCamera>['format'];
   frameProcessor: ReturnType<typeof useFrameProcessor>;
@@ -92,7 +95,7 @@ export function useLivePulse(
   const [currentBpm, setCurrentBpm] = useState<number | null>(null);
   const [isBpmReady, setIsBpmReady] = useState(false);
   const [beatTick, setBeatTick] = useState(0);
-  const [liveSignalSamples, setLiveSignalSamples] = useState<LivePpgSignalSample[]>([]);
+  const [liveSignalSource] = useState(createLiveSignalSource);
 
   const activeRef = useRef(false);
   const managerRef = useRef(new HeartRateManager({
@@ -143,7 +146,8 @@ export function useLivePulse(
     lastPublishedSignalTimestampRef.current = null;
     bpmReadyRef.current = false;
     managerRef.current.clearLiveSignalSamples();
-  }, []);
+    liveSignalSource.clear();
+  }, [liveSignalSource]);
 
   const resetAllStreamState = useCallback(() => {
     resetPulseRuntimeState();
@@ -163,7 +167,6 @@ export function useLivePulse(
     setCurrentBpm(null);
     setIsBpmReady(false);
     setBeatTick(0);
-    setLiveSignalSamples([]);
     fingerPlacementRef.current = 'no_finger';
     setFingerPlacement('no_finger');
     signalStatusRef.current = 'no_finger';
@@ -181,7 +184,6 @@ export function useLivePulse(
     setCurrentBpm(null);
     setIsBpmReady(false);
     setBeatTick(0);
-    setLiveSignalSamples([]);
     fingerPlacementRef.current = 'no_finger';
     setFingerPlacement('no_finger');
     signalStatusRef.current = 'no_finger';
@@ -194,7 +196,6 @@ export function useLivePulse(
     resetAllStreamState();
     setCurrentBpm(null);
     setIsBpmReady(false);
-    setLiveSignalSamples([]);
     fingerPlacementRef.current = 'no_finger';
     setFingerPlacement('no_finger');
     signalStatusRef.current = 'no_finger';
@@ -319,7 +320,7 @@ export function useLivePulse(
           latestSignalTimestamp !== lastPublishedSignalTimestampRef.current
         ) {
           lastPublishedSignalTimestampRef.current = latestSignalTimestamp;
-          setLiveSignalSamples(managerRef.current.getLiveSignalSamples());
+          liveSignalSource.publish(managerRef.current.getLiveSignalSamples());
         }
       }
 
@@ -335,7 +336,7 @@ export function useLivePulse(
         setIsBpmReady(false);
       }
     },
-    [publicationPolicy, startupPolicy],
+    [liveSignalSource, publicationPolicy, startupPolicy],
   );
 
   const beginMeasurementWindow = useCallback(() => {
@@ -422,7 +423,7 @@ export function useLivePulse(
     currentBpm,
     isBpmReady,
     beatTick,
-    liveSignalSamples,
+    liveSignalSource,
     device,
     format,
     frameProcessor,

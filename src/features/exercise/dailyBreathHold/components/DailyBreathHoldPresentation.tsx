@@ -9,9 +9,9 @@ import { LiveSignalGraph } from '../../../../components/heartRate/LiveSignalGrap
 import { DailyBreathHoldGuidance } from './DailyBreathHoldGuidance';
 import type {
   FingerPlacementState,
-  LivePpgSignalSample,
   SignalStatus,
 } from '../../../../lib/heartRate/types';
+import type { LiveSignalSource } from '../../../../lib/heartRate/liveSignalSource';
 import {
   isBreathHoldBreathingPhase,
   type DailyBreathHoldPhase,
@@ -46,7 +46,7 @@ interface DailyBreathHoldHeartRatePresentation {
   active: boolean;
   bpm: number | null;
   beatTick: number;
-  samples: LivePpgSignalSample[];
+  signalSource: LiveSignalSource;
   fingerPlacement: FingerPlacementState;
   signalStatus: SignalStatus;
   camera?: DailyBreathHoldCamera;
@@ -142,7 +142,7 @@ export const DailyBreathHoldPresentation = forwardRef<
       {heartRate.enabled && heartRate.active ? (
         <View style={styles.liveSignalGraphSlot} pointerEvents="none">
           <LiveSignalGraph
-            samples={heartRate.samples}
+            signalSource={heartRate.signalSource}
             fingerPlacement={heartRate.fingerPlacement}
             bpm={heartRate.bpm}
             beatTick={heartRate.beatTick}
