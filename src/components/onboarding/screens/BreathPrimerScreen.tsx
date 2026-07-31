@@ -261,7 +261,7 @@ export default function BreathPrimerScreen({
     >
       <View style={styles.introStage}>
         <View style={styles.introIcon}>
-          <Icon name="breath-profile" size={200} color={colors.primary.blue600} />
+          <Icon name="breath-profile" size={260} color={colors.primary.blue600} />
         </View>
         <View style={styles.introCopy}>
           <Text style={styles.introHeadline}>
