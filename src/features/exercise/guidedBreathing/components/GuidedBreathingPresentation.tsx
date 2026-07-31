@@ -16,7 +16,6 @@ import type {
   SignalStatus,
 } from '../../../../lib/heartRate/types';
 import type { ExerciseDarkTheme } from '../../../../theme/exerciseDarkThemes';
-import type { BreathEnvelope } from '../../shared/breathEnvelope';
 import { colors } from '../../../../theme/colors';
 import { fonts } from '../../../../theme/typography';
 
@@ -50,7 +49,6 @@ interface GuidedBreathingPresentationProps {
   technique: BreathingTechnique;
   theme: ExerciseDarkTheme;
   heartRate: GuidedBreathingHeartRatePresentation;
-  envelope?: BreathEnvelope;
 }
 
 const PHASE_LABELS: Record<GuidedBreathingPhase, string> = {
@@ -68,7 +66,7 @@ export const GuidedBreathingPresentation = forwardRef<
   BreathingCircleRef,
   GuidedBreathingPresentationProps
 >(function GuidedBreathingPresentation(
-  { phase, technique, theme, heartRate, envelope },
+  { phase, technique, theme, heartRate },
   circleRef,
 ) {
   const isIdle = phase === 'idle';
@@ -168,7 +166,6 @@ export const GuidedBreathingPresentation = forwardRef<
             ref={circleRef}
             cameraSlot={cameraSlot}
             beatTick={heartRate.beatTick}
-            envelope={envelope}
             themeColors={{
               outline: theme.circleOutline,
               outlineOpacity: theme.circleOutlineOpacity,
