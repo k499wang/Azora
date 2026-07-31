@@ -1,10 +1,8 @@
 import { Text } from '../components/common/Text';
-import { useCallback, useRef, useState } from 'react';
-import { Alert, Dimensions, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useCallback } from 'react';
+import { Alert, Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
 import { Background2066 } from '../components/common/Background2066';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import ViewShot from 'react-native-view-shot';
-import * as Sharing from 'expo-sharing';
 
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -13,7 +11,6 @@ import { typography, fonts } from '../theme/typography';
 import { spacing, padding, margin } from '../theme/spacing';
 import { card } from '../theme/card';
 import HeartRateStatsSection from '../components/heartRate/HeartRateStatsSection';
-import ShareCard from '../components/exercise/ShareCard';
 import ScoreRing from '../components/exercise/ScoreRing';
 import GlassIconButton from '../components/common/GlassIconButton';
 import type { DailyResultScreenProps } from '../app/navigation';
@@ -30,9 +27,8 @@ import { FeatureKey } from '../services/subscriptions/featureAccess';
 import { useAuthStore } from '../stores/authStore';
 import { useProfileQuery } from '../queries/profile/useProfileQuery';
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-const SCREEN_WIDTH = Dimensions.get('window').width;
+const APP_STORE_URL =
+  'https://apps.apple.com/us/app/azora-heart-rate-breathing/id6763631574';
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
@@ -64,27 +60,18 @@ export default function ShareableResultScreen({
   const lungAgeTone = lungAgeToneMeta(lungAge.deltaYears);
   const advancedStatsLocked =
     !advancedStatsAccess.allowed && !advancedStatsAccess.isLoading;
-  const artifactRef = useRef<ViewShot>(null);
-  const [shareArtifactReady, setShareArtifactReady] = useState(false);
   const handleShare = useCallback(async () => {
-    if (!shareArtifactReady) return;
     try {
-      const node = artifactRef.current;
-      if (node?.capture == null) return;
-      const uri = await node.capture();
-      const available = await Sharing.isAvailableAsync();
-      if (!available) {
-        Alert.alert('Sharing unavailable', 'This device does not support sharing.');
-        return;
-      }
-      await Sharing.shareAsync(uri, {
-        mimeType: 'image/png',
-        dialogTitle: 'Share your result',
+      const message = benchmark
+        ? `My lung age is ${lungAge.years}. I am in the top ${benchmark.topPercent}% of people my age. Can you beat me?\n\n${APP_STORE_URL}`
+        : `My lung age is ${lungAge.years}. Can you beat me?\n\n${APP_STORE_URL}`;
+      await Share.share({
+        message,
       });
     } catch {
       Alert.alert('Could not share', 'Please try again.');
     }
-  }, [shareArtifactReady]);
+  }, [benchmark, lungAge.years]);
   const showAdvancedStatsPaywall = useCallback(() => {
     trackFeatureGateHit({
       feature: FeatureKey.AdvancedStats,
@@ -168,8 +155,7 @@ export default function ShareableResultScreen({
           </View>
 
           <Pressable
-            disabled={!shareArtifactReady}
-            style={[styles.shareCta, !shareArtifactReady && styles.shareDisabled]}
+            style={styles.shareCta}
             onPress={handleShare}
           >
             <MaterialCommunityIcons
@@ -189,7 +175,6 @@ export default function ShareableResultScreen({
           <MaterialCommunityIcons name="close" size={22} color={colors.text.secondary} />
         </GlassIconButton>
         <GlassIconButton
-          disabled={!shareArtifactReady}
           style={[styles.shareButton, { top: insets.top + padding.screen.vertical }]}
           onPress={handleShare}
         >
@@ -199,26 +184,6 @@ export default function ShareableResultScreen({
             color={colors.primary.blue600}
           />
         </GlassIconButton>
-
-        {/* Off-screen share artifact */}
-        <View
-          pointerEvents="none"
-          style={styles.offscreenArtifactWrap}
-          collapsable={false}
-        >
-          <ViewShot
-            ref={artifactRef}
-            options={{ format: 'png', quality: 0.95, width: 1080, height: 1080, result: 'tmpfile' }}
-          >
-            <ShareCard
-              width={SCREEN_WIDTH}
-              lungAgeYears={lungAge.years}
-              comparisonLabel={comparisonLabel}
-              ringColors={lungAgeTone.ringColors}
-              onBackgroundDisplay={() => setShareArtifactReady(true)}
-            />
-          </ViewShot>
-        </View>
       </View>
     </View>
   );
@@ -245,12 +210,6 @@ const styles = StyleSheet.create({
     paddingBottom: spacing['5xl'],
   },
 
-  offscreenArtifactWrap: {
-    position: 'absolute',
-    left: -10000,
-    top: 0,
-    opacity: 0,
-  },
   header: {
     paddingHorizontal: padding.screen.horizontal,
     paddingTop: padding.screen.vertical,
@@ -300,9 +259,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semibold,
     fontWeight: '500',
     color: colors.text.inverse,
-  },
-  shareDisabled: {
-    opacity: 0.5,
   },
   statsSection: {
     marginTop: margin.resultSection,

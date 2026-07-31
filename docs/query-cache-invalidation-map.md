@@ -24,6 +24,7 @@ The most common bug pattern with TanStack Query (and the one AI tools repeatedly
 | `getHeartRateSessionDetailQueryKey` | `src/queries/tracking/useHeartRateSessionDetailQuery.ts` | `heart_rate_sessions[id]` | Per-session key. |
 | `getUserEntitlementQueryKey` | `src/queries/subscriptions/useUserEntitlementQuery.ts` | Entitlement service (RevenueCat + Supabase) | |
 | `getNotificationPreferencesQueryKey` | `src/queries/notifications/useNotificationPreferencesQuery.ts` | Notification preferences | |
+| `getDailyPlanScheduleQueryKey` | `src/queries/dailyPlan/useDailyPlanScheduleQuery.ts` | `user_preferences.daily_plan_schedule` | Device-local display times; independent of notifications. |
 
 ---
 
@@ -41,6 +42,7 @@ When adding a mutation, find every field it writes, then look up every query abo
 | `useCompleteBreathingSessionMutation` | `breathing_sessions`, `daily_activity` for `localDate` | `HomeStats` user prefix, `DailyFeatureUsage(userId, localDate)`, `ProfileSummary` |
 | `useCompleteHeartRateSessionMutation` | `heart_rate_sessions`, `heart_rate_samples`, `heart_rate_ibi_samples`, `daily_activity` for `usageDate` | `HomeStats` user prefix, `HeartRateStats`, `DailyFeatureUsage(userId, usageDate)`, `ProfileSummary` |
 | `useUpdateNotificationPreferencesMutation` | notification preferences | `NotificationPreferences` |
+| `useUpdateDailyPlanScheduleMutation` | `user_preferences.daily_plan_schedule` | `DailyPlanSchedule` (uses `setQueryData`, then exact invalidation) |
 | `useSaveOnboardingSurveyMutation` | `profiles.acquisition_source` | Nothing — no query reads this column; it exists for analysis only. |
 
 ---

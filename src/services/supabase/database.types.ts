@@ -966,6 +966,7 @@ export type Database = {
       user_preferences: {
         Row: {
           created_at: string
+          daily_plan_schedule: Json
           notification_preferences: Json
           privacy_settings: Json
           units: string
@@ -974,6 +975,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          daily_plan_schedule?: Json
           notification_preferences?: Json
           privacy_settings?: Json
           units?: string
@@ -982,6 +984,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          daily_plan_schedule?: Json
           notification_preferences?: Json
           privacy_settings?: Json
           units?: string

@@ -27,6 +27,8 @@ import { deriveHoldStats } from '../lib/holdStats';
 import type { HomeScreenProps } from '../app/navigation';
 import { useHomeStatsQuery } from '../queries/tracking/useHomeStatsQuery';
 import { useAuthStore } from '../stores/authStore';
+import { useDailyPlanScheduleQuery } from '../queries/dailyPlan/useDailyPlanScheduleQuery';
+import { DEFAULT_DAILY_PLAN_SCHEDULE } from '../services/dailyPlan/types';
 import { PaywallPlacement } from '../services/paywall';
 import { FeatureKey } from '../services/subscriptions/featureAccess';
 import type {
@@ -75,6 +77,9 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const { width: windowWidth } = useWindowDimensions();
   const user = useAuthStore((state) => state.user);
   const profileSummaryQuery = useProfileSummaryQuery(user?.id ?? null);
+  const dailyPlanScheduleQuery = useDailyPlanScheduleQuery(user?.id ?? null);
+  const dailyPlanSchedule =
+    dailyPlanScheduleQuery.data ?? DEFAULT_DAILY_PLAN_SCHEDULE;
   const displayName = profileSummaryQuery.data?.profile?.displayName ?? null;
   const dailyExerciseAccess = useFeatureAccess(FeatureKey.DailyExercise);
   const recommendedTechnique = useRecommendedTechnique(user?.id ?? null);
@@ -240,6 +245,8 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           <TodaysDailiesSection
             technique={recommendedTechnique.technique}
             techniqueLoading={recommendedTechnique.isLoading}
+            sessionTime={dailyPlanSchedule.actions.session}
+            breathHoldTime={dailyPlanSchedule.actions.checkIn}
             guidedExerciseCompleted={guidedExerciseCompleted}
             breathHoldCompleted={breathHoldCompleted}
             exerciseAccessAllowed={
