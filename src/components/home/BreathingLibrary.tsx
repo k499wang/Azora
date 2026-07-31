@@ -30,6 +30,25 @@ const CATEGORY_CONFIG = {
   balance: { label: 'Balance', color: colors.primary.blue600, bg: colors.primary.blue100 },
 } as const;
 
+type ExerciseGroupId = 'sleep-calm' | 'mental-reset' | 'focus-energy';
+
+const CATEGORY_GROUP: Record<BreathingTechnique['category'], ExerciseGroupId> = {
+  sleep: 'sleep-calm',
+  calm: 'sleep-calm',
+  balance: 'mental-reset',
+  focus: 'focus-energy',
+  energy: 'focus-energy',
+};
+
+const EXERCISE_GROUPS: ReadonlyArray<{
+  id: ExerciseGroupId;
+  title: string;
+}> = [
+  { id: 'sleep-calm', title: 'Sleep & Calm' },
+  { id: 'focus-energy', title: 'Focus & Energy' },
+  { id: 'mental-reset', title: 'Mental Reset' },
+];
+
 function formatPattern(p: BreathingTechnique['pattern']) {
   return [p.inhale, p.holdIn, p.exhale, p.holdOut].filter((v) => v > 0).join('-');
 }
@@ -148,27 +167,42 @@ export default function BreathingLibrary() {
     return [recommended, ...TECHNIQUES.filter((t) => t.id !== recommendedTechniqueId)];
   }, [recommendedTechniqueId]);
 
+  const exerciseGroups = useMemo(
+    () =>
+      EXERCISE_GROUPS.map((group) => ({
+        ...group,
+        techniques: orderedTechniques.filter(
+          (technique) => CATEGORY_GROUP[technique.category] === group.id,
+        ),
+      })),
+    [orderedTechniques],
+  );
+
   return (
     <View style={styles.section}>
-      <View style={styles.headerWrap}>
-        <SectionHeader title="Breathing Exercises" />
-      </View>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-        decelerationRate="fast"
-        snapToInterval={CARD_WIDTH + spacing.xs * 2}
-      >
-        {orderedTechniques.map((t) => (
-          <TechniqueCard
-            key={t.id}
-            technique={t}
-            recommended={t.id === recommendedTechniqueId}
-            exerciseAccess={exerciseAccess}
-          />
-        ))}
-      </ScrollView>
+      {exerciseGroups.map((group) => (
+        <View key={group.id} style={styles.exerciseGroup}>
+          <View style={styles.headerWrap}>
+            <SectionHeader title={group.title} />
+          </View>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.scrollContent}
+            decelerationRate="fast"
+            snapToInterval={CARD_WIDTH + spacing.xs * 2}
+          >
+            {group.techniques.map((technique) => (
+              <TechniqueCard
+                key={technique.id}
+                technique={technique}
+                recommended={technique.id === recommendedTechniqueId}
+                exerciseAccess={exerciseAccess}
+              />
+            ))}
+          </ScrollView>
+        </View>
+      ))}
     </View>
   );
 }
@@ -178,6 +212,9 @@ const CARD_HEIGHT = 288;
 
 const styles = StyleSheet.create({
   section: {
+    gap: spacing.lg,
+  },
+  exerciseGroup: {
     gap: spacing.md,
   },
   headerWrap: {
@@ -185,7 +222,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: padding.screen.horizontal - spacing.xs,
-    paddingVertical: spacing.sm,
+    paddingBottom: spacing.sm,
   },
   cardWrapper: {
     paddingHorizontal: spacing.xs,

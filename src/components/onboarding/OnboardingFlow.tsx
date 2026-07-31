@@ -11,6 +11,7 @@ import IntentQuestionScreen from './screens/IntentQuestionScreen';
 import IntentReflectionScreen from './screens/IntentReflectionScreen';
 import IntentProjectionScreen from './screens/IntentProjectionScreen';
 import BrainScienceScreen from './screens/BrainScienceScreen';
+import ModernBreathingScreen from './screens/ModernBreathingScreen';
 import BreathPrimerScreen from './screens/BreathPrimerScreen';
 import AgreementScreen, {
   AGREEMENT_STATEMENTS,
@@ -129,6 +130,9 @@ const STEP_ORDER: OnboardingStep[] = [
   'intent',
   'intentReflection',
   'intentProjection',
+  'brainScience',
+  'modernBreathing',
+  'breathPrimer',
   'name',
   'greeting',
   'acquisitionSource',
@@ -140,8 +144,6 @@ const STEP_ORDER: OnboardingStep[] = [
   'experience',
   'assessmentReflection',
   'consistency',
-  'brainScience',
-  'breathPrimer',
   'scienceCredibility',
   'age',
   'gender',
@@ -304,10 +306,7 @@ export default function OnboardingFlow({
         if (!INTENT_REFLECTION_ENABLED && candidate === 'intentReflection') {
           return false;
         }
-        if (
-          isOnlyCustomIntent &&
-          (candidate === 'intentProjection' || candidate === 'brainScience')
-        ) {
+        if (isOnlyCustomIntent && candidate === 'intentProjection') {
           return false;
         }
         return true;
@@ -467,7 +466,7 @@ export default function OnboardingFlow({
 
   const goFromIntent = () => {
     if (selectedIntents.length === 0 || isSubmitting) return;
-    const nextStep = isOnlyCustomIntent ? 'name' : 'intentProjection';
+    const nextStep = isOnlyCustomIntent ? 'brainScience' : 'intentProjection';
     const properties = {
       selected_intent_count: selectedIntents.length,
       only_custom_intent: isOnlyCustomIntent,
@@ -784,7 +783,7 @@ export default function OnboardingFlow({
         selectedIntents={selectedIntents}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('name', 'continue')}
+        onContinue={() => goToStep('brainScience', 'continue')}
         onBack={() =>
           goToStep(INTENT_REFLECTION_ENABLED ? 'intentReflection' : 'intent', 'back')
         }
@@ -797,8 +796,21 @@ export default function OnboardingFlow({
       <BrainScienceScreen
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
+        onContinue={() => goToStep('modernBreathing', 'continue')}
+        onBack={() =>
+          goToStep(isOnlyCustomIntent ? 'intent' : 'intentProjection', 'back')
+        }
+      />
+    );
+  }
+
+  if (step === 'modernBreathing') {
+    return (
+      <ModernBreathingScreen
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
         onContinue={() => goToStep('breathPrimer', 'continue')}
-        onBack={() => goToStep('consistency', 'back')}
+        onBack={() => goToStep('brainScience', 'back')}
       />
     );
   }
@@ -813,9 +825,7 @@ export default function OnboardingFlow({
         onContinue={() => goToStep('greeting', 'continue', {
           has_display_name: name.trim().length > 0,
         })}
-        onBack={() =>
-          goToStep(isOnlyCustomIntent ? 'intent' : 'intentProjection', 'back')
-        }
+        onBack={() => goToStep('breathPrimer', 'back')}
         onSkip={() => {
           setName('');
           goToStep('greeting', 'skip');
@@ -1057,9 +1067,7 @@ export default function OnboardingFlow({
       <ConsistencyScreen
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() =>
-          goToStep(isOnlyCustomIntent ? 'breathPrimer' : 'brainScience', 'continue')
-        }
+        onContinue={() => goToStep('scienceCredibility', 'continue')}
         onBack={() => goToStep('assessmentReflection', 'back')}
       />
     );
@@ -1273,14 +1281,9 @@ export default function OnboardingFlow({
       <BreathPrimerScreen
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('scienceCredibility', 'continue')}
-        onBack={() =>
-          goToStep(
-            isOnlyCustomIntent ? 'consistency' : 'brainScience',
-            'back',
-          )
-        }
-        onSkip={() => goToStep('scienceCredibility', 'skip')}
+        onContinue={() => goToStep('name', 'continue')}
+        onBack={() => goToStep('modernBreathing', 'back')}
+        onSkip={() => goToStep('name', 'skip')}
       />
     );
   }
@@ -1297,7 +1300,7 @@ export default function OnboardingFlow({
         name={name.trim() || null}
         intentTitle={scIntentTitle}
         onContinue={() => goToStep('age', 'continue')}
-        onBack={() => goToStep('breathPrimer', 'back')}
+        onBack={() => goToStep('consistency', 'back')}
       />
     );
   }

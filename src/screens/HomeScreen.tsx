@@ -1,7 +1,7 @@
 import { Text } from '../components/common/Text';
 import { useCallback, useEffect, useState } from 'react';
 import {
-  AppState, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
+  AppState, Linking, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import MaskedView from '@react-native-masked-view/masked-view';
@@ -17,8 +17,10 @@ import SectionHeader from '../components/common/SectionHeader';
 import TopBarWeekCalendar from '../components/common/TopBarWeekCalendar';
 import BreathingLibrary from '../components/home/BreathingLibrary';
 import DailyPlanCard from '../components/home/DailyPlanCard';
+import TodaysDailiesSection from '../components/home/TodaysDailiesSection';
 import { getBackgroundImageSource } from '../services/images/backgroundImageCache';
 import { useFeatureAccess } from '../hooks/useFeatureAccess';
+import { useRecommendedTechnique } from '../features/exercise/guidedBreathing/hooks/useRecommendedTechnique';
 import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
 import { formatLocalDate } from '../lib/calendar/weekCalendarDays';
 import { deriveHoldStats } from '../lib/holdStats';
@@ -34,6 +36,7 @@ import type {
 
 const HERO_FRAME_ASPECT_RATIO = 1.1;
 const HERO_OVERSCROLL_BLEED = 120;
+const SURVEY_DISCOUNT_URL = 'https://docs.google.com/forms/d/1wdbzWnXbhdpFZ3HoPcRet5K7EGW9RRtEQqrVYiXHwtc/viewform?edit_requested=true';
 
 function getMsUntilNextLocalDay(): number {
   const now = new Date();
@@ -74,6 +77,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const profileSummaryQuery = useProfileSummaryQuery(user?.id ?? null);
   const displayName = profileSummaryQuery.data?.profile?.displayName ?? null;
   const dailyExerciseAccess = useFeatureAccess(FeatureKey.DailyExercise);
+  const recommendedTechnique = useRecommendedTechnique(user?.id ?? null);
   const [todayLocalDate, setTodayLocalDate] = useState(() => formatLocalDate(new Date()));
   const [selectedLocalDate, setSelectedLocalDate] = useState(todayLocalDate);
   const refreshTodayLocalDate = useCallback(() => {
@@ -114,6 +118,11 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
 
   const currentStreak = stats?.streak?.currentStreak ?? 0;
   const holdStats = deriveHoldStats(stats?.dailyActivity, todayLocalDate);
+  const todayActivity = stats?.dailyActivity.find(
+    (activity) => activity.activityDate === todayLocalDate,
+  );
+  const guidedExerciseCompleted = (todayActivity?.breathingSessionCount ?? 0) > 0;
+  const breathHoldCompleted = todayActivity?.dailyBreathHoldCompleted ?? false;
   const showProPaywall = useCallback((
     feature: FeatureKeyValue,
     placement: typeof PaywallPlacement[keyof typeof PaywallPlacement],
@@ -136,6 +145,37 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   }, [navigation]);
 
   const heroBackdropHeight = windowWidth / HERO_FRAME_ASPECT_RATIO + HERO_OVERSCROLL_BLEED;
+
+  const startGuidedExercise = () => {
+    const technique = recommendedTechnique.technique;
+    if (technique == null) return;
+
+    if (!dailyExerciseAccess.allowed && !dailyExerciseAccess.isLoading) {
+      showProPaywall(
+        FeatureKey.DailyExercise,
+        PaywallPlacement.ExercisePremiumGate,
+        dailyExerciseAccess,
+        'todays_dailies_guided',
+      );
+      return;
+    }
+
+    navigation.navigate('ExerciseSession', { techniqueId: technique.id });
+  };
+
+  const startDailyBreathHold = (sourceAction: string) => {
+    if (!dailyExerciseAccess.allowed && !dailyExerciseAccess.isLoading) {
+      showProPaywall(
+        FeatureKey.DailyExercise,
+        PaywallPlacement.ExercisePremiumGate,
+        dailyExerciseAccess,
+        sourceAction,
+      );
+      return;
+    }
+
+    navigation.navigate('DailyExercise');
+  };
 
   return (
     <View style={styles.screen}>
@@ -195,26 +235,28 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           <CompactActionBanner
             icon="message"
             label="Take a survey and get 50% off"
+            onPress={() => void Linking.openURL(SURVEY_DISCOUNT_URL)}
           />
-          <SectionHeader title="Daily Breathhold" />
-          <DailyPlanCard
-            todayHoldSeconds={todayBreathHold?.holdSeconds ?? null}
-            lastHoldSeconds={holdStats.lastHoldSeconds}
-            streakDays={currentStreak}
-            onPress={() => {
-              if (!dailyExerciseAccess.allowed && !dailyExerciseAccess.isLoading) {
-                showProPaywall(
-                  FeatureKey.DailyExercise,
-                  PaywallPlacement.ExercisePremiumGate,
-                  dailyExerciseAccess,
-                  'daily_plan',
-                );
-                return;
-              }
-
-              navigation.navigate('DailyExercise');
-            }}
+          <TodaysDailiesSection
+            technique={recommendedTechnique.technique}
+            techniqueLoading={recommendedTechnique.isLoading}
+            guidedExerciseCompleted={guidedExerciseCompleted}
+            breathHoldCompleted={breathHoldCompleted}
+            exerciseAccessAllowed={
+              dailyExerciseAccess.allowed || dailyExerciseAccess.isLoading
+            }
+            onPressGuidedExercise={startGuidedExercise}
+            onPressBreathHold={() => startDailyBreathHold('todays_dailies_breathhold')}
           />
+          <View style={styles.dailyPlanSection}>
+            <SectionHeader title="Daily Breathhold" />
+            <DailyPlanCard
+              todayHoldSeconds={todayBreathHold?.holdSeconds ?? null}
+              lastHoldSeconds={holdStats.lastHoldSeconds}
+              streakDays={currentStreak}
+              onPress={() => startDailyBreathHold('daily_plan')}
+            />
+          </View>
         </View>
 
         <BreathingLibrary />
@@ -256,6 +298,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: padding.screen.horizontal,
     paddingBottom: spacing.md,
     gap: spacing.md,
+  },
+  dailyPlanSection: {
+    gap: spacing.md,
+    marginTop: spacing.md,
   },
   greeting: {
     ...typography.title.title3,

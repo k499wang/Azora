@@ -51,6 +51,7 @@ export default function BrainScienceScreen({
       subtitle="Azora uses proven breathing science to reset your nervous system in seconds."
       progress={stepIndex / stepCount}
       onBack={onBack}
+      centerBody
       footer={<OnboardingPrimaryButton label="Continue" onPress={onContinue} />}
     >
       <Animated.View
@@ -91,11 +92,6 @@ export default function BrainScienceScreen({
             </View>
           </View>
         </View>
-
-        <Text style={styles.legend}>
-          Red shows a stressed brain. After 10 minutes of guided Azora
-          breathwork, blue reflects a calmer nervous system and steadier focus.
-        </Text>
       </Animated.View>
     </OnboardingScreenLayout>
   );
@@ -103,7 +99,9 @@ export default function BrainScienceScreen({
 
 const styles = StyleSheet.create({
   visual: {
-    width: '100%',
+    width: '88%',
+    maxWidth: 320,
+    alignSelf: 'center',
     alignItems: 'center',
   },
   scanFrame: {
@@ -135,23 +133,15 @@ const styles = StyleSheet.create({
     transform: [{ translateX: RIGHT_BRAIN_LABEL_OFFSET }],
   },
   pill: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
     borderRadius: 999,
     backgroundColor: colors.neutral[0],
   },
   pillLabel: {
-    ...typography.label.small,
-    fontSize: 12,
+    ...typography.label.medium,
+    fontSize: 14,
     letterSpacing: 0,
     color: colors.text.primary,
-  },
-  legend: {
-    ...typography.body.small,
-    marginTop: spacing.lg,
-    fontSize: 13,
-    lineHeight: 19,
-    color: colors.text.secondary,
-    textAlign: 'center',
   },
 });
