@@ -24,6 +24,7 @@ const STEP_COUNT = 3;
 const STEP_SLIDE_DISTANCE = 40;
 const ENTRANCE_EASING = Easing.bezier(0.22, 1, 0.36, 1);
 const ENTRANCE_INITIAL_SCALE = 0.992;
+const ENTRANCE_OFFERING_TIMEOUT_MS = 2500;
 type StepTransitionPhase = 'idle' | 'exiting' | 'entering';
 
 interface OnboardingPaywallScreenProps {
@@ -112,8 +113,18 @@ export default function OnboardingPaywallScreen({
     );
   }, []);
 
+  // Until the offering resolves there is no way to tell "no trial" from "not
+  // known yet", and the first step renders a different headline and timeline
+  // for each. Holding the entrance until it settles means the screen fades in
+  // already showing the right one instead of correcting itself a frame later.
+  const isOfferingResolved = !isLoading;
+  const isOfferingResolvedRef = useRef(isOfferingResolved);
+  const hasLaidOutRef = useRef(false);
+
   const startEntranceAnimation = useCallback(() => {
+    hasLaidOutRef.current = true;
     if (hasStartedEntranceRef.current) return;
+    if (!isOfferingResolvedRef.current) return;
     hasStartedEntranceRef.current = true;
 
     entranceTimeoutRef.current = setTimeout(() => {
@@ -138,6 +149,24 @@ export default function OnboardingPaywallScreen({
       });
     }, 80);
   }, [fadeAnim, scaleAnim]);
+
+  useEffect(() => {
+    isOfferingResolvedRef.current = isOfferingResolved;
+    if (isOfferingResolved && hasLaidOutRef.current) {
+      startEntranceAnimation();
+    }
+  }, [isOfferingResolved, startEntranceAnimation]);
+
+  // RevenueCat can leave the load hanging when it is waiting on an identity
+  // that never settles. Showing the fallback copy beats showing an empty
+  // screen, so give up waiting and reveal it.
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      isOfferingResolvedRef.current = true;
+      if (hasLaidOutRef.current) startEntranceAnimation();
+    }, ENTRANCE_OFFERING_TIMEOUT_MS);
+    return () => clearTimeout(timeout);
+  }, [startEntranceAnimation]);
 
   useEffect(
     () => () => {
