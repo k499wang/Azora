@@ -475,6 +475,8 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 6,
     borderRadius: 999,
+    borderWidth: 1,
+    borderColor: colors.primary.blue600,
     backgroundColor: colors.primary.blue100,
     overflow: 'hidden',
   },

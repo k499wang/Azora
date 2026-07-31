@@ -127,7 +127,8 @@ export default function IntentProjectionScreen({
 
   const axis = useMemo(() => {
     const p = Skia.Path.Make();
-    p.moveTo(PAD_LEFT, PAD_TOP + innerH);
+    p.moveTo(PAD_LEFT, PAD_TOP);
+    p.lineTo(PAD_LEFT, PAD_TOP + innerH);
     p.lineTo(PAD_LEFT + innerW, PAD_TOP + innerH);
     return p;
   }, [innerW, innerH]);
@@ -163,9 +164,6 @@ export default function IntentProjectionScreen({
     >
       <View style={styles.chartWrap}>
         <Text style={styles.yAxisLabel}>Overall wellbeing</Text>
-        <Text style={styles.citation}>
-          Adapted from Fincham et al., 2023 · Scientific Reports
-        </Text>
         <View
           style={{ width: '100%', height: CHART_HEIGHT }}
           onLayout={handleChartLayout}
@@ -218,6 +216,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: chart.horizontalPadding,
   },
   yAxisLabel: chartText.heading,
-  citation: chartText.note,
   xAxisLabel: chartText.axisLabel,
 });

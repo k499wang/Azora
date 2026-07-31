@@ -55,7 +55,7 @@ export default function RecommendedExerciseScreen({
 
   return (
     <OnboardingScreenLayout
-      title="Your custom plan is ready!"
+      title="Your custom plan!"
       progress={stepIndex / stepCount}
       onBack={onBack}
       centerCopy

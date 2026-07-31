@@ -1,7 +1,7 @@
 import { Text } from '../components/common/Text';
-import { useCallback, useState } from 'react';
+import { useCallback } from 'react';
 import {
-  Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
+  ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import MaskedView from '@react-native-masked-view/masked-view';
@@ -9,8 +9,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { typography, fonts } from '../theme/typography';
 import AmbientBackground from '../components/common/AmbientBackground';
 import AppTopBar from '../components/common/AppTopBar';
-import FeatureInfoDialog from '../components/common/FeatureInfoDialog';
-import Icon from '../components/common/icons/Icon';
 import { MeasureHeroCard } from '../components/heartRate/MeasureHeroCard';
 import HeartRateStatsSection from '../components/heartRate/HeartRateStatsSection';
 import HRVStatsSection from '../components/heartRate/HRVStatsSection';
@@ -53,7 +51,6 @@ export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
   const heartRateStatsQuery = useHeartRateStatsQuery(user?.id ?? null);
   const profileQuery = useProfileQuery(user?.id ?? null);
   const advancedStatsAccess = useFeatureAccess(FeatureKey.AdvancedStats);
-  const [infoVisible, setInfoVisible] = useState(false);
 
   const stats = heartRateStatsQuery.data;
   const recentHeartRates = stats?.recent ?? [];
@@ -137,19 +134,7 @@ export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
               />
             </MaskedView>
           </View>
-          <AppTopBar
-            rightSlot={
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="About heart rate"
-                hitSlop={12}
-                onPress={() => setInfoVisible(true)}
-                style={({ pressed }) => pressed && styles.infoPressed}
-              >
-                <Icon name="info" size={24} color={colors.text.tertiary} />
-              </Pressable>
-            }
-          />
+          <AppTopBar />
         </View>
 
         <View style={styles.heroSection}>
@@ -225,12 +210,6 @@ export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
         />
       </ScrollView>
 
-      <FeatureInfoDialog
-        visible={infoVisible}
-        onClose={() => setInfoVisible(false)}
-        title="Heart Rate"
-        intro="Rest your fingertip on the camera and our PPG engine reads your pulse in seconds — the same optics used in pulse oximeters and the Apple Watch, with no wearable needed. It's built on peer-reviewed methods and benchmarked against medical-grade ECG, drawing on research from institutions like Harvard and Stanford. One reading gives you your resting, average, and peak heart rate plus how far it drops after exertion — all signs of a strong, fit heart. It also measures HRV, the micro-timing between beats, where higher variability means a well-rested, resilient nervous system. From that we track a stress score over time, so you always know when to push and when to rest."
-      />
     </View>
   );
 }
@@ -258,9 +237,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     overflow: 'hidden',
-  },
-  infoPressed: {
-    opacity: 0.6,
   },
   heroSection: {
     marginTop: -spacing.xl,
