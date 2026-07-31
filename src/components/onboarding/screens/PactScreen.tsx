@@ -543,28 +543,28 @@ export default function PactScreen({
                     </Text>
                   </View>
                 </View>
+
+                {/* ── Stamp Section ── */}
+                <View style={styles.stampSection}>
+                  <StampButton
+                    onSeal={handleConfirm}
+                    disabled={hasConfirmed || celebrating}
+                    loading={isSubmitting && !celebrating}
+                  />
+
+                  <View style={styles.hintWrap}>
+                    {!hasConfirmed && (
+                      <Text style={styles.stampHintIcon}>↑</Text>
+                    )}
+                    <Text style={[typography.body.small, styles.stampHint]}>
+                      {hasConfirmed
+                        ? 'Your promise has been recorded.'
+                        : 'Hold the seal for 2 seconds'}
+                    </Text>
+                  </View>
+                </View>
               </View>
             </Animated.View>
-
-            {/* ── Stamp Section ── */}
-            <View style={styles.stampSection}>
-              <StampButton
-                onSeal={handleConfirm}
-                disabled={hasConfirmed || celebrating}
-                loading={isSubmitting && !celebrating}
-              />
-
-              <View style={styles.hintWrap}>
-                {!hasConfirmed && (
-                  <Text style={styles.stampHintIcon}>↑</Text>
-                )}
-                <Text style={[typography.body.small, styles.stampHint]}>
-                  {hasConfirmed
-                    ? 'Your promise has been recorded.'
-                    : 'Hold the seal for 2 seconds'}
-                </Text>
-              </View>
-            </View>
 
             {errorMessage ? (
               <Text style={styles.error}>{errorMessage}</Text>
