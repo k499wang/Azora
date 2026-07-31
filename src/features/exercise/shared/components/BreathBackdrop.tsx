@@ -29,37 +29,42 @@ export default function BreathBackdrop({
   const settledAmountRef = useRef(0);
 
   useEffect(() => {
-    if (paused) {
-      inhaleAmount.stopAnimation((value) => {
-        settledAmountRef.current = value;
+    let disposed = false;
+    let animation: Animated.CompositeAnimation | null = null;
+
+    inhaleAmount.stopAnimation((value) => {
+      if (disposed) return;
+
+      settledAmountRef.current = value;
+
+      if (paused || phase === 'hold') return;
+
+      const target = phase === 'inhale' ? 1 : 0;
+      const phaseSeconds = phase === 'inhale' ? inhaleSeconds : exhaleSeconds;
+      // Each phase starts from the gradient's rendered position so an early
+      // transition continues smoothly instead of jumping to a stale endpoint.
+      const remaining = Math.abs(target - value);
+      const duration =
+        phase === 'idle'
+          ? IDLE_SETTLE_MS
+          : Math.max(0, phaseSeconds * 1000 * remaining);
+
+      animation = Animated.timing(inhaleAmount, {
+        toValue: target,
+        duration,
+        easing: Easing.inOut(Easing.ease),
+        useNativeDriver: true,
       });
-      return;
-    }
 
-    if (phase === 'hold') return;
-
-    const target = phase === 'inhale' ? 1 : 0;
-    const phaseSeconds = phase === 'inhale' ? inhaleSeconds : exhaleSeconds;
-    // Resuming mid-phase covers only the distance that is left, so the wash
-    // stays in step with the circle instead of restarting the full sweep.
-    const remaining = Math.abs(target - settledAmountRef.current);
-    const duration =
-      phase === 'idle'
-        ? IDLE_SETTLE_MS
-        : Math.max(0, phaseSeconds * 1000 * remaining);
-
-    const animation = Animated.timing(inhaleAmount, {
-      toValue: target,
-      duration,
-      easing: Easing.inOut(Easing.ease),
-      useNativeDriver: true,
+      animation.start(({ finished }) => {
+        if (!disposed && finished) settledAmountRef.current = target;
+      });
     });
 
-    animation.start(({ finished }) => {
-      if (finished) settledAmountRef.current = target;
-    });
-
-    return () => animation.stop();
+    return () => {
+      disposed = true;
+      animation?.stop();
+    };
   }, [exhaleSeconds, inhaleAmount, inhaleSeconds, paused, phase]);
 
   return (
