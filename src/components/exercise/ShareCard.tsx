@@ -11,8 +11,8 @@ import { lungAgeRingFill } from '../../lib/lungAge';
 interface Props {
   width: number;
   lungAgeYears: number;
-  /** How the lung age compares to the person's own age. Null when it is unknown. */
-  deltaLabel: string | null;
+  /** How the result compares with same-age peers. Null when age is unknown. */
+  comparisonLabel: string | null;
   ringColors: string[];
   onBackgroundDisplay?: () => void;
 }
@@ -20,7 +20,7 @@ interface Props {
 export default function ShareCard({
   width,
   lungAgeYears,
-  deltaLabel,
+  comparisonLabel,
   ringColors,
   onBackgroundDisplay,
 }: Props) {
@@ -113,7 +113,7 @@ export default function ShareCard({
             >
               {lungAgeYears}
             </Text>
-            <Text style={styles.tier}>{deltaLabel ?? 'years'}</Text>
+            <Text style={styles.tier}>{comparisonLabel ?? 'years'}</Text>
           </View>
         </View>
       </View>

@@ -138,7 +138,7 @@ export const paywallStepStyles = StyleSheet.create({
     backgroundColor: colors.neutral[200],
   },
   timelineLine: {
-    width: 12,
+    width: 16,
     flex: 1,
     minHeight: 36,
     backgroundColor: colors.primary.blue300,

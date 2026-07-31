@@ -11,17 +11,17 @@ export const RESULT_BACKGROUND_ASSET = {
 } as const;
 
 export const HOME_HERO_BACKGROUND_ASSET = {
-  source: require('../../assets/breath-hero-background.jpg'),
+  source: require('../../assets/home-hero-background-v2.jpg'),
   fallbackColor: colors.background.primary,
 } as const;
 
 export const BREATH_HERO_BACKGROUND_ASSET = {
-  source: require('../../assets/home-hero-meadow.jpg'),
+  source: require('../../assets/breath-hero-background-v2.jpg'),
   fallbackColor: colors.background.primary,
 } as const;
 
 export const HEART_HERO_BACKGROUND_ASSET = {
-  source: require('../../assets/heart-hero-background.jpg'),
+  source: require('../../assets/heart-hero-background-v2.jpg'),
   fallbackColor: colors.background.primary,
 } as const;
 
@@ -31,6 +31,6 @@ export const DAILY_PLAN_BACKGROUND_ASSET = {
 } as const;
 
 export const PROFILE_HERO_BACKGROUND_ASSET = {
-  source: require('../../assets/profile-hero-background.jpg'),
+  source: require('../../assets/profile-hero-background-v2.jpg'),
   fallbackColor: colors.background.primary,
 } as const;

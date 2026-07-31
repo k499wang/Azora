@@ -12,6 +12,25 @@ import {
 } from '../data/acquisitionOptions';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
+import OnboardingOptionIcon, {
+  type OnboardingOptionIconName,
+} from '../OnboardingOptionIcon';
+
+type AcquisitionSourceIcon = OnboardingOptionIconName | 'tiktok-custom';
+
+const ACQUISITION_SOURCE_ICONS: Record<
+  AcquisitionSourceId,
+  AcquisitionSourceIcon
+> = {
+  instagram: 'instagram',
+  tiktok: 'tiktok-custom',
+  facebook: 'facebook',
+  reddit: 'reddit',
+  app_store_search: 'apple-ios',
+  google_search: 'google',
+  friend_or_family: 'account-group-outline',
+  other: 'dots-horizontal-circle-outline',
+};
 
 interface AcquisitionSourceScreenProps {
   value: AcquisitionSourceId | null;
@@ -56,6 +75,7 @@ export default function AcquisitionSourceScreen({
         {ACQUISITION_SOURCE_OPTIONS.map((option, index) => {
           const selected = value === option.id;
           const isFirst = index === 0;
+          const icon = ACQUISITION_SOURCE_ICONS[option.id];
 
           return (
             <Pressable
@@ -69,9 +89,13 @@ export default function AcquisitionSourceScreen({
                 pressed && styles.optionPressed,
               ]}
             >
-              <View style={styles.iconSlot}>
-                <Icon name={option.icon} size={20} color={option.accent} />
-              </View>
+              {icon === 'tiktok-custom' ? (
+                <View style={styles.iconSlot}>
+                  <Icon name="tiktok" size={22} color={colors.accent[600]} />
+                </View>
+              ) : (
+                <OnboardingOptionIcon name={icon} />
+              )}
               <Text
                 style={[styles.optionTitle, selected && styles.optionTitleSelected]}
               >
@@ -105,10 +129,11 @@ const styles = StyleSheet.create({
   optionPressed: {
     opacity: 0.6,
   },
-  // Fixed width only, so titles line up regardless of each mark's aspect ratio.
   iconSlot: {
-    width: 20,
+    width: 24,
+    height: 24,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   optionTitle: {
     ...typography.body.medium,

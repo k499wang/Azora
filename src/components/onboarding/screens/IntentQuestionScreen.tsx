@@ -2,7 +2,6 @@ import { Text } from '../../common/Text';
 import { useEffect, useRef } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import Icon from '../../common/icons/Icon';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
@@ -11,6 +10,23 @@ import { isHapticsEnabled } from '../../../services/preferences/hapticsPreferenc
 import { INTENT_OPTIONS } from '../data/intentOptions';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
+import OnboardingOptionIcon, {
+  type OnboardingOptionIconName,
+} from '../OnboardingOptionIcon';
+import type { OnboardingIntent } from '../types';
+
+const INTENT_ICONS: Record<OnboardingIntent, OnboardingOptionIconName> = {
+  stress_relief: 'weather-windy',
+  calm_fast: 'clock-fast',
+  sleep: 'moon-waning-crescent',
+  focus: 'target',
+  energy: 'white-balance-sunny',
+  spiritual: 'meditation',
+  yoga: 'yoga',
+  heart_health: 'heart-pulse',
+  daily_habit: 'calendar-check-outline',
+  other: 'dots-horizontal-circle-outline',
+};
 
 interface IntentQuestionScreenProps {
   selectedIntents: string[];
@@ -118,11 +134,7 @@ export default function IntentQuestionScreen({
                   isSubmitting && !selected && styles.optionDisabled,
                 ]}
               >
-                <Icon
-                  name={option.icon}
-                  size={20}
-                  color={selected ? colors.primary.blue600 : colors.text.tertiary}
-                />
+                <OnboardingOptionIcon name={INTENT_ICONS[option.id]} />
                 <Text
                   style={[styles.optionTitle, selected && styles.optionTitleSelected]}
                   numberOfLines={1}

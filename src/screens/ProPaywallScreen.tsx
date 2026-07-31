@@ -199,7 +199,7 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
               <Text style={styles.eyebrow}>Your free plan is ready.</Text>
               <Text style={styles.title}>Unlock Azora for free</Text>
               <View style={styles.titleDivider} />
-              {showCancelAnytime ? (
+              {!hasAnnualTrial && showCancelAnytime ? (
                 <Text style={styles.trialNote}>Cancel anytime</Text>
               ) : null}
             </View>
