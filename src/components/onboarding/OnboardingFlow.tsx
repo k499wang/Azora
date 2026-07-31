@@ -35,7 +35,6 @@ import PlanIntroScreen from './screens/PlanIntroScreen';
 import PlanLoadingScreen from './screens/PlanLoadingScreen';
 import DiagnosisScreen from './screens/DiagnosisScreen';
 import RecommendedExerciseScreen from './screens/RecommendedExerciseScreen';
-import FounderNoteScreen from './screens/FounderNoteScreen';
 import OnboardingPaywallScreen from './screens/OnboardingPaywallScreen';
 import ExitOfferSheet from '../paywall/ExitOfferSheet';
 import BreathHoldScreen from './screens/BreathHoldScreen';
@@ -178,7 +177,6 @@ const STEP_ORDER: OnboardingStep[] = [
   'recommendedExercise',
   'attPriming',
   'notifications',
-  'founderNote',
   'pact',
   'paywall',
 ];
@@ -796,9 +794,11 @@ export default function OnboardingFlow({
         }
       }
 
-      goToStep('founderNote', 'continue', {
-        notification_status: permissionStatus,
-      });
+      void requestStoreReview().finally(() =>
+        goToStep('pact', 'continue', {
+          notification_status: permissionStatus,
+        }),
+      );
     } catch (error) {
       setNotificationErrorMessage(getErrorMessage(error));
     } finally {
@@ -811,7 +811,7 @@ export default function OnboardingFlow({
     setNotificationErrorMessage(null);
     setIsNotificationSubmitting(true);
     try {
-      goToStep('founderNote', 'skip');
+      void requestStoreReview().finally(() => goToStep('pact', 'skip'));
     } finally {
       setIsNotificationSubmitting(false);
     }
@@ -1389,20 +1389,6 @@ export default function OnboardingFlow({
     );
   }
 
-  if (step === 'founderNote') {
-    return (
-      <FounderNoteScreen
-        name={name.trim() || null}
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
-        onContinue={() => {
-          void requestStoreReview().finally(() => goToStep('pact', 'continue'));
-        }}
-        onBack={() => goToStep('notifications', 'back')}
-      />
-    );
-  }
-
   if (step === 'notifications') {
     return (
       <NotificationPermissionScreen
@@ -1467,7 +1453,7 @@ export default function OnboardingFlow({
         onConfirm={() => {
           void saveProfileAndShowPaywall();
         }}
-        onBack={() => goToStep('founderNote', 'back')}
+        onBack={() => goToStep('notifications', 'back')}
       />
     );
   }

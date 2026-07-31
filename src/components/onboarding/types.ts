@@ -33,7 +33,6 @@ export type OnboardingStep =
   | 'planLoading'
   | 'diagnosis'
   | 'recommendedExercise'
-  | 'founderNote'
   | 'scienceCredibility'
   | 'pact'
   | 'notifications'

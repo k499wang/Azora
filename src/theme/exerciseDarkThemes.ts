@@ -18,7 +18,16 @@ export interface ExerciseDarkTheme {
   textTertiary: string;
   textAccent: string;
   iconPrimary: string;
+  backdropExhale: BreathBackdropColors;
+  backdropInhale: BreathBackdropColors;
 }
+
+// Composited over `screen`, top to bottom, at BREATH_BACKDROP_LOCATIONS. The
+// middle stop stays fully transparent so the breathing circle never sits on a
+// tinted field.
+export type BreathBackdropColors = readonly [string, string, string];
+
+export const BREATH_BACKDROP_LOCATIONS = [0, 0.55, 1] as const;
 
 export const EXERCISE_DARK_THEMES: ExerciseDarkTheme[] = [
   {
@@ -41,6 +50,8 @@ export const EXERCISE_DARK_THEMES: ExerciseDarkTheme[] = [
     textTertiary: '#94A3B8',
     textAccent: '#2F7AEF',
     iconPrimary: '#0F172A',
+    backdropExhale: ['#78B4FF14', '#78B4FF00', '#78B4FF0F'],
+    backdropInhale: ['#78B4FF3D', '#78B4FF00', '#78B4FF29'],
   },
   {
     id: 'slate',
@@ -62,6 +73,8 @@ export const EXERCISE_DARK_THEMES: ExerciseDarkTheme[] = [
     textTertiary: '#5A6880',
     textAccent: '#6A90C8',
     iconPrimary: '#C8D4E8',
+    backdropExhale: ['#4A609014', '#4A609000', '#4A60900F'],
+    backdropInhale: ['#4A609047', '#4A609000', '#4A60902E'],
   },
   {
     id: 'stone',
@@ -83,6 +96,8 @@ export const EXERCISE_DARK_THEMES: ExerciseDarkTheme[] = [
     textTertiary: '#6A5E56',
     textAccent: '#C8A880',
     iconPrimary: '#E0D8D0',
+    backdropExhale: ['#7A6A5E14', '#7A6A5E00', '#7A6A5E0F'],
+    backdropInhale: ['#7A6A5E47', '#7A6A5E00', '#7A6A5E2E'],
   },
   {
     id: 'sage',
@@ -104,5 +119,7 @@ export const EXERCISE_DARK_THEMES: ExerciseDarkTheme[] = [
     textTertiary: '#4A6860',
     textAccent: '#6AB890',
     iconPrimary: '#C4D8D0',
+    backdropExhale: ['#4A706014', '#4A706000', '#4A70600F'],
+    backdropInhale: ['#4A706047', '#4A706000', '#4A70602E'],
   },
 ];

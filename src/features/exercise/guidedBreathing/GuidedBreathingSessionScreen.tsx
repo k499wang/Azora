@@ -4,6 +4,9 @@ import { useIsFocused } from '@react-navigation/native';
 import { EXERCISE_DARK_THEMES, type ExerciseDarkTheme } from '../../../theme/exerciseDarkThemes';
 import type { BreathingCircleRef } from '../shared/components/BreathingCircle';
 import ExerciseScaffold from '../shared/components/ExerciseScaffold';
+import BreathBackdrop, {
+  type BreathBackdropPhase,
+} from '../shared/components/BreathBackdrop';
 import { GuidedBreathingHud } from './components/GuidedBreathingHud';
 import {
   GUIDED_BREATHING_INTRO_DURATION_MS,
@@ -478,6 +481,13 @@ export default function GuidedBreathingSessionScreen({
     if (isActive) showHud();
   };
 
+  const backdropPhase: BreathBackdropPhase =
+    phase === 'inhale' || phase === 'exhale'
+      ? phase
+      : phase === 'holdIn' || phase === 'holdOut'
+        ? 'hold'
+        : 'idle';
+
   // Touch listener lives on the root container instead of an invisible
   // overlay: touch events bubble up from every child (camera preview, Skia
   // graph, circle), so nothing can sit above it and swallow the tap while
@@ -489,6 +499,15 @@ export default function GuidedBreathingSessionScreen({
     >
       <ExerciseScaffold
         darkTheme={activeTheme}
+        backgroundSlot={
+          <BreathBackdrop
+            theme={activeTheme}
+            phase={backdropPhase}
+            inhaleSeconds={technique.pattern.inhale}
+            exhaleSeconds={technique.pattern.exhale}
+            paused={paused}
+          />
+        }
         centerSlot={
           <GuidedBreathingPresentation
             ref={circleRef}

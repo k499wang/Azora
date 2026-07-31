@@ -72,7 +72,7 @@ export const colors = {
     elevated: '#FFFFFF',
     card: '#FAFCFF',
     accentSoft: '#EAF2FF',
-    // Warm cream for paper/letter surfaces (FounderNoteScreen).
+    // Warm cream for paper/letter surfaces.
     paper: '#FBF7EF',
     // Asset-matched fallbacks used while native background images decode.
     sunset: '#042B62',

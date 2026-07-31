@@ -6,6 +6,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { EXERCISE_DARK_THEMES, type ExerciseDarkTheme } from '../../../theme/exerciseDarkThemes';
 import type { BreathingCircleRef } from '../shared/components/BreathingCircle';
 import ExerciseScaffold from '../shared/components/ExerciseScaffold';
+import BreathBackdrop, {
+  type BreathBackdropPhase,
+} from '../shared/components/BreathBackdrop';
 import {
   DAILY_BREATH_HOLD_INTRO_DURATION_MS,
   DailyBreathHoldPresentation,
@@ -439,6 +442,15 @@ export default function DailyBreathHoldScreen({
     if (shouldAutoHideHud) showHud();
   }, [shouldAutoHideHud, showHud]);
 
+  const backdropPhase: BreathBackdropPhase =
+    phase === 'preInhale' || phase === 'inhale'
+      ? 'inhale'
+      : phase === 'preExhale'
+        ? 'exhale'
+        : phase === 'hold'
+          ? 'hold'
+          : 'idle';
+
   if (phase === 'processingResults') {
     return (
       <HeartRateProcessingScreen
@@ -459,6 +471,19 @@ export default function DailyBreathHoldScreen({
     >
       <ExerciseScaffold
         darkTheme={activeTheme}
+        backgroundSlot={
+          <BreathBackdrop
+            theme={activeTheme}
+            phase={backdropPhase}
+            inhaleSeconds={
+              phase === 'inhale'
+                ? DAILY_BREATH_HOLD_PROTOCOL.finalInhaleSeconds
+                : DAILY_BREATH_HOLD_PROTOCOL.prepInhaleSeconds
+            }
+            exhaleSeconds={DAILY_BREATH_HOLD_PROTOCOL.prepExhaleSeconds}
+            paused={paused}
+          />
+        }
         centerSlot={
           <DailyBreathHoldPresentation
             ref={circleRef}
