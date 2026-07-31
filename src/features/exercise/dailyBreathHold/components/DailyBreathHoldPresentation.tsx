@@ -18,6 +18,7 @@ import {
 } from '../domain/breathHoldPhases';
 import type { DailyBreathHoldProtocol } from '../domain/dailyBreathHoldProtocol';
 import type { ExerciseDarkTheme } from '../../../../theme/exerciseDarkThemes';
+import type { BreathEnvelope } from '../../shared/breathEnvelope';
 import { colors } from '../../../../theme/colors';
 import { fonts } from '../../../../theme/typography';
 
@@ -60,6 +61,7 @@ interface DailyBreathHoldPresentationProps {
   holdSeconds: number;
   bestHoldSeconds: number;
   heartRate: DailyBreathHoldHeartRatePresentation;
+  envelope?: BreathEnvelope;
 }
 
 export const DailyBreathHoldPresentation = forwardRef<
@@ -74,6 +76,7 @@ export const DailyBreathHoldPresentation = forwardRef<
     holdSeconds,
     bestHoldSeconds,
     heartRate,
+    envelope,
   },
   circleRef,
 ) {
@@ -187,6 +190,7 @@ export const DailyBreathHoldPresentation = forwardRef<
               ref={circleRef}
               cameraSlot={cameraSlot}
               beatTick={heartRate.beatTick}
+              envelope={envelope}
               themeColors={{
                 outline: theme.circleOutline,
                 outlineOpacity: theme.circleOutlineOpacity,

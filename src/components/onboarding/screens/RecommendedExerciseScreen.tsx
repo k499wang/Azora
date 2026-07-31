@@ -126,7 +126,7 @@ function ActionCard({ action }: { action: PlanAction }) {
     action.id === 'session'
       ? 'Guided breathing, matched to the goals you picked.'
       : action.id === 'handPicked'
-        ? 'Based on your data, Azora planned a different exercise for each day of your 7-day plan.'
+        ? 'Based on your data, Azora planned a different exercise for each day of your custom plan.'
         : 'A short hold to track how your breathing is changing.';
 
   return (

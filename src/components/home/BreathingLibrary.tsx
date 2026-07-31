@@ -46,7 +46,7 @@ const EXERCISE_GROUPS: ReadonlyArray<{
 }> = [
   { id: 'sleep-calm', title: 'Sleep & Calm' },
   { id: 'focus-energy', title: 'Focus & Energy' },
-  { id: 'mental-reset', title: 'Mental Reset' },
+  { id: 'mental-reset', title: 'Find Your Balance' },
 ];
 
 function formatPattern(p: BreathingTechnique['pattern']) {

@@ -112,6 +112,9 @@ export default function SessionCompleteScreen({
               value={breathCount}
               fill={breathScore}
               caption="Breaths"
+              captionFontSize={18}
+              captionPosition="bottom"
+              captionTextTransform="none"
               ringColors={[colors.primary.blue400, colors.primary.blue600]}
               gapLabel={null}
             />
