@@ -229,7 +229,6 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
         </View>
 
         <View style={styles.section}>
-          <SectionHeader title="Lifetime" />
           <View style={styles.sectionBody}>
             <ProfileLifetimeStatsRow
               totalBreaths={profileSummary?.totalBreaths ?? 0}

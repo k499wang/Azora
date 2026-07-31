@@ -6,15 +6,17 @@ import {
   GENERAL_DAYTIME_POOL_V2,
   GROWTH_AREA_TECHNIQUE_ORDER,
   GROWTH_AREA_TECHNIQUE_ORDER_V2,
-  buildGrowthAreaSevenDayExercisePlan,
   buildGrowthAreaSevenDayExercisePlanV2,
+  buildRebuiltSevenDayExercisePlan,
   buildSevenDayExercisePlan,
   readDailyPlanExercises,
   resolveDailyExerciseTechniqueIds,
   resolveDailyExerciseTechniqueId,
+  resolveGrowthAreaAxis,
   sanitizeDailyPlanExercises,
-  shouldRepairLegacyDailyPlan,
+  shouldRebuildDailyPlanAsV2,
 } from './dailyExercisePlan.ts';
+import { computeMindMap } from '../../../../lib/onboardingScores.ts';
 
 const INPUT = {
   userId: 'user-alpha',
@@ -177,7 +179,7 @@ test('different users can receive different plan ordering', () => {
   assert.notDeepEqual(first.techniqueIds, second.techniqueIds);
 });
 
-test('growth-area plans follow every approved total order and remain V1-compatible', () => {
+test('the V1 growth-area order still covers the pool stored V1 plans draw from', () => {
   for (const [growthAreaAxis, expectedOrder] of Object.entries(
     EXPECTED_GROWTH_AREA_ORDER,
   )) {
@@ -186,47 +188,7 @@ test('growth-area plans follow every approved total order and remain V1-compatib
       [...expectedOrder].sort(),
       [...GENERAL_DAYTIME_POOL_V1].sort(),
     );
-
-    const input = {
-      primaryTechniqueId: '478',
-      growthAreaAxis,
-      startsOn: '2026-07-30',
-    };
-    const first = buildGrowthAreaSevenDayExercisePlan(input);
-    const second = buildGrowthAreaSevenDayExercisePlan(input);
-
-    assert.deepEqual(first.techniqueIds, expectedOrder.slice(0, 7));
-    assert.ok(!first.techniqueIds.includes(expectedOrder[7]));
-    assert.deepEqual(first, second);
-    assert.deepEqual(sanitizeDailyPlanExercises(first), first);
   }
-});
-
-test('growth-area plans exclude an in-pool primary without changing the approved order', () => {
-  for (const [growthAreaAxis, expectedOrder] of Object.entries(
-    EXPECTED_GROWTH_AREA_ORDER,
-  )) {
-    const primaryTechniqueId = expectedOrder[0];
-    const plan = buildGrowthAreaSevenDayExercisePlan({
-      primaryTechniqueId,
-      growthAreaAxis,
-      startsOn: '2026-07-30',
-    });
-
-    assert.deepEqual(plan.techniqueIds, expectedOrder.slice(1));
-    assert.ok(!plan.techniqueIds.includes(primaryTechniqueId));
-  }
-});
-
-test('growth-area plans repeat day one on day eight', () => {
-  const plan = buildGrowthAreaSevenDayExercisePlan({
-    primaryTechniqueId: null,
-    growthAreaAxis: 'calm',
-    startsOn: '2026-07-30',
-  });
-
-  assert.equal(resolveDailyExerciseTechniqueId(plan, '2026-07-30'), plan.techniqueIds[0]);
-  assert.equal(resolveDailyExerciseTechniqueId(plan, '2026-08-06'), plan.techniqueIds[0]);
 });
 
 test('V2 growth-area plans follow every approved order and persist their axis', () => {
@@ -257,7 +219,7 @@ test('V2 growth-area plans follow every approved order and persist their axis', 
   }
 });
 
-test('legacy plan hashing keeps its exact established order', () => {
+test('the V1 plan hash keeps its exact established order', () => {
   assert.deepEqual(buildSevenDayExercisePlan(INPUT).techniqueIds, [
     'triangle',
     'coherent-6',
@@ -426,14 +388,142 @@ test('read classification protects V2 and future payloads from legacy repair', (
   );
   assert.deepEqual(readDailyPlanExercises('malformed'), { status: 'unsupported' });
 
-  assert.equal(shouldRepairLegacyDailyPlan({ status: 'missing' }), true);
-  assert.equal(shouldRepairLegacyDailyPlan({ status: 'invalid_v1' }), true);
-  assert.equal(shouldRepairLegacyDailyPlan({ status: 'invalid_v2' }), false);
-  assert.equal(shouldRepairLegacyDailyPlan({ status: 'unsupported' }), false);
+  assert.equal(shouldRebuildDailyPlanAsV2({ status: 'missing' }), true);
+  assert.equal(shouldRebuildDailyPlanAsV2({ status: 'invalid_v1' }), true);
+  assert.equal(shouldRebuildDailyPlanAsV2({ status: 'invalid_v2' }), true);
+  assert.equal(shouldRebuildDailyPlanAsV2({ status: 'unsupported' }), false);
   assert.equal(
-    shouldRepairLegacyDailyPlan({ status: 'available', plan: v2 }),
+    shouldRebuildDailyPlanAsV2({ status: 'available', plan: v1 }),
+    true,
+  );
+  assert.equal(
+    shouldRebuildDailyPlanAsV2({ status: 'available', plan: v2 }),
     false,
   );
+});
+
+const STRESSED_ASSESSMENT = {
+  stressLevel: 9,
+  sleepQuality: 8,
+  agreementResponses: { exhausted: 'disagree', racing: 'agree', reactive: 'agree' },
+};
+
+test('a stored assessment recomputes the real growth area instead of guessing', () => {
+  const expected = computeMindMap({
+    stressLevel: STRESSED_ASSESSMENT.stressLevel,
+    sleepQuality: STRESSED_ASSESSMENT.sleepQuality,
+    agreementResponses: STRESSED_ASSESSMENT.agreementResponses,
+  }).growthArea.axis;
+
+  assert.equal(
+    resolveGrowthAreaAxis({
+      assessment: STRESSED_ASSESSMENT,
+      primaryTechniqueId: 'box',
+    }),
+    expected,
+  );
+  // The technique would have guessed `focus`; the assessment overrules it.
+  assert.notEqual(expected, 'focus');
+
+  assert.equal(
+    resolveGrowthAreaAxis({
+      assessment: { ...STRESSED_ASSESSMENT, agreementResponses: null },
+      primaryTechniqueId: 'box',
+    }),
+    computeMindMap({
+      stressLevel: STRESSED_ASSESSMENT.stressLevel,
+      sleepQuality: STRESSED_ASSESSMENT.sleepQuality,
+      agreementResponses: {},
+    }).growthArea.axis,
+  );
+});
+
+test('an incomplete assessment falls back to the primary technique, then to calm', () => {
+  const partial = { stressLevel: 9, sleepQuality: null, agreementResponses: null };
+
+  assert.equal(
+    resolveGrowthAreaAxis({ assessment: partial, primaryTechniqueId: 'box' }),
+    'focus',
+  );
+  assert.equal(
+    resolveGrowthAreaAxis({ assessment: null, primaryTechniqueId: '478' }),
+    'recovery',
+  );
+  assert.equal(
+    resolveGrowthAreaAxis({ assessment: null, primaryTechniqueId: 'wimhof' }),
+    'resilience',
+  );
+  assert.equal(
+    resolveGrowthAreaAxis({ assessment: null, primaryTechniqueId: 'resonance' }),
+    'breathEase',
+  );
+  assert.equal(
+    resolveGrowthAreaAxis({ assessment: null, primaryTechniqueId: null }),
+    'calm',
+  );
+  assert.equal(
+    resolveGrowthAreaAxis({
+      assessment: null,
+      primaryTechniqueId: 'not-a-technique',
+    }),
+    'calm',
+  );
+});
+
+test('a rebuilt plan matches a new onboarding plan on the resolved axis', () => {
+  const rebuilt = buildRebuiltSevenDayExercisePlan({
+    assessment: null,
+    primaryTechniqueId: 'box',
+    startsOn: '2026-07-30',
+  });
+
+  assert.equal(rebuilt.version, 2);
+  assert.equal(rebuilt.poolVersion, 'growth_area_daytime_v2');
+  assert.equal(rebuilt.growthAreaAxis, 'focus');
+  assert.equal(rebuilt.startsOn, '2026-07-30');
+  assert.ok(!rebuilt.techniqueIds.includes('box'));
+  assert.deepEqual(sanitizeDailyPlanExercises(rebuilt), rebuilt);
+  assert.deepEqual(
+    rebuilt,
+    buildGrowthAreaSevenDayExercisePlanV2({
+      primaryTechniqueId: 'box',
+      growthAreaAxis: 'focus',
+      startsOn: '2026-07-30',
+    }),
+  );
+});
+
+test('rebuilt plans draw from the V2 pool, and the intensity axes surface its additions', () => {
+  const addedAfterV1 = ['deep-box', 'wimhof', 'bhastrika'];
+
+  for (const primaryTechniqueId of ['box', '478', 'wimhof', 'resonance', 'relaxing']) {
+    const plan = buildRebuiltSevenDayExercisePlan({
+      assessment: null,
+      primaryTechniqueId,
+      startsOn: '2026-07-30',
+    });
+
+    assert.ok(
+      plan.techniqueIds.every((id) => GENERAL_DAYTIME_POOL_V2.includes(id)),
+    );
+    assert.ok(!plan.techniqueIds.includes(primaryTechniqueId));
+  }
+
+  // Calm, recovery, and breathEase deliberately rank the intense additions
+  // below the seven-day window, so only the focus and resilience axes
+  // surface them.
+  for (const primaryTechniqueId of ['box', 'wimhof']) {
+    const plan = buildRebuiltSevenDayExercisePlan({
+      assessment: null,
+      primaryTechniqueId,
+      startsOn: '2026-07-30',
+    });
+
+    assert.ok(
+      plan.techniqueIds.some((id) => addedAfterV1.includes(id)),
+      `${primaryTechniqueId} plan never surfaces a post-V1 technique`,
+    );
+  }
 });
 
 test('builder and resolver reject invalid calendar dates', () => {
@@ -452,9 +542,9 @@ test('builder and resolver reject invalid calendar dates', () => {
   );
   assert.throws(
     () =>
-      buildGrowthAreaSevenDayExercisePlan({
+      buildRebuiltSevenDayExercisePlan({
+        assessment: null,
         primaryTechniqueId: 'box',
-        growthAreaAxis: 'calm',
         startsOn: '2026-02-30',
       }),
     /Invalid daily exercise plan start date/,

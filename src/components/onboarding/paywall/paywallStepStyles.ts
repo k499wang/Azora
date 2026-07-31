@@ -133,6 +133,7 @@ export const paywallStepStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.primary.blue600,
+    zIndex: 1,
   },
   timelineIconUpcoming: {
     backgroundColor: colors.neutral[200],

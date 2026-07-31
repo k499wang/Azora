@@ -14,7 +14,7 @@ The most common bug pattern with TanStack Query (and the one AI tools repeatedly
 
 | Query key fn | File | Reads from | Notes |
 |---|---|---|---|
-| `getProfileSummaryQueryKey` | `src/queries/profile/useProfileSummaryQuery.ts` | `profiles` (display_name, avatar_url, timezone), `breath_hold_sessions`, `daily_activity` (activity_date, qualifies_for_streak), `user_streaks_v` | Aggregate. Touched by anything that changes profile fields, breath holds, or daily activity rows (which HR captures and breath holds both write). |
+| `getProfileSummaryQueryKey` | `src/queries/profile/useProfileSummaryQuery.ts` | `profiles` (display_name, avatar_url, timezone), `breath_hold_sessions`, `breathing_sessions` and `breath_hold_sessions` via the `profile_lifetime_totals()` RPC, `daily_activity` (activity_date, qualifies_for_streak), `user_streaks_v` | Aggregate. Touched by anything that changes profile fields, breath holds, or daily activity rows (which HR captures and breath holds both write). |
 | `getProfileQueryKey` | `src/queries/profile/useProfileQuery.ts` | `profiles` | Raw profile row. |
 | `getOnboardingStatusQueryKey` | `src/queries/profile/useOnboardingStatusQuery.ts` | `profiles.onboarding_completed_at` | |
 | `getUserDefaultTechniqueQueryKey` | `src/queries/profile/useUserDefaultTechniqueQuery.ts` | `profiles.default_technique_id` | |
@@ -52,7 +52,7 @@ When adding a mutation, find every field it writes, then look up every query abo
 
 ## Rules of thumb
 
-1. **`ProfileSummary` is the big one.** It aggregates `profiles`, `breath_hold_sessions`, `daily_activity`, and `user_streaks_v`. Almost any user-data write invalidates it.
+1. **`ProfileSummary` is the big one.** It aggregates `profiles`, `breath_hold_sessions`, `breathing_sessions`, `daily_activity`, and `user_streaks_v`. Almost any user-data write invalidates it.
 2. **`setQueryData` counts as invalidation** *only* if you update every field a consumer reads. If you mutate one field and leave others stale, prefer `invalidateQueries`.
 3. **Per-day keys** (`DailyFeatureUsage`) include `localDate` — invalidate the exact date you wrote to, not "today" (timezone math has bitten us; use the same formatter the mutation already uses).
 4. **HomeStats is intentionally broader.** It is keyed by selected date, but it reads shared Home aggregates too. Use `getHomeStatsQueryKeyPrefix(userId)` for completion mutations unless the query is split into narrower caches.
