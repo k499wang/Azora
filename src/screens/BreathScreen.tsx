@@ -182,7 +182,7 @@ export default function BreathScreen({ navigation }: BreathTabScreenProps) {
             size={250}
             valueFontSize={90}
             ringColors={lungAgeTone.ringColors}
-            caption="LUNG AGE"
+            caption="Lung Age"
             captionPosition="bottom"
             captionTextTransform="none"
             captionFontSize={18}

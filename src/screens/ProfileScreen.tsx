@@ -23,6 +23,7 @@ import SectionHeader from '../components/common/SectionHeader';
 import ProfileDisplayNameEditorDialog from '../components/profile/ProfileDisplayNameEditorDialog';
 import ProfileIdentityCard from '../components/profile/ProfileIdentityCard';
 import ProfileCompletionCalendarCard from '../components/profile/ProfileCompletionCalendarCard';
+import ProfileLifetimeStatsRow from '../components/profile/ProfileLifetimeStatsRow';
 import { useAuthStore } from '../stores/authStore';
 import type { ProfileScreenProps } from '../app/navigation';
 import { trackProfileAction } from '../services/analytics/tracking';
@@ -223,6 +224,17 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
                 trackProfileAction('profile_name_edit_opened');
                 setEditingDisplayName(true);
               }}
+            />
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <SectionHeader title="Lifetime" />
+          <View style={styles.sectionBody}>
+            <ProfileLifetimeStatsRow
+              totalBreaths={profileSummary?.totalBreaths ?? 0}
+              totalSessions={profileSummary?.totalSessions ?? 0}
+              totalHoldSeconds={profileSummary?.totalHoldSeconds ?? 0}
             />
           </View>
         </View>

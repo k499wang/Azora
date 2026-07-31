@@ -5,8 +5,9 @@ import {
   buildSevenDayExercisePlan,
   isValidDailyPlanLocalDate,
   resolveDailyExerciseTechniqueId,
+  shouldRepairLegacyDailyPlan,
   type DailyPlanExercises,
-  type GeneralDaytimeTechniqueId,
+  type DailyPlanTechniqueId,
 } from '../domain/dailyExercisePlan';
 
 interface UseDailyExercisePlanInput {
@@ -18,7 +19,7 @@ interface UseDailyExercisePlanInput {
 
 interface DailyExercisePlanResolution {
   plan: DailyPlanExercises | null;
-  techniqueId: GeneralDaytimeTechniqueId | null;
+  techniqueId: DailyPlanTechniqueId | null;
   isLoading: boolean;
 }
 
@@ -56,7 +57,15 @@ export function useDailyExercisePlan({
   const planQuery = useDailyPlanExercisesQuery(userId);
   const { mutate: persistPlan } = useUpdateDailyPlanExercisesMutation(userId);
   const attemptedPersistenceKeysRef = useRef(new Set<string>());
-  const savedPlan = planQuery.data ?? null;
+  const readResult = planQuery.data;
+  const savedPlan = readResult?.status === 'available'
+    ? readResult.plan
+    : null;
+  const shouldUseLegacyFallback =
+    planQuery.isError ||
+    (planQuery.isSuccess &&
+      readResult != null &&
+      shouldRepairLegacyDailyPlan(readResult));
   const primaryTechniqueResolved = primaryTechniqueId !== undefined;
   const onboardingDateResolved = onboardingCompletedAt !== undefined;
   const storedPlanLookupSettled = planQuery.isSuccess || planQuery.isError;
@@ -66,7 +75,7 @@ export function useDailyExercisePlan({
       userId == null ||
       primaryTechniqueId === undefined ||
       onboardingCompletedAt === undefined ||
-      !storedPlanLookupSettled ||
+      !shouldUseLegacyFallback ||
       savedPlan != null
     ) {
       return null;
@@ -81,7 +90,7 @@ export function useDailyExercisePlan({
     onboardingCompletedAt,
     primaryTechniqueId,
     savedPlan,
-    storedPlanLookupSettled,
+    shouldUseLegacyFallback,
     todayLocalDate,
     userId,
   ]);
@@ -106,7 +115,8 @@ export function useDailyExercisePlan({
       userId == null ||
       onboardingCompletedAt === undefined ||
       !planQuery.isSuccess ||
-      planQuery.data != null ||
+      readResult == null ||
+      !shouldRepairLegacyDailyPlan(readResult) ||
       fallbackPlan == null
     ) {
       return;
@@ -120,9 +130,9 @@ export function useDailyExercisePlan({
   }, [
     fallbackPlan,
     onboardingCompletedAt,
-    planQuery.data,
     planQuery.isSuccess,
     persistPlan,
+    readResult,
     userId,
   ]);
 
@@ -132,7 +142,7 @@ export function useDailyExercisePlan({
     isLoading:
       userId != null &&
       (!primaryTechniqueResolved ||
-        (savedPlan == null &&
-          (!storedPlanLookupSettled || !onboardingDateResolved))),
+        !storedPlanLookupSettled ||
+        (shouldUseLegacyFallback && !onboardingDateResolved)),
   };
 }

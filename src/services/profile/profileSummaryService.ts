@@ -7,6 +7,14 @@ type BreathHoldRow = Pick<
   Database['public']['Tables']['breath_hold_sessions']['Row'],
   'hold_seconds' | 'local_date'
 >;
+type HoldSecondsRow = Pick<
+  Database['public']['Tables']['breath_hold_sessions']['Row'],
+  'hold_seconds'
+>;
+type BreathingRoundsRow = Pick<
+  Database['public']['Tables']['breathing_sessions']['Row'],
+  'rounds_completed'
+>;
 type DailyActivityRow = Pick<
   Database['public']['Tables']['daily_activity']['Row'],
   'activity_date' | 'qualifies_for_streak'
@@ -21,6 +29,9 @@ export interface ProfileSummary {
   } | null;
   longestHoldSeconds: number | null;
   breathHoldCount: number;
+  totalSessions: number;
+  totalBreaths: number;
+  totalHoldSeconds: number;
   activeDays: number;
   currentStreak: number;
   longestStreak: number;
@@ -37,6 +48,9 @@ export interface ProfileSummaryPartialErrors {
   profile: boolean;
   longestHold: boolean;
   breathHoldCount: boolean;
+  breathingSessionCount: boolean;
+  totalBreaths: boolean;
+  totalHoldSeconds: boolean;
   activeDays: boolean;
   streak: boolean;
   completedDays: boolean;
@@ -125,6 +139,25 @@ export function formatProfileHoldTime(totalSeconds: number | null): string {
   return secondsToDisplay(totalSeconds);
 }
 
+export function formatProfileDuration(totalSeconds: number): string {
+  if (totalSeconds < 60) {
+    return `${totalSeconds}s`;
+  }
+
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+
+  if (hours === 0) {
+    return `${minutes}m`;
+  }
+
+  return `${hours}h ${minutes}m`;
+}
+
+export function formatProfileCount(value: number): string {
+  return value.toLocaleString('en-US');
+}
+
 export async function getProfileSummary(userId: string): Promise<ProfileSummary> {
   const supabase = requireSupabaseClient();
   const today = new Date();
@@ -149,6 +182,21 @@ export async function getProfileSummary(userId: string): Promise<ProfileSummary>
   const breathHoldCountQuery = supabase
     .from('breath_hold_sessions')
     .select('id', { count: 'exact', head: true })
+    .eq('user_id', userId);
+
+  const breathingSessionCountQuery = supabase
+    .from('breathing_sessions')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', userId);
+
+  const totalBreathsQuery = supabase
+    .from('breathing_sessions')
+    .select('rounds_completed')
+    .eq('user_id', userId);
+
+  const totalHoldSecondsQuery = supabase
+    .from('breath_hold_sessions')
+    .select('hold_seconds')
     .eq('user_id', userId);
 
   const activeDaysQuery = supabase
@@ -181,6 +229,9 @@ export async function getProfileSummary(userId: string): Promise<ProfileSummary>
     profileResult,
     longestHoldResult,
     breathHoldCountResult,
+    breathingSessionCountResult,
+    totalBreathsResult,
+    totalHoldSecondsResult,
     activeDaysResult,
     streakResult,
     completedDaysResult,
@@ -189,6 +240,9 @@ export async function getProfileSummary(userId: string): Promise<ProfileSummary>
     profileQuery,
     longestHoldQuery,
     breathHoldCountQuery,
+    breathingSessionCountQuery,
+    totalBreathsQuery,
+    totalHoldSecondsQuery,
     activeDaysQuery,
     streakQuery,
     completedDaysQuery,
@@ -200,6 +254,13 @@ export async function getProfileSummary(userId: string): Promise<ProfileSummary>
     longestHold: longestHoldResult.status === 'rejected' || longestHoldResult.value.error != null,
     breathHoldCount:
       breathHoldCountResult.status === 'rejected' || breathHoldCountResult.value.error != null,
+    breathingSessionCount:
+      breathingSessionCountResult.status === 'rejected' ||
+      breathingSessionCountResult.value.error != null,
+    totalBreaths:
+      totalBreathsResult.status === 'rejected' || totalBreathsResult.value.error != null,
+    totalHoldSeconds:
+      totalHoldSecondsResult.status === 'rejected' || totalHoldSecondsResult.value.error != null,
     activeDays: activeDaysResult.status === 'rejected' || activeDaysResult.value.error != null,
     streak: streakResult.status === 'rejected' || streakResult.value.error != null,
     completedDays:
@@ -220,6 +281,19 @@ export async function getProfileSummary(userId: string): Promise<ProfileSummary>
     breathHoldCountResult.status === 'fulfilled' && breathHoldCountResult.value.error == null
       ? breathHoldCountResult.value.count
       : null;
+  const breathingSessionCount =
+    breathingSessionCountResult.status === 'fulfilled' &&
+    breathingSessionCountResult.value.error == null
+      ? breathingSessionCountResult.value.count
+      : null;
+  const breathingRounds =
+    totalBreathsResult.status === 'fulfilled' && totalBreathsResult.value.error == null
+      ? ((totalBreathsResult.value.data ?? []) as BreathingRoundsRow[])
+      : [];
+  const holdSeconds =
+    totalHoldSecondsResult.status === 'fulfilled' && totalHoldSecondsResult.value.error == null
+      ? ((totalHoldSecondsResult.value.data ?? []) as HoldSecondsRow[])
+      : [];
   const activeDays =
     activeDaysResult.status === 'fulfilled' && activeDaysResult.value.error == null
       ? activeDaysResult.value.count
@@ -247,6 +321,9 @@ export async function getProfileSummary(userId: string): Promise<ProfileSummary>
         },
     longestHoldSeconds: longestHold?.hold_seconds ?? null,
     breathHoldCount: breathHoldCount ?? 0,
+    totalSessions: (breathHoldCount ?? 0) + (breathingSessionCount ?? 0),
+    totalBreaths: breathingRounds.reduce((total, row) => total + (row.rounds_completed ?? 0), 0),
+    totalHoldSeconds: holdSeconds.reduce((total, row) => total + row.hold_seconds, 0),
     activeDays: activeDays ?? 0,
     currentStreak: streak?.current_streak ?? 0,
     longestStreak: streak?.longest_streak ?? 0,

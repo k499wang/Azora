@@ -5,6 +5,14 @@ import {
 
 const CLOCK_TIME_PATTERN = /^([01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/;
 
+export type DailyPlanActionId = keyof DailyPlanSchedule['actions'];
+
+const DAILY_PLAN_ACTION_TIE_ORDER: readonly DailyPlanActionId[] = [
+  'session',
+  'handPicked',
+  'checkIn',
+];
+
 export function createDefaultDailyPlanSchedule(): DailyPlanSchedule {
   return {
     version: 1,
@@ -79,4 +87,29 @@ export function formatDailyPlanTime(
   const hour12 = hour24 % 12 === 0 ? 12 : hour24 % 12;
 
   return `${hour12}:${minute} ${suffix}`;
+}
+
+export function sortDailyPlanActionIdsByTime(
+  actions: Partial<Record<DailyPlanActionId, unknown>>,
+): DailyPlanActionId[] {
+  return [...DAILY_PLAN_ACTION_TIE_ORDER].sort((left, right) => {
+    const leftTime = normalizeDailyPlanTime(
+      actions[left],
+      DEFAULT_DAILY_PLAN_SCHEDULE.actions[left],
+    );
+    const rightTime = normalizeDailyPlanTime(
+      actions[right],
+      DEFAULT_DAILY_PLAN_SCHEDULE.actions[right],
+    );
+    const [leftHour, leftMinute] = leftTime.split(':').map(Number);
+    const [rightHour, rightMinute] = rightTime.split(':').map(Number);
+    const timeDifference =
+      leftHour * 60 + leftMinute - (rightHour * 60 + rightMinute);
+
+    if (timeDifference !== 0) return timeDifference;
+    return (
+      DAILY_PLAN_ACTION_TIE_ORDER.indexOf(left) -
+      DAILY_PLAN_ACTION_TIE_ORDER.indexOf(right)
+    );
+  });
 }

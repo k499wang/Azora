@@ -18,7 +18,7 @@ export function useUpdateDailyPlanExercisesMutation(userId: string | null) {
     },
     onSuccess: async (plan) => {
       const queryKey = getDailyPlanExercisesQueryKey(userId);
-      queryClient.setQueryData(queryKey, plan);
+      queryClient.setQueryData(queryKey, { status: 'available', plan });
       await queryClient.invalidateQueries({ queryKey, exact: true });
     },
   });

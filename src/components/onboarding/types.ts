@@ -2,6 +2,7 @@ import type { IconName } from '../common/icons/Icon';
 
 export type OnboardingStep =
   | 'intent'
+  | 'intentPriority'
   | 'intentReflection'
   | 'intentProjection'
   | 'brainScience'

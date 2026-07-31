@@ -25,7 +25,7 @@ The most common bug pattern with TanStack Query (and the one AI tools repeatedly
 | `getUserEntitlementQueryKey` | `src/queries/subscriptions/useUserEntitlementQuery.ts` | Entitlement service (RevenueCat + Supabase) | |
 | `getNotificationPreferencesQueryKey` | `src/queries/notifications/useNotificationPreferencesQuery.ts` | Notification preferences | |
 | `getDailyPlanScheduleQueryKey` | `src/queries/dailyPlan/useDailyPlanScheduleQuery.ts` | `user_preferences.daily_plan_schedule` | Device-local display times; independent of notifications. |
-| `getDailyPlanExercisesQueryKey` | `src/queries/dailyPlan/useDailyPlanExercisesQuery.ts` | `user_preferences.daily_plan_exercises` | Stable seven-day general-daytime exercise plan; nullable for backward-compatible client derivation. |
+| `getDailyPlanExercisesQueryKey` | `src/queries/dailyPlan/useDailyPlanExercisesQuery.ts` | `user_preferences.daily_plan_exercises` | Caches `DailyPlanExercisesReadResult` (`available`, `missing`, `invalid_v1`, `invalid_v2`, or `unsupported`); successful mutations seed `available` before exact invalidation. |
 | `getCompletedBreathingTechniqueIdsQueryKey` | `src/queries/tracking/useCompletedBreathingTechniqueIdsQuery.ts` | Completed `breathing_sessions.technique_id` values for one user and local date | Drives independent completion state for the two guided cards in Today’s Dailies. |
 
 ---

@@ -8,7 +8,11 @@ import { getBackgroundImageSource } from '../../services/images/backgroundImageC
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
-import { formatDailyPlanTime } from '../../services/dailyPlan/dailyPlanScheduleCore';
+import {
+  formatDailyPlanTime,
+  sortDailyPlanActionIdsByTime,
+  type DailyPlanActionId,
+} from '../../services/dailyPlan/dailyPlanScheduleCore';
 import { DEFAULT_DAILY_PLAN_SCHEDULE } from '../../services/dailyPlan/types';
 
 const TIMELINE_COLUMN_WIDTH = 32;
@@ -20,7 +24,7 @@ const TODAY_TASK_CARD_BACKGROUND = '#F4F9FF';
 const TIMELINE_ROW_GAP = spacing.lg;
 const TIMELINE_RAIL_INSET = TIMELINE_ROW_HEIGHT / 2 + TIMELINE_MARKER_SIZE / 2;
 const TIMELINE_RAIL_LEFT = TIMELINE_COLUMN_WIDTH / 2 - TIMELINE_RAIL_WIDTH / 2;
-const TIMELINE_DASHES = Array.from({ length: 8 }, (_, index) => index);
+const TIMELINE_DASHES = Array.from({ length: 17 }, (_, index) => index);
 
 interface TodaysDailiesSectionProps {
   technique: BreathingTechnique | null;
@@ -178,6 +182,49 @@ export default function TodaysDailiesSection({
     ? 'Personalized for you'
     : `${formatCategory(technique.category)} breathing`;
   const guidedDetailIcon = technique?.icon ?? 'weather-windy';
+  const rows: Record<DailyPlanActionId, DailyTaskRowProps> = {
+    session: {
+      title: guidedTitle,
+      scheduledTime: guidedScheduledTime,
+      detailLabel: guidedDetail,
+      detailIcon: guidedDetailIcon,
+      imageSource:
+        technique?.backgroundImage ?? getBackgroundImageSource('dailyPlan'),
+      completed: guidedExerciseCompleted,
+      locked: guidedLocked,
+      loading: techniqueLoading,
+      onPress: technique == null ? undefined : onPressGuidedExercise,
+    },
+    handPicked: {
+      title: handPickedTechnique?.name ?? 'Azora’s daily pick',
+      scheduledTime: handPickedScheduledTime,
+      detailLabel: 'Azora’s daily pick',
+      detailIcon: handPickedTechnique?.icon ?? 'creation-outline',
+      imageSource:
+        handPickedTechnique?.backgroundImage ??
+        getBackgroundImageSource('dailyPlan'),
+      completed: handPickedExerciseCompleted,
+      locked: handPickedLocked,
+      loading: handPickedTechniqueLoading,
+      onPress:
+        handPickedTechnique == null ? undefined : onPressHandPickedExercise,
+    },
+    checkIn: {
+      title: 'Daily Breathhold',
+      scheduledTime: breathHoldScheduledTime,
+      detailLabel: 'Daily check-in',
+      detailIcon: 'timer-sand',
+      imageSource: getBackgroundImageSource('dailyPlan'),
+      completed: breathHoldCompleted,
+      locked: breathHoldLocked,
+      onPress: onPressBreathHold,
+    },
+  };
+  const orderedActionIds = sortDailyPlanActionIdsByTime({
+    session: sessionTime,
+    handPicked: handPickedTime,
+    checkIn: breathHoldTime,
+  });
 
   return (
     <View style={styles.section}>
@@ -189,45 +236,9 @@ export default function TodaysDailiesSection({
             <View key={dash} style={styles.timelineRailDash} />
           ))}
         </View>
-        <DailyTaskRow
-          title={guidedTitle}
-          scheduledTime={guidedScheduledTime}
-          detailLabel={guidedDetail}
-          detailIcon={guidedDetailIcon}
-          imageSource={technique?.backgroundImage ?? getBackgroundImageSource('dailyPlan')}
-          completed={guidedExerciseCompleted}
-          locked={guidedLocked}
-          loading={techniqueLoading}
-          onPress={technique == null ? undefined : onPressGuidedExercise}
-        />
-
-        <DailyTaskRow
-          title={handPickedTechnique?.name ?? 'Azora’s daily pick'}
-          scheduledTime={handPickedScheduledTime}
-          detailLabel="Azora’s daily pick"
-          detailIcon={handPickedTechnique?.icon ?? 'creation-outline'}
-          imageSource={
-            handPickedTechnique?.backgroundImage ??
-            getBackgroundImageSource('dailyPlan')
-          }
-          completed={handPickedExerciseCompleted}
-          locked={handPickedLocked}
-          loading={handPickedTechniqueLoading}
-          onPress={
-            handPickedTechnique == null ? undefined : onPressHandPickedExercise
-          }
-        />
-
-        <DailyTaskRow
-          title="Daily Breathhold"
-          scheduledTime={breathHoldScheduledTime}
-          detailLabel="Daily check-in"
-          detailIcon="timer-sand"
-          imageSource={getBackgroundImageSource('dailyPlan')}
-          completed={breathHoldCompleted}
-          locked={breathHoldLocked}
-          onPress={onPressBreathHold}
-        />
+        {orderedActionIds.map((actionId) => (
+          <DailyTaskRow key={actionId} {...rows[actionId]} />
+        ))}
       </View>
     </View>
   );

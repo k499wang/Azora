@@ -1,5 +1,4 @@
 import type { AgreementValue } from '../components/onboarding/screens/AgreementScreen';
-import type { ExperienceLevel } from '../components/onboarding/screens/ExperienceScreen';
 
 export type MindMapAxis = 'calm' | 'recovery' | 'focus' | 'resilience' | 'breathEase';
 
@@ -23,18 +22,15 @@ const AXIS_LABEL: Record<MindMapAxis, string> = {
   breathEase: 'Breathing',
 };
 
-const EXPERIENCE_BREATH_SCORE: Record<ExperienceLevel, number> = {
-  regular: 78,
-  little: 50,
-  never: 32,
-};
-
-const EXPERIENCE_RESILIENCE_BONUS: Record<ExperienceLevel, number> = {
-  regular: 12,
-  little: 5,
-  never: 0,
-};
-
+const BASE_BREATH_SCORE = 50;
+const BASE_RESILIENCE_BONUS = 5;
+const GROWTH_AREA_TIE_PRIORITY: readonly MindMapAxis[] = [
+  'breathEase',
+  'resilience',
+  'focus',
+  'recovery',
+  'calm',
+];
 const MIN_FINAL_MIND_MAP_SCORE = 5;
 
 function clamp(value: number, min = 0, max = 100): number {
@@ -56,7 +52,6 @@ interface ScoreInputs {
   sleepQuality: number;
   racingLevel?: number;
   agreementResponses: Record<string, AgreementValue | null>;
-  experienceLevel: ExperienceLevel | null;
 }
 
 export function computeMindMap({
@@ -64,7 +59,6 @@ export function computeMindMap({
   sleepQuality,
   racingLevel,
   agreementResponses,
-  experienceLevel,
 }: ScoreInputs): MindMapResult {
   const stress01 = clamp(stressLevel, 1, 10) / 10;
   const sleep01 = clamp(sleepQuality, 1, 10) / 10;
@@ -75,10 +69,6 @@ export function computeMindMap({
       ? (racingAgreement + clamp(racingLevel, 1, 10) / 10) / 2
       : racingAgreement;
   const reactive = agreementWeight(agreementResponses.reactive);
-  const experienceBreath =
-    experienceLevel != null ? EXPERIENCE_BREATH_SCORE[experienceLevel] : 38;
-  const experienceResilience =
-    experienceLevel != null ? EXPERIENCE_RESILIENCE_BONUS[experienceLevel] : 0;
 
   const calm = clamp(
     (1 - stress01) * 78 + (1 - reactive) * 15 + (1 - racing) * 7,
@@ -93,10 +83,10 @@ export function computeMindMap({
     (1 - reactive) * 45 +
       sleep01 * 25 +
       (1 - stress01) * 18 +
-      experienceResilience,
+      BASE_RESILIENCE_BONUS,
   );
   const breathEase = clamp(
-    experienceBreath + (1 - racing) * 12 + (1 - exhausted) * 6,
+    BASE_BREATH_SCORE + (1 - racing) * 12 + (1 - exhausted) * 6,
   );
 
   const scores: MindMapScore[] = [
@@ -116,9 +106,18 @@ export function computeMindMap({
   ];
 
   const sorted = [...scores].sort((a, b) => b.value - a.value);
+  const growthArea = [...scores].sort((a, b) => {
+    const scoreDifference = a.value - b.value;
+    if (scoreDifference !== 0) return scoreDifference;
+
+    return (
+      GROWTH_AREA_TIE_PRIORITY.indexOf(a.axis) -
+      GROWTH_AREA_TIE_PRIORITY.indexOf(b.axis)
+    );
+  })[0];
   return {
     scores,
     superpower: sorted[0],
-    growthArea: sorted[sorted.length - 1],
+    growthArea,
   };
 }
