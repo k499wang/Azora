@@ -1,5 +1,6 @@
-import type { MindMapAxis } from '../../../../lib/onboardingScores';
-import type { TechniqueId } from '../techniqueCatalog';
+import type { AgreementValue } from '../../../../components/onboarding/screens/AgreementScreen';
+import { computeMindMap, type MindMapAxis } from '../../../../lib/onboardingScores';
+import { isTechniqueId, type TechniqueId } from '../techniqueCatalog';
 
 export const GENERAL_DAYTIME_POOL_V1 = [
   'box',
@@ -152,6 +153,31 @@ export const GROWTH_AREA_TECHNIQUE_ORDER_V2 = {
   readonly GrowthAreaDaytimeTechniqueId[]
 >;
 
+/**
+ * Last resort for an account whose stored assessment is incomplete, so the
+ * mind map cannot be recomputed. The primary technique is the only other
+ * durable record of what the user came for.
+ */
+const GROWTH_AREA_AXIS_BY_TECHNIQUE = {
+  box: 'focus',
+  '478': 'recovery',
+  wimhof: 'resilience',
+  resonance: 'breathEase',
+  relaxing: 'calm',
+  belly: 'calm',
+  'extended-exhale': 'calm',
+  sitali: 'calm',
+  triangle: 'focus',
+  'deep-box': 'focus',
+  bhastrika: 'resilience',
+  'morning-charge': 'resilience',
+  'night-settle': 'recovery',
+  'sleep-descent': 'recovery',
+  'coherent-6': 'breathEase',
+} as const satisfies Record<TechniqueId, MindMapAxis>;
+
+export const DEFAULT_GROWTH_AREA_AXIS: MindMapAxis = 'calm';
+
 type SevenDayTechniqueIds<T extends string> = readonly [T, T, T, T, T, T, T];
 
 export interface DailyPlanExercisesV1 {
@@ -187,6 +213,23 @@ interface BuildSevenDayExercisePlanInput {
 interface BuildGrowthAreaSevenDayExercisePlanInput {
   primaryTechniqueId: string | null | undefined;
   growthAreaAxis: MindMapAxis;
+  startsOn: string;
+}
+
+/** The persisted onboarding answers `computeMindMap` scores. */
+export interface GrowthAreaAssessment {
+  stressLevel?: number | null;
+  sleepQuality?: number | null;
+  agreementResponses?: Record<string, AgreementValue | null> | null;
+}
+
+interface ResolveGrowthAreaAxisInput {
+  assessment: GrowthAreaAssessment | null | undefined;
+  primaryTechniqueId: string | null | undefined;
+}
+
+interface BuildRebuiltSevenDayExercisePlanInput
+  extends ResolveGrowthAreaAxisInput {
   startsOn: string;
 }
 
@@ -339,25 +382,48 @@ export function buildSevenDayExercisePlan({
   };
 }
 
-export function buildGrowthAreaSevenDayExercisePlan({
+/**
+ * The growth area for a plan that does not carry one. Only V2 plans store the
+ * axis, so a plan being rebuilt has to establish it again.
+ *
+ * The mind map is not persisted, but its inputs are: `computeMindMap` is
+ * deterministic over the stress, sleep, and agreement answers on `profiles`,
+ * so the same axis the user saw during onboarding can be recomputed rather
+ * than guessed. The technique mapping is the fallback for an account that
+ * skipped those questions or predates them.
+ */
+export function resolveGrowthAreaAxis({
+  assessment,
   primaryTechniqueId,
-  growthAreaAxis,
-  startsOn,
-}: BuildGrowthAreaSevenDayExercisePlanInput): DailyPlanExercisesV1 {
-  if (!isValidDailyPlanLocalDate(startsOn)) {
-    throw new Error(`Invalid daily exercise plan start date: "${startsOn}".`);
+}: ResolveGrowthAreaAxisInput): MindMapAxis {
+  if (assessment?.stressLevel != null && assessment.sleepQuality != null) {
+    return computeMindMap({
+      stressLevel: assessment.stressLevel,
+      sleepQuality: assessment.sleepQuality,
+      agreementResponses: assessment.agreementResponses ?? {},
+    }).growthArea.axis;
   }
 
-  const techniqueIds = GROWTH_AREA_TECHNIQUE_ORDER[growthAreaAxis]
-    .filter((techniqueId) => techniqueId !== primaryTechniqueId)
-    .slice(0, 7) as unknown as SevenDayTechniqueIds<GeneralDaytimeTechniqueId>;
+  if (!isTechniqueId(primaryTechniqueId)) return DEFAULT_GROWTH_AREA_AXIS;
 
-  return {
-    version: 1,
-    poolVersion: 'general_daytime_v1',
+  return GROWTH_AREA_AXIS_BY_TECHNIQUE[primaryTechniqueId];
+}
+
+/**
+ * Rebuilds an account that has no usable stored plan — or one still on the
+ * eight-technique V1 pool — onto the V2 pool, so the techniques added after
+ * the V1 contract reach existing users instead of only new ones.
+ */
+export function buildRebuiltSevenDayExercisePlan({
+  assessment,
+  primaryTechniqueId,
+  startsOn,
+}: BuildRebuiltSevenDayExercisePlanInput): DailyPlanExercisesV2 {
+  return buildGrowthAreaSevenDayExercisePlanV2({
+    primaryTechniqueId,
+    growthAreaAxis: resolveGrowthAreaAxis({ assessment, primaryTechniqueId }),
     startsOn,
-    techniqueIds,
-  };
+  });
 }
 
 export function buildGrowthAreaSevenDayExercisePlanV2({
@@ -434,10 +500,18 @@ export function sanitizeDailyPlanExercises(
   return result.status === 'available' ? result.plan : null;
 }
 
-export function shouldRepairLegacyDailyPlan(
+/**
+ * True for every stored state that should be replaced with a freshly built V2
+ * plan: nothing stored, a corrupt payload of either version, or a valid plan
+ * still on the V1 pool. A payload from a future version reads as `unsupported`
+ * and is left alone — a rolled-back client must not overwrite it.
+ */
+export function shouldRebuildDailyPlanAsV2(
   result: DailyPlanExercisesReadResult,
 ): boolean {
-  return result.status === 'missing' || result.status === 'invalid_v1';
+  if (result.status === 'available') return result.plan.version === 1;
+
+  return result.status !== 'unsupported';
 }
 
 export function resolveDailyExerciseTechniqueIds(

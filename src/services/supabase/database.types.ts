@@ -1259,6 +1259,14 @@ export type Database = {
         Returns: string
       }
       ensure_profile_exists: { Args: { p_user_id: string }; Returns: undefined }
+      profile_lifetime_totals: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          total_breaths: number
+          total_sessions: number
+          total_hold_seconds: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

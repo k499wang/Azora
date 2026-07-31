@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useDailyPlanExercisesQuery } from '../../../../queries/dailyPlan/useDailyPlanExercisesQuery';
 import { useUpdateDailyPlanExercisesMutation } from '../../../../queries/dailyPlan/useUpdateDailyPlanExercisesMutation';
+import { useSavedOnboardingProfileQuery } from '../../../../queries/profile/useSavedOnboardingProfileQuery';
 import {
-  buildSevenDayExercisePlan,
+  buildRebuiltSevenDayExercisePlan,
   isValidDailyPlanLocalDate,
   resolveDailyExerciseTechniqueId,
-  shouldRepairLegacyDailyPlan,
+  shouldRebuildDailyPlanAsV2,
   type DailyPlanExercises,
   type DailyPlanTechniqueId,
 } from '../domain/dailyExercisePlan';
@@ -61,41 +62,53 @@ export function useDailyExercisePlan({
   const savedPlan = readResult?.status === 'available'
     ? readResult.plan
     : null;
-  const shouldUseLegacyFallback =
+  const needsRebuild =
     planQuery.isError ||
     (planQuery.isSuccess &&
       readResult != null &&
-      shouldRepairLegacyDailyPlan(readResult));
+      shouldRebuildDailyPlanAsV2(readResult));
+  // Only a rebuild needs the onboarding answers, so the assessment is not
+  // fetched for the accounts that already store their growth area.
+  const assessmentQuery = useSavedOnboardingProfileQuery(userId, needsRebuild);
+  const assessmentSettled = assessmentQuery.isSuccess || assessmentQuery.isError;
   const primaryTechniqueResolved = primaryTechniqueId !== undefined;
   const onboardingDateResolved = onboardingCompletedAt !== undefined;
   const storedPlanLookupSettled = planQuery.isSuccess || planQuery.isError;
 
-  const fallbackPlan = useMemo(() => {
+  const rebuiltPlan = useMemo(() => {
     if (
       userId == null ||
       primaryTechniqueId === undefined ||
       onboardingCompletedAt === undefined ||
-      !shouldUseLegacyFallback ||
-      savedPlan != null
+      !needsRebuild ||
+      !assessmentSettled
     ) {
       return null;
     }
 
-    return buildSevenDayExercisePlan({
-      userId,
+    // A stored V1 plan keeps its own start date so upgrading its pool does not
+    // restart the seven-day rotation on whatever day the upgrade lands.
+    const startsOn = savedPlan != null
+      ? savedPlan.startsOn
+      : resolvePlanStartDate(onboardingCompletedAt, todayLocalDate);
+
+    return buildRebuiltSevenDayExercisePlan({
+      assessment: assessmentQuery.data,
       primaryTechniqueId,
-      startsOn: resolvePlanStartDate(onboardingCompletedAt, todayLocalDate),
+      startsOn,
     });
   }, [
+    assessmentQuery.data,
+    assessmentSettled,
+    needsRebuild,
     onboardingCompletedAt,
     primaryTechniqueId,
     savedPlan,
-    shouldUseLegacyFallback,
     todayLocalDate,
     userId,
   ]);
 
-  const plan = primaryTechniqueResolved ? savedPlan ?? fallbackPlan : null;
+  const plan = primaryTechniqueResolved ? rebuiltPlan ?? savedPlan : null;
   const techniqueId = useMemo(
     () =>
       plan == null
@@ -116,19 +129,19 @@ export function useDailyExercisePlan({
       onboardingCompletedAt === undefined ||
       !planQuery.isSuccess ||
       readResult == null ||
-      !shouldRepairLegacyDailyPlan(readResult) ||
-      fallbackPlan == null
+      !shouldRebuildDailyPlanAsV2(readResult) ||
+      rebuiltPlan == null
     ) {
       return;
     }
 
-    const persistenceKey = `${userId}:${JSON.stringify(fallbackPlan)}`;
+    const persistenceKey = `${userId}:${JSON.stringify(rebuiltPlan)}`;
     if (attemptedPersistenceKeysRef.current.has(persistenceKey)) return;
 
     attemptedPersistenceKeysRef.current.add(persistenceKey);
-    persistPlan(fallbackPlan);
+    persistPlan(rebuiltPlan);
   }, [
-    fallbackPlan,
+    rebuiltPlan,
     onboardingCompletedAt,
     planQuery.isSuccess,
     persistPlan,
@@ -143,6 +156,8 @@ export function useDailyExercisePlan({
       userId != null &&
       (!primaryTechniqueResolved ||
         !storedPlanLookupSettled ||
-        (shouldUseLegacyFallback && !onboardingDateResolved)),
+        (needsRebuild &&
+          savedPlan == null &&
+          (!onboardingDateResolved || !assessmentSettled))),
   };
 }

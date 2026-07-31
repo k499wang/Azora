@@ -205,7 +205,7 @@ guided-session sizing. Guided exercises continue to use each technique's
 `defaultRounds`; do not imply that the onboarding time answer changes their
 executed duration.
 
-### New onboarding and legacy repair
+### New onboarding and plan rebuilds
 
 New onboarding calls `buildGrowthAreaSevenDayExercisePlanV2` and writes:
 
@@ -232,32 +232,59 @@ device-local onboarding date and uses the existing
 `user_preferences.daily_plan_exercises` JSONB column, query key, service, and
 mutation.
 
-Valid existing V1 and V2 plans are always reused as stored. They do not
-regenerate when the app adds V2, recalculates a growth area, or changes the
-primary technique.
+Valid stored V2 plans are always reused as stored. They do not regenerate when
+the app recalculates a growth area or changes the primary technique.
 
 The service returns a `DailyPlanExercisesReadResult` with one of these statuses:
 
 ```text
-available   -> valid V1 or V2; use the stored plan
-missing     -> generate and persist the legacy V1 fallback
-invalid_v1  -> generate and persist the legacy V1 fallback
-invalid_v2  -> do not repair or overwrite
-unsupported -> do not repair or overwrite
+available V2 -> use the stored plan
+available V1 -> rebuild onto the V2 pool and persist
+missing      -> build and persist a V2 plan
+invalid_v1   -> build and persist a V2 plan
+invalid_v2   -> build and persist a V2 plan
+unsupported  -> do not rebuild or overwrite
 ```
 
-`buildSevenDayExercisePlan` is retained exclusively for an existing account
-with `missing` or `invalid_v1` data. It removes the primary technique, hashes
-the user ID with 32-bit FNV-1a, rotates by
-`hash % available.length`, and takes seven. The same repair inputs always
-produce the same fallback; it does not use `Math.random()`.
+`shouldRebuildDailyPlanAsV2` makes that call. Only `unsupported` — a payload
+from a future contract — is left untouched, so a rolled-back client cannot
+destroy a newer write.
 
-The hook displays that fallback immediately after the profile inputs and plan
-lookup resolve. After a successful `missing` or `invalid_v1` lookup, it attempts
-to persist the repair once per mounted resolution. A query failure may display
-the deterministic fallback but is not a successful repair classification and
-does not trigger a write. `invalid_v2` and `unsupported` intentionally produce
-no repair plan so older or corrupt newer contracts are not destroyed.
+`buildRebuiltSevenDayExercisePlan` builds the replacement. Only V2 plans store
+`growthAreaAxis`, so a rebuild has to establish it again. `resolveGrowthAreaAxis`
+does that in two steps:
+
+1. The mind map itself is never persisted, but its inputs are.
+   `profiles.stress_level`, `profiles.sleep_quality`, and
+   `profiles.agreement_responses` are written by `saveOnboardingProfile` and
+   read back by `getSavedOnboardingProfile`, and `computeMindMap` is
+   deterministic over them, so the axis the user actually saw during onboarding
+   is recomputed rather than guessed. `racingLevel` is not persisted and is
+   omitted, which can move a borderline axis.
+2. When `stress_level` or `sleep_quality` is null — the user skipped those
+   questions, or the account predates `20260504000100_add_onboarding_assessment`
+   — `GROWTH_AREA_AXIS_BY_TECHNIQUE` derives an axis from the primary
+   technique, defaulting to `DEFAULT_GROWTH_AREA_AXIS` (`calm`) when the primary
+   is missing or unrecognized.
+
+The plan is otherwise built exactly like a new onboarding V2 plan. This is what carries `deep-box`, `wimhof`, and `bhastrika`
+to existing accounts instead of only new ones. A rebuilt V1 plan keeps its
+stored `startsOn`, so upgrading the pool does not restart the seven-day
+rotation.
+
+`useSavedOnboardingProfileQuery` is enabled only when a rebuild is needed, so
+accounts that already store their axis do not pay for the assessment read.
+
+The hook keeps showing a stored V1 plan while the rebuild resolves, and shows
+the rebuilt plan as soon as the profile inputs, assessment, and plan lookup
+settle. After a
+successful lookup it attempts the write once per mounted resolution. A query
+failure may display a derived plan but is not a successful classification and
+does not trigger a write.
+
+`buildSevenDayExercisePlan` — the user-ID-hashed V1 builder — is no longer used
+in the app and is retained only as the canonical shape of the V1 rows still in
+the database.
 
 For reference, V1 remains this contract:
 
@@ -350,9 +377,9 @@ daily pool. Complete this checklist in one change:
 ### Expanding the daily pool safely
 
 Treat both versioned pools and all of their growth-area orders as immutable. Do
-not add, remove, or reorder entries in place. V1 legacy repair depends on the V1
-pool order, while onboarding and V2 primary replacement depend on the V2 axis
-orders. An in-place edit can change a generated plan or make another client
+not add, remove, or reorder entries in place. Stored V1 plans still resolve
+against the V1 pool order, while onboarding, rebuilds, and V2 primary
+replacement depend on the V2 axis orders. An in-place edit can change a generated plan or make another client
 reject a stored payload.
 
 Use this checklist before making another exercise eligible:
@@ -365,13 +392,13 @@ Use this checklist before making another exercise eligible:
    constant and parser unchanged. Define a complete order for all five axes.
 3. Extend the stored-plan union, sanitizer, reader, and resolver to read V1,
    V2, and the new version. Existing plans must retain their original order.
-4. Keep unknown future versions in the `unsupported` non-repair path. Never
+4. Keep unknown future versions in the `unsupported` non-rebuild path. Never
    collapse them into `missing` or `invalid_v1`.
-5. Define which users receive the new version: normally new plans only. If
-   existing users should migrate, specify an intentional migration rule and
-   start-date policy rather than regenerating silently.
+5. Define which users receive the new version. Older-version plans are rebuilt
+   onto the newest pool and keep their stored `startsOn`; state the axis and
+   start-date policy explicitly rather than regenerating silently.
 6. Add tests covering every supported-version fixture and resolver, exact axis
-   orders, primary replacement, legacy V1 repair, and unknown-version
+   orders, primary replacement, the rebuild path, and unknown-version
    non-overwrite behavior.
 
 ### Plan verification
@@ -380,10 +407,12 @@ Changes to plan generation, parsing, or day resolution must cover at least:
 
 - all five exact V1 and V2 growth-area orders, primary exclusion, and seven slots
 - V2 persistence of `growthAreaAxis`
-- deterministic legacy user-hash repair without using it for new onboarding
-- preservation of every valid V1 or V2 plan without regeneration
-- repair only for `missing` and `invalid_v1`; never `invalid_v2` or `unsupported`
-- downgrade-trigger behavior and server-before-client deployment order
+- axis recomputation from a stored assessment, and the technique-derived
+  fallback with its `calm` default when the assessment is incomplete
+- preservation of every valid V2 plan without regeneration
+- rebuilds for stored V1, `missing`, `invalid_v1`, and `invalid_v2`; never
+  `unsupported`
+- a rebuilt V1 plan keeping its stored `startsOn`
 - primary-intent timing precedence and sleep-quality fallback behavior
 - no score, growth-area, or pick effect from experience
 - no selection or guided-session-sizing effect from `dailyMinutes`
@@ -394,7 +423,7 @@ Changes to plan generation, parsing, or day resolution must cover at least:
 - valid local dates, pre-start clamping, day-one/day-seven mapping, and repeat
 - malformed, duplicate, unsupported-version, and unsupported-pool payloads
 - a primary technique changed after persistence
-- missing-plan legacy derivation and persistence behavior in the hook
+- missing-plan and stored-V1 rebuild and persistence behavior in the hook
 - exact cache updates and invalidation for plan writes and daily completion
 
 Run `npm run check` after code, migration, or contract changes. For a new
