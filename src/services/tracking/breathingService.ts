@@ -1,5 +1,9 @@
 import { requireSupabaseClient } from '../supabase';
 import type { Json } from '../supabase/database.types';
+import {
+  isTechniqueId,
+  type TechniqueId,
+} from '../../features/exercise/guidedBreathing/techniqueCatalog';
 import type { BreathingSessionSummary } from './types';
 
 export interface BreathingSessionBpmSampleInput {
@@ -96,4 +100,27 @@ export async function getRecentBreathingSessions(): Promise<BreathingSessionSumm
   throw new Error(
     'getRecentBreathingSessions is scaffolded but not wired yet. Read from `breathing_sessions` scoped by the authenticated user.',
   );
+}
+
+export async function getCompletedBreathingTechniqueIdsForDate(
+  userId: string,
+  localDate: string,
+): Promise<TechniqueId[]> {
+  const supabase = requireSupabaseClient();
+  const { data, error } = await supabase
+    .from('breathing_sessions')
+    .select('technique_id')
+    .eq('user_id', userId)
+    .eq('local_date', localDate)
+    .eq('completed', true);
+
+  if (error != null) throw error;
+
+  return [
+    ...new Set(
+      (data ?? [])
+        .map((session) => session.technique_id)
+        .filter(isTechniqueId),
+    ),
+  ];
 }

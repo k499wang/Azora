@@ -55,7 +55,7 @@ export default function ShareableResultScreen({
   const benchmark =
     userAge != null ? benchmarkBreathHold(holdSeconds, userAge) : null;
   const comparisonLabel = benchmark
-    ? `You are in the top ${benchmark.topPercent}% of people your age`
+    ? `Top ${benchmark.topPercent}% of people your age`
     : null;
   const lungAgeTone = lungAgeToneMeta(lungAge.deltaYears);
   const advancedStatsLocked =

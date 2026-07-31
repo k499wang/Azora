@@ -6,6 +6,7 @@ import {
 import { getProfileSummaryQueryKey } from '../profile/useProfileSummaryQuery';
 import { getDailyFeatureUsageQueryKey } from '../subscriptions/useDailyFeatureUsageQuery';
 import { getHomeStatsQueryKeyPrefix } from './useHomeStatsQuery';
+import { getCompletedBreathingTechniqueIdsQueryKey } from './useCompletedBreathingTechniqueIdsQuery';
 
 type CompleteBreathingSessionMutationInput = Omit<
   CompleteBreathingSessionInput,
@@ -71,6 +72,10 @@ export function useCompleteBreathingSessionMutation(userId: string | null) {
         }),
         queryClient.invalidateQueries({
           queryKey: getProfileSummaryQueryKey(userId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: getCompletedBreathingTechniqueIdsQueryKey(userId, localDate),
+          exact: true,
         }),
       ]);
     },

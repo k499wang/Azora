@@ -14,8 +14,8 @@ import { DEFAULT_DAILY_PLAN_SCHEDULE } from '../../services/dailyPlan/types';
 const TIMELINE_COLUMN_WIDTH = 32;
 const TIMELINE_MARKER_SIZE = 26;
 const TIMELINE_RAIL_WIDTH = 6;
-const TIMELINE_ROW_HEIGHT = 132;
-const TASK_CONTENT_SIZE = 100;
+const TIMELINE_ROW_HEIGHT = 144;
+const TASK_CONTENT_SIZE = 112;
 const TODAY_TASK_CARD_BACKGROUND = '#F4F9FF';
 const TIMELINE_ROW_GAP = spacing.lg;
 const TIMELINE_RAIL_INSET = TIMELINE_ROW_HEIGHT / 2 + TIMELINE_MARKER_SIZE / 2;
@@ -26,11 +26,16 @@ interface TodaysDailiesSectionProps {
   technique: BreathingTechnique | null;
   techniqueLoading: boolean;
   sessionTime: string;
+  handPickedTechnique: BreathingTechnique | null;
+  handPickedTechniqueLoading: boolean;
+  handPickedTime: string;
   breathHoldTime: string;
   guidedExerciseCompleted: boolean;
+  handPickedExerciseCompleted: boolean;
   breathHoldCompleted: boolean;
   exerciseAccessAllowed: boolean;
   onPressGuidedExercise: () => void;
+  onPressHandPickedExercise: () => void;
   onPressBreathHold: () => void;
 }
 
@@ -140,14 +145,21 @@ export default function TodaysDailiesSection({
   technique,
   techniqueLoading,
   sessionTime,
+  handPickedTechnique,
+  handPickedTechniqueLoading,
+  handPickedTime,
   breathHoldTime,
   guidedExerciseCompleted,
+  handPickedExerciseCompleted,
   breathHoldCompleted,
   exerciseAccessAllowed,
   onPressGuidedExercise,
+  onPressHandPickedExercise,
   onPressBreathHold,
 }: TodaysDailiesSectionProps) {
   const guidedLocked = !guidedExerciseCompleted && !exerciseAccessAllowed;
+  const handPickedLocked =
+    !handPickedExerciseCompleted && !exerciseAccessAllowed;
   const breathHoldLocked = !breathHoldCompleted && !exerciseAccessAllowed;
   const guidedTitle = technique?.name ?? 'Your breathing exercise';
   const guidedScheduledTime = formatDailyPlanTime(
@@ -157,6 +169,10 @@ export default function TodaysDailiesSection({
   const breathHoldScheduledTime = formatDailyPlanTime(
     breathHoldTime,
     DEFAULT_DAILY_PLAN_SCHEDULE.actions.checkIn,
+  );
+  const handPickedScheduledTime = formatDailyPlanTime(
+    handPickedTime,
+    DEFAULT_DAILY_PLAN_SCHEDULE.actions.handPicked,
   );
   const guidedDetail = technique == null
     ? 'Personalized for you'
@@ -183,6 +199,23 @@ export default function TodaysDailiesSection({
           locked={guidedLocked}
           loading={techniqueLoading}
           onPress={technique == null ? undefined : onPressGuidedExercise}
+        />
+
+        <DailyTaskRow
+          title={handPickedTechnique?.name ?? 'Azora’s daily pick'}
+          scheduledTime={handPickedScheduledTime}
+          detailLabel="Azora’s daily pick"
+          detailIcon={handPickedTechnique?.icon ?? 'creation-outline'}
+          imageSource={
+            handPickedTechnique?.backgroundImage ??
+            getBackgroundImageSource('dailyPlan')
+          }
+          completed={handPickedExerciseCompleted}
+          locked={handPickedLocked}
+          loading={handPickedTechniqueLoading}
+          onPress={
+            handPickedTechnique == null ? undefined : onPressHandPickedExercise
+          }
         />
 
         <DailyTaskRow

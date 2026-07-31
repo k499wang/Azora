@@ -966,6 +966,7 @@ export type Database = {
       user_preferences: {
         Row: {
           created_at: string
+          daily_plan_exercises: Json | null
           daily_plan_schedule: Json
           notification_preferences: Json
           privacy_settings: Json
@@ -975,6 +976,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          daily_plan_exercises?: Json | null
           daily_plan_schedule?: Json
           notification_preferences?: Json
           privacy_settings?: Json
@@ -984,6 +986,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          daily_plan_exercises?: Json | null
           daily_plan_schedule?: Json
           notification_preferences?: Json
           privacy_settings?: Json

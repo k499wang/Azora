@@ -94,10 +94,13 @@ import {
 import type { NotificationPreferences } from '../../services/notifications/types';
 import { useUpdateNotificationPreferencesMutation } from '../../queries/notifications/useUpdateNotificationPreferencesMutation';
 import { useUpdateDailyPlanScheduleMutation } from '../../queries/dailyPlan/useUpdateDailyPlanScheduleMutation';
+import { useUpdateDailyPlanExercisesMutation } from '../../queries/dailyPlan/useUpdateDailyPlanExercisesMutation';
 import {
   DEFAULT_DAILY_PLAN_SCHEDULE,
   type DailyPlanSchedule,
 } from '../../services/dailyPlan/types';
+import { buildSevenDayExercisePlan } from '../../features/exercise/guidedBreathing/domain/dailyExercisePlan';
+import { formatLocalDate } from '../../lib/calendar/weekCalendarDays';
 import { buildOnboardingSaveFailureDiagnostics } from '../../queries/profile/onboardingSaveDiagnostics';
 import type { SavedOnboardingProfile } from '../../services/profile/onboardingStatusService';
 import { requestStoreReview } from '../../services/reviews/storeReview';
@@ -301,6 +304,7 @@ export default function OnboardingFlow({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const updateNotificationPreferences = useUpdateNotificationPreferencesMutation(userId);
   const updateDailyPlanSchedule = useUpdateDailyPlanScheduleMutation(userId);
+  const updateDailyPlanExercises = useUpdateDailyPlanExercisesMutation(userId);
   const saveOnboardingSurvey = useSaveOnboardingSurveyMutation(userId);
   const entryStateRef = useRef<'new' | 'saved_profile'>(
     initialSavedProfile == null ? 'new' : 'saved_profile',
@@ -605,13 +609,24 @@ export default function OnboardingFlow({
         ...getStepEventInput(),
         ...buildProfileAnalyticsProperties(result),
       });
+      if (userId == null) {
+        throw new Error('Cannot save onboarding without a signed-in user.');
+      }
       const schedule = buildDailyPlanSchedule(plan);
+      const exercisePlan = buildSevenDayExercisePlan({
+        userId,
+        primaryTechniqueId: result.defaultTechniqueId,
+        startsOn: formatLocalDate(new Date()),
+      });
       await Promise.all([
         (async () => {
           // The profile owns the user_preferences row through its foreign key,
-          // so save it before persisting the independent display schedule.
+          // so save it before persisting the independent plan preferences.
           await onSaveProfile(result);
-          await updateDailyPlanSchedule.mutateAsync(schedule);
+          await Promise.all([
+            updateDailyPlanSchedule.mutateAsync(schedule),
+            updateDailyPlanExercises.mutateAsync(exercisePlan),
+          ]);
         })(),
         new Promise<void>((resolve) => setTimeout(resolve, 3500)),
       ]);

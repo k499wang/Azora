@@ -22,6 +22,7 @@ import { getBackgroundImageSource } from '../services/images/backgroundImageCach
 import { useFeatureAccess } from '../hooks/useFeatureAccess';
 import { useRecommendedTechnique } from '../features/exercise/guidedBreathing/hooks/useRecommendedTechnique';
 import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
+import { useProfileQuery } from '../queries/profile/useProfileQuery';
 import { formatLocalDate } from '../lib/calendar/weekCalendarDays';
 import { deriveHoldStats } from '../lib/holdStats';
 import type { HomeScreenProps } from '../app/navigation';
@@ -29,6 +30,9 @@ import { useHomeStatsQuery } from '../queries/tracking/useHomeStatsQuery';
 import { useAuthStore } from '../stores/authStore';
 import { useDailyPlanScheduleQuery } from '../queries/dailyPlan/useDailyPlanScheduleQuery';
 import { DEFAULT_DAILY_PLAN_SCHEDULE } from '../services/dailyPlan/types';
+import { useDailyExercisePlan } from '../features/exercise/guidedBreathing/hooks/useDailyExercisePlan';
+import { getTechnique } from '../features/exercise/guidedBreathing/techniques';
+import { useCompletedBreathingTechniqueIdsQuery } from '../queries/tracking/useCompletedBreathingTechniqueIdsQuery';
 import { PaywallPlacement } from '../services/paywall';
 import { FeatureKey } from '../services/subscriptions/featureAccess';
 import type {
@@ -77,6 +81,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const { width: windowWidth } = useWindowDimensions();
   const user = useAuthStore((state) => state.user);
   const profileSummaryQuery = useProfileSummaryQuery(user?.id ?? null);
+  const profileQuery = useProfileQuery(user?.id ?? null);
   const dailyPlanScheduleQuery = useDailyPlanScheduleQuery(user?.id ?? null);
   const dailyPlanSchedule =
     dailyPlanScheduleQuery.data ?? DEFAULT_DAILY_PLAN_SCHEDULE;
@@ -85,6 +90,22 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const recommendedTechnique = useRecommendedTechnique(user?.id ?? null);
   const [todayLocalDate, setTodayLocalDate] = useState(() => formatLocalDate(new Date()));
   const [selectedLocalDate, setSelectedLocalDate] = useState(todayLocalDate);
+  const dailyExercisePlan = useDailyExercisePlan({
+    userId: user?.id ?? null,
+    primaryTechniqueId: recommendedTechnique.isLoading
+      ? undefined
+      : recommendedTechnique.technique?.id ?? null,
+    onboardingCompletedAt:
+      profileQuery.isSuccess && !profileQuery.isPlaceholderData
+      ? profileQuery.data?.onboardingCompletedAt ?? null
+      : undefined,
+    todayLocalDate,
+  });
+  const handPickedTechnique = getTechnique(dailyExercisePlan.techniqueId);
+  const completedTechniqueIdsQuery = useCompletedBreathingTechniqueIdsQuery(
+    user?.id ?? null,
+    todayLocalDate,
+  );
   const refreshTodayLocalDate = useCallback(() => {
     const nextTodayLocalDate = formatLocalDate(new Date());
 
@@ -126,7 +147,11 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const todayActivity = stats?.dailyActivity.find(
     (activity) => activity.activityDate === todayLocalDate,
   );
-  const guidedExerciseCompleted = (todayActivity?.breathingSessionCount ?? 0) > 0;
+  const completedTechniqueIds = completedTechniqueIdsQuery.data ?? [];
+  const guidedExerciseCompleted = recommendedTechnique.technique != null &&
+    completedTechniqueIds.includes(recommendedTechnique.technique.id);
+  const handPickedExerciseCompleted = handPickedTechnique != null &&
+    completedTechniqueIds.includes(handPickedTechnique.id);
   const breathHoldCompleted = todayActivity?.dailyBreathHoldCompleted ?? false;
   const showProPaywall = useCallback((
     feature: FeatureKeyValue,
@@ -166,6 +191,24 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     }
 
     navigation.navigate('ExerciseSession', { techniqueId: technique.id });
+  };
+
+  const startHandPickedExercise = () => {
+    if (handPickedTechnique == null) return;
+
+    if (!dailyExerciseAccess.allowed && !dailyExerciseAccess.isLoading) {
+      showProPaywall(
+        FeatureKey.DailyExercise,
+        PaywallPlacement.ExercisePremiumGate,
+        dailyExerciseAccess,
+        'todays_dailies_hand_picked',
+      );
+      return;
+    }
+
+    navigation.navigate('ExerciseSession', {
+      techniqueId: handPickedTechnique.id,
+    });
   };
 
   const startDailyBreathHold = (sourceAction: string) => {
@@ -246,13 +289,18 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             technique={recommendedTechnique.technique}
             techniqueLoading={recommendedTechnique.isLoading}
             sessionTime={dailyPlanSchedule.actions.session}
+            handPickedTechnique={handPickedTechnique}
+            handPickedTechniqueLoading={dailyExercisePlan.isLoading}
+            handPickedTime={dailyPlanSchedule.actions.handPicked}
             breathHoldTime={dailyPlanSchedule.actions.checkIn}
             guidedExerciseCompleted={guidedExerciseCompleted}
+            handPickedExerciseCompleted={handPickedExerciseCompleted}
             breathHoldCompleted={breathHoldCompleted}
             exerciseAccessAllowed={
               dailyExerciseAccess.allowed || dailyExerciseAccess.isLoading
             }
             onPressGuidedExercise={startGuidedExercise}
+            onPressHandPickedExercise={startHandPickedExercise}
             onPressBreathHold={() => startDailyBreathHold('todays_dailies_breathhold')}
           />
           <View style={styles.dailyPlanSection}>
