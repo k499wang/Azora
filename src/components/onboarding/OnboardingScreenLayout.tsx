@@ -98,6 +98,22 @@ export default function OnboardingScreenLayout({
   const contentHeight = useRef(0);
   const [hasOverflow, setHasOverflow] = useState(false);
 
+  // The centred body is absolutely positioned, so its height never reaches the
+  // scroll view's content size and a body taller than the phone would be
+  // clipped with no way to reach the rest. Measure it and grow the content box
+  // to match, which both un-clips the body and gives the scroll view something
+  // to scroll. Screens that fit are unaffected.
+  const [centeredBodyHeight, setCenteredBodyHeight] = useState(0);
+  const [viewport, setViewport] = useState(0);
+  // screenCenterStyle pads the overlay, so the box has to clear that too or the
+  // padding eats back into the body it was grown to hold.
+  const centeredBodyBox =
+    centeredBodyHeight + (screenCenterStyle ? Math.abs(blockDelta) : 0);
+  const centeredBodyStyle =
+    centerBody && viewport > 0 && centeredBodyBox > viewport
+      ? { minHeight: centeredBodyBox }
+      : null;
+
   useEffect(() => {
     if (!hasOverflow) {
       bounce.setValue(0);
@@ -140,7 +156,12 @@ export default function OnboardingScreenLayout({
 
   const handleViewportLayout = (event: LayoutChangeEvent) => {
     viewportHeight.current = event.nativeEvent.layout.height;
+    setViewport(event.nativeEvent.layout.height);
     recomputeOverflow();
+  };
+
+  const handleCenteredBodyLayout = (event: LayoutChangeEvent) => {
+    setCenteredBodyHeight(event.nativeEvent.layout.height);
   };
 
   const handleContentSizeChange = (_: number, height: number) => {
@@ -290,7 +311,10 @@ export default function OnboardingScreenLayout({
           ref={scrollRef}
           style={styles.scroll}
           contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={true}
+          scrollEnabled={hasOverflow}
+          showsVerticalScrollIndicator={hasOverflow}
+          bounces={hasOverflow}
+          overScrollMode={hasOverflow ? 'always' : 'never'}
           keyboardShouldPersistTaps="handled"
           scrollEventThrottle={16}
           onLayout={handleViewportLayout}
@@ -301,6 +325,7 @@ export default function OnboardingScreenLayout({
             style={[
               styles.content,
               centerBody && styles.contentCentered,
+              centeredBodyStyle,
               { transform: [{ scale }] },
             ]}
           >
@@ -363,7 +388,12 @@ export default function OnboardingScreenLayout({
                 style={[styles.bodyCenteredOverlay, screenCenterStyle]}
                 pointerEvents="box-none"
               >
-                <View style={styles.bodyCenteredInner}>{children}</View>
+                <View
+                  style={styles.bodyCenteredInner}
+                  onLayout={handleCenteredBodyLayout}
+                >
+                  {children}
+                </View>
               </View>
             ) : (
               <View style={styles.body}>{children}</View>

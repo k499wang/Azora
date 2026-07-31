@@ -332,7 +332,7 @@ export default function OnboardingPaywallScreen({
           ) : (
             <View style={styles.headerButton} />
           )}
-          {onContinueWithoutPro != null ? (
+          {isFinal && onContinueWithoutPro != null ? (
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Close paywall"
