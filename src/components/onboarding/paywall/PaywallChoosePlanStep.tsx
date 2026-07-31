@@ -41,7 +41,7 @@ export function PaywallChoosePlanStep({
           {hasAnnualTrial ? 'Your 7-day Free Trial' : 'Unlock Azora Pro'}
         </Text>
         <View style={styles.titleDivider} />
-        {showCancelAnytime ? (
+        {!hasAnnualTrial && showCancelAnytime ? (
           <Text style={[styles.trialNote, styles.trialNoteDark]}>Cancel anytime</Text>
         ) : null}
       </View>

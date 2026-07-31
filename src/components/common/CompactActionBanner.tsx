@@ -2,20 +2,26 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
-import Icon from '../common/icons/Icon';
-import { Text } from '../common/Text';
+import Icon, { type IconName } from './icons/Icon';
+import { Text } from './Text';
 
-const SURVEY_COPY = 'Take a survey and get 50% off';
-
-interface HomeSurveyBannerProps {
+interface CompactActionBannerProps {
+  label: string;
+  icon: IconName;
   onPress?: () => void;
+  accessibilityLabel?: string;
 }
 
-export default function HomeSurveyBanner({ onPress }: HomeSurveyBannerProps) {
+export default function CompactActionBanner({
+  label,
+  icon,
+  onPress,
+  accessibilityLabel = label,
+}: CompactActionBannerProps) {
   const content = (
     <>
-      <Icon name="message" size={24} color={colors.text.inverse} />
-      <Text style={styles.label}>{SURVEY_COPY}</Text>
+      <Icon name={icon} size={24} color={colors.text.inverse} />
+      <Text style={styles.label}>{label}</Text>
       <Icon name="chevron-right" size={24} color="rgba(255,255,255,0.78)" />
     </>
   );
@@ -27,7 +33,7 @@ export default function HomeSurveyBanner({ onPress }: HomeSurveyBannerProps) {
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={SURVEY_COPY}
+      accessibilityLabel={accessibilityLabel}
       onPress={onPress}
       style={({ pressed }) => [styles.banner, pressed && styles.pressed]}
     >
@@ -38,7 +44,7 @@ export default function HomeSurveyBanner({ onPress }: HomeSurveyBannerProps) {
 
 const styles = StyleSheet.create({
   banner: {
-    minHeight: 60,
+    minHeight: 48,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,

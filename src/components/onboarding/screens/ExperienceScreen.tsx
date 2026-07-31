@@ -1,25 +1,27 @@
 import { Text } from '../../common/Text';
 import { Pressable, StyleSheet, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import Icon, { type IconName } from '../../common/icons/Icon';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
 import { isHapticsEnabled } from '../../../services/preferences/hapticsPreference';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
+import OnboardingOptionIcon, {
+  type OnboardingOptionIconName,
+} from '../OnboardingOptionIcon';
 
 export type ExperienceLevel = 'never' | 'little' | 'regular';
 
 const OPTIONS: {
   id: ExperienceLevel;
-  icon: IconName;
+  icon: OnboardingOptionIconName;
   title: string;
   body: string;
 }[] = [
   {
     id: 'never',
-    icon: 'sparkle',
+    icon: 'sprout-outline',
     title: 'New to this',
     body: "I haven't really tried breathwork before.",
   },
@@ -91,11 +93,7 @@ export default function ExperienceScreen({
                 pressed && styles.rowPressed,
               ]}
             >
-              <Icon
-                name={option.icon}
-                size={26}
-                color={selected ? colors.primary.blue600 : colors.text.tertiary}
-              />
+              <OnboardingOptionIcon name={option.icon} />
               <View style={styles.text}>
                 <Text
                   style={[

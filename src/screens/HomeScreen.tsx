@@ -12,11 +12,11 @@ import { spacing, padding, margin } from '../theme/spacing';
 import { fonts, typography } from '../theme/typography';
 import AmbientBackground from '../components/common/AmbientBackground';
 import AppTopBar from '../components/common/AppTopBar';
+import CompactActionBanner from '../components/common/CompactActionBanner';
 import SectionHeader from '../components/common/SectionHeader';
 import TopBarWeekCalendar from '../components/common/TopBarWeekCalendar';
 import BreathingLibrary from '../components/home/BreathingLibrary';
 import DailyPlanCard from '../components/home/DailyPlanCard';
-import HomeSurveyBanner from '../components/home/HomeSurveyBanner';
 import { getBackgroundImageSource } from '../services/images/backgroundImageCache';
 import { useFeatureAccess } from '../hooks/useFeatureAccess';
 import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
@@ -192,7 +192,10 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         </View>
 
         <View style={styles.dailyBreathholdSection}>
-          <HomeSurveyBanner />
+          <CompactActionBanner
+            icon="message"
+            label="Take a survey and get 50% off"
+          />
           <SectionHeader title="Daily Breathhold" />
           <DailyPlanCard
             todayHoldSeconds={todayBreathHold?.holdSeconds ?? null}

@@ -1,13 +1,15 @@
 import { Text } from '../../common/Text';
 import { StyleSheet, View } from 'react-native';
-import Icon, { type IconName } from '../../common/icons/Icon';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { typography } from '../../../theme/typography';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
+import OnboardingOptionIcon, {
+  type OnboardingOptionIconName,
+} from '../OnboardingOptionIcon';
 
-const ICON_SIZE = 28;
+const ICON_SIZE = 24;
 
 interface BreathHoldBenefitsScreenProps {
   stepIndex: number;
@@ -18,25 +20,25 @@ interface BreathHoldBenefitsScreenProps {
 }
 
 interface BreathHoldBenefit {
-  icon: IconName;
+  icon: OnboardingOptionIconName;
   text: string;
 }
 
 const BENEFITS: BreathHoldBenefit[] = [
   {
-    icon: 'timer',
+    icon: 'lungs',
     text: 'Estimate your lung age',
   },
   {
-    icon: 'stat-breath-flow',
+    icon: 'molecule-co2',
     text: 'Build tolerance to rising CO₂',
   },
   {
-    icon: 'stat-stress-battery',
+    icon: 'battery-heart-outline',
     text: 'Support relaxation and stress regulation',
   },
   {
-    icon: 'stat-hrv-curve',
+    icon: 'weather-windy',
     text: 'Develop greater control over your breathing',
   },
 ];
@@ -60,11 +62,7 @@ export default function BreathHoldBenefitsScreen({
       <View style={styles.list}>
         {BENEFITS.map((benefit, index) => (
           <View key={benefit.text} style={styles.row}>
-            <Icon
-              name={benefit.icon}
-              size={ICON_SIZE}
-              color={colors.primary.blue600}
-            />
+            <OnboardingOptionIcon name={benefit.icon} size={ICON_SIZE} />
             <Text style={styles.text}>{benefit.text}</Text>
             {index < BENEFITS.length - 1 ? (
               <View style={styles.divider} />

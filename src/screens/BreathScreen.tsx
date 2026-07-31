@@ -1,7 +1,6 @@
-import { Text } from '../components/common/Text';
 import { useCallback, useState } from 'react';
 import {
-  Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
+  ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import MaskedView from '@react-native-masked-view/masked-view';
@@ -9,12 +8,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { trackFeatureGateHit } from '../services/analytics/tracking';
 import { colors } from '../theme/colors';
 import { spacing, padding, margin } from '../theme/spacing';
-import { typography, fonts } from '../theme/typography';
 import AmbientBackground from '../components/common/AmbientBackground';
 import AppTopBar from '../components/common/AppTopBar';
+import CompactActionBanner from '../components/common/CompactActionBanner';
 import SectionHeader from '../components/common/SectionHeader';
-import CardSurface from '../components/common/CardSurface';
-import Icon from '../components/common/icons/Icon';
 import ScoreRing from '../components/exercise/ScoreRing';
 import ProUpgradeButton from '../components/common/ProUpgradeButton';
 import ProfileBreathHoldTrendCard from '../components/profile/ProfileBreathHoldTrendCard';
@@ -25,6 +22,7 @@ import {
   lungAgeRingFill,
   lungAgeToneMeta,
 } from '../lib/lungAge';
+import { benchmarkBreathHold } from '../lib/breathHoldPercentile';
 import { deriveHoldStats } from '../lib/holdStats';
 import { formatLocalDate } from '../lib/calendar/weekCalendarDays';
 import { useFeatureAccess } from '../hooks/useFeatureAccess';
@@ -78,6 +76,13 @@ export default function BreathScreen({ navigation }: BreathTabScreenProps) {
 
   const lungAge =
     holdSeconds != null ? estimateLungAge(holdSeconds, userAge) : null;
+  const benchmark =
+    holdSeconds != null && userAge != null
+      ? benchmarkBreathHold(holdSeconds, userAge)
+      : null;
+  const comparisonLabel = benchmark
+    ? `You are in the top ${benchmark.topPercent}% of people your age`
+    : null;
   const lungAgeTone = lungAgeToneMeta(lungAge?.deltaYears ?? null);
 
   const advancedStatsLocked =
@@ -181,29 +186,21 @@ export default function BreathScreen({ navigation }: BreathTabScreenProps) {
             captionPosition="bottom"
             captionTextTransform="none"
             captionFontSize={16}
-            gapLabel={lungAge?.label ?? null}
+            gapLabel={comparisonLabel}
             gapTextColor={lungAgeTone.textColor}
             gapDirection={lungAgeTone.direction}
           />
         </View>
 
         <View style={styles.section}>
-          <Pressable
+          <CompactActionBanner
+            icon="breath-hold"
+            label={lungAge
+              ? 'Ready to beat your record?'
+              : 'Tap to measure your lung age'}
             onPress={measureHold}
-            accessibilityRole="button"
             accessibilityLabel="Measure breath hold"
-            style={({ pressed }) => pressed && styles.measurePressed}
-          >
-            <CardSurface style={styles.measureCard}>
-              <Icon name="breath-hold" size={24} color={colors.accent[600]} />
-              <Text style={styles.measureTitle}>
-                {lungAge
-                  ? 'Ready to beat your record?'
-                  : 'Tap to measure your lung age'}
-              </Text>
-              <Icon name="chevron-right" size={22} color={colors.text.tertiary} />
-            </CardSurface>
-          </Pressable>
+          />
         </View>
 
         <View style={styles.section}>
@@ -275,24 +272,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: padding.screen.horizontal,
     alignItems: 'center',
     marginTop: -margin.sectionGap,
-  },
-  measureCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md,
-    borderWidth: 1.5,
-    borderColor: colors.primary.blue200,
-  },
-  measureTitle: {
-    ...typography.body.medium,
-    fontFamily: fonts.regular,
-    fontWeight: '400',
-    color: colors.text.primary,
-    flex: 1,
-  },
-  measurePressed: {
-    opacity: 0.85,
   },
 });

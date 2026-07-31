@@ -18,7 +18,6 @@ import {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
-import Icon from '../../common/icons/Icon';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
@@ -659,7 +658,11 @@ export default function BreathHoldScreen({
     >
       <View style={styles.introStage}>
         <View style={styles.lungIcon}>
-          <Icon name="lungs" size={140} color={colors.primary.blue600} />
+          <MaterialCommunityIcons
+            name="lungs"
+            size={116}
+            color={colors.accent[600]}
+          />
         </View>
         <View style={styles.introCopy}>
           <Text style={styles.introHeadline}>

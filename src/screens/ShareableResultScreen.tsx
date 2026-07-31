@@ -22,6 +22,7 @@ import {
   lungAgeRingFill,
   lungAgeToneMeta,
 } from '../lib/lungAge';
+import { benchmarkBreathHold } from '../lib/breathHoldPercentile';
 import { useFeatureAccess } from '../hooks/useFeatureAccess';
 import { trackFeatureGateHit } from '../services/analytics/tracking';
 import { PaywallPlacement } from '../services/paywall';
@@ -55,6 +56,11 @@ export default function ShareableResultScreen({
   const hrDropBpm =
     minBpm != null && maxBpm != null ? Math.max(0, maxBpm - minBpm) : null;
   const lungAge = estimateLungAge(holdSeconds, userAge);
+  const benchmark =
+    userAge != null ? benchmarkBreathHold(holdSeconds, userAge) : null;
+  const comparisonLabel = benchmark
+    ? `You are in the top ${benchmark.topPercent}% of people your age`
+    : null;
   const lungAgeTone = lungAgeToneMeta(lungAge.deltaYears);
   const advancedStatsLocked =
     !advancedStatsAccess.allowed && !advancedStatsAccess.isLoading;
@@ -111,7 +117,7 @@ export default function ShareableResultScreen({
             captionFontSize={18}
             captionPosition="bottom"
             captionTextTransform="none"
-            gapLabel={lungAge.label}
+            gapLabel={comparisonLabel}
             gapTextColor={lungAgeTone.textColor}
             gapDirection={lungAgeTone.direction}
           />
@@ -207,7 +213,7 @@ export default function ShareableResultScreen({
             <ShareCard
               width={SCREEN_WIDTH}
               lungAgeYears={lungAge.years}
-              deltaLabel={lungAge.shortLabel}
+              comparisonLabel={comparisonLabel}
               ringColors={lungAgeTone.ringColors}
               onBackgroundDisplay={() => setShareArtifactReady(true)}
             />
