@@ -150,7 +150,7 @@ const TECHNIQUES: BreathingTechnique[] = [
     name: 'Triangle Breathing',
     recommendedName: 'The Three Corners',
     description:
-      'Box breathing minus the pause on empty lungs, which is the bit most people find unpleasant at first. You still get the steady rhythm and the sharpening that comes with holding a breath, but the cycle is much easier to stay with. A good way in before you try the full box.',
+      'A three-count rhythm drawn from the yogic samavritti tradition, where even breathing was used to steady the mind before long sittings. Inhale, hold, exhale, all to the same count. The pause on full lungs sharpens attention while the even cycle keeps your heart rate settled.',
     pattern: { inhale: 4, holdIn: 4, exhale: 4, holdOut: 0 },
     defaultRounds: 8,
     category: 'focus',
@@ -164,7 +164,7 @@ const TECHNIQUES: BreathingTechnique[] = [
     name: 'Deep Box',
     recommendedName: 'The Wider Square',
     description:
-      'Box breathing, stretched to six seconds a side. Everything slows down and gets more deliberate, but you keep the even count that makes box breathing so easy to hold onto when your head is busy. Move up to this once four seconds stops feeling like work.',
+      'An equal-count pattern stretched to six seconds a side, closer to the long tempos used in military and free-diving training to build tolerance to stillness. Everything slows down and gets deliberate. The even count gives your mind something simple to hold when it is busy.',
     pattern: { inhale: 6, holdIn: 6, exhale: 6, holdOut: 6 },
     defaultRounds: 6,
     category: 'focus',
@@ -192,7 +192,7 @@ const TECHNIQUES: BreathingTechnique[] = [
     name: 'Morning Charge',
     recommendedName: 'The Sunrise Lift',
     description:
-      'Take the calming pattern and turn it around. A longer inhale than exhale nudges your body awake instead of settling it. Use this in the first few minutes after you get up, when you want to feel switched on but are not ready for anything as intense as fast breathing.',
+      'A longer inhale than exhale tips the balance toward your sympathetic nervous system, the same lever athletes use to lift alertness before warming up. It nudges your body awake instead of settling it. Made for the first few minutes after you get up, without the intensity of fast breathing.',
     pattern: { inhale: 4, holdIn: 0, exhale: 2, holdOut: 0 },
     defaultRounds: 15,
     category: 'energy',
@@ -206,7 +206,7 @@ const TECHNIQUES: BreathingTechnique[] = [
     name: 'Night Settle',
     recommendedName: 'The Slow Fold',
     description:
-      '4-7-8 with a hold you can actually manage. The long exhale is what does the real work of winding you down, and that stays. What goes is the seven second hold, which leaves a lot of people short of air and thinking about their lungs instead of drifting off. Same destination, gentler road.',
+      'A wind-down pattern built around a doubled exhale with only a brief hold. The long breath out is what does the real work, stimulating the vagus nerve and pulling your heart rate down. Keeping the hold short means you never end up short of air and thinking about your lungs instead of drifting off.',
     pattern: { inhale: 4, holdIn: 4, exhale: 8, holdOut: 0 },
     defaultRounds: 6,
     category: 'sleep',
@@ -220,7 +220,7 @@ const TECHNIQUES: BreathingTechnique[] = [
     name: 'Sleep Descent',
     recommendedName: 'The Long Dark',
     description:
-      'The longest exhale here and no holds at all, so there is nothing to concentrate on. Made for lying down with your eyes already shut. Holding a breath at that point tends to pull you back awake, which is the opposite of what you want, so this one never asks you to.',
+      'A doubled exhale with no holds at all, so there is nothing to concentrate on and nothing to count wrong. Sleep researchers have long noted that breathing slows and lengthens as the body drifts off. This walks you into that pattern deliberately. Made for lying down with your eyes already shut.',
     pattern: { inhale: 5, holdIn: 0, exhale: 10, holdOut: 0 },
     defaultRounds: 6,
     category: 'sleep',
@@ -234,7 +234,7 @@ const TECHNIQUES: BreathingTechnique[] = [
     name: 'Coherent 6',
     recommendedName: 'The Deep Tide',
     description:
-      'Five breaths a minute, one notch slower than Resonance. Everyone has a pace where their heart rate variability peaks, and for plenty of people it sits down here rather than at six. Try both across a week and let your own HRV numbers tell you which one is yours.',
+      'Five breaths a minute, the slow end of the coherent breathing range studied since the 1990s for its effect on autonomic balance. Everyone has a pace where their heart rate variability peaks, and for plenty of people it sits down here. Slow enough that the whole body starts to follow the rhythm.',
     pattern: { inhale: 6, holdIn: 0, exhale: 6, holdOut: 0 },
     defaultRounds: 10,
     category: 'balance',

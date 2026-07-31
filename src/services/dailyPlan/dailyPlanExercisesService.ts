@@ -1,7 +1,9 @@
 import { requireSupabaseClient, type SupabaseClientLike } from '../supabase';
 import {
+  readDailyPlanExercises,
   sanitizeDailyPlanExercises,
   type DailyPlanExercises,
+  type DailyPlanExercisesReadResult,
 } from '../../features/exercise/guidedBreathing/domain/dailyExercisePlan';
 
 interface DailyPlanExercisesDatabase {
@@ -39,7 +41,7 @@ function getDailyPlanExercisesClient(): SupabaseClientLike<DailyPlanExercisesDat
 
 export async function getDailyPlanExercises(
   userId: string,
-): Promise<DailyPlanExercises | null> {
+): Promise<DailyPlanExercisesReadResult> {
   const supabase = getDailyPlanExercisesClient();
   const { data, error } = await supabase
     .from('user_preferences')
@@ -49,7 +51,7 @@ export async function getDailyPlanExercises(
 
   if (error != null) throw error;
 
-  return sanitizeDailyPlanExercises(data?.daily_plan_exercises);
+  return readDailyPlanExercises(data?.daily_plan_exercises);
 }
 
 export async function updateDailyPlanExercises(

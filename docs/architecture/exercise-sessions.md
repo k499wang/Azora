@@ -58,15 +58,24 @@ user_preferences.daily_plan_schedule    -> device-local card display times
 notification_preferences                -> notification consent and reminders
 ```
 
-Changing an exercise plan must not schedule, cancel, or move a notification.
-The hand-picked card currently displays the saved `handPicked` time without
-creating an additional reminder.
+Today’s Dailies sorts the primary session, daily pick, and breath-hold check-in
+chronologically by their normalized device-local `HH:mm` values. Equal times
+use the stable order `session`, `handPicked`, then `checkIn`. This presentation
+ordering does not change the stored exercise order.
 
-### V1 daytime pool and generation
+There is still only one daily exercise notification. It uses the primary guided
+session time; neither the hand-picked exercise nor the breath-hold check-in
+creates a notification. The scheduler behavior is unchanged. Onboarding copy
+now states “Remind me to do my guided exercise” and clarifies that the reminder
+is for the primary guided breathing session, not the full daily plan.
 
-`GENERAL_DAYTIME_POOL_V1` in
-`src/features/exercise/guidedBreathing/domain/dailyExercisePlan.ts` is the
-source of truth for exercises eligible for the card:
+### Plan versions and eligible pools
+
+The domain in
+`src/features/exercise/guidedBreathing/domain/dailyExercisePlan.ts` reads both
+persisted versions. Keep each version's pool and ordering constants immutable.
+
+V1 uses `GENERAL_DAYTIME_POOL_V1`:
 
 ```ts
 [
@@ -81,28 +90,176 @@ source of truth for exercises eligible for the card:
 ]
 ```
 
-This is deliberately a general daytime pool. It excludes:
+V2 uses `GENERAL_DAYTIME_POOL_V2`, which is V1 plus three exercises:
+
+```ts
+[
+  'box',
+  'resonance',
+  'relaxing',
+  'belly',
+  'extended-exhale',
+  'sitali',
+  'triangle',
+  'coherent-6',
+  'deep-box',
+  'wimhof',
+  'bhastrika',
+]
+```
+
+Both are daytime pools and exclude the time-specific or sleep-focused
+techniques:
 
 - sleep exercises: `478`, `night-settle`, and `sleep-descent`
 - the time-specific `morning-charge`
-- intense or advanced picks: `wimhof`, `bhastrika`, and `deep-box`
 
-`buildSevenDayExercisePlan` removes the user's primary technique when it is in
-the pool, hashes the user ID with 32-bit FNV-1a, and rotates the remaining pool
-by `hash % available.length`. It then takes the first seven entries. This makes
-the ordering user-specific but deterministic: the same user, primary technique,
-pool version, and start date always produce the same stored plan. It does not
-use `Math.random()`.
+V2 deliberately makes `deep-box`, `wimhof`, and `bhastrika` eligible through
+growth-area ordering. These orders are product affinities for variety and
+relevance, not clinical rankings or medical recommendations.
 
-If the primary technique is not in the eight-entry pool, rotation still occurs
-and one pool entry is omitted from that user's seven-day plan. If it is in the
-pool, the other seven entries become the plan.
+### Growth-area orders
 
-### Stored contract and cache
+Historical V1 growth-area plans used `GROWTH_AREA_TECHNIQUE_ORDER`:
 
-Migration `supabase/migrations/20260730000300_add_daily_plan_exercises.sql`
-adds the nullable `user_preferences.daily_plan_exercises` JSONB column. A valid
-V1 value has this shape:
+```ts
+const GROWTH_AREA_TECHNIQUE_ORDER = {
+  calm: [
+    'extended-exhale', 'resonance', 'relaxing', 'belly',
+    'sitali', 'coherent-6', 'triangle', 'box',
+  ],
+  recovery: [
+    'resonance', 'coherent-6', 'relaxing', 'belly',
+    'extended-exhale', 'triangle', 'sitali', 'box',
+  ],
+  focus: [
+    'box', 'resonance', 'triangle', 'coherent-6',
+    'belly', 'extended-exhale', 'sitali', 'relaxing',
+  ],
+  resilience: [
+    'resonance', 'box', 'sitali', 'triangle',
+    'coherent-6', 'extended-exhale', 'belly', 'relaxing',
+  ],
+  breathEase: [
+    'belly', 'resonance', 'relaxing', 'coherent-6',
+    'extended-exhale', 'sitali', 'triangle', 'box',
+  ],
+} as const;
+```
+
+New onboarding uses `GROWTH_AREA_TECHNIQUE_ORDER_V2`:
+
+```ts
+const GROWTH_AREA_TECHNIQUE_ORDER_V2 = {
+  calm: [
+    'extended-exhale', 'resonance', 'relaxing', 'belly',
+    'sitali', 'coherent-6', 'triangle', 'box',
+    'deep-box', 'wimhof', 'bhastrika',
+  ],
+  recovery: [
+    'resonance', 'coherent-6', 'relaxing', 'belly',
+    'extended-exhale', 'triangle', 'sitali', 'deep-box',
+    'box', 'wimhof', 'bhastrika',
+  ],
+  focus: [
+    'box', 'triangle', 'deep-box', 'resonance',
+    'bhastrika', 'coherent-6', 'wimhof', 'belly',
+    'extended-exhale', 'sitali', 'relaxing',
+  ],
+  resilience: [
+    'resonance', 'box', 'sitali', 'triangle',
+    'deep-box', 'coherent-6', 'wimhof', 'extended-exhale',
+    'bhastrika', 'belly', 'relaxing',
+  ],
+  breathEase: [
+    'belly', 'relaxing', 'resonance', 'coherent-6',
+    'extended-exhale', 'sitali', 'triangle', 'box',
+    'deep-box', 'wimhof', 'bhastrika',
+  ],
+} as const;
+```
+
+`buildGrowthAreaSevenDayExercisePlanV2` receives the current
+`planMindMap.growthArea.axis`, removes the user's primary technique from that
+axis order, and takes the first seven IDs. It persists the axis so later
+in-memory primary replacement can use the same order.
+
+V1 has eight eligible exercises and V2 has eleven, but both contracts store
+exactly seven slots. If the primary is eligible, it is removed before taking
+seven. Any remaining lower-priority entries are omitted. Day eight repeats day
+one.
+
+The growth area is a product score, not a diagnosis. `computeMindMap` derives it
+from stress, sleep, racing/exhaustion/reactivity answers, fixed baseline values,
+and a deterministic tie priority. Onboarding experience is no longer an input
+to the scores, growth-area axis, or exercise picks.
+
+The explicit primary onboarding intent continues to own the primary session's
+intent-based time: focus and energy use the morning slot, while sleep uses the
+night slot. When the primary intent has no time-specific rule, sleep quality is
+the fallback that can move the session to night; otherwise it uses the evening
+slot. This scheduling decision is separate from the growth-area daily picks.
+
+`dailyMinutes` and onboarding experience do not affect technique selection or
+guided-session sizing. Guided exercises continue to use each technique's
+`defaultRounds`; do not imply that the onboarding time answer changes their
+executed duration.
+
+### New onboarding and legacy repair
+
+New onboarding calls `buildGrowthAreaSevenDayExercisePlanV2` and writes:
+
+```json
+{
+  "version": 2,
+  "poolVersion": "growth_area_daytime_v2",
+  "growthAreaAxis": "focus",
+  "startsOn": "2026-07-31",
+  "techniqueIds": [
+    "triangle",
+    "deep-box",
+    "resonance",
+    "bhastrika",
+    "coherent-6",
+    "wimhof",
+    "belly"
+  ]
+}
+```
+
+This example excludes a `box` primary. The plan starts on the current
+device-local onboarding date and uses the existing
+`user_preferences.daily_plan_exercises` JSONB column, query key, service, and
+mutation.
+
+Valid existing V1 and V2 plans are always reused as stored. They do not
+regenerate when the app adds V2, recalculates a growth area, or changes the
+primary technique.
+
+The service returns a `DailyPlanExercisesReadResult` with one of these statuses:
+
+```text
+available   -> valid V1 or V2; use the stored plan
+missing     -> generate and persist the legacy V1 fallback
+invalid_v1  -> generate and persist the legacy V1 fallback
+invalid_v2  -> do not repair or overwrite
+unsupported -> do not repair or overwrite
+```
+
+`buildSevenDayExercisePlan` is retained exclusively for an existing account
+with `missing` or `invalid_v1` data. It removes the primary technique, hashes
+the user ID with 32-bit FNV-1a, rotates by
+`hash % available.length`, and takes seven. The same repair inputs always
+produce the same fallback; it does not use `Math.random()`.
+
+The hook displays that fallback immediately after the profile inputs and plan
+lookup resolve. After a successful `missing` or `invalid_v1` lookup, it attempts
+to persist the repair once per mounted resolution. A query failure may display
+the deterministic fallback but is not a successful repair classification and
+does not trigger a write. `invalid_v2` and `unsupported` intentionally produce
+no repair plan so older or corrupt newer contracts are not destroyed.
+
+For reference, V1 remains this contract:
 
 ```json
 {
@@ -112,52 +269,34 @@ V1 value has this shape:
   "techniqueIds": [
     "belly",
     "resonance",
-    "triangle",
     "relaxing",
     "coherent-6",
+    "extended-exhale",
     "sitali",
-    "extended-exhale"
+    "triangle"
   ]
 }
 ```
 
-`sanitizeDailyPlanExercises` accepts only version 1, the exact V1 pool marker,
-a real `YYYY-MM-DD` calendar date, and seven unique IDs from the V1 daytime
-pool. The service applies this validation on both reads and writes.
+Both versions require a real `YYYY-MM-DD` calendar date and seven unique IDs
+from their matching pool. V2 additionally requires a recognized
+`growthAreaAxis`. `sanitizeDailyPlanExercises` accepts valid V1 and V2 writes;
+`readDailyPlanExercises` preserves the more specific invalid/unsupported read
+classification.
 
 `useDailyPlanExercisesQuery` caches the value under
 `['daily-plan-exercises', userId]` for five minutes. A successful update first
-places the returned plan in that exact user-scoped cache and then exactly
-invalidates it. Keep `docs/query-cache-invalidation-map.md` synchronized with
-any query or mutation changes.
+places `{ status: 'available', plan }` in that exact user-scoped cache and then
+exactly invalidates it. Keep `docs/query-cache-invalidation-map.md` synchronized
+with any query or mutation changes.
 
-### Persistence and backward compatibility
+### Database storage
 
-New users receive a plan during onboarding. After the profile owns its
-`user_preferences` row, onboarding saves the exercise plan and the independent
-display-time schedule together. The exercise plan starts on the user's current
-device-local onboarding date.
-
-For an existing account, `useDailyExercisePlan` follows this path:
-
-```text
-load saved plan
-  -> valid plan: use it
-  -> null or malformed plan: derive a deterministic fallback immediately
-       -> display the fallback
-       -> after a successful null lookup, try once per mounted resolution to
-          persist it through the normal mutation
-```
-
-The hook waits until the saved-plan lookup, primary technique, and onboarding
-date have resolved before deriving. It uses the device-local date of
-`onboarding_completed_at` as `startsOn`; if that value is absent or invalid, it
-uses today's local date. This avoids replaying onboarding for legacy users.
-
-Malformed JSON is sanitized to `null`, so it follows the same repair path. If
-the initial lookup fails, Home can still display the deterministic fallback,
-but it does not attempt a write until a later successful lookup. A failed
-background write does not hide the card; a future Home mount may try again.
+Migration `supabase/migrations/20260730000300_add_daily_plan_exercises.sql`
+added the nullable JSONB column. There is no server-side version guard: an
+older client that writes V1 over a stored V2 plan will succeed. Client read
+classification prevents the current app from repairing V2 or future versions,
+but nothing protects a stored plan from app versions already in the wild.
 
 ### Resolving today's exercise
 
@@ -166,15 +305,16 @@ calendar date without timezone-offset arithmetic. Dates before the plan start
 clamp to day zero. Otherwise it selects:
 
 ```text
-elapsed local calendar days % eligible technique count
+elapsed local calendar days % 7
 ```
 
-With the original seven entries, day eight repeats day one. At read time, the
-resolver filters the user's current primary technique again. This matters if
-the primary was changed after the plan was saved: the two Home cards still
-cannot duplicate one another. While that filter applies, the effective cycle
-uses the remaining entry count rather than seven; the stored plan itself is not
-rewritten.
+The resolver always indexes a seven-item in-memory list with
+`elapsedDays % 7`, so day eight repeats day one. If the user's primary technique
+changed and now occupies a stored daily-pick slot,
+`resolveDailyExerciseTechniqueIds` replaces that same slot in memory with the
+first unused eligible technique. V2 uses its persisted `growthAreaAxis` order;
+V1 uses `GENERAL_DAYTIME_POOL_V1`. The stored JSON is not rewritten, the two Home
+cards cannot duplicate, and the cycle remains seven days rather than shrinking.
 
 Home resolves the selected ID through `techniques.ts` for its title, icon, and
 image. Completion is independent for the primary and picked cards:
@@ -209,42 +349,48 @@ daily pool. Complete this checklist in one change:
 
 ### Expanding the daily pool safely
 
-Treat `GENERAL_DAYTIME_POOL_V1`, including its order, as immutable. Do not add,
-remove, or reorder entries in place. The rotation depends on pool length and
-order, so an in-place edit can change a legacy user's not-yet-persisted fallback
-plan. It can also make a plan written by a new client fail validation on an old
-client, which knows only the exact V1 ID set.
+Treat both versioned pools and all of their growth-area orders as immutable. Do
+not add, remove, or reorder entries in place. V1 legacy repair depends on the V1
+pool order, while onboarding and V2 primary replacement depend on the V2 axis
+orders. An in-place edit can change a generated plan or make another client
+reject a stored payload.
 
 Use this checklist before making another exercise eligible:
 
 1. Confirm the exercise is suitable at the plan's general daytime slot. Keep
-   sleep, morning-only, intense, or advanced techniques out unless the product
-   explicitly introduces time-aware pool selection.
-2. Create a new pool constant and marker, such as
-   `GENERAL_DAYTIME_POOL_V2` and `general_daytime_v2`; keep the V1 constant and
-   parser unchanged for existing stored plans and legacy derivation.
-3. Extend the stored-plan union and sanitizer to **read and resolve both V1 and
-   V2**. Existing V1 plans must remain valid and retain their original order.
-4. Add explicit unsupported-future-version handling before any V2 client can
-   write. The current V1 read boundary collapses unsupported versions into
-   `null`; without a distinct result, an older client could derive V1 and
-   overwrite a newer plan. Unknown versions must be preserved and must not
-   enter the lazy-repair write path.
-5. Define which users receive V2: normally new plans only. If existing users
-   should migrate, specify an intentional migration rule and start-date policy
-   rather than regenerating silently.
-6. Ship read compatibility and unsupported-version protection before, or in a
-   release guaranteed to precede, any V2 writes. Only then enable V2 generation.
-7. Add tests covering V1 fixtures, V2 fixtures, both resolvers, deterministic
-   ordering, primary exclusion, legacy fallback stability, and unknown-version
+   sleep and morning-only techniques out unless the product explicitly
+   introduces time-aware pool selection. Review the product and safety case for
+   advanced or intense exercises before assigning their axis positions.
+2. Create a new pool constant and marker, such as V3; keep every V1 and V2
+   constant and parser unchanged. Define a complete order for all five axes.
+3. Extend the stored-plan union, sanitizer, reader, and resolver to read V1,
+   V2, and the new version. Existing plans must retain their original order.
+4. Keep unknown future versions in the `unsupported` non-repair path. Never
+   collapse them into `missing` or `invalid_v1`.
+5. Define which users receive the new version: normally new plans only. If
+   existing users should migrate, specify an intentional migration rule and
+   start-date policy rather than regenerating silently.
+6. Add tests covering every supported-version fixture and resolver, exact axis
+   orders, primary replacement, legacy V1 repair, and unknown-version
    non-overwrite behavior.
 
 ### Plan verification
 
 Changes to plan generation, parsing, or day resolution must cover at least:
 
-- deterministic seven-entry output and user-specific rotation
-- exclusion of the primary technique and all non-daytime techniques
+- all five exact V1 and V2 growth-area orders, primary exclusion, and seven slots
+- V2 persistence of `growthAreaAxis`
+- deterministic legacy user-hash repair without using it for new onboarding
+- preservation of every valid V1 or V2 plan without regeneration
+- repair only for `missing` and `invalid_v1`; never `invalid_v2` or `unsupported`
+- downgrade-trigger behavior and server-before-client deployment order
+- primary-intent timing precedence and sleep-quality fallback behavior
+- no score, growth-area, or pick effect from experience
+- no selection or guided-session-sizing effect from `dailyMinutes`
+- same-slot in-memory primary replacement and an unchanged seven-day cycle
+- chronological Today’s Dailies ordering, including stable equal-time behavior
+- one primary-session notification and no pick/check-in notifications
+- exclusion of the primary technique and all sleep/time-specific techniques
 - valid local dates, pre-start clamping, day-one/day-seven mapping, and repeat
 - malformed, duplicate, unsupported-version, and unsupported-pool payloads
 - a primary technique changed after persistence

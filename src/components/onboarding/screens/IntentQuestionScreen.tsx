@@ -10,31 +10,17 @@ import { isHapticsEnabled } from '../../../services/preferences/hapticsPreferenc
 import { INTENT_OPTIONS } from '../data/intentOptions';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
-import OnboardingOptionIcon, {
-  type OnboardingOptionIconName,
-} from '../OnboardingOptionIcon';
+import OnboardingOptionIcon from '../OnboardingOptionIcon';
+import { INTENT_ICONS } from '../data/intentOptionIcons';
 import type { OnboardingIntent } from '../types';
 
-const INTENT_ICONS: Record<OnboardingIntent, OnboardingOptionIconName> = {
-  stress_relief: 'weather-windy',
-  calm_fast: 'clock-fast',
-  sleep: 'moon-waning-crescent',
-  focus: 'target',
-  energy: 'white-balance-sunny',
-  spiritual: 'meditation',
-  yoga: 'yoga',
-  heart_health: 'heart-pulse',
-  daily_habit: 'calendar-check-outline',
-  other: 'dots-horizontal-circle-outline',
-};
-
 interface IntentQuestionScreenProps {
-  selectedIntents: string[];
+  selectedIntents: OnboardingIntent[];
   isSubmitting: boolean;
   errorMessage: string | null;
   stepIndex: number;
   stepCount: number;
-  onToggle: (intentId: string) => void;
+  onToggle: (intentId: OnboardingIntent) => void;
   onContinue: () => void;
 }
 
@@ -70,7 +56,7 @@ export default function IntentQuestionScreen({
 
   const canContinue = selectedIntents.length > 0 && !isSubmitting;
 
-  const handleToggle = (intentId: string) => {
+  const handleToggle = (intentId: OnboardingIntent) => {
     if (isHapticsEnabled()) Haptics.selectionAsync().catch(() => {});
     onToggle(intentId);
   };

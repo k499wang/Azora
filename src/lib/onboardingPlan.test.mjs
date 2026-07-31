@@ -53,6 +53,17 @@ test('session time follows the goal', () => {
   assert.equal(sessionTimeFor(['stress_relief'], 8), 18 * 60);
 });
 
+test('the primary intent owns both the technique and session time', () => {
+  const plan = buildOnboardingPlan({
+    ...baseInputs,
+    intents: ['focus', 'sleep'],
+  });
+  const session = actionById(plan, 'session');
+
+  assert.equal(session.techniqueId, 'box');
+  assert.equal(session.minutesFromMidnight, 8 * 60);
+});
+
 test('poor sleepers get a late session even without a sleep goal', () => {
   assert.equal(sessionTimeFor(['stress_relief'], 3), 21 * 60 + 30);
 });

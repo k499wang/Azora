@@ -173,7 +173,7 @@ export function toClockString(minutesFromMidnight: number): string {
 export function buildOnboardingPlan(inputs: PlanInputs): OnboardingPlan {
   const minutes = sessionMinutes(inputs.dailyMinutes);
   const intent = primaryIntent(inputs.intents);
-  const sessionAt = sessionTimeFor(inputs.intents, inputs.sleepQuality);
+  const sessionAt = sessionTimeFor([intent], inputs.sleepQuality);
   const handPickedTechnique = HAND_PICKED_TECHNIQUE[intent];
   const handPickedMinutes = HAND_PICKED_MINUTES[handPickedTechnique];
   // The check-in sits on the opposite end of the day from the primary session

@@ -10,7 +10,6 @@ import {
 } from 'react-native-reanimated';
 import {
   Canvas,
-  Circle,
   Group,
   LinearGradient,
   Path,
@@ -133,24 +132,7 @@ export default function IntentProjectionScreen({
     return p;
   }, [innerW, innerH]);
 
-  const startX = PAD_LEFT;
-  const startY = PAD_TOP + innerH;
-
-  const endX = useDerivedValue(() => {
-    if (innerW <= 0) return 0;
-    return PAD_LEFT + progress.value * innerW;
-  }, [innerW]);
-
-  const endY = useDerivedValue(() => {
-    if (innerW <= 0) return 0;
-    const normalizer = 1 - Math.exp(-CURVE_K * 8);
-    const raw = 1 - Math.exp(-CURVE_K * progress.value * 8);
-    const v = (raw / normalizer) * ceiling;
-    return PAD_TOP + innerH - (v / ceiling) * (innerH - TOP_INSET);
-  }, [innerW, innerH, ceiling]);
-
   const lineColor = colors.primary.blue600;
-  const dotColor = colors.primary.blue600;
 
   return (
     <OnboardingScreenLayout
@@ -196,9 +178,6 @@ export default function IntentProjectionScreen({
                   color={lineColor}
                 />
               </Group>
-
-              <Circle cx={startX} cy={startY} r={6} color={dotColor} />
-              <Circle cx={endX} cy={endY} r={6} color={dotColor} />
             </Canvas>
           ) : null}
         </View>

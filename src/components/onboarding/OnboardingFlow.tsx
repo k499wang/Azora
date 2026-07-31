@@ -8,6 +8,7 @@ import DailyTimeScreen from './screens/DailyTimeScreen';
 import ConsistencyScreen from './screens/ConsistencyScreen';
 import GenderScreen from './screens/GenderScreen';
 import IntentQuestionScreen from './screens/IntentQuestionScreen';
+import IntentPriorityScreen from './screens/IntentPriorityScreen';
 import IntentReflectionScreen from './screens/IntentReflectionScreen';
 import IntentProjectionScreen from './screens/IntentProjectionScreen';
 import BrainScienceScreen from './screens/BrainScienceScreen';
@@ -60,6 +61,7 @@ import { useSaveOnboardingSurveyMutation } from '../../queries/profile/useSaveOn
 import type {
   CompletedOnboardingBaselineResult,
   OnboardingBreathHoldResult,
+  OnboardingIntent,
   OnboardingStep,
 } from './types';
 import { usePaywall } from '../../hooks/usePaywall';
@@ -99,7 +101,7 @@ import {
   DEFAULT_DAILY_PLAN_SCHEDULE,
   type DailyPlanSchedule,
 } from '../../services/dailyPlan/types';
-import { buildSevenDayExercisePlan } from '../../features/exercise/guidedBreathing/domain/dailyExercisePlan';
+import { buildGrowthAreaSevenDayExercisePlanV2 } from '../../features/exercise/guidedBreathing/domain/dailyExercisePlan';
 import { formatLocalDate } from '../../lib/calendar/weekCalendarDays';
 import { buildOnboardingSaveFailureDiagnostics } from '../../queries/profile/onboardingSaveDiagnostics';
 import type { SavedOnboardingProfile } from '../../services/profile/onboardingStatusService';
@@ -141,6 +143,7 @@ interface OnboardingFlowProps {
 
 const STEP_ORDER: OnboardingStep[] = [
   'intent',
+  'intentPriority',
   'intentReflection',
   'intentProjection',
   'brainScience',
@@ -248,11 +251,10 @@ export default function OnboardingFlow({
   const [step, setStep] = useState<OnboardingStep>(
     initialSavedProfile == null ? 'intent' : 'paywall',
   );
-  const [selectedIntents, setSelectedIntents] = useState<string[]>([]);
-  const primaryIntent = useMemo(() => {
-    const nonOther = selectedIntents.find((id) => id !== 'other');
-    return nonOther ?? selectedIntents[0] ?? null;
-  }, [selectedIntents]);
+  const [selectedIntents, setSelectedIntents] = useState<OnboardingIntent[]>([]);
+  const [primaryIntent, setPrimaryIntent] = useState<OnboardingIntent | null>(
+    null,
+  );
   const isOnlyCustomIntent =
     selectedIntents.length === 1 && selectedIntents[0] === 'other';
   const [name, setName] = useState(initialSavedProfile?.displayName ?? '');
@@ -354,12 +356,15 @@ export default function OnboardingFlow({
         if (!INTENT_REFLECTION_ENABLED && candidate === 'intentReflection') {
           return false;
         }
+        if (candidate === 'intentPriority' && selectedIntents.length < 2) {
+          return false;
+        }
         if (isOnlyCustomIntent && candidate === 'intentProjection') {
           return false;
         }
         return true;
       }),
-    [isOnlyCustomIntent],
+    [isOnlyCustomIntent, selectedIntents.length],
   );
 
   const stepIndexMap = useMemo(
@@ -495,7 +500,7 @@ export default function OnboardingFlow({
     isSubmitting,
   ]);
 
-  const toggleIntent = (intentId: string) => {
+  const toggleIntent = (intentId: OnboardingIntent) => {
     if (isSubmitting) return;
     const isSelected = selectedIntents.includes(intentId);
     const nextSelectedIntents = isSelected
@@ -503,6 +508,9 @@ export default function OnboardingFlow({
       : [...selectedIntents, intentId];
 
     setSelectedIntents(nextSelectedIntents);
+    if (isSelected && primaryIntent === intentId) {
+      setPrimaryIntent(null);
+    }
     trackOnboardingIntentUpdated({
       ...getStepEventInput('intent'),
       intentId,
@@ -512,19 +520,44 @@ export default function OnboardingFlow({
     setErrorMessage(null);
   };
 
+  const continueAfterIntentPriority = (
+    nextPrimaryIntent: OnboardingIntent,
+    properties: OnboardingAnalyticsProperties,
+  ) => {
+    const nextProperties = {
+      ...properties,
+      primary_intent_id: nextPrimaryIntent,
+    };
+
+    if (isOnlyCustomIntent) {
+      goToStep('brainScience', 'continue', nextProperties);
+      return;
+    }
+    if (INTENT_REFLECTION_ENABLED) {
+      goToStep('intentReflection', 'continue', nextProperties);
+      return;
+    }
+    goToStep('intentProjection', 'continue', nextProperties);
+  };
+
   const goFromIntent = () => {
     if (selectedIntents.length === 0 || isSubmitting) return;
-    const nextStep = isOnlyCustomIntent ? 'brainScience' : 'intentProjection';
     const properties = {
       selected_intent_count: selectedIntents.length,
       only_custom_intent: isOnlyCustomIntent,
     };
 
-    if (INTENT_REFLECTION_ENABLED && !isOnlyCustomIntent) {
-      goToStep('intentReflection', 'continue', properties);
+    if (selectedIntents.length === 1) {
+      const onlyIntent = selectedIntents[0];
+      setPrimaryIntent(onlyIntent);
+      continueAfterIntentPriority(onlyIntent, properties);
       return;
     }
-    goToStep(nextStep, 'continue', properties);
+
+    goToStep('intentPriority', 'continue', {
+      ...properties,
+      primary_intent_id: primaryIntent,
+    });
   };
 
   const buildOnboardingGoal = () => {
@@ -613,9 +646,9 @@ export default function OnboardingFlow({
         throw new Error('Cannot save onboarding without a signed-in user.');
       }
       const schedule = buildDailyPlanSchedule(plan);
-      const exercisePlan = buildSevenDayExercisePlan({
-        userId,
+      const exercisePlan = buildGrowthAreaSevenDayExercisePlanV2({
         primaryTechniqueId: result.defaultTechniqueId,
+        growthAreaAxis: planMindMap.growthArea.axis,
         startsOn: formatLocalDate(new Date()),
       });
       await Promise.all([
@@ -829,6 +862,29 @@ export default function OnboardingFlow({
   const visualStepIndex = displayedProgress * VISUAL_PROGRESS_STEP_COUNT;
   const visualStepCount = VISUAL_PROGRESS_STEP_COUNT;
 
+  if (step === 'intentPriority' && selectedIntents.length >= 2) {
+    return (
+      <IntentPriorityScreen
+        selectedIntents={selectedIntents}
+        primaryIntent={primaryIntent}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        isSubmitting={isSubmitting}
+        onSelect={setPrimaryIntent}
+        onContinue={() => {
+          if (primaryIntent == null || !selectedIntents.includes(primaryIntent)) {
+            return;
+          }
+          continueAfterIntentPriority(primaryIntent, {
+            selected_intent_count: selectedIntents.length,
+            only_custom_intent: isOnlyCustomIntent,
+          });
+        }}
+        onBack={() => goToStep('intent', 'back')}
+      />
+    );
+  }
+
   if (step === 'intentReflection' && selectedOption) {
     return (
       <IntentReflectionScreen
@@ -837,7 +893,12 @@ export default function OnboardingFlow({
         stepCount={visualStepCount}
         isSubmitting={isSubmitting}
         onContinue={() => goToStep('intentProjection', 'continue')}
-        onBack={() => goToStep('intent', 'back')}
+        onBack={() =>
+          goToStep(
+            selectedIntents.length >= 2 ? 'intentPriority' : 'intent',
+            'back',
+          )
+        }
       />
     );
   }
@@ -850,7 +911,14 @@ export default function OnboardingFlow({
         stepCount={visualStepCount}
         onContinue={() => goToStep('brainScience', 'continue')}
         onBack={() =>
-          goToStep(INTENT_REFLECTION_ENABLED ? 'intentReflection' : 'intent', 'back')
+          goToStep(
+            INTENT_REFLECTION_ENABLED
+              ? 'intentReflection'
+              : selectedIntents.length >= 2
+                ? 'intentPriority'
+                : 'intent',
+            'back',
+          )
         }
       />
     );
@@ -1234,7 +1302,7 @@ export default function OnboardingFlow({
   }
 
   const plan = buildOnboardingPlan({
-    intents: primaryIntent ? [primaryIntent, ...selectedIntents] : selectedIntents,
+    intents: primaryIntent ? [primaryIntent] : selectedIntents,
     stressLevel,
     sleepQuality,
     age,
@@ -1246,7 +1314,6 @@ export default function OnboardingFlow({
     stressLevel,
     sleepQuality,
     agreementResponses,
-    experienceLevel,
   });
   if (step === 'planLoading') {
     return <PlanLoadingScreen onDone={() => goToStep('diagnosis', 'auto')} />;
@@ -1325,7 +1392,7 @@ export default function OnboardingFlow({
   if (step === 'notifications') {
     return (
       <NotificationPermissionScreen
-        planTime={getPlanActionTime(
+        primarySessionTime={getPlanActionTime(
           plan,
           'session',
           DEFAULT_DAILY_PLAN_SCHEDULE.actions.session,

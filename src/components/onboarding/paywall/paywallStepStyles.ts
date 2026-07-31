@@ -141,6 +141,8 @@ export const paywallStepStyles = StyleSheet.create({
     width: 16,
     flex: 1,
     minHeight: 36,
+    marginTop: -6,
+    marginBottom: -6,
     backgroundColor: colors.primary.blue300,
   },
   timelineLineUpcoming: {

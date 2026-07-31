@@ -17,8 +17,8 @@ import { card } from '../../../theme/card';
 import type { NotificationPreferences } from '../../../services/notifications/types';
 
 interface NotificationPermissionScreenProps {
-  /** The plan's first daily action, as `HH:MM`. */
-  planTime: string;
+  /** The primary guided breathing session time, as `HH:MM`. */
+  primarySessionTime: string;
   stepIndex: number;
   stepCount: number;
   isSubmitting: boolean;
@@ -29,7 +29,7 @@ interface NotificationPermissionScreenProps {
 }
 
 export default function NotificationPermissionScreen({
-  planTime,
+  primarySessionTime,
   stepIndex,
   stepCount,
   isSubmitting,
@@ -39,7 +39,7 @@ export default function NotificationPermissionScreen({
   onBack,
 }: NotificationPermissionScreenProps) {
   const [enabled, setEnabled] = useState(true);
-  const [time, setTime] = useState(planTime);
+  const [time, setTime] = useState(primarySessionTime);
 
   const preferences = useMemo<NotificationPreferences>(
     () => ({
@@ -51,8 +51,8 @@ export default function NotificationPermissionScreen({
 
   return (
     <OnboardingScreenLayout
-      title="Turn on your plan reminder"
-      subtitle={`Your plan starts at ${formatDisplay(planTime)} each day. We'll send one nudge at that time so it actually happens. Nothing else.`}
+      title="Remind me to do my guided exercise"
+      subtitle="This reminder is for your primary guided breathing session—not your full daily plan."
       progress={stepIndex / stepCount}
       onBack={onBack}
       onSkip={onSkip}
@@ -73,7 +73,7 @@ export default function NotificationPermissionScreen({
         />
 
         <Text style={styles.reassurance}>
-          You're in control. Change the time or turn it off anytime in Settings.
+          Choose when you want the nudge. You can change it or turn it off anytime in Settings.
         </Text>
 
         {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
@@ -144,7 +144,7 @@ function ReminderCard({
     <>
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel={`Daily reminder at ${formatDisplay(time)}, tap to change`}
+        accessibilityLabel={`Guided exercise reminder at ${formatDisplay(time)}, tap to change`}
         onPress={openPicker}
         style={({ pressed }) => [
           styles.card,
@@ -153,7 +153,7 @@ function ReminderCard({
       >
         <View style={styles.cardLeft}>
           <Text style={[styles.cardLabel, !enabled && styles.cardLabelDisabled]}>
-            Daily reminder
+            Guided exercise reminder
           </Text>
           <View style={styles.timeRow}>
             <Text style={[styles.cardTime, !enabled && styles.cardTimeDisabled]}>
