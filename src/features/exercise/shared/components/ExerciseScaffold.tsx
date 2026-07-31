@@ -13,6 +13,7 @@ interface ExerciseScaffoldProps {
   titleSlot?: ReactNode;
   rightSlot?: ReactNode;
   pickerSlot?: ReactNode;
+  backgroundSlot?: ReactNode;
   centerSlot: ReactNode;
   bottomSlot: ReactNode;
   onClose?: () => void;
@@ -25,6 +26,7 @@ export default function ExerciseScaffold({
   titleSlot,
   rightSlot,
   pickerSlot,
+  backgroundSlot,
   centerSlot,
   bottomSlot,
   onClose,
@@ -40,6 +42,17 @@ export default function ExerciseScaffold({
         darkTheme && { backgroundColor: darkTheme.screen },
       ]}
     >
+      {backgroundSlot ? (
+        // Absolute children anchor to the padding box, so pull the layer back
+        // up over the safe-area inset to cover the full screen.
+        <View
+          style={[StyleSheet.absoluteFill, { top: -insets.top }]}
+          pointerEvents="none"
+        >
+          {backgroundSlot}
+        </View>
+      ) : null}
+
       <View style={styles.header}>
         <View style={styles.titleRow}>
           {!titleSlot && (

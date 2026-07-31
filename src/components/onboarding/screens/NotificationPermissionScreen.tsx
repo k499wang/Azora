@@ -52,7 +52,7 @@ export default function NotificationPermissionScreen({
   return (
     <OnboardingScreenLayout
       title="Remind me to do my guided exercise"
-      subtitle="This reminder is for your primary guided breathing session—not your full daily plan."
+      subtitle="This is your reminder for your primary guided breathing session."
       progress={stepIndex / stepCount}
       onBack={onBack}
       onSkip={onSkip}

@@ -162,6 +162,23 @@ export function formatPlanTime(minutesFromMidnight: number): string {
   return `${hour12}:${String(minute).padStart(2, '0')} ${suffix}`;
 }
 
+/**
+ * Where a plan action sits in the day, in the user's own terms.
+ *
+ * Derived from the clock time rather than the goal that produced it, so the
+ * label still reads true after the user moves an action to a time of their own.
+ */
+export function planTimeOfDayLabel(minutesFromMidnight: number): string {
+  const total = ((Math.round(minutesFromMidnight) % (24 * 60)) + 24 * 60) % (24 * 60);
+
+  if (total < 5 * 60) return 'Late night';
+  if (total < 11 * 60) return 'When you wake up';
+  if (total < 14 * 60) return 'Around midday';
+  if (total < 18 * 60) return 'Afternoon';
+  if (total < 21 * 60) return 'Evening';
+  return 'Before you sleep';
+}
+
 /** 24-hour `HH:MM`, the shape the notification preferences store. */
 export function toClockString(minutesFromMidnight: number): string {
   const total = ((Math.round(minutesFromMidnight) % (24 * 60)) + 24 * 60) % (24 * 60);
