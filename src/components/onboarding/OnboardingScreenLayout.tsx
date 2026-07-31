@@ -475,9 +475,7 @@ const styles = StyleSheet.create({
     flex: 1,
     height: 6,
     borderRadius: 999,
-    borderWidth: 1,
-    borderColor: colors.primary.blue600,
-    backgroundColor: colors.primary.blue100,
+    backgroundColor: colors.primary.blue200,
     overflow: 'hidden',
   },
   // Holds the bar's slot open so hiding it doesn't move anything else.

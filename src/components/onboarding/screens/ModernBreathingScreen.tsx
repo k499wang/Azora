@@ -129,7 +129,7 @@ export default function ModernBreathingScreen({
       footer={<OnboardingPrimaryButton label="Continue" onPress={onContinue} />}
     >
       <View style={styles.chartWrap}>
-        <Text style={styles.heading}>Focus &amp; sleep quality</Text>
+        <Text style={styles.heading}>Breath quality</Text>
         <View
           style={styles.plot}
           onLayout={handleChartLayout}
