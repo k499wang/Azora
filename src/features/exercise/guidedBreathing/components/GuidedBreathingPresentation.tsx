@@ -12,9 +12,9 @@ import type { BreathingTechnique } from '../techniques';
 import type { BreathingPhase } from '../domain/breathingSessionTiming';
 import type {
   FingerPlacementState,
-  LivePpgSignalSample,
   SignalStatus,
 } from '../../../../lib/heartRate/types';
+import type { LiveSignalSource } from '../../../../lib/heartRate/liveSignalSource';
 import type { ExerciseDarkTheme } from '../../../../theme/exerciseDarkThemes';
 import { colors } from '../../../../theme/colors';
 import { fonts } from '../../../../theme/typography';
@@ -38,7 +38,7 @@ interface GuidedBreathingHeartRatePresentation {
   active: boolean;
   bpm: number | null;
   beatTick: number;
-  samples: LivePpgSignalSample[];
+  signalSource: LiveSignalSource;
   fingerPlacement: FingerPlacementState;
   signalStatus: SignalStatus;
   camera?: GuidedBreathingCamera;
@@ -123,7 +123,7 @@ export const GuidedBreathingPresentation = forwardRef<
       {heartRate.enabled && heartRate.active ? (
         <View style={styles.liveSignalGraphSlot} pointerEvents="none">
           <LiveSignalGraph
-            samples={heartRate.samples}
+            signalSource={heartRate.signalSource}
             fingerPlacement={heartRate.fingerPlacement}
             bpm={heartRate.bpm}
             beatTick={heartRate.beatTick}

@@ -13,9 +13,11 @@ import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts } from '../../theme/typography';
 import type { FingerPlacementState, LivePpgSignalSample } from '../../lib/heartRate/types';
+import type { LiveSignalSource } from '../../lib/heartRate/liveSignalSource';
 
 interface LiveSignalGraphProps {
-  samples: LivePpgSignalSample[];
+  samples?: LivePpgSignalSample[];
+  signalSource?: LiveSignalSource;
   fingerPlacement: FingerPlacementState;
   bpm?: number | null;
   beatTick?: number;
@@ -283,17 +285,21 @@ function buildSignalPath(
 }
 
 function LiveSignalGraphComponent({
-  samples,
+  samples: providedSamples = EMPTY_SIGNAL_SAMPLES,
+  signalSource,
   fingerPlacement,
   bpm,
   beatTick,
   textColor,
   showLine = true,
 }: LiveSignalGraphProps) {
+  const samples = signalSource?.read() ?? providedSamples;
   const [width, setWidth] = useState(0);
   const [linePath, setLinePath] = useState<ReturnType<typeof Skia.Path.Make> | null>(null);
+  const [hasSignalSamples, setHasSignalSamples] = useState(samples.length >= 2);
 
   const samplesRef = useRef(samples);
+  const hasSignalSamplesRef = useRef(samples.length >= 2);
   const rangeEmaRef = useRef(0);
   const scaleReadyRef = useRef(false);
   const latestSampleTimestampRef = useRef(0);
@@ -304,7 +310,7 @@ function LiveSignalGraphComponent({
   const animationFrameRef = useRef<number | null>(null);
 
   const isSignalAvailable =
-    samples.length >= 2 &&
+    hasSignalSamples &&
     fingerPlacement !== 'lost' &&
     fingerPlacement !== 'no_finger';
   const signalGood = fingerPlacement === 'good';
@@ -312,6 +318,11 @@ function LiveSignalGraphComponent({
   useEffect(() => {
     const latestTimestamp = samples[samples.length - 1]?.timestamp ?? 0;
     samplesRef.current = samples;
+    const nextHasSignalSamples = samples.length >= 2;
+    if (nextHasSignalSamples !== hasSignalSamplesRef.current) {
+      hasSignalSamplesRef.current = nextHasSignalSamples;
+      setHasSignalSamples(nextHasSignalSamples);
+    }
 
     if (latestTimestamp !== latestSampleTimestampRef.current) {
       latestSampleTimestampRef.current = latestTimestamp;
@@ -337,12 +348,32 @@ function LiveSignalGraphComponent({
 
     const renderSignalFrame = () => {
       const now = Date.now();
+      const currentSamples = signalSource?.read() ?? samplesRef.current;
+      const nextHasSignalSamples = currentSamples.length >= 2;
+      if (nextHasSignalSamples !== hasSignalSamplesRef.current) {
+        hasSignalSamplesRef.current = nextHasSignalSamples;
+        setHasSignalSamples(nextHasSignalSamples);
+      }
+      const latestSourceTimestamp =
+        currentSamples[currentSamples.length - 1]?.timestamp ?? 0;
+      if (latestSourceTimestamp !== latestSampleTimestampRef.current) {
+        samplesRef.current = currentSamples;
+        latestSampleTimestampRef.current = latestSourceTimestamp;
+        latestSampleReceivedAtRef.current = now;
+        const nextScale = updateSignalScale(
+          currentSamples,
+          latestSourceTimestamp,
+          rangeEmaRef.current,
+          scaleReadyRef.current,
+        );
+        rangeEmaRef.current = nextScale.rangeEma;
+        scaleReadyRef.current = nextScale.scaleReady;
+      }
+      if (currentSamples.length < 2) scaleReadyRef.current = false;
+      const latestTimestamp = latestSampleTimestampRef.current;
 
       if (now - lastRenderAtRef.current >= SIGNAL_RENDER_FRAME_MS) {
         lastRenderAtRef.current = now;
-
-        const currentSamples = samplesRef.current;
-        const latestTimestamp = latestSampleTimestampRef.current;
 
         if (currentSamples.length < 2 || latestTimestamp <= 0) {
           if (renderedWidthRef.current !== width || renderedAnchorTimestampRef.current !== 0) {
@@ -390,7 +421,7 @@ function LiveSignalGraphComponent({
         animationFrameRef.current = null;
       }
     };
-  }, [showLine, width]);
+  }, [showLine, signalSource, width]);
 
   const handleLayout = useCallback((event: LayoutChangeEvent) => {
     const nextWidth = event.nativeEvent.layout.width;
@@ -468,6 +499,8 @@ function LiveSignalGraphComponent({
     </View>
   );
 }
+
+const EMPTY_SIGNAL_SAMPLES: LivePpgSignalSample[] = [];
 
 export const LiveSignalGraph = memo(LiveSignalGraphComponent);
 

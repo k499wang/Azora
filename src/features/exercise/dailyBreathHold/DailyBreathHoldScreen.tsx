@@ -498,7 +498,7 @@ export default function DailyBreathHoldScreen({
               active: pulse.active,
               bpm: presentedBpm,
               beatTick: pulse.beatTick,
-              samples: pulse.liveSignalSamples,
+              signalSource: pulse.liveSignalSource,
               fingerPlacement: pulse.fingerPlacement,
               signalStatus: pulse.signalStatus,
               camera:
