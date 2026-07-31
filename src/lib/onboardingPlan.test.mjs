@@ -6,6 +6,7 @@ import {
   formatPlanTime,
   formatRetestDate,
   fromClockString,
+  planTimeOfDayLabel,
   projectHold,
   sessionTimeFor,
   toClockString,
@@ -267,6 +268,26 @@ test('applying overrides leaves the source plan untouched', () => {
 test('an empty override set keeps the plan as built', () => {
   const plan = buildOnboardingPlan(baseInputs);
   assert.deepEqual(applyPlanTimeOverrides(plan, {}), plan);
+});
+
+test('time-of-day labels follow the clock, not the goal', () => {
+  assert.equal(planTimeOfDayLabel(2 * 60), 'Late night');
+  assert.equal(planTimeOfDayLabel(8 * 60), 'When you wake up');
+  assert.equal(planTimeOfDayLabel(13 * 60), 'Around midday');
+  assert.equal(planTimeOfDayLabel(15 * 60), 'Afternoon');
+  assert.equal(planTimeOfDayLabel(18 * 60), 'Evening');
+  assert.equal(planTimeOfDayLabel(21 * 60 + 30), 'Before you sleep');
+});
+
+test('a moved action gets the label of its new time', () => {
+  const plan = applyPlanTimeOverrides(buildOnboardingPlan(baseInputs), {
+    session: 22 * 60,
+  });
+
+  assert.equal(
+    planTimeOfDayLabel(actionById(plan, 'session').minutesFromMidnight),
+    'Before you sleep',
+  );
 });
 
 test('times format in twelve-hour clock', () => {

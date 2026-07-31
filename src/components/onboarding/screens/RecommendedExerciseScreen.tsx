@@ -15,6 +15,7 @@ import {
   formatPlanTime,
   formatRetestDate,
   fromClockString,
+  planTimeOfDayLabel,
   toClockString,
   type PlanAction,
   type PlanActionId,
@@ -162,7 +163,12 @@ function ActionCard({
   return (
     <CardSurface style={styles.actionCard}>
       <View style={styles.actionHeader}>
-        <Text style={styles.actionRole}>{title}</Text>
+        <View style={styles.actionHeading}>
+          <Text style={styles.actionRole}>{title}</Text>
+          <Text style={styles.actionWhen}>
+            {planTimeOfDayLabel(action.minutesFromMidnight)}
+          </Text>
+        </View>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={`Change time for ${title}, currently ${displayTime}`}
@@ -226,6 +232,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: spacing.sm,
   },
+  actionHeading: {
+    flexShrink: 1,
+    gap: 2,
+  },
   actionRole: {
     ...typography.heading.heading2,
     fontFamily: fonts.semibold,
@@ -233,7 +243,14 @@ const styles = StyleSheet.create({
     color: colors.primary.blue600,
     flexShrink: 1,
   },
+  actionWhen: {
+    ...typography.caption.caption1,
+    fontFamily: fonts.semibold,
+    fontWeight: '500',
+    color: colors.text.secondary,
+  },
   actionTime: {
+    flexShrink: 0,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
