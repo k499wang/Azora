@@ -18,6 +18,8 @@ test('standalone capture starts as soon as finger placement is good', () => {
 });
 
 test('camera target matches the supported iPhone camera layout', () => {
+  assert.equal(getHeartRateCameraTarget('iPhone', 'iPhone14,6'), 'camera lens');
+  assert.equal(getHeartRateCameraTarget('iPhone SE (2nd generation)'), 'camera lens');
   assert.equal(getHeartRateCameraTarget('iPhone 16'), 'bottom camera');
   assert.equal(
     getHeartRateCameraTarget('iPhone 16 Pro'),

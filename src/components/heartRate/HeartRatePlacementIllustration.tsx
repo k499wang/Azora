@@ -9,17 +9,25 @@ import { typography } from '../../theme/typography';
 import { getOnboardingImageSource } from '../../services/images/onboardingImageCache';
 import { getHeartRateCameraProfile } from '../../lib/heartRate/cameraProfile';
 
-export function HeartRatePlacementIllustration() {
-  const cameraProfile = getHeartRateCameraProfile(Device.modelName);
+interface HeartRatePlacementIllustrationProps {
+  compact?: boolean;
+}
+
+export function HeartRatePlacementIllustration({
+  compact = false,
+}: HeartRatePlacementIllustrationProps) {
+  const cameraProfile = getHeartRateCameraProfile(Device.modelName, Device.modelId);
   const cameraIllustration = cameraProfile.layout === 'triple'
     ? 'cameraPlacementTriple'
     : cameraProfile.layout === 'dual'
       ? 'cameraPlacementDual'
       : null;
 
+  if (cameraProfile.layout === 'single') return null;
+
   if (cameraIllustration == null) {
     return (
-      <View style={styles.genericGuide}>
+      <View style={[styles.genericGuide, compact && styles.genericGuideCompact]}>
         <View style={styles.genericIcon}>
           <Icon name="camera" size={22} color={colors.primary.blue700} />
         </View>
@@ -33,7 +41,7 @@ export function HeartRatePlacementIllustration() {
   return (
     <Image
       source={getOnboardingImageSource(cameraIllustration)}
-      style={styles.illustration}
+      style={[styles.illustration, compact && styles.illustrationCompact]}
       contentFit="contain"
       cachePolicy="memory-disk"
       transition={0}
@@ -48,6 +56,9 @@ const styles = StyleSheet.create({
     aspectRatio: 1.82,
     alignSelf: 'center',
   },
+  illustrationCompact: {
+    width: '92%',
+  },
   genericGuide: {
     minHeight: 160,
     flexDirection: 'row',
@@ -55,6 +66,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: spacing.md,
     paddingHorizontal: spacing.lg,
+  },
+  genericGuideCompact: {
+    minHeight: 120,
   },
   genericIcon: {
     width: 44,

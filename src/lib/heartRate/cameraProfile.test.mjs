@@ -6,6 +6,8 @@ import {
 } from './cameraProfile.ts';
 
 const expectedProfiles = [
+  ['iPhone SE (3rd generation)', 'single', 'camera lens'],
+  ['iPhone SE 3rd Gen', 'single', 'camera lens'],
   ['iPhone 16', 'dual', 'bottom camera'],
   ['iPhone 16 Plus', 'dual', 'bottom camera'],
   ['iPhone 16 Pro', 'triple', 'rightmost camera'],
@@ -20,6 +22,18 @@ test('known iPhone models resolve to their matching camera profile', () => {
     assert.equal(profile.layout, layout, modelName);
     assert.equal(profile.target, target, modelName);
   }
+});
+
+test('iPhone SE hardware identifiers resolve to the single-camera profile', () => {
+  for (const modelId of ['iPhone8,4', 'iPhone12,8', 'iPhone14,6']) {
+    const profile = getHeartRateCameraProfile('iPhone', modelId);
+    assert.equal(profile.layout, 'single', modelId);
+  }
+
+  assert.equal(
+    getHeartRateCameraProfile(null, 'iPhone14,6').layout,
+    'single',
+  );
 });
 
 test('unknown and unavailable models keep the safe wide camera fallback', () => {

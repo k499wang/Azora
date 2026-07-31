@@ -1,8 +1,11 @@
 import type { FingerPlacementState, SignalStatus } from './types';
 import { getHeartRateCameraProfile } from './cameraProfile';
 
-export function getHeartRateCameraTarget(modelName: string | null): string {
-  return getHeartRateCameraProfile(modelName).target;
+export function getHeartRateCameraTarget(
+  modelName: string | null,
+  modelId?: string | null,
+): string {
+  return getHeartRateCameraProfile(modelName, modelId).target;
 }
 
 export interface HeartRatePlacementStep {
@@ -19,8 +22,9 @@ export interface HeartRatePlacementGuidance {
 
 export function getHeartRatePlacementGuidance(
   modelName: string | null,
+  modelId?: string | null,
 ): HeartRatePlacementGuidance {
-  const profile = getHeartRateCameraProfile(modelName);
+  const profile = getHeartRateCameraProfile(modelName, modelId);
   const cameraTarget = profile.target;
   const isKnownLayout = profile.layout !== 'unknown';
 

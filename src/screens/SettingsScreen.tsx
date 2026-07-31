@@ -149,7 +149,10 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
   };
 
   const handleHeartRateAccuracyHelp = () => {
-    const placementGuidance = getHeartRatePlacementGuidance(Device.modelName);
+    const placementGuidance = getHeartRatePlacementGuidance(
+      Device.modelName,
+      Device.modelId,
+    );
     trackProfileAction('heart_rate_accuracy_help_opened');
     Alert.alert(
       placementGuidance.title,

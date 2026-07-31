@@ -1,7 +1,5 @@
-import { Dimensions, StyleSheet, View } from 'react-native';
+import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import { colors } from '../../theme/colors';
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 /*
   PhoneFrame wraps content in a scaled-down iPhone-style bezel.
@@ -12,21 +10,36 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const LOGICAL_WIDTH = 393;
 const LOGICAL_HEIGHT = 852;
-const TARGET_WIDTH = Math.min(SCREEN_WIDTH * 0.42, 180);
-const SCALE = TARGET_WIDTH / LOGICAL_WIDTH;
+const WIDTH_FRACTION = 0.42;
+const MAX_WIDTH = 180;
 
 interface PhoneFrameProps {
   children: React.ReactNode;
+  maxHeight?: number;
 }
 
-export default function PhoneFrame({ children }: PhoneFrameProps) {
+export default function PhoneFrame({ children, maxHeight }: PhoneFrameProps) {
+  const { width: screenWidth } = useWindowDimensions();
+
+  // Scaling from width alone overflows short screens: the 393×852 aspect turns
+  // a 157pt-wide frame into a 341pt-tall one, more than an iPhone SE can spare.
+  // Callers that know their available height pass it so the binding constraint
+  // wins instead of the frame silently clipping.
+  const widthScale =
+    Math.min(screenWidth * WIDTH_FRACTION, MAX_WIDTH) / LOGICAL_WIDTH;
+  const scale =
+    maxHeight && maxHeight > 0
+      ? Math.min(widthScale, maxHeight / LOGICAL_HEIGHT)
+      : widthScale;
+
   return (
     <View
       style={[
         styles.root,
         {
-          width: TARGET_WIDTH,
-          height: LOGICAL_HEIGHT * SCALE,
+          width: LOGICAL_WIDTH * scale,
+          height: LOGICAL_HEIGHT * scale,
+          borderRadius: 48 * scale,
         },
       ]}
     >
@@ -35,9 +48,9 @@ export default function PhoneFrame({ children }: PhoneFrameProps) {
           styles.inner,
           {
             transform: [
-              { translateX: -(LOGICAL_WIDTH * (1 - SCALE)) / 2 },
-              { translateY: -(LOGICAL_HEIGHT * (1 - SCALE)) / 2 },
-              { scale: SCALE },
+              { translateX: -(LOGICAL_WIDTH * (1 - scale)) / 2 },
+              { translateY: -(LOGICAL_HEIGHT * (1 - scale)) / 2 },
+              { scale },
             ],
           },
         ]}
@@ -59,7 +72,6 @@ const styles = StyleSheet.create({
   root: {
     alignSelf: 'center',
     overflow: 'hidden',
-    borderRadius: 48 * SCALE,
     backgroundColor: colors.neutral[900],
     shadowColor: colors.neutral[900],
     shadowOffset: { width: 0, height: 12 },

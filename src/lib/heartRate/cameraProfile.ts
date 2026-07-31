@@ -1,4 +1,4 @@
-export type HeartRateCameraLayout = 'dual' | 'triple' | 'unknown';
+export type HeartRateCameraLayout = 'single' | 'dual' | 'triple' | 'unknown';
 export type HeartRatePhysicalCamera =
   | 'wide-angle-camera'
   | 'telephoto-camera';
@@ -13,6 +13,12 @@ const DUAL_CAMERA_PROFILE: HeartRateCameraProfile = {
   layout: 'dual',
   target: 'bottom camera',
   title: 'Cover the bottom camera',
+};
+
+const SINGLE_CAMERA_PROFILE: HeartRateCameraProfile = {
+  layout: 'single',
+  target: 'camera lens',
+  title: 'Cover the camera lens',
 };
 
 const TRIPLE_CAMERA_PROFILE: HeartRateCameraProfile = {
@@ -30,6 +36,9 @@ const UNKNOWN_CAMERA_PROFILE: HeartRateCameraProfile = {
 const CAMERA_PROFILES_BY_MODEL: Readonly<
   Record<string, HeartRateCameraProfile>
 > = {
+  'iPhone SE': SINGLE_CAMERA_PROFILE,
+  'iPhone SE (2nd generation)': SINGLE_CAMERA_PROFILE,
+  'iPhone SE (3rd generation)': SINGLE_CAMERA_PROFILE,
   'iPhone 16': DUAL_CAMERA_PROFILE,
   'iPhone 16 Plus': DUAL_CAMERA_PROFILE,
   'iPhone 16 Pro': TRIPLE_CAMERA_PROFILE,
@@ -37,6 +46,12 @@ const CAMERA_PROFILES_BY_MODEL: Readonly<
   'iPhone 17 Pro': TRIPLE_CAMERA_PROFILE,
   'iPhone 17 Pro Max': TRIPLE_CAMERA_PROFILE,
 };
+
+const IPHONE_SE_MODEL_IDS = new Set([
+  'iPhone8,4',
+  'iPhone12,8',
+  'iPhone14,6',
+]);
 
 const TELEPHOTO_HEART_RATE_IPHONE_MODELS = new Set([
   'iPhone 11 Pro',
@@ -57,7 +72,14 @@ const TELEPHOTO_HEART_RATE_IPHONE_MODELS = new Set([
 
 export function getHeartRateCameraProfile(
   modelName: string | null,
+  modelId?: string | null,
 ): HeartRateCameraProfile {
+  if (
+    (modelName?.startsWith('iPhone SE') ?? false) ||
+    (modelId != null && IPHONE_SE_MODEL_IDS.has(modelId))
+  ) {
+    return SINGLE_CAMERA_PROFILE;
+  }
   if (modelName == null) return UNKNOWN_CAMERA_PROFILE;
   return CAMERA_PROFILES_BY_MODEL[modelName] ?? UNKNOWN_CAMERA_PROFILE;
 }

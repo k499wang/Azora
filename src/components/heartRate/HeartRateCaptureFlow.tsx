@@ -120,7 +120,7 @@ export function HeartRateCaptureFlow({
   const [pastSetup, setPastSetup] = useState(false);
   const [selectedMode, setSelectedMode] = useState<HeartRateCaptureMode>(DEFAULT_CAPTURE_MODE);
   const [pendingSave, setPendingSave] = useState<PendingHeartRateSave | null>(null);
-  const cameraTarget = getHeartRateCameraTarget(Device.modelName);
+  const cameraTarget = getHeartRateCameraTarget(Device.modelName, Device.modelId);
   const completeHeartRateSessionMutationRef = useRef(completeHeartRateSessionMutation);
   completeHeartRateSessionMutationRef.current = completeHeartRateSessionMutation;
 
