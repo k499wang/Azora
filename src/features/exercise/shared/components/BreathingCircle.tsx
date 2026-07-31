@@ -6,12 +6,6 @@ import {
   useEffect,
 } from 'react';
 import { Animated, Easing, StyleSheet, View } from 'react-native';
-import {
-  Easing as ReanimatedEasing,
-  cancelAnimation,
-  withTiming,
-  type SharedValue,
-} from 'react-native-reanimated';
 import { colors } from '../../../../theme/colors';
 import { spacing } from '../../../../theme/spacing';
 
@@ -51,12 +45,10 @@ interface BreathingCircleProps {
   cameraSlot?: ReactNode;
   beatTick?: number;
   themeColors?: BreathingThemeColors;
-  /** Mirrors the circle's fill from 0 (fully exhaled) to 1 (fully inhaled). */
-  breath?: SharedValue<number>;
 }
 
 const BreathingCircle = forwardRef<BreathingCircleRef, BreathingCircleProps>(
-  ({ children, cameraSlot, beatTick = 0, themeColors, breath }, ref) => {
+  ({ children, cameraSlot, beatTick = 0, themeColors }, ref) => {
     const scale = useRef(new Animated.Value(OUTER_MIN_SCALE)).current;
     const innerFlush = useRef(new Animated.Value(0)).current;
 
@@ -65,14 +57,6 @@ const BreathingCircle = forwardRef<BreathingCircleRef, BreathingCircleProps>(
       duration: number,
       onComplete?: AnimationCompletionCallback,
     ) => {
-      if (breath) {
-        cancelAnimation(breath);
-        breath.value = withTiming(toValue === 1 ? 1 : 0, {
-          duration: duration * 1000,
-          easing: ReanimatedEasing.linear,
-        });
-      }
-
       Animated.timing(scale, {
         toValue,
         duration: duration * 1000,
@@ -112,7 +96,6 @@ const BreathingCircle = forwardRef<BreathingCircleRef, BreathingCircleProps>(
       },
       pause() {
         scale.stopAnimation();
-        if (breath) cancelAnimation(breath);
       },
       resumeExpand(
         remainingSecs: number,
@@ -129,10 +112,6 @@ const BreathingCircle = forwardRef<BreathingCircleRef, BreathingCircleProps>(
       reset() {
         scale.stopAnimation();
         scale.setValue(OUTER_MIN_SCALE);
-        if (breath) {
-          cancelAnimation(breath);
-          breath.value = 0;
-        }
       },
     }));
 

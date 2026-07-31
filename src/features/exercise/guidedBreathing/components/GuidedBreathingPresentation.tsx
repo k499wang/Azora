@@ -1,7 +1,6 @@
 import { Text } from '../../../../components/common/Text';
 import { forwardRef, useEffect, useRef } from 'react';
 import { Animated, Easing, StyleSheet, View } from 'react-native';
-import type { SharedValue } from 'react-native-reanimated';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import BreathingCircle, { type BreathingCircleRef } from '../../shared/components/BreathingCircle';
 import TechniqueIntro from './TechniqueIntro';
@@ -50,7 +49,6 @@ interface GuidedBreathingPresentationProps {
   technique: BreathingTechnique;
   theme: ExerciseDarkTheme;
   heartRate: GuidedBreathingHeartRatePresentation;
-  breath?: SharedValue<number>;
 }
 
 const PHASE_LABELS: Record<GuidedBreathingPhase, string> = {
@@ -68,7 +66,7 @@ export const GuidedBreathingPresentation = forwardRef<
   BreathingCircleRef,
   GuidedBreathingPresentationProps
 >(function GuidedBreathingPresentation(
-  { phase, technique, theme, heartRate, breath },
+  { phase, technique, theme, heartRate },
   circleRef,
 ) {
   const isIdle = phase === 'idle';
@@ -168,7 +166,6 @@ export const GuidedBreathingPresentation = forwardRef<
             ref={circleRef}
             cameraSlot={cameraSlot}
             beatTick={heartRate.beatTick}
-            breath={breath}
             themeColors={{
               outline: theme.circleOutline,
               outlineOpacity: theme.circleOutlineOpacity,

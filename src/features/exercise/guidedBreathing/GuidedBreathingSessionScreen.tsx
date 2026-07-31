@@ -1,10 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
 import { useIsFocused } from '@react-navigation/native';
-import { useSharedValue } from 'react-native-reanimated';
 import { EXERCISE_DARK_THEMES, type ExerciseDarkTheme } from '../../../theme/exerciseDarkThemes';
 import type { BreathingCircleRef } from '../shared/components/BreathingCircle';
-import BreathLattice from '../shared/components/BreathLattice';
 import ExerciseScaffold from '../shared/components/ExerciseScaffold';
 import { GuidedBreathingHud } from './components/GuidedBreathingHud';
 import {
@@ -68,7 +66,6 @@ export default function GuidedBreathingSessionScreen({
   const [audioSettingsOpen, setAudioSettingsOpen] = useState(false);
 
   const circleRef = useRef<BreathingCircleRef>(null);
-  const breath = useSharedValue(0);
   const introTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sessionStartMsRef = useRef<number>(0);
   const savedSessionRef = useRef(false);
@@ -492,17 +489,9 @@ export default function GuidedBreathingSessionScreen({
     >
       <ExerciseScaffold
         darkTheme={activeTheme}
-        backgroundSlot={
-          <BreathLattice
-            breath={breath}
-            active={isActive}
-            color={activeTheme.dotColor}
-          />
-        }
         centerSlot={
           <GuidedBreathingPresentation
             ref={circleRef}
-            breath={breath}
             phase={phase}
             technique={technique}
             theme={activeTheme}
