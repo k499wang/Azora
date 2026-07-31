@@ -351,7 +351,7 @@ const styles = StyleSheet.create({
   },
   dailyBreathholdSection: {
     paddingHorizontal: padding.screen.horizontal,
-    paddingBottom: spacing.md,
+    marginBottom: -spacing.sm,
     gap: spacing.md,
   },
   dailyPlanSection: {

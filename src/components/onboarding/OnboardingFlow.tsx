@@ -326,7 +326,7 @@ export default function OnboardingFlow({
   const [isExitOfferVisible, setIsExitOfferVisible] = useState(false);
   const [hasReachedPlanStep, setHasReachedPlanStep] = useState(false);
   // Auto triggers (idle, cancelled purchase) fire at most once per session;
-  // the explicit "Maybe later" tap can always reopen the offer.
+  // the explicit close tap can always reopen the offer.
   const hasAutoShownExitOfferRef = useRef(false);
 
   const showExitOffer = () => {
