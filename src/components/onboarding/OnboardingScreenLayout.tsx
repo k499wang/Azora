@@ -10,6 +10,10 @@ import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import { isHapticsEnabled } from '../../services/preferences/hapticsPreference';
+import {
+  centeredBodyMinHeight,
+  hasScrollOverflow,
+} from '../../lib/ui/scrollOverflow';
 
 const ENTRANCE_EASING = Easing.bezier(0.22, 1, 0.36, 1);
 const ENTRANCE_INITIAL_SCALE = 0.992;
@@ -98,21 +102,18 @@ export default function OnboardingScreenLayout({
   const contentHeight = useRef(0);
   const [hasOverflow, setHasOverflow] = useState(false);
 
-  // The centred body is absolutely positioned, so its height never reaches the
-  // scroll view's content size and a body taller than the phone would be
-  // clipped with no way to reach the rest. Measure it and grow the content box
-  // to match, which both un-clips the body and gives the scroll view something
-  // to scroll. Screens that fit are unaffected.
   const [centeredBodyHeight, setCenteredBodyHeight] = useState(0);
   const [viewport, setViewport] = useState(0);
-  // screenCenterStyle pads the overlay, so the box has to clear that too or the
-  // padding eats back into the body it was grown to hold.
-  const centeredBodyBox =
-    centeredBodyHeight + (screenCenterStyle ? Math.abs(blockDelta) : 0);
+  const centeredBodyBox = centeredBodyMinHeight({
+    centerBody,
+    bodyHeight: centeredBodyHeight,
+    viewportHeight: viewport,
+    // screenCenterStyle pads the overlay, so the box has to clear that too or
+    // the padding eats back into the body it was grown to hold.
+    centerPadding: screenCenterStyle ? Math.abs(blockDelta) : 0,
+  });
   const centeredBodyStyle =
-    centerBody && viewport > 0 && centeredBodyBox > viewport
-      ? { minHeight: centeredBodyBox }
-      : null;
+    centeredBodyBox == null ? null : { minHeight: centeredBodyBox };
 
   useEffect(() => {
     if (!hasOverflow) {
@@ -149,7 +150,10 @@ export default function OnboardingScreenLayout({
   };
 
   const recomputeOverflow = () => {
-    const overflow = contentHeight.current - viewportHeight.current > 1;
+    const overflow = hasScrollOverflow(
+      contentHeight.current,
+      viewportHeight.current,
+    );
     setHasOverflow(overflow);
     setFadeVisible(overflow);
   };
