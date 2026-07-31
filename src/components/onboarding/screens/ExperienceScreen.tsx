@@ -93,7 +93,10 @@ export default function ExperienceScreen({
                 pressed && styles.rowPressed,
               ]}
             >
-              <OnboardingOptionIcon name={option.icon} />
+              <OnboardingOptionIcon
+                name={option.icon}
+                selected={selected}
+              />
               <View style={styles.text}>
                 <Text
                   style={[

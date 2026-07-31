@@ -10,18 +10,20 @@ export type OnboardingOptionIconName = NonNullable<
 interface OnboardingOptionIconProps {
   name: OnboardingOptionIconName;
   size?: number;
+  selected?: boolean;
 }
 
 export default function OnboardingOptionIcon({
   name,
   size = 22,
+  selected = false,
 }: OnboardingOptionIconProps) {
   return (
     <View style={styles.slot}>
       <MaterialCommunityIcons
         name={name}
         size={size}
-        color={colors.accent[600]}
+        color={selected ? colors.primary.blue600 : colors.accent[600]}
       />
     </View>
   );

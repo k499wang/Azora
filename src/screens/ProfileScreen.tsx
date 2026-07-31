@@ -201,9 +201,13 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
                   trackProfileAction('settings_opened');
                   navigation.navigate('Settings');
                 }}
-                style={({ pressed }) => pressed && { opacity: 0.6 }}
+                style={({ pressed }) => [styles.settingsBadge, pressed && { opacity: 0.6 }]}
               >
-                <MaterialCommunityIcons name="cog-outline" size={28} color={colors.text.primary} />
+                <MaterialCommunityIcons
+                  name="cog-outline"
+                  size={22}
+                  color={colors.text.inverse}
+                />
               </Pressable>
             }
           />
@@ -280,5 +284,15 @@ const styles = StyleSheet.create({
   },
   sectionBody: {
     marginTop: spacing.xs,
+  },
+  settingsBadge: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(12,16,33,0.52)',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.20)',
   },
 });
