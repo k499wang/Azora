@@ -4,6 +4,8 @@ import { useIsFocused } from '@react-navigation/native';
 import { EXERCISE_DARK_THEMES, type ExerciseDarkTheme } from '../../../theme/exerciseDarkThemes';
 import type { BreathingCircleRef } from '../shared/components/BreathingCircle';
 import ExerciseScaffold from '../shared/components/ExerciseScaffold';
+import { BreathingAmbience } from '../shared/components/BreathingAmbience';
+import { useBreathEnvelope } from '../shared/breathEnvelope';
 import { GuidedBreathingHud } from './components/GuidedBreathingHud';
 import {
   GUIDED_BREATHING_INTRO_DURATION_MS,
@@ -66,6 +68,7 @@ export default function GuidedBreathingSessionScreen({
   const [audioSettingsOpen, setAudioSettingsOpen] = useState(false);
 
   const circleRef = useRef<BreathingCircleRef>(null);
+  const envelope = useBreathEnvelope();
   const introTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sessionStartMsRef = useRef<number>(0);
   const savedSessionRef = useRef(false);
@@ -489,12 +492,16 @@ export default function GuidedBreathingSessionScreen({
     >
       <ExerciseScaffold
         darkTheme={activeTheme}
+        backgroundSlot={
+          <BreathingAmbience envelope={envelope} theme={activeTheme} />
+        }
         centerSlot={
           <GuidedBreathingPresentation
             ref={circleRef}
             phase={phase}
             technique={technique}
             theme={activeTheme}
+            envelope={envelope}
             heartRate={{
               enabled: hrEnabled,
               active: pulse.active,

@@ -6,8 +6,18 @@ import {
   useEffect,
 } from 'react';
 import { Animated, Easing, StyleSheet, View } from 'react-native';
+import {
+  cancelAnimation,
+  Easing as EnvelopeEasing,
+  withTiming,
+} from 'react-native-reanimated';
 import { colors } from '../../../../theme/colors';
 import { spacing } from '../../../../theme/spacing';
+import {
+  BREATH_EXHALED,
+  BREATH_INHALED,
+  type BreathEnvelope,
+} from '../breathEnvelope';
 
 const OUTER_MAX_SIZE = 300;
 const INNER_SIZE = 108;
@@ -45,10 +55,16 @@ interface BreathingCircleProps {
   cameraSlot?: ReactNode;
   beatTick?: number;
   themeColors?: BreathingThemeColors;
+  /**
+   * Optional 0–1 breath position for ambient layers to follow. Mirrors this
+   * circle's own timeline rather than replacing it, so the circle stays the
+   * authority on phase completion.
+   */
+  envelope?: BreathEnvelope;
 }
 
 const BreathingCircle = forwardRef<BreathingCircleRef, BreathingCircleProps>(
-  ({ children, cameraSlot, beatTick = 0, themeColors }, ref) => {
+  ({ children, cameraSlot, beatTick = 0, themeColors, envelope }, ref) => {
     const scale = useRef(new Animated.Value(OUTER_MIN_SCALE)).current;
     const innerFlush = useRef(new Animated.Value(0)).current;
 
@@ -57,6 +73,13 @@ const BreathingCircle = forwardRef<BreathingCircleRef, BreathingCircleProps>(
       duration: number,
       onComplete?: AnimationCompletionCallback,
     ) => {
+      if (envelope) {
+        envelope.value = withTiming(
+          toValue === 1 ? BREATH_INHALED : BREATH_EXHALED,
+          { duration: duration * 1000, easing: EnvelopeEasing.linear },
+        );
+      }
+
       Animated.timing(scale, {
         toValue,
         duration: duration * 1000,
@@ -96,6 +119,7 @@ const BreathingCircle = forwardRef<BreathingCircleRef, BreathingCircleProps>(
       },
       pause() {
         scale.stopAnimation();
+        if (envelope) cancelAnimation(envelope);
       },
       resumeExpand(
         remainingSecs: number,
@@ -112,6 +136,10 @@ const BreathingCircle = forwardRef<BreathingCircleRef, BreathingCircleProps>(
       reset() {
         scale.stopAnimation();
         scale.setValue(OUTER_MIN_SCALE);
+        if (envelope) {
+          cancelAnimation(envelope);
+          envelope.value = BREATH_EXHALED;
+        }
       },
     }));
 

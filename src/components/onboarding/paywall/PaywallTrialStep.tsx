@@ -42,6 +42,13 @@ const testimonials: Array<{
     author: 'Priya Shah',
     avatar: 'testimonialPriya',
   },
+  {
+    title: 'I finally know how my heart is doing',
+    quote:
+      'My heart rate and my lung age are in one place, so checking everything takes seconds. Watching my lung age come down two years was the moment it clicked.',
+    author: 'Nina Alvarez',
+    avatar: 'testimonialNina',
+  },
 ];
 
 interface TimelineStepProps {

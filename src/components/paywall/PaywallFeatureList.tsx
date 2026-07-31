@@ -13,7 +13,7 @@ export interface PaywallFeature {
 const DEFAULT_FEATURES: PaywallFeature[] = [
   {
     icon: 'waves',
-    text: 'Reset your mind and sharpen focus by settling your nervous system',
+    text: 'Calm your racing mind in minutes and stay sharper all day',
   },
   {
     icon: 'heart',
@@ -21,11 +21,11 @@ const DEFAULT_FEATURES: PaywallFeature[] = [
   },
   {
     icon: 'moon',
-    text: 'Enjoy calmer nights with wind downs made for sleep',
+    text: 'Fall asleep faster with wind downs built for deep rest',
   },
   {
     icon: 'sparkle',
-    text: 'Get a personalized plan that adapts as you improve',
+    text: 'Get a plan that grows smarter as you do',
   },
 ];
 

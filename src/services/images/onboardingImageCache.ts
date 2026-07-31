@@ -12,7 +12,8 @@ export type OnboardingImageKey =
   | 'cambridgeLogo'
   | 'testimonialMaya'
   | 'testimonialDaniel'
-  | 'testimonialPriya';
+  | 'testimonialPriya'
+  | 'testimonialNina';
 
 const sources: Record<OnboardingImageKey, number> = {
   brainScan: require('../../../assets/onboarding/brain-scan-comparison.webp'),
@@ -27,6 +28,7 @@ const sources: Record<OnboardingImageKey, number> = {
   testimonialMaya: require('../../../assets/testimonials/maya-rivera.jpg'),
   testimonialDaniel: require('../../../assets/testimonials/daniel-koch.jpg'),
   testimonialPriya: require('../../../assets/testimonials/priya-shah.jpg'),
+  testimonialNina: require('../../../assets/testimonials/nina-alvarez.jpg'),
 };
 
 const loadOptions: Partial<Record<OnboardingImageKey, ImageLoadOptions>> = {
@@ -41,6 +43,7 @@ const loadOptions: Partial<Record<OnboardingImageKey, ImageLoadOptions>> = {
   testimonialMaya: { maxWidth: 128 },
   testimonialDaniel: { maxWidth: 128 },
   testimonialPriya: { maxWidth: 128 },
+  testimonialNina: { maxWidth: 128 },
 };
 
 const retainedImages: Partial<Record<OnboardingImageKey, ImageRef>> = {};

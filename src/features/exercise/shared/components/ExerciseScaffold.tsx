@@ -15,6 +15,8 @@ interface ExerciseScaffoldProps {
   pickerSlot?: ReactNode;
   centerSlot: ReactNode;
   bottomSlot: ReactNode;
+  /** Ambient layer painted over the screen fill and under all content. */
+  backgroundSlot?: ReactNode;
   onClose?: () => void;
   darkTheme?: ExerciseDarkTheme;
 }
@@ -27,6 +29,7 @@ export default function ExerciseScaffold({
   pickerSlot,
   centerSlot,
   bottomSlot,
+  backgroundSlot,
   onClose,
   darkTheme,
 }: ExerciseScaffoldProps) {
@@ -40,6 +43,12 @@ export default function ExerciseScaffold({
         darkTheme && { backgroundColor: darkTheme.screen },
       ]}
     >
+      {backgroundSlot ? (
+        <View style={StyleSheet.absoluteFill} pointerEvents="none">
+          {backgroundSlot}
+        </View>
+      ) : null}
+
       <View style={styles.header}>
         <View style={styles.titleRow}>
           {!titleSlot && (
