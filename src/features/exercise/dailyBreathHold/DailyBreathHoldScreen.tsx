@@ -6,8 +6,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { EXERCISE_DARK_THEMES, type ExerciseDarkTheme } from '../../../theme/exerciseDarkThemes';
 import type { BreathingCircleRef } from '../shared/components/BreathingCircle';
 import ExerciseScaffold from '../shared/components/ExerciseScaffold';
-import { BreathingAmbience } from '../shared/components/BreathingAmbience';
-import { useBreathEnvelope } from '../shared/breathEnvelope';
 import {
   DAILY_BREATH_HOLD_INTRO_DURATION_MS,
   DailyBreathHoldPresentation,
@@ -69,7 +67,6 @@ export default function DailyBreathHoldScreen({
     DAILY_BREATH_HOLD_PROTOCOL.finalInhaleSeconds,
   );
   const circleRef = useRef<BreathingCircleRef>(null);
-  const envelope = useBreathEnvelope();
   const introTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const measurementStartAtRef = useRef<number>(0);
   const releaseInFlightRef = useRef(false);
@@ -462,16 +459,12 @@ export default function DailyBreathHoldScreen({
     >
       <ExerciseScaffold
         darkTheme={activeTheme}
-        backgroundSlot={
-          <BreathingAmbience envelope={envelope} theme={activeTheme} />
-        }
         centerSlot={
           <DailyBreathHoldPresentation
             ref={circleRef}
             phase={phase}
             paused={paused}
             theme={activeTheme}
-            envelope={envelope}
             protocol={DAILY_BREATH_HOLD_PROTOCOL}
             holdSeconds={holdSeconds}
             bestHoldSeconds={bestHoldSeconds}
