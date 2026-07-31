@@ -1,10 +1,11 @@
 import { Text } from '../../../../components/common/Text';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { SettingsGearButton } from '../../../audioSettings';
 import type { ExerciseDarkTheme } from '../../../../theme/exerciseDarkThemes';
 import { colors } from '../../../../theme/colors';
 import { spacing } from '../../../../theme/spacing';
+import { isShortScreen } from '../../../../theme/breakpoints';
 import { fonts, typography } from '../../../../theme/typography';
 import Icon from '../../../../components/common/icons/Icon';
 import RoundsHapticPicker from './RoundsHapticPicker';
@@ -44,8 +45,11 @@ export function GuidedBreathingHud({
   onPrimaryPress,
   onClosePress,
 }: GuidedBreathingHudProps) {
+  const { height } = useWindowDimensions();
+  const compact = isShortScreen(height);
+
   return (
-    <View style={styles.bottomContainer}>
+    <View style={[styles.bottomContainer, compact && styles.bottomContainerCompact]}>
       {showProgress ? (
         <View style={styles.progressWrap}>
           <View style={[styles.progressTrack, { backgroundColor: theme.progressTrack }]}>
@@ -123,6 +127,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.lg,
     marginBottom: spacing['4xl'],
+  },
+  // 56pt of bottom margin is a big share of a 667pt screen, and it pushes the
+  // picker up into the intro copy. Give the space back to the centre stack.
+  bottomContainerCompact: {
+    gap: spacing.md,
+    marginBottom: spacing.lg,
   },
   progressWrap: {
     width: '100%',

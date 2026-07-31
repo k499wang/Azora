@@ -1,5 +1,5 @@
 import { Text } from '../components/common/Text';
-import { Alert, Dimensions, FlatList, Linking, Platform, Pressable, StyleSheet, View, type NativeScrollEvent, type NativeSyntheticEvent, type ViewToken } from 'react-native';
+import { Alert, FlatList, Linking, Platform, Pressable, StyleSheet, View, useWindowDimensions, type LayoutChangeEvent, type NativeScrollEvent, type NativeSyntheticEvent, type ViewToken } from 'react-native';
 import { Image } from 'expo-image';
 import { useEffect, useRef, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -14,6 +14,7 @@ import {
 import { colors } from '../theme/colors';
 import { fonts } from '../theme/typography';
 import { spacing } from '../theme/spacing';
+import { isShortScreen } from '../theme/breakpoints';
 import { AUTH_LANDING_SLIDES, type AuthLandingSlide } from '../data/authLandingSlides';
 
 function showTermsRequiredAlert() {
@@ -23,11 +24,12 @@ function showTermsRequiredAlert() {
   );
 }
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-
 export default function AuthLandingScreen() {
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
+  const compact = isShortScreen(screenHeight);
   const [agreed, setAgreed] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
+  const [frameSlotHeight, setFrameSlotHeight] = useState(0);
   const [googleBusy, setGoogleBusy] = useState(false);
   const [appleBusy, setAppleBusy] = useState(false);
   const [appleAvailable, setAppleAvailable] = useState(Platform.OS === 'ios');
@@ -82,8 +84,15 @@ export default function AuthLandingScreen() {
   ).current;
 
   const onMomentumEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const i = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
+    const i = Math.round(e.nativeEvent.contentOffset.x / screenWidth);
     setActiveIndex(i);
+  };
+
+  // The frame slot takes whatever the copy block leaves behind, so measuring it
+  // tells PhoneFrame how tall it may actually be. The slot's own height is
+  // flex-derived and independent of the frame, so this settles in one pass.
+  const onFrameSlotLayout = (e: LayoutChangeEvent) => {
+    setFrameSlotHeight(e.nativeEvent.layout.height);
   };
 
   return (
@@ -100,17 +109,19 @@ export default function AuthLandingScreen() {
           onMomentumScrollEnd={onMomentumEnd}
           viewabilityConfig={{ itemVisiblePercentThreshold: 60 }}
           renderItem={({ item }) => (
-            <View style={styles.slide}>
-              <PhoneFrame>
-                <Image
-                  source={item.source}
-                  style={styles.frameImage}
-                  contentFit="cover"
-                  contentPosition="top center"
-                  cachePolicy="memory-disk"
-                  transition={0}
-                />
-              </PhoneFrame>
+            <View style={[styles.slide, { width: screenWidth }]}>
+              <View style={styles.frameSlot} onLayout={onFrameSlotLayout}>
+                <PhoneFrame maxHeight={frameSlotHeight}>
+                  <Image
+                    source={item.source}
+                    style={styles.frameImage}
+                    contentFit="cover"
+                    contentPosition="top center"
+                    cachePolicy="memory-disk"
+                    transition={0}
+                  />
+                </PhoneFrame>
+              </View>
               <View style={styles.copy}>
                 <Text style={styles.slideTitle}>{item.title}</Text>
               </View>
@@ -118,7 +129,7 @@ export default function AuthLandingScreen() {
           )}
         />
 
-        <View style={styles.dots}>
+        <View style={[styles.dots, compact && styles.dotsCompact]}>
           {AUTH_LANDING_SLIDES.map((_, i) => (
             <View key={i} style={[styles.dot, i === activeIndex && styles.dotActive]} />
           ))}
@@ -127,7 +138,7 @@ export default function AuthLandingScreen() {
 
       <View style={styles.sheet}>
         <SafeAreaView edges={['bottom']}>
-          <View style={styles.sheetContent}>
+          <View style={[styles.sheetContent, compact && styles.sheetContentCompact]}>
             <Pressable
               accessibilityRole="checkbox"
               accessibilityState={{ checked: agreed }}
@@ -209,11 +220,18 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   slide: {
-    width: SCREEN_WIDTH,
     paddingHorizontal: spacing.lg,
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.lg,
+  },
+  // flex: 1 pins the slot to the leftover space rather than the frame's natural
+  // height, so the frame can never push the title off a short screen.
+  frameSlot: {
+    flex: 1,
+    alignSelf: 'stretch',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   frameImage: {
     width: '100%',
@@ -238,6 +256,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.xs,
     paddingVertical: spacing.lg,
+  },
+  dotsCompact: {
+    paddingVertical: spacing.sm,
   },
   dot: {
     width: 8,
@@ -264,6 +285,11 @@ const styles = StyleSheet.create({
     paddingTop: spacing.lg,
     paddingBottom: spacing.lg,
     gap: spacing.md,
+  },
+  sheetContentCompact: {
+    paddingTop: spacing.md,
+    paddingBottom: spacing.md,
+    gap: spacing.sm,
   },
   terms: {
     flexDirection: 'row',

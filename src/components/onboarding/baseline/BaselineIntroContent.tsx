@@ -9,7 +9,10 @@ import { HeartRatePlacementIllustration } from '../../heartRate/HeartRatePlaceme
 import { HeartRatePlacementStepsCard } from '../../heartRate/HeartRatePlacementStepsCard';
 
 export function BaselineIntroContent() {
-  const placementGuidance = getHeartRatePlacementGuidance(Device.modelName);
+  const placementGuidance = getHeartRatePlacementGuidance(
+    Device.modelName,
+    Device.modelId,
+  );
 
   return (
     <>

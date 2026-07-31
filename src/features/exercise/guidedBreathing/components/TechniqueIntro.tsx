@@ -1,10 +1,11 @@
 import { Text } from '../../../../components/common/Text';
 import type { ReactNode } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../../../theme/colors';
 import { fonts, typography } from '../../../../theme/typography';
 import { spacing } from '../../../../theme/spacing';
+import { isShortScreen } from '../../../../theme/breakpoints';
 import type { BreathingTechnique } from '../techniques';
 
 interface TextColors {
@@ -32,10 +33,12 @@ const PHASE_META: {
 ];
 
 export default function TechniqueIntro({ technique, textColors, topSlot }: Props) {
+  const { height } = useWindowDimensions();
+  const compact = isShortScreen(height);
   const phases = PHASE_META.filter((p) => technique.pattern[p.key] > 0);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, compact && styles.containerCompact]}>
       {topSlot ? <View style={styles.topSlot}>{topSlot}</View> : null}
       <View style={styles.phaseRow}>
         {phases.map((p, idx) => (
@@ -58,7 +61,13 @@ export default function TechniqueIntro({ technique, textColors, topSlot }: Props
       <Text style={[styles.name, textColors && { color: textColors.primary }]}>
         {technique.name}
       </Text>
-      <Text style={[styles.description, textColors && { color: textColors.secondary }]}>
+      <Text
+        style={[
+          styles.description,
+          compact && styles.descriptionCompact,
+          textColors && { color: textColors.secondary },
+        ]}
+      >
         {technique.description}
       </Text>
     </View>
@@ -71,6 +80,13 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     alignItems: 'center',
     transform: [{ translateY: -48 }],
+  },
+  // The intro is centred against the full screen while the rounds picker sits
+  // in normal flow below it, so a long description grows straight into the
+  // picker. Short screens lose that headroom entirely — tighten the block
+  // rather than push it up, since the header caps how far it can travel.
+  containerCompact: {
+    gap: spacing.sm,
   },
   name: {
     ...typography.title.title1,
@@ -85,6 +101,11 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
     textAlign: 'center',
     opacity: 0.8,
+  },
+  descriptionCompact: {
+    ...typography.body.small,
+    fontFamily: fonts.regular,
+    fontWeight: '400',
   },
   phaseRow: {
     flexDirection: 'row',
