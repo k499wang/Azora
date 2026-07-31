@@ -1,10 +1,10 @@
 /**
  * Builds the personalized plan shown at the end of onboarding.
  *
- * The plan is two standing daily commitments — one guided breathing session and
- * one breath-hold check-in — each at a fixed time. Two anchors rather than one
- * gives the habit a second chance to land on a day the first is missed, and the
- * check-in is what produces the Day 7 re-test number.
+ * The plan is three standing daily commitments — a primary guided breathing
+ * session, a complementary hand-picked exercise, and a breath-hold check-in —
+ * each at a fixed time. The exercises support the user's goals from different
+ * angles, and the check-in is what produces the Day 7 re-test number.
  *
  * Seven days is the whole horizon because the trial is seven days: anything
  * that lands later is invisible to someone deciding whether to keep the app.
@@ -18,12 +18,12 @@ import {
 } from '../features/exercise/guidedBreathing/techniqueSelection';
 import type { TechniqueId } from '../features/exercise/guidedBreathing/techniqueCatalog';
 
-export type PlanActionId = 'session' | 'checkIn';
+export type PlanActionId = 'session' | 'handPicked' | 'checkIn';
 
 export interface PlanAction {
   id: PlanActionId;
   title: string;
-  /** Set for the breathing session; the check-in is not a guided technique. */
+  /** Set for guided exercises; the check-in is not a guided technique. */
   techniqueId: TechniqueId | null;
   /** Minutes from midnight, so callers can format or schedule it. */
   minutesFromMidnight: number;
@@ -67,6 +67,7 @@ export interface PlanInputs {
 }
 
 const MORNING_MIN = 8 * 60;
+const HAND_PICKED_MIN = 13 * 60;
 const EVENING_MIN = 18 * 60;
 const NIGHT_MIN = 21 * 60 + 30;
 
@@ -77,6 +78,31 @@ const NIGHT_INTENTS = ['sleep'];
 const CHECK_IN_MINUTES = 1;
 const MIN_SESSION_MINUTES = 2;
 const MAX_SESSION_MINUTES = 10;
+
+const HAND_PICKED_TECHNIQUE = {
+  stress_relief: 'resonance',
+  calm_fast: 'resonance',
+  sleep: 'relaxing',
+  focus: 'extended-exhale',
+  energy: 'morning-charge',
+  spiritual: 'coherent-6',
+  yoga: 'belly',
+  heart_health: 'coherent-6',
+  daily_habit: 'belly',
+  other: 'belly',
+} as const satisfies Record<OnboardingIntent, TechniqueId>;
+
+type HandPickedTechniqueId = (typeof HAND_PICKED_TECHNIQUE)[OnboardingIntent];
+
+/** Display durations for the techniques used as complementary exercises. */
+const HAND_PICKED_MINUTES: Record<HandPickedTechniqueId, number> = {
+  resonance: 2,
+  relaxing: 1,
+  'extended-exhale': 2,
+  'morning-charge': 2,
+  'coherent-6': 2,
+  belly: 1,
+};
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
@@ -148,8 +174,10 @@ export function buildOnboardingPlan(inputs: PlanInputs): OnboardingPlan {
   const minutes = sessionMinutes(inputs.dailyMinutes);
   const intent = primaryIntent(inputs.intents);
   const sessionAt = sessionTimeFor(inputs.intents, inputs.sleepQuality);
-  // The check-in sits on the opposite end of the day from the session so the
-  // plan has two separate anchors rather than one combined block.
+  const handPickedTechnique = HAND_PICKED_TECHNIQUE[intent];
+  const handPickedMinutes = HAND_PICKED_MINUTES[handPickedTechnique];
+  // The check-in sits on the opposite end of the day from the primary session
+  // so those commitments do not collapse into one combined block.
   const checkInAt = sessionAt < 12 * 60 ? EVENING_MIN : MORNING_MIN;
 
   const actions = [
@@ -159,6 +187,13 @@ export function buildOnboardingPlan(inputs: PlanInputs): OnboardingPlan {
       techniqueId: INTENT_TECHNIQUE[intent],
       minutesFromMidnight: sessionAt,
       minutes,
+    },
+    {
+      id: 'handPicked',
+      title: 'Hand-picked exercise',
+      techniqueId: handPickedTechnique,
+      minutesFromMidnight: HAND_PICKED_MIN,
+      minutes: handPickedMinutes,
     },
     {
       id: 'checkIn',
@@ -200,6 +235,6 @@ export function buildOnboardingPlan(inputs: PlanInputs): OnboardingPlan {
     actions,
     projection,
     lungAgeGoal,
-    fullDailyMinutes: minutes + CHECK_IN_MINUTES,
+    fullDailyMinutes: minutes + handPickedMinutes + CHECK_IN_MINUTES,
   };
 }

@@ -88,8 +88,8 @@ export default function RecommendedExerciseScreen({
 
           <Text style={styles.note}>
             {biggestLift != null
-              ? `${growthArea.label} climbs the most, about ${biggestLift} points, because both daily actions are chosen to lift it first.`
-              : `${growthArea.label} has the most room to move, so both daily actions are chosen to lift it first.`}
+              ? `${growthArea.label} climbs the most, about ${biggestLift} points, because your daily actions are chosen to lift it first.`
+              : `${growthArea.label} has the most room to move, so your daily actions are chosen to lift it first.`}
           </Text>
         </View>
 
@@ -104,7 +104,7 @@ export default function RecommendedExerciseScreen({
         ) : null}
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Do this every day</Text>
+          <Text style={styles.sectionTitle}>Azora’s plan</Text>
           {plan.actions.map((action) => (
             <ActionCard key={action.id} action={action} />
           ))}
@@ -116,25 +116,30 @@ export default function RecommendedExerciseScreen({
 
 function ActionCard({ action }: { action: PlanAction }) {
   const technique = techniqueName(action.techniqueId);
+  const title =
+    action.id === 'session'
+      ? technique ?? action.title
+      : action.id === 'handPicked'
+        ? 'Azora’s hand-picked exercise'
+        : action.title;
+  const body =
+    action.id === 'session'
+      ? 'Guided breathing, matched to the goals you picked.'
+      : action.id === 'handPicked'
+        ? 'Based on your data, Azora planned a different exercise for each day of your 7-day plan.'
+        : 'A short hold to track how your breathing is changing.';
 
   return (
     <CardSurface style={styles.actionCard}>
       <View style={styles.actionHeader}>
-        <Text style={styles.actionRole}>{technique ?? action.title}</Text>
-        <View style={styles.actionMeta}>
-          <Text style={styles.actionSubject}>{`${action.minutes} min`}</Text>
-          <View style={styles.actionPill}>
-            <Text style={styles.actionPillText}>
-              {formatPlanTime(action.minutesFromMidnight)}
-            </Text>
-          </View>
+        <Text style={styles.actionRole}>{title}</Text>
+        <View style={styles.actionPill}>
+          <Text style={styles.actionPillText}>
+            {formatPlanTime(action.minutesFromMidnight)}
+          </Text>
         </View>
       </View>
-      <Text style={styles.actionBody}>
-        {technique
-          ? 'Guided breathing, matched to the goals you picked.'
-          : 'A short hold to track how your breathing is changing.'}
-      </Text>
+      <Text style={styles.actionBody}>{body}</Text>
     </CardSurface>
   );
 }
@@ -185,19 +190,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semibold,
     fontWeight: '500',
     color: colors.primary.blue600,
-    flexShrink: 1,
-  },
-  actionMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    flexShrink: 1,
-  },
-  actionSubject: {
-    ...typography.heading.heading2,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    color: colors.text.primary,
     flexShrink: 1,
   },
   actionPill: {
