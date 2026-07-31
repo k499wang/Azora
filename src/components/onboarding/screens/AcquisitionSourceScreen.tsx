@@ -91,10 +91,14 @@ export default function AcquisitionSourceScreen({
             >
               {icon === 'tiktok-custom' ? (
                 <View style={styles.iconSlot}>
-                  <Icon name="tiktok" size={22} color={colors.accent[600]} />
+                  <Icon
+                    name="tiktok"
+                    size={22}
+                    color={selected ? colors.primary.blue600 : colors.accent[600]}
+                  />
                 </View>
               ) : (
-                <OnboardingOptionIcon name={icon} />
+                <OnboardingOptionIcon name={icon} selected={selected} />
               )}
               <Text
                 style={[styles.optionTitle, selected && styles.optionTitleSelected]}

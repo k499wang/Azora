@@ -48,11 +48,13 @@ export default function DailyPlanCard({
   const hasHistory = lastHoldSeconds != null || todayHoldSeconds != null;
   const doneToday = todayHoldSeconds != null;
 
-  const meta = !hasHistory
-    ? SESSION_DURATION
+  const status = !hasHistory
+    ? null
     : doneToday
       ? `Done today ${formatMmSs(todayHoldSeconds!)}`
       : `Last hold ${formatMmSs(lastHoldSeconds!)}`;
+
+  const meta = status ? `${status} · ${SESSION_DURATION}` : SESSION_DURATION;
 
   return (
     <View style={styles.container}>
@@ -101,7 +103,7 @@ export default function DailyPlanCard({
         <View style={styles.body}>
           <View style={styles.titleRow}>
             <MaterialCommunityIcons name="play" size={18} color={colors.text.primary} />
-            <Text style={styles.title}>Breathhold Exercise</Text>
+            <Text style={styles.title}>Azora's Breathhold Exercise</Text>
           </View>
           <Text style={styles.meta}>{meta}</Text>
         </View>
@@ -159,7 +161,7 @@ const styles = StyleSheet.create({
     color: colors.text.inverse,
   },
   body: {
-    paddingTop: spacing.sm,
+    paddingTop: spacing.xs,
     paddingLeft: spacing.sm,
   },
   titleRow: {

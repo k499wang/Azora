@@ -134,7 +134,10 @@ export default function IntentQuestionScreen({
                   isSubmitting && !selected && styles.optionDisabled,
                 ]}
               >
-                <OnboardingOptionIcon name={INTENT_ICONS[option.id]} />
+                <OnboardingOptionIcon
+                  name={INTENT_ICONS[option.id]}
+                  selected={selected}
+                />
                 <Text
                   style={[styles.optionTitle, selected && styles.optionTitleSelected]}
                   numberOfLines={1}

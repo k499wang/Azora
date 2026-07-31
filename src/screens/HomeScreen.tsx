@@ -238,7 +238,7 @@ const styles = StyleSheet.create({
   },
   topSection: {
     position: 'relative',
-    paddingBottom: spacing.md,
+    paddingBottom: spacing['2xl'],
   },
   heroBackdrop: {
     position: 'absolute',
@@ -254,6 +254,7 @@ const styles = StyleSheet.create({
   },
   dailyBreathholdSection: {
     paddingHorizontal: padding.screen.horizontal,
+    paddingBottom: spacing.md,
     gap: spacing.md,
   },
   greeting: {
