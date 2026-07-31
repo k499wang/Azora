@@ -21,10 +21,11 @@ const baseInputs = {
 
 const actionById = (plan, id) => plan.actions.find((action) => action.id === id);
 
-test('every plan is one session plus one daily check-in', () => {
+test('every plan has exactly two exercises and one daily check-in', () => {
   const plan = buildOnboardingPlan(baseInputs);
-  assert.equal(plan.actions.length, 2);
+  assert.equal(plan.actions.length, 3);
   assert.ok(actionById(plan, 'session'));
+  assert.ok(actionById(plan, 'handPicked'));
   assert.ok(actionById(plan, 'checkIn'));
 });
 
@@ -66,6 +67,52 @@ test('the technique follows the goal', () => {
   assert.equal(forIntent('stress_relief'), 'relaxing');
 });
 
+test('the hand-picked exercise is deterministic and complements every recognized goal', () => {
+  const expectedByIntent = {
+    stress_relief: 'resonance',
+    calm_fast: 'resonance',
+    sleep: 'relaxing',
+    focus: 'extended-exhale',
+    energy: 'morning-charge',
+    spiritual: 'coherent-6',
+    yoga: 'belly',
+    heart_health: 'coherent-6',
+    daily_habit: 'belly',
+    other: 'belly',
+  };
+
+  for (const [intent, expectedTechnique] of Object.entries(expectedByIntent)) {
+    const firstPlan = buildOnboardingPlan({ ...baseInputs, intents: [intent] });
+    const secondPlan = buildOnboardingPlan({ ...baseInputs, intents: [intent] });
+    const primary = actionById(firstPlan, 'session');
+    const handPicked = actionById(firstPlan, 'handPicked');
+
+    assert.equal(handPicked.techniqueId, expectedTechnique);
+    assert.notEqual(handPicked.techniqueId, primary.techniqueId);
+    assert.deepEqual(handPicked, actionById(secondPlan, 'handPicked'));
+  }
+});
+
+test('the hand-picked exercise is scheduled at 1 PM with its catalog duration', () => {
+  const oneMinuteTechniques = new Set(['relaxing', 'belly']);
+
+  for (const intents of [
+    ['stress_relief'],
+    ['sleep'],
+    ['focus'],
+    ['energy'],
+    ['spiritual'],
+    ['yoga'],
+  ]) {
+    const handPicked = actionById(
+      buildOnboardingPlan({ ...baseInputs, intents }),
+      'handPicked',
+    );
+    assert.equal(handPicked.minutesFromMidnight, 13 * 60);
+    assert.equal(handPicked.minutes, oneMinuteTechniques.has(handPicked.techniqueId) ? 1 : 2);
+  }
+});
+
 test('an unrecognised goal still yields a technique', () => {
   const plan = buildOnboardingPlan({ ...baseInputs, intents: ['nonsense'] });
   assert.equal(actionById(plan, 'session').techniqueId, 'box');
@@ -91,11 +138,13 @@ test('session duration follows only the daily minute commitment', () => {
   );
 });
 
-test('daily total counts the session and the check-in', () => {
+test('daily total counts both exercises and the check-in', () => {
   const plan = buildOnboardingPlan(baseInputs);
   assert.equal(
     plan.fullDailyMinutes,
-    actionById(plan, 'session').minutes + actionById(plan, 'checkIn').minutes,
+    actionById(plan, 'session').minutes +
+      actionById(plan, 'handPicked').minutes +
+      actionById(plan, 'checkIn').minutes,
   );
 });
 
