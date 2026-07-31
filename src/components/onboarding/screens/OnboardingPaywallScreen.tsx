@@ -332,7 +332,24 @@ export default function OnboardingPaywallScreen({
           ) : (
             <View style={styles.headerButton} />
           )}
-          <View style={styles.headerButton} />
+          {onContinueWithoutPro != null ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Close paywall"
+              hitSlop={12}
+              disabled={isBusy}
+              onPress={handleContinueWithoutPro}
+              style={({ pressed }) => [
+                styles.headerButton,
+                pressed && styles.subtlePressed,
+                isBusy && styles.disabled,
+              ]}
+            >
+              <Text style={[styles.closeText, !darkChrome && styles.headerTextLight]}>×</Text>
+            </Pressable>
+          ) : (
+            <View style={styles.headerButton} />
+          )}
         </View>
 
         <ScrollView
@@ -426,21 +443,6 @@ export default function OnboardingPaywallScreen({
                 restoreDisabled={isBusy}
                 onRestore={onRestore}
               />
-              {onContinueWithoutPro != null ? (
-                <Pressable
-                  accessibilityRole="button"
-                  disabled={isBusy}
-                  onPress={handleContinueWithoutPro}
-                  hitSlop={8}
-                  style={({ pressed }) => [
-                    styles.maybeLaterButton,
-                    pressed && styles.subtlePressed,
-                    isBusy && styles.disabled,
-                  ]}
-                >
-                  <Text style={styles.maybeLaterText}>Maybe later</Text>
-                </Pressable>
-              ) : null}
             </>
           )}
         </View>
@@ -490,16 +492,12 @@ const styles = StyleSheet.create({
     lineHeight: 34,
     color: colors.neutral[0],
   },
-  maybeLaterButton: {
-    alignSelf: 'center',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
-  },
-  maybeLaterText: {
-    ...typography.caption.caption1,
+  closeText: {
     fontFamily: fonts.semibold,
     fontWeight: '500',
-    color: colors.primary.blue200,
+    fontSize: 32,
+    lineHeight: 32,
+    color: colors.neutral[0],
   },
   headerTextLight: {
     color: colors.text.primary,
