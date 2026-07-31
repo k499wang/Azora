@@ -47,7 +47,12 @@ import {
   PERSONALIZED_INTENT_OPTIONS,
 } from './data/intentOptions';
 import { techniqueForIntent } from '../../features/exercise/guidedBreathing/techniqueSelection';
-import { buildOnboardingPlan, toClockString } from '../../lib/onboardingPlan';
+import {
+  buildOnboardingPlan,
+  toClockString,
+  type OnboardingPlan,
+  type PlanActionId,
+} from '../../lib/onboardingPlan';
 import type { GenderOption } from './data/genderOptions';
 import type { AcquisitionSourceId } from './data/acquisitionOptions';
 import AcquisitionSourceScreen from './screens/AcquisitionSourceScreen';
@@ -88,6 +93,11 @@ import {
 } from '../../services/analytics/onboarding';
 import type { NotificationPreferences } from '../../services/notifications/types';
 import { useUpdateNotificationPreferencesMutation } from '../../queries/notifications/useUpdateNotificationPreferencesMutation';
+import { useUpdateDailyPlanScheduleMutation } from '../../queries/dailyPlan/useUpdateDailyPlanScheduleMutation';
+import {
+  DEFAULT_DAILY_PLAN_SCHEDULE,
+  type DailyPlanSchedule,
+} from '../../services/dailyPlan/types';
 import { buildOnboardingSaveFailureDiagnostics } from '../../queries/profile/onboardingSaveDiagnostics';
 import type { SavedOnboardingProfile } from '../../services/profile/onboardingStatusService';
 import { requestStoreReview } from '../../services/reviews/storeReview';
@@ -187,6 +197,39 @@ function easeOutCubic(t: number) {
   return 1 - Math.pow(1 - t, 3);
 }
 
+function getPlanActionTime(
+  plan: OnboardingPlan,
+  actionId: PlanActionId,
+  fallback: string,
+): string {
+  const action = plan.actions.find((candidate) => candidate.id === actionId);
+  return action == null ? fallback : toClockString(action.minutesFromMidnight);
+}
+
+function buildDailyPlanSchedule(plan: OnboardingPlan): DailyPlanSchedule {
+  return {
+    version: 1,
+    timeMode: 'device_local',
+    actions: {
+      session: getPlanActionTime(
+        plan,
+        'session',
+        DEFAULT_DAILY_PLAN_SCHEDULE.actions.session,
+      ),
+      handPicked: getPlanActionTime(
+        plan,
+        'handPicked',
+        DEFAULT_DAILY_PLAN_SCHEDULE.actions.handPicked,
+      ),
+      checkIn: getPlanActionTime(
+        plan,
+        'checkIn',
+        DEFAULT_DAILY_PLAN_SCHEDULE.actions.checkIn,
+      ),
+    },
+  };
+}
+
 type OnboardingTransitionAction = 'continue' | 'skip' | 'back' | 'auto';
 type OnboardingAnalyticsProperties = Record<string, string | number | boolean | null>;
 
@@ -257,6 +300,7 @@ export default function OnboardingFlow({
   const [isNotificationSubmitting, setIsNotificationSubmitting] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const updateNotificationPreferences = useUpdateNotificationPreferencesMutation(userId);
+  const updateDailyPlanSchedule = useUpdateDailyPlanScheduleMutation(userId);
   const saveOnboardingSurvey = useSaveOnboardingSurveyMutation(userId);
   const entryStateRef = useRef<'new' | 'saved_profile'>(
     initialSavedProfile == null ? 'new' : 'saved_profile',
@@ -561,8 +605,14 @@ export default function OnboardingFlow({
         ...getStepEventInput(),
         ...buildProfileAnalyticsProperties(result),
       });
+      const schedule = buildDailyPlanSchedule(plan);
       await Promise.all([
-        onSaveProfile(result),
+        (async () => {
+          // The profile owns the user_preferences row through its foreign key,
+          // so save it before persisting the independent display schedule.
+          await onSaveProfile(result);
+          await updateDailyPlanSchedule.mutateAsync(schedule);
+        })(),
         new Promise<void>((resolve) => setTimeout(resolve, 3500)),
       ]);
       trackOnboardingProfileSaveSucceeded({
@@ -1260,7 +1310,11 @@ export default function OnboardingFlow({
   if (step === 'notifications') {
     return (
       <NotificationPermissionScreen
-        planTime={toClockString(plan.actions[0].minutesFromMidnight)}
+        planTime={getPlanActionTime(
+          plan,
+          'session',
+          DEFAULT_DAILY_PLAN_SCHEDULE.actions.session,
+        )}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         isSubmitting={isNotificationSubmitting}

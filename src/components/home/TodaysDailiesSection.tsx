@@ -8,6 +8,8 @@ import { getBackgroundImageSource } from '../../services/images/backgroundImageC
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
+import { formatDailyPlanTime } from '../../services/dailyPlan/dailyPlanScheduleCore';
+import { DEFAULT_DAILY_PLAN_SCHEDULE } from '../../services/dailyPlan/types';
 
 const TIMELINE_COLUMN_WIDTH = 32;
 const TIMELINE_MARKER_SIZE = 26;
@@ -23,6 +25,8 @@ const TIMELINE_DASHES = Array.from({ length: 8 }, (_, index) => index);
 interface TodaysDailiesSectionProps {
   technique: BreathingTechnique | null;
   techniqueLoading: boolean;
+  sessionTime: string;
+  breathHoldTime: string;
   guidedExerciseCompleted: boolean;
   breathHoldCompleted: boolean;
   exerciseAccessAllowed: boolean;
@@ -32,7 +36,7 @@ interface TodaysDailiesSectionProps {
 
 interface DailyTaskRowProps {
   title: string;
-  durationLabel: string;
+  scheduledTime: string;
   detailLabel: string;
   detailIcon: BreathingTechnique['icon'];
   imageSource: ImageProps['source'];
@@ -48,7 +52,7 @@ function formatCategory(category: BreathingTechnique['category']): string {
 
 function DailyTaskRow({
   title,
-  durationLabel,
+  scheduledTime,
   detailLabel,
   detailIcon,
   imageSource,
@@ -65,7 +69,7 @@ function DailyTaskRow({
       onPress={onPress}
       disabled={unavailable}
       accessibilityRole="button"
-      accessibilityLabel={`${title}, ${detailLabel}, ${durationLabel}, ${statusLabel}`}
+      accessibilityLabel={`${title}, ${detailLabel}, scheduled for ${scheduledTime}, ${statusLabel}`}
       accessibilityState={{ disabled: unavailable }}
       style={({ pressed }) => [styles.taskRow, pressed && styles.taskPressed]}
     >
@@ -113,7 +117,7 @@ function DailyTaskRow({
                 color={colors.text.secondary}
               />
               <Text style={styles.metadataText} numberOfLines={1}>
-                {durationLabel}
+                {scheduledTime}
               </Text>
             </View>
           </View>
@@ -135,6 +139,8 @@ function DailyTaskRow({
 export default function TodaysDailiesSection({
   technique,
   techniqueLoading,
+  sessionTime,
+  breathHoldTime,
   guidedExerciseCompleted,
   breathHoldCompleted,
   exerciseAccessAllowed,
@@ -144,9 +150,14 @@ export default function TodaysDailiesSection({
   const guidedLocked = !guidedExerciseCompleted && !exerciseAccessAllowed;
   const breathHoldLocked = !breathHoldCompleted && !exerciseAccessAllowed;
   const guidedTitle = technique?.name ?? 'Your breathing exercise';
-  const guidedDuration = techniqueLoading
-    ? 'Preparing your session'
-    : technique?.duration ?? 'Short guided session';
+  const guidedScheduledTime = formatDailyPlanTime(
+    sessionTime,
+    DEFAULT_DAILY_PLAN_SCHEDULE.actions.session,
+  );
+  const breathHoldScheduledTime = formatDailyPlanTime(
+    breathHoldTime,
+    DEFAULT_DAILY_PLAN_SCHEDULE.actions.checkIn,
+  );
   const guidedDetail = technique == null
     ? 'Personalized for you'
     : `${formatCategory(technique.category)} breathing`;
@@ -164,7 +175,7 @@ export default function TodaysDailiesSection({
         </View>
         <DailyTaskRow
           title={guidedTitle}
-          durationLabel={guidedDuration}
+          scheduledTime={guidedScheduledTime}
           detailLabel={guidedDetail}
           detailIcon={guidedDetailIcon}
           imageSource={technique?.backgroundImage ?? getBackgroundImageSource('dailyPlan')}
@@ -176,7 +187,7 @@ export default function TodaysDailiesSection({
 
         <DailyTaskRow
           title="Daily Breathhold"
-          durationLabel="~2 min"
+          scheduledTime={breathHoldScheduledTime}
           detailLabel="Daily check-in"
           detailIcon="timer-sand"
           imageSource={getBackgroundImageSource('dailyPlan')}

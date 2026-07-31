@@ -139,6 +139,13 @@ Server side: `notificationPreferencesService.ts` reads/writes only `user_prefere
 
 `sanitizeNotificationPreferences` is the trust boundary — anything coming back from Supabase passes through it before reaching app code.
 
+The times displayed on Today's Dailies are a separate product concern. They
+live in `user_preferences.daily_plan_schedule` and are read through
+`src/services/dailyPlan/`; notification permission does not control whether the
+plan schedule is saved or shown. Updating these display times does not create or
+reschedule notifications. The current notification system still owns only the
+single daily reminder configured by `notification_preferences`.
+
 ---
 
 ## Storage versioning
