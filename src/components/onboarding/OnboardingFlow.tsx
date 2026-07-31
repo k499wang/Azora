@@ -49,10 +49,12 @@ import {
 } from './data/intentOptions';
 import { techniqueForIntent } from '../../features/exercise/guidedBreathing/techniqueSelection';
 import {
+  applyPlanTimeOverrides,
   buildOnboardingPlan,
   toClockString,
   type OnboardingPlan,
   type PlanActionId,
+  type PlanTimeOverrides,
 } from '../../lib/onboardingPlan';
 import type { GenderOption } from './data/genderOptions';
 import type { AcquisitionSourceId } from './data/acquisitionOptions';
@@ -300,6 +302,9 @@ export default function OnboardingFlow({
   const [baseline, setBaseline] =
     useState<CompletedOnboardingBaselineResult | null>(null);
   const [breathHold, setBreathHold] = useState<OnboardingBreathHoldResult | null>(null);
+  const [planTimeOverrides, setPlanTimeOverrides] = useState<PlanTimeOverrides>(
+    {},
+  );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [notificationErrorMessage, setNotificationErrorMessage] = useState<string | null>(null);
   const [isNotificationSubmitting, setIsNotificationSubmitting] = useState(false);
@@ -1301,14 +1306,17 @@ export default function OnboardingFlow({
     );
   }
 
-  const plan = buildOnboardingPlan({
-    intents: primaryIntent ? [primaryIntent] : selectedIntents,
-    stressLevel,
-    sleepQuality,
-    age,
-    dailyMinutes,
-    breathHoldSeconds: breathHold?.holdSeconds ?? null,
-  });
+  const plan = applyPlanTimeOverrides(
+    buildOnboardingPlan({
+      intents: primaryIntent ? [primaryIntent] : selectedIntents,
+      stressLevel,
+      sleepQuality,
+      age,
+      dailyMinutes,
+      breathHoldSeconds: breathHold?.holdSeconds ?? null,
+    }),
+    planTimeOverrides,
+  );
 
   const planMindMap = computeMindMap({
     stressLevel,
@@ -1346,6 +1354,12 @@ export default function OnboardingFlow({
         growthArea={planMindMap.growthArea}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
+        onChangeActionTime={(actionId, minutesFromMidnight) =>
+          setPlanTimeOverrides((current) => ({
+            ...current,
+            [actionId]: minutesFromMidnight,
+          }))
+        }
         onContinue={() => goToStep('attPriming', 'continue')}
         onBack={() => goToStep('diagnosis', 'back')}
       />

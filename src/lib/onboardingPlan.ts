@@ -170,6 +170,36 @@ export function toClockString(minutesFromMidnight: number): string {
   return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
 }
 
+/** Parses 24-hour `HH:MM`; null when the value is not a valid clock time. */
+export function fromClockString(value: string): number | null {
+  const match = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(value);
+  if (match == null) return null;
+  return Number(match[1]) * 60 + Number(match[2]);
+}
+
+/**
+ * Times the user picked for themselves on the plan screen. Applied on top of a
+ * freshly built plan so the rest of the plan — techniques, durations,
+ * projection — stays derived from their answers.
+ */
+export type PlanTimeOverrides = Partial<Record<PlanActionId, number>>;
+
+export function applyPlanTimeOverrides(
+  plan: OnboardingPlan,
+  overrides: PlanTimeOverrides,
+): OnboardingPlan {
+  const actions = plan.actions
+    .map((action) => {
+      const override = overrides[action.id];
+      return override == null
+        ? action
+        : { ...action, minutesFromMidnight: override };
+    })
+    .sort((a, b) => a.minutesFromMidnight - b.minutesFromMidnight);
+
+  return { ...plan, actions };
+}
+
 export function buildOnboardingPlan(inputs: PlanInputs): OnboardingPlan {
   const minutes = sessionMinutes(inputs.dailyMinutes);
   const intent = primaryIntent(inputs.intents);
