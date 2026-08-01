@@ -1,7 +1,7 @@
 import { Text } from '../../components/common/Text';
 import { useEffect, useRef, useState } from 'react';
 import {
-  ActivityIndicator, Alert, Animated, Easing, Linking, Modal, Pressable, StyleSheet, Switch, View } from 'react-native';
+  ActivityIndicator, Alert, Animated, Easing, Linking, Modal, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../theme/colors';
@@ -9,7 +9,8 @@ import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import {
   DEFAULT_NOTIFICATION_PREFERENCES,
-  type DailyReminderPreference,
+  type DailyPlanReminderActionId,
+  type NotificationPreferences,
 } from '../../services/notifications/types';
 import {
   getNotificationPermissionStatus,
@@ -17,8 +18,15 @@ import {
 } from '../../services/notifications/notificationClient';
 import { useNotificationPreferencesQuery } from '../../queries/notifications/useNotificationPreferencesQuery';
 import { useUpdateNotificationPreferencesMutation } from '../../queries/notifications/useUpdateNotificationPreferencesMutation';
+import { useDailyPlanScheduleQuery } from '../../queries/dailyPlan/useDailyPlanScheduleQuery';
+import { useUpdateDailyPlanScheduleMutation } from '../../queries/dailyPlan/useUpdateDailyPlanScheduleMutation';
+import {
+  DEFAULT_DAILY_PLAN_SCHEDULE,
+} from '../../services/dailyPlan/types';
+import type { DailyPlanActionId } from '../../services/dailyPlan/dailyPlanScheduleCore';
 import TimePickerField from '../../components/common/TimePickerField';
 import { trackNotificationPermissionResult } from '../../services/analytics/tracking';
+import { DAILY_REMINDER_DEFINITIONS } from '../../services/notifications/notificationCatalog';
 
 interface NotificationsSettingsSheetProps {
   visible: boolean;
@@ -34,11 +42,14 @@ export default function NotificationsSettingsSheet({
   const insets = useSafeAreaInsets();
   const preferencesQuery = useNotificationPreferencesQuery(userId);
   const updatePreferences = useUpdateNotificationPreferencesMutation(userId);
+  const scheduleQuery = useDailyPlanScheduleQuery(userId);
+  const updateSchedule = useUpdateDailyPlanScheduleMutation(userId);
   const [permissionStatus, setPermissionStatus] = useState<string>('undetermined');
   const progress = useRef(new Animated.Value(0)).current;
   const [mounted, setMounted] = useState(visible);
 
   const preferences = preferencesQuery.data ?? DEFAULT_NOTIFICATION_PREFERENCES;
+  const schedule = scheduleQuery.data ?? DEFAULT_DAILY_PLAN_SCHEDULE;
 
   useEffect(() => {
     if (visible) {
@@ -78,7 +89,9 @@ export default function NotificationsSettingsSheet({
     };
   }, [visible]);
 
-  const hasEnabledNotification = preferences.dailyReminder.enabled;
+  const hasEnabledNotification = Object.values(preferences.dailyPlanReminders).some(
+    (reminder) => reminder.enabled,
+  );
 
   const ensurePermissionForEnabledNotification = async (): Promise<boolean> => {
     if (permissionStatus === 'granted') return true;
@@ -105,7 +118,10 @@ export default function NotificationsSettingsSheet({
     return false;
   };
 
-  const updateReminder = async (next: Partial<DailyReminderPreference>) => {
+  const updateReminder = async (
+    actionId: DailyPlanReminderActionId,
+    next: Partial<NotificationPreferences['dailyPlanReminders'][DailyPlanReminderActionId]>,
+  ) => {
     if (userId == null) return;
 
     if (next.enabled === true) {
@@ -113,7 +129,22 @@ export default function NotificationsSettingsSheet({
       if (!permissionGranted) return;
     }
 
-    await updatePreferences.mutateAsync({ dailyReminder: next });
+    await updatePreferences.mutateAsync({
+      dailyPlanReminders: { [actionId]: next },
+    });
+  };
+
+  const updateReminderTime = async (
+    actionId: DailyPlanActionId,
+    time: string,
+  ) => {
+    await updateSchedule.mutateAsync({
+      ...schedule,
+      actions: {
+        ...schedule.actions,
+        [actionId]: time,
+      },
+    });
   };
 
   if (!mounted) return null;
@@ -145,7 +176,7 @@ export default function NotificationsSettingsSheet({
             <View>
               <Text style={styles.title}>Notifications</Text>
               <Text style={styles.subtitle}>
-                A daily nudge so your practice does not slip.
+                Choose when Azora reminds you about each daily exercise.
               </Text>
             </View>
             <Pressable
@@ -162,17 +193,30 @@ export default function NotificationsSettingsSheet({
             </Pressable>
           </View>
 
-          {preferencesQuery.isPending ? (
+          {preferencesQuery.isPending || scheduleQuery.isPending ? (
             <View style={styles.loading}>
               <ActivityIndicator color={colors.primary.blue600} />
             </View>
           ) : (
-            <View style={styles.body}>
-              <ReminderRow
-                reminder={preferences.dailyReminder}
-                disabled={updatePreferences.isPending}
-                onUpdate={updateReminder}
-              />
+            <ScrollView
+              style={styles.bodyScroll}
+              contentContainerStyle={styles.body}
+              showsVerticalScrollIndicator={false}
+            >
+              {DAILY_REMINDER_DEFINITIONS.map((definition) => (
+                <ReminderRow
+                  key={definition.id}
+                  title={definition.settings.title}
+                  subtitle={definition.settings.subtitle}
+                  reminder={preferences.dailyPlanReminders[definition.id]}
+                  time={schedule.actions[definition.scheduleActionId]}
+                  disabled={updatePreferences.isPending || updateSchedule.isPending}
+                  onUpdate={(next) => updateReminder(definition.id, next)}
+                  onTimeChange={(time) =>
+                    updateReminderTime(definition.scheduleActionId, time)
+                  }
+                />
+              ))}
 
               {permissionStatus === 'denied' && hasEnabledNotification ? (
                 <Pressable
@@ -194,7 +238,7 @@ export default function NotificationsSettingsSheet({
                   </Text>
                 </Pressable>
               ) : null}
-            </View>
+            </ScrollView>
           )}
         </Animated.View>
       </View>
@@ -203,13 +247,21 @@ export default function NotificationsSettingsSheet({
 }
 
 function ReminderRow({
+  title,
+  subtitle,
   reminder,
+  time,
   disabled,
   onUpdate,
+  onTimeChange,
 }: {
-  reminder: DailyReminderPreference;
+  title: string;
+  subtitle: string;
+  reminder: { enabled: boolean };
+  time: string;
   disabled: boolean;
-  onUpdate: (next: Partial<DailyReminderPreference>) => Promise<void>;
+  onUpdate: (next: { enabled?: boolean }) => Promise<void>;
+  onTimeChange: (time: string) => Promise<void>;
 }) {
   return (
     <View style={styles.reminderBlock}>
@@ -220,10 +272,8 @@ function ReminderRow({
           color={colors.primary.blue600}
         />
         <View style={styles.rowCopy}>
-          <Text style={styles.rowTitle}>Daily reminder</Text>
-          <Text style={styles.rowSubtitle}>
-            One nudge a day at the time you choose.
-          </Text>
+          <Text style={styles.rowTitle}>{title}</Text>
+          <Text style={styles.rowSubtitle}>{subtitle}</Text>
         </View>
         <Switch
           value={reminder.enabled}
@@ -236,12 +286,12 @@ function ReminderRow({
         />
       </View>
       <TimePickerField
-        value={reminder.time}
+        value={time}
         onChange={(next) => {
-          void onUpdate({ time: next });
+          void onTimeChange(next);
         }}
         disabled={!reminder.enabled || disabled}
-        accessibilityLabel="Daily reminder time"
+        accessibilityLabel={`${title} reminder time`}
       />
     </View>
   );
@@ -257,6 +307,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.overlay.dark,
   },
   sheet: {
+    maxHeight: '90%',
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     backgroundColor: colors.background.primary,
@@ -305,6 +356,9 @@ const styles = StyleSheet.create({
   },
   body: {
     gap: spacing.md,
+  },
+  bodyScroll: {
+    flexGrow: 0,
   },
   reminderBlock: {
     borderRadius: 20,

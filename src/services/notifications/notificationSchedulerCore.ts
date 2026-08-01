@@ -1,7 +1,9 @@
+import type { DailyPlanSchedule } from '../dailyPlan/types';
 import {
   AZORA_NOTIFICATION_ID_PREFIX,
-  buildDailyReminderContent,
+  DAILY_REMINDER_DEFINITIONS,
   buildTrialEndingContent,
+  type DailyReminderDefinition,
   type ScheduledNotificationKind,
 } from './notificationCatalog';
 import type { NotificationPreferences } from './types';
@@ -23,6 +25,7 @@ export interface DesiredScheduledNotification {
 
 export interface BuildNotificationScheduleInput {
   preferences: NotificationPreferences;
+  dailyPlanSchedule: DailyPlanSchedule;
   trialEndsAt: string | null;
   now?: Date;
 }
@@ -32,18 +35,48 @@ const TRIAL_REMINDER_HOUR = 9;
 const TRIAL_REMINDER_MINUTE = 0;
 const MISSED_TRIAL_REMINDER_DELAY_MS = 5 * 60 * 1000;
 const DAILY_REMINDER_HORIZON_DAYS = 14;
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
+export const MAX_PENDING_NOTIFICATION_COUNT = 60;
+export const RESERVED_NON_DAILY_NOTIFICATION_COUNT = 4;
+export const MAX_PENDING_DAILY_ENTRIES =
+  MAX_PENDING_NOTIFICATION_COUNT - RESERVED_NON_DAILY_NOTIFICATION_COUNT;
 
-export function buildDesiredNotificationSchedule({
-  preferences,
-  trialEndsAt,
-  now = new Date(),
-}: BuildNotificationScheduleInput): DesiredScheduledNotification[] {
+export function buildDesiredNotificationSchedule(
+  {
+    preferences,
+    dailyPlanSchedule,
+    trialEndsAt,
+    now = new Date(),
+  }: BuildNotificationScheduleInput,
+  dailyReminderDefinitions: readonly DailyReminderDefinition[] =
+    DAILY_REMINDER_DEFINITIONS,
+): DesiredScheduledNotification[] {
   const desired: DesiredScheduledNotification[] = [];
+  const dailyEntries: DesiredScheduledNotification[] = [];
+  const enabledDefinitions = dailyReminderDefinitions.filter((definition) =>
+    preferences.dailyPlanReminders[definition.id].enabled,
+  );
+  const horizonDays = getDailyReminderHorizonDays(enabledDefinitions.length);
 
-  if (preferences.dailyReminder.enabled) {
-    desired.push(...buildDailyEntries(preferences.dailyReminder.time, now));
+  for (const definition of enabledDefinitions) {
+    dailyEntries.push(
+      ...buildDailyEntries(
+        definition,
+        dailyPlanSchedule.actions[definition.scheduleActionId],
+        now,
+        horizonDays,
+      ),
+    );
   }
+
+  desired.push(
+    ...dailyEntries
+      .sort(
+        (left, right) =>
+          left.trigger.date.getTime() - right.trigger.date.getTime() ||
+          left.stableId.localeCompare(right.stableId),
+      )
+      .slice(0, MAX_PENDING_DAILY_ENTRIES),
+  );
 
   if (preferences.trialEndingReminder.enabled) {
     const trialReminderDate = getTrialEndingReminderDate(trialEndsAt, now);
@@ -62,13 +95,15 @@ export function buildDesiredNotificationSchedule({
 }
 
 function buildDailyEntries(
+  definition: DailyReminderDefinition,
   time: string,
   now: Date,
+  horizonDays: number,
 ): DesiredScheduledNotification[] {
   const { hour, minute } = parseTime(time);
   const entries: DesiredScheduledNotification[] = [];
 
-  for (let offset = 0; offset < DAILY_REMINDER_HORIZON_DAYS; offset += 1) {
+  for (let offset = 0; offset < horizonDays; offset += 1) {
     const fireDate = new Date(
       now.getFullYear(),
       now.getMonth(),
@@ -81,19 +116,33 @@ function buildDailyEntries(
 
     if (fireDate <= now) continue;
 
-    const dayIndex = getEpochDayIndex(fireDate);
-    const content = buildDailyReminderContent(hour, dayIndex);
     const dateKey = formatDateKey(fireDate);
 
     entries.push({
-      stableId: `${AZORA_NOTIFICATION_ID_PREFIX}:daily:${dateKey}`,
-      kind: content.data.notification_kind as ScheduledNotificationKind,
-      ...content,
+      stableId: `${AZORA_NOTIFICATION_ID_PREFIX}:daily:${definition.id}:${dateKey}`,
+      kind: definition.kind,
+      ...definition.content,
+      data: {
+        notification_kind: definition.kind,
+        reminder_action: definition.id,
+      },
       trigger: { type: 'date', date: fireDate },
     });
   }
 
   return entries;
+}
+
+export function getDailyReminderHorizonDays(enabledCount: number): number {
+  if (enabledCount <= 0) return 0;
+
+  return Math.max(
+    1,
+    Math.min(
+      DAILY_REMINDER_HORIZON_DAYS,
+      Math.floor(MAX_PENDING_DAILY_ENTRIES / enabledCount),
+    ),
+  );
 }
 
 export function parseTime(value: string): { hour: number; minute: number } {
@@ -142,10 +191,6 @@ export function getTrialEndingReminderDate(
 
   const catchUpDate = new Date(now.getTime() + MISSED_TRIAL_REMINDER_DELAY_MS);
   return catchUpDate < trialEnd ? catchUpDate : null;
-}
-
-export function getEpochDayIndex(date: Date): number {
-  return Math.floor(date.getTime() / MS_PER_DAY);
 }
 
 function formatDateKey(date: Date): string {

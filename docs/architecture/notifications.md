@@ -9,7 +9,8 @@ How the local-notification system is wired in this app, why it's shaped the way 
 ```
 src/services/notifications/
   types.ts                          shapes + defaults for user preferences
-  notificationCatalog.ts            content (titles, bodies, channels, kinds)
+  notificationCatalog.ts            daily registry + content/channels/kinds
+  notificationPreferencesCore.ts    pure preference defaults/merge/sanitization
   notificationSchedulerCore.ts      pure: prefs + state → desired notifications
   notificationScheduleRecords.ts    pure: serialize/compare stored records
   notificationScheduler.ts          orchestrator: reconcile desired vs stored
@@ -51,9 +52,17 @@ reconcileScheduledNotifications()    ← side-effectful
    └─ save updated records to AsyncStorage
 ```
 
-Each desired item has a **stableId** like `azora:daily:2026-05-17` or `azora:trial:ending`. Stable IDs let us diff "what we want" against "what we stored" without caring about Expo's internal notification IDs.
+Each desired item has a **stableId** like `azora:daily:session:2026-05-17`,
+`azora:daily:handPicked:2026-05-17`, or `azora:trial:ending`. Stable IDs let us
+diff "what we want" against "what we stored" without caring about Expo's
+internal notification IDs.
 
-A **14-day rolling horizon** of daily reminders is scheduled at once. Every time the app foregrounds we reconcile again, so the horizon walks forward and old days drop off.
+Daily-plan reminders use a rolling horizon of at most 14 days. The registry's
+current three enabled actions produce 42 entries. The scheduler reserves four
+of a 60-entry pending budget for non-daily notifications and automatically
+shortens the daily horizon as more definitions are enabled. Every time the app
+foregrounds we reconcile again, so the horizon walks forward and old days drop
+off.
 
 ---
 
@@ -123,8 +132,12 @@ Tests pinning these properties: `src/lib/serializedAsync.test.mjs`.
 
 Two things to keep in mind:
 
-1. **Always include `notification_kind` and `destination` in `data`.** The tap handler in `notificationClient.ts` reads these to fire `trackNotificationTapped` and (eventually) route deep links.
-2. **Rotate copy by day index, not by random.** `buildDailyReminderContent(hour, dayIndex)` indexes into a variant pool so the same day always renders the same copy — which means reconciles are idempotent.
+1. **Always include `notification_kind` in `data`.** Include `destination` only
+   when a notification intentionally deep-links. Daily-plan reminders omit it
+   so tapping simply opens Azora.
+2. **Keep content deterministic.** Daily-plan copy is generic but specific to
+   `session`, `handPicked`, or `checkIn`. Stable content keeps reconciles
+   idempotent.
 
 ---
 
@@ -132,19 +145,41 @@ Two things to keep in mind:
 
 `NotificationPreferences` shape lives in `types.ts`. Two snapshots exist:
 
-- `DEFAULT_NOTIFICATION_PREFERENCES` — for users who haven't completed onboarding.
-- `ONBOARDING_NOTIFICATION_PREFERENCES` — what onboarding writes when the user opts in.
+- `DEFAULT_NOTIFICATION_PREFERENCES` — generated from each registry entry's
+  safe default.
+- `ONBOARDING_NOTIFICATION_PREFERENCES` — generated from each registry entry's
+  explicit onboarding default.
 
 Server side: `notificationPreferencesService.ts` reads/writes only `user_preferences.notification_preferences` (jsonb). The legacy `reminder_enabled` / `reminder_time` columns are not part of the app's notification preference model.
 
 `sanitizeNotificationPreferences` is the trust boundary — anything coming back from Supabase passes through it before reaching app code.
 
-The times displayed on Today's Dailies are a separate product concern. They
-live in `user_preferences.daily_plan_schedule` and are read through
-`src/services/dailyPlan/`; notification permission does not control whether the
-plan schedule is saved or shown. Updating these display times does not create or
-reschedule notifications. The current notification system still owns only the
-single daily reminder configured by `notification_preferences`.
+The times displayed on Today's Dailies live in
+`user_preferences.daily_plan_schedule` and are read through
+`src/services/dailyPlan/`. Notification preferences own only whether each
+action is enabled. The notification bootstrap reads both contracts, so changing
+a plan time reconciles the matching scheduled notification without duplicating
+the time in notification preferences.
+
+### Compatibility with older app versions
+
+Migration `20260731000300_expand_daily_plan_notification_preferences.sql`
+intentionally keeps both JSON contracts during the transition:
+
+- old clients read and write `dailyReminder.enabled` and `dailyReminder.time`;
+- new clients read and write `dailyPlanReminders`, with times in
+  `daily_plan_schedule`.
+
+A `BEFORE INSERT OR UPDATE` trigger merges incoming preferences with stored
+unknown keys, mirrors guided-session enabled state between both contracts, and
+mirrors its time between `dailyReminder.time` and
+`daily_plan_schedule.actions.session`. This is necessary because an old binary
+replaces the whole JSON object and cannot preserve keys it does not know.
+Hand-picked, check-in, and future registry entries are retained when an old
+client writes. If a payload explicitly contains both formats, the modern
+`dailyPlanReminders` value is authoritative; current clients write only their
+own format. Remove the compatibility trigger only after old app versions no
+longer need database support.
 
 ---
 
@@ -159,6 +194,35 @@ When the record shape changes incompatibly, bump the version and add cleanup of 
 
 ---
 
+## Daily reminder registry
+
+`DAILY_REMINDER_DEFINITIONS` in `notificationCatalog.ts` is the source of truth
+for daily-plan reminders. Each definition owns:
+
+- its stable ID and analytics kind;
+- the `daily_plan_schedule` action that supplies its time;
+- notification title and body;
+- safe existing-user and onboarding defaults;
+- onboarding and Settings labels.
+
+The scheduler, preference sanitizer/defaults, onboarding summary, and Settings
+sheet all iterate this registry. Adding a definition therefore does not require
+another scheduler branch or database migration. Missing definitions default to
+disabled for existing users. Removed definitions disappear from the desired
+schedule, so reconciliation cancels their stored OS notifications.
+
+To add a daily-plan reminder:
+
+1. Add its schedule action to `DailyPlanSchedule` if it needs a new time.
+2. Add one typed entry to `DAILY_REMINDER_DEFINITIONS`.
+3. Add its onboarding icon to the exhaustive UI icon map.
+4. Add schedule/copy tests and perform the physical-device checklist.
+
+The compile-time schedule and icon checks are intentional: adding a reminder
+should be easy, but it must still have an explicit time source and presentation.
+
+---
+
 ## How to add a new notification kind
 
 Example: streak-ending reminder ("you'll lose your 12-day streak at midnight").
@@ -166,11 +230,11 @@ Example: streak-ending reminder ("you'll lose your 12-day streak at midnight").
 1. **Extend the preference shape** in `types.ts`:
 
    ```ts
-   export interface NotificationPreferences {
-     dailyReminder: DailyReminderPreference;
-     trialEndingReminder: TrialEndingReminderPreference;
-     streakReminder: StreakReminderPreference;   // new
-   }
+  export interface NotificationPreferences {
+    dailyPlanReminders: DailyPlanReminderPreferences;
+    trialEndingReminder: TrialEndingReminderPreference;
+    streakReminder: StreakReminderPreference;   // new
+  }
    ```
 
    Update `DEFAULT_NOTIFICATION_PREFERENCES`, `sanitizeNotificationPreferences`, and the Supabase service in lockstep.
@@ -205,7 +269,9 @@ Example: streak-ending reminder ("you'll lose your 12-day streak at midnight").
 
 7. **Plumb the new input** through `useNotificationBootstrap` so foreground reconciles include it.
 
-> If you find yourself adding the third or fourth `if` branch in `buildDesiredNotificationSchedule`, refactor it into a registry of kind-schedulers — each kind exporting a `{ isEnabled, build }` pair. The cost of staying with conditionals grows roughly linearly; the registry refactor is a one-time cost.
+Daily recurring plan reminders belong in the existing registry. The steps in
+this section are for notification kinds with genuinely different cadence or
+state, such as a one-time trial or streak reminder.
 
 ---
 
@@ -221,7 +287,7 @@ Example: streak-ending reminder ("you'll lose your 12-day streak at midnight").
 
 ## Tests
 
-- `notificationSchedulerCore.test.mjs` — pure schedule shape (horizon length, time parsing, trial reminder math, variant rotation).
+- `notificationSchedulerCore.test.mjs` — pure schedule shape (three-action horizon, time parsing, generic action copy, trial reminder math).
 - `notificationScheduleRecords.test.mjs` — record sanitization and "is current" diff.
 - `serializedAsync.test.mjs` — concurrency primitive (ordering, isolation, drain behavior).
 
@@ -233,7 +299,8 @@ The orchestrator (`notificationScheduler.ts`) is currently untested at the integ
 
 | Change                                  | Files                                                                 |
 | --------------------------------------- | --------------------------------------------------------------------- |
-| New notification kind                   | `types.ts`, `notificationCatalog.ts`, `notificationSchedulerCore.ts`, `useNotificationBootstrap.ts`, optionally `notificationPreferencesService.ts` |
+| New daily-plan reminder                 | `notificationCatalog.ts`, the matching daily schedule action, onboarding icon, tests |
+| New non-daily notification kind         | `types.ts`, `notificationCatalog.ts`, `notificationSchedulerCore.ts`, `useNotificationBootstrap.ts`, optionally `notificationPreferencesService.ts` |
 | Edit reminder copy                      | `notificationCatalog.ts`                                              |
 | Change reconcile trigger conditions     | `useNotificationBootstrap.ts`                                         |
 | Change Android channel metadata         | `notificationClient.ts` (`ensureNotificationChannels`) + `notificationCatalog.ts` |

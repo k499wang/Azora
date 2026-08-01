@@ -25,25 +25,25 @@ The system can't be tested fully in a simulator — push permission dialogs, sch
 - [ ] App running with permission granted → revoke permission in iOS Settings → bring app to foreground → reconcile runs and **cancels all stored notifications**. This is the path that previously could deadlock; verify no hang.
 - [ ] Re-grant permission → foreground app → notifications reappear.
 
-## 2. Daily reminder — happy path
+## 2. Daily plan reminders — happy path
 
-- [ ] Enable daily reminder, time = 2 minutes from now → kill the app entirely (swipe up) → wait → notification fires while app is closed.
-- [ ] Tap the notification from the lock screen → app opens to **DailyExercise** screen (`data.destination` routing).
-- [ ] In Metro, `notification_scheduled` and `notification_tapped` analytics events fire with `notification_kind: 'daily_reminder_morning'` or `'daily_reminder_evening'` based on the time chosen.
-- [ ] Set time to **before** 14:00 → kind should be `daily_reminder_morning`. Set to ≥ 14:00 → `daily_reminder_evening`.
+- [ ] Enable all three reminders, set each time a few minutes apart, then kill the app entirely. Each notification fires while the app is closed.
+- [ ] Tap each notification from the lock screen → Azora opens normally without navigating directly into an exercise.
+- [ ] In Metro, `notification_scheduled` and `notification_tapped` fire with `daily_plan_session`, `daily_plan_hand_picked`, and `daily_plan_check_in`.
+- [ ] Confirm each notification uses generic copy that matches its action type.
 
-## 3. Daily reminder — variant rotation
+## 3. Daily reminder reconciliation
 
-- [ ] Enable daily reminder → inspect AsyncStorage record for `azora:daily:<date>` entries → confirm 14 entries with distinct `variant_index` values that rotate by day, not by random.
-- [ ] Reload the app twice with the same date and time → no new `notification_scheduled` analytics on the second run (idempotent reconcile).
+- [ ] Enable all three reminders → inspect AsyncStorage for 42 unique `azora:daily:<action>:<date>` entries when all of today's times are still ahead.
+- [ ] Reload the app twice with the same schedule → no new `notification_scheduled` analytics on the second run (idempotent reconcile).
 
 ## 4. Reconcile triggers
 
 - [ ] Sign in → reconcile fires within ~1s.
 - [ ] Background app → wait 30s → bring to foreground → reconcile fires again (watch for the second AsyncStorage write).
-- [ ] Toggle reminder OFF → all `azora:daily:*` notifications are cancelled. Check iOS Scheduled Summary is empty.
-- [ ] Toggle reminder ON → 14 entries reappear.
-- [ ] Change reminder time → all old entries cancelled, new ones scheduled at the new time. No leftover notifications at the old time.
+- [ ] Toggle one reminder OFF → only that action's `azora:daily:<action>:*` entries are cancelled.
+- [ ] Toggle it ON → its rolling-horizon entries reappear.
+- [ ] Change one reminder time → only that action is replaced, with no entries left at its old time.
 - [ ] Sign out → all stored notifications cancelled; storage key becomes `{}`.
 
 ## 5. Trial-ending reminder
@@ -77,6 +77,9 @@ The system can't be tested fully in a simulator — push permission dialogs, sch
 ## 9. Storage migrations
 
 - [ ] Install old build that wrote `notifications:scheduled_ids_v1` → upgrade to current build → on first reconcile, legacy key is cancelled and removed. Check `notifications:scheduled_ids_v1` is gone.
+- [ ] Install the previous single-reminder build, enable its reminder, and set a distinctive time. Upgrade without deleting the app. On first launch, confirm the old scheduled entries are cancelled and one `session` reminder is recreated at the same time; `handPicked` and `checkIn` remain disabled.
+- [ ] In the new build, enable `handPicked` and `checkIn`, then reinstall the previous build without clearing app data. Confirm its single reminder still works and can be edited. Reinstall the new build and confirm the two retained reminder choices return while the legacy scheduled entries are replaced.
+- [ ] Before releasing the new binary, query an existing legacy row after applying the compatibility migration. Confirm both `dailyReminder` and `dailyPlanReminders` exist, the session enabled state/time agree, and existing `trialEndingReminder` data remains unchanged.
 - [ ] Manually corrupt `notifications:scheduled_records_v2` (set to `"not json"` via dev tools) → app survives, reconciles fresh.
 
 ---
@@ -98,9 +101,9 @@ Items 1 (permission revoke path) and 6 (concurrency) directly exercise the bugs 
 
 The minimum-viable pass that catches the most common regressions:
 
-1. Cold install → onboarding → grant permission → reminder fires at scheduled time.
-2. Toggle reminder off → no notification at the next scheduled time.
-3. Tap a fired notification → opens DailyExercise.
+1. Cold install → onboarding → grant permission → all three reminder kinds are scheduled.
+2. Toggle one reminder off → no notification at that action's next scheduled time.
+3. Tap a fired notification → opens Azora normally.
 4. Revoke permission in iOS Settings → reopen app → no hang, no crash.
 
 Anything beyond that is hardening; these four are the regression floor.
