@@ -228,10 +228,14 @@ function liveBpmValues(
     .filter((bpm) => isFiniteNumber(bpm) && bpm >= 20 && bpm <= 240);
 }
 
-// The live detector emits roughly one sample per second while it holds a pulse,
-// so a longer silence means the finger slipped, moved, or lifted. Gaps under the
-// tolerance are ordinary sampling jitter and are not counted against the user.
+// The live detector emits roughly one sample per second while it holds a pulse.
+// Allow ordinary publication jitter before treating the remaining part of a
+// longer silence as degraded coverage.
 const SIGNAL_DROPOUT_TOLERANCE_MS = 3_000;
+
+function getSignalDropoutMs(gapMs: number): number {
+  return Math.max(0, gapMs - SIGNAL_DROPOUT_TOLERANCE_MS);
+}
 
 export function computeSignalCoverage(
   presentationBpmSamples: BuildCaptureResultOptions['presentationBpmSamples'],
@@ -253,15 +257,22 @@ export function computeSignalCoverage(
     .map((sample) => sample.offsetMs)
     .sort((a, b) => a - b);
 
+  if (offsets.length === 0) {
+    return {
+      ratio: 0,
+      lostSeconds: Math.round(judgedWindowMs / 1000),
+    };
+  }
+
   let lostMs = 0;
   let cursor = signalGraceMs;
   for (const offset of offsets) {
     const gap = offset - cursor;
-    if (gap > SIGNAL_DROPOUT_TOLERANCE_MS) lostMs += gap;
+    lostMs += getSignalDropoutMs(gap);
     cursor = Math.max(cursor, offset);
   }
   const trailingGap = durationMs - cursor;
-  if (trailingGap > SIGNAL_DROPOUT_TOLERANCE_MS) lostMs += trailingGap;
+  lostMs += getSignalDropoutMs(trailingGap);
 
   return {
     ratio: Math.max(0, Math.min(1, (judgedWindowMs - lostMs) / judgedWindowMs)),

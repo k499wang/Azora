@@ -1,14 +1,16 @@
 import { Text } from '../common/Text';
-import { ActivityIndicator, Image, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
+import { Image } from 'expo-image';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Icon from '../common/icons/Icon';
 import { colors } from '../../theme/colors';
 import { typography, fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 
+const DEFAULT_AVATAR_SOURCE = require('../../../assets/mascot/azora-cloud-friendly-no-arms.png');
+
 interface ProfileIdentityCardProps {
   displayName: string;
-  avatarLabel: string;
   avatarUrl?: string | null;
   isUploading?: boolean;
   onChangePhoto?: () => void;
@@ -17,13 +19,14 @@ interface ProfileIdentityCardProps {
 
 export default function ProfileIdentityCard({
   displayName,
-  avatarLabel,
   avatarUrl,
   isUploading = false,
   onChangePhoto,
   onEditDisplayName,
 }: ProfileIdentityCardProps) {
   const canChangePhoto = onChangePhoto != null;
+  const normalizedAvatarUrl = avatarUrl?.trim() || null;
+  const hasAvatar = normalizedAvatarUrl != null;
 
   return (
     <View style={styles.container}>
@@ -37,11 +40,20 @@ export default function ProfileIdentityCard({
           pressed && canChangePhoto && styles.avatarPressed,
         ]}
       >
-        <View style={styles.avatar}>
-          {avatarUrl ? (
-            <Image source={{ uri: avatarUrl }} style={styles.avatarImage} />
+        <View style={[styles.avatar, !hasAvatar && styles.avatarDefault]}>
+          {normalizedAvatarUrl ? (
+            <Image
+              source={{ uri: normalizedAvatarUrl }}
+              style={styles.avatarImage}
+              contentFit="cover"
+              cachePolicy="memory-disk"
+            />
           ) : (
-            <Text style={styles.avatarLabel}>{avatarLabel}</Text>
+            <Image
+              source={DEFAULT_AVATAR_SOURCE}
+              style={styles.defaultAvatarImage}
+              contentFit="contain"
+            />
           )}
           {isUploading ? (
             <View style={styles.avatarUploading}>
@@ -117,23 +129,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     overflow: 'hidden',
   },
+  avatarDefault: {
+    backgroundColor: colors.primary.blue100,
+  },
   avatarImage: {
     width: '100%',
     height: '100%',
+  },
+  defaultAvatarImage: {
+    width: '78%',
+    height: '78%',
   },
   avatarUploading: {
     ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.overlay.dark,
-  },
-  avatarLabel: {
-    ...typography.display.display3,
-    color: colors.text.inverse,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    fontSize: 30,
-    lineHeight: 34,
   },
   cameraBadge: {
     position: 'absolute',

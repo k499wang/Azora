@@ -39,23 +39,6 @@ function getFallbackDisplayName(_email: string | undefined): string {
   return '—';
 }
 
-function getAvatarLabel(displayName: string): string {
-  const words = displayName
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean);
-
-  if (words.length === 0 || (words.length === 1 && words[0] === '—')) {
-    return 'A';
-  }
-
-  return words
-    .slice(0, 2)
-    .map((word) => word[0])
-    .join('')
-    .toUpperCase();
-}
-
 export default function ProfileScreen({ navigation }: ProfileScreenProps) {
   const insets = useSafeAreaInsets();
   const { width: windowWidth } = useWindowDimensions();
@@ -68,7 +51,6 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
   const profileSummary = profileSummaryQuery.data;
   const displayName =
     profileSummary?.profile?.displayName ?? getFallbackDisplayName(user?.email);
-  const avatarLabel = getAvatarLabel(displayName);
   const avatarUrl = profileSummary?.profile?.avatarUrl;
 
   const handleChangePhoto = async () => {
@@ -216,7 +198,6 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
           <View style={styles.heroCardWrap}>
             <ProfileIdentityCard
               displayName={displayName}
-              avatarLabel={avatarLabel}
               avatarUrl={avatarUrl}
               isUploading={uploadAvatarMutation.isPending}
               onChangePhoto={handleChangePhoto}

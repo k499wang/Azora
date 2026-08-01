@@ -408,9 +408,20 @@ Important states:
 
 ### `camera_check`
 
-The app uses this state as a placement gate. The first frame classified with
-`fingerPlacement === 'good'` starts the actual timed measurement window. It
-does not wait for a live BPM estimate or add a separate confirmation delay.
+The app uses this state as a placement and signal gate. Good placement starts a
+bounded setup window: a confirmed live BPM starts the timed measurement after a
+short stabilization delay, while a fallback deadline prevents a hard-to-read
+finger from remaining on setup indefinitely. The delayed callback revalidates
+the latest placement and signal state and requires a recent camera frame before
+it can start measurement, so a paused or backgrounded camera cannot consume the
+capture window from stale state.
+
+The setup UI may show the detector's confirmed BPM before measurement begins.
+At the setup-to-measurement boundary, that displayed number is carried forward
+for continuity, but `beginMeasurementWindow()` clears the manager's published
+snapshot and requires the detector to publish a fresh in-window lock. This keeps
+the UI stable without treating the carried display value as new measurement
+evidence.
 
 ### `measuring`
 

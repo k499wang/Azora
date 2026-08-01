@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   runAtTargetFps,
   useFrameProcessor,
@@ -29,7 +29,12 @@ import { runAfterNextPaint } from '../lib/ui/runAfterNextPaint';
 import { useMeasurementTimer } from './useMeasurementTimer';
 import { useHeartRateCamera } from './useHeartRateCamera';
 import { useDeviceMotionFeed } from './useDeviceMotionFeed';
-import { isHeartRatePlacementReady } from '../lib/heartRate/captureGuidance';
+import {
+  getCaptureStartDeadlineMs,
+  isCaptureStartEligible,
+  isCaptureStartFrameFresh,
+} from '../lib/heartRate/measurementTimer';
+import { hasConfirmedPulse } from '../lib/heartRate/captureGuidance';
 
 const PROGRESS_UPDATE_INTERVAL_MS = 200;
 const BPM_UPDATE_INTERVAL_MS = 1000;
@@ -107,6 +112,11 @@ export function useHeartRateCapture(
   const fingerPlacementRef = useRef<FingerPlacementState>('no_finger');
   const signalStatusRef = useRef<SignalStatus>('no_finger');
   const managerRef = useRef(new HeartRateManager());
+  const startTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const startDeadlineRef = useRef<number | null>(null);
+  const placementSinceRef = useRef<number | null>(null);
+  const pulseLockedSinceRef = useRef<number | null>(null);
+  const lastCameraCheckFrameReceivedAtRef = useRef<number | null>(null);
   const liveBpmFilterRef = useRef(createLiveBpmPresentationFilter());
   const beatSchedulerRef = useRef(
     createBeatTickScheduler({ onBeat: () => setBeatTick((tick) => tick + 1) }),
@@ -128,6 +138,17 @@ export function useHeartRateCapture(
     setCaptureState(next);
   }, []);
 
+  const clearStartTimer = useCallback(() => {
+    if (startTimerRef.current != null) {
+      clearTimeout(startTimerRef.current);
+      startTimerRef.current = null;
+    }
+    startDeadlineRef.current = null;
+    placementSinceRef.current = null;
+    pulseLockedSinceRef.current = null;
+    lastCameraCheckFrameReceivedAtRef.current = null;
+  }, []);
+
   const resetMeasurementRefs = useCallback(() => {
     samplesRef.current = [];
     presentationBpmSamplesRef.current = [];
@@ -142,11 +163,12 @@ export function useHeartRateCapture(
   }, [offlineCaptureActive]);
 
   const resetCaptureRefs = useCallback(() => {
+    clearStartTimer();
     resetMeasurementRefs();
     lastFrameTimestampRef.current = null;
     currentBpmRef.current = null;
     managerRef.current.reset();
-  }, [resetMeasurementRefs]);
+  }, [clearStartTimer, resetMeasurementRefs]);
 
   const updateProgress = useCallback((elapsedMs: number) => {
     const clampedElapsed = Math.max(0, Math.min(captureDurationMs, elapsedMs));
@@ -190,24 +212,34 @@ export function useHeartRateCapture(
     onComplete: finishMeasurement,
   });
 
+  useEffect(() => clearStartTimer, [clearStartTimer]);
+
   const startMeasuring = useCallback(() => {
     stopMeasurementTimer();
     resetMeasurementRefs();
+    // When setup found a confirmed pulse, carry that display number across the
+    // boundary because opening the measurement window clears the manager's
+    // published snapshot. Fallback starts still enter with a null BPM.
+    const confirmedBpm = managerRef.current.getCurrentBpm();
     const measurementStartTs = lastFrameTimestampRef.current;
     measurementStartedAtRef.current = measurementStartTs;
     if (measurementStartTs != null) {
       managerRef.current.beginMeasurementWindow(measurementStartTs);
     }
-    // Start the hold with a fresh PPG trace instead of inheriting the
-    // calibration-era signal the manager accumulated during camera_check.
-    managerRef.current.clearLiveSignalSamples();
-    currentBpmRef.current = null;
+    currentBpmRef.current = confirmedBpm;
     liveBpmFilterRef.current.reset();
+    if (confirmedBpm != null) {
+      // Prime the filter from the same number so the first in-window reading
+      // steps smoothly instead of snapping from nothing.
+      liveBpmFilterRef.current.update({ elapsedMs: 0, bpm: confirmedBpm });
+    }
     setProgress(0);
     setSecondsRemaining(captureDurationSec);
     setBeatTick(0);
-    setCurrentBpm(null);
-    setLiveSignalSamples([]);
+    setCurrentBpm(confirmedBpm);
+    // The PPG trace carries over from the check so the graph keeps scrolling
+    // through the handover; the manager's buffer self-trims to its window.
+    setLiveSignalSamples(managerRef.current.getLiveSignalSamples());
     offlineCaptureActive.value = true;
     setCaptureStateAndRef('measuring');
     startMeasurementTimer();
@@ -254,12 +286,75 @@ export function useHeartRateCapture(
       }
 
       if (state === 'camera_check') {
-        if (isHeartRatePlacementReady(frameState.fingerPlacement)) {
-          startMeasuring();
+        const nowMs = Date.now();
+        lastCameraCheckFrameReceivedAtRef.current = nowMs;
+        const checkBpm = managerRef.current.getCurrentBpm();
+        const pulseConfirmed = hasConfirmedPulse({
+          fingerPlacement: frameState.fingerPlacement,
+          signalStatus: frameState.signalStatus,
+          bpm: checkBpm,
+        });
+        // Publish the rate as soon as it is trusted so the setup screen shows the
+        // number rather than announcing that it found one. The manager's value is
+        // already EMA-smoothed, so this only re-renders when it actually moves.
+        if (pulseConfirmed) {
+          if (checkBpm != null && checkBpm !== currentBpmRef.current) {
+            currentBpmRef.current = checkBpm;
+            setCurrentBpm(checkBpm);
+          }
+        } else if (currentBpmRef.current != null) {
+          currentBpmRef.current = null;
+          setCurrentBpm(null);
         }
-        return;
+
+        if (!isCaptureStartEligible({
+          fingerPlacement: frameState.fingerPlacement,
+          signalStatus: frameState.signalStatus,
+        })) {
+          clearStartTimer();
+        } else {
+          if (placementSinceRef.current == null) placementSinceRef.current = nowMs;
+          if (pulseConfirmed) {
+            pulseLockedSinceRef.current ??= nowMs;
+          } else {
+            pulseLockedSinceRef.current = null;
+          }
+
+          const deadlineMs = getCaptureStartDeadlineMs({
+            placementSinceMs: placementSinceRef.current,
+            pulseLockedSinceMs: pulseLockedSinceRef.current,
+          });
+
+          // Deadlines are absolute, so a steady placement keeps counting down
+          // instead of re-arming on every frame.
+          if (deadlineMs != null && startDeadlineRef.current !== deadlineMs) {
+            if (startTimerRef.current != null) clearTimeout(startTimerRef.current);
+            startDeadlineRef.current = deadlineMs;
+            startTimerRef.current = setTimeout(() => {
+              startTimerRef.current = null;
+              startDeadlineRef.current = null;
+              if (captureStateRef.current !== 'camera_check') return;
+              const placementIsEligible = isCaptureStartEligible({
+                fingerPlacement: fingerPlacementRef.current,
+                signalStatus: signalStatusRef.current,
+              });
+              const frameIsFresh = isCaptureStartFrameFresh({
+                lastFrameReceivedAtMs: lastCameraCheckFrameReceivedAtRef.current,
+                nowMs: Date.now(),
+              });
+              if (!placementIsEligible || !frameIsFresh) {
+                clearStartTimer();
+                return;
+              }
+              clearStartTimer();
+              startMeasuring();
+            }, Math.max(0, deadlineMs - Date.now()));
+          }
+        }
       }
 
+      // The PPG trace and beat feedback run through the setup check too, so the
+      // user can see the signal forming while the pulse is still being found.
       if (timestamp - lastSignalGraphUpdateRef.current >= LIVE_SIGNAL_GRAPH_UPDATE_INTERVAL_MS) {
         lastSignalGraphUpdateRef.current = timestamp;
         const latestSignalTimestamp = managerRef.current.getLatestLiveSignalTimestamp();
@@ -275,6 +370,8 @@ export function useHeartRateCapture(
       if (frameState.beatDetected && frameState.beatPeakTs != null) {
         beatSchedulerRef.current.schedule(frameState.beatPeakTs, timestamp);
       }
+
+      if (state !== 'measuring') return;
 
       if (timestamp - lastBpmUpdateRef.current >= BPM_UPDATE_INTERVAL_MS) {
         lastBpmUpdateRef.current = timestamp;
@@ -307,7 +404,7 @@ export function useHeartRateCapture(
         setCurrentBpm(null);
       }
     },
-    [startMeasuring],
+    [clearStartTimer, startMeasuring],
   );
 
   const frameProcessor = useFrameProcessor(
