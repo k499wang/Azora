@@ -1,7 +1,7 @@
 import { Text } from '../../components/common/Text';
-import { useCallback, useEffect, useMemo, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, type ReactNode } from 'react';
 import {
-  Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+  Modal, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import Icon from '../../components/common/icons/Icon';
@@ -41,6 +41,7 @@ export default function AudioSettingsSheet({
   const navigation = useNavigation<RootStackNavigationProp>();
   const { preferences, select, reset } = useAudioPreferences();
   const { play, stop, previewingAsset } = useAudioPreview();
+  const heartRatePaywallPendingRef = useRef(false);
   const heartRateMonitoringAccess = useFeatureAccess(FeatureKey.BreathingHeartRateMonitoring);
   const {
     heartRateMonitoringEnabled,
@@ -60,7 +61,28 @@ export default function AudioSettingsSheet({
     setHeartRateMonitoringEnabled,
   ]);
 
+  const navigateToHeartRateMonitoringPaywall = useCallback(() => {
+    if (!heartRatePaywallPendingRef.current) return;
+    heartRatePaywallPendingRef.current = false;
+    navigation.navigate('ProPaywall', {
+      placement: PaywallPlacement.HeartRateProGate,
+      sourceScreen: 'AudioSettings',
+      sourceAction: 'heart_rate_monitoring_toggle',
+      feature: FeatureKey.BreathingHeartRateMonitoring,
+    });
+  }, [navigation]);
+
+  useEffect(() => {
+    // React Native only emits Modal.onDismiss on iOS. On Android the modal is
+    // removed when visible becomes false, so navigate after that render commits.
+    if (Platform.OS !== 'ios' && !visible) {
+      navigateToHeartRateMonitoringPaywall();
+    }
+  }, [navigateToHeartRateMonitoringPaywall, visible]);
+
   const openHeartRateMonitoringPaywall = useCallback(() => {
+    if (heartRatePaywallPendingRef.current) return;
+
     trackFeatureGateHit({
       feature: FeatureKey.BreathingHeartRateMonitoring,
       placement: PaywallPlacement.HeartRateProGate,
@@ -68,13 +90,10 @@ export default function AudioSettingsSheet({
       sourceAction: 'heart_rate_monitoring_toggle',
       access: heartRateMonitoringAccess,
     });
-    navigation.navigate('ProPaywall', {
-      placement: PaywallPlacement.HeartRateProGate,
-      sourceScreen: 'AudioSettings',
-      sourceAction: 'heart_rate_monitoring_toggle',
-      feature: FeatureKey.BreathingHeartRateMonitoring,
-    });
-  }, [heartRateMonitoringAccess, navigation]);
+    heartRatePaywallPendingRef.current = true;
+    stop();
+    onClose();
+  }, [heartRateMonitoringAccess, onClose, stop]);
 
   const handleHeartRateMonitoringToggle = useCallback(
     (enabled: boolean) => {
@@ -102,6 +121,7 @@ export default function AudioSettingsSheet({
       transparent
       animationType="slide"
       onRequestClose={handleClose}
+      onDismiss={navigateToHeartRateMonitoringPaywall}
     >
       <View style={styles.backdrop}>
         <Pressable style={styles.backdropDismiss} onPress={handleClose} />
