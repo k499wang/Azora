@@ -45,7 +45,7 @@ const TECHNIQUES: BreathingTechnique[] = [
     heartRateResponse: 'stabilize',
     icon: 'checkbox-blank-outline',
     duration: '~2 min',
-    backgroundImage: require('../../../../assets/exercises/grass.jpg'),
+    backgroundImage: require('../../../../assets/exercises/grass-v2.jpg'),
   },
   {
     id: '478',
@@ -59,7 +59,7 @@ const TECHNIQUES: BreathingTechnique[] = [
     heartRateResponse: 'downshift',
     icon: 'moon-waning-crescent',
     duration: '~1 min',
-    backgroundImage: require('../../../../assets/exercises/lights.jpg'),
+    backgroundImage: require('../../../../assets/exercises/lights-v2.jpg'),
   },
   {
     id: 'wimhof',
@@ -73,7 +73,7 @@ const TECHNIQUES: BreathingTechnique[] = [
     heartRateResponse: 'energize',
     icon: 'flash-outline',
     duration: '~2 min',
-    backgroundImage: require('../../../../assets/exercises/rocks.jpg'),
+    backgroundImage: require('../../../../assets/exercises/rocks-v2.jpg'),
   },
   {
     id: 'resonance',
@@ -87,7 +87,7 @@ const TECHNIQUES: BreathingTechnique[] = [
     heartRateResponse: 'resonance',
     icon: 'waves',
     duration: '~2 min',
-    backgroundImage: require('../../../../assets/exercises/sea.jpg'),
+    backgroundImage: require('../../../../assets/exercises/sea-v2.jpg'),
   },
   {
     id: 'relaxing',
@@ -101,7 +101,7 @@ const TECHNIQUES: BreathingTechnique[] = [
     heartRateResponse: 'downshift',
     icon: 'leaf',
     duration: '~1 min',
-    backgroundImage: require('../../../../assets/exercises/flowers.jpg'),
+    backgroundImage: require('../../../../assets/exercises/flowers-v2.jpg'),
   },
   {
     id: 'belly',
@@ -115,7 +115,7 @@ const TECHNIQUES: BreathingTechnique[] = [
     heartRateResponse: 'stabilize',
     icon: 'lungs',
     duration: '~1 min',
-    backgroundImage: require('../../../../assets/exercises/belly.jpg'),
+    backgroundImage: require('../../../../assets/exercises/belly-v2.jpg'),
   },
   {
     id: 'extended-exhale',
@@ -129,7 +129,7 @@ const TECHNIQUES: BreathingTechnique[] = [
     heartRateResponse: 'downshift',
     icon: 'weather-windy',
     duration: '~2 min',
-    backgroundImage: require('../../../../assets/exercises/extended-exhale.jpg'),
+    backgroundImage: require('../../../../assets/exercises/extended-exhale-v2.jpg'),
   },
   {
     id: 'sitali',
@@ -143,7 +143,7 @@ const TECHNIQUES: BreathingTechnique[] = [
     heartRateResponse: 'downshift',
     icon: 'snowflake',
     duration: '~2 min',
-    backgroundImage: require('../../../../assets/exercises/sitali.jpg'),
+    backgroundImage: require('../../../../assets/exercises/sitali-v2.jpg'),
   },
   {
     id: 'triangle',
@@ -157,7 +157,7 @@ const TECHNIQUES: BreathingTechnique[] = [
     heartRateResponse: 'stabilize',
     icon: 'triangle-outline',
     duration: '~2 min',
-    backgroundImage: require('../../../../assets/exercises/triangle.jpg'),
+    backgroundImage: require('../../../../assets/exercises/triangle-v2.jpg'),
   },
   {
     id: 'deep-box',
@@ -171,7 +171,7 @@ const TECHNIQUES: BreathingTechnique[] = [
     heartRateResponse: 'stabilize',
     icon: 'square-outline',
     duration: '~2 min',
-    backgroundImage: require('../../../../assets/exercises/deep-box.jpg'),
+    backgroundImage: require('../../../../assets/exercises/deep-box-v2.jpg'),
   },
   {
     id: 'bhastrika',
@@ -185,7 +185,7 @@ const TECHNIQUES: BreathingTechnique[] = [
     heartRateResponse: 'energize',
     icon: 'fan',
     duration: '~1 min',
-    backgroundImage: require('../../../../assets/exercises/bhastrika.jpg'),
+    backgroundImage: require('../../../../assets/exercises/bhastrika-v2.jpg'),
   },
   {
     id: 'morning-charge',
@@ -199,7 +199,7 @@ const TECHNIQUES: BreathingTechnique[] = [
     heartRateResponse: 'energize',
     icon: 'weather-sunny',
     duration: '~2 min',
-    backgroundImage: require('../../../../assets/exercises/morning-charge.jpg'),
+    backgroundImage: require('../../../../assets/exercises/morning-charge-v2.jpg'),
   },
   {
     id: 'night-settle',
@@ -213,7 +213,7 @@ const TECHNIQUES: BreathingTechnique[] = [
     heartRateResponse: 'downshift',
     icon: 'weather-night',
     duration: '~2 min',
-    backgroundImage: require('../../../../assets/exercises/night-settle.jpg'),
+    backgroundImage: require('../../../../assets/exercises/night-settle-v2.jpg'),
   },
   {
     id: 'sleep-descent',
@@ -227,7 +227,7 @@ const TECHNIQUES: BreathingTechnique[] = [
     heartRateResponse: 'downshift',
     icon: 'bed',
     duration: '~2 min',
-    backgroundImage: require('../../../../assets/exercises/sleep-descent.jpg'),
+    backgroundImage: require('../../../../assets/exercises/sleep-descent-v2.jpg'),
   },
   {
     id: 'coherent-6',
@@ -241,7 +241,7 @@ const TECHNIQUES: BreathingTechnique[] = [
     heartRateResponse: 'resonance',
     icon: 'sine-wave',
     duration: '~2 min',
-    backgroundImage: require('../../../../assets/exercises/coherent-6.jpg'),
+    backgroundImage: require('../../../../assets/exercises/coherent-6-v2.jpg'),
   },
 ];
 
