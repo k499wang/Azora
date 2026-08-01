@@ -21,7 +21,11 @@ import CardSurface from '../common/CardSurface';
 import { DEFAULT_CARD_SURFACE } from '../common/cardSurfaceConfig';
 import { getStressZone } from '../../lib/heartRate/stress';
 import type { BpmTimePoint } from '../../lib/heartRate/bpmSeries';
-import type { HrvAvailabilityReason, IbiSample } from '../../lib/heartRate/types';
+import type {
+  HrvAvailabilityReason,
+  IbiSample,
+  SignalCoverage,
+} from '../../lib/heartRate/types';
 
 interface HeartRateResultContentProps {
   bpm: number | string;
@@ -29,6 +33,7 @@ interface HeartRateResultContentProps {
   sdnn?: number | null;
   stress?: number | null;
   hrvAvailabilityReason?: HrvAvailabilityReason;
+  signalCoverage?: SignalCoverage | null;
   ibiSamples?: IbiSample[];
   bpmSamples?: BpmTimePoint[];
   rrSeries?: DataPoint[];
@@ -50,6 +55,23 @@ const HERO_RING_START = 135;
 const HERO_RING_SWEEP = 270;
 const HERO_BPM_MIN = 40;
 const HERO_BPM_MAX = 120;
+
+// Below this share of the measurement the finger was off the lens, moving, or
+// pressed too hard for long enough that the numbers deserve a caveat.
+const MIN_TRUSTED_SIGNAL_COVERAGE = 0.9;
+
+function getSignalCoverageMessage(
+  coverage: SignalCoverage | null | undefined,
+): string | null {
+  if (coverage == null || coverage.ratio >= MIN_TRUSTED_SIGNAL_COVERAGE) return null;
+
+  const lost = coverage.lostSeconds;
+  const duration = lost >= 60
+    ? `${Math.round(lost / 60)} min`
+    : `${lost}s`;
+
+  return `Your pulse was lost for about ${duration} of this measurement, so these numbers are less reliable than usual. Keep your finger still and fully covering the camera next time.`;
+}
 
 function getHrvUnavailableMessage(
   reason: HrvAvailabilityReason | undefined,
@@ -89,6 +111,7 @@ export function HeartRateResultContent({
   sdnn,
   stress,
   hrvAvailabilityReason,
+  signalCoverage,
   ibiSamples = [],
   bpmSamples,
   rrSeries,
@@ -108,7 +131,14 @@ export function HeartRateResultContent({
       ? `${Math.round(rmssd)}`
       : null;
   const stressValue = stress?.toString() ?? null;
-  const hrvUnavailableMessage = getHrvUnavailableMessage(hrvAvailabilityReason);
+  const signalCoverageMessage = advancedStatsLocked
+    ? null
+    : getSignalCoverageMessage(signalCoverage);
+  // A dropout is usually why HRV is missing too — leading with the cause beats
+  // stacking two notices that say the same thing.
+  const hrvUnavailableMessage = signalCoverageMessage != null
+    ? null
+    : getHrvUnavailableMessage(hrvAvailabilityReason);
 
   const rmssdNumeric =
     rmssd != null && Number.isFinite(rmssd)
@@ -131,7 +161,11 @@ export function HeartRateResultContent({
         );
   const showBpmGraph =
     bpmChartSamples != null || chartIbiMs.length >= 2 || advancedStatsLocked;
-  const showRrGraph = rrChartIbiMs.length >= 2 || advancedStatsLocked;
+  // The HRV card always renders — when no intervals survived it shows its empty
+  // state rather than disappearing from a section the user expects it in.
+  const rrEmptyMessage = rrChartIbiMs.length >= 2
+    ? undefined
+    : 'HRV could not be read from this measurement. Keep your finger pressed still against the camera for the full session.';
   const stressForDisplay =
     stress != null ? stress : advancedStatsLocked ? 42 : null;
   const stressZoneForDisplay =
@@ -200,9 +234,33 @@ export function HeartRateResultContent({
         </View>
       ) : null}
 
+      {signalCoverageMessage != null ? (
+        <CardSurface style={styles.hrvUnavailableCard}>
+          <MaterialCommunityIcons
+            name="alert-outline"
+            size={16}
+            color={colors.warning[500]}
+          />
+          <Text style={styles.hrvUnavailableText}>{signalCoverageMessage}</Text>
+        </CardSurface>
+      ) : null}
+
       {showHrv &&
-      (showRmssd ||
-      (showStress && stressZoneForDisplay != null && stressForDisplay != null)) ? (
+      !advancedStatsLocked &&
+      rmssdValue == null &&
+      stressValue == null &&
+      hrvUnavailableMessage != null ? (
+        <CardSurface style={styles.hrvUnavailableCard}>
+          <MaterialCommunityIcons
+            name="information-outline"
+            size={16}
+            color={colors.text.secondary}
+          />
+          <Text style={styles.hrvUnavailableText}>{hrvUnavailableMessage}</Text>
+        </CardSurface>
+      ) : null}
+
+      {showHrv && (showRmssd || showStress) ? (
         <>
           <View style={styles.sectionHeaderWrap}>
             <SectionHeader
@@ -214,7 +272,7 @@ export function HeartRateResultContent({
               }
             />
           </View>
-            {showStress && stressZoneForDisplay != null && stressForDisplay != null ? (
+            {showStress ? (
               <View style={styles.gaugeWrap}>
                 <StressGauge
                   value={stressForDisplay}
@@ -253,7 +311,7 @@ export function HeartRateResultContent({
         </>
       ) : null}
 
-      {showHrv && (showBpmGraph || showRrGraph) ? (
+      {showHrv ? (
         <>
           <View style={styles.sectionHeaderWrap}>
             <SectionHeader
@@ -277,37 +335,21 @@ export function HeartRateResultContent({
               </View>
             ) : null}
 
-            {showRrGraph ? (
-              <View style={styles.graphCardWrap}>
-                <HRVChart
-                  ibiMs={rrChartIbiMs}
-                  insightSummary={{
-                    rmssd: rmssd ?? null,
-                    sdnn: sdnn ?? null,
-                    avgBpm: Number.isFinite(heroBpmNumber) ? heroBpmNumber : null,
-                  }}
-                  color={colors.error[500]}
-                  locked={advancedStatsLocked}
-                  onPressLocked={onPressUpgrade}
-                />
-              </View>
-            ) : null}
+            <View style={styles.graphCardWrap}>
+              <HRVChart
+                ibiMs={rrChartIbiMs}
+                insightSummary={{
+                  rmssd: rmssd ?? null,
+                  sdnn: sdnn ?? null,
+                  avgBpm: Number.isFinite(heroBpmNumber) ? heroBpmNumber : null,
+                }}
+                color={colors.error[500]}
+                locked={advancedStatsLocked}
+                onPressLocked={onPressUpgrade}
+                emptyMessage={rrEmptyMessage}
+              />
+            </View>
         </>
-      ) : null}
-
-      {showHrv &&
-      !advancedStatsLocked &&
-      rmssdValue == null &&
-      stressValue == null &&
-      hrvUnavailableMessage != null ? (
-        <CardSurface style={styles.hrvUnavailableCard}>
-          <MaterialCommunityIcons
-            name="information-outline"
-            size={16}
-            color={colors.text.secondary}
-          />
-          <Text style={styles.hrvUnavailableText}>{hrvUnavailableMessage}</Text>
-        </CardSurface>
       ) : null}
 
       {context != null ? (
@@ -448,7 +490,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
-    marginTop: spacing.sm,
+    marginTop: spacing.md,
   },
   hrvUnavailableText: {
     ...typography.body.small,

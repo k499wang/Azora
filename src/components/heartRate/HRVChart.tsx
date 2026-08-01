@@ -28,6 +28,7 @@ interface HRVChartProps {
   locked?: boolean;
   onPressLocked?: () => void;
   insightSummary: HrvInsightSummary;
+  emptyMessage?: string;
 }
 
 const PADDING = { top: 14, right: 8, bottom: 8, left: 8 };
@@ -46,6 +47,7 @@ export default function HRVChart({
   locked = false,
   onPressLocked,
   insightSummary,
+  emptyMessage = 'Complete a full 90s heart rate measuring to see your HRV.',
 }: HRVChartProps) {
   const [width, setWidth] = useState(0);
   const [infoVisible, setInfoVisible] = useState(false);
@@ -158,9 +160,7 @@ export default function HRVChart({
         >
         {!chart ? (
         <View style={[styles.emptyChart, { height }]} onLayout={onLayout}>
-          <Text style={styles.emptyText}>
-            Complete a full 90s heart rate measuring to see your HRV.
-          </Text>
+          <Text style={styles.emptyText}>{emptyMessage}</Text>
         </View>
       ) : (
       <View style={styles.plotRow}>

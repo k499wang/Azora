@@ -5,6 +5,11 @@ export interface HeartRateCaptureModeConfig {
   label: string;
   durationMs: number;
   computeHrv: boolean;
+  /**
+   * Lead-in the live detector needs to lock onto a pulse. Signal coverage is
+   * only judged after it, so normal warm-up is not reported as a dropout.
+   */
+  signalGraceMs: number;
   /** Preferred sensor rate. The camera hook safely falls back when unsupported. */
   captureFps: number;
   /** Whether this mode is reserved for Pro users (e.g. the longer HRV analysis). */
@@ -20,6 +25,7 @@ export const HEART_RATE_CAPTURE_MODES: Record<HeartRateCaptureMode, HeartRateCap
     label: 'Quick',
     durationMs: 20_000,
     computeHrv: false,
+    signalGraceMs: 6_000,
     captureFps: 30,
     requiresPro: false,
     shortDescription: 'Heart rate only · 20s',
@@ -30,6 +36,7 @@ export const HEART_RATE_CAPTURE_MODES: Record<HeartRateCaptureMode, HeartRateCap
     label: 'Full',
     durationMs: 90_000,
     computeHrv: true,
+    signalGraceMs: 10_000,
     captureFps: 60,
     requiresPro: true,
     shortDescription: 'Heart rate + HRV · 90s',

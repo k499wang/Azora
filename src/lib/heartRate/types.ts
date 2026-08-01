@@ -104,6 +104,13 @@ export interface HeartRateReading {
   hrvAvailabilityReason?: HrvAvailabilityReason;
 }
 
+export interface SignalCoverage {
+  /** 0..1 share of the judged window where the live detector held a pulse. */
+  ratio: number;
+  /** Whole seconds of the judged window spent without a usable pulse. */
+  lostSeconds: number;
+}
+
 export interface CaptureResult {
   reading: HeartRateReading | null;
   error:
@@ -120,6 +127,7 @@ export interface CaptureResult {
     bpm: number;
   }>;
   mode?: HeartRateCaptureMode;
+  signalCoverage?: SignalCoverage | null;
 }
 
 export interface HeartRateStreamSummary {
