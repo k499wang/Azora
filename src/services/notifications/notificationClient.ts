@@ -88,7 +88,7 @@ export async function ensureNotificationChannels(): Promise<void> {
   await Promise.all([
     Notifications.setNotificationChannelAsync(NOTIFICATION_CHANNELS.dailyReminders, {
       name: 'Daily reminders',
-      description: 'Morning and evening breathing practice reminders.',
+      description: 'Guided breathing, daily exercise, and breath-hold reminders.',
       importance: Notifications.AndroidImportance.DEFAULT,
       sound: null,
       enableVibrate: true,

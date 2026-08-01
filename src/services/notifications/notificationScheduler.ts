@@ -9,6 +9,7 @@ import {
 import { buildDesiredNotificationSchedule } from './notificationSchedulerCore';
 import {
   buildScheduledNotificationRecord,
+  getObsoleteScheduledNotificationIds,
   isScheduledNotificationRecordCurrent,
   sanitizeScheduledNotificationRecordMap,
   type ScheduledNotificationRecordMap,
@@ -16,6 +17,7 @@ import {
 import { trackNotificationScheduled } from '../analytics/tracking';
 import { createSerializedAsync } from '../../lib/serializedAsync';
 import type { NotificationPreferences } from './types';
+import type { DailyPlanSchedule } from '../dailyPlan/types';
 
 const LEGACY_SCHEDULED_IDS_KEY = 'notifications:scheduled_ids_v1';
 const SCHEDULED_RECORDS_KEY = 'notifications:scheduled_records_v2';
@@ -24,6 +26,7 @@ const reconcileQueue = createSerializedAsync();
 
 export function reconcileScheduledNotifications(input: {
   preferences: NotificationPreferences;
+  dailyPlanSchedule: DailyPlanSchedule;
   trialEndsAt: string | null;
 }): Promise<void> {
   return reconcileQueue.run(() => performReconcile(input));
@@ -31,6 +34,7 @@ export function reconcileScheduledNotifications(input: {
 
 async function performReconcile(input: {
   preferences: NotificationPreferences;
+  dailyPlanSchedule: DailyPlanSchedule;
   trialEndsAt: string | null;
 }): Promise<void> {
   registerNotificationHandler();
@@ -49,9 +53,9 @@ async function performReconcile(input: {
   const nextRecords: ScheduledNotificationRecordMap = {};
 
   await Promise.all(
-    Object.entries(currentRecords)
-      .filter(([stableId]) => desired.every((item) => item.stableId !== stableId))
-      .map(([, record]) => cancelScheduledNotification(record.notificationId)),
+    getObsoleteScheduledNotificationIds(currentRecords, desired).map(
+      (notificationId) => cancelScheduledNotification(notificationId),
+    ),
   );
 
   for (const item of desired) {

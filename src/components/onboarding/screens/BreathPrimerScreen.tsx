@@ -42,10 +42,14 @@ const CYCLE_PHASES: { phase: PrimerPhase; seconds: number }[] = [
 ];
 
 const CYCLES = 3;
+const TOTAL_PHASES = CYCLE_PHASES.length * CYCLES;
 
 const ENTER_MS = 700;
 const COUNTDOWN_FROM = 3;
-const COUNTDOWN_TICK_MS = 800;
+const COUNTDOWN_TICK_MS = 1600;
+
+const COUNTDOWN_CUE =
+  'One hand on your chest, one on your belly.\nOnly the bottom hand should move.';
 
 const PHASE_LABEL: Record<PrimerPhase, string> = {
   inhale: 'Inhale',
@@ -55,16 +59,18 @@ const PHASE_LABEL: Record<PrimerPhase, string> = {
 // One cue per phase, gaining detail with each cycle.
 const PHASE_CUES: Record<PrimerPhase, string[]> = {
   inhale: [
-    'Breathe in through your nose',
-    'In through your nose, let your belly expand',
-    'Belly out, chest still, fill from the bottom up',
+    'In through your nose — into the belly',
+    'Bottom hand rises, top hand stays still',
+    'Fill from the bottom up, chest quiet',
   ],
   exhale: [
-    'Breathe out slowly through your mouth',
-    'Out through your mouth, long and unhurried',
-    'Empty all the way, let your belly fall',
+    'Out through your mouth, slowly',
+    'Let the bottom hand sink back down',
+    'Empty all the way, unhurried',
   ],
 };
+
+const DONE_CUE = 'That’s it. Belly first, chest quiet.';
 
 const windowHeight = Dimensions.get('window').height;
 
@@ -97,7 +103,7 @@ export default function BreathPrimerScreen({
 
   const runFrom = useCallback(
     (index: number) => {
-      if (index >= CYCLE_PHASES.length * CYCLES) {
+      if (index >= TOTAL_PHASES) {
         cancel();
         setPhase(null);
         setStage('done');
@@ -191,10 +197,10 @@ export default function BreathPrimerScreen({
           <View style={styles.cueSlot}>
             <Text style={styles.phaseCue}>
               {isDone
-                ? 'Nice. That’s what proper breathing is.'
+                ? DONE_CUE
                 : phase
                   ? PHASE_CUES[phase][cueIndex]
-                  : 'Follow the circle'}
+                  : COUNTDOWN_CUE}
             </Text>
           </View>
         </Animated.View>
@@ -268,7 +274,7 @@ export default function BreathPrimerScreen({
             Let&apos;s learn how to{'\n'}breathe properly.
           </Text>
           <Text style={styles.introSub}>
-            Next, follow guided cues to inhale, hold, and exhale.
+            Next, follow the guided cues to inhale and exhale.
           </Text>
         </View>
       </View>

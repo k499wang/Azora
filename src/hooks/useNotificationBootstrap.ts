@@ -3,6 +3,7 @@ import { AppState, type AppStateStatus } from 'react-native';
 import { useAuthStore } from '../stores/authStore';
 import { useNotificationPreferencesQuery } from '../queries/notifications/useNotificationPreferencesQuery';
 import { useUserEntitlementQuery } from '../queries/subscriptions/useUserEntitlementQuery';
+import { useDailyPlanScheduleQuery } from '../queries/dailyPlan/useDailyPlanScheduleQuery';
 import {
   cancelStoredNotifications,
   reconcileScheduledNotifications,
@@ -12,6 +13,7 @@ export function useNotificationBootstrap() {
   const authStatus = useAuthStore((state) => state.status);
   const userId = useAuthStore((state) => state.user?.id ?? null);
   const preferencesQuery = useNotificationPreferencesQuery(userId);
+  const dailyPlanScheduleQuery = useDailyPlanScheduleQuery(userId);
   const entitlementQuery = useUserEntitlementQuery(userId);
 
   useEffect(() => {
@@ -25,15 +27,21 @@ export function useNotificationBootstrap() {
   useEffect(() => {
     if (authStatus !== 'signed_in' || userId == null) return;
     if (preferencesQuery.data == null) return;
+    if (dailyPlanScheduleQuery.data == null) return;
 
     let isDisposed = false;
 
     const reconcile = async () => {
-      if (isDisposed || preferencesQuery.data == null) return;
+      if (
+        isDisposed ||
+        preferencesQuery.data == null ||
+        dailyPlanScheduleQuery.data == null
+      ) return;
 
       try {
         await reconcileScheduledNotifications({
           preferences: preferencesQuery.data,
+          dailyPlanSchedule: dailyPlanScheduleQuery.data,
           trialEndsAt: entitlementQuery.data?.trialEndsAt ?? null,
         });
       } catch (error) {
@@ -59,6 +67,7 @@ export function useNotificationBootstrap() {
     };
   }, [
     authStatus,
+    dailyPlanScheduleQuery.data,
     entitlementQuery.data?.trialEndsAt,
     preferencesQuery.data,
     userId,

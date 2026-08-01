@@ -40,6 +40,17 @@ export function isScheduledNotificationRecordCurrent(
   );
 }
 
+export function getObsoleteScheduledNotificationIds(
+  records: ScheduledNotificationRecordMap,
+  desired: readonly Pick<DesiredScheduledNotification, 'stableId'>[],
+): string[] {
+  const desiredStableIds = new Set(desired.map((item) => item.stableId));
+
+  return Object.entries(records)
+    .filter(([stableId]) => !desiredStableIds.has(stableId))
+    .map(([, record]) => record.notificationId);
+}
+
 export function sanitizeScheduledNotificationRecordMap(
   raw: unknown,
 ): ScheduledNotificationRecordMap {

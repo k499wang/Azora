@@ -1,35 +1,28 @@
+import { StyleSheet, Switch, View } from 'react-native';
 import { Text } from '../../common/Text';
-import { useMemo, useState } from 'react';
-import {
-  Modal, Platform, Pressable, StyleSheet, Switch, View } from 'react-native';
-import DateTimePicker, {
-  DateTimePickerAndroid,
-  type DateTimePickerEvent,
-} from '@react-native-community/datetimepicker';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import OnboardingScreenLayout from '../OnboardingScreenLayout';
-import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
+import type { DailyPlanSchedule } from '../../../services/dailyPlan/types';
+import { formatDailyPlanTime } from '../../../services/dailyPlan/dailyPlanScheduleCore';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
 import { card } from '../../../theme/card';
-import type { NotificationPreferences } from '../../../services/notifications/types';
+import { DAILY_REMINDER_DEFINITIONS } from '../../../services/notifications/notificationCatalog';
+import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
+import OnboardingScreenLayout from '../OnboardingScreenLayout';
 
 interface NotificationPermissionScreenProps {
-  /** The primary guided breathing session time, as `HH:MM`. */
-  primarySessionTime: string;
+  schedule: DailyPlanSchedule;
   stepIndex: number;
   stepCount: number;
   isSubmitting: boolean;
   errorMessage: string | null;
-  onEnable: (preferences: NotificationPreferences) => void;
+  onEnable: () => void;
   onSkip: () => void;
   onBack: () => void;
 }
 
 export default function NotificationPermissionScreen({
-  primarySessionTime,
+  schedule,
   stepIndex,
   stepCount,
   isSubmitting,
@@ -38,42 +31,39 @@ export default function NotificationPermissionScreen({
   onSkip,
   onBack,
 }: NotificationPermissionScreenProps) {
-  const [enabled, setEnabled] = useState(true);
-  const [time, setTime] = useState(primarySessionTime);
-
-  const preferences = useMemo<NotificationPreferences>(
-    () => ({
-      dailyReminder: { enabled, time },
-      trialEndingReminder: { enabled: false },
-    }),
-    [enabled, time],
-  );
-
   return (
     <OnboardingScreenLayout
-      title="Remind me to do my guided exercise"
-      subtitle="This is your reminder for your primary guided breathing session."
+      title="Stay on track with your daily plan"
+      subtitle="Get one reminder for each of your three daily exercises."
       progress={stepIndex / stepCount}
       onBack={onBack}
       onSkip={onSkip}
       footer={
         <OnboardingPrimaryButton
-          label="Enable reminder"
+          label="Enable 3 reminders"
           loading={isSubmitting}
-          onPress={() => onEnable(preferences)}
+          onPress={onEnable}
         />
       }
     >
       <View style={styles.content}>
-        <ReminderCard
-          enabled={enabled}
-          time={time}
-          onToggle={setEnabled}
-          onTimeChange={setTime}
-        />
+        <View style={styles.reminderCards}>
+          {DAILY_REMINDER_DEFINITIONS.map((definition) => {
+            const time = schedule.actions[definition.scheduleActionId];
+
+            return (
+              <ReminderCard
+                key={definition.id}
+                label={definition.onboardingTitle}
+                time={formatDailyPlanTime(time, time)}
+                enabled={definition.onboardingEnabled}
+              />
+            );
+          })}
+        </View>
 
         <Text style={styles.reassurance}>
-          Choose when you want the nudge. You can change it or turn it off anytime in Settings.
+          You can change the times or turn individual reminders off anytime in Settings.
         </Text>
 
         {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
@@ -82,152 +72,40 @@ export default function NotificationPermissionScreen({
   );
 }
 
-
-function formatDisplay(time: string): string {
-  const [hourRaw, minute] = time.split(':');
-  const hour = Number(hourRaw);
-  const suffix = hour >= 12 ? 'PM' : 'AM';
-  const h = hour % 12 === 0 ? 12 : hour % 12;
-  return `${h}:${minute} ${suffix}`;
-}
-
-function timeStringToDate(value: string): Date {
-  const [hourRaw, minuteRaw] = value.split(':');
-  const date = new Date();
-  date.setHours(
-    Number.isFinite(Number(hourRaw)) ? Number(hourRaw) : 8,
-    Number.isFinite(Number(minuteRaw)) ? Number(minuteRaw) : 0,
-    0,
-    0,
-  );
-  return date;
-}
-
-function dateToTimeString(date: Date): string {
-  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
-}
-
 function ReminderCard({
-  enabled,
+  label,
   time,
-  onToggle,
-  onTimeChange,
+  enabled,
 }: {
-  enabled: boolean;
+  label: string;
   time: string;
-  onToggle: (enabled: boolean) => void;
-  onTimeChange: (time: string) => void;
+  enabled: boolean;
 }) {
-  const insets = useSafeAreaInsets();
-  const [iosOpen, setIosOpen] = useState(false);
-  const [iosDraft, setIosDraft] = useState<Date>(() => timeStringToDate(time));
-
-  const openPicker = () => {
-    if (!enabled) return;
-    if (Platform.OS === 'android') {
-      DateTimePickerAndroid.open({
-        value: timeStringToDate(time),
-        mode: 'time',
-        is24Hour: false,
-        onChange: (event: DateTimePickerEvent, date?: Date) => {
-          if (event.type !== 'set' || date == null) return;
-          onTimeChange(dateToTimeString(date));
-        },
-      });
-      return;
-    }
-    setIosDraft(timeStringToDate(time));
-    setIosOpen(true);
-  };
-
   return (
-    <>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={`Guided exercise reminder at ${formatDisplay(time)}, tap to change`}
-        onPress={openPicker}
-        style={({ pressed }) => [
-          styles.card,
-          pressed && enabled && styles.cardPressed,
-        ]}
-      >
-        <View style={styles.cardLeft}>
-          <Text style={[styles.cardLabel, !enabled && styles.cardLabelDisabled]}>
-            Guided exercise reminder
-          </Text>
-          <View style={styles.timeRow}>
-            <Text style={[styles.cardTime, !enabled && styles.cardTimeDisabled]}>
-              {formatDisplay(time)}
-            </Text>
-            <MaterialCommunityIcons
-              name="chevron-right"
-              size={22}
-              color={enabled ? colors.text.secondary : colors.text.tertiary}
-            />
-          </View>
-        </View>
+    <View style={styles.card}>
+      <View style={styles.cardLeft}>
+        <Text style={styles.cardLabel}>{label}</Text>
+        <Text style={styles.cardTime}>{time}</Text>
+      </View>
+      <View pointerEvents="none" accessibilityElementsHidden>
         <Switch
           value={enabled}
-          onValueChange={onToggle}
-          trackColor={{ false: colors.neutral[300], true: colors.primary.blue300 }}
+          trackColor={{
+            false: colors.neutral[300],
+            true: colors.primary.blue300,
+          }}
           thumbColor={colors.background.elevated}
         />
-      </Pressable>
-
-      {Platform.OS === 'ios' ? (
-        <Modal
-          visible={iosOpen}
-          animationType="slide"
-          transparent
-          statusBarTranslucent
-          onRequestClose={() => setIosOpen(false)}
-        >
-          <View style={styles.backdrop}>
-            <Pressable style={StyleSheet.absoluteFill} onPress={() => setIosOpen(false)} />
-            <View style={[styles.sheet, { paddingBottom: insets.bottom + spacing.lg }]}>
-              <View style={styles.grabber} />
-              <View style={styles.sheetHeader}>
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={() => setIosOpen(false)}
-                  hitSlop={10}
-                  style={({ pressed }) => [pressed && styles.sheetActionPressed]}
-                >
-                  <Text style={styles.sheetCancel}>Cancel</Text>
-                </Pressable>
-                <Text style={styles.sheetTitle}>Set reminder time</Text>
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={() => {
-                    onTimeChange(dateToTimeString(iosDraft));
-                    setIosOpen(false);
-                  }}
-                  hitSlop={10}
-                  style={({ pressed }) => [pressed && styles.sheetActionPressed]}
-                >
-                  <Text style={styles.sheetDone}>Done</Text>
-                </Pressable>
-              </View>
-              <DateTimePicker
-                value={iosDraft}
-                mode="time"
-                display="spinner"
-                themeVariant="light"
-                onChange={(_event, date) => {
-                  if (date != null) setIosDraft(date);
-                }}
-                style={styles.picker}
-              />
-            </View>
-          </View>
-        </Modal>
-      ) : null}
-    </>
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   content: {
+    gap: spacing.md,
+  },
+  reminderCards: {
     gap: spacing.md,
   },
   card: {
@@ -240,9 +118,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     borderRadius: 22,
   },
-  cardPressed: {
-    opacity: 0.75,
-  },
   cardLeft: {
     gap: 2,
   },
@@ -252,23 +127,12 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: colors.text.secondary,
   },
-  cardLabelDisabled: {
-    color: colors.text.tertiary,
-  },
-  timeRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-  },
   cardTime: {
     ...typography.title.title1,
     fontFamily: fonts.semibold,
     fontWeight: '500',
     color: colors.text.primary,
   },
-  cardTimeDisabled: {
-    color: colors.text.tertiary,
-  },
-
   reassurance: {
     ...typography.body.small,
     color: colors.text.tertiary,
@@ -279,51 +143,5 @@ const styles = StyleSheet.create({
     ...typography.body.small,
     color: colors.error[500],
     textAlign: 'center',
-  },
-  backdrop: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  sheet: {
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    backgroundColor: colors.background.primary,
-    paddingTop: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    gap: spacing.md,
-  },
-  grabber: {
-    width: 42,
-    height: 5,
-    borderRadius: 999,
-    alignSelf: 'center',
-    backgroundColor: colors.neutral[300],
-  },
-  sheetHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  sheetTitle: {
-    ...typography.body.medium,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    color: colors.text.primary,
-  },
-  sheetCancel: {
-    ...typography.body.medium,
-    color: colors.text.secondary,
-  },
-  sheetDone: {
-    ...typography.body.medium,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    color: colors.primary.blue600,
-  },
-  sheetActionPressed: {
-    opacity: 0.6,
-  },
-  picker: {
-    alignSelf: 'stretch',
   },
 });

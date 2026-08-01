@@ -63,11 +63,13 @@ chronologically by their normalized device-local `HH:mm` values. Equal times
 use the stable order `session`, `handPicked`, then `checkIn`. This presentation
 ordering does not change the stored exercise order.
 
-There is still only one daily exercise notification. It uses the primary guided
-session time; neither the hand-picked exercise nor the breath-hold check-in
-creates a notification. The scheduler behavior is unchanged. Onboarding copy
-now states “Remind me to do my guided exercise” and clarifies that the reminder
-is for the primary guided breathing session, not the full daily plan.
+New onboarding enables one local reminder for each daily plan action: the
+primary guided session, Azora's daily breathing exercise, and the breath-hold
+check-in. Reminder consent lives in `notification_preferences`, while all three
+device-local times remain authoritative in `daily_plan_schedule`. Reminder copy
+identifies the action type without coupling notification scheduling to a
+specific technique. Tapping a reminder opens the app normally; it does not
+deep-link into an exercise.
 
 ### Plan versions and eligible pools
 
