@@ -66,7 +66,7 @@ export default function DailyPlanCard({
         }
         style={({ pressed }) => pressed && styles.pressed}
       >
-        <View style={styles.mediaShadow}>
+        <View style={styles.mediaShadow} pointerEvents="none">
           <View style={styles.media}>
             <Image
               source={getBackgroundImageSource('dailyPlan')}
@@ -99,23 +99,21 @@ export default function DailyPlanCard({
             </View>
           </View>
         </View>
-
-        <View style={styles.body}>
-          <View style={styles.titleRow}>
-            <MaterialCommunityIcons name="play" size={18} color={colors.text.primary} />
-            <Text style={styles.title}>Azora's Breathhold Exercise</Text>
-          </View>
-          <Text style={styles.meta}>{meta}</Text>
-        </View>
       </Pressable>
+
+      <View style={styles.body}>
+        <View style={styles.titleRow}>
+          <MaterialCommunityIcons name="play" size={18} color={colors.text.primary} />
+          <Text style={styles.title}>Azora's Breathhold Exercise</Text>
+        </View>
+        <Text style={styles.meta}>{meta}</Text>
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    gap: spacing.sm,
-  },
+  container: {},
   pressed: {
     transform: [{ scale: 0.98 }],
     opacity: 0.9,
