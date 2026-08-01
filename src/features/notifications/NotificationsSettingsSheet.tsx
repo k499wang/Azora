@@ -8,7 +8,6 @@ import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import {
-  DEFAULT_NOTIFICATION_PREFERENCES,
   type DailyPlanReminderActionId,
   type NotificationPreferences,
 } from '../../services/notifications/types';
@@ -20,9 +19,6 @@ import { useNotificationPreferencesQuery } from '../../queries/notifications/use
 import { useUpdateNotificationPreferencesMutation } from '../../queries/notifications/useUpdateNotificationPreferencesMutation';
 import { useDailyPlanScheduleQuery } from '../../queries/dailyPlan/useDailyPlanScheduleQuery';
 import { useUpdateDailyPlanScheduleMutation } from '../../queries/dailyPlan/useUpdateDailyPlanScheduleMutation';
-import {
-  DEFAULT_DAILY_PLAN_SCHEDULE,
-} from '../../services/dailyPlan/types';
 import type { DailyPlanActionId } from '../../services/dailyPlan/dailyPlanScheduleCore';
 import TimePickerField from '../../components/common/TimePickerField';
 import { trackNotificationPermissionResult } from '../../services/analytics/tracking';
@@ -48,8 +44,13 @@ export default function NotificationsSettingsSheet({
   const progress = useRef(new Animated.Value(0)).current;
   const [mounted, setMounted] = useState(visible);
 
-  const preferences = preferencesQuery.data ?? DEFAULT_NOTIFICATION_PREFERENCES;
-  const schedule = scheduleQuery.data ?? DEFAULT_DAILY_PLAN_SCHEDULE;
+  const preferences = preferencesQuery.data;
+  const schedule = scheduleQuery.data;
+  const isInitialLoadPending =
+    preferencesQuery.data == null || scheduleQuery.data == null;
+  const hasInitialLoadError =
+    isInitialLoadPending &&
+    (preferencesQuery.isError || scheduleQuery.isError);
 
   useEffect(() => {
     if (visible) {
@@ -89,9 +90,11 @@ export default function NotificationsSettingsSheet({
     };
   }, [visible]);
 
-  const hasEnabledNotification = Object.values(preferences.dailyPlanReminders).some(
-    (reminder) => reminder.enabled,
-  );
+  const hasEnabledNotification =
+    preferences != null &&
+    Object.values(preferences.dailyPlanReminders).some(
+      (reminder) => reminder.enabled,
+    );
 
   const ensurePermissionForEnabledNotification = async (): Promise<boolean> => {
     if (permissionStatus === 'granted') return true;
@@ -138,10 +141,12 @@ export default function NotificationsSettingsSheet({
     actionId: DailyPlanActionId,
     time: string,
   ) => {
+    if (scheduleQuery.data == null) return;
+
     await updateSchedule.mutateAsync({
-      ...schedule,
+      ...scheduleQuery.data,
       actions: {
-        ...schedule.actions,
+        ...scheduleQuery.data.actions,
         [actionId]: time,
       },
     });
@@ -193,10 +198,52 @@ export default function NotificationsSettingsSheet({
             </Pressable>
           </View>
 
-          {preferencesQuery.isPending || scheduleQuery.isPending ? (
-            <View style={styles.loading}>
-              <ActivityIndicator color={colors.primary.blue600} />
-            </View>
+          {preferences == null || schedule == null ? (
+            hasInitialLoadError ? (
+              <View style={styles.loadError} accessibilityRole="alert">
+                <MaterialCommunityIcons
+                  name="cloud-alert-outline"
+                  size={28}
+                  color={colors.error[500]}
+                />
+                <Text style={styles.loadErrorTitle}>
+                  Couldn&apos;t load notification settings
+                </Text>
+                <Text style={styles.loadErrorMessage}>
+                  Check your connection and try again. Your saved reminder
+                  times have not been changed.
+                </Text>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => {
+                    void Promise.all([
+                      preferencesQuery.refetch(),
+                      scheduleQuery.refetch(),
+                    ]);
+                  }}
+                  disabled={
+                    preferencesQuery.isFetching || scheduleQuery.isFetching
+                  }
+                  style={({ pressed }) => [
+                    styles.retryButton,
+                    pressed && styles.retryButtonPressed,
+                  ]}
+                >
+                  {preferencesQuery.isFetching || scheduleQuery.isFetching ? (
+                    <ActivityIndicator
+                      size="small"
+                      color={colors.background.primary}
+                    />
+                  ) : (
+                    <Text style={styles.retryButtonText}>Try again</Text>
+                  )}
+                </Pressable>
+              </View>
+            ) : (
+              <View style={styles.loading}>
+                <ActivityIndicator color={colors.primary.blue600} />
+              </View>
+            )
           ) : (
             <ScrollView
               style={styles.bodyScroll}
@@ -353,6 +400,44 @@ const styles = StyleSheet.create({
     minHeight: 240,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  loadError: {
+    minHeight: 240,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.lg,
+  },
+  loadErrorTitle: {
+    ...typography.body.large,
+    fontFamily: fonts.semibold,
+    fontWeight: '500',
+    color: colors.text.primary,
+    textAlign: 'center',
+  },
+  loadErrorMessage: {
+    ...typography.body.small,
+    color: colors.text.secondary,
+    textAlign: 'center',
+  },
+  retryButton: {
+    minWidth: 120,
+    minHeight: 44,
+    marginTop: spacing.sm,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primary.blue600,
+    paddingHorizontal: spacing.lg,
+  },
+  retryButtonPressed: {
+    opacity: 0.75,
+  },
+  retryButtonText: {
+    ...typography.body.medium,
+    fontFamily: fonts.semibold,
+    fontWeight: '500',
+    color: colors.background.primary,
   },
   body: {
     gap: spacing.md,

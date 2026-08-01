@@ -46,10 +46,17 @@ const TOTAL_PHASES = CYCLE_PHASES.length * CYCLES;
 
 const ENTER_MS = 700;
 const COUNTDOWN_FROM = 3;
-const COUNTDOWN_TICK_MS = 1600;
+const COUNTDOWN_TICK_MS = 2400;
+const COUNTDOWN_TOTAL_MS = ENTER_MS + COUNTDOWN_FROM * COUNTDOWN_TICK_MS;
 
-const COUNTDOWN_CUE =
-  'One hand on your chest, one on your belly.\nOnly the bottom hand should move.';
+// Each cue holds for exactly half the countdown, swapping on its own timer
+// rather than on a numeral so the enter animation does not skew the split.
+// One hand keeps the other free for the phone, and the second cue still
+// works for anyone who cannot use a hand at all.
+const COUNTDOWN_CUES = [
+  'If you can, rest one hand on your belly.',
+  'It should rise before your chest does.',
+];
 
 const PHASE_LABEL: Record<PrimerPhase, string> = {
   inhale: 'Inhale',
@@ -59,18 +66,18 @@ const PHASE_LABEL: Record<PrimerPhase, string> = {
 // One cue per phase, gaining detail with each cycle.
 const PHASE_CUES: Record<PrimerPhase, string[]> = {
   inhale: [
-    'In through your nose — into the belly',
-    'Bottom hand rises, top hand stays still',
-    'Fill from the bottom up, chest quiet',
+    'Inhale slowly through your nose, into your belly.',
+    'Inhale and let your belly rise, not your chest.',
+    'Inhale from the bottom up, belly before chest.',
   ],
   exhale: [
-    'Out through your mouth, slowly',
-    'Let the bottom hand sink back down',
-    'Empty all the way, unhurried',
+    'Exhale gently through your mouth, nice and slow.',
+    'Exhale and let your belly sink back down.',
+    'Exhale until empty, without rushing the end.',
   ],
 };
 
-const DONE_CUE = 'That’s it. Belly first, chest quiet.';
+const DONE_CUE = 'That is a full breath. Your belly leads, your chest follows.';
 
 const windowHeight = Dimensions.get('window').height;
 
@@ -90,6 +97,7 @@ export default function BreathPrimerScreen({
   const [phase, setPhase] = useState<PrimerPhase | null>(null);
   const [cycle, setCycle] = useState(0);
   const [countdown, setCountdown] = useState(COUNTDOWN_FROM);
+  const [countdownCue, setCountdownCue] = useState(0);
 
   const insets = useSafeAreaInsets();
   const circleRef = useRef<BreathingCircleRef | null>(null);
@@ -132,6 +140,11 @@ export default function BreathPrimerScreen({
       useNativeDriver: true,
     }).start();
     setCountdown(COUNTDOWN_FROM);
+    setCountdownCue(0);
+    const cueSwap = setTimeout(
+      () => setCountdownCue(1),
+      COUNTDOWN_TOTAL_MS / 2,
+    );
     const beats = Array.from({ length: COUNTDOWN_FROM }, (_, index) =>
       setTimeout(countdownBeat, ENTER_MS + index * COUNTDOWN_TICK_MS),
     );
@@ -141,13 +154,11 @@ export default function BreathPrimerScreen({
         ENTER_MS + (index + 1) * COUNTDOWN_TICK_MS,
       ),
     );
-    const startTimeout = setTimeout(
-      () => runFrom(0),
-      ENTER_MS + COUNTDOWN_FROM * COUNTDOWN_TICK_MS,
-    );
+    const startTimeout = setTimeout(() => runFrom(0), COUNTDOWN_TOTAL_MS);
     return () => {
       beats.forEach(clearTimeout);
       ticks.forEach(clearTimeout);
+      clearTimeout(cueSwap);
       clearTimeout(startTimeout);
       enter.stopAnimation();
       cancel();
@@ -200,7 +211,7 @@ export default function BreathPrimerScreen({
                 ? DONE_CUE
                 : phase
                   ? PHASE_CUES[phase][cueIndex]
-                  : COUNTDOWN_CUE}
+                  : COUNTDOWN_CUES[countdownCue]}
             </Text>
           </View>
         </Animated.View>
@@ -373,7 +384,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   cueSlot: {
-    height: 72,
+    height: 92,
     marginTop: spacing.xl,
     justifyContent: 'center',
     alignItems: 'center',
@@ -382,8 +393,8 @@ const styles = StyleSheet.create({
     ...typography.body.large,
     fontFamily: fonts.semibold,
     fontWeight: '600',
-    fontSize: 22,
-    lineHeight: 30,
+    fontSize: 20,
+    lineHeight: 28,
     color: colors.text.primary,
     textAlign: 'center',
   },

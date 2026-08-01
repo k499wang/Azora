@@ -7,15 +7,24 @@ import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
 import { card } from '../../../theme/card';
 import { DAILY_REMINDER_DEFINITIONS } from '../../../services/notifications/notificationCatalog';
+import type {
+  DailyPlanReminderActionId,
+  DailyPlanReminderPreferences,
+} from '../../../services/notifications/types';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 
 interface NotificationPermissionScreenProps {
   schedule: DailyPlanSchedule;
+  reminders: DailyPlanReminderPreferences;
   stepIndex: number;
   stepCount: number;
   isSubmitting: boolean;
   errorMessage: string | null;
+  onReminderEnabledChange: (
+    actionId: DailyPlanReminderActionId,
+    enabled: boolean,
+  ) => void;
   onEnable: () => void;
   onSkip: () => void;
   onBack: () => void;
@@ -23,14 +32,20 @@ interface NotificationPermissionScreenProps {
 
 export default function NotificationPermissionScreen({
   schedule,
+  reminders,
   stepIndex,
   stepCount,
   isSubmitting,
   errorMessage,
+  onReminderEnabledChange,
   onEnable,
   onSkip,
   onBack,
 }: NotificationPermissionScreenProps) {
+  const enabledCount = Object.values(reminders).filter(
+    (reminder) => reminder.enabled,
+  ).length;
+
   return (
     <OnboardingScreenLayout
       title="Stay on track with your daily plan"
@@ -40,7 +55,11 @@ export default function NotificationPermissionScreen({
       onSkip={onSkip}
       footer={
         <OnboardingPrimaryButton
-          label="Enable 3 reminders"
+          label={
+            enabledCount === 0
+              ? 'Continue without reminders'
+              : `Enable ${enabledCount} ${enabledCount === 1 ? 'reminder' : 'reminders'}`
+          }
           loading={isSubmitting}
           onPress={onEnable}
         />
@@ -56,7 +75,11 @@ export default function NotificationPermissionScreen({
                 key={definition.id}
                 label={definition.onboardingTitle}
                 time={formatDailyPlanTime(time, time)}
-                enabled={definition.onboardingEnabled}
+                enabled={reminders[definition.id].enabled}
+                disabled={isSubmitting}
+                onToggle={(enabled) => {
+                  onReminderEnabledChange(definition.id, enabled);
+                }}
               />
             );
           })}
@@ -76,10 +99,14 @@ function ReminderCard({
   label,
   time,
   enabled,
+  disabled,
+  onToggle,
 }: {
   label: string;
   time: string;
   enabled: boolean;
+  disabled: boolean;
+  onToggle: (enabled: boolean) => void;
 }) {
   return (
     <View style={styles.card}>
@@ -87,16 +114,17 @@ function ReminderCard({
         <Text style={styles.cardLabel}>{label}</Text>
         <Text style={styles.cardTime}>{time}</Text>
       </View>
-      <View pointerEvents="none" accessibilityElementsHidden>
-        <Switch
-          value={enabled}
-          trackColor={{
-            false: colors.neutral[300],
-            true: colors.primary.blue300,
-          }}
-          thumbColor={colors.background.elevated}
-        />
-      </View>
+      <Switch
+        accessibilityLabel={`${label} reminder`}
+        value={enabled}
+        disabled={disabled}
+        onValueChange={onToggle}
+        trackColor={{
+          false: colors.neutral[300],
+          true: colors.primary.blue300,
+        }}
+        thumbColor={colors.background.elevated}
+      />
     </View>
   );
 }
