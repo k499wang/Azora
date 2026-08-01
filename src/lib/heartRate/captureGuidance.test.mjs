@@ -57,13 +57,14 @@ test('placement steps explain coverage, pressure, and a steady posture', () => {
 
   assert.deepEqual(guidance.steps, [
     {
-      title: 'Cover the bottom camera completely',
+      title: 'Press against the bottom camera',
       detail:
-        'Lay the soft pad of your index finger flat over the lens. Keep the flash uncovered.',
+        'Lay the soft pad of your index finger flat on the lens and keep it pressed there. Resting it near the lens or hovering over it will not read your pulse. Keep the flash uncovered.',
     },
     {
-      title: 'Use a light touch',
-      detail: 'Pressing hard can weaken the signal.',
+      title: 'Firm contact, not a hard squeeze',
+      detail:
+        'Stay in constant contact with the glass without pushing hard. Heavy pressure squeezes out the blood flow the camera needs to read.',
     },
     {
       title: 'Keep completely still',
@@ -93,11 +94,11 @@ test('camera check distinguishes finger coverage from pulse confirmation', () =>
 test('camera check gives a specific correction for each placement problem', () => {
   assert.equal(
     checkMessage({ fingerPlacement: 'no_finger', signalStatus: 'no_finger' }),
-    'Completely cover the camera lens.',
+    'Press your finger flat against the camera lens.',
   );
   assert.equal(
     checkMessage({ fingerPlacement: 'partial', signalStatus: 'partial_coverage' }),
-    'Lay your finger flatter.',
+    'Lay your finger flatter against the lens.',
   );
   assert.equal(
     checkMessage({
@@ -120,14 +121,14 @@ test('camera check gives a specific correction for each placement problem', () =
       signalStatus: 'no_finger',
       cameraTarget: 'rightmost camera',
     }),
-    'Completely cover the rightmost camera.',
+    'Press your finger flat against the rightmost camera.',
   );
 });
 
 test('measurement corrections use the same specific guidance', () => {
   assert.equal(
     getMeasurementCorrectionMessage('signal_lost', 'lost'),
-    'Completely cover the camera lens.',
+    'Press your finger flat against the camera lens.',
   );
   assert.equal(
     getMeasurementCorrectionMessage('measuring', 'good'),

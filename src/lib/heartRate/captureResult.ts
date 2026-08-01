@@ -8,6 +8,7 @@ import type {
   PpgFrameSample,
   PpgQuality,
   PpgRoiSample,
+  SignalCoverage,
 } from './types';
 import {
   analyzeCapture,
@@ -205,7 +206,7 @@ function normalizePresentationBpmSamples(
     }));
 }
 
-const MIN_QUICK_LIVE_SAMPLES = 3;
+const MIN_LIVE_BPM_SAMPLES = 3;
 
 function median(values: number[]): number {
   const sorted = [...values].sort((a, b) => a - b);
@@ -215,18 +216,66 @@ function median(values: number[]): number {
     : sorted[mid];
 }
 
-// Quick mode's final BPM is the median of what the live detector actually
-// reported during the capture, rather than a fresh offline re-analysis, so the
-// saved number matches what the user watched.
+// Both modes report the median of what the live detector actually showed during
+// the capture, rather than a separate offline frequency estimate. The BPM graph
+// plots these same samples, so a divergent headline number would contradict the
+// curve drawn directly beneath it.
+function liveBpmValues(
+  presentationBpmSamples: BuildCaptureResultOptions['presentationBpmSamples'],
+): number[] {
+  return (presentationBpmSamples ?? [])
+    .map((sample) => sample.bpm)
+    .filter((bpm) => isFiniteNumber(bpm) && bpm >= 20 && bpm <= 240);
+}
+
+// The live detector emits roughly one sample per second while it holds a pulse,
+// so a longer silence means the finger slipped, moved, or lifted. Gaps under the
+// tolerance are ordinary sampling jitter and are not counted against the user.
+const SIGNAL_DROPOUT_TOLERANCE_MS = 3_000;
+
+export function computeSignalCoverage(
+  presentationBpmSamples: BuildCaptureResultOptions['presentationBpmSamples'],
+  mode: HeartRateCaptureMode,
+): SignalCoverage | null {
+  const { durationMs, signalGraceMs } = getCaptureModeConfig(mode);
+  const judgedWindowMs = durationMs - signalGraceMs;
+  if (judgedWindowMs <= 0) return null;
+
+  const offsets = (presentationBpmSamples ?? [])
+    .filter((sample) => (
+      isFiniteNumber(sample.offsetMs) &&
+      isFiniteNumber(sample.bpm) &&
+      sample.bpm >= 20 &&
+      sample.bpm <= 240 &&
+      sample.offsetMs >= signalGraceMs &&
+      sample.offsetMs <= durationMs
+    ))
+    .map((sample) => sample.offsetMs)
+    .sort((a, b) => a - b);
+
+  let lostMs = 0;
+  let cursor = signalGraceMs;
+  for (const offset of offsets) {
+    const gap = offset - cursor;
+    if (gap > SIGNAL_DROPOUT_TOLERANCE_MS) lostMs += gap;
+    cursor = Math.max(cursor, offset);
+  }
+  const trailingGap = durationMs - cursor;
+  if (trailingGap > SIGNAL_DROPOUT_TOLERANCE_MS) lostMs += trailingGap;
+
+  return {
+    ratio: Math.max(0, Math.min(1, (judgedWindowMs - lostMs) / judgedWindowMs)),
+    lostSeconds: Math.round(lostMs / 1000),
+  };
+}
+
 function buildQuickLiveReading(
   presentationBpmSamples: BuildCaptureResultOptions['presentationBpmSamples'],
   sampleCount: number,
   durationMs: number,
 ): HeartRateReading | null {
-  const bpms = (presentationBpmSamples ?? [])
-    .map((sample) => sample.bpm)
-    .filter((bpm) => isFiniteNumber(bpm) && bpm >= 20 && bpm <= 240);
-  if (bpms.length < MIN_QUICK_LIVE_SAMPLES) return null;
+  const bpms = liveBpmValues(presentationBpmSamples);
+  if (bpms.length < MIN_LIVE_BPM_SAMPLES) return null;
 
   const bpm = Math.round(median(bpms));
   const spread = Math.max(...bpms) - Math.min(...bpms);
@@ -378,6 +427,7 @@ export function buildCaptureResult(
   options: BuildCaptureResultOptions = {},
 ): CaptureResult {
   const { computeHrv } = getCaptureModeConfig(mode);
+  const signalCoverage = computeSignalCoverage(options.presentationBpmSamples, mode);
 
   // No finger for (most of) the capture: reject before trusting a frequency
   // estimate, which would otherwise report ~40-45 bpm from low-frequency noise.
@@ -388,6 +438,7 @@ export function buildCaptureResult(
       ibiSamples: [],
       bpmSamples: normalizePresentationBpmSamples(options.presentationBpmSamples),
       mode,
+      signalCoverage,
     };
   }
 
@@ -410,6 +461,7 @@ export function buildCaptureResult(
         ibiSamples: [],
         bpmSamples: normalizePresentationBpmSamples(options.presentationBpmSamples),
         mode,
+        signalCoverage,
       };
     }
 
@@ -419,6 +471,7 @@ export function buildCaptureResult(
       ibiSamples: [],
       bpmSamples: normalizePresentationBpmSamples(options.presentationBpmSamples),
       mode,
+      signalCoverage,
     };
   }
 
@@ -432,8 +485,13 @@ export function buildCaptureResult(
       ibiSamples: [],
       bpmSamples: normalizePresentationBpmSamples(options.presentationBpmSamples),
       mode,
+      signalCoverage,
     };
   }
+
+  const liveBpms = liveBpmValues(options.presentationBpmSamples);
+  const reportedBpm =
+    liveBpms.length >= MIN_LIVE_BPM_SAMPLES ? Math.round(median(liveBpms)) : bpmResult.bpm;
 
   const hrv = computeHrv ? deriveCaptureHrvResult(hrvBeatSeries, bpmResult?.bpm) : null;
   const fallbackHrv =
@@ -453,7 +511,7 @@ export function buildCaptureResult(
 
   return {
     reading: {
-      bpm: bpmResult.bpm,
+      bpm: reportedBpm,
       confidence: bpmResult.confidence,
       quality: bpmResult.quality,
       roiId: bpmResult.roiId,
@@ -477,5 +535,6 @@ export function buildCaptureResult(
     ibiSamples: finalIbiSamples,
     bpmSamples: normalizePresentationBpmSamples(options.presentationBpmSamples),
     mode,
+    signalCoverage,
   };
 }

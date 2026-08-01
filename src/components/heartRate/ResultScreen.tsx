@@ -238,6 +238,7 @@ export function ResultScreen({
                 sdnn={reading.sdnn ?? null}
                 stress={reading.stress ?? null}
                 hrvAvailabilityReason={reading.hrvAvailabilityReason}
+                signalCoverage={result.signalCoverage}
                 bpmSamples={resultBpmSamples}
                 ibiSamples={result.ibiSamples ?? []}
                 context={context}
@@ -321,11 +322,15 @@ export function ResultScreen({
             <Text style={styles.tipsHeading}>Tips for a better reading:</Text>
             <View style={styles.tipRow}>
               <MaterialCommunityIcons name="circle-small" size={16} color={colors.text.tertiary} />
-              <Text style={styles.tipText}>Completely cover the {cameraTarget}</Text>
+              <Text style={styles.tipText}>
+                Press your finger flat against the {cameraTarget}
+              </Text>
             </View>
             <View style={styles.tipRow}>
               <MaterialCommunityIcons name="circle-small" size={16} color={colors.text.tertiary} />
-              <Text style={styles.tipText}>Apply steady, gentle pressure</Text>
+              <Text style={styles.tipText}>
+                Keep your skin touching the glass the whole time
+              </Text>
             </View>
             <View style={styles.tipRow}>
               <MaterialCommunityIcons name="circle-small" size={16} color={colors.text.tertiary} />

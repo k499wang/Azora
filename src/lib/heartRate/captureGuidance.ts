@@ -31,22 +31,23 @@ export function getHeartRatePlacementGuidance(
   return {
     title: profile.title,
     instruction: isKnownLayout
-      ? `Place the soft pad of your index finger flat over the ${cameraTarget} and cover it completely. Leave the flash uncovered.`
-      : 'Place the soft pad of your index finger flat over the lens shown in the live check and cover it completely. Leave the flash uncovered.',
+      ? `Press the soft pad of your index finger against the ${cameraTarget} so it is completely covered, with your skin touching the glass. Leave the flash uncovered.`
+      : 'Press the soft pad of your index finger against the lens shown in the live check so it is completely covered, with your skin touching the glass. Leave the flash uncovered.',
     multiCameraWarning: isKnownLayout
       ? `Use the highlighted ${cameraTarget} — covering another lens will not work.`
       : 'Use the lens shown during the live check — covering another lens will not work.',
     steps: [
       {
         title: isKnownLayout
-          ? `Cover the ${cameraTarget} completely`
-          : 'Cover the lens shown in the live check',
+          ? `Press against the ${cameraTarget}`
+          : 'Press against the lens shown in the live check',
         detail:
-          'Lay the soft pad of your index finger flat over the lens. Keep the flash uncovered.',
+          'Lay the soft pad of your index finger flat on the lens and keep it pressed there. Resting it near the lens or hovering over it will not read your pulse. Keep the flash uncovered.',
       },
       {
-        title: 'Use a light touch',
-        detail: 'Pressing hard can weaken the signal.',
+        title: 'Firm contact, not a hard squeeze',
+        detail:
+          'Stay in constant contact with the glass without pushing hard. Heavy pressure squeezes out the blood flow the camera needs to read.',
       },
       {
         title: 'Keep completely still',
@@ -100,10 +101,10 @@ export function getCameraCheckMessage({
   cameraTarget = 'camera lens',
 }: CameraCheckMessageOptions): string {
   if (fingerPlacement === 'no_finger' || fingerPlacement === 'lost') {
-    return `Completely cover the ${cameraTarget}.`;
+    return `Press your finger flat against the ${cameraTarget}.`;
   }
   if (fingerPlacement === 'partial' || signalStatus === 'partial_coverage') {
-    return 'Lay your finger flatter.';
+    return 'Lay your finger flatter against the lens.';
   }
   if (
     fingerPlacement === 'too_much_pressure' ||
@@ -134,10 +135,10 @@ export function getMeasurementCorrectionMessage(
     fingerPlacement === 'no_finger' ||
     fingerPlacement === 'lost'
   ) {
-    return `Completely cover the ${cameraTarget}.`;
+    return `Press your finger flat against the ${cameraTarget}.`;
   }
   if (signalStatus === 'partial_coverage' || fingerPlacement === 'partial') {
-    return 'Lay your finger flatter.';
+    return 'Lay your finger flatter against the lens.';
   }
   if (
     signalStatus === 'too_much_pressure' ||

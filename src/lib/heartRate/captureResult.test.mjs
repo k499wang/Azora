@@ -4,6 +4,7 @@ import {
   buildCaptureResult,
   deriveCaptureHrvResult,
   deriveIbiSampleHrvResult,
+  computeSignalCoverage,
 } from './captureResult.ts';
 
 function makeBeatSeries(ibiMs, overrides = {}) {
@@ -154,4 +155,61 @@ test('buildCaptureResult rejects a no-finger capture instead of reporting noise 
 
   assert.equal(result.reading, null);
   assert.equal(result.error, 'no_finger');
+});
+
+function makeContinuousBpmSamples(fromMs, toMs, bpm = 72) {
+  const samples = [];
+  for (let offsetMs = fromMs; offsetMs <= toMs; offsetMs += 1_000) {
+    samples.push({ offsetMs, bpm });
+  }
+  return samples;
+}
+
+test('computeSignalCoverage ignores the lock-on grace period and normal jitter', () => {
+  const coverage = computeSignalCoverage(
+    makeContinuousBpmSamples(10_000, 90_000),
+    'full',
+  );
+
+  assert.equal(coverage.lostSeconds, 0);
+  assert.equal(coverage.ratio, 1);
+});
+
+test('computeSignalCoverage counts a mid-capture dropout as lost time', () => {
+  const coverage = computeSignalCoverage(
+    [
+      ...makeContinuousBpmSamples(10_000, 30_000),
+      ...makeContinuousBpmSamples(50_000, 90_000),
+    ],
+    'full',
+  );
+
+  assert.equal(coverage.lostSeconds, 20);
+  assert.equal(Math.round(coverage.ratio * 100), 75);
+});
+
+test('computeSignalCoverage counts a capture that ends early as lost time', () => {
+  const coverage = computeSignalCoverage(
+    makeContinuousBpmSamples(10_000, 46_000),
+    'full',
+  );
+
+  assert.equal(coverage.lostSeconds, 44);
+  assert.equal(Math.round(coverage.ratio * 100), 45);
+});
+
+test('computeSignalCoverage reports a fully lost capture', () => {
+  const coverage = computeSignalCoverage([], 'full');
+
+  assert.equal(coverage.lostSeconds, 80);
+  assert.equal(coverage.ratio, 0);
+});
+
+test('buildCaptureResult reports signal coverage alongside a quick reading', () => {
+  const result = buildCaptureResult(makeCoveredFrames(), 'quick', {
+    presentationBpmSamples: makeContinuousBpmSamples(6_000, 20_000, 71),
+  });
+
+  assert.equal(result.reading.bpm, 71);
+  assert.equal(result.signalCoverage.lostSeconds, 0);
 });
