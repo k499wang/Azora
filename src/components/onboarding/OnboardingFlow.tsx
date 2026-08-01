@@ -98,6 +98,8 @@ import { useUpdateNotificationPreferencesMutation } from '../../queries/notifica
 import {
   DEFAULT_NOTIFICATION_PREFERENCES,
   ONBOARDING_NOTIFICATION_PREFERENCES,
+  type DailyPlanReminderActionId,
+  type DailyPlanReminderPreferences,
 } from '../../services/notifications/types';
 import { useUpdateDailyPlanScheduleMutation } from '../../queries/dailyPlan/useUpdateDailyPlanScheduleMutation';
 import { useUpdateDailyPlanExercisesMutation } from '../../queries/dailyPlan/useUpdateDailyPlanExercisesMutation';
@@ -309,6 +311,18 @@ export default function OnboardingFlow({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [notificationErrorMessage, setNotificationErrorMessage] = useState<string | null>(null);
   const [isNotificationSubmitting, setIsNotificationSubmitting] = useState(false);
+  const [onboardingReminders, setOnboardingReminders] =
+    useState<DailyPlanReminderPreferences>(() => ({
+      session: {
+        ...ONBOARDING_NOTIFICATION_PREFERENCES.dailyPlanReminders.session,
+      },
+      handPicked: {
+        ...ONBOARDING_NOTIFICATION_PREFERENCES.dailyPlanReminders.handPicked,
+      },
+      checkIn: {
+        ...ONBOARDING_NOTIFICATION_PREFERENCES.dailyPlanReminders.checkIn,
+      },
+    }));
   const [isSubmitting, setIsSubmitting] = useState(false);
   const updateNotificationPreferences = useUpdateNotificationPreferencesMutation(userId);
   const updateDailyPlanSchedule = useUpdateDailyPlanScheduleMutation(userId);
@@ -778,19 +792,25 @@ export default function OnboardingFlow({
 
     try {
       const schedule = buildDailyPlanSchedule(plan);
-      const permissionStatus = await requestNotificationPermissions();
+      const hasEnabledReminder = Object.values(onboardingReminders).some(
+        (reminder) => reminder.enabled,
+      );
+      const permissionStatus = hasEnabledReminder
+        ? await requestNotificationPermissions()
+        : 'undetermined';
       trackNotificationPermissionResult({ status: permissionStatus, source: 'onboarding' });
 
       if (userId != null) {
-        const remindersEnabled = permissionStatus === 'granted';
-        const notificationPreferences = remindersEnabled
-          ? ONBOARDING_NOTIFICATION_PREFERENCES
-          : DEFAULT_NOTIFICATION_PREFERENCES;
+        const reminders =
+          permissionStatus === 'granted'
+            ? onboardingReminders
+            : DEFAULT_NOTIFICATION_PREFERENCES.dailyPlanReminders;
         await Promise.all([
           updateDailyPlanSchedule.mutateAsync(schedule),
           updateNotificationPreferences.mutateAsync({
-            dailyPlanReminders: notificationPreferences.dailyPlanReminders,
-            trialEndingReminder: notificationPreferences.trialEndingReminder,
+            dailyPlanReminders: reminders,
+            trialEndingReminder:
+              DEFAULT_NOTIFICATION_PREFERENCES.trialEndingReminder,
           }),
         ]);
       }
@@ -1394,10 +1414,20 @@ export default function OnboardingFlow({
     return (
       <NotificationPermissionScreen
         schedule={buildDailyPlanSchedule(plan)}
+        reminders={onboardingReminders}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         isSubmitting={isNotificationSubmitting}
         errorMessage={notificationErrorMessage}
+        onReminderEnabledChange={(
+          actionId: DailyPlanReminderActionId,
+          enabled: boolean,
+        ) => {
+          setOnboardingReminders((current) => ({
+            ...current,
+            [actionId]: { enabled },
+          }));
+        }}
         onEnable={() => {
           void enableNotifications();
         }}
