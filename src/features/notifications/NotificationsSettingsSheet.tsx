@@ -1,7 +1,7 @@
 import { Text } from '../../components/common/Text';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ActivityIndicator, Alert, Animated, Easing, Linking, Modal, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
+  ActivityIndicator, Alert, Animated, Easing, Linking, Modal, PanResponder, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../theme/colors';
@@ -30,6 +30,10 @@ interface NotificationsSettingsSheetProps {
   onClose: () => void;
 }
 
+const DRAG_ACTIVATION_PX = 4;
+const DRAG_DISMISS_PX = 120;
+const DRAG_DISMISS_VELOCITY = 0.7;
+
 export default function NotificationsSettingsSheet({
   visible,
   userId,
@@ -42,6 +46,7 @@ export default function NotificationsSettingsSheet({
   const updateSchedule = useUpdateDailyPlanScheduleMutation(userId);
   const [permissionStatus, setPermissionStatus] = useState<string>('undetermined');
   const progress = useRef(new Animated.Value(0)).current;
+  const dragY = useRef(new Animated.Value(0)).current;
   const [mounted, setMounted] = useState(visible);
 
   const preferences = preferencesQuery.data;
@@ -55,6 +60,7 @@ export default function NotificationsSettingsSheet({
   useEffect(() => {
     if (visible) {
       setMounted(true);
+      dragY.setValue(0);
       Animated.timing(progress, {
         toValue: 1,
         duration: 240,
@@ -71,7 +77,41 @@ export default function NotificationsSettingsSheet({
         if (finished) setMounted(false);
       });
     }
-  }, [visible, mounted, progress]);
+  }, [visible, mounted, progress, dragY]);
+
+  const panResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onMoveShouldSetPanResponder: (_, gesture) =>
+          gesture.dy > DRAG_ACTIVATION_PX &&
+          Math.abs(gesture.dy) > Math.abs(gesture.dx),
+        onPanResponderMove: (_, gesture) => {
+          if (gesture.dy > 0) dragY.setValue(gesture.dy);
+        },
+        onPanResponderRelease: (_, gesture) => {
+          if (
+            gesture.dy > DRAG_DISMISS_PX ||
+            gesture.vy > DRAG_DISMISS_VELOCITY
+          ) {
+            onClose();
+            return;
+          }
+          Animated.spring(dragY, {
+            toValue: 0,
+            useNativeDriver: true,
+            bounciness: 0,
+          }).start();
+        },
+        onPanResponderTerminate: () => {
+          Animated.spring(dragY, {
+            toValue: 0,
+            useNativeDriver: true,
+            bounciness: 0,
+          }).start();
+        },
+      }),
+    [dragY, onClose],
+  );
 
   useEffect(() => {
     if (!visible) return;
@@ -173,29 +213,34 @@ export default function NotificationsSettingsSheet({
         <Animated.View
           style={[
             styles.sheet,
-            { paddingBottom: insets.bottom + spacing.lg, transform: [{ translateY }] },
+            {
+              paddingBottom: insets.bottom + spacing.lg,
+              transform: [{ translateY: Animated.add(translateY, dragY) }],
+            },
           ]}
         >
-          <View style={styles.grabber} />
-          <View style={styles.header}>
-            <View>
-              <Text style={styles.title}>Notifications</Text>
-              <Text style={styles.subtitle}>
-                Choose when Azora reminds you about each daily exercise.
-              </Text>
+          <View style={styles.dragArea} {...panResponder.panHandlers}>
+            <View style={styles.grabber} />
+            <View style={styles.header}>
+              <View>
+                <Text style={styles.title}>Notifications</Text>
+                <Text style={styles.subtitle}>
+                  Choose when Azora reminds you about each daily exercise.
+                </Text>
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Close notifications settings"
+                onPress={onClose}
+                hitSlop={10}
+                style={({ pressed }) => [
+                  styles.closeButton,
+                  pressed && styles.closeButtonPressed,
+                ]}
+              >
+                <MaterialCommunityIcons name="close" size={22} color={colors.text.secondary} />
+              </Pressable>
             </View>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Close notifications settings"
-              onPress={onClose}
-              hitSlop={10}
-              style={({ pressed }) => [
-                styles.closeButton,
-                pressed && styles.closeButtonPressed,
-              ]}
-            >
-              <MaterialCommunityIcons name="close" size={22} color={colors.text.secondary} />
-            </Pressable>
           </View>
 
           {preferences == null || schedule == null ? (
@@ -360,6 +405,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.primary,
     paddingTop: spacing.sm,
     paddingHorizontal: spacing.lg,
+    gap: spacing.lg,
+  },
+  dragArea: {
     gap: spacing.lg,
   },
   grabber: {
