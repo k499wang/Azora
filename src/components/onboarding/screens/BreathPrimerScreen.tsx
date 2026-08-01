@@ -384,7 +384,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   cueSlot: {
-    height: 92,
+    height: 100,
     marginTop: spacing.xl,
     justifyContent: 'center',
     alignItems: 'center',
@@ -397,5 +397,6 @@ const styles = StyleSheet.create({
     lineHeight: 28,
     color: colors.text.primary,
     textAlign: 'center',
+    paddingHorizontal: spacing.lg,
   },
 });
