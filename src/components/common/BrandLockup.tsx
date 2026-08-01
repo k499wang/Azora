@@ -1,5 +1,6 @@
 import { Text } from './Text';
-import { Image, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Image } from 'expo-image';
 import { colors } from '../../theme/colors';
 import { fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
@@ -12,7 +13,7 @@ export default function BrandLockup() {
       <Image
         source={require('../../../assets/azora_app_logo_transparent_1024.png')}
         style={styles.mark}
-        resizeMode="contain"
+        contentFit="contain"
       />
       <Text style={styles.wordmark}>Azora</Text>
     </View>

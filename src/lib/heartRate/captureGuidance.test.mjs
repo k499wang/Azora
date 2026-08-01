@@ -6,16 +6,7 @@ import {
   getHeartRatePlacementGuidance,
   getMeasurementCorrectionMessage,
   hasConfirmedPulse,
-  isHeartRatePlacementReady,
 } from './captureGuidance.ts';
-
-test('standalone capture starts as soon as finger placement is good', () => {
-  assert.equal(isHeartRatePlacementReady('good'), true);
-  assert.equal(isHeartRatePlacementReady('no_finger'), false);
-  assert.equal(isHeartRatePlacementReady('partial'), false);
-  assert.equal(isHeartRatePlacementReady('too_much_pressure'), false);
-  assert.equal(isHeartRatePlacementReady('lost'), false);
-});
 
 test('camera target matches the supported iPhone camera layout', () => {
   assert.equal(getHeartRateCameraTarget('iPhone', 'iPhone14,6'), 'camera lens');
@@ -84,7 +75,7 @@ function checkMessage(overrides = {}) {
 }
 
 test('camera check distinguishes finger coverage from pulse confirmation', () => {
-  assert.equal(checkMessage(), 'Finger detected—finding your pulse…');
+  assert.equal(checkMessage(), 'Finding your pulse…');
   assert.equal(
     checkMessage({ signalStatus: 'measuring', pulseConfirmed: true }),
     'Pulse found — hold still.',

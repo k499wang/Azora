@@ -74,12 +74,6 @@ interface PulseConfirmationOptions {
   bpm: number | null;
 }
 
-export function isHeartRatePlacementReady(
-  fingerPlacement: FingerPlacementState,
-): boolean {
-  return fingerPlacement === 'good';
-}
-
 export function hasConfirmedPulse({
   fingerPlacement,
   signalStatus,
@@ -121,7 +115,7 @@ export function getCameraCheckMessage({
   if (pulseConfirmed) {
     return 'Pulse found — hold still.';
   }
-  return 'Finger detected—finding your pulse…';
+  return 'Finding your pulse…';
 }
 
 export function getMeasurementCorrectionMessage(

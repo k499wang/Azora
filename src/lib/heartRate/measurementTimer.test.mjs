@@ -3,8 +3,14 @@ import assert from 'node:assert/strict';
 import {
   BREATH_EXERCISE_PLACEMENT_FALLBACK_DELAY_MS,
   BREATH_EXERCISE_PLACEMENT_LOCKED_DELAY_MS,
+  CAPTURE_CAMERA_CHECK_FRAME_FRESHNESS_MS,
+  CAPTURE_PLACEMENT_FALLBACK_DELAY_MS,
+  CAPTURE_PULSE_LOCKED_DELAY_MS,
   createMeasurementTimer,
   getBreathExercisePlacementStartDelayMs,
+  getCaptureStartDeadlineMs,
+  isCaptureStartEligible,
+  isCaptureStartFrameFresh,
 } from './measurementTimer.ts';
 
 function placementDelay(overrides = {}) {
@@ -157,4 +163,102 @@ test('measurement timer advances countdown without camera samples', () => {
   assert.equal(ticks.at(-1), 15000);
   assert.equal(completeCount, 1);
   assert.equal(timer.isRunning(), false);
+});
+
+function eligible(overrides = {}) {
+  return isCaptureStartEligible({
+    fingerPlacement: 'good',
+    signalStatus: 'measuring',
+    ...overrides,
+  });
+}
+
+test('standalone capture only trusts a recent camera-check frame', () => {
+  const nowMs = 10_000;
+
+  assert.equal(
+    isCaptureStartFrameFresh({ lastFrameReceivedAtMs: nowMs, nowMs }),
+    true,
+  );
+  assert.equal(
+    isCaptureStartFrameFresh({
+      lastFrameReceivedAtMs: nowMs - CAPTURE_CAMERA_CHECK_FRAME_FRESHNESS_MS,
+      nowMs,
+    }),
+    true,
+  );
+  assert.equal(
+    isCaptureStartFrameFresh({
+      lastFrameReceivedAtMs: nowMs - CAPTURE_CAMERA_CHECK_FRAME_FRESHNESS_MS - 1,
+      nowMs,
+    }),
+    false,
+  );
+  assert.equal(
+    isCaptureStartFrameFresh({ lastFrameReceivedAtMs: null, nowMs }),
+    false,
+  );
+  assert.equal(
+    isCaptureStartFrameFresh({ lastFrameReceivedAtMs: nowMs + 1, nowMs }),
+    false,
+  );
+});
+
+test('standalone capture waits while the finger is not placed well', () => {
+  assert.equal(eligible(), true);
+  assert.equal(eligible({ fingerPlacement: 'partial' }), false);
+  assert.equal(eligible({ fingerPlacement: 'no_finger' }), false);
+  assert.equal(eligible({ signalStatus: 'excessive_motion' }), false);
+  assert.equal(eligible({ signalStatus: 'signal_lost' }), false);
+});
+
+test('standalone capture starts promptly once a pulse is locked', () => {
+  const placementSinceMs = 1_000;
+  const pulseLockedSinceMs = 4_000;
+
+  assert.equal(
+    getCaptureStartDeadlineMs({ placementSinceMs, pulseLockedSinceMs }),
+    pulseLockedSinceMs + CAPTURE_PULSE_LOCKED_DELAY_MS,
+  );
+});
+
+test('standalone capture falls back to starting without a locked pulse', () => {
+  assert.equal(
+    getCaptureStartDeadlineMs({ placementSinceMs: 1_000, pulseLockedSinceMs: null }),
+    1_000 + CAPTURE_PLACEMENT_FALLBACK_DELAY_MS,
+  );
+});
+
+test('standalone capture has no deadline until placement is usable', () => {
+  assert.equal(
+    getCaptureStartDeadlineMs({ placementSinceMs: null, pulseLockedSinceMs: null }),
+    null,
+  );
+});
+
+test('a flickering pulse lock never pushes the fallback deadline back', () => {
+  const placementSinceMs = 1_000;
+  const fallbackDeadlineMs = placementSinceMs + CAPTURE_PLACEMENT_FALLBACK_DELAY_MS;
+
+  // Lock appears late, drops, and reappears later still. The fallback is
+  // anchored to placement, so none of that can delay the start past it.
+  for (const pulseLockedSinceMs of [null, 9_000, null, 14_000, null]) {
+    assert.ok(
+      getCaptureStartDeadlineMs({ placementSinceMs, pulseLockedSinceMs }) <=
+        fallbackDeadlineMs,
+    );
+  }
+});
+
+test('a pulse locked close to the fallback never delays the start', () => {
+  const placementSinceMs = 1_000;
+  const fallbackDeadlineMs = placementSinceMs + CAPTURE_PLACEMENT_FALLBACK_DELAY_MS;
+
+  assert.equal(
+    getCaptureStartDeadlineMs({
+      placementSinceMs,
+      pulseLockedSinceMs: fallbackDeadlineMs - 10,
+    }),
+    fallbackDeadlineMs,
+  );
 });

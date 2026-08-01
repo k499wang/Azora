@@ -175,6 +175,16 @@ test('computeSignalCoverage ignores the lock-on grace period and normal jitter',
   assert.equal(coverage.ratio, 1);
 });
 
+test('computeSignalCoverage does not turn quick-mode publication jitter into a full dropout', () => {
+  const coverage = computeSignalCoverage(
+    makeContinuousBpmSamples(6_000, 16_000),
+    'quick',
+  );
+
+  assert.equal(coverage.lostSeconds, 1);
+  assert.ok(coverage.ratio >= 0.9);
+});
+
 test('computeSignalCoverage counts a mid-capture dropout as lost time', () => {
   const coverage = computeSignalCoverage(
     [
@@ -184,8 +194,8 @@ test('computeSignalCoverage counts a mid-capture dropout as lost time', () => {
     'full',
   );
 
-  assert.equal(coverage.lostSeconds, 20);
-  assert.equal(Math.round(coverage.ratio * 100), 75);
+  assert.equal(coverage.lostSeconds, 17);
+  assert.equal(Math.round(coverage.ratio * 100), 79);
 });
 
 test('computeSignalCoverage counts a capture that ends early as lost time', () => {
@@ -194,8 +204,8 @@ test('computeSignalCoverage counts a capture that ends early as lost time', () =
     'full',
   );
 
-  assert.equal(coverage.lostSeconds, 44);
-  assert.equal(Math.round(coverage.ratio * 100), 45);
+  assert.equal(coverage.lostSeconds, 41);
+  assert.equal(Math.round(coverage.ratio * 100), 49);
 });
 
 test('computeSignalCoverage reports a fully lost capture', () => {

@@ -66,8 +66,9 @@ function checkStateConfig(
   placement: FingerPlacementState,
   signalStatus: SignalStatus,
   cameraTarget: string,
+  pulseConfirmed: boolean,
 ): {
-  ringColor: string;
+  statusColor: string;
   status: string;
 } {
   const isMissing = placement === 'no_finger' || placement === 'lost';
@@ -81,17 +82,17 @@ function checkStateConfig(
     signalStatus === 'excessive_motion';
 
   return {
-    ringColor: placementAccepted
-      ? colors.success[500]
-      : isMissing
-        ? colors.error[500]
-        : needsCorrection
-          ? colors.warning[500]
+    statusColor: isMissing
+      ? colors.error[500]
+      : needsCorrection
+        ? colors.warning[500]
+        : placementAccepted
+          ? colors.success[500]
           : colors.primary.blue500,
     status: getCameraCheckMessage({
       fingerPlacement: placement,
       signalStatus,
-      pulseConfirmed: placementAccepted,
+      pulseConfirmed,
       cameraTarget,
     }),
   };
@@ -361,19 +362,20 @@ export function HeartRateCaptureFlow({
     fingerPlacement,
     signalStatus,
     cameraTarget,
+    currentBpm != null,
   );
   const warningMessage = isMeasuring
     ? measuringWarning(signalStatus, fingerPlacement, cameraTarget)
     : null;
 
-  const ringColor = isMeasuring ? colors.primary.blue600 : checkConfig.ringColor;
+  const ringColor = colors.primary.blue600;
   const ringProgress = isMeasuring ? progress : 0;
-  const trackColor = isMeasuring ? colors.border.subtle : checkConfig.ringColor + '33';
+  const trackColor = colors.border.subtle;
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        {/* Top: warning banner (measuring) or status text (check) */}
+        {/* Top: the live PPG trace, swapped for the warning banner while measuring */}
         <View style={styles.topArea}>
           <TouchableOpacity
             onPress={handleCancel}
@@ -382,14 +384,9 @@ export function HeartRateCaptureFlow({
           >
             <Text style={styles.cancelText}>Cancel</Text>
           </TouchableOpacity>
-          {isCheck && (
-            <Text style={[styles.status, { color: checkConfig.ringColor }]}>
-              {checkConfig.status}
-            </Text>
-          )}
-          {isMeasuring && (
+          {(isCheck || isMeasuring) && (
             <View style={styles.measuringTopSlot}>
-              {warningMessage != null ? (
+              {isMeasuring && warningMessage != null ? (
                 <View style={styles.warningBanner}>
                   <MaterialCommunityIcons
                     name="alert-outline"
@@ -416,24 +413,28 @@ export function HeartRateCaptureFlow({
             progress={ringProgress}
             cameraProps={cameraProps}
             fingerPlacement={fingerPlacement}
-            beatTick={isMeasuring ? beatTick : 0}
-            showHeartIcon={isMeasuring}
-            hapticOnBeat={isMeasuring}
+            beatTick={isMeasuring || isCheck ? beatTick : 0}
+            showHeartIcon={isMeasuring || isCheck}
+            hapticOnBeat={isMeasuring || isCheck}
             smoothProgress={isMeasuring}
           />
         </View>
 
         {/* Bottom: state-specific chrome */}
         <View style={styles.bottomArea}>
-          {isMeasuring && (
+          {(isCheck || isMeasuring) && (
             <View style={styles.bpmRow}>
-              {currentBpm == null ? (
-                <AnimatedCalibratingText textStyle={styles.bpmCalibrating} />
-              ) : (
+              {currentBpm != null ? (
                 <View style={styles.bpmValueRow}>
                   <Text style={styles.bpmValue}>{currentBpm}</Text>
                   <Text style={styles.bpmUnit}>BPM</Text>
                 </View>
+              ) : isMeasuring ? (
+                <AnimatedCalibratingText textStyle={styles.bpmCalibrating} />
+              ) : (
+                <Text style={[styles.bpmCalibrating, { color: checkConfig.statusColor }]}>
+                  {checkConfig.status}
+                </Text>
               )}
             </View>
           )}
@@ -495,13 +496,6 @@ const styles = StyleSheet.create({
     ...typography.body.small,
     color: '#92400E',
     flex: 1,
-  },
-  status: {
-    ...typography.title.title3,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    textAlign: 'center',
-    paddingHorizontal: spacing.lg,
   },
   bpmRow: {
     width: '100%',
