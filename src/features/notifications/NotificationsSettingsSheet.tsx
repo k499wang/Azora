@@ -33,6 +33,7 @@ interface NotificationsSettingsSheetProps {
 const DRAG_ACTIVATION_PX = 4;
 const DRAG_DISMISS_PX = 120;
 const DRAG_DISMISS_VELOCITY = 0.7;
+const SHEET_FALLBACK_HEIGHT = 600;
 
 export default function NotificationsSettingsSheet({
   visible,
@@ -45,9 +46,13 @@ export default function NotificationsSettingsSheet({
   const scheduleQuery = useDailyPlanScheduleQuery(userId);
   const updateSchedule = useUpdateDailyPlanScheduleMutation(userId);
   const [permissionStatus, setPermissionStatus] = useState<string>('undetermined');
-  const progress = useRef(new Animated.Value(0)).current;
-  const dragY = useRef(new Animated.Value(0)).current;
+  const backdropOpacity = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(SHEET_FALLBACK_HEIGHT)).current;
+  const sheetHeight = useRef(SHEET_FALLBACK_HEIGHT);
+  const onCloseRef = useRef(onClose);
   const [mounted, setMounted] = useState(visible);
+
+  onCloseRef.current = onClose;
 
   const preferences = preferencesQuery.data;
   const schedule = scheduleQuery.data;
@@ -60,57 +65,75 @@ export default function NotificationsSettingsSheet({
   useEffect(() => {
     if (visible) {
       setMounted(true);
-      dragY.setValue(0);
-      Animated.timing(progress, {
-        toValue: 1,
-        duration: 240,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }).start();
-    } else if (mounted) {
-      Animated.timing(progress, {
+      translateY.setValue(sheetHeight.current);
+      Animated.parallel([
+        Animated.timing(backdropOpacity, {
+          toValue: 1,
+          duration: 240,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.timing(translateY, {
+          toValue: 0,
+          duration: 240,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+      ]).start();
+      return;
+    }
+
+    Animated.parallel([
+      Animated.timing(backdropOpacity, {
         toValue: 0,
         duration: 180,
         easing: Easing.in(Easing.cubic),
         useNativeDriver: true,
-      }).start(({ finished }) => {
-        if (finished) setMounted(false);
-      });
-    }
-  }, [visible, mounted, progress, dragY]);
+      }),
+      Animated.timing(translateY, {
+        toValue: sheetHeight.current,
+        duration: 180,
+        easing: Easing.in(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start(({ finished }) => {
+      if (finished) setMounted(false);
+    });
+  }, [visible, backdropOpacity, translateY]);
 
   const panResponder = useMemo(
     () =>
       PanResponder.create({
+        onStartShouldSetPanResponder: () => true,
         onMoveShouldSetPanResponder: (_, gesture) =>
-          gesture.dy > DRAG_ACTIVATION_PX &&
+          Math.abs(gesture.dy) > DRAG_ACTIVATION_PX &&
           Math.abs(gesture.dy) > Math.abs(gesture.dx),
         onPanResponderMove: (_, gesture) => {
-          if (gesture.dy > 0) dragY.setValue(gesture.dy);
+          translateY.setValue(Math.max(0, gesture.dy));
         },
         onPanResponderRelease: (_, gesture) => {
           if (
             gesture.dy > DRAG_DISMISS_PX ||
             gesture.vy > DRAG_DISMISS_VELOCITY
           ) {
-            onClose();
+            onCloseRef.current();
             return;
           }
-          Animated.spring(dragY, {
+          Animated.spring(translateY, {
             toValue: 0,
             useNativeDriver: true,
             bounciness: 0,
           }).start();
         },
         onPanResponderTerminate: () => {
-          Animated.spring(dragY, {
+          Animated.spring(translateY, {
             toValue: 0,
             useNativeDriver: true,
             bounciness: 0,
           }).start();
         },
       }),
-    [dragY, onClose],
+    [translateY],
   );
 
   useEffect(() => {
@@ -194,11 +217,6 @@ export default function NotificationsSettingsSheet({
 
   if (!mounted) return null;
 
-  const translateY = progress.interpolate({
-    inputRange: [0, 1],
-    outputRange: [400, 0],
-  });
-
   return (
     <Modal
       visible={mounted}
@@ -208,14 +226,19 @@ export default function NotificationsSettingsSheet({
       onRequestClose={onClose}
     >
       <View style={styles.backdrop}>
-        <Animated.View style={[styles.backdropFill, { opacity: progress }]} />
+        <Animated.View
+          style={[styles.backdropFill, { opacity: backdropOpacity }]}
+        />
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
         <Animated.View
+          onLayout={(event) => {
+            sheetHeight.current = event.nativeEvent.layout.height;
+          }}
           style={[
             styles.sheet,
             {
               paddingBottom: insets.bottom + spacing.lg,
-              transform: [{ translateY: Animated.add(translateY, dragY) }],
+              transform: [{ translateY }],
             },
           ]}
         >
