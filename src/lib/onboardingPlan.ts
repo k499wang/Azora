@@ -63,13 +63,20 @@ export interface PlanInputs {
   sleepQuality: number;
   age: number;
   dailyMinutes: number;
+  /** User's usual wake time, in minutes from midnight. */
+  wakeTimeMinutes: number;
+  /** User's usual sleep time, in minutes from midnight. */
+  sleepTimeMinutes: number;
   breathHoldSeconds: number | null;
 }
 
+const MINUTES_PER_DAY = 24 * 60;
+const DEFAULT_WAKE_MIN = 7 * 60;
+const DEFAULT_SLEEP_MIN = 22 * 60;
 const MORNING_MIN = 8 * 60;
-const HAND_PICKED_MIN = 13 * 60;
 const EVENING_MIN = 18 * 60;
 const NIGHT_MIN = 21 * 60 + 30;
+const WIND_DOWN_OFFSET_MINUTES = 30;
 
 /** Goals whose session belongs at a specific point in the day. */
 const MORNING_INTENTS = ['focus', 'energy'];
@@ -114,6 +121,44 @@ function primaryIntent(intents: string[]): OnboardingIntent {
 
 function sessionMinutes(dailyMinutes: number): number {
   return clamp(Math.round(dailyMinutes), MIN_SESSION_MINUTES, MAX_SESSION_MINUTES);
+}
+
+function normalizeTime(value: number): number | null {
+  if (!Number.isFinite(value)) return null;
+  return ((Math.round(value) % MINUTES_PER_DAY) + MINUTES_PER_DAY) % MINUTES_PER_DAY;
+}
+
+interface RoutineSchedule {
+  wakeAt: number;
+  windDownAt: number;
+  midpointAt: number;
+  awakeMinutes: number;
+}
+
+function routineSchedule(wakeInput: number, sleepInput: number): RoutineSchedule {
+  let wakeAt = normalizeTime(wakeInput);
+  let sleepAt = normalizeTime(sleepInput);
+
+  if (wakeAt == null || sleepAt == null || wakeAt === sleepAt) {
+    wakeAt = DEFAULT_WAKE_MIN;
+    sleepAt = DEFAULT_SLEEP_MIN;
+  }
+
+  const awakeMinutes = (sleepAt - wakeAt + MINUTES_PER_DAY) % MINUTES_PER_DAY;
+  const windDownOffset = Math.max(0, awakeMinutes - WIND_DOWN_OFFSET_MINUTES);
+
+  return {
+    wakeAt,
+    windDownAt: (wakeAt + windDownOffset) % MINUTES_PER_DAY,
+    midpointAt: (wakeAt + Math.round(awakeMinutes / 2)) % MINUTES_PER_DAY,
+    awakeMinutes,
+  };
+}
+
+function clampToAwakeWindow(preferred: number, routine: RoutineSchedule): number {
+  const elapsed = (preferred - routine.wakeAt + MINUTES_PER_DAY) % MINUTES_PER_DAY;
+  if (elapsed <= routine.awakeMinutes) return preferred;
+  return routine.windDownAt;
 }
 
 export function sessionTimeFor(intents: string[], sleepQuality: number): number {
@@ -220,12 +265,20 @@ export function applyPlanTimeOverrides(
 export function buildOnboardingPlan(inputs: PlanInputs): OnboardingPlan {
   const minutes = sessionMinutes(inputs.dailyMinutes);
   const intent = primaryIntent(inputs.intents);
-  const sessionAt = sessionTimeFor([intent], inputs.sleepQuality);
+  const routine = routineSchedule(inputs.wakeTimeMinutes, inputs.sleepTimeMinutes);
+  const isMorningSession = MORNING_INTENTS.includes(intent);
+  const isWindDownSession =
+    NIGHT_INTENTS.includes(intent) || inputs.sleepQuality <= 4;
+  const sessionAt = isMorningSession
+    ? routine.wakeAt
+    : isWindDownSession
+      ? routine.windDownAt
+      : clampToAwakeWindow(EVENING_MIN, routine);
   const handPickedTechnique = HAND_PICKED_TECHNIQUE[intent];
   const handPickedMinutes = HAND_PICKED_MINUTES[handPickedTechnique];
   // The check-in sits on the opposite end of the day from the primary session
   // so those commitments do not collapse into one combined block.
-  const checkInAt = sessionAt < 12 * 60 ? EVENING_MIN : MORNING_MIN;
+  const checkInAt = isMorningSession ? routine.windDownAt : routine.wakeAt;
 
   const actions = [
     {
@@ -239,7 +292,7 @@ export function buildOnboardingPlan(inputs: PlanInputs): OnboardingPlan {
       id: 'handPicked',
       title: 'Hand-picked exercise',
       techniqueId: handPickedTechnique,
-      minutesFromMidnight: HAND_PICKED_MIN,
+      minutesFromMidnight: routine.midpointAt,
       minutes: handPickedMinutes,
     },
     {

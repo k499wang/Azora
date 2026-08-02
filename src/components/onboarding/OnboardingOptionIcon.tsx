@@ -11,19 +11,21 @@ interface OnboardingOptionIconProps {
   name: OnboardingOptionIconName;
   size?: number;
   selected?: boolean;
+  color?: string;
 }
 
 export default function OnboardingOptionIcon({
   name,
   size = 22,
   selected = false,
+  color,
 }: OnboardingOptionIconProps) {
   return (
     <View style={styles.slot}>
       <MaterialCommunityIcons
         name={name}
         size={size}
-        color={selected ? colors.primary.blue600 : colors.accent[600]}
+        color={color ?? (selected ? colors.primary.blue600 : colors.accent[600])}
       />
     </View>
   );

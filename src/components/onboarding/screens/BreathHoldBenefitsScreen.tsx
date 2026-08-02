@@ -62,7 +62,11 @@ export default function BreathHoldBenefitsScreen({
       <View style={styles.list}>
         {BENEFITS.map((benefit, index) => (
           <View key={benefit.text} style={styles.row}>
-            <OnboardingOptionIcon name={benefit.icon} size={ICON_SIZE} />
+            <OnboardingOptionIcon
+              name={benefit.icon}
+              size={ICON_SIZE}
+              color={colors.primary.blue600}
+            />
             <Text style={styles.text}>{benefit.text}</Text>
             {index < BENEFITS.length - 1 ? (
               <View style={styles.divider} />
