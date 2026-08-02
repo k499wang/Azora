@@ -1,11 +1,11 @@
 import { Text } from '../../common/Text';
 import { useMemo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import Icon from '../../common/icons/Icon';
 import { useTimePickerSheet } from '../../common/useTimePickerSheet';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
-import { fonts, typography } from '../../../theme/typography';
+import { fonts } from '../../../theme/typography';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 
@@ -51,19 +51,14 @@ export default function RoutineTimeScreen({
       <View style={styles.content}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={`${pickerTitle}, currently ${displayTime}`}
+          accessibilityLabel={`Edit time, currently ${displayTime}`}
           accessibilityHint="Opens the system time picker"
           onPress={open}
           style={({ pressed }) => [styles.timeButton, pressed && styles.timeButtonPressed]}
         >
-          <Text style={styles.time}>{displayTime}</Text>
-          <View style={styles.changeAffordance}>
-            <Text style={styles.changeLabel}>Change time</Text>
-            <MaterialCommunityIcons
-              name="chevron-down"
-              size={18}
-              color={colors.text.tertiary}
-            />
+          <View style={styles.timeRow}>
+            <Text style={styles.time}>{displayTime}</Text>
+            <Icon name="pencil" size={32} color={colors.primary.blue600} />
           </View>
         </Pressable>
       </View>
@@ -91,28 +86,24 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.xs,
   },
   timeButtonPressed: {
     opacity: 0.7,
     transform: [{ scale: 0.985 }],
   },
+  timeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+  },
   time: {
-    fontSize: 64,
-    lineHeight: 70,
+    fontSize: 60,
+    lineHeight: 66,
     letterSpacing: -1,
     fontFamily: fonts.semibold,
     fontWeight: '500',
     fontVariant: ['tabular-nums'],
     color: colors.primary.blue600,
-  },
-  changeAffordance: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  changeLabel: {
-    ...typography.body.small,
-    color: colors.text.tertiary,
   },
 });
