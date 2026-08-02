@@ -22,7 +22,6 @@ import {
   lungAgeRingFill,
   lungAgeToneMeta,
 } from '../lib/lungAge';
-import { benchmarkBreathHold } from '../lib/breathHoldPercentile';
 import { deriveHoldStats } from '../lib/holdStats';
 import { formatLocalDate } from '../lib/calendar/weekCalendarDays';
 import { useFeatureAccess } from '../hooks/useFeatureAccess';
@@ -76,13 +75,6 @@ export default function BreathScreen({ navigation }: BreathTabScreenProps) {
 
   const lungAge =
     holdSeconds != null ? estimateLungAge(holdSeconds, userAge) : null;
-  const benchmark =
-    holdSeconds != null && userAge != null
-      ? benchmarkBreathHold(holdSeconds, userAge)
-      : null;
-  const comparisonLabel = benchmark
-    ? `Top ${benchmark.topPercent}% of people your age`
-    : null;
   const lungAgeTone = lungAgeToneMeta(lungAge?.deltaYears ?? null);
 
   const advancedStatsLocked =
@@ -186,7 +178,7 @@ export default function BreathScreen({ navigation }: BreathTabScreenProps) {
             captionPosition="bottom"
             captionTextTransform="none"
             captionFontSize={18}
-            gapLabel={comparisonLabel}
+            gapLabel={null}
             gapTextColor={lungAgeTone.textColor}
             gapDirection={lungAgeTone.direction}
           />

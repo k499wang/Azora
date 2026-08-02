@@ -38,6 +38,7 @@ export default function ProfileLifetimeStatsRow({
           {index > 0 ? <View style={styles.divider} /> : null}
           <View style={styles.stat}>
             <Icon name={stat.icon} size={28} color={colors.primary.blue600} />
+            <Text style={styles.statLabel}>{stat.label}</Text>
             <Text
               style={styles.statValue}
               numberOfLines={1}
@@ -46,7 +47,6 @@ export default function ProfileLifetimeStatsRow({
             >
               {stat.value}
             </Text>
-            <Text style={styles.statLabel}>{stat.label}</Text>
           </View>
         </Fragment>
       ))}
@@ -73,19 +73,19 @@ const styles = StyleSheet.create({
     marginVertical: spacing.xs,
     backgroundColor: colors.border.subtle,
   },
-  statValue: {
-    ...typography.title.title1,
-    lineHeight: 32,
-    marginTop: spacing.xs,
-    color: colors.text.primary,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    textAlign: 'center',
-  },
   statLabel: {
     ...typography.label.medium,
     color: colors.text.secondary,
     fontFamily: fonts.regular,
+    textAlign: 'center',
+  },
+  statValue: {
+    ...typography.display.display3,
+    lineHeight: 38,
+    marginTop: spacing.sm,
+    color: colors.text.primary,
+    fontFamily: fonts.semibold,
+    fontWeight: '500',
     textAlign: 'center',
   },
 });

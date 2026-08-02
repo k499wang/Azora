@@ -12,6 +12,7 @@ import { card } from '../theme/card';
 import SectionHeader from '../components/common/SectionHeader';
 import BPMChart from '../components/heartRate/BPMChart';
 import GlassIconButton from '../components/common/GlassIconButton';
+import AmbientBackground from '../components/common/AmbientBackground';
 import ThermometerStatCard from '../components/heartRate/ThermometerStatCard';
 import ScoreRing from '../components/exercise/ScoreRing';
 import SessionStreakCard from '../components/exercise/SessionStreakCard';
@@ -113,6 +114,7 @@ export default function SessionCompleteScreen({
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
+      <AmbientBackground />
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
