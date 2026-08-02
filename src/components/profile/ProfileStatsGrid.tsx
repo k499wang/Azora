@@ -94,7 +94,6 @@ const styles = StyleSheet.create({
   },
   heroCard: {
     ...card.base,
-    ...card.shadow,
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: spacing.md,

@@ -141,7 +141,6 @@ const styles = StyleSheet.create({
   },
   solidSurface: {
     ...card.base,
-    ...card.shadow,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
     position: 'relative',

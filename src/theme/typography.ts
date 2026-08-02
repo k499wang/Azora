@@ -125,6 +125,13 @@ export const typography = {
       fontSize: 12,
       lineHeight: 16,
     },
+    // Shared size for card metadata rows (category, duration, schedule).
+    detail: {
+      fontFamily: fontMedium,
+      fontWeight: weight.medium,
+      fontSize: 13,
+      lineHeight: 16,
+    },
   },
 
   button: {

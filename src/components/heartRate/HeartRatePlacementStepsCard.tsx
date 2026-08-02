@@ -24,7 +24,6 @@ export function HeartRatePlacementStepsCard({
     <View
       style={[
         !isPlain && card.base,
-        !isPlain && card.shadow,
         styles.container,
         isPlain && styles.plain,
       ]}

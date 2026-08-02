@@ -110,11 +110,11 @@ const styles = StyleSheet.create({
     color: colors.orange[700],
   },
   card: {
-    backgroundColor: colors.background.elevated,
+    backgroundColor: colors.background.card,
     borderRadius: 18,
     padding: spacing.md,
     borderWidth: 1,
-    borderColor: colors.border.subtle,
+    borderColor: colors.border.default,
     overflow: 'hidden',
   },
 });

@@ -35,6 +35,7 @@ export const AnalyticsEvent = {
   ExerciseSessionCompleted: 'exercise_session_completed',
   ExerciseSessionPaused: 'exercise_session_paused',
   ExerciseSessionAbandoned: 'exercise_session_abandoned',
+  PostSessionMoodLogged: 'post_session_mood_logged',
 
   HeartRateMonitoringToggled: 'heart_rate_monitoring_toggled',
   HeartRateCaptureStarted: 'heart_rate_capture_started',

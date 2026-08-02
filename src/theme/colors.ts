@@ -70,7 +70,7 @@ export const colors = {
     primary: '#F4F5F7',
     secondary: '#EEF5FF',
     elevated: '#FFFFFF',
-    card: '#FAFCFF',
+    card: '#F4F9FF',
     accentSoft: '#EAF2FF',
     // Warm cream for paper/letter surfaces.
     paper: '#FBF7EF',

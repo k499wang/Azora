@@ -100,11 +100,6 @@ export function useBreathHoldPhaseSequence({
       return;
     }
 
-    preparationTimerRef.current = setTimeout(
-      completeCurrentSchedule,
-      boundedRemainingMs,
-    );
-
     requestAnimationFrame(() => {
       if (
         runIdRef.current !== activeStep.runId ||
@@ -116,7 +111,13 @@ export function useBreathHoldPhaseSequence({
       }
 
       const circle = circleRef.current;
-      if (circle == null) return;
+      if (circle == null) {
+        preparationTimerRef.current = setTimeout(
+          completeCurrentSchedule,
+          boundedRemainingMs,
+        );
+        return;
+      }
 
       const remainingSeconds = boundedRemainingMs / 1000;
       if (activeStep.step.phase === 'preExhale') {

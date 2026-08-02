@@ -120,7 +120,6 @@ const styles = StyleSheet.create({
   },
   card: {
     ...card.base,
-    ...card.shadow,
     flexDirection: 'row',
     alignItems: 'stretch',
     overflow: 'hidden',

@@ -13,7 +13,6 @@ export default function SettingsGroup({ children }: SettingsGroupProps) {
 const styles = StyleSheet.create({
   group: {
     ...card.base,
-    ...card.shadow,
     overflow: 'hidden',
   },
 });

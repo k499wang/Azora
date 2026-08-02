@@ -1,9 +1,7 @@
 import { Text } from '../components/common/Text';
 import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
-import { Background2066 } from '../components/common/Background2066';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import { colors } from '../theme/colors';
 import { spacing, padding, margin } from '../theme/spacing';
 import { typography, fonts } from '../theme/typography';
@@ -34,19 +32,6 @@ export function HeartRateSessionDetailScreen({
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
-      {/* Fixed background image with quick fade to white */}
-      <Background2066 style={styles.bgImage} />
-      <LinearGradient
-        colors={[
-          'rgba(248,251,255,0)',
-          'rgba(248,251,255,0.55)',
-          'rgba(248,251,255,1)',
-        ]}
-        locations={[0, 0.25, 0.45]}
-        style={styles.bgGradient}
-        pointerEvents="none"
-      />
-
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -122,14 +107,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background.primary,
   },
-  bgImage: {
-    ...StyleSheet.absoluteFillObject,
-    width: undefined,
-    height: undefined,
-  },
-  bgGradient: {
-    ...StyleSheet.absoluteFillObject,
-  },
   scrollContent: {
     paddingBottom: spacing['5xl'],
   },
@@ -156,7 +133,6 @@ const styles = StyleSheet.create({
   heroContent: {
     alignItems: 'center',
     width: '100%',
-    paddingTop: spacing.xl,
   },
   centerState: {
     flex: 1,

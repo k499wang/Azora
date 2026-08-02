@@ -61,12 +61,12 @@ const styles = StyleSheet.create({
   taskCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.background.elevated,
+    backgroundColor: colors.background.card,
     borderRadius: 18,
     padding: spacing.md,
     gap: spacing.md,
     borderWidth: 1,
-    borderColor: colors.border.subtle,
+    borderColor: colors.border.default,
     overflow: 'hidden',
   },
   taskImageArea: {

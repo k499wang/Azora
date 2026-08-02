@@ -76,7 +76,6 @@ export default function ProfileBreathHoldTrendCard({
 const styles = StyleSheet.create({
   card: {
     ...card.base,
-    ...card.shadow,
     padding: spacing.lg,
   },
   graph: {

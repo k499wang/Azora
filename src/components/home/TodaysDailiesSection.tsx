@@ -20,7 +20,6 @@ const TIMELINE_MARKER_SIZE = 26;
 const TIMELINE_RAIL_WIDTH = 6;
 const TIMELINE_ROW_HEIGHT = 144;
 const TASK_CONTENT_SIZE = 112;
-const TODAY_TASK_CARD_BACKGROUND = '#F4F9FF';
 const TIMELINE_ROW_GAP = spacing.lg;
 const TIMELINE_RAIL_INSET = TIMELINE_ROW_HEIGHT / 2 + TIMELINE_MARKER_SIZE / 2;
 const TIMELINE_RAIL_LEFT = TIMELINE_COLUMN_WIDTH / 2 - TIMELINE_RAIL_WIDTH / 2;
@@ -112,7 +111,7 @@ function DailyTaskRow({
             <View style={styles.metadataRow}>
               <MaterialCommunityIcons
                 name={detailIcon}
-                size={16}
+                size={14}
                 color={colors.text.secondary}
               />
               <Text style={styles.metadataText} numberOfLines={1}>
@@ -122,7 +121,7 @@ function DailyTaskRow({
             <View style={styles.metadataRow}>
               <MaterialCommunityIcons
                 name="clock-outline"
-                size={16}
+                size={14}
                 color={colors.text.secondary}
               />
               <Text style={styles.metadataText} numberOfLines={1}>
@@ -310,7 +309,7 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     borderWidth: 1,
     borderColor: colors.border.default,
-    backgroundColor: TODAY_TASK_CARD_BACKGROUND,
+    backgroundColor: colors.background.card,
   },
   taskImage: {
     width: TASK_CONTENT_SIZE,
@@ -328,8 +327,7 @@ const styles = StyleSheet.create({
   },
   taskTitle: {
     ...typography.title.title3,
-    fontFamily: fonts.medium,
-    fontWeight: '500',
+    fontFamily: fonts.semibold,
     color: colors.text.primary,
   },
   metadataStack: {
@@ -341,7 +339,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   metadataText: {
-    ...typography.label.small,
+    ...typography.label.detail,
     color: colors.text.secondary,
   },
 });
