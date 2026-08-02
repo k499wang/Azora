@@ -11,6 +11,7 @@ import { fonts, typography } from '../../theme/typography';
 import { spacing, padding } from '../../theme/spacing';
 import { card } from '../../theme/card';
 import TECHNIQUES, { type BreathingTechnique } from '../../features/exercise/guidedBreathing/techniques';
+import Icon from '../common/icons/Icon';
 import SectionHeader from '../common/SectionHeader';
 import { AnalyticsEvent } from '../../services/analytics/events';
 import { trackFeatureGateHit } from '../../services/analytics/tracking';
@@ -138,9 +139,12 @@ function TechniqueCard({
             <Text style={[styles.techniqueName, { color: textColor }]} numberOfLines={2}>
               {technique.name}
             </Text>
-            <Text style={[styles.meta, { color: textColor, opacity: 0.8 }]}>
-              {technique.duration} · {formatPattern(technique.pattern)}
-            </Text>
+            <View style={[styles.metaRow, { opacity: 0.8 }]}>
+              <Icon name="timer" size={14} color={textColor} />
+              <Text style={[styles.meta, { color: textColor }]}>
+                {technique.duration} · {formatPattern(technique.pattern)}
+              </Text>
+            </View>
           </View>
         </View>
         {recommended ? (
@@ -307,6 +311,11 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 16,
     color: colors.text.tertiary,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
   },
   meta: {
     ...typography.caption.caption1,

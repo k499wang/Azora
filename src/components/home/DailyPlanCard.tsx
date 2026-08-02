@@ -106,7 +106,14 @@ export default function DailyPlanCard({
           <MaterialCommunityIcons name="play" size={18} color={colors.text.primary} />
           <Text style={styles.title}>Azora's Breathhold Exercise</Text>
         </View>
-        <Text style={styles.meta}>{meta}</Text>
+        <View style={styles.metaRow}>
+          <MaterialCommunityIcons
+            name="clock-outline"
+            size={16}
+            color={colors.text.secondary}
+          />
+          <Text style={styles.meta}>{meta}</Text>
+        </View>
       </View>
     </View>
   );
@@ -172,8 +179,13 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semibold,
     color: colors.text.primary,
   },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
   meta: {
-    ...typography.label.medium,
+    ...typography.label.large,
     fontFamily: fonts.medium,
     color: colors.text.secondary,
   },
