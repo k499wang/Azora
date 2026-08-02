@@ -19,6 +19,8 @@ const baseInputs = {
   sleepQuality: 8,
   age: 30,
   dailyMinutes: 3,
+  wakeTimeMinutes: 7 * 60,
+  sleepTimeMinutes: 22 * 60,
   breathHoldSeconds: 40,
 };
 
@@ -64,7 +66,7 @@ test('the primary intent owns both the technique and session time', () => {
   const session = actionById(plan, 'session');
 
   assert.equal(session.techniqueId, 'box');
-  assert.equal(session.minutesFromMidnight, 8 * 60);
+  assert.equal(session.minutesFromMidnight, 7 * 60);
 });
 
 test('poor sleepers get a late session even without a sleep goal', () => {
@@ -107,7 +109,7 @@ test('the hand-picked exercise is deterministic and complements every recognized
   }
 });
 
-test('the hand-picked exercise is scheduled at 1 PM with its catalog duration', () => {
+test('the hand-picked exercise is scheduled midway through the waking day with its catalog duration', () => {
   const oneMinuteTechniques = new Set(['relaxing', 'belly']);
 
   for (const intents of [
@@ -122,8 +124,61 @@ test('the hand-picked exercise is scheduled at 1 PM with its catalog duration', 
       buildOnboardingPlan({ ...baseInputs, intents }),
       'handPicked',
     );
-    assert.equal(handPicked.minutesFromMidnight, 13 * 60);
+    assert.equal(handPicked.minutesFromMidnight, 14 * 60 + 30);
     assert.equal(handPicked.minutes, oneMinuteTechniques.has(handPicked.techniqueId) ? 1 : 2);
+  }
+});
+
+test('the plan follows the user\'s wake and sleep routine', () => {
+  const routineInputs = {
+    ...baseInputs,
+    wakeTimeMinutes: 6 * 60 + 30,
+    sleepTimeMinutes: 23 * 60,
+  };
+  const morningPlan = buildOnboardingPlan({ ...routineInputs, intents: ['focus'] });
+  const nightPlan = buildOnboardingPlan({ ...routineInputs, intents: ['sleep'] });
+
+  assert.equal(actionById(morningPlan, 'session').minutesFromMidnight, 6 * 60 + 30);
+  assert.equal(actionById(morningPlan, 'checkIn').minutesFromMidnight, 22 * 60 + 30);
+  assert.equal(actionById(morningPlan, 'handPicked').minutesFromMidnight, 14 * 60 + 45);
+  assert.equal(actionById(nightPlan, 'session').minutesFromMidnight, 22 * 60 + 30);
+  assert.equal(actionById(nightPlan, 'checkIn').minutesFromMidnight, 6 * 60 + 30);
+});
+
+test('overnight waking windows wrap across midnight', () => {
+  const plan = buildOnboardingPlan({
+    ...baseInputs,
+    intents: ['focus'],
+    wakeTimeMinutes: 22 * 60,
+    sleepTimeMinutes: 7 * 60,
+  });
+
+  assert.equal(actionById(plan, 'session').minutesFromMidnight, 22 * 60);
+  assert.equal(actionById(plan, 'handPicked').minutesFromMidnight, 2 * 60 + 30);
+  assert.equal(actionById(plan, 'checkIn').minutesFromMidnight, 6 * 60 + 30);
+});
+
+test('routine times normalize modulo one day', () => {
+  const plan = buildOnboardingPlan({
+    ...baseInputs,
+    intents: ['focus'],
+    wakeTimeMinutes: 25 * 60,
+    sleepTimeMinutes: -60,
+  });
+
+  assert.equal(actionById(plan, 'session').minutesFromMidnight, 60);
+  assert.equal(actionById(plan, 'checkIn').minutesFromMidnight, 22 * 60 + 30);
+});
+
+test('malformed or equal routine times use safe defaults', () => {
+  for (const routine of [
+    { wakeTimeMinutes: Number.NaN, sleepTimeMinutes: 22 * 60 },
+    { wakeTimeMinutes: 9 * 60, sleepTimeMinutes: 9 * 60 },
+  ]) {
+    const plan = buildOnboardingPlan({ ...baseInputs, ...routine, intents: ['focus'] });
+    assert.equal(actionById(plan, 'session').minutesFromMidnight, 7 * 60);
+    assert.equal(actionById(plan, 'handPicked').minutesFromMidnight, 14 * 60 + 30);
+    assert.equal(actionById(plan, 'checkIn').minutesFromMidnight, 21 * 60 + 30);
   }
 });
 

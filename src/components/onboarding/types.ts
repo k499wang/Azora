@@ -25,6 +25,8 @@ export type OnboardingStep =
   | 'gender'
   | 'consistency'
   | 'dailyTime'
+  | 'wakeTime'
+  | 'sleepTime'
   | 'doctorReferral'
   | 'heartVariability'
   | 'baselineIntro'

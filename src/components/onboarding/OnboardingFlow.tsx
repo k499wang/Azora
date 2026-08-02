@@ -5,6 +5,7 @@ import BaselineScreen from './screens/BaselineScreen';
 import BaselineIntroScreen from './screens/BaselineIntroScreen';
 import HeartVariabilityScreen from './screens/HeartVariabilityScreen';
 import DailyTimeScreen from './screens/DailyTimeScreen';
+import RoutineTimeScreen from './screens/RoutineTimeScreen';
 import ConsistencyScreen from './screens/ConsistencyScreen';
 import GenderScreen from './screens/GenderScreen';
 import IntentQuestionScreen from './screens/IntentQuestionScreen';
@@ -50,6 +51,7 @@ import { techniqueForIntent } from '../../features/exercise/guidedBreathing/tech
 import {
   applyPlanTimeOverrides,
   buildOnboardingPlan,
+  fromClockString,
   toClockString,
   type OnboardingPlan,
   type PlanActionId,
@@ -172,6 +174,8 @@ const STEP_ORDER: OnboardingStep[] = [
   'breathHoldBenefits',
   'lungCapacity',
   'dailyTime',
+  'wakeTime',
+  'sleepTime',
   'doctorReferral',
   'heartVariability',
   'baselineIntro',
@@ -297,6 +301,8 @@ export default function OnboardingFlow({
   const [dailyMinutes, setDailyMinutes] = useState(
     initialSavedProfile?.dailyMinutes ?? 3,
   );
+  const [wakeTime, setWakeTime] = useState('07:00');
+  const [sleepTime, setSleepTime] = useState('22:00');
   const [acquisitionSource, setAcquisitionSource] =
     useState<AcquisitionSourceId | null>(null);
   const [doctorReferral, setDoctorReferral] = useState<DoctorReferral | null>(
@@ -1240,10 +1246,44 @@ export default function OnboardingFlow({
         stepCount={visualStepCount}
         onChange={setDailyMinutes}
         onContinue={() =>
-          goToStep('doctorReferral', 'continue', { has_daily_minutes: true })
+          goToStep('wakeTime', 'continue', { has_daily_minutes: true })
         }
         onBack={() => goToStep('lungCapacity', 'back')}
-        onSkip={() => goToStep('doctorReferral', 'skip')}
+        onSkip={() => goToStep('wakeTime', 'skip')}
+      />
+    );
+  }
+
+  if (step === 'wakeTime') {
+    return (
+      <RoutineTimeScreen
+        key="wakeTime"
+        title="When do you usually wake up?"
+        subtitle="We’ll use this to fit your plan naturally into your day."
+        pickerTitle="Set wake-up time"
+        value={wakeTime}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onChange={setWakeTime}
+        onContinue={() => goToStep('sleepTime', 'continue')}
+        onBack={() => goToStep('dailyTime', 'back')}
+      />
+    );
+  }
+
+  if (step === 'sleepTime') {
+    return (
+      <RoutineTimeScreen
+        key="sleepTime"
+        title="When do you usually go to sleep?"
+        subtitle="We’ll keep your evening exercises close to your wind-down routine."
+        pickerTitle="Set sleep time"
+        value={sleepTime}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onChange={setSleepTime}
+        onContinue={() => goToStep('doctorReferral', 'continue')}
+        onBack={() => goToStep('wakeTime', 'back')}
       />
     );
   }
@@ -1260,7 +1300,7 @@ export default function OnboardingFlow({
             doctor_referral: doctorReferral,
           })
         }
-        onBack={() => goToStep('dailyTime', 'back')}
+        onBack={() => goToStep('sleepTime', 'back')}
         onSkip={() => goToStep('heartVariability', 'skip')}
       />
     );
@@ -1334,6 +1374,8 @@ export default function OnboardingFlow({
       sleepQuality,
       age,
       dailyMinutes,
+      wakeTimeMinutes: fromClockString(wakeTime) ?? 7 * 60,
+      sleepTimeMinutes: fromClockString(sleepTime) ?? 22 * 60,
       breathHoldSeconds: breathHold?.holdSeconds ?? null,
     }),
     planTimeOverrides,
