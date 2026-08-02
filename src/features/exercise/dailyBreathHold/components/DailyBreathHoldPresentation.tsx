@@ -1,7 +1,10 @@
 import { forwardRef, useEffect, useMemo, useRef } from 'react';
 import { Animated, Easing, StyleSheet, View } from 'react-native';
 import { Text } from '../../../../components/common/Text';
-import BreathingCircle, { type BreathingCircleRef } from '../../shared/components/BreathingCircle';
+import BreathingCircle, {
+  BREATHING_CIRCLE_SIZE,
+  type BreathingCircleRef,
+} from '../../shared/components/BreathingCircle';
 import BreathHoldIntro, { type BreathHoldStep } from './BreathHoldIntro';
 import { HeartRateCameraPreview } from '../../../../components/heartRate/HeartRateCameraPreview';
 import type { HeartRateCameraPreviewProps } from '../../../../components/heartRate/HeartRateCameraPreview';
@@ -234,8 +237,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   contentArea: {
-    width: 340,
-    height: 300,
+    width: BREATHING_CIRCLE_SIZE,
+    height: BREATHING_CIRCLE_SIZE,
     marginBottom: 52,
     alignItems: 'center',
     justifyContent: 'center',
