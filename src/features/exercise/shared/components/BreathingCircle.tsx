@@ -5,14 +5,18 @@ import {
   ReactNode,
   useEffect,
 } from 'react';
-import { Animated, Easing, StyleSheet, View } from 'react-native';
+import { Animated, Dimensions, Easing, StyleSheet, View } from 'react-native';
 import { colors } from '../../../../theme/colors';
 import { spacing } from '../../../../theme/spacing';
 
-const OUTER_MAX_SIZE = 300;
+const SCREEN_WIDTH = Dimensions.get('window').width;
+const OUTER_MAX_SIZE = Math.min(328, SCREEN_WIDTH - spacing.lg * 2);
 const INNER_SIZE = 108;
-const OUTER_MIN_SIZE = INNER_SIZE;
-const OUTER_MIN_SCALE = OUTER_MIN_SIZE / OUTER_MAX_SIZE;
+const OUTLINE_WIDTH = 2;
+// The outline's stroke is drawn inside its box, so the fill stops at the
+// stroke's inner edge to land exactly on the ring at full expansion.
+const OUTER_FILL_SIZE = OUTER_MAX_SIZE - OUTLINE_WIDTH * 2;
+const OUTER_MIN_SCALE = INNER_SIZE / OUTER_FILL_SIZE;
 
 type AnimationCompletionCallback = () => void;
 
@@ -164,6 +168,8 @@ const BreathingCircle = forwardRef<BreathingCircleRef, BreathingCircleProps>(
 
 BreathingCircle.displayName = 'BreathingCircle';
 
+export const BREATHING_CIRCLE_SIZE = OUTER_MAX_SIZE;
+
 export default BreathingCircle;
 
 const styles = StyleSheet.create({
@@ -178,15 +184,15 @@ const styles = StyleSheet.create({
     width: OUTER_MAX_SIZE,
     height: OUTER_MAX_SIZE,
     borderRadius: OUTER_MAX_SIZE / 2,
-    borderWidth: 2,
+    borderWidth: OUTLINE_WIDTH,
     borderColor: colors.primary.blue400,
     opacity: 0.5,
   },
   outer: {
     position: 'absolute',
-    width: OUTER_MAX_SIZE,
-    height: OUTER_MAX_SIZE,
-    borderRadius: OUTER_MAX_SIZE / 2,
+    width: OUTER_FILL_SIZE,
+    height: OUTER_FILL_SIZE,
+    borderRadius: OUTER_FILL_SIZE / 2,
     backgroundColor: colors.primary.blue400,
     opacity: 0.28,
   },
