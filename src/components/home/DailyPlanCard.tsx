@@ -109,7 +109,7 @@ export default function DailyPlanCard({
         <View style={styles.metaRow}>
           <MaterialCommunityIcons
             name="clock-outline"
-            size={16}
+            size={14}
             color={colors.text.secondary}
           />
           <Text style={styles.meta}>{meta}</Text>
@@ -185,8 +185,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   meta: {
-    ...typography.label.large,
-    fontFamily: fonts.medium,
+    ...typography.label.detail,
     color: colors.text.secondary,
   },
   playBtn: {

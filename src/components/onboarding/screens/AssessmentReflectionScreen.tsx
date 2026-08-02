@@ -107,7 +107,6 @@ export default function AssessmentReflectionScreen({
         style={[
           styles.quoteCard,
           card.base,
-          card.shadow,
           { opacity: fade, transform: [{ translateY: lift }] },
         ]}
       >

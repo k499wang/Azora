@@ -1,10 +1,7 @@
 import { Text } from '../components/common/Text';
 import { useCallback } from 'react';
 import { Alert, Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
-import { Background2066 } from '../components/common/Background2066';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-
-import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 import { typography, fonts } from '../theme/typography';
@@ -91,7 +88,7 @@ export default function ShareableResultScreen({
   const renderHeroCard = () => (
     <View>
       <View style={styles.header}>
-        <Text style={styles.title}>Nice work!</Text>
+        <Text style={styles.title}>Breathhold Exercise</Text>
       </View>
 
       <View style={styles.heroCardWrap}>
@@ -115,19 +112,6 @@ export default function ShareableResultScreen({
 
   return (
     <View style={styles.screen}>
-      {/* Fixed background image with quick fade to white */}
-      <Background2066 style={styles.bgImage} />
-      <LinearGradient
-        colors={[
-          'rgba(248,251,255,0)',
-          'rgba(248,251,255,0.55)',
-          'rgba(248,251,255,1)',
-        ]}
-        locations={[0, 0.25, 0.45]}
-        style={styles.bgGradient}
-        pointerEvents="none"
-      />
-
       <View style={[styles.screenInner, { paddingTop: insets.top }]}>
         <ScrollView
           contentContainerStyle={styles.scrollContent}
@@ -194,14 +178,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background.primary,
   },
-  bgImage: {
-    ...StyleSheet.absoluteFillObject,
-    width: undefined,
-    height: undefined,
-  },
-  bgGradient: {
-    ...StyleSheet.absoluteFillObject,
-  },
   screenInner: {
     flex: 1,
   },
@@ -226,7 +202,7 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   title: {
-    ...typography.title.title2,
+    ...typography.title.title1,
     color: colors.text.primary,
     fontFamily: fonts.semibold,
     fontWeight: '500',
@@ -234,10 +210,9 @@ const styles = StyleSheet.create({
 
   heroCardWrap: {
     paddingHorizontal: padding.screen.horizontal,
-    marginTop: spacing.lg,
+    marginTop: margin.sectionGap,
   },
   heroCard: {
-    paddingTop: spacing.md,
     paddingBottom: spacing.xl,
     paddingHorizontal: spacing.lg,
     alignItems: 'center',

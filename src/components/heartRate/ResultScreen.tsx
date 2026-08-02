@@ -1,8 +1,6 @@
 import { Text } from '../common/Text';
 import { useEffect, useMemo, useRef } from 'react';
 import { View, StyleSheet, TouchableOpacity, Animated, ScrollView, Pressable } from 'react-native';
-import { Background2066 } from '../common/Background2066';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Device from 'expo-device';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -79,25 +77,6 @@ function getErrorMessage(
         message: 'We were unable to get a clear reading. Please try again.',
       };
   }
-}
-
-function ResultBackground() {
-  return (
-    <>
-      {/* Fixed background image with quick fade to white */}
-      <Background2066 style={styles.bgImage} />
-      <LinearGradient
-        colors={[
-          'rgba(248,251,255,0)',
-          'rgba(248,251,255,0.55)',
-          'rgba(248,251,255,1)',
-        ]}
-        locations={[0, 0.25, 0.45]}
-        style={styles.bgGradient}
-        pointerEvents="none"
-      />
-    </>
-  );
 }
 
 function buildResultBpmSamples(result: CaptureResult): BpmTimePoint[] {
@@ -200,7 +179,6 @@ export function ResultScreen({
     const reading = result.reading;
     return (
       <View style={[styles.screen, { paddingTop: insets.top }]}>
-        <ResultBackground />
         <ScrollView
           style={styles.scrollFlex}
           contentContainerStyle={styles.scrollContent}
@@ -296,7 +274,6 @@ export function ResultScreen({
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
-      <ResultBackground />
       <View style={styles.container}>
         <Animated.View
           style={[
@@ -368,14 +345,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background.primary,
   },
-  bgImage: {
-    ...StyleSheet.absoluteFillObject,
-    width: undefined,
-    height: undefined,
-  },
-  bgGradient: {
-    ...StyleSheet.absoluteFillObject,
-  },
   container: {
     flex: 1,
     paddingHorizontal: spacing.lg,
@@ -415,7 +384,6 @@ const styles = StyleSheet.create({
   heroContent: {
     alignItems: 'center',
     width: '100%',
-    paddingTop: spacing.xl,
   },
   content: {
     alignItems: 'center',
@@ -461,15 +429,12 @@ const styles = StyleSheet.create({
   },
   tipsCard: {
     width: '100%',
-    backgroundColor: colors.background.elevated,
+    backgroundColor: colors.background.card,
     borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border.default,
     padding: spacing.md,
     gap: spacing.xs,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
   },
   tipsHeading: {
     ...typography.body.small,

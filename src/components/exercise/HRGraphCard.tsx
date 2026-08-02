@@ -46,7 +46,6 @@ export default function HRGraphCard({
 const styles = StyleSheet.create({
   graphCard: {
     ...card.base,
-    ...card.shadow,
     width: '100%',
     padding: spacing.md,
     marginTop: spacing.sm,

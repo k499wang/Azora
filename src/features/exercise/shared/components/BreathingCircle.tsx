@@ -13,10 +13,7 @@ const SCREEN_WIDTH = Dimensions.get('window').width;
 const OUTER_MAX_SIZE = Math.min(328, SCREEN_WIDTH - spacing.lg * 2);
 const INNER_SIZE = 108;
 const OUTLINE_WIDTH = 2;
-// The outline's stroke is drawn inside its box, so the fill stops at the
-// stroke's inner edge to land exactly on the ring at full expansion.
-const OUTER_FILL_SIZE = OUTER_MAX_SIZE - OUTLINE_WIDTH * 2;
-const OUTER_MIN_SCALE = INNER_SIZE / OUTER_FILL_SIZE;
+const OUTER_MIN_SCALE = INNER_SIZE / OUTER_MAX_SIZE;
 
 type AnimationCompletionCallback = () => void;
 
@@ -121,16 +118,6 @@ const BreathingCircle = forwardRef<BreathingCircleRef, BreathingCircleProps>(
 
     return (
       <View style={styles.wrapper}>
-        <View
-          style={[
-            styles.outline,
-            themeColors && {
-              borderColor: themeColors.outline,
-              opacity: themeColors.outlineOpacity ?? 0.5,
-            },
-          ]}
-          pointerEvents="none"
-        />
         <Animated.View
           style={[
             styles.outer,
@@ -138,6 +125,16 @@ const BreathingCircle = forwardRef<BreathingCircleRef, BreathingCircleProps>(
             themeColors && {
               backgroundColor: themeColors.outer,
               opacity: themeColors.outerOpacity ?? 0.28,
+            },
+          ]}
+          pointerEvents="none"
+        />
+        <View
+          style={[
+            styles.outline,
+            themeColors && {
+              borderColor: themeColors.outline,
+              opacity: themeColors.outlineOpacity ?? 0.5,
             },
           ]}
           pointerEvents="none"
@@ -190,9 +187,9 @@ const styles = StyleSheet.create({
   },
   outer: {
     position: 'absolute',
-    width: OUTER_FILL_SIZE,
-    height: OUTER_FILL_SIZE,
-    borderRadius: OUTER_FILL_SIZE / 2,
+    width: OUTER_MAX_SIZE,
+    height: OUTER_MAX_SIZE,
+    borderRadius: OUTER_MAX_SIZE / 2,
     backgroundColor: colors.primary.blue400,
     opacity: 0.28,
   },

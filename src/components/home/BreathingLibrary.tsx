@@ -288,8 +288,8 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
   },
   recommendedText: {
-    ...typography.label.small,
-    fontFamily: fonts.semibold,
+    ...typography.caption.caption2,
+    fontFamily: fonts.medium,
     color: colors.text.inverse,
   },
   textBlock: {
@@ -305,11 +305,7 @@ const styles = StyleSheet.create({
     color: colors.primary.blue700,
   },
   category: {
-    ...typography.overline,
-    textTransform: 'none',
-    letterSpacing: 0,
-    fontSize: 13,
-    lineHeight: 16,
+    ...typography.label.detail,
     color: colors.text.tertiary,
   },
   metaRow: {
@@ -318,7 +314,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   meta: {
-    ...typography.caption.caption1,
+    ...typography.label.detail,
     color: colors.text.tertiary,
   },
 });

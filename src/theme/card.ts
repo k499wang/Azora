@@ -13,7 +13,7 @@ export const card: {
     backgroundColor: colors.background.card,
     borderRadius: 22,
     borderWidth: 1,
-    borderColor: colors.neutral[200],
+    borderColor: colors.border.default,
   },
   // Warm cream sheet for letter/note surfaces. Flatter corners + a soft, wide,
   // low-opacity shadow so it reads as paper lying on the canvas, not a UI card.

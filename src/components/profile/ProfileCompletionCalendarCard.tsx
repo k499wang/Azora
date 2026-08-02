@@ -127,7 +127,6 @@ export default function ProfileCompletionCalendarCard({
 const styles = StyleSheet.create({
   card: {
     ...card.base,
-    ...card.shadow,
     padding: spacing.md,
     gap: spacing.md,
   },

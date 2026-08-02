@@ -1,24 +1,29 @@
 import { Text } from '../components/common/Text';
-import { useEffect, useMemo } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
-import { Background2066 } from '../components/common/Background2066';
+import { useCallback, useEffect, useMemo } from 'react';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
+import { usePostHog } from 'posthog-react-native';
 import { colors } from '../theme/colors';
 import { typography, fonts } from '../theme/typography';
 import { spacing, padding, margin } from '../theme/spacing';
+import { card } from '../theme/card';
 import SectionHeader from '../components/common/SectionHeader';
 import BPMChart from '../components/heartRate/BPMChart';
 import GlassIconButton from '../components/common/GlassIconButton';
 import ThermometerStatCard from '../components/heartRate/ThermometerStatCard';
 import ScoreRing from '../components/exercise/ScoreRing';
+import SessionStreakCard from '../components/exercise/SessionStreakCard';
+import MoodCheckIn from '../components/exercise/MoodCheckIn';
+import type { PostSessionMood } from '../data/postSessionMoods';
+import { AnalyticsEvent } from '../services/analytics/events';
 import type { SessionCompleteScreenProps } from '../app/navigation';
 import { useAuthStore } from '../stores/authStore';
 import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
 import { buildAffirmation } from '../lib/affirmation';
 import { buildBpmSeries } from '../lib/heartRate/bpmSeries';
+import { withTodaysSession } from '../lib/weeklyProgress';
 
 function formatDuration(secs: number): string {
   const m = Math.floor(secs / 60);
@@ -31,7 +36,9 @@ export default function SessionCompleteScreen({
   route,
 }: SessionCompleteScreenProps) {
   const insets = useSafeAreaInsets();
+  const posthog = usePostHog();
   const {
+    techniqueId,
     techniqueName,
     techniqueBpmResponse,
     breathCount,
@@ -47,7 +54,8 @@ export default function SessionCompleteScreen({
 
   const user = useAuthStore((state) => state.user);
   const profileSummaryQuery = useProfileSummaryQuery(user?.id ?? null);
-  const displayName = profileSummaryQuery.data?.profile?.displayName ?? null;
+  const summary = profileSummaryQuery.data;
+  const displayName = summary?.profile?.displayName ?? null;
   const firstName = displayName?.trim().split(/\s+/)[0] ?? null;
   const affirmation = buildAffirmation({
     firstName,
@@ -79,31 +87,38 @@ export default function SessionCompleteScreen({
     [techniqueBpmResponse, techniqueName],
   );
 
-  const handleClose = () => {
+  const streakView = useMemo(
+    () =>
+      summary == null
+        ? null
+        : withTodaysSession(summary.currentStreak, summary.completedDaysAgo),
+    [summary],
+  );
+
+  const handleClose = useCallback(() => {
     navigation.navigate('MainTabs', { screen: 'Home' });
-  };
+  }, [navigation]);
+
+  const handleMoodSelect = useCallback(
+    (mood: PostSessionMood) => {
+      posthog.capture(AnalyticsEvent.PostSessionMoodLogged, {
+        mood: mood.id,
+        mood_score: mood.score,
+        technique_id: techniqueId,
+        duration_sec: durationSec,
+      });
+    },
+    [durationSec, posthog, techniqueId],
+  );
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
-      {/* Fixed background image with quick fade to white */}
-      <Background2066 style={styles.bgImage} />
-      <LinearGradient
-        colors={[
-          'rgba(248,251,255,0)',
-          'rgba(248,251,255,0.55)',
-          'rgba(248,251,255,1)',
-        ]}
-        locations={[0, 0.25, 0.45]}
-        style={styles.bgGradient}
-        pointerEvents="none"
-      />
-
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
-          <Text style={styles.title}>Nice work!</Text>
+          <Text style={styles.title}>{techniqueName}</Text>
         </View>
 
         <View style={styles.heroWrap}>
@@ -118,9 +133,21 @@ export default function SessionCompleteScreen({
               ringColors={[colors.primary.blue400, colors.primary.blue600]}
               gapLabel={null}
             />
-            <Text style={styles.techniqueName}>{techniqueName}</Text>
             <Text style={styles.affirmation}>{affirmation}</Text>
           </View>
+        </View>
+
+        {streakView != null ? (
+          <View style={styles.streakWrap}>
+            <SessionStreakCard
+              currentStreak={streakView.currentStreak}
+              completedDaysAgo={streakView.completedDaysAgo}
+            />
+          </View>
+        ) : null}
+
+        <View style={styles.moodWrap}>
+          <MoodCheckIn onSelect={handleMoodSelect} />
         </View>
 
         <View style={styles.statsHeader}>
@@ -157,6 +184,14 @@ export default function SessionCompleteScreen({
             />
           </View>
         ) : null}
+
+        <Pressable
+          style={({ pressed }) => [styles.doneCta, pressed && styles.ctaPressed]}
+          onPress={handleClose}
+          accessibilityRole="button"
+        >
+          <Text style={styles.doneCtaLabel}>Done</Text>
+        </Pressable>
       </ScrollView>
 
       {/* Glassmorphic close button — fixed above the scroll */}
@@ -174,14 +209,6 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: colors.background.primary,
-  },
-  bgImage: {
-    ...StyleSheet.absoluteFillObject,
-    width: undefined,
-    height: undefined,
-  },
-  bgGradient: {
-    ...StyleSheet.absoluteFillObject,
   },
   scrollContent: {
     paddingBottom: spacing['5xl'],
@@ -207,22 +234,15 @@ const styles = StyleSheet.create({
     marginTop: margin.sectionGap,
   },
   heroCard: {
-    paddingTop: spacing.xl,
     paddingBottom: spacing.xl,
     paddingHorizontal: spacing.lg,
     alignItems: 'center',
-  },
-  techniqueName: {
-    ...typography.body.small,
-    color: colors.text.secondary,
-    fontFamily: fonts.semibold,
-    marginTop: spacing.md,
   },
   affirmation: {
     ...typography.title.title2,
     color: colors.text.primary,
     fontFamily: fonts.semibold,
-    marginTop: spacing.sm,
+    marginTop: spacing.md,
     textAlign: 'center',
     paddingHorizontal: spacing.md,
   },
@@ -239,5 +259,32 @@ const styles = StyleSheet.create({
   graphWrap: {
     paddingHorizontal: padding.screen.horizontal,
     marginTop: spacing.sm,
+  },
+  streakWrap: {
+    paddingHorizontal: padding.screen.horizontal,
+    marginTop: margin.resultSection,
+  },
+  moodWrap: {
+    paddingHorizontal: padding.screen.horizontal,
+    marginTop: spacing.sm,
+  },
+  doneCta: {
+    ...card.shadow,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: padding.screen.horizontal,
+    marginTop: margin.resultSection,
+    paddingVertical: spacing.md,
+    borderRadius: spacing.md,
+    backgroundColor: colors.primary.blue600,
+  },
+  ctaPressed: {
+    opacity: 0.9,
+  },
+  doneCtaLabel: {
+    ...typography.body.medium,
+    fontFamily: fonts.semibold,
+    fontWeight: '500',
+    color: colors.text.inverse,
   },
 });

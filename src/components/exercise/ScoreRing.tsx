@@ -382,9 +382,9 @@ export default function ScoreRing({
             </Circle>
           </Canvas>
 
-          {/* Animated layer — only the colored arc + gloss repaint each frame. The
-              arc sits at radius r (outside the inner disc), so stacking it above the
-              static Canvas is visually identical to the original single-layer order. */}
+          {/* Animated layer — only the colored arc repaints each frame. The arc sits
+              at radius r (outside the inner disc), so stacking it above the static
+              Canvas is visually identical to the original single-layer order. */}
           <Canvas style={StyleSheet.absoluteFill}>
             {/* Colored arc — slightly wider to prevent AA bleed from track */}
             <Path
@@ -394,15 +394,6 @@ export default function ScoreRing({
               strokeWidth={STROKE + 0.5}
               strokeCap="round"
               color={arcColor}
-            />
-            {/* Glossy highlight skimming the top of the arc */}
-            <Path
-              path={arcPath}
-              end={arcEnd}
-              style="stroke"
-              strokeWidth={STROKE * 0.32}
-              strokeCap="round"
-              color="rgba(255,255,255,0.28)"
             />
           </Canvas>
 
