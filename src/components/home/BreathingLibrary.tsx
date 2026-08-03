@@ -1,9 +1,6 @@
 import { Text } from '../common/Text';
 import { useMemo } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Image } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { usePostHog } from 'posthog-react-native';
 import { colors } from '../../theme/colors';
@@ -11,6 +8,8 @@ import { fonts, typography } from '../../theme/typography';
 import { spacing, padding } from '../../theme/spacing';
 import { card } from '../../theme/card';
 import TECHNIQUES, { type BreathingTechnique } from '../../features/exercise/guidedBreathing/techniques';
+import { CATEGORY_STYLE } from '../../features/exercise/guidedBreathing/categoryPalette';
+import ActivityGlyph from './ActivityGlyph';
 import Icon from '../common/icons/Icon';
 import SectionHeader from '../common/SectionHeader';
 import { AnalyticsEvent } from '../../services/analytics/events';
@@ -22,14 +21,6 @@ import { PaywallPlacement } from '../../services/paywall';
 import { FeatureKey } from '../../services/subscriptions/featureAccess';
 import type { FeatureAccessResult } from '../../services/subscriptions/featureAccess';
 import type { MainTabNavigationProp } from '../../app/navigation';
-
-const CATEGORY_CONFIG = {
-  calm: { label: 'Calm', color: colors.primary.blue600, bg: colors.primary.blue100 },
-  focus: { label: 'Focus', color: colors.primary.blue600, bg: colors.primary.blue100 },
-  energy: { label: 'Energy', color: colors.primary.blue600, bg: colors.primary.blue100 },
-  sleep: { label: 'Sleep', color: colors.primary.blue600, bg: colors.primary.blue100 },
-  balance: { label: 'Balance', color: colors.primary.blue600, bg: colors.primary.blue100 },
-} as const;
 
 type ExerciseGroupId = 'sleep-calm' | 'mental-reset' | 'focus-energy';
 
@@ -65,7 +56,7 @@ function TechniqueCard({
 }) {
   const navigation = useNavigation<MainTabNavigationProp<'Home'>>();
   const posthog = usePostHog();
-  const cat = CATEGORY_CONFIG[technique.category];
+  const style = CATEGORY_STYLE[technique.category];
   const textColor = colors.text.inverse;
 
   const handlePress = () => {
@@ -99,58 +90,46 @@ function TechniqueCard({
 
   return (
     <View style={styles.cardWrapper}>
-      <Pressable
-        onPress={handlePress}
-        style={({ pressed }) => [
-          styles.card,
-          pressed && styles.cardPressed,
-        ]}
-      >
-        <Image
-          source={technique.backgroundImage}
-          style={styles.cardImage}
-          contentFit="cover"
-          contentPosition="center"
-          cachePolicy="memory-disk"
-          transition={0}
-        />
-        <LinearGradient
-          colors={[colors.photoScrim.transparent, colors.photoScrim.strong]}
-          locations={[0.35, 1]}
-          style={styles.cardScrim}
-        />
-        <View style={styles.cardContent}>
-          <View style={styles.cardTop}>
-            <View style={styles.iconBadge}>
-              <MaterialCommunityIcons
-                name={technique.icon}
-                size={24}
-                color={textColor}
-              />
-            </View>
-            {recommended ? (
-              <View style={styles.recommendedPill}>
-                <Text style={styles.recommendedText}>Recommended</Text>
-              </View>
-            ) : null}
+      <View style={[styles.cardShadow, { backgroundColor: style.hue.base }]}>
+        <Pressable
+          onPress={handlePress}
+          style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+        >
+          <View style={styles.cardGlyph} pointerEvents="none">
+            <ActivityGlyph
+              shape={style.glyph}
+              size={GLYPH_SIZE}
+              color={textColor}
+              opacity={0.16}
+            />
           </View>
-          <View style={styles.textBlock}>
-            <Text style={[styles.category, { color: textColor, opacity: 0.75 }]}>{cat.label}</Text>
-            <Text style={[styles.techniqueName, { color: textColor }]} numberOfLines={2}>
-              {technique.name}
-            </Text>
-            <View style={[styles.metaRow, { opacity: 0.8 }]}>
-              <Icon name="timer" size={14} color={textColor} />
-              <Text style={[styles.meta, { color: textColor }]}>
-                {technique.duration} · {formatPattern(technique.pattern)}
+          <View style={styles.cardContent}>
+            <View style={styles.cardTop}>
+              <Text style={[styles.category, { color: textColor }]}>
+                {style.label}
               </Text>
+              {recommended ? (
+                <View style={styles.recommendedPill}>
+                  <Text style={[styles.recommendedText, { color: style.hue.ink }]}>
+                    For you
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+            <View style={styles.textBlock}>
+              <Text style={[styles.techniqueName, { color: textColor }]} numberOfLines={2}>
+                {technique.name}
+              </Text>
+              <View style={[styles.metaRow, { opacity: 0.85 }]}>
+                <Icon name="timer" size={14} color={textColor} />
+                <Text style={[styles.meta, { color: textColor }]}>
+                  {technique.duration} · {formatPattern(technique.pattern)}
+                </Text>
+              </View>
             </View>
           </View>
-        </View>
-        {recommended ? (
-          <View pointerEvents="none" style={styles.recommendedOutline} />
-        ) : null}
-      </Pressable>
+        </Pressable>
+      </View>
     </View>
   );
 }
@@ -211,8 +190,9 @@ export default function BreathingLibrary() {
   );
 }
 
-const CARD_WIDTH = 240;
-const CARD_HEIGHT = 288;
+const CARD_WIDTH = 184;
+const CARD_HEIGHT = 208;
+const GLYPH_SIZE = 148;
 
 const styles = StyleSheet.create({
   section: {
@@ -230,83 +210,56 @@ const styles = StyleSheet.create({
   },
   cardWrapper: {
     paddingHorizontal: spacing.xs,
-    paddingBottom: spacing.xs,
-    shadowColor: colors.primary.blue500,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.10,
-    shadowRadius: 4,
-    elevation: 3,
+    paddingBottom: spacing.sm,
+  },
+  cardShadow: {
+    ...card.blockShadow,
   },
   card: {
-    ...card.base,
+    ...card.block,
     width: CARD_WIDTH,
     height: CARD_HEIGHT,
-    borderWidth: 0,
-    overflow: 'hidden',
   },
-  recommendedOutline: {
-    ...StyleSheet.absoluteFillObject,
-    borderRadius: 22,
-    borderWidth: 3,
-    borderColor: colors.primary.blue500,
-  },
-  cardImage: {
-    ...StyleSheet.absoluteFillObject,
-    width: '100%',
-    height: '100%',
-  },
-  cardScrim: {
-    ...StyleSheet.absoluteFillObject,
+  cardGlyph: {
+    position: 'absolute',
+    right: -40,
+    bottom: -46,
   },
   cardContent: {
     flex: 1,
-    padding: spacing.lg,
+    padding: spacing.md,
     justifyContent: 'space-between',
   },
   cardTop: {
-    minHeight: 30,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: spacing.sm,
   },
-  iconBadge: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    transform: [{ translateX: -8 }],
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(12,16,33,0.52)',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.20)',
-  },
   recommendedPill: {
     borderRadius: 999,
-    backgroundColor: 'rgba(0,0,0,0.35)',
+    backgroundColor: colors.text.inverse,
     paddingHorizontal: spacing.sm,
     paddingVertical: 3,
   },
   recommendedText: {
     ...typography.caption.caption2,
-    fontFamily: fonts.medium,
-    color: colors.text.inverse,
+    fontFamily: fonts.semibold,
   },
   textBlock: {
     gap: spacing.xs,
   },
   cardPressed: {
-    opacity: 0.88,
+    opacity: 0.9,
     transform: [{ scale: 0.98 }],
   },
   techniqueName: {
     ...typography.heading.heading1,
     fontFamily: fonts.semibold,
-    color: colors.primary.blue700,
   },
   category: {
-    ...typography.label.detail,
-    color: colors.text.tertiary,
+    ...typography.overline,
+    opacity: 0.8,
   },
   metaRow: {
     flexDirection: 'row',
@@ -315,6 +268,5 @@ const styles = StyleSheet.create({
   },
   meta: {
     ...typography.label.detail,
-    color: colors.text.tertiary,
   },
 });

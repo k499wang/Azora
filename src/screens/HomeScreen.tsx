@@ -1,16 +1,13 @@
 import { Text } from '../components/common/Text';
 import { useCallback, useEffect, useState } from 'react';
-import {
-  AppState, Linking, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
-import { Image } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
-import MaskedView from '@react-native-masked-view/masked-view';
+import { AppState, Linking, ScrollView, StyleSheet, View } from 'react-native';
+import { usePostHog } from 'posthog-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { AnalyticsEvent } from '../services/analytics/events';
 import { trackFeatureGateHit } from '../services/analytics/tracking';
 import { colors } from '../theme/colors';
 import { spacing, padding, margin } from '../theme/spacing';
 import { fonts, typography } from '../theme/typography';
-import AmbientBackground from '../components/common/AmbientBackground';
 import AppTopBar from '../components/common/AppTopBar';
 import CompactActionBanner from '../components/common/CompactActionBanner';
 import SectionHeader from '../components/common/SectionHeader';
@@ -18,7 +15,6 @@ import TopBarWeekCalendar from '../components/common/TopBarWeekCalendar';
 import BreathingLibrary from '../components/home/BreathingLibrary';
 import DailyPlanCard from '../components/home/DailyPlanCard';
 import TodaysDailiesSection from '../components/home/TodaysDailiesSection';
-import { getBackgroundImageSource } from '../services/images/backgroundImageCache';
 import { useFeatureAccess } from '../hooks/useFeatureAccess';
 import { useRecommendedTechnique } from '../features/exercise/guidedBreathing/hooks/useRecommendedTechnique';
 import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
@@ -40,8 +36,6 @@ import type {
   FeatureKeyValue,
 } from '../services/subscriptions/featureAccess';
 
-const HERO_FRAME_ASPECT_RATIO = 1.1;
-const HERO_OVERSCROLL_BLEED = 120;
 const SURVEY_DISCOUNT_URL = 'https://docs.google.com/forms/d/1wdbzWnXbhdpFZ3HoPcRet5K7EGW9RRtEQqrVYiXHwtc/viewform?edit_requested=true';
 
 function getMsUntilNextLocalDay(): number {
@@ -78,7 +72,7 @@ function Greeting({ displayName }: { displayName: string | null | undefined }) {
 
 export default function HomeScreen({ navigation }: HomeScreenProps) {
   const insets = useSafeAreaInsets();
-  const { width: windowWidth } = useWindowDimensions();
+  const posthog = usePostHog();
   const user = useAuthStore((state) => state.user);
   const profileSummaryQuery = useProfileSummaryQuery(user?.id ?? null);
   const profileQuery = useProfileQuery(user?.id ?? null);
@@ -174,8 +168,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     });
   }, [navigation]);
 
-  const heroBackdropHeight = windowWidth / HERO_FRAME_ASPECT_RATIO + HERO_OVERSCROLL_BLEED;
-
   const startGuidedExercise = () => {
     const technique = recommendedTechnique.technique;
     if (technique == null) return;
@@ -212,6 +204,10 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   };
 
   const startDailyBreathHold = (sourceAction: string) => {
+    posthog.capture(AnalyticsEvent.DailyPlanStarted, {
+      streak_days: currentStreak,
+    });
+
     if (!dailyExerciseAccess.allowed && !dailyExerciseAccess.isLoading) {
       showProPaywall(
         FeatureKey.DailyExercise,
@@ -227,7 +223,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
 
   return (
     <View style={styles.screen}>
-      <AmbientBackground />
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
@@ -237,35 +232,12 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         overScrollMode="always"
       >
         <View style={[styles.topSection, { paddingTop: insets.top }]}>
-          <View
-            style={[styles.heroBackdrop, { height: heroBackdropHeight }]}
-            pointerEvents="none"
-          >
-            <MaskedView
-              style={StyleSheet.absoluteFill}
-              maskElement={(
-                <LinearGradient
-                  colors={['transparent', 'black', 'black', 'transparent']}
-                  locations={[0, 0.34, 0.65, 1]}
-                  style={StyleSheet.absoluteFill}
-                />
-              )}
-            >
-              <Image
-                source={getBackgroundImageSource('homeHero')}
-                style={StyleSheet.absoluteFill}
-                contentFit="cover"
-                contentPosition="center"
-              />
-            </MaskedView>
-          </View>
           <AppTopBar
             leftSlot={(
               <TopBarWeekCalendar
                 todayLocalDate={todayLocalDate}
                 selectedLocalDate={selectedLocalDate}
                 completedDaysAgo={stats?.completedDaysAgo ?? []}
-                streakDays={currentStreak}
                 onSelectDay={setSelectedLocalDate}
               />
             )}
@@ -279,7 +251,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           </View>
         </View>
 
-        <View style={styles.dailyBreathholdSection}>
+        <View style={styles.bodySection}>
           <CompactActionBanner
             icon="message"
             label="Take a survey and get 50% off"
@@ -308,7 +280,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             <DailyPlanCard
               todayHoldSeconds={todayBreathHold?.holdSeconds ?? null}
               lastHoldSeconds={holdStats.lastHoldSeconds}
-              streakDays={currentStreak}
               onPress={() => startDailyBreathHold('daily_plan')}
             />
           </View>
@@ -323,7 +294,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: colors.background.primary,
+    backgroundColor: colors.background.canvas,
   },
   scroll: {
     flex: 1,
@@ -334,24 +305,15 @@ const styles = StyleSheet.create({
     gap: margin.sectionGap,
   },
   topSection: {
-    position: 'relative',
-    paddingBottom: spacing['2xl'],
-  },
-  heroBackdrop: {
-    position: 'absolute',
-    top: -HERO_OVERSCROLL_BLEED,
-    left: 0,
-    right: 0,
-    overflow: 'hidden',
+    paddingBottom: spacing.sm,
   },
   heroTextSection: {
     paddingHorizontal: padding.screen.horizontal,
     marginTop: spacing.xl,
     gap: spacing.md,
   },
-  dailyBreathholdSection: {
+  bodySection: {
     paddingHorizontal: padding.screen.horizontal,
-    marginBottom: -spacing.sm,
     gap: spacing.md,
   },
   dailyPlanSection: {

@@ -1,8 +1,7 @@
 import { Text } from '../../common/Text';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  ActivityIndicator, Animated, Easing, Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+  ActivityIndicator, Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
@@ -10,16 +9,13 @@ import { fonts, typography } from '../../../theme/typography';
 import { isHapticsEnabled } from '../../../services/preferences/hapticsPreference';
 import { ContinuousHaptics } from '../../../native/continuousHaptics';
 import CelebrationOverlay from '../CelebrationOverlay';
-import AmbientBackground from '../../common/AmbientBackground';
+import OnboardingScreenLayout from '../OnboardingScreenLayout';
 
 const HOLD_DURATION_MS = 2000;
-const STAMP_SIZE = 100;
+const STAMP_SIZE = 88;
 const HAPTIC_RAMP_STEPS = 20;
-const ENTRANCE_EASING = Easing.bezier(0.22, 1, 0.36, 1);
-const ENTRANCE_INITIAL_SCALE = 0.992;
 
 interface PactScreenProps {
-  displayName: string | null;
   dailyMinutes: number;
   stepIndex: number;
   stepCount: number;
@@ -110,7 +106,7 @@ function StampButton({
 
     /* stamp grows bigger */
     Animated.timing(growScale, {
-      toValue: 1.28,
+      toValue: 1.22,
       duration: HOLD_DURATION_MS,
       easing: Easing.out(Easing.cubic),
       useNativeDriver: true,
@@ -213,8 +209,8 @@ const stampStyles = StyleSheet.create({
   wrapper: {
     alignItems: 'center',
     justifyContent: 'center',
-    width: 160,
-    height: 160,
+    width: 116,
+    height: 116,
   },
   pressable: {
     width: STAMP_SIZE,
@@ -225,23 +221,23 @@ const stampStyles = StyleSheet.create({
     width: STAMP_SIZE,
     height: STAMP_SIZE,
     borderRadius: STAMP_SIZE / 2,
-    backgroundColor: colors.orange[700],
+    backgroundColor: colors.primary.blue600,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#3A1F00',
-    shadowOffset: { width: 0, height: 10 },
+    shadowColor: colors.primary.blue700,
+    shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.22,
-    shadowRadius: 22,
-    elevation: 10,
+    shadowRadius: 18,
+    elevation: 8,
   },
   stampSealed: {
     backgroundColor: colors.success[700],
-    shadowColor: '#0A2A12',
+    shadowColor: colors.success[700],
   },
   stampInnerRing: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 70,
+    height: 70,
+    borderRadius: 35,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.28)',
     alignItems: 'center',
@@ -255,7 +251,7 @@ const stampStyles = StyleSheet.create({
     color: colors.text.inverse,
   },
   stampCheck: {
-    fontSize: 30,
+    fontSize: 28,
     fontFamily: fonts.semibold,
     fontWeight: '500',
     color: colors.text.inverse,
@@ -264,7 +260,6 @@ const stampStyles = StyleSheet.create({
 
 /* ─── PactScreen ─── */
 export default function PactScreen({
-  displayName,
   dailyMinutes,
   stepIndex,
   stepCount,
@@ -273,64 +268,27 @@ export default function PactScreen({
   onConfirm,
   onBack,
 }: PactScreenProps) {
-  const insets = useSafeAreaInsets();
   const [celebrating, setCelebrating] = useState(false);
   const [hasConfirmed, setHasConfirmed] = useState(false);
-  const progress = stepIndex / stepCount;
-  const clampedProgress = Math.max(0, Math.min(1, progress));
 
-  /* animated values */
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(ENTRANCE_INITIAL_SCALE)).current;
-  const entranceAnimationRef = useRef<{ stop: () => void } | null>(null);
-  const entranceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const hasStartedEntranceRef = useRef(false);
-  const sealScale = useRef(new Animated.Value(0)).current;
-  const cardBorder = useRef(new Animated.Value(0)).current;
-  const cardScale = useRef(new Animated.Value(1)).current;
+  const durationLabel =
+    dailyMinutes === 0
+      ? '30 seconds'
+      : dailyMinutes === 1
+        ? '1 minute'
+        : `${dailyMinutes} minutes`;
+
+  const clauses = [
+    `Breathe for ${durationLabel} a day.`,
+    "Show up even on the days I don't feel like it.",
+    'Count every session as a win, however small.',
+    'Start again the day after I miss one.',
+  ];
 
   useEffect(() => {
     if (isHapticsEnabled()) {
       Haptics.selectionAsync().catch(() => {});
     }
-  }, []);
-
-  const startEntranceAnimation = useCallback(() => {
-    if (hasStartedEntranceRef.current) return;
-    hasStartedEntranceRef.current = true;
-
-    entranceTimeoutRef.current = setTimeout(() => {
-      const entranceAnimation = Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 680,
-          easing: ENTRANCE_EASING,
-          useNativeDriver: true,
-        }),
-        Animated.timing(scaleAnim, {
-          toValue: 1,
-          duration: 760,
-          easing: ENTRANCE_EASING,
-          useNativeDriver: true,
-        }),
-      ]);
-
-      entranceAnimationRef.current = entranceAnimation;
-      entranceAnimation.start(({ finished }) => {
-        if (finished) entranceAnimationRef.current = null;
-      });
-    }, 80);
-  }, [fadeAnim, scaleAnim]);
-
-  useEffect(() => {
-    return () => {
-      if (entranceTimeoutRef.current) {
-        clearTimeout(entranceTimeoutRef.current);
-        entranceTimeoutRef.current = null;
-      }
-      entranceAnimationRef.current?.stop();
-      entranceAnimationRef.current = null;
-    };
   }, []);
 
   useEffect(() => {
@@ -339,57 +297,6 @@ export default function PactScreen({
       setHasConfirmed(false);
     }
   }, [errorMessage]);
-
-  /* confirmation animation */
-  useEffect(() => {
-    if (hasConfirmed) {
-      /* seal pops onto card */
-      const sealAnimation = Animated.timing(sealScale, {
-        toValue: 1,
-        duration: 400,
-        easing: Easing.out(Easing.back(1.6)),
-        useNativeDriver: true,
-      });
-
-      /* card border turns green */
-      const borderAnimation = Animated.timing(cardBorder, {
-        toValue: 1,
-        duration: 500,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: false,
-      });
-
-      /* card "thump" from the stamp impression */
-      const cardAnimation = Animated.sequence([
-        Animated.timing(cardScale, {
-          toValue: 0.985,
-          duration: 100,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: true,
-        }),
-        Animated.spring(cardScale, {
-          toValue: 1,
-          friction: 4,
-          tension: 300,
-          useNativeDriver: true,
-        }),
-      ]);
-
-      sealAnimation.start();
-      borderAnimation.start();
-      cardAnimation.start();
-
-      return () => {
-        sealAnimation.stop();
-        borderAnimation.stop();
-        cardAnimation.stop();
-      };
-    } else {
-      sealScale.setValue(0);
-      cardBorder.setValue(0);
-      cardScale.setValue(1);
-    }
-  }, [hasConfirmed, cardBorder, cardScale, sealScale]);
 
   const handleConfirm = useCallback(() => {
     if (celebrating || isSubmitting) return;
@@ -406,174 +313,40 @@ export default function PactScreen({
     onConfirm();
   }, [celebrating, isSubmitting, onConfirm]);
 
-  const today = new Date().toLocaleDateString('en-US', {
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-  });
-
-  const borderColor = cardBorder.interpolate({
-    inputRange: [0, 1],
-    outputRange: [colors.border.subtle, colors.success[500]],
-  });
-
   return (
     <>
-      <View style={styles.root}>
-        <AmbientBackground />
-        <View
-          style={[
-            styles.screen,
-            {
-              paddingTop: insets.top,
-              paddingLeft: insets.left,
-              paddingRight: insets.right,
-            },
-          ]}
-        >
-        <Animated.View
-          onLayout={startEntranceAnimation}
-          style={[styles.entrance, { opacity: fadeAnim }]}
-        >
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.backGlyph} onPress={onBack}>
-            ←
-          </Text>
-          <View style={styles.progressBar}>
-            <View style={[styles.progressFill, { width: `${clampedProgress * 100}%` }]} />
-          </View>
-        </View>
-
-        <ScrollView
-          style={styles.scroll}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-          <Animated.View
-            style={[
-              styles.content,
-              { transform: [{ scale: scaleAnim }] },
-            ]}
-          >
-            {/* Title */}
-            <View style={styles.copy}>
-              <Text style={typography.title.title1}>Make a promise to yourself to show up every day</Text>
-              <Text
-                style={[
-                  typography.body.small,
-                  { color: colors.text.secondary },
-                ]}
-              >
-                Consistency beats intensity. Every day matters more than any one session.
-              </Text>
-            </View>
-
-            {/* ── Personal Pledge Card ── */}
-            <Animated.View
-              style={[
-                styles.card,
-                {
-                  borderColor,
-                  transform: [{ scale: cardScale }],
-                },
-              ]}
-            >
-              {/* checkmark seal (appears after confirming) */}
-              {hasConfirmed && (
-                <Animated.View
-                  style={[styles.seal, { transform: [{ scale: sealScale }] }]}
-                  pointerEvents="none"
-                >
-                  <Text style={styles.sealCheck}>✓</Text>
-                </Animated.View>
-              )}
-
-              <View style={styles.cardHeader}>
-                <View style={styles.headerRule} />
-                <Text style={styles.wordmark}>MY COMMITMENT</Text>
-                <View style={styles.headerRule} />
-              </View>
-
-              <View style={styles.cardBody}>
-                <Text
-                  style={[
-                    typography.body.medium,
-                    { color: colors.text.secondary, lineHeight: 28 },
-                  ]}
-                >
-                  Just{' '}
-                  <Text style={styles.highlight}>
-                    {dailyMinutes === 0
-                      ? '30 seconds'
-                      : dailyMinutes === 1
-                        ? '1 minute'
-                        : `${dailyMinutes} minutes`}
-                  </Text>{' '}
-                  a day. That's the whole plan.
-                </Text>
-
-                <Text
-                  style={[
-                    typography.body.medium,
-                    { color: colors.text.secondary, lineHeight: 28 },
-                  ]}
-                >
-                  Showing up is enough. Small steps add up.
-                </Text>
-
-                <View style={styles.signatureBlock}>
-                  <View style={styles.signatureRule} />
-                  <View style={styles.signatureRow}>
-                    <Text
-                      style={[
-                        typography.caption.caption2,
-                        { color: colors.text.tertiary, letterSpacing: 1 },
-                      ]}
-                    >
-                      {displayName ? displayName.toUpperCase() : 'SIGNED'}
-                    </Text>
-                    <Text
-                      style={[
-                        typography.caption.caption2,
-                        { color: colors.text.tertiary, letterSpacing: 1 },
-                      ]}
-                    >
-                      {today.toUpperCase()}
-                    </Text>
-                  </View>
-                </View>
-
-                {/* ── Stamp Section ── */}
-                <View style={styles.stampSection}>
-                  <StampButton
-                    onSeal={handleConfirm}
-                    disabled={hasConfirmed || celebrating}
-                    loading={isSubmitting && !celebrating}
-                  />
-
-                  <View style={styles.hintWrap}>
-                    {!hasConfirmed && (
-                      <Text style={styles.stampHintIcon}>↑</Text>
-                    )}
-                    <Text style={[typography.body.small, styles.stampHint]}>
-                      {hasConfirmed
-                        ? 'Your promise has been recorded.'
-                        : 'Hold the seal for 2 seconds'}
-                    </Text>
-                  </View>
-                </View>
-              </View>
-            </Animated.View>
-
+      <OnboardingScreenLayout
+        title="Make a promise to yourself to show up every day."
+        subtitle="Consistency beats intensity. Every day matters more than any one session."
+        progress={stepIndex / stepCount}
+        onBack={onBack}
+        footer={
+          <View style={styles.footer}>
+            <StampButton
+              onSeal={handleConfirm}
+              disabled={hasConfirmed || celebrating}
+              loading={isSubmitting && !celebrating}
+            />
+            <Text style={styles.stampHint}>
+              {hasConfirmed
+                ? 'Your promise has been recorded.'
+                : 'Hold the seal for 2 seconds'}
+            </Text>
             {errorMessage ? (
               <Text style={styles.error}>{errorMessage}</Text>
             ) : null}
-          </Animated.View>
-        </ScrollView>
-        </Animated.View>
+          </View>
+        }
+      >
+        <View style={styles.list}>
+          {clauses.map((clause) => (
+            <View key={clause} style={styles.row}>
+              <View style={styles.dot} />
+              <Text style={styles.clause}>{clause}</Text>
+            </View>
+          ))}
         </View>
-      </View>
+      </OnboardingScreenLayout>
 
       {celebrating ? <CelebrationOverlay /> : null}
     </>
@@ -582,164 +355,37 @@ export default function PactScreen({
 
 /* ─── Styles ─── */
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: colors.background.primary,
+  list: {
+    paddingHorizontal: spacing.xs,
+    gap: spacing.lg,
   },
-  screen: {
-    flex: 1,
-    backgroundColor: 'transparent',
-  },
-  entrance: {
-    flex: 1,
-  },
-
-  /* Header */
-  header: {
+  row: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.xl,
+    alignItems: 'flex-start',
+    gap: spacing.md,
   },
-  backGlyph: {
-    fontSize: 22,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    color: colors.text.primary,
-    lineHeight: 24,
-    padding: spacing.xs,
-  },
-  progressBar: {
-    flex: 1,
+  dot: {
+    width: 6,
     height: 6,
-    borderRadius: 999,
-    backgroundColor: colors.primary.blue200,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: 999,
+    borderRadius: 3,
     backgroundColor: colors.primary.blue600,
+    marginTop: 9,
   },
-
-  /* Scroll */
-  scroll: { flex: 1 },
-  scrollContent: { flexGrow: 1 },
-  content: {
-    paddingHorizontal: spacing.lg,
-    paddingTop: 0,
-    gap: spacing.xl,
-    paddingBottom: spacing.xl,
-  },
-
-  /* Title */
-  copy: { gap: spacing.sm },
-
-  /* ── Pledge Card ── */
-  card: {
-    width: '100%',
-    borderRadius: 20,
-    backgroundColor: colors.surface.welcome,
-    overflow: 'hidden',
-    position: 'relative',
-    borderWidth: 1,
-    shadowColor: '#1A1206',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.08,
-    shadowRadius: 28,
-    elevation: 6,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.lg,
-  },
-  headerRule: {
+  clause: {
     flex: 1,
-    height: 1,
-    backgroundColor: 'rgba(204,106,0,0.22)',
-  },
-  wordmark: {
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    fontSize: 10,
-    letterSpacing: 4,
-    color: colors.orange[700],
-  },
-  cardBody: {
-    paddingHorizontal: spacing['2xl'],
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.xl,
-    gap: spacing.md,
-  },
-  highlight: {
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
+    ...typography.body.medium,
     color: colors.text.primary,
   },
-  signatureBlock: {
-    marginTop: spacing.lg,
-    gap: spacing.xs,
-  },
-  signatureRule: {
-    height: 1,
-    backgroundColor: colors.border.subtle,
-  },
-  signatureRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
 
-  /* Seal */
-  seal: {
-    position: 'absolute',
-    top: 14,
-    right: 14,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.success[500],
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: colors.success[700],
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 4,
-    zIndex: 1,
-  },
-  sealCheck: {
-    fontSize: 16,
-    fontFamily: fonts.bold,
-    fontWeight: '600',
-    color: colors.text.inverse,
-  },
-
-  /* ── Stamp Section ── */
-  stampSection: {
-    gap: spacing.md,
-    marginTop: spacing.sm,
-    alignItems: 'center',
-  },
-  hintWrap: {
+  footer: {
     alignItems: 'center',
     gap: spacing.xs,
   },
   stampHint: {
+    ...typography.body.small,
     color: colors.text.secondary,
     textAlign: 'center',
   },
-  stampHintIcon: {
-    fontSize: 18,
-    color: colors.text.tertiary,
-    lineHeight: 22,
-  },
-
   error: {
     ...typography.body.small,
     color: colors.error[700],
