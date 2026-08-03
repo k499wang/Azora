@@ -1,5 +1,6 @@
 import { Text } from '../common/Text';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { LockedScrim } from '../common/glass';
 import { colors } from '../../theme/colors';
 import { typography, fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
@@ -19,6 +20,8 @@ interface RestingHeartRateBarProps {
   title?: string;
   showValue?: boolean;
   surface?: CardSurfaceMode;
+  locked?: boolean;
+  onPressLocked?: () => void;
 }
 
 const NUM_TICKS = 56;
@@ -50,6 +53,8 @@ export default function RestingHeartRateBar({
   title = 'Resting heart rate',
   showValue = true,
   surface,
+  locked = false,
+  onPressLocked,
 }: RestingHeartRateBarProps) {
   const hasBpm = bpm != null && Number.isFinite(bpm);
   const zone = hasBpm ? getRestingHeartRateZone(bpm!, age) : null;
@@ -58,51 +63,77 @@ export default function RestingHeartRateBar({
   const ticks = buildTickMarks(segments);
 
   return (
-    <CardSurface style={styles.card} surface={surface}>
-      <CardTitle
-        title={title}
-        leading={<PulseDot color={zone?.color} />}
-        right={
-          zone ? (
-            <View style={[styles.zonePill, { backgroundColor: `${zone.color}18` }]}>
-              <Text style={[styles.zoneText, { color: zone.color }]}>{zone.label}</Text>
-            </View>
-          ) : null
-        }
-      />
-
-      {showValue ? (
-        <View style={styles.valueRow}>
-          <Text style={styles.value}>{hasBpm ? Math.round(bpm!) : '--'}</Text>
-          <Text style={styles.unit}>bpm</Text>
+    <CardSurface locked={locked} style={styles.card} surface={surface}>
+      <View
+        accessibilityElementsHidden={locked}
+        importantForAccessibility={locked ? 'no-hide-descendants' : 'auto'}
+        style={styles.content}
+      >
+        <View style={locked && styles.hiddenLockedTitle}>
+          <CardTitle
+            title={title}
+            leading={<PulseDot color={zone?.color} />}
+            right={
+              zone ? (
+                <View style={[styles.zonePill, { backgroundColor: `${zone.color}18` }]}>
+                  <Text style={[styles.zoneText, { color: zone.color }]}>{zone.label}</Text>
+                </View>
+              ) : null
+            }
+          />
         </View>
-      ) : null}
 
-      <View style={styles.barWrap}>
-        <View style={[styles.tickTrack, !hasBpm && styles.tickTrackEmpty]}>
-          {ticks.map((tick, i) => (
-            <View
-              key={i}
-              style={[
-                styles.tick,
-                {
-                  left: `${tick.t * 100}%`,
-                  backgroundColor:
-                    !hasBpm
-                      ? colors.neutral[300]
-                      : fraction != null && tick.t > fraction
-                      ? colors.neutral[300]
-                      : tick.color,
-                  opacity:
-                    fraction != null && tick.t > fraction
-                      ? TICK_UNSELECTED_OPACITY
-                      : TICK_SELECTED_OPACITY,
-                },
-              ]}
-            />
-          ))}
+        {showValue ? (
+          <View style={styles.valueRow}>
+            <Text style={styles.value}>{hasBpm ? Math.round(bpm!) : '--'}</Text>
+            <Text style={styles.unit}>bpm</Text>
+          </View>
+        ) : null}
+
+        <View style={styles.barWrap}>
+          <View style={[styles.tickTrack, !hasBpm && styles.tickTrackEmpty]}>
+            {ticks.map((tick, i) => (
+              <View
+                key={i}
+                style={[
+                  styles.tick,
+                  {
+                    left: `${tick.t * 100}%`,
+                    backgroundColor:
+                      !hasBpm
+                        ? colors.neutral[300]
+                        : fraction != null && tick.t > fraction
+                        ? colors.neutral[300]
+                        : tick.color,
+                    opacity:
+                      fraction != null && tick.t > fraction
+                        ? TICK_UNSELECTED_OPACITY
+                        : TICK_SELECTED_OPACITY,
+                  },
+                ]}
+              />
+            ))}
+          </View>
         </View>
       </View>
+
+      {locked ? (
+        <>
+          <LockedScrim />
+          <View style={styles.clearHeaderOverlay} pointerEvents="none">
+            <CardTitle title={title} leading={<PulseDot />} />
+          </View>
+          {onPressLocked ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Unlock ${title.toLowerCase()}`}
+              accessibilityHint="Opens the Pro upgrade screen"
+              onPress={onPressLocked}
+              style={StyleSheet.absoluteFill}
+            />
+          ) : null}
+        </>
+      ) : null}
     </CardSurface>
   );
 }
@@ -112,7 +143,20 @@ const styles = StyleSheet.create({
     width: '100%',
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
+    position: 'relative',
+  },
+  content: {
     gap: spacing.sm,
+  },
+  clearHeaderOverlay: {
+    position: 'absolute',
+    top: spacing.md,
+    left: spacing.md,
+    right: spacing.md,
+    zIndex: 2,
+  },
+  hiddenLockedTitle: {
+    opacity: 0,
   },
   zonePill: {
     borderRadius: 20,

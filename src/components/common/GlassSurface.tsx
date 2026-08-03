@@ -32,9 +32,11 @@ interface Props {
   blurColor?: string;
   solidColor?: string;
   // Downgrade liquid -> blur for this surface even where Liquid Glass is
-  // available. For surfaces that must obscure content (locks) rather than act
-  // as see-through chrome, or where liquid reads poorly over the backdrop.
+  // available, while preserving a resolved solid mode.
   forceFallback?: boolean;
+  // Render the blur implementation regardless of the resolved glass mode.
+  // Reserved for surfaces that must consistently obscure underlying content.
+  forceBlur?: boolean;
 }
 
 export default function GlassSurface({
@@ -53,9 +55,14 @@ export default function GlassSurface({
   blurColor,
   solidColor,
   forceFallback = false,
+  forceBlur = false,
 }: Props) {
   const resolvedMode = useGlassMode();
-  const mode = forceFallback && resolvedMode === 'liquid' ? 'blur' : resolvedMode;
+  const mode = forceBlur
+    ? 'blur'
+    : forceFallback && resolvedMode === 'liquid'
+      ? 'blur'
+      : resolvedMode;
   const isClear = variant === 'clear';
 
   // Resolve every fallback knob once so `bare` and framed paths stay identical,

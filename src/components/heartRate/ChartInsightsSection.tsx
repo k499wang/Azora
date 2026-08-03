@@ -1,4 +1,5 @@
 import { Text } from '../common/Text';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRef, useState } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
 import { colors } from '../../theme/colors';
@@ -6,6 +7,14 @@ import { typography, fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import LockedContentBlur from '../common/LockedContentBlur';
 import Icon from '../common/icons/Icon';
+
+const CARD_FADE_TRANSPARENT = 'rgba(244, 249, 255, 0)';
+const CARD_FADE_COLORS = [
+  colors.background.card,
+  CARD_FADE_TRANSPARENT,
+  CARD_FADE_TRANSPARENT,
+  colors.background.card,
+] as const;
 
 interface ChartInsightsSectionProps {
   accentColor: string;
@@ -53,14 +62,32 @@ export default function ChartInsightsSection({
       )}
 
       {locked ? (
-        <LockedContentBlur locked style={styles.lockedTextWrap}>
-          <View
-            accessibilityElementsHidden
-            importantForAccessibility="no-hide-descendants"
-          >
-            <Text style={styles.text}>{lockedPlaceholder}</Text>
-          </View>
-        </LockedContentBlur>
+        <View style={styles.lockedTextWrap}>
+          <LockedContentBlur locked style={styles.lockedTextContent}>
+            <View
+              accessibilityElementsHidden
+              importantForAccessibility="no-hide-descendants"
+            >
+              <Text style={styles.text}>{lockedPlaceholder}</Text>
+            </View>
+          </LockedContentBlur>
+          <LinearGradient
+            pointerEvents="none"
+            colors={CARD_FADE_COLORS}
+            locations={[0, 0.14, 0.86, 1]}
+            start={{ x: 0, y: 0.5 }}
+            end={{ x: 1, y: 0.5 }}
+            style={StyleSheet.absoluteFill}
+          />
+          <LinearGradient
+            pointerEvents="none"
+            colors={CARD_FADE_COLORS}
+            locations={[0, 0.18, 0.82, 1]}
+            start={{ x: 0.5, y: 0 }}
+            end={{ x: 0.5, y: 1 }}
+            style={StyleSheet.absoluteFill}
+          />
+        </View>
       ) : (
         <Animated.View style={{ maxHeight: animatedHeight, overflow: 'hidden' }}>
           <Text style={styles.text}>{insight}</Text>
@@ -97,6 +124,10 @@ const styles = StyleSheet.create({
     lineHeight: 26,
   },
   lockedTextWrap: {
+    minHeight: 60,
+    overflow: 'hidden',
+  },
+  lockedTextContent: {
     minHeight: 60,
   },
   text: {

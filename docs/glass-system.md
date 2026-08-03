@@ -31,7 +31,7 @@ import { GlassSurface, GlassCard, GlassIconButton, GlassGroup, useGlassMode } fr
 The system distinguishes two jobs that look similar but are opposites:
 
 - **Chrome** (`GlassSurface` & presets) — a *see-through* floating layer above content. May use Liquid Glass. For tab bars, FABs, cards, buttons.
-- **Obscure** (`LockedScrim`) — a frost that *hides* content to gate it (paywall/lock). **Never** uses Liquid Glass: liquid stays see-through, so it would not hide what it is meant to gate. Resolves to blur on iOS < 26 and Android, or an opaque scrim when Reduce Transparency is enabled.
+- **Obscure** (`LockedScrim`) — a frost that *hides* content to gate it (paywall/lock). It always uses `BlurView`, including on Liquid Glass devices and when Reduce Transparency is enabled, so locked content keeps the same blurred treatment.
 
 Never gate content with a plain `GlassSurface` — use `LockedScrim`.
 
@@ -41,7 +41,7 @@ Never gate content with a plain `GlassSurface` — use `LockedScrim`.
 - **`GlassIconButton`** — small round glass control (header actions).
 - **`GlassSurface`** — the chrome primitive. Use directly for a custom shape or a full-bleed chrome fill (`bare`).
 - **`GlassGroup`** — wrap *adjacent* glass controls so they merge/morph on iOS 26. Use for a row of buttons; no effect (plain View) elsewhere.
-- **`LockedScrim`** — the obscuring overlay for locked/Pro content. Pass `intensity` for blur strength, `style` for bleed/positioning.
+- **`LockedScrim`** — the obscuring overlay for locked/Pro content. It defaults to blur intensity `50`; pass `intensity` to override the strength or `style` for bleed/positioning.
 
 ## `GlassSurface` props
 
@@ -50,7 +50,8 @@ Never gate content with a plain `GlassSurface` — use `LockedScrim`.
 - `bare` — emit only the raw surface (no shadow wrapper / radius / framed tint). For masked or full-bleed (`absoluteFill`) callers that own their layout.
 - `interactive` — Liquid-Glass press deformation (iOS 26 only; pair with a `Pressable` for fallback affordance).
 - `tintColor` — liquid tint. `blurTint` / `blurIntensity` / `blurColor` — blur-mode knobs. `solidColor` — scrim override.
-- `forceFallback` — downgrade `liquid` → `blur` for this surface even where Liquid Glass is available. For obscuring surfaces (`LockedScrim` sets this) or where liquid reads poorly over the backdrop.
+- `forceFallback` — downgrade `liquid` → `blur` for this surface even where Liquid Glass is available, while preserving a resolved `solid` mode. Use where liquid reads poorly over the backdrop.
+- `forceBlur` — render `BlurView` regardless of the resolved glass mode. Reserved for obscuring surfaces; `LockedScrim` sets this so locked content always stays blurred.
 - `radius` (framed only, default 24), `style`, `pointerEvents`.
 
 ## Rules

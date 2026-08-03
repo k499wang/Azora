@@ -87,6 +87,8 @@ export default function HeartRateStatsSection({
           bpm={avgBpm ?? null}
           age={age ?? null}
           title="Average heart rate"
+          locked={locked}
+          onPressLocked={onPressUpgrade}
         />
 
         <BPMChart
