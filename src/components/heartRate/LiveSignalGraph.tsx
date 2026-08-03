@@ -12,8 +12,16 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts } from '../../theme/typography';
-import type { FingerPlacementState, LivePpgSignalSample } from '../../lib/heartRate/types';
+import type {
+  FingerPlacementState,
+  LivePpgSignalSample,
+  SignalStatus,
+} from '../../lib/heartRate/types';
 import type { LiveSignalSource } from '../../lib/heartRate/liveSignalSource';
+import {
+  isGraphContaminated,
+  smoothLiveSignalGraphSamples,
+} from '../../lib/heartRate/liveSignalGraphSmoothing';
 
 interface LiveSignalGraphProps {
   samples?: LivePpgSignalSample[];
@@ -21,6 +29,7 @@ interface LiveSignalGraphProps {
   fingerPlacement: FingerPlacementState;
   bpm?: number | null;
   beatTick?: number;
+  signalStatus?: SignalStatus;
   textColor?: string;
   showLine?: boolean;
 }
@@ -290,10 +299,22 @@ function LiveSignalGraphComponent({
   fingerPlacement,
   bpm,
   beatTick,
+  signalStatus,
   textColor,
   showLine = true,
 }: LiveSignalGraphProps) {
-  const samples = signalSource?.read() ?? providedSamples;
+  const smoothingCacheRef = useRef<{
+    raw: LivePpgSignalSample[];
+    smoothed: LivePpgSignalSample[];
+  } | null>(null);
+  const readSmoothedSamples = useCallback((raw: LivePpgSignalSample[]) => {
+    const cached = smoothingCacheRef.current;
+    if (cached?.raw === raw) return cached.smoothed;
+    const smoothed = smoothLiveSignalGraphSamples(raw);
+    smoothingCacheRef.current = { raw, smoothed };
+    return smoothed;
+  }, []);
+  const samples = readSmoothedSamples(signalSource?.read() ?? providedSamples);
   const [width, setWidth] = useState(0);
   const [linePath, setLinePath] = useState<ReturnType<typeof Skia.Path.Make> | null>(null);
   const [hasSignalSamples, setHasSignalSamples] = useState(samples.length >= 2);
@@ -308,6 +329,7 @@ function LiveSignalGraphComponent({
   const renderedWidthRef = useRef(0);
   const lastRenderAtRef = useRef(0);
   const animationFrameRef = useRef<number | null>(null);
+  const graphLineOpacity = useRef(new Animated.Value(1)).current;
 
   const isSignalAvailable =
     hasSignalSamples &&
@@ -348,7 +370,9 @@ function LiveSignalGraphComponent({
 
     const renderSignalFrame = () => {
       const now = Date.now();
-      const currentSamples = signalSource?.read() ?? samplesRef.current;
+      const currentSamples = signalSource != null
+        ? readSmoothedSamples(signalSource.read())
+        : samplesRef.current;
       const nextHasSignalSamples = currentSamples.length >= 2;
       if (nextHasSignalSamples !== hasSignalSamplesRef.current) {
         hasSignalSamplesRef.current = nextHasSignalSamples;
@@ -421,7 +445,20 @@ function LiveSignalGraphComponent({
         animationFrameRef.current = null;
       }
     };
-  }, [showLine, signalSource, width]);
+  }, [readSmoothedSamples, showLine, signalSource, width]);
+
+  useEffect(() => {
+    graphLineOpacity.stopAnimation();
+    if (isGraphContaminated(signalStatus)) {
+      graphLineOpacity.setValue(0.3);
+      return;
+    }
+    Animated.timing(graphLineOpacity, {
+      toValue: 1,
+      duration: 200,
+      useNativeDriver: true,
+    }).start();
+  }, [graphLineOpacity, signalStatus]);
 
   const handleLayout = useCallback((event: LayoutChangeEvent) => {
     const nextWidth = event.nativeEvent.layout.width;
@@ -483,17 +520,21 @@ function LiveSignalGraphComponent({
       )}
       <View style={styles.graph}>
         {showLine && width > 0 && linePath != null && (
-          <Canvas style={StyleSheet.absoluteFill}>
-            <Path
-              path={linePath}
-              style="stroke"
-              strokeWidth={1.5}
-              strokeCap="round"
-              strokeJoin="round"
-              color={isSignalAvailable ? colors.primary.blue400 : colors.text.tertiary}
-              opacity={isSignalAvailable ? 0.5 : 0.25}
-            />
-          </Canvas>
+          <Animated.View
+            style={[StyleSheet.absoluteFill, { opacity: graphLineOpacity }]}
+          >
+            <Canvas style={StyleSheet.absoluteFill}>
+              <Path
+                path={linePath}
+                style="stroke"
+                strokeWidth={1.5}
+                strokeCap="round"
+                strokeJoin="round"
+                color={isSignalAvailable ? colors.primary.blue400 : colors.text.tertiary}
+                opacity={isSignalAvailable ? 0.5 : 0.25}
+              />
+            </Canvas>
+          </Animated.View>
         )}
       </View>
     </View>

@@ -8,6 +8,7 @@ import type { HeartRateCameraPreviewProps } from '../../heartRate/HeartRateCamer
 import type {
   FingerPlacementState,
   LivePpgSignalSample,
+  SignalStatus,
 } from '../../../lib/heartRate/types';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
@@ -33,6 +34,7 @@ interface BaselineCaptureStageProps {
   placement: BaselinePlacementConfig;
   progress: number;
   signalWarning: string | null;
+  signalStatus: SignalStatus;
   visibleBeatTick: number;
 }
 
@@ -51,6 +53,7 @@ export function BaselineCaptureStage({
   placement,
   progress,
   signalWarning,
+  signalStatus,
   visibleBeatTick,
 }: BaselineCaptureStageProps) {
   const insets = useSafeAreaInsets();
@@ -81,6 +84,7 @@ export function BaselineCaptureStage({
             <LiveSignalGraph
               samples={liveSignalSamples}
               fingerPlacement={fingerPlacement}
+              signalStatus={signalStatus}
             />
           </View>
         </View>

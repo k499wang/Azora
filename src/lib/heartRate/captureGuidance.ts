@@ -1,4 +1,5 @@
 import type { FingerPlacementState, SignalStatus } from './types';
+import type { HeartRateStallIssue } from './captureStall';
 import { getHeartRateCameraProfile } from './cameraProfile';
 
 export function getHeartRateCameraTarget(
@@ -60,6 +61,118 @@ export function getHeartRatePlacementGuidance(
 
 export const HEART_RATE_PLACEMENT_GUIDANCE =
   getHeartRatePlacementGuidance(null);
+
+export interface HeartRateTroubleshooting {
+  readonly title: string;
+  readonly diagnosis: string;
+  readonly tips: readonly HeartRatePlacementStep[];
+}
+
+const TROUBLESHOOTING_TIPS: Record<string, HeartRatePlacementStep> = {
+  warmHands: {
+    title: 'Warm your hands first',
+    detail:
+      'Cold fingers pull blood away from the surface, which is the most common reason the camera can’t see a pulse. Run them under warm water or rub them together for about 30 seconds.',
+  },
+  removeCase: {
+    title: 'Take your case off',
+    detail:
+      'A case that sits over the lens or tints the flash blocks the light the reading depends on.',
+  },
+  restOnTable: {
+    title: 'Rest the phone on a table',
+    detail:
+      'Set the phone down and let your hand rest on it. Holding it up adds small movements that break the signal.',
+  },
+  indexPad: {
+    title: 'Use your index fingertip',
+    detail:
+      'The soft pad of your index finger reads best — thumbs and the sides of fingers have thicker skin. If one hand won’t read, try the other.',
+  },
+  cleanLens: {
+    title: 'Wipe the lens and dim the light',
+    detail:
+      'A smudged lens, or bright light leaking past the edge of your finger, both wash out the pulse.',
+  },
+  easePressure: {
+    title: 'Ease off the pressure',
+    detail:
+      'Let your finger rest its own weight on the lens without pushing. Hard pressure squeezes out the blood flow the camera reads.',
+  },
+  holdStill: {
+    title: 'Stay still and quiet',
+    detail:
+      'Stop adjusting your grip and don’t talk. Breathe normally and give your hand a few seconds to settle.',
+  },
+};
+
+export function getHeartRateTroubleshooting(
+  issue: HeartRateStallIssue,
+  cameraTarget: string = 'camera lens',
+): HeartRateTroubleshooting {
+  const {
+    warmHands,
+    removeCase,
+    restOnTable,
+    indexPad,
+    cleanLens,
+    easePressure,
+    holdStill,
+  } = TROUBLESHOOTING_TIPS;
+
+  switch (issue) {
+    case 'no_finger':
+      return {
+        title: 'Trouble finding your pulse',
+        diagnosis: `We’re not seeing your finger on the ${cameraTarget} yet.`,
+        tips: [
+          {
+            title: `Press flat against the ${cameraTarget}`,
+            detail: `Your skin has to touch the glass of the ${cameraTarget} itself. Resting near it or hovering over it reads nothing, and covering another lens won’t work.`,
+          },
+          removeCase,
+          restOnTable,
+          indexPad,
+        ],
+      };
+    case 'partial_coverage':
+      return {
+        title: 'Trouble finding your pulse',
+        diagnosis:
+          'Your finger is on the lens, but it isn’t covering all of it.',
+        tips: [
+          {
+            title: `Cover the ${cameraTarget} completely`,
+            detail:
+              'Lay the pad flat so no light slips past the edges. A fingertip resting on one side of the lens leaves a gap the camera can’t read through.',
+          },
+          indexPad,
+          removeCase,
+          warmHands,
+        ],
+      };
+    case 'too_much_pressure':
+      return {
+        title: 'Trouble finding your pulse',
+        diagnosis: 'You’re pressing hard enough to squeeze the blood out.',
+        tips: [easePressure, restOnTable, indexPad, warmHands],
+      };
+    case 'motion':
+      return {
+        title: 'Trouble finding your pulse',
+        diagnosis:
+          'There’s too much movement for the camera to lock onto a pulse.',
+        tips: [restOnTable, holdStill, indexPad, warmHands],
+      };
+    case 'no_pulse':
+      return {
+        title: 'Trouble finding your pulse',
+        diagnosis:
+          'Your placement looks right, but the signal is too faint to read a pulse from.',
+        tips: [warmHands, removeCase, indexPad, cleanLens],
+      };
+  }
+}
 
 interface CameraCheckMessageOptions {
   fingerPlacement: FingerPlacementState;

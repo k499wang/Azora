@@ -147,6 +147,7 @@ export const DailyBreathHoldPresentation = forwardRef<
           <LiveSignalGraph
             signalSource={heartRate.signalSource}
             fingerPlacement={heartRate.fingerPlacement}
+            signalStatus={heartRate.signalStatus}
             bpm={heartRate.bpm}
             beatTick={heartRate.beatTick}
             textColor={theme.textPrimary}
