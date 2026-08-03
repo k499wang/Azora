@@ -6,9 +6,7 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withDelay,
-  withSequence,
   withSpring,
-  withTiming,
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { Text } from '../common/Text';
@@ -26,11 +24,11 @@ import { isHapticsEnabled } from '../../services/preferences/hapticsPreference';
 interface Props {
   currentStreak: number;
   completedDaysAgo: readonly number[];
-  /** Plays the count-up when this session is what put today on the board. */
+  /** Fills today's circle in when this session is what put today on the board. */
   animateIncrement?: boolean;
 }
 
-// Long enough for the result screen to settle before the streak celebrates.
+// Long enough for the result screen to settle before today's circle fills in.
 const CELEBRATION_DELAY_MS = 500;
 const POP_SPRING = { damping: 8, stiffness: 180 } as const;
 
@@ -54,50 +52,30 @@ export default function SessionStreakCard({
     [completedDaysAgo],
   );
 
-  const [displayStreak, setDisplayStreak] = useState(
-    animateIncrement ? currentStreak - 1 : currentStreak,
-  );
+  // The profile summary refetches in the background while this screen is open,
+  // and once the server has counted today the parent stops asking for an
+  // increment. Latch the decision at mount so that refresh cannot cancel a
+  // celebration that is already half played.
+  const [celebrates] = useState(animateIncrement);
 
-  const flameScale = useSharedValue(1);
-  const labelScale = useSharedValue(1);
-  const todayFill = useSharedValue(animateIncrement ? 0 : 1);
+  const todayFill = useSharedValue(celebrates ? 0 : 1);
 
   useEffect(() => {
-    if (!animateIncrement) {
-      setDisplayStreak(currentStreak);
-      return;
-    }
+    if (!celebrates) return;
 
     todayFill.value = withDelay(
       CELEBRATION_DELAY_MS,
       withSpring(1, POP_SPRING),
     );
-    flameScale.value = withDelay(
-      CELEBRATION_DELAY_MS,
-      withSequence(withTiming(1.4, { duration: 180 }), withSpring(1, POP_SPRING)),
-    );
-    labelScale.value = withDelay(
-      CELEBRATION_DELAY_MS + 90,
-      withSequence(withTiming(1.12, { duration: 160 }), withSpring(1, POP_SPRING)),
-    );
 
     const timer = setTimeout(() => {
-      setDisplayStreak(currentStreak);
       if (isHapticsEnabled()) {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
       }
-    }, CELEBRATION_DELAY_MS + 90);
+    }, CELEBRATION_DELAY_MS);
 
     return () => clearTimeout(timer);
-  }, [animateIncrement, currentStreak, flameScale, labelScale, todayFill]);
-
-  const flameStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: flameScale.value }],
-  }));
-
-  const labelStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: labelScale.value }],
-  }));
+  }, [celebrates, todayFill]);
 
   const todayDotStyle = useAnimatedStyle(() => ({
     transform: [{ scale: 0.7 + todayFill.value * 0.3 }],
@@ -115,21 +93,17 @@ export default function SessionStreakCard({
   return (
     <View style={[card.base, styles.container]}>
       <View style={styles.headerRow}>
-        <Animated.View style={flameStyle}>
-          <MaterialCommunityIcons
-            name="fire"
-            size={26}
-            color={colors.mood.lowEnergy}
-          />
-        </Animated.View>
-        <Animated.View style={labelStyle}>
-          <Text style={styles.streakLabel}>{streakLabelFor(displayStreak)}</Text>
-        </Animated.View>
+        <MaterialCommunityIcons
+          name="fire"
+          size={26}
+          color={colors.mood.lowEnergy}
+        />
+        <Text style={styles.streakLabel}>{streakLabelFor(currentStreak)}</Text>
       </View>
 
       <View style={styles.weekRow}>
         {days.map((day) => {
-          const celebrates = animateIncrement && day.isToday;
+          const celebratesToday = celebrates && day.isToday && day.isCompleted;
 
           return (
             <View key={day.key} style={styles.dayItem}>
@@ -141,13 +115,13 @@ export default function SessionStreakCard({
               <Animated.View
                 style={[
                   styles.dayDot,
-                  day.isCompleted && !celebrates && styles.dayDotDone,
+                  day.isCompleted && !celebratesToday && styles.dayDotDone,
                   day.isToday && styles.dayDotToday,
-                  celebrates && todayDotStyle,
+                  celebratesToday && todayDotStyle,
                 ]}
               >
                 {day.isCompleted ? (
-                  <Animated.View style={celebrates ? todayCheckStyle : null}>
+                  <Animated.View style={celebratesToday ? todayCheckStyle : null}>
                     <MaterialCommunityIcons
                       name="check"
                       size={18}
