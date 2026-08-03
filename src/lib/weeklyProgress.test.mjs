@@ -49,6 +49,10 @@ test('only the session that puts today on the board flags an extension', () => {
   assert.equal(withTodaysSession(3, [0, 1, 2]).extendedToday, false);
 });
 
+test('a completed today is never shown as a zero streak', () => {
+  assert.equal(withTodaysSession(0, [0]).currentStreak, 1);
+});
+
 test('the first ever session is a streak of one', () => {
   assert.equal(withTodaysSession(0, []).currentStreak, 1);
 });

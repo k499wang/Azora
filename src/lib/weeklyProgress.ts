@@ -28,8 +28,12 @@ export function withTodaysSession(
   completedDaysAgo: readonly number[],
 ): SessionStreakView {
   if (completedDaysAgo.includes(0)) {
+    // A day on the board cannot coexist with a zero streak. The streak row is
+    // written by a separate path than the session row, so a refetch can land
+    // between the two and would otherwise render "Streak started" over a day
+    // the user just completed.
     return {
-      currentStreak,
+      currentStreak: Math.max(currentStreak, 1),
       completedDaysAgo: [...completedDaysAgo],
       extendedToday: false,
     };
