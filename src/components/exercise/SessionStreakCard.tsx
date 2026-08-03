@@ -10,7 +10,7 @@ import {
   buildWeekCalendarDays,
   formatLocalDate,
 } from '../../lib/calendar/weekCalendarDays';
-import { buildWeeklyProgress, WEEK_LENGTH_DAYS } from '../../lib/weeklyProgress';
+import { WEEK_LENGTH_DAYS } from '../../lib/weeklyProgress';
 
 interface Props {
   currentStreak: number;
@@ -21,11 +21,6 @@ export default function SessionStreakCard({
   currentStreak,
   completedDaysAgo,
 }: Props) {
-  const progress = useMemo(
-    () => buildWeeklyProgress(completedDaysAgo),
-    [completedDaysAgo],
-  );
-
   const days = useMemo(
     () =>
       buildWeekCalendarDays(
@@ -41,16 +36,12 @@ export default function SessionStreakCard({
       ? `${currentStreak} day${currentStreak === 1 ? '' : 's'} in a row`
       : 'Streak started';
 
-  const goalLabel = progress.goalMet
-    ? 'Weekly goal reached'
-    : `${progress.daysCompleted} of ${progress.goal} days this week`;
-
   return (
     <View style={[card.base, styles.container]}>
       <View style={styles.headerRow}>
         <MaterialCommunityIcons
           name="fire"
-          size={22}
+          size={26}
           color={colors.mood.lowEnergy}
         />
         <Text style={styles.streakLabel}>{streakLabel}</Text>
@@ -74,7 +65,7 @@ export default function SessionStreakCard({
               {day.isCompleted ? (
                 <MaterialCommunityIcons
                   name="check"
-                  size={14}
+                  size={18}
                   color={colors.text.inverse}
                 />
               ) : null}
@@ -82,8 +73,6 @@ export default function SessionStreakCard({
           </View>
         ))}
       </View>
-
-      <Text style={styles.goalLabel}>{goalLabel}</Text>
     </View>
   );
 }
@@ -91,16 +80,17 @@ export default function SessionStreakCard({
 const styles = StyleSheet.create({
   container: {
     paddingVertical: spacing.lg,
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.md,
     gap: spacing.md,
   },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: spacing.xs,
   },
   streakLabel: {
-    ...typography.body.medium,
+    ...typography.title.title3,
     fontFamily: fonts.semibold,
     color: colors.text.primary,
   },
@@ -121,9 +111,9 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
   },
   dayDot: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.background.secondary,
@@ -134,10 +124,5 @@ const styles = StyleSheet.create({
   dayDotToday: {
     borderWidth: 2,
     borderColor: colors.primary.blue400,
-  },
-  goalLabel: {
-    ...typography.body.small,
-    fontFamily: fonts.semibold,
-    color: colors.text.secondary,
   },
 });
