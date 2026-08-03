@@ -5,6 +5,10 @@ import { DefaultInstructionScreen } from '../components/heartRate/setupScreens';
 import type { CaptureResult } from '../lib/heartRate/types';
 import { colors } from '../theme/colors';
 import type { HeartRateScreenProps } from '../app/navigation';
+import {
+  maybeRequestSessionReview,
+  ReviewTrigger,
+} from '../services/reviews/storeReview';
 
 export function HeartRateScreen({ navigation, route }: HeartRateScreenProps) {
   const context = route?.params?.context;
@@ -12,6 +16,7 @@ export function HeartRateScreen({ navigation, route }: HeartRateScreenProps) {
   const handleComplete = useCallback(
     (_result: CaptureResult) => {
       navigation?.goBack();
+      void maybeRequestSessionReview(ReviewTrigger.HeartRate);
     },
     [navigation],
   );

@@ -59,6 +59,11 @@ Home component usage:
 
 Notes:
 
+- A day qualifies for the streak when it contains a breath hold **or** a
+  breathing session. Heart-rate captures alone never qualify a day, and never
+  clear the flag another session set. `user_streaks_v` counts consecutive
+  qualifying dates and allows one grace day (a run ending yesterday still
+  counts as current).
 - Home uses today's breath-hold data first for HRV/BPM when available.
 - If there is no breath-hold summary, it falls back to today's standalone heart-rate summary for HRV/BPM.
 - The health score is derived in the screen as `100 - stress`.

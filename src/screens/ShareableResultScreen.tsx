@@ -1,5 +1,5 @@
 import { Text } from '../components/common/Text';
-import { useCallback } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { Alert, Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -9,6 +9,7 @@ import { spacing, padding, margin } from '../theme/spacing';
 import { card } from '../theme/card';
 import HeartRateStatsSection from '../components/heartRate/HeartRateStatsSection';
 import ScoreRing from '../components/exercise/ScoreRing';
+import SessionStreakCard from '../components/exercise/SessionStreakCard';
 import GlassIconButton from '../components/common/GlassIconButton';
 import AmbientBackground from '../components/common/AmbientBackground';
 import type { DailyResultScreenProps } from '../app/navigation';
@@ -24,7 +25,13 @@ import { PaywallPlacement } from '../services/paywall';
 import { FeatureKey } from '../services/subscriptions/featureAccess';
 import { useAuthStore } from '../stores/authStore';
 import { useProfileQuery } from '../queries/profile/useProfileQuery';
+import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
+import { withTodaysSession } from '../lib/weeklyProgress';
 import { APP_STORE_URL } from '../lib/appStoreLink';
+import {
+  maybeRequestSessionReview,
+  ReviewTrigger,
+} from '../services/reviews/storeReview';
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
@@ -37,6 +44,15 @@ export default function ShareableResultScreen({
   const userId = useAuthStore((s) => s.user?.id ?? null);
   const profileQuery = useProfileQuery(userId);
   const userAge = profileQuery.data?.age ?? null;
+  const profileSummaryQuery = useProfileSummaryQuery(userId);
+  const summary = profileSummaryQuery.data;
+  const streakView = useMemo(
+    () =>
+      summary == null
+        ? null
+        : withTodaysSession(summary.currentStreak, summary.completedDaysAgo),
+    [summary],
+  );
   const {
     holdSeconds,
     heartRateResultStatus = 'not_measured',
@@ -47,6 +63,9 @@ export default function ShareableResultScreen({
   } = route.params;
   const hrDropBpm =
     minBpm != null && maxBpm != null ? Math.max(0, maxBpm - minBpm) : null;
+  useEffect(() => {
+    void maybeRequestSessionReview(ReviewTrigger.BreathHold);
+  }, []);
   const lungAge = estimateLungAge(holdSeconds, userAge);
   const benchmark =
     userAge != null ? benchmarkBreathHold(holdSeconds, userAge) : null;
@@ -85,26 +104,20 @@ export default function ShareableResultScreen({
   }, [advancedStatsAccess, navigation]);
 
   const renderHeroCard = () => (
-    <View>
-      <View style={styles.header}>
-        <Text style={styles.title}>Breathhold Exercise</Text>
-      </View>
-
-      <View style={styles.heroCardWrap}>
-        <View style={styles.heroCard}>
-          <ScoreRing
-            value={lungAge.years}
-            fill={lungAgeRingFill(lungAge.years)}
-            ringColors={lungAgeTone.ringColors}
-            caption="Lung Age"
-            captionFontSize={18}
-            captionPosition="bottom"
-            captionTextTransform="none"
-            gapLabel={comparisonLabel}
-            gapTextColor={lungAgeTone.textColor}
-            gapDirection={lungAgeTone.direction}
-          />
-        </View>
+    <View style={styles.heroCardWrap}>
+      <View style={styles.heroCard}>
+        <ScoreRing
+          value={lungAge.years}
+          fill={lungAgeRingFill(lungAge.years)}
+          ringColors={lungAgeTone.ringColors}
+          caption="Lung Age"
+          captionFontSize={18}
+          captionPosition="bottom"
+          captionTextTransform="none"
+          gapLabel={comparisonLabel}
+          gapTextColor={lungAgeTone.textColor}
+          gapDirection={lungAgeTone.direction}
+        />
       </View>
     </View>
   );
@@ -118,6 +131,16 @@ export default function ShareableResultScreen({
           showsVerticalScrollIndicator={false}
         >
           {renderHeroCard()}
+
+          {streakView != null ? (
+            <View style={styles.streakWrap}>
+              <SessionStreakCard
+                currentStreak={streakView.currentStreak}
+                completedDaysAgo={streakView.completedDaysAgo}
+                animateIncrement={streakView.extendedToday}
+              />
+            </View>
+          ) : null}
 
           <View style={styles.statsSection}>
             <HeartRateStatsSection
@@ -186,11 +209,6 @@ const styles = StyleSheet.create({
     paddingBottom: spacing['5xl'],
   },
 
-  header: {
-    paddingHorizontal: padding.screen.horizontal,
-    paddingTop: padding.screen.vertical,
-    alignItems: 'center',
-  },
   closeButton: {
     position: 'absolute',
     left: padding.screen.horizontal,
@@ -201,13 +219,6 @@ const styles = StyleSheet.create({
     right: padding.screen.horizontal,
     zIndex: 1,
   },
-  title: {
-    ...typography.title.title1,
-    color: colors.text.primary,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-  },
-
   heroCardWrap: {
     paddingHorizontal: padding.screen.horizontal,
     marginTop: margin.sectionGap,
@@ -234,6 +245,10 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semibold,
     fontWeight: '500',
     color: colors.text.inverse,
+  },
+  streakWrap: {
+    paddingHorizontal: padding.screen.horizontal,
+    marginTop: margin.resultSection,
   },
   statsSection: {
     marginTop: margin.resultSection,

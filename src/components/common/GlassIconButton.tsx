@@ -2,7 +2,9 @@ import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
 import GlassSurface from './GlassSurface';
 
-const SIZE = 36;
+export const GLASS_ICON_BUTTON_SIZE = 36;
+
+const SIZE = GLASS_ICON_BUTTON_SIZE;
 const MUTED_SURFACE = {
   tintColor: 'transparent',
   blurColor: 'transparent',

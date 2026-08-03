@@ -72,6 +72,18 @@ export function trackNotificationPermissionResult(props: {
   posthog.capture(AnalyticsEvent.NotificationPermissionResult, props);
 }
 
+export function trackReviewPromptRequested(props: {
+  trigger: string;
+  promptCount: number;
+  completedSessions: number;
+}) {
+  posthog.capture(AnalyticsEvent.ReviewPromptRequested, {
+    trigger: props.trigger,
+    prompt_count: props.promptCount,
+    completed_sessions: props.completedSessions,
+  });
+}
+
 export function trackProfileAction(
   action: string,
   properties?: Record<string, string | number | boolean | null>,

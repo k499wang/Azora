@@ -12,6 +12,8 @@ export interface WeeklyProgress {
 export interface SessionStreakView {
   currentStreak: number;
   completedDaysAgo: number[];
+  /** True when this session is the one that put today on the board. */
+  extendedToday: boolean;
 }
 
 /**
@@ -26,7 +28,11 @@ export function withTodaysSession(
   completedDaysAgo: readonly number[],
 ): SessionStreakView {
   if (completedDaysAgo.includes(0)) {
-    return { currentStreak, completedDaysAgo: [...completedDaysAgo] };
+    return {
+      currentStreak,
+      completedDaysAgo: [...completedDaysAgo],
+      extendedToday: false,
+    };
   }
 
   const continuesRun = completedDaysAgo.includes(1) || currentStreak === 0;
@@ -34,6 +40,7 @@ export function withTodaysSession(
   return {
     currentStreak: continuesRun ? currentStreak + 1 : 1,
     completedDaysAgo: [0, ...completedDaysAgo],
+    extendedToday: true,
   };
 }
 
