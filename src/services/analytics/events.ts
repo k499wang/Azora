@@ -54,6 +54,8 @@ export const AnalyticsEvent = {
   FeatureGateHit: 'feature_gate_hit',
   ProfileAction: 'profile_action',
 
+  ReviewPromptRequested: 'review_prompt_requested',
+
   NotificationScheduled: 'notification_scheduled',
   NotificationTapped: 'notification_tapped',
   NotificationPermissionResult: 'notification_permission_result',

@@ -10,7 +10,9 @@ import { spacing, padding, margin } from '../theme/spacing';
 import { card } from '../theme/card';
 import SectionHeader from '../components/common/SectionHeader';
 import BPMChart from '../components/heartRate/BPMChart';
-import GlassIconButton from '../components/common/GlassIconButton';
+import GlassIconButton, {
+  GLASS_ICON_BUTTON_SIZE,
+} from '../components/common/GlassIconButton';
 import AmbientBackground from '../components/common/AmbientBackground';
 import ThermometerStatCard from '../components/heartRate/ThermometerStatCard';
 import ScoreRing from '../components/exercise/ScoreRing';
@@ -22,6 +24,10 @@ import { buildAffirmation } from '../lib/affirmation';
 import { buildBpmSeries } from '../lib/heartRate/bpmSeries';
 import { withTodaysSession } from '../lib/weeklyProgress';
 import { APP_STORE_URL } from '../lib/appStoreLink';
+import {
+  maybeRequestSessionReview,
+  ReviewTrigger,
+} from '../services/reviews/storeReview';
 
 function formatDuration(secs: number): string {
   const m = Math.floor(secs / 60);
@@ -46,6 +52,7 @@ export default function SessionCompleteScreen({
 
   useEffect(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    void maybeRequestSessionReview(ReviewTrigger.GuidedBreathing);
   }, []);
 
   const user = useAuthStore((state) => state.user);
@@ -139,6 +146,7 @@ export default function SessionCompleteScreen({
             <SessionStreakCard
               currentStreak={streakView.currentStreak}
               completedDaysAgo={streakView.completedDaysAgo}
+              animateIncrement={streakView.extendedToday}
             />
           </View>
         ) : null}
@@ -219,7 +227,10 @@ const styles = StyleSheet.create({
     paddingBottom: spacing['5xl'],
   },
   header: {
-    paddingHorizontal: padding.screen.horizontal,
+    // The close and share buttons float over this row, so the title column has
+    // to stop short of them rather than at the screen edge.
+    paddingHorizontal:
+      padding.screen.horizontal + GLASS_ICON_BUTTON_SIZE + spacing.sm,
     paddingTop: padding.screen.vertical,
     alignItems: 'center',
   },
@@ -251,7 +262,8 @@ const styles = StyleSheet.create({
   affirmation: {
     ...typography.title.title2,
     color: colors.text.primary,
-    fontFamily: fonts.semibold,
+    fontFamily: fonts.medium,
+    fontWeight: '500',
     marginTop: spacing.md,
     textAlign: 'center',
     paddingHorizontal: spacing.md,
