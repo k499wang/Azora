@@ -24,9 +24,7 @@ import { PaywallPlacement } from '../services/paywall';
 import { FeatureKey } from '../services/subscriptions/featureAccess';
 import { useAuthStore } from '../stores/authStore';
 import { useProfileQuery } from '../queries/profile/useProfileQuery';
-
-const APP_STORE_URL =
-  'https://apps.apple.com/us/app/azora-heart-rate-breathing/id6763631574';
+import { APP_STORE_URL } from '../lib/appStoreLink';
 
 // ─── Screen ───────────────────────────────────────────────────────────────────
 

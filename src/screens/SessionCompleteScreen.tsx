@@ -1,10 +1,9 @@
 import { Text } from '../components/common/Text';
 import { useCallback, useEffect, useMemo } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { usePostHog } from 'posthog-react-native';
 import { colors } from '../theme/colors';
 import { typography, fonts } from '../theme/typography';
 import { spacing, padding, margin } from '../theme/spacing';
@@ -16,15 +15,13 @@ import AmbientBackground from '../components/common/AmbientBackground';
 import ThermometerStatCard from '../components/heartRate/ThermometerStatCard';
 import ScoreRing from '../components/exercise/ScoreRing';
 import SessionStreakCard from '../components/exercise/SessionStreakCard';
-import MoodCheckIn from '../components/exercise/MoodCheckIn';
-import type { PostSessionMood } from '../data/postSessionMoods';
-import { AnalyticsEvent } from '../services/analytics/events';
 import type { SessionCompleteScreenProps } from '../app/navigation';
 import { useAuthStore } from '../stores/authStore';
 import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
 import { buildAffirmation } from '../lib/affirmation';
 import { buildBpmSeries } from '../lib/heartRate/bpmSeries';
 import { withTodaysSession } from '../lib/weeklyProgress';
+import { APP_STORE_URL } from '../lib/appStoreLink';
 
 function formatDuration(secs: number): string {
   const m = Math.floor(secs / 60);
@@ -37,9 +34,7 @@ export default function SessionCompleteScreen({
   route,
 }: SessionCompleteScreenProps) {
   const insets = useSafeAreaInsets();
-  const posthog = usePostHog();
   const {
-    techniqueId,
     techniqueName,
     techniqueBpmResponse,
     breathCount,
@@ -100,17 +95,17 @@ export default function SessionCompleteScreen({
     navigation.navigate('MainTabs', { screen: 'Home' });
   }, [navigation]);
 
-  const handleMoodSelect = useCallback(
-    (mood: PostSessionMood) => {
-      posthog.capture(AnalyticsEvent.PostSessionMoodLogged, {
-        mood: mood.id,
-        mood_score: mood.score,
-        technique_id: techniqueId,
-        duration_sec: durationSec,
+  const handleShare = useCallback(async () => {
+    try {
+      await Share.share({
+        message: `I just finished a ${techniqueName} session — ${breathCount} breaths in ${formatDuration(
+          durationSec,
+        )}.\n\n${APP_STORE_URL}`,
       });
-    },
-    [durationSec, posthog, techniqueId],
-  );
+    } catch {
+      Alert.alert('Could not share', 'Please try again.');
+    }
+  }, [breathCount, durationSec, techniqueName]);
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
@@ -148,10 +143,6 @@ export default function SessionCompleteScreen({
           </View>
         ) : null}
 
-        <View style={styles.moodWrap}>
-          <MoodCheckIn onSelect={handleMoodSelect} />
-        </View>
-
         <View style={styles.statsHeader}>
           <SectionHeader title="Statistics" />
         </View>
@@ -187,21 +178,33 @@ export default function SessionCompleteScreen({
           </View>
         ) : null}
 
-        <Pressable
-          style={({ pressed }) => [styles.doneCta, pressed && styles.ctaPressed]}
-          onPress={handleClose}
-          accessibilityRole="button"
-        >
-          <Text style={styles.doneCtaLabel}>Done</Text>
+        <Pressable style={styles.shareCta} onPress={handleShare}>
+          <MaterialCommunityIcons
+            name="share-variant"
+            size={20}
+            color={colors.text.inverse}
+          />
+          <Text style={styles.shareCtaLabel}>Share my result</Text>
         </Pressable>
+
       </ScrollView>
 
-      {/* Glassmorphic close button — fixed above the scroll */}
+      {/* Glassmorphic top buttons — fixed above the scroll */}
       <GlassIconButton
         style={[styles.closeButton, { top: insets.top + padding.screen.vertical }]}
         onPress={handleClose}
       >
         <MaterialCommunityIcons name="close" size={22} color={colors.text.secondary} />
+      </GlassIconButton>
+      <GlassIconButton
+        style={[styles.shareButton, { top: insets.top + padding.screen.vertical }]}
+        onPress={handleShare}
+      >
+        <MaterialCommunityIcons
+          name="share-variant"
+          size={20}
+          color={colors.primary.blue600}
+        />
       </GlassIconButton>
     </View>
   );
@@ -223,6 +226,11 @@ const styles = StyleSheet.create({
   closeButton: {
     position: 'absolute',
     left: padding.screen.horizontal,
+    zIndex: 1,
+  },
+  shareButton: {
+    position: 'absolute',
+    right: padding.screen.horizontal,
     zIndex: 1,
   },
   title: {
@@ -266,24 +274,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: padding.screen.horizontal,
     marginTop: margin.resultSection,
   },
-  moodWrap: {
-    paddingHorizontal: padding.screen.horizontal,
-    marginTop: spacing.sm,
-  },
-  doneCta: {
+  shareCta: {
     ...card.shadow,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: spacing.sm,
     marginHorizontal: padding.screen.horizontal,
     marginTop: margin.resultSection,
     paddingVertical: spacing.md,
     borderRadius: spacing.md,
     backgroundColor: colors.primary.blue600,
   },
-  ctaPressed: {
-    opacity: 0.9,
-  },
-  doneCtaLabel: {
+  shareCtaLabel: {
     ...typography.body.medium,
     fontFamily: fonts.semibold,
     fontWeight: '500',
