@@ -41,6 +41,7 @@ export const AnalyticsEvent = {
   HeartRateCaptureStarted: 'heart_rate_capture_started',
   HeartRateCaptureCompleted: 'heart_rate_capture_completed',
   HeartRateCaptureFailed: 'heart_rate_capture_failed',
+  HeartRateCaptureHelpShown: 'heart_rate_capture_help_shown',
   HeartRateResultAction: 'heart_rate_result_action',
   PaywallViewed: 'paywall_viewed',
   PaywallPackageSelected: 'paywall_package_selected',

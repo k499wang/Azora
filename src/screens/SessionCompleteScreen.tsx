@@ -102,17 +102,26 @@ export default function SessionCompleteScreen({
     navigation.navigate('MainTabs', { screen: 'Home' });
   }, [navigation]);
 
+  const shareMessage = useMemo(() => {
+    const parts = [
+      `${breathCount} breaths of ${techniqueName} in ${formatDuration(durationSec)}.`,
+    ];
+    if (displayAvgBpm != null) {
+      parts.push(`Heart rate settled at ${Math.round(displayAvgBpm)} bpm.`);
+    }
+    if (streakView != null && streakView.currentStreak >= 2) {
+      parts.push(`Day ${streakView.currentStreak} in a row.`);
+    }
+    return `${parts.join(' ')}\n\nBreathe with me:\n${APP_STORE_URL}`;
+  }, [breathCount, displayAvgBpm, durationSec, streakView, techniqueName]);
+
   const handleShare = useCallback(async () => {
     try {
-      await Share.share({
-        message: `I just finished a ${techniqueName} session — ${breathCount} breaths in ${formatDuration(
-          durationSec,
-        )}.\n\n${APP_STORE_URL}`,
-      });
+      await Share.share({ message: shareMessage });
     } catch {
       Alert.alert('Could not share', 'Please try again.');
     }
-  }, [breathCount, durationSec, techniqueName]);
+  }, [shareMessage]);
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>

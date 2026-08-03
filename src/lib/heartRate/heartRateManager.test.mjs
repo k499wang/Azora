@@ -331,6 +331,68 @@ test('HeartRateManager: graph timeline stays continuous across a freeze (no fast
   );
 });
 
+test('HeartRateManager: centered median smooths AC but emits the raw middle graph sample', () => {
+  const manager = new HeartRateManager();
+
+  assert.equal(manager.pushMicroJitterSample(0, 0.1, 0.1), null);
+  assert.equal(
+    manager.pushMicroJitterSample(FRAME_SPACING_MS, 0.9, 0.9),
+    null,
+  );
+  const filtered = manager.pushMicroJitterSample(
+    FRAME_SPACING_MS * 2,
+    0.12,
+    0.12,
+  );
+
+  assert.deepEqual(filtered, {
+    timestamp: FRAME_SPACING_MS,
+    ac: 0.12,
+    graphAc: 0.9,
+  });
+});
+
+function runBroadPulseTrain(manager, withJitter = false) {
+  let timestamp = 0;
+  let ticks = 0;
+  const statuses = new Set();
+  for (let i = 0; i < WARMUP_FRAMES; i++) {
+    manager.processFrame(makeFrame(timestamp, BASELINE_WEIGHTED));
+    timestamp += FRAME_SPACING_MS;
+  }
+
+  const pulse = [110, 125, 140, 125, 110];
+  for (let frame = 0; frame < 24 * 12 + 10; frame++) {
+    const phase = frame % 24;
+    let weighted = pulse[phase] ?? BASELINE_WEIGHTED;
+    // A single ±2% camera bump between pulses is below the raw-motion gate.
+    if (withJitter && phase === 12) {
+      weighted += Math.floor(frame / 24) % 2 === 0 ? 2 : -2;
+    }
+    const state = manager.processFrame(makeFrame(timestamp, weighted));
+    if (state.beatDetected) ticks += 1;
+    statuses.add(state.signalStatus);
+    timestamp += FRAME_SPACING_MS;
+  }
+  return { bpm: manager.getCurrentBpm(), statuses, ticks };
+}
+
+test('HeartRateManager: isolated sub-threshold jitter does not alter BPM or ticks', () => {
+  const clean = runBroadPulseTrain(new HeartRateManager());
+  const jittered = runBroadPulseTrain(new HeartRateManager(), true);
+
+  assert.equal(jittered.bpm, clean.bpm);
+  assert.equal(jittered.ticks, clean.ticks);
+  assert.ok(!jittered.statuses.has('excessive_motion'));
+});
+
+test('HeartRateManager: centered median preserves a broad clean pulse train', () => {
+  const result = runBroadPulseTrain(new HeartRateManager());
+
+  assert.ok(result.ticks >= 10, `expected one tick per broad pulse, got ${result.ticks}`);
+  assert.equal(result.bpm, 76);
+});
+
 test('HeartRateManager: emits no beat ticks while motion is active', () => {
   const manager = new HeartRateManager();
   let t = warmAndLock(manager);
@@ -359,6 +421,74 @@ test('HeartRateManager: emits no beat ticks while motion is active', () => {
 
   assert.ok(motionFrames > 0, 'expected the device shake to register as motion');
   assert.equal(beatsDuringMotion, 0, 'no beats should be emitted during motion');
+});
+
+test('HeartRateManager: motion is excluded from frequency and IBI state', () => {
+  const manager = new HeartRateManager();
+  let t = warmAndLock(manager);
+  manager.beginMeasurementWindow(t);
+
+  let seed = 1;
+  const rnd = () => {
+    seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+    return seed / 0x7fffffff;
+  };
+  let sawMotion = false;
+  let samplesAtMotionStart = null;
+  for (let i = 0; i < 24 * 3; i++) {
+    manager.pushAccelSample(t, 1.0 + (rnd() - 0.5) * 0.4);
+    manager.pushAccelSample(t + 16, 1.0 + (rnd() - 0.5) * 0.4);
+    const state = manager.processFrame(
+      makeFrame(t, i % 24 === 0 ? BEAT_WEIGHTED : 70 + rnd() * 60),
+    );
+    if (state.signalStatus === 'excessive_motion') {
+      sawMotion = true;
+      samplesAtMotionStart ??= manager.getIbiSamples().length;
+      assert.equal(manager.freqWindow.length, 0, 'motion must clear and stop spectral input');
+    }
+    t += FRAME_SPACING_MS;
+  }
+
+  assert.ok(sawMotion, 'expected motion to be surfaced');
+  assert.equal(
+    manager.getIbiSamples().length,
+    samplesAtMotionStart,
+    'motion frames must not add accepted intervals',
+  );
+
+  // Allow the accelerometer hold to expire, then resume a clean 800ms rhythm.
+  // The first clean peak becomes a new anchor, so no accepted IBI may span the
+  // multi-second corrupted interval. The centered median must also wait for
+  // three entirely fresh frames rather than mixing recovery with motion data.
+  const frozenGraphTimestamp = manager.getLatestLiveSignalTimestamp();
+  let cleanRecoveryFrames = 0;
+  for (let i = 0; i < 24 * 7; i++) {
+    manager.pushAccelSample(t, 1.0);
+    manager.pushAccelSample(t + 16, 1.0);
+    const state = manager.processFrame(
+      makeFrame(t, i % 24 === 0 ? BEAT_WEIGHTED : BASELINE_WEIGHTED),
+    );
+    if (state.signalStatus === 'measuring' && cleanRecoveryFrames < 3) {
+      cleanRecoveryFrames += 1;
+      assert.equal(manager.microJitterSamples.length, cleanRecoveryFrames);
+      if (cleanRecoveryFrames < 3) {
+        assert.equal(
+          manager.getLatestLiveSignalTimestamp(),
+          frozenGraphTimestamp,
+          'recovery must wait for a full fresh centered window',
+        );
+      }
+    }
+    t += FRAME_SPACING_MS;
+  }
+
+  assert.equal(cleanRecoveryFrames, 3, 'expected the clean median window to refill');
+  const recovered = manager.getIbiSamples().slice(samplesAtMotionStart);
+  assert.ok(recovered.length > 0, 'clean post-motion beats should resume IBI collection');
+  assert.ok(
+    recovered.every(({ ibiMs }) => Math.abs(ibiMs - 24 * FRAME_SPACING_MS) < 50),
+    `recovery must not record an IBI spanning motion, got ${JSON.stringify(recovered)}`,
+  );
 });
 
 test('HeartRateManager: a still accelerometer does not flag motion on a clean pulse', () => {
@@ -428,12 +558,11 @@ test('HeartRateManager: slow luminance drift reports motion while placement stay
   assert.deepEqual([...placements], ['good'], 'placement should stay good');
 });
 
-test('HeartRateManager: does not report motion at the start of a measurement window', () => {
+test('HeartRateManager: preserves confirmed optical motion detection at measurement start', () => {
   const manager = new HeartRateManager();
   let t = warmAndLock(manager);
-  // Start of a hold: the latch is reset, so the opening inhale / hand-settle
-  // (here an immediately erratic signal) must NOT read as "keep still" until a
-  // fresh pulse re-locks.
+  // Calibration already confirmed a real pulse. Starting the hold must retain
+  // that latch so an immediately erratic optical signal is not ignored.
   manager.beginMeasurementWindow(t);
 
   let seed = 1;
@@ -442,14 +571,14 @@ test('HeartRateManager: does not report motion at the start of a measurement win
     return seed / 0x7fffffff;
   };
   const statuses = new Set();
-  for (let i = 0; i < 20; i++) {
+  for (let i = 0; i < 40; i++) {
     statuses.add(manager.processFrame(makeFrame(t, 70 + rnd() * 60)).signalStatus);
     t += FRAME_SPACING_MS;
   }
 
   assert.ok(
-    !statuses.has('excessive_motion'),
-    `no motion before re-lock, saw ${JSON.stringify([...statuses])}`,
+    statuses.has('excessive_motion'),
+    `confirmed calibration lock should surface motion, saw ${JSON.stringify([...statuses])}`,
   );
 });
 

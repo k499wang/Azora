@@ -204,6 +204,8 @@ const LIVE_BPM_PROFILE_CONFIG = {
 // to wobble within a beat, fast enough to track the breathing-cycle amplitude
 // modulation (4-10s period) that otherwise renders beats tall-then-tiny.
 const GRAPH_GAIN_ALPHA = 0.03;
+const MICRO_JITTER_WINDOW = 3;
+const MICRO_JITTER_MAX_GAP_MS = 100;
 
 const SAMPLE_RATE_HZ = 30;
 const BP_LOW_HZ = 0.7;
@@ -439,6 +441,11 @@ export class HeartRateManager {
   private polarityPositiveScore = 0;
   private polarityNegativeScore = 0;
   private readonly liveSignalSamples: LivePpgSignalSample[] = [];
+  private readonly microJitterSamples: {
+    timestamp: number;
+    ac: number;
+    graphAc: number;
+  }[] = [];
   private lastGraphRealTs: number | null = null;
   private graphTimeShift = 0;
   private readonly motionFrames: {
@@ -465,6 +472,7 @@ export class HeartRateManager {
   private freqDisagreeCount = 0;
   private lastFreqEstimate: { bpm: number; timestamp: number } | null = null;
   private latestBpmSnapshot: HeartRateBpmSnapshot | null = null;
+  private signalErrorActive = false;
 
   constructor(options: HeartRateManagerOptions = {}) {
     this.liveBpmConfig = LIVE_BPM_PROFILE_CONFIG[options.liveBpmProfile ?? 'stable'];
@@ -474,6 +482,7 @@ export class HeartRateManager {
     this.bpHp.reset();
     this.graphHp.reset();
     this.bpLp.reset();
+    this.microJitterSamples.length = 0;
   }
 
   private primeBandpass(x0: number): void {
@@ -482,6 +491,7 @@ export class HeartRateManager {
     // under constant input is zero.
     this.graphHp.prime(0, 0);
     this.bpLp.prime(0, 1);
+    this.microJitterSamples.length = 0;
   }
 
   reset(): void {
@@ -515,6 +525,7 @@ export class HeartRateManager {
     this.polarityPositiveScore = 0;
     this.polarityNegativeScore = 0;
     this.liveSignalSamples.length = 0;
+    this.microJitterSamples.length = 0;
     this.lastGraphRealTs = null;
     this.graphTimeShift = 0;
     this.motionFrames.length = 0;
@@ -537,6 +548,7 @@ export class HeartRateManager {
     this.freqDisagreeCount = 0;
     this.lastFreqEstimate = null;
     this.latestBpmSnapshot = null;
+    this.signalErrorActive = false;
   }
 
   // Counts transitions of the *committed* placement (after the grace window has
@@ -809,10 +821,56 @@ export class HeartRateManager {
     this.ibiEma = null;
     this.freqDisagreeCount = 0;
     this.latestBpmSnapshot = null;
-    // Re-require a fresh pulse lock before trusting motion, so the opening inhale
-    // / hand-settle at the start of a hold isn't misread as "keep still".
-    this.pulseLockedThisWindow = false;
-    this.lockBeatCount = 0;
+    // Preserve a confirmed pulse-lock latch across calibration -> measurement.
+    // Resetting it here made the first seconds of the actual measurement blind
+    // to optical motion even though calibration had already established a pulse.
+  }
+
+  private quarantineSignalError(): void {
+    // Motion/no-pulse samples are missing data, not evidence about rhythm. Drop
+    // the spectral window and peak anchor so neither estimator can bridge the
+    // corrupted interval. Keep accepted IBI history/EMA so a stable BPM can be
+    // held and resumed after clean beats return.
+    this.freqWindow.length = 0;
+    this.lastFreqCheckTs = 0;
+    this.freqDisagreeCount = 0;
+    this.lastFreqEstimate = null;
+    this.prev1 = 0;
+    this.prev2 = 0;
+    this.prev1Ts = 0;
+    this.prev2Ts = 0;
+    this.lastPeakTs = 0;
+    this.lastTickTs = 0;
+    this.armedForPeak = true;
+    this.pendingShortPeakTs = null;
+    this.coldStartPendingIbi = null;
+    this.peakHeightEma = null;
+    this.microJitterSamples.length = 0;
+  }
+
+  private pushMicroJitterSample(
+    timestamp: number,
+    ac: number,
+    graphAc: number,
+  ): { timestamp: number; ac: number; graphAc: number } | null {
+    this.microJitterSamples.push({ timestamp, ac, graphAc });
+    if (this.microJitterSamples.length > MICRO_JITTER_WINDOW) {
+      this.microJitterSamples.shift();
+    }
+    if (this.microJitterSamples.length < MICRO_JITTER_WINDOW) return null;
+
+    // Use the middle frame's clock: the centered median adds one frame of
+    // latency, but must not shift beat/IBI timestamps to the newest frame.
+    return {
+      timestamp: this.microJitterSamples[1].timestamp,
+      ac: medianOfRecent(
+        this.microJitterSamples.map((sample) => sample.ac),
+        MICRO_JITTER_WINDOW,
+      ),
+      // The graph has its own snapshot-level smoother. Keep its centered raw
+      // band-pass sample here so the manager does not blur it a second time.
+      graphAc: this.microJitterSamples[1].graphAc,
+    };
   }
 
   private pushFreqSample(timestamp: number, ac: number): void {
@@ -1036,6 +1094,9 @@ export class HeartRateManager {
     }
 
     const gapMs = this.lastGoodTs === 0 ? 0 : sample.timestamp - this.lastGoodTs;
+    if (gapMs > MICRO_JITTER_MAX_GAP_MS) {
+      this.microJitterSamples.length = 0;
+    }
     if (!this.initialized || gapMs > REINIT_GAP_MS) {
       if (this.sessionStartTs == null) {
         this.sessionStartTs = sample.timestamp;
@@ -1079,36 +1140,11 @@ export class HeartRateManager {
     const denom = Math.max(this.baseline, 1);
     const rawAc = bp / denom;
     const rawGraphAc = this.graphHp.process(bp) / denom;
-    this.amplitude += AMPLITUDE_ALPHA * (Math.abs(rawAc) - this.amplitude);
-    this.graphGain += GRAPH_GAIN_ALPHA * (Math.abs(rawGraphAc) - this.graphGain);
-
-    if (!this.polarityLocked && this.amplitude > MIN_AMPLITUDE) {
-      const excursionThreshold =
-        this.amplitude * POLARITY_EXCURSION_THRESHOLD_FACTOR;
-      if (rawAc > excursionThreshold) {
-        this.polarityPositiveScore += rawAc;
-      } else if (rawAc < -excursionThreshold) {
-        this.polarityNegativeScore += -rawAc;
-      }
-    }
 
     this.validFrameCounter += 1;
     const readyForMeasurement = this.validFrameCounter > WARMUP_FRAMES;
 
-    if (!this.polarityLocked && readyForMeasurement) {
-      const pos = this.polarityPositiveScore;
-      const neg = this.polarityNegativeScore;
-      if (
-        neg > pos * POLARITY_LOCK_DOMINANCE &&
-        neg > 0
-      ) {
-        this.polarity = -1;
-      }
-      this.polarityLocked = true;
-    }
-
-    const ac = rawAc * this.polarity;
-    this.pushFreqSample(sample.timestamp, ac);
+    const motionAc = rawAc * this.polarity;
 
     // Motion classification is computed here (before the beat detector) so the
     // PPG graph can freeze during movement: while motion is active we stop
@@ -1118,7 +1154,7 @@ export class HeartRateManager {
     const placementChurn = this.trackPlacementChurn(sample.timestamp, placement);
     const rawDev =
       Math.abs(weightedAverage - this.baseline) / Math.max(this.baseline, 1);
-    const excursionMotion = this.trackMotion(sample.timestamp, ac, rawDev);
+    const excursionMotion = this.trackMotion(sample.timestamp, motionAc, rawDev);
     // Only trust the optical motion detectors once a real pulse has locked at
     // least once this measurement window. Before that everything is a settling
     // transient — the opening inhale of a breathing exercise, the hand settling
@@ -1139,31 +1175,95 @@ export class HeartRateManager {
       readyForMeasurement &&
       this.flatSignalSinceTs != null &&
       sample.timestamp - this.flatSignalSinceTs > NO_PULSE_NOTICE_MS;
-    // Any surfaced signal problem freezes the graph and mutes beats: while it is
-    // active we neither feed the PPG trace (it holds the last clean waveform) nor
-    // emit beat ticks (which drive the pulse animation and haptics). Internal
-    // interval tracking below still runs so the BPM can hold its last value.
+    // Any surfaced signal problem freezes the graph and mutes beats. It also
+    // quarantines the spectral and interval estimators: corrupted samples must
+    // not alter frequency state or create an IBI spanning the bad interval.
     const signalError = inMotion || noPulse;
 
+    let filteredSample: { timestamp: number; ac: number; graphAc: number } | null = null;
+    if (signalError) {
+      if (!this.signalErrorActive) {
+        this.quarantineSignalError();
+      }
+      this.signalErrorActive = true;
+    } else {
+      if (this.signalErrorActive) {
+        // The first clean frame must not form a peak with stale error frames.
+        this.prev1 = 0;
+        this.prev2 = 0;
+        this.prev1Ts = 0;
+        this.prev2Ts = 0;
+        this.armedForPeak = true;
+        this.microJitterSamples.length = 0;
+      }
+      this.signalErrorActive = false;
+      filteredSample = this.pushMicroJitterSample(
+        sample.timestamp,
+        rawAc,
+        rawGraphAc,
+      );
+      if (filteredSample != null) {
+        this.amplitude +=
+          AMPLITUDE_ALPHA * (Math.abs(filteredSample.ac) - this.amplitude);
+        this.graphGain +=
+          GRAPH_GAIN_ALPHA * (Math.abs(filteredSample.graphAc) - this.graphGain);
+
+        if (!this.polarityLocked && this.amplitude > MIN_AMPLITUDE) {
+          const excursionThreshold =
+            this.amplitude * POLARITY_EXCURSION_THRESHOLD_FACTOR;
+          if (filteredSample.ac > excursionThreshold) {
+            this.polarityPositiveScore += filteredSample.ac;
+          } else if (filteredSample.ac < -excursionThreshold) {
+            this.polarityNegativeScore += -filteredSample.ac;
+          }
+        }
+      }
+
+      if (!this.polarityLocked && readyForMeasurement) {
+        const pos = this.polarityPositiveScore;
+        const neg = this.polarityNegativeScore;
+        if (neg > pos * POLARITY_LOCK_DOMINANCE && neg > 0) {
+          this.polarity = -1;
+        }
+        this.polarityLocked = true;
+      }
+    }
+
+    const ac = filteredSample == null ? 0 : filteredSample.ac * this.polarity;
+    const graphAc =
+      filteredSample == null ? 0 : filteredSample.graphAc * this.polarity;
+    const processedTimestamp = filteredSample?.timestamp ?? sample.timestamp;
+
     if (!signalError) {
+      if (filteredSample != null) {
+        this.pushFreqSample(processedTimestamp, ac);
+      }
+    }
+
+    if (!signalError && filteredSample != null) {
       // Feed the graph gain-normalized so breathing-cycle amplitude modulation
       // does not render beats tall-then-tiny; the graph autoscales, so only the
       // relative height consistency matters.
       this.pushLiveSignalSample(
-        sample.timestamp,
-        (rawGraphAc * this.polarity) / Math.max(this.graphGain, MIN_AMPLITUDE),
+        processedTimestamp,
+        graphAc / Math.max(this.graphGain, MIN_AMPLITUDE),
       );
     }
     let beatDetected = false;
     let beatPeakTs: number | null = null;
 
-    if (readyForMeasurement && this.amplitude > MIN_AMPLITUDE) {
+    if (
+      !signalError &&
+      filteredSample != null &&
+      readyForMeasurement &&
+      this.amplitude > MIN_AMPLITUDE
+    ) {
       const upperThreshold =
         this.lastPeakTs === 0
           ? this.amplitude * INITIAL_PEAK_THRESHOLD_FACTOR
           : adaptivePeakThreshold(
               this.amplitude,
-              sample.timestamp - this.lastPeakTs,
+              processedTimestamp - this.lastPeakTs,
               this.getExpectedIbiMs(),
             );
       const lowerThreshold = -this.amplitude * TROUGH_REARM_FACTOR;
@@ -1171,7 +1271,7 @@ export class HeartRateManager {
         !this.armedForPeak &&
         (ac < lowerThreshold ||
           (this.lastPeakTs !== 0 &&
-            sample.timestamp - this.lastPeakTs >= FORCE_REARM_AFTER_MS))
+            processedTimestamp - this.lastPeakTs >= FORCE_REARM_AFTER_MS))
       ) {
         this.armedForPeak = true;
       }
@@ -1190,7 +1290,7 @@ export class HeartRateManager {
                 ac,
                 this.prev2Ts,
                 this.prev1Ts,
-                sample.timestamp,
+                processedTimestamp,
               )
             : this.prev1Ts;
         const peakTs = rawPeakTs - FILTER_GROUP_DELAY_MS;
@@ -1351,14 +1451,16 @@ export class HeartRateManager {
       }
     }
 
-    if (readyForMeasurement) {
-      this.runFrequencyCrossCheck(sample.timestamp);
+    if (!signalError && filteredSample != null && readyForMeasurement) {
+      this.runFrequencyCrossCheck(processedTimestamp);
     }
 
-    this.prev2 = this.prev1;
-    this.prev2Ts = this.prev1Ts;
-    this.prev1 = ac;
-    this.prev1Ts = sample.timestamp;
+    if (!signalError && filteredSample != null) {
+      this.prev2 = this.prev1;
+      this.prev2Ts = this.prev1Ts;
+      this.prev1 = ac;
+      this.prev1Ts = processedTimestamp;
+    }
     this.lastGoodTs = sample.timestamp;
     this.lastPlacement = placement;
 

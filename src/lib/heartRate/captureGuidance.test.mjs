@@ -4,6 +4,7 @@ import {
   getCameraCheckMessage,
   getHeartRateCameraTarget,
   getHeartRatePlacementGuidance,
+  getHeartRateTroubleshooting,
   getMeasurementCorrectionMessage,
   hasConfirmedPulse,
 } from './captureGuidance.ts';
@@ -160,4 +161,55 @@ test('pulse confirmation requires good placement, measuring status, and a BPM', 
     }),
     false,
   );
+});
+
+test('troubleshooting leads with the fix for the fault that stalled the check', () => {
+  assert.match(
+    getHeartRateTroubleshooting('no_finger', 'bottom camera').tips[0].title,
+    /bottom camera/,
+  );
+  assert.match(
+    getHeartRateTroubleshooting('partial_coverage', 'bottom camera').tips[0].title,
+    /cover the bottom camera completely/i,
+  );
+  assert.match(
+    getHeartRateTroubleshooting('too_much_pressure').tips[0].title,
+    /ease off/i,
+  );
+  assert.match(
+    getHeartRateTroubleshooting('motion').tips[0].title,
+    /table/i,
+  );
+});
+
+test('a faint signal leads with warm hands, the usual real cause', () => {
+  const troubleshooting = getHeartRateTroubleshooting('no_pulse');
+
+  assert.match(troubleshooting.tips[0].title, /warm your hands/i);
+  assert.match(troubleshooting.diagnosis, /too faint/i);
+});
+
+test('every fault gets a title, a diagnosis, and distinct tips', () => {
+  const issues = [
+    'no_finger',
+    'partial_coverage',
+    'too_much_pressure',
+    'motion',
+    'no_pulse',
+  ];
+
+  for (const issue of issues) {
+    const { title, diagnosis, tips } = getHeartRateTroubleshooting(issue);
+    assert.equal(title, 'Trouble finding your pulse');
+    assert.ok(diagnosis.length > 0, `${issue} has no diagnosis`);
+    assert.equal(tips.length, 4, `${issue} has the wrong tip count`);
+    assert.equal(
+      new Set(tips.map((tip) => tip.title)).size,
+      tips.length,
+      `${issue} repeats a tip`,
+    );
+    for (const tip of tips) {
+      assert.ok(tip.detail.length > 0, `${issue} has an empty tip detail`);
+    }
+  }
 });

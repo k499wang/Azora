@@ -403,6 +403,7 @@ export default function BaselineScreen({
         placement={placementCfg}
         progress={progress}
         signalWarning={signalWarning}
+        signalStatus={stream.signalStatus}
         visibleBeatTick={visibleBeatTick}
       />
     );

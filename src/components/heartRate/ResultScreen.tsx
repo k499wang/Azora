@@ -35,6 +35,8 @@ interface ResultScreenProps {
   saveError?: boolean;
   onRetrySave?: () => void;
   context?: string;
+  /** Whether the capture stalled long enough to surface the troubleshooting sheet. */
+  helpShown?: boolean;
 }
 
 function getErrorMessage(
@@ -111,6 +113,7 @@ export function ResultScreen({
   saveError = false,
   onRetrySave,
   context,
+  helpShown = false,
 }: ResultScreenProps) {
   const posthog = usePostHog();
   const insets = useSafeAreaInsets();
@@ -149,11 +152,13 @@ export function ResultScreen({
     if (isSuccess && result.reading) {
       posthog.capture(AnalyticsEvent.HeartRateCaptureCompleted, {
         context: context ?? null,
+        help_shown: helpShown,
       });
     } else if (!isSuccess) {
       posthog.capture(AnalyticsEvent.HeartRateCaptureFailed, {
         error_type: result.error ?? 'unknown',
         context: context ?? null,
+        help_shown: helpShown,
       });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
