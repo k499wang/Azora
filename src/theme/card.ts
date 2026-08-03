@@ -4,6 +4,8 @@ import { colors } from './colors';
 export const card: {
   base: ViewStyle;
   paper: ViewStyle;
+  block: ViewStyle;
+  blockShadow: ViewStyle;
   shadow: ViewStyle;
   shadowElevated: ViewStyle;
   glass: ViewStyle;
@@ -27,6 +29,20 @@ export const card: {
     shadowOpacity: 0.06,
     shadowRadius: 18,
     elevation: 3,
+  },
+  // Flat color-block tile: deep radius, no border, clips its decoration. Clips
+  // its own shadow too, so pair it with `blockShadow` on a wrapper view.
+  block: {
+    borderRadius: 28,
+    overflow: 'hidden',
+  },
+  blockShadow: {
+    borderRadius: 28,
+    shadowColor: colors.neutral[900],
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.1,
+    shadowRadius: 16,
+    elevation: 6,
   },
   shadow: {
     shadowColor: colors.primary.blue700,

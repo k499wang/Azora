@@ -1,10 +1,16 @@
 import { Text } from '../common/Text';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { Image, type ImageProps } from 'expo-image';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import BlobCharacter from './BlobCharacter';
+import TaskCardDecor from './TaskCardDecor';
 import SectionHeader from '../common/SectionHeader';
 import type { BreathingTechnique } from '../../features/exercise/guidedBreathing/techniques';
-import { getBackgroundImageSource } from '../../services/images/backgroundImageCache';
+import {
+  BREATH_HOLD_STYLE,
+  CATEGORY_STYLE,
+  type CategoryStyle,
+} from '../../features/exercise/guidedBreathing/categoryPalette';
+import { card } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
@@ -16,7 +22,7 @@ import {
 import { DEFAULT_DAILY_PLAN_SCHEDULE } from '../../services/dailyPlan/types';
 
 const TIMELINE_COLUMN_WIDTH = 32;
-const TIMELINE_MARKER_SIZE = 26;
+const TIMELINE_MARKER_SIZE = 18;
 const TIMELINE_RAIL_WIDTH = 6;
 const TIMELINE_ROW_HEIGHT = 144;
 const TASK_CONTENT_SIZE = 112;
@@ -47,7 +53,7 @@ interface DailyTaskRowProps {
   scheduledTime: string;
   detailLabel: string;
   detailIcon: BreathingTechnique['icon'];
-  imageSource: ImageProps['source'];
+  style: CategoryStyle;
   completed: boolean;
   locked: boolean;
   loading?: boolean;
@@ -63,7 +69,7 @@ function DailyTaskRow({
   scheduledTime,
   detailLabel,
   detailIcon,
-  imageSource,
+  style,
   completed,
   locked,
   loading = false,
@@ -95,50 +101,57 @@ function DailyTaskRow({
           {completed || locked ? (
             <MaterialCommunityIcons
               name={completed ? 'check' : 'lock-outline'}
-              size={15}
+              size={11}
               color={colors.text.inverse}
             />
           ) : null}
         </View>
       </View>
 
-      <View style={styles.taskPill}>
-        <View style={styles.taskCopy} pointerEvents="none">
-          <Text style={styles.taskTitle} numberOfLines={2}>
-            {title}
-          </Text>
-          <View style={styles.metadataStack}>
-            <View style={styles.metadataRow}>
-              <MaterialCommunityIcons
-                name={detailIcon}
-                size={14}
-                color={colors.text.secondary}
-              />
-              <Text style={styles.metadataText} numberOfLines={1}>
-                {detailLabel}
-              </Text>
-            </View>
-            <View style={styles.metadataRow}>
-              <MaterialCommunityIcons
-                name="clock-outline"
-                size={14}
-                color={colors.text.secondary}
-              />
-              <Text style={styles.metadataText} numberOfLines={1}>
-                {scheduledTime}
-              </Text>
+      <View style={[styles.taskPillShadow, { backgroundColor: style.hue.base }]}>
+        <View style={styles.taskPill}>
+          <TaskCardDecor character={style.character} color={colors.text.inverse} />
+
+          <View style={styles.taskCopy} pointerEvents="none">
+            <Text style={styles.taskTitle} numberOfLines={2}>
+              {title}
+            </Text>
+            <View style={styles.metadataStack}>
+              <View style={styles.metadataRow}>
+                <MaterialCommunityIcons
+                  name={detailIcon}
+                  size={14}
+                  color={colors.text.inverse}
+                />
+                <Text style={styles.metadataText} numberOfLines={1}>
+                  {detailLabel}
+                </Text>
+              </View>
+              <View style={styles.metadataRow}>
+                <MaterialCommunityIcons
+                  name="clock-outline"
+                  size={14}
+                  color={colors.text.inverse}
+                />
+                <Text style={styles.metadataText} numberOfLines={1}>
+                  {scheduledTime}
+                </Text>
+              </View>
             </View>
           </View>
-        </View>
 
-        <Image
-          source={imageSource}
-          style={[styles.taskImage, loading && styles.taskImageLoading]}
-          contentFit="cover"
-          contentPosition="center"
-          cachePolicy="memory-disk"
-          transition={0}
-        />
+          <View
+            style={[styles.taskArt, loading && styles.taskArtLoading]}
+            pointerEvents="none"
+          >
+            <BlobCharacter
+              character={style.character}
+              size={TASK_CONTENT_SIZE}
+              bodyColor={style.hue.soft}
+              faceColor={style.hue.ink}
+            />
+          </View>
+        </View>
       </View>
     </Pressable>
   );
@@ -187,8 +200,9 @@ export default function TodaysDailiesSection({
       scheduledTime: guidedScheduledTime,
       detailLabel: guidedDetail,
       detailIcon: guidedDetailIcon,
-      imageSource:
-        technique?.backgroundImage ?? getBackgroundImageSource('dailyPlan'),
+      style: technique
+        ? CATEGORY_STYLE[technique.category]
+        : CATEGORY_STYLE.calm,
       completed: guidedExerciseCompleted,
       locked: guidedLocked,
       loading: techniqueLoading,
@@ -199,9 +213,9 @@ export default function TodaysDailiesSection({
       scheduledTime: handPickedScheduledTime,
       detailLabel: 'Azora’s daily pick',
       detailIcon: handPickedTechnique?.icon ?? 'creation-outline',
-      imageSource:
-        handPickedTechnique?.backgroundImage ??
-        getBackgroundImageSource('dailyPlan'),
+      style: handPickedTechnique
+        ? CATEGORY_STYLE[handPickedTechnique.category]
+        : CATEGORY_STYLE.balance,
       completed: handPickedExerciseCompleted,
       locked: handPickedLocked,
       loading: handPickedTechniqueLoading,
@@ -213,7 +227,7 @@ export default function TodaysDailiesSection({
       scheduledTime: breathHoldScheduledTime,
       detailLabel: 'Daily check-in',
       detailIcon: 'timer-sand',
-      imageSource: getBackgroundImageSource('dailyPlan'),
+      style: BREATH_HOLD_STYLE,
       completed: breathHoldCompleted,
       locked: breathHoldLocked,
       onPress: onPressBreathHold,
@@ -298,26 +312,28 @@ const styles = StyleSheet.create({
   statusMarkerLocked: {
     backgroundColor: colors.neutral[400],
   },
+  taskPillShadow: {
+    ...card.blockShadow,
+    flex: 1,
+    borderRadius: 24,
+  },
   taskPill: {
     height: TIMELINE_ROW_HEIGHT,
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderRadius: 24,
-    borderWidth: 1,
-    borderColor: colors.border.default,
-    backgroundColor: colors.background.card,
+    overflow: 'hidden',
   },
-  taskImage: {
+  taskArt: {
     width: TASK_CONTENT_SIZE,
     height: TASK_CONTENT_SIZE,
-    borderRadius: 24,
-    backgroundColor: colors.background.lagoon,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  taskImageLoading: {
+  taskArtLoading: {
     opacity: 0.45,
   },
   taskCopy: {
@@ -328,7 +344,7 @@ const styles = StyleSheet.create({
   taskTitle: {
     ...typography.title.title3,
     fontFamily: fonts.semibold,
-    color: colors.text.primary,
+    color: colors.text.inverse,
   },
   metadataStack: {
     gap: spacing.xs,
@@ -340,6 +356,6 @@ const styles = StyleSheet.create({
   },
   metadataText: {
     ...typography.label.detail,
-    color: colors.text.secondary,
+    color: colors.text.inverse,
   },
 });

@@ -1513,7 +1513,6 @@ export default function OnboardingFlow({
   if (step === 'pact') {
     return (
       <PactScreen
-        displayName={name.trim() || null}
         dailyMinutes={dailyMinutes}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}

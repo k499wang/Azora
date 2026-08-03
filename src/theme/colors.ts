@@ -64,10 +64,24 @@ export const colors = {
     700: '#CC6A00',
   },
 
+  // Playful multi-hue families for the color-blocked home surfaces. `base` is a
+  // saturated fill that carries white text (all bases clear 3:1 against white),
+  // `soft` is the receded/completed tint, `ink` is the text color on `soft`.
+  playful: {
+    teal: { base: '#0E9E8C', soft: '#DCF2EE', ink: '#07564B' },
+    coral: { base: '#E85A3A', soft: '#FDE6DF', ink: '#8A2E15' },
+    violet: { base: '#6B57E0', soft: '#E7E2FC', ink: '#3A2C93' },
+    amber: { base: '#C97F04', soft: '#FBEDD2', ink: '#7A4D02' },
+    sky: { base: '#2F82E0', soft: '#DEEBFB', ink: '#10457F' },
+    blush: { base: '#E14C8B', soft: '#FBE1EC', ink: '#85194A' },
+  },
+
   background: {
     // Cool neutral canvas for the frosted/glass paradigm — glass surfaces refract
     // against grey rather than blue tint.
     primary: '#F4F5F7',
+    // Near-white canvas the playful color blocks sit on.
+    canvas: '#F7F8FB',
     secondary: '#EEF5FF',
     elevated: '#FFFFFF',
     card: '#F4F9FF',
