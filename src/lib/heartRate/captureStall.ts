@@ -5,7 +5,7 @@ import type { FingerPlacementState, SignalStatus } from './types';
  * help sheet takes over. Long enough for an ordinary fumble to resolve itself,
  * short enough that nobody sits there guessing.
  */
-export const HEART_RATE_STALL_DELAY_MS = 17_000;
+export const HEART_RATE_STALL_DELAY_MS = 20_000;
 
 export type HeartRateStallIssue =
   | 'no_finger'
