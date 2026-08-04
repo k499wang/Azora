@@ -1,6 +1,6 @@
 import { createNativeBottomTabNavigator } from '@react-navigation/bottom-tabs/unstable';
 import HomeScreen from '../../screens/HomeScreen';
-import BreathScreen from '../../screens/BreathScreen';
+import ExploreScreen from '../../screens/ExploreScreen';
 import HeartTabScreen from '../../screens/HeartTabScreen';
 import ProfileScreen from '../../screens/ProfileScreen';
 import type { MainTabParamList } from './types';
@@ -30,13 +30,13 @@ export function MainTabs() {
         }}
       />
       <Tab.Screen
-        name="Breath"
-        component={BreathScreen}
+        name="Explore"
+        component={ExploreScreen}
         options={{
-          tabBarLabel: 'Breath',
+          tabBarLabel: 'Explore',
           tabBarIcon: ({ focused }) => ({
             type: 'sfSymbol',
-            name: focused ? 'lungs.fill' : 'lungs',
+            name: focused ? 'safari.fill' : 'safari',
           }),
         }}
       />

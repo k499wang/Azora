@@ -23,6 +23,9 @@ interface LineGraphProps {
   highlightColor?: string;
   showXAxisLabels?: boolean;
   valuePaddingRatio?: number;
+  labelColor?: string;
+  mutedLabelColor?: string;
+  dotStrokeColor?: string;
 }
 
 const CHART_PADDING = {
@@ -44,6 +47,9 @@ export default function LineGraph({
   highlightColor = colors.orange[400],
   showXAxisLabels = true,
   valuePaddingRatio = 0.15,
+  labelColor = colors.text.primary,
+  mutedLabelColor = colors.text.secondary,
+  dotStrokeColor = colors.background.elevated,
 }: LineGraphProps) {
   const [containerWidth, setContainerWidth] = useState(0);
 
@@ -148,8 +154,8 @@ export default function LineGraph({
       <View style={styles.container} onLayout={onLayout}>
         {data.length === 0 ? (
           <View style={[styles.emptyChart, { height }]}>
-            <Text style={styles.emptyTitle}>No holds yet</Text>
-            <Text style={styles.emptyBody}>
+            <Text style={[styles.emptyTitle, { color: labelColor }]}>No holds yet</Text>
+            <Text style={[styles.emptyBody, { color: mutedLabelColor }]}>
               Complete your first breath hold to start tracking your progress.
             </Text>
           </View>
@@ -187,7 +193,7 @@ export default function LineGraph({
                     cy={point.y}
                     r={isHighlighted ? 5 : 3.5}
                     fill={isHighlighted ? highlightColor : dotColor}
-                    stroke={colors.background.elevated}
+                    stroke={dotStrokeColor}
                     strokeWidth={2}
                   />
                 );
@@ -206,6 +212,7 @@ export default function LineGraph({
                     {
                       left: point.x - 20,
                       top: point.y - 22,
+                      color: labelColor,
                     },
                     isHighlighted && {
                       color: highlightColor,
@@ -233,7 +240,11 @@ export default function LineGraph({
                   return (
                     <Text
                       key={`label-${index}`}
-                      style={[styles.xLabel, positionStyle, { bottom: 0 }]}
+                      style={[
+                        styles.xLabel,
+                        positionStyle,
+                        { bottom: 0, color: mutedLabelColor },
+                      ]}
                       numberOfLines={1}
                     >
                       {point.label}
@@ -244,7 +255,9 @@ export default function LineGraph({
           </View>
         ) : (
           <View style={styles.placeholder}>
-            <Text style={styles.placeholderText}>Loading chart...</Text>
+            <Text style={[styles.placeholderText, { color: mutedLabelColor }]}>
+              Loading chart...
+            </Text>
           </View>
         )}
       </View>

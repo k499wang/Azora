@@ -9,10 +9,12 @@ import {
 import { colors } from '../../theme/colors';
 import { typography, fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
+import { card } from '../../theme/card';
 import LockedScrim from '../common/LockedScrim';
 import CardSurface from '../common/CardSurface';
 import Icon from '../common/icons/Icon';
 import type { CardSurfaceMode } from '../common/cardSurfaceConfig';
+import type { PlayfulHue } from '../../features/exercise/guidedBreathing/categoryPalette';
 
 interface StressGaugeProps {
   value: number | null;
@@ -20,6 +22,7 @@ interface StressGaugeProps {
   locked?: boolean;
   onPressLocked?: () => void;
   surface?: CardSurfaceMode;
+  hue?: PlayfulHue;
   lastMeasuredLabel?: string;
 }
 
@@ -58,6 +61,7 @@ export default function StressGauge({
   locked = false,
   onPressLocked,
   surface,
+  hue = colors.playful.teal,
   lastMeasuredLabel,
 }: StressGaugeProps) {
   const hasValue = value != null && Number.isFinite(value);
@@ -76,13 +80,11 @@ export default function StressGauge({
 
   const header = (
     <>
-      <Icon name="stat-stress-index" size={24} color={colors.accent[600]} />
+      <Icon name="stat-stress-index" size={24} color={colors.text.inverse} />
       <Text style={styles.label}>Stress Index</Text>
       {zone != null ? (
-        <View style={[styles.zonePill, { backgroundColor: `${zone.color}18` }]}>
-          <Text style={[styles.zonePillText, { color: zone.color }]}>
-            {zone.label}
-          </Text>
+        <View style={styles.zonePill}>
+          <Text style={styles.zonePillText}>{zone.label}</Text>
         </View>
       ) : null}
     </>
@@ -121,7 +123,7 @@ export default function StressGauge({
                 style="stroke"
                 strokeWidth={STROKE}
                 strokeCap="round"
-                color={colors.neutral[100]}
+                color={colors.onBlock.fill}
               />
               {zone != null ? (
                 <Path
@@ -129,7 +131,7 @@ export default function StressGauge({
                   style="stroke"
                   strokeWidth={STROKE}
                   strokeCap="round"
-                  color={zone.color}
+                  color={colors.text.inverse}
                 />
               ) : null}
               {TICKS.map((p, i) => (
@@ -139,14 +141,11 @@ export default function StressGauge({
                   style="stroke"
                   strokeWidth={1.5}
                   strokeCap="round"
-                  color={colors.neutral[200]}
+                  color={colors.onBlock.divider}
                 />
               ))}
 
-              <Circle cx={CX} cy={CY + 3} r={INNER_R + 3} color="rgba(15,23,42,0.04)" />
-              <Circle cx={CX} cy={CY + 1.5} r={INNER_R + 1.5} color="rgba(15,23,42,0.02)" />
-              <Circle cx={CX} cy={CY} r={INNER_R + 1} color={colors.neutral[200]} />
-              <Circle cx={CX} cy={CY} r={INNER_R} color={colors.background.elevated} />
+              <Circle cx={CX} cy={CY} r={INNER_R} color={hue.base} />
             </Canvas>
           </View>
         </View>
@@ -156,7 +155,7 @@ export default function StressGauge({
         <>
           <LockedScrim />
           <View style={styles.clearHeaderOverlay} pointerEvents="none">
-            <Icon name="stat-stress-index" size={24} color={colors.accent[600]} />
+            <Icon name="stat-stress-index" size={24} color={colors.text.inverse} />
             <Text style={styles.label}>Stress Index</Text>
           </View>
           {onPressLocked ? (
@@ -172,7 +171,7 @@ export default function StressGauge({
   );
 
   return (
-    <CardSurface locked={locked} style={styles.card} surface={surface}>
+    <CardSurface locked={locked} style={styles.card} surface={surface} hue={hue}>
       {content}
     </CardSurface>
   );
@@ -198,10 +197,9 @@ const styles = StyleSheet.create({
   },
   label: {
     ...typography.heading.heading2,
-    fontFamily: fonts.regular,
-    fontWeight: '400',
+    fontFamily: fonts.semibold,
     fontSize: 17,
-    color: colors.text.primary,
+    color: colors.text.inverse,
   },
   headerRow: {
     flexDirection: 'row',
@@ -247,7 +245,7 @@ const styles = StyleSheet.create({
     ...typography.label.small,
     fontFamily: fonts.semibold,
     fontSize: 10,
-    color: colors.text.tertiary,
+    color: colors.onBlock.textMuted,
     letterSpacing: 0,
   },
   currentStatLabel: {
@@ -263,9 +261,8 @@ const styles = StyleSheet.create({
   },
   statValue: {
     ...typography.title.title3,
-    fontFamily: fonts.medium,
-    fontWeight: '500',
-    color: colors.text.primary,
+    fontFamily: fonts.semibold,
+    color: colors.text.inverse,
     fontVariant: ['tabular-nums'],
     letterSpacing: -0.3,
     fontSize: 19,
@@ -273,7 +270,7 @@ const styles = StyleSheet.create({
   statUnit: {
     ...typography.label.small,
     fontSize: 12,
-    color: colors.text.tertiary,
+    color: colors.onBlock.textMuted,
     fontFamily: fonts.regular,
     fontWeight: '400',
   },
@@ -282,9 +279,8 @@ const styles = StyleSheet.create({
   },
   statValueLarge: {
     ...typography.title.title1,
-    fontFamily: fonts.medium,
-    fontWeight: '500',
-    color: colors.text.primary,
+    fontFamily: fonts.semibold,
+    color: colors.text.inverse,
     fontVariant: ['tabular-nums'],
     letterSpacing: -0.3,
   },
@@ -292,28 +288,23 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   zonePill: {
+    backgroundColor: colors.onBlock.fill,
     paddingHorizontal: spacing.sm,
     paddingVertical: 2,
     borderRadius: 20,
   },
   zonePillText: {
     ...typography.label.small,
-    fontFamily: fonts.medium,
-    fontWeight: '500',
+    fontFamily: fonts.semibold,
     fontSize: 11,
+    color: colors.text.inverse,
   },
   ringSurface: {
+    ...card.well,
+    backgroundColor: colors.onBlock.fill,
     width: SIZE,
     height: SIZE,
     borderRadius: SIZE / 2,
     flexShrink: 0,
-    backgroundColor: colors.background.elevated,
-    borderWidth: 1,
-    borderColor: colors.neutral[100],
-    shadowColor: colors.neutral[900],
-    shadowOpacity: 0.08,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 7 },
-    elevation: 3,
   },
 });

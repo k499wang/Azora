@@ -7,10 +7,12 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
 import { typography, fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
+import { card } from '../../theme/card';
 import CardSurface from '../common/CardSurface';
 import FeatureInfoDialog from '../common/FeatureInfoDialog';
 import Icon from '../common/icons/Icon';
 import type { IconName } from '../common/icons/paths';
+import type { PlayfulHue } from '../../features/exercise/guidedBreathing/categoryPalette';
 
 const SIZE = 96;
 const STAT_ICON_SIZE = 24;
@@ -29,21 +31,8 @@ const TICK_WIDTH = 3;
 const TRI_TIP_OFFSET = 8;  // how far beyond INNER_R the tip extends
 const TRI_HALF_DEG = 7;    // half-width of the base in degrees
 
-const PASTEL_STOPS = ['#FCA5A5', '#FDE68A', '#86EFAC'];
-
-function hexToRgb(hex: string): [number, number, number] {
-  return [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)];
-}
-
-function lerpColor(t: number, stops: string[]): string {
-  const n = stops.length - 1;
-  const scaled = t * n;
-  const i = Math.min(Math.floor(scaled), n - 1);
-  const f = scaled - i;
-  const [r1, g1, b1] = hexToRgb(stops[i]);
-  const [r2, g2, b2] = hexToRgb(stops[i + 1]);
-  return `rgb(${Math.round(r1 + (r2 - r1) * f)},${Math.round(g1 + (g2 - g1) * f)},${Math.round(b1 + (b2 - b1) * f)})`;
-}
+const TICK_REACHED_OPACITY = 1;
+const TICK_REMAINING_OPACITY = 0.3;
 
 // Static outer tick paths — computed once at module load
 const TICKS = Array.from({ length: NUM_TICKS }, (_, i) => {
@@ -54,7 +43,7 @@ const TICKS = Array.from({ length: NUM_TICKS }, (_, i) => {
   const path = Skia.Path.Make();
   path.moveTo(CX + (R - TICK_HALF) * cosA, CY + (R - TICK_HALF) * sinA);
   path.lineTo(CX + (R + TICK_HALF) * cosA, CY + (R + TICK_HALF) * sinA);
-  return { path, color: lerpColor(t, PASTEL_STOPS) };
+  return { path, t };
 });
 
 function getZone(
@@ -83,6 +72,7 @@ interface HRVTrackStatCardProps {
   lowBound: number;
   highBound: number;
   info?: { title: string; message: string };
+  hue?: PlayfulHue;
   locked?: boolean;
   onPressLocked?: () => void;
   lastMeasuredLabel?: string;
@@ -91,7 +81,8 @@ interface HRVTrackStatCardProps {
 export default function HRVTrackStatCard({
   label,
   icon,
-  iconColor = colors.text.secondary,
+  iconColor = colors.text.inverse,
+  hue = colors.playful.violet,
   value,
   avgValue,
   bestValue,
@@ -143,7 +134,7 @@ export default function HRVTrackStatCard({
   })();
 
   return (
-    <CardSurface locked={locked} style={styles.card}>
+    <CardSurface locked={locked} style={styles.card} hue={hue}>
       {info && !locked ? (
         <>
           <Pressable
@@ -154,7 +145,7 @@ export default function HRVTrackStatCard({
             <MaterialCommunityIcons
               name="information-outline"
               size={16}
-              color={colors.text.tertiary}
+              color={colors.onBlock.textMuted}
             />
           </Pressable>
           <FeatureInfoDialog
@@ -174,12 +165,8 @@ export default function HRVTrackStatCard({
             ) : null}
             <Text style={styles.label}>{label}</Text>
             {zone != null ? (
-              <View
-                style={[styles.zonePill, { backgroundColor: `${zone.color}18` }]}
-              >
-                <Text style={[styles.zonePillText, { color: zone.color }]}>
-                  {zone.label}
-                </Text>
+              <View style={styles.zonePill}>
+                <Text style={styles.zonePillText}>{zone.label}</Text>
               </View>
             ) : null}
           </View>
@@ -237,21 +224,22 @@ export default function HRVTrackStatCard({
                   style="stroke"
                   strokeWidth={TICK_WIDTH}
                   strokeCap="round"
-                  color={tick.color}
-                  opacity={0.85}
+                  color={colors.text.inverse}
+                  opacity={
+                    progress != null && tick.t <= progress
+                      ? TICK_REACHED_OPACITY
+                      : TICK_REMAINING_OPACITY
+                  }
                 />
               ))}
 
-              <Circle cx={CX} cy={CY + 3} r={INNER_R + 3} color="rgba(15,23,42,0.04)" />
-              <Circle cx={CX} cy={CY + 1.5} r={INNER_R + 1.5} color="rgba(15,23,42,0.02)" />
-              <Circle cx={CX} cy={CY} r={INNER_R + 1} color={colors.neutral[200]} />
-              <Circle cx={CX} cy={CY} r={INNER_R} color={colors.background.elevated} />
+              <Circle cx={CX} cy={CY} r={INNER_R} color={hue.base} />
 
               {indPath != null ? (
                 <Path
                   path={indPath}
                   style="fill"
-                  color={colors.primary.blue500}
+                  color={colors.text.inverse}
                 />
               ) : null}
             </Canvas>
@@ -302,10 +290,9 @@ const styles = StyleSheet.create({
   },
   label: {
     ...typography.heading.heading2,
-    fontFamily: fonts.regular,
-    fontWeight: '400',
+    fontFamily: fonts.semibold,
     fontSize: 17,
-    color: colors.text.primary,
+    color: colors.text.inverse,
   },
   headerRow: {
     flexDirection: 'row',
@@ -365,13 +352,13 @@ const styles = StyleSheet.create({
   statDivider: {
     width: 1,
     height: 32,
-    backgroundColor: colors.neutral[200],
+    backgroundColor: colors.onBlock.divider,
   },
   statLabel: {
     ...typography.label.small,
     fontFamily: fonts.semibold,
     fontSize: 10,
-    color: colors.text.tertiary,
+    color: colors.onBlock.textMuted,
     letterSpacing: 0,
   },
   currentStatLabel: {
@@ -387,9 +374,8 @@ const styles = StyleSheet.create({
   },
   statValue: {
     ...typography.title.title3,
-    fontFamily: fonts.medium,
-    fontWeight: '500',
-    color: colors.text.primary,
+    fontFamily: fonts.semibold,
+    color: colors.text.inverse,
     fontVariant: ['tabular-nums'],
     letterSpacing: -0.3,
     fontSize: 19,
@@ -397,7 +383,7 @@ const styles = StyleSheet.create({
   statUnit: {
     ...typography.label.small,
     fontSize: 12,
-    color: colors.text.tertiary,
+    color: colors.onBlock.textMuted,
     fontFamily: fonts.semibold,
   },
   statLabelLarge: {
@@ -405,9 +391,8 @@ const styles = StyleSheet.create({
   },
   statValueLarge: {
     ...typography.title.title1,
-    fontFamily: fonts.medium,
-    fontWeight: '500',
-    color: colors.text.primary,
+    fontFamily: fonts.semibold,
+    color: colors.text.inverse,
     fontVariant: ['tabular-nums'],
     letterSpacing: -0.3,
   },
@@ -415,6 +400,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   zonePill: {
+    backgroundColor: colors.onBlock.fill,
     paddingHorizontal: spacing.sm,
     paddingVertical: 2,
     borderRadius: 20,
@@ -423,19 +409,14 @@ const styles = StyleSheet.create({
     ...typography.label.small,
     fontFamily: fonts.semibold,
     fontSize: 11,
+    color: colors.text.inverse,
   },
   ringSurface: {
+    ...card.well,
+    backgroundColor: colors.onBlock.fill,
     width: SIZE,
     height: SIZE,
     borderRadius: SIZE / 2,
     flexShrink: 0,
-    backgroundColor: colors.background.elevated,
-    borderWidth: 1,
-    borderColor: colors.neutral[100],
-    shadowColor: colors.neutral[900],
-    shadowOpacity: 0.08,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 7 },
-    elevation: 3,
   },
 });

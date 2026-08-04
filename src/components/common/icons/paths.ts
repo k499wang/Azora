@@ -61,6 +61,10 @@ export const ICON_PATHS = {
     <path d="M10.5 16.5a1.8 1.8 0 1 0 3 0c0-1-.9-1.5-1.5-1.5s-1.5.5-1.5 1.5z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" fill="none" />
   `,
 
+  streakFilled: `
+    <path fill="currentColor" d="M13.4 2.1c.1 2.2 1.2 3.4 2.5 4.7 1.4 1.5 2.5 3.1 2.5 5.4a6.4 6.4 0 0 1-12.8 0c0-2.1.9-3.8 2.2-5.1.2 1.2.8 2 1.7 2.3-.4-3 .9-5.8 3.9-7.3z"/>
+  `,
+
   check: `
     <path d="M5 12.5l4 4 10-10" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" fill="none" />
   `,
@@ -299,11 +303,6 @@ export const ICON_PATHS = {
     <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M6.5 3 H14 L18 7 V20 A1 1 0 0 1 17 21 H6.5 A1 1 0 0 1 5.5 20 V4 A1 1 0 0 1 6.5 3 Z"/>
     <path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" d="M14 3 V7 H18"/>
     <path fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" d="M9 13.5 V17 M12 11.5 V17 M15 14.5 V17"/>
-  `,
-
-  settings: `
-    <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M12 3.5l1.4 2.1 2.5-.4.6 2.5 2.3 1.1-.9 2.4.9 2.4-2.3 1.1-.6 2.5-2.5-.4L12 20.5l-1.4-2.1-2.5.4-.6-2.5-2.3-1.1.9-2.4-.9-2.4 2.3-1.1.6-2.5 2.5.4L12 3.5z"/>
-    <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.8" fill="none"/>
   `,
 
   pencil: `

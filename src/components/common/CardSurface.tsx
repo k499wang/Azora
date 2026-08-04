@@ -8,6 +8,7 @@ import {
   DEFAULT_CARD_SURFACE,
   type CardSurfaceMode,
 } from './cardSurfaceConfig';
+import type { PlayfulHue } from '../../features/exercise/guidedBreathing/categoryPalette';
 
 const CARD_SURFACE_RADIUS = 22;
 
@@ -54,6 +55,8 @@ interface CardSurfaceProps {
   onPress?: () => void;
   variant?: 'regular' | 'clear';
   surface?: CardSurfaceMode;
+  /** Renders the card as a flat playful color block instead of a solid/glass sheet. */
+  hue?: PlayfulHue;
 }
 
 export default function CardSurface({
@@ -66,6 +69,7 @@ export default function CardSurface({
   onPress,
   variant = 'regular',
   surface = DEFAULT_CARD_SURFACE,
+  hue,
 }: CardSurfaceProps) {
   const glassContainerStyle = getGlassContainerStyle(style);
   const content = contentStyle ? (
@@ -73,6 +77,34 @@ export default function CardSurface({
   ) : (
     children
   );
+
+  if (hue != null) {
+    const blockNode = (
+      <View style={[styles.blockSurface, { backgroundColor: hue.base }, style]}>
+        {content}
+      </View>
+    );
+
+    if (!onPress) {
+      return (
+        <View style={[styles.blockShadow, containerStyle]}>{blockNode}</View>
+      );
+    }
+
+    return (
+      <Pressable
+        accessibilityRole="button"
+        onPress={onPress}
+        style={({ pressed }) => [
+          styles.blockShadow,
+          containerStyle,
+          pressed && styles.pressed,
+        ]}
+      >
+        {blockNode}
+      </Pressable>
+    );
+  }
 
   const surfaceNode =
     surface === 'glass' ? (
@@ -141,6 +173,15 @@ const styles = StyleSheet.create({
   },
   solidSurface: {
     ...card.base,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    position: 'relative',
+  },
+  blockShadow: {
+    ...card.blockShadow,
+  },
+  blockSurface: {
+    ...card.block,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
     position: 'relative',

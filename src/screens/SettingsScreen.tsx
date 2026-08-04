@@ -3,7 +3,6 @@ import { useState } from 'react';
 import { Alert, Linking, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
 import * as Device from 'expo-device';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import { padding, spacing } from '../theme/spacing';
 import { typography, fonts } from '../theme/typography';
@@ -22,7 +21,6 @@ const FEEDBACK_EMAIL = 'feedback@tryazora.app';
 const FEEDBACK_CC_EMAIL = 'kevin@tryazora.app';
 
 export default function SettingsScreen({ navigation }: SettingsScreenProps) {
-  const insets = useSafeAreaInsets();
   const user = useAuthStore((s) => s.user);
   const signOut = useAuthStore((s) => s.signOut);
   const deleteAccount = useAuthStore((s) => s.deleteAccount);
@@ -176,8 +174,10 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        <View style={[styles.topSection, { paddingTop: insets.top }]}>
+        <View style={styles.topSection}>
           <AppTopBar
+            showAvatar={false}
+            showStreak={false}
             leftSlot={
               <View style={styles.headerLeft}>
                 <Pressable
@@ -334,9 +334,7 @@ const styles = StyleSheet.create({
     paddingBottom: spacing['7xl'] + spacing.xl,
   },
   topSection: {
-    paddingTop: spacing.md,
     paddingBottom: spacing.xl,
-    overflow: 'hidden',
   },
   section: {
     paddingHorizontal: padding.screen.horizontal,

@@ -50,19 +50,11 @@ function formatReadingDuration(seconds: number): string {
   return s === 0 ? `${m}m` : `${m}m ${s}s`;
 }
 
-function MetricInline({
-  iconColor,
-  iconBg,
-  value,
-}: {
-  iconColor: string;
-  iconBg: string;
-  value: string;
-}) {
+function MetricInline({ value }: { value: string }) {
   return (
     <View style={styles.metricInline}>
-      <View style={[styles.metricDot, { backgroundColor: iconBg }]}>
-        <View style={[styles.metricDotInner, { backgroundColor: iconColor }]} />
+      <View style={styles.metricDot}>
+        <View style={styles.metricDotInner} />
       </View>
       <Text style={styles.metricInlineValue}>{value}</Text>
     </View>
@@ -141,25 +133,16 @@ export function RecentlyLoggedSection({
           {items.map((item, index) => {
             const stress = item.stress;
             const stressZone = stress == null ? null : getStressZone(stress);
-            const metrics: {
-              key: string;
-              iconColor: string;
-              iconBg: string;
-              value: string;
-            }[] = [];
+            const metrics: { key: string; value: string }[] = [];
             if (stress != null && stressZone != null) {
               metrics.push({
                 key: 'stress',
-                iconColor: stressZone.color,
-                iconBg: stressZone.color + '22',
                 value: `${stressZone.label} stress`,
               });
             }
             if (item.hrDrop != null) {
               metrics.push({
                 key: 'hrDrop',
-                iconColor: colors.primary.blue600,
-                iconBg: colors.primary.blue100,
                 value: `${item.hrDrop} HR drop`,
               });
             }
@@ -168,6 +151,7 @@ export function RecentlyLoggedSection({
               <CardSurface
                 key={item.sessionId}
                 onPress={() => handleItemPress(item.sessionId, index)}
+                hue={colors.playful.sky}
                 style={styles.card}
               >
                 <View style={styles.thumb}>
@@ -187,12 +171,7 @@ export function RecentlyLoggedSection({
                   {metrics.length > 0 ? (
                     <View style={styles.metricRow}>
                       {metrics.map((m) => (
-                        <MetricInline
-                          key={m.key}
-                          iconColor={m.iconColor}
-                          iconBg={m.iconBg}
-                          value={m.value}
-                        />
+                        <MetricInline key={m.key} value={m.value} />
                       ))}
                     </View>
                   ) : null}
@@ -236,13 +215,13 @@ const styles = StyleSheet.create({
     fontSize: 32,
     lineHeight: 34,
     fontFamily: fonts.semibold,
-    color: colors.error[500],
+    color: colors.text.inverse,
     letterSpacing: -0.8,
   },
   thumbUnit: {
     ...typography.caption.caption2,
     fontFamily: fonts.semibold,
-    color: colors.error[500],
+    color: colors.onBlock.textMuted,
     marginTop: 1,
     letterSpacing: 0.5,
   },
@@ -258,18 +237,18 @@ const styles = StyleSheet.create({
   label: {
     ...typography.body.medium,
     fontFamily: fonts.semibold,
-    color: colors.text.primary,
+    color: colors.text.inverse,
   },
   time: {
     ...typography.caption.caption1,
     fontFamily: fonts.semibold,
-    color: colors.text.tertiary,
+    color: colors.onBlock.textMuted,
   },
   duration: {
     ...typography.body.small,
     fontFamily: fonts.regular,
     fontWeight: '400',
-    color: colors.text.tertiary,
+    color: colors.onBlock.textMuted,
   },
   metricRow: {
     flexDirection: 'row',
@@ -285,6 +264,7 @@ const styles = StyleSheet.create({
     width: 16,
     height: 16,
     borderRadius: 8,
+    backgroundColor: colors.onBlock.fill,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -292,10 +272,11 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
+    backgroundColor: colors.text.inverse,
   },
   metricInlineValue: {
     ...typography.caption.caption1,
     fontFamily: fonts.semibold,
-    color: colors.text.secondary,
+    color: colors.onBlock.textMuted,
   },
 });

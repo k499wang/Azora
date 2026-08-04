@@ -6,6 +6,7 @@ export const card: {
   paper: ViewStyle;
   block: ViewStyle;
   blockShadow: ViewStyle;
+  well: ViewStyle;
   shadow: ViewStyle;
   shadowElevated: ViewStyle;
   glass: ViewStyle;
@@ -43,6 +44,13 @@ export const card: {
     shadowOpacity: 0.1,
     shadowRadius: 16,
     elevation: 6,
+  },
+  // Panel inset into a color block. Charts and gauges live here so their
+  // zone/accent colors keep meaning instead of fighting the saturated fill.
+  // Shape only — fill it with the block's own `playful.*.soft` tint so the
+  // panel recedes into the card instead of punching a white hole in it.
+  well: {
+    borderRadius: 18,
   },
   shadow: {
     shadowColor: colors.primary.blue700,

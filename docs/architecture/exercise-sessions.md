@@ -5,6 +5,9 @@ It documents current behavior and the intended extension points.
 
 ## Entry Points
 
+- Exercise discovery and daily breath-hold card: `src/screens/ExploreScreen.tsx`
+- Breathing technique library: `src/components/explore/BreathingLibrary.tsx`
+- Breath-hold progress presentation: `src/components/profile/ProfileBreathHoldTrendCard.tsx`
 - Guided breathing screen: `src/features/exercise/guidedBreathing/GuidedBreathingSessionScreen.tsx`
 - Daily breath-hold screen: `src/features/exercise/dailyBreathHold/DailyBreathHoldScreen.tsx`
 - Guided technique catalog: `src/features/exercise/guidedBreathing/techniques.ts`
@@ -369,7 +372,7 @@ daily pool. Complete this checklist in one change:
    rounds, category, heart-rate response, icon, duration, description, and
    names.
 4. Add the referenced image under `assets/exercises/` and wire it through the
-   entry's static `require()`. Confirm the image and icon work in the library,
+   entry's static `require()`. Confirm the image and icon work in Explore's library,
    session, and Today’s Dailies card where applicable.
 5. Run the catalog contract tests in
    `src/features/exercise/guidedBreathing/techniqueCatalog.test.mjs`. Add or

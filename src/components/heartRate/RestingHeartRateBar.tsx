@@ -8,6 +8,7 @@ import CardSurface from '../common/CardSurface';
 import type { CardSurfaceMode } from '../common/cardSurfaceConfig';
 import CardTitle from '../common/CardTitle';
 import PulseDot from '../common/PulseDot';
+import type { PlayfulHue } from '../../features/exercise/guidedBreathing/categoryPalette';
 import {
   getRestingHeartRateMarkerFraction,
   getRestingHeartRateSegments,
@@ -22,6 +23,7 @@ interface RestingHeartRateBarProps {
   surface?: CardSurfaceMode;
   locked?: boolean;
   onPressLocked?: () => void;
+  hue?: PlayfulHue;
 }
 
 const NUM_TICKS = 56;
@@ -55,6 +57,7 @@ export default function RestingHeartRateBar({
   surface,
   locked = false,
   onPressLocked,
+  hue = colors.playful.coral,
 }: RestingHeartRateBarProps) {
   const hasBpm = bpm != null && Number.isFinite(bpm);
   const zone = hasBpm ? getRestingHeartRateZone(bpm!, age) : null;
@@ -63,7 +66,7 @@ export default function RestingHeartRateBar({
   const ticks = buildTickMarks(segments);
 
   return (
-    <CardSurface locked={locked} style={styles.card} surface={surface}>
+    <CardSurface locked={locked} style={styles.card} surface={surface} hue={hue}>
       <View
         accessibilityElementsHidden={locked}
         importantForAccessibility={locked ? 'no-hide-descendants' : 'auto'}
@@ -72,11 +75,12 @@ export default function RestingHeartRateBar({
         <View style={locked && styles.hiddenLockedTitle}>
           <CardTitle
             title={title}
-            leading={<PulseDot color={zone?.color} />}
+            color={colors.text.inverse}
+            leading={<PulseDot color={colors.text.inverse} />}
             right={
               zone ? (
-                <View style={[styles.zonePill, { backgroundColor: `${zone.color}18` }]}>
-                  <Text style={[styles.zoneText, { color: zone.color }]}>{zone.label}</Text>
+                <View style={styles.zonePill}>
+                  <Text style={styles.zoneText}>{zone.label}</Text>
                 </View>
               ) : null
             }
@@ -101,10 +105,10 @@ export default function RestingHeartRateBar({
                     left: `${tick.t * 100}%`,
                     backgroundColor:
                       !hasBpm
-                        ? colors.neutral[300]
+                        ? colors.onBlock.divider
                         : fraction != null && tick.t > fraction
-                        ? colors.neutral[300]
-                        : tick.color,
+                        ? colors.onBlock.divider
+                        : colors.text.inverse,
                     opacity:
                       fraction != null && tick.t > fraction
                         ? TICK_UNSELECTED_OPACITY
@@ -121,7 +125,11 @@ export default function RestingHeartRateBar({
         <>
           <LockedScrim />
           <View style={styles.clearHeaderOverlay} pointerEvents="none">
-            <CardTitle title={title} leading={<PulseDot />} />
+            <CardTitle
+              title={title}
+              color={colors.text.inverse}
+              leading={<PulseDot color={colors.text.inverse} />}
+            />
           </View>
           {onPressLocked ? (
             <Pressable
@@ -159,6 +167,7 @@ const styles = StyleSheet.create({
     opacity: 0,
   },
   zonePill: {
+    backgroundColor: colors.onBlock.fill,
     borderRadius: 20,
     paddingHorizontal: spacing.sm,
     paddingVertical: 3,
@@ -168,6 +177,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.medium,
     fontWeight: '500',
     fontSize: 11,
+    color: colors.text.inverse,
   },
   valueRow: {
     flexDirection: 'row',
@@ -178,14 +188,14 @@ const styles = StyleSheet.create({
     ...typography.title.title1,
     fontFamily: fonts.medium,
     fontWeight: '500',
-    color: colors.text.primary,
+    color: colors.text.inverse,
     fontVariant: ['tabular-nums'],
     letterSpacing: -0.3,
   },
   unit: {
     ...typography.label.small,
     fontSize: 14,
-    color: colors.text.tertiary,
+    color: colors.onBlock.textMuted,
     fontFamily: fonts.regular,
     fontWeight: '400',
   },

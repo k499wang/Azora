@@ -76,6 +76,16 @@ export const colors = {
     blush: { base: '#E14C8B', soft: '#FBE1EC', ink: '#85194A' },
   },
 
+  // White-alpha layers for content sitting on a `playful.*.base` color block:
+  // tinted cells, dividers, and secondary text that must stay legible on the fill.
+  onBlock: {
+    fill: 'rgba(255,255,255,0.16)',
+    fillActive: 'rgba(255,255,255,0.34)',
+    divider: 'rgba(255,255,255,0.24)',
+    textMuted: 'rgba(255,255,255,0.78)',
+    textFaint: 'rgba(255,255,255,0.45)',
+  },
+
   background: {
     // Cool neutral canvas for the frosted/glass paradigm — glass surfaces refract
     // against grey rather than blue tint.
@@ -86,6 +96,8 @@ export const colors = {
     elevated: '#FFFFFF',
     card: '#F4F9FF',
     accentSoft: '#EAF2FF',
+    // Blue block behind the top bar, curving into the page canvas.
+    headerTint: '#78B4FF',
     // Warm cream for paper/letter surfaces.
     paper: '#FBF7EF',
     // Asset-matched fallbacks used while native background images decode.

@@ -1,6 +1,7 @@
 export { RootNavigator } from './RootNavigator';
 export type {
-  BreathTabScreenProps,
+  ExploreScreenProps,
+  ExerciseSearchScreenProps,
   DailyExerciseScreenProps,
   DailyResultScreenProps,
   ExerciseSessionScreenProps,

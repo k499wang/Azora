@@ -1,26 +1,18 @@
-import { Text } from '../components/common/Text';
-import { useCallback, useEffect, useState } from 'react';
-import { AppState, Linking, ScrollView, StyleSheet, View } from 'react-native';
+import { useCallback } from 'react';
+import { Linking, ScrollView, StyleSheet, View } from 'react-native';
 import { usePostHog } from 'posthog-react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AnalyticsEvent } from '../services/analytics/events';
 import { trackFeatureGateHit } from '../services/analytics/tracking';
 import { colors } from '../theme/colors';
 import { spacing, padding, margin } from '../theme/spacing';
-import { fonts, typography } from '../theme/typography';
 import AppTopBar from '../components/common/AppTopBar';
 import CompactActionBanner from '../components/common/CompactActionBanner';
-import SectionHeader from '../components/common/SectionHeader';
-import TopBarWeekCalendar from '../components/common/TopBarWeekCalendar';
-import BreathingLibrary from '../components/home/BreathingLibrary';
-import DailyPlanCard from '../components/home/DailyPlanCard';
+import WeekCalendarStrip from '../components/common/WeekCalendarStrip';
 import TodaysDailiesSection from '../components/home/TodaysDailiesSection';
 import { useFeatureAccess } from '../hooks/useFeatureAccess';
+import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
 import { useRecommendedTechnique } from '../features/exercise/guidedBreathing/hooks/useRecommendedTechnique';
-import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
 import { useProfileQuery } from '../queries/profile/useProfileQuery';
-import { formatLocalDate } from '../lib/calendar/weekCalendarDays';
-import { deriveHoldStats } from '../lib/holdStats';
 import type { HomeScreenProps } from '../app/navigation';
 import { useHomeStatsQuery } from '../queries/tracking/useHomeStatsQuery';
 import { useAuthStore } from '../stores/authStore';
@@ -38,52 +30,16 @@ import type {
 
 const SURVEY_DISCOUNT_URL = 'https://docs.google.com/forms/d/1wdbzWnXbhdpFZ3HoPcRet5K7EGW9RRtEQqrVYiXHwtc/viewform?edit_requested=true';
 
-function getMsUntilNextLocalDay(): number {
-  const now = new Date();
-  const nextDay = new Date(now);
-  nextDay.setHours(24, 0, 1, 0);
-
-  return Math.max(1000, nextDay.getTime() - now.getTime());
-}
-
-function getTimeOfDayGreeting(): string {
-  const hour = new Date().getHours();
-  if (hour < 12) return 'Good morning';
-  if (hour < 17) return 'Good afternoon';
-  if (hour < 21) return 'Good evening';
-  return 'Good night';
-}
-
-function Greeting({ displayName }: { displayName: string | null | undefined }) {
-  const firstName = displayName?.trim().split(/\s+/)[0];
-  const greeting = getTimeOfDayGreeting();
-  return (
-    <Text
-      style={styles.greeting}
-      numberOfLines={2}
-      ellipsizeMode="tail"
-      adjustsFontSizeToFit
-      minimumFontScale={0.7}
-    >
-      {firstName ? `${greeting}, ${firstName}` : greeting}
-    </Text>
-  );
-}
-
 export default function HomeScreen({ navigation }: HomeScreenProps) {
-  const insets = useSafeAreaInsets();
   const posthog = usePostHog();
   const user = useAuthStore((state) => state.user);
-  const profileSummaryQuery = useProfileSummaryQuery(user?.id ?? null);
   const profileQuery = useProfileQuery(user?.id ?? null);
   const dailyPlanScheduleQuery = useDailyPlanScheduleQuery(user?.id ?? null);
   const dailyPlanSchedule =
     dailyPlanScheduleQuery.data ?? DEFAULT_DAILY_PLAN_SCHEDULE;
-  const displayName = profileSummaryQuery.data?.profile?.displayName ?? null;
   const dailyExerciseAccess = useFeatureAccess(FeatureKey.DailyExercise);
   const recommendedTechnique = useRecommendedTechnique(user?.id ?? null);
-  const [todayLocalDate, setTodayLocalDate] = useState(() => formatLocalDate(new Date()));
-  const [selectedLocalDate, setSelectedLocalDate] = useState(todayLocalDate);
+  const todayLocalDate = useTodayLocalDate();
   const dailyExercisePlan = useDailyExercisePlan({
     userId: user?.id ?? null,
     primaryTechniqueId: recommendedTechnique.isLoading
@@ -100,44 +56,13 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     user?.id ?? null,
     todayLocalDate,
   );
-  const refreshTodayLocalDate = useCallback(() => {
-    const nextTodayLocalDate = formatLocalDate(new Date());
-
-    if (nextTodayLocalDate === todayLocalDate) {
-      return;
-    }
-
-    setTodayLocalDate(nextTodayLocalDate);
-    setSelectedLocalDate((currentSelectedLocalDate) =>
-      currentSelectedLocalDate === todayLocalDate
-        ? nextTodayLocalDate
-        : currentSelectedLocalDate,
-    );
-  }, [todayLocalDate]);
-  const homeStatsQuery = useHomeStatsQuery(user?.id ?? null, selectedLocalDate);
+  const homeStatsQuery = useHomeStatsQuery(user?.id ?? null, todayLocalDate);
   const stats = homeStatsQuery.data;
-  const todayBreathHold = stats?.todayBreathHold ?? null;
-  useEffect(() => {
-    const timeout = setTimeout(refreshTodayLocalDate, getMsUntilNextLocalDay());
-
-    return () => clearTimeout(timeout);
-  }, [refreshTodayLocalDate]);
-
-  useEffect(() => {
-    const subscription = AppState.addEventListener('change', (nextState) => {
-      if (nextState === 'active') {
-        refreshTodayLocalDate();
-      }
-    });
-
-    return () => subscription.remove();
-  }, [refreshTodayLocalDate]);
 
   // The recently-logged list and its analytics now live on the Heart tab
   // (see RecentlyLoggedSection — it uses useIsFocused to gate the view event).
 
   const currentStreak = stats?.streak?.currentStreak ?? 0;
-  const holdStats = deriveHoldStats(stats?.dailyActivity, todayLocalDate);
   const todayActivity = stats?.dailyActivity.find(
     (activity) => activity.activityDate === todayLocalDate,
   );
@@ -231,25 +156,14 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         alwaysBounceVertical
         overScrollMode="always"
       >
-        <View style={[styles.topSection, { paddingTop: insets.top }]}>
-          <AppTopBar
-            leftSlot={(
-              <TopBarWeekCalendar
-                todayLocalDate={todayLocalDate}
-                selectedLocalDate={selectedLocalDate}
-                completedDaysAgo={stats?.completedDaysAgo ?? []}
-                onSelectDay={setSelectedLocalDate}
-              />
-            )}
-          />
-
-          <View style={styles.heroTextSection}>
-            <Greeting displayName={displayName} />
-            <Text style={styles.greetingSubtitle}>
-              Take a minute to check in with your breath.
-            </Text>
+        <AppTopBar tinted showAvatar={false} showStreak={false}>
+          <View style={styles.weekCalendar}>
+            <WeekCalendarStrip
+              todayLocalDate={todayLocalDate}
+              completedDaysAgo={stats?.completedDaysAgo ?? []}
+            />
           </View>
-        </View>
+        </AppTopBar>
 
         <View style={styles.bodySection}>
           <CompactActionBanner
@@ -275,17 +189,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             onPressHandPickedExercise={startHandPickedExercise}
             onPressBreathHold={() => startDailyBreathHold('todays_dailies_breathhold')}
           />
-          <View style={styles.dailyPlanSection}>
-            <SectionHeader title="Daily Breathhold" />
-            <DailyPlanCard
-              todayHoldSeconds={todayBreathHold?.holdSeconds ?? null}
-              lastHoldSeconds={holdStats.lastHoldSeconds}
-              onPress={() => startDailyBreathHold('daily_plan')}
-            />
-          </View>
         </View>
-
-        <BreathingLibrary />
       </ScrollView>
     </View>
   );
@@ -294,7 +198,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: colors.background.canvas,
+    backgroundColor: colors.background.accentSoft,
   },
   scroll: {
     flex: 1,
@@ -304,34 +208,13 @@ const styles = StyleSheet.create({
     paddingBottom: spacing['7xl'] + spacing.xl,
     gap: margin.sectionGap,
   },
-  topSection: {
-    paddingBottom: spacing.sm,
-  },
-  heroTextSection: {
+  weekCalendar: {
     paddingHorizontal: padding.screen.horizontal,
-    marginTop: spacing.xl,
-    gap: spacing.md,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.lg,
   },
   bodySection: {
     paddingHorizontal: padding.screen.horizontal,
     gap: spacing.md,
-  },
-  dailyPlanSection: {
-    gap: spacing.md,
-    marginTop: spacing.md,
-  },
-  greeting: {
-    ...typography.title.title3,
-    fontFamily: fonts.regular,
-    fontWeight: '400',
-    fontSize: 28,
-    lineHeight: 36,
-    color: colors.text.primary,
-    textAlign: 'center',
-  },
-  greetingSubtitle: {
-    ...typography.body.medium,
-    color: colors.text.secondary,
-    textAlign: 'center',
   },
 });

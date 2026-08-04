@@ -8,19 +8,17 @@ import { spacing } from '../../theme/spacing';
 import LockedContentBlur from '../common/LockedContentBlur';
 import Icon from '../common/icons/Icon';
 
-const CARD_FADE_TRANSPARENT = 'rgba(244, 249, 255, 0)';
-const CARD_FADE_COLORS = [
-  colors.background.card,
-  CARD_FADE_TRANSPARENT,
-  CARD_FADE_TRANSPARENT,
-  colors.background.card,
-] as const;
-
 interface ChartInsightsSectionProps {
   accentColor: string;
   insight: string | null;
   locked: boolean;
   lockedPlaceholder: string;
+  /** Card fill the locked teaser fades into — the surrounding block hue. */
+  fadeColor: string;
+  /** Disable the local teaser blur when the parent card supplies a full-card scrim. */
+  blurLockedContent?: boolean;
+  textColor?: string;
+  dividerColor?: string;
 }
 
 export default function ChartInsightsSection({
@@ -28,8 +26,13 @@ export default function ChartInsightsSection({
   insight,
   locked,
   lockedPlaceholder,
+  fadeColor,
+  blurLockedContent = true,
+  textColor = colors.text.inverse,
+  dividerColor = colors.onBlock.divider,
 }: ChartInsightsSectionProps) {
   const [expanded, setExpanded] = useState(true);
+  const fadeColors = [fadeColor, `${fadeColor}00`, `${fadeColor}00`, fadeColor] as const;
   const animatedHeight = useRef(new Animated.Value(300)).current;
 
   if (!locked && insight == null) return null;
@@ -47,7 +50,7 @@ export default function ChartInsightsSection({
 
   return (
     <View style={styles.section}>
-      <View style={styles.divider} />
+      <View style={[styles.divider, { backgroundColor: dividerColor }]} />
       {locked ? (
         <View style={styles.header}>
           <Icon name="sparkle" size={16} color={accentColor} />
@@ -57,40 +60,54 @@ export default function ChartInsightsSection({
         <Pressable style={styles.header} onPress={toggle}>
           <Icon name="sparkle" size={16} color={accentColor} />
           <Text style={[styles.title, { color: accentColor }]}>Insights</Text>
-          <Text style={styles.toggle}>{expanded ? '−' : '+'}</Text>
+          <Text style={[styles.toggle, { color: textColor }]}>{expanded ? '−' : '+'}</Text>
         </Pressable>
       )}
 
       {locked ? (
         <View style={styles.lockedTextWrap}>
-          <LockedContentBlur locked style={styles.lockedTextContent}>
+          {blurLockedContent ? (
+            <LockedContentBlur locked style={styles.lockedTextContent}>
+              <View
+                accessibilityElementsHidden
+                importantForAccessibility="no-hide-descendants"
+              >
+                <Text style={[styles.text, { color: textColor }]}>{lockedPlaceholder}</Text>
+              </View>
+            </LockedContentBlur>
+          ) : (
             <View
               accessibilityElementsHidden
               importantForAccessibility="no-hide-descendants"
+              style={styles.lockedTextContent}
             >
-              <Text style={styles.text}>{lockedPlaceholder}</Text>
+              <Text style={[styles.text, { color: textColor }]}>{lockedPlaceholder}</Text>
             </View>
-          </LockedContentBlur>
-          <LinearGradient
-            pointerEvents="none"
-            colors={CARD_FADE_COLORS}
-            locations={[0, 0.14, 0.86, 1]}
-            start={{ x: 0, y: 0.5 }}
-            end={{ x: 1, y: 0.5 }}
-            style={StyleSheet.absoluteFill}
-          />
-          <LinearGradient
-            pointerEvents="none"
-            colors={CARD_FADE_COLORS}
-            locations={[0, 0.18, 0.82, 1]}
-            start={{ x: 0.5, y: 0 }}
-            end={{ x: 0.5, y: 1 }}
-            style={StyleSheet.absoluteFill}
-          />
+          )}
+          {blurLockedContent ? (
+            <>
+              <LinearGradient
+                pointerEvents="none"
+                colors={fadeColors}
+                locations={[0, 0.14, 0.86, 1]}
+                start={{ x: 0, y: 0.5 }}
+                end={{ x: 1, y: 0.5 }}
+                style={StyleSheet.absoluteFill}
+              />
+              <LinearGradient
+                pointerEvents="none"
+                colors={fadeColors}
+                locations={[0, 0.18, 0.82, 1]}
+                start={{ x: 0.5, y: 0 }}
+                end={{ x: 0.5, y: 1 }}
+                style={StyleSheet.absoluteFill}
+              />
+            </>
+          ) : null}
         </View>
       ) : (
         <Animated.View style={{ maxHeight: animatedHeight, overflow: 'hidden' }}>
-          <Text style={styles.text}>{insight}</Text>
+          <Text style={[styles.text, { color: textColor }]}>{insight}</Text>
         </Animated.View>
       )}
     </View>
@@ -103,7 +120,7 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    backgroundColor: colors.neutral[200],
+    backgroundColor: colors.onBlock.divider,
     marginBottom: spacing.md,
   },
   header: {
@@ -118,7 +135,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   toggle: {
-    color: colors.text.tertiary,
+    color: colors.onBlock.textMuted,
     fontFamily: fonts.semibold,
     fontSize: 26,
     lineHeight: 26,
@@ -132,7 +149,7 @@ const styles = StyleSheet.create({
   },
   text: {
     ...typography.body.small,
-    color: colors.text.primary,
+    color: colors.text.inverse,
     fontFamily: fonts.regular,
     fontWeight: '400',
     lineHeight: 20,

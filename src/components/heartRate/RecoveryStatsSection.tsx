@@ -54,7 +54,7 @@ export default function RecoveryStatsSection({
               <MaterialCommunityIcons
                 name="information-outline"
                 size={16}
-                color={colors.text.tertiary}
+                color={colors.onBlock.textMuted}
               />
             </Pressable>
           ) : null}

@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { LinearGradient } from 'expo-linear-gradient';
 import {
   Pressable,
   StyleSheet,
@@ -7,12 +8,23 @@ import {
   type ViewStyle,
 } from 'react-native';
 import LockedScrim from './LockedScrim';
+import { colors } from '../../theme/colors';
+
+// Alpha suffixes on the surface hex: the frost tint, and the fully clear stop
+// the edge feather resolves to.
+const FROST_ALPHA = '59';
+const CLEAR_ALPHA = '00';
 
 interface LockedContentBlurProps {
   locked?: boolean;
   children: ReactNode;
   style?: StyleProp<ViewStyle>;
   onPressLocked?: () => void;
+  /**
+   * Solid 6-digit hex of the surface behind this content. The frost is tinted
+   * with it and feathers out into it, so the gate has no hard rectangle edge.
+   */
+  fadeColor?: string;
 }
 
 export default function LockedContentBlur({
@@ -20,13 +32,40 @@ export default function LockedContentBlur({
   children,
   style,
   onPressLocked,
+  fadeColor = colors.background.card,
 }: LockedContentBlurProps) {
+  const feather = [
+    fadeColor,
+    `${fadeColor}${CLEAR_ALPHA}`,
+    `${fadeColor}${CLEAR_ALPHA}`,
+    fadeColor,
+  ] as const;
+
   return (
     <View style={[styles.wrap, style]}>
       {children}
       {locked ? (
         <>
-          <LockedScrim style={styles.bleedOverlay} />
+          <LockedScrim
+            style={styles.bleedOverlay}
+            color={`${fadeColor}${FROST_ALPHA}`}
+          />
+          <LinearGradient
+            pointerEvents="none"
+            colors={feather}
+            locations={[0, 0.14, 0.86, 1]}
+            start={{ x: 0, y: 0.5 }}
+            end={{ x: 1, y: 0.5 }}
+            style={styles.bleedOverlay}
+          />
+          <LinearGradient
+            pointerEvents="none"
+            colors={feather}
+            locations={[0, 0.18, 0.82, 1]}
+            start={{ x: 0.5, y: 0 }}
+            end={{ x: 0.5, y: 1 }}
+            style={styles.bleedOverlay}
+          />
           {onPressLocked ? (
             <Pressable
               accessibilityRole="button"

@@ -9,14 +9,20 @@ interface CardTitleProps {
   title: string;
   leading?: ReactNode;
   right?: ReactNode;
+  color?: string;
 }
 
-export default function CardTitle({ title, leading, right }: CardTitleProps) {
+export default function CardTitle({
+  title,
+  leading,
+  right,
+  color = colors.text.primary,
+}: CardTitleProps) {
   return (
     <View style={styles.row}>
       <View style={styles.titleGroup}>
         {leading ? <View style={styles.leading}>{leading}</View> : null}
-        <Text style={styles.title}>{title}</Text>
+        <Text style={[styles.title, { color }]}>{title}</Text>
       </View>
       {right}
     </View>

@@ -96,7 +96,7 @@ Lifecycle
 - `screen_view` — every navigation change (dedup'd on route name). Carries `app_screen_name` + route-specific context.
 
 Daily plan / breath hold
-- `daily_plan_started` — user taps the home daily card.
+- `daily_plan_started` — user starts breath hold from Home's Today’s Dailies or Explore's Daily Breathhold card.
 - `daily_breath_hold_started` / `daily_breath_hold_released` / `daily_results_viewed`.
 
 Breathing exercise sessions

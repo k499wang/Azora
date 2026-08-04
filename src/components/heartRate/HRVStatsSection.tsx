@@ -1,5 +1,4 @@
 import { StyleSheet, View } from 'react-native';
-import { colors } from '../../theme/colors';
 import { spacing, padding } from '../../theme/spacing';
 import SectionHeader from '../common/SectionHeader';
 import ProUpgradeButton from '../common/ProUpgradeButton';
@@ -58,7 +57,6 @@ export default function HRVStatsSection({
         <HRVTrackStatCard
           label="RMSSD"
           icon="stat-rmssd"
-          iconColor={colors.accent[600]}
           value={rmssdValue}
           unit="ms"
           max={80}
@@ -72,7 +70,6 @@ export default function HRVStatsSection({
         <HRVTrackStatCard
           label="Avg HRV"
           icon="stat-average-hrv"
-          iconColor={colors.accent[600]}
           value={sdnnValue}
           unit="ms"
           max={80}
@@ -90,7 +87,6 @@ export default function HRVStatsSection({
             sdnn: sdnn ?? null,
             avgBpm: avgBpm ?? null,
           }}
-          color={colors.error[500]}
           locked={locked}
           onPressLocked={onPressUpgrade}
         />

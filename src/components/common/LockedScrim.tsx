@@ -5,6 +5,9 @@ import { colors } from '../../theme/colors';
 interface Props {
   // Blur strength on every supported platform and glass mode.
   intensity?: number;
+  // Frost tint. Pass the surrounding surface fill so the scrim reads as part of
+  // that surface instead of a pale slab laid over it.
+  color?: string;
   style?: StyleProp<ViewStyle>;
   pointerEvents?: ViewProps['pointerEvents'];
 }
@@ -17,6 +20,7 @@ interface Props {
 // making underlying high-contrast content appear as a heavy shadow.
 export default function LockedScrim({
   intensity = 50,
+  color = colors.glass.fillClear,
   style,
   pointerEvents = 'none',
 }: Props) {
@@ -25,7 +29,7 @@ export default function LockedScrim({
       bare
       forceBlur
       blurIntensity={intensity}
-      blurColor={colors.glass.fillClear}
+      blurColor={color}
       style={style ?? StyleSheet.absoluteFill}
       pointerEvents={pointerEvents}
     />

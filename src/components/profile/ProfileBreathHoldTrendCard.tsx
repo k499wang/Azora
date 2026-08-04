@@ -1,11 +1,15 @@
 import { useMemo } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { card } from '../../theme/card';
 import LineGraph, { type DataPoint } from '../analytics/LineGraph';
-import LockedContentBlur from '../common/LockedContentBlur';
+import { LockedScrim } from '../common/glass';
 import BreathHoldStatsRow from '../exercise/BreathHoldStatsRow';
+import ActivityGlyph from '../explore/ActivityGlyph';
+import { BREATH_HOLD_STYLE } from '../../features/exercise/guidedBreathing/categoryPalette';
+
+const GLYPH_SIZE = 190;
 
 interface ProfileBreathHoldTrendCardProps {
   data: DataPoint[];
@@ -41,49 +45,87 @@ export default function ProfileBreathHoldTrendCard({
   }, [data]);
 
   return (
-    <View style={styles.card}>
-      <LockedContentBlur locked={locked} onPressLocked={onPressLocked}>
+    <View style={styles.cardShadow}>
+      <View style={styles.card}>
         <View
-          style={styles.graph}
           accessibilityElementsHidden={locked}
           importantForAccessibility={locked ? 'no-hide-descendants' : 'auto'}
         >
-          <LineGraph
-            data={data}
-            unit="s"
-            height={210}
-            highlightIndex={bestIndex}
-            lineColor={colors.primary.blue600}
-            fillColor={colors.primary.blue100}
-            dotColor={colors.primary.blue700}
-            showXAxisLabels={false}
-            valuePaddingRatio={0.04}
+          <View style={styles.cardGlyph} pointerEvents="none">
+            <ActivityGlyph
+              shape={BREATH_HOLD_STYLE.glyph}
+              size={GLYPH_SIZE}
+              color={colors.text.inverse}
+              opacity={0.12}
+            />
+          </View>
+
+          <View style={styles.graph}>
+            <LineGraph
+              data={data}
+              unit="s"
+              height={210}
+              highlightIndex={bestIndex}
+              lineColor={colors.text.inverse}
+              fillColor={colors.text.inverse}
+              dotColor={colors.text.inverse}
+              highlightColor={colors.text.inverse}
+              dotStrokeColor={BREATH_HOLD_STYLE.hue.base}
+              labelColor={colors.text.inverse}
+              mutedLabelColor={colors.onBlock.textMuted}
+              showXAxisLabels={false}
+              valuePaddingRatio={0.04}
+            />
+          </View>
+
+          <View style={styles.divider} />
+
+          <BreathHoldStatsRow
+            bestHoldSeconds={bestHoldSeconds}
+            todayHoldSeconds={todayHoldSeconds}
+            avgHoldSeconds={avgHoldSeconds}
           />
         </View>
-      </LockedContentBlur>
 
-      <View style={styles.divider} />
-
-      <BreathHoldStatsRow
-        bestHoldSeconds={bestHoldSeconds}
-        todayHoldSeconds={todayHoldSeconds}
-        avgHoldSeconds={avgHoldSeconds}
-      />
+        {locked ? (
+          <>
+            <LockedScrim />
+            {onPressLocked ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Unlock breath hold progress"
+                accessibilityHint="Opens the Pro upgrade screen"
+                onPress={onPressLocked}
+                style={StyleSheet.absoluteFill}
+              />
+            ) : null}
+          </>
+        ) : null}
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  cardShadow: {
+    ...card.blockShadow,
+  },
   card: {
-    ...card.base,
+    ...card.block,
+    backgroundColor: BREATH_HOLD_STYLE.hue.base,
     padding: spacing.lg,
+  },
+  cardGlyph: {
+    position: 'absolute',
+    right: -70,
+    top: -76,
   },
   graph: {
     marginHorizontal: -spacing.xs,
   },
   divider: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.border.subtle,
+    backgroundColor: colors.onBlock.divider,
     marginHorizontal: -spacing.lg,
     marginTop: spacing.lg,
     marginBottom: spacing.lg,

@@ -5,8 +5,10 @@ import { colors } from '../../theme/colors';
 import { typography, fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import { card } from '../../theme/card';
+import ActivityGlyph from '../explore/ActivityGlyph';
 
 const WEEKDAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+const GLYPH_SIZE = 180;
 
 interface CalendarCell {
   key: string;
@@ -81,54 +83,73 @@ export default function ProfileCompletionCalendarCard({
   });
 
   return (
-    <View style={styles.card}>
-      <View style={styles.monthRow}>
-        <Text style={styles.monthLabel}>{monthLabel}</Text>
-        <Text style={styles.monthMeta}>{completedDays.length} completed days</Text>
-      </View>
+    <View style={styles.cardShadow}>
+      <View style={styles.card}>
+        <View style={styles.cardGlyph} pointerEvents="none">
+          <ActivityGlyph
+            shape="rings"
+            size={GLYPH_SIZE}
+            color={colors.text.inverse}
+            opacity={0.12}
+          />
+        </View>
 
-      <View style={styles.weekdayRow}>
-        {WEEKDAY_LABELS.map((label, index) => (
-          <Text key={`${label}-${index}`} style={styles.weekdayLabel}>
-            {label}
-          </Text>
-        ))}
-      </View>
+        <View style={styles.monthRow}>
+          <Text style={styles.monthLabel}>{monthLabel}</Text>
+          <Text style={styles.monthMeta}>{completedDays.length} completed days</Text>
+        </View>
 
-      <View style={styles.grid}>
-        {cells.map((cell) => (
-          <View key={cell.key} style={styles.cellWrap}>
-            <View
-              style={[
-                styles.dayCard,
-                !cell.isCurrentMonth && styles.dayCardMuted,
-                cell.isCompleted && styles.dayCardCompleted,
-                cell.isToday && styles.dayCardToday,
-                cell.isCompleted && cell.isToday && styles.dayCardCompletedToday,
-              ]}
-            >
-              <Text
+        <View style={styles.weekdayRow}>
+          {WEEKDAY_LABELS.map((label, index) => (
+            <Text key={`${label}-${index}`} style={styles.weekdayLabel}>
+              {label}
+            </Text>
+          ))}
+        </View>
+
+        <View style={styles.grid}>
+          {cells.map((cell) => (
+            <View key={cell.key} style={styles.cellWrap}>
+              <View
                 style={[
-                  styles.dayLabel,
-                  !cell.isCurrentMonth && styles.dayLabelMuted,
-                  cell.isCompleted && styles.dayLabelCompleted,
+                  styles.dayCard,
+                  !cell.isCurrentMonth && styles.dayCardMuted,
+                  cell.isCompleted && styles.dayCardCompleted,
+                  cell.isToday && styles.dayCardToday,
                 ]}
               >
-                {cell.dayNumber ?? ''}
-              </Text>
+                <Text
+                  style={[
+                    styles.dayLabel,
+                    !cell.isCurrentMonth && styles.dayLabelMuted,
+                    cell.isCompleted && styles.dayLabelCompleted,
+                  ]}
+                >
+                  {cell.dayNumber ?? ''}
+                </Text>
+              </View>
             </View>
-          </View>
-        ))}
+          ))}
+        </View>
       </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  cardShadow: {
+    ...card.blockShadow,
+  },
   card: {
-    ...card.base,
+    ...card.block,
+    backgroundColor: colors.playful.sky.base,
     padding: spacing.md,
     gap: spacing.md,
+  },
+  cardGlyph: {
+    position: 'absolute',
+    right: -64,
+    top: -70,
   },
   monthRow: {
     flexDirection: 'row',
@@ -138,11 +159,12 @@ const styles = StyleSheet.create({
   },
   monthLabel: {
     ...typography.label.large,
-    color: colors.text.primary,
+    fontFamily: fonts.semibold,
+    color: colors.text.inverse,
   },
   monthMeta: {
     ...typography.caption.caption1,
-    color: colors.text.tertiary,
+    color: colors.onBlock.textMuted,
   },
   weekdayRow: {
     flexDirection: 'row',
@@ -151,7 +173,7 @@ const styles = StyleSheet.create({
   },
   weekdayLabel: {
     ...typography.caption.caption1,
-    color: colors.text.tertiary,
+    color: colors.onBlock.textMuted,
     width: '14.2857%',
     textAlign: 'center',
   },
@@ -167,38 +189,29 @@ const styles = StyleSheet.create({
   dayCard: {
     height: 40,
     borderRadius: 14,
-    backgroundColor: colors.background.secondary,
-    borderWidth: 1,
-    borderColor: colors.border.subtle,
+    backgroundColor: colors.onBlock.fill,
+    borderWidth: 2,
+    borderColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
   },
   dayCardMuted: {
-    backgroundColor: colors.background.primary,
-    borderColor: 'transparent',
+    backgroundColor: 'transparent',
   },
   dayCardCompleted: {
-    backgroundColor: colors.orange[500],
-    borderColor: colors.orange[500],
+    backgroundColor: colors.onBlock.fillActive,
   },
   dayCardToday: {
-    borderWidth: 2,
-    borderColor: colors.primary.blue600,
-  },
-  dayCardCompletedToday: {
     borderColor: colors.text.inverse,
   },
   dayLabel: {
     ...typography.label.small,
-    color: colors.text.primary,
+    color: colors.text.inverse,
   },
   dayLabelMuted: {
-    color: colors.text.tertiary,
-    opacity: 0.4,
+    color: colors.onBlock.textFaint,
   },
   dayLabelCompleted: {
-    color: colors.text.inverse,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
   },
 });

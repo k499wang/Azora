@@ -1,25 +1,20 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   Alert,
   Linking,
-  Pressable,
   ScrollView,
   StyleSheet,
-  useWindowDimensions,
   View,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { Image } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
-import MaskedView from '@react-native-masked-view/masked-view';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import { padding, spacing } from '../theme/spacing';
-import AmbientBackground from '../components/common/AmbientBackground';
 import AppTopBar from '../components/common/AppTopBar';
-import BrandLockup from '../components/common/BrandLockup';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import GlassIconButton from '../components/common/GlassIconButton';
+import { Ionicons } from '@expo/vector-icons';
 import SectionHeader from '../components/common/SectionHeader';
+import ProUpgradeButton from '../components/common/ProUpgradeButton';
+import ProfileBreathHoldTrendCard from '../components/profile/ProfileBreathHoldTrendCard';
 import ProfileDisplayNameEditorDialog from '../components/profile/ProfileDisplayNameEditorDialog';
 import ProfileIdentityCard from '../components/profile/ProfileIdentityCard';
 import ProfileCompletionCalendarCard from '../components/profile/ProfileCompletionCalendarCard';
@@ -30,21 +25,25 @@ import { trackProfileAction } from '../services/analytics/tracking';
 import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
 import { useUploadProfileAvatarMutation } from '../queries/profile/useUploadProfileAvatarMutation';
 import { useUpdateProfileDisplayNameMutation } from '../queries/profile/useUpdateProfileDisplayNameMutation';
-import { getBackgroundImageSource } from '../services/images/backgroundImageCache';
-
-const HERO_FRAME_ASPECT_RATIO = 1.1;
-const HERO_OVERSCROLL_BLEED = 120;
+import { useHomeStatsQuery } from '../queries/tracking/useHomeStatsQuery';
+import { useFeatureAccess } from '../hooks/useFeatureAccess';
+import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
+import { deriveHoldStats } from '../lib/holdStats';
+import { trackFeatureGateHit } from '../services/analytics/tracking';
+import { PaywallPlacement } from '../services/paywall';
+import { FeatureKey } from '../services/subscriptions/featureAccess';
 
 function getFallbackDisplayName(_email: string | undefined): string {
   return '—';
 }
 
 export default function ProfileScreen({ navigation }: ProfileScreenProps) {
-  const insets = useSafeAreaInsets();
-  const { width: windowWidth } = useWindowDimensions();
   const user = useAuthStore((s) => s.user);
   const [editingDisplayName, setEditingDisplayName] = useState(false);
+  const todayLocalDate = useTodayLocalDate();
   const profileSummaryQuery = useProfileSummaryQuery(user?.id ?? null);
+  const homeStatsQuery = useHomeStatsQuery(user?.id ?? null, todayLocalDate);
+  const advancedStatsAccess = useFeatureAccess(FeatureKey.AdvancedStats);
   const uploadAvatarMutation = useUploadProfileAvatarMutation(user?.id ?? null);
   const updateDisplayNameMutation = useUpdateProfileDisplayNameMutation(user?.id ?? null);
 
@@ -52,6 +51,26 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
   const displayName =
     profileSummary?.profile?.displayName ?? getFallbackDisplayName(user?.email);
   const avatarUrl = profileSummary?.profile?.avatarUrl;
+  const homeStats = homeStatsQuery.data;
+  const holdStats = deriveHoldStats(homeStats?.dailyActivity, todayLocalDate);
+  const advancedStatsLocked =
+    !advancedStatsAccess.allowed && !advancedStatsAccess.isLoading;
+
+  const openTrendPaywall = useCallback(() => {
+    trackFeatureGateHit({
+      feature: FeatureKey.AdvancedStats,
+      placement: PaywallPlacement.DailyResultProGate,
+      sourceScreen: 'Profile',
+      sourceAction: 'profile_breath_hold_trend',
+      access: advancedStatsAccess,
+    });
+    navigation.navigate('ProPaywall', {
+      placement: PaywallPlacement.DailyResultProGate,
+      sourceScreen: 'Profile',
+      sourceAction: 'profile_breath_hold_trend',
+      feature: FeatureKey.AdvancedStats,
+    });
+  }, [advancedStatsAccess, navigation]);
 
   const handleChangePhoto = async () => {
     if (uploadAvatarMutation.isPending) {
@@ -139,11 +158,29 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
     await handleUpdateDisplayName(nextDisplayName);
     setEditingDisplayName(false);
   };
-  const heroBackdropHeight = windowWidth / HERO_FRAME_ASPECT_RATIO + HERO_OVERSCROLL_BLEED;
 
   return (
     <View style={styles.screen}>
-      <AmbientBackground />
+      <AppTopBar
+        showAvatar={false}
+        rightSlot={
+          <GlassIconButton
+            accessibilityLabel="Open settings"
+            size={48}
+            variant="regular"
+            onPress={() => {
+              trackProfileAction('settings_opened');
+              navigation.navigate('Settings');
+            }}
+          >
+            <Ionicons
+              name="settings-outline"
+              size={26}
+              color={colors.text.secondary}
+            />
+          </GlassIconButton>
+        }
+      />
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.content}
@@ -152,61 +189,17 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
         alwaysBounceVertical
         overScrollMode="always"
       >
-        <View style={[styles.topSection, { paddingTop: insets.top }]}>
-          <View
-            style={[styles.heroBackdrop, { height: heroBackdropHeight }]}
-            pointerEvents="none"
-          >
-            <MaskedView
-              style={StyleSheet.absoluteFill}
-              maskElement={(
-                <LinearGradient
-                  colors={['transparent', 'black', 'black', 'transparent']}
-                  locations={[0, 0.34, 0.65, 1]}
-                  style={StyleSheet.absoluteFill}
-                />
-              )}
-            >
-              <Image
-                source={getBackgroundImageSource('profileHero')}
-                style={StyleSheet.absoluteFill}
-                contentFit="cover"
-                contentPosition="center"
-              />
-            </MaskedView>
-          </View>
-          <AppTopBar
-            leftSlot={<BrandLockup />}
-            rightSlot={
-              <Pressable
-                hitSlop={12}
-                onPress={() => {
-                  trackProfileAction('settings_opened');
-                  navigation.navigate('Settings');
-                }}
-                style={({ pressed }) => [styles.settingsBadge, pressed && { opacity: 0.6 }]}
-              >
-                <MaterialCommunityIcons
-                  name="cog-outline"
-                  size={22}
-                  color={colors.text.inverse}
-                />
-              </Pressable>
-            }
+        <View style={styles.heroCardWrap}>
+          <ProfileIdentityCard
+            displayName={displayName}
+            avatarUrl={avatarUrl}
+            isUploading={uploadAvatarMutation.isPending}
+            onChangePhoto={handleChangePhoto}
+            onEditDisplayName={() => {
+              trackProfileAction('profile_name_edit_opened');
+              setEditingDisplayName(true);
+            }}
           />
-
-          <View style={styles.heroCardWrap}>
-            <ProfileIdentityCard
-              displayName={displayName}
-              avatarUrl={avatarUrl}
-              isUploading={uploadAvatarMutation.isPending}
-              onChangePhoto={handleChangePhoto}
-              onEditDisplayName={() => {
-                trackProfileAction('profile_name_edit_opened');
-                setEditingDisplayName(true);
-              }}
-            />
-          </View>
         </View>
 
         <View style={styles.section}>
@@ -224,6 +217,25 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
           <View style={styles.sectionBody}>
             <ProfileCompletionCalendarCard completedDays={profileSummary?.completedDays ?? []} />
           </View>
+        </View>
+
+        <View style={styles.section}>
+          <SectionHeader
+            title="Progress"
+            right={
+              advancedStatsLocked ? (
+                <ProUpgradeButton onPress={openTrendPaywall} />
+              ) : null
+            }
+          />
+          <ProfileBreathHoldTrendCard
+            data={profileSummary?.breathHoldTrend ?? []}
+            bestHoldSeconds={holdStats.bestHoldSeconds}
+            todayHoldSeconds={homeStats?.todayBreathHold?.holdSeconds ?? null}
+            avgHoldSeconds={holdStats.avgHoldSeconds}
+            locked={advancedStatsLocked}
+            onPressLocked={openTrendPaywall}
+          />
         </View>
 
       </ScrollView>
@@ -244,7 +256,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: colors.background.primary,
+    backgroundColor: colors.background.accentSoft,
   },
   scrollView: {
     flex: 1,
@@ -252,18 +264,6 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingBottom: spacing['7xl'] + spacing.xl,
-  },
-  topSection: {
-    position: 'relative',
-    paddingTop: spacing.md,
-    paddingBottom: spacing.xl,
-  },
-  heroBackdrop: {
-    position: 'absolute',
-    top: -HERO_OVERSCROLL_BLEED,
-    left: 0,
-    right: 0,
-    overflow: 'hidden',
   },
   heroCardWrap: {
     paddingHorizontal: padding.screen.horizontal,
@@ -276,15 +276,5 @@ const styles = StyleSheet.create({
   },
   sectionBody: {
     marginTop: spacing.xs,
-  },
-  settingsBadge: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(12,16,33,0.52)',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.20)',
   },
 });

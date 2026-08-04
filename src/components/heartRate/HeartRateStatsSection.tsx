@@ -1,5 +1,4 @@
 import { StyleSheet, View } from 'react-native';
-import { colors } from '../../theme/colors';
 import { spacing, padding } from '../../theme/spacing';
 import SectionHeader from '../common/SectionHeader';
 import ProUpgradeButton from '../common/ProUpgradeButton';
@@ -60,24 +59,20 @@ export default function HeartRateStatsSection({
           <ThermometerStatCard
             label="HR change"
             icon="stat-heart-rate-change"
-            iconColor={colors.accent[600]}
             value={hrDrop ?? (locked ? LOCKED_PLACEHOLDERS.hrDrop : null)}
             unit="bpm"
             min={0}
             max={40}
-            accent={colors.primary.blue500}
             locked={locked}
             onPressLocked={onPressUpgrade}
           />
           <ThermometerStatCard
             label="Lowest HR"
             icon="stat-lowest-heart-rate"
-            iconColor={colors.accent[600]}
             value={minBpm ?? (locked ? LOCKED_PLACEHOLDERS.minBpm : null)}
             unit="bpm"
             min={40}
             max={90}
-            accent={colors.error[500]}
             locked={locked}
             onPressLocked={onPressUpgrade}
           />
@@ -99,7 +94,6 @@ export default function HeartRateStatsSection({
             maxBpm: maxBpm ?? null,
             hrDrop: hrDrop ?? null,
           }}
-          color={colors.primary.blue500}
           locked={locked}
           onPressLocked={onPressUpgrade}
           emptyMessage={emptyChartMessage}

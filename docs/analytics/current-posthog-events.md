@@ -63,6 +63,9 @@ It is based on the actual `posthog.capture(...)` calls in the codebase.
 
 - `streak_days`
 
+This event fires from Home's Today’s Dailies breath-hold action and Explore's
+Daily Breathhold card.
+
 ## Daily Breath Hold
 
 - `daily_breath_hold_started`

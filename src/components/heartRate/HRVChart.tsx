@@ -6,11 +6,13 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
 import { typography, fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
+import { card } from '../../theme/card';
 import CardSurface from '../common/CardSurface';
 import FeatureInfoDialog from '../common/FeatureInfoDialog';
-import LockedContentBlur from '../common/LockedContentBlur';
+import { LockedScrim } from '../common/glass';
 import Icon from '../common/icons/Icon';
 import ChartInsightsSection from './ChartInsightsSection';
+import type { PlayfulHue } from '../../features/exercise/guidedBreathing/categoryPalette';
 import {
   buildHrvInsight,
   type HrvInsightSummary,
@@ -25,6 +27,7 @@ interface HRVChartProps {
   ibiMs: number[];
   height?: number;
   color?: string;
+  hue?: PlayfulHue;
   locked?: boolean;
   onPressLocked?: () => void;
   insightSummary: HrvInsightSummary;
@@ -43,7 +46,8 @@ const HRV_INFO = {
 export default function HRVChart({
   ibiMs,
   height = 170,
-  color = colors.primary.blue500,
+  color,
+  hue = colors.playful.violet,
   locked = false,
   onPressLocked,
   insightSummary,
@@ -51,6 +55,7 @@ export default function HRVChart({
 }: HRVChartProps) {
   const [width, setWidth] = useState(0);
   const [infoVisible, setInfoVisible] = useState(false);
+  const chartColor = color ?? colors.text.inverse;
 
   const onLayout = (e: LayoutChangeEvent) => {
     const w = Math.round(e.nativeEvent.layout.width);
@@ -126,7 +131,7 @@ export default function HRVChart({
     [insightSummary],
   );
   return (
-    <CardSurface locked={locked} style={styles.card}>
+    <CardSurface locked={locked} style={styles.card} hue={hue}>
       {!locked ? (
         <>
           <Pressable
@@ -137,7 +142,7 @@ export default function HRVChart({
             <MaterialCommunityIcons
               name="information-outline"
               size={16}
-              color={colors.text.tertiary}
+              color={colors.text.inverse}
             />
           </Pressable>
           <FeatureInfoDialog
@@ -149,14 +154,14 @@ export default function HRVChart({
         </>
       ) : null}
       <View style={styles.titleRow}>
-        <Icon name="stat-average-hrv" size={24} color={colors.accent[600]} />
+        <Icon name="stat-average-hrv" size={24} color={colors.text.inverse} />
         <Text style={styles.title}>Heart rate variability</Text>
       </View>
 
-      <LockedContentBlur locked={locked}>
-        <View
+      <View
           accessibilityElementsHidden={locked}
           importantForAccessibility={locked ? 'no-hide-descendants' : 'auto'}
+          style={styles.plotWell}
         >
         {!chart ? (
         <View style={[styles.emptyChart, { height }]} onLayout={onLayout}>
@@ -193,7 +198,7 @@ export default function HRVChart({
                       y1={y}
                       x2={width - PADDING.right}
                       y2={y}
-                      stroke={colors.neutral[200]}
+                      stroke={colors.onBlock.divider}
                       strokeWidth={1}
                       strokeDasharray="3,4"
                     />
@@ -201,7 +206,7 @@ export default function HRVChart({
                 })}
                 <Path
                   d={chart.line}
-                  stroke={color}
+                  stroke={chartColor}
                   strokeWidth={8}
                   fill="none"
                   strokeLinecap="round"
@@ -210,7 +215,7 @@ export default function HRVChart({
                 />
                 <Path
                   d={chart.line}
-                  stroke={color}
+                  stroke={chartColor}
                   strokeWidth={5}
                   fill="none"
                   strokeLinecap="round"
@@ -219,7 +224,7 @@ export default function HRVChart({
                 />
                 <Path
                   d={chart.line}
-                  stroke={color}
+                  stroke={chartColor}
                   strokeWidth={2.5}
                   fill="none"
                   strokeLinecap="round"
@@ -229,14 +234,14 @@ export default function HRVChart({
                   cx={chart.last.x}
                   cy={chart.last.y}
                   r={6}
-                  fill={colors.primary.blue500}
-                  opacity={0.18}
+                  fill={chartColor}
+                  opacity={0.3}
                 />
                 <Circle
                   cx={chart.last.x}
                   cy={chart.last.y}
                   r={3}
-                  fill={colors.primary.blue500}
+                  fill={chartColor}
                 />
               </Svg>
             ) : null}
@@ -254,16 +259,24 @@ export default function HRVChart({
         </View>
       </View>
         )}
-        </View>
-      </LockedContentBlur>
+      </View>
       <ChartInsightsSection
-        accentColor={colors.primary.blue500}
+        accentColor={colors.text.inverse}
+        fadeColor={hue.base}
+        textColor={colors.text.inverse}
+        dividerColor={colors.onBlock.divider}
         insight={chart ? hrvInsight : null}
         locked={locked}
         lockedPlaceholder="Your HRV is 14% higher than your 30-day baseline, indicating your parasympathetic nervous system is in a strong recovery state. This pattern often follows consistent sleep and low-stress days — your nervous system is ready for higher-intensity effort. If this trend holds through tomorrow, it may be a good window to push a harder session."
+        blurLockedContent={false}
       />
       {locked ? (
         <>
+          <LockedScrim />
+          <View style={styles.clearHeaderOverlay} pointerEvents="none">
+            <Icon name="stat-average-hrv" size={24} color={colors.text.primary} />
+            <Text style={[styles.title, { color: colors.text.primary }]}>Heart rate variability</Text>
+          </View>
           {onPressLocked ? (
             <Pressable
               accessibilityRole="button"
@@ -283,6 +296,17 @@ const styles = StyleSheet.create({
   card: {
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
+    position: 'relative',
+  },
+  clearHeaderOverlay: {
+    position: 'absolute',
+    top: spacing.md,
+    left: spacing.md - spacing.xs,
+    right: spacing.md,
+    zIndex: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
   },
   titleRow: {
     flexDirection: 'row',
@@ -293,10 +317,14 @@ const styles = StyleSheet.create({
   },
   title: {
     ...typography.heading.heading2,
-    color: colors.text.primary,
-    fontFamily: fonts.regular,
-    fontWeight: '400',
+    color: colors.text.inverse,
+    fontFamily: fonts.semibold,
     fontSize: 17,
+  },
+  plotWell: {
+    ...card.well,
+    backgroundColor: colors.onBlock.fill,
+    padding: spacing.sm,
   },
   plotRow: {
     flexDirection: 'row',
@@ -309,7 +337,7 @@ const styles = StyleSheet.create({
   },
   yTick: {
     ...typography.caption.caption1,
-    color: colors.text.tertiary,
+    color: colors.onBlock.textMuted,
     fontSize: 11,
     lineHeight: Y_TICK_HEIGHT,
     textAlign: 'right',
@@ -331,12 +359,12 @@ const styles = StyleSheet.create({
   },
   xTick: {
     ...typography.caption.caption1,
-    color: colors.text.tertiary,
+    color: colors.onBlock.textMuted,
     fontSize: 11,
   },
   xLabel: {
     ...typography.caption.caption1,
-    color: colors.text.tertiary,
+    color: colors.onBlock.textMuted,
     textAlign: 'center',
     marginTop: spacing.xs,
   },
@@ -347,7 +375,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     ...typography.body.small,
-    color: colors.text.tertiary,
+    color: colors.onBlock.textMuted,
     textAlign: 'center',
   },
   infoButton: {
