@@ -1,6 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { formatProfileCount, formatProfileDuration } from './profileStatsFormat.ts';
+import {
+  addProfileValueBreakOpportunities,
+  formatProfileCount,
+  formatProfileDuration,
+} from './profileStatsFormat.ts';
 
 test('counts stay readable as they grow past three and four digits', () => {
   assert.equal(formatProfileCount(0), '0');
@@ -26,4 +30,13 @@ test('durations past an hour keep counting in minutes', () => {
 
 test('large minute totals stay separated', () => {
   assert.equal(formatProfileDuration(360000), '6,000m');
+});
+
+test('formatted values can wrap after commas without changing their visible text', () => {
+  assert.equal(addProfileValueBreakOpportunities('142'), '142');
+  assert.equal(addProfileValueBreakOpportunities('1,247'), '1,\u200B247');
+  assert.equal(
+    addProfileValueBreakOpportunities('12,345,678m'),
+    '12,\u200B345,\u200B678m',
+  );
 });

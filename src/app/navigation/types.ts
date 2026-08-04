@@ -27,6 +27,7 @@ export type RootStackParamList = {
   MainTabs: NavigatorScreenParams<MainTabParamList> | undefined;
   HeartRate: { context?: string } | undefined;
   ExerciseSearch: undefined;
+  Garden: undefined;
   ProPaywall: {
     placement: PaywallPlacementValue;
     sourceScreen?: string;
@@ -89,6 +90,7 @@ export type ProfileScreenProps = MainTabScreenProps<'Profile'>;
 
 export type HeartRateScreenProps = RootStackScreenProps<'HeartRate'>;
 export type ExerciseSearchScreenProps = RootStackScreenProps<'ExerciseSearch'>;
+export type GardenScreenProps = RootStackScreenProps<'Garden'>;
 export type ProPaywallScreenProps = RootStackScreenProps<'ProPaywall'>;
 export type HeartRateSessionDetailScreenProps = RootStackScreenProps<'HeartRateSessionDetail'>;
 export type ExerciseSessionScreenProps = RootStackScreenProps<'ExerciseSession'>;

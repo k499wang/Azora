@@ -14,7 +14,6 @@ import LockedScrim from '../common/LockedScrim';
 import CardSurface from '../common/CardSurface';
 import Icon from '../common/icons/Icon';
 import type { CardSurfaceMode } from '../common/cardSurfaceConfig';
-import type { PlayfulHue } from '../../features/exercise/guidedBreathing/categoryPalette';
 
 interface StressGaugeProps {
   value: number | null;
@@ -22,8 +21,8 @@ interface StressGaugeProps {
   locked?: boolean;
   onPressLocked?: () => void;
   surface?: CardSurfaceMode;
-  hue?: PlayfulHue;
-  lastMeasuredLabel?: string;
+  emphasizeValue?: boolean;
+  showMeasuredLabel?: boolean;
 }
 
 const SIZE = 96;
@@ -61,8 +60,8 @@ export default function StressGauge({
   locked = false,
   onPressLocked,
   surface,
-  hue = colors.playful.teal,
-  lastMeasuredLabel,
+  emphasizeValue = false,
+  showMeasuredLabel = true,
 }: StressGaugeProps) {
   const hasValue = value != null && Number.isFinite(value);
   const clamped = hasValue ? Math.max(0, Math.min(100, value!)) : null;
@@ -80,11 +79,13 @@ export default function StressGauge({
 
   const header = (
     <>
-      <Icon name="stat-stress-index" size={24} color={colors.text.inverse} />
+      <Icon name="stat-stress-index" size={28} color={colors.primary.blue600} />
       <Text style={styles.label}>Stress Index</Text>
       {zone != null ? (
-        <View style={styles.zonePill}>
-          <Text style={styles.zonePillText}>{zone.label}</Text>
+        <View style={[styles.zonePill, { backgroundColor: `${zone.color}18` }]}>
+          <Text style={[styles.zonePillText, { color: zone.color }]}>
+            {zone.label}
+          </Text>
         </View>
       ) : null}
     </>
@@ -102,14 +103,30 @@ export default function StressGauge({
             <View style={styles.statsRow}>
               <View style={styles.statCell}>
                 <View style={styles.statValueRow}>
-                  <Text style={[styles.statValue, styles.statValueLarge]}>
+                  <Text
+                    style={[
+                      styles.statValue,
+                      styles.statValueLarge,
+                      emphasizeValue && styles.emphasizedValue,
+                    ]}
+                  >
                     {formatValue(clamped)}
                   </Text>
-                  <Text style={[styles.statUnit, styles.statUnitLarge]}>/100</Text>
+                  <Text
+                    style={[
+                      styles.statUnit,
+                      styles.statUnitLarge,
+                      emphasizeValue && styles.emphasizedUnit,
+                    ]}
+                  >
+                    /100
+                  </Text>
                 </View>
-                <Text style={[styles.statLabel, styles.statLabelLarge, styles.currentStatLabel]}>
-                  {lastMeasuredLabel ?? 'Today'}
-                </Text>
+                {showMeasuredLabel ? (
+                  <Text style={[styles.statLabel, styles.statLabelLarge, styles.currentStatLabel]}>
+                    Today
+                  </Text>
+                ) : null}
               </View>
             </View>
           </View>
@@ -123,7 +140,7 @@ export default function StressGauge({
                 style="stroke"
                 strokeWidth={STROKE}
                 strokeCap="round"
-                color={colors.onBlock.fill}
+                color={colors.neutral[100]}
               />
               {zone != null ? (
                 <Path
@@ -131,7 +148,7 @@ export default function StressGauge({
                   style="stroke"
                   strokeWidth={STROKE}
                   strokeCap="round"
-                  color={colors.text.inverse}
+                  color={zone.color}
                 />
               ) : null}
               {TICKS.map((p, i) => (
@@ -141,11 +158,14 @@ export default function StressGauge({
                   style="stroke"
                   strokeWidth={1.5}
                   strokeCap="round"
-                  color={colors.onBlock.divider}
+                  color={colors.neutral[200]}
                 />
               ))}
 
-              <Circle cx={CX} cy={CY} r={INNER_R} color={hue.base} />
+              <Circle cx={CX} cy={CY + 3} r={INNER_R + 3} color="rgba(15,23,42,0.04)" />
+              <Circle cx={CX} cy={CY + 1.5} r={INNER_R + 1.5} color="rgba(15,23,42,0.02)" />
+              <Circle cx={CX} cy={CY} r={INNER_R + 1} color={colors.neutral[200]} />
+              <Circle cx={CX} cy={CY} r={INNER_R} color={colors.background.elevated} />
             </Canvas>
           </View>
         </View>
@@ -155,7 +175,7 @@ export default function StressGauge({
         <>
           <LockedScrim />
           <View style={styles.clearHeaderOverlay} pointerEvents="none">
-            <Icon name="stat-stress-index" size={24} color={colors.text.inverse} />
+            <Icon name="stat-stress-index" size={28} color={colors.primary.blue600} />
             <Text style={styles.label}>Stress Index</Text>
           </View>
           {onPressLocked ? (
@@ -171,7 +191,7 @@ export default function StressGauge({
   );
 
   return (
-    <CardSurface locked={locked} style={styles.card} surface={surface} hue={hue}>
+    <CardSurface elevated locked={locked} style={styles.card} surface={surface}>
       {content}
     </CardSurface>
   );
@@ -179,6 +199,8 @@ export default function StressGauge({
 
 const styles = StyleSheet.create({
   card: {
+    backgroundColor: colors.background.elevated,
+    borderWidth: 0,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
     position: 'relative',
@@ -196,10 +218,12 @@ const styles = StyleSheet.create({
     minHeight: SIZE,
   },
   label: {
-    ...typography.heading.heading2,
-    fontFamily: fonts.semibold,
-    fontSize: 17,
-    color: colors.text.inverse,
+    ...typography.title.title3,
+    fontFamily: fonts.medium,
+    fontWeight: '500',
+    fontSize: 20,
+    lineHeight: 26,
+    color: colors.text.primary,
   },
   headerRow: {
     flexDirection: 'row',
@@ -245,12 +269,12 @@ const styles = StyleSheet.create({
     ...typography.label.small,
     fontFamily: fonts.semibold,
     fontSize: 10,
-    color: colors.onBlock.textMuted,
+    color: colors.text.tertiary,
     letterSpacing: 0,
   },
   currentStatLabel: {
-    fontFamily: fonts.regular,
-    fontWeight: '400',
+    fontFamily: fonts.medium,
+    fontWeight: '500',
     fontSize: 13,
     lineHeight: 16,
   },
@@ -261,8 +285,9 @@ const styles = StyleSheet.create({
   },
   statValue: {
     ...typography.title.title3,
-    fontFamily: fonts.semibold,
-    color: colors.text.inverse,
+    fontFamily: fonts.medium,
+    fontWeight: '500',
+    color: colors.text.primary,
     fontVariant: ['tabular-nums'],
     letterSpacing: -0.3,
     fontSize: 19,
@@ -270,25 +295,35 @@ const styles = StyleSheet.create({
   statUnit: {
     ...typography.label.small,
     fontSize: 12,
-    color: colors.onBlock.textMuted,
-    fontFamily: fonts.regular,
-    fontWeight: '400',
+    color: colors.text.tertiary,
+    fontFamily: fonts.medium,
+    fontWeight: '500',
   },
   statLabelLarge: {
     fontSize: 11,
   },
   statValueLarge: {
     ...typography.title.title1,
-    fontFamily: fonts.semibold,
-    color: colors.text.inverse,
+    fontFamily: fonts.medium,
+    fontWeight: '500',
+    color: colors.text.primary,
     fontVariant: ['tabular-nums'],
     letterSpacing: -0.3,
+  },
+  emphasizedValue: {
+    fontSize: 32,
+    lineHeight: 40,
+  },
+  emphasizedUnit: {
+    fontFamily: fonts.bold,
+    fontWeight: '600',
+    fontSize: 16,
+    lineHeight: 20,
   },
   statUnitLarge: {
     fontSize: 14,
   },
   zonePill: {
-    backgroundColor: colors.onBlock.fill,
     paddingHorizontal: spacing.sm,
     paddingVertical: 2,
     borderRadius: 20,
@@ -297,14 +332,18 @@ const styles = StyleSheet.create({
     ...typography.label.small,
     fontFamily: fonts.semibold,
     fontSize: 11,
-    color: colors.text.inverse,
   },
   ringSurface: {
     ...card.well,
-    backgroundColor: colors.onBlock.fill,
+    backgroundColor: colors.background.elevated,
     width: SIZE,
     height: SIZE,
     borderRadius: SIZE / 2,
     flexShrink: 0,
+    shadowColor: colors.neutral[900],
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 3,
   },
 });

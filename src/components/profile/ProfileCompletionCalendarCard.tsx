@@ -158,8 +158,11 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   monthLabel: {
-    ...typography.label.large,
-    fontFamily: fonts.semibold,
+    ...typography.title.title3,
+    fontFamily: fonts.medium,
+    fontWeight: '500',
+    fontSize: 20,
+    lineHeight: 26,
     color: colors.text.inverse,
   },
   monthMeta: {

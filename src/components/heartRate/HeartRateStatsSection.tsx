@@ -10,6 +10,7 @@ import type {
   BpmInsightContext,
   BreathingTechniqueBpmProfile,
 } from '../../lib/heartRate/bpmInsight';
+import { colors } from '../../theme/colors';
 
 const LOCKED_PLACEHOLDERS = {
   hrDrop: 18,
@@ -28,6 +29,7 @@ interface HeartRateSectionProps {
   emptyChartMessage?: string;
   insightContext?: BpmInsightContext;
   breathingTechniqueProfile?: BreathingTechniqueBpmProfile | null;
+  numberForwardSummary?: boolean;
 }
 
 export default function HeartRateStatsSection({
@@ -42,6 +44,7 @@ export default function HeartRateStatsSection({
   emptyChartMessage,
   insightContext,
   breathingTechniqueProfile,
+  numberForwardSummary = false,
 }: HeartRateSectionProps) {
   const isBreathHold = insightContext === 'breath-hold';
 
@@ -63,6 +66,9 @@ export default function HeartRateStatsSection({
             unit="bpm"
             min={0}
             max={40}
+            accent={colors.primary.blue500}
+            iconColor={colors.primary.blue600}
+            presentation={numberForwardSummary ? 'number' : 'thermometer'}
             locked={locked}
             onPressLocked={onPressUpgrade}
           />
@@ -73,6 +79,9 @@ export default function HeartRateStatsSection({
             unit="bpm"
             min={40}
             max={90}
+            accent={colors.error[500]}
+            iconColor={colors.primary.blue600}
+            presentation={numberForwardSummary ? 'number' : 'thermometer'}
             locked={locked}
             onPressLocked={onPressUpgrade}
           />
@@ -82,6 +91,7 @@ export default function HeartRateStatsSection({
           bpm={avgBpm ?? null}
           age={age ?? null}
           title="Average heart rate"
+          emphasizeValue={numberForwardSummary}
           locked={locked}
           onPressLocked={onPressUpgrade}
         />
@@ -94,6 +104,7 @@ export default function HeartRateStatsSection({
             maxBpm: maxBpm ?? null,
             hrDrop: hrDrop ?? null,
           }}
+          color={colors.primary.blue500}
           locked={locked}
           onPressLocked={onPressUpgrade}
           emptyMessage={emptyChartMessage}

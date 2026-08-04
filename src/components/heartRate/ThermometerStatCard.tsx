@@ -4,13 +4,11 @@ import { LockedScrim } from '../common/glass';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography, fonts } from '../../theme/typography';
-import { card } from '../../theme/card';
 import CardSurface from '../common/CardSurface';
 import Icon from '../common/icons/Icon';
 import type { IconName } from '../common/icons/paths';
-import type { PlayfulHue } from '../../features/exercise/guidedBreathing/categoryPalette';
 
-const STAT_ICON_SIZE = 24;
+const STAT_ICON_SIZE = 28;
 
 interface ThermometerStatCardProps {
   label: string;
@@ -18,11 +16,12 @@ interface ThermometerStatCardProps {
   unit: string;
   min: number;
   max: number;
+  accent: string;
   icon?: IconName;
   iconColor?: string;
-  hue?: PlayfulHue;
   /** When set, renders this text as the primary black value and hides the grey unit. */
   valueText?: string;
+  presentation?: 'thermometer' | 'number';
   locked?: boolean;
   onPressLocked?: () => void;
 }
@@ -33,10 +32,11 @@ export default function ThermometerStatCard({
   unit,
   min,
   max,
+  accent,
   icon,
-  iconColor = colors.text.inverse,
-  hue = colors.playful.coral,
+  iconColor = colors.text.secondary,
   valueText,
+  presentation = 'thermometer',
   locked = false,
   onPressLocked,
 }: ThermometerStatCardProps) {
@@ -47,8 +47,8 @@ export default function ThermometerStatCard({
 
   return (
     <CardSurface
+      elevated
       locked={locked}
-      hue={hue}
       containerStyle={styles.tileContainer}
       style={styles.tile}
     >
@@ -62,20 +62,46 @@ export default function ThermometerStatCard({
         <View style={styles.tileBody}>
           <View style={styles.tileValueRow}>
             {valueText != null ? (
-              <Text style={styles.tileValue}>{valueText}</Text>
+              <Text
+                style={[
+                  styles.tileValue,
+                  presentation === 'number' && styles.emphasizedValue,
+                ]}
+              >
+                {valueText}
+              </Text>
             ) : (
               <>
-                <Text style={styles.tileValue}>
+                <Text
+                  style={[
+                    styles.tileValue,
+                    presentation === 'number' && styles.emphasizedValue,
+                  ]}
+                >
                   {magnitude != null ? Math.round(magnitude) : '--'}
                 </Text>
-                <Text style={styles.tileUnit}>{unit}</Text>
+                <Text
+                  style={[
+                    styles.tileUnit,
+                    presentation === 'number' && styles.emphasizedUnit,
+                  ]}
+                >
+                  {unit}
+                </Text>
               </>
             )}
           </View>
         </View>
-        <View style={styles.thermoTrack}>
-          <View style={[styles.thermoFill, { height: `${fillPct}%` }]} />
-        </View>
+        {presentation === 'thermometer' ? (
+          <View style={styles.thermoTrack}>
+            <View
+              style={[
+                styles.thermoFill,
+                { height: `${fillPct}%`, backgroundColor: accent },
+              ]}
+            />
+          </View>
+        ) : null}
       </View>
       {locked ? (
         <>
@@ -104,6 +130,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   tile: {
+    backgroundColor: colors.background.elevated,
+    borderWidth: 0,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
   },
@@ -131,10 +159,12 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
   },
   tileLabel: {
-    ...typography.heading.heading2,
-    fontFamily: fonts.semibold,
-    fontSize: 17,
-    color: colors.text.inverse,
+    ...typography.title.title3,
+    fontFamily: fonts.medium,
+    fontWeight: '500',
+    fontSize: 20,
+    lineHeight: 26,
+    color: colors.text.primary,
   },
   lockedTitleText: {
     opacity: 0,
@@ -147,31 +177,47 @@ const styles = StyleSheet.create({
   tileValue: {
     fontSize: 28,
     lineHeight: 32,
-    fontFamily: fonts.semibold,
-    color: colors.text.inverse,
+    fontFamily: fonts.medium,
+    fontWeight: '500',
+    color: colors.text.primary,
     fontVariant: ['tabular-nums'],
     letterSpacing: -0.3,
+  },
+  emphasizedValue: {
+    fontSize: 32,
+    lineHeight: 40,
+  },
+  emphasizedUnit: {
+    fontFamily: fonts.bold,
+    fontWeight: '600',
+    fontSize: 16,
+    lineHeight: 20,
   },
   tileUnit: {
     ...typography.label.small,
     fontSize: 14,
-    color: colors.onBlock.textMuted,
-    fontFamily: fonts.regular,
-    fontWeight: '400',
+    color: colors.text.tertiary,
+    fontFamily: fonts.medium,
+    fontWeight: '500',
   },
   thermoTrack: {
-    ...card.well,
-    backgroundColor: colors.onBlock.fill,
+    backgroundColor: colors.neutral[100],
+    borderWidth: 1,
+    borderColor: colors.neutral[200],
     width: 10,
     height: 80,
     borderRadius: 5,
     overflow: 'hidden',
     justifyContent: 'flex-end',
     alignSelf: 'center',
+    shadowColor: colors.primary.blue700,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.14,
+    shadowRadius: 3,
+    elevation: 2,
   },
   thermoFill: {
     width: '100%',
     borderRadius: 5,
-    backgroundColor: colors.text.inverse,
   },
 });

@@ -21,6 +21,9 @@ import { DEFAULT_DAILY_PLAN_SCHEDULE } from '../services/dailyPlan/types';
 import { useDailyExercisePlan } from '../features/exercise/guidedBreathing/hooks/useDailyExercisePlan';
 import { getTechnique } from '../features/exercise/guidedBreathing/techniques';
 import { useCompletedBreathingTechniqueIdsQuery } from '../queries/tracking/useCompletedBreathingTechniqueIdsQuery';
+import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
+import HomeTreeHero from '../features/garden/components/HomeTreeHero';
+import { buildHomeTreeProgress } from '../features/garden/domain/homeTreeProgress';
 import { PaywallPlacement } from '../services/paywall';
 import { FeatureKey } from '../services/subscriptions/featureAccess';
 import type {
@@ -34,6 +37,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const posthog = usePostHog();
   const user = useAuthStore((state) => state.user);
   const profileQuery = useProfileQuery(user?.id ?? null);
+  const profileSummaryQuery = useProfileSummaryQuery(user?.id ?? null);
   const dailyPlanScheduleQuery = useDailyPlanScheduleQuery(user?.id ?? null);
   const dailyPlanSchedule =
     dailyPlanScheduleQuery.data ?? DEFAULT_DAILY_PLAN_SCHEDULE;
@@ -72,6 +76,11 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const handPickedExerciseCompleted = handPickedTechnique != null &&
     completedTechniqueIds.includes(handPickedTechnique.id);
   const breathHoldCompleted = todayActivity?.dailyBreathHoldCompleted ?? false;
+  const treeProgressUnavailable =
+    profileSummaryQuery.data?.partialErrors.activeDays === true;
+  const treeProgress = profileSummaryQuery.data == null || treeProgressUnavailable
+    ? null
+    : buildHomeTreeProgress(profileSummaryQuery.data.activeDays);
   const showProPaywall = useCallback((
     feature: FeatureKeyValue,
     placement: typeof PaywallPlacement[keyof typeof PaywallPlacement],
@@ -166,10 +175,16 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         </AppTopBar>
 
         <View style={styles.bodySection}>
-          <CompactActionBanner
-            icon="message"
-            label="Take a survey and get 50% off"
-            onPress={() => void Linking.openURL(SURVEY_DISCOUNT_URL)}
+          <HomeTreeHero
+            progress={treeProgress}
+            progressUnavailable={treeProgressUnavailable}
+            caredToday={stats?.completedDaysAgo.includes(0) ?? false}
+            returning={
+              treeProgress != null &&
+              treeProgress.careDays > 0 &&
+              (stats?.streak?.currentStreak ?? 0) === 0
+            }
+            onPressGarden={() => navigation.navigate('Garden')}
           />
           <TodaysDailiesSection
             technique={recommendedTechnique.technique}
@@ -189,6 +204,11 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             onPressHandPickedExercise={startHandPickedExercise}
             onPressBreathHold={() => startDailyBreathHold('todays_dailies_breathhold')}
           />
+          <CompactActionBanner
+            icon="message"
+            label="Take a survey and get 50% off"
+            onPress={() => void Linking.openURL(SURVEY_DISCOUNT_URL)}
+          />
         </View>
       </ScrollView>
     </View>
@@ -198,7 +218,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: colors.background.accentSoft,
+    backgroundColor: colors.background.canvas,
   },
   scroll: {
     flex: 1,

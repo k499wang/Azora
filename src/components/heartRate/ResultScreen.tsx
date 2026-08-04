@@ -25,7 +25,6 @@ import { PaywallPlacement } from '../../services/paywall';
 import { FeatureKey } from '../../services/subscriptions/featureAccess';
 import type { RootStackNavigationProp } from '../../app/navigation';
 import { getHeartRateCameraTarget } from '../../lib/heartRate/captureGuidance';
-import AmbientBackground from '../common/AmbientBackground';
 
 interface ResultScreenProps {
   result: CaptureResult;
@@ -185,7 +184,6 @@ export function ResultScreen({
     const reading = result.reading;
     return (
       <View style={[styles.screen, { paddingTop: insets.top }]}>
-        <AmbientBackground />
         <ScrollView
           style={styles.scrollFlex}
           contentContainerStyle={styles.scrollContent}
@@ -281,7 +279,6 @@ export function ResultScreen({
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
-      <AmbientBackground />
       <View style={styles.container}>
         <Animated.View
           style={[
@@ -351,7 +348,7 @@ export function ResultScreen({
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: colors.background.primary,
+    backgroundColor: colors.background.canvas,
   },
   container: {
     flex: 1,

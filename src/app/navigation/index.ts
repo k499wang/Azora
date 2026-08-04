@@ -2,6 +2,7 @@ export { RootNavigator } from './RootNavigator';
 export type {
   ExploreScreenProps,
   ExerciseSearchScreenProps,
+  GardenScreenProps,
   DailyExerciseScreenProps,
   DailyResultScreenProps,
   ExerciseSessionScreenProps,

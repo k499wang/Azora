@@ -14,7 +14,7 @@ interface EmptyStateCardProps {
 
 export default function EmptyStateCard({ title, subtitle, hue }: EmptyStateCardProps) {
   return (
-    <CardSurface style={styles.card} hue={hue}>
+    <CardSurface elevated style={styles.card} hue={hue}>
       <Text style={[styles.title, hue != null && styles.blockTitle]}>{title}</Text>
       <Text style={[styles.subtitle, hue != null && styles.blockSubtitle]}>{subtitle}</Text>
     </CardSurface>
@@ -23,6 +23,8 @@ export default function EmptyStateCard({ title, subtitle, hue }: EmptyStateCardP
 
 const styles = StyleSheet.create({
   card: {
+    backgroundColor: colors.background.elevated,
+    borderWidth: 0,
     paddingVertical: spacing.lg,
     paddingHorizontal: spacing.lg,
     alignItems: 'center',

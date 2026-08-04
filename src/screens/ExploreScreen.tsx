@@ -74,7 +74,7 @@ export default function ExploreScreen({ navigation }: ExploreScreenProps) {
         </AppTopBar>
 
         <View style={styles.dailyPlanSection}>
-          <SectionHeader title="Daily Breathhold" />
+          <SectionHeader title="Breathhold Exercise" />
           <DailyPlanCard
             todayHoldSeconds={todayBreathHold?.holdSeconds ?? null}
             lastHoldSeconds={holdStats.lastHoldSeconds}
@@ -91,7 +91,7 @@ export default function ExploreScreen({ navigation }: ExploreScreenProps) {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: colors.background.accentSoft,
+    backgroundColor: colors.background.canvas,
   },
   scroll: {
     flex: 1,

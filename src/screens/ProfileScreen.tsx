@@ -260,7 +260,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: colors.background.accentSoft,
+    backgroundColor: colors.background.canvas,
   },
   scrollView: {
     flex: 1,

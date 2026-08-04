@@ -8,7 +8,6 @@ import CardSurface from '../common/CardSurface';
 import type { CardSurfaceMode } from '../common/cardSurfaceConfig';
 import CardTitle from '../common/CardTitle';
 import PulseDot from '../common/PulseDot';
-import type { PlayfulHue } from '../../features/exercise/guidedBreathing/categoryPalette';
 import {
   getRestingHeartRateMarkerFraction,
   getRestingHeartRateSegments,
@@ -21,13 +20,13 @@ interface RestingHeartRateBarProps {
   title?: string;
   showValue?: boolean;
   surface?: CardSurfaceMode;
+  emphasizeValue?: boolean;
   locked?: boolean;
   onPressLocked?: () => void;
-  hue?: PlayfulHue;
 }
 
-const NUM_TICKS = 56;
-const TICK_WIDTH = 2;
+const NUM_TICKS = 40;
+const TICK_WIDTH = 4;
 const TICK_SELECTED_OPACITY = 1;
 const TICK_UNSELECTED_OPACITY = 0.26;
 
@@ -55,9 +54,9 @@ export default function RestingHeartRateBar({
   title = 'Resting heart rate',
   showValue = true,
   surface,
+  emphasizeValue = false,
   locked = false,
   onPressLocked,
-  hue = colors.playful.coral,
 }: RestingHeartRateBarProps) {
   const hasBpm = bpm != null && Number.isFinite(bpm);
   const zone = hasBpm ? getRestingHeartRateZone(bpm!, age) : null;
@@ -66,7 +65,7 @@ export default function RestingHeartRateBar({
   const ticks = buildTickMarks(segments);
 
   return (
-    <CardSurface locked={locked} style={styles.card} surface={surface} hue={hue}>
+    <CardSurface elevated locked={locked} style={styles.card} surface={surface}>
       <View
         accessibilityElementsHidden={locked}
         importantForAccessibility={locked ? 'no-hide-descendants' : 'auto'}
@@ -75,12 +74,14 @@ export default function RestingHeartRateBar({
         <View style={locked && styles.hiddenLockedTitle}>
           <CardTitle
             title={title}
-            color={colors.text.inverse}
-            leading={<PulseDot color={colors.text.inverse} />}
+            color={colors.text.primary}
+            leading={<PulseDot color={zone?.color} />}
             right={
               zone ? (
-                <View style={styles.zonePill}>
-                  <Text style={styles.zoneText}>{zone.label}</Text>
+                <View style={[styles.zonePill, { backgroundColor: `${zone.color}18` }]}>
+                  <Text style={[styles.zoneText, { color: zone.color }]}>
+                    {zone.label}
+                  </Text>
                 </View>
               ) : null
             }
@@ -89,8 +90,12 @@ export default function RestingHeartRateBar({
 
         {showValue ? (
           <View style={styles.valueRow}>
-            <Text style={styles.value}>{hasBpm ? Math.round(bpm!) : '--'}</Text>
-            <Text style={styles.unit}>bpm</Text>
+            <Text style={[styles.value, emphasizeValue && styles.emphasizedValue]}>
+              {hasBpm ? Math.round(bpm!) : '--'}
+            </Text>
+            <Text style={[styles.unit, emphasizeValue && styles.emphasizedUnit]}>
+              bpm
+            </Text>
           </View>
         ) : null}
 
@@ -105,10 +110,10 @@ export default function RestingHeartRateBar({
                     left: `${tick.t * 100}%`,
                     backgroundColor:
                       !hasBpm
-                        ? colors.onBlock.divider
+                        ? colors.neutral[300]
                         : fraction != null && tick.t > fraction
-                        ? colors.onBlock.divider
-                        : colors.text.inverse,
+                        ? colors.neutral[300]
+                        : tick.color,
                     opacity:
                       fraction != null && tick.t > fraction
                         ? TICK_UNSELECTED_OPACITY
@@ -127,8 +132,8 @@ export default function RestingHeartRateBar({
           <View style={styles.clearHeaderOverlay} pointerEvents="none">
             <CardTitle
               title={title}
-              color={colors.text.inverse}
-              leading={<PulseDot color={colors.text.inverse} />}
+              color={colors.text.primary}
+              leading={<PulseDot />}
             />
           </View>
           {onPressLocked ? (
@@ -148,6 +153,8 @@ export default function RestingHeartRateBar({
 
 const styles = StyleSheet.create({
   card: {
+    backgroundColor: colors.background.elevated,
+    borderWidth: 0,
     width: '100%',
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
@@ -167,7 +174,6 @@ const styles = StyleSheet.create({
     opacity: 0,
   },
   zonePill: {
-    backgroundColor: colors.onBlock.fill,
     borderRadius: 20,
     paddingHorizontal: spacing.sm,
     paddingVertical: 3,
@@ -177,7 +183,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.medium,
     fontWeight: '500',
     fontSize: 11,
-    color: colors.text.inverse,
   },
   valueRow: {
     flexDirection: 'row',
@@ -188,16 +193,26 @@ const styles = StyleSheet.create({
     ...typography.title.title1,
     fontFamily: fonts.medium,
     fontWeight: '500',
-    color: colors.text.inverse,
+    color: colors.text.primary,
     fontVariant: ['tabular-nums'],
     letterSpacing: -0.3,
+  },
+  emphasizedValue: {
+    fontSize: 32,
+    lineHeight: 40,
+  },
+  emphasizedUnit: {
+    fontFamily: fonts.bold,
+    fontWeight: '600',
+    fontSize: 16,
+    lineHeight: 20,
   },
   unit: {
     ...typography.label.small,
     fontSize: 14,
-    color: colors.onBlock.textMuted,
-    fontFamily: fonts.regular,
-    fontWeight: '400',
+    color: colors.text.tertiary,
+    fontFamily: fonts.medium,
+    fontWeight: '500',
   },
   barWrap: {
     width: '100%',
