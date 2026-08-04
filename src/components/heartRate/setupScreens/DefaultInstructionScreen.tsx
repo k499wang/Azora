@@ -75,22 +75,19 @@ export function DefaultInstructionScreen({ onNext }: SetupScreenProps) {
       style={[
         styles.container,
         {
-          paddingTop: insets.top + (compact ? spacing.lg : spacing.xl),
-          paddingBottom: insets.bottom + (compact ? spacing.sm : spacing.lg),
+          paddingTop: insets.top + spacing.lg,
+          paddingBottom: insets.bottom + spacing.sm,
         },
       ]}
     >
       <ScrollView
-        contentContainerStyle={[styles.scrollContent, compact && styles.scrollContentCompact]}
+        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         <Text style={[styles.title, compact && styles.titleCompact]}>{placementGuidance.title}</Text>
-        <Text style={[styles.subtitle, compact && styles.subtitleCompact]}>
-          {placementGuidance.instruction}
-        </Text>
-        <View style={[styles.modeBlock, compact && styles.modeBlockCompact]}>
+        <View style={styles.modeBlock}>
           <CaptureModeToggle value={mode} onChange={setMode} isPro={isPro} />
-          <View style={[styles.perkRow, compact && styles.perkRowCompact]}>
+          <View style={styles.perkRow}>
             {HEART_RATE_CAPTURE_MODES[mode].perks.map((perk) => (
               <View key={perk} style={styles.perkChip}>
                 <Text style={styles.perkText}>{perk}</Text>
@@ -100,12 +97,12 @@ export function DefaultInstructionScreen({ onNext }: SetupScreenProps) {
         </View>
 
         {showPlacementIllustration && (
-          <View style={[styles.illustration, compact && styles.illustrationCompact]}>
+          <View style={styles.illustration}>
             <HeartRatePlacementIllustration compact={compact} />
           </View>
         )}
 
-        <View style={[styles.steps, compact && styles.stepsCompact]}>
+        <View style={styles.steps}>
           <HeartRatePlacementStepsCard
             steps={placementGuidance.steps}
             appearance="plain"
@@ -114,7 +111,7 @@ export function DefaultInstructionScreen({ onNext }: SetupScreenProps) {
         </View>
       </ScrollView>
 
-      <View style={[styles.footer, compact && styles.footerCompact]}>
+      <View style={styles.footer}>
         <Pressable
           accessibilityRole="button"
           onPress={() => (locked ? openPaywallForLockedMode() : onNext({ mode }))}
@@ -164,9 +161,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
   },
   scrollContent: {
-    paddingBottom: spacing.lg,
-  },
-  scrollContentCompact: {
     paddingBottom: spacing.sm,
   },
   title: {
@@ -179,20 +173,7 @@ const styles = StyleSheet.create({
   titleCompact: {
     ...typography.title.title2,
   },
-  subtitle: {
-    ...typography.body.small,
-    color: colors.text.secondary,
-    textAlign: 'center',
-    marginTop: spacing.sm,
-    paddingHorizontal: spacing.md,
-  },
-  subtitleCompact: {
-    ...typography.body.xsmall,
-  },
   modeBlock: {
-    marginTop: spacing.xl,
-  },
-  modeBlockCompact: {
     marginTop: spacing.lg,
   },
   perkRow: {
@@ -202,12 +183,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     alignContent: 'center',
     gap: spacing.xs,
-    marginTop: spacing.md,
-    minHeight: 60,
-  },
-  perkRowCompact: {
-    minHeight: 48,
     marginTop: spacing.sm,
+    minHeight: 48,
   },
   perkChip: {
     paddingHorizontal: spacing.sm,
@@ -222,22 +199,13 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
   },
   illustration: {
-    marginTop: spacing.xl,
-  },
-  illustrationCompact: {
-    marginTop: spacing.lg,
+    marginTop: spacing.md,
   },
   steps: {
-    marginTop: spacing.lg,
-  },
-  stepsCompact: {
-    marginTop: spacing.md,
+    marginTop: 0,
   },
   footer: {
     gap: spacing.md,
-    paddingTop: spacing.md,
-  },
-  footerCompact: {
     paddingTop: spacing.sm,
   },
   ctaShadow: {

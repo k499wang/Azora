@@ -130,7 +130,6 @@ export function HeartRateCaptureFlow({
   const [selectedMode, setSelectedMode] = useState<HeartRateCaptureMode>(DEFAULT_CAPTURE_MODE);
   const [pendingSave, setPendingSave] = useState<PendingHeartRateSave | null>(null);
   const [helpVisible, setHelpVisible] = useState(false);
-  const [helpIssue, setHelpIssue] = useState<HeartRateStallIssue>('no_pulse');
   const helpShownRef = useRef(false);
   const stallSamplesRef = useRef<HeartRateStallSample[]>([]);
   const lastStallIssueRef = useRef<HeartRateStallIssue | null>(null);
@@ -203,7 +202,6 @@ export function HeartRateCaptureFlow({
       stallTimerRef.current = null;
       const issue = dominantStallIssue(stallSamplesRef.current, Date.now());
       helpShownRef.current = true;
-      setHelpIssue(issue);
       setHelpVisible(true);
       posthog.capture(AnalyticsEvent.HeartRateCaptureHelpShown, {
         issue,
@@ -508,8 +506,6 @@ export function HeartRateCaptureFlow({
 
       <HeartRateHelpSheet
         visible={helpVisible}
-        issue={helpIssue}
-        cameraTarget={cameraTarget}
         statusMessage={checkConfig.status}
         pulseConfirmed={currentBpm != null}
         onDismiss={() => setHelpVisible(false)}
@@ -527,7 +523,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.lg,
-    paddingBottom: spacing.xl,
+    paddingBottom: spacing.lg,
     alignItems: 'center',
   },
   topArea: {

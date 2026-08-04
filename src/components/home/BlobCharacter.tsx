@@ -17,6 +17,7 @@ const STROKE = 4;
 
 interface BlobCharacterProps {
   character: CharacterId;
+  faceExpression?: CharacterId;
   size: number;
   bodyColor: string;
   faceColor: string;
@@ -136,6 +137,7 @@ function Accessory({ character, bodyColor }: { character: CharacterId; bodyColor
 
 export default function BlobCharacter({
   character,
+  faceExpression = character,
   size,
   bodyColor,
   faceColor,
@@ -145,7 +147,7 @@ export default function BlobCharacter({
       <Ellipse cx={50} cy={89} rx={26} ry={4.5} fill={bodyColor} fillOpacity={0.18} />
       <Accessory character={character} bodyColor={bodyColor} />
       <Path d={BODY_PATH} fill={bodyColor} />
-      <Face character={character} faceColor={faceColor} />
+      <Face character={faceExpression} faceColor={faceColor} />
     </Svg>
   );
 }

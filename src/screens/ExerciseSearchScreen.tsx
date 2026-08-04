@@ -1,7 +1,8 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
   InteractionManager,
   Pressable,
   ScrollView,
@@ -12,13 +13,16 @@ import {
 import { usePostHog } from 'posthog-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { ExerciseSearchScreenProps } from '../app/navigation';
-import SectionHeader from '../components/common/SectionHeader';
 import { Text } from '../components/common/Text';
-import DailyPlanCard from '../components/explore/DailyPlanCard';
 import ExerciseSearchBar from '../components/explore/ExerciseSearchBar';
-import { searchExerciseCatalog } from '../components/explore/exerciseCatalog';
+import ExerciseSearchResultRow from '../components/explore/ExerciseSearchResultRow';
+import {
+  searchExerciseCatalog,
+  type ExerciseSearchFilter,
+} from '../components/explore/exerciseCatalog';
 import TechniqueCard from '../components/explore/TechniqueCard';
 import { useRecommendedTechnique } from '../features/exercise/guidedBreathing/hooks/useRecommendedTechnique';
+import { BREATH_HOLD_STYLE } from '../features/exercise/guidedBreathing/categoryPalette';
 import { useFeatureAccess } from '../hooks/useFeatureAccess';
 import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
 import { matchesDailyExerciseSearch, normalizeExerciseSearch } from '../lib/exerciseSearch';
@@ -33,10 +37,32 @@ import { colors } from '../theme/colors';
 import { padding, spacing } from '../theme/spacing';
 import { fonts, typography } from '../theme/typography';
 
+const SEARCH_DEBOUNCE_MS = 250;
+const SEARCH_FILTERS: ReadonlyArray<{
+  id: ExerciseSearchFilter;
+  label: string;
+}> = [
+  { id: 'all', label: 'All' },
+  { id: 'calm', label: 'Calm' },
+  { id: 'sleep', label: 'Sleep' },
+  { id: 'focus', label: 'Focus' },
+  { id: 'energy', label: 'Energy' },
+  { id: 'balance', label: 'Balance' },
+  { id: 'breath-hold', label: 'Breath Hold' },
+];
+
+function formatHoldTime(seconds: number): string {
+  const minutes = Math.floor(seconds / 60);
+  const remainder = seconds % 60;
+  return `${minutes}:${remainder.toString().padStart(2, '0')}`;
+}
+
 export default function ExerciseSearchScreen({
   navigation,
 }: ExerciseSearchScreenProps) {
-  const [searchQuery, setSearchQuery] = useState('');
+  const [draftQuery, setDraftQuery] = useState('');
+  const [committedQuery, setCommittedQuery] = useState('');
+  const [selectedFilter, setSelectedFilter] = useState<ExerciseSearchFilter>('all');
   const inputRef = useRef<TextInput>(null);
   const insets = useSafeAreaInsets();
   const posthog = usePostHog();
@@ -49,16 +75,44 @@ export default function ExerciseSearchScreen({
     recommendedTechnique.source === 'profile'
       ? recommendedTechnique.technique?.id ?? null
       : null;
-  const normalizedQuery = normalizeExerciseSearch(searchQuery);
-  const hasQuery = normalizedQuery.length > 0;
-  const dailyMatches = hasQuery && matchesDailyExerciseSearch(searchQuery);
+  const normalizedDraftQuery = normalizeExerciseSearch(draftQuery);
+  const normalizedCommittedQuery = normalizeExerciseSearch(committedQuery);
+  const hasQuery = normalizedCommittedQuery.length > 0;
+  const isSearching = normalizedDraftQuery !== normalizedCommittedQuery;
+  const dailyQueryMatches = matchesDailyExerciseSearch(committedQuery);
+  const dailyMatches = selectedFilter === 'breath-hold'
+    ? !hasQuery || dailyQueryMatches
+    : selectedFilter === 'all' && hasQuery && dailyQueryMatches;
   const matchingTechniques = useMemo(
-    () => searchExerciseCatalog(searchQuery, recommendedTechniqueId),
-    [recommendedTechniqueId, searchQuery],
+    () => searchExerciseCatalog(
+      committedQuery,
+      recommendedTechniqueId,
+      selectedFilter,
+    ),
+    [committedQuery, recommendedTechniqueId, selectedFilter],
   );
   const stats = homeStatsQuery.data;
   const holdStats = deriveHoldStats(stats?.dailyActivity, todayLocalDate);
-  const noResults = hasQuery && !dailyMatches && matchingTechniques.length === 0;
+  const showInitialPrompt = !hasQuery && selectedFilter === 'all';
+  const noResults =
+    !showInitialPrompt && !dailyMatches && matchingTechniques.length === 0;
+  const todayHoldSeconds = stats?.todayBreathHold?.holdSeconds ?? null;
+  const dailyStatus = todayHoldSeconds != null
+    ? `Done today ${formatHoldTime(todayHoldSeconds)}`
+    : holdStats.lastHoldSeconds != null
+      ? `Last hold ${formatHoldTime(holdStats.lastHoldSeconds)}`
+      : null;
+  const dailyMetadata = dailyStatus == null ? '~2 min' : `~2 min · ${dailyStatus}`;
+
+  useEffect(() => {
+    if (normalizedDraftQuery === normalizedCommittedQuery) return;
+
+    const timeout = setTimeout(() => {
+      setCommittedQuery(draftQuery);
+    }, SEARCH_DEBOUNCE_MS);
+
+    return () => clearTimeout(timeout);
+  }, [draftQuery, normalizedCommittedQuery, normalizedDraftQuery]);
 
   useFocusEffect(
     useCallback(() => {
@@ -95,35 +149,66 @@ export default function ExerciseSearchScreen({
     navigation.navigate('DailyExercise');
   }, [dailyExerciseAccess, navigation, posthog, stats?.streak?.currentStreak]);
 
+  const clearSearch = useCallback(() => {
+    setDraftQuery('');
+    setCommittedQuery('');
+  }, []);
+
   return (
     <View style={styles.screen}>
       <View style={[styles.header, { paddingTop: insets.top }]}>
         <View style={styles.headerRow}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Back"
-            accessibilityHint="Returns to Explore"
-            hitSlop={4}
-            onPress={() => navigation.goBack()}
-            style={({ pressed }) => [
-              styles.backButton,
-              pressed && styles.buttonPressed,
-            ]}
-          >
-            <MaterialCommunityIcons
-              name="chevron-left"
-              size={30}
-              color={colors.text.primary}
-            />
-          </Pressable>
           <ExerciseSearchBar
             mode="editable"
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            onClear={() => setSearchQuery('')}
+            onBack={() => navigation.goBack()}
+            value={draftQuery}
+            onChangeText={setDraftQuery}
+            onClear={clearSearch}
             inputRef={inputRef}
             autoFocus
           />
+        </View>
+        <View
+          accessibilityRole="radiogroup"
+          accessibilityLabel="Exercise categories"
+          style={styles.filtersWrap}
+        >
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.filtersContent}
+            keyboardShouldPersistTaps="handled"
+          >
+            {SEARCH_FILTERS.map((filter) => {
+              const selected = filter.id === selectedFilter;
+
+              return (
+                <Pressable
+                  key={filter.id}
+                  accessibilityRole="button"
+                  accessibilityLabel={filter.label}
+                  accessibilityState={{ selected }}
+                  onPress={() => setSelectedFilter(filter.id)}
+                  style={({ pressed }) => [
+                    styles.filterChip,
+                    selected ? styles.filterChipSelected : styles.filterChipDefault,
+                    pressed && styles.buttonPressed,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.filterChipText,
+                      selected
+                        ? styles.filterChipTextSelected
+                        : styles.filterChipTextDefault,
+                    ]}
+                  >
+                    {filter.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </ScrollView>
         </View>
       </View>
 
@@ -134,7 +219,17 @@ export default function ExerciseSearchScreen({
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
       >
-        {!hasQuery ? (
+        {isSearching ? (
+          <View
+            accessible
+            accessibilityLiveRegion="polite"
+            accessibilityLabel="Searching exercises"
+            style={styles.searching}
+          >
+            <ActivityIndicator size="small" color={colors.primary.blue600} />
+            <Text style={styles.searchingText}>Searching…</Text>
+          </View>
+        ) : showInitialPrompt ? (
           <View style={styles.prompt}>
             <MaterialCommunityIcons
               name="magnify"
@@ -148,16 +243,20 @@ export default function ExerciseSearchScreen({
           </View>
         ) : (
           <>
-            <SectionHeader title="Results" />
-
             {dailyMatches ? (
-              <View style={styles.dailyResult}>
-                <DailyPlanCard
-                  todayHoldSeconds={stats?.todayBreathHold?.holdSeconds ?? null}
-                  lastHoldSeconds={holdStats.lastHoldSeconds}
-                  onPress={startDailyBreathHold}
-                />
-              </View>
+              <ExerciseSearchResultRow
+                title="Azora’s Breathhold Exercise"
+                metadata={dailyMetadata}
+                hue={BREATH_HOLD_STYLE.hue}
+                glyph={BREATH_HOLD_STYLE.glyph}
+                accessibilityLabel={`Azora’s Breathhold Exercise, ${dailyMetadata}`}
+                accessibilityHint={
+                  !dailyExerciseAccess.allowed && !dailyExerciseAccess.isLoading
+                    ? 'Opens the Pro upgrade screen'
+                    : 'Starts the daily breath hold exercise'
+                }
+                onPress={startDailyBreathHold}
+              />
             ) : null}
 
             {matchingTechniques.map((technique) => (
@@ -176,12 +275,12 @@ export default function ExerciseSearchScreen({
               <View
                 accessible
                 accessibilityLiveRegion="polite"
-                accessibilityLabel="No exercises found. Try a different name or category."
+                accessibilityLabel="No exercises found. Try another search or category."
                 style={styles.noResults}
               >
                 <Text style={styles.noResultsTitle}>No exercises found</Text>
                 <Text style={styles.noResultsBody}>
-                  Try a different name or category.
+                  Try another search or category.
                 </Text>
               </View>
             ) : null}
@@ -206,20 +305,44 @@ const styles = StyleSheet.create({
     minHeight: 64,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
-    paddingLeft: spacing.xs,
-    paddingRight: padding.screen.horizontal,
+    paddingHorizontal: padding.screen.horizontal,
     paddingVertical: spacing.sm,
-  },
-  backButton: {
-    width: 44,
-    height: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 22,
   },
   buttonPressed: {
     opacity: 0.6,
+  },
+  filtersWrap: {
+    paddingBottom: spacing.sm,
+  },
+  filtersContent: {
+    paddingHorizontal: padding.screen.horizontal,
+    gap: spacing.sm,
+  },
+  filterChip: {
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.md,
+    borderRadius: 18,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  filterChipSelected: {
+    backgroundColor: colors.primary.blue600,
+    borderColor: colors.primary.blue600,
+  },
+  filterChipDefault: {
+    backgroundColor: colors.background.elevated,
+    borderColor: colors.border.subtle,
+  },
+  filterChipText: {
+    ...typography.label.medium,
+    fontFamily: fonts.semibold,
+  },
+  filterChipTextSelected: {
+    color: colors.text.inverse,
+  },
+  filterChipTextDefault: {
+    color: colors.text.secondary,
   },
   results: {
     flex: 1,
@@ -246,8 +369,15 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
     textAlign: 'center',
   },
-  dailyResult: {
-    marginBottom: spacing.xs,
+  searching: {
+    alignItems: 'center',
+    paddingTop: spacing['4xl'],
+    gap: spacing.sm,
+  },
+  searchingText: {
+    ...typography.body.medium,
+    color: colors.text.secondary,
+    fontFamily: fonts.medium,
   },
   noResults: {
     alignItems: 'center',

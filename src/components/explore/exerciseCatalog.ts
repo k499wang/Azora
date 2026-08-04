@@ -1,13 +1,16 @@
 import TECHNIQUES, {
   type BreathingTechnique,
 } from '../../features/exercise/guidedBreathing/techniques';
-import { CATEGORY_STYLE } from '../../features/exercise/guidedBreathing/categoryPalette';
 import {
   matchesExerciseSearch,
   normalizeExerciseSearch,
 } from '../../lib/exerciseSearch';
 
-export type ExerciseGroupId = 'sleep-calm' | 'mental-reset' | 'focus-energy';
+export type ExerciseGroupId = BreathingTechnique['category'];
+export type ExerciseSearchFilter =
+  | 'all'
+  | BreathingTechnique['category']
+  | 'breath-hold';
 
 export interface ExerciseGroup {
   id: ExerciseGroupId;
@@ -15,21 +18,31 @@ export interface ExerciseGroup {
   techniques: BreathingTechnique[];
 }
 
-const CATEGORY_GROUP: Record<BreathingTechnique['category'], ExerciseGroupId> = {
-  sleep: 'sleep-calm',
-  calm: 'sleep-calm',
-  balance: 'mental-reset',
-  focus: 'focus-energy',
-  energy: 'focus-energy',
+const CATEGORY_SEARCH_TERMS: Record<
+  BreathingTechnique['category'],
+  readonly string[]
+> = {
+  calm: ['Calm', 'Reduce Stress & Unwind', 'Sleep & Calm'],
+  sleep: ['Sleep', 'Fall Asleep Easier', 'Sleep & Calm'],
+  focus: ['Focus', 'Improve Your Focus', 'Focus & Energy'],
+  energy: ['Energy', 'Boost Your Energy', 'Focus & Energy'],
+  balance: [
+    'Balance',
+    'Coherence',
+    'Build Inner Coherence',
+    'Find Your Balance',
+  ],
 };
 
 const EXERCISE_GROUPS: ReadonlyArray<{
   id: ExerciseGroupId;
   title: string;
 }> = [
-  { id: 'sleep-calm', title: 'Sleep & Calm' },
-  { id: 'focus-energy', title: 'Focus & Energy' },
-  { id: 'mental-reset', title: 'Find Your Balance' },
+  { id: 'calm', title: 'Reduce Stress & Unwind' },
+  { id: 'sleep', title: 'Fall Asleep Easier' },
+  { id: 'focus', title: 'Improve Your Focus' },
+  { id: 'energy', title: 'Boost Your Energy' },
+  { id: 'balance', title: 'Build Inner Coherence' },
 ];
 
 export function getOrderedTechniques(
@@ -55,7 +68,7 @@ export function getBrowseExerciseGroups(
   return EXERCISE_GROUPS.map((group) => ({
     ...group,
     techniques: orderedTechniques.filter(
-      (technique) => CATEGORY_GROUP[technique.category] === group.id,
+      (technique) => technique.category === group.id,
     ),
   }));
 }
@@ -63,19 +76,20 @@ export function getBrowseExerciseGroups(
 export function searchExerciseCatalog(
   searchQuery: string,
   recommendedTechniqueId: string | null,
+  filter: ExerciseSearchFilter = 'all',
 ): BreathingTechnique[] {
+  if (filter === 'breath-hold') return [];
+
   const normalizedQuery = normalizeExerciseSearch(searchQuery);
-  if (normalizedQuery.length === 0) return [];
+  if (normalizedQuery.length === 0 && filter === 'all') return [];
 
   return getOrderedTechniques(recommendedTechniqueId).filter((technique) => {
-    const group = EXERCISE_GROUPS.find(
-      (candidate) => candidate.id === CATEGORY_GROUP[technique.category],
-    );
+    if (filter !== 'all' && technique.category !== filter) return false;
+    if (normalizedQuery.length === 0) return true;
 
     return matchesExerciseSearch(normalizedQuery, [
       technique.name,
-      CATEGORY_STYLE[technique.category].label,
-      group?.title ?? '',
+      ...CATEGORY_SEARCH_TERMS[technique.category],
     ]);
   });
 }

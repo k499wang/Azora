@@ -340,8 +340,8 @@ export default function BPMChart({
         <>
           <LockedScrim />
           <View style={styles.clearHeaderOverlay} pointerEvents="none">
-            <Icon name="stat-heart-rate-graph" size={24} color={colors.text.primary} />
-            <Text style={[styles.title, { color: colors.text.primary }]}>Heart rate</Text>
+            <Icon name="stat-heart-rate-graph" size={24} color={colors.text.inverse} />
+            <Text style={styles.title}>Heart rate</Text>
           </View>
           {onPressLocked ? (
             <Pressable

@@ -1,17 +1,14 @@
 import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { getHeartRateTroubleshooting } from '../../lib/heartRate/captureGuidance';
-import type { HeartRateStallIssue } from '../../lib/heartRate/captureStall';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import { Text } from '../common/Text';
+import { HeartRatePlacementIllustration } from './HeartRatePlacementIllustration';
 import { HeartRatePlacementStepsCard } from './HeartRatePlacementStepsCard';
 
 interface HeartRateHelpSheetProps {
   visible: boolean;
-  issue: HeartRateStallIssue;
-  cameraTarget: string;
   /** Mirrors the live check underneath, which the sheet covers while it is open. */
   statusMessage: string;
   pulseConfirmed: boolean;
@@ -20,14 +17,26 @@ interface HeartRateHelpSheetProps {
 
 export function HeartRateHelpSheet({
   visible,
-  issue,
-  cameraTarget,
   statusMessage,
   pulseConfirmed,
   onDismiss,
 }: HeartRateHelpSheetProps) {
   const insets = useSafeAreaInsets();
-  const troubleshooting = getHeartRateTroubleshooting(issue, cameraTarget);
+
+  const tips = [
+    {
+      title: 'Cover the lens',
+      detail: 'Lay your index fingertip flat over the highlighted lens. Keep the flash uncovered.',
+    },
+    {
+      title: 'Use light pressure',
+      detail: 'Rest your finger on the glass—don’t squeeze.',
+    },
+    {
+      title: 'Keep still',
+      detail: 'Set the phone down, relax your hand, and breathe normally.',
+    },
+  ];
 
   return (
     <Modal
@@ -42,8 +51,6 @@ export function HeartRateHelpSheet({
         <View
           style={[styles.sheet, { paddingBottom: insets.bottom + spacing.lg }]}
         >
-          <View style={styles.grabber} />
-
           <View style={styles.statusRow}>
             <View
               style={[
@@ -58,10 +65,12 @@ export function HeartRateHelpSheet({
             contentContainerStyle={styles.content}
             showsVerticalScrollIndicator={false}
           >
-            <Text style={styles.title}>{troubleshooting.title}</Text>
-            <Text style={styles.diagnosis}>{troubleshooting.diagnosis}</Text>
+            <Text style={styles.title}>Tips</Text>
+            <View style={styles.illustrationWrap}>
+              <HeartRatePlacementIllustration compact />
+            </View>
             <HeartRatePlacementStepsCard
-              steps={troubleshooting.tips}
+              steps={tips}
               appearance="plain"
             />
           </ScrollView>
@@ -97,13 +106,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     gap: spacing.md,
   },
-  grabber: {
-    width: 42,
-    height: 5,
-    borderRadius: 999,
-    alignSelf: 'center',
-    backgroundColor: colors.neutral[300],
-  },
   statusRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -137,9 +139,9 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: colors.text.primary,
   },
-  diagnosis: {
-    ...typography.body.small,
-    color: colors.text.secondary,
+  illustrationWrap: {
+    width: '82%',
+    alignSelf: 'center',
   },
   dismissButton: {
     borderRadius: 999,
