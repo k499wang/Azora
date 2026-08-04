@@ -7,6 +7,7 @@ import {
   View,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import { padding, spacing } from '../theme/spacing';
 import AppTopBar from '../components/common/AppTopBar';
@@ -38,6 +39,7 @@ function getFallbackDisplayName(_email: string | undefined): string {
 }
 
 export default function ProfileScreen({ navigation }: ProfileScreenProps) {
+  const insets = useSafeAreaInsets();
   const user = useAuthStore((s) => s.user);
   const [editingDisplayName, setEditingDisplayName] = useState(false);
   const todayLocalDate = useTodayLocalDate();
@@ -161,26 +163,6 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
 
   return (
     <View style={styles.screen}>
-      <AppTopBar
-        showAvatar={false}
-        rightSlot={
-          <GlassIconButton
-            accessibilityLabel="Open settings"
-            size={48}
-            variant="regular"
-            onPress={() => {
-              trackProfileAction('settings_opened');
-              navigation.navigate('Settings');
-            }}
-          >
-            <Ionicons
-              name="settings-outline"
-              size={26}
-              color={colors.text.secondary}
-            />
-          </GlassIconButton>
-        }
-      />
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.content}
@@ -189,6 +171,11 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
         alwaysBounceVertical
         overScrollMode="always"
       >
+        <AppTopBar
+          showAvatar={false}
+          rightSlot={<View style={styles.topBarActionPlaceholder} />}
+        />
+
         <View style={styles.heroCardWrap}>
           <ProfileIdentityCard
             displayName={displayName}
@@ -240,6 +227,23 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
 
       </ScrollView>
 
+      <GlassIconButton
+        accessibilityLabel="Open settings"
+        size={48}
+        style={[styles.stickyAction, { top: insets.top + spacing.xs }]}
+        variant="regular"
+        onPress={() => {
+          trackProfileAction('settings_opened');
+          navigation.navigate('Settings');
+        }}
+      >
+        <Ionicons
+          name="settings-outline"
+          size={26}
+          color={colors.text.secondary}
+        />
+      </GlassIconButton>
+
       <ProfileDisplayNameEditorDialog
         visible={editingDisplayName}
         displayName={displayName}
@@ -264,6 +268,16 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingBottom: spacing['7xl'] + spacing.xl,
+  },
+  topBarActionPlaceholder: {
+    width: 48,
+    height: 48,
+  },
+  stickyAction: {
+    position: 'absolute',
+    right: spacing.lg,
+    zIndex: 1,
+    elevation: 1,
   },
   heroCardWrap: {
     paddingHorizontal: padding.screen.horizontal,

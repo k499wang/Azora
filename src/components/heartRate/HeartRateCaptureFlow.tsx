@@ -5,6 +5,7 @@ import {
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Device from 'expo-device';
 import { useNavigation } from '@react-navigation/native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { usePostHog } from 'posthog-react-native';
 import { useHeartRateCapture } from '../../hooks/useHeartRateCapture';
 import { ResultScreen } from './ResultScreen';
@@ -122,6 +123,7 @@ export function HeartRateCaptureFlow({
 }: HeartRateCaptureFlowProps) {
   const posthog = usePostHog();
   const navigation = useNavigation<RootStackNavigationProp<'HeartRate'>>();
+  const insets = useSafeAreaInsets();
   const user = useAuthStore((state) => state.user);
   const completeHeartRateSessionMutation = useCompleteHeartRateSessionMutation(user?.id ?? null);
   const heartRateAccess = useFeatureAccess(FeatureKey.HeartRateMeasurement);
@@ -468,7 +470,12 @@ export function HeartRateCaptureFlow({
         </View>
 
         {/* Persistent ring + camera — never unmounts across check ↔ measuring */}
-        <View style={styles.ringSlot}>
+        <View
+          style={[
+            styles.ringSlot,
+            { transform: [{ translateY: (insets.bottom - insets.top) / 2 }] },
+          ]}
+        >
           <PersistentCameraRing
             ringColor={ringColor}
             trackColor={trackColor}

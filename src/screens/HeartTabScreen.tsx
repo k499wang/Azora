@@ -2,6 +2,7 @@ import { Text } from '../components/common/Text';
 import { useCallback } from 'react';
 import {
   ScrollView, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AppTopBar from '../components/common/AppTopBar';
 import GlassIconButton from '../components/common/GlassIconButton';
 import Icon from '../components/common/icons/Icon';
@@ -30,6 +31,7 @@ function formatMeasuredTime(isoString: string): string {
 }
 
 export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
+  const insets = useSafeAreaInsets();
   const user = useAuthStore((state) => state.user);
   const heartRateStatsQuery = useHeartRateStatsQuery(user?.id ?? null);
   const profileQuery = useProfileQuery(user?.id ?? null);
@@ -83,19 +85,6 @@ export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
 
   return (
     <View style={styles.screen}>
-      <AppTopBar
-        showAvatar={false}
-        rightSlot={(
-          <GlassIconButton
-            accessibilityLabel="Measure heart rate"
-            onPress={openMeasure}
-            size={48}
-            variant="regular"
-          >
-            <Icon name="plus" size={26} color={colors.text.secondary} />
-          </GlassIconButton>
-        )}
-      />
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
@@ -104,68 +93,84 @@ export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
         alwaysBounceVertical
         overScrollMode="always"
       >
-        {partialStatsError || heartRateStatsQuery.isError ? (
-          <Text style={styles.partialErrorText}>
-            Some stats may be out of date.
-          </Text>
-        ) : null}
-
-        <RecoveryStatsSection
-          stress={canonicalSession == null ? null : stats?.hrv.stress ?? null}
-          locked={advancedStatsLocked}
-          onPressUpgrade={() =>
-            openProPaywall(
-              FeatureKey.AdvancedStats,
-              PaywallPlacement.DailyResultProGate,
-              advancedStatsAccess,
-              'recovery_section',
-            )
-          }
-          lastMeasuredLabel={lastMeasuredLabel}
+        <AppTopBar
+          showAvatar={false}
+          rightSlot={<View style={styles.topBarActionPlaceholder} />}
         />
 
-        <HeartRateStatsSection
-          hrDrop={canonicalSession == null ? null : stats?.hrv.hrDrop ?? null}
-          minBpm={canonicalSession?.minBpm ?? null}
-          maxBpm={canonicalSession?.maxBpm ?? null}
-          avgBpm={canonicalSession?.avgBpm ?? null}
-          age={profileQuery.data?.age ?? null}
-          bpmSamples={bpmSamples}
-          locked={advancedStatsLocked}
-          onPressUpgrade={() =>
-            openProPaywall(
-              FeatureKey.AdvancedStats,
-              PaywallPlacement.DailyResultProGate,
-              advancedStatsAccess,
-              'heart_rate_section',
-            )
-          }
-        />
+        <View style={styles.statsContent}>
+          {partialStatsError || heartRateStatsQuery.isError ? (
+            <Text style={styles.partialErrorText}>
+              Some stats may be out of date.
+            </Text>
+          ) : null}
 
-        <HRVStatsSection
-          rmssd={stats?.hrv.rmssd ?? null}
-          sdnn={stats?.hrv.sdnn ?? null}
-          avgBpm={canonicalSession?.avgBpm ?? null}
-          ibiMs={ibiMs}
-          locked={advancedStatsLocked}
-          onPressUpgrade={() =>
-            openProPaywall(
-              FeatureKey.AdvancedStats,
-              PaywallPlacement.DailyResultProGate,
-              advancedStatsAccess,
-              'hrv_section',
-            )
-          }
-          lastMeasuredLabel={lastMeasuredLabel}
-        />
+          <RecoveryStatsSection
+            stress={canonicalSession == null ? null : stats?.hrv.stress ?? null}
+            locked={advancedStatsLocked}
+            onPressUpgrade={() =>
+              openProPaywall(
+                FeatureKey.AdvancedStats,
+                PaywallPlacement.DailyResultProGate,
+                advancedStatsAccess,
+                'recovery_section',
+              )
+            }
+            lastMeasuredLabel={lastMeasuredLabel}
+          />
 
-        <RecentlyLoggedSection
-          items={recentHeartRates}
-          hasError={recentHeartRatesError}
-          isLoading={heartRateStatsQuery.isLoading}
-        />
+          <HeartRateStatsSection
+            hrDrop={canonicalSession == null ? null : stats?.hrv.hrDrop ?? null}
+            minBpm={canonicalSession?.minBpm ?? null}
+            maxBpm={canonicalSession?.maxBpm ?? null}
+            avgBpm={canonicalSession?.avgBpm ?? null}
+            age={profileQuery.data?.age ?? null}
+            bpmSamples={bpmSamples}
+            locked={advancedStatsLocked}
+            onPressUpgrade={() =>
+              openProPaywall(
+                FeatureKey.AdvancedStats,
+                PaywallPlacement.DailyResultProGate,
+                advancedStatsAccess,
+                'heart_rate_section',
+              )
+            }
+          />
+
+          <HRVStatsSection
+            rmssd={stats?.hrv.rmssd ?? null}
+            sdnn={stats?.hrv.sdnn ?? null}
+            avgBpm={canonicalSession?.avgBpm ?? null}
+            ibiMs={ibiMs}
+            locked={advancedStatsLocked}
+            onPressUpgrade={() =>
+              openProPaywall(
+                FeatureKey.AdvancedStats,
+                PaywallPlacement.DailyResultProGate,
+                advancedStatsAccess,
+                'hrv_section',
+              )
+            }
+            lastMeasuredLabel={lastMeasuredLabel}
+          />
+
+          <RecentlyLoggedSection
+            items={recentHeartRates}
+            hasError={recentHeartRatesError}
+            isLoading={heartRateStatsQuery.isLoading}
+          />
+        </View>
       </ScrollView>
 
+      <GlassIconButton
+        accessibilityLabel="Measure heart rate"
+        onPress={openMeasure}
+        size={48}
+        style={[styles.stickyAction, { top: insets.top + spacing.xs }]}
+        variant="regular"
+      >
+        <Icon name="plus" size={26} color={colors.text.secondary} />
+      </GlassIconButton>
     </View>
   );
 }
@@ -180,9 +185,21 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   scrollContent: {
-    paddingTop: spacing.md,
     paddingBottom: spacing['7xl'] + spacing.xl,
+  },
+  statsContent: {
+    paddingTop: spacing.md,
     gap: margin.sectionGap,
+  },
+  topBarActionPlaceholder: {
+    width: 48,
+    height: 48,
+  },
+  stickyAction: {
+    position: 'absolute',
+    right: spacing.lg,
+    zIndex: 1,
+    elevation: 1,
   },
   partialErrorText: {
     color: colors.text.tertiary,
