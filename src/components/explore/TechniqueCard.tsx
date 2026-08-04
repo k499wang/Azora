@@ -19,12 +19,11 @@ import { fonts, typography } from '../../theme/typography';
 import Icon from '../common/icons/Icon';
 import { Text } from '../common/Text';
 import ActivityGlyph from './ActivityGlyph';
+import ExerciseSearchResultRow from './ExerciseSearchResultRow';
 
 export const TECHNIQUE_SHELF_CARD_WIDTH = 232;
 const SHELF_CARD_HEIGHT = 262;
 const SHELF_GLYPH_SIZE = 186;
-const SEARCH_CARD_HEIGHT = 160;
-const SEARCH_GLYPH_SIZE = 132;
 
 interface TechniqueCardProps {
   technique: BreathingTechnique;
@@ -53,7 +52,10 @@ export default function TechniqueCard({
   const posthog = usePostHog();
   const categoryStyle = CATEGORY_STYLE[technique.category];
   const textColor = colors.text.inverse;
-  const isShelf = layout === 'shelf';
+  const accessHint =
+    !exerciseAccess.allowed && !exerciseAccess.isLoading
+      ? 'Opens the Pro upgrade screen'
+      : 'Starts this breathing exercise';
 
   const handlePress = () => {
     posthog.capture(AnalyticsEvent.BreathingTechniqueSelected, {
@@ -84,31 +86,46 @@ export default function TechniqueCard({
     navigation.navigate('ExerciseSession', { techniqueId: technique.id });
   };
 
+  if (layout === 'search') {
+    return (
+      <ExerciseSearchResultRow
+        title={technique.name}
+        metadata={technique.duration}
+        hue={categoryStyle.hue}
+        glyph={TECHNIQUE_GLYPH[technique.id]}
+        accessibilityLabel={`${technique.name}, ${categoryStyle.label}, ${technique.duration}${recommended ? ', recommended for you' : ''}`}
+        accessibilityHint={accessHint}
+        onPress={handlePress}
+      />
+    );
+  }
+
   return (
-    <View style={isShelf ? styles.shelfWrapper : styles.searchWrapper}>
+    <View style={styles.shelfWrapper}>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`${technique.name}, ${categoryStyle.label}, ${technique.duration}${recommended ? ', recommended for you' : ''}`}
+        accessibilityHint={accessHint}
         onPress={handlePress}
         style={({ pressed }) => [
           styles.card,
-          isShelf ? styles.shelfCard : styles.searchCard,
+          styles.shelfCard,
           { backgroundColor: categoryStyle.hue.base },
           pressed && styles.cardPressed,
         ]}
       >
         <View
-          style={isShelf ? styles.shelfGlyph : styles.searchGlyph}
+          style={styles.shelfGlyph}
           pointerEvents="none"
         >
           <ActivityGlyph
             shape={TECHNIQUE_GLYPH[technique.id]}
-            size={isShelf ? SHELF_GLYPH_SIZE : SEARCH_GLYPH_SIZE}
+            size={SHELF_GLYPH_SIZE}
             color={textColor}
             opacity={0.16}
           />
         </View>
-        <View style={[styles.cardContent, !isShelf && styles.searchCardContent]}>
+        <View style={styles.cardContent}>
           <View style={styles.cardTop}>
             <Text style={[styles.category, { color: textColor }]}>
               {categoryStyle.label}
@@ -150,19 +167,12 @@ const styles = StyleSheet.create({
   shelfWrapper: {
     paddingHorizontal: spacing.xs,
   },
-  searchWrapper: {
-    width: '100%',
-  },
   card: {
     ...card.block,
   },
   shelfCard: {
     width: TECHNIQUE_SHELF_CARD_WIDTH,
     height: SHELF_CARD_HEIGHT,
-  },
-  searchCard: {
-    width: '100%',
-    height: SEARCH_CARD_HEIGHT,
   },
   cardPressed: {
     opacity: 0.9,
@@ -173,20 +183,12 @@ const styles = StyleSheet.create({
     right: -50,
     bottom: -58,
   },
-  searchGlyph: {
-    position: 'absolute',
-    right: -24,
-    bottom: -32,
-  },
   cardContent: {
     flex: 1,
     padding: spacing.lg,
     paddingLeft: spacing.md,
     paddingBottom: spacing.md,
     justifyContent: 'space-between',
-  },
-  searchCardContent: {
-    padding: spacing.md,
   },
   cardTop: {
     flexDirection: 'row',

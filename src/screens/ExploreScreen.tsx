@@ -64,14 +64,14 @@ export default function ExploreScreen({ navigation }: ExploreScreenProps) {
         alwaysBounceVertical
         overScrollMode="always"
       >
-        <AppTopBar showAvatar={false} showStreak={false} />
-
-        <View style={styles.searchWrap}>
-          <ExerciseSearchBar
-            mode="entry"
-            onPress={() => navigation.navigate('ExerciseSearch')}
-          />
-        </View>
+        <AppTopBar showAvatar={false} showStreak={false}>
+          <View style={styles.searchWrap}>
+            <ExerciseSearchBar
+              mode="entry"
+              onPress={() => navigation.navigate('ExerciseSearch')}
+            />
+          </View>
+        </AppTopBar>
 
         <View style={styles.dailyPlanSection}>
           <SectionHeader title="Daily Breathhold" />
@@ -102,7 +102,7 @@ const styles = StyleSheet.create({
     gap: margin.sectionGap,
   },
   searchWrap: {
-    height: 48,
+    paddingTop: spacing.sm,
     paddingHorizontal: padding.screen.horizontal,
   },
   dailyPlanSection: {

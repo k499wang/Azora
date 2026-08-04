@@ -2,7 +2,7 @@ import { Text } from '../common/Text';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import BlobCharacter from './BlobCharacter';
+import BlobCharacter, { type CharacterId } from './BlobCharacter';
 import TaskCardDecor from './TaskCardDecor';
 import SectionHeader from '../common/SectionHeader';
 import type { BreathingTechnique } from '../../features/exercise/guidedBreathing/techniques';
@@ -56,6 +56,7 @@ interface DailyTaskRowProps {
   detailLabel: string;
   detailIcon: BreathingTechnique['icon'];
   style: CategoryStyle;
+  faceExpression: CharacterId;
   completed: boolean;
   locked: boolean;
   loading?: boolean;
@@ -72,6 +73,7 @@ function DailyTaskRow({
   detailLabel,
   detailIcon,
   style,
+  faceExpression,
   completed,
   locked,
   loading = false,
@@ -159,6 +161,7 @@ function DailyTaskRow({
           >
             <BlobCharacter
               character={style.character}
+              faceExpression={faceExpression}
               size={TASK_CONTENT_SIZE}
               bodyColor={style.hue.soft}
               faceColor={style.hue.ink}
@@ -216,6 +219,7 @@ export default function TodaysDailiesSection({
       style: technique
         ? CATEGORY_STYLE[technique.category]
         : CATEGORY_STYLE.calm,
+      faceExpression: 'calm',
       completed: guidedExerciseCompleted,
       locked: guidedLocked,
       loading: techniqueLoading,
@@ -229,6 +233,7 @@ export default function TodaysDailiesSection({
       style: handPickedTechnique
         ? CATEGORY_STYLE[handPickedTechnique.category]
         : CATEGORY_STYLE.balance,
+      faceExpression: 'energy',
       completed: handPickedExerciseCompleted,
       locked: handPickedLocked,
       loading: handPickedTechniqueLoading,
@@ -241,6 +246,7 @@ export default function TodaysDailiesSection({
       detailLabel: 'Daily check-in',
       detailIcon: 'timer-sand',
       style: BREATH_HOLD_STYLE,
+      faceExpression: 'hold',
       completed: breathHoldCompleted,
       locked: breathHoldLocked,
       onPress: onPressBreathHold,

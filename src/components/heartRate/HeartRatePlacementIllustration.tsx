@@ -41,7 +41,7 @@ export function HeartRatePlacementIllustration({
   return (
     <Image
       source={getOnboardingImageSource(cameraIllustration)}
-      style={[styles.illustration, compact && styles.illustrationCompact]}
+      style={styles.illustration}
       contentFit="contain"
       cachePolicy="memory-disk"
       transition={0}
@@ -52,12 +52,9 @@ export function HeartRatePlacementIllustration({
 
 const styles = StyleSheet.create({
   illustration: {
-    width: '112%',
+    width: '92%',
     aspectRatio: 1.82,
     alignSelf: 'center',
-  },
-  illustrationCompact: {
-    width: '92%',
   },
   genericGuide: {
     minHeight: 160,

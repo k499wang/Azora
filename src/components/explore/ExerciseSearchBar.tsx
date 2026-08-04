@@ -18,6 +18,7 @@ interface EntrySearchBarProps {
 
 interface EditableSearchBarProps {
   mode: 'editable';
+  onBack: () => void;
   value: string;
   onChangeText: (value: string) => void;
   onClear: () => void;
@@ -40,11 +41,13 @@ export default function ExerciseSearchBar(props: ExerciseSearchBarProps) {
           pressed && styles.surfacePressed,
         ]}
       >
-        <MaterialCommunityIcons
-          name="magnify"
-          size={22}
-          color={colors.text.secondary}
-        />
+        <View style={styles.leadingSlot} pointerEvents="none">
+          <MaterialCommunityIcons
+            name="magnify"
+            size={22}
+            color={colors.text.secondary}
+          />
+        </View>
         <Text style={styles.placeholder}>Search exercises</Text>
       </Pressable>
     );
@@ -52,11 +55,23 @@ export default function ExerciseSearchBar(props: ExerciseSearchBarProps) {
 
   return (
     <View style={styles.surface}>
-      <MaterialCommunityIcons
-        name="magnify"
-        size={22}
-        color={colors.text.secondary}
-      />
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Back"
+        accessibilityHint="Returns to Explore"
+        hitSlop={4}
+        onPress={props.onBack}
+        style={({ pressed }) => [
+          styles.leadingSlot,
+          pressed && styles.surfacePressed,
+        ]}
+      >
+        <MaterialCommunityIcons
+          name="chevron-left"
+          size={30}
+          color={colors.text.primary}
+        />
+      </Pressable>
       <TextInput
         ref={props.inputRef}
         value={props.value}
@@ -98,7 +113,7 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingLeft: spacing.md,
+    paddingLeft: 2,
     paddingRight: 2,
     borderRadius: 24,
     borderWidth: StyleSheet.hairlineWidth,
@@ -108,21 +123,33 @@ const styles = StyleSheet.create({
   surfacePressed: {
     opacity: 0.75,
   },
+  leadingSlot: {
+    width: 44,
+    height: 44,
+    flexShrink: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 22,
+  },
   placeholder: {
-    ...typography.body.medium,
+    ...typography.label.large,
     flex: 1,
     paddingHorizontal: spacing.sm,
     color: colors.text.tertiary,
     fontFamily: fonts.regular,
+    includeFontPadding: false,
   },
   input: {
-    ...typography.body.medium,
+    ...typography.label.large,
     flex: 1,
-    height: 48,
+    height: '100%',
     paddingHorizontal: spacing.sm,
-    paddingVertical: 0,
+    paddingTop: 0,
+    paddingBottom: 0,
     color: colors.text.primary,
     fontFamily: fonts.regular,
+    includeFontPadding: false,
+    textAlignVertical: 'center',
   },
   clearButton: {
     width: 44,

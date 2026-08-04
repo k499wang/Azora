@@ -120,6 +120,7 @@ export function RecentlyLoggedSection({
       {items.length === 0 ? (
         <View style={styles.emptyWrap}>
           <EmptyStateCard
+            hue={colors.playful.sky}
             title="No heart rate logged yet"
             subtitle={
               hasError
