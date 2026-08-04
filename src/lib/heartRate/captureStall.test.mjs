@@ -7,7 +7,7 @@ import {
 } from './captureStall.ts';
 
 test('the stall delay leaves room for an ordinary fumble', () => {
-  assert.equal(HEART_RATE_STALL_DELAY_MS, 17_000);
+  assert.equal(HEART_RATE_STALL_DELAY_MS, 20_000);
 });
 
 test('placement faults classify ahead of signal faults', () => {
