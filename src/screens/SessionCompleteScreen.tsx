@@ -13,7 +13,6 @@ import BPMChart from '../components/heartRate/BPMChart';
 import GlassIconButton, {
   GLASS_ICON_BUTTON_SIZE,
 } from '../components/common/GlassIconButton';
-import AmbientBackground from '../components/common/AmbientBackground';
 import ThermometerStatCard from '../components/heartRate/ThermometerStatCard';
 import ScoreRing from '../components/exercise/ScoreRing';
 import type { SessionCompleteScreenProps } from '../app/navigation';
@@ -124,7 +123,6 @@ export default function SessionCompleteScreen({
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
-      <AmbientBackground />
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -161,6 +159,7 @@ export default function SessionCompleteScreen({
             valueText={formatDuration(durationSec)}
             min={30}
             max={300}
+            accent={colors.primary.blue500}
           />
           <ThermometerStatCard
             label="Avg HR"
@@ -168,6 +167,7 @@ export default function SessionCompleteScreen({
             unit="bpm"
             min={40}
             max={120}
+            accent={colors.error[500]}
           />
         </View>
 
@@ -216,7 +216,7 @@ export default function SessionCompleteScreen({
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: colors.background.primary,
+    backgroundColor: colors.background.canvas,
   },
   scrollContent: {
     paddingBottom: spacing['5xl'],

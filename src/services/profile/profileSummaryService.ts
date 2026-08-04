@@ -162,7 +162,8 @@ export async function getProfileSummary(userId: string): Promise<ProfileSummary>
   const activeDaysQuery = supabase
     .from('daily_activity')
     .select('activity_date', { count: 'exact', head: true })
-    .eq('user_id', userId);
+    .eq('user_id', userId)
+    .eq('qualifies_for_streak', true);
 
   const streakQuery = supabase
     .from('user_streaks_v')

@@ -105,7 +105,7 @@ export default function ExerciseScaffold({
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: colors.background.primary,
+    backgroundColor: colors.background.canvas,
   },
   header: {
     paddingHorizontal: padding.screen.horizontal,

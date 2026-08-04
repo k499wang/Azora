@@ -1,7 +1,6 @@
 import { Text } from '../common/Text';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import BlobCharacter, { type CharacterId } from './BlobCharacter';
 import TaskCardDecor from './TaskCardDecor';
 import SectionHeader from '../common/SectionHeader';
@@ -113,20 +112,8 @@ function DailyTaskRow({
         </View>
       </View>
 
-      <View style={[styles.taskPillShadow, { backgroundColor: style.hue.base }]}>
-        <LinearGradient
-          colors={[
-            'rgba(255,255,255,0.10)',
-            'rgba(255,255,255,0)',
-            'rgba(15,23,42,0.14)',
-          ]}
-          locations={[0, 0.45, 1]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={styles.taskPill}
-        >
-          <TaskCardDecor character={style.character} color={colors.text.inverse} />
-
+      <View style={styles.taskPillShadow}>
+        <View style={styles.taskPill}>
           <View style={styles.taskCopy} pointerEvents="none">
             <Text style={styles.taskTitle} numberOfLines={2}>
               {title}
@@ -136,7 +123,7 @@ function DailyTaskRow({
                 <MaterialCommunityIcons
                   name={detailIcon}
                   size={14}
-                  color={colors.text.inverse}
+                  color={colors.text.secondary}
                 />
                 <Text style={styles.metadataText} numberOfLines={1}>
                   {detailLabel}
@@ -146,7 +133,7 @@ function DailyTaskRow({
                 <MaterialCommunityIcons
                   name="clock-outline"
                   size={14}
-                  color={colors.text.inverse}
+                  color={colors.text.secondary}
                 />
                 <Text style={styles.metadataText} numberOfLines={1}>
                   {scheduledTime}
@@ -156,9 +143,17 @@ function DailyTaskRow({
           </View>
 
           <View
-            style={[styles.taskArt, loading && styles.taskArtLoading]}
+            style={[
+              styles.taskArt,
+              { backgroundColor: style.hue.base },
+              loading && styles.taskArtLoading,
+            ]}
             pointerEvents="none"
           >
+            <TaskCardDecor
+              character={style.character}
+              color={colors.text.inverse}
+            />
             <BlobCharacter
               character={style.character}
               faceExpression={faceExpression}
@@ -167,7 +162,7 @@ function DailyTaskRow({
               faceColor={style.hue.ink}
             />
           </View>
-        </LinearGradient>
+        </View>
       </View>
     </Pressable>
   );
@@ -341,6 +336,7 @@ const styles = StyleSheet.create({
     ...card.blockShadow,
     flex: 1,
     borderRadius: 24,
+    backgroundColor: colors.background.elevated,
   },
   taskPill: {
     height: TIMELINE_ROW_HEIGHT,
@@ -351,25 +347,30 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     borderRadius: 24,
     overflow: 'hidden',
+    backgroundColor: colors.background.elevated,
   },
   taskArt: {
     width: TASK_CONTENT_SIZE,
     height: TASK_CONTENT_SIZE,
+    flexShrink: 0,
     alignItems: 'center',
     justifyContent: 'center',
+    borderRadius: 18,
+    overflow: 'hidden',
   },
   taskArtLoading: {
     opacity: 0.45,
   },
   taskCopy: {
     flex: 1,
+    minWidth: 0,
     height: TASK_CONTENT_SIZE,
     justifyContent: 'space-between',
   },
   taskTitle: {
     ...typography.title.title3,
     fontFamily: fonts.semibold,
-    color: colors.text.inverse,
+    color: colors.text.primary,
   },
   metadataStack: {
     gap: spacing.xs,
@@ -381,6 +382,6 @@ const styles = StyleSheet.create({
   },
   metadataText: {
     ...typography.label.detail,
-    color: colors.text.inverse,
+    color: colors.text.secondary,
   },
 });

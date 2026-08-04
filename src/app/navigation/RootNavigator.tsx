@@ -14,6 +14,7 @@ import { ExitOfferScreen } from '../../screens/ExitOfferScreen';
 import SettingsScreen from '../../screens/SettingsScreen';
 import ShareableResultScreen from '../../screens/ShareableResultScreen';
 import ExerciseSearchScreen from '../../screens/ExerciseSearchScreen';
+import GardenScreen from '../../screens/GardenScreen';
 import { useAppGate, type AppGate } from '../../hooks/useAppGate';
 import {
   isAttPermissionResolved,
@@ -55,6 +56,14 @@ function AppStack({ showBootPaywall }: AppStackProps) {
       <Stack.Screen
         name="ExerciseSearch"
         component={ExerciseSearchScreen}
+        options={{
+          presentation: 'card',
+          animation: 'slide_from_right',
+        }}
+      />
+      <Stack.Screen
+        name="Garden"
+        component={GardenScreen}
         options={{
           presentation: 'card',
           animation: 'slide_from_right',

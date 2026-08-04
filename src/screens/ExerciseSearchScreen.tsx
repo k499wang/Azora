@@ -294,10 +294,10 @@ export default function ExerciseSearchScreen({
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: colors.background.accentSoft,
+    backgroundColor: colors.background.canvas,
   },
   header: {
-    backgroundColor: colors.background.accentSoft,
+    backgroundColor: colors.background.canvas,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border.subtle,
   },

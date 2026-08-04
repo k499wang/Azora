@@ -25,11 +25,6 @@ import type {
 } from '../services/subscriptions/featureAccess';
 import type { HeartTabScreenProps } from '../app/navigation';
 
-function formatMeasuredTime(isoString: string): string {
-  const date = new Date(isoString);
-  return date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
-}
-
 export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
   const insets = useSafeAreaInsets();
   const user = useAuthStore((state) => state.user);
@@ -52,9 +47,6 @@ export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
     (stats?.partialErrors.recent ?? false);
   const hrvSource = stats?.hrvSource;
   const canonicalSession = hrvSource?.session ?? null;
-  const lastMeasuredLabel = canonicalSession?.startedAt
-    ? `last measured at ${formatMeasuredTime(canonicalSession.startedAt)}`
-    : undefined;
   const openProPaywall = useCallback(
     (
       feature: FeatureKeyValue,
@@ -116,7 +108,6 @@ export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
                 'recovery_section',
               )
             }
-            lastMeasuredLabel={lastMeasuredLabel}
           />
 
           <HeartRateStatsSection
@@ -126,6 +117,7 @@ export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
             avgBpm={canonicalSession?.avgBpm ?? null}
             age={profileQuery.data?.age ?? null}
             bpmSamples={bpmSamples}
+            numberForwardSummary
             locked={advancedStatsLocked}
             onPressUpgrade={() =>
               openProPaywall(
@@ -151,7 +143,6 @@ export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
                 'hrv_section',
               )
             }
-            lastMeasuredLabel={lastMeasuredLabel}
           />
 
           <RecentlyLoggedSection
@@ -178,7 +169,7 @@ export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: colors.background.accentSoft,
+    backgroundColor: colors.background.canvas,
   },
   scroll: {
     flex: 1,

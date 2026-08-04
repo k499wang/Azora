@@ -45,10 +45,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   title: {
-    ...typography.heading.heading2,
+    ...typography.title.title3,
     color: colors.text.primary,
-    fontFamily: fonts.regular,
-    fontWeight: '400',
-    fontSize: 17,
+    fontFamily: fonts.medium,
+    fontWeight: '500',
+    fontSize: 20,
+    lineHeight: 26,
   },
 });

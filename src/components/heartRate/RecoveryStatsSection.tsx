@@ -22,14 +22,12 @@ interface RecoverySectionProps {
   stress?: number | null;
   locked?: boolean;
   onPressUpgrade?: () => void;
-  lastMeasuredLabel?: string;
 }
 
 export default function RecoveryStatsSection({
   stress,
   locked = false,
   onPressUpgrade,
-  lastMeasuredLabel,
 }: RecoverySectionProps) {
   const stressValue = stress ?? (locked ? 38 : null);
   const [infoVisible, setInfoVisible] = useState(false);
@@ -54,7 +52,7 @@ export default function RecoveryStatsSection({
               <MaterialCommunityIcons
                 name="information-outline"
                 size={16}
-                color={colors.onBlock.textMuted}
+                color={colors.text.tertiary}
               />
             </Pressable>
           ) : null}
@@ -64,7 +62,8 @@ export default function RecoveryStatsSection({
             locked={locked}
             onPressLocked={onPressUpgrade}
             surface={DEFAULT_CARD_SURFACE}
-            lastMeasuredLabel={lastMeasuredLabel}
+            emphasizeValue
+            showMeasuredLabel={false}
           />
         </View>
       </View>

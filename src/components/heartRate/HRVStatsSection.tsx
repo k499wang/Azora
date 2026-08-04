@@ -4,6 +4,7 @@ import SectionHeader from '../common/SectionHeader';
 import ProUpgradeButton from '../common/ProUpgradeButton';
 import HRVTrackStatCard from './HRVTrackStatCard';
 import HRVChart from './HRVChart';
+import { colors } from '../../theme/colors';
 
 const RMSSD_INFO = {
   title: 'RMSSD',
@@ -29,7 +30,6 @@ interface HRVSectionProps {
   ibiMs?: number[];
   locked?: boolean;
   onPressUpgrade?: () => void;
-  lastMeasuredLabel?: string;
 }
 
 export default function HRVStatsSection({
@@ -39,7 +39,6 @@ export default function HRVStatsSection({
   ibiMs = [],
   locked = false,
   onPressUpgrade,
-  lastMeasuredLabel,
 }: HRVSectionProps) {
   const rmssdValue = rmssd ?? (locked ? LOCKED_PLACEHOLDERS.rmssd : null);
   const sdnnValue = sdnn ?? (locked ? LOCKED_PLACEHOLDERS.sdnn : null);
@@ -57,6 +56,7 @@ export default function HRVStatsSection({
         <HRVTrackStatCard
           label="RMSSD"
           icon="stat-rmssd"
+          iconColor={colors.primary.blue600}
           value={rmssdValue}
           unit="ms"
           max={80}
@@ -65,11 +65,13 @@ export default function HRVStatsSection({
           info={RMSSD_INFO}
           locked={locked}
           onPressLocked={onPressUpgrade}
-          lastMeasuredLabel={lastMeasuredLabel}
+          emphasizeValue
+          showMeasuredLabel={false}
         />
         <HRVTrackStatCard
           label="Avg HRV"
           icon="stat-average-hrv"
+          iconColor={colors.primary.blue600}
           value={sdnnValue}
           unit="ms"
           max={80}
@@ -78,7 +80,8 @@ export default function HRVStatsSection({
           info={SDNN_INFO}
           locked={locked}
           onPressLocked={onPressUpgrade}
-          lastMeasuredLabel={lastMeasuredLabel}
+          emphasizeValue
+          showMeasuredLabel={false}
         />
         <HRVChart
           ibiMs={ibiMs}
@@ -87,6 +90,7 @@ export default function HRVStatsSection({
             sdnn: sdnn ?? null,
             avgBpm: avgBpm ?? null,
           }}
+          color={colors.error[500]}
           locked={locked}
           onPressLocked={onPressUpgrade}
         />

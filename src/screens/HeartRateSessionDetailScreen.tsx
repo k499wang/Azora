@@ -15,7 +15,6 @@ import { PaywallPlacement } from '../services/paywall';
 import { FeatureKey } from '../services/subscriptions/featureAccess';
 import type { HeartRateSessionDetailScreenProps } from '../app/navigation';
 import GlassIconButton from '../components/common/GlassIconButton';
-import AmbientBackground from '../components/common/AmbientBackground';
 
 export function HeartRateSessionDetailScreen({
   navigation,
@@ -33,7 +32,6 @@ export function HeartRateSessionDetailScreen({
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
-      <AmbientBackground />
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -107,7 +105,7 @@ export function HeartRateSessionDetailScreen({
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: colors.background.primary,
+    backgroundColor: colors.background.canvas,
   },
   scrollContent: {
     paddingBottom: spacing['5xl'],

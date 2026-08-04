@@ -7,15 +7,13 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
 import { typography, fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
-import { card } from '../../theme/card';
 import CardSurface from '../common/CardSurface';
 import FeatureInfoDialog from '../common/FeatureInfoDialog';
 import Icon from '../common/icons/Icon';
 import type { IconName } from '../common/icons/paths';
-import type { PlayfulHue } from '../../features/exercise/guidedBreathing/categoryPalette';
 
 const SIZE = 96;
-const STAT_ICON_SIZE = 24;
+const STAT_ICON_SIZE = 28;
 const CX = SIZE / 2;
 const CY = SIZE / 2;
 const R = 39;           // outer tick ring radius
@@ -31,8 +29,25 @@ const TICK_WIDTH = 3;
 const TRI_TIP_OFFSET = 8;  // how far beyond INNER_R the tip extends
 const TRI_HALF_DEG = 7;    // half-width of the base in degrees
 
-const TICK_REACHED_OPACITY = 1;
-const TICK_REMAINING_OPACITY = 0.3;
+const PASTEL_STOPS = ['#FCA5A5', '#FDE68A', '#86EFAC'];
+
+function hexToRgb(hex: string): [number, number, number] {
+  return [
+    parseInt(hex.slice(1, 3), 16),
+    parseInt(hex.slice(3, 5), 16),
+    parseInt(hex.slice(5, 7), 16),
+  ];
+}
+
+function lerpColor(t: number, stops: string[]): string {
+  const n = stops.length - 1;
+  const scaled = t * n;
+  const i = Math.min(Math.floor(scaled), n - 1);
+  const f = scaled - i;
+  const [r1, g1, b1] = hexToRgb(stops[i]);
+  const [r2, g2, b2] = hexToRgb(stops[i + 1]);
+  return `rgb(${Math.round(r1 + (r2 - r1) * f)},${Math.round(g1 + (g2 - g1) * f)},${Math.round(b1 + (b2 - b1) * f)})`;
+}
 
 // Static outer tick paths — computed once at module load
 const TICKS = Array.from({ length: NUM_TICKS }, (_, i) => {
@@ -43,7 +58,7 @@ const TICKS = Array.from({ length: NUM_TICKS }, (_, i) => {
   const path = Skia.Path.Make();
   path.moveTo(CX + (R - TICK_HALF) * cosA, CY + (R - TICK_HALF) * sinA);
   path.lineTo(CX + (R + TICK_HALF) * cosA, CY + (R + TICK_HALF) * sinA);
-  return { path, t };
+  return { path, color: lerpColor(t, PASTEL_STOPS) };
 });
 
 function getZone(
@@ -72,17 +87,16 @@ interface HRVTrackStatCardProps {
   lowBound: number;
   highBound: number;
   info?: { title: string; message: string };
-  hue?: PlayfulHue;
   locked?: boolean;
   onPressLocked?: () => void;
-  lastMeasuredLabel?: string;
+  emphasizeValue?: boolean;
+  showMeasuredLabel?: boolean;
 }
 
 export default function HRVTrackStatCard({
   label,
   icon,
-  iconColor = colors.text.inverse,
-  hue = colors.playful.violet,
+  iconColor = colors.text.secondary,
   value,
   avgValue,
   bestValue,
@@ -96,7 +110,8 @@ export default function HRVTrackStatCard({
   info,
   locked = false,
   onPressLocked,
-  lastMeasuredLabel,
+  emphasizeValue = false,
+  showMeasuredLabel = true,
 }: HRVTrackStatCardProps) {
   const [infoVisible, setInfoVisible] = useState(false);
   const hasAvg = avgValue != null && Number.isFinite(avgValue);
@@ -134,7 +149,7 @@ export default function HRVTrackStatCard({
   })();
 
   return (
-    <CardSurface locked={locked} style={styles.card} hue={hue}>
+    <CardSurface elevated locked={locked} style={styles.card}>
       {info && !locked ? (
         <>
           <Pressable
@@ -145,7 +160,7 @@ export default function HRVTrackStatCard({
             <MaterialCommunityIcons
               name="information-outline"
               size={16}
-              color={colors.onBlock.textMuted}
+              color={colors.text.tertiary}
             />
           </Pressable>
           <FeatureInfoDialog
@@ -165,8 +180,8 @@ export default function HRVTrackStatCard({
             ) : null}
             <Text style={styles.label}>{label}</Text>
             {zone != null ? (
-              <View style={styles.zonePill}>
-                <Text style={styles.zonePillText}>{zone.label}</Text>
+              <View style={[styles.zonePill, { backgroundColor: `${zone.color}18` }]}>
+                <Text style={[styles.zonePillText, { color: zone.color }]}>{zone.label}</Text>
               </View>
             ) : null}
           </View>
@@ -175,14 +190,30 @@ export default function HRVTrackStatCard({
             <View style={[styles.statsRow, multiStat && styles.statsRowCompact]}>
               <View style={styles.statCell}>
                 <View style={styles.statValueRow}>
-                  <Text style={[styles.statValue, !multiStat && styles.statValueLarge]}>
+                  <Text
+                    style={[
+                      styles.statValue,
+                      !multiStat && styles.statValueLarge,
+                      emphasizeValue && !multiStat && styles.emphasizedValue,
+                    ]}
+                  >
                     {hasValue ? Math.round(value!) : '--'}
                   </Text>
-                  <Text style={[styles.statUnit, !multiStat && styles.statUnitLarge]}>{unit}</Text>
+                  <Text
+                    style={[
+                      styles.statUnit,
+                      !multiStat && styles.statUnitLarge,
+                      emphasizeValue && styles.emphasizedUnit,
+                    ]}
+                  >
+                    {unit}
+                  </Text>
                 </View>
-                <Text style={[styles.statLabel, !multiStat && styles.statLabelLarge, styles.currentStatLabel]}>
-                  {lastMeasuredLabel ?? 'Today'}
-                </Text>
+                {showMeasuredLabel ? (
+                  <Text style={[styles.statLabel, !multiStat && styles.statLabelLarge, styles.currentStatLabel]}>
+                    Today
+                  </Text>
+                ) : null}
               </View>
 
               {hasAvg ? (
@@ -224,22 +255,21 @@ export default function HRVTrackStatCard({
                   style="stroke"
                   strokeWidth={TICK_WIDTH}
                   strokeCap="round"
-                  color={colors.text.inverse}
-                  opacity={
-                    progress != null && tick.t <= progress
-                      ? TICK_REACHED_OPACITY
-                      : TICK_REMAINING_OPACITY
-                  }
+                  color={tick.color}
+                  opacity={0.85}
                 />
               ))}
 
-              <Circle cx={CX} cy={CY} r={INNER_R} color={hue.base} />
+              <Circle cx={CX} cy={CY + 3} r={INNER_R + 3} color="rgba(15,23,42,0.04)" />
+              <Circle cx={CX} cy={CY + 1.5} r={INNER_R + 1.5} color="rgba(15,23,42,0.02)" />
+              <Circle cx={CX} cy={CY} r={INNER_R + 1} color={colors.neutral[200]} />
+              <Circle cx={CX} cy={CY} r={INNER_R} color={colors.background.elevated} />
 
               {indPath != null ? (
                 <Path
                   path={indPath}
                   style="fill"
-                  color={colors.text.inverse}
+                  color={colors.primary.blue500}
                 />
               ) : null}
             </Canvas>
@@ -270,6 +300,8 @@ export default function HRVTrackStatCard({
 
 const styles = StyleSheet.create({
   card: {
+    backgroundColor: colors.background.elevated,
+    borderWidth: 0,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
     position: 'relative',
@@ -289,10 +321,12 @@ const styles = StyleSheet.create({
     minHeight: SIZE,
   },
   label: {
-    ...typography.heading.heading2,
-    fontFamily: fonts.semibold,
-    fontSize: 17,
-    color: colors.text.inverse,
+    ...typography.title.title3,
+    fontFamily: fonts.medium,
+    fontWeight: '500',
+    fontSize: 20,
+    lineHeight: 26,
+    color: colors.text.primary,
   },
   headerRow: {
     flexDirection: 'row',
@@ -352,18 +386,18 @@ const styles = StyleSheet.create({
   statDivider: {
     width: 1,
     height: 32,
-    backgroundColor: colors.onBlock.divider,
+    backgroundColor: colors.neutral[200],
   },
   statLabel: {
     ...typography.label.small,
     fontFamily: fonts.semibold,
     fontSize: 10,
-    color: colors.onBlock.textMuted,
+    color: colors.text.tertiary,
     letterSpacing: 0,
   },
   currentStatLabel: {
-    fontFamily: fonts.regular,
-    fontWeight: '400',
+    fontFamily: fonts.medium,
+    fontWeight: '500',
     fontSize: 13,
     lineHeight: 16,
   },
@@ -374,8 +408,9 @@ const styles = StyleSheet.create({
   },
   statValue: {
     ...typography.title.title3,
-    fontFamily: fonts.semibold,
-    color: colors.text.inverse,
+    fontFamily: fonts.medium,
+    fontWeight: '500',
+    color: colors.text.primary,
     fontVariant: ['tabular-nums'],
     letterSpacing: -0.3,
     fontSize: 19,
@@ -383,24 +418,35 @@ const styles = StyleSheet.create({
   statUnit: {
     ...typography.label.small,
     fontSize: 12,
-    color: colors.onBlock.textMuted,
-    fontFamily: fonts.semibold,
+    color: colors.text.tertiary,
+    fontFamily: fonts.medium,
+    fontWeight: '500',
   },
   statLabelLarge: {
     fontSize: 11,
   },
   statValueLarge: {
     ...typography.title.title1,
-    fontFamily: fonts.semibold,
-    color: colors.text.inverse,
+    fontFamily: fonts.medium,
+    fontWeight: '500',
+    color: colors.text.primary,
     fontVariant: ['tabular-nums'],
     letterSpacing: -0.3,
+  },
+  emphasizedValue: {
+    fontSize: 32,
+    lineHeight: 40,
+  },
+  emphasizedUnit: {
+    fontFamily: fonts.bold,
+    fontWeight: '600',
+    fontSize: 16,
+    lineHeight: 20,
   },
   statUnitLarge: {
     fontSize: 14,
   },
   zonePill: {
-    backgroundColor: colors.onBlock.fill,
     paddingHorizontal: spacing.sm,
     paddingVertical: 2,
     borderRadius: 20,
@@ -409,14 +455,17 @@ const styles = StyleSheet.create({
     ...typography.label.small,
     fontFamily: fonts.semibold,
     fontSize: 11,
-    color: colors.text.inverse,
   },
   ringSurface: {
-    ...card.well,
-    backgroundColor: colors.onBlock.fill,
+    backgroundColor: colors.background.elevated,
     width: SIZE,
     height: SIZE,
     borderRadius: SIZE / 2,
     flexShrink: 0,
+    shadowColor: colors.neutral[900],
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 3,
   },
 });

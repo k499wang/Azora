@@ -1,3 +1,5 @@
+import { colors } from './colors';
+
 export interface ExerciseDarkTheme {
   id: 'light' | 'slate' | 'stone' | 'sage';
   label: string;
@@ -34,7 +36,7 @@ export const EXERCISE_DARK_THEMES: ExerciseDarkTheme[] = [
     id: 'light',
     label: 'Light',
     dotColor: '#78B4FF',
-    screen: '#F8FBFF',
+    screen: colors.background.canvas,
     surface: '#F1F5F9',
     surfaceBorder: '#E2E8F0',
     circleOutline: '#78B4FF',

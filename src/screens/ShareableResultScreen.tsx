@@ -10,7 +10,6 @@ import { card } from '../theme/card';
 import HeartRateStatsSection from '../components/heartRate/HeartRateStatsSection';
 import ScoreRing from '../components/exercise/ScoreRing';
 import GlassIconButton from '../components/common/GlassIconButton';
-import AmbientBackground from '../components/common/AmbientBackground';
 import type { DailyResultScreenProps } from '../app/navigation';
 import {
   estimateLungAge,
@@ -112,7 +111,6 @@ export default function ShareableResultScreen({
 
   return (
     <View style={styles.screen}>
-      <AmbientBackground />
       <View style={[styles.screenInner, { paddingTop: insets.top }]}>
         <ScrollView
           contentContainerStyle={styles.scrollContent}
@@ -177,7 +175,7 @@ export default function ShareableResultScreen({
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: colors.background.primary,
+    backgroundColor: colors.background.canvas,
   },
   screenInner: {
     flex: 1,

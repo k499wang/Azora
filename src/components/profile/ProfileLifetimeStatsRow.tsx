@@ -9,9 +9,13 @@ import type {
   GlyphShape,
   PlayfulHue,
 } from '../../features/exercise/guidedBreathing/categoryPalette';
-import { formatProfileCount, formatProfileDuration } from '../../lib/profileStatsFormat';
+import {
+  addProfileValueBreakOpportunities,
+  formatProfileCount,
+  formatProfileDuration,
+} from '../../lib/profileStatsFormat';
 
-const TILE_HEIGHT = 116;
+const TILE_HEIGHT = 140;
 const GLYPH_SIZE = 96;
 
 interface ProfileLifetimeStatsRowProps {
@@ -68,16 +72,22 @@ export default function ProfileLifetimeStatsRow({
             </View>
 
             <View style={styles.tileContent}>
-              <Text style={styles.statLabel} numberOfLines={1}>
+              <Text
+                style={styles.statLabel}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.8}
+              >
                 {stat.label}
               </Text>
               <Text
                 style={styles.statValue}
-                numberOfLines={1}
+                accessibilityLabel={stat.value}
+                numberOfLines={2}
                 adjustsFontSizeToFit
-                minimumFontScale={0.6}
+                minimumFontScale={0.8}
               >
-                {stat.value}
+                {addProfileValueBreakOpportunities(stat.value)}
               </Text>
             </View>
           </View>
@@ -111,13 +121,20 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   statLabel: {
-    ...typography.label.medium,
-    fontFamily: fonts.semibold,
+    ...typography.title.title3,
+    fontFamily: fonts.medium,
+    fontWeight: '500',
+    fontSize: 20,
+    lineHeight: 26,
     color: colors.text.inverse,
   },
   statValue: {
-    ...typography.title.title2,
+    ...typography.display.display3,
     fontFamily: fonts.semibold,
+    fontSize: 32,
+    lineHeight: 38,
+    letterSpacing: -0.5,
+    fontVariant: ['tabular-nums'],
     color: colors.text.inverse,
   },
 });

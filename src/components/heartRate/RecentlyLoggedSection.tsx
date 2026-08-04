@@ -50,11 +50,19 @@ function formatReadingDuration(seconds: number): string {
   return s === 0 ? `${m}m` : `${m}m ${s}s`;
 }
 
-function MetricInline({ value }: { value: string }) {
+function MetricInline({
+  iconColor,
+  iconBg,
+  value,
+}: {
+  iconColor: string;
+  iconBg: string;
+  value: string;
+}) {
   return (
     <View style={styles.metricInline}>
-      <View style={styles.metricDot}>
-        <View style={styles.metricDotInner} />
+      <View style={[styles.metricDot, { backgroundColor: iconBg }]}>
+        <View style={[styles.metricDotInner, { backgroundColor: iconColor }]} />
       </View>
       <Text style={styles.metricInlineValue}>{value}</Text>
     </View>
@@ -120,7 +128,6 @@ export function RecentlyLoggedSection({
       {items.length === 0 ? (
         <View style={styles.emptyWrap}>
           <EmptyStateCard
-            hue={colors.playful.sky}
             title="No heart rate logged yet"
             subtitle={
               hasError
@@ -134,25 +141,34 @@ export function RecentlyLoggedSection({
           {items.map((item, index) => {
             const stress = item.stress;
             const stressZone = stress == null ? null : getStressZone(stress);
-            const metrics: { key: string; value: string }[] = [];
+            const metrics: {
+              key: string;
+              value: string;
+              iconColor: string;
+              iconBg: string;
+            }[] = [];
             if (stress != null && stressZone != null) {
               metrics.push({
                 key: 'stress',
                 value: `${stressZone.label} stress`,
+                iconColor: stressZone.color,
+                iconBg: `${stressZone.color}22`,
               });
             }
             if (item.hrDrop != null) {
               metrics.push({
                 key: 'hrDrop',
                 value: `${item.hrDrop} HR drop`,
+                iconColor: colors.primary.blue600,
+                iconBg: colors.primary.blue100,
               });
             }
 
             return (
               <CardSurface
+                elevated
                 key={item.sessionId}
                 onPress={() => handleItemPress(item.sessionId, index)}
-                hue={colors.playful.sky}
                 style={styles.card}
               >
                 <View style={styles.thumb}>
@@ -172,7 +188,12 @@ export function RecentlyLoggedSection({
                   {metrics.length > 0 ? (
                     <View style={styles.metricRow}>
                       {metrics.map((m) => (
-                        <MetricInline key={m.key} value={m.value} />
+                        <MetricInline
+                          key={m.key}
+                          value={m.value}
+                          iconColor={m.iconColor}
+                          iconBg={m.iconBg}
+                        />
                       ))}
                     </View>
                   ) : null}
@@ -201,6 +222,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: padding.screen.horizontal,
   },
   card: {
+    backgroundColor: colors.background.elevated,
+    borderWidth: 0,
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: spacing.md,
@@ -213,16 +236,18 @@ const styles = StyleSheet.create({
     minWidth: 56,
   },
   thumbBpm: {
-    fontSize: 32,
-    lineHeight: 34,
-    fontFamily: fonts.semibold,
-    color: colors.text.inverse,
-    letterSpacing: -0.8,
+    ...typography.display.display3,
+    fontFamily: fonts.medium,
+    fontWeight: '500',
+    color: colors.error[500],
+    fontVariant: ['tabular-nums'],
+    letterSpacing: -0.3,
   },
   thumbUnit: {
-    ...typography.caption.caption2,
-    fontFamily: fonts.semibold,
-    color: colors.onBlock.textMuted,
+    ...typography.label.large,
+    fontFamily: fonts.bold,
+    fontWeight: '600',
+    color: colors.error[500],
     marginTop: 1,
     letterSpacing: 0.5,
   },
@@ -236,20 +261,23 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   label: {
-    ...typography.body.medium,
-    fontFamily: fonts.semibold,
-    color: colors.text.inverse,
+    ...typography.title.title3,
+    fontFamily: fonts.medium,
+    fontWeight: '500',
+    fontSize: 20,
+    lineHeight: 26,
+    color: colors.text.primary,
   },
   time: {
     ...typography.caption.caption1,
     fontFamily: fonts.semibold,
-    color: colors.onBlock.textMuted,
+    color: colors.text.tertiary,
   },
   duration: {
     ...typography.body.small,
     fontFamily: fonts.regular,
     fontWeight: '400',
-    color: colors.onBlock.textMuted,
+    color: colors.text.tertiary,
   },
   metricRow: {
     flexDirection: 'row',
@@ -265,7 +293,6 @@ const styles = StyleSheet.create({
     width: 16,
     height: 16,
     borderRadius: 8,
-    backgroundColor: colors.onBlock.fill,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -273,11 +300,10 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: colors.text.inverse,
   },
   metricInlineValue: {
     ...typography.caption.caption1,
     fontFamily: fonts.semibold,
-    color: colors.onBlock.textMuted,
+    color: colors.text.secondary,
   },
 });
