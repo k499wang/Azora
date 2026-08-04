@@ -328,7 +328,6 @@ export function HeartRateResultContent({
                 <BPMChart
                   bpmSamples={bpmChartSamples}
                   ibiMs={chartIbiMs}
-                  color={colors.primary.blue500}
                   locked={advancedStatsLocked}
                   onPressLocked={onPressUpgrade}
                 />
@@ -343,7 +342,6 @@ export function HeartRateResultContent({
                   sdnn: sdnn ?? null,
                   avgBpm: Number.isFinite(heroBpmNumber) ? heroBpmNumber : null,
                 }}
-                color={colors.error[500]}
                 locked={advancedStatsLocked}
                 onPressLocked={onPressUpgrade}
                 emptyMessage={rrEmptyMessage}

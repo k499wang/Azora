@@ -119,22 +119,32 @@ export interface LungAgeToneMeta {
   ringColors: [string, string];
   textColor: string;
   direction: 'positive' | 'neutral';
+  /** Tinted pill behind the comparison line. `pillTextColor` is the darker step
+   *  of the same family so the label stays legible on the tint. */
+  pillBackground: string;
+  pillTextColor: string;
 }
 
 const YOUNGER_TONE: LungAgeToneMeta = {
   ringColors: [colors.success[500], colors.primary.blue500],
   textColor: colors.success[500],
   direction: 'positive',
+  pillBackground: colors.success[100],
+  pillTextColor: colors.success[700],
 };
 const ON_PACE_TONE: LungAgeToneMeta = {
   ringColors: [colors.primary.blue500, colors.primary.blue400],
   textColor: colors.primary.blue500,
   direction: 'neutral',
+  pillBackground: colors.primary.blue100,
+  pillTextColor: colors.primary.blue700,
 };
 const OLDER_TONE: LungAgeToneMeta = {
   ringColors: [colors.orange[500], colors.error[500]],
   textColor: colors.orange[500],
   direction: 'neutral',
+  pillBackground: colors.orange[100],
+  pillTextColor: colors.orange[700],
 };
 
 /** Coloring for a lung-age readout. A null delta means the age is unknown. */

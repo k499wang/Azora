@@ -16,7 +16,6 @@ import GlassIconButton, {
 import AmbientBackground from '../components/common/AmbientBackground';
 import ThermometerStatCard from '../components/heartRate/ThermometerStatCard';
 import ScoreRing from '../components/exercise/ScoreRing';
-import SessionStreakCard from '../components/exercise/SessionStreakCard';
 import type { SessionCompleteScreenProps } from '../app/navigation';
 import { useAuthStore } from '../stores/authStore';
 import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
@@ -150,16 +149,6 @@ export default function SessionCompleteScreen({
           </View>
         </View>
 
-        {streakView != null ? (
-          <View style={styles.streakWrap}>
-            <SessionStreakCard
-              currentStreak={streakView.currentStreak}
-              completedDaysAgo={streakView.completedDaysAgo}
-              animateIncrement={streakView.extendedToday}
-            />
-          </View>
-        ) : null}
-
         <View style={styles.statsHeader}>
           <SectionHeader title="Statistics" />
         </View>
@@ -172,7 +161,6 @@ export default function SessionCompleteScreen({
             valueText={formatDuration(durationSec)}
             min={30}
             max={300}
-            accent={colors.primary.blue500}
           />
           <ThermometerStatCard
             label="Avg HR"
@@ -180,7 +168,6 @@ export default function SessionCompleteScreen({
             unit="bpm"
             min={40}
             max={120}
-            accent={colors.error[500]}
           />
         </View>
 
@@ -188,7 +175,6 @@ export default function SessionCompleteScreen({
           <View style={styles.graphWrap}>
             <BPMChart
               bpmSamples={hrSamples}
-              color={colors.primary.blue500}
               insightContext="breathing-exercise"
               breathingTechniqueProfile={breathingTechniqueProfile}
             />
@@ -290,10 +276,6 @@ const styles = StyleSheet.create({
   graphWrap: {
     paddingHorizontal: padding.screen.horizontal,
     marginTop: spacing.sm,
-  },
-  streakWrap: {
-    paddingHorizontal: padding.screen.horizontal,
-    marginTop: margin.resultSection,
   },
   shareCta: {
     ...card.shadow,

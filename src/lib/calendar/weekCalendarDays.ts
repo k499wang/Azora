@@ -1,10 +1,12 @@
 const DAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+const DAY_SHORT_LABELS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 export interface WeekCalendarDay {
   key: string;
   localDate: string;
   dayLabel: string;
+  dayShortLabel: string;
   dateNum: number;
   isToday: boolean;
   isFuture: boolean;
@@ -43,6 +45,7 @@ export function buildWeekCalendarDays(
       key: localDate,
       localDate,
       dayLabel: DAY_LABELS[date.getDay()],
+      dayShortLabel: DAY_SHORT_LABELS[date.getDay()],
       dateNum: date.getDate(),
       isToday: offset === 0,
       isFuture: offset > 0,

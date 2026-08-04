@@ -62,7 +62,7 @@ const styles = StyleSheet.create({
   },
   divider: {
     width: StyleSheet.hairlineWidth,
-    backgroundColor: colors.border.subtle,
+    backgroundColor: colors.onBlock.divider,
     marginHorizontal: 8,
   },
   stat: {
@@ -72,18 +72,17 @@ const styles = StyleSheet.create({
   },
   value: {
     ...typography.heading.heading2,
-    fontFamily: fonts.regular,
-    fontWeight: '400',
-    fontSize: 18,
+    fontFamily: fonts.semibold,
+    fontSize: 20,
     fontVariant: ['tabular-nums'],
-    color: colors.text.primary,
+    color: colors.text.inverse,
   },
   label: {
     ...typography.label.small,
     fontFamily: fonts.regular,
     fontWeight: '400',
     fontSize: 13,
-    color: colors.text.tertiary,
+    color: colors.onBlock.textMuted,
     letterSpacing: 0.2,
   },
 });

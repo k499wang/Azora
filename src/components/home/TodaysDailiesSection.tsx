@@ -1,6 +1,7 @@
 import { Text } from '../common/Text';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import BlobCharacter from './BlobCharacter';
 import TaskCardDecor from './TaskCardDecor';
 import SectionHeader from '../common/SectionHeader';
@@ -23,6 +24,7 @@ import { DEFAULT_DAILY_PLAN_SCHEDULE } from '../../services/dailyPlan/types';
 
 const TIMELINE_COLUMN_WIDTH = 32;
 const TIMELINE_MARKER_SIZE = 18;
+const MARKER_ICON_SIZE = 13;
 const TIMELINE_RAIL_WIDTH = 6;
 const TIMELINE_ROW_HEIGHT = 144;
 const TASK_CONTENT_SIZE = 112;
@@ -101,15 +103,26 @@ function DailyTaskRow({
           {completed || locked ? (
             <MaterialCommunityIcons
               name={completed ? 'check' : 'lock-outline'}
-              size={11}
+              size={MARKER_ICON_SIZE}
               color={colors.text.inverse}
+              style={styles.statusMarkerIcon}
             />
           ) : null}
         </View>
       </View>
 
       <View style={[styles.taskPillShadow, { backgroundColor: style.hue.base }]}>
-        <View style={styles.taskPill}>
+        <LinearGradient
+          colors={[
+            'rgba(255,255,255,0.10)',
+            'rgba(255,255,255,0)',
+            'rgba(15,23,42,0.14)',
+          ]}
+          locations={[0, 0.45, 1]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.taskPill}
+        >
           <TaskCardDecor character={style.character} color={colors.text.inverse} />
 
           <View style={styles.taskCopy} pointerEvents="none">
@@ -151,7 +164,7 @@ function DailyTaskRow({
               faceColor={style.hue.ink}
             />
           </View>
-        </View>
+        </LinearGradient>
       </View>
     </Pressable>
   );
@@ -302,6 +315,12 @@ const styles = StyleSheet.create({
     borderRadius: TIMELINE_MARKER_SIZE / 2,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  statusMarkerIcon: {
+    width: TIMELINE_MARKER_SIZE,
+    height: TIMELINE_MARKER_SIZE,
+    lineHeight: TIMELINE_MARKER_SIZE,
+    textAlign: 'center',
   },
   statusMarkerActive: {
     backgroundColor: colors.primary.blue600,

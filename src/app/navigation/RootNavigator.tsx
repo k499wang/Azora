@@ -13,6 +13,7 @@ import { ProPaywallScreen } from '../../screens/ProPaywallScreen';
 import { ExitOfferScreen } from '../../screens/ExitOfferScreen';
 import SettingsScreen from '../../screens/SettingsScreen';
 import ShareableResultScreen from '../../screens/ShareableResultScreen';
+import ExerciseSearchScreen from '../../screens/ExerciseSearchScreen';
 import { useAppGate, type AppGate } from '../../hooks/useAppGate';
 import {
   isAttPermissionResolved,
@@ -51,6 +52,14 @@ function AppStack({ showBootPaywall }: AppStackProps) {
       <Stack.Screen name="MainTabs">
         {() => <MainTabsRoute showBootPaywall={showBootPaywall} />}
       </Stack.Screen>
+      <Stack.Screen
+        name="ExerciseSearch"
+        component={ExerciseSearchScreen}
+        options={{
+          presentation: 'card',
+          animation: 'slide_from_right',
+        }}
+      />
       <Stack.Screen
         name="HeartRate"
         component={HeartRateScreen}

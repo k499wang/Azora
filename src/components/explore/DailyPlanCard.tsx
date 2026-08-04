@@ -9,14 +9,14 @@ import { fonts, typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 
 const SESSION_DURATION = '~2 min';
-const CARD_HEIGHT = 152;
-const GLYPH_SIZE = 148;
+const CARD_HEIGHT = 196;
+const GLYPH_SIZE = 186;
 
-interface DailyPlanCardProps {
+type DailyPlanCardProps = {
   todayHoldSeconds: number | null;
   lastHoldSeconds: number | null;
   onPress: () => void;
-}
+};
 
 function formatMmSs(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -43,55 +43,54 @@ export default function DailyPlanCard({
   const meta = status ? `${status} · ${SESSION_DURATION}` : SESSION_DURATION;
 
   return (
-    <View style={[styles.cardShadow, { backgroundColor: hue.base }]}>
-      <Pressable
-        onPress={onPress}
-        accessibilityRole="button"
-        accessibilityLabel={
-          doneToday ? 'Try another breath hold' : 'Start your daily breath hold'
-        }
-        style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
-      >
-        <View style={styles.cardGlyph} pointerEvents="none">
-          <ActivityGlyph
-            shape={glyph}
-            size={GLYPH_SIZE}
-            color={textColor}
-            opacity={0.16}
-          />
-        </View>
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={
+        doneToday ? 'Try another breath hold' : 'Start your daily breath hold'
+      }
+      style={({ pressed }) => [
+        styles.card,
+        { backgroundColor: hue.base },
+        pressed && styles.cardPressed,
+      ]}
+    >
+      <View style={styles.cardGlyph} pointerEvents="none">
+        <ActivityGlyph
+          shape={glyph}
+          size={GLYPH_SIZE}
+          color={textColor}
+          opacity={0.16}
+        />
+      </View>
 
-        <View style={styles.cardContent}>
-          <View style={styles.cardTop}>
-            <Text style={[styles.category, { color: textColor }]}>{label}</Text>
-            <View style={styles.originalPill}>
-              <Text style={[styles.originalPillText, { color: hue.ink }]}>
-                Azora Original
-              </Text>
-            </View>
-          </View>
-
-          <View style={styles.textBlock}>
-            <Text style={[styles.title, { color: textColor }]} numberOfLines={2}>
-              Azora’s Breathhold Exercise
+      <View style={styles.cardContent}>
+        <View style={styles.cardTop}>
+          <Text style={[styles.category, { color: textColor }]}>{label}</Text>
+          <View style={styles.originalPill}>
+            <Text style={[styles.originalPillText, { color: hue.ink }]}>
+              Azora Original
             </Text>
-            <View style={[styles.metaRow, { opacity: 0.85 }]}>
-              <Icon name="timer" size={14} color={textColor} />
-              <Text style={[styles.meta, { color: textColor }]} numberOfLines={1}>
-                {meta}
-              </Text>
-            </View>
           </View>
         </View>
-      </Pressable>
-    </View>
+
+        <View style={styles.textBlock}>
+          <Text style={[styles.title, { color: textColor }]} numberOfLines={2}>
+            Azora’s Breathhold Exercise
+          </Text>
+          <View style={[styles.metaRow, { opacity: 0.85 }]}>
+            <Icon name="timer" size={14} color={textColor} />
+            <Text style={[styles.meta, { color: textColor }]} numberOfLines={1}>
+              {meta}
+            </Text>
+          </View>
+        </View>
+      </View>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  cardShadow: {
-    ...card.blockShadow,
-  },
   card: {
     ...card.block,
     height: CARD_HEIGHT,
@@ -102,12 +101,14 @@ const styles = StyleSheet.create({
   },
   cardGlyph: {
     position: 'absolute',
-    right: -40,
-    bottom: -46,
+    right: -50,
+    bottom: -58,
   },
   cardContent: {
     flex: 1,
-    padding: spacing.md,
+    padding: spacing.lg,
+    paddingLeft: spacing.md,
+    paddingBottom: spacing.md,
     justifyContent: 'space-between',
   },
   cardTop: {
@@ -118,24 +119,31 @@ const styles = StyleSheet.create({
   },
   category: {
     ...typography.overline,
+    textTransform: 'none',
+    letterSpacing: 0.4,
+    fontFamily: fonts.semibold,
+    fontSize: 16,
+    lineHeight: 20,
     opacity: 0.8,
   },
   originalPill: {
     borderRadius: 999,
     backgroundColor: colors.text.inverse,
     paddingHorizontal: spacing.sm,
-    paddingVertical: 3,
+    paddingVertical: 4,
   },
   originalPillText: {
-    ...typography.caption.caption2,
+    ...typography.label.small,
     fontFamily: fonts.semibold,
   },
   textBlock: {
-    gap: spacing.xs,
+    gap: 2,
   },
   title: {
-    ...typography.heading.heading1,
+    ...typography.title.title3,
     fontFamily: fonts.semibold,
+    fontSize: 20,
+    lineHeight: 26,
   },
   metaRow: {
     flexDirection: 'row',
@@ -143,6 +151,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   meta: {
-    ...typography.label.detail,
+    ...typography.label.medium,
+    fontFamily: fonts.medium,
   },
 });

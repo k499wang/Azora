@@ -4,9 +4,11 @@ import { LockedScrim } from '../common/glass';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography, fonts } from '../../theme/typography';
+import { card } from '../../theme/card';
 import CardSurface from '../common/CardSurface';
 import Icon from '../common/icons/Icon';
 import type { IconName } from '../common/icons/paths';
+import type { PlayfulHue } from '../../features/exercise/guidedBreathing/categoryPalette';
 
 const STAT_ICON_SIZE = 24;
 
@@ -16,9 +18,9 @@ interface ThermometerStatCardProps {
   unit: string;
   min: number;
   max: number;
-  accent: string;
   icon?: IconName;
   iconColor?: string;
+  hue?: PlayfulHue;
   /** When set, renders this text as the primary black value and hides the grey unit. */
   valueText?: string;
   locked?: boolean;
@@ -31,9 +33,9 @@ export default function ThermometerStatCard({
   unit,
   min,
   max,
-  accent,
   icon,
-  iconColor = colors.text.secondary,
+  iconColor = colors.text.inverse,
+  hue = colors.playful.coral,
   valueText,
   locked = false,
   onPressLocked,
@@ -46,6 +48,7 @@ export default function ThermometerStatCard({
   return (
     <CardSurface
       locked={locked}
+      hue={hue}
       containerStyle={styles.tileContainer}
       style={styles.tile}
     >
@@ -71,12 +74,7 @@ export default function ThermometerStatCard({
           </View>
         </View>
         <View style={styles.thermoTrack}>
-          <View
-            style={[
-              styles.thermoFill,
-              { height: `${fillPct}%`, backgroundColor: accent },
-            ]}
-          />
+          <View style={[styles.thermoFill, { height: `${fillPct}%` }]} />
         </View>
       </View>
       {locked ? (
@@ -134,10 +132,9 @@ const styles = StyleSheet.create({
   },
   tileLabel: {
     ...typography.heading.heading2,
-    fontFamily: fonts.regular,
-    fontWeight: '400',
+    fontFamily: fonts.semibold,
     fontSize: 17,
-    color: colors.text.primary,
+    color: colors.text.inverse,
   },
   lockedTitleText: {
     opacity: 0,
@@ -150,37 +147,31 @@ const styles = StyleSheet.create({
   tileValue: {
     fontSize: 28,
     lineHeight: 32,
-    fontFamily: fonts.medium,
-    fontWeight: '500',
-    color: colors.text.primary,
+    fontFamily: fonts.semibold,
+    color: colors.text.inverse,
     fontVariant: ['tabular-nums'],
     letterSpacing: -0.3,
   },
   tileUnit: {
     ...typography.label.small,
     fontSize: 14,
-    color: colors.text.tertiary,
+    color: colors.onBlock.textMuted,
     fontFamily: fonts.regular,
     fontWeight: '400',
   },
   thermoTrack: {
+    ...card.well,
+    backgroundColor: colors.onBlock.fill,
     width: 10,
     height: 80,
     borderRadius: 5,
-    backgroundColor: colors.neutral[100],
-    borderWidth: 1,
-    borderColor: colors.neutral[200],
     overflow: 'hidden',
     justifyContent: 'flex-end',
     alignSelf: 'center',
-    shadowColor: colors.primary.blue700,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.14,
-    shadowRadius: 3,
-    elevation: 2,
   },
   thermoFill: {
     width: '100%',
     borderRadius: 5,
+    backgroundColor: colors.text.inverse,
   },
 });

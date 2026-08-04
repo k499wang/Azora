@@ -1,15 +1,10 @@
 import { Text } from '../components/common/Text';
 import { useCallback } from 'react';
 import {
-  ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
-import { Image } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
-import MaskedView from '@react-native-masked-view/masked-view';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { typography, fonts } from '../theme/typography';
-import AmbientBackground from '../components/common/AmbientBackground';
+  ScrollView, StyleSheet, View } from 'react-native';
 import AppTopBar from '../components/common/AppTopBar';
-import { MeasureHeroCard } from '../components/heartRate/MeasureHeroCard';
+import GlassIconButton from '../components/common/GlassIconButton';
+import Icon from '../components/common/icons/Icon';
 import HeartRateStatsSection from '../components/heartRate/HeartRateStatsSection';
 import HRVStatsSection from '../components/heartRate/HRVStatsSection';
 import RecoveryStatsSection from '../components/heartRate/RecoveryStatsSection';
@@ -19,7 +14,6 @@ import { spacing, padding, margin } from '../theme/spacing';
 import { useAuthStore } from '../stores/authStore';
 import { useProfileQuery } from '../queries/profile/useProfileQuery';
 import { useHeartRateStatsQuery } from '../queries/tracking/useHeartRateStatsQuery';
-import { getBackgroundImageSource } from '../services/images/backgroundImageCache';
 import { useFeatureAccess } from '../hooks/useFeatureAccess';
 import { FeatureKey } from '../services/subscriptions/featureAccess';
 import { PaywallPlacement } from '../services/paywall';
@@ -30,23 +24,12 @@ import type {
 } from '../services/subscriptions/featureAccess';
 import type { HeartTabScreenProps } from '../app/navigation';
 
-const HERO_FRAME_ASPECT_RATIO = 1.1;
-const HERO_OVERSCROLL_BLEED = 120;
-
-function formatLocalDate(localDate: string): string {
-  const [year, month, day] = localDate.split('-').map(Number);
-  const date = new Date(year, month - 1, day);
-  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-}
-
 function formatMeasuredTime(isoString: string): string {
   const date = new Date(isoString);
   return date.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
 }
 
 export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
-  const insets = useSafeAreaInsets();
-  const { width: windowWidth } = useWindowDimensions();
   const user = useAuthStore((state) => state.user);
   const heartRateStatsQuery = useHeartRateStatsQuery(user?.id ?? null);
   const profileQuery = useProfileQuery(user?.id ?? null);
@@ -54,7 +37,6 @@ export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
 
   const stats = heartRateStatsQuery.data;
   const recentHeartRates = stats?.recent ?? [];
-  const lastMeasuredDate = recentHeartRates[0]?.localDate ?? null;
   const bpmSamples = stats?.bpmSeries ?? [];
   const ibiMs = stats?.ibiSeries.map((point) => point.ibiMs) ?? [];
   const advancedStatsLocked =
@@ -98,11 +80,22 @@ export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
   const openMeasure = useCallback(() => {
     navigation.navigate('HeartRate');
   }, [navigation]);
-  const heroBackdropHeight = windowWidth / HERO_FRAME_ASPECT_RATIO + HERO_OVERSCROLL_BLEED;
 
   return (
     <View style={styles.screen}>
-      <AmbientBackground />
+      <AppTopBar
+        showAvatar={false}
+        rightSlot={(
+          <GlassIconButton
+            accessibilityLabel="Measure heart rate"
+            onPress={openMeasure}
+            size={48}
+            variant="regular"
+          >
+            <Icon name="plus" size={26} color={colors.text.secondary} />
+          </GlassIconButton>
+        )}
+      />
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
@@ -111,43 +104,6 @@ export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
         alwaysBounceVertical
         overScrollMode="always"
       >
-        <View style={[styles.topSection, { paddingTop: insets.top }]}>
-          <View
-            style={[styles.heroBackdrop, { height: heroBackdropHeight }]}
-            pointerEvents="none"
-          >
-            <MaskedView
-              style={StyleSheet.absoluteFill}
-              maskElement={(
-                <LinearGradient
-                  colors={['transparent', 'black', 'black', 'transparent']}
-                  locations={[0, 0.34, 0.65, 1]}
-                  style={StyleSheet.absoluteFill}
-                />
-              )}
-            >
-              <Image
-                source={getBackgroundImageSource('heartHero')}
-                style={StyleSheet.absoluteFill}
-                contentFit="cover"
-                contentPosition="center"
-              />
-            </MaskedView>
-          </View>
-          <AppTopBar />
-        </View>
-
-        <View style={styles.heroSection}>
-          <MeasureHeroCard onPress={openMeasure} />
-          <View style={styles.lastMeasuredSlot}>
-            {lastMeasuredDate ? (
-              <Text style={styles.lastMeasuredText}>
-                Last measured {formatLocalDate(lastMeasuredDate)}
-              </Text>
-            ) : null}
-          </View>
-        </View>
-
         {partialStatsError || heartRateStatsQuery.isError ? (
           <Text style={styles.partialErrorText}>
             Some stats may be out of date.
@@ -217,41 +173,16 @@ export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: colors.background.primary,
+    backgroundColor: colors.background.accentSoft,
   },
   scroll: {
     flex: 1,
     backgroundColor: 'transparent',
   },
   scrollContent: {
+    paddingTop: spacing.md,
     paddingBottom: spacing['7xl'] + spacing.xl,
     gap: margin.sectionGap,
-  },
-  topSection: {
-    position: 'relative',
-    paddingTop: spacing.md,
-  },
-  heroBackdrop: {
-    position: 'absolute',
-    top: -HERO_OVERSCROLL_BLEED,
-    left: 0,
-    right: 0,
-    overflow: 'hidden',
-  },
-  heroSection: {
-    marginTop: -spacing.xl,
-  },
-  lastMeasuredSlot: {
-    marginTop: spacing.sm,
-    height: typography.caption.caption2.lineHeight,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  lastMeasuredText: {
-    ...typography.caption.caption2,
-    fontFamily: fonts.semibold,
-    color: colors.text.tertiary,
-    textAlign: 'center',
   },
   partialErrorText: {
     color: colors.text.tertiary,

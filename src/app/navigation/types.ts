@@ -18,7 +18,7 @@ import type { BreathHoldHeartRateResultStatus } from '../../features/exercise/da
 
 export type MainTabParamList = {
   Home: undefined;
-  Breath: undefined;
+  Explore: undefined;
   Heart: undefined;
   Profile: undefined;
 };
@@ -26,6 +26,7 @@ export type MainTabParamList = {
 export type RootStackParamList = {
   MainTabs: NavigatorScreenParams<MainTabParamList> | undefined;
   HeartRate: { context?: string } | undefined;
+  ExerciseSearch: undefined;
   ProPaywall: {
     placement: PaywallPlacementValue;
     sourceScreen?: string;
@@ -82,11 +83,12 @@ export type MainTabNavigationProp<
 >;
 
 export type HomeScreenProps = MainTabScreenProps<'Home'>;
-export type BreathTabScreenProps = MainTabScreenProps<'Breath'>;
+export type ExploreScreenProps = MainTabScreenProps<'Explore'>;
 export type HeartTabScreenProps = MainTabScreenProps<'Heart'>;
 export type ProfileScreenProps = MainTabScreenProps<'Profile'>;
 
 export type HeartRateScreenProps = RootStackScreenProps<'HeartRate'>;
+export type ExerciseSearchScreenProps = RootStackScreenProps<'ExerciseSearch'>;
 export type ProPaywallScreenProps = RootStackScreenProps<'ProPaywall'>;
 export type HeartRateSessionDetailScreenProps = RootStackScreenProps<'HeartRateSessionDetail'>;
 export type ExerciseSessionScreenProps = RootStackScreenProps<'ExerciseSession'>;
