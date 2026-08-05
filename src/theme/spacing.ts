@@ -2,6 +2,7 @@ export const spacing = {
   xs: 4,
   sm: 8,
   md: 16,
+  mdPlus: 20,
   lg: 24,
   xl: 32,
   '2xl': 40,
@@ -14,7 +15,8 @@ export const spacing = {
 
 export const padding = {
   screen: {
-    horizontal: spacing.lg,
+    // App-standard screen margin — a touch roomier than Apple's 16pt default.
+    horizontal: spacing.mdPlus,
     vertical: spacing.xl,
   },
   card: {

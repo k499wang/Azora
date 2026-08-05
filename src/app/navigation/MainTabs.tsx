@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { createNativeBottomTabNavigator } from '@react-navigation/bottom-tabs/unstable';
 import HomeScreen from '../../screens/HomeScreen';
 import ExploreScreen from '../../screens/ExploreScreen';
@@ -5,10 +6,15 @@ import HeartTabScreen from '../../screens/HeartTabScreen';
 import ProfileScreen from '../../screens/ProfileScreen';
 import type { MainTabParamList } from './types';
 import { fonts } from '../../theme/typography';
+import { triggerTapHaptic } from '../../native/tapHaptics';
 
 const Tab = createNativeBottomTabNavigator<MainTabParamList>();
 
 export function MainTabs() {
+  // The native tab bar emits tabPress even when re-tapping the active tab;
+  // only buzz when the user actually switches tabs.
+  const lastActiveTabRef = useRef<keyof MainTabParamList>('Home');
+
   return (
     <Tab.Navigator
       screenOptions={{
@@ -17,6 +23,14 @@ export function MainTabs() {
         tabBarMinimizeBehavior: 'auto',
         tabBarLabelStyle: { fontFamily: fonts.semibold },
       }}
+      screenListeners={({ route }) => ({
+        tabPress: () => {
+          if (lastActiveTabRef.current !== route.name) {
+            triggerTapHaptic();
+            lastActiveTabRef.current = route.name;
+          }
+        },
+      })}
     >
       <Tab.Screen
         name="Home"

@@ -215,14 +215,16 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
               ) : null
             }
           />
-          <ProfileBreathHoldTrendCard
-            data={profileSummary?.breathHoldTrend ?? []}
-            bestHoldSeconds={holdStats.bestHoldSeconds}
-            todayHoldSeconds={homeStats?.todayBreathHold?.holdSeconds ?? null}
-            avgHoldSeconds={holdStats.avgHoldSeconds}
-            locked={advancedStatsLocked}
-            onPressLocked={openTrendPaywall}
-          />
+          <View style={styles.sectionBody}>
+            <ProfileBreathHoldTrendCard
+              data={profileSummary?.breathHoldTrend ?? []}
+              bestHoldSeconds={holdStats.bestHoldSeconds}
+              todayHoldSeconds={homeStats?.todayBreathHold?.holdSeconds ?? null}
+              avgHoldSeconds={holdStats.avgHoldSeconds}
+              locked={advancedStatsLocked}
+              onPressLocked={openTrendPaywall}
+            />
+          </View>
         </View>
 
       </ScrollView>

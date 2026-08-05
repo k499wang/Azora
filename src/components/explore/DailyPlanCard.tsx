@@ -4,6 +4,7 @@ import ActivityGlyph from './ActivityGlyph';
 import Icon from '../common/icons/Icon';
 import { BREATH_HOLD_STYLE } from '../../features/exercise/guidedBreathing/categoryPalette';
 import { card } from '../../theme/card';
+import { triggerTapHaptic } from '../../native/tapHaptics';
 import { colors } from '../../theme/colors';
 import { fonts, typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
@@ -44,7 +45,10 @@ export default function DailyPlanCard({
 
   return (
     <Pressable
-      onPress={onPress}
+      onPress={() => {
+        triggerTapHaptic();
+        onPress();
+      }}
       accessibilityRole="button"
       accessibilityLabel={
         doneToday ? 'Try another breath hold' : 'Start your daily breath hold'

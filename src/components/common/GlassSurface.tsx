@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import { BlurView, type BlurTint } from 'expo-blur';
 import { GlassView } from 'expo-glass-effect';
-import { card } from '../../theme/card';
+import { card, radius as radiusScale } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { useGlassMode } from '../../hooks/useGlassMode';
 
@@ -43,7 +43,7 @@ export default function GlassSurface({
   children,
   containerStyle,
   style,
-  radius = 24,
+  radius = radiusScale.card,
   interactive = false,
   variant = 'regular',
   colorScheme = 'light',
@@ -164,9 +164,11 @@ const styles = StyleSheet.create({
   shadow: {
     ...card.shadowElevated,
     width: '100%',
+    borderCurve: 'continuous',
   },
   pane: {
     width: '100%',
     overflow: 'hidden',
+    borderCurve: 'continuous',
   },
 });

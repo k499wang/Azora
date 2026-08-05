@@ -13,6 +13,7 @@ import { PaywallPlacement } from '../../services/paywall';
 import { FeatureKey } from '../../services/subscriptions/featureAccess';
 import type { FeatureAccessResult } from '../../services/subscriptions/featureAccess';
 import { card } from '../../theme/card';
+import { triggerTapHaptic } from '../../native/tapHaptics';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
@@ -58,6 +59,7 @@ export default function TechniqueCard({
       : 'Starts this breathing exercise';
 
   const handlePress = () => {
+    triggerTapHaptic();
     posthog.capture(AnalyticsEvent.BreathingTechniqueSelected, {
       technique_id: technique.id,
       technique_name: technique.name,

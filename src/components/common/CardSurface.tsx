@@ -1,8 +1,9 @@
 import type { ReactNode } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { card } from '../../theme/card';
+import { card, radius } from '../../theme/card';
 import { spacing } from '../../theme/spacing';
+import { triggerTapHaptic } from '../../native/tapHaptics';
 import GlassSurface from './GlassSurface';
 import {
   DEFAULT_CARD_SURFACE,
@@ -10,7 +11,7 @@ import {
 } from './cardSurfaceConfig';
 import type { PlayfulHue } from '../../features/exercise/guidedBreathing/categoryPalette';
 
-const CARD_SURFACE_RADIUS = 22;
+const CARD_SURFACE_RADIUS = radius.card;
 
 const GLASS_CONTAINER_STYLE_KEYS = [
   'alignSelf',
@@ -81,6 +82,11 @@ export default function CardSurface({
     children
   );
 
+  const handlePress = () => {
+    triggerTapHaptic();
+    onPress?.();
+  };
+
   if (hue != null) {
     const blockNode = (
       <View style={[styles.blockSurface, { backgroundColor: hue.base }, style]}>
@@ -97,7 +103,7 @@ export default function CardSurface({
     return (
       <Pressable
         accessibilityRole="button"
-        onPress={onPress}
+        onPress={handlePress}
         style={({ pressed }) => [
           styles.blockShadow,
           containerStyle,
@@ -139,7 +145,7 @@ export default function CardSurface({
   return (
     <Pressable
       accessibilityRole="button"
-      onPress={onPress}
+      onPress={handlePress}
       style={({ pressed }) => [
         elevated && styles.elevatedShadow,
         containerStyle,

@@ -6,6 +6,7 @@ import {
 import Icon from '../../../components/common/icons/Icon';
 import { Text } from '../../../components/common/Text';
 import { card } from '../../../theme/card';
+import { triggerTapHaptic } from '../../../native/tapHaptics';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
@@ -84,7 +85,10 @@ export default function HomeTreeHero({
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
       accessibilityHint="Opens your garden"
-      onPress={onPressGarden}
+      onPress={() => {
+        triggerTapHaptic();
+        onPressGarden();
+      }}
       style={({ pressed }) => [styles.shadow, pressed && styles.pressed]}
     >
       {content}
