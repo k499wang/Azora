@@ -134,6 +134,58 @@ export const typography = {
     },
   },
 
+  // Card stat scales — big values with secondary units (HRV, BPM, stress).
+  stat: {
+    // Compact value inside multi-stat cells (Avg / Best).
+    value: {
+      fontFamily: fontMedium,
+      fontWeight: weight.medium,
+      fontSize: 21,
+      lineHeight: 26,
+      fontVariant: ['tabular-nums'] as TextStyle['fontVariant'],
+      letterSpacing: -0.3,
+    },
+    // Standalone value inside a stat card.
+    valueMedium: {
+      fontFamily: fontMedium,
+      fontWeight: weight.medium,
+      fontSize: 30,
+      lineHeight: 36,
+      fontVariant: ['tabular-nums'] as TextStyle['fontVariant'],
+      letterSpacing: -0.3,
+    },
+    // Emphasized hero value.
+    valueLarge: {
+      fontFamily: fontMedium,
+      fontWeight: weight.medium,
+      fontSize: 34,
+      lineHeight: 42,
+      fontVariant: ['tabular-nums'] as TextStyle['fontVariant'],
+      letterSpacing: -0.5,
+    },
+    // Compact secondary unit (multi-stat cells).
+    unit: {
+      fontFamily: fontMedium,
+      fontWeight: weight.medium,
+      fontSize: 14,
+      lineHeight: 18,
+    },
+    // Standalone secondary unit next to a value.
+    unitMedium: {
+      fontFamily: fontMedium,
+      fontWeight: weight.medium,
+      fontSize: 16,
+      lineHeight: 20,
+    },
+    // Emphasized unit next to an emphasized value.
+    unitLarge: {
+      fontFamily: fontBold,
+      fontWeight: weight.semibold,
+      fontSize: 18,
+      lineHeight: 22,
+    },
+  },
+
   button: {
     large: {
       fontFamily: fontMedium,

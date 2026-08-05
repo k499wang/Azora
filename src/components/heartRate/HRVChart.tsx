@@ -4,7 +4,7 @@ import { LayoutChangeEvent, Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Circle, Line, Path } from 'react-native-svg';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../theme/colors';
-import { typography, fonts } from '../../theme/typography';
+import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 import CardSurface from '../common/CardSurface';
 import FeatureInfoDialog from '../common/FeatureInfoDialog';
@@ -312,12 +312,8 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   title: {
-    ...typography.title.title3,
+    ...typography.heading.heading1,
     color: colors.text.primary,
-    fontFamily: fonts.semibold,
-    fontWeight: '600',
-    fontSize: 20,
-    lineHeight: 26,
   },
   plotRow: {
     flexDirection: 'row',

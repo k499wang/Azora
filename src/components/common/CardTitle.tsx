@@ -2,7 +2,7 @@ import { Text } from './Text';
 import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { colors } from '../../theme/colors';
-import { typography, fonts } from '../../theme/typography';
+import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 
 interface CardTitleProps {
@@ -45,11 +45,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   title: {
-    ...typography.title.title3,
+    ...typography.heading.heading1,
     color: colors.text.primary,
-    fontFamily: fonts.medium,
-    fontWeight: '500',
-    fontSize: 20,
-    lineHeight: 26,
   },
 });
