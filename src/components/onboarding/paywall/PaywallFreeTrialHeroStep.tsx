@@ -61,7 +61,7 @@ export function PaywallFreeTrialHeroStep() {
             transform: [{ translateY: -110 }, { rotate }, { translateY: 110 }],
           }}
         >
-          <Icon name="bell" size={250} color={colors.primary.blue300} />
+          <Icon name="bell" size={300} color={colors.primary.blue300} />
           <Animated.View style={[styles.bellBadge, { transform: [{ scale: badgePop }] }]}>
             <Text style={styles.bellBadgeText}>1</Text>
           </Animated.View>

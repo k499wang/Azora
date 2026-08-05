@@ -7,12 +7,96 @@ import { fonts, typography } from '../../../theme/typography';
 export const TESTIMONIAL_CARD_WIDTH = 268;
 
 export const paywallStepStyles = StyleSheet.create({
+  benefitsContainer: {
+    gap: spacing.lg,
+    paddingTop: spacing.sm,
+  },
+  benefitsHeader: {
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.sm,
+  },
+  benefitsTitle: {
+    ...typography.title.title1,
+    fontSize: 30,
+    lineHeight: 38,
+    fontFamily: fonts.semibold,
+    fontWeight: '500',
+    color: colors.text.primary,
+    textAlign: 'center',
+  },
+  benefitsTitleAccent: {
+    color: colors.primary.blue600,
+  },
+  benefitsSubtitle: {
+    ...typography.body.small,
+    color: colors.text.secondary,
+    textAlign: 'center',
+  },
+  proofCard: {
+    ...card.base,
+    ...card.shadow,
+    gap: 0,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    backgroundColor: colors.background.elevated,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border.subtle,
+  },
+  proofRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    minHeight: 70,
+    paddingVertical: spacing.sm,
+    position: 'relative',
+  },
+  proofLogo: {
+    width: 78,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  proofCopy: {
+    flex: 1,
+    gap: 2,
+  },
+  proofLabel: {
+    ...typography.body.small,
+    fontFamily: fonts.semibold,
+    fontWeight: '500',
+    color: colors.text.primary,
+  },
+  proofDetail: {
+    ...typography.caption.caption1,
+    color: colors.text.secondary,
+  },
+  proofDivider: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.border.subtle,
+  },
+  unlockSection: {
+    gap: spacing.sm,
+  },
+  unlockTitle: {
+    ...typography.heading.heading2,
+    fontFamily: fonts.semibold,
+    fontWeight: '500',
+    color: colors.text.primary,
+  },
+  planIntroText: {
+    ...typography.body.small,
+    color: colors.text.secondary,
+    paddingHorizontal: spacing.xs,
+  },
   stepContainer: {
-    gap: spacing.xl,
+    gap: spacing.md,
   },
   choosePlanContainer: {
-    paddingTop: spacing.md,
-    gap: spacing.sm,
+    gap: spacing.xs,
   },
   heroContainer: {
     paddingTop: spacing['3xl'],
@@ -30,8 +114,8 @@ export const paywallStepStyles = StyleSheet.create({
   },
   bellBadge: {
     position: 'absolute',
-    top: 46,
-    right: 48,
+    top: 56,
+    right: 58,
     minWidth: 52,
     height: 52,
     borderRadius: 26,
@@ -55,22 +139,22 @@ export const paywallStepStyles = StyleSheet.create({
     ...typography.body.medium,
     fontFamily: fonts.semibold,
     fontWeight: '500',
-    color: colors.paywall.textMuted,
+    color: colors.text.secondary,
     textAlign: 'left',
   },
   title: {
-    ...typography.display.display3,
+    ...typography.title.title1,
+    fontSize: 30,
+    lineHeight: 38,
     fontFamily: fonts.semibold,
     fontWeight: '500',
-    fontSize: 29,
-    lineHeight: 36,
-    color: colors.neutral[0],
+    color: colors.text.primary,
     textAlign: 'left',
   },
   titleDivider: {
     alignSelf: 'stretch',
     height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.paywall.divider,
+    backgroundColor: colors.border.subtle,
     marginTop: spacing.xs,
     marginBottom: spacing.xs,
   },
@@ -80,7 +164,9 @@ export const paywallStepStyles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
   },
   stepTitle: {
-    ...typography.display.display3,
+    ...typography.title.title1,
+    fontSize: 30,
+    lineHeight: 38,
     fontFamily: fonts.semibold,
     fontWeight: '500',
     color: colors.text.primary,
@@ -110,11 +196,12 @@ export const paywallStepStyles = StyleSheet.create({
     marginTop: spacing.xs,
   },
   trialNoteDark: {
-    color: colors.primary.blue200,
+    color: colors.primary.blue600,
     textAlign: 'left',
   },
   timeline: {
     alignSelf: 'stretch',
+    paddingLeft: spacing.md,
     paddingRight: spacing.md,
     marginTop: spacing.md,
   },
@@ -144,14 +231,14 @@ export const paywallStepStyles = StyleSheet.create({
     minHeight: 36,
     marginTop: -6,
     marginBottom: -6,
-    backgroundColor: colors.primary.blue300,
+    backgroundColor: colors.primary.blue200,
   },
   timelineLineUpcoming: {
     backgroundColor: colors.neutral[200],
   },
   timelineCopy: {
     flex: 1,
-    paddingBottom: spacing.lg,
+    paddingBottom: spacing.sm,
   },
   timelineLabel: {
     ...typography.heading.heading1,
@@ -166,15 +253,20 @@ export const paywallStepStyles = StyleSheet.create({
   },
   testimonialScroll: {
     marginHorizontal: -spacing.lg,
+    // The scroller must not clip the cards' shadows.
+    marginVertical: -spacing.sm,
+    overflow: 'visible',
   },
   testimonialRow: {
     gap: spacing.sm,
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.xs,
+    paddingVertical: spacing.sm,
   },
   testimonialCard: {
     ...card.base,
     ...card.shadow,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.border.subtle,
     width: TESTIMONIAL_CARD_WIDTH,
     gap: spacing.sm,
     paddingVertical: spacing.md,

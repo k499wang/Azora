@@ -8,6 +8,7 @@ import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
 import { isHapticsEnabled } from '../../../services/preferences/hapticsPreference';
 import { ContinuousHaptics } from '../../../native/continuousHaptics';
+import Icon, { type IconName } from '../../common/icons/Icon';
 import CelebrationOverlay from '../CelebrationOverlay';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 
@@ -278,11 +279,14 @@ export default function PactScreen({
         ? '1 minute'
         : `${dailyMinutes} minutes`;
 
-  const clauses = [
-    `Breathe for ${durationLabel} a day.`,
-    "Show up even on the days I don't feel like it.",
-    'Count every session as a win, however small.',
-    'Start again the day after I miss one.',
+  const clauses: Array<{ icon: IconName; text: string }> = [
+    { icon: 'waves', text: `Breathe for ${durationLabel} a day.` },
+    {
+      icon: 'streak',
+      text: "Show up even on the days I don't feel like it.",
+    },
+    { icon: 'check', text: 'Count every session as a win, however small.' },
+    { icon: 'sun', text: 'Start again the day after I miss one.' },
   ];
 
   useEffect(() => {
@@ -340,9 +344,11 @@ export default function PactScreen({
       >
         <View style={styles.list}>
           {clauses.map((clause) => (
-            <View key={clause} style={styles.row}>
-              <View style={styles.dot} />
-              <Text style={styles.clause}>{clause}</Text>
+            <View key={clause.text} style={styles.row}>
+              <View style={styles.iconWrap}>
+                <Icon name={clause.icon} size={16} color={colors.primary.blue600} />
+              </View>
+              <Text style={styles.clause}>{clause.text}</Text>
             </View>
           ))}
         </View>
@@ -361,15 +367,16 @@ const styles = StyleSheet.create({
   },
   row: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.md,
+    alignItems: 'center',
+    gap: spacing.sm,
   },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: colors.primary.blue600,
-    marginTop: 9,
+  iconWrap: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primary.blue100,
   },
   clause: {
     flex: 1,
