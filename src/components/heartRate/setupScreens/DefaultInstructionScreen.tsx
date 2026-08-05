@@ -93,7 +93,6 @@ export function DefaultInstructionScreen({ onNext, onCancel }: SetupScreenProps)
         <Text style={[styles.title, compact && styles.titleCompact]}>
           {placementGuidance.title}
         </Text>
-        <Text style={styles.supporting}>{placementGuidance.instruction}</Text>
 
         <View style={styles.modeBlock}>
           <CaptureModeToggle value={mode} onChange={setMode} isPro={isPro} />
@@ -186,12 +185,6 @@ const styles = StyleSheet.create({
   },
   titleCompact: {
     ...typography.title.title2,
-  },
-  supporting: {
-    ...typography.body.small,
-    color: colors.text.secondary,
-    marginTop: spacing.sm,
-    lineHeight: 22,
   },
   modeBlock: {
     marginTop: spacing.lg,

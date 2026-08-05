@@ -3,20 +3,18 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator, Animated, Easing, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
-import { SunsetBackground } from '../components/common/SunsetBackground';
-import { SUNSET_BACKGROUND_ASSET } from '../data/backgroundAssets';
 import { usePaywall } from '../hooks/usePaywall';
 import { PaywallPlacement } from '../services/paywall';
 import type { RootStackScreenProps } from '../app/navigation';
 import { colors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
 import { fonts, typography } from '../theme/typography';
+import Icon from '../components/common/icons/Icon';
 import OnboardingPrimaryButton from '../components/onboarding/OnboardingPrimaryButton';
 import { PlanCard, computeAnnualSavings, computePerWeek } from '../components/paywall/PlanCard';
-import PaywallFeatureList from '../components/paywall/PaywallFeatureList';
 import { PaywallFooterLinks } from '../components/paywall/PaywallFooterLinks';
 import PaywallTrialReminderToggle from '../components/paywall/PaywallTrialReminderToggle';
+import { PaywallTrialStep } from '../components/onboarding/paywall/PaywallTrialStep';
 
 
 export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'ProPaywall'>) {
@@ -95,7 +93,6 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
   const isAnnualSelected = paywall.selectedPackageId === 'annual';
   const hasAnnualTrial = annualPackage?.trialLabel != null;
   const selectedPackageHasTrial = selectedPackage?.trialLabel != null;
-  const showCancelAnytime = !selectedPackageHasTrial || isAnnualSelected;
   const isBusy = paywall.isLoading || paywall.isPurchasing || paywall.isRestoring;
 
   const savingsPercent = useMemo(
@@ -136,26 +133,16 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
     }
   }, [navigation, paywall]);
 
+  const trialDuration = annualPackage?.trialLabel?.replace(/\s+free trial$/i, '') ?? '7-day';
   const ctaLabel =
     isAnnualSelected && selectedPackageHasTrial
-      ? 'Start my free trial'
+      ? `Start my ${trialDuration} free trial`
       : isAnnualSelected
         ? 'Subscribe yearly'
         : 'Continue with weekly';
 
   return (
     <Animated.View style={[styles.screen, { transform: [{ translateY: exitSlideAnim }] }]}>
-      <SunsetBackground style={styles.background}>
-        <LinearGradient
-          colors={[
-            'rgba(0,0,0,0)',
-            'rgba(0,0,0,0.08)',
-            'rgba(0,0,0,0.38)',
-          ]}
-          locations={[0, 0.5, 1]}
-          style={StyleSheet.absoluteFill}
-          pointerEvents="none"
-        />
       <SafeAreaView
         style={[styles.screenBody, { paddingTop: insets.top }]}
         edges={['left', 'right']}
@@ -195,20 +182,14 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
               { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
             ]}
           >
-            <View style={styles.headerCopy}>
-              <Text style={styles.eyebrow}>Your free plan is ready.</Text>
-              <Text style={styles.title}>Unlock Azora for free</Text>
-              <View style={styles.titleDivider} />
-              {!hasAnnualTrial && showCancelAnytime ? (
-                <Text style={styles.trialNote}>Cancel anytime</Text>
-              ) : null}
-            </View>
-
-            <PaywallFeatureList />
+            <PaywallTrialStep
+              hasAnnualTrial={hasAnnualTrial}
+              trialLabel={annualPackage?.trialLabel}
+            />
 
             {hasAnnualTrial ? (
               <View style={styles.reminderToggleWrap}>
-                <PaywallTrialReminderToggle dark disabled={!selectedPackageHasTrial} />
+                <PaywallTrialReminderToggle disabled={!selectedPackageHasTrial} />
               </View>
             ) : null}
 
@@ -225,6 +206,7 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
                     onSelect={paywall.selectPackage}
                     savingsPercent={savingsPercent}
                     comparePerWeek={weeklyPackage ? computePerWeek(weeklyPackage) : null}
+                    light
                   />
                 ) : null}
                 {weeklyPackage ? (
@@ -233,6 +215,7 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
                     isSelected={paywall.selectedPackageId === 'weekly'}
                     onSelect={paywall.selectPackage}
                     savingsPercent={null}
+                    light
                   />
                 ) : null}
               </View>
@@ -260,7 +243,15 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
           </Animated.View>
         </ScrollView>
 
-        <View style={[styles.tray, { paddingBottom: insets.bottom + spacing.md }]}>
+        <View style={styles.tray}>
+          <View style={styles.noPaymentRow}>
+            <Icon name="check" size={18} color={colors.text.primary} />
+            <Text style={styles.noPaymentText}>
+              {selectedPackageHasTrial
+                ? 'No Payment Due Now'
+                : 'Cancel Anytime In Seconds'}
+            </Text>
+          </View>
           <OnboardingPrimaryButton
             label={ctaLabel}
             onPress={() => {
@@ -283,7 +274,6 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
           />
         </View>
       </SafeAreaView>
-      </SunsetBackground>
     </Animated.View>
   );
 }
@@ -291,10 +281,7 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: SUNSET_BACKGROUND_ASSET.fallbackColor,
-  },
-  background: {
-    flex: 1,
+    backgroundColor: colors.background.elevated,
   },
   screenBody: {
     flex: 1,
@@ -322,7 +309,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     fontSize: 32,
     lineHeight: 32,
-    color: colors.neutral[0],
+    color: colors.text.primary,
   },
   scroll: {
     flex: 1,
@@ -330,6 +317,18 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.xl,
+  },
+  noPaymentRow: {
+    flexDirection: 'row',
+    alignSelf: 'center',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  noPaymentText: {
+    ...typography.body.medium,
+    fontFamily: fonts.semibold,
+    fontWeight: '500',
+    color: colors.text.primary,
   },
   content: {
     gap: spacing.sm,
@@ -343,20 +342,22 @@ const styles = StyleSheet.create({
     ...typography.body.medium,
     fontFamily: fonts.semibold,
     fontWeight: '500',
-    color: colors.paywall.textMuted,
+    color: colors.text.secondary,
     textAlign: 'left',
   },
   title: {
-    ...typography.display.display3,
+    ...typography.title.title1,
+    fontSize: 30,
+    lineHeight: 38,
     fontFamily: fonts.semibold,
     fontWeight: '500',
-    color: colors.neutral[0],
+    color: colors.text.primary,
     textAlign: 'left',
   },
   titleDivider: {
     alignSelf: 'stretch',
     height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.paywall.divider,
+    backgroundColor: colors.border.subtle,
     marginTop: spacing.xs,
     marginBottom: spacing.xs,
   },
@@ -364,7 +365,7 @@ const styles = StyleSheet.create({
     ...typography.caption.caption1,
     fontFamily: fonts.semibold,
     fontWeight: '500',
-    color: colors.primary.blue200,
+    color: colors.primary.blue600,
     textAlign: 'left',
     marginTop: spacing.xs,
   },
@@ -408,17 +409,13 @@ const styles = StyleSheet.create({
     color: colors.error[700],
   },
   tray: {
-    gap: spacing.sm,
+    gap: spacing.xs,
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
-    backgroundColor: colors.paywall.tray,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
-    elevation: 12,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.lg,
+    backgroundColor: colors.background.elevated,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border.subtle,
   },
   subtlePressed: {
     opacity: 0.65,

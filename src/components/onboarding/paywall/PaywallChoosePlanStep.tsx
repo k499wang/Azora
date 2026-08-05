@@ -1,4 +1,3 @@
-import { Text } from '../../common/Text';
 import { ActivityIndicator, View } from 'react-native';
 import type {
   PaywallPackageId,
@@ -6,8 +5,6 @@ import type {
 } from '../../../services/paywall';
 import { colors } from '../../../theme/colors';
 import { PlanCard, computePerWeek } from '../../paywall/PlanCard';
-import PaywallFeatureList from '../../paywall/PaywallFeatureList';
-import PaywallTrialReminderToggle from '../../paywall/PaywallTrialReminderToggle';
 import { paywallStepStyles as styles } from './paywallStepStyles';
 
 interface PaywallChoosePlanStepProps {
@@ -17,7 +14,6 @@ interface PaywallChoosePlanStepProps {
   selectedPackageId: PaywallPackageId;
   onSelectPackage: (packageId: PaywallPackageId) => void;
   savingsPercent: number | null;
-  selectedPackageHasTrial: boolean;
   hasAnnualTrial: boolean;
 }
 
@@ -28,32 +24,10 @@ export function PaywallChoosePlanStep({
   selectedPackageId,
   onSelectPackage,
   savingsPercent,
-  selectedPackageHasTrial,
   hasAnnualTrial,
 }: PaywallChoosePlanStepProps) {
-  const showCancelAnytime = !selectedPackageHasTrial || selectedPackageId === 'annual';
-
   return (
     <View style={styles.choosePlanContainer}>
-      <View style={styles.headerCopy}>
-        <Text style={styles.eyebrow}>Your free plan is ready.</Text>
-        <Text style={styles.title}>
-          {hasAnnualTrial ? 'Your 7-day Free Trial' : 'Unlock Azora Pro'}
-        </Text>
-        <View style={styles.titleDivider} />
-        {!hasAnnualTrial && showCancelAnytime ? (
-          <Text style={[styles.trialNote, styles.trialNoteDark]}>Cancel anytime</Text>
-        ) : null}
-      </View>
-
-      <PaywallFeatureList />
-
-      {hasAnnualTrial ? (
-        <View style={styles.reminderToggleWrap}>
-          <PaywallTrialReminderToggle dark disabled={!selectedPackageHasTrial} />
-        </View>
-      ) : null}
-
       {isLoading ? (
         <View style={[styles.cardsLoading, !hasAnnualTrial && styles.planCardsNoTrial]}>
           <ActivityIndicator color={colors.primary.blue600} />
@@ -67,6 +41,7 @@ export function PaywallChoosePlanStep({
               onSelect={onSelectPackage}
               savingsPercent={savingsPercent}
               comparePerWeek={weeklyPackage ? computePerWeek(weeklyPackage) : null}
+              light
             />
           ) : null}
           {weeklyPackage ? (
@@ -75,6 +50,7 @@ export function PaywallChoosePlanStep({
               isSelected={selectedPackageId === 'weekly'}
               onSelect={onSelectPackage}
               savingsPercent={null}
+              light
             />
           ) : null}
         </View>

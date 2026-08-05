@@ -35,18 +35,18 @@ export function PlanCard({
   const isAnnual = pkg.id === 'annual';
   const hasTrial = pkg.trialLabel != null;
   const perWeek = computePerWeek(pkg);
-  const headline = isAnnual ? (hasTrial ? 'Try for free' : 'Annual') : 'Weekly';
-  const secondary = isAnnual ? `${pkg.priceString}/year` : 'billed weekly';
+  const headline = isAnnual ? (hasTrial ? 'Try for free' : 'Yearly') : 'Weekly';
   const planDetail = isAnnual
     ? hasTrial
-      ? 'No charge today'
-      : 'Annual subscription'
-    : 'Weekly subscription';
+      ? pkg.trialLabel ?? '7 day free trial'
+      : `12mo · ${pkg.priceString}`
+    : 'Billed weekly';
+  const trialDuration = pkg.trialLabel?.replace(/\s+free trial$/i, '').toUpperCase() ?? '7-DAY';
   const badgeText = isAnnual
     ? hasTrial
       ? savingsPercent != null
-        ? `7 DAYS FREE · SAVE ${savingsPercent}%`
-        : '7-DAY FREE TRIAL'
+        ? `${trialDuration} FREE · SAVE ${savingsPercent}%`
+        : `${trialDuration} FREE TRIAL`
       : savingsPercent != null
         ? `SAVE ${savingsPercent}%`
         : null
@@ -66,49 +66,42 @@ export function PlanCard({
       ]}
     >
       {badgeText ? (
-        <View style={styles.savingsBadge}>
-          <Text style={styles.savingsBadgeText}>{badgeText}</Text>
+        <View style={styles.savingsBanner}>
+          <Text style={styles.savingsBannerText}>{badgeText}</Text>
         </View>
       ) : null}
 
       <View style={styles.planCardBody}>
-        <View style={styles.planCardLeft}>
-          <View
-            style={[
-              styles.radio,
-              light && styles.radioLight,
-              isSelected && (light ? styles.radioSelectedLight : styles.radioSelected),
-            ]}
-          >
-            {isSelected ? (
-              <View style={[styles.radioInner, light && styles.radioInnerLight]} />
-            ) : null}
-          </View>
-          <View style={styles.planCardCopy}>
-            <Text style={[styles.planCardTitle, light && styles.textPrimaryLight]}>
-              {headline}
-            </Text>
-            <Text style={[styles.planCardTrial, light && styles.textMutedLight]}>
-              {planDetail}
-            </Text>
-          </View>
+        <View
+          style={[
+            styles.radio,
+            light && styles.radioLight,
+            isSelected && (light ? styles.radioSelectedLight : styles.radioSelected),
+          ]}
+        >
+          {isSelected ? (
+            <View style={[styles.radioInner, light && styles.radioInnerLight]} />
+          ) : null}
+        </View>
+        <View style={styles.planCardCopy}>
+          <Text style={[styles.planCardTitle, light && styles.textPrimaryLight]}>
+            {headline}
+          </Text>
+          <Text style={[styles.planCardDetail, light && styles.textMutedLight]}>
+            {planDetail}
+          </Text>
         </View>
         <View style={styles.planCardRight}>
-          {perWeek ? (
-            <View style={styles.planCardPriceRow}>
-              {strikePrice ? (
-                <Text style={[styles.planCardStrike, light && styles.textFaintLight]}>
-                  {strikePrice}
-                </Text>
-              ) : null}
-              <Text style={[styles.planCardPerWeek, light && styles.textPrimaryLight]}>
-                {perWeek}/week
-              </Text>
-            </View>
+          {strikePrice ? (
+            <Text style={[styles.planCardStrike, light && styles.textFaintLight]}>
+              {strikePrice}
+            </Text>
           ) : null}
-          <Text style={[styles.planCardSecondary, light && styles.textFaintLight]}>
-            {secondary}
-          </Text>
+          {perWeek ? (
+            <Text style={[styles.planCardPerWeek, light && styles.textPrimaryLight]}>
+              {perWeek}/week
+            </Text>
+          ) : null}
         </View>
       </View>
     </Pressable>
@@ -174,9 +167,7 @@ const styles = StyleSheet.create({
     // Border width stays fixed across states so selecting a plan doesn't
     // reflow the row — only the color changes.
     borderWidth: 2,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md,
-    position: 'relative',
+    overflow: 'hidden',
   },
   planCardSelected: {
     backgroundColor: colors.primary.blue600,
@@ -209,6 +200,24 @@ const styles = StyleSheet.create({
   textFaintLight: {
     color: colors.text.tertiary,
   },
+  radio: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: colors.paywall.controlEdge,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  radioSelected: {
+    borderColor: colors.neutral[0],
+  },
+  radioInner: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: colors.neutral[0],
+  },
   radioLight: {
     borderColor: colors.neutral[300],
   },
@@ -225,16 +234,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: spacing.md,
-  },
-  planCardLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
     gap: spacing.sm,
-    flex: 1,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
   },
   planCardRight: {
-    alignItems: 'flex-end',
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: spacing.xs,
   },
   planCardCopy: {
     flex: 1,
@@ -245,15 +252,10 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: colors.neutral[0],
   },
-  planCardTrial: {
+  planCardDetail: {
     ...typography.caption.caption1,
     color: colors.paywall.textMuted,
     marginTop: 2,
-  },
-  planCardPriceRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: spacing.xs,
   },
   planCardStrike: {
     ...typography.body.small,
@@ -266,48 +268,18 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: colors.neutral[0],
   },
-  planCardSecondary: {
-    ...typography.caption.caption2,
-    color: colors.paywall.textFaint,
-    marginTop: 2,
-  },
-  radio: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    borderWidth: 2,
-    borderColor: colors.paywall.controlEdge,
+  savingsBanner: {
+    alignSelf: 'stretch',
     alignItems: 'center',
     justifyContent: 'center',
+    paddingVertical: 1,
+    backgroundColor: colors.primary.blue600,
   },
-  radioSelected: {
-    borderColor: colors.neutral[0],
-  },
-  radioInner: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: colors.neutral[0],
-  },
-  savingsBadge: {
-    position: 'absolute',
-    top: -12,
-    right: spacing.md,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 999,
-    backgroundColor: colors.orange[500],
-    shadowColor: colors.orange[700],
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  savingsBadgeText: {
-    ...typography.caption.caption1,
+  savingsBannerText: {
+    ...typography.caption.caption2,
     fontFamily: fonts.semibold,
     fontWeight: '500',
-    color: colors.text.inverse,
+    color: colors.neutral[0],
     letterSpacing: 1,
   },
   urgencyBanner: {

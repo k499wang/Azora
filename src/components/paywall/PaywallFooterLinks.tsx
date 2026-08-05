@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
     ...typography.button.small,
     fontFamily: fonts.semibold,
     fontWeight: '500',
-    color: colors.neutral[0],
+    color: colors.text.secondary,
     textAlign: 'center',
   },
   pressed: {

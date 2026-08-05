@@ -1,5 +1,9 @@
 import type { ComponentType } from 'react';
 import { RoseRenderer } from './species/rose';
+import {
+  AZORA_FLOWER_DESIGNS,
+  createAzoraFlowerRenderer,
+} from './species/azoraFlowers';
 import { TulipRenderer } from './species/tulip';
 
 /**
@@ -21,16 +25,32 @@ export interface FlowerSpecies {
 }
 
 /**
- * Adding a new flower = one id here + one entry below + one renderer file in
- * `./species`. Nothing else in the app needs to change; `FlowerIllustration`
- * dispatches purely by id. Rarity/unlock fields can be added to this shape
- * when the gamification roll lands.
+ * Every registered flower can be rendered through `FlowerIllustration` using
+ * only its id and growth scalar. The original rose and tulip remain available
+ * for existing garden surfaces; the Azora designs form the collectible set.
  */
-export type FlowerSpeciesId = 'rose' | 'tulip';
+export type FlowerSpeciesId =
+  | 'rose'
+  | 'tulip'
+  | (typeof AZORA_FLOWER_DESIGNS)[number]['id'];
+
+type AzoraFlowerId = (typeof AZORA_FLOWER_DESIGNS)[number]['id'];
+
+const AZORA_SPECIES: Record<AzoraFlowerId, FlowerSpecies> = Object.fromEntries(
+  AZORA_FLOWER_DESIGNS.map((design) => [
+    design.id,
+    {
+      id: design.id,
+      name: design.name,
+      Renderer: createAzoraFlowerRenderer(design),
+    },
+  ]),
+) as Record<AzoraFlowerId, FlowerSpecies>;
 
 export const FLOWER_SPECIES: Record<FlowerSpeciesId, FlowerSpecies> = {
   rose: { id: 'rose', name: 'Rose', Renderer: RoseRenderer },
   tulip: { id: 'tulip', name: 'Tulip', Renderer: TulipRenderer },
+  ...AZORA_SPECIES,
 };
 
 export function getFlowerSpecies(

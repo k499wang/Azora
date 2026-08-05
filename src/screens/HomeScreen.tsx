@@ -21,9 +21,6 @@ import { DEFAULT_DAILY_PLAN_SCHEDULE } from '../services/dailyPlan/types';
 import { useDailyExercisePlan } from '../features/exercise/guidedBreathing/hooks/useDailyExercisePlan';
 import { getTechnique } from '../features/exercise/guidedBreathing/techniques';
 import { useCompletedBreathingTechniqueIdsQuery } from '../queries/tracking/useCompletedBreathingTechniqueIdsQuery';
-import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
-import HomeTreeHero from '../features/garden/components/HomeTreeHero';
-import { buildHomeTreeProgress } from '../features/garden/domain/homeTreeProgress';
 import { PaywallPlacement } from '../services/paywall';
 import { FeatureKey } from '../services/subscriptions/featureAccess';
 import type {
@@ -37,7 +34,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const posthog = usePostHog();
   const user = useAuthStore((state) => state.user);
   const profileQuery = useProfileQuery(user?.id ?? null);
-  const profileSummaryQuery = useProfileSummaryQuery(user?.id ?? null);
   const dailyPlanScheduleQuery = useDailyPlanScheduleQuery(user?.id ?? null);
   const dailyPlanSchedule =
     dailyPlanScheduleQuery.data ?? DEFAULT_DAILY_PLAN_SCHEDULE;
@@ -76,11 +72,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const handPickedExerciseCompleted = handPickedTechnique != null &&
     completedTechniqueIds.includes(handPickedTechnique.id);
   const breathHoldCompleted = todayActivity?.dailyBreathHoldCompleted ?? false;
-  const treeProgressUnavailable =
-    profileSummaryQuery.data?.partialErrors.activeDays === true;
-  const treeProgress = profileSummaryQuery.data == null || treeProgressUnavailable
-    ? null
-    : buildHomeTreeProgress(profileSummaryQuery.data.activeDays);
   const showProPaywall = useCallback((
     feature: FeatureKeyValue,
     placement: typeof PaywallPlacement[keyof typeof PaywallPlacement],
@@ -175,10 +166,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         </AppTopBar>
 
         <View style={styles.bodySection}>
-          <HomeTreeHero
-            progress={treeProgress}
-            progressUnavailable={treeProgressUnavailable}
-          />
           <TodaysDailiesSection
             technique={recommendedTechnique.technique}
             techniqueLoading={recommendedTechnique.isLoading}

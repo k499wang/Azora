@@ -41,7 +41,7 @@ export default function PaywallFeatureList({ features }: PaywallFeatureListProps
       {resolvedFeatures.map((feature) => (
         <View key={feature.text} style={styles.row}>
           <View style={styles.iconWrap}>
-            <Icon name={feature.icon} size={16} color={colors.neutral[0]} />
+            <Icon name={feature.icon} size={16} color={colors.primary.blue600} />
           </View>
           <Text style={styles.text}>{feature.text}</Text>
         </View>
@@ -66,11 +66,11 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.paywall.iconFill,
+    backgroundColor: colors.primary.blue100,
   },
   text: {
     flex: 1,
     ...typography.body.medium,
-    color: colors.neutral[0],
+    color: colors.text.primary,
   },
 });

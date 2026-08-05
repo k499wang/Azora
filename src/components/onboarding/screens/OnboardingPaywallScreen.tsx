@@ -3,7 +3,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated, Easing, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import type {
   PaywallOffering,
   PaywallPackageId,
@@ -12,11 +11,11 @@ import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
 import Icon from '../../common/icons/Icon';
-import { SunsetBackground } from '../../common/SunsetBackground';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import { computeAnnualSavings } from '../../paywall/PlanCard';
 import { PaywallChoosePlanStep } from '../paywall/PaywallChoosePlanStep';
 import { PaywallFreeTrialHeroStep } from '../paywall/PaywallFreeTrialHeroStep';
+import { PaywallBenefitsStep } from '../paywall/PaywallBenefitsStep';
 import { PaywallTrialStep } from '../paywall/PaywallTrialStep';
 import { PaywallFooterLinks } from '../../paywall/PaywallFooterLinks';
 
@@ -296,38 +295,20 @@ export default function OnboardingPaywallScreen({
     if (step > 0) animateToStep(step - 1, -1);
   }, [animateToStep, step]);
 
+  const trialDuration = annualPackage?.trialLabel?.replace(/\s+free trial$/i, '') ?? '7-day';
   const ctaLabel =
     isAnnualSelected && selectedPackageHasTrial
-      ? 'Start my 7-day free trial'
+      ? `Start my ${trialDuration} free trial`
       : isAnnualSelected
         ? 'Subscribe yearly'
         : 'Continue with weekly';
 
   const isFinal = step === STEP_COUNT - 1;
-  const darkChrome = isFinal;
 
   return (
     <Animated.View
-      style={[
-        styles.screen,
-        darkChrome ? styles.screenDark : styles.screenLight,
-      ]}
+      style={[styles.screen]}
     >
-      <SunsetBackground style={StyleSheet.absoluteFill}>
-        {darkChrome ? (
-          <LinearGradient
-            colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.08)', 'rgba(0,0,0,0.38)']}
-            locations={[0, 0.5, 1]}
-            style={StyleSheet.absoluteFill}
-            pointerEvents="none"
-          />
-        ) : (
-          <View
-            style={[StyleSheet.absoluteFill, styles.lightOverlay]}
-            pointerEvents="none"
-          />
-        )}
-      </SunsetBackground>
       <View
         style={[
           styles.screenBody,
@@ -356,7 +337,7 @@ export default function OnboardingPaywallScreen({
                 isBusy && styles.disabled,
               ]}
             >
-              <Text style={[styles.backText, !darkChrome && styles.headerTextLight]}>‹</Text>
+              <Text style={styles.headerText}>‹</Text>
             </Pressable>
           ) : (
             <View style={styles.headerButton} />
@@ -374,7 +355,7 @@ export default function OnboardingPaywallScreen({
                 isBusy && styles.disabled,
               ]}
             >
-              <Text style={[styles.closeText, !darkChrome && styles.headerTextLight]}>×</Text>
+              <Text style={styles.headerText}>×</Text>
             </Pressable>
           ) : (
             <View style={styles.headerButton} />
@@ -400,19 +381,24 @@ export default function OnboardingPaywallScreen({
                 transform: [{ translateX: stepTranslateX }],
               }}
             >
-              {step === 0 ? <PaywallTrialStep hasAnnualTrial={hasAnnualTrial} /> : null}
+              {step === 0 ? <PaywallBenefitsStep /> : null}
               {step === 1 ? <PaywallFreeTrialHeroStep /> : null}
               {step === 2 ? (
-                <PaywallChoosePlanStep
-                  isLoading={isLoading}
-                  annualPackage={annualPackage}
-                  weeklyPackage={weeklyPackage}
-                  selectedPackageId={selectedPackageId}
-                  onSelectPackage={onSelectPackage}
-                  savingsPercent={savingsPercent}
-                  selectedPackageHasTrial={selectedPackageHasTrial}
-                  hasAnnualTrial={hasAnnualTrial}
-                />
+                <View style={styles.finalStepContent}>
+                  <PaywallTrialStep
+                    hasAnnualTrial={hasAnnualTrial}
+                    trialLabel={annualPackage?.trialLabel}
+                  />
+                  <PaywallChoosePlanStep
+                    isLoading={isLoading}
+                    annualPackage={annualPackage}
+                    weeklyPackage={weeklyPackage}
+                    selectedPackageId={selectedPackageId}
+                    onSelectPackage={onSelectPackage}
+                    savingsPercent={savingsPercent}
+                    hasAnnualTrial={hasAnnualTrial}
+                  />
+                </View>
               ) : null}
             </Animated.View>
 
@@ -436,7 +422,7 @@ export default function OnboardingPaywallScreen({
           </Animated.View>
         </ScrollView>
 
-        <View style={[styles.footer, darkChrome ? styles.footerDark : styles.footerLight]}>
+        <View style={styles.footer}>
           {step < STEP_COUNT - 1 ? (
             <>
               {step === 0 || step === 1 ? (
@@ -453,12 +439,12 @@ export default function OnboardingPaywallScreen({
             </>
           ) : (
             <>
-              <View style={styles.riskReversalRow}>
-                <Icon name="check" size={16} color={colors.neutral[0]} />
-                <Text style={styles.riskReversalText}>
+              <View style={styles.noPaymentRow}>
+                <Icon name="check" size={18} color={colors.text.primary} />
+                <Text style={styles.noPaymentText}>
                   {selectedPackageHasTrial
-                    ? 'No payment due now · Cancel anytime'
-                    : 'Cancel anytime in seconds'}
+                    ? 'No Payment Due Now'
+                    : 'Cancel Anytime In Seconds'}
                 </Text>
               </View>
               <OnboardingPrimaryButton
@@ -484,15 +470,7 @@ export default function OnboardingPaywallScreen({
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-  },
-  screenLight: {
-    backgroundColor: colors.background.primary,
-  },
-  screenDark: {
-    backgroundColor: colors.neutral[900],
-  },
-  lightOverlay: {
-    backgroundColor: colors.background.primary,
+    backgroundColor: colors.background.elevated,
   },
   screenBody: {
     flex: 1,
@@ -514,21 +492,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  backText: {
+  headerText: {
     fontFamily: fonts.semibold,
     fontWeight: '500',
     fontSize: 34,
     lineHeight: 34,
-    color: colors.neutral[0],
-  },
-  closeText: {
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    fontSize: 32,
-    lineHeight: 32,
-    color: colors.neutral[0],
-  },
-  headerTextLight: {
     color: colors.text.primary,
   },
   scroll: {
@@ -540,6 +508,9 @@ const styles = StyleSheet.create({
   },
   content: {
     gap: spacing.lg,
+  },
+  finalStepContent: {
+    gap: spacing.sm,
   },
   noPaymentRow: {
     flexDirection: 'row',
@@ -579,37 +550,13 @@ const styles = StyleSheet.create({
     color: colors.error[700],
   },
   footer: {
+    gap: spacing.xs,
     paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.lg,
-  },
-  footerLight: {
-    gap: spacing.xs,
     paddingTop: spacing.sm,
-    backgroundColor: colors.background.primary,
-  },
-  footerDark: {
-    gap: spacing.sm,
-    paddingTop: spacing.md,
-    backgroundColor: 'rgba(10, 28, 68, 0.92)',
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
-    elevation: 12,
-  },
-  riskReversalRow: {
-    flexDirection: 'row',
-    alignSelf: 'center',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  riskReversalText: {
-    ...typography.caption.caption1,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    color: colors.neutral[0],
+    paddingBottom: spacing.lg,
+    backgroundColor: colors.background.elevated,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border.subtle,
   },
   subtlePressed: {
     opacity: 0.65,

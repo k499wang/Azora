@@ -1,55 +1,8 @@
 import { Text } from '../../common/Text';
-import { ScrollView, View } from 'react-native';
-import { Image } from 'expo-image';
+import { View } from 'react-native';
 import { colors } from '../../../theme/colors';
-import { spacing } from '../../../theme/spacing';
 import Icon, { type IconName } from '../../common/icons/Icon';
-import {
-  getOnboardingImageSource,
-  type OnboardingImageKey,
-} from '../../../services/images/onboardingImageCache';
-import {
-  TESTIMONIAL_CARD_WIDTH,
-  paywallStepStyles as styles,
-} from './paywallStepStyles';
-
-// Mockup content. Replace with verbatim App Store reviews, real reviewer names,
-// and real headshots before shipping — see the note in the paywall PR.
-const testimonials: Array<{
-  title: string;
-  quote: string;
-  author: string;
-  avatar: OnboardingImageKey;
-}> = [
-  {
-    title: 'I stopped lying awake at 2am',
-    quote:
-      'My head would not switch off at night. Four minutes of the wind down and I am out before I finish it.',
-    author: 'Maya Rivera',
-    avatar: 'testimonialMaya',
-  },
-  {
-    title: 'The stress does not stack up now',
-    quote:
-      'I used to carry every bad meeting into the evening. One reset at my desk and my heart rate is back down before I get home.',
-    author: 'Jackie Koch',
-    avatar: 'testimonialDaniel',
-  },
-  {
-    title: 'Calmer without adding another hour',
-    quote:
-      'I do not have time for a long meditation. Five minutes a day and I feel steadier through the whole week.',
-    author: 'Priya Shah',
-    avatar: 'testimonialPriya',
-  },
-  {
-    title: 'I finally know how my heart is doing',
-    quote:
-      'My heart rate and my lung age are in one place, so checking everything takes seconds. Watching my lung age come down two years was the moment it clicked.',
-    author: 'Nina Alvarez',
-    avatar: 'testimonialNina',
-  },
-];
+import { paywallStepStyles as styles } from './paywallStepStyles';
 
 interface TimelineStepProps {
   icon: IconName;
@@ -57,7 +10,6 @@ interface TimelineStepProps {
   body: string;
   /** Steps that haven't happened yet read greyed out rather than brand blue. */
   upcoming?: boolean;
-  nextIsUpcoming?: boolean;
   showLine?: boolean;
 }
 
@@ -66,7 +18,6 @@ function TimelineStep({
   label,
   body,
   upcoming = false,
-  nextIsUpcoming = false,
   showLine = false,
 }: TimelineStepProps) {
   return (
@@ -75,16 +26,13 @@ function TimelineStep({
         <View style={[styles.timelineIcon, upcoming && styles.timelineIconUpcoming]}>
           <Icon
             name={icon}
-            size={24}
-            color={upcoming ? colors.text.tertiary : colors.text.inverse}
+            size={20}
+            color={upcoming ? colors.text.tertiary : colors.neutral[0]}
           />
         </View>
         {showLine ? (
           <View
-            style={[
-              styles.timelineLine,
-              (upcoming || nextIsUpcoming) && styles.timelineLineUpcoming,
-            ]}
+            style={[styles.timelineLine, upcoming && styles.timelineLineUpcoming]}
           />
         ) : null}
       </View>
@@ -96,42 +44,43 @@ function TimelineStep({
   );
 }
 
-export function PaywallTrialStep({ hasAnnualTrial }: { hasAnnualTrial: boolean }) {
+export function PaywallTrialStep({
+  hasAnnualTrial,
+  trialLabel,
+}: {
+  hasAnnualTrial: boolean;
+  trialLabel?: string | null;
+}) {
+  const trialDuration = trialLabel?.replace(/\s+free trial$/i, '') ?? '7-day';
+  const trialDurationLabel = trialDuration.replace(/-/g, ' ');
+  const trialDays = Number.parseInt(trialDuration, 10);
+  const billingDay = Number.isFinite(trialDays) && trialDays > 1 ? trialDays : 7;
+  const reminderDays = billingDay - 1;
   const steps: Array<Omit<TimelineStepProps, 'showLine'>> = hasAnnualTrial
     ? [
         {
-          icon: 'check',
-          label: 'Join Azora',
-          body: 'You’ve successfully created your personalized plan.',
-        },
-        {
           icon: 'unlock',
-          label: 'Today: Get Premium Access',
-          body: 'Unlock exclusive access to heart insights, unlimited sessions, and your full plan.',
+          label: 'Day 1: Today',
+          body: 'Unlock all app exercises like heart insights and your personalized plan.',
         },
         {
           icon: 'bell',
-          label: 'Day 6: Trial Reminder',
-          body: 'We’ll remind you the day before your trial ends, so nothing catches you off guard.',
+          label: `Day ${reminderDays}: Reminder`,
+          body: "We'll send you a reminder that your trial is ending soon.",
           upcoming: true,
         },
         {
           icon: 'star',
-          label: 'Day 7: Your Trial Ends',
-          body: 'Your membership begins and your subscription starts from there on out.',
+          label: `Day ${billingDay}: Billing starts`,
+          body: "You'll be charged unless you cancel anytime before.",
           upcoming: true,
         },
       ]
     : [
         {
-          icon: 'check',
-          label: 'Join Azora',
-          body: 'You’ve successfully created your personalized plan.',
-        },
-        {
           icon: 'unlock',
-          label: 'Today: Get Premium Access',
-          body: 'Unlock exclusive access to heart insights, unlimited sessions, and your full plan.',
+          label: 'Today',
+          body: 'Unlock all app exercises like heart insights and your personalized plan.',
         },
         {
           icon: 'timer',
@@ -150,65 +99,21 @@ export function PaywallTrialStep({ hasAnnualTrial }: { hasAnnualTrial: boolean }
       <View style={styles.stepHeader}>
         <Text style={styles.stepTitle}>
           {hasAnnualTrial ? (
-            <>
-              We want you to try <Text style={styles.stepTitleBrand}>Azora</Text> for
-              free
-            </>
+            <>Your <Text style={styles.stepTitleBrand}>{trialDurationLabel} Free</Text> Trial</>
           ) : (
             'Pro, on your terms'
           )}
         </Text>
-        {hasAnnualTrial ? null : (
-          <Text style={styles.stepSubtitle}>
-            Cancel anytime, no questions asked.
-          </Text>
-        )}
       </View>
       <View style={styles.timeline}>
         {steps.map((step, index) => (
           <TimelineStep
             key={step.label}
             {...step}
-            nextIsUpcoming={steps[index + 1]?.upcoming ?? false}
             showLine={index < steps.length - 1}
           />
         ))}
       </View>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        decelerationRate="fast"
-        snapToInterval={TESTIMONIAL_CARD_WIDTH + spacing.sm}
-        snapToAlignment="start"
-        style={styles.testimonialScroll}
-        contentContainerStyle={styles.testimonialRow}
-      >
-        {testimonials.map((testimonial) => (
-          <View key={testimonial.author} style={styles.testimonialCard}>
-            <View style={styles.testimonialRating}>
-              <View style={styles.testimonialStars}>
-                {[0, 1, 2, 3, 4].map((index) => (
-                  <Icon key={index} name="star" size={20} color={colors.orange[500]} />
-                ))}
-              </View>
-              <Text style={styles.testimonialRatingValue}>5.0</Text>
-            </View>
-            <Text style={styles.testimonialTitle}>{testimonial.title}</Text>
-            <Text style={styles.testimonialQuote}>{testimonial.quote}</Text>
-            <View style={styles.testimonialAttribution}>
-              <Image
-                source={getOnboardingImageSource(testimonial.avatar)}
-                style={styles.testimonialAvatar}
-                contentFit="cover"
-                cachePolicy="memory-disk"
-                transition={0}
-                accessibilityLabel={`${testimonial.author} profile photo`}
-              />
-              <Text style={styles.testimonialAuthor}>{testimonial.author}</Text>
-            </View>
-          </View>
-        ))}
-      </ScrollView>
     </View>
   );
 }
