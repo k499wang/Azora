@@ -257,7 +257,7 @@ export default function HRVChart({
       <ChartInsightsSection
         accentColor={colors.primary.blue500}
         fadeColor={colors.background.elevated}
-        textColor={colors.text.primary}
+        textColor={colors.text.secondary}
         dividerColor={colors.neutral[200]}
         insight={chart ? hrvInsight : null}
         locked={locked}

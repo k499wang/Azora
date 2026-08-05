@@ -323,7 +323,7 @@ export default function BPMChart({
       <ChartInsightsSection
         accentColor={colors.error[500]}
         fadeColor={colors.background.elevated}
-        textColor={colors.text.primary}
+        textColor={colors.text.secondary}
         dividerColor={colors.neutral[200]}
         insight={chart ? bpmInsight : null}
         locked={locked}

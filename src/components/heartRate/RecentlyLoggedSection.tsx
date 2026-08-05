@@ -1,4 +1,5 @@
 import { Text } from '../common/Text';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useEffect, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useIsFocused, useNavigation } from '@react-navigation/native';
@@ -180,9 +181,18 @@ export function RecentlyLoggedSection({
                     <Text style={styles.label}>
                       {formatRelativeDay(item.startedAt)}
                     </Text>
-                    <Text style={styles.time}>{formatTime(item.startedAt)}</Text>
+                    <View style={styles.timeWrap}>
+                      <MaterialCommunityIcons
+                        name="clock-outline"
+                        size={14}
+                        color={colors.text.secondary}
+                      />
+                      <Text style={styles.metadataText}>
+                        {formatTime(item.startedAt)}
+                      </Text>
+                    </View>
                   </View>
-                  <Text style={styles.duration}>
+                  <Text style={styles.metadataText}>
                     {formatReadingDuration(item.durationSeconds)} reading
                   </Text>
                   {metrics.length > 0 ? (
@@ -260,24 +270,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
+  timeWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
   label: {
-    ...typography.title.title3,
-    fontFamily: fonts.medium,
-    fontWeight: '500',
-    fontSize: 20,
-    lineHeight: 26,
+    ...typography.heading.heading1,
     color: colors.text.primary,
   },
-  time: {
-    ...typography.caption.caption1,
-    fontFamily: fonts.semibold,
-    color: colors.text.tertiary,
+  metadataText: {
+    ...typography.label.detail,
+    color: colors.text.secondary,
   },
-  duration: {
-    ...typography.body.small,
-    fontFamily: fonts.regular,
-    fontWeight: '400',
-    color: colors.text.tertiary,
+  metricInlineValue: {
+    ...typography.heading.heading2,
+    color: colors.text.secondary,
   },
   metricRow: {
     flexDirection: 'row',
@@ -300,10 +308,5 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-  },
-  metricInlineValue: {
-    ...typography.caption.caption1,
-    fontFamily: fonts.semibold,
-    color: colors.text.secondary,
   },
 });

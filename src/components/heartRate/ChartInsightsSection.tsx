@@ -148,10 +148,7 @@ const styles = StyleSheet.create({
     minHeight: 60,
   },
   text: {
-    ...typography.body.small,
-    color: colors.text.inverse,
-    fontFamily: fonts.regular,
-    fontWeight: '400',
-    lineHeight: 20,
+    ...typography.body.medium,
+    color: colors.text.secondary,
   },
 });
