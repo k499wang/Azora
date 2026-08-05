@@ -39,7 +39,7 @@ export default function WeekCalendarStrip({
             ]}
           >
             {day.isCompleted ? (
-              <Icon name="check" size={CHECK_SIZE} color={colors.primary.blue700} />
+              <Icon name="check" size={CHECK_SIZE} color={colors.text.inverse} />
             ) : day.isToday ? (
               <View style={styles.todayDot} />
             ) : null}

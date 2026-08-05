@@ -314,8 +314,8 @@ const styles = StyleSheet.create({
   title: {
     ...typography.title.title3,
     color: colors.text.primary,
-    fontFamily: fonts.medium,
-    fontWeight: '500',
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
     fontSize: 20,
     lineHeight: 26,
   },

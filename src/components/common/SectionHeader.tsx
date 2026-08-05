@@ -26,8 +26,8 @@ const styles = StyleSheet.create({
   },
   title: {
     ...typography.title.title3,
-    fontFamily: fonts.regular,
-    fontWeight: '400',
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
     color: colors.text.primary,
   },
 });

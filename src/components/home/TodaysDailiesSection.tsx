@@ -10,7 +10,8 @@ import {
   CATEGORY_STYLE,
   type CategoryStyle,
 } from '../../features/exercise/guidedBreathing/categoryPalette';
-import { card } from '../../theme/card';
+import { card, radius } from '../../theme/card';
+import { triggerTapHaptic } from '../../native/tapHaptics';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
@@ -83,7 +84,10 @@ function DailyTaskRow({
 
   return (
     <Pressable
-      onPress={onPress}
+      onPress={() => {
+        triggerTapHaptic();
+        onPress?.();
+      }}
       disabled={unavailable}
       accessibilityRole="button"
       accessibilityLabel={`${title}, ${detailLabel}, scheduled for ${scheduledTime}, ${statusLabel}`}
@@ -335,7 +339,7 @@ const styles = StyleSheet.create({
   taskPillShadow: {
     ...card.blockShadow,
     flex: 1,
-    borderRadius: 24,
+    borderRadius: radius.hero,
     backgroundColor: colors.background.elevated,
   },
   taskPill: {
@@ -345,7 +349,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-    borderRadius: 24,
+    borderRadius: radius.hero,
     overflow: 'hidden',
     backgroundColor: colors.background.elevated,
   },
