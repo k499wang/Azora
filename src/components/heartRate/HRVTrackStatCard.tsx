@@ -193,7 +193,7 @@ export default function HRVTrackStatCard({
                   <Text
                     style={[
                       styles.statValue,
-                      !multiStat && styles.statValueLarge,
+                      !multiStat && styles.statValueMedium,
                       emphasizeValue && !multiStat && styles.emphasizedValue,
                     ]}
                   >
@@ -321,11 +321,7 @@ const styles = StyleSheet.create({
     minHeight: SIZE,
   },
   label: {
-    ...typography.title.title3,
-    fontFamily: fonts.medium,
-    fontWeight: '500',
-    fontSize: 20,
-    lineHeight: 26,
+    ...typography.heading.heading1,
     color: colors.text.primary,
   },
   headerRow: {
@@ -407,44 +403,29 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   statValue: {
-    ...typography.title.title3,
-    fontFamily: fonts.medium,
-    fontWeight: '500',
+    ...typography.stat.value,
     color: colors.text.primary,
-    fontVariant: ['tabular-nums'],
-    letterSpacing: -0.3,
-    fontSize: 19,
   },
   statUnit: {
-    ...typography.label.small,
-    fontSize: 12,
+    ...typography.stat.unit,
     color: colors.text.tertiary,
-    fontFamily: fonts.medium,
-    fontWeight: '500',
   },
   statLabelLarge: {
     fontSize: 11,
   },
-  statValueLarge: {
-    ...typography.title.title1,
-    fontFamily: fonts.medium,
-    fontWeight: '500',
+  statValueMedium: {
+    ...typography.stat.valueMedium,
     color: colors.text.primary,
-    fontVariant: ['tabular-nums'],
-    letterSpacing: -0.3,
   },
   emphasizedValue: {
-    fontSize: 32,
-    lineHeight: 40,
+    ...typography.stat.valueLarge,
   },
   emphasizedUnit: {
-    fontFamily: fonts.bold,
-    fontWeight: '600',
-    fontSize: 16,
-    lineHeight: 20,
+    ...typography.stat.unitLarge,
   },
   statUnitLarge: {
-    fontSize: 14,
+    ...typography.stat.unitMedium,
+    color: colors.text.tertiary,
   },
   zonePill: {
     paddingHorizontal: spacing.sm,

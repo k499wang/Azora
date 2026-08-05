@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { LockedScrim } from '../common/glass';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
-import { typography, fonts } from '../../theme/typography';
+import { typography } from '../../theme/typography';
 import CardSurface from '../common/CardSurface';
 import Icon from '../common/icons/Icon';
 import type { IconName } from '../common/icons/paths';
@@ -159,11 +159,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
   },
   tileLabel: {
-    ...typography.title.title3,
-    fontFamily: fonts.medium,
-    fontWeight: '500',
-    fontSize: 20,
-    lineHeight: 26,
+    ...typography.heading.heading1,
     color: colors.text.primary,
   },
   lockedTitleText: {
@@ -175,30 +171,18 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   tileValue: {
-    fontSize: 28,
-    lineHeight: 32,
-    fontFamily: fonts.medium,
-    fontWeight: '500',
+    ...typography.stat.valueMedium,
     color: colors.text.primary,
-    fontVariant: ['tabular-nums'],
-    letterSpacing: -0.3,
   },
   emphasizedValue: {
-    fontSize: 32,
-    lineHeight: 40,
+    ...typography.stat.valueLarge,
   },
   emphasizedUnit: {
-    fontFamily: fonts.bold,
-    fontWeight: '600',
-    fontSize: 16,
-    lineHeight: 20,
+    ...typography.stat.unitLarge,
   },
   tileUnit: {
-    ...typography.label.small,
-    fontSize: 14,
+    ...typography.stat.unitMedium,
     color: colors.text.tertiary,
-    fontFamily: fonts.medium,
-    fontWeight: '500',
   },
   thermoTrack: {
     backgroundColor: colors.neutral[100],

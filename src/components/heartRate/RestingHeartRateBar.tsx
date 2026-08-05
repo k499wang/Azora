@@ -190,29 +190,18 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   value: {
-    ...typography.title.title1,
-    fontFamily: fonts.medium,
-    fontWeight: '500',
+    ...typography.stat.valueMedium,
     color: colors.text.primary,
-    fontVariant: ['tabular-nums'],
-    letterSpacing: -0.3,
   },
   emphasizedValue: {
-    fontSize: 32,
-    lineHeight: 40,
+    ...typography.stat.valueLarge,
   },
   emphasizedUnit: {
-    fontFamily: fonts.bold,
-    fontWeight: '600',
-    fontSize: 16,
-    lineHeight: 20,
+    ...typography.stat.unitLarge,
   },
   unit: {
-    ...typography.label.small,
-    fontSize: 14,
+    ...typography.stat.unitMedium,
     color: colors.text.tertiary,
-    fontFamily: fonts.medium,
-    fontWeight: '500',
   },
   barWrap: {
     width: '100%',
