@@ -68,12 +68,12 @@ export const colors = {
   // saturated fill that carries white text (all bases clear 3:1 against white),
   // `soft` is the receded/completed tint, `ink` is the text color on `soft`.
   playful: {
-    teal: { base: '#0E9E8C', soft: '#DCF2EE', ink: '#07564B' },
-    coral: { base: '#E85A3A', soft: '#FDE6DF', ink: '#8A2E15' },
-    violet: { base: '#6B57E0', soft: '#E7E2FC', ink: '#3A2C93' },
-    amber: { base: '#C97F04', soft: '#FBEDD2', ink: '#7A4D02' },
-    sky: { base: '#2F82E0', soft: '#DEEBFB', ink: '#10457F' },
-    blush: { base: '#E14C8B', soft: '#FBE1EC', ink: '#85194A' },
+    teal: { base: '#00A391', soft: '#A8E5DA', ink: '#0B6B5C' },
+    coral: { base: '#F04E30', soft: '#FAC7B6', ink: '#B23A1D' },
+    violet: { base: '#6C4BFF', soft: '#CFC5FB', ink: '#4B34C4' },
+    amber: { base: '#D97706', soft: '#F8DEA3', ink: '#925C00' },
+    sky: { base: '#2979FF', soft: '#C3DBFC', ink: '#1559A8' },
+    blush: { base: '#F0488F', soft: '#F8CFE3', ink: '#A12359' },
   },
 
   // White-alpha layers for content sitting on a `playful.*.base` color block:

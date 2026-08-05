@@ -127,9 +127,12 @@ function DailyTaskRow({
                 <MaterialCommunityIcons
                   name={detailIcon}
                   size={14}
-                  color={colors.text.secondary}
+                  color={style.hue.ink}
                 />
-                <Text style={styles.metadataText} numberOfLines={1}>
+                <Text
+                  style={[styles.metadataText, { color: style.hue.ink }]}
+                  numberOfLines={1}
+                >
                   {detailLabel}
                 </Text>
               </View>
