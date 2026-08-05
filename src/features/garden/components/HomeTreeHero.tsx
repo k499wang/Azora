@@ -10,6 +10,7 @@ import type { HomeTreeProgress } from '../domain/homeTreeProgress';
 import FlowerIllustration from '../illustrations/FlowerIllustration';
 
 const TREE_SCALE = 1;
+const CIRCLE_SCALE = 0.88;
 
 interface HomeTreeHeroProps {
   progress: HomeTreeProgress | null;
@@ -23,8 +24,11 @@ export default function HomeTreeHero({
   // TEMP preview: showing the fully grown tulip in the circle. Revert to the
   // rose with growth derived from flowerGrowthFromCareDays(progress.careDays).
   const { width } = useWindowDimensions();
-  const size = Math.min(300, width - spacing.lg * 2 - spacing.xl);
-  const treeSize = Math.round(size * TREE_SCALE);
+  // Keep the flower at its existing size while tightening the surrounding
+  // circle slightly so the artwork feels less oversized in the layout.
+  const flowerSize = Math.min(300, width - spacing.lg * 2 - spacing.xl);
+  const circleSize = Math.round(flowerSize * CIRCLE_SCALE);
+  const treeSize = Math.round(flowerSize * TREE_SCALE);
   const unavailable = progress == null && progressUnavailable;
 
   return (
@@ -32,7 +36,11 @@ export default function HomeTreeHero({
       accessibilityLiveRegion={progress == null ? 'polite' : 'none'}
       style={[
         styles.circle,
-        { width: size, height: size, borderRadius: size / 2 },
+        {
+          width: circleSize,
+          height: circleSize,
+          borderRadius: circleSize / 2,
+        },
       ]}
     >
       {progress == null ? (
@@ -51,6 +59,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'visible',
     backgroundColor: 'rgba(168,229,218,0.40)',
     borderWidth: 3,
     borderColor: 'rgba(0,163,145,0.30)',

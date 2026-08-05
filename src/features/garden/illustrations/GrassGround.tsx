@@ -1,23 +1,19 @@
 import { Ellipse } from 'react-native-svg';
 
-const GRASS = '#8FD6BB';
-const GRASS_DARK = '#6FBFAA';
-const GRASS_TUFT = '#B4E8D2';
-const SHADOW = 'rgba(11,107,92,0.12)';
+const GRASS = '#86C875';
+const GRASS_DARK = '#5EAA69';
+const SHADOW = 'rgba(48,112,76,0.16)';
 
 export interface GrassGroundProps {
-  /** Horizontal center of the dome. */
+  /** Horizontal center of the soft garden mound. */
   cx: number;
-  /** Vertical center of the dome (the stem's ground line). */
+  /** Vertical center of the mound top. */
   baseY: number;
   moundRx: number;
   moundRy: number;
 }
 
-/**
- * The shared grassy mound every flower species grows from. Species compose it
- * at the bottom of their own Svg so all illustrations share one ground style.
- */
+/** A quiet, soft mound that the stem can grow into. */
 export default function GrassGround({
   cx,
   baseY,
@@ -28,14 +24,14 @@ export default function GrassGround({
     <>
       <Ellipse
         cx={cx}
-        cy={baseY}
-        rx={moundRx * 0.92}
-        ry={5}
+        cy={baseY + 7}
+        rx={moundRx * 0.86}
+        ry={moundRy * 0.58}
         fill={SHADOW}
       />
       <Ellipse
         cx={cx}
-        cy={baseY}
+        cy={baseY + 1}
         rx={moundRx}
         ry={moundRy}
         fill={GRASS_DARK}
@@ -43,31 +39,30 @@ export default function GrassGround({
       <Ellipse
         cx={cx}
         cy={baseY - 2}
-        rx={moundRx - 3}
-        ry={Math.max(2, moundRy - 3)}
+        rx={moundRx - 2}
+        ry={Math.max(3, moundRy - 3)}
         fill={GRASS}
       />
-      <Ellipse
-        cx={cx - moundRx * 0.42}
-        cy={baseY - moundRy * 0.45}
-        rx={moundRx * 0.18}
-        ry={moundRy * 0.3}
-        fill={GRASS_TUFT}
-      />
-      <Ellipse
-        cx={cx + moundRx * 0.3}
-        cy={baseY - moundRy * 0.3}
-        rx={moundRx * 0.16}
-        ry={moundRy * 0.26}
-        fill={GRASS_TUFT}
-      />
-      <Ellipse
-        cx={cx + moundRx * 0.55}
-        cy={baseY - moundRy * 0.62}
-        rx={moundRx * 0.13}
-        ry={moundRy * 0.22}
-        fill={GRASS_TUFT}
-      />
     </>
+  );
+}
+
+/**
+ * A shallow foreground edge that hides only the stem's last few pixels. It
+ * makes the plant feel rooted without covering the leaves or lower silhouette.
+ */
+export function GrassGroundRootLip({
+  cx,
+  baseY,
+  moundRx,
+}: Pick<GrassGroundProps, 'cx' | 'baseY' | 'moundRx'>) {
+  return (
+    <Ellipse
+      cx={cx}
+      cy={baseY + 1}
+      rx={moundRx * 0.3}
+      ry={4}
+      fill={GRASS}
+    />
   );
 }

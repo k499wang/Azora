@@ -4,11 +4,11 @@ import { TulipRenderer } from './species/tulip';
 
 /**
  * Shared props contract for every flower species renderer. A renderer is a
- * self-contained parametric SVG illustration (its own ground, stem, bloom…)
- * driven only by how grown the flower is.
+ * self-contained illustrated SVG composition (its own ground, stem, bloom…)
+ * selected from discrete hand-drawn stages by how grown the flower is.
  */
 export interface SpeciesRendererProps {
-  /** How grown the flower is, 0 (seed/bud) → 1 (full bloom). */
+  /** How grown the flower is, 0 (sprout) → 1 (full bloom). */
   growth: number;
   /** Canvas size in points — the renderer draws to a square of this size. */
   size: number;
