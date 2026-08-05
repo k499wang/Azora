@@ -1,7 +1,9 @@
 import { Text } from '../../../../components/common/Text';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { SettingsGearButton } from '../../../audioSettings';
+import { isHapticsEnabled } from '../../../../services/preferences/hapticsPreference';
 import type { ExerciseDarkTheme } from '../../../../theme/exerciseDarkThemes';
 import { colors } from '../../../../theme/colors';
 import { spacing } from '../../../../theme/spacing';
@@ -84,7 +86,10 @@ export function GuidedBreathingHud({
             { backgroundColor: theme.surface, borderColor: theme.surfaceBorder },
             pressed && styles.circleBtnPressed,
           ]}
-          onPress={onClosePress}
+          onPress={() => {
+            if (isHapticsEnabled()) Haptics.selectionAsync().catch(() => {});
+            onClosePress();
+          }}
         >
           <Icon name="close" size={26} color={theme.iconPrimary} />
         </Pressable>
@@ -108,7 +113,10 @@ export function GuidedBreathingHud({
               { backgroundColor: theme.surface, borderColor: theme.surfaceBorder },
               pressed && styles.circleBtnPressed,
             ]}
-            onPress={onPrimaryPress}
+            onPress={() => {
+              if (isHapticsEnabled()) Haptics.selectionAsync().catch(() => {});
+              onPrimaryPress();
+            }}
           >
             <MaterialCommunityIcons
               name={primaryIcon}

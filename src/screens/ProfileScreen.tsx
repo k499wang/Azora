@@ -23,6 +23,7 @@ import ProfileLifetimeStatsRow from '../components/profile/ProfileLifetimeStatsR
 import { useAuthStore } from '../stores/authStore';
 import type { ProfileScreenProps } from '../app/navigation';
 import { trackProfileAction } from '../services/analytics/tracking';
+import { triggerTapHaptic } from '../native/tapHaptics';
 import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
 import { useUploadProfileAvatarMutation } from '../queries/profile/useUploadProfileAvatarMutation';
 import { useUpdateProfileDisplayNameMutation } from '../queries/profile/useUpdateProfileDisplayNameMutation';
@@ -235,6 +236,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
         style={[styles.stickyAction, { top: insets.top + spacing.xs }]}
         variant="regular"
         onPress={() => {
+          triggerTapHaptic();
           trackProfileAction('settings_opened');
           navigation.navigate('Settings');
         }}

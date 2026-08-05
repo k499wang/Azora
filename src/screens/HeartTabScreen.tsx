@@ -19,6 +19,7 @@ import { useFeatureAccess } from '../hooks/useFeatureAccess';
 import { FeatureKey } from '../services/subscriptions/featureAccess';
 import { PaywallPlacement } from '../services/paywall';
 import { trackFeatureGateHit } from '../services/analytics/tracking';
+import { triggerTapHaptic } from '../native/tapHaptics';
 import type {
   FeatureAccessResult,
   FeatureKeyValue,
@@ -72,6 +73,7 @@ export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
   );
 
   const openMeasure = useCallback(() => {
+    triggerTapHaptic();
     navigation.navigate('HeartRate');
   }, [navigation]);
 

@@ -6,6 +6,10 @@ import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import { Text } from '../common/Text';
 
+// Apple's inset-grouped cells sit as flat white surfaces on the grey canvas;
+// separators start after the leading icon/number, not at the card edge.
+const DIVIDER_INSET = 26 + spacing.md; // number circle width + row gap
+
 interface HeartRatePlacementStepsCardProps {
   steps: readonly HeartRatePlacementStep[];
   appearance?: 'card' | 'plain';
@@ -24,25 +28,33 @@ export function HeartRatePlacementStepsCard({
     <View
       style={[
         !isPlain && card.base,
+        !isPlain && styles.surface,
         styles.container,
         isPlain && styles.plain,
       ]}
     >
       {steps.map((step, index) => (
-        <View
-          key={step.title}
-          style={[styles.row, index > 0 && styles.divider]}
-        >
-          <View style={styles.number}>
-            <Text style={styles.numberText}>{index + 1}</Text>
-          </View>
-          <View style={styles.copy}>
-            <Text style={[styles.title, hasLargeText && styles.titleLarge]}>
-              {step.title}
-            </Text>
-            <Text style={[styles.detail, hasLargeText && styles.detailLarge]}>
-              {step.detail}
-            </Text>
+        <View key={step.title} style={styles.cell}>
+          {index > 0 ? (
+            <View
+              style={[
+                styles.divider,
+                !isPlain && styles.dividerInset,
+              ]}
+            />
+          ) : null}
+          <View style={styles.row}>
+            <View style={styles.number}>
+              <Text style={styles.numberText}>{index + 1}</Text>
+            </View>
+            <View style={styles.copy}>
+              <Text style={[styles.title, hasLargeText && styles.titleLarge]}>
+                {step.title}
+              </Text>
+              <Text style={[styles.detail, hasLargeText && styles.detailLarge]}>
+                {step.detail}
+              </Text>
+            </View>
           </View>
         </View>
       ))}
@@ -55,21 +67,36 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
   },
+  surface: {
+    backgroundColor: colors.background.elevated,
+  },
   plain: {
     paddingHorizontal: 0,
     paddingVertical: 0,
   },
+  cell: {
+    position: 'relative',
+  },
   row: {
     flexDirection: 'row',
     alignItems: 'flex-start',
+    justifyContent: 'flex-start',
     gap: spacing.md,
     paddingVertical: spacing.md,
   },
   divider: {
-    borderTopWidth: 1,
-    borderTopColor: colors.border.subtle,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.neutral[200],
+  },
+  dividerInset: {
+    left: DIVIDER_INSET,
   },
   number: {
+    flexShrink: 0,
     width: 26,
     height: 26,
     borderRadius: 13,
@@ -82,6 +109,8 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semibold,
     fontWeight: '500',
     color: colors.primary.blue700,
+    textAlign: 'center',
+    includeFontPadding: false,
   },
   copy: {
     flex: 1,
@@ -92,6 +121,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semibold,
     fontWeight: '500',
     color: colors.text.primary,
+    textAlign: 'left',
   },
   titleLarge: {
     ...typography.body.medium,

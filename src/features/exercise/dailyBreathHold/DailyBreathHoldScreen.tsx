@@ -535,7 +535,12 @@ export default function DailyBreathHoldScreen({
       {phase === 'hold' && !paused ? (
         <Pressable
           style={styles.holdReleaseTarget}
-          onPress={tryReleaseHold}
+          onPress={() => {
+            if (isHapticsEnabled()) {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+            }
+            tryReleaseHold();
+          }}
           accessible
           accessibilityRole="button"
           accessibilityLabel="Stop breath hold"

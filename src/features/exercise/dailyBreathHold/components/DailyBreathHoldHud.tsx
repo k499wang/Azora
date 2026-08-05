@@ -1,6 +1,8 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { SettingsGearButton } from '../../../audioSettings';
+import { isHapticsEnabled } from '../../../../services/preferences/hapticsPreference';
 import {
   isBreathHoldBreathingPhase,
   type DailyBreathHoldPhase,
@@ -91,7 +93,10 @@ function ControlButton({ icon, label, theme, onPress }: ControlButtonProps) {
         { backgroundColor: theme.surface, borderColor: theme.surfaceBorder },
         pressed && styles.buttonPressed,
       ]}
-      onPress={onPress}
+      onPress={() => {
+        if (isHapticsEnabled()) Haptics.selectionAsync().catch(() => {});
+        onPress();
+      }}
       accessibilityRole="button"
       accessibilityLabel={label}
     >

@@ -9,13 +9,12 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Device from 'expo-device';
 import { useNavigation } from '@react-navigation/native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { colors } from '../../../theme/colors';
 import { typography, fonts } from '../../../theme/typography';
-import { spacing } from '../../../theme/spacing';
+import { spacing, padding } from '../../../theme/spacing';
+import { radius } from '../../../theme/card';
 import { isShortScreen } from '../../../theme/breakpoints';
 import type { SetupScreenProps } from '../../../lib/heartRate/types';
 import {
@@ -34,8 +33,9 @@ import { getHeartRatePlacementGuidance } from '../../../lib/heartRate/captureGui
 import { getHeartRateCameraProfile } from '../../../lib/heartRate/cameraProfile';
 import { HeartRatePlacementIllustration } from '../HeartRatePlacementIllustration';
 import { HeartRatePlacementStepsCard } from '../HeartRatePlacementStepsCard';
+import { triggerTapHaptic } from '../../../native/tapHaptics';
 
-export function DefaultInstructionScreen({ onNext }: SetupScreenProps) {
+export function DefaultInstructionScreen({ onNext, onCancel }: SetupScreenProps) {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<RootStackNavigationProp<'HeartRate'>>();
   const advancedStatsAccess = useFeatureAccess(FeatureKey.AdvancedStats);
@@ -74,26 +74,32 @@ export function DefaultInstructionScreen({ onNext }: SetupScreenProps) {
     <View
       style={[
         styles.container,
-        {
-          paddingTop: insets.top + spacing.lg,
-          paddingBottom: insets.bottom + spacing.sm,
-        },
+        { paddingTop: insets.top + spacing.md },
       ]}
     >
+      <Pressable
+        accessibilityRole="button"
+        onPress={onCancel}
+        hitSlop={10}
+        style={styles.cancelButton}
+      >
+        <Text style={styles.cancelText}>Cancel</Text>
+      </Pressable>
+
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={[styles.title, compact && styles.titleCompact]}>{placementGuidance.title}</Text>
+        <Text style={[styles.title, compact && styles.titleCompact]}>
+          {placementGuidance.title}
+        </Text>
+        <Text style={styles.supporting}>{placementGuidance.instruction}</Text>
+
         <View style={styles.modeBlock}>
           <CaptureModeToggle value={mode} onChange={setMode} isPro={isPro} />
-          <View style={styles.perkRow}>
-            {HEART_RATE_CAPTURE_MODES[mode].perks.map((perk) => (
-              <View key={perk} style={styles.perkChip}>
-                <Text style={styles.perkText}>{perk}</Text>
-              </View>
-            ))}
-          </View>
+          <Text style={styles.modeCaption}>
+            {HEART_RATE_CAPTURE_MODES[mode].shortDescription}
+          </Text>
         </View>
 
         {showPlacementIllustration && (
@@ -102,7 +108,8 @@ export function DefaultInstructionScreen({ onNext }: SetupScreenProps) {
           </View>
         )}
 
-        <View style={styles.steps}>
+        <View style={styles.stepsSection}>
+          <Text style={styles.sectionLabel}>How to measure</Text>
           <HeartRatePlacementStepsCard
             steps={placementGuidance.steps}
             appearance="plain"
@@ -111,13 +118,20 @@ export function DefaultInstructionScreen({ onNext }: SetupScreenProps) {
         </View>
       </ScrollView>
 
-      <View style={styles.footer}>
+      <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.md }]}>
         <Pressable
           accessibilityRole="button"
-          onPress={() => (locked ? openPaywallForLockedMode() : onNext({ mode }))}
+          onPress={() => {
+            triggerTapHaptic();
+            if (locked) {
+              openPaywallForLockedMode();
+            } else {
+              onNext({ mode });
+            }
+          }}
           onPressIn={() =>
             Animated.spring(pressScale, {
-              toValue: 0.97,
+              toValue: 0.98,
               useNativeDriver: true,
               speed: 40,
               bounciness: 0,
@@ -132,22 +146,10 @@ export function DefaultInstructionScreen({ onNext }: SetupScreenProps) {
             }).start()
           }
         >
-          <Animated.View style={[styles.ctaShadow, { transform: [{ scale: pressScale }] }]}>
-            <LinearGradient
-              colors={[colors.primary.blue500, colors.primary.blue700]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.cta}
-            >
-              <MaterialCommunityIcons
-                name={locked ? 'lock-open-outline' : 'heart-pulse'}
-                size={18}
-                color={colors.text.inverse}
-              />
-              <Text style={styles.ctaText}>
-                {locked ? 'Unlock Full with Pro' : 'Begin measurement'}
-              </Text>
-            </LinearGradient>
+          <Animated.View style={[styles.cta, { transform: [{ scale: pressScale }] }]}>
+            <Text style={styles.ctaText}>
+              {locked ? 'Unlock Full with Pro' : 'Begin measurement'}
+            </Text>
           </Animated.View>
         </Pressable>
       </View>
@@ -158,77 +160,79 @@ export function DefaultInstructionScreen({ onNext }: SetupScreenProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: padding.screen.horizontal,
+    backgroundColor: colors.background.primary,
+  },
+  cancelButton: {
+    alignSelf: 'flex-start',
+    paddingVertical: spacing.sm,
+    marginBottom: spacing.xs,
+  },
+  cancelText: {
+    ...typography.body.medium,
+    fontFamily: fonts.semibold,
+    fontWeight: '500',
+    color: colors.primary.blue600,
   },
   scrollContent: {
-    paddingBottom: spacing.sm,
+    paddingBottom: spacing.lg,
   },
   title: {
     ...typography.title.title1,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
+    fontWeight: '600',
     color: colors.text.primary,
-    textAlign: 'center',
+    textAlign: 'left',
   },
   titleCompact: {
     ...typography.title.title2,
   },
+  supporting: {
+    ...typography.body.small,
+    color: colors.text.secondary,
+    marginTop: spacing.sm,
+    lineHeight: 22,
+  },
   modeBlock: {
     marginTop: spacing.lg,
-  },
-  perkRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'center',
+    gap: spacing.sm,
     alignItems: 'center',
-    alignContent: 'center',
-    gap: spacing.xs,
-    marginTop: spacing.sm,
-    minHeight: 48,
   },
-  perkChip: {
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
-    borderRadius: 999,
-    backgroundColor: colors.background.secondary,
-  },
-  perkText: {
-    ...typography.caption.caption1,
-    fontFamily: fonts.semibold,
+  modeCaption: {
+    ...typography.label.medium,
+    fontFamily: fonts.medium,
     fontWeight: '500',
-    color: colors.text.secondary,
+    color: colors.text.tertiary,
+    textAlign: 'center',
   },
   illustration: {
-    marginTop: spacing.md,
+    marginTop: spacing.lg,
   },
-  steps: {
-    marginTop: 0,
+  stepsSection: {
+    marginTop: spacing.lg,
+    gap: spacing.sm,
+  },
+  sectionLabel: {
+    ...typography.label.detail,
+    fontFamily: fonts.semibold,
+    fontWeight: '600',
+    color: colors.text.secondary,
   },
   footer: {
-    gap: spacing.md,
     paddingTop: spacing.sm,
   },
-  ctaShadow: {
-    borderRadius: 16,
-    shadowColor: colors.primary.blue700,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.24,
-    shadowRadius: 12,
-    elevation: 6,
-  },
   cta: {
-    flexDirection: 'row',
+    backgroundColor: colors.primary.blue600,
+    borderRadius: radius.card,
+    borderCurve: 'continuous',
+    minHeight: 52,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.sm,
-    paddingVertical: spacing.md,
-    borderRadius: 16,
-    overflow: 'hidden',
   },
   ctaText: {
     ...typography.button.large,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
+    fontWeight: '600',
     color: colors.text.inverse,
   },
 });
