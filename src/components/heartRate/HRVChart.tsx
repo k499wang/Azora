@@ -363,8 +363,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
   },
   emptyText: {
-    ...typography.body.small,
-    color: colors.text.tertiary,
+    ...typography.body.medium,
+    color: colors.text.secondary,
     textAlign: 'center',
   },
   infoButton: {

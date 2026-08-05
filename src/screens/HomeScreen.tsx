@@ -178,13 +178,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           <HomeTreeHero
             progress={treeProgress}
             progressUnavailable={treeProgressUnavailable}
-            caredToday={stats?.completedDaysAgo.includes(0) ?? false}
-            returning={
-              treeProgress != null &&
-              treeProgress.careDays > 0 &&
-              (stats?.streak?.currentStreak ?? 0) === 0
-            }
-            onPressGarden={() => navigation.navigate('Garden')}
           />
           <TodaysDailiesSection
             technique={recommendedTechnique.technique}

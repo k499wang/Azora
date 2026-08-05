@@ -21,9 +21,9 @@ const INNER_R = 22;     // inner white circle radius
 const START_ANGLE = 135;
 const SWEEP = 270;
 
-const NUM_TICKS = 40;
-const TICK_HALF = 5;
-const TICK_WIDTH = 3;
+const NUM_TICKS = 24;
+const TICK_HALF = 7;
+const TICK_WIDTH = 5;
 
 // Curved triangle indicator — points outward from inner circle edge
 const TRI_TIP_OFFSET = 8;  // how far beyond INNER_R the tip extends

@@ -133,7 +133,7 @@ export function RecentlyLoggedSection({
             subtitle={
               hasError
                 ? 'Stats could not load from Supabase.'
-                : 'Tap "Measure heart rate" above to log your first reading.'
+                : 'Tap the plus button in the top right to start measuring.'
             }
           />
         </View>
