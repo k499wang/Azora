@@ -2,6 +2,8 @@ import { Text } from '../../components/common/Text';
 import { Pressable, StyleSheet, View } from 'react-native';
 import type { StyleProp, ViewStyle } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
+import { isHapticsEnabled } from '../../services/preferences/hapticsPreference';
 import { colors } from '../../theme/colors';
 import { fonts, typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
@@ -34,7 +36,10 @@ export default function SettingsGearButton({
 
   return (
     <Pressable
-      onPress={onPress}
+      onPress={() => {
+        if (isHapticsEnabled()) Haptics.selectionAsync().catch(() => {});
+        onPress();
+      }}
       accessibilityRole="button"
       accessibilityLabel={label ?? 'Session settings'}
       hitSlop={8}
