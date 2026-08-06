@@ -50,6 +50,8 @@ export type LungAgeGoal =
 
 export interface OnboardingPlan {
   actions: PlanAction[];
+  /** The goal the plan was built around, so UI can speak in the user's terms. */
+  intent: OnboardingIntent;
   projection: PlanProjection | null;
   lungAgeGoal: LungAgeGoal | null;
   fullDailyMinutes: number;
@@ -333,6 +335,7 @@ export function buildOnboardingPlan(inputs: PlanInputs): OnboardingPlan {
 
   return {
     actions,
+    intent,
     projection,
     lungAgeGoal,
     fullDailyMinutes: minutes + handPickedMinutes + CHECK_IN_MINUTES,
