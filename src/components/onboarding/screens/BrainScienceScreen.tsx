@@ -47,7 +47,7 @@ export default function BrainScienceScreen({
 
   return (
     <OnboardingScreenLayout
-      title="Breathing is a neuroscience."
+      title="Breathing is a science."
       subtitle="Azora uses proven breathing science to reset your nervous system in seconds."
       progress={stepIndex / stepCount}
       onBack={onBack}

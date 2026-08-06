@@ -4,7 +4,9 @@ import { Text } from '../../common/Text';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import Icon from '../../common/icons/Icon';
-import PaywallFeatureList from '../../paywall/PaywallFeatureList';
+import PaywallFeatureList, {
+  type PaywallFeature,
+} from '../../paywall/PaywallFeatureList';
 import {
   getOnboardingImageSource,
   type OnboardingImageKey,
@@ -52,7 +54,24 @@ const testimonials: Array<{
   },
 ];
 
-export function PaywallBenefitsStep() {
+interface PaywallBenefitsStepProps {
+  features?: PaywallFeature[];
+  name?: string;
+  hasTrial: boolean;
+  trialDuration: string;
+}
+
+export function PaywallBenefitsStep({
+  features,
+  name,
+  hasTrial,
+  trialDuration,
+}: PaywallBenefitsStepProps) {
+  const trimmedName = name?.trim();
+  const unlockTitle = hasTrial
+    ? `${trimmedName ? `${trimmedName}, your` : 'Your'} ${trialDuration} trial unlocks`
+    : `${trimmedName ? `${trimmedName}, your` : 'Your'} plan includes`;
+
   return (
     <View style={styles.stepContainer}>
       <View style={styles.stepHeader}>
@@ -99,8 +118,8 @@ export function PaywallBenefitsStep() {
       </ScrollView>
 
       <View style={styles.unlockSection}>
-        <Text style={styles.unlockTitle}>Your plan includes</Text>
-        <PaywallFeatureList />
+        <Text style={styles.unlockTitle}>{unlockTitle}</Text>
+        <PaywallFeatureList features={features} />
       </View>
     </View>
   );

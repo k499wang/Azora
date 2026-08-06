@@ -264,6 +264,8 @@ const styles = StyleSheet.create({
     ...typography.heading.heading2,
     fontFamily: fonts.semibold,
     fontWeight: '500',
+    fontSize: 19,
+    lineHeight: 26,
     color: colors.primary.blue600,
     flexShrink: 1,
   },
@@ -297,8 +299,9 @@ const styles = StyleSheet.create({
   },
   actionBody: {
     ...typography.body.small,
+    fontSize: 16,
     color: colors.text.secondary,
-    lineHeight: 20,
+    lineHeight: 23,
   },
   radarWrap: {
     alignItems: 'center',

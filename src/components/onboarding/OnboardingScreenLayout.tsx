@@ -601,10 +601,10 @@ const styles = StyleSheet.create({
   title: {
     ...typography.title.title1,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
-    fontSize: 26,
-    lineHeight: 32,
-    letterSpacing: -0.3,
+    fontWeight: '600',
+    fontSize: 30,
+    lineHeight: 36,
+    letterSpacing: -0.4,
     color: colors.text.primary,
   },
   subtitle: {

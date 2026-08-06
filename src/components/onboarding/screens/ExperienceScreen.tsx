@@ -1,41 +1,30 @@
-import { Text } from '../../common/Text';
-import { Pressable, StyleSheet, View } from 'react-native';
-import * as Haptics from 'expo-haptics';
 import { colors } from '../../../theme/colors';
-import { spacing } from '../../../theme/spacing';
-import { fonts, typography } from '../../../theme/typography';
-import { isHapticsEnabled } from '../../../services/preferences/hapticsPreference';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
-import OnboardingOptionIcon, {
-  type OnboardingOptionIconName,
-} from '../OnboardingOptionIcon';
+import OnboardingOptionCardGrid, {
+  type OnboardingOptionCard,
+} from '../OnboardingOptionCardGrid';
 
 export type ExperienceLevel = 'never' | 'little' | 'regular';
 
-const OPTIONS: {
-  id: ExperienceLevel;
-  icon: OnboardingOptionIconName;
-  title: string;
-  body: string;
-}[] = [
+const OPTIONS: OnboardingOptionCard<ExperienceLevel>[] = [
   {
     id: 'never',
     icon: 'sprout-outline',
+    accent: colors.playful.teal.base,
     title: 'New to this',
-    body: "I haven't really tried breathwork before.",
   },
   {
     id: 'little',
     icon: 'waves',
+    accent: colors.playful.sky.base,
     title: 'Dabbled a bit',
-    body: 'I\'ve tried it a few times but nothing consistent.',
   },
   {
     id: 'regular',
     icon: 'meditation',
+    accent: colors.playful.violet.base,
     title: 'I practice regularly',
-    body: 'Breathwork or meditation is part of my routine.',
   },
 ];
 
@@ -58,11 +47,6 @@ export default function ExperienceScreen({
   onBack,
   onSkip,
 }: ExperienceScreenProps) {
-  const handleSelect = (id: ExperienceLevel) => {
-    if (isHapticsEnabled()) Haptics.selectionAsync().catch(() => {});
-    onSelect(id);
-  };
-
   return (
     <OnboardingScreenLayout
       title="Have you tried breathwork before?"
@@ -78,102 +62,11 @@ export default function ExperienceScreen({
         />
       }
     >
-      <View style={styles.list}>
-        {OPTIONS.map((option, index) => {
-          const selected = value === option.id;
-          return (
-            <Pressable
-              key={option.id}
-              accessibilityRole="button"
-              accessibilityState={{ selected }}
-              onPress={() => handleSelect(option.id)}
-              style={({ pressed }) => [
-                styles.row,
-                index !== 0 && styles.rowDivider,
-                pressed && styles.rowPressed,
-              ]}
-            >
-              <OnboardingOptionIcon
-                name={option.icon}
-                selected={selected}
-              />
-              <View style={styles.text}>
-                <Text
-                  style={[
-                    styles.title,
-                    selected && styles.titleSelected,
-                  ]}
-                >
-                  {option.title}
-                </Text>
-                <Text style={styles.body}>{option.body}</Text>
-              </View>
-              <View
-                style={[
-                  styles.radio,
-                  selected && styles.radioSelected,
-                ]}
-              >
-                {selected ? <View style={styles.radioInner} /> : null}
-              </View>
-            </Pressable>
-          );
-        })}
-      </View>
+      <OnboardingOptionCardGrid
+        options={OPTIONS}
+        selectedIds={value ? [value] : []}
+        onSelect={onSelect}
+      />
     </OnboardingScreenLayout>
   );
 }
-
-const styles = StyleSheet.create({
-  list: {
-    marginTop: spacing.xs,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.lg,
-    paddingVertical: spacing.lg,
-  },
-  rowDivider: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border.default,
-  },
-  rowPressed: {
-    opacity: 0.6,
-  },
-  text: {
-    flex: 1,
-    gap: 2,
-  },
-  title: {
-    ...typography.body.medium,
-    color: colors.text.primary,
-  },
-  titleSelected: {
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-  },
-  body: {
-    ...typography.body.small,
-    fontSize: 13,
-    color: colors.text.secondary,
-  },
-  radio: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    borderWidth: 2,
-    borderColor: colors.border.default,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  radioSelected: {
-    borderColor: colors.primary.blue600,
-  },
-  radioInner: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: colors.primary.blue600,
-  },
-});

@@ -21,6 +21,7 @@ import { PaywallFreeVsProStep } from '../paywall/PaywallFreeVsProStep';
 import { PaywallTrialStep } from '../paywall/PaywallTrialStep';
 import { PaywallFooterLinks } from '../../paywall/PaywallFooterLinks';
 import PaywallTrialReminderToggle from '../../paywall/PaywallTrialReminderToggle';
+import type { PaywallFeature } from '../../paywall/PaywallFeatureList';
 import { paywallStepStyles } from '../paywall/paywallStepStyles';
 
 const STEP_COUNT = 4;
@@ -32,6 +33,9 @@ type StepTransitionPhase = 'idle' | 'exiting' | 'entering';
 
 interface OnboardingPaywallScreenProps {
   offering: PaywallOffering | null;
+  /** Personalized "your trial unlocks" bullets built from the plan just created. */
+  planHighlights?: PaywallFeature[];
+  name?: string;
   selectedPackageId: PaywallPackageId;
   stepIndex: number;
   stepCount: number;
@@ -52,6 +56,8 @@ interface OnboardingPaywallScreenProps {
 
 export default function OnboardingPaywallScreen({
   offering,
+  planHighlights,
+  name,
   selectedPackageId,
   isLoading,
   isPurchasing,
@@ -385,8 +391,20 @@ export default function OnboardingPaywallScreen({
                 transform: [{ translateX: stepTranslateX }],
               }}
             >
-              {step === 0 ? <PaywallBenefitsStep /> : null}
-              {step === 1 ? <PaywallFreeVsProStep /> : null}
+              {step === 0 ? (
+                <PaywallBenefitsStep
+                  features={planHighlights}
+                  name={name}
+                  hasTrial={hasAnnualTrial}
+                  trialDuration={trialDuration}
+                />
+              ) : null}
+              {step === 1 ? (
+                <PaywallFreeVsProStep
+                  hasTrial={hasAnnualTrial}
+                  trialDuration={trialDuration}
+                />
+              ) : null}
               {step === 2 ? <PaywallFreeTrialHeroStep /> : null}
               {step === 3 ? (
                 <View style={styles.finalStepContent}>

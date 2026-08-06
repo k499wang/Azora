@@ -12,25 +12,25 @@ export const GENDER_OPTIONS: GenderOption[] = [
   {
     id: 'female',
     icon: 'sparkle',
-    accent: colors.error[500],
+    accent: colors.playful.blush.base,
     title: 'Female',
   },
   {
     id: 'male',
     icon: 'sparkle',
-    accent: colors.primary.blue600,
+    accent: colors.playful.sky.base,
     title: 'Male',
   },
   {
     id: 'nonbinary',
     icon: 'sparkle',
-    accent: colors.orange[500],
+    accent: colors.playful.violet.base,
     title: 'Non-binary',
   },
   {
     id: 'prefer_not',
     icon: 'sparkle',
-    accent: colors.text.tertiary,
+    accent: colors.accent[600],
     title: 'Prefer not to say',
   },
 ];

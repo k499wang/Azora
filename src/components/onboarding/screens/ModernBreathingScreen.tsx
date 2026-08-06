@@ -151,16 +151,16 @@ export default function ModernBreathingScreen({
                 <Path
                   path={referenceLine}
                   style="stroke"
-                  strokeWidth={2}
+                  strokeWidth={chart.referenceWidth}
                   strokeCap="round"
                   color={colors.neutral[400]}
                 >
-                  <DashPathEffect intervals={[8, 7]} />
+                  <DashPathEffect intervals={chart.referenceDash} />
                 </Path>
                 <Path
                   path={breathingDepthLine}
                   style="stroke"
-                  strokeWidth={4}
+                  strokeWidth={chart.lineWidth}
                   strokeCap="round"
                   strokeJoin="round"
                   color={colors.primary.blue600}
@@ -213,15 +213,15 @@ const styles = StyleSheet.create({
     height: CHART_HEIGHT,
   },
   referenceSwatch: {
-    width: 24,
-    borderTopWidth: 2,
+    width: 26,
+    borderTopWidth: 4,
     borderStyle: 'dashed',
     borderColor: colors.neutral[400],
   },
   depthSwatch: {
-    width: 24,
-    height: 3,
-    borderRadius: 2,
+    width: 26,
+    height: 6,
+    borderRadius: 3,
     backgroundColor: colors.primary.blue600,
   },
 });

@@ -12,10 +12,18 @@ export const chart = {
   padTop: 12,
   padBottom: 28,
   topInset: 10,
-  axisWidth: 1.5,
+  axisWidth: 3,
   axisColor: colors.neutral[300],
   horizontalPadding: spacing.md,
   gap: spacing.md,
+  // Chunky, rounded strokes — the onboarding charts are illustrations first and
+  // data second, so they read heavier than a real analytics plot.
+  lineWidth: 6,
+  referenceWidth: 4,
+  referenceDash: [9, 9],
+  dotRadius: 7,
+  dotHaloRadius: 11,
+  fillOpacity: { top: '5c', bottom: '00' },
 };
 
 export const chartText: {

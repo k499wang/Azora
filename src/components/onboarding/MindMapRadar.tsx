@@ -80,7 +80,8 @@ export default function MindMapRadar({
             points={points}
             fill="none"
             stroke={colors.neutral[400]}
-            strokeWidth={2}
+            strokeWidth={3}
+            strokeLinejoin="round"
           />
         ))}
         {scores.map((_, i) => {
@@ -93,7 +94,7 @@ export default function MindMapRadar({
               x2={p.x}
               y2={p.y}
               stroke={colors.neutral[400]}
-              strokeWidth={1.25}
+              strokeWidth={2}
             />
           );
         })}
@@ -103,8 +104,9 @@ export default function MindMapRadar({
             fill={colors.orange[300]}
             fillOpacity={0.3}
             stroke={colors.orange[500]}
-            strokeWidth={3}
-            strokeDasharray="4,4"
+            strokeWidth={5}
+            strokeLinejoin="round"
+            strokeDasharray="8,8"
           />
         ) : null}
         <Polygon
@@ -112,7 +114,8 @@ export default function MindMapRadar({
           fill={colors.primary.blue300}
           fillOpacity={0.55}
           stroke={colors.primary.blue500}
-          strokeWidth={2.5}
+          strokeWidth={5}
+          strokeLinejoin="round"
         />
         {scores.map((s, i) => {
           const p = pointOnAxis(cx, cy, radius * (s.value / 100), i, total);
@@ -121,7 +124,7 @@ export default function MindMapRadar({
               key={`dot-${i}`}
               cx={p.x}
               cy={p.y}
-              r={3.5}
+              r={6}
               fill={colors.primary.blue600}
             />
           );
@@ -134,7 +137,7 @@ export default function MindMapRadar({
                   key={`target-dot-${i}`}
                   cx={p.x}
                   cy={p.y}
-                  r={4.5}
+                  r={7}
                   fill={colors.orange[500]}
                 />
               );
