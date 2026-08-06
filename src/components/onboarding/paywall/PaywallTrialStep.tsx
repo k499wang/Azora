@@ -11,6 +11,8 @@ interface TimelineStepProps {
   /** Steps that haven't happened yet read greyed out rather than brand blue. */
   upcoming?: boolean;
   showLine?: boolean;
+  /** Trailing stub on the final step — the timeline runs on past the last card. */
+  showTail?: boolean;
 }
 
 function TimelineStep({
@@ -19,6 +21,7 @@ function TimelineStep({
   body,
   upcoming = false,
   showLine = false,
+  showTail = false,
 }: TimelineStepProps) {
   return (
     <View style={styles.timelineRow}>
@@ -35,8 +38,16 @@ function TimelineStep({
             style={[styles.timelineLine, upcoming && styles.timelineLineUpcoming]}
           />
         ) : null}
+        {showTail ? (
+          <View
+            style={[
+              styles.timelineTail,
+              upcoming && styles.timelineLineUpcoming,
+            ]}
+          />
+        ) : null}
       </View>
-      <View style={styles.timelineCopy}>
+      <View style={[styles.timelineCopy, showLine && styles.timelineCopySpaced]}>
         <Text style={styles.timelineLabel}>{label}</Text>
         <Text style={styles.timelineBody}>{body}</Text>
       </View>
@@ -111,6 +122,7 @@ export function PaywallTrialStep({
             key={step.label}
             {...step}
             showLine={index < steps.length - 1}
+            showTail={index === steps.length - 1}
           />
         ))}
       </View>

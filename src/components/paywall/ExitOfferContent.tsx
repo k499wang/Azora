@@ -402,8 +402,8 @@ const styles = StyleSheet.create({
     paddingTop: spacing.sm,
   },
   title: {
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
+    fontFamily: fonts.heavy,
+    fontWeight: '800',
     fontSize: 56,
     lineHeight: 62,
     color: colors.text.primary,
