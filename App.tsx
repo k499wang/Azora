@@ -15,6 +15,7 @@ import {
   Outfit_500Medium,
   Outfit_600SemiBold,
   Outfit_700Bold,
+  Outfit_800ExtraBold,
 } from '@expo-google-fonts/outfit';
 import { Asset } from 'expo-asset';
 import {
@@ -57,6 +58,7 @@ export default function App() {
     'Outfit-Medium': Outfit_500Medium,
     'Outfit-SemiBold': Outfit_600SemiBold,
     'Outfit-Bold': Outfit_700Bold,
+    'Outfit-ExtraBold': Outfit_800ExtraBold,
   });
   const [backgroundImagesReady, setBackgroundImagesReady] = useState(false);
 

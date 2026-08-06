@@ -16,6 +16,9 @@ const weight = {
 const FONT_FAMILY = 'Outfit';
 
 const fontBold = `${FONT_FAMILY}-SemiBold`;
+// Real Bold face. Reserved for paywall headlines, where the extra weight is a
+// deliberate emphasis break from the app-wide SemiBold ceiling.
+const fontHeavy = `${FONT_FAMILY}-ExtraBold`;
 const fontSemiBold = `${FONT_FAMILY}-SemiBold`;
 const fontRegular = `${FONT_FAMILY}-Regular`;
 const fontMedium = `${FONT_FAMILY}-Medium`;
@@ -253,4 +256,4 @@ export const typography = {
   },
 } as const;
 
-export const fonts = { bold: fontBold, semibold: fontSemiBold, regular: fontRegular, medium: fontMedium, light: fontLight };
+export const fonts = { heavy: fontHeavy, bold: fontBold, semibold: fontSemiBold, regular: fontRegular, medium: fontMedium, light: fontLight };

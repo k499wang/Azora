@@ -7,6 +7,7 @@ import type {
   PaywallOffering,
   PaywallPackageId,
 } from '../../../services/paywall';
+import { card } from '../../../theme/card';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
@@ -18,6 +19,8 @@ import { PaywallFreeTrialHeroStep } from '../paywall/PaywallFreeTrialHeroStep';
 import { PaywallBenefitsStep } from '../paywall/PaywallBenefitsStep';
 import { PaywallTrialStep } from '../paywall/PaywallTrialStep';
 import { PaywallFooterLinks } from '../../paywall/PaywallFooterLinks';
+import PaywallTrialReminderToggle from '../../paywall/PaywallTrialReminderToggle';
+import { paywallStepStyles } from '../paywall/paywallStepStyles';
 
 const STEP_COUNT = 3;
 const STEP_SLIDE_DISTANCE = 40;
@@ -389,6 +392,13 @@ export default function OnboardingPaywallScreen({
                     hasAnnualTrial={hasAnnualTrial}
                     trialLabel={annualPackage?.trialLabel}
                   />
+                  {hasAnnualTrial ? (
+                    <View style={paywallStepStyles.reminderToggleWrap}>
+                      <PaywallTrialReminderToggle
+                        disabled={!selectedPackageHasTrial}
+                      />
+                    </View>
+                  ) : null}
                   <PaywallChoosePlanStep
                     isLoading={isLoading}
                     annualPackage={annualPackage}
@@ -550,6 +560,7 @@ const styles = StyleSheet.create({
     color: colors.error[700],
   },
   footer: {
+    ...card.trayShadow,
     gap: spacing.xs,
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.sm,

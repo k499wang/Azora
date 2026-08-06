@@ -20,6 +20,7 @@ export const card: {
   well: ViewStyle;
   shadow: ViewStyle;
   shadowElevated: ViewStyle;
+  trayShadow: ViewStyle;
   glass: ViewStyle;
   glassTint: ViewStyle;
 } = {
@@ -85,6 +86,15 @@ export const card: {
     shadowOpacity: 0.06,
     shadowRadius: 24,
     elevation: 8,
+  },
+  // Bottom-docked action tray: shadow casts upward so the tray reads as
+  // floating above the content scrolling beneath it.
+  trayShadow: {
+    shadowColor: colors.neutral[900],
+    shadowOffset: { width: 0, height: -6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 16,
   },
   // Frosted pane: hairline white edge + clip. Put a <BlurView> behind content
   // and overlay `glassTint`. Clips its own shadow, so wrap with shadowElevated.

@@ -20,8 +20,8 @@ export const paywallStepStyles = StyleSheet.create({
     ...typography.title.title1,
     fontSize: 30,
     lineHeight: 38,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
+    fontFamily: fonts.heavy,
+    fontWeight: '800',
     color: colors.text.primary,
     textAlign: 'center',
   },
@@ -83,8 +83,8 @@ export const paywallStepStyles = StyleSheet.create({
   },
   unlockTitle: {
     ...typography.heading.heading2,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
+    fontFamily: fonts.heavy,
+    fontWeight: '800',
     color: colors.text.primary,
   },
   planIntroText: {
@@ -146,8 +146,8 @@ export const paywallStepStyles = StyleSheet.create({
     ...typography.title.title1,
     fontSize: 30,
     lineHeight: 38,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
+    fontFamily: fonts.heavy,
+    fontWeight: '800',
     color: colors.text.primary,
     textAlign: 'left',
   },
@@ -167,8 +167,8 @@ export const paywallStepStyles = StyleSheet.create({
     ...typography.title.title1,
     fontSize: 30,
     lineHeight: 38,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
+    fontFamily: fonts.heavy,
+    fontWeight: '800',
     color: colors.text.primary,
     textAlign: 'center',
   },
@@ -182,8 +182,8 @@ export const paywallStepStyles = StyleSheet.create({
   },
   sectionTitle: {
     ...typography.heading.heading1,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
+    fontFamily: fonts.heavy,
+    fontWeight: '800',
     color: colors.text.primary,
     textAlign: 'center',
   },
@@ -228,9 +228,15 @@ export const paywallStepStyles = StyleSheet.create({
   timelineLine: {
     width: 16,
     flex: 1,
-    minHeight: 36,
+    minHeight: 56,
     marginTop: -6,
     marginBottom: -6,
+    backgroundColor: colors.primary.blue200,
+  },
+  timelineTail: {
+    width: 16,
+    flex: 1,
+    marginTop: -6,
     backgroundColor: colors.primary.blue200,
   },
   timelineLineUpcoming: {
@@ -238,7 +244,9 @@ export const paywallStepStyles = StyleSheet.create({
   },
   timelineCopy: {
     flex: 1,
-    paddingBottom: spacing.sm,
+  },
+  timelineCopySpaced: {
+    paddingBottom: spacing.lg,
   },
   timelineLabel: {
     ...typography.heading.heading1,
@@ -322,8 +330,8 @@ export const paywallStepStyles = StyleSheet.create({
     justifyContent: 'center',
   },
   reminderToggleWrap: {
-    marginTop: spacing.md,
-    marginBottom: spacing.md,
+    marginTop: spacing.xs,
+    marginBottom: spacing.xs,
   },
   planCards: {
     gap: spacing.sm,

@@ -6,6 +6,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { usePaywall } from '../hooks/usePaywall';
 import { PaywallPlacement } from '../services/paywall';
 import type { RootStackScreenProps } from '../app/navigation';
+import { card } from '../theme/card';
 import { colors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
 import { fonts, typography } from '../theme/typography';
@@ -349,8 +350,8 @@ const styles = StyleSheet.create({
     ...typography.title.title1,
     fontSize: 30,
     lineHeight: 38,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
+    fontFamily: fonts.heavy,
+    fontWeight: '800',
     color: colors.text.primary,
     textAlign: 'left',
   },
@@ -375,8 +376,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   reminderToggleWrap: {
-    marginTop: spacing.md,
-    marginBottom: spacing.md,
+    marginTop: spacing.xs,
+    marginBottom: spacing.xs,
   },
   planCards: {
     gap: spacing.sm,
@@ -409,6 +410,7 @@ const styles = StyleSheet.create({
     color: colors.error[700],
   },
   tray: {
+    ...card.trayShadow,
     gap: spacing.xs,
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.sm,
