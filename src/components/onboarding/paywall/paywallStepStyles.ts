@@ -202,7 +202,7 @@ export const paywallStepStyles = StyleSheet.create({
   timelineLine: {
     width: 16,
     flex: 1,
-    minHeight: 56,
+    minHeight: 44,
     marginTop: -6,
     marginBottom: -6,
     backgroundColor: colors.primary.blue200,
@@ -220,7 +220,7 @@ export const paywallStepStyles = StyleSheet.create({
     flex: 1,
   },
   timelineCopySpaced: {
-    paddingBottom: spacing.lg,
+    paddingBottom: spacing.md,
   },
   timelineLabel: {
     ...typography.heading.heading1,
