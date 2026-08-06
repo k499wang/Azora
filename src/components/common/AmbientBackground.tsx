@@ -12,6 +12,6 @@ export default function AmbientBackground() {
 
 const styles = StyleSheet.create({
   fill: {
-    backgroundColor: colors.background.secondary,
+    backgroundColor: colors.background.canvas,
   },
 });

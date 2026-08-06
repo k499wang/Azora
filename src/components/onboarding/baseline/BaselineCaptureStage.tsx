@@ -212,7 +212,7 @@ function BaselineCaptureMetric({
 const styles = StyleSheet.create({
   fill: {
     flex: 1,
-    backgroundColor: colors.background.primary,
+    backgroundColor: colors.background.canvas,
   },
   tapToRevealLayer: {
     ...StyleSheet.absoluteFillObject,

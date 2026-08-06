@@ -219,6 +219,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   highlightCard: {
+    backgroundColor: colors.background.elevated,
     gap: spacing.sm,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,

@@ -147,7 +147,7 @@ const styles = StyleSheet.create({
   sheet: {
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
-    backgroundColor: colors.background.primary,
+    backgroundColor: colors.background.elevated,
     paddingTop: spacing.sm,
     paddingHorizontal: spacing.lg,
     gap: spacing.md,

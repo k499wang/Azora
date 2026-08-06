@@ -410,7 +410,7 @@ export default function OnboardingScreenLayout({
           style={[styles.scrollFade, { opacity: scrollFade }]}
         >
           <LinearGradient
-            colors={['#F4F5F700', colors.background.primary]}
+            colors={[`${colors.background.canvas}00`, colors.background.canvas]}
             style={styles.scrollFadeGradient}
           />
           <Animated.View

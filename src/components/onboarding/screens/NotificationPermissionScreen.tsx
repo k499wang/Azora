@@ -138,6 +138,7 @@ const styles = StyleSheet.create({
   },
   card: {
     ...card.base,
+    backgroundColor: colors.background.elevated,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',

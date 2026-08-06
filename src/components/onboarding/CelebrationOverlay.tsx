@@ -152,7 +152,7 @@ const RING_SIZE = 128;
 const styles = StyleSheet.create({
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: colors.background.primary,
+    backgroundColor: colors.background.canvas,
     alignItems: 'center',
     justifyContent: 'center',
   },
