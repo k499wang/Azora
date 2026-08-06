@@ -17,12 +17,13 @@ import { computeAnnualSavings } from '../../paywall/PlanCard';
 import { PaywallChoosePlanStep } from '../paywall/PaywallChoosePlanStep';
 import { PaywallFreeTrialHeroStep } from '../paywall/PaywallFreeTrialHeroStep';
 import { PaywallBenefitsStep } from '../paywall/PaywallBenefitsStep';
+import { PaywallFreeVsProStep } from '../paywall/PaywallFreeVsProStep';
 import { PaywallTrialStep } from '../paywall/PaywallTrialStep';
 import { PaywallFooterLinks } from '../../paywall/PaywallFooterLinks';
 import PaywallTrialReminderToggle from '../../paywall/PaywallTrialReminderToggle';
 import { paywallStepStyles } from '../paywall/paywallStepStyles';
 
-const STEP_COUNT = 3;
+const STEP_COUNT = 4;
 const STEP_SLIDE_DISTANCE = 40;
 const ENTRANCE_EASING = Easing.bezier(0.22, 1, 0.36, 1);
 const ENTRANCE_INITIAL_SCALE = 0.992;
@@ -385,8 +386,9 @@ export default function OnboardingPaywallScreen({
               }}
             >
               {step === 0 ? <PaywallBenefitsStep /> : null}
-              {step === 1 ? <PaywallFreeTrialHeroStep /> : null}
-              {step === 2 ? (
+              {step === 1 ? <PaywallFreeVsProStep /> : null}
+              {step === 2 ? <PaywallFreeTrialHeroStep /> : null}
+              {step === 3 ? (
                 <View style={styles.finalStepContent}>
                   <PaywallTrialStep
                     hasAnnualTrial={hasAnnualTrial}
@@ -412,7 +414,7 @@ export default function OnboardingPaywallScreen({
               ) : null}
             </Animated.View>
 
-            {step === 2 && errorMessage ? (
+            {step === STEP_COUNT - 1 && errorMessage ? (
               <View style={styles.errorBlock}>
                 <Text style={styles.error}>{errorMessage}</Text>
                 <Pressable
@@ -435,7 +437,7 @@ export default function OnboardingPaywallScreen({
         <View style={styles.footer}>
           {step < STEP_COUNT - 1 ? (
             <>
-              {step === 0 || step === 1 ? (
+              {step < STEP_COUNT - 1 ? (
                 <View style={styles.noPaymentRow}>
                   <Icon name="check" size={18} color={colors.text.primary} />
                   <Text style={styles.noPaymentText}>No Payment Due Now</Text>

@@ -22,6 +22,7 @@ import {
   type OnboardingPlan,
 } from '../../../lib/onboardingPlan';
 import type { MindMapScore } from '../../../lib/onboardingScores';
+import { PERSONALIZED_INTENT_OPTIONS } from '../data/intentOptions';
 
 interface RecommendedExerciseScreenProps {
   plan: OnboardingPlan;
@@ -120,6 +121,7 @@ export default function RecommendedExerciseScreen({
             <ActionCard
               key={action.id}
               action={action}
+              body={actionBody(action, plan, growthArea)}
               onChangeTime={(minutes) => onChangeActionTime(action.id, minutes)}
             />
           ))}
@@ -129,11 +131,39 @@ export default function RecommendedExerciseScreen({
   );
 }
 
+function actionBody(
+  action: PlanAction,
+  plan: OnboardingPlan,
+  growthArea: MindMapScore,
+): string {
+  const goalPhrase =
+    PERSONALIZED_INTENT_OPTIONS.find((option) => option.id === plan.intent)
+      ?.goalPhrase ?? null;
+  const when = planTimeOfDayLabel(action.minutesFromMidnight).toLowerCase();
+
+  if (action.id === 'session') {
+    return goalPhrase
+      ? `${action.minutes} minutes every ${when}, chosen to help you ${goalPhrase}.`
+      : `${action.minutes} minutes of guided breathing every ${when}.`;
+  }
+
+  if (action.id === 'handPicked') {
+    return `A different ${action.minutes}-minute exercise each day, ordered to lift your ${growthArea.label.toLowerCase()} first.`;
+  }
+
+  const projection = plan.projection;
+  return projection
+    ? `A short hold every ${when} to track your progress from ${projection.baselineSeconds}s toward ${projection.highSeconds}s.`
+    : `A short hold every ${when} to track how your breathing is changing.`;
+}
+
 function ActionCard({
   action,
+  body,
   onChangeTime,
 }: {
   action: PlanAction;
+  body: string;
   onChangeTime: (minutesFromMidnight: number) => void;
 }) {
   const technique = techniqueName(action.techniqueId);
@@ -143,12 +173,6 @@ function ActionCard({
       : action.id === 'handPicked'
         ? 'Azora’s exercise'
         : action.title;
-  const body =
-    action.id === 'session'
-      ? 'Guided breathing, matched to the goals you picked.'
-      : action.id === 'handPicked'
-        ? 'Based on your data, Azora planned a different exercise for each day of your custom plan.'
-        : 'A short hold to track how your breathing is changing.';
   const displayTime = formatPlanTime(action.minutesFromMidnight);
 
   const { open, sheet } = useTimePickerSheet({

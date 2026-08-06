@@ -7,32 +7,6 @@ import { fonts, typography } from '../../../theme/typography';
 export const TESTIMONIAL_CARD_WIDTH = 268;
 
 export const paywallStepStyles = StyleSheet.create({
-  benefitsContainer: {
-    gap: spacing.lg,
-    paddingTop: spacing.sm,
-  },
-  benefitsHeader: {
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.sm,
-  },
-  benefitsTitle: {
-    ...typography.title.title1,
-    fontSize: 30,
-    lineHeight: 38,
-    fontFamily: fonts.heavy,
-    fontWeight: '800',
-    color: colors.text.primary,
-    textAlign: 'center',
-  },
-  benefitsTitleAccent: {
-    color: colors.primary.blue600,
-  },
-  benefitsSubtitle: {
-    ...typography.body.small,
-    color: colors.text.secondary,
-    textAlign: 'center',
-  },
   proofCard: {
     ...card.base,
     ...card.shadow,

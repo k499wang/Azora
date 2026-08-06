@@ -54,11 +54,11 @@ const testimonials: Array<{
 
 export function PaywallBenefitsStep() {
   return (
-    <View style={styles.benefitsContainer}>
-      <View style={styles.benefitsHeader}>
-        <Text style={styles.benefitsTitle}>
+    <View style={styles.stepContainer}>
+      <View style={styles.stepHeader}>
+        <Text style={styles.stepTitle}>
           We want you to try{ '\n' }
-          Azora <Text style={styles.benefitsTitleAccent}>for free.</Text>
+          Azora <Text style={styles.stepTitleBrand}>for free.</Text>
         </Text>
       </View>
 
