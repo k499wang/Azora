@@ -344,7 +344,7 @@ const styles = StyleSheet.create({
 
   fullScreen: {
     flex: 1,
-    backgroundColor: colors.background.primary,
+    backgroundColor: colors.background.canvas,
   },
   fullCenter: {
     flex: 1,

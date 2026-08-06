@@ -282,7 +282,7 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: colors.background.elevated,
+    backgroundColor: colors.background.canvas,
   },
   screenBody: {
     flex: 1,
@@ -415,7 +415,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.sm,
     paddingBottom: spacing.lg,
-    backgroundColor: colors.background.elevated,
+    backgroundColor: colors.background.canvas,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: colors.border.subtle,
   },

@@ -246,6 +246,7 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
   },
   actionCard: {
+    backgroundColor: colors.background.elevated,
     gap: spacing.sm,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,

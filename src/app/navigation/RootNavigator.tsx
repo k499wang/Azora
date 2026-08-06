@@ -373,6 +373,6 @@ const styles = StyleSheet.create({
   },
   onboardingOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: colors.background.primary,
+    backgroundColor: colors.background.canvas,
   },
 });

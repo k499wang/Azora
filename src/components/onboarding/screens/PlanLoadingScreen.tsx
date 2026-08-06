@@ -238,6 +238,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
   },
   card: {
+    backgroundColor: colors.background.elevated,
     marginTop: spacing['3xl'],
     padding: spacing.lg,
     gap: spacing.sm,
