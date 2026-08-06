@@ -40,7 +40,7 @@ export function PlanCard({
     ? hasTrial
       ? pkg.trialLabel ?? '7 day free trial'
       : `12mo · ${pkg.priceString}`
-    : 'Billed weekly';
+    : null;
   const trialDuration = pkg.trialLabel?.replace(/\s+free trial$/i, '').toUpperCase() ?? '7-DAY';
   const badgeText = isAnnual
     ? hasTrial
@@ -87,9 +87,11 @@ export function PlanCard({
           <Text style={[styles.planCardTitle, light && styles.textPrimaryLight]}>
             {headline}
           </Text>
-          <Text style={[styles.planCardDetail, light && styles.textMutedLight]}>
-            {planDetail}
-          </Text>
+          {planDetail ? (
+            <Text style={[styles.planCardDetail, light && styles.textMutedLight]}>
+              {planDetail}
+            </Text>
+          ) : null}
         </View>
         <View style={styles.planCardRight}>
           {strikePrice ? (
