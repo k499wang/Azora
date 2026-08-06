@@ -92,7 +92,7 @@ export default function BaselineHero() {
           <Path
             d={`M ${W / 2 - 60} 110 L ${W / 2 - 40} 110 L ${W / 2 - 32} 96 L ${W / 2 - 24} 122 L ${W / 2 - 16} 104 L ${W / 2 - 8} 110 L ${W / 2 + 60} 110`}
             stroke={colors.primary.blue600}
-            strokeWidth={1.8}
+            strokeWidth={3}
             strokeLinecap="round"
             strokeLinejoin="round"
             fill="none"

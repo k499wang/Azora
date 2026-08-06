@@ -72,6 +72,7 @@ import { PaywallPlacement } from '../../services/paywall';
 import { useUserEntitlementQuery } from '../../queries/subscriptions/useUserEntitlementQuery';
 import { useExitOfferStore } from '../../stores/exitOfferStore';
 import { projectScores } from '../../lib/paywallPersonalization';
+import { buildPlanHighlights } from '../../lib/paywallPlanHighlights';
 import { computeMindMap } from '../../lib/onboardingScores';
 import { useAuthStore } from '../../stores/authStore';
 import { requestNotificationPermissions } from '../../services/notifications/notificationClient';
@@ -1531,6 +1532,12 @@ export default function OnboardingFlow({
       <>
         <OnboardingPaywallScreen
           offering={paywall.offering}
+          planHighlights={buildPlanHighlights({
+            plan,
+            growthArea: planMindMap.growthArea,
+            holdSeconds: breathHold?.holdSeconds ?? null,
+          })}
+          name={name}
           selectedPackageId={paywall.selectedPackageId}
           stepIndex={visualStepIndex}
           stepCount={visualStepCount}

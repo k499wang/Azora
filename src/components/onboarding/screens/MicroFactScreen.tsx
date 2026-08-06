@@ -30,7 +30,7 @@ const SLICES: Slice[] = [
 ];
 
 const CHART_SIZE = 220;
-const STROKE = 32;
+const STROKE = 42;
 const RADIUS = (CHART_SIZE - STROKE) / 2;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 

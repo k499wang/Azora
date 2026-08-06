@@ -32,7 +32,17 @@ function dailyExerciseFreeLabel(): string | null {
   return access.limit != null ? `${access.limit} / day` : null;
 }
 
-export function PaywallFreeVsProStep() {
+interface PaywallFreeVsProStepProps {
+  hasTrial: boolean;
+  trialDuration: string;
+}
+
+export function PaywallFreeVsProStep({
+  hasTrial,
+  trialDuration,
+}: PaywallFreeVsProStepProps) {
+  const parsedTrialDays = Number.parseInt(trialDuration, 10);
+  const trialDays = Number.isFinite(parsedTrialDays) ? parsedTrialDays : 7;
   const rows = useMemo<ComparisonRow[]>(
     () => [
       {
@@ -56,8 +66,18 @@ export function PaywallFreeVsProStep() {
     <View style={paywallStepStyles.stepContainer}>
       <View style={paywallStepStyles.stepHeader}>
         <Text style={paywallStepStyles.stepTitle}>
-          Azora is free.{'\n'}Here&apos;s what{' '}
-          <Text style={paywallStepStyles.stepTitleBrand}>Pro</Text> adds.
+          {hasTrial ? (
+            <>
+              Azora is free.{'\n'}Here&apos;s what your{' '}
+              <Text style={paywallStepStyles.stepTitleBrand}>free trial</Text>{' '}
+              gives you.
+            </>
+          ) : (
+            <>
+              Azora is free.{'\n'}Here&apos;s what{' '}
+              <Text style={paywallStepStyles.stepTitleBrand}>Pro</Text> adds.
+            </>
+          )}
         </Text>
       </View>
 
@@ -95,6 +115,12 @@ export function PaywallFreeVsProStep() {
           </View>
         ))}
       </View>
+
+      {hasTrial ? (
+        <Text style={styles.trialFootnote}>
+          Every Pro row is yours free for {trialDays} days.
+        </Text>
+      ) : null}
     </View>
   );
 }
@@ -170,6 +196,15 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: colors.text.secondary,
     textAlign: 'center',
+  },
+  trialFootnote: {
+    ...typography.body.small,
+    fontFamily: fonts.semibold,
+    fontWeight: '500',
+    color: colors.primary.blue600,
+    textAlign: 'center',
+    marginTop: spacing.lg,
+    paddingHorizontal: spacing.md,
   },
   absentDash: {
     width: 16,

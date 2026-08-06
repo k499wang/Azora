@@ -222,22 +222,47 @@ export default function HeartVariabilityScreen({
                   <LinearGradient
                     start={vec(0, PAD_TOP)}
                     end={vec(0, PAD_TOP + innerH)}
-                    colors={[`${lineColor}44`, `${lineColor}00`]}
+                    colors={[
+                      `${lineColor}${chart.fillOpacity.top}`,
+                      `${lineColor}${chart.fillOpacity.bottom}`,
+                    ]}
                   />
                 </Path>
 
                 <Path
                   path={line}
                   style="stroke"
-                  strokeWidth={4}
+                  strokeWidth={chart.lineWidth}
                   strokeCap="round"
                   strokeJoin="round"
                   color={lineColor}
                 />
               </Group>
 
-              <Circle cx={startX} cy={startY} r={6} color={dotColor} />
-              <Circle cx={endX} cy={endY} r={6} color={dotColor} />
+              <Circle
+                cx={startX}
+                cy={startY}
+                r={chart.dotHaloRadius}
+                color={colors.background.primary}
+              />
+              <Circle
+                cx={startX}
+                cy={startY}
+                r={chart.dotRadius}
+                color={dotColor}
+              />
+              <Circle
+                cx={endX}
+                cy={endY}
+                r={chart.dotHaloRadius}
+                color={colors.background.primary}
+              />
+              <Circle
+                cx={endX}
+                cy={endY}
+                r={chart.dotRadius}
+                color={dotColor}
+              />
             </Canvas>
           ) : null}
         </View>

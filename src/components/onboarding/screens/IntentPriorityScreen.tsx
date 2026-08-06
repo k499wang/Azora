@@ -1,15 +1,8 @@
-import { Text } from '../../common/Text';
-import { Pressable, StyleSheet, View } from 'react-native';
-import * as Haptics from 'expo-haptics';
-import { colors } from '../../../theme/colors';
-import { spacing } from '../../../theme/spacing';
-import { fonts, typography } from '../../../theme/typography';
-import { isHapticsEnabled } from '../../../services/preferences/hapticsPreference';
 import { INTENT_OPTIONS } from '../data/intentOptions';
 import { INTENT_ICONS } from '../data/intentOptionIcons';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
-import OnboardingOptionIcon from '../OnboardingOptionIcon';
+import OnboardingOptionCardGrid from '../OnboardingOptionCardGrid';
 import type { OnboardingIntent } from '../types';
 
 interface IntentPriorityScreenProps {
@@ -41,11 +34,6 @@ export default function IntentPriorityScreen({
     selectedIntents.includes(primaryIntent) &&
     !isSubmitting;
 
-  const handleSelect = (intentId: OnboardingIntent) => {
-    if (isHapticsEnabled()) Haptics.selectionAsync().catch(() => {});
-    onSelect(intentId);
-  };
-
   return (
     <OnboardingScreenLayout
       title="What is most important to you?"
@@ -61,102 +49,18 @@ export default function IntentPriorityScreen({
         />
       }
     >
-      <View style={styles.options} accessibilityRole="radiogroup">
-        {options.map((option, index) => {
-          const selected = primaryIntent === option.id;
-
-          return (
-            <Pressable
-              key={option.id}
-              accessibilityRole="radio"
-              accessibilityState={{ selected, disabled: isSubmitting }}
-              disabled={isSubmitting}
-              onPress={() => handleSelect(option.id)}
-              style={({ pressed }) => [
-                styles.option,
-                index !== 0 && styles.optionDivider,
-                pressed && styles.optionPressed,
-                isSubmitting && !selected && styles.optionDisabled,
-              ]}
-            >
-              <OnboardingOptionIcon
-                name={INTENT_ICONS[option.id]}
-                selected={selected}
-              />
-              <Text
-                style={[
-                  styles.optionTitle,
-                  selected && styles.optionTitleSelected,
-                ]}
-                numberOfLines={1}
-              >
-                {option.title}
-              </Text>
-              <View
-                style={[
-                  styles.radio,
-                  selected && { borderColor: colors.primary.blue600 },
-                ]}
-              >
-                {selected ? (
-                  <View
-                    style={[
-                      styles.radioInner,
-                      { backgroundColor: colors.primary.blue600 },
-                    ]}
-                  />
-                ) : null}
-              </View>
-            </Pressable>
-          );
-        })}
-      </View>
+      <OnboardingOptionCardGrid
+        options={options.map((option) => ({
+          id: option.id,
+          title: option.title,
+          accent: option.accent,
+          icon: INTENT_ICONS[option.id],
+        }))}
+        selectedIds={primaryIntent ? [primaryIntent] : []}
+        onSelect={onSelect}
+        disabled={isSubmitting}
+      />
     </OnboardingScreenLayout>
   );
 }
 
-const styles = StyleSheet.create({
-  options: {
-    marginTop: 0,
-  },
-  option: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    paddingVertical: spacing.lg,
-  },
-  optionDivider: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border.default,
-  },
-  optionPressed: {
-    opacity: 0.6,
-  },
-  optionDisabled: {
-    opacity: 0.5,
-  },
-  optionTitle: {
-    ...typography.body.medium,
-    color: colors.text.primary,
-    flex: 1,
-  },
-  optionTitleSelected: {
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    color: colors.text.primary,
-  },
-  radio: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: colors.border.default,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  radioInner: {
-    width: 9,
-    height: 9,
-    borderRadius: 4.5,
-  },
-});

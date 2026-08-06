@@ -1,13 +1,14 @@
-import { Text } from '../../common/Text';
-import { Pressable, StyleSheet, View } from 'react-native';
-import * as Haptics from 'expo-haptics';
-import { colors } from '../../../theme/colors';
-import { spacing } from '../../../theme/spacing';
-import { fonts, typography } from '../../../theme/typography';
-import { isHapticsEnabled } from '../../../services/preferences/hapticsPreference';
 import { GENDER_OPTIONS, type GenderOption } from '../data/genderOptions';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
+import OnboardingOptionCardGrid from '../OnboardingOptionCardGrid';
+
+const GENDER_ICONS: Record<GenderOption['id'], 'gender-female' | 'gender-male' | 'gender-non-binary' | 'help-circle-outline'> = {
+  female: 'gender-female',
+  male: 'gender-male',
+  nonbinary: 'gender-non-binary',
+  prefer_not: 'help-circle-outline',
+};
 
 interface GenderScreenProps {
   value: GenderOption['id'] | null;
@@ -28,11 +29,6 @@ export default function GenderScreen({
   onBack,
   onSkip,
 }: GenderScreenProps) {
-  const handleSelect = (id: GenderOption['id']) => {
-    if (isHapticsEnabled()) Haptics.selectionAsync().catch(() => {});
-    onSelect(id);
-  };
-
   return (
     <OnboardingScreenLayout
       title="How do you identify?"
@@ -48,71 +44,16 @@ export default function GenderScreen({
         />
       }
     >
-      <View style={styles.options}>
-        {GENDER_OPTIONS.map((option, index) => {
-          const selected = value === option.id;
-          const isFirst = index === 0;
-
-          return (
-            <Pressable
-              key={option.id}
-              accessibilityRole="button"
-              accessibilityState={{ selected }}
-              onPress={() => handleSelect(option.id)}
-              style={({ pressed }) => [
-                styles.option,
-                !isFirst && styles.optionDivider,
-                pressed && styles.optionPressed,
-              ]}
-            >
-              <View
-                style={[
-                  styles.dot,
-                  { backgroundColor: selected ? option.accent : colors.border.default },
-                ]}
-              />
-              <Text
-                style={[styles.optionTitle, selected && styles.optionTitleSelected]}
-              >
-                {option.title}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
+      <OnboardingOptionCardGrid
+        options={GENDER_OPTIONS.map((option) => ({
+          id: option.id,
+          title: option.title,
+          accent: option.accent,
+          icon: GENDER_ICONS[option.id],
+        }))}
+        selectedIds={value ? [value] : []}
+        onSelect={onSelect}
+      />
     </OnboardingScreenLayout>
   );
 }
-
-const styles = StyleSheet.create({
-  options: {
-    marginTop: spacing.xs,
-  },
-  option: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.lg,
-    paddingVertical: spacing.lg,
-  },
-  optionDivider: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border.default,
-  },
-  optionPressed: {
-    opacity: 0.6,
-  },
-  dot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-  },
-  optionTitle: {
-    ...typography.body.medium,
-    color: colors.text.primary,
-    flex: 1,
-  },
-  optionTitleSelected: {
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-  },
-});

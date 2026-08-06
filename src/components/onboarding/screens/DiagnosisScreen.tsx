@@ -233,7 +233,10 @@ const styles = StyleSheet.create({
     ...typography.heading.heading2,
     fontFamily: fonts.semibold,
     fontWeight: '500',
+    fontSize: 19,
+    lineHeight: 26,
     color: colors.primary.blue600,
+    flexShrink: 1,
   },
   highlightMeta: {
     flexDirection: 'row',
@@ -245,6 +248,8 @@ const styles = StyleSheet.create({
     ...typography.heading.heading2,
     fontFamily: fonts.semibold,
     fontWeight: '500',
+    fontSize: 19,
+    lineHeight: 26,
     color: colors.text.primary,
     flexShrink: 1,
   },
@@ -262,7 +267,8 @@ const styles = StyleSheet.create({
   },
   highlightBody: {
     ...typography.body.small,
+    fontSize: 16,
     color: colors.text.secondary,
-    lineHeight: 20,
+    lineHeight: 23,
   },
 });
