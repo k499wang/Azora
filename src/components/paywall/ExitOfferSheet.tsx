@@ -1,7 +1,7 @@
 import { Modal } from 'react-native';
 import { usePaywall } from '../../hooks/usePaywall';
 import { PaywallPlacement } from '../../services/paywall';
-import { ExitOfferContent } from './ExitOfferContent';
+import { ExitOfferContent, confirmExitOffer } from './ExitOfferContent';
 
 interface ExitOfferSheetProps {
   visible: boolean;
@@ -60,7 +60,10 @@ export default function ExitOfferSheet({
       visible={visible}
       animationType="slide"
       presentationStyle="fullScreen"
-      onRequestClose={decline}
+      onRequestClose={() => {
+        if (isBusy) return;
+        confirmExitOffer(decline);
+      }}
       onDismiss={onDismiss}
     >
       <ExitOfferContent

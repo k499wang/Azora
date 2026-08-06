@@ -1,7 +1,7 @@
 import { Text } from '../common/Text';
 import { useEffect, useMemo, useState } from 'react';
 import {
-  ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+  ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   Easing,
@@ -26,6 +26,23 @@ import { card } from '../../theme/card';
 const OFFER_DURATION_SECONDS = 5 * 60;
 
 export type ExitOfferPaywall = ReturnType<typeof usePaywall>;
+
+export function confirmExitOffer(
+  onConfirm: () => void,
+  discountPercent?: number | null,
+) {
+  Alert.alert(
+    'Are you sure?',
+    discountPercent != null
+      ? `This ${discountPercent}% discount is only offered once. If you leave now, you won't see it again.`
+      : "This offer is only shown once. If you leave now, you won't see it again.",
+    [
+      { text: 'Keep My Discount', style: 'cancel' },
+      { text: 'Leave Offer', style: 'destructive', onPress: onConfirm },
+    ],
+    { cancelable: true },
+  );
+}
 
 interface ExitOfferContentProps {
   paywall: ExitOfferPaywall;
@@ -97,13 +114,18 @@ export function ExitOfferContent({
   const ctaLabel =
     selectedPackage?.trialLabel != null ? 'Start My Free Trial' : 'Continue';
 
+  const confirmDecline = () => {
+    if (onDecline == null) return;
+    confirmExitOffer(onDecline, discountPercent);
+  };
+
   return (
     <View style={styles.screen}>
       {onDecline != null ? (
         <Pressable
           hitSlop={8}
           disabled={isBusy}
-          onPress={onDecline}
+          onPress={confirmDecline}
           style={[styles.closeButton, { top: insets.top + spacing.sm }]}
         >
           <Icon name="close" size={24} color={colors.text.primary} />
