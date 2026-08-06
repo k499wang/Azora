@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { usePaywall } from '../hooks/usePaywall';
 import { PaywallPlacement } from '../services/paywall';
-import { ExitOfferContent } from '../components/paywall/ExitOfferContent';
+import {
+  ExitOfferContent,
+  confirmExitOffer,
+} from '../components/paywall/ExitOfferContent';
 import type { ExitOfferScreenProps } from '../app/navigation';
 
 export function ExitOfferScreen({ navigation }: ExitOfferScreenProps) {
@@ -38,12 +41,14 @@ export function ExitOfferScreen({ navigation }: ExitOfferScreenProps) {
     const unsubscribe = navigation.addListener('beforeRemove', (event) => {
       if (allowDismissRef.current) return;
 
-      if (isBusy) {
-        event.preventDefault();
-        return;
-      }
+      event.preventDefault();
+      if (isBusy) return;
 
-      paywall.trackDismissed();
+      confirmExitOffer(() => {
+        paywall.trackDismissed();
+        allowDismissRef.current = true;
+        navigation.dispatch(event.data.action);
+      });
     });
 
     return unsubscribe;
