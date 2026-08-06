@@ -49,7 +49,7 @@ export default function ConsistencyScreen({
   return (
     <OnboardingScreenLayout
       title="You have great potential to crush your goal."
-      subtitle="Consistency is where you'll actually see results. Each session builds on the last."
+      subtitle="People who practice daily feel calmer within 2 weeks."
       progress={stepIndex / stepCount}
       onBack={onBack}
       centerBody
