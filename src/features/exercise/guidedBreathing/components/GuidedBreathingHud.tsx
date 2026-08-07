@@ -1,4 +1,3 @@
-import { Text } from '../../../../components/common/Text';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import * as Haptics from 'expo-haptics';
@@ -8,15 +7,11 @@ import type { ExerciseDarkTheme } from '../../../../theme/exerciseDarkThemes';
 import { colors } from '../../../../theme/colors';
 import { spacing } from '../../../../theme/spacing';
 import { isShortScreen } from '../../../../theme/breakpoints';
-import { fonts, typography } from '../../../../theme/typography';
 import Icon from '../../../../components/common/icons/Icon';
 import RoundsHapticPicker from './RoundsHapticPicker';
 
 interface GuidedBreathingHudProps {
   theme: ExerciseDarkTheme;
-  showProgress: boolean;
-  progress: number;
-  currentRound: number;
   totalRounds: number;
   showRoundsPicker: boolean;
   minRounds: number;
@@ -24,6 +19,8 @@ interface GuidedBreathingHudProps {
   onRoundsChange: (rounds: number) => void;
   showSettingsButton: boolean;
   onSettingsPress: () => void;
+  /** False while a session runs — those controls move to the top glass row. */
+  showButtonRow: boolean;
   showPrimaryButton: boolean;
   primaryIcon: 'play' | 'pause';
   onPrimaryPress: () => void;
@@ -32,9 +29,6 @@ interface GuidedBreathingHudProps {
 
 export function GuidedBreathingHud({
   theme,
-  showProgress,
-  progress,
-  currentRound,
   totalRounds,
   showRoundsPicker,
   minRounds,
@@ -42,6 +36,7 @@ export function GuidedBreathingHud({
   onRoundsChange,
   showSettingsButton,
   onSettingsPress,
+  showButtonRow,
   showPrimaryButton,
   primaryIcon,
   onPrimaryPress,
@@ -52,24 +47,7 @@ export function GuidedBreathingHud({
 
   return (
     <View style={[styles.bottomContainer, compact && styles.bottomContainerCompact]}>
-      {showProgress ? (
-        <View style={styles.progressWrap}>
-          <View style={[styles.progressTrack, { backgroundColor: theme.progressTrack }]}>
-            <View
-              style={[
-                styles.progressFill,
-                {
-                  width: `${progress * 100}%`,
-                  backgroundColor: theme.progressFill,
-                },
-              ]}
-            />
-          </View>
-          <Text style={[styles.progressLabel, { color: theme.textTertiary }]}>
-            Round {Math.min(currentRound, totalRounds)} of {totalRounds}
-          </Text>
-        </View>
-      ) : showRoundsPicker ? (
+      {showRoundsPicker ? (
         <RoundsHapticPicker
           value={totalRounds}
           min={minRounds}
@@ -79,53 +57,55 @@ export function GuidedBreathingHud({
         />
       ) : null}
 
-      <View style={styles.btnRow}>
-        <Pressable
-          style={({ pressed }) => [
-            styles.exitBtn,
-            { backgroundColor: theme.surface, borderColor: theme.surfaceBorder },
-            pressed && styles.circleBtnPressed,
-          ]}
-          onPress={() => {
-            if (isHapticsEnabled()) Haptics.selectionAsync().catch(() => {});
-            onClosePress();
-          }}
-        >
-          <Icon name="close" size={26} color={theme.iconPrimary} />
-        </Pressable>
-
-        {showSettingsButton ? (
-          <SettingsGearButton
-            onPress={onSettingsPress}
-            label="Session options"
-            iconName="tune-variant"
-            color={theme.iconPrimary}
-            backgroundColor={theme.surface}
-            borderColor={theme.surfaceBorder}
-            size={64}
-          />
-        ) : null}
-
-        {showPrimaryButton ? (
+      {showButtonRow ? (
+        <View style={styles.btnRow}>
           <Pressable
             style={({ pressed }) => [
-              styles.circleBtn,
+              styles.exitBtn,
               { backgroundColor: theme.surface, borderColor: theme.surfaceBorder },
               pressed && styles.circleBtnPressed,
             ]}
             onPress={() => {
               if (isHapticsEnabled()) Haptics.selectionAsync().catch(() => {});
-              onPrimaryPress();
+              onClosePress();
             }}
           >
-            <MaterialCommunityIcons
-              name={primaryIcon}
-              size={28}
-              color={theme.iconPrimary}
-            />
+            <Icon name="close" size={26} color={theme.iconPrimary} />
           </Pressable>
-        ) : null}
-      </View>
+
+          {showSettingsButton ? (
+            <SettingsGearButton
+              onPress={onSettingsPress}
+              label="Session options"
+              iconName="tune-variant"
+              color={theme.iconPrimary}
+              backgroundColor={theme.surface}
+              borderColor={theme.surfaceBorder}
+              size={64}
+            />
+          ) : null}
+
+          {showPrimaryButton ? (
+            <Pressable
+              style={({ pressed }) => [
+                styles.circleBtn,
+                { backgroundColor: theme.surface, borderColor: theme.surfaceBorder },
+                pressed && styles.circleBtnPressed,
+              ]}
+              onPress={() => {
+                if (isHapticsEnabled()) Haptics.selectionAsync().catch(() => {});
+                onPrimaryPress();
+              }}
+            >
+              <MaterialCommunityIcons
+                name={primaryIcon}
+                size={28}
+                color={theme.iconPrimary}
+              />
+            </Pressable>
+          ) : null}
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -141,33 +121,6 @@ const styles = StyleSheet.create({
   bottomContainerCompact: {
     gap: spacing.md,
     marginBottom: spacing.lg,
-  },
-  progressWrap: {
-    width: '100%',
-    alignItems: 'center',
-    gap: spacing.xs,
-    paddingHorizontal: spacing.lg,
-  },
-  progressTrack: {
-    width: '100%',
-    height: 2,
-    borderRadius: 1,
-    backgroundColor: colors.border.subtle,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    backgroundColor: colors.primary.blue400,
-    opacity: 0.6,
-    borderRadius: 1,
-  },
-  progressLabel: {
-    ...typography.caption.caption1,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    color: colors.text.tertiary,
-    opacity: 0.6,
-    letterSpacing: 1,
   },
   btnRow: {
     flexDirection: 'row',

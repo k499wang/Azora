@@ -8,8 +8,10 @@ import BreathBackdrop, {
   type BreathBackdropPhase,
 } from '../shared/components/BreathBackdrop';
 import { GuidedBreathingHud } from './components/GuidedBreathingHud';
+import { SessionGlassButton } from './components/SessionGlassButton';
 import {
   GUIDED_BREATHING_INTRO_DURATION_MS,
+  GUIDED_BREATHING_SETTLE_MS,
   GuidedBreathingPresentation,
   type GuidedBreathingPhase,
 } from './components/GuidedBreathingPresentation';
@@ -43,10 +45,7 @@ import {
   type GuidedBreathingSequenceCompletion,
 } from './hooks/useGuidedBreathingFlow';
 import { buildBreathingSessionCompletion } from './domain/breathingSessionCompletion';
-import {
-  getBreathingSessionProgress,
-  getBreathingSessionTargetSeconds,
-} from './domain/breathingSessionTiming';
+import { getBreathingSessionTargetSeconds } from './domain/breathingSessionTiming';
 import { resolveBreathingSessionStart } from '../shared/domain/breathingSessionStart';
 
 const MIN_ROUNDS = 1;
@@ -402,7 +401,7 @@ export default function GuidedBreathingSessionScreen({
     introTimeoutRef.current = setTimeout(() => {
       if (!flow.isActive()) return;
       beginExercise(false);
-    }, GUIDED_BREATHING_INTRO_DURATION_MS);
+    }, GUIDED_BREATHING_INTRO_DURATION_MS + GUIDED_BREATHING_SETTLE_MS);
   }, [beginExercise, clearIntroTimeout, flow, resetElapsed]);
 
   const handleStart = () => {
@@ -467,18 +466,25 @@ export default function GuidedBreathingSessionScreen({
     }
   }, [isActive, showHud, hudOpacity]);
 
-  const targetSeconds = getBreathingSessionTargetSeconds(
-    technique.pattern,
-    totalRounds,
-  );
-  const progress = getBreathingSessionProgress(
-    elapsed,
-    targetSeconds,
-    phase === 'done',
-  );
-
   const handleScreenTap = () => {
     if (isActive) showHud();
+  };
+
+  const handlePrimaryPress = () => {
+    if (phase === 'intro') return;
+    if (isActive) showHud();
+    if (phase === 'idle' || phase === 'done') {
+      handleStart();
+    } else if (paused) {
+      handleResume();
+    } else {
+      handlePause();
+    }
+  };
+
+  const handleCloseButtonPress = () => {
+    if (isActive) showHud();
+    handleClose();
   };
 
   const backdropPhase: BreathBackdropPhase =
@@ -499,6 +505,34 @@ export default function GuidedBreathingSessionScreen({
     >
       <ExerciseScaffold
         darkTheme={activeTheme}
+        leftSlot={
+          showSessionControls || isPlacement ? (
+            <Animated.View
+              style={isActive ? { opacity: hudOpacity } : undefined}
+              pointerEvents={isActive && !hudVisible ? 'none' : 'auto'}
+            >
+              <SessionGlassButton
+                theme={activeTheme}
+                icon="close"
+                onPress={handleCloseButtonPress}
+              />
+            </Animated.View>
+          ) : null
+        }
+        rightSlot={
+          showSessionControls && phase !== 'intro' ? (
+            <Animated.View
+              style={isActive ? { opacity: hudOpacity } : undefined}
+              pointerEvents={isActive && !hudVisible ? 'none' : 'auto'}
+            >
+              <SessionGlassButton
+                theme={activeTheme}
+                icon={paused ? 'play' : 'pause'}
+                onPress={handlePrimaryPress}
+              />
+            </Animated.View>
+          ) : null
+        }
         backgroundSlot={
           <BreathBackdrop
             theme={activeTheme}
@@ -514,6 +548,8 @@ export default function GuidedBreathingSessionScreen({
             phase={phase}
             technique={technique}
             theme={activeTheme}
+            round={round}
+            totalRounds={totalRounds}
             heartRate={{
               enabled: hrEnabled,
               active: pulse.active,
@@ -541,9 +577,6 @@ export default function GuidedBreathingSessionScreen({
           >
             <GuidedBreathingHud
               theme={activeTheme}
-              showProgress={showSessionControls}
-              progress={progress}
-              currentRound={round}
               totalRounds={totalRounds}
               showRoundsPicker={!showSessionControls && !isPlacement}
               minRounds={MIN_ROUNDS}
@@ -551,23 +584,11 @@ export default function GuidedBreathingSessionScreen({
               onRoundsChange={setTotalRounds}
               showSettingsButton={phase === 'idle' || phase === 'done'}
               onSettingsPress={() => setAudioSettingsOpen(true)}
+              showButtonRow={!showSessionControls && !isPlacement}
               showPrimaryButton={!isPlacement}
               primaryIcon={showSessionControls && !paused ? 'pause' : 'play'}
-              onPrimaryPress={() => {
-                if (phase === 'intro') return;
-                if (isActive) showHud();
-                if (phase === 'idle' || phase === 'done') {
-                  handleStart();
-                } else if (paused) {
-                  handleResume();
-                } else {
-                  handlePause();
-                }
-              }}
-              onClosePress={() => {
-                if (isActive) showHud();
-                handleClose();
-              }}
+              onPrimaryPress={handlePrimaryPress}
+              onClosePress={handleCloseButtonPress}
             />
           </Animated.View>
         }

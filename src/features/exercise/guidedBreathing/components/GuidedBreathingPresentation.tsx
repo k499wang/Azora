@@ -1,16 +1,26 @@
 import { Text } from '../../../../components/common/Text';
 import { forwardRef, useEffect, useRef } from 'react';
-import { Animated, Easing, StyleSheet, View } from 'react-native';
+import {
+  Animated,
+  Easing,
+  StyleSheet,
+  View,
+  useWindowDimensions,
+} from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import BreathingCircle, {
-  BREATHING_CIRCLE_SIZE,
-  type BreathingCircleRef,
-} from '../../shared/components/BreathingCircle';
+import { useReducedMotion } from 'react-native-reanimated';
+import type { BreathingCircleRef } from '../../shared/components/BreathingCircle';
+import type { BreathFace } from '../../shared/components/breathFaces';
+import BreathingCompanion from './BreathingCompanion';
 import TechniqueIntro from './TechniqueIntro';
 import { HeartRateCameraPreview } from '../../../../components/heartRate/HeartRateCameraPreview';
 import type { HeartRateCameraPreviewProps } from '../../../../components/heartRate/HeartRateCameraPreview';
-import { LiveSignalGraph } from '../../../../components/heartRate/LiveSignalGraph';
-import { ExerciseHeartRateGuidance } from '../../shared/components/ExerciseHeartRateGuidance';
+import HeartRatePlacementStage, {
+  PULSE_PREVIEW_RING,
+  PULSE_PREVIEW_SIZE,
+  pulsePreviewTop,
+} from './HeartRatePlacementStage';
+import SessionHeartRateReadout from './SessionHeartRateReadout';
 import type { BreathingTechnique } from '../techniques';
 import type { BreathingPhase } from '../domain/breathingSessionTiming';
 import type {
@@ -19,10 +29,20 @@ import type {
 } from '../../../../lib/heartRate/types';
 import type { LiveSignalSource } from '../../../../lib/heartRate/liveSignalSource';
 import type { ExerciseDarkTheme } from '../../../../theme/exerciseDarkThemes';
-import { colors } from '../../../../theme/colors';
-import { fonts } from '../../../../theme/typography';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SESSION_GLASS_BUTTON_SIZE } from './SessionGlassButton';
+import { padding, spacing } from '../../../../theme/spacing';
+import { typography } from '../../../../theme/typography';
 
 export const GUIDED_BREATHING_INTRO_DURATION_MS = 750;
+// Beat between the technique copy clearing the screen and the first inhale, so
+// the character has arrived and settled before it asks anything of you.
+export const GUIDED_BREATHING_SETTLE_MS = 500;
+
+const HEADLINE_AREA_HEIGHT = 104;
+// Clears the glass buttons sitting in the scaffold header.
+const TOP_CLEARANCE =
+  padding.screen.vertical + SESSION_GLASS_BUTTON_SIZE + spacing.lg;
 
 export type GuidedBreathingPhase =
   | BreathingPhase
@@ -51,6 +71,8 @@ interface GuidedBreathingPresentationProps {
   phase: GuidedBreathingPhase;
   technique: BreathingTechnique;
   theme: ExerciseDarkTheme;
+  round: number;
+  totalRounds: number;
   heartRate: GuidedBreathingHeartRatePresentation;
 }
 
@@ -65,12 +87,23 @@ const PHASE_LABELS: Record<GuidedBreathingPhase, string> = {
   done: 'Well done',
 };
 
+const PHASE_FACES: Record<GuidedBreathingPhase, BreathFace> = {
+  idle: 'resting',
+  intro: 'resting',
+  placement: 'resting',
+  inhale: 'inhale',
+  holdIn: 'holdIn',
+  exhale: 'exhale',
+  holdOut: 'holdOut',
+  done: 'resting',
+};
+
 export const GuidedBreathingPresentation = forwardRef<
   BreathingCircleRef,
   GuidedBreathingPresentationProps
 >(function GuidedBreathingPresentation(
-  { phase, technique, theme, heartRate },
-  circleRef,
+  { phase, technique, theme, round, totalRounds, heartRate },
+  companionRef,
 ) {
   const isIdle = phase === 'idle';
   const isPlacement = phase === 'placement';
@@ -79,6 +112,13 @@ export const GuidedBreathingPresentation = forwardRef<
     phase === 'holdIn' ||
     phase === 'exhale' ||
     phase === 'holdOut';
+
+  const insets = useSafeAreaInsets();
+  const { height } = useWindowDimensions();
+  const viewport = height - insets.top;
+  const reducedMotion = useReducedMotion();
+  const measuringPulse = heartRate.enabled && heartRate.active && isPlacement;
+  const trackingPulse = heartRate.enabled && heartRate.active && isBreathing;
 
   const transition = useRef(new Animated.Value(isIdle ? 0 : 1)).current;
 
@@ -95,99 +135,62 @@ export const GuidedBreathingPresentation = forwardRef<
     inputRange: [0, 0.55, 1],
     outputRange: [1, 0.4, 0],
   });
-  const introScale = transition.interpolate({
-    inputRange: [0, 1],
-    outputRange: [1, 0.96],
-  });
   const introTranslateY = transition.interpolate({
     inputRange: [0, 1],
     outputRange: [0, -12],
   });
-  const circleOpacity = transition.interpolate({
+  const headlineOpacity = transition.interpolate({
     inputRange: [0, 0.45, 1],
     outputRange: [0, 0.3, 1],
   });
-  const circleScale = transition.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.88, 1],
-  });
 
   const camera = heartRate.camera;
-  const cameraSlot =
-    camera != null && (isPlacement || isBreathing) && heartRate.active ? (
-    <HeartRateCameraPreview
-      {...camera}
-      fingerPlacement={heartRate.fingerPlacement}
-      isActive={heartRate.active}
-    />
-  ) : null;
+
+  const subline = isBreathing && totalRounds > 0 ? `Breath ${round} of ${totalRounds}` : '';
+
   return (
-    <View style={styles.centerStack}>
-      {heartRate.enabled && heartRate.active ? (
-        <View style={styles.liveSignalGraphSlot} pointerEvents="none">
-          <LiveSignalGraph
-            signalSource={heartRate.signalSource}
-            fingerPlacement={heartRate.fingerPlacement}
-            signalStatus={heartRate.signalStatus}
-            bpm={heartRate.bpm}
-            beatTick={heartRate.beatTick}
-            textColor={theme.textPrimary}
-          />
-        </View>
-      ) : null}
+    <View style={styles.stage} pointerEvents="box-none">
+      <BreathingCompanion
+        ref={companionRef}
+        face={PHASE_FACES[phase]}
+        theme={theme}
+        reducedMotion={reducedMotion}
+        visible={!isIdle && !isPlacement}
+      />
 
-      <View style={styles.contentArea}>
-        <Animated.View
-          style={[
-            styles.contentLayer,
-            {
-              opacity: introOpacity,
-              transform: [{ scale: introScale }, { translateY: introTranslateY }],
-            },
-          ]}
-        >
-          <TechniqueIntro
-            technique={technique}
-            textColors={{
-              primary: theme.textPrimary,
-              secondary: theme.textSecondary,
-              tertiary: theme.textTertiary,
-              accent: theme.textAccent,
-            }}
-          />
-        </Animated.View>
+      <Animated.View
+        style={[
+          styles.introLayer,
+          { opacity: introOpacity, transform: [{ translateY: introTranslateY }] },
+        ]}
+        pointerEvents="none"
+      >
+        <TechniqueIntro
+          technique={technique}
+          textColors={{
+            primary: theme.textPrimary,
+            secondary: theme.textSecondary,
+            tertiary: theme.textTertiary,
+            accent: theme.textAccent,
+          }}
+        />
+      </Animated.View>
 
-        <Animated.View
-          style={[
-            styles.contentLayer,
-            {
-              opacity: circleOpacity,
-              transform: [{ scale: circleScale }],
-            },
-          ]}
-        >
-          <BreathingCircle
-            ref={circleRef}
-            cameraSlot={cameraSlot}
-            beatTick={heartRate.beatTick}
-            themeColors={{
-              outline: theme.circleOutline,
-              outlineOpacity: theme.circleOutlineOpacity,
-              outer: theme.circleOuter,
-              outerOpacity: theme.circleOuterOpacity,
-              inner: theme.circleInner,
-              beatFlush: theme.beatFlush,
-            }}
+      <View style={styles.topBlock} pointerEvents="box-none">
+        <View style={styles.headlineArea} pointerEvents="none">
+          <Animated.View
+            style={[styles.headlineLayer, { opacity: headlineOpacity }]}
           >
             {phase === 'done' ? (
               <MaterialCommunityIcons
                 name="check-circle-outline"
-                size={32}
-                color={colors.neutral[50]}
+                size={40}
+                color={theme.textPrimary}
               />
-            ) : PHASE_LABELS[phase] ? (
+            ) : null}
+            {PHASE_LABELS[phase] ? (
               <Text
-                style={styles.phaseLabel}
+                style={[styles.headline, { color: theme.textPrimary }]}
                 numberOfLines={1}
                 adjustsFontSizeToFit
                 minimumFontScale={0.7}
@@ -196,52 +199,135 @@ export const GuidedBreathingPresentation = forwardRef<
                 {PHASE_LABELS[phase]}
               </Text>
             ) : null}
-          </BreathingCircle>
-        </Animated.View>
+            {subline ? (
+              <Text style={[styles.subline, { color: theme.textSecondary }]}>
+                {subline}
+              </Text>
+            ) : null}
+          </Animated.View>
+        </View>
       </View>
 
-      <ExerciseHeartRateGuidance
-        placementActive={isPlacement}
-        breathingActive={isBreathing}
-        theme={theme}
-        active={heartRate.active}
-        fingerPlacement={heartRate.fingerPlacement}
-        signalStatus={heartRate.signalStatus}
-      />
+      {measuringPulse ? (
+        <HeartRatePlacementStage
+          theme={theme}
+          viewport={viewport}
+          bpm={heartRate.bpm}
+          beatTick={heartRate.beatTick}
+          signalSource={heartRate.signalSource}
+          fingerPlacement={heartRate.fingerPlacement}
+          signalStatus={heartRate.signalStatus}
+        />
+      ) : null}
+
+      {/* One mount across both phases. Re-rendering this into a different slot
+          would tear down the capture session and drop the pulse lock the
+          placement flow just earned. */}
+      {camera && (measuringPulse || trackingPulse) ? (
+        <View
+          style={
+            measuringPulse
+              ? [
+                  styles.pulsePreview,
+                  {
+                    top: pulsePreviewTop(viewport),
+                    backgroundColor: theme.circleInner,
+                    borderColor: theme.circleOutline,
+                  },
+                ]
+              : styles.hiddenCamera
+          }
+          pointerEvents="none"
+        >
+          <HeartRateCameraPreview
+            {...camera}
+            fingerPlacement={heartRate.fingerPlacement}
+            isActive={heartRate.active}
+          />
+        </View>
+      ) : null}
+
+      {trackingPulse ? (
+        <View
+          style={[styles.readout, { bottom: insets.bottom + spacing.lg }]}
+          pointerEvents="none"
+        >
+          <SessionHeartRateReadout
+            theme={theme}
+            bpm={heartRate.bpm}
+            fingerPlacement={heartRate.fingerPlacement}
+            signalStatus={heartRate.signalStatus}
+          />
+        </View>
+      ) : null}
     </View>
   );
 });
 
 const styles = StyleSheet.create({
-  centerStack: {
-    alignItems: 'center',
-    justifyContent: 'center',
+  stage: {
+    ...StyleSheet.absoluteFillObject,
   },
-  contentArea: {
-    width: BREATHING_CIRCLE_SIZE,
-    height: BREATHING_CIRCLE_SIZE,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  liveSignalGraphSlot: {
+  topBlock: {
     position: 'absolute',
-    top: -102,
+    top: 0,
+    left: 0,
+    right: 0,
+    paddingTop: TOP_CLEARANCE,
+    paddingHorizontal: padding.screen.horizontal,
+    alignItems: 'center',
+  },
+  // Takes the slot the progress bar used to hold, riding over the character's
+  // body where the breath motion is quietest.
+  readout: {
+    position: 'absolute',
     left: 0,
     right: 0,
     alignItems: 'center',
   },
-  contentLayer: {
+  pulsePreview: {
+    position: 'absolute',
+    alignSelf: 'center',
+    width: PULSE_PREVIEW_SIZE,
+    height: PULSE_PREVIEW_SIZE,
+    borderRadius: PULSE_PREVIEW_SIZE / 2,
+    borderWidth: PULSE_PREVIEW_RING,
+    overflow: 'hidden',
+  },
+  // Transparent and behind the character: kept only so frames keep reaching the
+  // pulse processor once the preview has served its purpose.
+  hiddenCamera: {
+    position: 'absolute',
+    left: 0,
+    bottom: 0,
+    width: 64,
+    height: 64,
+    opacity: 0,
+  },
+  introLayer: {
     ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: padding.screen.horizontal,
   },
-  phaseLabel: {
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    fontSize: 22,
-    lineHeight: 26,
-    letterSpacing: 1.2,
-    color: colors.neutral[50],
+  // Fixed height so the layout does not shift as the phase label swaps.
+  headlineArea: {
+    alignSelf: 'stretch',
+    height: HEADLINE_AREA_HEIGHT,
+    justifyContent: 'center',
+  },
+  headlineLayer: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+  },
+  headline: {
+    ...typography.display.display1,
+    textAlign: 'center',
+  },
+  subline: {
+    ...typography.body.medium,
     textAlign: 'center',
   },
 });

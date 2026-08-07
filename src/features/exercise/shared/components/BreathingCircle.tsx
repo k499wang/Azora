@@ -154,9 +154,7 @@ const BreathingCircle = forwardRef<BreathingCircleRef, BreathingCircleProps>(
             ]}
             pointerEvents="none"
           />
-          {children ? (
-            <View style={styles.innerContent}>{children}</View>
-          ) : null}
+          {children ? <View style={styles.innerContent}>{children}</View> : null}
         </View>
       </View>
     );
