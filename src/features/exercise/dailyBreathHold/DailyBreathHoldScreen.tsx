@@ -11,9 +11,11 @@ import BreathBackdrop, {
 } from '../shared/components/BreathBackdrop';
 import {
   DAILY_BREATH_HOLD_INTRO_DURATION_MS,
+  DAILY_BREATH_HOLD_SETTLE_MS,
   DailyBreathHoldPresentation,
 } from './components/DailyBreathHoldPresentation';
 import { DailyBreathHoldHud } from './components/DailyBreathHoldHud';
+import { SessionGlassButton } from '../shared/components/SessionGlassButton';
 import { useLivePulse } from '../../../hooks/useLivePulse';
 import { HeartRateProcessingScreen } from '../../../components/heartRate/HeartRateProcessingScreen';
 import {
@@ -35,6 +37,9 @@ import {
 } from '../../audioSettings';
 import { useCancellableFlow } from '../shared/hooks/useCancellableFlow';
 import { useHeartRatePlacementFlow } from '../shared/hooks/useHeartRatePlacementFlow';
+import { useHeartRateStallHelp } from '../../../hooks/useHeartRateStallHelp';
+import { HeartRateHelpSheet } from '../../../components/heartRate/HeartRateHelpSheet';
+import { signalHint } from '../shared/components/ExerciseHeartRateGuidance';
 import { useBreathingHeartRateMonitoringAccess } from '../shared/hooks/useBreathingHeartRateMonitoringAccess';
 import { useBreathHoldPhaseSequence } from './hooks/useBreathHoldPhaseSequence';
 import { useBreathHoldCompletionPersistence } from './hooks/useBreathHoldCompletionPersistence';
@@ -148,6 +153,7 @@ export default function DailyBreathHoldScreen({
   } = useBreathingHeartRateMonitoringAccess();
   const {
     holdSeconds,
+    prepCycle,
     paused,
     start: startPrepSequence,
     pause: pausePhaseSequence,
@@ -273,6 +279,17 @@ export default function DailyBreathHoldScreen({
     startPulse,
   ]);
 
+  const bpmLocked =
+    isBpmReady && presentedBpm != null && pulse.signalStatus === 'measuring';
+
+  const stallHelp = useHeartRateStallHelp({
+    active: phase === 'placement' && hrEnabled,
+    pulseConfirmed: bpmLocked,
+    fingerPlacement: pulse.fingerPlacement,
+    signalStatus: pulse.signalStatus,
+    context: 'daily_breath_hold',
+  });
+
   const { startPlacement } = useHeartRatePlacementFlow({
     flow,
     accessLoading: heartRateMonitoringAccessLoading,
@@ -284,8 +301,7 @@ export default function DailyBreathHoldScreen({
     heartRateEnabled: hrEnabled,
     fingerPlacement: pulse.fingerPlacement,
     signalStatus: pulse.signalStatus,
-    bpmLocked:
-      isBpmReady && presentedBpm != null && pulse.signalStatus === 'measuring',
+    bpmLocked,
     onAccessDenied: () => {
       if (heartRateMonitoringProLocked) {
         setHeartRateMonitoringEnabled(false);
@@ -320,7 +336,7 @@ export default function DailyBreathHoldScreen({
       introTimeoutRef.current = null;
       if (!flow.isActive()) return;
       startPrepBreathing(false);
-    }, DAILY_BREATH_HOLD_INTRO_DURATION_MS);
+    }, DAILY_BREATH_HOLD_INTRO_DURATION_MS + DAILY_BREATH_HOLD_SETTLE_MS);
   }, [clearIntroTimeout, flow, startPrepBreathing]);
 
   const startDailyExercise = useCallback(() => {
@@ -442,6 +458,12 @@ export default function DailyBreathHoldScreen({
     if (shouldAutoHideHud) showHud();
   }, [shouldAutoHideHud, showHud]);
 
+  // Once the character is on screen the close and pause controls live in the
+  // scaffold header. During the hold itself nothing is shown — the whole screen
+  // is the release target.
+  const showSessionControls =
+    phase === 'intro' || phase === 'placement' || isBreathHoldBreathingPhase(phase);
+
   const backdropPhase: BreathBackdropPhase =
     phase === 'preInhale' || phase === 'inhale'
       ? 'inhale'
@@ -471,6 +493,34 @@ export default function DailyBreathHoldScreen({
     >
       <ExerciseScaffold
         darkTheme={activeTheme}
+        leftSlot={
+          showSessionControls ? (
+            <Animated.View
+              style={shouldAutoHideHud ? { opacity: hudOpacity } : undefined}
+              pointerEvents={shouldAutoHideHud && !hudVisible ? 'none' : 'auto'}
+            >
+              <SessionGlassButton
+                theme={activeTheme}
+                icon="close"
+                onPress={handleExit}
+              />
+            </Animated.View>
+          ) : null
+        }
+        rightSlot={
+          showSessionControls && phase !== 'intro' && phase !== 'placement' ? (
+            <Animated.View
+              style={shouldAutoHideHud ? { opacity: hudOpacity } : undefined}
+              pointerEvents={shouldAutoHideHud && !hudVisible ? 'none' : 'auto'}
+            >
+              <SessionGlassButton
+                theme={activeTheme}
+                icon={paused ? 'play' : 'pause'}
+                onPress={handlePauseResume}
+              />
+            </Animated.View>
+          ) : null
+        }
         backgroundSlot={
           <BreathBackdrop
             theme={activeTheme}
@@ -488,9 +538,9 @@ export default function DailyBreathHoldScreen({
           <DailyBreathHoldPresentation
             ref={circleRef}
             phase={phase}
-            paused={paused}
             theme={activeTheme}
             protocol={DAILY_BREATH_HOLD_PROTOCOL}
+            prepCycle={prepCycle}
             holdSeconds={holdSeconds}
             bestHoldSeconds={bestHoldSeconds}
             heartRate={{
@@ -514,22 +564,14 @@ export default function DailyBreathHoldScreen({
           />
         }
         bottomSlot={
-          <Animated.View
-            style={shouldAutoHideHud ? { opacity: hudOpacity } : undefined}
-            pointerEvents={shouldAutoHideHud && !hudVisible ? 'none' : 'auto'}
-          >
-            {phase !== 'hold' ? (
-              <DailyBreathHoldHud
-                phase={phase}
-                paused={paused}
-                theme={activeTheme}
-                onSettingsPress={() => setAudioSettingsOpen(true)}
-                onExit={handleExit}
-                onStart={handlePrimaryPress}
-                onPauseResume={handlePauseResume}
-              />
-            ) : null}
-          </Animated.View>
+          phase === 'idle' ? (
+            <DailyBreathHoldHud
+              theme={activeTheme}
+              onSettingsPress={() => setAudioSettingsOpen(true)}
+              onExit={handleExit}
+              onStart={handlePrimaryPress}
+            />
+          ) : null
         }
       />
       {phase === 'hold' && !paused ? (
@@ -558,6 +600,13 @@ export default function DailyBreathHoldScreen({
             onSelect={(theme) => setThemeId(theme.id)}
           />
         }
+      />
+      <HeartRateHelpSheet
+        visible={stallHelp.visible}
+        statusMessage={signalHint(pulse.signalStatus, pulse.fingerPlacement)}
+        pulseConfirmed={bpmLocked}
+        onDismiss={stallHelp.dismiss}
+        theme={activeTheme}
       />
     </View>
   );

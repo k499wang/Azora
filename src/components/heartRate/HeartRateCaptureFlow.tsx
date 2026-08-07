@@ -47,13 +47,7 @@ import {
   getHeartRateCameraTarget,
   getMeasurementCorrectionMessage,
 } from '../../lib/heartRate/captureGuidance';
-import {
-  classifyStallIssue,
-  dominantStallIssue,
-  HEART_RATE_STALL_DELAY_MS,
-  type HeartRateStallIssue,
-  type HeartRateStallSample,
-} from '../../lib/heartRate/captureStall';
+import { useHeartRateStallHelp } from '../../hooks/useHeartRateStallHelp';
 
 interface HeartRateCaptureFlowProps {
   setupScreens?: React.ComponentType<SetupScreenProps>[];
@@ -131,11 +125,6 @@ export function HeartRateCaptureFlow({
   const [pastSetup, setPastSetup] = useState(false);
   const [selectedMode, setSelectedMode] = useState<HeartRateCaptureMode>(DEFAULT_CAPTURE_MODE);
   const [pendingSave, setPendingSave] = useState<PendingHeartRateSave | null>(null);
-  const [helpVisible, setHelpVisible] = useState(false);
-  const helpShownRef = useRef(false);
-  const stallSamplesRef = useRef<HeartRateStallSample[]>([]);
-  const lastStallIssueRef = useRef<HeartRateStallIssue | null>(null);
-  const stallTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cameraTarget = getHeartRateCameraTarget(Device.modelName, Device.modelId);
   const completeHeartRateSessionMutationRef = useRef(completeHeartRateSessionMutation);
   completeHeartRateSessionMutationRef.current = completeHeartRateSessionMutation;
@@ -184,52 +173,14 @@ export function HeartRateCaptureFlow({
     };
   }, [captureState, pendingSave]);
 
-  const clearStallTimer = useCallback(() => {
-    if (stallTimerRef.current == null) return;
-    clearTimeout(stallTimerRef.current);
-    stallTimerRef.current = null;
-  }, []);
-
-  useEffect(() => {
-    if (captureState !== 'camera_check') {
-      clearStallTimer();
-      setHelpVisible(false);
-      return;
-    }
-
-    stallSamplesRef.current = [];
-    lastStallIssueRef.current = null;
-    helpShownRef.current = false;
-    stallTimerRef.current = setTimeout(() => {
-      stallTimerRef.current = null;
-      const issue = dominantStallIssue(stallSamplesRef.current, Date.now());
-      helpShownRef.current = true;
-      setHelpVisible(true);
-      posthog.capture(AnalyticsEvent.HeartRateCaptureHelpShown, {
-        issue,
-        mode: selectedMode,
-        context: context ?? null,
-      });
-    }, HEART_RATE_STALL_DELAY_MS);
-
-    return clearStallTimer;
-  }, [captureState, clearStallTimer, context, posthog, selectedMode]);
-
-  // Which fault held longest decides the advice, so every change is timestamped.
-  useEffect(() => {
-    if (captureState !== 'camera_check') return;
-    const issue = classifyStallIssue(fingerPlacement, signalStatus);
-    if (issue === lastStallIssueRef.current) return;
-    lastStallIssueRef.current = issue;
-    stallSamplesRef.current.push({ issue, atMs: Date.now() });
-  }, [captureState, fingerPlacement, signalStatus]);
-
-  // A confirmed pulse settles the check for good: stand down and get out of the way.
-  useEffect(() => {
-    if (currentBpm == null) return;
-    clearStallTimer();
-    setHelpVisible(false);
-  }, [clearStallTimer, currentBpm]);
+  const stallHelp = useHeartRateStallHelp({
+    active: captureState === 'camera_check',
+    pulseConfirmed: currentBpm != null,
+    fingerPlacement,
+    signalStatus,
+    context,
+    mode: selectedMode,
+  });
 
   const beginCapture = useCallback(async () => {
     try {
@@ -410,7 +361,7 @@ export function HeartRateCaptureFlow({
         saveError={completeHeartRateSessionMutation.isError}
         onRetrySave={retrySave}
         context={context}
-        helpShown={helpShownRef.current}
+        helpShown={stallHelp.shown}
       />
     );
   }
@@ -512,10 +463,10 @@ export function HeartRateCaptureFlow({
       </View>
 
       <HeartRateHelpSheet
-        visible={helpVisible}
+        visible={stallHelp.visible}
         statusMessage={checkConfig.status}
         pulseConfirmed={currentBpm != null}
-        onDismiss={() => setHelpVisible(false)}
+        onDismiss={stallHelp.dismiss}
       />
     </SafeAreaView>
   );

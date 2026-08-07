@@ -11,22 +11,24 @@ const FALLBACK_SCALE_SECONDS = 60;
 interface Props {
   holdSeconds: number;
   bestSeconds: number;
-  textColor: string;
   trackColor: string;
   fillColor: string;
 }
 
-function formatHoldTime(totalSeconds: number): string {
+export function formatHoldTime(totalSeconds: number): string {
   const safe = Math.max(0, Math.floor(totalSeconds));
   const minutes = Math.floor(safe / 60);
   const seconds = safe % 60;
   return `${minutes}:${seconds.toString().padStart(2, '0')}`;
 }
 
+/**
+ * The elapsed time itself is the session headline now, so this is only the
+ * track: how far along you are and where your best sits.
+ */
 export default function HoldProgressBar({
   holdSeconds,
   bestSeconds,
-  textColor,
   trackColor,
   fillColor,
 }: Props) {
@@ -47,16 +49,6 @@ export default function HoldProgressBar({
 
   return (
     <View style={styles.wrap}>
-      <View style={styles.headerRow}>
-        <Text style={[styles.timer, { color: textColor }]}>
-          {formatHoldTime(holdSeconds)}
-        </Text>
-        {hasBest ? (
-          <Text style={[styles.bestLabel, pastBest && styles.bestLabelPast]}>
-            Best {formatHoldTime(bestSeconds)}
-          </Text>
-        ) : null}
-      </View>
       <View style={[styles.track, { backgroundColor: trackColor }]}>
         <View
           style={[
@@ -68,14 +60,14 @@ export default function HoldProgressBar({
           ]}
         />
         {markerPct != null ? (
-          <View
-            style={[
-              styles.marker,
-              { left: `${markerPct * 100}%` },
-            ]}
-          />
+          <View style={[styles.marker, { left: `${markerPct * 100}%` }]} />
         ) : null}
       </View>
+      {hasBest ? (
+        <Text style={[styles.bestLabel, pastBest && styles.bestLabelPast]}>
+          Best {formatHoldTime(bestSeconds)}
+        </Text>
+      ) : null}
     </View>
   );
 }
@@ -83,21 +75,8 @@ export default function HoldProgressBar({
 const styles = StyleSheet.create({
   wrap: {
     width: '100%',
-    paddingHorizontal: spacing.xl,
     gap: spacing.xs,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    justifyContent: 'space-between',
-  },
-  timer: {
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    fontSize: 16,
-    letterSpacing: 0.6,
-    fontVariant: ['tabular-nums'],
-    opacity: 0.85,
+    alignItems: 'flex-end',
   },
   bestLabel: {
     fontFamily: fonts.semibold,

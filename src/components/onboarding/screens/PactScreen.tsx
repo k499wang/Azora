@@ -320,7 +320,7 @@ export default function PactScreen({
   return (
     <>
       <OnboardingScreenLayout
-        title="Make a promise to yourself to show up every day."
+        title="Make a promise to yourself to show up."
         subtitle="Consistency beats intensity. Every day matters more than any one session."
         progress={stepIndex / stepCount}
         onBack={onBack}

@@ -1,7 +1,7 @@
 import { Text } from '../../../../components/common/Text';
 import { StyleSheet, View } from 'react-native';
 import { LiveSignalGraph } from '../../../../components/heartRate/LiveSignalGraph';
-import { HeartRatePlacementGuidance } from '../../shared/components/ExerciseHeartRateGuidance';
+import { HeartRatePlacementGuidance } from './ExerciseHeartRateGuidance';
 import type {
   FingerPlacementState,
   SignalStatus,

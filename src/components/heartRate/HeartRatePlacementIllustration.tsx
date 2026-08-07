@@ -3,7 +3,10 @@ import { Image } from 'expo-image';
 import * as Device from 'expo-device';
 import Icon from '../common/icons/Icon';
 import { Text } from '../common/Text';
-import { colors } from '../../theme/colors';
+import {
+  LIGHT_HEART_RATE_HELP_PALETTE,
+  type HeartRatePlacementPalette,
+} from '../../theme/heartRateHelpPalette';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 import { getOnboardingImageSource } from '../../services/images/onboardingImageCache';
@@ -11,10 +14,12 @@ import { getHeartRateCameraProfile } from '../../lib/heartRate/cameraProfile';
 
 interface HeartRatePlacementIllustrationProps {
   compact?: boolean;
+  palette?: HeartRatePlacementPalette;
 }
 
 export function HeartRatePlacementIllustration({
   compact = false,
+  palette = LIGHT_HEART_RATE_HELP_PALETTE,
 }: HeartRatePlacementIllustrationProps) {
   const cameraProfile = getHeartRateCameraProfile(Device.modelName, Device.modelId);
   const cameraIllustration = cameraProfile.layout === 'triple'
@@ -28,10 +33,12 @@ export function HeartRatePlacementIllustration({
   if (cameraIllustration == null) {
     return (
       <View style={[styles.genericGuide, compact && styles.genericGuideCompact]}>
-        <View style={styles.genericIcon}>
-          <Icon name="camera" size={22} color={colors.primary.blue700} />
+        <View
+          style={[styles.genericIcon, { backgroundColor: palette.markerSurface }]}
+        >
+          <Icon name="camera" size={22} color={palette.markerText} />
         </View>
-        <Text style={styles.genericText}>
+        <Text style={[styles.genericText, { color: palette.detail }]}>
           The live camera check will show you which lens to cover.
         </Text>
       </View>
@@ -71,13 +78,11 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: colors.primary.blue100,
     alignItems: 'center',
     justifyContent: 'center',
   },
   genericText: {
     ...typography.body.small,
-    color: colors.text.secondary,
     flexShrink: 1,
   },
 });

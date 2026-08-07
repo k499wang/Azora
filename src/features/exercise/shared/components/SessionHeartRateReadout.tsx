@@ -1,7 +1,7 @@
 import { Text } from '../../../../components/common/Text';
 import { StyleSheet, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { signalHint } from '../../shared/components/ExerciseHeartRateGuidance';
+import { signalHint } from './ExerciseHeartRateGuidance';
 import type {
   FingerPlacementState,
   SignalStatus,
