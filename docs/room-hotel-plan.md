@@ -49,9 +49,9 @@ this plan modifies it, so it can be regenerated without losing work.
 
 ## 3. Build order
 
-Steps 1–3 are built. The migration has not been applied — there is no local
-Supabase CLI, so `20260807000200_room_daily_earn.sql` is unrun and its backfill
-is unverified against real rows.
+Steps 1–4 are built and `20260807000200_room_daily_earn.sql` has been applied.
+Steps 5–7 remain; until step 5 lands the loop has no trigger, so the only way to
+reach a claim is to open the room from Home.
 
 ### Step 1 — Extract the dailies-complete signal — **done**
 
@@ -136,23 +136,81 @@ the user makes, not something that happens to them.
   nowhere honest to sit on a `Room`.
 - `docs/query-cache-invalidation-map.md` updated in the same change.
 
-### Step 4 — The picker screen
+### Step 4 — The picker screen — **done**
 
-`RoomDecorateScreen` becomes today's piece, in three states:
+`RoomDecorateScreen` is now today's piece, in four states, all driven by
+`roomProgress` + `useDailiesCompletion`. The room itself is on screen above the
+panel in every one of them, so the user is always looking at what they are
+filling.
 
-- **Locked** — dailies unfinished; show which ones remain.
-- **Choose** — the current slot's options as `DecorationTile`s.
-- **Complete** — 7/7; pick the next room's look and open the next floor.
+- **Locked** — dailies unfinished; a checklist of the three, ticked as they land.
+- **Claimed** — already earned today; come back tomorrow.
+- **Choose** — the current slot's ~5 options as a two-column grid of
+  `DecorationTile`s, each previewing the object in place over a ghosted room.
+- **Complete** — 7/7; a CTA through to `RoomComplete`.
 
-The current all-seven-days-at-once layout goes away.
+`RoomCompleteScreen` is a separate route rather than a fifth state. Finishing a
+room is the milestone the whole loop builds toward, and a panel swapping under
+the user's thumb would undersell it. Placing the seventh piece `replace()`s
+straight into it, so the celebration is the response to the tap.
 
-### Step 5 — Reward card and Home badge
+It shows the finished room, then the next room's frame hue as three live
+`HexRoom` previews rather than color chips — the choice is about the room, so
+the room is what you pick from. Opening the next floor returns to Home.
 
-A shared `RoomRewardCard`, rendered by both `SessionCompleteScreen.tsx` and
+### Step 5 — Reward banner and Home badge — **done**
+
+`RoomRewardBanner` is rendered by both `SessionCompleteScreen.tsx` and
 `ShareableResultScreen.tsx` — either can be the screen where the third daily
-lands — visible only when that completion finished the set. `HomeRoom` also
-shows a "ready" badge while a piece is unclaimed, so skipping past the result
-screen never hides the reward.
+lands — and renders nothing unless a piece is actually claimable. `HomeRoom`
+shows a "A new piece is ready" pill for the same condition.
+
+**It is deliberately quiet**, and this is the one place the design departs from
+what Duolingo and Finch do. Those apps celebrate hard at the completion screen
+because their post-task state is *achievement*. A breathing app's post-session
+state is *calm* — the thing the session was for — and there is documented
+criticism of wellness apps whose gamification interrupts exactly that. So the
+banner sits at the bottom of the existing result content, below the share CTA:
+no modal, no interstitial, no auto-navigation, nothing blocking the exit.
+
+The Home badge carries the real weight. Home is where attention has already
+reset and where the collection lives, so missing the banner costs nothing —
+which is what lets the banner stay quiet.
+
+The loud celebration is spent on the 7/7 milestone (`RoomCompleteScreen`),
+where it is earned and rare.
+
+All four call sites — picker, badge, and both result screens — read
+`useRoomClaim`, so the badge can never promise a piece the picker refuses.
+
+**The banner renders on every session, not only the third.** Most sessions are
+someone's first or second of the day, so the partial state is the common case
+and "one more to go" is the whole pull — the same reason Duolingo shows quest
+progress on every lesson-complete screen and the reward only on the last. Its
+three states:
+
+| Dailies done | Shows |
+| --- | --- |
+| 1 of 3 | "2 more to earn your piece", next slot's category, the three dailies |
+| 2 of 3 | "1 more to earn your piece", same list with two ticked |
+| 3 of 3 | "A new piece is ready ›" → the picker |
+
+Incomplete dailies in the list are tappable and start that exercise, which is
+why `useStartDaily` exists: Home and the banner both offer this, and the Pro
+gate is the part that must not drift into two copies. Extracting it also emptied
+most of `HomeScreen`'s body.
+
+One consequence to know about: `DailyPlanStarted`'s `streak_days` now reads
+`useProfileSummaryQuery().currentStreak` rather than
+`useHomeStatsQuery().streak.currentStreak`. Both are backed by `user_streaks_v`,
+so the value is the same, but the source moved.
+
+**There is no locked preview of the piece, by design.** The reward is a choice
+among five options, so any single object shown behind a padlock would be a
+spoiler or a lie about what arrives. The banner names the *category*
+(`DAYS[n].note` — "small furniture") instead: enough to anticipate, nothing
+spent. Unknown rewards also outperform fully predictable ones, and a padlock in
+a calm app reads as a paywall tease.
 
 ### Step 6 — Hotel screen
 

@@ -1,11 +1,7 @@
-import { ambientCategory } from './catalog/ambient';
 import { chimeCategory } from './catalog/chimes';
-import { voiceCategory } from './catalog/voices';
 import type { AudioCategory, AudioCategoryId, AudioOption } from './types';
 
 export const audioCategories: AudioCategory[] = [
-  voiceCategory,
-  ambientCategory,
   chimeCategory,
 ];
 

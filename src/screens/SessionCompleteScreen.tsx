@@ -7,18 +7,18 @@ import * as Haptics from 'expo-haptics';
 import { colors } from '../theme/colors';
 import { typography, fonts } from '../theme/typography';
 import { spacing, padding, margin } from '../theme/spacing';
+import RoomProgressBanner from '../features/room/RoomProgressBanner';
+import HelpfulnessQuestion from '../components/exercise/HelpfulnessQuestion';
+import BlobCharacter from '../components/home/BlobCharacter';
+import { CATEGORY_STYLE } from '../features/exercise/guidedBreathing/categoryPalette';
+import { getTechnique } from '../features/exercise/guidedBreathing/techniques';
+import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
 import { card } from '../theme/card';
-import SectionHeader from '../components/common/SectionHeader';
 import BPMChart from '../components/heartRate/BPMChart';
-import GlassIconButton, {
-  GLASS_ICON_BUTTON_SIZE,
-} from '../components/common/GlassIconButton';
-import ThermometerStatCard from '../components/heartRate/ThermometerStatCard';
-import ScoreRing from '../components/exercise/ScoreRing';
+import GlassIconButton from '../components/common/GlassIconButton';
 import type { SessionCompleteScreenProps } from '../app/navigation';
 import { useAuthStore } from '../stores/authStore';
 import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
-import { buildAffirmation } from '../lib/affirmation';
 import { buildBpmSeries } from '../lib/heartRate/bpmSeries';
 import { withTodaysSession } from '../lib/weeklyProgress';
 import { APP_STORE_URL } from '../lib/appStoreLink';
@@ -26,6 +26,17 @@ import {
   maybeRequestSessionReview,
   ReviewTrigger,
 } from '../services/reviews/storeReview';
+
+const HERO_BLOB_SIZE = 132;
+
+function StatCell({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.statCell}>
+      <Text style={styles.statValue}>{value}</Text>
+      <Text style={styles.statLabel}>{label}</Text>
+    </View>
+  );
+}
 
 function formatDuration(secs: number): string {
   const m = Math.floor(secs / 60);
@@ -39,10 +50,10 @@ export default function SessionCompleteScreen({
 }: SessionCompleteScreenProps) {
   const insets = useSafeAreaInsets();
   const {
+    techniqueId,
     techniqueName,
     techniqueBpmResponse,
     breathCount,
-    targetBreaths,
     durationSec,
     avgBpm,
     hrSamples = [],
@@ -58,13 +69,12 @@ export default function SessionCompleteScreen({
   const summary = profileSummaryQuery.data;
   const displayName = summary?.profile?.displayName ?? null;
   const firstName = displayName?.trim().split(/\s+/)[0] ?? null;
-  const affirmation = buildAffirmation({
-    firstName,
-    hour: new Date().getHours(),
-    durationSec,
-  });
-
-  const breathScore = targetBreaths > 0 ? Math.max(0, Math.min(1, breathCount / targetBreaths)) : 0;
+  const technique = getTechnique(techniqueId);
+  const categoryStyle = CATEGORY_STYLE[technique?.category ?? 'calm'];
+  const hue = categoryStyle.hue;
+  const congratulation =
+    firstName == null ? 'Nice work' : `Nice work, ${firstName}`;
+  const todayLocalDate = useTodayLocalDate();
 
   // Derive Avg HR from the same smoothed series the graph plots so the stat
   // and the line agree. Falls back to the raw session average when there are
@@ -127,48 +137,40 @@ export default function SessionCompleteScreen({
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.header}>
-          <Text style={styles.title}>{techniqueName}</Text>
-        </View>
-
         <View style={styles.heroWrap}>
-          <View style={styles.heroCard}>
-            <ScoreRing
-              value={breathCount}
-              fill={breathScore}
-              caption="Breaths"
-              captionFontSize={18}
-              captionPosition="bottom"
-              captionTextTransform="none"
-              ringColors={[colors.primary.blue400, colors.primary.blue600]}
-              gapLabel={null}
-            />
-            <Text style={styles.affirmation}>{affirmation}</Text>
+          <View style={styles.heroShadow}>
+            <View style={[styles.heroCard, { backgroundColor: hue.base }]}>
+              <BlobCharacter
+                character={categoryStyle.character}
+                faceExpression="energy"
+                size={HERO_BLOB_SIZE}
+                bodyColor={hue.soft}
+                faceColor={hue.ink}
+              />
+              <Text style={styles.heroTitle}>{congratulation}</Text>
+              <Text style={styles.heroSubtitle}>
+                {techniqueName} · {formatDuration(durationSec)}
+              </Text>
+            </View>
           </View>
         </View>
 
-        <View style={styles.statsHeader}>
-          <SectionHeader title="Statistics" />
+        <View style={styles.bodySection}>
+          <HelpfulnessQuestion
+            techniqueId={techniqueId}
+            localDate={todayLocalDate}
+          />
+
+          <RoomProgressBanner sourceScreen="SessionComplete" />
         </View>
 
-        <View style={styles.tileRow}>
-          <ThermometerStatCard
-            label="Duration"
-            value={durationSec}
-            unit=""
-            valueText={formatDuration(durationSec)}
-            min={30}
-            max={300}
-            accent={colors.primary.blue500}
-          />
-          <ThermometerStatCard
+        <View style={styles.statRow}>
+          <StatCell label="Duration" value={formatDuration(durationSec)} />
+          <StatCell
             label="Avg HR"
-            value={displayAvgBpm}
-            unit="bpm"
-            min={40}
-            max={120}
-            accent={colors.error[500]}
+            value={displayAvgBpm == null ? '—' : `${Math.round(displayAvgBpm)}`}
           />
+          <StatCell label="Breaths" value={`${breathCount}`} />
         </View>
 
         {showGraph ? (
@@ -221,14 +223,6 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: spacing['5xl'],
   },
-  header: {
-    // The close and share buttons float over this row, so the title column has
-    // to stop short of them rather than at the screen edge.
-    paddingHorizontal:
-      padding.screen.horizontal + GLASS_ICON_BUTTON_SIZE + spacing.sm,
-    paddingTop: padding.screen.vertical,
-    alignItems: 'center',
-  },
   closeButton: {
     position: 'absolute',
     left: padding.screen.horizontal,
@@ -239,39 +233,55 @@ const styles = StyleSheet.create({
     right: padding.screen.horizontal,
     zIndex: 1,
   },
-  title: {
-    ...typography.title.title1,
-    color: colors.text.primary,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-  },
   heroWrap: {
     paddingHorizontal: padding.screen.horizontal,
     marginTop: margin.sectionGap,
   },
+  heroShadow: {
+    ...card.blockShadow,
+  },
   heroCard: {
-    paddingBottom: spacing.xl,
+    ...card.block,
+    paddingVertical: spacing.xl,
     paddingHorizontal: spacing.lg,
     alignItems: 'center',
+    gap: spacing.xs,
   },
-  affirmation: {
-    ...typography.title.title2,
-    color: colors.text.primary,
-    fontFamily: fonts.medium,
-    fontWeight: '500',
-    marginTop: spacing.md,
+  heroTitle: {
+    ...typography.title.title1,
+    fontFamily: fonts.semibold,
+    color: colors.text.inverse,
     textAlign: 'center',
-    paddingHorizontal: spacing.md,
+    marginTop: spacing.sm,
   },
-  statsHeader: {
+  heroSubtitle: {
+    ...typography.body.medium,
+    color: colors.onBlock.textMuted,
+    textAlign: 'center',
+  },
+  bodySection: {
     paddingHorizontal: padding.screen.horizontal,
-    marginTop: margin.resultSection,
-    marginBottom: spacing.sm,
+    marginTop: margin.sectionGap,
+    gap: margin.itemGap,
   },
-  tileRow: {
+  statRow: {
     flexDirection: 'row',
-    gap: spacing.sm,
     marginHorizontal: padding.screen.horizontal,
+    marginTop: margin.sectionGap,
+  },
+  statCell: {
+    flex: 1,
+    alignItems: 'center',
+    gap: 2,
+  },
+  statValue: {
+    ...typography.title.title3,
+    fontFamily: fonts.semibold,
+    color: colors.text.primary,
+  },
+  statLabel: {
+    ...typography.body.small,
+    color: colors.text.tertiary,
   },
   graphWrap: {
     paddingHorizontal: padding.screen.horizontal,
@@ -284,7 +294,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: spacing.sm,
     marginHorizontal: padding.screen.horizontal,
-    marginTop: margin.resultSection,
+    marginTop: margin.sectionGap,
     paddingVertical: spacing.md,
     borderRadius: spacing.md,
     backgroundColor: colors.primary.blue600,

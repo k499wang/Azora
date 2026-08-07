@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { card } from '../../theme/card';
+import { colors } from '../../theme/colors';
 
 interface SettingsGroupProps {
   children: ReactNode;
@@ -13,6 +14,7 @@ export default function SettingsGroup({ children }: SettingsGroupProps) {
 const styles = StyleSheet.create({
   group: {
     ...card.base,
+    backgroundColor: colors.background.elevated,
     overflow: 'hidden',
   },
 });

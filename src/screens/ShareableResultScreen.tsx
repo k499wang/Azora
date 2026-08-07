@@ -6,6 +6,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 import { typography, fonts } from '../theme/typography';
 import { spacing, padding, margin } from '../theme/spacing';
+import RoomProgressBanner from '../features/room/RoomProgressBanner';
 import { card } from '../theme/card';
 import HeartRateStatsSection from '../components/heartRate/HeartRateStatsSection';
 import ScoreRing from '../components/exercise/ScoreRing';
@@ -118,6 +119,11 @@ export default function ShareableResultScreen({
         >
           {renderHeroCard()}
 
+          <RoomProgressBanner
+            sourceScreen="DailyResult"
+            style={styles.roomBanner}
+          />
+
           <View style={styles.statsSection}>
             <HeartRateStatsSection
               hrDrop={hrDropBpm}
@@ -221,6 +227,10 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semibold,
     fontWeight: '500',
     color: colors.text.inverse,
+  },
+  roomBanner: {
+    marginHorizontal: padding.screen.horizontal,
+    marginTop: margin.resultSection,
   },
   statsSection: {
     marginTop: margin.resultSection,
