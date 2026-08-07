@@ -32,7 +32,10 @@ function placementHint(placement: FingerPlacementState): string {
   }
 }
 
-function signalHint(status: SignalStatus, placement: FingerPlacementState): string {
+export function signalHint(
+  status: SignalStatus,
+  placement: FingerPlacementState,
+): string {
   switch (status) {
     case 'excessive_motion':
       return 'Too much movement — keep still';

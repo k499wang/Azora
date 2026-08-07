@@ -11,6 +11,7 @@ interface ExerciseScaffoldProps {
   title?: string;
   subtitle?: string;
   titleSlot?: ReactNode;
+  leftSlot?: ReactNode;
   rightSlot?: ReactNode;
   pickerSlot?: ReactNode;
   backgroundSlot?: ReactNode;
@@ -24,6 +25,7 @@ export default function ExerciseScaffold({
   title,
   subtitle,
   titleSlot,
+  leftSlot,
   rightSlot,
   pickerSlot,
   backgroundSlot,
@@ -46,6 +48,7 @@ export default function ExerciseScaffold({
 
       <View style={styles.header}>
         <View style={styles.titleRow}>
+          {leftSlot}
           {!titleSlot && (
             <View style={styles.titleCopy}>
               {title ? (
@@ -60,7 +63,12 @@ export default function ExerciseScaffold({
               ) : null}
             </View>
           )}
-          <View style={[styles.headerRight, titleSlot ? styles.headerRightPushed : null]}>
+          <View
+            style={[
+              styles.headerRight,
+              titleSlot || leftSlot ? styles.headerRightPushed : null,
+            ]}
+          >
             {rightSlot}
             {onClose ? (
               <Pressable
