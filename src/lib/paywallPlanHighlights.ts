@@ -5,10 +5,10 @@ import type { OnboardingPlan } from './onboardingPlan';
 
 const INTENT_HIGHLIGHT: Record<OnboardingIntent, string> = {
   stress_relief: 'Run slow-exhale resets that pull your heart rate back down',
-  calm_fast: 'Reach for a 60-second rescue breath without anyone noticing',
+  calm_fast: 'Reach for a 60-second reset whenever stress spikes',
   sleep: 'Start a wind down timed to the bedtime you gave us',
-  focus: 'Clear the fog with breathing before you open your laptop',
-  energy: 'Charge up in the morning without another coffee',
+  focus: 'Clear your head with a short reset before deep work',
+  energy: 'Lift your energy without reaching for caffeine',
   spiritual: 'Settle into coherent breathing at a steady, held rhythm',
   yoga: 'Train belly breathing that carries into your practice',
   heart_health: 'Scan your heart rate and HRV in 90 seconds with your camera',
@@ -17,13 +17,13 @@ const INTENT_HIGHLIGHT: Record<OnboardingIntent, string> = {
 };
 
 const INTENT_PROOF: Record<Exclude<OnboardingIntent, 'other'>, string> = {
-  stress_relief: 'Feel your shoulders drop by the second round of exhales',
+  stress_relief: 'Feel your body settle within a few rounds of breathing',
   calm_fast: 'Come back down in under a minute, wherever you are',
-  sleep: 'Drift off on the exhale instead of rerunning the day',
-  focus: 'Win one clear hour of work before the noise creeps back',
-  energy: 'Skip the 3pm crash with a two-minute breath instead',
+  sleep: 'Wind down on the exhale instead of replaying the day',
+  focus: 'Hold your attention longer before it starts to slip',
+  energy: 'Lift the afternoon dip with a two-minute breath',
   spiritual: 'Sit longer without your mind drifting off the breath',
-  yoga: 'Hold poses longer with breath left over at the end',
+  yoga: 'Move through your practice with steadier breath',
   heart_health: 'Watch your resting heart rate settle week over week',
   daily_habit: 'Build a streak that survives the days you almost skip',
 };

@@ -315,6 +315,10 @@ export default function OnboardingPaywallScreen({
 
   const isFinal = step === STEP_COUNT - 1;
 
+  const [viewportHeight, setViewportHeight] = useState(0);
+  const [contentHeight, setContentHeight] = useState(0);
+  const contentOverflows = contentHeight > viewportHeight + 1;
+
   return (
     <Animated.View
       style={[styles.screen]}
@@ -376,6 +380,12 @@ export default function OnboardingPaywallScreen({
           style={styles.scroll}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
+          scrollEnabled={contentOverflows}
+          alwaysBounceVertical={false}
+          onLayout={(event) =>
+            setViewportHeight(event.nativeEvent.layout.height)
+          }
+          onContentSizeChange={(_, height) => setContentHeight(height)}
         >
           <Animated.View
             style={[
