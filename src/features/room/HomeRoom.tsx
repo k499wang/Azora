@@ -13,7 +13,7 @@ export default function HomeRoom() {
   const { width } = useWindowDimensions();
   const navigation = useNavigation<MainTabNavigationProp<'Home'>>();
   const userId = useAuthStore((state) => state.user?.id ?? null);
-  const room = useCurrentRoomQuery(userId).data;
+  const room = useCurrentRoomQuery(userId).data?.room;
   const roomWidth = Math.min(
     width - padding.screen.horizontal * 2,
     MAX_ROOM_WIDTH,

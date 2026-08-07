@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Text } from '../../../../components/common/Text';
 import type { BreathingCircleRef } from '../../shared/components/BreathingCircle';
 import BreathingCompanion from '../../shared/components/BreathingCompanion';
@@ -17,6 +18,7 @@ import HeartRatePlacementStage, {
   PULSE_PREVIEW_SIZE,
   pulsePreviewTop,
 } from '../../shared/components/HeartRatePlacementStage';
+import { usePlacementFade } from '../../shared/hooks/usePlacementFade';
 import SessionHeartRateReadout from '../../shared/components/SessionHeartRateReadout';
 import { SESSION_GLASS_BUTTON_SIZE } from '../../shared/components/SessionGlassButton';
 import BreathHoldIntro, { type BreathHoldStep } from './BreathHoldIntro';
@@ -50,7 +52,6 @@ const TOP_CLEARANCE =
   padding.screen.vertical + SESSION_GLASS_BUTTON_SIZE + spacing.lg;
 
 const HOLD_SUBLINE = 'Hold as long as you can';
-const HOLD_CUE = 'Tap the screen to stop when you need to breathe.';
 
 const PHASE_FACES: Record<DailyBreathHoldPhase, BreathFace> = {
   idle: 'resting',
@@ -130,6 +131,8 @@ export const DailyBreathHoldPresentation = forwardRef<
     [prepExhaleSeconds, prepInhaleSeconds],
   );
 
+  const placementFade = usePlacementFade(measuringPulse);
+
   const transition = useRef(new Animated.Value(isIdle ? 0 : 1)).current;
 
   useEffect(() => {
@@ -141,14 +144,6 @@ export const DailyBreathHoldPresentation = forwardRef<
     }).start();
   }, [isIdle, transition]);
 
-  const introOpacity = transition.interpolate({
-    inputRange: [0, 0.55, 1],
-    outputRange: [1, 0.4, 0],
-  });
-  const introTranslateY = transition.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, -12],
-  });
   const headlineOpacity = transition.interpolate({
     inputRange: [0, 0.45, 1],
     outputRange: [0, 0.3, 1],
@@ -181,25 +176,21 @@ export const DailyBreathHoldPresentation = forwardRef<
         visible={!isIdle && !isPlacement}
       />
 
-      <Animated.View
-        style={[
-          styles.introLayer,
-          { opacity: introOpacity, transform: [{ translateY: introTranslateY }] },
-        ]}
-        pointerEvents="none"
-      >
-        <BreathHoldIntro
-          title={INTRO_TITLE}
-          description={introDescription}
-          steps={introSteps}
-          textColors={{
-            primary: theme.textPrimary,
-            secondary: theme.textSecondary,
-            tertiary: theme.textTertiary,
-            accent: theme.textAccent,
-          }}
-        />
-      </Animated.View>
+      {isIdle ? (
+        <View style={styles.introLayer} pointerEvents="none">
+          <BreathHoldIntro
+            title={INTRO_TITLE}
+            description={introDescription}
+            steps={introSteps}
+            textColors={{
+              primary: theme.textPrimary,
+              secondary: theme.textSecondary,
+              tertiary: theme.textTertiary,
+              accent: theme.textAccent,
+            }}
+          />
+        </View>
+      ) : null}
 
       <View style={styles.topBlock} pointerEvents="none">
         <Animated.View style={{ opacity: headlineOpacity }}>
@@ -239,12 +230,6 @@ export const DailyBreathHoldPresentation = forwardRef<
               {subline}
             </Text>
           ) : null}
-
-          {isHold ? (
-            <Text style={[styles.cue, { color: theme.textTertiary }]}>
-              {HOLD_CUE}
-            </Text>
-          ) : null}
         </Animated.View>
       </View>
 
@@ -264,7 +249,7 @@ export const DailyBreathHoldPresentation = forwardRef<
           would tear down the capture session and drop the pulse lock the
           placement flow just earned. */}
       {camera && (measuringPulse || trackingPulse) ? (
-        <View
+        <Animated.View
           style={
             measuringPulse
               ? [
@@ -273,6 +258,7 @@ export const DailyBreathHoldPresentation = forwardRef<
                     top: pulsePreviewTop(viewport),
                     backgroundColor: theme.circleInner,
                     borderColor: theme.circleOutline,
+                    opacity: placementFade,
                   },
                 ]
               : styles.hiddenCamera
@@ -284,20 +270,49 @@ export const DailyBreathHoldPresentation = forwardRef<
             fingerPlacement={heartRate.fingerPlacement}
             isActive={heartRate.active}
           />
-        </View>
+        </Animated.View>
       ) : null}
 
-      {trackingPulse ? (
+      {trackingPulse || isHold ? (
         <View
-          style={[styles.readout, { bottom: insets.bottom + spacing.lg }]}
+          style={[
+            styles.bottomSection,
+            { bottom: insets.bottom + spacing.md },
+          ]}
           pointerEvents="none"
         >
-          <SessionHeartRateReadout
-            theme={theme}
-            bpm={heartRate.bpm}
-            fingerPlacement={heartRate.fingerPlacement}
-            signalStatus={heartRate.signalStatus}
-          />
+          {trackingPulse ? (
+            <SessionHeartRateReadout
+              theme={theme}
+              bpm={heartRate.bpm}
+              beatTick={heartRate.beatTick}
+              fingerPlacement={heartRate.fingerPlacement}
+              signalStatus={heartRate.signalStatus}
+            />
+          ) : null}
+
+          {isHold ? (
+            <View
+              style={[
+                styles.holdCue,
+                {
+                  backgroundColor: theme.surface,
+                  borderColor: theme.surfaceBorder,
+                },
+              ]}
+            >
+              <MaterialCommunityIcons
+                name="gesture-tap"
+                size={18}
+                color={theme.textAccent}
+              />
+              <Text
+                style={[styles.holdCueText, { color: theme.textSecondary }]}
+              >
+                {HOLD_SUBLINE} — tap the screen to stop
+              </Text>
+            </View>
+          ) : null}
         </View>
       ) : null}
     </View>
@@ -317,13 +332,22 @@ const styles = StyleSheet.create({
     paddingHorizontal: padding.screen.horizontal,
     alignItems: 'stretch',
   },
-  // Takes the slot the progress bar used to hold, riding over the character's
-  // body where the breath motion is quietest.
-  readout: {
+  bottomSection: {
     position: 'absolute',
     left: 0,
     right: 0,
     alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: padding.screen.horizontal,
+  },
+  holdCue: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: 999,
+    borderWidth: 1,
   },
   pulsePreview: {
     position: 'absolute',
@@ -376,12 +400,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: spacing.xs,
   },
-  cue: {
-    ...typography.body.small,
+  holdCueText: {
+    ...typography.body.medium,
     fontFamily: fonts.semibold,
     textAlign: 'center',
-    alignSelf: 'center',
-    marginTop: spacing.sm,
-    maxWidth: 280,
+    fontWeight: '500',
   },
 });

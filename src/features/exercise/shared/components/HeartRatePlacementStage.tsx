@@ -1,5 +1,6 @@
 import { Text } from '../../../../components/common/Text';
-import { StyleSheet, View } from 'react-native';
+import { Animated, StyleSheet, View } from 'react-native';
+import { usePlacementFade } from '../hooks/usePlacementFade';
 import { LiveSignalGraph } from '../../../../components/heartRate/LiveSignalGraph';
 import { HeartRatePlacementGuidance } from './ExerciseHeartRateGuidance';
 import type {
@@ -50,8 +51,13 @@ export default function HeartRatePlacementStage({
   // itself.
   const columnTop = previewTop + PULSE_PREVIEW_SIZE + spacing['4xl'];
 
+  const fade = usePlacementFade(true);
+
   return (
-    <View style={styles.stage} pointerEvents="none">
+    <Animated.View
+      style={[styles.stage, { opacity: fade }]}
+      pointerEvents="none"
+    >
       <Text
         style={[
           styles.title,
@@ -76,7 +82,7 @@ export default function HeartRatePlacementStage({
           signalStatus={signalStatus}
         />
       </View>
-    </View>
+    </Animated.View>
   );
 }
 

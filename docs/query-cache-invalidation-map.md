@@ -27,7 +27,8 @@ The most common bug pattern with TanStack Query (and the one AI tools repeatedly
 | `getDailyPlanScheduleQueryKey` | `src/queries/dailyPlan/useDailyPlanScheduleQuery.ts` | `user_preferences.daily_plan_schedule` | Device-local display times; independent of notifications. |
 | `getDailyPlanExercisesQueryKey` | `src/queries/dailyPlan/useDailyPlanExercisesQuery.ts` | `user_preferences.daily_plan_exercises` | Caches `DailyPlanExercisesReadResult` (`available`, `missing`, `invalid_v1`, `invalid_v2`, or `unsupported`); successful mutations seed `available` before exact invalidation. |
 | `getCompletedBreathingTechniqueIdsQueryKey` | `src/queries/tracking/useCompletedBreathingTechniqueIdsQuery.ts` | Completed `breathing_sessions.technique_id` values for one user and local date | Drives independent completion state for the two guided cards in Today’s Dailies. |
-| `getCurrentRoomQueryKey` | `src/queries/room/useCurrentRoomQuery.ts` | `rooms` (highest floor) plus its `room_decorations` rows | The room drawn on Home and edited on the Decorate screen. Returns `null` until the user places their first object, which lazily opens floor 1. |
+| `getCurrentRoomQueryKey` | `src/queries/room/useCurrentRoomQuery.ts` | `rooms` (highest floor) plus its `room_decorations` rows, and the user's `max(earned_local_date)` across every floor | The room drawn on Home and filled on the Decorate screen. `room` is `null` until the user places their first object, which lazily opens floor 1. `lastEarnedLocalDate` is user-scoped, not room-scoped — it is what stops a rollover from granting a second object the same day. |
+| `getRoomsQueryKey` | `src/queries/room/useRoomsQuery.ts` | every `rooms` row for the user plus all their `room_decorations` | The hotel. Any write that adds a decoration or a floor changes it. |
 
 ---
 
@@ -48,7 +49,8 @@ When adding a mutation, find every field it writes, then look up every query abo
 | `useUpdateDailyPlanScheduleMutation` | `user_preferences.daily_plan_schedule` | `DailyPlanSchedule` (uses `setQueryData`, then exact invalidation) |
 | `useUpdateDailyPlanExercisesMutation` | `user_preferences.daily_plan_exercises` | `DailyPlanExercises` (uses `setQueryData`, then exact invalidation) |
 | `useSaveOnboardingSurveyMutation` | `profiles.acquisition_source` | Nothing — no query reads this column; it exists for analysis only. |
-| `usePlaceDecorationMutation` | `room_decorations`, and `rooms` on the first placement (opens floor 1) | `CurrentRoom` (uses `setQueryData` with the room the service returns, then exact invalidation) |
+| `usePlaceDecorationMutation` | `room_decorations` (including `earned_local_date`), and `rooms` on the first placement (opens floor 1) | `CurrentRoom` (uses `setQueryData` with what the service returns, then exact invalidation), exact `Rooms(userId)` |
+| `useCreateNextRoomMutation` | `rooms` (opens floor *n+1*) | `CurrentRoom` (uses `setQueryData`, then exact invalidation), exact `Rooms(userId)` |
 
 ---
 
