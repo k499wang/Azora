@@ -5,6 +5,8 @@ import {
 import * as Haptics from 'expo-haptics';
 import * as Device from 'expo-device';
 import { useHeartRateStream } from '../../../hooks/useHeartRateStream';
+import { useHeartRateStallHelp } from '../../../hooks/useHeartRateStallHelp';
+import { HeartRateHelpSheet } from '../../heartRate/HeartRateHelpSheet';
 import { createBpmPresentationFilter } from '../../../lib/heartRate/bpmSmoothing';
 import {
   getCameraCheckMessage,
@@ -156,6 +158,14 @@ export default function BaselineScreen({
     phase === 'running'
       ? measuringWarning(stream.signalStatus, stream.fingerPlacement, cameraTarget)
       : null;
+
+  const stallHelp = useHeartRateStallHelp({
+    active: phase === 'placement',
+    pulseConfirmed: hasConfirmedSignal,
+    fingerPlacement: stream.fingerPlacement,
+    signalStatus: stream.signalStatus,
+    context: 'onboarding_baseline',
+  });
 
   useEffect(() => {
     if (visibleBeatTick <= lastSeenBeatTickRef.current) return;
@@ -388,24 +398,32 @@ export default function BaselineScreen({
   if (phase === 'placement' || phase === 'running') {
     const isRunning = phase === 'running';
     return (
-      <BaselineCaptureStage
-        bpmDisplay={bpmDisplay}
-        bpmOpacity={bpmOpacity}
-        cameraProps={cameraProps ?? undefined}
-        fingerPlacement={stream.fingerPlacement}
-        heartScale={heartScale}
-        hudOpacity={hudOpacity}
-        hudVisible={hudVisible}
-        isRunning={isRunning}
-        liveSignalSamples={stream.liveSignalSamples}
-        onCancel={() => finishCapture(false)}
-        onShowHud={showHud}
-        placement={placementCfg}
-        progress={progress}
-        signalWarning={signalWarning}
-        signalStatus={stream.signalStatus}
-        visibleBeatTick={visibleBeatTick}
-      />
+      <>
+        <BaselineCaptureStage
+          bpmDisplay={bpmDisplay}
+          bpmOpacity={bpmOpacity}
+          cameraProps={cameraProps ?? undefined}
+          fingerPlacement={stream.fingerPlacement}
+          heartScale={heartScale}
+          hudOpacity={hudOpacity}
+          hudVisible={hudVisible}
+          isRunning={isRunning}
+          liveSignalSamples={stream.liveSignalSamples}
+          onCancel={() => finishCapture(false)}
+          onShowHud={showHud}
+          placement={placementCfg}
+          progress={progress}
+          signalWarning={signalWarning}
+          signalStatus={stream.signalStatus}
+          visibleBeatTick={visibleBeatTick}
+        />
+        <HeartRateHelpSheet
+          visible={stallHelp.visible}
+          statusMessage={placementCfg.status}
+          pulseConfirmed={hasConfirmedSignal}
+          onDismiss={stallHelp.dismiss}
+        />
+      </>
     );
   }
 

@@ -1,6 +1,11 @@
 import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../theme/colors';
+import type { ExerciseDarkTheme } from '../../theme/exerciseDarkThemes';
+import {
+  exerciseHeartRateHelpPalette,
+  LIGHT_HEART_RATE_HELP_PALETTE,
+} from '../../theme/heartRateHelpPalette';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import { Text } from '../common/Text';
@@ -13,6 +18,8 @@ interface HeartRateHelpSheetProps {
   statusMessage: string;
   pulseConfirmed: boolean;
   onDismiss: () => void;
+  /** Set inside a session so the sheet matches the theme it interrupts. */
+  theme?: ExerciseDarkTheme;
 }
 
 export function HeartRateHelpSheet({
@@ -20,8 +27,13 @@ export function HeartRateHelpSheet({
   statusMessage,
   pulseConfirmed,
   onDismiss,
+  theme,
 }: HeartRateHelpSheetProps) {
   const insets = useSafeAreaInsets();
+  const palette =
+    theme == null
+      ? LIGHT_HEART_RATE_HELP_PALETTE
+      : exerciseHeartRateHelpPalette(theme);
 
   const tips = [
     {
@@ -49,29 +61,40 @@ export function HeartRateHelpSheet({
       <View style={styles.backdrop}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onDismiss} />
         <View
-          style={[styles.sheet, { paddingBottom: insets.bottom + spacing.lg }]}
+          style={[
+            styles.sheet,
+            {
+              backgroundColor: palette.sheet,
+              paddingBottom: insets.bottom + spacing.lg,
+            },
+          ]}
         >
-          <View style={styles.statusRow}>
+          <View
+            style={[styles.statusRow, { backgroundColor: palette.statusSurface }]}
+          >
             <View
               style={[
                 styles.statusDot,
                 pulseConfirmed && styles.statusDotConfirmed,
               ]}
             />
-            <Text style={styles.statusText}>{statusMessage}</Text>
+            <Text style={[styles.statusText, { color: palette.detail }]}>
+              {statusMessage}
+            </Text>
           </View>
 
           <ScrollView
             contentContainerStyle={styles.content}
             showsVerticalScrollIndicator={false}
           >
-            <Text style={styles.title}>Tips</Text>
+            <Text style={[styles.title, { color: palette.title }]}>Tips</Text>
             <View style={styles.illustrationWrap}>
-              <HeartRatePlacementIllustration compact />
+              <HeartRatePlacementIllustration compact palette={palette} />
             </View>
             <HeartRatePlacementStepsCard
               steps={tips}
               appearance="plain"
+              palette={palette}
             />
           </ScrollView>
 
@@ -80,10 +103,13 @@ export function HeartRateHelpSheet({
             onPress={onDismiss}
             style={({ pressed }) => [
               styles.dismissButton,
+              { backgroundColor: palette.buttonSurface },
               pressed && styles.dismissButtonPressed,
             ]}
           >
-            <Text style={styles.dismissText}>Got it</Text>
+            <Text style={[styles.dismissText, { color: palette.buttonText }]}>
+              Got it
+            </Text>
           </Pressable>
         </View>
       </View>
@@ -101,7 +127,6 @@ const styles = StyleSheet.create({
     maxHeight: '85%',
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
-    backgroundColor: colors.background.primary,
     paddingTop: spacing.sm,
     paddingHorizontal: spacing.lg,
     gap: spacing.md,
@@ -111,7 +136,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
     borderRadius: 999,
-    backgroundColor: colors.neutral[100],
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
   },
@@ -126,7 +150,6 @@ const styles = StyleSheet.create({
   },
   statusText: {
     ...typography.body.small,
-    color: colors.text.secondary,
     flex: 1,
   },
   content: {
@@ -137,7 +160,6 @@ const styles = StyleSheet.create({
     ...typography.title.title3,
     fontFamily: fonts.semibold,
     fontWeight: '500',
-    color: colors.text.primary,
   },
   illustrationWrap: {
     width: '82%',
@@ -145,7 +167,6 @@ const styles = StyleSheet.create({
   },
   dismissButton: {
     borderRadius: 999,
-    backgroundColor: colors.primary.blue600,
     paddingVertical: spacing.md,
     alignItems: 'center',
   },
@@ -156,6 +177,5 @@ const styles = StyleSheet.create({
     ...typography.body.medium,
     fontFamily: fonts.semibold,
     fontWeight: '500',
-    color: colors.text.inverse,
   },
 });

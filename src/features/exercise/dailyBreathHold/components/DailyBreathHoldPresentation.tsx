@@ -1,15 +1,28 @@
 import { forwardRef, useEffect, useMemo, useRef } from 'react';
-import { Animated, Easing, StyleSheet, View } from 'react-native';
+import {
+  Animated,
+  Easing,
+  StyleSheet,
+  View,
+  useWindowDimensions,
+} from 'react-native';
+import { useReducedMotion } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from '../../../../components/common/Text';
-import BreathingCircle, {
-  BREATHING_CIRCLE_SIZE,
-  type BreathingCircleRef,
-} from '../../shared/components/BreathingCircle';
+import type { BreathingCircleRef } from '../../shared/components/BreathingCircle';
+import BreathingCompanion from '../../shared/components/BreathingCompanion';
+import type { BreathFace } from '../../shared/components/breathFaces';
+import HeartRatePlacementStage, {
+  PULSE_PREVIEW_RING,
+  PULSE_PREVIEW_SIZE,
+  pulsePreviewTop,
+} from '../../shared/components/HeartRatePlacementStage';
+import SessionHeartRateReadout from '../../shared/components/SessionHeartRateReadout';
+import { SESSION_GLASS_BUTTON_SIZE } from '../../shared/components/SessionGlassButton';
 import BreathHoldIntro, { type BreathHoldStep } from './BreathHoldIntro';
+import HoldProgressBar, { formatHoldTime } from './HoldProgressBar';
 import { HeartRateCameraPreview } from '../../../../components/heartRate/HeartRateCameraPreview';
 import type { HeartRateCameraPreviewProps } from '../../../../components/heartRate/HeartRateCameraPreview';
-import { LiveSignalGraph } from '../../../../components/heartRate/LiveSignalGraph';
-import { DailyBreathHoldGuidance } from './DailyBreathHoldGuidance';
 import type {
   FingerPlacementState,
   SignalStatus,
@@ -21,22 +34,33 @@ import {
 } from '../domain/breathHoldPhases';
 import type { DailyBreathHoldProtocol } from '../domain/dailyBreathHoldProtocol';
 import type { ExerciseDarkTheme } from '../../../../theme/exerciseDarkThemes';
-import { colors } from '../../../../theme/colors';
-import { fonts } from '../../../../theme/typography';
+import { padding, spacing } from '../../../../theme/spacing';
+import { fonts, typography } from '../../../../theme/typography';
 
 export const DAILY_BREATH_HOLD_INTRO_DURATION_MS = 750;
+// Beat between the intro copy clearing and the first inhale, so the character
+// has arrived and settled before it asks anything of you.
+export const DAILY_BREATH_HOLD_SETTLE_MS = 500;
 
 const INTRO_TITLE = 'Daily Breath Hold';
 
-const PHASE_LABELS: Record<DailyBreathHoldPhase, string> = {
-  idle: '',
-  intro: '',
-  placement: '',
-  preInhale: 'Inhale',
-  preExhale: 'Exhale',
-  inhale: 'Inhale',
-  hold: 'Hold',
-  processingResults: '',
+const HEADLINE_AREA_HEIGHT = 104;
+// Clears the glass buttons sitting in the scaffold header.
+const TOP_CLEARANCE =
+  padding.screen.vertical + SESSION_GLASS_BUTTON_SIZE + spacing.lg;
+
+const HOLD_SUBLINE = 'Hold as long as you can';
+const HOLD_CUE = 'Tap the screen to stop when you need to breathe.';
+
+const PHASE_FACES: Record<DailyBreathHoldPhase, BreathFace> = {
+  idle: 'resting',
+  intro: 'resting',
+  placement: 'resting',
+  preInhale: 'inhale',
+  preExhale: 'exhale',
+  inhale: 'inhale',
+  hold: 'holdIn',
+  processingResults: 'resting',
 };
 
 type DailyBreathHoldCamera = Pick<
@@ -57,9 +81,9 @@ interface DailyBreathHoldHeartRatePresentation {
 
 interface DailyBreathHoldPresentationProps {
   phase: DailyBreathHoldPhase;
-  paused: boolean;
   theme: ExerciseDarkTheme;
   protocol: DailyBreathHoldProtocol;
+  prepCycle: number;
   holdSeconds: number;
   bestHoldSeconds: number;
   heartRate: DailyBreathHoldHeartRatePresentation;
@@ -71,19 +95,27 @@ export const DailyBreathHoldPresentation = forwardRef<
 >(function DailyBreathHoldPresentation(
   {
     phase,
-    paused,
     theme,
     protocol,
+    prepCycle,
     holdSeconds,
     bestHoldSeconds,
     heartRate,
   },
-  circleRef,
+  companionRef,
 ) {
+  const isIdle = phase === 'idle';
   const isPlacement = phase === 'placement';
-  const breathingActive = isBreathHoldBreathingPhase(phase);
-  const isLive = breathingActive || phase === 'hold';
-  const transition = useRef(new Animated.Value(phase === 'idle' ? 0 : 1)).current;
+  const isHold = phase === 'hold';
+  const isLive = isBreathHoldBreathingPhase(phase) || isHold;
+
+  const insets = useSafeAreaInsets();
+  const { height } = useWindowDimensions();
+  const viewport = height - insets.top;
+  const reducedMotion = useReducedMotion();
+  const measuringPulse = heartRate.enabled && heartRate.active && isPlacement;
+  const trackingPulse = heartRate.enabled && heartRate.active && isLive;
+
   const { prepCycles, prepExhaleSeconds, prepInhaleSeconds } = protocol;
   const introDescription =
     `Take ${prepCycles} slow breaths, one last deep inhale, then hold as long as you ` +
@@ -98,168 +130,258 @@ export const DailyBreathHoldPresentation = forwardRef<
     [prepExhaleSeconds, prepInhaleSeconds],
   );
 
-  useEffect(() => {
-    if (phase === 'intro') transition.setValue(0);
+  const transition = useRef(new Animated.Value(isIdle ? 0 : 1)).current;
 
+  useEffect(() => {
     Animated.timing(transition, {
-      toValue: phase === 'idle' ? 0 : 1,
+      toValue: isIdle ? 0 : 1,
       duration: DAILY_BREATH_HOLD_INTRO_DURATION_MS,
       easing: Easing.inOut(Easing.ease),
       useNativeDriver: true,
     }).start();
-  }, [phase, transition]);
-
-  const camera = heartRate.camera;
-  const cameraSlot =
-    camera != null && (isLive || isPlacement) && heartRate.active ? (
-      <HeartRateCameraPreview
-        {...camera}
-        fingerPlacement={heartRate.fingerPlacement}
-        isActive={heartRate.active}
-      />
-    ) : null;
+  }, [isIdle, transition]);
 
   const introOpacity = transition.interpolate({
     inputRange: [0, 0.55, 1],
     outputRange: [1, 0.4, 0],
   });
-  const introScale = transition.interpolate({
-    inputRange: [0, 1],
-    outputRange: [1, 0.96],
-  });
   const introTranslateY = transition.interpolate({
     inputRange: [0, 1],
     outputRange: [0, -12],
   });
-  const circleOpacity = transition.interpolate({
+  const headlineOpacity = transition.interpolate({
     inputRange: [0, 0.45, 1],
     outputRange: [0, 0.3, 1],
   });
-  const circleScale = transition.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.88, 1],
-  });
+
+  const camera = heartRate.camera;
+
+  const headline = isHold
+    ? formatHoldTime(holdSeconds)
+    : phase === 'preExhale'
+      ? 'Exhale'
+      : phase === 'preInhale' || phase === 'inhale'
+        ? 'Inhale'
+        : '';
+  const subline = isHold
+    ? HOLD_SUBLINE
+    : phase === 'inhale'
+      ? 'Last breath in'
+      : isBreathHoldBreathingPhase(phase) && prepCycle > 0
+        ? `Breath ${prepCycle} of ${prepCycles}`
+        : '';
 
   return (
-    <View style={styles.centerSlotWrap}>
-      {heartRate.enabled && heartRate.active ? (
-        <View style={styles.liveSignalGraphSlot} pointerEvents="none">
-          <LiveSignalGraph
-            signalSource={heartRate.signalSource}
+    <View style={styles.stage} pointerEvents="box-none">
+      <BreathingCompanion
+        ref={companionRef}
+        face={PHASE_FACES[phase]}
+        theme={theme}
+        reducedMotion={reducedMotion}
+        visible={!isIdle && !isPlacement}
+      />
+
+      <Animated.View
+        style={[
+          styles.introLayer,
+          { opacity: introOpacity, transform: [{ translateY: introTranslateY }] },
+        ]}
+        pointerEvents="none"
+      >
+        <BreathHoldIntro
+          title={INTRO_TITLE}
+          description={introDescription}
+          steps={introSteps}
+          textColors={{
+            primary: theme.textPrimary,
+            secondary: theme.textSecondary,
+            tertiary: theme.textTertiary,
+            accent: theme.textAccent,
+          }}
+        />
+      </Animated.View>
+
+      <View style={styles.topBlock} pointerEvents="none">
+        <Animated.View style={{ opacity: headlineOpacity }}>
+          <View style={styles.headlineArea}>
+            <View style={styles.headlineLayer}>
+              {headline ? (
+                <Text
+                  style={[
+                    styles.headline,
+                    isHold && styles.headlineTimer,
+                    { color: theme.textPrimary },
+                  ]}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.7}
+                  maxFontSizeMultiplier={1.2}
+                >
+                  {headline}
+                </Text>
+              ) : null}
+            </View>
+          </View>
+
+          {isHold ? (
+            <View style={styles.progressArea}>
+              <HoldProgressBar
+                holdSeconds={holdSeconds}
+                bestSeconds={bestHoldSeconds}
+                trackColor={theme.surface}
+                fillColor={theme.textAccent}
+              />
+            </View>
+          ) : null}
+
+          {subline ? (
+            <Text style={[styles.subline, { color: theme.textSecondary }]}>
+              {subline}
+            </Text>
+          ) : null}
+
+          {isHold ? (
+            <Text style={[styles.cue, { color: theme.textTertiary }]}>
+              {HOLD_CUE}
+            </Text>
+          ) : null}
+        </Animated.View>
+      </View>
+
+      {measuringPulse ? (
+        <HeartRatePlacementStage
+          theme={theme}
+          viewport={viewport}
+          bpm={heartRate.bpm}
+          beatTick={heartRate.beatTick}
+          signalSource={heartRate.signalSource}
+          fingerPlacement={heartRate.fingerPlacement}
+          signalStatus={heartRate.signalStatus}
+        />
+      ) : null}
+
+      {/* One mount across both phases. Re-rendering this into a different slot
+          would tear down the capture session and drop the pulse lock the
+          placement flow just earned. */}
+      {camera && (measuringPulse || trackingPulse) ? (
+        <View
+          style={
+            measuringPulse
+              ? [
+                  styles.pulsePreview,
+                  {
+                    top: pulsePreviewTop(viewport),
+                    backgroundColor: theme.circleInner,
+                    borderColor: theme.circleOutline,
+                  },
+                ]
+              : styles.hiddenCamera
+          }
+          pointerEvents="none"
+        >
+          <HeartRateCameraPreview
+            {...camera}
             fingerPlacement={heartRate.fingerPlacement}
-            signalStatus={heartRate.signalStatus}
-            bpm={heartRate.bpm}
-            beatTick={heartRate.beatTick}
-            textColor={theme.textPrimary}
+            isActive={heartRate.active}
           />
         </View>
       ) : null}
 
-      <View style={styles.contentArea}>
-        <Animated.View
-          style={[
-            styles.contentLayer,
-            {
-              opacity: introOpacity,
-              transform: [{ scale: introScale }, { translateY: introTranslateY }],
-            },
-          ]}
+      {trackingPulse ? (
+        <View
+          style={[styles.readout, { bottom: insets.bottom + spacing.lg }]}
           pointerEvents="none"
         >
-          <BreathHoldIntro
-            title={INTRO_TITLE}
-            description={introDescription}
-            steps={introSteps}
-            textColors={{
-              primary: theme.textPrimary,
-              secondary: theme.textSecondary,
-              tertiary: theme.textTertiary,
-              accent: theme.textAccent,
-            }}
+          <SessionHeartRateReadout
+            theme={theme}
+            bpm={heartRate.bpm}
+            fingerPlacement={heartRate.fingerPlacement}
+            signalStatus={heartRate.signalStatus}
           />
-        </Animated.View>
-
-        <Animated.View
-          style={[
-            styles.contentLayer,
-            { opacity: circleOpacity, transform: [{ scale: circleScale }] },
-          ]}
-          pointerEvents={phase === 'idle' ? 'none' : 'auto'}
-        >
-          <View style={styles.centerStack}>
-            <BreathingCircle
-              ref={circleRef}
-              cameraSlot={cameraSlot}
-              beatTick={heartRate.beatTick}
-              themeColors={{
-                outline: theme.circleOutline,
-                outlineOpacity: theme.circleOutlineOpacity,
-                outer: theme.circleOuter,
-                outerOpacity: theme.circleOuterOpacity,
-                inner: theme.circleInner,
-                beatFlush: theme.beatFlush,
-              }}
-            >
-              {PHASE_LABELS[phase] ? (
-                <Text style={styles.phaseLabel}>{PHASE_LABELS[phase]}</Text>
-              ) : null}
-            </BreathingCircle>
-          </View>
-        </Animated.View>
-
-        <DailyBreathHoldGuidance
-          placementActive={isPlacement}
-          liveActive={isLive}
-          holdProgressVisible={phase === 'hold'}
-          holdActive={phase === 'hold' && !paused}
-          holdSeconds={holdSeconds}
-          bestHoldSeconds={bestHoldSeconds}
-          theme={theme}
-          heartRateActive={heartRate.active}
-          fingerPlacement={heartRate.fingerPlacement}
-          signalStatus={heartRate.signalStatus}
-        />
-      </View>
+        </View>
+      ) : null}
     </View>
   );
 });
 
 const styles = StyleSheet.create({
-  centerSlotWrap: {
-    width: '100%',
-    alignItems: 'center',
-    justifyContent: 'center',
+  stage: {
+    ...StyleSheet.absoluteFillObject,
   },
-  liveSignalGraphSlot: {
+  topBlock: {
     position: 'absolute',
-    top: -102,
+    top: 0,
+    left: 0,
+    right: 0,
+    paddingTop: TOP_CLEARANCE,
+    paddingHorizontal: padding.screen.horizontal,
+    alignItems: 'stretch',
+  },
+  // Takes the slot the progress bar used to hold, riding over the character's
+  // body where the breath motion is quietest.
+  readout: {
+    position: 'absolute',
     left: 0,
     right: 0,
     alignItems: 'center',
   },
-  contentArea: {
-    width: BREATHING_CIRCLE_SIZE,
-    height: BREATHING_CIRCLE_SIZE,
-    marginBottom: 52,
+  pulsePreview: {
+    position: 'absolute',
+    alignSelf: 'center',
+    width: PULSE_PREVIEW_SIZE,
+    height: PULSE_PREVIEW_SIZE,
+    borderRadius: PULSE_PREVIEW_SIZE / 2,
+    borderWidth: PULSE_PREVIEW_RING,
+    overflow: 'hidden',
+  },
+  // Transparent and behind the character: kept only so frames keep reaching the
+  // pulse processor once the preview has served its purpose.
+  hiddenCamera: {
+    position: 'absolute',
+    left: 0,
+    bottom: 0,
+    width: 64,
+    height: 64,
+    opacity: 0,
+  },
+  introLayer: {
+    ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: padding.screen.horizontal,
   },
-  contentLayer: {
+  // Fixed height so the layout does not shift as the phase label swaps.
+  headlineArea: {
+    alignSelf: 'stretch',
+    height: HEADLINE_AREA_HEIGHT,
+    justifyContent: 'center',
+  },
+  headlineLayer: {
     ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  centerStack: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  phaseLabel: {
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    fontSize: 22,
-    lineHeight: 26,
-    letterSpacing: 1.2,
-    color: colors.neutral[50],
+  headline: {
+    ...typography.display.display1,
     textAlign: 'center',
+  },
+  headlineTimer: {
+    fontVariant: ['tabular-nums'],
+  },
+  progressArea: {
+    marginBottom: spacing.xs,
+  },
+  subline: {
+    ...typography.body.medium,
+    textAlign: 'center',
+    marginTop: spacing.xs,
+  },
+  cue: {
+    ...typography.body.small,
+    fontFamily: fonts.semibold,
+    textAlign: 'center',
+    alignSelf: 'center',
+    marginTop: spacing.sm,
+    maxWidth: 280,
   },
 });

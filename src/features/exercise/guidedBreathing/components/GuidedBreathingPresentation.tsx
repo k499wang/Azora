@@ -11,7 +11,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useReducedMotion } from 'react-native-reanimated';
 import type { BreathingCircleRef } from '../../shared/components/BreathingCircle';
 import type { BreathFace } from '../../shared/components/breathFaces';
-import BreathingCompanion from './BreathingCompanion';
+import BreathingCompanion from '../../shared/components/BreathingCompanion';
 import TechniqueIntro from './TechniqueIntro';
 import { HeartRateCameraPreview } from '../../../../components/heartRate/HeartRateCameraPreview';
 import type { HeartRateCameraPreviewProps } from '../../../../components/heartRate/HeartRateCameraPreview';
@@ -19,8 +19,8 @@ import HeartRatePlacementStage, {
   PULSE_PREVIEW_RING,
   PULSE_PREVIEW_SIZE,
   pulsePreviewTop,
-} from './HeartRatePlacementStage';
-import SessionHeartRateReadout from './SessionHeartRateReadout';
+} from '../../shared/components/HeartRatePlacementStage';
+import SessionHeartRateReadout from '../../shared/components/SessionHeartRateReadout';
 import type { BreathingTechnique } from '../techniques';
 import type { BreathingPhase } from '../domain/breathingSessionTiming';
 import type {
@@ -30,7 +30,7 @@ import type {
 import type { LiveSignalSource } from '../../../../lib/heartRate/liveSignalSource';
 import type { ExerciseDarkTheme } from '../../../../theme/exerciseDarkThemes';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { SESSION_GLASS_BUTTON_SIZE } from './SessionGlassButton';
+import { SESSION_GLASS_BUTTON_SIZE } from '../../shared/components/SessionGlassButton';
 import { padding, spacing } from '../../../../theme/spacing';
 import { typography } from '../../../../theme/typography';
 

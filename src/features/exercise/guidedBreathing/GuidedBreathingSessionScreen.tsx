@@ -8,7 +8,7 @@ import BreathBackdrop, {
   type BreathBackdropPhase,
 } from '../shared/components/BreathBackdrop';
 import { GuidedBreathingHud } from './components/GuidedBreathingHud';
-import { SessionGlassButton } from './components/SessionGlassButton';
+import { SessionGlassButton } from '../shared/components/SessionGlassButton';
 import {
   GUIDED_BREATHING_INTRO_DURATION_MS,
   GUIDED_BREATHING_SETTLE_MS,
@@ -23,6 +23,9 @@ import { useBreathPhaseAudio } from '../shared/hooks/useBreathPhaseAudio';
 import { useAmbientAudio } from '../shared/hooks/useAmbientAudio';
 import { usePhaseChime } from '../shared/hooks/usePhaseChime';
 import { useHeartRatePlacementFlow } from '../shared/hooks/useHeartRatePlacementFlow';
+import { useHeartRateStallHelp } from '../../../hooks/useHeartRateStallHelp';
+import { HeartRateHelpSheet } from '../../../components/heartRate/HeartRateHelpSheet';
+import { signalHint } from '../shared/components/ExerciseHeartRateGuidance';
 import { useBreathingHeartRateMonitoringAccess } from '../shared/hooks/useBreathingHeartRateMonitoringAccess';
 import {
   AudioSettingsSheet,
@@ -351,6 +354,17 @@ export default function GuidedBreathingSessionScreen({
     ],
   );
 
+  const bpmLocked =
+    isBpmReady && presentedBpm != null && pulse.signalStatus === 'measuring';
+
+  const stallHelp = useHeartRateStallHelp({
+    active: phase === 'placement' && hrEnabled,
+    pulseConfirmed: bpmLocked,
+    fingerPlacement: pulse.fingerPlacement,
+    signalStatus: pulse.signalStatus,
+    context: 'guided_breathing',
+  });
+
   const { startPlacement } = useHeartRatePlacementFlow({
     flow,
     accessLoading: heartRateMonitoringAccessLoading,
@@ -362,8 +376,7 @@ export default function GuidedBreathingSessionScreen({
     heartRateEnabled: hrEnabled,
     fingerPlacement: pulse.fingerPlacement,
     signalStatus: pulse.signalStatus,
-    bpmLocked:
-      isBpmReady && presentedBpm != null && pulse.signalStatus === 'measuring',
+    bpmLocked,
     onAccessDenied: () => {
       if (heartRateMonitoringProLocked) {
         setHeartRateMonitoringEnabled(false);
@@ -604,6 +617,13 @@ export default function GuidedBreathingSessionScreen({
             onSelect={(theme) => setThemeId(theme.id)}
           />
         }
+      />
+      <HeartRateHelpSheet
+        visible={stallHelp.visible}
+        statusMessage={signalHint(pulse.signalStatus, pulse.fingerPlacement)}
+        pulseConfirmed={bpmLocked}
+        onDismiss={stallHelp.dismiss}
+        theme={activeTheme}
       />
     </View>
   );

@@ -11,6 +11,7 @@ import { HeartRateScreen } from '../../screens/HeartRateScreen';
 import { HeartRateSessionDetailScreen } from '../../screens/HeartRateSessionDetailScreen';
 import { ProPaywallScreen } from '../../screens/ProPaywallScreen';
 import { ExitOfferScreen } from '../../screens/ExitOfferScreen';
+import RoomDecorateScreen from '../../screens/RoomDecorateScreen';
 import SettingsScreen from '../../screens/SettingsScreen';
 import ShareableResultScreen from '../../screens/ShareableResultScreen';
 import ExerciseSearchScreen from '../../screens/ExerciseSearchScreen';
@@ -123,6 +124,14 @@ function AppStack({ showBootPaywall }: AppStackProps) {
       <Stack.Screen
         name="DailyExercise"
         component={DailyBreathHoldScreen}
+        options={{
+          presentation: 'card',
+          animation: 'slide_from_right',
+        }}
+      />
+      <Stack.Screen
+        name="RoomDecorate"
+        component={RoomDecorateScreen}
         options={{
           presentation: 'card',
           animation: 'slide_from_right',

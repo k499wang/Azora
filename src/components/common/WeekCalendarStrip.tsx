@@ -9,7 +9,7 @@ import { spacing } from '../../theme/spacing';
 
 const WEEK_DAYS = 7;
 const CIRCLE_SIZE = 28;
-const TODAY_DOT_SIZE = 18;
+const TODAY_DOT_SIZE = 16;
 const CHECK_SIZE = 16;
 const RING_WIDTH = 2;
 
@@ -29,24 +29,37 @@ export default function WeekCalendarStrip({
 
   return (
     <View style={styles.row}>
-      {days.map((day) => (
-        <View key={day.key} style={styles.dayItem}>
-          <View
-            style={[
-              styles.circle,
-              day.isCompleted && styles.circleCompleted,
-              !day.isCompleted && !day.isToday && styles.circleEmpty,
-            ]}
-          >
-            {day.isCompleted ? (
-              <Icon name="check" size={CHECK_SIZE} color={colors.text.inverse} />
-            ) : day.isToday ? (
-              <View style={styles.todayDot} />
-            ) : null}
+      {days.map((day) => {
+        const isPast = !day.isToday && !day.isFuture;
+
+        return (
+          <View key={day.key} style={styles.dayItem}>
+            <View
+              style={[
+                styles.circle,
+                day.isCompleted && styles.circleCompleted,
+                !day.isCompleted && !day.isToday && styles.circleEmpty,
+                !day.isCompleted && isPast && styles.circlePast,
+              ]}
+            >
+              {day.isCompleted ? (
+                <Icon name="check" size={CHECK_SIZE} color={colors.text.inverse} />
+              ) : day.isToday ? (
+                <View style={styles.todayDot} />
+              ) : null}
+            </View>
+            <Text
+              style={[
+                styles.dayLabel,
+                isPast && styles.dayLabelPast,
+                day.isToday && styles.dayLabelToday,
+              ]}
+            >
+              {day.dayShortLabel}
+            </Text>
           </View>
-          <Text style={styles.dayLabel}>{day.dayShortLabel}</Text>
-        </View>
-      ))}
+        );
+      })}
     </View>
   );
 }
@@ -72,9 +85,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary.blue700,
   },
   circleEmpty: {
-    backgroundColor: colors.primary.blue100,
+    backgroundColor: colors.neutral[0],
     borderWidth: RING_WIDTH,
-    borderColor: colors.primary.blue100,
+    borderColor: colors.primary.blue200,
+  },
+  circlePast: {
+    backgroundColor: colors.neutral[50],
+    borderColor: colors.neutral[200],
   },
   todayDot: {
     width: TODAY_DOT_SIZE,
@@ -83,10 +100,16 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary.blue700,
   },
   dayLabel: {
-    fontSize: 13,
-    lineHeight: 16,
+    fontSize: 12,
+    lineHeight: 15,
     letterSpacing: 0.4,
-    color: colors.neutral[0],
+    color: colors.text.secondary,
     fontFamily: fonts.semibold,
+  },
+  dayLabelPast: {
+    color: colors.text.tertiary,
+  },
+  dayLabelToday: {
+    color: colors.text.primary,
   },
 });

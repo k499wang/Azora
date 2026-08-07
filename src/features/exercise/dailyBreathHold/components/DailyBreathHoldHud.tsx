@@ -3,77 +3,43 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { SettingsGearButton } from '../../../audioSettings';
 import { isHapticsEnabled } from '../../../../services/preferences/hapticsPreference';
-import {
-  isBreathHoldBreathingPhase,
-  type DailyBreathHoldPhase,
-} from '../domain/breathHoldPhases';
 import type { ExerciseDarkTheme } from '../../../../theme/exerciseDarkThemes';
 import { colors } from '../../../../theme/colors';
 import { spacing } from '../../../../theme/spacing';
 
 interface DailyBreathHoldHudProps {
-  phase: DailyBreathHoldPhase;
-  paused: boolean;
   theme: ExerciseDarkTheme;
   onSettingsPress: () => void;
   onExit: () => void;
   onStart: () => void;
-  onPauseResume: () => void;
 }
 
+/**
+ * The pre-session row only. Once the character is on screen the close and pause
+ * controls move to the glass buttons in the scaffold header, so nothing sits on
+ * top of the blob.
+ */
 export function DailyBreathHoldHud({
-  phase,
-  paused,
   theme,
   onSettingsPress,
   onExit,
   onStart,
-  onPauseResume,
 }: DailyBreathHoldHudProps) {
-  const showSettings = phase === 'idle';
-  const showStart = phase === 'idle';
-  const canPause = phase === 'intro' || isBreathHoldBreathingPhase(phase);
-  const showControls = showStart || canPause || phase === 'placement';
-
   return (
-    <View style={[styles.container, showControls && styles.raisedControlsContainer]}>
-      {showSettings ? (
+    <View style={styles.container}>
+      <View style={styles.buttonRow}>
+        <ControlButton icon="close" label="Exit" theme={theme} onPress={onExit} />
         <SettingsGearButton
           onPress={onSettingsPress}
           label="Session options"
           iconName="tune-variant"
-          color={theme.textPrimary}
+          color={theme.iconPrimary}
           backgroundColor={theme.surface}
           borderColor={theme.surfaceBorder}
-          style={styles.settingsPill}
+          size={64}
         />
-      ) : null}
-
-      {showControls ? (
-        <View style={styles.buttonRow}>
-          <ControlButton
-            icon="close"
-            label="Exit"
-            theme={theme}
-            onPress={onExit}
-          />
-          {showStart ? (
-            <ControlButton
-              icon="play"
-              label="Start"
-              theme={theme}
-              onPress={onStart}
-            />
-          ) : canPause ? (
-            <ControlButton
-              icon={paused ? 'play' : 'pause'}
-              label={paused ? 'Resume' : 'Pause'}
-              theme={theme}
-              onPress={onPauseResume}
-            />
-          ) : null}
-        </View>
-      ) : null}
+        <ControlButton icon="play" label="Start" theme={theme} onPress={onStart} />
+      </View>
     </View>
   );
 }
@@ -109,12 +75,7 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
     gap: spacing.lg,
-  },
-  raisedControlsContainer: {
-    marginBottom: spacing['6xl'],
-  },
-  settingsPill: {
-    alignSelf: 'center',
+    marginBottom: spacing['4xl'],
   },
   buttonRow: {
     flexDirection: 'row',

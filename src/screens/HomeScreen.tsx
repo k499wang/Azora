@@ -9,6 +9,7 @@ import AppTopBar from '../components/common/AppTopBar';
 import CompactActionBanner from '../components/common/CompactActionBanner';
 import WeekCalendarStrip from '../components/common/WeekCalendarStrip';
 import TodaysDailiesSection from '../components/home/TodaysDailiesSection';
+import HomeRoom from '../features/room/HomeRoom';
 import { useFeatureAccess } from '../hooks/useFeatureAccess';
 import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
 import { useRecommendedTechnique } from '../features/exercise/guidedBreathing/hooks/useRecommendedTechnique';
@@ -156,7 +157,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         alwaysBounceVertical
         overScrollMode="always"
       >
-        <AppTopBar tinted showAvatar={false} showStreak={false}>
+        <AppTopBar>
           <View style={styles.weekCalendar}>
             <WeekCalendarStrip
               todayLocalDate={todayLocalDate}
@@ -164,6 +165,8 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             />
           </View>
         </AppTopBar>
+
+        <HomeRoom />
 
         <View style={styles.bodySection}>
           <TodaysDailiesSection
@@ -206,12 +209,11 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingBottom: spacing['7xl'] + spacing.xl,
-    gap: margin.sectionGap,
+    gap: margin.itemGap,
   },
   weekCalendar: {
     paddingHorizontal: padding.screen.horizontal,
-    paddingTop: spacing.xl,
-    paddingBottom: spacing.lg,
+    paddingTop: spacing.md,
   },
   bodySection: {
     paddingHorizontal: padding.screen.horizontal,

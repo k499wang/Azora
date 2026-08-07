@@ -13,7 +13,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import Svg, { Circle, G, Path } from 'react-native-svg';
-import type { BreathingCircleRef } from '../../shared/components/BreathingCircle';
+import type { BreathingCircleRef } from './BreathingCircle';
 import {
   CHEEK_LEFT_X,
   CHEEK_RIGHT_X,
@@ -26,7 +26,7 @@ import {
   lensPath,
   lerpFace,
   type BreathFace,
-} from '../../shared/components/breathFaces';
+} from './breathFaces';
 import type { ExerciseDarkTheme } from '../../../../theme/exerciseDarkThemes';
 
 const AnimatedPath = Animated.createAnimatedComponent(Path);

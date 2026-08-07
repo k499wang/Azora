@@ -47,6 +47,7 @@ export function useBreathHoldPhaseSequence({
   const onPhaseChangeRef = useRef(onPhaseChange);
   const onHoldStartedRef = useRef(onHoldStarted);
   const [holdSeconds, setHoldSeconds] = useState(0);
+  const [prepCycle, setPrepCycle] = useState(0);
   const [paused, setPaused] = useState(false);
 
   onPhaseChangeRef.current = onPhaseChange;
@@ -149,7 +150,10 @@ export function useBreathHoldPhaseSequence({
     holdStartedAtMsRef.current = 0;
     circleRef.current?.pause();
     stopInhaleVibration();
-    if (mountedRef.current) setPaused(false);
+    if (mountedRef.current) {
+      setPaused(false);
+      setPrepCycle(0);
+    }
   }, [circleRef, clearHoldTicker, clearPreparationTimer]);
 
   const start = useCallback(() => {
@@ -215,6 +219,7 @@ export function useBreathHoldPhaseSequence({
 
       activePreparationStepRef.current = activeStep;
       preparationClockRef.current.start(Date.now());
+      setPrepCycle(step.cycle);
       onPhaseChangeRef.current(step.phase);
       schedulePreparationStep(activeStep, durationMs, false);
     };
@@ -285,6 +290,7 @@ export function useBreathHoldPhaseSequence({
 
   return {
     holdSeconds,
+    prepCycle,
     paused,
     start,
     pause,

@@ -2,6 +2,10 @@ import { StyleSheet, View } from 'react-native';
 import type { HeartRatePlacementStep } from '../../lib/heartRate/captureGuidance';
 import { card } from '../../theme/card';
 import { colors } from '../../theme/colors';
+import {
+  LIGHT_HEART_RATE_HELP_PALETTE,
+  type HeartRatePlacementPalette,
+} from '../../theme/heartRateHelpPalette';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import { Text } from '../common/Text';
@@ -14,12 +18,14 @@ interface HeartRatePlacementStepsCardProps {
   steps: readonly HeartRatePlacementStep[];
   appearance?: 'card' | 'plain';
   textSize?: 'default' | 'large';
+  palette?: HeartRatePlacementPalette;
 }
 
 export function HeartRatePlacementStepsCard({
   steps,
   appearance = 'card',
   textSize = 'default',
+  palette = LIGHT_HEART_RATE_HELP_PALETTE,
 }: HeartRatePlacementStepsCardProps) {
   const isPlain = appearance === 'plain';
   const hasLargeText = textSize === 'large';
@@ -39,19 +45,36 @@ export function HeartRatePlacementStepsCard({
             <View
               style={[
                 styles.divider,
+                { backgroundColor: palette.divider },
                 !isPlain && styles.dividerInset,
               ]}
             />
           ) : null}
           <View style={styles.row}>
-            <View style={styles.number}>
-              <Text style={styles.numberText}>{index + 1}</Text>
+            <View
+              style={[styles.number, { backgroundColor: palette.markerSurface }]}
+            >
+              <Text style={[styles.numberText, { color: palette.markerText }]}>
+                {index + 1}
+              </Text>
             </View>
             <View style={styles.copy}>
-              <Text style={[styles.title, hasLargeText && styles.titleLarge]}>
+              <Text
+                style={[
+                  styles.title,
+                  hasLargeText && styles.titleLarge,
+                  { color: palette.title },
+                ]}
+              >
                 {step.title}
               </Text>
-              <Text style={[styles.detail, hasLargeText && styles.detailLarge]}>
+              <Text
+                style={[
+                  styles.detail,
+                  hasLargeText && styles.detailLarge,
+                  { color: palette.detail },
+                ]}
+              >
                 {step.detail}
               </Text>
             </View>
@@ -90,7 +113,6 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.neutral[200],
   },
   dividerInset: {
     left: DIVIDER_INSET,
@@ -100,7 +122,6 @@ const styles = StyleSheet.create({
     width: 26,
     height: 26,
     borderRadius: 13,
-    backgroundColor: colors.primary.blue100,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -108,7 +129,6 @@ const styles = StyleSheet.create({
     ...typography.label.small,
     fontFamily: fonts.semibold,
     fontWeight: '500',
-    color: colors.primary.blue700,
     textAlign: 'center',
     includeFontPadding: false,
   },
@@ -120,7 +140,6 @@ const styles = StyleSheet.create({
     ...typography.body.small,
     fontFamily: fonts.semibold,
     fontWeight: '500',
-    color: colors.text.primary,
     textAlign: 'left',
   },
   titleLarge: {
@@ -130,7 +149,6 @@ const styles = StyleSheet.create({
   },
   detail: {
     ...typography.body.xsmall,
-    color: colors.text.secondary,
   },
   detailLarge: {
     ...typography.body.small,
