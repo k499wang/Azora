@@ -53,6 +53,7 @@ export type RootStackParamList = {
   DailyExercise: undefined;
   ExitOffer: undefined;
   RoomDecorate: undefined;
+  RoomComplete: undefined;
   Settings: undefined;
   DailyResult: {
     holdSeconds: number;
@@ -98,6 +99,7 @@ export type ExerciseSessionScreenProps = RootStackScreenProps<'ExerciseSession'>
 export type SessionCompleteScreenProps = RootStackScreenProps<'SessionComplete'>;
 export type DailyExerciseScreenProps = RootStackScreenProps<'DailyExercise'>;
 export type RoomDecorateScreenProps = RootStackScreenProps<'RoomDecorate'>;
+export type RoomCompleteScreenProps = RootStackScreenProps<'RoomComplete'>;
 export type SettingsScreenProps = RootStackScreenProps<'Settings'>;
 export type DailyResultScreenProps = RootStackScreenProps<'DailyResult'>;
 export type ExitOfferScreenProps = RootStackScreenProps<'ExitOffer'>;

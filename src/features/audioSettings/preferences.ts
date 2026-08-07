@@ -31,8 +31,9 @@ function sanitize(raw: unknown): AudioPreferences {
   if (!raw || typeof raw !== 'object') return { ...DEFAULT_PREFERENCES };
   const r = raw as Partial<AudioPreferences>;
   return {
-    voice: typeof r.voice === 'string' || r.voice === null ? r.voice : null,
-    ambient: typeof r.ambient === 'string' || r.ambient === null ? r.ambient : null,
+    // Voice cues and background sound are always off and cannot be re-enabled.
+    voice: null,
+    ambient: null,
     chime: typeof r.chime === 'string' || r.chime === null ? r.chime : null,
     ambientVolume:
       typeof r.ambientVolume === 'number' &&

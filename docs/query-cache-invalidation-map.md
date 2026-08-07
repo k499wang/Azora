@@ -29,6 +29,7 @@ The most common bug pattern with TanStack Query (and the one AI tools repeatedly
 | `getCompletedBreathingTechniqueIdsQueryKey` | `src/queries/tracking/useCompletedBreathingTechniqueIdsQuery.ts` | Completed `breathing_sessions.technique_id` values for one user and local date | Drives independent completion state for the two guided cards in Today’s Dailies. |
 | `getCurrentRoomQueryKey` | `src/queries/room/useCurrentRoomQuery.ts` | `rooms` (highest floor) plus its `room_decorations` rows, and the user's `max(earned_local_date)` across every floor | The room drawn on Home and filled on the Decorate screen. `room` is `null` until the user places their first object, which lazily opens floor 1. `lastEarnedLocalDate` is user-scoped, not room-scoped — it is what stops a rollover from granting a second object the same day. |
 | `getRoomsQueryKey` | `src/queries/room/useRoomsQuery.ts` | every `rooms` row for the user plus all their `room_decorations` | The hotel. Any write that adds a decoration or a floor changes it. |
+| `getTechniqueFeedbackQueryKey` | `src/queries/tracking/useTechniqueFeedbackQuery.ts` | `technique_feedback` for the user | "Did this feel helpful?" answers, one per technique per local date. Read by the results screen to show the saved answer; intended to feed technique recommendation. |
 
 ---
 
@@ -51,6 +52,7 @@ When adding a mutation, find every field it writes, then look up every query abo
 | `useSaveOnboardingSurveyMutation` | `profiles.acquisition_source` | Nothing — no query reads this column; it exists for analysis only. |
 | `usePlaceDecorationMutation` | `room_decorations` (including `earned_local_date`), and `rooms` on the first placement (opens floor 1) | `CurrentRoom` (uses `setQueryData` with what the service returns, then exact invalidation), exact `Rooms(userId)` |
 | `useCreateNextRoomMutation` | `rooms` (opens floor *n+1*) | `CurrentRoom` (uses `setQueryData`, then exact invalidation), exact `Rooms(userId)` |
+| `useSaveTechniqueFeedbackMutation` | `technique_feedback` (upsert on `user_id,technique_id,local_date`) | exact `TechniqueFeedback(userId)`. Add `UserDefaultTechnique` / `RecommendedTechnique` here once helpfulness feeds recommendation. |
 
 ---
 

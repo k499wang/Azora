@@ -325,7 +325,7 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: colors.background.primary,
+    backgroundColor: colors.background.canvas,
   },
   scrollView: {
     flex: 1,
