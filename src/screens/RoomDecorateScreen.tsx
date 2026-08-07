@@ -6,6 +6,7 @@ import { DAYS, DecorationTile } from '../features/room/RoomScene';
 import { toPicks } from '../features/room/roomPicks';
 import { useCurrentRoomQuery } from '../queries/room/useCurrentRoomQuery';
 import { usePlaceDecorationMutation } from '../queries/room/usePlaceDecorationMutation';
+import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
 import { useAuthStore } from '../stores/authStore';
 import { card } from '../theme/card';
 import { colors } from '../theme/colors';
@@ -17,9 +18,10 @@ const TILE_WIDTH = 96;
 
 export default function RoomDecorateScreen(_: RoomDecorateScreenProps) {
   const userId = useAuthStore((state) => state.user?.id ?? null);
-  const room = useCurrentRoomQuery(userId).data;
+  const currentRoom = useCurrentRoomQuery(userId).data;
   const placeDecoration = usePlaceDecorationMutation(userId);
-  const picks = toPicks(room?.decorations ?? []);
+  const todayLocalDate = useTodayLocalDate();
+  const picks = toPicks(currentRoom?.room?.decorations ?? []);
 
   return (
     <View style={styles.screen}>
@@ -48,6 +50,7 @@ export default function RoomDecorateScreen(_: RoomDecorateScreenProps) {
                       placeDecoration.mutate({
                         slot: day.key,
                         optionId: option.id,
+                        earnedLocalDate: todayLocalDate,
                       })
                     }
                   >

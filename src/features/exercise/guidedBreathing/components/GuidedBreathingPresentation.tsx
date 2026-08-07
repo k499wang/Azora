@@ -20,6 +20,7 @@ import HeartRatePlacementStage, {
   PULSE_PREVIEW_SIZE,
   pulsePreviewTop,
 } from '../../shared/components/HeartRatePlacementStage';
+import { usePlacementFade } from '../../shared/hooks/usePlacementFade';
 import SessionHeartRateReadout from '../../shared/components/SessionHeartRateReadout';
 import type { BreathingTechnique } from '../techniques';
 import type { BreathingPhase } from '../domain/breathingSessionTiming';
@@ -120,6 +121,8 @@ export const GuidedBreathingPresentation = forwardRef<
   const measuringPulse = heartRate.enabled && heartRate.active && isPlacement;
   const trackingPulse = heartRate.enabled && heartRate.active && isBreathing;
 
+  const placementFade = usePlacementFade(measuringPulse);
+
   const transition = useRef(new Animated.Value(isIdle ? 0 : 1)).current;
 
   useEffect(() => {
@@ -131,14 +134,6 @@ export const GuidedBreathingPresentation = forwardRef<
     }).start();
   }, [isIdle, transition]);
 
-  const introOpacity = transition.interpolate({
-    inputRange: [0, 0.55, 1],
-    outputRange: [1, 0.4, 0],
-  });
-  const introTranslateY = transition.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, -12],
-  });
   const headlineOpacity = transition.interpolate({
     inputRange: [0, 0.45, 1],
     outputRange: [0, 0.3, 1],
@@ -158,23 +153,19 @@ export const GuidedBreathingPresentation = forwardRef<
         visible={!isIdle && !isPlacement}
       />
 
-      <Animated.View
-        style={[
-          styles.introLayer,
-          { opacity: introOpacity, transform: [{ translateY: introTranslateY }] },
-        ]}
-        pointerEvents="none"
-      >
-        <TechniqueIntro
-          technique={technique}
-          textColors={{
-            primary: theme.textPrimary,
-            secondary: theme.textSecondary,
-            tertiary: theme.textTertiary,
-            accent: theme.textAccent,
-          }}
-        />
-      </Animated.View>
+      {isIdle ? (
+        <View style={styles.introLayer} pointerEvents="none">
+          <TechniqueIntro
+            technique={technique}
+            textColors={{
+              primary: theme.textPrimary,
+              secondary: theme.textSecondary,
+              tertiary: theme.textTertiary,
+              accent: theme.textAccent,
+            }}
+          />
+        </View>
+      ) : null}
 
       <View style={styles.topBlock} pointerEvents="box-none">
         <View style={styles.headlineArea} pointerEvents="none">
@@ -224,7 +215,7 @@ export const GuidedBreathingPresentation = forwardRef<
           would tear down the capture session and drop the pulse lock the
           placement flow just earned. */}
       {camera && (measuringPulse || trackingPulse) ? (
-        <View
+        <Animated.View
           style={
             measuringPulse
               ? [
@@ -233,6 +224,7 @@ export const GuidedBreathingPresentation = forwardRef<
                     top: pulsePreviewTop(viewport),
                     backgroundColor: theme.circleInner,
                     borderColor: theme.circleOutline,
+                    opacity: placementFade,
                   },
                 ]
               : styles.hiddenCamera
@@ -244,7 +236,7 @@ export const GuidedBreathingPresentation = forwardRef<
             fingerPlacement={heartRate.fingerPlacement}
             isActive={heartRate.active}
           />
-        </View>
+        </Animated.View>
       ) : null}
 
       {trackingPulse ? (
@@ -255,6 +247,7 @@ export const GuidedBreathingPresentation = forwardRef<
           <SessionHeartRateReadout
             theme={theme}
             bpm={heartRate.bpm}
+            beatTick={heartRate.beatTick}
             fingerPlacement={heartRate.fingerPlacement}
             signalStatus={heartRate.signalStatus}
           />

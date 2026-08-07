@@ -1,29 +1,22 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { placeDecoration } from '../../services/room/roomService';
+import { createNextRoom } from '../../services/room/roomService';
 import { getCurrentRoomQueryKey } from './useCurrentRoomQuery';
 import { getRoomsQueryKey } from './useRoomsQuery';
-import type { RoomSlot } from '../../lib/room/roomProgress';
 
-interface PlaceDecorationInput {
-  slot: RoomSlot;
-  optionId: string;
-  earnedLocalDate: string;
+interface CreateNextRoomInput {
+  frameHue: string;
 }
 
-export function usePlaceDecorationMutation(userId: string | null) {
+export function useCreateNextRoomMutation(userId: string | null) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({
-      slot,
-      optionId,
-      earnedLocalDate,
-    }: PlaceDecorationInput) => {
+    mutationFn: async ({ frameHue }: CreateNextRoomInput) => {
       if (userId == null) {
-        throw new Error('Cannot place a decoration without a signed-in user.');
+        throw new Error('Cannot open a room without a signed-in user.');
       }
 
-      return placeDecoration(userId, slot, optionId, earnedLocalDate);
+      return createNextRoom(userId, frameHue);
     },
     onSuccess: async (currentRoom) => {
       const queryKey = getCurrentRoomQueryKey(userId);

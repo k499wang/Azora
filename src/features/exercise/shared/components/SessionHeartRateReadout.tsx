@@ -1,5 +1,6 @@
+import { useEffect, useRef } from 'react';
+import { Animated, StyleSheet, View } from 'react-native';
 import { Text } from '../../../../components/common/Text';
-import { StyleSheet, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { signalHint } from './ExerciseHeartRateGuidance';
 import type {
@@ -14,6 +15,7 @@ import { fonts, typography } from '../../../../theme/typography';
 interface SessionHeartRateReadoutProps {
   theme: ExerciseDarkTheme;
   bpm: number | null;
+  beatTick?: number;
   fingerPlacement: FingerPlacementState;
   signalStatus: SignalStatus;
 }
@@ -26,9 +28,21 @@ interface SessionHeartRateReadoutProps {
 export default function SessionHeartRateReadout({
   theme,
   bpm,
+  beatTick = 0,
   fingerPlacement,
   signalStatus,
 }: SessionHeartRateReadoutProps) {
+  const heartScale = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    if (beatTick <= 0) return;
+    heartScale.setValue(1);
+    Animated.sequence([
+      Animated.timing(heartScale, { toValue: 1.35, duration: 90, useNativeDriver: true }),
+      Animated.timing(heartScale, { toValue: 1, duration: 180, useNativeDriver: true }),
+    ]).start();
+  }, [beatTick, heartScale]);
+
   const signalGood =
     fingerPlacement === 'good' &&
     (signalStatus === 'measuring' || signalStatus === 'warming_up');
@@ -49,11 +63,13 @@ export default function SessionHeartRateReadout({
       )}
 
       <View style={styles.bpmRow}>
-        <MaterialCommunityIcons
-          name="heart"
-          size={20}
-          color={theme.textAccent}
-        />
+        <Animated.View style={{ transform: [{ scale: heartScale }] }}>
+          <MaterialCommunityIcons
+            name="heart"
+            size={20}
+            color={theme.textAccent}
+          />
+        </Animated.View>
         <Text style={[styles.bpm, { color: theme.textPrimary }]}>
           {bpm == null ? '--' : Math.round(bpm)}
         </Text>

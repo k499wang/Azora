@@ -10,18 +10,13 @@ import CompactActionBanner from '../components/common/CompactActionBanner';
 import WeekCalendarStrip from '../components/common/WeekCalendarStrip';
 import TodaysDailiesSection from '../components/home/TodaysDailiesSection';
 import HomeRoom from '../features/room/HomeRoom';
+import { useDailiesCompletion } from '../hooks/useDailiesCompletion';
 import { useFeatureAccess } from '../hooks/useFeatureAccess';
-import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
-import { useRecommendedTechnique } from '../features/exercise/guidedBreathing/hooks/useRecommendedTechnique';
-import { useProfileQuery } from '../queries/profile/useProfileQuery';
 import type { HomeScreenProps } from '../app/navigation';
 import { useHomeStatsQuery } from '../queries/tracking/useHomeStatsQuery';
 import { useAuthStore } from '../stores/authStore';
 import { useDailyPlanScheduleQuery } from '../queries/dailyPlan/useDailyPlanScheduleQuery';
 import { DEFAULT_DAILY_PLAN_SCHEDULE } from '../services/dailyPlan/types';
-import { useDailyExercisePlan } from '../features/exercise/guidedBreathing/hooks/useDailyExercisePlan';
-import { getTechnique } from '../features/exercise/guidedBreathing/techniques';
-import { useCompletedBreathingTechniqueIdsQuery } from '../queries/tracking/useCompletedBreathingTechniqueIdsQuery';
 import { PaywallPlacement } from '../services/paywall';
 import { FeatureKey } from '../services/subscriptions/featureAccess';
 import type {
@@ -34,29 +29,12 @@ const SURVEY_DISCOUNT_URL = 'https://docs.google.com/forms/d/1wdbzWnXbhdpFZ3HoPc
 export default function HomeScreen({ navigation }: HomeScreenProps) {
   const posthog = usePostHog();
   const user = useAuthStore((state) => state.user);
-  const profileQuery = useProfileQuery(user?.id ?? null);
   const dailyPlanScheduleQuery = useDailyPlanScheduleQuery(user?.id ?? null);
   const dailyPlanSchedule =
     dailyPlanScheduleQuery.data ?? DEFAULT_DAILY_PLAN_SCHEDULE;
   const dailyExerciseAccess = useFeatureAccess(FeatureKey.DailyExercise);
-  const recommendedTechnique = useRecommendedTechnique(user?.id ?? null);
-  const todayLocalDate = useTodayLocalDate();
-  const dailyExercisePlan = useDailyExercisePlan({
-    userId: user?.id ?? null,
-    primaryTechniqueId: recommendedTechnique.isLoading
-      ? undefined
-      : recommendedTechnique.technique?.id ?? null,
-    onboardingCompletedAt:
-      profileQuery.isSuccess && !profileQuery.isPlaceholderData
-      ? profileQuery.data?.onboardingCompletedAt ?? null
-      : undefined,
-    todayLocalDate,
-  });
-  const handPickedTechnique = getTechnique(dailyExercisePlan.techniqueId);
-  const completedTechniqueIdsQuery = useCompletedBreathingTechniqueIdsQuery(
-    user?.id ?? null,
-    todayLocalDate,
-  );
+  const dailies = useDailiesCompletion(user?.id ?? null);
+  const todayLocalDate = dailies.todayLocalDate;
   const homeStatsQuery = useHomeStatsQuery(user?.id ?? null, todayLocalDate);
   const stats = homeStatsQuery.data;
 
@@ -64,15 +42,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   // (see RecentlyLoggedSection — it uses useIsFocused to gate the view event).
 
   const currentStreak = stats?.streak?.currentStreak ?? 0;
-  const todayActivity = stats?.dailyActivity.find(
-    (activity) => activity.activityDate === todayLocalDate,
-  );
-  const completedTechniqueIds = completedTechniqueIdsQuery.data ?? [];
-  const guidedExerciseCompleted = recommendedTechnique.technique != null &&
-    completedTechniqueIds.includes(recommendedTechnique.technique.id);
-  const handPickedExerciseCompleted = handPickedTechnique != null &&
-    completedTechniqueIds.includes(handPickedTechnique.id);
-  const breathHoldCompleted = todayActivity?.dailyBreathHoldCompleted ?? false;
   const showProPaywall = useCallback((
     feature: FeatureKeyValue,
     placement: typeof PaywallPlacement[keyof typeof PaywallPlacement],
@@ -95,7 +64,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   }, [navigation]);
 
   const startGuidedExercise = () => {
-    const technique = recommendedTechnique.technique;
+    const technique = dailies.guidedTechnique;
     if (technique == null) return;
 
     if (!dailyExerciseAccess.allowed && !dailyExerciseAccess.isLoading) {
@@ -112,7 +81,8 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   };
 
   const startHandPickedExercise = () => {
-    if (handPickedTechnique == null) return;
+    const technique = dailies.handPickedTechnique;
+    if (technique == null) return;
 
     if (!dailyExerciseAccess.allowed && !dailyExerciseAccess.isLoading) {
       showProPaywall(
@@ -124,9 +94,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
       return;
     }
 
-    navigation.navigate('ExerciseSession', {
-      techniqueId: handPickedTechnique.id,
-    });
+    navigation.navigate('ExerciseSession', { techniqueId: technique.id });
   };
 
   const startDailyBreathHold = (sourceAction: string) => {
@@ -170,16 +138,16 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
 
         <View style={styles.bodySection}>
           <TodaysDailiesSection
-            technique={recommendedTechnique.technique}
-            techniqueLoading={recommendedTechnique.isLoading}
+            technique={dailies.guidedTechnique}
+            techniqueLoading={dailies.guidedTechniqueLoading}
             sessionTime={dailyPlanSchedule.actions.session}
-            handPickedTechnique={handPickedTechnique}
-            handPickedTechniqueLoading={dailyExercisePlan.isLoading}
+            handPickedTechnique={dailies.handPickedTechnique}
+            handPickedTechniqueLoading={dailies.handPickedTechniqueLoading}
             handPickedTime={dailyPlanSchedule.actions.handPicked}
             breathHoldTime={dailyPlanSchedule.actions.checkIn}
-            guidedExerciseCompleted={guidedExerciseCompleted}
-            handPickedExerciseCompleted={handPickedExerciseCompleted}
-            breathHoldCompleted={breathHoldCompleted}
+            guidedExerciseCompleted={dailies.guidedCompleted}
+            handPickedExerciseCompleted={dailies.handPickedCompleted}
+            breathHoldCompleted={dailies.breathHoldCompleted}
             exerciseAccessAllowed={
               dailyExerciseAccess.allowed || dailyExerciseAccess.isLoading
             }
