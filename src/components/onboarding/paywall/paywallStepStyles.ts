@@ -235,8 +235,9 @@ export const paywallStepStyles = StyleSheet.create({
   },
   testimonialScroll: {
     marginHorizontal: -spacing.lg,
+    marginTop: spacing.md,
     // The scroller must not clip the cards' shadows.
-    marginVertical: -spacing.sm,
+    marginBottom: -spacing.sm,
     overflow: 'visible',
   },
   testimonialRow: {

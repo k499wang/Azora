@@ -304,11 +304,13 @@ export type HexRoomProps = {
   picks?: Picks;
   /** hue of the hexagon outline */
   frameHue?: FrameHue;
+  /** walls, floor and trim; defaults to the original room. See `roomShells.ts`. */
+  shell?: Poly[];
   /** render the shell at 35% for a single-decoration preview tile */
   ghost?: boolean;
 };
 
-export const HexRoom = ({ width = 280, picks = {}, frameHue = 'sky', ghost = false }: HexRoomProps) => {
+export const HexRoom = ({ width = 280, picks = {}, frameHue = 'sky', shell = ROOM_SHELL, ghost = false }: HexRoomProps) => {
   const placed = PAINT_ORDER.map((day) => {
     const id = picks[day];
     return id ? DECOR[day + '.' + id] : undefined;
@@ -317,7 +319,7 @@ export const HexRoom = ({ width = 280, picks = {}, frameHue = 'sky', ghost = fal
   return (
     <Svg width={width} height={width * ROOM_ASPECT} viewBox={VIEW_BOX}>
       <G opacity={ghost ? 0.35 : 1}>
-        <Polys polys={ROOM_SHELL} />
+        <Polys polys={shell} />
       </G>
       {placed.map((polys, k) => (
         <Polys key={k} polys={polys} />
@@ -332,14 +334,16 @@ export const DecorationTile = ({
   day,
   option,
   width = 180,
+  shell = ROOM_SHELL,
 }: {
   day: DayKey;
   option: string;
   width?: number;
+  shell?: Poly[];
 }) => (
   <Svg width={width} height={width * ROOM_ASPECT} viewBox={VIEW_BOX}>
     <G opacity={0.35}>
-      <Polys polys={ROOM_SHELL} />
+      <Polys polys={shell} />
     </G>
     <Polys polys={GHOST_FRAME} />
     <Polys polys={DECOR[day + '.' + option] ?? []} />

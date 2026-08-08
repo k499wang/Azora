@@ -91,8 +91,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   question: {
-    ...typography.body.medium,
-    fontFamily: fonts.semibold,
+    ...typography.title.title3,
     color: colors.text.primary,
   },
   row: {

@@ -1,23 +1,43 @@
 import { Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import * as Haptics from 'expo-haptics';
 import { Text } from '../../components/common/Text';
 import Icon from '../../components/common/icons/Icon';
-import { HexRoom } from './RoomScene';
+import ProgressBar from '../../components/common/ProgressBar';
 import { getRoomDay } from './roomDays';
-import { toFrameHue, toPicks } from './roomPicks';
 import { useRoomClaim } from './useRoomClaim';
 import { useStartDaily, type DailyId } from '../../hooks/useStartDaily';
 import { useAuthStore } from '../../stores/authStore';
 import { triggerTapHaptic } from '../../native/tapHaptics';
+import { isHapticsEnabled } from '../../services/preferences/hapticsPreference';
 import { card } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
-import { fonts, typography } from '../../theme/typography';
+import { typography } from '../../theme/typography';
 import type { RootStackNavigationProp } from '../../app/navigation';
 
-const THUMB_WIDTH = 40;
-const CHECK_SIZE = 14;
-const DOT_SIZE = 22;
+const BADGE_SIZE = 34;
+const BAR_HEIGHT = 12;
+
+// A soft tap as the fill leaves, a firmer one as it lands, and the success
+// pattern reserved for the step that actually unlocks the piece.
+function fillStartHaptic() {
+  if (!isHapticsEnabled()) return;
+  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+}
+
+function fillEndHaptic(unlocked: boolean) {
+  if (!isHapticsEnabled()) return;
+
+  if (unlocked) {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
+      () => {},
+    );
+    return;
+  }
+
+  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+}
 
 interface RoomProgressBannerProps {
   sourceScreen: string;
@@ -30,12 +50,12 @@ interface RoomProgressBannerProps {
  * Deliberately quiet, and this is where the design departs from Duolingo and
  * Finch: they celebrate hard at the completion screen because their post-task
  * state is achievement. A breathing app's is calm — the thing the session was
- * for — so this sits below the share CTA with no modal, no interstitial and
- * nothing blocking the exit. The Home badge carries the real cue, which is what
- * lets this stay quiet.
+ * for — so this stays a card with no modal, no interstitial and nothing
+ * blocking the exit. The Home badge carries the real cue, which is what lets
+ * this stay quiet.
  *
  * It renders on *every* session, not just the third. Most sessions are someone's
- * first or second of the day, and "one more to go" is the whole pull.
+ * first or second of the day, and watching the bar move is the whole pull.
  */
 export default function RoomProgressBanner({
   sourceScreen,
@@ -43,7 +63,7 @@ export default function RoomProgressBanner({
 }: RoomProgressBannerProps) {
   const navigation = useNavigation<RootStackNavigationProp>();
   const userId = useAuthStore((state) => state.user?.id ?? null);
-  const { room, progress, dailies, isLoading } = useRoomClaim(userId);
+  const { progress, dailies, isLoading } = useRoomClaim(userId);
   const { start } = useStartDaily(sourceScreen);
 
   // Nothing to say once today is spent or the room is full — the next move is
@@ -53,7 +73,7 @@ export default function RoomProgressBanner({
   }
 
   const day = progress.nextSlot == null ? null : getRoomDay(progress.nextSlot);
-  const remaining: { id: DailyId; label: string; done: boolean }[] = [
+  const dailyList: { id: DailyId; label: string; done: boolean }[] = [
     { id: 'guided', label: 'Guided breathing', done: dailies.guidedCompleted },
     {
       id: 'handPicked',
@@ -66,13 +86,20 @@ export default function RoomProgressBanner({
       done: dailies.breathHoldCompleted,
     },
   ];
-  const left = remaining.filter((daily) => !daily.done).length;
+  const total = dailyList.length;
+  const done = dailyList.filter((daily) => daily.done).length;
+  const next = dailyList.find((daily) => !daily.done) ?? null;
 
-  const thumbnail = (
-    <HexRoom
-      width={THUMB_WIDTH}
-      picks={toPicks(room?.decorations ?? [])}
-      frameHue={toFrameHue(room?.frameHue)}
+  // The session that just ended is one of these three, so the bar starts a step
+  // behind and fills to where they actually are. That step is the reward.
+  const bar = (
+    <ProgressBar
+      progress={done / total}
+      from={Math.max(0, done - 1) / total}
+      height={BAR_HEIGHT}
+      onFillStart={fillStartHaptic}
+      onFillEnd={() => fillEndHaptic(progress.canClaim)}
+      style={styles.bar}
     />
   );
 
@@ -82,82 +109,59 @@ export default function RoomProgressBanner({
         accessibilityRole="button"
         accessibilityLabel="A new piece is ready for your room"
         accessibilityHint="Opens your room to choose it"
-        style={({ pressed }) => [
-          styles.banner,
-          styles.row,
-          pressed && styles.pressed,
-          style,
-        ]}
+        style={({ pressed }) => [styles.banner, pressed && styles.pressed, style]}
         onPress={() => {
           triggerTapHaptic();
           navigation.navigate('RoomDecorate');
         }}
       >
-        {thumbnail}
-        <View style={styles.copy}>
-          <Text style={styles.title}>A new piece is ready</Text>
-          <Text style={styles.subtitle}>
-            {day == null ? 'Choose what goes in your room' : `Choose your ${day.note}`}
-          </Text>
+        <Text style={styles.title}>Today's piece</Text>
+        <View style={styles.barRow}>
+          {bar}
+          <View style={[styles.badge, styles.badgeUnlocked]}>
+            <Icon
+              name="chevron-right"
+              size={20}
+              color={colors.text.inverse}
+            />
+          </View>
         </View>
-        <Icon name="chevron-right" size={22} color={colors.text.tertiary} />
+        <Text style={styles.caption}>
+          {day == null
+            ? 'Tap to choose what goes in your room'
+            : `Tap to choose your ${day.note}`}
+        </Text>
       </Pressable>
     );
   }
 
   return (
     <View style={[styles.banner, style]}>
-      <View style={styles.row}>
-        {thumbnail}
-        <View style={styles.copy}>
-          <Text style={styles.title}>
-            {left === 1 ? '1 more to earn your piece' : `${left} more to earn your piece`}
-          </Text>
-          {day != null ? (
-            <Text style={styles.subtitle}>Next: {day.note}</Text>
-          ) : null}
+      <Text style={styles.title}>Today's piece</Text>
+      <View style={styles.barRow}>
+        {bar}
+        <View style={styles.badge}>
+          <Icon name="lock" size={18} color={colors.text.tertiary} />
         </View>
       </View>
+      <Text style={styles.caption}>
+        {done} of {total} done — finish all three to unlock
+      </Text>
 
-      <View style={styles.list}>
-        {remaining.map((daily) => (
-          <Pressable
-            key={daily.id}
-            accessibilityRole={daily.done ? 'text' : 'button'}
-            accessibilityLabel={
-              daily.done ? `${daily.label}, done` : `Start ${daily.label}`
-            }
-            disabled={daily.done}
-            style={({ pressed }) => [styles.listRow, pressed && styles.pressed]}
-            onPress={() => {
-              triggerTapHaptic();
-              start(daily.id);
-            }}
-          >
-            <View style={[styles.dot, daily.done && styles.dotDone]}>
-              {daily.done ? (
-                <Icon
-                  name="check"
-                  size={CHECK_SIZE}
-                  color={colors.text.inverse}
-                />
-              ) : null}
-            </View>
-            <Text
-              style={[styles.listLabel, daily.done && styles.listLabelDone]}
-            >
-              {daily.label}
-            </Text>
-            {daily.done ? null : (
-              <Icon
-                name="chevron-right"
-                size={20}
-                color={colors.text.tertiary}
-              />
-            )}
-          </Pressable>
-        ))}
-      </View>
+      {next == null ? null : (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Start ${next.label}`}
+          style={({ pressed }) => [styles.nextRow, pressed && styles.pressed]}
+          onPress={() => {
+            triggerTapHaptic();
+            start(next.id);
+          }}
+        >
+          <Text style={styles.nextLabel}>Next: {next.label}</Text>
+          <Icon name="chevron-right" size={20} color={colors.text.tertiary} />
+        </Pressable>
+      )}
     </View>
   );
 }
@@ -167,61 +171,52 @@ const styles = StyleSheet.create({
     ...card.base,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.md,
-    gap: spacing.md,
+    gap: spacing.sm,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border.subtle,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
   },
   pressed: {
     opacity: 0.9,
     transform: [{ scale: 0.99 }],
   },
-  copy: {
-    flex: 1,
-    gap: 2,
-  },
   title: {
-    ...typography.body.medium,
-    fontFamily: fonts.semibold,
+    ...typography.title.title3,
     color: colors.text.primary,
   },
-  subtitle: {
-    ...typography.body.small,
-    color: colors.text.secondary,
-  },
-  list: {
-    gap: spacing.xs,
-  },
-  listRow: {
+  barRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    paddingVertical: spacing.sm,
   },
-  dot: {
-    width: DOT_SIZE,
-    height: DOT_SIZE,
-    borderRadius: DOT_SIZE / 2,
+  bar: {
+    flex: 1,
+  },
+  badge: {
+    width: BADGE_SIZE,
+    height: BADGE_SIZE,
+    borderRadius: BADGE_SIZE / 2,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.neutral[0],
-    borderWidth: 2,
-    borderColor: colors.primary.blue200,
+    backgroundColor: colors.primary.blue100,
   },
-  dotDone: {
-    backgroundColor: colors.primary.blue700,
-    borderColor: colors.primary.blue700,
+  badgeUnlocked: {
+    backgroundColor: colors.primary.blue600,
   },
-  listLabel: {
+  caption: {
+    ...typography.body.small,
+    color: colors.text.secondary,
+  },
+  nextRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingTop: spacing.sm,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.border.subtle,
+  },
+  nextLabel: {
     ...typography.body.medium,
     flex: 1,
     color: colors.text.primary,
-  },
-  listLabelDone: {
-    color: colors.text.tertiary,
   },
 });

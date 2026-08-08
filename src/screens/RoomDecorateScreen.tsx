@@ -11,6 +11,7 @@ import Icon from '../components/common/icons/Icon';
 import { DecorationTile, HexRoom } from '../features/room/RoomScene';
 import { getRoomDay } from '../features/room/roomDays';
 import { toFrameHue, toPicks } from '../features/room/roomPicks';
+import { roomShellPolys } from '../features/room/roomShells';
 import { useRoomClaim } from '../features/room/useRoomClaim';
 import { ROOM_SLOT_COUNT } from '../lib/room/roomProgress';
 import { usePlaceDecorationMutation } from '../queries/room/usePlaceDecorationMutation';
@@ -35,6 +36,7 @@ export default function RoomDecorateScreen({
   const placeDecoration = usePlaceDecorationMutation(userId);
 
   const decorations = room?.decorations ?? [];
+  const shell = roomShellPolys(room?.shell);
   const contentWidth = width - padding.screen.horizontal * 2;
   const roomWidth = Math.min(contentWidth, MAX_ROOM_WIDTH);
   const tileWidth =
@@ -78,6 +80,7 @@ export default function RoomDecorateScreen({
             width={roomWidth}
             picks={toPicks(decorations)}
             frameHue={toFrameHue(room?.frameHue)}
+            shell={shell}
           />
           <Text style={styles.progress}>
             {progress.placedCount} of {ROOM_SLOT_COUNT} pieces
@@ -144,6 +147,7 @@ export default function RoomDecorateScreen({
                     day={nextSlot}
                     option={option.id}
                     width={tileWidth - spacing.md}
+                    shell={shell}
                   />
                   <Text style={styles.tileLabel}>{option.name}</Text>
                 </Pressable>

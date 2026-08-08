@@ -16,6 +16,8 @@ import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
 import { card } from '../theme/card';
 import BPMChart from '../components/heartRate/BPMChart';
 import GlassIconButton from '../components/common/GlassIconButton';
+import { SESSION_GLASS_BUTTON_SIZE } from '../features/exercise/shared/components/SessionGlassButton';
+import ThermometerStatCard from '../components/heartRate/ThermometerStatCard';
 import type { SessionCompleteScreenProps } from '../app/navigation';
 import { useAuthStore } from '../stores/authStore';
 import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
@@ -28,15 +30,6 @@ import {
 } from '../services/reviews/storeReview';
 
 const HERO_BLOB_SIZE = 132;
-
-function StatCell({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={styles.statCell}>
-      <Text style={styles.statValue}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
-    </View>
-  );
-}
 
 function formatDuration(secs: number): string {
   const m = Math.floor(secs / 60);
@@ -156,21 +149,52 @@ export default function SessionCompleteScreen({
         </View>
 
         <View style={styles.bodySection}>
-          <HelpfulnessQuestion
-            techniqueId={techniqueId}
-            localDate={todayLocalDate}
-          />
-
           <RoomProgressBanner sourceScreen="SessionComplete" />
         </View>
 
-        <View style={styles.statRow}>
-          <StatCell label="Duration" value={formatDuration(durationSec)} />
-          <StatCell
-            label="Avg HR"
-            value={displayAvgBpm == null ? '—' : `${Math.round(displayAvgBpm)}`}
-          />
-          <StatCell label="Breaths" value={`${breathCount}`} />
+        <View style={styles.statSection}>
+          <View style={styles.statRow}>
+            <ThermometerStatCard
+              label="Duration"
+              icon="breath-timer"
+              value={durationSec}
+              valueText={formatDuration(durationSec)}
+              unit=""
+              min={0}
+              max={1}
+              accent={colors.primary.blue500}
+              iconColor={colors.primary.blue600}
+              presentation="number"
+            />
+            <ThermometerStatCard
+              label="Breaths"
+              icon="stat-breath-flow"
+              value={breathCount}
+              valueText={`${breathCount}`}
+              unit=""
+              min={0}
+              max={1}
+              accent={colors.primary.blue500}
+              iconColor={colors.primary.blue600}
+              presentation="number"
+            />
+          </View>
+
+          {displayAvgBpm == null ? null : (
+            <View style={styles.statRow}>
+              <ThermometerStatCard
+                label="Avg HR"
+                icon="heart-bpm"
+                value={displayAvgBpm}
+                unit="bpm"
+                min={40}
+                max={110}
+                accent={colors.primary.blue500}
+                iconColor={colors.primary.blue600}
+                presentation="number"
+              />
+            </View>
+          )}
         </View>
 
         {showGraph ? (
@@ -182,6 +206,13 @@ export default function SessionCompleteScreen({
             />
           </View>
         ) : null}
+
+        <View style={styles.bodySection}>
+          <HelpfulnessQuestion
+            techniqueId={techniqueId}
+            localDate={todayLocalDate}
+          />
+        </View>
 
         <Pressable style={styles.shareCta} onPress={handleShare}>
           <MaterialCommunityIcons
@@ -196,12 +227,14 @@ export default function SessionCompleteScreen({
 
       {/* Glassmorphic top buttons — fixed above the scroll */}
       <GlassIconButton
+        size={SESSION_GLASS_BUTTON_SIZE}
         style={[styles.closeButton, { top: insets.top + padding.screen.vertical }]}
         onPress={handleClose}
       >
-        <MaterialCommunityIcons name="close" size={22} color={colors.text.secondary} />
+        <MaterialCommunityIcons name="close" size={20} color={colors.text.secondary} />
       </GlassIconButton>
       <GlassIconButton
+        size={SESSION_GLASS_BUTTON_SIZE}
         style={[styles.shareButton, { top: insets.top + padding.screen.vertical }]}
         onPress={handleShare}
       >
@@ -248,8 +281,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   heroTitle: {
-    ...typography.title.title1,
-    fontFamily: fonts.semibold,
+    ...typography.display.display3,
     color: colors.text.inverse,
     textAlign: 'center',
     marginTop: spacing.sm,
@@ -264,24 +296,14 @@ const styles = StyleSheet.create({
     marginTop: margin.sectionGap,
     gap: margin.itemGap,
   },
-  statRow: {
-    flexDirection: 'row',
+  statSection: {
     marginHorizontal: padding.screen.horizontal,
     marginTop: margin.sectionGap,
+    gap: spacing.sm,
   },
-  statCell: {
-    flex: 1,
-    alignItems: 'center',
-    gap: 2,
-  },
-  statValue: {
-    ...typography.title.title3,
-    fontFamily: fonts.semibold,
-    color: colors.text.primary,
-  },
-  statLabel: {
-    ...typography.body.small,
-    color: colors.text.tertiary,
+  statRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
   },
   graphWrap: {
     paddingHorizontal: padding.screen.horizontal,
@@ -302,7 +324,7 @@ const styles = StyleSheet.create({
   shareCtaLabel: {
     ...typography.body.medium,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
+    fontWeight: '600',
     color: colors.text.inverse,
   },
 });

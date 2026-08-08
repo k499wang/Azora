@@ -204,15 +204,24 @@ export async function getRooms(userId: string): Promise<Room[]> {
   }));
 }
 
+export interface RoomLook {
+  shell: string;
+  frameHue: string;
+}
+
 async function createRoom(
   userId: string,
   floor: number,
-  frameHue?: string,
+  look?: RoomLook,
 ): Promise<Room> {
   const supabase = getRoomClient();
   const { data, error } = await supabase
     .from('rooms')
-    .insert({ user_id: userId, floor, ...(frameHue != null && { frame_hue: frameHue }) })
+    .insert({
+      user_id: userId,
+      floor,
+      ...(look != null && { shell: look.shell, frame_hue: look.frameHue }),
+    })
     .select('id, floor, shell, frame_hue')
     .single();
 
@@ -285,7 +294,7 @@ export async function placeDecoration(
  */
 export async function createNextRoom(
   userId: string,
-  frameHue: string,
+  look: RoomLook,
 ): Promise<CurrentRoom> {
   const current = await getCurrentRoom(userId);
   const progress = roomProgress({
@@ -300,7 +309,7 @@ export async function createNextRoom(
   }
 
   return {
-    room: await createRoom(userId, current.room.floor + 1, frameHue),
+    room: await createRoom(userId, current.room.floor + 1, look),
     lastEarnedLocalDate: current.lastEarnedLocalDate,
   };
 }
