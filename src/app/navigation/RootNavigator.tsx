@@ -12,6 +12,7 @@ import { HeartRateSessionDetailScreen } from '../../screens/HeartRateSessionDeta
 import { ProPaywallScreen } from '../../screens/ProPaywallScreen';
 import { ExitOfferScreen } from '../../screens/ExitOfferScreen';
 import RoomDecorateScreen from '../../screens/RoomDecorateScreen';
+import RoomLabScreen from '../../screens/RoomLabScreen';
 import RoomCompleteScreen from '../../screens/RoomCompleteScreen';
 import SettingsScreen from '../../screens/SettingsScreen';
 import ShareableResultScreen from '../../screens/ShareableResultScreen';
@@ -130,6 +131,16 @@ function AppStack({ showBootPaywall }: AppStackProps) {
           animation: 'slide_from_right',
         }}
       />
+      {__DEV__ ? (
+        <Stack.Screen
+          name="RoomLab"
+          component={RoomLabScreen}
+          options={{
+            presentation: 'card',
+            animation: 'slide_from_right',
+          }}
+        />
+      ) : null}
       <Stack.Screen
         name="RoomDecorate"
         component={RoomDecorateScreen}

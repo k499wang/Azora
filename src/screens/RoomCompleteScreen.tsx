@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Pressable,
   ScrollView,
@@ -8,7 +8,14 @@ import {
 } from 'react-native';
 import { Text } from '../components/common/Text';
 import AppTopBar from '../components/common/AppTopBar';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+  Easing,
+} from 'react-native-reanimated';
 import { HexRoom } from '../features/room/RoomScene';
+import RoomReplay from '../features/room/RoomReplay';
 import { toFrameHue, toPicks } from '../features/room/roomPicks';
 import {
   ROOM_SHELLS,
@@ -46,6 +53,22 @@ export default function RoomCompleteScreen({
     () => ROOM_STYLES.find((it) => it.shell !== currentShell) ?? ROOM_STYLES[0],
   );
 
+  const [replayDone, setReplayDone] = useState(false);
+  const reveal = useSharedValue(0);
+
+  useEffect(() => {
+    if (!replayDone) return;
+    reveal.value = withTiming(1, {
+      duration: 420,
+      easing: Easing.out(Easing.cubic),
+    });
+  }, [replayDone, reveal]);
+
+  const revealStyle = useAnimatedStyle(() => ({
+    opacity: reveal.value,
+    transform: [{ translateY: (1 - reveal.value) * 14 }],
+  }));
+
   const contentWidth = width - padding.screen.horizontal * 2;
   const roomWidth = Math.min(contentWidth, MAX_ROOM_WIDTH);
   const swatchWidth =
@@ -72,23 +95,21 @@ export default function RoomCompleteScreen({
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.header}>
-          <Text style={styles.eyebrow}>
-            Room {room?.floor ?? 1} complete
-          </Text>
+        <Animated.View style={[styles.header, revealStyle]}>
           <Text style={styles.title}>You filled every corner</Text>
-        </View>
+        </Animated.View>
 
         <View style={styles.stage}>
-          <HexRoom
+          <RoomReplay
             width={roomWidth}
             picks={toPicks(room?.decorations ?? [])}
             frameHue={toFrameHue(room?.frameHue)}
             shell={roomShellPolys(room?.shell)}
+            onDone={() => setReplayDone(true)}
           />
         </View>
 
-        <View style={styles.section}>
+        <Animated.View style={[styles.section, revealStyle]}>
           <Text style={styles.sectionTitle}>Pick your next room</Text>
           <Text style={styles.sectionNote}>
             Each look has its own walls and floor. Seven more pieces to fill
@@ -130,19 +151,21 @@ export default function RoomCompleteScreen({
               );
             })}
           </View>
-        </View>
+        </Animated.View>
 
-        <Pressable
-          style={styles.primaryButton}
-          disabled={createNextRoom.isPending}
-          onPress={openNextRoom}
-        >
-          <Text style={styles.primaryButtonLabel}>
-            {createNextRoom.isPending
-              ? 'Opening…'
-              : `Open room ${(room?.floor ?? 1) + 1}`}
-          </Text>
-        </Pressable>
+        <Animated.View style={revealStyle}>
+          <Pressable
+            style={styles.primaryButton}
+            disabled={createNextRoom.isPending}
+            onPress={openNextRoom}
+          >
+            <Text style={styles.primaryButtonLabel}>
+              {createNextRoom.isPending
+                ? 'Opening…'
+                : `Open room ${(room?.floor ?? 1) + 1}`}
+            </Text>
+          </Pressable>
+        </Animated.View>
       </ScrollView>
     </View>
   );
@@ -161,13 +184,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: padding.screen.horizontal,
     alignItems: 'center',
     gap: spacing.xs,
-  },
-  eyebrow: {
-    ...typography.body.small,
-    fontFamily: fonts.semibold,
-    color: colors.primary.blue600,
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
   },
   title: {
     ...typography.title.title1,

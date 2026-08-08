@@ -285,6 +285,10 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
               <SettingsRow
                 label="Preview exit offer (dev)"
                 onPress={() => navigation.navigate('ExitOffer')}
+              />
+              <SettingsRow
+                label="Room lab (dev)"
+                onPress={() => navigation.navigate('RoomLab')}
                 isLast
               />
             </SettingsGroup>
