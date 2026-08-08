@@ -1,8 +1,7 @@
 # The Room and the Hotel — Build Plan
 
-Replaces `docs/cube-room-spec.md`, which describes an earlier six-slot,
-category-keyed cube that the hex room superseded. Delete that file when step 7
-lands.
+Replaces `docs/cube-room-spec.md`, which described an earlier six-slot,
+category-keyed cube that the hex room superseded. That file is deleted.
 
 ---
 
@@ -214,15 +213,25 @@ a calm app reads as a paywall tease.
 
 ### Step 6 — Hotel screen
 
-New route; a grid of small `HexRoom`s, one per completed floor.
+New route; a grid of small `HexRoom`s, one per completed floor. `getRooms` and
+`useRoomsQuery` are built and waiting for it. **Not built.**
 
-The look choice is thin as things stand: `ROOM_FRAME` has three hues and
-`ROOM_SHELL` is a single constant, so "pick your next room" is currently a
-choice between three outline colors — a weak payoff for seven days of work.
-Adding 3–4 shell palettes is a recolor of existing polygons, no new geometry.
-Worth doing before this step ships.
+### Step 7 — Delete `docs/cube-room-spec.md` — **done**
 
-### Step 7 — Delete `docs/cube-room-spec.md`
+### Step 8 — Room shells — **done**
+
+`src/features/room/roomShells.ts` builds six shells (cream, sage, clay, dusk,
+mint, slate) from a palette plus a floor pattern — planks, cross planks,
+checker, tile, medallion — rather than hand-authored polygons, so a new look is
+a dozen lines. Walls, skirting, optional wainscot panelling and the floor
+pattern all vary; the hexagon and its decoration coordinates do not, because
+every object is authored against one room space.
+
+`HexRoom` and `DecorationTile` take a `shell` prop defaulting to the generated
+`ROOM_SHELL`, so regenerating `RoomScene.tsx` never clobbers the shells. The
+room's shell is stored in `rooms.shell` (the column already existed) and
+resolved client-side by `toRoomShell`, so retiring a look needs no migration.
+"Pick your next room" now offers the six full looks, not three outline colors.
 
 ---
 

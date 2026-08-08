@@ -87,11 +87,11 @@ const styles = StyleSheet.create({
   circleEmpty: {
     backgroundColor: colors.neutral[0],
     borderWidth: RING_WIDTH,
-    borderColor: colors.primary.blue200,
+    borderColor: colors.neutral[100],
   },
   circlePast: {
-    backgroundColor: colors.neutral[50],
-    borderColor: colors.neutral[200],
+    backgroundColor: colors.neutral[0],
+    borderColor: colors.neutral[100],
   },
   todayDot: {
     width: TODAY_DOT_SIZE,

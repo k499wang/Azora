@@ -3,6 +3,7 @@ import { useNavigation } from '@react-navigation/native';
 import { Text } from '../../components/common/Text';
 import { HexRoom } from './RoomScene';
 import { toFrameHue, toPicks } from './roomPicks';
+import { roomShellPolys } from './roomShells';
 import { useRoomClaim } from './useRoomClaim';
 import { useAuthStore } from '../../stores/authStore';
 import { triggerTapHaptic } from '../../native/tapHaptics';
@@ -43,6 +44,7 @@ export default function HomeRoom() {
         width={roomWidth}
         picks={toPicks(room?.decorations ?? [])}
         frameHue={toFrameHue(room?.frameHue)}
+        shell={roomShellPolys(room?.shell)}
       />
       {progress.canClaim ? (
         <View style={styles.badge}>

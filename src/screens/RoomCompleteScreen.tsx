@@ -8,8 +8,15 @@ import {
 } from 'react-native';
 import { Text } from '../components/common/Text';
 import AppTopBar from '../components/common/AppTopBar';
-import { HexRoom, type FrameHue } from '../features/room/RoomScene';
+import { HexRoom } from '../features/room/RoomScene';
 import { toFrameHue, toPicks } from '../features/room/roomPicks';
+import {
+  ROOM_SHELLS,
+  ROOM_STYLES,
+  roomShellPolys,
+  toRoomShell,
+  type RoomStyle,
+} from '../features/room/roomShells';
 import { useCreateNextRoomMutation } from '../queries/room/useCreateNextRoomMutation';
 import { useCurrentRoomQuery } from '../queries/room/useCurrentRoomQuery';
 import { useAuthStore } from '../stores/authStore';
@@ -21,13 +28,7 @@ import { fonts, typography } from '../theme/typography';
 import type { RoomCompleteScreenProps } from '../app/navigation';
 
 const MAX_ROOM_WIDTH = 320;
-const SWATCH_WIDTH = 84;
-
-const FRAME_HUES: { id: FrameHue; name: string }[] = [
-  { id: 'sky', name: 'Sky' },
-  { id: 'teal', name: 'Teal' },
-  { id: 'blush', name: 'Blush' },
-];
+const SWATCH_COLUMNS = 3;
 
 export default function RoomCompleteScreen({
   navigation,
@@ -36,20 +37,26 @@ export default function RoomCompleteScreen({
   const userId = useAuthStore((state) => state.user?.id ?? null);
   const currentRoom = useCurrentRoomQuery(userId).data;
   const createNextRoom = useCreateNextRoomMutation(userId);
-  const [frameHue, setFrameHue] = useState<FrameHue>('teal');
 
   const room = currentRoom?.room;
-  const roomWidth = Math.min(
-    width - padding.screen.horizontal * 2,
-    MAX_ROOM_WIDTH,
+  const currentShell = toRoomShell(room?.shell);
+  // Open on a look they are not already living in, so the next room reads as a
+  // new place rather than a repeat of the one they just finished.
+  const [style, setStyle] = useState<RoomStyle>(
+    () => ROOM_STYLES.find((it) => it.shell !== currentShell) ?? ROOM_STYLES[0],
   );
+
+  const contentWidth = width - padding.screen.horizontal * 2;
+  const roomWidth = Math.min(contentWidth, MAX_ROOM_WIDTH);
+  const swatchWidth =
+    (contentWidth - spacing.sm * (SWATCH_COLUMNS - 1)) / SWATCH_COLUMNS;
 
   const openNextRoom = () => {
     if (createNextRoom.isPending) return;
 
     triggerTapHaptic();
     createNextRoom.mutate(
-      { frameHue },
+      { shell: style.shell, frameHue: style.frameHue },
       {
         // Back to Home rather than the picker: the next room is empty and today
         // is already claimed, so there would be nothing to do there.
@@ -77,35 +84,47 @@ export default function RoomCompleteScreen({
             width={roomWidth}
             picks={toPicks(room?.decorations ?? [])}
             frameHue={toFrameHue(room?.frameHue)}
+            shell={roomShellPolys(room?.shell)}
           />
         </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Pick your next room</Text>
           <Text style={styles.sectionNote}>
-            Seven more pieces to fill it.
+            Each look has its own walls and floor. Seven more pieces to fill
+            it.
           </Text>
           <View style={styles.swatchRow}>
-            {FRAME_HUES.map((hue) => {
-              const selected = hue.id === frameHue;
+            {ROOM_STYLES.map((option) => {
+              const selected = option.shell === style.shell;
 
               return (
                 <Pressable
-                  key={hue.id}
-                  style={[styles.swatch, selected && styles.swatchSelected]}
+                  key={option.shell}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected }}
+                  style={[
+                    styles.swatch,
+                    { width: swatchWidth },
+                    selected && styles.swatchSelected,
+                  ]}
                   onPress={() => {
                     triggerTapHaptic();
-                    setFrameHue(hue.id);
+                    setStyle(option);
                   }}
                 >
-                  <HexRoom width={SWATCH_WIDTH} frameHue={hue.id} />
+                  <HexRoom
+                    width={swatchWidth - spacing.md}
+                    frameHue={option.frameHue}
+                    shell={ROOM_SHELLS[option.shell]}
+                  />
                   <Text
                     style={[
                       styles.swatchLabel,
                       selected && styles.swatchLabelSelected,
                     ]}
                   >
-                    {hue.name}
+                    {option.name}
                   </Text>
                 </Pressable>
               );
@@ -174,12 +193,12 @@ const styles = StyleSheet.create({
   },
   swatchRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: spacing.sm,
     marginTop: spacing.sm,
   },
   swatch: {
     ...card.base,
-    flex: 1,
     alignItems: 'center',
     paddingVertical: spacing.sm,
     gap: spacing.xs,

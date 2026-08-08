@@ -94,7 +94,9 @@ export const colors = {
     canvas: '#F7F8FB',
     secondary: '#EEF5FF',
     elevated: '#FFFFFF',
-    card: '#F4F9FF',
+    // Cards read pure white, matching Today's Dailies. Every card surface uses
+    // this so the app has one card white, not two that are nearly the same.
+    card: '#FFFFFF',
     accentSoft: '#EAF2FF',
     // Blue block behind the top bar, curving into the page canvas.
     headerTint: '#78B4FF',
