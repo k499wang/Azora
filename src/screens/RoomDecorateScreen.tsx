@@ -1,4 +1,6 @@
+import { useEffect, useState } from 'react';
 import {
+  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -8,12 +10,13 @@ import {
 import { Text } from '../components/common/Text';
 import AppTopBar from '../components/common/AppTopBar';
 import Icon from '../components/common/icons/Icon';
-import { DecorationTile, HexRoom } from '../features/room/RoomScene';
+import { DecorationTile, HexRoom, type Picks } from '../features/room/RoomScene';
+import PlacementReveal from '../features/room/PlacementReveal';
 import { getRoomDay } from '../features/room/roomDays';
 import { toFrameHue, toPicks } from '../features/room/roomPicks';
 import { roomShellPolys } from '../features/room/roomShells';
 import { useRoomClaim } from '../features/room/useRoomClaim';
-import { ROOM_SLOT_COUNT } from '../lib/room/roomProgress';
+import { ROOM_SLOT_COUNT, type RoomSlot } from '../lib/room/roomProgress';
 import { usePlaceDecorationMutation } from '../queries/room/usePlaceDecorationMutation';
 import { useAuthStore } from '../stores/authStore';
 import { triggerTapHaptic } from '../native/tapHaptics';
@@ -26,6 +29,14 @@ import type { RoomDecorateScreenProps } from '../app/navigation';
 const MAX_ROOM_WIDTH = 300;
 const TILE_COLUMNS = 2;
 const CHECK_SIZE = 18;
+
+interface Placing {
+  slot: RoomSlot;
+  optionId: string;
+  optionName: string;
+  /** the room as it looked before this piece — the reveal drops the piece onto it */
+  picks: Picks;
+}
 
 export default function RoomDecorateScreen({
   navigation,
@@ -44,29 +55,55 @@ export default function RoomDecorateScreen({
   const nextSlot = progress.nextSlot;
   const day = nextSlot == null ? null : getRoomDay(nextSlot);
 
+  const [placing, setPlacing] = useState<Placing | null>(null);
+  const [revealDone, setRevealDone] = useState(false);
+
   const pick = (optionId: string) => {
-    if (nextSlot == null || !progress.canClaim) return;
-    if (placeDecoration.isPending) return;
+    if (nextSlot == null || !progress.canClaim || day == null) return;
+    if (placing != null || placeDecoration.isPending) return;
 
     triggerTapHaptic();
-    placeDecoration.mutate(
-      {
-        slot: nextSlot,
-        optionId,
-        earnedLocalDate: dailies.todayLocalDate,
-      },
-      {
-        onSuccess: (result) => {
-          // The seventh piece finishes the room, and finishing is the biggest
-          // moment in the loop — it gets its own screen rather than a state
-          // swap under the user's thumb.
-          if ((result.room?.decorations.length ?? 0) >= ROOM_SLOT_COUNT) {
-            navigation.replace('RoomComplete');
-          }
-        },
-      },
-    );
+    setPlacing({
+      slot: nextSlot,
+      optionId,
+      optionName:
+        day.options.find((option) => option.id === optionId)?.name ?? 'New piece',
+      picks: toPicks(decorations),
+    });
+    placeDecoration.mutate({
+      slot: nextSlot,
+      optionId,
+      earnedLocalDate: dailies.todayLocalDate,
+    });
   };
+
+  // The reveal and the write race each other; whichever finishes last decides
+  // when the screen moves on, so the animation is never cut short and the room
+  // never renders a frame without the piece that just landed in it.
+  const placed = placeDecoration.data?.room?.decorations.length ?? 0;
+  const writeSettled = !placeDecoration.isPending;
+  const writeFailed = placeDecoration.isError;
+
+  useEffect(() => {
+    if (placing == null || !revealDone || !writeSettled) return;
+
+    setPlacing(null);
+    setRevealDone(false);
+
+    // The reveal has already told them the piece landed, so a failed write can
+    // never just drop them back on the picker with nothing said.
+    if (writeFailed) {
+      Alert.alert('Could not place that piece', 'Please try again.');
+      return;
+    }
+
+    // The seventh piece finishes the room, and finishing is the biggest moment
+    // in the loop — it gets its own screen rather than a state swap under the
+    // user's thumb.
+    if (placed >= ROOM_SLOT_COUNT) {
+      navigation.replace('RoomComplete');
+    }
+  }, [navigation, placed, placing, revealDone, writeFailed, writeSettled]);
 
   return (
     <View style={styles.screen}>
@@ -76,18 +113,33 @@ export default function RoomDecorateScreen({
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.stage}>
-          <HexRoom
-            width={roomWidth}
-            picks={toPicks(decorations)}
-            frameHue={toFrameHue(room?.frameHue)}
-            shell={shell}
-          />
-          <Text style={styles.progress}>
-            {progress.placedCount} of {ROOM_SLOT_COUNT} pieces
-          </Text>
+          {placing != null ? (
+            <PlacementReveal
+              width={roomWidth}
+              day={placing.slot}
+              option={placing.optionId}
+              optionName={placing.optionName}
+              picks={placing.picks}
+              frameHue={toFrameHue(room?.frameHue)}
+              shell={shell}
+              onDone={() => setRevealDone(true)}
+            />
+          ) : (
+            <>
+              <HexRoom
+                width={roomWidth}
+                picks={toPicks(decorations)}
+                frameHue={toFrameHue(room?.frameHue)}
+                shell={shell}
+              />
+              <Text style={styles.progress}>
+                {progress.placedCount} of {ROOM_SLOT_COUNT} pieces
+              </Text>
+            </>
+          )}
         </View>
 
-        {isLoading ? null : progress.isComplete ? (
+        {placing != null ? null : isLoading ? null : progress.isComplete ? (
           <View style={styles.panel}>
             <Text style={styles.panelTitle}>This room is finished</Text>
             <Text style={styles.panelBody}>

@@ -22,5 +22,6 @@ export type {
   SessionCompleteScreenProps,
   RoomDecorateScreenProps,
   RoomCompleteScreenProps,
+  RoomLabScreenProps,
   SettingsScreenProps,
 } from './types';

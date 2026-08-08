@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { StyleSheet, View, type LayoutChangeEvent, type ViewStyle } from 'react-native';
+import { useEffect } from 'react';
+import { StyleSheet, View, type ViewStyle } from 'react-native';
 import Animated, {
   Easing,
   runOnJS,
@@ -37,10 +37,14 @@ interface ProgressBarProps {
 }
 
 /**
- * The fill is a full-width bar slid in from the left, not a view whose `width`
- * animates. Width is a layout prop, so animating it re-runs layout every frame
- * and the bar visibly steps; `translateX` stays on the compositor. Sliding also
- * keeps the rounded right cap its true shape, which `scaleX` would squash.
+ * The fill is scaled from its left edge, never measured and never sized in
+ * points. An earlier version animated a `translateX` off an `onLayout` width,
+ * which paints one wrong frame before layout arrives — at width 0 the offset is
+ * 0, and the fill spans the whole track, so the bar flashes complete before it
+ * fills. There is no measurement here, so the first frame is already correct.
+ *
+ * `width` itself stays untouched: it is a layout prop, so animating it re-runs
+ * layout every frame and the bar visibly steps.
  */
 export default function ProgressBar({
   progress,
@@ -52,17 +56,9 @@ export default function ProgressBar({
   onFillEnd,
   style,
 }: ProgressBarProps) {
-  const [trackWidth, setTrackWidth] = useState(0);
   const fraction = useSharedValue(clamp(from ?? progress));
 
-  // Gated on layout: before the track is measured the fill has no distance to
-  // travel, so an animation started here would complete against a zero width
-  // and the bar would snap into place the moment the real width arrived.
   useEffect(() => {
-    if (trackWidth === 0) {
-      return;
-    }
-
     const target = clamp(progress);
 
     if (fraction.value === target) {
@@ -86,19 +82,14 @@ export default function ProgressBar({
     // inline closures, and re-running this on every render would restart the
     // fill mid-flight.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fraction, progress, trackWidth]);
+  }, [fraction, progress]);
 
   const fillStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: -(1 - fraction.value) * trackWidth }],
+    transform: [{ scaleX: fraction.value }],
   }));
-
-  const onLayout = (event: LayoutChangeEvent) => {
-    setTrackWidth(event.nativeEvent.layout.width);
-  };
 
   return (
     <View
-      onLayout={onLayout}
       style={[
         styles.track,
         { height, borderRadius: height / 2, backgroundColor: trackColor },
@@ -126,5 +117,6 @@ const styles = StyleSheet.create({
   },
   fill: {
     ...StyleSheet.absoluteFillObject,
+    transformOrigin: 'left center',
   },
 });

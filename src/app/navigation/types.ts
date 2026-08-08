@@ -54,6 +54,8 @@ export type RootStackParamList = {
   ExitOffer: undefined;
   RoomDecorate: undefined;
   RoomComplete: undefined;
+  /** dev-only harness for the room's animations */
+  RoomLab: undefined;
   Settings: undefined;
   DailyResult: {
     holdSeconds: number;
@@ -100,6 +102,7 @@ export type SessionCompleteScreenProps = RootStackScreenProps<'SessionComplete'>
 export type DailyExerciseScreenProps = RootStackScreenProps<'DailyExercise'>;
 export type RoomDecorateScreenProps = RootStackScreenProps<'RoomDecorate'>;
 export type RoomCompleteScreenProps = RootStackScreenProps<'RoomComplete'>;
+export type RoomLabScreenProps = RootStackScreenProps<'RoomLab'>;
 export type SettingsScreenProps = RootStackScreenProps<'Settings'>;
 export type DailyResultScreenProps = RootStackScreenProps<'DailyResult'>;
 export type ExitOfferScreenProps = RootStackScreenProps<'ExitOffer'>;

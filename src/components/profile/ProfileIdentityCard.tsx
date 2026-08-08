@@ -3,11 +3,12 @@ import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import { Image } from 'expo-image';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Icon from '../common/icons/Icon';
+import BlobCharacter from '../home/BlobCharacter';
 import { colors } from '../../theme/colors';
 import { typography, fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 
-const DEFAULT_AVATAR_SOURCE = require('../../../assets/mascot/azora-cloud-friendly-no-arms.png');
+const AVATAR_INNER_SIZE = 104;
 
 interface ProfileIdentityCardProps {
   displayName: string;
@@ -49,10 +50,11 @@ export default function ProfileIdentityCard({
               cachePolicy="memory-disk"
             />
           ) : (
-            <Image
-              source={DEFAULT_AVATAR_SOURCE}
-              style={styles.defaultAvatarImage}
-              contentFit="contain"
+            <BlobCharacter
+              character="calm"
+              size={AVATAR_INNER_SIZE}
+              bodyColor={colors.playful.sky.soft}
+              faceColor={colors.playful.sky.ink}
             />
           )}
           {isUploading ? (
@@ -121,9 +123,9 @@ const styles = StyleSheet.create({
     opacity: 0.92,
   },
   avatar: {
-    width: 104,
-    height: 104,
-    borderRadius: 52,
+    width: AVATAR_INNER_SIZE,
+    height: AVATAR_INNER_SIZE,
+    borderRadius: AVATAR_INNER_SIZE / 2,
     backgroundColor: colors.primary.blue600,
     alignItems: 'center',
     justifyContent: 'center',
@@ -135,10 +137,6 @@ const styles = StyleSheet.create({
   avatarImage: {
     width: '100%',
     height: '100%',
-  },
-  defaultAvatarImage: {
-    width: '78%',
-    height: '78%',
   },
   avatarUploading: {
     ...StyleSheet.absoluteFillObject,

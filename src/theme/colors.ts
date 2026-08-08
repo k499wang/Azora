@@ -86,6 +86,19 @@ export const colors = {
     textFaint: 'rgba(255,255,255,0.45)',
   },
 
+  // The hex room's resident. Mint reads as a character rather than furniture
+  // against the room's warm cream floor, and stays distinct from every frame hue.
+  roomBlob: {
+    body: '#57C9B7',
+    bodyLight: '#7FDCCC',
+    foot: '#39AC9A',
+    face: '#1F423C',
+    // the pop of sparkles when the blob is poked
+    sparkle: '#FFC94D',
+    // matches the shadow ink the room artwork already uses
+    shadow: 'rgba(58,67,79,0.22)',
+  },
+
   background: {
     // Cool neutral canvas for the frosted/glass paradigm — glass surfaces refract
     // against grey rather than blue tint.
