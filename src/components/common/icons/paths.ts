@@ -134,6 +134,9 @@ export const ICON_PATHS = {
   'chevron-right': `
     <path d="M9.5 6l6 6-6 6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none" />
   `,
+  'chevron-left': `
+    <path d="M14.5 6l-6 6 6 6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+  `,
 
   'arrow-up': `
     <path d="M12 19.5V5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" fill="none" />

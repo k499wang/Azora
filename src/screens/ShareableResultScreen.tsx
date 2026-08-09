@@ -69,6 +69,10 @@ export default function ShareableResultScreen({
   // Always shown: this screen is only reachable from the daily breath hold, so
   // reaching it always means a daily just moved.
   const [sheetVisible, setSheetVisible] = useState(true);
+  // Same reason as the breathing screen: the heart-rate section is expensive
+  // and must not build itself while the sheet is animating.
+  const [sheetSettled, setSheetSettled] = useState(false);
+  const showResults = !sheetVisible || sheetSettled;
 
   // Held until the sheet is gone — a store-review prompt landing on top of the
   // celebration would eat it.
@@ -127,9 +131,11 @@ export default function ShareableResultScreen({
           { label: 'Hold', value: formatDuration(holdSeconds) },
           { label: 'Lung age', value: `${lungAge.years}` },
         ]}
+        onSettled={() => setSheetSettled(true)}
         onDismiss={() => setSheetVisible(false)}
       />
 
+      {showResults ? (
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -190,6 +196,7 @@ export default function ShareableResultScreen({
           <Text style={styles.shareCtaLabel}>Share my result</Text>
         </Pressable>
       </ScrollView>
+      ) : null}
 
       {/* Glassmorphic top buttons — fixed above the scroll */}
       <GlassIconButton

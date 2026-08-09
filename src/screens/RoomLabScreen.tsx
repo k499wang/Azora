@@ -14,11 +14,23 @@ import SectionHeader from '../components/common/SectionHeader';
 import PlacementReveal from '../features/room/PlacementReveal';
 import RoomReplay from '../features/room/RoomReplay';
 import { ROOM_MAX_WIDTH, getRoomWidth } from '../features/room/roomLayout';
-import DailyCompleteSheet from '../features/room/DailyCompleteSheet';
+import DailyCompleteSheet, {
+  type DailyCompleteState,
+} from '../features/room/DailyCompleteSheet';
+import RoomPager from '../features/room/RoomPager';
+import DecoratePanel, {
+  type DecorateState,
+} from '../features/room/DecoratePanel';
+import type { RoomSlot } from '../lib/room/roomProgress';
+import { ROOM_SLOTS } from '../lib/room/roomProgress';
+import {
+  setRoomOverride,
+  isRoomOverridden,
+} from '../features/room/devRoomOverride';
+import type { RoomClaim } from '../features/room/useRoomClaim';
 import { CATEGORY_STYLE } from '../features/exercise/guidedBreathing/categoryPalette';
 import {
   DAYS,
-  DecorationTile,
   HexRoom,
   type DayKey,
   type FrameHue,
@@ -36,7 +48,6 @@ import { fonts, typography } from '../theme/typography';
 import type { RoomLabScreenProps } from '../app/navigation';
 
 const SHELL_PREVIEW_WIDTH = 96;
-const TILE_COLUMNS = 2;
 const BADGE_SIZE = 34;
 const FRAME_HUES: FrameHue[] = ['sky', 'teal', 'blush'];
 
@@ -45,6 +56,126 @@ const SAMPLE_PICKS: Picks = Object.fromEntries(
   DAYS.map((day) => [day.key, day.options[0].id]),
 ) as Picks;
 
+// Every state the sheet can be in, so none of them costs three real exercises.
+const SHEET_CASES: { label: string; state: DailyCompleteState }[] = [
+  {
+    label: '1 of 3',
+    state: { done: 1, unlocked: false, showBar: true, nextSlot: 'day1' },
+  },
+  {
+    label: '2 of 3',
+    state: { done: 2, unlocked: false, showBar: true, nextSlot: 'day1' },
+  },
+  {
+    label: '3 of 3 — unlocked',
+    state: { done: 3, unlocked: true, showBar: true, nextSlot: 'day1' },
+  },
+  {
+    label: 'Already claimed',
+    state: { done: 3, unlocked: false, showBar: false, nextSlot: 'day2' },
+  },
+  {
+    label: 'Room full',
+    state: { done: 3, unlocked: false, showBar: false, nextSlot: null },
+  },
+];
+
+// The four things the decorate screen can be saying.
+const PANEL_CASES: { label: string; state: DecorateState }[] = [
+  {
+    label: 'Locked — 0 done',
+    state: {
+      kind: 'locked',
+      guidedDone: false,
+      handPickedDone: false,
+      breathHoldDone: false,
+    },
+  },
+  {
+    label: 'Locked — 2 done',
+    state: {
+      kind: 'locked',
+      guidedDone: true,
+      handPickedDone: true,
+      breathHoldDone: false,
+    },
+  },
+  { label: 'Claimed today', state: { kind: 'claimed' } },
+  { label: 'Room finished', state: { kind: 'complete' } },
+];
+
+/** A whole fabricated room, so the real decorate screen can be opened at will. */
+function fakeClaim({
+  placed,
+  dailiesDone,
+  claimedToday,
+}: {
+  placed: number;
+  dailiesDone: number;
+  claimedToday: boolean;
+}): RoomClaim {
+  const decorations = ROOM_SLOTS.slice(0, placed).map((slot) => ({
+    slot,
+    optionId: DAYS.find((day) => day.key === slot)?.options[0].id ?? '',
+    earnedLocalDate: '2026-01-01',
+  }));
+  const nextSlot = ROOM_SLOTS[placed] ?? null;
+  const allCompleted = dailiesDone >= 3;
+
+  return {
+    room: {
+      id: 'lab-room',
+      floor: 1,
+      shell: 'cream',
+      frameHue: 'sky',
+      decorations,
+    },
+    progress: {
+      placedCount: placed,
+      nextSlot,
+      isComplete: nextSlot == null,
+      claimedToday,
+      canClaim: allCompleted && !claimedToday && nextSlot != null,
+    },
+    dailies: {
+      todayLocalDate: '2026-01-01',
+      guidedTechnique: null,
+      guidedTechniqueLoading: false,
+      handPickedTechnique: null,
+      handPickedTechniqueLoading: false,
+      guidedCompleted: dailiesDone >= 1,
+      handPickedCompleted: dailiesDone >= 2,
+      breathHoldCompleted: dailiesDone >= 3,
+      allCompleted,
+      isLoading: false,
+    },
+    isLoading: false,
+  };
+}
+
+const SCREEN_CASES: { label: string; claim: RoomClaim }[] = [
+  {
+    label: 'Ready to pick',
+    claim: fakeClaim({ placed: 3, dailiesDone: 3, claimedToday: false }),
+  },
+  {
+    label: 'Dailies unfinished',
+    claim: fakeClaim({ placed: 3, dailiesDone: 1, claimedToday: false }),
+  },
+  {
+    label: 'Claimed today',
+    claim: fakeClaim({ placed: 4, dailiesDone: 3, claimedToday: true }),
+  },
+  {
+    label: 'Last piece (6 of 7)',
+    claim: fakeClaim({ placed: 6, dailiesDone: 3, claimedToday: false }),
+  },
+  {
+    label: 'Room full',
+    claim: fakeClaim({ placed: 7, dailiesDone: 3, claimedToday: false }),
+  },
+];
+
 const BAR_STEPS = [
   { label: '1st daily', from: 0, to: 1 / 3 },
   { label: '2nd daily', from: 1 / 3, to: 2 / 3 },
@@ -52,7 +183,10 @@ const BAR_STEPS = [
 ];
 
 /**
- * Dev-only harness for the room's animations.
+ * Dev-only harness for the room's animations. Gated three ways — the route is
+ * only registered under `__DEV__`, the Settings entry only renders under
+ * `__DEV__`, and the screen itself refuses to render outside it. See
+ * `devScreens.test.mjs`, which fails if any of the three is removed.
  *
  * Every moment in the reward loop is otherwise gated behind finishing three
  * real exercises and waiting a day, which makes tuning a 600ms burst
@@ -61,10 +195,8 @@ const BAR_STEPS = [
  */
 export default function RoomLabScreen({ navigation }: RoomLabScreenProps) {
   const { width } = useWindowDimensions();
+  const isDev = __DEV__;
   const roomWidth = getRoomWidth(width);
-  const contentWidth = width - padding.screen.horizontal * 2;
-  const tileWidth =
-    (contentWidth - spacing.sm * (TILE_COLUMNS - 1)) / TILE_COLUMNS;
 
   const [dayIndex, setDayIndex] = useState(0);
   const [optionIndex, setOptionIndex] = useState(0);
@@ -76,6 +208,9 @@ export default function RoomLabScreen({ navigation }: RoomLabScreenProps) {
   const [barRun, setBarRun] = useState(0);
   const [replayRun, setReplayRun] = useState(0);
   const [sheetVisible, setSheetVisible] = useState(false);
+  const [sheetCase, setSheetCase] = useState(0);
+  const [hotelFloors, setHotelFloors] = useState(3);
+  const [panelCase, setPanelCase] = useState(0);
 
   const day = DAYS[dayIndex];
   const option = day.options[optionIndex] ?? day.options[0];
@@ -85,6 +220,12 @@ export default function RoomLabScreen({ navigation }: RoomLabScreenProps) {
     DAYS.slice(0, dayIndex).map((it) => [it.key, it.options[0].id]),
   ) as Picks;
 
+  // Last line of defence: even if the route were somehow reachable in a
+  // release build, there is nothing here to reach.
+  if (!isDev) {
+    return null;
+  }
+
   return (
     <View style={styles.screen}>
       <DailyCompleteSheet
@@ -92,6 +233,7 @@ export default function RoomLabScreen({ navigation }: RoomLabScreenProps) {
         hue={CATEGORY_STYLE.calm.hue}
         character={CATEGORY_STYLE.calm.character}
         title="Nice work"
+        state={SHEET_CASES[sheetCase].state}
         subtitle="Box Breathing"
         stats={[
           { label: 'Time', value: '2:00' },
@@ -99,11 +241,18 @@ export default function RoomLabScreen({ navigation }: RoomLabScreenProps) {
         ]}
         onDismiss={() => setSheetVisible(false)}
       />
-      <AppTopBar title="Room lab" showAvatar={false} showStreak={false} />
+      <AppTopBar showBack title="Room lab" showAvatar={false} showStreak={false} />
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
+        <View style={styles.section}>
+          <Text style={styles.note}>
+            Placement reveal · Picker · Panel states · Progress bar · Room
+            complete · Shells · Daily sheet · Hotel · Real screens
+          </Text>
+        </View>
+
         <View style={styles.section}>
           <SectionHeader title="Placement reveal" />
           <Text style={styles.note}>
@@ -125,7 +274,6 @@ export default function RoomLabScreen({ navigation }: RoomLabScreenProps) {
               width={roomWidth}
               day={day.key as DayKey}
               option={option.id}
-              optionName={option.name}
               picks={picks}
               frameHue={frameHue}
               shell={ROOM_SHELLS[shell]}
@@ -146,18 +294,6 @@ export default function RoomLabScreen({ navigation }: RoomLabScreenProps) {
                   setDayIndex(index);
                   setOptionIndex(0);
                 }}
-              />
-            ))}
-          </View>
-
-          <Text style={styles.label}>{day.title}</Text>
-          <View style={styles.chipRow}>
-            {day.options.map((it, index) => (
-              <Chip
-                key={it.id}
-                label={it.name}
-                selected={index === optionIndex}
-                onPress={() => setOptionIndex(index)}
               />
             ))}
           </View>
@@ -194,36 +330,50 @@ export default function RoomLabScreen({ navigation }: RoomLabScreenProps) {
         </View>
 
         <View style={styles.section}>
-          <SectionHeader title="Picker (simulated)" />
+          <SectionHeader title="Picker" />
           <Text style={styles.note}>
-            The real grid for the selected slot. Tapping a tile plays the
-            reveal above and writes nothing.
+            The decorate screen's "choose" state for the selected slot — the
+            real component. Tapping a tile plays the reveal above and writes
+            nothing.
           </Text>
-          <Text style={styles.pickerTitle}>{day.title}</Text>
-          <Text style={styles.note}>Pick one — {day.note}</Text>
-          <View style={styles.tileGrid}>
-            {day.options.map((it, index) => (
-              <Pressable
-                key={it.id}
-                accessibilityRole="button"
-                style={[styles.tile, { width: tileWidth }]}
-                disabled={revealRun !== 0}
-                onPress={() => {
-                  setOptionIndex(index);
-                  setRevealRun((run) => run + 1);
-                }}
-              >
-                <DecorationTile
-                  day={day.key as DayKey}
-                  option={it.id}
-                  width={tileWidth - spacing.md}
-                  shell={ROOM_SHELLS[shell]}
-                />
-                <Text style={styles.tileLabel}>{it.name}</Text>
-              </Pressable>
+        </View>
+
+        <DecoratePanel
+          state={{ kind: 'choose', slot: day.key as RoomSlot }}
+          busy={revealRun !== 0}
+          onSeeRoom={() => {}}
+          onStartDaily={() => {}}
+          onPick={(optionId) => {
+            const index = day.options.findIndex((it) => it.id === optionId);
+            if (index >= 0) setOptionIndex(index);
+            setRevealRun((run) => run + 1);
+          }}
+        />
+
+        <View style={styles.section}>
+          <SectionHeader title="Decorate panel states" />
+          <Text style={styles.note}>
+            The other three things the decorate screen says. The picker above is
+            the fourth.
+          </Text>
+          <View style={styles.chipRow}>
+            {PANEL_CASES.map((option, index) => (
+              <Chip
+                key={option.label}
+                label={option.label}
+                selected={index === panelCase}
+                onPress={() => setPanelCase(index)}
+              />
             ))}
           </View>
         </View>
+
+        <DecoratePanel
+          state={PANEL_CASES[panelCase].state}
+          onSeeRoom={() => {}}
+          onStartDaily={() => {}}
+          onPick={() => {}}
+        />
 
         <View style={styles.section}>
           <SectionHeader title="Progress bar" />
@@ -328,16 +478,86 @@ export default function RoomLabScreen({ navigation }: RoomLabScreenProps) {
         <View style={styles.section}>
           <SectionHeader title="Daily complete sheet" />
           <Text style={styles.note}>
-            Solid colour block. Shows the locked or unlocked state depending on
-            your real dailies.
+            Solid colour block. These cases are faked, so none of them touches
+            your real dailies or spends a day.
           </Text>
+          <View style={styles.chipRow}>
+            {SHEET_CASES.map((option, index) => (
+              <Chip
+                key={option.label}
+                label={option.label}
+                selected={index === sheetCase}
+                onPress={() => setSheetCase(index)}
+              />
+            ))}
+          </View>
           <Button label="Open sheet" onPress={() => setSheetVisible(true)} />
+        </View>
+
+        <View style={styles.section}>
+          <SectionHeader title="Hotel (simulated)" />
+          <Text style={styles.note}>
+            Fake floors, so the pager can be seen at any size.
+          </Text>
+          <View style={styles.chipRow}>
+            {[1, 3, 5, 8].map((count) => (
+              <Chip
+                key={count}
+                label={`${count} floor${count === 1 ? '' : 's'}`}
+                selected={count === hotelFloors}
+                onPress={() => setHotelFloors(count)}
+              />
+            ))}
+          </View>
+        </View>
+
+        <RoomPager<number>
+          items={Array.from({ length: hotelFloors }, (_, i) => i + 1)}
+          pageWidth={width}
+          initialIndex={hotelFloors - 1}
+          keyOf={(floor) => `floor-${floor}`}
+          captionOf={(floor) => `Room ${floor}`}
+          renderItem={(floor) => (
+            <HexRoom
+              width={roomWidth}
+              picks={SAMPLE_PICKS}
+              frameHue={ROOM_STYLES[(floor - 1) % ROOM_STYLES.length].frameHue}
+              shell={
+                ROOM_SHELLS[ROOM_STYLES[(floor - 1) % ROOM_STYLES.length].shell]
+              }
+            />
+          )}
+        />
+
+        <View style={styles.section}>
+          <SectionHeader title="Decorate screen — faked" />
+          <Text style={styles.note}>
+            Opens the real screen with an invented room. Picking plays the
+            reveal and writes nothing.
+          </Text>
+          {SCREEN_CASES.map((option) => (
+            <Button
+              key={option.label}
+              label={option.label}
+              onPress={() => {
+                setRoomOverride(option.claim);
+                navigation.navigate('RoomDecorate');
+              }}
+            />
+          ))}
+          <Button
+            label={
+              isRoomOverridden() ? 'Clear fake room' : 'Fake room not active'
+            }
+            disabled={!isRoomOverridden()}
+            onPress={() => setRoomOverride(null)}
+          />
         </View>
 
         <View style={styles.section}>
           <SectionHeader title="Real screens" />
           <Text style={styles.note}>
-            These read your actual room, so they show real progress.
+            Your real data, unless a fake room is active above.
           </Text>
           <Button
             label="Open decorate screen"
@@ -474,30 +694,6 @@ const styles = StyleSheet.create({
   },
   badgeUnlocked: {
     backgroundColor: colors.primary.blue600,
-  },
-  pickerTitle: {
-    ...typography.title.title3,
-    color: colors.text.primary,
-    marginTop: spacing.sm,
-  },
-  tileGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-    marginTop: spacing.sm,
-  },
-  tile: {
-    ...card.base,
-    ...card.shadow,
-    alignItems: 'center',
-    paddingVertical: spacing.sm,
-    gap: spacing.xs,
-  },
-  tileLabel: {
-    ...typography.body.small,
-    fontFamily: fonts.semibold,
-    color: colors.text.secondary,
-    textAlign: 'center',
   },
   shellGrid: {
     flexDirection: 'row',

@@ -1,39 +1,37 @@
 import { useEffect, useState } from 'react';
-import {
-  Alert,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  View,
-  useWindowDimensions,
-} from 'react-native';
+import { Alert, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Text } from '../components/common/Text';
-import AppTopBar from '../components/common/AppTopBar';
-import Icon from '../components/common/icons/Icon';
-import { DecorationTile, HexRoom, type Picks } from '../features/room/RoomScene';
+import { Rise } from '../components/common/Reveal';
+import RoomScreenLayout, {
+  RoomActionButton,
+  RoomStage,
+} from '../features/room/RoomScreenLayout';
+import { HexRoom, type Picks } from '../features/room/RoomScene';
 import PlacementReveal from '../features/room/PlacementReveal';
+import DecoratePanel, {
+  type DecorateState,
+} from '../features/room/DecoratePanel';
 import { getRoomDay } from '../features/room/roomDays';
 import { toFrameHue, toPicks } from '../features/room/roomPicks';
 import { roomShellPolys } from '../features/room/roomShells';
 import { getRoomWidth } from '../features/room/roomLayout';
 import { useRoomClaim } from '../features/room/useRoomClaim';
+import { isRoomOverridden } from '../features/room/devRoomOverride';
+import { useStartDaily } from '../hooks/useStartDaily';
 import { ROOM_SLOT_COUNT, type RoomSlot } from '../lib/room/roomProgress';
 import { usePlaceDecorationMutation } from '../queries/room/usePlaceDecorationMutation';
 import { useAuthStore } from '../stores/authStore';
 import { triggerTapHaptic } from '../native/tapHaptics';
-import { card } from '../theme/card';
 import { colors } from '../theme/colors';
+import { stagger } from '../theme/motion';
 import { margin, padding, spacing } from '../theme/spacing';
-import { fonts, typography } from '../theme/typography';
+import { typography } from '../theme/typography';
 import type { RoomDecorateScreenProps } from '../app/navigation';
 
-const TILE_COLUMNS = 2;
-const CHECK_SIZE = 18;
 
 interface Placing {
   slot: RoomSlot;
   optionId: string;
-  optionName: string;
   /** the room as it looked before this piece — the reveal drops the piece onto it */
   picks: Picks;
 }
@@ -45,18 +43,46 @@ export default function RoomDecorateScreen({
   const userId = useAuthStore((state) => state.user?.id ?? null);
   const { room, progress, dailies, isLoading } = useRoomClaim(userId);
   const placeDecoration = usePlaceDecorationMutation(userId);
+  const { start } = useStartDaily('RoomDecorate');
 
   const decorations = room?.decorations ?? [];
   const shell = roomShellPolys(room?.shell);
-  const contentWidth = width - padding.screen.horizontal * 2;
   const roomWidth = getRoomWidth(width);
-  const tileWidth =
-    (contentWidth - spacing.sm * (TILE_COLUMNS - 1)) / TILE_COLUMNS;
   const nextSlot = progress.nextSlot;
   const day = nextSlot == null ? null : getRoomDay(nextSlot);
+  const panelState: DecorateState = progress.isComplete
+    ? { kind: 'complete' }
+    : progress.claimedToday
+      ? { kind: 'claimed' }
+      : !dailies.allCompleted
+        ? {
+            kind: 'locked',
+            guidedDone: dailies.guidedCompleted,
+            handPickedDone: dailies.handPickedCompleted,
+            breathHoldDone: dailies.breathHoldCompleted,
+          }
+        : { kind: 'choose', slot: nextSlot ?? 'day1' };
 
   const [placing, setPlacing] = useState<Placing | null>(null);
   const [revealDone, setRevealDone] = useState(false);
+  const [justPlaced, setJustPlaced] = useState(false);
+  // What was placed this visit, held locally. The query is the source of truth,
+  // but it refreshes a beat after the reveal ends — and under a faked room it
+  // never refreshes at all — so without this the piece pops in and vanishes.
+  const [localPicks, setLocalPicks] = useState<Picks>({});
+  const [selected, setSelected] = useState<string | null>(null);
+
+  const placedPicks: Picks = { ...toPicks(decorations), ...localPicks };
+  // The highlighted option is drawn straight into the room, so choosing is
+  // seeing it where it will live rather than guessing from a thumbnail.
+  const shownPicks: Picks =
+    selected != null && nextSlot != null
+      ? { ...placedPicks, [nextSlot]: selected }
+      : placedPicks;
+
+  // The dev lab hands this screen a fabricated room. Playing the reveal is the
+  // point there; writing a decoration against invented state is not.
+  const previewing = isRoomOverridden();
 
   const pick = (optionId: string) => {
     if (nextSlot == null || !progress.canClaim || day == null) return;
@@ -66,10 +92,12 @@ export default function RoomDecorateScreen({
     setPlacing({
       slot: nextSlot,
       optionId,
-      optionName:
-        day.options.find((option) => option.id === optionId)?.name ?? 'New piece',
-      picks: toPicks(decorations),
+      picks: placedPicks,
     });
+    setSelected(null);
+
+    if (previewing) return;
+
     placeDecoration.mutate({
       slot: nextSlot,
       optionId,
@@ -81,11 +109,18 @@ export default function RoomDecorateScreen({
   // when the screen moves on, so the animation is never cut short and the room
   // never renders a frame without the piece that just landed in it.
   const placed = placeDecoration.data?.room?.decorations.length ?? 0;
-  const writeSettled = !placeDecoration.isPending;
-  const writeFailed = placeDecoration.isError;
+  const writeSettled = previewing || !placeDecoration.isPending;
+  const writeFailed = !previewing && placeDecoration.isError;
 
   useEffect(() => {
     if (placing == null || !revealDone || !writeSettled) return;
+
+    if (!writeFailed) {
+      setLocalPicks((current) => ({
+        ...current,
+        [placing.slot]: placing.optionId,
+      }));
+    }
 
     setPlacing(null);
     setRevealDone(false);
@@ -100,240 +135,108 @@ export default function RoomDecorateScreen({
     // The seventh piece finishes the room, and finishing is the biggest moment
     // in the loop — it gets its own screen rather than a state swap under the
     // user's thumb.
-    if (placed >= ROOM_SLOT_COUNT) {
+    if (!previewing && placed >= ROOM_SLOT_COUNT) {
       navigation.replace('RoomComplete');
+      return;
     }
-  }, [navigation, placed, placing, revealDone, writeFailed, writeSettled]);
+
+    // The room now has the piece in it. Hold there rather than dropping back to
+    // a panel — the point of the last two seconds was to look at it.
+    setJustPlaced(true);
+  }, [
+    navigation,
+    placed,
+    placing,
+    previewing,
+    revealDone,
+    writeFailed,
+    writeSettled,
+  ]);
 
   return (
-    <View style={styles.screen}>
-      <AppTopBar title="Your room" showAvatar={false} showStreak={false} />
-      <ScrollView
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.stage}>
-          {placing != null ? (
-            <PlacementReveal
-              width={roomWidth}
-              day={placing.slot}
-              option={placing.optionId}
-              optionName={placing.optionName}
-              picks={placing.picks}
-              frameHue={toFrameHue(room?.frameHue)}
-              shell={shell}
-              onDone={() => setRevealDone(true)}
+    <RoomScreenLayout
+      scroll
+      action={
+        justPlaced ? (
+          <Rise delay={stagger.loose * 3}>
+            <RoomActionButton
+              label="Continue"
+              onPress={() =>
+                navigation.navigate('MainTabs', { screen: 'Home' })
+              }
             />
-          ) : (
-            <>
-              <HexRoom
-                width={roomWidth}
-                picks={toPicks(decorations)}
-                frameHue={toFrameHue(room?.frameHue)}
-                shell={shell}
-              />
-              <Text style={styles.progress}>
-                {progress.placedCount} of {ROOM_SLOT_COUNT} pieces
-              </Text>
-            </>
-          )}
-        </View>
+          </Rise>
+        ) : null
+      }
+    >
+      {justPlaced ? (
+        <Rise style={styles.congratsWrap}>
+          <Text style={styles.congrats}>Congratulations!</Text>
+        </Rise>
+      ) : null}
 
-        {placing != null ? null : isLoading ? null : progress.isComplete ? (
-          <View style={styles.panel}>
-            <Text style={styles.panelTitle}>This room is finished</Text>
-            <Text style={styles.panelBody}>
-              Every piece is placed. Open your next room to keep going.
-            </Text>
-            <Pressable
-              style={styles.primaryButton}
-              onPress={() => {
-                triggerTapHaptic();
-                navigation.navigate('RoomComplete');
-              }}
-            >
-              <Text style={styles.primaryButtonLabel}>See your room</Text>
-            </Pressable>
-          </View>
-        ) : progress.claimedToday ? (
-          <View style={styles.panel}>
-            <Text style={styles.panelTitle}>Today's piece is placed</Text>
-            <Text style={styles.panelBody}>
-              Come back tomorrow for the next one.
-            </Text>
-          </View>
-        ) : !dailies.allCompleted ? (
-          <View style={styles.panel}>
-            <Text style={styles.panelTitle}>Finish today's dailies</Text>
-            <Text style={styles.panelBody}>
-              All three earn you a piece for this room.
-            </Text>
-            <View style={styles.checklist}>
-              <ChecklistRow
-                label="Guided breathing"
-                done={dailies.guidedCompleted}
-              />
-              <ChecklistRow
-                label="Hand-picked exercise"
-                done={dailies.handPickedCompleted}
-              />
-              <ChecklistRow
-                label="Daily breath hold"
-                done={dailies.breathHoldCompleted}
-              />
-            </View>
-          </View>
-        ) : nextSlot == null || day == null ? null : (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>{day.title}</Text>
-            <Text style={styles.sectionNote}>Pick one — {day.note}</Text>
-            <View style={styles.tileGrid}>
-              {day.options.map((option) => (
-                <Pressable
-                  key={option.id}
-                  style={[styles.tile, { width: tileWidth }]}
-                  disabled={placeDecoration.isPending}
-                  onPress={() => pick(option.id)}
-                >
-                  <DecorationTile
-                    day={nextSlot}
-                    option={option.id}
-                    width={tileWidth - spacing.md}
-                    shell={shell}
-                  />
-                  <Text style={styles.tileLabel}>{option.name}</Text>
-                </Pressable>
-              ))}
-            </View>
-          </View>
+      <RoomStage
+        caption={
+          placing == null
+            ? `${Object.keys(placedPicks).length} of ${ROOM_SLOT_COUNT} pieces`
+            : undefined
+        }
+      >
+        {placing != null ? (
+          <PlacementReveal
+            width={roomWidth}
+            day={placing.slot}
+            option={placing.optionId}
+            picks={placing.picks}
+            frameHue={toFrameHue(room?.frameHue)}
+            shell={shell}
+            onDone={() => setRevealDone(true)}
+          />
+        ) : (
+          <HexRoom
+            width={roomWidth}
+            picks={shownPicks}
+            frameHue={toFrameHue(room?.frameHue)}
+            shell={shell}
+          />
         )}
-      </ScrollView>
-    </View>
-  );
-}
+      </RoomStage>
 
-function ChecklistRow({ label, done }: { label: string; done: boolean }) {
-  return (
-    <View style={styles.checklistRow}>
-      <View style={[styles.checkDot, done && styles.checkDotDone]}>
-        {done ? (
-          <Icon name="check" size={CHECK_SIZE} color={colors.text.inverse} />
-        ) : null}
-      </View>
-      <Text style={[styles.checklistLabel, done && styles.checklistLabelDone]}>
-        {label}
-      </Text>
-    </View>
+      {justPlaced || placing != null || isLoading ? null : (
+        <View style={styles.panelWrap}>
+          <DecoratePanel
+            state={panelState}
+            busy={placeDecoration.isPending}
+            selected={selected}
+            onSelect={setSelected}
+            onSeeRoom={() => {
+              triggerTapHaptic();
+              navigation.navigate('RoomComplete');
+            }}
+            onStartDaily={(daily) => {
+              triggerTapHaptic();
+              start(daily);
+            }}
+            onPick={pick}
+          />
+        </View>
+      )}
+    </RoomScreenLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: colors.background.canvas,
-  },
-  content: {
-    paddingBottom: spacing['7xl'],
-    gap: margin.sectionGap,
-  },
-  stage: {
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  progress: {
-    ...typography.body.small,
-    fontFamily: fonts.semibold,
-    color: colors.text.secondary,
-  },
-  panel: {
-    ...card.base,
-    ...card.shadow,
-    marginHorizontal: padding.screen.horizontal,
-    padding: spacing.lg,
-    gap: spacing.sm,
-  },
-  panelTitle: {
-    ...typography.title.title3,
-    fontFamily: fonts.semibold,
-    color: colors.text.primary,
-  },
-  panelBody: {
-    ...typography.body.medium,
-    color: colors.text.secondary,
-  },
-  checklist: {
-    marginTop: spacing.sm,
-    gap: spacing.md,
-  },
-  checklistRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  checkDot: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.neutral[0],
-    borderWidth: 2,
-    borderColor: colors.primary.blue200,
-  },
-  checkDotDone: {
-    backgroundColor: colors.primary.blue700,
-    borderColor: colors.primary.blue700,
-  },
-  checklistLabel: {
-    ...typography.body.medium,
-    color: colors.text.secondary,
-  },
-  checklistLabelDone: {
-    color: colors.text.primary,
-    fontFamily: fonts.semibold,
-  },
-  section: {
+  congratsWrap: {
     paddingHorizontal: padding.screen.horizontal,
-    gap: spacing.xs,
-  },
-  sectionTitle: {
-    ...typography.title.title3,
-    fontFamily: fonts.semibold,
-    color: colors.text.primary,
-  },
-  sectionNote: {
-    ...typography.body.small,
-    color: colors.text.secondary,
-  },
-  tileGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-    marginTop: spacing.sm,
-  },
-  tile: {
-    ...card.base,
-    ...card.shadow,
+    marginTop: spacing['2xl'],
     alignItems: 'center',
-    paddingVertical: spacing.sm,
-    gap: spacing.xs,
   },
-  tileLabel: {
-    ...typography.body.small,
-    fontFamily: fonts.semibold,
-    color: colors.text.secondary,
+  congrats: {
+    ...typography.display.display3,
+    color: colors.text.primary,
     textAlign: 'center',
   },
-  primaryButton: {
-    marginTop: spacing.sm,
-    paddingVertical: spacing.md,
-    borderRadius: spacing.md,
-    alignItems: 'center',
-    backgroundColor: colors.primary.blue600,
-  },
-  primaryButtonLabel: {
-    ...typography.body.medium,
-    fontFamily: fonts.semibold,
-    color: colors.text.inverse,
+  panelWrap: {
+    marginTop: margin.sectionGap,
   },
 });

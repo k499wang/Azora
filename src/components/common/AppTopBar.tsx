@@ -1,9 +1,10 @@
 import { ReactNode } from 'react';
-import { StyleSheet, useWindowDimensions, View } from 'react-native';
+import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { Text } from './Text';
+import Icon from './icons/Icon';
 import TopBarAvatar from './TopBarAvatar';
 import TopBarStreak from './TopBarStreak';
 import TopBarGeometry from './TopBarGeometry';
@@ -20,6 +21,8 @@ const OVERSCROLL_FILL_HEIGHT = 600;
 
 interface AppTopBarProps {
   title?: string;
+  /** renders a back chevron when there is somewhere to go back to */
+  showBack?: boolean;
   leftSlot?: ReactNode;
   rightSlot?: ReactNode;
   showAvatar?: boolean;
@@ -30,6 +33,7 @@ interface AppTopBarProps {
 
 export default function AppTopBar({
   title,
+  showBack = false,
   leftSlot,
   rightSlot,
   showAvatar = true,
@@ -45,8 +49,14 @@ export default function AppTopBar({
   const profileSummary = useProfileSummaryQuery(needsProfile ? userId : null).data;
 
   const openProfile = () => navigation.navigate('Profile');
+  const canGoBack = showBack && navigation.canGoBack();
   const showBar =
-    title != null || leftSlot != null || rightSlot != null || showAvatar || showStreak;
+    canGoBack ||
+    title != null ||
+    leftSlot != null ||
+    rightSlot != null ||
+    showAvatar ||
+    showStreak;
 
   return (
     <View>
@@ -61,6 +71,21 @@ export default function AppTopBar({
         {showBar && (
           <View style={styles.bar}>
             <View style={styles.leftSide}>
+              {canGoBack && (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Go back"
+                  hitSlop={spacing.md}
+                  style={styles.back}
+                  onPress={() => navigation.goBack()}
+                >
+                  <Icon
+                    name="chevron-left"
+                    size={26}
+                    color={colors.text.primary}
+                  />
+                </Pressable>
+              )}
               {title != null && <Text style={styles.title}>{title}</Text>}
               {leftSlot}
               {showStreak && (
@@ -121,6 +146,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
+  },
+  back: {
+    marginLeft: -spacing.xs,
+    marginRight: spacing.xs,
   },
   title: {
     ...typography.title.title2,

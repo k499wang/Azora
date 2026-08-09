@@ -7,6 +7,7 @@ import {
   type NativeSyntheticEvent,
 } from 'react-native';
 import { Text } from '../../components/common/Text';
+import PagerDots from '../../components/common/PagerDots';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
@@ -75,19 +76,10 @@ export default function RoomPager<T>({
         {items.length === 0 ? '' : captionOf(items[index], index)}
       </Text>
 
-      <View style={styles.dots}>
-        {items.map((item, dotIndex) => (
-          <View
-            key={keyOf(item, dotIndex)}
-            style={[styles.dot, dotIndex === index && styles.dotActive]}
-          />
-        ))}
-      </View>
+      <PagerDots count={items.length} index={index} />
     </View>
   );
 }
-
-const DOT_SIZE = 7;
 
 const styles = StyleSheet.create({
   container: {
@@ -102,18 +94,5 @@ const styles = StyleSheet.create({
     ...typography.title.title3,
     color: colors.text.primary,
     textAlign: 'center',
-  },
-  dots: {
-    flexDirection: 'row',
-    gap: spacing.xs,
-  },
-  dot: {
-    width: DOT_SIZE,
-    height: DOT_SIZE,
-    borderRadius: DOT_SIZE / 2,
-    backgroundColor: colors.border.default,
-  },
-  dotActive: {
-    backgroundColor: colors.primary.blue600,
   },
 });

@@ -1,6 +1,13 @@
 import { Text } from '../components/common/Text';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
+import {
+  Alert,
+  Pressable,
+  ScrollView,
+  Share,
+  StyleSheet,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
@@ -18,9 +25,11 @@ import { card } from '../theme/card';
 import BPMChart from '../components/heartRate/BPMChart';
 import GlassIconButton from '../components/common/GlassIconButton';
 import { SESSION_GLASS_BUTTON_SIZE } from '../features/exercise/shared/components/SessionGlassButton';
+import RestingHeartRateBar from '../components/heartRate/RestingHeartRateBar';
 import ThermometerStatCard from '../components/heartRate/ThermometerStatCard';
 import type { SessionCompleteScreenProps } from '../app/navigation';
 import { useAuthStore } from '../stores/authStore';
+import { useProfileQuery } from '../queries/profile/useProfileQuery';
 import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
 import { buildBpmSeries } from '../lib/heartRate/bpmSeries';
 import { withTodaysSession } from '../lib/weeklyProgress';
@@ -69,6 +78,15 @@ export default function SessionCompleteScreen({
     techniqueId === dailies.guidedTechnique?.id ||
     techniqueId === dailies.handPickedTechnique?.id;
   const sheetVisible = !sheetDismissed && !dailies.isLoading && isDaily;
+  // Whether this session earns the sheet is not known until the dailies resolve.
+  // Painting the results underneath in the meantime is what made the wrong
+  // screen flash before the right one — so hold everything until we know.
+  const undecided = dailies.isLoading;
+  // The results screen carries a chart, three stat cards and a query. Mounting
+  // it while the sheet animates puts all of that on the same thread as the
+  // entrance, which is what made it stutter. It waits for the sheet to settle.
+  const [sheetSettled, setSheetSettled] = useState(false);
+  const showResults = !undecided && (!sheetVisible || sheetSettled);
 
   // Held until the sheet has had its turn — a store-review prompt landing on
   // top of the celebration would eat it.
@@ -80,6 +98,7 @@ export default function SessionCompleteScreen({
   }, [sheetPending]);
 
   const profileSummaryQuery = useProfileSummaryQuery(user?.id ?? null);
+  const profileQuery = useProfileQuery(user?.id ?? null);
   const summary = profileSummaryQuery.data;
   const displayName = summary?.profile?.displayName ?? null;
   const firstName = displayName?.trim().split(/\s+/)[0] ?? null;
@@ -157,123 +176,131 @@ export default function SessionCompleteScreen({
           { label: 'Time', value: formatDuration(durationSec) },
           { label: 'Breaths', value: `${breathCount}` },
         ]}
+        onSettled={() => setSheetSettled(true)}
         onDismiss={() => setSheetDismissed(true)}
       />
 
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.heroWrap}>
-          <View style={styles.heroShadow}>
-            <View style={[styles.heroCard, { backgroundColor: hue.base }]}>
-              <BlobCharacter
-                character={categoryStyle.character}
-                faceExpression="energy"
-                size={HERO_BLOB_SIZE}
-                bodyColor={hue.soft}
-                faceColor={hue.ink}
-              />
-              <Text style={styles.heroTitle}>{congratulation}</Text>
-              <Text style={styles.heroSubtitle}>
-                {techniqueName} · {formatDuration(durationSec)}
-              </Text>
+      {showResults ? (
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.heroWrap}>
+            <View style={styles.heroShadow}>
+              <View style={[styles.heroCard, { backgroundColor: hue.base }]}>
+                <BlobCharacter
+                  character={categoryStyle.character}
+                  faceExpression="energy"
+                  size={HERO_BLOB_SIZE}
+                  bodyColor={hue.soft}
+                  faceColor={hue.ink}
+                />
+                <Text style={styles.heroTitle}>{congratulation}</Text>
+                <Text style={styles.heroSubtitle}>
+                  {techniqueName} · {formatDuration(durationSec)}
+                </Text>
+              </View>
             </View>
           </View>
-        </View>
 
-        <View style={styles.statSection}>
-          <View style={styles.statRow}>
-            <ThermometerStatCard
-              label="Duration"
-              icon="breath-timer"
-              value={durationSec}
-              valueText={formatDuration(durationSec)}
-              unit=""
-              min={0}
-              max={1}
-              accent={colors.primary.blue500}
-              iconColor={colors.primary.blue600}
-              presentation="number"
-            />
-            <ThermometerStatCard
-              label="Breaths"
-              icon="stat-breath-flow"
-              value={breathCount}
-              valueText={`${breathCount}`}
-              unit=""
-              min={0}
-              max={1}
-              accent={colors.primary.blue500}
-              iconColor={colors.primary.blue600}
-              presentation="number"
-            />
-          </View>
-
-          {displayAvgBpm == null ? null : (
+          <View style={styles.statSection}>
             <View style={styles.statRow}>
               <ThermometerStatCard
-                label="Avg HR"
-                icon="heart-bpm"
-                value={displayAvgBpm}
-                unit="bpm"
-                min={40}
-                max={110}
+                label="Duration"
+                icon="breath-timer"
+                value={durationSec}
+                valueText={formatDuration(durationSec)}
+                unit=""
+                min={0}
+                max={1}
+                accent={colors.primary.blue500}
+                iconColor={colors.primary.blue600}
+                presentation="number"
+              />
+              <ThermometerStatCard
+                label="Breaths"
+                icon="stat-breath-flow"
+                value={breathCount}
+                valueText={`${breathCount}`}
+                unit=""
+                min={0}
+                max={1}
                 accent={colors.primary.blue500}
                 iconColor={colors.primary.blue600}
                 presentation="number"
               />
             </View>
-          )}
-        </View>
 
-        {showGraph ? (
-          <View style={styles.graphWrap}>
-            <BPMChart
-              bpmSamples={hrSamples}
-              insightContext="breathing-exercise"
-              breathingTechniqueProfile={breathingTechniqueProfile}
+            {displayAvgBpm == null ? null : (
+              <RestingHeartRateBar
+                bpm={displayAvgBpm}
+                age={profileQuery.data?.age ?? null}
+                title="Average heart rate"
+              />
+            )}
+          </View>
+
+          {showGraph ? (
+            <View style={styles.graphWrap}>
+              <BPMChart
+                bpmSamples={hrSamples}
+                insightContext="breathing-exercise"
+                breathingTechniqueProfile={breathingTechniqueProfile}
+              />
+            </View>
+          ) : null}
+
+          <View style={styles.bodySection}>
+            <HelpfulnessQuestion
+              techniqueId={techniqueId}
+              localDate={todayLocalDate}
             />
           </View>
-        ) : null}
 
-        <View style={styles.bodySection}>
-          <HelpfulnessQuestion
-            techniqueId={techniqueId}
-            localDate={todayLocalDate}
-          />
-        </View>
+          <Pressable style={styles.shareCta} onPress={handleShare}>
+            <MaterialCommunityIcons
+              name="share-variant"
+              size={20}
+              color={colors.text.inverse}
+            />
+            <Text style={styles.shareCtaLabel}>Share my result</Text>
+          </Pressable>
+        </ScrollView>
+      ) : null}
 
-        <Pressable style={styles.shareCta} onPress={handleShare}>
-          <MaterialCommunityIcons
-            name="share-variant"
-            size={20}
-            color={colors.text.inverse}
-          />
-          <Text style={styles.shareCtaLabel}>Share my result</Text>
-        </Pressable>
-
-      </ScrollView>
-
-      {/* Glassmorphic top buttons — fixed above the scroll */}
-      <GlassIconButton
-        size={SESSION_GLASS_BUTTON_SIZE}
-        style={[styles.closeButton, { top: insets.top + padding.screen.vertical }]}
-        onPress={handleClose}
-      >
-        <MaterialCommunityIcons name="close" size={20} color={colors.text.secondary} />
-      </GlassIconButton>
-      <GlassIconButton
-        size={SESSION_GLASS_BUTTON_SIZE}
-        style={[styles.shareButton, { top: insets.top + padding.screen.vertical }]}
-        onPress={handleShare}
-      >
-        <MaterialCommunityIcons
-          name="share-variant"
-          size={20}
-          color={colors.primary.blue600}
-        />
-      </GlassIconButton>
+      {showResults ? (
+        <>
+          {/* Glassmorphic top buttons — fixed above the scroll */}
+          <GlassIconButton
+            size={SESSION_GLASS_BUTTON_SIZE}
+            style={[
+              styles.closeButton,
+              { top: insets.top + padding.screen.vertical },
+            ]}
+            onPress={handleClose}
+          >
+            <MaterialCommunityIcons
+              name="close"
+              size={20}
+              color={colors.text.secondary}
+            />
+          </GlassIconButton>
+          <GlassIconButton
+            size={SESSION_GLASS_BUTTON_SIZE}
+            style={[
+              styles.shareButton,
+              { top: insets.top + padding.screen.vertical },
+            ]}
+            onPress={handleShare}
+          >
+            <MaterialCommunityIcons
+              name="share-variant"
+              size={20}
+              color={colors.primary.blue600}
+            />
+          </GlassIconButton>
+        </>
+      ) : null}
     </View>
   );
 }
