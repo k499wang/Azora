@@ -33,6 +33,7 @@ export function useBreathingPhaseRunner({
   const mountedRef = useRef(true);
 
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [remainingSeconds, setRemainingSeconds] = useState(0);
   const [paused, setPaused] = useState(false);
 
   useEffect(() => {
@@ -65,6 +66,7 @@ export function useBreathingPhaseRunner({
 
       const remainingSeconds = Math.max(0, remainingSecondsRef.current);
       remainingSecondsRef.current = 0;
+      setRemainingSeconds(0);
       activePhaseRef.current = null;
       onCompleteRef.current = null;
 
@@ -89,6 +91,7 @@ export function useBreathingPhaseRunner({
       activePhaseRef.current = phase;
       onCompleteRef.current = onComplete;
       remainingSecondsRef.current = durationSeconds;
+      setRemainingSeconds(durationSeconds);
       setPaused(false);
       onPhaseChangeRef.current(phase);
 
@@ -116,6 +119,7 @@ export function useBreathingPhaseRunner({
 
           remainingSeconds = Math.max(0, remainingSeconds - 1);
           remainingSecondsRef.current = remainingSeconds;
+          setRemainingSeconds(remainingSeconds);
           addElapsedSeconds(1);
 
           if (remainingSeconds <= 0) {
@@ -202,6 +206,7 @@ export function useBreathingPhaseRunner({
 
       remaining = Math.max(0, remaining - 1);
       remainingSecondsRef.current = remaining;
+      setRemainingSeconds(remaining);
       addElapsedSeconds(1);
 
       if (remaining <= 0) {
@@ -215,7 +220,9 @@ export function useBreathingPhaseRunner({
 
   const resetElapsed = useCallback(() => {
     elapsedSecondsRef.current = 0;
+    remainingSecondsRef.current = 0;
     setElapsedSeconds(0);
+    setRemainingSeconds(0);
   }, []);
 
   const getElapsedSeconds = useCallback(() => elapsedSecondsRef.current, []);
@@ -233,6 +240,7 @@ export function useBreathingPhaseRunner({
   const cancel = useCallback(() => {
     disposeActivePhase();
     if (mountedRef.current) {
+      setRemainingSeconds(0);
       setPaused(false);
     }
   }, [disposeActivePhase]);
@@ -247,6 +255,7 @@ export function useBreathingPhaseRunner({
 
   return {
     elapsedSeconds,
+    remainingSeconds,
     paused,
     runPhase,
     pause,

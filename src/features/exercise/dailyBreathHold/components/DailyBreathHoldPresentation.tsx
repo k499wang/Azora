@@ -51,8 +51,6 @@ const HEADLINE_AREA_HEIGHT = 104;
 const TOP_CLEARANCE =
   padding.screen.vertical + SESSION_GLASS_BUTTON_SIZE + spacing.lg;
 
-const HOLD_SUBLINE = 'Hold as long as you can';
-
 const PHASE_FACES: Record<DailyBreathHoldPhase, BreathFace> = {
   idle: 'resting',
   intro: 'resting',
@@ -158,9 +156,7 @@ export const DailyBreathHoldPresentation = forwardRef<
       : phase === 'preInhale' || phase === 'inhale'
         ? 'Inhale'
         : '';
-  const subline = isHold
-    ? HOLD_SUBLINE
-    : phase === 'inhale'
+  const subline = phase === 'inhale'
       ? 'Last breath in'
       : isBreathHoldBreathingPhase(phase) && prepCycle > 0
         ? `Breath ${prepCycle} of ${prepCycles}`
@@ -309,7 +305,7 @@ export const DailyBreathHoldPresentation = forwardRef<
               <Text
                 style={[styles.holdCueText, { color: theme.textSecondary }]}
               >
-                {HOLD_SUBLINE} — tap the screen to stop
+                Tap the screen to stop.
               </Text>
             </View>
           ) : null}

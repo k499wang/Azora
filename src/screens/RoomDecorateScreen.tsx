@@ -15,6 +15,7 @@ import PlacementReveal from '../features/room/PlacementReveal';
 import { getRoomDay } from '../features/room/roomDays';
 import { toFrameHue, toPicks } from '../features/room/roomPicks';
 import { roomShellPolys } from '../features/room/roomShells';
+import { getRoomWidth } from '../features/room/roomLayout';
 import { useRoomClaim } from '../features/room/useRoomClaim';
 import { ROOM_SLOT_COUNT, type RoomSlot } from '../lib/room/roomProgress';
 import { usePlaceDecorationMutation } from '../queries/room/usePlaceDecorationMutation';
@@ -26,7 +27,6 @@ import { margin, padding, spacing } from '../theme/spacing';
 import { fonts, typography } from '../theme/typography';
 import type { RoomDecorateScreenProps } from '../app/navigation';
 
-const MAX_ROOM_WIDTH = 300;
 const TILE_COLUMNS = 2;
 const CHECK_SIZE = 18;
 
@@ -49,7 +49,7 @@ export default function RoomDecorateScreen({
   const decorations = room?.decorations ?? [];
   const shell = roomShellPolys(room?.shell);
   const contentWidth = width - padding.screen.horizontal * 2;
-  const roomWidth = Math.min(contentWidth, MAX_ROOM_WIDTH);
+  const roomWidth = getRoomWidth(width);
   const tileWidth =
     (contentWidth - spacing.sm * (TILE_COLUMNS - 1)) / TILE_COLUMNS;
   const nextSlot = progress.nextSlot;

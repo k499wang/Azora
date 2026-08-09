@@ -78,6 +78,7 @@ export default function GuidedBreathingSessionScreen({
   const [round, setRound] = useState(0);
   const {
     elapsedSeconds: elapsed,
+    remainingSeconds,
     paused,
     runPhase,
     pause: pausePhase,
@@ -561,8 +562,7 @@ export default function GuidedBreathingSessionScreen({
             phase={phase}
             technique={technique}
             theme={activeTheme}
-            round={round}
-            totalRounds={totalRounds}
+            remainingSeconds={remainingSeconds}
             heartRate={{
               enabled: hrEnabled,
               active: pulse.active,

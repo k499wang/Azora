@@ -14,17 +14,10 @@ import Animated, {
   withTiming,
   Easing,
 } from 'react-native-reanimated';
-import { HexRoom } from '../features/room/RoomScene';
 import RoomReplay from '../features/room/RoomReplay';
+import { getRoomWidth } from '../features/room/roomLayout';
 import { toFrameHue, toPicks } from '../features/room/roomPicks';
-import {
-  ROOM_SHELLS,
-  ROOM_STYLES,
-  roomShellPolys,
-  toRoomShell,
-  type RoomStyle,
-} from '../features/room/roomShells';
-import { useCreateNextRoomMutation } from '../queries/room/useCreateNextRoomMutation';
+import { roomShellPolys } from '../features/room/roomShells';
 import { useCurrentRoomQuery } from '../queries/room/useCurrentRoomQuery';
 import { useAuthStore } from '../stores/authStore';
 import { triggerTapHaptic } from '../native/tapHaptics';
@@ -34,8 +27,6 @@ import { margin, padding, spacing } from '../theme/spacing';
 import { fonts, typography } from '../theme/typography';
 import type { RoomCompleteScreenProps } from '../app/navigation';
 
-const MAX_ROOM_WIDTH = 320;
-const SWATCH_COLUMNS = 3;
 
 export default function RoomCompleteScreen({
   navigation,
@@ -43,15 +34,8 @@ export default function RoomCompleteScreen({
   const { width } = useWindowDimensions();
   const userId = useAuthStore((state) => state.user?.id ?? null);
   const currentRoom = useCurrentRoomQuery(userId).data;
-  const createNextRoom = useCreateNextRoomMutation(userId);
 
   const room = currentRoom?.room;
-  const currentShell = toRoomShell(room?.shell);
-  // Open on a look they are not already living in, so the next room reads as a
-  // new place rather than a repeat of the one they just finished.
-  const [style, setStyle] = useState<RoomStyle>(
-    () => ROOM_STYLES.find((it) => it.shell !== currentShell) ?? ROOM_STYLES[0],
-  );
 
   const [replayDone, setReplayDone] = useState(false);
   const reveal = useSharedValue(0);
@@ -69,23 +53,11 @@ export default function RoomCompleteScreen({
     transform: [{ translateY: (1 - reveal.value) * 14 }],
   }));
 
-  const contentWidth = width - padding.screen.horizontal * 2;
-  const roomWidth = Math.min(contentWidth, MAX_ROOM_WIDTH);
-  const swatchWidth =
-    (contentWidth - spacing.sm * (SWATCH_COLUMNS - 1)) / SWATCH_COLUMNS;
+  const roomWidth = getRoomWidth(width);
 
-  const openNextRoom = () => {
-    if (createNextRoom.isPending) return;
-
+  const continueToHotel = () => {
     triggerTapHaptic();
-    createNextRoom.mutate(
-      { shell: style.shell, frameHue: style.frameHue },
-      {
-        // Back to Home rather than the picker: the next room is empty and today
-        // is already claimed, so there would be nothing to do there.
-        onSuccess: () => navigation.navigate('MainTabs', { screen: 'Home' }),
-      },
-    );
+    navigation.navigate('Hotel', { fromCompletion: true });
   };
 
   return (
@@ -110,62 +82,11 @@ export default function RoomCompleteScreen({
         </View>
 
         <Animated.View style={[styles.section, revealStyle]}>
-          <Text style={styles.sectionTitle}>Pick your next room</Text>
-          <Text style={styles.sectionNote}>
-            Each look has its own walls and floor. Seven more pieces to fill
-            it.
-          </Text>
-          <View style={styles.swatchRow}>
-            {ROOM_STYLES.map((option) => {
-              const selected = option.shell === style.shell;
-
-              return (
-                <Pressable
-                  key={option.shell}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected }}
-                  style={[
-                    styles.swatch,
-                    { width: swatchWidth },
-                    selected && styles.swatchSelected,
-                  ]}
-                  onPress={() => {
-                    triggerTapHaptic();
-                    setStyle(option);
-                  }}
-                >
-                  <HexRoom
-                    width={swatchWidth - spacing.md}
-                    frameHue={option.frameHue}
-                    shell={ROOM_SHELLS[option.shell]}
-                  />
-                  <Text
-                    style={[
-                      styles.swatchLabel,
-                      selected && styles.swatchLabelSelected,
-                    ]}
-                  >
-                    {option.name}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        </Animated.View>
-
-        <Animated.View style={revealStyle}>
-          <Pressable
-            style={styles.primaryButton}
-            disabled={createNextRoom.isPending}
-            onPress={openNextRoom}
-          >
-            <Text style={styles.primaryButtonLabel}>
-              {createNextRoom.isPending
-                ? 'Opening…'
-                : `Open room ${(room?.floor ?? 1) + 1}`}
-            </Text>
+          <Pressable style={styles.primaryButton} onPress={continueToHotel}>
+            <Text style={styles.primaryButtonLabel}>Continue</Text>
           </Pressable>
         </Animated.View>
+
       </ScrollView>
     </View>
   );
@@ -182,11 +103,12 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: padding.screen.horizontal,
+    marginTop: spacing['2xl'],
     alignItems: 'center',
     gap: spacing.xs,
   },
   title: {
-    ...typography.title.title1,
+    ...typography.display.display3,
     fontFamily: fonts.semibold,
     color: colors.text.primary,
     textAlign: 'center',
@@ -197,40 +119,6 @@ const styles = StyleSheet.create({
   section: {
     paddingHorizontal: padding.screen.horizontal,
     gap: spacing.xs,
-  },
-  sectionTitle: {
-    ...typography.title.title3,
-    fontFamily: fonts.semibold,
-    color: colors.text.primary,
-  },
-  sectionNote: {
-    ...typography.body.small,
-    color: colors.text.secondary,
-  },
-  swatchRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-    marginTop: spacing.sm,
-  },
-  swatch: {
-    ...card.base,
-    alignItems: 'center',
-    paddingVertical: spacing.sm,
-    gap: spacing.xs,
-    borderWidth: 2,
-    borderColor: 'transparent',
-  },
-  swatchSelected: {
-    borderColor: colors.primary.blue600,
-  },
-  swatchLabel: {
-    ...typography.body.small,
-    fontFamily: fonts.semibold,
-    color: colors.text.secondary,
-  },
-  swatchLabelSelected: {
-    color: colors.primary.blue700,
   },
   primaryButton: {
     ...card.shadow,

@@ -1,5 +1,5 @@
 import { Text } from '../components/common/Text';
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -7,12 +7,13 @@ import * as Haptics from 'expo-haptics';
 import { colors } from '../theme/colors';
 import { typography, fonts } from '../theme/typography';
 import { spacing, padding, margin } from '../theme/spacing';
-import RoomProgressBanner from '../features/room/RoomProgressBanner';
+import DailyCompleteSheet from '../features/room/DailyCompleteSheet';
 import HelpfulnessQuestion from '../components/exercise/HelpfulnessQuestion';
 import BlobCharacter from '../components/home/BlobCharacter';
 import { CATEGORY_STYLE } from '../features/exercise/guidedBreathing/categoryPalette';
 import { getTechnique } from '../features/exercise/guidedBreathing/techniques';
 import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
+import { useDailiesCompletion } from '../hooks/useDailiesCompletion';
 import { card } from '../theme/card';
 import BPMChart from '../components/heartRate/BPMChart';
 import GlassIconButton from '../components/common/GlassIconButton';
@@ -29,13 +30,13 @@ import {
   ReviewTrigger,
 } from '../services/reviews/storeReview';
 
-const HERO_BLOB_SIZE = 132;
-
 function formatDuration(secs: number): string {
   const m = Math.floor(secs / 60);
   const s = secs % 60;
   return `${m}:${s.toString().padStart(2, '0')}`;
 }
+
+const HERO_BLOB_SIZE = 132;
 
 export default function SessionCompleteScreen({
   navigation,
@@ -54,10 +55,30 @@ export default function SessionCompleteScreen({
 
   useEffect(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    void maybeRequestSessionReview(ReviewTrigger.GuidedBreathing);
   }, []);
 
   const user = useAuthStore((state) => state.user);
+  const [sheetDismissed, setSheetDismissed] = useState(false);
+  const dailies = useDailiesCompletion(user?.id ?? null);
+
+  // Only the three dailies move the room forward, so only they get the
+  // celebration. Matching on technique id rather than on how the session was
+  // launched is deliberate: running today's technique from the library really
+  // does complete the daily, and the screen should say so.
+  const isDaily =
+    techniqueId === dailies.guidedTechnique?.id ||
+    techniqueId === dailies.handPickedTechnique?.id;
+  const sheetVisible = !sheetDismissed && !dailies.isLoading && isDaily;
+
+  // Held until the sheet has had its turn — a store-review prompt landing on
+  // top of the celebration would eat it.
+  const sheetPending = dailies.isLoading || sheetVisible;
+
+  useEffect(() => {
+    if (sheetPending) return;
+    void maybeRequestSessionReview(ReviewTrigger.GuidedBreathing);
+  }, [sheetPending]);
+
   const profileSummaryQuery = useProfileSummaryQuery(user?.id ?? null);
   const summary = profileSummaryQuery.data;
   const displayName = summary?.profile?.displayName ?? null;
@@ -126,6 +147,19 @@ export default function SessionCompleteScreen({
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
+      <DailyCompleteSheet
+        visible={sheetVisible}
+        hue={hue}
+        character={categoryStyle.character}
+        title={congratulation}
+        subtitle={techniqueName}
+        stats={[
+          { label: 'Time', value: formatDuration(durationSec) },
+          { label: 'Breaths', value: `${breathCount}` },
+        ]}
+        onDismiss={() => setSheetDismissed(true)}
+      />
+
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -146,10 +180,6 @@ export default function SessionCompleteScreen({
               </Text>
             </View>
           </View>
-        </View>
-
-        <View style={styles.bodySection}>
-          <RoomProgressBanner sourceScreen="SessionComplete" />
         </View>
 
         <View style={styles.statSection}>

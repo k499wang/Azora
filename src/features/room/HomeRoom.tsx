@@ -5,25 +5,21 @@ import RoomBlob, { type RoomBlobHandle } from './RoomBlob';
 import { HexRoom, ROOM_ASPECT } from './RoomScene';
 import { toFrameHue, toPicks } from './roomPicks';
 import { roomShellPolys } from './roomShells';
+import { getRoomWidth } from './roomLayout';
 import { useRoomClaim } from './useRoomClaim';
 import { useAuthStore } from '../../stores/authStore';
 import { triggerBounceHaptic } from '../../native/tapHaptics';
 import { card } from '../../theme/card';
 import { colors } from '../../theme/colors';
-import { padding, spacing } from '../../theme/spacing';
+import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
-
-const MAX_ROOM_WIDTH = 360;
 
 export default function HomeRoom() {
   const { width } = useWindowDimensions();
   const userId = useAuthStore((state) => state.user?.id ?? null);
   const { room, progress } = useRoomClaim(userId);
   const blob = useRef<RoomBlobHandle>(null);
-  const roomWidth = Math.min(
-    width - padding.screen.horizontal * 2,
-    MAX_ROOM_WIDTH,
-  );
+  const roomWidth = getRoomWidth(width);
 
   return (
     <Pressable

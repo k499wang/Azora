@@ -54,6 +54,10 @@ export type RootStackParamList = {
   ExitOffer: undefined;
   RoomDecorate: undefined;
   RoomComplete: undefined;
+  /** every finished floor. `fromCompletion` adds the Continue that carries on
+      into picking the next room. */
+  Hotel: { fromCompletion?: boolean } | undefined;
+  NextRoom: undefined;
   /** dev-only harness for the room's animations */
   RoomLab: undefined;
   Settings: undefined;
@@ -103,6 +107,8 @@ export type DailyExerciseScreenProps = RootStackScreenProps<'DailyExercise'>;
 export type RoomDecorateScreenProps = RootStackScreenProps<'RoomDecorate'>;
 export type RoomCompleteScreenProps = RootStackScreenProps<'RoomComplete'>;
 export type RoomLabScreenProps = RootStackScreenProps<'RoomLab'>;
+export type HotelScreenProps = RootStackScreenProps<'Hotel'>;
+export type NextRoomScreenProps = RootStackScreenProps<'NextRoom'>;
 export type SettingsScreenProps = RootStackScreenProps<'Settings'>;
 export type DailyResultScreenProps = RootStackScreenProps<'DailyResult'>;
 export type ExitOfferScreenProps = RootStackScreenProps<'ExitOffer'>;

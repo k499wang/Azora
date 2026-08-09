@@ -13,8 +13,12 @@ import ProgressBar from '../components/common/ProgressBar';
 import SectionHeader from '../components/common/SectionHeader';
 import PlacementReveal from '../features/room/PlacementReveal';
 import RoomReplay from '../features/room/RoomReplay';
+import { ROOM_MAX_WIDTH, getRoomWidth } from '../features/room/roomLayout';
+import DailyCompleteSheet from '../features/room/DailyCompleteSheet';
+import { CATEGORY_STYLE } from '../features/exercise/guidedBreathing/categoryPalette';
 import {
   DAYS,
+  DecorationTile,
   HexRoom,
   type DayKey,
   type FrameHue,
@@ -31,8 +35,8 @@ import { margin, padding, spacing } from '../theme/spacing';
 import { fonts, typography } from '../theme/typography';
 import type { RoomLabScreenProps } from '../app/navigation';
 
-const MAX_ROOM_WIDTH = 300;
 const SHELL_PREVIEW_WIDTH = 96;
+const TILE_COLUMNS = 2;
 const BADGE_SIZE = 34;
 const FRAME_HUES: FrameHue[] = ['sky', 'teal', 'blush'];
 
@@ -57,8 +61,10 @@ const BAR_STEPS = [
  */
 export default function RoomLabScreen({ navigation }: RoomLabScreenProps) {
   const { width } = useWindowDimensions();
+  const roomWidth = getRoomWidth(width);
   const contentWidth = width - padding.screen.horizontal * 2;
-  const roomWidth = Math.min(contentWidth, MAX_ROOM_WIDTH);
+  const tileWidth =
+    (contentWidth - spacing.sm * (TILE_COLUMNS - 1)) / TILE_COLUMNS;
 
   const [dayIndex, setDayIndex] = useState(0);
   const [optionIndex, setOptionIndex] = useState(0);
@@ -69,6 +75,7 @@ export default function RoomLabScreen({ navigation }: RoomLabScreenProps) {
   const [barStep, setBarStep] = useState(0);
   const [barRun, setBarRun] = useState(0);
   const [replayRun, setReplayRun] = useState(0);
+  const [sheetVisible, setSheetVisible] = useState(false);
 
   const day = DAYS[dayIndex];
   const option = day.options[optionIndex] ?? day.options[0];
@@ -80,6 +87,18 @@ export default function RoomLabScreen({ navigation }: RoomLabScreenProps) {
 
   return (
     <View style={styles.screen}>
+      <DailyCompleteSheet
+        visible={sheetVisible}
+        hue={CATEGORY_STYLE.calm.hue}
+        character={CATEGORY_STYLE.calm.character}
+        title="Nice work"
+        subtitle="Box Breathing"
+        stats={[
+          { label: 'Time', value: '2:00' },
+          { label: 'Breaths', value: '24' },
+        ]}
+        onDismiss={() => setSheetVisible(false)}
+      />
       <AppTopBar title="Room lab" showAvatar={false} showStreak={false} />
       <ScrollView
         contentContainerStyle={styles.content}
@@ -172,6 +191,38 @@ export default function RoomLabScreen({ navigation }: RoomLabScreenProps) {
             disabled={revealRun !== 0}
             onPress={() => setRevealRun((run) => run + 1)}
           />
+        </View>
+
+        <View style={styles.section}>
+          <SectionHeader title="Picker (simulated)" />
+          <Text style={styles.note}>
+            The real grid for the selected slot. Tapping a tile plays the
+            reveal above and writes nothing.
+          </Text>
+          <Text style={styles.pickerTitle}>{day.title}</Text>
+          <Text style={styles.note}>Pick one — {day.note}</Text>
+          <View style={styles.tileGrid}>
+            {day.options.map((it, index) => (
+              <Pressable
+                key={it.id}
+                accessibilityRole="button"
+                style={[styles.tile, { width: tileWidth }]}
+                disabled={revealRun !== 0}
+                onPress={() => {
+                  setOptionIndex(index);
+                  setRevealRun((run) => run + 1);
+                }}
+              >
+                <DecorationTile
+                  day={day.key as DayKey}
+                  option={it.id}
+                  width={tileWidth - spacing.md}
+                  shell={ROOM_SHELLS[shell]}
+                />
+                <Text style={styles.tileLabel}>{it.name}</Text>
+              </Pressable>
+            ))}
+          </View>
         </View>
 
         <View style={styles.section}>
@@ -275,6 +326,15 @@ export default function RoomLabScreen({ navigation }: RoomLabScreenProps) {
         </View>
 
         <View style={styles.section}>
+          <SectionHeader title="Daily complete sheet" />
+          <Text style={styles.note}>
+            Solid colour block. Shows the locked or unlocked state depending on
+            your real dailies.
+          </Text>
+          <Button label="Open sheet" onPress={() => setSheetVisible(true)} />
+        </View>
+
+        <View style={styles.section}>
           <SectionHeader title="Real screens" />
           <Text style={styles.note}>
             These read your actual room, so they show real progress.
@@ -286,6 +346,14 @@ export default function RoomLabScreen({ navigation }: RoomLabScreenProps) {
           <Button
             label="Open room complete"
             onPress={() => navigation.navigate('RoomComplete')}
+          />
+          <Button
+            label="Open hotel"
+            onPress={() => navigation.navigate('Hotel')}
+          />
+          <Button
+            label="Open next-room picker"
+            onPress={() => navigation.navigate('NextRoom')}
           />
         </View>
       </ScrollView>
@@ -352,7 +420,7 @@ const styles = StyleSheet.create({
   },
   stage: {
     alignItems: 'center',
-    minHeight: MAX_ROOM_WIDTH,
+    minHeight: ROOM_MAX_WIDTH,
   },
   note: {
     ...typography.body.small,
@@ -406,6 +474,30 @@ const styles = StyleSheet.create({
   },
   badgeUnlocked: {
     backgroundColor: colors.primary.blue600,
+  },
+  pickerTitle: {
+    ...typography.title.title3,
+    color: colors.text.primary,
+    marginTop: spacing.sm,
+  },
+  tileGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+  },
+  tile: {
+    ...card.base,
+    ...card.shadow,
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+    gap: spacing.xs,
+  },
+  tileLabel: {
+    ...typography.body.small,
+    fontFamily: fonts.semibold,
+    color: colors.text.secondary,
+    textAlign: 'center',
   },
   shellGrid: {
     flexDirection: 'row',

@@ -23,5 +23,7 @@ export type {
   RoomDecorateScreenProps,
   RoomCompleteScreenProps,
   RoomLabScreenProps,
+  HotelScreenProps,
+  NextRoomScreenProps,
   SettingsScreenProps,
 } from './types';
