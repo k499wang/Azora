@@ -99,7 +99,7 @@ const styles = StyleSheet.create({
     paddingTop: spacing.md,
   },
   roomSection: {
-    marginVertical: spacing['4xl'],
+    marginVertical: spacing.lg,
   },
   bodySection: {
     paddingHorizontal: padding.screen.horizontal,
