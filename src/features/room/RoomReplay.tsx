@@ -22,12 +22,13 @@ import {
 } from './RoomScene';
 import DecorationLayer, { FLOOR_CENTER_Y, frameAccent } from './roomStage';
 import { isHapticsEnabled } from '../../services/preferences/hapticsPreference';
+import { duration, easing, spring, stagger } from '../../theme/motion';
 
-const START_MS = 260;
-const STAGGER_MS = 115;
+const START_MS = duration.base;
+const STAGGER_MS = stagger.loose;
 const PIECE_MS = 320;
 const BLOOM_MS = 720;
-const TAIL_MS = 420;
+const TAIL_MS = duration.slow;
 
 interface RoomReplayProps {
   width: number;
@@ -64,14 +65,14 @@ export default function RoomReplay({
   useEffect(() => {
     bloom.value = withDelay(
       landsAt,
-      withTiming(1, { duration: BLOOM_MS, easing: Easing.out(Easing.quad) }),
+      withTiming(1, { duration: BLOOM_MS, easing: easing.burst }),
     );
 
     pop.value = withDelay(
       landsAt,
       withSequence(
         withTiming(1, { duration: 120 }),
-        withSpring(0, { damping: 9, stiffness: 150 }),
+        withSpring(0, spring.pop),
       ),
     );
 
@@ -197,8 +198,16 @@ function Piece({
     ],
   }));
 
+  // Seven full-size SVG canvases animate at once here. Rasterising each one
+  // turns its transform into a texture move instead of a re-composite of every
+  // polygon, every frame. Safe because these only translate and scale to 1.
   return (
-    <Animated.View pointerEvents="none" style={[styles.fill, style]}>
+    <Animated.View
+      pointerEvents="none"
+      shouldRasterizeIOS
+      renderToHardwareTextureAndroid
+      style={[styles.fill, style]}
+    >
       <DecorationLayer width={width} day={day} option={option} />
     </Animated.View>
   );

@@ -1,6 +1,6 @@
 import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Text } from '../components/common/Text';
-import AppTopBar from '../components/common/AppTopBar';
+import RoomScreenLayout from '../features/room/RoomScreenLayout';
 import RoomPager from '../features/room/RoomPager';
 import { HexRoom } from '../features/room/RoomScene';
 import { toFrameHue, toPicks } from '../features/room/roomPicks';
@@ -28,71 +28,40 @@ export default function HotelScreen(_: HotelScreenProps) {
   const roomWidth = getRoomWidth(width);
 
   return (
-    <View style={styles.screen}>
-      <AppTopBar showAvatar={false} showStreak={false} />
-
-      <View style={styles.header}>
-        <Text style={styles.title}>Your hotel</Text>
-        <Text style={styles.note}>
-          Every room you have finished. Swipe to look through them.
-        </Text>
-      </View>
-
-      <View style={styles.body}>
-        {roomsQuery.isPending ? null : rooms.length === 0 ? (
-          <View style={styles.empty}>
-            <Text style={styles.emptyTitle}>No floors yet</Text>
-            <Text style={styles.emptyBody}>
-              Finish today's dailies to earn your first piece. Seven of them
-              fill a room, and a filled room opens here.
-            </Text>
-          </View>
-        ) : (
-          <RoomPager<Room>
-            items={rooms}
-            pageWidth={width}
-            // Land on the newest floor, which is the one they just finished.
-            initialIndex={rooms.length - 1}
-            keyOf={(room) => room.id}
-            captionOf={(room) => `Room ${room.floor}`}
-            renderItem={(room) => (
-              <HexRoom
-                width={roomWidth}
-                picks={toPicks(room.decorations)}
-                frameHue={toFrameHue(room.frameHue)}
-                shell={roomShellPolys(room.shell)}
-              />
-            )}
-          />
-        )}
-      </View>
-
-    </View>
+    <RoomScreenLayout
+      title="Your hotel"
+      note="Every room you have finished. Swipe to look through them."
+    >
+      {roomsQuery.isPending ? null : rooms.length === 0 ? (
+        <View style={styles.empty}>
+          <Text style={styles.emptyTitle}>No floors yet</Text>
+          <Text style={styles.emptyBody}>
+            Finish today's dailies to earn your first piece. Seven of them fill
+            a room, and a filled room opens here.
+          </Text>
+        </View>
+      ) : (
+        <RoomPager<Room>
+          items={rooms}
+          pageWidth={width}
+          initialIndex={rooms.length - 1}
+          keyOf={(room) => room.id}
+          captionOf={(room) => `Room ${room.floor}`}
+          renderItem={(room) => (
+            <HexRoom
+              width={roomWidth}
+              picks={toPicks(room.decorations)}
+              frameHue={toFrameHue(room.frameHue)}
+              shell={roomShellPolys(room.shell)}
+            />
+          )}
+        />
+      )}
+    </RoomScreenLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: colors.background.canvas,
-  },
-  header: {
-    paddingHorizontal: padding.screen.horizontal,
-    marginTop: spacing['2xl'],
-    gap: spacing.xs,
-  },
-  title: {
-    ...typography.display.display3,
-    color: colors.text.primary,
-  },
-  note: {
-    ...typography.body.small,
-    color: colors.text.secondary,
-  },
-  body: {
-    flex: 1,
-    justifyContent: 'center',
-  },
   empty: {
     paddingHorizontal: padding.screen.horizontal,
     alignItems: 'center',

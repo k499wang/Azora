@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import Svg, { Circle, Ellipse, G, Path } from 'react-native-svg';
 
 export type CharacterId =
@@ -135,7 +136,7 @@ function Accessory({ character, bodyColor }: { character: CharacterId; bodyColor
   }
 }
 
-export default function BlobCharacter({
+function BlobCharacter({
   character,
   faceExpression = character,
   size,
@@ -151,3 +152,8 @@ export default function BlobCharacter({
     </Svg>
   );
 }
+
+// Every prop is a primitive and the output is pure SVG. Without this it redraws
+// on any parent render — including the query settling behind a full-screen
+// celebration, mid-animation.
+export default memo(BlobCharacter);

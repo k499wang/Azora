@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, {
-  Easing,
   interpolate,
   useAnimatedStyle,
   useSharedValue,
@@ -12,7 +11,6 @@ import Animated, {
   type SharedValue,
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
-import { Text } from '../../components/common/Text';
 import {
   DECOR,
   HexRoom,
@@ -24,9 +22,7 @@ import {
 } from './RoomScene';
 import DecorationLayer, { FLOOR_CENTER_Y, frameAccent } from './roomStage';
 import { isHapticsEnabled } from '../../services/preferences/hapticsPreference';
-import { colors } from '../../theme/colors';
-import { spacing } from '../../theme/spacing';
-import { typography } from '../../theme/typography';
+import { duration, easing, spring } from '../../theme/motion';
 
 // Beats of the reveal, in ms from mount. The object falls under gravity easing
 // and lands on an exact frame, so everything that reacts to the landing — the
@@ -35,8 +31,7 @@ import { typography } from '../../theme/typography';
 const FALL_START_MS = 140;
 const FALL_MS = 260;
 const LAND_MS = FALL_START_MS + FALL_MS;
-const BURST_MS = 620;
-const LABEL_MS = LAND_MS + 120;
+const BURST_MS = duration.slower;
 const DONE_MS = LAND_MS + BURST_MS + 380;
 
 const SPARKLE_ANGLES = [0, 45, 90, 135, 180, 225, 270, 315];
@@ -47,7 +42,6 @@ interface PlacementRevealProps {
   width: number;
   day: DayKey;
   option: string;
-  optionName: string;
   /** the room as it stands, *without* the piece being placed */
   picks: Picks;
   frameHue: FrameHue;
@@ -67,7 +61,6 @@ export default function PlacementReveal({
   width,
   day,
   option,
-  optionName,
   picks,
   frameHue,
   shell,
@@ -81,7 +74,6 @@ export default function PlacementReveal({
   const squash = useSharedValue(0);
   const kick = useSharedValue(0);
   const burst = useSharedValue(0);
-  const label = useSharedValue(0);
 
   useEffect(() => {
     if (polys == null) {
@@ -91,7 +83,7 @@ export default function PlacementReveal({
 
     fall.value = withDelay(
       FALL_START_MS,
-      withTiming(1, { duration: FALL_MS, easing: Easing.in(Easing.cubic) }),
+      withTiming(1, { duration: FALL_MS, easing: easing.gravity }),
     );
 
     // Squash on contact, then spring back out — the bounce belongs after the
@@ -100,7 +92,7 @@ export default function PlacementReveal({
       LAND_MS,
       withSequence(
         withTiming(1, { duration: 90 }),
-        withSpring(0, { damping: 8, stiffness: 190, mass: 0.7 }),
+        withSpring(0, spring.bounce),
       ),
     );
 
@@ -108,18 +100,13 @@ export default function PlacementReveal({
       LAND_MS,
       withSequence(
         withTiming(1, { duration: 90 }),
-        withSpring(0, { damping: 10, stiffness: 160 }),
+        withSpring(0, spring.pop),
       ),
     );
 
     burst.value = withDelay(
       LAND_MS,
-      withTiming(1, { duration: BURST_MS, easing: Easing.out(Easing.quad) }),
-    );
-
-    label.value = withDelay(
-      LABEL_MS,
-      withSpring(1, { damping: 12, stiffness: 170 }),
+      withTiming(1, { duration: BURST_MS, easing: easing.burst }),
     );
 
     const timers = [
@@ -130,11 +117,6 @@ export default function PlacementReveal({
           );
         }
       }, LAND_MS),
-      setTimeout(() => {
-        if (isHapticsEnabled()) {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-        }
-      }, LABEL_MS),
       setTimeout(onDone, DONE_MS),
     ];
 
@@ -173,88 +155,79 @@ export default function PlacementReveal({
     transform: [{ scale: interpolate(burst.value, [0, 1], [0.3, 1.5]) }],
   }));
 
-  const labelStyle = useAnimatedStyle(() => ({
-    opacity: label.value,
-    transform: [
-      { translateY: interpolate(label.value, [0, 1], [10, 0]) },
-      { scale: interpolate(label.value, [0, 1], [0.9, 1]) },
-    ],
-  }));
-
   const centerX = width / 2;
   const centerY = height * FLOOR_CENTER_Y;
   const glowSize = width * 0.62;
   const ringSize = width * 0.44;
 
   return (
-    <View style={styles.stage}>
-      <View style={{ width, height }}>
-        <Animated.View style={[StyleSheet.absoluteFill, roomStyle]}>
-          <HexRoom
-            width={width}
-            picks={picks}
-            frameHue={frameHue}
-            shell={shell}
-          />
-        </Animated.View>
-
-        <Animated.View
-          pointerEvents="none"
-          style={[
-            styles.centered,
-            {
-              width: glowSize,
-              height: glowSize,
-              borderRadius: glowSize / 2,
-              backgroundColor: accent.soft,
-              left: centerX - glowSize / 2,
-              top: centerY - glowSize / 2,
-            },
-            glowStyle,
-          ]}
+    <View style={{ width, height }}>
+      <Animated.View
+        shouldRasterizeIOS
+        renderToHardwareTextureAndroid
+        style={[StyleSheet.absoluteFill, roomStyle]}
+      >
+        <HexRoom
+          width={width}
+          picks={picks}
+          frameHue={frameHue}
+          shell={shell}
         />
-
-        <Animated.View
-          pointerEvents="none"
-          style={[StyleSheet.absoluteFill, objectStyle]}
-        >
-          <DecorationLayer width={width} day={day} option={option} />
-        </Animated.View>
-
-        <Animated.View
-          pointerEvents="none"
-          style={[
-            styles.centered,
-            {
-              width: ringSize,
-              height: ringSize,
-              borderRadius: ringSize / 2,
-              borderWidth: 3,
-              borderColor: accent.base,
-              left: centerX - ringSize / 2,
-              top: centerY - ringSize / 2,
-            },
-            ringStyle,
-          ]}
-        />
-
-        {SPARKLE_ANGLES.map((angle) => (
-          <Sparkle
-            key={angle}
-            angle={angle}
-            burst={burst}
-            color={accent.base}
-            distance={width * SPARKLE_TRAVEL}
-            left={centerX - SPARKLE_SIZE / 2}
-            top={centerY - SPARKLE_SIZE / 2}
-          />
-        ))}
-      </View>
-
-      <Animated.View style={labelStyle}>
-        <Text style={styles.label}>{optionName}</Text>
-        <Text style={styles.caption}>Added to your room</Text>
       </Animated.View>
+
+      <Animated.View
+        pointerEvents="none"
+        style={[
+          styles.centered,
+          {
+            width: glowSize,
+            height: glowSize,
+            borderRadius: glowSize / 2,
+            backgroundColor: accent.soft,
+            left: centerX - glowSize / 2,
+            top: centerY - glowSize / 2,
+          },
+          glowStyle,
+        ]}
+      />
+
+      <Animated.View
+        pointerEvents="none"
+        shouldRasterizeIOS
+        renderToHardwareTextureAndroid
+        style={[StyleSheet.absoluteFill, objectStyle]}
+      >
+        <DecorationLayer width={width} day={day} option={option} />
+      </Animated.View>
+
+      <Animated.View
+        pointerEvents="none"
+        style={[
+          styles.centered,
+          {
+            width: ringSize,
+            height: ringSize,
+            borderRadius: ringSize / 2,
+            borderWidth: 3,
+            borderColor: accent.base,
+            left: centerX - ringSize / 2,
+            top: centerY - ringSize / 2,
+          },
+          ringStyle,
+        ]}
+      />
+
+      {SPARKLE_ANGLES.map((angle) => (
+        <Sparkle
+          key={angle}
+          angle={angle}
+          burst={burst}
+          color={accent.base}
+          distance={width * SPARKLE_TRAVEL}
+          left={centerX - SPARKLE_SIZE / 2}
+          top={centerY - SPARKLE_SIZE / 2}
+        />
+      ))}
     </View>
   );
 }
@@ -311,21 +284,7 @@ function Sparkle({
 }
 
 const styles = StyleSheet.create({
-  stage: {
-    alignItems: 'center',
-    gap: spacing.md,
-  },
   centered: {
     position: 'absolute',
-  },
-  label: {
-    ...typography.title.title3,
-    color: colors.text.primary,
-    textAlign: 'center',
-  },
-  caption: {
-    ...typography.body.small,
-    color: colors.text.secondary,
-    textAlign: 'center',
   },
 });

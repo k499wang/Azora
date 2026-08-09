@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 import { StyleSheet, View, type ViewStyle } from 'react-native';
 import Animated, {
-  Easing,
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
@@ -9,14 +8,13 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { colors } from '../../theme/colors';
+import { duration, easing } from '../../theme/motion';
 
-const FILL_DURATION_MS = 900;
+const FILL_DURATION_MS = duration.fill;
 const FILL_DELAY_MS = 320;
 
-// Long, flat deceleration — the fill covers most of its distance early and
-// eases into the target without the abrupt stop a plain ease-out gives. No
-// spring: a bar that overshoots past its own track just looks broken.
-const FILL_EASING = Easing.bezier(0.16, 1, 0.3, 1);
+// No spring: a bar that overshoots past its own track just looks broken.
+const FILL_EASING = easing.settle;
 
 interface ProgressBarProps {
   /** 0..1 — where the bar should end up */

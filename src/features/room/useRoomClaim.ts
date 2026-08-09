@@ -1,4 +1,5 @@
 import { useDailiesCompletion } from '../../hooks/useDailiesCompletion';
+import { useRoomOverride } from './devRoomOverride';
 import { roomProgress, type RoomProgress } from '../../lib/room/roomProgress';
 import { useCurrentRoomQuery } from '../../queries/room/useCurrentRoomQuery';
 import type { Room } from '../../services/room/roomService';
@@ -19,9 +20,15 @@ export interface RoomClaim {
  * refuses to give.
  */
 export function useRoomClaim(userId: string | null): RoomClaim {
+  const override = useRoomOverride();
   const currentRoomQuery = useCurrentRoomQuery(userId);
   const dailies = useDailiesCompletion(userId);
   const currentRoom = currentRoomQuery.data;
+
+  // Dev lab only, and `useRoomOverride` returns null in release builds.
+  if (override != null) {
+    return override;
+  }
 
   return {
     room: currentRoom?.room ?? null,

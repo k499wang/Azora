@@ -69,7 +69,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderRadius: 999,
-    marginTop: -spacing.sm,
+    marginTop: spacing.sm,
   },
   badgeDot: {
     width: 8,

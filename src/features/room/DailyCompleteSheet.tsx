@@ -1,16 +1,14 @@
-import { useEffect, type ReactNode } from 'react';
+import { memo, useEffect, useState } from 'react';
 import {
   Modal,
   Pressable,
   StyleSheet,
   View,
   useWindowDimensions,
-  type ViewStyle,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
-  Easing,
   interpolate,
   runOnJS,
   useAnimatedStyle,
@@ -24,6 +22,7 @@ import * as Haptics from 'expo-haptics';
 import { Text } from '../../components/common/Text';
 import Icon from '../../components/common/icons/Icon';
 import ProgressBar from '../../components/common/ProgressBar';
+import { Pop, Rise } from '../../components/common/Reveal';
 import BlobCharacter, {
   type CharacterId,
 } from '../../components/home/BlobCharacter';
@@ -34,29 +33,47 @@ import { useAuthStore } from '../../stores/authStore';
 import { isHapticsEnabled } from '../../services/preferences/hapticsPreference';
 import { triggerTapHaptic } from '../../native/tapHaptics';
 import { radius } from '../../theme/card';
+import { duration, easing, spring } from '../../theme/motion';
 import { colors } from '../../theme/colors';
 import { padding, spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
+import type { RoomSlot } from '../../lib/room/roomProgress';
 import type { PlayfulHue } from '../exercise/guidedBreathing/categoryPalette';
 import type { RootStackNavigationProp } from '../../app/navigation';
 
-const BLOB_SIZE = 140;
+const BLOB_SIZE = 190;
 const BADGE_SIZE = 38;
 const BAR_HEIGHT = 12;
-const RISE_MS = 420;
-const FALL_MS = 240;
+const FALL_MS = duration.base;
 const TOTAL_DAILIES = 3;
 
-// Every element lands on its own beat after the screen settles, top to bottom.
-// Arriving all at once is what made it read as a static page that slid in.
+// Every element lands on its own beat, top to bottom, from the moment the
+// screen appears. These used to be offset by a slide-up that no longer happens,
+// which left the whole sheet sitting empty for the first half second.
 const BEAT = {
-  blob: RISE_MS - 120,
-  title: RISE_MS + 60,
-  subtitle: RISE_MS + 150,
-  stats: RISE_MS + 260,
-  progress: RISE_MS + 420,
-  cta: RISE_MS + 560,
+  blob: 60,
+  title: 200,
+  subtitle: 290,
+  stats: 400,
+  progress: 560,
+  cta: 700,
 } as const;
+
+const CONFETTI_MS = 140;
+// After the last element has finished arriving, not during it — this is when
+// callers mount their charts and cards.
+const SETTLED_MS = 1300;
+
+/** everything the sheet needs to know about the room, so it can be faked */
+export interface DailyCompleteState {
+  /** how many of the three dailies are done, 0..3 */
+  done: number;
+  /** all three done and the piece not yet placed */
+  unlocked: boolean;
+  /** false once today's piece is placed, or the room is full */
+  showBar: boolean;
+  nextSlot: RoomSlot | null;
+}
 
 interface DailyCompleteSheetProps {
   visible: boolean;
@@ -67,6 +84,18 @@ interface DailyCompleteSheetProps {
   subtitle: string;
   /** the two or three headline numbers, shown as tiles */
   stats?: { label: string; value: string }[];
+  /**
+   * Overrides the live room state. Only the dev lab passes this — it is what
+   * lets every case be seen without spending three real exercises on each.
+   */
+  state?: DailyCompleteState;
+  /**
+   * Fires once the entrance has finished, or as soon as the sheet starts
+   * leaving. Callers mount their expensive content on this rather than up
+   * front — a chart building its path on the JS thread mid-animation is what
+   * makes the entrance stutter.
+   */
+  onSettled?: () => void;
   onDismiss: () => void;
 }
 
@@ -90,6 +119,8 @@ export default function DailyCompleteSheet({
   title,
   subtitle,
   stats = [],
+  state,
+  onSettled,
   onDismiss,
 }: DailyCompleteSheetProps) {
   const insets = useSafeAreaInsets();
@@ -98,27 +129,42 @@ export default function DailyCompleteSheet({
   const userId = useAuthStore((state) => state.user?.id ?? null);
   const { progress, dailies } = useRoomClaim(userId);
 
-  const offset = useSharedValue(height);
+  // Starts covering, rather than sliding up into place. Rising from off-screen
+  // means the results screen is visible behind it for the length of the
+  // animation, which reads as the wrong screen flashing before the right one.
+  // The contents animate in instead; only leaving is a slide.
+  const offset = useSharedValue(0);
   const badge = useSharedValue(0);
 
-  const done = [
-    dailies.guidedCompleted,
-    dailies.handPickedCompleted,
-    dailies.breathHoldCompleted,
-  ].filter(Boolean).length;
+  const live: DailyCompleteState = {
+    done: [
+      dailies.guidedCompleted,
+      dailies.handPickedCompleted,
+      dailies.breathHoldCompleted,
+    ].filter(Boolean).length,
+    unlocked: progress.canClaim,
+    showBar: !progress.isComplete && !progress.claimedToday,
+    nextSlot: progress.nextSlot,
+  };
+  // Frozen on open. A background refetch landing mid-entrance would otherwise
+  // re-render the whole sheet and could retarget the bar while it is filling.
+  const [frozen, setFrozen] = useState<DailyCompleteState | null>(null);
+  const view = frozen ?? state ?? live;
+  const { done, unlocked, showBar } = view;
 
   // Start the fill wherever they last saw it. When this session did not move
   // the count — a daily re-run, say — the two ends match and `ProgressBar`
-  // leaves it alone rather than replaying a step that never happened.
+  // leaves it alone rather than replaying a step that never happened. A faked
+  // state always animates, since the point there is to watch it move.
   const barFrom =
-    (readSeenDailies(dailies.todayLocalDate) ?? Math.max(0, done - 1)) /
+    (state != null
+      ? Math.max(0, done - 1)
+      : (readSeenDailies(dailies.todayLocalDate) ?? Math.max(0, done - 1))) /
     TOTAL_DAILIES;
 
-  const unlocked = progress.canClaim;
-  const showBar = !progress.isComplete && !progress.claimedToday;
-  const day = progress.nextSlot == null ? null : getRoomDay(progress.nextSlot);
+  const day = view.nextSlot == null ? null : getRoomDay(view.nextSlot);
   const pieceLabel =
-    progress.nextSlot == null ? null : getRoomDayLabel(progress.nextSlot);
+    view.nextSlot == null ? null : getRoomDayLabel(view.nextSlot);
   const remaining = Math.max(0, TOTAL_DAILIES - done);
 
   // On the third daily the screen stops being about the session and starts
@@ -132,34 +178,56 @@ export default function DailyCompleteSheet({
 
   useEffect(() => {
     if (!visible) {
-      offset.value = height;
+      offset.value = 0;
       badge.value = 0;
+      setFrozen(null);
       return;
     }
 
-    offset.value = withTiming(0, {
-      duration: RISE_MS,
-      easing: Easing.out(Easing.cubic),
-    });
+    setFrozen(state ?? live);
 
-    markSeenDailies(dailies.todayLocalDate, done);
+    // Never let a faked state write over what the user has really seen.
+    if (state == null) {
+      markSeenDailies(dailies.todayLocalDate, done);
+    }
+
+    const settle =
+      onSettled == null ? null : setTimeout(onSettled, SETTLED_MS);
 
     if (unlocked) {
       badge.value = withDelay(
         900,
         withSequence(
           withTiming(1, { duration: 160 }),
-          withSpring(0.6, { damping: 7, stiffness: 180 }),
+          withSpring(0.6, spring.bounce),
         ),
       );
     }
-  }, [badge, dailies.todayLocalDate, done, height, offset, unlocked, visible]);
+    return () => {
+      if (settle != null) clearTimeout(settle);
+    };
+    // `onSettled` is deliberately excluded: callers pass inline closures, and
+    // re-running this would restart the entrance.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    badge,
+    dailies.todayLocalDate,
+    done,
+    height,
+    offset,
+    state,
+    unlocked,
+    visible,
+  ]);
 
   const close = () => {
     triggerTapHaptic();
+    // If they leave before the entrance settles, the content behind still has
+    // to exist before the sheet uncovers it.
+    onSettled?.();
     offset.value = withTiming(
       height,
-      { duration: FALL_MS, easing: Easing.in(Easing.cubic) },
+      { duration: FALL_MS, easing: easing.exit },
       (finished) => {
         if (finished) runOnJS(onDismiss)();
       },
@@ -304,60 +372,6 @@ export default function DailyCompleteSheet({
   );
 }
 
-/** Fades up into place. For text and blocks. */
-function Rise({
-  delay,
-  style,
-  children,
-}: {
-  delay: number;
-  style?: ViewStyle;
-  children: ReactNode;
-}) {
-  const enter = useSharedValue(0);
-
-  useEffect(() => {
-    enter.value = withDelay(
-      delay,
-      withTiming(1, { duration: 380, easing: Easing.out(Easing.cubic) }),
-    );
-  }, [delay, enter]);
-
-  const animated = useAnimatedStyle(() => ({
-    opacity: enter.value,
-    transform: [{ translateY: interpolate(enter.value, [0, 1], [16, 0]) }],
-  }));
-
-  return <Animated.View style={[style, animated]}>{children}</Animated.View>;
-}
-
-/** Springs in with a small overshoot. For the blob and the stat tiles. */
-function Pop({
-  delay,
-  style,
-  children,
-}: {
-  delay: number;
-  style?: ViewStyle;
-  children: ReactNode;
-}) {
-  const enter = useSharedValue(0);
-
-  useEffect(() => {
-    enter.value = withDelay(
-      delay,
-      withSpring(1, { damping: 11, stiffness: 160, mass: 0.8 }),
-    );
-  }, [delay, enter]);
-
-  const animated = useAnimatedStyle(() => ({
-    opacity: interpolate(enter.value, [0, 0.4], [0, 1], 'clamp'),
-    transform: [{ scale: interpolate(enter.value, [0, 1], [0.7, 1]) }],
-  }));
-
-  return <Animated.View style={[style, animated]}>{children}</Animated.View>;
-}
-
 /**
  * Duolingo's button, borrowed wholesale: a solid face sitting 4pt above a
  * darker lip, so pressing it physically drops onto the lip instead of just
@@ -404,7 +418,7 @@ const CONFETTI = [
   { angle: 265, distance: 140, size: 11, delay: 60, spin: -290 },
 ];
 
-function Confetti({ hue }: { hue: PlayfulHue }) {
+const Confetti = memo(function Confetti({ hue }: { hue: PlayfulHue }) {
   return (
     <View pointerEvents="none" style={styles.confettiLayer}>
       {CONFETTI.map((piece, index) => (
@@ -412,7 +426,7 @@ function Confetti({ hue }: { hue: PlayfulHue }) {
       ))}
     </View>
   );
-}
+});
 
 function ConfettiPiece({
   piece,
@@ -426,8 +440,8 @@ function ConfettiPiece({
 
   useEffect(() => {
     fly.value = withDelay(
-      RISE_MS * 0.6 + piece.delay,
-      withTiming(1, { duration: 1100, easing: Easing.out(Easing.quad) }),
+      CONFETTI_MS + piece.delay,
+      withTiming(1, { duration: 1100, easing: easing.burst }),
     );
   }, [fly, piece.delay]);
 
