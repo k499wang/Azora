@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import { Text } from '../components/common/Text';
 import AppTopBar from '../components/common/AppTopBar';
 import RoomPager from '../features/room/RoomPager';
@@ -8,33 +8,24 @@ import { roomShellPolys } from '../features/room/roomShells';
 import { getRoomWidth } from '../features/room/roomLayout';
 import { useRoomsQuery } from '../queries/room/useRoomsQuery';
 import { useAuthStore } from '../stores/authStore';
-import { triggerTapHaptic } from '../native/tapHaptics';
-import { card } from '../theme/card';
 import { colors } from '../theme/colors';
-import { margin, padding, spacing } from '../theme/spacing';
-import { fonts, typography } from '../theme/typography';
+import { padding, spacing } from '../theme/spacing';
+import { typography } from '../theme/typography';
 import type { Room } from '../services/room/roomService';
 import type { HotelScreenProps } from '../app/navigation';
 
 /**
  * Every floor the user has finished, one per page.
  *
- * Reached two ways: on its own, and as the middle beat of finishing a room —
- * where it opens on the floor they just completed so the room they spent seven
- * days on is the one they are looking at.
+ * Opens on the newest floor rather than the ground floor — the room they most
+ * recently spent seven days on is the one worth landing on.
  */
-export default function HotelScreen({ navigation, route }: HotelScreenProps) {
-  const fromCompletion = route.params?.fromCompletion ?? false;
+export default function HotelScreen(_: HotelScreenProps) {
   const { width } = useWindowDimensions();
   const userId = useAuthStore((state) => state.user?.id ?? null);
   const roomsQuery = useRoomsQuery(userId);
   const rooms = roomsQuery.data ?? [];
   const roomWidth = getRoomWidth(width);
-
-  const openNextRoom = () => {
-    triggerTapHaptic();
-    navigation.navigate('NextRoom');
-  };
 
   return (
     <View style={styles.screen}>
@@ -76,13 +67,6 @@ export default function HotelScreen({ navigation, route }: HotelScreenProps) {
         )}
       </View>
 
-      {fromCompletion ? (
-        <View style={styles.tray}>
-          <Pressable style={styles.primaryButton} onPress={openNextRoom}>
-            <Text style={styles.primaryButtonLabel}>Continue</Text>
-          </Pressable>
-        </View>
-      ) : null}
     </View>
   );
 }
@@ -122,21 +106,5 @@ const styles = StyleSheet.create({
     ...typography.body.small,
     color: colors.text.secondary,
     textAlign: 'center',
-  },
-  tray: {
-    paddingHorizontal: padding.screen.horizontal,
-    paddingBottom: margin.sectionGap,
-  },
-  primaryButton: {
-    ...card.shadow,
-    paddingVertical: spacing.md,
-    borderRadius: spacing.md,
-    alignItems: 'center',
-    backgroundColor: colors.primary.blue600,
-  },
-  primaryButtonLabel: {
-    ...typography.body.medium,
-    fontFamily: fonts.semibold,
-    color: colors.text.inverse,
   },
 });

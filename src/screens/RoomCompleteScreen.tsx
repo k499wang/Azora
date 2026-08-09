@@ -6,14 +6,14 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
-import { Text } from '../components/common/Text';
-import AppTopBar from '../components/common/AppTopBar';
 import Animated, {
+  Easing,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
-  Easing,
 } from 'react-native-reanimated';
+import { Text } from '../components/common/Text';
+import AppTopBar from '../components/common/AppTopBar';
 import RoomReplay from '../features/room/RoomReplay';
 import { getRoomWidth } from '../features/room/roomLayout';
 import { toFrameHue, toPicks } from '../features/room/roomPicks';
@@ -27,7 +27,12 @@ import { margin, padding, spacing } from '../theme/spacing';
 import { fonts, typography } from '../theme/typography';
 import type { RoomCompleteScreenProps } from '../app/navigation';
 
-
+/**
+ * The finished room, replaying itself.
+ *
+ * One job: the payoff for seven days. Choosing the next room is its own screen
+ * so this one is not also a form.
+ */
 export default function RoomCompleteScreen({
   navigation,
 }: RoomCompleteScreenProps) {
@@ -36,6 +41,7 @@ export default function RoomCompleteScreen({
   const currentRoom = useCurrentRoomQuery(userId).data;
 
   const room = currentRoom?.room;
+  const roomWidth = getRoomWidth(width);
 
   const [replayDone, setReplayDone] = useState(false);
   const reveal = useSharedValue(0);
@@ -53,16 +59,15 @@ export default function RoomCompleteScreen({
     transform: [{ translateY: (1 - reveal.value) * 14 }],
   }));
 
-  const roomWidth = getRoomWidth(width);
-
-  const continueToHotel = () => {
+  const continueToPicker = () => {
     triggerTapHaptic();
-    navigation.navigate('Hotel', { fromCompletion: true });
+    navigation.navigate('NextRoom');
   };
 
   return (
     <View style={styles.screen}>
       <AppTopBar showAvatar={false} showStreak={false} />
+
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
@@ -81,12 +86,11 @@ export default function RoomCompleteScreen({
           />
         </View>
 
-        <Animated.View style={[styles.section, revealStyle]}>
-          <Pressable style={styles.primaryButton} onPress={continueToHotel}>
+        <Animated.View style={revealStyle}>
+          <Pressable style={styles.primaryButton} onPress={continueToPicker}>
             <Text style={styles.primaryButtonLabel}>Continue</Text>
           </Pressable>
         </Animated.View>
-
       </ScrollView>
     </View>
   );
@@ -99,30 +103,25 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingBottom: spacing['7xl'],
-    gap: margin.sectionGap,
   },
   header: {
     paddingHorizontal: padding.screen.horizontal,
     marginTop: spacing['2xl'],
     alignItems: 'center',
-    gap: spacing.xs,
   },
   title: {
     ...typography.display.display3,
-    fontFamily: fonts.semibold,
     color: colors.text.primary,
     textAlign: 'center',
   },
   stage: {
     alignItems: 'center',
-  },
-  section: {
-    paddingHorizontal: padding.screen.horizontal,
-    gap: spacing.xs,
+    marginTop: margin.sectionGap,
   },
   primaryButton: {
     ...card.shadow,
     marginHorizontal: padding.screen.horizontal,
+    marginTop: margin.sectionGap,
     paddingVertical: spacing.md,
     borderRadius: spacing.md,
     alignItems: 'center',

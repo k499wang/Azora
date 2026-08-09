@@ -54,9 +54,9 @@ export type RootStackParamList = {
   ExitOffer: undefined;
   RoomDecorate: undefined;
   RoomComplete: undefined;
-  /** every finished floor. `fromCompletion` adds the Continue that carries on
-      into picking the next room. */
-  Hotel: { fromCompletion?: boolean } | undefined;
+  /** every finished floor, swiped through */
+  Hotel: undefined;
+  /** choosing the look of the room about to open */
   NextRoom: undefined;
   /** dev-only harness for the room's animations */
   RoomLab: undefined;

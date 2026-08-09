@@ -213,20 +213,21 @@ a calm app reads as a paywall tease.
 
 ### Step 6 — Hotel screen — **done**
 
-Three screens, one per beat, rather than one screen doing everything:
+**Two screens.**
 
-1. `RoomComplete` — the finished room replays itself building, then **Continue**.
-2. `Hotel` — every finished floor, one per page, swiped horizontally. Opens on
-   the newest floor, because that is the one they just spent seven days on.
-   Reached standalone too; the **Continue** only appears with
-   `fromCompletion: true`.
-3. `NextRoom` — the six looks, also one per page. Full width, because the look
-   is the whole reward for the next seven days and a 90pt swatch cannot show
-   the difference between a plank floor and a checker one.
+1. `RoomComplete` — the finished room replays itself building, then Continue.
+   One job: the payoff for seven days, not also a form.
+2. `NextRoom` — the six looks, one per full-width page. A 90pt swatch cannot
+   show plank floor versus checker, and the look is the whole reward for the
+   next week.
 
-`RoomPager` backs both pagers: a paged `ScrollView`, not a `FlatList` — the
-hotel is a handful of rooms the user wants to flick through freely, and
-virtualising costs a blank frame per swipe for nothing.
+`Hotel` is a standalone destination rather than a step in this flow — every
+finished floor, one per page. Currently reached only from the lab; it wants an
+entry point on Home or the profile.
+
+`RoomPager` backs the pagers: a paged `ScrollView`, not a `FlatList` — these are
+a handful of pages the user wants to flick through freely, and virtualising
+costs a blank frame per swipe for nothing.
 
 ### Step 7 — Delete `docs/cube-room-spec.md` — **done**
 
