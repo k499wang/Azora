@@ -1,5 +1,5 @@
 import { Text } from '../../../../components/common/Text';
-import { forwardRef, useEffect, useRef } from 'react';
+import { forwardRef, useEffect, useRef, useState } from 'react';
 import {
   Animated,
   Easing,
@@ -72,8 +72,7 @@ interface GuidedBreathingPresentationProps {
   phase: GuidedBreathingPhase;
   technique: BreathingTechnique;
   theme: ExerciseDarkTheme;
-  round: number;
-  totalRounds: number;
+  remainingSeconds: number;
   heartRate: GuidedBreathingHeartRatePresentation;
 }
 
@@ -103,7 +102,7 @@ export const GuidedBreathingPresentation = forwardRef<
   BreathingCircleRef,
   GuidedBreathingPresentationProps
 >(function GuidedBreathingPresentation(
-  { phase, technique, theme, round, totalRounds, heartRate },
+  { phase, technique, theme, remainingSeconds, heartRate },
   companionRef,
 ) {
   const isIdle = phase === 'idle';
@@ -139,9 +138,42 @@ export const GuidedBreathingPresentation = forwardRef<
     outputRange: [0, 0.3, 1],
   });
 
+  // Stage-by-stage crossfade: the instruction block (phase label + countdown)
+  // fades out, swaps to the new stage, then fades in so transitions read as a
+  // soft re-anchor instead of a hard label swap.
+  const [displayPhase, setDisplayPhase] = useState<GuidedBreathingPhase>(phase);
+  const stageOpacity = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    if (phase === displayPhase) return;
+
+    Animated.timing(stageOpacity, {
+      toValue: 0,
+      duration: 260,
+      easing: Easing.inOut(Easing.quad),
+      useNativeDriver: true,
+    }).start(({ finished }) => {
+      if (!finished) return;
+      setDisplayPhase(phase);
+      Animated.timing(stageOpacity, {
+        toValue: 1,
+        duration: 380,
+        easing: Easing.inOut(Easing.quad),
+        useNativeDriver: true,
+      }).start();
+    });
+  }, [phase, displayPhase, stageOpacity]);
+
   const camera = heartRate.camera;
 
-  const subline = isBreathing && totalRounds > 0 ? `Breath ${round} of ${totalRounds}` : '';
+  const displayBreathing =
+    displayPhase === 'inhale' ||
+    displayPhase === 'holdIn' ||
+    displayPhase === 'exhale' ||
+    displayPhase === 'holdOut';
+  const countdown =
+    displayBreathing && remainingSeconds > 0 ? remainingSeconds : '';
+  const labelOpacity = Animated.multiply(headlineOpacity, stageOpacity);
 
   return (
     <View style={styles.stage} pointerEvents="box-none">
@@ -170,16 +202,16 @@ export const GuidedBreathingPresentation = forwardRef<
       <View style={styles.topBlock} pointerEvents="box-none">
         <View style={styles.headlineArea} pointerEvents="none">
           <Animated.View
-            style={[styles.headlineLayer, { opacity: headlineOpacity }]}
+            style={[styles.headlineLayer, { opacity: labelOpacity }]}
           >
-            {phase === 'done' ? (
+            {displayPhase === 'done' ? (
               <MaterialCommunityIcons
                 name="check-circle-outline"
                 size={40}
                 color={theme.textPrimary}
               />
             ) : null}
-            {PHASE_LABELS[phase] ? (
+            {PHASE_LABELS[displayPhase] ? (
               <Text
                 style={[styles.headline, { color: theme.textPrimary }]}
                 numberOfLines={1}
@@ -187,12 +219,12 @@ export const GuidedBreathingPresentation = forwardRef<
                 minimumFontScale={0.7}
                 maxFontSizeMultiplier={1.2}
               >
-                {PHASE_LABELS[phase]}
+                {PHASE_LABELS[displayPhase]}
               </Text>
             ) : null}
-            {subline ? (
-              <Text style={[styles.subline, { color: theme.textSecondary }]}>
-                {subline}
+            {countdown ? (
+              <Text style={[styles.countdown, { color: theme.textSecondary }]}>
+                {countdown}
               </Text>
             ) : null}
           </Animated.View>
@@ -319,8 +351,10 @@ const styles = StyleSheet.create({
     ...typography.display.display1,
     textAlign: 'center',
   },
-  subline: {
-    ...typography.body.medium,
+  countdown: {
+    ...typography.display.display2,
+    fontVariant: ['tabular-nums'],
     textAlign: 'center',
+    letterSpacing: -0.5,
   },
 });

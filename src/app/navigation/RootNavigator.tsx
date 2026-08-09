@@ -14,6 +14,8 @@ import { ExitOfferScreen } from '../../screens/ExitOfferScreen';
 import RoomDecorateScreen from '../../screens/RoomDecorateScreen';
 import RoomLabScreen from '../../screens/RoomLabScreen';
 import RoomCompleteScreen from '../../screens/RoomCompleteScreen';
+import HotelScreen from '../../screens/HotelScreen';
+import NextRoomScreen from '../../screens/NextRoomScreen';
 import SettingsScreen from '../../screens/SettingsScreen';
 import ShareableResultScreen from '../../screens/ShareableResultScreen';
 import ExerciseSearchScreen from '../../screens/ExerciseSearchScreen';
@@ -153,8 +155,26 @@ function AppStack({ showBootPaywall }: AppStackProps) {
         name="RoomComplete"
         component={RoomCompleteScreen}
         options={{
+          // Arrives as an event, not as navigation — the replay is the payoff
+          // for seven days, and fading in undersells it.
+          presentation: 'fullScreenModal',
+          animation: 'slide_from_bottom',
+        }}
+      />
+      <Stack.Screen
+        name="Hotel"
+        component={HotelScreen}
+        options={{
           presentation: 'card',
-          animation: 'fade',
+          animation: 'slide_from_right',
+        }}
+      />
+      <Stack.Screen
+        name="NextRoom"
+        component={NextRoomScreen}
+        options={{
+          presentation: 'card',
+          animation: 'slide_from_right',
         }}
       />
       <Stack.Screen

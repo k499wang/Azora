@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useImperativeHandle } from 'react';
+import { forwardRef, memo, useEffect, useImperativeHandle } from 'react';
 import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
@@ -371,7 +371,7 @@ const BreathingCompanion = forwardRef<BreathingCircleRef, BreathingCompanionProp
   },
 );
 
-export default BreathingCompanion;
+export default memo(BreathingCompanion);
 
 const styles = StyleSheet.create({
   clip: {

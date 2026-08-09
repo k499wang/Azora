@@ -211,10 +211,22 @@ spoiler or a lie about what arrives. The banner names the *category*
 spent. Unknown rewards also outperform fully predictable ones, and a padlock in
 a calm app reads as a paywall tease.
 
-### Step 6 — Hotel screen
+### Step 6 — Hotel screen — **done**
 
-New route; a grid of small `HexRoom`s, one per completed floor. `getRooms` and
-`useRoomsQuery` are built and waiting for it. **Not built.**
+Three screens, one per beat, rather than one screen doing everything:
+
+1. `RoomComplete` — the finished room replays itself building, then **Continue**.
+2. `Hotel` — every finished floor, one per page, swiped horizontally. Opens on
+   the newest floor, because that is the one they just spent seven days on.
+   Reached standalone too; the **Continue** only appears with
+   `fromCompletion: true`.
+3. `NextRoom` — the six looks, also one per page. Full width, because the look
+   is the whole reward for the next seven days and a 90pt swatch cannot show
+   the difference between a plank floor and a checker one.
+
+`RoomPager` backs both pagers: a paged `ScrollView`, not a `FlatList` — the
+hotel is a handful of rooms the user wants to flick through freely, and
+virtualising costs a blank frame per swipe for nothing.
 
 ### Step 7 — Delete `docs/cube-room-spec.md` — **done**
 

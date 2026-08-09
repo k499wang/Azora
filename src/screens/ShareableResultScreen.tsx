@@ -1,12 +1,12 @@
 import { Text } from '../components/common/Text';
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, Share, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 import { typography, fonts } from '../theme/typography';
 import { spacing, padding, margin } from '../theme/spacing';
-import RoomProgressBanner from '../features/room/RoomProgressBanner';
+import DailyCompleteSheet from '../features/room/DailyCompleteSheet';
 import HelpfulnessQuestion from '../components/exercise/HelpfulnessQuestion';
 import BlobCharacter from '../components/home/BlobCharacter';
 import { BREATH_HOLD_STYLE } from '../features/exercise/guidedBreathing/categoryPalette';
@@ -30,11 +30,11 @@ import {
   ReviewTrigger,
 } from '../services/reviews/storeReview';
 
-const HERO_BLOB_SIZE = 132;
-
 // The breath hold is not a guided technique, but feedback is stored per
 // technique id, so it answers under its own key.
 const BREATH_HOLD_FEEDBACK_ID = 'breath-hold';
+
+const HERO_BLOB_SIZE = 132;
 
 function formatDuration(secs: number): string {
   const m = Math.floor(secs / 60);
@@ -66,9 +66,16 @@ export default function ShareableResultScreen({
   const hrDropBpm =
     minBpm != null && maxBpm != null ? Math.max(0, maxBpm - minBpm) : null;
 
+  // Always shown: this screen is only reachable from the daily breath hold, so
+  // reaching it always means a daily just moved.
+  const [sheetVisible, setSheetVisible] = useState(true);
+
+  // Held until the sheet is gone — a store-review prompt landing on top of the
+  // celebration would eat it.
   useEffect(() => {
+    if (sheetVisible) return;
     void maybeRequestSessionReview(ReviewTrigger.BreathHold);
-  }, []);
+  }, [sheetVisible]);
 
   const lungAge = estimateLungAge(holdSeconds, userAge);
   const benchmark =
@@ -110,6 +117,19 @@ export default function ShareableResultScreen({
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
+      <DailyCompleteSheet
+        visible={sheetVisible}
+        hue={hue}
+        character={BREATH_HOLD_STYLE.character}
+        title={congratulation}
+        subtitle="Daily breath hold"
+        stats={[
+          { label: 'Hold', value: formatDuration(holdSeconds) },
+          { label: 'Lung age', value: `${lungAge.years}` },
+        ]}
+        onDismiss={() => setSheetVisible(false)}
+      />
+
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -133,10 +153,6 @@ export default function ShareableResultScreen({
               )}
             </View>
           </View>
-        </View>
-
-        <View style={styles.bodySection}>
-          <RoomProgressBanner sourceScreen="DailyResult" />
         </View>
 
         <View style={styles.statsSection}>
