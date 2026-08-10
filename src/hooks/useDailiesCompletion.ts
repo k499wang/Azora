@@ -9,6 +9,9 @@ import { useProfileQuery } from '../queries/profile/useProfileQuery';
 import { useCompletedBreathingTechniqueIdsQuery } from '../queries/tracking/useCompletedBreathingTechniqueIdsQuery';
 import { useHomeStatsQuery } from '../queries/tracking/useHomeStatsQuery';
 
+/** guided, hand-picked, breath hold */
+export const DAILIES_PER_DAY = 3;
+
 export interface DailiesCompletion {
   todayLocalDate: string;
   guidedTechnique: BreathingTechnique | null;
@@ -20,6 +23,14 @@ export interface DailiesCompletion {
   breathHoldCompleted: boolean;
   allCompleted: boolean;
   isLoading: boolean;
+  /**
+   * True while the completion data is being refetched over data we already
+   * have. `isLoading` cannot answer this — it only covers a first load — so a
+   * screen opened right after finishing a session sees the *previous* counts
+   * and reports itself ready. Anything that snapshots completion has to wait
+   * for this to clear.
+   */
+  isSettling: boolean;
 }
 
 /**
@@ -82,6 +93,8 @@ export function useDailiesCompletion(userId: string | null): DailiesCompletion {
     guidedCompleted,
     handPickedCompleted,
     breathHoldCompleted,
+    isSettling:
+      completedTechniqueIdsQuery.isFetching || homeStatsQuery.isFetching,
     allCompleted:
       !isLoading &&
       userId != null &&

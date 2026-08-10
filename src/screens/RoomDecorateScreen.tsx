@@ -24,7 +24,7 @@ import { useAuthStore } from '../stores/authStore';
 import { triggerTapHaptic } from '../native/tapHaptics';
 import { colors } from '../theme/colors';
 import { stagger } from '../theme/motion';
-import { margin, padding, spacing } from '../theme/spacing';
+import { margin, padding } from '../theme/spacing';
 import { typography } from '../theme/typography';
 import type { RoomDecorateScreenProps } from '../app/navigation';
 
@@ -169,13 +169,14 @@ export default function RoomDecorateScreen({
         ) : null
       }
     >
-      {justPlaced ? (
-        <Rise style={styles.congratsWrap}>
-          <Text style={styles.congrats}>Congratulations!</Text>
-        </Rise>
-      ) : null}
-
       <RoomStage
+        banner={
+          justPlaced ? (
+            <Rise style={styles.congratsWrap}>
+              <Text style={styles.congrats}>Congratulations!</Text>
+            </Rise>
+          ) : null
+        }
         caption={
           placing == null
             ? `${Object.keys(placedPicks).length} of ${ROOM_SLOT_COUNT} pieces`
@@ -228,7 +229,6 @@ export default function RoomDecorateScreen({
 const styles = StyleSheet.create({
   congratsWrap: {
     paddingHorizontal: padding.screen.horizontal,
-    marginTop: spacing['2xl'],
     alignItems: 'center',
   },
   congrats: {

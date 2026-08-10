@@ -1,4 +1,4 @@
-import { memo, useEffect, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import {
   Modal,
   Pressable,
@@ -32,6 +32,7 @@ import { markSeenDailies, readSeenDailies } from './dailyProgressSeen';
 import { useAuthStore } from '../../stores/authStore';
 import { isHapticsEnabled } from '../../services/preferences/hapticsPreference';
 import { triggerTapHaptic } from '../../native/tapHaptics';
+import { DAILIES_PER_DAY } from '../../hooks/useDailiesCompletion';
 import { radius } from '../../theme/card';
 import { duration, easing, spring } from '../../theme/motion';
 import { colors } from '../../theme/colors';
@@ -45,7 +46,6 @@ const BLOB_SIZE = 190;
 const BADGE_SIZE = 38;
 const BAR_HEIGHT = 12;
 const FALL_MS = duration.base;
-const TOTAL_DAILIES = 3;
 
 // Every element lands on its own beat, top to bottom, from the moment the
 // screen appears. These used to be offset by a slide-up that no longer happens,
@@ -60,9 +60,21 @@ const BEAT = {
 } as const;
 
 const CONFETTI_MS = 140;
+
+// The bar fills only once it has finished fading in. Starting with its `Rise`
+// meant the fill — which is deliberately front-loaded — was all but complete by
+// the time it became visible, so it looked like it had never moved.
+const BAR_FILL_DELAY = BEAT.progress + duration.slow;
+
+// The bar's target must be final before it starts moving. If the refetch has
+// not landed by here, take what we have — a bar that never fills is worse than
+// one that fills to a number a beat behind.
+const FREEZE_DEADLINE = BAR_FILL_DELAY - 80;
+const BAR_FILL_END = BAR_FILL_DELAY + duration.fill;
+
 // After the last element has finished arriving, not during it — this is when
 // callers mount their charts and cards.
-const SETTLED_MS = 1300;
+const SETTLED_MS = BAR_FILL_END + 120;
 
 /** everything the sheet needs to know about the room, so it can be faked */
 export interface DailyCompleteState {
@@ -149,6 +161,7 @@ export default function DailyCompleteSheet({
   // Frozen on open. A background refetch landing mid-entrance would otherwise
   // re-render the whole sheet and could retarget the bar while it is filling.
   const [frozen, setFrozen] = useState<DailyCompleteState | null>(null);
+  const sawRefetch = useRef(false);
   const view = frozen ?? state ?? live;
   const { done, unlocked, showBar } = view;
 
@@ -160,12 +173,12 @@ export default function DailyCompleteSheet({
     (state != null
       ? Math.max(0, done - 1)
       : (readSeenDailies(dailies.todayLocalDate) ?? Math.max(0, done - 1))) /
-    TOTAL_DAILIES;
+    DAILIES_PER_DAY;
 
   const day = view.nextSlot == null ? null : getRoomDay(view.nextSlot);
   const pieceLabel =
     view.nextSlot == null ? null : getRoomDayLabel(view.nextSlot);
-  const remaining = Math.max(0, TOTAL_DAILIES - done);
+  const remaining = Math.max(0, DAILIES_PER_DAY - done);
 
   // On the third daily the screen stops being about the session and starts
   // being about the thing they just earned, so the copy changes with it.
@@ -176,19 +189,63 @@ export default function DailyCompleteSheet({
       : `You unlocked a new ${pieceLabel}`
     : subtitle;
 
+  // Snapshot the room state once, and only once it is trustworthy.
+  //
+  // Navigation to the results screen happens before the session is persisted,
+  // so at the moment this opens the completion queries are usually still
+  // refetching and reporting the counts from *before* this session. Freezing
+  // that captured a `done` one short of the truth, which then matched where the
+  // bar already was — and a bar told to animate to where it is does nothing.
+  useEffect(() => {
+    if (!visible) {
+      setFrozen(null);
+      sawRefetch.current = false;
+      return;
+    }
+
+    if (frozen != null) {
+      return;
+    }
+
+    if (dailies.isSettling) {
+      sawRefetch.current = true;
+    }
+
+    // Trustworthy means the refetch this session triggered has been seen to
+    // start *and* finish. `!isSettling` alone is true in the gap before it
+    // begins, which is exactly the window this screen opens in.
+    if (state != null || (sawRefetch.current && !dailies.isSettling)) {
+      setFrozen(state ?? live);
+      return;
+    }
+
+    const deadline = setTimeout(() => setFrozen(live), FREEZE_DEADLINE);
+    return () => clearTimeout(deadline);
+    // `live` is rebuilt every render; the primitives it is made of are the real
+    // dependencies.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    dailies.isSettling,
+    frozen,
+    live.done,
+    live.nextSlot,
+    live.showBar,
+    live.unlocked,
+    state,
+    visible,
+  ]);
+
   useEffect(() => {
     if (!visible) {
       offset.value = 0;
       badge.value = 0;
-      setFrozen(null);
       return;
     }
 
-    setFrozen(state ?? live);
-
-    // Never let a faked state write over what the user has really seen.
-    if (state == null) {
-      markSeenDailies(dailies.todayLocalDate, done);
+    // Never let a faked state write over what the user has really seen, and
+    // never record a count that has not settled.
+    if (state == null && frozen != null) {
+      markSeenDailies(dailies.todayLocalDate, frozen.done);
     }
 
     const settle =
@@ -196,7 +253,7 @@ export default function DailyCompleteSheet({
 
     if (unlocked) {
       badge.value = withDelay(
-        900,
+        BAR_FILL_END,
         withSequence(
           withTiming(1, { duration: 160 }),
           withSpring(0.6, spring.bounce),
@@ -212,7 +269,7 @@ export default function DailyCompleteSheet({
   }, [
     badge,
     dailies.todayLocalDate,
-    done,
+    frozen,
     height,
     offset,
     state,
@@ -323,8 +380,9 @@ export default function DailyCompleteSheet({
             <Rise delay={BEAT.progress} style={styles.progressBlock}>
               <View style={styles.barRow}>
                 <ProgressBar
-                  progress={done / TOTAL_DAILIES}
+                  progress={done / DAILIES_PER_DAY}
                   from={barFrom}
+                  delay={BAR_FILL_DELAY}
                   height={BAR_HEIGHT}
                   trackColor={colors.onBlock.fill}
                   fillColor={colors.text.inverse}
@@ -352,16 +410,11 @@ export default function DailyCompleteSheet({
 
           <Rise delay={BEAT.cta} style={styles.ctaBlock}>
             {unlocked ? (
-              <>
-                <ChunkyButton
-                  label="Choose your piece"
-                  hue={hue}
-                  onPress={choosePiece}
-                />
-                <Pressable style={styles.secondary} onPress={close}>
-                  <Text style={styles.secondaryLabel}>Later</Text>
-                </Pressable>
-              </>
+              <ChunkyButton
+                label="Choose your piece"
+                hue={hue}
+                onPress={choosePiece}
+              />
             ) : (
               <ChunkyButton label="Continue" hue={hue} onPress={close} />
             )}
@@ -613,17 +666,6 @@ const styles = StyleSheet.create({
   },
   progressLabel: {
     ...typography.body.small,
-    color: colors.onBlock.textMuted,
-  },
-  secondary: {
-    alignSelf: 'stretch',
-    alignItems: 'center',
-    paddingVertical: spacing.md,
-    marginTop: spacing.xs,
-  },
-  secondaryLabel: {
-    ...typography.body.medium,
-    fontFamily: fonts.semibold,
     color: colors.onBlock.textMuted,
   },
 });

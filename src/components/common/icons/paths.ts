@@ -80,6 +80,21 @@ export const ICON_PATHS = {
     <circle cx="12" cy="15.8" r="1.5" fill="currentColor" />
   `,
 
+  calendar: `
+    <rect x="3.2" y="5.2" width="17.6" height="15.6" rx="3.2" stroke="currentColor" stroke-width="1.9" fill="none" />
+    <path d="M3.2 10h17.6" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" />
+    <path d="M8 3.2v3.6M16 3.2v3.6" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" />
+    <circle cx="8.4" cy="14.2" r="1.35" fill="currentColor" />
+    <circle cx="12" cy="14.2" r="1.35" fill="currentColor" />
+    <circle cx="15.6" cy="14.2" r="1.35" fill="currentColor" />
+  `,
+
+  'room-hex': `
+    <path d="M12 2.6 20.4 7.3v9.4L12 21.4 3.6 16.7V7.3z" fill="currentColor" opacity="0.2" />
+    <path d="M12 2.6 20.4 7.3v9.4L12 21.4 3.6 16.7V7.3z" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" fill="none" />
+    <path d="M3.6 7.3 12 12m0 0 8.4-4.7M12 12v9.4" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" fill="none" opacity="0.55" />
+  `,
+
   timer: `
     <path d="M10 3h4" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
     <path d="M12 3v3" stroke="currentColor" stroke-width="2" stroke-linecap="round" />

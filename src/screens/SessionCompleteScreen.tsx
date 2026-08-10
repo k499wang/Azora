@@ -55,6 +55,7 @@ export default function SessionCompleteScreen({
   const {
     techniqueId,
     techniqueName,
+    sessionKey,
     techniqueBpmResponse,
     breathCount,
     durationSec,
@@ -254,6 +255,7 @@ export default function SessionCompleteScreen({
             <HelpfulnessQuestion
               techniqueId={techniqueId}
               localDate={todayLocalDate}
+              sessionKey={sessionKey}
             />
           </View>
 

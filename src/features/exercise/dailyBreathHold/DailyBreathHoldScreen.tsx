@@ -23,6 +23,10 @@ import {
   showHeartRateCameraUnavailableAlert,
 } from '../../../components/heartRate/cameraAccessPrompts';
 import { usePostHog } from 'posthog-react-native';
+import {
+  BREATH_HOLD_FEEDBACK_ID,
+  buildSessionKey,
+} from '../../../lib/sessionKey';
 import { AnalyticsEvent } from '../../../services/analytics/events';
 import { captureException } from '../../../services/analytics/errorTracking';
 import type { DailyExerciseScreenProps } from '../../../app/navigation';
@@ -411,6 +415,7 @@ export default function DailyBreathHoldScreen({
 
       navigation.replace('DailyResult', {
         holdSeconds: releasedHoldSeconds,
+        sessionKey: buildSessionKey(BREATH_HOLD_FEEDBACK_ID, endedAtMs),
         heartRateResultStatus: completion.heartRateResultStatus,
         avgBpm: completion.avgBpm ?? undefined,
         minBpm: completion.minBpm ?? undefined,

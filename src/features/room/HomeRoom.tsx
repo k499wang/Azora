@@ -1,6 +1,5 @@
 import { useRef } from 'react';
 import { Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
-import { Text } from '../../components/common/Text';
 import RoomBlob, { type RoomBlobHandle } from './RoomBlob';
 import { HexRoom, ROOM_ASPECT } from './RoomScene';
 import { toFrameHue, toPicks } from './roomPicks';
@@ -9,10 +8,6 @@ import { getRoomWidth } from './roomLayout';
 import { useRoomClaim } from './useRoomClaim';
 import { useAuthStore } from '../../stores/authStore';
 import { triggerBounceHaptic } from '../../native/tapHaptics';
-import { card } from '../../theme/card';
-import { colors } from '../../theme/colors';
-import { spacing } from '../../theme/spacing';
-import { fonts, typography } from '../../theme/typography';
 
 export default function HomeRoom() {
   const { width } = useWindowDimensions();
@@ -45,12 +40,6 @@ export default function HomeRoom() {
         />
         <RoomBlob ref={blob} width={roomWidth} />
       </View>
-      {progress.canClaim ? (
-        <View style={styles.badge}>
-          <View style={styles.badgeDot} />
-          <Text style={styles.badgeLabel}>A new piece is ready</Text>
-        </View>
-      ) : null}
     </Pressable>
   );
 }
@@ -59,27 +48,5 @@ const styles = StyleSheet.create({
   stage: {
     alignSelf: 'stretch',
     alignItems: 'center',
-  },
-  badge: {
-    ...card.base,
-    ...card.shadow,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: 999,
-    marginTop: spacing.sm,
-  },
-  badgeDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.primary.blue600,
-  },
-  badgeLabel: {
-    ...typography.body.small,
-    fontFamily: fonts.semibold,
-    color: colors.text.primary,
   },
 });

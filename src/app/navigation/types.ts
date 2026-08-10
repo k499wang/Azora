@@ -40,6 +40,8 @@ export type RootStackParamList = {
   SessionComplete: {
     techniqueId: string;
     techniqueName: string;
+    /** identifies this session for per-session feedback */
+    sessionKey: string;
     techniqueBpmResponse?: BreathingTechniqueBpmResponse;
     breathCount: number;
     targetBreaths: number;
@@ -63,6 +65,8 @@ export type RootStackParamList = {
   Settings: undefined;
   DailyResult: {
     holdSeconds: number;
+    /** identifies this session for per-session feedback */
+    sessionKey: string;
     heartRateResultStatus?: BreathHoldHeartRateResultStatus;
     avgBpm?: number;
     minBpm?: number;

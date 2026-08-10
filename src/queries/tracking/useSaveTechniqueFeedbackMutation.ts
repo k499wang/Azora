@@ -8,6 +8,7 @@ import { getTechniqueFeedbackQueryKey } from './useTechniqueFeedbackQuery';
 interface SaveTechniqueFeedbackInput {
   techniqueId: string;
   localDate: string;
+  sessionKey: string;
   helpfulness: Helpfulness;
 }
 
@@ -18,13 +19,20 @@ export function useSaveTechniqueFeedbackMutation(userId: string | null) {
     mutationFn: async ({
       techniqueId,
       localDate,
+      sessionKey,
       helpfulness,
     }: SaveTechniqueFeedbackInput) => {
       if (userId == null) {
         throw new Error('Cannot save feedback without a signed-in user.');
       }
 
-      return saveTechniqueFeedback(userId, techniqueId, localDate, helpfulness);
+      return saveTechniqueFeedback(
+        userId,
+        techniqueId,
+        localDate,
+        sessionKey,
+        helpfulness,
+      );
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({
