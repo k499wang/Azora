@@ -148,6 +148,7 @@ function fakeClaim({
       breathHoldCompleted: dailiesDone >= 3,
       allCompleted,
       isLoading: false,
+    isSettling: false,
     },
     isLoading: false,
   };

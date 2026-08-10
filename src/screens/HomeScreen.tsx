@@ -6,6 +6,7 @@ import CompactActionBanner from '../components/common/CompactActionBanner';
 import WeekCalendarStrip from '../components/common/WeekCalendarStrip';
 import TodaysDailiesSection from '../components/home/TodaysDailiesSection';
 import HomeRoom from '../features/room/HomeRoom';
+import RoomProgressCard from '../features/room/RoomProgressCard';
 import { useDailiesCompletion } from '../hooks/useDailiesCompletion';
 import { useStartDaily } from '../hooks/useStartDaily';
 import type { HomeScreenProps } from '../app/navigation';
@@ -54,6 +55,7 @@ export default function HomeScreen(_: HomeScreenProps) {
         </View>
 
         <View style={styles.bodySection}>
+          <RoomProgressCard />
           <TodaysDailiesSection
             technique={dailies.guidedTechnique}
             techniqueLoading={dailies.guidedTechniqueLoading}

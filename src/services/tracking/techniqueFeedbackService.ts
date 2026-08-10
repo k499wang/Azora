@@ -6,6 +6,8 @@ export type Helpfulness = 1 | 2 | 3;
 export interface TechniqueFeedbackRow {
   techniqueId: string;
   localDate: string;
+  /** identifies the one session this answer is about */
+  sessionKey: string;
   helpfulness: Helpfulness;
 }
 
@@ -18,12 +20,14 @@ interface TechniqueFeedbackDatabase {
           user_id: string;
           technique_id: string;
           local_date: string;
+          session_key: string;
           helpfulness: number;
         };
         Insert: {
           user_id: string;
           technique_id: string;
           local_date: string;
+          session_key: string;
           helpfulness: number;
         };
         Update: {
@@ -51,7 +55,7 @@ export async function getTechniqueFeedback(
   const supabase = getClient();
   const { data, error } = await supabase
     .from('technique_feedback')
-    .select('technique_id, local_date, helpfulness')
+    .select('technique_id, local_date, session_key, helpfulness')
     .eq('user_id', userId);
 
   if (error != null) {
@@ -61,15 +65,17 @@ export async function getTechniqueFeedback(
   return (data ?? []).map((row) => ({
     techniqueId: row.technique_id,
     localDate: row.local_date,
+    sessionKey: row.session_key,
     helpfulness: toHelpfulness(row.helpfulness),
   }));
 }
 
-/** Answering again on the same day replaces the earlier answer. */
+/** Changing your mind about the same session replaces the earlier answer. */
 export async function saveTechniqueFeedback(
   userId: string,
   techniqueId: string,
   localDate: string,
+  sessionKey: string,
   helpfulness: Helpfulness,
 ): Promise<void> {
   const supabase = getClient();
@@ -80,9 +86,10 @@ export async function saveTechniqueFeedback(
         user_id: userId,
         technique_id: techniqueId,
         local_date: localDate,
+        session_key: sessionKey,
         helpfulness,
       },
-      { onConflict: 'user_id,technique_id,local_date' },
+      { onConflict: 'user_id,session_key' },
     );
 
   if (error != null) {

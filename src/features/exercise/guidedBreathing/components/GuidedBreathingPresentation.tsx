@@ -1,5 +1,5 @@
 import { Text } from '../../../../components/common/Text';
-import { forwardRef, useEffect, useRef, useState } from 'react';
+import { forwardRef, useEffect, useRef } from 'react';
 import {
   Animated,
   Easing,
@@ -21,6 +21,7 @@ import HeartRatePlacementStage, {
   pulsePreviewTop,
 } from '../../shared/components/HeartRatePlacementStage';
 import { usePlacementFade } from '../../shared/hooks/usePlacementFade';
+import { usePhaseCrossfade } from '../../shared/hooks/usePhaseCrossfade';
 import SessionHeartRateReadout from '../../shared/components/SessionHeartRateReadout';
 import type { BreathingTechnique } from '../techniques';
 import type { BreathingPhase } from '../domain/breathingSessionTiming';
@@ -138,31 +139,7 @@ export const GuidedBreathingPresentation = forwardRef<
     outputRange: [0, 0.3, 1],
   });
 
-  // Stage-by-stage crossfade: the instruction block (phase label + countdown)
-  // fades out, swaps to the new stage, then fades in so transitions read as a
-  // soft re-anchor instead of a hard label swap.
-  const [displayPhase, setDisplayPhase] = useState<GuidedBreathingPhase>(phase);
-  const stageOpacity = useRef(new Animated.Value(1)).current;
-
-  useEffect(() => {
-    if (phase === displayPhase) return;
-
-    Animated.timing(stageOpacity, {
-      toValue: 0,
-      duration: 260,
-      easing: Easing.inOut(Easing.quad),
-      useNativeDriver: true,
-    }).start(({ finished }) => {
-      if (!finished) return;
-      setDisplayPhase(phase);
-      Animated.timing(stageOpacity, {
-        toValue: 1,
-        duration: 380,
-        easing: Easing.inOut(Easing.quad),
-        useNativeDriver: true,
-      }).start();
-    });
-  }, [phase, displayPhase, stageOpacity]);
+  const { displayPhase, opacity: stageOpacity } = usePhaseCrossfade(phase);
 
   const camera = heartRate.camera;
 

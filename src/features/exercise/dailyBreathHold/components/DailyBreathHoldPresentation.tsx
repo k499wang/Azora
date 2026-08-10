@@ -19,6 +19,7 @@ import HeartRatePlacementStage, {
   pulsePreviewTop,
 } from '../../shared/components/HeartRatePlacementStage';
 import { usePlacementFade } from '../../shared/hooks/usePlacementFade';
+import { usePhaseCrossfade } from '../../shared/hooks/usePhaseCrossfade';
 import SessionHeartRateReadout from '../../shared/components/SessionHeartRateReadout';
 import { SESSION_GLASS_BUTTON_SIZE } from '../../shared/components/SessionGlassButton';
 import BreathHoldIntro, { type BreathHoldStep } from './BreathHoldIntro';
@@ -149,11 +150,18 @@ export const DailyBreathHoldPresentation = forwardRef<
 
   const camera = heartRate.camera;
 
-  const headline = isHold
+  // The instruction crossfades between stages the way guided breathing does.
+  // The hold's timer is keyed on the phase, not the second, so it counts up
+  // without re-fading; the cycle counter below stays on the live phase because
+  // fading it every breath turns a quiet line into a flicker.
+  const { displayPhase, opacity: stageOpacity } = usePhaseCrossfade(phase);
+  const displayHold = displayPhase === 'hold';
+
+  const headline = displayHold
     ? formatHoldTime(holdSeconds)
-    : phase === 'preExhale'
+    : displayPhase === 'preExhale'
       ? 'Exhale'
-      : phase === 'preInhale' || phase === 'inhale'
+      : displayPhase === 'preInhale' || displayPhase === 'inhale'
         ? 'Inhale'
         : '';
   const subline = phase === 'inhale'
@@ -190,13 +198,15 @@ export const DailyBreathHoldPresentation = forwardRef<
 
       <View style={styles.topBlock} pointerEvents="none">
         <Animated.View style={{ opacity: headlineOpacity }}>
-          <View style={styles.headlineArea}>
+          <Animated.View
+            style={[styles.headlineArea, { opacity: stageOpacity }]}
+          >
             <View style={styles.headlineLayer}>
               {headline ? (
                 <Text
                   style={[
                     styles.headline,
-                    isHold && styles.headlineTimer,
+                    displayHold && styles.headlineTimer,
                     { color: theme.textPrimary },
                   ]}
                   numberOfLines={1}
@@ -208,7 +218,7 @@ export const DailyBreathHoldPresentation = forwardRef<
                 </Text>
               ) : null}
             </View>
-          </View>
+          </Animated.View>
 
           {isHold ? (
             <View style={styles.progressArea}>

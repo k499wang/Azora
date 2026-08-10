@@ -11,7 +11,7 @@ import { colors } from '../../theme/colors';
 import { duration, easing } from '../../theme/motion';
 
 const FILL_DURATION_MS = duration.fill;
-const FILL_DELAY_MS = 320;
+const DEFAULT_FILL_DELAY_MS = 320;
 
 // No spring: a bar that overshoots past its own track just looks broken.
 const FILL_EASING = easing.settle;
@@ -24,6 +24,13 @@ interface ProgressBarProps {
    * bar only moves when a caller asks it to.
    */
   from?: number;
+  /**
+   * ms before the fill starts moving. Raise it when the bar is revealed by an
+   * entrance animation: a fill that begins while the bar is still fading in is
+   * most of the way home by the time anyone can see it, so the bar reads as
+   * having been full all along.
+   */
+  delay?: number;
   height?: number;
   trackColor?: string;
   fillColor?: string;
@@ -47,6 +54,7 @@ interface ProgressBarProps {
 export default function ProgressBar({
   progress,
   from,
+  delay = DEFAULT_FILL_DELAY_MS,
   height = 10,
   trackColor = colors.primary.blue100,
   fillColor = colors.primary.blue600,
@@ -65,7 +73,7 @@ export default function ProgressBar({
 
     onFillStart?.();
     fraction.value = withDelay(
-      FILL_DELAY_MS,
+      delay,
       withTiming(
         target,
         { duration: FILL_DURATION_MS, easing: FILL_EASING },
@@ -80,7 +88,7 @@ export default function ProgressBar({
     // inline closures, and re-running this on every render would restart the
     // fill mid-flight.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fraction, progress]);
+  }, [delay, fraction, progress]);
 
   const fillStyle = useAnimatedStyle(() => ({
     transform: [{ scaleX: fraction.value }],

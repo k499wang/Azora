@@ -20,6 +20,8 @@ const OPTIONS: { value: Helpfulness; label: string }[] = [
 interface HelpfulnessQuestionProps {
   techniqueId: string;
   localDate: string;
+  /** the one session being asked about — see `buildSessionKey` */
+  sessionKey: string;
   style?: ViewStyle;
 }
 
@@ -33,6 +35,7 @@ interface HelpfulnessQuestionProps {
 export default function HelpfulnessQuestion({
   techniqueId,
   localDate,
+  sessionKey,
   style,
 }: HelpfulnessQuestionProps) {
   const userId = useAuthStore((state) => state.user?.id ?? null);
@@ -40,8 +43,10 @@ export default function HelpfulnessQuestion({
   const saveFeedback = useSaveTechniqueFeedbackMutation(userId);
   const [pending, setPending] = useState<Helpfulness | null>(null);
 
+  // Scoped to this session, so redoing an exercise asks again rather than
+  // showing back the answer given the last time.
   const saved = feedback?.find(
-    (row) => row.techniqueId === techniqueId && row.localDate === localDate,
+    (row) => row.sessionKey === sessionKey,
   )?.helpfulness;
   const selected = pending ?? saved ?? null;
 
@@ -71,6 +76,7 @@ export default function HelpfulnessQuestion({
                 saveFeedback.mutate({
                   techniqueId,
                   localDate,
+                  sessionKey,
                   helpfulness: option.value,
                 });
               }}

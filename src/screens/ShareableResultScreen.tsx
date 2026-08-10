@@ -8,6 +8,7 @@ import { typography, fonts } from '../theme/typography';
 import { spacing, padding, margin } from '../theme/spacing';
 import DailyCompleteSheet from '../features/room/DailyCompleteSheet';
 import HelpfulnessQuestion from '../components/exercise/HelpfulnessQuestion';
+import { BREATH_HOLD_FEEDBACK_ID } from '../lib/sessionKey';
 import BlobCharacter from '../components/home/BlobCharacter';
 import { BREATH_HOLD_STYLE } from '../features/exercise/guidedBreathing/categoryPalette';
 import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
@@ -32,7 +33,6 @@ import {
 
 // The breath hold is not a guided technique, but feedback is stored per
 // technique id, so it answers under its own key.
-const BREATH_HOLD_FEEDBACK_ID = 'breath-hold';
 
 const HERO_BLOB_SIZE = 132;
 
@@ -57,6 +57,7 @@ export default function ShareableResultScreen({
   const hue = BREATH_HOLD_STYLE.hue;
   const {
     holdSeconds,
+    sessionKey,
     heartRateResultStatus = 'not_measured',
     avgBpm,
     minBpm,
@@ -184,6 +185,7 @@ export default function ShareableResultScreen({
           <HelpfulnessQuestion
             techniqueId={BREATH_HOLD_FEEDBACK_ID}
             localDate={todayLocalDate}
+            sessionKey={sessionKey}
           />
         </View>
 

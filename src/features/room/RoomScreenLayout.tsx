@@ -20,8 +20,10 @@ import { fonts, typography } from '../../theme/typography';
  *   · titles are left-aligned `display3`, one `2xl` below the bar
  *   · the room is centred, with `sectionGap` above it
  *   · the primary action is pinned to the bottom, never in the flow
- *   · every screen can go back
  */
+
+/** Reserved whether or not there is a caption, so the room cannot shift. */
+const CAPTION_HEIGHT = 20;
 
 interface RoomScreenLayoutProps {
   title?: string;
@@ -53,7 +55,10 @@ export default function RoomScreenLayout({
 
   return (
     <View style={styles.screen}>
-      <AppTopBar showBack showAvatar={false} showStreak={false} />
+      {/* Back exists for poking around the room flow in the lab. In a release
+          build these screens are reached one way and left one way, so a back
+          arrow would offer an exit the flow has no state for. */}
+      <AppTopBar showBack={__DEV__} showAvatar={false} showStreak={false} />
 
       {scroll ? (
         <ScrollView
@@ -75,20 +80,39 @@ export default function RoomScreenLayout({
   );
 }
 
-/** The room, centred, with an optional line under it. */
+/**
+ * The room, centred, with an optional line under it and an optional message
+ * above it.
+ *
+ * The room never moves. A message arriving above it is drawn as an overlay
+ * rather than a sibling, and the caption's line is reserved whether or not
+ * there is a caption — otherwise congratulating someone shoves the thing they
+ * are being congratulated about down the screen, mid-animation.
+ */
 export function RoomStage({
   children,
   caption,
+  banner,
 }: {
   children: ReactNode;
   caption?: string;
+  banner?: ReactNode;
 }) {
   return (
     <View style={styles.stage}>
-      {children}
-      {caption == null ? null : (
-        <Text style={styles.caption}>{caption}</Text>
-      )}
+      <View>
+        {children}
+        {banner == null ? null : (
+          <View pointerEvents="none" style={styles.banner}>
+            {banner}
+          </View>
+        )}
+      </View>
+      <View style={styles.captionSlot}>
+        {caption == null ? null : (
+          <Text style={styles.caption}>{caption}</Text>
+        )}
+      </View>
     </View>
   );
 }
@@ -127,9 +151,11 @@ const styles = StyleSheet.create({
   scrollBody: {
     paddingBottom: spacing['5xl'],
   },
+  // Top-anchored, exactly like the scrolling variant. Centring these instead
+  // put the room at a different height depending on which screen you were on,
+  // so moving between them looked like the room jumped.
   fixedBody: {
     flex: 1,
-    justifyContent: 'center',
   },
   header: {
     paddingHorizontal: padding.screen.horizontal,
@@ -148,6 +174,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: margin.sectionGap,
     gap: spacing.sm,
+  },
+  banner: {
+    position: 'absolute',
+    bottom: '100%',
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    paddingBottom: spacing.md,
+  },
+  captionSlot: {
+    height: CAPTION_HEIGHT,
+    justifyContent: 'center',
   },
   caption: {
     ...typography.body.small,

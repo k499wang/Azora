@@ -37,6 +37,7 @@ import {
   showHeartRateCameraUnavailableAlert,
 } from '../../../components/heartRate/cameraAccessPrompts';
 import { usePostHog } from 'posthog-react-native';
+import { buildSessionKey } from '../../../lib/sessionKey';
 import type { ExerciseSessionScreenProps } from '../../../app/navigation';
 import { captureException } from '../../../services/analytics/errorTracking';
 import { AnalyticsEvent } from '../../../services/analytics/events';
@@ -245,6 +246,7 @@ export default function GuidedBreathingSessionScreen({
       navigation.replace('SessionComplete', {
         techniqueId: technique.id,
         techniqueName: technique.name,
+        sessionKey: buildSessionKey(technique.id, completion.endedAtMs),
         techniqueBpmResponse: technique.heartRateResponse,
         breathCount: completedRounds,
         targetBreaths: completedRounds,

@@ -262,7 +262,7 @@ export default function TodaysDailiesSection({
 
   return (
     <View style={styles.section}>
-      <SectionHeader title="Today’s Dailies" />
+      <SectionHeader icon="calendar" title="Today’s Dailies" />
 
       <View style={styles.timeline}>
         <View style={styles.timelineRail} pointerEvents="none">
