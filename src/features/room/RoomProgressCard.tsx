@@ -1,13 +1,13 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Text } from '../../components/common/Text';
 import Icon from '../../components/common/icons/Icon';
 import ProgressBar from '../../components/common/ProgressBar';
+import ChunkyButton from '../../components/common/ChunkyButton';
 import { useRoomClaim } from './useRoomClaim';
 import { DAILIES_PER_DAY } from '../../hooks/useDailiesCompletion';
 import { ROOM_SLOT_COUNT } from '../../lib/room/roomProgress';
 import { useAuthStore } from '../../stores/authStore';
-import { triggerTapHaptic } from '../../native/tapHaptics';
 import { card } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
@@ -15,6 +15,8 @@ import { fonts, typography } from '../../theme/typography';
 import type { MainTabNavigationProp } from '../../app/navigation';
 
 const BAR_HEIGHT = 12;
+/** Shorter than a screen's primary — this one sits inside a card. */
+const CTA_MIN_HEIGHT = 48;
 
 /**
  * Where the room loop is, and the way back into it.
@@ -34,11 +36,10 @@ export default function RoomProgressCard() {
     return null;
   }
 
-  const view = describe({
+  const view = describeRoomCard({
     isComplete: progress.isComplete,
     canClaim: progress.canClaim,
     claimedToday: progress.claimedToday,
-    dailiesDone: dailies.allCompleted,
     dailiesDoneCount: [
       dailies.guidedCompleted,
       dailies.handPickedCompleted,
@@ -47,6 +48,25 @@ export default function RoomProgressCard() {
     placedCount: progress.placedCount,
   });
 
+  return (
+    <RoomProgressCardView
+      view={view}
+      onAction={(route) => navigation.navigate(route)}
+    />
+  );
+}
+
+/**
+ * The card with its state handed to it, so the dev lab can show every state at
+ * once without arranging a week of real progress.
+ */
+export function RoomProgressCardView({
+  view,
+  onAction,
+}: {
+  view: RoomCardView;
+  onAction: (route: RoomCardRoute) => void;
+}) {
   const action = view.action;
 
   return (
@@ -87,23 +107,23 @@ export default function RoomProgressCard() {
       </View>
 
       {action == null ? null : (
-        <Pressable
-          accessibilityRole="button"
-          style={({ pressed }) => [styles.button, pressed && styles.pressed]}
-          onPress={() => {
-            triggerTapHaptic();
-            navigation.navigate(action.route);
-          }}
-        >
-          <Text style={styles.buttonLabel}>{action.label}</Text>
-          <Icon name="chevron-right" size={16} color={colors.text.inverse} />
-        </Pressable>
+        <ChunkyButton
+          label={action.label}
+          shape="card"
+          minHeight={CTA_MIN_HEIGHT}
+          trailingIcon={
+            <Icon name="chevron-right" size={16} color={colors.text.inverse} />
+          }
+          onPress={() => onAction(action.route)}
+        />
       )}
     </View>
   );
 }
 
-interface CardView {
+export type RoomCardRoute = 'RoomDecorate' | 'NextRoom';
+
+export interface RoomCardView {
   title: string;
   /** drives the lock at the end of the bar */
   earned: boolean;
@@ -112,7 +132,7 @@ interface CardView {
   /** the bar counts whatever the title is about, never something else */
   done: number;
   total: number;
-  action: { label: string; route: 'RoomDecorate' | 'NextRoom' } | null;
+  action: { label: string; route: RoomCardRoute } | null;
 }
 
 /**
@@ -120,23 +140,20 @@ interface CardView {
  * user controls — the floor number is bookkeeping. A button appears only when
  * there is something waiting that they cannot otherwise reach.
  */
-function describe({
+export function describeRoomCard({
   isComplete,
   canClaim,
   claimedToday,
-  dailiesDone,
   dailiesDoneCount,
   placedCount,
 }: {
   isComplete: boolean;
   canClaim: boolean;
   claimedToday: boolean;
-  dailiesDone: boolean;
   dailiesDoneCount: number;
   placedCount: number;
-}): CardView {
+}): RoomCardView {
   const room = { done: placedCount, total: ROOM_SLOT_COUNT };
-  const today = { done: dailiesDoneCount, total: DAILIES_PER_DAY };
   // A full room earns nothing until the next floor is opened, and opening it is
   // otherwise only offered once, right after the seventh piece lands. Anyone who
   // missed that screen would be stuck here forever.
@@ -171,22 +188,19 @@ function describe({
     };
   }
 
-  // Still working through today: the bar counts the three dailies, because
-  // that is what the title asks for. Showing room pieces here read as
-  // "finish today's dailies — 1 / 7", which asks for four days that do not exist.
-  return dailiesDone
-    ? {
-        title: 'Your piece is ready',
-        earned: true,
-        ...room,
-        action: null,
-      }
-    : {
-        title: "Finish today's dailies",
-        earned: false,
-        ...today,
-        action: null,
-      };
+  // Still working through today. The bar counts the three dailies, because that
+  // is what the title asks for — showing room pieces here read as "finish
+  // today's dailies — 1 / 7", which asks for four days that do not exist.
+  //
+  // Finishing them can only land in `canClaim` above, never here: that flag is
+  // built from the same `allCompleted` this branch would test.
+  return {
+    title: "Finish today's dailies",
+    earned: false,
+    done: dailiesDoneCount,
+    total: DAILIES_PER_DAY,
+    action: null,
+  };
 }
 
 const styles = StyleSheet.create({
@@ -203,6 +217,8 @@ const styles = StyleSheet.create({
   },
   title: {
     ...typography.title.title3,
+    fontSize: 19,
+    lineHeight: 26,
     flex: 1,
     color: colors.text.primary,
   },
@@ -220,23 +236,5 @@ const styles = StyleSheet.create({
   },
   bar: {
     flex: 1,
-  },
-  button: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.xs,
-    paddingVertical: spacing.md,
-    borderRadius: spacing.md,
-    backgroundColor: colors.primary.blue600,
-  },
-  buttonLabel: {
-    ...typography.body.medium,
-    fontFamily: fonts.semibold,
-    color: colors.text.inverse,
-  },
-  pressed: {
-    opacity: 0.9,
-    transform: [{ scale: 0.99 }],
   },
 });

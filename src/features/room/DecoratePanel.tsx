@@ -3,6 +3,7 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Text } from '../../components/common/Text';
 import Icon from '../../components/common/icons/Icon';
 import PagerDots from '../../components/common/PagerDots';
+import ChunkyButton from '../../components/common/ChunkyButton';
 import { DecorationSolo } from './roomStage';
 import { getRoomDay } from './roomDays';
 import { triggerTapHaptic } from '../../native/tapHaptics';
@@ -60,9 +61,12 @@ export default function DecoratePanel({
         <Text style={styles.panelBody}>
           Every piece is placed. Open your next room to keep going.
         </Text>
-        <Pressable style={styles.primaryButton} onPress={onSeeRoom}>
-          <Text style={styles.primaryButtonLabel}>See your room</Text>
-        </Pressable>
+        <ChunkyButton
+          label="See your room"
+          shape="card"
+          style={styles.primaryButton}
+          onPress={onSeeRoom}
+        />
       </View>
     );
   }
@@ -236,19 +240,13 @@ function ChooseDecoration({
 
       <PagerDots count={day.options.length} index={Math.max(0, index)} />
 
-      <Pressable
-        accessibilityRole="button"
+      <ChunkyButton
+        label={chosen == null ? 'Pick one to continue' : `Place ${chosen.name}`}
+        shape="card"
         disabled={busy || chosen == null}
-        style={[
-          styles.confirmButton,
-          (busy || chosen == null) && styles.confirmButtonDisabled,
-        ]}
+        style={styles.confirmButton}
         onPress={() => chosen != null && onPick(chosen.id)}
-      >
-        <Text style={styles.confirmLabel}>
-          {chosen == null ? 'Pick one to continue' : `Place ${chosen.name}`}
-        </Text>
-      </Pressable>
+      />
     </View>
   );
 }
@@ -336,31 +334,9 @@ const styles = StyleSheet.create({
     color: colors.primary.blue700,
   },
   confirmButton: {
-    ...card.shadow,
     marginTop: spacing.md,
-    paddingVertical: spacing.md,
-    borderRadius: spacing.md,
-    alignItems: 'center',
-    backgroundColor: colors.primary.blue600,
-  },
-  confirmButtonDisabled: {
-    backgroundColor: colors.border.default,
-  },
-  confirmLabel: {
-    ...typography.body.medium,
-    fontFamily: fonts.semibold,
-    color: colors.text.inverse,
   },
   primaryButton: {
     marginTop: spacing.sm,
-    paddingVertical: spacing.md,
-    borderRadius: spacing.md,
-    alignItems: 'center',
-    backgroundColor: colors.primary.blue600,
-  },
-  primaryButtonLabel: {
-    ...typography.body.medium,
-    fontFamily: fonts.semibold,
-    color: colors.text.inverse,
   },
 });

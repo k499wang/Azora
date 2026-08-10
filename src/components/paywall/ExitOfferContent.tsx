@@ -18,12 +18,15 @@ import type { PaywallPackageOption } from '../../services/paywall';
 import PaywallTrialReminderToggle from './PaywallTrialReminderToggle';
 import { PlanCard, computePerWeek, computeAnnualSavings } from './PlanCard';
 import Icon from '../common/icons/Icon';
+import ChunkyButton from '../common/ChunkyButton';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import { card } from '../../theme/card';
 
 const OFFER_DURATION_SECONDS = 5 * 60;
+/** Taller than the standard primary — this is the one button on the screen. */
+const CTA_MIN_HEIGHT = 60;
 
 export type ExitOfferPaywall = ReturnType<typeof usePaywall>;
 
@@ -311,22 +314,13 @@ function PrimaryButton({
   loading?: boolean;
 }) {
   return (
-    <Pressable
-      accessibilityRole="button"
-      disabled={disabled || loading}
+    <ChunkyButton
+      label={label}
       onPress={onPress}
-      style={({ pressed }) => [
-        styles.cta,
-        pressed && styles.ctaPressed,
-        (disabled || loading) && styles.ctaDisabled,
-      ]}
-    >
-      {loading ? (
-        <ActivityIndicator color={colors.text.inverse} />
-      ) : (
-        <Text style={styles.ctaText}>{label}</Text>
-      )}
-    </Pressable>
+      disabled={disabled}
+      loading={loading}
+      minHeight={CTA_MIN_HEIGHT}
+    />
   );
 }
 
@@ -530,28 +524,6 @@ const styles = StyleSheet.create({
   footer: {
     alignSelf: 'stretch',
     gap: spacing.md,
-  },
-  cta: {
-    minHeight: 60,
-    borderRadius: 999,
-    backgroundColor: colors.primary.blue600,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: spacing.lg,
-  },
-  ctaPressed: {
-    backgroundColor: colors.primary.blue700,
-    transform: [{ scale: 0.985 }],
-  },
-  ctaDisabled: {
-    opacity: 0.45,
-  },
-  ctaText: {
-    ...typography.button.large,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    color: colors.text.inverse,
-    letterSpacing: 0.3,
   },
   commitmentRow: {
     alignSelf: 'stretch',

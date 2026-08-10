@@ -1,10 +1,4 @@
-import { Text } from '../common/Text';
-import { ActivityIndicator, Pressable, StyleSheet } from 'react-native';
-import * as Haptics from 'expo-haptics';
-import { colors } from '../../theme/colors';
-import { spacing } from '../../theme/spacing';
-import { fonts, typography } from '../../theme/typography';
-import { isHapticsEnabled } from '../../services/preferences/hapticsPreference';
+import ChunkyButton from '../common/ChunkyButton';
 
 interface OnboardingPrimaryButtonProps {
   label: string;
@@ -14,6 +8,11 @@ interface OnboardingPrimaryButtonProps {
   enableHaptics?: boolean;
 }
 
+/**
+ * Onboarding's continue button. Kept as its own name because forty screens
+ * import it, but the shape and the lip now come from `ChunkyButton` so it
+ * cannot drift from the rest of the app's primaries.
+ */
 export default function OnboardingPrimaryButton({
   label,
   onPress,
@@ -21,58 +20,13 @@ export default function OnboardingPrimaryButton({
   loading = false,
   enableHaptics = true,
 }: OnboardingPrimaryButtonProps) {
-  const isDisabled = disabled || loading;
-
-  const handlePress = () => {
-    if (isDisabled) return;
-    if (enableHaptics && isHapticsEnabled()) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
-    }
-    onPress();
-  };
-
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityState={{ disabled: isDisabled }}
-      disabled={isDisabled}
-      onPress={handlePress}
-      style={({ pressed }) => [
-        styles.button,
-        pressed && styles.buttonPressed,
-        isDisabled && styles.buttonDisabled,
-      ]}
-    >
-      {loading ? (
-        <ActivityIndicator color={colors.text.inverse} />
-      ) : (
-        <Text style={styles.text}>{label}</Text>
-      )}
-    </Pressable>
+    <ChunkyButton
+      label={label}
+      onPress={onPress}
+      disabled={disabled}
+      loading={loading}
+      haptic={enableHaptics ? 'medium' : 'none'}
+    />
   );
 }
-
-const styles = StyleSheet.create({
-  button: {
-    minHeight: 56,
-    borderRadius: 999,
-    backgroundColor: colors.primary.blue600,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  buttonPressed: {
-    backgroundColor: colors.primary.blue700,
-    transform: [{ scale: 0.985 }],
-  },
-  buttonDisabled: {
-    opacity: 0.45,
-  },
-  text: {
-    ...typography.button.large,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    color: colors.text.inverse,
-  },
-});

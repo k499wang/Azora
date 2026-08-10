@@ -1,7 +1,6 @@
 import { Text } from '../../common/Text';
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import {
-  Animated,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -14,8 +13,11 @@ import { useNavigation } from '@react-navigation/native';
 import { colors } from '../../../theme/colors';
 import { typography, fonts } from '../../../theme/typography';
 import { spacing, padding } from '../../../theme/spacing';
-import { radius } from '../../../theme/card';
+import ChunkyButton from '../../common/ChunkyButton';
 import { isShortScreen } from '../../../theme/breakpoints';
+
+/** Slightly taller than the standard primary, matching this flow's footer. */
+const CTA_MIN_HEIGHT = 52;
 import type { SetupScreenProps } from '../../../lib/heartRate/types';
 import {
   DEFAULT_CAPTURE_MODE,
@@ -33,7 +35,6 @@ import { getHeartRatePlacementGuidance } from '../../../lib/heartRate/captureGui
 import { getHeartRateCameraProfile } from '../../../lib/heartRate/cameraProfile';
 import { HeartRatePlacementIllustration } from '../HeartRatePlacementIllustration';
 import { HeartRatePlacementStepsCard } from '../HeartRatePlacementStepsCard';
-import { triggerTapHaptic } from '../../../native/tapHaptics';
 
 export function DefaultInstructionScreen({ onNext, onCancel }: SetupScreenProps) {
   const insets = useSafeAreaInsets();
@@ -49,8 +50,6 @@ export function DefaultInstructionScreen({ onNext, onCancel }: SetupScreenProps)
     getHeartRateCameraProfile(Device.modelName, Device.modelId).layout !== 'single';
   const { height: windowHeight } = useWindowDimensions();
   const compact = isShortScreen(windowHeight);
-
-  const pressScale = useRef(new Animated.Value(1)).current;
 
   const locked = isCaptureModeLocked(mode, isPro);
 
@@ -118,39 +117,19 @@ export function DefaultInstructionScreen({ onNext, onCancel }: SetupScreenProps)
       </ScrollView>
 
       <View style={[styles.footer, { paddingBottom: insets.bottom + spacing.md }]}>
-        <Pressable
-          accessibilityRole="button"
+        <ChunkyButton
+          label={locked ? 'Unlock Full with Pro' : 'Begin measurement'}
+          shape="card"
+          minHeight={CTA_MIN_HEIGHT}
+          haptic="tap"
           onPress={() => {
-            triggerTapHaptic();
             if (locked) {
               openPaywallForLockedMode();
             } else {
               onNext({ mode });
             }
           }}
-          onPressIn={() =>
-            Animated.spring(pressScale, {
-              toValue: 0.98,
-              useNativeDriver: true,
-              speed: 40,
-              bounciness: 0,
-            }).start()
-          }
-          onPressOut={() =>
-            Animated.spring(pressScale, {
-              toValue: 1,
-              useNativeDriver: true,
-              speed: 40,
-              bounciness: 6,
-            }).start()
-          }
-        >
-          <Animated.View style={[styles.cta, { transform: [{ scale: pressScale }] }]}>
-            <Text style={styles.ctaText}>
-              {locked ? 'Unlock Full with Pro' : 'Begin measurement'}
-            </Text>
-          </Animated.View>
-        </Pressable>
+        />
       </View>
     </View>
   );
@@ -213,19 +192,5 @@ const styles = StyleSheet.create({
   },
   footer: {
     paddingTop: spacing.sm,
-  },
-  cta: {
-    backgroundColor: colors.primary.blue600,
-    borderRadius: radius.card,
-    borderCurve: 'continuous',
-    minHeight: 52,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  ctaText: {
-    ...typography.button.large,
-    fontFamily: fonts.semibold,
-    fontWeight: '600',
-    color: colors.text.inverse,
   },
 });

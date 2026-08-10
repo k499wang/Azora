@@ -11,7 +11,6 @@ const WEEK_DAYS = 7;
 const CIRCLE_SIZE = 28;
 const TODAY_DOT_SIZE = 16;
 const CHECK_SIZE = 16;
-const RING_WIDTH = 2;
 
 interface WeekCalendarStripProps {
   todayLocalDate: string;
@@ -55,7 +54,7 @@ export default function WeekCalendarStrip({
                 day.isToday && styles.dayLabelToday,
               ]}
             >
-              {day.dayShortLabel}
+              {day.dayLabel}
             </Text>
           </View>
         );
@@ -86,12 +85,9 @@ const styles = StyleSheet.create({
   },
   circleEmpty: {
     backgroundColor: colors.neutral[0],
-    borderWidth: RING_WIDTH,
-    borderColor: colors.neutral[100],
   },
   circlePast: {
     backgroundColor: colors.neutral[0],
-    borderColor: colors.neutral[100],
   },
   todayDot: {
     width: TODAY_DOT_SIZE,
@@ -103,13 +99,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 15,
     letterSpacing: 0.4,
-    color: colors.text.secondary,
+    color: colors.text.primary,
     fontFamily: fonts.semibold,
   },
   dayLabelPast: {
-    color: colors.text.tertiary,
+    color: colors.text.primary,
   },
   dayLabelToday: {
-    color: colors.text.primary,
+    color: colors.neutral[900],
   },
 });
