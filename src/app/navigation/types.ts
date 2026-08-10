@@ -23,6 +23,9 @@ export type MainTabParamList = {
   Profile: undefined;
 };
 
+/** Shared by every room screen. See `RoomDecorate` below. */
+export type RoomScreenParams = { fromLab?: boolean } | undefined;
+
 export type RootStackParamList = {
   MainTabs: NavigatorScreenParams<MainTabParamList> | undefined;
   HeartRate: { context?: string } | undefined;
@@ -54,12 +57,18 @@ export type RootStackParamList = {
   };
   DailyExercise: undefined;
   ExitOffer: undefined;
-  RoomDecorate: undefined;
-  RoomComplete: undefined;
+  /**
+   * `fromLab` is set only by the dev room lab. The room screens are reached one
+   * way and left one way in the real flow, so they carry no back arrow — but a
+   * screen opened from the lab needs a way out, and the lab is where you jump
+   * into these out of order.
+   */
+  RoomDecorate: RoomScreenParams;
+  RoomComplete: RoomScreenParams;
   /** every finished floor, swiped through */
-  Hotel: undefined;
+  Hotel: RoomScreenParams;
   /** choosing the look of the room about to open */
-  NextRoom: undefined;
+  NextRoom: RoomScreenParams;
   /** dev-only harness for the room's animations */
   RoomLab: undefined;
   Settings: undefined;

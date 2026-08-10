@@ -18,6 +18,10 @@ import DailyCompleteSheet, {
   type DailyCompleteState,
 } from '../features/room/DailyCompleteSheet';
 import RoomPager from '../features/room/RoomPager';
+import {
+  RoomProgressCardView,
+  describeRoomCard,
+} from '../features/room/RoomProgressCard';
 import DecoratePanel, {
   type DecorateState,
 } from '../features/room/DecoratePanel';
@@ -177,6 +181,54 @@ const SCREEN_CASES: { label: string; claim: RoomClaim }[] = [
   },
 ];
 
+/**
+ * Every state the Home card can be in — and only those. The impossible ones are
+ * absent on purpose: dailies finished with a slot free *is* "piece ready", so
+ * there is no separate "done but no button" case to preview.
+ */
+const CARD_CASES = [
+  {
+    label: 'Working through today',
+    input: {
+      isComplete: false,
+      canClaim: false,
+      claimedToday: false,
+      dailiesDoneCount: 1,
+      placedCount: 2,
+    },
+  },
+  {
+    label: 'Piece ready — dailies done, nothing placed',
+    input: {
+      isComplete: false,
+      canClaim: true,
+      claimedToday: false,
+      dailiesDoneCount: 3,
+      placedCount: 2,
+    },
+  },
+  {
+    label: 'Placed for today',
+    input: {
+      isComplete: false,
+      canClaim: false,
+      claimedToday: true,
+      dailiesDoneCount: 3,
+      placedCount: 3,
+    },
+  },
+  {
+    label: 'Floor finished',
+    input: {
+      isComplete: true,
+      canClaim: false,
+      claimedToday: false,
+      dailiesDoneCount: 3,
+      placedCount: 7,
+    },
+  },
+];
+
 const BAR_STEPS = [
   { label: '1st daily', from: 0, to: 1 / 3 },
   { label: '2nd daily', from: 1 / 3, to: 2 / 3 },
@@ -249,8 +301,8 @@ export default function RoomLabScreen({ navigation }: RoomLabScreenProps) {
       >
         <View style={styles.section}>
           <Text style={styles.note}>
-            Placement reveal · Picker · Panel states · Progress bar · Room
-            complete · Shells · Daily sheet · Hotel · Real screens
+            Placement reveal · Picker · Panel states · Home card · Progress bar
+            · Room complete · Shells · Daily sheet · Hotel · Real screens
           </Text>
         </View>
 
@@ -375,6 +427,23 @@ export default function RoomLabScreen({ navigation }: RoomLabScreenProps) {
           onStartDaily={() => {}}
           onPick={() => {}}
         />
+
+        <View style={styles.section}>
+          <SectionHeader title="Home card" />
+          <Text style={styles.note}>
+            The standing way back into the loop, in every state it can reach.
+            Buttons navigate for real.
+          </Text>
+          {CARD_CASES.map((option) => (
+            <View key={option.label} style={styles.cardCase}>
+              <Text style={styles.label}>{option.label}</Text>
+              <RoomProgressCardView
+                view={describeRoomCard(option.input)}
+                onAction={(route) => navigation.navigate(route, { fromLab: true })}
+              />
+            </View>
+          ))}
+        </View>
 
         <View style={styles.section}>
           <SectionHeader title="Progress bar" />
@@ -542,7 +611,7 @@ export default function RoomLabScreen({ navigation }: RoomLabScreenProps) {
               label={option.label}
               onPress={() => {
                 setRoomOverride(option.claim);
-                navigation.navigate('RoomDecorate');
+                navigation.navigate('RoomDecorate', { fromLab: true });
               }}
             />
           ))}
@@ -562,19 +631,19 @@ export default function RoomLabScreen({ navigation }: RoomLabScreenProps) {
           </Text>
           <Button
             label="Open decorate screen"
-            onPress={() => navigation.navigate('RoomDecorate')}
+            onPress={() => navigation.navigate('RoomDecorate', { fromLab: true })}
           />
           <Button
             label="Open room complete"
-            onPress={() => navigation.navigate('RoomComplete')}
+            onPress={() => navigation.navigate('RoomComplete', { fromLab: true })}
           />
           <Button
             label="Open hotel"
-            onPress={() => navigation.navigate('Hotel')}
+            onPress={() => navigation.navigate('Hotel', { fromLab: true })}
           />
           <Button
             label="Open next-room picker"
-            onPress={() => navigation.navigate('NextRoom')}
+            onPress={() => navigation.navigate('NextRoom', { fromLab: true })}
           />
         </View>
       </ScrollView>
@@ -676,6 +745,9 @@ const styles = StyleSheet.create({
   chipLabelSelected: {
     fontFamily: fonts.semibold,
     color: colors.primary.blue700,
+  },
+  cardCase: {
+    gap: spacing.xs,
   },
   barRow: {
     flexDirection: 'row',

@@ -1,9 +1,10 @@
 import type { ReactNode } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from '../../components/common/Text';
 import AppTopBar from '../../components/common/AppTopBar';
-import { triggerTapHaptic } from '../../native/tapHaptics';
-import { card } from '../../theme/card';
+import ChunkyButton from '../../components/common/ChunkyButton';
+import { useOpenedFromLab } from './useOpenedFromLab';
 import { colors } from '../../theme/colors';
 import { margin, padding, spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
@@ -45,6 +46,9 @@ export default function RoomScreenLayout({
   action,
   children,
 }: RoomScreenLayoutProps) {
+  const insets = useSafeAreaInsets();
+  const fromLab = useOpenedFromLab();
+
   const header =
     title == null ? null : (
       <View style={styles.header}>
@@ -55,10 +59,15 @@ export default function RoomScreenLayout({
 
   return (
     <View style={styles.screen}>
-      {/* Back exists for poking around the room flow in the lab. In a release
-          build these screens are reached one way and left one way, so a back
-          arrow would offer an exit the flow has no state for. */}
-      <AppTopBar showBack={__DEV__} showAvatar={false} showStreak={false} />
+      {/* No bar in the real flow — only the inset it would have cleared, so the
+          room sits as high as it can without running under the notch. The lab
+          gets a real bar, because it jumps into these screens out of order and
+          you need a way back. */}
+      {fromLab ? (
+        <AppTopBar showBack showAvatar={false} showStreak={false} />
+      ) : (
+        <View style={{ height: insets.top }} />
+      )}
 
       {scroll ? (
         <ScrollView
@@ -128,18 +137,12 @@ export function RoomActionButton({
   onPress: () => void;
 }) {
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityState={{ disabled }}
+    <ChunkyButton
+      label={label}
+      shape="card"
       disabled={disabled}
-      style={[styles.button, disabled && styles.buttonDisabled]}
-      onPress={() => {
-        triggerTapHaptic();
-        onPress();
-      }}
-    >
-      <Text style={styles.buttonLabel}>{label}</Text>
-    </Pressable>
+      onPress={onPress}
+    />
   );
 }
 
@@ -196,20 +199,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: padding.screen.horizontal,
     paddingBottom: margin.sectionGap,
     paddingTop: spacing.sm,
-  },
-  button: {
-    ...card.shadow,
-    paddingVertical: spacing.md,
-    borderRadius: spacing.md,
-    alignItems: 'center',
-    backgroundColor: colors.primary.blue600,
-  },
-  buttonDisabled: {
-    backgroundColor: colors.border.default,
-  },
-  buttonLabel: {
-    ...typography.body.medium,
-    fontFamily: fonts.semibold,
-    color: colors.text.inverse,
   },
 });

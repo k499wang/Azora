@@ -101,3 +101,17 @@ test('a duplicated slot counts once', () => {
   assert.equal(result.placedCount, 1);
   assert.equal(result.nextSlot, 'day2');
 });
+
+test('finishing the dailies without placing anything is always claimable', () => {
+  // The card leans on this: it has no "dailies done, nothing to do" state,
+  // because there isn't one. If this ever fails, that state exists again and
+  // the user is stranded with a piece and no button.
+  for (let placed = 0; placed < ROOM_SLOTS.length; placed += 1) {
+    const result = progress({
+      decorations: decorationsThrough(placed),
+      lastEarnedLocalDate: '2026-08-06',
+      dailiesComplete: true,
+    });
+    assert.equal(result.canClaim, true, `placed ${placed}`);
+  }
+});

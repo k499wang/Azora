@@ -1,7 +1,6 @@
 import { memo, useEffect, useRef, useState } from 'react';
 import {
   Modal,
-  Pressable,
   StyleSheet,
   View,
   useWindowDimensions,
@@ -22,6 +21,7 @@ import * as Haptics from 'expo-haptics';
 import { Text } from '../../components/common/Text';
 import Icon from '../../components/common/icons/Icon';
 import ProgressBar from '../../components/common/ProgressBar';
+import ChunkyButton from '../../components/common/ChunkyButton';
 import { Pop, Rise } from '../../components/common/Reveal';
 import BlobCharacter, {
   type CharacterId,
@@ -410,13 +410,13 @@ export default function DailyCompleteSheet({
 
           <Rise delay={BEAT.cta} style={styles.ctaBlock}>
             {unlocked ? (
-              <ChunkyButton
+              <SheetButton
                 label="Choose your piece"
                 hue={hue}
                 onPress={choosePiece}
               />
             ) : (
-              <ChunkyButton label="Continue" hue={hue} onPress={close} />
+              <SheetButton label="Continue" hue={hue} onPress={close} />
             )}
           </Rise>
         </Animated.View>
@@ -426,11 +426,11 @@ export default function DailyCompleteSheet({
 }
 
 /**
- * Duolingo's button, borrowed wholesale: a solid face sitting 4pt above a
- * darker lip, so pressing it physically drops onto the lip instead of just
- * dimming. It is the single most recognisable thing on their screen.
+ * The app's chunky primary, inverted for a colour block: a white face on a lip
+ * of the block's own ink, so it reads as raised against a background that is
+ * already saturated.
  */
-function ChunkyButton({
+function SheetButton({
   label,
   hue,
   onPress,
@@ -440,17 +440,16 @@ function ChunkyButton({
   onPress: () => void;
 }) {
   return (
-    <Pressable
-      accessibilityRole="button"
-      style={[styles.ctaLip, { backgroundColor: hue.ink }]}
+    <ChunkyButton
+      label={label}
+      shape="card"
+      tone={{
+        face: colors.text.inverse,
+        lip: hue.ink,
+        label: hue.ink,
+      }}
       onPress={onPress}
-    >
-      {({ pressed }) => (
-        <View style={[styles.ctaFace, pressed && styles.ctaFacePressed]}>
-          <Text style={[styles.ctaLabel, { color: hue.ink }]}>{label}</Text>
-        </View>
-      )}
-    </Pressable>
+    />
   );
 }
 
@@ -609,28 +608,6 @@ const styles = StyleSheet.create({
   },
   ctaBlock: {
     alignSelf: 'stretch',
-  },
-  ctaLip: {
-    alignSelf: 'stretch',
-    borderRadius: radius.card,
-    borderCurve: 'continuous',
-  },
-  ctaFace: {
-    alignItems: 'center',
-    paddingVertical: spacing.md,
-    borderRadius: radius.card,
-    borderCurve: 'continuous',
-    backgroundColor: colors.text.inverse,
-    transform: [{ translateY: -4 }],
-  },
-  ctaFacePressed: {
-    transform: [{ translateY: 0 }],
-  },
-  ctaLabel: {
-    ...typography.body.medium,
-    fontFamily: fonts.semibold,
-    fontWeight: '600',
-    letterSpacing: 0.3,
   },
   title: {
     ...typography.display.display2,

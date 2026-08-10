@@ -2,7 +2,6 @@ import { Text } from '../components/common/Text';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Alert,
-  Pressable,
   ScrollView,
   Share,
   StyleSheet,
@@ -12,9 +11,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { colors } from '../theme/colors';
-import { typography, fonts } from '../theme/typography';
+import { typography } from '../theme/typography';
 import { spacing, padding, margin } from '../theme/spacing';
 import DailyCompleteSheet from '../features/room/DailyCompleteSheet';
+import ChunkyButton from '../components/common/ChunkyButton';
 import HelpfulnessQuestion from '../components/exercise/HelpfulnessQuestion';
 import BlobCharacter from '../components/home/BlobCharacter';
 import { CATEGORY_STYLE } from '../features/exercise/guidedBreathing/categoryPalette';
@@ -181,6 +181,31 @@ export default function SessionCompleteScreen({
         onDismiss={() => setSheetDismissed(true)}
       />
 
+      {/* In the flow, not over it. These used to be absolutely positioned, so
+          the hero card scrolled underneath them and the first thing you saw was
+          partly covered by its own controls. */}
+      {showResults ? (
+        <View style={styles.topBar}>
+          <GlassIconButton
+            size={SESSION_GLASS_BUTTON_SIZE}
+            onPress={handleClose}
+          >
+            <MaterialCommunityIcons
+              name="close"
+              size={20}
+              color={colors.text.secondary}
+            />
+          </GlassIconButton>
+          <GlassIconButton size={SESSION_GLASS_BUTTON_SIZE} onPress={handleShare}>
+            <MaterialCommunityIcons
+              name="share-variant"
+              size={20}
+              color={colors.primary.blue600}
+            />
+          </GlassIconButton>
+        </View>
+      ) : null}
+
       {showResults ? (
         <ScrollView
           contentContainerStyle={styles.scrollContent}
@@ -259,50 +284,22 @@ export default function SessionCompleteScreen({
             />
           </View>
 
-          <Pressable style={styles.shareCta} onPress={handleShare}>
-            <MaterialCommunityIcons
-              name="share-variant"
-              size={20}
-              color={colors.text.inverse}
-            />
-            <Text style={styles.shareCtaLabel}>Share my result</Text>
-          </Pressable>
+          <ChunkyButton
+            label="Share my result"
+            shape="card"
+            style={styles.shareCta}
+            icon={
+              <MaterialCommunityIcons
+                name="share-variant"
+                size={20}
+                color={colors.text.inverse}
+              />
+            }
+            onPress={handleShare}
+          />
         </ScrollView>
       ) : null}
 
-      {showResults ? (
-        <>
-          {/* Glassmorphic top buttons — fixed above the scroll */}
-          <GlassIconButton
-            size={SESSION_GLASS_BUTTON_SIZE}
-            style={[
-              styles.closeButton,
-              { top: insets.top + padding.screen.vertical },
-            ]}
-            onPress={handleClose}
-          >
-            <MaterialCommunityIcons
-              name="close"
-              size={20}
-              color={colors.text.secondary}
-            />
-          </GlassIconButton>
-          <GlassIconButton
-            size={SESSION_GLASS_BUTTON_SIZE}
-            style={[
-              styles.shareButton,
-              { top: insets.top + padding.screen.vertical },
-            ]}
-            onPress={handleShare}
-          >
-            <MaterialCommunityIcons
-              name="share-variant"
-              size={20}
-              color={colors.primary.blue600}
-            />
-          </GlassIconButton>
-        </>
-      ) : null}
     </View>
   );
 }
@@ -315,15 +312,11 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: spacing['5xl'],
   },
-  closeButton: {
-    position: 'absolute',
-    left: padding.screen.horizontal,
-    zIndex: 1,
-  },
-  shareButton: {
-    position: 'absolute',
-    right: padding.screen.horizontal,
-    zIndex: 1,
+  topBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: padding.screen.horizontal,
+    paddingVertical: padding.screen.vertical,
   },
   heroWrap: {
     paddingHorizontal: padding.screen.horizontal,
@@ -369,21 +362,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
   shareCta: {
-    ...card.shadow,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
     marginHorizontal: padding.screen.horizontal,
     marginTop: margin.sectionGap,
-    paddingVertical: spacing.md,
-    borderRadius: spacing.md,
-    backgroundColor: colors.primary.blue600,
-  },
-  shareCtaLabel: {
-    ...typography.body.medium,
-    fontFamily: fonts.semibold,
-    fontWeight: '600',
-    color: colors.text.inverse,
   },
 });

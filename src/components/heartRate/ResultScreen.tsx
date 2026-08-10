@@ -1,6 +1,6 @@
 import { Text } from '../common/Text';
 import { useEffect, useMemo, useRef } from 'react';
-import { View, StyleSheet, TouchableOpacity, Animated, ScrollView, Pressable } from 'react-native';
+import { View, StyleSheet, Animated, ScrollView, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Device from 'expo-device';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -11,6 +11,7 @@ import { spacing, padding, margin } from '../../theme/spacing';
 import type { CaptureResult } from '../../lib/heartRate/types';
 import { AnalyticsEvent } from '../../services/analytics/events';
 import { trackFeatureGateHit } from '../../services/analytics/tracking';
+import ChunkyButton from '../common/ChunkyButton';
 import { HeartRateResultContent } from './HeartRateResultContent';
 import {
   buildBpmSamplesFromIbiSamples,
@@ -252,8 +253,9 @@ export function ResultScreen({
                 </Pressable>
               </View>
             )}
-            <TouchableOpacity
-              style={styles.primaryButton}
+            <ChunkyButton
+              label={isSaving ? 'Saving...' : 'Check Again'}
+              shape="card"
               disabled={isSaving}
               onPress={() => {
                 posthog.capture(AnalyticsEvent.HeartRateResultAction, {
@@ -263,12 +265,7 @@ export function ResultScreen({
                 });
                 onRetry();
               }}
-              activeOpacity={0.85}
-            >
-              <Text style={styles.primaryButtonText}>
-                {isSaving ? 'Saving...' : 'Check Again'}
-              </Text>
-            </TouchableOpacity>
+            />
           </View>
       </View>
     );
@@ -324,8 +321,9 @@ export function ResultScreen({
         <View style={styles.spacer} />
 
         <View style={styles.errorActions}>
-          <TouchableOpacity
-            style={styles.primaryButton}
+          <ChunkyButton
+            label="Try Again"
+            shape="card"
             onPress={() => {
               posthog.capture(AnalyticsEvent.HeartRateResultAction, {
                 action: 'retry',
@@ -335,10 +333,7 @@ export function ResultScreen({
               });
               onRetry();
             }}
-            activeOpacity={0.85}
-          >
-            <Text style={styles.primaryButtonText}>Try Again</Text>
-          </TouchableOpacity>
+          />
         </View>
       </View>
     </View>
@@ -458,17 +453,6 @@ const styles = StyleSheet.create({
   },
   spacer: {
     flex: 1,
-  },
-  primaryButton: {
-    width: '100%',
-    backgroundColor: colors.primary.blue600,
-    borderRadius: 14,
-    paddingVertical: spacing.md,
-    alignItems: 'center',
-  },
-  primaryButtonText: {
-    ...typography.button.large,
-    color: colors.text.inverse,
   },
   errorActions: {
     width: '100%',

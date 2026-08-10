@@ -38,8 +38,24 @@ test('a full room has a route to choosing the next one', () => {
   assert.match(card, /'NextRoom'/);
 });
 
-test('the room screens only offer a back arrow in dev builds', () => {
+test('the room screens only offer a back arrow when opened from the lab', () => {
+  // The real flow enters and leaves these one way, so a back arrow would offer
+  // an exit the flow has no state for — and the bar itself ate the space above
+  // the room. `useOpenedFromLab` is the only thing that may bring it back.
   const layout = read('features/room/RoomScreenLayout.tsx');
-  assert.match(layout, /showBack=\{__DEV__\}/);
-  assert.doesNotMatch(layout, /<AppTopBar showBack /);
+  assert.match(layout, /useOpenedFromLab\(\)/);
+  assert.match(layout, /fromLab \? \(\s*<AppTopBar showBack/);
+});
+
+test('the lab flags the room screens it opens', () => {
+  // Without the flag the lab strands you on a screen with no way back.
+  const lab = read('screens/RoomLabScreen.tsx');
+  for (const route of ['RoomDecorate', 'RoomComplete', 'Hotel', 'NextRoom']) {
+    assert.match(lab, new RegExp(`'${route}', \\{ fromLab: true \\}`));
+  }
+});
+
+test('__DEV__ still gates the arrow, whatever the param says', () => {
+  const hook = read('features/room/useOpenedFromLab.ts');
+  assert.match(hook, /__DEV__ && params\?\.fromLab === true/);
 });

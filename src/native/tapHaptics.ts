@@ -9,6 +9,13 @@ export function triggerTapHaptic() {
   Haptics.selectionAsync().catch(() => {});
 }
 
+// The weightier knock a full-width primary action gets, so committing to
+// something feels different from picking a row.
+export function triggerMediumHaptic() {
+  if (!isHapticsEnabled()) return;
+  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+}
+
 // Two soft bumps timed to the room blob's two hops, so the poke is felt as a
 // boing rather than a click. The delay matches `CHEER_HOP_GAP_MS` in RoomBlob.
 export function triggerBounceHaptic() {
