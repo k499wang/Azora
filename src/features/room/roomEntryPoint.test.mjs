@@ -55,6 +55,14 @@ test('the lab flags the room screens it opens', () => {
   }
 });
 
+test('the stage message is reserved space, not an overlay', () => {
+  // Hung off the top of the stage it drew outside the layout, over the top bar
+  // — "Congratulations!" landed under the back arrow on any screen with one.
+  const layout = read('features/room/RoomScreenLayout.tsx');
+  assert.match(layout, /bannerSlot: \{\s*height: BANNER_HEIGHT/);
+  assert.doesNotMatch(layout, /bottom: '100%'/);
+});
+
 test('__DEV__ still gates the arrow, whatever the param says', () => {
   const hook = read('features/room/useOpenedFromLab.ts');
   assert.match(hook, /__DEV__ && params\?\.fromLab === true/);
