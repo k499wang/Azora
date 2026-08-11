@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
+import { dirname, join, relative } from 'node:path';
 import test from 'node:test';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -9,6 +9,15 @@ const src = join(here, '..', '..');
 
 function read(relativePath) {
   return readFileSync(join(src, relativePath), 'utf8');
+}
+
+/** every source file under `src`, as paths relative to it */
+function allSourceFiles(dir = src) {
+  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const path = join(dir, entry.name);
+    if (entry.isDirectory()) return allSourceFiles(path);
+    return /\.(ts|tsx)$/.test(entry.name) ? [relative(src, path)] : [];
+  });
 }
 
 /**
@@ -76,8 +85,40 @@ test('the room override can never return a value in a release build', () => {
   assert.match(
     override,
     /function read\(\)[^}]*__DEV__ \? override : null/s,
-    'devRoomOverride must gate the read on __DEV__, not the write',
+    'devRoomOverride must gate the read on __DEV__',
   );
+
+  assert.match(
+    override,
+    /export function setRoomOverride[^}]*if \(!__DEV__\) return;/s,
+    'devRoomOverride must also gate the write, so nothing can set it at all',
+  );
+});
+
+test('only these files may touch the room override', () => {
+  // The read gate makes the override harmless in release; this keeps it from
+  // spreading in the first place. A new caller is a deliberate decision, not
+  // something that arrives quietly with a feature.
+  const allowed = new Set([
+    'features/room/devRoomOverride.ts',
+    // reads it, so every consumer of the room sees the fake one
+    'features/room/useRoomClaim.ts',
+    // reads it, so it refuses to write against a fabricated room
+    'screens/RoomDecorateScreen.tsx',
+    // the only writer
+    'screens/RoomLabScreen.tsx',
+  ]);
+
+  const callers = allSourceFiles().filter((file) =>
+    read(file).includes('devRoomOverride'),
+  );
+
+  for (const file of callers) {
+    assert.ok(
+      allowed.has(file),
+      `${file} reaches into dev-only room machinery; add it to the allowlist only if that is intended`,
+    );
+  }
 });
 
 test('nothing outside the lab and its gates references the lab route', () => {

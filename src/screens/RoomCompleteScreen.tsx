@@ -71,6 +71,7 @@ const styles = StyleSheet.create({
   title: {
     ...typography.display.display3,
     color: colors.text.primary,
+    textAlign: 'center',
   },
   actionWrap: {
     paddingHorizontal: padding.screen.horizontal,

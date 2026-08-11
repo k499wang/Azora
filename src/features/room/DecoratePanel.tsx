@@ -1,5 +1,11 @@
-import { useRef } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import {
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+  useWindowDimensions,
+} from 'react-native';
 import { Text } from '../../components/common/Text';
 import Icon from '../../components/common/icons/Icon';
 import PagerDots from '../../components/common/PagerDots';
@@ -148,18 +154,22 @@ export default function DecoratePanel({
   );
 }
 
-const CARD_WIDTH = 190;
-const CARD_HEIGHT = 170;
-/** one card plus the gap after it — the snap step and the scroll-to offset */
-const STRIDE = CARD_WIDTH + spacing.sm;
+const SLIDE_HEIGHT = 190;
+/** the drawing inside a slide, inset from the page edges */
+const ART_WIDTH = 200;
 
 /**
  * Swipe through the options, then confirm.
  *
- * Tapping a card selects it rather than placing it — placing is irreversible
- * for the day, and a mis-tap that spends it is a bad trade for one saved press.
- * Each option is drawn on its own rather than sitting in the room: at thumbnail
- * size the room is what you see and the object is a speck.
+ * One option per page: the option you are looking at is the one you have
+ * chosen, so there is nothing to tap and nothing to mis-tap. The earlier
+ * version was a row of tappable cards over a snapping scroller, where a tap and
+ * the snap both wanted to decide the selection and the scroller won — tapping
+ * one card could leave another selected.
+ *
+ * Confirming is still its own press, because placing is irreversible for the
+ * day. Each option is drawn on its own rather than sitting in the room: at
+ * thumbnail size the room is what you see and the object is a speck.
  */
 function ChooseDecoration({
   slot,
@@ -174,25 +184,39 @@ function ChooseDecoration({
   onSelect?: (optionId: string | null) => void;
   onPick: (optionId: string) => void;
 }) {
-  const scroller = useRef<ScrollView>(null);
+  const { width } = useWindowDimensions();
   const day = getRoomDay(slot);
+  const options = day?.options ?? [];
+  const first = options[0]?.id ?? null;
+
+  // The lab renders this panel without owning the selection. Falling back to
+  // local state keeps the dots and the label following the swipe there.
+  const [local, setLocal] = useState<string | null>(null);
+  const active = selected ?? local ?? first;
+
+  // A page is always centred, so something is always chosen — including before
+  // the first swipe. Told upwards so the room previews it straight away.
+  useEffect(() => {
+    if (selected == null && first != null) onSelect?.(first);
+  }, [first, onSelect, selected]);
 
   if (day == null) {
     return null;
   }
 
-  const index = day.options.findIndex((option) => option.id === selected);
-  const chosen = index < 0 ? null : day.options[index];
+  const index = Math.max(
+    0,
+    options.findIndex((option) => option.id === active),
+  );
+  const chosen = options[index];
 
-  const select = (optionId: string, at: number, scroll: boolean) => {
-    if (optionId === selected) return;
+  const settle = (at: number) => {
+    const option = options[at];
+    if (option == null || option.id === active) return;
 
     triggerTapHaptic();
-    onSelect?.(optionId);
-
-    if (scroll) {
-      scroller.current?.scrollTo({ x: at * STRIDE, animated: true });
-    }
+    setLocal(option.id);
+    onSelect?.(option.id);
   };
 
   return (
@@ -200,45 +224,35 @@ function ChooseDecoration({
       <Text style={styles.sectionTitle}>Pick your decoration</Text>
 
       <ScrollView
-        ref={scroller}
         horizontal
+        pagingEnabled
         showsHorizontalScrollIndicator={false}
-        snapToInterval={STRIDE}
-        decelerationRate="fast"
-        contentContainerStyle={styles.cardRow}
-        onMomentumScrollEnd={(event) => {
-          const at = Math.round(event.nativeEvent.contentOffset.x / STRIDE);
-          const option = day.options[at];
-          if (option != null) select(option.id, at, false);
-        }}
+        style={[styles.slider, { marginHorizontal: -padding.screen.horizontal }]}
+        onMomentumScrollEnd={(event) =>
+          settle(Math.round(event.nativeEvent.contentOffset.x / width))
+        }
       >
-        {day.options.map((option, at) => {
-          const active = option.id === selected;
-
-          return (
-            <Pressable
-              key={option.id}
-              accessibilityRole="button"
-              accessibilityState={{ selected: active }}
-              accessibilityLabel={option.name}
-              style={[styles.card, active && styles.cardSelected]}
-              onPress={() => select(option.id, at, true)}
-            >
+        {options.map((option) => (
+          <View
+            key={option.id}
+            accessibilityRole="image"
+            accessibilityLabel={option.name}
+            style={[styles.slide, { width }]}
+          >
+            <View style={styles.art}>
               <DecorationSolo
-                width={CARD_WIDTH - spacing.xl}
-                height={CARD_HEIGHT - spacing.xl}
+                width={ART_WIDTH}
+                height={SLIDE_HEIGHT - spacing.xl}
                 day={slot}
                 option={option.id}
               />
-              <Text style={[styles.cardLabel, active && styles.cardLabelActive]}>
-                {option.name}
-              </Text>
-            </Pressable>
-          );
-        })}
+            </View>
+            <Text style={styles.slideLabel}>{option.name}</Text>
+          </View>
+        ))}
       </ScrollView>
 
-      <PagerDots count={day.options.length} index={Math.max(0, index)} />
+      <PagerDots count={options.length} index={index} />
 
       <ChunkyButton
         label={chosen == null ? 'Pick one to continue' : `Place ${chosen.name}`}
@@ -306,32 +320,25 @@ const styles = StyleSheet.create({
     ...typography.title.title3,
     color: colors.text.primary,
   },
-  cardRow: {
-    gap: spacing.sm,
-    paddingVertical: spacing.sm,
+  slider: {
+    marginVertical: spacing.sm,
   },
-  card: {
+  slide: {
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  art: {
     ...card.base,
     ...card.shadow,
-    width: CARD_WIDTH,
-    height: CARD_HEIGHT,
+    height: SLIDE_HEIGHT,
+    paddingHorizontal: spacing.lg,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.xs,
     borderRadius: radius.hero,
-    borderWidth: 2,
-    borderColor: 'transparent',
   },
-  cardSelected: {
-    borderColor: colors.primary.blue600,
-  },
-  cardLabel: {
-    ...typography.body.small,
-    fontFamily: fonts.semibold,
-    color: colors.text.secondary,
-  },
-  cardLabelActive: {
-    color: colors.primary.blue700,
+  slideLabel: {
+    ...typography.title.title3,
+    color: colors.text.primary,
   },
   confirmButton: {
     marginTop: spacing.md,

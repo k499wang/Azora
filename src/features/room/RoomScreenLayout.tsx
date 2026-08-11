@@ -18,13 +18,15 @@ import { fonts, typography } from '../../theme/typography';
  * between them. One layout owns all of it.
  *
  * Rules it encodes:
- *   · titles are left-aligned `display3`, one `2xl` below the bar
+ *   · titles are centred `display3`, one `2xl` below the bar
  *   · the room is centred, with `sectionGap` above it
  *   · the primary action is pinned to the bottom, never in the flow
  */
 
 /** Reserved whether or not there is a caption, so the room cannot shift. */
 const CAPTION_HEIGHT = 20;
+/** One `display3` line, reserved on every room screen — see `RoomStage`. */
+const BANNER_HEIGHT = 40;
 
 interface RoomScreenLayoutProps {
   title?: string;
@@ -93,10 +95,15 @@ export default function RoomScreenLayout({
  * The room, centred, with an optional line under it and an optional message
  * above it.
  *
- * The room never moves. A message arriving above it is drawn as an overlay
- * rather than a sibling, and the caption's line is reserved whether or not
- * there is a caption — otherwise congratulating someone shoves the thing they
- * are being congratulated about down the screen, mid-animation.
+ * The room never moves. Both the line above it and the line below it are
+ * reserved whether or not there is anything to put in them — otherwise
+ * congratulating someone shoves the thing they are being congratulated about
+ * down the screen, mid-animation.
+ *
+ * The banner used to be an overlay hung off the top of the stage, which kept
+ * the room still but drew the message outside the layout entirely — over the
+ * top bar, on any screen that has one. A reserved slot does the same job
+ * inside the bounds.
  */
 export function RoomStage({
   children,
@@ -109,14 +116,10 @@ export function RoomStage({
 }) {
   return (
     <View style={styles.stage}>
-      <View>
-        {children}
-        {banner == null ? null : (
-          <View pointerEvents="none" style={styles.banner}>
-            {banner}
-          </View>
-        )}
+      <View pointerEvents="none" style={styles.bannerSlot}>
+        {banner}
       </View>
+      {children}
       <View style={styles.captionSlot}>
         {caption == null ? null : (
           <Text style={styles.caption}>{caption}</Text>
@@ -168,23 +171,23 @@ const styles = StyleSheet.create({
   title: {
     ...typography.display.display3,
     color: colors.text.primary,
+    textAlign: 'center',
   },
   note: {
     ...typography.body.small,
     color: colors.text.secondary,
+    textAlign: 'center',
   },
   stage: {
     alignItems: 'center',
     marginTop: margin.sectionGap,
     gap: spacing.sm,
   },
-  banner: {
-    position: 'absolute',
-    bottom: '100%',
-    left: 0,
-    right: 0,
+  bannerSlot: {
+    height: BANNER_HEIGHT,
+    alignSelf: 'stretch',
     alignItems: 'center',
-    paddingBottom: spacing.md,
+    justifyContent: 'center',
   },
   captionSlot: {
     height: CAPTION_HEIGHT,

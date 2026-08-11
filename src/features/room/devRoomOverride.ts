@@ -9,14 +9,18 @@ import type { RoomClaim } from './useRoomClaim';
  * day's wait per case. This lets the lab hand the real screen a fabricated
  * answer instead.
  *
- * `__DEV__` is checked at the read, not the write, so a release build cannot
- * return an override even if one were somehow set.
+ * `__DEV__` is checked at the read, so a release build cannot return an override
+ * even if one were somehow set. The write is guarded too, so it cannot be set
+ * in the first place — either alone is enough, which is the point of having
+ * both.
  */
 
 let override: RoomClaim | null = null;
 const listeners = new Set<() => void>();
 
 export function setRoomOverride(next: RoomClaim | null): void {
+  if (!__DEV__) return;
+
   override = next;
   listeners.forEach((listener) => listener());
 }

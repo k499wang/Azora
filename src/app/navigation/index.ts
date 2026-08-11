@@ -1,4 +1,5 @@
 export { RootNavigator } from './RootNavigator';
+export { useOpeningTransitionComplete } from './useOpeningTransitionComplete';
 export type {
   RoomScreenParams,
   ExploreScreenProps,
