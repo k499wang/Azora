@@ -8,6 +8,10 @@ export type BreathFace = 'inhale' | 'holdIn' | 'exhale' | 'holdOut' | 'resting';
  * interpolates geometry rather than cross-fading two pictures. The eye actually
  * closes; the mouth actually opens.
  *
+ * The breath is nasal in and oral out, the way the sessions coach it: the mouth
+ * is sealed for everything except the exhale, which is the one phase air leaves
+ * through it.
+ *
  * All values are in the 100-unit blob coordinate space. Vertical extents are
  * signed: negative bulges up, positive bulges down.
  */
@@ -20,8 +24,14 @@ export interface FaceShape {
   mouthWidth: number;
   mouthTop: number;
   mouthBottom: number;
-  /** How far the breath value opens this mouth. 0 holds it still. */
+  /** How far the breath value opens this mouth. 0 keeps it sealed. */
   mouthBreath: number;
+  /**
+   * How far the breath value presses a sealed mouth thin and wide. This is the
+   * only thing the mouth does while the air is going through the nose, and it
+   * costs nothing — the mouth path is already redrawn on the breath.
+   */
+  mouthPress: number;
 }
 
 export const EYE_Y = 53;
@@ -36,19 +46,21 @@ export const CHEEK_LEFT_X = 30;
 export const CHEEK_RIGHT_X = 70;
 
 export const FACE_SHAPES: Record<BreathFace, FaceShape> = {
-  // Eyes closed, drawing air in through a mouth that widens as the breath
-  // fills.
+  // Eyes closed, drawing air in through the nose — the mouth stays shut and
+  // only presses thinner as the lungs fill.
   inhale: {
     eyeWidth: 6,
     eyeTop: -5,
     eyeBottom: -1.6,
-    cheek: 0.15,
-    mouthWidth: 4.6,
-    mouthTop: -4.6,
-    mouthBottom: 4.6,
-    mouthBreath: 1,
+    cheek: 0.12,
+    mouthWidth: 5,
+    mouthTop: -0.75,
+    mouthBottom: 0.75,
+    mouthBreath: 0,
+    mouthPress: 1,
   },
-  // Full and straining: squeezed shut, cheeks puffed, mouth sealed.
+  // Full and straining: squeezed shut, cheeks puffed, lips still pressed from
+  // the inhale that ended here.
   holdIn: {
     eyeWidth: 6.6,
     eyeTop: -6.2,
@@ -58,18 +70,20 @@ export const FACE_SHAPES: Record<BreathFace, FaceShape> = {
     mouthTop: -0.8,
     mouthBottom: 0.8,
     mouthBreath: 0,
+    mouthPress: 1,
   },
-  // Blowing out: the mouth pushes open and wide, then relaxes closed as the
-  // breath empties.
+  // Blowing out: the mouth opens into a round O and narrows closed again as
+  // the breath empties, landing on the sealed line the next inhale starts from.
   exhale: {
     eyeWidth: 6,
     eyeTop: -4.2,
     eyeBottom: -1.2,
-    cheek: 0.3,
-    mouthWidth: 7,
-    mouthTop: -3.4,
-    mouthBottom: 8.4,
+    cheek: 0.25,
+    mouthWidth: 4.8,
+    mouthTop: -4.2,
+    mouthBottom: 5.8,
     mouthBreath: 1,
+    mouthPress: 0,
   },
   // Empty and calm: eyes soft, mouth a small neutral line.
   holdOut: {
@@ -81,6 +95,7 @@ export const FACE_SHAPES: Record<BreathFace, FaceShape> = {
     mouthTop: -0.9,
     mouthBottom: 0.9,
     mouthBreath: 0,
+    mouthPress: 0,
   },
   // Between sessions: eyes open, gentle smile.
   resting: {
@@ -92,6 +107,7 @@ export const FACE_SHAPES: Record<BreathFace, FaceShape> = {
     mouthTop: 0.6,
     mouthBottom: 4.6,
     mouthBreath: 0,
+    mouthPress: 0,
   },
 };
 
@@ -125,5 +141,6 @@ export function lerpFace(from: FaceShape, to: FaceShape, t: number): FaceShape {
     mouthTop: mix(from.mouthTop, to.mouthTop),
     mouthBottom: mix(from.mouthBottom, to.mouthBottom),
     mouthBreath: mix(from.mouthBreath, to.mouthBreath),
+    mouthPress: mix(from.mouthPress, to.mouthPress),
   };
 }

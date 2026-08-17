@@ -1,7 +1,5 @@
 import { useEffect, useState } from 'react';
 import { Alert, StyleSheet, View, useWindowDimensions } from 'react-native';
-import { Text } from '../components/common/Text';
-import { Rise } from '../components/common/Reveal';
 import RoomScreenLayout, {
   RoomActionButton,
   RoomStage,
@@ -9,6 +7,7 @@ import RoomScreenLayout, {
 import { HexRoom, type Picks } from '../features/room/RoomScene';
 import PlacementReveal from '../features/room/PlacementReveal';
 import DecoratePanel, {
+  decorateTitle,
   type DecorateState,
 } from '../features/room/DecoratePanel';
 import { getRoomDay } from '../features/room/roomDays';
@@ -22,10 +21,7 @@ import { ROOM_SLOT_COUNT, type RoomSlot } from '../lib/room/roomProgress';
 import { usePlaceDecorationMutation } from '../queries/room/usePlaceDecorationMutation';
 import { useAuthStore } from '../stores/authStore';
 import { triggerTapHaptic } from '../native/tapHaptics';
-import { colors } from '../theme/colors';
-import { stagger } from '../theme/motion';
-import { margin, padding } from '../theme/spacing';
-import { typography } from '../theme/typography';
+import { margin } from '../theme/spacing';
 import type { RoomDecorateScreenProps } from '../app/navigation';
 
 
@@ -153,36 +149,28 @@ export default function RoomDecorateScreen({
     writeSettled,
   ]);
 
+  // The piece falling and the screen congratulating you are one moment: the
+  // congratulation is already the title while it falls — the write settles
+  // mid-animation and flips `claimedToday`, and reading the panel state here
+  // made the title say "Today's piece is placed" for a beat first — and it
+  // arrives with the button once the piece has landed.
+  const celebrating = placing != null || justPlaced;
+
   return (
     <RoomScreenLayout
       scroll
+      title={celebrating ? 'Congratulations!' : decorateTitle(panelState)}
+      reveal={celebrating ? justPlaced : undefined}
       action={
-        justPlaced ? (
-          <Rise delay={stagger.loose * 3}>
-            <RoomActionButton
-              label="Continue"
-              onPress={() =>
-                navigation.navigate('MainTabs', { screen: 'Home' })
-              }
-            />
-          </Rise>
+        celebrating ? (
+          <RoomActionButton
+            label="Continue"
+            onPress={() => navigation.navigate('MainTabs', { screen: 'Home' })}
+          />
         ) : null
       }
     >
-      <RoomStage
-        banner={
-          justPlaced ? (
-            <Rise style={styles.congratsWrap}>
-              <Text style={styles.congrats}>Congratulations!</Text>
-            </Rise>
-          ) : null
-        }
-        caption={
-          placing == null
-            ? `${Object.keys(placedPicks).length} of ${ROOM_SLOT_COUNT} pieces`
-            : undefined
-        }
-      >
+      <RoomStage>
         {placing != null ? (
           <PlacementReveal
             width={roomWidth}
@@ -203,7 +191,7 @@ export default function RoomDecorateScreen({
         )}
       </RoomStage>
 
-      {justPlaced || placing != null || isLoading ? null : (
+      {celebrating || isLoading ? null : (
         <View style={styles.panelWrap}>
           <DecoratePanel
             state={panelState}
@@ -227,15 +215,6 @@ export default function RoomDecorateScreen({
 }
 
 const styles = StyleSheet.create({
-  congratsWrap: {
-    paddingHorizontal: padding.screen.horizontal,
-    alignItems: 'center',
-  },
-  congrats: {
-    ...typography.display.display3,
-    color: colors.text.primary,
-    textAlign: 'center',
-  },
   panelWrap: {
     marginTop: margin.sectionGap,
   },

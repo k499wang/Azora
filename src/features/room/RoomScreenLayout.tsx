@@ -4,10 +4,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from '../../components/common/Text';
 import AppTopBar from '../../components/common/AppTopBar';
 import ChunkyButton from '../../components/common/ChunkyButton';
+import { Rise } from '../../components/common/Reveal';
 import { useOpenedFromLab } from './useOpenedFromLab';
 import { colors } from '../../theme/colors';
+import { stagger } from '../../theme/motion';
 import { margin, padding, spacing } from '../../theme/spacing';
-import { fonts, typography } from '../../theme/typography';
+import { typography } from '../../theme/typography';
 
 /**
  * The shared shell for every room screen.
@@ -18,19 +20,31 @@ import { fonts, typography } from '../../theme/typography';
  * between them. One layout owns all of it.
  *
  * Rules it encodes:
- *   · titles are centred `display3`, one `2xl` below the bar
+ *   · titles are centred `display3` in one fixed place — see `RoomScreenTitle`
  *   · the room is centred, with `sectionGap` above it
  *   · the primary action is pinned to the bottom, never in the flow
+ *   · a screen that waits on its room speaks and offers its button together
  */
 
-/** Reserved whether or not there is a caption, so the room cannot shift. */
-const CAPTION_HEIGHT = 20;
-/** One `display3` line, reserved on every room screen — see `RoomStage`. */
-const BANNER_HEIGHT = 40;
+/**
+ * The beat between the room settling and the screen speaking over it. Long
+ * enough that the piece is seen landing, short enough not to feel stalled.
+ */
+const REVEAL_DELAY = stagger.loose * 2;
 
 interface RoomScreenLayoutProps {
   title?: string;
   note?: string;
+  /**
+   * Holds the title and the action back until this turns true, then plays them
+   * in together. Both hold their space from the start, so the room underneath
+   * does not move when they arrive.
+   *
+   * The layout owns this because the two have to be in sync, and two screens
+   * agreeing on a delay is not sync — it is a coincidence that lasts until
+   * someone edits one of them. Omit it when the title is simply there.
+   */
+  reveal?: boolean;
   /**
    * Scrolls when the content can outgrow the screen. Pagers and single rooms
    * stay fixed and centre themselves instead.
@@ -44,6 +58,7 @@ interface RoomScreenLayoutProps {
 export default function RoomScreenLayout({
   title,
   note,
+  reveal,
   scroll = false,
   action,
   children,
@@ -51,13 +66,17 @@ export default function RoomScreenLayout({
   const insets = useSafeAreaInsets();
   const fromLab = useOpenedFromLab();
 
-  const header =
-    title == null ? null : (
-      <View style={styles.header}>
-        <Text style={styles.title}>{title}</Text>
-        {note == null ? null : <Text style={styles.note}>{note}</Text>}
-      </View>
+  const enter = (node: ReactNode) =>
+    reveal === undefined ? (
+      node
+    ) : (
+      <Rise when={reveal} delay={REVEAL_DELAY}>
+        {node}
+      </Rise>
     );
+
+  const header =
+    title == null ? null : enter(<RoomScreenTitle title={title} note={note} />);
 
   return (
     <View style={styles.screen}>
@@ -86,47 +105,42 @@ export default function RoomScreenLayout({
         </>
       )}
 
-      {action == null ? null : <View style={styles.tray}>{action}</View>}
+      {action == null ? null : (
+        <View style={styles.tray}>{enter(action)}</View>
+      )}
     </View>
   );
 }
 
 /**
- * The room, centred, with an optional line under it and an optional message
- * above it.
+ * The one place a room screen puts a title.
  *
- * The room never moves. Both the line above it and the line below it are
- * reserved whether or not there is anything to put in them — otherwise
- * congratulating someone shoves the thing they are being congratulated about
- * down the screen, mid-animation.
+ * Every room screen says something above its room, and each of them used to say
+ * it somewhere slightly different — a screen title here, a section heading
+ * inside a card there, a congratulation floating over the room on a third. Same
+ * sentence, three heights. This is the only one.
  *
- * The banner used to be an overlay hung off the top of the stage, which kept
- * the room still but drew the message outside the layout entirely — over the
- * top bar, on any screen that has one. A reserved slot does the same job
- * inside the bounds.
+ * Private: a screen names its title through `title`, and everything about how
+ * that title looks and when it arrives is decided here.
  */
-export function RoomStage({
-  children,
-  caption,
-  banner,
+function RoomScreenTitle({
+  title,
+  note,
 }: {
-  children: ReactNode;
-  caption?: string;
-  banner?: ReactNode;
+  title: string;
+  note?: string;
 }) {
   return (
-    <View style={styles.stage}>
-      <View pointerEvents="none" style={styles.bannerSlot}>
-        {banner}
-      </View>
-      {children}
-      <View style={styles.captionSlot}>
-        {caption == null ? null : (
-          <Text style={styles.caption}>{caption}</Text>
-        )}
-      </View>
+    <View style={styles.header}>
+      <Text style={styles.title}>{title}</Text>
+      {note == null ? null : <Text style={styles.note}>{note}</Text>}
     </View>
   );
+}
+
+/** The room, centred. */
+export function RoomStage({ children }: { children: ReactNode }) {
+  return <View style={styles.stage}>{children}</View>;
 }
 
 /** The one button shape these screens use. */
@@ -165,7 +179,7 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingHorizontal: padding.screen.horizontal,
-    marginTop: spacing['2xl'],
+    marginTop: spacing.lg,
     gap: spacing.xs,
   },
   title: {
@@ -180,23 +194,7 @@ const styles = StyleSheet.create({
   },
   stage: {
     alignItems: 'center',
-    marginTop: margin.sectionGap,
-    gap: spacing.sm,
-  },
-  bannerSlot: {
-    height: BANNER_HEIGHT,
-    alignSelf: 'stretch',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  captionSlot: {
-    height: CAPTION_HEIGHT,
-    justifyContent: 'center',
-  },
-  caption: {
-    ...typography.body.small,
-    fontFamily: fonts.semibold,
-    color: colors.text.secondary,
+    marginTop: spacing.lg,
   },
   tray: {
     paddingHorizontal: padding.screen.horizontal,

@@ -48,9 +48,11 @@ export const DAILY_BREATH_HOLD_SETTLE_MS = 500;
 const INTRO_TITLE = 'Daily Breath Hold';
 
 const HEADLINE_AREA_HEIGHT = 104;
-// Clears the glass buttons sitting in the scaffold header.
-const TOP_CLEARANCE =
-  padding.screen.vertical + SESSION_GLASS_BUTTON_SIZE + spacing.lg;
+// Sits directly under the glass buttons in the scaffold header. The timer is
+// centred inside `HEADLINE_AREA_HEIGHT`, so it keeps its air from them without
+// a gap on top of that — and the clock and its track read higher on the screen,
+// clear of the character rising into them.
+const TOP_CLEARANCE = padding.screen.vertical + SESSION_GLASS_BUTTON_SIZE;
 
 const PHASE_FACES: Record<DailyBreathHoldPhase, BreathFace> = {
   idle: 'resting',

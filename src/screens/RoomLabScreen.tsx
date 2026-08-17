@@ -287,6 +287,9 @@ export default function RoomLabScreen({ navigation }: RoomLabScreenProps) {
         character={CATEGORY_STYLE.calm.character}
         title="Nice work"
         state={SHEET_CASES[sheetCase].state}
+        barFrom={
+          Math.max(0, SHEET_CASES[sheetCase].state.done - 1) / 3
+        }
         subtitle="Box Breathing"
         stats={[
           { label: 'Time', value: '2:00' },

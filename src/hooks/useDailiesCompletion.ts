@@ -8,9 +8,7 @@ import {
 import { useProfileQuery } from '../queries/profile/useProfileQuery';
 import { useCompletedBreathingTechniqueIdsQuery } from '../queries/tracking/useCompletedBreathingTechniqueIdsQuery';
 import { useHomeStatsQuery } from '../queries/tracking/useHomeStatsQuery';
-
-/** guided, hand-picked, breath hold */
-export const DAILIES_PER_DAY = 3;
+export { DAILIES_PER_DAY } from '../lib/dailies';
 
 export interface DailiesCompletion {
   todayLocalDate: string;

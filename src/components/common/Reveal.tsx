@@ -21,6 +21,8 @@ import { duration, easing, spring, travel } from '../../theme/motion';
 interface RevealProps {
   /** ms from mount */
   delay?: number;
+  /** Override the reveal timing without changing the shared default. */
+  durationMs?: number;
   /** re-plays when this flips from false to true; omit to play on mount */
   when?: boolean;
   style?: ViewStyle;
@@ -28,7 +30,13 @@ interface RevealProps {
 }
 
 /** Fades up into place. For text, cards, blocks. */
-export function Rise({ delay = 0, when = true, style, children }: RevealProps) {
+export function Rise({
+  delay = 0,
+  durationMs = duration.slow,
+  when = true,
+  style,
+  children,
+}: RevealProps) {
   const enter = useSharedValue(0);
 
   useEffect(() => {
@@ -39,9 +47,9 @@ export function Rise({ delay = 0, when = true, style, children }: RevealProps) {
 
     enter.value = withDelay(
       delay,
-      withTiming(1, { duration: duration.slow, easing: easing.enter }),
+      withTiming(1, { duration: durationMs, easing: easing.enter }),
     );
-  }, [delay, enter, when]);
+  }, [delay, durationMs, enter, when]);
 
   const animated = useAnimatedStyle(() => ({
     opacity: enter.value,

@@ -47,9 +47,31 @@ interface DecoratePanelProps {
 }
 
 /**
+ * What the screen's title says in each state.
+ *
+ * Lives here because it is the same closed set the panel switches on, and the
+ * two must not drift. The screen renders it, so every room screen's title is in
+ * the one place `RoomScreenTitle` puts it.
+ */
+export function decorateTitle(state: DecorateState): string {
+  switch (state.kind) {
+    case 'complete':
+      return 'This room is finished';
+    case 'claimed':
+      return "Today's piece is placed";
+    case 'locked':
+      return "Finish today's dailies";
+    case 'choose':
+      return 'Pick your decoration';
+  }
+}
+
+/**
  * The four things the decorate screen can be saying, split out from the screen
  * so all of them can be rendered without arranging the room state that
  * produces them. The screen owns the data; this owns the pixels.
+ *
+ * The title is the screen's, not the panel's — see `decorateTitle`.
  */
 export default function DecoratePanel({
   state,
@@ -63,7 +85,6 @@ export default function DecoratePanel({
   if (state.kind === 'complete') {
     return (
       <View style={styles.panel}>
-        <Text style={styles.panelTitle}>This room is finished</Text>
         <Text style={styles.panelBody}>
           Every piece is placed. Open your next room to keep going.
         </Text>
@@ -80,7 +101,6 @@ export default function DecoratePanel({
   if (state.kind === 'claimed') {
     return (
       <View style={styles.panel}>
-        <Text style={styles.panelTitle}>Today's piece is placed</Text>
         <Text style={styles.panelBody}>Come back tomorrow for the next one.</Text>
       </View>
     );
@@ -103,7 +123,6 @@ export default function DecoratePanel({
 
     return (
       <View style={styles.panel}>
-        <Text style={styles.panelTitle}>Finish today's dailies</Text>
         <Text style={styles.panelBody}>
           All three earn you a piece for this room.
         </Text>
@@ -154,9 +173,21 @@ export default function DecoratePanel({
   );
 }
 
-const SLIDE_HEIGHT = 190;
-/** the drawing inside a slide, inset from the page edges */
-const ART_WIDTH = 200;
+/**
+ * A square card, a square well inside it, a square drawing inside that.
+ *
+ * All three have to be square. Decorations run from 0.76 to 1.62 in aspect — a
+ * tall wardrobe and a wide rug — and each is fitted to its box and centred.
+ * Give any of these boxes a different shape, or uneven padding, and the drawing
+ * lands off-centre by exactly the difference.
+ *
+ * The well is tinted because several pieces are white or near-white — the cloud
+ * rug is white on pale grey — and are invisible on a white card. They are
+ * authored to sit on a warm floor, not on paper.
+ */
+const ART_CARD = 220;
+const ART_WELL = ART_CARD - spacing.md * 2;
+const ART_SIZE = ART_WELL - spacing.sm * 2;
 
 /**
  * Swipe through the options, then confirm.
@@ -221,8 +252,6 @@ function ChooseDecoration({
 
   return (
     <View style={styles.section}>
-      <Text style={styles.sectionTitle}>Pick your decoration</Text>
-
       <ScrollView
         horizontal
         pagingEnabled
@@ -240,12 +269,14 @@ function ChooseDecoration({
             style={[styles.slide, { width }]}
           >
             <View style={styles.art}>
-              <DecorationSolo
-                width={ART_WIDTH}
-                height={SLIDE_HEIGHT - spacing.xl}
-                day={slot}
-                option={option.id}
-              />
+              <View style={styles.well}>
+                <DecorationSolo
+                  width={ART_SIZE}
+                  height={ART_SIZE}
+                  day={slot}
+                  option={option.id}
+                />
+              </View>
             </View>
             <Text style={styles.slideLabel}>{option.name}</Text>
           </View>
@@ -272,10 +303,6 @@ const styles = StyleSheet.create({
     marginHorizontal: padding.screen.horizontal,
     padding: spacing.lg,
     gap: spacing.sm,
-  },
-  panelTitle: {
-    ...typography.title.title3,
-    color: colors.text.primary,
   },
   panelBody: {
     ...typography.body.medium,
@@ -316,10 +343,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: padding.screen.horizontal,
     gap: spacing.xs,
   },
-  sectionTitle: {
-    ...typography.title.title3,
-    color: colors.text.primary,
-  },
   slider: {
     marginVertical: spacing.sm,
   },
@@ -330,11 +353,19 @@ const styles = StyleSheet.create({
   art: {
     ...card.base,
     ...card.shadow,
-    height: SLIDE_HEIGHT,
-    paddingHorizontal: spacing.lg,
+    width: ART_CARD,
+    height: ART_CARD,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radius.hero,
+  },
+  well: {
+    ...card.well,
+    width: ART_WELL,
+    height: ART_WELL,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.neutral[100],
   },
   slideLabel: {
     ...typography.title.title3,

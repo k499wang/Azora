@@ -26,21 +26,20 @@ import { Pop, Rise } from '../../components/common/Reveal';
 import BlobCharacter, {
   type CharacterId,
 } from '../../components/home/BlobCharacter';
-import { useRoomClaim } from './useRoomClaim';
 import { getRoomDay, getRoomDayLabel } from './roomDays';
-import { markSeenDailies, readSeenDailies } from './dailyProgressSeen';
-import { useAuthStore } from '../../stores/authStore';
 import { isHapticsEnabled } from '../../services/preferences/hapticsPreference';
 import { triggerTapHaptic } from '../../native/tapHaptics';
-import { DAILIES_PER_DAY } from '../../hooks/useDailiesCompletion';
+import { DAILIES_PER_DAY } from '../../lib/dailies';
 import { radius } from '../../theme/card';
 import { duration, easing, spring } from '../../theme/motion';
 import { colors } from '../../theme/colors';
 import { padding, spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
-import type { RoomSlot } from '../../lib/room/roomProgress';
 import type { PlayfulHue } from '../exercise/guidedBreathing/categoryPalette';
 import type { RootStackNavigationProp } from '../../app/navigation';
+import type { DailyCompleteState } from './useDailyCompleteSnapshot';
+
+export type { DailyCompleteState } from './useDailyCompleteSnapshot';
 
 const BLOB_SIZE = 190;
 const BADGE_SIZE = 38;
@@ -66,26 +65,7 @@ const CONFETTI_MS = 140;
 // the time it became visible, so it looked like it had never moved.
 const BAR_FILL_DELAY = BEAT.progress + duration.slow;
 
-// The bar's target must be final before it starts moving. If the refetch has
-// not landed by here, take what we have — a bar that never fills is worse than
-// one that fills to a number a beat behind.
-const FREEZE_DEADLINE = BAR_FILL_DELAY - 80;
 const BAR_FILL_END = BAR_FILL_DELAY + duration.fill;
-
-// After the last element has finished arriving, not during it — this is when
-// callers mount their charts and cards.
-const SETTLED_MS = BAR_FILL_END + 120;
-
-/** everything the sheet needs to know about the room, so it can be faked */
-export interface DailyCompleteState {
-  /** how many of the three dailies are done, 0..3 */
-  done: number;
-  /** all three done and the piece not yet placed */
-  unlocked: boolean;
-  /** false once today's piece is placed, or the room is full */
-  showBar: boolean;
-  nextSlot: RoomSlot | null;
-}
 
 interface DailyCompleteSheetProps {
   visible: boolean;
@@ -96,18 +76,16 @@ interface DailyCompleteSheetProps {
   subtitle: string;
   /** the two or three headline numbers, shown as tiles */
   stats?: { label: string; value: string }[];
-  /**
-   * Overrides the live room state. Only the dev lab passes this — it is what
-   * lets every case be seen without spending three real exercises on each.
-   */
-  state?: DailyCompleteState;
-  /**
-   * Fires once the entrance has finished, or as soon as the sheet starts
-   * leaving. Callers mount their expensive content on this rather than up
-   * front — a chart building its path on the JS thread mid-animation is what
-   * makes the entrance stutter.
-   */
-  onSettled?: () => void;
+  /** Immutable room state captured before the animated content mounts. */
+  state: DailyCompleteState;
+  /** Frozen progress-bar origin, including repeat-daily behavior. */
+  barFrom: number;
+  /** Server-confirmed room entitlement; optimistic completion stays dismissible. */
+  rewardReady?: boolean;
+  /** Fires when the native Modal is visible and the entrance may begin. */
+  onShow?: () => void;
+  /** Fires immediately before the sheet begins its exit animation. */
+  onExitStart?: () => void;
   onDismiss: () => void;
 }
 
@@ -124,7 +102,7 @@ interface DailyCompleteSheetProps {
  * you can brush off by accident is one people will brush off by accident. It
  * leaves on a deliberate press, nothing else.
  */
-export default function DailyCompleteSheet({
+function DailyCompleteSheet({
   visible,
   hue,
   character,
@@ -132,14 +110,17 @@ export default function DailyCompleteSheet({
   subtitle,
   stats = [],
   state,
-  onSettled,
+  barFrom,
+  rewardReady = true,
+  onShow,
+  onExitStart,
   onDismiss,
 }: DailyCompleteSheetProps) {
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
   const navigation = useNavigation<RootStackNavigationProp>();
-  const userId = useAuthStore((state) => state.user?.id ?? null);
-  const { progress, dailies } = useRoomClaim(userId);
+  const [presented, setPresented] = useState(false);
+  const closing = useRef(false);
 
   // Starts covering, rather than sliding up into place. Rising from off-screen
   // means the results screen is visible behind it for the length of the
@@ -147,37 +128,11 @@ export default function DailyCompleteSheet({
   // The contents animate in instead; only leaving is a slide.
   const offset = useSharedValue(0);
   const badge = useSharedValue(0);
+  const { done, unlocked, showBar } = state;
 
-  const live: DailyCompleteState = {
-    done: [
-      dailies.guidedCompleted,
-      dailies.handPickedCompleted,
-      dailies.breathHoldCompleted,
-    ].filter(Boolean).length,
-    unlocked: progress.canClaim,
-    showBar: !progress.isComplete && !progress.claimedToday,
-    nextSlot: progress.nextSlot,
-  };
-  // Frozen on open. A background refetch landing mid-entrance would otherwise
-  // re-render the whole sheet and could retarget the bar while it is filling.
-  const [frozen, setFrozen] = useState<DailyCompleteState | null>(null);
-  const sawRefetch = useRef(false);
-  const view = frozen ?? state ?? live;
-  const { done, unlocked, showBar } = view;
-
-  // Start the fill wherever they last saw it. When this session did not move
-  // the count — a daily re-run, say — the two ends match and `ProgressBar`
-  // leaves it alone rather than replaying a step that never happened. A faked
-  // state always animates, since the point there is to watch it move.
-  const barFrom =
-    (state != null
-      ? Math.max(0, done - 1)
-      : (readSeenDailies(dailies.todayLocalDate) ?? Math.max(0, done - 1))) /
-    DAILIES_PER_DAY;
-
-  const day = view.nextSlot == null ? null : getRoomDay(view.nextSlot);
+  const day = state.nextSlot == null ? null : getRoomDay(state.nextSlot);
   const pieceLabel =
-    view.nextSlot == null ? null : getRoomDayLabel(view.nextSlot);
+    state.nextSlot == null ? null : getRoomDayLabel(state.nextSlot);
   const remaining = Math.max(0, DAILIES_PER_DAY - done);
 
   // On the third daily the screen stops being about the session and starts
@@ -189,67 +144,16 @@ export default function DailyCompleteSheet({
       : `You unlocked a new ${pieceLabel}`
     : subtitle;
 
-  // Snapshot the room state once, and only once it is trustworthy.
-  //
-  // Navigation to the results screen happens before the session is persisted,
-  // so at the moment this opens the completion queries are usually still
-  // refetching and reporting the counts from *before* this session. Freezing
-  // that captured a `done` one short of the truth, which then matched where the
-  // bar already was — and a bar told to animate to where it is does nothing.
-  useEffect(() => {
-    if (!visible) {
-      setFrozen(null);
-      sawRefetch.current = false;
-      return;
-    }
-
-    if (frozen != null) {
-      return;
-    }
-
-    if (dailies.isSettling) {
-      sawRefetch.current = true;
-    }
-
-    // Trustworthy means the refetch this session triggered has been seen to
-    // start *and* finish. `!isSettling` alone is true in the gap before it
-    // begins, which is exactly the window this screen opens in.
-    if (state != null || (sawRefetch.current && !dailies.isSettling)) {
-      setFrozen(state ?? live);
-      return;
-    }
-
-    const deadline = setTimeout(() => setFrozen(live), FREEZE_DEADLINE);
-    return () => clearTimeout(deadline);
-    // `live` is rebuilt every render; the primitives it is made of are the real
-    // dependencies.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    dailies.isSettling,
-    frozen,
-    live.done,
-    live.nextSlot,
-    live.showBar,
-    live.unlocked,
-    state,
-    visible,
-  ]);
-
   useEffect(() => {
     if (!visible) {
       offset.value = 0;
       badge.value = 0;
+      closing.current = false;
+      setPresented(false);
       return;
     }
 
-    // Never let a faked state write over what the user has really seen, and
-    // never record a count that has not settled.
-    if (state == null && frozen != null) {
-      markSeenDailies(dailies.todayLocalDate, frozen.done);
-    }
-
-    const settle =
-      onSettled == null ? null : setTimeout(onSettled, SETTLED_MS);
+    if (!presented) return;
 
     if (unlocked) {
       badge.value = withDelay(
@@ -260,28 +164,13 @@ export default function DailyCompleteSheet({
         ),
       );
     }
-    return () => {
-      if (settle != null) clearTimeout(settle);
-    };
-    // `onSettled` is deliberately excluded: callers pass inline closures, and
-    // re-running this would restart the entrance.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    badge,
-    dailies.todayLocalDate,
-    frozen,
-    height,
-    offset,
-    state,
-    unlocked,
-    visible,
-  ]);
+  }, [badge, offset, presented, unlocked, visible]);
 
   const close = () => {
+    if (closing.current) return;
+    closing.current = true;
+    onExitStart?.();
     triggerTapHaptic();
-    // If they leave before the entrance settles, the content behind still has
-    // to exist before the sheet uncovers it.
-    onSettled?.();
     offset.value = withTiming(
       height,
       { duration: FALL_MS, easing: easing.exit },
@@ -304,6 +193,8 @@ export default function DailyCompleteSheet({
   }));
 
   const choosePiece = () => {
+    if (closing.current) return;
+    closing.current = true;
     if (isHapticsEnabled()) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
     }
@@ -325,6 +216,10 @@ export default function DailyCompleteSheet({
       statusBarTranslucent
       // Android's back gesture must not dismiss this either.
       onRequestClose={noop}
+      onShow={() => {
+        setPresented(true);
+        onShow?.();
+      }}
     >
       <View style={styles.root}>
         <Animated.View style={[styles.backdrop, backdropStyle]} />
@@ -340,90 +235,96 @@ export default function DailyCompleteSheet({
             sheetStyle,
           ]}
         >
-          <View style={styles.center}>
-            <Confetti hue={hue} />
-            <Pop delay={BEAT.blob}>
-              <BlobCharacter
-                character={character}
-                faceExpression="energy"
-                size={BLOB_SIZE}
-                bodyColor={hue.soft}
-                faceColor={hue.ink}
-              />
-            </Pop>
-            <Rise delay={BEAT.title}>
-              <Text style={styles.title}>{headline}</Text>
-            </Rise>
-            <Rise delay={BEAT.subtitle}>
-              <Text style={styles.subtitle}>{supporting}</Text>
-            </Rise>
-          </View>
-
-          {stats.length === 0 ? null : (
-            <View style={styles.statRow}>
-              {stats.map((stat, index) => (
-                <Pop
-                  key={stat.label}
-                  delay={BEAT.stats + index * 90}
-                  style={styles.statSlot}
-                >
-                  <View style={styles.statTile}>
-                    <Text style={styles.statLabel}>{stat.label}</Text>
-                    <Text style={styles.statValue}>{stat.value}</Text>
-                  </View>
-                </Pop>
-              ))}
-            </View>
-          )}
-
-          {showBar ? (
-            <Rise delay={BEAT.progress} style={styles.progressBlock}>
-              <View style={styles.barRow}>
-                <ProgressBar
-                  progress={done / DAILIES_PER_DAY}
-                  from={barFrom}
-                  delay={BAR_FILL_DELAY}
-                  height={BAR_HEIGHT}
-                  trackColor={colors.onBlock.fill}
-                  fillColor={colors.text.inverse}
-                  onFillStart={impactLight}
-                  onFillEnd={() => settleHaptic(unlocked)}
-                  style={styles.bar}
-                />
-                <Animated.View style={[styles.badge, badgeStyle]}>
-                  <Icon
-                    name={unlocked ? 'unlock' : 'lock'}
-                    size={18}
-                    color={colors.text.inverse}
+          {presented ? (
+            <>
+              <View style={styles.center}>
+                <Confetti hue={hue} />
+                <Pop delay={BEAT.blob}>
+                  <BlobCharacter
+                    character={character}
+                    faceExpression="energy"
+                    size={BLOB_SIZE}
+                    bodyColor={hue.soft}
+                    faceColor={hue.ink}
                   />
-                </Animated.View>
+                </Pop>
+                <Rise delay={BEAT.title}>
+                  <Text style={styles.title}>{headline}</Text>
+                </Rise>
+                <Rise delay={BEAT.subtitle}>
+                  <Text style={styles.subtitle}>{supporting}</Text>
+                </Rise>
               </View>
-              <Text style={styles.progressLabel}>
-                {unlocked
-                  ? day == null
-                    ? 'Ready to place'
-                    : `Ready for the ${day.note}`
-                  : `${remaining} more to unlock your piece`}
-              </Text>
-            </Rise>
-          ) : null}
 
-          <Rise delay={BEAT.cta} style={styles.ctaBlock}>
-            {unlocked ? (
-              <SheetButton
-                label="Choose your piece"
-                hue={hue}
-                onPress={choosePiece}
-              />
-            ) : (
-              <SheetButton label="Continue" hue={hue} onPress={close} />
-            )}
-          </Rise>
+              {stats.length === 0 ? null : (
+                <View style={styles.statRow}>
+                  {stats.map((stat, index) => (
+                    <Pop
+                      key={stat.label}
+                      delay={BEAT.stats + index * 90}
+                      style={styles.statSlot}
+                    >
+                      <View style={styles.statTile}>
+                        <Text style={styles.statLabel}>{stat.label}</Text>
+                        <Text style={styles.statValue}>{stat.value}</Text>
+                      </View>
+                    </Pop>
+                  ))}
+                </View>
+              )}
+
+              {showBar ? (
+                <Rise delay={BEAT.progress} style={styles.progressBlock}>
+                  <View style={styles.barRow}>
+                    <ProgressBar
+                      progress={done / DAILIES_PER_DAY}
+                      from={barFrom}
+                      delay={BAR_FILL_DELAY}
+                      height={BAR_HEIGHT}
+                      trackColor={colors.onBlock.fill}
+                      fillColor={colors.text.inverse}
+                      onFillStart={impactLight}
+                      onFillEnd={() => settleHaptic(unlocked)}
+                      style={styles.bar}
+                    />
+                    <Animated.View style={[styles.badge, badgeStyle]}>
+                      <Icon
+                        name={unlocked ? 'unlock' : 'lock'}
+                        size={18}
+                        color={colors.text.inverse}
+                      />
+                    </Animated.View>
+                  </View>
+                  <Text style={styles.progressLabel}>
+                    {unlocked
+                      ? day == null
+                        ? 'Ready to place'
+                        : `Ready for the ${day.note}`
+                      : `${remaining} more to unlock your piece`}
+                  </Text>
+                </Rise>
+              ) : null}
+
+              <Rise delay={BEAT.cta} style={styles.ctaBlock}>
+                {unlocked && rewardReady ? (
+                  <SheetButton
+                    label="Choose your piece"
+                    hue={hue}
+                    onPress={choosePiece}
+                  />
+                ) : (
+                  <SheetButton label="Continue" hue={hue} onPress={close} />
+                )}
+              </Rise>
+            </>
+          ) : null}
         </Animated.View>
       </View>
     </Modal>
   );
 }
+
+export default memo(DailyCompleteSheet);
 
 /**
  * The app's chunky primary, inverted for a colour block: a white face on a lip

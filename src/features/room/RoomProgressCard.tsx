@@ -5,7 +5,7 @@ import Icon from '../../components/common/icons/Icon';
 import ProgressBar from '../../components/common/ProgressBar';
 import ChunkyButton from '../../components/common/ChunkyButton';
 import { useRoomClaim } from './useRoomClaim';
-import { DAILIES_PER_DAY } from '../../hooks/useDailiesCompletion';
+import { DAILIES_PER_DAY } from '../../lib/dailies';
 import { ROOM_SLOT_COUNT } from '../../lib/room/roomProgress';
 import { useAuthStore } from '../../stores/authStore';
 import { card } from '../../theme/card';
