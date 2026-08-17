@@ -45,10 +45,18 @@ export function Rise({
       return;
     }
 
-    enter.value = withDelay(
-      delay,
-      withTiming(1, { duration: durationMs, easing: easing.enter }),
-    );
+    // One frame of headroom. `when` almost always flips inside a React commit,
+    // and starting here would put the entrance's first frames behind that
+    // commit's mount work on the UI thread — which is exactly the stutter you
+    // see at the front of a staggered reveal.
+    const frame = requestAnimationFrame(() => {
+      enter.value = withDelay(
+        delay,
+        withTiming(1, { duration: durationMs, easing: easing.enter }),
+      );
+    });
+
+    return () => cancelAnimationFrame(frame);
   }, [delay, durationMs, enter, when]);
 
   const animated = useAnimatedStyle(() => ({
@@ -71,7 +79,11 @@ export function Pop({ delay = 0, when = true, style, children }: RevealProps) {
       return;
     }
 
-    enter.value = withDelay(delay, withSpring(1, spring.pop));
+    const frame = requestAnimationFrame(() => {
+      enter.value = withDelay(delay, withSpring(1, spring.pop));
+    });
+
+    return () => cancelAnimationFrame(frame);
   }, [delay, enter, when]);
 
   const animated = useAnimatedStyle(() => ({

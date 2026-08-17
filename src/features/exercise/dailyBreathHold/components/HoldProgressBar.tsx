@@ -8,6 +8,12 @@ import { spacing } from '../../../../theme/spacing';
 const BEST_MARKER_FRACTION = 0.75;
 const FALLBACK_SCALE_SECONDS = 60;
 
+// One colour has to carry the best marker across all four exercise themes, so
+// it is the brand's counter-hue rather than any theme's own accent. Yellow was
+// washing out against the light canvas and fighting the blue character under
+// it; orange holds on both the light and the three dark screens.
+const BEST_COLOR = colors.orange[600];
+
 interface Props {
   holdSeconds: number;
   bestSeconds: number;
@@ -45,7 +51,7 @@ export default function HoldProgressBar({
     };
   }, [bestSeconds, hasBest, holdSeconds]);
 
-  const activeFill = pastBest ? colors.yellow[400] : fillColor;
+  const activeFill = pastBest ? BEST_COLOR : fillColor;
 
   return (
     <View style={styles.wrap}>
@@ -83,7 +89,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     fontSize: 12,
     letterSpacing: 0.6,
-    color: colors.yellow[400],
+    color: BEST_COLOR,
     fontVariant: ['tabular-nums'],
     opacity: 0.85,
   },
@@ -111,6 +117,6 @@ const styles = StyleSheet.create({
     width: 2,
     marginLeft: -1,
     borderRadius: 1,
-    backgroundColor: colors.yellow[400],
+    backgroundColor: BEST_COLOR,
   },
 });
