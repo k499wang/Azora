@@ -16,6 +16,7 @@ import { useCreateNextRoomMutation } from '../queries/room/useCreateNextRoomMuta
 import { useCurrentRoomQuery } from '../queries/room/useCurrentRoomQuery';
 import { useAuthStore } from '../stores/authStore';
 import type { NextRoomScreenProps } from '../app/navigation';
+import { returnToHome } from '../app/navigation/returnToHome';
 
 /**
  * Picking the room to live in for the next seven days.
@@ -51,7 +52,7 @@ export default function NextRoomScreen({ navigation }: NextRoomScreenProps) {
       {
         // Home rather than the picker: the new room is empty and today is
         // already spent, so there would be nothing to do there.
-        onSuccess: () => navigation.navigate('MainTabs', { screen: 'Home' }),
+        onSuccess: () => returnToHome(navigation),
       },
     );
   };

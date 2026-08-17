@@ -52,9 +52,20 @@ interface AppStackProps {
   showBootPaywall: boolean;
 }
 
+/**
+ * `freezeOnBlur`: a screen under a pushed one stops re-rendering entirely.
+ *
+ * Home and its cards stayed fully live underneath a running session,
+ * re-rendering on every query that settled behind them, competing with the
+ * breathing animation for the same JS thread. Nothing below the top screen has
+ * work that has to keep running — the session screens are always the top one
+ * while they are timing anything.
+ */
+const SCREEN_OPTIONS = { headerShown: false, freezeOnBlur: true } as const;
+
 function AppStack({ showBootPaywall }: AppStackProps) {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator screenOptions={SCREEN_OPTIONS}>
       <Stack.Screen name="MainTabs">
         {() => <MainTabsRoute showBootPaywall={showBootPaywall} />}
       </Stack.Screen>

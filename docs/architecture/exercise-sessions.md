@@ -495,6 +495,8 @@ Preserve these when changing exercise orchestration:
 - after that guard, the active daily hold uses the whole screen as its release target
 - daily exit cancels the flow without saving or opening a result
 - result processing disables the back gesture
+- closing a terminal exercise result returns to the existing `MainTabs/Home`
+  route and must not push another tab navigator
 - successful daily hold processing replaces the exercise route with the result route, so Back cannot reopen a completed hold
 - save failures do not discard the locally computed result
 

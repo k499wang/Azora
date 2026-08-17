@@ -230,12 +230,13 @@ export function useBreathingPhaseRunner({
   const disposeActivePhase = useCallback(() => {
     runIdRef.current += 1;
     clearTimer();
+    circleRef.current?.pause();
     remainingSecondsRef.current = 0;
     activePhaseRef.current = null;
     onCompleteRef.current = null;
     stopInhaleVibration();
     stopHoldHaptics();
-  }, [clearTimer]);
+  }, [circleRef, clearTimer]);
 
   const cancel = useCallback(() => {
     disposeActivePhase();
