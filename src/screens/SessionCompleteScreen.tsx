@@ -44,7 +44,15 @@ function formatDuration(secs: number): string {
 
 const HERO_BLOB_SIZE = 132;
 const EMPTY_HR_SAMPLES: { offsetMs: number; bpm: number }[] = [];
+
+// Everything below re-renders on every query that resolves while the screen is
+// on — profile, summary, room, dailies, feedback — and each of those commits
+// lands mid-entrance and reconciles a whole SVG tree. Their props are already
+// stable values, so memoizing lets the reveal own the frame.
 const ResultBPMChart = memo(BPMChart);
+const ResultThermometerStatCard = memo(ThermometerStatCard);
+const ResultRestingHeartRateBar = memo(RestingHeartRateBar);
+const ResultHelpfulnessQuestion = memo(HelpfulnessQuestion);
 
 export default function SessionCompleteScreen({
   navigation,
@@ -330,7 +338,7 @@ export default function SessionCompleteScreen({
         >
           <View style={styles.statSection}>
             <View style={styles.statRow}>
-              <ThermometerStatCard
+              <ResultThermometerStatCard
                 label="Duration"
                 icon="breath-timer"
                 value={durationSec}
@@ -342,7 +350,7 @@ export default function SessionCompleteScreen({
                 iconColor={colors.primary.blue600}
                 presentation="number"
               />
-              <ThermometerStatCard
+              <ResultThermometerStatCard
                 label="Breaths"
                 icon="stat-breath-flow"
                 value={breathCount}
@@ -357,7 +365,7 @@ export default function SessionCompleteScreen({
             </View>
 
             {displayAvgBpm == null ? null : (
-              <RestingHeartRateBar
+              <ResultRestingHeartRateBar
                 bpm={displayAvgBpm}
                 age={profileQuery.data?.age ?? null}
                 title="Average heart rate"
@@ -387,7 +395,7 @@ export default function SessionCompleteScreen({
           durationMs={duration.base}
         >
           <View style={styles.bodySection}>
-            <HelpfulnessQuestion
+            <ResultHelpfulnessQuestion
               techniqueId={techniqueId}
               localDate={todayLocalDate}
               sessionKey={sessionKey}

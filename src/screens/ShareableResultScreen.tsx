@@ -43,7 +43,13 @@ import { duration, stagger } from '../theme/motion';
 const HERO_BLOB_SIZE = 132;
 const BREATH_HOLD_COMPLETION = { breathHold: true } as const;
 const EMPTY_BPM_SAMPLES: { offsetMs: number; bpm: number }[] = [];
+
+// Profile, feature access, room and dailies all resolve while this screen is
+// on, and each commit lands mid-entrance and reconciles a whole SVG tree.
+// Their props are already stable values, so memoizing lets the reveal own the
+// frame.
 const ResultHeartRateStatsSection = memo(HeartRateStatsSection);
+const ResultHelpfulnessQuestion = memo(HelpfulnessQuestion);
 
 function formatDuration(secs: number): string {
   const m = Math.floor(secs / 60);
@@ -320,7 +326,7 @@ export default function ShareableResultScreen({
           durationMs={duration.base}
         >
           <View style={styles.bodySection}>
-            <HelpfulnessQuestion
+            <ResultHelpfulnessQuestion
               techniqueId={BREATH_HOLD_FEEDBACK_ID}
               localDate={todayLocalDate}
               sessionKey={sessionKey}
