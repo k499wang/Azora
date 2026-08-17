@@ -36,6 +36,7 @@ import { useRoomClaim } from '../features/room/useRoomClaim';
 import { useDailyCompleteSnapshot } from '../features/room/useDailyCompleteSnapshot';
 import { SESSION_GLASS_BUTTON_SIZE } from '../features/exercise/shared/components/SessionGlassButton';
 import { duration, stagger } from '../theme/motion';
+import { returnToHome } from '../app/navigation/returnToHome';
 
 // The breath hold is not a guided technique, but feedback is stored per
 // technique id, so it answers under its own key.
@@ -158,7 +159,7 @@ export default function ShareableResultScreen({
   const celebrationContent = celebrationContentRef.current;
 
   const handleClose = useCallback(() => {
-    navigation.navigate('MainTabs', { screen: 'Home' });
+    returnToHome(navigation);
   }, [navigation]);
 
   const handleSheetShow = useCallback(() => {

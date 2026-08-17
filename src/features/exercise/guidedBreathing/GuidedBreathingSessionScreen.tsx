@@ -54,6 +54,9 @@ import { resolveBreathingSessionStart } from '../shared/domain/breathingSessionS
 
 const MIN_ROUNDS = 1;
 const MAX_ROUNDS = 30;
+const HUD_HIDE_DELAY_MS = 3000;
+const HUD_FADE_IN_DURATION_MS = 200;
+const HUD_FADE_OUT_DURATION_MS = 600;
 
 export default function GuidedBreathingSessionScreen({
   navigation,
@@ -100,27 +103,40 @@ export default function GuidedBreathingSessionScreen({
   const [hudVisible, setHudVisible] = useState(true);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const clearHudHideTimer = useCallback(() => {
+    if (hideTimerRef.current == null) return;
+    clearTimeout(hideTimerRef.current);
+    hideTimerRef.current = null;
+  }, []);
+
+  const resetHud = useCallback(() => {
+    clearHudHideTimer();
+    hudOpacity.stopAnimation();
+    setHudVisible(true);
+    hudOpacity.setValue(1);
+  }, [clearHudHideTimer, hudOpacity]);
+
   const showHud = useCallback(() => {
-    if (hideTimerRef.current) {
-      clearTimeout(hideTimerRef.current);
-      hideTimerRef.current = null;
-    }
+    clearHudHideTimer();
+    hudOpacity.stopAnimation();
     setHudVisible(true);
     Animated.timing(hudOpacity, {
       toValue: 1,
-      duration: 200,
+      duration: HUD_FADE_IN_DURATION_MS,
       useNativeDriver: true,
     }).start();
     hideTimerRef.current = setTimeout(() => {
+      hideTimerRef.current = null;
+      hudOpacity.stopAnimation();
       Animated.timing(hudOpacity, {
         toValue: 0,
-        duration: 600,
+        duration: HUD_FADE_OUT_DURATION_MS,
         useNativeDriver: true,
       }).start(({ finished }) => {
         if (finished) setHudVisible(false);
       });
-    }, 3000);
-  }, [hudOpacity]);
+    }, HUD_HIDE_DELAY_MS);
+  }, [clearHudHideTimer, hudOpacity]);
 
   const posthog = usePostHog();
   const userId = useAuthStore((state) => state.user?.id ?? null);
@@ -199,8 +215,8 @@ export default function GuidedBreathingSessionScreen({
       cancelPhase();
       clearIntroTimeout();
       stopPulse();
-      if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
-    }, [cancelPhase, clearIntroTimeout, stopPulse]),
+      clearHudHideTimer();
+    }, [cancelPhase, clearHudHideTimer, clearIntroTimeout, stopPulse]),
   );
 
   useEffect(() => {
@@ -473,14 +489,17 @@ export default function GuidedBreathingSessionScreen({
   const showSessionControls = isActive || paused || phase === 'intro';
 
   useEffect(() => {
-    if (isActive) {
-      showHud();
-    } else {
-      if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
-      setHudVisible(true);
-      hudOpacity.setValue(1);
-    }
-  }, [isActive, showHud, hudOpacity]);
+    if (isActive) showHud();
+    else resetHud();
+  }, [isActive, resetHud, showHud]);
+
+  useEffect(
+    () => () => {
+      clearHudHideTimer();
+      hudOpacity.stopAnimation();
+    },
+    [clearHudHideTimer, hudOpacity],
+  );
 
   const handleScreenTap = () => {
     if (isActive) showHud();

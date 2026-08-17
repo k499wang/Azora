@@ -81,9 +81,7 @@ export default function HelpfulnessQuestion({
                 });
               }}
             >
-              <Text style={[styles.chipLabel, active && styles.chipLabelActive]}>
-                {option.label}
-              </Text>
+              <Text style={styles.chipLabel}>{option.label}</Text>
             </Pressable>
           );
         })}
@@ -109,12 +107,9 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     paddingVertical: spacing.md,
-    borderWidth: 2,
-    borderColor: colors.border.subtle,
   },
   chipActive: {
     backgroundColor: colors.primary.blue100,
-    borderColor: colors.primary.blue600,
   },
   pressed: {
     opacity: 0.9,
@@ -123,9 +118,6 @@ const styles = StyleSheet.create({
   chipLabel: {
     ...typography.body.medium,
     fontFamily: fonts.semibold,
-    color: colors.text.secondary,
-  },
-  chipLabelActive: {
-    color: colors.primary.blue700,
+    color: colors.text.primary,
   },
 });

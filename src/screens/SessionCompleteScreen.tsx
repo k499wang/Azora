@@ -35,6 +35,7 @@ import { useRoomClaim } from '../features/room/useRoomClaim';
 import { useDailyCompleteSnapshot } from '../features/room/useDailyCompleteSnapshot';
 import { SESSION_GLASS_BUTTON_SIZE } from '../features/exercise/shared/components/SessionGlassButton';
 import { duration, stagger } from '../theme/motion';
+import { returnToHome } from '../app/navigation/returnToHome';
 
 function formatDuration(secs: number): string {
   const m = Math.floor(secs / 60);
@@ -185,7 +186,7 @@ export default function SessionCompleteScreen({
   );
 
   const handleClose = useCallback(() => {
-    navigation.navigate('MainTabs', { screen: 'Home' });
+    returnToHome(navigation);
   }, [navigation]);
 
   const handleSheetShow = useCallback(() => {

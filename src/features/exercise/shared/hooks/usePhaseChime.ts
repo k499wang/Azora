@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { MutableRefObject } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
-import { setAudioModeAsync, useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
+import { setAudioModeAsync, useAudioPlayer } from 'expo-audio';
 import type { AudioPlayer } from 'expo-audio';
 import { audioMix } from '../../../audioSettings/audioMix';
 import { getAudioOption } from '../../../audioSettings/registry';
 import { useAudioPreferences } from '../../../audioSettings/useAudioPreferences';
+import { useAudioLoaded } from './useAudioLoaded';
 
 interface UsePhaseChimeOptions {
   active: boolean;
@@ -96,8 +97,8 @@ export function usePhaseChime(
 
   const inhalePlayer = useAudioPlayer(inhaleAsset ?? null, CUE_PLAYER_OPTIONS);
   const exhalePlayer = useAudioPlayer(exhaleAsset ?? null, CUE_PLAYER_OPTIONS);
-  const inhaleStatus = useAudioPlayerStatus(inhalePlayer);
-  const exhaleStatus = useAudioPlayerStatus(exhalePlayer);
+  const inhaleLoaded = useAudioLoaded(inhalePlayer);
+  const exhaleLoaded = useAudioLoaded(exhalePlayer);
 
   const inhaleRampRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const exhaleRampRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -194,8 +195,8 @@ export function usePhaseChime(
 
   const kind = phaseKindOf(phase);
   const phaseAssetReady =
-    (kind === 'inhale' && inhaleAsset != null && inhaleStatus.isLoaded) ||
-    (kind === 'exhale' && exhaleAsset != null && exhaleStatus.isLoaded);
+    (kind === 'inhale' && inhaleAsset != null && inhaleLoaded) ||
+    (kind === 'exhale' && exhaleAsset != null && exhaleLoaded);
   const shouldPlay = active && appActive && option != null && phaseAssetReady;
   const effectiveKind = shouldPlay ? kind : null;
 

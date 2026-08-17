@@ -23,7 +23,7 @@ import { useAuthStore } from '../stores/authStore';
 import { triggerTapHaptic } from '../native/tapHaptics';
 import { margin } from '../theme/spacing';
 import type { RoomDecorateScreenProps } from '../app/navigation';
-
+import { returnToHome } from '../app/navigation/returnToHome';
 
 interface Placing {
   slot: RoomSlot;
@@ -165,7 +165,7 @@ export default function RoomDecorateScreen({
         celebrating ? (
           <RoomActionButton
             label="Continue"
-            onPress={() => navigation.navigate('MainTabs', { screen: 'Home' })}
+            onPress={() => returnToHome(navigation)}
           />
         ) : null
       }

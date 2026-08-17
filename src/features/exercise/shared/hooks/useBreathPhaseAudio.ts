@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { MutableRefObject } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
-import { setAudioModeAsync, useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
+import { setAudioModeAsync, useAudioPlayer } from 'expo-audio';
 import type { AudioPlayer, AudioSource } from 'expo-audio';
 import { audioMix } from '../../../audioSettings/audioMix';
 import { getAudioOption } from '../../../audioSettings/registry';
 import { useAudioPreferences } from '../../../audioSettings/useAudioPreferences';
+import { useAudioLoaded } from './useAudioLoaded';
 
 type BreathAudioPhase = 'inhale' | 'exhale' | 'hold' | null;
 
@@ -134,9 +135,9 @@ export function useBreathPhaseAudio(
   const inhalePlayer = useAudioPlayer(inhaleAsset ?? null, CUE_PLAYER_OPTIONS);
   const exhalePlayer = useAudioPlayer(exhaleAsset ?? null, CUE_PLAYER_OPTIONS);
   const holdPlayer = useAudioPlayer(holdAsset ?? null, CUE_PLAYER_OPTIONS);
-  const inhaleStatus = useAudioPlayerStatus(inhalePlayer);
-  const exhaleStatus = useAudioPlayerStatus(exhalePlayer);
-  const holdStatus = useAudioPlayerStatus(holdPlayer);
+  const inhaleLoaded = useAudioLoaded(inhalePlayer);
+  const exhaleLoaded = useAudioLoaded(exhalePlayer);
+  const holdLoaded = useAudioLoaded(holdPlayer);
   const inhaleRampRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const exhaleRampRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const holdRampRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -258,9 +259,9 @@ export function useBreathPhaseAudio(
 
   const phaseHasAsset = hasPhaseAsset(phase, inhaleAsset, exhaleAsset, holdAsset);
   const phaseLoaded =
-    (phase === 'inhale' && inhaleStatus.isLoaded) ||
-    (phase === 'exhale' && exhaleStatus.isLoaded) ||
-    (phase === 'hold' && holdStatus.isLoaded);
+    (phase === 'inhale' && inhaleLoaded) ||
+    (phase === 'exhale' && exhaleLoaded) ||
+    (phase === 'hold' && holdLoaded);
   const shouldPlayAudio = active && appActive && phaseHasAsset && phaseLoaded;
   const waitingForPhaseAudio =
     active && appActive && phaseHasAsset && !phaseLoaded;
@@ -271,7 +272,7 @@ export function useBreathPhaseAudio(
 
     if (
       inhaleAsset != null &&
-      inhaleStatus.isLoaded &&
+      inhaleLoaded &&
       prewarmedPlayerIdsRef.current.inhale !== inhalePlayer.id
     ) {
       prewarmedPlayerIdsRef.current.inhale = inhalePlayer.id;
@@ -280,7 +281,7 @@ export function useBreathPhaseAudio(
 
     if (
       exhaleAsset != null &&
-      exhaleStatus.isLoaded &&
+      exhaleLoaded &&
       prewarmedPlayerIdsRef.current.exhale !== exhalePlayer.id
     ) {
       prewarmedPlayerIdsRef.current.exhale = exhalePlayer.id;
@@ -289,7 +290,7 @@ export function useBreathPhaseAudio(
 
     if (
       holdAsset != null &&
-      holdStatus.isLoaded &&
+      holdLoaded &&
       prewarmedPlayerIdsRef.current.hold !== holdPlayer.id
     ) {
       prewarmedPlayerIdsRef.current.hold = holdPlayer.id;
@@ -299,13 +300,13 @@ export function useBreathPhaseAudio(
     appActive,
     exhaleAsset,
     exhalePlayer,
-    exhaleStatus.isLoaded,
+    exhaleLoaded,
     holdAsset,
     holdPlayer,
-    holdStatus.isLoaded,
+    holdLoaded,
     inhaleAsset,
     inhalePlayer,
-    inhaleStatus.isLoaded,
+    inhaleLoaded,
     shouldPlayAudio,
     waitingForPhaseAudio,
   ]);
