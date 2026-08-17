@@ -3,14 +3,12 @@ import { colors } from '../theme/colors';
 import { spacing, padding, margin } from '../theme/spacing';
 import AppTopBar from '../components/common/AppTopBar';
 import CompactActionBanner from '../components/common/CompactActionBanner';
-import WeekCalendarStrip from '../components/common/WeekCalendarStrip';
 import TodaysDailiesSection from '../components/home/TodaysDailiesSection';
 import HomeRoom from '../features/room/HomeRoom';
 import RoomProgressCard from '../features/room/RoomProgressCard';
 import { useDailiesCompletion } from '../hooks/useDailiesCompletion';
 import { useStartDaily } from '../hooks/useStartDaily';
 import type { HomeScreenProps } from '../app/navigation';
-import { useHomeStatsQuery } from '../queries/tracking/useHomeStatsQuery';
 import { useAuthStore } from '../stores/authStore';
 import { useDailyPlanScheduleQuery } from '../queries/dailyPlan/useDailyPlanScheduleQuery';
 import { DEFAULT_DAILY_PLAN_SCHEDULE } from '../services/dailyPlan/types';
@@ -23,9 +21,6 @@ export default function HomeScreen(_: HomeScreenProps) {
   const dailyPlanSchedule =
     dailyPlanScheduleQuery.data ?? DEFAULT_DAILY_PLAN_SCHEDULE;
   const dailies = useDailiesCompletion(user?.id ?? null);
-  const todayLocalDate = dailies.todayLocalDate;
-  const homeStatsQuery = useHomeStatsQuery(user?.id ?? null, todayLocalDate);
-  const stats = homeStatsQuery.data;
   const { start, accessAllowed } = useStartDaily('Home');
 
   // The recently-logged list and its analytics now live on the Heart tab
@@ -41,14 +36,7 @@ export default function HomeScreen(_: HomeScreenProps) {
         alwaysBounceVertical
         overScrollMode="always"
       >
-        <AppTopBar>
-          <View style={styles.weekCalendar}>
-            <WeekCalendarStrip
-              todayLocalDate={todayLocalDate}
-              completedDaysAgo={stats?.completedDaysAgo ?? []}
-            />
-          </View>
-        </AppTopBar>
+        <AppTopBar />
 
         <View style={styles.roomSection}>
           <HomeRoom />
@@ -95,10 +83,6 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: spacing['7xl'] + spacing.xl,
     gap: margin.itemGap,
-  },
-  weekCalendar: {
-    paddingHorizontal: padding.screen.horizontal,
-    paddingTop: spacing.md,
   },
   roomSection: {
     marginVertical: spacing.lg,

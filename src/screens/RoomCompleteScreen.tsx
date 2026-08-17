@@ -1,7 +1,5 @@
 import { useState } from 'react';
-import { StyleSheet, useWindowDimensions } from 'react-native';
-import { Text } from '../components/common/Text';
-import { Rise } from '../components/common/Reveal';
+import { useWindowDimensions } from 'react-native';
 import RoomScreenLayout, {
   RoomActionButton,
   RoomStage,
@@ -12,10 +10,6 @@ import { toFrameHue, toPicks } from '../features/room/roomPicks';
 import { roomShellPolys } from '../features/room/roomShells';
 import { useCurrentRoomQuery } from '../queries/room/useCurrentRoomQuery';
 import { useAuthStore } from '../stores/authStore';
-import { colors } from '../theme/colors';
-import { stagger } from '../theme/motion';
-import { margin, padding, spacing } from '../theme/spacing';
-import { typography } from '../theme/typography';
 import type { RoomCompleteScreenProps } from '../app/navigation';
 
 /**
@@ -41,11 +35,13 @@ export default function RoomCompleteScreen({
   };
 
   return (
-    <RoomScreenLayout scroll>
-      <Rise when={replayDone} style={styles.header}>
-        <Text style={styles.title}>You filled every corner</Text>
-      </Rise>
-
+    <RoomScreenLayout
+      scroll
+      title="You filled every corner"
+      // Both held until the replay lands, both holding their space until then.
+      reveal={replayDone}
+      action={<RoomActionButton label="Continue" onPress={continueToPicker} />}
+    >
       <RoomStage>
         <RoomReplay
           width={roomWidth}
@@ -55,26 +51,6 @@ export default function RoomCompleteScreen({
           onDone={() => setReplayDone(true)}
         />
       </RoomStage>
-
-      <Rise when={replayDone} delay={stagger.base} style={styles.actionWrap}>
-        <RoomActionButton label="Continue" onPress={continueToPicker} />
-      </Rise>
     </RoomScreenLayout>
   );
 }
-
-const styles = StyleSheet.create({
-  header: {
-    paddingHorizontal: padding.screen.horizontal,
-    marginTop: spacing['2xl'],
-  },
-  title: {
-    ...typography.display.display3,
-    color: colors.text.primary,
-    textAlign: 'center',
-  },
-  actionWrap: {
-    paddingHorizontal: padding.screen.horizontal,
-    marginTop: margin.sectionGap,
-  },
-});

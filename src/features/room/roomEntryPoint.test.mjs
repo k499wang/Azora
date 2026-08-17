@@ -55,12 +55,57 @@ test('the lab flags the room screens it opens', () => {
   }
 });
 
-test('the stage message is reserved space, not an overlay', () => {
-  // Hung off the top of the stage it drew outside the layout, over the top bar
-  // — "Congratulations!" landed under the back arrow on any screen with one.
+test('every room screen puts its title in the one shared place', () => {
+  // "Congratulations!" was an overlay hung off the top of the stage, so it drew
+  // outside the layout — over the top bar, on any screen that has one — and at
+  // a different height from every other line these screens show.
   const layout = read('features/room/RoomScreenLayout.tsx');
-  assert.match(layout, /bannerSlot: \{\s*height: BANNER_HEIGHT/);
-  assert.doesNotMatch(layout, /bottom: '100%'/);
+  assert.match(layout, /function RoomScreenTitle/);
+  assert.doesNotMatch(layout, /position: 'absolute'/);
+
+  // The title is the layout's to render, never a screen's — the moment one
+  // screen can hand in its own, the heights drift apart again.
+  assert.doesNotMatch(layout, /export function RoomScreenTitle/);
+
+  for (const screen of [
+    'screens/RoomDecorateScreen.tsx',
+    'screens/RoomCompleteScreen.tsx',
+    'screens/NextRoomScreen.tsx',
+    'screens/HotelScreen.tsx',
+  ]) {
+    const source = read(screen);
+    assert.match(
+      source,
+      /title=["{]/,
+      `${screen} has no title going through the shared layout`,
+    );
+    assert.doesNotMatch(
+      source,
+      /typography\.display/,
+      `${screen} styles a title of its own; it must use RoomScreenTitle`,
+    );
+  }
+});
+
+test('a held-back title and its button arrive on the same beat', () => {
+  // Both entrances come from one helper on one delay. Two screens each timing
+  // their own `Rise` is how the congratulation and the Continue button used to
+  // land a third of a second apart.
+  const layout = read('features/room/RoomScreenLayout.tsx');
+  assert.match(layout, /const REVEAL_DELAY =/);
+  assert.match(layout, /enter\(<RoomScreenTitle/);
+  assert.match(layout, /enter\(action\)/);
+
+  for (const screen of [
+    'screens/RoomDecorateScreen.tsx',
+    'screens/RoomCompleteScreen.tsx',
+  ]) {
+    assert.doesNotMatch(
+      read(screen),
+      /<Rise/,
+      `${screen} times its own entrance; it must pass \`reveal\` instead`,
+    );
+  }
 });
 
 test('__DEV__ still gates the arrow, whatever the param says', () => {

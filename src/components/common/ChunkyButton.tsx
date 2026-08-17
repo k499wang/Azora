@@ -40,6 +40,13 @@ export const CHUNKY_TONE: ChunkyTone = {
   label: colors.text.inverse,
 };
 
+/** White face, blue label. For the lesser of two stacked buttons. */
+export const CHUNKY_TONE_QUIET: ChunkyTone = {
+  face: colors.background.card,
+  lip: colors.primary.blue200,
+  label: colors.primary.blue700,
+};
+
 interface ChunkyButtonProps {
   label: string;
   onPress: () => void;

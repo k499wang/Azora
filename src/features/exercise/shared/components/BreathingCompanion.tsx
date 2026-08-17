@@ -61,12 +61,23 @@ const BODY_STRETCH_Y = 1.03;
 const FACE_SQUASH_Y = 0.99;
 const FACE_STRETCH_Y = 1.01;
 
+// Concentric and drawn into one canvas rather than three stacked views: the
+// aura is the largest thing on screen and it rescales every frame, so it is
+// worth one composited layer instead of three. Radii are in stage widths.
 const AURA_RINGS = [
   { radius: 0.92, opacity: 0.08 },
   { radius: 0.75, opacity: 0.13 },
   { radius: 0.6, opacity: 0.2 },
 ] as const;
+const AURA_OUTER = AURA_RINGS[0].radius;
 const AURA_MIN_SCALE = 0.88;
+
+// A lung fills and empties on a curve, not a ramp. Sinusoidal in and out also
+// puts zero velocity at both ends of every phase, so a pattern with no hold
+// between inhale and exhale turns over instead of reversing on a corner. The
+// phase clock is a separate one-second timer, so this changes how the breath
+// looks, never how long it lasts.
+const BREATH_EASING = Easing.inOut(Easing.sin);
 
 // Long enough that the eye visibly travels closed rather than blinking there.
 const FACE_MORPH_MS = 560;
@@ -112,6 +123,7 @@ const BreathingCompanion = forwardRef<BreathingCircleRef, BreathingCompanionProp
     const stageTop = viewport * FACE_REST_RATIO - faceOffsetFromTop;
     const travel = viewport * TRAVEL_RATIO;
     const auraOffset = (FACE_ORIGIN_Y / VIEWBOX_H - 0.5) * stageHeight;
+    const auraSize = stageWidth * AURA_OUTER * 2;
     // Far enough that the crown clears the bottom edge before it settles.
     const enterDistance = viewport - stageTop + stageHeight * 0.1;
 
@@ -129,7 +141,7 @@ const BreathingCompanion = forwardRef<BreathingCircleRef, BreathingCompanionProp
     ) => {
       breath.value = withTiming(
         toValue,
-        { duration: durationSeconds * 1000, easing: Easing.linear },
+        { duration: durationSeconds * 1000, easing: BREATH_EASING },
         (finished) => {
           'worklet';
           if (finished && onComplete) runOnJS(onComplete)();
@@ -270,19 +282,24 @@ const BreathingCompanion = forwardRef<BreathingCircleRef, BreathingCompanionProp
       ),
     }));
 
-    // The mouth keeps moving inside a phase: the breath value opens it on the
-    // way in and relaxes it closed on the way out.
+    // The mouth keeps moving inside a phase, and which way depends on where the
+    // air is going. The exhale is the only phase it leaves through the mouth:
+    // there the breath pushes it open on full lungs and lets it narrow shut as
+    // they empty. Everywhere else the air is nasal, so the mouth stays sealed
+    // and the breath only presses the lips thin and wide.
     const mouthProps = useAnimatedProps(() => {
       const s = shape.value;
-      const open = 1 - s.mouthBreath + s.mouthBreath * (0.28 + 0.72 * breath.value);
-      const widen = 1 - 0.12 * s.mouthBreath + 0.12 * s.mouthBreath * breath.value;
+      const filled = breath.value;
+      const open = 1 - s.mouthBreath + s.mouthBreath * (0.18 + 0.82 * filled);
+      const round = 1 - 0.18 * s.mouthBreath * (1 - filled);
+      const press = s.mouthPress * filled;
       return {
         d: lensPath(
           VIEWBOX_W / 2,
           MOUTH_Y,
-          s.mouthWidth * widen,
-          s.mouthTop * open,
-          s.mouthBottom * open,
+          s.mouthWidth * round * (1 + 0.12 * press),
+          s.mouthTop * open * (1 - 0.34 * press),
+          s.mouthBottom * open * (1 - 0.34 * press),
         ),
       };
     });
@@ -306,26 +323,27 @@ const BreathingCompanion = forwardRef<BreathingCircleRef, BreathingCompanionProp
       <View style={styles.clip} pointerEvents="none">
         <Animated.View style={[stageBox, stageStyle]}>
           <Animated.View style={[StyleSheet.absoluteFillObject, auraStyle]}>
-            {AURA_RINGS.map((ring) => {
-              const diameter = stageWidth * ring.radius * 2;
-              return (
-                <View
+            <Svg
+              width={auraSize}
+              height={auraSize}
+              viewBox="-1 -1 2 2"
+              style={{
+                position: 'absolute',
+                left: (stageWidth - auraSize) / 2,
+                top: (stageHeight - auraSize) / 2,
+              }}
+            >
+              {AURA_RINGS.map((ring) => (
+                <Circle
                   key={ring.radius}
-                  style={[
-                    styles.auraRing,
-                    {
-                      width: diameter,
-                      height: diameter,
-                      borderRadius: diameter / 2,
-                      left: (stageWidth - diameter) / 2,
-                      top: (stageHeight - diameter) / 2,
-                      backgroundColor: theme.circleOuter,
-                      opacity: ring.opacity,
-                    },
-                  ]}
+                  cx={0}
+                  cy={0}
+                  r={ring.radius / AURA_OUTER}
+                  fill={theme.circleOuter}
+                  fillOpacity={ring.opacity}
                 />
-              );
-            })}
+              ))}
+            </Svg>
           </Animated.View>
 
           <Animated.View style={[StyleSheet.absoluteFillObject, bodyStyle]}>
@@ -377,8 +395,5 @@ const styles = StyleSheet.create({
   clip: {
     ...StyleSheet.absoluteFillObject,
     overflow: 'hidden',
-  },
-  auraRing: {
-    position: 'absolute',
   },
 });

@@ -389,6 +389,8 @@ const styles = StyleSheet.create({
   },
   metadataText: {
     ...typography.label.detail,
+    fontSize: 14,
+    lineHeight: 18,
     color: colors.text.secondary,
   },
 });

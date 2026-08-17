@@ -1,5 +1,5 @@
 import { Text } from '../components/common/Text';
-import { useCallback, useEffect, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, ScrollView, Share, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -7,7 +7,9 @@ import { colors } from '../theme/colors';
 import { typography, fonts } from '../theme/typography';
 import { spacing, padding, margin } from '../theme/spacing';
 import DailyCompleteSheet from '../features/room/DailyCompleteSheet';
+import GlassIconButton from '../components/common/GlassIconButton';
 import ChunkyButton from '../components/common/ChunkyButton';
+import { Rise } from '../components/common/Reveal';
 import HelpfulnessQuestion from '../components/exercise/HelpfulnessQuestion';
 import { BREATH_HOLD_FEEDBACK_ID } from '../lib/sessionKey';
 import BlobCharacter from '../components/home/BlobCharacter';
@@ -15,8 +17,6 @@ import { BREATH_HOLD_STYLE } from '../features/exercise/guidedBreathing/category
 import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
 import { card } from '../theme/card';
 import HeartRateStatsSection from '../components/heartRate/HeartRateStatsSection';
-import GlassIconButton from '../components/common/GlassIconButton';
-import { SESSION_GLASS_BUTTON_SIZE } from '../features/exercise/shared/components/SessionGlassButton';
 import type { DailyResultScreenProps } from '../app/navigation';
 import { estimateLungAge } from '../lib/lungAge';
 import { benchmarkBreathHold } from '../lib/breathHoldPercentile';
@@ -31,11 +31,19 @@ import {
   maybeRequestSessionReview,
   ReviewTrigger,
 } from '../services/reviews/storeReview';
+import { useOpeningTransitionComplete } from '../app/navigation';
+import { useRoomClaim } from '../features/room/useRoomClaim';
+import { useDailyCompleteSnapshot } from '../features/room/useDailyCompleteSnapshot';
+import { SESSION_GLASS_BUTTON_SIZE } from '../features/exercise/shared/components/SessionGlassButton';
+import { duration, stagger } from '../theme/motion';
 
 // The breath hold is not a guided technique, but feedback is stored per
 // technique id, so it answers under its own key.
 
 const HERO_BLOB_SIZE = 132;
+const BREATH_HOLD_COMPLETION = { breathHold: true } as const;
+const EMPTY_BPM_SAMPLES: { offsetMs: number; bpm: number }[] = [];
+const ResultHeartRateStatsSection = memo(HeartRateStatsSection);
 
 function formatDuration(secs: number): string {
   const m = Math.floor(secs / 60);
@@ -63,25 +71,39 @@ export default function ShareableResultScreen({
     avgBpm,
     minBpm,
     maxBpm,
-    bpmSamples = [],
+    bpmSamples = EMPTY_BPM_SAMPLES,
   } = route.params;
   const hrDropBpm =
     minBpm != null && maxBpm != null ? Math.max(0, maxBpm - minBpm) : null;
 
-  // Always shown: this screen is only reachable from the daily breath hold, so
-  // reaching it always means a daily just moved.
-  const [sheetVisible, setSheetVisible] = useState(true);
-  // Same reason as the breathing screen: the heart-rate section is expensive
-  // and must not build itself while the sheet is animating.
-  const [sheetSettled, setSheetSettled] = useState(false);
-  const showResults = !sheetVisible || sheetSettled;
+  const [sheetDismissed, setSheetDismissed] = useState(false);
+  const [sheetPresented, setSheetPresented] = useState(false);
+  const [sheetExitStarted, setSheetExitStarted] = useState(false);
+  const openingTransitionComplete =
+    useOpeningTransitionComplete(navigation);
+  const roomClaim = useRoomClaim(userId);
+  const { snapshot, markSeen } = useDailyCompleteSnapshot({
+    // Resolve while the native route is moving; presentation still waits for
+    // `transitionEnd` below.
+    active: true,
+    claim: roomClaim,
+    projection: BREATH_HOLD_COMPLETION,
+  });
+  // Result data comes from the route, so the whole tree is mounted right away
+  // and lays out under the opaque cover while the native slide is still
+  // running. Nothing heavy is left to commit once the screen is on-screen —
+  // `transitionEnd` only decides when things become *visible*.
+  const sheetVisible =
+    !sheetDismissed && snapshot != null && openingTransitionComplete;
+  const showDailyCover = !sheetDismissed && !sheetPresented;
+  const revealResults = sheetExitStarted || sheetDismissed;
 
   // Held until the sheet is gone — a store-review prompt landing on top of the
   // celebration would eat it.
   useEffect(() => {
-    if (sheetVisible) return;
+    if (!sheetDismissed) return;
     void maybeRequestSessionReview(ReviewTrigger.BreathHold);
-  }, [sheetVisible]);
+  }, [sheetDismissed]);
 
   const lungAge = estimateLungAge(holdSeconds, userAge);
   const benchmark =
@@ -93,6 +115,58 @@ export default function ShareableResultScreen({
     firstName == null ? 'Nice work' : `Nice work, ${firstName}`;
   const advancedStatsLocked =
     !advancedStatsAccess.allowed && !advancedStatsAccess.isLoading;
+  const advancedStatsTrackingAccess = useMemo(
+    () => ({
+      allowed: advancedStatsAccess.allowed,
+      isPro: advancedStatsAccess.isPro,
+      reason: advancedStatsAccess.reason,
+      used: advancedStatsAccess.used,
+      limit: advancedStatsAccess.limit,
+    }),
+    [
+      advancedStatsAccess.allowed,
+      advancedStatsAccess.isPro,
+      advancedStatsAccess.limit,
+      advancedStatsAccess.reason,
+      advancedStatsAccess.used,
+    ],
+  );
+
+  const celebrationStats = useMemo(
+    () => [
+      { label: 'Hold', value: formatDuration(holdSeconds) },
+      { label: 'Lung age', value: `${lungAge.years}` },
+    ],
+    [holdSeconds, lungAge.years],
+  );
+  const celebrationContentRef = useRef<{
+    title: string;
+    stats: typeof celebrationStats;
+  } | null>(null);
+  if (snapshot != null && celebrationContentRef.current == null) {
+    celebrationContentRef.current = {
+      title: congratulation,
+      stats: celebrationStats,
+    };
+  }
+  const celebrationContent = celebrationContentRef.current;
+
+  const handleClose = useCallback(() => {
+    navigation.navigate('MainTabs', { screen: 'Home' });
+  }, [navigation]);
+
+  const handleSheetShow = useCallback(() => {
+    markSeen();
+    setSheetPresented(true);
+  }, [markSeen]);
+
+  const handleSheetDismiss = useCallback(() => {
+    setSheetDismissed(true);
+  }, []);
+
+  const handleSheetExitStart = useCallback(() => {
+    setSheetExitStarted(true);
+  }, []);
 
   const handleShare = useCallback(async () => {
     try {
@@ -111,7 +185,7 @@ export default function ShareableResultScreen({
       placement: PaywallPlacement.DailyResultProGate,
       sourceScreen: 'DailyResult',
       sourceAction: 'result_stats',
-      access: advancedStatsAccess,
+      access: advancedStatsTrackingAccess,
     });
     navigation.navigate('ProPaywall', {
       placement: PaywallPlacement.DailyResultProGate,
@@ -119,58 +193,82 @@ export default function ShareableResultScreen({
       sourceAction: 'result_stats',
       feature: FeatureKey.AdvancedStats,
     });
-  }, [advancedStatsAccess, navigation]);
+  }, [
+    advancedStatsTrackingAccess,
+    navigation,
+  ]);
 
   return (
-    <View style={[styles.screen, { paddingTop: insets.top }]}>
-      <DailyCompleteSheet
-        visible={sheetVisible}
-        hue={hue}
-        character={BREATH_HOLD_STYLE.character}
-        title={congratulation}
-        subtitle="Daily breath hold"
-        stats={[
-          { label: 'Hold', value: formatDuration(holdSeconds) },
-          { label: 'Lung age', value: `${lungAge.years}` },
-        ]}
-        onSettled={() => setSheetSettled(true)}
-        onDismiss={() => setSheetVisible(false)}
-      />
-
-      {/* In the flow, not over it. These used to be absolutely positioned, so
-          the hero card scrolled underneath them and the first thing you saw was
-          partly covered by its own controls. */}
-      {showResults ? (
-        <View style={styles.topBar}>
-          <GlassIconButton
-            size={SESSION_GLASS_BUTTON_SIZE}
-            onPress={() => navigation.navigate('MainTabs', { screen: 'Home' })}
-          >
-            <MaterialCommunityIcons
-              name="close"
-              size={20}
-              color={colors.text.secondary}
-            />
-          </GlassIconButton>
-          <GlassIconButton
-            size={SESSION_GLASS_BUTTON_SIZE}
-            onPress={handleShare}
-          >
-            <MaterialCommunityIcons
-              name="share-variant"
-              size={20}
-              color={colors.primary.blue600}
-            />
-          </GlassIconButton>
-        </View>
+    <View
+      style={[
+        styles.screen,
+        {
+          paddingTop: insets.top,
+          backgroundColor: showDailyCover
+            ? hue.base
+            : colors.background.canvas,
+        },
+      ]}
+    >
+      {sheetVisible && snapshot != null && celebrationContent != null ? (
+        <DailyCompleteSheet
+          visible
+          hue={hue}
+          character={BREATH_HOLD_STYLE.character}
+          title={celebrationContent.title}
+          subtitle="Daily breath hold"
+          stats={celebrationContent.stats}
+          state={snapshot.state}
+          barFrom={snapshot.barFrom}
+          rewardReady={!snapshot.state.unlocked || snapshot.rewardReady}
+          onShow={handleSheetShow}
+          onExitStart={handleSheetExitStart}
+          onDismiss={handleSheetDismiss}
+        />
       ) : null}
 
-      {showResults ? (
+      <GlassIconButton
+        accessibilityLabel="Close results"
+        size={SESSION_GLASS_BUTTON_SIZE}
+        style={[
+          styles.floatingAction,
+          styles.floatingClose,
+          { top: insets.top + padding.screen.vertical },
+        ]}
+        onPress={handleClose}
+      >
+        <MaterialCommunityIcons
+          name="close"
+          size={20}
+          color={colors.text.secondary}
+        />
+      </GlassIconButton>
+      <GlassIconButton
+        accessibilityLabel="Share result"
+        size={SESSION_GLASS_BUTTON_SIZE}
+        style={[
+          styles.floatingAction,
+          styles.floatingShare,
+          { top: insets.top + padding.screen.vertical },
+        ]}
+        onPress={handleShare}
+      >
+        <MaterialCommunityIcons
+          name="share-variant"
+          size={20}
+          color={colors.primary.blue600}
+        />
+      </GlassIconButton>
+
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.heroWrap}>
+        <Rise
+          when={revealResults}
+          durationMs={duration.base}
+          style={styles.heroWrap}
+        >
           <View style={styles.heroShadow}>
             <View style={[styles.heroCard, { backgroundColor: hue.base }]}>
               <BlobCharacter
@@ -189,51 +287,65 @@ export default function ShareableResultScreen({
               )}
             </View>
           </View>
-        </View>
+        </Rise>
 
-        <View style={styles.statsSection}>
-          <HeartRateStatsSection
-            hrDrop={hrDropBpm}
-            minBpm={minBpm ?? null}
-            maxBpm={maxBpm ?? null}
-            avgBpm={avgBpm ?? null}
-            age={userAge}
-            bpmSamples={bpmSamples}
-            locked={advancedStatsLocked}
-            onPressUpgrade={showAdvancedStatsPaywall}
-            emptyChartMessage={
-              heartRateResultStatus === 'insufficient_beats'
-                ? 'Not enough reliable heartbeats were detected during this hold to show heart-rate results.'
-                : 'Complete your breath hold with heart rate enabled to see your BPM.'
-            }
-            insightContext="breath-hold"
-          />
-        </View>
-
-        <View style={styles.bodySection}>
-          <HelpfulnessQuestion
-            techniqueId={BREATH_HOLD_FEEDBACK_ID}
-            localDate={todayLocalDate}
-            sessionKey={sessionKey}
-          />
-        </View>
-
-        <ChunkyButton
-          label="Share my result"
-          shape="card"
-          style={styles.shareCta}
-          icon={
-            <MaterialCommunityIcons
-              name="share-variant"
-              size={20}
-              color={colors.text.inverse}
+        <Rise
+          when={revealResults}
+          delay={stagger.tight}
+          durationMs={duration.base}
+        >
+          <View style={styles.statsSection}>
+            <ResultHeartRateStatsSection
+              hrDrop={hrDropBpm}
+              minBpm={minBpm ?? null}
+              maxBpm={maxBpm ?? null}
+              avgBpm={avgBpm ?? null}
+              age={userAge}
+              bpmSamples={bpmSamples}
+              locked={advancedStatsLocked}
+              onPressUpgrade={showAdvancedStatsPaywall}
+              emptyChartMessage={
+                heartRateResultStatus === 'insufficient_beats'
+                  ? 'Not enough reliable heartbeats were detected during this hold to show heart-rate results.'
+                  : 'Complete your breath hold with heart rate enabled to see your BPM.'
+              }
+              insightContext="breath-hold"
             />
-          }
-          onPress={handleShare}
-        />
-      </ScrollView>
-      ) : null}
+          </View>
+        </Rise>
 
+        <Rise
+          when={revealResults}
+          delay={stagger.tight * 2}
+          durationMs={duration.base}
+        >
+          <View style={styles.bodySection}>
+            <HelpfulnessQuestion
+              techniqueId={BREATH_HOLD_FEEDBACK_ID}
+              localDate={todayLocalDate}
+              sessionKey={sessionKey}
+            />
+          </View>
+
+          <ChunkyButton
+            label="Share my result"
+            shape="card"
+            style={styles.shareCta}
+            icon={
+              <MaterialCommunityIcons
+                name="share-variant"
+                size={20}
+                color={colors.text.inverse}
+              />
+            }
+            onPress={handleShare}
+          />
+        </Rise>
+      </ScrollView>
+
+      {showDailyCover ? (
+        <View style={[styles.dailyCover, { backgroundColor: hue.base }]} />
+      ) : null}
     </View>
   );
 }
@@ -243,14 +355,25 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background.canvas,
   },
+  dailyCover: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   scrollContent: {
+    paddingTop: padding.screen.vertical + SESSION_GLASS_BUTTON_SIZE,
     paddingBottom: spacing['5xl'],
   },
-  topBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: padding.screen.horizontal,
-    paddingVertical: padding.screen.vertical,
+  floatingAction: {
+    position: 'absolute',
+    zIndex: 2,
+  },
+  floatingClose: {
+    left: padding.screen.horizontal,
+  },
+  floatingShare: {
+    right: padding.screen.horizontal,
   },
   heroWrap: {
     paddingHorizontal: padding.screen.horizontal,
