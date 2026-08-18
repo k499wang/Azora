@@ -33,7 +33,10 @@ import {
 } from '../services/reviews/storeReview';
 import { useOpeningTransitionComplete } from '../app/navigation';
 import { useRoomClaim } from '../features/room/useRoomClaim';
-import { useDailyCompleteSnapshot } from '../features/room/useDailyCompleteSnapshot';
+import {
+  isDailyCompleteRewardReady,
+  useDailyCompleteSnapshot,
+} from '../features/room/useDailyCompleteSnapshot';
 import { SESSION_GLASS_BUTTON_SIZE } from '../features/exercise/shared/components/SessionGlassButton';
 import { duration, stagger } from '../theme/motion';
 import { returnToHome } from '../app/navigation/returnToHome';
@@ -175,6 +178,10 @@ export default function ShareableResultScreen({
     setSheetExitStarted(true);
   }, []);
 
+  const handleChoosePiece = useCallback(() => {
+    navigation.replace('RoomDecorate');
+  }, [navigation]);
+
   const handleShare = useCallback(async () => {
     try {
       const message = benchmark
@@ -227,9 +234,13 @@ export default function ShareableResultScreen({
           stats={celebrationContent.stats}
           state={snapshot.state}
           barFrom={snapshot.barFrom}
-          rewardReady={!snapshot.state.unlocked || snapshot.rewardReady}
+          rewardReady={isDailyCompleteRewardReady(
+            snapshot.state,
+            roomClaim.progress.canClaim,
+          )}
           onShow={handleSheetShow}
           onExitStart={handleSheetExitStart}
+          onChoosePiece={handleChoosePiece}
           onDismiss={handleSheetDismiss}
         />
       ) : null}

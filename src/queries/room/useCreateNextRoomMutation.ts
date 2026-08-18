@@ -14,16 +14,13 @@ export function useCreateNextRoomMutation(userId: string | null) {
 
       return createNextRoom(userId, look);
     },
-    onSuccess: async (currentRoom) => {
+    onSuccess: (currentRoom) => {
       const queryKey = getCurrentRoomQueryKey(userId);
       queryClient.setQueryData(queryKey, currentRoom);
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey, exact: true }),
-        queryClient.invalidateQueries({
-          queryKey: getRoomsQueryKey(userId),
-          exact: true,
-        }),
-      ]);
+      void queryClient.invalidateQueries({
+        queryKey: getRoomsQueryKey(userId),
+        exact: true,
+      });
     },
   });
 }

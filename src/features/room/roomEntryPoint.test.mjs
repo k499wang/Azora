@@ -23,7 +23,25 @@ function read(relativePath) {
 test('Home renders the room progress card', () => {
   const home = read('screens/HomeScreen.tsx');
   assert.match(home, /import RoomProgressCard from/);
-  assert.match(home, /<RoomProgressCard \/>/);
+  assert.match(home, /<RoomProgressCard/);
+});
+
+test('Home owns one room claim graph and passes explicit room props', () => {
+  const home = read('screens/HomeScreen.tsx');
+  const homeRoom = read('features/room/HomeRoom.tsx');
+  const progressCard = read('features/room/RoomProgressCard.tsx');
+  const startDaily = read('hooks/useStartDaily.ts');
+
+  assert.equal((home.match(/useRoomClaim\(/g) ?? []).length, 1);
+  assert.doesNotMatch(home, /useDailiesCompletion/);
+  assert.match(home, /<HomeRoom room={roomClaim\.room} progress={roomClaim\.progress}/);
+  assert.match(home, /<RoomProgressCard\s+progress={roomClaim\.progress}/);
+
+  for (const source of [homeRoom, progressCard]) {
+    assert.doesNotMatch(source, /useRoomClaim|useAuthStore/);
+  }
+  assert.doesNotMatch(startDaily, /useDailiesCompletion\(/);
+  assert.match(startDaily, /dailies: StartDailyTechniques/);
 });
 
 test('a claimable piece has a route to the picker', () => {
@@ -52,6 +70,53 @@ test('the lab flags the room screens it opens', () => {
   const lab = read('screens/RoomLabScreen.tsx');
   for (const route of ['RoomDecorate', 'RoomComplete', 'Hotel', 'NextRoom']) {
     assert.match(lab, new RegExp(`'${route}', \\{ fromLab: true \\}`));
+  }
+});
+
+test('the completion sheet delegates typed forward navigation to its callers', () => {
+  const sheet = read('features/room/DailyCompleteSheet.tsx');
+  const guided = read('screens/SessionCompleteScreen.tsx');
+  const breathHold = read('screens/ShareableResultScreen.tsx');
+  const lab = read('screens/RoomLabScreen.tsx');
+
+  assert.doesNotMatch(sheet, /useNavigation|RootStackNavigationProp/);
+  assert.match(sheet, /onChoosePiece: \(\) => void/);
+  assert.match(sheet, /onChoosePiece\(\)/);
+
+  for (const result of [guided, breathHold]) {
+    assert.match(result, /navigation\.replace\('RoomDecorate'\)/);
+    assert.match(result, /onChoosePiece={handleChoosePiece}/);
+  }
+  assert.match(
+    lab,
+    /onChoosePiece={[\s\S]*?setSheetVisible\(false\)[\s\S]*?navigate\('RoomDecorate', \{ fromLab: true \}\)/,
+  );
+});
+
+test('forward room transitions replace and preserve lab params', () => {
+  const decorate = read('screens/RoomDecorateScreen.tsx');
+  const complete = read('screens/RoomCompleteScreen.tsx');
+
+  assert.doesNotMatch(decorate, /navigation\.navigate\('RoomComplete'/);
+  assert.match(decorate, /navigation\.replace\('RoomComplete', route\.params\)/);
+  assert.doesNotMatch(complete, /navigation\.navigate\('NextRoom'/);
+  assert.match(complete, /navigation\.replace\('NextRoom', route\.params\)/);
+});
+
+test('canonical room writes refresh history without blocking on current-room refetches', () => {
+  for (const path of [
+    'queries/room/usePlaceDecorationMutation.ts',
+    'queries/room/useCreateNextRoomMutation.ts',
+  ]) {
+    const mutation = read(path);
+    assert.match(mutation, /queryClient\.setQueryData\(queryKey, currentRoom\)/);
+    assert.match(mutation, /void queryClient\.invalidateQueries\(\{/);
+    assert.match(mutation, /queryKey: getRoomsQueryKey\(userId\)/);
+    assert.doesNotMatch(mutation, /onSuccess: async/);
+    assert.doesNotMatch(
+      mutation,
+      /invalidateQueries\(\{ queryKey, exact: true \}\)/,
+    );
   }
 });
 

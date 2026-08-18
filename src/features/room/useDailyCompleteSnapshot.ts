@@ -21,8 +21,6 @@ export interface DailyCompleteSnapshot {
   state: DailyCompleteState;
   /** Frozen progress-bar origin, including repeat-daily behavior. */
   barFrom: number;
-  /** Canonical room entitlement at capture time; never optimistic. */
-  rewardReady: boolean;
   todayLocalDate: string;
 }
 
@@ -31,6 +29,14 @@ export interface DailyCompletionProjection {
   guided?: boolean;
   handPicked?: boolean;
   breathHold?: boolean;
+}
+
+/** Keep the animated snapshot frozen while canonical entitlement catches up. */
+export function isDailyCompleteRewardReady(
+  state: Pick<DailyCompleteState, 'unlocked'>,
+  canClaim: boolean,
+): boolean {
+  return !state.unlocked || canClaim;
 }
 
 export function buildDailyCompleteSnapshot(
@@ -66,7 +72,6 @@ export function buildDailyCompleteSnapshot(
     },
     barFrom:
       (seenDone ?? Math.max(0, done - 1)) / DAILIES_PER_DAY,
-    rewardReady: claim.progress.canClaim,
     todayLocalDate: claim.dailies.todayLocalDate,
   };
 }

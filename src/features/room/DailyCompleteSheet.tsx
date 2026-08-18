@@ -5,7 +5,6 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   interpolate,
@@ -36,7 +35,6 @@ import { colors } from '../../theme/colors';
 import { padding, spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import type { PlayfulHue } from '../exercise/guidedBreathing/categoryPalette';
-import type { RootStackNavigationProp } from '../../app/navigation';
 import type { DailyCompleteState } from './useDailyCompleteSnapshot';
 
 export type { DailyCompleteState } from './useDailyCompleteSnapshot';
@@ -86,6 +84,7 @@ interface DailyCompleteSheetProps {
   onShow?: () => void;
   /** Fires immediately before the sheet begins its exit animation. */
   onExitStart?: () => void;
+  onChoosePiece: () => void;
   onDismiss: () => void;
 }
 
@@ -114,11 +113,11 @@ function DailyCompleteSheet({
   rewardReady = true,
   onShow,
   onExitStart,
+  onChoosePiece,
   onDismiss,
 }: DailyCompleteSheetProps) {
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
-  const navigation = useNavigation<RootStackNavigationProp>();
   const [presented, setPresented] = useState(false);
   const closing = useRef(false);
 
@@ -198,8 +197,7 @@ function DailyCompleteSheet({
     if (isHapticsEnabled()) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
     }
-    onDismiss();
-    navigation.navigate('RoomDecorate');
+    onChoosePiece();
   };
 
   if (!visible) {

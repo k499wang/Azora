@@ -20,6 +20,7 @@ import type { RoomCompleteScreenProps } from '../app/navigation';
  */
 export default function RoomCompleteScreen({
   navigation,
+  route,
 }: RoomCompleteScreenProps) {
   const { width } = useWindowDimensions();
   const userId = useAuthStore((state) => state.user?.id ?? null);
@@ -31,7 +32,7 @@ export default function RoomCompleteScreen({
   const [replayDone, setReplayDone] = useState(false);
 
   const continueToPicker = () => {
-    navigation.navigate('NextRoom');
+    navigation.replace('NextRoom', route.params);
   };
 
   return (

@@ -34,12 +34,13 @@ interface Placing {
 
 export default function RoomDecorateScreen({
   navigation,
+  route,
 }: RoomDecorateScreenProps) {
   const { width } = useWindowDimensions();
   const userId = useAuthStore((state) => state.user?.id ?? null);
   const { room, progress, dailies, isLoading } = useRoomClaim(userId);
   const placeDecoration = usePlaceDecorationMutation(userId);
-  const { start } = useStartDaily('RoomDecorate');
+  const { start } = useStartDaily('RoomDecorate', dailies);
 
   const decorations = room?.decorations ?? [];
   const shell = roomShellPolys(room?.shell);
@@ -132,7 +133,7 @@ export default function RoomDecorateScreen({
     // in the loop — it gets its own screen rather than a state swap under the
     // user's thumb.
     if (!previewing && placed >= ROOM_SLOT_COUNT) {
-      navigation.replace('RoomComplete');
+      navigation.replace('RoomComplete', route.params);
       return;
     }
 
@@ -145,6 +146,7 @@ export default function RoomDecorateScreen({
     placing,
     previewing,
     revealDone,
+    route.params,
     writeFailed,
     writeSettled,
   ]);
@@ -200,7 +202,7 @@ export default function RoomDecorateScreen({
             onSelect={setSelected}
             onSeeRoom={() => {
               triggerTapHaptic();
-              navigation.navigate('RoomComplete');
+              navigation.replace('RoomComplete', route.params);
             }}
             onStartDaily={(daily) => {
               triggerTapHaptic();

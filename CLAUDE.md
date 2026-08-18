@@ -106,6 +106,7 @@ Example:
 
 ```ts
 import type { DailyResultScreenProps } from '../app/navigation';
+import { returnToHome } from '../app/navigation/returnToHome';
 
 export default function ShareableResultScreen({
   navigation,
@@ -114,14 +115,14 @@ export default function ShareableResultScreen({
   const holdSeconds = route.params.holdSeconds;
 
   return (
-    <Pressable onPress={() => navigation.navigate('MainTabs', { screen: 'Home' })} />
+    <Pressable onPress={() => returnToHome(navigation)} />
   );
 }
 ```
 
 Why:
 - `route.params` is typed
-- `navigation.navigate(...)` is typed
+- `navigation` is typed
 - route names and params stay centralized
 
 ### Child Component Navigation Pattern
@@ -193,7 +194,7 @@ navigation.navigate('Settings');
 
 ## React Query Cache Invalidation
 
-Before adding or modifying any `useMutation`, read `docs/query-cache-invalidation-map.md` and update it in the same change. The map enumerates which queries each mutation must invalidate. Stale-cache bugs (a DB write that the UI doesn't reflect until reload) almost always come from a mutation that didn't invalidate every query reading the fields it wrote — the map exists to make that enumeration mechanical.
+Before adding or modifying any `useMutation`, read `docs/query-cache-invalidation-map.md` and update it in the same change. The map enumerates every cache affected by a mutation. Every affected cache must be refreshed, but refresh does not always mean invalidation: if the mutation returns the complete canonical query shape, seed that exact key with `setQueryData` and invalidate only other affected queries. Refetch the canonical key only when the response is incomplete or requires server normalization.
 
 ---
 

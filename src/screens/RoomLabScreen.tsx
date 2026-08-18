@@ -295,6 +295,10 @@ export default function RoomLabScreen({ navigation }: RoomLabScreenProps) {
           { label: 'Time', value: '2:00' },
           { label: 'Breaths', value: '24' },
         ]}
+        onChoosePiece={() => {
+          setSheetVisible(false);
+          navigation.navigate('RoomDecorate', { fromLab: true });
+        }}
         onDismiss={() => setSheetVisible(false)}
       />
       <AppTopBar showBack title="Room lab" showAvatar={false} showStreak={false} />

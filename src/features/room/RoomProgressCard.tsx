@@ -4,15 +4,17 @@ import { Text } from '../../components/common/Text';
 import Icon from '../../components/common/icons/Icon';
 import ProgressBar from '../../components/common/ProgressBar';
 import ChunkyButton from '../../components/common/ChunkyButton';
-import { useRoomClaim } from './useRoomClaim';
 import { DAILIES_PER_DAY } from '../../lib/dailies';
-import { ROOM_SLOT_COUNT } from '../../lib/room/roomProgress';
-import { useAuthStore } from '../../stores/authStore';
+import {
+  ROOM_SLOT_COUNT,
+  type RoomProgress,
+} from '../../lib/room/roomProgress';
 import { card } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import type { MainTabNavigationProp } from '../../app/navigation';
+import type { DailiesCompletion } from '../../hooks/useDailiesCompletion';
 
 const BAR_HEIGHT = 12;
 /** Shorter than a screen's primary — this one sits inside a card. */
@@ -27,12 +29,29 @@ const CTA_MIN_HEIGHT = 48;
  * waiting to roll over, with nothing anywhere that led back to it. This is the
  * standing entry point, so no state of the loop is ever unreachable.
  */
-export default function RoomProgressCard() {
-  const userId = useAuthStore((state) => state.user?.id ?? null);
-  const { room, progress, dailies, isLoading } = useRoomClaim(userId);
+interface RoomProgressCardProps {
+  progress: Pick<
+    RoomProgress,
+    'isComplete' | 'canClaim' | 'claimedToday' | 'placedCount'
+  >;
+  dailies: Pick<
+    DailiesCompletion,
+    'guidedCompleted' | 'handPickedCompleted' | 'breathHoldCompleted'
+  >;
+  isLoading: boolean;
+}
+
+export default function RoomProgressCard({
+  progress,
+  dailies,
+  isLoading,
+}: RoomProgressCardProps) {
   const navigation = useNavigation<MainTabNavigationProp<'Home'>>();
 
-  if (isLoading || room == null) {
+  // Deliberately not gated on an existing room: the first `rooms` row is only
+  // written when the first piece is placed, so requiring one hid this card from
+  // exactly the users who have never been through the loop.
+  if (isLoading) {
     return null;
   }
 

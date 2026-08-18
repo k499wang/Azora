@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   buildDailyCompleteSnapshot,
+  isDailyCompleteRewardReady,
 } from './useDailyCompleteSnapshot.ts';
 
 function claim({
@@ -48,7 +49,6 @@ test('captures third-daily unlock and its one-step progress origin', () => {
     nextSlot: 'day4',
   });
   assert.equal(snapshot.barFrom, 2 / 3);
-  assert.equal(snapshot.rewardReady, true);
 });
 
 test('a repeated daily starts from the last progress the user saw', () => {
@@ -71,7 +71,17 @@ test('projects the just-finished daily without waiting for a refetch', () => {
   assert.equal(snapshot.state.done, 3);
   assert.equal(snapshot.state.unlocked, true);
   assert.equal(snapshot.barFrom, 2 / 3);
-  assert.equal(snapshot.rewardReady, false);
+});
+
+test('a projected third daily becomes actionable when live entitlement catches up', () => {
+  const snapshot = buildDailyCompleteSnapshot(
+    claim({ guided: true, handPicked: true }),
+    2,
+    { breathHold: true },
+  );
+
+  assert.equal(isDailyCompleteRewardReady(snapshot.state, false), false);
+  assert.equal(isDailyCompleteRewardReady(snapshot.state, true), true);
 });
 
 test('a projected repeat does not increment daily progress', () => {

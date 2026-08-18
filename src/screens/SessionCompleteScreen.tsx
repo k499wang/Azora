@@ -10,7 +10,6 @@ import { spacing, padding, margin } from '../theme/spacing';
 import DailyCompleteSheet from '../features/room/DailyCompleteSheet';
 import GlassIconButton from '../components/common/GlassIconButton';
 import ChunkyButton from '../components/common/ChunkyButton';
-import { Rise } from '../components/common/Reveal';
 import HelpfulnessQuestion from '../components/exercise/HelpfulnessQuestion';
 import BlobCharacter from '../components/home/BlobCharacter';
 import { CATEGORY_STYLE } from '../features/exercise/guidedBreathing/categoryPalette';
@@ -32,9 +31,11 @@ import {
 } from '../services/reviews/storeReview';
 import { useOpeningTransitionComplete } from '../app/navigation';
 import { useRoomClaim } from '../features/room/useRoomClaim';
-import { useDailyCompleteSnapshot } from '../features/room/useDailyCompleteSnapshot';
+import {
+  isDailyCompleteRewardReady,
+  useDailyCompleteSnapshot,
+} from '../features/room/useDailyCompleteSnapshot';
 import { SESSION_GLASS_BUTTON_SIZE } from '../features/exercise/shared/components/SessionGlassButton';
-import { duration, stagger } from '../theme/motion';
 import { returnToHome } from '../app/navigation/returnToHome';
 
 function formatDuration(secs: number): string {
@@ -80,7 +81,6 @@ export default function SessionCompleteScreen({
   const profileQuery = useProfileQuery(user?.id ?? null);
   const [sheetDismissed, setSheetDismissed] = useState(false);
   const [sheetPresented, setSheetPresented] = useState(false);
-  const [sheetExitStarted, setSheetExitStarted] = useState(false);
   const openingTransitionComplete =
     useOpeningTransitionComplete(navigation);
   const roomClaim = useRoomClaim(user?.id ?? null);
@@ -121,10 +121,8 @@ export default function SessionCompleteScreen({
     claim: roomClaim,
     projection: completionProjection,
   });
-  // Result data comes from the route, so the whole tree is mounted right away
-  // and lays out under the opaque cover while the native slide is still
-  // running. Nothing heavy is left to commit once the screen is on-screen —
-  // `transitionEnd` only decides when things become *visible*.
+  // The native stack owns the base result entrance. Transition completion only
+  // sequences the optional daily celebration sheet over that content.
   const sheetVisible =
     isDaily && !sheetDismissed && snapshot != null && openingTransitionComplete;
   // Cover only while a celebration is actually coming. Eligibility resolves
@@ -134,11 +132,6 @@ export default function SessionCompleteScreen({
     (isDaily || (dailyEligibility == null && !openingTransitionComplete)) &&
     !sheetDismissed &&
     !sheetPresented;
-  const revealResults =
-    sheetExitStarted ||
-    sheetDismissed ||
-    (openingTransitionComplete && !showDailyCover && !sheetPresented);
-
   // Held until the sheet has had its turn — a store-review prompt landing on
   // top of the celebration would eat it.
   const sheetPending =
@@ -198,9 +191,9 @@ export default function SessionCompleteScreen({
     setSheetDismissed(true);
   }, []);
 
-  const handleSheetExitStart = useCallback(() => {
-    setSheetExitStarted(true);
-  }, []);
+  const handleChoosePiece = useCallback(() => {
+    navigation.replace('RoomDecorate');
+  }, [navigation]);
 
   const celebrationStats = useMemo(
     () => [
@@ -266,9 +259,12 @@ export default function SessionCompleteScreen({
           stats={celebrationContent.stats}
           state={snapshot.state}
           barFrom={snapshot.barFrom}
-          rewardReady={!snapshot.state.unlocked || snapshot.rewardReady}
+          rewardReady={isDailyCompleteRewardReady(
+            snapshot.state,
+            roomClaim.progress.canClaim,
+          )}
           onShow={handleSheetShow}
-          onExitStart={handleSheetExitStart}
+          onChoosePiece={handleChoosePiece}
           onDismiss={handleSheetDismiss}
         />
       ) : null}
@@ -310,11 +306,7 @@ export default function SessionCompleteScreen({
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <Rise
-          when={revealResults}
-          durationMs={duration.base}
-          style={styles.heroWrap}
-        >
+        <View style={styles.heroWrap}>
           <View style={styles.heroShadow}>
             <View style={[styles.heroCard, { backgroundColor: hue.base }]}>
               <BlobCharacter
@@ -330,13 +322,9 @@ export default function SessionCompleteScreen({
               </Text>
             </View>
           </View>
-        </Rise>
+        </View>
 
-        <Rise
-          when={revealResults}
-          delay={stagger.tight}
-          durationMs={duration.base}
-        >
+        <View>
           <View style={styles.statSection}>
             <View style={styles.statRow}>
               <ResultThermometerStatCard
@@ -373,28 +361,19 @@ export default function SessionCompleteScreen({
               />
             )}
           </View>
-        </Rise>
+        </View>
 
         {showGraph ? (
-          <Rise
-            when={revealResults}
-            delay={stagger.tight * 2}
-            durationMs={duration.base}
-            style={styles.graphWrap}
-          >
+          <View style={styles.graphWrap}>
             <ResultBPMChart
               bpmSamples={hrSamples}
               insightContext="breathing-exercise"
               breathingTechniqueProfile={breathingTechniqueProfile}
             />
-          </Rise>
+          </View>
         ) : null}
 
-        <Rise
-          when={revealResults}
-          delay={stagger.tight * 3}
-          durationMs={duration.base}
-        >
+        <View>
           <View style={styles.bodySection}>
             <ResultHelpfulnessQuestion
               techniqueId={techniqueId}
@@ -416,7 +395,7 @@ export default function SessionCompleteScreen({
             }
             onPress={handleShare}
           />
-        </Rise>
+        </View>
       </ScrollView>
 
       {showDailyCover ? (
