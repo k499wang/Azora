@@ -1,6 +1,7 @@
 import { useEffect, type ReactNode } from 'react';
 import type { ViewStyle } from 'react-native';
 import Animated, {
+  cancelAnimation,
   interpolate,
   useAnimatedStyle,
   useSharedValue,
@@ -41,6 +42,7 @@ export function Rise({
 
   useEffect(() => {
     if (!when) {
+      cancelAnimation(enter);
       enter.value = 0;
       return;
     }
@@ -56,7 +58,10 @@ export function Rise({
       );
     });
 
-    return () => cancelAnimationFrame(frame);
+    return () => {
+      cancelAnimationFrame(frame);
+      cancelAnimation(enter);
+    };
   }, [delay, durationMs, enter, when]);
 
   const animated = useAnimatedStyle(() => ({
@@ -75,6 +80,7 @@ export function Pop({ delay = 0, when = true, style, children }: RevealProps) {
 
   useEffect(() => {
     if (!when) {
+      cancelAnimation(enter);
       enter.value = 0;
       return;
     }
@@ -83,7 +89,10 @@ export function Pop({ delay = 0, when = true, style, children }: RevealProps) {
       enter.value = withDelay(delay, withSpring(1, spring.pop));
     });
 
-    return () => cancelAnimationFrame(frame);
+    return () => {
+      cancelAnimationFrame(frame);
+      cancelAnimation(enter);
+    };
   }, [delay, enter, when]);
 
   const animated = useAnimatedStyle(() => ({

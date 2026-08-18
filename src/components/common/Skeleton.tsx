@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import type {
   DimensionValue,
@@ -16,6 +16,7 @@ import Animated, {
   withRepeat,
   withTiming,
 } from 'react-native-reanimated';
+import { useWhileVisible } from '../../hooks/useWhileVisible';
 import { colors } from '../../theme/colors';
 
 const AnimatedLinearGradient = Animated.createAnimatedComponent(LinearGradient);
@@ -76,7 +77,8 @@ interface BlockProps {
 function PulseBlock({ blockStyle, duration, style }: BlockProps) {
   const opacity = useSharedValue(0.4);
 
-  useEffect(() => {
+  useWhileVisible(() => {
+    opacity.value = 0.4;
     opacity.value = withRepeat(
       withTiming(1, { duration: duration / 2, easing: Easing.inOut(Easing.ease) }),
       -1,
@@ -94,7 +96,8 @@ function ShimmerBlock({ blockStyle, duration, style }: BlockProps) {
   const [trackWidth, setTrackWidth] = useState(0);
   const progress = useSharedValue(0);
 
-  useEffect(() => {
+  useWhileVisible(() => {
+    progress.value = 0;
     progress.value = withRepeat(
       withTiming(1, { duration, easing: Easing.linear }),
       -1,

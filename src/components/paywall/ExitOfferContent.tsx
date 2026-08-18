@@ -1,9 +1,10 @@
 import { Text } from '../common/Text';
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
+  cancelAnimation,
   Easing,
   FadeIn,
   FadeInUp,
@@ -13,6 +14,7 @@ import Animated, {
   withRepeat,
   withTiming,
 } from 'react-native-reanimated';
+import { useWhileVisible } from '../../hooks/useWhileVisible';
 import type { usePaywall } from '../../hooks/usePaywall';
 import type { PaywallPackageOption } from '../../services/paywall';
 import PaywallTrialReminderToggle from './PaywallTrialReminderToggle';
@@ -23,6 +25,7 @@ import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import { card } from '../../theme/card';
+import { secondsUntilDeadline } from '../../lib/paywall/exitOfferCountdown';
 
 const OFFER_DURATION_SECONDS = 5 * 60;
 /** Taller than the standard primary — this is the one button on the screen. */
@@ -63,13 +66,33 @@ export function ExitOfferContent({
 }: ExitOfferContentProps) {
   const insets = useSafeAreaInsets();
 
-  const [secondsLeft, setSecondsLeft] = useState(OFFER_DURATION_SECONDS);
-  useEffect(() => {
-    const id = setInterval(() => {
-      setSecondsLeft((value) => (value <= 1 ? 0 : value - 1));
-    }, 1000);
-    return () => clearInterval(id);
-  }, []);
+  const [offerDeadlineMs] = useState(
+    () => Date.now() + OFFER_DURATION_SECONDS * 1000,
+  );
+  const [secondsLeft, setSecondsLeft] = useState(() =>
+    secondsUntilDeadline(offerDeadlineMs, Date.now()),
+  );
+
+  useWhileVisible(() => {
+    let interval: ReturnType<typeof setInterval> | null = null;
+    const syncCountdown = () => {
+      const next = secondsUntilDeadline(offerDeadlineMs, Date.now());
+      setSecondsLeft(next);
+      if (next === 0 && interval != null) {
+        clearInterval(interval);
+        interval = null;
+      }
+      return next;
+    };
+
+    if (syncCountdown() > 0) {
+      interval = setInterval(syncCountdown, 1000);
+    }
+
+    return () => {
+      if (interval != null) clearInterval(interval);
+    };
+  }, [offerDeadlineMs]);
 
   const annual = useMemo(
     () => paywall.offering?.packages.find((pkg) => pkg.id === 'annual') ?? null,
@@ -276,7 +299,8 @@ function TwinkleStar({
 }: Sparkle) {
   const progress = useSharedValue(0);
 
-  useEffect(() => {
+  useWhileVisible(() => {
+    progress.value = 0;
     progress.value = withDelay(
       delay,
       withRepeat(
@@ -285,6 +309,8 @@ function TwinkleStar({
         true,
       ),
     );
+
+    return () => cancelAnimation(progress);
   }, [delay, duration, progress]);
 
   const animatedStyle = useAnimatedStyle(() => ({

@@ -2,6 +2,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { Text } from '../../components/common/Text';
 import Icon from '../../components/common/icons/Icon';
 import ChunkyButton from '../../components/common/ChunkyButton';
+import NextDayCountdown from './NextDayCountdown';
 import { card } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { padding, spacing } from '../../theme/spacing';
@@ -94,6 +95,7 @@ export default function DecoratePanel({
     return (
       <View style={styles.panel}>
         <Text style={styles.panelBody}>Come back tomorrow for the next one.</Text>
+        <NextDayCountdown />
       </View>
     );
   }

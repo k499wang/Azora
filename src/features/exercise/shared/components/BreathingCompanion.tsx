@@ -93,6 +93,8 @@ const HOLD_IN_PERIOD_MS = 1100;
 const HOLD_OUT_PERIOD_MS = 2400;
 
 interface BreathingCompanionProps {
+  /** Whether the owning route is currently visible and allowed to animate. */
+  active: boolean;
   face: BreathFace;
   theme: ExerciseDarkTheme;
   reducedMotion: boolean;
@@ -108,7 +110,7 @@ function strainAmplitude(face: BreathFace): number {
 
 const BreathingCompanion = forwardRef<BreathingCircleRef, BreathingCompanionProps>(
   function BreathingCompanion(
-    { face, theme, reducedMotion, visible },
+    { active, face, theme, reducedMotion, visible },
     ref,
   ) {
     const { width, height } = useWindowDimensions();
@@ -129,26 +131,35 @@ const BreathingCompanion = forwardRef<BreathingCircleRef, BreathingCompanionProp
 
     const breath = useSharedValue(0);
     const strain = useSharedValue(0);
-    const entered = useSharedValue(visible ? 1 : 0);
+    const entered = useSharedValue(active && visible ? 1 : 0);
     const faceFrom = useSharedValue(FACE_SHAPES[face]);
     const faceTo = useSharedValue(FACE_SHAPES[face]);
     const faceProgress = useSharedValue(1);
 
-    useEffect(
-      () => () => {
+    useEffect(() => {
+      if (!active) {
         cancelAnimation(breath);
         cancelAnimation(strain);
         cancelAnimation(entered);
         cancelAnimation(faceProgress);
-      },
-      [breath, entered, faceProgress, strain],
-    );
+        strain.value = 0;
+      }
+
+      return () => {
+        cancelAnimation(breath);
+        cancelAnimation(strain);
+        cancelAnimation(entered);
+        cancelAnimation(faceProgress);
+      };
+    }, [active, breath, entered, faceProgress, strain]);
 
     const run = (
       toValue: number,
       durationSeconds: number,
       onComplete?: () => void,
     ) => {
+      if (!active) return;
+
       breath.value = withTiming(
         toValue,
         { duration: durationSeconds * 1000, easing: BREATH_EASING },
@@ -182,6 +193,8 @@ const BreathingCompanion = forwardRef<BreathingCircleRef, BreathingCompanionProp
     }));
 
     useEffect(() => {
+      if (!active) return;
+
       // Start from wherever the morph currently sits, so a phase that changes
       // mid-transition continues from the drawn face instead of snapping.
       faceFrom.value = lerpFace(faceFrom.value, faceTo.value, faceProgress.value);
@@ -191,9 +204,11 @@ const BreathingCompanion = forwardRef<BreathingCircleRef, BreathingCompanionProp
         duration: reducedMotion ? 0 : FACE_MORPH_MS,
         easing: Easing.inOut(Easing.quad),
       });
-    }, [face, faceFrom, faceProgress, faceTo, reducedMotion]);
+    }, [active, face, faceFrom, faceProgress, faceTo, reducedMotion]);
 
     useEffect(() => {
+      if (!active) return;
+
       if (visible) {
         // Arrive at the position the first inhale starts from, whatever the
         // last session left behind.
@@ -209,11 +224,17 @@ const BreathingCompanion = forwardRef<BreathingCircleRef, BreathingCompanionProp
         duration: EXIT_MS,
         easing: Easing.in(Easing.cubic),
       });
-    }, [breath, entered, visible]);
+    }, [active, breath, entered, visible]);
 
     const amplitude = strainAmplitude(face);
 
     useEffect(() => {
+      if (!active) {
+        cancelAnimation(strain);
+        strain.value = 0;
+        return;
+      }
+
       if (amplitude === 0 || reducedMotion) {
         cancelAnimation(strain);
         strain.value = withTiming(0, { duration: 300 });
@@ -232,7 +253,7 @@ const BreathingCompanion = forwardRef<BreathingCircleRef, BreathingCompanionProp
       return () => {
         cancelAnimation(strain);
       };
-    }, [amplitude, face, reducedMotion, strain]);
+    }, [active, amplitude, face, reducedMotion, strain]);
 
     const shape = useDerivedValue(() =>
       lerpFace(faceFrom.value, faceTo.value, faceProgress.value),

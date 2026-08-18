@@ -21,28 +21,67 @@ export function usePhaseCrossfade<Phase>(phase: Phase): {
   opacity: Animated.Value;
 } {
   const [displayPhase, setDisplayPhase] = useState<Phase>(phase);
+  const displayedPhase = useRef(phase);
   const opacity = useRef(new Animated.Value(1)).current;
+  const running = useRef<Animated.CompositeAnimation | null>(null);
+  const generation = useRef(0);
 
   useEffect(() => {
-    if (phase === displayPhase) return;
+    const currentGeneration = ++generation.current;
+    const previousAnimation = running.current;
+    running.current = null;
+    previousAnimation?.stop();
 
-    Animated.timing(opacity, {
+    if (Object.is(phase, displayedPhase.current)) {
+      opacity.setValue(1);
+      return;
+    }
+
+    const fadeOut = Animated.timing(opacity, {
       toValue: 0,
       duration: FADE_OUT_MS,
       easing: Easing.inOut(Easing.quad),
       useNativeDriver: true,
-    }).start(({ finished }) => {
-      if (!finished) return;
+    });
 
+    running.current = fadeOut;
+    fadeOut.start(({ finished }) => {
+      if (
+        !finished ||
+        generation.current !== currentGeneration ||
+        running.current !== fadeOut
+      ) {
+        return;
+      }
+
+      displayedPhase.current = phase;
       setDisplayPhase(phase);
-      Animated.timing(opacity, {
+      const fadeIn = Animated.timing(opacity, {
         toValue: 1,
         duration: FADE_IN_MS,
         easing: Easing.inOut(Easing.quad),
         useNativeDriver: true,
-      }).start();
+      });
+
+      running.current = fadeIn;
+      fadeIn.start(() => {
+        if (
+          generation.current === currentGeneration &&
+          running.current === fadeIn
+        ) {
+          running.current = null;
+        }
+      });
     });
-  }, [displayPhase, opacity, phase]);
+
+    return () => {
+      if (generation.current !== currentGeneration) return;
+      generation.current += 1;
+      const currentAnimation = running.current;
+      running.current = null;
+      currentAnimation?.stop();
+    };
+  }, [opacity, phase]);
 
   return { displayPhase, opacity };
 }

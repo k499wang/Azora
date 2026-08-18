@@ -1,5 +1,6 @@
-import { useEffect, useRef } from 'react';
+import { useRef } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
+import { useWhileVisible } from '../../hooks/useWhileVisible';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 
@@ -9,9 +10,17 @@ interface Props {
 }
 
 export function DotsLoader({ color = colors.primary.blue600, size = 10 }: Props) {
-  const dots = [useRef(new Animated.Value(0)).current, useRef(new Animated.Value(0)).current, useRef(new Animated.Value(0)).current];
+  // One array for the life of the component. Rebuilding it every render made
+  // the effect below tear down and restart all three loops on every render of
+  // whatever screen the loader sits on.
+  const dots = useRef([
+    new Animated.Value(0),
+    new Animated.Value(0),
+    new Animated.Value(0),
+  ]).current;
 
-  useEffect(() => {
+  useWhileVisible(() => {
+    dots.forEach((dot) => dot.setValue(0));
     const animations = dots.map((dot, i) =>
       Animated.loop(
         Animated.sequence([

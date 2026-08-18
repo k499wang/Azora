@@ -70,6 +70,7 @@ interface GuidedBreathingHeartRatePresentation {
 }
 
 interface GuidedBreathingPresentationProps {
+  active: boolean;
   phase: GuidedBreathingPhase;
   technique: BreathingTechnique;
   theme: ExerciseDarkTheme;
@@ -103,7 +104,7 @@ export const GuidedBreathingPresentation = forwardRef<
   BreathingCircleRef,
   GuidedBreathingPresentationProps
 >(function GuidedBreathingPresentation(
-  { phase, technique, theme, remainingSeconds, heartRate },
+  { active, phase, technique, theme, remainingSeconds, heartRate },
   companionRef,
 ) {
   const isIdle = phase === 'idle';
@@ -118,20 +119,27 @@ export const GuidedBreathingPresentation = forwardRef<
   const { height } = useWindowDimensions();
   const viewport = height - insets.top;
   const reducedMotion = useReducedMotion();
-  const measuringPulse = heartRate.enabled && heartRate.active && isPlacement;
-  const trackingPulse = heartRate.enabled && heartRate.active && isBreathing;
+  const measuringPulse =
+    active && heartRate.enabled && heartRate.active && isPlacement;
+  const trackingPulse =
+    active && heartRate.enabled && heartRate.active && isBreathing;
 
   const placementFade = usePlacementFade(measuringPulse);
 
   const transition = useRef(new Animated.Value(isIdle ? 0 : 1)).current;
 
   useEffect(() => {
-    Animated.timing(transition, {
+    transition.stopAnimation();
+
+    const animation = Animated.timing(transition, {
       toValue: isIdle ? 0 : 1,
       duration: GUIDED_BREATHING_INTRO_DURATION_MS,
       easing: Easing.inOut(Easing.ease),
       useNativeDriver: true,
-    }).start();
+    });
+    animation.start();
+
+    return () => animation.stop();
   }, [isIdle, transition]);
 
   const headlineOpacity = transition.interpolate({
@@ -156,6 +164,7 @@ export const GuidedBreathingPresentation = forwardRef<
     <View style={styles.stage} pointerEvents="box-none">
       <BreathingCompanion
         ref={companionRef}
+        active={active}
         face={PHASE_FACES[phase]}
         theme={theme}
         reducedMotion={reducedMotion}
