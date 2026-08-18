@@ -6,7 +6,7 @@ import CompactActionBanner from '../components/common/CompactActionBanner';
 import TodaysDailiesSection from '../components/home/TodaysDailiesSection';
 import HomeRoom from '../features/room/HomeRoom';
 import RoomProgressCard from '../features/room/RoomProgressCard';
-import { useDailiesCompletion } from '../hooks/useDailiesCompletion';
+import { useRoomClaim } from '../features/room/useRoomClaim';
 import { useStartDaily } from '../hooks/useStartDaily';
 import type { HomeScreenProps } from '../app/navigation';
 import { useAuthStore } from '../stores/authStore';
@@ -20,8 +20,9 @@ export default function HomeScreen(_: HomeScreenProps) {
   const dailyPlanScheduleQuery = useDailyPlanScheduleQuery(user?.id ?? null);
   const dailyPlanSchedule =
     dailyPlanScheduleQuery.data ?? DEFAULT_DAILY_PLAN_SCHEDULE;
-  const dailies = useDailiesCompletion(user?.id ?? null);
-  const { start, accessAllowed } = useStartDaily('Home');
+  const roomClaim = useRoomClaim(user?.id ?? null);
+  const dailies = roomClaim.dailies;
+  const { start, accessAllowed } = useStartDaily('Home', dailies);
 
   // The recently-logged list and its analytics now live on the Heart tab
   // (see RecentlyLoggedSection — it uses useIsFocused to gate the view event).
@@ -39,11 +40,15 @@ export default function HomeScreen(_: HomeScreenProps) {
         <AppTopBar />
 
         <View style={styles.roomSection}>
-          <HomeRoom />
+          <HomeRoom room={roomClaim.room} progress={roomClaim.progress} />
         </View>
 
         <View style={styles.bodySection}>
-          <RoomProgressCard />
+          <RoomProgressCard
+            progress={roomClaim.progress}
+            dailies={dailies}
+            isLoading={roomClaim.isLoading}
+          />
           <TodaysDailiesSection
             technique={dailies.guidedTechnique}
             techniqueLoading={dailies.guidedTechniqueLoading}
@@ -85,7 +90,8 @@ const styles = StyleSheet.create({
     gap: margin.itemGap,
   },
   roomSection: {
-    marginVertical: spacing.lg,
+    marginTop: spacing.xs,
+    marginBottom: spacing.sm,
   },
   bodySection: {
     paddingHorizontal: padding.screen.horizontal,

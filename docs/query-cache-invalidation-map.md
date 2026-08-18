@@ -50,8 +50,8 @@ When adding a mutation, find every field it writes, then look up every query abo
 | `useUpdateDailyPlanScheduleMutation` | `user_preferences.daily_plan_schedule` | `DailyPlanSchedule` (uses `setQueryData`, then exact invalidation) |
 | `useUpdateDailyPlanExercisesMutation` | `user_preferences.daily_plan_exercises` | `DailyPlanExercises` (uses `setQueryData`, then exact invalidation) |
 | `useSaveOnboardingSurveyMutation` | `profiles.acquisition_source` | Nothing — no query reads this column; it exists for analysis only. |
-| `usePlaceDecorationMutation` | `room_decorations` (including `earned_local_date`), and `rooms` on the first placement (opens floor 1) | `CurrentRoom` (uses `setQueryData` with what the service returns, then exact invalidation), exact `Rooms(userId)` |
-| `useCreateNextRoomMutation` | `rooms` (opens floor *n+1* with the chosen `shell` and `frame_hue`) | `CurrentRoom` (uses `setQueryData`, then exact invalidation), exact `Rooms(userId)` |
+| `usePlaceDecorationMutation` | `room_decorations` (including `earned_local_date`), and `rooms` on the first placement (opens floor 1) | `CurrentRoom` (canonical `setQueryData`; no refetch), exact `Rooms(userId)` invalidated in the background |
+| `useCreateNextRoomMutation` | `rooms` (opens floor *n+1* with the chosen `shell` and `frame_hue`) | `CurrentRoom` (canonical `setQueryData`; no refetch), exact `Rooms(userId)` invalidated in the background |
 | `useSaveTechniqueFeedbackMutation` | `technique_feedback` (upsert on `user_id,session_key`) | exact `TechniqueFeedback(userId)`. Add `UserDefaultTechnique` / `RecommendedTechnique` here once helpfulness feeds recommendation. |
 
 ---

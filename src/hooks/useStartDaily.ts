@@ -1,7 +1,6 @@
 import { useCallback } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { usePostHog } from 'posthog-react-native';
-import { useDailiesCompletion } from './useDailiesCompletion';
 import { useFeatureAccess } from './useFeatureAccess';
 import { AnalyticsEvent } from '../services/analytics/events';
 import { trackFeatureGateHit } from '../services/analytics/tracking';
@@ -10,6 +9,7 @@ import { FeatureKey } from '../services/subscriptions/featureAccess';
 import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
 import { useAuthStore } from '../stores/authStore';
 import type { RootStackNavigationProp } from '../app/navigation';
+import type { DailiesCompletion } from './useDailiesCompletion';
 
 export type DailyId = 'guided' | 'handPicked' | 'breathHold';
 
@@ -32,12 +32,19 @@ const SOURCE_ACTION: Record<DailyId, string> = {
  * that must not drift — a second copy is how a screen ends up launching a
  * locked exercise.
  */
-export function useStartDaily(sourceScreen: string): StartDaily {
+type StartDailyTechniques = Pick<
+  DailiesCompletion,
+  'guidedTechnique' | 'handPickedTechnique'
+>;
+
+export function useStartDaily(
+  sourceScreen: string,
+  dailies: StartDailyTechniques,
+): StartDaily {
   const navigation = useNavigation<RootStackNavigationProp>();
   const posthog = usePostHog();
   const userId = useAuthStore((state) => state.user?.id ?? null);
   const access = useFeatureAccess(FeatureKey.DailyExercise);
-  const dailies = useDailiesCompletion(userId);
   const profileSummary = useProfileSummaryQuery(userId).data;
 
   const { guidedTechnique, handPickedTechnique } = dailies;

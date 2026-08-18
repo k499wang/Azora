@@ -116,6 +116,49 @@ If the answer is mostly no, keep the code inline and simple.
 - Avoid `any`. Especially avoid `useNavigation<any>()`.
 - Use typed route params and central navigation types.
 
+## Flow, Lifecycle, And Performance Rules
+
+- Treat repeated use as the baseline. A flow that is fast once but slows after
+  several sessions is not complete.
+- Return to Home through `returnToHome()`. Do not call
+  `navigate('MainTabs')` directly from a terminal flow: it can push another
+  root route. Any alternative must explicitly pop or reset to the existing
+  root and have a route-state regression test.
+- Use `replace` for forward-only steps whose source must not reopen on Back.
+  Use `navigate` only when returning to the source is intentional, and preserve
+  route context such as `fromLab`.
+- Registered screens own flow navigation. Reusable sheets, modals,
+  celebrations, and presentational children emit semantic callbacks such as
+  `onChoosePiece`; they do not select root routes themselves.
+- `freezeOnBlur` is a rendering optimization, not cleanup. Frozen screens stay
+  mounted. Stop owned Reanimated work, timers, listeners, sensors, audio, and
+  subscriptions when the owner becomes inactive or unmounts.
+- Freeze visual snapshots only. Copy, progress origins, and animation
+  sequencing may be immutable; async entitlement, permission, and CTA
+  availability must come from live canonical state and be rechecked before a
+  mutation.
+- Instantiate a query- or subscription-composing orchestration hook once at
+  the nearest owning screen/container and pass narrow typed props to children.
+  Shared query keys deduplicate requests, not observers, effects, or renders.
+- When a mutation returns the complete canonical query shape, write it with
+  `setQueryData` and invalidate only other affected caches. Do not immediately
+  refetch the same key unless the response is partial or requires server
+  normalization. Do not make non-critical background refresh extend a
+  user-visible pending state. Keep `docs/query-cache-invalidation-map.md`
+  synchronized.
+- Use one owner for a screen entrance. Do not stack a native transition,
+  opaque cover, and multiple JS reveal animations over the same content without
+  profiling the combined mount and animation cost. Hidden opacity and covers do
+  not defer mounting or layout work.
+- Collections that grow with user history must be virtualized or paginated.
+  Eager `ScrollView` rendering is only acceptable for a small, explicitly
+  bounded item count.
+- Fix unbounded work and ownership leaks before adding memoization. For
+  navigation, animation, sensor, or session lifecycle changes, smoke-test 5–10
+  complete cycles in a release build and verify bounded route depth, correct
+  Back behavior, smooth entrances, and teardown of animation, audio, sensor,
+  timer, and subscription work.
+
 ## Navigation Rules
 
 - Navigation types live in `src/app/navigation/types.ts`.

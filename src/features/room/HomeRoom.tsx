@@ -5,14 +5,17 @@ import { HexRoom, ROOM_ASPECT } from './RoomScene';
 import { toFrameHue, toPicks } from './roomPicks';
 import { roomShellPolys } from './roomShells';
 import { getRoomWidth } from './roomLayout';
-import { useRoomClaim } from './useRoomClaim';
-import { useAuthStore } from '../../stores/authStore';
 import { triggerBounceHaptic } from '../../native/tapHaptics';
+import type { RoomProgress } from '../../lib/room/roomProgress';
+import type { Room } from '../../services/room/roomService';
 
-export default function HomeRoom() {
+interface HomeRoomProps {
+  room: Room | null;
+  progress: Pick<RoomProgress, 'canClaim' | 'placedCount'>;
+}
+
+export default function HomeRoom({ room, progress }: HomeRoomProps) {
   const { width } = useWindowDimensions();
-  const userId = useAuthStore((state) => state.user?.id ?? null);
-  const { room, progress } = useRoomClaim(userId);
   const blob = useRef<RoomBlobHandle>(null);
   const roomWidth = getRoomWidth(width);
 
