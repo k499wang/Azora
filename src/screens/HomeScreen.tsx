@@ -37,7 +37,7 @@ export default function HomeScreen(_: HomeScreenProps) {
         alwaysBounceVertical
         overScrollMode="always"
       >
-        <AppTopBar />
+        <AppTopBar showNotifications />
 
         <View style={styles.roomSection}>
           <HomeRoom room={roomClaim.room} progress={roomClaim.progress} />
