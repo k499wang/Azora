@@ -40,6 +40,10 @@ export const GUIDED_BREATHING_INTRO_DURATION_MS = 750;
 // Beat between the technique copy clearing the screen and the first inhale, so
 // the character has arrived and settled before it asks anything of you.
 export const GUIDED_BREATHING_SETTLE_MS = 500;
+// The full beat between the character arriving and the first cue, shared by
+// every way into the session.
+export const GUIDED_BREATHING_LEAD_IN_MS =
+  GUIDED_BREATHING_INTRO_DURATION_MS + GUIDED_BREATHING_SETTLE_MS;
 
 const HEADLINE_AREA_HEIGHT = 104;
 // Clears the glass buttons sitting in the scaffold header.
@@ -119,10 +123,12 @@ export const GuidedBreathingPresentation = forwardRef<
   const { height } = useWindowDimensions();
   const viewport = height - insets.top;
   const reducedMotion = useReducedMotion();
-  const measuringPulse =
-    active && heartRate.enabled && heartRate.active && isPlacement;
-  const trackingPulse =
-    active && heartRate.enabled && heartRate.active && isBreathing;
+  // Held across every phase after the intro card so the lead-in between finding
+  // the pulse and the first cue cannot tear the capture down mid-session.
+  const pulseAttached =
+    active && heartRate.enabled && heartRate.active && !isIdle;
+  const measuringPulse = pulseAttached && isPlacement;
+  const trackingPulse = pulseAttached && isBreathing;
 
   const placementFade = usePlacementFade(measuringPulse);
 
@@ -229,10 +235,10 @@ export const GuidedBreathingPresentation = forwardRef<
         />
       ) : null}
 
-      {/* One mount across both phases. Re-rendering this into a different slot
+      {/* One mount across every live phase. Re-rendering this into a different slot
           would tear down the capture session and drop the pulse lock the
           placement flow just earned. */}
-      {camera && (measuringPulse || trackingPulse) ? (
+      {camera && pulseAttached ? (
         <Animated.View
           style={
             measuringPulse

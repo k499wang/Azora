@@ -10,8 +10,7 @@ import BreathBackdrop, {
   type BreathBackdropPhase,
 } from '../shared/components/BreathBackdrop';
 import {
-  DAILY_BREATH_HOLD_INTRO_DURATION_MS,
-  DAILY_BREATH_HOLD_SETTLE_MS,
+  DAILY_BREATH_HOLD_LEAD_IN_MS,
   DailyBreathHoldPresentation,
 } from './components/DailyBreathHoldPresentation';
 import { DailyBreathHoldHud } from './components/DailyBreathHoldHud';
@@ -41,6 +40,7 @@ import {
 } from '../../audioSettings';
 import { useCancellableFlow } from '../shared/hooks/useCancellableFlow';
 import { useHeartRatePlacementFlow } from '../shared/hooks/useHeartRatePlacementFlow';
+import { useBreathingSessionLeadIn } from '../shared/hooks/useBreathingSessionLeadIn';
 import { useHeartRateStallHelp } from '../../../hooks/useHeartRateStallHelp';
 import { HeartRateHelpSheet } from '../../../components/heartRate/HeartRateHelpSheet';
 import { signalHint } from '../shared/components/ExerciseHeartRateGuidance';
@@ -79,7 +79,6 @@ export default function DailyBreathHoldScreen({
     DAILY_BREATH_HOLD_PROTOCOL.finalInhaleSeconds,
   );
   const circleRef = useRef<BreathingCircleRef>(null);
-  const introTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const measurementStartAtRef = useRef<number>(0);
   const releaseInFlightRef = useRef(false);
   const [phase, setPhase] = useState<DailyBreathHoldPhase>('idle');
@@ -218,19 +217,11 @@ export default function DailyBreathHoldScreen({
     };
   }, []);
 
-  const clearIntroTimeout = useCallback(() => {
-    if (introTimeoutRef.current) {
-      clearTimeout(introTimeoutRef.current);
-      introTimeoutRef.current = null;
-    }
-  }, []);
-
   const flow = useCancellableFlow(
     useCallback(() => {
       cancelPhaseSequence();
-      clearIntroTimeout();
       stopPulse();
-    }, [cancelPhaseSequence, clearIntroTimeout, stopPulse]),
+    }, [cancelPhaseSequence, stopPulse]),
   );
 
   useEffect(() => {
@@ -246,9 +237,8 @@ export default function DailyBreathHoldScreen({
     };
   }, [navigation, phase]);
 
-  const startPrepBreathing = useCallback((withHeartRate = hrEnabled) => {
+  const startPrepBreathing = useCallback((withHeartRate: boolean) => {
     if (!flow.isActive()) return;
-    clearIntroTimeout();
     resetCompletionPersistence();
     releaseInFlightRef.current = false;
     measurementStartAtRef.current = 0;
@@ -271,17 +261,27 @@ export default function DailyBreathHoldScreen({
     startPrepSequence();
   }, [
     beginPulseMeasurementWindow,
-    clearIntroTimeout,
     flow,
     heartRateMonitoringAllowed,
     heartRateMonitoringProLocked,
-    hrEnabled,
     posthog,
     resetCompletionPersistence,
     setHeartRateMonitoringEnabled,
     startPrepSequence,
     startPulse,
   ]);
+
+  const enterLeadIn = useCallback((withHeartRate: boolean) => {
+    setHrEnabled(withHeartRate);
+    setPhase('intro');
+  }, []);
+
+  useBreathingSessionLeadIn({
+    active: phase === 'intro',
+    durationMs: DAILY_BREATH_HOLD_LEAD_IN_MS,
+    isActive: flow.isActive,
+    onComplete: () => startPrepBreathing(hrEnabled),
+  });
 
   const bpmLocked =
     isBpmReady && presentedBpm != null && pulse.signalStatus === 'measuring';
@@ -317,7 +317,7 @@ export default function DailyBreathHoldScreen({
       setPhase('placement');
       startPulse();
     },
-    onPlacementReady: () => startPrepBreathing(),
+    onPlacementReady: () => enterLeadIn(true),
     onHeartRateDisabled: () => setHrEnabled(false),
     onPermissionDenied: showCameraAccessNeededAlert,
     onCameraUnavailable: showHeartRateCameraUnavailableAlert,
@@ -330,18 +330,11 @@ export default function DailyBreathHoldScreen({
     },
   });
 
-  const startIntroWithoutHeartRate = useCallback(() => {
+  const startWithoutHeartRate = useCallback(() => {
     if (!flow.start()) return;
 
-    setHrEnabled(false);
-    setPhase('intro');
-    clearIntroTimeout();
-    introTimeoutRef.current = setTimeout(() => {
-      introTimeoutRef.current = null;
-      if (!flow.isActive()) return;
-      startPrepBreathing(false);
-    }, DAILY_BREATH_HOLD_INTRO_DURATION_MS + DAILY_BREATH_HOLD_SETTLE_MS);
-  }, [clearIntroTimeout, flow, startPrepBreathing]);
+    enterLeadIn(false);
+  }, [enterLeadIn, flow]);
 
   const startDailyExercise = useCallback(() => {
     const decision = resolveBreathingSessionStart({
@@ -360,15 +353,15 @@ export default function DailyBreathHoldScreen({
     if (decision.disableHeartRatePreference) {
       setHeartRateMonitoringEnabled(false);
     }
-    startIntroWithoutHeartRate();
+    startWithoutHeartRate();
   }, [
     heartRateMonitoringAccessLoading,
     heartRateMonitoringAllowed,
     heartRateMonitoringEnabled,
     heartRateMonitoringPreferenceLoaded,
     setHeartRateMonitoringEnabled,
-    startIntroWithoutHeartRate,
     startPlacement,
+    startWithoutHeartRate,
   ]);
 
   const releaseHold = () => {
