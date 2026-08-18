@@ -1,7 +1,8 @@
 import { Text, AnimatedText } from '../common/Text';
-import { useEffect, useRef } from 'react';
+import { useRef } from 'react';
 import {
   Animated, type StyleProp, type TextStyle } from 'react-native';
+import { useWhileVisible } from '../../hooks/useWhileVisible';
 
 const DOT_COUNT = 3;
 const DOT_STEP_MS = 260;
@@ -16,7 +17,8 @@ export function FindingPulseHint({ textStyle }: FindingPulseHintProps) {
     Array.from({ length: DOT_COUNT }, () => new Animated.Value(DOT_REST_OPACITY)),
   ).current;
 
-  useEffect(() => {
+  useWhileVisible(() => {
+    dotOpacities.forEach((opacity) => opacity.setValue(DOT_REST_OPACITY));
     const wave = Animated.loop(
       Animated.stagger(
         DOT_STEP_MS,

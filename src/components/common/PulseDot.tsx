@@ -1,5 +1,6 @@
-import { useEffect, useRef } from 'react';
+import { useRef } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
+import { useWhileVisible } from '../../hooks/useWhileVisible';
 import { colors } from '../../theme/colors';
 
 interface PulseDotProps {
@@ -10,7 +11,8 @@ interface PulseDotProps {
 export default function PulseDot({ color = colors.neutral[300], size = 8 }: PulseDotProps) {
   const pulse = useRef(new Animated.Value(0)).current;
 
-  useEffect(() => {
+  useWhileVisible(() => {
+    pulse.setValue(0);
     const animation = Animated.loop(
       Animated.sequence([
         Animated.timing(pulse, { toValue: 1, duration: 900, useNativeDriver: true }),

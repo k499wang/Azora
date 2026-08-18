@@ -9,6 +9,7 @@ import { fonts, typography } from '../../../theme/typography';
 import { isHapticsEnabled } from '../../../services/preferences/hapticsPreference';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
+import { useWhileVisible } from '../../../hooks/useWhileVisible';
 
 interface GreetingScreenProps {
   name: string;
@@ -65,7 +66,7 @@ export default function GreetingScreen({
   const textEnter = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    Animated.sequence([
+    const entrance = Animated.sequence([
       Animated.timing(enter, {
         toValue: 1,
         duration: 520,
@@ -78,12 +79,18 @@ export default function GreetingScreen({
         easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }),
-    ]).start(() => {
-      if (isHapticsEnabled()) {
+    ]);
+    entrance.start(({ finished }) => {
+      if (finished && isHapticsEnabled()) {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
       }
     });
 
+    return () => entrance.stop();
+  }, [enter, textEnter]);
+
+  useWhileVisible(() => {
+    wave.setValue(0);
     const loop = Animated.loop(
       Animated.sequence([
         Animated.timing(wave, {
@@ -108,11 +115,8 @@ export default function GreetingScreen({
       ]),
     );
     loop.start();
-
-    return () => {
-      loop.stop();
-    };
-  }, []);
+    return () => loop.stop();
+  }, [wave]);
 
   const rotate = wave.interpolate({
     inputRange: [-1, 1],

@@ -580,6 +580,7 @@ export default function GuidedBreathingSessionScreen({
         centerSlot={
           <GuidedBreathingPresentation
             ref={circleRef}
+            active={isFocused}
             phase={phase}
             technique={technique}
             theme={activeTheme}

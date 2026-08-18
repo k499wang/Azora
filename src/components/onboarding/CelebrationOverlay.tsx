@@ -6,6 +6,7 @@ import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import { isHapticsEnabled } from '../../services/preferences/hapticsPreference';
+import { useWhileVisible } from '../../hooks/useWhileVisible';
 import ConfettiFall from './ConfettiFall';
 
 interface CelebrationOverlayProps {
@@ -28,17 +29,18 @@ export default function CelebrationOverlay({
 
   useEffect(() => {
     const haptics = isHapticsEnabled();
+    let secondBuzz: ReturnType<typeof setTimeout> | null = null;
 
     if (haptics) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
         () => {},
       );
-      setTimeout(() => {
+      secondBuzz = setTimeout(() => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {});
       }, 220);
     }
 
-    Animated.parallel([
+    const entrance = Animated.parallel([
       Animated.timing(bgFade, {
         toValue: 1,
         duration: 240,
@@ -51,9 +53,9 @@ export default function CelebrationOverlay({
         friction: 7,
         useNativeDriver: true,
       }),
-    ]).start();
+    ]);
 
-    Animated.sequence([
+    const settle = Animated.sequence([
       Animated.delay(120),
       Animated.parallel([
         Animated.timing(checkOpacity, {
@@ -83,17 +85,31 @@ export default function CelebrationOverlay({
           useNativeDriver: true,
         }),
       ]),
-    ]).start();
+    ]);
 
-    Animated.loop(
+    entrance.start();
+    settle.start();
+
+    return () => {
+      if (secondBuzz != null) clearTimeout(secondBuzz);
+      entrance.stop();
+      settle.stop();
+    };
+  }, []);
+
+  useWhileVisible(() => {
+    ringPulse.setValue(0);
+    const halo = Animated.loop(
       Animated.timing(ringPulse, {
         toValue: 1,
         duration: 1600,
         easing: Easing.out(Easing.quad),
         useNativeDriver: true,
       }),
-    ).start();
-  }, []);
+    );
+    halo.start();
+    return () => halo.stop();
+  }, [ringPulse]);
 
   const pulseScale = ringPulse.interpolate({
     inputRange: [0, 1],

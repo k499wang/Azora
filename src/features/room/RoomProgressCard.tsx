@@ -9,6 +9,7 @@ import {
   ROOM_SLOT_COUNT,
   type RoomProgress,
 } from '../../lib/room/roomProgress';
+import NextDayCountdown from './NextDayCountdown';
 import { card } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
@@ -98,6 +99,8 @@ export function RoomProgressCardView({
         </Text>
       </View>
 
+      {view.countdown === true ? <NextDayCountdown style={styles.note} /> : null}
+
       <View style={styles.barRow}>
         <ProgressBar
           progress={view.done / view.total}
@@ -144,6 +147,8 @@ export type RoomCardRoute = 'RoomDecorate' | 'NextRoom';
 
 export interface RoomCardView {
   title: string;
+  /** the wait until the next piece, for a day with nothing left to do */
+  countdown?: boolean;
   /** drives the lock at the end of the bar */
   earned: boolean;
   /** the day is finished — the bar goes green and the lock becomes a tick */
@@ -197,8 +202,11 @@ export function describeRoomCard({
   if (claimedToday) {
     // Today is what this state is about, so the bar stays on today rather than
     // dropping back to a room count that reads as progress lost.
+    // Nothing here is actionable today, so the card's job is the next day:
+    // point at when it opens rather than closing the loop with a tick.
     return {
-      title: 'Placed for today',
+      title: 'All set for today!',
+      countdown: true,
       earned: true,
       complete: true,
       done: DAILIES_PER_DAY,
@@ -243,6 +251,9 @@ const styles = StyleSheet.create({
   },
   // Beside the bar rather than inside it: the fill runs the whole track, so
   // there is no colour a centred count stays legible against end to end.
+  note: {
+    marginTop: -spacing.xs,
+  },
   count: {
     ...typography.body.small,
     fontFamily: fonts.semibold,

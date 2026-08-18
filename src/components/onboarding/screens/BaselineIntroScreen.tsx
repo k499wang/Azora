@@ -1,5 +1,5 @@
 import { Text } from '../../common/Text';
-import { useEffect, useMemo, useRef } from 'react';
+import { useMemo, useRef } from 'react';
 import { Animated, Easing, StyleSheet, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -9,6 +9,7 @@ import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
+import { useWhileVisible } from '../../../hooks/useWhileVisible';
 
 interface BaselineIntroScreenProps {
   stepIndex: number;
@@ -52,7 +53,8 @@ export default function BaselineIntroScreen({
 
   const ecgPath = useMemo(() => buildEcgPath(), []);
 
-  useEffect(() => {
+  useWhileVisible(() => {
+    scroll.setValue(0);
     const loop = Animated.loop(
       Animated.timing(scroll, {
         toValue: 1,

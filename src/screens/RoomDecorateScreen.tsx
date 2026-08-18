@@ -6,6 +6,7 @@ import RoomScreenLayout, {
 } from '../features/room/RoomScreenLayout';
 import { HexRoom, type Picks } from '../features/room/RoomScene';
 import PlacementReveal from '../features/room/PlacementReveal';
+import NextDayCountdown from '../features/room/NextDayCountdown';
 import DecoratePanel, {
   decorateNote,
   decorateTitle,
@@ -148,11 +149,10 @@ export default function RoomDecorateScreen({
     writeSettled,
   ]);
 
-  // The piece falling and the screen congratulating you are one moment: the
-  // congratulation is already the title while it falls — the write settles
-  // mid-animation and flips `claimedToday`, and reading the panel state here
-  // made the title say "Today's piece is placed" for a beat first — and it
-  // arrives with the button once the piece has landed.
+  // Placing is its own moment: the room says nothing over the piece, it just
+  // shows it landing and then offers the way out. Reading the panel state here
+  // would put a title back mid-fall — the write settles mid-animation and flips
+  // `claimedToday` — so the title stays off for the whole beat.
   const celebrating = placing != null || justPlaced;
   // The room and the dailies land separately, so a half-loaded screen can read
   // as claimable for a frame. Nothing offers a piece until both are in.
@@ -161,9 +161,10 @@ export default function RoomDecorateScreen({
   return (
     <RoomScreenLayout
       scroll
-      title={celebrating ? 'Congratulations!' : decorateTitle(panelState)}
+      title={celebrating ? undefined : decorateTitle(panelState)}
       note={choosing ? decorateNote(panelState) : undefined}
       reveal={celebrating ? justPlaced : undefined}
+      actionNote={celebrating ? <NextDayCountdown /> : undefined}
       action={
         celebrating ? (
           <RoomActionButton

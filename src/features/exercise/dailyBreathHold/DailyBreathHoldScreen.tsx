@@ -542,6 +542,7 @@ export default function DailyBreathHoldScreen({
         centerSlot={
           <DailyBreathHoldPresentation
             ref={circleRef}
+            active={isFocused}
             phase={phase}
             theme={activeTheme}
             protocol={DAILY_BREATH_HOLD_PROTOCOL}

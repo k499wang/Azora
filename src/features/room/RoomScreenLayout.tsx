@@ -52,6 +52,11 @@ interface RoomScreenLayoutProps {
   scroll?: boolean;
   /** pinned above the bottom edge */
   action?: ReactNode;
+  /**
+   * One line above the action, arriving with it. For what happens next rather
+   * than what just happened — the reason to come back tomorrow.
+   */
+  actionNote?: ReactNode;
   children: ReactNode;
 }
 
@@ -61,6 +66,7 @@ export default function RoomScreenLayout({
   reveal,
   scroll = false,
   action,
+  actionNote,
   children,
 }: RoomScreenLayoutProps) {
   const insets = useSafeAreaInsets();
@@ -77,6 +83,18 @@ export default function RoomScreenLayout({
 
   const header =
     title == null ? null : enter(<RoomScreenTitle title={title} note={note} />);
+
+  const tray =
+    action == null
+      ? null
+      : enter(
+          <>
+            {actionNote == null ? null : (
+              <View style={styles.actionNote}>{actionNote}</View>
+            )}
+            {action}
+          </>,
+        );
 
   return (
     <View style={styles.screen}>
@@ -105,9 +123,7 @@ export default function RoomScreenLayout({
         </>
       )}
 
-      {action == null ? null : (
-        <View style={styles.tray}>{enter(action)}</View>
-      )}
+      {tray == null ? null : <View style={styles.tray}>{tray}</View>}
     </View>
   );
 }
@@ -195,6 +211,10 @@ const styles = StyleSheet.create({
   stage: {
     alignItems: 'center',
     marginTop: spacing.lg,
+  },
+  actionNote: {
+    alignItems: 'center',
+    marginBottom: spacing.md,
   },
   tray: {
     paddingHorizontal: padding.screen.horizontal,

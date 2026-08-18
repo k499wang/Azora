@@ -1,6 +1,7 @@
 import { Text } from '../common/Text';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { StyleProp, StyleSheet, TextStyle, View } from 'react-native';
+import { useWhileVisible } from '../../hooks/useWhileVisible';
 
 interface AnimatedCalibratingTextProps {
   textStyle: StyleProp<TextStyle>;
@@ -18,8 +19,8 @@ export function AnimatedCalibratingText({
 }: AnimatedCalibratingTextProps) {
   const [dotCount, setDotCount] = useState(1);
 
-  useEffect(() => {
-    if (!animateDots) return;
+  useWhileVisible(() => {
+    if (!animateDots) return () => {};
     const interval = setInterval(() => {
       setDotCount((count) => (count === 3 ? 1 : count + 1));
     }, 450);

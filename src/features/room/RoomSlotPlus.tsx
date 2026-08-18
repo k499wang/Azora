@@ -1,6 +1,6 @@
-import { useEffect } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, {
+  cancelAnimation,
   useAnimatedStyle,
   useSharedValue,
   withDelay,
@@ -9,6 +9,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import Icon from '../../components/common/icons/Icon';
+import { useWhileVisible } from '../../hooks/useWhileVisible';
 import { slotAnchor } from './roomStage';
 import { ROOM_ASPECT } from './RoomScene';
 import { colors } from '../../theme/colors';
@@ -44,7 +45,8 @@ export default function RoomSlotPlus({
 }: RoomSlotPlusProps) {
   const pulse = useSharedValue(0);
 
-  useEffect(() => {
+  useWhileVisible(() => {
+    pulse.value = 0;
     pulse.value = withRepeat(
       withSequence(
         withTiming(1, { duration: PULSE_MS, easing: easing.burst }),
@@ -53,6 +55,8 @@ export default function RoomSlotPlus({
       -1,
       false,
     );
+
+    return () => cancelAnimation(pulse);
   }, [pulse]);
 
   const haloStyle = useAnimatedStyle(() => ({

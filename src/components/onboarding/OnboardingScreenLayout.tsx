@@ -14,6 +14,7 @@ import {
   centeredBodyMinHeight,
   hasScrollOverflow,
 } from '../../lib/ui/scrollOverflow';
+import { useWhileVisible } from '../../hooks/useWhileVisible';
 
 const ENTRANCE_EASING = Easing.bezier(0.22, 1, 0.36, 1);
 const ENTRANCE_INITIAL_SCALE = 0.992;
@@ -115,10 +116,10 @@ export default function OnboardingScreenLayout({
   const centeredBodyStyle =
     centeredBodyBox == null ? null : { minHeight: centeredBodyBox };
 
-  useEffect(() => {
+  useWhileVisible(() => {
+    bounce.setValue(0);
     if (!hasOverflow) {
-      bounce.setValue(0);
-      return;
+      return () => {};
     }
     const loop = Animated.loop(
       Animated.sequence([

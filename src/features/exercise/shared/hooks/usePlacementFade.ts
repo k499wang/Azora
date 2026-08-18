@@ -13,17 +13,21 @@ export function usePlacementFade(active: boolean): Animated.Value {
   const opacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    opacity.stopAnimation();
     if (!active) {
       opacity.setValue(0);
       return;
     }
 
-    Animated.timing(opacity, {
+    const animation = Animated.timing(opacity, {
       toValue: 1,
       duration: reducedMotion ? 0 : PLACEMENT_FADE_MS,
       easing: Easing.out(Easing.ease),
       useNativeDriver: true,
-    }).start();
+    });
+    animation.start();
+
+    return () => animation.stop();
   }, [active, opacity, reducedMotion]);
 
   return opacity;

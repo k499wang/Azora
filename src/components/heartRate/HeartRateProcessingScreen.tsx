@@ -1,5 +1,4 @@
 import { Text } from '../common/Text';
-import { useEffect } from 'react';
 import {
   BackHandler, SafeAreaView, StyleSheet, View } from 'react-native';
 import Reanimated, {
@@ -13,6 +12,7 @@ import Reanimated, {
   withTiming,
 } from 'react-native-reanimated';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useWhileVisible } from '../../hooks/useWhileVisible';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
@@ -35,7 +35,8 @@ interface ProcessingDotProps {
 function ProcessingDot({ color, index, size }: ProcessingDotProps) {
   const progress = useSharedValue(0);
 
-  useEffect(() => {
+  useWhileVisible(() => {
+    progress.value = 0;
     progress.value = withDelay(
       index * 160,
       withRepeat(
@@ -99,12 +100,13 @@ export function HeartRateProcessingScreen({
 }: HeartRateProcessingScreenProps) {
   const pulse = useSharedValue(0);
 
-  useEffect(() => {
+  useWhileVisible(() => {
     const subscription = BackHandler.addEventListener('hardwareBackPress', () => true);
     return () => subscription.remove();
   }, []);
 
-  useEffect(() => {
+  useWhileVisible(() => {
+    pulse.value = 0;
     pulse.value = withRepeat(
       withTiming(1, {
         duration: 900,

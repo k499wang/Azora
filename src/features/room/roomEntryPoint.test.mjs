@@ -159,7 +159,8 @@ test('a held-back title and its button arrive on the same beat', () => {
   const layout = read('features/room/RoomScreenLayout.tsx');
   assert.match(layout, /const REVEAL_DELAY =/);
   assert.match(layout, /enter\(<RoomScreenTitle/);
-  assert.match(layout, /enter\(action\)/);
+  // The tray is a fragment now — the note above the button rides the same beat.
+  assert.match(layout, /const tray =[\s\S]{0,80}enter\(/);
 
   for (const screen of [
     'screens/RoomDecorateScreen.tsx',
