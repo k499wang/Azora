@@ -134,6 +134,16 @@ const BreathingCompanion = forwardRef<BreathingCircleRef, BreathingCompanionProp
     const faceTo = useSharedValue(FACE_SHAPES[face]);
     const faceProgress = useSharedValue(1);
 
+    useEffect(
+      () => () => {
+        cancelAnimation(breath);
+        cancelAnimation(strain);
+        cancelAnimation(entered);
+        cancelAnimation(faceProgress);
+      },
+      [breath, entered, faceProgress, strain],
+    );
+
     const run = (
       toValue: number,
       durationSeconds: number,

@@ -122,7 +122,7 @@ export function useLivePulse(
 
   const { device, format, hasPermission, requestPermission } = useHeartRateCamera();
 
-  useDeviceMotionFeed(managerRef);
+  useDeviceMotionFeed(managerRef, active);
 
   const torchMode: 'on' | 'off' =
     active && device?.hasTorch === true
