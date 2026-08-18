@@ -7,9 +7,12 @@ import RoomScreenLayout, {
 import { HexRoom, type Picks } from '../features/room/RoomScene';
 import PlacementReveal from '../features/room/PlacementReveal';
 import DecoratePanel, {
+  decorateNote,
   decorateTitle,
   type DecorateState,
 } from '../features/room/DecoratePanel';
+import PickDecorationSheet from '../features/room/PickDecorationSheet';
+import RoomSlotPlus from '../features/room/RoomSlotPlus';
 import { getRoomDay } from '../features/room/roomDays';
 import { toFrameHue, toPicks } from '../features/room/roomPicks';
 import { roomShellPolys } from '../features/room/roomShells';
@@ -67,15 +70,9 @@ export default function RoomDecorateScreen({
   // but it refreshes a beat after the reveal ends — and under a faked room it
   // never refreshes at all — so without this the piece pops in and vanishes.
   const [localPicks, setLocalPicks] = useState<Picks>({});
-  const [selected, setSelected] = useState<string | null>(null);
+  const [picking, setPicking] = useState(false);
 
   const placedPicks: Picks = { ...toPicks(decorations), ...localPicks };
-  // The highlighted option is drawn straight into the room, so choosing is
-  // seeing it where it will live rather than guessing from a thumbnail.
-  const shownPicks: Picks =
-    selected != null && nextSlot != null
-      ? { ...placedPicks, [nextSlot]: selected }
-      : placedPicks;
 
   // The dev lab hands this screen a fabricated room. Playing the reveal is the
   // point there; writing a decoration against invented state is not.
@@ -86,12 +83,12 @@ export default function RoomDecorateScreen({
     if (placing != null || placeDecoration.isPending) return;
 
     triggerTapHaptic();
+    setPicking(false);
     setPlacing({
       slot: nextSlot,
       optionId,
       picks: placedPicks,
     });
-    setSelected(null);
 
     if (previewing) return;
 
@@ -157,11 +154,15 @@ export default function RoomDecorateScreen({
   // made the title say "Today's piece is placed" for a beat first — and it
   // arrives with the button once the piece has landed.
   const celebrating = placing != null || justPlaced;
+  // The room and the dailies land separately, so a half-loaded screen can read
+  // as claimable for a frame. Nothing offers a piece until both are in.
+  const choosing = panelState.kind === 'choose' && !celebrating && !isLoading;
 
   return (
     <RoomScreenLayout
       scroll
       title={celebrating ? 'Congratulations!' : decorateTitle(panelState)}
+      note={choosing ? decorateNote(panelState) : undefined}
       reveal={celebrating ? justPlaced : undefined}
       action={
         celebrating ? (
@@ -173,33 +174,45 @@ export default function RoomDecorateScreen({
       }
     >
       <RoomStage>
-        {placing != null ? (
-          <PlacementReveal
-            width={roomWidth}
-            day={placing.slot}
-            option={placing.optionId}
-            picks={placing.picks}
-            frameHue={toFrameHue(room?.frameHue)}
-            shell={shell}
-            onDone={() => setRevealDone(true)}
-          />
-        ) : (
-          <HexRoom
-            width={roomWidth}
-            picks={shownPicks}
-            frameHue={toFrameHue(room?.frameHue)}
-            shell={shell}
-          />
-        )}
+        <View style={{ width: roomWidth }}>
+          {placing != null ? (
+            <PlacementReveal
+              width={roomWidth}
+              day={placing.slot}
+              option={placing.optionId}
+              picks={placing.picks}
+              frameHue={toFrameHue(room?.frameHue)}
+              shell={shell}
+              onDone={() => setRevealDone(true)}
+            />
+          ) : (
+            <HexRoom
+              width={roomWidth}
+              picks={placedPicks}
+              frameHue={toFrameHue(room?.frameHue)}
+              shell={shell}
+            />
+          )}
+
+          {/* The empty slot is the button: tap the gap, choose what fills it. */}
+          {choosing && nextSlot != null ? (
+            <RoomSlotPlus
+              roomWidth={roomWidth}
+              slot={nextSlot}
+              disabled={placeDecoration.isPending}
+              onPress={() => {
+                triggerTapHaptic();
+                setPicking(true);
+              }}
+            />
+          ) : null}
+        </View>
       </RoomStage>
 
-      {celebrating || isLoading ? null : (
+      {celebrating || isLoading || panelState.kind === 'choose' ? null : (
         <View style={styles.panelWrap}>
           <DecoratePanel
             state={panelState}
-            busy={placeDecoration.isPending}
-            selected={selected}
-            onSelect={setSelected}
             onSeeRoom={() => {
               triggerTapHaptic();
               navigation.replace('RoomComplete', route.params);
@@ -208,10 +221,19 @@ export default function RoomDecorateScreen({
               triggerTapHaptic();
               start(daily);
             }}
-            onPick={pick}
           />
         </View>
       )}
+
+      {choosing && nextSlot != null ? (
+        <PickDecorationSheet
+          visible={picking}
+          slot={nextSlot}
+          busy={placeDecoration.isPending}
+          onCancel={() => setPicking(false)}
+          onConfirm={pick}
+        />
+      ) : null}
     </RoomScreenLayout>
   );
 }
