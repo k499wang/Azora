@@ -1,4 +1,4 @@
-import { ReactNode } from 'react';
+import { ReactNode, useState } from 'react';
 import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,6 +8,8 @@ import Icon from './icons/Icon';
 import TopBarAvatar from './TopBarAvatar';
 import TopBarStreak from './TopBarStreak';
 import TopBarGeometry from './TopBarGeometry';
+import GlassIconButton from './GlassIconButton';
+import NotificationsSettingsSheet from '../../features/notifications/NotificationsSettingsSheet';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
@@ -26,6 +28,8 @@ interface AppTopBarProps {
   leftSlot?: ReactNode;
   rightSlot?: ReactNode;
   showAvatar?: boolean;
+  /** a bell beside the avatar that opens the notification settings sheet */
+  showNotifications?: boolean;
   showStreak?: boolean;
   tinted?: boolean;
   children?: ReactNode;
@@ -37,6 +41,7 @@ export default function AppTopBar({
   leftSlot,
   rightSlot,
   showAvatar = true,
+  showNotifications = false,
   showStreak = true,
   tinted = false,
   children,
@@ -48,6 +53,8 @@ export default function AppTopBar({
   const needsProfile = showAvatar || showStreak;
   const profileSummary = useProfileSummaryQuery(needsProfile ? userId : null).data;
 
+  const [notificationsVisible, setNotificationsVisible] = useState(false);
+
   const openProfile = () => navigation.navigate('Profile');
   const canGoBack = showBack && navigation.canGoBack();
   const showBar =
@@ -56,6 +63,7 @@ export default function AppTopBar({
     leftSlot != null ||
     rightSlot != null ||
     showAvatar ||
+    showNotifications ||
     showStreak;
 
   return (
@@ -97,6 +105,14 @@ export default function AppTopBar({
             </View>
             <View style={styles.rightSide}>
               {rightSlot}
+              {showNotifications && (
+                <GlassIconButton
+                  accessibilityLabel="Open notification settings"
+                  onPress={() => setNotificationsVisible(true)}
+                >
+                  <Icon name="bell" size={20} color={colors.text.secondary} />
+                </GlassIconButton>
+              )}
               {showAvatar && (
                 <TopBarAvatar
                   avatarUrl={profileSummary?.profile?.avatarUrl}
@@ -115,6 +131,13 @@ export default function AppTopBar({
             fill={colors.background.headerTint}
           />
         </Svg>
+      )}
+      {showNotifications && (
+        <NotificationsSettingsSheet
+          visible={notificationsVisible}
+          userId={userId}
+          onClose={() => setNotificationsVisible(false)}
+        />
       )}
     </View>
   );
@@ -159,6 +182,6 @@ const styles = StyleSheet.create({
   rightSide: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
+    gap: spacing.sm,
   },
 });
