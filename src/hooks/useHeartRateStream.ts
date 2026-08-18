@@ -82,7 +82,7 @@ export function useHeartRateStream(): UseHeartRateStreamReturn {
 
   const needsIllumination = streamState !== 'idle' && streamState !== 'stopped';
 
-  useDeviceMotionFeed(managerRef);
+  useDeviceMotionFeed(managerRef, needsIllumination);
   const torchMode: 'on' | 'off' =
     needsIllumination && device?.hasTorch === true
       ? 'on'
