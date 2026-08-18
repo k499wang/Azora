@@ -25,6 +25,8 @@ import {
 import DecoratePanel, {
   type DecorateState,
 } from '../features/room/DecoratePanel';
+import PickDecorationSheet from '../features/room/PickDecorationSheet';
+import RoomSlotPlus from '../features/room/RoomSlotPlus';
 import type { RoomSlot } from '../lib/room/roomProgress';
 import { ROOM_SLOTS } from '../lib/room/roomProgress';
 import {
@@ -264,6 +266,7 @@ export default function RoomLabScreen({ navigation }: RoomLabScreenProps) {
   const [sheetCase, setSheetCase] = useState(0);
   const [hotelFloors, setHotelFloors] = useState(3);
   const [panelCase, setPanelCase] = useState(0);
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   const day = DAYS[dayIndex];
   const option = day.options[optionIndex] ?? day.options[0];
@@ -301,6 +304,18 @@ export default function RoomLabScreen({ navigation }: RoomLabScreenProps) {
         }}
         onDismiss={() => setSheetVisible(false)}
       />
+      <PickDecorationSheet
+        visible={pickerOpen}
+        slot={day.key as RoomSlot}
+        busy={revealRun !== 0}
+        onCancel={() => setPickerOpen(false)}
+        onConfirm={(optionId) => {
+          const index = day.options.findIndex((it) => it.id === optionId);
+          if (index >= 0) setOptionIndex(index);
+          setPickerOpen(false);
+          setRevealRun((run) => run + 1);
+        }}
+      />
       <AppTopBar showBack title="Room lab" showAvatar={false} showStreak={false} />
       <ScrollView
         contentContainerStyle={styles.content}
@@ -321,25 +336,35 @@ export default function RoomLabScreen({ navigation }: RoomLabScreenProps) {
         </View>
 
         <View style={styles.stage}>
-          {revealRun === 0 ? (
-            <HexRoom
-              width={roomWidth}
-              picks={picks}
-              frameHue={frameHue}
-              shell={ROOM_SHELLS[shell]}
-            />
-          ) : (
-            <PlacementReveal
-              key={revealRun}
-              width={roomWidth}
-              day={day.key as DayKey}
-              option={option.id}
-              picks={picks}
-              frameHue={frameHue}
-              shell={ROOM_SHELLS[shell]}
-              onDone={() => setRevealRun(0)}
-            />
-          )}
+          <View style={{ width: roomWidth }}>
+            {revealRun === 0 ? (
+              <HexRoom
+                width={roomWidth}
+                picks={picks}
+                frameHue={frameHue}
+                shell={ROOM_SHELLS[shell]}
+              />
+            ) : (
+              <PlacementReveal
+                key={revealRun}
+                width={roomWidth}
+                day={day.key as DayKey}
+                option={option.id}
+                picks={picks}
+                frameHue={frameHue}
+                shell={ROOM_SHELLS[shell]}
+                onDone={() => setRevealRun(0)}
+              />
+            )}
+
+            {revealRun === 0 ? (
+              <RoomSlotPlus
+                roomWidth={roomWidth}
+                slot={day.key as RoomSlot}
+                onPress={() => setPickerOpen(true)}
+              />
+            ) : null}
+          </View>
         </View>
 
         <View style={styles.section}>
@@ -392,23 +417,10 @@ export default function RoomLabScreen({ navigation }: RoomLabScreenProps) {
         <View style={styles.section}>
           <SectionHeader title="Picker" />
           <Text style={styles.note}>
-            The decorate screen's "choose" state for the selected slot — the
-            real component. Tapping a tile plays the reveal above and writes
-            nothing.
+            The "+" standing in the selected slot above opens the real picker.
+            Confirming plays the reveal and writes nothing.
           </Text>
         </View>
-
-        <DecoratePanel
-          state={{ kind: 'choose', slot: day.key as RoomSlot }}
-          busy={revealRun !== 0}
-          onSeeRoom={() => {}}
-          onStartDaily={() => {}}
-          onPick={(optionId) => {
-            const index = day.options.findIndex((it) => it.id === optionId);
-            if (index >= 0) setOptionIndex(index);
-            setRevealRun((run) => run + 1);
-          }}
-        />
 
         <View style={styles.section}>
           <SectionHeader title="Decorate panel states" />
@@ -432,7 +444,6 @@ export default function RoomLabScreen({ navigation }: RoomLabScreenProps) {
           state={PANEL_CASES[panelCase].state}
           onSeeRoom={() => {}}
           onStartDaily={() => {}}
-          onPick={() => {}}
         />
 
         <View style={styles.section}>

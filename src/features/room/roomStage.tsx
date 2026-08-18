@@ -3,8 +3,11 @@ import {
   DECOR,
   ROOM_ASPECT,
   VIEW_BOX,
+  VIEW_BOX_HEIGHT,
+  VIEW_BOX_WIDTH,
   type DayKey,
   type FrameHue,
+  type Poly,
 } from './RoomScene';
 import { colors } from '../../theme/colors';
 
@@ -39,6 +42,65 @@ function soloPolys(day: DayKey, option: string) {
   return polys.filter((poly) => poly.sh !== 1);
 }
 
+interface Bounds {
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
+}
+
+/** the tightest box around a set of polys, in room space */
+function polyBounds(polys: Poly[]): Bounds | null {
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+
+  for (const poly of polys) {
+    for (const pair of poly.p.trim().split(/\s+/)) {
+      const [x, y] = pair.split(',').map(Number);
+      if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
+      minX = Math.min(minX, x);
+      minY = Math.min(minY, y);
+      maxX = Math.max(maxX, x);
+      maxY = Math.max(maxY, y);
+    }
+  }
+
+  if (!Number.isFinite(minX) || !Number.isFinite(minY)) {
+    return null;
+  }
+
+  return { minX, minY, maxX, maxY };
+}
+
+const [VIEW_BOX_MIN_X, VIEW_BOX_MIN_Y] = VIEW_BOX.split(' ').map(Number);
+
+/**
+ * Where a day's piece lives in the room, as a fraction of the rendered box.
+ *
+ * Every option for a day is authored in the same corner — a rug on the floor,
+ * a banner across the back wall — so the union of their bounds is the patch of
+ * room that slot owns. That is where the "+" standing in for the empty slot
+ * belongs, and it moves with the artwork instead of being a table of numbers
+ * that quietly goes stale the next time a piece is redrawn.
+ */
+export function slotAnchor(day: DayKey): { x: number; y: number } | null {
+  const polys = Object.entries(DECOR)
+    .filter(([key]) => key.startsWith(`${day}.`))
+    .flatMap(([, dayPolys]) => dayPolys.filter((poly) => poly.sh !== 1));
+
+  const box = polyBounds(polys);
+  if (box == null) {
+    return null;
+  }
+
+  return {
+    x: ((box.minX + box.maxX) / 2 - VIEW_BOX_MIN_X) / VIEW_BOX_WIDTH,
+    y: ((box.minY + box.maxY) / 2 - VIEW_BOX_MIN_Y) / VIEW_BOX_HEIGHT,
+  };
+}
+
 /**
  * A square box around a single decoration, in room space.
  *
@@ -64,25 +126,12 @@ export function decorationViewBox(
     return null;
   }
 
-  let minX = Infinity;
-  let minY = Infinity;
-  let maxX = -Infinity;
-  let maxY = -Infinity;
-
-  for (const poly of polys) {
-    for (const pair of poly.p.trim().split(/\s+/)) {
-      const [x, y] = pair.split(',').map(Number);
-      if (!Number.isFinite(x) || !Number.isFinite(y)) continue;
-      minX = Math.min(minX, x);
-      minY = Math.min(minY, y);
-      maxX = Math.max(maxX, x);
-      maxY = Math.max(maxY, y);
-    }
-  }
-
-  if (!Number.isFinite(minX) || !Number.isFinite(minY)) {
+  const box = polyBounds(polys);
+  if (box == null) {
     return null;
   }
+
+  const { minX, minY, maxX, maxY } = box;
 
   const width = maxX - minX + pad * 2;
   const height = maxY - minY + pad * 2;

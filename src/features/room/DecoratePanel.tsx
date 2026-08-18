@@ -1,19 +1,8 @@
-import { useEffect, useState } from 'react';
-import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  View,
-  useWindowDimensions,
-} from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { Text } from '../../components/common/Text';
 import Icon from '../../components/common/icons/Icon';
-import PagerDots from '../../components/common/PagerDots';
 import ChunkyButton from '../../components/common/ChunkyButton';
-import { DecorationSolo } from './roomStage';
-import { getRoomDay } from './roomDays';
-import { triggerTapHaptic } from '../../native/tapHaptics';
-import { card, radius } from '../../theme/card';
+import { card } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { padding, spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
@@ -37,13 +26,8 @@ export type DecorateState =
 
 interface DecoratePanelProps {
   state: DecorateState;
-  busy?: boolean;
-  /** which option is highlighted; the screen owns it so the room can preview it */
-  selected?: string | null;
-  onSelect?: (optionId: string | null) => void;
   onSeeRoom: () => void;
   onStartDaily: (daily: DailyId) => void;
-  onPick: (optionId: string) => void;
 }
 
 /**
@@ -67,20 +51,28 @@ export function decorateTitle(state: DecorateState): string {
 }
 
 /**
- * The four things the decorate screen can be saying, split out from the screen
- * so all of them can be rendered without arranging the room state that
- * produces them. The screen owns the data; this owns the pixels.
+ * The line under the title, where there is one.
+ *
+ * Only the choosing state has something more to say, and what it says is where
+ * to tap — the picker lives on the room now, not under it.
+ */
+export function decorateNote(state: DecorateState): string | undefined {
+  return state.kind === 'choose'
+    ? "Tap the + to place today's piece"
+    : undefined;
+}
+
+/**
+ * The three things the decorate screen can say under the room, split out from
+ * the screen so all of them can be rendered without arranging the room state
+ * that produces them. The screen owns the data; this owns the pixels.
  *
  * The title is the screen's, not the panel's — see `decorateTitle`.
  */
 export default function DecoratePanel({
   state,
-  busy = false,
-  selected = null,
-  onSelect,
   onSeeRoom,
   onStartDaily,
-  onPick,
 }: DecoratePanelProps) {
   if (state.kind === 'complete') {
     return (
@@ -162,138 +154,9 @@ export default function DecoratePanel({
     );
   }
 
-  return (
-    <ChooseDecoration
-      slot={state.slot}
-      busy={busy}
-      selected={selected}
-      onSelect={onSelect}
-      onPick={onPick}
-    />
-  );
-}
-
-/**
- * A square card, a square well inside it, a square drawing inside that.
- *
- * All three have to be square. Decorations run from 0.76 to 1.62 in aspect — a
- * tall wardrobe and a wide rug — and each is fitted to its box and centred.
- * Give any of these boxes a different shape, or uneven padding, and the drawing
- * lands off-centre by exactly the difference.
- *
- * The well is tinted because several pieces are white or near-white — the cloud
- * rug is white on pale grey — and are invisible on a white card. They are
- * authored to sit on a warm floor, not on paper.
- */
-const ART_CARD = 220;
-const ART_WELL = ART_CARD - spacing.md * 2;
-const ART_SIZE = ART_WELL - spacing.sm * 2;
-
-/**
- * Swipe through the options, then confirm.
- *
- * One option per page: the option you are looking at is the one you have
- * chosen, so there is nothing to tap and nothing to mis-tap. The earlier
- * version was a row of tappable cards over a snapping scroller, where a tap and
- * the snap both wanted to decide the selection and the scroller won — tapping
- * one card could leave another selected.
- *
- * Confirming is still its own press, because placing is irreversible for the
- * day. Each option is drawn on its own rather than sitting in the room: at
- * thumbnail size the room is what you see and the object is a speck.
- */
-function ChooseDecoration({
-  slot,
-  busy,
-  selected,
-  onSelect,
-  onPick,
-}: {
-  slot: RoomSlot;
-  busy: boolean;
-  selected: string | null;
-  onSelect?: (optionId: string | null) => void;
-  onPick: (optionId: string) => void;
-}) {
-  const { width } = useWindowDimensions();
-  const day = getRoomDay(slot);
-  const options = day?.options ?? [];
-  const first = options[0]?.id ?? null;
-
-  // The lab renders this panel without owning the selection. Falling back to
-  // local state keeps the dots and the label following the swipe there.
-  const [local, setLocal] = useState<string | null>(null);
-  const active = selected ?? local ?? first;
-
-  // A page is always centred, so something is always chosen — including before
-  // the first swipe. Told upwards so the room previews it straight away.
-  useEffect(() => {
-    if (selected == null && first != null) onSelect?.(first);
-  }, [first, onSelect, selected]);
-
-  if (day == null) {
-    return null;
-  }
-
-  const index = Math.max(
-    0,
-    options.findIndex((option) => option.id === active),
-  );
-  const chosen = options[index];
-
-  const settle = (at: number) => {
-    const option = options[at];
-    if (option == null || option.id === active) return;
-
-    triggerTapHaptic();
-    setLocal(option.id);
-    onSelect?.(option.id);
-  };
-
-  return (
-    <View style={styles.section}>
-      <ScrollView
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        style={[styles.slider, { marginHorizontal: -padding.screen.horizontal }]}
-        onMomentumScrollEnd={(event) =>
-          settle(Math.round(event.nativeEvent.contentOffset.x / width))
-        }
-      >
-        {options.map((option) => (
-          <View
-            key={option.id}
-            accessibilityRole="image"
-            accessibilityLabel={option.name}
-            style={[styles.slide, { width }]}
-          >
-            <View style={styles.art}>
-              <View style={styles.well}>
-                <DecorationSolo
-                  width={ART_SIZE}
-                  height={ART_SIZE}
-                  day={slot}
-                  option={option.id}
-                />
-              </View>
-            </View>
-            <Text style={styles.slideLabel}>{option.name}</Text>
-          </View>
-        ))}
-      </ScrollView>
-
-      <PagerDots count={options.length} index={index} />
-
-      <ChunkyButton
-        label={chosen == null ? 'Pick one to continue' : `Place ${chosen.name}`}
-        shape="card"
-        disabled={busy || chosen == null}
-        style={styles.confirmButton}
-        onPress={() => chosen != null && onPick(chosen.id)}
-      />
-    </View>
-  );
+  // Choosing happens on the room itself — the "+" standing in the empty slot
+  // opens `PickDecorationSheet`. Nothing belongs under the room while it does.
+  return null;
 }
 
 const styles = StyleSheet.create({
@@ -338,41 +201,6 @@ const styles = StyleSheet.create({
   checklistLabelDone: {
     color: colors.text.primary,
     fontFamily: fonts.semibold,
-  },
-  section: {
-    paddingHorizontal: padding.screen.horizontal,
-    gap: spacing.xs,
-  },
-  slider: {
-    marginVertical: spacing.sm,
-  },
-  slide: {
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  art: {
-    ...card.base,
-    ...card.shadow,
-    width: ART_CARD,
-    height: ART_CARD,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radius.hero,
-  },
-  well: {
-    ...card.well,
-    width: ART_WELL,
-    height: ART_WELL,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.neutral[100],
-  },
-  slideLabel: {
-    ...typography.title.title3,
-    color: colors.text.primary,
-  },
-  confirmButton: {
-    marginTop: spacing.md,
   },
   primaryButton: {
     marginTop: spacing.sm,
