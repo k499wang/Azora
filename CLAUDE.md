@@ -4,6 +4,16 @@ Project-specific guide for Claude Code. Complements `AGENTS.md` — read that fi
 
 ---
 
+## Engineering Priorities
+
+`AGENTS.md` §"Engineering Priorities" is the contract: **simplicity, readability, reusability, extensibility, modularization**. In this repo that concretely means:
+
+- Two screens that behave the same must call the same hook or domain function — never two copies of the logic. Extract into `src/features/<area>/shared/` (hooks for behavior over time, `domain/` for pure rules).
+- Prefer declarative, state-driven hooks over imperative timers/refs held in a screen. `useHeartRatePlacementFlow` and `useBreathingSessionLeadIn` are the reference shape: `active` flag in, callback out, effect owns the timer and its cleanup.
+- Keep per-screen values (durations, analytics, resets) at the call site; the shared hook must not know which screen it serves.
+- Extract on the second real caller, not the first imagined one. Parameterize only what varies today.
+- Delete the code the extraction replaced in the same change.
+
 ## Stack
 
 - **Expo** (React Native) + **TypeScript** (strict mode on)

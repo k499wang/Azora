@@ -10,8 +10,7 @@ import BreathBackdrop, {
 import { GuidedBreathingHud } from './components/GuidedBreathingHud';
 import { SessionGlassButton } from '../shared/components/SessionGlassButton';
 import {
-  GUIDED_BREATHING_INTRO_DURATION_MS,
-  GUIDED_BREATHING_SETTLE_MS,
+  GUIDED_BREATHING_LEAD_IN_MS,
   GuidedBreathingPresentation,
   type GuidedBreathingPhase,
 } from './components/GuidedBreathingPresentation';
@@ -23,6 +22,7 @@ import { useBreathPhaseAudio } from '../shared/hooks/useBreathPhaseAudio';
 import { useAmbientAudio } from '../shared/hooks/useAmbientAudio';
 import { usePhaseChime } from '../shared/hooks/usePhaseChime';
 import { useHeartRatePlacementFlow } from '../shared/hooks/useHeartRatePlacementFlow';
+import { useBreathingSessionLeadIn } from '../shared/hooks/useBreathingSessionLeadIn';
 import { useHeartRateStallHelp } from '../../../hooks/useHeartRateStallHelp';
 import { HeartRateHelpSheet } from '../../../components/heartRate/HeartRateHelpSheet';
 import { signalHint } from '../shared/components/ExerciseHeartRateGuidance';
@@ -75,7 +75,6 @@ export default function GuidedBreathingSessionScreen({
   const [audioSettingsOpen, setAudioSettingsOpen] = useState(false);
 
   const circleRef = useRef<BreathingCircleRef>(null);
-  const introTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sessionStartMsRef = useRef<number>(0);
   const savedSessionRef = useRef(false);
   const [phase, setPhase] = useState<GuidedBreathingPhase>('idle');
@@ -203,20 +202,12 @@ export default function GuidedBreathingSessionScreen({
     stopPulse,
   ]);
 
-  const clearIntroTimeout = useCallback(() => {
-    if (introTimeoutRef.current) {
-      clearTimeout(introTimeoutRef.current);
-      introTimeoutRef.current = null;
-    }
-  }, []);
-
   const flow = useCancellableFlow(
     useCallback(() => {
       cancelPhase();
-      clearIntroTimeout();
       stopPulse();
       clearHudHideTimer();
-    }, [cancelPhase, clearHudHideTimer, clearIntroTimeout, stopPulse]),
+    }, [cancelPhase, clearHudHideTimer, stopPulse]),
   );
 
   useEffect(() => {
@@ -373,6 +364,23 @@ export default function GuidedBreathingSessionScreen({
     ],
   );
 
+  const enterLeadIn = useCallback(
+    (withHeartRate: boolean) => {
+      setHrEnabled(withHeartRate);
+      resetElapsed();
+      setRound(1);
+      setPhase('intro');
+    },
+    [resetElapsed],
+  );
+
+  useBreathingSessionLeadIn({
+    active: phase === 'intro',
+    durationMs: GUIDED_BREATHING_LEAD_IN_MS,
+    isActive: flow.isActive,
+    onComplete: () => beginExercise(hrEnabled),
+  });
+
   const bpmLocked =
     isBpmReady && presentedBpm != null && pulse.signalStatus === 'measuring';
 
@@ -407,7 +415,7 @@ export default function GuidedBreathingSessionScreen({
       setPhase('placement');
       startPulse();
     },
-    onPlacementReady: () => beginExercise(true),
+    onPlacementReady: () => enterLeadIn(true),
     onHeartRateDisabled: () => setHrEnabled(false),
     onPermissionDenied: showCameraAccessNeededAlert,
     onCameraUnavailable: showHeartRateCameraUnavailableAlert,
@@ -422,19 +430,11 @@ export default function GuidedBreathingSessionScreen({
     },
   });
 
-  const startIntroWithoutHeartRate = useCallback(() => {
+  const startWithoutHeartRate = useCallback(() => {
     if (!flow.start()) return;
 
-    setHrEnabled(false);
-    resetElapsed();
-    setRound(1);
-    setPhase('intro');
-    clearIntroTimeout();
-    introTimeoutRef.current = setTimeout(() => {
-      if (!flow.isActive()) return;
-      beginExercise(false);
-    }, GUIDED_BREATHING_INTRO_DURATION_MS + GUIDED_BREATHING_SETTLE_MS);
-  }, [beginExercise, clearIntroTimeout, flow, resetElapsed]);
+    enterLeadIn(false);
+  }, [enterLeadIn, flow]);
 
   const handleStart = () => {
     if (phase !== 'idle' && phase !== 'done') return;
@@ -455,7 +455,7 @@ export default function GuidedBreathingSessionScreen({
     if (decision.disableHeartRatePreference) {
       setHeartRateMonitoringEnabled(false);
     }
-    startIntroWithoutHeartRate();
+    startWithoutHeartRate();
   };
 
   const handleClose = () => {

@@ -81,8 +81,7 @@ export default function RoomScreenLayout({
       </Rise>
     );
 
-  const header =
-    title == null ? null : enter(<RoomScreenTitle title={title} note={note} />);
+  const header = enter(<RoomScreenTitle title={title} note={note} />);
 
   const tray =
     action == null
@@ -143,13 +142,16 @@ function RoomScreenTitle({
   title,
   note,
 }: {
-  title: string;
+  title?: string;
   note?: string;
 }) {
   return (
     <View style={styles.header}>
-      <Text style={styles.title}>{title}</Text>
-      {note == null ? null : <Text style={styles.note}>{note}</Text>}
+      {/* Blank lines, not missing lines. The header is the same height in every
+          state, so the room below it sits at one height on every screen and
+          never moves when the words above it change. */}
+      <Text style={styles.title}>{title ?? ' '}</Text>
+      <Text style={styles.note}>{note ?? ' '}</Text>
     </View>
   );
 }

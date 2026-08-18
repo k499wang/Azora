@@ -10,6 +10,22 @@ The goal is simple:
 
 This project is a React Native + Expo mobile app with TypeScript, custom heart-rate logic, and planned Android support.
 
+## Engineering Priorities
+
+Every change is judged against five priorities, in this order when they conflict:
+
+1. **Simplicity** — the fewest moving parts that solve the actual problem. No speculative layers, no configuration nobody sets, no indirection that only pays off in an imagined future.
+2. **Readability** — a maintainer should understand the flow from the names alone. Names describe the domain concept, not the mechanism. Comment only the non-obvious *why*.
+3. **Reusability** — when two flows need the same behavior, they run the *same code path*, not two copies that drift. Extract at the point of the second real caller, not before.
+4. **Extensibility** — a third caller should plug in without editing the abstraction. Parameterize what genuinely varies (duration, callbacks); hard-code what does not.
+5. **Modularization** — one module, one responsibility, with a boundary you can name in a sentence. Screens orchestrate, hooks own behavior over time, `domain/` files hold pure rules, components render.
+
+Concretely, when two screens do "the same thing with different values":
+- Name the shared concept, then put it in `features/<area>/shared/` (hook for behavior, `domain/` for pure rules).
+- Make the shared piece declarative where the repo already is — drive it from state (`active: phase === 'intro'`) rather than from imperative timers scattered across call sites.
+- Leave the per-screen values (durations, analytics, resets) at the call site. The shared piece should not know which screen it serves.
+- Delete the duplicated code in the same change. Two implementations of one behavior is the bug.
+
 ## Core Rules
 
 1. Inspect before editing. Do not invent architecture that conflicts with the current repo.

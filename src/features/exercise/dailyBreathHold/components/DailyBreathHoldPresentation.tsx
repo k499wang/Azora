@@ -44,6 +44,10 @@ export const DAILY_BREATH_HOLD_INTRO_DURATION_MS = 750;
 // Beat between the intro copy clearing and the first inhale, so the character
 // has arrived and settled before it asks anything of you.
 export const DAILY_BREATH_HOLD_SETTLE_MS = 500;
+// The full beat between the character arriving and the first cue, shared by
+// every way into the session.
+export const DAILY_BREATH_HOLD_LEAD_IN_MS =
+  DAILY_BREATH_HOLD_INTRO_DURATION_MS + DAILY_BREATH_HOLD_SETTLE_MS;
 
 const INTRO_TITLE = 'Daily Breath Hold';
 
@@ -117,9 +121,12 @@ export const DailyBreathHoldPresentation = forwardRef<
   const { height } = useWindowDimensions();
   const viewport = height - insets.top;
   const reducedMotion = useReducedMotion();
-  const measuringPulse =
-    active && heartRate.enabled && heartRate.active && isPlacement;
-  const trackingPulse = active && heartRate.enabled && heartRate.active && isLive;
+  // Held across every phase after the intro card so the lead-in between finding
+  // the pulse and the first cue cannot tear the capture down mid-session.
+  const pulseAttached =
+    active && heartRate.enabled && heartRate.active && !isIdle;
+  const measuringPulse = pulseAttached && isPlacement;
+  const trackingPulse = pulseAttached && isLive;
 
   const { prepCycles, prepExhaleSeconds, prepInhaleSeconds } = protocol;
   const introDescription =
@@ -262,10 +269,10 @@ export const DailyBreathHoldPresentation = forwardRef<
         />
       ) : null}
 
-      {/* One mount across both phases. Re-rendering this into a different slot
+      {/* One mount across every live phase. Re-rendering this into a different slot
           would tear down the capture session and drop the pulse lock the
           placement flow just earned. */}
-      {camera && (measuringPulse || trackingPulse) ? (
+      {camera && pulseAttached ? (
         <Animated.View
           style={
             measuringPulse
