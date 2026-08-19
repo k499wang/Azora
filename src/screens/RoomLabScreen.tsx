@@ -17,7 +17,6 @@ import { ROOM_MAX_WIDTH, getRoomWidth } from '../features/room/roomLayout';
 import DailyCompleteSheet, {
   type DailyCompleteState,
 } from '../features/room/DailyCompleteSheet';
-import RoomPager from '../features/room/RoomPager';
 import {
   RoomProgressCardView,
   describeRoomCard,
@@ -33,6 +32,8 @@ import {
   setRoomOverride,
   isRoomOverridden,
 } from '../features/room/devRoomOverride';
+import { setHotelOverride } from '../features/room/devHotelOverride';
+import type { PyramidRoom } from '../features/room/PyramidCanvas';
 import type { RoomClaim } from '../features/room/useRoomClaim';
 import { CATEGORY_STYLE } from '../features/exercise/guidedBreathing/categoryPalette';
 import {
@@ -61,6 +62,27 @@ const FRAME_HUES: FrameHue[] = ['sky', 'teal', 'blush'];
 const SAMPLE_PICKS: Picks = Object.fromEntries(
   DAYS.map((day) => [day.key, day.options[0].id]),
 ) as Picks;
+
+/** one room, a third of a pyramid, most of a year, and a full one */
+const HOTEL_FLOOR_COUNTS = [1, 12, 34, 55];
+
+/**
+ * Finished floors that were never earned, cycling through the shells so the
+ * pyramid reads as a hotel rather than one room repeated.
+ */
+function fakeFloors(count: number): PyramidRoom[] {
+  return Array.from({ length: count }, (_, index) => {
+    const style = ROOM_STYLES[index % ROOM_STYLES.length];
+
+    return {
+      key: `fake-floor-${index + 1}`,
+      floor: index + 1,
+      shell: ROOM_SHELLS[style.shell],
+      picks: SAMPLE_PICKS,
+      frameHue: style.frameHue,
+    };
+  });
+}
 
 // Every state the sheet can be in, so none of them costs three real exercises.
 const SHEET_CASES: { label: string; state: DailyCompleteState }[] = [
@@ -264,7 +286,7 @@ export default function RoomLabScreen({ navigation }: RoomLabScreenProps) {
   const [replayRun, setReplayRun] = useState(0);
   const [sheetVisible, setSheetVisible] = useState(false);
   const [sheetCase, setSheetCase] = useState(0);
-  const [hotelFloors, setHotelFloors] = useState(3);
+  const [hotelFloors, setHotelFloors] = useState(12);
   const [panelCase, setPanelCase] = useState(0);
   const [pickerOpen, setPickerOpen] = useState(false);
 
@@ -585,10 +607,11 @@ export default function RoomLabScreen({ navigation }: RoomLabScreenProps) {
         <View style={styles.section}>
           <SectionHeader title="Hotel (simulated)" />
           <Text style={styles.note}>
-            Fake floors, so the pager can be seen at any size.
+            Fake floors for the pyramid below. Fifty-five is a full year, and a
+            filled one. Open the hotel to pinch through them.
           </Text>
           <View style={styles.chipRow}>
-            {[1, 3, 5, 8].map((count) => (
+            {HOTEL_FLOOR_COUNTS.map((count) => (
               <Chip
                 key={count}
                 label={`${count} floor${count === 1 ? '' : 's'}`}
@@ -598,24 +621,6 @@ export default function RoomLabScreen({ navigation }: RoomLabScreenProps) {
             ))}
           </View>
         </View>
-
-        <RoomPager<number>
-          items={Array.from({ length: hotelFloors }, (_, i) => i + 1)}
-          pageWidth={width}
-          initialIndex={hotelFloors - 1}
-          keyOf={(floor) => `floor-${floor}`}
-          captionOf={(floor) => `Room ${floor}`}
-          renderItem={(floor) => (
-            <HexRoom
-              width={roomWidth}
-              picks={SAMPLE_PICKS}
-              frameHue={ROOM_STYLES[(floor - 1) % ROOM_STYLES.length].frameHue}
-              shell={
-                ROOM_SHELLS[ROOM_STYLES[(floor - 1) % ROOM_STYLES.length].shell]
-              }
-            />
-          )}
-        />
 
         <View style={styles.section}>
           <SectionHeader title="Decorate screen — faked" />
@@ -656,8 +661,18 @@ export default function RoomLabScreen({ navigation }: RoomLabScreenProps) {
             onPress={() => navigation.navigate('RoomComplete', { fromLab: true })}
           />
           <Button
-            label="Open hotel"
-            onPress={() => navigation.navigate('Hotel', { fromLab: true })}
+            label={`Open hotel (${hotelFloors} fake floors)`}
+            onPress={() => {
+              setHotelOverride(fakeFloors(hotelFloors));
+              navigation.navigate('Hotel', { fromLab: true });
+            }}
+          />
+          <Button
+            label="Open hotel (my real floors)"
+            onPress={() => {
+              setHotelOverride(null);
+              navigation.navigate('Hotel', { fromLab: true });
+            }}
           />
           <Button
             label="Open next-room picker"

@@ -1,7 +1,7 @@
 import { Text } from '../components/common/Text';
 import { useCallback } from 'react';
 import {
-  ScrollView, StyleSheet, View } from 'react-native';
+  Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AppTopBar from '../components/common/AppTopBar';
 import GlassIconButton from '../components/common/GlassIconButton';
@@ -12,6 +12,7 @@ import RecoveryStatsSection from '../components/heartRate/RecoveryStatsSection';
 import { RecentlyLoggedSection } from '../components/heartRate/RecentlyLoggedSection';
 import { colors } from '../theme/colors';
 import { spacing, padding, margin } from '../theme/spacing';
+import { typography, fonts } from '../theme/typography';
 import { useAuthStore } from '../stores/authStore';
 import { useProfileQuery } from '../queries/profile/useProfileQuery';
 import { useHeartRateStatsQuery } from '../queries/tracking/useHeartRateStatsQuery';
@@ -25,6 +26,9 @@ import type {
   FeatureKeyValue,
 } from '../services/subscriptions/featureAccess';
 import type { HeartTabScreenProps } from '../app/navigation';
+
+const MEASURE_BUTTON_SIZE = 48;
+const MEASURE_ARROW_SIZE = 44;
 
 export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
   const insets = useSafeAreaInsets();
@@ -46,6 +50,10 @@ export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
   const recentHeartRatesError =
     heartRateStatsQuery.isError ||
     (stats?.partialErrors.recent ?? false);
+  const showMeasureHint =
+    recentHeartRates.length === 0 &&
+    !heartRateStatsQuery.isLoading &&
+    !recentHeartRatesError;
   const hrvSource = stats?.hrvSource;
   const canonicalSession = hrvSource?.session ?? null;
   const openProPaywall = useCallback(
@@ -158,12 +166,31 @@ export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
       <GlassIconButton
         accessibilityLabel="Measure heart rate"
         onPress={openMeasure}
-        size={48}
+        size={MEASURE_BUTTON_SIZE}
         style={[styles.stickyAction, { top: insets.top + spacing.xs }]}
         variant="regular"
       >
         <Icon name="plus" size={26} color={colors.text.secondary} />
       </GlassIconButton>
+
+      {showMeasureHint ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Measure heart rate"
+          onPress={openMeasure}
+          style={[
+            styles.measureHint,
+            { top: insets.top + spacing.xs + MEASURE_BUTTON_SIZE },
+          ]}
+        >
+          <Text style={styles.measureHintText}>Tap the plus to measure</Text>
+          <Icon
+            name="arrow-curve-up"
+            size={MEASURE_ARROW_SIZE}
+            color={colors.primary.blue500}
+          />
+        </Pressable>
+      ) : null}
     </View>
   );
 }
@@ -193,6 +220,22 @@ const styles = StyleSheet.create({
     right: spacing.lg,
     zIndex: 1,
     elevation: 1,
+  },
+  // Anchored to the measure button's own offsets so the arrow keeps pointing at
+  // it whatever the scroll content above the first card does.
+  measureHint: {
+    position: 'absolute',
+    right: spacing.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    zIndex: 1,
+    elevation: 1,
+  },
+  measureHintText: {
+    ...typography.label.medium,
+    fontFamily: fonts.semibold,
+    color: colors.text.brand,
   },
   partialErrorText: {
     color: colors.text.tertiary,

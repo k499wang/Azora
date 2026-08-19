@@ -132,11 +132,14 @@ test('every room screen puts its title in the one shared place', () => {
   // screen can hand in its own, the heights drift apart again.
   assert.doesNotMatch(layout, /export function RoomScreenTitle/);
 
+  // The hotel is not in this list. It is a full-screen pinchable canvas rather
+  // than a still room under a caption, so it carries no title and does not use
+  // the shared layout at all — see `HotelScreen`. Every screen that does show a
+  // title still has to get it from the one place.
   for (const screen of [
     'screens/RoomDecorateScreen.tsx',
     'screens/RoomCompleteScreen.tsx',
     'screens/NextRoomScreen.tsx',
-    'screens/HotelScreen.tsx',
   ]) {
     const source = read(screen);
     assert.match(

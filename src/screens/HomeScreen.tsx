@@ -8,6 +8,7 @@ import Icon from '../components/common/icons/Icon';
 import TodaysDailiesSection from '../components/home/TodaysDailiesSection';
 import HomeRoom from '../features/room/HomeRoom';
 import RoomProgressCard from '../features/room/RoomProgressCard';
+import HotelCard from '../features/room/HotelCard';
 import { useRoomClaim } from '../features/room/useRoomClaim';
 import { useStartDaily } from '../hooks/useStartDaily';
 import type { HomeScreenProps } from '../app/navigation';
@@ -54,6 +55,10 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             </GlassIconButton>
           }
         />
+
+        <View style={styles.hotelSection}>
+          <HotelCard floor={roomClaim.room?.floor ?? null} />
+        </View>
 
         <View style={styles.roomSection}>
           <HomeRoom room={roomClaim.room} progress={roomClaim.progress} />
@@ -104,6 +109,11 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: spacing['7xl'] + spacing.xl,
     gap: margin.itemGap,
+  },
+  // The room below this has no horizontal padding of its own — it centres a
+  // fixed width instead — so the card brings the screen's gutters with it.
+  hotelSection: {
+    paddingHorizontal: padding.screen.horizontal,
   },
   roomSection: {
     marginTop: spacing.xs,
