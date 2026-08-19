@@ -3,6 +3,8 @@ import { colors } from '../theme/colors';
 import { spacing, padding, margin } from '../theme/spacing';
 import AppTopBar from '../components/common/AppTopBar';
 import CompactActionBanner from '../components/common/CompactActionBanner';
+import GlassIconButton from '../components/common/GlassIconButton';
+import Icon from '../components/common/icons/Icon';
 import TodaysDailiesSection from '../components/home/TodaysDailiesSection';
 import HomeRoom from '../features/room/HomeRoom';
 import RoomProgressCard from '../features/room/RoomProgressCard';
@@ -15,7 +17,7 @@ import { DEFAULT_DAILY_PLAN_SCHEDULE } from '../services/dailyPlan/types';
 
 const SURVEY_DISCOUNT_URL = 'https://docs.google.com/forms/d/1wdbzWnXbhdpFZ3HoPcRet5K7EGW9RRtEQqrVYiXHwtc/viewform?edit_requested=true';
 
-export default function HomeScreen(_: HomeScreenProps) {
+export default function HomeScreen({ navigation }: HomeScreenProps) {
   const user = useAuthStore((state) => state.user);
   const dailyPlanScheduleQuery = useDailyPlanScheduleQuery(user?.id ?? null);
   const dailyPlanSchedule =
@@ -37,7 +39,21 @@ export default function HomeScreen(_: HomeScreenProps) {
         alwaysBounceVertical
         overScrollMode="always"
       >
-        <AppTopBar showNotifications />
+        <AppTopBar
+          showNotifications
+          rightSlot={
+            <GlassIconButton
+              accessibilityLabel="Open your history"
+              onPress={() => navigation.navigate('History')}
+            >
+              <Icon
+                name="calendar"
+                size={20}
+                color={colors.text.secondary}
+              />
+            </GlassIconButton>
+          }
+        />
 
         <View style={styles.roomSection}>
           <HomeRoom room={roomClaim.room} progress={roomClaim.progress} />

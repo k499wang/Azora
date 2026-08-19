@@ -199,6 +199,28 @@ export async function getHeartRateSummaryForDate(
   return mapHeartRateSummary(data as HeartRateRow);
 }
 
+export async function getHeartRateSummariesForDate(
+  userId: string,
+  localDate: string,
+): Promise<TodayHeartRateSummary[]> {
+  const supabase = requireSupabaseClient();
+
+  const { data, error } = await supabase
+    .from('heart_rate_sessions')
+    .select('id, started_at, ended_at, local_date, timezone, duration_seconds, avg_bpm, min_bpm, max_bpm, rmssd, sdnn, pnn50, hr_drop, beat_count, stress')
+    .eq('user_id', userId)
+    .eq('local_date', localDate)
+    .order('started_at', { ascending: true });
+
+  if (error != null) {
+    throw error;
+  }
+
+  return ((data ?? []) as HeartRateSessionRow[])
+    .map(mapHeartRateSummary)
+    .filter((summary): summary is TodayHeartRateSummary => summary != null);
+}
+
 export async function getRecentHeartRateSummaries(
   userId: string,
   limit = 3,

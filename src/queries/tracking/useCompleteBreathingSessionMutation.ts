@@ -6,6 +6,8 @@ import {
 import { getProfileSummaryQueryKey } from '../profile/useProfileSummaryQuery';
 import { getDailyFeatureUsageQueryKey } from '../subscriptions/useDailyFeatureUsageQuery';
 import { getHomeStatsQueryKeyPrefix } from './useHomeStatsQuery';
+import { getDailyActivityRangeQueryKeyPrefix } from './useDailyActivityRangeQuery';
+import { getDayHistoryQueryKeyPrefix } from '../history/useDayHistoryQuery';
 import { getCompletedBreathingTechniqueIdsQueryKey } from './useCompletedBreathingTechniqueIdsQuery';
 
 type CompleteBreathingSessionMutationInput = Omit<
@@ -66,6 +68,12 @@ export function useCompleteBreathingSessionMutation(userId: string | null) {
       await Promise.all([
         queryClient.invalidateQueries({
           queryKey: getHomeStatsQueryKeyPrefix(userId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: getDayHistoryQueryKeyPrefix(userId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: getDailyActivityRangeQueryKeyPrefix(userId),
         }),
         queryClient.invalidateQueries({
           queryKey: getDailyFeatureUsageQueryKey(userId, localDate),
