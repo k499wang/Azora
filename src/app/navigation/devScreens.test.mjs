@@ -121,6 +121,43 @@ test('only these files may touch the room override', () => {
   }
 });
 
+test('the hotel override can never return a value in a release build', () => {
+  const override = read('features/room/devHotelOverride.ts');
+
+  assert.match(
+    override,
+    /function read\(\)[^}]*__DEV__ \? override : null/s,
+    'devHotelOverride must gate the read on __DEV__',
+  );
+
+  assert.match(
+    override,
+    /export function setHotelOverride[^}]*if \(!__DEV__\) return;/s,
+    'devHotelOverride must also gate the write, so nothing can set it at all',
+  );
+});
+
+test('only these files may touch the hotel override', () => {
+  const allowed = new Set([
+    'features/room/devHotelOverride.ts',
+    // reads it, so the pyramid can be seen at a size real data cannot reach
+    'screens/HotelScreen.tsx',
+    // the only writer
+    'screens/RoomLabScreen.tsx',
+  ]);
+
+  const callers = allSourceFiles().filter((file) =>
+    read(file).includes('devHotelOverride'),
+  );
+
+  for (const file of callers) {
+    assert.ok(
+      allowed.has(file),
+      `${file} reaches into dev-only hotel machinery; add it to the allowlist only if that is intended`,
+    );
+  }
+});
+
 test('nothing outside the lab and its gates references the lab route', () => {
   const allowed = new Set([
     'app/navigation/RootNavigator.tsx',

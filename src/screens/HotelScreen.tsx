@@ -1,71 +1,89 @@
-import { StyleSheet, View, useWindowDimensions } from 'react-native';
+import { useMemo } from 'react';
+import { StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from '../components/common/Text';
-import RoomScreenLayout from '../features/room/RoomScreenLayout';
-import RoomPager from '../features/room/RoomPager';
-import { HexRoom } from '../features/room/RoomScene';
+import AppTopBar from '../components/common/AppTopBar';
+import PyramidCanvas from '../features/room/PyramidCanvas';
+import type { PyramidRoom } from '../features/room/PyramidCanvas';
+import { useOpenedFromLab } from '../features/room/useOpenedFromLab';
+import { useHotelOverride } from '../features/room/devHotelOverride';
 import { toFrameHue, toPicks } from '../features/room/roomPicks';
 import { roomShellPolys } from '../features/room/roomShells';
-import { getRoomWidth } from '../features/room/roomLayout';
 import { useRoomsQuery } from '../queries/room/useRoomsQuery';
 import { useAuthStore } from '../stores/authStore';
 import { colors } from '../theme/colors';
 import { padding, spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
-import type { Room } from '../services/room/roomService';
 import type { HotelScreenProps } from '../app/navigation';
 
 /**
- * Every floor the user has finished, one per page.
+ * The hotel is one honeycomb, not a stack of pages.
  *
- * Opens on the newest floor rather than the ground floor — the room they most
- * recently spent seven days on is the one worth landing on.
+ * Every finished floor is a hexagon in a pyramid — the first room at the apex,
+ * each row below it one room wider — and every floor still to come is a dotted
+ * outline of one, so the whole year is on screen from the first day.
+ *
+ * It opens close on the newest floor, filling the screen. This is the one room
+ * screen that does not use `RoomScreenLayout`: that layout exists to hold a
+ * title and a still room at the same height on every screen, and the hotel has
+ * neither. A blank header here would only push the canvas down the screen.
  */
 export default function HotelScreen(_: HotelScreenProps) {
-  const { width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  const fromLab = useOpenedFromLab();
   const userId = useAuthStore((state) => state.user?.id ?? null);
   const roomsQuery = useRoomsQuery(userId);
-  const rooms = roomsQuery.data ?? [];
-  const roomWidth = getRoomWidth(width);
+  const rooms = roomsQuery.data;
+  const override = useHotelOverride();
+
+  const realRooms = useMemo<PyramidRoom[]>(
+    () =>
+      (rooms ?? []).map((room) => ({
+        key: room.id,
+        floor: room.floor,
+        shell: roomShellPolys(room.shell),
+        picks: toPicks(room.decorations),
+        frameHue: toFrameHue(room.frameHue),
+      })),
+    [rooms],
+  );
+
+  const pyramidRooms = override ?? realRooms;
+  const waiting = roomsQuery.isPending && override == null;
 
   return (
-    <RoomScreenLayout
-      title="Your hotel"
-      note="Every room you have finished. Swipe to look through them."
-    >
-      {roomsQuery.isPending ? null : rooms.length === 0 ? (
+    <View style={styles.screen}>
+      {fromLab ? (
+        <AppTopBar showBack showAvatar={false} showStreak={false} />
+      ) : (
+        <View style={{ height: insets.top }} />
+      )}
+
+      {waiting ? null : pyramidRooms.length === 0 ? (
         <View style={styles.empty}>
           <Text style={styles.emptyTitle}>No floors yet</Text>
           <Text style={styles.emptyBody}>
             Finish today's dailies to earn your first piece. Seven of them fill
-            a room, and a filled room opens here.
+            a room, and a filled room takes its place at the top of the pyramid.
           </Text>
         </View>
       ) : (
-        <RoomPager<Room>
-          items={rooms}
-          pageWidth={width}
-          initialIndex={rooms.length - 1}
-          keyOf={(room) => room.id}
-          captionOf={(room) => `Room ${room.floor}`}
-          renderItem={(room) => (
-            <HexRoom
-              width={roomWidth}
-              picks={toPicks(room.decorations)}
-              frameHue={toFrameHue(room.frameHue)}
-              shell={roomShellPolys(room.shell)}
-            />
-          )}
-        />
+        <PyramidCanvas rooms={pyramidRooms} />
       )}
-    </RoomScreenLayout>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: colors.background.canvas,
+  },
   empty: {
     paddingHorizontal: padding.screen.horizontal,
     alignItems: 'center',
     gap: spacing.sm,
+    marginTop: spacing.lg,
   },
   emptyTitle: {
     ...typography.title.title3,

@@ -94,6 +94,14 @@ export const ICON_PATHS = {
     <path d="M12 2.6 20.4 7.3v9.4L12 21.4 3.6 16.7V7.3z" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" fill="none" />
     <path d="M3.6 7.3 12 12m0 0 8.4-4.7M12 12v9.4" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" fill="none" opacity="0.55" />
   `,
+  'hotel-pyramid': `
+    <path d="M12 1.2 16.5 3.8v5.2L12 11.6 7.5 9V3.8z" fill="currentColor" opacity="0.2" />
+    <path d="M7.5 9 12 11.6v5.2L7.5 19.4 3 16.8v-5.2z" fill="currentColor" opacity="0.2" />
+    <path d="M16.5 9 21 11.6v5.2l-4.5 2.6-4.5-2.6v-5.2z" fill="currentColor" opacity="0.2" />
+    <path d="M12 1.2 16.5 3.8v5.2L12 11.6 7.5 9V3.8z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" fill="none" />
+    <path d="M7.5 9 12 11.6v5.2L7.5 19.4 3 16.8v-5.2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" fill="none" />
+    <path d="M16.5 9 21 11.6v5.2l-4.5 2.6-4.5-2.6v-5.2z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" fill="none" />
+  `,
 
   timer: `
     <path d="M10 3h4" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
@@ -156,6 +164,17 @@ export const ICON_PATHS = {
   'arrow-up': `
     <path d="M12 19.5V5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" fill="none" />
     <path d="M5.5 11.5L12 5l6.5 6.5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+  `,
+
+  'arrow-right': `
+    <path d="M4.5 12H19" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" fill="none" />
+    <path d="M12.5 5.5L19 12l-6.5 6.5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+  `,
+
+  // Hand-drawn sweep that points up at the measure button on the Heart tab.
+  'arrow-curve-up': `
+    <path d="M7 23C6 16 10.5 9 10.5 2.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" fill="none" />
+    <path d="M12.75 6.4L10.5 2.5L8.25 6.4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" fill="none" />
   `,
 
   info: `

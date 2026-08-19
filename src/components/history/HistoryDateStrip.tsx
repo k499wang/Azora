@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import {
   Pressable,
   ScrollView,
@@ -21,6 +21,12 @@ interface Props {
   days: WeekCalendarDay[];
   selectedLocalDate: string;
   onSelect: (localDate: string) => void;
+  /**
+   * Bump to scroll back to the newest week. Today is always on the last page —
+   * the strip is built to end on the Saturday of today's week — so this needs
+   * no date, only a signal that something asked to go back there.
+   */
+  jumpToLatestToken: number;
 }
 
 /** Sits on the header block, so every color here is picked against its fill. */
@@ -28,6 +34,7 @@ export default function HistoryDateStrip({
   days,
   selectedLocalDate,
   onSelect,
+  jumpToLatestToken,
 }: Props) {
   const { width } = useWindowDimensions();
   // No screen margin on purpose: a page has to be exactly the viewport wide for
@@ -44,6 +51,11 @@ export default function HistoryDateStrip({
     openedOnLatestWeek.current = true;
     scrollRef.current?.scrollToEnd({ animated: false });
   }, []);
+
+  useEffect(() => {
+    if (jumpToLatestToken === 0) return;
+    scrollRef.current?.scrollToEnd({ animated: true });
+  }, [jumpToLatestToken]);
 
   return (
     <ScrollView

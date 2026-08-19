@@ -18,6 +18,7 @@ interface Props {
   selectedLocalDate: string;
   onSelect: (localDate: string) => void;
   onClose: () => void;
+  jumpToLatestToken: number;
 }
 
 /**
@@ -32,6 +33,7 @@ export default function HistoryHeader({
   selectedLocalDate,
   onSelect,
   onClose,
+  jumpToLatestToken,
 }: Props) {
   const insets = useSafeAreaInsets();
 
@@ -65,6 +67,7 @@ export default function HistoryHeader({
         days={days}
         selectedLocalDate={selectedLocalDate}
         onSelect={onSelect}
+        jumpToLatestToken={jumpToLatestToken}
       />
     </View>
   );
