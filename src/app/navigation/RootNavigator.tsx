@@ -17,6 +17,7 @@ import RoomCompleteScreen from '../../screens/RoomCompleteScreen';
 import HotelScreen from '../../screens/HotelScreen';
 import NextRoomScreen from '../../screens/NextRoomScreen';
 import SettingsScreen from '../../screens/SettingsScreen';
+import HistoryScreen from '../../screens/HistoryScreen';
 import ShareableResultScreen from '../../screens/ShareableResultScreen';
 import ExerciseSearchScreen from '../../screens/ExerciseSearchScreen';
 import GardenScreen from '../../screens/GardenScreen';
@@ -194,6 +195,14 @@ function AppStack({ showBootPaywall }: AppStackProps) {
         options={{
           presentation: 'card',
           animation: 'slide_from_right',
+        }}
+      />
+      <Stack.Screen
+        name="History"
+        component={HistoryScreen}
+        options={{
+          presentation: 'fullScreenModal',
+          animation: 'slide_from_bottom',
         }}
       />
       <Stack.Screen

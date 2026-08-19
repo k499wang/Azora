@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import {
   Alert,
   Linking,
+  Pressable,
   ScrollView,
   StyleSheet,
   View,
@@ -10,6 +11,8 @@ import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import { padding, spacing } from '../theme/spacing';
+import { fonts, typography } from '../theme/typography';
+import { Text } from '../components/common/Text';
 import AppTopBar from '../components/common/AppTopBar';
 import GlassIconButton from '../components/common/GlassIconButton';
 import { Ionicons } from '@expo/vector-icons';
@@ -201,7 +204,22 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
         </View>
 
         <View style={styles.section}>
-          <SectionHeader title="Consistency" />
+          <SectionHeader
+            title="Consistency"
+            right={
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Open your history"
+                hitSlop={spacing.sm}
+                onPress={() => {
+                  triggerTapHaptic();
+                  navigation.navigate('History');
+                }}
+              >
+                <Text style={styles.sectionLink}>See all</Text>
+              </Pressable>
+            }
+          />
           <View style={styles.sectionBody}>
             <ProfileCompletionCalendarCard completedDays={profileSummary?.completedDays ?? []} />
           </View>
@@ -291,6 +309,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: padding.screen.horizontal,
     marginTop: spacing.md,
     gap: spacing.sm,
+  },
+  sectionLink: {
+    ...typography.label.medium,
+    fontFamily: fonts.semibold,
+    color: colors.text.brand,
   },
   sectionBody: {
     marginTop: spacing.xs,

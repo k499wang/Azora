@@ -72,6 +72,8 @@ export type RootStackParamList = {
   /** dev-only harness for the room's animations */
   RoomLab: undefined;
   Settings: undefined;
+  /** day-by-day record; opens on `date` when given, otherwise today */
+  History: { date?: string } | undefined;
   DailyResult: {
     holdSeconds: number;
     /** identifies this session for per-session feedback */
@@ -123,5 +125,6 @@ export type RoomLabScreenProps = RootStackScreenProps<'RoomLab'>;
 export type HotelScreenProps = RootStackScreenProps<'Hotel'>;
 export type NextRoomScreenProps = RootStackScreenProps<'NextRoom'>;
 export type SettingsScreenProps = RootStackScreenProps<'Settings'>;
+export type HistoryScreenProps = RootStackScreenProps<'History'>;
 export type DailyResultScreenProps = RootStackScreenProps<'DailyResult'>;
 export type ExitOfferScreenProps = RootStackScreenProps<'ExitOffer'>;

@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { placeDecoration } from '../../services/room/roomService';
 import { getCurrentRoomQueryKey } from './useCurrentRoomQuery';
 import { getRoomsQueryKey } from './useRoomsQuery';
+import { getDayHistoryQueryKeyPrefix } from '../history/useDayHistoryQuery';
 import type { RoomSlot } from '../../lib/room/roomProgress';
 
 interface PlaceDecorationInput {
@@ -31,6 +32,9 @@ export function usePlaceDecorationMutation(userId: string | null) {
       void queryClient.invalidateQueries({
         queryKey: getRoomsQueryKey(userId),
         exact: true,
+      });
+      void queryClient.invalidateQueries({
+        queryKey: getDayHistoryQueryKeyPrefix(userId),
       });
     },
   });

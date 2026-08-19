@@ -102,6 +102,36 @@ export async function getRecentBreathingSessions(): Promise<BreathingSessionSumm
   );
 }
 
+export async function getBreathingSessionsForDate(
+  userId: string,
+  localDate: string,
+): Promise<BreathingSessionSummary[]> {
+  const supabase = requireSupabaseClient();
+
+  const { data, error } = await supabase
+    .from('breathing_sessions')
+    .select('id, technique_id, started_at, ended_at, local_date, timezone, duration_seconds, target_rounds, rounds_completed, completed')
+    .eq('user_id', userId)
+    .eq('local_date', localDate)
+    .eq('completed', true)
+    .order('started_at', { ascending: true });
+
+  if (error != null) throw error;
+
+  return (data ?? []).map((row) => ({
+    sessionId: row.id,
+    techniqueId: row.technique_id,
+    startedAt: row.started_at,
+    endedAt: row.ended_at,
+    localDate: row.local_date,
+    timezone: row.timezone,
+    durationSeconds: row.duration_seconds,
+    targetRounds: row.target_rounds,
+    roundsCompleted: row.rounds_completed,
+    completed: row.completed,
+  }));
+}
+
 export async function getCompletedBreathingTechniqueIdsForDate(
   userId: string,
   localDate: string,

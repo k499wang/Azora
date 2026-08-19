@@ -28,4 +28,5 @@ export type {
   HotelScreenProps,
   NextRoomScreenProps,
   SettingsScreenProps,
+  HistoryScreenProps,
 } from './types';

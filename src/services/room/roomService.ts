@@ -155,6 +155,29 @@ export async function getCurrentRoom(userId: string): Promise<CurrentRoom> {
 }
 
 /** Every floor of the hotel, ground floor first. */
+/** every object earned on one day, across floors — the day's reward in History */
+export async function getDecorationsEarnedOnDate(
+  userId: string,
+  localDate: string,
+): Promise<RoomDecorationRow[]> {
+  const supabase = getRoomClient();
+  const { data, error } = await supabase
+    .from('room_decorations')
+    .select(DECORATION_COLUMNS)
+    .eq('user_id', userId)
+    .eq('earned_local_date', localDate);
+
+  if (error != null) {
+    throw error;
+  }
+
+  return (data ?? []).map((row) => ({
+    slot: row.slot,
+    optionId: row.option_id,
+    earnedLocalDate: row.earned_local_date,
+  }));
+}
+
 export async function getRooms(userId: string): Promise<Room[]> {
   const supabase = getRoomClient();
   const roomsResult = await supabase
