@@ -1,6 +1,6 @@
 import { Text } from '../components/common/Text';
-import { useCallback, useEffect, useRef } from 'react';
-import { Animated, Easing, StyleSheet, View } from 'react-native';
+import { useCallback, useMemo, useRef } from 'react';
+import { Animated, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import AppTopBar from '../components/common/AppTopBar';
@@ -32,7 +32,6 @@ const MEASURE_BUTTON_SIZE = 48;
 export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
   const insets = useSafeAreaInsets();
   const scrollY = useRef(new Animated.Value(0)).current;
-  const measureHintPulse = useRef(new Animated.Value(0)).current;
   const user = useAuthStore((state) => state.user);
   const heartRateStatsQuery = useHeartRateStatsQuery(user?.id ?? null);
   const profileQuery = useProfileQuery(user?.id ?? null);
@@ -55,40 +54,32 @@ export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
     recentHeartRates.length === 0 &&
     !heartRateStatsQuery.isLoading &&
     !recentHeartRatesError;
-  useEffect(() => {
-    if (!showMeasureHint) return;
-    const pulse = Animated.loop(
-      Animated.sequence([
-        Animated.timing(measureHintPulse, {
-          toValue: 1,
-          duration: 600,
-          easing: Easing.inOut(Easing.quad),
-          useNativeDriver: true,
-        }),
-        Animated.timing(measureHintPulse, {
-          toValue: 0.35,
-          duration: 800,
-          easing: Easing.inOut(Easing.quad),
-          useNativeDriver: true,
-        }),
-      ]),
-    );
-    pulse.start();
-    return () => pulse.stop();
-  }, [measureHintPulse, showMeasureHint]);
-  const measureHintOpacity = Animated.multiply(
-    measureHintPulse,
-    scrollY.interpolate({
-      inputRange: [0, 12, 56],
-      outputRange: [1, 1, 0],
-      extrapolate: 'clamp',
-    }),
+  const measureHintOpacity = useMemo(
+    () =>
+      scrollY.interpolate({
+        inputRange: [0, 16, 80],
+        outputRange: [1, 1, 0],
+        extrapolate: 'clamp',
+      }),
+    [scrollY],
   );
-  const measureHintTranslateY = scrollY.interpolate({
-    inputRange: [0, 56],
-    outputRange: [0, -6],
-    extrapolate: 'clamp',
-  });
+  const measureHintTranslateY = useMemo(
+    () =>
+      scrollY.interpolate({
+        inputRange: [0, 16, 80],
+        outputRange: [0, 0, -10],
+        extrapolate: 'clamp',
+      }),
+    [scrollY],
+  );
+  const onScroll = useMemo(
+    () =>
+      Animated.event(
+        [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+        { useNativeDriver: true },
+      ),
+    [scrollY],
+  );
   const hrvSource = stats?.hrvSource;
   const canonicalSession = hrvSource?.session ?? null;
   const openProPaywall = useCallback(
@@ -129,10 +120,7 @@ export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
         bounces
         alwaysBounceVertical
         overScrollMode="always"
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          { useNativeDriver: true },
-        )}
+        onScroll={onScroll}
         scrollEventThrottle={16}
       >
         <AppTopBar
