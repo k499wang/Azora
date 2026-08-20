@@ -1,11 +1,14 @@
 import { Text } from './Text';
 import { useMemo } from 'react';
 import { Pressable, StyleSheet } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import Icon from './icons/Icon';
 import { useTimePickerSheet } from './useTimePickerSheet';
 import { colors } from '../../theme/colors';
+import { radius } from '../../theme/card';
+import { pressable } from '../../theme/pressable';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
+import { triggerTapHaptic } from '../../native/tapHaptics';
 
 interface TimePickerFieldProps {
   value: string;
@@ -36,7 +39,10 @@ export default function TimePickerField({
         accessibilityLabel={accessibilityLabel ?? `Change time, currently ${displayLabel}`}
         accessibilityState={{ disabled }}
         disabled={disabled}
-        onPress={open}
+        onPress={() => {
+          triggerTapHaptic();
+          open();
+        }}
         style={({ pressed }) => [
           styles.pill,
           disabled && styles.pillDisabled,
@@ -44,7 +50,7 @@ export default function TimePickerField({
         ]}
       >
         <Text style={styles.pillText}>{displayLabel}</Text>
-        <MaterialCommunityIcons
+        <Icon
           name="chevron-down"
           size={18}
           color={disabled ? colors.text.tertiary : colors.primary.blue700}
@@ -73,14 +79,12 @@ const styles = StyleSheet.create({
     minHeight: 40,
     paddingLeft: spacing.md,
     paddingRight: spacing.sm,
-    borderRadius: 999,
+    borderRadius: radius.full,
     borderWidth: 1,
     borderColor: colors.primary.blue600,
     backgroundColor: colors.primary.blue100,
   },
-  pillPressed: {
-    opacity: 0.72,
-  },
+  pillPressed: pressable.control,
   pillDisabled: {
     borderColor: colors.border.default,
     backgroundColor: colors.background.elevated,

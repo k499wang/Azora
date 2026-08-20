@@ -53,9 +53,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           }
         />
 
-        <View style={styles.roomSection}>
-          <HomeRoom room={roomClaim.room} progress={roomClaim.progress} />
-        </View>
+        <HomeRoom room={roomClaim.room} progress={roomClaim.progress} />
 
         <View style={styles.bodySection}>
           <RoomProgressCard
@@ -106,10 +104,6 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: spacing['7xl'] + spacing.xl,
     gap: margin.itemGap,
-  },
-  roomSection: {
-    marginTop: spacing.xs,
-    marginBottom: spacing.sm,
   },
   bodySection: {
     paddingHorizontal: padding.screen.horizontal,

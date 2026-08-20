@@ -6,10 +6,16 @@ import { colors } from './colors';
 // treatment and is what makes surfaces read as Apple-designed rather than
 // generic rounded rectangles.
 export const radius = {
-  small: 10, // chips, small cells, paper
+  xs: 8, // tiny chips, skeleton blocks
+  small: 10, // paper, small cells
+  medium: 12, // inputs, utility controls, dialog buttons
   card: 16, // standard cards and grouped cells
   hero: 20, // color-block heroes, glass panes
+  // `large` is the spec name for the hero size; keep `hero` for back-compat.
+  large: 20,
   sheet: 24, // large sheets / modals
+  xl: 28, // reward cards, mascot bubbles, gamified containers
+  full: 999, // pills, avatars, circular controls
 } as const;
 
 export const card: {
@@ -21,6 +27,8 @@ export const card: {
   shadow: ViewStyle;
   shadowElevated: ViewStyle;
   trayShadow: ViewStyle;
+  shadowModal: ViewStyle;
+  shadowReward: ViewStyle;
   glass: ViewStyle;
   glassTint: ViewStyle;
 } = {
@@ -95,6 +103,24 @@ export const card: {
     shadowOpacity: 0.08,
     shadowRadius: 16,
     elevation: 16,
+  },
+  // Floating dialogs and centered sheets: strong enough to separate the layer
+  // from the dimmed backdrop, still colorless and soft-edged.
+  shadowModal: {
+    shadowColor: colors.neutral[900],
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.2,
+    shadowRadius: 24,
+    elevation: 16,
+  },
+  // Reward reveals and special collectible states may carry slightly more
+  // dimensionality, but never a colored or neon glow.
+  shadowReward: {
+    shadowColor: colors.neutral[900],
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.18,
+    shadowRadius: 20,
+    elevation: 12,
   },
   // Frosted pane: hairline white edge + clip. Put a <BlurView> behind content
   // and overlay `glassTint`. Clips its own shadow, so wrap with shadowElevated.

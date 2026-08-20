@@ -1,4 +1,5 @@
 import { SvgXml } from 'react-native-svg';
+import { colors } from '../../../theme/colors';
 import { ICON_PATHS, type IconName } from './paths';
 
 interface IconProps {
@@ -7,7 +8,11 @@ interface IconProps {
   color?: string;
 }
 
-export default function Icon({ name, size = 24, color = '#000' }: IconProps) {
+export default function Icon({
+  name,
+  size = 24,
+  color = colors.text.primary,
+}: IconProps) {
   const entry = ICON_PATHS[name];
   const body = typeof entry === 'string' ? entry : entry.body;
   const viewBox =

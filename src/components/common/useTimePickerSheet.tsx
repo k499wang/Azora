@@ -7,6 +7,7 @@ import DateTimePicker, {
 } from '@react-native-community/datetimepicker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../theme/colors';
+import { radius } from '../../theme/card';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 
@@ -155,7 +156,7 @@ const styles = StyleSheet.create({
   grabber: {
     width: 42,
     height: 5,
-    borderRadius: 999,
+    borderRadius: radius.full,
     alignSelf: 'center',
     backgroundColor: colors.neutral[300],
   },

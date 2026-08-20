@@ -4,6 +4,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import BlobCharacter, { type CharacterId } from './BlobCharacter';
 import TaskCardDecor from './TaskCardDecor';
 import SectionHeader from '../common/SectionHeader';
+import Icon from '../common/icons/Icon';
 import type { BreathingTechnique } from '../../features/exercise/guidedBreathing/techniques';
 import {
   BREATH_HOLD_STYLE,
@@ -11,6 +12,7 @@ import {
   type CategoryStyle,
 } from '../../features/exercise/guidedBreathing/categoryPalette';
 import { card, radius } from '../../theme/card';
+import { pressable } from '../../theme/pressable';
 import { triggerTapHaptic } from '../../native/tapHaptics';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
@@ -106,11 +108,10 @@ function DailyTaskRow({
           ]}
         >
           {completed || locked ? (
-            <MaterialCommunityIcons
-              name={completed ? 'check' : 'lock-outline'}
+            <Icon
+              name={completed ? 'check' : 'lock'}
               size={MARKER_ICON_SIZE}
               color={colors.text.inverse}
-              style={styles.statusMarkerIcon}
             />
           ) : null}
         </View>
@@ -137,11 +138,7 @@ function DailyTaskRow({
                 </Text>
               </View>
               <View style={styles.metadataRow}>
-                <MaterialCommunityIcons
-                  name="clock-outline"
-                  size={14}
-                  color={colors.text.secondary}
-                />
+                <Icon name="clock" size={14} color={colors.text.secondary} />
                 <Text style={styles.metadataText} numberOfLines={1}>
                   {scheduledTime}
                 </Text>
@@ -307,10 +304,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
   },
-  taskPressed: {
-    opacity: 0.8,
-    transform: [{ scale: 0.99 }],
-  },
+  taskPressed: pressable.subtle,
   timelineColumn: {
     width: TIMELINE_COLUMN_WIDTH,
     alignItems: 'center',
@@ -323,12 +317,6 @@ const styles = StyleSheet.create({
     borderRadius: TIMELINE_MARKER_SIZE / 2,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  statusMarkerIcon: {
-    width: TIMELINE_MARKER_SIZE,
-    height: TIMELINE_MARKER_SIZE,
-    lineHeight: TIMELINE_MARKER_SIZE,
-    textAlign: 'center',
   },
   statusMarkerActive: {
     backgroundColor: colors.primary.blue600,
@@ -362,7 +350,8 @@ const styles = StyleSheet.create({
     flexShrink: 0,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 18,
+    borderRadius: radius.large,
+    borderCurve: 'continuous',
     overflow: 'hidden',
   },
   taskArtLoading: {

@@ -2,12 +2,12 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { Text } from './Text';
 import Icon from './icons/Icon';
 import GlassSurface from './GlassSurface';
-import { card } from '../../theme/card';
+import { card, radius } from '../../theme/card';
 import { colors } from '../../theme/colors';
+import { pressable } from '../../theme/pressable';
 import { spacing } from '../../theme/spacing';
 import { fonts } from '../../theme/typography';
-
-const PILL_RADIUS = 20;
+import { triggerTapHaptic } from '../../native/tapHaptics';
 
 interface TopBarStreakProps {
   streakDays: number;
@@ -22,7 +22,11 @@ export default function TopBarStreak({
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={`${streakDays} day streak`}
-      onPress={onPress}
+      onPress={() => {
+        if (onPress == null) return;
+        triggerTapHaptic();
+        onPress();
+      }}
       hitSlop={12}
       style={({ pressed }) => [
         styles.pressable,
@@ -52,11 +56,11 @@ const styles = StyleSheet.create({
   },
   shadow: {
     ...card.shadowElevated,
-    borderRadius: PILL_RADIUS,
+    borderRadius: radius.large,
     borderCurve: 'continuous',
   },
   pill: {
-    borderRadius: PILL_RADIUS,
+    borderRadius: radius.large,
     borderCurve: 'continuous',
     overflow: 'hidden',
     borderWidth: StyleSheet.hairlineWidth,
@@ -70,10 +74,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
     height: 40,
   },
-  pressed: {
-    opacity: 0.75,
-    transform: [{ scale: 0.96 }],
-  },
+  pressed: pressable.control,
   count: {
     fontFamily: fonts.semibold,
     fontWeight: '600',

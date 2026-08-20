@@ -212,6 +212,14 @@ export const colors = {
     strong: 'rgba(12,16,33,0.82)',
   },
 
+  // Translucent action banners pinned over photography. Kept on the same
+  // blue-black as `photoScrim` so banners and scrims share one atmosphere.
+  photoBanner: {
+    fill: 'rgba(12,16,33,0.26)',
+    edge: 'rgba(255,255,255,0.20)',
+    chevron: 'rgba(255,255,255,0.78)',
+  },
+
   mood: {
     stressed: '#F59E0B',
     anxious: '#7C3AED',

@@ -8,7 +8,7 @@
  * Panning is deliberately unbounded — the canvas floats free rather than
  * fighting the edges of its content — so double-tap is the way home.
  */
-import { useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { Gesture } from 'react-native-gesture-handler';
 import {
   cancelAnimation,
@@ -28,14 +28,11 @@ const SETTLE_MS = 260;
 const DECELERATION = 0.995;
 
 interface Options {
-  /** where double-tap goes to see everything; null until the canvas is measured */
-  home: Fit | null;
   /**
-   * Where the canvas sits when it first opens. Separate from `home` because the
-   * hotel opens close on one room and stands back to the whole pyramid, so the
-   * first view and the stand-back view are not the same view.
+   * Where the canvas opens, and where double-tap goes to see everything again.
+   * Null until the canvas is measured.
    */
-  start: Fit | null;
+  home: Fit | null;
   /** the loosest a pinch can settle, as a multiple of `home.scale` */
   minScaleFactor: number;
   /** the tightest a pinch can settle */
@@ -49,6 +46,8 @@ export interface PinchZoomPan {
   translateX: SharedValue<number>;
   translateY: SharedValue<number>;
   gesture: ReturnType<typeof Gesture.Race>;
+  /** the same zoom a pinch does, from a button: multiply the scale about a point */
+  zoomBy: (factor: number, focusX: number, focusY: number) => void;
 }
 
 function resist(value: number, min: number, max: number): number {
@@ -60,7 +59,6 @@ function resist(value: number, min: number, max: number): number {
 
 export function usePinchZoomPan({
   home,
-  start,
   minScaleFactor,
   maxScale,
   closeScale,
@@ -83,7 +81,7 @@ export function usePinchZoomPan({
   const placed = useSharedValue(false);
 
   useEffect(() => {
-    if (home == null || start == null) return;
+    if (home == null) return;
 
     homeScale.value = home.scale;
     homeX.value = home.x;
@@ -94,13 +92,12 @@ export function usePinchZoomPan({
     if (placed.value) return;
 
     placed.value = true;
-    scale.value = start.scale;
-    rawScale.value = start.scale;
-    translateX.value = start.x;
-    translateY.value = start.y;
+    scale.value = home.scale;
+    rawScale.value = home.scale;
+    translateX.value = home.x;
+    translateY.value = home.y;
   }, [
     home,
-    start,
     homeScale,
     homeX,
     homeY,
@@ -110,6 +107,35 @@ export function usePinchZoomPan({
     translateX,
     translateY,
   ]);
+
+  const zoomBy = useCallback(
+    (factor: number, focusX: number, focusY: number) => {
+      cancelAnimation(translateX);
+      cancelAnimation(translateY);
+      cancelAnimation(scale);
+
+      const next = Math.min(
+        Math.max(scale.value * factor, homeScale.value * minScaleFactor),
+        maxScale,
+      );
+      if (next === scale.value) return;
+
+      const applied = next / scale.value;
+      const settle = { duration: SETTLE_MS };
+
+      translateX.value = withTiming(
+        focusX - (focusX - translateX.value) * applied,
+        settle,
+      );
+      translateY.value = withTiming(
+        focusY - (focusY - translateY.value) * applied,
+        settle,
+      );
+      scale.value = withTiming(next, settle);
+      rawScale.value = next;
+    },
+    [homeScale, maxScale, minScaleFactor, rawScale, scale, translateX, translateY],
+  );
 
   const gesture = useMemo(() => {
     /**
@@ -253,5 +279,5 @@ export function usePinchZoomPan({
     translateY,
   ]);
 
-  return { scale, translateX, translateY, gesture };
+  return { scale, translateX, translateY, gesture, zoomBy };
 }

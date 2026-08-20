@@ -16,6 +16,7 @@ import { Text } from '../components/common/Text';
 import AppTopBar from '../components/common/AppTopBar';
 import GlassIconButton from '../components/common/GlassIconButton';
 import CompactActionBanner from '../components/common/CompactActionBanner';
+import Icon from '../components/common/icons/Icon';
 import { Ionicons } from '@expo/vector-icons';
 import SectionHeader from '../components/common/SectionHeader';
 import ProUpgradeButton from '../components/common/ProUpgradeButton';
@@ -196,6 +197,15 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
           />
         </View>
 
+        <View style={styles.surveyBannerWrap}>
+          <CompactActionBanner
+            tone="card"
+            icon="message"
+            label="Take a survey and get 50% off"
+            onPress={() => void Linking.openURL(SURVEY_DISCOUNT_URL)}
+          />
+        </View>
+
         <View style={styles.section}>
           <View style={styles.sectionBody}>
             <ProfileLifetimeStatsRow
@@ -204,14 +214,6 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
               totalHoldSeconds={profileSummary?.totalHoldSeconds ?? 0}
             />
           </View>
-        </View>
-
-        <View style={styles.surveyBannerWrap}>
-          <CompactActionBanner
-            icon="message"
-            label="Take a survey and get 50% off"
-            onPress={() => void Linking.openURL(SURVEY_DISCOUNT_URL)}
-          />
         </View>
 
         <View style={styles.section}>
@@ -226,8 +228,10 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
                   triggerTapHaptic();
                   navigation.navigate('History');
                 }}
+                style={styles.sectionLink}
               >
-                <Text style={styles.sectionLink}>See all</Text>
+                <Text style={styles.sectionLinkText}>See all</Text>
+                <Icon name="chevron-right" size={16} color={colors.text.brand} />
               </Pressable>
             }
           />
@@ -322,6 +326,11 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   sectionLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  sectionLinkText: {
     ...typography.label.medium,
     fontFamily: fonts.semibold,
     color: colors.text.brand,

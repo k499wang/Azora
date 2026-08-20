@@ -18,6 +18,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useWhileVisible } from '../../hooks/useWhileVisible';
 import { colors } from '../../theme/colors';
+import { radius } from '../../theme/card';
 
 const AnimatedLinearGradient = Animated.createAnimatedComponent(LinearGradient);
 
@@ -38,7 +39,7 @@ export interface SkeletonProps {
   style?: StyleProp<ViewStyle>;
 }
 
-const DEFAULT_RADIUS = 8;
+const DEFAULT_RADIUS = radius.xs;
 const DEFAULT_HEIGHT = 12;
 const DEFAULT_DURATION = 1200;
 

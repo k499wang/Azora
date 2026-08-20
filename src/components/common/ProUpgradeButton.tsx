@@ -1,10 +1,12 @@
 import { Text } from './Text';
 import { Pressable, StyleSheet } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import Icon from './icons/Icon';
 import { colors } from '../../theme/colors';
+import { card, radius } from '../../theme/card';
+import { pressable } from '../../theme/pressable';
 import { spacing } from '../../theme/spacing';
 import { typography, fonts } from '../../theme/typography';
-import { card } from '../../theme/card';
+import { triggerTapHaptic } from '../../native/tapHaptics';
 
 interface ProUpgradeButtonProps {
   onPress?: () => void;
@@ -17,18 +19,19 @@ export default function ProUpgradeButton({
 }: ProUpgradeButtonProps) {
   return (
     <Pressable
+      accessibilityRole="button"
       disabled={onPress == null}
-      onPress={onPress}
+      onPress={() => {
+        if (onPress == null) return;
+        triggerTapHaptic();
+        onPress();
+      }}
       style={({ pressed }) => [
         styles.button,
         pressed && styles.buttonPressed,
       ]}
     >
-      <MaterialCommunityIcons
-        name="lock"
-        size={15}
-        color={colors.text.inverse}
-      />
+      <Icon name="lock" size={15} color={colors.text.inverse} />
       <Text style={styles.text}>{label}</Text>
     </Pressable>
   );
@@ -42,12 +45,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.neutral[900],
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-    borderRadius: 999,
+    borderRadius: radius.full,
     ...card.shadow,
   },
-  buttonPressed: {
-    opacity: 0.85,
-  },
+  buttonPressed: pressable.control,
   text: {
     ...typography.label.small,
     color: colors.text.inverse,
