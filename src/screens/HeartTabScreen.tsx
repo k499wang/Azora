@@ -1,8 +1,8 @@
 import { Text } from '../components/common/Text';
-import { useCallback } from 'react';
-import {
-  Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useCallback, useEffect, useRef } from 'react';
+import { Animated, Easing, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Svg, { Path } from 'react-native-svg';
 import AppTopBar from '../components/common/AppTopBar';
 import GlassIconButton from '../components/common/GlassIconButton';
 import Icon from '../components/common/icons/Icon';
@@ -28,10 +28,11 @@ import type {
 import type { HeartTabScreenProps } from '../app/navigation';
 
 const MEASURE_BUTTON_SIZE = 48;
-const MEASURE_ARROW_SIZE = 44;
 
 export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
   const insets = useSafeAreaInsets();
+  const scrollY = useRef(new Animated.Value(0)).current;
+  const measureHintPulse = useRef(new Animated.Value(0)).current;
   const user = useAuthStore((state) => state.user);
   const heartRateStatsQuery = useHeartRateStatsQuery(user?.id ?? null);
   const profileQuery = useProfileQuery(user?.id ?? null);
@@ -54,6 +55,40 @@ export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
     recentHeartRates.length === 0 &&
     !heartRateStatsQuery.isLoading &&
     !recentHeartRatesError;
+  useEffect(() => {
+    if (!showMeasureHint) return;
+    const pulse = Animated.loop(
+      Animated.sequence([
+        Animated.timing(measureHintPulse, {
+          toValue: 1,
+          duration: 600,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.timing(measureHintPulse, {
+          toValue: 0.35,
+          duration: 800,
+          easing: Easing.inOut(Easing.quad),
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    pulse.start();
+    return () => pulse.stop();
+  }, [measureHintPulse, showMeasureHint]);
+  const measureHintOpacity = Animated.multiply(
+    measureHintPulse,
+    scrollY.interpolate({
+      inputRange: [0, 12, 56],
+      outputRange: [1, 1, 0],
+      extrapolate: 'clamp',
+    }),
+  );
+  const measureHintTranslateY = scrollY.interpolate({
+    inputRange: [0, 56],
+    outputRange: [0, -6],
+    extrapolate: 'clamp',
+  });
   const hrvSource = stats?.hrvSource;
   const canonicalSession = hrvSource?.session ?? null;
   const openProPaywall = useCallback(
@@ -87,13 +122,18 @@ export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
 
   return (
     <View style={styles.screen}>
-      <ScrollView
+      <Animated.ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         bounces
         alwaysBounceVertical
         overScrollMode="always"
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: true },
+        )}
+        scrollEventThrottle={16}
       >
         <AppTopBar
           showAvatar={false}
@@ -161,7 +201,53 @@ export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
             isLoading={heartRateStatsQuery.isLoading}
           />
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
+
+      {showMeasureHint ? (
+        <Animated.View
+          pointerEvents="none"
+          accessible={false}
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
+          style={[
+            styles.measureHintOverlay,
+            {
+              top: insets.top + spacing.sm,
+              opacity: measureHintOpacity,
+              transform: [{ translateY: measureHintTranslateY }],
+            },
+          ]}
+        >
+          <Text numberOfLines={1} style={styles.measureHintText}>
+            Tap the plus to measure
+          </Text>
+          <Svg
+            width={140}
+            height={32}
+            viewBox="0 0 140 32"
+            accessibilityElementsHidden
+            importantForAccessibility="no-hide-descendants"
+            style={styles.measureHintArrow}
+          >
+            <Path
+              d="M6 16 H94"
+              fill="none"
+              stroke={colors.text.brand}
+              strokeWidth={2.4}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <Path
+              d="M88 10 L100 16 L88 22"
+              fill="none"
+              stroke={colors.text.brand}
+              strokeWidth={2.4}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </Svg>
+        </Animated.View>
+      ) : null}
 
       <GlassIconButton
         accessibilityLabel="Measure heart rate"
@@ -172,25 +258,6 @@ export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
       >
         <Icon name="plus" size={26} color={colors.text.secondary} />
       </GlassIconButton>
-
-      {showMeasureHint ? (
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Measure heart rate"
-          onPress={openMeasure}
-          style={[
-            styles.measureHint,
-            { top: insets.top + spacing.xs + MEASURE_BUTTON_SIZE },
-          ]}
-        >
-          <Text style={styles.measureHintText}>Tap the plus to measure</Text>
-          <Icon
-            name="arrow-curve-up"
-            size={MEASURE_ARROW_SIZE}
-            color={colors.primary.blue500}
-          />
-        </Pressable>
-      ) : null}
     </View>
   );
 }
@@ -215,24 +282,28 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
   },
+  measureHintOverlay: {
+    position: 'absolute',
+    left: spacing.lg,
+    right: spacing.lg,
+    alignItems: 'flex-end',
+  },
+  measureHintArrow: {
+    width: 140,
+    height: 32,
+    marginTop: -spacing.xs,
+    marginRight: MEASURE_BUTTON_SIZE + spacing.xs,
+  },
   stickyAction: {
     position: 'absolute',
     right: spacing.lg,
-    zIndex: 1,
-    elevation: 1,
-  },
-  // Anchored to the measure button's own offsets so the arrow keeps pointing at
-  // it whatever the scroll content above the first card does.
-  measureHint: {
-    position: 'absolute',
-    right: spacing.lg,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    zIndex: 1,
-    elevation: 1,
+    zIndex: 2,
+    elevation: 2,
   },
   measureHintText: {
+    alignSelf: 'stretch',
+    paddingRight: MEASURE_BUTTON_SIZE + spacing.sm,
+    textAlign: 'right',
     ...typography.label.medium,
     fontFamily: fonts.semibold,
     color: colors.text.brand,

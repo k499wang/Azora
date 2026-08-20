@@ -13,7 +13,6 @@ import { typography } from '../theme/typography';
 import { useAuthStore } from '../stores/authStore';
 import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
 import { useDailiesCompletion } from '../hooks/useDailiesCompletion';
-import { useStartDaily } from '../hooks/useStartDaily';
 import { useDayHistoryQuery } from '../queries/history/useDayHistoryQuery';
 import { useDailyActivityRangeQuery } from '../queries/tracking/useDailyActivityRangeQuery';
 import {
@@ -111,7 +110,6 @@ export default function HistoryScreen({
   // Passing null on a past day leaves every one of them disabled; they stay
   // cached under the real user id, so coming back to today is instant.
   const dailies = useDailiesCompletion(isToday ? userId : null);
-  const { start } = useStartDaily('History', dailies);
 
   const days = useMemo(() => {
     const completedDaysAgo = getCompletedDaysAgoFromActivityDates(
@@ -176,7 +174,6 @@ export default function HistoryScreen({
     technique: BreathingTechnique | null,
     fallbackTitle: string,
     completed: boolean,
-    onPress: (() => void) | undefined,
   ) => {
     const style = technique
       ? CATEGORY_STYLE[technique.category]
@@ -193,7 +190,6 @@ export default function HistoryScreen({
             : techniqueMeta(technique, sessionFor(technique.id))
         }
         completed={completed}
-        onPress={onPress}
       />
     );
   };
@@ -243,18 +239,11 @@ export default function HistoryScreen({
                       dailies.guidedTechnique,
                       'Your breathing exercise',
                       dailies.guidedCompleted,
-                      dailies.guidedCompleted || dailies.guidedTechnique == null
-                        ? undefined
-                        : () => start('guided'),
                     )}
                     {renderTechniqueRow(
                       dailies.handPickedTechnique,
                       'Azora’s daily pick',
                       dailies.handPickedCompleted,
-                      dailies.handPickedCompleted ||
-                        dailies.handPickedTechnique == null
-                        ? undefined
-                        : () => start('handPicked'),
                     )}
                     <HistoryDayRow
                       glyph={BREATH_HOLD_STYLE.glyph}
@@ -262,11 +251,6 @@ export default function HistoryScreen({
                       title="Daily Breathhold"
                       meta={holdMeta}
                       completed={dailies.breathHoldCompleted}
-                      onPress={
-                        dailies.breathHoldCompleted
-                          ? undefined
-                          : () => start('breathHold')
-                      }
                     />
                   </>
                 ) : (

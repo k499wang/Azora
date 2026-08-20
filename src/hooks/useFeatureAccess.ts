@@ -10,9 +10,9 @@ import { useUserEntitlementQuery } from '../queries/subscriptions/useUserEntitle
 import { useDailyFeatureUsageQuery } from '../queries/subscriptions/useDailyFeatureUsageQuery';
 import { logDevDiagnostic } from '../services/debug/devLogger';
 
-export function useFeatureAccess(feature: FeatureKeyValue): FeatureAccessResult & {
-  isLoading: boolean;
-} {
+export type FeatureAccessState = FeatureAccessResult & { isLoading: boolean };
+
+export function useFeatureAccess(feature: FeatureKeyValue): FeatureAccessState {
   const user = useAuthStore((state) => state.user);
   const userId = user?.id ?? null;
   const entitlementQuery = useUserEntitlementQuery(userId);

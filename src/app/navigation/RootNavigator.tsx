@@ -14,10 +14,11 @@ import { ExitOfferScreen } from '../../screens/ExitOfferScreen';
 import RoomDecorateScreen from '../../screens/RoomDecorateScreen';
 import RoomLabScreen from '../../screens/RoomLabScreen';
 import RoomCompleteScreen from '../../screens/RoomCompleteScreen';
-import HotelScreen from '../../screens/HotelScreen';
+import { HotelPreviewScreen } from '../../screens/HotelScreen';
 import NextRoomScreen from '../../screens/NextRoomScreen';
 import SettingsScreen from '../../screens/SettingsScreen';
 import HistoryScreen from '../../screens/HistoryScreen';
+import ExploreScreen from '../../screens/ExploreScreen';
 import ShareableResultScreen from '../../screens/ShareableResultScreen';
 import ExerciseSearchScreen from '../../screens/ExerciseSearchScreen';
 import GardenScreen from '../../screens/GardenScreen';
@@ -70,6 +71,14 @@ function AppStack({ showBootPaywall }: AppStackProps) {
       <Stack.Screen name="MainTabs">
         {() => <MainTabsRoute showBootPaywall={showBootPaywall} />}
       </Stack.Screen>
+      <Stack.Screen
+        name="Explore"
+        component={ExploreScreen}
+        options={{
+          presentation: 'card',
+          animation: 'slide_from_right',
+        }}
+      />
       <Stack.Screen
         name="ExerciseSearch"
         component={ExerciseSearchScreen}
@@ -146,14 +155,24 @@ function AppStack({ showBootPaywall }: AppStackProps) {
         }}
       />
       {__DEV__ ? (
-        <Stack.Screen
-          name="RoomLab"
-          component={RoomLabScreen}
-          options={{
-            presentation: 'card',
-            animation: 'slide_from_right',
-          }}
-        />
+        <>
+          <Stack.Screen
+            name="RoomLab"
+            component={RoomLabScreen}
+            options={{
+              presentation: 'card',
+              animation: 'slide_from_right',
+            }}
+          />
+          <Stack.Screen
+            name="HotelPreview"
+            component={HotelPreviewScreen}
+            options={{
+              presentation: 'card',
+              animation: 'slide_from_right',
+            }}
+          />
+        </>
       ) : null}
       <Stack.Screen
         name="RoomDecorate"
@@ -171,14 +190,6 @@ function AppStack({ showBootPaywall }: AppStackProps) {
           // for seven days, and fading in undersells it.
           presentation: 'fullScreenModal',
           animation: 'slide_from_bottom',
-        }}
-      />
-      <Stack.Screen
-        name="Hotel"
-        component={HotelScreen}
-        options={{
-          presentation: 'card',
-          animation: 'slide_from_right',
         }}
       />
       <Stack.Screen

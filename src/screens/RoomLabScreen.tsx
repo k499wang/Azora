@@ -664,14 +664,14 @@ export default function RoomLabScreen({ navigation }: RoomLabScreenProps) {
             label={`Open hotel (${hotelFloors} fake floors)`}
             onPress={() => {
               setHotelOverride(fakeFloors(hotelFloors));
-              navigation.navigate('Hotel', { fromLab: true });
+              navigation.navigate('HotelPreview', { fromLab: true });
             }}
           />
           <Button
             label="Open hotel (my real floors)"
             onPress={() => {
               setHotelOverride(null);
-              navigation.navigate('Hotel', { fromLab: true });
+              navigation.navigate('HotelPreview', { fromLab: true });
             }}
           />
           <Button

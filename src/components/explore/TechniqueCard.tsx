@@ -31,8 +31,11 @@ interface TechniqueCardProps {
   recommended?: boolean;
   exerciseAccess: FeatureAccessResult & { isLoading: boolean };
   layout: 'shelf' | 'search';
-  sourceScreen: 'Explore' | 'ExerciseSearch';
-  sourceAction: 'breathing_library' | 'exercise_search_result';
+  sourceScreen: 'Explore' | 'ExerciseSearch' | 'Home';
+  sourceAction:
+    | 'breathing_library'
+    | 'exercise_search_result'
+    | 'extra_practice';
 }
 
 function formatPattern(pattern: BreathingTechnique['pattern']) {

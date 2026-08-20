@@ -18,7 +18,7 @@ import type { BreathHoldHeartRateResultStatus } from '../../features/exercise/da
 
 export type MainTabParamList = {
   Home: undefined;
-  Explore: undefined;
+  Hotel: undefined;
   Heart: undefined;
   Profile: undefined;
 };
@@ -28,6 +28,7 @@ export type RoomScreenParams = { fromLab?: boolean } | undefined;
 
 export type RootStackParamList = {
   MainTabs: NavigatorScreenParams<MainTabParamList> | undefined;
+  Explore: undefined;
   HeartRate: { context?: string } | undefined;
   ExerciseSearch: undefined;
   Garden: undefined;
@@ -65,12 +66,12 @@ export type RootStackParamList = {
    */
   RoomDecorate: RoomScreenParams;
   RoomComplete: RoomScreenParams;
-  /** every finished floor, swiped through */
-  Hotel: RoomScreenParams;
   /** choosing the look of the room about to open */
   NextRoom: RoomScreenParams;
   /** dev-only harness for the room's animations */
   RoomLab: undefined;
+  /** dev-only Hotel preview opened from RoomLab */
+  HotelPreview: RoomScreenParams;
   Settings: undefined;
   /** day-by-day record; opens on `date` when given, otherwise today */
   History: { date?: string } | undefined;
@@ -107,7 +108,8 @@ export type MainTabNavigationProp<
 >;
 
 export type HomeScreenProps = MainTabScreenProps<'Home'>;
-export type ExploreScreenProps = MainTabScreenProps<'Explore'>;
+export type ExploreScreenProps = RootStackScreenProps<'Explore'>;
+export type HotelScreenProps = MainTabScreenProps<'Hotel'>;
 export type HeartTabScreenProps = MainTabScreenProps<'Heart'>;
 export type ProfileScreenProps = MainTabScreenProps<'Profile'>;
 
@@ -122,7 +124,7 @@ export type DailyExerciseScreenProps = RootStackScreenProps<'DailyExercise'>;
 export type RoomDecorateScreenProps = RootStackScreenProps<'RoomDecorate'>;
 export type RoomCompleteScreenProps = RootStackScreenProps<'RoomComplete'>;
 export type RoomLabScreenProps = RootStackScreenProps<'RoomLab'>;
-export type HotelScreenProps = RootStackScreenProps<'Hotel'>;
+export type HotelPreviewScreenProps = RootStackScreenProps<'HotelPreview'>;
 export type NextRoomScreenProps = RootStackScreenProps<'NextRoom'>;
 export type SettingsScreenProps = RootStackScreenProps<'Settings'>;
 export type HistoryScreenProps = RootStackScreenProps<'History'>;
