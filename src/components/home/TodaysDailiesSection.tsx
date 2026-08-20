@@ -50,6 +50,7 @@ interface TodaysDailiesSectionProps {
   onPressGuidedExercise: () => void;
   onPressHandPickedExercise: () => void;
   onPressBreathHold: () => void;
+  onPressHistory: () => void;
 }
 
 interface DailyTaskRowProps {
@@ -187,6 +188,7 @@ export default function TodaysDailiesSection({
   onPressGuidedExercise,
   onPressHandPickedExercise,
   onPressBreathHold,
+  onPressHistory,
 }: TodaysDailiesSectionProps) {
   const guidedLocked = !guidedExerciseCompleted && !exerciseAccessAllowed;
   const handPickedLocked =
@@ -259,7 +261,28 @@ export default function TodaysDailiesSection({
 
   return (
     <View style={styles.section}>
-      <SectionHeader icon="calendar" title="Today’s Dailies" />
+      <SectionHeader
+        icon="calendar"
+        title="Today’s Dailies"
+        right={
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Open your history"
+            hitSlop={spacing.sm}
+            onPress={() => {
+              triggerTapHaptic();
+              onPressHistory();
+            }}
+            style={({ pressed }) => [
+              styles.historyLink,
+              pressed && styles.historyLinkPressed,
+            ]}
+          >
+            <Text style={styles.historyLinkText}>History</Text>
+            <Icon name="chevron-right" size={16} color={colors.text.brand} />
+          </Pressable>
+        }
+      />
 
       <View style={styles.timeline}>
         <View style={styles.timelineRail} pointerEvents="none">
@@ -278,6 +301,19 @@ export default function TodaysDailiesSection({
 const styles = StyleSheet.create({
   section: {
     gap: spacing.md,
+  },
+  historyLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  historyLinkText: {
+    ...typography.label.medium,
+    fontFamily: fonts.semibold,
+    color: colors.text.brand,
+  },
+  historyLinkPressed: {
+    opacity: 0.6,
   },
   timeline: {
     position: 'relative',

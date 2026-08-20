@@ -40,6 +40,14 @@ export const CHUNKY_TONE: ChunkyTone = {
   label: colors.text.inverse,
 };
 
+/** Amber face, deep amber lip. For an action that is a reward waiting to be
+ * collected rather than the next step in a flow. */
+export const CHUNKY_TONE_AMBER: ChunkyTone = {
+  face: colors.playful.amber.base,
+  lip: colors.playful.amber.ink,
+  label: colors.text.inverse,
+};
+
 /** White face, blue label. For the lesser of two stacked buttons. */
 export const CHUNKY_TONE_QUIET: ChunkyTone = {
   face: colors.background.card,
