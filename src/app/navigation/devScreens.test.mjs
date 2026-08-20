@@ -29,23 +29,25 @@ function allSourceFiles(dir = src) {
  * removed — a single guard is one careless edit away from shipping.
  */
 
-test('the RoomLab route is only registered under __DEV__', () => {
+test('the room lab and Hotel preview routes are only registered under __DEV__', () => {
   const navigator = read('app/navigation/RootNavigator.tsx');
   const guard = navigator.indexOf('{__DEV__ ? (');
-  const route = navigator.indexOf('name="RoomLab"');
 
   assert.ok(guard !== -1, 'RootNavigator has no __DEV__ guard at all');
-  assert.ok(route !== -1, 'RoomLab route is missing');
-  assert.ok(
-    guard < route,
-    'the RoomLab <Stack.Screen> must sit inside the __DEV__ guard',
-  );
-
   const guardEnd = navigator.indexOf(') : null}', guard);
-  assert.ok(
-    route < guardEnd,
-    'the RoomLab route escaped the __DEV__ guard it used to be inside',
-  );
+
+  for (const name of ['RoomLab', 'HotelPreview']) {
+    const route = navigator.indexOf(`name="${name}"`);
+    assert.ok(route !== -1, `${name} route is missing`);
+    assert.ok(
+      guard < route,
+      `the ${name} <Stack.Screen> must sit inside the __DEV__ guard`,
+    );
+    assert.ok(
+      route < guardEnd,
+      `the ${name} route escaped the __DEV__ guard it used to be inside`,
+    );
+  }
 });
 
 test('the Settings entry point is only rendered under __DEV__', () => {

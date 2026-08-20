@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-screens/experimental';
 import { Text } from '../components/common/Text';
 import AppTopBar from '../components/common/AppTopBar';
 import PyramidCanvas from '../features/room/PyramidCanvas';
@@ -14,7 +15,10 @@ import { useAuthStore } from '../stores/authStore';
 import { colors } from '../theme/colors';
 import { padding, spacing } from '../theme/spacing';
 import { typography } from '../theme/typography';
-import type { HotelScreenProps } from '../app/navigation';
+import type {
+  HotelPreviewScreenProps,
+  HotelScreenProps,
+} from '../app/navigation';
 
 /**
  * The hotel is one honeycomb, not a stack of pages.
@@ -28,9 +32,12 @@ import type { HotelScreenProps } from '../app/navigation';
  * title and a still room at the same height on every screen, and the hotel has
  * neither. A blank header here would only push the canvas down the screen.
  */
-export default function HotelScreen(_: HotelScreenProps) {
+interface HotelContentProps {
+  fromLab: boolean;
+}
+
+function HotelContent({ fromLab }: HotelContentProps) {
   const insets = useSafeAreaInsets();
-  const fromLab = useOpenedFromLab();
   const userId = useAuthStore((state) => state.user?.id ?? null);
   const roomsQuery = useRoomsQuery(userId);
   const rooms = roomsQuery.data;
@@ -52,7 +59,7 @@ export default function HotelScreen(_: HotelScreenProps) {
   const waiting = roomsQuery.isPending && override == null;
 
   return (
-    <View style={styles.screen}>
+    <>
       {fromLab ? (
         <AppTopBar showBack showAvatar={false} showStreak={false} />
       ) : (
@@ -70,6 +77,23 @@ export default function HotelScreen(_: HotelScreenProps) {
       ) : (
         <PyramidCanvas rooms={pyramidRooms} />
       )}
+    </>
+  );
+}
+
+export default function HotelScreen(_: HotelScreenProps) {
+  return (
+    <SafeAreaView style={styles.screen} edges={{ bottom: true }}>
+      <HotelContent fromLab={false} />
+    </SafeAreaView>
+  );
+}
+
+export function HotelPreviewScreen(_: HotelPreviewScreenProps) {
+  const fromLab = useOpenedFromLab();
+  return (
+    <View style={styles.screen}>
+      <HotelContent fromLab={fromLab} />
     </View>
   );
 }

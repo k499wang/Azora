@@ -222,8 +222,9 @@ a calm app reads as a paywall tease.
    next week.
 
 `Hotel` is a standalone destination rather than a step in this flow — every
-finished floor, one per page. Currently reached only from the lab; it wants an
-entry point on Home or the profile.
+finished floor together in one pinchable pyramid. It is a primary tab, while
+the dev-only `HotelPreview` stack route lets the room lab open simulated or real
+floors and return with Back.
 
 `RoomPager` backs the pagers: a paged `ScrollView`, not a `FlatList` — these are
 a handful of pages the user wants to flick through freely, and virtualising

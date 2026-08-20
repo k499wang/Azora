@@ -1,7 +1,10 @@
 import { useCallback } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { usePostHog } from 'posthog-react-native';
-import { useFeatureAccess } from './useFeatureAccess';
+import {
+  useFeatureAccess,
+  type FeatureAccessState,
+} from './useFeatureAccess';
 import { AnalyticsEvent } from '../services/analytics/events';
 import { trackFeatureGateHit } from '../services/analytics/tracking';
 import { PaywallPlacement } from '../services/paywall';
@@ -17,6 +20,8 @@ export interface StartDaily {
   start: (daily: DailyId) => void;
   /** true while access is still resolving, so callers do not flash a lock */
   accessAllowed: boolean;
+  /** shared with other Home exercise entry points to avoid another observer */
+  exerciseAccess: FeatureAccessState;
 }
 
 const SOURCE_ACTION: Record<DailyId, string> = {
@@ -103,5 +108,9 @@ export function useStartDaily(
     ],
   );
 
-  return { start, accessAllowed: access.allowed || access.isLoading };
+  return {
+    start,
+    accessAllowed: access.allowed || access.isLoading,
+    exerciseAccess: access,
+  };
 }

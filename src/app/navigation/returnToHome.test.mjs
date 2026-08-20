@@ -9,6 +9,7 @@ import { returnToHome } from './returnToHome.ts';
 
 const routeNames = [
   'MainTabs',
+  'Explore',
   'ExerciseSearch',
   'ExerciseSession',
   'SessionComplete',
@@ -67,6 +68,13 @@ test('ten repeated guided and daily/search cycles keep one root route', () => {
   const stack = createStackHarness();
 
   for (let cycle = 0; cycle < 10; cycle += 1) {
+    // Explore is pushed over MainTabs and must return to the existing root.
+    stack.navigation.navigate('Explore');
+    assert.deepEqual(stack.routeNames(), ['MainTabs', 'Explore']);
+
+    returnToHome(stack.navigation);
+    assert.deepEqual(stack.routeNames(), ['MainTabs']);
+
     stack.navigation.navigate('ExerciseSearch');
     stack.navigation.navigate('ExerciseSession', { techniqueId: 'box' });
     stack.navigation.replace('SessionComplete', { techniqueId: 'box' });

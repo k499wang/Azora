@@ -26,6 +26,7 @@ export type {
   RoomCompleteScreenProps,
   RoomLabScreenProps,
   HotelScreenProps,
+  HotelPreviewScreenProps,
   NextRoomScreenProps,
   SettingsScreenProps,
   HistoryScreenProps,

@@ -34,7 +34,10 @@ test('Home owns one room claim graph and passes explicit room props', () => {
 
   assert.equal((home.match(/useRoomClaim\(/g) ?? []).length, 1);
   assert.doesNotMatch(home, /useDailiesCompletion/);
-  assert.match(home, /<HomeRoom room={roomClaim\.room} progress={roomClaim\.progress}/);
+  assert.match(
+    home,
+    /<HomeRoom\s+room={roomClaim\.room}\s+progress={roomClaim\.progress}/,
+  );
   assert.match(home, /<RoomProgressCard\s+progress={roomClaim\.progress}/);
 
   for (const source of [homeRoom, progressCard]) {
@@ -65,10 +68,48 @@ test('the room screens only offer a back arrow when opened from the lab', () => 
   assert.match(layout, /fromLab \? \(\s*<AppTopBar showBack/);
 });
 
-test('the lab flags the room screens it opens', () => {
+test('Hotel is a product tab and not a production stack route', () => {
+  const tabs = read('app/navigation/MainTabs.tsx');
+  const root = read('app/navigation/RootNavigator.tsx');
+  const home = read('screens/HomeScreen.tsx');
+  const homeRoom = read('features/room/HomeRoom.tsx');
+  const tabNames = [...tabs.matchAll(/<Tab\.Screen\s+name="([^"]+)"/g)].map(
+    (match) => match[1],
+  );
+
+  assert.deepEqual(tabNames, ['Home', 'Hotel', 'Heart', 'Profile']);
+  assert.match(tabs, /name: focused \? 'building\.2\.fill' : 'building\.2'/);
+  assert.doesNotMatch(root, /name="Hotel"/);
+  assert.match(root, /name="HotelPreview"/);
+  assert.doesNotMatch(home, /View hotel|onViewHotel/);
+  assert.doesNotMatch(homeRoom, /View hotel|onViewHotel/);
+});
+
+test('the Hotel tab avoids native tab-bar overlap without changing its preview', () => {
+  const hotel = read('screens/HotelScreen.tsx');
+  const productStart = hotel.indexOf('export default function HotelScreen');
+  const previewStart = hotel.indexOf('export function HotelPreviewScreen');
+  const stylesStart = hotel.indexOf('const styles =', previewStart);
+  const product = hotel.slice(productStart, previewStart);
+  const preview = hotel.slice(previewStart, stylesStart);
+
+  assert.match(
+    hotel,
+    /import { SafeAreaView } from 'react-native-screens\/experimental'/,
+  );
+  assert.match(product, /<SafeAreaView[^>]*edges={{ bottom: true }}/);
+  assert.doesNotMatch(preview, /SafeAreaView/);
+});
+
+test('the lab flags the room screens and Hotel preview it opens', () => {
   // Without the flag the lab strands you on a screen with no way back.
   const lab = read('screens/RoomLabScreen.tsx');
-  for (const route of ['RoomDecorate', 'RoomComplete', 'Hotel', 'NextRoom']) {
+  for (const route of [
+    'RoomDecorate',
+    'RoomComplete',
+    'HotelPreview',
+    'NextRoom',
+  ]) {
     assert.match(lab, new RegExp(`'${route}', \\{ fromLab: true \\}`));
   }
 });

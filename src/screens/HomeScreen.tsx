@@ -1,22 +1,19 @@
-import { Linking, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { colors } from '../theme/colors';
 import { spacing, padding, margin } from '../theme/spacing';
 import AppTopBar from '../components/common/AppTopBar';
-import CompactActionBanner from '../components/common/CompactActionBanner';
 import GlassIconButton from '../components/common/GlassIconButton';
 import Icon from '../components/common/icons/Icon';
+import ExtraPracticeSection from '../components/home/ExtraPracticeSection';
 import TodaysDailiesSection from '../components/home/TodaysDailiesSection';
 import HomeRoom from '../features/room/HomeRoom';
 import RoomProgressCard from '../features/room/RoomProgressCard';
-import HotelCard from '../features/room/HotelCard';
 import { useRoomClaim } from '../features/room/useRoomClaim';
 import { useStartDaily } from '../hooks/useStartDaily';
 import type { HomeScreenProps } from '../app/navigation';
 import { useAuthStore } from '../stores/authStore';
 import { useDailyPlanScheduleQuery } from '../queries/dailyPlan/useDailyPlanScheduleQuery';
 import { DEFAULT_DAILY_PLAN_SCHEDULE } from '../services/dailyPlan/types';
-
-const SURVEY_DISCOUNT_URL = 'https://docs.google.com/forms/d/1wdbzWnXbhdpFZ3HoPcRet5K7EGW9RRtEQqrVYiXHwtc/viewform?edit_requested=true';
 
 export default function HomeScreen({ navigation }: HomeScreenProps) {
   const user = useAuthStore((state) => state.user);
@@ -25,7 +22,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     dailyPlanScheduleQuery.data ?? DEFAULT_DAILY_PLAN_SCHEDULE;
   const roomClaim = useRoomClaim(user?.id ?? null);
   const dailies = roomClaim.dailies;
-  const { start, accessAllowed } = useStartDaily('Home', dailies);
+  const { start, accessAllowed, exerciseAccess } = useStartDaily('Home', dailies);
 
   // The recently-logged list and its analytics now live on the Heart tab
   // (see RecentlyLoggedSection — it uses useIsFocused to gate the view event).
@@ -56,10 +53,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           }
         />
 
-        <View style={styles.hotelSection}>
-          <HotelCard floor={roomClaim.room?.floor ?? null} />
-        </View>
-
         <View style={styles.roomSection}>
           <HomeRoom room={roomClaim.room} progress={roomClaim.progress} />
         </View>
@@ -86,10 +79,14 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             onPressHandPickedExercise={() => start('handPicked')}
             onPressBreathHold={() => start('breathHold')}
           />
-          <CompactActionBanner
-            icon="message"
-            label="Take a survey and get 50% off"
-            onPress={() => void Linking.openURL(SURVEY_DISCOUNT_URL)}
+          <ExtraPracticeSection
+            recommendedTechniqueId={dailies.guidedTechnique?.id ?? null}
+            excludedTechniqueIds={[
+              dailies.guidedTechnique?.id,
+              dailies.handPickedTechnique?.id,
+            ]}
+            exerciseAccess={exerciseAccess}
+            onSeeAll={() => navigation.navigate('Explore')}
           />
         </View>
       </ScrollView>
@@ -109,11 +106,6 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: spacing['7xl'] + spacing.xl,
     gap: margin.itemGap,
-  },
-  // The room below this has no horizontal padding of its own — it centres a
-  // fixed width instead — so the card brings the screen's gutters with it.
-  hotelSection: {
-    paddingHorizontal: padding.screen.horizontal,
   },
   roomSection: {
     marginTop: spacing.xs,

@@ -15,6 +15,7 @@ import { fonts, typography } from '../theme/typography';
 import { Text } from '../components/common/Text';
 import AppTopBar from '../components/common/AppTopBar';
 import GlassIconButton from '../components/common/GlassIconButton';
+import CompactActionBanner from '../components/common/CompactActionBanner';
 import { Ionicons } from '@expo/vector-icons';
 import SectionHeader from '../components/common/SectionHeader';
 import ProUpgradeButton from '../components/common/ProUpgradeButton';
@@ -37,6 +38,8 @@ import { deriveHoldStats } from '../lib/holdStats';
 import { trackFeatureGateHit } from '../services/analytics/tracking';
 import { PaywallPlacement } from '../services/paywall';
 import { FeatureKey } from '../services/subscriptions/featureAccess';
+
+const SURVEY_DISCOUNT_URL = 'https://docs.google.com/forms/d/1wdbzWnXbhdpFZ3HoPcRet5K7EGW9RRtEQqrVYiXHwtc/viewform?edit_requested=true';
 
 function getFallbackDisplayName(_email: string | undefined): string {
   return '—';
@@ -203,6 +206,14 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
           </View>
         </View>
 
+        <View style={styles.surveyBannerWrap}>
+          <CompactActionBanner
+            icon="message"
+            label="Take a survey and get 50% off"
+            onPress={() => void Linking.openURL(SURVEY_DISCOUNT_URL)}
+          />
+        </View>
+
         <View style={styles.section}>
           <SectionHeader
             title="Consistency"
@@ -317,5 +328,9 @@ const styles = StyleSheet.create({
   },
   sectionBody: {
     marginTop: spacing.xs,
+  },
+  surveyBannerWrap: {
+    paddingHorizontal: padding.screen.horizontal,
+    marginTop: spacing.md,
   },
 });

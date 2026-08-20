@@ -60,6 +60,29 @@ export function getOrderedTechniques(
   ];
 }
 
+/**
+ * A short catalog preview for Home: one available representative from every
+ * category. Recommendation ordering is preserved when that technique is not
+ * already part of today's plan.
+ */
+export function getExtraPracticeTechniques(
+  recommendedTechniqueId: string | null,
+  excludedTechniqueIds: ReadonlyArray<string | null | undefined>,
+): BreathingTechnique[] {
+  const excludedIds = new Set(
+    excludedTechniqueIds.filter((id): id is string => id != null),
+  );
+  const selectedCategories = new Set<ExerciseGroupId>();
+
+  return getOrderedTechniques(recommendedTechniqueId).filter((technique) => {
+    if (excludedIds.has(technique.id)) return false;
+    if (selectedCategories.has(technique.category)) return false;
+
+    selectedCategories.add(technique.category);
+    return true;
+  });
+}
+
 export function getBrowseExerciseGroups(
   recommendedTechniqueId: string | null,
 ): ExerciseGroup[] {
