@@ -4,6 +4,10 @@ import { Image } from 'expo-image';
 import { useEffect, useRef, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from '../components/common/icons/Icon';
+import ChunkyButton, {
+  CHUNKY_TONE,
+  CHUNKY_TONE_QUIET,
+} from '../components/common/ChunkyButton';
 import PhoneFrame from '../components/common/PhoneFrame';
 import { useAuthStore } from '../stores/authStore';
 import {
@@ -169,40 +173,24 @@ export default function AuthLandingScreen() {
 
             <View style={styles.actions}>
               {appleAvailable && (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityState={{ disabled: appleBusy }}
+                <ChunkyButton
+                  label="Continue with Apple"
                   onPress={onApplePress}
-                  disabled={appleBusy}
-                  style={({ pressed }) => [
-                    styles.primaryButton,
-                    pressed && styles.buttonPressed,
-                    appleBusy && styles.buttonDisabled,
-                  ]}
-                >
-                  <Icon name="apple" size={18} color={colors.text.inverse} />
-                  <Text style={styles.primaryButtonLabel}>
-                    {appleBusy ? 'Signing in…' : 'Continue with Apple'}
-                  </Text>
-                </Pressable>
+                  tone={CHUNKY_TONE}
+                  loading={appleBusy}
+                  icon={
+                    <Icon name="apple" size={18} color={colors.text.inverse} />
+                  }
+                />
               )}
 
-              <Pressable
-                accessibilityRole="button"
-                accessibilityState={{ disabled: googleBusy }}
+              <ChunkyButton
+                label="Continue with Google"
                 onPress={onGooglePress}
-                disabled={googleBusy}
-                style={({ pressed }) => [
-                  styles.secondaryButton,
-                  pressed && styles.buttonPressed,
-                  googleBusy && styles.buttonDisabled,
-                ]}
-              >
-                <Icon name="google" size={18} />
-                <Text style={styles.secondaryButtonLabel}>
-                  {googleBusy ? 'Signing in…' : 'Continue with Google'}
-                </Text>
-              </Pressable>
+                tone={CHUNKY_TONE_QUIET}
+                loading={googleBusy}
+                icon={<Icon name="google" size={18} />}
+              />
             </View>
           </View>
         </SafeAreaView>
@@ -324,44 +312,5 @@ const styles = StyleSheet.create({
   },
   actions: {
     gap: spacing.sm,
-  },
-  primaryButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.primary.blue600,
-    borderRadius: 999,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.lg,
-  },
-  secondaryButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.background.accentSoft,
-    borderRadius: 999,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.lg,
-  },
-  primaryButtonLabel: {
-    color: colors.text.inverse,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    fontSize: 16,
-  },
-  secondaryButtonLabel: {
-    color: colors.text.primary,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    fontSize: 16,
-  },
-  buttonPressed: {
-    opacity: 0.9,
-    transform: [{ scale: 0.985 }],
-  },
-  buttonDisabled: {
-    opacity: 0.6,
   },
 });

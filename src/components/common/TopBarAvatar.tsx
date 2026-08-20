@@ -4,6 +4,8 @@ import GlassIconButton, { GLASS_ICON_BUTTON_SIZE } from './GlassIconButton';
 import Icon from './icons/Icon';
 import { card } from '../../theme/card';
 import { colors } from '../../theme/colors';
+import { pressable } from '../../theme/pressable';
+import { triggerTapHaptic } from '../../native/tapHaptics';
 
 const AVATAR_SIZE = GLASS_ICON_BUTTON_SIZE;
 
@@ -27,7 +29,10 @@ export default function TopBarAvatar({ avatarUrl, onPress }: TopBarAvatarProps) 
     <Pressable
       accessibilityRole="button"
       accessibilityLabel="Open profile"
-      onPress={onPress}
+      onPress={() => {
+        triggerTapHaptic();
+        onPress();
+      }}
       hitSlop={10}
       style={({ pressed }) => [styles.shell, pressed && styles.pressed]}
     >
@@ -58,10 +63,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.glass.edge,
   },
-  pressed: {
-    opacity: 0.75,
-    transform: [{ scale: 0.96 }],
-  },
+  pressed: pressable.control,
   image: {
     width: '100%',
     height: '100%',

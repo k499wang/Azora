@@ -1,8 +1,11 @@
 import { Text } from './Text';
 import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { colors } from '../../theme/colors';
+import { card, radius } from '../../theme/card';
+import { pressable } from '../../theme/pressable';
 import { spacing } from '../../theme/spacing';
 import { typography, fonts } from '../../theme/typography';
+import { triggerTapHaptic } from '../../native/tapHaptics';
 
 export interface FeatureInfoSection {
   heading: string;
@@ -50,7 +53,10 @@ export default function FeatureInfoDialog({
           </ScrollView>
           <Pressable
             accessibilityRole="button"
-            onPress={onClose}
+            onPress={() => {
+              triggerTapHaptic();
+              onClose();
+            }}
             style={({ pressed }) => [
               styles.closeButton,
               pressed && styles.closeButtonPressed,
@@ -76,16 +82,13 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 360,
     maxHeight: '80%',
-    borderRadius: 18,
+    borderRadius: radius.large,
+    borderCurve: 'continuous',
     backgroundColor: colors.background.elevated,
     paddingTop: spacing.lg,
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.md,
-    shadowColor: colors.neutral[900],
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.2,
-    shadowRadius: 24,
-    elevation: 16,
+    ...card.shadowModal,
   },
   title: {
     ...typography.heading.heading1,
@@ -126,12 +129,10 @@ const styles = StyleSheet.create({
     minHeight: 44,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 12,
+    borderRadius: radius.medium,
     backgroundColor: colors.primary.blue600,
   },
-  closeButtonPressed: {
-    opacity: 0.85,
-  },
+  closeButtonPressed: pressable.control,
   closeText: {
     ...typography.button.medium,
     color: colors.text.inverse,

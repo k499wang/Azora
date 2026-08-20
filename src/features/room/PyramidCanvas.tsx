@@ -1,8 +1,12 @@
 /**
  * The hotel, as one pinchable honeycomb.
  *
- * Every finished room is a hexagon in a pyramid, and the next one to come is a
- * dotted outline waiting under them.
+ * Every room is a hexagon in a pyramid, drawn with its own shell and frame from
+ * the day it opens — the one being decorated right now included, part-furnished
+ * or still empty. Nothing marks a slot that has no room in it: the pyramid is
+ * the rooms, and the empty space beside them is where the next ones will go.
+ * It opens on the whole hotel at once, so a new room shows up in place rather
+ * than needing to be panned to.
  *
  * Each room is recorded once into a Skia `Picture`, already positioned in its
  * slot, and drawn as a single op. A pinch rebuilds no React elements and
@@ -15,9 +19,7 @@ import { StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 import { GestureDetector } from 'react-native-gesture-handler';
 import {
   Canvas,
-  DashPathEffect,
   Group,
-  Path,
   Picture,
   Skia,
   createPicture,
@@ -31,7 +33,10 @@ import type { PaintedPath } from './roomPaths';
 import { fitToViewport, pyramidBounds, slotAt } from './pyramidLayout';
 import { VIEW_BOX_HEIGHT, VIEW_BOX_WIDTH } from './RoomScene';
 import type { FrameHue, Picks, Poly } from './RoomScene';
+import Icon from '../../components/common/icons/Icon';
+import GlassIconButton from '../../components/common/GlassIconButton';
 import { colors } from '../../theme/colors';
+import { spacing } from '../../theme/spacing';
 
 /** a single room, filling the screen */
 const CLOSE_SCALE = 1;
@@ -39,24 +44,9 @@ const MAX_SCALE = 3;
 /** a pinch can settle a little looser than everything at once, but not much */
 const MIN_SCALE_FACTOR = 0.7;
 const FIT_MARGIN = 28;
-
-/** the outline of the next room, in points on the glass — dash then gap */
-const GHOST_STROKE_PX = 1.25;
-const GHOST_DASH_PX = 5;
-const GHOST_GAP_PX = 5;
-
-/** the hexagon itself, tighter than the viewBox around it */
-const HEX_HALF_W = 155.9;
-const HEX_HALF_H = 180;
-
-const HEX_POINTS = [
-  { x: 0, y: -HEX_HALF_H },
-  { x: -HEX_HALF_W, y: -HEX_HALF_H / 2 },
-  { x: -HEX_HALF_W, y: HEX_HALF_H / 2 },
-  { x: 0, y: HEX_HALF_H },
-  { x: HEX_HALF_W, y: HEX_HALF_H / 2 },
-  { x: HEX_HALF_W, y: -HEX_HALF_H / 2 },
-];
+/** one tap of a zoom control, as a multiple of the scale */
+const ZOOM_STEP = 1.6;
+const ZOOM_ICON_SIZE = 20;
 
 export interface PyramidRoom {
   key: string;
@@ -104,35 +94,28 @@ export default function PyramidCanvas({ rooms }: Props) {
     null,
   );
 
-  const highestFloor = rooms.reduce((top, room) => Math.max(top, room.floor), 0);
+  const floors = useMemo(
+    () => rooms.filter((room) => room.floor >= 1),
+    [rooms],
+  );
+  const highestFloor = floors.reduce(
+    (top, room) => Math.max(top, room.floor),
+    0,
+  );
 
   const home = useMemo(() => {
     if (size == null) return null;
 
-    // Every room earned, plus the one slot waiting for the next.
-    const bounds = pyramidBounds(highestFloor + 1);
-
-    return fitToViewport(bounds, size.width, size.height, FIT_MARGIN);
+    return fitToViewport(
+      pyramidBounds(highestFloor),
+      size.width,
+      size.height,
+      FIT_MARGIN,
+    );
   }, [size, highestFloor]);
 
-  // The hotel opens on the newest room, close enough to see its furniture — the
-  // one the user just spent seven days on is the one worth landing on, and the
-  // rest of the pyramid is a double-tap away.
-  const start = useMemo(() => {
-    if (size == null) return null;
-
-    const newest = slotAt(Math.max(0, highestFloor - 1));
-
-    return {
-      scale: CLOSE_SCALE,
-      x: size.width / 2 - newest.x * CLOSE_SCALE,
-      y: size.height / 2 - newest.y * CLOSE_SCALE,
-    };
-  }, [size, highestFloor]);
-
-  const { scale, translateX, translateY, gesture } = usePinchZoomPan({
+  const { scale, translateX, translateY, gesture, zoomBy } = usePinchZoomPan({
     home,
-    start,
     minScaleFactor: MIN_SCALE_FACTOR,
     maxScale: MAX_SCALE,
     closeScale: CLOSE_SCALE,
@@ -144,37 +127,14 @@ export default function PyramidCanvas({ rooms }: Props) {
     { scale: scale.value },
   ]);
 
-  // The outline has to read the same at every zoom, so it is measured in points
-  // and divided back out of the scale rather than growing with the artwork.
-  const ghostStroke = useDerivedValue(() => GHOST_STROKE_PX / scale.value);
-  const ghostDash = useDerivedValue(() => [
-    GHOST_DASH_PX / scale.value,
-    GHOST_GAP_PX / scale.value,
-  ]);
-
-  const scene = useMemo(() => {
-    // Only the next room is outlined. Every unbuilt slot after it was a
-    // fifty-hexagon wireframe that read as scaffolding around the rooms rather
-    // than a place for them; one dotted hexagon says the same thing.
-    const next = slotAt(highestFloor);
-    const ghost = Skia.Path.Make();
-    ghost.addPoly(
-      HEX_POINTS.map((point) => ({
-        x: point.x + next.x,
-        y: point.y + next.y,
-      })),
-      true,
-    );
-
-    const pictures = rooms
-      .filter((room) => room.floor >= 1)
-      .map((room) => {
+  const pictures = useMemo(
+    () =>
+      floors.map((room) => {
         const { x, y } = slotAt(room.floor - 1);
         return { key: room.key, picture: recordRoom(room, x, y) };
-      });
-
-    return { ghost, pictures };
-  }, [rooms, highestFloor]);
+      }),
+    [floors],
+  );
 
   const onLayout = (event: LayoutChangeEvent) => {
     const { width, height } = event.nativeEvent.layout;
@@ -182,25 +142,41 @@ export default function PyramidCanvas({ rooms }: Props) {
     setSize({ width, height });
   };
 
+  const zoom = (factor: number) => {
+    if (size == null) return;
+    zoomBy(factor, size.width / 2, size.height / 2);
+  };
+
   return (
     <View style={styles.canvas} onLayout={onLayout}>
       <GestureDetector gesture={gesture}>
         <Canvas style={StyleSheet.absoluteFill}>
           <Group transform={transform}>
-            <Path
-              path={scene.ghost}
-              color={colors.border.default}
-              style="stroke"
-              strokeWidth={ghostStroke}
-            >
-              <DashPathEffect intervals={ghostDash} />
-            </Path>
-            {scene.pictures.map((room) => (
+            {pictures.map((room) => (
               <Picture key={room.key} picture={room.picture} />
             ))}
           </Group>
         </Canvas>
       </GestureDetector>
+
+      <View style={styles.zoom} pointerEvents="box-none">
+        <GlassIconButton
+          accessibilityLabel="Zoom in"
+          onPress={() => zoom(ZOOM_STEP)}
+        >
+          <Icon name="zoom-in" size={ZOOM_ICON_SIZE} color={colors.text.primary} />
+        </GlassIconButton>
+        <GlassIconButton
+          accessibilityLabel="Zoom out"
+          onPress={() => zoom(1 / ZOOM_STEP)}
+        >
+          <Icon
+            name="zoom-out"
+            size={ZOOM_ICON_SIZE}
+            color={colors.text.primary}
+          />
+        </GlassIconButton>
+      </View>
     </View>
   );
 }
@@ -208,5 +184,14 @@ export default function PyramidCanvas({ rooms }: Props) {
 const styles = StyleSheet.create({
   canvas: {
     flex: 1,
+  },
+  // Over the canvas rather than in a header: the hotel has no top bar to sit
+  // in, and a header would push the pyramid down the screen to hold them.
+  zoom: {
+    position: 'absolute',
+    top: spacing.sm,
+    right: spacing.md,
+    flexDirection: 'row',
+    gap: spacing.xs,
   },
 });

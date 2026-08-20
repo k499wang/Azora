@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
 import GlassSurface from './GlassSurface';
+import { pressable } from '../../theme/pressable';
+import { triggerTapHaptic } from '../../native/tapHaptics';
 
 export const GLASS_ICON_BUTTON_SIZE = 36;
 
@@ -41,7 +43,10 @@ export default function GlassIconButton({
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
       disabled={disabled}
-      onPress={onPress}
+      onPress={() => {
+        triggerTapHaptic();
+        onPress();
+      }}
       style={({ pressed }) => [
         { width: size, height: size },
         disabled && styles.disabled,
@@ -71,11 +76,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  pressed: {
-    opacity: 0.75,
-    transform: [{ scale: 0.96 }],
-  },
-  disabled: {
-    opacity: 0.5,
-  },
+  pressed: pressable.control,
+  disabled: pressable.disabled,
 });

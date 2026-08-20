@@ -1,12 +1,13 @@
 import { Text } from './Text';
 import { StyleSheet, View, ViewStyle } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import Icon, { type IconName } from './icons/Icon';
 import { colors } from '../../theme/colors';
+import { radius } from '../../theme/card';
 import { typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 
 interface PillProps {
-  icon: keyof typeof MaterialCommunityIcons.glyphMap;
+  icon: IconName;
   label: string;
   backgroundColor?: string;
   textColor?: string;
@@ -22,7 +23,7 @@ export default function Pill({
 }: PillProps) {
   return (
     <View style={[styles.container, { backgroundColor }, style]}>
-      <MaterialCommunityIcons name={icon} size={18} color={textColor} />
+      <Icon name={icon} size={18} color={textColor} />
       <Text style={[styles.label, { color: textColor }]}>{label}</Text>
     </View>
   );
@@ -34,7 +35,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-    borderRadius: 20,
+    borderRadius: radius.large,
     gap: spacing.sm,
   },
   label: {

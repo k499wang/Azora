@@ -89,6 +89,11 @@ export const ICON_PATHS = {
     <circle cx="15.6" cy="14.2" r="1.35" fill="currentColor" />
   `,
 
+  clock: `
+    <circle cx="12" cy="12" r="8.4" stroke="currentColor" stroke-width="2" fill="none" />
+    <path d="M12 7.6V12l3 2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+  `,
+
   'room-hex': `
     <path d="M12 2.6 20.4 7.3v9.4L12 21.4 3.6 16.7V7.3z" fill="currentColor" opacity="0.2" />
     <path d="M12 2.6 20.4 7.3v9.4L12 21.4 3.6 16.7V7.3z" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round" fill="none" />
@@ -362,6 +367,16 @@ export const ICON_PATHS = {
 
   plus: `
     <path fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" d="M12 5v14M5 12h14"/>
+  `,
+
+  'zoom-in': `
+    <circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="1.9"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" d="M15.4 15.4L20.5 20.5M10.5 7.7v5.6M7.7 10.5h5.6"/>
+  `,
+
+  'zoom-out': `
+    <circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="1.9"/>
+    <path fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" d="M15.4 15.4L20.5 20.5M7.7 10.5h5.6"/>
   `,
 
   camera: `

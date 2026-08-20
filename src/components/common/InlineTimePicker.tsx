@@ -8,11 +8,11 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
-import * as Haptics from 'expo-haptics';
 import { colors } from '../../theme/colors';
+import { radius } from '../../theme/card';
 import { spacing } from '../../theme/spacing';
-import { fonts } from '../../theme/typography';
-import { isHapticsEnabled } from '../../services/preferences/hapticsPreference';
+import { typography } from '../../theme/typography';
+import { triggerTapHaptic } from '../../native/tapHaptics';
 
 const ITEM_HEIGHT = 44;
 const VISIBLE_ITEMS = 5;
@@ -142,9 +142,7 @@ function WheelColumn({
         const index = indexAt(event);
         if (index === hapticIndex.current) return;
         hapticIndex.current = index;
-        if (isHapticsEnabled()) {
-          Haptics.selectionAsync().catch(() => {});
-        }
+        triggerTapHaptic();
       },
     },
   );
@@ -279,7 +277,8 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: ITEM_HEIGHT + spacing.xs,
-    borderRadius: 16,
+    borderRadius: radius.card,
+    borderCurve: 'continuous',
     backgroundColor: colors.primary.blue100,
   },
   columns: {
@@ -299,12 +298,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
   },
   itemLabel: {
-    fontSize: 30,
-    lineHeight: 36,
-    letterSpacing: -0.4,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    fontVariant: ['tabular-nums'],
+    ...typography.stat.valueMedium,
     color: colors.primary.blue700,
   },
 });

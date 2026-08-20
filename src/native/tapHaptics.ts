@@ -26,3 +26,32 @@ export function triggerBounceHaptic() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Soft).catch(() => {});
   }, 340);
 }
+
+// A single success notification — completions, rewards, and unlocks. Routes
+// every "you did it" through one guarded helper so no screen can forget the
+// user's Haptics toggle.
+export function triggerSuccessHaptic() {
+  if (!isHapticsEnabled()) return;
+  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(
+    () => {},
+  );
+}
+
+// A light impact for gentle beats — phase changes, arriving on a result
+// surface, a soft tick.
+export function triggerLightHaptic() {
+  if (!isHapticsEnabled()) return;
+  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+}
+
+// A heavy impact for milestone beats (streak milestones, jackpot moments).
+export function triggerHeavyHaptic() {
+  if (!isHapticsEnabled()) return;
+  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {});
+}
+
+// The full celebration: a success chime paired with a heavy knock, guarded once.
+export function triggerCelebrationHaptic() {
+  triggerSuccessHaptic();
+  triggerHeavyHaptic();
+}

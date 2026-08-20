@@ -3,10 +3,10 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, ScrollView, Share, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
 import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
 import { spacing, padding, margin } from '../theme/spacing';
+import { triggerLightHaptic } from '../native/tapHaptics';
 import DailyCompleteSheet from '../features/room/DailyCompleteSheet';
 import GlassIconButton from '../components/common/GlassIconButton';
 import ChunkyButton from '../components/common/ChunkyButton';
@@ -73,7 +73,7 @@ export default function SessionCompleteScreen({
   } = route.params;
 
   useEffect(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    triggerLightHaptic();
   }, []);
 
   const user = useAuthStore((state) => state.user);

@@ -4,7 +4,7 @@ import { StyleSheet, View } from 'react-native';
 import Icon, { type IconName } from './icons/Icon';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
-import { fonts, typography } from '../../theme/typography';
+import { typography } from '../../theme/typography';
 
 /** Matches `title3`, so the icon reads as a letter in the heading. */
 const ICON_SIZE = typography.title.title3.fontSize;
@@ -47,8 +47,6 @@ const styles = StyleSheet.create({
   },
   title: {
     ...typography.title.title3,
-    fontFamily: fonts.semibold,
-    fontWeight: '600',
     color: colors.text.primary,
   },
 });

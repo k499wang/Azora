@@ -1,7 +1,10 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 import { colors } from '../../theme/colors';
+import { pressable } from '../../theme/pressable';
+import { card, radius } from '../../theme/card';
 import { spacing } from '../../theme/spacing';
-import { fonts, typography } from '../../theme/typography';
+import { typography, fonts } from '../../theme/typography';
+import { triggerTapHaptic } from '../../native/tapHaptics';
 import Icon, { type IconName } from './icons/Icon';
 import { Text } from './Text';
 
@@ -10,6 +13,8 @@ interface CompactActionBannerProps {
   icon: IconName;
   onPress?: () => void;
   accessibilityLabel?: string;
+  /** `photo` (default) floats over photography; `card` reads as a white CTA card. */
+  tone?: 'photo' | 'card';
 }
 
 export default function CompactActionBanner({
@@ -17,25 +22,44 @@ export default function CompactActionBanner({
   icon,
   onPress,
   accessibilityLabel = label,
+  tone = 'photo',
 }: CompactActionBannerProps) {
+  const isCard = tone === 'card';
   const content = (
     <>
-      <Icon name={icon} size={24} color={colors.text.inverse} />
-      <Text style={styles.label}>{label}</Text>
-      <Icon name="chevron-right" size={24} color="rgba(255,255,255,0.78)" />
+      <Icon
+        name={icon}
+        size={24}
+        color={isCard ? colors.text.primary : colors.text.inverse}
+      />
+      <Text style={[styles.label, isCard && styles.labelCard]}>{label}</Text>
+      <Icon
+        name="chevron-right"
+        size={24}
+        color={isCard ? colors.text.secondary : colors.photoBanner.chevron}
+      />
     </>
   );
 
+  const bannerStyle = [styles.banner, isCard && styles.bannerCard];
+
   if (onPress == null) {
-    return <View style={styles.banner}>{content}</View>;
+    return <View style={bannerStyle}>{content}</View>;
   }
 
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
-      onPress={onPress}
-      style={({ pressed }) => [styles.banner, pressed && styles.pressed]}
+      onPress={() => {
+        triggerTapHaptic();
+        onPress();
+      }}
+      style={({ pressed }) => [
+        styles.banner,
+        isCard && styles.bannerCard,
+        pressed && styles.pressed,
+      ]}
     >
       {content}
     </Pressable>
@@ -50,22 +74,26 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-    borderRadius: 22,
-    backgroundColor: 'rgba(12,16,33,0.26)',
+    borderRadius: radius.large,
+    borderCurve: 'continuous',
+    backgroundColor: colors.photoBanner.fill,
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.20)',
+    borderColor: colors.photoBanner.edge,
   },
-  pressed: {
-    opacity: 0.88,
-    transform: [{ scale: 0.98 }],
+  bannerCard: {
+    backgroundColor: colors.background.card,
+    borderColor: colors.border.default,
+    ...card.shadow,
   },
+  pressed: pressable.subtle,
   label: {
     ...typography.body.medium,
     flex: 1,
-    fontFamily: fonts.regular,
-    fontWeight: '400',
-    fontSize: 17,
-    lineHeight: 25,
     color: colors.text.inverse,
+  },
+  labelCard: {
+    ...typography.label.large,
+    fontFamily: fonts.semibold,
+    color: colors.text.primary,
   },
 });

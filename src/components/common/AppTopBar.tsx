@@ -11,8 +11,10 @@ import TopBarGeometry from './TopBarGeometry';
 import GlassIconButton from './GlassIconButton';
 import NotificationsSettingsSheet from '../../features/notifications/NotificationsSettingsSheet';
 import { colors } from '../../theme/colors';
+import { pressable } from '../../theme/pressable';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
+import { triggerTapHaptic } from '../../native/tapHaptics';
 import { useProfileSummaryQuery } from '../../queries/profile/useProfileSummaryQuery';
 import { useAuthStore } from '../../stores/authStore';
 import type { MainTabNavigationProp } from '../../app/navigation';
@@ -84,8 +86,14 @@ export default function AppTopBar({
                   accessibilityRole="button"
                   accessibilityLabel="Go back"
                   hitSlop={spacing.md}
-                  style={styles.back}
-                  onPress={() => navigation.goBack()}
+                  style={({ pressed }) => [
+                    styles.back,
+                    pressed && styles.backPressed,
+                  ]}
+                  onPress={() => {
+                    triggerTapHaptic();
+                    navigation.goBack();
+                  }}
                 >
                   <Icon
                     name="chevron-left"
@@ -174,6 +182,7 @@ const styles = StyleSheet.create({
     marginLeft: -spacing.xs,
     marginRight: spacing.xs,
   },
+  backPressed: pressable.control,
   title: {
     ...typography.title.title2,
     fontFamily: fonts.semibold,

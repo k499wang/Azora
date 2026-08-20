@@ -10,6 +10,7 @@ import { colors } from '../../theme/colors';
 import { padding, spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import SectionHeader from '../common/SectionHeader';
+import Icon from '../common/icons/Icon';
 import { Text } from '../common/Text';
 
 interface ExtraPracticeSectionProps {
@@ -46,9 +47,13 @@ export default function ExtraPracticeSection({
             accessibilityLabel="See all breathing exercises"
             onPress={handleSeeAll}
             hitSlop={spacing.sm}
-            style={({ pressed }) => pressed && styles.seeAllPressed}
+            style={({ pressed }) => [
+              styles.seeAll,
+              pressed && styles.seeAllPressed,
+            ]}
           >
-            <Text style={styles.seeAll}>See all</Text>
+            <Text style={styles.seeAllText}>See all</Text>
+            <Icon name="chevron-right" size={16} color={colors.text.brand} />
           </Pressable>
         }
       />
@@ -80,9 +85,16 @@ export default function ExtraPracticeSection({
 const styles = StyleSheet.create({
   section: {
     gap: spacing.md,
-    marginTop: spacing.sm,
+    // One section apart from Today's Dailies: the 16px container gap plus this
+    // margin lands on the 32px sectionGap, matching the design system.
+    marginTop: spacing.lg,
   },
   seeAll: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  seeAllText: {
     ...typography.label.medium,
     fontFamily: fonts.semibold,
     color: colors.text.brand,

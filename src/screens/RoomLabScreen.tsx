@@ -70,6 +70,17 @@ const HOTEL_FLOOR_COUNTS = [1, 12, 34, 55];
  * Finished floors that were never earned, cycling through the shells so the
  * pyramid reads as a hotel rather than one room repeated.
  */
+/** the days a room part-way through its week has filled so far */
+const PARTIAL_DAYS = 3;
+
+const PARTIAL_PICKS: Picks = Object.fromEntries(
+  DAYS.slice(0, PARTIAL_DAYS).map((day) => [day.key, day.options[0].id]),
+) as Picks;
+
+/**
+ * The newest floor is left part-furnished, because a real hotel's top room
+ * always is — it is the one being decorated this week.
+ */
 function fakeFloors(count: number): PyramidRoom[] {
   return Array.from({ length: count }, (_, index) => {
     const style = ROOM_STYLES[index % ROOM_STYLES.length];
@@ -78,7 +89,7 @@ function fakeFloors(count: number): PyramidRoom[] {
       key: `fake-floor-${index + 1}`,
       floor: index + 1,
       shell: ROOM_SHELLS[style.shell],
-      picks: SAMPLE_PICKS,
+      picks: index === count - 1 ? PARTIAL_PICKS : SAMPLE_PICKS,
       frameHue: style.frameHue,
     };
   });
