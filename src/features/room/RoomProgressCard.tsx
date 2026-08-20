@@ -1,9 +1,12 @@
 import { StyleSheet, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Text } from '../../components/common/Text';
-import Icon from '../../components/common/icons/Icon';
+import Icon, { type IconName } from '../../components/common/icons/Icon';
 import ProgressBar from '../../components/common/ProgressBar';
-import ChunkyButton from '../../components/common/ChunkyButton';
+import ChunkyButton, {
+  CHUNKY_TONE,
+  CHUNKY_TONE_AMBER,
+} from '../../components/common/ChunkyButton';
 import { DAILIES_PER_DAY } from '../../lib/dailies';
 import {
   ROOM_SLOT_COUNT,
@@ -20,6 +23,48 @@ import type { DailiesCompletion } from '../../hooks/useDailiesCompletion';
 const BAR_HEIGHT = 12;
 /** Shorter than a screen's primary — this one sits inside a card. */
 const CTA_MIN_HEIGHT = 48;
+
+export type RoomCardTone = 'waiting' | 'ready' | 'done';
+
+/**
+ * Colour is the card's loudest signal, so it says the one thing the user needs:
+ * amber means something is waiting for them. Blue and green are both passive —
+ * without the third tone the only state with a button looked like the state
+ * with nothing to do.
+ */
+const TONE_STYLE: Record<
+  RoomCardTone,
+  {
+    accent: string;
+    track: string;
+    icon: IconName;
+    iconColor: string;
+    cta: typeof CHUNKY_TONE;
+  }
+> = {
+  waiting: {
+    accent: colors.playful.sky.base,
+    track: colors.playful.sky.soft,
+    icon: 'lock',
+    // Muted on purpose: a saturated lock reads as a thing to press.
+    iconColor: colors.text.tertiary,
+    cta: CHUNKY_TONE,
+  },
+  ready: {
+    accent: colors.playful.amber.base,
+    track: colors.playful.amber.soft,
+    icon: 'unlock',
+    iconColor: colors.playful.amber.base,
+    cta: CHUNKY_TONE_AMBER,
+  },
+  done: {
+    accent: colors.success[500],
+    track: colors.success[100],
+    icon: 'check',
+    iconColor: colors.success[500],
+    cta: CHUNKY_TONE,
+  },
+};
 
 /**
  * Where the room loop is, and the way back into it.
@@ -88,11 +133,12 @@ export function RoomProgressCardView({
   onAction: (route: RoomCardRoute) => void;
 }) {
   const action = view.action;
+  const tone = TONE_STYLE[view.tone];
 
   return (
     <View style={styles.card}>
       <View style={styles.headline}>
-        <Icon name="room-hex" size={26} color={colors.primary.blue600} />
+        <Icon name="room-hex" size={26} color={tone.accent} />
         <Text style={styles.title}>{view.title}</Text>
         <Text style={styles.count}>
           {view.done} / {view.total}
@@ -105,33 +151,18 @@ export function RoomProgressCardView({
         <ProgressBar
           progress={view.done / view.total}
           height={BAR_HEIGHT}
-          trackColor={
-            view.complete === true ? colors.success[100] : colors.primary.blue100
-          }
-          fillColor={
-            view.complete === true ? colors.success[500] : colors.primary.blue600
-          }
+          trackColor={tone.track}
+          fillColor={tone.accent}
           style={styles.bar}
         />
-        <Icon
-          name={
-            view.complete === true ? 'check' : view.earned ? 'unlock' : 'lock'
-          }
-          size={22}
-          color={
-            view.complete === true
-              ? colors.success[500]
-              : view.earned
-                ? colors.primary.blue600
-                : colors.text.tertiary
-          }
-        />
+        <Icon name={tone.icon} size={22} color={tone.iconColor} />
       </View>
 
       {action == null ? null : (
         <ChunkyButton
           label={action.label}
           shape="card"
+          tone={tone.cta}
           minHeight={CTA_MIN_HEIGHT}
           trailingIcon={
             <Icon name="chevron-right" size={16} color={colors.text.inverse} />
@@ -149,10 +180,8 @@ export interface RoomCardView {
   title: string;
   /** the wait until the next piece, for a day with nothing left to do */
   countdown?: boolean;
-  /** drives the lock at the end of the bar */
-  earned: boolean;
-  /** the day is finished — the bar goes green and the lock becomes a tick */
-  complete?: boolean;
+  /** drives the tile, the bar, the lock at its end, and the button */
+  tone: RoomCardTone;
   /** the bar counts whatever the title is about, never something else */
   done: number;
   total: number;
@@ -184,7 +213,7 @@ export function describeRoomCard({
   if (isComplete) {
     return {
       title: 'This floor is finished',
-      earned: true,
+      tone: 'ready',
       ...room,
       action: { label: 'Choose your next room', route: 'NextRoom' },
     };
@@ -193,7 +222,7 @@ export function describeRoomCard({
   if (canClaim) {
     return {
       title: 'Your piece is ready',
-      earned: true,
+      tone: 'ready',
       ...room,
       action: { label: 'Place it in your room', route: 'RoomDecorate' },
     };
@@ -207,8 +236,7 @@ export function describeRoomCard({
     return {
       title: 'All set for today!',
       countdown: true,
-      earned: true,
-      complete: true,
+      tone: 'done',
       done: DAILIES_PER_DAY,
       total: DAILIES_PER_DAY,
       action: null,
@@ -223,7 +251,7 @@ export function describeRoomCard({
   // built from the same `allCompleted` this branch would test.
   return {
     title: "Finish today's dailies",
-    earned: false,
+    tone: 'waiting',
     done: dailiesDoneCount,
     total: DAILIES_PER_DAY,
     action: null,
@@ -235,7 +263,7 @@ const styles = StyleSheet.create({
     ...card.base,
     ...card.shadow,
     padding: spacing.md,
-    gap: spacing.md,
+    gap: spacing.sm,
   },
   headline: {
     flexDirection: 'row',

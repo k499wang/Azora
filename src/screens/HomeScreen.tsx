@@ -2,8 +2,6 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { colors } from '../theme/colors';
 import { spacing, padding, margin } from '../theme/spacing';
 import AppTopBar from '../components/common/AppTopBar';
-import GlassIconButton from '../components/common/GlassIconButton';
-import Icon from '../components/common/icons/Icon';
 import ExtraPracticeSection from '../components/home/ExtraPracticeSection';
 import TodaysDailiesSection from '../components/home/TodaysDailiesSection';
 import HomeRoom from '../features/room/HomeRoom';
@@ -37,21 +35,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         alwaysBounceVertical
         overScrollMode="always"
       >
-        <AppTopBar
-          showNotifications
-          rightSlot={
-            <GlassIconButton
-              accessibilityLabel="Open your history"
-              onPress={() => navigation.navigate('History')}
-            >
-              <Icon
-                name="calendar"
-                size={20}
-                color={colors.text.secondary}
-              />
-            </GlassIconButton>
-          }
-        />
+        <AppTopBar showNotifications showAvatar={false} />
 
         <HomeRoom room={roomClaim.room} progress={roomClaim.progress} />
 
@@ -76,6 +60,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             onPressGuidedExercise={() => start('guided')}
             onPressHandPickedExercise={() => start('handPicked')}
             onPressBreathHold={() => start('breathHold')}
+            onPressHistory={() => navigation.navigate('History')}
           />
           <ExtraPracticeSection
             recommendedTechniqueId={dailies.guidedTechnique?.id ?? null}
