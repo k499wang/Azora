@@ -68,24 +68,38 @@ test('the room screens only offer a back arrow when opened from the lab', () => 
   assert.match(layout, /fromLab \? \(\s*<AppTopBar showBack/);
 });
 
-test('Hotel is a product tab and not a production stack route', () => {
+test('Hotel is reached from the room on Home, never from a tab', () => {
+  // A room takes a week to fill, so for the whole of a new user's first week
+  // the hotel is one part-furnished room and an outline. That is not worth a
+  // quarter of the tab bar, and Home already shows that room. It hangs off the
+  // room instead, which is also where the thought "show me the rest" starts.
   const tabs = read('app/navigation/MainTabs.tsx');
   const root = read('app/navigation/RootNavigator.tsx');
-  const home = read('screens/HomeScreen.tsx');
   const homeRoom = read('features/room/HomeRoom.tsx');
   const tabNames = [...tabs.matchAll(/<Tab\.Screen\s+name="([^"]+)"/g)].map(
     (match) => match[1],
   );
 
-  assert.deepEqual(tabNames, ['Home', 'Hotel', 'Heart', 'Profile']);
-  assert.match(tabs, /name: focused \? 'building\.2\.fill' : 'building\.2'/);
-  assert.doesNotMatch(root, /name="Hotel"/);
+  assert.deepEqual(tabNames, ['Home', 'Heart', 'Profile']);
+  assert.doesNotMatch(tabs, /Hotel/);
+  assert.match(root, /name="Hotel"/);
   assert.match(root, /name="HotelPreview"/);
-  assert.doesNotMatch(home, /View hotel|onViewHotel/);
-  assert.doesNotMatch(homeRoom, /View hotel|onViewHotel/);
+  assert.match(homeRoom, /<HotelChip/);
 });
 
-test('the Hotel tab avoids native tab-bar overlap without changing its preview', () => {
+test('the hotel offers its own way back, and does not spend height on it', () => {
+  // Pushed over the tab bar rather than under it, so there is no tab to return
+  // by — and a header would take the canvas's height to say so. The button
+  // floats over the pyramid instead, like the zoom controls it lines up with.
+  const hotel = read('screens/HotelScreen.tsx');
+
+  assert.match(hotel, /<GlassIconButton[^>]*accessibilityLabel="Back"/s);
+  assert.match(hotel, /name="chevron-left"/);
+  assert.doesNotMatch(hotel, /AppTopBar/);
+  assert.match(hotel, /back: \{\s*position: 'absolute'/);
+});
+
+test('the hotel avoids native tab-bar overlap without changing its preview', () => {
   const hotel = read('screens/HotelScreen.tsx');
   const productStart = hotel.indexOf('export default function HotelScreen');
   const previewStart = hotel.indexOf('export function HotelPreviewScreen');

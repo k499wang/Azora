@@ -18,7 +18,6 @@ import type { BreathHoldHeartRateResultStatus } from '../../features/exercise/da
 
 export type MainTabParamList = {
   Home: undefined;
-  Hotel: undefined;
   Heart: undefined;
   Profile: undefined;
 };
@@ -70,6 +69,12 @@ export type RootStackParamList = {
   NextRoom: RoomScreenParams;
   /** dev-only harness for the room's animations */
   RoomLab: undefined;
+  /**
+   * Every floor so far, opened from the room on Home rather than a tab. It is
+   * a full-screen canvas with no tab bar under it: the pyramid is the screen,
+   * and a bar across the bottom would cover the rows nearest the viewer.
+   */
+  Hotel: undefined;
   /** dev-only Hotel preview opened from RoomLab */
   HotelPreview: RoomScreenParams;
   Settings: undefined;
@@ -109,7 +114,7 @@ export type MainTabNavigationProp<
 
 export type HomeScreenProps = MainTabScreenProps<'Home'>;
 export type ExploreScreenProps = RootStackScreenProps<'Explore'>;
-export type HotelScreenProps = MainTabScreenProps<'Hotel'>;
+export type HotelScreenProps = RootStackScreenProps<'Hotel'>;
 export type HeartTabScreenProps = MainTabScreenProps<'Heart'>;
 export type ProfileScreenProps = MainTabScreenProps<'Profile'>;
 
