@@ -1,15 +1,14 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from '../common/Text';
 import Icon from '../common/icons/Icon';
+import CloseButton, { CLOSE_BUTTON_SIZE } from '../common/CloseButton';
 import HistoryDateStrip from './HistoryDateStrip';
 import { colors } from '../../theme/colors';
 import { padding, spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
-import { triggerTapHaptic } from '../../native/tapHaptics';
 import type { WeekCalendarDay } from '../../lib/calendar/weekCalendarDays';
 
-const CLOSE_SIZE = 40;
 const BAR_HEIGHT = 56;
 
 interface Props {
@@ -40,18 +39,11 @@ export default function HistoryHeader({
   return (
     <View style={[styles.block, { paddingTop: insets.top }]}>
       <View style={styles.bar}>
-        <Pressable
-          accessibilityRole="button"
+        <CloseButton
+          onBlock
           accessibilityLabel="Close history"
-          hitSlop={spacing.sm}
-          onPress={() => {
-            triggerTapHaptic();
-            onClose();
-          }}
-          style={({ pressed }) => [styles.close, pressed && styles.pressed]}
-        >
-          <Icon name="close" size={18} color={colors.text.inverse} />
-        </Pressable>
+          onPress={onClose}
+        />
 
         <View style={styles.titleWrap}>
           <Icon name="calendar" size={18} color={colors.text.inverse} />
@@ -83,17 +75,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: padding.screen.horizontal,
   },
-  close: {
-    width: CLOSE_SIZE,
-    height: CLOSE_SIZE,
-    borderRadius: CLOSE_SIZE / 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.onBlock.fill,
-  },
-  pressed: {
-    opacity: 0.7,
-  },
   titleWrap: {
     flex: 1,
     flexDirection: 'row',
@@ -107,6 +88,6 @@ const styles = StyleSheet.create({
     color: colors.text.inverse,
   },
   barSpacer: {
-    width: CLOSE_SIZE,
+    width: CLOSE_BUTTON_SIZE,
   },
 });

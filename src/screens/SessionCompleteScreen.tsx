@@ -9,6 +9,7 @@ import { spacing, padding, margin } from '../theme/spacing';
 import { triggerLightHaptic } from '../native/tapHaptics';
 import DailyCompleteSheet from '../features/room/DailyCompleteSheet';
 import GlassIconButton from '../components/common/GlassIconButton';
+import CloseButton from '../components/common/CloseButton';
 import ChunkyButton from '../components/common/ChunkyButton';
 import HelpfulnessQuestion from '../components/exercise/HelpfulnessQuestion';
 import BlobCharacter from '../components/home/BlobCharacter';
@@ -269,22 +270,15 @@ export default function SessionCompleteScreen({
         />
       ) : null}
 
-      <GlassIconButton
+      <CloseButton
         accessibilityLabel="Close results"
-        size={SESSION_GLASS_BUTTON_SIZE}
         style={[
           styles.floatingAction,
           styles.floatingClose,
           { top: insets.top + padding.screen.vertical },
         ]}
         onPress={handleClose}
-      >
-        <MaterialCommunityIcons
-          name="close"
-          size={20}
-          color={colors.text.secondary}
-        />
-      </GlassIconButton>
+      />
       <GlassIconButton
         accessibilityLabel="Share result"
         size={SESSION_GLASS_BUTTON_SIZE}
