@@ -47,10 +47,24 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { usePinchZoomPan } from './usePinchZoomPan';
-import { decorationPaths, framePaths, ghostPaths, paintedPaths } from './roomPaths';
+import {
+  accentPaths,
+  decorationPaths,
+  ghostPaths,
+  latticePath,
+  paintedPaths,
+} from './roomPaths';
 import type { PaintedPath } from './roomPaths';
 import { snapshotPyramid, type FarView } from './pyramidSnapshot';
-import { HEX_W, fitToViewport, pyramidBounds, slotAt } from './pyramidLayout';
+import type { Bounds } from './pyramidLayout';
+import {
+  HEX_H,
+  HEX_W,
+  expandBounds,
+  fitToViewport,
+  pyramidBounds,
+  slotAt,
+} from './pyramidLayout';
 import { VIEW_BOX_HEIGHT, VIEW_BOX_WIDTH } from './RoomScene';
 import type { FrameHue, Picks, Poly } from './RoomScene';
 import { Text } from '../../components/common/Text';
@@ -78,6 +92,15 @@ const ZOOM_ICON_SIZE = 20;
 const FAR_HYSTERESIS = 0.8;
 
 const PIXEL_RATIO = PixelRatio.get();
+
+/**
+ * What a room's viewBox reserves around its own hexagon, and therefore how far
+ * outside it the artwork is allowed to reach — the frame stroke straddling the
+ * outline, and the miter where its sides meet. The texture has to hold that or
+ * every room on the pyramid's edge loses its frame to the crop.
+ */
+const ROOM_BLEED_X = (VIEW_BOX_WIDTH - HEX_W) / 2;
+const ROOM_BLEED_Y = (VIEW_BOX_HEIGHT - HEX_H) / 2;
 
 /**
  * The label is authored in viewBox units like the artwork, so it belongs to the
@@ -153,8 +176,31 @@ function recordRoom(room: PyramidRoom): SkPicture {
   return recordSlot(room.floor - 1, (canvas) => {
     draw(canvas, paintedPaths(room.shell));
     draw(canvas, decorationPaths(room.picks));
-    draw(canvas, framePaths(room.frameHue));
+    draw(canvas, accentPaths(room.frameHue));
   });
+}
+
+/**
+ * The mortar, over every room at once.
+ *
+ * One picture rather than one per slot: it is a single path however many rooms
+ * are in it, and it has to be drawn after all of them — a room recorded later
+ * would otherwise paint its floor over its neighbour's share of the lattice.
+ */
+function recordLattice(
+  centres: readonly { x: number; y: number }[],
+  bounds: Bounds,
+): SkPicture {
+  const rect = Skia.XYWHRect(
+    bounds.minX,
+    bounds.minY,
+    bounds.width,
+    bounds.height,
+  );
+
+  return createPicture((canvas) => {
+    draw(canvas, [latticePath(centres)]);
+  }, rect);
 }
 
 export default function PyramidCanvas({ rooms }: Props) {
@@ -171,11 +217,6 @@ export default function PyramidCanvas({ rooms }: Props) {
     0,
   );
 
-  const pictures = useMemo(
-    () =>
-      floors.map((room) => ({ key: room.key, picture: recordRoom(room) })),
-    [floors],
-  );
 
   /**
    * The outline is drawn live at every zoom, and is deliberately the one thing
@@ -196,11 +237,37 @@ export default function PyramidCanvas({ rooms }: Props) {
   const nextSlot = useMemo(() => slotAt(highestFloor), [highestFloor]);
 
   // What the texture covers: the rooms and nothing else, now that the outline
-  // is drawn over it rather than into it.
+  // is drawn over it rather than into it — plus the bleed each one draws past
+  // its own hexagon, which the bare bounds would crop away.
   const roomBounds = useMemo(
-    () => pyramidBounds(highestFloor),
+    () =>
+      expandBounds(
+        pyramidBounds(highestFloor),
+        ROOM_BLEED_X,
+        ROOM_BLEED_Y,
+      ),
     [highestFloor],
   );
+
+  const pictures = useMemo(() => {
+    const drawn = floors.map((room) => ({
+      key: room.key,
+      picture: recordRoom(room),
+    }));
+
+    if (drawn.length === 0) return drawn;
+
+    return [
+      ...drawn,
+      {
+        key: 'lattice',
+        picture: recordLattice(
+          floors.map((room) => slotAt(room.floor - 1)),
+          roomBounds,
+        ),
+      },
+    ];
+  }, [floors, roomBounds]);
 
   // What the canvas is framed against: one slot more, so the hotel stands back
   // far enough to show where the next room goes instead of cropping it at the

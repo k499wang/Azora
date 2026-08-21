@@ -140,8 +140,114 @@ function decorationPolys(day: DayKey, option: string | undefined) {
   return option == null ? undefined : DECOR[`${day}.${option}`];
 }
 
-export function framePaths(hue: FrameHue): PaintedPath[] {
-  return paintedPaths(ROOM_FRAME[hue]);
+/**
+ * The hexagon every room is cut to, and how far off-centre a stroke sits.
+ *
+ * It is regular: all six vertices are 180 from the centre and all six sides are
+ * 180 long, so the apothem — centre to the middle of an edge — is the one
+ * number an inset is measured against.
+ */
+const HEX_VERTICES: readonly (readonly [number, number])[] = [
+  [0, -180],
+  [-155.9, -90],
+  [-155.9, 90],
+  [0, 180],
+  [155.9, 90],
+  [155.9, -90],
+];
+const HEX_APOTHEM = 155.9;
+
+/**
+ * Rooms tessellate, so neighbours do not sit next to a shared edge — they sit
+ * on it. A frame drawn per room therefore paints the same line twice and the
+ * second one wins, which is why a room used to be outlined in its own hue on
+ * some sides and its neighbour's on the rest.
+ *
+ * So the honeycomb is mortar and rooms are what is set into it: one lattice for
+ * the whole pyramid in a single colour, where drawing an edge twice is drawing
+ * it the same both times, and each room's hue as a ring inset far enough to
+ * clear it. Interior seams and the pyramid's outer edge then look alike, which
+ * per-room frames could not manage in either arrangement.
+ */
+const LATTICE_STROKE = 10;
+
+/** the widest stroke the room's own frame lays down, straight off the artwork */
+const FRAME_STROKE = ROOM_FRAME.sky[0].w ?? 14;
+
+/** far enough in that the frame's outer edge meets the mortar's inner edge */
+const ACCENT_INSET = LATTICE_STROKE / 2 + FRAME_STROKE / 2;
+
+function hexPoints(inset: number) {
+  const factor = (HEX_APOTHEM - inset) / HEX_APOTHEM;
+
+  return HEX_VERTICES.map(([x, y]) => ({ x: x * factor, y: y * factor }));
+}
+
+function strokePaint(color: string, width: number): SkPaint {
+  const paint = Skia.Paint();
+  paint.setAntiAlias(true);
+  paint.setColor(Skia.Color(color));
+  paint.setStyle(PaintStyle.Stroke);
+  paint.setStrokeWidth(width);
+
+  return paint;
+}
+
+/**
+ * Every room's outline as one path, stroked once.
+ *
+ * Shared edges are drawn twice over and it does not show, because both passes
+ * lay down the same colour at the same width — the whole point of moving the
+ * outline off the rooms and into the pyramid.
+ */
+export function latticePath(
+  centres: readonly { x: number; y: number }[],
+): PaintedPath {
+  const path = Skia.Path.Make();
+  const points = hexPoints(0);
+
+  for (const centre of centres) {
+    path.addPoly(
+      points.map((point) => ({ x: centre.x + point.x, y: centre.y + point.y })),
+      true,
+    );
+  }
+
+  return {
+    path,
+    paint: strokePaint(colors.neutral[0], LATTICE_STROKE),
+  };
+}
+
+const accents = new Map<FrameHue, PaintedPath[]>();
+
+/**
+ * The room's frame, set inside the mortar rather than shared with it.
+ *
+ * Not a new border: it is `ROOM_FRAME` — the same two strokes, in the same
+ * colours, at the same widths the home room draws — on a hexagon pulled in far
+ * enough to clear the lattice. A room in the pyramid is outlined exactly as it
+ * is anywhere else in the app; only what sits between rooms is new.
+ */
+export function accentPaths(hue: FrameHue): PaintedPath[] {
+  const hit = accents.get(hue);
+  if (hit != null) return hit;
+
+  const path = Skia.Path.Make();
+  path.addPoly(hexPoints(ACCENT_INSET), true);
+
+  const built: PaintedPath[] = [];
+
+  for (const poly of ROOM_FRAME[hue]) {
+    const color = poly.s ?? poly.f;
+    if (color == null || poly.w == null) continue;
+
+    built.push({ path, paint: strokePaint(readableColor(color), poly.w) });
+  }
+
+  accents.set(hue, built);
+
+  return built;
 }
 
 /**
