@@ -1,13 +1,16 @@
 import { Text } from '../../common/Text';
 import { View } from 'react-native';
-import Icon, { type IconName } from '../../common/icons/Icon';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import type { ComponentProps } from 'react';
 import { colors } from '../../../theme/colors';
 import { paywallStepStyles as styles } from './paywallStepStyles';
+
+type TimelineIconName = ComponentProps<typeof MaterialCommunityIcons>['name'];
 
 interface TimelineStepProps {
   label: string;
   body: string;
-  icon: IconName;
+  icon: TimelineIconName;
   /** Steps that haven't happened yet read greyed out rather than brand blue. */
   upcoming?: boolean;
   showLine?: boolean;
@@ -27,7 +30,7 @@ function TimelineStep({
     <View style={styles.timelineRow}>
       <View style={styles.timelineRail}>
         <View style={[styles.timelineDot, upcoming && styles.timelineDotUpcoming]}>
-          <Icon name={icon} size={16} color={colors.neutral[0]} />
+          <MaterialCommunityIcons name={icon} size={22} color={colors.neutral[0]} />
         </View>
         {showLine ? (
           <View
@@ -68,7 +71,7 @@ export function PaywallTrialStep({
         {
           label: 'Day 1: Today',
           body: 'Unlock all app exercises like heart insights and your personalized plan.',
-          icon: 'unlock',
+          icon: 'lock-open-variant',
         },
         {
           label: `Day ${reminderDays}: Reminder`,
@@ -79,7 +82,7 @@ export function PaywallTrialStep({
         {
           label: `Day ${billingDay}: Billing starts`,
           body: "You'll be charged unless you cancel anytime before.",
-          icon: 'calendar',
+          icon: 'credit-card',
           upcoming: true,
         },
       ]
@@ -87,7 +90,7 @@ export function PaywallTrialStep({
         {
           label: 'Today',
           body: 'Unlock all app exercises like heart insights and your personalized plan.',
-          icon: 'unlock',
+          icon: 'lock-open-variant',
         },
         {
           label: 'Anytime',

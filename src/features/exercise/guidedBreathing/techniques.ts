@@ -247,6 +247,13 @@ const TECHNIQUES: BreathingTechnique[] = [
 
 export default TECHNIQUES;
 
+/** '4-4-4-4', dropping the phases this technique does not use. */
+export function formatPattern(pattern: BreathingTechnique['pattern']): string {
+  return [pattern.inhale, pattern.holdIn, pattern.exhale, pattern.holdOut]
+    .filter((value) => value > 0)
+    .join('-');
+}
+
 export function getTechnique(id: string | null | undefined): BreathingTechnique | null {
   if (id == null) return null;
   return TECHNIQUES.find((technique) => technique.id === id) ?? null;

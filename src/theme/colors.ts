@@ -67,13 +67,16 @@ export const colors = {
   // Playful multi-hue families for the color-blocked home surfaces. `base` is a
   // saturated fill that carries white text (all bases clear 3:1 against white),
   // `soft` is the receded/completed tint, `ink` is the text color on `soft`.
+  // `mid` is base lifted ~35% toward soft. It exists so a color block can carry
+  // a gradient that stays inside the saturated range — base to mid reads as
+  // depth, where base to soft washes out to a near-white corner.
   playful: {
-    teal: { base: '#00A391', soft: '#A8E5DA', ink: '#0B6B5C' },
-    coral: { base: '#F04E30', soft: '#FAC7B6', ink: '#B23A1D' },
-    violet: { base: '#6C4BFF', soft: '#CFC5FB', ink: '#4B34C4' },
-    amber: { base: '#D97706', soft: '#F8DEA3', ink: '#925C00' },
-    sky: { base: '#2979FF', soft: '#C3DBFC', ink: '#1559A8' },
-    blush: { base: '#F0488F', soft: '#F8CFE3', ink: '#A12359' },
+    teal: { base: '#00A391', mid: '#3BBAAB', soft: '#A8E5DA', ink: '#0B6B5C' },
+    coral: { base: '#F04E30', mid: '#F4785F', soft: '#FAC7B6', ink: '#B23A1D' },
+    violet: { base: '#6C4BFF', mid: '#8F76FE', soft: '#CFC5FB', ink: '#4B34C4' },
+    amber: { base: '#D97706', mid: '#E49B3D', soft: '#F8DEA3', ink: '#925C00' },
+    sky: { base: '#2979FF', mid: '#5F9BFE', soft: '#C3DBFC', ink: '#1559A8' },
+    blush: { base: '#F0488F', mid: '#F377AC', soft: '#F8CFE3', ink: '#A12359' },
   },
 
   // White-alpha layers for content sitting on a `playful.*.base` color block:

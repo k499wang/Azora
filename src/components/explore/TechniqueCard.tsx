@@ -6,7 +6,10 @@ import {
   CATEGORY_STYLE,
   TECHNIQUE_GLYPH,
 } from '../../features/exercise/guidedBreathing/categoryPalette';
-import type { BreathingTechnique } from '../../features/exercise/guidedBreathing/techniques';
+import {
+  formatPattern,
+  type BreathingTechnique,
+} from '../../features/exercise/guidedBreathing/techniques';
 import { AnalyticsEvent } from '../../services/analytics/events';
 import { trackFeatureGateHit } from '../../services/analytics/tracking';
 import { PaywallPlacement } from '../../services/paywall';
@@ -36,12 +39,6 @@ interface TechniqueCardProps {
     | 'breathing_library'
     | 'exercise_search_result'
     | 'extra_practice';
-}
-
-function formatPattern(pattern: BreathingTechnique['pattern']) {
-  return [pattern.inhale, pattern.holdIn, pattern.exhale, pattern.holdOut]
-    .filter((value) => value > 0)
-    .join('-');
 }
 
 export default function TechniqueCard({

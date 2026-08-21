@@ -10,8 +10,8 @@ export type CharacterId =
   | 'hold';
 
 // `character` is identity and stays closed at the six categories, because
-// CATEGORY_STYLE and TaskCardDecor switch on it exhaustively. Feelings that are
-// not a category live here instead, so they never need a hue or a decor shape.
+// CATEGORY_STYLE switches on it exhaustively. Feelings that are not a category
+// live here instead, so they never need a hue.
 export type FaceExpression = CharacterId | 'cheer' | 'rest';
 
 // Deliberately not an ellipse — the control points are uneven so the body reads

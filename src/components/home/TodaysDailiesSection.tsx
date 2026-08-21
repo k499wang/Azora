@@ -1,15 +1,20 @@
 import { Text } from '../common/Text';
 import { Pressable, StyleSheet, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import BlobCharacter, { type CharacterId } from './BlobCharacter';
-import TaskCardDecor from './TaskCardDecor';
+import ActivityGlyph from '../explore/ActivityGlyph';
 import SectionHeader from '../common/SectionHeader';
 import Icon from '../common/icons/Icon';
-import type { BreathingTechnique } from '../../features/exercise/guidedBreathing/techniques';
+import {
+  formatPattern,
+  type BreathingTechnique,
+} from '../../features/exercise/guidedBreathing/techniques';
 import {
   BREATH_HOLD_STYLE,
   CATEGORY_STYLE,
+  TECHNIQUE_GLYPH,
   type CategoryStyle,
+  type GlyphShape,
 } from '../../features/exercise/guidedBreathing/categoryPalette';
 import { card, radius } from '../../theme/card';
 import { pressable } from '../../theme/pressable';
@@ -30,10 +35,20 @@ const MARKER_ICON_SIZE = 14;
 const TIMELINE_RAIL_WIDTH = 6;
 const TIMELINE_ROW_HEIGHT = 144;
 const TASK_CONTENT_SIZE = 112;
+// Oversized and bled off the corner so it reads as a watermark behind the copy,
+// matching the extra-practice shelf cards.
+const TASK_GLYPH_SIZE = 150;
+const TASK_GLYPH_RIGHT = -34;
+const TASK_GLYPH_BOTTOM = -40;
+const TASK_COPY_INSET = 72;
 const TIMELINE_ROW_GAP = spacing.lg;
 const TIMELINE_RAIL_INSET = TIMELINE_ROW_HEIGHT / 2 + TIMELINE_MARKER_SIZE / 2;
 const TIMELINE_RAIL_LEFT = TIMELINE_COLUMN_WIDTH / 2 - TIMELINE_RAIL_WIDTH / 2;
 const TIMELINE_DASHES = Array.from({ length: 17 }, (_, index) => index);
+// Diagonal, deepest at the top-left. Stops at `mid` rather than `soft` so the
+// card reads as one saturated hue with depth, not a fade out to near-white.
+const GRADIENT_START = { x: 0, y: 0 };
+const GRADIENT_END = { x: 1, y: 1 };
 
 interface TodaysDailiesSectionProps {
   technique: BreathingTechnique | null;
@@ -56,10 +71,11 @@ interface TodaysDailiesSectionProps {
 interface DailyTaskRowProps {
   title: string;
   scheduledTime: string;
+  techniqueMeta: string | null;
   detailLabel: string;
   detailIcon: BreathingTechnique['icon'];
   style: CategoryStyle;
-  faceExpression: CharacterId;
+  glyph: GlyphShape;
   completed: boolean;
   locked: boolean;
   loading?: boolean;
@@ -70,13 +86,20 @@ function formatCategory(category: BreathingTechnique['category']): string {
   return category.charAt(0).toUpperCase() + category.slice(1);
 }
 
+// How long it takes and the rhythm it runs at — the breath hold has neither.
+function techniqueMetaLabel(technique: BreathingTechnique | null): string | null {
+  if (technique == null) return null;
+  return `${technique.duration} · ${formatPattern(technique.pattern)}`;
+}
+
 function DailyTaskRow({
   title,
   scheduledTime,
+  techniqueMeta,
   detailLabel,
   detailIcon,
   style,
-  faceExpression,
+  glyph,
   completed,
   locked,
   loading = false,
@@ -93,7 +116,7 @@ function DailyTaskRow({
       }}
       disabled={unavailable}
       accessibilityRole="button"
-      accessibilityLabel={`${title}, ${detailLabel}, scheduled for ${scheduledTime}, ${statusLabel}`}
+      accessibilityLabel={`${title}, ${detailLabel}, scheduled for ${scheduledTime}${techniqueMeta == null ? '' : `, ${techniqueMeta}`}, ${statusLabel}`}
       accessibilityState={{ disabled: unavailable }}
       style={({ pressed }) => [styles.taskRow, pressed && styles.taskPressed]}
     >
@@ -118,56 +141,60 @@ function DailyTaskRow({
         </View>
       </View>
 
-      <View style={styles.taskPillShadow}>
-        <View style={styles.taskPill}>
+      <View
+        style={[styles.taskPillShadow, { backgroundColor: style.hue.base }]}
+      >
+        <LinearGradient
+          colors={[style.hue.base, style.hue.mid]}
+          start={GRADIENT_START}
+          end={GRADIENT_END}
+          style={styles.taskPill}
+        >
+          <View
+            style={[styles.taskGlyph, loading && styles.taskGlyphLoading]}
+            pointerEvents="none"
+          >
+            <ActivityGlyph
+              shape={glyph}
+              size={TASK_GLYPH_SIZE}
+              color={colors.text.inverse}
+              opacity={0.16}
+            />
+          </View>
+
           <View style={styles.taskCopy} pointerEvents="none">
-            <Text style={styles.taskTitle} numberOfLines={2}>
-              {title}
-            </Text>
+            <View style={styles.taskTop}>
+              <Text style={styles.taskTitle} numberOfLines={2}>
+                {title}
+              </Text>
+              {techniqueMeta == null ? null : (
+                <View style={styles.metaPill}>
+                  <Text style={[styles.metaPillText, { color: style.hue.ink }]}>
+                    {techniqueMeta}
+                  </Text>
+                </View>
+              )}
+            </View>
             <View style={styles.metadataStack}>
               <View style={styles.metadataRow}>
                 <MaterialCommunityIcons
                   name={detailIcon}
                   size={14}
-                  color={style.hue.ink}
+                  color={colors.onBlock.textMuted}
                 />
-                <Text
-                  style={[styles.metadataText, { color: style.hue.ink }]}
-                  numberOfLines={1}
-                >
+                <Text style={styles.metadataText} numberOfLines={1}>
                   {detailLabel}
                 </Text>
               </View>
               <View style={styles.metadataRow}>
-                <Icon name="clock" size={14} color={colors.text.secondary} />
+                <Icon name="clock" size={14} color={colors.onBlock.textMuted} />
                 <Text style={styles.metadataText} numberOfLines={1}>
                   {scheduledTime}
                 </Text>
               </View>
             </View>
           </View>
-
-          <View
-            style={[
-              styles.taskArt,
-              { backgroundColor: style.hue.base },
-              loading && styles.taskArtLoading,
-            ]}
-            pointerEvents="none"
-          >
-            <TaskCardDecor
-              character={style.character}
-              color={colors.text.inverse}
-            />
-            <BlobCharacter
-              character={style.character}
-              faceExpression={completed ? 'rest' : faceExpression}
-              size={TASK_CONTENT_SIZE}
-              bodyColor={style.hue.soft}
-              faceColor={style.hue.ink}
-            />
-          </View>
-        </View>
+        </LinearGradient>
       </View>
     </Pressable>
   );
@@ -215,12 +242,15 @@ export default function TodaysDailiesSection({
     session: {
       title: guidedTitle,
       scheduledTime: guidedScheduledTime,
+      techniqueMeta: techniqueMetaLabel(technique),
       detailLabel: guidedDetail,
       detailIcon: guidedDetailIcon,
       style: technique
         ? CATEGORY_STYLE[technique.category]
         : CATEGORY_STYLE.calm,
-      faceExpression: 'calm',
+      glyph: technique
+        ? TECHNIQUE_GLYPH[technique.id]
+        : CATEGORY_STYLE.calm.glyph,
       completed: guidedExerciseCompleted,
       locked: guidedLocked,
       loading: techniqueLoading,
@@ -229,12 +259,15 @@ export default function TodaysDailiesSection({
     handPicked: {
       title: handPickedTechnique?.name ?? 'Azora’s daily pick',
       scheduledTime: handPickedScheduledTime,
+      techniqueMeta: techniqueMetaLabel(handPickedTechnique),
       detailLabel: 'Azora’s daily pick',
       detailIcon: handPickedTechnique?.icon ?? 'creation-outline',
       style: handPickedTechnique
         ? CATEGORY_STYLE[handPickedTechnique.category]
         : CATEGORY_STYLE.balance,
-      faceExpression: 'energy',
+      glyph: handPickedTechnique
+        ? TECHNIQUE_GLYPH[handPickedTechnique.id]
+        : CATEGORY_STYLE.balance.glyph,
       completed: handPickedExerciseCompleted,
       locked: handPickedLocked,
       loading: handPickedTechniqueLoading,
@@ -244,10 +277,11 @@ export default function TodaysDailiesSection({
     checkIn: {
       title: 'Daily Breathhold',
       scheduledTime: breathHoldScheduledTime,
+      techniqueMeta: null,
       detailLabel: 'Daily check-in',
       detailIcon: 'timer-sand',
       style: BREATH_HOLD_STYLE,
-      faceExpression: 'hold',
+      glyph: BREATH_HOLD_STYLE.glyph,
       completed: breathHoldCompleted,
       locked: breathHoldLocked,
       onPress: onPressBreathHold,
@@ -367,30 +401,22 @@ const styles = StyleSheet.create({
     ...card.blockShadow,
     flex: 1,
     borderRadius: radius.hero,
-    backgroundColor: colors.background.elevated,
   },
   taskPill: {
     height: TIMELINE_ROW_HEIGHT,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderRadius: radius.hero,
     overflow: 'hidden',
-    backgroundColor: colors.background.elevated,
   },
-  taskArt: {
-    width: TASK_CONTENT_SIZE,
-    height: TASK_CONTENT_SIZE,
-    flexShrink: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radius.large,
-    borderCurve: 'continuous',
-    overflow: 'hidden',
+  taskGlyph: {
+    position: 'absolute',
+    right: TASK_GLYPH_RIGHT,
+    bottom: TASK_GLYPH_BOTTOM,
   },
-  taskArtLoading: {
+  taskGlyphLoading: {
     opacity: 0.45,
   },
   taskCopy: {
@@ -399,13 +425,30 @@ const styles = StyleSheet.create({
     height: TASK_CONTENT_SIZE,
     justifyContent: 'space-between',
   },
+  taskTop: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+  },
+  metaPill: {
+    borderRadius: radius.full,
+    backgroundColor: colors.text.inverse,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+  },
+  metaPillText: {
+    ...typography.label.small,
+    fontFamily: fonts.semibold,
+  },
   taskTitle: {
+    flex: 1,
     ...typography.title.title3,
     fontFamily: fonts.semibold,
-    color: colors.text.primary,
+    color: colors.text.inverse,
   },
   metadataStack: {
     gap: spacing.xs,
+    paddingRight: TASK_COPY_INSET,
   },
   metadataRow: {
     flexDirection: 'row',
@@ -416,6 +459,6 @@ const styles = StyleSheet.create({
     ...typography.label.detail,
     fontSize: 14,
     lineHeight: 18,
-    color: colors.text.secondary,
+    color: colors.onBlock.textMuted,
   },
 });

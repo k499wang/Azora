@@ -4,6 +4,7 @@ import { View, StyleSheet, Animated, ScrollView, Pressable } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Device from 'expo-device';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import CloseButton from '../common/CloseButton';
 import { usePostHog } from 'posthog-react-native';
 import { colors } from '../../theme/colors';
 import { typography, fonts } from '../../theme/typography';
@@ -191,7 +192,8 @@ export function ResultScreen({
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.header}>
-            <Pressable
+            <CloseButton
+              accessibilityLabel="Close results"
               style={styles.closeButton}
               onPress={() => {
                 posthog.capture(AnalyticsEvent.HeartRateResultAction, {
@@ -201,13 +203,7 @@ export function ResultScreen({
                 });
                 onDone();
               }}
-            >
-              <MaterialCommunityIcons
-                name="close"
-                size={22}
-                color={colors.text.secondary}
-              />
-            </Pressable>
+            />
             <Text style={styles.headerTitle}>Nice work!</Text>
           </View>
 
@@ -361,14 +357,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: padding.screen.vertical,
     left: padding.screen.horizontal,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.background.elevated,
-    borderWidth: 1,
-    borderColor: colors.border.subtle,
-    alignItems: 'center',
-    justifyContent: 'center',
     zIndex: 1,
   },
   headerTitle: {
