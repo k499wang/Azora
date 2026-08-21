@@ -69,6 +69,26 @@ const PHASE_FACES: Record<DailyBreathHoldPhase, BreathFace> = {
   processingResults: 'resting',
 };
 
+// Phases that draw the same word share an entry, so the crossfade never fades
+// "Inhale" out and back in to become "Inhale". The hold draws a running timer
+// in place of a word.
+const PHASE_HEADLINES: Record<DailyBreathHoldPhase, string> = {
+  idle: '',
+  intro: '',
+  placement: '',
+  preInhale: 'Inhale',
+  preExhale: 'Exhale',
+  inhale: 'Inhale',
+  hold: '',
+  processingResults: '',
+};
+
+// The hold shares its empty headline with the stages that draw no instruction
+// at all, so it needs its own key to still read as a stage change.
+function headlineFadeKey(phase: DailyBreathHoldPhase): string {
+  return phase === 'hold' ? 'hold' : PHASE_HEADLINES[phase];
+}
+
 type DailyBreathHoldCamera = Pick<
   HeartRateCameraPreviewProps,
   'device' | 'format' | 'frameProcessor' | 'torchMode'
@@ -160,10 +180,19 @@ export const DailyBreathHoldPresentation = forwardRef<
     return () => animation.stop();
   }, [isIdle, transition]);
 
-  const headlineOpacity = transition.interpolate({
-    inputRange: [0, 0.45, 1],
-    outputRange: [0, 0.3, 1],
-  });
+  // Built once per animated source, never per render: RN memoizes a view's
+  // animated props on the identity of the nodes driving them, and a fresh
+  // interpolation restores the view's default opacity for a frame as the old
+  // node detaches. The hold re-renders every second, which would land those
+  // resets mid-crossfade.
+  const headlineOpacity = useMemo(
+    () =>
+      transition.interpolate({
+        inputRange: [0, 0.45, 1],
+        outputRange: [0, 0.3, 1],
+      }),
+    [transition],
+  );
 
   const camera = heartRate.camera;
 
@@ -171,16 +200,15 @@ export const DailyBreathHoldPresentation = forwardRef<
   // The hold's timer is keyed on the phase, not the second, so it counts up
   // without re-fading; the cycle counter below stays on the live phase because
   // fading it every breath turns a quiet line into a flicker.
-  const { displayPhase, opacity: stageOpacity } = usePhaseCrossfade(phase);
+  const { displayPhase, opacity: stageOpacity } = usePhaseCrossfade(phase, {
+    fadeKey: headlineFadeKey(phase),
+    holdMs: Math.min(prepInhaleSeconds, prepExhaleSeconds) * 1000,
+  });
   const displayHold = displayPhase === 'hold';
 
   const headline = displayHold
     ? formatHoldTime(holdSeconds)
-    : displayPhase === 'preExhale'
-      ? 'Exhale'
-      : displayPhase === 'preInhale' || displayPhase === 'inhale'
-        ? 'Inhale'
-        : '';
+    : PHASE_HEADLINES[displayPhase];
   const subline = phase === 'inhale'
       ? 'Last breath in'
       : isBreathHoldBreathingPhase(phase) && prepCycle > 0
