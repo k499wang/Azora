@@ -162,7 +162,8 @@ The 4px scale in `src/theme/spacing.ts`: `xs 4 · sm 8 · md 16 · mdPlus 20 ·
 lg 24 · xl 32 · 2xl 40 · 3xl 48 · 4xl 56 · 5xl 64 · 6xl 80 · 7xl 96`.
 
 Screen margin is `padding.screen.horizontal` (18) and `padding.screen.vertical`
-(32). Section gaps use `margin.sectionGap` (32). Card padding is `spacing.md`.
+(32). Section gaps use `margin.sectionGap` (40). A section title sits 24pt
+above its content (`spacing.lg`). Card padding is `spacing.md`.
 Functional layouts stay strongly aligned; asymmetry is reserved for intentional
 illustration compositions.
 

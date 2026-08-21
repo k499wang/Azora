@@ -291,7 +291,7 @@ export default function ShareableResultScreen({
             <View style={[styles.heroCard, { backgroundColor: hue.base }]}>
               <BlobCharacter
                 character={BREATH_HOLD_STYLE.character}
-                faceExpression="energy"
+                faceExpression="cheer"
                 size={HERO_BLOB_SIZE}
                 bodyColor={hue.soft}
                 faceColor={hue.ink}

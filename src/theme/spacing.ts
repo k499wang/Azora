@@ -34,9 +34,11 @@ export const padding = {
 } as const;
 
 export const margin = {
-  sectionGap: spacing.xl,
+  // Generous section rhythm: 40px between sections, 24px under a section
+  // title. Kept wider than the itemGap so sections read as distinct blocks.
+  sectionGap: spacing['2xl'],
   resultSection: spacing.lg,
-  itemGap: spacing.md,
+  itemGap: spacing.lg,
   textGap: spacing.sm,
   tightGap: spacing.xs,
 } as const;

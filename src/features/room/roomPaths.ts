@@ -19,6 +19,7 @@
  */
 import { PaintStyle, Skia, type SkPaint, type SkPath } from '@shopify/react-native-skia';
 import { DECOR, PAINT_ORDER, ROOM_FRAME } from './RoomScene';
+import { colors } from '../../theme/colors';
 import type { DayKey, FrameHue, Picks, Poly } from './RoomScene';
 
 /**
@@ -141,4 +142,70 @@ function decorationPolys(day: DayKey, option: string | undefined) {
 
 export function framePaths(hue: FrameHue): PaintedPath[] {
   return paintedPaths(ROOM_FRAME[hue]);
+}
+
+/**
+ * The slot the next room will stand in.
+ *
+ * Deliberately not drawn like a room: a dashed outline over a barely-there
+ * fill, so the pyramid reads as having somewhere to grow without the empty
+ * slot competing with the rooms that are actually furnished. The stroke and
+ * dash are in viewBox units like everything else, so they thin out with the
+ * rest of the artwork as you stand back instead of staying a fixed hairline.
+ *
+ * Built once — there is only ever one of these on screen.
+ */
+const GHOST_HEX = '0,-180 -155.9,-90 -155.9,90 0,180 155.9,90 155.9,-90';
+
+/**
+ * Lighter than the frame a real room carries, and derived from it rather than
+ * guessed at, so the empty slot stays in proportion with the rooms around it
+ * however the frame is redrawn — a slot waiting to be filled should not draw
+ * the eye harder than the rooms that already are.
+ */
+const GHOST_WEIGHT = 0.6;
+const GHOST_STROKE = (ROOM_FRAME.sky[0].w ?? 14) * GHOST_WEIGHT;
+
+/**
+ * Every side of the hexagon is exactly 180 units long. A dash period that
+ * divides 180 therefore reaches all six corners at the same point in the
+ * pattern, and starting half a dash in centres one on every vertex — otherwise
+ * a corner falls mid-dash here and in a gap there, and the outline reads as
+ * uneven even though the stroke never changes.
+ */
+const GHOST_SIDE = 180;
+const GHOST_DASHES_PER_SIDE = 4;
+const GHOST_PERIOD = GHOST_SIDE / GHOST_DASHES_PER_SIDE;
+/** two parts ink to one part air */
+const GHOST_DASH = (GHOST_PERIOD * 2) / 3;
+
+let ghost: PaintedPath[] | null = null;
+
+export function ghostPaths(): PaintedPath[] {
+  if (ghost != null) return ghost;
+
+  const path = toPath([{ p: GHOST_HEX }], 0, 0);
+
+  const fill = Skia.Paint();
+  fill.setAntiAlias(true);
+  fill.setColor(Skia.Color(colors.neutral[100]));
+
+  const outline = Skia.Paint();
+  outline.setAntiAlias(true);
+  outline.setColor(Skia.Color(colors.border.strong));
+  outline.setStyle(PaintStyle.Stroke);
+  outline.setStrokeWidth(GHOST_STROKE);
+  outline.setPathEffect(
+    Skia.PathEffect.MakeDash(
+      [GHOST_DASH, GHOST_PERIOD - GHOST_DASH],
+      GHOST_DASH / 2,
+    ),
+  );
+
+  ghost = [
+    { path, paint: fill },
+    { path, paint: outline },
+  ];
+
+  return ghost;
 }

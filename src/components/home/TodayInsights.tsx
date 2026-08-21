@@ -150,7 +150,7 @@ export default function TodayInsights({
 
 const styles = StyleSheet.create({
   page: {
-    gap: spacing.md,
+    gap: spacing.lg,
   },
   title: {
     ...typography.title.title3,

@@ -1,7 +1,6 @@
 import { Text } from '../../common/Text';
 import { useState } from 'react';
 import {
-  Pressable,
   ScrollView,
   StyleSheet,
   useWindowDimensions,
@@ -10,10 +9,13 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Device from 'expo-device';
 import { useNavigation } from '@react-navigation/native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../../theme/colors';
 import { typography, fonts } from '../../../theme/typography';
 import { spacing, padding } from '../../../theme/spacing';
 import ChunkyButton from '../../common/ChunkyButton';
+import GlassIconButton from '../../common/GlassIconButton';
+import { SESSION_GLASS_BUTTON_SIZE } from '../../../features/exercise/shared/components/SessionGlassButton';
 import { isShortScreen } from '../../../theme/breakpoints';
 
 /** Slightly taller than the standard primary, matching this flow's footer. */
@@ -70,20 +72,21 @@ export function DefaultInstructionScreen({ onNext, onCancel }: SetupScreenProps)
   };
 
   return (
-    <View
-      style={[
-        styles.container,
-        { paddingTop: insets.top + spacing.md },
-      ]}
-    >
-      <Pressable
-        accessibilityRole="button"
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+      {/* Matches the floating close on the result screens: absolute, above
+          everything, with the scroll content clearing below it. */}
+      <GlassIconButton
+        accessibilityLabel="Close"
+        size={SESSION_GLASS_BUTTON_SIZE}
+        style={[
+          styles.floatingAction,
+          styles.floatingClose,
+          { top: insets.top + padding.screen.vertical },
+        ]}
         onPress={onCancel}
-        hitSlop={10}
-        style={styles.cancelButton}
       >
-        <Text style={styles.cancelText}>Cancel</Text>
-      </Pressable>
+        <MaterialCommunityIcons name="close" size={20} color={colors.text.secondary} />
+      </GlassIconButton>
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
@@ -107,10 +110,9 @@ export function DefaultInstructionScreen({ onNext, onCancel }: SetupScreenProps)
         )}
 
         <View style={styles.stepsSection}>
-          <Text style={styles.sectionLabel}>How to measure</Text>
           <HeartRatePlacementStepsCard
             steps={placementGuidance.steps}
-            appearance="plain"
+            appearance="card"
             textSize={compact ? 'default' : 'large'}
           />
         </View>
@@ -141,18 +143,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: padding.screen.horizontal,
     backgroundColor: colors.background.primary,
   },
-  cancelButton: {
-    alignSelf: 'flex-start',
-    paddingVertical: spacing.sm,
-    marginBottom: spacing.xs,
+  floatingAction: {
+    position: 'absolute',
+    zIndex: 2,
   },
-  cancelText: {
-    ...typography.body.medium,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    color: colors.primary.blue600,
+  floatingClose: {
+    left: padding.screen.horizontal,
   },
   scrollContent: {
+    paddingTop: padding.screen.vertical + SESSION_GLASS_BUTTON_SIZE,
     paddingBottom: spacing.lg,
   },
   title: {
@@ -160,7 +159,8 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semibold,
     fontWeight: '600',
     color: colors.text.primary,
-    textAlign: 'left',
+    textAlign: 'center',
+    marginTop: spacing.xs,
   },
   titleCompact: {
     ...typography.title.title2,
@@ -182,13 +182,6 @@ const styles = StyleSheet.create({
   },
   stepsSection: {
     marginTop: spacing.lg,
-    gap: spacing.sm,
-  },
-  sectionLabel: {
-    ...typography.label.detail,
-    fontFamily: fonts.semibold,
-    fontWeight: '600',
-    color: colors.text.secondary,
   },
   footer: {
     paddingTop: spacing.sm,
