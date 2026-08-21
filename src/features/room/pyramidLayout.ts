@@ -21,6 +21,9 @@ const HEX_HALF_H = 180;
 /** flat-to-flat: the horizontal distance between two rooms in the same row */
 export const HEX_W = HEX_HALF_W * 2;
 
+/** vertex to vertex: the full height of a single hexagon */
+export const HEX_H = HEX_HALF_H * 2;
+
 /**
  * The vertical distance between rows. Three quarters of the hexagon's height,
  * not all of it — each row nests into the notches of the one above, which is
@@ -137,4 +140,24 @@ export function fitToViewport(
     x: viewportWidth / 2 - (bounds.minX + bounds.width / 2) * scale,
     y: viewportHeight / 2 - (bounds.minY + bounds.height / 2) * scale,
   };
+}
+
+/**
+ * The same box, opened out on every side.
+ *
+ * `pyramidBounds` measures hexagons, and a room is not drawn entirely inside
+ * its own: the frame stroke is centred on the outline so half of it falls
+ * beyond, and the miter where two sides meet at 120 degrees reaches half again
+ * as far. Anything that crops to the bare bounds therefore cuts the frame off
+ * every room around the pyramid's edge, worst at the corners. A room's viewBox
+ * already reserves the room for this — it is why it is bigger than the hexagon
+ * — so that reserve is what callers pass here.
+ */
+export function expandBounds(bounds: Bounds, x: number, y: number): Bounds {
+  const minX = bounds.minX - x;
+  const maxX = bounds.maxX + x;
+  const minY = bounds.minY - y;
+  const maxY = bounds.maxY + y;
+
+  return { minX, minY, maxX, maxY, width: maxX - minX, height: maxY - minY };
 }

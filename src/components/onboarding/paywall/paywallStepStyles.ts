@@ -187,30 +187,28 @@ export const paywallStepStyles = StyleSheet.create({
     alignItems: 'center',
     width: 38,
   },
-  timelineIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    alignItems: 'center',
-    justifyContent: 'center',
+  timelineDot: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     backgroundColor: colors.primary.blue600,
     zIndex: 1,
   },
-  timelineIconUpcoming: {
-    backgroundColor: colors.neutral[200],
+  timelineDotUpcoming: {
+    backgroundColor: colors.neutral[300],
   },
   timelineLine: {
     width: 16,
     flex: 1,
     minHeight: 44,
-    marginTop: -6,
-    marginBottom: -6,
+    marginTop: -12,
+    marginBottom: -12,
     backgroundColor: colors.primary.blue400,
   },
   timelineTail: {
     width: 16,
     flex: 1,
-    marginTop: -6,
+    marginTop: -12,
     backgroundColor: colors.primary.blue400,
   },
   timelineLineUpcoming: {

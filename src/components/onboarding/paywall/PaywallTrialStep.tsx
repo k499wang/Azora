@@ -1,11 +1,8 @@
 import { Text } from '../../common/Text';
 import { View } from 'react-native';
-import { colors } from '../../../theme/colors';
-import Icon, { type IconName } from '../../common/icons/Icon';
 import { paywallStepStyles as styles } from './paywallStepStyles';
 
 interface TimelineStepProps {
-  icon: IconName;
   label: string;
   body: string;
   /** Steps that haven't happened yet read greyed out rather than brand blue. */
@@ -16,7 +13,6 @@ interface TimelineStepProps {
 }
 
 function TimelineStep({
-  icon,
   label,
   body,
   upcoming = false,
@@ -26,13 +22,7 @@ function TimelineStep({
   return (
     <View style={styles.timelineRow}>
       <View style={styles.timelineRail}>
-        <View style={[styles.timelineIcon, upcoming && styles.timelineIconUpcoming]}>
-          <Icon
-            name={icon}
-            size={20}
-            color={upcoming ? colors.text.tertiary : colors.neutral[0]}
-          />
-        </View>
+        <View style={[styles.timelineDot, upcoming && styles.timelineDotUpcoming]} />
         {showLine ? (
           <View
             style={[styles.timelineLine, upcoming && styles.timelineLineUpcoming]}
@@ -70,18 +60,15 @@ export function PaywallTrialStep({
   const steps: Array<Omit<TimelineStepProps, 'showLine'>> = hasAnnualTrial
     ? [
         {
-          icon: 'unlock',
           label: 'Day 1: Today',
           body: 'Unlock all app exercises like heart insights and your personalized plan.',
         },
         {
-          icon: 'bell',
           label: `Day ${reminderDays}: Reminder`,
           body: "We'll send you a reminder that your trial is ending soon.",
           upcoming: true,
         },
         {
-          icon: 'star',
           label: `Day ${billingDay}: Billing starts`,
           body: "You'll be charged unless you cancel anytime before.",
           upcoming: true,
@@ -89,17 +76,14 @@ export function PaywallTrialStep({
       ]
     : [
         {
-          icon: 'unlock',
           label: 'Today',
           body: 'Unlock all app exercises like heart insights and your personalized plan.',
         },
         {
-          icon: 'timer',
           label: 'Anytime',
           body: 'Change or cancel your plan whenever you want, no questions asked.',
         },
         {
-          icon: 'heart',
           label: 'Welcome back',
           body: 'Your past progress and insights stay with you whenever you return.',
         },
