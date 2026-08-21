@@ -10,7 +10,7 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
-import { padding, spacing } from '../theme/spacing';
+import { margin, padding, spacing } from '../theme/spacing';
 import { fonts, typography } from '../theme/typography';
 import { Text } from '../components/common/Text';
 import AppTopBar from '../components/common/AppTopBar';
@@ -322,8 +322,8 @@ const styles = StyleSheet.create({
   },
   section: {
     paddingHorizontal: padding.screen.horizontal,
-    marginTop: spacing.md,
-    gap: spacing.sm,
+    marginTop: margin.sectionGap,
+    gap: spacing.lg,
   },
   sectionLink: {
     flexDirection: 'row',
@@ -335,9 +335,9 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semibold,
     color: colors.text.brand,
   },
-  sectionBody: {
-    marginTop: spacing.xs,
-  },
+  // The section gap above already spaces the body below its header; the
+  // wrapper stays only so headerless sections keep the same structure.
+  sectionBody: {},
   surveyBannerWrap: {
     paddingHorizontal: padding.screen.horizontal,
     marginTop: spacing.md,

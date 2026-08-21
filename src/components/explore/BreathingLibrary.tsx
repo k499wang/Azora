@@ -59,7 +59,7 @@ const styles = StyleSheet.create({
     gap: spacing.lg,
   },
   exerciseGroup: {
-    gap: spacing.md,
+    gap: spacing.lg,
   },
   headerWrap: {
     paddingHorizontal: padding.screen.horizontal,

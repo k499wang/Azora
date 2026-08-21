@@ -461,7 +461,7 @@ const styles = StyleSheet.create({
   sectionHeaderWrap: {
     width: '100%',
     marginTop: margin.resultSection,
-    marginBottom: spacing.sm,
+    marginBottom: spacing.md,
   },
   proStatsColumn: {
     width: '100%',

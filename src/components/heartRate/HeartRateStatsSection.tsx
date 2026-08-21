@@ -118,7 +118,7 @@ export default function HeartRateStatsSection({
 
 const styles = StyleSheet.create({
   section: {
-    gap: spacing.md,
+    gap: spacing.lg,
   },
   headerWrap: {
     paddingHorizontal: padding.screen.horizontal,

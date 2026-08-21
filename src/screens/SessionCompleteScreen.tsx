@@ -311,7 +311,7 @@ export default function SessionCompleteScreen({
             <View style={[styles.heroCard, { backgroundColor: hue.base }]}>
               <BlobCharacter
                 character={categoryStyle.character}
-                faceExpression="energy"
+                faceExpression="cheer"
                 size={HERO_BLOB_SIZE}
                 bodyColor={hue.soft}
                 faceColor={hue.ink}

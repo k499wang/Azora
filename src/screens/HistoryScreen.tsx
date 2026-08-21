@@ -346,7 +346,7 @@ const styles = StyleSheet.create({
     color: colors.text.tertiary,
   },
   section: {
-    gap: spacing.md,
+    gap: spacing.lg,
   },
   rows: {
     gap: spacing.sm,

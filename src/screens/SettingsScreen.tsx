@@ -4,7 +4,7 @@ import { Alert, Linking, Pressable, ScrollView, StyleSheet, Switch, View } from 
 import * as Device from 'expo-device';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
-import { padding, spacing } from '../theme/spacing';
+import { margin, padding, spacing } from '../theme/spacing';
 import { typography, fonts } from '../theme/typography';
 import AppTopBar from '../components/common/AppTopBar';
 import SectionHeader from '../components/common/SectionHeader';
@@ -342,12 +342,12 @@ const styles = StyleSheet.create({
   },
   section: {
     paddingHorizontal: padding.screen.horizontal,
-    marginTop: spacing.lg,
-    gap: spacing.sm,
+    marginTop: margin.sectionGap,
+    gap: spacing.lg,
   },
-  sectionBody: {
-    marginTop: spacing.xs,
-  },
+  // The section gap above already spaces the body below its header; the
+  // wrapper stays only so headerless sections keep the same structure.
+  sectionBody: {},
   headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',

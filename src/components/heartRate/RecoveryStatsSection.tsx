@@ -80,7 +80,7 @@ export default function RecoveryStatsSection({
 
 const styles = StyleSheet.create({
   section: {
-    gap: spacing.md,
+    gap: spacing.lg,
   },
   headerWrap: {
     paddingHorizontal: padding.screen.horizontal,

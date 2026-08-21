@@ -40,28 +40,33 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         <HomeRoom room={roomClaim.room} progress={roomClaim.progress} />
 
         <View style={styles.bodySection}>
-          <RoomProgressCard
-            progress={roomClaim.progress}
-            dailies={dailies}
-            isLoading={roomClaim.isLoading}
-          />
-          <TodaysDailiesSection
-            technique={dailies.guidedTechnique}
-            techniqueLoading={dailies.guidedTechniqueLoading}
-            sessionTime={dailyPlanSchedule.actions.session}
-            handPickedTechnique={dailies.handPickedTechnique}
-            handPickedTechniqueLoading={dailies.handPickedTechniqueLoading}
-            handPickedTime={dailyPlanSchedule.actions.handPicked}
-            breathHoldTime={dailyPlanSchedule.actions.checkIn}
-            guidedExerciseCompleted={dailies.guidedCompleted}
-            handPickedExerciseCompleted={dailies.handPickedCompleted}
-            breathHoldCompleted={dailies.breathHoldCompleted}
-            exerciseAccessAllowed={accessAllowed}
-            onPressGuidedExercise={() => start('guided')}
-            onPressHandPickedExercise={() => start('handPicked')}
-            onPressBreathHold={() => start('breathHold')}
-            onPressHistory={() => navigation.navigate('History')}
-          />
+          {/* The progress card belongs to the dailies it tracks, so it sits
+              tightly above the section title rather than floating at the full
+              section gap. */}
+          <View style={styles.dailiesGroup}>
+            <RoomProgressCard
+              progress={roomClaim.progress}
+              dailies={dailies}
+              isLoading={roomClaim.isLoading}
+            />
+            <TodaysDailiesSection
+              technique={dailies.guidedTechnique}
+              techniqueLoading={dailies.guidedTechniqueLoading}
+              sessionTime={dailyPlanSchedule.actions.session}
+              handPickedTechnique={dailies.handPickedTechnique}
+              handPickedTechniqueLoading={dailies.handPickedTechniqueLoading}
+              handPickedTime={dailyPlanSchedule.actions.handPicked}
+              breathHoldTime={dailyPlanSchedule.actions.checkIn}
+              guidedExerciseCompleted={dailies.guidedCompleted}
+              handPickedExerciseCompleted={dailies.handPickedCompleted}
+              breathHoldCompleted={dailies.breathHoldCompleted}
+              exerciseAccessAllowed={accessAllowed}
+              onPressGuidedExercise={() => start('guided')}
+              onPressHandPickedExercise={() => start('handPicked')}
+              onPressBreathHold={() => start('breathHold')}
+              onPressHistory={() => navigation.navigate('History')}
+            />
+          </View>
           <ExtraPracticeSection
             recommendedTechniqueId={dailies.guidedTechnique?.id ?? null}
             excludedTechniqueIds={[
@@ -92,6 +97,9 @@ const styles = StyleSheet.create({
   },
   bodySection: {
     paddingHorizontal: padding.screen.horizontal,
+    gap: margin.sectionGap,
+  },
+  dailiesGroup: {
     gap: spacing.md,
   },
 });

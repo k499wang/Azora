@@ -9,6 +9,11 @@ export type CharacterId =
   | 'balance'
   | 'hold';
 
+// `character` is identity and stays closed at the six categories, because
+// CATEGORY_STYLE and TaskCardDecor switch on it exhaustively. Feelings that are
+// not a category live here instead, so they never need a hue or a decor shape.
+export type FaceExpression = CharacterId | 'cheer' | 'rest';
+
 // Deliberately not an ellipse — the control points are uneven so the body reads
 // as a hand-drawn blob rather than a shape primitive.
 const BODY_PATH =
@@ -18,13 +23,19 @@ const STROKE = 4;
 
 interface BlobCharacterProps {
   character: CharacterId;
-  faceExpression?: CharacterId;
+  faceExpression?: FaceExpression;
   size: number;
   bodyColor: string;
   faceColor: string;
 }
 
-function Face({ character, faceColor }: { character: CharacterId; faceColor: string }) {
+function Face({
+  expression,
+  faceColor,
+}: {
+  expression: FaceExpression;
+  faceColor: string;
+}) {
   const stroke = {
     stroke: faceColor,
     strokeWidth: STROKE,
@@ -32,7 +43,7 @@ function Face({ character, faceColor }: { character: CharacterId; faceColor: str
     fill: 'none',
   };
 
-  switch (character) {
+  switch (expression) {
     case 'calm':
       return (
         <G>
@@ -83,6 +94,22 @@ function Face({ character, faceColor }: { character: CharacterId; faceColor: str
           <Path d="M 33,52 q 6,-7 12,0" {...stroke} />
           <Path d="M 55,52 q 6,-7 12,0" {...stroke} />
           <Circle cx={50} cy={66} r={4} fill={faceColor} />
+        </G>
+      );
+    case 'cheer':
+      return (
+        <G>
+          <Path d="M 32,56 q 7,-10 14,0" {...stroke} />
+          <Path d="M 54,56 q 7,-10 14,0" {...stroke} />
+          <Path d="M 37,64 a 13,13 0 0 0 26,0 Z" fill={faceColor} />
+        </G>
+      );
+    case 'rest':
+      return (
+        <G>
+          <Path d="M 34,55 q 5.5,4 11,0" {...stroke} />
+          <Path d="M 55,55 q 5.5,4 11,0" {...stroke} />
+          <Path d="M 43,65 q 7,5 14,0" {...stroke} />
         </G>
       );
   }
@@ -148,7 +175,7 @@ function BlobCharacter({
       <Ellipse cx={50} cy={89} rx={26} ry={4.5} fill={bodyColor} fillOpacity={0.18} />
       <Accessory character={character} bodyColor={bodyColor} />
       <Path d={BODY_PATH} fill={bodyColor} />
-      <Face character={faceExpression} faceColor={faceColor} />
+      <Face expression={faceExpression} faceColor={faceColor} />
     </Svg>
   );
 }

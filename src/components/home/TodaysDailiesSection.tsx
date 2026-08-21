@@ -24,9 +24,9 @@ import {
 } from '../../services/dailyPlan/dailyPlanScheduleCore';
 import { DEFAULT_DAILY_PLAN_SCHEDULE } from '../../services/dailyPlan/types';
 
-const TIMELINE_COLUMN_WIDTH = 32;
-const TIMELINE_MARKER_SIZE = 18;
-const MARKER_ICON_SIZE = 13;
+const TIMELINE_COLUMN_WIDTH = 40;
+const TIMELINE_MARKER_SIZE = 22;
+const MARKER_ICON_SIZE = 14;
 const TIMELINE_RAIL_WIDTH = 6;
 const TIMELINE_ROW_HEIGHT = 144;
 const TASK_CONTENT_SIZE = 112;
@@ -161,7 +161,7 @@ function DailyTaskRow({
             />
             <BlobCharacter
               character={style.character}
-              faceExpression={faceExpression}
+              faceExpression={completed ? 'rest' : faceExpression}
               size={TASK_CONTENT_SIZE}
               bodyColor={style.hue.soft}
               faceColor={style.hue.ink}
@@ -300,7 +300,7 @@ export default function TodaysDailiesSection({
 
 const styles = StyleSheet.create({
   section: {
-    gap: spacing.md,
+    gap: spacing.lg,
   },
   historyLink: {
     flexDirection: 'row',

@@ -240,7 +240,7 @@ function DailyCompleteSheet({
                 <Pop delay={BEAT.blob}>
                   <BlobCharacter
                     character={character}
-                    faceExpression="energy"
+                    faceExpression="cheer"
                     size={BLOB_SIZE}
                     bodyColor={hue.soft}
                     faceColor={hue.ink}

@@ -84,10 +84,7 @@ export default function ExtraPracticeSection({
 
 const styles = StyleSheet.create({
   section: {
-    gap: spacing.md,
-    // One section apart from Today's Dailies: the 16px container gap plus this
-    // margin lands on the 32px sectionGap, matching the design system.
-    marginTop: spacing.lg,
+    gap: spacing.lg,
   },
   seeAll: {
     flexDirection: 'row',
