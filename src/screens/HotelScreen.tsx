@@ -2,16 +2,17 @@ import { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SafeAreaView } from 'react-native-screens/experimental';
-import AppTopBar from '../components/common/AppTopBar';
+import GlassIconButton from '../components/common/GlassIconButton';
+import Icon from '../components/common/icons/Icon';
 import PyramidCanvas from '../features/room/PyramidCanvas';
 import type { PyramidRoom } from '../features/room/PyramidCanvas';
-import { useOpenedFromLab } from '../features/room/useOpenedFromLab';
 import { useHotelOverride } from '../features/room/devHotelOverride';
 import { toFrameHue, toPicks } from '../features/room/roomPicks';
 import { roomShellPolys } from '../features/room/roomShells';
 import { useRoomsQuery } from '../queries/room/useRoomsQuery';
 import { useAuthStore } from '../stores/authStore';
 import { colors } from '../theme/colors';
+import { spacing } from '../theme/spacing';
 import type {
   HotelPreviewScreenProps,
   HotelScreenProps,
@@ -30,6 +31,11 @@ import type {
  * not use `RoomScreenLayout`: that layout exists to hold a title and a still
  * room at the same height on every screen, and the hotel has neither. A blank
  * header here would only push the canvas down the screen.
+ *
+ * Reached from the room on Home rather than a tab, and pushed over the tab bar
+ * rather than under it — a bar across the bottom would sit on the rows of the
+ * pyramid nearest the viewer. The way back is a floating button instead of a
+ * header, for the same reason: nothing here may cost the canvas height.
  */
 /**
  * Floor 1, before the first object lands in it.
@@ -51,11 +57,13 @@ const FIRST_ROOM: PyramidRoom[] = [
   },
 ];
 
+const BACK_ICON_SIZE = 20;
+
 interface HotelContentProps {
-  fromLab: boolean;
+  onBack: () => void;
 }
 
-function HotelContent({ fromLab }: HotelContentProps) {
+function HotelContent({ onBack }: HotelContentProps) {
   const insets = useSafeAreaInsets();
   const userId = useAuthStore((state) => state.user?.id ?? null);
   const roomsQuery = useRoomsQuery(userId);
@@ -83,30 +91,37 @@ function HotelContent({ fromLab }: HotelContentProps) {
 
   return (
     <>
-      {fromLab ? (
-        <AppTopBar showBack showAvatar={false} showStreak={false} />
-      ) : (
-        <View style={{ height: insets.top }} />
-      )}
+      <View style={{ height: insets.top }} />
 
       {waiting ? null : <PyramidCanvas rooms={pyramidRooms} />}
+
+      {/* Level with the canvas's own zoom controls, which start at the same
+          inset on the other side. */}
+      <View style={[styles.back, { top: insets.top + spacing.sm }]}>
+        <GlassIconButton accessibilityLabel="Back" onPress={onBack}>
+          <Icon
+            name="chevron-left"
+            size={BACK_ICON_SIZE}
+            color={colors.text.primary}
+          />
+        </GlassIconButton>
+      </View>
     </>
   );
 }
 
-export default function HotelScreen(_: HotelScreenProps) {
+export default function HotelScreen({ navigation }: HotelScreenProps) {
   return (
     <SafeAreaView style={styles.screen} edges={{ bottom: true }}>
-      <HotelContent fromLab={false} />
+      <HotelContent onBack={() => navigation.goBack()} />
     </SafeAreaView>
   );
 }
 
-export function HotelPreviewScreen(_: HotelPreviewScreenProps) {
-  const fromLab = useOpenedFromLab();
+export function HotelPreviewScreen({ navigation }: HotelPreviewScreenProps) {
   return (
     <View style={styles.screen}>
-      <HotelContent fromLab={fromLab} />
+      <HotelContent onBack={() => navigation.goBack()} />
     </View>
   );
 }
@@ -115,5 +130,9 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: colors.background.canvas,
+  },
+  back: {
+    position: 'absolute',
+    left: spacing.md,
   },
 });

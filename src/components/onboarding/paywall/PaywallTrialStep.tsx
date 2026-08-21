@@ -1,10 +1,13 @@
 import { Text } from '../../common/Text';
 import { View } from 'react-native';
+import Icon, { type IconName } from '../../common/icons/Icon';
+import { colors } from '../../../theme/colors';
 import { paywallStepStyles as styles } from './paywallStepStyles';
 
 interface TimelineStepProps {
   label: string;
   body: string;
+  icon: IconName;
   /** Steps that haven't happened yet read greyed out rather than brand blue. */
   upcoming?: boolean;
   showLine?: boolean;
@@ -15,6 +18,7 @@ interface TimelineStepProps {
 function TimelineStep({
   label,
   body,
+  icon,
   upcoming = false,
   showLine = false,
   showTail = false,
@@ -22,7 +26,9 @@ function TimelineStep({
   return (
     <View style={styles.timelineRow}>
       <View style={styles.timelineRail}>
-        <View style={[styles.timelineDot, upcoming && styles.timelineDotUpcoming]} />
+        <View style={[styles.timelineDot, upcoming && styles.timelineDotUpcoming]}>
+          <Icon name={icon} size={16} color={colors.neutral[0]} />
+        </View>
         {showLine ? (
           <View
             style={[styles.timelineLine, upcoming && styles.timelineLineUpcoming]}
@@ -62,15 +68,18 @@ export function PaywallTrialStep({
         {
           label: 'Day 1: Today',
           body: 'Unlock all app exercises like heart insights and your personalized plan.',
+          icon: 'unlock',
         },
         {
           label: `Day ${reminderDays}: Reminder`,
           body: "We'll send you a reminder that your trial is ending soon.",
+          icon: 'bell',
           upcoming: true,
         },
         {
           label: `Day ${billingDay}: Billing starts`,
           body: "You'll be charged unless you cancel anytime before.",
+          icon: 'calendar',
           upcoming: true,
         },
       ]
@@ -78,14 +87,17 @@ export function PaywallTrialStep({
         {
           label: 'Today',
           body: 'Unlock all app exercises like heart insights and your personalized plan.',
+          icon: 'unlock',
         },
         {
           label: 'Anytime',
           body: 'Change or cancel your plan whenever you want, no questions asked.',
+          icon: 'calendar',
         },
         {
           label: 'Welcome back',
           body: 'Your past progress and insights stay with you whenever you return.',
+          icon: 'heart',
         },
       ];
 
