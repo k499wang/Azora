@@ -1,5 +1,5 @@
 import { Text } from '../../../../components/common/Text';
-import { forwardRef, useEffect, useRef } from 'react';
+import { forwardRef, useEffect, useMemo, useRef } from 'react';
 import {
   Animated,
   Easing,
@@ -93,6 +93,19 @@ const PHASE_LABELS: Record<GuidedBreathingPhase, string> = {
   done: 'Well done',
 };
 
+// Bellows Breath runs one-second phases, so the crossfade has to know how
+// little time a cue is actually on screen. Zero-length phases never render.
+function shortestPhaseMs(pattern: BreathingTechnique['pattern']): number {
+  const durations = [
+    pattern.inhale,
+    pattern.holdIn,
+    pattern.exhale,
+    pattern.holdOut,
+  ].filter((seconds) => seconds > 0);
+
+  return Math.min(...durations) * 1000;
+}
+
 const PHASE_FACES: Record<GuidedBreathingPhase, BreathFace> = {
   idle: 'resting',
   intro: 'resting',
@@ -148,12 +161,24 @@ export const GuidedBreathingPresentation = forwardRef<
     return () => animation.stop();
   }, [isIdle, transition]);
 
-  const headlineOpacity = transition.interpolate({
-    inputRange: [0, 0.45, 1],
-    outputRange: [0, 0.3, 1],
-  });
+  // Built once per animated source, never per render: RN memoizes a view's
+  // animated props on the identity of the nodes driving them, and a fresh
+  // interpolation restores the view's default opacity for a frame as the old
+  // node detaches. The session re-renders several times a second on its
+  // countdown and pulse, which would land those resets mid-crossfade.
+  const headlineOpacity = useMemo(
+    () =>
+      transition.interpolate({
+        inputRange: [0, 0.45, 1],
+        outputRange: [0, 0.3, 1],
+      }),
+    [transition],
+  );
 
-  const { displayPhase, opacity: stageOpacity } = usePhaseCrossfade(phase);
+  const { displayPhase, opacity: stageOpacity } = usePhaseCrossfade(phase, {
+    fadeKey: PHASE_LABELS[phase],
+    holdMs: shortestPhaseMs(technique.pattern),
+  });
 
   const camera = heartRate.camera;
 
@@ -162,9 +187,17 @@ export const GuidedBreathingPresentation = forwardRef<
     displayPhase === 'holdIn' ||
     displayPhase === 'exhale' ||
     displayPhase === 'holdOut';
+  // Only while the label is the one this count belongs to. Mid-crossfade the
+  // phase has already moved on, and the live count beside the outgoing
+  // instruction reads as a wrong cue.
   const countdown =
-    displayBreathing && remainingSeconds > 0 ? remainingSeconds : '';
-  const labelOpacity = Animated.multiply(headlineOpacity, stageOpacity);
+    displayBreathing && displayPhase === phase && remainingSeconds > 0
+      ? String(remainingSeconds)
+      : '';
+  const labelOpacity = useMemo(
+    () => Animated.multiply(headlineOpacity, stageOpacity),
+    [headlineOpacity, stageOpacity],
+  );
 
   return (
     <View style={styles.stage} pointerEvents="box-none">
@@ -214,9 +247,11 @@ export const GuidedBreathingPresentation = forwardRef<
                 {PHASE_LABELS[displayPhase]}
               </Text>
             ) : null}
-            {countdown ? (
+            {/* Holds its line through the crossfade, so clearing the count
+                cannot re-centre the instruction above it. */}
+            {displayBreathing ? (
               <Text style={[styles.countdown, { color: theme.textSecondary }]}>
-                {countdown}
+                {countdown === '' ? '\u00A0' : countdown}
               </Text>
             ) : null}
           </Animated.View>
