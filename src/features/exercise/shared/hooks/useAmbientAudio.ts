@@ -29,6 +29,9 @@ export function useAmbientAudio({ active }: UseAmbientAudioOptions) {
     [preferences.ambient],
   );
   const targetVolume = preferences.ambientVolume * audioMix.ambient.maxVolume;
+  // Background sound is off by default, and then there is no player to own and
+  // no reason to watch the app's foreground state on its behalf.
+  const hasAmbience = option?.asset != null;
 
   const playerRef = useRef<AudioPlayer | null>(null);
   const rampRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -37,18 +40,22 @@ export function useAmbientAudio({ active }: UseAmbientAudioOptions) {
   const effectiveActive = active && appActive;
 
   useEffect(() => {
+    if (!hasAmbience) return;
+
     setAudioModeAsync({
       playsInSilentMode: true,
       interruptionMode: 'mixWithOthers',
     }).catch(() => {});
-  }, []);
+  }, [hasAmbience]);
 
   useEffect(() => {
+    if (!hasAmbience) return;
+
     const sub = AppState.addEventListener('change', (state) => {
       setAppActive(state === 'active');
     });
     return () => sub.remove();
-  }, []);
+  }, [hasAmbience]);
 
   useEffect(() => {
     targetVolumeRef.current = targetVolume;

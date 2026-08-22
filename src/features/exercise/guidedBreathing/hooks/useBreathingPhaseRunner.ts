@@ -7,6 +7,10 @@ import {
 import { startHoldHaptics, stopHoldHaptics } from '../../../../native/holdHaptics';
 import type { BreathingPhase } from '../domain/breathingSessionTiming';
 
+// Long enough that the circle animation always lands first when it is running,
+// short enough that a phase which never reports back is not visibly stuck.
+const MOTION_FALLBACK_GRACE_MS = 250;
+
 export type { BreathingPhase } from '../domain/breathingSessionTiming';
 export type RunBreathingPhase = (
   phase: BreathingPhase,
@@ -24,6 +28,7 @@ export function useBreathingPhaseRunner({
   onPhaseChange,
 }: UseBreathingPhaseRunnerOptions) {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const motionFallbackRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const remainingSecondsRef = useRef(0);
   const runIdRef = useRef(0);
   const activePhaseRef = useRef<BreathingPhase | null>(null);
@@ -47,6 +52,13 @@ export function useBreathingPhaseRunner({
     }
   }, []);
 
+  const clearMotionFallback = useCallback(() => {
+    if (motionFallbackRef.current) {
+      clearTimeout(motionFallbackRef.current);
+      motionFallbackRef.current = null;
+    }
+  }, []);
+
   const addElapsedSeconds = useCallback((seconds: number) => {
     elapsedSecondsRef.current += seconds;
     setElapsedSeconds(elapsedSecondsRef.current);
@@ -63,6 +75,7 @@ export function useBreathingPhaseRunner({
       // and its fallback timer can never complete the same phase twice.
       runIdRef.current += 1;
       clearTimer();
+      clearMotionFallback();
 
       const remainingSeconds = Math.max(0, remainingSecondsRef.current);
       remainingSecondsRef.current = 0;
@@ -76,7 +89,26 @@ export function useBreathingPhaseRunner({
 
       onComplete();
     },
-    [addElapsedSeconds, clearTimer],
+    [addElapsedSeconds, clearMotionFallback, clearTimer],
+  );
+
+  // The circle animation is what normally completes a motion phase, but it
+  // declines to animate at all while its screen is unfocused and then never
+  // reports back. Without this the session would sit on that phase forever.
+  // completePhase invalidates the run before continuing, so whichever arrives
+  // first wins and the other is a no-op.
+  const armMotionFallback = useCallback(
+    (runId: number, remainingSeconds: number) => {
+      clearMotionFallback();
+      motionFallbackRef.current = setTimeout(
+        () => {
+          motionFallbackRef.current = null;
+          completePhase(runId);
+        },
+        remainingSeconds * 1000 + MOTION_FALLBACK_GRACE_MS,
+      );
+    },
+    [clearMotionFallback, completePhase],
   );
 
   const runPhase = useCallback(
@@ -142,6 +174,10 @@ export function useBreathingPhaseRunner({
             return;
           }
 
+          // Armed before the animation starts so a phase that completes
+          // immediately clears it rather than racing it.
+          armMotionFallback(runId, durationSeconds);
+
           const finish = () => completePhase(runId);
           if (phase === 'inhale') circle.expand(durationSeconds, finish);
           else circle.contract(durationSeconds, finish);
@@ -155,18 +191,19 @@ export function useBreathingPhaseRunner({
 
       startTimer(true);
     },
-    [addElapsedSeconds, circleRef, clearTimer, completePhase],
+    [addElapsedSeconds, armMotionFallback, circleRef, clearTimer, completePhase],
   );
 
   const pause = useCallback(() => {
     if (!activePhaseRef.current || !onCompleteRef.current) return;
 
     clearTimer();
+    clearMotionFallback();
     circleRef.current?.pause();
     stopInhaleVibration();
     stopHoldHaptics();
     setPaused(true);
-  }, [circleRef, clearTimer]);
+  }, [circleRef, clearMotionFallback, clearTimer]);
 
   const resume = useCallback(() => {
     const phase = activePhaseRef.current;
@@ -183,6 +220,7 @@ export function useBreathingPhaseRunner({
       const circle = circleRef.current;
       if (circle) {
         motionHandledByCircle = true;
+        armMotionFallback(runId, remainingSeconds);
         circle.resumeExpand(remainingSeconds, finish);
       }
       startInhaleVibration(remainingSeconds * 1000);
@@ -190,6 +228,7 @@ export function useBreathingPhaseRunner({
       const circle = circleRef.current;
       if (circle) {
         motionHandledByCircle = true;
+        armMotionFallback(runId, remainingSeconds);
         circle.resumeContract(remainingSeconds, finish);
       }
     } else {
@@ -216,7 +255,13 @@ export function useBreathingPhaseRunner({
         }
       }
     }, 1000);
-  }, [addElapsedSeconds, circleRef, clearTimer, completePhase]);
+  }, [
+    addElapsedSeconds,
+    armMotionFallback,
+    circleRef,
+    clearTimer,
+    completePhase,
+  ]);
 
   const resetElapsed = useCallback(() => {
     elapsedSecondsRef.current = 0;
@@ -230,13 +275,14 @@ export function useBreathingPhaseRunner({
   const disposeActivePhase = useCallback(() => {
     runIdRef.current += 1;
     clearTimer();
+    clearMotionFallback();
     circleRef.current?.pause();
     remainingSecondsRef.current = 0;
     activePhaseRef.current = null;
     onCompleteRef.current = null;
     stopInhaleVibration();
     stopHoldHaptics();
-  }, [circleRef, clearTimer]);
+  }, [circleRef, clearMotionFallback, clearTimer]);
 
   const cancel = useCallback(() => {
     disposeActivePhase();

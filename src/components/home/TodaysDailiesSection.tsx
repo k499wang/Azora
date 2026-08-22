@@ -33,8 +33,8 @@ const TIMELINE_COLUMN_WIDTH = 40;
 const TIMELINE_MARKER_SIZE = 22;
 const MARKER_ICON_SIZE = 14;
 const TIMELINE_RAIL_WIDTH = 6;
-const TIMELINE_ROW_HEIGHT = 144;
-const TASK_CONTENT_SIZE = 112;
+const TIMELINE_ROW_HEIGHT = 160;
+const TASK_CONTENT_SIZE = 128;
 // Oversized and bled off the corner so it reads as a watermark behind the copy,
 // matching the extra-practice shelf cards.
 const TASK_GLYPH_SIZE = 150;
