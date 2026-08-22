@@ -95,10 +95,12 @@ export function usePhaseChime(
     isActiveAppState(AppState.currentState),
   );
 
+  // Nothing below has anything to drive once the chime is set to none.
+  const hasChimes = inhaleAsset != null || exhaleAsset != null;
   const inhalePlayer = useAudioPlayer(inhaleAsset ?? null, CUE_PLAYER_OPTIONS);
   const exhalePlayer = useAudioPlayer(exhaleAsset ?? null, CUE_PLAYER_OPTIONS);
-  const inhaleLoaded = useAudioLoaded(inhalePlayer);
-  const exhaleLoaded = useAudioLoaded(exhalePlayer);
+  const inhaleLoaded = useAudioLoaded(inhalePlayer, inhaleAsset != null);
+  const exhaleLoaded = useAudioLoaded(exhalePlayer, exhaleAsset != null);
 
   const inhaleRampRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const exhaleRampRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -106,27 +108,33 @@ export function usePhaseChime(
   const exhalePlayRetryRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    if (!hasChimes) return;
+
     const sub = AppState.addEventListener('change', (s) =>
       setAppActive(isActiveAppState(s)),
     );
     return () => sub.remove();
-  }, []);
+  }, [hasChimes]);
 
   useEffect(() => {
+    if (!hasChimes) return;
+
     setAudioModeAsync({
       playsInSilentMode: true,
       interruptionMode: 'mixWithOthers',
     }).catch(() => {});
-  }, []);
+  }, [hasChimes]);
 
   useEffect(() => {
+    if (!hasChimes) return;
+
     safely(() => {
       inhalePlayer.loop = false;
       inhalePlayer.volume = 0;
       exhalePlayer.loop = false;
       exhalePlayer.volume = 0;
     });
-  }, [exhalePlayer, inhalePlayer]);
+  }, [exhalePlayer, hasChimes, inhalePlayer]);
 
   const fadeOut = useCallback(
     (
@@ -201,6 +209,8 @@ export function usePhaseChime(
   const effectiveKind = shouldPlay ? kind : null;
 
   useEffect(() => {
+    if (!hasChimes) return;
+
     if (effectiveKind === 'inhale') {
       fadeOut(exhalePlayer, exhaleRampRef, exhalePlayRetryRef);
       fadeIn(inhalePlayer, inhaleRampRef, inhalePlayRetryRef, audioMix.chime.inhale);
@@ -213,7 +223,7 @@ export function usePhaseChime(
     }
     fadeOut(inhalePlayer, inhaleRampRef, inhalePlayRetryRef);
     fadeOut(exhalePlayer, exhaleRampRef, exhalePlayRetryRef);
-  }, [effectiveKind, exhalePlayer, fadeIn, fadeOut, inhalePlayer]);
+  }, [effectiveKind, exhalePlayer, fadeIn, fadeOut, hasChimes, inhalePlayer]);
 
   useEffect(
     () => () => {

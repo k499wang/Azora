@@ -132,12 +132,17 @@ export function useBreathPhaseAudio(
   const [appActive, setAppActive] = useState(() =>
     isActiveAppState(AppState.currentState),
   );
+  // Voice cues are off by default, and then none of the machinery below has
+  // anything to drive: no status to watch, no app-state to track, and no
+  // players to stop and rewind on every phase change.
+  const hasVoiceCues =
+    inhaleAsset != null || exhaleAsset != null || holdAsset != null;
   const inhalePlayer = useAudioPlayer(inhaleAsset ?? null, CUE_PLAYER_OPTIONS);
   const exhalePlayer = useAudioPlayer(exhaleAsset ?? null, CUE_PLAYER_OPTIONS);
   const holdPlayer = useAudioPlayer(holdAsset ?? null, CUE_PLAYER_OPTIONS);
-  const inhaleLoaded = useAudioLoaded(inhalePlayer);
-  const exhaleLoaded = useAudioLoaded(exhalePlayer);
-  const holdLoaded = useAudioLoaded(holdPlayer);
+  const inhaleLoaded = useAudioLoaded(inhalePlayer, inhaleAsset != null);
+  const exhaleLoaded = useAudioLoaded(exhalePlayer, exhaleAsset != null);
+  const holdLoaded = useAudioLoaded(holdPlayer, holdAsset != null);
   const inhaleRampRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const exhaleRampRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const holdRampRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -151,21 +156,27 @@ export function useBreathPhaseAudio(
   });
 
   useEffect(() => {
+    if (!hasVoiceCues) return;
+
     const subscription = AppState.addEventListener('change', (nextState) => {
       setAppActive(isActiveAppState(nextState));
     });
 
     return () => subscription.remove();
-  }, []);
+  }, [hasVoiceCues]);
 
   useEffect(() => {
+    if (!hasVoiceCues) return;
+
     setAudioModeAsync({
       playsInSilentMode: true,
       interruptionMode: 'mixWithOthers',
     }).catch(() => {});
-  }, []);
+  }, [hasVoiceCues]);
 
   useEffect(() => {
+    if (!hasVoiceCues) return;
+
     safely(() => {
       inhalePlayer.loop = false;
       inhalePlayer.volume = 0;
@@ -174,7 +185,7 @@ export function useBreathPhaseAudio(
       holdPlayer.loop = false;
       holdPlayer.volume = 0;
     });
-  }, [exhalePlayer, holdPlayer, inhalePlayer]);
+  }, [exhalePlayer, hasVoiceCues, holdPlayer, inhalePlayer]);
 
   const fadeOut = useCallback(
     (
@@ -268,6 +279,7 @@ export function useBreathPhaseAudio(
   const effectivePhase = shouldPlayAudio ? phase : null;
 
   useEffect(() => {
+    if (!hasVoiceCues) return;
     if (!appActive || shouldPlayAudio || waitingForPhaseAudio) return;
 
     if (
@@ -303,6 +315,7 @@ export function useBreathPhaseAudio(
     exhaleLoaded,
     holdAsset,
     holdPlayer,
+    hasVoiceCues,
     holdLoaded,
     inhaleAsset,
     inhalePlayer,
@@ -312,6 +325,8 @@ export function useBreathPhaseAudio(
   ]);
 
   useEffect(() => {
+    if (!hasVoiceCues) return;
+
     if (waitingForPhaseAudio) {
       if (phase === 'inhale') {
         fadeOut(exhalePlayer, exhaleRampRef, exhalePlayRetryRef);
@@ -376,6 +391,7 @@ export function useBreathPhaseAudio(
     exhalePlayer,
     fadeIn,
     fadeOut,
+    hasVoiceCues,
     holdPlayer,
     inhalePlayer,
     phase,
@@ -383,6 +399,7 @@ export function useBreathPhaseAudio(
   ]);
 
   useEffect(() => {
+    if (!hasVoiceCues) return;
     if (shouldPlayAudio || waitingForPhaseAudio) return;
 
     clearRamp(inhaleRampRef);
@@ -396,6 +413,7 @@ export function useBreathPhaseAudio(
     stopImmediately(holdPlayer);
   }, [
     exhalePlayer,
+    hasVoiceCues,
     holdPlayer,
     inhalePlayer,
     shouldPlayAudio,
