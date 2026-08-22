@@ -77,10 +77,10 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: spacing.md,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm + 2,
-    minHeight: 48,
+    paddingVertical: spacing.md,
+    minHeight: 56,
   },
   divider: {
     borderBottomWidth: StyleSheet.hairlineWidth,

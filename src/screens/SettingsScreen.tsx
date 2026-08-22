@@ -199,84 +199,78 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
 
         <View style={styles.section}>
           <SectionHeader title="Preferences" />
-          <View style={styles.sectionBody}>
-            <SettingsGroup>
-              <SettingsRow
-                icon="bell-outline"
-                label="Notifications"
-                onPress={() => {
-                  trackProfileAction('notifications_opened');
-                  setNotificationsVisible(true);
-                }}
-              />
-              <SettingsRow
-                icon="vibrate"
-                label="Haptics"
-                showChevron={false}
-                isLast
-                rightSlot={
-                  <Switch
-                    value={hapticsEnabled}
-                    onValueChange={(enabled) => {
-                      setHapticsEnabled(enabled);
-                      trackProfileAction('haptics_toggled', { enabled });
-                    }}
-                    trackColor={{
-                      false: colors.neutral[300],
-                      true: colors.primary.blue300,
-                    }}
-                    thumbColor={hapticsEnabled ? colors.primary.blue600 : colors.neutral[50]}
-                  />
-                }
-              />
-            </SettingsGroup>
-          </View>
+          <SettingsGroup>
+            <SettingsRow
+              icon="bell-outline"
+              label="Notifications"
+              onPress={() => {
+                trackProfileAction('notifications_opened');
+                setNotificationsVisible(true);
+              }}
+            />
+            <SettingsRow
+              icon="vibrate"
+              label="Haptics"
+              showChevron={false}
+              isLast
+              rightSlot={
+                <Switch
+                  value={hapticsEnabled}
+                  onValueChange={(enabled) => {
+                    setHapticsEnabled(enabled);
+                    trackProfileAction('haptics_toggled', { enabled });
+                  }}
+                  trackColor={{
+                    false: colors.neutral[300],
+                    true: colors.primary.blue300,
+                  }}
+                  thumbColor={hapticsEnabled ? colors.primary.blue600 : colors.neutral[50]}
+                />
+              }
+            />
+          </SettingsGroup>
         </View>
 
         <View style={styles.section}>
           <SectionHeader title="Support" />
-          <View style={styles.sectionBody}>
-            <SettingsGroup>
-              <SettingsRow
-                icon="heart-pulse"
-                label="Help, my heart rate isn't accurate"
-                onPress={handleHeartRateAccuracyHelp}
-              />
-              <SettingsRow
-                icon="email-outline"
-                label="Send feedback"
-                onPress={() => {
-                  void handleSendFeedback();
-                }}
-                isLast
-              />
-            </SettingsGroup>
-          </View>
+          <SettingsGroup>
+            <SettingsRow
+              icon="heart-pulse"
+              label="Help, my heart rate isn't accurate"
+              onPress={handleHeartRateAccuracyHelp}
+            />
+            <SettingsRow
+              icon="email-outline"
+              label="Send feedback"
+              onPress={() => {
+                void handleSendFeedback();
+              }}
+              isLast
+            />
+          </SettingsGroup>
         </View>
 
         <View style={styles.section}>
           <SectionHeader title="Legal" />
-          <View style={styles.sectionBody}>
-            <SettingsGroup>
-              <SettingsRow
-                icon="shield-lock-outline"
-                label="Privacy policy"
-                onPress={() => {
-                  trackProfileAction('privacy_policy_opened');
-                  void Linking.openURL('https://www.tryazora.app/privacy');
-                }}
-              />
-              <SettingsRow
-                icon="file-document-outline"
-                label="Terms of service"
-                onPress={() => {
-                  trackProfileAction('terms_opened');
-                  void Linking.openURL('https://www.tryazora.app/terms');
-                }}
-                isLast
-              />
-            </SettingsGroup>
-          </View>
+          <SettingsGroup>
+            <SettingsRow
+              icon="shield-lock-outline"
+              label="Privacy policy"
+              onPress={() => {
+                trackProfileAction('privacy_policy_opened');
+                void Linking.openURL('https://www.tryazora.app/privacy');
+              }}
+            />
+            <SettingsRow
+              icon="file-document-outline"
+              label="Terms of service"
+              onPress={() => {
+                trackProfileAction('terms_opened');
+                void Linking.openURL('https://www.tryazora.app/terms');
+              }}
+              isLast
+            />
+          </SettingsGroup>
         </View>
 
         {__DEV__ ? (
@@ -295,13 +289,10 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
           </View>
         ) : null}
 
-        <View style={styles.section}>
+        <View style={[styles.section, styles.accountActions]}>
           <SettingsGroup>
             <SettingsRow label="Sign out" onPress={handleSignOut} centered isLast />
           </SettingsGroup>
-        </View>
-
-        <View style={styles.section}>
           <SettingsGroup>
             <SettingsRow
               label="Delete account"
@@ -312,7 +303,6 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
             />
           </SettingsGroup>
         </View>
-
       </ScrollView>
 
       <NotificationsSettingsSheet
@@ -345,9 +335,11 @@ const styles = StyleSheet.create({
     marginTop: margin.sectionGap,
     gap: spacing.lg,
   },
-  // The section gap above already spaces the body below its header; the
-  // wrapper stays only so headerless sections keep the same structure.
-  sectionBody: {},
+  // Sign out and delete belong together at the foot of the page, so they sit a
+  // card gap apart rather than a full section gap.
+  accountActions: {
+    gap: spacing.md,
+  },
   headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
