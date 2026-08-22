@@ -24,7 +24,7 @@ function placementDelay(overrides = {}) {
 
 test('breath exercise placement uses the fallback until a BPM locks', () => {
   assert.equal(BREATH_EXERCISE_PLACEMENT_FALLBACK_DELAY_MS, 20000);
-  assert.equal(BREATH_EXERCISE_PLACEMENT_LOCKED_DELAY_MS, 250);
+  assert.equal(BREATH_EXERCISE_PLACEMENT_LOCKED_DELAY_MS, 900);
   assert.equal(
     placementDelay(),
     BREATH_EXERCISE_PLACEMENT_FALLBACK_DELAY_MS,

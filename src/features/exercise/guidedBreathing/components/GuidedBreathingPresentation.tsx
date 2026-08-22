@@ -263,7 +263,6 @@ export const GuidedBreathingPresentation = forwardRef<
           theme={theme}
           viewport={viewport}
           bpm={heartRate.bpm}
-          beatTick={heartRate.beatTick}
           signalSource={heartRate.signalSource}
           fingerPlacement={heartRate.fingerPlacement}
           signalStatus={heartRate.signalStatus}

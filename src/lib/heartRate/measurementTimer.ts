@@ -2,7 +2,9 @@ import type { FingerPlacementState, SignalStatus } from './types';
 
 type MeasurementTimerHandle = ReturnType<typeof globalThis.setInterval>;
 
-export const BREATH_EXERCISE_PLACEMENT_LOCKED_DELAY_MS = 250;
+// Long enough for the "Pulse found" confirmation to register as a beat of its
+// own before the session slides in over it.
+export const BREATH_EXERCISE_PLACEMENT_LOCKED_DELAY_MS = 900;
 export const BREATH_EXERCISE_PLACEMENT_FALLBACK_DELAY_MS = 20_000;
 
 interface BreathExercisePlacementStartState {
