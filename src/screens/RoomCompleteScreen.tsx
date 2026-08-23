@@ -39,9 +39,12 @@ export default function RoomCompleteScreen({
     <RoomScreenLayout
       scroll
       title="You filled every corner"
+      note="All 7 decorations placed — this room is finished."
       // Both held until the replay lands, both holding their space until then.
       reveal={replayDone}
-      action={<RoomActionButton label="Continue" onPress={continueToPicker} />}
+      action={
+        <RoomActionButton label="Pick a new room" onPress={continueToPicker} />
+      }
     >
       <RoomStage>
         <RoomReplay

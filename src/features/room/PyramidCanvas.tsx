@@ -422,9 +422,7 @@ export default function PyramidCanvas({ rooms }: Props) {
           size={LABEL_ICON_UNITS * MAX_SCALE}
           color={colors.text.tertiary}
         />
-        <Text style={styles.labelText}>
-          Finish this floor to open your next room
-        </Text>
+        <Text style={styles.labelText}>Your next room is placed here</Text>
       </Animated.View>
 
       <View style={styles.zoom} pointerEvents="box-none">

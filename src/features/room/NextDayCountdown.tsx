@@ -35,7 +35,7 @@ export default function NextDayCountdown({ style }: { style?: TextStyle }) {
 
   return (
     <Text style={[styles.text, style]}>
-      Next piece in {formatCountdown(remaining)}
+      Next decoration in {formatCountdown(remaining)}
     </Text>
   );
 }

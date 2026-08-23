@@ -162,7 +162,9 @@ export default function RoomDecorateScreen({
     <RoomScreenLayout
       scroll
       title={celebrating ? undefined : decorateTitle(panelState)}
-      note={choosing ? decorateNote(panelState) : undefined}
+      note={
+        celebrating || isLoading ? undefined : decorateNote(panelState)
+      }
       reveal={celebrating ? justPlaced : undefined}
       actionNote={celebrating ? <NextDayCountdown /> : undefined}
       action={

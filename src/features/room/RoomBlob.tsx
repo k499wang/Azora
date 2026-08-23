@@ -13,8 +13,6 @@ import Animated, {
   useFrameCallback,
   useReducedMotion,
   useSharedValue,
-  withDelay,
-  withSequence,
   withSpring,
   withTiming,
   type SharedValue,
@@ -102,8 +100,6 @@ const BUBBLE_LINE = 16;
 /** clear of the body, which already floats `BODY_LIFT` above the feet */
 const BUBBLE_GAP = 9;
 const BUBBLE_TAIL = 9;
-/** long enough to read two words, short enough not to become furniture */
-const BUBBLE_HOLD_MS = 2400;
 /** let the room settle before it says anything */
 const BUBBLE_OPEN_MS = 700;
 
@@ -228,12 +224,10 @@ const RoomBlob = forwardRef<RoomBlobHandle, Props>(function RoomBlob(
 
   const say = useCallback(() => {
     if (speech == null) return;
-    bubble.value = withSequence(
-      reducedMotion
-        ? withTiming(1, { duration: duration.base })
-        : withSpring(1, spring.pop),
-      withDelay(BUBBLE_HOLD_MS, withTiming(0, { duration: duration.base })),
-    );
+    // it stays open: the line is the screen's copy, not a passing flourish
+    bubble.value = reducedMotion
+      ? withTiming(1, { duration: duration.base })
+      : withSpring(1, spring.pop);
   }, [bubble, reducedMotion, speech]);
 
   useEffect(() => {

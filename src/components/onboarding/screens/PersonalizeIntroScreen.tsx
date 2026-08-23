@@ -3,7 +3,6 @@ import { StyleSheet, View } from 'react-native';
 import MochiPortrait, {
   getMochiSideroom,
 } from '../../../features/room/MochiPortrait';
-import { MASCOT_NAME } from '../../../features/room/mascot';
 import { card, radius } from '../../../theme/card';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
@@ -100,9 +99,11 @@ export default function PersonalizeIntroScreen({
         <PersonalizeIllustration />
 
         <View style={styles.copy}>
-          <Text style={styles.headline}>Let’s build your plan.</Text>
+          <Text style={styles.headline}>
+            First, let’s personalize Azora for you.
+          </Text>
           <Text style={styles.sub}>
-            {`A few questions shape your daily practice. Doing it is what fills ${MASCOT_NAME}’s room.`}
+            A few questions shape what your daily tasks are.
           </Text>
         </View>
       </View>

@@ -60,9 +60,12 @@ export default function NextRoomScreen({ navigation }: NextRoomScreenProps) {
   return (
     <RoomScreenLayout
       title="Pick your next room"
+      note="Seven more decorations to fill it."
       action={
         <RoomActionButton
-          label={createNextRoom.isPending ? 'Opening…' : `Open room ${nextFloor}`}
+          label={
+            createNextRoom.isPending ? 'Opening…' : `Start room ${nextFloor}`
+          }
           disabled={createNextRoom.isPending}
           onPress={openNextRoom}
         />

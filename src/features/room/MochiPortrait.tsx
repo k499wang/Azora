@@ -216,10 +216,10 @@ const SPRITES: Record<MochiExpression, Sprite> = {
     },
     pose: { tilt: 6, stretch: 0.99, feet: [{ dx: 1 }, { dx: 2.5 }] },
   },
-  /** cheeks full of air, eyes shut, lips pursed: one held breath */
+  /** cheeks full of air, lips pursed: one held breath */
   puffed: {
     face: {
-      eye: { w: 8.5, h: 3.25, top: 17.5, arc: true },
+      eye: { w: 8, h: 9, top: 16 },
       mouth: { w: 5, h: 6, top: 31, kind: 'open' },
     },
     /** regular silhouette; the cheeks carry the held-breath expression */

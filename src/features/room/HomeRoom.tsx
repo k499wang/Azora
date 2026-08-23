@@ -34,8 +34,8 @@ export default function HomeRoom({ room, progress }: HomeRoomProps) {
         accessibilityRole="button"
         accessibilityLabel={
           progress.canClaim
-            ? 'Your room. A new piece is ready to place.'
-            : `Your room, ${progress.placedCount} of 7 pieces.`
+            ? 'Your room. A new decoration is ready to place.'
+            : `Your room, ${progress.placedCount} of 7 decorations placed.`
         }
         accessibilityHint="Says hello to the blob living in your room"
         onPress={() => {

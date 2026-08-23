@@ -8,8 +8,8 @@ sounds like one character.
 
 ## The whole story
 
-Mochi has moved so many times he stopped unpacking. His room is empty and he has
-given up decorating it. You decorate it for him, one thing a day.
+Mochi moves houses a lot and never has time to decorate his room, so it is
+empty. You decorate it for him, one thing a day.
 
 That is the entire fiction and it should stay that size. He is sad, plainly and
 on screen — slumped, still, mouth turned down — and what lifts him is the room
@@ -21,22 +21,24 @@ Mochi is **he/him**.
 
 ## The loop, in the order a user meets it
 
-Four sentences, one per screen. Each is a mechanic that already ships (see
-`docs/room-hotel-plan.md`), stated as a plain fact rather than explained.
+One sentence per screen. The story beats are title-only — no subtitle.
+Each is a mechanic that already ships (see `docs/room-hotel-plan.md`), stated as
+a plain fact rather than explained.
 
-The four backstory beats open the flow; the loop is explained later, next to the
+The backstory beats open the flow; the loop is explained later, next to the
 plan.
 
 | Beat | Mechanic |
 | --- | --- |
-| This is Mochi. It just moved in. | floor 1 opens empty on the first placement |
-| He's moved a lot. He stopped unpacking. | — backstory, told once |
-| You decorate it for him. | the user places the piece |
+| This is Mochi. | floor 1 opens empty on the first placement |
+| Mochi moves houses a lot. | — backstory, told once |
+| Mochi never has time to decorate his room. | — backstory, told once |
+| Would you help decorate Mochi's room? | the user places the piece |
 | Three dailies a day — two breathing sessions and a breath hold. | `useDailiesCompletion` |
 | Finish all three, Mochi gets one thing for the room. One a day. | one decoration per user per day |
 | Seven things fill the room. Then Mochi starts a fresh one. | seven slots, then floor *n+1* |
 
-Nothing else needs saying during onboarding. A user who understands those four
+Nothing else needs saying during onboarding. A user who understands those
 lines understands the whole feature.
 
 ---
@@ -59,10 +61,10 @@ one thing a day by practising, and that is the only exchange in the product.
 *by* him. Copy says "you put something in his room", never "Mochi earns a
 piece" — the second one makes him the player and the user the currency.
 
-**4. The backstory is four sentences and it is over.** Mochi moved a lot and
-stopped unpacking. That is all of it — no reason for the moves, no previous
-home, no one it left behind, no answer to what Mochi is. It is told once, at the
-start, and never referred to again. Every additional detail is one the loop does
+**4. The backstory is two sentences and it is over.** Mochi moves houses a lot
+and never has time to decorate his room. That is all of it — no reason for the moves, no
+previous home, no one it left behind, no answer to what Mochi is. It is told
+once, at the start, and never referred to again. Every additional detail is one the loop does
 not need and later copy has to stay consistent with.
 
 **4b. Sad at his situation, never sad at the user.** He is sad on arrival,
@@ -80,17 +82,24 @@ between them rather than a duty owed.
 ## Voice
 
 Understated, plain, a little dry. Short sentences. No exclamation marks, no
-whimsy, no pleading.
+whimsy, no pleading — with one deliberate exception, the `mochiFresh` ask, where
+he asks for help outright ("please.") and the button answers "Yes!". That is the
+one place the copy leans on the user's sympathy, it is a single screen, and it
+happens before they have done anything, so nothing they do later can disappoint
+him. Do not spread that register anywhere else.
 
-- Good: "It just moved in. The room is empty."
+- Good: "Mochi moves houses a lot. The room is empty."
 - Good: "One a day."
 - Bad: "Poor Mochi needs your help!"
 - Bad: "Let's build our dream room together!!"
 
 Third person for narration, always: the copy describes Mochi, it does not speak
-as it. Mochi speaks only in bubbles, and only in the room. Every line is a single word
+as it. Mochi speaks only in bubbles, and only in the room. A bubble opens shortly after
+the room settles and then stays open for as long as the screen does — the line
+is part of that screen's copy, not a flourish that times out. Every line is a single word
 or an ellipsis, and it is always a reaction — he never explains, instructs, or
-describes the product.
+describes the product. The one thing he ever asks for is help decorating, on
+`mochiFresh`, once.
 
 He does **not** appear on the question screens. Putting the question in his
 mouth has now been built and reverted twice — treat it as settled. The questions
@@ -111,16 +120,20 @@ lives in `src/components/onboarding/data/mochiStory.ts` (see `STEP_ORDER` in
 
 | Screen | Line |
 | --- | --- |
-| `MochiStoryScreen` (`mochiIntro`) | "This is Mochi." / "He just moved in." — sad, bubble: "hi." |
-| `MochiStoryScreen` (`mochiMoved`) | "He's moved a lot." / "Never long enough to unpack." — sad, bubble: "again." |
-| `MochiStoryScreen` (`mochiUnpacked`) | "So his room is empty." / "He stopped bothering to decorate it." — sad, bubble: "..." |
-| `MochiStoryScreen` (`mochiFresh`) | "You decorate it for him." / "One thing at a time." — bubble: "oh." |
-| `MochiPlaceScreen` | "Finish your dailies." / "Every day you finish, an item lands in his room." — bubble on landing: "thanks." |
-| `MochiFloorScreen` | "Seven items fill a room." / "Fill it and you get to make another one." — bubble when full: "home." |
-| `MochiRoomsScreen` | "Every room is its own." / "You pick the look when you start the next one." — the room styles slide past on their own |
+| `MochiStoryScreen` (`mochiIntro`) | "This is Mochi." — sad, bubble: "hi." |
+| `MochiStoryScreen` (`mochiMoved`) | "Mochi moves houses a lot." — sad, bubble: "again." |
+| `MochiStoryScreen` (`mochiNoTime`) | "Mochi never has time to decorate his room." — sad, bubble: "..." |
+| `MochiStoryScreen` (`mochiFresh`) | "Would you help decorate Mochi's room?" — sad, bubble: "please.", button "Yes!" |
+| `MochiPlaceScreen` | "Finish your daily plan to decorate Mochi’s room." — bubble on landing: "thanks." |
+| `MochiFloorScreen` | "Seven decorations finish a room. Then you pick a new one." — bubble when full: "home." |
 
 After onboarding the room itself carries it, plus `RoomCompleteScreen`
-("You filled every corner").
+("You filled every corner" / "All 7 decorations placed — this room is
+finished.").
+
+One noun for the reward everywhere: a **decoration**, never a piece or an item.
+Seven of them finish a **room**, and a finished room is followed by picking a
+new one — every surface in the loop says that in those words.
 
 ---
 
