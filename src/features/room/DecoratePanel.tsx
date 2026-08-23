@@ -43,7 +43,7 @@ export function decorateTitle(state: DecorateState): string {
     case 'complete':
       return 'This room is finished';
     case 'claimed':
-      return "Today's piece is placed";
+      return "Today's decoration is placed";
     case 'locked':
       return "Finish today's dailies";
     case 'choose':
@@ -54,13 +54,19 @@ export function decorateTitle(state: DecorateState): string {
 /**
  * The line under the title, where there is one.
  *
- * Only the choosing state has something more to say, and what it says is where
- * to tap — the picker lives on the room now, not under it.
+ * The choosing state says where to tap — the picker lives on the room now, not
+ * under it. The finished state says what "finished" counted to, because seven
+ * is the rule of the whole loop and this is the screen that proves it.
  */
 export function decorateNote(state: DecorateState): string | undefined {
-  return state.kind === 'choose'
-    ? "Tap the + to place today's piece"
-    : undefined;
+  switch (state.kind) {
+    case 'choose':
+      return "Tap the + to place today's decoration";
+    case 'complete':
+      return 'All 7 decorations placed';
+    default:
+      return undefined;
+  }
 }
 
 /**
@@ -79,10 +85,10 @@ export default function DecoratePanel({
     return (
       <View style={styles.panel}>
         <Text style={styles.panelBody}>
-          Every piece is placed. Open your next room to keep going.
+          Pick a new room next and fill that one too.
         </Text>
         <ChunkyButton
-          label="See your room"
+          label="See your finished room"
           shape="card"
           style={styles.primaryButton}
           onPress={onSeeRoom}
@@ -94,7 +100,9 @@ export default function DecoratePanel({
   if (state.kind === 'claimed') {
     return (
       <View style={styles.panel}>
-        <Text style={styles.panelBody}>Come back tomorrow for the next one.</Text>
+        <Text style={styles.panelBody}>
+          Come back tomorrow for the next decoration.
+        </Text>
         <NextDayCountdown />
       </View>
     );
@@ -118,7 +126,7 @@ export default function DecoratePanel({
     return (
       <View style={styles.panel}>
         <Text style={styles.panelBody}>
-          All three earn you a piece for this room.
+          All 3 earn one decoration for this room.
         </Text>
         <View style={styles.checklist}>
           {dailies.map((daily) => (

@@ -136,11 +136,11 @@ function DailyCompleteSheet({
 
   // On the third daily the screen stops being about the session and starts
   // being about the thing they just earned, so the copy changes with it.
-  const headline = unlocked ? 'All three done' : title;
+  const headline = unlocked ? 'All 3 dailies done' : title;
   const supporting = unlocked
     ? pieceLabel == null
-      ? 'You unlocked a new piece for your room'
-      : `You unlocked a new ${pieceLabel}`
+      ? "You earned today's decoration"
+      : `You earned a new ${pieceLabel}`
     : subtitle;
 
   useEffect(() => {
@@ -298,7 +298,7 @@ function DailyCompleteSheet({
                       ? day == null
                         ? 'Ready to place'
                         : `Ready for the ${day.note}`
-                      : `${remaining} more to unlock your piece`}
+                      : `${remaining} more to earn today's decoration`}
                   </Text>
                 </Rise>
               ) : null}
@@ -306,7 +306,7 @@ function DailyCompleteSheet({
               <Rise delay={BEAT.cta} style={styles.ctaBlock}>
                 {unlocked && rewardReady ? (
                   <SheetButton
-                    label="Choose your piece"
+                    label="Choose your decoration"
                     hue={hue}
                     onPress={choosePiece}
                   />

@@ -3,12 +3,11 @@ import { MASCOT_NAME } from '../../../features/room/mascot';
 export type MochiStoryStep =
   | 'mochiIntro'
   | 'mochiMoved'
-  | 'mochiUnpacked'
+  | 'mochiNoTime'
   | 'mochiFresh';
 
 export interface MochiStoryBeat {
   title: string;
-  subtitle: string;
   /** a line for the blob to say; it opens on arrival and again on every poke */
   speech?: string;
   /** slumped and staying put, until the beat where someone offers to help */
@@ -26,29 +25,26 @@ export interface MochiStoryBeat {
 export const MOCHI_STORY: Record<MochiStoryStep, MochiStoryBeat> = {
   mochiIntro: {
     title: `This is ${MASCOT_NAME}.`,
-    subtitle: 'He just moved in.',
     speech: 'hi.',
     sad: true,
     button: 'Go on',
   },
   mochiMoved: {
-    title: "He's moved a lot.",
-    subtitle: 'Never long enough to unpack.',
+    title: `${MASCOT_NAME} moves houses a lot.`,
     speech: 'again.',
     sad: true,
     button: 'Continue',
   },
-  mochiUnpacked: {
-    title: 'So his room is empty.',
-    subtitle: 'He stopped bothering to decorate it.',
+  mochiNoTime: {
+    title: `${MASCOT_NAME} never has time to decorate his room.`,
     speech: '...',
     sad: true,
     button: 'Continue',
   },
   mochiFresh: {
-    title: 'You decorate it for him.',
-    subtitle: 'First he needs to know what you are working on.',
-    speech: 'so?',
-    button: 'Continue',
+    title: `Would you help decorate ${MASCOT_NAME}’s room?`,
+    speech: 'please.',
+    sad: true,
+    button: 'Yes!',
   },
 };

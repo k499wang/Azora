@@ -155,7 +155,8 @@ export default function GreetingScreen({
           </AnimatedText>
 
           <AnimatedText style={[styles.subtitle, { opacity: textEnter }]}>
-            It's good to meet you! We'll ask you a few questions to make your experience better.
+            It's good to meet you. Next, a bit about how you've been feeling
+            lately.
           </AnimatedText>
         </View>
 

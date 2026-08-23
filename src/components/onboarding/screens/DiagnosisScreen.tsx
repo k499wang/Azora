@@ -29,7 +29,7 @@ interface DiagnosisScreenProps {
 interface HighlightCard {
   id: string;
   role: string;
-  subject: string;
+  subject?: string;
   pill: string;
   pillColor: string;
   body: string;
@@ -43,7 +43,9 @@ function HighlightCardList({ items }: { items: HighlightCard[] }) {
           <View style={styles.highlightHeader}>
             <Text style={styles.highlightRole}>{item.role}</Text>
             <View style={styles.highlightMeta}>
-              <Text style={styles.highlightSubject}>{item.subject}</Text>
+              {item.subject ? (
+                <Text style={styles.highlightSubject}>{item.subject}</Text>
+              ) : null}
               <View style={[styles.highlightPill, { backgroundColor: item.pillColor }]}>
                 <Text style={styles.highlightPillText}>{item.pill}</Text>
               </View>
@@ -130,7 +132,6 @@ export default function DiagnosisScreen({
       next.push({
         id: 'resting-bpm',
         role: 'Resting heart rate',
-        subject: 'Your result',
         pill: `${Math.round(restingBpm)} BPM`,
         pillColor: colors.primary.blue600,
         body: 'Measured from your fingertip during onboarding.',

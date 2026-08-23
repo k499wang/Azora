@@ -31,7 +31,6 @@ import PersonalizeIntroScreen from './screens/PersonalizeIntroScreen';
 import { MOCHI_STORY } from './data/mochiStory';
 import MochiPlaceScreen from './screens/MochiPlaceScreen';
 import MochiFloorScreen from './screens/MochiFloorScreen';
-import MochiRoomsScreen from './screens/MochiRoomsScreen';
 import AttPrimingScreen from './screens/AttPrimingScreen';
 import PactScreen from './screens/PactScreen';
 import NotificationPermissionScreen from './screens/NotificationPermissionScreen';
@@ -160,11 +159,12 @@ interface OnboardingFlowProps {
 const STEP_ORDER: OnboardingStep[] = [
   'mochiIntro',
   'mochiMoved',
-  'mochiUnpacked',
+  'mochiNoTime',
   'mochiFresh',
   'personalizeIntro',
   'intent',
   'intentPriority',
+  'acquisitionSource',
   'intentReflection',
   'intentProjection',
   'brainScience',
@@ -172,7 +172,6 @@ const STEP_ORDER: OnboardingStep[] = [
   'breathPrimer',
   'name',
   'greeting',
-  'acquisitionSource',
   'stress',
   'sleep',
   'brainFog',
@@ -199,7 +198,6 @@ const STEP_ORDER: OnboardingStep[] = [
   'recommendedExercise',
   'mochiPlace',
   'mochiFloor',
-  'mochiRooms',
   'attPriming',
   'notifications',
   'pact',
@@ -566,15 +564,23 @@ function OnboardingFlowSteps({
       primary_intent_id: nextPrimaryIntent,
     };
 
+    goToStep('acquisitionSource', 'continue', nextProperties);
+  };
+
+  /** where the intent chain resumes once the source question is answered */
+  const continueAfterAcquisitionSource = (
+    action: OnboardingTransitionAction,
+    properties?: OnboardingAnalyticsProperties,
+  ) => {
     if (isOnlyCustomIntent) {
-      goToStep('brainScience', 'continue', nextProperties);
+      goToStep('brainScience', action, properties);
       return;
     }
     if (INTENT_REFLECTION_ENABLED) {
-      goToStep('intentReflection', 'continue', nextProperties);
+      goToStep('intentReflection', action, properties);
       return;
     }
-    goToStep('intentProjection', 'continue', nextProperties);
+    goToStep('intentProjection', action, properties);
   };
 
   const goFromIntent = () => {
@@ -880,16 +886,16 @@ function OnboardingFlowSteps({
         beat={MOCHI_STORY.mochiMoved}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('mochiUnpacked', 'continue')}
+        onContinue={() => goToStep('mochiNoTime', 'continue')}
         onBack={() => goToStep('mochiIntro', 'back')}
       />
     );
   }
 
-  if (step === 'mochiUnpacked') {
+  if (step === 'mochiNoTime') {
     return (
       <MochiStoryScreen
-        beat={MOCHI_STORY.mochiUnpacked}
+        beat={MOCHI_STORY.mochiNoTime}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goToStep('mochiFresh', 'continue')}
@@ -905,7 +911,7 @@ function OnboardingFlowSteps({
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goToStep('personalizeIntro', 'continue')}
-        onBack={() => goToStep('mochiUnpacked', 'back')}
+        onBack={() => goToStep('mochiNoTime', 'back')}
       />
     );
   }
@@ -952,12 +958,7 @@ function OnboardingFlowSteps({
         stepCount={visualStepCount}
         isSubmitting={isSubmitting}
         onContinue={() => goToStep('intentProjection', 'continue')}
-        onBack={() =>
-          goToStep(
-            selectedIntents.length >= 2 ? 'intentPriority' : 'intent',
-            'back',
-          )
-        }
+        onBack={() => goToStep('acquisitionSource', 'back')}
       />
     );
   }
@@ -971,11 +972,7 @@ function OnboardingFlowSteps({
         onContinue={() => goToStep('brainScience', 'continue')}
         onBack={() =>
           goToStep(
-            INTENT_REFLECTION_ENABLED
-              ? 'intentReflection'
-              : selectedIntents.length >= 2
-                ? 'intentPriority'
-                : 'intent',
+            INTENT_REFLECTION_ENABLED ? 'intentReflection' : 'acquisitionSource',
             'back',
           )
         }
@@ -990,7 +987,10 @@ function OnboardingFlowSteps({
         stepCount={visualStepCount}
         onContinue={() => goToStep('modernBreathing', 'continue')}
         onBack={() =>
-          goToStep(isOnlyCustomIntent ? 'intent' : 'intentProjection', 'back')
+          goToStep(
+            isOnlyCustomIntent ? 'acquisitionSource' : 'intentProjection',
+            'back',
+          )
         }
       />
     );
@@ -1032,7 +1032,7 @@ function OnboardingFlowSteps({
         name={name}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('acquisitionSource', 'continue')}
+        onContinue={() => goToStep('stress', 'continue')}
         onBack={() => goToStep('name', 'back')}
       />
     );
@@ -1046,14 +1046,19 @@ function OnboardingFlowSteps({
         stepCount={visualStepCount}
         onSelect={recordAcquisitionSource}
         onContinue={() =>
-          goToStep('stress', 'continue', {
+          continueAfterAcquisitionSource('continue', {
             acquisition_source: acquisitionSource,
           })
         }
-        onBack={() => goToStep('greeting', 'back')}
+        onBack={() =>
+          goToStep(
+            selectedIntents.length >= 2 ? 'intentPriority' : 'intent',
+            'back',
+          )
+        }
         onSkip={() => {
           recordAcquisitionSource('skipped');
-          goToStep('stress', 'skip');
+          continueAfterAcquisitionSource('skip');
         }}
       />
     );
@@ -1070,7 +1075,7 @@ function OnboardingFlowSteps({
           setHasAnsweredStress(true);
           goToStep('sleep', 'continue', { has_stress_level: true });
         }}
-        onBack={() => goToStep('acquisitionSource', 'back')}
+        onBack={() => goToStep('greeting', 'back')}
         onSkip={() => {
           setHasAnsweredStress(false);
           goToStep('sleep', 'skip');
@@ -1472,19 +1477,8 @@ function OnboardingFlowSteps({
       <MochiFloorScreen
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('mochiRooms', 'continue')}
-        onBack={() => goToStep('mochiPlace', 'back')}
-      />
-    );
-  }
-
-  if (step === 'mochiRooms') {
-    return (
-      <MochiRoomsScreen
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
         onContinue={() => goToStep('attPriming', 'continue')}
-        onBack={() => goToStep('mochiFloor', 'back')}
+        onBack={() => goToStep('mochiPlace', 'back')}
       />
     );
   }
@@ -1507,7 +1501,7 @@ function OnboardingFlowSteps({
               goToStep('notifications', 'continue');
             });
         }}
-        onBack={() => goToStep('mochiRooms', 'back')}
+        onBack={() => goToStep('mochiFloor', 'back')}
       />
     );
   }

@@ -146,6 +146,9 @@ export function RoomProgressCardView({
       </View>
 
       {view.countdown === true ? <NextDayCountdown style={styles.note} /> : null}
+      {view.note == null ? null : (
+        <Text style={[styles.note, styles.noteText]}>{view.note}</Text>
+      )}
 
       <View style={styles.barRow}>
         <ProgressBar
@@ -178,7 +181,9 @@ export type RoomCardRoute = 'RoomDecorate' | 'NextRoom';
 
 export interface RoomCardView {
   title: string;
-  /** the wait until the next piece, for a day with nothing left to do */
+  /** the line under the title, when the title alone does not say the rule */
+  note?: string;
+  /** the wait until the next decoration, for a day with nothing left to do */
   countdown?: boolean;
   /** drives the tile, the bar, the lock at its end, and the button */
   tone: RoomCardTone;
@@ -212,16 +217,18 @@ export function describeRoomCard({
   // missed that screen would be stuck here forever.
   if (isComplete) {
     return {
-      title: 'This floor is finished',
+      title: 'This room is finished',
+      note: 'All 7 decorations placed. Pick a new room to keep going.',
       tone: 'ready',
       ...room,
-      action: { label: 'Choose your next room', route: 'NextRoom' },
+      action: { label: 'Pick a new room', route: 'NextRoom' },
     };
   }
 
   if (canClaim) {
     return {
-      title: 'Your piece is ready',
+      title: 'Your decoration is ready',
+      note: 'Seven decorations finish a room.',
       tone: 'ready',
       ...room,
       action: { label: 'Place it in your room', route: 'RoomDecorate' },
@@ -251,6 +258,7 @@ export function describeRoomCard({
   // built from the same `allCompleted` this branch would test.
   return {
     title: "Finish today's dailies",
+    note: "All 3 earn today's decoration.",
     tone: 'waiting',
     done: dailiesDoneCount,
     total: DAILIES_PER_DAY,
@@ -281,6 +289,14 @@ const styles = StyleSheet.create({
   // there is no colour a centred count stays legible against end to end.
   note: {
     marginTop: -spacing.xs,
+  },
+  // Matches the countdown that shares this slot, so the line under the title
+  // is the same line whichever state the card is in.
+  noteText: {
+    ...typography.label.detail,
+    fontSize: 14,
+    lineHeight: 18,
+    color: colors.text.secondary,
   },
   count: {
     ...typography.body.small,

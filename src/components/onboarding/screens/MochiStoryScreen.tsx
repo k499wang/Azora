@@ -42,7 +42,6 @@ export default function MochiStoryScreen({
   return (
     <OnboardingScreenLayout
       title={beat.title}
-      subtitle={beat.subtitle}
       progress={stepIndex / stepCount}
       onBack={onBack}
       centerCopy
