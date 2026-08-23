@@ -1,9 +1,16 @@
-import { memo } from 'react';
+import { memo, useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useFrameCallback,
+  useReducedMotion,
+  useSharedValue,
+} from 'react-native-reanimated';
 import { colors } from '../../theme/colors';
 
 /**
- * Mochi cropped to his face, standing on a pair of feet.
+ * Mochi cropped to his face, standing on a pair of feet — and waddling on the
+ * spot.
  *
  * `MochiPortrait` draws the whole character — a lean, a stance, the ground
  * shadow he stands on. This is the app-icon crop: one shape, straight on, and
@@ -14,6 +21,12 @@ import { colors } from '../../theme/colors';
  * stance. Off-centre feet are what stop him reading as a mannequin when he is
  * standing in a room; centred under a wordmark they only look like he is about
  * to tip over.
+ *
+ * The waddle is in place: he is centred under the wordmark, so walking anywhere
+ * would only pull him off it. He rocks for a short burst of whole steps, then
+ * stands and breathes — the same rhythm `RoomBlob` wanders on, which is what
+ * keeps him a character idling rather than a looping ornament. Bursts end on a
+ * planted foot so he never freezes mid-air when one runs out.
  *
  * Cheeks are the one thing here he does not have anywhere else. At this size the
  * face carries the whole screen, and a mint blob with two eyes reads as a shape
@@ -55,6 +68,33 @@ const SHEEN_TOP = 7;
 const SHEEN_W = 20;
 const SHEEN_H = 15;
 
+/** one full stride cycle is two steps; 0.8 of a cycle a second is an amble */
+const STEP_RATE = Math.PI * 2 * 0.8;
+/** seconds of stride per step, so a burst can be counted in whole steps */
+const STEP_SECONDS = Math.PI / STEP_RATE;
+
+/** the waddle itself, in body units and degrees */
+const ROCK_DEG = 5;
+const SWAY = 1.6;
+const BOUNCE = 2.6;
+const FOOT_LIFT = 3.2;
+/** how far the free foot swings out from under him as it lifts */
+const FOOT_SWING = 1.6;
+/** the body pivots on its base rather than its middle, like a weight shift */
+const PIVOT_Y = BODY_H / 2;
+
+/** how fast the gait fades in and out, per second */
+const WALK_EASE = 6;
+/** the standing-still rise and fall */
+const BREATH_RATE = 2;
+
+const BURST_MIN_STEPS = 3;
+const BURST_EXTRA_STEPS = 4;
+const REST_MIN = 1.1;
+const REST_SPAN = 2.4;
+/** he is standing when the screen opens, and starts up a beat later */
+const FIRST_REST = 0.9;
+
 interface MochiFaceProps {
   /** rendered width of his face; everything else scales from it */
   size: number;
@@ -62,11 +102,86 @@ interface MochiFaceProps {
 
 function MochiFace({ size }: MochiFaceProps) {
   const u = size / BODY_W;
+  const reducedMotion = useReducedMotion();
+
+  const clock = useSharedValue(0);
+  const stride = useSharedValue(0);
+  const strideEnd = useSharedValue(0);
+  const walk = useSharedValue(0);
+  const rest = useSharedValue(FIRST_REST);
+
+  const frame = useFrameCallback((info) => {
+    const dt = Math.min((info.timeSincePreviousFrame ?? 16) / 1000, 0.05);
+    clock.value += dt;
+
+    let moving = 0;
+    if (rest.value > 0) {
+      rest.value -= dt;
+      if (rest.value <= 0) {
+        const steps =
+          BURST_MIN_STEPS + Math.floor(Math.random() * (BURST_EXTRA_STEPS + 1));
+        strideEnd.value = stride.value + steps * STEP_SECONDS;
+      }
+    } else if (stride.value < strideEnd.value) {
+      stride.value = Math.min(strideEnd.value, stride.value + dt);
+      moving = 1;
+      if (stride.value >= strideEnd.value) {
+        rest.value = REST_MIN + Math.random() * REST_SPAN;
+      }
+    }
+
+    walk.value += (moving - walk.value) * Math.min(1, dt * WALK_EASE);
+  }, false);
+
+  useEffect(() => {
+    if (reducedMotion) return;
+    frame.setActive(true);
+    return () => frame.setActive(false);
+  }, [frame, reducedMotion]);
+
+  const bodyStyle = useAnimatedStyle(() => {
+    const cycle = Math.sin(stride.value * STEP_RATE);
+    const rock = cycle * walk.value;
+    // airborne at mid-step, on the floor at the ends of it
+    const air = Math.abs(rock);
+    const contact = (1 - Math.abs(cycle)) * walk.value;
+
+    const breath = Math.sin(clock.value * BREATH_RATE) * 0.022 * (1 - walk.value);
+    const scaleY = 1 - contact * 0.075 + breath;
+    const scaleX = 1 + contact * 0.06 - breath;
+
+    return {
+      transform: [
+        { translateX: rock * SWAY * u },
+        // the squash compensation keeps his base planted on the floor
+        {
+          translateY: (-air * BOUNCE + (BODY_H * (1 - scaleY)) / 2) * u,
+        },
+        { translateY: PIVOT_Y * u },
+        { rotateZ: `${rock * ROCK_DEG}deg` },
+        { translateY: -PIVOT_Y * u },
+        { scaleX },
+        { scaleY },
+      ],
+    };
+  }, [u]);
+
+  // He leans onto one foot and lifts the other, so each foot is free exactly
+  // when the rock is running away from it.
+  const leftFootStyle = useAnimatedStyle(() => {
+    const rock = Math.sin(stride.value * STEP_RATE) * walk.value;
+    return footTransform(rock, -1, u);
+  }, [u]);
+
+  const rightFootStyle = useAnimatedStyle(() => {
+    const rock = Math.sin(stride.value * STEP_RATE) * walk.value;
+    return footTransform(rock, 1, u);
+  }, [u]);
 
   return (
     <View style={{ width: BODY_W * u, height: (BODY_H + BODY_LIFT) * u }}>
-      {[-FOOT_X, FOOT_X].map((offset) => (
-        <View
+      {[-FOOT_X, FOOT_X].map((offset, index) => (
+        <Animated.View
           key={`foot-${offset}`}
           style={[
             styles.foot,
@@ -76,11 +191,12 @@ function MochiFace({ size }: MochiFaceProps) {
               height: FOOT_H * u,
               borderRadius: (FOOT_H / 2) * u,
             },
+            index === 0 ? leftFootStyle : rightFootStyle,
           ]}
         />
       ))}
 
-      <View
+      <Animated.View
         style={[
           styles.face,
           {
@@ -92,6 +208,7 @@ function MochiFace({ size }: MochiFaceProps) {
             borderBottomLeftRadius: BODY_ROUND * u,
             borderBottomRightRadius: BODY_ROUND * u,
           },
+          bodyStyle,
         ]}
       >
         <View
@@ -152,9 +269,22 @@ function MochiFace({ size }: MochiFaceProps) {
             },
           ]}
         />
-      </View>
+      </Animated.View>
     </View>
   );
+}
+
+/** `side` is -1 for the left foot, 1 for the right */
+function footTransform(rock: number, side: -1 | 1, u: number) {
+  'worklet';
+  const free = Math.max(0, -side * rock);
+
+  return {
+    transform: [
+      { translateX: (rock * SWAY * 0.4 + side * free * FOOT_SWING) * u },
+      { translateY: -free * FOOT_LIFT * u },
+    ],
+  };
 }
 
 const styles = StyleSheet.create({
@@ -181,6 +311,6 @@ const styles = StyleSheet.create({
   },
 });
 
-// Its only prop is a number and its output is a static View tree, so without
-// this it redraws on every parent render for no change on screen.
+// Its only prop is a number, so without this it rebuilds its shared values'
+// consumers on every parent render for no change on screen.
 export default memo(MochiFace);
