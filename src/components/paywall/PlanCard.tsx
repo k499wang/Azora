@@ -108,60 +108,78 @@ export function PlanCard({
               style={[
                 styles.planLip,
                 light && styles.planLipLight,
-                isSelected && (light ? styles.planLipSelectedLight : styles.planLipSelected),
-              ]}
-            >
-            <View
-              style={[
-                styles.planSurface,
-                light && styles.planSurfaceLight,
                 isSelected &&
-                  (light ? styles.planSurfaceSelectedLight : styles.planSurfaceSelected),
-                pressed && styles.planSurfacePressed,
+                  (light ? styles.planLipSelectedLight : styles.planLipSelected),
               ]}
             >
-              <View style={styles.planSurfaceBody}>
-                <Text
-                  style={[styles.planSurfaceTitle, light && styles.textPrimaryLight]}
-                >
-                  {headline}
-                </Text>
-                <View style={styles.planPriceBlock}>
-                  <View style={styles.planPriceRow}>
-                    {strikePrice ? (
+              <View
+                style={[
+                  styles.planSurface,
+                  light && styles.planSurfaceLight,
+                  isSelected &&
+                    (light
+                      ? styles.planSurfaceSelectedLight
+                      : styles.planSurfaceSelected),
+                  pressed && styles.planSurfacePressed,
+                ]}
+              >
+                <View style={styles.planSurfaceBody}>
+                  <Text
+                    style={[
+                      styles.planSurfaceTitle,
+                      light && styles.textPrimaryLight,
+                    ]}
+                  >
+                    {headline}
+                  </Text>
+
+                  <View style={styles.planPriceBlock}>
+                    <View style={styles.planPriceRow}>
+                      {strikePrice ? (
+                        <Text
+                          style={[
+                            styles.planSurfaceStrike,
+                            light && styles.textFaintLight,
+                          ]}
+                        >
+                          {strikePrice}
+                        </Text>
+                      ) : null}
                       <Text
                         style={[
-                          styles.planSurfaceStrike,
+                          styles.planSurfacePrice,
+                          light && styles.textMutedLight,
+                        ]}
+                      >
+                        {priceLabel}
+                      </Text>
+                    </View>
+                    {termsLabel ? (
+                      <Text
+                        style={[
+                          styles.planSurfaceTerms,
                           light && styles.textFaintLight,
                         ]}
                       >
-                        {strikePrice}
+                        {termsLabel}
                       </Text>
                     ) : null}
-                    <Text
-                      style={[styles.planSurfacePrice, light && styles.textMutedLight]}
-                    >
-                      {priceLabel}
-                    </Text>
                   </View>
-                  {termsLabel ? (
-                    <Text
-                      style={[styles.planSurfaceTerms, light && styles.textFaintLight]}
-                    >
-                      {termsLabel}
-                    </Text>
-                  ) : null}
                 </View>
               </View>
             </View>
-            </View>
 
-            {/* On the card rather than in it: inside, its height pushed this card's
-                copy a strip lower than its neighbour's, so the two titles never sat
-                on the same line. */}
+            {/* On the card rather than in it: inside, its height pushed this
+                card's copy a strip lower than its neighbour's, so the two
+                titles never sat on the same line. */}
             {trialPillText ? (
               <View style={styles.planTrialPillRow} pointerEvents="none">
-                <View style={[styles.planTrialPill, light && styles.planTrialPillLight]}>
+                <View
+                  style={[
+                    styles.planTrialPill,
+                    light && styles.planTrialPillLight,
+                  ]}
+                >
                   <Text style={styles.planTrialPillText}>{trialPillText}</Text>
                 </View>
               </View>
