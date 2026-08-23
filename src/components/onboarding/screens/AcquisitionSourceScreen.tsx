@@ -1,12 +1,11 @@
 import Icon from '../../common/icons/Icon';
-import { colors } from '../../../theme/colors';
 import {
   ACQUISITION_SOURCE_OPTIONS,
   type AcquisitionSourceId,
 } from '../data/acquisitionOptions';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
-import OnboardingOptionCardGrid from '../OnboardingOptionCardGrid';
+import OnboardingOptionList from '../OnboardingOptionList';
 import type { OnboardingOptionIconName } from '../OnboardingOptionIcon';
 
 const ACQUISITION_SOURCE_ICONS: Record<
@@ -57,7 +56,7 @@ export default function AcquisitionSourceScreen({
         />
       }
     >
-      <OnboardingOptionCardGrid
+      <OnboardingOptionList
         options={ACQUISITION_SOURCE_OPTIONS.map((option) => ({
           id: option.id,
           title: option.title,
@@ -68,7 +67,7 @@ export default function AcquisitionSourceScreen({
         onSelect={onSelect}
         renderGlyph={(option) =>
           option.id === 'tiktok' ? (
-            <Icon name="tiktok" size={96} color={colors.text.inverse} />
+            <Icon name="tiktok" size={26} color={option.accent} />
           ) : null
         }
       />

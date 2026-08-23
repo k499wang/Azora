@@ -1,13 +1,13 @@
 import { colors } from '../../../theme/colors';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
-import OnboardingOptionCardGrid, {
-  type OnboardingOptionCard,
-} from '../OnboardingOptionCardGrid';
+import OnboardingOptionList, {
+  type OnboardingOption,
+} from '../OnboardingOptionList';
 
 export type ExperienceLevel = 'never' | 'little' | 'regular';
 
-const OPTIONS: OnboardingOptionCard<ExperienceLevel>[] = [
+const OPTIONS: OnboardingOption<ExperienceLevel>[] = [
   {
     id: 'never',
     icon: 'sprout-outline',
@@ -62,7 +62,7 @@ export default function ExperienceScreen({
         />
       }
     >
-      <OnboardingOptionCardGrid
+      <OnboardingOptionList
         options={OPTIONS}
         selectedIds={value ? [value] : []}
         onSelect={onSelect}

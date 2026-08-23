@@ -2,7 +2,7 @@ import { INTENT_OPTIONS } from '../data/intentOptions';
 import { INTENT_ICONS } from '../data/intentOptionIcons';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
-import OnboardingOptionCardGrid from '../OnboardingOptionCardGrid';
+import OnboardingOptionList from '../OnboardingOptionList';
 import type { OnboardingIntent } from '../types';
 
 interface IntentPriorityScreenProps {
@@ -49,7 +49,7 @@ export default function IntentPriorityScreen({
         />
       }
     >
-      <OnboardingOptionCardGrid
+      <OnboardingOptionList
         options={options.map((option) => ({
           id: option.id,
           title: option.title,

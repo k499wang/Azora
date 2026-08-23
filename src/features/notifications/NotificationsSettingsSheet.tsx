@@ -1,9 +1,9 @@
 import { Text } from '../../components/common/Text';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
-  ActivityIndicator, Alert, Animated, Easing, Linking, Modal, PanResponder, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
+  ActivityIndicator, Alert, Linking, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import BottomSheet from '../../components/common/BottomSheet';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
@@ -30,29 +30,16 @@ interface NotificationsSettingsSheetProps {
   onClose: () => void;
 }
 
-const DRAG_ACTIVATION_PX = 4;
-const DRAG_DISMISS_PX = 120;
-const DRAG_DISMISS_VELOCITY = 0.7;
-const SHEET_FALLBACK_HEIGHT = 600;
-
 export default function NotificationsSettingsSheet({
   visible,
   userId,
   onClose,
 }: NotificationsSettingsSheetProps) {
-  const insets = useSafeAreaInsets();
   const preferencesQuery = useNotificationPreferencesQuery(userId);
   const updatePreferences = useUpdateNotificationPreferencesMutation(userId);
   const scheduleQuery = useDailyPlanScheduleQuery(userId);
   const updateSchedule = useUpdateDailyPlanScheduleMutation(userId);
   const [permissionStatus, setPermissionStatus] = useState<string>('undetermined');
-  const backdropOpacity = useRef(new Animated.Value(0)).current;
-  const translateY = useRef(new Animated.Value(SHEET_FALLBACK_HEIGHT)).current;
-  const sheetHeight = useRef(SHEET_FALLBACK_HEIGHT);
-  const onCloseRef = useRef(onClose);
-  const [mounted, setMounted] = useState(visible);
-
-  onCloseRef.current = onClose;
 
   const preferences = preferencesQuery.data;
   const schedule = scheduleQuery.data;
@@ -61,80 +48,6 @@ export default function NotificationsSettingsSheet({
   const hasInitialLoadError =
     isInitialLoadPending &&
     (preferencesQuery.isError || scheduleQuery.isError);
-
-  useEffect(() => {
-    if (visible) {
-      setMounted(true);
-      translateY.setValue(sheetHeight.current);
-      Animated.parallel([
-        Animated.timing(backdropOpacity, {
-          toValue: 1,
-          duration: 240,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: true,
-        }),
-        Animated.timing(translateY, {
-          toValue: 0,
-          duration: 240,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: true,
-        }),
-      ]).start();
-      return;
-    }
-
-    Animated.parallel([
-      Animated.timing(backdropOpacity, {
-        toValue: 0,
-        duration: 180,
-        easing: Easing.in(Easing.cubic),
-        useNativeDriver: true,
-      }),
-      Animated.timing(translateY, {
-        toValue: sheetHeight.current,
-        duration: 180,
-        easing: Easing.in(Easing.cubic),
-        useNativeDriver: true,
-      }),
-    ]).start(({ finished }) => {
-      if (finished) setMounted(false);
-    });
-  }, [visible, backdropOpacity, translateY]);
-
-  const panResponder = useMemo(
-    () =>
-      PanResponder.create({
-        onStartShouldSetPanResponder: () => true,
-        onMoveShouldSetPanResponder: (_, gesture) =>
-          Math.abs(gesture.dy) > DRAG_ACTIVATION_PX &&
-          Math.abs(gesture.dy) > Math.abs(gesture.dx),
-        onPanResponderMove: (_, gesture) => {
-          translateY.setValue(Math.max(0, gesture.dy));
-        },
-        onPanResponderRelease: (_, gesture) => {
-          if (
-            gesture.dy > DRAG_DISMISS_PX ||
-            gesture.vy > DRAG_DISMISS_VELOCITY
-          ) {
-            onCloseRef.current();
-            return;
-          }
-          Animated.spring(translateY, {
-            toValue: 0,
-            useNativeDriver: true,
-            bounciness: 0,
-          }).start();
-        },
-        onPanResponderTerminate: () => {
-          Animated.spring(translateY, {
-            toValue: 0,
-            useNativeDriver: true,
-            bounciness: 0,
-          }).start();
-        },
-      }),
-    [translateY],
-  );
 
   useEffect(() => {
     if (!visible) return;
@@ -215,149 +128,103 @@ export default function NotificationsSettingsSheet({
     });
   };
 
-  if (!mounted) return null;
-
   return (
-    <Modal
-      visible={mounted}
-      animationType="none"
-      transparent
-      statusBarTranslucent
-      onRequestClose={onClose}
+    <BottomSheet
+      visible={visible}
+      onClose={onClose}
+      title="Notifications"
+      subtitle="Choose when Azora reminds you about each daily exercise."
     >
-      <View style={styles.backdrop}>
-        <Animated.View
-          style={[styles.backdropFill, { opacity: backdropOpacity }]}
-        />
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
-        <Animated.View
-          onLayout={(event) => {
-            sheetHeight.current = event.nativeEvent.layout.height;
-          }}
-          style={[
-            styles.sheet,
-            {
-              paddingBottom: insets.bottom + spacing.lg,
-              transform: [{ translateY }],
-            },
-          ]}
-        >
-          <View style={styles.dragArea} {...panResponder.panHandlers}>
-            <View style={styles.grabber} />
-            <View style={styles.header}>
-              <View>
-                <Text style={styles.title}>Notifications</Text>
-                <Text style={styles.subtitle}>
-                  Choose when Azora reminds you about each daily exercise.
-                </Text>
-              </View>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Close notifications settings"
-                onPress={onClose}
-                hitSlop={10}
-                style={({ pressed }) => [
-                  styles.closeButton,
-                  pressed && styles.closeButtonPressed,
-                ]}
-              >
-                <MaterialCommunityIcons name="close" size={22} color={colors.text.secondary} />
-              </Pressable>
-            </View>
-          </View>
-
-          {preferences == null || schedule == null ? (
-            hasInitialLoadError ? (
-              <View style={styles.loadError} accessibilityRole="alert">
-                <MaterialCommunityIcons
-                  name="cloud-alert-outline"
-                  size={28}
-                  color={colors.error[500]}
-                />
-                <Text style={styles.loadErrorTitle}>
-                  Couldn&apos;t load notification settings
-                </Text>
-                <Text style={styles.loadErrorMessage}>
-                  Check your connection and try again. Your saved reminder
-                  times have not been changed.
-                </Text>
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={() => {
-                    void Promise.all([
-                      preferencesQuery.refetch(),
-                      scheduleQuery.refetch(),
-                    ]);
-                  }}
-                  disabled={
-                    preferencesQuery.isFetching || scheduleQuery.isFetching
-                  }
-                  style={({ pressed }) => [
-                    styles.retryButton,
-                    pressed && styles.retryButtonPressed,
-                  ]}
-                >
-                  {preferencesQuery.isFetching || scheduleQuery.isFetching ? (
-                    <ActivityIndicator
-                      size="small"
-                      color={colors.background.primary}
-                    />
-                  ) : (
-                    <Text style={styles.retryButtonText}>Try again</Text>
-                  )}
-                </Pressable>
-              </View>
-            ) : (
-              <View style={styles.loading}>
-                <ActivityIndicator color={colors.primary.blue600} />
-              </View>
-            )
-          ) : (
-            <ScrollView
-              style={styles.bodyScroll}
-              contentContainerStyle={styles.body}
-              showsVerticalScrollIndicator={false}
+      {preferences == null || schedule == null ? (
+        hasInitialLoadError ? (
+          <View style={styles.loadError} accessibilityRole="alert">
+            <MaterialCommunityIcons
+              name="cloud-alert-outline"
+              size={28}
+              color={colors.error[500]}
+            />
+            <Text style={styles.loadErrorTitle}>
+              Couldn&apos;t load notification settings
+            </Text>
+            <Text style={styles.loadErrorMessage}>
+              Check your connection and try again. Your saved reminder
+              times have not been changed.
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => {
+                void Promise.all([
+                  preferencesQuery.refetch(),
+                  scheduleQuery.refetch(),
+                ]);
+              }}
+              disabled={
+                preferencesQuery.isFetching || scheduleQuery.isFetching
+              }
+              style={({ pressed }) => [
+                styles.retryButton,
+                pressed && styles.retryButtonPressed,
+              ]}
             >
-              {DAILY_REMINDER_DEFINITIONS.map((definition) => (
-                <ReminderRow
-                  key={definition.id}
-                  title={definition.settings.title}
-                  subtitle={definition.settings.subtitle}
-                  reminder={preferences.dailyPlanReminders[definition.id]}
-                  time={schedule.actions[definition.scheduleActionId]}
-                  disabled={updatePreferences.isPending || updateSchedule.isPending}
-                  onUpdate={(next) => updateReminder(definition.id, next)}
-                  onTimeChange={(time) =>
-                    updateReminderTime(definition.scheduleActionId, time)
-                  }
+              {preferencesQuery.isFetching || scheduleQuery.isFetching ? (
+                <ActivityIndicator
+                  size="small"
+                  color={colors.background.primary}
                 />
-              ))}
+              ) : (
+                <Text style={styles.retryButtonText}>Try again</Text>
+              )}
+            </Pressable>
+          </View>
+        ) : (
+          <View style={styles.loading}>
+            <ActivityIndicator color={colors.primary.blue600} />
+          </View>
+        )
+      ) : (
+        <ScrollView
+          style={styles.bodyScroll}
+          contentContainerStyle={styles.body}
+          showsVerticalScrollIndicator={false}
+        >
+          {DAILY_REMINDER_DEFINITIONS.map((definition) => (
+            <ReminderRow
+              key={definition.id}
+              title={definition.settings.title}
+              subtitle={definition.settings.subtitle}
+              reminder={preferences.dailyPlanReminders[definition.id]}
+              time={schedule.actions[definition.scheduleActionId]}
+              disabled={updatePreferences.isPending || updateSchedule.isPending}
+              onUpdate={(next) => updateReminder(definition.id, next)}
+              onTimeChange={(time) =>
+                updateReminderTime(definition.scheduleActionId, time)
+              }
+            />
+          ))}
 
-              {permissionStatus === 'denied' && hasEnabledNotification ? (
-                <Pressable
-                  onPress={() => {
-                    void Linking.openSettings();
-                  }}
-                  style={({ pressed }) => [
-                    styles.settingsNotice,
-                    pressed && styles.settingsNoticePressed,
-                  ]}
-                >
-                  <MaterialCommunityIcons
-                    name="alert-circle-outline"
-                    size={18}
-                    color={colors.warning[700]}
-                  />
-                  <Text style={styles.settingsNoticeText}>
-                    Notifications are disabled in system settings.
-                  </Text>
-                </Pressable>
-              ) : null}
-            </ScrollView>
-          )}
-        </Animated.View>
-      </View>
-    </Modal>
+          {permissionStatus === 'denied' && hasEnabledNotification ? (
+            <Pressable
+              onPress={() => {
+                void Linking.openSettings();
+              }}
+              style={({ pressed }) => [
+                styles.settingsNotice,
+                pressed && styles.settingsNoticePressed,
+              ]}
+            >
+              <MaterialCommunityIcons
+                name="alert-circle-outline"
+                size={18}
+                color={colors.warning[700]}
+              />
+              <Text style={styles.settingsNoticeText}>
+                Notifications are disabled in system settings.
+              </Text>
+            </Pressable>
+          ) : null}
+        </ScrollView>
+      )}
+    </BottomSheet>
   );
 }
 
@@ -413,60 +280,6 @@ function ReminderRow({
 }
 
 const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    justifyContent: 'flex-end',
-  },
-  backdropFill: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: colors.overlay.dark,
-  },
-  sheet: {
-    maxHeight: '90%',
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    backgroundColor: colors.background.primary,
-    paddingTop: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    gap: spacing.lg,
-  },
-  dragArea: {
-    gap: spacing.lg,
-  },
-  grabber: {
-    width: 42,
-    height: 5,
-    borderRadius: 999,
-    alignSelf: 'center',
-    backgroundColor: colors.neutral[300],
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    gap: spacing.md,
-  },
-  title: {
-    ...typography.title.title2,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    color: colors.text.primary,
-  },
-  subtitle: {
-    ...typography.body.small,
-    color: colors.text.secondary,
-  },
-  closeButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.background.elevated,
-  },
-  closeButtonPressed: {
-    opacity: 0.65,
-  },
   loading: {
     minHeight: 240,
     alignItems: 'center',

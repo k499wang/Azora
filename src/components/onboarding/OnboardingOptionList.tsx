@@ -10,26 +10,38 @@ import { fonts, typography } from '../../theme/typography';
 import { Text } from '../common/Text';
 import type { OnboardingOptionIconName } from './OnboardingOptionIcon';
 
-const GLYPH_SIZE = 96;
+const GLYPH_SIZE = 28;
+const GLYPH_COLUMN = 40;
 
-export interface OnboardingOptionCard<Id extends string> {
+export interface OnboardingOption<Id extends string> {
   id: Id;
   title: string;
+  /** the option's colour — it tints the icon, never the surface */
   accent: string;
   icon?: OnboardingOptionIconName;
 }
 
-interface OnboardingOptionCardGridProps<Id extends string> {
-  options: OnboardingOptionCard<Id>[];
+interface OnboardingOptionListProps<Id extends string> {
+  options: OnboardingOption<Id>[];
   selectedIds: Id[];
   onSelect: (id: Id) => void;
   disabled?: boolean;
   animate?: boolean;
   multiSelect?: boolean;
-  renderGlyph?: (option: OnboardingOptionCard<Id>) => ReactNode;
+  renderGlyph?: (option: OnboardingOption<Id>) => ReactNode;
 }
 
-export default function OnboardingOptionCardGrid<Id extends string>({
+/**
+ * One option per row: an outlined off-white card, the option's colour carried
+ * by its icon, and the label in the app's normal reading colour.
+ *
+ * Colour used to fill the whole card, which put white text on six different
+ * hues and made every option a separate contrast problem — light fills failed
+ * outright and dark ones turned the screen muddy. A row keeps the colour as
+ * accent, lets long labels ("A friend or family member") sit on one line, and
+ * makes selection a single blue state rather than one per hue.
+ */
+export default function OnboardingOptionList<Id extends string>({
   options,
   selectedIds,
   onSelect,
@@ -37,8 +49,8 @@ export default function OnboardingOptionCardGrid<Id extends string>({
   animate = false,
   multiSelect = false,
   renderGlyph,
-}: OnboardingOptionCardGridProps<Id>) {
-  const cardAnims = useRef(
+}: OnboardingOptionListProps<Id>) {
+  const rowAnims = useRef(
     options.map(() => new Animated.Value(animate ? 0 : 1)),
   ).current;
 
@@ -46,7 +58,7 @@ export default function OnboardingOptionCardGrid<Id extends string>({
     if (!animate) return;
     const animation = Animated.stagger(
       45,
-      cardAnims.map((anim) =>
+      rowAnims.map((anim) =>
         Animated.timing(anim, {
           toValue: 1,
           duration: 420,
@@ -58,7 +70,7 @@ export default function OnboardingOptionCardGrid<Id extends string>({
     );
     animation.start();
     return () => animation.stop();
-  }, [animate, cardAnims]);
+  }, [animate, rowAnims]);
 
   const handlePress = (id: Id) => {
     if (isHapticsEnabled()) Haptics.selectionAsync().catch(() => {});
@@ -67,30 +79,27 @@ export default function OnboardingOptionCardGrid<Id extends string>({
 
   return (
     <View
-      style={styles.grid}
+      style={styles.list}
       accessibilityRole={multiSelect ? undefined : 'radiogroup'}
     >
       {options.map((option, index) => {
         const selected = selectedIds.includes(option.id);
-        const anim = cardAnims[index];
+        const anim = rowAnims[index];
 
         return (
           <Animated.View
             key={option.id}
-            style={[
-              styles.slot,
-              {
-                opacity: anim,
-                transform: [
-                  {
-                    translateY: anim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [14, 0],
-                    }),
-                  },
-                ],
-              },
-            ]}
+            style={{
+              opacity: anim,
+              transform: [
+                {
+                  translateY: anim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [14, 0],
+                  }),
+                },
+              ],
+            }}
           >
             <Pressable
               accessibilityRole={multiSelect ? 'checkbox' : 'radio'}
@@ -100,11 +109,10 @@ export default function OnboardingOptionCardGrid<Id extends string>({
               disabled={disabled}
               onPress={() => handlePress(option.id)}
               style={({ pressed }) => [
-                styles.card,
-                { backgroundColor: option.accent },
-                pressed && styles.cardPressed,
-                disabled && !selected && styles.cardDisabled,
-                selected && styles.cardSelected,
+                styles.row,
+                pressed && styles.rowPressed,
+                disabled && !selected && styles.rowDisabled,
+                selected && styles.rowSelected,
               ]}
             >
               <View style={styles.glyph} pointerEvents="none">
@@ -113,7 +121,7 @@ export default function OnboardingOptionCardGrid<Id extends string>({
                   <MaterialCommunityIcons
                     name={option.icon}
                     size={GLYPH_SIZE}
-                    color={colors.text.inverse}
+                    color={option.accent}
                   />
                 ) : null)}
               </View>
@@ -127,46 +135,48 @@ export default function OnboardingOptionCardGrid<Id extends string>({
 }
 
 const styles = StyleSheet.create({
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginHorizontal: -spacing.xs,
+  list: {
+    gap: spacing.sm,
     marginTop: spacing.sm,
   },
-  slot: {
-    width: '50%',
-    padding: spacing.xs,
+  row: {
+    ...card.base,
+    // Off-white, the canvas the onboarding screens already sit on: the outline
+    // is what makes a row a row here, so the fill stays quiet behind it rather
+    // than lifting a white slab off the page.
+    backgroundColor: colors.background.canvas,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    minHeight: 64,
+    // The selected border is drawn on every row so selecting one does not
+    // change its size and nudge the rows under it.
+    borderWidth: 2,
+    borderColor: colors.neutral[200],
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
   },
-  card: {
-    ...card.block,
-    flex: 1,
-    minHeight: 78,
-    borderWidth: 3,
-    borderColor: 'transparent',
-    padding: spacing.md,
-    justifyContent: 'center',
+  rowSelected: {
+    borderColor: colors.primary.blue600,
+    backgroundColor: colors.primary.blue100,
   },
-  cardSelected: {
-    borderColor: colors.text.primary,
-  },
-  cardPressed: {
+  rowPressed: {
     opacity: 0.9,
-    transform: [{ scale: 0.98 }],
+    transform: [{ scale: 0.99 }],
   },
-  cardDisabled: {
+  rowDisabled: {
     opacity: 0.5,
   },
   glyph: {
-    position: 'absolute',
-    right: -20,
-    bottom: -18,
-    opacity: 0.18,
+    width: GLYPH_COLUMN,
+    alignItems: 'center',
   },
   title: {
     ...typography.label.large,
     fontFamily: fonts.semibold,
-    fontSize: 18,
+    fontSize: 17,
     lineHeight: 22,
-    color: colors.text.inverse,
+    flex: 1,
+    color: colors.text.primary,
   },
 });

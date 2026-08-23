@@ -1,14 +1,11 @@
 import { Text } from '../../components/common/Text';
 import { useCallback, useEffect, useMemo, useRef, type ReactNode } from 'react';
-import {
-  Modal, Platform, Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import Icon from '../../components/common/icons/Icon';
+import BottomSheet from '../../components/common/BottomSheet';
 import type { RootStackNavigationProp } from '../../app/navigation';
-import { card } from '../../theme/card';
 import { colors } from '../../theme/colors';
-import { padding, spacing } from '../../theme/spacing';
+import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import AudioSettingsRow from './AudioSettingsRow';
 import HeartRateMonitoringSection from './HeartRateMonitoringSection';
@@ -37,7 +34,6 @@ export default function AudioSettingsSheet({
   extraSectionsTop,
   heartRateMonitoringLocked = false,
 }: AudioSettingsSheetProps) {
-  const insets = useSafeAreaInsets();
   const navigation = useNavigation<RootStackNavigationProp>();
   const { preferences, select, reset } = useAudioPreferences();
   const { play, stop, previewingAsset } = useAudioPreview();
@@ -71,14 +67,6 @@ export default function AudioSettingsSheet({
       feature: FeatureKey.BreathingHeartRateMonitoring,
     });
   }, [navigation]);
-
-  useEffect(() => {
-    // React Native only emits Modal.onDismiss on iOS. On Android the modal is
-    // removed when visible becomes false, so navigate after that render commits.
-    if (Platform.OS !== 'ios' && !visible) {
-      navigateToHeartRateMonitoringPaywall();
-    }
-  }, [navigateToHeartRateMonitoringPaywall, visible]);
 
   const openHeartRateMonitoringPaywall = useCallback(() => {
     if (heartRatePaywallPendingRef.current) return;
@@ -116,70 +104,50 @@ export default function AudioSettingsSheet({
   };
 
   return (
-    <Modal
+    <BottomSheet
       visible={visible}
-      transparent
-      animationType="slide"
-      onRequestClose={handleClose}
-      onDismiss={navigateToHeartRateMonitoringPaywall}
+      onClose={handleClose}
+      title={title}
+      onDismissed={navigateToHeartRateMonitoringPaywall}
     >
-      <View style={styles.backdrop}>
-        <Pressable style={styles.backdropDismiss} onPress={handleClose} />
-        <View style={[styles.sheet, { paddingBottom: insets.bottom + spacing.lg }]}>
-          <View style={styles.handle} />
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {extraSectionsTop}
+        <HeartRateMonitoringSection
+          enabled={effectiveHeartRateMonitoringEnabled}
+          locked={heartRateMonitoringLocked}
+          proLocked={heartRateMonitoringProLocked}
+          onToggle={handleHeartRateMonitoringToggle}
+        />
+        {audioCategories.map((category) => (
+          <CategorySection
+            key={category.id}
+            category={category}
+            selectedId={preferences[category.id]}
+            onSelect={(optionId) => select(category.id, optionId)}
+            previewingAsset={previewingAsset}
+            onPreview={(asset) => {
+              if (previewingAsset === asset) {
+                stop();
+              } else {
+                play(asset);
+              }
+            }}
+          />
+        ))}
 
-          <View style={styles.header}>
-            <Text style={styles.title}>{title}</Text>
-            <Pressable
-              onPress={handleClose}
-              accessibilityRole="button"
-              accessibilityLabel="Close audio settings"
-              style={({ pressed }) => [styles.closeBtn, pressed && styles.pressed]}
-            >
-              <Icon name="close" size={18} color={colors.text.primary} />
-            </Pressable>
-          </View>
-
-          <ScrollView
-            style={styles.scroll}
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-          >
-            {extraSectionsTop}
-            <HeartRateMonitoringSection
-              enabled={effectiveHeartRateMonitoringEnabled}
-              locked={heartRateMonitoringLocked}
-              proLocked={heartRateMonitoringProLocked}
-              onToggle={handleHeartRateMonitoringToggle}
-            />
-            {audioCategories.map((category) => (
-              <CategorySection
-                key={category.id}
-                category={category}
-                selectedId={preferences[category.id]}
-                onSelect={(optionId) => select(category.id, optionId)}
-                previewingAsset={previewingAsset}
-                onPreview={(asset) => {
-                  if (previewingAsset === asset) {
-                    stop();
-                  } else {
-                    play(asset);
-                  }
-                }}
-              />
-            ))}
-
-            <Pressable
-              onPress={reset}
-              accessibilityRole="button"
-              style={({ pressed }) => [styles.resetBtn, pressed && styles.pressed]}
-            >
-              <Text style={styles.resetLabel}>Reset to defaults</Text>
-            </Pressable>
-          </ScrollView>
-        </View>
-      </View>
-    </Modal>
+        <Pressable
+          onPress={reset}
+          accessibilityRole="button"
+          style={({ pressed }) => [styles.resetBtn, pressed && styles.pressed]}
+        >
+          <Text style={styles.resetLabel}>Reset to defaults</Text>
+        </Pressable>
+      </ScrollView>
+    </BottomSheet>
   );
 }
 
@@ -252,53 +220,6 @@ function CategorySection({
 }
 
 const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: colors.overlay.dark,
-    justifyContent: 'flex-end',
-  },
-  backdropDismiss: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  sheet: {
-    ...card.base,
-    ...card.shadow,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    borderBottomLeftRadius: 0,
-    borderBottomRightRadius: 0,
-    paddingTop: spacing.sm,
-    paddingHorizontal: padding.screen.horizontal,
-    maxHeight: '85%',
-  },
-  handle: {
-    alignSelf: 'center',
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: colors.neutral[300],
-    marginBottom: spacing.sm,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: spacing.sm,
-  },
-  title: {
-    ...typography.title.title2,
-    fontFamily: fonts.regular,
-    fontWeight: '400',
-    color: colors.text.primary,
-  },
-  closeBtn: {
-    width: spacing.xl,
-    height: spacing.xl,
-    borderRadius: spacing.xl / 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.neutral[100],
-  },
   pressed: {
     opacity: 0.7,
   },
