@@ -11,6 +11,7 @@ import {
   getFeatureAccess,
 } from '../../../services/subscriptions/featureAccess';
 import { getCaptureModeConfig } from '../../../lib/heartRate/captureModes';
+import { DAILIES_PER_DAY } from '../../../lib/dailies';
 
 const QUICK_MODE = getCaptureModeConfig('quick');
 const FULL_MODE = getCaptureModeConfig('full');
@@ -30,6 +31,20 @@ function dailyExerciseFreeLabel(): string | null {
   });
   if (access.reason === 'pro_only') return null;
   return access.limit != null ? `${access.limit} / day` : null;
+}
+
+// A decoration is earned by finishing every daily, so the free tier reaches the
+// room only when its session limit covers all of them. Derived rather than
+// hardcoded for the same reason as the row above: raising the limit must move
+// this cell on its own, not leave the paywall claiming a lock that is gone.
+function dailyDecorationFreeCell(): true | null {
+  const access = getFeatureAccess({
+    feature: FeatureKey.DailyExercise,
+    isPro: false,
+  });
+  if (access.reason === 'pro_only') return null;
+  if (access.limit == null) return true;
+  return access.limit >= DAILIES_PER_DAY ? true : null;
 }
 
 interface PaywallFreeVsProStepProps {
@@ -54,6 +69,7 @@ export function PaywallFreeVsProStep({
         free: FULL_MODE.requiresPro ? null : true,
       },
       { label: 'Breathing sessions', free: dailyExerciseFreeLabel() },
+      { label: 'Daily room decoration', free: dailyDecorationFreeCell() },
       { label: 'Personalized plan', free: null },
       { label: 'Live heart rate', free: null },
       { label: 'Stress insights', free: null },

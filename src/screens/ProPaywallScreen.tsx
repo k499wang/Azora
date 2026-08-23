@@ -380,6 +380,8 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   planCards: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
     gap: spacing.sm,
   },
   planCardsNoTrial: {

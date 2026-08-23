@@ -237,6 +237,7 @@ export function ExitOfferContent({
                   savingsPercent={savingsPercent}
                   comparePerWeek={weekly ? computePerWeek(weekly) : null}
                   light
+                  layout="full-width"
                 />
               ) : null}
 
