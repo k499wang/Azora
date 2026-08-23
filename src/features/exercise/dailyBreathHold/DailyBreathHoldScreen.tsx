@@ -492,7 +492,7 @@ export default function DailyBreathHoldScreen({
       <ExerciseScaffold
         darkTheme={activeTheme}
         leftSlot={
-          showSessionControls ? (
+          showSessionControls || phase === 'idle' ? (
             <Animated.View
               style={shouldAutoHideHud ? { opacity: hudOpacity } : undefined}
               pointerEvents={shouldAutoHideHud && !hudVisible ? 'none' : 'auto'}
@@ -567,7 +567,6 @@ export default function DailyBreathHoldScreen({
             <DailyBreathHoldHud
               theme={activeTheme}
               onSettingsPress={() => setAudioSettingsOpen(true)}
-              onExit={handleExit}
               onStart={handlePrimaryPress}
             />
           ) : null

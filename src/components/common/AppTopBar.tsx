@@ -116,9 +116,10 @@ export default function AppTopBar({
               {showNotifications && (
                 <GlassIconButton
                   accessibilityLabel="Open notification settings"
+                  size={48}
                   onPress={() => setNotificationsVisible(true)}
                 >
-                  <Icon name="bell" size={20} color={colors.text.secondary} />
+                  <Icon name="bell" size={26} color={colors.text.secondary} />
                 </GlassIconButton>
               )}
               {showAvatar && (

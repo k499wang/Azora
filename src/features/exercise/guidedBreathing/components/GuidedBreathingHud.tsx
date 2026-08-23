@@ -1,13 +1,11 @@
-import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
-import * as Haptics from 'expo-haptics';
-import { SettingsGearButton } from '../../../audioSettings';
-import { isHapticsEnabled } from '../../../../services/preferences/hapticsPreference';
+import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import type { ExerciseDarkTheme } from '../../../../theme/exerciseDarkThemes';
-import { colors } from '../../../../theme/colors';
 import { spacing } from '../../../../theme/spacing';
 import { isShortScreen } from '../../../../theme/breakpoints';
-import Icon from '../../../../components/common/icons/Icon';
+import {
+  SESSION_GLASS_CONTROL_SIZE,
+  SessionGlassButton,
+} from '../../shared/components/SessionGlassButton';
 import RoundsHapticPicker from './RoundsHapticPicker';
 
 interface GuidedBreathingHudProps {
@@ -24,7 +22,6 @@ interface GuidedBreathingHudProps {
   showPrimaryButton: boolean;
   primaryIcon: 'play' | 'pause';
   onPrimaryPress: () => void;
-  onClosePress: () => void;
 }
 
 export function GuidedBreathingHud({
@@ -40,7 +37,6 @@ export function GuidedBreathingHud({
   showPrimaryButton,
   primaryIcon,
   onPrimaryPress,
-  onClosePress,
 }: GuidedBreathingHudProps) {
   const { height } = useWindowDimensions();
   const compact = isShortScreen(height);
@@ -59,50 +55,24 @@ export function GuidedBreathingHud({
 
       {showButtonRow ? (
         <View style={styles.btnRow}>
-          <Pressable
-            style={({ pressed }) => [
-              styles.exitBtn,
-              { backgroundColor: theme.surface, borderColor: theme.surfaceBorder },
-              pressed && styles.circleBtnPressed,
-            ]}
-            onPress={() => {
-              if (isHapticsEnabled()) Haptics.selectionAsync().catch(() => {});
-              onClosePress();
-            }}
-          >
-            <Icon name="close" size={26} color={theme.iconPrimary} />
-          </Pressable>
-
           {showSettingsButton ? (
-            <SettingsGearButton
+            <SessionGlassButton
+              theme={theme}
+              icon="cog-outline"
+              accessibilityLabel="Session options"
+              size={SESSION_GLASS_CONTROL_SIZE}
               onPress={onSettingsPress}
-              label="Session options"
-              iconName="tune-variant"
-              color={theme.iconPrimary}
-              backgroundColor={theme.surface}
-              borderColor={theme.surfaceBorder}
-              size={64}
             />
           ) : null}
 
           {showPrimaryButton ? (
-            <Pressable
-              style={({ pressed }) => [
-                styles.circleBtn,
-                { backgroundColor: theme.surface, borderColor: theme.surfaceBorder },
-                pressed && styles.circleBtnPressed,
-              ]}
-              onPress={() => {
-                if (isHapticsEnabled()) Haptics.selectionAsync().catch(() => {});
-                onPrimaryPress();
-              }}
-            >
-              <MaterialCommunityIcons
-                name={primaryIcon}
-                size={28}
-                color={theme.iconPrimary}
-              />
-            </Pressable>
+            <SessionGlassButton
+              theme={theme}
+              icon={primaryIcon}
+              accessibilityLabel={primaryIcon === 'play' ? 'Start' : 'Pause'}
+              size={SESSION_GLASS_CONTROL_SIZE}
+              onPress={onPrimaryPress}
+            />
           ) : null}
         </View>
       ) : null}
@@ -127,29 +97,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.md,
-  },
-  exitBtn: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.neutral[100],
-    borderWidth: 1,
-    borderColor: colors.border.subtle,
-  },
-  circleBtn: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.neutral[100],
-    borderWidth: 1,
-    borderColor: colors.border.subtle,
-  },
-  circleBtnPressed: {
-    opacity: 0.75,
-    transform: [{ scale: 0.96 }],
   },
 });

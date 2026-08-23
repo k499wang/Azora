@@ -541,18 +541,16 @@ export default function GuidedBreathingSessionScreen({
       <ExerciseScaffold
         darkTheme={activeTheme}
         leftSlot={
-          showSessionControls || isPlacement ? (
-            <Animated.View
-              style={isActive ? { opacity: hudOpacity } : undefined}
-              pointerEvents={isActive && !hudVisible ? 'none' : 'auto'}
-            >
-              <SessionGlassButton
-                theme={activeTheme}
-                icon="close"
-                onPress={handleCloseButtonPress}
-              />
-            </Animated.View>
-          ) : null
+          <Animated.View
+            style={isActive ? { opacity: hudOpacity } : undefined}
+            pointerEvents={isActive && !hudVisible ? 'none' : 'auto'}
+          >
+            <SessionGlassButton
+              theme={activeTheme}
+              icon="close"
+              onPress={handleCloseButtonPress}
+            />
+          </Animated.View>
         }
         rightSlot={
           showSessionControls && phase !== 'intro' ? (
@@ -623,7 +621,6 @@ export default function GuidedBreathingSessionScreen({
               showPrimaryButton={!isPlacement}
               primaryIcon={showSessionControls && !paused ? 'pause' : 'play'}
               onPrimaryPress={handlePrimaryPress}
-              onClosePress={handleCloseButtonPress}
             />
           </Animated.View>
         }

@@ -7,7 +7,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { INTENT_OPTIONS } from '../data/intentOptions';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
-import OnboardingOptionCardGrid from '../OnboardingOptionCardGrid';
+import OnboardingOptionList from '../OnboardingOptionList';
 import { INTENT_ICONS } from '../data/intentOptionIcons';
 import type { OnboardingIntent } from '../types';
 
@@ -59,7 +59,7 @@ export default function IntentQuestionScreen({
         <Text style={styles.timeHintText}>Takes about 5 minutes</Text>
       </View>
 
-      <OnboardingOptionCardGrid
+      <OnboardingOptionList
         options={INTENT_OPTIONS.map((option) => ({
           id: option.id,
           title: option.title,

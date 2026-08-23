@@ -1,13 +1,13 @@
 import { colors } from '../../../theme/colors';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
-import OnboardingOptionCardGrid, {
-  type OnboardingOptionCard,
-} from '../OnboardingOptionCardGrid';
+import OnboardingOptionList, {
+  type OnboardingOption,
+} from '../OnboardingOptionList';
 
 export type DoctorReferral = 'doctor' | 'no';
 
-const OPTIONS: OnboardingOptionCard<DoctorReferral>[] = [
+const OPTIONS: OnboardingOption<DoctorReferral>[] = [
   {
     id: 'doctor',
     icon: 'stethoscope',
@@ -56,7 +56,7 @@ export default function DoctorReferralScreen({
         />
       }
     >
-      <OnboardingOptionCardGrid
+      <OnboardingOptionList
         options={OPTIONS}
         selectedIds={value ? [value] : []}
         onSelect={onSelect}

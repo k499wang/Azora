@@ -1,7 +1,7 @@
 import { GENDER_OPTIONS, type GenderOption } from '../data/genderOptions';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
-import OnboardingOptionCardGrid from '../OnboardingOptionCardGrid';
+import OnboardingOptionList from '../OnboardingOptionList';
 
 const GENDER_ICONS: Record<GenderOption['id'], 'gender-female' | 'gender-male' | 'gender-non-binary' | 'help-circle-outline'> = {
   female: 'gender-female',
@@ -44,7 +44,7 @@ export default function GenderScreen({
         />
       }
     >
-      <OnboardingOptionCardGrid
+      <OnboardingOptionList
         options={GENDER_OPTIONS.map((option) => ({
           id: option.id,
           title: option.title,
