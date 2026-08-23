@@ -173,7 +173,8 @@ const styles = StyleSheet.create({
   },
   title: {
     ...typography.label.large,
-    fontFamily: fonts.semibold,
+    fontFamily: fonts.medium,
+    fontWeight: '500',
     fontSize: 17,
     lineHeight: 22,
     flex: 1,

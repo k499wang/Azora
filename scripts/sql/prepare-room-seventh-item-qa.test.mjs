@@ -57,19 +57,61 @@ test('every seeded option still has authored room artwork', () => {
   }
 });
 
-test('the fixture is dry-run by default and refuses unsafe account state', () => {
+test('the fixture is dry-run by default and requires an explicit destructive reset', () => {
   assert.match(setup, /begin;/);
   assert.match(setup, /rollback;\s*-- commit;/);
   assert.match(setup, /v_email text := '<QA_EMAIL>'/);
   assert.match(setup, /v_expected_user_id uuid := null/);
   assert.match(setup, /v_device_timezone text := 'America\/Toronto'/);
+  assert.match(setup, /v_allow_destructive_reset boolean := false/);
+  assert.match(setup, /if not v_allow_destructive_reset then/);
   assert.match(setup, /from auth\.users/);
   assert.match(setup, /from public\.profiles/);
   assert.match(setup, /onboarding_completed_at is not null/);
-  assert.match(setup, /from public\.breathing_sessions/);
-  assert.match(setup, /from public\.breath_hold_sessions/);
-  assert.match(setup, /daily_breath_hold_completed = true/);
-  assert.match(setup, /from public\.rooms/);
-  assert.match(setup, /from public\.room_decorations/);
-  assert.doesNotMatch(setup, /delete from/);
+});
+
+test('destructive reset is scoped to the selected user and local test date', () => {
+  assert.match(
+    setup,
+    /delete from public\.rooms\s+where user_id = v_user_id;/,
+  );
+  assert.match(
+    setup,
+    /delete from public\.breathing_sessions\s+where user_id = v_user_id\s+and local_date = v_today;/,
+  );
+  assert.match(
+    setup,
+    /delete from public\.breath_hold_sessions\s+where user_id = v_user_id\s+and local_date = v_today;/,
+  );
+
+  assert.doesNotMatch(setup, /delete from public\.profiles/);
+  assert.doesNotMatch(setup, /delete from auth\.users/);
+  assert.doesNotMatch(setup, /delete from public\.daily_activity/);
+  assert.doesNotMatch(setup, /delete from public\.heart_rate_sessions/);
+});
+
+test('today exercise counters reset without touching heart-rate or XP counters', () => {
+  const activityReset = setup.slice(
+    setup.indexOf('update public.daily_activity'),
+    setup.indexOf('get diagnostics v_reset_daily_activity_rows'),
+  );
+
+  for (const reset of [
+    'daily_breath_hold_completed = false',
+    'breath_hold_count = 0',
+    'best_hold_seconds = null',
+    'breathing_session_count = 0',
+    'breathing_seconds = 0',
+    'qualifies_for_streak = false',
+  ]) {
+    assert.ok(activityReset.includes(reset), `missing activity reset: ${reset}`);
+  }
+
+  assert.match(
+    activityReset,
+    /where user_id = v_user_id\s+and activity_date = v_today;/,
+  );
+  assert.doesNotMatch(activityReset, /heart_rate_capture_count\s*=/);
+  assert.doesNotMatch(activityReset, /xp_earned\s*=/);
+  assert.match(setup, /Destructive reset verification failed/);
 });

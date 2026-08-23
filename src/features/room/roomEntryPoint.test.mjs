@@ -158,6 +158,26 @@ test('forward room transitions replace and preserve lab params', () => {
   assert.match(complete, /navigation\.replace\('NextRoom', route\.params\)/);
 });
 
+test('the seventh piece stays mounted until the celebration takes over', () => {
+  const decorate = read('screens/RoomDecorateScreen.tsx');
+  const completionBranch = decorate.indexOf(
+    'if (!previewing && placed >= ROOM_SLOT_COUNT)',
+  );
+  const celebrationHandoff = decorate.indexOf(
+    "navigation.replace('RoomComplete', route.params)",
+    completionBranch,
+  );
+  const placementClear = decorate.indexOf('setPlacing(null)', completionBranch);
+
+  assert.ok(completionBranch >= 0, 'the seventh-piece branch is missing');
+  assert.ok(celebrationHandoff >= 0, 'the celebration handoff is missing');
+  assert.ok(placementClear >= 0, 'the non-final placement cleanup is missing');
+  assert.ok(
+    celebrationHandoff < placementClear,
+    'clearing the reveal before navigation exposes the completed picker for a frame',
+  );
+});
+
 test('canonical room writes refresh history without blocking on current-room refetches', () => {
   for (const path of [
     'queries/room/usePlaceDecorationMutation.ts',

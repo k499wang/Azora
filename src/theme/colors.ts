@@ -119,10 +119,10 @@ export const colors = {
     // Cards read pure white, matching Today's Dailies. Every card surface uses
     // this so the app has one card white, not two that are nearly the same.
     card: '#FFFFFF',
-    // A near-white for outlined surfaces that sit directly on `canvas` — white
-    // enough to read as a card, a shade back from the pure card white so the
-    // outline does the separating.
-    cardSoft: '#FCFDFE',
+    // An off-white for outlined surfaces that sit directly on `canvas` — close
+    // enough to the canvas that the rows settle into the page, still a shade
+    // lighter so each one reads as its own surface.
+    cardSoft: '#FAFBFD',
     accentSoft: '#EAF2FF',
     // Blue block behind the top bar, curving into the page canvas.
     headerTint: '#78B4FF',

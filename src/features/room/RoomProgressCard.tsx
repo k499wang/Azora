@@ -218,7 +218,7 @@ export function describeRoomCard({
   if (isComplete) {
     return {
       title: 'This room is finished',
-      note: 'All 7 decorations placed. Pick a new room to keep going.',
+      note: 'Pick a new room to keep going.',
       tone: 'ready',
       ...room,
       action: { label: 'Pick a new room', route: 'NextRoom' },
