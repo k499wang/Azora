@@ -6,6 +6,18 @@ import { fonts, typography } from '../../../theme/typography';
 
 export const TESTIMONIAL_CARD_WIDTH = 268;
 
+const TIMELINE_RAIL_WIDTH = 44;
+/**
+ * A label line plus two lines of body. Pinning the copy blocks to a shared
+ * floor is what keeps the icons evenly spaced down the rail — without it their
+ * gaps track however each body happens to wrap, and three near-identical
+ * paragraphs still drift a few points apart.
+ */
+const TIMELINE_COPY_MIN_HEIGHT =
+  typography.heading.heading1.lineHeight +
+  spacing.xs +
+  typography.body.small.lineHeight * 2;
+
 export const paywallStepStyles = StyleSheet.create({
   proofCard: {
     ...card.base,
@@ -175,52 +187,45 @@ export const paywallStepStyles = StyleSheet.create({
   },
   timeline: {
     alignSelf: 'stretch',
-    paddingLeft: spacing.md,
-    paddingRight: spacing.md,
     marginTop: spacing.md,
+    paddingHorizontal: spacing.md,
+    // The rail spans the padding box, so these are what let it run on above the
+    // first icon and past the last block rather than stopping level with them.
+    paddingTop: spacing.md,
+    paddingBottom: spacing.md,
+  },
+  // One unbroken rail behind every icon rather than dots joined by segments:
+  // the trial is a single stretch of time, and three separate dots read as
+  // three unrelated events. Absolutely positioned so the rows above it can be
+  // any height — copy that wraps to a third line cannot desync the two columns.
+  timelineRail: {
+    position: 'absolute',
+    left: spacing.md,
+    top: 0,
+    bottom: 0,
+    width: TIMELINE_RAIL_WIDTH,
+    borderRadius: TIMELINE_RAIL_WIDTH / 2,
+    borderCurve: 'continuous',
   },
   timelineRow: {
     flexDirection: 'row',
     gap: spacing.md,
+    marginBottom: spacing.md,
   },
-  timelineRail: {
-    alignItems: 'center',
-    width: 52,
+  timelineRowLast: {
+    marginBottom: 0,
   },
-  timelineDot: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  // One label-line tall, so each icon centres on its own heading rather than on
+  // the copy block, whose height varies with how the body wraps.
+  timelineIconSlot: {
+    width: TIMELINE_RAIL_WIDTH,
+    height: typography.heading.heading1.lineHeight,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.primary.blue600,
-    zIndex: 1,
-  },
-  timelineDotUpcoming: {
-    backgroundColor: colors.neutral[300],
-  },
-  timelineLine: {
-    width: 24,
-    flex: 1,
-    minHeight: 44,
-    marginTop: -20,
-    marginBottom: -20,
-    backgroundColor: colors.primary.blue400,
-  },
-  timelineTail: {
-    width: 24,
-    flex: 1,
-    marginTop: -20,
-    backgroundColor: colors.primary.blue400,
-  },
-  timelineLineUpcoming: {
-    backgroundColor: colors.neutral[200],
   },
   timelineCopy: {
     flex: 1,
-  },
-  timelineCopySpaced: {
-    paddingBottom: spacing.md,
+    minHeight: TIMELINE_COPY_MIN_HEIGHT,
   },
   timelineLabel: {
     ...typography.heading.heading1,
@@ -308,7 +313,11 @@ export const paywallStepStyles = StyleSheet.create({
     marginTop: spacing.xs,
     marginBottom: spacing.xs,
   },
+  // Side by side, so both prices are readable against each other without a
+  // scroll or a glance down the page.
   planCards: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
     gap: spacing.sm,
   },
   planCardsNoTrial: {
