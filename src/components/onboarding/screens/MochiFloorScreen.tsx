@@ -61,15 +61,15 @@ export default function MochiFloorScreen({
 
   return (
     <OnboardingScreenLayout
-      title="Seven things fill the room."
-      subtitle="Then you start on his next one."
+      title="Seven items fill a room."
+      subtitle="Fill it and you get to make another one."
       progress={stepIndex / stepCount}
       onBack={onBack}
       centerCopy
       typeTitle
       centerBody
       centerOnScreen
-      footer={<OnboardingPrimaryButton label="Got it" onPress={onContinue} />}
+      footer={<OnboardingPrimaryButton label="Continue" onPress={onContinue} />}
     >
       <MochiStage
         ref={blob}

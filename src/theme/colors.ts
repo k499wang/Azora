@@ -100,6 +100,9 @@ export const colors = {
     sparkle: '#FFC94D',
     // matches the shadow ink the room artwork already uses
     shadow: 'rgba(58,67,79,0.22)',
+    // the clipboard he takes notes on — warm wood against his mint
+    board: '#C08A54',
+    boardEdge: '#8A5A2E',
   },
 
   background: {

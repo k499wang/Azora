@@ -34,7 +34,10 @@ const NAV_SLOT_WIDTH = 44;
 interface OnboardingScreenLayoutProps {
   title: string;
   subtitle?: string;
-  progress: number;
+  /** stands in for the title block — the screen's own question, asked its way */
+  titleSlot?: ReactNode;
+  /** omit on a screen that is not a step, and the bar is left off entirely */
+  progress?: number;
   onBack?: () => void;
   onSkip?: () => void;
   footer: ReactNode;
@@ -55,6 +58,7 @@ interface OnboardingScreenLayoutProps {
 export default function OnboardingScreenLayout({
   title,
   subtitle,
+  titleSlot,
   progress,
   onBack,
   onSkip,
@@ -72,7 +76,8 @@ export default function OnboardingScreenLayout({
   enableNavigationHaptics = true,
 }: OnboardingScreenLayoutProps) {
   const insets = useSafeAreaInsets();
-  const clampedProgress = Math.max(0, Math.min(1, progress));
+  const clampedProgress =
+    progress === undefined ? undefined : Math.max(0, Math.min(1, progress));
   // The nav row always keeps its height, so the copy below it sits at the same
   // vertical position whether or not a screen has a back or skip action.
   const fade = useRef(
@@ -288,7 +293,11 @@ export default function OnboardingScreenLayout({
           ) : null}
         </View>
 
-        <ProgressBar progress={clampedProgress} />
+        {clampedProgress === undefined ? (
+          <View style={styles.progressBarSpacer} />
+        ) : (
+          <ProgressBar progress={clampedProgress} />
+        )}
 
         <View style={styles.headerSlotRight}>
           {onSkip ? (
@@ -331,7 +340,9 @@ export default function OnboardingScreenLayout({
               { transform: [{ scale }] },
             ]}
           >
-            {title ? (
+            {titleSlot ? (
+              <View style={styles.copy}>{titleSlot}</View>
+            ) : title ? (
               <View style={styles.copy}>
                 <Animated.View
                   style={{
@@ -547,6 +558,9 @@ const styles = StyleSheet.create({
     height: 32,
     alignItems: 'flex-end',
     justifyContent: 'center',
+  },
+  progressBarSpacer: {
+    flex: 1,
   },
   progressBar: {
     flex: 1,

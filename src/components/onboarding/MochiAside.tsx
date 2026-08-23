@@ -9,20 +9,23 @@ import Reanimated, {
   withTiming,
 } from 'react-native-reanimated';
 import MochiPortrait, {
-  type MochiAccessory,
   type MochiExpression,
+  type MochiHeld,
+  type MochiWearable,
 } from '../../features/room/MochiPortrait';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
-import { typography } from '../../theme/typography';
+import { fonts, typography } from '../../theme/typography';
 import { duration, easing } from '../../theme/motion';
 
 /**
- * Mochi adding a line beside something the screen is showing.
+ * Mochi saying one line from a speech bubble.
  *
- * This is a footnote, not a narrator: it belongs under a visual that has already
- * made the point, and it says one thing. He does not run the screen, and the
- * copy above him is still the app's own voice.
+ * In its default `aside` variant this is a footnote, not a narrator: it belongs
+ * under a visual that has already made the point, and it says one thing. In
+ * `question` and `heading` he is doing the title's job instead — asking the
+ * screen's question, or introducing a section of a longer page — so he is
+ * larger and the line carries a title's weight.
  *
  * Two restraints keep it cheap and crisp:
  *
@@ -36,24 +39,38 @@ import { duration, easing } from '../../theme/motion';
  */
 
 const MOCHI_SIZE = 52;
+const LEAD_MOCHI_SIZE = 64;
 const TAIL = 13;
 const PILL_START_SCALE = 0.9;
 
+/**
+ * `aside` is the footnote above. `question` is Mochi asking the screen's own
+ * question, standing in for the title the screen no longer prints, and
+ * `heading` is him introducing a section of a longer page; both of those carry
+ * a title's weight, so they share its size.
+ */
+export type MochiAsideVariant = 'aside' | 'question' | 'heading';
+
 interface MochiAsideProps {
   text: string;
-  /** what he is wearing or holding — pick one that fits the screen */
-  accessory?: MochiAccessory;
+  variant?: MochiAsideVariant;
   expression?: MochiExpression;
+  wearing?: MochiWearable;
+  holding?: MochiHeld;
   /** lets the screen's own visual land first */
   delayMs?: number;
 }
 
 export default function MochiAside({
   text,
-  accessory,
+  variant = 'aside',
   expression,
+  wearing,
+  holding,
   delayMs = 320,
 }: MochiAsideProps) {
+  const lead = variant !== 'aside';
+  const heading = variant === 'heading';
   const enter = useSharedValue(0);
   const reducedMotion = useReducedMotion();
 
@@ -87,15 +104,25 @@ export default function MochiAside({
   return (
     <View style={styles.row} accessible accessibilityLabel={text}>
       <MochiPortrait
-        size={MOCHI_SIZE}
-        accessory={accessory}
+        size={lead ? LEAD_MOCHI_SIZE : MOCHI_SIZE}
         expression={expression}
+        wearing={wearing}
+        holding={holding}
       />
-      <View style={styles.bubble}>
-        <Reanimated.View style={[styles.pill, pillStyle]}>
+      <View style={[styles.bubble, lead && styles.bubbleLead]}>
+        <Reanimated.View
+          style={[styles.pill, lead && styles.pillLead, pillStyle]}
+        >
           <View style={styles.tail} />
         </Reanimated.View>
-        <Reanimated.Text style={[styles.text, textStyle]}>
+        <Reanimated.Text
+          style={[
+            styles.text,
+            lead && styles.textLead,
+            heading && styles.textHeading,
+            textStyle,
+          ]}
+        >
           {text}
         </Reanimated.Text>
       </View>
@@ -116,6 +143,10 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
   },
+  bubbleLead: {
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+  },
   // No shadow. This layer scales as it pops, and an unrasterised shadow on a
   // scaling layer is redrawn every frame — a hairline border reads as cleanly
   // and costs nothing.
@@ -126,6 +157,9 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border.subtle,
     backgroundColor: colors.background.card,
+  },
+  pillLead: {
+    borderRadius: 22,
   },
   // a square rotated onto its corner, tucked behind the pill so only the point
   // aimed at Mochi shows
@@ -146,5 +180,19 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 19,
     color: colors.text.secondary,
+  },
+  // He introduces a section rather than titling it, so it sits below the
+  // weight of a question and above the footnote.
+  textHeading: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  textLead: {
+    fontFamily: fonts.semibold,
+    fontWeight: '500',
+    fontSize: 19,
+    lineHeight: 26,
+    letterSpacing: -0.2,
+    color: colors.text.primary,
   },
 });

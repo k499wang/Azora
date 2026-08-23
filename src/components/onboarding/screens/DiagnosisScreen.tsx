@@ -6,6 +6,7 @@ import MindMapRadar from '../MindMapRadar';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
+import MochiAside from '../MochiAside';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import { benchmarkBreathHold } from '../../../lib/breathHoldPercentile';
@@ -160,7 +161,14 @@ export default function DiagnosisScreen({
           {' has the most room to move.'}
         </Text>
 
-        <Text style={styles.sectionTitle}>Your highlights</Text>
+        <View style={styles.speech}>
+          <MochiAside
+            text="Here are your highlights:"
+            variant="heading"
+            expression="pleased"
+            holding="notes"
+          />
+        </View>
 
         <HighlightCardList items={highlights} />
 
@@ -206,6 +214,10 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semibold,
     fontWeight: '500',
     color: colors.orange[600],
+  },
+  speech: {
+    marginTop: spacing.lg,
+    marginBottom: spacing.xs,
   },
   sectionTitle: {
     ...typography.title.title3,

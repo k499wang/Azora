@@ -6,6 +6,7 @@ import { fonts, typography } from '../../../theme/typography';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import OnboardingHapticSlider from '../OnboardingHapticSlider';
+import MochiAside from '../MochiAside';
 
 interface SleepScreenProps {
   value: number;
@@ -46,8 +47,16 @@ export default function SleepScreen({
 
   return (
     <OnboardingScreenLayout
-      title="How rested do you feel most mornings?"
-      subtitle="Sleep shapes everything including your stress, focus, and mood."
+      title=""
+      titleSlot={
+        <MochiAside
+          text="How rested do you feel most mornings?"
+          variant="question"
+          expression="sleepy"
+          holding="notes"
+          delayMs={160}
+        />
+      }
       progress={stepIndex / stepCount}
       onBack={onBack}
       onSkip={onSkip}

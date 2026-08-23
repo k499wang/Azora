@@ -13,6 +13,7 @@ import {
   type OnboardingImageKey,
 } from '../../../services/images/onboardingImageCache';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
+import MochiAside from '../MochiAside';
 
 export type AgreementValue = 'agree' | 'disagree';
 
@@ -162,8 +163,16 @@ export default function AgreementScreen({
 
   return (
     <OnboardingScreenLayout
-      title="Do you agree with the statement below?"
-      subtitle={`${currentIdx + 1} of ${total}`}
+      title=""
+      titleSlot={
+        <MochiAside
+          text="Do you agree with the statement below?"
+          variant="question"
+          expression="thinking"
+          holding="notes"
+          delayMs={160}
+        />
+      }
       progress={stepIndex / stepCount}
       onBack={handleBack}
       onSkip={onSkip}

@@ -6,6 +6,7 @@ import { fonts, typography } from '../../../theme/typography';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import OnboardingHapticSlider from '../OnboardingHapticSlider';
+import MochiAside from '../MochiAside';
 
 interface BrainFogScreenProps {
   value: number;
@@ -46,8 +47,16 @@ export default function BrainFogScreen({
 
   return (
     <OnboardingScreenLayout
-      title="How often does brain fog slow you down?"
-      subtitle="Azora tunes your plan to it."
+      title=""
+      titleSlot={
+        <MochiAside
+          text="How often does brain fog slow you down?"
+          variant="question"
+          expression="thinking"
+          holding="notes"
+          delayMs={160}
+        />
+      }
       progress={stepIndex / stepCount}
       onBack={onBack}
       onSkip={onSkip}

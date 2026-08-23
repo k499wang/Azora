@@ -135,11 +135,7 @@ export default function PlanLoadingScreen({ onDone }: PlanLoadingScreenProps) {
   );
 
   return (
-    <OnboardingScreenLayout
-      title=""
-      progress={0}
-      footer={<View />}
-    >
+    <OnboardingScreenLayout title="" footer={<View />}>
       <View style={styles.loadingBody}>
         <Text style={styles.percent}>{percent}%</Text>
         <Text style={styles.headline}>We&apos;re building your plan</Text>

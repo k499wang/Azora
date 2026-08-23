@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import OnboardingHapticSlider from '../OnboardingHapticSlider';
+import MochiAside from '../MochiAside';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
@@ -47,8 +48,16 @@ export default function DailyTimeScreen({
 
   return (
     <OnboardingScreenLayout
-      title="How much time can you give?"
-      subtitle="Even 30 seconds a day makes a difference. Most people start tiny."
+      title=""
+      titleSlot={
+        <MochiAside
+          text="How much time can you give every day?"
+          variant="question"
+          expression="happy"
+          holding="notes"
+          delayMs={160}
+        />
+      }
       progress={stepIndex / stepCount}
       onBack={onBack}
       onSkip={onSkip}

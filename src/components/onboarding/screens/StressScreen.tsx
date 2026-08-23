@@ -6,6 +6,7 @@ import { fonts, typography } from '../../../theme/typography';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import OnboardingHapticSlider from '../OnboardingHapticSlider';
+import MochiAside from '../MochiAside';
 
 interface StressScreenProps {
   value: number;
@@ -46,8 +47,16 @@ export default function StressScreen({
 
   return (
     <OnboardingScreenLayout
-      title="How stressed have you felt this past week?"
-      subtitle="There's no wrong answer. Azora tunes your plan to it."
+      title=""
+      titleSlot={
+        <MochiAside
+          text="How stressed have you felt this past week?"
+          variant="question"
+          expression="thinking"
+          holding="notes"
+          delayMs={160}
+        />
+      }
       progress={stepIndex / stepCount}
       onBack={onBack}
       onSkip={onSkip}

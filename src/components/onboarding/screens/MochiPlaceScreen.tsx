@@ -65,8 +65,8 @@ export default function MochiPlaceScreen({
 
   return (
     <OnboardingScreenLayout
-      title="Finish all three."
-      subtitle="You put something in his room. One thing a day."
+      title="Finish your dailies."
+      subtitle="Every day you finish, an item lands in his room."
       progress={stepIndex / stepCount}
       onBack={onBack}
       centerCopy
