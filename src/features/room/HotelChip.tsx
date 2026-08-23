@@ -46,7 +46,7 @@ export default function HotelChip({ floors }: HotelChipProps) {
         size={ICON_SIZE}
         color={colors.text.primary}
       />
-      <Text style={styles.label}>cl</Text>
+      <Text style={styles.label}>View hotel</Text>
       {/* Lighter than the label it follows: it says the chip goes somewhere
           without reading as a third thing to look at. */}
       <Icon

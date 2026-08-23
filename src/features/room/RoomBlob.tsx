@@ -93,15 +93,15 @@ const SPARKLE = 17;
  * factor lands on half-pixels and renders soft, and one word does not need to
  * shrink on a small phone.
  */
-const BUBBLE_W = 62;
-const BUBBLE_H = 30;
-const BUBBLE_FONT = 13;
-const BUBBLE_LINE = 16;
+const BUBBLE_W = 88;
+const BUBBLE_H = 40;
+const BUBBLE_FONT = 15;
+const BUBBLE_LINE = 20;
 /** clear of the body, which already floats `BODY_LIFT` above the feet */
 const BUBBLE_GAP = 9;
 const BUBBLE_TAIL = 9;
 /** let the room settle before it says anything */
-const BUBBLE_OPEN_MS = 700;
+export const SPEECH_OPEN_MS = 700;
 
 const BOUNCE = 6.5;
 const FOOT_LIFT = 5.5;
@@ -236,7 +236,7 @@ const RoomBlob = forwardRef<RoomBlobHandle, Props>(function RoomBlob(
 
   useEffect(() => {
     if (speech == null) return;
-    const timer = setTimeout(say, BUBBLE_OPEN_MS);
+    const timer = setTimeout(say, SPEECH_OPEN_MS);
     return () => clearTimeout(timer);
   }, [say, speech]);
 

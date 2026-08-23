@@ -1,7 +1,10 @@
-import { useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useWindowDimensions } from 'react-native';
 import { HexRoom } from '../../../features/room/RoomScene';
-import type { RoomBlobHandle } from '../../../features/room/RoomBlob';
+import {
+  SPEECH_OPEN_MS,
+  type RoomBlobHandle,
+} from '../../../features/room/RoomBlob';
 import { ROOM_SHELLS } from '../../../features/room/roomShells';
 import { MASCOT_NAME } from '../../../features/room/mascot';
 import type { MochiStoryBeat } from '../data/mochiStory';
@@ -38,6 +41,14 @@ export default function MochiStoryScreen({
     () => <HexRoom width={width} shell={ROOM_SHELLS.cream} frameHue="sky" />,
     [width],
   );
+
+  // The hop lands with the line, so the beat reads as one happy reaction rather
+  // than a bubble and a bounce that happen to share a screen.
+  useEffect(() => {
+    if (!beat.cheer) return;
+    const timer = setTimeout(() => blob.current?.cheer(), SPEECH_OPEN_MS);
+    return () => clearTimeout(timer);
+  }, [beat.cheer]);
 
   return (
     <OnboardingScreenLayout

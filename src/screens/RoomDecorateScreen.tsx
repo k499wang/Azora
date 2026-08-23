@@ -110,30 +110,29 @@ export default function RoomDecorateScreen({
   useEffect(() => {
     if (placing == null || !revealDone || !writeSettled) return;
 
-    if (!writeFailed) {
-      setLocalPicks((current) => ({
-        ...current,
-        [placing.slot]: placing.optionId,
-      }));
-    }
-
-    setPlacing(null);
-    setRevealDone(false);
-
     // The reveal has already told them the piece landed, so a failed write can
     // never just drop them back on the picker with nothing said.
     if (writeFailed) {
+      setPlacing(null);
+      setRevealDone(false);
       Alert.alert('Could not place that piece', 'Please try again.');
       return;
     }
 
     // The seventh piece finishes the room, and finishing is the biggest moment
-    // in the loop — it gets its own screen rather than a state swap under the
-    // user's thumb.
+    // in the loop. Keep the settled reveal mounted while the celebration takes
+    // over; clearing it first exposes the completed picker for one frame.
     if (!previewing && placed >= ROOM_SLOT_COUNT) {
       navigation.replace('RoomComplete', route.params);
       return;
     }
+
+    setLocalPicks((current) => ({
+      ...current,
+      [placing.slot]: placing.optionId,
+    }));
+    setPlacing(null);
+    setRevealDone(false);
 
     // The room now has the piece in it. Hold there rather than dropping back to
     // a panel — the point of the last two seconds was to look at it.

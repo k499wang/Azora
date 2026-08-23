@@ -12,6 +12,8 @@ export interface MochiStoryBeat {
   speech?: string;
   /** slumped and staying put, until the beat where someone offers to help */
   sad?: boolean;
+  /** plays the delighted hop on arrival, in time with the line being said */
+  cheer?: boolean;
   button: string;
 }
 
@@ -44,7 +46,7 @@ export const MOCHI_STORY: Record<MochiStoryStep, MochiStoryBeat> = {
   mochiFresh: {
     title: `Would you help decorate ${MASCOT_NAME}’s room?`,
     speech: 'please.',
-    sad: true,
+    cheer: true,
     button: 'Yes!',
   },
 };
