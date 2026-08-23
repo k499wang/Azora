@@ -10,10 +10,17 @@ import { isHapticsEnabled } from '../../../services/preferences/hapticsPreferenc
 import { getOnboardingImageSource } from '../../../services/images/onboardingImageCache';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
+import MochiAside from '../MochiAside';
 
 const BRAIN_SCAN_ASPECT_RATIO = 3 / 2;
 const BRAIN_SCAN_CONTENT_OFFSET = -10;
 const RIGHT_BRAIN_LABEL_OFFSET = 12;
+/**
+ * A real, citable number rather than a conversion stat: around six breaths a
+ * minute is the resonance frequency where breathing and heart rate line up, and
+ * it is the rate the app's own paces are built around.
+ */
+const MOCHI_NOTE = 'Around six breaths a minute is where your breath and your heartbeat line up.';
 
 interface BrainScienceScreenProps {
   stepIndex: number;
@@ -54,50 +61,57 @@ export default function BrainScienceScreen({
       centerBody
       footer={<OnboardingPrimaryButton label="Continue" onPress={onContinue} />}
     >
-      <Animated.View
-        style={[
-          styles.visual,
-          {
-            opacity: reveal,
-            transform: [
-              {
-                translateY: reveal.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [14, 0],
-                }),
-              },
-            ],
-          },
-        ]}
-      >
-        <View style={styles.scanFrame}>
-          <Image
-            source={getOnboardingImageSource('brainScan')}
-            style={styles.scans}
-            contentFit="cover"
-            cachePolicy="memory-disk"
-            transition={0}
-          />
-        </View>
+      <View style={styles.body}>
+        <Animated.View
+          style={[
+            styles.visual,
+            {
+              opacity: reveal,
+              transform: [
+                {
+                  translateY: reveal.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [14, 0],
+                  }),
+                },
+              ],
+            },
+          ]}
+        >
+          <View style={styles.scanFrame}>
+            <Image
+              source={getOnboardingImageSource('brainScan')}
+              style={styles.scans}
+              contentFit="cover"
+              cachePolicy="memory-disk"
+              transition={0}
+            />
+          </View>
 
-        <View style={styles.pillRow}>
-          <View style={[styles.pillCol, styles.pillColBefore]}>
-            <View style={styles.pill}>
-              <Text style={styles.pillLabel}>Before Azora</Text>
+          <View style={styles.pillRow}>
+            <View style={[styles.pillCol, styles.pillColBefore]}>
+              <View style={styles.pill}>
+                <Text style={styles.pillLabel}>Before Azora</Text>
+              </View>
+            </View>
+            <View style={[styles.pillCol, styles.pillColAfter]}>
+              <View style={styles.pill}>
+                <Text style={styles.pillLabel}>After Azora</Text>
+              </View>
             </View>
           </View>
-          <View style={[styles.pillCol, styles.pillColAfter]}>
-            <View style={styles.pill}>
-              <Text style={styles.pillLabel}>After Azora</Text>
-            </View>
-          </View>
-        </View>
-      </Animated.View>
+        </Animated.View>
+
+        <MochiAside text={MOCHI_NOTE} accessory="glasses" />
+      </View>
     </OnboardingScreenLayout>
   );
 }
 
 const styles = StyleSheet.create({
+  body: {
+    gap: spacing['2xl'],
+  },
   visual: {
     width: '88%',
     maxWidth: 320,

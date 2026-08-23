@@ -1,15 +1,29 @@
-import { forwardRef, useCallback, useImperativeHandle, useMemo } from 'react';
-import { StyleSheet, View } from 'react-native';
+import {
+  forwardRef,
+  memo,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+} from 'react';
+import { PixelRatio, StyleSheet, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import Animated, {
   useAnimatedStyle,
   useFrameCallback,
   useReducedMotion,
   useSharedValue,
+  withDelay,
+  withSequence,
+  withSpring,
+  withTiming,
   type SharedValue,
 } from 'react-native-reanimated';
 import Icon from '../../components/common/icons/Icon';
 import { colors } from '../../theme/colors';
+import { duration, spring } from '../../theme/motion';
+import { fonts, typography } from '../../theme/typography';
+import MochiSpeechBubble from './MochiSpeechBubble';
 import { VIEW_BOX_HEIGHT, VIEW_BOX_WIDTH } from './RoomScene';
 
 /**
@@ -75,6 +89,24 @@ const EYE_SHIFT = 2.5;
 const EYE_DX = 8;
 const SPARKLE = 17;
 
+/**
+ * The speech bubble's *position* is in viewBox units like everything else here,
+ * so it tracks the blob. Its box and type are not: text scaled by a fractional
+ * factor lands on half-pixels and renders soft, and one word does not need to
+ * shrink on a small phone.
+ */
+const BUBBLE_W = 62;
+const BUBBLE_H = 30;
+const BUBBLE_FONT = 13;
+const BUBBLE_LINE = 16;
+/** clear of the body, which already floats `BODY_LIFT` above the feet */
+const BUBBLE_GAP = 9;
+const BUBBLE_TAIL = 9;
+/** long enough to read two words, short enough not to become furniture */
+const BUBBLE_HOLD_MS = 2400;
+/** let the room settle before it says anything */
+const BUBBLE_OPEN_MS = 700;
+
 const BOUNCE = 6.5;
 const FOOT_LIFT = 5.5;
 const STRIDE = 4.3;
@@ -94,10 +126,21 @@ export interface RoomBlobHandle {
 interface Props {
   /** must match the width handed to `HexRoom` */
   width: number;
+  /**
+   * Slumped, droop-eyed and turned-down, and it stops wandering. A mood, not an
+   * event: it holds until the prop changes rather than playing out like `cheer`.
+   */
+  sad?: boolean;
+  /**
+   * A line for the blob to say. It rides the actor, so it follows the walk;
+   * it opens once shortly after mount and again on every `cheer()`, then packs
+   * itself away. Omit it and no bubble is rendered at all.
+   */
+  speech?: string;
 }
 
 const RoomBlob = forwardRef<RoomBlobHandle, Props>(function RoomBlob(
-  { width },
+  { width, speech, sad = false },
   ref,
 ) {
   const u = width / VIEW_BOX_WIDTH;
@@ -117,6 +160,8 @@ const RoomBlob = forwardRef<RoomBlobHandle, Props>(function RoomBlob(
   const blinkIn = useSharedValue(2.5);
   const blinkFor = useSharedValue(0);
   const cheer = useSharedValue(0);
+  const bubble = useSharedValue(0);
+  const sadness = useSharedValue(sad ? 1 : 0);
 
   const frame = useFrameCallback((info) => {
     const dt = Math.min((info.timeSincePreviousFrame ?? 16) / 1000, 0.05);
@@ -135,6 +180,12 @@ const RoomBlob = forwardRef<RoomBlobHandle, Props>(function RoomBlob(
     }
     if (blinkFor.value > 0) blinkFor.value -= dt;
     blink.value = blinkFor.value > 0 ? 0.12 : 1;
+
+    // a sad blob stays put: topping rest up every frame means it never reaches
+    // the branch that picks somewhere new to walk
+    if (sadness.value > 0.5) {
+      rest.value = Math.max(rest.value, 0.5);
+    }
 
     let moving = 0;
     if (rest.value > 0) {
@@ -175,17 +226,38 @@ const RoomBlob = forwardRef<RoomBlobHandle, Props>(function RoomBlob(
     facing.value += (heading.value - facing.value) * Math.min(1, dt * 6);
   }, false);
 
+  const say = useCallback(() => {
+    if (speech == null) return;
+    bubble.value = withSequence(
+      reducedMotion
+        ? withTiming(1, { duration: duration.base })
+        : withSpring(1, spring.pop),
+      withDelay(BUBBLE_HOLD_MS, withTiming(0, { duration: duration.base })),
+    );
+  }, [bubble, reducedMotion, speech]);
+
+  useEffect(() => {
+    sadness.value = withTiming(sad ? 1 : 0, { duration: duration.slow });
+  }, [sad, sadness]);
+
+  useEffect(() => {
+    if (speech == null) return;
+    const timer = setTimeout(say, BUBBLE_OPEN_MS);
+    return () => clearTimeout(timer);
+  }, [say, speech]);
+
   useImperativeHandle(
     ref,
     () => ({
       cheer: () => {
+        say();
         // nothing decays `cheer` while the frame callback is off, so a reduced
         // motion blob would be stuck mid-hop
         if (reducedMotion) return;
         cheer.value = CHEER_DUR;
       },
     }),
-    [cheer, reducedMotion],
+    [cheer, reducedMotion, say],
   );
 
   useFocusEffect(
@@ -236,18 +308,24 @@ const RoomBlob = forwardRef<RoomBlobHandle, Props>(function RoomBlob(
     const wiggle =
       Math.sin(cheerPhase(cheer.value) * Math.PI * 4) * 7 * cheering;
 
+    const slump = sadness.value;
+
     return {
       transform: [
         // the squash compensation keeps the blob's feet planted on the floor
         {
           translateY:
-            (-air * BOUNCE - hop * CHEER_HOP + (BODY_H * (1 - scaleY)) / 2) * u,
+            (-air * BOUNCE -
+              hop * CHEER_HOP +
+              (BODY_H * (1 - scaleY)) / 2 +
+              slump * 3) *
+            u,
         },
         {
           rotateZ: `${facing.value * LEAN_DEG * walk.value + wiggle}deg`,
         },
-        { scaleX: scaleX * flip },
-        { scaleY },
+        { scaleX: (scaleX + slump * 0.05) * flip },
+        { scaleY: scaleY - slump * 0.06 },
       ],
     };
   }, [u]);
@@ -286,13 +364,50 @@ const RoomBlob = forwardRef<RoomBlobHandle, Props>(function RoomBlob(
   }, []);
 
   const eyeStyle = useAnimatedStyle(() => ({
-    // the happy squint while cheering
-    transform: [{ scaleY: blink.value * (cheer.value > 0 ? 0.5 : 1) }],
-  }));
+    transform: [
+      { translateY: sadness.value * 2.5 * u },
+      {
+        // the happy squint while cheering, the heavy lid while sad
+        scaleY:
+          blink.value * (cheer.value > 0 ? 0.5 : 1 - sadness.value * 0.45),
+      },
+    ],
+  }), [u]);
 
+  // The mouth is a half-pill with its rounded edge down, so half a turn is the
+  // whole frown — no second shape to keep in sync with the first.
   const smileStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: cheer.value > 0 ? 1.45 : 1 }],
-  }));
+    transform: [
+      { translateY: sadness.value * 3.5 * u },
+      { rotate: `${sadness.value * 180}deg` },
+      { scale: cheer.value > 0 ? 1.45 : 1 - sadness.value * 0.12 },
+    ],
+  }), [u]);
+
+  // Rides the actor rather than the body: the body carries the horizontal flip
+  // that turns the blob around, and a mirrored bubble would read backwards.
+  /**
+   * Everything here is in service of crisp glyphs.
+   *
+   * The bubble is deliberately *not* a child of the actor. The actor is scaled
+   * (nearer the front of the room reads larger) and sits at whatever sub-pixel
+   * offset the walk has reached; text inheriting both is drawn at 1.04x on a
+   * half pixel, which is exactly the soft, low-res look. So the bubble tracks
+   * the blob by computing the same position itself, rounds it to the pixel
+   * grid, and inherits no scale at all.
+   */
+  const bubblePositionStyle = useAnimatedStyle(() => {
+    const x = (HALF_W * side.value + ORIGIN_X) * u;
+    const y = (HALF_D * depth.value + ORIGIN_Y) * u;
+
+    return {
+      opacity: Math.min(1, bubble.value * 2),
+      transform: [
+        { translateX: Math.round(x) },
+        { translateY: Math.round(y) },
+      ],
+    };
+  }, [u]);
 
   const styles = useMemo(() => createStyles(u), [u]);
 
@@ -312,11 +427,31 @@ const RoomBlob = forwardRef<RoomBlobHandle, Props>(function RoomBlob(
         <Sparkle cheer={cheer} u={u} x={3} y={-74} delay={0.14} />
         <Sparkle cheer={cheer} u={u} x={27} y={-58} delay={0.28} />
       </Animated.View>
+
+      {speech == null ? null : (
+        <Animated.View style={[styles.bubble, bubblePositionStyle]}>
+          <MochiSpeechBubble
+            text={speech}
+            progress={bubble}
+            tail="bottom"
+            unit="character"
+            fillStyle={styles.bubbleFill}
+            tailStyle={styles.bubbleTail}
+            textStyle={styles.bubbleText}
+          />
+        </Animated.View>
+      )}
     </View>
   );
 });
 
-export default RoomBlob;
+/**
+ * Its only prop is a width, and everything it animates lives in shared values —
+ * so a parent re-render can never tell it anything it does not already know.
+ * Memoised because its hosts (Home, the onboarding story beats) re-render for
+ * reasons that have nothing to do with the blob.
+ */
+export default memo(RoomBlob);
 
 /** 0 at the start of the reaction, 1 at the end */
 function cheerPhase(remaining: number) {
@@ -382,6 +517,9 @@ function Sparkle({ cheer, u, x, y, delay }: SparkleProps) {
 }
 
 function createStyles(u: number) {
+  /** snap to the device pixel grid — half-pixel edges are what read as low-res */
+  const px = (value: number) => PixelRatio.roundToNearestPixel(value);
+
   return StyleSheet.create({
     /** a zero-size anchor at the blob's contact point with the floor */
     actor: {
@@ -421,6 +559,54 @@ function createStyles(u: number) {
       borderBottomLeftRadius: 22 * u,
       borderBottomRightRadius: 22 * u,
       backgroundColor: colors.roomBlob.body,
+    },
+    // No shadow: this view is re-composited on every frame the blob walks, and
+    // an unrasterised shadow makes the compositor redraw it each time — which
+    // is the stutter, and it softens the edge into the bargain. A hairline
+    // border separates it from the wall for free.
+    // The container carries position only. Its box and its type are in whole
+    // pixels and are not scaled by `u`: a fractional font size lands glyphs on
+    // half pixels, and one word does not need to shrink on a small phone.
+    bubble: {
+      position: 'absolute',
+      left: px((-BUBBLE_W / 2) * u),
+      top: px(-(BODY_H + BODY_LIFT + BUBBLE_GAP + BUBBLE_H) * u),
+      width: px(BUBBLE_W * u),
+      height: px(BUBBLE_H * u),
+    },
+    // The pill, which holds no text and so is free to pop. No shadow: this is
+    // re-composited on every frame the blob walks, and an unrasterised shadow
+    // makes the compositor redraw it each time — the stutter, and a softer edge
+    // into the bargain. A hairline border separates it from the wall for free.
+    bubbleFill: {
+      ...StyleSheet.absoluteFillObject,
+      // centres the tail, which is positioned from the bottom only
+      alignItems: 'center',
+      borderRadius: px((BUBBLE_H / 2) * u),
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: colors.border.subtle,
+      backgroundColor: colors.background.card,
+    },
+    bubbleText: {
+      ...typography.label.small,
+      fontFamily: fonts.semibold,
+      fontSize: BUBBLE_FONT,
+      lineHeight: BUBBLE_LINE,
+      color: colors.text.primary,
+    },
+    // a square rotated onto its corner, tucked under the bubble so only the
+    // bottom point shows
+    bubbleTail: {
+      position: 'absolute',
+      bottom: px(-BUBBLE_TAIL * 0.35 * u),
+      width: px(BUBBLE_TAIL * u),
+      height: px(BUBBLE_TAIL * u),
+      borderRadius: 2,
+      backgroundColor: colors.background.card,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderRightWidth: StyleSheet.hairlineWidth,
+      borderColor: colors.border.subtle,
+      transform: [{ rotate: '45deg' }],
     },
     sheen: {
       position: 'absolute',

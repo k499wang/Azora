@@ -2,13 +2,23 @@ import { Text } from '../common/Text';
 import { ReactNode, useEffect, useRef, useState } from 'react';
 import {
   Animated, Easing, InteractionManager, Keyboard, KeyboardAvoidingView, LayoutChangeEvent, NativeScrollEvent, NativeSyntheticEvent, Platform, Pressable, ScrollView, StyleProp, StyleSheet, TextStyle, View } from 'react-native';
+import Reanimated, {
+  cancelAnimation,
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withTiming,
+} from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
 import Icon from '../common/icons/Icon';
+import TypedText from './TypedText';
+import { useOnboardingProgressValue } from './onboardingProgress';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
+import { duration, easing as motionEasing } from '../../theme/motion';
 import { isHapticsEnabled } from '../../services/preferences/hapticsPreference';
 import {
   centeredBodyMinHeight,
@@ -18,6 +28,8 @@ import { useWhileVisible } from '../../hooks/useWhileVisible';
 
 const ENTRANCE_EASING = Easing.bezier(0.22, 1, 0.36, 1);
 const ENTRANCE_INITIAL_SCALE = 0.992;
+/** wide enough for "Skip", and reserved on both sides so the bar stays centred */
+const NAV_SLOT_WIDTH = 44;
 
 interface OnboardingScreenLayoutProps {
   title: string;
@@ -31,10 +43,10 @@ interface OnboardingScreenLayoutProps {
   centerBody?: boolean;
   centerOnScreen?: boolean;
   centerCopy?: boolean;
+  /** type the title in a character at a time, for the story beats */
+  typeTitle?: boolean;
   copyBadge?: ReactNode;
   titleStyle?: StyleProp<TextStyle>;
-  fullWidthProgress?: boolean;
-  hideProgress?: boolean;
   animateCopy?: boolean;
   disableEntranceAnimation?: boolean;
   enableNavigationHaptics?: boolean;
@@ -52,21 +64,17 @@ export default function OnboardingScreenLayout({
   centerBody = false,
   centerOnScreen = false,
   centerCopy = false,
+  typeTitle = false,
   copyBadge,
   titleStyle,
-  fullWidthProgress = false,
-  hideProgress = false,
   animateCopy = false,
   disableEntranceAnimation = false,
   enableNavigationHaptics = true,
 }: OnboardingScreenLayoutProps) {
   const insets = useSafeAreaInsets();
   const clampedProgress = Math.max(0, Math.min(1, progress));
-  // First step runs the bar full width; every other step reserves the back and
-  // skip slots so the bar stays put even on screens that have no skip action.
-  // The slots always keep their height so the bar sits at the same vertical
-  // position on every screen — only their width collapses.
-  const showNavSlots = !fullWidthProgress;
+  // The nav row always keeps its height, so the copy below it sits at the same
+  // vertical position whether or not a screen has a back or skip action.
   const fade = useRef(
     new Animated.Value(disableEntranceAnimation ? 1 : 0),
   ).current;
@@ -260,13 +268,11 @@ export default function OnboardingScreenLayout({
         style={styles.header}
         onLayout={(event) => setHeaderHeight(event.nativeEvent.layout.height)}
       >
-        <View
-          style={[
-            styles.headerSlotLeft,
-            !showNavSlots && styles.headerSlotCollapsed,
-          ]}
-        >
-          {showNavSlots && onBack ? (
+        {/* Both slots keep their width whether or not they hold a button, so the
+            bar is inset by the same amount on either side on every screen —
+            collapsing the empty side is what made the spacing wander. */}
+        <View style={styles.headerSlotLeft}>
+          {onBack ? (
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Back"
@@ -281,20 +287,11 @@ export default function OnboardingScreenLayout({
             </Pressable>
           ) : null}
         </View>
-        {hideProgress ? (
-          <View style={styles.progressSpacer} />
-        ) : (
-          <View style={styles.progressBar}>
-            <View style={[styles.progressFill, { width: `${clampedProgress * 100}%` }]} />
-          </View>
-        )}
-        <View
-          style={[
-            styles.headerSlotRight,
-            !showNavSlots && styles.headerSlotCollapsed,
-          ]}
-        >
-          {showNavSlots && onSkip ? (
+
+        <ProgressBar progress={clampedProgress} />
+
+        <View style={styles.headerSlotRight}>
+          {onSkip ? (
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Skip"
@@ -354,15 +351,26 @@ export default function OnboardingScreenLayout({
                       {copyBadge}
                     </View>
                   ) : null}
-                  <Text
-                    style={[
-                      styles.title,
-                      centerCopy && styles.centeredCopy,
-                      titleStyle,
-                    ]}
-                  >
-                    {title}
-                  </Text>
+                  {typeTitle ? (
+                    <TypedText
+                      text={title}
+                      style={[
+                        styles.title,
+                        centerCopy && styles.centeredCopy,
+                        titleStyle,
+                      ]}
+                    />
+                  ) : (
+                    <Text
+                      style={[
+                        styles.title,
+                        centerCopy && styles.centeredCopy,
+                        titleStyle,
+                      ]}
+                    >
+                      {title}
+                    </Text>
+                  )}
                 </Animated.View>
                 {subtitle ? (
                   <Animated.View
@@ -464,6 +472,47 @@ export default function OnboardingScreenLayout({
   );
 }
 
+/**
+ * The bar, animated on the UI thread.
+ *
+ * The value comes from the flow rather than from this component, so it survives
+ * the screen swap between steps and the bar slides on every screen instead of
+ * jumping on some — see `onboardingProgress`.
+ */
+function ProgressBar({ progress }: { progress: number }) {
+  const shared = useOnboardingProgressValue();
+  // A screen rendered outside the flow still gets a bar; it just starts at rest.
+  const fallback = useSharedValue(progress);
+  const value = shared ?? fallback;
+  const reducedMotion = useReducedMotion();
+
+  useEffect(() => {
+    if (reducedMotion) {
+      value.value = progress;
+      return undefined;
+    }
+
+    value.value = withTiming(progress, {
+      duration: duration.slow,
+      easing: motionEasing.settle,
+    });
+
+    // Stops the tween when this screen goes away. The next screen picks the
+    // value up where this one left it, so nothing is left running behind it.
+    return () => cancelAnimation(value);
+  }, [progress, reducedMotion, value]);
+
+  const fillStyle = useAnimatedStyle(() => ({
+    width: `${value.value * 100}%`,
+  }));
+
+  return (
+    <View style={styles.progressBar}>
+      <Reanimated.View style={[styles.progressFill, fillStyle]} />
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
@@ -484,27 +533,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,
-    paddingBottom: spacing['2xl'],
+    paddingBottom: spacing.xl,
+    gap: spacing.md,
   },
   headerSlotLeft: {
-    width: 32,
+    width: NAV_SLOT_WIDTH,
     height: 32,
+    alignItems: 'flex-start',
     justifyContent: 'center',
-    marginRight: spacing.sm,
   },
   headerSlotRight: {
-    width: 48,
+    width: NAV_SLOT_WIDTH,
     height: 32,
     alignItems: 'flex-end',
     justifyContent: 'center',
-    marginLeft: spacing.sm,
-  },
-  // Keeps the 32pt row height so the bar never shifts vertically between
-  // screens, while letting it run edge to edge.
-  headerSlotCollapsed: {
-    width: 0,
-    marginLeft: 0,
-    marginRight: 0,
   },
   progressBar: {
     flex: 1,
@@ -512,11 +554,6 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     backgroundColor: colors.primary.blue200,
     overflow: 'hidden',
-  },
-  // Holds the bar's slot open so hiding it doesn't move anything else.
-  progressSpacer: {
-    flex: 1,
-    height: 6,
   },
   progressFill: {
     height: '100%',
@@ -539,8 +576,10 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     lineHeight: 24,
   },
+  // No horizontal padding: the slot is already the tap target's width, and
+  // padding here would push "Skip" off the screen's right margin. `hitSlop`
+  // covers the touch area.
   skipButton: {
-    paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
   },
   skipButtonPressed: {
@@ -588,12 +627,18 @@ const styles = StyleSheet.create({
   contentCentered: {
     gap: 0,
   },
+  // An absolutely positioned child is laid out against its parent's padding
+  // *edge*, so `left: 0` here starts where `content`'s side padding starts —
+  // the centred body spanned the full screen while the title above it was
+  // inset, and anything full-width in it ran past the screen's margins. The
+  // same padding again puts the two back on one grid.
   bodyCenteredOverlay: {
     position: 'absolute',
     top: 0,
     bottom: 0,
     left: 0,
     right: 0,
+    paddingHorizontal: spacing.lg,
     justifyContent: 'center',
   },
   bodyCenteredInner: {

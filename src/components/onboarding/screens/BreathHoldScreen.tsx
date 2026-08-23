@@ -488,7 +488,6 @@ export default function BreathHoldScreen({
       <OnboardingScreenLayout
         title=""
         progress={stepIndex / stepCount}
-        hideProgress
         footer={
           isCalibrating ? (
             <View />
