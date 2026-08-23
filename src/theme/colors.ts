@@ -98,6 +98,9 @@ export const colors = {
     face: '#1F423C',
     // the pop of sparkles when the blob is poked
     sparkle: '#FFC94D',
+    // blush on the portrait crop, where his face carries the whole frame; warm
+    // against the mint so the cheeks read as colour rather than another highlight
+    cheek: '#F4785F',
     // matches the shadow ink the room artwork already uses
     shadow: 'rgba(58,67,79,0.22)',
     // the clipboard he takes notes on — warm wood against his mint
