@@ -4,8 +4,7 @@ export type MochiStoryStep =
   | 'mochiIntro'
   | 'mochiMoved'
   | 'mochiUnpacked'
-  | 'mochiFresh'
-  | 'mochiDailies';
+  | 'mochiFresh';
 
 export interface MochiStoryBeat {
   title: string;
@@ -50,11 +49,6 @@ export const MOCHI_STORY: Record<MochiStoryStep, MochiStoryBeat> = {
     title: 'You decorate it for him.',
     subtitle: 'First he needs to know what you are working on.',
     speech: 'so?',
-    button: 'Continue',
-  },
-  mochiDailies: {
-    title: 'Three dailies a day.',
-    subtitle: 'Two breathing sessions and a breath hold.',
     button: 'Continue',
   },
 };

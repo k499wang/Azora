@@ -6,6 +6,7 @@ import { fonts, typography } from '../../../theme/typography';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import OnboardingHapticSlider from '../OnboardingHapticSlider';
+import MochiAside from '../MochiAside';
 
 interface HeartWorryScreenProps {
   value: number;
@@ -46,8 +47,16 @@ export default function HeartWorryScreen({
 
   return (
     <OnboardingScreenLayout
-      title="How much do you worry about your heart health?"
-      subtitle="There's no wrong answer. Azora tunes your plan to it."
+      title=""
+      titleSlot={
+        <MochiAside
+          text="How much do you worry about your heart health?"
+          variant="question"
+          expression="thinking"
+          holding="notes"
+          delayMs={160}
+        />
+      }
       progress={stepIndex / stepCount}
       onBack={onBack}
       onSkip={onSkip}

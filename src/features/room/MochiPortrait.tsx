@@ -47,24 +47,27 @@ export type MochiExpression =
   | 'excited'
   | 'thinking'
   | 'surprised'
-  | 'proud';
+  | 'proud'
+  | 'puffed'
+  | 'pleased';
 
 /**
- * What he is wearing or holding.
+ * Props come in two slots so a screen can put him in glasses *and* hand him a
+ * pencil, while the pairs that would sit on top of each other — a party hat and
+ * a nightcap — stay unrepresentable.
  *
- * Pick one per screen — he reads as a character with a prop, not a dress-up
- * doll. Props that need room above or beside him grow the sprite's box rather
- * than spilling out of it: Android clips children that overflow their parent,
- * so anything poking outside the bounds would render on iOS and be cut off on
+ * Props that need room above or beside him grow the sprite's box rather than
+ * spilling out of it: Android clips children that overflow their parent, so
+ * anything poking outside the bounds would render on iOS and be cut off on
  * Android.
  */
-export type MochiAccessory =
+export type MochiWearable =
   | 'glasses'
-  | 'pencil'
   | 'headphones'
-  | 'book'
   | 'partyHat'
   | 'nightcap';
+
+export type MochiHeld = 'pencil' | 'book' | 'notes';
 
 interface EyeShape {
   w: number;
@@ -74,7 +77,7 @@ interface EyeShape {
   arc?: boolean;
 }
 
-type MouthKind = 'smile' | 'frown' | 'open' | 'line';
+type MouthKind = 'smile' | 'frown' | 'open' | 'line' | 'curve';
 
 interface MouthShape {
   w: number;
@@ -120,30 +123,50 @@ const FACES: Record<MochiExpression, Face> = {
     eye: { w: 9, h: 4.5, top: 18, arc: true },
     mouth: { w: 13, h: 6.5, top: 30, kind: 'smile' },
   },
+  /** eyes open, mouth closed and curved: happy without the grin */
+  pleased: {
+    eye: { w: 8, h: 9, top: 16 },
+    mouth: { w: 12, h: 5, top: 31, kind: 'curve' },
+  },
+  /** cheeks full of air, eyes shut, lips pursed: one held breath */
+  puffed: {
+    eye: { w: 8.5, h: 3.25, top: 17.5, arc: true },
+    mouth: { w: 5, h: 6, top: 31, kind: 'open' },
+  },
 };
 
-/** extra room a prop needs above his head, in body units */
-const HEADROOM: Record<MochiAccessory, number> = {
+/** extra room a worn prop needs above his head, in body units */
+const HEADROOM: Record<MochiWearable, number> = {
   glasses: 0,
-  pencil: 0,
   headphones: 3,
-  book: 0,
   partyHat: 17,
   nightcap: 15,
 };
 
-/** extra room a prop needs on either side, in body units */
-const SIDEROOM: Record<MochiAccessory, number> = {
-  glasses: 0,
+const PUFFED_CHEEK_SIZE = 17;
+const PUFFED_CHEEK_DX = 13;
+const PUFFED_CHEEK_TOP = 22;
+
+/** extra room a held prop needs on either side, in body units */
+const SIDEROOM: Record<MochiHeld, number> = {
   pencil: 8,
-  headphones: 0,
   book: 10,
-  partyHat: 0,
-  nightcap: 4,
+  notes: 8,
 };
 
-const LENS = 13;
-const RIM = 1.8;
+/**
+ * How much wider than his body the sprite's box is on each side once he is
+ * holding something. A caller placing him against other art lines up his body,
+ * not the box, so it needs this to cancel the growth out.
+ */
+export function getMochiSideroom(size: number, holding?: MochiHeld) {
+  return holding ? (SIDEROOM[holding] * size) / BODY_W : 0;
+}
+
+const MOUTH_STROKE = 2;
+const LENS = 16;
+const RIM = 2;
+const BRIDGE = 3;
 const BAND_W = 52;
 const BAND_H = 17;
 const BAND_RIM = 3;
@@ -153,6 +176,8 @@ const PENCIL_W = 5;
 const PENCIL_H = 28;
 const BOOK_W = 22;
 const BOOK_H = 17;
+const NOTES_W = 24;
+const NOTES_H = 19;
 const HAT_W = 22;
 const HAT_H = 20;
 const CAP_W = 26;
@@ -162,24 +187,28 @@ interface MochiPortraitProps {
   /** rendered width of the body; everything else scales from it */
   size: number;
   expression?: MochiExpression;
-  accessory?: MochiAccessory;
+  wearing?: MochiWearable;
+  holding?: MochiHeld;
 }
 
 function MochiPortrait({
   size,
   expression = 'happy',
-  accessory,
+  wearing,
+  holding,
 }: MochiPortraitProps) {
   const u = size / BODY_W;
-  const headroom = accessory ? HEADROOM[accessory] : 0;
-  const sideroom = accessory ? SIDEROOM[accessory] : 0;
+  const headroom = wearing ? HEADROOM[wearing] : 0;
+  const sideroom = holding ? SIDEROOM[holding] : 0;
+  const face = FACES[expression];
+  const isPuffed = expression === 'puffed';
+  const faceCenterX = isPuffed ? BODY_W / 2 : FACE_CX;
   const width = (SHADOW_W + sideroom * 2) * u;
   const height = (BODY_H + BODY_LIFT + SHADOW_H + headroom) * u;
   /** the floor line, measured up from the bottom of the box */
   const contact = (SHADOW_H / 2) * u;
   /** the top of his head, measured up from the bottom of the box */
   const crown = contact + (BODY_LIFT + BODY_H) * u;
-  const face = FACES[expression];
 
   return (
     <View style={{ width, height }}>
@@ -212,8 +241,10 @@ function MochiPortrait({
         />
       ))}
 
-      {accessory === 'book' ? <Book u={u} width={width} /> : null}
-      {accessory === 'pencil' ? <Pencil u={u} width={width} /> : null}
+      {holding === 'book' ? <Book u={u} width={width} /> : null}
+      {holding === 'pencil' || holding === 'notes' ? (
+        <Pencil u={u} width={width} />
+      ) : null}
 
       <View
         style={[
@@ -230,18 +261,42 @@ function MochiPortrait({
           },
         ]}
       >
-        <View
-          style={[
-            styles.sheen,
-            {
-              left: 9.5 * u,
-              top: 7 * u,
-              width: 20 * u,
-              height: 15 * u,
-              borderRadius: 10 * u,
-            },
-          ]}
-        />
+        {!isPuffed ? (
+          <View
+            style={[
+              styles.sheen,
+              {
+                left: 9.5 * u,
+                top: 7 * u,
+                width: 20 * u,
+                height: 15 * u,
+                borderRadius: 10 * u,
+              },
+            ]}
+          />
+        ) : null}
+
+        {isPuffed
+          ? [-1, 1].map((side) => (
+              <View
+                key={side}
+                style={[
+                  styles.filledCheek,
+                  {
+                    left:
+                      (faceCenterX +
+                        side * PUFFED_CHEEK_DX -
+                        PUFFED_CHEEK_SIZE / 2) *
+                      u,
+                    top: PUFFED_CHEEK_TOP * u,
+                    width: PUFFED_CHEEK_SIZE * u,
+                    height: PUFFED_CHEEK_SIZE * u,
+                    borderRadius: (PUFFED_CHEEK_SIZE / 2) * u,
+                  },
+                ]}
+              />
+            ))
+          : null}
 
         {[-EYE_DX, EYE_DX].map((offset) => {
           const squinted = face.squint === true && offset > 0;
@@ -256,7 +311,7 @@ function MochiPortrait({
               style={[
                 styles.eye,
                 {
-                  left: (FACE_CX + offset - face.eye.w / 2) * u,
+                  left: (faceCenterX + offset - face.eye.w / 2) * u,
                   top: top * u,
                   width: face.eye.w * u,
                   height: h * u,
@@ -272,18 +327,20 @@ function MochiPortrait({
           );
         })}
 
-        <Mouth mouth={face.mouth} u={u} />
+        <Mouth mouth={face.mouth} u={u} centerX={faceCenterX} />
 
-        {accessory === 'glasses' ? <Glasses u={u} /> : null}
+        {wearing === 'glasses' ? <Glasses u={u} /> : null}
       </View>
 
-      {accessory === 'headphones' ? (
+      {holding === 'notes' ? <Notes u={u} width={width} /> : null}
+
+      {wearing === 'headphones' ? (
         <Headphones u={u} width={width} crown={crown} />
       ) : null}
-      {accessory === 'partyHat' ? (
+      {wearing === 'partyHat' ? (
         <PartyHat u={u} width={width} crown={crown} />
       ) : null}
-      {accessory === 'nightcap' ? (
+      {wearing === 'nightcap' ? (
         <NightCap u={u} width={width} crown={crown} />
       ) : null}
     </View>
@@ -292,8 +349,38 @@ function MochiPortrait({
 
 export default memo(MochiPortrait);
 
-function Mouth({ mouth, u }: { mouth: MouthShape; u: number }) {
+function Mouth({
+  mouth,
+  u,
+  centerX,
+}: {
+  mouth: MouthShape;
+  u: number;
+  centerX: number;
+}) {
   const round = (value: number) => value * u;
+
+  // A closed smile is the bottom edge of a rounded box with nothing filled in,
+  // so the stroke tapers away at both ends the way a drawn line would.
+  if (mouth.kind === 'curve') {
+    return (
+      <View
+        style={[
+          styles.mouthCurve,
+          {
+            left: (centerX - mouth.w / 2) * u,
+            top: mouth.top * u,
+            width: mouth.w * u,
+            height: mouth.h * u,
+            borderBottomWidth: MOUTH_STROKE * u,
+            borderBottomLeftRadius: round(mouth.h),
+            borderBottomRightRadius: round(mouth.h),
+          },
+        ]}
+      />
+    );
+  }
+
   const corners =
     mouth.kind === 'smile'
       ? {
@@ -312,7 +399,7 @@ function Mouth({ mouth, u }: { mouth: MouthShape; u: number }) {
       style={[
         styles.mouth,
         {
-          left: (FACE_CX - mouth.w / 2) * u,
+          left: (centerX - mouth.w / 2) * u,
           top: mouth.top * u,
           width: mouth.w * u,
           height: mouth.h * u,
@@ -350,9 +437,9 @@ function Glasses({ u }: { u: number }) {
         style={[
           styles.frame,
           {
-            left: (FACE_CX - EYE_DX + LENS / 2 - 0.5) * u,
+            left: (FACE_CX - BRIDGE / 2) * u,
             top: (cy - RIM / 2) * u,
-            width: (2 * EYE_DX - LENS + 1) * u,
+            width: BRIDGE * u,
             height: RIM * u,
           },
         ]}
@@ -555,6 +642,39 @@ function Pencil({ u, width }: { u: number; width: number }) {
   );
 }
 
+/**
+ * The clipboard he takes an answer down on. It sits across his front, overlapping
+ * his body, so the overlap alone reads as him holding it — the pencil arm at his
+ * other side is the only limb he needs.
+ */
+function Notes({ u, width }: { u: number; width: number }) {
+  return (
+    <View
+      style={{
+        position: 'absolute',
+        left: width / 2 - (NOTES_W + 1) * u,
+        bottom: (SHADOW_H / 2 + BODY_LIFT + 3) * u,
+        width: NOTES_W * u,
+        height: NOTES_H * u,
+        transform: [{ rotate: '-6deg' }],
+      }}
+    >
+      <View
+        style={[
+          styles.boardFace,
+          { borderRadius: 2.5 * u, borderWidth: 1.4 * u },
+        ]}
+      />
+      <View
+        style={[
+          styles.boardSpine,
+          { left: NOTES_W * 0.62 * u, width: 1.4 * u },
+        ]}
+      />
+    </View>
+  );
+}
+
 /** a stub of an arm, and a book held open against it */
 function Book({ u, width }: { u: number; width: number }) {
   const bottom = (SHADOW_H / 2 + BODY_LIFT + 8) * u;
@@ -606,10 +726,19 @@ const styles = StyleSheet.create({
   foot: { position: 'absolute', backgroundColor: colors.roomBlob.foot },
   body: { position: 'absolute', backgroundColor: colors.roomBlob.body },
   sheen: { position: 'absolute', backgroundColor: colors.roomBlob.bodyLight },
+  filledCheek: {
+    position: 'absolute',
+    backgroundColor: colors.roomBlob.bodyLight,
+  },
   eye: { position: 'absolute', backgroundColor: colors.roomBlob.face },
   mouth: {
     position: 'absolute',
     backgroundColor: colors.roomBlob.face,
+    opacity: 0.75,
+  },
+  mouthCurve: {
+    position: 'absolute',
+    borderColor: colors.roomBlob.face,
     opacity: 0.75,
   },
   lens: {
@@ -656,5 +785,16 @@ const styles = StyleSheet.create({
     top: 0,
     bottom: 0,
     backgroundColor: colors.primary.blue600,
+  },
+  boardFace: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: colors.roomBlob.board,
+    borderColor: colors.roomBlob.boardEdge,
+  },
+  boardSpine: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    backgroundColor: colors.roomBlob.boardEdge,
   },
 });

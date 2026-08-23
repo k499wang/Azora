@@ -15,12 +15,8 @@ import MochiAside from '../MochiAside';
 const BRAIN_SCAN_ASPECT_RATIO = 3 / 2;
 const BRAIN_SCAN_CONTENT_OFFSET = -10;
 const RIGHT_BRAIN_LABEL_OFFSET = 12;
-/**
- * A real, citable number rather than a conversion stat: around six breaths a
- * minute is the resonance frequency where breathing and heart rate line up, and
- * it is the rate the app's own paces are built around.
- */
-const MOCHI_NOTE = 'Around six breaths a minute is where your breath and your heartbeat line up.';
+const MOCHI_NOTE =
+  'Controlled breathing can lead to a lower heart rate and lower stress.';
 
 interface BrainScienceScreenProps {
   stepIndex: number;
@@ -102,7 +98,12 @@ export default function BrainScienceScreen({
           </View>
         </Animated.View>
 
-        <MochiAside text={MOCHI_NOTE} accessory="glasses" />
+        <MochiAside
+          text={MOCHI_NOTE}
+          expression="thinking"
+          wearing="glasses"
+          holding="pencil"
+        />
       </View>
     </OnboardingScreenLayout>
   );

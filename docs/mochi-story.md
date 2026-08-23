@@ -115,9 +115,9 @@ lives in `src/components/onboarding/data/mochiStory.ts` (see `STEP_ORDER` in
 | `MochiStoryScreen` (`mochiMoved`) | "He's moved a lot." / "Never long enough to unpack." — sad, bubble: "again." |
 | `MochiStoryScreen` (`mochiUnpacked`) | "So his room is empty." / "He stopped bothering to decorate it." — sad, bubble: "..." |
 | `MochiStoryScreen` (`mochiFresh`) | "You decorate it for him." / "One thing at a time." — bubble: "oh." |
-| `MochiStoryScreen` (`mochiDailies`) | "Three dailies a day." / "Two breathing sessions and a breath hold." |
-| `MochiPlaceScreen` | "Finish all three." / "You put something in his room. One thing a day." — bubble on landing: "thanks." |
-| `MochiFloorScreen` | "Seven things fill the room." / "Then you start on his next one." — bubble when full: "home." |
+| `MochiPlaceScreen` | "Finish your dailies." / "Every day you finish, an item lands in his room." — bubble on landing: "thanks." |
+| `MochiFloorScreen` | "Seven items fill a room." / "Fill it and you get to make another one." — bubble when full: "home." |
+| `MochiRoomsScreen` | "Every room is its own." / "You pick the look when you start the next one." — the room styles slide past on their own |
 
 After onboarding the room itself carries it, plus `RoomCompleteScreen`
 ("You filled every corner").

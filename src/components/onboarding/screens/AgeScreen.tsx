@@ -1,6 +1,7 @@
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import OnboardingHapticSlider from '../OnboardingHapticSlider';
+import MochiAside from '../MochiAside';
 
 interface AgeScreenProps {
   value: number;
@@ -23,8 +24,16 @@ export default function AgeScreen({
 }: AgeScreenProps) {
   return (
     <OnboardingScreenLayout
-      title="How old are you?"
-      subtitle="Azora tunes guidance to your age."
+      title=""
+      titleSlot={
+        <MochiAside
+          text="How old are you?"
+          variant="question"
+          expression="happy"
+          holding="notes"
+          delayMs={160}
+        />
+      }
       progress={stepIndex / stepCount}
       onBack={onBack}
       onSkip={onSkip}

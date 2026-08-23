@@ -8,6 +8,7 @@ import { useTimePickerSheet } from '../../common/useTimePickerSheet';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
+import MochiAside from '../MochiAside';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import TECHNIQUES from '../../../features/exercise/guidedBreathing/techniques';
@@ -116,7 +117,11 @@ export default function RecommendedExerciseScreen({
         ) : null}
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Azora’s plan</Text>
+          <MochiAside
+            text="We made this plan for you:"
+            variant="heading"
+            expression="pleased"
+          />
           {plan.actions.map((action) => (
             <ActionCard
               key={action.id}
@@ -238,12 +243,6 @@ const styles = StyleSheet.create({
   },
   section: {
     gap: spacing.md,
-  },
-  sectionTitle: {
-    ...typography.title.title3,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    color: colors.text.primary,
   },
   actionCard: {
     backgroundColor: colors.background.elevated,

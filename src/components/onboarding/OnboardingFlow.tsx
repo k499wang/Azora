@@ -31,6 +31,7 @@ import PersonalizeIntroScreen from './screens/PersonalizeIntroScreen';
 import { MOCHI_STORY } from './data/mochiStory';
 import MochiPlaceScreen from './screens/MochiPlaceScreen';
 import MochiFloorScreen from './screens/MochiFloorScreen';
+import MochiRoomsScreen from './screens/MochiRoomsScreen';
 import AttPrimingScreen from './screens/AttPrimingScreen';
 import PactScreen from './screens/PactScreen';
 import NotificationPermissionScreen from './screens/NotificationPermissionScreen';
@@ -196,9 +197,9 @@ const STEP_ORDER: OnboardingStep[] = [
   'planLoading',
   'diagnosis',
   'recommendedExercise',
-  'mochiDailies',
   'mochiPlace',
   'mochiFloor',
+  'mochiRooms',
   'attPriming',
   'notifications',
   'pact',
@@ -1449,20 +1450,8 @@ function OnboardingFlowSteps({
             [actionId]: minutesFromMidnight,
           }))
         }
-        onContinue={() => goToStep('mochiDailies', 'continue')}
-        onBack={() => goToStep('diagnosis', 'back')}
-      />
-    );
-  }
-
-  if (step === 'mochiDailies') {
-    return (
-      <MochiStoryScreen
-        beat={MOCHI_STORY.mochiDailies}
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
         onContinue={() => goToStep('mochiPlace', 'continue')}
-        onBack={() => goToStep('recommendedExercise', 'back')}
+        onBack={() => goToStep('diagnosis', 'back')}
       />
     );
   }
@@ -1473,7 +1462,7 @@ function OnboardingFlowSteps({
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goToStep('mochiFloor', 'continue')}
-        onBack={() => goToStep('mochiDailies', 'back')}
+        onBack={() => goToStep('recommendedExercise', 'back')}
       />
     );
   }
@@ -1483,8 +1472,19 @@ function OnboardingFlowSteps({
       <MochiFloorScreen
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('attPriming', 'continue')}
+        onContinue={() => goToStep('mochiRooms', 'continue')}
         onBack={() => goToStep('mochiPlace', 'back')}
+      />
+    );
+  }
+
+  if (step === 'mochiRooms') {
+    return (
+      <MochiRoomsScreen
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onContinue={() => goToStep('attPriming', 'continue')}
+        onBack={() => goToStep('mochiFloor', 'back')}
       />
     );
   }
@@ -1507,7 +1507,7 @@ function OnboardingFlowSteps({
               goToStep('notifications', 'continue');
             });
         }}
-        onBack={() => goToStep('mochiFloor', 'back')}
+        onBack={() => goToStep('mochiRooms', 'back')}
       />
     );
   }

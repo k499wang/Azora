@@ -112,7 +112,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.md,
     marginTop: spacing.lg,
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.sm,
   },
   chartTitle: {
     ...typography.body.small,

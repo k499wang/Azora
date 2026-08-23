@@ -1,6 +1,8 @@
 import Svg, { Circle, Polyline } from 'react-native-svg';
 import { StyleSheet, View } from 'react-native';
-import MochiPortrait from '../../../features/room/MochiPortrait';
+import MochiPortrait, {
+  getMochiSideroom,
+} from '../../../features/room/MochiPortrait';
 import { MASCOT_NAME } from '../../../features/room/mascot';
 import { card, radius } from '../../../theme/card';
 import { colors } from '../../../theme/colors';
@@ -18,6 +20,9 @@ interface PersonalizeIntroScreenProps {
 }
 
 const BLOB_SIZE = 74;
+const BLOB_HELD = 'pencil' as const;
+/** the pencil widens his box; cancel it so his body sits where it always did */
+const BLOB_INSET = getMochiSideroom(BLOB_SIZE, BLOB_HELD);
 const CARD_W = 140;
 const CARD_H = 156;
 const CHART_W = CARD_W - spacing.md * 2;
@@ -66,8 +71,12 @@ function PersonalizeIllustration() {
       </View>
 
       {/* overlapping the card's lower-left corner, so he reads as holding it */}
-      <View style={styles.blob}>
-        <MochiPortrait size={BLOB_SIZE} />
+      <View style={[styles.blob, { left: -BLOB_INSET }]}>
+        <MochiPortrait
+          size={BLOB_SIZE}
+          expression="pleased"
+          holding={BLOB_HELD}
+        />
       </View>
     </View>
   );
@@ -132,7 +141,6 @@ const styles = StyleSheet.create({
   },
   blob: {
     position: 'absolute',
-    left: 0,
     bottom: 0,
   },
   copy: {
