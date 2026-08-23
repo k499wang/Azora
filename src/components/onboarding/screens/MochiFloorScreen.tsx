@@ -61,7 +61,7 @@ export default function MochiFloorScreen({
 
   return (
     <OnboardingScreenLayout
-      title="Seven decorations finish a room. Then you pick a new one."
+      title="You finish a room once you have seven decorations."
       progress={stepIndex / stepCount}
       onBack={onBack}
       centerCopy

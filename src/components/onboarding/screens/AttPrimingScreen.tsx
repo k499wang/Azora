@@ -68,11 +68,6 @@ export default function AttPrimingScreen({
             <SvgXml xml={ARROW_XML} width={ARROW_WIDTH} height={ARROW_HEIGHT} />
           </View>
         </View>
-
-        <Text style={styles.reassurance}>
-          Allowing this keeps what you see relevant to you — and you can change
-          it anytime in Settings.
-        </Text>
       </View>
     </OnboardingScreenLayout>
   );
@@ -135,11 +130,5 @@ const styles = StyleSheet.create({
   arrow: {
     marginTop: spacing.xs,
     alignItems: 'center',
-  },
-  reassurance: {
-    ...typography.body.small,
-    color: colors.text.tertiary,
-    textAlign: 'center',
-    paddingHorizontal: spacing.sm,
   },
 });
