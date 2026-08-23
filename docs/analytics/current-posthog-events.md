@@ -71,6 +71,7 @@ Daily Breathhold card.
 - `daily_breath_hold_started`
 - `daily_breath_hold_released`
 - `daily_results_viewed`
+- `dailies_completed`
 
 ### Daily Breath Hold Properties
 
@@ -83,6 +84,26 @@ Daily Breathhold card.
 
 - `hold_seconds`
 - `best_hold_seconds`
+
+`dailies_completed`
+
+- `is_pro` — `true` / `false` after entitlement resolves; `null` if the lookup failed
+- `streak_days`
+- `room_piece_earned` — whether the completion also earned a room decoration
+- `floor`
+
+All three dailies done, fired once per local date from whichever result screen
+carries the third one. Deliberately separate from `room_reward_unlocked`: a full
+room, or one already claimed today, completes the dailies and earns nothing, so
+the room event alone would miss exactly the users who have been at this longest.
+
+The once-per-date guard is persisted in an authenticated-user-scoped
+`AsyncStorage` key. Its read-modify-write is serialized, so simultaneous result
+effects cannot lose a claim and accounts on the same device cannot suppress one
+another's events. Storage work is detached from the result UI.
+
+Emitted from
+[src/features/room/useTrackDailyCompletion.ts](/Users/k3vinwvng/Documents/Azora/Azora/src/features/room/useTrackDailyCompletion.ts).
 
 ## Exercise Session
 
@@ -132,6 +153,73 @@ Daily Breathhold card.
 - `enabled`
 - `technique_id`
 - `technique_name`
+
+## Room and Hotel
+
+- `room_reward_unlocked`
+- `room_picker_opened`
+- `room_decoration_placed`
+- `room_completed`
+- `room_started`
+
+These five are the room loop as a funnel, in order. `room_reward_unlocked` is
+the *earn* and `room_decoration_placed` is the *placement*: they are separate
+events because a user who is handed a piece and never places it is the loop's
+most interesting failure, and one event cannot describe both ends of it.
+
+`is_pro` rides on every one of them. It is resolved from the canonical shared
+entitlement query without delaying the room action or mutation. A failed lookup
+is recorded as `null`, never guessed to mean non-Pro.
+
+The dev lab (`RoomLabScreen`) fabricates a room and short-circuits before the
+mutations, so previews never reach these events.
+
+Room screens themselves are covered by `screen_view` — `RoomDecorate`,
+`RoomComplete`, `NextRoom`, `Hotel` — so there are no separate view events.
+
+### Room and Hotel Properties
+
+Shared by all five:
+
+- `is_pro` — `true` / `false`, or `null` when entitlement resolution failed
+- `floor` — position in the hotel; 1 is the ground floor
+
+`room_reward_unlocked`
+
+- `slot` — the slot the earned piece will fill, `day1`..`day7`
+- `placed_count` — pieces already in the room, 0..6
+
+`room_picker_opened`
+
+- `slot`
+- `placed_count`
+
+`room_decoration_placed`
+
+- `slot`
+- `option_id` — which object, e.g. `checker_rug`
+- `placed_count` — pieces in the room *after* this one, 1..7
+- `completes_room`
+
+`room_completed`
+
+- no properties beyond the shared two
+
+`room_started`
+
+- `shell`
+- `frame_hue`
+
+Emitted from:
+
+- [src/services/analytics/room.ts](/Users/k3vinwvng/Documents/Azora/Azora/src/services/analytics/room.ts)
+- [src/features/room/useTrackDailyCompletion.ts](/Users/k3vinwvng/Documents/Azora/Azora/src/features/room/useTrackDailyCompletion.ts)
+- [src/queries/room/usePlaceDecorationMutation.ts](/Users/k3vinwvng/Documents/Azora/Azora/src/queries/room/usePlaceDecorationMutation.ts)
+- [src/queries/room/useCreateNextRoomMutation.ts](/Users/k3vinwvng/Documents/Azora/Azora/src/queries/room/useCreateNextRoomMutation.ts)
+- [src/screens/RoomDecorateScreen.tsx](/Users/k3vinwvng/Documents/Azora/Azora/src/screens/RoomDecorateScreen.tsx)
+
+See [room-loop-activation.md](/Users/k3vinwvng/Documents/Azora/Azora/docs/analytics/room-loop-activation.md)
+for what these events are meant to measure.
 
 ## Recently Logged
 
@@ -217,6 +305,49 @@ available:
 - `stage`
 - `error_code`
 - `error_message`
+
+## Exit Offer
+
+- `exit_offer_shown`
+- `exit_offer_accepted`
+- `exit_offer_declined`
+
+The discounted counter-offer already emits the full `paywall_*` set under
+`placement: exit_discount`, so these three exist only for what those cannot say:
+which exit intent summoned the offer, and how it was refused.
+
+### Exit Offer Properties
+
+All three carry the shared paywall properties (placement, offering, both price
+points, experiment variant) plus:
+
+- `trigger` — `idle` | `purchase_cancelled` | `post_onboarding`
+
+`exit_offer_accepted`
+
+- `outcome` — `purchased` | `restored`
+
+`exit_offer_declined`
+
+- `decline_method` — `button` (the explicit control) | `system_close` (back
+  gesture or hardware back, through the confirm dialog)
+
+`exit_offer_shown` is emitted once only after the offering and paywall view ID
+are ready, so its shared price, experiment, and view properties are complete.
+Accept and decline behavior never waits on analytics; if a user can dismiss
+before metadata is ready, the new `exit_offer_declined` event is skipped while
+the existing paywall dismissal still runs.
+
+The three triggers are not the same user. `purchase_cancelled` backed out of the
+store sheet with a thumb on the button; `idle` may only have been reading;
+`post_onboarding` already declined once and meets the offer over Home. The
+offer is identical for all three, which is a decision worth being able to check.
+
+Emitted from:
+
+- [src/services/analytics/exitOffer.ts](/Users/k3vinwvng/Documents/Azora/Azora/src/services/analytics/exitOffer.ts)
+- [src/components/paywall/ExitOfferSheet.tsx](/Users/k3vinwvng/Documents/Azora/Azora/src/components/paywall/ExitOfferSheet.tsx) — the two in-onboarding triggers
+- [src/screens/ExitOfferScreen.tsx](/Users/k3vinwvng/Documents/Azora/Azora/src/screens/ExitOfferScreen.tsx) — the queued post-onboarding one
 
 ## Feature Gates
 

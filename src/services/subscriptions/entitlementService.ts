@@ -23,7 +23,9 @@ export interface UserEntitlement {
   experimentVariant?: string | null;
 }
 
-export async function getUserEntitlement(): Promise<UserEntitlement | null> {
+export async function getUserEntitlement(
+  expectedUserId: string,
+): Promise<UserEntitlement | null> {
   const supabase = requireSupabaseClient();
   const [{ data, error }, authResult] = await Promise.all([
     supabase
@@ -40,6 +42,9 @@ export async function getUserEntitlement(): Promise<UserEntitlement | null> {
   }
 
   const authUserId = authResult.data.user?.id ?? null;
+  if (authUserId !== expectedUserId) {
+    throw new Error('Authenticated user changed during entitlement lookup.');
+  }
   const supabaseRow = mapEntitlementRow(data);
   const revenueCatProEntitlement = await getActiveRevenueCatProEntitlement(authUserId);
 

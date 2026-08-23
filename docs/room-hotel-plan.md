@@ -40,6 +40,7 @@ Consequences worth stating, because they drive the data model:
 | Storage | `supabase/migrations/20260807000100_create_room_hotel.sql` | `rooms` (floor, shell, frame_hue) + `room_decorations` (slot, option_id), RLS on |
 | Read/write | `src/services/room/roomService.ts`, `src/queries/room/*` | Reads highest floor as current; lazily opens floor 1 |
 | Picker | `src/screens/RoomDecorateScreen.tsx` | Dev-grade — every slot, every option, unlimited |
+| Analytics | `src/services/analytics/room.ts` | Done — the five-event funnel, all carrying canonically resolved `is_pro` (`null` on lookup failure). See [analytics/room-loop-activation.md](/Users/k3vinwvng/Documents/Azora/Azora/docs/analytics/room-loop-activation.md) |
 
 `RoomScene.tsx` is a generated asset file. Treat it as read-only: nothing in
 this plan modifies it, so it can be regenerated without losing work.

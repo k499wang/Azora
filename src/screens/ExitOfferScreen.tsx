@@ -5,6 +5,12 @@ import {
   ExitOfferContent,
   confirmExitOffer,
 } from '../components/paywall/ExitOfferContent';
+import {
+  trackExitOfferAccepted,
+  trackExitOfferDeclined,
+  trackExitOfferShown,
+  type ExitOfferDeclineMethod,
+} from '../services/analytics/exitOffer';
 import type { ExitOfferScreenProps } from '../app/navigation';
 
 export function ExitOfferScreen({ navigation }: ExitOfferScreenProps) {
@@ -19,6 +25,25 @@ export function ExitOfferScreen({ navigation }: ExitOfferScreenProps) {
   });
 
   const allowDismissRef = useRef(false);
+  const shownRef = useRef(false);
+
+  const declineWith = useCallback(
+    (method: ExitOfferDeclineMethod) => {
+      if (paywall.isEventMetadataReady) {
+        trackExitOfferDeclined(paywall.trackEvent, 'post_onboarding', method);
+      }
+      paywall.trackDismissed();
+    },
+    [paywall],
+  );
+
+  // This screen only ever exists for the queued post-onboarding offer: it is
+  // navigated to once by `ExitOfferPresenter` after Home paints.
+  useEffect(() => {
+    if (!paywall.isEventMetadataReady || shownRef.current) return;
+    shownRef.current = true;
+    trackExitOfferShown(paywall.trackEvent, 'post_onboarding');
+  }, [paywall.isEventMetadataReady, paywall.trackEvent]);
 
   const isWaitingForAnchorPricing =
     paywall.offering != null &&
@@ -45,7 +70,7 @@ export function ExitOfferScreen({ navigation }: ExitOfferScreenProps) {
       if (isBusy) return;
 
       confirmExitOffer(() => {
-        paywall.trackDismissed();
+        declineWith('system_close');
         allowDismissRef.current = true;
         navigation.dispatch(event.data.action);
       });
@@ -57,6 +82,13 @@ export function ExitOfferScreen({ navigation }: ExitOfferScreenProps) {
   const purchase = useCallback(async () => {
     const result = await paywall.purchaseSelectedPackage();
     if (result.status === 'purchased' && result.isPro) {
+      if (paywall.isEventMetadataReady) {
+        trackExitOfferAccepted(
+          paywall.trackEvent,
+          'post_onboarding',
+          'purchased',
+        );
+      }
       allowDismissRef.current = true;
       navigation.goBack();
     }
@@ -65,6 +97,13 @@ export function ExitOfferScreen({ navigation }: ExitOfferScreenProps) {
   const restore = useCallback(async () => {
     const result = await paywall.restorePurchases();
     if (result.status === 'restored' && result.isPro) {
+      if (paywall.isEventMetadataReady) {
+        trackExitOfferAccepted(
+          paywall.trackEvent,
+          'post_onboarding',
+          'restored',
+        );
+      }
       allowDismissRef.current = true;
       navigation.goBack();
     }
@@ -72,10 +111,10 @@ export function ExitOfferScreen({ navigation }: ExitOfferScreenProps) {
 
   const decline = useCallback(() => {
     if (isBusy) return;
-    paywall.trackDismissed();
+    declineWith('button');
     allowDismissRef.current = true;
     navigation.goBack();
-  }, [isBusy, navigation, paywall]);
+  }, [declineWith, isBusy, navigation]);
 
   return (
     <ExitOfferContent

@@ -37,6 +37,7 @@ import {
   isDailyCompleteRewardReady,
   useDailyCompleteSnapshot,
 } from '../features/room/useDailyCompleteSnapshot';
+import { useTrackDailyCompletion } from '../features/room/useTrackDailyCompletion';
 import { SESSION_GLASS_BUTTON_SIZE } from '../features/exercise/shared/components/SessionGlassButton';
 import { duration, stagger } from '../theme/motion';
 import { returnToHome } from '../app/navigation/returnToHome';
@@ -99,6 +100,7 @@ export default function ShareableResultScreen({
     claim: roomClaim,
     projection: BREATH_HOLD_COMPLETION,
   });
+  useTrackDailyCompletion(snapshot, roomClaim);
   // Result data comes from the route, so the whole tree is mounted right away
   // and lays out under the opaque cover while the native slide is still
   // running. Nothing heavy is left to commit once the screen is on-screen —

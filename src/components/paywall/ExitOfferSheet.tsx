@@ -1,11 +1,21 @@
+import { useEffect, useRef } from 'react';
 import { Modal } from 'react-native';
 import { usePaywall } from '../../hooks/usePaywall';
 import { PaywallPlacement } from '../../services/paywall';
+import {
+  trackExitOfferAccepted,
+  trackExitOfferDeclined,
+  trackExitOfferShown,
+  type ExitOfferDeclineMethod,
+  type ExitOfferTrigger,
+} from '../../services/analytics/exitOffer';
 import { ExitOfferContent, confirmExitOffer } from './ExitOfferContent';
 
 interface ExitOfferSheetProps {
   visible: boolean;
   sourceScreen: string;
+  /** which exit intent summoned it; the offer is identical, the user is not */
+  trigger: ExitOfferTrigger;
   onPurchased: () => void;
   onRestored: () => void;
   onDismiss: () => void;
@@ -17,6 +27,7 @@ interface ExitOfferSheetProps {
 export default function ExitOfferSheet({
   visible,
   sourceScreen,
+  trigger,
   onPurchased,
   onRestored,
   onDismiss,
@@ -35,9 +46,30 @@ export default function ExitOfferSheet({
 
   const isBusy = paywall.isLoading || paywall.isPurchasing || paywall.isRestoring;
 
+  // Once per presentation. `visible` can flip back on for a second exit intent
+  // in the same session, and that is a second showing.
+  const shownRef = useRef(false);
+  useEffect(() => {
+    if (!visible) {
+      shownRef.current = false;
+      return;
+    }
+    if (!paywall.isEventMetadataReady || shownRef.current) return;
+    shownRef.current = true;
+    trackExitOfferShown(paywall.trackEvent, trigger);
+  }, [
+    paywall.isEventMetadataReady,
+    paywall.trackEvent,
+    trigger,
+    visible,
+  ]);
+
   const purchase = async () => {
     const result = await paywall.purchaseSelectedPackage();
     if (result.status === 'purchased' && result.isPro) {
+      if (paywall.isEventMetadataReady) {
+        trackExitOfferAccepted(paywall.trackEvent, trigger, 'purchased');
+      }
       onPurchased();
     }
   };
@@ -45,12 +77,18 @@ export default function ExitOfferSheet({
   const restore = async () => {
     const result = await paywall.restorePurchases();
     if (result.status === 'restored' && result.isPro) {
+      if (paywall.isEventMetadataReady) {
+        trackExitOfferAccepted(paywall.trackEvent, trigger, 'restored');
+      }
       onRestored();
     }
   };
 
-  const decline = () => {
+  const decline = (method: ExitOfferDeclineMethod = 'button') => {
     if (isBusy) return;
+    if (paywall.isEventMetadataReady) {
+      trackExitOfferDeclined(paywall.trackEvent, trigger, method);
+    }
     paywall.trackDismissed();
     onDismiss();
   };
@@ -62,7 +100,7 @@ export default function ExitOfferSheet({
       presentationStyle="fullScreen"
       onRequestClose={() => {
         if (isBusy) return;
-        confirmExitOffer(decline);
+        confirmExitOffer(() => decline('system_close'));
       }}
       onDismiss={onDismiss}
     >
@@ -75,7 +113,7 @@ export default function ExitOfferSheet({
         onRestore={() => {
           void restore();
         }}
-        onDecline={decline}
+        onDecline={() => decline('button')}
       />
     </Modal>
   );

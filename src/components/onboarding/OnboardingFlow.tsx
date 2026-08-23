@@ -45,6 +45,7 @@ import DiagnosisScreen from './screens/DiagnosisScreen';
 import RecommendedExerciseScreen from './screens/RecommendedExerciseScreen';
 import OnboardingPaywallScreen from './screens/OnboardingPaywallScreen';
 import ExitOfferSheet from '../paywall/ExitOfferSheet';
+import type { ExitOfferTrigger } from '../../services/analytics/exitOffer';
 import BreathHoldScreen from './screens/BreathHoldScreen';
 import BreathHoldBenefitsScreen from './screens/BreathHoldBenefitsScreen';
 import DoctorReferralScreen, {
@@ -361,13 +362,16 @@ function OnboardingFlowSteps({
   // the free path must stay available.
   const paywallMode = paywall.offering?.paywallMode ?? 'soft';
   const [isExitOfferVisible, setIsExitOfferVisible] = useState(false);
+  const [exitOfferTrigger, setExitOfferTrigger] =
+    useState<ExitOfferTrigger>('idle');
   const [hasReachedPlanStep, setHasReachedPlanStep] = useState(false);
   // Auto triggers (idle, cancelled purchase) fire at most once per session;
   // the explicit close tap can always reopen the offer.
   const hasAutoShownExitOfferRef = useRef(false);
 
-  const showExitOffer = () => {
+  const showExitOffer = (trigger: ExitOfferTrigger) => {
     hasAutoShownExitOfferRef.current = true;
+    setExitOfferTrigger(trigger);
     setIsExitOfferVisible(true);
   };
 
@@ -521,10 +525,7 @@ function OnboardingFlowSteps({
     if (hasAutoShownExitOfferRef.current || isExitOfferVisible) return;
     if (paywall.isPurchasing || paywall.isRestoring || isSubmitting) return;
 
-    const id = setTimeout(() => {
-      hasAutoShownExitOfferRef.current = true;
-      setIsExitOfferVisible(true);
-    }, EXIT_OFFER_IDLE_MS);
+    const id = setTimeout(() => showExitOffer('idle'), EXIT_OFFER_IDLE_MS);
     return () => clearTimeout(id);
   }, [
     step,
@@ -777,7 +778,7 @@ function OnboardingFlowSteps({
       !isPro &&
       !hasAutoShownExitOfferRef.current
     ) {
-      showExitOffer();
+      showExitOffer('purchase_cancelled');
       return;
     }
 
@@ -1630,6 +1631,7 @@ function OnboardingFlowSteps({
         <ExitOfferSheet
           visible={isExitOfferVisible}
           sourceScreen="onboarding_exit_offer"
+          trigger={exitOfferTrigger}
           onPurchased={() => {
             setIsExitOfferVisible(false);
             void finish('purchase');
