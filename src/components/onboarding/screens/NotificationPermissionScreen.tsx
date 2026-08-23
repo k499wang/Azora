@@ -85,10 +85,6 @@ export default function NotificationPermissionScreen({
           })}
         </View>
 
-        <Text style={styles.reassurance}>
-          You can change the times or turn individual reminders off anytime in Settings.
-        </Text>
-
         {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
       </View>
     </OnboardingScreenLayout>
@@ -160,12 +156,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semibold,
     fontWeight: '500',
     color: colors.text.primary,
-  },
-  reassurance: {
-    ...typography.body.small,
-    color: colors.text.tertiary,
-    textAlign: 'center',
-    paddingHorizontal: spacing.sm,
   },
   errorText: {
     ...typography.body.small,

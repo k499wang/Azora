@@ -125,7 +125,8 @@ lives in `src/components/onboarding/data/mochiStory.ts` (see `STEP_ORDER` in
 | `MochiStoryScreen` (`mochiNoTime`) | "Mochi never has time to decorate his room." — sad, bubble: "..." |
 | `MochiStoryScreen` (`mochiFresh`) | "Would you help decorate Mochi's room?" — sad, bubble: "please.", button "Yes!" |
 | `MochiPlaceScreen` | "Finish your daily plan to decorate Mochi’s room." — bubble on landing: "thanks." |
-| `MochiFloorScreen` | "Seven decorations finish a room. Then you pick a new one." — bubble when full: "home." |
+| `MochiFloorScreen` | "You finish a room once you have seven decorations." — bubble when full: "home." |
+| `MochiRoomsScreen` | "Then you pick another room for Mochi." — empty rooms swipe past on their own |
 
 After onboarding the room itself carries it, plus `RoomCompleteScreen`
 ("You filled every corner" / "All 7 decorations placed — this room is
