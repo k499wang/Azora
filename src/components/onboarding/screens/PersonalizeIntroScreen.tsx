@@ -21,8 +21,9 @@ interface PersonalizeIntroScreenProps {
 
 const BLOB_SIZE = 74;
 const BLOB_HELD = 'pencil' as const;
-/** the pencil widens his box; cancel it so his body sits where it always did */
-const BLOB_INSET = getMochiSideroom(BLOB_SIZE, BLOB_HELD);
+const BLOB_FACE = 'pleased' as const;
+/** the pencil and his lean widen his box; cancel both so his body stays put */
+const BLOB_INSET = getMochiSideroom(BLOB_SIZE, BLOB_HELD, BLOB_FACE);
 const CARD_W = 140;
 const CARD_H = 156;
 const CHART_W = CARD_W - spacing.md * 2;
@@ -74,7 +75,7 @@ function PersonalizeIllustration() {
       <View style={[styles.blob, { left: -BLOB_INSET }]}>
         <MochiPortrait
           size={BLOB_SIZE}
-          expression="pleased"
+          expression={BLOB_FACE}
           holding={BLOB_HELD}
         />
       </View>
