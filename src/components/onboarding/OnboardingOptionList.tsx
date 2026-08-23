@@ -141,10 +141,10 @@ const styles = StyleSheet.create({
   },
   row: {
     ...card.base,
-    // Off-white, the canvas the onboarding screens already sit on: the outline
-    // is what makes a row a row here, so the fill stays quiet behind it rather
-    // than lifting a white slab off the page.
-    backgroundColor: colors.background.canvas,
+    // Near-white rather than the pure card white: the outline is what makes a
+    // row a row here, and the fill sits a shade back from white so the rows do
+    // not read as slabs stacked on the canvas.
+    backgroundColor: colors.background.cardSoft,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
