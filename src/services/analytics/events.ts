@@ -25,6 +25,19 @@ export const AnalyticsEvent = {
   DailyBreathHoldStarted: 'daily_breath_hold_started',
   DailyBreathHoldReleased: 'daily_breath_hold_released',
   DailyResultsViewed: 'daily_results_viewed',
+  // All three dailies done. Distinct from `room_reward_unlocked`, which only
+  // fires when a piece is actually claimable — a full room, or one already
+  // claimed today, completes the dailies and earns nothing.
+  DailiesCompleted: 'dailies_completed',
+
+  // The room loop. `room_reward_unlocked` is the earn, not the placement: the
+  // gap between the two is where a user who was handed a piece walks away
+  // without using it, and only a separate event can show that.
+  RoomRewardUnlocked: 'room_reward_unlocked',
+  RoomPickerOpened: 'room_picker_opened',
+  RoomDecorationPlaced: 'room_decoration_placed',
+  RoomCompleted: 'room_completed',
+  RoomStarted: 'room_started',
 
   RecentlyLoggedViewed: 'recently_logged_viewed',
   RecentlyLoggedSessionOpened: 'recently_logged_session_opened',
@@ -52,6 +65,12 @@ export const AnalyticsEvent = {
   PaywallRestoreCompleted: 'paywall_restore_completed',
   PaywallDismissed: 'paywall_dismissed',
   PaywallFailed: 'paywall_failed',
+  // The discounted counter-offer. `paywall_*` already fires for it under
+  // `placement: exit_discount`; these add what that cannot say — which exit
+  // intent summoned it, and how it was refused.
+  ExitOfferShown: 'exit_offer_shown',
+  ExitOfferAccepted: 'exit_offer_accepted',
+  ExitOfferDeclined: 'exit_offer_declined',
   FeatureGateHit: 'feature_gate_hit',
   ProfileAction: 'profile_action',
 

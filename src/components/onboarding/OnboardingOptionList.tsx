@@ -3,7 +3,7 @@ import { Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { isHapticsEnabled } from '../../services/preferences/hapticsPreference';
-import { card } from '../../theme/card';
+import { card, radius } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
@@ -12,6 +12,8 @@ import type { OnboardingOptionIconName } from './OnboardingOptionIcon';
 
 const GLYPH_SIZE = 28;
 const GLYPH_COLUMN = 40;
+/** Shallower than `ChunkyButton`'s lip: a row is a choice, not the action. */
+const LIP_DEPTH = 2;
 
 export interface OnboardingOption<Id extends string> {
   id: Id;
@@ -40,6 +42,9 @@ interface OnboardingOptionListProps<Id extends string> {
  * outright and dark ones turned the screen muddy. A row keeps the colour as
  * accent, lets long labels ("A friend or family member") sit on one line, and
  * makes selection a single blue state rather than one per hue.
+ *
+ * The lip under each row carries the border's own colour, so it reads as a
+ * thicker bottom edge rather than a shadow. Pressing drops the row onto it.
  */
 export default function OnboardingOptionList<Id extends string>({
   options,
@@ -108,24 +113,33 @@ export default function OnboardingOptionList<Id extends string>({
               }
               disabled={disabled}
               onPress={() => handlePress(option.id)}
-              style={({ pressed }) => [
-                styles.row,
-                pressed && styles.rowPressed,
+              style={[
+                styles.lip,
+                selected && styles.lipSelected,
                 disabled && !selected && styles.rowDisabled,
-                selected && styles.rowSelected,
               ]}
             >
-              <View style={styles.glyph} pointerEvents="none">
-                {renderGlyph?.(option) ??
-                (option.icon ? (
-                  <MaterialCommunityIcons
-                    name={option.icon}
-                    size={GLYPH_SIZE}
-                    color={option.accent}
-                  />
-                ) : null)}
-              </View>
-              <Text style={styles.title}>{option.title}</Text>
+              {({ pressed }) => (
+                <View
+                  style={[
+                    styles.row,
+                    selected && styles.rowSelected,
+                    pressed && styles.rowPressed,
+                  ]}
+                >
+                  <View style={styles.glyph} pointerEvents="none">
+                    {renderGlyph?.(option) ??
+                    (option.icon ? (
+                      <MaterialCommunityIcons
+                        name={option.icon}
+                        size={GLYPH_SIZE}
+                        color={option.accent}
+                      />
+                    ) : null)}
+                  </View>
+                  <Text style={styles.title}>{option.title}</Text>
+                </View>
+              )}
             </Pressable>
           </Animated.View>
         );
@@ -138,6 +152,15 @@ const styles = StyleSheet.create({
   list: {
     gap: spacing.sm,
     marginTop: spacing.sm,
+  },
+  lip: {
+    borderRadius: radius.card,
+    borderCurve: 'continuous',
+    backgroundColor: colors.neutral[200],
+    paddingBottom: LIP_DEPTH,
+  },
+  lipSelected: {
+    backgroundColor: colors.primary.blue600,
   },
   row: {
     ...card.base,
@@ -160,9 +183,9 @@ const styles = StyleSheet.create({
     borderColor: colors.primary.blue600,
     backgroundColor: colors.primary.blue100,
   },
+  // Exactly the lip's depth, so the row lands flush on its bottom edge.
   rowPressed: {
-    opacity: 0.9,
-    transform: [{ scale: 0.99 }],
+    transform: [{ translateY: LIP_DEPTH }],
   },
   rowDisabled: {
     opacity: 0.5,

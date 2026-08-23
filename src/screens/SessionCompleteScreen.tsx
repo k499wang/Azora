@@ -36,6 +36,7 @@ import {
   isDailyCompleteRewardReady,
   useDailyCompleteSnapshot,
 } from '../features/room/useDailyCompleteSnapshot';
+import { useTrackDailyCompletion } from '../features/room/useTrackDailyCompletion';
 import { SESSION_GLASS_BUTTON_SIZE } from '../features/exercise/shared/components/SessionGlassButton';
 import { returnToHome } from '../app/navigation/returnToHome';
 
@@ -122,6 +123,7 @@ export default function SessionCompleteScreen({
     claim: roomClaim,
     projection: completionProjection,
   });
+  useTrackDailyCompletion(snapshot, roomClaim);
   // The native stack owns the base result entrance. Transition completion only
   // sequences the optional daily celebration sheet over that content.
   const sheetVisible =

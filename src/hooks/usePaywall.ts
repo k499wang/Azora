@@ -423,8 +423,11 @@ export function usePaywall({
     await ensureRevenueCatIdentityForCurrentUser();
   };
 
+  const isEventMetadataReady = offering != null && paywallViewId != null;
+
   return {
     offering,
+    isEventMetadataReady,
     selectedPackageId,
     isLoading,
     isPurchasing,

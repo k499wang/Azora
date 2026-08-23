@@ -32,7 +32,7 @@ const MOCHI_SIZE_COMPACT = 88;
 
 // He is shown, not named. The first onboarding beat is "This is Mochi.", and
 // introducing him here would spend that reveal before the story gets to it.
-const TAGLINE = 'Your heart rate and breathing friend.';
+const TAGLINE = 'Here to help you unwind.';
 
 function showTermsRequiredAlert() {
   Alert.alert(

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Alert, StyleSheet, View, useWindowDimensions } from 'react-native';
 import RoomScreenLayout, {
   RoomActionButton,
@@ -23,6 +24,8 @@ import { isRoomOverridden } from '../features/room/devRoomOverride';
 import { useStartDaily } from '../hooks/useStartDaily';
 import { ROOM_SLOT_COUNT, type RoomSlot } from '../lib/room/roomProgress';
 import { usePlaceDecorationMutation } from '../queries/room/usePlaceDecorationMutation';
+import { resolveUserIsPro } from '../queries/subscriptions/useUserEntitlementQuery';
+import { trackRoomPickerOpened } from '../services/analytics/room';
 import { useAuthStore } from '../stores/authStore';
 import { triggerTapHaptic } from '../native/tapHaptics';
 import { margin } from '../theme/spacing';
@@ -32,8 +35,10 @@ import { returnToHome } from '../app/navigation/returnToHome';
 interface Placing {
   slot: RoomSlot;
   optionId: string;
-  /** the room as it looked before this piece — the reveal drops the piece onto it */
+  /** the room before this piece, held stable until its animation owns the stage */
   picks: Picks;
+  /** production's seventh piece skips straight to the finished-room replay */
+  completesRoom: boolean;
 }
 
 export default function RoomDecorateScreen({
@@ -41,6 +46,7 @@ export default function RoomDecorateScreen({
   route,
 }: RoomDecorateScreenProps) {
   const { width } = useWindowDimensions();
+  const queryClient = useQueryClient();
   const userId = useAuthStore((state) => state.user?.id ?? null);
   const { room, progress, dailies, isLoading } = useRoomClaim(userId);
   const placeDecoration = usePlaceDecorationMutation(userId);
@@ -65,7 +71,7 @@ export default function RoomDecorateScreen({
         : { kind: 'choose', slot: nextSlot ?? 'day1' };
 
   const [placing, setPlacing] = useState<Placing | null>(null);
-  const [revealDone, setRevealDone] = useState(false);
+  const [placementReady, setPlacementReady] = useState(false);
   const [justPlaced, setJustPlaced] = useState(false);
   // What was placed this visit, held locally. The query is the source of truth,
   // but it refreshes a beat after the reveal ends — and under a faked room it
@@ -83,46 +89,57 @@ export default function RoomDecorateScreen({
     if (nextSlot == null || !progress.canClaim || day == null) return;
     if (placing != null || placeDecoration.isPending) return;
 
+    const completesRoom =
+      !previewing && progress.placedCount === ROOM_SLOT_COUNT - 1;
+
     triggerTapHaptic();
     setPicking(false);
     setPlacing({
       slot: nextSlot,
       optionId,
       picks: placedPicks,
+      completesRoom,
     });
 
     if (previewing) return;
 
-    placeDecoration.mutate({
-      slot: nextSlot,
-      optionId,
-      earnedLocalDate: dailies.todayLocalDate,
-    });
+    placeDecoration.mutate(
+      {
+        slot: nextSlot,
+        optionId,
+        earnedLocalDate: dailies.todayLocalDate,
+      },
+      {
+        // The final piece has no placement reveal to finish. The mutation's
+        // hook-level success handler writes the completed room to the cache
+        // before this callback lets the existing completion handoff run.
+        onSettled: () => {
+          if (completesRoom) setPlacementReady(true);
+        },
+      },
+    );
   };
 
-  // The reveal and the write race each other; whichever finishes last decides
-  // when the screen moves on, so the animation is never cut short and the room
-  // never renders a frame without the piece that just landed in it.
-  const placed = placeDecoration.data?.room?.decorations.length ?? 0;
+  // Normal placements wait for both the reveal and write. The final production
+  // placement has no reveal, so its settled write makes the handoff ready.
   const writeSettled = previewing || !placeDecoration.isPending;
   const writeFailed = !previewing && placeDecoration.isError;
 
   useEffect(() => {
-    if (placing == null || !revealDone || !writeSettled) return;
+    if (placing == null || !placementReady || !writeSettled) return;
 
-    // The reveal has already told them the piece landed, so a failed write can
-    // never just drop them back on the picker with nothing said.
+    // Placement has already taken over the screen, so a failed write can never
+    // just drop them back on the picker with nothing said.
     if (writeFailed) {
       setPlacing(null);
-      setRevealDone(false);
+      setPlacementReady(false);
       Alert.alert('Could not place that piece', 'Please try again.');
       return;
     }
 
-    // The seventh piece finishes the room, and finishing is the biggest moment
-    // in the loop. Keep the settled reveal mounted while the celebration takes
-    // over; clearing it first exposes the completed picker for one frame.
-    if (!previewing && placed >= ROOM_SLOT_COUNT) {
+    // RoomComplete owns the only animation for the seventh piece: a replay of
+    // all seven decorations followed by the filled-every-corner celebration.
+    if (placing.completesRoom) {
       navigation.replace('RoomComplete', route.params);
       return;
     }
@@ -132,17 +149,16 @@ export default function RoomDecorateScreen({
       [placing.slot]: placing.optionId,
     }));
     setPlacing(null);
-    setRevealDone(false);
+    setPlacementReady(false);
 
     // The room now has the piece in it. Hold there rather than dropping back to
     // a panel — the point of the last two seconds was to look at it.
     setJustPlaced(true);
   }, [
     navigation,
-    placed,
     placing,
+    placementReady,
     previewing,
-    revealDone,
     route.params,
     writeFailed,
     writeSettled,
@@ -177,7 +193,7 @@ export default function RoomDecorateScreen({
     >
       <RoomStage>
         <View style={{ width: roomWidth }}>
-          {placing != null ? (
+          {placing != null && !placing.completesRoom ? (
             <PlacementReveal
               width={roomWidth}
               day={placing.slot}
@@ -185,12 +201,12 @@ export default function RoomDecorateScreen({
               picks={placing.picks}
               frameHue={toFrameHue(room?.frameHue)}
               shell={shell}
-              onDone={() => setRevealDone(true)}
+              onDone={() => setPlacementReady(true)}
             />
           ) : (
             <HexRoom
               width={roomWidth}
-              picks={placedPicks}
+              picks={placing?.completesRoom ? placing.picks : placedPicks}
               frameHue={toFrameHue(room?.frameHue)}
               shell={shell}
             />
@@ -204,6 +220,27 @@ export default function RoomDecorateScreen({
               disabled={placeDecoration.isPending}
               onPress={() => {
                 triggerTapHaptic();
+                // Opening the picker is the step between being handed a piece
+                // and choosing one, and it is the only one the user can abandon
+                // silently.
+                if (!previewing && room != null && userId != null) {
+                  const analyticsUserId = userId;
+                  const properties = {
+                    floor: room.floor,
+                    slot: nextSlot,
+                    placedCount: progress.placedCount,
+                  };
+                  void resolveUserIsPro(queryClient, analyticsUserId).then(
+                    (isPro) => {
+                      if (
+                        useAuthStore.getState().user?.id !== analyticsUserId
+                      ) {
+                        return;
+                      }
+                      trackRoomPickerOpened({ isPro, ...properties });
+                    },
+                  );
+                }
                 setPicking(true);
               }}
             />
