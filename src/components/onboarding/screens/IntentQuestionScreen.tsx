@@ -19,6 +19,7 @@ interface IntentQuestionScreenProps {
   stepCount: number;
   onToggle: (intentId: OnboardingIntent) => void;
   onContinue: () => void;
+  onBack: () => void;
 }
 
 export default function IntentQuestionScreen({
@@ -29,6 +30,7 @@ export default function IntentQuestionScreen({
   stepCount,
   onToggle,
   onContinue,
+  onBack,
 }: IntentQuestionScreenProps) {
   const canContinue = selectedIntents.length > 0 && !isSubmitting;
 
@@ -37,7 +39,7 @@ export default function IntentQuestionScreen({
       title="What's on your mind?"
       subtitle="Pick as many as feel right — Azora will tune to them."
       progress={stepIndex / stepCount}
-      fullWidthProgress
+      onBack={onBack}
       animateCopy
       footer={
         <OnboardingPrimaryButton

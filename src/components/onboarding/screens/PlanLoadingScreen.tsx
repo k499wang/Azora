@@ -138,8 +138,6 @@ export default function PlanLoadingScreen({ onDone }: PlanLoadingScreenProps) {
     <OnboardingScreenLayout
       title=""
       progress={0}
-      hideProgress
-      fullWidthProgress
       footer={<View />}
     >
       <View style={styles.loadingBody}>

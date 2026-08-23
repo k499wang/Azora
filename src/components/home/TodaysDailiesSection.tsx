@@ -1,6 +1,5 @@
 import { Text } from '../common/Text';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import ActivityGlyph from '../explore/ActivityGlyph';
 import SectionHeader from '../common/SectionHeader';
@@ -45,10 +44,6 @@ const TIMELINE_ROW_GAP = spacing.lg;
 const TIMELINE_RAIL_INSET = TIMELINE_ROW_HEIGHT / 2 + TIMELINE_MARKER_SIZE / 2;
 const TIMELINE_RAIL_LEFT = TIMELINE_COLUMN_WIDTH / 2 - TIMELINE_RAIL_WIDTH / 2;
 const TIMELINE_DASHES = Array.from({ length: 17 }, (_, index) => index);
-// Diagonal, deepest at the top-left. Stops at `mid` rather than `soft` so the
-// card reads as one saturated hue with depth, not a fade out to near-white.
-const GRADIENT_START = { x: 0, y: 0 };
-const GRADIENT_END = { x: 1, y: 1 };
 
 interface TodaysDailiesSectionProps {
   technique: BreathingTechnique | null;
@@ -144,12 +139,7 @@ function DailyTaskRow({
       <View
         style={[styles.taskPillShadow, { backgroundColor: style.hue.base }]}
       >
-        <LinearGradient
-          colors={[style.hue.base, style.hue.mid]}
-          start={GRADIENT_START}
-          end={GRADIENT_END}
-          style={styles.taskPill}
-        >
+        <View style={styles.taskPill}>
           <View
             style={[styles.taskGlyph, loading && styles.taskGlyphLoading]}
             pointerEvents="none"
@@ -194,7 +184,7 @@ function DailyTaskRow({
               </View>
             </View>
           </View>
-        </LinearGradient>
+        </View>
       </View>
     </Pressable>
   );

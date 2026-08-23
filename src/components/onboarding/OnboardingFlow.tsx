@@ -6,6 +6,7 @@ import BaselineIntroScreen from './screens/BaselineIntroScreen';
 import HeartVariabilityScreen from './screens/HeartVariabilityScreen';
 import DailyTimeScreen from './screens/DailyTimeScreen';
 import RoutineTimeScreen from './screens/RoutineTimeScreen';
+import { OnboardingProgressProvider } from './onboardingProgress';
 import ConsistencyScreen from './screens/ConsistencyScreen';
 import GenderScreen from './screens/GenderScreen';
 import IntentQuestionScreen from './screens/IntentQuestionScreen';
@@ -25,6 +26,11 @@ import ExperienceScreen, {
 } from './screens/ExperienceScreen';
 import NameScreen from './screens/NameScreen';
 import GreetingScreen from './screens/GreetingScreen';
+import MochiStoryScreen from './screens/MochiStoryScreen';
+import PersonalizeIntroScreen from './screens/PersonalizeIntroScreen';
+import { MOCHI_STORY } from './data/mochiStory';
+import MochiPlaceScreen from './screens/MochiPlaceScreen';
+import MochiFloorScreen from './screens/MochiFloorScreen';
 import AttPrimingScreen from './screens/AttPrimingScreen';
 import PactScreen from './screens/PactScreen';
 import NotificationPermissionScreen from './screens/NotificationPermissionScreen';
@@ -151,6 +157,11 @@ interface OnboardingFlowProps {
 }
 
 const STEP_ORDER: OnboardingStep[] = [
+  'mochiIntro',
+  'mochiMoved',
+  'mochiUnpacked',
+  'mochiFresh',
+  'personalizeIntro',
   'intent',
   'intentPriority',
   'intentReflection',
@@ -185,6 +196,9 @@ const STEP_ORDER: OnboardingStep[] = [
   'planLoading',
   'diagnosis',
   'recommendedExercise',
+  'mochiDailies',
+  'mochiPlace',
+  'mochiFloor',
   'attPriming',
   'notifications',
   'pact',
@@ -200,17 +214,12 @@ const BASE_STEP_INDEX = STEP_ORDER.reduce<Record<OnboardingStep, number>>(
 );
 const VISUAL_PROGRESS_STEP_COUNT = 100;
 const FRONT_LOADED_PROGRESS_EXPONENT = 0.65;
-const PROGRESS_ANIMATION_MS = 520;
 const EXIT_OFFER_IDLE_MS = 20_000;
 
 function computeFrontLoadedProgress(stepIndex: number, stepCount: number) {
   if (stepCount <= 0) return 0;
   const rawProgress = Math.max(0, Math.min(1, stepIndex / stepCount));
   return Math.pow(rawProgress, FRONT_LOADED_PROGRESS_EXPONENT);
-}
-
-function easeOutCubic(t: number) {
-  return 1 - Math.pow(1 - t, 3);
 }
 
 function getPlanActionTime(
@@ -249,7 +258,7 @@ function buildDailyPlanSchedule(plan: OnboardingPlan): DailyPlanSchedule {
 type OnboardingTransitionAction = 'continue' | 'skip' | 'back' | 'auto';
 type OnboardingAnalyticsProperties = Record<string, string | number | boolean | null>;
 
-export default function OnboardingFlow({
+function OnboardingFlowSteps({
   initialSavedProfile = null,
   isSavingProfile = false,
   isCompletingOnboarding = false,
@@ -259,7 +268,7 @@ export default function OnboardingFlow({
   const userId = useAuthStore((state) => state.user?.id ?? null);
   const isPro = useUserEntitlementQuery(userId).data?.isPro === true;
   const [step, setStep] = useState<OnboardingStep>(
-    initialSavedProfile == null ? 'intent' : 'paywall',
+    initialSavedProfile == null ? 'mochiIntro' : 'paywall',
   );
   const [selectedIntents, setSelectedIntents] = useState<OnboardingIntent[]>([]);
   const [primaryIntent, setPrimaryIntent] = useState<OnboardingIntent | null>(
@@ -846,54 +855,70 @@ export default function OnboardingFlow({
   };
 
   const stepIndex = stepIndexMap[step] ?? BASE_STEP_INDEX[step];
-  const visualProgressTarget = computeFrontLoadedProgress(stepIndex, stepCount);
-  const [displayedProgress, setDisplayedProgress] = useState(visualProgressTarget);
-  const displayedProgressRef = useRef(visualProgressTarget);
-  const progressFrameRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    if (progressFrameRef.current != null) {
-      cancelAnimationFrame(progressFrameRef.current);
-      progressFrameRef.current = null;
-    }
-
-    const from = displayedProgressRef.current;
-    const delta = visualProgressTarget - from;
-
-    if (Math.abs(delta) < 0.001) {
-      displayedProgressRef.current = visualProgressTarget;
-      setDisplayedProgress(visualProgressTarget);
-      return undefined;
-    }
-
-    const startedAt = Date.now();
-    const tick = () => {
-      const elapsed = Date.now() - startedAt;
-      const t = Math.min(1, elapsed / PROGRESS_ANIMATION_MS);
-      const next = from + delta * easeOutCubic(t);
-
-      displayedProgressRef.current = next;
-      setDisplayedProgress(next);
-
-      if (t < 1) {
-        progressFrameRef.current = requestAnimationFrame(tick);
-      } else {
-        progressFrameRef.current = null;
-      }
-    };
-
-    progressFrameRef.current = requestAnimationFrame(tick);
-
-    return () => {
-      if (progressFrameRef.current != null) {
-        cancelAnimationFrame(progressFrameRef.current);
-        progressFrameRef.current = null;
-      }
-    };
-  }, [visualProgressTarget]);
-
-  const visualStepIndex = displayedProgress * VISUAL_PROGRESS_STEP_COUNT;
+  // The bar animates itself from this target, on the UI thread — see
+  // `OnboardingProgressProvider` below and `ProgressBar` in the screen layout.
+  const visualStepIndex =
+    computeFrontLoadedProgress(stepIndex, stepCount) *
+    VISUAL_PROGRESS_STEP_COUNT;
   const visualStepCount = VISUAL_PROGRESS_STEP_COUNT;
+
+  if (step === 'mochiIntro') {
+    return (
+      <MochiStoryScreen
+        beat={MOCHI_STORY.mochiIntro}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onContinue={() => goToStep('mochiMoved', 'continue')}
+      />
+    );
+  }
+
+  if (step === 'mochiMoved') {
+    return (
+      <MochiStoryScreen
+        beat={MOCHI_STORY.mochiMoved}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onContinue={() => goToStep('mochiUnpacked', 'continue')}
+        onBack={() => goToStep('mochiIntro', 'back')}
+      />
+    );
+  }
+
+  if (step === 'mochiUnpacked') {
+    return (
+      <MochiStoryScreen
+        beat={MOCHI_STORY.mochiUnpacked}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onContinue={() => goToStep('mochiFresh', 'continue')}
+        onBack={() => goToStep('mochiMoved', 'back')}
+      />
+    );
+  }
+
+  if (step === 'mochiFresh') {
+    return (
+      <MochiStoryScreen
+        beat={MOCHI_STORY.mochiFresh}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onContinue={() => goToStep('personalizeIntro', 'continue')}
+        onBack={() => goToStep('mochiUnpacked', 'back')}
+      />
+    );
+  }
+
+  if (step === 'personalizeIntro') {
+    return (
+      <PersonalizeIntroScreen
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onContinue={() => goToStep('intent', 'continue')}
+        onBack={() => goToStep('mochiFresh', 'back')}
+      />
+    );
+  }
 
   if (step === 'intentPriority' && selectedIntents.length >= 2) {
     return (
@@ -1424,8 +1449,42 @@ export default function OnboardingFlow({
             [actionId]: minutesFromMidnight,
           }))
         }
-        onContinue={() => goToStep('attPriming', 'continue')}
+        onContinue={() => goToStep('mochiDailies', 'continue')}
         onBack={() => goToStep('diagnosis', 'back')}
+      />
+    );
+  }
+
+  if (step === 'mochiDailies') {
+    return (
+      <MochiStoryScreen
+        beat={MOCHI_STORY.mochiDailies}
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onContinue={() => goToStep('mochiPlace', 'continue')}
+        onBack={() => goToStep('recommendedExercise', 'back')}
+      />
+    );
+  }
+
+  if (step === 'mochiPlace') {
+    return (
+      <MochiPlaceScreen
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onContinue={() => goToStep('mochiFloor', 'continue')}
+        onBack={() => goToStep('mochiDailies', 'back')}
+      />
+    );
+  }
+
+  if (step === 'mochiFloor') {
+    return (
+      <MochiFloorScreen
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onContinue={() => goToStep('attPriming', 'continue')}
+        onBack={() => goToStep('mochiPlace', 'back')}
       />
     );
   }
@@ -1448,7 +1507,7 @@ export default function OnboardingFlow({
               goToStep('notifications', 'continue');
             });
         }}
-        onBack={() => goToStep('recommendedExercise', 'back')}
+        onBack={() => goToStep('mochiFloor', 'back')}
       />
     );
   }
@@ -1587,7 +1646,20 @@ export default function OnboardingFlow({
       stepCount={visualStepCount}
       onToggle={toggleIntent}
       onContinue={goFromIntent}
+      onBack={() => goToStep('personalizeIntro', 'back')}
     />
+  );
+}
+
+/**
+ * Holds the progress bar's animated value above the steps, so it survives the
+ * screen swap each transition and every screen's bar slides the same way.
+ */
+export default function OnboardingFlow(props: OnboardingFlowProps) {
+  return (
+    <OnboardingProgressProvider>
+      <OnboardingFlowSteps {...props} />
+    </OnboardingProgressProvider>
   );
 }
 

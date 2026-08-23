@@ -1,6 +1,14 @@
 import type { IconName } from '../common/icons/Icon';
 
 export type OnboardingStep =
+  | 'mochiIntro'
+  | 'mochiMoved'
+  | 'mochiUnpacked'
+  | 'mochiFresh'
+  | 'personalizeIntro'
+  | 'mochiDailies'
+  | 'mochiPlace'
+  | 'mochiFloor'
   | 'intent'
   | 'intentPriority'
   | 'intentReflection'
