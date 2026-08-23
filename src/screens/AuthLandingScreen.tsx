@@ -1,14 +1,21 @@
 import { Text } from '../components/common/Text';
-import { Alert, FlatList, Linking, Platform, Pressable, StyleSheet, View, useWindowDimensions, type LayoutChangeEvent, type NativeScrollEvent, type NativeSyntheticEvent, type ViewToken } from 'react-native';
-import { Image } from 'expo-image';
-import { useEffect, useRef, useState } from 'react';
+import {
+  Alert,
+  Linking,
+  Platform,
+  Pressable,
+  StyleSheet,
+  View,
+  useWindowDimensions,
+} from 'react-native';
+import { useEffect, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from '../components/common/icons/Icon';
 import ChunkyButton, {
   CHUNKY_TONE,
   CHUNKY_TONE_QUIET,
 } from '../components/common/ChunkyButton';
-import PhoneFrame from '../components/common/PhoneFrame';
+import MochiFace from '../features/room/MochiFace';
 import { useAuthStore } from '../stores/authStore';
 import {
   AppleSignInCancelledError,
@@ -16,10 +23,16 @@ import {
   isAppleSignInAvailable,
 } from '../services/supabase';
 import { colors } from '../theme/colors';
-import { fonts } from '../theme/typography';
+import { fonts, typography } from '../theme/typography';
 import { spacing } from '../theme/spacing';
 import { isShortScreen } from '../theme/breakpoints';
-import { AUTH_LANDING_SLIDES, type AuthLandingSlide } from '../data/authLandingSlides';
+
+const MOCHI_SIZE = 112;
+const MOCHI_SIZE_COMPACT = 88;
+
+// He is shown, not named. The first onboarding beat is "This is Mochi.", and
+// introducing him here would spend that reveal before the story gets to it.
+const TAGLINE = 'Your heart rate and breathing friend.';
 
 function showTermsRequiredAlert() {
   Alert.alert(
@@ -29,15 +42,12 @@ function showTermsRequiredAlert() {
 }
 
 export default function AuthLandingScreen() {
-  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
+  const { height: screenHeight } = useWindowDimensions();
   const compact = isShortScreen(screenHeight);
   const [agreed, setAgreed] = useState(false);
-  const [activeIndex, setActiveIndex] = useState(0);
-  const [frameSlotHeight, setFrameSlotHeight] = useState(0);
   const [googleBusy, setGoogleBusy] = useState(false);
   const [appleBusy, setAppleBusy] = useState(false);
   const [appleAvailable, setAppleAvailable] = useState(Platform.OS === 'ios');
-  const listRef = useRef<FlatList<AuthLandingSlide>>(null);
   const signInWithGoogle = useAuthStore((s) => s.signInWithGoogle);
   const signInWithApple = useAuthStore((s) => s.signInWithApple);
 
@@ -81,62 +91,15 @@ export default function AuthLandingScreen() {
     }
   };
 
-  const onViewable = useRef(
-    ({ viewableItems }: { viewableItems: ViewToken[] }) => {
-      if (viewableItems[0]?.index != null) setActiveIndex(viewableItems[0].index);
-    },
-  ).current;
-
-  const onMomentumEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const i = Math.round(e.nativeEvent.contentOffset.x / screenWidth);
-    setActiveIndex(i);
-  };
-
-  // The frame slot takes whatever the copy block leaves behind, so measuring it
-  // tells PhoneFrame how tall it may actually be. The slot's own height is
-  // flex-derived and independent of the frame, so this settles in one pass.
-  const onFrameSlotLayout = (e: LayoutChangeEvent) => {
-    setFrameSlotHeight(e.nativeEvent.layout.height);
-  };
-
   return (
     <View style={styles.screen}>
       <SafeAreaView edges={['top']} style={styles.heroSafe}>
-        <FlatList
-          ref={listRef}
-          data={AUTH_LANDING_SLIDES}
-          keyExtractor={(item) => item.id}
-          horizontal
-          pagingEnabled
-          showsHorizontalScrollIndicator={false}
-          onViewableItemsChanged={onViewable}
-          onMomentumScrollEnd={onMomentumEnd}
-          viewabilityConfig={{ itemVisiblePercentThreshold: 60 }}
-          renderItem={({ item }) => (
-            <View style={[styles.slide, { width: screenWidth }]}>
-              <View style={styles.frameSlot} onLayout={onFrameSlotLayout}>
-                <PhoneFrame maxHeight={frameSlotHeight}>
-                  <Image
-                    source={item.source}
-                    style={styles.frameImage}
-                    contentFit="cover"
-                    contentPosition="top center"
-                    cachePolicy="memory-disk"
-                    transition={0}
-                  />
-                </PhoneFrame>
-              </View>
-              <View style={styles.copy}>
-                <Text style={styles.slideTitle}>{item.title}</Text>
-              </View>
-            </View>
-          )}
-        />
-
-        <View style={[styles.dots, compact && styles.dotsCompact]}>
-          {AUTH_LANDING_SLIDES.map((_, i) => (
-            <View key={i} style={[styles.dot, i === activeIndex && styles.dotActive]} />
-          ))}
+        <View style={[styles.hero, compact && styles.heroCompact]}>
+          <MochiFace size={compact ? MOCHI_SIZE_COMPACT : MOCHI_SIZE} />
+          <View style={styles.copy}>
+            <Text style={styles.appName}>Azora</Text>
+            <Text style={styles.tagline}>{TAGLINE}</Text>
+          </View>
         </View>
       </SafeAreaView>
 
@@ -207,56 +170,31 @@ const styles = StyleSheet.create({
   heroSafe: {
     flex: 1,
   },
-  slide: {
-    paddingHorizontal: spacing.lg,
+  hero: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: spacing.lg,
     gap: spacing.lg,
   },
-  // flex: 1 pins the slot to the leftover space rather than the frame's natural
-  // height, so the frame can never push the title off a short screen.
-  frameSlot: {
-    flex: 1,
-    alignSelf: 'stretch',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  frameImage: {
-    width: '100%',
-    height: '100%',
+  heroCompact: {
+    gap: spacing.md,
   },
   copy: {
     alignItems: 'center',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.md,
+    gap: spacing.xs,
   },
-  slideTitle: {
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    fontSize: 24,
-    lineHeight: 30,
+  appName: {
+    ...typography.display.display2,
     color: colors.text.primary,
     textAlign: 'center',
   },
-  dots: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: spacing.xs,
-    paddingVertical: spacing.lg,
-  },
-  dotsCompact: {
-    paddingVertical: spacing.sm,
-  },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.neutral[200],
-  },
-  dotActive: {
-    width: 24,
-    backgroundColor: colors.primary.blue600,
+  tagline: {
+    ...typography.body.large,
+    fontFamily: fonts.semibold,
+    fontWeight: '500',
+    color: colors.text.secondary,
+    textAlign: 'center',
   },
   sheet: {
     backgroundColor: colors.background.elevated,
