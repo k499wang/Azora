@@ -320,8 +320,7 @@ export default function RoomLabScreen({ navigation }: RoomLabScreenProps) {
       <DailyCompleteSheet
         visible={sheetVisible}
         hue={CATEGORY_STYLE.calm.hue}
-        character={CATEGORY_STYLE.calm.character}
-        title="Nice work"
+        title="Nice work!"
         state={SHEET_CASES[sheetCase].state}
         barFrom={
           Math.max(0, SHEET_CASES[sheetCase].state.done - 1) / 3

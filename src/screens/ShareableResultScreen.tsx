@@ -12,7 +12,7 @@ import ChunkyButton from '../components/common/ChunkyButton';
 import { Rise } from '../components/common/Reveal';
 import HelpfulnessQuestion from '../components/exercise/HelpfulnessQuestion';
 import { BREATH_HOLD_FEEDBACK_ID } from '../lib/sessionKey';
-import BlobCharacter from '../components/home/BlobCharacter';
+import Icon from '../components/common/icons/Icon';
 import { BREATH_HOLD_STYLE } from '../features/exercise/guidedBreathing/categoryPalette';
 import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
 import { card } from '../theme/card';
@@ -45,7 +45,7 @@ import { returnToHome } from '../app/navigation/returnToHome';
 // The breath hold is not a guided technique, but feedback is stored per
 // technique id, so it answers under its own key.
 
-const HERO_BLOB_SIZE = 132;
+const HERO_FLAME_SIZE = 132;
 const BREATH_HOLD_COMPLETION = { breathHold: true } as const;
 const EMPTY_BPM_SAMPLES: { offsetMs: number; bpm: number }[] = [];
 
@@ -124,7 +124,7 @@ export default function ShareableResultScreen({
     ? `Top ${benchmark.topPercent}% of people your age`
     : null;
   const congratulation =
-    firstName == null ? 'Nice work' : `Nice work, ${firstName}`;
+    firstName == null ? 'Nice work!' : `Nice work, ${firstName}!`;
   const advancedStatsLocked =
     !advancedStatsAccess.allowed && !advancedStatsAccess.isLoading;
   const advancedStatsTrackingAccess = useMemo(
@@ -230,7 +230,6 @@ export default function ShareableResultScreen({
         <DailyCompleteSheet
           visible
           hue={hue}
-          character={BREATH_HOLD_STYLE.character}
           title={celebrationContent.title}
           subtitle="Daily breath hold"
           stats={celebrationContent.stats}
@@ -291,13 +290,7 @@ export default function ShareableResultScreen({
         >
           <View style={styles.heroShadow}>
             <View style={[styles.heroCard, { backgroundColor: hue.base }]}>
-              <BlobCharacter
-                character={BREATH_HOLD_STYLE.character}
-                faceExpression="cheer"
-                size={HERO_BLOB_SIZE}
-                bodyColor={hue.soft}
-                faceColor={hue.ink}
-              />
+              <Icon name="streakFilled" size={HERO_FLAME_SIZE} color={hue.soft} />
               <Text style={styles.heroTitle}>{congratulation}</Text>
               <Text style={styles.heroSubtitle}>
                 Breath hold · {formatDuration(holdSeconds)}
