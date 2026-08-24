@@ -99,8 +99,8 @@ export const colors = {
     face: '#12384B',
     // the pop of sparkles when the blob is poked
     sparkle: '#FFC94D',
-    // blush on the portrait crop, where his face carries the whole frame; warm
-    // against the sky blue so the cheeks read as colour rather than another highlight
+    // Mochi's friendly blush; warm against the sky blue so the small cheeks
+    // read as colour rather than another highlight
     cheek: '#F4785F',
     // matches the shadow ink the room artwork already uses
     shadow: 'rgba(58,67,79,0.22)',

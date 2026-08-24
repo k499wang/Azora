@@ -61,7 +61,7 @@ module.exports = {
     slug: 'Azora',
     version: '1.0.17',
     orientation: 'portrait',
-    icon: './assets/icon.png',
+    icon: './assets/icon-mochi-v2.png',
     userInterfaceStyle: 'light',
     newArchEnabled: true,
     splash: {
@@ -259,8 +259,8 @@ module.exports = {
     },
     android: {
       adaptiveIcon: {
-        foregroundImage: './assets/adaptive-icon.png',
-        backgroundColor: '#FFFFFF',
+        foregroundImage: './assets/adaptive-icon-mochi-v2.png',
+        backgroundColor: '#4B34C4',
       },
       edgeToEdgeEnabled: true,
       predictiveBackGestureEnabled: false,

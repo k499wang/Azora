@@ -73,6 +73,7 @@ const STEP_RATE = Math.PI * 2 * 0.95;
 /** blob geometry, in viewBox units — scaled to the rendered room by `u` */
 const BODY_W = 54;
 const BODY_H = 48;
+const BODY_ROUND = BODY_H / 2;
 /** how far the body floats above the ground point, leaving the feet visible */
 const BODY_LIFT = 6;
 const FOOT_W = 19;
@@ -85,6 +86,9 @@ const EYE_H = 9;
 /** eyes sit off-centre so the horizontal flip reads as a turn */
 const EYE_SHIFT = 2.5;
 const EYE_DX = 8;
+const CHEEK_SIZE = 4.8;
+const CHEEK_DX = 15.5;
+const CHEEK_TOP = 25.5;
 const SPARKLE = 17;
 
 /**
@@ -357,19 +361,27 @@ const RoomBlob = forwardRef<RoomBlobHandle, Props>(function RoomBlob(
     return { opacity: 1 - air * 0.5, transform: [{ scale: 1 - air * 0.24 }] };
   }, []);
 
-  const eyeStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateY: sadness.value * 2.5 * u },
-      {
-        // the happy squint while cheering, the heavy lid while sad
-        scaleY:
-          blink.value * (cheer.value > 0 ? 0.5 : 1 - sadness.value * 0.45),
-      },
-    ],
-  }), [u]);
+  const eyeStyle = useAnimatedStyle(
+    () => ({
+      transform: [
+        { translateY: sadness.value * 2.5 * u },
+        {
+          // the happy squint while cheering, the heavy lid while sad
+          scaleY:
+            blink.value *
+            (cheer.value > 0 ? 0.5 : 1 - sadness.value * 0.45),
+        },
+      ],
+    }),
+    [u],
+  );
 
-  // The mouth is a half-pill with its rounded edge down, so half a turn is the
-  // whole frown — no second shape to keep in sync with the first.
+  const cheekStyle = useAnimatedStyle(() => ({
+    opacity: 1 - sadness.value,
+  }));
+
+  // The smile is one curved stroke, so half a turn is the whole frown — no
+  // second shape to keep in sync with the first.
   const smileStyle = useAnimatedStyle(() => ({
     transform: [
       { translateY: sadness.value * 3.5 * u },
@@ -413,6 +425,17 @@ const RoomBlob = forwardRef<RoomBlobHandle, Props>(function RoomBlob(
         <Animated.View style={[styles.foot, styles.frontFoot, frontFootStyle]} />
         <Animated.View style={[styles.body, bodyStyle]}>
           <View style={styles.sheen} />
+          <Animated.View style={[styles.cheeks, cheekStyle]}>
+            {[-1, 1].map((side) => (
+              <View
+                key={`cheek-${side}`}
+                style={[
+                  styles.cheek,
+                  side < 0 ? styles.leftCheek : styles.rightCheek,
+                ]}
+              />
+            ))}
+          </Animated.View>
           <Animated.View style={[styles.eye, styles.leftEye, eyeStyle]} />
           <Animated.View style={[styles.eye, styles.rightEye, eyeStyle]} />
           <Animated.View style={[styles.smile, smileStyle]} />
@@ -550,8 +573,8 @@ function createStyles(u: number) {
       height: BODY_H * u,
       borderTopLeftRadius: (BODY_W / 2) * u,
       borderTopRightRadius: (BODY_W / 2) * u,
-      borderBottomLeftRadius: 22 * u,
-      borderBottomRightRadius: 22 * u,
+      borderBottomLeftRadius: BODY_ROUND * u,
+      borderBottomRightRadius: BODY_ROUND * u,
       backgroundColor: colors.roomBlob.body,
     },
     // No shadow: this view is re-composited on every frame the blob walks, and
@@ -604,12 +627,30 @@ function createStyles(u: number) {
     },
     sheen: {
       position: 'absolute',
-      left: 9.5 * u,
+      left: 8 * u,
       top: 7 * u,
-      width: 20 * u,
-      height: 15 * u,
-      borderRadius: 10 * u,
+      width: 12 * u,
+      height: 6 * u,
+      borderRadius: 3 * u,
       backgroundColor: colors.roomBlob.bodyLight,
+      transform: [{ rotate: '-28deg' }],
+    },
+    cheeks: {
+      ...StyleSheet.absoluteFillObject,
+    },
+    cheek: {
+      position: 'absolute',
+      top: CHEEK_TOP * u,
+      width: CHEEK_SIZE * u,
+      height: CHEEK_SIZE * u,
+      borderRadius: (CHEEK_SIZE / 2) * u,
+      backgroundColor: colors.roomBlob.cheek,
+    },
+    leftCheek: {
+      left: (BODY_W / 2 + EYE_SHIFT - CHEEK_DX - CHEEK_SIZE / 2) * u,
+    },
+    rightCheek: {
+      left: (BODY_W / 2 + EYE_SHIFT + CHEEK_DX - CHEEK_SIZE / 2) * u,
     },
     eye: {
       position: 'absolute',
@@ -623,14 +664,13 @@ function createStyles(u: number) {
     rightEye: { left: (BODY_W / 2 + EYE_SHIFT + EYE_DX - EYE_W / 2) * u },
     smile: {
       position: 'absolute',
-      top: 31 * u,
-      left: (BODY_W / 2 + EYE_SHIFT - 5.5) * u,
-      width: 11 * u,
-      height: 5.5 * u,
-      borderBottomLeftRadius: 5.5 * u,
-      borderBottomRightRadius: 5.5 * u,
+      top: 30.5 * u,
+      left: (BODY_W / 2 + EYE_SHIFT - 5.75) * u,
+      width: 11.5 * u,
+      height: 6.5 * u,
+      borderBottomLeftRadius: 6.5 * u,
+      borderBottomRightRadius: 6.5 * u,
       backgroundColor: colors.roomBlob.face,
-      opacity: 0.75,
     },
   });
 }

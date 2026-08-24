@@ -40,7 +40,7 @@ export default function ExtraPracticeSection({
     <View style={styles.section}>
       <SectionHeader
         icon="waves"
-        title="Extra practice"
+        title="What are you feeling?"
         right={
           <Pressable
             accessibilityRole="button"

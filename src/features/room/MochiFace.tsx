@@ -28,9 +28,8 @@ import { colors } from '../../theme/colors';
  * keeps him a character idling rather than a looping ornament. Bursts end on a
  * planted foot so he never freezes mid-air when one runs out.
  *
- * Cheeks are the one thing here he does not have anywhere else. At this size the
- * face carries the whole screen, and a mint blob with two eyes reads as a shape
- * rather than a character without them.
+ * His friendly cheeks stay readable at this crop, where the face has to carry
+ * the whole character without a room or a prop around him.
  *
  * The constants below mirror `MochiPortrait`'s deliberately rather than
  * importing them, which is the same arrangement `MochiPortrait` has with
@@ -40,7 +39,7 @@ import { colors } from '../../theme/colors';
 const BODY_W = 54;
 const BODY_H = 48;
 /** how far his bottom corners are rounded off, in body units */
-const BODY_ROUND = 22;
+const BODY_ROUND = BODY_H / 2;
 /** how far he floats above his feet, which is what lets them show below him */
 const BODY_LIFT = 6;
 
@@ -51,22 +50,22 @@ const FOOT_X = 13;
 /** straight on, so the face is centred rather than carrying his usual offset */
 const FACE_CX = BODY_W / 2;
 const EYE_DX = 8.5;
-const EYE_W = 9;
-const EYE_H = 10;
-const EYE_TOP = 15;
+const EYE_W = 8;
+const EYE_H = 9;
+const EYE_TOP = 16;
 
-const MOUTH_W = 12;
-const MOUTH_H = 6;
-const MOUTH_TOP = 30;
+const MOUTH_W = 11.5;
+const MOUTH_H = 6.5;
+const MOUTH_TOP = 30.5;
 
-const CHEEK_R = 5;
-const CHEEK_DX = 16.5;
-const CHEEK_TOP = 24;
+const CHEEK_SIZE = 4.8;
+const CHEEK_DX = 15.5;
+const CHEEK_TOP = 25.5;
 
-const SHEEN_LEFT = 9.5;
+const SHEEN_LEFT = 8;
 const SHEEN_TOP = 7;
-const SHEEN_W = 20;
-const SHEEN_H = 15;
+const SHEEN_W = 12;
+const SHEEN_H = 6;
 
 /** one full stride cycle is two steps; 0.8 of a cycle a second is an amble */
 const STEP_RATE = Math.PI * 2 * 0.8;
@@ -219,7 +218,8 @@ function MochiFace({ size }: MochiFaceProps) {
               top: SHEEN_TOP * u,
               width: SHEEN_W * u,
               height: SHEEN_H * u,
-              borderRadius: (SHEEN_W / 2) * u,
+              borderRadius: (SHEEN_H / 2) * u,
+              transform: [{ rotate: '-28deg' }],
             },
           ]}
         />
@@ -230,11 +230,11 @@ function MochiFace({ size }: MochiFaceProps) {
             style={[
               styles.cheek,
               {
-                left: (FACE_CX + side * CHEEK_DX - CHEEK_R) * u,
+                left: (FACE_CX + side * CHEEK_DX - CHEEK_SIZE / 2) * u,
                 top: CHEEK_TOP * u,
-                width: CHEEK_R * 2 * u,
-                height: CHEEK_R * 2 * u,
-                borderRadius: CHEEK_R * u,
+                width: CHEEK_SIZE * u,
+                height: CHEEK_SIZE * u,
+                borderRadius: (CHEEK_SIZE / 2) * u,
               },
             ]}
           />
@@ -304,11 +304,7 @@ const styles = StyleSheet.create({
   sheen: { position: 'absolute', backgroundColor: colors.roomBlob.bodyLight },
   cheek: { position: 'absolute', backgroundColor: colors.roomBlob.cheek },
   eye: { position: 'absolute', backgroundColor: colors.roomBlob.face },
-  mouth: {
-    position: 'absolute',
-    backgroundColor: colors.roomBlob.face,
-    opacity: 0.75,
-  },
+  mouth: { position: 'absolute', backgroundColor: colors.roomBlob.face },
 });
 
 // Its only prop is a number, so without this it rebuilds its shared values'

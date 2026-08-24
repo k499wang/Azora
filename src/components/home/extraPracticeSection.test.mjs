@@ -28,7 +28,10 @@ test('the extra practice section reuses card behavior without query observers', 
     section,
     /\buseNavigation\s*\(|\buseFeatureAccess\s*\(|\buseRecommendedTechnique\s*\(|\buseQuery\s*\(/,
   );
-  assert.match(section, /<SectionHeader\s+icon="waves"\s+title="Extra practice"/);
+  assert.match(
+    section,
+    /<SectionHeader\s+icon="waves"\s+title="What are you feeling\?"/,
+  );
   assert.match(section, /TECHNIQUE_SHELF_CARD_WIDTH/);
   assert.match(section, /layout="shelf"/);
   assert.match(section, /sourceScreen="Home"/);

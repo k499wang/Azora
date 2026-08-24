@@ -24,7 +24,7 @@ const BODY_W = 54;
 const BODY_H = 48;
 const BODY_LIFT = 6;
 /** how far his bottom corners are rounded off at rest, in body units */
-const BODY_ROUND = 22;
+const BODY_ROUND = BODY_H / 2;
 const FOOT_W = 19;
 const FOOT_H = 9.5;
 const FOOT_X = 13;
@@ -84,13 +84,15 @@ interface EyeShape {
   dx?: number;
 }
 
-type MouthKind = 'smile' | 'frown' | 'open' | 'line' | 'curve';
+type MouthKind = 'smile' | 'frown' | 'open' | 'line';
 
 interface MouthShape {
   w: number;
   h: number;
   top: number;
   kind: MouthKind;
+  /** overrides the subdued default used by mood-specific filled mouths */
+  opacity?: number;
 }
 
 interface Face {
@@ -98,6 +100,8 @@ interface Face {
   mouth: MouthShape;
   /** squints the far eye, for a look off to one side */
   squint?: boolean;
+  /** adds the small coral blush used by his warmer expressions */
+  cheeks?: boolean;
 }
 
 /** where a foot sits relative to where it rests, in body units */
@@ -132,9 +136,8 @@ interface Pose {
   /** how much of the eye a lowered lid covers, 0 to 1 */
   lid?: number;
   /**
-   * His bottom corners, in body units. He rests on `BODY_ROUND`, which is a
-   * rounded box; half his height makes him a ball, which is what being full of
-   * air should look like.
+   * His bottom corners, in body units. He rests on `BODY_ROUND`, half his
+   * height, while an expression can still override the silhouette locally.
    */
   round?: number;
 }
@@ -148,7 +151,14 @@ const SPRITES: Record<MochiExpression, Sprite> = {
   happy: {
     face: {
       eye: { w: 8, h: 9, top: 16 },
-      mouth: { w: 11, h: 5.5, top: 31, kind: 'smile' },
+      mouth: {
+        w: 11.5,
+        h: 6.5,
+        top: 30.5,
+        kind: 'smile',
+        opacity: 1,
+      },
+      cheeks: true,
     },
     pose: { tilt: 5, feet: [{ dx: -1 }, { dx: 2, dy: 1.5 }] },
   },
@@ -217,7 +227,14 @@ const SPRITES: Record<MochiExpression, Sprite> = {
   pleased: {
     face: {
       eye: { w: 8, h: 9, top: 16 },
-      mouth: { w: 12, h: 5, top: 31, kind: 'curve' },
+      mouth: {
+        w: 11.5,
+        h: 6.5,
+        top: 30.5,
+        kind: 'smile',
+        opacity: 1,
+      },
+      cheeks: true,
     },
     pose: { tilt: 6, stretch: 0.99, feet: [{ dx: 1 }, { dx: 2.5 }] },
   },
@@ -226,6 +243,7 @@ const SPRITES: Record<MochiExpression, Sprite> = {
     face: {
       eye: { w: 7, h: 10, top: 13, chevron: true, dx: 8.5 },
       mouth: { w: 9, h: 10.5, top: 29, kind: 'open' },
+      cheeks: true,
     },
     /** upright and planted, so all the effort reads in the face */
     pose: { feet: [{ dx: -2.5 }, { dx: 2.5 }] },
@@ -242,10 +260,9 @@ const HEADROOM: Record<MochiWearable, number> = {
   nightcap: 15,
 };
 
-const PUFFED_CHEEK_W = 14.5;
-const PUFFED_CHEEK_H = 13;
-const PUFFED_CHEEK_DX = 13;
-const PUFFED_CHEEK_TOP = 25;
+const FRIENDLY_CHEEK_SIZE = 4.8;
+const FRIENDLY_CHEEK_DX = 15.5;
+const FRIENDLY_CHEEK_TOP = 25.5;
 
 /** extra room a held prop needs on either side, in body units */
 const SIDEROOM: Record<MochiHeld, number> = {
@@ -293,7 +310,6 @@ export function getMochiSideroom(
   return (room * size) / BODY_W;
 }
 
-const MOUTH_STROKE = 2;
 const EYE_STROKE = 2.6;
 const LENS = 16;
 const RIM = 2;
@@ -421,36 +437,34 @@ function MochiPortrait({
             style={[
               styles.sheen,
               {
-                left: 9.5 * fx * u,
+                left: 8 * fx * u,
                 top: 7 * fy * u,
-                width: 20 * fx * u,
-                height: 15 * fy * u,
-                borderRadius: 10 * u,
+                width: 12 * fx * u,
+                height: 6 * fy * u,
+                borderRadius: 3 * u,
+                transform: [{ rotate: '-28deg' }],
               },
             ]}
           />
         ) : null}
 
-        {isPuffed
+        {face.cheeks
           ? [-1, 1].map((side) => (
               <View
-                key={side}
+                key={`friendly-cheek-${side}`}
                 style={[
-                  styles.filledCheek,
+                  styles.friendlyCheek,
                   {
                     left:
                       (faceCenterX +
-                        side * PUFFED_CHEEK_DX -
-                        PUFFED_CHEEK_W / 2) *
+                        side * FRIENDLY_CHEEK_DX -
+                        FRIENDLY_CHEEK_SIZE / 2) *
                       fx *
                       u,
-                    top: PUFFED_CHEEK_TOP * fy * u,
-                    width: PUFFED_CHEEK_W * u,
-                    height: PUFFED_CHEEK_H * u,
-                    borderTopLeftRadius: 8 * u,
-                    borderTopRightRadius: 8 * u,
-                    borderBottomLeftRadius: 6.5 * u,
-                    borderBottomRightRadius: 6.5 * u,
+                    top: FRIENDLY_CHEEK_TOP * fy * u,
+                    width: FRIENDLY_CHEEK_SIZE * u,
+                    height: FRIENDLY_CHEEK_SIZE * u,
+                    borderRadius: (FRIENDLY_CHEEK_SIZE / 2) * u,
                   },
                 ]}
               />
@@ -556,27 +570,6 @@ function Mouth({
 }) {
   const round = (value: number) => value * u;
 
-  // A closed smile is the bottom edge of a rounded box with nothing filled in,
-  // so the stroke tapers away at both ends the way a drawn line would.
-  if (mouth.kind === 'curve') {
-    return (
-      <View
-        style={[
-          styles.mouthCurve,
-          {
-            left: (centerX - mouth.w / 2) * fx * u,
-            top: mouth.top * fy * u,
-            width: mouth.w * u,
-            height: mouth.h * u,
-            borderBottomWidth: MOUTH_STROKE * u,
-            borderBottomLeftRadius: round(mouth.h),
-            borderBottomRightRadius: round(mouth.h),
-          },
-        ]}
-      />
-    );
-  }
-
   const corners =
     mouth.kind === 'smile'
       ? {
@@ -599,6 +592,7 @@ function Mouth({
           top: mouth.top * fy * u,
           width: mouth.w * u,
           height: mouth.h * u,
+          opacity: mouth.opacity ?? 0.75,
         },
         corners,
       ]}
@@ -999,9 +993,9 @@ const styles = StyleSheet.create({
     transformOrigin: 'bottom center',
   },
   sheen: { position: 'absolute', backgroundColor: colors.roomBlob.bodyLight },
-  filledCheek: {
+  friendlyCheek: {
     position: 'absolute',
-    backgroundColor: colors.roomBlob.bodyLight,
+    backgroundColor: colors.roomBlob.cheek,
   },
   eye: {
     position: 'absolute',
@@ -1020,12 +1014,6 @@ const styles = StyleSheet.create({
   mouth: {
     position: 'absolute',
     backgroundColor: colors.roomBlob.face,
-    opacity: 0.75,
-  },
-  mouthCurve: {
-    position: 'absolute',
-    borderColor: colors.roomBlob.face,
-    opacity: 0.75,
   },
   lens: {
     position: 'absolute',
