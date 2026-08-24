@@ -1,5 +1,6 @@
 import { memo } from 'react';
 import { StyleSheet, View } from 'react-native';
+import Svg, { Polyline } from 'react-native-svg';
 import { colors } from '../../theme/colors';
 
 /**
@@ -77,6 +78,10 @@ interface EyeShape {
   top: number;
   /** rounds only the top edge, for the closed happy arc */
   arc?: boolean;
+  /** draws a `>` and a `<` instead of a filled eye, for squeezed shut */
+  chevron?: boolean;
+  /** how far each eye sits from the centre of the face, over `EYE_DX` */
+  dx?: number;
 }
 
 type MouthKind = 'smile' | 'frown' | 'open' | 'line' | 'curve';
@@ -216,14 +221,14 @@ const SPRITES: Record<MochiExpression, Sprite> = {
     },
     pose: { tilt: 6, stretch: 0.99, feet: [{ dx: 1 }, { dx: 2.5 }] },
   },
-  /** cheeks full of air, lips pursed: one held breath */
+  /** eyes screwed shut, cheeks full, lips pushing the air out */
   puffed: {
     face: {
-      eye: { w: 8, h: 9, top: 16 },
-      mouth: { w: 5, h: 6, top: 31, kind: 'open' },
+      eye: { w: 7, h: 10, top: 13, chevron: true, dx: 8.5 },
+      mouth: { w: 9, h: 10.5, top: 29, kind: 'open' },
     },
-    /** regular silhouette; the cheeks carry the held-breath expression */
-    pose: { feet: [{ dx: -1 }, { dx: 1 }] },
+    /** upright and planted, so all the effort reads in the face */
+    pose: { feet: [{ dx: -2.5 }, { dx: 2.5 }] },
   },
 };
 
@@ -237,10 +242,10 @@ const HEADROOM: Record<MochiWearable, number> = {
   nightcap: 15,
 };
 
-const PUFFED_CHEEK_W = 16;
-const PUFFED_CHEEK_H = 14;
+const PUFFED_CHEEK_W = 14.5;
+const PUFFED_CHEEK_H = 13;
 const PUFFED_CHEEK_DX = 13;
-const PUFFED_CHEEK_TOP = 23.5;
+const PUFFED_CHEEK_TOP = 25;
 
 /** extra room a held prop needs on either side, in body units */
 const SIDEROOM: Record<MochiHeld, number> = {
@@ -289,6 +294,7 @@ export function getMochiSideroom(
 }
 
 const MOUTH_STROKE = 2;
+const EYE_STROKE = 2.6;
 const LENS = 16;
 const RIM = 2;
 const BRIDGE = 3;
@@ -451,7 +457,20 @@ function MochiPortrait({
             ))
           : null}
 
-        {[-EYE_DX, EYE_DX].map((offset) => {
+        {[-(face.eye.dx ?? EYE_DX), face.eye.dx ?? EYE_DX].map((offset) => {
+          if (face.eye.chevron) {
+            return (
+              <ChevronEye
+                key={offset}
+                u={u}
+                eye={face.eye}
+                centerX={(faceCenterX + offset) * fx}
+                fy={fy}
+                pointsRight={offset < 0}
+              />
+            );
+          }
+
           const squinted = face.squint === true && offset > 0;
           const h = squinted ? face.eye.h * 0.4 : face.eye.h;
           const top = squinted
@@ -584,6 +603,61 @@ function Mouth({
         corners,
       ]}
     />
+  );
+}
+
+/**
+ * An eye screwed shut: a `>` on his left and a `<` on his right, so the pair
+ * close in on each other.
+ *
+ * This is the one part of him that is not a rounded View. A chevron is a single
+ * stroke that changes direction, and two Views butted together at the turn leave
+ * the outside of the corner unfilled however carefully they are placed — so it is
+ * drawn as one polyline with a round join, which is the shape a pen would make.
+ * `react-native-svg` still scales with `size` and recolours from `colors.ts`.
+ */
+function ChevronEye({
+  u,
+  eye,
+  centerX,
+  fy,
+  pointsRight,
+}: {
+  u: number;
+  eye: EyeShape;
+  /** the middle of this eye, in body units, already stretched */
+  centerX: number;
+  fy: number;
+  pointsRight: boolean;
+}) {
+  /** the stroke straddles the path, so the box grows to hold its width and caps */
+  const pad = EYE_STROKE;
+  const boxW = eye.w + pad * 2;
+  const boxH = eye.h + pad * 2;
+  const tip = pointsRight ? pad + eye.w : pad;
+  const back = pointsRight ? pad : pad + eye.w;
+
+  return (
+    <Svg
+      style={{
+        position: 'absolute',
+        left: (centerX - boxW / 2) * u,
+        top: (eye.top - pad) * fy * u,
+      }}
+      width={boxW * u}
+      height={boxH * fy * u}
+      viewBox={`0 0 ${boxW} ${boxH}`}
+      preserveAspectRatio="none"
+    >
+      <Polyline
+        points={`${back},${pad} ${tip},${pad + eye.h / 2} ${back},${pad + eye.h}`}
+        fill="none"
+        stroke={colors.roomBlob.face}
+        strokeWidth={EYE_STROKE}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
   );
 }
 

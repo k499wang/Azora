@@ -41,7 +41,9 @@ export const EXERCISE_DARK_THEMES: ExerciseDarkTheme[] = [
     surfaceBorder: '#E2E8F0',
     circleOutline: '#78B4FF',
     circleOutlineOpacity: 0.5,
-    circleOuter: '#78B4FF',
+    // The breathing companion's body and aura. Shares Mochi's token so the
+    // mascot is one colour wherever he appears.
+    circleOuter: colors.roomBlob.body,
     circleOuterOpacity: 0.28,
     circleInner: '#4A90F5',
     beatFlush: '#2F7AEF',
