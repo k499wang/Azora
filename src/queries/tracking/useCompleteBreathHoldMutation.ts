@@ -6,9 +6,15 @@ import {
 } from '../../services/tracking/breathHoldService';
 import { getProfileSummaryQueryKey } from '../profile/useProfileSummaryQuery';
 import { getDailyFeatureUsageQueryKey } from '../subscriptions/useDailyFeatureUsageQuery';
-import { getHomeStatsQueryKeyPrefix } from './useHomeStatsQuery';
+import {
+  getHomeStatsQueryKey,
+  getHomeStatsQueryKeyPrefix,
+} from './useHomeStatsQuery';
 import { getDailyActivityRangeQueryKeyPrefix } from './useDailyActivityRangeQuery';
 import { getDayHistoryQueryKeyPrefix } from '../history/useDayHistoryQuery';
+import { projectBreathHoldHomeStats } from './completionCacheProjections';
+import { reconcileCompletionQueries } from './completionQueryReconciliation';
+import type { HomeStats } from '../../services/tracking/homeStatsService';
 
 type CompleteBreathHoldMutationInput = Omit<CompleteBreathHoldInput, 'timezone' | 'localDate'>;
 
@@ -46,13 +52,15 @@ export function useCompleteBreathHoldMutation(userId: string | null) {
       }
 
       const timezone = getDeviceTimezone();
+      const localDate = formatLocalDate(input.endedAt, timezone);
 
       try {
-        return await completeBreathHold({
+        const sessionId = await completeBreathHold({
           ...input,
           timezone,
-          localDate: formatLocalDate(input.endedAt, timezone),
+          localDate,
         });
+        return { sessionId, localDate, timezone, userId };
       } catch (error) {
         console.warn(
           '[breath-hold-save] mutation diagnostics',
@@ -66,33 +74,40 @@ export function useCompleteBreathHoldMutation(userId: string | null) {
         throw error;
       }
     },
-    retry: (failureCount, error) => {
-      if (failureCount >= 2) return false;
-      const message = (error as { message?: string } | null)?.message ?? '';
-      return /network request failed|fetch failed|aborted|timeout/i.test(message);
-    },
-    retryDelay: (attempt) => 500 * 2 ** attempt,
-    onSuccess: async (_sessionId, input) => {
-      const timezone = getDeviceTimezone();
-      const localDate = formatLocalDate(input.endedAt, timezone);
+    onSuccess: async (completion, input) => {
+      const homeStatsKey = getHomeStatsQueryKey(
+        completion.userId,
+        completion.localDate,
+      );
+      const filters = [
+        { queryKey: getHomeStatsQueryKeyPrefix(completion.userId) },
+        { queryKey: getDayHistoryQueryKeyPrefix(completion.userId) },
+        { queryKey: getDailyActivityRangeQueryKeyPrefix(completion.userId) },
+        {
+          queryKey: getDailyFeatureUsageQueryKey(
+            completion.userId,
+            completion.localDate,
+          ),
+          exact: true,
+        },
+        { queryKey: getProfileSummaryQueryKey(completion.userId), exact: true },
+      ] as const;
 
-      await Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: getHomeStatsQueryKeyPrefix(userId),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: getDayHistoryQueryKeyPrefix(userId),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: getDailyActivityRangeQueryKeyPrefix(userId),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: getDailyFeatureUsageQueryKey(userId, localDate),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: getProfileSummaryQueryKey(userId),
-        }),
-      ]);
+      await reconcileCompletionQueries(queryClient, filters, () => {
+        queryClient.setQueryData<HomeStats>(homeStatsKey, (current) =>
+          projectBreathHoldHomeStats(current, {
+            sessionId: completion.sessionId,
+            startedAt: input.startedAt,
+            endedAt: input.endedAt,
+            localDate: completion.localDate,
+            timezone: completion.timezone,
+            holdSeconds: input.holdSeconds,
+            avgBpm: input.avgBpm,
+            minBpm: input.minBpm,
+            maxBpm: input.maxBpm,
+          }),
+        );
+      });
     },
   });
 }

@@ -5,7 +5,7 @@ import Icon, { type IconName } from '../../common/icons/Icon';
 import { colors } from '../../../theme/colors';
 import { paywallStepStyles as styles } from './paywallStepStyles';
 
-const ICON_SIZE = 28;
+const ICON_SIZE = 22;
 
 interface TimelineStep {
   label: string;

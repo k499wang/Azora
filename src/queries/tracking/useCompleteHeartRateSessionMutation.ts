@@ -8,12 +8,12 @@ import {
 import {
   completeHeartRateSession,
 } from '../../services/tracking/heartRateService';
-import { getProfileSummaryQueryKey } from '../profile/useProfileSummaryQuery';
 import { getDailyFeatureUsageQueryKey } from '../subscriptions/useDailyFeatureUsageQuery';
 import { getHomeStatsQueryKeyPrefix } from './useHomeStatsQuery';
 import { getDailyActivityRangeQueryKeyPrefix } from './useDailyActivityRangeQuery';
 import { getDayHistoryQueryKeyPrefix } from '../history/useDayHistoryQuery';
 import { getHeartRateStatsQueryKey } from './useHeartRateStatsQuery';
+import { reconcileCompletionQueries } from './completionQueryReconciliation';
 
 interface CompleteHeartRateSessionMutationInput {
   captureSamples: PpgFrameSample[];
@@ -58,17 +58,22 @@ export function useCompleteHeartRateSessionMutation(userId: string | null) {
       }
 
       const timezone = getDeviceTimezone();
+      // Frame timestamps are monotonic; the reading timestamp is wall-clock.
+      const recordedAtMs = Date.parse(input.result.reading?.recordedAt ?? '');
+      const endedAt = Number.isFinite(recordedAtMs) ? recordedAtMs : Date.now();
+      const localDate = formatLocalDate(endedAt, timezone);
 
       try {
         const sessionId = await completeHeartRateSession({
           captureSamples: input.captureSamples,
           result: input.result,
+          localDate,
           timezone,
         });
         logDevDiagnostic('[heart-rate-save] mutation succeeded', {
           elapsedMs: Date.now() - startedAt,
         });
-        return sessionId;
+        return { sessionId, localDate, timezone, userId };
       } catch (error) {
         warnDevDiagnostic('[heart-rate-save] mutation failed', {
           elapsedMs: Date.now() - startedAt,
@@ -86,35 +91,23 @@ export function useCompleteHeartRateSessionMutation(userId: string | null) {
         throw error;
       }
     },
-    onSuccess: async (_sessionId, input) => {
-      const timezone = getDeviceTimezone();
-      // Frame timestamps are a monotonic clock, not wall-clock — use recordedAt for the date key.
-      const recordedAtMs = Date.parse(input.result.reading?.recordedAt ?? '');
-      const endedAt = Number.isFinite(recordedAtMs) ? recordedAtMs : Date.now();
-      const usageDate = formatLocalDate(endedAt, timezone);
+    onSuccess: async (completion) => {
       logDevDiagnostic('[hr-gate] mutation onSuccess: invalidating', {
-        usageDate,
+        usageDate: completion.localDate,
       });
 
-      await Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: getHomeStatsQueryKeyPrefix(userId),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: getDayHistoryQueryKeyPrefix(userId),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: getDailyActivityRangeQueryKeyPrefix(userId),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: getHeartRateStatsQueryKey(userId),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: getDailyFeatureUsageQueryKey(userId, usageDate),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: getProfileSummaryQueryKey(userId),
-        }),
+      await reconcileCompletionQueries(queryClient, [
+        { queryKey: getHomeStatsQueryKeyPrefix(completion.userId) },
+        { queryKey: getDayHistoryQueryKeyPrefix(completion.userId) },
+        { queryKey: getDailyActivityRangeQueryKeyPrefix(completion.userId) },
+        { queryKey: getHeartRateStatsQueryKey(completion.userId), exact: true },
+        {
+          queryKey: getDailyFeatureUsageQueryKey(
+            completion.userId,
+            completion.localDate,
+          ),
+          exact: true,
+        },
       ]);
 
       logDevDiagnostic('[hr-gate] mutation onSuccess: invalidate complete');

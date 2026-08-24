@@ -9,6 +9,9 @@ import { getHomeStatsQueryKeyPrefix } from './useHomeStatsQuery';
 import { getDailyActivityRangeQueryKeyPrefix } from './useDailyActivityRangeQuery';
 import { getDayHistoryQueryKeyPrefix } from '../history/useDayHistoryQuery';
 import { getCompletedBreathingTechniqueIdsQueryKey } from './useCompletedBreathingTechniqueIdsQuery';
+import { projectCompletedTechniqueId } from './completionCacheProjections';
+import { reconcileCompletionQueries } from './completionQueryReconciliation';
+import type { TechniqueId } from '../../features/exercise/guidedBreathing/techniqueCatalog';
 
 type CompleteBreathingSessionMutationInput = Omit<
   CompleteBreathingSessionInput,
@@ -48,44 +51,42 @@ export function useCompleteBreathingSessionMutation(userId: string | null) {
       }
 
       const timezone = getDeviceTimezone();
-
-      return completeBreathingSession({
+      const localDate = formatLocalDate(input.endedAt, timezone);
+      const sessionId = await completeBreathingSession({
         ...input,
         timezone,
-        localDate: formatLocalDate(input.endedAt, timezone),
+        localDate,
       });
-    },
-    retry: (failureCount, error) => {
-      if (failureCount >= 2) return false;
-      const message = (error as { message?: string } | null)?.message ?? '';
-      return /network request failed|fetch failed|aborted|timeout/i.test(message);
-    },
-    retryDelay: (attempt) => 500 * 2 ** attempt,
-    onSuccess: async (_sessionId, input) => {
-      const timezone = getDeviceTimezone();
-      const localDate = formatLocalDate(input.endedAt, timezone);
 
-      await Promise.all([
-        queryClient.invalidateQueries({
-          queryKey: getHomeStatsQueryKeyPrefix(userId),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: getDayHistoryQueryKeyPrefix(userId),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: getDailyActivityRangeQueryKeyPrefix(userId),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: getDailyFeatureUsageQueryKey(userId, localDate),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: getProfileSummaryQueryKey(userId),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: getCompletedBreathingTechniqueIdsQueryKey(userId, localDate),
+      return { sessionId, localDate, timezone, userId };
+    },
+    onSuccess: async (completion, input) => {
+      const completedTechniquesKey = getCompletedBreathingTechniqueIdsQueryKey(
+        completion.userId,
+        completion.localDate,
+      );
+      const filters = [
+        { queryKey: getHomeStatsQueryKeyPrefix(completion.userId) },
+        { queryKey: getDayHistoryQueryKeyPrefix(completion.userId) },
+        { queryKey: getDailyActivityRangeQueryKeyPrefix(completion.userId) },
+        {
+          queryKey: getDailyFeatureUsageQueryKey(
+            completion.userId,
+            completion.localDate,
+          ),
           exact: true,
-        }),
-      ]);
+        },
+        { queryKey: getProfileSummaryQueryKey(completion.userId), exact: true },
+        { queryKey: completedTechniquesKey, exact: true },
+      ] as const;
+
+      await reconcileCompletionQueries(queryClient, filters, () => {
+        queryClient.setQueryData<TechniqueId[]>(
+          completedTechniquesKey,
+          (current) =>
+            projectCompletedTechniqueId(current, input.techniqueId),
+        );
+      });
     },
   });
 }

@@ -17,21 +17,19 @@ Everything downstream — whether to widen the free tier, whether to sell room
 breadth as a Pro upsell, whether the hotel is worth building — turns on that one
 answer. Until it has a number, room work is a bet rather than a decision.
 
-## The blocker to be aware of when reading any of this
+## The free-tier cohort
 
-`FREE_DAILY_LIMITS[DailyExercise]` is `1`
+`FREE_DAILY_LIMITS[DailyExercise]` is `3`
 ([featureAccessCore.ts](/Users/k3vinwvng/Documents/Azora/Azora/src/services/subscriptions/featureAccessCore.ts)),
 and the counter sums breath holds and breathing sessions together. A room piece
-requires all three dailies (`DAILIES_PER_DAY = 3`).
+requires all three dailies (`DAILIES_PER_DAY = 3`), so a free user can now earn
+one piece per day by completing the full daily loop.
 
-So a free user can complete one of three dailies and can **never** earn a piece.
-Today every room event is necessarily from a Pro or trialing user, and the
-non-null `is_pro = false` slice will be empty. `is_pro = null` means the
-canonical entitlement lookup failed; it is not classified as free. That is a
-property of the current gate, not of the instrumentation.
-
-The events exist so that the moment the limit is raised, the comparison is
-already there and does not need a month of backfill first.
+While the RevenueCat offering uses soft paywall mode, that makes the non-null
+`is_pro = false` slice the free-tier comparison cohort. Hard mode still prevents
+new free users from reaching the app. `is_pro = null` means the canonical
+entitlement lookup failed; it is not classified as free. Events recorded before
+this policy change may contain only Pro or trialing room participants.
 
 ## The funnel
 
@@ -107,10 +105,10 @@ move a 7-day boundary enough to matter.
 Written down in advance so the result cannot be re-interpreted after the fact.
 
 - Activated users convert at **≥2x** non-activated → the room is a monetization
-  asset. Raise the free daily limit, and build room breadth (shells, hues,
-  exclusive options) as the Pro upsell.
-- They don't → the room is decoration, not a driver. Leave the limit at 1 and
-  stop investing in the hotel.
+  asset. Keep the full daily loop available and build room breadth (shells,
+  hues, exclusive options) as the Pro upsell.
+- They don't → the room is decoration, not a driver. Return the free exercise
+  limit to 1 and stop investing in the hotel.
 
 Read leading indicators (D7 retention, pieces earned) at 2 weeks; conversion
 needs more sample, so read it at 6.

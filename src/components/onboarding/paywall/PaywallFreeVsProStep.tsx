@@ -9,6 +9,7 @@ import { paywallStepStyles } from './paywallStepStyles';
 import {
   FeatureKey,
   getFeatureAccess,
+  type FeatureKeyValue,
 } from '../../../services/subscriptions/featureAccess';
 import { getCaptureModeConfig } from '../../../lib/heartRate/captureModes';
 import { DAILIES_PER_DAY } from '../../../lib/dailies';
@@ -22,15 +23,15 @@ interface ComparisonRow {
   free: string | true | null;
 }
 
-// Free cells that mirror a runtime gate are derived from that gate, so a limit
-// change in featureAccessCore or captureModes can never leave this screen lying.
-function dailyExerciseFreeLabel(): string | null {
+// Free cells that mirror a runtime gate are derived from that gate, so a policy
+// change in featureAccessCore or captureModes cannot leave this screen lying.
+function featureFreeCell(feature: FeatureKeyValue): string | true | null {
   const access = getFeatureAccess({
-    feature: FeatureKey.DailyExercise,
+    feature,
     isPro: false,
   });
   if (access.reason === 'pro_only') return null;
-  return access.limit != null ? `${access.limit} / day` : null;
+  return access.limit != null ? `${access.limit} / day` : true;
 }
 
 // A decoration is earned by finishing every daily, so the free tier reaches the
@@ -62,18 +63,26 @@ export function PaywallFreeVsProStep({
     () => [
       {
         label: `Quick scan · ${Math.round(QUICK_MODE.durationMs / 1000)}s`,
-        free: QUICK_MODE.requiresPro ? null : true,
+        free: QUICK_MODE.requiresPro
+          ? null
+          : featureFreeCell(FeatureKey.HeartRateMeasurement),
       },
       {
         label: `Full HRV scan · ${Math.round(FULL_MODE.durationMs / 1000)}s`,
         free: FULL_MODE.requiresPro ? null : true,
       },
-      { label: 'Breathing sessions', free: dailyExerciseFreeLabel() },
+      {
+        label: 'Breathing sessions',
+        free: featureFreeCell(FeatureKey.DailyExercise),
+      },
       { label: 'Daily room decoration', free: dailyDecorationFreeCell() },
-      { label: 'Personalized plan', free: null },
+      { label: 'Personalized plan', free: true },
       { label: 'Live heart rate', free: null },
       { label: 'Stress insights', free: null },
-      { label: 'Session history', free: null },
+      {
+        label: 'Session history',
+        free: featureFreeCell(FeatureKey.SessionHistory),
+      },
     ],
     [],
   );

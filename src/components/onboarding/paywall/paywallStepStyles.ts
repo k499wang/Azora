@@ -6,7 +6,7 @@ import { fonts, typography } from '../../../theme/typography';
 
 export const TESTIMONIAL_CARD_WIDTH = 268;
 
-const TIMELINE_RAIL_WIDTH = 44;
+const TIMELINE_RAIL_WIDTH = 34;
 /**
  * A label line plus two lines of body. Pinning the copy blocks to a shared
  * floor is what keeps the icons evenly spaced down the rail — without it their

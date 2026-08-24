@@ -99,7 +99,7 @@ export const FeatureKey = {
 
 const FREE_DAILY_LIMITS: Partial<Record<FeatureKeyValue, number>> = {
   [FeatureKey.HeartRateMeasurement]: 1,
-  [FeatureKey.DailyExercise]: 1,
+  [FeatureKey.DailyExercise]: 3,
   [FeatureKey.MeditationTimer]: 1,  // ← new
 };
 ```
