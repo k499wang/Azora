@@ -5,16 +5,24 @@ Short, practical checklist for verifying payments, paywalls, and feature gating 
 ## Setup
 
 - [ ] Signed-in build with a valid RevenueCat API key (`src/services/subscriptions/revenueCatConfig.ts`).
+- [ ] To test the free onboarding path, the RevenueCat offering uses soft mode (`paywall_mode` is not `hard`). Hard mode intentionally removes the self-serve free continuation.
 - [ ] Console open — watch for `[hr-gate] useFeatureAccess` logs.
 - [ ] Know your `appUserId` (matches Supabase user id).
 - [ ] Have access to: RevenueCat dashboard, Supabase dashboard, App Store Connect Sandbox tester (iOS) or Play Internal Testing (Android).
 
+### Exact free tier
+
+- Three total daily exercises across guided breathing, hand-picked breathing, and breath hold.
+- One 20-second Quick heart-rate scan per local day.
+- Personalized daily plan, session history, and the daily room-decoration loop.
+- Full HRV scans, live heart rate during breathing, stress/advanced insights, and unlimited sessions require Pro.
+
 ## 1. Free-tier gating (no purchase)
 
 - [ ] Fresh free user — open Heart Rate flow.
-- [ ] Complete sessions up to the daily limit.
-- [ ] Next attempt opens the paywall via `usePaywall`.
-- [ ] Repeat for Daily Exercise.
+- [ ] Complete three exercises; the fourth attempt opens the paywall.
+- [ ] Complete one Quick heart-rate scan; retry and route re-entry both open the paywall.
+- [ ] Confirm session history remains available without Pro.
 - [ ] Reset: delete today's row in the daily usage table → gate reopens.
 
 ## 2. Pro gating (force entitlement, no payment)

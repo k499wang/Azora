@@ -25,13 +25,12 @@ export interface FeatureAccessResult {
 
 const FREE_DAILY_LIMITS: Partial<Record<FeatureKeyValue, number>> = {
   [FeatureKey.HeartRateMeasurement]: 1,
-  [FeatureKey.DailyExercise]: 1,
+  [FeatureKey.DailyExercise]: 3,
 };
 
 const PRO_ONLY_FEATURES = new Set<FeatureKeyValue>([
   FeatureKey.AdvancedStats,
   FeatureKey.BreathingHeartRateMonitoring,
-  FeatureKey.SessionHistory,
 ]);
 
 export function getLocalDate(value = new Date()): string {

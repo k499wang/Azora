@@ -14,7 +14,7 @@ The most common bug pattern with TanStack Query (and the one AI tools repeatedly
 
 | Query key fn | File | Reads from | Notes |
 |---|---|---|---|
-| `getProfileSummaryQueryKey` | `src/queries/profile/useProfileSummaryQuery.ts` | `profiles` (display_name, avatar_url, timezone), `breath_hold_sessions`, `breathing_sessions` and `breath_hold_sessions` via the `profile_lifetime_totals()` RPC, `daily_activity` (activity_date, qualifies_for_streak), `user_streaks_v` | Aggregate. Touched by anything that changes profile fields, breath holds, or daily activity rows (which HR captures and breath holds both write). |
+| `getProfileSummaryQueryKey` | `src/queries/profile/useProfileSummaryQuery.ts` | `profiles` (display_name, avatar_url, timezone), `breath_hold_sessions`, plus `breathing_sessions` / `breath_hold_sessions` via the `profile_lifetime_totals()` RPC, `daily_activity` (activity_date, qualifies_for_streak), `user_streaks_v` | Aggregate. Touched by anything that changes profile fields, breath holds, breathing sessions, or streak-qualifying activity. Standalone HR captures only increment a non-qualifying counter and do not change this payload. |
 | `getProfileQueryKey` | `src/queries/profile/useProfileQuery.ts` | `profiles` | Raw profile row. |
 | `getOnboardingStatusQueryKey` | `src/queries/profile/useOnboardingStatusQuery.ts` | `profiles.onboarding_completed_at` | |
 | `getUserDefaultTechniqueQueryKey` | `src/queries/profile/useUserDefaultTechniqueQuery.ts` | `profiles.default_technique_id` | |
@@ -45,9 +45,9 @@ When adding a mutation, find every field it writes, then look up every query abo
 | `useCompleteOnboardingMutation` | `profiles.onboarding_completed_at` | `OnboardingStatus`, `UserDefaultTechnique`, `ProfileQuery`, `ProfileSummary` |
 | `useUpdateProfileDisplayNameMutation` | `profiles.display_name` | `ProfileQuery`, `ProfileSummary` (uses `setQueryData`, then invalidates both) |
 | `useUploadProfileAvatarMutation` | `profiles.avatar_url` | `ProfileQuery`, `ProfileSummary` (uses `setQueryData`, then invalidates both) |
-| `useCompleteBreathHoldMutation` | `breath_hold_sessions`, `daily_activity` for `localDate` | `HomeStats` user prefix, `DayHistory` user prefix, `DailyActivityRange` user prefix, `DailyFeatureUsage(userId, localDate)`, `ProfileSummary` |
-| `useCompleteBreathingSessionMutation` | `breathing_sessions`, `daily_activity` for `localDate` | `HomeStats` user prefix, `DayHistory` user prefix, `DailyActivityRange` user prefix, `DailyFeatureUsage(userId, localDate)`, `ProfileSummary`, exact `CompletedBreathingTechniqueIds(userId, localDate)` |
-| `useCompleteHeartRateSessionMutation` | `heart_rate_sessions`, `heart_rate_samples`, `heart_rate_ibi_samples`, `daily_activity` for `usageDate` | `HomeStats` user prefix, `DayHistory` user prefix, `DailyActivityRange` user prefix, `HeartRateStats`, `DailyFeatureUsage(userId, usageDate)`, `ProfileSummary` |
+| `useCompleteBreathHoldMutation` | `breath_hold_sessions`, `daily_activity` for `localDate` | `HomeStats` user prefix, `DayHistory` user prefix, `DailyActivityRange` user prefix, `DailyFeatureUsage(userId, localDate)`, `ProfileSummary`. Reconciliation projects exact-date Home completion fields into an existing cache, then refetches canonical counts. |
+| `useCompleteBreathingSessionMutation` | `breathing_sessions`, `daily_activity` for `localDate` | `HomeStats` user prefix, `DayHistory` user prefix, `DailyActivityRange` user prefix, `DailyFeatureUsage(userId, localDate)`, `ProfileSummary`, exact `CompletedBreathingTechniqueIds(userId, localDate)`. Reconciliation unions the technique into an existing exact-date cache, then refetches canonical values. |
+| `useCompleteHeartRateSessionMutation` | `heart_rate_sessions`, `heart_rate_samples`, `heart_rate_ibi_samples`, `daily_activity` for `usageDate` | `HomeStats` user prefix, `DayHistory` user prefix, `DailyActivityRange` user prefix, `HeartRateStats`, `DailyFeatureUsage(userId, usageDate)` |
 | `useUpdateNotificationPreferencesMutation` | notification preferences | `NotificationPreferences` |
 | `useUpdateDailyPlanScheduleMutation` | `user_preferences.daily_plan_schedule` | `DailyPlanSchedule` (uses `setQueryData`, then exact invalidation) |
 | `useUpdateDailyPlanExercisesMutation` | `user_preferences.daily_plan_exercises` | `DailyPlanExercises` (uses `setQueryData`, then exact invalidation) |
@@ -66,6 +66,10 @@ When adding a mutation, find every field it writes, then look up every query abo
 4. **HomeStats is intentionally broader.** It is keyed by selected date, but it reads shared Home aggregates too. Use `getHomeStatsQueryKeyPrefix(userId)` for completion mutations unless the query is split into narrower caches.
 5. **Don't invalidate a query you didn't change.** Over-invalidation causes re-fetch storms and flicker. The map is the source of truth: if a row isn't in this file, don't invalidate it speculatively.
 6. **If you add a query**, add a row to "Query → backing data" *and* update every mutation in "Mutation → required invalidations" that writes any of those fields. Both directions must stay in sync.
+7. **Completion writes cancel before invalidating.** An initial fetch with no cached data cannot be restarted by `invalidateQueries` alone; a pre-write response can otherwise be marked fresh. `reconcileCompletionQueries` awaits cancellation, applies only safe projections, and launches invalidation/refetch in the background so non-critical refreshes do not extend mutation pending UI.
+8. **Use write metadata, not a second clock read.** Completion results carry the executing `userId`, timezone, and exact local date sent to the RPC. Filters use those values so midnight, timezone changes, sign-out, or account switching cannot target another cache key.
+9. **Do not project counters as deltas.** A concurrent post-write fetch may already include the new count. Safe projections set certain booleans, union stable IDs, or take maxima; canonical counts come from refetch.
+10. **Partial aggregates preserve their last good slices.** `HomeStats`, `HeartRateStats`, and `ProfileSummary` structural sharing keep the previous/projected slice when its matching `partialErrors` flag is true instead of caching an empty fallback as fresh data. Heart-rate series are reused only when they belong to the same canonical source session.
 
 ---
 

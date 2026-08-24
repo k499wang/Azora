@@ -295,6 +295,21 @@ test('local_date reflects the user timezone, not UTC, for the same UTC moment', 
   assert.equal(tokyoPayload.p_session.local_date, '2026-05-09');
 });
 
+test('an exact completion local date is preserved in the RPC payload', () => {
+  const payload = buildHeartRateSessionRpcPayload(
+    [makeFrame(1000), makeFrame(11_000)],
+    {
+      reading: buildReading('2026-05-09T03:30:00.000Z', 10_000),
+      error: null,
+      ibiSamples: [],
+    },
+    { timezone: 'America/Toronto', localDate: '2026-05-07' },
+  );
+
+  assert.ok(payload);
+  assert.equal(payload.p_session.local_date, '2026-05-07');
+});
+
 test('session crossing midnight is attributed to the day it ended on', () => {
   // Started 2026-05-08 23:59:55 EDT (= 03:59:55 UTC May 9)
   // Ended   2026-05-09 00:00:05 EDT (= 04:00:05 UTC May 9)

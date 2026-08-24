@@ -353,8 +353,10 @@ image. Completion is independent for the primary and picked cards:
 `useCompletedBreathingTechniqueIdsQuery` reads completed
 `breathing_sessions.technique_id` values under
 `['completed-breathing-technique-ids', userId, localDate]`. Completing a guided
-session exactly invalidates this user-and-date key, so only the matching card is
-marked complete.
+session cancels any pre-write fetch, unions the technique into an existing
+user-and-date cache, and then refetches the canonical list. The mutation uses
+the exact user, timezone, and local date sent to the RPC, so only the matching
+card on the written day is marked complete.
 
 ### Adding an exercise
 
@@ -451,6 +453,16 @@ ordered preparation steps consumed by the phase runner.
 Preparation resumes the same animation step with its exact active-time
 remainder. Hold duration and the early-release guard both use active hold time,
 so paused time is never counted.
+
+After the completion RPC commits, its mutation projects only certain Home
+fields into the existing exact-date cache: the returned session summary, daily
+completion, best-hold maximum, and streak qualification. Existing counters are
+not incremented because a concurrent post-write fetch may already include the
+session. All affected queries are cancelled first and then invalidated for
+canonical counts in the background, without extending the completed write's
+pending state. Guided breathing and breath hold do not automatically retry
+their non-idempotent completion RPCs; a lost response must not create a second
+session or consume another free daily use.
 
 The workflow intentionally keeps two heart-rate boundaries:
 

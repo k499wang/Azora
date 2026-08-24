@@ -18,6 +18,7 @@ import type {
 export interface CompleteHeartRateSessionInput {
   captureSamples: PpgFrameSample[];
   result: CaptureResult;
+  localDate: string;
   timezone: string;
 }
 
@@ -41,7 +42,7 @@ export async function completeHeartRateSession(
   const args = buildHeartRateSessionRpcPayload(
     input.captureSamples,
     input.result,
-    { timezone: input.timezone },
+    { timezone: input.timezone, localDate: input.localDate },
   );
 
   if (args == null) {

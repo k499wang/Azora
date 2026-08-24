@@ -1,5 +1,9 @@
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import { getHomeStats } from '../../services/tracking/homeStatsService';
+import { useQuery } from '@tanstack/react-query';
+import {
+  getHomeStats,
+  type HomeStats,
+} from '../../services/tracking/homeStatsService';
+import { mergeHomeStatsPartialResult } from './homeStatsStructuralSharing';
 
 export function getHomeStatsQueryKey(
   userId: string | null,
@@ -15,11 +19,15 @@ export function getHomeStatsQueryKeyPrefix(userId: string | null) {
 }
 
 export function useHomeStatsQuery(userId: string | null, localDate: string) {
-  return useQuery({
+  return useQuery<HomeStats>({
     queryKey: getHomeStatsQueryKey(userId, localDate),
     enabled: userId != null,
     queryFn: () => getHomeStats(userId as string, localDate),
     staleTime: 1000 * 60 * 5,
-    placeholderData: keepPreviousData,
+    structuralSharing: (previous, incoming) =>
+      mergeHomeStatsPartialResult(
+        previous as HomeStats | undefined,
+        incoming as HomeStats,
+      ),
   });
 }

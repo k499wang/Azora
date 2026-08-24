@@ -46,6 +46,8 @@ export interface CompleteHeartRateSessionRpcArgs {
 
 interface BuildHeartRateSessionRpcPayloadOptions {
   timezone: string;
+  /** Exact device-local date chosen by the completion mutation. */
+  localDate?: string;
 }
 
 function isFiniteNumber(value: unknown): value is number {
@@ -296,7 +298,8 @@ export function buildHeartRateSessionRpcPayload(
     p_session: {
       started_at: new Date(startedAtMs).toISOString(),
       ended_at: new Date(endedAtMs).toISOString(),
-      local_date: formatLocalDate(endedAtMs, options.timezone),
+      local_date:
+        options.localDate ?? formatLocalDate(endedAtMs, options.timezone),
       timezone: options.timezone,
       duration_seconds: Math.max(1, Math.round(durationMs / 1000)),
       avg_bpm: reading.bpm,

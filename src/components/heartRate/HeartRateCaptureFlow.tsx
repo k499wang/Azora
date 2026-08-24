@@ -1,7 +1,11 @@
 import { Text } from '../common/Text';
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import {
-  InteractionManager, SafeAreaView, StyleSheet, TouchableOpacity, View } from 'react-native';
+  SafeAreaView,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as Device from 'expo-device';
 import { useNavigation } from '@react-navigation/native';
@@ -48,6 +52,7 @@ import {
   getMeasurementCorrectionMessage,
 } from '../../lib/heartRate/captureGuidance';
 import { useHeartRateStallHelp } from '../../hooks/useHeartRateStallHelp';
+import { runAfterNextPaint } from '../../lib/ui/runAfterNextPaint';
 
 interface HeartRateCaptureFlowProps {
   setupScreens?: React.ComponentType<SetupScreenProps>[];
@@ -157,20 +162,20 @@ export function HeartRateCaptureFlow({
       });
     },
   });
+  const saveInFlight =
+    pendingSave != null || completeHeartRateSessionMutation.isPending;
+  const navigationBlocked = captureState === 'processing' || saveInFlight;
 
   useEffect(() => {
     if (captureState !== 'done' || pendingSave == null) return;
 
-    // Wait until the done screen has committed so the camera preview unmounts
-    // before the first network request starts.
-    const task = InteractionManager.runAfterInteractions(() => {
+    // Let the done screen and camera teardown paint before starting I/O, but do
+    // not wait through the result entrance animation. That delay made saving
+    // feel slow and left a window where leaving the route could cancel it.
+    void runAfterNextPaint(() => {
       completeHeartRateSessionMutationRef.current.mutate(pendingSave);
       setPendingSave(null);
     });
-
-    return () => {
-      task.cancel();
-    };
   }, [captureState, pendingSave]);
 
   const stallHelp = useHeartRateStallHelp({
@@ -184,6 +189,23 @@ export function HeartRateCaptureFlow({
 
   const beginCapture = useCallback(async () => {
     try {
+      if (!heartRateAccess.allowed && !heartRateAccess.isLoading) {
+        trackFeatureGateHit({
+          feature: FeatureKey.HeartRateMeasurement,
+          placement: PaywallPlacement.HeartRateProGate,
+          sourceScreen: 'HeartRate',
+          sourceAction: 'begin_measurement',
+          access: heartRateAccess,
+        });
+        navigation.replace('ProPaywall', {
+          placement: PaywallPlacement.HeartRateProGate,
+          sourceScreen: 'HeartRate',
+          sourceAction: 'begin_measurement',
+          feature: FeatureKey.HeartRateMeasurement,
+        });
+        return;
+      }
+
       if (!hasPermission) {
         const granted = await requestPermission();
         if (!granted) {
@@ -208,7 +230,21 @@ export function HeartRateCaptureFlow({
         context: context ?? null,
       });
     }
-  }, [device, hasPermission, requestPermission, startCapture, posthog, context]);
+  }, [
+    context,
+    device,
+    hasPermission,
+    heartRateAccess.allowed,
+    heartRateAccess.isLoading,
+    heartRateAccess.isPro,
+    heartRateAccess.limit,
+    heartRateAccess.reason,
+    heartRateAccess.used,
+    navigation,
+    posthog,
+    requestPermission,
+    startCapture,
+  ]);
 
   const handleSetupNext = useCallback(async (selection?: { mode: HeartRateCaptureMode }) => {
     try {
@@ -237,11 +273,21 @@ export function HeartRateCaptureFlow({
   }, [beginCapture, pastSetup, setupScreens.length]);
 
   useEffect(() => {
-    navigation.setOptions({ gestureEnabled: captureState !== 'processing' });
+    navigation.setOptions({
+      gestureEnabled: !navigationBlocked,
+    });
     return () => {
       navigation.setOptions({ gestureEnabled: true });
     };
-  }, [captureState, navigation]);
+  }, [navigation, navigationBlocked]);
+
+  useEffect(() => {
+    if (!navigationBlocked) return;
+
+    return navigation.addListener('beforeRemove', (event) => {
+      event.preventDefault();
+    });
+  }, [navigation, navigationBlocked]);
 
   const handleSetupCancel = useCallback(() => {
     onCancel();

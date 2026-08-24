@@ -1,8 +1,10 @@
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import {
   getHeartRateStats,
 } from '../../services/tracking/heartRateStatsService';
+import type { HeartRateStats } from '../../services/tracking/heartRateStatsCore';
 import { formatLocalDate } from '../../lib/calendar/weekCalendarDays';
+import { mergeHeartRateStatsPartialResult } from './heartRateStatsStructuralSharing';
 
 export function getHeartRateStatsQueryKey(userId: string | null) {
   return ['heart-rate-stats', userId] as const;
@@ -19,12 +21,16 @@ export function getHeartRateStatsQueryKey(userId: string | null) {
  * signal resolved at call time.
  */
 export function useHeartRateStatsQuery(userId: string | null) {
-  return useQuery({
+  return useQuery<HeartRateStats>({
     queryKey: getHeartRateStatsQueryKey(userId),
     enabled: userId != null,
     queryFn: () =>
       getHeartRateStats(userId as string, formatLocalDate(new Date())),
     staleTime: 1000 * 60 * 5,
-    placeholderData: keepPreviousData,
+    structuralSharing: (previous, incoming) =>
+      mergeHeartRateStatsPartialResult(
+        previous as HeartRateStats | undefined,
+        incoming as HeartRateStats,
+      ),
   });
 }
