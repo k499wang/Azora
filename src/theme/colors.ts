@@ -89,21 +89,22 @@ export const colors = {
     textFaint: 'rgba(255,255,255,0.45)',
   },
 
-  // The hex room's resident. Mint reads as a character rather than furniture
-  // against the room's warm cream floor, and stays distinct from every frame hue.
+  // The hex room's resident. A cyan-leaning sky blue keeps him in the app's blue
+  // family while staying clear of the primary azure the UI accents use, so he
+  // reads as a character rather than furniture against the warm cream floor.
   roomBlob: {
-    body: '#57C9B7',
-    bodyLight: '#7FDCCC',
-    foot: '#39AC9A',
-    face: '#1F423C',
+    body: '#4FB3E8',
+    bodyLight: '#7ACDF3',
+    foot: '#2E93CC',
+    face: '#12384B',
     // the pop of sparkles when the blob is poked
     sparkle: '#FFC94D',
     // blush on the portrait crop, where his face carries the whole frame; warm
-    // against the mint so the cheeks read as colour rather than another highlight
+    // against the sky blue so the cheeks read as colour rather than another highlight
     cheek: '#F4785F',
     // matches the shadow ink the room artwork already uses
     shadow: 'rgba(58,67,79,0.22)',
-    // the clipboard he takes notes on — warm wood against his mint
+    // the clipboard he takes notes on — warm wood against his sky blue
     board: '#C08A54',
     boardEdge: '#8A5A2E',
   },
