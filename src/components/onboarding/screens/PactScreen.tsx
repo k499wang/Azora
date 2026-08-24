@@ -4,11 +4,11 @@ import {
   ActivityIndicator, Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { colors } from '../../../theme/colors';
+import { card } from '../../../theme/card';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
 import { isHapticsEnabled } from '../../../services/preferences/hapticsPreference';
 import { ContinuousHaptics } from '../../../native/continuousHaptics';
-import Icon, { type IconName } from '../../common/icons/Icon';
 import CelebrationOverlay from '../CelebrationOverlay';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 
@@ -279,16 +279,6 @@ export default function PactScreen({
         ? '1 minute'
         : `${dailyMinutes} minutes`;
 
-  const clauses: Array<{ icon: IconName; text: string }> = [
-    { icon: 'waves', text: `Breathe for ${durationLabel} a day.` },
-    {
-      icon: 'streak',
-      text: "Show up even on the days I don't feel like it.",
-    },
-    { icon: 'check', text: 'Count every session as a win, however small.' },
-    { icon: 'sun', text: 'Start again the day after I miss one.' },
-  ];
-
   useEffect(() => {
     if (isHapticsEnabled()) {
       Haptics.selectionAsync().catch(() => {});
@@ -320,8 +310,8 @@ export default function PactScreen({
   return (
     <>
       <OnboardingScreenLayout
-        title="Make a promise to yourself to show up."
-        subtitle="Consistency beats intensity. Every day matters more than any one session."
+        title="One small promise to yourself."
+        subtitle="Small moments add up. There’s no need to be perfect."
         progress={stepIndex / stepCount}
         onBack={onBack}
         footer={
@@ -342,15 +332,9 @@ export default function PactScreen({
           </View>
         }
       >
-        <View style={styles.list}>
-          {clauses.map((clause) => (
-            <View key={clause.text} style={styles.row}>
-              <View style={styles.iconWrap}>
-                <Icon name={clause.icon} size={16} color={colors.primary.blue600} />
-              </View>
-              <Text style={styles.clause}>{clause.text}</Text>
-            </View>
-          ))}
+        <View style={styles.promiseCard}>
+          <Text style={styles.salutation}>A note to myself,</Text>
+          <Text style={styles.note}>{`I’ll take ${durationLabel} to breathe each day. Even a short session counts. If I miss a day, that’s okay. I can come back tomorrow.`}</Text>
         </View>
       </OnboardingScreenLayout>
 
@@ -361,26 +345,19 @@ export default function PactScreen({
 
 /* ─── Styles ─── */
 const styles = StyleSheet.create({
-  list: {
-    paddingHorizontal: spacing.xs,
-    gap: spacing.lg,
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  promiseCard: {
+    ...card.paper,
+    padding: spacing.lg,
     gap: spacing.sm,
   },
-  iconWrap: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.primary.blue100,
+  salutation: {
+    ...typography.heading.heading2,
+    color: colors.text.primary,
   },
-  clause: {
-    flex: 1,
-    ...typography.body.medium,
+  note: {
+    ...typography.body.large,
+    fontFamily: fonts.regular,
+    fontWeight: '400',
     color: colors.text.primary,
   },
 
