@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { StyleSheet } from 'react-native';
 import Animated, {
+  cancelAnimation,
   Easing,
   interpolate,
   useAnimatedStyle,
@@ -98,7 +99,11 @@ export default function RoomReplay({
       timers.push(setTimeout(onDone, landsAt + TAIL_MS));
     }
 
-    return () => timers.forEach(clearTimeout);
+    return () => {
+      cancelAnimation(bloom);
+      cancelAnimation(pop);
+      timers.forEach(clearTimeout);
+    };
     // Plays once for the room it mounted with.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -188,6 +193,8 @@ function Piece({
       delay,
       withTiming(1, { duration: PIECE_MS, easing: Easing.out(Easing.back(1.6)) }),
     );
+
+    return () => cancelAnimation(enter);
   }, [delay, enter]);
 
   const style = useAnimatedStyle(() => ({

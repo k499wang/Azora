@@ -149,10 +149,13 @@ filling.
   `DecorationTile`s, each previewing the object in place over a ghosted room.
 - **Complete** — 7/7; a CTA through to `RoomComplete`.
 
-`RoomCompleteScreen` is a separate route rather than a fifth state. Finishing a
-room is the milestone the whole loop builds toward, and a panel swapping under
-the user's thumb would undersell it. Placing the seventh piece `replace()`s
-straight into it, so the celebration is the response to the tap.
+Finishing a room is the milestone the whole loop builds toward. After the
+seventh piece is confirmed, `RoomDecorateScreen` clears its existing stage.
+After the write succeeds, it rebuilds all seven pieces from an empty room in
+that same stage, then reveals the filled-every-corner copy and next-room CTA.
+There is no route transition between placing the piece and seeing its payoff.
+`RoomCompleteScreen` remains a standalone replay route for opening an already
+finished room from its CTA or from the room lab.
 
 It shows the finished room, then the next room's frame hue as three live
 `HexRoom` previews rather than color chips — the choice is about the room, so
@@ -177,8 +180,9 @@ The Home badge carries the real weight. Home is where attention has already
 reset and where the collection lives, so missing the banner costs nothing —
 which is what lets the banner stay quiet.
 
-The loud celebration is spent on the 7/7 milestone (`RoomCompleteScreen`),
-where it is earned and rare.
+The loud celebration is spent on the 7/7 milestone, where it is earned and
+rare. Immediate completion plays in `RoomDecorateScreen`; later replays use
+`RoomCompleteScreen`.
 
 All four call sites — picker, badge, and both result screens — read
 `useRoomClaim`, so the badge can never promise a piece the picker refuses.
@@ -216,8 +220,9 @@ a calm app reads as a paywall tease.
 
 **Two screens.**
 
-1. `RoomComplete` — the finished room replays itself building, then Continue.
-   One job: the payoff for seven days, not also a form.
+1. `RoomComplete` — the standalone finished-room replay opened from an already
+   completed state or the room lab. Immediate seventh-piece completion uses the
+   same replay in `RoomDecorateScreen`, without a route transition.
 2. `NextRoom` — the six looks, one per full-width page. A 90pt swatch cannot
    show plank floor versus checker, and the look is the whole reward for the
    next week.

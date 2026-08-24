@@ -50,10 +50,6 @@ export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
   const recentHeartRatesError =
     heartRateStatsQuery.isError ||
     (stats?.partialErrors.recent ?? false);
-  const showMeasureHint =
-    recentHeartRates.length === 0 &&
-    !heartRateStatsQuery.isLoading &&
-    !recentHeartRatesError;
   const measureHintOpacity = useMemo(
     () =>
       scrollY.interpolate({
@@ -191,51 +187,49 @@ export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
         </View>
       </Animated.ScrollView>
 
-      {showMeasureHint ? (
-        <Animated.View
-          pointerEvents="none"
-          accessible={false}
+      <Animated.View
+        pointerEvents="none"
+        accessible={false}
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
+        style={[
+          styles.measureHintOverlay,
+          {
+            top: insets.top + spacing.sm,
+            opacity: measureHintOpacity,
+            transform: [{ translateY: measureHintTranslateY }],
+          },
+        ]}
+      >
+        <Text numberOfLines={1} style={styles.measureHintText}>
+          Tap the plus to measure
+        </Text>
+        <Svg
+          width={140}
+          height={32}
+          viewBox="0 0 140 32"
           accessibilityElementsHidden
           importantForAccessibility="no-hide-descendants"
-          style={[
-            styles.measureHintOverlay,
-            {
-              top: insets.top + spacing.sm,
-              opacity: measureHintOpacity,
-              transform: [{ translateY: measureHintTranslateY }],
-            },
-          ]}
+          style={styles.measureHintArrow}
         >
-          <Text numberOfLines={1} style={styles.measureHintText}>
-            Tap the plus to measure
-          </Text>
-          <Svg
-            width={140}
-            height={32}
-            viewBox="0 0 140 32"
-            accessibilityElementsHidden
-            importantForAccessibility="no-hide-descendants"
-            style={styles.measureHintArrow}
-          >
-            <Path
-              d="M6 16 H94"
-              fill="none"
-              stroke={colors.text.brand}
-              strokeWidth={2.4}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-            <Path
-              d="M88 10 L100 16 L88 22"
-              fill="none"
-              stroke={colors.text.brand}
-              strokeWidth={2.4}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </Svg>
-        </Animated.View>
-      ) : null}
+          <Path
+            d="M6 16 H94"
+            fill="none"
+            stroke={colors.text.brand}
+            strokeWidth={2.4}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <Path
+            d="M88 10 L100 16 L88 22"
+            fill="none"
+            stroke={colors.text.brand}
+            strokeWidth={2.4}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </Svg>
+      </Animated.View>
 
       <GlassIconButton
         accessibilityLabel="Measure heart rate"

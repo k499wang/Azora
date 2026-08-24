@@ -5,6 +5,7 @@ import RoomScreenLayout, {
   RoomStage,
 } from '../features/room/RoomScreenLayout';
 import RoomReplay from '../features/room/RoomReplay';
+import { HexRoom } from '../features/room/RoomScene';
 import { getRoomWidth } from '../features/room/roomLayout';
 import { toFrameHue, toPicks } from '../features/room/roomPicks';
 import { roomShellPolys } from '../features/room/roomShells';
@@ -43,17 +44,30 @@ export default function RoomCompleteScreen({
       // Both held until the replay lands, both holding their space until then.
       reveal={replayDone}
       action={
-        <RoomActionButton label="Pick a new room" onPress={continueToPicker} />
+        <RoomActionButton
+          label="Pick a new room"
+          disabled={!replayDone}
+          onPress={continueToPicker}
+        />
       }
     >
       <RoomStage>
-        <RoomReplay
-          width={roomWidth}
-          picks={toPicks(room?.decorations ?? [])}
-          frameHue={toFrameHue(room?.frameHue)}
-          shell={roomShellPolys(room?.shell)}
-          onDone={() => setReplayDone(true)}
-        />
+        {room != null ? (
+          <RoomReplay
+            width={roomWidth}
+            picks={toPicks(room.decorations)}
+            frameHue={toFrameHue(room.frameHue)}
+            shell={roomShellPolys(room.shell)}
+            onDone={() => setReplayDone(true)}
+          />
+        ) : (
+          <HexRoom
+            width={roomWidth}
+            picks={{}}
+            frameHue={toFrameHue(undefined)}
+            shell={roomShellPolys(undefined)}
+          />
+        )}
       </RoomStage>
     </RoomScreenLayout>
   );

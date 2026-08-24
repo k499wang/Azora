@@ -7,6 +7,7 @@ import RoomScreenLayout, {
 } from '../features/room/RoomScreenLayout';
 import { HexRoom, type Picks } from '../features/room/RoomScene';
 import PlacementReveal from '../features/room/PlacementReveal';
+import RoomReplay from '../features/room/RoomReplay';
 import NextDayCountdown from '../features/room/NextDayCountdown';
 import DecoratePanel, {
   decorateNote,
@@ -35,9 +36,9 @@ import { returnToHome } from '../app/navigation/returnToHome';
 interface Placing {
   slot: RoomSlot;
   optionId: string;
-  /** the room before this piece, held stable until its animation owns the stage */
+  /** stable room snapshot for the animation that owns the stage */
   picks: Picks;
-  /** production's seventh piece skips straight to the finished-room replay */
+  /** production's seventh piece replays the finished room after its write */
   completesRoom: boolean;
 }
 
@@ -71,7 +72,8 @@ export default function RoomDecorateScreen({
         : { kind: 'choose', slot: nextSlot ?? 'day1' };
 
   const [placing, setPlacing] = useState<Placing | null>(null);
-  const [placementReady, setPlacementReady] = useState(false);
+  const [placementRevealDone, setPlacementRevealDone] = useState(false);
+  const [roomReplayDone, setRoomReplayDone] = useState(false);
   const [justPlaced, setJustPlaced] = useState(false);
   // What was placed this visit, held locally. The query is the source of truth,
   // but it refreshes a beat after the reveal ends — and under a faked room it
@@ -94,53 +96,46 @@ export default function RoomDecorateScreen({
 
     triggerTapHaptic();
     setPicking(false);
+    setPlacementRevealDone(false);
+    setRoomReplayDone(false);
     setPlacing({
       slot: nextSlot,
       optionId,
-      picks: placedPicks,
+      picks: completesRoom
+        ? { ...placedPicks, [nextSlot]: optionId }
+        : placedPicks,
       completesRoom,
     });
 
     if (previewing) return;
 
-    placeDecoration.mutate(
-      {
-        slot: nextSlot,
-        optionId,
-        earnedLocalDate: dailies.todayLocalDate,
-      },
-      {
-        // The final piece has no placement reveal to finish. The mutation's
-        // hook-level success handler writes the completed room to the cache
-        // before this callback lets the existing completion handoff run.
-        onSettled: () => {
-          if (completesRoom) setPlacementReady(true);
-        },
-      },
-    );
+    placeDecoration.mutate({
+      slot: nextSlot,
+      optionId,
+      earnedLocalDate: dailies.todayLocalDate,
+    });
   };
 
-  // Normal placements wait for both the reveal and write. The final production
-  // placement has no reveal, so its settled write makes the handoff ready.
+  // The seventh piece skips the single-piece reveal, while normal placements
+  // wait for that animation before committing their local snapshot.
+  const placementAnimationDone =
+    placing?.completesRoom === true || placementRevealDone;
   const writeSettled = previewing || !placeDecoration.isPending;
   const writeFailed = !previewing && placeDecoration.isError;
 
   useEffect(() => {
-    if (placing == null || !placementReady || !writeSettled) return;
+    if (placing == null || !placementAnimationDone || !writeSettled) return;
 
     // Placement has already taken over the screen, so a failed write can never
     // just drop them back on the picker with nothing said.
     if (writeFailed) {
       setPlacing(null);
-      setPlacementReady(false);
+      setPlacementRevealDone(false);
       Alert.alert('Could not place that piece', 'Please try again.');
       return;
     }
 
-    // RoomComplete owns the only animation for the seventh piece: a replay of
-    // all seven decorations followed by the filled-every-corner celebration.
     if (placing.completesRoom) {
-      navigation.replace('RoomComplete', route.params);
       return;
     }
 
@@ -149,17 +144,15 @@ export default function RoomDecorateScreen({
       [placing.slot]: placing.optionId,
     }));
     setPlacing(null);
-    setPlacementReady(false);
+    setPlacementRevealDone(false);
 
     // The room now has the piece in it. Hold there rather than dropping back to
     // a panel — the point of the last two seconds was to look at it.
     setJustPlaced(true);
   }, [
-    navigation,
     placing,
-    placementReady,
+    placementAnimationDone,
     previewing,
-    route.params,
     writeFailed,
     writeSettled,
   ]);
@@ -169,6 +162,8 @@ export default function RoomDecorateScreen({
   // would put a title back mid-fall — the write settles mid-animation and flips
   // `claimedToday` — so the title stays off for the whole beat.
   const celebrating = placing != null || justPlaced;
+  const completingRoom = placing?.completesRoom === true;
+  const completedRoomReady = completingRoom && placeDecoration.isSuccess;
   // The room and the dailies land separately, so a half-loaded screen can read
   // as claimable for a frame. Nothing offers a piece until both are in.
   const choosing = panelState.kind === 'choose' && !celebrating && !isLoading;
@@ -176,14 +171,38 @@ export default function RoomDecorateScreen({
   return (
     <RoomScreenLayout
       scroll
-      title={celebrating ? undefined : decorateTitle(panelState)}
-      note={
-        celebrating || isLoading ? undefined : decorateNote(panelState)
+      title={
+        completingRoom
+          ? 'You filled every corner'
+          : celebrating
+            ? undefined
+            : decorateTitle(panelState)
       }
-      reveal={celebrating ? justPlaced : undefined}
-      actionNote={celebrating ? <NextDayCountdown /> : undefined}
+      note={
+        completingRoom
+          ? 'All 7 decorations placed — this room is finished.'
+          : celebrating || isLoading
+            ? undefined
+            : decorateNote(panelState)
+      }
+      reveal={
+        completingRoom
+          ? roomReplayDone
+          : celebrating
+            ? justPlaced
+            : undefined
+      }
+      actionNote={
+        celebrating && !completingRoom ? <NextDayCountdown /> : undefined
+      }
       action={
-        celebrating ? (
+        completingRoom ? (
+          <RoomActionButton
+            label="Pick a new room"
+            disabled={!roomReplayDone}
+            onPress={() => navigation.replace('NextRoom', route.params)}
+          />
+        ) : celebrating ? (
           <RoomActionButton
             label="Continue"
             onPress={() => returnToHome(navigation)}
@@ -193,7 +212,22 @@ export default function RoomDecorateScreen({
     >
       <RoomStage>
         <View style={{ width: roomWidth }}>
-          {placing != null && !placing.completesRoom ? (
+          {completedRoomReady && placing != null ? (
+            <RoomReplay
+              width={roomWidth}
+              picks={placing.picks}
+              frameHue={toFrameHue(room?.frameHue)}
+              shell={shell}
+              onDone={() => setRoomReplayDone(true)}
+            />
+          ) : completingRoom ? (
+            <HexRoom
+              width={roomWidth}
+              picks={{}}
+              frameHue={toFrameHue(room?.frameHue)}
+              shell={shell}
+            />
+          ) : placing != null && !placing.completesRoom ? (
             <PlacementReveal
               width={roomWidth}
               day={placing.slot}
@@ -201,12 +235,12 @@ export default function RoomDecorateScreen({
               picks={placing.picks}
               frameHue={toFrameHue(room?.frameHue)}
               shell={shell}
-              onDone={() => setPlacementReady(true)}
+              onDone={() => setPlacementRevealDone(true)}
             />
           ) : (
             <HexRoom
               width={roomWidth}
-              picks={placing?.completesRoom ? placing.picks : placedPicks}
+              picks={placedPicks}
               frameHue={toFrameHue(room?.frameHue)}
               shell={shell}
             />
