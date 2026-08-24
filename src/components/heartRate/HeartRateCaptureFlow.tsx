@@ -3,7 +3,6 @@ import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import {
   SafeAreaView,
   StyleSheet,
-  TouchableOpacity,
   View,
 } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -21,7 +20,9 @@ import { HeartRateHelpSheet } from './HeartRateHelpSheet';
 import { LiveSignalGraph } from './LiveSignalGraph';
 import { colors } from '../../theme/colors';
 import { typography, fonts } from '../../theme/typography';
-import { spacing } from '../../theme/spacing';
+import { padding, spacing } from '../../theme/spacing';
+import GlassIconButton from '../common/GlassIconButton';
+import { SESSION_GLASS_BUTTON_SIZE } from '../../features/exercise/shared/components/SessionGlassButton';
 import type {
   SetupScreenProps,
   CaptureResult,
@@ -435,15 +436,18 @@ export function HeartRateCaptureFlow({
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
+        {/* Matches the floating close on the setup and result screens. */}
+        <GlassIconButton
+          accessibilityLabel="Close"
+          size={SESSION_GLASS_BUTTON_SIZE}
+          style={styles.floatingClose}
+          onPress={handleCancel}
+        >
+          <MaterialCommunityIcons name="close" size={20} color={colors.text.secondary} />
+        </GlassIconButton>
+
         {/* Top: the live PPG trace, swapped for the warning banner while measuring */}
         <View style={styles.topArea}>
-          <TouchableOpacity
-            onPress={handleCancel}
-            activeOpacity={0.7}
-            style={styles.cancelTouchableTop}
-          >
-            <Text style={styles.cancelText}>Cancel</Text>
-          </TouchableOpacity>
           {(isCheck || isMeasuring) && (
             <View style={styles.measuringTopSlot}>
               {isMeasuring && warningMessage != null ? (
@@ -604,20 +608,10 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     textAlign: 'center',
   },
-  cancelTouchable: {
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-  },
-  cancelTouchableTop: {
+  floatingClose: {
     position: 'absolute',
-    top: spacing.sm,
-    alignSelf: 'center',
+    top: padding.screen.vertical,
+    left: padding.screen.horizontal,
     zIndex: 20,
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.md,
-  },
-  cancelText: {
-    ...typography.body.medium,
-    color: colors.text.secondary,
   },
 });

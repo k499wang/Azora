@@ -5,6 +5,7 @@ import AppTopBar from '../components/common/AppTopBar';
 import ExtraPracticeSection from '../components/home/ExtraPracticeSection';
 import TodaysDailiesSection from '../components/home/TodaysDailiesSection';
 import HomeRoom from '../features/room/HomeRoom';
+import HotelButton from '../features/room/HotelButton';
 import RoomProgressCard from '../features/room/RoomProgressCard';
 import { useRoomClaim } from '../features/room/useRoomClaim';
 import { useStartDaily } from '../hooks/useStartDaily';
@@ -35,7 +36,11 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         alwaysBounceVertical
         overScrollMode="always"
       >
-        <AppTopBar showNotifications showAvatar={false} />
+        <AppTopBar
+          showNotifications
+          showAvatar={false}
+          rightSlot={<HotelButton floors={roomClaim.room?.floor ?? 1} />}
+        />
 
         <HomeRoom room={roomClaim.room} progress={roomClaim.progress} />
 

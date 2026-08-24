@@ -68,14 +68,15 @@ test('the room screens only offer a back arrow when opened from the lab', () => 
   assert.match(layout, /fromLab \? \(\s*<AppTopBar showBack/);
 });
 
-test('Hotel is reached from the room on Home, never from a tab', () => {
+test('Hotel is reached from Home, never from a tab', () => {
   // A room takes a week to fill, so for the whole of a new user's first week
   // the hotel is one part-furnished room and an outline. That is not worth a
-  // quarter of the tab bar, and Home already shows that room. It hangs off the
-  // room instead, which is also where the thought "show me the rest" starts.
+  // quarter of the tab bar, and Home already shows that room. It sits in Home's
+  // top bar instead, beside the other controls that only ever navigate — over
+  // the room it spent a whole row of the screen on one chip.
   const tabs = read('app/navigation/MainTabs.tsx');
   const root = read('app/navigation/RootNavigator.tsx');
-  const homeRoom = read('features/room/HomeRoom.tsx');
+  const home = read('screens/HomeScreen.tsx');
   const tabNames = [...tabs.matchAll(/<Tab\.Screen\s+name="([^"]+)"/g)].map(
     (match) => match[1],
   );
@@ -84,7 +85,7 @@ test('Hotel is reached from the room on Home, never from a tab', () => {
   assert.doesNotMatch(tabs, /Hotel/);
   assert.match(root, /name="Hotel"/);
   assert.match(root, /name="HotelPreview"/);
-  assert.match(homeRoom, /<HotelChip/);
+  assert.match(home, /<AppTopBar[^>]*rightSlot={<HotelButton/s);
 });
 
 test('the hotel offers its own way back, and does not spend height on it', () => {
@@ -153,30 +154,83 @@ test('forward room transitions replace and preserve lab params', () => {
   const complete = read('screens/RoomCompleteScreen.tsx');
 
   assert.doesNotMatch(decorate, /navigation\.navigate\('RoomComplete'/);
-  assert.match(decorate, /navigation\.replace\('RoomComplete', route\.params\)/);
+  assert.match(decorate, /navigation\.replace\('NextRoom', route\.params\)/);
   assert.doesNotMatch(complete, /navigation\.navigate\('NextRoom'/);
   assert.match(complete, /navigation\.replace\('NextRoom', route\.params\)/);
 });
 
-test('the seventh piece skips placement reveal for the finished-room replay', () => {
+test('the seventh piece replays on the decorate screen after its write succeeds', () => {
   const decorate = read('screens/RoomDecorateScreen.tsx');
   const complete = read('screens/RoomCompleteScreen.tsx');
+  const pick = decorate.slice(
+    decorate.indexOf('const pick ='),
+    decorate.indexOf('// The seventh piece skips'),
+  );
 
   assert.match(
     decorate,
     /!previewing && progress\.placedCount === ROOM_SLOT_COUNT - 1/,
   );
   assert.match(
+    pick,
+    /picks: completesRoom\s*\? \{ \.\.\.placedPicks, \[nextSlot\]: optionId \}\s*: placedPicks/,
+  );
+  assert.match(
+    pick,
+    /setPlacementRevealDone\(false\);\s*setRoomReplayDone\(false\);\s*setPlacing\(/,
+  );
+  assert.doesNotMatch(pick, /onSuccess|onError|onSettled/);
+  assert.match(
     decorate,
-    /placing != null && !placing\.completesRoom \? \(\s*<PlacementReveal/,
+    /const placementAnimationDone =\s*placing\?\.completesRoom === true \|\| placementRevealDone/,
   );
   assert.match(
     decorate,
-    /onSettled: \(\) => \{\s*if \(completesRoom\) setPlacementReady\(true\)/,
+    /const completedRoomReady =\s*completingRoom && placeDecoration\.isSuccess/,
   );
-  assert.doesNotMatch(decorate, /RoomReplay/);
+  assert.match(
+    decorate,
+    /completedRoomReady && placing != null \? \(\s*<RoomReplay/,
+  );
+  assert.match(
+    decorate,
+    /<RoomReplay[\s\S]*?\) : completingRoom \? \(\s*<HexRoom[\s\S]*?picks=\{\{\}\}[\s\S]*?\) : placing != null && !placing\.completesRoom \? \(\s*<PlacementReveal/,
+  );
+  assert.match(decorate, /onDone=\{\(\) => setRoomReplayDone\(true\)\}/);
+  assert.match(decorate, /completingRoom\s*\? roomReplayDone/);
+  assert.match(
+    decorate,
+    /label="Pick a new room"\s*disabled=\{!roomReplayDone\}/,
+  );
+  assert.match(
+    decorate,
+    /if \(writeFailed\) \{\s*setPlacing\(null\);\s*setPlacementRevealDone\(false\);\s*Alert\.alert\('Could not place that piece'/,
+  );
+  assert.doesNotMatch(
+    decorate,
+    /if \(placing\.completesRoom\) \{\s*navigation\.replace\('RoomComplete'/,
+  );
   assert.match(complete, /import RoomReplay from/);
-  assert.match(complete, /<RoomReplay/);
+  assert.match(complete, /room != null \? \(\s*<RoomReplay/);
+  assert.match(
+    complete,
+    /\) : \(\s*<HexRoom[\s\S]*?picks=\{\{\}\}/,
+  );
+  assert.match(
+    complete,
+    /label="Pick a new room"\s*disabled=\{!replayDone\}/,
+  );
+});
+
+test('room replay cancels all owned animation and timer work on unmount', () => {
+  const replay = read('features/room/RoomReplay.tsx');
+
+  assert.match(replay, /import Animated, \{\s*cancelAnimation,/);
+  assert.match(
+    replay,
+    /return \(\) => \{\s*cancelAnimation\(bloom\);\s*cancelAnimation\(pop\);\s*timers\.forEach\(clearTimeout\);/,
+  );
+  assert.match(replay, /return \(\) => cancelAnimation\(enter\)/);
 });
 
 test('canonical room writes refresh history without blocking on current-room refetches', () => {

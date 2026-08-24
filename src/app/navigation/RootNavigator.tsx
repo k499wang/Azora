@@ -196,8 +196,8 @@ function AppStack({ showBootPaywall }: AppStackProps) {
         name="RoomComplete"
         component={RoomCompleteScreen}
         options={{
-          // Arrives as an event, not as navigation — the replay is the payoff
-          // for seven days, and fading in undersells it.
+          // Standalone replay opened from a finished-state CTA or the room lab.
+          // Immediate completion stays on RoomDecorate so its stage never moves.
           presentation: 'fullScreenModal',
           animation: 'slide_from_bottom',
         }}

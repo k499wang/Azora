@@ -140,7 +140,7 @@ new one — every surface in the loop says that in those words.
 
 ## The hotel
 
-The app stacks finished rooms into a hotel — `HotelChip` on Home, the Hotel
+The app stacks finished rooms into a hotel — `HotelButton` in Home's top bar, the Hotel
 screen, `createNextRoom`. That is a shipped feature and it stays.
 
 It is deliberately **not part of the story we tell during onboarding.** A user

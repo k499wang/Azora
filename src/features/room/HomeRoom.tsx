@@ -1,12 +1,10 @@
 import { useRef } from 'react';
 import { Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
-import HotelChip from './HotelChip';
 import RoomBlob, { type RoomBlobHandle } from './RoomBlob';
 import { HexRoom, ROOM_ASPECT } from './RoomScene';
 import { toFrameHue, toPicks } from './roomPicks';
 import { roomShellPolys } from './roomShells';
 import { getRoomWidth } from './roomLayout';
-import { padding, spacing } from '../../theme/spacing';
 import { triggerBounceHaptic } from '../../native/tapHaptics';
 import type { RoomProgress } from '../../lib/room/roomProgress';
 import type { Room } from '../../services/room/roomService';
@@ -23,13 +21,6 @@ export default function HomeRoom({ room, progress }: HomeRoomProps) {
 
   return (
     <View style={styles.stage}>
-      {/* Above the room rather than over it. The chip is a control and the room
-          is artwork; overlapping them made the chip read as part of the
-          picture, and left it competing with the hexagon's own edge. */}
-      <View style={styles.chipRow}>
-        <HotelChip floors={room?.floor ?? 1} />
-      </View>
-
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={
@@ -61,11 +52,5 @@ const styles = StyleSheet.create({
   stage: {
     alignSelf: 'stretch',
     alignItems: 'center',
-  },
-  chipRow: {
-    alignSelf: 'stretch',
-    alignItems: 'flex-end',
-    paddingHorizontal: padding.screen.horizontal,
-    paddingBottom: spacing.sm,
   },
 });
