@@ -20,6 +20,8 @@ export const duration = {
   slower: 640,
   /** a bar filling — long enough to be watched */
   fill: 900,
+  /** a line typing itself out, start of first character to end of last */
+  type: 500,
 } as const;
 
 export const easing = {

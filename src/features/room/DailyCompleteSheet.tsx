@@ -7,6 +7,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
+  cancelAnimation,
   interpolate,
   runOnJS,
   useAnimatedStyle,
@@ -22,9 +23,6 @@ import Icon from '../../components/common/icons/Icon';
 import ProgressBar from '../../components/common/ProgressBar';
 import ChunkyButton from '../../components/common/ChunkyButton';
 import { Pop, Rise } from '../../components/common/Reveal';
-import BlobCharacter, {
-  type CharacterId,
-} from '../../components/home/BlobCharacter';
 import { getRoomDay, getRoomDayLabel } from './roomDays';
 import { isHapticsEnabled } from '../../services/preferences/hapticsPreference';
 import { triggerTapHaptic } from '../../native/tapHaptics';
@@ -39,7 +37,13 @@ import type { DailyCompleteState } from './useDailyCompleteSnapshot';
 
 export type { DailyCompleteState } from './useDailyCompleteSnapshot';
 
-const BLOB_SIZE = 190;
+// Sized off the screen rather than fixed, so it stays the hero on a Pro Max
+// without crowding the title off an SE.
+const FLAME_MAX = 260;
+const FLAME_WIDTH_RATIO = 0.62;
+// Two frames at 60Hz, four at 120 — a whole number on both, which is what keeps
+// the gaps between characters even.
+const TYPE_MIN_STEP = 32;
 const BADGE_SIZE = 38;
 const BAR_HEIGHT = 12;
 const FALL_MS = duration.base;
@@ -48,7 +52,7 @@ const FALL_MS = duration.base;
 // screen appears. These used to be offset by a slide-up that no longer happens,
 // which left the whole sheet sitting empty for the first half second.
 const BEAT = {
-  blob: 60,
+  flame: 60,
   title: 200,
   subtitle: 290,
   stats: 400,
@@ -69,7 +73,6 @@ interface DailyCompleteSheetProps {
   visible: boolean;
   /** the colour the whole screen is painted in — the exercise's category hue */
   hue: PlayfulHue;
-  character: CharacterId;
   title: string;
   subtitle: string;
   /** the two or three headline numbers, shown as tiles */
@@ -104,7 +107,6 @@ interface DailyCompleteSheetProps {
 function DailyCompleteSheet({
   visible,
   hue,
-  character,
   title,
   subtitle,
   stats = [],
@@ -117,7 +119,8 @@ function DailyCompleteSheet({
   onDismiss,
 }: DailyCompleteSheetProps) {
   const insets = useSafeAreaInsets();
-  const { height } = useWindowDimensions();
+  const { height, width } = useWindowDimensions();
+  const flameSize = Math.min(FLAME_MAX, width * FLAME_WIDTH_RATIO);
   const [presented, setPresented] = useState(false);
   const closing = useRef(false);
 
@@ -136,7 +139,7 @@ function DailyCompleteSheet({
 
   // On the third daily the screen stops being about the session and starts
   // being about the thing they just earned, so the copy changes with it.
-  const headline = unlocked ? 'All 3 dailies done' : title;
+  const headline = unlocked ? 'All 3 dailies done!' : title;
   const supporting = unlocked
     ? pieceLabel == null
       ? "You earned today's decoration"
@@ -237,18 +240,10 @@ function DailyCompleteSheet({
             <>
               <View style={styles.center}>
                 <Confetti hue={hue} />
-                <Pop delay={BEAT.blob}>
-                  <BlobCharacter
-                    character={character}
-                    faceExpression="cheer"
-                    size={BLOB_SIZE}
-                    bodyColor={hue.soft}
-                    faceColor={hue.ink}
-                  />
+                <Pop delay={BEAT.flame}>
+                  <Icon name="streakFilled" size={flameSize} color={hue.soft} />
                 </Pop>
-                <Rise delay={BEAT.title}>
-                  <Text style={styles.title}>{headline}</Text>
-                </Rise>
+                <TypedTitle text={headline} delay={BEAT.title} />
                 <Rise delay={BEAT.subtitle}>
                   <Text style={styles.subtitle}>{supporting}</Text>
                 </Rise>
@@ -323,6 +318,68 @@ function DailyCompleteSheet({
 }
 
 export default memo(DailyCompleteSheet);
+
+/**
+ * The headline types itself out.
+ *
+ * Every character is laid out from the start and fades from transparent, so the
+ * line's geometry never changes and nothing below it shifts while it fills in.
+ * The fade is long enough to overlap its neighbours: characters are still
+ * arriving one at a time, but each one eases in rather than snapping on, which
+ * is the difference between typing and flickering.
+ *
+ * It runs on the UI thread. The JS thread is at its busiest exactly here — the
+ * modal mounting, the flame springing, twelve confetti pieces launching — and
+ * anything driving this from a timer or a frame callback inherits that as
+ * stutter.
+ *
+ * Words are grouped so the line wraps between them and never mid-word.
+ */
+function TypedTitle({ text, delay }: { text: string; delay: number }) {
+  // A fixed window would put the characters of a long name closer together than
+  // a frame, and gaps that do not divide evenly into frames read as stuttering
+  // no matter how smoothly each one fades.
+  const step = Math.max(TYPE_MIN_STEP, duration.type / Math.max(1, text.length));
+
+  let index = 0;
+
+  return (
+    <View style={styles.titleBlock}>
+      {(text.match(/\S+\s*/g) ?? [text]).map((word, wordIndex) => (
+        <View key={wordIndex} style={styles.titleWord}>
+          {[...word].map((char, charIndex) => (
+            <TypedChar
+              key={charIndex}
+              char={char}
+              delay={delay + index++ * step}
+            />
+          ))}
+        </View>
+      ))}
+    </View>
+  );
+}
+
+function TypedChar({ char, delay }: { char: string; delay: number }) {
+  const enter = useSharedValue(0);
+
+  useEffect(() => {
+    enter.value = withDelay(
+      delay,
+      withTiming(1, { duration: duration.type, easing: easing.enter }),
+    );
+
+    return () => cancelAnimation(enter);
+  }, [delay, enter]);
+
+  const animated = useAnimatedStyle(() => ({ opacity: enter.value }));
+
+  return (
+    <Animated.Text allowFontScaling={false} style={[styles.title, animated]}>
+      {char}
+    </Animated.Text>
+  );
+}
 
 /**
  * The app's chunky primary, inverted for a colour block: a white face on a lip
@@ -508,11 +565,19 @@ const styles = StyleSheet.create({
   ctaBlock: {
     alignSelf: 'stretch',
   },
+  titleBlock: {
+    marginTop: spacing.lg,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+  },
+  titleWord: {
+    flexDirection: 'row',
+  },
   title: {
     ...typography.display.display2,
     color: colors.text.inverse,
     textAlign: 'center',
-    marginTop: spacing.lg,
   },
   subtitle: {
     ...typography.body.medium,

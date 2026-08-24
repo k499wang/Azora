@@ -12,7 +12,7 @@ import GlassIconButton from '../components/common/GlassIconButton';
 import CloseButton from '../components/common/CloseButton';
 import ChunkyButton from '../components/common/ChunkyButton';
 import HelpfulnessQuestion from '../components/exercise/HelpfulnessQuestion';
-import BlobCharacter from '../components/home/BlobCharacter';
+import Icon from '../components/common/icons/Icon';
 import { CATEGORY_STYLE } from '../features/exercise/guidedBreathing/categoryPalette';
 import { getTechnique } from '../features/exercise/guidedBreathing/techniques';
 import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
@@ -46,7 +46,7 @@ function formatDuration(secs: number): string {
   return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
-const HERO_BLOB_SIZE = 132;
+const HERO_FLAME_SIZE = 132;
 const EMPTY_HR_SAMPLES: { offsetMs: number; bpm: number }[] = [];
 
 // Everything below re-renders on every query that resolves while the screen is
@@ -154,7 +154,7 @@ export default function SessionCompleteScreen({
   const categoryStyle = CATEGORY_STYLE[technique?.category ?? 'calm'];
   const hue = categoryStyle.hue;
   const congratulation =
-    firstName == null ? 'Nice work' : `Nice work, ${firstName}`;
+    firstName == null ? 'Nice work!' : `Nice work, ${firstName}!`;
   const todayLocalDate = useTodayLocalDate();
 
   // Completion already derived this from the same exercise-mode series the
@@ -256,7 +256,6 @@ export default function SessionCompleteScreen({
         <DailyCompleteSheet
           visible
           hue={hue}
-          character={categoryStyle.character}
           title={celebrationContent.title}
           subtitle={celebrationContent.subtitle}
           stats={celebrationContent.stats}
@@ -305,13 +304,7 @@ export default function SessionCompleteScreen({
         <View style={styles.heroWrap}>
           <View style={styles.heroShadow}>
             <View style={[styles.heroCard, { backgroundColor: hue.base }]}>
-              <BlobCharacter
-                character={categoryStyle.character}
-                faceExpression="cheer"
-                size={HERO_BLOB_SIZE}
-                bodyColor={hue.soft}
-                faceColor={hue.ink}
-              />
+              <Icon name="streakFilled" size={HERO_FLAME_SIZE} color={hue.soft} />
               <Text style={styles.heroTitle}>{congratulation}</Text>
               <Text style={styles.heroSubtitle}>
                 {techniqueName} · {formatDuration(durationSec)}

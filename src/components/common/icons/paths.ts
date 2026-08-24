@@ -57,12 +57,12 @@ export const ICON_PATHS = {
   `,
 
   streak: `
-    <path d="M12 3c.2 3.2-2.8 4.6-2.8 8.2a4.2 4.2 0 0 0 8.4 0c0-1.7-.7-2.8-1.6-3.8-.5 1-1.2 1.4-2 1.4 0-2.5-2-4-2-5.8z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" fill="none" />
-    <path d="M10.5 16.5a1.8 1.8 0 1 0 3 0c0-1-.9-1.5-1.5-1.5s-1.5.5-1.5 1.5z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" fill="none" />
+    <path d="M12 1.8C12.4 4.9 14.1 6.5 15.6 8 17.5 9.9 19 12 19 14.6a7 7 0 0 1-14 0c0-2.4 1.1-4.4 2.4-5.9.1 1.4.8 2.4 1.8 2.7C8.6 7.5 9.8 4.2 12 1.8z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" fill="none" />
+    <path d="M12 12.6c1.4 1.7 2.8 2.9 2.8 4.8a2.8 2.8 0 0 1-5.6 0c0-1.9 1.4-3.1 2.8-4.8z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" fill="none" />
   `,
 
   streakFilled: `
-    <path fill="currentColor" d="M13.4 2.1c.1 2.2 1.2 3.4 2.5 4.7 1.4 1.5 2.5 3.1 2.5 5.4a6.4 6.4 0 0 1-12.8 0c0-2.1.9-3.8 2.2-5.1.2 1.2.8 2 1.7 2.3-.4-3 .9-5.8 3.9-7.3z"/>
+    <path fill="currentColor" fill-rule="evenodd" d="M12 1.8C12.4 4.9 14.1 6.5 15.6 8 17.5 9.9 19 12 19 14.6a7 7 0 0 1-14 0c0-2.4 1.1-4.4 2.4-5.9.1 1.4.8 2.4 1.8 2.7C8.6 7.5 9.8 4.2 12 1.8zm0 10.8c1.4 1.7 2.8 2.9 2.8 4.8a2.8 2.8 0 0 1-5.6 0c0-1.9 1.4-3.1 2.8-4.8z"/>
   `,
 
   check: `
