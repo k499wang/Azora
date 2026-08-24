@@ -11,7 +11,6 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import Icon from '../../common/icons/Icon';
-import MochiPortrait from '../../../features/room/MochiPortrait';
 import { isHapticsEnabled } from '../../../services/preferences/hapticsPreference';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
@@ -278,8 +277,12 @@ export default function BreathPrimerScreen({
       }
     >
       <View style={styles.introStage}>
-        <View style={styles.introVisual}>
-          <MochiPortrait size={168} expression="puffed" />
+        <View style={styles.introIcon}>
+          <Icon
+            name="breath-profile"
+            size={260}
+            color={colors.primary.blue600}
+          />
         </View>
         <View style={styles.introCopy}>
           <Text style={styles.introHeadline}>
@@ -305,10 +308,9 @@ const styles = StyleSheet.create({
     gap: spacing.md,
     paddingBottom: spacing['2xl'],
   },
-  introVisual: {
+  introIcon: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: spacing.xl,
   },
   introCopy: {
     alignItems: 'center',
