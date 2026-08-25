@@ -3,7 +3,7 @@ import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import { Image } from 'expo-image';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Icon from '../common/icons/Icon';
-import BlobCharacter from '../home/BlobCharacter';
+import { DEFAULT_PROFILE_AVATAR_SOURCE } from '../../data/profileAssets';
 import { colors } from '../../theme/colors';
 import { typography, fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
@@ -42,21 +42,16 @@ export default function ProfileIdentityCard({
         ]}
       >
         <View style={[styles.avatar, !hasAvatar && styles.avatarDefault]}>
-          {normalizedAvatarUrl ? (
-            <Image
-              source={{ uri: normalizedAvatarUrl }}
-              style={styles.avatarImage}
-              contentFit="cover"
-              cachePolicy="memory-disk"
-            />
-          ) : (
-            <BlobCharacter
-              character="calm"
-              size={AVATAR_INNER_SIZE}
-              bodyColor={colors.playful.sky.soft}
-              faceColor={colors.playful.sky.ink}
-            />
-          )}
+          <Image
+            source={
+              normalizedAvatarUrl
+                ? { uri: normalizedAvatarUrl }
+                : DEFAULT_PROFILE_AVATAR_SOURCE
+            }
+            style={styles.avatarImage}
+            contentFit="cover"
+            cachePolicy="memory-disk"
+          />
           {isUploading ? (
             <View style={styles.avatarUploading}>
               <ActivityIndicator color={colors.text.inverse} />

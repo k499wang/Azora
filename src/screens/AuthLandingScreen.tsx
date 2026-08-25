@@ -9,13 +9,13 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { useEffect, useState } from 'react';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from '../components/common/icons/Icon';
 import ChunkyButton, {
   CHUNKY_TONE,
   CHUNKY_TONE_QUIET,
 } from '../components/common/ChunkyButton';
-import MochiFace from '../features/room/MochiFace';
 import { useAuthStore } from '../stores/authStore';
 import {
   AppleSignInCancelledError,
@@ -27,8 +27,9 @@ import { fonts, typography } from '../theme/typography';
 import { spacing } from '../theme/spacing';
 import { isShortScreen } from '../theme/breakpoints';
 
-const MOCHI_SIZE = 112;
-const MOCHI_SIZE_COMPACT = 88;
+const MOCHI_SIZE = 160;
+const MOCHI_SIZE_COMPACT = 120;
+const MOCHI_IMAGE = require('../../assets/mascot/mochi-auth-landing.png');
 
 // He is shown, not named. The first onboarding beat is "This is Mochi.", and
 // introducing him here would spend that reveal before the story gets to it.
@@ -44,6 +45,7 @@ function showTermsRequiredAlert() {
 export default function AuthLandingScreen() {
   const { height: screenHeight } = useWindowDimensions();
   const compact = isShortScreen(screenHeight);
+  const mochiSize = compact ? MOCHI_SIZE_COMPACT : MOCHI_SIZE;
   const [agreed, setAgreed] = useState(false);
   const [googleBusy, setGoogleBusy] = useState(false);
   const [appleBusy, setAppleBusy] = useState(false);
@@ -95,7 +97,12 @@ export default function AuthLandingScreen() {
     <View style={styles.screen}>
       <SafeAreaView edges={['top']} style={styles.heroSafe}>
         <View style={[styles.hero, compact && styles.heroCompact]}>
-          <MochiFace size={compact ? MOCHI_SIZE_COMPACT : MOCHI_SIZE} />
+          <Image
+            source={MOCHI_IMAGE}
+            style={{ width: mochiSize, height: mochiSize }}
+            contentFit="contain"
+            accessible={false}
+          />
           <View style={styles.copy}>
             <Text style={styles.appName}>Azora</Text>
             <Text style={styles.tagline}>{TAGLINE}</Text>
