@@ -19,6 +19,99 @@ be reused or extended.
 
 ---
 
+## Design principles
+
+The numbered sections below are the **system** — the tokens, components, and
+rules you reach for while building. These five are the **principles**: what to
+do when two good options conflict and the system doesn't decide for you. When a
+review note says "I don't know, it just feels off," it is almost always one of
+these.
+
+### 1. Calm inside, celebration at the seams
+
+Calm owns the inside of a practice — the breath, the hold, the measurement.
+Delight owns the edges: starting, finishing, unlocking, reaching a milestone.
+
+Never interrupt a session with delight; always pay out after it. A reveal
+during a hold is a bug even when it's beautiful. This is why §16 lets breathing
+break normal UI constraints while §13 scales celebration to emotional
+importance — the same rule seen from both ends.
+
+Rules out: reward animation over a running timer, motion that delays a tap,
+ambient sparkle on a resting screen.
+
+### 2. One screen answers "what now?"
+
+Home's job is to end the question, not open it. Today's plan is the answer —
+the dailies, with nothing competing for the same attention. Extra practice
+stays reachable and never equal.
+
+The failure mode is well documented on both sides: Finch's quest board draws
+consistent criticism for decision fatigue, and Headspace's counter is one
+recommended session, one tap. Azora sits between them and stays closer to
+Headspace here.
+
+Rules out: ten equal tiles, a second CTA carrying the same weight as the
+primary, a browsable shelf above the plan.
+
+### 3. The blob is glad you came, never hurt that you left
+
+The companion is a real relationship, and that relationship is the engine —
+care is a better motivator than performance because it asks for warmth instead
+of discipline. But it reacts only to presence. Showing up delights it. Absence
+changes nothing about how it looks.
+
+No sad mascot, no dying streak, no wilting room used as a lever. The pull to
+return is that coming back feels good, never that staying away is punished.
+
+Rules out: neglect states, decay mechanics, guilt or loss framing in copy.
+
+### 4. Numbers never flatter
+
+**This one is absolute.** It outranks every other principle here and any growth
+argument.
+
+A number Azora shows is the number Azora measured. No smoothing toward a nicer
+curve, no invented improvement, no score that only rises, no hiding a decline
+because it's discouraging. When the honest reading is worse than yesterday,
+show it calmly and plainly.
+
+Cute must never cost perceived accuracy — the subscription rests on the user
+believing the readings. §19's tabular numerals are the typographic half of this;
+this is the ethical half.
+
+Rules out: cosmetic smoothing, floor-capped scores, estimates presented as
+measurements.
+
+### 5. A reward has to change something you own
+
+Celebration without a payload is noise. Every reward moment ends in a visible
+change to the user's own space — a new object, a lit corner of the room,
+visible progress toward the next one. That payload is what makes principle 1's
+celebration land instead of decorate.
+
+Rules out: confetti that leads nowhere, an achievement screen with no artifact,
+points with no home.
+
+### When they conflict
+
+**4 is absolute.** The rest rank **1, 2, 3, 5** in that order. A calm interior
+beats a tidy home screen; a tidy home screen beats giving the blob more room;
+the blob's warmth beats the reward's spectacle.
+
+### Strong defaults
+
+Three further rules hold unless there is a specific, deliberate reason to break
+one — and breaking it should be a decision somebody made on purpose, not a
+side effect:
+
+- Delight never delays a session (the operational half of principle 1).
+- The paywall never uses a dark pattern. Close, price, billing frequency, and
+  trial terms stay legible. See §20.
+- Notification copy never uses shame or loss (the off-app half of principle 3).
+
+---
+
 ## 1. Brand personality
 
 Azora communicates four feelings, in order of priority:

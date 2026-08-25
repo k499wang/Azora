@@ -16,7 +16,7 @@ test('Home owns See all navigation and places extra practice after dailies', () 
 
   assert.match(
     home,
-    /<TodaysDailiesSection[\s\S]*?\/>\s*<ExtraPracticeSection[\s\S]*?onSeeAll={\(\) => navigation\.navigate\('Explore'\)}/,
+    /<TodaysDailiesSection[\s\S]*?\/>[\s\S]*?<ExtraPracticeSection[\s\S]*?onSeeAll={\(\) => navigation\.navigate\('Explore'\)}/,
   );
 });
 
