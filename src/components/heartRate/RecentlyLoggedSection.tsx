@@ -290,7 +290,8 @@ const styles = StyleSheet.create({
   metricRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: spacing.md,
+    columnGap: spacing.md,
+    rowGap: spacing.xs,
   },
   metricInline: {
     flexDirection: 'row',

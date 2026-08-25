@@ -2,8 +2,10 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { colors } from '../theme/colors';
 import { spacing, padding, margin } from '../theme/spacing';
 import AppTopBar from '../components/common/AppTopBar';
+import TopBarStreak from '../components/common/TopBarStreak';
 import ExtraPracticeSection from '../components/home/ExtraPracticeSection';
 import TodaysDailiesSection from '../components/home/TodaysDailiesSection';
+import { getDevHomeScreenshotData } from '../features/home/devHomeScreenshotData';
 import HomeRoom from '../features/room/HomeRoom';
 import HotelButton from '../features/room/HotelButton';
 import RoomProgressCard from '../features/room/RoomProgressCard';
@@ -19,7 +21,9 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const dailyPlanScheduleQuery = useDailyPlanScheduleQuery(user?.id ?? null);
   const dailyPlanSchedule =
     dailyPlanScheduleQuery.data ?? DEFAULT_DAILY_PLAN_SCHEDULE;
-  const roomClaim = useRoomClaim(user?.id ?? null);
+  const realRoomClaim = useRoomClaim(user?.id ?? null);
+  const screenshotData = getDevHomeScreenshotData();
+  const roomClaim = screenshotData?.roomClaim ?? realRoomClaim;
   const dailies = roomClaim.dailies;
   const { start, accessAllowed, exerciseAccess } = useStartDaily('Home', dailies);
 
@@ -39,7 +43,16 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         <AppTopBar
           showNotifications
           showAvatar={false}
+          showStreak={screenshotData == null}
           rightSlot={<HotelButton floors={roomClaim.room?.floor ?? 1} />}
+          leftSlot={
+            screenshotData == null ? undefined : (
+              <TopBarStreak
+                streakDays={screenshotData.streakDays}
+                onPress={() => navigation.navigate('Profile')}
+              />
+            )
+          }
         />
 
         <HomeRoom room={roomClaim.room} progress={roomClaim.progress} />
@@ -65,7 +78,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
               guidedExerciseCompleted={dailies.guidedCompleted}
               handPickedExerciseCompleted={dailies.handPickedCompleted}
               breathHoldCompleted={dailies.breathHoldCompleted}
-              exerciseAccessAllowed={accessAllowed}
+              exerciseAccessAllowed={screenshotData != null || accessAllowed}
               onPressGuidedExercise={() => start('guided')}
               onPressHandPickedExercise={() => start('handPicked')}
               onPressBreathHold={() => start('breathHold')}

@@ -17,6 +17,7 @@ import { useAuthStore } from '../stores/authStore';
 import { useProfileQuery } from '../queries/profile/useProfileQuery';
 import { useHeartRateStatsQuery } from '../queries/tracking/useHeartRateStatsQuery';
 import { useFeatureAccess } from '../hooks/useFeatureAccess';
+import { getDevHeartScreenshotData } from '../features/home/devHomeScreenshotData';
 import { FeatureKey } from '../services/subscriptions/featureAccess';
 import { PaywallPlacement } from '../services/paywall';
 import { trackFeatureGateHit } from '../services/analytics/tracking';
@@ -36,20 +37,24 @@ export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
   const heartRateStatsQuery = useHeartRateStatsQuery(user?.id ?? null);
   const profileQuery = useProfileQuery(user?.id ?? null);
   const advancedStatsAccess = useFeatureAccess(FeatureKey.AdvancedStats);
+  const screenshotData = getDevHeartScreenshotData();
 
-  const stats = heartRateStatsQuery.data;
+  const stats = screenshotData?.stats ?? heartRateStatsQuery.data;
   const recentHeartRates = stats?.recent ?? [];
   const bpmSamples = stats?.bpmSeries ?? [];
   const ibiMs = stats?.ibiSeries.map((point) => point.ibiMs) ?? [];
   const advancedStatsLocked =
-    !advancedStatsAccess.allowed && !advancedStatsAccess.isLoading;
+    screenshotData == null &&
+    !advancedStatsAccess.allowed &&
+    !advancedStatsAccess.isLoading;
   const partialStatsError =
     stats != null
       ? Object.values(stats.partialErrors).some(Boolean)
       : false;
   const recentHeartRatesError =
-    heartRateStatsQuery.isError ||
-    (stats?.partialErrors.recent ?? false);
+    screenshotData == null &&
+    (heartRateStatsQuery.isError ||
+      (stats?.partialErrors.recent ?? false));
   const measureHintOpacity = useMemo(
     () =>
       scrollY.interpolate({
@@ -125,7 +130,8 @@ export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
         />
 
         <View style={styles.statsContent}>
-          {partialStatsError || heartRateStatsQuery.isError ? (
+          {screenshotData == null &&
+          (partialStatsError || heartRateStatsQuery.isError) ? (
             <Text style={styles.partialErrorText}>
               Some stats may be out of date.
             </Text>
@@ -149,7 +155,7 @@ export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
             minBpm={canonicalSession?.minBpm ?? null}
             maxBpm={canonicalSession?.maxBpm ?? null}
             avgBpm={canonicalSession?.avgBpm ?? null}
-            age={profileQuery.data?.age ?? null}
+            age={screenshotData?.age ?? profileQuery.data?.age ?? null}
             bpmSamples={bpmSamples}
             numberForwardSummary
             locked={advancedStatsLocked}
@@ -182,7 +188,9 @@ export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
           <RecentlyLoggedSection
             items={recentHeartRates}
             hasError={recentHeartRatesError}
-            isLoading={heartRateStatsQuery.isLoading}
+            isLoading={
+              screenshotData == null && heartRateStatsQuery.isLoading
+            }
           />
         </View>
       </Animated.ScrollView>

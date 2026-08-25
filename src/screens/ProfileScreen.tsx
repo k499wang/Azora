@@ -14,6 +14,7 @@ import { margin, padding, spacing } from '../theme/spacing';
 import { fonts, typography } from '../theme/typography';
 import { Text } from '../components/common/Text';
 import AppTopBar from '../components/common/AppTopBar';
+import TopBarStreak from '../components/common/TopBarStreak';
 import GlassIconButton from '../components/common/GlassIconButton';
 import CompactActionBanner from '../components/common/CompactActionBanner';
 import Icon from '../components/common/icons/Icon';
@@ -35,12 +36,14 @@ import { useUpdateProfileDisplayNameMutation } from '../queries/profile/useUpdat
 import { useHomeStatsQuery } from '../queries/tracking/useHomeStatsQuery';
 import { useFeatureAccess } from '../hooks/useFeatureAccess';
 import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
+import { getDevProfileScreenshotData } from '../features/home/devHomeScreenshotData';
 import { deriveHoldStats } from '../lib/holdStats';
 import { trackFeatureGateHit } from '../services/analytics/tracking';
 import { PaywallPlacement } from '../services/paywall';
 import { FeatureKey } from '../services/subscriptions/featureAccess';
 
 const SURVEY_DISCOUNT_URL = 'https://docs.google.com/forms/d/1wdbzWnXbhdpFZ3HoPcRet5K7EGW9RRtEQqrVYiXHwtc/viewform?edit_requested=true';
+const ignoreScreenshotIdentityAction = () => {};
 
 function getFallbackDisplayName(_email: string | undefined): string {
   return '—';
@@ -56,15 +59,19 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
   const advancedStatsAccess = useFeatureAccess(FeatureKey.AdvancedStats);
   const uploadAvatarMutation = useUploadProfileAvatarMutation(user?.id ?? null);
   const updateDisplayNameMutation = useUpdateProfileDisplayNameMutation(user?.id ?? null);
+  const screenshotData = getDevProfileScreenshotData();
 
-  const profileSummary = profileSummaryQuery.data;
+  const profileSummary =
+    screenshotData?.profileSummary ?? profileSummaryQuery.data;
   const displayName =
     profileSummary?.profile?.displayName ?? getFallbackDisplayName(user?.email);
   const avatarUrl = profileSummary?.profile?.avatarUrl;
-  const homeStats = homeStatsQuery.data;
+  const homeStats = screenshotData?.homeStats ?? homeStatsQuery.data;
   const holdStats = deriveHoldStats(homeStats?.dailyActivity, todayLocalDate);
   const advancedStatsLocked =
-    !advancedStatsAccess.allowed && !advancedStatsAccess.isLoading;
+    screenshotData == null &&
+    !advancedStatsAccess.allowed &&
+    !advancedStatsAccess.isLoading;
 
   const openTrendPaywall = useCallback(() => {
     trackFeatureGateHit({
@@ -181,19 +188,35 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
       >
         <AppTopBar
           showAvatar={false}
+          showStreak={screenshotData == null}
           rightSlot={<View style={styles.topBarActionPlaceholder} />}
+          leftSlot={
+            screenshotData == null ? undefined : (
+              <TopBarStreak streakDays={profileSummary?.currentStreak ?? 0} />
+            )
+          }
         />
 
         <View style={styles.heroCardWrap}>
           <ProfileIdentityCard
             displayName={displayName}
             avatarUrl={avatarUrl}
-            isUploading={uploadAvatarMutation.isPending}
-            onChangePhoto={handleChangePhoto}
-            onEditDisplayName={() => {
-              trackProfileAction('profile_name_edit_opened');
-              setEditingDisplayName(true);
-            }}
+            isUploading={
+              screenshotData == null && uploadAvatarMutation.isPending
+            }
+            onChangePhoto={
+              screenshotData == null
+                ? handleChangePhoto
+                : ignoreScreenshotIdentityAction
+            }
+            onEditDisplayName={
+              screenshotData == null
+                ? () => {
+                    trackProfileAction('profile_name_edit_opened');
+                    setEditingDisplayName(true);
+                  }
+                : ignoreScreenshotIdentityAction
+            }
           />
         </View>
 
@@ -282,9 +305,11 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
       </GlassIconButton>
 
       <ProfileDisplayNameEditorDialog
-        visible={editingDisplayName}
+        visible={screenshotData == null && editingDisplayName}
         displayName={displayName}
-        isSaving={updateDisplayNameMutation.isPending}
+        isSaving={
+          screenshotData == null && updateDisplayNameMutation.isPending
+        }
         onCancel={() => {
           setEditingDisplayName(false);
         }}

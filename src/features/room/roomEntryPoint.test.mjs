@@ -47,6 +47,16 @@ test('Home owns one room claim graph and passes explicit room props', () => {
   assert.match(startDaily, /dailies: StartDailyTechniques/);
 });
 
+test('Home screenshot data requires both development and explicit opt-in', () => {
+  const fixture = read('features/home/devHomeScreenshotData.ts');
+
+  assert.match(fixture, /!__DEV__/);
+  assert.match(
+    fixture,
+    /process\.env\.EXPO_PUBLIC_HOME_SCREENSHOT_DATA !== 'true'/,
+  );
+});
+
 test('a claimable piece has a route to the picker', () => {
   const card = read('features/room/RoomProgressCard.tsx');
   assert.match(card, /progress\.canClaim/);

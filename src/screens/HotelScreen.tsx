@@ -7,6 +7,7 @@ import Icon from '../components/common/icons/Icon';
 import PyramidCanvas from '../features/room/PyramidCanvas';
 import type { PyramidRoom } from '../features/room/PyramidCanvas';
 import { useHotelOverride } from '../features/room/devHotelOverride';
+import { getDevHotelScreenshotData } from '../features/home/devHomeScreenshotData';
 import { toFrameHue, toPicks } from '../features/room/roomPicks';
 import { roomShellPolys } from '../features/room/roomShells';
 import { useRoomsQuery } from '../queries/room/useRoomsQuery';
@@ -61,9 +62,10 @@ const BACK_ICON_SIZE = 20;
 
 interface HotelContentProps {
   onBack: () => void;
+  screenshotRooms?: PyramidRoom[] | null;
 }
 
-function HotelContent({ onBack }: HotelContentProps) {
+function HotelContent({ onBack, screenshotRooms }: HotelContentProps) {
   const insets = useSafeAreaInsets();
   const userId = useAuthStore((state) => state.user?.id ?? null);
   const roomsQuery = useRoomsQuery(userId);
@@ -82,12 +84,13 @@ function HotelContent({ onBack }: HotelContentProps) {
     [rooms],
   );
 
-  const resolved = override ?? realRooms;
+  const resolved = override ?? screenshotRooms ?? realRooms;
   // The hotel always has a floor 1 — except when the read failed, where an
   // empty room would claim the user has none rather than that we do not know.
   const pyramidRooms =
     resolved.length === 0 && !roomsQuery.isError ? FIRST_ROOM : resolved;
-  const waiting = roomsQuery.isPending && override == null;
+  const waiting =
+    roomsQuery.isPending && override == null && screenshotRooms == null;
 
   return (
     <>
@@ -113,7 +116,10 @@ function HotelContent({ onBack }: HotelContentProps) {
 export default function HotelScreen({ navigation }: HotelScreenProps) {
   return (
     <SafeAreaView style={styles.screen} edges={{ bottom: true }}>
-      <HotelContent onBack={() => navigation.goBack()} />
+      <HotelContent
+        onBack={() => navigation.goBack()}
+        screenshotRooms={getDevHotelScreenshotData()}
+      />
     </SafeAreaView>
   );
 }
