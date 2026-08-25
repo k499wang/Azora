@@ -182,10 +182,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing.lg,
-    gap: spacing.lg,
+    gap: spacing.sm,
   },
   heroCompact: {
-    gap: spacing.md,
+    gap: spacing.xs,
   },
   copy: {
     alignItems: 'center',
