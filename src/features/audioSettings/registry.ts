@@ -1,9 +1,6 @@
-import { chimeCategory } from './catalog/chimes';
 import type { AudioCategory, AudioCategoryId, AudioOption } from './types';
 
-export const audioCategories: AudioCategory[] = [
-  chimeCategory,
-];
+export const audioCategories: AudioCategory[] = [];
 
 const categoriesById = new Map<AudioCategoryId, AudioCategory>(
   audioCategories.map((c) => [c.id, c]),

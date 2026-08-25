@@ -122,7 +122,6 @@ export function useBreathPhaseAudio(
   const { active = true } = options;
   const { preferences } = useAudioPreferences();
   const voiceOption = getAudioOption('voice', preferences.voice);
-  // Voice cues must not fall back to chime assets; chimes are owned by usePhaseChime.
   const inhaleAsset =
     voiceOption?.phaseAssets?.inhale ?? voiceOption?.asset ?? null;
   const exhaleAsset =

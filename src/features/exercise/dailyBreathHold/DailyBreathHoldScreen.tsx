@@ -32,7 +32,6 @@ import type { DailyExerciseScreenProps } from '../../../app/navigation';
 import { isHapticsEnabled } from '../../../services/preferences/hapticsPreference';
 import { useBreathPhaseAudio } from '../shared/hooks/useBreathPhaseAudio';
 import { useAmbientAudio } from '../shared/hooks/useAmbientAudio';
-import { usePhaseChime } from '../shared/hooks/usePhaseChime';
 import {
   AudioSettingsSheet,
   ThemePickerSection,
@@ -203,7 +202,6 @@ export default function DailyBreathHoldScreen({
   useAmbientAudio({
     active: breathHoldAudioActive,
   });
-  usePhaseChime(phase, { active: breathHoldAudioActive });
 
   useEffect(() => {
     let cancelled = false;

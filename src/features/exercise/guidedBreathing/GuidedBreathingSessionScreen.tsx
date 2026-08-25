@@ -20,7 +20,6 @@ import { useCancellableFlow } from '../shared/hooks/useCancellableFlow';
 import { useLivePulse } from '../../../hooks/useLivePulse';
 import { useBreathPhaseAudio } from '../shared/hooks/useBreathPhaseAudio';
 import { useAmbientAudio } from '../shared/hooks/useAmbientAudio';
-import { usePhaseChime } from '../shared/hooks/usePhaseChime';
 import { useHeartRatePlacementFlow } from '../shared/hooks/useHeartRatePlacementFlow';
 import { useBreathingSessionLeadIn } from '../shared/hooks/useBreathingSessionLeadIn';
 import { useHeartRateStallHelp } from '../../../hooks/useHeartRateStallHelp';
@@ -156,7 +155,6 @@ export default function GuidedBreathingSessionScreen({
   useAmbientAudio({
     active: breathingAudioActive,
   });
-  usePhaseChime(phase, { active: breathingAudioActive });
 
   const pulse = useLivePulse({ initialProfile: 'guidedBreathing' });
   const {
