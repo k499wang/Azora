@@ -64,11 +64,6 @@ module.exports = {
     icon: './assets/icon-mochi-v3.png',
     userInterfaceStyle: 'light',
     newArchEnabled: true,
-    splash: {
-      image: './assets/splash-mochi-v2.png',
-      resizeMode: 'contain',
-      backgroundColor: '#FFFFFF',
-    },
     ios: {
       supportsTablet: true,
       bundleIdentifier: 'com.azora.breath',
@@ -274,6 +269,17 @@ module.exports = {
       favicon: './assets/favicon.png',
     },
     plugins: [
+      [
+        'expo-splash-screen',
+        {
+          image: './assets/splash-mochi-v2.png',
+          // The source includes transparent padding; this preserves its current
+          // on-screen size while moving off the cached legacy launch asset.
+          imageWidth: 393,
+          resizeMode: 'contain',
+          backgroundColor: '#FFFFFF',
+        },
+      ],
       'expo-font',
       'expo-asset',
       'react-native-vision-camera',
