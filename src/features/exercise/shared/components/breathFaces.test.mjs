@@ -26,6 +26,28 @@ test('the inhale keeps the mouth sealed', () => {
   assert.ok(Math.abs(mouthBottom) < 1, 'inhale mouth is open at the bottom');
 });
 
+test('only the resting face uses tall rounded eyes', () => {
+  const { resting, ...breathingFaces } = FACE_SHAPES;
+  assert.equal(resting.eyeRoundness, 1);
+  assert.equal(resting.eyeTop, -resting.eyeBottom);
+  assert.ok(resting.eyeBottom > resting.eyeWidth);
+
+  const squints = {
+    inhale: [6, -5, -1.6],
+    holdIn: [6.6, -6.2, -2.8],
+    exhale: [6, -4.2, -1.2],
+    holdOut: [5.6, -3.6, -1.1],
+  };
+  for (const [face, shape] of Object.entries(breathingFaces)) {
+    assert.equal(shape.eyeRoundness, 0, `${face} eyes are rounded`);
+    assert.deepEqual(
+      [shape.eyeWidth, shape.eyeTop, shape.eyeBottom],
+      squints[face],
+      `${face} squint geometry changed`,
+    );
+  }
+});
+
 test('a mouth is never pressed and blown open at once', () => {
   for (const [face, shape] of Object.entries(FACE_SHAPES)) {
     assert.ok(
@@ -39,13 +61,12 @@ test('every part of a face morphs', () => {
   // A field added to FaceShape but missed in lerpFace snaps between phases
   // instead of travelling, and nothing else would catch it.
   const from = FACE_SHAPES.inhale;
-  const to = FACE_SHAPES.exhale;
+  const to = FACE_SHAPES.resting;
   const mid = lerpFace(from, to, 0.5);
 
   for (const key of Object.keys(from)) {
-    assert.equal(
-      mid[key],
-      (from[key] + to[key]) / 2,
+    assert.ok(
+      Math.abs(mid[key] - (from[key] + to[key]) / 2) < 1e-12,
       `lerpFace does not carry ${key}`,
     );
   }

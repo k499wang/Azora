@@ -23,11 +23,13 @@ import {
   EYE_Y,
   FACE_SHAPES,
   MOUTH_Y,
+  eyePath,
   lensPath,
   lerpFace,
   type BreathFace,
 } from './breathFaces';
 import type { ExerciseDarkTheme } from '../../../../theme/exerciseDarkThemes';
+import { colors } from '../../../../theme/colors';
 
 const AnimatedPath = Animated.createAnimatedComponent(Path);
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
@@ -294,22 +296,24 @@ const BreathingCompanion = forwardRef<BreathingCircleRef, BreathingCompanionProp
     }));
 
     const leftEyeProps = useAnimatedProps(() => ({
-      d: lensPath(
+      d: eyePath(
         EYE_LEFT_X,
         EYE_Y,
         shape.value.eyeWidth,
         shape.value.eyeTop,
         shape.value.eyeBottom,
+        shape.value.eyeRoundness,
       ),
     }));
 
     const rightEyeProps = useAnimatedProps(() => ({
-      d: lensPath(
+      d: eyePath(
         EYE_RIGHT_X,
         EYE_Y,
         shape.value.eyeWidth,
         shape.value.eyeTop,
         shape.value.eyeBottom,
+        shape.value.eyeRoundness,
       ),
     }));
 
@@ -337,7 +341,7 @@ const BreathingCompanion = forwardRef<BreathingCircleRef, BreathingCompanionProp
 
     const cheekProps = useAnimatedProps(() => ({
       r: 4 + 3 * shape.value.cheek,
-      fillOpacity: 0.3 * shape.value.cheek,
+      fillOpacity: 0.38 + 0.42 * shape.value.cheek,
     }));
 
     const stageBox = {
@@ -398,14 +402,14 @@ const BreathingCompanion = forwardRef<BreathingCircleRef, BreathingCompanionProp
                   cx={CHEEK_LEFT_X}
                   cy={CHEEK_Y}
                   r={4}
-                  fill={ink}
+                  fill={colors.roomBlob.cheek}
                   animatedProps={cheekProps}
                 />
                 <AnimatedCircle
                   cx={CHEEK_RIGHT_X}
                   cy={CHEEK_Y}
                   r={4}
-                  fill={ink}
+                  fill={colors.roomBlob.cheek}
                   animatedProps={cheekProps}
                 />
                 <AnimatedPath fill={ink} animatedProps={leftEyeProps} />

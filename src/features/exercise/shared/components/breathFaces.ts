@@ -19,6 +19,8 @@ export interface FaceShape {
   eyeWidth: number;
   eyeTop: number;
   eyeBottom: number;
+  /** 0 = the breathing-phase lens, 1 = a true resting ellipse. */
+  eyeRoundness: number;
   /** 0 = no cheek, 1 = fully flushed and puffed. */
   cheek: number;
   mouthWidth: number;
@@ -52,6 +54,7 @@ export const FACE_SHAPES: Record<BreathFace, FaceShape> = {
     eyeWidth: 6,
     eyeTop: -5,
     eyeBottom: -1.6,
+    eyeRoundness: 0,
     cheek: 0.12,
     mouthWidth: 5,
     mouthTop: -0.75,
@@ -65,6 +68,7 @@ export const FACE_SHAPES: Record<BreathFace, FaceShape> = {
     eyeWidth: 6.6,
     eyeTop: -6.2,
     eyeBottom: -2.8,
+    eyeRoundness: 0,
     cheek: 1,
     mouthWidth: 7,
     mouthTop: -0.8,
@@ -78,6 +82,7 @@ export const FACE_SHAPES: Record<BreathFace, FaceShape> = {
     eyeWidth: 6,
     eyeTop: -4.2,
     eyeBottom: -1.2,
+    eyeRoundness: 0,
     cheek: 0.25,
     mouthWidth: 4.8,
     mouthTop: -4.2,
@@ -90,6 +95,7 @@ export const FACE_SHAPES: Record<BreathFace, FaceShape> = {
     eyeWidth: 5.6,
     eyeTop: -3.6,
     eyeBottom: -1.1,
+    eyeRoundness: 0,
     cheek: 0,
     mouthWidth: 4.6,
     mouthTop: -0.9,
@@ -99,9 +105,10 @@ export const FACE_SHAPES: Record<BreathFace, FaceShape> = {
   },
   // Between sessions: eyes open, gentle smile.
   resting: {
-    eyeWidth: 5,
-    eyeTop: -5,
-    eyeBottom: 5,
+    eyeWidth: 4.2,
+    eyeTop: -6.4,
+    eyeBottom: 6.4,
+    eyeRoundness: 1,
     cheek: 0,
     mouthWidth: 9,
     mouthTop: 0.6,
@@ -110,6 +117,77 @@ export const FACE_SHAPES: Record<BreathFace, FaceShape> = {
     mouthPress: 0,
   },
 };
+
+const ELLIPSE_KAPPA = 0.5522848;
+
+/**
+ * Four cubics with matching topology at both ends of the morph. At roundness 0,
+ * each half is the exact cubic conversion of half of `lensPath`'s quadratic.
+ * At roundness 1, the controls are the standard kappa ellipse approximation.
+ */
+export function eyePath(
+  cx: number,
+  cy: number,
+  width: number,
+  top: number,
+  bottom: number,
+  roundness: number,
+): string {
+  'worklet';
+  const mix = (from: number, to: number) => from + (to - from) * roundness;
+  const centerY = cy + (top + bottom) / 2;
+  const radiusY = (bottom - top) / 2;
+  const left = cx - width;
+  const right = cx + width;
+  const topY = cy + top;
+  const bottomY = cy + bottom;
+  const sideY = mix(cy, centerY);
+
+  const topLeftControl1X = mix(cx - (2 * width) / 3, left);
+  const topLeftControl1Y = mix(
+    cy + (2 * top) / 3,
+    centerY - ELLIPSE_KAPPA * radiusY,
+  );
+  const topLeftControl2X = mix(cx - width / 3, cx - ELLIPSE_KAPPA * width);
+
+  const topRightControl1X = mix(
+    cx + width / 3,
+    cx + ELLIPSE_KAPPA * width,
+  );
+  const topRightControl2X = mix(cx + (2 * width) / 3, right);
+  const topRightControl2Y = mix(
+    cy + (2 * top) / 3,
+    centerY - ELLIPSE_KAPPA * radiusY,
+  );
+
+  const bottomRightControl1X = mix(cx + (2 * width) / 3, right);
+  const bottomRightControl1Y = mix(
+    cy + (2 * bottom) / 3,
+    centerY + ELLIPSE_KAPPA * radiusY,
+  );
+  const bottomRightControl2X = mix(
+    cx + width / 3,
+    cx + ELLIPSE_KAPPA * width,
+  );
+
+  const bottomLeftControl1X = mix(
+    cx - width / 3,
+    cx - ELLIPSE_KAPPA * width,
+  );
+  const bottomLeftControl2X = mix(cx - (2 * width) / 3, left);
+  const bottomLeftControl2Y = mix(
+    cy + (2 * bottom) / 3,
+    centerY + ELLIPSE_KAPPA * radiusY,
+  );
+
+  return (
+    `M ${left} ${sideY} ` +
+    `C ${topLeftControl1X} ${topLeftControl1Y} ${topLeftControl2X} ${topY} ${cx} ${topY} ` +
+    `C ${topRightControl1X} ${topY} ${topRightControl2X} ${topRightControl2Y} ${right} ${sideY} ` +
+    `C ${bottomRightControl1X} ${bottomRightControl1Y} ${bottomRightControl2X} ${bottomY} ${cx} ${bottomY} ` +
+    `C ${bottomLeftControl1X} ${bottomY} ${bottomLeftControl2X} ${bottomLeftControl2Y} ${left} ${sideY} Z`
+  );
+}
 
 /**
  * Two quadratics meeting at the corners. The control points are doubled because
@@ -136,6 +214,7 @@ export function lerpFace(from: FaceShape, to: FaceShape, t: number): FaceShape {
     eyeWidth: mix(from.eyeWidth, to.eyeWidth),
     eyeTop: mix(from.eyeTop, to.eyeTop),
     eyeBottom: mix(from.eyeBottom, to.eyeBottom),
+    eyeRoundness: mix(from.eyeRoundness, to.eyeRoundness),
     cheek: mix(from.cheek, to.cheek),
     mouthWidth: mix(from.mouthWidth, to.mouthWidth),
     mouthTop: mix(from.mouthTop, to.mouthTop),
