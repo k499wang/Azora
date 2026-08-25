@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Image } from 'expo-image';
-import GlassIconButton, { GLASS_ICON_BUTTON_SIZE } from './GlassIconButton';
-import Icon from './icons/Icon';
+import { GLASS_ICON_BUTTON_SIZE } from './GlassIconButton';
+import { DEFAULT_PROFILE_AVATAR_SOURCE } from '../../data/profileAssets';
 import { card } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { pressable } from '../../theme/pressable';
@@ -17,14 +17,6 @@ interface TopBarAvatarProps {
 export default function TopBarAvatar({ avatarUrl, onPress }: TopBarAvatarProps) {
   const normalizedAvatarUrl = avatarUrl?.trim() || null;
 
-  if (normalizedAvatarUrl == null) {
-    return (
-      <GlassIconButton accessibilityLabel="Open profile" onPress={onPress}>
-        <Icon name="profile" size={20} color={colors.text.secondary} />
-      </GlassIconButton>
-    );
-  }
-
   return (
     <Pressable
       accessibilityRole="button"
@@ -38,7 +30,11 @@ export default function TopBarAvatar({ avatarUrl, onPress }: TopBarAvatarProps) 
     >
       <View style={styles.clip}>
         <Image
-          source={{ uri: normalizedAvatarUrl }}
+          source={
+            normalizedAvatarUrl
+              ? { uri: normalizedAvatarUrl }
+              : DEFAULT_PROFILE_AVATAR_SOURCE
+          }
           style={styles.image}
           contentFit="cover"
           cachePolicy="memory-disk"

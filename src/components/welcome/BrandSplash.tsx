@@ -1,12 +1,12 @@
 import { Image, StyleSheet, View } from 'react-native';
 import { colors } from '../../theme/colors';
 
-const LOCKUP = require('../../../assets/splash-lockup.png');
+const SPLASH_IMAGE = require('../../../assets/splash-mochi-v2.png');
 
 export function BrandSplash() {
   return (
     <View style={styles.root}>
-      <Image source={LOCKUP} style={styles.lockup} resizeMode="contain" />
+      <Image source={SPLASH_IMAGE} style={styles.image} resizeMode="contain" />
     </View>
   );
 }
@@ -16,7 +16,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.neutral[0],
   },
-  lockup: {
+  image: {
     flex: 1,
     width: '100%',
     height: '100%',
