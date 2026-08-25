@@ -10,7 +10,6 @@ const STORAGE_KEY = 'settings:audio_v1';
 const DEFAULT_PREFERENCES: AudioPreferences = {
   voice:  null,
   ambient:  null,
-  chime: 'singingBowl',
   ambientVolume: 0.5,
   themeId: EXERCISE_DARK_THEMES[0].id,
 };
@@ -34,7 +33,6 @@ function sanitize(raw: unknown): AudioPreferences {
     // Voice cues and background sound are always off and cannot be re-enabled.
     voice: null,
     ambient: null,
-    chime: typeof r.chime === 'string' || r.chime === null ? r.chime : null,
     ambientVolume:
       typeof r.ambientVolume === 'number' &&
       r.ambientVolume >= 0 &&

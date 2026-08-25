@@ -1,4 +1,4 @@
-export type AudioCategoryId = 'voice' | 'ambient' | 'chime';
+export type AudioCategoryId = 'voice' | 'ambient';
 
 export interface AudioOption {
   id: string;
@@ -30,7 +30,6 @@ import type { ExerciseDarkTheme } from '../../theme/exerciseDarkThemes';
 export interface AudioPreferences {
   voice: string | null;
   ambient: string | null;
-  chime: string | null;
   ambientVolume: number;
   themeId: ExerciseDarkTheme['id'];
 }

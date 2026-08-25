@@ -13,7 +13,7 @@ import type { OnboardingOptionIconName } from './OnboardingOptionIcon';
 const GLYPH_SIZE = 28;
 const GLYPH_COLUMN = 40;
 /** Shallower than `ChunkyButton`'s lip: a row is a choice, not the action. */
-const LIP_DEPTH = 2;
+const LIP_DEPTH = 1;
 
 export interface OnboardingOption<Id extends string> {
   id: Id;
