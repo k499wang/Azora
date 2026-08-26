@@ -52,7 +52,7 @@ export default function BreathHoldBenefitsScreen({
 }: BreathHoldBenefitsScreenProps) {
   return (
     <OnboardingScreenLayout
-      title="Why Azorians run The Azora Protocol."
+      title="Why Azorians do breathholds."
       subtitle="A calm, guided session to establish your personal baseline."
       progress={stepIndex / stepCount}
       onBack={onBack}

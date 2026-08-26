@@ -3,6 +3,7 @@ import { Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { isHapticsEnabled } from '../../services/preferences/hapticsPreference';
+import { pauseSessionReplay } from '../../services/analytics/sessionReplay';
 import { card, radius } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
@@ -61,6 +62,7 @@ export default function OnboardingOptionList<Id extends string>({
 
   useEffect(() => {
     if (!animate) return;
+    const resumeReplay = pauseSessionReplay();
     const animation = Animated.stagger(
       45,
       rowAnims.map((anim) =>
@@ -73,8 +75,11 @@ export default function OnboardingOptionList<Id extends string>({
         }),
       ),
     );
-    animation.start();
-    return () => animation.stop();
+    animation.start(resumeReplay);
+    return () => {
+      animation.stop();
+      resumeReplay();
+    };
   }, [animate, rowAnims]);
 
   const handlePress = (id: Id) => {
