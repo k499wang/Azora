@@ -52,12 +52,12 @@ export default function BreathHoldBenefitsScreen({
 }: BreathHoldBenefitsScreenProps) {
   return (
     <OnboardingScreenLayout
-      title="Why Azorians practice breath holds."
+      title="Why Azorians run the Azora Protocol."
       subtitle="A calm, guided session to establish your personal baseline."
       progress={stepIndex / stepCount}
       onBack={onBack}
       onSkip={onSkip}
-      footer={<OnboardingPrimaryButton label="Begin my breath hold" onPress={onContinue} />}
+      footer={<OnboardingPrimaryButton label="Begin my first Protocol" onPress={onContinue} />}
     >
       <View style={styles.list}>
         {BENEFITS.map((benefit, index) => (

@@ -118,7 +118,7 @@ export default function DecoratePanel({
       },
       {
         id: 'breathHold',
-        label: 'Daily breath hold',
+        label: 'Azora Protocol',
         done: state.breathHoldDone,
       },
     ];

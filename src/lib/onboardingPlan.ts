@@ -299,7 +299,7 @@ export function buildOnboardingPlan(inputs: PlanInputs): OnboardingPlan {
     },
     {
       id: 'checkIn',
-      title: 'Breath-hold check-in',
+      title: 'Azora Protocol',
       techniqueId: null,
       minutesFromMidnight: checkInAt,
       minutes: CHECK_IN_MINUTES,

@@ -48,7 +48,7 @@ const SEARCH_FILTERS: ReadonlyArray<{
   { id: 'focus', label: 'Focus' },
   { id: 'energy', label: 'Energy' },
   { id: 'balance', label: 'Balance' },
-  { id: 'breath-hold', label: 'Breath Hold' },
+  { id: 'breath-hold', label: 'Protocol' },
 ];
 
 function formatHoldTime(seconds: number): string {
@@ -245,15 +245,15 @@ export default function ExerciseSearchScreen({
           <>
             {dailyMatches ? (
               <ExerciseSearchResultRow
-                title="Azora’s Breathhold Exercise"
+                title="Azora Protocol"
                 metadata={dailyMetadata}
                 hue={BREATH_HOLD_STYLE.hue}
                 glyph={BREATH_HOLD_STYLE.glyph}
-                accessibilityLabel={`Azora’s Breathhold Exercise, ${dailyMetadata}`}
+                accessibilityLabel={`Azora Protocol, ${dailyMetadata}`}
                 accessibilityHint={
                   !dailyExerciseAccess.allowed && !dailyExerciseAccess.isLoading
                     ? 'Opens the Pro upgrade screen'
-                    : 'Starts the daily breath hold'
+                    : 'Starts the Azora Protocol'
                 }
                 onPress={startDailyBreathHold}
               />

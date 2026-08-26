@@ -218,7 +218,7 @@ test('daily plan content is generic and specific to each action', () => {
 
   assert.match(session.title, /guided breathing/i);
   assert.match(handPicked.title, /daily reset/i);
-  assert.match(checkIn.title, /breath-hold check-in/i);
+  assert.match(checkIn.title, /azora protocol/i);
   assert.notEqual(session.title, handPicked.title);
   assert.notEqual(handPicked.title, checkIn.title);
   assert.equal(session.data.destination, undefined);

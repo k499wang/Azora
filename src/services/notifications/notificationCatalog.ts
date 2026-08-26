@@ -68,17 +68,17 @@ export const DAILY_REMINDER_DEFINITIONS = [
     kind: 'daily_plan_check_in',
     scheduleActionId: 'checkIn',
     content: {
-      title: 'Time for your breath-hold check-in',
+      title: 'Time for the Azora Protocol',
       body: 'Check in with your breath and see how you feel today.',
       channelId: NOTIFICATION_CHANNELS.dailyReminders,
     },
     defaultEnabled: false,
     onboardingEnabled: true,
     settings: {
-      title: 'Breath-hold check-in',
-      subtitle: 'A reminder to complete your daily check-in.',
+      title: 'Azora Protocol',
+      subtitle: 'A reminder to run your daily Azora Protocol.',
     },
-    onboardingTitle: 'Breath-hold check-in',
+    onboardingTitle: 'Azora Protocol',
   },
 ] as const satisfies readonly DailyReminderDefinitionShape[];
 
