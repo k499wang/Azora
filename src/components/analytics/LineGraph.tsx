@@ -156,7 +156,7 @@ export default function LineGraph({
           <View style={[styles.emptyChart, { height }]}>
             <Text style={[styles.emptyTitle, { color: labelColor }]}>No holds yet</Text>
             <Text style={[styles.emptyBody, { color: mutedLabelColor }]}>
-              Complete your first breath hold to start tracking your progress.
+              Complete your first Azora Protocol to start tracking your progress.
             </Text>
           </View>
         ) : chart ? (

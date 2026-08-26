@@ -19,8 +19,24 @@ implementation detail, not pitch.
   `FeatureKey.DailyExercise`, `mode: 'exercise'` flags, `src/features/exercise/`
   folder names, and dev-facing error strings. Old "exercise" search aliases kept
   in `exerciseSearch.ts` (users still type them) with "reset" aliases added.
-- **"Azora Protocol"** is the trademarked name for the practice. Zero occurrences
-  in the codebase today — net-new.
+- **"Azora Protocol" is the name of the daily breath hold**, decided 2026-08-25 —
+  not an umbrella term. Trademarks stick to concrete rituals, not abstractions
+  ("the Wim Hof Method", "Whoop Strain"): the daily breath hold is the one
+  proprietary, once-a-day, said-out-loud thing in the app, so it hosts the mark.
+  Card titles read "Azora Protocol"; sentences read "the Azora Protocol"; the
+  search filter chip reads "Protocol".
+
+  Replaced five inconsistent names: "Daily Breathhold", "Daily Breath Hold",
+  "Azora's Breathhold Exercise", "Start Breath Hold", "breath-hold check-in".
+  Old search aliases kept, "azora protocol"/"protocol" added.
+
+  **Open:** the umbrella concept and the top intensity tier both used to be called
+  "Azora Protocol" and now need different words — or the umbrella gets dropped.
+
+  **Kept as mechanism language** (instruction and scoring explanations, not
+  branding): "hold" wording in `AzoraScoreInfoDialog`, `TodayInsights`,
+  `BPMChart`, `bpmInsight`, `DiagnosisScreen`, `paywallPlanHighlights`, and the
+  "Stop/End breath hold" controls during the act itself.
 
 **Consequence:** the Yaduveer direction is dropped. That plan (AI daily check-in,
 a ten-technique pranayama library with English names, Yaduveer as on-screen coach via
@@ -133,3 +149,9 @@ breath-first. These are naming decisions, not a sweep:
 - **`restingHeartRate.ts`** typical/above bands still say "slow breathing" (the
   `below` band now says "a daily reset"). Users see exactly one band, so there is no
   visible inconsistency today.
+
+## Dead code found (not deleted — separate call)
+
+- `src/components/home/HeroActionCard.tsx` — no importers.
+- `src/components/exercise/LungAgeInfoDialog.tsx` — no importers; Lung Age was
+  replaced by the Azora Score.

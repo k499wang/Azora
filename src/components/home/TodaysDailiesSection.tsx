@@ -265,7 +265,7 @@ export default function TodaysDailiesSection({
         handPickedTechnique == null ? undefined : onPressHandPickedExercise,
     },
     checkIn: {
-      title: 'Daily Breathhold',
+      title: 'Azora Protocol',
       scheduledTime: breathHoldScheduledTime,
       techniqueMeta: null,
       detailLabel: 'Daily check-in',
