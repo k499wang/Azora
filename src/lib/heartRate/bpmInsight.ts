@@ -409,7 +409,7 @@ export function buildBpmInsight(
       );
     }
     return withShapeInsight(
-      `Your heart rate stayed steady across the breathing graph. ${rangeDesc}. A stable line during guided breathing can be a useful sign that your body tolerated the rhythm smoothly.`,
+      `Your heart rate stayed steady across the breathing graph. ${rangeDesc}. A stable line during a Guided Reset can be a useful sign that your body tolerated the rhythm smoothly.`,
     );
   }
 

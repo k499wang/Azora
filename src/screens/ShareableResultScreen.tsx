@@ -231,7 +231,7 @@ export default function ShareableResultScreen({
           visible
           hue={hue}
           title={celebrationContent.title}
-          subtitle="Azora Protocol"
+          subtitle="The Azora Protocol"
           stats={celebrationContent.stats}
           state={snapshot.state}
           barFrom={snapshot.barFrom}
@@ -320,7 +320,7 @@ export default function ShareableResultScreen({
               emptyChartMessage={
                 heartRateResultStatus === 'insufficient_beats'
                   ? 'Not enough reliable heartbeats were detected during this hold to show heart-rate results.'
-                  : 'Complete your Azora Protocol with heart rate enabled to see your BPM.'
+                  : 'Complete The Azora Protocol with heart rate enabled to see your BPM.'
               }
               insightContext="breath-hold"
             />

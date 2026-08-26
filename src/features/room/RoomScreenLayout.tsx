@@ -1,4 +1,6 @@
 import type { ReactNode } from 'react';
+import { useState } from 'react';
+import { RoomStageBoxProvider } from './roomStageBox';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Text } from '../../components/common/Text';
@@ -30,6 +32,10 @@ import { typography } from '../../theme/typography';
  * The beat between the room settling and the screen speaking over it. Long
  * enough that the piece is seen landing, short enough not to feel stalled.
  */
+/** `stage.marginTop` and the scrolling body's tail, as numbers the maths can use */
+const STAGE_MARGIN_TOP = spacing.lg;
+const SCROLL_TAIL = spacing['5xl'];
+
 const REVEAL_DELAY = stagger.loose * 2;
 
 interface RoomScreenLayoutProps {
@@ -81,6 +87,24 @@ export default function RoomScreenLayout({
       </Rise>
     );
 
+  const [screenHeight, setScreenHeight] = useState(0);
+  const [topHeight, setTopHeight] = useState(0);
+  const [headerHeight, setHeaderHeight] = useState(0);
+  const [trayHeight, setTrayHeight] = useState(0);
+
+  // What is left for the room once the screen has paid for everything else.
+  // Every part of that is measured, so a title that wraps to two lines costs
+  // what it actually costs rather than what a constant guessed it would.
+  const stageBox =
+    screenHeight > 0 && topHeight > 0
+      ? screenHeight -
+        topHeight -
+        headerHeight -
+        trayHeight -
+        STAGE_MARGIN_TOP -
+        (scroll ? SCROLL_TAIL : 0)
+      : null;
+
   const header = enter(<RoomScreenTitle title={title} note={note} />);
 
   const tray =
@@ -96,34 +120,52 @@ export default function RoomScreenLayout({
         );
 
   return (
-    <View style={styles.screen}>
+    <RoomStageBoxProvider height={stageBox}>
+    <View
+      style={styles.screen}
+      onLayout={(e) => setScreenHeight(e.nativeEvent.layout.height)}
+    >
       {/* No bar in the real flow — only the inset it would have cleared, so the
           room sits as high as it can without running under the notch. The lab
           gets a real bar, because it jumps into these screens out of order and
           you need a way back. */}
-      {fromLab ? (
-        <AppTopBar showBack showAvatar={false} showStreak={false} />
-      ) : (
-        <View style={{ height: insets.top }} />
-      )}
+      <View onLayout={(e) => setTopHeight(e.nativeEvent.layout.height)}>
+        {fromLab ? (
+          <AppTopBar showBack showAvatar={false} showStreak={false} />
+        ) : (
+          <View style={{ height: insets.top }} />
+        )}
+      </View>
 
       {scroll ? (
         <ScrollView
           contentContainerStyle={styles.scrollBody}
           showsVerticalScrollIndicator={false}
         >
-          {header}
+          <View onLayout={(e) => setHeaderHeight(e.nativeEvent.layout.height)}>
+            {header}
+          </View>
           {children}
         </ScrollView>
       ) : (
         <>
-          {header}
+          <View onLayout={(e) => setHeaderHeight(e.nativeEvent.layout.height)}>
+            {header}
+          </View>
           <View style={styles.fixedBody}>{children}</View>
         </>
       )}
 
-      {tray == null ? null : <View style={styles.tray}>{tray}</View>}
+      {tray == null ? null : (
+        <View
+          style={styles.tray}
+          onLayout={(e) => setTrayHeight(e.nativeEvent.layout.height)}
+        >
+          {tray}
+        </View>
+      )}
     </View>
+    </RoomStageBoxProvider>
   );
 }
 

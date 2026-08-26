@@ -267,7 +267,7 @@ export default function HeartVariabilityScreen({
           ) : null}
         </View>
         <Text style={styles.xAxisLabel}>
-          Two minutes of Azora’s guided breathing
+          Two minutes of Azora’s Guided Reset
         </Text>
       </View>
     </OnboardingScreenLayout>

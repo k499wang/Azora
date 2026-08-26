@@ -1,5 +1,10 @@
 import { forwardRef, useEffect, type ReactNode } from 'react';
-import { Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
+import {
+  Pressable,
+  StyleSheet,
+  View,
+  useWindowDimensions,
+} from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -10,15 +15,13 @@ import RoomBlob, { type RoomBlobHandle } from '../../features/room/RoomBlob';
 import { ROOM_ASPECT } from '../../features/room/RoomScene';
 import { triggerBounceHaptic } from '../../native/tapHaptics';
 import { duration, easing, travel } from '../../theme/motion';
-import { spacing } from '../../theme/spacing';
+import { getMochiStageWidth } from './mochiStageSize';
 
-const MAX_ROOM_WIDTH = 330;
 /** a beat behind the screen transition, so the room lands into a settled page */
 const ENTER_DELAY_MS = 90;
 
-export function getMochiStageWidth(screenWidth: number): number {
-  return Math.min(screenWidth - spacing.lg * 2, MAX_ROOM_WIDTH);
-}
+export { getMochiStageWidth };
+
 
 interface MochiStageProps {
   /** the room artwork this sizes itself to; must be rendered at `width` */
@@ -43,8 +46,8 @@ const MochiStage = forwardRef<RoomBlobHandle, MochiStageProps>(
     { children, accessibilityLabel, onPress, speech, sad },
     ref,
   ) {
-    const { width: screenWidth } = useWindowDimensions();
-    const width = getMochiStageWidth(screenWidth);
+    const { width: screenWidth, height: screenHeight } = useWindowDimensions();
+    const width = getMochiStageWidth(screenWidth, screenHeight);
 
     // The room arrives rather than appearing. Reanimated, so it runs on the UI
     // thread alongside the blob instead of competing with it for JS frames.

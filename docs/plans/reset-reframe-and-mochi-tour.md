@@ -23,8 +23,10 @@ implementation detail, not pitch.
   not an umbrella term. Trademarks stick to concrete rituals, not abstractions
   ("the Wim Hof Method", "Whoop Strain"): the daily breath hold is the one
   proprietary, once-a-day, said-out-loud thing in the app, so it hosts the mark.
-  Card titles read "Azora Protocol"; sentences read "the Azora Protocol"; the
-  search filter chip reads "Protocol".
+  The name is "The Azora Protocol", article included, in titles and sentences
+  alike. The article drops only where a possessive or quantifier makes it
+  ungrammatical ("your progress on The Azora Protocol"). The search filter chip
+  stays the bare "Protocol".
 
   Replaced five inconsistent names: "Daily Breathhold", "Daily Breath Hold",
   "Azora's Breathhold Exercise", "Start Breath Hold", "breath-hold check-in".
@@ -137,13 +139,16 @@ rect must be re-measured post-transition, not cached from mount.
 
 ---
 
+## The three dailies — settled names
+
+| Daily | Name |
+|---|---|
+| Primary guided session | **Guided Reset** (renamed 2026-08-25) |
+| Complementary pick | **Hand-picked reset** |
+| Daily breath hold | **The Azora Protocol** |
+
 ## Still breathing-forward (needs a naming call)
 
-The copy sweep removed the banned words but left product-surface names that are still
-breath-first. These are naming decisions, not a sweep:
-
-- **"Guided breathing"** — a notification title, a settings row, and an onboarding
-  title in `services/notifications/notificationCatalog.ts`.
 - **"Support my yoga" intent** (`onboarding/data/intentOptions.ts`) — deliberately
   pranayama-framed throughout ("Pranayama is the breath half of yoga").
 - **`restingHeartRate.ts`** typical/above bands still say "slow breathing" (the

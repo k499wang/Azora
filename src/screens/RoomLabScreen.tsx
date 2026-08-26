@@ -4,7 +4,6 @@ import {
   ScrollView,
   StyleSheet,
   View,
-  useWindowDimensions,
 } from 'react-native';
 import { Text } from '../components/common/Text';
 import AppTopBar from '../components/common/AppTopBar';
@@ -13,7 +12,8 @@ import ProgressBar from '../components/common/ProgressBar';
 import SectionHeader from '../components/common/SectionHeader';
 import PlacementReveal from '../features/room/PlacementReveal';
 import RoomReplay from '../features/room/RoomReplay';
-import { ROOM_MAX_WIDTH, getRoomWidth } from '../features/room/roomLayout';
+import { ROOM_MAX_WIDTH } from '../features/room/roomLayout';
+
 import DailyCompleteSheet, {
   type DailyCompleteState,
 } from '../features/room/DailyCompleteSheet';
@@ -53,6 +53,7 @@ import { colors } from '../theme/colors';
 import { margin, padding, spacing } from '../theme/spacing';
 import { fonts, typography } from '../theme/typography';
 import type { RoomLabScreenProps } from '../app/navigation';
+import { useRoomWidth } from '../features/room/roomStageBox';
 
 const SHELL_PREVIEW_WIDTH = 96;
 const BADGE_SIZE = 34;
@@ -282,9 +283,8 @@ const BAR_STEPS = [
  * database, so replaying a placement never spends a real day.
  */
 export default function RoomLabScreen({ navigation }: RoomLabScreenProps) {
-  const { width } = useWindowDimensions();
   const isDev = __DEV__;
-  const roomWidth = getRoomWidth(width);
+  const roomWidth = useRoomWidth();
 
   const [dayIndex, setDayIndex] = useState(0);
   const [optionIndex, setOptionIndex] = useState(0);

@@ -1,10 +1,10 @@
 /**
  * Builds the personalized plan shown at the end of onboarding.
  *
- * The plan is three standing daily commitments — a primary guided breathing
- * session, a complementary hand-picked exercise, and a breath-hold check-in —
- * each at a fixed time. The exercises support the user's goals from different
- * angles, and the check-in is what produces the Day 7 re-test number.
+ * The plan is three standing daily commitments — a primary Guided Reset
+ * session, a complementary hand-picked reset, and The Azora Protocol —
+ * each at a fixed time. The resets support the user's goals from different
+ * angles, and the Protocol is what produces the Day 7 re-test number.
  *
  * Seven days is the whole horizon because the trial is seven days: anything
  * that lands later is invisible to someone deciding whether to keep the app.
@@ -285,7 +285,7 @@ export function buildOnboardingPlan(inputs: PlanInputs): OnboardingPlan {
   const actions = [
     {
       id: 'session',
-      title: 'Guided breathing',
+      title: 'Guided Reset',
       techniqueId: INTENT_TECHNIQUE[intent],
       minutesFromMidnight: sessionAt,
       minutes,
@@ -299,7 +299,7 @@ export function buildOnboardingPlan(inputs: PlanInputs): OnboardingPlan {
     },
     {
       id: 'checkIn',
-      title: 'Azora Protocol',
+      title: 'The Azora Protocol',
       techniqueId: null,
       minutesFromMidnight: checkInAt,
       minutes: CHECK_IN_MINUTES,

@@ -15,9 +15,9 @@ interface HomeRoomProps {
 }
 
 export default function HomeRoom({ room, progress }: HomeRoomProps) {
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
   const blob = useRef<RoomBlobHandle>(null);
-  const roomWidth = getRoomWidth(width);
+  const roomWidth = getRoomWidth(width, height);
 
   return (
     <View style={styles.stage}>

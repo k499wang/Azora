@@ -11,12 +11,13 @@ import {
   toRoomShell,
   type RoomStyle,
 } from '../features/room/roomShells';
-import { getRoomWidth } from '../features/room/roomLayout';
+
 import { useCreateNextRoomMutation } from '../queries/room/useCreateNextRoomMutation';
 import { useCurrentRoomQuery } from '../queries/room/useCurrentRoomQuery';
 import { useAuthStore } from '../stores/authStore';
 import type { NextRoomScreenProps } from '../app/navigation';
 import { returnToHome } from '../app/navigation/returnToHome';
+import { useRoomWidth } from '../features/room/roomStageBox';
 
 /**
  * Picking the room to live in for the next seven days.
@@ -33,7 +34,7 @@ export default function NextRoomScreen({ navigation }: NextRoomScreenProps) {
 
   const room = currentRoom?.room;
   const currentShell = toRoomShell(room?.shell);
-  const roomWidth = getRoomWidth(width);
+  const roomWidth = useRoomWidth();
   const nextFloor = (room?.floor ?? 1) + 1;
 
   // Open on a look they are not already living in, so the next room reads as a

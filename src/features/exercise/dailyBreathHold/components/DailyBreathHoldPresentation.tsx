@@ -49,7 +49,7 @@ export const DAILY_BREATH_HOLD_SETTLE_MS = 500;
 export const DAILY_BREATH_HOLD_LEAD_IN_MS =
   DAILY_BREATH_HOLD_INTRO_DURATION_MS + DAILY_BREATH_HOLD_SETTLE_MS;
 
-const INTRO_TITLE = 'Azora Protocol';
+const INTRO_TITLE = 'The Azora Protocol';
 
 const HEADLINE_AREA_HEIGHT = 104;
 // Sits directly under the glass buttons in the scaffold header. The timer is

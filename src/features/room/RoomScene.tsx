@@ -33,17 +33,14 @@ export type DayKey = 'day1' | 'day2' | 'day3' | 'day4' | 'day5' | 'day6' | 'day7
 export type Picks = Partial<Record<DayKey, string>>;
 export type FrameHue = 'sky' | 'teal' | 'blush';
 
-/** viewBox of the room space: x -168..168, y -194..194 */
-export const VIEW_BOX = '-168 -194 336 388';
-export const VIEW_BOX_WIDTH = 336;
-export const VIEW_BOX_HEIGHT = 388;
+import { ROOM_ASPECT, VIEW_BOX } from './roomGeometry';
 
-/**
- * The scene is taller than it is wide. Callers give a width and the height
- * follows, so the svg box matches the artwork and nothing is letterboxed —
- * rendering into a square leaves ~13% dead width and reads as off-centre.
- */
-export const ROOM_ASPECT = VIEW_BOX_HEIGHT / VIEW_BOX_WIDTH;
+export {
+  ROOM_ASPECT,
+  VIEW_BOX,
+  VIEW_BOX_HEIGHT,
+  VIEW_BOX_WIDTH,
+} from './roomGeometry';
 
 /** walls, floor, planks, corner shading — drawn first */
 export const ROOM_SHELL: Poly[] = [{"p":"0,-180 -155.9,-90 -155.9,90 0,0","f":"#FCF4DE"},{"p":"0,-180 155.9,-90 155.9,90 0,0","f":"#F4E9C8"},{"p":"0,-172 -6.9,-168 -6.9,4 0,0","f":"rgba(58,67,79,.05)"},{"p":"0,-172 6.9,-168 6.9,4 0,0","f":"rgba(58,67,79,.07)"},{"p":"0,0 155.9,90 0,180 -155.9,90","f":"#EBCA92"},{"p":"-31.2,18 124.7,108 123,109 -32.9,19","f":"#DEB979"},{"p":"-62.4,36 93.5,126 91.8,127 -64.1,37","f":"#DEB979"},{"p":"-93.5,54 62.4,144 60.6,145 -95.3,55","f":"#DEB979"},{"p":"-124.7,72 31.2,162 29.4,163 -126.4,73","f":"#DEB979"},{"p":"0,0 6.9,4 -149,94 -155.9,90","f":"rgba(58,67,79,.05)"},{"p":"0,0 155.9,90 149,94 -6.9,4","f":"rgba(58,67,79,.05)"},{"p":"0,-6 -155.9,84 -155.9,90 0,0","f":"#F0E2BC"},{"p":"0,-6 155.9,84 155.9,90 0,0","f":"#EDDDB2"}];

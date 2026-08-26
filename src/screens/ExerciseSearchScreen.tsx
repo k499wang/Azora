@@ -245,15 +245,15 @@ export default function ExerciseSearchScreen({
           <>
             {dailyMatches ? (
               <ExerciseSearchResultRow
-                title="Azora Protocol"
+                title="The Azora Protocol"
                 metadata={dailyMetadata}
                 hue={BREATH_HOLD_STYLE.hue}
                 glyph={BREATH_HOLD_STYLE.glyph}
-                accessibilityLabel={`Azora Protocol, ${dailyMetadata}`}
+                accessibilityLabel={`The Azora Protocol, ${dailyMetadata}`}
                 accessibilityHint={
                   !dailyExerciseAccess.allowed && !dailyExerciseAccess.isLoading
                     ? 'Opens the Pro upgrade screen'
-                    : 'Starts the Azora Protocol'
+                    : 'Starts The Azora Protocol'
                 }
                 onPress={startDailyBreathHold}
               />

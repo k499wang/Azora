@@ -1,2 +1,2 @@
-/** guided breathing, hand-picked breathing, and daily breath hold */
+/** Guided Reset, hand-picked reset, and The Azora Protocol */
 export const DAILIES_PER_DAY = 3;

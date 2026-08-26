@@ -63,6 +63,9 @@ const HALF_D = 90;
  */
 const WALK = { depth: 1.2, side: -0.33, rDepth: 0.19, rSide: 0.18 };
 
+/** the room width the walk ellipse above was drawn for; narrower rooms tighten it */
+const WANDER_FULL_WIDTH = 330;
+
 /** floor units per second, and the shortest trip worth taking */
 const SPEED = 0.12;
 const MIN_TRIP = 0.19;
@@ -92,10 +95,9 @@ const CHEEK_TOP = 25.5;
 const SPARKLE = 17;
 
 /**
- * The speech bubble's *position* is in viewBox units like everything else here,
- * so it tracks the blob. Its box and type are not: text scaled by a fractional
- * factor lands on half-pixels and renders soft, and one word does not need to
- * shrink on a small phone.
+ * The speech bubble is in viewBox units like everything else here, so it tracks
+ * the blob and shrinks with the room. Its type is rounded to whole pixels on the
+ * way: a fractional font size lands glyphs on half pixels and renders soft.
  */
 const BUBBLE_W = 88;
 const BUBBLE_H = 40;
@@ -144,6 +146,13 @@ const RoomBlob = forwardRef<RoomBlobHandle, Props>(function RoomBlob(
   ref,
 ) {
   const u = width / VIEW_BOX_WIDTH;
+  /**
+   * A small room gets a calmer resident. Everything here scales by `u`, so a
+   * narrow room already shrinks the blob's steps in absolute terms — but the
+   * wander stays just as wide *relative* to the artwork, which is what reads as
+   * restless on a short phone. Tightening the ellipse itself settles it.
+   */
+  const wander = Math.min(1, width / WANDER_FULL_WIDTH);
   const reducedMotion = useReducedMotion();
 
   const depth = useSharedValue(WALK.depth);
@@ -201,9 +210,9 @@ const RoomBlob = forwardRef<RoomBlobHandle, Props>(function RoomBlob(
         for (let attempt = 0; attempt < 8; attempt += 1) {
           const angle = Math.random() * Math.PI * 2;
           const radius = Math.sqrt(Math.random());
-          const d = WALK.depth + Math.cos(angle) * WALK.rDepth * radius;
-          const s = WALK.side + Math.sin(angle) * WALK.rSide * radius;
-          if (Math.hypot(d - depth.value, s - side.value) > MIN_TRIP) {
+          const d = WALK.depth + Math.cos(angle) * WALK.rDepth * wander * radius;
+          const s = WALK.side + Math.sin(angle) * WALK.rSide * wander * radius;
+          if (Math.hypot(d - depth.value, s - side.value) > MIN_TRIP * wander) {
             targetDepth.value = d;
             targetSide.value = s;
             break;
@@ -581,9 +590,9 @@ function createStyles(u: number) {
     // an unrasterised shadow makes the compositor redraw it each time — which
     // is the stutter, and it softens the edge into the bargain. A hairline
     // border separates it from the wall for free.
-    // The container carries position only. Its box and its type are in whole
-    // pixels and are not scaled by `u`: a fractional font size lands glyphs on
-    // half pixels, and one word does not need to shrink on a small phone.
+    // The container carries position only. Its box and its type scale with the
+    // room, both rounded to whole pixels: a fractional font size lands glyphs on
+    // half pixels, and a pill that shrank while its text did not used to overflow.
     bubble: {
       position: 'absolute',
       left: px((-BUBBLE_W / 2) * u),
@@ -607,8 +616,8 @@ function createStyles(u: number) {
     bubbleText: {
       ...typography.label.small,
       fontFamily: fonts.semibold,
-      fontSize: BUBBLE_FONT,
-      lineHeight: BUBBLE_LINE,
+      fontSize: Math.round(BUBBLE_FONT * u),
+      lineHeight: Math.round(BUBBLE_LINE * u),
       color: colors.text.primary,
     },
     // a square rotated onto its corner, tucked under the bubble so only the
