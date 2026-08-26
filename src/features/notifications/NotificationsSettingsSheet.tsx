@@ -133,7 +133,7 @@ export default function NotificationsSettingsSheet({
       visible={visible}
       onClose={onClose}
       title="Notifications"
-      subtitle="Choose when Azora reminds you about each daily exercise."
+      subtitle="Choose when Azora reminds you about each daily reset."
     >
       {preferences == null || schedule == null ? (
         hasInitialLoadError ? (

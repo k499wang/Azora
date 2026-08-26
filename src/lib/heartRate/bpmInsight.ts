@@ -297,7 +297,7 @@ export function buildBpmLockedInsightPlaceholder(
       const buildPlaceholder = TECHNIQUE_RESPONSE_PLACEHOLDER[breathingTechniqueProfile.response];
       return buildPlaceholder(breathingTechniqueProfile.name);
     }
-    return 'Your breathing-session graph can show whether this exercise tends to settle, raise, stabilize, or rhythmically vary your heart rate across repeated sessions.';
+    return 'Your breathing-session graph can show whether this reset tends to settle, raise, stabilize, or rhythmically vary your heart rate across repeated sessions.';
   }
 
   return "Your resting heart rate is tracking slightly below your weekly average, which typically signals good cardiovascular recovery. Today's peak of 112 bpm occurred during your afternoon session — well within your normal exertion range. Over the past 7 days, your recovery windows have been shortening, suggesting your body is adapting positively to recent activity.";
@@ -385,7 +385,7 @@ export function buildBpmInsight(
 
     if (drop == null) {
       return withShapeInsight(
-        `${rangeDesc}. Add a few more heart-rate-enabled sessions to see whether this exercise usually settles, raises, or stabilizes your pulse.`,
+        `${rangeDesc}. Add a few more heart-rate-enabled sessions to see whether this reset usually settles, raises, or stabilizes your pulse.`,
       );
     }
     if (drop >= 10) {
@@ -395,7 +395,7 @@ export function buildBpmInsight(
     }
     if (drop >= 4) {
       return withShapeInsight(
-        `Your heart rate eased by ${drop} bpm across the breathing graph. ${rangeDesc}. That suggests the exercise helped nudge your nervous system toward a calmer state.`,
+        `Your heart rate eased by ${drop} bpm across the breathing graph. ${rangeDesc}. That suggests the reset helped nudge your nervous system toward a calmer state.`,
       );
     }
     if (drop <= -10) {

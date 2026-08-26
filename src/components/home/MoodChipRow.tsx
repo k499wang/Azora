@@ -38,7 +38,7 @@ export default function MoodChipRow() {
           onPress={() => handlePress(mood)}
           style={({ pressed }) => [styles.chip, pressed && styles.pressed]}
           accessibilityRole="button"
-          accessibilityLabel={`Breathwork for ${mood.label.toLowerCase()}`}
+          accessibilityLabel={`Reset for ${mood.label.toLowerCase()}`}
         >
           <MoodChipSurface>
             <MaterialCommunityIcons

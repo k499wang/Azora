@@ -113,7 +113,7 @@ export default function DecoratePanel({
       { id: 'guided', label: 'Guided breathing', done: state.guidedDone },
       {
         id: 'handPicked',
-        label: 'Hand-picked exercise',
+        label: 'Hand-picked reset',
         done: state.handPickedDone,
       },
       {

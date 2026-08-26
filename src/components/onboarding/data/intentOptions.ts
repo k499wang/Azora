@@ -215,7 +215,7 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
       {
         icon: 'meditation',
         accent: colors.orange[600],
-        label: 'A few minutes of breathwork deepens post-practice stillness',
+        label: 'A few minutes of daily practice deepens post-practice stillness',
       },
     ],
   },
