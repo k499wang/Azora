@@ -59,7 +59,7 @@ const BPM_CONTEXT_INFO: Record<BpmInsightContext, { title: string; message: stri
   'breathing-exercise': {
     title: 'Heart Rate',
     message:
-      'Your instantaneous beats per minute over the breathing session. Different techniques can intentionally settle, energize, stabilize, or rhythmically vary your heart rate, so the insight interprets the graph against the exercise you completed.',
+      'Your instantaneous beats per minute over the breathing session. Different techniques can intentionally settle, energize, stabilize, or rhythmically vary your heart rate, so the insight interprets the graph against the reset you completed.',
   },
 };
 

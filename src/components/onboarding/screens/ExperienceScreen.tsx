@@ -49,7 +49,7 @@ export default function ExperienceScreen({
 }: ExperienceScreenProps) {
   return (
     <OnboardingScreenLayout
-      title="Have you tried breathwork before?"
+      title="Have you done anything like this before?"
       subtitle="We'll tailor the app to your experience."
       progress={stepIndex / stepCount}
       onBack={onBack}

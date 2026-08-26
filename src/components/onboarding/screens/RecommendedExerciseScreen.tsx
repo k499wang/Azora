@@ -153,7 +153,7 @@ function actionBody(
   }
 
   if (action.id === 'handPicked') {
-    return `A different ${action.minutes}-minute exercise each day, ordered to lift your ${growthArea.label.toLowerCase()} first.`;
+    return `A different ${action.minutes}-minute reset each day, ordered to lift your ${growthArea.label.toLowerCase()} first.`;
   }
 
   const projection = plan.projection;
@@ -176,7 +176,7 @@ function ActionCard({
     action.id === 'session'
       ? technique ?? action.title
       : action.id === 'handPicked'
-        ? 'Azora’s exercise'
+        ? 'Azora’s reset'
         : action.title;
   const displayTime = formatPlanTime(action.minutesFromMidnight);
 

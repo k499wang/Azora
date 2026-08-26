@@ -74,7 +74,7 @@ export function PaywallTrialStep({
     ? [
         {
           label: 'Day 1: Today',
-          body: 'Unlock all app exercises like heart insights and your personalized plan.',
+          body: 'Unlock all app features like heart insights and your personalized plan.',
           icon: 'unlock',
         },
         {
@@ -91,7 +91,7 @@ export function PaywallTrialStep({
     : [
         {
           label: 'Today',
-          body: 'Unlock all app exercises like heart insights and your personalized plan.',
+          body: 'Unlock all app features like heart insights and your personalized plan.',
           icon: 'unlock',
         },
         {

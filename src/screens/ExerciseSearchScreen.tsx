@@ -223,7 +223,7 @@ export default function ExerciseSearchScreen({
           <View
             accessible
             accessibilityLiveRegion="polite"
-            accessibilityLabel="Searching exercises"
+            accessibilityLabel="Searching resets"
             style={styles.searching}
           >
             <ActivityIndicator size="small" color={colors.primary.blue600} />
@@ -253,7 +253,7 @@ export default function ExerciseSearchScreen({
                 accessibilityHint={
                   !dailyExerciseAccess.allowed && !dailyExerciseAccess.isLoading
                     ? 'Opens the Pro upgrade screen'
-                    : 'Starts the daily breath hold exercise'
+                    : 'Starts the daily breath hold'
                 }
                 onPress={startDailyBreathHold}
               />
@@ -275,7 +275,7 @@ export default function ExerciseSearchScreen({
               <View
                 accessible
                 accessibilityLiveRegion="polite"
-                accessibilityLabel="No exercises found. Try another search or category."
+                accessibilityLabel="No resets found. Try another search or category."
                 style={styles.noResults}
               >
                 <Text style={styles.noResultsTitle}>No exercises found</Text>

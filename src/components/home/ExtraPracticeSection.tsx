@@ -44,7 +44,7 @@ export default function ExtraPracticeSection({
         right={
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="See all breathing exercises"
+            accessibilityLabel="See all resets"
             onPress={handleSeeAll}
             hitSlop={spacing.sm}
             style={({ pressed }) => [

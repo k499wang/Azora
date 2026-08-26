@@ -237,7 +237,7 @@ export default function HistoryScreen({
                   <>
                     {renderTechniqueRow(
                       dailies.guidedTechnique,
-                      'Your breathing exercise',
+                      'Your reset',
                       dailies.guidedCompleted,
                     )}
                     {renderTechniqueRow(

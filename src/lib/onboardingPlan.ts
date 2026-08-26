@@ -292,7 +292,7 @@ export function buildOnboardingPlan(inputs: PlanInputs): OnboardingPlan {
     },
     {
       id: 'handPicked',
-      title: 'Hand-picked exercise',
+      title: 'Hand-picked reset',
       techniqueId: handPickedTechnique,
       minutesFromMidnight: routine.midpointAt,
       minutes: handPickedMinutes,
