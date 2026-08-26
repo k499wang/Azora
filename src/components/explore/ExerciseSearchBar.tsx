@@ -33,8 +33,8 @@ export default function ExerciseSearchBar(props: ExerciseSearchBarProps) {
     return (
       <Pressable
         accessibilityRole="button"
-        accessibilityLabel="Search exercises"
-        accessibilityHint="Opens exercise search"
+        accessibilityLabel="Search resets"
+        accessibilityHint="Opens reset search"
         onPress={props.onPress}
         style={({ pressed }) => [
           styles.surface,
@@ -76,19 +76,19 @@ export default function ExerciseSearchBar(props: ExerciseSearchBarProps) {
         ref={props.inputRef}
         value={props.value}
         onChangeText={props.onChangeText}
-        placeholder="Search exercises"
+        placeholder="Search resets"
         placeholderTextColor={colors.text.tertiary}
         autoCapitalize="none"
         autoCorrect={false}
         autoFocus={props.autoFocus}
         returnKeyType="search"
-        accessibilityLabel="Search exercises"
+        accessibilityLabel="Search resets"
         style={styles.input}
       />
       {props.value.length > 0 ? (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Clear exercise search"
+          accessibilityLabel="Clear reset search"
           hitSlop={4}
           onPress={props.onClear}
           style={({ pressed }) => [

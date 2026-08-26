@@ -56,7 +56,7 @@ export default function TechniqueCard({
   const accessHint =
     !exerciseAccess.allowed && !exerciseAccess.isLoading
       ? 'Opens the Pro upgrade screen'
-      : 'Starts this breathing exercise';
+      : 'Starts this reset';
 
   const handlePress = () => {
     triggerTapHaptic();

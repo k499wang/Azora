@@ -9,6 +9,9 @@ const DAILY_EXERCISE_SEARCH_TERMS = [
   'check-in',
   'check in',
   'azora original',
+  'daily reset',
+  'azora’s reset',
+  "azora's reset",
 ] as const;
 
 export function normalizeExerciseSearch(value: string): string {

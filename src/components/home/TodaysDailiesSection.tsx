@@ -211,7 +211,7 @@ export default function TodaysDailiesSection({
   const handPickedLocked =
     !handPickedExerciseCompleted && !exerciseAccessAllowed;
   const breathHoldLocked = !breathHoldCompleted && !exerciseAccessAllowed;
-  const guidedTitle = technique?.name ?? 'Your breathing exercise';
+  const guidedTitle = technique?.name ?? 'Your reset';
   const guidedScheduledTime = formatDailyPlanTime(
     sessionTime,
     DEFAULT_DAILY_PLAN_SCHEDULE.actions.session,

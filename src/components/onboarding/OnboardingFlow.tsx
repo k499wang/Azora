@@ -1311,7 +1311,7 @@ function OnboardingFlowSteps({
       <RoutineTimeScreen
         key="sleepTime"
         title="When do you usually go to sleep?"
-        subtitle="We’ll keep your evening exercises close to your wind-down routine."
+        subtitle="We’ll keep your evening resets close to your wind-down routine."
         pickerTitle="Set sleep time"
         value={sleepTime}
         stepIndex={visualStepIndex}

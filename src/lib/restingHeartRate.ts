@@ -63,7 +63,7 @@ const BAND_LABEL: Record<RestingHeartRateBand, string> = {
 
 const BAND_DETAIL: Record<RestingHeartRateBand, string> = {
   below:
-    'A slower resting heart rate is linked to a longer life, deeper sleep and sharper focus. Yours is already there — breathwork is how you keep it.',
+    'A slower resting heart rate is linked to a longer life, deeper sleep and sharper focus. Yours is already there — a daily reset is how you keep it.',
   typical:
     'A slower resting heart rate is linked to a longer life, deeper sleep and sharper focus. Slow breathing is one of the fastest ways to move yours down.',
   above:
