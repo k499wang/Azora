@@ -1,5 +1,5 @@
 import { AnimatedText } from '../../common/Text';
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, StyleSheet, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
@@ -62,24 +62,26 @@ export default function GreetingScreen({
   }, [name]);
 
   const wave = useRef(new Animated.Value(0)).current;
-  const enter = useRef(new Animated.Value(0)).current;
   const textEnter = useRef(new Animated.Value(0)).current;
 
+  // react-native-svg never sets the layer's contentsScale, so an <Svg> drawn
+  // before its view reaches a window rasterises at 1x and only sharpens on the
+  // next redraw. Mounting a frame late means the first draw is already at
+  // device scale. styles.wave reserves the space, so nothing shifts.
+  const [isHandMounted, setIsHandMounted] = useState(false);
+
   useEffect(() => {
-    const entrance = Animated.sequence([
-      Animated.timing(enter, {
-        toValue: 1,
-        duration: 520,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-      Animated.timing(textEnter, {
-        toValue: 1,
-        duration: 460,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-    ]);
+    const frame = requestAnimationFrame(() => setIsHandMounted(true));
+    return () => cancelAnimationFrame(frame);
+  }, []);
+
+  useEffect(() => {
+    const entrance = Animated.timing(textEnter, {
+      toValue: 1,
+      duration: 460,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    });
     entrance.start(({ finished }) => {
       if (finished && isHapticsEnabled()) {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
@@ -87,7 +89,7 @@ export default function GreetingScreen({
     });
 
     return () => entrance.stop();
-  }, [enter, textEnter]);
+  }, [textEnter]);
 
   useWhileVisible(() => {
     wave.setValue(0);
@@ -122,10 +124,6 @@ export default function GreetingScreen({
     inputRange: [-1, 1],
     outputRange: ['-18deg', '22deg'],
   });
-  const scale = enter.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.7, 1],
-  });
   const textTranslate = textEnter.interpolate({
     inputRange: [0, 1],
     outputRange: [16, 0],
@@ -154,22 +152,24 @@ export default function GreetingScreen({
             Hey, {displayName}.
           </AnimatedText>
 
-          <AnimatedText style={[styles.subtitle, { opacity: textEnter }]}>
+          <AnimatedText
+            style={[
+              styles.subtitle,
+              {
+                opacity: textEnter,
+                transform: [{ translateY: textTranslate }],
+              },
+            ]}
+          >
             It's good to meet you. Next, a bit about how you've been feeling
             lately.
           </AnimatedText>
         </View>
 
         <Animated.View
-          style={[
-            styles.wave,
-            {
-              opacity: enter,
-              transform: [{ scale }, { rotate }],
-            },
-          ]}
+          style={[styles.wave, { transform: [{ rotate }] }]}
         >
-          <WaveHandIllustration />
+          {isHandMounted ? <WaveHandIllustration /> : null}
         </Animated.View>
       </View>
     </OnboardingScreenLayout>

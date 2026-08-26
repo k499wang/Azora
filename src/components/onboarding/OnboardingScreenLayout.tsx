@@ -20,6 +20,7 @@ import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import { duration, easing as motionEasing } from '../../theme/motion';
 import { isHapticsEnabled } from '../../services/preferences/hapticsPreference';
+import { pauseSessionReplay } from '../../services/analytics/sessionReplay';
 import {
   centeredBodyMinHeight,
   hasScrollOverflow,
@@ -207,6 +208,7 @@ export default function OnboardingScreenLayout({
     if (disableEntranceAnimation) return;
 
     let animation: Animated.CompositeAnimation | null = null;
+    const resumeReplay = pauseSessionReplay();
 
     // Gate the entrance behind runAfterInteractions so the native-driven fade
     // starts on an idle UI thread instead of racing the freshly-mounted screen.
@@ -242,12 +244,13 @@ export default function OnboardingScreenLayout({
             ]
           : []),
       ]);
-      animation.start();
+      animation.start(resumeReplay);
     });
 
     return () => {
       handle.cancel();
       animation?.stop();
+      resumeReplay();
     };
   }, [animateCopy, disableEntranceAnimation, fade, scale, subtitleEnter, titleEnter]);
 
