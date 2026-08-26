@@ -72,8 +72,8 @@ const AURA_RINGS = [
   { radius: 0.6, opacity: 0.2 },
 ] as const;
 const AURA_OUTER = AURA_RINGS[0].radius;
-const AURA_EXHALE_SCALE = 0.68;
-const AURA_INHALE_SCALE = 1.18;
+const AURA_EXHALE_SCALE = 0.55;
+const AURA_INHALE_SCALE = 1.3;
 
 // A lung fills and empties on a curve, not a ramp. Sinusoidal in and out also
 // puts zero velocity at both ends of every phase, so a pattern with no hold
