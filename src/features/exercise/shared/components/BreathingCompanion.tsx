@@ -72,7 +72,8 @@ const AURA_RINGS = [
   { radius: 0.6, opacity: 0.2 },
 ] as const;
 const AURA_OUTER = AURA_RINGS[0].radius;
-const AURA_MIN_SCALE = 0.88;
+const AURA_EXHALE_SCALE = 0.68;
+const AURA_INHALE_SCALE = 1.18;
 
 // A lung fills and empties on a curve, not a ramp. Sinusoidal in and out also
 // puts zero velocity at both ends of every phase, so a pattern with no hold
@@ -291,7 +292,11 @@ const BreathingCompanion = forwardRef<BreathingCircleRef, BreathingCompanionProp
     const auraStyle = useAnimatedStyle(() => ({
       transform: [
         { translateY: auraOffset },
-        { scale: AURA_MIN_SCALE + (1 - AURA_MIN_SCALE) * breath.value },
+        {
+          scale:
+            AURA_EXHALE_SCALE +
+            (AURA_INHALE_SCALE - AURA_EXHALE_SCALE) * breath.value,
+        },
       ],
     }));
 

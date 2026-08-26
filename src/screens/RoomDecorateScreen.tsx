@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Alert, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { Alert, StyleSheet, View } from 'react-native';
 import RoomScreenLayout, {
   RoomActionButton,
   RoomStage,
@@ -19,7 +19,7 @@ import RoomSlotPlus from '../features/room/RoomSlotPlus';
 import { getRoomDay } from '../features/room/roomDays';
 import { toFrameHue, toPicks } from '../features/room/roomPicks';
 import { roomShellPolys } from '../features/room/roomShells';
-import { getRoomWidth } from '../features/room/roomLayout';
+
 import { useRoomClaim } from '../features/room/useRoomClaim';
 import { isRoomOverridden } from '../features/room/devRoomOverride';
 import { useStartDaily } from '../hooks/useStartDaily';
@@ -32,6 +32,7 @@ import { triggerTapHaptic } from '../native/tapHaptics';
 import { margin } from '../theme/spacing';
 import type { RoomDecorateScreenProps } from '../app/navigation';
 import { returnToHome } from '../app/navigation/returnToHome';
+import { useRoomWidth } from '../features/room/roomStageBox';
 
 interface Placing {
   slot: RoomSlot;
@@ -46,7 +47,6 @@ export default function RoomDecorateScreen({
   navigation,
   route,
 }: RoomDecorateScreenProps) {
-  const { width } = useWindowDimensions();
   const queryClient = useQueryClient();
   const userId = useAuthStore((state) => state.user?.id ?? null);
   const { room, progress, dailies, isLoading } = useRoomClaim(userId);
@@ -55,7 +55,7 @@ export default function RoomDecorateScreen({
 
   const decorations = room?.decorations ?? [];
   const shell = roomShellPolys(room?.shell);
-  const roomWidth = getRoomWidth(width);
+  const roomWidth = useRoomWidth();
   const nextSlot = progress.nextSlot;
   const day = nextSlot == null ? null : getRoomDay(nextSlot);
   const panelState: DecorateState = progress.isComplete

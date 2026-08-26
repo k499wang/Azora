@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { StyleSheet, View, useWindowDimensions } from 'react-native';
+import { useWindowDimensions } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import Animated, {
   cancelAnimation,
   useAnimatedStyle,
@@ -34,8 +35,8 @@ export default function MochiRoomsScreen({
   onContinue,
   onBack,
 }: MochiRoomsScreenProps) {
-  const { width: screenWidth } = useWindowDimensions();
-  const width = getMochiStageWidth(screenWidth);
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
+  const width = getMochiStageWidth(screenWidth, screenHeight);
   const reducedMotion = useReducedMotion();
 
   const [index, setIndex] = useState(0);

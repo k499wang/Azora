@@ -248,7 +248,7 @@ export default function HistoryScreen({
                     <HistoryDayRow
                       glyph={BREATH_HOLD_STYLE.glyph}
                       hue={BREATH_HOLD_STYLE.hue}
-                      title="Azora Protocol"
+                      title="The Azora Protocol"
                       meta={holdMeta}
                       completed={dailies.breathHoldCompleted}
                     />
@@ -269,7 +269,7 @@ export default function HistoryScreen({
                       <HistoryDayRow
                         glyph={BREATH_HOLD_STYLE.glyph}
                         hue={BREATH_HOLD_STYLE.hue}
-                        title="Azora Protocol"
+                        title="The Azora Protocol"
                         meta={holdMeta}
                         completed
                       />

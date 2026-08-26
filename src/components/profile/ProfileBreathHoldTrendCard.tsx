@@ -93,7 +93,7 @@ export default function ProfileBreathHoldTrendCard({
             {onPressLocked ? (
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Unlock your Azora Protocol progress"
+                accessibilityLabel="Unlock your progress on The Azora Protocol"
                 accessibilityHint="Opens the Pro upgrade screen"
                 onPress={onPressLocked}
                 style={StyleSheet.absoluteFill}

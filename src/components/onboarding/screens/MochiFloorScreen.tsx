@@ -33,8 +33,8 @@ export default function MochiFloorScreen({
   onContinue,
   onBack,
 }: MochiFloorScreenProps) {
-  const { width: screenWidth } = useWindowDimensions();
-  const width = getMochiStageWidth(screenWidth);
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
+  const width = getMochiStageWidth(screenWidth, screenHeight);
   const blob = useRef<RoomBlobHandle>(null);
 
   const [filled, setFilled] = useState(false);
@@ -61,7 +61,7 @@ export default function MochiFloorScreen({
 
   return (
     <OnboardingScreenLayout
-      title="You finish a room once you have seven decorations."
+      title="You finish a room if you have seven decorations."
       progress={stepIndex / stepCount}
       onBack={onBack}
       centerCopy

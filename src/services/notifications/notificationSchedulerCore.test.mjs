@@ -216,7 +216,7 @@ test('daily plan content is generic and specific to each action', () => {
   const handPicked = buildDailyPlanReminderContent('handPicked');
   const checkIn = buildDailyPlanReminderContent('checkIn');
 
-  assert.match(session.title, /guided breathing/i);
+  assert.match(session.title, /guided reset/i);
   assert.match(handPicked.title, /daily reset/i);
   assert.match(checkIn.title, /azora protocol/i);
   assert.notEqual(session.title, handPicked.title);

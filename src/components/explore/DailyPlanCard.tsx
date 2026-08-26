@@ -51,7 +51,7 @@ export default function DailyPlanCard({
       }}
       accessibilityRole="button"
       accessibilityLabel={
-        doneToday ? 'Run the Azora Protocol again' : 'Start the Azora Protocol'
+        doneToday ? 'Run The Azora Protocol again' : 'Start The Azora Protocol'
       }
       style={({ pressed }) => [
         styles.card,
@@ -80,7 +80,7 @@ export default function DailyPlanCard({
 
         <View style={styles.textBlock}>
           <Text style={[styles.title, { color: textColor }]} numberOfLines={2}>
-            Azora Protocol
+            The Azora Protocol
           </Text>
           <View style={[styles.metaRow, { opacity: 0.85 }]}>
             <Icon name="timer" size={14} color={textColor} />

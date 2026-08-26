@@ -34,17 +34,17 @@ export const DAILY_REMINDER_DEFINITIONS = [
     kind: 'daily_plan_session',
     scheduleActionId: 'session',
     content: {
-      title: 'Time for guided breathing',
+      title: 'Time for your Guided Reset',
       body: 'Your guided reset is ready.',
       channelId: NOTIFICATION_CHANNELS.dailyReminders,
     },
     defaultEnabled: false,
     onboardingEnabled: true,
     settings: {
-      title: 'Guided breathing',
+      title: 'Guided Reset',
       subtitle: 'A reminder for your primary guided reset.',
     },
-    onboardingTitle: 'Guided breathing',
+    onboardingTitle: 'Guided Reset',
   },
   {
     id: 'handPicked',
@@ -68,17 +68,17 @@ export const DAILY_REMINDER_DEFINITIONS = [
     kind: 'daily_plan_check_in',
     scheduleActionId: 'checkIn',
     content: {
-      title: 'Time for the Azora Protocol',
+      title: 'Time for The Azora Protocol',
       body: 'Check in with your breath and see how you feel today.',
       channelId: NOTIFICATION_CHANNELS.dailyReminders,
     },
     defaultEnabled: false,
     onboardingEnabled: true,
     settings: {
-      title: 'Azora Protocol',
-      subtitle: 'A reminder to run your daily Azora Protocol.',
+      title: 'The Azora Protocol',
+      subtitle: 'A daily reminder to run The Azora Protocol.',
     },
-    onboardingTitle: 'Azora Protocol',
+    onboardingTitle: 'The Azora Protocol',
   },
 ] as const satisfies readonly DailyReminderDefinitionShape[];
 

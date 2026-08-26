@@ -33,8 +33,8 @@ export default function MochiStoryScreen({
   onContinue,
   onBack,
 }: MochiStoryScreenProps) {
-  const { width: screenWidth } = useWindowDimensions();
-  const width = getMochiStageWidth(screenWidth);
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
+  const width = getMochiStageWidth(screenWidth, screenHeight);
   const blob = useRef<RoomBlobHandle>(null);
 
   const room = useMemo(

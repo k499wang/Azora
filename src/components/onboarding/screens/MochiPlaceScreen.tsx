@@ -24,8 +24,8 @@ export default function MochiPlaceScreen({
   onContinue,
   onBack,
 }: MochiPlaceScreenProps) {
-  const { width: screenWidth } = useWindowDimensions();
-  const width = getMochiStageWidth(screenWidth);
+  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
+  const width = getMochiStageWidth(screenWidth, screenHeight);
   const blob = useRef<RoomBlobHandle>(null);
   const [placed, setPlaced] = useState(false);
 

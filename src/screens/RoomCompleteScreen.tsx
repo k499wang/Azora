@@ -1,17 +1,17 @@
 import { useState } from 'react';
-import { useWindowDimensions } from 'react-native';
 import RoomScreenLayout, {
   RoomActionButton,
   RoomStage,
 } from '../features/room/RoomScreenLayout';
 import RoomReplay from '../features/room/RoomReplay';
 import { HexRoom } from '../features/room/RoomScene';
-import { getRoomWidth } from '../features/room/roomLayout';
+
 import { toFrameHue, toPicks } from '../features/room/roomPicks';
 import { roomShellPolys } from '../features/room/roomShells';
 import { useCurrentRoomQuery } from '../queries/room/useCurrentRoomQuery';
 import { useAuthStore } from '../stores/authStore';
 import type { RoomCompleteScreenProps } from '../app/navigation';
+import { useRoomWidth } from '../features/room/roomStageBox';
 
 /**
  * The finished room, replaying itself.
@@ -23,12 +23,11 @@ export default function RoomCompleteScreen({
   navigation,
   route,
 }: RoomCompleteScreenProps) {
-  const { width } = useWindowDimensions();
   const userId = useAuthStore((state) => state.user?.id ?? null);
   const currentRoom = useCurrentRoomQuery(userId).data;
 
   const room = currentRoom?.room;
-  const roomWidth = getRoomWidth(width);
+  const roomWidth = useRoomWidth();
 
   const [replayDone, setReplayDone] = useState(false);
 

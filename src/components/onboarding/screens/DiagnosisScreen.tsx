@@ -143,7 +143,7 @@ export default function DiagnosisScreen({
 
   return (
     <OnboardingScreenLayout
-      title="Your breathing profile"
+      title="Your Azora profile"
       progress={stepIndex / stepCount}
       onBack={onBack}
       titleStyle={styles.screenTitle}

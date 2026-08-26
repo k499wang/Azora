@@ -110,7 +110,7 @@ export default function DecoratePanel({
 
   if (state.kind === 'locked') {
     const dailies: { id: DailyId; label: string; done: boolean }[] = [
-      { id: 'guided', label: 'Guided breathing', done: state.guidedDone },
+      { id: 'guided', label: 'Guided Reset', done: state.guidedDone },
       {
         id: 'handPicked',
         label: 'Hand-picked reset',
@@ -118,7 +118,7 @@ export default function DecoratePanel({
       },
       {
         id: 'breathHold',
-        label: 'Azora Protocol',
+        label: 'The Azora Protocol',
         done: state.breathHoldDone,
       },
     ];

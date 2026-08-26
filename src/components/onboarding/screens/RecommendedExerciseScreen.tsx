@@ -149,7 +149,7 @@ function actionBody(
   if (action.id === 'session') {
     return goalPhrase
       ? `${action.minutes} minutes every ${when}, chosen to help you ${goalPhrase}.`
-      : `${action.minutes} minutes of guided breathing every ${when}.`;
+      : `${action.minutes} minutes of Guided Reset every ${when}.`;
   }
 
   if (action.id === 'handPicked') {
