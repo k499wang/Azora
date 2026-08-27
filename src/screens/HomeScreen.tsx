@@ -9,7 +9,6 @@ import HotelButton from '../features/room/HotelButton';
 import RoomProgressCard from '../features/room/RoomProgressCard';
 import { useRoomClaim } from '../features/room/useRoomClaim';
 import { useStartDaily } from '../hooks/useStartDaily';
-import TourOverlay from '../features/tour/TourOverlay';
 import { useTourScroller, useTourTarget } from '../features/tour/tourTargets';
 import type { TourTargetId } from '../features/tour/tourSteps';
 import type { HomeScreenProps } from '../app/navigation';
@@ -17,7 +16,7 @@ import { useAuthStore } from '../stores/authStore';
 import { useDailyPlanScheduleQuery } from '../queries/dailyPlan/useDailyPlanScheduleQuery';
 import { DEFAULT_DAILY_PLAN_SCHEDULE } from '../services/dailyPlan/types';
 
-const TOUR_TARGETS: TourTargetId[] = ['dailies', 'extraPractice'];
+const TOUR_TARGETS: TourTargetId[] = ['dailies', 'extraPractice', 'seeAll'];
 
 export default function HomeScreen({ navigation }: HomeScreenProps) {
   const user = useAuthStore((state) => state.user);
@@ -97,8 +96,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           </View>
         </View>
       </ScrollView>
-
-      <TourOverlay tab="Home" />
     </View>
   );
 }

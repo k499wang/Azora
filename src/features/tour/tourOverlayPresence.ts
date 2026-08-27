@@ -1,6 +1,6 @@
 const mountedOverlays = new Map<number, Set<symbol>>();
 
-/** Tracks the screen-local owner so orchestration can recover if none mounts. */
+/** Tracks the global overlay owner so orchestration can recover if it never mounts. */
 export function registerTourOverlay(stepIndex: number): () => void {
   const owner = Symbol('tour-overlay');
   const owners = mountedOverlays.get(stepIndex) ?? new Set<symbol>();

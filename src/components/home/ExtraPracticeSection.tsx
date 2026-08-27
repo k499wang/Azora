@@ -12,6 +12,7 @@ import { fonts, typography } from '../../theme/typography';
 import SectionHeader from '../common/SectionHeader';
 import Icon from '../common/icons/Icon';
 import { Text } from '../common/Text';
+import { useTourTarget } from '../../features/tour/tourTargets';
 
 interface ExtraPracticeSectionProps {
   recommendedTechniqueId: string | null;
@@ -30,6 +31,7 @@ export default function ExtraPracticeSection({
     recommendedTechniqueId,
     excludedTechniqueIds,
   );
+  const seeAllTarget = useTourTarget('seeAll');
 
   const handleSeeAll = () => {
     triggerTapHaptic();
@@ -42,19 +44,21 @@ export default function ExtraPracticeSection({
         icon="waves"
         title="What are you feeling?"
         right={
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="See all resets"
-            onPress={handleSeeAll}
-            hitSlop={spacing.sm}
-            style={({ pressed }) => [
-              styles.seeAll,
-              pressed && styles.seeAllPressed,
-            ]}
-          >
-            <Text style={styles.seeAllText}>See all</Text>
-            <Icon name="chevron-right" size={16} color={colors.text.brand} />
-          </Pressable>
+          <View {...seeAllTarget}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="See all resets"
+              onPress={handleSeeAll}
+              hitSlop={spacing.sm}
+              style={({ pressed }) => [
+                styles.seeAll,
+                pressed && styles.seeAllPressed,
+              ]}
+            >
+              <Text style={styles.seeAllText}>See all</Text>
+              <Icon name="chevron-right" size={16} color={colors.text.brand} />
+            </Pressable>
+          </View>
         }
       />
 

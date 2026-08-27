@@ -1,6 +1,10 @@
-export type TourTargetId = 'dailies' | 'extraPractice';
+export type TourTargetId =
+  | 'dailies'
+  | 'extraPractice'
+  | 'seeAll'
+  | 'measureHeart';
 
-export type TourTab = 'Home';
+export type TourTab = 'Home' | 'Heart';
 
 export interface TourStep {
   /** the element Mochi points at; registered with `useTourTarget` */
@@ -19,11 +23,21 @@ export const tourSteps: readonly TourStep[] = [
   {
     target: 'dailies',
     tab: 'Home',
-    body: "Start here. Finish today's three and your room gets its next piece.",
+    body: 'Start here! Finish your three daily exercises to earn a new piece for your room.',
   },
   {
     target: 'extraPractice',
     tab: 'Home',
-    body: 'Not sure what you need? Pick a reset that matches how you feel.',
+    body: 'Want something different? Pick an exercise that matches how you feel.',
+  },
+  {
+    target: 'seeAll',
+    tab: 'Home',
+    body: 'Looking for more? Tap See all to explore every exercise.',
+  },
+  {
+    target: 'measureHeart',
+    tab: 'Heart',
+    body: 'This is where you can track your heart rate. Tap + to take a measurement and see how your body responds over time.',
   },
 ];

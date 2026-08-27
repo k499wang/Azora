@@ -3,11 +3,10 @@ import { setTourSeen } from '../../services/preferences/tourSeenPreference';
 import { tourSteps } from './tourSteps';
 
 /**
- * `checking` covers the gap while the seen flag loads. Anything that waits for
- * the tour must treat it as "not finished yet", or a one-time offer would slide
- * up over the first stop.
+ * Lifecycle: checking the saved flag → running steps → closing the overlay →
+ * finished. Post-tour presenters wait for the final state.
  */
-export type TourStatus = 'checking' | 'running' | 'finished';
+export type TourStatus = 'checking' | 'running' | 'closing' | 'finished';
 
 interface TourState {
   status: TourStatus;
@@ -17,8 +16,10 @@ interface TourState {
   prepare: () => void;
   start: () => void;
   next: () => void;
-  /** ends the tour and remembers it, for both finishing and skipping */
+  /** remembers finishing or skipping, then starts the overlay close */
   stop: () => Promise<void>;
+  /** releases post-tour presenters after the native overlay has closed */
+  completeClosing: () => void;
   /** stands the tour down without marking it seen, when it has run before */
   dismiss: () => void;
 }
@@ -40,6 +41,7 @@ export const useTourStore = create<TourState>((set, get) => ({
     set({ status: 'running', stepIndex: 0 });
   },
   next: () => {
+    if (stopPromise != null) return;
     const current = get().stepIndex;
     if (current == null) return;
     if (current + 1 >= tourSteps.length) {
@@ -50,11 +52,12 @@ export const useTourStore = create<TourState>((set, get) => ({
   },
   stop: () => {
     if (stopPromise != null) return stopPromise;
+    if (get().status !== 'running') return Promise.resolve();
 
     const stoppingGeneration = lifecycleGeneration;
     const pending = setTourSeen(true).then(() => {
       if (lifecycleGeneration === stoppingGeneration) {
-        set({ status: 'finished', stepIndex: null });
+        set({ status: 'closing', stepIndex: null });
       }
     });
     stopPromise = pending;
@@ -62,6 +65,10 @@ export const useTourStore = create<TourState>((set, get) => ({
       if (stopPromise === pending) stopPromise = null;
     });
     return pending;
+  },
+  completeClosing: () => {
+    if (get().status !== 'closing') return;
+    set({ status: 'finished', stepIndex: null });
   },
   dismiss: () => {
     lifecycleGeneration += 1;
@@ -75,7 +82,10 @@ export function useCurrentTourStep() {
   return stepIndex == null ? null : tourSteps[stepIndex];
 }
 
-/** true once the tour has run, been skipped, or been found unnecessary */
-export function useIsTourFinished() {
-  return useTourStore((state) => state.status === 'finished');
+export function canPresentAfterTour(
+  enabled: boolean,
+  hasResolvedSeenFlag: boolean,
+  status: TourStatus,
+): boolean {
+  return enabled && hasResolvedSeenFlag && status === 'finished';
 }
