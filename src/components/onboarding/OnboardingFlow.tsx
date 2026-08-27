@@ -78,6 +78,8 @@ import type {
 import { usePaywall } from '../../hooks/usePaywall';
 import { PaywallPlacement } from '../../services/paywall';
 import { useUserEntitlementQuery } from '../../queries/subscriptions/useUserEntitlementQuery';
+import { setTourSeen } from '../../services/preferences/tourSeenPreference';
+import { useTourStore } from '../../features/tour/tourStore';
 import { useExitOfferStore } from '../../stores/exitOfferStore';
 import { projectScores } from '../../lib/paywallPersonalization';
 import { buildPlanHighlights } from '../../lib/paywallPlanHighlights';
@@ -755,6 +757,10 @@ function OnboardingFlowSteps({
     setErrorMessage(null);
 
     try {
+      // Queue the tour for every finished onboarding. The seen flag otherwise
+      // survives from an earlier run on this install and the tour never plays.
+      useTourStore.getState().prepare();
+      await setTourSeen(false);
       await onComplete();
       trackOnboardingCompleted({
         ...getStepEventInput(),

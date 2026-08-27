@@ -11,6 +11,7 @@ import SectionHeader from '../components/common/SectionHeader';
 import SettingsGroup from '../components/settings/SettingsGroup';
 import SettingsRow from '../components/settings/SettingsRow';
 import NotificationsSettingsSheet from '../features/notifications/NotificationsSettingsSheet';
+import { replayAppTour } from '../features/tour/useAppTour';
 import { useAuthStore } from '../stores/authStore';
 import { useHapticsPreference } from '../hooks/useHapticsPreference';
 import { trackProfileAction } from '../services/analytics/tracking';
@@ -283,6 +284,13 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
               <SettingsRow
                 label="Room lab (dev)"
                 onPress={() => navigation.navigate('RoomLab')}
+              />
+              <SettingsRow
+                label="Replay app tour (dev)"
+                onPress={() => {
+                  navigation.navigate('MainTabs', { screen: 'Home' });
+                  void replayAppTour();
+                }}
                 isLast
               />
             </SettingsGroup>

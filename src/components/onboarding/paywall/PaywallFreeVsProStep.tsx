@@ -93,14 +93,16 @@ export function PaywallFreeVsProStep({
         <Text style={paywallStepStyles.stepTitle}>
           {hasTrial ? (
             <>
-              Azora is free.{'\n'}Here&apos;s what your{' '}
-              <Text style={paywallStepStyles.stepTitleBrand}>free trial</Text>{' '}
-              gives you.
+              Everything unlocked{'\n'}for{' '}
+              <Text style={paywallStepStyles.stepTitleBrand}>
+                {trialDays} days
+              </Text>
+              .
             </>
           ) : (
             <>
-              Azora is free.{'\n'}Here&apos;s what{' '}
-              <Text style={paywallStepStyles.stepTitleBrand}>Pro</Text> adds.
+              What <Text style={paywallStepStyles.stepTitleBrand}>Pro</Text>{' '}
+              adds.
             </>
           )}
         </Text>

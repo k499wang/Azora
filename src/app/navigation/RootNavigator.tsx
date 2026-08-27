@@ -41,6 +41,7 @@ import {
   syncRevenueCatAttributionForCurrentUser,
 } from '../../services/subscriptions/revenueCatIdentitySync';
 import { useAuthStore } from '../../stores/authStore';
+import { useIsTourFinished } from '../../features/tour/tourStore';
 import { useExitOfferStore } from '../../stores/exitOfferStore';
 import { useRevenueCatIdentityStore } from '../../stores/revenueCatIdentityStore';
 import { loadCriticalOnboardingImages } from '../../services/images/onboardingImageCache';
@@ -242,13 +243,18 @@ function MainTabsRoute({ showBootPaywall }: AppStackProps) {
   // Capture once at mount: a pending exit offer takes precedence over the boot
   // paywall so the just-onboarded user never sees both.
   const exitOfferPending = useRef(useExitOfferStore.getState().pending).current;
+  // The tour comes first for a just-onboarded user, so nothing may cover the
+  // app until it has run, been skipped, or been found unnecessary.
+  const isTourFinished = useIsTourFinished();
 
   return (
     <>
-      {exitOfferPending ? <ExitOfferPresenter /> : null}
+      {exitOfferPending && isTourFinished ? <ExitOfferPresenter /> : null}
       <MainTabs />
       {/* After MainTabs so the boot paywall can present over the app. */}
-      {!exitOfferPending && showBootPaywall ? <BootPaywallGate /> : null}
+      {!exitOfferPending && showBootPaywall && isTourFinished ? (
+        <BootPaywallGate />
+      ) : null}
     </>
   );
 }

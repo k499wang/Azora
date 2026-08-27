@@ -6,6 +6,7 @@ import ProfileScreen from '../../screens/ProfileScreen';
 import type { MainTabParamList } from './types';
 import { fonts } from '../../theme/typography';
 import { triggerTapHaptic } from '../../native/tapHaptics';
+import { useAppTour } from '../../features/tour/useAppTour';
 
 const Tab = createNativeBottomTabNavigator<MainTabParamList>();
 
@@ -13,6 +14,8 @@ export function MainTabs() {
   // The native tab bar emits tabPress even when re-tapping the active tab;
   // only buzz when the user actually switches tabs.
   const lastActiveTabRef = useRef<keyof MainTabParamList>('Home');
+
+  useAppTour();
 
   return (
     <Tab.Navigator
