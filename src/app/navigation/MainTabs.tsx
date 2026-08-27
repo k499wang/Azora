@@ -6,67 +6,72 @@ import ProfileScreen from '../../screens/ProfileScreen';
 import type { MainTabParamList } from './types';
 import { fonts } from '../../theme/typography';
 import { triggerTapHaptic } from '../../native/tapHaptics';
-import { useAppTour } from '../../features/tour/useAppTour';
+import TourOverlay from '../../features/tour/TourOverlay';
 
 const Tab = createNativeBottomTabNavigator<MainTabParamList>();
 
-export function MainTabs() {
+interface MainTabsProps {
+  tourEnabled: boolean;
+}
+
+export function MainTabs({ tourEnabled }: MainTabsProps) {
   // The native tab bar emits tabPress even when re-tapping the active tab;
   // only buzz when the user actually switches tabs.
   const lastActiveTabRef = useRef<keyof MainTabParamList>('Home');
 
-  useAppTour();
-
   return (
-    <Tab.Navigator
-      screenOptions={{
-        headerShown: false,
-        tabBarControllerMode: 'tabBar',
-        tabBarMinimizeBehavior: 'auto',
-        tabBarLabelStyle: { fontFamily: fonts.semibold },
-      }}
-      screenListeners={({ route }) => ({
-        tabPress: () => {
-          if (lastActiveTabRef.current !== route.name) {
-            triggerTapHaptic();
-            lastActiveTabRef.current = route.name;
-          }
-        },
-      })}
-    >
-      <Tab.Screen
-        name="Home"
-        component={HomeScreen}
-        options={{
-          tabBarLabel: 'Home',
-          tabBarIcon: ({ focused }) => ({
-            type: 'sfSymbol',
-            name: focused ? 'house.fill' : 'house',
-          }),
+    <>
+      <Tab.Navigator
+        screenOptions={{
+          headerShown: false,
+          tabBarControllerMode: 'tabBar',
+          tabBarMinimizeBehavior: 'auto',
+          tabBarLabelStyle: { fontFamily: fonts.semibold },
         }}
-      />
-      <Tab.Screen
-        name="Heart"
-        component={HeartTabScreen}
-        options={{
-          tabBarLabel: 'Heart',
-          tabBarIcon: ({ focused }) => ({
-            type: 'sfSymbol',
-            name: focused ? 'heart.fill' : 'heart',
-          }),
-        }}
-      />
-      <Tab.Screen
-        name="Profile"
-        component={ProfileScreen}
-        options={{
-          tabBarLabel: 'Profile',
-          tabBarIcon: ({ focused }) => ({
-            type: 'sfSymbol',
-            name: focused ? 'person.crop.circle.fill' : 'person.crop.circle',
-          }),
-        }}
-      />
-    </Tab.Navigator>
+        screenListeners={({ route }) => ({
+          tabPress: () => {
+            if (lastActiveTabRef.current !== route.name) {
+              triggerTapHaptic();
+              lastActiveTabRef.current = route.name;
+            }
+          },
+        })}
+      >
+        <Tab.Screen
+          name="Home"
+          component={HomeScreen}
+          options={{
+            tabBarLabel: 'Home',
+            tabBarIcon: ({ focused }) => ({
+              type: 'sfSymbol',
+              name: focused ? 'house.fill' : 'house',
+            }),
+          }}
+        />
+        <Tab.Screen
+          name="Heart"
+          component={HeartTabScreen}
+          options={{
+            tabBarLabel: 'Heart',
+            tabBarIcon: ({ focused }) => ({
+              type: 'sfSymbol',
+              name: focused ? 'heart.fill' : 'heart',
+            }),
+          }}
+        />
+        <Tab.Screen
+          name="Profile"
+          component={ProfileScreen}
+          options={{
+            tabBarLabel: 'Profile',
+            tabBarIcon: ({ focused }) => ({
+              type: 'sfSymbol',
+              name: focused ? 'person.crop.circle.fill' : 'person.crop.circle',
+            }),
+          }}
+        />
+      </Tab.Navigator>
+      {tourEnabled ? <TourOverlay /> : null}
+    </>
   );
 }

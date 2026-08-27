@@ -26,6 +26,7 @@ import type {
   FeatureKeyValue,
 } from '../services/subscriptions/featureAccess';
 import type { HeartTabScreenProps } from '../app/navigation';
+import { useTourTarget } from '../features/tour/tourTargets';
 
 const MEASURE_BUTTON_SIZE = 48;
 
@@ -36,6 +37,7 @@ export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
   const heartRateStatsQuery = useHeartRateStatsQuery(user?.id ?? null);
   const profileQuery = useProfileQuery(user?.id ?? null);
   const advancedStatsAccess = useFeatureAccess(FeatureKey.AdvancedStats);
+  const measureTarget = useTourTarget('measureHeart');
 
   const stats = heartRateStatsQuery.data;
   const recentHeartRates = stats?.recent ?? [];
@@ -231,15 +233,19 @@ export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
         </Svg>
       </Animated.View>
 
-      <GlassIconButton
-        accessibilityLabel="Measure heart rate"
-        onPress={openMeasure}
-        size={MEASURE_BUTTON_SIZE}
+      <View
+        {...measureTarget}
         style={[styles.stickyAction, { top: insets.top + spacing.xs }]}
-        variant="regular"
       >
-        <Icon name="plus" size={26} color={colors.text.secondary} />
-      </GlassIconButton>
+        <GlassIconButton
+          accessibilityLabel="Measure heart rate"
+          onPress={openMeasure}
+          size={MEASURE_BUTTON_SIZE}
+          variant="regular"
+        >
+          <Icon name="plus" size={26} color={colors.text.secondary} />
+        </GlassIconButton>
+      </View>
     </View>
   );
 }

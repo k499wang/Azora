@@ -34,7 +34,7 @@ import {
   watchTourTargetLayout,
 } from './tourTargets';
 import { useCurrentTourStep, useTourStore } from './tourStore';
-import { tourSteps, type TourStep, type TourTab } from './tourSteps';
+import { tourSteps, type TourStep } from './tourSteps';
 
 const DESIRED_TOP = 220;
 const MEASURE_SETTLE_MAX_MS = 650;
@@ -42,13 +42,10 @@ const MEASURE_TIMEOUT_MS = 1400;
 const CLUSTER_HEIGHT = 170;
 const ARROW_WIDTH = 40;
 const ARROW_HEIGHT = 56;
-const FOOTER_HEIGHT = 112;
+const TOP_CONTROL_HEIGHT = 56;
+const BOTTOM_META_HEIGHT = 48;
 const MIN_VISIBLE = 40;
 const MAX_MEASURE_ATTEMPTS = 2;
-
-interface TourOverlayProps {
-  tab: TourTab;
-}
 
 interface PositionedRect {
   stepIndex: number;
@@ -65,10 +62,12 @@ interface PresentedStep {
   stepIndex: number;
 }
 
-export default function TourOverlay({ tab }: TourOverlayProps) {
+export default function TourOverlay() {
+  const status = useTourStore((state) => state.status);
   const step = useCurrentTourStep();
   const stepIndex = useTourStore((state) => state.stepIndex);
   const stop = useTourStore((state) => state.stop);
+  const completeClosing = useTourStore((state) => state.completeClosing);
   const { width, height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const reducedMotion = useReducedMotion();
@@ -82,24 +81,32 @@ export default function TourOverlay({ tab }: TourOverlayProps) {
   const measurementGenerationRef = useRef(0);
   const layoutGenerationRef = useRef(0);
 
-  const isOnThisTab = step?.tab === tab;
-  const hasActiveStep = step != null && stepIndex != null && isOnThisTab;
+  const hasActiveStep = step != null && stepIndex != null;
   const currentAttempt =
     stepIndex != null && attempt?.stepIndex === stepIndex ? attempt.count : 0;
-  const viewport: TourViewport = {
+  const measurementViewport: TourViewport = {
     safeLeft: insets.left,
     safeRight: width - insets.right,
-    safeTop: insets.top + spacing.sm,
-    safeBottom: height - insets.bottom - FOOTER_HEIGHT,
+    safeTop: insets.top,
+    safeBottom: height - insets.bottom,
   };
-  const { safeLeft, safeRight, safeTop, safeBottom } = viewport;
+  const clusterViewport: TourViewport = {
+    ...measurementViewport,
+    safeTop: insets.top + TOP_CONTROL_HEIGHT,
+    safeBottom: height - insets.bottom - BOTTOM_META_HEIGHT,
+  };
+  const { safeLeft, safeRight, safeTop, safeBottom } = measurementViewport;
 
+  // Register the active step so the app-level watchdog can recover if this
+  // overlay never mounts for it.
   useEffect(() => {
     if (!hasActiveStep || step == null || stepIndex == null) return;
     setLastPresentedStep({ step, stepIndex });
     return registerTourOverlay(stepIndex);
   }, [hasActiveStep, step, stepIndex]);
 
+  // Own the native Modal lifecycle here. Post-tour presenters remain blocked
+  // while the store is `closing` and this fade is still on screen.
   useEffect(() => {
     let frame: number | null = null;
     overlayOpacity.stopAnimation();
@@ -147,6 +154,22 @@ export default function TourOverlay({ tab }: TourOverlayProps) {
     };
   }, [hasActiveStep, overlayOpacity, reducedMotion]);
 
+  // Acknowledge closing on the next frame, after React has committed the
+  // invisible Modal. This is the only normal path to `finished`.
+  useEffect(() => {
+    if (status !== 'closing' || isModalVisible) return;
+
+    const frame = requestAnimationFrame(() => {
+      const live = useTourStore.getState();
+      if (!modalVisibleRef.current && live.status === 'closing') {
+        completeClosing();
+      }
+    });
+
+    return () => cancelAnimationFrame(frame);
+  }, [completeClosing, isModalVisible, status]);
+
+  // Measure and, when needed, scroll the target into a predictable position.
   useEffect(() => {
     if (!hasActiveStep || step == null || stepIndex == null) return;
 
@@ -169,7 +192,10 @@ export default function TourOverlay({ tab }: TourOverlayProps) {
         return;
       }
 
-      if (measured != null && isOnScreen(measured, viewport, MIN_VISIBLE)) {
+      if (
+        measured != null &&
+        isOnScreen(measured, measurementViewport, MIN_VISIBLE)
+      ) {
         setPositionedRect({ stepIndex: measuringIndex, rect: measured });
         return;
       }
@@ -215,7 +241,7 @@ export default function TourOverlay({ tab }: TourOverlayProps) {
           return;
         }
 
-        if (isOnScreen(measured, viewport, MIN_VISIBLE)) {
+        if (isOnScreen(measured, measurementViewport, MIN_VISIBLE)) {
           setPositionedRect({ stepIndex: watchingIndex, rect: measured });
         } else {
           setAttempt((current) => {
@@ -283,7 +309,7 @@ export default function TourOverlay({ tab }: TourOverlayProps) {
   const placement =
     hole == null
       ? null
-      : placeCluster(hole, viewport, CLUSTER_HEIGHT, spacing.sm);
+      : placeCluster(hole, clusterViewport, CLUSTER_HEIGHT, spacing.sm);
   const isLast = presentedStep.stepIndex === tourSteps.length - 1;
   const clusterLeft = insets.left + spacing.lg;
   const clusterRight = insets.right + spacing.lg;
@@ -318,8 +344,12 @@ export default function TourOverlay({ tab }: TourOverlayProps) {
         accessibilityViewIsModal
         style={[styles.overlay, { opacity: overlayOpacity }]}
       >
-        <View style={StyleSheet.absoluteFill} pointerEvents="none">
-          <Svg width={width} height={height}>
+        <Pressable
+          accessible={false}
+          onPress={continueTour}
+          style={StyleSheet.absoluteFill}
+        >
+          <Svg pointerEvents="none" width={width} height={height}>
             <Defs>
               <Mask id="tourCutout">
                 <Rect x={0} y={0} width={width} height={height} fill="white" />
@@ -345,7 +375,7 @@ export default function TourOverlay({ tab }: TourOverlayProps) {
               mask="url(#tourCutout)"
             />
           </Svg>
-        </View>
+        </Pressable>
 
         {placement == null ? null : (
           <Animated.View
@@ -374,12 +404,13 @@ export default function TourOverlay({ tab }: TourOverlayProps) {
         )}
 
         <View
+          pointerEvents="box-none"
           style={[
-            styles.footer,
+            styles.topControl,
             {
               left: clusterLeft,
               right: clusterRight,
-              bottom: insets.bottom + spacing.lg,
+              top: insets.top + spacing.sm,
             },
           ]}
         >
@@ -393,23 +424,36 @@ export default function TourOverlay({ tab }: TourOverlayProps) {
               pressed && styles.buttonPressed,
             ]}
           >
-            <Text style={styles.advance}>{isLast ? 'Finish' : 'Continue'}</Text>
-          </Pressable>
-          <View style={styles.footerMeta}>
-            <Text style={styles.counter}>
-              {presentedStep.stepIndex + 1} of {tourSteps.length}
+            <Text style={styles.advance}>
+              {isLast ? 'Tap anywhere to finish' : 'Tap anywhere to continue'}
             </Text>
-            <Pressable
-              accessibilityLabel="Skip tour"
-              accessibilityRole="button"
-              disabled={!liveStepMatches}
-              hitSlop={spacing.md}
-              onPress={skipTour}
-              style={({ pressed }) => pressed && styles.buttonPressed}
-            >
-              <Text style={styles.skip}>Skip</Text>
-            </Pressable>
-          </View>
+          </Pressable>
+        </View>
+
+        <View
+          pointerEvents="box-none"
+          style={[
+            styles.bottomMeta,
+            {
+              left: clusterLeft,
+              right: clusterRight,
+              bottom: insets.bottom + spacing.sm,
+            },
+          ]}
+        >
+          <Text pointerEvents="none" style={styles.counter}>
+            {presentedStep.stepIndex + 1} of {tourSteps.length}
+          </Text>
+          <Pressable
+            accessibilityLabel="Skip tour"
+            accessibilityRole="button"
+            disabled={!liveStepMatches}
+            hitSlop={spacing.md}
+            onPress={skipTour}
+            style={({ pressed }) => pressed && styles.buttonPressed}
+          >
+            <Text style={styles.skip}>Skip</Text>
+          </Pressable>
         </View>
       </Animated.View>
     </Modal>
@@ -457,10 +501,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
   },
-  footer: {
+  topControl: {
     position: 'absolute',
     alignItems: 'center',
-    gap: spacing.sm,
   },
   advancePill: {
     minWidth: 132,
@@ -475,8 +518,10 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semibold,
     color: colors.text.primary,
   },
-  footerMeta: {
+  bottomMeta: {
+    position: 'absolute',
     flexDirection: 'row',
+    justifyContent: 'center',
     alignItems: 'center',
     gap: spacing.lg,
   },

@@ -41,7 +41,11 @@ import {
   syncRevenueCatAttributionForCurrentUser,
 } from '../../services/subscriptions/revenueCatIdentitySync';
 import { useAuthStore } from '../../stores/authStore';
-import { useIsTourFinished } from '../../features/tour/tourStore';
+import {
+  canPresentAfterTour,
+  useTourStore,
+} from '../../features/tour/tourStore';
+import { useAppTour } from '../../features/tour/useAppTour';
 import { useExitOfferStore } from '../../stores/exitOfferStore';
 import { useRevenueCatIdentityStore } from '../../stores/revenueCatIdentityStore';
 import { loadCriticalOnboardingImages } from '../../services/images/onboardingImageCache';
@@ -55,6 +59,7 @@ type LastStableGateStatus = 'signed_out' | 'needs_onboarding' | 'ready' | null;
 
 interface AppStackProps {
   showBootPaywall: boolean;
+  tourEnabled: boolean;
 }
 
 /**
@@ -68,11 +73,16 @@ interface AppStackProps {
  */
 const SCREEN_OPTIONS = { headerShown: false, freezeOnBlur: true } as const;
 
-function AppStack({ showBootPaywall }: AppStackProps) {
+function AppStack({ showBootPaywall, tourEnabled }: AppStackProps) {
   return (
     <Stack.Navigator screenOptions={SCREEN_OPTIONS}>
       <Stack.Screen name="MainTabs">
-        {() => <MainTabsRoute showBootPaywall={showBootPaywall} />}
+        {() => (
+          <MainTabsRoute
+            showBootPaywall={showBootPaywall}
+            tourEnabled={tourEnabled}
+          />
+        )}
       </Stack.Screen>
       <Stack.Screen
         name="Explore"
@@ -239,20 +249,28 @@ function AppStack({ showBootPaywall }: AppStackProps) {
   );
 }
 
-function MainTabsRoute({ showBootPaywall }: AppStackProps) {
+function MainTabsRoute({ showBootPaywall, tourEnabled }: AppStackProps) {
   // Capture once at mount: a pending exit offer takes precedence over the boot
   // paywall so the just-onboarded user never sees both.
   const exitOfferPending = useRef(useExitOfferStore.getState().pending).current;
   // The tour comes first for a just-onboarded user, so nothing may cover the
   // app until it has run, been skipped, or been found unnecessary.
-  const isTourFinished = useIsTourFinished();
+  const tourStatus = useTourStore((state) => state.status);
+  const hasResolvedTourSeenFlag = useAppTour(tourEnabled);
+  const canPresent = canPresentAfterTour(
+    tourEnabled,
+    hasResolvedTourSeenFlag,
+    tourStatus,
+  );
 
   return (
     <>
-      {exitOfferPending && isTourFinished ? <ExitOfferPresenter /> : null}
-      <MainTabs />
+      {exitOfferPending && canPresent ? (
+        <ExitOfferPresenter />
+      ) : null}
+      <MainTabs tourEnabled={tourEnabled} />
       {/* After MainTabs so the boot paywall can present over the app. */}
-      {!exitOfferPending && showBootPaywall && isTourFinished ? (
+      {!exitOfferPending && showBootPaywall && canPresent ? (
         <BootPaywallGate />
       ) : null}
     </>
@@ -408,7 +426,7 @@ function OnboardingOverlay({ gate }: { gate: OnboardingGate }) {
 
   return (
     <View style={styles.overlayRoot}>
-      <AppStack showBootPaywall={false} />
+      <AppStack showBootPaywall={false} tourEnabled={false} />
       <View style={styles.onboardingOverlay}>
         <AmbientBackground />
         <OnboardingFlow
@@ -457,7 +475,7 @@ export function RootNavigator({ allowBootPaywall = true }: RootNavigatorProps) {
   return (
     <>
       <AttFallbackPresenter />
-      <AppStack showBootPaywall={allowBootPaywall} />
+      <AppStack showBootPaywall={allowBootPaywall} tourEnabled />
     </>
   );
 }
