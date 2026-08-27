@@ -9,10 +9,15 @@ import HotelButton from '../features/room/HotelButton';
 import RoomProgressCard from '../features/room/RoomProgressCard';
 import { useRoomClaim } from '../features/room/useRoomClaim';
 import { useStartDaily } from '../hooks/useStartDaily';
+import TourOverlay from '../features/tour/TourOverlay';
+import { useTourScroller, useTourTarget } from '../features/tour/tourTargets';
+import type { TourTargetId } from '../features/tour/tourSteps';
 import type { HomeScreenProps } from '../app/navigation';
 import { useAuthStore } from '../stores/authStore';
 import { useDailyPlanScheduleQuery } from '../queries/dailyPlan/useDailyPlanScheduleQuery';
 import { DEFAULT_DAILY_PLAN_SCHEDULE } from '../services/dailyPlan/types';
+
+const TOUR_TARGETS: TourTargetId[] = ['dailies', 'extraPractice'];
 
 export default function HomeScreen({ navigation }: HomeScreenProps) {
   const user = useAuthStore((state) => state.user);
@@ -23,12 +28,17 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const dailies = roomClaim.dailies;
   const { start, accessAllowed, exerciseAccess } = useStartDaily('Home', dailies);
 
+  const tourScroll = useTourScroller(TOUR_TARGETS);
+  const dailiesTarget = useTourTarget('dailies');
+  const extraPracticeTarget = useTourTarget('extraPractice');
+
   // The recently-logged list and its analytics now live on the Heart tab
   // (see RecentlyLoggedSection — it uses useIsFocused to gate the view event).
 
   return (
     <View style={styles.screen}>
       <ScrollView
+        {...tourScroll}
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
@@ -49,11 +59,13 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
               tightly above the section title rather than floating at the full
               section gap. */}
           <View style={styles.dailiesGroup}>
-            <RoomProgressCard
-              progress={roomClaim.progress}
-              dailies={dailies}
-              isLoading={roomClaim.isLoading}
-            />
+            <View {...dailiesTarget}>
+              <RoomProgressCard
+                progress={roomClaim.progress}
+                dailies={dailies}
+                isLoading={roomClaim.isLoading}
+              />
+            </View>
             <TodaysDailiesSection
               technique={dailies.guidedTechnique}
               techniqueLoading={dailies.guidedTechniqueLoading}
@@ -72,17 +84,21 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
               onPressHistory={() => navigation.navigate('History')}
             />
           </View>
-          <ExtraPracticeSection
-            recommendedTechniqueId={dailies.guidedTechnique?.id ?? null}
-            excludedTechniqueIds={[
-              dailies.guidedTechnique?.id,
-              dailies.handPickedTechnique?.id,
-            ]}
-            exerciseAccess={exerciseAccess}
-            onSeeAll={() => navigation.navigate('Explore')}
-          />
+          <View {...extraPracticeTarget}>
+            <ExtraPracticeSection
+              recommendedTechniqueId={dailies.guidedTechnique?.id ?? null}
+              excludedTechniqueIds={[
+                dailies.guidedTechnique?.id,
+                dailies.handPickedTechnique?.id,
+              ]}
+              exerciseAccess={exerciseAccess}
+              onSeeAll={() => navigation.navigate('Explore')}
+            />
+          </View>
         </View>
       </ScrollView>
+
+      <TourOverlay tab="Home" />
     </View>
   );
 }
