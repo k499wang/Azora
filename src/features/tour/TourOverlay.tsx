@@ -132,6 +132,8 @@ export default function TourOverlay() {
         modalVisibleRef.current = false;
         setIsModalVisible(false);
         setLastPresentedStep(null);
+        setPositionedRect(null);
+        setAttempt(null);
       };
       if (reducedMotion) {
         overlayOpacity.setValue(0);
@@ -267,6 +269,11 @@ export default function TourOverlay() {
     presentedStep != null && positionedRect?.stepIndex === presentedStep.stepIndex
       ? positionedRect.rect
       : null;
+  const canContinue =
+    rect != null &&
+    hasActiveStep &&
+    presentedStep != null &&
+    useTourStore.getState().stepIndex === presentedStep.stepIndex;
 
   useEffect(() => {
     clusterOpacity.stopAnimation();
@@ -288,7 +295,7 @@ export default function TourOverlay() {
   }, [rect, clusterOpacity, reducedMotion]);
 
   useEffect(() => {
-    if (!isModalVisible || !hasActiveStep || presentedStep == null) return;
+    if (!isModalVisible || !canContinue || presentedStep == null) return;
     const { step: announcedStep, stepIndex: announcedIndex } = presentedStep;
     const id = setTimeout(() => {
       AccessibilityInfo.announceForAccessibility(
@@ -297,7 +304,7 @@ export default function TourOverlay() {
     }, 0);
     return () => clearTimeout(id);
   }, [
-    hasActiveStep,
+    canContinue,
     isModalVisible,
     presentedStep?.step.body,
     presentedStep?.stepIndex,
@@ -318,10 +325,8 @@ export default function TourOverlay() {
     hole == null
       ? 0
       : arrowOffsetX(hole, clusterLeft, clusterWidth, ARROW_WIDTH);
-  const liveStepMatches =
-    hasActiveStep && useTourStore.getState().stepIndex === presentedStep.stepIndex;
-
   const continueTour = () => {
+    if (!canContinue) return;
     if (useTourStore.getState().stepIndex !== presentedStep.stepIndex) return;
     useTourStore.getState().next();
   };
@@ -346,6 +351,7 @@ export default function TourOverlay() {
       >
         <Pressable
           accessible={false}
+          disabled={!canContinue}
           onPress={continueTour}
           style={StyleSheet.absoluteFill}
         >
@@ -403,32 +409,33 @@ export default function TourOverlay() {
           </Animated.View>
         )}
 
-        <View
-          pointerEvents="box-none"
-          style={[
-            styles.topControl,
-            {
-              left: clusterLeft,
-              right: clusterRight,
-              top: insets.top + spacing.sm,
-            },
-          ]}
-        >
-          <Pressable
-            accessibilityLabel={isLast ? 'Finish tour' : 'Continue tour'}
-            accessibilityRole="button"
-            disabled={!liveStepMatches}
-            onPress={continueTour}
-            style={({ pressed }) => [
-              styles.advancePill,
-              pressed && styles.buttonPressed,
+        {canContinue ? (
+          <View
+            pointerEvents="box-none"
+            style={[
+              styles.topControl,
+              {
+                left: clusterLeft,
+                right: clusterRight,
+                top: insets.top + spacing.sm,
+              },
             ]}
           >
-            <Text style={styles.advance}>
-              {isLast ? 'Tap anywhere to finish' : 'Tap anywhere to continue'}
-            </Text>
-          </Pressable>
-        </View>
+            <Pressable
+              accessibilityLabel={isLast ? 'Finish tour' : 'Continue tour'}
+              accessibilityRole="button"
+              onPress={continueTour}
+              style={({ pressed }) => [
+                styles.advancePill,
+                pressed && styles.buttonPressed,
+              ]}
+            >
+              <Text style={styles.advance}>
+                {isLast ? 'Tap anywhere to finish' : 'Tap anywhere to continue'}
+              </Text>
+            </Pressable>
+          </View>
+        ) : null}
 
         <View
           pointerEvents="box-none"
@@ -447,7 +454,7 @@ export default function TourOverlay() {
           <Pressable
             accessibilityLabel="Skip tour"
             accessibilityRole="button"
-            disabled={!liveStepMatches}
+            disabled={!hasActiveStep}
             hitSlop={spacing.md}
             onPress={skipTour}
             style={({ pressed }) => pressed && styles.buttonPressed}
