@@ -75,34 +75,34 @@ export function PaywallTrialStep({
         {
           label: 'Day 1: Today',
           body: 'Unlock all app features like heart insights and your personalized plan.',
-          icon: 'unlock',
+          icon: 'sparkle',
         },
         {
           label: `Day ${reminderDays}: Reminder`,
           body: "We'll send you a reminder that your trial is ending soon.",
-          icon: 'bell',
+          icon: 'message',
         },
         {
           label: `Day ${billingDay}: Billing starts`,
           body: "You'll be charged unless you cancel anytime before.",
-          icon: 'star',
+          icon: 'calendar',
         },
       ]
     : [
         {
           label: 'Today',
           body: 'Unlock all app features like heart insights and your personalized plan.',
-          icon: 'unlock',
+          icon: 'sparkle',
         },
         {
           label: 'Anytime',
           body: 'Change or cancel your plan whenever you want, no questions asked.',
-          icon: 'calendar',
+          icon: 'clock',
         },
         {
           label: 'Welcome back',
           body: 'Your past progress and insights stay with you whenever you return.',
-          icon: 'heart',
+          icon: 'journal',
         },
       ];
 

@@ -94,12 +94,17 @@ him. Do not spread that register anywhere else.
 - Bad: "Let's build our dream room together!!"
 
 Third person for narration, always: the copy describes Mochi, it does not speak
-as it. Mochi speaks only in bubbles, and only in the room. A bubble opens shortly after
-the room settles and then stays open for as long as the screen does — the line
-is part of that screen's copy, not a flourish that times out. Every line is a single word
-or an ellipsis, and it is always a reaction — he never explains, instructs, or
-describes the product. The one thing he ever asks for is help decorating, on
-`mochiFresh`, once.
+as it. Mochi speaks only in bubbles, and only in the room. Onboarding bubbles
+open shortly after the room settles and stay open for as long as the screen does
+— those one-word lines are screen copy, not a flourish that times out. The one
+thing he ever asks for is help decorating, on `mochiFresh`, once.
+
+Home has one deliberate exception. A direct tap on Mochi may produce one short,
+full sentence about live positive state: today's completed resets, a decoration
+ready to place, the decoration the user just chose, or a finished room. It lasts
+briefly and is always user-invoked. It never refers to absence, missed days,
+streak loss, disappointment, or a need the user must satisfy. Mochi reacts to
+what happened; he does not start a conversation.
 
 He does **not** appear on the question screens. Putting the question in his
 mouth has now been built and reverted twice — treat it as settled. The questions

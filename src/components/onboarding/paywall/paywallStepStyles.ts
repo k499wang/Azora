@@ -16,7 +16,7 @@ const TIMELINE_RAIL_WIDTH = 34;
 const TIMELINE_COPY_MIN_HEIGHT =
   typography.heading.heading1.lineHeight +
   spacing.xs +
-  typography.body.small.lineHeight * 2;
+  typography.body.medium.lineHeight * 2;
 
 export const paywallStepStyles = StyleSheet.create({
   proofCard: {
@@ -234,7 +234,7 @@ export const paywallStepStyles = StyleSheet.create({
     color: colors.text.primary,
   },
   timelineBody: {
-    ...typography.body.small,
+    ...typography.body.medium,
     color: colors.text.secondary,
     marginTop: spacing.xs,
   },
