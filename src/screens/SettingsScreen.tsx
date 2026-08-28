@@ -1,5 +1,5 @@
 import { Text } from '../components/common/Text';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Alert, Linking, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
 import * as Device from 'expo-device';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -16,6 +16,8 @@ import { useAuthStore } from '../stores/authStore';
 import { useHapticsPreference } from '../hooks/useHapticsPreference';
 import { trackProfileAction } from '../services/analytics/tracking';
 import type { SettingsScreenProps } from '../app/navigation';
+import { subscribeToClosingTransitionEnd } from '../app/navigation/useOpeningTransitionComplete';
+import { returnToHome } from '../app/navigation/returnToHome';
 import { getHeartRatePlacementGuidance } from '../lib/heartRate/captureGuidance';
 
 const FEEDBACK_EMAIL = 'feedback@tryazora.app';
@@ -28,6 +30,7 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
   const [signingOut, setSigningOut] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [notificationsVisible, setNotificationsVisible] = useState(false);
+  const replayingTourRef = useRef(false);
   const { hapticsEnabled, setHapticsEnabled } = useHapticsPreference();
 
   const handleSignOut = () => {
@@ -168,6 +171,23 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
     );
   };
 
+  const handleReplayAppTour = () => {
+    if (replayingTourRef.current) return;
+    replayingTourRef.current = true;
+
+    // Home is frozen underneath Settings. Start the tour only after the native
+    // close finishes so its first target can be measured in the visible window.
+    let unsubscribe = () => {};
+    unsubscribe = subscribeToClosingTransitionEnd(
+      (listener) => navigation.addListener('transitionEnd', listener),
+      () => {
+        unsubscribe();
+        void replayAppTour();
+      },
+    );
+    returnToHome(navigation);
+  };
+
   return (
     <View style={styles.screen}>
       <ScrollView
@@ -287,10 +307,7 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
               />
               <SettingsRow
                 label="Replay app tour (dev)"
-                onPress={() => {
-                  navigation.navigate('MainTabs', { screen: 'Home' });
-                  void replayAppTour();
-                }}
+                onPress={handleReplayAppTour}
                 isLast
               />
             </SettingsGroup>

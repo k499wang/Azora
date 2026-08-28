@@ -46,6 +46,24 @@ export function subscribeToOpeningTransitionEnd(
   onComplete: () => void,
   timers: TransitionTimers = globalThis,
 ): () => void {
+  return subscribeToTransitionEnd(subscribe, false, onComplete, timers);
+}
+
+/** Subscribe before leaving a route, then complete once its close finishes. */
+export function subscribeToClosingTransitionEnd(
+  subscribe: SubscribeToTransitionEnd,
+  onComplete: () => void,
+  timers: TransitionTimers = globalThis,
+): () => void {
+  return subscribeToTransitionEnd(subscribe, true, onComplete, timers);
+}
+
+function subscribeToTransitionEnd(
+  subscribe: SubscribeToTransitionEnd,
+  expectedClosing: boolean,
+  onComplete: () => void,
+  timers: TransitionTimers,
+): () => void {
   let completed = false;
   let fallback: ReturnType<typeof setTimeout> | null = null;
 
@@ -65,7 +83,7 @@ export function subscribeToOpeningTransitionEnd(
   // Subscribed before the fallback is armed: the event is the better answer, so
   // give it every chance to be the one that arrives.
   const unsubscribe = subscribe((event) => {
-    if (event.data.closing) return;
+    if (event.data.closing !== expectedClosing) return;
     complete();
   });
 

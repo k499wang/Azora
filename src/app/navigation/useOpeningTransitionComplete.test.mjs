@@ -1,6 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { subscribeToOpeningTransitionEnd } from './useOpeningTransitionComplete.ts';
+import {
+  subscribeToClosingTransitionEnd,
+  subscribeToOpeningTransitionEnd,
+} from './useOpeningTransitionComplete.ts';
 
 function createTimers() {
   let pending = null;
@@ -160,4 +163,21 @@ test('cleanup disarms the fallback', () => {
 
   timers.fire();
   assert.equal(completionCalls, 0);
+});
+
+test('closing subscriber waits for the route to finish closing', () => {
+  const source = createTransitionSource();
+  const timers = createTimers();
+  let completionCalls = 0;
+
+  subscribeToClosingTransitionEnd(source.subscribe, () => {
+    completionCalls += 1;
+  }, timers);
+
+  source.emit(false);
+  assert.equal(completionCalls, 0);
+
+  source.emit(true);
+  assert.equal(completionCalls, 1);
+  assert.equal(timers.armedFor, null);
 });

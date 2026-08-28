@@ -15,6 +15,7 @@ const routeNames = [
   'SessionComplete',
   'DailyExercise',
   'DailyResult',
+  'Settings',
 ];
 
 function createStackHarness() {
@@ -96,6 +97,10 @@ test('ten repeated guided and daily/search cycles keep one root route', () => {
       'DailyResult',
     ]);
 
+    returnToHome(stack.navigation);
+    assert.deepEqual(stack.routeNames(), ['MainTabs']);
+
+    stack.navigation.navigate('Settings');
     returnToHome(stack.navigation);
     assert.deepEqual(stack.routeNames(), ['MainTabs']);
   }
