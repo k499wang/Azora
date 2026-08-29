@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   AccessibilityInfo,
   Animated,
@@ -78,8 +78,6 @@ export default function TourOverlay() {
   const modalVisibleRef = useRef(false);
   const overlayOpacity = useRef(new Animated.Value(0)).current;
   const clusterOpacity = useRef(new Animated.Value(0)).current;
-  const measurementGenerationRef = useRef(0);
-  const layoutGenerationRef = useRef(0);
 
   const hasActiveStep = step != null && stepIndex != null;
   const currentAttempt =
@@ -171,14 +169,45 @@ export default function TourOverlay() {
     return () => cancelAnimationFrame(frame);
   }, [completeClosing, isModalVisible, status]);
 
-  // Measure and, when needed, scroll the target into a predictable position.
-  useEffect(() => {
+  // Measure, publish, and then watch one target as a single lifecycle. Keeping
+  // one owner prevents a layout event from racing the initial settled measure.
+  useLayoutEffect(() => {
     if (!hasActiveStep || step == null || stepIndex == null) return;
 
     let isActive = true;
     const measuringIndex = stepIndex;
-    const generation = measurementGenerationRef.current + 1;
-    measurementGenerationRef.current = generation;
+    let unwatch: (() => void) | null = null;
+    let latestRequestId = 0;
+
+    const isCurrentStep = () =>
+      isActive && useTourStore.getState().stepIndex === measuringIndex;
+
+    const clearCurrentRect = () => {
+      setPositionedRect((current) =>
+        current?.stepIndex === measuringIndex ? null : current,
+      );
+    };
+
+    const stopWatching = () => {
+      if (unwatch == null) return;
+      latestRequestId += 1;
+      const stop = unwatch;
+      unwatch = null;
+      stop();
+    };
+
+    const retryOrAdvance = () => {
+      if (!isCurrentStep()) return;
+      if (currentAttempt + 1 < MAX_MEASURE_ATTEMPTS) {
+        setAttempt({ stepIndex: measuringIndex, count: currentAttempt + 1 });
+        return;
+      }
+      useTourStore.getState().next();
+    };
+
+    // A viewport change or tagged retry must not display old geometry while
+    // the new settled measurement is pending. Preserve other steps for exit.
+    clearCurrentRect();
 
     void measureTourTarget(step.target, {
       desiredTop: DESIRED_TOP,
@@ -186,30 +215,49 @@ export default function TourOverlay() {
       timeoutMs: MEASURE_TIMEOUT_MS,
       animated: !reducedMotion,
     }).then((measured) => {
-      if (
-        !isActive ||
-        generation !== measurementGenerationRef.current ||
-        useTourStore.getState().stepIndex !== measuringIndex
-      ) {
-        return;
-      }
+      if (!isCurrentStep()) return;
 
       if (
         measured != null &&
         isOnScreen(measured, measurementViewport, MIN_VISIBLE)
       ) {
         setPositionedRect({ stepIndex: measuringIndex, rect: measured });
+
+        unwatch = watchTourTargetLayout(step.target, () => {
+          if (unwatch == null || !isCurrentStep()) return;
+          const requestId = ++latestRequestId;
+
+          void remeasureTourTarget(step.target).then((updated) => {
+            if (
+              unwatch == null ||
+              !isCurrentStep() ||
+              requestId !== latestRequestId
+            ) {
+              return;
+            }
+
+            if (
+              updated != null &&
+              isOnScreen(updated, measurementViewport, MIN_VISIBLE)
+            ) {
+              setPositionedRect({ stepIndex: measuringIndex, rect: updated });
+              return;
+            }
+
+            stopWatching();
+            clearCurrentRect();
+            retryOrAdvance();
+          });
+        });
         return;
       }
-      if (currentAttempt + 1 < MAX_MEASURE_ATTEMPTS) {
-        setAttempt({ stepIndex: measuringIndex, count: currentAttempt + 1 });
-        return;
-      }
-      useTourStore.getState().next();
+
+      retryOrAdvance();
     });
 
     return () => {
       isActive = false;
+      stopWatching();
     };
   }, [
     currentAttempt,
@@ -223,45 +271,6 @@ export default function TourOverlay() {
     stepIndex,
   ]);
 
-  useEffect(() => {
-    if (!hasActiveStep || step == null || stepIndex == null) return;
-
-    let isActive = true;
-    const watchingIndex = stepIndex;
-    layoutGenerationRef.current += 1;
-
-    const unwatch = watchTourTargetLayout(step.target, () => {
-      const generation = layoutGenerationRef.current + 1;
-      layoutGenerationRef.current = generation;
-      void remeasureTourTarget(step.target).then((measured) => {
-        if (
-          !isActive ||
-          generation !== layoutGenerationRef.current ||
-          useTourStore.getState().stepIndex !== watchingIndex ||
-          measured == null
-        ) {
-          return;
-        }
-
-        if (isOnScreen(measured, measurementViewport, MIN_VISIBLE)) {
-          setPositionedRect({ stepIndex: watchingIndex, rect: measured });
-        } else {
-          setAttempt((current) => {
-            const count = current?.stepIndex === watchingIndex ? current.count : 0;
-            if (count >= MAX_MEASURE_ATTEMPTS - 1) return current;
-            return { stepIndex: watchingIndex, count: count + 1 };
-          });
-        }
-      });
-    });
-
-    return () => {
-      isActive = false;
-      layoutGenerationRef.current += 1;
-      unwatch();
-    };
-  }, [hasActiveStep, safeBottom, safeLeft, safeRight, safeTop, step, stepIndex]);
-
   const presentedStep = hasActiveStep && step != null && stepIndex != null
     ? { step, stepIndex }
     : lastPresentedStep;
@@ -269,6 +278,7 @@ export default function TourOverlay() {
     presentedStep != null && positionedRect?.stepIndex === presentedStep.stepIndex
       ? positionedRect.rect
       : null;
+  const hasPositionedRect = rect != null;
   const canContinue =
     rect != null &&
     hasActiveStep &&
@@ -277,7 +287,7 @@ export default function TourOverlay() {
 
   useEffect(() => {
     clusterOpacity.stopAnimation();
-    if (rect == null) {
+    if (!hasPositionedRect) {
       clusterOpacity.setValue(0);
       return;
     }
@@ -292,7 +302,7 @@ export default function TourOverlay() {
       useNativeDriver: true,
     }).start();
     return () => clusterOpacity.stopAnimation();
-  }, [rect, clusterOpacity, reducedMotion]);
+  }, [clusterOpacity, hasPositionedRect, reducedMotion]);
 
   useEffect(() => {
     if (!isModalVisible || !canContinue || presentedStep == null) return;
