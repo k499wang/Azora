@@ -61,7 +61,9 @@ test('placement and floor replay have one entrance owner', () => {
   const floor = read('components/onboarding/screens/MochiFloorScreen.tsx');
 
   for (const screen of [place, floor]) {
-    assert.match(screen, /disableEntranceAnimation/);
+    // The layout entrance stays on, so these two arrive like every other step
+    // in the flow; the reveal owns only the pieces dropping in.
+    assert.doesNotMatch(screen, /disableEntranceAnimation/);
     assert.match(screen, /animateEntrance=\{false\}/);
   }
 

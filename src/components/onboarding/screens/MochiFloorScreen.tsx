@@ -68,7 +68,6 @@ export default function MochiFloorScreen({
       typeTitle
       centerBody
       centerOnScreen
-      disableEntranceAnimation
       footer={<OnboardingPrimaryButton label="Continue" onPress={onContinue} />}
     >
       <MochiStage
