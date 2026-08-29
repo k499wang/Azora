@@ -1,9 +1,6 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import {
-  Animated,
-  Easing,
   Modal,
-  PanResponder,
   Pressable,
   StyleSheet,
   View,
@@ -23,11 +20,6 @@ interface BottomSheetProps {
   onDismissed?: () => void;
 }
 
-const DRAG_ACTIVATION_PX = 4;
-const DRAG_DISMISS_PX = 120;
-const DRAG_DISMISS_VELOCITY = 0.7;
-const SHEET_FALLBACK_HEIGHT = 600;
-
 export default function BottomSheet({
   visible,
   onClose,
@@ -37,124 +29,39 @@ export default function BottomSheet({
   onDismissed,
 }: BottomSheetProps) {
   const insets = useSafeAreaInsets();
-  const backdropOpacity = useRef(new Animated.Value(0)).current;
-  const translateY = useRef(new Animated.Value(SHEET_FALLBACK_HEIGHT)).current;
-  const sheetHeight = useRef(SHEET_FALLBACK_HEIGHT);
-  const onCloseRef = useRef(onClose);
-  const onDismissedRef = useRef(onDismissed);
-  const [mounted, setMounted] = useState(visible);
-
-  onCloseRef.current = onClose;
-  onDismissedRef.current = onDismissed;
+  const wasVisible = useRef(false);
 
   useEffect(() => {
-    if (visible) {
-      setMounted(true);
-      translateY.setValue(sheetHeight.current);
-      Animated.parallel([
-        Animated.timing(backdropOpacity, {
-          toValue: 1,
-          duration: 240,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: true,
-        }),
-        Animated.timing(translateY, {
-          toValue: 0,
-          duration: 240,
-          easing: Easing.out(Easing.cubic),
-          useNativeDriver: true,
-        }),
-      ]).start();
-      return;
+    if (wasVisible.current && !visible) {
+      onDismissed?.();
     }
-
-    Animated.parallel([
-      Animated.timing(backdropOpacity, {
-        toValue: 0,
-        duration: 180,
-        easing: Easing.in(Easing.cubic),
-        useNativeDriver: true,
-      }),
-      Animated.timing(translateY, {
-        toValue: sheetHeight.current,
-        duration: 180,
-        easing: Easing.in(Easing.cubic),
-        useNativeDriver: true,
-      }),
-    ]).start(({ finished }) => {
-      if (!finished) return;
-      setMounted(false);
-      onDismissedRef.current?.();
-    });
-  }, [visible, backdropOpacity, translateY]);
-
-  const panResponder = useMemo(
-    () =>
-      PanResponder.create({
-        onStartShouldSetPanResponder: () => true,
-        onMoveShouldSetPanResponder: (_, gesture) =>
-          Math.abs(gesture.dy) > DRAG_ACTIVATION_PX &&
-          Math.abs(gesture.dy) > Math.abs(gesture.dx),
-        onPanResponderMove: (_, gesture) => {
-          translateY.setValue(Math.max(0, gesture.dy));
-        },
-        onPanResponderRelease: (_, gesture) => {
-          if (gesture.dy > DRAG_DISMISS_PX || gesture.vy > DRAG_DISMISS_VELOCITY) {
-            onCloseRef.current();
-            return;
-          }
-          Animated.spring(translateY, {
-            toValue: 0,
-            useNativeDriver: true,
-            bounciness: 0,
-          }).start();
-        },
-        onPanResponderTerminate: () => {
-          Animated.spring(translateY, {
-            toValue: 0,
-            useNativeDriver: true,
-            bounciness: 0,
-          }).start();
-        },
-      }),
-    [translateY],
-  );
-
-  if (!mounted) return null;
+    wasVisible.current = visible;
+  }, [onDismissed, visible]);
 
   return (
     <Modal
-      visible={mounted}
-      animationType="none"
+      visible={visible}
+      animationType="slide"
       transparent
       statusBarTranslucent
       onRequestClose={onClose}
     >
       <View style={styles.backdrop}>
-        <Animated.View style={[styles.backdropFill, { opacity: backdropOpacity }]} />
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
-        <Animated.View
-          onLayout={(event) => {
-            sheetHeight.current = event.nativeEvent.layout.height;
-          }}
+        <View
           style={[
             styles.sheet,
-            {
-              paddingBottom: insets.bottom + spacing.lg,
-              transform: [{ translateY }],
-            },
+            { paddingBottom: insets.bottom + spacing.lg },
           ]}
         >
-          <View style={styles.dragArea} {...panResponder.panHandlers}>
+          <View style={styles.header}>
             <View style={styles.grabber} />
-            <View style={styles.header}>
-              <Text style={styles.title}>{title}</Text>
-              {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
-            </View>
+            <Text style={styles.title}>{title}</Text>
+            {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
           </View>
 
           {children}
-        </Animated.View>
+        </View>
       </View>
     </Modal>
   );
@@ -164,9 +71,6 @@ const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
     justifyContent: 'flex-end',
-  },
-  backdropFill: {
-    ...StyleSheet.absoluteFillObject,
     backgroundColor: colors.overlay.dark,
   },
   sheet: {
@@ -178,7 +82,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     gap: spacing.lg,
   },
-  dragArea: {
+  header: {
     gap: spacing.lg,
   },
   grabber: {
@@ -187,9 +91,6 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     alignSelf: 'center',
     backgroundColor: colors.neutral[300],
-  },
-  header: {
-    gap: 2,
   },
   title: {
     ...typography.title.title2,
