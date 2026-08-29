@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import AgeScreen from './screens/AgeScreen';
 import ScienceCredibilityScreen from './screens/ScienceCredibilityScreen';
 import BaselineScreen from './screens/BaselineScreen';
@@ -281,14 +281,30 @@ function OnboardingFlowSteps({
     initialSavedProfile == null ? 'mochiIntro' : 'paywall',
   );
   const isMochiAnimationSequence = MOCHI_ANIMATION_STEPS.has(step);
+  const mochiReplayReleaseRef = useRef<(() => void) | null>(null);
 
-  // These three screens form one continuous, graphics-heavy story beat. Keep
-  // one replay pause alive while moving between them so a capture cannot land
-  // between screen-level cleanup and the next screen mounting.
+  const ensureMochiReplayPaused = useCallback(() => {
+    if (mochiReplayReleaseRef.current != null) return;
+    mochiReplayReleaseRef.current = pauseSessionReplay({
+      autoResumeAfterMs: null,
+    });
+  }, []);
+
+  const releaseMochiReplayPause = useCallback(() => {
+    const release = mochiReplayReleaseRef.current;
+    mochiReplayReleaseRef.current = null;
+    release?.();
+  }, []);
+
+  // Keep one pause across this continuous story beat. Releasing from an effect
+  // ensures the destination outside the sequence has committed first.
   useEffect(() => {
-    if (!isMochiAnimationSequence) return;
-    return pauseSessionReplay({ autoResumeAfterMs: null });
-  }, [isMochiAnimationSequence]);
+    if (!isMochiAnimationSequence) {
+      releaseMochiReplayPause();
+    }
+  }, [isMochiAnimationSequence, releaseMochiReplayPause]);
+
+  useEffect(() => releaseMochiReplayPause, [releaseMochiReplayPause]);
 
   const [selectedIntents, setSelectedIntents] = useState<OnboardingIntent[]>([]);
   const [primaryIntent, setPrimaryIntent] = useState<OnboardingIntent | null>(
@@ -475,6 +491,12 @@ function OnboardingFlowSteps({
     action: OnboardingTransitionAction,
     properties?: OnboardingAnalyticsProperties,
   ) => {
+    // Pause before committing the first graphics-heavy screen so its initial
+    // mount cannot compete with session replay capture work.
+    if (MOCHI_ANIMATION_STEPS.has(nextStep)) {
+      ensureMochiReplayPaused();
+    }
+
     const eventInput = {
       ...getStepEventInput(),
       nextStep,

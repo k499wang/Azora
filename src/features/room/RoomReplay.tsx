@@ -62,7 +62,6 @@ export default function RoomReplay({
 
   const bloom = useSharedValue(0);
   const pop = useSharedValue(0);
-  const [visiblePieceCount, setVisiblePieceCount] = useState(0);
 
   useEffect(() => {
     bloom.value = withDelay(
@@ -78,26 +77,7 @@ export default function RoomReplay({
       ),
     );
 
-    // Mount each SVG only when its entrance begins. This spreads the native SVG
-    // construction across the replay instead of doing all seven on one frame.
-    const timers = order.map((_, index) =>
-      setTimeout(
-        () => setVisiblePieceCount(index + 1),
-        START_MS + index * STAGGER_MS,
-      ),
-    );
-
-    timers.push(
-      ...order.map((_, index) =>
-        setTimeout(() => {
-          if (isHapticsEnabled()) {
-            Haptics.selectionAsync().catch(() => {});
-          }
-        }, START_MS + index * STAGGER_MS + PIECE_MS * 0.7),
-      ),
-    );
-
-    timers.push(
+    const timers = [
       setTimeout(() => {
         if (isHapticsEnabled()) {
           Haptics.notificationAsync(
@@ -105,7 +85,7 @@ export default function RoomReplay({
           ).catch(() => {});
         }
       }, landsAt),
-    );
+    ];
 
     if (onDone != null) {
       timers.push(setTimeout(onDone, landsAt + TAIL_MS));
@@ -157,12 +137,13 @@ export default function RoomReplay({
         ]}
       />
 
-      {order.slice(0, visiblePieceCount).map((day) => (
+      {order.map((day, index) => (
         <Piece
           key={day}
           width={width}
           day={day}
           option={picks[day] as string}
+          delayMs={START_MS + index * STAGGER_MS}
         />
       ))}
 
@@ -190,21 +171,43 @@ function Piece({
   width,
   day,
   option,
+  delayMs,
 }: {
   width: number;
   day: DayKey;
   option: string;
+  delayMs: number;
 }) {
   const enter = useSharedValue(0);
+  const [visible, setVisible] = useState(false);
 
   useEffect(() => {
+    // Each piece owns its reveal so mounting one SVG does not rerender the
+    // room or any artwork that has already landed.
+    const showTimer = setTimeout(() => setVisible(true), delayMs);
+    const hapticTimer = setTimeout(() => {
+      if (isHapticsEnabled()) {
+        Haptics.selectionAsync().catch(() => {});
+      }
+    }, delayMs + PIECE_MS * 0.7);
+
+    return () => {
+      clearTimeout(showTimer);
+      clearTimeout(hapticTimer);
+    };
+  }, [delayMs]);
+
+  useEffect(() => {
+    if (!visible) return;
+
+    enter.value = 0;
     enter.value = withTiming(1, {
       duration: PIECE_MS,
       easing: Easing.out(Easing.back(1.6)),
     });
 
     return () => cancelAnimation(enter);
-  }, [enter]);
+  }, [enter, visible]);
 
   const style = useAnimatedStyle(() => ({
     opacity: interpolate(enter.value, [0, 0.35], [0, 1], 'clamp'),
@@ -213,6 +216,8 @@ function Piece({
       { scale: interpolate(enter.value, [0, 1], [0.82, 1]) },
     ],
   }));
+
+  if (!visible) return null;
 
   // Rasterising turns the entrance into a texture move instead of a
   // re-composite of every polygon on every frame. Safe because pieces only
