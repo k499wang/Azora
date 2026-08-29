@@ -125,9 +125,15 @@ import { formatLocalDate } from '../../lib/calendar/weekCalendarDays';
 import { buildOnboardingSaveFailureDiagnostics } from '../../queries/profile/onboardingSaveDiagnostics';
 import type { SavedOnboardingProfile } from '../../services/profile/onboardingStatusService';
 import { requestStoreReview } from '../../services/reviews/storeReview';
+import { pauseSessionReplay } from '../../services/analytics/sessionReplay';
 
 // Set to true to re-enable the intent reflection screen between intent selection and name entry.
 const INTENT_REFLECTION_ENABLED = false;
+const MOCHI_ANIMATION_STEPS = new Set<OnboardingStep>([
+  'mochiPlace',
+  'mochiFloor',
+  'mochiRooms',
+]);
 
 export interface OnboardingFlowResult {
   onboardingGoal: string;
@@ -274,6 +280,16 @@ function OnboardingFlowSteps({
   const [step, setStep] = useState<OnboardingStep>(
     initialSavedProfile == null ? 'mochiIntro' : 'paywall',
   );
+  const isMochiAnimationSequence = MOCHI_ANIMATION_STEPS.has(step);
+
+  // These three screens form one continuous, graphics-heavy story beat. Keep
+  // one replay pause alive while moving between them so a capture cannot land
+  // between screen-level cleanup and the next screen mounting.
+  useEffect(() => {
+    if (!isMochiAnimationSequence) return;
+    return pauseSessionReplay({ autoResumeAfterMs: null });
+  }, [isMochiAnimationSequence]);
+
   const [selectedIntents, setSelectedIntents] = useState<OnboardingIntent[]>([]);
   const [primaryIntent, setPrimaryIntent] = useState<OnboardingIntent | null>(
     null,

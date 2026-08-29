@@ -68,6 +68,7 @@ export default function MochiFloorScreen({
       typeTitle
       centerBody
       centerOnScreen
+      disableEntranceAnimation
       footer={<OnboardingPrimaryButton label="Continue" onPress={onContinue} />}
     >
       <MochiStage
@@ -75,7 +76,7 @@ export default function MochiFloorScreen({
         accessibilityLabel={`Say hello to ${MASCOT_NAME}`}
         onPress={() => blob.current?.cheer()}
         speech={filled ? 'home.' : undefined}
-
+        animateEntrance={false}
       >
         {replay}
       </MochiStage>

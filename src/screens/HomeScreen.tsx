@@ -51,7 +51,9 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           rightSlot={<HotelButton floors={roomClaim.room?.floor ?? 1} />}
         />
 
-        <HomeRoom room={roomClaim.room} progress={roomClaim.progress} />
+        <View style={styles.roomBlock}>
+          <HomeRoom room={roomClaim.room} progress={roomClaim.progress} />
+        </View>
 
         <View style={styles.bodySection}>
           {/* The progress card belongs to the dailies it tracks, so it sits
@@ -111,9 +113,14 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingBottom: spacing['7xl'] + spacing.xl,
-    gap: margin.itemGap,
+  },
+  // Tighter than the standard item gap: the room is what the screen opens on,
+  // so it sits up under the bar rather than reading as the first item in a list.
+  roomBlock: {
+    marginTop: spacing.md,
   },
   bodySection: {
+    marginTop: margin.itemGap,
     paddingHorizontal: padding.screen.horizontal,
     gap: margin.sectionGap,
   },

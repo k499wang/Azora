@@ -49,7 +49,6 @@ import { useAppTour } from '../../features/tour/useAppTour';
 import { useExitOfferStore } from '../../stores/exitOfferStore';
 import { useRevenueCatIdentityStore } from '../../stores/revenueCatIdentityStore';
 import { loadCriticalOnboardingImages } from '../../services/images/onboardingImageCache';
-import { colors } from '../../theme/colors';
 import { MainTabs } from './MainTabs';
 import type { RootStackNavigationProp, RootStackParamList } from './types';
 
@@ -419,24 +418,21 @@ interface RootNavigatorProps {
   allowBootPaywall?: boolean;
 }
 
-function OnboardingOverlay({ gate }: { gate: OnboardingGate }) {
+function OnboardingRoot({ gate }: { gate: OnboardingGate }) {
   useEffect(() => {
     void loadCriticalOnboardingImages();
   }, []);
 
   return (
-    <View style={styles.overlayRoot}>
-      <AppStack showBootPaywall={false} tourEnabled={false} />
-      <View style={styles.onboardingOverlay}>
-        <AmbientBackground />
-        <OnboardingFlow
-          initialSavedProfile={gate.savedOnboardingProfile}
-          isSavingProfile={gate.isSavingOnboardingProfile}
-          isCompletingOnboarding={gate.isCompletingOnboarding}
-          onSaveProfile={gate.saveOnboardingProfile}
-          onComplete={gate.completeOnboarding}
-        />
-      </View>
+    <View style={styles.onboardingRoot}>
+      <AmbientBackground />
+      <OnboardingFlow
+        initialSavedProfile={gate.savedOnboardingProfile}
+        isSavingProfile={gate.isSavingOnboardingProfile}
+        isCompletingOnboarding={gate.isCompletingOnboarding}
+        onSaveProfile={gate.saveOnboardingProfile}
+        onComplete={gate.completeOnboarding}
+      />
     </View>
   );
 }
@@ -448,7 +444,7 @@ export function RootNavigator({ allowBootPaywall = true }: RootNavigatorProps) {
 
   if (gate.status === 'booting') {
     if (lastOnboardingGateRef.current != null) {
-      return <OnboardingOverlay gate={lastOnboardingGateRef.current} />;
+      return <OnboardingRoot gate={lastOnboardingGateRef.current} />;
     }
 
     if (lastStableGateStatusRef.current === 'signed_out') {
@@ -467,7 +463,7 @@ export function RootNavigator({ allowBootPaywall = true }: RootNavigatorProps) {
   if (gate.status === 'needs_onboarding') {
     lastStableGateStatusRef.current = 'needs_onboarding';
     lastOnboardingGateRef.current = gate;
-    return <OnboardingOverlay gate={gate} />;
+    return <OnboardingRoot gate={gate} />;
   }
 
   lastStableGateStatusRef.current = 'ready';
@@ -481,12 +477,7 @@ export function RootNavigator({ allowBootPaywall = true }: RootNavigatorProps) {
 }
 
 const styles = StyleSheet.create({
-  overlayRoot: {
+  onboardingRoot: {
     flex: 1,
-    backgroundColor: colors.background.primary,
-  },
-  onboardingOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: colors.background.canvas,
   },
 });
