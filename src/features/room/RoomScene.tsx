@@ -292,7 +292,7 @@ export const DAYS: { key: DayKey; title: string; note: string; options: { id: st
 /** back-to-front paint order for a filled room */
 export const PAINT_ORDER: DayKey[] = ['day6', 'day5', 'day7', 'day1', 'day3', 'day2', 'day4'];
 
-const Polys = ({ polys }: { polys: Poly[] }) => (
+export const Polys = ({ polys }: { polys: Poly[] }) => (
   <>
     {polys.map((q, k) => (
       <Polygon

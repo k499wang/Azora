@@ -8,6 +8,7 @@ import {
 } from 'react';
 import { PixelRatio, StyleSheet, View } from 'react-native';
 import Animated, {
+  runOnJS,
   useAnimatedStyle,
   useFrameCallback,
   useReducedMotion,
@@ -21,7 +22,19 @@ import { colors } from '../../theme/colors';
 import { duration, spring } from '../../theme/motion';
 import { fonts, typography } from '../../theme/typography';
 import MochiSpeechBubble from './MochiSpeechBubble';
-import { VIEW_BOX_HEIGHT, VIEW_BOX_WIDTH } from './RoomScene';
+import {
+  BLOB_HALF_W,
+  START,
+  planWalk,
+  type FloorGrid,
+} from './blobWalk';
+import { flatFloor } from './roomLayers';
+import {
+  FLOOR_HALF_D,
+  FLOOR_HALF_W,
+  VIEW_BOX_HEIGHT,
+  VIEW_BOX_WIDTH,
+} from './roomGeometry';
 import { useWhileVisible } from '../../hooks/useWhileVisible';
 
 /**
@@ -39,46 +52,37 @@ const ORIGIN_X = VIEW_BOX_WIDTH / 2;
 const ORIGIN_Y = VIEW_BOX_HEIGHT / 2;
 
 /**
- * The floor plane, in the same basis `roomShells.floorPoint` uses. A position
- * on it is a `depth` (how far toward the viewer) and a `side` (how far right):
- * `x = HALF_W * side`, `y = HALF_D * depth`.
+ * Where it walks and how it gets around the furniture lives in `blobWalk`; this
+ * file owns only how the walking looks.
  */
-const HALF_W = 155.9;
-const HALF_D = 90;
+
+/** viewBox units per second, and how long it stands about between trips */
+const SPEED = 32;
+const REST_MIN = 0.8;
+const REST_VARY = 2.2;
 
 /**
- * Where it is allowed to walk — an ellipse over the open front-left floor.
- *
- * Three edges bound it, and all three are about the blob's full silhouette, not
- * just its feet, because the body floats above its contact point:
- *
- * - it stays past `depth` 1.01 (y=91), in front of the day 2 and day 3 wall
- *   furniture, whose footprints all end by y=73 in this x range;
- * - its right edge stays under x=14, clearing the day 4 floor accent at x=19;
- * - it stays off the front-left frame edge, which runs `x = -HALF_W * (2 - depth)`.
- *
- * So the blob is always genuinely nearer the viewer than anything it overlaps,
- * and painting it last on top of the room reads as correct depth rather than as
- * a sticker. Growing the blob tightens all three — shrink this ellipse to match.
+ * How far past a piece's front edge it has to be before it changes places with
+ * it in the paint order. Without the band, a blob idling on the line would swap
+ * layers every few frames and re-render the room with it.
  */
-const WALK = { depth: 1.2, side: -0.33, rDepth: 0.19, rSide: 0.18 };
-
-/** the room width the walk ellipse above was drawn for; narrower rooms tighten it */
-const WANDER_FULL_WIDTH = 330;
-
-/** floor units per second, and the shortest trip worth taking */
-const SPEED = 0.12;
-const MIN_TRIP = 0.19;
+const CUT_HYSTERESIS = 3;
 
 /** one full stride cycle is two steps */
 const STEP_RATE = Math.PI * 2 * 0.95;
 
 /** blob geometry, in viewBox units — scaled to the rendered room by `u` */
-const BODY_W = 54;
+const BODY_W = BLOB_HALF_W * 2;
 const BODY_H = 48;
 const BODY_ROUND = BODY_H / 2;
-/** how far the body floats above the ground point, leaving the feet visible */
-const BODY_LIFT = 6;
+/**
+ * How far the body floats above the ground point, which is both how much of the
+ * 9.5-tall feet shows below it and — the other way round — how deeply they tuck
+ * into it. The tuck has to stay deeper than anything the body does vertically,
+ * or a walking blob opens daylight between itself and the foot it is standing
+ * on, and the legs read as two pills following it around.
+ */
+const BODY_LIFT = 5;
 const FOOT_W = 19;
 const FOOT_H = 9.5;
 const FOOT_X = 13;
@@ -109,10 +113,23 @@ const BUBBLE_TAIL = 9;
 /** let the room settle before it says anything */
 export const SPEECH_OPEN_MS = 700;
 
-const BOUNCE = 6.5;
-const FOOT_LIFT = 5.5;
-const STRIDE = 4.3;
+/**
+ * The walk is a waddle: it rocks over the foot it is standing on rather than
+ * hopping off the floor. The bounce is what used to carry it, and what used to
+ * pull the body off its feet, so it is now barely there — the sway, the tip and
+ * the scissoring feet do the work.
+ */
+const BOUNCE = 1.8;
+const FOOT_LIFT = 3;
+const STRIDE = 5.5;
 const LEAN_DEG = 3.5;
+/** how far it leans over the planted foot, and how far it tips doing it */
+const WADDLE_X = 2.8;
+const WADDLE_DEG = 6;
+/** the feet come part of the way with the sway, so the three stay one creature */
+const FOOT_SWAY = 0.35;
+/** it rocks about the floor under it, not about its own middle */
+const ROLL_PIVOT = BODY_H / 2 + BODY_LIFT;
 
 /** the poke reaction: two delighted hops, then back to wandering */
 const CHEER_DUR = 1.05;
@@ -139,27 +156,41 @@ interface Props {
    * itself away. Omit it and no bubble is rendered at all.
    */
   speech?: string;
+  /**
+   * Which floor it may walk, from `roomFloor(picks)`. Omit it and the blob
+   * keeps to the floor no decoration can ever reach, which is the right answer
+   * for a host that paints it on top of finished artwork.
+   */
+  floor?: FloorGrid;
+  /**
+   * The front edge of each floor-standing piece, ascending, when the host
+   * paints the room in layers around the blob. It reports back how many of them
+   * it is standing in front of, and only when that count changes.
+   */
+  frontEdges?: number[];
+  onPassed?: (passed: number) => void;
 }
 
+const NO_EDGES: number[] = [];
+
 const RoomBlob = forwardRef<RoomBlobHandle, Props>(function RoomBlob(
-  { width, speech, sad = false },
+  { width, speech, sad = false, floor, frontEdges = NO_EDGES, onPassed },
   ref,
 ) {
   const u = width / VIEW_BOX_WIDTH;
-  /**
-   * A small room gets a calmer resident. Everything here scales by `u`, so a
-   * narrow room already shrinks the blob's steps in absolute terms — but the
-   * wander stays just as wide *relative* to the artwork, which is what reads as
-   * restless on a short phone. Tightening the ellipse itself settles it.
-   */
-  const wander = Math.min(1, width / WANDER_FULL_WIDTH);
   const reducedMotion = useReducedMotion();
+  const walkable = floor ?? flatFloor();
 
-  const depth = useSharedValue(WALK.depth);
-  const side = useSharedValue(WALK.side);
-  const targetDepth = useSharedValue(WALK.depth);
-  const targetSide = useSharedValue(WALK.side);
-  const rest = useSharedValue(0.8);
+  const pa = useSharedValue(START.a);
+  const pb = useSharedValue(START.b);
+  /** the route it is walking, as flat `a, b` pairs, and the leg it is on */
+  const route = useSharedValue<number[]>([]);
+  const leg = useSharedValue(0);
+  const routing = useSharedValue(false);
+  const edges = useSharedValue<number[]>(frontEdges);
+  /** -1 until the first frame has worked out where it stands in the paint order */
+  const passed = useSharedValue(-1);
+  const rest = useSharedValue(REST_MIN);
   const stride = useSharedValue(0);
   const clock = useSharedValue(0);
   const walk = useSharedValue(0);
@@ -171,6 +202,39 @@ const RoomBlob = forwardRef<RoomBlobHandle, Props>(function RoomBlob(
   const cheer = useSharedValue(0);
   const bubble = useSharedValue(0);
   const sadness = useSharedValue(sad ? 1 : 0);
+
+  const planRoute = useCallback(
+    (a: number, b: number) => {
+      const flat: number[] = [];
+      for (const point of planWalk(walkable, { a, b })) {
+        flat.push(point.a, point.b);
+      }
+
+      route.value = flat;
+      leg.value = 0;
+      routing.value = false;
+      // nowhere to go — wait out a rest rather than asking again every frame
+      if (flat.length === 0) rest.value = REST_MIN + REST_VARY;
+    },
+    [leg, rest, route, routing, walkable],
+  );
+
+  const report = useCallback(
+    (count: number) => onPassed?.(count),
+    [onPassed],
+  );
+
+  useEffect(() => {
+    // a redecorated room is a different floor plan: drop the route mid-walk
+    route.value = [];
+    leg.value = 0;
+    routing.value = false;
+  }, [leg, route, routing, walkable]);
+
+  useEffect(() => {
+    edges.value = frontEdges;
+    passed.value = -1;
+  }, [edges, frontEdges, passed]);
 
   const frame = useFrameCallback((info) => {
     const dt = Math.min((info.timeSincePreviousFrame ?? 16) / 1000, 0.05);
@@ -191,7 +255,7 @@ const RoomBlob = forwardRef<RoomBlobHandle, Props>(function RoomBlob(
     blink.value = blinkFor.value > 0 ? 0.12 : 1;
 
     // a sad blob stays put: topping rest up every frame means it never reaches
-    // the branch that picks somewhere new to walk
+    // the branch that asks for somewhere new to walk
     if (sadness.value > 0.5) {
       rest.value = Math.max(rest.value, 0.5);
     }
@@ -199,35 +263,52 @@ const RoomBlob = forwardRef<RoomBlobHandle, Props>(function RoomBlob(
     let moving = 0;
     if (rest.value > 0) {
       rest.value -= dt;
+    } else if (leg.value * 2 >= route.value.length) {
+      // Routes are planned on the js thread, so the blob idles for the frame or
+      // two that takes rather than blocking here for them.
+      if (!routing.value) {
+        routing.value = true;
+        runOnJS(planRoute)(pa.value, pb.value);
+      }
     } else {
-      const dDepth = targetDepth.value - depth.value;
-      const dSide = targetSide.value - side.value;
-      const distance = Math.hypot(dDepth, dSide);
+      const da = route.value[leg.value * 2] - pa.value;
+      const db = route.value[leg.value * 2 + 1] - pb.value;
+      const dx = FLOOR_HALF_W * (da - db);
+      const dy = FLOOR_HALF_D * (da + db);
+      const distance = Math.hypot(dx, dy);
 
-      if (distance < 0.006) {
-        rest.value = 0.7 + Math.random() * 2.6;
-
-        for (let attempt = 0; attempt < 8; attempt += 1) {
-          const angle = Math.random() * Math.PI * 2;
-          const radius = Math.sqrt(Math.random());
-          const d = WALK.depth + Math.cos(angle) * WALK.rDepth * wander * radius;
-          const s = WALK.side + Math.sin(angle) * WALK.rSide * wander * radius;
-          if (Math.hypot(d - depth.value, s - side.value) > MIN_TRIP * wander) {
-            targetDepth.value = d;
-            targetSide.value = s;
-            break;
-          }
+      if (distance < 1) {
+        pa.value += da;
+        pb.value += db;
+        leg.value += 1;
+        if (leg.value * 2 >= route.value.length) {
+          rest.value = REST_MIN + Math.random() * REST_VARY;
         }
       } else {
-        const step = Math.min(distance, SPEED * dt);
-        depth.value += (dDepth / distance) * step;
-        side.value += (dSide / distance) * step;
+        const step = Math.min(1, (SPEED * dt) / distance);
+        pa.value += da * step;
+        pb.value += db * step;
         stride.value += dt;
         moving = 1;
 
-        if (Math.abs(HALF_W * dSide) > 0.5) {
-          heading.value = dSide > 0 ? 1 : -1;
+        if (Math.abs(dx) > 0.5) {
+          heading.value = dx > 0 ? 1 : -1;
         }
+      }
+    }
+
+    if (edges.value.length > 0) {
+      const y = FLOOR_HALF_D * (pa.value + pb.value);
+      let count = 0;
+      for (let k = 0; k < edges.value.length; k += 1) {
+        const line =
+          edges.value[k] + (k < passed.value ? -CUT_HYSTERESIS : CUT_HYSTERESIS);
+        if (y > line) count += 1;
+      }
+
+      if (count !== passed.value) {
+        passed.value = count;
+        runOnJS(report)(count);
       }
     }
 
@@ -274,8 +355,8 @@ const RoomBlob = forwardRef<RoomBlobHandle, Props>(function RoomBlob(
   }, [frame, reducedMotion]);
 
   const actorStyle = useAnimatedStyle(() => {
-    const x = HALF_W * side.value;
-    const y = HALF_D * depth.value;
+    const x = FLOOR_HALF_W * (pa.value - pb.value);
+    const y = FLOOR_HALF_D * (pa.value + pb.value);
 
     return {
       transform: [
@@ -313,10 +394,14 @@ const RoomBlob = forwardRef<RoomBlobHandle, Props>(function RoomBlob(
     const wiggle =
       Math.sin(cheerPhase(cheer.value) * Math.PI * 4) * 7 * cheering;
 
+    // its weight is on whichever foot is down, so it leans that way and tips
+    // with it — one phase, read by the body, the feet and the shadow alike
+    const sway = stepCycle * walk.value;
     const slump = sadness.value;
 
     return {
       transform: [
+        { translateX: sway * WADDLE_X * u },
         // the squash compensation keeps the blob's feet planted on the floor
         {
           translateY:
@@ -326,47 +411,77 @@ const RoomBlob = forwardRef<RoomBlobHandle, Props>(function RoomBlob(
               slump * 3) *
             u,
         },
+        // rock about the floor rather than about the middle: pivot down, turn,
+        // and come back up
+        { translateY: ROLL_PIVOT * u },
         {
-          rotateZ: `${facing.value * LEAN_DEG * walk.value + wiggle}deg`,
+          rotateZ: `${
+            sway * WADDLE_DEG + facing.value * LEAN_DEG * walk.value + wiggle
+          }deg`,
         },
+        { translateY: -ROLL_PIVOT * u },
         { scaleX: (scaleX + slump * 0.05) * flip },
         { scaleY: scaleY - slump * 0.06 },
       ],
     };
   }, [u]);
 
+  // The two feet scissor against each other and lean the same way, so each
+  // reads the stride itself and negates it. Spelling both out rather than
+  // sharing a helper is deliberate: a worklet may call `footLift`, but a worklet
+  // calling a helper that calls `footLift` is one hop too deep for the closure
+  // to survive the trip to the ui thread.
   const backFootStyle = useAnimatedStyle(() => {
-    const cycle = Math.sin(stride.value * STEP_RATE);
+    const step = Math.sin(stride.value * STEP_RATE);
 
     return {
       transform: [
-        { translateX: facing.value * cycle * STRIDE * walk.value * u },
-        { translateY: -footLift(cycle, walk.value, cheer.value) * u },
+        {
+          translateX:
+            (facing.value * step * STRIDE + step * WADDLE_X * FOOT_SWAY) *
+            walk.value *
+            u,
+        },
+        { translateY: -footLift(step, walk.value, cheer.value) * u },
       ],
     };
   }, [u]);
 
   const frontFootStyle = useAnimatedStyle(() => {
-    const cycle = -Math.sin(stride.value * STEP_RATE);
+    const step = Math.sin(stride.value * STEP_RATE);
 
     return {
       transform: [
-        { translateX: facing.value * cycle * STRIDE * walk.value * u },
-        { translateY: -footLift(cycle, walk.value, cheer.value) * u },
+        {
+          translateX:
+            (-facing.value * step * STRIDE + step * WADDLE_X * FOOT_SWAY) *
+            walk.value *
+            u,
+        },
+        { translateY: -footLift(-step, walk.value, cheer.value) * u },
       ],
     };
   }, [u]);
 
   const shadowStyle = useAnimatedStyle(() => {
+    const cycle = Math.sin(stride.value * STEP_RATE);
+    // the walk barely leaves the floor now, so the shadow only breathes under
+    // it; the cheer is a real hop and still takes the full lift
     const air = Math.max(
-      Math.abs(Math.sin(stride.value * STEP_RATE)) * walk.value,
+      Math.abs(cycle) * walk.value * 0.35,
       cheer.value > 0
         ? Math.abs(Math.sin(cheerPhase(cheer.value) * Math.PI * 2))
         : 0,
     );
 
-    return { opacity: 1 - air * 0.5, transform: [{ scale: 1 - air * 0.24 }] };
-  }, []);
+    return {
+      opacity: 1 - air * 0.5,
+      transform: [
+        { translateX: cycle * walk.value * WADDLE_X * 0.5 * u },
+        { scale: 1 - air * 0.24 },
+      ],
+    };
+  }, [u]);
 
   const eyeStyle = useAnimatedStyle(
     () => ({
@@ -410,8 +525,8 @@ const RoomBlob = forwardRef<RoomBlobHandle, Props>(function RoomBlob(
    * grid, and inherits no scale at all.
    */
   const bubblePositionStyle = useAnimatedStyle(() => {
-    const x = (HALF_W * side.value + ORIGIN_X) * u;
-    const y = (HALF_D * depth.value + ORIGIN_Y) * u;
+    const x = (FLOOR_HALF_W * (pa.value - pb.value) + ORIGIN_X) * u;
+    const y = (FLOOR_HALF_D * (pa.value + pb.value) + ORIGIN_Y) * u;
 
     return {
       opacity: Math.min(1, bubble.value * 2),
@@ -470,10 +585,11 @@ const RoomBlob = forwardRef<RoomBlobHandle, Props>(function RoomBlob(
 });
 
 /**
- * Its only prop is a width, and everything it animates lives in shared values —
- * so a parent re-render can never tell it anything it does not already know.
- * Memoised because its hosts (Home, the onboarding story beats) re-render for
- * reasons that have nothing to do with the blob.
+ * Everything it animates lives in shared values, so a parent re-render can
+ * never tell it anything it does not already know. Memoised because its hosts
+ * (Home, the onboarding story beats) re-render for reasons that have nothing to
+ * do with the blob — Home re-renders on every layer swap the blob itself asks
+ * for, so this is what keeps that from feeding back.
  */
 export default memo(RoomBlob);
 
