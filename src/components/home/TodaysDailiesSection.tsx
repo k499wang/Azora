@@ -221,7 +221,6 @@ function DailyTaskRow({
             <CollapsedTaskPill
             title={title}
             meta={collapsedMeta}
-            style={style}
             glyph={glyph}
           />
           </Animated.View>
@@ -316,26 +315,20 @@ function ExpandedTaskPill({
 interface CollapsedTaskPillProps {
   title: string;
   meta: string;
-  style: CategoryStyle;
   glyph: GlyphShape;
 }
 
-function CollapsedTaskPill({
-  title,
-  meta,
-  style,
-  glyph,
-}: CollapsedTaskPillProps) {
+function CollapsedTaskPill({ title, meta, glyph }: CollapsedTaskPillProps) {
   return (
     <View style={styles.collapsedPill} pointerEvents="none">
       <View style={styles.collapsedLine}>
-        {/* The daily's own mark, so a closed row is still identifiably itself.
-            Colour arrives as an accent here, never as a fill — a tinted surface
-            is what makes the open card the open card. */}
+        {/* The daily's own shape, but always in the app's blue: a closed row is
+            identifiable without spending the category colour, which is what
+            tells you at a glance which card is open. */}
         <ActivityGlyph
           shape={glyph}
           size={COLLAPSED_GLYPH_SIZE}
-          color={style.hue.base}
+          color={colors.primary.blue600}
         />
         {/* The title is the only part allowed to truncate — how long it takes
             is the reason to read a closed row at all. */}
