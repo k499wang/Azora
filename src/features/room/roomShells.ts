@@ -1,3 +1,4 @@
+import { FLOOR_HALF_D, FLOOR_HALF_W } from './roomGeometry';
 import type { FrameHue, Poly } from './RoomScene';
 
 /**
@@ -13,9 +14,9 @@ import type { FrameHue, Poly } from './RoomScene';
  * room space — so a shell varies surface, not shape.
  */
 
-/** floor half-width and half-depth; wall height, in viewBox units */
-const HALF_W = 155.9;
-const HALF_D = 90;
+/** wall height, in viewBox units; the floor's half-width and half-depth are shared */
+const HALF_W = FLOOR_HALF_W;
+const HALF_D = FLOOR_HALF_D;
 const WALL_H = 180;
 
 /** the floor plane: `a` runs toward the right wall, `b` toward the left, 0..1 */
