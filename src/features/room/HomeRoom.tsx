@@ -4,7 +4,7 @@ import RoomBlob, { type RoomBlobHandle } from './RoomBlob';
 import { HexRoom, ROOM_ASPECT } from './RoomScene';
 import { toFrameHue, toPicks } from './roomPicks';
 import { roomShellPolys } from './roomShells';
-import { getRoomWidth } from './roomLayout';
+import { getHomeRoomWidth } from './roomLayout';
 import { triggerBounceHaptic } from '../../native/tapHaptics';
 import type { RoomProgress } from '../../lib/room/roomProgress';
 import type { Room } from '../../services/room/roomService';
@@ -15,9 +15,9 @@ interface HomeRoomProps {
 }
 
 export default function HomeRoom({ room, progress }: HomeRoomProps) {
-  const { width, height } = useWindowDimensions();
+  const { width } = useWindowDimensions();
   const blob = useRef<RoomBlobHandle>(null);
-  const roomWidth = getRoomWidth(width, height);
+  const roomWidth = getHomeRoomWidth(width);
 
   return (
     <View style={styles.stage}>

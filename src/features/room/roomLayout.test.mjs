@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { ROOM_MAX_WIDTH, getRoomWidth } from './roomLayout';
+import { ROOM_MAX_WIDTH, getHomeRoomWidth, getRoomWidth } from './roomLayout';
 import { ROOM_ASPECT } from './roomGeometry';
 
 /**
@@ -81,4 +81,58 @@ test('even the shortest screen still gets a room, not a thumbnail', () => {
     ...DEVICES.map((d) => getRoomWidth(d.width, d.height)),
   );
   assert.ok(smallest > 170, `smallest room is ${smallest.toFixed(0)}pt`);
+});
+
+/**
+ * Home sizes its room from width alone, so what these pin is the inset: the
+ * same margin on every phone, the shared cap on tablets, and nothing shrinking
+ * a short phone for chrome Home does not have.
+ */
+const HOME_GUTTER = 18;
+
+test('the home room sits one screen margin from both edges, on every phone', () => {
+  for (const d of DEVICES) {
+    if (d.width - HOME_GUTTER * 2 > ROOM_MAX_WIDTH) continue;
+    assert.equal(
+      getHomeRoomWidth(d.width),
+      d.width - HOME_GUTTER * 2,
+      `${d.name} does not sit ${HOME_GUTTER}pt from the edges`,
+    );
+  }
+});
+
+test('a tablet draws the capped room, not a room as wide as the slab', () => {
+  for (const d of DEVICES) {
+    assert.ok(
+      getHomeRoomWidth(d.width) <= ROOM_MAX_WIDTH + 0.001,
+      `${d.name} exceeds the cap`,
+    );
+  }
+});
+
+test('the home room is never smaller than the room screens draw it', () => {
+  for (const d of DEVICES) {
+    assert.ok(
+      getHomeRoomWidth(d.width) >= getRoomWidth(d.width, d.height) - 0.001,
+      `${d.name} shrank`,
+    );
+  }
+});
+
+/**
+ * Home's chrome is a 58pt bar under the safe-area inset, plus the 16pt margin
+ * above the room. Whatever is left has to hold the progress card, or the screen
+ * opens looking like it has nothing below the fold.
+ */
+test('the progress card still breaks the fold on the shortest phones', () => {
+  const HOME_CHROME = 20 + 58 + 16;
+  const CARD_HEIGHT = 140;
+  for (const d of DEVICES) {
+    const left =
+      d.height - HOME_CHROME - getHomeRoomWidth(d.width) * ROOM_ASPECT;
+    assert.ok(
+      left >= CARD_HEIGHT,
+      `${d.name}: only ${left.toFixed(0)}pt left for the progress card`,
+    );
+  }
 });
