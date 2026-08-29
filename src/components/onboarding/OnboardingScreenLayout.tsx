@@ -52,7 +52,6 @@ interface OnboardingScreenLayoutProps {
   copyBadge?: ReactNode;
   titleStyle?: StyleProp<TextStyle>;
   animateCopy?: boolean;
-  disableEntranceAnimation?: boolean;
   enableNavigationHaptics?: boolean;
 }
 
@@ -73,7 +72,6 @@ export default function OnboardingScreenLayout({
   copyBadge,
   titleStyle,
   animateCopy = false,
-  disableEntranceAnimation = false,
   enableNavigationHaptics = true,
 }: OnboardingScreenLayoutProps) {
   const insets = useSafeAreaInsets();
@@ -81,20 +79,10 @@ export default function OnboardingScreenLayout({
     progress === undefined ? undefined : Math.max(0, Math.min(1, progress));
   // The nav row always keeps its height, so the copy below it sits at the same
   // vertical position whether or not a screen has a back or skip action.
-  const fade = useRef(
-    new Animated.Value(disableEntranceAnimation ? 1 : 0),
-  ).current;
-  const scale = useRef(
-    new Animated.Value(
-      disableEntranceAnimation ? 1 : ENTRANCE_INITIAL_SCALE,
-    ),
-  ).current;
-  const titleEnter = useRef(
-    new Animated.Value(disableEntranceAnimation || !animateCopy ? 1 : 0),
-  ).current;
-  const subtitleEnter = useRef(
-    new Animated.Value(disableEntranceAnimation || !animateCopy ? 1 : 0),
-  ).current;
+  const fade = useRef(new Animated.Value(0)).current;
+  const scale = useRef(new Animated.Value(ENTRANCE_INITIAL_SCALE)).current;
+  const titleEnter = useRef(new Animated.Value(animateCopy ? 0 : 1)).current;
+  const subtitleEnter = useRef(new Animated.Value(animateCopy ? 0 : 1)).current;
   const scrollRef = useRef<ScrollView>(null);
 
   // centerBody centres the body inside its own box, which sits lower than the
@@ -205,8 +193,6 @@ export default function OnboardingScreenLayout({
   }, [keyboardAvoiding]);
 
   useEffect(() => {
-    if (disableEntranceAnimation) return;
-
     let animation: Animated.CompositeAnimation | null = null;
     const resumeReplay = pauseSessionReplay();
 
@@ -252,7 +238,7 @@ export default function OnboardingScreenLayout({
       animation?.stop();
       resumeReplay();
     };
-  }, [animateCopy, disableEntranceAnimation, fade, scale, subtitleEnter, titleEnter]);
+  }, [animateCopy, fade, scale, subtitleEnter, titleEnter]);
 
   const handleBack = () => {
     if (!onBack) return;
