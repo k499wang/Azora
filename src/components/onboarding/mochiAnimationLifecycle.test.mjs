@@ -31,8 +31,29 @@ test('the rich Mochi sequence owns one replay pause across all three steps', () 
   }
   assert.match(
     flow,
-    /pauseSessionReplay\(\{ autoResumeAfterMs: null \}\)/,
+    /pauseSessionReplay\(\{[\s\S]*?autoResumeAfterMs: null,[\s\S]*?\}\)/,
   );
+  assert.match(flow, /const mochiReplayReleaseRef = useRef/);
+  assert.match(flow, /if \(mochiReplayReleaseRef\.current != null\) return/);
+  assert.match(flow, /mochiReplayReleaseRef\.current = null;\s*release\?\.\(\)/);
+  assert.match(
+    flow,
+    /useEffect\(\(\) => \{\s*if \(!isMochiAnimationSequence\) \{\s*releaseMochiReplayPause\(\)/,
+  );
+  assert.match(
+    flow,
+    /useEffect\(\(\) => releaseMochiReplayPause, \[releaseMochiReplayPause\]\)/,
+  );
+
+  const transition = flow.slice(
+    flow.indexOf('const goToStep ='),
+    flow.indexOf('useEffect(() => {', flow.indexOf('const goToStep =')),
+  );
+  const pauseIndex = transition.indexOf('ensureMochiReplayPaused()');
+  const commitIndex = transition.indexOf('setStep(nextStep)');
+  assert.notEqual(pauseIndex, -1);
+  assert.notEqual(commitIndex, -1);
+  assert.ok(pauseIndex < commitIndex);
 });
 
 test('placement and floor replay have one entrance owner', () => {
@@ -66,8 +87,11 @@ test('room sequences construct only the artwork needed for the current beat', ()
   const replay = read('features/room/RoomReplay.tsx');
   const rooms = read('components/onboarding/screens/MochiRoomsScreen.tsx');
 
-  assert.match(replay, /setVisiblePieceCount\(index \+ 1\)/);
-  assert.match(replay, /order\.slice\(0, visiblePieceCount\)\.map/);
+  assert.doesNotMatch(replay, /visiblePieceCount/);
+  assert.match(replay, /order\.map\(\(day, index\) =>/);
+  assert.match(replay, /delayMs=\{START_MS \+ index \* STAGGER_MS\}/);
+  assert.match(replay, /setTimeout\(\(\) => setVisible\(true\), delayMs\)/);
+  assert.match(replay, /if \(!visible\) return null/);
   assert.match(rooms, /useWhileVisible\(\(\) => \{/);
   assert.match(
     rooms,
