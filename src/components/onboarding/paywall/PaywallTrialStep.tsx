@@ -74,7 +74,7 @@ export function PaywallTrialStep({
     ? [
         {
           label: 'Day 1: Today',
-          body: 'Unlock all app features like heart insights and your personalized plan.',
+          body: 'Unlock all app features like heart insights and unlimited sessions.',
           icon: 'sparkle',
         },
         {
@@ -91,17 +91,17 @@ export function PaywallTrialStep({
     : [
         {
           label: 'Today',
-          body: 'Unlock all app features like heart insights and your personalized plan.',
+          body: 'Unlock all app features like heart insights and unlimited sessions.',
           icon: 'sparkle',
         },
         {
           label: 'Anytime',
-          body: 'Change or cancel your plan whenever you want, no questions asked.',
+          body: 'Change or cancel your plan whenever you want.',
           icon: 'clock',
         },
         {
           label: 'Welcome back',
-          body: 'Your past progress and insights stay with you whenever you return.',
+          body: 'Your past progress and insights stay with you.',
           icon: 'journal',
         },
       ];

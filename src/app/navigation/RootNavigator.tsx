@@ -276,6 +276,16 @@ function MainTabsRoute({ showBootPaywall, tourEnabled }: AppStackProps) {
   );
 }
 
+/**
+ * Once per process launch, and deliberately not component state.
+ *
+ * The gate unmounts whenever the entitlement query refetches, which
+ * `useSubscriptionBootstrap` makes happen on every foreground. A guard held in
+ * a ref died with that unmount, so coming back to the app re-presented the
+ * paywall — on top of whatever screen the user was on, mid-session included.
+ */
+let hasPresentedBootPaywall = false;
+
 // Decides how non-Pro users meet the paywall on boot: hard mode renders a
 // blocking full-screen gate; soft mode (or any failure resolving the mode)
 // falls back to the dismissible ProPaywall modal.
@@ -287,13 +297,15 @@ function BootPaywallGate() {
   const [paywallMode, setPaywallMode] = useState<PaywallMode | null>(null);
 
   const isPro = entitlementQuery.data?.isPro === true;
-  // isFetching matters as much as isPending: this gate mounts right after
-  // onboarding finishes, when a just-purchased user's entitlement is still
-  // being refetched and the cached value still reads non-Pro.
+  // A fetch only blocks while there is nothing to read yet: that covers the
+  // case this guard exists for — the gate mounting right after onboarding, when
+  // a just-purchased user's entitlement is still loading and the cached value
+  // still reads non-Pro — without unmounting the gate on every foreground
+  // refetch, which threw away both the guard below and `paywallMode`.
   const shouldGate =
     userId != null &&
     !entitlementQuery.isPending &&
-    !entitlementQuery.isFetching &&
+    !(entitlementQuery.isFetching && entitlementQuery.data == null) &&
     !entitlementQuery.isError &&
     !isPro;
 
@@ -358,15 +370,20 @@ function BootPaywallPresenter({ isBlocking = false }: { isBlocking?: boolean }) 
   const navigation = useNavigation<RootStackNavigationProp<'MainTabs'>>();
   const userId = useAuthStore((state) => state.user?.id ?? null);
   const entitlementQuery = useUserEntitlementQuery(userId);
-  const hasPresentedRef = useRef(false);
 
   useEffect(() => {
-    if (hasPresentedRef.current) return;
+    if (hasPresentedBootPaywall) return;
     if (userId == null || entitlementQuery.isPending || entitlementQuery.isError) return;
-    if (entitlementQuery.isFetching) return;
+    if (entitlementQuery.isFetching && entitlementQuery.data == null) return;
     if (entitlementQuery.data?.isPro === true) return;
 
-    hasPresentedRef.current = true;
+    // Spent for this launch either way. A boot paywall belongs on the tab root,
+    // so anything stacked above it — a session, a result, another modal — means
+    // this one is dropped rather than queued: deferring it only moves the
+    // interruption to a moment the user did not ask for either.
+    hasPresentedBootPaywall = true;
+    if (navigation.getState().routes.length > 1) return;
+
     navigation.navigate('ProPaywall', {
       placement: PaywallPlacement.ProfileUpgrade,
       sourceScreen: 'RootNavigator',
