@@ -7,7 +7,6 @@ import {
   useMemo,
 } from 'react';
 import { PixelRatio, StyleSheet, View } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
 import Animated, {
   useAnimatedStyle,
   useFrameCallback,
@@ -23,6 +22,7 @@ import { duration, spring } from '../../theme/motion';
 import { fonts, typography } from '../../theme/typography';
 import MochiSpeechBubble from './MochiSpeechBubble';
 import { VIEW_BOX_HEIGHT, VIEW_BOX_WIDTH } from './RoomScene';
+import { useWhileVisible } from '../../hooks/useWhileVisible';
 
 /**
  * The room's resident — a blob that wanders the floor of the hex room and
@@ -267,13 +267,11 @@ const RoomBlob = forwardRef<RoomBlobHandle, Props>(function RoomBlob(
     [cheer, reducedMotion, say],
   );
 
-  useFocusEffect(
-    useCallback(() => {
-      if (reducedMotion) return;
-      frame.setActive(true);
-      return () => frame.setActive(false);
-    }, [frame, reducedMotion]),
-  );
+  useWhileVisible(() => {
+    if (reducedMotion) return () => {};
+    frame.setActive(true);
+    return () => frame.setActive(false);
+  }, [frame, reducedMotion]);
 
   const actorStyle = useAnimatedStyle(() => {
     const x = HALF_W * side.value;

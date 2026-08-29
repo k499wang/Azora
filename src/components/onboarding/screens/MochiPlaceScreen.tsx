@@ -1,6 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { useWindowDimensions } from 'react-native';
-import { HexRoom } from '../../../features/room/RoomScene';
 import PlacementReveal from '../../../features/room/PlacementReveal';
 import type { RoomBlobHandle } from '../../../features/room/RoomBlob';
 import { ROOM_SHELLS } from '../../../features/room/roomShells';
@@ -34,20 +33,9 @@ export default function MochiPlaceScreen({
     blob.current?.cheer();
   }, []);
 
-  // Rebuilding either of these on a re-render would restart the drop, and the
-  // room's SVG is expensive enough that it should be built once per state.
-  const room = useMemo(
-    () => (
-      <HexRoom
-        width={width}
-        picks={{ day1: FIRST_PIECE }}
-        shell={ROOM_SHELLS.cream}
-        frameHue="sky"
-      />
-    ),
-    [width],
-  );
-
+  // Keep the reveal mounted after it lands. Its final frame already is the
+  // completed room; swapping in another full SVG at that moment only adds work
+  // while Mochi starts cheering.
   const reveal = useMemo(
     () => (
       <PlacementReveal
@@ -72,6 +60,7 @@ export default function MochiPlaceScreen({
       typeTitle
       centerBody
       centerOnScreen
+      disableEntranceAnimation
       footer={<OnboardingPrimaryButton label="Continue" onPress={onContinue} />}
     >
       <MochiStage
@@ -79,9 +68,9 @@ export default function MochiPlaceScreen({
         accessibilityLabel={`Say hello to ${MASCOT_NAME}`}
         onPress={() => blob.current?.cheer()}
         speech={placed ? 'thanks.' : undefined}
-
+        animateEntrance={false}
       >
-        {placed ? room : reveal}
+        {reveal}
       </MochiStage>
     </OnboardingScreenLayout>
   );

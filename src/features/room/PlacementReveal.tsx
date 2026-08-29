@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, {
+  cancelAnimation,
   interpolate,
   useAnimatedStyle,
   useSharedValue,
@@ -120,7 +121,13 @@ export default function PlacementReveal({
       setTimeout(onDone, DONE_MS),
     ];
 
-    return () => timers.forEach(clearTimeout);
+    return () => {
+      cancelAnimation(fall);
+      cancelAnimation(squash);
+      cancelAnimation(kick);
+      cancelAnimation(burst);
+      timers.forEach(clearTimeout);
+    };
     // Runs once for the piece it was mounted with; the screen remounts this
     // component per placement rather than reusing it.
     // eslint-disable-next-line react-hooks/exhaustive-deps

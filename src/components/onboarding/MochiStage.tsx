@@ -6,6 +6,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import Animated, {
+  cancelAnimation,
   useAnimatedStyle,
   useSharedValue,
   withDelay,
@@ -32,6 +33,8 @@ interface MochiStageProps {
   speech?: string;
   /** whether the blob is slumped and staying put */
   sad?: boolean;
+  /** disable when the child owns the entrance for the whole stage */
+  animateEntrance?: boolean;
 }
 
 /**
@@ -43,7 +46,14 @@ interface MochiStageProps {
  */
 const MochiStage = forwardRef<RoomBlobHandle, MochiStageProps>(
   function MochiStage(
-    { children, accessibilityLabel, onPress, speech, sad },
+    {
+      children,
+      accessibilityLabel,
+      onPress,
+      speech,
+      sad,
+      animateEntrance = true,
+    },
     ref,
   ) {
     const { width: screenWidth, height: screenHeight } = useWindowDimensions();
@@ -51,14 +61,21 @@ const MochiStage = forwardRef<RoomBlobHandle, MochiStageProps>(
 
     // The room arrives rather than appearing. Reanimated, so it runs on the UI
     // thread alongside the blob instead of competing with it for JS frames.
-    const enter = useSharedValue(0);
+    const enter = useSharedValue(animateEntrance ? 0 : 1);
 
     useEffect(() => {
+      if (!animateEntrance) {
+        enter.value = 1;
+        return () => cancelAnimation(enter);
+      }
+
       enter.value = withDelay(
         ENTER_DELAY_MS,
         withTiming(1, { duration: duration.slow, easing: easing.settle }),
       );
-    }, [enter]);
+
+      return () => cancelAnimation(enter);
+    }, [animateEntrance, enter]);
 
     const enterStyle = useAnimatedStyle(() => ({
       opacity: enter.value,

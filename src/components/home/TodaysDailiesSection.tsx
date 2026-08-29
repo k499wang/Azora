@@ -60,7 +60,9 @@ const TASK_GLYPH_SIZE = 150;
 const TASK_GLYPH_RIGHT = -34;
 const TASK_GLYPH_BOTTOM = -40;
 const TASK_COPY_INSET = 72;
-const TIMELINE_ROW_GAP = spacing.lg;
+// Small enough to read as a mark beside the title rather than a second card.
+const COLLAPSED_GLYPH_SIZE = 20;
+const TIMELINE_ROW_GAP = spacing.md;
 const TIMELINE_RAIL_LEFT = TIMELINE_COLUMN_WIDTH / 2 - TIMELINE_RAIL_WIDTH / 2;
 /**
  * A fixed count, spread by `space-between`. Deriving it from the rail's length
@@ -216,7 +218,12 @@ function DailyTaskRow({
             style={[StyleSheet.absoluteFill, closedFace]}
             pointerEvents="none"
           >
-            <CollapsedTaskPill title={title} meta={collapsedMeta} />
+            <CollapsedTaskPill
+            title={title}
+            meta={collapsedMeta}
+            style={style}
+            glyph={glyph}
+          />
           </Animated.View>
           <Animated.View
             style={[StyleSheet.absoluteFill, openFace]}
@@ -309,12 +316,27 @@ function ExpandedTaskPill({
 interface CollapsedTaskPillProps {
   title: string;
   meta: string;
+  style: CategoryStyle;
+  glyph: GlyphShape;
 }
 
-function CollapsedTaskPill({ title, meta }: CollapsedTaskPillProps) {
+function CollapsedTaskPill({
+  title,
+  meta,
+  style,
+  glyph,
+}: CollapsedTaskPillProps) {
   return (
     <View style={styles.collapsedPill} pointerEvents="none">
       <View style={styles.collapsedLine}>
+        {/* The daily's own mark, so a closed row is still identifiably itself.
+            Colour arrives as an accent here, never as a fill — a tinted surface
+            is what makes the open card the open card. */}
+        <ActivityGlyph
+          shape={glyph}
+          size={COLLAPSED_GLYPH_SIZE}
+          color={style.hue.base}
+        />
         {/* The title is the only part allowed to truncate — how long it takes
             is the reason to read a closed row at all. */}
         <Text style={styles.collapsedTitle} numberOfLines={1}>

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { StyleSheet } from 'react-native';
 import Animated, {
   cancelAnimation,
@@ -62,6 +62,7 @@ export default function RoomReplay({
 
   const bloom = useSharedValue(0);
   const pop = useSharedValue(0);
+  const [visiblePieceCount, setVisiblePieceCount] = useState(0);
 
   useEffect(() => {
     bloom.value = withDelay(
@@ -77,12 +78,23 @@ export default function RoomReplay({
       ),
     );
 
+    // Mount each SVG only when its entrance begins. This spreads the native SVG
+    // construction across the replay instead of doing all seven on one frame.
     const timers = order.map((_, index) =>
-      setTimeout(() => {
-        if (isHapticsEnabled()) {
-          Haptics.selectionAsync().catch(() => {});
-        }
-      }, START_MS + index * STAGGER_MS + PIECE_MS * 0.7),
+      setTimeout(
+        () => setVisiblePieceCount(index + 1),
+        START_MS + index * STAGGER_MS,
+      ),
+    );
+
+    timers.push(
+      ...order.map((_, index) =>
+        setTimeout(() => {
+          if (isHapticsEnabled()) {
+            Haptics.selectionAsync().catch(() => {});
+          }
+        }, START_MS + index * STAGGER_MS + PIECE_MS * 0.7),
+      ),
     );
 
     timers.push(
@@ -145,13 +157,12 @@ export default function RoomReplay({
         ]}
       />
 
-      {order.map((day, index) => (
+      {order.slice(0, visiblePieceCount).map((day) => (
         <Piece
           key={day}
           width={width}
           day={day}
           option={picks[day] as string}
-          delay={START_MS + index * STAGGER_MS}
         />
       ))}
 
@@ -179,23 +190,21 @@ function Piece({
   width,
   day,
   option,
-  delay,
 }: {
   width: number;
   day: DayKey;
   option: string;
-  delay: number;
 }) {
   const enter = useSharedValue(0);
 
   useEffect(() => {
-    enter.value = withDelay(
-      delay,
-      withTiming(1, { duration: PIECE_MS, easing: Easing.out(Easing.back(1.6)) }),
-    );
+    enter.value = withTiming(1, {
+      duration: PIECE_MS,
+      easing: Easing.out(Easing.back(1.6)),
+    });
 
     return () => cancelAnimation(enter);
-  }, [delay, enter]);
+  }, [enter]);
 
   const style = useAnimatedStyle(() => ({
     opacity: interpolate(enter.value, [0, 0.35], [0, 1], 'clamp'),
@@ -205,9 +214,9 @@ function Piece({
     ],
   }));
 
-  // Seven full-size SVG canvases animate at once here. Rasterising each one
-  // turns its transform into a texture move instead of a re-composite of every
-  // polygon, every frame. Safe because these only translate and scale to 1.
+  // Rasterising turns the entrance into a texture move instead of a
+  // re-composite of every polygon on every frame. Safe because pieces only
+  // translate and scale to 1.
   return (
     <Animated.View
       pointerEvents="none"

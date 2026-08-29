@@ -17,6 +17,7 @@ import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { duration, easing } from '../../../theme/motion';
+import { useWhileVisible } from '../../../hooks/useWhileVisible';
 
 /** how long each room holds still before the track moves on */
 const DWELL_MS = 2000;
@@ -39,21 +40,24 @@ export default function MochiRoomsScreen({
   const width = getMochiStageWidth(screenWidth, screenHeight);
   const reducedMotion = useReducedMotion();
 
-  const [index, setIndex] = useState(0);
+  const [{ index, sourceIndex }, setSlide] = useState({
+    index: 0,
+    sourceIndex: 0,
+  });
   // The track walks to the end and back rather than rewinding past every room
   // it just showed.
   const direction = useRef(1);
   const x = useSharedValue(0);
 
-  useEffect(() => {
+  useWhileVisible(() => {
     const timer = setInterval(() => {
-      setIndex((current) => {
-        let next = current + direction.current;
+      setSlide((current) => {
+        let next = current.index + direction.current;
         if (next >= ROOM_STYLES.length || next < 0) {
           direction.current = -direction.current;
-          next = current + direction.current;
+          next = current.index + direction.current;
         }
-        return next;
+        return { index: next, sourceIndex: current.index };
       });
     }, DWELL_MS);
 
@@ -80,23 +84,28 @@ export default function MochiRoomsScreen({
     transform: [{ translateX: x.value }],
   }));
 
-  // Empty on purpose: this screen is about the room they pick, and a furnished
-  // one shows the decorations they have not earned yet. Building them is still
-  // expensive and they never change, so the rooms are built once and only the
-  // track they sit on moves.
+  // Every spacer stays in the track so each translate target remains stable,
+  // but only the source and target rooms exist during a slide. Building all
+  // room SVGs up front creates a much larger native tree for no visible gain.
   const rooms = useMemo(
     () =>
-      ROOM_STYLES.map((style) => (
-        <View key={style.shell} style={{ width, marginRight: GAP }}>
-          <HexRoom
-            width={width}
-            picks={{}}
-            shell={ROOM_SHELLS[style.shell]}
-            frameHue={style.frameHue}
-          />
-        </View>
-      )),
-    [width],
+      ROOM_STYLES.map((style, roomIndex) => {
+        const isMounted = roomIndex === index || roomIndex === sourceIndex;
+
+        return (
+          <View key={style.shell} style={{ width, marginRight: GAP }}>
+            {isMounted ? (
+              <HexRoom
+                width={width}
+                picks={{}}
+                shell={ROOM_SHELLS[style.shell]}
+                frameHue={style.frameHue}
+              />
+            ) : null}
+          </View>
+        );
+      }),
+    [index, sourceIndex, width],
   );
 
   return (

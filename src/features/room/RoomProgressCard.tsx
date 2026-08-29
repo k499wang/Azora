@@ -250,15 +250,18 @@ export function describeRoomCard({
     };
   }
 
-  // Still working through today. The bar counts the three dailies, because that
-  // is what the title asks for — showing room pieces here read as "finish
-  // today's dailies — 1 / 7", which asks for four days that do not exist.
+  // Still working through today. The title and the 1 / 3 beside it already say
+  // the rule, so the line under them stays empty — it is there for the
+  // countdown, and this is the one state with nothing to wait for.
+  //
+  // The bar counts the three dailies, because that is what the title asks for —
+  // showing room pieces here read as "finish today's dailies — 1 / 7", which
+  // asks for four days that do not exist.
   //
   // Finishing them can only land in `canClaim` above, never here: that flag is
   // built from the same `allCompleted` this branch would test.
   return {
     title: "Finish today's dailies",
-    note: "All 3 earn today's decoration.",
     tone: 'waiting',
     done: dailiesDoneCount,
     total: DAILIES_PER_DAY,
