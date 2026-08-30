@@ -9,6 +9,7 @@ import type {
 } from '../../../services/paywall';
 import { card } from '../../../theme/card';
 import { colors } from '../../../theme/colors';
+import { dashboardContentColumn } from '../../../theme/breakpoints';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
 import Icon from '../../common/icons/Icon';
@@ -462,44 +463,46 @@ export default function OnboardingPaywallScreen({
           </Animated.View>
         </ScrollView>
 
-        <View style={styles.footer}>
-          {step < STEP_COUNT - 1 ? (
-            <>
-              {step < STEP_COUNT - 1 ? (
+        <View style={styles.footerBar}>
+          <View style={styles.footerInner}>
+            {step < STEP_COUNT - 1 ? (
+              <>
+                {step < STEP_COUNT - 1 ? (
+                  <View style={styles.noPaymentRow}>
+                    <Icon name="check" size={18} color={colors.text.primary} />
+                    <Text style={styles.noPaymentText}>No Payment Due Now</Text>
+                  </View>
+                ) : null}
+                <OnboardingPrimaryButton
+                  label="Continue"
+                  onPress={handleNext}
+                  disabled={isBusy}
+                />
+              </>
+            ) : (
+              <>
                 <View style={styles.noPaymentRow}>
                   <Icon name="check" size={18} color={colors.text.primary} />
-                  <Text style={styles.noPaymentText}>No Payment Due Now</Text>
+                  <Text style={styles.noPaymentText}>
+                    {selectedPackageHasTrial
+                      ? 'No Payment Due Now'
+                      : 'Cancel Anytime In Seconds'}
+                  </Text>
                 </View>
-              ) : null}
-              <OnboardingPrimaryButton
-                label="Continue"
-                onPress={handleNext}
-                disabled={isBusy}
-              />
-            </>
-          ) : (
-            <>
-              <View style={styles.noPaymentRow}>
-                <Icon name="check" size={18} color={colors.text.primary} />
-                <Text style={styles.noPaymentText}>
-                  {selectedPackageHasTrial
-                    ? 'No Payment Due Now'
-                    : 'Cancel Anytime In Seconds'}
-                </Text>
-              </View>
-              <OnboardingPrimaryButton
-                label={ctaLabel}
-                onPress={onPurchase}
-                loading={isPurchasing || isCompleting}
-                disabled={isLoading || selectedPackage == null || isRestoring || isCompleting}
-              />
-              <PaywallFooterLinks
-                isRestoring={isRestoring}
-                restoreDisabled={isBusy}
-                onRestore={onRestore}
-              />
-            </>
-          )}
+                <OnboardingPrimaryButton
+                  label={ctaLabel}
+                  onPress={onPurchase}
+                  loading={isPurchasing || isCompleting}
+                  disabled={isLoading || selectedPackage == null || isRestoring || isCompleting}
+                />
+                <PaywallFooterLinks
+                  isRestoring={isRestoring}
+                  restoreDisabled={isBusy}
+                  onRestore={onRestore}
+                />
+              </>
+            )}
+          </View>
         </View>
         </Animated.View>
       </View>
@@ -520,6 +523,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
+    ...dashboardContentColumn,
     minHeight: 40,
     flexDirection: 'row',
     alignItems: 'center',
@@ -543,6 +547,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
+    ...dashboardContentColumn,
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.xl,
   },
@@ -589,15 +594,20 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: colors.error[700],
   },
-  footer: {
+  // The tray keeps its full-bleed background, shadow and divider so the rule
+  // still reaches both window edges; only what sits on it is capped.
+  footerBar: {
     ...card.trayShadow,
-    gap: spacing.xs,
-    paddingHorizontal: spacing.lg,
     paddingTop: spacing.sm,
     paddingBottom: spacing.lg,
     backgroundColor: colors.background.canvas,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: colors.border.subtle,
+  },
+  footerInner: {
+    ...dashboardContentColumn,
+    gap: spacing.xs,
+    paddingHorizontal: spacing.lg,
   },
   subtlePressed: {
     opacity: 0.65,

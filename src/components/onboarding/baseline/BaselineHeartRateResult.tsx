@@ -30,6 +30,7 @@ import { calibrationDurationMs } from '../../../lib/gaugeCalibration';
 import { isHapticsEnabled } from '../../../services/preferences/hapticsPreference';
 import type { GenderOption } from '../data/genderOptions';
 import type { CompletedOnboardingBaselineResult } from '../types';
+import { scaleVisual } from '../onboardingVisualScale';
 
 interface BaselineHeartRateResultProps {
   result: CompletedOnboardingBaselineResult;
@@ -40,8 +41,8 @@ interface BaselineHeartRateResultProps {
   onContinue: () => void;
 }
 
-const GAUGE_SIZE = 250;
-const GAUGE_STROKE = 12;
+const GAUGE_SIZE = scaleVisual(250);
+const GAUGE_STROKE = scaleVisual(12);
 const GAUGE_CX = GAUGE_SIZE / 2;
 const GAUGE_CY = GAUGE_SIZE / 2;
 const GAUGE_R = GAUGE_SIZE / 2 - GAUGE_STROKE / 2 - 8;

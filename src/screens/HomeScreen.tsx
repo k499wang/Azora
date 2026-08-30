@@ -1,6 +1,6 @@
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { colors } from '../theme/colors';
-import { spacing, padding, margin } from '../theme/spacing';
+import { spacing, margin } from '../theme/spacing';
 import AppTopBar from '../components/common/AppTopBar';
 import ExtraPracticeSection from '../components/home/ExtraPracticeSection';
 import TodaysDailiesSection from '../components/home/TodaysDailiesSection';
@@ -15,6 +15,7 @@ import type { HomeScreenProps } from '../app/navigation';
 import { useAuthStore } from '../stores/authStore';
 import { useDailyPlanScheduleQuery } from '../queries/dailyPlan/useDailyPlanScheduleQuery';
 import { DEFAULT_DAILY_PLAN_SCHEDULE } from '../services/dailyPlan/types';
+import { useDashboardLayout } from '../hooks/useDashboardLayout';
 
 const TOUR_TARGETS: TourTargetId[] = ['dailies', 'extraPractice', 'seeAll'];
 
@@ -26,6 +27,8 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const roomClaim = useRoomClaim(user?.id ?? null);
   const dailies = roomClaim.dailies;
   const { start, accessAllowed, exerciseAccess } = useStartDaily('Home', dailies);
+
+  const homeLayout = useDashboardLayout();
 
   const tourScroll = useTourScroller(TOUR_TARGETS);
   const dailiesTarget = useTourTarget('dailies');
@@ -55,47 +58,54 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           <HomeRoom room={roomClaim.room} progress={roomClaim.progress} />
         </View>
 
-        <View style={styles.bodySection}>
-          {/* The progress card belongs to the dailies it tracks, so it sits
-              tightly above the section title rather than floating at the full
-              section gap. */}
-          <View style={styles.dailiesGroup}>
-            <RoomProgressCard
-              progress={roomClaim.progress}
-              dailies={dailies}
-              isLoading={roomClaim.isLoading}
-            />
-            <View {...dailiesTarget}>
-              <TodaysDailiesSection
-                technique={dailies.guidedTechnique}
-                techniqueLoading={dailies.guidedTechniqueLoading}
-                sessionTime={dailyPlanSchedule.actions.session}
-                handPickedTechnique={dailies.handPickedTechnique}
-                handPickedTechniqueLoading={dailies.handPickedTechniqueLoading}
-                handPickedTime={dailyPlanSchedule.actions.handPicked}
-                breathHoldTime={dailyPlanSchedule.actions.checkIn}
-                guidedExerciseCompleted={dailies.guidedCompleted}
-                handPickedExerciseCompleted={dailies.handPickedCompleted}
-                breathHoldCompleted={dailies.breathHoldCompleted}
-                exerciseAccessAllowed={accessAllowed}
-                onPressGuidedExercise={() => start('guided')}
-                onPressHandPickedExercise={() => start('handPicked')}
-                onPressBreathHold={() => start('breathHold')}
-                onPressHistory={() => navigation.navigate('History')}
-              />
-            </View>
-          </View>
-          <View {...extraPracticeTarget}>
-            <ExtraPracticeSection
-              recommendedTechniqueId={dailies.guidedTechnique?.id ?? null}
-              excludedTechniqueIds={[
-                dailies.guidedTechnique?.id,
-                dailies.handPickedTechnique?.id,
-              ]}
-              exerciseAccess={exerciseAccess}
-              onSeeAll={() => navigation.navigate('Explore')}
+        {/* The progress card belongs to the dailies it tracks, so the whole
+            group stays together and centred directly below the room. */}
+        <View
+          style={[
+            styles.dailiesGroup,
+            { paddingHorizontal: homeLayout.contentInset },
+          ]}
+        >
+          <RoomProgressCard
+            progress={roomClaim.progress}
+            dailies={dailies}
+            isLoading={roomClaim.isLoading}
+          />
+          <View {...dailiesTarget}>
+            <TodaysDailiesSection
+              technique={dailies.guidedTechnique}
+              techniqueLoading={dailies.guidedTechniqueLoading}
+              sessionTime={dailyPlanSchedule.actions.session}
+              handPickedTechnique={dailies.handPickedTechnique}
+              handPickedTechniqueLoading={dailies.handPickedTechniqueLoading}
+              handPickedTime={dailyPlanSchedule.actions.handPicked}
+              breathHoldTime={dailyPlanSchedule.actions.checkIn}
+              guidedExerciseCompleted={dailies.guidedCompleted}
+              handPickedExerciseCompleted={dailies.handPickedCompleted}
+              breathHoldCompleted={dailies.breathHoldCompleted}
+              exerciseAccessAllowed={accessAllowed}
+              onPressGuidedExercise={() => start('guided')}
+              onPressHandPickedExercise={() => start('handPicked')}
+              onPressBreathHold={() => start('breathHold')}
+              onPressHistory={() => navigation.navigate('History')}
             />
           </View>
+        </View>
+
+        {/* The shelf stays horizontally scrollable at every width and runs to
+            the column edge, so the row a tablet cuts off is cut off on the same
+            margin the dailies above it sit on. */}
+        <View style={styles.extraPracticeSection} {...extraPracticeTarget}>
+          <ExtraPracticeSection
+            recommendedTechniqueId={dailies.guidedTechnique?.id ?? null}
+            excludedTechniqueIds={[
+              dailies.guidedTechnique?.id,
+              dailies.handPickedTechnique?.id,
+            ]}
+            exerciseAccess={exerciseAccess}
+            contentMaxWidth={homeLayout.contentMaxWidth}
+            onSeeAll={() => navigation.navigate('Explore')}
+          />
         </View>
       </ScrollView>
     </View>
@@ -119,12 +129,11 @@ const styles = StyleSheet.create({
   roomBlock: {
     marginTop: spacing.md,
   },
-  bodySection: {
-    marginTop: margin.itemGap,
-    paddingHorizontal: padding.screen.horizontal,
-    gap: margin.sectionGap,
-  },
   dailiesGroup: {
+    marginTop: margin.itemGap,
     gap: spacing.md,
+  },
+  extraPracticeSection: {
+    marginTop: margin.sectionGap,
   },
 });

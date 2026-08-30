@@ -8,6 +8,7 @@ import { fonts, typography } from '../../../theme/typography';
 import { isHapticsEnabled } from '../../../services/preferences/hapticsPreference';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
+import { scaleVisual } from '../onboardingVisualScale';
 
 interface ConsistencyScreenProps {
   stepIndex: number;
@@ -18,7 +19,7 @@ interface ConsistencyScreenProps {
 
 const DAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 const HEIGHTS = [0.28, 0.36, 0.47, 0.55, 0.68, 0.82, 1];
-const CHART_HEIGHT = 200;
+const CHART_HEIGHT = scaleVisual(200);
 
 export default function ConsistencyScreen({
   stepIndex,

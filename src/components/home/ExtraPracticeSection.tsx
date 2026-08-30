@@ -1,8 +1,6 @@
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import {
-  TECHNIQUE_SHELF_CARD_WIDTH,
-  default as TechniqueCard,
-} from '../explore/TechniqueCard';
+import { Pressable, StyleSheet, View } from 'react-native';
+import TechniqueCard from '../explore/TechniqueCard';
+import TechniqueShelf from '../explore/TechniqueShelf';
 import { getExtraPracticeTechniques } from '../explore/exerciseCatalog';
 import { triggerTapHaptic } from '../../native/tapHaptics';
 import type { FeatureAccessState } from '../../hooks/useFeatureAccess';
@@ -18,6 +16,9 @@ interface ExtraPracticeSectionProps {
   recommendedTechniqueId: string | null;
   excludedTechniqueIds: ReadonlyArray<string | null | undefined>;
   exerciseAccess: FeatureAccessState;
+  /** Caps the shelf so a tablet clips the row on the content margin. */
+  contentMaxWidth?: number;
+  contentInset?: number;
   onSeeAll: () => void;
 }
 
@@ -25,6 +26,8 @@ export default function ExtraPracticeSection({
   recommendedTechniqueId,
   excludedTechniqueIds,
   exerciseAccess,
+  contentMaxWidth,
+  contentInset = padding.screen.horizontal,
   onSeeAll,
 }: ExtraPracticeSectionProps) {
   const techniques = getExtraPracticeTechniques(
@@ -39,37 +42,37 @@ export default function ExtraPracticeSection({
   };
 
   return (
-    <View style={styles.section}>
-      <SectionHeader
-        icon="waves"
-        title="What are you feeling?"
-        right={
-          <View {...seeAllTarget}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="See all resets"
-              onPress={handleSeeAll}
-              hitSlop={spacing.sm}
-              style={({ pressed }) => [
-                styles.seeAll,
-                pressed && styles.seeAllPressed,
-              ]}
-            >
-              <Text style={styles.seeAllText}>See all</Text>
-              <Icon name="chevron-right" size={16} color={colors.text.brand} />
-            </Pressable>
-          </View>
-        }
-      />
+    <View
+      style={[
+        styles.section,
+        contentMaxWidth != null && { maxWidth: contentMaxWidth },
+      ]}
+    >
+      <View style={{ paddingHorizontal: contentInset }}>
+        <SectionHeader
+          icon="waves"
+          title="What are you feeling?"
+          right={
+            <View {...seeAllTarget}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="See all resets"
+                onPress={handleSeeAll}
+                hitSlop={spacing.sm}
+                style={({ pressed }) => [
+                  styles.seeAll,
+                  pressed && styles.seeAllPressed,
+                ]}
+              >
+                <Text style={styles.seeAllText}>See all</Text>
+                <Icon name="chevron-right" size={16} color={colors.text.brand} />
+              </Pressable>
+            </View>
+          }
+        />
+      </View>
 
-      <ScrollView
-        horizontal
-        style={styles.scroll}
-        showsHorizontalScrollIndicator={false}
-        decelerationRate="fast"
-        snapToInterval={TECHNIQUE_SHELF_CARD_WIDTH + spacing.xs * 2}
-        contentContainerStyle={styles.cards}
-      >
+      <TechniqueShelf contentInset={contentInset}>
         {techniques.map((technique) => (
           <TechniqueCard
             key={technique.id}
@@ -81,13 +84,15 @@ export default function ExtraPracticeSection({
             sourceAction="extra_practice"
           />
         ))}
-      </ScrollView>
+      </TechniqueShelf>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   section: {
+    width: '100%',
+    alignSelf: 'center',
     gap: spacing.lg,
   },
   seeAll: {
@@ -102,11 +107,5 @@ const styles = StyleSheet.create({
   },
   seeAllPressed: {
     opacity: 0.6,
-  },
-  cards: {
-    paddingHorizontal: padding.screen.horizontal - spacing.xs,
-  },
-  scroll: {
-    marginHorizontal: -padding.screen.horizontal,
   },
 });

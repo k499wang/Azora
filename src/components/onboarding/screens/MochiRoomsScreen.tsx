@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useWindowDimensions } from 'react-native';
 import { StyleSheet, View } from 'react-native';
 import Animated, {
   cancelAnimation,
@@ -11,7 +10,7 @@ import Animated, {
 import { HexRoom } from '../../../features/room/RoomScene';
 import { ROOM_SHELLS, ROOM_STYLES } from '../../../features/room/roomShells';
 import { MASCOT_NAME } from '../../../features/room/mascot';
-import { getMochiStageWidth } from '../MochiStage';
+import { useMochiStageWidth } from '../MochiStage';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import { colors } from '../../../theme/colors';
@@ -36,8 +35,7 @@ export default function MochiRoomsScreen({
   onContinue,
   onBack,
 }: MochiRoomsScreenProps) {
-  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
-  const width = getMochiStageWidth(screenWidth, screenHeight);
+  const width = useMochiStageWidth();
   const reducedMotion = useReducedMotion();
 
   const [{ index, sourceIndex }, setSlide] = useState({

@@ -4,6 +4,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../../../theme/colors';
 import { fonts, typography } from '../../../../theme/typography';
 import { spacing } from '../../../../theme/spacing';
+import { breakpoints } from '../../../../theme/breakpoints';
 
 interface TextColors {
   primary: string;
@@ -71,6 +72,10 @@ export default function BreathHoldIntro({
 
 const styles = StyleSheet.create({
   container: {
+    // Same rule as the guided intro: the layer around this centres it and lets
+    // the block shrink to its content, so without a cap the description runs
+    // the full width of a tablet window. No phone reaches this measure.
+    maxWidth: breakpoints.contentMaxWidth,
     paddingHorizontal: spacing.sm,
     gap: spacing.md,
     alignItems: 'center',

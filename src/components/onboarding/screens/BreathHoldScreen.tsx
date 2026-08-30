@@ -38,6 +38,7 @@ import {
 } from '../../../lib/lungAge';
 import { calibrationDurationMs } from '../../../lib/gaugeCalibration';
 import type { OnboardingBreathHoldResult } from '../types';
+import { scaleVisual } from '../onboardingVisualScale';
 
 interface BreathHoldScreenProps {
   age: number;
@@ -65,11 +66,11 @@ interface ScoredHold extends OnboardingBreathHoldResult {
 
 const INHALE_SECONDS = 4;
 const MIN_SCORABLE_HOLD_MS = 1000;
-const CIRCLE_SIZE = 260;
+const CIRCLE_SIZE = scaleVisual(260);
 const CIRCLE_MIN_SCALE = 0.5;
 
-const GAUGE_SIZE = 250;
-const GAUGE_STROKE = 12;
+const GAUGE_SIZE = scaleVisual(250);
+const GAUGE_STROKE = scaleVisual(12);
 const GAUGE_CX = GAUGE_SIZE / 2;
 const GAUGE_CY = GAUGE_SIZE / 2;
 const GAUGE_R = GAUGE_SIZE / 2 - GAUGE_STROKE / 2 - 8;

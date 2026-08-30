@@ -34,6 +34,7 @@ import { formatProfileHoldTime } from '../services/profile/profileSummaryService
 import type { HistoryScreenProps } from '../app/navigation';
 import type { DayHistory } from '../services/history/dayHistoryService';
 import type { BreathingSessionSummary } from '../services/tracking/types';
+import ScreenContent from '../components/common/ScreenContent';
 
 /** four weeks back, which is also what `daily_activity` is read for elsewhere */
 const HISTORY_DAYS = 28;
@@ -213,108 +214,113 @@ export default function HistoryScreen({
         ]}
         showsVerticalScrollIndicator={false}
       >
-        {showCentered ? (
-          isLoadingDay ? (
-            <ActivityIndicator color={colors.text.tertiary} />
-          ) : dayQuery.isError ? (
-            <HistoryEmptyDay message="Couldn’t load this day" />
+        <ScreenContent
+          width="grouped"
+          style={[styles.column, showCentered && styles.columnCentered]}
+        >
+          {showCentered ? (
+            isLoadingDay ? (
+              <ActivityIndicator color={colors.text.tertiary} />
+            ) : dayQuery.isError ? (
+              <HistoryEmptyDay message="Couldn’t load this day" />
+            ) : (
+              <HistoryEmptyDay message="No activities for this day" />
+            )
           ) : (
-            <HistoryEmptyDay message="No activities for this day" />
-          )
-        ) : (
-          <>
-            {hasPartialError ? (
-              <Text style={styles.partialError}>
-                Some of this day may be out of date.
-              </Text>
-            ) : null}
+            <>
+              {hasPartialError ? (
+                <Text style={styles.partialError}>
+                  Some of this day may be out of date.
+                </Text>
+              ) : null}
 
-            <View style={styles.section}>
-              <SectionHeader icon="calendar" title="What you did" />
+              <View style={styles.section}>
+                <SectionHeader icon="calendar" title="What you did" />
 
-              <View style={styles.rows}>
-                {isToday ? (
-                  <>
-                    {renderTechniqueRow(
-                      dailies.guidedTechnique,
-                      'Your reset',
-                      dailies.guidedCompleted,
-                    )}
-                    {renderTechniqueRow(
-                      dailies.handPickedTechnique,
-                      'Azora’s daily pick',
-                      dailies.handPickedCompleted,
-                    )}
-                    <HistoryDayRow
-                      glyph={BREATH_HOLD_STYLE.glyph}
-                      hue={BREATH_HOLD_STYLE.hue}
-                      title="The Azora Protocol"
-                      meta={holdMeta}
-                      completed={dailies.breathHoldCompleted}
-                    />
-                  </>
-                ) : (
-                  <>
-                    {pastRows.map(({ session, technique }) => (
-                      <HistoryDayRow
-                        key={session.sessionId}
-                        glyph={TECHNIQUE_GLYPH[technique.id]}
-                        hue={CATEGORY_STYLE[technique.category].hue}
-                        title={technique.name}
-                        meta={techniqueMeta(technique, session)}
-                        completed
-                      />
-                    ))}
-                    {breathHold == null ? null : (
+                <View style={styles.rows}>
+                  {isToday ? (
+                    <>
+                      {renderTechniqueRow(
+                        dailies.guidedTechnique,
+                        'Your reset',
+                        dailies.guidedCompleted,
+                      )}
+                      {renderTechniqueRow(
+                        dailies.handPickedTechnique,
+                        'Azora’s daily pick',
+                        dailies.handPickedCompleted,
+                      )}
                       <HistoryDayRow
                         glyph={BREATH_HOLD_STYLE.glyph}
                         hue={BREATH_HOLD_STYLE.hue}
                         title="The Azora Protocol"
                         meta={holdMeta}
-                        completed
+                        completed={dailies.breathHoldCompleted}
                       />
-                    )}
-                  </>
-                )}
+                    </>
+                  ) : (
+                    <>
+                      {pastRows.map(({ session, technique }) => (
+                        <HistoryDayRow
+                          key={session.sessionId}
+                          glyph={TECHNIQUE_GLYPH[technique.id]}
+                          hue={CATEGORY_STYLE[technique.category].hue}
+                          title={technique.name}
+                          meta={techniqueMeta(technique, session)}
+                          completed
+                        />
+                      ))}
+                      {breathHold == null ? null : (
+                        <HistoryDayRow
+                          glyph={BREATH_HOLD_STYLE.glyph}
+                          hue={BREATH_HOLD_STYLE.hue}
+                          title="The Azora Protocol"
+                          meta={holdMeta}
+                          completed
+                        />
+                      )}
+                    </>
+                  )}
+                </View>
               </View>
-            </View>
 
-            {heartRateSessions.length === 0 ? null : (
-              <View style={styles.section}>
-                <SectionHeader icon="heart" title="Heart rate" />
-                <View style={styles.rows}>
-                  {heartRateSessions.map((session) => (
-                    <HistoryDayRow
-                      key={session.sessionId}
-                      glyph="ripple"
-                      hue={HEART_RATE_HUE}
-                      title="Heart rate check"
-                      meta={heartRateMeta(session)}
-                      completed
-                      onPress={() =>
-                        navigation.navigate('HeartRateSessionDetail', {
-                          sessionId: session.sessionId,
-                        })
-                      }
+              {heartRateSessions.length === 0 ? null : (
+                <View style={styles.section}>
+                  <SectionHeader icon="heart" title="Heart rate" />
+                  <View style={styles.rows}>
+                    {heartRateSessions.map((session) => (
+                      <HistoryDayRow
+                        key={session.sessionId}
+                        glyph="ripple"
+                        hue={HEART_RATE_HUE}
+                        title="Heart rate check"
+                        meta={heartRateMeta(session)}
+                        completed
+                        onPress={() =>
+                          navigation.navigate('HeartRateSessionDetail', {
+                            sessionId: session.sessionId,
+                          })
+                        }
+                      />
+                    ))}
+                  </View>
+                </View>
+              )}
+
+              {earnedDecorations.length === 0 ? null : (
+                <View style={styles.section}>
+                  <SectionHeader icon="room-hex" title="Earned" />
+                  {earnedDecorations.map((decoration) => (
+                    <HistoryEarnedCard
+                      key={`${decoration.slot}-${decoration.optionId}`}
+                      decoration={decoration}
                     />
                   ))}
                 </View>
-              </View>
-            )}
-
-            {earnedDecorations.length === 0 ? null : (
-              <View style={styles.section}>
-                <SectionHeader icon="room-hex" title="Earned" />
-                {earnedDecorations.map((decoration) => (
-                  <HistoryEarnedCard
-                    key={`${decoration.slot}-${decoration.optionId}`}
-                    decoration={decoration}
-                  />
-                ))}
-              </View>
-            )}
-          </>
-        )}
+              )}
+            </>
+          )}
+        </ScreenContent>
       </ScrollView>
 
       {isToday ? null : <HistoryTodayButton onPress={jumpToToday} />}
@@ -323,6 +329,14 @@ export default function HistoryScreen({
 }
 
 const styles = StyleSheet.create({
+  // Carries the scroll container's gap and, on the empty day, its centring —
+  // neither reaches past this wrapper to the content inside it.
+  column: {
+    gap: margin.sectionGap,
+  },
+  columnCentered: {
+    alignItems: 'center',
+  },
   screen: {
     flex: 1,
     backgroundColor: colors.background.canvas,

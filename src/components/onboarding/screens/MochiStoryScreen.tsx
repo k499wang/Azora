@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef } from 'react';
-import { useWindowDimensions } from 'react-native';
 import { HexRoom } from '../../../features/room/RoomScene';
 import {
   SPEECH_OPEN_MS,
@@ -8,7 +7,7 @@ import {
 import { ROOM_SHELLS } from '../../../features/room/roomShells';
 import { MASCOT_NAME } from '../../../features/room/mascot';
 import type { MochiStoryBeat } from '../data/mochiStory';
-import MochiStage, { getMochiStageWidth } from '../MochiStage';
+import MochiStage, { useMochiStageWidth } from '../MochiStage';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 
@@ -33,8 +32,7 @@ export default function MochiStoryScreen({
   onContinue,
   onBack,
 }: MochiStoryScreenProps) {
-  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
-  const width = getMochiStageWidth(screenWidth, screenHeight);
+  const width = useMochiStageWidth();
   const blob = useRef<RoomBlobHandle>(null);
 
   const room = useMemo(

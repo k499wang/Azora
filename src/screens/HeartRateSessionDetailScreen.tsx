@@ -15,6 +15,8 @@ import { PaywallPlacement } from '../services/paywall';
 import { FeatureKey } from '../services/subscriptions/featureAccess';
 import type { HeartRateSessionDetailScreenProps } from '../app/navigation';
 import GlassIconButton from '../components/common/GlassIconButton';
+import ScreenContent from '../components/common/ScreenContent';
+import { useDashboardLayout } from '../hooks/useDashboardLayout';
 
 export function HeartRateSessionDetailScreen({
   navigation,
@@ -26,6 +28,7 @@ export function HeartRateSessionDetailScreen({
   const detailQuery = useHeartRateSessionDetailQuery(user?.id ?? null, sessionId);
   const profileQuery = useProfileQuery(user?.id ?? null);
   const advancedStatsAccess = useFeatureAccess(FeatureKey.AdvancedStats);
+  const dashboardLayout = useDashboardLayout();
   const detail = detailQuery.data ?? null;
   const advancedStatsLocked =
     !advancedStatsAccess.allowed && !advancedStatsAccess.isLoading;
@@ -36,64 +39,72 @@ export function HeartRateSessionDetailScreen({
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Nice work!</Text>
-        </View>
+        <ScreenContent width="dashboard">
+          <View style={styles.header}>
+            <Text style={styles.headerTitle}>Nice work!</Text>
+          </View>
 
-        {detailQuery.isLoading ? (
-          <View style={styles.centerState}>
-            <ActivityIndicator color={colors.primary.blue600} />
-          </View>
-        ) : detailQuery.isError || detail == null ? (
-          <View style={styles.centerState}>
-            <MaterialCommunityIcons
-              name="alert-circle-outline"
-              size={42}
-              color={colors.warning[500]}
-            />
-            <Text style={styles.errorTitle}>Could not load reading</Text>
-            <Text style={styles.errorText}>
-              This heart-rate session may no longer be available.
-            </Text>
-          </View>
-        ) : (
-          <View style={styles.heroWrap}>
-            <View style={styles.heroContent}>
-              <HeartRateResultContent
-                bpm={detail.avgBpm ?? '--'}
-                showHrv={detail.mode !== 'quick'}
-                showRestingHealthBar={detail.mode === 'quick'}
-                age={profileQuery.data?.age ?? null}
-                rmssd={detail.rmssd}
-                sdnn={detail.sdnn}
-                stress={detail.stress}
-                bpmSamples={detail.bpmSeries}
-                ibiSamples={detail.ibiSeries}
-                advancedStatsLocked={advancedStatsLocked}
-                onPressUpgrade={() => {
-                  trackFeatureGateHit({
-                    feature: FeatureKey.AdvancedStats,
-                    placement: PaywallPlacement.DailyResultProGate,
-                    sourceScreen: 'HeartRateSessionDetail',
-                    sourceAction: 'session_detail_stats',
-                    access: advancedStatsAccess,
-                  });
-                  navigation.navigate('ProPaywall', {
-                    placement: PaywallPlacement.DailyResultProGate,
-                    sourceScreen: 'HeartRateSessionDetail',
-                    sourceAction: 'session_detail_stats',
-                    feature: FeatureKey.AdvancedStats,
-                  });
-                }}
-              />
+          {detailQuery.isLoading ? (
+            <View style={styles.centerState}>
+              <ActivityIndicator color={colors.primary.blue600} />
             </View>
-          </View>
-        )}
+          ) : detailQuery.isError || detail == null ? (
+            <View style={styles.centerState}>
+              <MaterialCommunityIcons
+                name="alert-circle-outline"
+                size={42}
+                color={colors.warning[500]}
+              />
+              <Text style={styles.errorTitle}>Could not load reading</Text>
+              <Text style={styles.errorText}>
+                This heart-rate session may no longer be available.
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.heroWrap}>
+              <View style={styles.heroContent}>
+                <HeartRateResultContent
+                  bpm={detail.avgBpm ?? '--'}
+                  showHrv={detail.mode !== 'quick'}
+                  showRestingHealthBar={detail.mode === 'quick'}
+                  age={profileQuery.data?.age ?? null}
+                  rmssd={detail.rmssd}
+                  sdnn={detail.sdnn}
+                  stress={detail.stress}
+                  bpmSamples={detail.bpmSeries}
+                  ibiSamples={detail.ibiSeries}
+                  advancedStatsLocked={advancedStatsLocked}
+                  onPressUpgrade={() => {
+                    trackFeatureGateHit({
+                      feature: FeatureKey.AdvancedStats,
+                      placement: PaywallPlacement.DailyResultProGate,
+                      sourceScreen: 'HeartRateSessionDetail',
+                      sourceAction: 'session_detail_stats',
+                      access: advancedStatsAccess,
+                    });
+                    navigation.navigate('ProPaywall', {
+                      placement: PaywallPlacement.DailyResultProGate,
+                      sourceScreen: 'HeartRateSessionDetail',
+                      sourceAction: 'session_detail_stats',
+                      feature: FeatureKey.AdvancedStats,
+                    });
+                  }}
+                />
+              </View>
+            </View>
+          )}
+        </ScreenContent>
       </ScrollView>
 
       {/* Glassmorphic close button — fixed above the scroll */}
       <GlassIconButton
-        style={[styles.closeButton, { top: insets.top + padding.screen.vertical }]}
+        style={[
+          styles.closeButton,
+          {
+            top: insets.top + padding.screen.vertical,
+            left: dashboardLayout.contentInset,
+          },
+        ]}
         onPress={() => navigation.goBack()}
       >
         <MaterialCommunityIcons name="close" size={22} color={colors.text.secondary} />
@@ -117,7 +128,6 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     position: 'absolute',
-    left: padding.screen.horizontal,
     zIndex: 1,
   },
   headerTitle: {

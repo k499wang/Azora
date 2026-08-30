@@ -29,6 +29,7 @@ const DEVICES = [
 ];
 
 const HEIGHT_SHARE = 0.46;
+const REGULAR_HEIGHT_SHARE = 0.55;
 
 test('the room never takes more than its share of any screen height', () => {
   for (const d of DEVICES) {
@@ -66,4 +67,38 @@ test('the room stays big enough to read as a room on the smallest screen', () =>
     ...DEVICES.map((d) => getMochiStageWidth(d.width, d.height)),
   );
   assert.ok(smallest > 200, `smallest room is ${smallest.toFixed(0)}pt`);
+});
+
+/** Every device here is portrait, so a tablet is a regular-width window. */
+const TABLETS = DEVICES.filter((d) => Math.min(d.width, d.height) >= 600);
+
+test('a tablet draws a bigger room than the phone caps allowed', () => {
+  for (const d of TABLETS) {
+    assert.ok(
+      getMochiStageWidth(d.width, d.height, true) >
+        getMochiStageWidth(d.width, d.height),
+      `${d.name} did not grow`,
+    );
+  }
+});
+
+test('the bigger room still keeps its share of the height and its gutters', () => {
+  for (const d of TABLETS) {
+    const width = getMochiStageWidth(d.width, d.height, true);
+    assert.ok(
+      width * ROOM_ASPECT <= d.height * REGULAR_HEIGHT_SHARE + 0.001,
+      `${d.name}: room is ${(width * ROOM_ASPECT).toFixed(0)}pt of ${d.height}pt`,
+    );
+    assert.ok(width <= d.width - 48, `${d.name} overflows its gutters`);
+  }
+});
+
+test('a phone is untouched by the regular-width room', () => {
+  for (const d of DEVICES.filter((device) => !TABLETS.includes(device))) {
+    assert.equal(
+      getMochiStageWidth(d.width, d.height),
+      getMochiStageWidth(d.width, d.height, false),
+      `${d.name} moved`,
+    );
+  }
 });

@@ -28,6 +28,7 @@ import { triggerTapHaptic } from '../../native/tapHaptics';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
+import { useIsRegularWidth } from '../../hooks/useIsRegularWidth';
 import {
   formatDailyPlanTime,
   sortDailyPlanActionIdsByTime,
@@ -39,10 +40,42 @@ const TIMELINE_COLUMN_WIDTH = 40;
 const TIMELINE_MARKER_SIZE = 22;
 const MARKER_ICON_SIZE = 14;
 const TIMELINE_RAIL_WIDTH = 6;
-const TIMELINE_ROW_HEIGHT = 176;
-// One line of copy plus 12pt above and below it. Tight on purpose: a closed
-// daily is a label, and any more height reads as a card with nothing in it.
-const COLLAPSED_ROW_HEIGHT = 48;
+/**
+ * How much height a daily is given.
+ *
+ * A tablet gets the taller set. The open daily is the widest card on Home
+ * there, and at phone height a card that wide reads as a banner across the
+ * screen rather than the one thing the day is built around.
+ */
+interface DailyRowMetrics {
+  expandedHeight: number;
+  /**
+   * One line of copy with room above and below it. Tight on purpose: a closed
+   * daily is a label, and any more height reads as a card with nothing in it.
+   */
+  collapsedHeight: number;
+  /** the copy block an open card spends its height on */
+  contentHeight: number;
+  /**
+   * Oversized and bled off the corner so it reads as a watermark behind the
+   * copy, matching the extra-practice shelf cards.
+   */
+  glyphSize: number;
+}
+
+const COMPACT_ROW_METRICS: DailyRowMetrics = {
+  expandedHeight: 176,
+  collapsedHeight: 48,
+  contentHeight: 136,
+  glyphSize: 150,
+};
+
+const REGULAR_ROW_METRICS: DailyRowMetrics = {
+  expandedHeight: 248,
+  collapsedHeight: 60,
+  contentHeight: 208,
+  glyphSize: 210,
+};
 /** how long a row takes to open, and the one it displaces to close */
 const EXPAND_MS = 420;
 /**
@@ -53,10 +86,6 @@ const EXPAND_TIMING = {
   duration: EXPAND_MS,
   easing: Easing.inOut(Easing.cubic),
 } as const;
-const TASK_CONTENT_SIZE = 136;
-// Oversized and bled off the corner so it reads as a watermark behind the copy,
-// matching the extra-practice shelf cards.
-const TASK_GLYPH_SIZE = 150;
 const TASK_GLYPH_RIGHT = -34;
 const TASK_GLYPH_BOTTOM = -40;
 const TASK_COPY_INSET = 72;
@@ -117,6 +146,7 @@ interface DailyTaskRowProps {
   glyph: GlyphShape;
   /** the one-line summary a closed row shows after its title */
   collapsedMeta: string;
+  metrics: DailyRowMetrics;
   expanded: boolean;
   completed: boolean;
   locked: boolean;
@@ -127,7 +157,10 @@ interface DailyTaskRowProps {
 }
 
 /** everything about a daily except which one happens to be open */
-type DailyRowContent = Omit<DailyTaskRowProps, 'expanded' | 'onSelect'>;
+type DailyRowContent = Omit<
+  DailyTaskRowProps,
+  'expanded' | 'onSelect' | 'metrics'
+>;
 
 function formatCategory(category: BreathingTechnique['category']): string {
   return category.charAt(0).toUpperCase() + category.slice(1);
@@ -148,6 +181,7 @@ function DailyTaskRow({
   style,
   glyph,
   collapsedMeta,
+  metrics,
   expanded,
   completed,
   locked,
@@ -158,6 +192,7 @@ function DailyTaskRow({
   const unavailable = onPress == null;
   const statusLabel = completed ? 'completed' : locked ? 'locked' : 'not completed';
   const open = useSharedValue(expanded ? 1 : 0);
+  const { collapsedHeight, expandedHeight } = metrics;
 
   useEffect(() => {
     open.value = withTiming(expanded ? 1 : 0, EXPAND_TIMING);
@@ -166,11 +201,12 @@ function DailyTaskRow({
   // The row's height is the animation; both faces are mounted the whole time and
   // cross-fade across it. Swapping one for the other on a growing box is what
   // made the old version clip — the incoming face was already full height.
-  const rowStyle = useAnimatedStyle(() => ({
-    height:
-      COLLAPSED_ROW_HEIGHT +
-      (TIMELINE_ROW_HEIGHT - COLLAPSED_ROW_HEIGHT) * open.value,
-  }));
+  const rowStyle = useAnimatedStyle(
+    () => ({
+      height: collapsedHeight + (expandedHeight - collapsedHeight) * open.value,
+    }),
+    [collapsedHeight, expandedHeight],
+  );
   const openFace = useAnimatedStyle(() => ({ opacity: open.value }));
   const closedFace = useAnimatedStyle(() => ({ opacity: 1 - open.value }));
 
@@ -236,6 +272,7 @@ function DailyTaskRow({
               detailIcon={detailIcon}
               style={style}
               glyph={glyph}
+              metrics={metrics}
               loading={loading}
             />
           </Animated.View>
@@ -247,7 +284,7 @@ function DailyTaskRow({
 
 type ExpandedTaskPillProps = Pick<
   DailyTaskRowProps,
-  'title' | 'scheduledTime' | 'techniqueMeta' | 'detailLabel' | 'detailIcon' | 'style' | 'glyph'
+  'title' | 'scheduledTime' | 'techniqueMeta' | 'detailLabel' | 'detailIcon' | 'style' | 'glyph' | 'metrics'
 > & { loading: boolean };
 
 function ExpandedTaskPill({
@@ -258,6 +295,7 @@ function ExpandedTaskPill({
   detailIcon,
   style,
   glyph,
+  metrics,
   loading,
 }: ExpandedTaskPillProps) {
   return (
@@ -269,13 +307,16 @@ function ExpandedTaskPill({
         >
           <ActivityGlyph
             shape={glyph}
-            size={TASK_GLYPH_SIZE}
+            size={metrics.glyphSize}
             color={colors.text.inverse}
             opacity={0.16}
           />
         </View>
 
-        <View style={styles.taskCopy} pointerEvents="none">
+        <View
+          style={[styles.taskCopy, { height: metrics.contentHeight }]}
+          pointerEvents="none"
+        >
           <View style={styles.taskTop}>
             <Text style={styles.taskTitle} numberOfLines={2}>
               {title}
@@ -363,6 +404,9 @@ export default function TodaysDailiesSection({
   const handPickedLocked =
     !handPickedExerciseCompleted && !exerciseAccessAllowed;
   const breathHoldLocked = !breathHoldCompleted && !exerciseAccessAllowed;
+  const metrics = useIsRegularWidth()
+    ? REGULAR_ROW_METRICS
+    : COMPACT_ROW_METRICS;
   const guidedTitle = technique?.name ?? 'Your reset';
   const guidedScheduledTime = formatDailyPlanTime(
     sessionTime,
@@ -460,7 +504,9 @@ export default function TodaysDailiesSection({
     orderedActionIds.find((actionId) => !rows[actionId].completed) ??
     orderedActionIds[orderedActionIds.length - 1];
   const rowHeight = (actionId: DailyPlanActionId) =>
-    actionId === expandedActionId ? TIMELINE_ROW_HEIGHT : COLLAPSED_ROW_HEIGHT;
+    actionId === expandedActionId
+      ? metrics.expandedHeight
+      : metrics.collapsedHeight;
   const rail = railGeometry(
     rowHeight(orderedActionIds[0]),
     rowHeight(orderedActionIds[orderedActionIds.length - 1]),
@@ -516,6 +562,7 @@ export default function TodaysDailiesSection({
           <DailyTaskRow
             key={actionId}
             {...rows[actionId]}
+            metrics={metrics}
             expanded={actionId === expandedActionId}
             onSelect={() => setOpenedActionId(actionId)}
           />
@@ -619,7 +666,6 @@ const styles = StyleSheet.create({
   taskCopy: {
     flex: 1,
     minWidth: 0,
-    height: TASK_CONTENT_SIZE,
     justifyContent: 'space-between',
   },
   taskTop: {

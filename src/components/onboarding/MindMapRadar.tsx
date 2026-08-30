@@ -4,6 +4,11 @@ import Svg, { Circle, Line, Polygon } from 'react-native-svg';
 import { colors } from '../../theme/colors';
 import { fonts, typography } from '../../theme/typography';
 import type { MindMapScore } from '../../lib/onboardingScores';
+import {
+  axisAngle,
+  getRadarLayout,
+  LABEL_OFFSET,
+} from './mindMapRadarLayout';
 
 interface MindMapRadarProps {
   scores: MindMapScore[];
@@ -15,10 +20,6 @@ interface MindMapRadarProps {
 }
 
 const RINGS = [0.55, 1];
-
-function axisAngle(index: number, total: number): number {
-  return -Math.PI / 2 + (index * 2 * Math.PI) / total;
-}
 
 function pointOnAxis(
   cx: number,
@@ -39,12 +40,34 @@ export default function MindMapRadar({
   showValueOnLabel = true,
 }: MindMapRadarProps) {
   const labels = labelScores ?? scores;
-  const labelOffset = 20;
-  const labelWidth = 84;
+  const total = scores.length;
+  const labelOffset = LABEL_OFFSET;
+  const {
+    radius,
+    labelWidth,
+    ink,
+    textScale,
+    boxHeight,
+    boxTop,
+  } = getRadarLayout(size, total);
   const cx = size / 2;
   const cy = size / 2;
-  const radius = 120;
-  const total = scores.length;
+  // Everything drawn on the pentagon thickens with it, so a tablet gets the
+  // same picture rather than the same picture in hairlines.
+  const ringStroke = 3 * ink;
+  const axisStroke = 2 * ink;
+  const polygonStroke = 5 * ink;
+  const dotRadius = 6 * ink;
+  const targetDotRadius = 7 * ink;
+  const targetDash = `${8 * ink},${8 * ink}`;
+  const labelTitleScale = {
+    fontSize: Math.round(14 * textScale),
+    lineHeight: Math.round(18 * textScale),
+  };
+  const labelValueScale = {
+    fontSize: Math.round(11 * textScale),
+    lineHeight: Math.round(14 * textScale),
+  };
 
   const ringPolygons = RINGS.map((scale) =>
     scores
@@ -72,7 +95,7 @@ export default function MindMapRadar({
     : null;
 
   return (
-    <View style={{ width: size, height: size - 40, marginTop: -20 }}>
+    <View style={{ width: size, height: boxHeight, marginTop: boxTop }}>
       <Svg width={size} height={size}>
         {ringPolygons.map((points, idx) => (
           <Polygon
@@ -80,7 +103,7 @@ export default function MindMapRadar({
             points={points}
             fill="none"
             stroke={colors.neutral[400]}
-            strokeWidth={3}
+            strokeWidth={ringStroke}
             strokeLinejoin="round"
           />
         ))}
@@ -94,7 +117,7 @@ export default function MindMapRadar({
               x2={p.x}
               y2={p.y}
               stroke={colors.neutral[400]}
-              strokeWidth={2}
+              strokeWidth={axisStroke}
             />
           );
         })}
@@ -104,9 +127,9 @@ export default function MindMapRadar({
             fill={colors.orange[300]}
             fillOpacity={0.3}
             stroke={colors.orange[500]}
-            strokeWidth={5}
+            strokeWidth={polygonStroke}
             strokeLinejoin="round"
-            strokeDasharray="8,8"
+            strokeDasharray={targetDash}
           />
         ) : null}
         <Polygon
@@ -114,7 +137,7 @@ export default function MindMapRadar({
           fill={colors.primary.blue300}
           fillOpacity={0.55}
           stroke={colors.primary.blue500}
-          strokeWidth={5}
+          strokeWidth={polygonStroke}
           strokeLinejoin="round"
         />
         {scores.map((s, i) => {
@@ -124,7 +147,7 @@ export default function MindMapRadar({
               key={`dot-${i}`}
               cx={p.x}
               cy={p.y}
-              r={6}
+              r={dotRadius}
               fill={colors.primary.blue600}
             />
           );
@@ -137,7 +160,7 @@ export default function MindMapRadar({
                   key={`target-dot-${i}`}
                   cx={p.x}
                   cy={p.y}
-                  r={7}
+                  r={targetDotRadius}
                   fill={colors.orange[500]}
                 />
               );
@@ -162,25 +185,33 @@ export default function MindMapRadar({
         left = Math.max(0, Math.min(left, size - labelWidth));
         // Lift the two upper-side labels so they sit clear of the pentagon.
         const topNudge =
-          s.axis === 'breathEase' || s.axis === 'recovery' ? -20 : 0;
+          s.axis === 'breathEase' || s.axis === 'recovery'
+            ? -Math.round(20 * textScale)
+            : 0;
         return (
           <View
             key={`label-${s.axis}`}
             pointerEvents="none"
             style={[
               styles.labelWrap,
-              { left, top: p.y - 18 + topNudge, width: labelWidth },
+              {
+                left,
+                top: p.y - Math.round(18 * textScale) + topNudge,
+                width: labelWidth,
+              },
             ]}
           >
-            <Text style={[styles.labelTitle, { textAlign }]}>{s.label}</Text>
+            <Text style={[styles.labelTitle, labelTitleScale, { textAlign }]}>
+              {s.label}
+            </Text>
             {showValueOnLabel ? (
               targetScores ? (
-                <Text style={[styles.labelValue, { textAlign }]}>
+                <Text style={[styles.labelValue, labelValueScale, { textAlign }]}>
                   {labels[i]?.value ?? s.value}
                   <Text style={styles.labelValueTarget}> › {targetScores[i]?.value ?? s.value}</Text>
                 </Text>
               ) : (
-                <Text style={[styles.labelValue, { textAlign }]}>
+                <Text style={[styles.labelValue, labelValueScale, { textAlign }]}>
                   {labels[i]?.value ?? s.value}%
                 </Text>
               )

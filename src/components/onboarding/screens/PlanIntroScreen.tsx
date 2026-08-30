@@ -8,6 +8,7 @@ import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
+import { scaleVisual } from '../onboardingVisualScale';
 
 interface PlanIntroScreenProps {
   stepIndex: number;
@@ -16,9 +17,10 @@ interface PlanIntroScreenProps {
   onBack: () => void;
 }
 
-const VISUAL_SIZE = 240;
+const VISUAL_SIZE = scaleVisual(240);
 const RING_CENTER = VISUAL_SIZE / 2;
-const RING_RADIUS = 84;
+const RING_RADIUS = scaleVisual(84);
+const CENTER_DISC = scaleVisual(120);
 const SEGMENT_SWEEP = 100;
 const SEGMENT_START_ANGLES = [-90, 30, 150];
 const SEGMENT_COLORS = [
@@ -26,8 +28,9 @@ const SEGMENT_COLORS = [
   colors.primary.blue400,
   colors.primary.blue300,
 ];
-const SEAL_SIZE = 52;
-const SEAL_CENTER = SEAL_SIZE / 2;
+const SEAL_BOX = 52;
+const SEAL_CENTER = SEAL_BOX / 2;
+const SEAL_SIZE = scaleVisual(SEAL_BOX);
 const SEAL_LOBE_COUNT = 12;
 
 interface SealPoint {
@@ -138,7 +141,11 @@ function PlanCelebrationVisual() {
 
       <View style={styles.centerDisc} />
       <View style={styles.centerIcon}>
-        <Icon name="sparkle" size={64} color={colors.primary.blue600} />
+        <Icon
+          name="sparkle"
+          size={scaleVisual(64)}
+          color={colors.primary.blue600}
+        />
       </View>
     </View>
   );
@@ -147,7 +154,7 @@ function PlanCelebrationVisual() {
 function PersonalizationSeal() {
   return (
     <View style={styles.personalizationSeal}>
-      <Svg width={SEAL_SIZE} height={SEAL_SIZE} viewBox="0 0 52 52">
+      <Svg width={SEAL_SIZE} height={SEAL_SIZE} viewBox={`0 0 ${SEAL_BOX} ${SEAL_BOX}`}>
         <Path
           d={PERSONALIZATION_SEAL_PATH}
           fill={colors.neutral[50]}
@@ -156,7 +163,7 @@ function PersonalizationSeal() {
       <View style={styles.personalizationSealIcon}>
         <MaterialCommunityIcons
           name="account-circle"
-          size={28}
+          size={scaleVisual(28)}
           color={colors.primary.blue600}
         />
       </View>
@@ -218,11 +225,11 @@ const styles = StyleSheet.create({
   },
   centerDisc: {
     position: 'absolute',
-    left: RING_CENTER - 60,
-    top: RING_CENTER - 60,
-    width: 120,
-    height: 120,
-    borderRadius: 60,
+    left: RING_CENTER - CENTER_DISC / 2,
+    top: RING_CENTER - CENTER_DISC / 2,
+    width: CENTER_DISC,
+    height: CENTER_DISC,
+    borderRadius: CENTER_DISC / 2,
     backgroundColor: colors.background.elevated,
     borderWidth: 1.5,
     borderColor: colors.primary.blue200,
@@ -234,10 +241,10 @@ const styles = StyleSheet.create({
   },
   centerIcon: {
     position: 'absolute',
-    left: RING_CENTER - 60,
-    top: RING_CENTER - 60,
-    width: 120,
-    height: 120,
+    left: RING_CENTER - CENTER_DISC / 2,
+    top: RING_CENTER - CENTER_DISC / 2,
+    width: CENTER_DISC,
+    height: CENTER_DISC,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -262,7 +269,7 @@ const styles = StyleSheet.create({
   },
   planCardWrap: {
     width: '100%',
-    maxWidth: 310,
+    maxWidth: scaleVisual(310),
     position: 'relative',
     overflow: 'visible',
   },
@@ -284,7 +291,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     left: '50%',
-    marginLeft: -SEAL_CENTER,
+    marginLeft: -SEAL_SIZE / 2,
     width: SEAL_SIZE,
     height: SEAL_SIZE,
     alignItems: 'center',

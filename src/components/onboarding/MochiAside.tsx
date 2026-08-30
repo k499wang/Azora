@@ -38,6 +38,9 @@ import { duration, easing } from '../../theme/motion';
  *   single `Text` so line breaks and kerning are the font's own.
  */
 
+// Not on the onboarding visual scale, deliberately: the tour renders this
+// inside a fixed-height cluster, so a tablet-sized Mochi would grow out of the
+// box the arrow and speech bubble are placed against.
 const MOCHI_SIZE = 52;
 const LEAD_MOCHI_SIZE = 64;
 const TAIL = 13;

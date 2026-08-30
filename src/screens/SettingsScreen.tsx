@@ -19,6 +19,7 @@ import type { SettingsScreenProps } from '../app/navigation';
 import { subscribeToClosingTransitionEnd } from '../app/navigation/useOpeningTransitionComplete';
 import { returnToHome } from '../app/navigation/returnToHome';
 import { getHeartRatePlacementGuidance } from '../lib/heartRate/captureGuidance';
+import ScreenContent from '../components/common/ScreenContent';
 
 const FEEDBACK_EMAIL = 'feedback@tryazora.app';
 const FEEDBACK_CC_EMAIL = 'kevin@tryazora.app';
@@ -195,139 +196,141 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.topSection}>
-          <AppTopBar
-            showAvatar={false}
-            showStreak={false}
-            leftSlot={
-              <View style={styles.headerLeft}>
-                <Pressable
-                  onPress={() => navigation.goBack()}
-                  hitSlop={12}
-                  style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
-                >
-                  <MaterialCommunityIcons
-                    name="chevron-left"
-                    size={28}
-                    color={colors.text.primary}
-                  />
-                </Pressable>
-                <Text style={styles.headerTitle}>Settings</Text>
-              </View>
-            }
-          />
-        </View>
-
-        <View style={styles.section}>
-          <SectionHeader title="Preferences" />
-          <SettingsGroup>
-            <SettingsRow
-              icon="bell-outline"
-              label="Notifications"
-              onPress={() => {
-                trackProfileAction('notifications_opened');
-                setNotificationsVisible(true);
-              }}
-            />
-            <SettingsRow
-              icon="vibrate"
-              label="Haptics"
-              showChevron={false}
-              isLast
-              rightSlot={
-                <Switch
-                  value={hapticsEnabled}
-                  onValueChange={(enabled) => {
-                    setHapticsEnabled(enabled);
-                    trackProfileAction('haptics_toggled', { enabled });
-                  }}
-                  trackColor={{
-                    false: colors.neutral[300],
-                    true: colors.primary.blue300,
-                  }}
-                  thumbColor={hapticsEnabled ? colors.primary.blue600 : colors.neutral[50]}
-                />
+        <ScreenContent width="grouped">
+          <View style={styles.topSection}>
+            <AppTopBar
+              showAvatar={false}
+              showStreak={false}
+              leftSlot={
+                <View style={styles.headerLeft}>
+                  <Pressable
+                    onPress={() => navigation.goBack()}
+                    hitSlop={12}
+                    style={({ pressed }) => [styles.backButton, pressed && styles.pressed]}
+                  >
+                    <MaterialCommunityIcons
+                      name="chevron-left"
+                      size={28}
+                      color={colors.text.primary}
+                    />
+                  </Pressable>
+                  <Text style={styles.headerTitle}>Settings</Text>
+                </View>
               }
             />
-          </SettingsGroup>
-        </View>
+          </View>
 
-        <View style={styles.section}>
-          <SectionHeader title="Support" />
-          <SettingsGroup>
-            <SettingsRow
-              icon="heart-pulse"
-              label="Help, my heart rate isn't accurate"
-              onPress={handleHeartRateAccuracyHelp}
-            />
-            <SettingsRow
-              icon="email-outline"
-              label="Send feedback"
-              onPress={() => {
-                void handleSendFeedback();
-              }}
-              isLast
-            />
-          </SettingsGroup>
-        </View>
-
-        <View style={styles.section}>
-          <SectionHeader title="Legal" />
-          <SettingsGroup>
-            <SettingsRow
-              icon="shield-lock-outline"
-              label="Privacy policy"
-              onPress={() => {
-                trackProfileAction('privacy_policy_opened');
-                void Linking.openURL('https://www.tryazora.app/privacy');
-              }}
-            />
-            <SettingsRow
-              icon="file-document-outline"
-              label="Terms of service"
-              onPress={() => {
-                trackProfileAction('terms_opened');
-                void Linking.openURL('https://www.tryazora.app/terms');
-              }}
-              isLast
-            />
-          </SettingsGroup>
-        </View>
-
-        {__DEV__ ? (
           <View style={styles.section}>
+            <SectionHeader title="Preferences" />
             <SettingsGroup>
               <SettingsRow
-                label="Preview exit offer (dev)"
-                onPress={() => navigation.navigate('ExitOffer')}
+                icon="bell-outline"
+                label="Notifications"
+                onPress={() => {
+                  trackProfileAction('notifications_opened');
+                  setNotificationsVisible(true);
+                }}
               />
               <SettingsRow
-                label="Room lab (dev)"
-                onPress={() => navigation.navigate('RoomLab')}
+                icon="vibrate"
+                label="Haptics"
+                showChevron={false}
+                isLast
+                rightSlot={
+                  <Switch
+                    value={hapticsEnabled}
+                    onValueChange={(enabled) => {
+                      setHapticsEnabled(enabled);
+                      trackProfileAction('haptics_toggled', { enabled });
+                    }}
+                    trackColor={{
+                      false: colors.neutral[300],
+                      true: colors.primary.blue300,
+                    }}
+                    thumbColor={hapticsEnabled ? colors.primary.blue600 : colors.neutral[50]}
+                  />
+                }
+              />
+            </SettingsGroup>
+          </View>
+
+          <View style={styles.section}>
+            <SectionHeader title="Support" />
+            <SettingsGroup>
+              <SettingsRow
+                icon="heart-pulse"
+                label="Help, my heart rate isn't accurate"
+                onPress={handleHeartRateAccuracyHelp}
               />
               <SettingsRow
-                label="Replay app tour (dev)"
-                onPress={handleReplayAppTour}
+                icon="email-outline"
+                label="Send feedback"
+                onPress={() => {
+                  void handleSendFeedback();
+                }}
                 isLast
               />
             </SettingsGroup>
           </View>
-        ) : null}
 
-        <View style={[styles.section, styles.accountActions]}>
-          <SettingsGroup>
-            <SettingsRow label="Sign out" onPress={handleSignOut} centered isLast />
-          </SettingsGroup>
-          <SettingsGroup>
-            <SettingsRow
-              label="Delete account"
-              onPress={handleDeleteAccount}
-              destructive
-              centered
-              isLast
-            />
-          </SettingsGroup>
-        </View>
+          <View style={styles.section}>
+            <SectionHeader title="Legal" />
+            <SettingsGroup>
+              <SettingsRow
+                icon="shield-lock-outline"
+                label="Privacy policy"
+                onPress={() => {
+                  trackProfileAction('privacy_policy_opened');
+                  void Linking.openURL('https://www.tryazora.app/privacy');
+                }}
+              />
+              <SettingsRow
+                icon="file-document-outline"
+                label="Terms of service"
+                onPress={() => {
+                  trackProfileAction('terms_opened');
+                  void Linking.openURL('https://www.tryazora.app/terms');
+                }}
+                isLast
+              />
+            </SettingsGroup>
+          </View>
+
+          {__DEV__ ? (
+            <View style={styles.section}>
+              <SettingsGroup>
+                <SettingsRow
+                  label="Preview exit offer (dev)"
+                  onPress={() => navigation.navigate('ExitOffer')}
+                />
+                <SettingsRow
+                  label="Room lab (dev)"
+                  onPress={() => navigation.navigate('RoomLab')}
+                />
+                <SettingsRow
+                  label="Replay app tour (dev)"
+                  onPress={handleReplayAppTour}
+                  isLast
+                />
+              </SettingsGroup>
+            </View>
+          ) : null}
+
+          <View style={[styles.section, styles.accountActions]}>
+            <SettingsGroup>
+              <SettingsRow label="Sign out" onPress={handleSignOut} centered isLast />
+            </SettingsGroup>
+            <SettingsGroup>
+              <SettingsRow
+                label="Delete account"
+                onPress={handleDeleteAccount}
+                destructive
+                centered
+                isLast
+              />
+            </SettingsGroup>
+          </View>
+        </ScreenContent>
       </ScrollView>
 
       <NotificationsSettingsSheet

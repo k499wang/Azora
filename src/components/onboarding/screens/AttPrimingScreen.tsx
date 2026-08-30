@@ -7,9 +7,10 @@ import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
 import { card } from '../../../theme/card';
+import { scaleVisual } from '../onboardingVisualScale';
 
-const ARROW_WIDTH = 60;
-const ARROW_HEIGHT = 116;
+const ARROW_WIDTH = scaleVisual(60);
+const ARROW_HEIGHT = scaleVisual(116);
 const ARROW_XML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 52" width="${ARROW_WIDTH}" height="${ARROW_HEIGHT}">
   <path d="M11 49 C 9 36 14 28 14 8" fill="none" stroke="${colors.primary.blue600}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
   <path d="M7.5 17 L14 8 L20.5 17" fill="none" stroke="${colors.primary.blue600}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>

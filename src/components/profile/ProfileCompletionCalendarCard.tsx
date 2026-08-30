@@ -21,6 +21,8 @@ interface CalendarCell {
 interface ProfileCompletionCalendarCardProps {
   monthDate?: Date;
   completedDays: number[];
+  /** Fill the height of a peer column so side-by-side cards match. */
+  fill?: boolean;
 }
 
 function buildCalendar(monthDate: Date, completedDays: Set<number>): CalendarCell[] {
@@ -74,6 +76,7 @@ function buildCalendar(monthDate: Date, completedDays: Set<number>): CalendarCel
 export default function ProfileCompletionCalendarCard({
   monthDate = new Date(),
   completedDays,
+  fill = false,
 }: ProfileCompletionCalendarCardProps) {
   const completedSet = useMemo(() => new Set(completedDays), [completedDays]);
   const cells = useMemo(() => buildCalendar(monthDate, completedSet), [monthDate, completedSet]);
@@ -83,8 +86,8 @@ export default function ProfileCompletionCalendarCard({
   });
 
   return (
-    <View style={styles.cardShadow}>
-      <View style={styles.card}>
+    <View style={[styles.cardShadow, fill && styles.fill]}>
+      <View style={[styles.card, fill && styles.fill]}>
         <View style={styles.cardGlyph} pointerEvents="none">
           <ActivityGlyph
             shape="rings"
@@ -139,6 +142,9 @@ export default function ProfileCompletionCalendarCard({
 const styles = StyleSheet.create({
   cardShadow: {
     ...card.blockShadow,
+  },
+  fill: {
+    flex: 1,
   },
   card: {
     ...card.block,

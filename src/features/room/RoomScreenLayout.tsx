@@ -8,6 +8,7 @@ import AppTopBar from '../../components/common/AppTopBar';
 import ChunkyButton from '../../components/common/ChunkyButton';
 import { Rise } from '../../components/common/Reveal';
 import { useOpenedFromLab } from './useOpenedFromLab';
+import { contentColumn } from '../../theme/breakpoints';
 import { colors } from '../../theme/colors';
 import { stagger } from '../../theme/motion';
 import { margin, padding, spacing } from '../../theme/spacing';
@@ -238,6 +239,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
+    ...contentColumn,
     paddingHorizontal: padding.screen.horizontal,
     marginTop: spacing.lg,
     gap: spacing.xs,
@@ -261,6 +263,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   tray: {
+    ...contentColumn,
     paddingHorizontal: padding.screen.horizontal,
     paddingBottom: margin.sectionGap,
     paddingTop: spacing.sm,

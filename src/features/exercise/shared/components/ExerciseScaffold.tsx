@@ -3,6 +3,7 @@ import { ReactNode } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { contentColumn } from '../../../../theme/breakpoints';
 import { colors } from '../../../../theme/colors';
 import { typography } from '../../../../theme/typography';
 import { spacing, padding } from '../../../../theme/spacing';
@@ -116,6 +117,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.canvas,
   },
   header: {
+    ...contentColumn,
     paddingHorizontal: padding.screen.horizontal,
     paddingTop: padding.screen.vertical,
     gap: spacing.sm,
@@ -173,6 +175,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   bottom: {
+    ...contentColumn,
     paddingHorizontal: padding.screen.horizontal,
   },
 });

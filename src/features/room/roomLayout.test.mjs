@@ -3,6 +3,7 @@ import test from 'node:test';
 
 import { ROOM_MAX_WIDTH, getHomeRoomWidth, getRoomWidth } from './roomLayout';
 import { ROOM_ASPECT } from './roomGeometry';
+import { breakpoints } from '../../theme/breakpoints';
 
 /**
  * The tallest room screen is the room-complete screen: a two-line title, a
@@ -85,8 +86,9 @@ test('even the shortest screen still gets a room, not a thumbnail', () => {
 
 /**
  * Home sizes its room from width alone, so what these pin is the inset: the
- * same margin on every phone, the shared cap on tablets, and nothing shrinking
- * a short phone for chrome Home does not have.
+ * same margin on every phone and nothing shrinking a short phone for chrome
+ * Home does not have. At regular width the centred room grows beyond the phone
+ * cap without changing the compact layout below the breakpoint.
  */
 const HOME_GUTTER = 18;
 
@@ -101,11 +103,28 @@ test('the home room sits one screen margin from both edges, on every phone', () 
   }
 });
 
-test('a tablet draws the capped room, not a room as wide as the slab', () => {
-  for (const d of DEVICES) {
+test('compact Home rooms keep the shared cap', () => {
+  for (const d of DEVICES.filter(
+    (device) => device.width < breakpoints.regularWidth,
+  )) {
     assert.ok(
       getHomeRoomWidth(d.width) <= ROOM_MAX_WIDTH + 0.001,
       `${d.name} exceeds the cap`,
+    );
+  }
+});
+
+test('regular-width Home rooms grow while keeping their screen gutters', () => {
+  for (const d of DEVICES.filter(
+    (device) => device.width >= breakpoints.regularWidth,
+  )) {
+    const roomWidth = getHomeRoomWidth(d.width);
+
+    assert.ok(roomWidth > ROOM_MAX_WIDTH, `${d.name} did not grow`);
+    assert.ok(roomWidth <= 720, `${d.name} exceeds the Home room cap`);
+    assert.ok(
+      roomWidth <= d.width - HOME_GUTTER * 2,
+      `${d.name} overflows its screen gutters`,
     );
   }
 });

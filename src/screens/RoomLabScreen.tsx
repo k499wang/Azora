@@ -54,6 +54,7 @@ import { margin, padding, spacing } from '../theme/spacing';
 import { fonts, typography } from '../theme/typography';
 import type { RoomLabScreenProps } from '../app/navigation';
 import { useRoomWidth } from '../features/room/roomStageBox';
+import ScreenContent from '../components/common/ScreenContent';
 
 const SHELL_PREVIEW_WIDTH = 96;
 const BADGE_SIZE = 34;
@@ -353,342 +354,344 @@ export default function RoomLabScreen({ navigation }: RoomLabScreenProps) {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.section}>
-          <Text style={styles.note}>
-            Placement reveal · Picker · Panel states · Home card · Progress bar
-            · Room complete · Shells · Daily sheet · Hotel · Real screens
-          </Text>
-        </View>
+        <ScreenContent style={styles.column}>
+          <View style={styles.section}>
+            <Text style={styles.note}>
+              Placement reveal · Picker · Panel states · Home card · Progress bar
+              · Room complete · Shells · Daily sheet · Hotel · Real screens
+            </Text>
+          </View>
 
-        <View style={styles.section}>
-          <SectionHeader title="Placement reveal" />
-          <Text style={styles.note}>
-            Drop, squash, burst, label. Replays without touching the database.
-          </Text>
-        </View>
+          <View style={styles.section}>
+            <SectionHeader title="Placement reveal" />
+            <Text style={styles.note}>
+              Drop, squash, burst, label. Replays without touching the database.
+            </Text>
+          </View>
 
-        <View style={styles.stage}>
-          <View style={{ width: roomWidth }}>
-            {revealRun === 0 ? (
+          <View style={styles.stage}>
+            <View style={{ width: roomWidth }}>
+              {revealRun === 0 ? (
+                <HexRoom
+                  width={roomWidth}
+                  picks={picks}
+                  frameHue={frameHue}
+                  shell={ROOM_SHELLS[shell]}
+                />
+              ) : (
+                <PlacementReveal
+                  key={revealRun}
+                  width={roomWidth}
+                  day={day.key as DayKey}
+                  option={option.id}
+                  picks={picks}
+                  frameHue={frameHue}
+                  shell={ROOM_SHELLS[shell]}
+                  onDone={() => setRevealRun(0)}
+                />
+              )}
+
+              {revealRun === 0 ? (
+                <RoomSlotPlus
+                  roomWidth={roomWidth}
+                  slot={day.key as RoomSlot}
+                  onPress={() => setPickerOpen(true)}
+                />
+              ) : null}
+            </View>
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.label}>Slot</Text>
+            <View style={styles.chipRow}>
+              {DAYS.map((it, index) => (
+                <Chip
+                  key={it.key}
+                  label={`${index + 1}`}
+                  selected={index === dayIndex}
+                  onPress={() => {
+                    setDayIndex(index);
+                    setOptionIndex(0);
+                  }}
+                />
+              ))}
+            </View>
+
+            <Text style={styles.label}>Frame — tints the burst</Text>
+            <View style={styles.chipRow}>
+              {FRAME_HUES.map((hue) => (
+                <Chip
+                  key={hue}
+                  label={hue}
+                  selected={hue === frameHue}
+                  onPress={() => setFrameHue(hue)}
+                />
+              ))}
+            </View>
+
+            <Text style={styles.label}>Shell</Text>
+            <View style={styles.chipRow}>
+              {ROOM_STYLES.map((style) => (
+                <Chip
+                  key={style.shell}
+                  label={style.name}
+                  selected={style.shell === shell}
+                  onPress={() => setShell(style.shell)}
+                />
+              ))}
+            </View>
+
+            <Button
+              label={revealRun === 0 ? 'Play placement' : 'Playing…'}
+              disabled={revealRun !== 0}
+              onPress={() => setRevealRun((run) => run + 1)}
+            />
+          </View>
+
+          <View style={styles.section}>
+            <SectionHeader title="Picker" />
+            <Text style={styles.note}>
+              The "+" standing in the selected slot above opens the real picker.
+              Confirming plays the reveal and writes nothing.
+            </Text>
+          </View>
+
+          <View style={styles.section}>
+            <SectionHeader title="Decorate panel states" />
+            <Text style={styles.note}>
+              The other three things the decorate screen says. The picker above is
+              the fourth.
+            </Text>
+            <View style={styles.chipRow}>
+              {PANEL_CASES.map((option, index) => (
+                <Chip
+                  key={option.label}
+                  label={option.label}
+                  selected={index === panelCase}
+                  onPress={() => setPanelCase(index)}
+                />
+              ))}
+            </View>
+          </View>
+
+          <DecoratePanel
+            state={PANEL_CASES[panelCase].state}
+            onSeeRoom={() => {}}
+            onStartDaily={() => {}}
+          />
+
+          <View style={styles.section}>
+            <SectionHeader title="Home card" />
+            <Text style={styles.note}>
+              The standing way back into the loop, in every state it can reach.
+              Buttons navigate for real.
+            </Text>
+            {CARD_CASES.map((option) => (
+              <View key={option.label} style={styles.cardCase}>
+                <Text style={styles.label}>{option.label}</Text>
+                <RoomProgressCardView
+                  view={describeRoomCard(option.input)}
+                  onAction={(route) => navigation.navigate(route, { fromLab: true })}
+                />
+              </View>
+            ))}
+          </View>
+
+          <View style={styles.section}>
+            <SectionHeader title="Progress bar" />
+            <Text style={styles.note}>
+              The results-screen fill, with the same haptics.
+            </Text>
+
+            <View style={styles.barRow}>
+              <ProgressBar
+                key={barRun}
+                progress={BAR_STEPS[barStep].to}
+                from={barRun === 0 ? BAR_STEPS[barStep].to : BAR_STEPS[barStep].from}
+                height={12}
+                style={styles.bar}
+              />
+              <View
+                style={[
+                  styles.badge,
+                  barStep === BAR_STEPS.length - 1 && styles.badgeUnlocked,
+                ]}
+              >
+                <Icon
+                  name={barStep === BAR_STEPS.length - 1 ? 'chevron-right' : 'lock'}
+                  size={barStep === BAR_STEPS.length - 1 ? 20 : 18}
+                  color={
+                    barStep === BAR_STEPS.length - 1
+                      ? colors.text.inverse
+                      : colors.text.tertiary
+                  }
+                />
+              </View>
+            </View>
+
+            <View style={styles.chipRow}>
+              {BAR_STEPS.map((step, index) => (
+                <Chip
+                  key={step.label}
+                  label={step.label}
+                  selected={index === barStep}
+                  onPress={() => {
+                    setBarStep(index);
+                    setBarRun((run) => run + 1);
+                  }}
+                />
+              ))}
+            </View>
+          </View>
+
+          <View style={styles.section}>
+            <SectionHeader title="Room complete replay" />
+            <Text style={styles.note}>
+              The 7/7 celebration — pieces land in paint order, then bloom.
+            </Text>
+          </View>
+
+          <View style={styles.stage}>
+            {replayRun === 0 ? (
               <HexRoom
                 width={roomWidth}
-                picks={picks}
+                picks={SAMPLE_PICKS}
                 frameHue={frameHue}
                 shell={ROOM_SHELLS[shell]}
               />
             ) : (
-              <PlacementReveal
-                key={revealRun}
+              <RoomReplay
+                key={replayRun}
                 width={roomWidth}
-                day={day.key as DayKey}
-                option={option.id}
-                picks={picks}
+                picks={SAMPLE_PICKS}
                 frameHue={frameHue}
                 shell={ROOM_SHELLS[shell]}
-                onDone={() => setRevealRun(0)}
+                onDone={() => setReplayRun(0)}
               />
             )}
-
-            {revealRun === 0 ? (
-              <RoomSlotPlus
-                roomWidth={roomWidth}
-                slot={day.key as RoomSlot}
-                onPress={() => setPickerOpen(true)}
-              />
-            ) : null}
-          </View>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.label}>Slot</Text>
-          <View style={styles.chipRow}>
-            {DAYS.map((it, index) => (
-              <Chip
-                key={it.key}
-                label={`${index + 1}`}
-                selected={index === dayIndex}
-                onPress={() => {
-                  setDayIndex(index);
-                  setOptionIndex(0);
-                }}
-              />
-            ))}
           </View>
 
-          <Text style={styles.label}>Frame — tints the burst</Text>
-          <View style={styles.chipRow}>
-            {FRAME_HUES.map((hue) => (
-              <Chip
-                key={hue}
-                label={hue}
-                selected={hue === frameHue}
-                onPress={() => setFrameHue(hue)}
-              />
-            ))}
-          </View>
-
-          <Text style={styles.label}>Shell</Text>
-          <View style={styles.chipRow}>
-            {ROOM_STYLES.map((style) => (
-              <Chip
-                key={style.shell}
-                label={style.name}
-                selected={style.shell === shell}
-                onPress={() => setShell(style.shell)}
-              />
-            ))}
-          </View>
-
-          <Button
-            label={revealRun === 0 ? 'Play placement' : 'Playing…'}
-            disabled={revealRun !== 0}
-            onPress={() => setRevealRun((run) => run + 1)}
-          />
-        </View>
-
-        <View style={styles.section}>
-          <SectionHeader title="Picker" />
-          <Text style={styles.note}>
-            The "+" standing in the selected slot above opens the real picker.
-            Confirming plays the reveal and writes nothing.
-          </Text>
-        </View>
-
-        <View style={styles.section}>
-          <SectionHeader title="Decorate panel states" />
-          <Text style={styles.note}>
-            The other three things the decorate screen says. The picker above is
-            the fourth.
-          </Text>
-          <View style={styles.chipRow}>
-            {PANEL_CASES.map((option, index) => (
-              <Chip
-                key={option.label}
-                label={option.label}
-                selected={index === panelCase}
-                onPress={() => setPanelCase(index)}
-              />
-            ))}
-          </View>
-        </View>
-
-        <DecoratePanel
-          state={PANEL_CASES[panelCase].state}
-          onSeeRoom={() => {}}
-          onStartDaily={() => {}}
-        />
-
-        <View style={styles.section}>
-          <SectionHeader title="Home card" />
-          <Text style={styles.note}>
-            The standing way back into the loop, in every state it can reach.
-            Buttons navigate for real.
-          </Text>
-          {CARD_CASES.map((option) => (
-            <View key={option.label} style={styles.cardCase}>
-              <Text style={styles.label}>{option.label}</Text>
-              <RoomProgressCardView
-                view={describeRoomCard(option.input)}
-                onAction={(route) => navigation.navigate(route, { fromLab: true })}
-              />
-            </View>
-          ))}
-        </View>
-
-        <View style={styles.section}>
-          <SectionHeader title="Progress bar" />
-          <Text style={styles.note}>
-            The results-screen fill, with the same haptics.
-          </Text>
-
-          <View style={styles.barRow}>
-            <ProgressBar
-              key={barRun}
-              progress={BAR_STEPS[barStep].to}
-              from={barRun === 0 ? BAR_STEPS[barStep].to : BAR_STEPS[barStep].from}
-              height={12}
-              style={styles.bar}
-            />
-            <View
-              style={[
-                styles.badge,
-                barStep === BAR_STEPS.length - 1 && styles.badgeUnlocked,
-              ]}
-            >
-              <Icon
-                name={barStep === BAR_STEPS.length - 1 ? 'chevron-right' : 'lock'}
-                size={barStep === BAR_STEPS.length - 1 ? 20 : 18}
-                color={
-                  barStep === BAR_STEPS.length - 1
-                    ? colors.text.inverse
-                    : colors.text.tertiary
-                }
-              />
-            </View>
-          </View>
-
-          <View style={styles.chipRow}>
-            {BAR_STEPS.map((step, index) => (
-              <Chip
-                key={step.label}
-                label={step.label}
-                selected={index === barStep}
-                onPress={() => {
-                  setBarStep(index);
-                  setBarRun((run) => run + 1);
-                }}
-              />
-            ))}
-          </View>
-        </View>
-
-        <View style={styles.section}>
-          <SectionHeader title="Room complete replay" />
-          <Text style={styles.note}>
-            The 7/7 celebration — pieces land in paint order, then bloom.
-          </Text>
-        </View>
-
-        <View style={styles.stage}>
-          {replayRun === 0 ? (
-            <HexRoom
-              width={roomWidth}
-              picks={SAMPLE_PICKS}
-              frameHue={frameHue}
-              shell={ROOM_SHELLS[shell]}
-            />
-          ) : (
-            <RoomReplay
-              key={replayRun}
-              width={roomWidth}
-              picks={SAMPLE_PICKS}
-              frameHue={frameHue}
-              shell={ROOM_SHELLS[shell]}
-              onDone={() => setReplayRun(0)}
-            />
-          )}
-        </View>
-
-        <View style={styles.section}>
-          <Button
-            label={replayRun === 0 ? 'Play replay' : 'Playing…'}
-            disabled={replayRun !== 0}
-            onPress={() => setReplayRun((run) => run + 1)}
-          />
-        </View>
-
-        <View style={styles.section}>
-          <SectionHeader title="Shells" />
-          <Text style={styles.note}>All six looks, fully decorated.</Text>
-          <View style={styles.shellGrid}>
-            {ROOM_STYLES.map((style) => (
-              <View key={style.shell} style={styles.shellCell}>
-                <HexRoom
-                  width={SHELL_PREVIEW_WIDTH}
-                  picks={SAMPLE_PICKS}
-                  frameHue={style.frameHue}
-                  shell={ROOM_SHELLS[style.shell]}
-                />
-                <Text style={styles.shellLabel}>{style.name}</Text>
-              </View>
-            ))}
-          </View>
-        </View>
-
-        <View style={styles.section}>
-          <SectionHeader title="Daily complete sheet" />
-          <Text style={styles.note}>
-            Solid colour block. These cases are faked, so none of them touches
-            your real dailies or spends a day.
-          </Text>
-          <View style={styles.chipRow}>
-            {SHEET_CASES.map((option, index) => (
-              <Chip
-                key={option.label}
-                label={option.label}
-                selected={index === sheetCase}
-                onPress={() => setSheetCase(index)}
-              />
-            ))}
-          </View>
-          <Button label="Open sheet" onPress={() => setSheetVisible(true)} />
-        </View>
-
-        <View style={styles.section}>
-          <SectionHeader title="Hotel (simulated)" />
-          <Text style={styles.note}>
-            Fake floors for the pyramid below. Fifty-five is a full year, and a
-            filled one. Open the hotel to pinch through them.
-          </Text>
-          <View style={styles.chipRow}>
-            {HOTEL_FLOOR_COUNTS.map((count) => (
-              <Chip
-                key={count}
-                label={`${count} floor${count === 1 ? '' : 's'}`}
-                selected={count === hotelFloors}
-                onPress={() => setHotelFloors(count)}
-              />
-            ))}
-          </View>
-        </View>
-
-        <View style={styles.section}>
-          <SectionHeader title="Decorate screen — faked" />
-          <Text style={styles.note}>
-            Opens the real screen with an invented room. Picking plays the
-            reveal and writes nothing.
-          </Text>
-          {SCREEN_CASES.map((option) => (
+          <View style={styles.section}>
             <Button
-              key={option.label}
-              label={option.label}
+              label={replayRun === 0 ? 'Play replay' : 'Playing…'}
+              disabled={replayRun !== 0}
+              onPress={() => setReplayRun((run) => run + 1)}
+            />
+          </View>
+
+          <View style={styles.section}>
+            <SectionHeader title="Shells" />
+            <Text style={styles.note}>All six looks, fully decorated.</Text>
+            <View style={styles.shellGrid}>
+              {ROOM_STYLES.map((style) => (
+                <View key={style.shell} style={styles.shellCell}>
+                  <HexRoom
+                    width={SHELL_PREVIEW_WIDTH}
+                    picks={SAMPLE_PICKS}
+                    frameHue={style.frameHue}
+                    shell={ROOM_SHELLS[style.shell]}
+                  />
+                  <Text style={styles.shellLabel}>{style.name}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          <View style={styles.section}>
+            <SectionHeader title="Daily complete sheet" />
+            <Text style={styles.note}>
+              Solid colour block. These cases are faked, so none of them touches
+              your real dailies or spends a day.
+            </Text>
+            <View style={styles.chipRow}>
+              {SHEET_CASES.map((option, index) => (
+                <Chip
+                  key={option.label}
+                  label={option.label}
+                  selected={index === sheetCase}
+                  onPress={() => setSheetCase(index)}
+                />
+              ))}
+            </View>
+            <Button label="Open sheet" onPress={() => setSheetVisible(true)} />
+          </View>
+
+          <View style={styles.section}>
+            <SectionHeader title="Hotel (simulated)" />
+            <Text style={styles.note}>
+              Fake floors for the pyramid below. Fifty-five is a full year, and a
+              filled one. Open the hotel to pinch through them.
+            </Text>
+            <View style={styles.chipRow}>
+              {HOTEL_FLOOR_COUNTS.map((count) => (
+                <Chip
+                  key={count}
+                  label={`${count} floor${count === 1 ? '' : 's'}`}
+                  selected={count === hotelFloors}
+                  onPress={() => setHotelFloors(count)}
+                />
+              ))}
+            </View>
+          </View>
+
+          <View style={styles.section}>
+            <SectionHeader title="Decorate screen — faked" />
+            <Text style={styles.note}>
+              Opens the real screen with an invented room. Picking plays the
+              reveal and writes nothing.
+            </Text>
+            {SCREEN_CASES.map((option) => (
+              <Button
+                key={option.label}
+                label={option.label}
+                onPress={() => {
+                  setRoomOverride(option.claim);
+                  navigation.navigate('RoomDecorate', { fromLab: true });
+                }}
+              />
+            ))}
+            <Button
+              label={
+                isRoomOverridden() ? 'Clear fake room' : 'Fake room not active'
+              }
+              disabled={!isRoomOverridden()}
+              onPress={() => setRoomOverride(null)}
+            />
+          </View>
+
+          <View style={styles.section}>
+            <SectionHeader title="Real screens" />
+            <Text style={styles.note}>
+              Your real data, unless a fake room is active above.
+            </Text>
+            <Button
+              label="Open decorate screen"
+              onPress={() => navigation.navigate('RoomDecorate', { fromLab: true })}
+            />
+            <Button
+              label="Open room complete"
+              onPress={() => navigation.navigate('RoomComplete', { fromLab: true })}
+            />
+            <Button
+              label={`Open hotel (${hotelFloors} fake floors)`}
               onPress={() => {
-                setRoomOverride(option.claim);
-                navigation.navigate('RoomDecorate', { fromLab: true });
+                setHotelOverride(fakeFloors(hotelFloors));
+                navigation.navigate('HotelPreview', { fromLab: true });
               }}
             />
-          ))}
-          <Button
-            label={
-              isRoomOverridden() ? 'Clear fake room' : 'Fake room not active'
-            }
-            disabled={!isRoomOverridden()}
-            onPress={() => setRoomOverride(null)}
-          />
-        </View>
-
-        <View style={styles.section}>
-          <SectionHeader title="Real screens" />
-          <Text style={styles.note}>
-            Your real data, unless a fake room is active above.
-          </Text>
-          <Button
-            label="Open decorate screen"
-            onPress={() => navigation.navigate('RoomDecorate', { fromLab: true })}
-          />
-          <Button
-            label="Open room complete"
-            onPress={() => navigation.navigate('RoomComplete', { fromLab: true })}
-          />
-          <Button
-            label={`Open hotel (${hotelFloors} fake floors)`}
-            onPress={() => {
-              setHotelOverride(fakeFloors(hotelFloors));
-              navigation.navigate('HotelPreview', { fromLab: true });
-            }}
-          />
-          <Button
-            label="Open hotel (my real floors)"
-            onPress={() => {
-              setHotelOverride(null);
-              navigation.navigate('HotelPreview', { fromLab: true });
-            }}
-          />
-          <Button
-            label="Open next-room picker"
-            onPress={() => navigation.navigate('NextRoom', { fromLab: true })}
-          />
-        </View>
+            <Button
+              label="Open hotel (my real floors)"
+              onPress={() => {
+                setHotelOverride(null);
+                navigation.navigate('HotelPreview', { fromLab: true });
+              }}
+            />
+            <Button
+              label="Open next-room picker"
+              onPress={() => navigation.navigate('NextRoom', { fromLab: true })}
+            />
+          </View>
+        </ScreenContent>
       </ScrollView>
     </View>
   );
@@ -739,6 +742,11 @@ function Button({
 }
 
 const styles = StyleSheet.create({
+  // Carries the scroll container's section gap, which no longer reaches past
+  // this wrapper to the sections inside it.
+  column: {
+    gap: margin.sectionGap,
+  },
   screen: {
     flex: 1,
     backgroundColor: colors.background.canvas,

@@ -16,6 +16,7 @@ import { PlanCard, computeAnnualSavings, computePerWeek } from '../components/pa
 import { PaywallFooterLinks } from '../components/paywall/PaywallFooterLinks';
 import PaywallTrialReminderToggle from '../components/paywall/PaywallTrialReminderToggle';
 import { PaywallTrialStep } from '../components/onboarding/paywall/PaywallTrialStep';
+import ScreenContent from '../components/common/ScreenContent';
 
 
 export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'ProPaywall'>) {
@@ -177,71 +178,73 @@ export function ProPaywallScreen({ navigation, route }: RootStackScreenProps<'Pr
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          <Animated.View
-            style={[
-              styles.content,
-              { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
-            ]}
-          >
-            <PaywallTrialStep
-              hasAnnualTrial={hasAnnualTrial}
-              trialLabel={annualPackage?.trialLabel}
-            />
+          <ScreenContent>
+            <Animated.View
+              style={[
+                styles.content,
+                { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
+              ]}
+            >
+              <PaywallTrialStep
+                hasAnnualTrial={hasAnnualTrial}
+                trialLabel={annualPackage?.trialLabel}
+              />
 
-            {hasAnnualTrial ? (
-              <View style={styles.reminderToggleWrap}>
-                <PaywallTrialReminderToggle disabled={!selectedPackageHasTrial} />
-              </View>
-            ) : null}
+              {hasAnnualTrial ? (
+                <View style={styles.reminderToggleWrap}>
+                  <PaywallTrialReminderToggle disabled={!selectedPackageHasTrial} />
+                </View>
+              ) : null}
 
-            {paywall.isLoading ? (
-              <View style={[styles.cardsLoading, !hasAnnualTrial && styles.planCardsNoTrial]}>
-                <ActivityIndicator color={colors.primary.blue600} />
-              </View>
-            ) : (
-              <View style={[styles.planCards, !hasAnnualTrial && styles.planCardsNoTrial]}>
-                {annualPackage ? (
-                  <PlanCard
-                    pkg={annualPackage}
-                    isSelected={paywall.selectedPackageId === 'annual'}
-                    onSelect={paywall.selectPackage}
-                    savingsPercent={savingsPercent}
-                    comparePerWeek={weeklyPackage ? computePerWeek(weeklyPackage) : null}
-                    light
-                  />
-                ) : null}
-                {weeklyPackage ? (
-                  <PlanCard
-                    pkg={weeklyPackage}
-                    isSelected={paywall.selectedPackageId === 'weekly'}
-                    onSelect={paywall.selectPackage}
-                    savingsPercent={null}
-                    light
-                  />
-                ) : null}
-              </View>
-            )}
+              {paywall.isLoading ? (
+                <View style={[styles.cardsLoading, !hasAnnualTrial && styles.planCardsNoTrial]}>
+                  <ActivityIndicator color={colors.primary.blue600} />
+                </View>
+              ) : (
+                <View style={[styles.planCards, !hasAnnualTrial && styles.planCardsNoTrial]}>
+                  {annualPackage ? (
+                    <PlanCard
+                      pkg={annualPackage}
+                      isSelected={paywall.selectedPackageId === 'annual'}
+                      onSelect={paywall.selectPackage}
+                      savingsPercent={savingsPercent}
+                      comparePerWeek={weeklyPackage ? computePerWeek(weeklyPackage) : null}
+                      light
+                    />
+                  ) : null}
+                  {weeklyPackage ? (
+                    <PlanCard
+                      pkg={weeklyPackage}
+                      isSelected={paywall.selectedPackageId === 'weekly'}
+                      onSelect={paywall.selectPackage}
+                      savingsPercent={null}
+                      light
+                    />
+                  ) : null}
+                </View>
+              )}
 
-            {paywall.errorMessage ? (
-              <View style={styles.errorBlock}>
-                <Text style={styles.error}>{paywall.errorMessage}</Text>
-                <Pressable
-                  accessibilityRole="button"
-                  disabled={isBusy || isExiting}
-                  onPress={() => {
-                    void paywall.retryRevenueCatSync();
-                  }}
-                  style={({ pressed }) => [
-                    styles.retryButton,
-                    pressed && styles.subtlePressed,
-                    (isBusy || isExiting) && styles.disabled,
-                  ]}
-                >
-                  <Text style={styles.retryText}>Retry</Text>
-                </Pressable>
-              </View>
-            ) : null}
-          </Animated.View>
+              {paywall.errorMessage ? (
+                <View style={styles.errorBlock}>
+                  <Text style={styles.error}>{paywall.errorMessage}</Text>
+                  <Pressable
+                    accessibilityRole="button"
+                    disabled={isBusy || isExiting}
+                    onPress={() => {
+                      void paywall.retryRevenueCatSync();
+                    }}
+                    style={({ pressed }) => [
+                      styles.retryButton,
+                      pressed && styles.subtlePressed,
+                      (isBusy || isExiting) && styles.disabled,
+                    ]}
+                  >
+                    <Text style={styles.retryText}>Retry</Text>
+                  </Pressable>
+                </View>
+              ) : null}
+            </Animated.View>
+          </ScreenContent>
         </ScrollView>
 
         <View style={styles.tray}>

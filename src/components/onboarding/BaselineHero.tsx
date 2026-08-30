@@ -9,9 +9,10 @@ import Svg, {
   Stop,
 } from 'react-native-svg';
 import { colors } from '../../theme/colors';
+import { scaleVisual } from './onboardingVisualScale';
 
-const W = 220;
-const H = 140;
+const W = scaleVisual(220);
+const H = scaleVisual(140);
 
 export default function BaselineHero() {
   return (

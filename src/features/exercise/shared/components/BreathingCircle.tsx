@@ -9,7 +9,13 @@ import { Animated, Dimensions, Easing, StyleSheet, View } from 'react-native';
 import { colors } from '../../../../theme/colors';
 import { spacing } from '../../../../theme/spacing';
 
-const SCREEN_WIDTH = Dimensions.get('window').width;
+// `screen`, not `window`: the circle's size feeds a StyleSheet and an Animated
+// initial value, both of which are fixed at module load, so this has to read a
+// number that cannot change afterwards. The device screen qualifies; `window`
+// does not, because an iPad in Split View resizes it and the circle would stay
+// frozen at whatever width the app happened to launch at. On a phone the two
+// are the same, so this changes nothing there.
+const SCREEN_WIDTH = Dimensions.get('screen').width;
 const OUTER_MAX_SIZE = Math.min(328, SCREEN_WIDTH - spacing.lg * 2);
 const INNER_SIZE = 108;
 const OUTLINE_WIDTH = 2;
@@ -163,7 +169,6 @@ const BreathingCircle = forwardRef<BreathingCircleRef, BreathingCircleProps>(
 
 BreathingCircle.displayName = 'BreathingCircle';
 
-export const BREATHING_CIRCLE_SIZE = OUTER_MAX_SIZE;
 
 export default BreathingCircle;
 

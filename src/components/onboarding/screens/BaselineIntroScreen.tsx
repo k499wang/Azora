@@ -10,6 +10,7 @@ import { fonts, typography } from '../../../theme/typography';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import { useWhileVisible } from '../../../hooks/useWhileVisible';
+import { scaleVisual } from '../onboardingVisualScale';
 
 interface BaselineIntroScreenProps {
   stepIndex: number;
@@ -18,8 +19,8 @@ interface BaselineIntroScreenProps {
   onBack: () => void;
 }
 
-const ECG_WIDTH = 320;
-const ECG_HEIGHT = 140;
+const ECG_WIDTH = scaleVisual(320);
+const ECG_HEIGHT = scaleVisual(140);
 const BASELINE = ECG_HEIGHT / 2;
 const CYCLE = 80;
 const CYCLES_VISIBLE = ECG_WIDTH / CYCLE;

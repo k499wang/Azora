@@ -24,7 +24,12 @@ export function MainTabs({ tourEnabled }: MainTabsProps) {
       <Tab.Navigator
         screenOptions={{
           headerShown: false,
-          tabBarControllerMode: 'tabBar',
+          // Sidebar-adaptable: UIKit draws a sidebar at regular width (iPad,
+          // and a wide iPad window) and falls back to the bottom bar at compact
+          // width, including every iPhone and a narrow Split View window. This
+          // is the one place the app gets a real iPad navigation idiom for
+          // free — iOS 18+; older systems just keep the tab bar.
+          tabBarControllerMode: 'tabSidebar',
           tabBarMinimizeBehavior: 'auto',
           tabBarLabelStyle: { fontFamily: fonts.semibold },
         }}
