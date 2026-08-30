@@ -11,6 +11,7 @@ import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import { benchmarkBreathHold } from '../../../lib/breathHoldPercentile';
 import type { MindMapAxis, MindMapScore } from '../../../lib/onboardingScores';
+import { ONBOARDING_VISUAL_MAX_WIDTH } from '../onboardingVisualScale';
 
 interface DiagnosisScreenProps {
   age: number;
@@ -152,7 +153,7 @@ export default function DiagnosisScreen({
     >
       <View style={styles.page}>
         <View style={styles.radarWrap}>
-          <MindMapRadar scores={scores} size={width} />
+          <MindMapRadar scores={scores} size={Math.min(width, ONBOARDING_VISUAL_MAX_WIDTH)} />
         </View>
 
         <Text style={styles.summary}>

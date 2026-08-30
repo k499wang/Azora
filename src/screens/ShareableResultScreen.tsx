@@ -41,6 +41,7 @@ import { useTrackDailyCompletion } from '../features/room/useTrackDailyCompletio
 import { SESSION_GLASS_BUTTON_SIZE } from '../features/exercise/shared/components/SessionGlassButton';
 import { duration, stagger } from '../theme/motion';
 import { returnToHome } from '../app/navigation/returnToHome';
+import ScreenContent from '../components/common/ScreenContent';
 
 // The breath hold is not a guided technique, but feedback is stored per
 // technique id, so it answers under its own key.
@@ -283,77 +284,79 @@ export default function ShareableResultScreen({
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <Rise
-          when={revealResults}
-          durationMs={duration.base}
-          style={styles.heroWrap}
-        >
-          <View style={styles.heroShadow}>
-            <View style={[styles.heroCard, { backgroundColor: hue.base }]}>
-              <Icon name="streakFilled" size={HERO_FLAME_SIZE} color={hue.soft} />
-              <Text style={styles.heroTitle}>{congratulation}</Text>
-              <Text style={styles.heroSubtitle}>
-                Breath hold · {formatDuration(holdSeconds)}
-              </Text>
-              {comparisonLabel == null ? null : (
-                <Text style={styles.heroBadge}>{comparisonLabel}</Text>
-              )}
+        <ScreenContent>
+          <Rise
+            when={revealResults}
+            durationMs={duration.base}
+            style={styles.heroWrap}
+          >
+            <View style={styles.heroShadow}>
+              <View style={[styles.heroCard, { backgroundColor: hue.base }]}>
+                <Icon name="streakFilled" size={HERO_FLAME_SIZE} color={hue.soft} />
+                <Text style={styles.heroTitle}>{congratulation}</Text>
+                <Text style={styles.heroSubtitle}>
+                  Breath hold · {formatDuration(holdSeconds)}
+                </Text>
+                {comparisonLabel == null ? null : (
+                  <Text style={styles.heroBadge}>{comparisonLabel}</Text>
+                )}
+              </View>
             </View>
-          </View>
-        </Rise>
+          </Rise>
 
-        <Rise
-          when={revealResults}
-          delay={stagger.tight}
-          durationMs={duration.base}
-        >
-          <View style={styles.statsSection}>
-            <ResultHeartRateStatsSection
-              hrDrop={hrDropBpm}
-              minBpm={minBpm ?? null}
-              maxBpm={maxBpm ?? null}
-              avgBpm={avgBpm ?? null}
-              age={userAge}
-              bpmSamples={bpmSamples}
-              locked={advancedStatsLocked}
-              onPressUpgrade={showAdvancedStatsPaywall}
-              emptyChartMessage={
-                heartRateResultStatus === 'insufficient_beats'
-                  ? 'Not enough reliable heartbeats were detected during this hold to show heart-rate results.'
-                  : 'Complete The Azora Protocol with heart rate enabled to see your BPM.'
-              }
-              insightContext="breath-hold"
-            />
-          </View>
-        </Rise>
-
-        <Rise
-          when={revealResults}
-          delay={stagger.tight * 2}
-          durationMs={duration.base}
-        >
-          <View style={styles.bodySection}>
-            <ResultHelpfulnessQuestion
-              techniqueId={BREATH_HOLD_FEEDBACK_ID}
-              localDate={todayLocalDate}
-              sessionKey={sessionKey}
-            />
-          </View>
-
-          <ChunkyButton
-            label="Share my result"
-            shape="card"
-            style={styles.shareCta}
-            icon={
-              <MaterialCommunityIcons
-                name="share-variant"
-                size={20}
-                color={colors.text.inverse}
+          <Rise
+            when={revealResults}
+            delay={stagger.tight}
+            durationMs={duration.base}
+          >
+            <View style={styles.statsSection}>
+              <ResultHeartRateStatsSection
+                hrDrop={hrDropBpm}
+                minBpm={minBpm ?? null}
+                maxBpm={maxBpm ?? null}
+                avgBpm={avgBpm ?? null}
+                age={userAge}
+                bpmSamples={bpmSamples}
+                locked={advancedStatsLocked}
+                onPressUpgrade={showAdvancedStatsPaywall}
+                emptyChartMessage={
+                  heartRateResultStatus === 'insufficient_beats'
+                    ? 'Not enough reliable heartbeats were detected during this hold to show heart-rate results.'
+                    : 'Complete The Azora Protocol with heart rate enabled to see your BPM.'
+                }
+                insightContext="breath-hold"
               />
-            }
-            onPress={handleShare}
-          />
-        </Rise>
+            </View>
+          </Rise>
+
+          <Rise
+            when={revealResults}
+            delay={stagger.tight * 2}
+            durationMs={duration.base}
+          >
+            <View style={styles.bodySection}>
+              <ResultHelpfulnessQuestion
+                techniqueId={BREATH_HOLD_FEEDBACK_ID}
+                localDate={todayLocalDate}
+                sessionKey={sessionKey}
+              />
+            </View>
+
+            <ChunkyButton
+              label="Share my result"
+              shape="card"
+              style={styles.shareCta}
+              icon={
+                <MaterialCommunityIcons
+                  name="share-variant"
+                  size={20}
+                  color={colors.text.inverse}
+                />
+              }
+              onPress={handleShare}
+            />
+          </Rise>
+        </ScreenContent>
       </ScrollView>
 
       {showDailyCover ? (

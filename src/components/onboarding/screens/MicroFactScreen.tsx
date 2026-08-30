@@ -9,6 +9,7 @@ import { fonts, typography } from '../../../theme/typography';
 import { isHapticsEnabled } from '../../../services/preferences/hapticsPreference';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
+import { scaleVisual } from '../onboardingVisualScale';
 
 interface MicroFactScreenProps {
   stepIndex: number;
@@ -29,8 +30,8 @@ const SLICES: Slice[] = [
   { label: 'Steadier breath', percent: 16, accent: colors.warning[500] },
 ];
 
-const CHART_SIZE = 220;
-const STROKE = 42;
+const CHART_SIZE = scaleVisual(220);
+const STROKE = scaleVisual(42);
 const RADIUS = (CHART_SIZE - STROKE) / 2;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 

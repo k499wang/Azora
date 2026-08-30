@@ -13,6 +13,7 @@ import { card } from '../theme/card';
 import { colors } from '../theme/colors';
 import { padding, spacing } from '../theme/spacing';
 import { fonts, typography } from '../theme/typography';
+import ScreenContent from '../components/common/ScreenContent';
 
 export default function GardenScreen({ navigation }: GardenScreenProps) {
   const insets = useSafeAreaInsets();
@@ -43,108 +44,115 @@ export default function GardenScreen({ navigation }: GardenScreenProps) {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.header}>
-          <GlassIconButton
-            accessibilityLabel="Go back"
-            size={48}
-            onPress={() => navigation.goBack()}
-          >
-            <MaterialCommunityIcons
-              name="arrow-left"
-              size={24}
-              color={colors.text.secondary}
-            />
-          </GlassIconButton>
-          <Text style={styles.headerTitle}>My Tree</Text>
-          <View style={styles.headerSpacer} />
-        </View>
-
-        {progress == null ? (
-          <View style={styles.loadingCard} accessibilityLiveRegion="polite">
-            {profileSummaryQuery.isPending ? (
-              <>
-                <ActivityIndicator color={colors.playful.teal.base} />
-                <Text style={styles.loadingText}>Loading your tree…</Text>
-              </>
-            ) : (
-              <>
-                <Text style={styles.errorTitle}>Your practice is still available</Text>
-                <Text style={styles.errorCopy}>
-                  We couldn’t refresh your tree just now.
-                </Text>
-                <Pressable
-                  accessibilityRole="button"
-                  onPress={() => void profileSummaryQuery.refetch()}
-                  style={({ pressed }) => [
-                    styles.retryButton,
-                    pressed && styles.retryButtonPressed,
-                  ]}
-                >
-                  <Text style={styles.retryLabel}>Try again</Text>
-                </Pressable>
-              </>
-            )}
+        <ScreenContent style={styles.column}>
+          <View style={styles.header}>
+            <GlassIconButton
+              accessibilityLabel="Go back"
+              size={48}
+              onPress={() => navigation.goBack()}
+            >
+              <MaterialCommunityIcons
+                name="arrow-left"
+                size={24}
+                color={colors.text.secondary}
+              />
+            </GlassIconButton>
+            <Text style={styles.headerTitle}>My Tree</Text>
+            <View style={styles.headerSpacer} />
           </View>
-        ) : (
-          <>
-            <View style={styles.treeShadow}>
-              <LinearGradient
-                colors={[colors.background.paper, colors.playful.teal.soft]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.treeCard}
-              >
-                <Text style={styles.eyebrow}>YOUR AZORA TREE</Text>
-                <Text style={styles.stageTitle}>{progress.stageLabel}</Text>
-                <GardenTreeImage
-                  stage={progress.stage}
-                  size={treeSize}
-                  accessibilityLabel={`${progress.stageLabel} Azora tree`}
-                />
-                <Text style={styles.careDays}>
-                  {progress.careDays} care {progress.careDays === 1 ? 'day' : 'days'}
-                </Text>
-                <View
-                  accessible
-                  accessibilityRole="progressbar"
-                  accessibilityLabel="Tree stage progress"
-                  accessibilityValue={{
-                    min: progress.stageStartsAtCareDays,
-                    max: progress.nextStageStartsAtCareDays ?? progress.careDays,
-                    now: progress.careDays,
-                    text: nextStageCopy,
-                  }}
-                  style={styles.progressGroup}
-                >
-                  <View style={styles.progressTrack}>
-                    <View
-                      style={[
-                        styles.progressFill,
-                        { width: `${Math.round(progress.stageProgress * 100)}%` },
-                      ]}
-                    />
-                  </View>
-                  <Text style={styles.progressCopy}>{nextStageCopy}</Text>
-                </View>
-              </LinearGradient>
-            </View>
 
-            <View style={styles.infoCard}>
-              <Text style={styles.infoTitle}>How your tree grows</Text>
-              <Text style={styles.infoCopy}>
-                The first qualifying reset or Protocol you complete
-                on a separate day adds one permanent day of care. Extra sessions
-                never need to be farmed, and time away never removes your growth.
-              </Text>
+          {progress == null ? (
+            <View style={styles.loadingCard} accessibilityLiveRegion="polite">
+              {profileSummaryQuery.isPending ? (
+                <>
+                  <ActivityIndicator color={colors.playful.teal.base} />
+                  <Text style={styles.loadingText}>Loading your tree…</Text>
+                </>
+              ) : (
+                <>
+                  <Text style={styles.errorTitle}>Your practice is still available</Text>
+                  <Text style={styles.errorCopy}>
+                    We couldn’t refresh your tree just now.
+                  </Text>
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => void profileSummaryQuery.refetch()}
+                    style={({ pressed }) => [
+                      styles.retryButton,
+                      pressed && styles.retryButtonPressed,
+                    ]}
+                  >
+                    <Text style={styles.retryLabel}>Try again</Text>
+                  </Pressable>
+                </>
+              )}
             </View>
-          </>
-        )}
+          ) : (
+            <>
+              <View style={styles.treeShadow}>
+                <LinearGradient
+                  colors={[colors.background.paper, colors.playful.teal.soft]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.treeCard}
+                >
+                  <Text style={styles.eyebrow}>YOUR AZORA TREE</Text>
+                  <Text style={styles.stageTitle}>{progress.stageLabel}</Text>
+                  <GardenTreeImage
+                    stage={progress.stage}
+                    size={treeSize}
+                    accessibilityLabel={`${progress.stageLabel} Azora tree`}
+                  />
+                  <Text style={styles.careDays}>
+                    {progress.careDays} care {progress.careDays === 1 ? 'day' : 'days'}
+                  </Text>
+                  <View
+                    accessible
+                    accessibilityRole="progressbar"
+                    accessibilityLabel="Tree stage progress"
+                    accessibilityValue={{
+                      min: progress.stageStartsAtCareDays,
+                      max: progress.nextStageStartsAtCareDays ?? progress.careDays,
+                      now: progress.careDays,
+                      text: nextStageCopy,
+                    }}
+                    style={styles.progressGroup}
+                  >
+                    <View style={styles.progressTrack}>
+                      <View
+                        style={[
+                          styles.progressFill,
+                          { width: `${Math.round(progress.stageProgress * 100)}%` },
+                        ]}
+                      />
+                    </View>
+                    <Text style={styles.progressCopy}>{nextStageCopy}</Text>
+                  </View>
+                </LinearGradient>
+              </View>
+
+              <View style={styles.infoCard}>
+                <Text style={styles.infoTitle}>How your tree grows</Text>
+                <Text style={styles.infoCopy}>
+                  The first qualifying reset or Protocol you complete
+                  on a separate day adds one permanent day of care. Extra sessions
+                  never need to be farmed, and time away never removes your growth.
+                </Text>
+              </View>
+            </>
+          )}
+        </ScreenContent>
       </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  // Carries the scroll container's gap, which no longer reaches past this
+  // wrapper to the blocks inside it.
+  column: {
+    gap: spacing.lg,
+  },
   screen: {
     flex: 1,
     backgroundColor: colors.background.canvas,

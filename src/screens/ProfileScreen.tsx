@@ -39,6 +39,13 @@ import { deriveHoldStats } from '../lib/holdStats';
 import { trackFeatureGateHit } from '../services/analytics/tracking';
 import { PaywallPlacement } from '../services/paywall';
 import { FeatureKey } from '../services/subscriptions/featureAccess';
+import ScreenContent from '../components/common/ScreenContent';
+import { useDashboardLayout } from '../hooks/useDashboardLayout';
+
+// The Pro button is the tallest control either peer header can carry, so both
+// headers reserve its height and the cards below them start on the same line.
+const DASHBOARD_HEADER_HEIGHT =
+  typography.label.small.lineHeight + spacing.sm * 2;
 
 const SURVEY_DISCOUNT_URL = 'https://docs.google.com/forms/d/1wdbzWnXbhdpFZ3HoPcRet5K7EGW9RRtEQqrVYiXHwtc/viewform?edit_requested=true';
 
@@ -54,6 +61,7 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
   const profileSummaryQuery = useProfileSummaryQuery(user?.id ?? null);
   const homeStatsQuery = useHomeStatsQuery(user?.id ?? null, todayLocalDate);
   const advancedStatsAccess = useFeatureAccess(FeatureKey.AdvancedStats);
+  const dashboardLayout = useDashboardLayout();
   const uploadAvatarMutation = useUploadProfileAvatarMutation(user?.id ?? null);
   const updateDisplayNameMutation = useUpdateProfileDisplayNameMutation(user?.id ?? null);
 
@@ -65,6 +73,9 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
   const holdStats = deriveHoldStats(homeStats?.dailyActivity, todayLocalDate);
   const advancedStatsLocked =
     !advancedStatsAccess.allowed && !advancedStatsAccess.isLoading;
+  const headerSlot = dashboardLayout.hasColumns
+    ? styles.sectionHeaderWide
+    : undefined;
 
   const openTrendPaywall = useCallback(() => {
     trackFeatureGateHit({
@@ -179,94 +190,137 @@ export default function ProfileScreen({ navigation }: ProfileScreenProps) {
         alwaysBounceVertical
         overScrollMode="always"
       >
-        <AppTopBar
-          showAvatar={false}
-          rightSlot={<View style={styles.topBarActionPlaceholder} />}
-        />
-
-        <View style={styles.heroCardWrap}>
-          <ProfileIdentityCard
-            displayName={displayName}
-            avatarUrl={avatarUrl}
-            isUploading={uploadAvatarMutation.isPending}
-            onChangePhoto={handleChangePhoto}
-            onEditDisplayName={() => {
-              trackProfileAction('profile_name_edit_opened');
-              setEditingDisplayName(true);
-            }}
+        <ScreenContent width="dashboard">
+          <AppTopBar
+            showAvatar={false}
+            rightSlot={<View style={styles.topBarActionPlaceholder} />}
           />
-        </View>
 
-        <View style={styles.surveyBannerWrap}>
-          <CompactActionBanner
-            tone="card"
-            icon="message"
-            label="Take a survey and get 50% off"
-            onPress={() => void Linking.openURL(SURVEY_DISCOUNT_URL)}
-          />
-        </View>
-
-        <View style={styles.section}>
-          <View style={styles.sectionBody}>
-            <ProfileLifetimeStatsRow
-              totalBreaths={profileSummary?.totalBreaths ?? 0}
-              totalSessions={profileSummary?.totalSessions ?? 0}
-              totalHoldSeconds={profileSummary?.totalHoldSeconds ?? 0}
+          <View style={styles.heroCardWrap}>
+            <ProfileIdentityCard
+              displayName={displayName}
+              avatarUrl={avatarUrl}
+              isUploading={uploadAvatarMutation.isPending}
+              onChangePhoto={handleChangePhoto}
+              onEditDisplayName={() => {
+                trackProfileAction('profile_name_edit_opened');
+                setEditingDisplayName(true);
+              }}
             />
           </View>
-        </View>
 
-        <View style={styles.section}>
-          <SectionHeader
-            title="Consistency"
-            right={
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Open your history"
-                hitSlop={spacing.sm}
-                onPress={() => {
-                  triggerTapHaptic();
-                  navigation.navigate('History');
-                }}
-                style={styles.sectionLink}
+          <View style={styles.surveyBannerWrap}>
+            <CompactActionBanner
+              tone="card"
+              icon="message"
+              label="Take a survey and get 50% off"
+              onPress={() => void Linking.openURL(SURVEY_DISCOUNT_URL)}
+            />
+          </View>
+
+          <View style={styles.section}>
+            <View style={styles.sectionBody}>
+              <ProfileLifetimeStatsRow
+                totalBreaths={profileSummary?.totalBreaths ?? 0}
+                totalSessions={profileSummary?.totalSessions ?? 0}
+                totalHoldSeconds={profileSummary?.totalHoldSeconds ?? 0}
+              />
+            </View>
+          </View>
+
+          <View
+            style={dashboardLayout.hasColumns ? styles.dashboardSectionsWide : undefined}
+          >
+            <View
+              style={[
+                styles.section,
+                dashboardLayout.hasColumns && styles.dashboardSectionWide,
+              ]}
+            >
+              <View style={headerSlot}>
+                <SectionHeader
+                  title="Consistency"
+                  right={
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel="Open your history"
+                      hitSlop={spacing.sm}
+                      onPress={() => {
+                        triggerTapHaptic();
+                        navigation.navigate('History');
+                      }}
+                      style={styles.sectionLink}
+                    >
+                      <Text style={styles.sectionLinkText}>See all</Text>
+                      <Icon
+                        name="chevron-right"
+                        size={16}
+                        color={colors.text.brand}
+                      />
+                    </Pressable>
+                  }
+                />
+              </View>
+              <View
+                style={[
+                  styles.sectionBody,
+                  dashboardLayout.hasColumns && styles.sectionBodyFill,
+                ]}
               >
-                <Text style={styles.sectionLinkText}>See all</Text>
-                <Icon name="chevron-right" size={16} color={colors.text.brand} />
-              </Pressable>
-            }
-          />
-          <View style={styles.sectionBody}>
-            <ProfileCompletionCalendarCard completedDays={profileSummary?.completedDays ?? []} />
-          </View>
-        </View>
+                <ProfileCompletionCalendarCard
+                  completedDays={profileSummary?.completedDays ?? []}
+                  fill={dashboardLayout.hasColumns}
+                />
+              </View>
+            </View>
 
-        <View style={styles.section}>
-          <SectionHeader
-            title="Progress"
-            right={
-              advancedStatsLocked ? (
-                <ProUpgradeButton onPress={openTrendPaywall} />
-              ) : null
-            }
-          />
-          <View style={styles.sectionBody}>
-            <ProfileBreathHoldTrendCard
-              data={profileSummary?.breathHoldTrend ?? []}
-              bestHoldSeconds={holdStats.bestHoldSeconds}
-              todayHoldSeconds={homeStats?.todayBreathHold?.holdSeconds ?? null}
-              avgHoldSeconds={holdStats.avgHoldSeconds}
-              locked={advancedStatsLocked}
-              onPressLocked={openTrendPaywall}
-            />
+            <View
+              style={[
+                styles.section,
+                dashboardLayout.hasColumns && styles.dashboardSectionWide,
+              ]}
+            >
+              <View style={headerSlot}>
+                <SectionHeader
+                  title="Progress"
+                  right={
+                    advancedStatsLocked ? (
+                      <ProUpgradeButton onPress={openTrendPaywall} />
+                    ) : null
+                  }
+                />
+              </View>
+              <View
+                style={[
+                  styles.sectionBody,
+                  dashboardLayout.hasColumns && styles.sectionBodyFill,
+                ]}
+              >
+                <ProfileBreathHoldTrendCard
+                  data={profileSummary?.breathHoldTrend ?? []}
+                  bestHoldSeconds={holdStats.bestHoldSeconds}
+                  todayHoldSeconds={homeStats?.todayBreathHold?.holdSeconds ?? null}
+                  avgHoldSeconds={holdStats.avgHoldSeconds}
+                  locked={advancedStatsLocked}
+                  fill={dashboardLayout.hasColumns}
+                  onPressLocked={openTrendPaywall}
+                />
+              </View>
+            </View>
           </View>
-        </View>
-
+        </ScreenContent>
       </ScrollView>
 
       <GlassIconButton
         accessibilityLabel="Open settings"
         size={48}
-        style={[styles.stickyAction, { top: insets.top + spacing.xs }]}
+        style={[
+          styles.stickyAction,
+          {
+            top: insets.top + spacing.xs,
+            right: dashboardLayout.actionInset,
+          },
+        ]}
         variant="regular"
         onPress={() => {
           triggerTapHaptic();
@@ -312,7 +366,6 @@ const styles = StyleSheet.create({
   },
   stickyAction: {
     position: 'absolute',
-    right: spacing.lg,
     zIndex: 1,
     elevation: 1,
   },
@@ -324,6 +377,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: padding.screen.horizontal,
     marginTop: margin.sectionGap,
     gap: spacing.lg,
+  },
+  // Peer sections, so they stretch to the taller of the two and their cards
+  // fill that height rather than one card ending halfway up the other.
+  dashboardSectionsWide: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+  },
+  dashboardSectionWide: {
+    flex: 1,
+  },
+  sectionHeaderWide: {
+    minHeight: DASHBOARD_HEADER_HEIGHT,
+    justifyContent: 'center',
   },
   sectionLink: {
     flexDirection: 'row',
@@ -338,6 +404,9 @@ const styles = StyleSheet.create({
   // The section gap above already spaces the body below its header; the
   // wrapper stays only so headerless sections keep the same structure.
   sectionBody: {},
+  sectionBodyFill: {
+    flex: 1,
+  },
   surveyBannerWrap: {
     paddingHorizontal: padding.screen.horizontal,
     marginTop: spacing.md,

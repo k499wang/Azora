@@ -22,6 +22,7 @@ import {
   GoogleSignInCancelledError,
   isAppleSignInAvailable,
 } from '../services/supabase';
+import { contentColumn } from '../theme/breakpoints';
 import { colors } from '../theme/colors';
 import { fonts, typography } from '../theme/typography';
 import { spacing } from '../theme/spacing';
@@ -178,6 +179,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   hero: {
+    ...contentColumn,
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
@@ -214,6 +216,7 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   sheetContent: {
+    ...contentColumn,
     paddingHorizontal: spacing.xl,
     paddingTop: spacing.lg,
     paddingBottom: spacing.lg,

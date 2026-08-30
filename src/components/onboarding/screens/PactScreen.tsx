@@ -11,9 +11,10 @@ import { isHapticsEnabled } from '../../../services/preferences/hapticsPreferenc
 import { ContinuousHaptics } from '../../../native/continuousHaptics';
 import CelebrationOverlay from '../CelebrationOverlay';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
+import { scaleVisual } from '../onboardingVisualScale';
 
 const HOLD_DURATION_MS = 2000;
-const STAMP_SIZE = 88;
+const STAMP_SIZE = scaleVisual(88);
 const HAPTIC_RAMP_STEPS = 20;
 
 interface PactScreenProps {

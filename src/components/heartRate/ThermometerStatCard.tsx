@@ -1,5 +1,6 @@
 import { Text } from '../common/Text';
 import { Pressable, StyleSheet, View } from 'react-native';
+import type { StyleProp, ViewStyle } from 'react-native';
 import { LockedScrim } from '../common/glass';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
@@ -24,6 +25,7 @@ interface ThermometerStatCardProps {
   presentation?: 'thermometer' | 'number';
   locked?: boolean;
   onPressLocked?: () => void;
+  style?: StyleProp<ViewStyle>;
 }
 
 export default function ThermometerStatCard({
@@ -39,6 +41,7 @@ export default function ThermometerStatCard({
   presentation = 'thermometer',
   locked = false,
   onPressLocked,
+  style,
 }: ThermometerStatCardProps) {
   const hasValue = value != null && Number.isFinite(value);
   const magnitude = hasValue ? Math.abs(value!) : null;
@@ -50,7 +53,7 @@ export default function ThermometerStatCard({
       elevated
       locked={locked}
       containerStyle={styles.tileContainer}
-      style={styles.tile}
+      style={[styles.tile, style]}
     >
       <View style={[styles.tileHeader, locked && styles.lockedTitleText]}>
         {icon ? (

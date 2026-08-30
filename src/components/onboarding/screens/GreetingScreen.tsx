@@ -10,6 +10,7 @@ import { isHapticsEnabled } from '../../../services/preferences/hapticsPreferenc
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import { useWhileVisible } from '../../../hooks/useWhileVisible';
+import { scaleVisual } from '../onboardingVisualScale';
 
 interface GreetingScreenProps {
   name: string;
@@ -19,7 +20,7 @@ interface GreetingScreenProps {
   onBack: () => void;
 }
 
-const WAVE_SIZE = 256;
+const WAVE_SIZE = scaleVisual(256);
 const HAND_PATH =
   'M45.7 111.2c-9-4-13.7-14.8-20.3-27.5l-9.1-17.4c-2.3-4.4-.9-9.7 3.3-11.9 4.1-2.1 9.1-.5 11.4 3.9l6.6 12.5c-3.8-8.2-13.4-27.9-16.8-35.3-2-4.3-.4-9.3 3.7-11.2 4.2-2 9.1-.1 11.2 4.2l12.1 25.4-11-31.4c-1.8-4.8.4-9.8 5-11.5 4.7-1.7 9.6.9 11.4 5.6l10.4 28.1-5.7-27.4c-1.2-5 1.8-9.7 6.6-10.9 4.9-1.2 9.4 2 10.7 7l10.9 44.8 4.1-11.2c1.8-5 6.6-7.6 11.5-6 4.8 1.7 7.2 6.9 5.4 11.9L99 80.7c-5.9 16.4-11.6 26.6-23.8 31.3-9.8 3.7-20.5 3.2-29.5-.8Z';
 

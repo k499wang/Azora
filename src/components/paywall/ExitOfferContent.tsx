@@ -26,6 +26,7 @@ import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import { card } from '../../theme/card';
 import { secondsUntilDeadline } from '../../lib/paywall/exitOfferCountdown';
+import ScreenContent from '../common/ScreenContent';
 
 const OFFER_DURATION_SECONDS = 5 * 60;
 /** Taller than the standard primary — this is the one button on the screen. */
@@ -165,99 +166,101 @@ export function ExitOfferContent({
         ]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.heroWrap}>
-          <Text
-            style={[styles.title, { marginTop: insets.top + spacing['5xl'] }]}
-            numberOfLines={1}
-            adjustsFontSizeToFit
-          >
-            Your one-time offer
-          </Text>
-          <Text style={styles.heroSubtitle}>
-            A one-time special price for new users. Close this and it&apos;s
-            gone for good.
-          </Text>
-        </View>
-
-        {showInitialLoading ? (
-          <ActivityIndicator color={colors.text.primary} style={styles.loading} />
-        ) : (
-          <Animated.View
-            style={styles.revealedWrap}
-            entering={FadeInUp.duration(660)}
-          >
-            <Animated.View
-              style={styles.offerBlock}
-              entering={FadeIn.delay(240).duration(620)}
+        <ScreenContent style={styles.column}>
+          <View style={styles.heroWrap}>
+            <Text
+              style={[styles.title, { marginTop: insets.top + spacing['5xl'] }]}
+              numberOfLines={1}
+              adjustsFontSizeToFit
             >
-              <View style={styles.timerRow}>
-                <Icon name="timer" size={20} color={colors.error[700]} />
-                <Text style={styles.timerLabel}>Offer ends in</Text>
-                <Text style={styles.timerValue}>{formatClock(secondsLeft)}</Text>
-              </View>
+              Your one-time offer
+            </Text>
+            <Text style={styles.heroSubtitle}>
+              A one-time special price for new users. Close this and it&apos;s
+              gone for good.
+            </Text>
+          </View>
 
-              <View style={styles.priceCardWrap}>
-                <View style={styles.priceBlock}>
-                  {discountPercent != null ? (
-                    <Text style={styles.discountHeadline}>{discountPercent}% OFF</Text>
-                  ) : null}
+          {showInitialLoading ? (
+            <ActivityIndicator color={colors.text.primary} style={styles.loading} />
+          ) : (
+            <Animated.View
+              style={styles.revealedWrap}
+              entering={FadeInUp.duration(660)}
+            >
+              <Animated.View
+                style={styles.offerBlock}
+                entering={FadeIn.delay(240).duration(620)}
+              >
+                <View style={styles.timerRow}>
+                  <Icon name="timer" size={20} color={colors.error[700]} />
+                  <Text style={styles.timerLabel}>Offer ends in</Text>
+                  <Text style={styles.timerValue}>{formatClock(secondsLeft)}</Text>
+                </View>
 
-                  <View style={styles.priceRow}>
-                    {anchorPriceString ? (
-                      <Text style={styles.priceAnchor}>{anchorPriceString}/year</Text>
+                <View style={styles.priceCardWrap}>
+                  <View style={styles.priceBlock}>
+                    {discountPercent != null ? (
+                      <Text style={styles.discountHeadline}>{discountPercent}% OFF</Text>
                     ) : null}
-                    {monthly ? (
-                      <>
-                        <Text style={styles.priceSecondary}>{monthly}</Text>
-                        <Text style={styles.priceUnitSecondary}>/mo</Text>
-                      </>
-                    ) : null}
+
+                    <View style={styles.priceRow}>
+                      {anchorPriceString ? (
+                        <Text style={styles.priceAnchor}>{anchorPriceString}/year</Text>
+                      ) : null}
+                      {monthly ? (
+                        <>
+                          <Text style={styles.priceSecondary}>{monthly}</Text>
+                          <Text style={styles.priceUnitSecondary}>/mo</Text>
+                        </>
+                      ) : null}
+                    </View>
+                  </View>
+                  <View style={StyleSheet.absoluteFill} pointerEvents="none">
+                    {SPARKLES.map((sparkle, i) => (
+                      <TwinkleStar key={i} {...sparkle} />
+                    ))}
                   </View>
                 </View>
-                <View style={StyleSheet.absoluteFill} pointerEvents="none">
-                  {SPARKLES.map((sparkle, i) => (
-                    <TwinkleStar key={i} {...sparkle} />
-                  ))}
+              </Animated.View>
+
+              {paywall.errorMessage ? (
+                <Text style={styles.error}>{paywall.errorMessage}</Text>
+              ) : null}
+
+              <View style={styles.footer}>
+                {hasTrial && annual ? <PaywallTrialReminderToggle /> : null}
+
+                {annual ? (
+                  <PlanCard
+                    pkg={annual}
+                    isSelected={paywall.selectedPackageId === 'annual'}
+                    onSelect={paywall.selectPackage}
+                    savingsPercent={savingsPercent}
+                    comparePerWeek={weekly ? computePerWeek(weekly) : null}
+                    light
+                    layout="full-width"
+                  />
+                ) : null}
+
+                {annual == null && !paywall.isLoading ? (
+                  <PrimaryButton label="Try again" onPress={paywall.retryRevenueCatSync} disabled={isBusy} />
+                ) : (
+                  <PrimaryButton
+                    label={ctaLabel}
+                    onPress={onPurchase}
+                    disabled={isBusy || !canBuy}
+                    loading={paywall.isPurchasing}
+                  />
+                )}
+
+                <View style={styles.commitmentRow}>
+                  <Text style={styles.commitmentText}>No commitment — cancel anytime</Text>
                 </View>
               </View>
             </Animated.View>
-
-            {paywall.errorMessage ? (
-              <Text style={styles.error}>{paywall.errorMessage}</Text>
-            ) : null}
-
-            <View style={styles.footer}>
-              {hasTrial && annual ? <PaywallTrialReminderToggle /> : null}
-
-              {annual ? (
-                <PlanCard
-                  pkg={annual}
-                  isSelected={paywall.selectedPackageId === 'annual'}
-                  onSelect={paywall.selectPackage}
-                  savingsPercent={savingsPercent}
-                  comparePerWeek={weekly ? computePerWeek(weekly) : null}
-                  light
-                  layout="full-width"
-                />
-              ) : null}
-
-              {annual == null && !paywall.isLoading ? (
-                <PrimaryButton label="Try again" onPress={paywall.retryRevenueCatSync} disabled={isBusy} />
-              ) : (
-                <PrimaryButton
-                  label={ctaLabel}
-                  onPress={onPurchase}
-                  disabled={isBusy || !canBuy}
-                  loading={paywall.isPurchasing}
-                />
-              )}
-
-              <View style={styles.commitmentRow}>
-                <Text style={styles.commitmentText}>No commitment — cancel anytime</Text>
-              </View>
-            </View>
-          </Animated.View>
-        )}
+          )}
+        </ScreenContent>
       </ScrollView>
     </View>
   );
@@ -409,6 +412,12 @@ function computeDiscountPercent(
 }
 
 const styles = StyleSheet.create({
+  // The scroll container centres and spaces its children, and this wrapper is
+  // now its only child, so it has to carry both to the blocks inside it.
+  column: {
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
   screen: {
     flex: 1,
     backgroundColor: colors.background.primary,

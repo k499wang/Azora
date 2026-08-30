@@ -27,6 +27,8 @@ import type {
 } from '../services/subscriptions/featureAccess';
 import type { HeartTabScreenProps } from '../app/navigation';
 import { useTourTarget } from '../features/tour/tourTargets';
+import ScreenContent from '../components/common/ScreenContent';
+import { useDashboardLayout } from '../hooks/useDashboardLayout';
 
 const MEASURE_BUTTON_SIZE = 48;
 
@@ -38,6 +40,7 @@ export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
   const profileQuery = useProfileQuery(user?.id ?? null);
   const advancedStatsAccess = useFeatureAccess(FeatureKey.AdvancedStats);
   const measureTarget = useTourTarget('measureHeart');
+  const dashboardLayout = useDashboardLayout();
 
   const stats = heartRateStatsQuery.data;
   const recentHeartRates = stats?.recent ?? [];
@@ -121,72 +124,76 @@ export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
         onScroll={onScroll}
         scrollEventThrottle={16}
       >
-        <AppTopBar
-          showAvatar={false}
-          rightSlot={<View style={styles.topBarActionPlaceholder} />}
-        />
-
-        <View style={styles.statsContent}>
-          {partialStatsError || heartRateStatsQuery.isError ? (
-            <Text style={styles.partialErrorText}>
-              Some stats may be out of date.
-            </Text>
-          ) : null}
-
-          <RecoveryStatsSection
-            stress={canonicalSession == null ? null : stats?.hrv.stress ?? null}
-            locked={advancedStatsLocked}
-            onPressUpgrade={() =>
-              openProPaywall(
-                FeatureKey.AdvancedStats,
-                PaywallPlacement.DailyResultProGate,
-                advancedStatsAccess,
-                'recovery_section',
-              )
-            }
+        <ScreenContent width="dashboard">
+          <AppTopBar
+            showAvatar={false}
+            rightSlot={<View style={styles.topBarActionPlaceholder} />}
           />
 
-          <HeartRateStatsSection
-            hrDrop={canonicalSession == null ? null : stats?.hrv.hrDrop ?? null}
-            minBpm={canonicalSession?.minBpm ?? null}
-            maxBpm={canonicalSession?.maxBpm ?? null}
-            avgBpm={canonicalSession?.avgBpm ?? null}
-            age={profileQuery.data?.age ?? null}
-            bpmSamples={bpmSamples}
-            numberForwardSummary
-            locked={advancedStatsLocked}
-            onPressUpgrade={() =>
-              openProPaywall(
-                FeatureKey.AdvancedStats,
-                PaywallPlacement.DailyResultProGate,
-                advancedStatsAccess,
-                'heart_rate_section',
-              )
-            }
-          />
+          <View style={styles.statsContent}>
+            {partialStatsError || heartRateStatsQuery.isError ? (
+              <Text style={styles.partialErrorText}>
+                Some stats may be out of date.
+              </Text>
+            ) : null}
 
-          <HRVStatsSection
-            rmssd={stats?.hrv.rmssd ?? null}
-            sdnn={stats?.hrv.sdnn ?? null}
-            avgBpm={canonicalSession?.avgBpm ?? null}
-            ibiMs={ibiMs}
-            locked={advancedStatsLocked}
-            onPressUpgrade={() =>
-              openProPaywall(
-                FeatureKey.AdvancedStats,
-                PaywallPlacement.DailyResultProGate,
-                advancedStatsAccess,
-                'hrv_section',
-              )
-            }
-          />
+            <RecoveryStatsSection
+              stress={canonicalSession == null ? null : stats?.hrv.stress ?? null}
+              locked={advancedStatsLocked}
+              onPressUpgrade={() =>
+                openProPaywall(
+                  FeatureKey.AdvancedStats,
+                  PaywallPlacement.DailyResultProGate,
+                  advancedStatsAccess,
+                  'recovery_section',
+                )
+              }
+            />
 
-          <RecentlyLoggedSection
-            items={recentHeartRates}
-            hasError={recentHeartRatesError}
-            isLoading={heartRateStatsQuery.isLoading}
-          />
-        </View>
+            <HeartRateStatsSection
+              hrDrop={canonicalSession == null ? null : stats?.hrv.hrDrop ?? null}
+              minBpm={canonicalSession?.minBpm ?? null}
+              maxBpm={canonicalSession?.maxBpm ?? null}
+              avgBpm={canonicalSession?.avgBpm ?? null}
+              age={profileQuery.data?.age ?? null}
+              bpmSamples={bpmSamples}
+              numberForwardSummary
+              useSummaryRow={dashboardLayout.hasColumns}
+              locked={advancedStatsLocked}
+              onPressUpgrade={() =>
+                openProPaywall(
+                  FeatureKey.AdvancedStats,
+                  PaywallPlacement.DailyResultProGate,
+                  advancedStatsAccess,
+                  'heart_rate_section',
+                )
+              }
+            />
+
+            <HRVStatsSection
+              rmssd={stats?.hrv.rmssd ?? null}
+              sdnn={stats?.hrv.sdnn ?? null}
+              avgBpm={canonicalSession?.avgBpm ?? null}
+              ibiMs={ibiMs}
+              locked={advancedStatsLocked}
+              useSummaryRow={dashboardLayout.hasColumns}
+              onPressUpgrade={() =>
+                openProPaywall(
+                  FeatureKey.AdvancedStats,
+                  PaywallPlacement.DailyResultProGate,
+                  advancedStatsAccess,
+                  'hrv_section',
+                )
+              }
+            />
+
+            <RecentlyLoggedSection
+              items={recentHeartRates}
+              hasError={recentHeartRatesError}
+              isLoading={heartRateStatsQuery.isLoading}
+            />
+          </View>
+        </ScreenContent>
       </Animated.ScrollView>
 
       <Animated.View
@@ -198,6 +205,7 @@ export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
           styles.measureHintOverlay,
           {
             top: insets.top + spacing.sm,
+            right: dashboardLayout.actionInset,
             opacity: measureHintOpacity,
             transform: [{ translateY: measureHintTranslateY }],
           },
@@ -235,7 +243,13 @@ export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
 
       <View
         {...measureTarget}
-        style={[styles.stickyAction, { top: insets.top + spacing.xs }]}
+        style={[
+          styles.stickyAction,
+          {
+            top: insets.top + spacing.xs,
+            right: dashboardLayout.actionInset,
+          },
+        ]}
       >
         <GlassIconButton
           accessibilityLabel="Measure heart rate"
@@ -273,7 +287,6 @@ const styles = StyleSheet.create({
   measureHintOverlay: {
     position: 'absolute',
     left: spacing.lg,
-    right: spacing.lg,
     alignItems: 'flex-end',
   },
   measureHintArrow: {
@@ -284,7 +297,6 @@ const styles = StyleSheet.create({
   },
   stickyAction: {
     position: 'absolute',
-    right: spacing.lg,
     zIndex: 2,
     elevation: 2,
   },

@@ -1,4 +1,5 @@
 import { TextStyle } from 'react-native';
+import { isTablet } from './tablet';
 
 type FontWeight = TextStyle['fontWeight'];
 
@@ -24,7 +25,7 @@ const fontRegular = `${FONT_FAMILY}-Regular`;
 const fontMedium = `${FONT_FAMILY}-Medium`;
 const fontLight = `${FONT_FAMILY}-Light`;
 
-export const typography = {
+const baseTypography = {
   display: {
     display1: {
       fontFamily: fontSemiBold,
@@ -254,6 +255,56 @@ export const typography = {
     letterSpacing: 1.4,
     textTransform: 'uppercase' as TextStyle['textTransform'],
   },
-} as const;
+};
+
+/**
+ * How much larger type is drawn on a tablet.
+ *
+ * An iPad is held further from the eye than a phone, so matching point sizes
+ * read a size smaller. This is deliberately a nudge rather than the ~1.3x the
+ * extra screen might suggest: about a hundred components size a control by a
+ * fixed `height`, and type that outgrows those boxes clips instead of
+ * reflowing. Raising this is a per-screen check on a tablet, not a safe edit.
+ *
+ * It pairs with `breakpoints.contentMaxWidth`: 480pt at 1.1 carries the same
+ * characters per line as a 390pt phone at 1.0, so line length holds steady.
+ */
+const TABLET_TYPE_SCALE = 1.1;
+
+const TYPE_SCALE = isTablet ? TABLET_TYPE_SCALE : 1;
+
+function scaleToken<T extends TextStyle>(token: T): T {
+  if (TYPE_SCALE === 1) return token;
+
+  const scaled: TextStyle = { ...token };
+  if (typeof token.fontSize === 'number') {
+    scaled.fontSize = Math.round(token.fontSize * TYPE_SCALE);
+  }
+  if (typeof token.lineHeight === 'number') {
+    scaled.lineHeight = Math.round(token.lineHeight * TYPE_SCALE);
+  }
+  return scaled as T;
+}
+
+function scaleGroup<T extends Record<string, TextStyle>>(group: T): T {
+  if (TYPE_SCALE === 1) return group;
+
+  return Object.fromEntries(
+    Object.entries(group).map(([name, token]) => [name, scaleToken(token)]),
+  ) as T;
+}
+
+export const typography = {
+  display: scaleGroup(baseTypography.display),
+  title: scaleGroup(baseTypography.title),
+  heading: scaleGroup(baseTypography.heading),
+  body: scaleGroup(baseTypography.body),
+  label: scaleGroup(baseTypography.label),
+  stat: scaleGroup(baseTypography.stat),
+  button: scaleGroup(baseTypography.button),
+  input: scaleGroup(baseTypography.input),
+  caption: scaleGroup(baseTypography.caption),
+  overline: scaleToken(baseTypography.overline),
+};
 
 export const fonts = { heavy: fontHeavy, bold: fontBold, semibold: fontSemiBold, regular: fontRegular, medium: fontMedium, light: fontLight };

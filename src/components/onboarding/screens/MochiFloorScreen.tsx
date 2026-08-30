@@ -1,11 +1,10 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { useWindowDimensions } from 'react-native';
 import RoomReplay from '../../../features/room/RoomReplay';
 import type { RoomBlobHandle } from '../../../features/room/RoomBlob';
 import type { Picks } from '../../../features/room/RoomScene';
 import { ROOM_SHELLS } from '../../../features/room/roomShells';
 import { MASCOT_NAME } from '../../../features/room/mascot';
-import MochiStage, { getMochiStageWidth } from '../MochiStage';
+import MochiStage, { useMochiStageWidth } from '../MochiStage';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 
@@ -33,8 +32,7 @@ export default function MochiFloorScreen({
   onContinue,
   onBack,
 }: MochiFloorScreenProps) {
-  const { width: screenWidth, height: screenHeight } = useWindowDimensions();
-  const width = getMochiStageWidth(screenWidth, screenHeight);
+  const width = useMochiStageWidth();
   const blob = useRef<RoomBlobHandle>(null);
 
   const [filled, setFilled] = useState(false);

@@ -5,7 +5,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../../../theme/colors';
 import { fonts, typography } from '../../../../theme/typography';
 import { spacing } from '../../../../theme/spacing';
-import { isShortScreen } from '../../../../theme/breakpoints';
+import { breakpoints, isShortScreen } from '../../../../theme/breakpoints';
 import type { BreathingTechnique } from '../techniques';
 
 interface TextColors {
@@ -76,6 +76,12 @@ export default function TechniqueIntro({ technique, textColors, topSlot }: Props
 
 const styles = StyleSheet.create({
   container: {
+    // The layer around this centres it and already carries the screen margin,
+    // so the block shrinks to its content — which on a tablet means the
+    // description runs the full width of the window as one long line. The cap
+    // is the same measure the scaffold's header and footer use, and no phone is
+    // wide enough to reach it, so nothing below a tablet moves.
+    maxWidth: breakpoints.contentMaxWidth,
     paddingHorizontal: spacing.sm,
     gap: spacing.md,
     alignItems: 'center',

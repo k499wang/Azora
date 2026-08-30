@@ -30,6 +30,8 @@ interface HeartRateSectionProps {
   insightContext?: BpmInsightContext;
   breathingTechniqueProfile?: BreathingTechniqueBpmProfile | null;
   numberForwardSummary?: boolean;
+  /** Places the three peer summary cards in one row when the window can hold them. */
+  useSummaryRow?: boolean;
 }
 
 export default function HeartRateStatsSection({
@@ -45,6 +47,7 @@ export default function HeartRateStatsSection({
   insightContext,
   breathingTechniqueProfile,
   numberForwardSummary = false,
+  useSummaryRow = false,
 }: HeartRateSectionProps) {
   const isBreathHold = insightContext === 'breath-hold';
 
@@ -58,43 +61,49 @@ export default function HeartRateStatsSection({
       </View>
 
       <View style={styles.metricColumn}>
-        <View style={styles.tileRow}>
-          <ThermometerStatCard
-            label="HR change"
-            icon="stat-heart-rate-change"
-            value={hrDrop ?? (locked ? LOCKED_PLACEHOLDERS.hrDrop : null)}
-            unit="bpm"
-            min={0}
-            max={40}
-            accent={colors.primary.blue500}
-            iconColor={colors.primary.blue600}
-            presentation={numberForwardSummary ? 'number' : 'thermometer'}
+        <View style={[styles.summaryCards, useSummaryRow && styles.summaryRow]}>
+          <View style={[styles.tileRow, useSummaryRow && styles.tileRowWide]}>
+            <ThermometerStatCard
+              label="HR change"
+              icon="stat-heart-rate-change"
+              value={hrDrop ?? (locked ? LOCKED_PLACEHOLDERS.hrDrop : null)}
+              unit="bpm"
+              min={0}
+              max={40}
+              accent={colors.primary.blue500}
+              iconColor={colors.primary.blue600}
+              presentation={numberForwardSummary ? 'number' : 'thermometer'}
+              locked={locked}
+              onPressLocked={onPressUpgrade}
+              style={useSummaryRow ? styles.summaryCardFill : undefined}
+            />
+            <ThermometerStatCard
+              label="Lowest HR"
+              icon="stat-lowest-heart-rate"
+              value={minBpm ?? (locked ? LOCKED_PLACEHOLDERS.minBpm : null)}
+              unit="bpm"
+              min={40}
+              max={90}
+              accent={colors.error[500]}
+              iconColor={colors.primary.blue600}
+              presentation={numberForwardSummary ? 'number' : 'thermometer'}
+              locked={locked}
+              onPressLocked={onPressUpgrade}
+              style={useSummaryRow ? styles.summaryCardFill : undefined}
+            />
+          </View>
+
+          <RestingHeartRateBar
+            bpm={avgBpm ?? null}
+            age={age ?? null}
+            title="Average heart rate"
+            emphasizeValue={numberForwardSummary}
             locked={locked}
             onPressLocked={onPressUpgrade}
-          />
-          <ThermometerStatCard
-            label="Lowest HR"
-            icon="stat-lowest-heart-rate"
-            value={minBpm ?? (locked ? LOCKED_PLACEHOLDERS.minBpm : null)}
-            unit="bpm"
-            min={40}
-            max={90}
-            accent={colors.error[500]}
-            iconColor={colors.primary.blue600}
-            presentation={numberForwardSummary ? 'number' : 'thermometer'}
-            locked={locked}
-            onPressLocked={onPressUpgrade}
+            containerStyle={useSummaryRow ? styles.averageCardWide : undefined}
+            style={useSummaryRow ? styles.summaryCardFill : undefined}
           />
         </View>
-
-        <RestingHeartRateBar
-          bpm={avgBpm ?? null}
-          age={age ?? null}
-          title="Average heart rate"
-          emphasizeValue={numberForwardSummary}
-          locked={locked}
-          onPressLocked={onPressUpgrade}
-        />
 
         <BPMChart
           bpmSamples={bpmSamples}
@@ -131,5 +140,21 @@ const styles = StyleSheet.create({
   tileRow: {
     flexDirection: 'row',
     gap: spacing.sm,
+  },
+  summaryCards: {
+    gap: spacing.sm,
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+  },
+  tileRowWide: {
+    flex: 2,
+  },
+  averageCardWide: {
+    flex: 1,
+  },
+  summaryCardFill: {
+    flex: 1,
   },
 });

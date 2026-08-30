@@ -28,6 +28,12 @@ import {
   lerpFace,
   type BreathFace,
 } from './breathFaces';
+import {
+  FACE_ORIGIN_Y,
+  getBreathingStage,
+  STAGE_VIEWBOX_H,
+  STAGE_VIEWBOX_W,
+} from './breathingStage';
 import type { ExerciseDarkTheme } from '../../../../theme/exerciseDarkThemes';
 import { colors } from '../../../../theme/colors';
 
@@ -37,22 +43,15 @@ const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 // The stage pose: a standing blob whose sides and base run off the screen, so
 // the breath reads as the character rising and settling rather than a shape
 // resizing. Straight flanks below y=60 give the crop something to hold onto at
-// every point of the travel.
-const VIEWBOX_W = 100;
-const VIEWBOX_H = 160;
+// every point of the travel — see `breathingStage` for how far off the edge
+// they are kept.
 const STAGE_BODY_PATH =
   'M 1,160 L 1,60 C 1,29 22,9 50,9 C 78,9 99,29 99,60 L 99,160 Z';
 
 // The face is authored in the 100-unit blob space shared with the home screen,
 // then blown up about its own centre to fill this much larger body.
 const FACE_SCALE = 1.6;
-const FACE_ORIGIN_Y = 60;
 
-const WIDTH_RATIO = 1.02;
-// Caps the character on short, wide screens, where the width ratio alone would
-// push the face off the top.
-const MAX_WIDTH_FROM_HEIGHT = 0.62;
-const FACE_REST_RATIO = 0.66;
 const TRAVEL_RATIO = 0.085;
 
 const BODY_SQUASH_X = 1.03;
@@ -122,12 +121,13 @@ const BreathingCompanion = forwardRef<BreathingCircleRef, BreathingCompanionProp
     // below is measured against that box rather than the whole window.
     const viewport = height - insets.top;
 
-    const stageWidth = Math.min(width * WIDTH_RATIO, viewport * MAX_WIDTH_FROM_HEIGHT);
-    const stageHeight = stageWidth * (VIEWBOX_H / VIEWBOX_W);
-    const faceOffsetFromTop = stageHeight * (FACE_ORIGIN_Y / VIEWBOX_H);
-    const stageTop = viewport * FACE_REST_RATIO - faceOffsetFromTop;
+    const {
+      width: stageWidth,
+      height: stageHeight,
+      top: stageTop,
+    } = getBreathingStage(width, viewport);
     const travel = viewport * TRAVEL_RATIO;
-    const auraOffset = (FACE_ORIGIN_Y / VIEWBOX_H - 0.5) * stageHeight;
+    const auraOffset = (FACE_ORIGIN_Y / STAGE_VIEWBOX_H - 0.5) * stageHeight;
     const auraSize = stageWidth * AURA_OUTER * 2;
     // Far enough that the crown clears the bottom edge before it settles.
     const enterDistance = viewport - stageTop + stageHeight * 0.1;
@@ -335,7 +335,7 @@ const BreathingCompanion = forwardRef<BreathingCircleRef, BreathingCompanionProp
       const press = s.mouthPress * filled;
       return {
         d: lensPath(
-          VIEWBOX_W / 2,
+          STAGE_VIEWBOX_W / 2,
           MOUTH_Y,
           s.mouthWidth * round * (1 + 0.12 * press),
           s.mouthTop * open * (1 - 0.34 * press),
@@ -390,7 +390,7 @@ const BreathingCompanion = forwardRef<BreathingCircleRef, BreathingCompanionProp
             <Svg
               width={stageWidth}
               height={stageHeight}
-              viewBox={`0 0 ${VIEWBOX_W} ${VIEWBOX_H}`}
+              viewBox={`0 0 ${STAGE_VIEWBOX_W} ${STAGE_VIEWBOX_H}`}
             >
               <Path d={STAGE_BODY_PATH} fill={theme.circleOuter} />
             </Svg>
@@ -400,9 +400,9 @@ const BreathingCompanion = forwardRef<BreathingCircleRef, BreathingCompanionProp
             <Svg
               width={stageWidth}
               height={stageHeight}
-              viewBox={`0 0 ${VIEWBOX_W} ${VIEWBOX_H}`}
+              viewBox={`0 0 ${STAGE_VIEWBOX_W} ${STAGE_VIEWBOX_H}`}
             >
-              <G scale={FACE_SCALE} originX={VIEWBOX_W / 2} originY={FACE_ORIGIN_Y}>
+              <G scale={FACE_SCALE} originX={STAGE_VIEWBOX_W / 2} originY={FACE_ORIGIN_Y}>
                 <AnimatedCircle
                   cx={CHEEK_LEFT_X}
                   cy={CHEEK_Y}

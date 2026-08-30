@@ -24,6 +24,7 @@ import {
 } from '../../../lib/onboardingPlan';
 import type { MindMapScore } from '../../../lib/onboardingScores';
 import { PERSONALIZED_INTENT_OPTIONS } from '../data/intentOptions';
+import { ONBOARDING_VISUAL_MAX_WIDTH } from '../onboardingVisualScale';
 
 interface RecommendedExerciseScreenProps {
   plan: OnboardingPlan;
@@ -84,7 +85,7 @@ export default function RecommendedExerciseScreen({
               scores={currentScores}
               targetScores={targetScores}
               labelScores={currentScores}
-              size={width}
+              size={Math.min(width, ONBOARDING_VISUAL_MAX_WIDTH)}
             />
           </View>
 

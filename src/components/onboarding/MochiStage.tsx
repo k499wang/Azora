@@ -17,12 +17,25 @@ import { ROOM_ASPECT } from '../../features/room/RoomScene';
 import { triggerBounceHaptic } from '../../native/tapHaptics';
 import { duration, easing, travel } from '../../theme/motion';
 import { getMochiStageWidth } from './mochiStageSize';
+import { useIsRegularWidth } from '../../hooks/useIsRegularWidth';
 
 /** a beat behind the screen transition, so the room lands into a settled page */
 const ENTER_DELAY_MS = 90;
 
-export { getMochiStageWidth };
+/**
+ * How wide the room is on this window.
+ *
+ * The one way to ask. A screen that draws the room artwork itself has to render
+ * it at exactly the width the stage gives the blob, so the stage cannot own a
+ * size the screen can compute differently — that puts Mochi beside the room
+ * instead of in it.
+ */
+export function useMochiStageWidth(): number {
+  const { width, height } = useWindowDimensions();
+  const regular = useIsRegularWidth();
 
+  return getMochiStageWidth(width, height, regular);
+}
 
 interface MochiStageProps {
   /** the room artwork this sizes itself to; must be rendered at `width` */
@@ -56,8 +69,7 @@ const MochiStage = forwardRef<RoomBlobHandle, MochiStageProps>(
     },
     ref,
   ) {
-    const { width: screenWidth, height: screenHeight } = useWindowDimensions();
-    const width = getMochiStageWidth(screenWidth, screenHeight);
+    const width = useMochiStageWidth();
 
     // The room arrives rather than appearing. Reanimated, so it runs on the UI
     // thread alongside the blob instead of competing with it for JS frames.

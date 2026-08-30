@@ -39,6 +39,7 @@ import {
 import { useTrackDailyCompletion } from '../features/room/useTrackDailyCompletion';
 import { SESSION_GLASS_BUTTON_SIZE } from '../features/exercise/shared/components/SessionGlassButton';
 import { returnToHome } from '../app/navigation/returnToHome';
+import ScreenContent from '../components/common/ScreenContent';
 
 function formatDuration(secs: number): string {
   const m = Math.floor(secs / 60);
@@ -301,90 +302,92 @@ export default function SessionCompleteScreen({
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.heroWrap}>
-          <View style={styles.heroShadow}>
-            <View style={[styles.heroCard, { backgroundColor: hue.base }]}>
-              <Icon name="streakFilled" size={HERO_FLAME_SIZE} color={hue.soft} />
-              <Text style={styles.heroTitle}>{congratulation}</Text>
-              <Text style={styles.heroSubtitle}>
-                {techniqueName} · {formatDuration(durationSec)}
-              </Text>
+        <ScreenContent>
+          <View style={styles.heroWrap}>
+            <View style={styles.heroShadow}>
+              <View style={[styles.heroCard, { backgroundColor: hue.base }]}>
+                <Icon name="streakFilled" size={HERO_FLAME_SIZE} color={hue.soft} />
+                <Text style={styles.heroTitle}>{congratulation}</Text>
+                <Text style={styles.heroSubtitle}>
+                  {techniqueName} · {formatDuration(durationSec)}
+                </Text>
+              </View>
             </View>
           </View>
-        </View>
 
-        <View>
-          <View style={styles.statSection}>
-            <View style={styles.statRow}>
-              <ResultThermometerStatCard
-                label="Duration"
-                icon="breath-timer"
-                value={durationSec}
-                valueText={formatDuration(durationSec)}
-                unit=""
-                min={0}
-                max={1}
-                accent={colors.primary.blue500}
-                iconColor={colors.primary.blue600}
-                presentation="number"
+          <View>
+            <View style={styles.statSection}>
+              <View style={styles.statRow}>
+                <ResultThermometerStatCard
+                  label="Duration"
+                  icon="breath-timer"
+                  value={durationSec}
+                  valueText={formatDuration(durationSec)}
+                  unit=""
+                  min={0}
+                  max={1}
+                  accent={colors.primary.blue500}
+                  iconColor={colors.primary.blue600}
+                  presentation="number"
+                />
+                <ResultThermometerStatCard
+                  label="Breaths"
+                  icon="stat-breath-flow"
+                  value={breathCount}
+                  valueText={`${breathCount}`}
+                  unit=""
+                  min={0}
+                  max={1}
+                  accent={colors.primary.blue500}
+                  iconColor={colors.primary.blue600}
+                  presentation="number"
+                />
+              </View>
+
+              {displayAvgBpm == null ? null : (
+                <ResultRestingHeartRateBar
+                  bpm={displayAvgBpm}
+                  age={profileQuery.data?.age ?? null}
+                  title="Average heart rate"
+                />
+              )}
+            </View>
+          </View>
+
+          {showGraph ? (
+            <View style={styles.graphWrap}>
+              <ResultBPMChart
+                bpmSamples={hrSamples}
+                insightContext="breathing-exercise"
+                breathingTechniqueProfile={breathingTechniqueProfile}
               />
-              <ResultThermometerStatCard
-                label="Breaths"
-                icon="stat-breath-flow"
-                value={breathCount}
-                valueText={`${breathCount}`}
-                unit=""
-                min={0}
-                max={1}
-                accent={colors.primary.blue500}
-                iconColor={colors.primary.blue600}
-                presentation="number"
+            </View>
+          ) : null}
+
+          <View>
+            <View style={styles.bodySection}>
+              <ResultHelpfulnessQuestion
+                techniqueId={techniqueId}
+                localDate={todayLocalDate}
+                sessionKey={sessionKey}
               />
             </View>
 
-            {displayAvgBpm == null ? null : (
-              <ResultRestingHeartRateBar
-                bpm={displayAvgBpm}
-                age={profileQuery.data?.age ?? null}
-                title="Average heart rate"
-              />
-            )}
-          </View>
-        </View>
-
-        {showGraph ? (
-          <View style={styles.graphWrap}>
-            <ResultBPMChart
-              bpmSamples={hrSamples}
-              insightContext="breathing-exercise"
-              breathingTechniqueProfile={breathingTechniqueProfile}
+            <ChunkyButton
+              label="Share my result"
+              shape="card"
+              style={styles.shareCta}
+              icon={
+                <MaterialCommunityIcons
+                  name="share-variant"
+                  size={20}
+                  color={colors.text.inverse}
+                />
+              }
+              onPress={handleShare}
             />
           </View>
-        ) : null}
-
-        <View>
-          <View style={styles.bodySection}>
-            <ResultHelpfulnessQuestion
-              techniqueId={techniqueId}
-              localDate={todayLocalDate}
-              sessionKey={sessionKey}
-            />
-          </View>
-
-          <ChunkyButton
-            label="Share my result"
-            shape="card"
-            style={styles.shareCta}
-            icon={
-              <MaterialCommunityIcons
-                name="share-variant"
-                size={20}
-                color={colors.text.inverse}
-              />
-            }
-            onPress={handleShare}
-          />
-        </View>
+        </ScreenContent>
       </ScrollView>
 
       {showDailyCover ? (

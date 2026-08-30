@@ -8,6 +8,7 @@ import { fonts, typography } from '../../theme/typography';
 import { isHapticsEnabled } from '../../services/preferences/hapticsPreference';
 import { useWhileVisible } from '../../hooks/useWhileVisible';
 import ConfettiFall from './ConfettiFall';
+import { scaleVisual } from './onboardingVisualScale';
 
 interface CelebrationOverlayProps {
   title?: string;
@@ -163,7 +164,7 @@ export default function CelebrationOverlay({
   );
 }
 
-const RING_SIZE = 128;
+const RING_SIZE = scaleVisual(128);
 
 const styles = StyleSheet.create({
   overlay: {

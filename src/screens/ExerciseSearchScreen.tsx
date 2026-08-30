@@ -33,6 +33,8 @@ import { trackFeatureGateHit } from '../services/analytics/tracking';
 import { PaywallPlacement } from '../services/paywall';
 import { FeatureKey } from '../services/subscriptions/featureAccess';
 import { useAuthStore } from '../stores/authStore';
+import ScreenContent from '../components/common/ScreenContent';
+import { contentColumn } from '../theme/breakpoints';
 import { colors } from '../theme/colors';
 import { padding, spacing } from '../theme/spacing';
 import { fonts, typography } from '../theme/typography';
@@ -219,79 +221,86 @@ export default function ExerciseSearchScreen({
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
       >
-        {isSearching ? (
-          <View
-            accessible
-            accessibilityLiveRegion="polite"
-            accessibilityLabel="Searching resets"
-            style={styles.searching}
-          >
-            <ActivityIndicator size="small" color={colors.primary.blue600} />
-            <Text style={styles.searchingText}>Searching…</Text>
-          </View>
-        ) : showInitialPrompt ? (
-          <View style={styles.prompt}>
-            <MaterialCommunityIcons
-              name="magnify"
-              size={30}
-              color={colors.text.tertiary}
-            />
-            <Text style={styles.promptTitle}>Find an exercise</Text>
-            <Text style={styles.promptBody}>
-              Search by exercise name or category.
-            </Text>
-          </View>
-        ) : (
-          <>
-            {dailyMatches ? (
-              <ExerciseSearchResultRow
-                title="The Azora Protocol"
-                metadata={dailyMetadata}
-                hue={BREATH_HOLD_STYLE.hue}
-                glyph={BREATH_HOLD_STYLE.glyph}
-                accessibilityLabel={`The Azora Protocol, ${dailyMetadata}`}
-                accessibilityHint={
-                  !dailyExerciseAccess.allowed && !dailyExerciseAccess.isLoading
-                    ? 'Opens the Pro upgrade screen'
-                    : 'Starts The Azora Protocol'
-                }
-                onPress={startDailyBreathHold}
+        <ScreenContent style={styles.column}>
+          {isSearching ? (
+            <View
+              accessible
+              accessibilityLiveRegion="polite"
+              accessibilityLabel="Searching resets"
+              style={styles.searching}
+            >
+              <ActivityIndicator size="small" color={colors.primary.blue600} />
+              <Text style={styles.searchingText}>Searching…</Text>
+            </View>
+          ) : showInitialPrompt ? (
+            <View style={styles.prompt}>
+              <MaterialCommunityIcons
+                name="magnify"
+                size={30}
+                color={colors.text.tertiary}
               />
-            ) : null}
+              <Text style={styles.promptTitle}>Find an exercise</Text>
+              <Text style={styles.promptBody}>
+                Search by exercise name or category.
+              </Text>
+            </View>
+          ) : (
+            <>
+              {dailyMatches ? (
+                <ExerciseSearchResultRow
+                  title="The Azora Protocol"
+                  metadata={dailyMetadata}
+                  hue={BREATH_HOLD_STYLE.hue}
+                  glyph={BREATH_HOLD_STYLE.glyph}
+                  accessibilityLabel={`The Azora Protocol, ${dailyMetadata}`}
+                  accessibilityHint={
+                    !dailyExerciseAccess.allowed && !dailyExerciseAccess.isLoading
+                      ? 'Opens the Pro upgrade screen'
+                      : 'Starts The Azora Protocol'
+                  }
+                  onPress={startDailyBreathHold}
+                />
+              ) : null}
 
-            {matchingTechniques.map((technique) => (
-              <TechniqueCard
-                key={technique.id}
-                technique={technique}
-                recommended={technique.id === recommendedTechniqueId}
-                exerciseAccess={dailyExerciseAccess}
-                layout="search"
-                sourceScreen="ExerciseSearch"
-                sourceAction="exercise_search_result"
-              />
-            ))}
+              {matchingTechniques.map((technique) => (
+                <TechniqueCard
+                  key={technique.id}
+                  technique={technique}
+                  recommended={technique.id === recommendedTechniqueId}
+                  exerciseAccess={dailyExerciseAccess}
+                  layout="search"
+                  sourceScreen="ExerciseSearch"
+                  sourceAction="exercise_search_result"
+                />
+              ))}
 
-            {noResults ? (
-              <View
-                accessible
-                accessibilityLiveRegion="polite"
-                accessibilityLabel="No resets found. Try another search or category."
-                style={styles.noResults}
-              >
-                <Text style={styles.noResultsTitle}>No exercises found</Text>
-                <Text style={styles.noResultsBody}>
-                  Try another search or category.
-                </Text>
-              </View>
-            ) : null}
-          </>
-        )}
+              {noResults ? (
+                <View
+                  accessible
+                  accessibilityLiveRegion="polite"
+                  accessibilityLabel="No resets found. Try another search or category."
+                  style={styles.noResults}
+                >
+                  <Text style={styles.noResultsTitle}>No exercises found</Text>
+                  <Text style={styles.noResultsBody}>
+                    Try another search or category.
+                  </Text>
+                </View>
+              ) : null}
+            </>
+          )}
+        </ScreenContent>
       </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  // Carries the results list's gap, which no longer reaches past this wrapper
+  // to the rows inside it.
+  column: {
+    gap: spacing.md,
+  },
   screen: {
     flex: 1,
     backgroundColor: colors.background.canvas,
@@ -302,6 +311,7 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border.subtle,
   },
   headerRow: {
+    ...contentColumn,
     minHeight: 64,
     flexDirection: 'row',
     alignItems: 'center',
@@ -312,6 +322,7 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   filtersWrap: {
+    ...contentColumn,
     paddingBottom: spacing.sm,
   },
   filtersContent: {

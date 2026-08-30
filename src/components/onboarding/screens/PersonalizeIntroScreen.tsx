@@ -10,6 +10,7 @@ import { fonts, typography } from '../../../theme/typography';
 import { Text } from '../../common/Text';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
+import { scaleVisual } from '../onboardingVisualScale';
 
 interface PersonalizeIntroScreenProps {
   stepIndex: number;
@@ -18,13 +19,13 @@ interface PersonalizeIntroScreenProps {
   onBack: () => void;
 }
 
-const BLOB_SIZE = 74;
+const BLOB_SIZE = scaleVisual(74);
 const BLOB_HELD = 'pencil' as const;
 const BLOB_FACE = 'pleased' as const;
 /** the pencil and his lean widen his box; cancel both so his body stays put */
 const BLOB_INSET = getMochiSideroom(BLOB_SIZE, BLOB_HELD, BLOB_FACE);
-const CARD_W = 140;
-const CARD_H = 156;
+const CARD_W = scaleVisual(140);
+const CARD_H = scaleVisual(156);
 const CHART_W = CARD_W - spacing.md * 2;
 
 /** the rows of "writing" on the card, as a fraction of its width */
@@ -46,7 +47,7 @@ function PersonalizeIllustration() {
           />
         ))}
 
-        <Svg width={CHART_W} height={44} viewBox="0 0 100 40">
+        <Svg width={CHART_W} height={scaleVisual(44)} viewBox="0 0 100 40">
           <Polyline
             points="4,32 28,20 52,26 76,8 96,14"
             fill="none"

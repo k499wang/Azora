@@ -1,5 +1,6 @@
 import { Text } from '../common/Text';
 import { Pressable, StyleSheet, View } from 'react-native';
+import type { StyleProp, ViewStyle } from 'react-native';
 import { LockedScrim } from '../common/glass';
 import { colors } from '../../theme/colors';
 import { typography, fonts } from '../../theme/typography';
@@ -23,6 +24,8 @@ interface RestingHeartRateBarProps {
   emphasizeValue?: boolean;
   locked?: boolean;
   onPressLocked?: () => void;
+  containerStyle?: StyleProp<ViewStyle>;
+  style?: StyleProp<ViewStyle>;
 }
 
 const NUM_TICKS = 40;
@@ -57,6 +60,8 @@ export default function RestingHeartRateBar({
   emphasizeValue = false,
   locked = false,
   onPressLocked,
+  containerStyle,
+  style,
 }: RestingHeartRateBarProps) {
   const hasBpm = bpm != null && Number.isFinite(bpm);
   const zone = hasBpm ? getRestingHeartRateZone(bpm!, age) : null;
@@ -65,7 +70,13 @@ export default function RestingHeartRateBar({
   const ticks = buildTickMarks(segments);
 
   return (
-    <CardSurface elevated locked={locked} style={styles.card} surface={surface}>
+    <CardSurface
+      elevated
+      locked={locked}
+      containerStyle={containerStyle}
+      style={[styles.card, style]}
+      surface={surface}
+    >
       <View
         accessibilityElementsHidden={locked}
         importantForAccessibility={locked ? 'no-hide-descendants' : 'auto'}

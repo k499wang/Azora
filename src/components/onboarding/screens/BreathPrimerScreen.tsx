@@ -2,11 +2,11 @@ import { Text } from '../../common/Text';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Animated,
-  Dimensions,
   Easing,
   Pressable,
   StyleSheet,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
@@ -23,6 +23,7 @@ import type { BreathingPhase } from '../../../features/exercise/guidedBreathing/
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import ConfettiFall from '../ConfettiFall';
+import { scaleVisual } from '../onboardingVisualScale';
 
 interface BreathPrimerScreenProps {
   stepIndex: number;
@@ -79,7 +80,6 @@ const PHASE_CUES: Record<PrimerPhase, string[]> = {
 
 const DONE_CUE = 'That is a full breath. Your belly leads, your chest follows.';
 
-const windowHeight = Dimensions.get('window').height;
 
 function countdownBeat() {
   if (!isHapticsEnabled()) return;
@@ -100,6 +100,7 @@ export default function BreathPrimerScreen({
   const [countdownCue, setCountdownCue] = useState(0);
 
   const insets = useSafeAreaInsets();
+  const { height: windowHeight } = useWindowDimensions();
   const circleRef = useRef<BreathingCircleRef | null>(null);
   const enter = useRef(new Animated.Value(0)).current;
 
@@ -280,7 +281,7 @@ export default function BreathPrimerScreen({
         <View style={styles.introIcon}>
           <Icon
             name="breath-profile"
-            size={260}
+            size={scaleVisual(260)}
             color={colors.primary.blue600}
           />
         </View>

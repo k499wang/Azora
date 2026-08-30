@@ -1,3 +1,4 @@
+import { isRegularWidth } from '../../theme/breakpoints';
 import { padding } from '../../theme/spacing';
 import { ROOM_ASPECT } from './roomGeometry';
 
@@ -63,22 +64,27 @@ export function getRoomWidth(
   return roomWidthWithin(windowWidth, windowHeight - ROOM_SCREEN_CHROME);
 }
 
+/** Past this the centred Home room stops growing. */
+const REGULAR_ROOM_MAX_WIDTH = 720;
+
 /**
- * How wide Home draws its room: the screen, less one screen margin either side.
+ * How wide Home draws its room.
  *
- * Home is the one place the room answers to width alone. It scrolls, so nothing
- * below it has to survive the fold, and it is the screen you open on — so the
- * room reads as the page's own width rather than as an object floating in it.
- * The inset is `padding.screen.horizontal`, the same margin the progress card
- * and the dailies below it use, so all three share one edge.
+ * On a phone: the screen, less one screen margin either side. Home scrolls, so
+ * nothing below the room has to survive the fold, and it is the screen you open
+ * on — the room reads as the page's own width rather than as an object floating
+ * in it. A height rule here only ever took size away.
  *
- * A height rule here only ever took size away. Sharing `getRoomWidth` made Home
- * pay the room-complete screen's worst-case chrome — 107pt of room lost on a
- * 568pt phone for chrome Home does not have — and even a height share of its
- * own shrank the short phones that could least afford it. Home's chrome is a
- * 58pt bar and a 16pt margin; past that the phone's width is the only real
- * constraint, and the cap keeps a tablet from drawing a 708pt room.
+ * On a tablet the room stays centred above the dailies and grows beyond the
+ * phone cap. Home scrolls, so the larger scene does not have to share the fold
+ * with the progress card below it.
  */
 export function getHomeRoomWidth(windowWidth: number): number {
-  return roomWidthWithin(windowWidth);
+  if (!isRegularWidth(windowWidth)) {
+    return roomWidthWithin(windowWidth);
+  }
+
+  return roomWidthWithin(windowWidth, Infinity, {
+    maxWidth: REGULAR_ROOM_MAX_WIDTH,
+  });
 }

@@ -17,6 +17,8 @@ interface ProfileBreathHoldTrendCardProps {
   todayHoldSeconds: number | null;
   avgHoldSeconds: number | null;
   locked?: boolean;
+  /** Fill the height of a peer column so side-by-side cards match. */
+  fill?: boolean;
   onPressLocked?: () => void;
 }
 
@@ -26,6 +28,7 @@ export default function ProfileBreathHoldTrendCard({
   todayHoldSeconds,
   avgHoldSeconds,
   locked = false,
+  fill = false,
   onPressLocked,
 }: ProfileBreathHoldTrendCardProps) {
   const bestIndex = useMemo(() => {
@@ -45,8 +48,8 @@ export default function ProfileBreathHoldTrendCard({
   }, [data]);
 
   return (
-    <View style={styles.cardShadow}>
-      <View style={styles.card}>
+    <View style={[styles.cardShadow, fill && styles.fill]}>
+      <View style={[styles.card, fill && styles.fill]}>
         <View
           accessibilityElementsHidden={locked}
           importantForAccessibility={locked ? 'no-hide-descendants' : 'auto'}
@@ -109,6 +112,9 @@ export default function ProfileBreathHoldTrendCard({
 const styles = StyleSheet.create({
   cardShadow: {
     ...card.blockShadow,
+  },
+  fill: {
+    flex: 1,
   },
   card: {
     ...card.block,

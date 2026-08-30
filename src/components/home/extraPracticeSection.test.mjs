@@ -16,13 +16,15 @@ test('Home owns See all navigation and places extra practice after dailies', () 
 
   assert.match(
     home,
-    /<TodaysDailiesSection[\s\S]*?\/>[\s\S]*?<ExtraPracticeSection[\s\S]*?onSeeAll={\(\) => navigation\.navigate\('Explore'\)}/,
+    /<HomeRoom[\s\S]*?<RoomProgressCard[\s\S]*?<TodaysDailiesSection[\s\S]*?\/>[\s\S]*?<ExtraPracticeSection[\s\S]*?onSeeAll={\(\) => navigation\.navigate\('Explore'\)}/,
   );
+  assert.doesNotMatch(home, /splitRow|splitDailiesColumn|flexDirection:\s*'row'/);
 });
 
 test('the extra practice section reuses card behavior without query observers', () => {
   const section = read('components/home/ExtraPracticeSection.tsx');
   const techniqueCard = read('components/explore/TechniqueCard.tsx');
+  const shelf = read('components/explore/TechniqueShelf.tsx');
 
   assert.doesNotMatch(
     section,
@@ -32,7 +34,11 @@ test('the extra practice section reuses card behavior without query observers', 
     section,
     /<SectionHeader\s+icon="waves"\s+title="What are you feeling\?"/,
   );
-  assert.match(section, /TECHNIQUE_SHELF_CARD_WIDTH/);
+  // The shared shelf owns the fixed card width and horizontal scrolling at
+  // every window size, so Home and Explore cannot drift apart.
+  assert.match(section, /<TechniqueShelf/);
+  assert.match(shelf, /TECHNIQUE_SHELF_CARD_WIDTH/);
+  assert.match(shelf, /<ScrollView\s+horizontal/);
   assert.match(section, /layout="shelf"/);
   assert.match(section, /sourceScreen="Home"/);
   assert.match(section, /sourceAction="extra_practice"/);

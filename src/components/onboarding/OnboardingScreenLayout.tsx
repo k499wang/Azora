@@ -16,6 +16,7 @@ import { useOnboardingProgressValue } from './onboardingProgress';
 import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../theme/colors';
+import { dashboardContentColumn } from '../../theme/breakpoints';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import { duration, easing as motionEasing } from '../../theme/motion';
@@ -529,6 +530,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
+    ...dashboardContentColumn,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: spacing.lg,
@@ -619,6 +621,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   content: {
+    ...dashboardContentColumn,
     flex: 1,
     paddingHorizontal: spacing.lg,
     paddingTop: 0,
@@ -683,6 +686,7 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xl,
   },
   bottom: {
+    ...dashboardContentColumn,
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.lg,
     paddingTop: spacing.sm,
