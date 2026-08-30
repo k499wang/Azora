@@ -255,10 +255,11 @@ function DailyTaskRow({
             pointerEvents="none"
           >
             <CollapsedTaskPill
-            title={title}
-            meta={collapsedMeta}
-            glyph={glyph}
-          />
+              title={title}
+              meta={collapsedMeta}
+              glyph={glyph}
+              muted={completed}
+            />
           </Animated.View>
           <Animated.View
             style={[StyleSheet.absoluteFill, openFace]}
@@ -357,9 +358,15 @@ interface CollapsedTaskPillProps {
   title: string;
   meta: string;
   glyph: GlyphShape;
+  muted: boolean;
 }
 
-function CollapsedTaskPill({ title, meta, glyph }: CollapsedTaskPillProps) {
+function CollapsedTaskPill({
+  title,
+  meta,
+  glyph,
+  muted,
+}: CollapsedTaskPillProps) {
   return (
     <View style={styles.collapsedPill} pointerEvents="none">
       <View style={styles.collapsedLine}>
@@ -369,15 +376,22 @@ function CollapsedTaskPill({ title, meta, glyph }: CollapsedTaskPillProps) {
         <ActivityGlyph
           shape={glyph}
           size={COLLAPSED_GLYPH_SIZE}
-          color={colors.primary.blue600}
+          color={muted ? colors.text.tertiary : colors.primary.blue600}
         />
         {/* The title is the only part allowed to truncate — how long it takes
             is the reason to read a closed row at all. */}
-        <Text style={styles.collapsedTitle} numberOfLines={1}>
+        <Text
+          style={[styles.collapsedTitle, muted && styles.collapsedContentMuted]}
+          numberOfLines={1}
+        >
           {title}
         </Text>
         <Text style={styles.collapsedSeparator}>·</Text>
-        <Text style={styles.collapsedMeta}>{meta}</Text>
+        <Text
+          style={[styles.collapsedMeta, muted && styles.collapsedContentMuted]}
+        >
+          {meta}
+        </Text>
       </View>
     </View>
   );
@@ -734,6 +748,9 @@ const styles = StyleSheet.create({
   },
   collapsedSeparator: {
     ...typography.title.title3,
+    color: colors.text.tertiary,
+  },
+  collapsedContentMuted: {
     color: colors.text.tertiary,
   },
 });
