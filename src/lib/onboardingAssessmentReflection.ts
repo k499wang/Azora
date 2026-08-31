@@ -1,5 +1,3 @@
-export type AssessmentExperienceLevel = 'never' | 'little' | 'regular';
-
 interface AssessmentSynthesisInput {
   stress: number | null;
   sleep: number | null;
@@ -7,7 +5,6 @@ interface AssessmentSynthesisInput {
   agreementResponses: Readonly<
     Record<string, 'agree' | 'disagree' | null>
   >;
-  experience: AssessmentExperienceLevel | null;
   primaryPlan: string | null;
   goalPhrases: readonly string[];
 }
@@ -42,7 +39,6 @@ export function buildAssessmentSynthesis({
   sleep,
   heartWorry,
   agreementResponses,
-  experience,
   primaryPlan,
   goalPhrases,
 }: AssessmentSynthesisInput): string {
@@ -140,15 +136,6 @@ export function buildAssessmentSynthesis({
     fallbackPlan = 'We’ll start with steady resets for focus and performance.';
   }
 
-  let experienceLine: string | null = null;
-  if (experience === 'never') {
-    experienceLine = 'Your first week will be short and fully guided.';
-  } else if (experience === 'little') {
-    experienceLine = 'We’ll build on what you’ve already tried.';
-  } else if (experience === 'regular') {
-    experienceLine = 'Since you already practice, we’ll skip the basics.';
-  }
-
   const formattedGoals = formatGoalList(goalPhrases);
   const goalSentence = formattedGoals ? `You want to ${formattedGoals}.` : null;
 
@@ -157,7 +144,6 @@ export function buildAssessmentSynthesis({
     supportingConcern,
     goalSentence,
     primaryPlan ?? fallbackPlan,
-    experienceLine,
   ]
     .filter(Boolean)
     .join(' ');

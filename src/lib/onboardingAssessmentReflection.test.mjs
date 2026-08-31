@@ -41,7 +41,6 @@ const BASE_INPUT = {
     racing: null,
     reactive: null,
   },
-  experience: null,
   primaryPlan: null,
   goalPhrases: [],
 };
@@ -137,34 +136,6 @@ for (const { name, stress, sleep, expected } of [
     assert.ok(result.startsWith(expected));
   });
 }
-
-for (const { experience, expected } of [
-  {
-    experience: 'never',
-    expected: 'Your first week will be short and fully guided.',
-  },
-  {
-    experience: 'little',
-    expected: 'We’ll build on what you’ve already tried.',
-  },
-  {
-    experience: 'regular',
-    expected: 'Since you already practice, we’ll skip the basics.',
-  },
-]) {
-  test(`buildAssessmentSynthesis adds the ${experience} experience line`, () => {
-    const result = buildAssessmentSynthesis({ ...BASE_INPUT, experience });
-    assert.ok(result.endsWith(expected));
-  });
-}
-
-test('buildAssessmentSynthesis omits an experience line for null', () => {
-  const result = buildAssessmentSynthesis(BASE_INPUT);
-  assert.equal(
-    result,
-    'We’ll start with steady resets for focus and performance.',
-  );
-});
 
 test('buildAssessmentSynthesis omits the opener when both sliders are unanswered', () => {
   const result = buildAssessmentSynthesis(BASE_INPUT);

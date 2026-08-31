@@ -19,9 +19,6 @@ import AgreementScreen, {
   type AgreementValue,
 } from './screens/AgreementScreen';
 import AssessmentReflectionScreen from './screens/AssessmentReflectionScreen';
-import ExperienceScreen, {
-  type ExperienceLevel,
-} from './screens/ExperienceScreen';
 import NameScreen from './screens/NameScreen';
 import GreetingScreen from './screens/GreetingScreen';
 import MochiStoryScreen from './screens/MochiStoryScreen';
@@ -139,7 +136,6 @@ export interface OnboardingFlowResult {
   stressLevel: number | null;
   sleepQuality: number | null;
   agreementResponses: Record<string, AgreementValue | null>;
-  experienceLevel: ExperienceLevel | null;
   age: number | null;
   gender: GenderOption['id'] | null;
   dailyMinutes: number | null;
@@ -183,7 +179,6 @@ const STEP_ORDER: OnboardingStep[] = [
   'brainFog',
   'heartWorry',
   'agreement',
-  'experience',
   'assessmentReflection',
   'consistency',
   'scienceCredibility',
@@ -333,9 +328,6 @@ function OnboardingFlowSteps({
       {},
     ),
   );
-  const [experienceLevel, setExperienceLevel] = useState<ExperienceLevel | null>(
-    initialSavedProfile?.experienceLevel ?? null,
-  );
   const [age, setAge] = useState(initialSavedProfile?.age ?? 25);
   const [gender, setGender] = useState<GenderOption['id'] | null>(
     toGenderOptionId(initialSavedProfile?.gender),
@@ -473,7 +465,6 @@ function OnboardingFlowSteps({
       agreement_response_count: Object.values(agreementResponses).filter(
         (value) => value != null,
       ).length,
-      has_experience_level: (profile?.experienceLevel ?? null) != null,
       has_age: (profile?.age ?? null) != null,
       has_gender: (profile?.gender ?? null) != null,
       has_daily_minutes: (profile?.dailyMinutes ?? null) != null,
@@ -688,7 +679,6 @@ function OnboardingFlowSteps({
       stressLevel,
       sleepQuality,
       agreementResponses,
-      experienceLevel,
       age,
       gender,
       // The slider's 0 stop means "30 seconds"; the DB column holds whole minutes.
@@ -1183,28 +1173,12 @@ function OnboardingFlowSteps({
         onChange={(id, value) =>
           setAgreementResponses((prev) => ({ ...prev, [id]: value }))
         }
-        onContinue={() => goToStep('experience', 'continue', {
+        onContinue={() => goToStep('assessmentReflection', 'continue', {
           agreement_response_count: Object.values(agreementResponses).filter(
             (value) => value != null,
           ).length,
         })}
         onBack={() => goToStep('heartWorry', 'back')}
-        onSkip={() => goToStep('experience', 'skip')}
-      />
-    );
-  }
-
-  if (step === 'experience') {
-    return (
-      <ExperienceScreen
-        value={experienceLevel}
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
-        onSelect={setExperienceLevel}
-        onContinue={() => goToStep('assessmentReflection', 'continue', {
-          has_experience_level: experienceLevel != null,
-        })}
-        onBack={() => goToStep('agreement', 'back')}
         onSkip={() => goToStep('assessmentReflection', 'skip')}
       />
     );
@@ -1218,13 +1192,12 @@ function OnboardingFlowSteps({
         sleepQuality={hasAnsweredSleep ? sleepQuality : null}
         heartWorryLevel={hasAnsweredHeartWorry ? heartWorryLevel : null}
         agreementResponses={agreementResponses}
-        experienceLevel={experienceLevel}
         intentOption={selectedOption}
         goalPhrases={selectedGoalPhrases}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goToStep('consistency', 'continue')}
-        onBack={() => goToStep('experience', 'back')}
+        onBack={() => goToStep('agreement', 'back')}
       />
     );
   }

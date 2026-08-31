@@ -3,6 +3,7 @@ import { Animated, Pressable, StyleSheet, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PersistentCameraRing } from '../../heartRate/PersistentCameraRing';
+import { FindingPulseHint } from '../../heartRate/FindingPulseHint';
 import { LiveSignalGraph } from '../../heartRate/LiveSignalGraph';
 import type { HeartRateCameraPreviewProps } from '../../heartRate/HeartRateCameraPreview';
 import type {
@@ -136,6 +137,10 @@ export function BaselineCaptureStage({
                   </View>
                 ) : null}
               </View>
+            ) : placement.status === 'Finding your pulse…' ? (
+              <FindingPulseHint
+                textStyle={[styles.hintText, { color: placement.ringColor }]}
+              />
             ) : (
               <Text style={[styles.hintText, { color: placement.ringColor }]}>
                 {placement.status}

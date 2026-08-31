@@ -17,7 +17,9 @@ import { spacing } from '../../../../theme/spacing';
 // are the same, so this changes nothing there.
 const SCREEN_WIDTH = Dimensions.get('screen').width;
 const OUTER_MAX_SIZE = Math.min(328, SCREEN_WIDTH - spacing.lg * 2);
-const INNER_SIZE = 108;
+// Wide enough for a one-word cue at reading size once the content padding is
+// taken off it.
+const INNER_SIZE = 116;
 const OUTLINE_WIDTH = 2;
 const OUTER_MIN_SCALE = INNER_SIZE / OUTER_MAX_SIZE;
 

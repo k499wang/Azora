@@ -24,23 +24,18 @@ interface BreathHoldBenefit {
   text: string;
 }
 
+/** what it is first, then what it does for him */
 const BENEFITS: BreathHoldBenefit[] = [
   {
-    icon: 'lungs',
-    text: 'Estimate your lung age',
+    icon: 'weather-windy',
+    text: '3 deep inhales, 3 deep exhales, then hold your breath as long as you can',
   },
-  {
-    icon: 'molecule-co2',
-    text: 'Build tolerance to rising CO₂',
-  },
+  { icon: 'molecule-co2', text: 'Builds your tolerance to rising CO₂' },
   {
     icon: 'battery-heart-outline',
-    text: 'Support relaxation and stress regulation',
+    text: 'The long exhales settle your nervous system',
   },
-  {
-    icon: 'weather-windy',
-    text: 'Build control you can call on any time',
-  },
+  { icon: 'lungs', text: 'Tracks your lung age as it improves' },
 ];
 
 export default function BreathHoldBenefitsScreen({
@@ -52,12 +47,14 @@ export default function BreathHoldBenefitsScreen({
 }: BreathHoldBenefitsScreenProps) {
   return (
     <OnboardingScreenLayout
-      title="The Benefits of Breathholds."
-      subtitle="A calm, guided session to establish your personal baseline."
+      title="Let’s try your first guided exercise."
+      subtitle="It’s called The Azora Protocol."
       progress={stepIndex / stepCount}
       onBack={onBack}
       onSkip={onSkip}
-      footer={<OnboardingPrimaryButton label="Begin my first Protocol" onPress={onContinue} />}
+      footer={
+        <OnboardingPrimaryButton label="I’m ready" onPress={onContinue} />
+      }
     >
       <View style={styles.list}>
         {BENEFITS.map((benefit, index) => (
