@@ -126,7 +126,7 @@ export default function HRVChart({
     [insightSummary],
   );
   return (
-    <CardSurface elevated locked={locked} style={styles.card}>
+    <CardSurface locked={locked} style={styles.card}>
       {!locked ? (
         <>
           <Pressable

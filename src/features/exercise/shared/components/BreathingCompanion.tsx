@@ -52,12 +52,13 @@ const STAGE_BODY_PATH =
 // then blown up about its own centre to fill this much larger body.
 const FACE_SCALE = 1.6;
 
-const TRAVEL_RATIO = 0.085;
+const TRAVEL_RATIO = 0.06;
 
-const BODY_SQUASH_X = 1.03;
-const BODY_STRETCH_X = 0.99;
-const BODY_SQUASH_Y = 0.98;
-const BODY_STRETCH_Y = 1.03;
+// Both endpoints stay wider and flatter so a full inhale never reads vertical.
+const BODY_SQUASH_X = 1.12;
+const BODY_STRETCH_X = 1.08;
+const BODY_SQUASH_Y = 0.96;
+const BODY_STRETCH_Y = 1;
 // The face rides the body at a third of its stretch so the eyes stay round.
 const FACE_SQUASH_Y = 0.99;
 const FACE_STRETCH_Y = 1.01;

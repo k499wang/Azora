@@ -50,7 +50,6 @@ export default function ThermometerStatCard({
 
   return (
     <CardSurface
-      elevated
       locked={locked}
       containerStyle={styles.tileContainer}
       style={[styles.tile, style]}

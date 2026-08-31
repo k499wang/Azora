@@ -54,8 +54,6 @@ interface CardSurfaceProps {
   contentStyle?: StyleProp<ViewStyle>;
   locked?: boolean;
   interactive?: boolean;
-  /** Adds the same outer depth treatment used by elevated Home cards. */
-  elevated?: boolean;
   onPress?: () => void;
   variant?: 'regular' | 'clear';
   surface?: CardSurfaceMode;
@@ -70,7 +68,6 @@ export default function CardSurface({
   contentStyle,
   locked = false,
   interactive = false,
-  elevated = false,
   onPress,
   variant = 'regular',
   surface = DEFAULT_CARD_SURFACE,
@@ -96,9 +93,7 @@ export default function CardSurface({
     );
 
     if (!onPress) {
-      return (
-        <View style={[styles.blockShadow, containerStyle]}>{blockNode}</View>
-      );
+      return containerStyle ? <View style={containerStyle}>{blockNode}</View> : blockNode;
     }
 
     return (
@@ -106,7 +101,6 @@ export default function CardSurface({
         accessibilityRole="button"
         onPress={handlePress}
         style={({ pressed }) => [
-          styles.blockShadow,
           containerStyle,
           pressed && styles.pressed,
         ]}
@@ -134,13 +128,7 @@ export default function CardSurface({
     );
 
   if (!onPress) {
-    return containerStyle || elevated ? (
-      <View style={[elevated && styles.elevatedShadow, containerStyle]}>
-        {surfaceNode}
-      </View>
-    ) : (
-      surfaceNode
-    );
+    return containerStyle ? <View style={containerStyle}>{surfaceNode}</View> : surfaceNode;
   }
 
   return (
@@ -148,7 +136,6 @@ export default function CardSurface({
       accessibilityRole="button"
       onPress={handlePress}
       style={({ pressed }) => [
-        elevated && styles.elevatedShadow,
         containerStyle,
         pressed && styles.pressed,
       ]}
@@ -192,13 +179,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
     position: 'relative',
-  },
-  elevatedShadow: {
-    ...card.blockShadow,
-    borderRadius: CARD_SURFACE_RADIUS,
-  },
-  blockShadow: {
-    ...card.blockShadow,
   },
   blockSurface: {
     ...card.block,

@@ -71,7 +71,6 @@ export default function RestingHeartRateBar({
 
   return (
     <CardSurface
-      elevated
       locked={locked}
       containerStyle={containerStyle}
       style={[styles.card, style]}
