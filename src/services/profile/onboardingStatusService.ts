@@ -61,7 +61,6 @@ interface OnboardingDatabase {
 type ProfileInsert = OnboardingDatabase['public']['Tables']['profiles']['Insert'];
 
 export type OnboardingGender = 'female' | 'male' | 'nonbinary' | 'prefer_not';
-export type OnboardingExperienceLevel = 'never' | 'little' | 'regular';
 
 export interface CompleteOnboardingInput {
   onboardingGoal?: string | null;
@@ -73,7 +72,6 @@ export interface CompleteOnboardingInput {
   stressLevel?: number | null;
   sleepQuality?: number | null;
   agreementResponses?: AgreementResponses | null;
-  experienceLevel?: OnboardingExperienceLevel | null;
 }
 
 export type SavedOnboardingProfile = CompleteOnboardingInput;
@@ -119,7 +117,6 @@ export async function saveOnboardingProfile(
     stress_level: input.stressLevel ?? null,
     sleep_quality: input.sleepQuality ?? null,
     agreement_responses: input.agreementResponses ?? null,
-    experience_level: input.experienceLevel ?? null,
   };
 
   const { error } = await supabase
@@ -157,7 +154,7 @@ export async function getSavedOnboardingProfile(
   const { data, error } = await supabase
     .from('profiles')
     .select(
-      'onboarding_goal, age, gender, daily_minutes, default_technique_id, display_name, stress_level, sleep_quality, agreement_responses, experience_level',
+      'onboarding_goal, age, gender, daily_minutes, default_technique_id, display_name, stress_level, sleep_quality, agreement_responses',
     )
     .eq('user_id', userId)
     .maybeSingle();
@@ -180,7 +177,6 @@ export async function getSavedOnboardingProfile(
     stressLevel: data.stress_level,
     sleepQuality: data.sleep_quality,
     agreementResponses: toAgreementResponses(data.agreement_responses),
-    experienceLevel: data.experience_level as OnboardingExperienceLevel | null,
   };
 }
 

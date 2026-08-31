@@ -22,6 +22,18 @@ import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
 import { isHapticsEnabled } from '../../../services/preferences/hapticsPreference';
+import BreathingCircle, {
+  type BreathingCircleRef,
+} from '../../../features/exercise/shared/components/BreathingCircle';
+import {
+  startInhaleVibration,
+  stopInhaleVibration,
+} from '../../../native/inhaleVibration';
+import {
+  DAILY_BREATH_HOLD_PROTOCOL,
+  buildDailyBreathHoldPreparationPlan,
+  type DailyBreathHoldPreparationPhase,
+} from '../../../features/exercise/dailyBreathHold/domain/dailyBreathHoldProtocol';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import {
@@ -51,7 +63,8 @@ interface BreathHoldScreenProps {
 
 type Phase =
   | 'intro'
-  | 'inhale'
+  | 'leadIn'
+  | 'prepare'
   | 'hold'
   | 'earlyStop'
   | 'calibrating'
@@ -64,10 +77,60 @@ interface ScoredHold extends OnboardingBreathHoldResult {
   benchmarkLabel: string;
 }
 
-const INHALE_SECONDS = 4;
+/**
+ * The measurement runs the same Protocol the daily session runs — three slow
+ * rounds, then the deep breath, then the hold — rather than a bare deep breath.
+ * The sequence is imported rather than restated: a baseline taken under a
+ * different protocol is not comparable with the sessions it is the baseline for.
+ */
+const PREPARATION = buildDailyBreathHoldPreparationPlan(
+  DAILY_BREATH_HOLD_PROTOCOL,
+);
+const FINAL_STEP_INDEX = PREPARATION.length - 1;
+
+/**
+ * The room the cue has inside the circle, once the circle's own content padding
+ * is taken off it. A word that would overrun it shrinks rather than wrapping.
+ */
+const CUE_SLOT_WIDTH = 84;
+
+/** seconds of "ready?" before the first cue, so it never starts under him */
+const LEAD_IN_SECONDS = 3;
+
+/** how the cue hands the circle over to the count, in milliseconds */
+const CUE_FADE_MS = 220;
+/** exhale hands off to 4 → 3 → 2 → 1 two seconds into its six-second step */
+const EXHALE_CUE_MS = 2000;
+/**
+ * A count is only worth swapping to if it has seconds to spend. Below this the
+ * word carries the rest of the round, which is what stops a number appearing
+ * for a blink before the next cue takes it away.
+ */
+const COUNT_MIN_SECONDS = 1.6;
+
+/**
+ * Nothing inside the circle ever cuts: the cue and the count cross over each
+ * other, and both stay mounted at zero opacity between their turns. A
+ * `setValue(0)` or an unmount anywhere in here reads as a flicker.
+ */
+function fadeTo(value: Animated.Value, toValue: number) {
+  return Animated.timing(value, {
+    toValue,
+    duration: CUE_FADE_MS,
+    easing: Easing.out(Easing.cubic),
+    useNativeDriver: true,
+  });
+}
+
+// One word each: the inner circle is 108pt across, and anything longer either
+// shrinks past reading or wraps.
+const STEP_CUE: Record<DailyBreathHoldPreparationPhase, string> = {
+  preInhale: 'Inhale',
+  preExhale: 'Exhale',
+  inhale: 'Inhale',
+};
+
 const MIN_SCORABLE_HOLD_MS = 1000;
-const CIRCLE_SIZE = scaleVisual(260);
-const CIRCLE_MIN_SCALE = 0.5;
 
 const GAUGE_SIZE = scaleVisual(250);
 const GAUGE_STROKE = scaleVisual(12);
@@ -152,12 +215,30 @@ export default function BreathHoldScreen({
   onSkip,
 }: BreathHoldScreenProps) {
   const [phase, setPhase] = useState<Phase>('intro');
-  const [inhaleRemaining, setInhaleRemaining] = useState(INHALE_SECONDS);
+  const [protocolStep, setProtocolStep] = useState(0);
+  /**
+   * The one number in the circle, shared by the lead-in and exhale countdowns.
+   *
+   * Two states meant the handover between them swapped the digit under a
+   * full-opacity fade — the flicker. It is written only while the count is
+   * faded out, which `countLive` guards.
+   */
+  const [count, setCount] = useState(LEAD_IN_SECONDS);
+  const countLive = useRef(true);
+  /**
+   * The word, as state rather than read off the current step: it has to change
+   * while it is invisible, in the same gap the digit changes in.
+   */
+  const [cueText, setCueText] = useState(STEP_CUE.preInhale);
+  const cueTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [holdSec, setHoldSec] = useState(0);
   const [isHolding, setIsHolding] = useState(false);
   const [result, setResult] = useState<ScoredHold | null>(null);
 
-  const scale = useRef(new Animated.Value(CIRCLE_MIN_SCALE)).current;
+  const circleRef = useRef<BreathingCircleRef | null>(null);
+  const cueEnter = useRef(new Animated.Value(0)).current;
+  const countEnter = useRef(new Animated.Value(0)).current;
+  const countPulse = useRef(new Animated.Value(1)).current;
   const inhaleEnter = useRef(new Animated.Value(0)).current;
   const doneEnter = useRef(new Animated.Value(0)).current;
   const holdStartRef = useRef<number | null>(null);
@@ -178,15 +259,60 @@ export default function BreathHoldScreen({
   useEffect(() => {
     return () => {
       if (tickRef.current) clearInterval(tickRef.current);
-      scale.stopAnimation();
+      circleRef.current?.reset();
+      stopInhaleVibration();
       inhaleEnter.stopAnimation();
+      cueEnter.stopAnimation();
+      countEnter.stopAnimation();
+      countPulse.stopAnimation();
       doneEnter.stopAnimation();
       cancelAnimation(arcProgress);
     };
-  }, [arcProgress, doneEnter, inhaleEnter, scale]);
+  }, [arcProgress, countEnter, countPulse, cueEnter, doneEnter, inhaleEnter]);
 
   useEffect(() => {
-    if (phase !== 'inhale') return;
+    if (phase !== 'leadIn') return;
+    setCount(LEAD_IN_SECONDS);
+    countLive.current = true;
+    circleRef.current?.reset();
+    fadeTo(countEnter, 1).start();
+
+    // The number stays put and beats, rather than re-fading every second: three
+    // fades in three seconds is a flicker, not a countdown.
+    const beat = () => {
+      countPulse.setValue(0.82);
+      Animated.spring(countPulse, {
+        toValue: 1,
+        friction: 5,
+        tension: 120,
+        useNativeDriver: true,
+      }).start();
+      if (isHapticsEnabled()) {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+      }
+    };
+
+    beat();
+    const interval = setInterval(() => {
+      setCount((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          countLive.current = false;
+          setPhase('prepare');
+          // held at 1 rather than zeroed: the count crossfades out under the
+          // first cue, and a 0 flashing on the way there is the clip itself
+          return prev;
+        }
+        beat();
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [countEnter, countPulse, cueEnter, phase]);
+
+  useEffect(() => {
+    if (phase !== 'leadIn') return;
     inhaleEnter.setValue(0);
     Animated.timing(inhaleEnter, {
       toValue: 1,
@@ -197,42 +323,119 @@ export default function BreathHoldScreen({
   }, [phase, inhaleEnter]);
 
   useEffect(() => {
-    if (phase !== 'inhale') return;
-    setInhaleRemaining(INHALE_SECONDS);
-    scale.setValue(CIRCLE_MIN_SCALE);
+    if (phase !== 'prepare') return;
+    const step = PREPARATION[protocolStep];
+    const isExhale = step.phase === 'preExhale';
+    countLive.current = false;
 
-    Animated.timing(scale, {
-      toValue: 1,
-      duration: INHALE_SECONDS * 1000,
-      easing: Easing.inOut(Easing.cubic),
-      useNativeDriver: true,
-    }).start();
+    // Haptics reinforce each change of direction; exhale's visible countdown
+    // supplies the lighter second-by-second ticks.
+    if (isHapticsEnabled()) {
+      Haptics.impactAsync(
+        isExhale
+          ? Haptics.ImpactFeedbackStyle.Soft
+          : Haptics.ImpactFeedbackStyle.Medium,
+      ).catch(() => {});
+    }
+
+    // The same circle the sessions breathe with, driven by the same protocol:
+    // it fills on a breath in and empties on a breath out, so a round is
+    // legible without reading anything.
+    if (isExhale) {
+      stopInhaleVibration();
+      circleRef.current?.contract(step.durationSeconds);
+    } else {
+      // the same continuous buzz the breathing sessions rise on
+      if (isHapticsEnabled()) {
+        startInhaleVibration(step.durationSeconds * 1000);
+      }
+      circleRef.current?.expand(step.durationSeconds);
+    }
 
     const startedAt = Date.now();
+    const secondsLeft = () =>
+      Math.max(
+        1,
+        Math.ceil(step.durationSeconds - (Date.now() - startedAt) / 1000),
+      );
+
+    // Fade out whatever the circle is showing, swap it in the dark, then fade
+    // the word in. Inhale keeps its cue for the whole step; exhale hands over
+    // to a count. Every value changes at zero opacity to prevent flashing.
+    if (cueTimerRef.current) clearTimeout(cueTimerRef.current);
+    Animated.parallel([fadeTo(cueEnter, 0), fadeTo(countEnter, 0)]).start(
+      ({ finished }) => {
+        if (!finished) return;
+        setCueText(STEP_CUE[step.phase]);
+        fadeTo(cueEnter, 1).start(({ finished: shown }) => {
+          if (!shown || !isExhale) return;
+          cueTimerRef.current = setTimeout(() => {
+            const left =
+              step.durationSeconds - (Date.now() - startedAt) / 1000;
+            // too little of the round left to be worth a number: the word stays
+            if (left < COUNT_MIN_SECONDS) return;
+            setCount(Math.max(1, Math.ceil(left)));
+            countLive.current = true;
+            Animated.parallel([
+              fadeTo(cueEnter, 0),
+              fadeTo(countEnter, 1),
+            ]).start();
+          }, Math.max(0, startedAt + EXHALE_CUE_MS - Date.now()));
+        });
+      },
+    );
+
     const interval = setInterval(() => {
       const elapsed = (Date.now() - startedAt) / 1000;
-      const remaining = Math.max(0, INHALE_SECONDS - elapsed);
-      const next = Math.ceil(remaining);
-      setInhaleRemaining((prev) => {
-        if (next !== prev && next > 0 && isHapticsEnabled()) {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-        }
-        return next;
-      });
-      if (elapsed >= INHALE_SECONDS) {
+      // clamped to 1: the last second belongs to the next cue, not to a zero
+      const next = secondsLeft();
+      if (countLive.current) {
+        setCount((prev) => {
+          if (next !== prev && isHapticsEnabled()) {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(
+              () => {},
+            );
+          }
+          return next;
+        });
+      }
+      if (elapsed >= step.durationSeconds) {
         clearInterval(interval);
+        if (protocolStep < FINAL_STEP_INDEX) {
+          countLive.current = false;
+          setProtocolStep(protocolStep + 1);
+          return;
+        }
+        countLive.current = false;
+        // the hold is the moment the whole sequence was for, so it lands
+        // harder than any of the breaths before it
         if (isHapticsEnabled()) {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+          Haptics.notificationAsync(
+            Haptics.NotificationFeedbackType.Success,
+          ).catch(() => {});
         }
         setPhase('hold');
       }
     }, 100);
 
-    return () => clearInterval(interval);
-  }, [phase, scale]);
+    return () => {
+      clearInterval(interval);
+      if (cueTimerRef.current) clearTimeout(cueTimerRef.current);
+    };
+  }, [countEnter, cueEnter, phase, protocolStep]);
 
   useEffect(() => {
     if (phase !== 'hold') return;
+    stopInhaleVibration();
+    countLive.current = false;
+    if (cueTimerRef.current) clearTimeout(cueTimerRef.current);
+    Animated.parallel([fadeTo(cueEnter, 0), fadeTo(countEnter, 0)]).start(
+      ({ finished }) => {
+        if (!finished) return;
+        setCueText('Hold');
+        fadeTo(cueEnter, 1).start();
+      },
+    );
     releaseHandledRef.current = false;
     setIsHolding(true);
     setHoldSec(0);
@@ -290,22 +493,39 @@ export default function BreathHoldScreen({
     }
     releaseHandledRef.current = false;
     holdStartRef.current = null;
-    setInhaleRemaining(INHALE_SECONDS);
+    setProtocolStep(0);
+    setCount(LEAD_IN_SECONDS);
     setHoldSec(0);
     setIsHolding(false);
     setResult(null);
     setDisplayedLungAge(MIN_LUNG_AGE);
 
-    scale.stopAnimation();
+    circleRef.current?.reset();
     inhaleEnter.stopAnimation();
+    cueEnter.stopAnimation();
+    countEnter.stopAnimation();
+    countPulse.stopAnimation();
     doneEnter.stopAnimation();
-    scale.setValue(CIRCLE_MIN_SCALE);
     inhaleEnter.setValue(0);
+    cueEnter.setValue(0);
+    countEnter.setValue(0);
+    countPulse.setValue(1);
     doneEnter.setValue(0);
+    if (cueTimerRef.current) {
+      clearTimeout(cueTimerRef.current);
+      cueTimerRef.current = null;
+    }
     cancelAnimation(arcProgress);
     arcProgress.value = 0;
-    setPhase('inhale');
-  }, [arcProgress, doneEnter, inhaleEnter, scale]);
+    setPhase('leadIn');
+  }, [
+    arcProgress,
+    countEnter,
+    countPulse,
+    cueEnter,
+    doneEnter,
+    inhaleEnter,
+  ]);
 
   // The counter reads off the same shared value as the ring, so both stay on the
   // UI thread and React only re-renders when the whole year changes.
@@ -355,75 +575,69 @@ export default function BreathHoldScreen({
     return () => cancelAnimation(arcProgress);
   }, [phase, result, arcProgress, finishCalibration]);
 
-  if (phase === 'inhale' || phase === 'hold') {
-    const isInhale = phase === 'inhale';
-
-    const inhaleEntryStyle = isInhale
-      ? {
-          opacity: inhaleEnter,
-          transform: [
-            {
-              translateY: inhaleEnter.interpolate({
-                inputRange: [0, 1],
-                outputRange: [40, 0],
-              }),
-            },
-          ],
-        }
-      : null;
+  if (phase === 'leadIn' || phase === 'prepare' || phase === 'hold') {
+    // One entrance, on the lead-in. The lead-in, the rounds and the hold are one
+    // continuous screen, so nothing re-enters when the first cue arrives.
+    const enterStyle = {
+      opacity: inhaleEnter,
+      transform: [
+        {
+          translateY: inhaleEnter.interpolate({
+            inputRange: [0, 1],
+            outputRange: [40, 0],
+          }),
+        },
+      ],
+    };
 
     return (
-      <View style={styles.fullScreen}>
-        <Animated.View style={[styles.fullCenter, inhaleEntryStyle]}>
-          <View style={styles.headingSlot}>
-            <Text style={styles.phaseHeading}>
-              {isInhale ? 'Breathe in' : 'Hold your breath'}
-            </Text>
-          </View>
-          <View style={styles.phaseDetailSlot}>
-            {isInhale ? (
-              <Text style={styles.phaseSub}>Hold when the circle is full.</Text>
-            ) : (
-              <Text style={styles.bigTimer}>{formatHold(holdSec)}</Text>
-            )}
-          </View>
-
-          <View style={styles.circleWrap}>
-            <Animated.View
-              style={[
-                styles.circle,
-                styles.circleInhale,
-                { transform: [{ scale }] },
-              ]}
-            />
-            <View style={styles.circleContent} pointerEvents="none">
-              {isInhale ? (
-                <Text style={styles.countdown}>{inhaleRemaining}</Text>
-              ) : (
-                <View style={styles.releaseTarget}>
-                  <MaterialCommunityIcons
-                    name="fingerprint"
-                    size={72}
-                    color={colors.primary.blue700}
-                  />
-                  <Text style={styles.releaseLabel}>
-                    Tap when you need{'\n'}to breathe
-                  </Text>
-                </View>
-              )}
+      <Pressable
+        style={styles.fullScreen}
+        onPress={isHolding ? handleHoldRelease : undefined}
+        disabled={!isHolding}
+        accessibilityRole={isHolding ? 'button' : undefined}
+        accessibilityLabel={isHolding ? 'End breath hold' : undefined}
+      >
+        <Animated.View style={[styles.fullCenter, enterStyle]}>
+          <BreathingCircle ref={circleRef}>
+            <View style={styles.cueSlot}>
+              <Animated.Text
+                style={[styles.cue, { opacity: cueEnter }]}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.7}
+              >
+                {cueText}
+              </Animated.Text>
+              <Animated.Text
+                style={[
+                  styles.countdown,
+                  { opacity: countEnter, transform: [{ scale: countPulse }] },
+                ]}
+                numberOfLines={1}
+              >
+                {count}
+              </Animated.Text>
             </View>
+          </BreathingCircle>
 
+          {/*
+            Below the circle rather than inside it: the inner circle holds one
+            word, and a running timer and a line of instruction do not fit
+            beside it without shrinking both past reading.
+          */}
+          <View style={styles.belowCircle}>
             {isHolding ? (
-              <Pressable
-                style={styles.holdTarget}
-                onPress={handleHoldRelease}
-                accessibilityRole="button"
-                accessibilityLabel="End breath hold"
-              />
+              <>
+                <Text style={styles.holdTimer}>{formatHold(holdSec)}</Text>
+                <Text style={styles.releaseHint}>
+                  Tap anywhere when you{'\n'}need to breathe
+                </Text>
+              </>
             ) : null}
           </View>
         </Animated.View>
-      </View>
+      </Pressable>
     );
   }
 
@@ -639,7 +853,10 @@ export default function BreathHoldScreen({
         <View style={styles.introFooter}>
           <OnboardingPrimaryButton
             label="Start"
-            onPress={() => setPhase('inhale')}
+            onPress={() => {
+              setProtocolStep(0);
+              setPhase('leadIn');
+            }}
           />
           {onSkip ? (
             <Pressable
@@ -665,11 +882,17 @@ export default function BreathHoldScreen({
           />
         </View>
         <View style={styles.introCopy}>
-          <Text style={styles.introHeadline}>
-            Let&apos;s estimate your{'\n'}lung age.
+          <Text
+            style={styles.introHeadline}
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.7}
+          >
+            The Azora Protocol.
           </Text>
           <Text style={styles.introSub}>
-            Take one deep breath. Hold until you need to breathe, then tap to end.
+            Three slow rounds, one deep breath in, then hold. Tap at the first
+            strong urge to breathe.
           </Text>
         </View>
 
@@ -756,12 +979,47 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: spacing.lg,
-    gap: spacing.xs,
+    // sits the circle above the middle, so the timer and the instruction under
+    // it have room without pushing it off centre as they appear
+    paddingBottom: spacing['6xl'],
   },
-  headingSlot: {
-    minHeight: 96,
+  // The cue and the count share one centred slot, so the handover crossfades in
+  // place instead of the count stepping in from wherever the word left off.
+  cueSlot: {
+    minWidth: CUE_SLOT_WIDTH,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  cue: {
+    position: 'absolute',
+    fontFamily: fonts.semibold,
+    fontWeight: '500',
+    fontSize: 20,
+    lineHeight: 26,
+    color: colors.primary.blue700,
+    textAlign: 'center',
+  },
+  // Keeps its room whether or not it is showing, so nothing above it moves when
+  // the hold starts.
+  belowCircle: {
+    height: 148,
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    paddingTop: spacing.lg,
+    gap: spacing.sm,
+  },
+  holdTimer: {
+    fontFamily: fonts.semibold,
+    fontWeight: '500',
+    fontSize: 56,
+    lineHeight: 64,
+    color: colors.primary.blue700,
+  },
+  releaseHint: {
+    ...typography.title.title3,
+    fontFamily: fonts.semibold,
+    color: colors.text.primary,
+    textAlign: 'center',
   },
   phaseHeading: {
     ...typography.title.title2,
@@ -773,11 +1031,6 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     textAlign: 'center',
     paddingHorizontal: spacing.md,
-  },
-  phaseDetailSlot: {
-    height: 72,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   bigTimer: {
     fontFamily: fonts.semibold,
@@ -795,32 +1048,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingHorizontal: spacing.md,
   },
-  circleWrap: {
-    width: CIRCLE_SIZE,
-    height: CIRCLE_SIZE,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: spacing['2xl'],
-  },
-  circle: {
-    position: 'absolute',
-    width: CIRCLE_SIZE,
-    height: CIRCLE_SIZE,
-    borderRadius: CIRCLE_SIZE / 2,
-  },
-  circleInhale: {
-    backgroundColor: colors.primary.blue100,
-    borderWidth: 2,
-    borderColor: colors.primary.blue500,
-  },
-  circleContent: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  releaseTarget: {
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
   releaseLabel: {
     fontFamily: fonts.semibold,
     fontWeight: '500',
@@ -832,13 +1059,9 @@ const styles = StyleSheet.create({
   countdown: {
     fontFamily: fonts.semibold,
     fontWeight: '500',
-    fontSize: 56,
-    lineHeight: 64,
+    fontSize: 44,
+    lineHeight: 52,
     color: colors.primary.blue700,
-  },
-  holdTarget: {
-    ...StyleSheet.absoluteFillObject,
-    borderRadius: CIRCLE_SIZE / 2,
   },
 
   gaugeStage: {

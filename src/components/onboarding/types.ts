@@ -23,7 +23,6 @@ export type OnboardingStep =
   | 'brainFog'
   | 'heartWorry'
   | 'agreement'
-  | 'experience'
   | 'assessmentReflection'
   | 'breathHoldBenefits'
   | 'lungCapacity'

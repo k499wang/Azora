@@ -12,7 +12,6 @@ import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import type { PersonalizedIntentOption } from '../types';
 import type { AgreementValue } from './AgreementScreen';
-import type { ExperienceLevel } from './ExperienceScreen';
 
 interface AssessmentReflectionScreenProps {
   name: string;
@@ -20,7 +19,6 @@ interface AssessmentReflectionScreenProps {
   sleepQuality: number | null;
   heartWorryLevel: number | null;
   agreementResponses: Record<string, AgreementValue | null>;
-  experienceLevel: ExperienceLevel | null;
   intentOption: PersonalizedIntentOption | null;
   goalPhrases: readonly string[];
   stepIndex: number;
@@ -35,7 +33,6 @@ export default function AssessmentReflectionScreen({
   sleepQuality,
   heartWorryLevel,
   agreementResponses,
-  experienceLevel,
   intentOption,
   goalPhrases,
   stepIndex,
@@ -50,7 +47,6 @@ export default function AssessmentReflectionScreen({
         sleep: sleepQuality,
         heartWorry: heartWorryLevel,
         agreementResponses,
-        experience: experienceLevel,
         primaryPlan: intentOption?.assessmentPlan ?? null,
         goalPhrases,
       }),
@@ -59,7 +55,6 @@ export default function AssessmentReflectionScreen({
       sleepQuality,
       heartWorryLevel,
       agreementResponses,
-      experienceLevel,
       intentOption,
       goalPhrases,
     ],
