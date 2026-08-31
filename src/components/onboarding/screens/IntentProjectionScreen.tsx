@@ -154,8 +154,8 @@ export default function IntentProjectionScreen({
 
   return (
     <OnboardingScreenLayout
-      title="Your breath is powerful."
-      subtitle="Train it a few minutes a day and the benefits build, week after week."
+      title="Small resets are powerful."
+      subtitle="A few minutes a day and the benefits build, week after week."
       progress={stepIndex / stepCount}
       onBack={onBack}
       footer={

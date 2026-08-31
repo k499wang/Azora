@@ -6,7 +6,7 @@ import { typography } from '../../theme/typography';
 import { spacing, padding, margin } from '../../theme/spacing';
 
 const DAILY_TASKS = [
-  { label: 'Morning breathing session', time: '5 min', technique: 'Box Breathing', icon: 'weather-sunny' as const },
+  { label: 'Morning reset', time: '5 min', technique: 'Box Breathing', icon: 'weather-sunny' as const },
   { label: 'Mindfulness check-in', time: '3 min', technique: 'Body Scan', icon: 'meditation' as const },
   { label: 'Evening session', time: '7 min', technique: '4-7-8 Breathing', icon: 'weather-night' as const },
 ];

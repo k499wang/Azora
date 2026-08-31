@@ -193,8 +193,8 @@ export default function HeartVariabilityScreen({
 
   return (
     <OnboardingScreenLayout
-      title="Your breath sets the pace for your heart."
-      subtitle="Slower, steadier breathing can encourage a calmer heartbeat and help your body relax."
+      title="Your stress shows up in your heart rate."
+      subtitle="A slower, steadier reset can encourage a calmer heartbeat and help your body relax."
       progress={stepIndex / stepCount}
       onBack={onBack}
       onSkip={onSkip}

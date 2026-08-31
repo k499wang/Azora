@@ -46,9 +46,9 @@ const testimonials: Array<{
     avatar: 'testimonialPriya',
   },
   {
-    title: 'I finally know how my heart is doing',
+    title: 'I finally know how I’m actually doing',
     quote:
-      'My heart rate and my Azora Score are in one place, so checking everything takes seconds.',
+      'My stress, my heart rate, and my Azora Score are in one place, so checking in takes seconds.',
     author: 'Nina Alvarez',
     avatar: 'testimonialNina',
   },

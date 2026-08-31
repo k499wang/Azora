@@ -4,26 +4,26 @@ import type { OnboardingIntent } from '../components/onboarding/types';
 import type { OnboardingPlan } from './onboardingPlan';
 
 const INTENT_HIGHLIGHT: Record<OnboardingIntent, string> = {
-  stress_relief: 'Run slow-exhale resets that pull your heart rate back down',
+  stress_relief: 'Pull your stress back down with a short reset',
   calm_fast: 'Reach for a 60-second reset whenever stress spikes',
   sleep: 'Start a wind down timed to the bedtime you gave us',
   focus: 'Clear your head with a short reset before deep work',
   energy: 'Lift your energy without reaching for caffeine',
-  spiritual: 'Settle into coherent breathing at a steady, held rhythm',
-  yoga: 'Train belly breathing that carries into your practice',
-  heart_health: 'Scan your heart rate and HRV in 90 seconds with your camera',
+  spiritual: 'Settle into a rhythm that makes stillness easier to reach',
+  yoga: 'Build the calm and control that carry into your practice',
+  heart_health: 'Check your recovery and stress in 90 seconds with your camera',
   daily_habit: 'Keep a session short enough to finish on your worst days',
-  other: 'Follow a breathing routine built from the answers you just gave',
+  other: 'Follow a daily routine built from the answers you just gave',
 };
 
 const INTENT_PROOF: Record<Exclude<OnboardingIntent, 'other'>, string> = {
-  stress_relief: 'Feel your body settle within a few rounds of breathing',
+  stress_relief: 'Feel your body settle within the first few minutes',
   calm_fast: 'Come back down in under a minute, wherever you are',
   sleep: 'Wind down on the exhale instead of replaying the day',
   focus: 'Hold your attention longer before it starts to slip',
-  energy: 'Lift the afternoon dip with a two-minute breath',
-  spiritual: 'Sit longer without your mind drifting off the breath',
-  yoga: 'Move through your practice with steadier breath',
+  energy: 'Lift the afternoon dip in two minutes',
+  spiritual: 'Sit longer before your mind starts to wander',
+  yoga: 'Move through your practice feeling steadier',
   heart_health: 'Watch your resting heart rate settle week over week',
   daily_habit: 'Build a streak that survives the days you almost skip',
 };
@@ -34,7 +34,7 @@ const GROWTH_AREA_PROOF: Record<MindMapAxis, string> = {
   recovery: 'Wake up rested instead of already behind',
   focus: 'Hold your attention on one thing at a time',
   resilience: 'Bounce back faster when something knocks you sideways',
-  breathEase: 'Breathe deeper without having to force it',
+  breathEase: 'Feel your chest loosen without having to force it',
 };
 
 const GROWTH_AREA_HIGHLIGHT: Record<MindMapAxis, string> = {
@@ -80,7 +80,7 @@ export function buildPlanHighlights({
     holdSeconds != null
       ? {
           icon: 'heart',
-          text: `Retest your ${holdSeconds}s breath hold each week and watch it climb`,
+          text: `Retest The Azora Protocol weekly and watch your ${holdSeconds}s baseline climb`,
         }
       : {
           icon: 'heart',

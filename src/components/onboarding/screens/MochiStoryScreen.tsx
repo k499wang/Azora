@@ -13,8 +13,9 @@ import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 
 interface MochiStoryScreenProps {
   beat: MochiStoryBeat;
-  stepIndex: number;
-  stepCount: number;
+  /** both absent on the first beat, which opens the flow with no progress yet */
+  stepIndex?: number;
+  stepCount?: number;
   onContinue: () => void;
   /** absent on the first beat, which opens the flow */
   onBack?: () => void;
@@ -51,7 +52,11 @@ export default function MochiStoryScreen({
   return (
     <OnboardingScreenLayout
       title={beat.title}
-      progress={stepIndex / stepCount}
+      progress={
+        stepIndex === undefined || stepCount === undefined
+          ? undefined
+          : stepIndex / stepCount
+      }
       onBack={onBack}
       centerCopy
       typeTitle

@@ -65,9 +65,9 @@ const BAND_DETAIL: Record<RestingHeartRateBand, string> = {
   below:
     'A slower resting heart rate is linked to a longer life, deeper sleep and sharper focus. Yours is already there — a daily reset is how you keep it.',
   typical:
-    'A slower resting heart rate is linked to a longer life, deeper sleep and sharper focus. Slow breathing is one of the fastest ways to move yours down.',
+    'A slower resting heart rate is linked to a longer life, deeper sleep and sharper focus. A daily reset is one of the fastest ways to move yours down.',
   above:
-    'A slower resting heart rate is linked to a longer life, deeper sleep and sharper focus. Yours has room to come down, and slow breathing is the fastest way there.',
+    'A slower resting heart rate is linked to a longer life, deeper sleep and sharper focus. Yours has room to come down, and a daily reset is the fastest way there.',
 };
 
 function bandForAge(age: number): AgeBand {

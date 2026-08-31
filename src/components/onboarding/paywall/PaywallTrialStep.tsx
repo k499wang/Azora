@@ -74,7 +74,7 @@ export function PaywallTrialStep({
     ? [
         {
           label: 'Day 1: Today',
-          body: 'Unlock all app features like heart insights and unlimited sessions.',
+          body: 'Unlock everything — unlimited resets and all your health insights.',
           icon: 'sparkle',
         },
         {
@@ -91,7 +91,7 @@ export function PaywallTrialStep({
     : [
         {
           label: 'Today',
-          body: 'Unlock all app features like heart insights and unlimited sessions.',
+          body: 'Unlock everything — unlimited resets and all your health insights.',
           icon: 'sparkle',
         },
         {

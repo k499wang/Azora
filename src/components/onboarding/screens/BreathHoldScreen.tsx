@@ -620,7 +620,7 @@ export default function BreathHoldScreen({
               </View>
               <Text style={styles.resultReassurance}>
                 We’ll explain what this means—and how you can improve it—as you
-                try the exercises in the app.
+                try the resets in the app.
               </Text>
             </Animated.View>
           ) : null}

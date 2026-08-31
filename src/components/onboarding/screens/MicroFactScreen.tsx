@@ -27,7 +27,7 @@ interface Slice {
 const SLICES: Slice[] = [
   { label: 'Calmer mind', percent: 58, accent: colors.primary.blue600 },
   { label: 'Slower heart rate', percent: 26, accent: colors.error[500] },
-  { label: 'Steadier breath', percent: 16, accent: colors.warning[500] },
+  { label: 'Less tension', percent: 16, accent: colors.warning[500] },
 ];
 
 const CHART_SIZE = scaleVisual(220);
@@ -104,7 +104,7 @@ export default function MicroFactScreen({
   return (
     <OnboardingScreenLayout
       title="Did you know?"
-      subtitle="What users feel within their first minute of slow breathing."
+      subtitle="What users feel within their first minute of a reset."
       progress={stepIndex / stepCount}
       onBack={onBack}
       footer={<OnboardingPrimaryButton label="Cool, let's go" onPress={onContinue} />}

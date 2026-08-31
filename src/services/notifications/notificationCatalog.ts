@@ -69,7 +69,7 @@ export const DAILY_REMINDER_DEFINITIONS = [
     scheduleActionId: 'checkIn',
     content: {
       title: 'Time for The Azora Protocol',
-      body: 'Check in with your breath and see how you feel today.',
+      body: 'A couple of minutes to check in and see how you feel today.',
       channelId: NOTIFICATION_CHANNELS.dailyReminders,
     },
     defaultEnabled: false,

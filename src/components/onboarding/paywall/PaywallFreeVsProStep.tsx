@@ -72,7 +72,7 @@ export function PaywallFreeVsProStep({
         free: FULL_MODE.requiresPro ? null : true,
       },
       {
-        label: 'Breathing sessions',
+        label: 'Guided resets',
         free: featureFreeCell(FeatureKey.DailyExercise),
       },
       { label: 'Daily room decoration', free: dailyDecorationFreeCell() },

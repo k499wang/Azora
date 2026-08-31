@@ -130,14 +130,14 @@ export function buildAssessmentSynthesis({
   let fallbackPlan: string;
   if (sleepLow || (stressHigh && sleepMid)) {
     fallbackPlan =
-      'We’ll start with gentle evening breathing to help your body wind down.';
+      'We’ll start with a gentle evening reset to help your body wind down.';
   } else if (stressHigh) {
     fallbackPlan =
       'We’ll start with quick calming techniques and longer exhales.';
   } else if (stressMid) {
     fallbackPlan = 'We’ll start with short daily resets you can use anywhere.';
   } else {
-    fallbackPlan = 'We’ll start with steady breathing for focus and performance.';
+    fallbackPlan = 'We’ll start with steady resets for focus and performance.';
   }
 
   let experienceLine: string | null = null;

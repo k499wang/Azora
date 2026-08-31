@@ -16,7 +16,7 @@ const BRAIN_SCAN_ASPECT_RATIO = 3 / 2;
 const BRAIN_SCAN_CONTENT_OFFSET = -10;
 const RIGHT_BRAIN_LABEL_OFFSET = 12;
 const MOCHI_NOTE =
-  'Controlled breathing can lead to a lower heart rate and lower stress.';
+  'A few controlled minutes of breathing can lower your heart rate and your stress.';
 
 interface BrainScienceScreenProps {
   stepIndex: number;
@@ -50,8 +50,8 @@ export default function BrainScienceScreen({
 
   return (
     <OnboardingScreenLayout
-      title="Breathing is a science."
-      subtitle="Azora uses proven breathing science to reset your nervous system in seconds."
+      title="This is your brain with Azora."
+      subtitle="Azora uses proven science to settle your nervous system in seconds."
       progress={stepIndex / stepCount}
       onBack={onBack}
       centerBody
