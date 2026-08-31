@@ -167,7 +167,6 @@ export function RecentlyLoggedSection({
 
             return (
               <CardSurface
-                elevated
                 key={item.sessionId}
                 onPress={() => handleItemPress(item.sessionId, index)}
                 style={styles.card}

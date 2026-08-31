@@ -191,7 +191,7 @@ export default function StressGauge({
   );
 
   return (
-    <CardSurface elevated locked={locked} style={styles.card} surface={surface}>
+    <CardSurface locked={locked} style={styles.card} surface={surface}>
       {content}
     </CardSurface>
   );

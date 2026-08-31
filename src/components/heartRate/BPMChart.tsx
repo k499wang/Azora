@@ -190,7 +190,7 @@ export default function BPMChart({
   );
   const info = BPM_CONTEXT_INFO[insightContext];
   return (
-    <CardSurface elevated locked={locked} style={styles.card}>
+    <CardSurface locked={locked} style={styles.card}>
       {!locked ? (
         <>
           <Pressable

@@ -149,7 +149,7 @@ export default function HRVTrackStatCard({
   })();
 
   return (
-    <CardSurface elevated locked={locked} style={styles.card}>
+    <CardSurface locked={locked} style={styles.card}>
       {info && !locked ? (
         <>
           <Pressable

@@ -720,7 +720,6 @@ const styles = StyleSheet.create({
   },
   collapsedPill: {
     ...card.base,
-    ...card.shadow,
     flex: 1,
     justifyContent: 'center',
     paddingHorizontal: spacing.md,

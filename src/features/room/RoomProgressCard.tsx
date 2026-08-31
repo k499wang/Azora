@@ -136,7 +136,9 @@ export function RoomProgressCardView({
   const tone = TONE_STYLE[view.tone];
 
   return (
-    <View style={styles.card}>
+    <View
+      style={[styles.card, view.tone !== 'done' && styles.cardShadow]}
+    >
       <View style={styles.headline}>
         <Icon name="room-hex" size={26} color={tone.accent} />
         <Text style={styles.title}>{view.title}</Text>
@@ -272,10 +274,10 @@ export function describeRoomCard({
 const styles = StyleSheet.create({
   card: {
     ...card.base,
-    ...card.shadow,
     padding: spacing.md,
     gap: spacing.sm,
   },
+  cardShadow: card.shadow,
   headline: {
     flexDirection: 'row',
     alignItems: 'center',
