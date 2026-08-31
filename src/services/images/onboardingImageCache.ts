@@ -17,12 +17,12 @@ export type OnboardingImageKey =
 
 const sources: Record<OnboardingImageKey, number> = {
   brainScan: require('../../../assets/onboarding/brain-scan-comparison.webp'),
-  agreementQ1: require('../../../assets/questions/q1.png'),
-  agreementQ2: require('../../../assets/questions/q2.png'),
-  agreementQ3: require('../../../assets/questions/q3.png'),
+  agreementQ1: require('../../../assets/onboarding/questions/q1.png'),
+  agreementQ2: require('../../../assets/onboarding/questions/q2.png'),
+  agreementQ3: require('../../../assets/onboarding/questions/q3.png'),
   cameraPlacementDual: require('../../../assets/onboarding/camera-placement-dual.png'),
   cameraPlacementTriple: require('../../../assets/onboarding/camera-placement-triple.png'),
-  signature: require('../../../assets/signature.png'),
+  signature: require('../../../assets/brand/signature.png'),
   oxfordLogo: require('../../../assets/logos/oxford.png'),
   cambridgeLogo: require('../../../assets/logos/cambridge.png'),
   testimonialMaya: require('../../../assets/testimonials/maya-rivera.jpg'),

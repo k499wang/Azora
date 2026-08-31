@@ -11,7 +11,7 @@ export default function BrandLockup() {
   return (
     <View style={styles.row}>
       <Image
-        source={require('../../../assets/azora_app_logo_transparent_1024.png')}
+        source={require('../../../assets/brand/logo.png')}
         style={styles.mark}
         contentFit="contain"
       />

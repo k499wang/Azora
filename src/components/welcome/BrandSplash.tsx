@@ -1,7 +1,7 @@
 import { Image, StyleSheet, View } from 'react-native';
 import { colors } from '../../theme/colors';
 
-const SPLASH_IMAGE = require('../../../assets/splash-mochi-v2.png');
+const SPLASH_IMAGE = require('../../../assets/app/splash.png');
 
 export function BrandSplash() {
   return (
