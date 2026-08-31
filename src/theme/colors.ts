@@ -1,14 +1,14 @@
 export const colors = {
   primary: {
-    blue100: '#EAF2FF',
-    blue200: '#C8DBFF',
-    blue300: '#A0C4FF',
-    blue400: '#78B4FF',
-    blue500: '#4A90F5',
-    blue600: '#2F7AEF',
-    blue700: '#1E63D6',
-    blue800: '#154AAB',
-    blue900: '#0D3380',
+    blue100: '#E4F0FF',
+    blue200: '#C2DDFF',
+    blue300: '#94C6FF',
+    blue400: '#63ADFF',
+    blue500: '#3D93FF',
+    blue600: '#1F7BFF',
+    blue700: '#0F62E8',
+    blue800: '#0C49B8',
+    blue900: '#073388',
   },
 
   neutral: {
@@ -26,39 +26,39 @@ export const colors = {
   },
 
   success: {
-    100: '#DCFCE7',
-    300: '#86EFAC',
-    500: '#22C55E',
-    700: '#15803D',
+    100: '#D6FBE4',
+    300: '#7BF0AE',
+    500: '#16CC65',
+    700: '#0E7A3C',
   },
 
   warning: {
-    100: '#FEF3C7',
-    300: '#FDE68A',
-    500: '#F59E0B',
-    700: '#B45309',
+    100: '#FFF2C2',
+    300: '#FFE380',
+    500: '#FFA800',
+    700: '#A85A00',
   },
 
   error: {
-    100: '#FEE2E2',
-    300: '#FCA5A5',
-    400: '#F87171',
-    500: '#EF4444',
-    700: '#B91C1C',
+    100: '#FFE0E3',
+    300: '#FF9DA4',
+    400: '#FF6B78',
+    500: '#FF4152',
+    700: '#C2102A',
   },
 
   yellow: {
-    100: '#FEF9C3',
-    300: '#FDE047',
-    400: '#FACC15',
-    500: '#EAB308',
+    100: '#FFF8BC',
+    300: '#FFDE33',
+    400: '#FFCC00',
+    500: '#F2B600',
   },
 
   orange: {
-    100: '#FFF4E6',
-    200: '#FFE0BF',
-    300: '#FFBD6B',
-    400: '#FF9A3D',
+    100: '#FFF2E0',
+    200: '#FFDDB5',
+    300: '#FFBA5C',
+    400: '#FF9629',
     500: '#FF8C00',
     600: '#E67700',
     700: '#CC6A00',
@@ -70,13 +70,19 @@ export const colors = {
   // `mid` is base lifted ~35% toward soft. It exists so a color block can carry
   // a gradient that stays inside the saturated range — base to mid reads as
   // depth, where base to soft washes out to a near-white corner.
+  //
+  // Every `base` sits at the most chroma the 3:1 white-text floor allows for its
+  // hue, so these are as vivid as they can get without white text going soft.
+  // Reach for chroma in `soft`/`mid` when a block needs more life — never by
+  // lightening a `base`, which trades legibility for it. `ink` clears 4.5:1 on
+  // its own `soft`.
   playful: {
-    teal: { base: '#00A391', mid: '#3BBAAB', soft: '#A8E5DA', ink: '#0B6B5C' },
-    coral: { base: '#F04E30', mid: '#F4785F', soft: '#FAC7B6', ink: '#B23A1D' },
-    violet: { base: '#6C4BFF', mid: '#8F76FE', soft: '#CFC5FB', ink: '#4B34C4' },
-    amber: { base: '#D97706', mid: '#E49B3D', soft: '#F8DEA3', ink: '#925C00' },
-    sky: { base: '#2979FF', mid: '#5F9BFE', soft: '#C3DBFC', ink: '#1559A8' },
-    blush: { base: '#F0488F', mid: '#F377AC', soft: '#F8CFE3', ink: '#A12359' },
+    teal: { base: '#00A48F', mid: '#3BBFAD', soft: '#A8F2E4', ink: '#00705F' },
+    coral: { base: '#FF5230', mid: '#FF7C61', soft: '#FFCBBB', ink: '#A82F10' },
+    violet: { base: '#8B5CFF', mid: '#A784FF', soft: '#DCCEFF', ink: '#5326D6' },
+    amber: { base: '#D77A00', mid: '#E5A03B', soft: '#FFE6A8', ink: '#8F5A00' },
+    sky: { base: '#3B88FF', mid: '#6AA6FF', soft: '#C2DEFF', ink: '#0D59B2' },
+    blush: { base: '#FF4590', mid: '#FF73AC', soft: '#FFC9E0', ink: '#B01356' },
   },
 
   // White-alpha layers for content sitting on a `playful.*.base` color block:
@@ -93,15 +99,15 @@ export const colors = {
   // family while staying clear of the primary azure the UI accents use, so he
   // reads as a character rather than furniture against the warm cream floor.
   roomBlob: {
-    body: '#4FB3E8',
-    bodyLight: '#7ACDF3',
-    foot: '#2E93CC',
+    body: '#46BCF5',
+    bodyLight: '#7FD6FA',
+    foot: '#2497DB',
     face: '#12384B',
     // the pop of sparkles when the blob is poked
-    sparkle: '#FFC94D',
+    sparkle: '#FFCE3D',
     // Mochi's friendly blush; warm against the sky blue so the small cheeks
     // read as colour rather than another highlight
-    cheek: '#F4785F',
+    cheek: '#FF7C6A',
     // matches the shadow ink the room artwork already uses
     shadow: 'rgba(58,67,79,0.22)',
     // the clipboard he takes notes on — warm wood against his sky blue
@@ -110,23 +116,25 @@ export const colors = {
   },
 
   background: {
-    // Cool neutral canvas for the frosted/glass paradigm — glass surfaces refract
-    // against grey rather than blue tint.
-    primary: '#F4F5F7',
-    // Near-white canvas the playful color blocks sit on.
-    canvas: '#F7F8FB',
-    secondary: '#EEF5FF',
+    // Cool off-white canvas for the frosted/glass paradigm — a shade deeper than
+    // `canvas` so sheets and modals seat below the page they cover.
+    primary: '#F1F3F8',
+    // Off-white canvas the playful color blocks and white cards sit on. `card.base`
+    // is borderless by design, so this gap to `background.card` is the only thing
+    // separating a card from the page — never take it to pure white.
+    canvas: '#F4F6FA',
+    secondary: '#E6F1FF',
     elevated: '#FFFFFF',
     // Cards read pure white, matching Today's Dailies. Every card surface uses
     // this so the app has one card white, not two that are nearly the same.
     card: '#FFFFFF',
-    // An off-white for outlined surfaces that sit directly on `canvas` — close
-    // enough to the canvas that the rows settle into the page, still a shade
-    // lighter so each one reads as its own surface.
-    cardSoft: '#FAFBFD',
-    accentSoft: '#EAF2FF',
+    // Outlined surfaces that sit directly on `canvas` — lighter than the canvas so
+    // each row reads as its own surface, still short of `card` so a bordered row
+    // never competes with a real elevated card.
+    cardSoft: '#FAFBFE',
+    accentSoft: '#E4F0FF',
     // Blue block behind the top bar, curving into the page canvas.
-    headerTint: '#78B4FF',
+    headerTint: '#63ADFF',
     // Warm cream for paper/letter surfaces.
     paper: '#FBF7EF',
     // Asset-matched fallbacks used while native background images decode.
@@ -157,8 +165,8 @@ export const colors = {
     shadow: '#0F172A',
     // Opaque scrim for the 'solid' glass fallback, used when Reduce
     // Transparency asks us to avoid blur/translucency.
-    scrim: 'rgba(244,245,247,0.94)',
-    lockedScrim: '#F4F5F7',
+    scrim: 'rgba(241,243,248,0.94)',
+    lockedScrim: '#F1F3F8',
     // Dark counterpart for colorScheme="dark" surfaces on the solid fallback.
     scrimDark: 'rgba(15,23,42,0.94)',
     // White-leaning fills for glass controls placed over imagery/vibrant media.
@@ -205,14 +213,14 @@ export const colors = {
     secondary: '#5B6675',
     tertiary: '#94A3B8',
     inverse: '#FFFFFF',
-    brand: '#2F7AEF',
+    brand: '#1367E8',
   },
 
   border: {
     subtle: '#E2E8F0',
     default: '#CBD5E1',
     strong: '#94A3B8',
-    brand: '#78B4FF',
+    brand: '#63ADFF',
   },
 
   overlay: {
@@ -238,12 +246,12 @@ export const colors = {
   },
 
   mood: {
-    stressed: '#F59E0B',
-    anxious: '#7C3AED',
-    sleepless: '#1E40AF',
-    focus: '#2F7AEF',
-    angry: '#EF4444',
-    lowEnergy: '#F97316',
+    stressed: '#FF9F1C',
+    anxious: '#8B5CFF',
+    sleepless: '#4A5FE0',
+    focus: '#3B88FF',
+    angry: '#FF4A54',
+    lowEnergy: '#FF7A2F',
   },
 
   // Loading placeholder tones. `base` is the resting block fill, `highlight`

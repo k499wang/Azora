@@ -32,7 +32,7 @@ Edit only `src/features/exercise/guidedBreathing/techniques.ts`:
   category: 'calm',
   icon: 'weather-windy',
   duration: '~1 min',
-  backgroundImage: require('../../assets/exercises/sea.jpg'),
+  backgroundImage: require('../../assets/exercises/sea-v2.jpg'),
 }
 ```
 

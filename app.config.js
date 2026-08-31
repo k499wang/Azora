@@ -59,9 +59,9 @@ module.exports = {
   expo: {
     name: 'Azora',
     slug: 'Azora',
-    version: '1.0.18',
+    version: '1.0.19',
     orientation: 'portrait',
-    icon: './assets/icon-mochi-v3.png',
+    icon: './assets/app/icon.png',
     userInterfaceStyle: 'light',
     newArchEnabled: true,
     ios: {
@@ -254,7 +254,7 @@ module.exports = {
     },
     android: {
       adaptiveIcon: {
-        foregroundImage: './assets/adaptive-icon-mochi-v3.png',
+        foregroundImage: './assets/app/adaptive-icon.png',
         backgroundColor: '#EEF1FF',
       },
       edgeToEdgeEnabled: true,
@@ -266,13 +266,13 @@ module.exports = {
       package: 'com.azora.breath',
     },
     web: {
-      favicon: './assets/favicon.png',
+      favicon: './assets/app/favicon.png',
     },
     plugins: [
       [
         'expo-splash-screen',
         {
-          image: './assets/splash-mochi-v2.png',
+          image: './assets/app/splash.png',
           // The source includes transparent padding; this preserves its current
           // on-screen size while moving off the cached legacy launch asset.
           imageWidth: 393,

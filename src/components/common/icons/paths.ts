@@ -27,18 +27,18 @@ export const ICON_PATHS = {
   <defs>
     <linearGradient id="airwayBlue" x1="17" y1="0" x2="17" y2="20" gradientUnits="userSpaceOnUse">
       <stop stop-color="#EAF2FF"/>
-      <stop offset="1" stop-color="#78B4FF"/>
+      <stop offset="1" stop-color="#63ADFF"/>
     </linearGradient>
 
     <radialGradient id="leftLungBlue" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(6.35 9.44) rotate(78) scale(19.85 12.41)">
       <stop stop-color="#C8DBFF"/>
-      <stop offset="0.55" stop-color="#4A90F5"/>
+      <stop offset="0.55" stop-color="#3D93FF"/>
       <stop offset="1" stop-color="#1E63D6"/>
     </radialGradient>
 
     <radialGradient id="rightLungBlue" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(22.73 10.59) rotate(87) scale(18.29 11.43)">
       <stop stop-color="#C8DBFF"/>
-      <stop offset="0.55" stop-color="#4A90F5"/>
+      <stop offset="0.55" stop-color="#3D93FF"/>
       <stop offset="1" stop-color="#1E63D6"/>
     </radialGradient>
   </defs>

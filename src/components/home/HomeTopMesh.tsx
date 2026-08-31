@@ -23,7 +23,7 @@ export default function HomeTopMesh() {
           <LinearGradient id="baseGradient" x1="0%" y1="0%" x2="100%" y2="100%">
             <Stop offset="0%" stopColor="#EAF2FF" />
             <Stop offset="55%" stopColor="#BDD7FF" />
-            <Stop offset="100%" stopColor="#78B4FF" />
+            <Stop offset="100%" stopColor="#63ADFF" />
           </LinearGradient>
 
           <LinearGradient id="arcHighlight" x1="0%" y1="0%" x2="100%" y2="100%">

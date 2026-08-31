@@ -14,7 +14,7 @@ import type { OnboardingOptionIconName } from './OnboardingOptionIcon';
 const GLYPH_SIZE = 28;
 const GLYPH_COLUMN = 40;
 /** Shallower than `ChunkyButton`'s lip: a row is a choice, not the action. */
-const LIP_DEPTH = 1;
+const LIP_DEPTH = 2;
 
 export interface OnboardingOption<Id extends string> {
   id: Id;
@@ -169,10 +169,9 @@ const styles = StyleSheet.create({
   },
   row: {
     ...card.base,
-    // Near-white rather than the pure card white: the outline is what makes a
-    // row a row here, and the fill sits a shade back from white so the rows do
-    // not read as slabs stacked on the canvas.
-    backgroundColor: colors.background.cardSoft,
+    // The page canvas itself: the outline is the whole row, so an unselected
+    // option reads as an outlined area of the page rather than a card on it.
+    backgroundColor: colors.background.canvas,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
@@ -201,8 +200,8 @@ const styles = StyleSheet.create({
   },
   title: {
     ...typography.label.large,
-    fontFamily: fonts.medium,
-    fontWeight: '500',
+    fontFamily: fonts.regular,
+    fontWeight: '400',
     fontSize: 17,
     lineHeight: 22,
     flex: 1,
