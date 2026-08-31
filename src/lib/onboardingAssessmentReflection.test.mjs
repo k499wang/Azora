@@ -60,7 +60,7 @@ for (const { name, input, expected } of [
   {
     name: 'sleep fallback',
     input: { stress: 2, sleep: 4 },
-    expected: 'We’ll start with gentle evening breathing to help your body wind down.',
+    expected: 'We’ll start with a gentle evening reset to help your body wind down.',
   },
   {
     name: 'high-stress fallback',
@@ -75,7 +75,7 @@ for (const { name, input, expected } of [
   {
     name: 'steady fallback',
     input: { stress: 2, sleep: 9 },
-    expected: 'We’ll start with steady breathing for focus and performance.',
+    expected: 'We’ll start with steady resets for focus and performance.',
   },
 ]) {
   test(`buildAssessmentSynthesis uses the ${name}`, () => {
@@ -162,7 +162,7 @@ test('buildAssessmentSynthesis omits an experience line for null', () => {
   const result = buildAssessmentSynthesis(BASE_INPUT);
   assert.equal(
     result,
-    'We’ll start with steady breathing for focus and performance.',
+    'We’ll start with steady resets for focus and performance.',
   );
 });
 
@@ -171,7 +171,7 @@ test('buildAssessmentSynthesis omits the opener when both sliders are unanswered
 
   assert.equal(
     result,
-    'We’ll start with steady breathing for focus and performance.',
+    'We’ll start with steady resets for focus and performance.',
   );
 });
 
@@ -299,7 +299,7 @@ test('buildAssessmentSynthesis ignores disagree and null agreement responses', (
 
   assert.equal(
     result,
-    'We’ll start with steady breathing for focus and performance.',
+    'We’ll start with steady resets for focus and performance.',
   );
 });
 
@@ -316,7 +316,7 @@ test('buildAssessmentSynthesis combines high heart worry and agreement concerns 
 
   assert.equal(
     result,
-    'Mental strain is part of the picture, and your heart health is weighing on you too. We’ll start with steady breathing for focus and performance.',
+    'Mental strain is part of the picture, and your heart health is weighing on you too. We’ll start with steady resets for focus and performance.',
   );
   assert.doesNotMatch(result, /Mental fatigue is part of the picture too/);
   assert.doesNotMatch(result, /Your heart health is weighing on you right now/);

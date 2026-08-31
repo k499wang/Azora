@@ -32,8 +32,8 @@ const PERSONALIZING_STEPS = [
     item: 'Focus window',
   },
   {
-    status: 'Tuning your breathing rhythm...',
-    item: 'Breath rhythm',
+    status: 'Tuning your daily rhythm...',
+    item: 'Daily rhythm',
   },
   {
     status: 'Finishing your plan...',

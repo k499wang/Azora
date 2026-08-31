@@ -7,7 +7,7 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
     icon: 'waves',
     accent: colors.success[700],
     title: 'Reduce stress',
-    body: 'Use breathing to settle your nervous system.',
+    body: 'Settle your nervous system in a few minutes.',
     hook: "Stress doesn't stand a chance.",
     goalPhrase: 'reduce stress',
     assessmentPlan:
@@ -73,7 +73,7 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
     hook: 'Tonight can already feel different.',
     goalPhrase: 'sleep better',
     assessmentPlan:
-      'We’ll start with gentle evening breathing that helps your body wind down.',
+      'We’ll start with a gentle evening reset that helps your body wind down.',
     reflectionHeadline: 'Fall asleep faster, sleep deeper.',
     reflectionBody:
       'A nightly wind-down teaches your body to slip into rest on cue — no willpower needed.',
@@ -86,7 +86,7 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
       {
         icon: 'breath-timer',
         accent: colors.success[700],
-        label: '10 min of slow breathing lifts HRV before bed',
+        label: 'A 10 min wind down lifts HRV before bed',
       },
       {
         icon: 'streak',
@@ -104,10 +104,10 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
     hook: 'Clear head, sharper recall.',
     goalPhrase: 'stay focused while you work or study',
     assessmentPlan:
-      'We’ll start with steady breathing that quiets mental noise before work or study.',
-    reflectionHeadline: 'Find focus in a few breaths.',
+      'We’ll start with steady resets that quiet mental noise before work or study.',
+    reflectionHeadline: 'Find focus in a few minutes.',
     reflectionBody:
-      'Paced breathing calms pre-exam nerves and pulls your attention back from the noise.',
+      'A paced reset calms pre-exam nerves and pulls your attention back from the noise.',
     valuePoints: [
       {
         icon: 'sparkle',
@@ -138,17 +138,17 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
       'We’ll start with energizing sessions that lift alertness in minutes.',
     reflectionHeadline: 'Energize without the crash.',
     reflectionBody:
-      'Active breathing raises alertness and oxygen flow — a natural lift you can repeat anytime.',
+      'An active reset raises alertness and circulation — a natural lift you can repeat anytime.',
     valuePoints: [
       {
         icon: 'sun',
         accent: colors.orange[600],
-        label: 'Energizing breaths raise alertness in minutes',
+        label: 'An energizing reset raises alertness in minutes',
       },
       {
         icon: 'waves',
         accent: colors.primary.blue600,
-        label: 'More oxygen flow, no caffeine crash',
+        label: 'A cleaner lift, no caffeine crash',
       },
       {
         icon: 'heart-glow',
@@ -162,19 +162,19 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
     icon: 'arrow-up',
     accent: colors.primary.blue600,
     title: 'Deepen practice',
-    body: 'Use breath as a path to stillness and presence.',
-    hook: 'Breath as a way in.',
+    body: 'Make more room for stillness and presence.',
+    hook: 'A way back to stillness.',
     goalPhrase: 'deepen your spiritual practice',
     assessmentPlan:
-      'We’ll start with mindful breathing that makes more room for stillness and presence.',
-    reflectionHeadline: 'Find stillness through the breath.',
+      'We’ll start with mindful resets that quiet the noise and deepen stillness.',
+    reflectionHeadline: 'Find stillness on purpose.',
     reflectionBody:
-      'Breath has anchored meditation and prayer for millennia — a doorway to presence you carry everywhere.',
+      'Stillness has anchored meditation and prayer for millennia — a doorway to presence you carry everywhere.',
     valuePoints: [
       {
         icon: 'lotus',
         accent: colors.primary.blue600,
-        label: 'Slow breathing deepens meditative focus',
+        label: 'Slowing down deepens meditative focus',
       },
       {
         icon: 'meditation',
@@ -184,7 +184,7 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
       {
         icon: 'sparkle',
         accent: colors.orange[600],
-        label: 'A few mindful breaths bring you back to now',
+        label: 'A few mindful minutes bring you back to now',
       },
     ],
   },
@@ -228,7 +228,7 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
     hook: 'Your heart has been waiting for this.',
     goalPhrase: 'look after your heart and recovery',
     assessmentPlan:
-      'We’ll start with resonance breathing to support HRV and recovery.',
+      'We’ll start with a resonance reset to support HRV and recovery.',
     reflectionHeadline: 'See your heart, every day.',
     reflectionBody:
       'HRV is the clearest window into recovery, stress, and long-term cardiovascular health.',
@@ -255,9 +255,9 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
     icon: 'streak',
     accent: colors.orange[600],
     title: 'Daily habit',
-    body: 'Build a steady breathing practice you return to.',
+    body: 'Build a steady daily practice you return to.',
     hook: 'Small reps. Real change.',
-    goalPhrase: 'build a breathing habit that lasts',
+    goalPhrase: 'build a daily habit that lasts',
     assessmentPlan:
       'We’ll start with short sessions designed to fit your day and build consistency.',
     reflectionHeadline: 'A practice built to actually last.',

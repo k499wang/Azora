@@ -14,8 +14,6 @@ export type OnboardingStep =
   | 'intentReflection'
   | 'intentProjection'
   | 'brainScience'
-  | 'modernBreathing'
-  | 'breathPrimer'
   | 'name'
   | 'greeting'
   | 'acquisitionSource'

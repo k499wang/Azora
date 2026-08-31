@@ -49,7 +49,7 @@ export default function NotificationPermissionScreen({
   return (
     <OnboardingScreenLayout
       title="Stay on track with your daily plan"
-      subtitle="Users who set reminders breathe 2x more consistently."
+      subtitle="Users who set reminders are 2x more consistent."
       progress={stepIndex / stepCount}
       onBack={onBack}
       onSkip={onSkip}

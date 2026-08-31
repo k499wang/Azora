@@ -436,7 +436,7 @@ export default function TodaysDailiesSection({
   );
   const guidedDetail = technique == null
     ? 'Personalized for you'
-    : `${formatCategory(technique.category)} breathing`;
+    : `${formatCategory(technique.category)} reset`;
   const guidedDetailIcon = technique?.icon ?? 'weather-windy';
   const rows: Record<DailyPlanActionId, DailyRowContent> = {
     session: {

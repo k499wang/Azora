@@ -39,7 +39,7 @@ const BENEFITS: BreathHoldBenefit[] = [
   },
   {
     icon: 'weather-windy',
-    text: 'Develop greater control over your breathing',
+    text: 'Build control you can call on any time',
   },
 ];
 
@@ -52,7 +52,7 @@ export default function BreathHoldBenefitsScreen({
 }: BreathHoldBenefitsScreenProps) {
   return (
     <OnboardingScreenLayout
-      title="Why Azorians do breathholds."
+      title="Why Azorians run The Azora Protocol."
       subtitle="A calm, guided session to establish your personal baseline."
       progress={stepIndex / stepCount}
       onBack={onBack}

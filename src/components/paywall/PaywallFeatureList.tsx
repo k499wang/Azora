@@ -17,7 +17,7 @@ const DEFAULT_FEATURES: PaywallFeature[] = [
   },
   {
     icon: 'heart',
-    text: 'Track heart rate, HRV, and stress with just your camera',
+    text: 'Track stress, recovery, and heart rate with just your camera',
   },
   {
     icon: 'moon',

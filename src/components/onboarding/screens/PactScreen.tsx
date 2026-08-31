@@ -335,7 +335,7 @@ export default function PactScreen({
       >
         <View style={styles.promiseCard}>
           <Text style={styles.salutation}>A note to myself,</Text>
-          <Text style={styles.note}>{`I’ll take ${durationLabel} to breathe each day. Even a short session counts. If I miss a day, that’s okay. I can come back tomorrow.`}</Text>
+          <Text style={styles.note}>{`I’ll take ${durationLabel} to reset each day. Even a short session counts. If I miss a day, that’s okay. I can come back tomorrow.`}</Text>
         </View>
       </OnboardingScreenLayout>
 

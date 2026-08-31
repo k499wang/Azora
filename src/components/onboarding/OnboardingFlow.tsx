@@ -14,8 +14,6 @@ import IntentPriorityScreen from './screens/IntentPriorityScreen';
 import IntentReflectionScreen from './screens/IntentReflectionScreen';
 import IntentProjectionScreen from './screens/IntentProjectionScreen';
 import BrainScienceScreen from './screens/BrainScienceScreen';
-import ModernBreathingScreen from './screens/ModernBreathingScreen';
-import BreathPrimerScreen from './screens/BreathPrimerScreen';
 import AgreementScreen, {
   AGREEMENT_STATEMENTS,
   type AgreementValue,
@@ -178,8 +176,6 @@ const STEP_ORDER: OnboardingStep[] = [
   'intentReflection',
   'intentProjection',
   'brainScience',
-  'modernBreathing',
-  'breathPrimer',
   'name',
   'greeting',
   'stress',
@@ -920,8 +916,6 @@ function OnboardingFlowSteps({
     return (
       <MochiStoryScreen
         beat={MOCHI_STORY.mochiIntro}
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
         onContinue={() => goToStep('mochiMoved', 'continue')}
       />
     );
@@ -1032,24 +1026,13 @@ function OnboardingFlowSteps({
       <BrainScienceScreen
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('modernBreathing', 'continue')}
+        onContinue={() => goToStep('name', 'continue')}
         onBack={() =>
           goToStep(
             isOnlyCustomIntent ? 'acquisitionSource' : 'intentProjection',
             'back',
           )
         }
-      />
-    );
-  }
-
-  if (step === 'modernBreathing') {
-    return (
-      <ModernBreathingScreen
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
-        onContinue={() => goToStep('breathPrimer', 'continue')}
-        onBack={() => goToStep('brainScience', 'back')}
       />
     );
   }
@@ -1064,7 +1047,7 @@ function OnboardingFlowSteps({
         onContinue={() => goToStep('greeting', 'continue', {
           has_display_name: name.trim().length > 0,
         })}
-        onBack={() => goToStep('breathPrimer', 'back')}
+        onBack={() => goToStep('brainScience', 'back')}
         onSkip={() => {
           setName('');
           goToStep('greeting', 'skip');
@@ -1589,18 +1572,6 @@ function OnboardingFlowSteps({
           void skipNotifications();
         }}
         onBack={() => goToStep('attPriming', 'back')}
-      />
-    );
-  }
-
-  if (step === 'breathPrimer') {
-    return (
-      <BreathPrimerScreen
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
-        onContinue={() => goToStep('name', 'continue')}
-        onBack={() => goToStep('modernBreathing', 'back')}
-        onSkip={() => goToStep('name', 'skip')}
       />
     );
   }
