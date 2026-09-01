@@ -35,23 +35,27 @@ export function PaywallChoosePlanStep({
       ) : (
         <View style={[styles.planCards, !hasAnnualTrial && styles.planCardsNoTrial]}>
           {annualPackage ? (
-            <PlanCard
-              pkg={annualPackage}
-              isSelected={selectedPackageId === 'annual'}
-              onSelect={onSelectPackage}
-              savingsPercent={savingsPercent}
-              comparePerWeek={weeklyPackage ? computePerWeek(weeklyPackage) : null}
-              light
-            />
+            <View style={styles.annualCard}>
+              <PlanCard
+                pkg={annualPackage}
+                isSelected={selectedPackageId === 'annual'}
+                onSelect={onSelectPackage}
+                savingsPercent={savingsPercent}
+                comparePerWeek={weeklyPackage ? computePerWeek(weeklyPackage) : null}
+                light
+              />
+            </View>
           ) : null}
           {weeklyPackage ? (
-            <PlanCard
-              pkg={weeklyPackage}
-              isSelected={selectedPackageId === 'weekly'}
-              onSelect={onSelectPackage}
-              savingsPercent={null}
-              light
-            />
+            <View style={styles.weeklyCard}>
+              <PlanCard
+                pkg={weeklyPackage}
+                isSelected={selectedPackageId === 'weekly'}
+                onSelect={onSelectPackage}
+                savingsPercent={null}
+                light
+              />
+            </View>
           ) : null}
         </View>
       )}

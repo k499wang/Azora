@@ -18,42 +18,61 @@ interface TimelineStep {
  *
  * The rail runs behind all three icons rather than joining separate dots,
  * because the trial is a single stretch of time — three dots read as three
- * unrelated events. It fades out at the foot instead of stopping square: an
- * end-stop says the relationship ends on billing day, which is the opposite of
- * what the last step is telling them.
+ * unrelated events. The lower section changes colour at the final milestone
+ * so the trial period and its billing boundary stay visually distinct.
  */
-function Timeline({ steps }: { steps: TimelineStep[] }) {
+function Timeline({
+  steps,
+  showTrialTail,
+}: {
+  steps: TimelineStep[];
+  showTrialTail: boolean;
+}) {
   return (
     <View style={styles.timeline}>
-      <LinearGradient
-        pointerEvents="none"
-        colors={[
-          colors.primary.blue600,
-          colors.primary.blue600,
-          colors.success[300],
-          colors.paywall.trialRailTail,
-        ]}
-        locations={[0, 0.7, 0.9, 1]}
-        style={styles.timelineRail}
-      />
+      {steps.map((step, index) => {
+        const isFirst = index === 0;
+        const isLast = index === steps.length - 1;
 
-      {steps.map((step, index) => (
-        <View
-          key={step.label}
-          style={[
-            styles.timelineRow,
-            index === steps.length - 1 && styles.timelineRowLast,
-          ]}
-        >
-          <View style={styles.timelineIconSlot}>
-            <Icon name={step.icon} size={ICON_SIZE} color={colors.neutral[0]} />
+        return (
+          <View
+            key={step.label}
+            style={[styles.timelineRow, isLast && styles.timelineRowLast]}
+          >
+            {showTrialTail && isLast ? (
+              <LinearGradient
+                pointerEvents="none"
+                colors={[
+                  colors.success[500],
+                  colors.success[300],
+                  'rgba(123,240,174,0)',
+                ]}
+                locations={[0, 0.5, 1]}
+                style={styles.timelineRailTail}
+              />
+            ) : null}
+            <View
+              pointerEvents="none"
+              style={[
+                styles.timelineRailSegment,
+                isFirst && styles.timelineRailSegmentFirst,
+                !isLast && styles.timelineRailSegmentBridge,
+                isLast &&
+                  (showTrialTail
+                    ? styles.timelineRailCap
+                    : styles.timelineRailSegmentLast),
+              ]}
+            />
+            <View style={styles.timelineIconSlot}>
+              <Icon name={step.icon} size={ICON_SIZE} color={colors.neutral[0]} />
+            </View>
+            <View style={styles.timelineCopy}>
+              <Text style={styles.timelineLabel}>{step.label}</Text>
+              <Text style={styles.timelineBody}>{step.body}</Text>
+            </View>
           </View>
-          <View style={styles.timelineCopy}>
-            <Text style={styles.timelineLabel}>{step.label}</Text>
-            <Text style={styles.timelineBody}>{step.body}</Text>
-          </View>
-        </View>
-      ))}
+        );
+      })}
     </View>
   );
 }
@@ -74,24 +93,24 @@ export function PaywallTrialStep({
     ? [
         {
           label: 'Day 1: Today',
-          body: 'Unlock everything — unlimited resets and all your health insights.',
-          icon: 'sparkle',
+          body: 'Your full personalized plan, unlimited exercises and all your health insights.',
+          icon: 'lock',
         },
         {
           label: `Day ${reminderDays}: Reminder`,
           body: "We'll send you a reminder that your trial is ending soon.",
-          icon: 'message',
+          icon: 'bell',
         },
         {
           label: `Day ${billingDay}: Billing starts`,
           body: "You'll be charged unless you cancel anytime before.",
-          icon: 'calendar',
+          icon: 'star',
         },
       ]
     : [
         {
-          label: 'Today',
-          body: 'Unlock everything — unlimited resets and all your health insights.',
+          label: 'Day 1: Today',
+          body: 'Your full personalized plan, unlimited exercises and all your health insights.',
           icon: 'sparkle',
         },
         {
@@ -117,7 +136,7 @@ export function PaywallTrialStep({
           )}
         </Text>
       </View>
-      <Timeline steps={steps} />
+      <Timeline steps={steps} showTrialTail={hasAnnualTrial} />
     </View>
   );
 }
