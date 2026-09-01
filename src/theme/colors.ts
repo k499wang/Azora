@@ -190,9 +190,6 @@ export const colors = {
     switchTrack: 'rgba(255,255,255,0.20)',
     textMuted: 'rgba(255,255,255,0.72)',
     textFaint: 'rgba(255,255,255,0.58)',
-    // success[300] at zero alpha. The trial rail dissolves rather than stopping
-    // square — a hard end-stop reads as the relationship ending on billing day.
-    trialRailTail: 'rgba(134,239,172,0)',
   },
 
   surface: {

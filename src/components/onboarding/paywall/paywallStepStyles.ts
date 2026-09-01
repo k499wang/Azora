@@ -194,20 +194,44 @@ export const paywallStepStyles = StyleSheet.create({
     paddingTop: spacing.md,
     paddingBottom: spacing.md,
   },
-  // One unbroken rail behind every icon rather than dots joined by segments:
-  // the trial is a single stretch of time, and three separate dots read as
-  // three unrelated events. Absolutely positioned so the rows above it can be
-  // any height — copy that wraps to a third line cannot desync the two columns.
-  timelineRail: {
+  // Each row owns its solid rail segment so wrapped copy determines the rail's
+  // height without layout measurement. Non-final segments bridge the row gap.
+  timelineRailSegment: {
     position: 'absolute',
-    left: spacing.md,
+    left: 0,
     top: 0,
-    bottom: 0,
     width: TIMELINE_RAIL_WIDTH,
-    borderRadius: TIMELINE_RAIL_WIDTH / 2,
     borderCurve: 'continuous',
+    backgroundColor: colors.primary.blue600,
+  },
+  timelineRailSegmentFirst: {
+    top: -spacing.md,
+    borderTopLeftRadius: TIMELINE_RAIL_WIDTH / 2,
+    borderTopRightRadius: TIMELINE_RAIL_WIDTH / 2,
+  },
+  timelineRailSegmentBridge: {
+    bottom: -spacing.md,
+  },
+  timelineRailSegmentLast: {
+    bottom: -spacing.md,
+    borderBottomLeftRadius: TIMELINE_RAIL_WIDTH / 2,
+    borderBottomRightRadius: TIMELINE_RAIL_WIDTH / 2,
+  },
+  timelineRailCap: {
+    height:
+      typography.heading.heading1.lineHeight / 2 + TIMELINE_RAIL_WIDTH / 2,
+    borderBottomLeftRadius: TIMELINE_RAIL_WIDTH / 2,
+    borderBottomRightRadius: TIMELINE_RAIL_WIDTH / 2,
+  },
+  timelineRailTail: {
+    position: 'absolute',
+    left: 0,
+    top: typography.heading.heading1.lineHeight / 2,
+    bottom: -spacing.md,
+    width: TIMELINE_RAIL_WIDTH,
   },
   timelineRow: {
+    position: 'relative',
     flexDirection: 'row',
     gap: spacing.md,
     marginBottom: spacing.md,
@@ -229,8 +253,10 @@ export const paywallStepStyles = StyleSheet.create({
   },
   timelineLabel: {
     ...typography.heading.heading1,
+    fontSize: 20,
+    lineHeight: 26,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
+    fontWeight: '600',
     color: colors.text.primary,
   },
   timelineBody: {
@@ -319,6 +345,13 @@ export const paywallStepStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'stretch',
     gap: spacing.sm,
+  },
+  annualCard: {
+    flex: 1,
+  },
+  weeklyCard: {
+    flex: 1.35,
+    marginTop: spacing.xs,
   },
   planCardsNoTrial: {
     marginTop: spacing.lg,
