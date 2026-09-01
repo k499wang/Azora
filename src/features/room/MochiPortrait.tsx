@@ -1,6 +1,6 @@
 import { memo } from 'react';
 import { StyleSheet, View } from 'react-native';
-import Svg, { Polyline } from 'react-native-svg';
+import Svg, { Path, Polyline } from 'react-native-svg';
 import { colors } from '../../theme/colors';
 import MochiMouth, { type MochiMouthKind } from './MochiMouth';
 
@@ -24,15 +24,11 @@ import MochiMouth, { type MochiMouthKind } from './MochiMouth';
 const BODY_W = 56;
 const BODY_H = 66;
 const BODY_LIFT = 4;
-/**
- * His corners at rest. The top is a full dome — `BODY_TOP_ROUND` is exactly
- * half his width — and the bottom is nearly one, so the short straight run left
- * on each side reads as a soft loaf rather than a capsule.
- */
-const BODY_TOP_ROUND = BODY_W / 2;
-const BODY_ROUND = 26;
 /** the line that wraps him; the eyes and mouth are the same ink */
 const INK = 1.6;
+/** A subtly narrow crown flowing into a full lower half and broad soft base. */
+const BODY_PATH =
+  'M28 1 C13 1 3 11 3 27 C3 34 2 40 2 45 C2 56 13 65 28 65 C43 65 54 56 54 45 C54 40 53 34 53 27 C53 11 43 1 28 1 Z';
 const FOOT_W = 17;
 const FOOT_H = 11.5;
 const FOOT_X = 11.5;
@@ -46,11 +42,13 @@ const SHADOW_H = 17;
 const NUB_W = 11;
 const NUB_H = 9.5;
 const NUB_OUT = 5.5;
-const NUB_TOP = 39;
+const NUB_TOP = 37;
 /** the right nub hangs a shade lower — he is not a corporate icon */
 const NUB_DROP = 1;
 const EYE_SHIFT = 1.5;
-const EYE_DX = 11;
+const EYE_DX = 12;
+const EYE_RISE = 1;
+const MOUTH_RISE = 0.5;
 
 /** the centre of the face, in body units */
 const FACE_CX = BODY_W / 2 + EYE_SHIFT;
@@ -144,11 +142,6 @@ interface Pose {
   feet?: [FootOffset, FootOffset];
   /** how much of the eye a lowered lid covers, 0 to 1 */
   lid?: number;
-  /**
-   * His bottom corners, in body units. He rests on `BODY_ROUND`, half his
-   * height, while an expression can still override the silhouette locally.
-   */
-  round?: number;
 }
 
 interface Sprite {
@@ -236,7 +229,7 @@ const SPRITES: Record<MochiExpression, Sprite> = {
   /** eyes screwed shut, lips pushing the air out */
   puffed: {
     face: {
-      eye: { w: 4.6, h: 6.4, top: 20, chevron: true, dx: 11 },
+      eye: { w: 4.6, h: 6.4, top: 20, chevron: true, dx: 12 },
       mouth: { w: 5.4, h: 6.4, top: 26.5, kind: 'open' },
     },
     /** upright and planted, so all the effort reads in the face */
@@ -303,10 +296,10 @@ export function getMochiSideroom(
 }
 
 /** the blush, out past the eyes and a little below them */
-const CHEEK_W = 9.5;
-const CHEEK_H = 6.2;
+const CHEEK_W = 8;
+const CHEEK_H = 8;
 const CHEEK_DX = 17;
-const CHEEK_TOP = 28.5;
+const CHEEK_TOP = 27.6;
 
 const EYE_STROKE = 1.8;
 const LENS = 11;
@@ -353,7 +346,6 @@ function MochiPortrait({
   const stretch = pose.stretch ?? 1;
   const lift = pose.lift ?? 0;
   const lid = pose.lid ?? 0;
-  const round = pose.round ?? BODY_ROUND;
   const feet = pose.feet ?? RESTING_FEET;
   const bodyW = BODY_W / stretch;
   const bodyH = BODY_H * stretch;
@@ -458,14 +450,22 @@ function MochiPortrait({
               top: 0,
               width: bodyW * u,
               height: bodyH * u,
-              borderTopLeftRadius: BODY_TOP_ROUND * u,
-              borderTopRightRadius: BODY_TOP_ROUND * u,
-              borderBottomLeftRadius: round * u,
-              borderBottomRightRadius: round * u,
-              borderWidth: INK * u,
             },
           ]}
         >
+          <Svg
+            width={bodyW * u}
+            height={bodyH * u}
+            viewBox={`0 0 ${BODY_W} ${BODY_H}`}
+            preserveAspectRatio="none"
+          >
+            <Path
+              d={BODY_PATH}
+              fill={colors.roomBlob.body}
+              stroke={colors.roomBlob.ink}
+              strokeWidth={INK}
+            />
+          </Svg>
           {[-1, 1].map((side) => (
             <View
               key={`cheek-${side}`}
@@ -512,7 +512,7 @@ function MochiPortrait({
                   {
                     left:
                       ((faceCenterX + offset - face.eye.w / 2) * fx - INK) * u,
-                    top: (top * fy - INK) * u,
+                    top: ((top - EYE_RISE) * fy - INK) * u,
                     width: face.eye.w * u,
                     height: h * u,
                     borderTopLeftRadius: (face.eye.w / 2) * u,
@@ -547,7 +547,7 @@ function MochiPortrait({
               styles.mouth,
               {
                 left: ((faceCenterX - face.mouth.w / 2) * fx - INK) * u,
-                top: (face.mouth.top * fy - INK) * u,
+                top: ((face.mouth.top - MOUTH_RISE) * fy - INK) * u,
               },
             ]}
           >
@@ -616,7 +616,7 @@ function ChevronEye({
       style={{
         position: 'absolute',
         left: (centerX - boxW / 2 - INK) * u,
-        top: ((eye.top - pad) * fy - INK) * u,
+        top: ((eye.top - EYE_RISE - pad) * fy - INK) * u,
       }}
       width={boxW * u}
       height={boxH * fy * u}
@@ -638,7 +638,7 @@ function ChevronEye({
 /** rims around the eyes, a bridge between them and a stub arm on each side */
 function Glasses({ u, fx, fy }: { u: number; fx: number; fy: number }) {
   /** the middle of the eye row he wears them over */
-  const cy = 24;
+  const cy = 23;
 
   return (
     <>
@@ -986,8 +986,6 @@ const styles = StyleSheet.create({
   },
   body: {
     position: 'absolute',
-    backgroundColor: colors.roomBlob.body,
-    borderColor: colors.roomBlob.ink,
   },
   eye: {
     position: 'absolute',

@@ -17,6 +17,7 @@ import Animated, {
   withTiming,
   type SharedValue,
 } from 'react-native-reanimated';
+import Svg, { Path } from 'react-native-svg';
 import Icon from '../../components/common/icons/Icon';
 import { colors } from '../../theme/colors';
 import { duration, spring } from '../../theme/motion';
@@ -75,16 +76,17 @@ const STEP_RATE = Math.PI * 2 * 0.95;
 /**
  * Blob geometry, in viewBox units — scaled to the rendered room by `u`.
  *
- * He is a tall soft loaf drawn with one ink line all the way round: a full dome
- * on top, an almost-full one underneath, and his weight low. Nothing about him
- * is anatomy — the nubs and the feet are lobes stuck on a single shape.
+ * He is a tall soft oval drawn with one ink line all the way round. The crown
+ * is a touch narrower than his full lower half, with one continuous curve into
+ * a broad soft base. Nothing about him is anatomy — the nubs and the feet are
+ * lobes stuck on a single shape.
  */
 const BODY_W = BLOB_HALF_W * 2;
 const BODY_H = 66;
-const BODY_TOP_ROUND = BODY_W / 2;
-const BODY_BOTTOM_ROUND = 26;
 /** the line that wraps him; the eyes and mouth are the same ink */
 const INK = 1.6;
+const BODY_PATH =
+  'M28 1 C13 1 3 11 3 27 C3 34 2 40 2 45 C2 56 13 65 28 65 C43 65 54 56 54 45 C54 40 53 34 53 27 C53 11 43 1 28 1 Z';
 /**
  * How far the body floats above the ground point, which is both how much of the
  * feet shows below it and — the other way round — how deeply they tuck into it.
@@ -106,7 +108,7 @@ const SHADOW_H = 17;
 const NUB_W = 11;
 const NUB_H = 9.5;
 const NUB_OUT = 5.5;
-const NUB_TOP = 39;
+const NUB_TOP = 37;
 /** the right nub hangs a shade lower — he is not a corporate icon */
 const NUB_DROP = 1;
 /** the sprite's box: the body plus whatever the nubs stick out past it */
@@ -118,18 +120,18 @@ const SPRITE_W = BODY_W + NUB_OUT * 2;
  */
 const EYE_W = 5.4;
 const EYE_H = 6;
-const EYE_TOP = 21;
-const EYE_DX = 11;
+const EYE_TOP = 20;
+const EYE_DX = 12;
 /** the whole face sits off-centre so the horizontal flip reads as a turn */
 const EYE_SHIFT = 1.5;
 const MOUTH_W = 13;
 const MOUTH_H = 6;
-const MOUTH_TOP = 26;
+const MOUTH_TOP = 25.5;
 /** the blush, out past the eyes and a little below them */
-const CHEEK_W = 9.5;
-const CHEEK_H = 6.2;
+const CHEEK_W = 8;
+const CHEEK_H = 8;
 const CHEEK_DX = 17;
-const CHEEK_TOP = 28.5;
+const CHEEK_TOP = 27.6;
 const SPARKLE = 17;
 
 /**
@@ -582,6 +584,18 @@ const RoomBlob = forwardRef<RoomBlobHandle, Props>(function RoomBlob(
           <View style={[styles.nub, styles.leftNub]} />
           <View style={[styles.nub, styles.rightNub]} />
           <View style={styles.body}>
+            <Svg
+              width={BODY_W * u}
+              height={BODY_H * u}
+              viewBox={`0 0 ${BODY_W} ${BODY_H}`}
+            >
+              <Path
+                d={BODY_PATH}
+                fill={colors.roomBlob.body}
+                stroke={colors.roomBlob.ink}
+                strokeWidth={INK}
+              />
+            </Svg>
             <Animated.View style={[styles.cheek, styles.leftCheek, cheekStyle]} />
             <Animated.View
               style={[styles.cheek, styles.rightCheek, cheekStyle]}
@@ -757,13 +771,6 @@ function createStyles(u: number) {
       top: 0,
       width: BODY_W * u,
       height: BODY_H * u,
-      borderTopLeftRadius: BODY_TOP_ROUND * u,
-      borderTopRightRadius: BODY_TOP_ROUND * u,
-      borderBottomLeftRadius: BODY_BOTTOM_ROUND * u,
-      borderBottomRightRadius: BODY_BOTTOM_ROUND * u,
-      backgroundColor: colors.roomBlob.body,
-      borderWidth: INK * u,
-      borderColor: colors.roomBlob.ink,
     },
     // No shadow: this view is re-composited on every frame the blob walks, and
     // an unrasterised shadow makes the compositor redraw it each time — which
