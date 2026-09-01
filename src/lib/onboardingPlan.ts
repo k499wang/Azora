@@ -10,7 +10,6 @@
  * that lands later is invisible to someone deciding whether to keep the app.
  */
 
-import { estimateLungAge, MIN_LUNG_AGE } from './lungAge';
 import {
   INTENT_TECHNIQUE,
   isOnboardingIntent,
@@ -30,30 +29,10 @@ export interface PlanAction {
   minutes: number;
 }
 
-export interface PlanProjection {
-  baselineSeconds: number;
-  lowSeconds: number;
-  highSeconds: number;
-}
-
-export type LungAgeGoal =
-  | {
-      mode: 'lower';
-      currentYears: number;
-      targetYears: number;
-    }
-  | {
-      mode: 'maintain';
-      currentYears: typeof MIN_LUNG_AGE;
-      targetYears: typeof MIN_LUNG_AGE;
-    };
-
 export interface OnboardingPlan {
   actions: PlanAction[];
   /** The goal the plan was built around, so UI can speak in the user's terms. */
   intent: OnboardingIntent;
-  projection: PlanProjection | null;
-  lungAgeGoal: LungAgeGoal | null;
   fullDailyMinutes: number;
 }
 
@@ -69,7 +48,6 @@ export interface PlanInputs {
   wakeTimeMinutes: number;
   /** User's usual sleep time, in minutes from midnight. */
   sleepTimeMinutes: number;
-  breathHoldSeconds: number | null;
 }
 
 const MINUTES_PER_DAY = 24 * 60;
@@ -170,36 +148,6 @@ export function sessionTimeFor(intents: string[], sleepQuality: number): number 
   return sleepQuality <= 4 ? NIGHT_MIN : EVENING_MIN;
 }
 
-/**
- * A conservative first-week range for a repeat static hold.
- *
- * Untrained holds improve quickly at first, mostly from CO2 tolerance and
- * technique rather than physiology, and the effect is proportional rather than
- * absolute. The range is set low enough that a user who actually practises
- * should clear it, because a projection they miss on Day 7 is worse than no
- * projection at all.
- */
-export function projectHold(baselineSeconds: number): PlanProjection {
-  const low = Math.max(baselineSeconds + 2, Math.round(baselineSeconds * 1.06));
-  const high = Math.min(
-    baselineSeconds + 20,
-    Math.max(low + 3, Math.round(baselineSeconds * 1.16)),
-  );
-  return { baselineSeconds, lowSeconds: low, highSeconds: high };
-}
-
-const MONTHS = [
-  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-];
-
-/** The calendar day the Day 7 re-test lands on, counting today as Day 1. */
-export function formatRetestDate(from: Date): string {
-  const date = new Date(from.getTime());
-  date.setDate(date.getDate() + 6);
-  return `${MONTHS[date.getMonth()]} ${date.getDate()}`;
-}
-
 export function formatPlanTime(minutesFromMidnight: number): string {
   const total = ((Math.round(minutesFromMidnight) % (24 * 60)) + 24 * 60) % (24 * 60);
   const hour24 = Math.floor(total / 60);
@@ -243,8 +191,8 @@ export function fromClockString(value: string): number | null {
 
 /**
  * Times the user picked for themselves on the plan screen. Applied on top of a
- * freshly built plan so the rest of the plan — techniques, durations,
- * projection — stays derived from their answers.
+ * freshly built plan so the rest of the plan — techniques and durations —
+ * stays derived from their answers.
  */
 export type PlanTimeOverrides = Partial<Record<PlanActionId, number>>;
 
@@ -307,37 +255,9 @@ export function buildOnboardingPlan(inputs: PlanInputs): OnboardingPlan {
   ] satisfies PlanAction[];
   actions.sort((a, b) => a.minutesFromMidnight - b.minutesFromMidnight);
 
-  const projection =
-    inputs.breathHoldSeconds != null && inputs.breathHoldSeconds > 0
-      ? projectHold(Math.round(inputs.breathHoldSeconds))
-      : null;
-  let lungAgeGoal: LungAgeGoal | null = null;
-
-  if (projection && inputs.breathHoldSeconds != null) {
-    const currentYears = estimateLungAge(
-      inputs.breathHoldSeconds,
-      inputs.age,
-    ).years;
-    const targetYears = estimateLungAge(
-      projection.highSeconds,
-      inputs.age,
-    ).years;
-
-    if (targetYears < currentYears) {
-      lungAgeGoal = { mode: 'lower', currentYears, targetYears };
-    } else if (
-      currentYears === MIN_LUNG_AGE &&
-      targetYears === MIN_LUNG_AGE
-    ) {
-      lungAgeGoal = { mode: 'maintain', currentYears, targetYears };
-    }
-  }
-
   return {
     actions,
     intent,
-    projection,
-    lungAgeGoal,
     fullDailyMinutes: minutes + handPickedMinutes + CHECK_IN_MINUTES,
   };
 }

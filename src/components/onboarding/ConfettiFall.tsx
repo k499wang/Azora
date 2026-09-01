@@ -54,13 +54,16 @@ function ConfettiPiece({
   const anim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    Animated.timing(anim, {
+    const fall = Animated.timing(anim, {
       toValue: 1,
       duration,
       delay,
       easing: Easing.linear,
       useNativeDriver: true,
-    }).start();
+    });
+
+    fall.start();
+    return () => fall.stop();
   }, [anim, delay, duration]);
 
   const translateY = anim.interpolate({

@@ -22,7 +22,6 @@ const INTENT_PLAN_HIGHLIGHT: Record<OnboardingIntent, string> = {
 export interface PlanHighlightInputs {
   plan: OnboardingPlan;
   growthArea: MindMapScore;
-  holdSeconds: number | null;
 }
 
 /**

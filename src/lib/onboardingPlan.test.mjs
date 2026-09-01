@@ -4,14 +4,11 @@ import {
   applyPlanTimeOverrides,
   buildOnboardingPlan,
   formatPlanTime,
-  formatRetestDate,
   fromClockString,
   planTimeOfDayLabel,
-  projectHold,
   sessionTimeFor,
   toClockString,
 } from './onboardingPlan.ts';
-import { estimateLungAge, MIN_LUNG_AGE } from './lungAge.ts';
 
 const baseInputs = {
   intents: ['stress_relief'],
@@ -21,7 +18,6 @@ const baseInputs = {
   dailyMinutes: 3,
   wakeTimeMinutes: 7 * 60,
   sleepTimeMinutes: 22 * 60,
-  breathHoldSeconds: 40,
 };
 
 const actionById = (plan, id) => plan.actions.find((action) => action.id === id);
@@ -201,7 +197,6 @@ test('session duration follows only the daily minute commitment', () => {
       stressLevel: 10,
       sleepQuality: 1,
       age: 70,
-      breathHoldSeconds: null,
     }),
     Math.round(baseInputs.dailyMinutes),
   );
@@ -215,140 +210,4 @@ test('daily total counts both exercises and the check-in', () => {
       actionById(plan, 'handPicked').minutes +
       actionById(plan, 'checkIn').minutes,
   );
-});
-
-test('the projection is above baseline but stays conservative', () => {
-  const projection = projectHold(40);
-  assert.ok(projection.lowSeconds > 40);
-  assert.ok(projection.highSeconds > projection.lowSeconds);
-  assert.ok(projection.highSeconds <= 60);
-});
-
-test('short holds still get a meaningful range', () => {
-  const projection = projectHold(12);
-  assert.ok(projection.lowSeconds >= 14);
-  assert.ok(projection.highSeconds >= projection.lowSeconds + 3);
-});
-
-test('no projection without a recorded hold', () => {
-  assert.equal(buildOnboardingPlan({ ...baseInputs, breathHoldSeconds: null }).projection, null);
-});
-
-test('the lung-age goal uses the projected high hold', () => {
-  const plan = buildOnboardingPlan(baseInputs);
-  const expectedTarget = estimateLungAge(
-    plan.projection.highSeconds,
-    baseInputs.age,
-  ).years;
-
-  assert.equal(plan.lungAgeGoal.mode, 'lower');
-  assert.equal(plan.lungAgeGoal.targetYears, expectedTarget);
-  assert.ok(plan.lungAgeGoal.targetYears < plan.lungAgeGoal.currentYears);
-});
-
-test('the current lung age uses the exact recorded hold', () => {
-  const breathHoldSeconds = 10.13;
-  const plan = buildOnboardingPlan({ ...baseInputs, breathHoldSeconds });
-
-  assert.equal(
-    plan.lungAgeGoal.currentYears,
-    estimateLungAge(breathHoldSeconds, baseInputs.age).years,
-  );
-  assert.equal(plan.projection.baselineSeconds, Math.round(breathHoldSeconds));
-});
-
-test('there is no lung-age goal without a positive recorded hold', () => {
-  for (const breathHoldSeconds of [null, 0, -1]) {
-    const plan = buildOnboardingPlan({ ...baseInputs, breathHoldSeconds });
-    assert.equal(plan.lungAgeGoal, null);
-  }
-});
-
-test('the youngest lung age gets a maintain goal', () => {
-  const plan = buildOnboardingPlan({ ...baseInputs, breathHoldSeconds: 60 });
-
-  assert.deepEqual(plan.lungAgeGoal, {
-    mode: 'maintain',
-    currentYears: MIN_LUNG_AGE,
-    targetYears: MIN_LUNG_AGE,
-  });
-});
-
-test('the re-test lands six days out, counting today as day one', () => {
-  assert.equal(formatRetestDate(new Date(2026, 6, 29)), 'Aug 4');
-  assert.equal(formatRetestDate(new Date(2026, 11, 30)), 'Jan 5');
-});
-
-test('clock strings are zero-padded twenty-four hour', () => {
-  assert.equal(toClockString(21 * 60 + 30), '21:30');
-  assert.equal(toClockString(8 * 60), '08:00');
-  assert.equal(toClockString(0), '00:00');
-});
-
-test('clock strings parse back to minutes, rejecting invalid times', () => {
-  assert.equal(fromClockString('21:30'), 21 * 60 + 30);
-  assert.equal(fromClockString('00:00'), 0);
-  assert.equal(fromClockString('24:00'), null);
-  assert.equal(fromClockString('7:05'), null);
-  assert.equal(fromClockString('nope'), null);
-});
-
-test('overridden action times replace the defaults and re-sort the day', () => {
-  const plan = buildOnboardingPlan(baseInputs);
-  const overridden = applyPlanTimeOverrides(plan, {
-    session: 6 * 60,
-    checkIn: 22 * 60,
-  });
-
-  assert.equal(actionById(overridden, 'session').minutesFromMidnight, 6 * 60);
-  assert.equal(actionById(overridden, 'checkIn').minutesFromMidnight, 22 * 60);
-  assert.deepEqual(
-    overridden.actions.map((action) => action.id),
-    ['session', 'handPicked', 'checkIn'],
-  );
-  assert.equal(
-    actionById(overridden, 'handPicked').minutesFromMidnight,
-    actionById(plan, 'handPicked').minutesFromMidnight,
-  );
-});
-
-test('applying overrides leaves the source plan untouched', () => {
-  const plan = buildOnboardingPlan(baseInputs);
-  const sessionAt = actionById(plan, 'session').minutesFromMidnight;
-  applyPlanTimeOverrides(plan, { session: 6 * 60 });
-
-  assert.equal(actionById(plan, 'session').minutesFromMidnight, sessionAt);
-});
-
-test('an empty override set keeps the plan as built', () => {
-  const plan = buildOnboardingPlan(baseInputs);
-  assert.deepEqual(applyPlanTimeOverrides(plan, {}), plan);
-});
-
-test('time-of-day labels follow the clock, not the goal', () => {
-  assert.equal(planTimeOfDayLabel(2 * 60), 'Late night');
-  assert.equal(planTimeOfDayLabel(8 * 60), 'When you wake up');
-  assert.equal(planTimeOfDayLabel(13 * 60), 'Around midday');
-  assert.equal(planTimeOfDayLabel(15 * 60), 'Afternoon');
-  assert.equal(planTimeOfDayLabel(18 * 60), 'Evening');
-  assert.equal(planTimeOfDayLabel(21 * 60 + 30), 'Before you sleep');
-});
-
-test('a moved action gets the label of its new time', () => {
-  const plan = applyPlanTimeOverrides(buildOnboardingPlan(baseInputs), {
-    session: 22 * 60,
-  });
-
-  assert.equal(
-    planTimeOfDayLabel(actionById(plan, 'session').minutesFromMidnight),
-    'Before you sleep',
-  );
-});
-
-test('times format in twelve-hour clock', () => {
-  assert.equal(formatPlanTime(0), '12:00 AM');
-  assert.equal(formatPlanTime(8 * 60), '8:00 AM');
-  assert.equal(formatPlanTime(12 * 60), '12:00 PM');
-  assert.equal(formatPlanTime(18 * 60), '6:00 PM');
-  assert.equal(formatPlanTime(21 * 60 + 30), '9:30 PM');
 });

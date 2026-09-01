@@ -24,8 +24,7 @@ export type OnboardingStep =
   | 'heartWorry'
   | 'agreement'
   | 'assessmentReflection'
-  | 'breathHoldBenefits'
-  | 'lungCapacity'
+  | 'firstReset'
   | 'age'
   | 'gender'
   | 'consistency'
@@ -45,11 +44,8 @@ export type OnboardingStep =
   | 'notifications'
   | 'paywall';
 
-export interface OnboardingBreathHoldResult {
-  holdSeconds: number;
-  score: number;
-  lungAgeYears: number;
-}
+/** The answer to "how do you feel?" straight after the first reset. */
+export type OnboardingMood = 'calmer' | 'clearer' | 'same' | 'restless';
 
 export interface OnboardingBaselineResult {
   completed: boolean;

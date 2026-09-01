@@ -41,8 +41,7 @@ import RecommendedExerciseScreen from './screens/RecommendedExerciseScreen';
 import OnboardingPaywallScreen from './screens/OnboardingPaywallScreen';
 import ExitOfferSheet from '../paywall/ExitOfferSheet';
 import type { ExitOfferTrigger } from '../../services/analytics/exitOffer';
-import BreathHoldScreen from './screens/BreathHoldScreen';
-import BreathHoldBenefitsScreen from './screens/BreathHoldBenefitsScreen';
+import FirstResetScreen from './screens/FirstResetScreen';
 import DoctorReferralScreen, {
   type DoctorReferral,
 } from './screens/DoctorReferralScreen';
@@ -66,7 +65,7 @@ import AcquisitionSourceScreen from './screens/AcquisitionSourceScreen';
 import { useSaveOnboardingSurveyMutation } from '../../queries/profile/useSaveOnboardingSurveyMutation';
 import type {
   CompletedOnboardingBaselineResult,
-  OnboardingBreathHoldResult,
+  OnboardingMood,
   OnboardingIntent,
   OnboardingStep,
 } from './types';
@@ -140,7 +139,6 @@ export interface OnboardingFlowResult {
   gender: GenderOption['id'] | null;
   dailyMinutes: number | null;
   defaultTechniqueId: string | null;
-  breathHold: OnboardingBreathHoldResult | null;
 }
 
 async function syncPostAttAttribution(): Promise<void> {
@@ -184,8 +182,7 @@ const STEP_ORDER: OnboardingStep[] = [
   'scienceCredibility',
   'age',
   'gender',
-  'breathHoldBenefits',
-  'lungCapacity',
+  'firstReset',
   'dailyTime',
   'wakeTime',
   'sleepTime',
@@ -298,6 +295,9 @@ function OnboardingFlowSteps({
   useEffect(() => releaseMochiReplayPause, [releaseMochiReplayPause]);
 
   const [selectedIntents, setSelectedIntents] = useState<OnboardingIntent[]>([]);
+  const [firstResetMood, setFirstResetMood] = useState<OnboardingMood | null>(
+    null,
+  );
   const [primaryIntent, setPrimaryIntent] = useState<OnboardingIntent | null>(
     null,
   );
@@ -344,7 +344,6 @@ function OnboardingFlowSteps({
   );
   const [baseline, setBaseline] =
     useState<CompletedOnboardingBaselineResult | null>(null);
-  const [breathHold, setBreathHold] = useState<OnboardingBreathHoldResult | null>(null);
   const [planTimeOverrides, setPlanTimeOverrides] = useState<PlanTimeOverrides>(
     {},
   );
@@ -468,7 +467,7 @@ function OnboardingFlowSteps({
       has_age: (profile?.age ?? null) != null,
       has_gender: (profile?.gender ?? null) != null,
       has_daily_minutes: (profile?.dailyMinutes ?? null) != null,
-      has_lung_capacity: (profile?.breathHold ?? null) != null,
+      first_reset_mood: firstResetMood,
       has_baseline: baseline != null,
     };
   };
@@ -687,7 +686,6 @@ function OnboardingFlowSteps({
         primaryIntent != null
           ? techniqueForIntent(primaryIntent)
           : initialSavedProfile?.defaultTechniqueId ?? null,
-      breathHold,
     };
   };
 
@@ -706,7 +704,6 @@ function OnboardingFlowSteps({
       selectedIntentCount: selectedIntents.length,
       hasDisplayName: result.displayName != null,
       hasDefaultTechnique: result.defaultTechniqueId != null,
-      hasLungCapacity: result.breathHold != null,
     });
 
     try {
@@ -1202,29 +1199,19 @@ function OnboardingFlowSteps({
     );
   }
 
-  if (step === 'breathHoldBenefits') {
+  if (step === 'firstReset') {
     return (
-      <BreathHoldBenefitsScreen
+      <FirstResetScreen
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('lungCapacity', 'continue')}
-        onBack={() => goToStep('gender', 'back')}
-        onSkip={() => goToStep('lungCapacity', 'skip')}
-      />
-    );
-  }
-
-  if (step === 'lungCapacity') {
-    return (
-      <BreathHoldScreen
-        age={age}
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
-        onContinue={(result) => {
-          setBreathHold(result);
-          goToStep('dailyTime', 'continue', { has_lung_capacity: true });
+        onContinue={(mood) => {
+          setFirstResetMood(mood);
+          goToStep('dailyTime', 'continue', {
+            has_first_reset: true,
+            first_reset_mood: mood,
+          });
         }}
-        onBack={() => goToStep('breathHoldBenefits', 'back')}
+        onBack={() => goToStep('gender', 'back')}
         onSkip={() => goToStep('dailyTime', 'skip')}
       />
     );
@@ -1252,12 +1239,12 @@ function OnboardingFlowSteps({
         stepCount={visualStepCount}
         onSelect={setGender}
         onContinue={() =>
-          goToStep('breathHoldBenefits', 'continue', {
+          goToStep('firstReset', 'continue', {
             has_gender: gender != null,
           })
         }
         onBack={() => goToStep('age', 'back')}
-        onSkip={() => goToStep('breathHoldBenefits', 'skip')}
+        onSkip={() => goToStep('firstReset', 'skip')}
       />
     );
   }
@@ -1283,7 +1270,7 @@ function OnboardingFlowSteps({
         onContinue={() =>
           goToStep('wakeTime', 'continue', { has_daily_minutes: true })
         }
-        onBack={() => goToStep('lungCapacity', 'back')}
+        onBack={() => goToStep('firstReset', 'back')}
         onSkip={() => goToStep('wakeTime', 'skip')}
       />
     );
@@ -1411,7 +1398,6 @@ function OnboardingFlowSteps({
       dailyMinutes,
       wakeTimeMinutes: fromClockString(wakeTime) ?? 7 * 60,
       sleepTimeMinutes: fromClockString(sleepTime) ?? 22 * 60,
-      breathHoldSeconds: breathHold?.holdSeconds ?? null,
     }),
     planTimeOverrides,
   );
@@ -1428,12 +1414,9 @@ function OnboardingFlowSteps({
   if (step === 'diagnosis') {
     return (
       <DiagnosisScreen
-        age={age}
         scores={planMindMap.scores}
         superpower={planMindMap.superpower}
         growthArea={planMindMap.growthArea}
-        holdSeconds={breathHold?.holdSeconds ?? null}
-        lungAgeYears={breathHold?.lungAgeYears ?? null}
         restingBpm={baseline?.avgBpm ?? null}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
@@ -1590,7 +1573,6 @@ function OnboardingFlowSteps({
           planHighlights={buildPlanHighlights({
             plan,
             growthArea: planMindMap.growthArea,
-            holdSeconds: breathHold?.holdSeconds ?? null,
           })}
           name={name}
           selectedPackageId={paywall.selectedPackageId}

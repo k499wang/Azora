@@ -14,7 +14,6 @@ import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import TECHNIQUES from '../../../features/exercise/guidedBreathing/techniques';
 import {
   formatPlanTime,
-  formatRetestDate,
   fromClockString,
   planTimeOfDayLabel,
   toClockString,
@@ -58,7 +57,6 @@ export default function RecommendedExerciseScreen({
   onBack,
 }: RecommendedExerciseScreenProps) {
   const { width } = useWindowDimensions();
-  const lungAgeGoal = plan.lungAgeGoal;
 
   const biggestLift = useMemo(() => {
     const growthTarget = targetScores.find(
@@ -107,16 +105,6 @@ export default function RecommendedExerciseScreen({
           </Text>
         </View>
 
-        {lungAgeGoal ? (
-          <View style={styles.goalPill}>
-            <Text style={styles.goalPillText}>
-              {lungAgeGoal.mode === 'lower'
-                ? `Lower my lung age to ${lungAgeGoal.targetYears} by ${formatRetestDate(new Date())}`
-                : `Keep my lung age at ${lungAgeGoal.targetYears} through ${formatRetestDate(new Date())}`}
-            </Text>
-          </View>
-        ) : null}
-
         <View style={styles.section}>
           <MochiAside
             text="We made this plan for you:"
@@ -157,10 +145,7 @@ function actionBody(
     return `A different ${action.minutes}-minute reset each day, ordered to lift your ${growthArea.label.toLowerCase()} first.`;
   }
 
-  const projection = plan.projection;
-  return projection
-    ? `A short hold every ${when} to track your progress from ${projection.baselineSeconds}s toward ${projection.highSeconds}s.`
-    : `A short hold every ${when} to track how your breathing is changing.`;
+  return `A short hold every ${when} to track how your breathing is changing.`;
 }
 
 function ActionCard({

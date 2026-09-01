@@ -22,6 +22,7 @@ import { Text } from '../../components/common/Text';
 import Icon from '../../components/common/icons/Icon';
 import ProgressBar from '../../components/common/ProgressBar';
 import ChunkyButton from '../../components/common/ChunkyButton';
+import Confetti from '../../components/common/Confetti';
 import { Pop, Rise } from '../../components/common/Reveal';
 import { getRoomDay, getRoomDayLabel } from './roomDays';
 import { isHapticsEnabled } from '../../services/preferences/hapticsPreference';
@@ -239,7 +240,10 @@ function DailyCompleteSheet({
           {presented ? (
             <>
               <View style={styles.center}>
-                <Confetti hue={hue} />
+                <Confetti
+                  pieceColors={[colors.text.inverse, hue.soft]}
+                  startDelayMs={CONFETTI_MS}
+                />
                 <Pop delay={BEAT.flame}>
                   <Icon name="streakFilled" size={flameSize} color={hue.soft} />
                 </Pop>
@@ -409,80 +413,6 @@ function SheetButton({
   );
 }
 
-// Fixed rather than random: the same burst every time reads as choreography,
-// and a re-render mid-flight would otherwise reshuffle it.
-const CONFETTI = [
-  { angle: -80, distance: 150, size: 10, delay: 0, spin: 220 },
-  { angle: -50, distance: 190, size: 7, delay: 40, spin: -180 },
-  { angle: -20, distance: 165, size: 12, delay: 90, spin: 300 },
-  { angle: 10, distance: 200, size: 8, delay: 20, spin: -260 },
-  { angle: 40, distance: 175, size: 11, delay: 70, spin: 190 },
-  { angle: 70, distance: 145, size: 7, delay: 110, spin: -320 },
-  { angle: 120, distance: 160, size: 9, delay: 50, spin: 240 },
-  { angle: 150, distance: 185, size: 12, delay: 0, spin: -200 },
-  { angle: 180, distance: 155, size: 8, delay: 95, spin: 280 },
-  { angle: 210, distance: 195, size: 10, delay: 30, spin: -230 },
-  { angle: 240, distance: 170, size: 7, delay: 80, spin: 210 },
-  { angle: 265, distance: 140, size: 11, delay: 60, spin: -290 },
-];
-
-const Confetti = memo(function Confetti({ hue }: { hue: PlayfulHue }) {
-  return (
-    <View pointerEvents="none" style={styles.confettiLayer}>
-      {CONFETTI.map((piece, index) => (
-        <ConfettiPiece key={index} piece={piece} hue={hue} />
-      ))}
-    </View>
-  );
-});
-
-function ConfettiPiece({
-  piece,
-  hue,
-}: {
-  piece: (typeof CONFETTI)[number];
-  hue: PlayfulHue;
-}) {
-  const fly = useSharedValue(0);
-  const radians = (piece.angle * Math.PI) / 180;
-
-  useEffect(() => {
-    fly.value = withDelay(
-      CONFETTI_MS + piece.delay,
-      withTiming(1, { duration: 1100, easing: easing.burst }),
-    );
-  }, [fly, piece.delay]);
-
-  const style = useAnimatedStyle(() => {
-    const travel = interpolate(fly.value, [0, 1], [0, piece.distance]);
-    // Gravity on the way out — pieces arc rather than shooting in straight lines.
-    const drop = interpolate(fly.value, [0, 1], [0, 90]);
-
-    return {
-      opacity: interpolate(fly.value, [0, 0.1, 0.75, 1], [0, 1, 1, 0]),
-      transform: [
-        { translateX: Math.cos(radians) * travel },
-        { translateY: Math.sin(radians) * travel + drop },
-        { rotate: `${interpolate(fly.value, [0, 1], [0, piece.spin])}deg` },
-      ],
-    };
-  });
-
-  return (
-    <Animated.View
-      style={[
-        styles.confettiPiece,
-        {
-          width: piece.size,
-          height: piece.size * 0.6,
-          backgroundColor: piece.size % 2 === 0 ? colors.text.inverse : hue.soft,
-        },
-        style,
-      ]}
-    />
-  );
-}
-
 function noop() {}
 
 function impactLight() {
@@ -524,15 +454,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.xs,
-  },
-  confettiLayer: {
-    ...StyleSheet.absoluteFillObject,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  confettiPiece: {
-    position: 'absolute',
-    borderRadius: 2,
   },
   statRow: {
     alignSelf: 'stretch',
