@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { card, radius } from '../../theme/card';
+import { card, coloredCard, radius } from '../../theme/card';
 import { pressable } from '../../theme/pressable';
 import { spacing } from '../../theme/spacing';
 import { triggerTapHaptic } from '../../native/tapHaptics';
@@ -87,7 +87,7 @@ export default function CardSurface({
 
   if (hue != null) {
     const blockNode = (
-      <View style={[styles.blockSurface, { backgroundColor: hue.base }, style]}>
+      <View style={[styles.blockSurface, coloredCard(hue), style]}>
         {content}
       </View>
     );

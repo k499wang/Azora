@@ -133,7 +133,6 @@ const styles = StyleSheet.create({
   },
   tile: {
     backgroundColor: colors.background.elevated,
-    borderWidth: 0,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
   },

@@ -171,8 +171,12 @@ const HEX_APOTHEM = 155.9;
  */
 const LATTICE_STROKE = 10;
 
-/** the widest stroke the room's own frame lays down, straight off the artwork */
-const FRAME_STROKE = ROOM_FRAME.sky[0].w ?? 14;
+/**
+ * How much room the frame is given, which is wider than the line it now draws:
+ * the hex used to carry a colour band under the ink, and the mortar around it
+ * was cut to clear that band. Keeping the clearance keeps the pyramid's layout.
+ */
+const FRAME_STROKE = 14;
 
 /** far enough in that the frame's outer edge meets the mortar's inner edge */
 const ACCENT_INSET = LATTICE_STROKE / 2 + FRAME_STROKE / 2;
@@ -224,8 +228,9 @@ const accents = new Map<FrameHue, PaintedPath[]>();
 /**
  * The room's frame, set inside the mortar rather than shared with it.
  *
- * Not a new border: it is `ROOM_FRAME` — the same two strokes, in the same
- * colours, at the same widths the home room draws — on a hexagon pulled in far
+ * Not a new border: it is `ROOM_FRAME`'s outline — the same ink, at the same
+ * widths the home room draws it, though without the wall thickness those lines
+ * wrap at full size — on a hexagon pulled in far
  * enough to clear the lattice. A room in the pyramid is outlined exactly as it
  * is anywhere else in the app; only what sits between rooms is new.
  */
@@ -239,7 +244,9 @@ export function accentPaths(hue: FrameHue): PaintedPath[] {
   const built: PaintedPath[] = [];
 
   for (const poly of ROOM_FRAME[hue]) {
-    const color = poly.s ?? poly.f;
+    // the frame's shaded faces are fills; only its outline survives the trip
+    if (poly.f != null) continue;
+    const color = poly.s;
     if (color == null || poly.w == null) continue;
 
     built.push({ path, paint: strokePaint(readableColor(color), poly.w) });
@@ -270,7 +277,7 @@ const GHOST_HEX = '0,-180 -155.9,-90 -155.9,90 0,180 155.9,90 155.9,-90';
  * the eye harder than the rooms that already are.
  */
 const GHOST_WEIGHT = 0.6;
-const GHOST_STROKE = (ROOM_FRAME.sky[0].w ?? 14) * GHOST_WEIGHT;
+const GHOST_STROKE = FRAME_STROKE * GHOST_WEIGHT;
 
 /**
  * Every side of the hexagon is exactly 180 units long. A dash period that

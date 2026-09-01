@@ -3,7 +3,7 @@ import { Text } from '../../components/common/Text';
 import Icon from '../../components/common/icons/Icon';
 import ChunkyButton from '../../components/common/ChunkyButton';
 import NextDayCountdown from './NextDayCountdown';
-import { card } from '../../theme/card';
+import { LINE, card } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { padding, spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
@@ -197,8 +197,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.neutral[0],
-    borderWidth: 2,
-    borderColor: colors.primary.blue200,
+    borderWidth: LINE,
+    borderColor: colors.ink,
   },
   checkDotDone: {
     backgroundColor: colors.primary.blue700,

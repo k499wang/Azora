@@ -355,7 +355,6 @@ export default function BPMChart({
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.background.elevated,
-    borderWidth: 0,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
     position: 'relative',

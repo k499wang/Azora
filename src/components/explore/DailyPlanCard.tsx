@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import ActivityGlyph from './ActivityGlyph';
 import Icon from '../common/icons/Icon';
 import { BREATH_HOLD_STYLE } from '../../features/exercise/guidedBreathing/categoryPalette';
-import { card } from '../../theme/card';
+import { card, coloredCard } from '../../theme/card';
 import { triggerTapHaptic } from '../../native/tapHaptics';
 import { colors } from '../../theme/colors';
 import { fonts, typography } from '../../theme/typography';
@@ -55,7 +55,7 @@ export default function DailyPlanCard({
       }
       style={({ pressed }) => [
         styles.card,
-        { backgroundColor: hue.base },
+        coloredCard(hue),
         pressed && styles.cardPressed,
       ]}
     >

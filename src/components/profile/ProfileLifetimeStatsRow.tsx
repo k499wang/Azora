@@ -3,7 +3,7 @@ import { Text } from '../common/Text';
 import { colors } from '../../theme/colors';
 import { typography, fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
-import { card } from '../../theme/card';
+import { card, coloredCard } from '../../theme/card';
 import ActivityGlyph from '../explore/ActivityGlyph';
 import type {
   GlyphShape,
@@ -61,7 +61,7 @@ export default function ProfileLifetimeStatsRow({
     <View style={styles.row}>
       {stats.map((stat) => (
         <View key={stat.label} style={styles.tileShadow}>
-          <View style={[styles.tile, { backgroundColor: stat.hue.base }]}>
+          <View style={[styles.tile, coloredCard(stat.hue)]}>
             <View style={styles.tileGlyph} pointerEvents="none">
               <ActivityGlyph
                 shape={stat.glyph}

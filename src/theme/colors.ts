@@ -1,4 +1,15 @@
+/**
+ * Mochi's line: his outline, his eyes, his mouth, and the few room surfaces
+ * drawn to match him. It is his own blue taken dark rather than a neutral —
+ * black reads as print and navy reads as borrowed, but a deep version of the
+ * body colour reads as the same creature drawn in shadow.
+ */
+const INK = '#0B5A87';
+
 export const colors = {
+  /** the line weight itself lives in `card.ts`; this is only its colour */
+  ink: INK,
+
   primary: {
     blue100: '#E4F0FF',
     blue200: '#C2DDFF',
@@ -79,7 +90,12 @@ export const colors = {
   playful: {
     teal: { base: '#00A48F', mid: '#3BBFAD', soft: '#A8F2E4', ink: '#00705F' },
     coral: { base: '#FF5230', mid: '#FF7C61', soft: '#FFCBBB', ink: '#A82F10' },
-    violet: { base: '#8B5CFF', mid: '#A784FF', soft: '#DCCEFF', ink: '#5326D6' },
+    violet: {
+      base: '#8B5CFF',
+      mid: '#A784FF',
+      soft: '#DCCEFF',
+      ink: '#5326D6',
+    },
     amber: { base: '#D77A00', mid: '#E5A03B', soft: '#FFE6A8', ink: '#8F5A00' },
     sky: { base: '#3B88FF', mid: '#6AA6FF', soft: '#C2DEFF', ink: '#0D59B2' },
     blush: { base: '#FF4590', mid: '#FF73AC', soft: '#FFC9E0', ink: '#B01356' },
@@ -98,16 +114,37 @@ export const colors = {
   // The hex room's resident. A cyan-leaning sky blue keeps him in the app's blue
   // family while staying clear of the primary azure the UI accents use, so he
   // reads as a character rather than furniture against the warm cream floor.
+  // The room's hex frame is the cut thickness of its walls and floor slab, so
+  // it is lit rather than coloured: one tone per face, ordered by how square
+  // that face turns to a light sitting above and to the left. Cooler than the
+  // walls it wraps, because a cut edge is plaster and the wall is painted.
+  roomFrame: {
+    /** both wall tops */
+    cap: '#F5F1E6',
+    baseLeft: '#EEE8D9',
+    sideLeft: '#E2DBC8',
+    baseRight: '#DCD4BF',
+    sideRight: '#CFC6AE',
+    /**
+     * The line around the cut. Same warm family as the faces, taken dark
+     * instead of to ink: the frame is one piece of plaster turning corners, and
+     * an outline in its own colour deepens it where a neutral would fence it
+     * off from the room it wraps.
+     */
+    line: '#9A8556',
+  },
+
   roomBlob: {
     body: '#46BCF5',
-    bodyLight: '#7FD6FA',
-    foot: '#2497DB',
-    face: '#12384B',
+    // One ink for the outline that wraps him and for the eyes and mouth inside
+    // it, a deep cut of `body` — so his own line deepens his blue instead of
+    // fencing it in, and he reads as drawn rather than stickered onto the page.
+    ink: INK,
     // the pop of sparkles when the blob is poked
     sparkle: '#FFCE3D',
-    // Mochi's friendly blush; warm against the sky blue so the small cheeks
-    // read as colour rather than another highlight
-    cheek: '#FF7C6A',
+    // his blush, and the breathing circle's; warm against the sky blue so the
+    // small cheeks read as colour rather than another highlight
+    cheek: '#FF8CA2',
     // matches the shadow ink the room artwork already uses
     shadow: 'rgba(58,67,79,0.22)',
     // the clipboard he takes notes on — warm wood against his sky blue

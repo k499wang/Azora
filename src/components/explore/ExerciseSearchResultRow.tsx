@@ -5,6 +5,7 @@ import type {
   PlayfulHue,
 } from '../../features/exercise/guidedBreathing/categoryPalette';
 import { colors } from '../../theme/colors';
+import { coloredCard } from '../../theme/card';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import Icon from '../common/icons/Icon';
@@ -40,7 +41,7 @@ export default function ExerciseSearchResultRow({
       onPress={onPress}
       style={({ pressed }) => [
         styles.row,
-        { backgroundColor: hue.base },
+        coloredCard(hue),
         pressed && styles.rowPressed,
       ]}
     >

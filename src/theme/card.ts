@@ -5,6 +5,35 @@ import { colors } from './colors';
 // `borderCurve: 'continuous'` — the squircle curve is the native iOS
 // treatment and is what makes surfaces read as Apple-designed rather than
 // generic rounded rectangles.
+/**
+ * The ink line, in points, for the surfaces that carry one.
+ *
+ * The room, mascot, and the pieces of UI that belong to them use it with a
+ * darker shade of their own fill. Saturated cards use their separate, heavier
+ * line below; neutral cards stay borderless.
+ *
+ * Fixed rather than proportional: a tile is a fraction of the size of a room,
+ * and a line that scaled with each would read as a different drawing on every
+ * one of them.
+ */
+export const LINE = 1.25;
+/** Saturated cards need a stronger edge than the finer room drawing. */
+export const COLORED_CARD_LINE = 2;
+
+type ColoredCardHue = {
+  base: string;
+  ink: `#${string}`;
+};
+
+/** Gives a saturated card a softened darker outline from its own color family. */
+export function coloredCard(hue: ColoredCardHue): ViewStyle {
+  return {
+    backgroundColor: hue.base,
+    borderColor: `${hue.ink}B3`,
+    borderWidth: COLORED_CARD_LINE,
+  };
+}
+
 export const radius = {
   xs: 8, // tiny chips, skeleton blocks
   small: 10, // paper, small cells
@@ -53,8 +82,8 @@ export const card: {
     shadowRadius: 18,
     elevation: 3,
   },
-  // Flat color-block tile: deep radius, no border, clips its decoration. Clips
-  // its own shadow too, so pair it with `blockShadow` on a wrapper view.
+  // Color-block shape: deep radius and clipped decoration. Add fill and its
+  // own-color line with `coloredCard`; pair with `blockShadow` when it must lift.
   block: {
     borderRadius: radius.hero,
     borderCurve: 'continuous',

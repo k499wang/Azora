@@ -16,9 +16,9 @@ The system has exactly two card bodies. Every new card should be one of them.
 
 ### A. Color block (Explore)
 
-A saturated `playful.*.base` fill, white text, a huge translucent glyph bleeding
-off the bottom-right corner. Used when the card *is* the thing (an exercise, a
-plan) and browsing is visual.
+A saturated `playful.*.base` fill outlined by its darker `playful.*.ink`, white
+text, and a huge translucent glyph bleeding off the bottom-right corner. Used
+when the card *is* the thing (an exercise, a plan) and browsing is visual.
 
 ```
 ┌──────────────────────────┐
@@ -36,7 +36,7 @@ Recipe:
 | Part | Token |
 | --- | --- |
 | Shape | `...card.block` (radius.hero 20, continuous, `overflow: 'hidden'`) |
-| Fill | `categoryStyle.hue.base` — never a raw hex |
+| Fill + line | `coloredCard(categoryStyle.hue)` — `hue.base` fill with a `COLORED_CARD_LINE` (2pt) border using `hue.ink` at 70% opacity |
 | Text | `colors.text.inverse` for all copy |
 | Decoration | `<ActivityGlyph size={186} color={inverse} opacity={0.16} />`, absolutely positioned `right: -50, bottom: -58` |
 | Content pad | `padding: spacing.lg`, `paddingLeft: spacing.md`, `paddingBottom: spacing.md`, `justifyContent: 'space-between'` |
@@ -180,8 +180,10 @@ missing, add it to the palette first.
   `0/4`, opacity `0.06`, radius `20`, `elevation: 4`. Shadows are never colored,
   never tinted by the hue. Color blocks clip, so the shadow must go on a wrapper
   view, never on the clipping view itself.
-- **No borders.** Depth comes from canvas contrast and the shadow. `card.base`'s
-  borderless philosophy applies here too.
+- **Own-color borders on saturated cards.** Use `coloredCard(hue)` for a
+  `hue.base` fill with a 2pt `hue.ink` border at 70% opacity. Neutral
+  `card.base` surfaces remain borderless; depth there comes from canvas contrast
+  and shadow. The room and mascot keep their separate 1.25pt `LINE` token.
 - **Spacing:** `spacing.xs 4` inside a meta row, `spacing.sm 8` between marker
   and pill, `spacing.md 16` between copy and art / as card padding,
   `spacing.lg 24` as the top/right pad of a color block and as the vertical gap
@@ -226,8 +228,8 @@ dailies rows; prefer adding to `src/components/common/icons/paths.ts` and using
 
 1. Pick the archetype: is this a browsable *thing* (A) or a stateful list item (B)?
 2. Get the hue from `CATEGORY_STYLE` / `BREATH_HOLD_STYLE`. Don't choose one.
-3. Spread `card.block` (A) or wrap in `card.blockShadow` (B). No hand-rolled
-   radius/shadow/border.
+3. Spread `card.block` and add `coloredCard(hue)` (A), or wrap in
+   `card.blockShadow` (B). No hand-rolled radius/shadow/border.
 4. Four text roles max: eyebrow, title, meta, optional pill.
 5. `fonts.semibold` is the ceiling; `label.*` for metadata, never `body.*`.
 6. White copy on `hue.base`; `hue.ink` on white pills and soft tints.

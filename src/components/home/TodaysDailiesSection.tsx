@@ -22,7 +22,7 @@ import {
   type CategoryStyle,
   type GlyphShape,
 } from '../../features/exercise/guidedBreathing/categoryPalette';
-import { card, radius } from '../../theme/card';
+import { card, coloredCard, radius } from '../../theme/card';
 import { pressable } from '../../theme/pressable';
 import { triggerTapHaptic } from '../../native/tapHaptics';
 import { colors } from '../../theme/colors';
@@ -300,7 +300,7 @@ function ExpandedTaskPill({
   loading,
 }: ExpandedTaskPillProps) {
   return (
-    <View style={[styles.taskPillShadow, { backgroundColor: style.hue.base }]}>
+    <View style={[styles.taskPillShadow, coloredCard(style.hue)]}>
       <View style={styles.taskPill}>
         <View
           style={[styles.taskGlyph, loading && styles.taskGlyphLoading]}

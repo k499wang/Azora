@@ -232,7 +232,6 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: colors.background.elevated,
-    borderWidth: 0,
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: spacing.md,

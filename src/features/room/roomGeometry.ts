@@ -1,7 +1,14 @@
-/** viewBox of the room space: x -168..168, y -194..194 */
-export const VIEW_BOX = '-168 -194 336 388';
-export const VIEW_BOX_WIDTH = 336;
-export const VIEW_BOX_HEIGHT = 388;
+/**
+ * viewBox of the room space: x -174..174, y -201..201.
+ *
+ * Wider than the artwork needs, because the frame is no longer a line on the
+ * hexagon — it is the walls' own thickness, standing outside it. The ratio is
+ * held to the box it replaced (336x388) to a hundredth, so every caller that
+ * sizes a room by width gets the same height it always did.
+ */
+export const VIEW_BOX = '-174 -201 348 402';
+export const VIEW_BOX_WIDTH = 348;
+export const VIEW_BOX_HEIGHT = 402;
 
 /**
  * The scene is taller than it is wide. Callers give a width and the height
