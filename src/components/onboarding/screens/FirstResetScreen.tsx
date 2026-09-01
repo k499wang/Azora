@@ -343,8 +343,7 @@ export default function FirstResetScreen({
             {'Let’s try your\nfirst exercise.'}
           </Text>
           <Text style={styles.introSub}>
-            Let’s do a small breathing exercise together. It’ll take about a
-            minute.
+            A quick minute of slow, even inhales and exhales to help you settle.
           </Text>
         </View>
       </View>
