@@ -33,6 +33,7 @@ export type DayKey = 'day1' | 'day2' | 'day3' | 'day4' | 'day5' | 'day6' | 'day7
 export type Picks = Partial<Record<DayKey, string>>;
 export type FrameHue = 'sky' | 'teal' | 'blush';
 
+import { colors } from '../../theme/colors';
 import { ROOM_ASPECT, VIEW_BOX } from './roomGeometry';
 
 export {
@@ -45,11 +46,103 @@ export {
 /** walls, floor, planks, corner shading — drawn first */
 export const ROOM_SHELL: Poly[] = [{"p":"0,-180 -155.9,-90 -155.9,90 0,0","f":"#FCF4DE"},{"p":"0,-180 155.9,-90 155.9,90 0,0","f":"#F4E9C8"},{"p":"0,-172 -6.9,-168 -6.9,4 0,0","f":"rgba(58,67,79,.05)"},{"p":"0,-172 6.9,-168 6.9,4 0,0","f":"rgba(58,67,79,.07)"},{"p":"0,0 155.9,90 0,180 -155.9,90","f":"#EBCA92"},{"p":"-31.2,18 124.7,108 123,109 -32.9,19","f":"#DEB979"},{"p":"-62.4,36 93.5,126 91.8,127 -64.1,37","f":"#DEB979"},{"p":"-93.5,54 62.4,144 60.6,145 -95.3,55","f":"#DEB979"},{"p":"-124.7,72 31.2,162 29.4,163 -126.4,73","f":"#DEB979"},{"p":"0,0 6.9,4 -149,94 -155.9,90","f":"rgba(58,67,79,.05)"},{"p":"0,0 155.9,90 149,94 -6.9,4","f":"rgba(58,67,79,.05)"},{"p":"0,-6 -155.9,84 -155.9,90 0,0","f":"#F0E2BC"},{"p":"0,-6 155.9,84 155.9,90 0,0","f":"#EDDDB2"}];
 
-/** the hexagon outline, in each available hue — drawn last */
+/** the frame's own line: its faces' warm family, taken dark */
+const EDGE = colors.roomFrame.line;
+
+/** the room's two line weights: its own edges, and the outside of the solid */
+const LINE = 1.6;
+const LINE_OUTER = 2.5;
+
+/**
+ * The frame is the room's own thickness, not a line drawn around it.
+ *
+ * Each wall is extruded along its own outward normal, which in this projection
+ * means the left wall's slab shears up-and-left, the right wall's up-and-right,
+ * and the floor's drops straight down. Offsetting the hexagon uniformly instead
+ * — the obvious thing — gives a picture-frame bevel with no depth at all, which
+ * is the whole difference between this reading as a solid and reading as a
+ * border. At the back corner the two slabs stop against each other rather than
+ * carrying on to a point: walls end where they meet, and running them out to a
+ * peak turns the junction into a spike standing above the room.
+ *
+ * Every point below is `vertex + offset` at a thickness of 0.095 of a floor
+ * axis, worked out once and written down: the artwork in this file is data, and
+ * a frame that recomputed itself at import would be the only part that is not.
+ */
+const FRAME_FACES: Poly[] = [
+  { p: '0,-180 -155.9,-90 -170.7,-98.6 -14.8,-188.6', f: colors.roomFrame.cap },
+  { p: '155.9,-90 0,-180 14.8,-188.6 170.7,-98.6', f: colors.roomFrame.cap },
+  {
+    p: '-155.9,-90 -155.9,90 -170.7,81.4 -170.7,-98.6',
+    f: colors.roomFrame.sideLeft,
+  },
+  {
+    p: '155.9,90 155.9,-90 170.7,-98.6 170.7,81.4',
+    f: colors.roomFrame.sideRight,
+  },
+  // The slab runs out under both walls rather than stopping at the hexagon: the
+  // extrusion is parallel to the floor's own front edges, so carrying it past
+  // them keeps the same line and closes the notch it would otherwise leave.
+  {
+    p: '-170.7,81.4 0,180 0,197.1 -170.7,98.5',
+    f: colors.roomFrame.baseLeft,
+  },
+  {
+    p: '0,180 170.7,81.4 170.7,98.5 0,197.1',
+    f: colors.roomFrame.baseRight,
+  },
+];
+
+/** the room's edge, where the slab faces meet what they wrap */
+const FRAME_INNER = '0,-180 -155.9,-90 -155.9,90 0,180 155.9,90 155.9,-90';
+
+/** the outside of the whole solid, carrying the heavier of the two lines */
+const FRAME_OUTER =
+  '0,-180 14.8,-188.6 170.7,-98.6 170.7,98.5 0,197.1 -170.7,98.5 ' +
+  '-170.7,-98.6 -14.8,-188.6';
+
+/**
+ * The line goes on the two boundaries, plus the footings. Every other crease
+ * inside the solid — wall top into wall end, wall end into slab — is left to
+ * the difference in tone: a dark line there reads as two objects pushed
+ * together rather than one piece turning a corner, and it is worst at the back
+ * corner, where inking both wall tops draws a hard Y through the junction.
+ */
+/**
+ * Where a side wall lands on the slab, the slab's own end shows under it — a
+ * block as wide as the wall is thick and as deep as the slab. It is the one
+ * inside seam that earns a line: it is the room's foot, and the two runs of
+ * plaster above it are only readable as having *stopped* somewhere if the thing
+ * they stop on is drawn. Same tone as the slab it belongs to; the border is the
+ * whole point.
+ */
+const FRAME_FOOTINGS: Poly[] = [
+  {
+    p: '-170.7,81.4 -155.9,90 -155.9,107.1 -170.7,98.5',
+    f: colors.roomFrame.baseLeft,
+    s: EDGE,
+    w: LINE,
+  },
+  {
+    p: '170.7,81.4 155.9,90 155.9,107.1 170.7,98.5',
+    f: colors.roomFrame.baseRight,
+    s: EDGE,
+    w: LINE,
+  },
+];
+
+const FRAME: Poly[] = [
+  ...FRAME_FACES,
+  ...FRAME_FOOTINGS,
+  { p: FRAME_INNER, s: EDGE, w: LINE },
+  { p: FRAME_OUTER, s: EDGE, w: LINE_OUTER },
+];
+
+/** kept per-hue because the callers index by hue, though it no longer varies */
 export const ROOM_FRAME: Record<FrameHue, Poly[]> = {
-  sky: [{"p":"0,-180 -155.9,-90 -155.9,90 0,180 155.9,90 155.9,-90","s":"#C3DBFC","w":14},{"p":"0,-180 -155.9,-90 -155.9,90 0,180 155.9,90 155.9,-90","s":"#1559A8","w":4}],
-  teal: [{"p":"0,-180 -155.9,-90 -155.9,90 0,180 155.9,90 155.9,-90","s":"#A8E5DA","w":14},{"p":"0,-180 -155.9,-90 -155.9,90 0,180 155.9,90 155.9,-90","s":"#0B6B5C","w":4}],
-  blush: [{"p":"0,-180 -155.9,-90 -155.9,90 0,180 155.9,90 155.9,-90","s":"#F8CFE3","w":14},{"p":"0,-180 -155.9,-90 -155.9,90 0,180 155.9,90 155.9,-90","s":"#A12359","w":4}],
+  sky: FRAME,
+  teal: FRAME,
+  blush: FRAME,
 };
 
 /** a faint outline used when a room is previewed empty */

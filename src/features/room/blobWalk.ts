@@ -43,7 +43,7 @@ export interface FloorGrid {
 export type Occlusion = 'sorted' | 'flat';
 
 /** half the blob's body, in viewBox units — what a piece has to cover to hide it */
-export const BLOB_HALF_W = 27;
+export const BLOB_HALF_W = 28;
 
 /** where it stands before it has walked anywhere: the open front-left floor */
 export const START: FloorPoint = { a: 0.44, b: 0.76 };

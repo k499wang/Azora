@@ -8,7 +8,7 @@ import ChunkyButton, {
 import { DecorationSolo } from './roomStage';
 import { getRoomDay } from './roomDays';
 import { triggerTapHaptic } from '../../native/tapHaptics';
-import { card, radius } from '../../theme/card';
+import { LINE, card, radius } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { padding, spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
@@ -174,12 +174,12 @@ const styles = StyleSheet.create({
   },
   tile: {
     ...card.base,
+    borderWidth: LINE,
+    borderColor: colors.ink,
     flexBasis: '48%',
     padding: TILE_PAD,
     gap: spacing.xs,
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: colors.neutral[200],
   },
   tileActive: {
     borderColor: colors.primary.blue600,

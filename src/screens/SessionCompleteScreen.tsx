@@ -16,7 +16,7 @@ import Icon from '../components/common/icons/Icon';
 import { CATEGORY_STYLE } from '../features/exercise/guidedBreathing/categoryPalette';
 import { getTechnique } from '../features/exercise/guidedBreathing/techniques';
 import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
-import { card } from '../theme/card';
+import { card, coloredCard } from '../theme/card';
 import BPMChart from '../components/heartRate/BPMChart';
 import RestingHeartRateBar from '../components/heartRate/RestingHeartRateBar';
 import ThermometerStatCard from '../components/heartRate/ThermometerStatCard';
@@ -305,7 +305,7 @@ export default function SessionCompleteScreen({
         <ScreenContent>
           <View style={styles.heroWrap}>
             <View style={styles.heroShadow}>
-              <View style={[styles.heroCard, { backgroundColor: hue.base }]}>
+              <View style={[styles.heroCard, coloredCard(hue)]}>
                 <Icon name="streakFilled" size={HERO_FLAME_SIZE} color={hue.soft} />
                 <Text style={styles.heroTitle}>{congratulation}</Text>
                 <Text style={styles.heroSubtitle}>

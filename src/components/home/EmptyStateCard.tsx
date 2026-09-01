@@ -24,7 +24,6 @@ export default function EmptyStateCard({ title, subtitle, hue }: EmptyStateCardP
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.background.elevated,
-    borderWidth: 0,
     paddingVertical: spacing.lg,
     paddingHorizontal: spacing.lg,
     alignItems: 'center',

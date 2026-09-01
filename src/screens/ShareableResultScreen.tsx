@@ -15,7 +15,7 @@ import { BREATH_HOLD_FEEDBACK_ID } from '../lib/sessionKey';
 import Icon from '../components/common/icons/Icon';
 import { BREATH_HOLD_STYLE } from '../features/exercise/guidedBreathing/categoryPalette';
 import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
-import { card } from '../theme/card';
+import { card, coloredCard } from '../theme/card';
 import HeartRateStatsSection from '../components/heartRate/HeartRateStatsSection';
 import type { DailyResultScreenProps } from '../app/navigation';
 import { estimateLungAge } from '../lib/lungAge';
@@ -291,7 +291,7 @@ export default function ShareableResultScreen({
             style={styles.heroWrap}
           >
             <View style={styles.heroShadow}>
-              <View style={[styles.heroCard, { backgroundColor: hue.base }]}>
+              <View style={[styles.heroCard, coloredCard(hue)]}>
                 <Icon name="streakFilled" size={HERO_FLAME_SIZE} color={hue.soft} />
                 <Text style={styles.heroTitle}>{congratulation}</Text>
                 <Text style={styles.heroSubtitle}>

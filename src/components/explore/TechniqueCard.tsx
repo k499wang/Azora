@@ -15,7 +15,7 @@ import { trackFeatureGateHit } from '../../services/analytics/tracking';
 import { PaywallPlacement } from '../../services/paywall';
 import { FeatureKey } from '../../services/subscriptions/featureAccess';
 import type { FeatureAccessResult } from '../../services/subscriptions/featureAccess';
-import { card } from '../../theme/card';
+import { card, coloredCard } from '../../theme/card';
 import { triggerTapHaptic } from '../../native/tapHaptics';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
@@ -112,7 +112,7 @@ export default function TechniqueCard({
         style={({ pressed }) => [
           styles.card,
           styles.shelfCard,
-          { backgroundColor: categoryStyle.hue.base },
+          coloredCard(categoryStyle.hue),
           pressed && styles.cardPressed,
         ]}
       >
