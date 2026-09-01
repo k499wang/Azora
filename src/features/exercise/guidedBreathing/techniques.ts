@@ -258,3 +258,16 @@ export function getTechnique(id: string | null | undefined): BreathingTechnique 
   if (id == null) return null;
   return TECHNIQUES.find((technique) => technique.id === id) ?? null;
 }
+
+/**
+ * For callers that must render an exercise and have already narrowed to a
+ * catalog id. Every `TechniqueId` has an entry here, so the throw only fires if
+ * an id was registered in the catalog without shipping its entry.
+ */
+export function requireTechnique(id: TechniqueId): BreathingTechnique {
+  const technique = getTechnique(id);
+  if (technique == null) {
+    throw new Error(`No breathing technique registered for id "${id}".`);
+  }
+  return technique;
+}

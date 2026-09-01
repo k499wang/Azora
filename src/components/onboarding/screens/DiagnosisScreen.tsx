@@ -9,17 +9,13 @@ import { fonts, typography } from '../../../theme/typography';
 import MochiAside from '../MochiAside';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
-import { benchmarkBreathHold } from '../../../lib/breathHoldPercentile';
 import type { MindMapAxis, MindMapScore } from '../../../lib/onboardingScores';
 import { ONBOARDING_VISUAL_MAX_WIDTH } from '../onboardingVisualScale';
 
 interface DiagnosisScreenProps {
-  age: number;
   scores: MindMapScore[];
   superpower: MindMapScore;
   growthArea: MindMapScore;
-  holdSeconds: number | null;
-  lungAgeYears: number | null;
   restingBpm: number | null;
   stepIndex: number;
   stepCount: number;
@@ -76,12 +72,9 @@ const GROWTH_COPY: Record<MindMapAxis, string> = {
 };
 
 export default function DiagnosisScreen({
-  age,
   scores,
   superpower,
   growthArea,
-  holdSeconds,
-  lungAgeYears,
   restingBpm,
   stepIndex,
   stepCount,
@@ -89,10 +82,6 @@ export default function DiagnosisScreen({
   onBack,
 }: DiagnosisScreenProps) {
   const { width } = useWindowDimensions();
-  const benchmark = useMemo(
-    () => (holdSeconds != null ? benchmarkBreathHold(holdSeconds, age) : null),
-    [holdSeconds, age],
-  );
 
   const highlights = useMemo<HighlightCard[]>(() => {
     return [
@@ -118,17 +107,6 @@ export default function DiagnosisScreen({
   const measurements = useMemo<HighlightCard[]>(() => {
     const next: HighlightCard[] = [];
 
-    if (benchmark && holdSeconds != null && lungAgeYears != null) {
-      next.push({
-        id: 'lung-age',
-        role: 'Lung age',
-        subject: `Top ${benchmark.topPercent}%`,
-        pill: `${Math.round(lungAgeYears)} yrs`,
-        pillColor: colors.primary.blue600,
-        body: `Based on your ${holdSeconds}s breath hold compared with people your age.`,
-      });
-    }
-
     if (restingBpm != null) {
       next.push({
         id: 'resting-bpm',
@@ -140,7 +118,7 @@ export default function DiagnosisScreen({
     }
 
     return next;
-  }, [benchmark, holdSeconds, lungAgeYears, restingBpm]);
+  }, [restingBpm]);
 
   return (
     <OnboardingScreenLayout
