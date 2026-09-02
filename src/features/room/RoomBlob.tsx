@@ -17,12 +17,10 @@ import Animated, {
   withTiming,
   type SharedValue,
 } from 'react-native-reanimated';
-import Svg, { Path } from 'react-native-svg';
 import Icon from '../../components/common/icons/Icon';
 import { colors } from '../../theme/colors';
 import { duration, spring } from '../../theme/motion';
 import { fonts, typography } from '../../theme/typography';
-import MochiMouth from './MochiMouth';
 import MochiSpeechBubble from './MochiSpeechBubble';
 import {
   BLOB_HALF_W,
@@ -73,65 +71,31 @@ const CUT_HYSTERESIS = 3;
 /** one full stride cycle is two steps */
 const STEP_RATE = Math.PI * 2 * 0.95;
 
-/**
- * Blob geometry, in viewBox units — scaled to the rendered room by `u`.
- *
- * He is a tall soft oval drawn with one ink line all the way round. The crown
- * is a touch narrower than his full lower half, with one continuous curve into
- * a broad soft base. Nothing about him is anatomy — the nubs and the feet are
- * lobes stuck on a single shape.
- */
+/** blob geometry, in viewBox units — scaled to the rendered room by `u` */
 const BODY_W = BLOB_HALF_W * 2;
-const BODY_H = 66;
-/** the line that wraps him; the eyes and mouth are the same ink */
-const INK = 1.6;
-const BODY_PATH =
-  'M28 1 C13 1 3 11 3 27 C3 34 2 40 2 45 C2 56 13 65 28 65 C43 65 54 56 54 45 C54 40 53 34 53 27 C53 11 43 1 28 1 Z';
+const BODY_H = 48;
+const BODY_ROUND = BODY_H / 2;
 /**
  * How far the body floats above the ground point, which is both how much of the
- * feet shows below it and — the other way round — how deeply they tuck into it.
- * The tuck has to stay deeper than anything the body does vertically, or a
- * walking blob opens daylight between itself and the foot it is standing on,
- * and the legs read as two pills following it around.
+ * 9.5-tall feet shows below it and — the other way round — how deeply they tuck
+ * into it. The tuck has to stay deeper than anything the body does vertically,
+ * or a walking blob opens daylight between itself and the foot it is standing
+ * on, and the legs read as two pills following it around.
  */
-const BODY_LIFT = 4;
-const FOOT_W = 17;
-const FOOT_H = 11.5;
-const FOOT_X = 11.5;
-const SHADOW_W = 62;
-const SHADOW_H = 17;
-/**
- * The nubs. They are arms only in the sense that they are on the sides — barely
- * a lobe each, drawn behind him so his own outline crosses their base and the
- * three shapes stay one creature. `NUB_OUT` is all that shows.
- */
-const NUB_W = 11;
-const NUB_H = 9.5;
-const NUB_OUT = 5.5;
-const NUB_TOP = 37;
-/** the right nub hangs a shade lower — he is not a corporate icon */
-const NUB_DROP = 1;
-/** the sprite's box: the body plus whatever the nubs stick out past it */
-const SPRITE_W = BODY_W + NUB_OUT * 2;
-/**
- * The face is tiny and sits high, so the whole lower two-thirds of him is empty
- * body. Eye centres land 36% of the way down, which is what leaves the long
- * plush belly below them.
- */
-const EYE_W = 5.4;
-const EYE_H = 6;
-const EYE_TOP = 20;
-const EYE_DX = 12;
-/** the whole face sits off-centre so the horizontal flip reads as a turn */
-const EYE_SHIFT = 1.5;
-const MOUTH_W = 13;
-const MOUTH_H = 6;
-const MOUTH_TOP = 25.5;
-/** the blush, out past the eyes and a little below them */
-const CHEEK_W = 8;
-const CHEEK_H = 8;
-const CHEEK_DX = 17;
-const CHEEK_TOP = 27.6;
+const BODY_LIFT = 5;
+const FOOT_W = 19;
+const FOOT_H = 9.5;
+const FOOT_X = 13;
+const SHADOW_W = 60;
+const SHADOW_H = 20;
+const EYE_W = 8;
+const EYE_H = 9;
+/** eyes sit off-centre so the horizontal flip reads as a turn */
+const EYE_SHIFT = 2.5;
+const EYE_DX = 8;
+const CHEEK_SIZE = 4.8;
+const CHEEK_DX = 15.5;
+const CHEEK_TOP = 25.5;
 const SPARKLE = 17;
 
 /**
@@ -534,18 +498,19 @@ const RoomBlob = forwardRef<RoomBlobHandle, Props>(function RoomBlob(
     [u],
   );
 
-  // The shape of the mouth is `sad`'s job, not this one's — a stem-and-lobes
-  // smile turned upside down is a squiggle, not a frown. This only carries it.
-  const smileStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateY: sadness.value * 3.5 * u },
-      { scale: cheer.value > 0 ? 1.35 : 1 - sadness.value * 0.12 },
-    ],
-  }), [u]);
-
   const cheekStyle = useAnimatedStyle(() => ({
     opacity: 1 - sadness.value,
   }));
+
+  // The smile is one curved stroke, so half a turn is the whole frown — no
+  // second shape to keep in sync with the first.
+  const smileStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateY: sadness.value * 3.5 * u },
+      { rotate: `${sadness.value * 180}deg` },
+      { scale: cheer.value > 0 ? 1.45 : 1 - sadness.value * 0.12 },
+    ],
+  }), [u]);
 
   // Rides the actor rather than the body: the body carries the horizontal flip
   // that turns the blob around, and a mirrored bubble would read backwards.
@@ -580,41 +545,26 @@ const RoomBlob = forwardRef<RoomBlobHandle, Props>(function RoomBlob(
         <Animated.View style={[styles.shadow, shadowStyle]} />
         <Animated.View style={[styles.foot, styles.backFoot, backFootStyle]} />
         <Animated.View style={[styles.foot, styles.frontFoot, frontFootStyle]} />
-        <Animated.View style={[styles.sprite, bodyStyle]}>
-          <View style={[styles.nub, styles.leftNub]} />
-          <View style={[styles.nub, styles.rightNub]} />
-          <View style={styles.body}>
-            <Svg
-              width={BODY_W * u}
-              height={BODY_H * u}
-              viewBox={`0 0 ${BODY_W} ${BODY_H}`}
-            >
-              <Path
-                d={BODY_PATH}
-                fill={colors.roomBlob.body}
-                stroke={colors.roomBlob.ink}
-                strokeWidth={INK}
+        <Animated.View style={[styles.body, bodyStyle]}>
+          <View style={styles.sheen} />
+          <Animated.View style={[styles.cheeks, cheekStyle]}>
+            {[-1, 1].map((side) => (
+              <View
+                key={`cheek-${side}`}
+                style={[
+                  styles.cheek,
+                  side < 0 ? styles.leftCheek : styles.rightCheek,
+                ]}
               />
-            </Svg>
-            <Animated.View style={[styles.cheek, styles.leftCheek, cheekStyle]} />
-            <Animated.View
-              style={[styles.cheek, styles.rightCheek, cheekStyle]}
-            />
-            <Animated.View style={[styles.eye, styles.leftEye, eyeStyle]} />
-            <Animated.View style={[styles.eye, styles.rightEye, eyeStyle]} />
-            <Animated.View style={[styles.smile, smileStyle]}>
-              <MochiMouth
-                kind={sad ? 'frown' : 'smile'}
-                w={MOUTH_W}
-                h={MOUTH_H}
-                u={u}
-              />
-            </Animated.View>
-          </View>
+            ))}
+          </Animated.View>
+          <Animated.View style={[styles.eye, styles.leftEye, eyeStyle]} />
+          <Animated.View style={[styles.eye, styles.rightEye, eyeStyle]} />
+          <Animated.View style={[styles.smile, smileStyle]} />
         </Animated.View>
-        <Sparkle cheer={cheer} u={u} x={-27} y={-84} delay={0} />
-        <Sparkle cheer={cheer} u={u} x={3} y={-96} delay={0.14} />
-        <Sparkle cheer={cheer} u={u} x={27} y={-80} delay={0.28} />
+        <Sparkle cheer={cheer} u={u} x={-27} y={-62} delay={0} />
+        <Sparkle cheer={cheer} u={u} x={3} y={-74} delay={0.14} />
+        <Sparkle cheer={cheer} u={u} x={27} y={-58} delay={0.28} />
       </Animated.View>
 
       {speech == null ? null : (
@@ -728,49 +678,27 @@ function createStyles(u: number) {
       borderRadius: (SHADOW_H / 2) * u,
       backgroundColor: colors.roomBlob.shadow,
     },
-    // Same fill and same ink as the body, drawn before it so his outline runs
-    // across their tops and only the bean end shows.
     foot: {
       position: 'absolute',
       top: -FOOT_H * u,
       width: FOOT_W * u,
       height: FOOT_H * u,
       borderRadius: (FOOT_H / 2) * u,
-      backgroundColor: colors.roomBlob.body,
-      borderWidth: INK * u,
-      borderColor: colors.roomBlob.ink,
+      backgroundColor: colors.roomBlob.foot,
     },
     backFoot: { left: (-FOOT_X - FOOT_W / 2) * u },
     frontFoot: { left: (FOOT_X - FOOT_W / 2) * u },
-    /** the whole creature, nubs included, hinging and squashing as one */
-    sprite: {
-      position: 'absolute',
-      left: (-SPRITE_W / 2) * u,
-      top: -(BODY_H + BODY_LIFT) * u,
-      width: SPRITE_W * u,
-      height: BODY_H * u,
-    },
-    nub: {
-      position: 'absolute',
-      top: NUB_TOP * u,
-      width: NUB_W * u,
-      height: NUB_H * u,
-      borderRadius: (NUB_H / 2) * u,
-      backgroundColor: colors.roomBlob.body,
-      borderWidth: INK * u,
-      borderColor: colors.roomBlob.ink,
-    },
-    leftNub: { left: 0 },
-    rightNub: {
-      left: (SPRITE_W - NUB_W) * u,
-      top: (NUB_TOP + NUB_DROP) * u,
-    },
     body: {
       position: 'absolute',
-      left: NUB_OUT * u,
-      top: 0,
+      left: (-BODY_W / 2) * u,
+      top: -(BODY_H + BODY_LIFT) * u,
       width: BODY_W * u,
       height: BODY_H * u,
+      borderTopLeftRadius: (BODY_W / 2) * u,
+      borderTopRightRadius: (BODY_W / 2) * u,
+      borderBottomLeftRadius: BODY_ROUND * u,
+      borderBottomRightRadius: BODY_ROUND * u,
+      backgroundColor: colors.roomBlob.body,
     },
     // No shadow: this view is re-composited on every frame the blob walks, and
     // an unrasterised shadow makes the compositor redraw it each time — which
@@ -820,41 +748,52 @@ function createStyles(u: number) {
       borderColor: colors.border.subtle,
       transform: [{ rotate: '45deg' }],
     },
-    // The face lives inside the body, and an absolutely positioned child sits
-    // against the *inner* edge of a border — so every face offset is measured in
-    // body units and then pulled back by the ink it is drawn inside.
-    eye: {
+    sheen: {
       position: 'absolute',
-      top: (EYE_TOP - INK) * u,
-      width: EYE_W * u,
-      height: EYE_H * u,
-      borderRadius: (EYE_W / 2) * u,
-      backgroundColor: colors.roomBlob.ink,
+      left: 8 * u,
+      top: 7 * u,
+      width: 12 * u,
+      height: 6 * u,
+      borderRadius: 3 * u,
+      backgroundColor: colors.roomBlob.bodyLight,
+      transform: [{ rotate: '-28deg' }],
     },
-    leftEye: {
-      left: (BODY_W / 2 + EYE_SHIFT - EYE_DX - EYE_W / 2 - INK) * u,
-    },
-    rightEye: {
-      left: (BODY_W / 2 + EYE_SHIFT + EYE_DX - EYE_W / 2 - INK) * u,
-    },
-    smile: {
-      position: 'absolute',
-      top: (MOUTH_TOP - INK) * u,
-      left: (BODY_W / 2 + EYE_SHIFT - MOUTH_W / 2 - INK) * u,
+    cheeks: {
+      ...StyleSheet.absoluteFillObject,
     },
     cheek: {
       position: 'absolute',
-      top: (CHEEK_TOP - INK) * u,
-      width: CHEEK_W * u,
-      height: CHEEK_H * u,
-      borderRadius: (CHEEK_H / 2) * u,
+      top: CHEEK_TOP * u,
+      width: CHEEK_SIZE * u,
+      height: CHEEK_SIZE * u,
+      borderRadius: (CHEEK_SIZE / 2) * u,
       backgroundColor: colors.roomBlob.cheek,
     },
     leftCheek: {
-      left: (BODY_W / 2 + EYE_SHIFT - CHEEK_DX - CHEEK_W / 2 - INK) * u,
+      left: (BODY_W / 2 + EYE_SHIFT - CHEEK_DX - CHEEK_SIZE / 2) * u,
     },
     rightCheek: {
-      left: (BODY_W / 2 + EYE_SHIFT + CHEEK_DX - CHEEK_W / 2 - INK) * u,
+      left: (BODY_W / 2 + EYE_SHIFT + CHEEK_DX - CHEEK_SIZE / 2) * u,
+    },
+    eye: {
+      position: 'absolute',
+      top: 16 * u,
+      width: EYE_W * u,
+      height: EYE_H * u,
+      borderRadius: (EYE_W / 2) * u,
+      backgroundColor: colors.roomBlob.face,
+    },
+    leftEye: { left: (BODY_W / 2 + EYE_SHIFT - EYE_DX - EYE_W / 2) * u },
+    rightEye: { left: (BODY_W / 2 + EYE_SHIFT + EYE_DX - EYE_W / 2) * u },
+    smile: {
+      position: 'absolute',
+      top: 30.5 * u,
+      left: (BODY_W / 2 + EYE_SHIFT - 5.75) * u,
+      width: 11.5 * u,
+      height: 6.5 * u,
+      borderBottomLeftRadius: 6.5 * u,
+      borderBottomRightRadius: 6.5 * u,
+      backgroundColor: colors.roomBlob.face,
     },
   });
 }

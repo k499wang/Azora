@@ -1,9 +1,4 @@
-/**
- * Mochi's line: his outline, his eyes, his mouth, and the few room surfaces
- * drawn to match him. It is his own blue taken dark rather than a neutral —
- * black reads as print and navy reads as borrowed, but a deep version of the
- * body colour reads as the same creature drawn in shadow.
- */
+/** Deep blue outline used by bordered controls in the room customization UI. */
 const INK = '#0B5A87';
 
 export const colors = {
@@ -111,9 +106,6 @@ export const colors = {
     textFaint: 'rgba(255,255,255,0.45)',
   },
 
-  // The hex room's resident. A cyan-leaning sky blue keeps him in the app's blue
-  // family while staying clear of the primary azure the UI accents use, so he
-  // reads as a character rather than furniture against the warm cream floor.
   // The room's hex frame is the cut thickness of its walls and floor slab, so
   // it is lit rather than coloured: one tone per face, ordered by how square
   // that face turns to a light sitting above and to the left. Cooler than the
@@ -126,25 +118,25 @@ export const colors = {
     baseRight: '#DCD4BF',
     sideRight: '#CFC6AE',
     /**
-     * The line around the cut. Same warm family as the faces, taken dark
-     * instead of to ink: the frame is one piece of plaster turning corners, and
-     * an outline in its own colour deepens it where a neutral would fence it
-     * off from the room it wraps.
+     * The softened line around the cut. Same warm family as the faces, with
+     * enough contrast to define the plaster edge without fencing off the room.
      */
-    line: '#9A8556',
+    line: 'rgba(154,133,86,0.30)',
   },
 
+  // The hex room's resident. A cyan-leaning sky blue keeps him in the app's blue
+  // family while staying clear of the primary azure the UI accents use, so he
+  // reads as a character rather than furniture against the warm cream floor.
   roomBlob: {
     body: '#46BCF5',
-    // One ink for the outline that wraps him and for the eyes and mouth inside
-    // it, a deep cut of `body` — so his own line deepens his blue instead of
-    // fencing it in, and he reads as drawn rather than stickered onto the page.
-    ink: INK,
+    bodyLight: '#7FD6FA',
+    foot: '#2497DB',
+    face: '#12384B',
     // the pop of sparkles when the blob is poked
     sparkle: '#FFCE3D',
-    // his blush, and the breathing circle's; warm against the sky blue so the
-    // small cheeks read as colour rather than another highlight
-    cheek: '#FF8CA2',
+    // Mochi's friendly blush; warm against the sky blue so the small cheeks
+    // read as colour rather than another highlight
+    cheek: '#FF7C6A',
     // matches the shadow ink the room artwork already uses
     shadow: 'rgba(58,67,79,0.22)',
     // the clipboard he takes notes on — warm wood against his sky blue

@@ -36,7 +36,7 @@ Recipe:
 | Part | Token |
 | --- | --- |
 | Shape | `...card.block` (radius.hero 20, continuous, `overflow: 'hidden'`) |
-| Fill + line | `coloredCard(categoryStyle.hue)` — `hue.base` fill with a `COLORED_CARD_LINE` (2pt) border using `hue.ink` at 70% opacity |
+| Fill + line | `coloredCard(categoryStyle.hue)` — `hue.base` fill with a `COLORED_CARD_LINE` (2pt) border using `hue.ink` at 25% opacity |
 | Text | `colors.text.inverse` for all copy |
 | Decoration | `<ActivityGlyph size={186} color={inverse} opacity={0.16} />`, absolutely positioned `right: -50, bottom: -58` |
 | Content pad | `padding: spacing.lg`, `paddingLeft: spacing.md`, `paddingBottom: spacing.md`, `justifyContent: 'space-between'` |
@@ -181,9 +181,10 @@ missing, add it to the palette first.
   never tinted by the hue. Color blocks clip, so the shadow must go on a wrapper
   view, never on the clipping view itself.
 - **Own-color borders on saturated cards.** Use `coloredCard(hue)` for a
-  `hue.base` fill with a 2pt `hue.ink` border at 70% opacity. Neutral
+  `hue.base` fill with a 2pt `hue.ink` border at 25% opacity. Neutral
   `card.base` surfaces remain borderless; depth there comes from canvas contrast
-  and shadow. The room and mascot keep their separate 1.25pt `LINE` token.
+  and shadow. Bordered room-customization controls use the separate 1.25pt
+  `LINE` token.
 - **Spacing:** `spacing.xs 4` inside a meta row, `spacing.sm 8` between marker
   and pill, `spacing.md 16` between copy and art / as card padding,
   `spacing.lg 24` as the top/right pad of a color block and as the vertical gap

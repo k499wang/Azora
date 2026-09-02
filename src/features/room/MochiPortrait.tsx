@@ -1,8 +1,7 @@
 import { memo } from 'react';
 import { StyleSheet, View } from 'react-native';
-import Svg, { Path, Polyline } from 'react-native-svg';
+import Svg, { Polyline } from 'react-native-svg';
 import { colors } from '../../theme/colors';
-import MochiMouth, { type MochiMouthKind } from './MochiMouth';
 
 /**
  * The room's resident, standing still.
@@ -21,34 +20,18 @@ import MochiMouth, { type MochiMouthKind } from './MochiMouth';
  * recolour from `colors.ts` with the rest of the app, and cost nothing in the
  * bundle.
  */
-const BODY_W = 56;
-const BODY_H = 66;
-const BODY_LIFT = 4;
-/** the line that wraps him; the eyes and mouth are the same ink */
-const INK = 1.6;
-/** A subtly narrow crown flowing into a full lower half and broad soft base. */
-const BODY_PATH =
-  'M28 1 C13 1 3 11 3 27 C3 34 2 40 2 45 C2 56 13 65 28 65 C43 65 54 56 54 45 C54 40 53 34 53 27 C53 11 43 1 28 1 Z';
-const FOOT_W = 17;
-const FOOT_H = 11.5;
-const FOOT_X = 11.5;
-const SHADOW_W = 62;
-const SHADOW_H = 17;
-/**
- * The nubs. They are arms only in the sense that they are on the sides — barely
- * a lobe each, drawn behind him so his own outline crosses their base and the
- * three shapes stay one creature. `NUB_OUT` is all that shows.
- */
-const NUB_W = 11;
-const NUB_H = 9.5;
-const NUB_OUT = 5.5;
-const NUB_TOP = 37;
-/** the right nub hangs a shade lower — he is not a corporate icon */
-const NUB_DROP = 1;
-const EYE_SHIFT = 1.5;
-const EYE_DX = 12;
-const EYE_RISE = 1;
-const MOUTH_RISE = 0.5;
+const BODY_W = 54;
+const BODY_H = 48;
+const BODY_LIFT = 6;
+/** how far his bottom corners are rounded off at rest, in body units */
+const BODY_ROUND = BODY_H / 2;
+const FOOT_W = 19;
+const FOOT_H = 9.5;
+const FOOT_X = 13;
+const SHADOW_W = 60;
+const SHADOW_H = 20;
+const EYE_SHIFT = 2.5;
+const EYE_DX = 8;
 
 /** the centre of the face, in body units */
 const FACE_CX = BODY_W / 2 + EYE_SHIFT;
@@ -81,7 +64,11 @@ export type MochiExpression =
  * anything poking outside the bounds would render on iOS and be cut off on
  * Android.
  */
-export type MochiWearable = 'glasses' | 'headphones' | 'partyHat' | 'nightcap';
+export type MochiWearable =
+  | 'glasses'
+  | 'headphones'
+  | 'partyHat'
+  | 'nightcap';
 
 export type MochiHeld = 'pencil' | 'book' | 'notes';
 
@@ -97,11 +84,15 @@ interface EyeShape {
   dx?: number;
 }
 
+type MouthKind = 'smile' | 'frown' | 'open' | 'line';
+
 interface MouthShape {
   w: number;
   h: number;
   top: number;
-  kind: MochiMouthKind;
+  kind: MouthKind;
+  /** overrides the subdued default used by mood-specific filled mouths */
+  opacity?: number;
 }
 
 interface Face {
@@ -109,6 +100,8 @@ interface Face {
   mouth: MouthShape;
   /** squints the far eye, for a look off to one side */
   squint?: boolean;
+  /** adds the small coral blush used by his warmer expressions */
+  cheeks?: boolean;
 }
 
 /** where a foot sits relative to where it rests, in body units */
@@ -142,6 +135,11 @@ interface Pose {
   feet?: [FootOffset, FootOffset];
   /** how much of the eye a lowered lid covers, 0 to 1 */
   lid?: number;
+  /**
+   * His bottom corners, in body units. He rests on `BODY_ROUND`, half his
+   * height, while an expression can still override the silhouette locally.
+   */
+  round?: number;
 }
 
 interface Sprite {
@@ -152,15 +150,22 @@ interface Sprite {
 const SPRITES: Record<MochiExpression, Sprite> = {
   happy: {
     face: {
-      eye: { w: 5.4, h: 6, top: 21 },
-      mouth: { w: 13, h: 6, top: 26, kind: 'smile' },
+      eye: { w: 8, h: 9, top: 16 },
+      mouth: {
+        w: 11.5,
+        h: 6.5,
+        top: 30.5,
+        kind: 'smile',
+        opacity: 1,
+      },
+      cheeks: true,
     },
     pose: { tilt: 5, feet: [{ dx: -1 }, { dx: 2, dy: 1.5 }] },
   },
   sad: {
     face: {
-      eye: { w: 5.4, h: 3.6, top: 22.5 },
-      mouth: { w: 10, h: 4.5, top: 29, kind: 'frown' },
+      eye: { w: 8, h: 5.5, top: 18 },
+      mouth: { w: 9, h: 4.5, top: 33, kind: 'frown' },
     },
     /** shorter, drawn in on himself, lids down */
     pose: {
@@ -172,16 +177,16 @@ const SPRITES: Record<MochiExpression, Sprite> = {
   },
   sleepy: {
     face: {
-      eye: { w: 6, h: 1.6, top: 24 },
-      mouth: { w: 8, h: 4.5, top: 28, kind: 'smile' },
+      eye: { w: 9, h: 2.2, top: 20 },
+      mouth: { w: 6, h: 3, top: 32, kind: 'smile' },
     },
     /** listing over, about to go */
     pose: { tilt: 8, stretch: 0.96, lid: 0.35, feet: [{ dx: 2 }, { dx: 4 }] },
   },
   excited: {
     face: {
-      eye: { w: 6, h: 6.8, top: 20.5 },
-      mouth: { w: 7, h: 5.4, top: 27, kind: 'open' },
+      eye: { w: 9, h: 10, top: 15 },
+      mouth: { w: 12, h: 9, top: 28, kind: 'open' },
     },
     /** the only pose with both feet off the floor */
     pose: {
@@ -195,8 +200,8 @@ const SPRITES: Record<MochiExpression, Sprite> = {
   },
   thinking: {
     face: {
-      eye: { w: 5.4, h: 6, top: 21 },
-      mouth: { w: 6, h: 2, top: 29, kind: 'line' },
+      eye: { w: 8, h: 9, top: 16 },
+      mouth: { w: 7, h: 2.2, top: 33, kind: 'line' },
       squint: true,
     },
     /** leaning back from the thing he is weighing up, one foot forward */
@@ -204,16 +209,16 @@ const SPRITES: Record<MochiExpression, Sprite> = {
   },
   surprised: {
     face: {
-      eye: { w: 6.4, h: 7.4, top: 20 },
-      mouth: { w: 4.4, h: 4.6, top: 27.5, kind: 'open' },
+      eye: { w: 10, h: 11, top: 14 },
+      mouth: { w: 7, h: 7.5, top: 30, kind: 'open' },
     },
     /** pulled up short, feet apart */
     pose: { stretch: 1.07, lift: 2, feet: [{ dx: -4 }, { dx: 4 }] },
   },
   proud: {
     face: {
-      eye: { w: 6, h: 3, top: 22.5, arc: true },
-      mouth: { w: 14, h: 6, top: 26.5, kind: 'smile' },
+      eye: { w: 9, h: 4.5, top: 18, arc: true },
+      mouth: { w: 13, h: 6.5, top: 30, kind: 'smile' },
     },
     /** chest up, planted */
     pose: { stretch: 1.05, feet: [{ dx: -3.5 }, { dx: 3.5 }] },
@@ -221,16 +226,24 @@ const SPRITES: Record<MochiExpression, Sprite> = {
   /** eyes open, mouth closed and curved: happy without the grin */
   pleased: {
     face: {
-      eye: { w: 5.4, h: 6, top: 21 },
-      mouth: { w: 13, h: 6, top: 26, kind: 'smile' },
+      eye: { w: 8, h: 9, top: 16 },
+      mouth: {
+        w: 11.5,
+        h: 6.5,
+        top: 30.5,
+        kind: 'smile',
+        opacity: 1,
+      },
+      cheeks: true,
     },
     pose: { tilt: 6, stretch: 0.99, feet: [{ dx: 1 }, { dx: 2.5 }] },
   },
-  /** eyes screwed shut, lips pushing the air out */
+  /** eyes screwed shut, cheeks full, lips pushing the air out */
   puffed: {
     face: {
-      eye: { w: 4.6, h: 6.4, top: 20, chevron: true, dx: 12 },
-      mouth: { w: 5.4, h: 6.4, top: 26.5, kind: 'open' },
+      eye: { w: 7, h: 10, top: 13, chevron: true, dx: 8.5 },
+      mouth: { w: 9, h: 10.5, top: 29, kind: 'open' },
+      cheeks: true,
     },
     /** upright and planted, so all the effort reads in the face */
     pose: { feet: [{ dx: -2.5 }, { dx: 2.5 }] },
@@ -247,6 +260,10 @@ const HEADROOM: Record<MochiWearable, number> = {
   nightcap: 15,
 };
 
+const FRIENDLY_CHEEK_SIZE = 4.8;
+const FRIENDLY_CHEEK_DX = 15.5;
+const FRIENDLY_CHEEK_TOP = 25.5;
+
 /** extra room a held prop needs on either side, in body units */
 const SIDEROOM: Record<MochiHeld, number> = {
   pencil: 8,
@@ -262,14 +279,12 @@ const SIDEROOM: Record<MochiHeld, number> = {
 function poseSideroom(pose: Pose, bodyW: number, bodyH: number) {
   const radians = ((pose.tilt ?? 0) * Math.PI) / 180;
   const leaned =
-    (bodyW / 2 + NUB_OUT) * Math.cos(radians) +
-    bodyH * Math.abs(Math.sin(radians));
+    (bodyW / 2) * Math.cos(radians) + bodyH * Math.abs(Math.sin(radians));
   const planted = (pose.feet ?? RESTING_FEET).reduce(
     (widest, foot, index) =>
       Math.max(
         widest,
-        Math.abs((index === 0 ? -FOOT_X : FOOT_X) + (foot.dx ?? 0)) +
-          FOOT_W / 2,
+        Math.abs((index === 0 ? -FOOT_X : FOOT_X) + (foot.dx ?? 0)) + FOOT_W / 2,
       ),
     0,
   );
@@ -295,16 +310,10 @@ export function getMochiSideroom(
   return (room * size) / BODY_W;
 }
 
-/** the blush, out past the eyes and a little below them */
-const CHEEK_W = 8;
-const CHEEK_H = 8;
-const CHEEK_DX = 17;
-const CHEEK_TOP = 27.6;
-
-const EYE_STROKE = 1.8;
-const LENS = 11;
+const EYE_STROKE = 2.6;
+const LENS = 16;
 const RIM = 2;
-const BRIDGE = 4;
+const BRIDGE = 3;
 const BAND_W = 52;
 const BAND_H = 17;
 const BAND_RIM = 3;
@@ -346,6 +355,7 @@ function MochiPortrait({
   const stretch = pose.stretch ?? 1;
   const lift = pose.lift ?? 0;
   const lid = pose.lid ?? 0;
+  const round = pose.round ?? BODY_ROUND;
   const feet = pose.feet ?? RESTING_FEET;
   const bodyW = BODY_W / stretch;
   const bodyH = BODY_H * stretch;
@@ -353,16 +363,10 @@ function MochiPortrait({
   const fx = 1 / stretch;
   const fy = stretch;
 
-  const spriteW = bodyW + NUB_OUT * 2;
   const poseroom = poseSideroom(pose, bodyW, bodyH);
   const width = (SHADOW_W + (sideroom + poseroom) * 2) * u;
   const height =
-    (BODY_H +
-      BODY_LIFT +
-      SHADOW_H +
-      headroom +
-      Math.max(0, bodyH + lift - BODY_H)) *
-    u;
+    (BODY_H + BODY_LIFT + SHADOW_H + headroom + Math.max(0, bodyH + lift - BODY_H)) * u;
   /** the floor line, measured up from the bottom of the box */
   const contact = (SHADOW_H / 2) * u;
   /** the top of his head, measured up from the bottom of the box */
@@ -401,7 +405,6 @@ function MochiPortrait({
                 width: FOOT_W * u,
                 height: FOOT_H * u,
                 borderRadius: (FOOT_H / 2) * u,
-                borderWidth: INK * u,
               },
             ]}
           />
@@ -415,152 +418,123 @@ function MochiPortrait({
 
       <View
         style={[
-          styles.sprite,
+          styles.body,
           {
-            left: (width - spriteW * u) / 2,
+            left: (width - bodyW * u) / 2,
             bottom: contact + (BODY_LIFT + lift) * u,
-            width: spriteW * u,
+            width: bodyW * u,
             height: bodyH * u,
+            borderTopLeftRadius: (bodyW / 2) * u,
+            borderTopRightRadius: (bodyW / 2) * u,
+            borderBottomLeftRadius: round * u,
+            borderBottomRightRadius: round * u,
             transform: [{ rotate: `${tilt}deg` }],
           },
         ]}
       >
-        {[-1, 1].map((side) => (
+        {!isPuffed ? (
           <View
-            key={`nub-${side}`}
             style={[
-              styles.nub,
+              styles.sheen,
               {
-                left: side < 0 ? 0 : (spriteW - NUB_W) * u,
-                top: (NUB_TOP * fy + (side < 0 ? 0 : NUB_DROP)) * u,
-                width: NUB_W * u,
-                height: NUB_H * u,
-                borderRadius: (NUB_H / 2) * u,
-                borderWidth: INK * u,
+                left: 8 * fx * u,
+                top: 7 * fy * u,
+                width: 12 * fx * u,
+                height: 6 * fy * u,
+                borderRadius: 3 * u,
+                transform: [{ rotate: '-28deg' }],
               },
             ]}
           />
-        ))}
+        ) : null}
 
-        <View
-          style={[
-            styles.body,
-            {
-              left: NUB_OUT * u,
-              top: 0,
-              width: bodyW * u,
-              height: bodyH * u,
-            },
-          ]}
-        >
-          <Svg
-            width={bodyW * u}
-            height={bodyH * u}
-            viewBox={`0 0 ${BODY_W} ${BODY_H}`}
-            preserveAspectRatio="none"
-          >
-            <Path
-              d={BODY_PATH}
-              fill={colors.roomBlob.body}
-              stroke={colors.roomBlob.ink}
-              strokeWidth={INK}
-            />
-          </Svg>
-          {[-1, 1].map((side) => (
-            <View
-              key={`cheek-${side}`}
-              style={[
-                styles.cheek,
-                {
-                  left:
-                    ((faceCenterX + side * CHEEK_DX - CHEEK_W / 2) * fx - INK) *
-                    u,
-                  top: (CHEEK_TOP * fy - INK) * u,
-                  width: CHEEK_W * u,
-                  height: CHEEK_H * u,
-                  borderRadius: (CHEEK_H / 2) * u,
-                },
-              ]}
-            />
-          ))}
-
-          {[-(face.eye.dx ?? EYE_DX), face.eye.dx ?? EYE_DX].map((offset) => {
-            if (face.eye.chevron) {
-              return (
-                <ChevronEye
-                  key={offset}
-                  u={u}
-                  eye={face.eye}
-                  centerX={(faceCenterX + offset) * fx}
-                  fy={fy}
-                  pointsRight={offset < 0}
-                />
-              );
-            }
-
-            const squinted = face.squint === true && offset > 0;
-            const h = squinted ? face.eye.h * 0.4 : face.eye.h;
-            const top = squinted
-              ? face.eye.top + (face.eye.h - h) / 2
-              : face.eye.top;
-
-            return (
+        {face.cheeks
+          ? [-1, 1].map((side) => (
               <View
-                key={offset}
+                key={`friendly-cheek-${side}`}
                 style={[
-                  styles.eye,
+                  styles.friendlyCheek,
                   {
                     left:
-                      ((faceCenterX + offset - face.eye.w / 2) * fx - INK) * u,
-                    top: ((top - EYE_RISE) * fy - INK) * u,
-                    width: face.eye.w * u,
-                    height: h * u,
-                    borderTopLeftRadius: (face.eye.w / 2) * u,
-                    borderTopRightRadius: (face.eye.w / 2) * u,
-                    borderBottomLeftRadius: face.eye.arc
-                      ? 0
-                      : (face.eye.w / 2) * u,
-                    borderBottomRightRadius: face.eye.arc
-                      ? 0
-                      : (face.eye.w / 2) * u,
+                      (faceCenterX +
+                        side * FRIENDLY_CHEEK_DX -
+                        FRIENDLY_CHEEK_SIZE / 2) *
+                      fx *
+                      u,
+                    top: FRIENDLY_CHEEK_TOP * fy * u,
+                    width: FRIENDLY_CHEEK_SIZE * u,
+                    height: FRIENDLY_CHEEK_SIZE * u,
+                    borderRadius: (FRIENDLY_CHEEK_SIZE / 2) * u,
                   },
                 ]}
-              >
-                {lid > 0 ? (
-                  <View
-                    style={[
-                      styles.lid,
-                      {
-                        height: h * lid * u,
-                        borderBottomLeftRadius: (face.eye.w / 2) * u,
-                        borderBottomRightRadius: (face.eye.w / 2) * u,
-                      },
-                    ]}
-                  />
-                ) : null}
-              </View>
+              />
+            ))
+          : null}
+
+        {[-(face.eye.dx ?? EYE_DX), face.eye.dx ?? EYE_DX].map((offset) => {
+          if (face.eye.chevron) {
+            return (
+              <ChevronEye
+                key={offset}
+                u={u}
+                eye={face.eye}
+                centerX={(faceCenterX + offset) * fx}
+                fy={fy}
+                pointsRight={offset < 0}
+              />
             );
-          })}
+          }
 
-          <View
-            style={[
-              styles.mouth,
-              {
-                left: ((faceCenterX - face.mouth.w / 2) * fx - INK) * u,
-                top: ((face.mouth.top - MOUTH_RISE) * fy - INK) * u,
-              },
-            ]}
-          >
-            <MochiMouth
-              kind={face.mouth.kind}
-              w={face.mouth.w}
-              h={face.mouth.h}
-              u={u}
-            />
-          </View>
+          const squinted = face.squint === true && offset > 0;
+          const h = squinted ? face.eye.h * 0.4 : face.eye.h;
+          const top = squinted
+            ? face.eye.top + (face.eye.h - h) / 2
+            : face.eye.top;
 
-          {wearing === 'glasses' ? <Glasses u={u} fx={fx} fy={fy} /> : null}
-        </View>
+          return (
+            <View
+              key={offset}
+              style={[
+                styles.eye,
+                {
+                  left: (faceCenterX + offset - face.eye.w / 2) * fx * u,
+                  top: top * fy * u,
+                  width: face.eye.w * u,
+                  height: h * u,
+                  borderTopLeftRadius: (face.eye.w / 2) * u,
+                  borderTopRightRadius: (face.eye.w / 2) * u,
+                  borderBottomLeftRadius: face.eye.arc ? 0 : (face.eye.w / 2) * u,
+                  borderBottomRightRadius: face.eye.arc
+                    ? 0
+                    : (face.eye.w / 2) * u,
+                },
+              ]}
+            >
+              {lid > 0 ? (
+                <View
+                  style={[
+                    styles.lid,
+                    {
+                      height: h * lid * u,
+                      borderBottomLeftRadius: (face.eye.w / 2) * u,
+                      borderBottomRightRadius: (face.eye.w / 2) * u,
+                    },
+                  ]}
+                />
+              ) : null}
+            </View>
+          );
+        })}
+
+        <Mouth
+          mouth={face.mouth}
+          u={u}
+          centerX={faceCenterX}
+          fx={fx}
+          fy={fy}
+        />
+
+        {wearing === 'glasses' ? <Glasses u={u} fx={fx} fy={fy} /> : null}
       </View>
 
       {holding === 'notes' ? <Notes u={u} width={width} /> : null}
@@ -579,6 +553,52 @@ function MochiPortrait({
 }
 
 export default memo(MochiPortrait);
+
+function Mouth({
+  mouth,
+  u,
+  centerX,
+  fx,
+  fy,
+}: {
+  mouth: MouthShape;
+  u: number;
+  centerX: number;
+  /** the body's stretch, which the face is positioned inside */
+  fx: number;
+  fy: number;
+}) {
+  const round = (value: number) => value * u;
+
+  const corners =
+    mouth.kind === 'smile'
+      ? {
+          borderBottomLeftRadius: round(mouth.h),
+          borderBottomRightRadius: round(mouth.h),
+        }
+      : mouth.kind === 'frown'
+        ? {
+            borderTopLeftRadius: round(mouth.h),
+            borderTopRightRadius: round(mouth.h),
+          }
+        : { borderRadius: round(Math.min(mouth.w, mouth.h) / 2) };
+
+  return (
+    <View
+      style={[
+        styles.mouth,
+        {
+          left: (centerX - mouth.w / 2) * fx * u,
+          top: mouth.top * fy * u,
+          width: mouth.w * u,
+          height: mouth.h * u,
+          opacity: mouth.opacity ?? 0.75,
+        },
+        corners,
+      ]}
+    />
+  );
+}
 
 /**
  * An eye screwed shut: a `>` on his left and a `<` on his right, so the pair
@@ -615,8 +635,8 @@ function ChevronEye({
     <Svg
       style={{
         position: 'absolute',
-        left: (centerX - boxW / 2 - INK) * u,
-        top: ((eye.top - EYE_RISE - pad) * fy - INK) * u,
+        left: (centerX - boxW / 2) * u,
+        top: (eye.top - pad) * fy * u,
       }}
       width={boxW * u}
       height={boxH * fy * u}
@@ -626,7 +646,7 @@ function ChevronEye({
       <Polyline
         points={`${back},${pad} ${tip},${pad + eye.h / 2} ${back},${pad + eye.h}`}
         fill="none"
-        stroke={colors.roomBlob.ink}
+        stroke={colors.roomBlob.face}
         strokeWidth={EYE_STROKE}
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -637,8 +657,7 @@ function ChevronEye({
 
 /** rims around the eyes, a bridge between them and a stub arm on each side */
 function Glasses({ u, fx, fy }: { u: number; fx: number; fy: number }) {
-  /** the middle of the eye row he wears them over */
-  const cy = 23;
+  const cy = 20.5;
 
   return (
     <>
@@ -648,8 +667,8 @@ function Glasses({ u, fx, fy }: { u: number; fx: number; fy: number }) {
           style={[
             styles.lens,
             {
-              left: ((FACE_CX + offset - LENS / 2) * fx - INK) * u,
-              top: ((cy - LENS / 2) * fy - INK) * u,
+              left: (FACE_CX + offset - LENS / 2) * fx * u,
+              top: (cy - LENS / 2) * fy * u,
               width: LENS * u,
               height: LENS * u,
               borderRadius: (LENS / 2) * u,
@@ -663,8 +682,8 @@ function Glasses({ u, fx, fy }: { u: number; fx: number; fy: number }) {
         style={[
           styles.frame,
           {
-            left: ((FACE_CX - BRIDGE / 2) * fx - INK) * u,
-            top: ((cy - RIM / 2) * fy - INK) * u,
+            left: (FACE_CX - BRIDGE / 2) * fx * u,
+            top: (cy - RIM / 2) * fy * u,
             width: BRIDGE * u,
             height: RIM * u,
           },
@@ -679,9 +698,9 @@ function Glasses({ u, fx, fy }: { u: number; fx: number; fy: number }) {
             {
               left:
                 side < 0
-                  ? ((FACE_CX - EYE_DX - LENS / 2 - 3.5) * fx - INK) * u
-                  : ((FACE_CX + EYE_DX + LENS / 2 - 0.5) * fx - INK) * u,
-              top: ((cy - RIM / 2) * fy - INK) * u,
+                  ? (FACE_CX - EYE_DX - LENS / 2 - 3.5) * fx * u
+                  : (FACE_CX + EYE_DX + LENS / 2 - 0.5) * fx * u,
+              top: (cy - RIM / 2) * fy * u,
               width: 4 * u,
               height: RIM * u,
             },
@@ -965,31 +984,22 @@ function Book({
 
 const styles = StyleSheet.create({
   shadow: { position: 'absolute', backgroundColor: colors.roomBlob.shadow },
-  // Same fill and same ink as the body, drawn before it so his outline runs
-  // across their tops and only the bean end shows.
-  foot: {
-    position: 'absolute',
-    backgroundColor: colors.roomBlob.body,
-    borderColor: colors.roomBlob.ink,
-  },
+  foot: { position: 'absolute', backgroundColor: colors.roomBlob.foot },
   // Hinged at the floor, so a lean reads as a bend at the waist rather than the
-  // whole sprite falling over. Carries the nubs as well as the body, so the
-  // three lean as one creature.
-  sprite: {
-    position: 'absolute',
-    transformOrigin: 'bottom center',
-  },
-  nub: {
-    position: 'absolute',
-    backgroundColor: colors.roomBlob.body,
-    borderColor: colors.roomBlob.ink,
-  },
+  // whole sprite falling over.
   body: {
     position: 'absolute',
+    backgroundColor: colors.roomBlob.body,
+    transformOrigin: 'bottom center',
+  },
+  sheen: { position: 'absolute', backgroundColor: colors.roomBlob.bodyLight },
+  friendlyCheek: {
+    position: 'absolute',
+    backgroundColor: colors.roomBlob.cheek,
   },
   eye: {
     position: 'absolute',
-    backgroundColor: colors.roomBlob.ink,
+    backgroundColor: colors.roomBlob.face,
     overflow: 'hidden',
   },
   // His own colour sliding down over the eye, clipped to it. Half-shut eyes are
@@ -1001,20 +1011,22 @@ const styles = StyleSheet.create({
     top: 0,
     backgroundColor: colors.roomBlob.body,
   },
-  mouth: { position: 'absolute' },
-  cheek: { position: 'absolute', backgroundColor: colors.roomBlob.cheek },
+  mouth: {
+    position: 'absolute',
+    backgroundColor: colors.roomBlob.face,
+  },
   lens: {
     position: 'absolute',
-    borderColor: colors.roomBlob.ink,
+    borderColor: colors.roomBlob.face,
   },
-  frame: { position: 'absolute', backgroundColor: colors.roomBlob.ink },
+  frame: { position: 'absolute', backgroundColor: colors.roomBlob.face },
   band: {
     position: 'absolute',
     borderColor: colors.neutral[700],
     backgroundColor: 'transparent',
   },
   cup: { position: 'absolute', backgroundColor: colors.neutral[700] },
-  arm: { position: 'absolute', backgroundColor: colors.neutral[700] },
+  arm: { position: 'absolute', backgroundColor: colors.roomBlob.foot },
   pom: { position: 'absolute', backgroundColor: colors.neutral[0] },
   cap: { position: 'absolute', backgroundColor: colors.primary.blue600 },
   capBrim: { position: 'absolute', backgroundColor: colors.neutral[0] },
@@ -1036,7 +1048,7 @@ const styles = StyleSheet.create({
     right: 0,
     backgroundColor: colors.orange[600],
   },
-  graphite: { position: 'absolute', backgroundColor: colors.roomBlob.ink },
+  graphite: { position: 'absolute', backgroundColor: colors.roomBlob.face },
   bookCover: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: colors.primary.blue200,

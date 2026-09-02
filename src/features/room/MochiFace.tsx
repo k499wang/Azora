@@ -7,7 +7,6 @@ import Animated, {
   useSharedValue,
 } from 'react-native-reanimated';
 import { colors } from '../../theme/colors';
-import MochiMouth from './MochiMouth';
 
 /**
  * Mochi cropped to his face, standing on a pair of feet — and waddling on the
@@ -37,50 +36,36 @@ import MochiMouth from './MochiMouth';
  * `RoomBlob`: each renderer measures in its own basis and keeps its own numbers
  * legible in one file.
  */
-const BODY_W = 56;
-const BODY_H = 66;
-/**
- * His corners. The top is a full dome — `BODY_TOP_ROUND` is exactly half his
- * width — and the bottom is nearly one, so the short straight run left on each
- * side reads as a soft loaf rather than a capsule.
- */
-const BODY_TOP_ROUND = BODY_W / 2;
-const BODY_BOTTOM_ROUND = 26;
-/** the line that wraps him; the eyes and mouth are the same ink */
-const INK = 1.6;
+const BODY_W = 54;
+const BODY_H = 48;
+/** how far his bottom corners are rounded off, in body units */
+const BODY_ROUND = BODY_H / 2;
 /** how far he floats above his feet, which is what lets them show below him */
-const BODY_LIFT = 4;
+const BODY_LIFT = 6;
 
-const FOOT_W = 17;
-const FOOT_H = 11.5;
-const FOOT_X = 11.5;
-
-/** the nubs, drawn behind him so his own outline crosses their base */
-const NUB_W = 11;
-const NUB_H = 9.5;
-const NUB_OUT = 5.5;
-const NUB_TOP = 39;
-/** the right nub hangs a shade lower — he is not a corporate icon */
-const NUB_DROP = 1;
-const SPRITE_W = BODY_W + NUB_OUT * 2;
+const FOOT_W = 19;
+const FOOT_H = 9.5;
+const FOOT_X = 13;
 
 /** straight on, so the face is centred rather than carrying his usual offset */
 const FACE_CX = BODY_W / 2;
-const EYE_DX = 11;
-const EYE_W = 5.4;
-const EYE_H = 6;
-/** high on the body, so the empty plush belly below is most of what you see */
-const EYE_TOP = 21;
+const EYE_DX = 8.5;
+const EYE_W = 8;
+const EYE_H = 9;
+const EYE_TOP = 16;
 
-const MOUTH_W = 13;
-const MOUTH_H = 6;
-const MOUTH_TOP = 26;
+const MOUTH_W = 11.5;
+const MOUTH_H = 6.5;
+const MOUTH_TOP = 30.5;
 
-/** the blush, out past the eyes and a little below them */
-const CHEEK_W = 9.5;
-const CHEEK_H = 6.2;
-const CHEEK_DX = 17;
-const CHEEK_TOP = 28.5;
+const CHEEK_SIZE = 4.8;
+const CHEEK_DX = 15.5;
+const CHEEK_TOP = 25.5;
+
+const SHEEN_LEFT = 8;
+const SHEEN_TOP = 7;
+const SHEEN_W = 12;
+const SHEEN_H = 6;
 
 /** one full stride cycle is two steps; 0.8 of a cycle a second is an amble */
 const STEP_RATE = Math.PI * 2 * 0.8;
@@ -193,18 +178,17 @@ function MochiFace({ size }: MochiFaceProps) {
   }, [u]);
 
   return (
-    <View style={{ width: SPRITE_W * u, height: (BODY_H + BODY_LIFT) * u }}>
+    <View style={{ width: BODY_W * u, height: (BODY_H + BODY_LIFT) * u }}>
       {[-FOOT_X, FOOT_X].map((offset, index) => (
         <Animated.View
           key={`foot-${offset}`}
           style={[
             styles.foot,
             {
-              left: (SPRITE_W / 2 + offset - FOOT_W / 2) * u,
+              left: (FACE_CX + offset - FOOT_W / 2) * u,
               width: FOOT_W * u,
               height: FOOT_H * u,
               borderRadius: (FOOT_H / 2) * u,
-              borderWidth: INK * u,
             },
             index === 0 ? leftFootStyle : rightFootStyle,
           ]}
@@ -213,23 +197,60 @@ function MochiFace({ size }: MochiFaceProps) {
 
       <Animated.View
         style={[
-          styles.sprite,
-          { bottom: BODY_LIFT * u, width: SPRITE_W * u, height: BODY_H * u },
+          styles.face,
+          {
+            bottom: BODY_LIFT * u,
+            width: BODY_W * u,
+            height: BODY_H * u,
+            borderTopLeftRadius: (BODY_W / 2) * u,
+            borderTopRightRadius: (BODY_W / 2) * u,
+            borderBottomLeftRadius: BODY_ROUND * u,
+            borderBottomRightRadius: BODY_ROUND * u,
+          },
           bodyStyle,
         ]}
       >
+        <View
+          style={[
+            styles.sheen,
+            {
+              left: SHEEN_LEFT * u,
+              top: SHEEN_TOP * u,
+              width: SHEEN_W * u,
+              height: SHEEN_H * u,
+              borderRadius: (SHEEN_H / 2) * u,
+              transform: [{ rotate: '-28deg' }],
+            },
+          ]}
+        />
+
         {[-1, 1].map((side) => (
           <View
-            key={`nub-${side}`}
+            key={`cheek-${side}`}
             style={[
-              styles.nub,
+              styles.cheek,
               {
-                left: side < 0 ? 0 : (SPRITE_W - NUB_W) * u,
-                top: (NUB_TOP + (side < 0 ? 0 : NUB_DROP)) * u,
-                width: NUB_W * u,
-                height: NUB_H * u,
-                borderRadius: (NUB_H / 2) * u,
-                borderWidth: INK * u,
+                left: (FACE_CX + side * CHEEK_DX - CHEEK_SIZE / 2) * u,
+                top: CHEEK_TOP * u,
+                width: CHEEK_SIZE * u,
+                height: CHEEK_SIZE * u,
+                borderRadius: (CHEEK_SIZE / 2) * u,
+              },
+            ]}
+          />
+        ))}
+
+        {[-EYE_DX, EYE_DX].map((offset) => (
+          <View
+            key={`eye-${offset}`}
+            style={[
+              styles.eye,
+              {
+                left: (FACE_CX + offset - EYE_W / 2) * u,
+                top: EYE_TOP * u,
+                width: EYE_W * u,
+                height: EYE_H * u,
+                borderRadius: (EYE_W / 2) * u,
               },
             ]}
           />
@@ -237,63 +258,17 @@ function MochiFace({ size }: MochiFaceProps) {
 
         <View
           style={[
-            styles.face,
+            styles.mouth,
             {
-              left: NUB_OUT * u,
-              width: BODY_W * u,
-              height: BODY_H * u,
-              borderTopLeftRadius: BODY_TOP_ROUND * u,
-              borderTopRightRadius: BODY_TOP_ROUND * u,
-              borderBottomLeftRadius: BODY_BOTTOM_ROUND * u,
-              borderBottomRightRadius: BODY_BOTTOM_ROUND * u,
-              borderWidth: INK * u,
+              left: (FACE_CX - MOUTH_W / 2) * u,
+              top: MOUTH_TOP * u,
+              width: MOUTH_W * u,
+              height: MOUTH_H * u,
+              borderBottomLeftRadius: MOUTH_H * u,
+              borderBottomRightRadius: MOUTH_H * u,
             },
           ]}
-        >
-          {[-1, 1].map((side) => (
-            <View
-              key={`cheek-${side}`}
-              style={[
-                styles.cheek,
-                {
-                  left: (FACE_CX + side * CHEEK_DX - CHEEK_W / 2 - INK) * u,
-                  top: (CHEEK_TOP - INK) * u,
-                  width: CHEEK_W * u,
-                  height: CHEEK_H * u,
-                  borderRadius: (CHEEK_H / 2) * u,
-                },
-              ]}
-            />
-          ))}
-
-          {[-EYE_DX, EYE_DX].map((offset) => (
-            <View
-              key={`eye-${offset}`}
-              style={[
-                styles.eye,
-                {
-                  left: (FACE_CX + offset - EYE_W / 2 - INK) * u,
-                  top: (EYE_TOP - INK) * u,
-                  width: EYE_W * u,
-                  height: EYE_H * u,
-                  borderRadius: (EYE_W / 2) * u,
-                },
-              ]}
-            />
-          ))}
-
-          <View
-            style={[
-              styles.mouth,
-              {
-                left: (FACE_CX - MOUTH_W / 2 - INK) * u,
-                top: (MOUTH_TOP - INK) * u,
-              },
-            ]}
-          >
-            <MochiMouth kind="smile" w={MOUTH_W} h={MOUTH_H} u={u} />
-          </View>
-        </View>
+        />
       </Animated.View>
     </View>
   );
@@ -313,33 +288,23 @@ function footTransform(rock: number, side: -1 | 1, u: number) {
 }
 
 const styles = StyleSheet.create({
-  // Same fill and same ink as the body, drawn before it so his outline runs
-  // across their tops and only the bean end shows.
   foot: {
     position: 'absolute',
     bottom: 0,
-    backgroundColor: colors.roomBlob.body,
-    borderColor: colors.roomBlob.ink,
+    backgroundColor: colors.roomBlob.foot,
   },
-  /** the whole creature, nubs included, rocking as one */
-  sprite: { position: 'absolute', left: 0 },
-  nub: {
-    position: 'absolute',
-    backgroundColor: colors.roomBlob.body,
-    borderColor: colors.roomBlob.ink,
-  },
-  // Clips the mouth to his silhouette, so it can stay a plain rectangle placed
-  // by its own numbers.
+  // Clips the sheen, cheeks and mouth to his silhouette, so each one can stay a
+  // plain rectangle placed by its own numbers.
   face: {
     position: 'absolute',
-    top: 0,
+    left: 0,
     backgroundColor: colors.roomBlob.body,
-    borderColor: colors.roomBlob.ink,
     overflow: 'hidden',
   },
+  sheen: { position: 'absolute', backgroundColor: colors.roomBlob.bodyLight },
   cheek: { position: 'absolute', backgroundColor: colors.roomBlob.cheek },
-  eye: { position: 'absolute', backgroundColor: colors.roomBlob.ink },
-  mouth: { position: 'absolute' },
+  eye: { position: 'absolute', backgroundColor: colors.roomBlob.face },
+  mouth: { position: 'absolute', backgroundColor: colors.roomBlob.face },
 });
 
 // Its only prop is a number, so without this it rebuilds its shared values'
