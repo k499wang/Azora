@@ -50,8 +50,8 @@ export const ROOM_SHELL: Poly[] = [{"p":"0,-180 -155.9,-90 -155.9,90 0,0","f":"#
 const EDGE = colors.roomFrame.line;
 
 /** the room's two line weights: its own edges, and the outside of the solid */
-const LINE = 1.6;
-const LINE_OUTER = 2.5;
+const LINE = 1;
+const LINE_OUTER = 1.5;
 
 /**
  * The frame is the room's own thickness, not a line drawn around it.
