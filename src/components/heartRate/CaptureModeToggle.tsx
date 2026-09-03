@@ -66,7 +66,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
   },
   segmentSelected: {
-    backgroundColor: colors.background.elevated,
+    backgroundColor: colors.background.card,
   },
   label: {
     ...typography.label.medium,

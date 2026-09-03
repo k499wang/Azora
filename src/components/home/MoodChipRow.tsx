@@ -92,7 +92,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   solidChipSurface: {
-    backgroundColor: colors.background.elevated,
+    backgroundColor: colors.background.card,
     borderColor: colors.border.subtle,
   },
   pressed: {

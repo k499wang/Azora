@@ -231,7 +231,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: padding.screen.horizontal,
   },
   card: {
-    backgroundColor: colors.background.elevated,
+    backgroundColor: colors.background.card,
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: spacing.md,

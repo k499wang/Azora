@@ -38,7 +38,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs + 2,
     borderRadius: 999,
-    backgroundColor: colors.background.elevated,
+    backgroundColor: colors.background.card,
   },
   label: {
     ...typography.title.title3,

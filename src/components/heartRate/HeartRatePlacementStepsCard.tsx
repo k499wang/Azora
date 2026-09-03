@@ -91,7 +91,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
   },
   surface: {
-    backgroundColor: colors.background.elevated,
+    backgroundColor: colors.background.card,
   },
   plain: {
     paddingHorizontal: 0,

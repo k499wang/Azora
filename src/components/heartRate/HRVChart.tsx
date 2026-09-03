@@ -256,7 +256,7 @@ export default function HRVChart({
       </View>
       <ChartInsightsSection
         accentColor={colors.primary.blue500}
-        fadeColor={colors.background.elevated}
+        fadeColor={colors.background.card}
         textColor={colors.text.secondary}
         dividerColor={colors.neutral[200]}
         insight={chart ? hrvInsight : null}
@@ -288,7 +288,7 @@ export default function HRVChart({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.background.elevated,
+    backgroundColor: colors.background.card,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
     position: 'relative',
