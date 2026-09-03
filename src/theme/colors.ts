@@ -147,11 +147,11 @@ export const colors = {
   background: {
     // Cool off-white canvas for the frosted/glass paradigm — a shade deeper than
     // `canvas` so sheets and modals seat below the page they cover.
-    primary: '#F1F3F8',
+    primary: '#F3F5F9',
     // Off-white canvas the playful color blocks and white cards sit on. `card.base`
     // is borderless by design, so this gap to `background.card` is the only thing
     // separating a card from the page — never take it to pure white.
-    canvas: '#F4F6FA',
+    canvas: '#F6F7FB',
     secondary: '#E6F1FF',
     elevated: '#FFFFFF',
     // Cards read pure white, matching Today's Dailies. Every card surface uses
@@ -160,7 +160,7 @@ export const colors = {
     // Outlined surfaces that sit directly on `canvas` — lighter than the canvas so
     // each row reads as its own surface, still short of `card` so a bordered row
     // never competes with a real elevated card.
-    cardSoft: '#FAFBFE',
+    cardSoft: '#F8FAFD',
     accentSoft: '#E4F0FF',
     // Blue block behind the top bar, curving into the page canvas.
     headerTint: '#63ADFF',
@@ -221,8 +221,20 @@ export const colors = {
     textFaint: 'rgba(255,255,255,0.58)',
   },
 
+  // The middle step of the three-level surface system: white card, very light
+  // tint, saturated accent. These are the tint level — full card backgrounds for
+  // category, selected, or special content, where a border would otherwise go.
+  // Never use a `playful.*.soft` as a card fill; it belongs on badges and fills.
   surface: {
     welcome: '#FAF6F0',
+    /** selected / primary card */
+    selected: '#EDF5FF',
+    teal: '#ECFAF7',
+    coral: '#FFF2EE',
+    violet: '#F5F0FF',
+    amber: '#FFF8E6',
+    sky: '#EDF5FF',
+    blush: '#FFF0F6',
   },
 
   // Official third-party brand colors, used only to tint the acquisition-source
@@ -249,6 +261,10 @@ export const colors = {
     brand: '#63ADFF',
   },
 
+  // Blue-grey shadow ink for card lift — warmer than neutral[900], so a card's
+  // depth reads as soft light rather than a grey smudge.
+  shadowInk: '#37485C',
+
   overlay: {
     light: '#FFFFFFCC',
     dark: '#0F172A66',
@@ -269,6 +285,23 @@ export const colors = {
     fill: 'rgba(12,16,33,0.26)',
     edge: 'rgba(255,255,255,0.20)',
     chevron: 'rgba(255,255,255,0.78)',
+  },
+
+  // Currency and streak colours for the reward loop. Used on coin/flame
+  // iconography and counters — not a general accent family.
+  reward: {
+    gold: '#FFC53D',
+    flame: '#FF7A3D',
+  },
+
+  // Illustration-only palette for the room and outdoor scenes. Never use these
+  // in UI chrome — they exist so artwork shares one world, not one theme.
+  scene: {
+    sky: '#A9DDF7',
+    grass: '#7CC98D',
+    grassDeep: '#5FAE73',
+    cloud: '#E8F6FD',
+    roomWall: '#FFF3DC',
   },
 
   mood: {

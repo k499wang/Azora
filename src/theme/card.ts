@@ -34,13 +34,13 @@ export function coloredCard(hue: ColoredCardHue): ViewStyle {
 
 export const radius = {
   xs: 8, // tiny chips, skeleton blocks
-  small: 10, // paper, small cells
-  medium: 12, // inputs, utility controls, dialog buttons
-  card: 16, // standard cards and grouped cells
-  hero: 20, // color-block heroes, glass panes
+  small: 12, // paper, icon containers, small cells
+  medium: 16, // inputs, buttons, utility controls
+  card: 22, // standard cards and grouped cells
+  hero: 24, // color-block heroes, glass panes
   // `large` is the spec name for the hero size; keep `hero` for back-compat.
-  large: 20,
-  sheet: 24, // large sheets / modals
+  large: 24,
+  sheet: 28, // large sheets / modals
   xl: 28, // reward cards, mascot bubbles, gamified containers
   full: 999, // pills, avatars, circular controls
 } as const;
@@ -106,12 +106,14 @@ export const card: {
     borderRadius: radius.card,
     borderCurve: 'continuous',
   },
+  // The standard card lift: soft, wide, and barely there. A card is separated
+  // from the canvas by this shadow and the surface contrast — never an outline.
   shadow: {
-    shadowColor: colors.neutral[900],
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowColor: colors.shadowInk,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    elevation: 2,
   },
   // Diffuse ambient depth for premium surfaces — colorless, large radius.
   // Apply to a wrapper view (no overflow) when paired with `glass`.
