@@ -3,7 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import * as Device from 'expo-device';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
-import { fonts, typography } from '../../../theme/typography';
+import { fonts } from '../../../theme/typography';
 import { getHeartRatePlacementGuidance } from '../../../lib/heartRate/captureGuidance';
 import { HeartRatePlacementIllustration } from '../../heartRate/HeartRatePlacementIllustration';
 import { HeartRatePlacementStepsCard } from '../../heartRate/HeartRatePlacementStepsCard';
@@ -17,12 +17,7 @@ export function BaselineIntroContent() {
   return (
     <>
       <View style={styles.heading}>
-        <Text style={styles.headingTitle}>
-          {placementGuidance.title}
-        </Text>
-        <Text style={styles.headingSubtitle}>
-          {placementGuidance.instruction}
-        </Text>
+        <Text style={styles.headingTitle}>{placementGuidance.title}</Text>
       </View>
 
       <HeartRatePlacementIllustration />
@@ -51,11 +46,5 @@ const styles = StyleSheet.create({
     letterSpacing: -0.4,
     color: colors.text.primary,
     textAlign: 'center',
-  },
-  headingSubtitle: {
-    ...typography.body.small,
-    color: colors.text.secondary,
-    textAlign: 'center',
-    maxWidth: 360,
   },
 });

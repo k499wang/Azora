@@ -322,7 +322,7 @@ export default function BPMChart({
       </View>
       <ChartInsightsSection
         accentColor={colors.error[500]}
-        fadeColor={colors.background.elevated}
+        fadeColor={colors.background.card}
         textColor={colors.text.secondary}
         dividerColor={colors.neutral[200]}
         insight={chart ? bpmInsight : null}
@@ -354,7 +354,7 @@ export default function BPMChart({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.background.elevated,
+    backgroundColor: colors.background.card,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
     position: 'relative',

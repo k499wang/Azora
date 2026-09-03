@@ -462,7 +462,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,
     borderRadius: 12,
-    backgroundColor: colors.background.elevated,
+    backgroundColor: colors.background.card,
     borderWidth: 1,
     borderColor: colors.error[500],
   },

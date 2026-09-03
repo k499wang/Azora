@@ -173,7 +173,7 @@ export default function AuthLandingScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: colors.background.primary,
+    backgroundColor: colors.background.canvas,
   },
   heroSafe: {
     flex: 1,
@@ -206,7 +206,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   sheet: {
-    backgroundColor: colors.background.elevated,
+    backgroundColor: colors.background.card,
     borderTopLeftRadius: 32,
     borderTopRightRadius: 32,
     shadowColor: colors.primary.blue700,

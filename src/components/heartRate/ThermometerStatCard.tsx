@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   tile: {
-    backgroundColor: colors.background.elevated,
+    backgroundColor: colors.background.card,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
   },

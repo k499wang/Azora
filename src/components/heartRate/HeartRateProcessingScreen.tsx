@@ -178,7 +178,7 @@ const styles = StyleSheet.create({
     borderRadius: 46,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.background.elevated,
+    backgroundColor: colors.background.card,
     borderWidth: 1,
   },
   title: {

@@ -163,7 +163,7 @@ export default function RestingHeartRateBar({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.background.elevated,
+    backgroundColor: colors.background.card,
     width: '100%',
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,

@@ -640,7 +640,7 @@ const styles = StyleSheet.create({
   // A closed row's marker is an outlined white dot; the open one fills with the
   // daily's own colour, so the rail says which row you are looking at.
   statusMarkerIdle: {
-    backgroundColor: colors.neutral[0],
+    backgroundColor: colors.background.card,
     borderWidth: 2,
     borderColor: colors.border.default,
   },

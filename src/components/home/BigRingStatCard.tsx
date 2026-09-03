@@ -139,7 +139,7 @@ const styles = StyleSheet.create({
     width: RING_SIZE,
     height: RING_SIZE,
     borderRadius: RING_SIZE / 2,
-    backgroundColor: colors.background.elevated,
+    backgroundColor: colors.background.card,
     borderWidth: 1,
     borderColor: colors.neutral[100],
     shadowColor: colors.neutral[900],

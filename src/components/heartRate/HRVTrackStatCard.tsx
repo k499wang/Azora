@@ -263,7 +263,7 @@ export default function HRVTrackStatCard({
               <Circle cx={CX} cy={CY + 3} r={INNER_R + 3} color="rgba(15,23,42,0.04)" />
               <Circle cx={CX} cy={CY + 1.5} r={INNER_R + 1.5} color="rgba(15,23,42,0.02)" />
               <Circle cx={CX} cy={CY} r={INNER_R + 1} color={colors.neutral[200]} />
-              <Circle cx={CX} cy={CY} r={INNER_R} color={colors.background.elevated} />
+              <Circle cx={CX} cy={CY} r={INNER_R} color={colors.background.card} />
 
               {indPath != null ? (
                 <Path
@@ -300,7 +300,7 @@ export default function HRVTrackStatCard({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: colors.background.elevated,
+    backgroundColor: colors.background.card,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
     position: 'relative',
@@ -437,7 +437,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
   },
   ringSurface: {
-    backgroundColor: colors.background.elevated,
+    backgroundColor: colors.background.card,
     width: SIZE,
     height: SIZE,
     borderRadius: SIZE / 2,

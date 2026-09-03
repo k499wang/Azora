@@ -122,7 +122,7 @@ export default function RingStatCard({
             <Circle cx={CX} cy={CY + 3} r={INNER_R + 3} color="rgba(15,23,42,0.04)" />
             <Circle cx={CX} cy={CY + 1.5} r={INNER_R + 1.5} color="rgba(15,23,42,0.02)" />
             <Circle cx={CX} cy={CY} r={INNER_R + 1} color={colors.neutral[200]} />
-            <Circle cx={CX} cy={CY} r={INNER_R} color={colors.background.elevated} />
+            <Circle cx={CX} cy={CY} r={INNER_R} color={colors.background.card} />
           </Canvas>
           <View style={styles.iconCenter} pointerEvents="none">
             <Icon name={icon} size={30} color={color} />
@@ -195,7 +195,7 @@ const styles = StyleSheet.create({
     width: RING_SIZE,
     height: RING_SIZE,
     borderRadius: RING_SIZE / 2,
-    backgroundColor: colors.background.elevated,
+    backgroundColor: colors.background.card,
     borderWidth: 1,
     borderColor: colors.neutral[100],
     shadowColor: colors.neutral[900],
