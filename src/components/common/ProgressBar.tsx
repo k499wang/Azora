@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { StyleSheet, View, type ViewStyle } from 'react-native';
 import Animated, {
   runOnJS,
@@ -39,6 +39,12 @@ interface ProgressBarProps {
   /** fires once the fill has settled on `progress` */
   onFillEnd?: () => void;
   style?: ViewStyle;
+  /**
+   * Sits centred over the track, above the fill — for a bar that carries its
+   * own count rather than putting one beside it. Give it a colour that reads on
+   * the fill and on the track, since the fill passes under it as the bar grows.
+   */
+  children?: ReactNode;
 }
 
 /**
@@ -61,6 +67,7 @@ export default function ProgressBar({
   onFillStart,
   onFillEnd,
   style,
+  children,
 }: ProgressBarProps) {
   const fraction = useSharedValue(clamp(from ?? progress));
 
@@ -109,6 +116,11 @@ export default function ProgressBar({
           fillStyle,
         ]}
       />
+      {children == null ? null : (
+        <View style={styles.label} pointerEvents="none">
+          {children}
+        </View>
+      )}
     </View>
   );
 }
@@ -124,5 +136,10 @@ const styles = StyleSheet.create({
   fill: {
     ...StyleSheet.absoluteFillObject,
     transformOrigin: 'left center',
+  },
+  label: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

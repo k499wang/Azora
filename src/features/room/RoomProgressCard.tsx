@@ -1,7 +1,7 @@
 import { StyleSheet, View } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Text } from '../../components/common/Text';
-import Icon, { type IconName } from '../../components/common/icons/Icon';
+import Icon from '../../components/common/icons/Icon';
 import ProgressBar from '../../components/common/ProgressBar';
 import ChunkyButton, {
   CHUNKY_TONE,
@@ -20,25 +20,32 @@ import { fonts, typography } from '../../theme/typography';
 import type { MainTabNavigationProp } from '../../app/navigation';
 import type { DailiesCompletion } from '../../hooks/useDailiesCompletion';
 
-const BAR_HEIGHT = 12;
+/** deep enough to carry the count inside it rather than beside it */
+const BAR_HEIGHT = 20;
+/**
+ * One icon for the card, standing beside both rows rather than on the title's
+ * line — the title and the bar are the same statement, so they share a margin
+ * and the icon marks the pair.
+ */
+const HEADLINE_ICON_SIZE = 44;
 /** Shorter than a screen's primary — this one sits inside a card. */
 const CTA_MIN_HEIGHT = 48;
 
 export type RoomCardTone = 'waiting' | 'ready' | 'done';
 
 /**
- * Colour is the card's loudest signal, so it says the one thing the user needs:
- * amber means something is waiting for them. Blue and green are both passive —
- * without the third tone the only state with a button looked like the state
- * with nothing to do.
+ * Colour is the card's only state signal, so it says the one thing the user
+ * needs: amber means something is waiting for them. Blue and green are both
+ * passive — without the third tone the only state with a button looked like the
+ * state with nothing to do.
  */
 const TONE_STYLE: Record<
   RoomCardTone,
   {
     accent: string;
     track: string;
-    icon: IconName;
-    iconColor: string;
+    /** the count riding in the bar: legible on the track and on the fill */
+    countInk: string;
     cta: typeof CHUNKY_TONE;
   }
 > = {
@@ -47,23 +54,19 @@ const TONE_STYLE: Record<
     // `base` — the deep blue disappears into it.
     accent: colors.playful.sky.mid,
     track: colors.playful.sky.soft,
-    icon: 'lock',
-    // Muted on purpose: a saturated lock reads as a thing to press.
-    iconColor: colors.text.tertiary,
+    countInk: colors.playful.sky.ink,
     cta: CHUNKY_TONE,
   },
   ready: {
     accent: colors.playful.amber.base,
     track: colors.playful.amber.soft,
-    icon: 'unlock',
-    iconColor: colors.playful.amber.base,
+    countInk: colors.playful.amber.ink,
     cta: CHUNKY_TONE_AMBER,
   },
   done: {
     accent: colors.success[500],
     track: colors.success[100],
-    icon: 'check',
-    iconColor: colors.success[500],
+    countInk: colors.success[700],
     cta: CHUNKY_TONE,
   },
 };
@@ -142,28 +145,26 @@ export function RoomProgressCardView({
       style={[styles.card, view.tone !== 'done' && styles.cardShadow]}
     >
       <View style={styles.headline}>
-        <Icon name="room-hex" size={26} color={tone.accent} />
-        <Text style={styles.title}>{view.title}</Text>
-        <Text style={styles.count}>
-          {view.done} / {view.total}
-        </Text>
+        <Icon name="room-hex" size={HEADLINE_ICON_SIZE} color={tone.accent} />
+        <View style={styles.headlineCopy}>
+          <Text style={styles.title}>{view.title}</Text>
+          <ProgressBar
+            progress={view.done / view.total}
+            height={BAR_HEIGHT}
+            trackColor={tone.track}
+            fillColor={tone.accent}
+          >
+            <Text style={[styles.count, { color: tone.countInk }]}>
+              {view.done} / {view.total}
+            </Text>
+          </ProgressBar>
+        </View>
       </View>
 
       {view.countdown === true ? <NextDayCountdown style={styles.countdown} /> : null}
       {view.note == null ? null : (
         <Text style={[styles.note, styles.noteText]}>{view.note}</Text>
       )}
-
-      <View style={styles.barRow}>
-        <ProgressBar
-          progress={view.done / view.total}
-          height={BAR_HEIGHT}
-          trackColor={tone.track}
-          fillColor={tone.accent}
-          style={styles.bar}
-        />
-        <Icon name={tone.icon} size={22} color={tone.iconColor} />
-      </View>
 
       {action == null ? null : (
         <ChunkyButton
@@ -189,7 +190,7 @@ export interface RoomCardView {
   note?: string;
   /** the wait until the next decoration, for a day with nothing left to do */
   countdown?: boolean;
-  /** drives the tile, the bar, the lock at its end, and the button */
+  /** drives the icon, the bar and the button */
   tone: RoomCardTone;
   /** the bar counts whatever the title is about, never something else */
   done: number;
@@ -286,6 +287,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
   },
+  headlineCopy: {
+    flex: 1,
+    gap: spacing.xs,
+  },
   title: {
     ...typography.title.title3,
     fontSize: 19,
@@ -293,8 +298,6 @@ const styles = StyleSheet.create({
     flex: 1,
     color: colors.text.primary,
   },
-  // Beside the bar rather than inside it: the fill runs the whole track, so
-  // there is no colour a centred count stays legible against end to end.
   note: {
     marginTop: -spacing.xs,
   },
@@ -309,17 +312,10 @@ const styles = StyleSheet.create({
   countdown: {
     marginTop: -spacing.xs,
   },
+  // In the bar, in the tone's own ink — dark enough to hold on the pale track
+  // and on the fill that passes under it as the bar grows.
   count: {
-    ...typography.body.small,
+    ...typography.label.small,
     fontFamily: fonts.semibold,
-    color: colors.text.secondary,
-  },
-  barRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  bar: {
-    flex: 1,
   },
 });
