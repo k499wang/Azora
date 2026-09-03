@@ -17,6 +17,7 @@ import {
 import {
   BREATH_HOLD_STYLE,
   CATEGORY_STYLE,
+  TECHNIQUE_GLYPH,
   type CategoryStyle,
   type GlyphShape,
 } from '../../features/exercise/guidedBreathing/categoryPalette';
@@ -99,23 +100,6 @@ const TIMELINE_RAIL_LEFT = TIMELINE_COLUMN_WIDTH / 2 - TIMELINE_RAIL_WIDTH / 2;
  */
 const DASH_COUNT = 10;
 
-/**
- * One icon per daily, fixed. A daily is a slot in the day, not whichever
- * technique happens to fill it — the mark has to stay put so the row is
- * recognisable before it is read.
- */
-const DAILY_ICON: Record<DailyPlanActionId, IconName> = {
-  session: 'daily-session',
-  handPicked: 'daily-pick',
-  checkIn: 'daily-protocol',
-};
-
-/** the same rule for the mark: one shape per slot, whatever fills it */
-const DAILY_GLYPH: Record<DailyPlanActionId, GlyphShape> = {
-  session: 'rings',
-  handPicked: 'petals',
-  checkIn: 'orb',
-};
 
 /**
  * Where the rail starts and stops: the foot of the first marker to the top of
@@ -270,7 +254,7 @@ function DailyTaskRow({
           >
             <CollapsedTaskPill
               title={title}
-              icon={detailIcon}
+              glyph={glyph}
               muted={completed}
             />
           </Animated.View>
@@ -369,24 +353,26 @@ function ExpandedTaskPill({
 
 interface CollapsedTaskPillProps {
   title: string;
-  icon: IconName;
+  glyph: GlyphShape;
   muted: boolean;
 }
 
 function CollapsedTaskPill({
   title,
-  icon,
+  glyph,
   muted,
 }: CollapsedTaskPillProps) {
   return (
     <View style={styles.collapsedPill} pointerEvents="none">
       <View style={styles.collapsedLine}>
-        {/* The daily's own mark, but always in the app's blue: a closed row is
+        {/* The daily's own shape, but always in the app's blue: a closed row is
             identifiable without spending the category colour, which is what
             tells you at a glance which card is open. */}
-        <View style={muted && styles.collapsedMarkMuted}>
-          <Icon name={icon} size={COLLAPSED_GLYPH_SIZE} />
-        </View>
+        <ActivityGlyph
+          shape={glyph}
+          size={COLLAPSED_GLYPH_SIZE}
+          color={muted ? colors.text.tertiary : colors.primary.blue600}
+        />
         {/* The title is the only part allowed to truncate — how long it takes
             is the reason to read a closed row at all. */}
         <Text
@@ -424,6 +410,7 @@ export default function TodaysDailiesSection({
   const metrics = useIsRegularWidth()
     ? REGULAR_ROW_METRICS
     : COMPACT_ROW_METRICS;
+  const guidedDetailIcon = technique?.icon ?? 'wind';
   const guidedTitle = technique?.name ?? 'Your reset';
   const guidedScheduledTime = formatDailyPlanTime(
     sessionTime,
@@ -440,17 +427,25 @@ export default function TodaysDailiesSection({
   const guidedDetail = technique == null
     ? 'Personalized for you'
     : `${formatCategory(technique.category)} reset`;
+  // Same line as the guided daily: what kind of reset it is, not the name of
+  // the slot, which the title already carries.
+  const handPickedDetail = handPickedTechnique == null
+    ? 'Azora’s daily pick'
+    : `${formatCategory(handPickedTechnique.category)} reset`;
+  const handPickedDetailIcon = handPickedTechnique?.icon ?? 'sparkle';
   const rows: Record<DailyPlanActionId, DailyRowContent> = {
     session: {
       title: guidedTitle,
       scheduledTime: guidedScheduledTime,
       techniqueMeta: techniqueMetaLabel(technique),
       detailLabel: guidedDetail,
-      detailIcon: DAILY_ICON.session,
+      detailIcon: guidedDetailIcon,
       style: technique
         ? CATEGORY_STYLE[technique.category]
         : CATEGORY_STYLE.calm,
-      glyph: DAILY_GLYPH.session,
+      glyph: technique
+        ? TECHNIQUE_GLYPH[technique.id]
+        : CATEGORY_STYLE.calm.glyph,
       completed: guidedExerciseCompleted,
       locked: guidedLocked,
       loading: techniqueLoading,
@@ -460,12 +455,14 @@ export default function TodaysDailiesSection({
       title: handPickedTechnique?.name ?? 'Azora’s daily pick',
       scheduledTime: handPickedScheduledTime,
       techniqueMeta: techniqueMetaLabel(handPickedTechnique),
-      detailLabel: 'Azora’s daily pick',
-      detailIcon: DAILY_ICON.handPicked,
+      detailLabel: handPickedDetail,
+      detailIcon: handPickedDetailIcon,
       style: handPickedTechnique
         ? CATEGORY_STYLE[handPickedTechnique.category]
         : CATEGORY_STYLE.balance,
-      glyph: DAILY_GLYPH.handPicked,
+      glyph: handPickedTechnique
+        ? TECHNIQUE_GLYPH[handPickedTechnique.id]
+        : CATEGORY_STYLE.balance.glyph,
       completed: handPickedExerciseCompleted,
       locked: handPickedLocked,
       loading: handPickedTechniqueLoading,
@@ -477,9 +474,9 @@ export default function TodaysDailiesSection({
       scheduledTime: breathHoldScheduledTime,
       techniqueMeta: null,
       detailLabel: 'Daily check-in',
-      detailIcon: DAILY_ICON.checkIn,
+      detailIcon: 'timer',
       style: BREATH_HOLD_STYLE,
-      glyph: DAILY_GLYPH.checkIn,
+      glyph: BREATH_HOLD_STYLE.glyph,
       completed: breathHoldCompleted,
       locked: breathHoldLocked,
       onPress: onPressBreathHold,
@@ -736,10 +733,5 @@ const styles = StyleSheet.create({
   },
   collapsedContentMuted: {
     color: colors.text.tertiary,
-  },
-  // The mark carries its own colours, so a finished row fades it rather than
-  // recolouring it.
-  collapsedMarkMuted: {
-    opacity: 0.4,
   },
 });

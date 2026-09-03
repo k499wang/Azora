@@ -142,7 +142,7 @@ export function RoomProgressCardView({
       style={[styles.card, view.tone !== 'done' && styles.cardShadow]}
     >
       <View style={styles.headline}>
-        <Icon name="room-box" size={26} color={tone.accent} />
+        <Icon name="room-hex" size={26} color={tone.accent} />
         <Text style={styles.title}>{view.title}</Text>
         <Text style={styles.count}>
           {view.done} / {view.total}
