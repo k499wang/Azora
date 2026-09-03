@@ -1,5 +1,7 @@
 export type TourTargetId =
   | 'dailies'
+  | 'extraPractice'
+  | 'seeAll'
   | 'measureHeart';
 
 export type TourTab = 'Home' | 'Heart';
@@ -22,6 +24,16 @@ export const tourSteps: readonly TourStep[] = [
     target: 'dailies',
     tab: 'Home',
     body: 'Start here! Finish your three daily resets to earn a new piece for your room.',
+  },
+  {
+    target: 'extraPractice',
+    tab: 'Home',
+    body: 'Want something different? Pick a reset that matches how you feel.',
+  },
+  {
+    target: 'seeAll',
+    tab: 'Home',
+    body: 'Looking for more? Tap See all to explore every reset.',
   },
   {
     target: 'measureHeart',
