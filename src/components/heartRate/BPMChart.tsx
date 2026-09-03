@@ -1,4 +1,5 @@
 import { Text } from '../common/Text';
+import { card } from '../../theme/card';
 import { useMemo, useState } from 'react';
 import { LayoutChangeEvent, Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Circle, Line, Path } from 'react-native-svg';
@@ -355,6 +356,7 @@ export default function BPMChart({
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.background.elevated,
+    ...card.shadow,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
     position: 'relative',
