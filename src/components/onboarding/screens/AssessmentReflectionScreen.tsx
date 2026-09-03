@@ -11,7 +11,7 @@ import { isHapticsEnabled } from '../../../services/preferences/hapticsPreferenc
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import type { PersonalizedIntentOption } from '../types';
-import type { AgreementValue } from './AgreementScreen';
+import type { AgreementValue } from '../../../lib/onboardingAgreement';
 
 interface AssessmentReflectionScreenProps {
   name: string;

@@ -84,7 +84,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     width: 272,
     borderRadius: 14,
-    backgroundColor: colors.background.elevated,
+    backgroundColor: colors.background.card,
     overflow: 'hidden',
   },
   promptHeader: {

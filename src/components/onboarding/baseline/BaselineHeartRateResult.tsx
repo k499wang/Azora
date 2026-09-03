@@ -316,7 +316,7 @@ const styles = StyleSheet.create({
     height: GAUGE_SIZE,
     borderRadius: GAUGE_SIZE / 2,
     position: 'relative',
-    backgroundColor: colors.background.elevated,
+    backgroundColor: colors.background.card,
     borderWidth: 1,
     borderColor: colors.neutral[100],
     shadowColor: colors.neutral[900],

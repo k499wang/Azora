@@ -1,4 +1,4 @@
-import type { AgreementValue } from '../../../../components/onboarding/screens/AgreementScreen';
+import type { AgreementValue } from '../../../../lib/onboardingAgreement';
 import { computeMindMap, type MindMapAxis } from '../../../../lib/onboardingScores';
 import { isTechniqueId, type TechniqueId } from '../techniqueCatalog';
 

@@ -25,7 +25,7 @@ export const paywallStepStyles = StyleSheet.create({
     gap: 0,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.xs,
-    backgroundColor: colors.background.elevated,
+    backgroundColor: colors.background.card,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border.subtle,
   },
@@ -285,7 +285,7 @@ export const paywallStepStyles = StyleSheet.create({
     gap: spacing.sm,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
-    backgroundColor: colors.background.elevated,
+    backgroundColor: colors.background.card,
   },
   testimonialRating: {
     flexDirection: 'row',

@@ -232,7 +232,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
   },
   card: {
-    backgroundColor: colors.background.elevated,
+    backgroundColor: colors.background.card,
     marginTop: spacing['3xl'],
     padding: spacing.lg,
     gap: spacing.sm,

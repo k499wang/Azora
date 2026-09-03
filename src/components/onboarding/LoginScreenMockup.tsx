@@ -54,7 +54,7 @@ const styles = StyleSheet.create({
     color: colors.text.secondary,
   },
   sheet: {
-    backgroundColor: colors.background.elevated,
+    backgroundColor: colors.background.card,
     borderTopLeftRadius: 32,
     borderTopRightRadius: 32,
     paddingHorizontal: spacing.xl,

@@ -22,7 +22,6 @@ export type OnboardingStep =
   | 'sleep'
   | 'brainFog'
   | 'heartWorry'
-  | 'agreement'
   | 'assessmentReflection'
   | 'firstReset'
   | 'age'
