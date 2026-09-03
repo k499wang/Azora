@@ -273,17 +273,18 @@ export const ROOM_SHELLS: Record<RoomShellKey, Poly[]> = Object.fromEntries(
  * room was. Each tone is the floor lifted most of the way to white so the cut
  * still reads as plaster, pulled slightly toward its own grey because a cut
  * edge is flatter than a painted surface, then darkened by how far that face
- * turns from the light. The factors are the tones the original cream frame was
- * authored with, kept as ratios so every shell is lit the same way.
+ * turns from the light. The falloff between faces is shallow on purpose: it
+ * only has to order the faces, and any more than that turns a light room's own
+ * walls into the darkest thing on it.
  */
-const FRAME_LIFT = 0.62;
+const FRAME_LIFT = 0.7;
 const FRAME_FLATTEN = 0.15;
 const FRAME_FACTORS: Record<keyof FramePalette, number> = {
-  cap: 0.96,
-  baseLeft: 0.93,
-  sideLeft: 0.885,
-  baseRight: 0.853,
-  sideRight: 0.805,
+  cap: 0.99,
+  baseLeft: 0.965,
+  sideLeft: 0.935,
+  baseRight: 0.915,
+  sideRight: 0.885,
 };
 
 function channels(hex: string): [number, number, number] {
