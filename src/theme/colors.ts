@@ -83,17 +83,17 @@ export const colors = {
   // lightening a `base`, which trades legibility for it. `ink` clears 4.5:1 on
   // its own `soft`.
   playful: {
-    teal: { base: '#00A48F', mid: '#3BBFAD', soft: '#A8F2E4', ink: '#00705F' },
-    coral: { base: '#FF5230', mid: '#FF7C61', soft: '#FFCBBB', ink: '#A82F10' },
+    teal: { base: '#06A48C', mid: '#3FC7B0', soft: '#C2F1E7', ink: '#046B5B' },
+    coral: { base: '#F0563A', mid: '#FF8567', soft: '#FFD6C9', ink: '#B23A22' },
     violet: {
-      base: '#8B5CFF',
-      mid: '#A784FF',
-      soft: '#DCCEFF',
-      ink: '#5326D6',
+      base: '#9B4DEC',
+      mid: '#B77CF6',
+      soft: '#E7D8FB',
+      ink: '#6428AE',
     },
-    amber: { base: '#D77A00', mid: '#E5A03B', soft: '#FFE6A8', ink: '#8F5A00' },
-    sky: { base: '#3B88FF', mid: '#6AA6FF', soft: '#C2DEFF', ink: '#0D59B2' },
-    blush: { base: '#FF4590', mid: '#FF73AC', soft: '#FFC9E0', ink: '#B01356' },
+    amber: { base: '#CE7A00', mid: '#EDA733', soft: '#FBE5B4', ink: '#8C5300' },
+    sky: { base: '#2280F0', mid: '#5EA5F8', soft: '#CCE2FC', ink: '#0F55AA' },
+    blush: { base: '#F04593', mid: '#FA7EB4', soft: '#FCD3E6', ink: '#AB1C5F' },
   },
 
   // White-alpha layers for content sitting on a `playful.*.base` color block:
@@ -236,12 +236,12 @@ export const colors = {
     welcome: '#FAF6F0',
     /** selected / primary card */
     selected: '#EDF5FF',
-    teal: '#ECFAF7',
-    coral: '#FFF2EE',
-    violet: '#F5F0FF',
-    amber: '#FFF8E6',
-    sky: '#EDF5FF',
-    blush: '#FFF0F6',
+    teal: '#E4FBF5',
+    coral: '#FFEFE9',
+    violet: '#F6EDFF',
+    amber: '#FFF6DF',
+    sky: '#E9F3FF',
+    blush: '#FFEDF5',
   },
 
   // Official third-party brand colors, used only to tint the acquisition-source

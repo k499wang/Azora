@@ -142,7 +142,7 @@ export function RoomProgressCardView({
       style={[styles.card, view.tone !== 'done' && styles.cardShadow]}
     >
       <View style={styles.headline}>
-        <Icon name="room-hex" size={26} color={tone.accent} />
+        <Icon name="room-box" size={26} color={tone.accent} />
         <Text style={styles.title}>{view.title}</Text>
         <Text style={styles.count}>
           {view.done} / {view.total}
@@ -276,9 +276,7 @@ export function describeRoomCard({
 const styles = StyleSheet.create({
   card: {
     ...card.base,
-    // Not white: this card sits on the meadow, so it darkens the field behind
-    // it rather than reading as a sheet of paper dropped on the grass.
-    backgroundColor: colors.background.cardScrim,
+    backgroundColor: colors.background.card,
     padding: spacing.md,
     gap: spacing.sm,
   },
@@ -293,7 +291,7 @@ const styles = StyleSheet.create({
     fontSize: 19,
     lineHeight: 26,
     flex: 1,
-    color: colors.text.inverse,
+    color: colors.text.primary,
   },
   // Beside the bar rather than inside it: the fill runs the whole track, so
   // there is no colour a centred count stays legible against end to end.
@@ -306,18 +304,15 @@ const styles = StyleSheet.create({
     ...typography.label.detail,
     fontSize: 14,
     lineHeight: 18,
-    color: colors.overlay.light,
+    color: colors.text.secondary,
   },
-  // The countdown ships its own dark metadata colour, so the scrim's light one
-  // has to be handed back to it.
   countdown: {
     marginTop: -spacing.xs,
-    color: colors.overlay.light,
   },
   count: {
     ...typography.body.small,
     fontFamily: fonts.semibold,
-    color: colors.overlay.light,
+    color: colors.text.secondary,
   },
   barRow: {
     flexDirection: 'row',

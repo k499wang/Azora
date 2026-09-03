@@ -7,10 +7,9 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import ActivityGlyph from '../explore/ActivityGlyph';
 import SectionHeader from '../common/SectionHeader';
-import Icon from '../common/icons/Icon';
+import Icon, { type IconName } from '../common/icons/Icon';
 import {
   formatPattern,
   type BreathingTechnique,
@@ -18,7 +17,6 @@ import {
 import {
   BREATH_HOLD_STYLE,
   CATEGORY_STYLE,
-  TECHNIQUE_GLYPH,
   type CategoryStyle,
   type GlyphShape,
 } from '../../features/exercise/guidedBreathing/categoryPalette';
@@ -102,6 +100,24 @@ const TIMELINE_RAIL_LEFT = TIMELINE_COLUMN_WIDTH / 2 - TIMELINE_RAIL_WIDTH / 2;
 const DASH_COUNT = 10;
 
 /**
+ * One icon per daily, fixed. A daily is a slot in the day, not whichever
+ * technique happens to fill it — the mark has to stay put so the row is
+ * recognisable before it is read.
+ */
+const DAILY_ICON: Record<DailyPlanActionId, IconName> = {
+  session: 'daily-session',
+  handPicked: 'daily-pick',
+  checkIn: 'daily-protocol',
+};
+
+/** the same rule for the mark: one shape per slot, whatever fills it */
+const DAILY_GLYPH: Record<DailyPlanActionId, GlyphShape> = {
+  session: 'rings',
+  handPicked: 'petals',
+  checkIn: 'orb',
+};
+
+/**
  * Where the rail starts and stops: the foot of the first marker to the top of
  * the last. Exactly one row is open at any time, so the section's total height
  * never changes and only these two insets move.
@@ -142,7 +158,7 @@ interface DailyTaskRowProps {
   scheduledTime: string;
   techniqueMeta: string | null;
   detailLabel: string;
-  detailIcon: BreathingTechnique['icon'];
+  detailIcon: IconName;
   style: CategoryStyle;
   glyph: GlyphShape;
   metrics: DailyRowMetrics;
@@ -254,7 +270,7 @@ function DailyTaskRow({
           >
             <CollapsedTaskPill
               title={title}
-              glyph={glyph}
+              icon={detailIcon}
               muted={completed}
             />
           </Animated.View>
@@ -329,7 +345,7 @@ function ExpandedTaskPill({
           </View>
           <View style={styles.metadataStack}>
             <View style={styles.metadataRow}>
-              <MaterialCommunityIcons
+              <Icon
                 name={detailIcon}
                 size={14}
                 color={colors.onBlock.textMuted}
@@ -353,26 +369,24 @@ function ExpandedTaskPill({
 
 interface CollapsedTaskPillProps {
   title: string;
-  glyph: GlyphShape;
+  icon: IconName;
   muted: boolean;
 }
 
 function CollapsedTaskPill({
   title,
-  glyph,
+  icon,
   muted,
 }: CollapsedTaskPillProps) {
   return (
     <View style={styles.collapsedPill} pointerEvents="none">
       <View style={styles.collapsedLine}>
-        {/* The daily's own shape, but always in the app's blue: a closed row is
+        {/* The daily's own mark, but always in the app's blue: a closed row is
             identifiable without spending the category colour, which is what
             tells you at a glance which card is open. */}
-        <ActivityGlyph
-          shape={glyph}
-          size={COLLAPSED_GLYPH_SIZE}
-          color={muted ? colors.text.tertiary : colors.primary.blue600}
-        />
+        <View style={muted && styles.collapsedMarkMuted}>
+          <Icon name={icon} size={COLLAPSED_GLYPH_SIZE} />
+        </View>
         {/* The title is the only part allowed to truncate — how long it takes
             is the reason to read a closed row at all. */}
         <Text
@@ -426,20 +440,17 @@ export default function TodaysDailiesSection({
   const guidedDetail = technique == null
     ? 'Personalized for you'
     : `${formatCategory(technique.category)} reset`;
-  const guidedDetailIcon = technique?.icon ?? 'weather-windy';
   const rows: Record<DailyPlanActionId, DailyRowContent> = {
     session: {
       title: guidedTitle,
       scheduledTime: guidedScheduledTime,
       techniqueMeta: techniqueMetaLabel(technique),
       detailLabel: guidedDetail,
-      detailIcon: guidedDetailIcon,
+      detailIcon: DAILY_ICON.session,
       style: technique
         ? CATEGORY_STYLE[technique.category]
         : CATEGORY_STYLE.calm,
-      glyph: technique
-        ? TECHNIQUE_GLYPH[technique.id]
-        : CATEGORY_STYLE.calm.glyph,
+      glyph: DAILY_GLYPH.session,
       completed: guidedExerciseCompleted,
       locked: guidedLocked,
       loading: techniqueLoading,
@@ -450,13 +461,11 @@ export default function TodaysDailiesSection({
       scheduledTime: handPickedScheduledTime,
       techniqueMeta: techniqueMetaLabel(handPickedTechnique),
       detailLabel: 'Azora’s daily pick',
-      detailIcon: handPickedTechnique?.icon ?? 'creation-outline',
+      detailIcon: DAILY_ICON.handPicked,
       style: handPickedTechnique
         ? CATEGORY_STYLE[handPickedTechnique.category]
         : CATEGORY_STYLE.balance,
-      glyph: handPickedTechnique
-        ? TECHNIQUE_GLYPH[handPickedTechnique.id]
-        : CATEGORY_STYLE.balance.glyph,
+      glyph: DAILY_GLYPH.handPicked,
       completed: handPickedExerciseCompleted,
       locked: handPickedLocked,
       loading: handPickedTechniqueLoading,
@@ -468,9 +477,9 @@ export default function TodaysDailiesSection({
       scheduledTime: breathHoldScheduledTime,
       techniqueMeta: null,
       detailLabel: 'Daily check-in',
-      detailIcon: 'timer-sand',
+      detailIcon: DAILY_ICON.checkIn,
       style: BREATH_HOLD_STYLE,
-      glyph: BREATH_HOLD_STYLE.glyph,
+      glyph: DAILY_GLYPH.checkIn,
       completed: breathHoldCompleted,
       locked: breathHoldLocked,
       onPress: onPressBreathHold,
@@ -529,7 +538,6 @@ export default function TodaysDailiesSection({
       <SectionHeader
         icon="calendar"
         title="Today’s Dailies"
-        tone="inverse"
         right={
           <Pressable
             accessibilityRole="button"
@@ -605,7 +613,7 @@ const styles = StyleSheet.create({
     width: TIMELINE_RAIL_WIDTH,
     height: 10,
     borderRadius: TIMELINE_RAIL_WIDTH / 2,
-    backgroundColor: colors.neutral[0],
+    backgroundColor: colors.border.default,
   },
   taskRow: {
     flex: 1,
@@ -632,12 +640,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  // A closed row's marker is an empty ring; the open one fills with the daily's
-  // own colour, so the rail says which row you are looking at. A closed marker
-  // is a solid white dot like the dashes it sits on — the timeline lives on the
-  // meadow, where a grey line reads as a smudge rather than a rail.
+  // A closed row's marker is an outlined white dot; the open one fills with the
+  // daily's own colour, so the rail says which row you are looking at.
   statusMarkerIdle: {
     backgroundColor: colors.neutral[0],
+    borderWidth: 2,
+    borderColor: colors.border.default,
   },
   statusMarkerCompleted: {
     backgroundColor: colors.success[500],
@@ -728,5 +736,10 @@ const styles = StyleSheet.create({
   },
   collapsedContentMuted: {
     color: colors.text.tertiary,
+  },
+  // The mark carries its own colours, so a finished row fades it rather than
+  // recolouring it.
+  collapsedMarkMuted: {
+    opacity: 0.4,
   },
 });
