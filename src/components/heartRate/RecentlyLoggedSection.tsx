@@ -1,4 +1,5 @@
 import { Text } from '../common/Text';
+import { card } from '../../theme/card';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useEffect, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
@@ -232,6 +233,7 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: colors.background.elevated,
+    ...card.shadow,
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: spacing.md,

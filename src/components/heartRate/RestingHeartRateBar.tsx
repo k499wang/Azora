@@ -1,4 +1,5 @@
 import { Text } from '../common/Text';
+import { card } from '../../theme/card';
 import { Pressable, StyleSheet, View } from 'react-native';
 import type { StyleProp, ViewStyle } from 'react-native';
 import { LockedScrim } from '../common/glass';
@@ -164,6 +165,7 @@ export default function RestingHeartRateBar({
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.background.elevated,
+    ...card.shadow,
     width: '100%',
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,

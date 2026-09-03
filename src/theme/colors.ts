@@ -145,22 +145,25 @@ export const colors = {
   },
 
   background: {
-    // Cool off-white canvas for the frosted/glass paradigm — a shade deeper than
-    // `canvas` so sheets and modals seat below the page they cover.
-    primary: '#F3F5F9',
-    // Off-white canvas the playful color blocks and white cards sit on. `card.base`
+    // Warm off-white for sheets and modals — a shade deeper than `canvas` so a
+    // sheet seats below the page it covers, in the same cream family.
+    primary: '#F5F3EF',
+    // Warm cream canvas the playful color blocks and white cards sit on. Cream
+    // rather than cool grey so the app reads soft instead of clinical. `card.base`
     // is borderless by design, so this gap to `background.card` is the only thing
-    // separating a card from the page — never take it to pure white.
-    canvas: '#F6F7FB',
+    // separating a card from the page — never take it to pure white, and never
+    // back to a cool grey.
+    canvas: '#FAF8F4',
     secondary: '#E6F1FF',
     elevated: '#FFFFFF',
-    // Cards read pure white, matching Today's Dailies. Every card surface uses
-    // this so the app has one card white, not two that are nearly the same.
+    // Cards are pure, bright white. The canvas carries the warmth; a card that
+    // is only nearly-white reads as dirty rather than soft. Every card surface
+    // uses this so the app has one card white, not two that are nearly the same.
     card: '#FFFFFF',
-    // Outlined surfaces that sit directly on `canvas` — lighter than the canvas so
+    // Surfaces that sit directly on `canvas` — lighter than the canvas so
     // each row reads as its own surface, still short of `card` so a bordered row
     // never competes with a real elevated card.
-    cardSoft: '#F8FAFD',
+    cardSoft: '#FDFCFA',
     accentSoft: '#E4F0FF',
     // Blue block behind the top bar, curving into the page canvas.
     headerTint: '#63ADFF',
@@ -194,8 +197,8 @@ export const colors = {
     shadow: '#0F172A',
     // Opaque scrim for the 'solid' glass fallback, used when Reduce
     // Transparency asks us to avoid blur/translucency.
-    scrim: 'rgba(241,243,248,0.94)',
-    lockedScrim: '#F1F3F8',
+    scrim: 'rgba(245,243,239,0.94)',
+    lockedScrim: '#F5F3EF',
     // Dark counterpart for colorScheme="dark" surfaces on the solid fallback.
     scrimDark: 'rgba(15,23,42,0.94)',
     // White-leaning fills for glass controls placed over imagery/vibrant media.
