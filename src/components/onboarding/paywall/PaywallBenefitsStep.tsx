@@ -25,30 +25,30 @@ const testimonials: Array<{
   avatar: OnboardingImageKey;
 }> = [
   {
-    title: 'I stopped lying awake at 2am',
+    title: 'My new bedtime routine',
     quote:
-      'My head would not switch off at night. Four minutes of the wind down and I am out before I finish it.',
+      'I started using Azora when I could not switch my brain off at night. Now winding down is something I look forward to instead of something I dread.',
     author: 'Maya Rivera',
     avatar: 'testimonialMaya',
   },
   {
-    title: 'The stress does not stack up now',
+    title: 'The stress does not follow me home',
     quote:
-      'I used to carry every bad meeting into the evening. One reset at my desk and my heart rate is back down before I get home.',
+      'I used to carry every hard day into the evening. One reset at my desk and I walk in the door as myself again.',
     author: 'Jackie Koch',
     avatar: 'testimonialDaniel',
   },
   {
-    title: 'Calmer without adding another hour',
+    title: 'Looking after myself finally fits',
     quote:
-      'I do not have time for a long meditation. Five minutes a day and I feel steadier through the whole week.',
+      'I do not have an hour to give myself. Five minutes a day turned out to be enough to feel steadier all week.',
     author: 'Priya Shah',
     avatar: 'testimonialPriya',
   },
   {
-    title: 'I finally know how I’m actually doing',
+    title: 'I can see my body settle',
     quote:
-      'My stress, my heart rate, and my Azora Score are in one place, so checking in takes seconds.',
+      'I take a heart rate reading before and after. Watching the number come down is what convinced me this was doing something real.',
     author: 'Nina Alvarez',
     avatar: 'testimonialNina',
   },
