@@ -13,21 +13,27 @@ interface SectionHeaderProps {
   title: string;
   /** sits before the title, tinted to match it */
   icon?: IconName;
+  /** `inverse` for a heading that sits on artwork rather than on the canvas */
+  tone?: 'default' | 'inverse';
   right?: ReactNode;
 }
 
 export default function SectionHeader({
   title,
   icon,
+  tone = 'default',
   right,
 }: SectionHeaderProps) {
+  const color =
+    tone === 'inverse' ? colors.text.inverse : colors.text.primary;
+
   return (
     <View style={styles.row}>
       <View style={styles.leading}>
         {icon == null ? null : (
-          <Icon name={icon} size={ICON_SIZE} color={colors.text.primary} />
+          <Icon name={icon} size={ICON_SIZE} color={color} />
         )}
-        <Text style={styles.title}>{title}</Text>
+        <Text style={[styles.title, { color }]}>{title}</Text>
       </View>
       {right}
     </View>

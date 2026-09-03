@@ -72,8 +72,7 @@ test('Hotel is reached from Home, never from a tab', () => {
   // A room takes a week to fill, so for the whole of a new user's first week
   // the hotel is one part-furnished room and an outline. That is not worth a
   // quarter of the tab bar, and Home already shows that room. It sits in Home's
-  // top bar instead, beside the other controls that only ever navigate — over
-  // the room it spent a whole row of the screen on one chip.
+  // own top corner instead, over the sky above the room it opens.
   const tabs = read('app/navigation/MainTabs.tsx');
   const root = read('app/navigation/RootNavigator.tsx');
   const home = read('screens/HomeScreen.tsx');
@@ -81,11 +80,11 @@ test('Hotel is reached from Home, never from a tab', () => {
     (match) => match[1],
   );
 
-  assert.deepEqual(tabNames, ['Home', 'Heart', 'Profile']);
+  assert.deepEqual(tabNames, ['Home', 'Explore', 'Heart', 'Profile']);
   assert.doesNotMatch(tabs, /Hotel/);
   assert.match(root, /name="Hotel"/);
   assert.match(root, /name="HotelPreview"/);
-  assert.match(home, /<AppTopBar[^>]*rightSlot={<HotelButton/s);
+  assert.match(home, /<HotelButton floors=/);
 });
 
 test('the hotel offers its own way back, and does not spend height on it', () => {

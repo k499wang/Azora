@@ -43,7 +43,9 @@ const TONE_STYLE: Record<
   }
 > = {
   waiting: {
-    accent: colors.playful.sky.base,
+    // The card is a dark scrim, so the sky tone is taken a step lighter than
+    // `base` — the deep blue disappears into it.
+    accent: colors.playful.sky.mid,
     track: colors.playful.sky.soft,
     icon: 'lock',
     // Muted on purpose: a saturated lock reads as a thing to press.
@@ -147,7 +149,7 @@ export function RoomProgressCardView({
         </Text>
       </View>
 
-      {view.countdown === true ? <NextDayCountdown style={styles.note} /> : null}
+      {view.countdown === true ? <NextDayCountdown style={styles.countdown} /> : null}
       {view.note == null ? null : (
         <Text style={[styles.note, styles.noteText]}>{view.note}</Text>
       )}
@@ -274,6 +276,9 @@ export function describeRoomCard({
 const styles = StyleSheet.create({
   card: {
     ...card.base,
+    // Not white: this card sits on the meadow, so it darkens the field behind
+    // it rather than reading as a sheet of paper dropped on the grass.
+    backgroundColor: colors.background.cardScrim,
     padding: spacing.md,
     gap: spacing.sm,
   },
@@ -288,7 +293,7 @@ const styles = StyleSheet.create({
     fontSize: 19,
     lineHeight: 26,
     flex: 1,
-    color: colors.text.primary,
+    color: colors.text.inverse,
   },
   // Beside the bar rather than inside it: the fill runs the whole track, so
   // there is no colour a centred count stays legible against end to end.
@@ -301,12 +306,18 @@ const styles = StyleSheet.create({
     ...typography.label.detail,
     fontSize: 14,
     lineHeight: 18,
-    color: colors.text.secondary,
+    color: colors.overlay.light,
+  },
+  // The countdown ships its own dark metadata colour, so the scrim's light one
+  // has to be handed back to it.
+  countdown: {
+    marginTop: -spacing.xs,
+    color: colors.overlay.light,
   },
   count: {
     ...typography.body.small,
     fontFamily: fonts.semibold,
-    color: colors.text.secondary,
+    color: colors.overlay.light,
   },
   barRow: {
     flexDirection: 'row',

@@ -65,14 +65,14 @@ interface DailyRowMetrics {
 
 const COMPACT_ROW_METRICS: DailyRowMetrics = {
   expandedHeight: 176,
-  collapsedHeight: 48,
+  collapsedHeight: 58,
   contentHeight: 136,
   glyphSize: 150,
 };
 
 const REGULAR_ROW_METRICS: DailyRowMetrics = {
   expandedHeight: 248,
-  collapsedHeight: 60,
+  collapsedHeight: 70,
   contentHeight: 208,
   glyphSize: 210,
 };
@@ -89,8 +89,9 @@ const EXPAND_TIMING = {
 const TASK_GLYPH_RIGHT = -34;
 const TASK_GLYPH_BOTTOM = -40;
 const TASK_COPY_INSET = 72;
-// Small enough to read as a mark beside the title rather than a second card.
-const COLLAPSED_GLYPH_SIZE = 20;
+// Big enough to carry the row on its own: a closed daily is its mark, its name
+// and the way in, so the mark is the size of an app tile rather than a bullet.
+const COLLAPSED_GLYPH_SIZE = 34;
 const TIMELINE_ROW_GAP = spacing.md;
 const TIMELINE_RAIL_LEFT = TIMELINE_COLUMN_WIDTH / 2 - TIMELINE_RAIL_WIDTH / 2;
 /**
@@ -144,8 +145,6 @@ interface DailyTaskRowProps {
   detailIcon: BreathingTechnique['icon'];
   style: CategoryStyle;
   glyph: GlyphShape;
-  /** the one-line summary a closed row shows after its title */
-  collapsedMeta: string;
   metrics: DailyRowMetrics;
   expanded: boolean;
   completed: boolean;
@@ -180,7 +179,6 @@ function DailyTaskRow({
   detailIcon,
   style,
   glyph,
-  collapsedMeta,
   metrics,
   expanded,
   completed,
@@ -256,7 +254,6 @@ function DailyTaskRow({
           >
             <CollapsedTaskPill
               title={title}
-              meta={collapsedMeta}
               glyph={glyph}
               muted={completed}
             />
@@ -356,14 +353,12 @@ function ExpandedTaskPill({
 
 interface CollapsedTaskPillProps {
   title: string;
-  meta: string;
   glyph: GlyphShape;
   muted: boolean;
 }
 
 function CollapsedTaskPill({
   title,
-  meta,
   glyph,
   muted,
 }: CollapsedTaskPillProps) {
@@ -385,12 +380,6 @@ function CollapsedTaskPill({
           numberOfLines={1}
         >
           {title}
-        </Text>
-        <Text style={styles.collapsedSeparator}>·</Text>
-        <Text
-          style={[styles.collapsedMeta, muted && styles.collapsedContentMuted]}
-        >
-          {meta}
         </Text>
       </View>
     </View>
@@ -451,7 +440,6 @@ export default function TodaysDailiesSection({
       glyph: technique
         ? TECHNIQUE_GLYPH[technique.id]
         : CATEGORY_STYLE.calm.glyph,
-      collapsedMeta: technique?.duration ?? guidedScheduledTime,
       completed: guidedExerciseCompleted,
       locked: guidedLocked,
       loading: techniqueLoading,
@@ -469,7 +457,6 @@ export default function TodaysDailiesSection({
       glyph: handPickedTechnique
         ? TECHNIQUE_GLYPH[handPickedTechnique.id]
         : CATEGORY_STYLE.balance.glyph,
-      collapsedMeta: handPickedTechnique?.duration ?? handPickedScheduledTime,
       completed: handPickedExerciseCompleted,
       locked: handPickedLocked,
       loading: handPickedTechniqueLoading,
@@ -484,7 +471,6 @@ export default function TodaysDailiesSection({
       detailIcon: 'timer-sand',
       style: BREATH_HOLD_STYLE,
       glyph: BREATH_HOLD_STYLE.glyph,
-      collapsedMeta: breathHoldScheduledTime,
       completed: breathHoldCompleted,
       locked: breathHoldLocked,
       onPress: onPressBreathHold,
@@ -543,6 +529,7 @@ export default function TodaysDailiesSection({
       <SectionHeader
         icon="calendar"
         title="Today’s Dailies"
+        tone="inverse"
         right={
           <Pressable
             accessibilityRole="button"
@@ -618,7 +605,7 @@ const styles = StyleSheet.create({
     width: TIMELINE_RAIL_WIDTH,
     height: 10,
     borderRadius: TIMELINE_RAIL_WIDTH / 2,
-    backgroundColor: colors.border.default,
+    backgroundColor: colors.neutral[0],
   },
   taskRow: {
     flex: 1,
@@ -646,11 +633,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   // A closed row's marker is an empty ring; the open one fills with the daily's
-  // own colour, so the rail says which row you are looking at.
+  // own colour, so the rail says which row you are looking at. A closed marker
+  // is a solid white dot like the dashes it sits on — the timeline lives on the
+  // meadow, where a grey line reads as a smudge rather than a rail.
   statusMarkerIdle: {
     backgroundColor: colors.neutral[0],
-    borderWidth: 2,
-    borderColor: colors.neutral[300],
   },
   statusMarkerCompleted: {
     backgroundColor: colors.success[500],
@@ -720,6 +707,8 @@ const styles = StyleSheet.create({
   },
   collapsedPill: {
     ...card.base,
+    ...card.shadow,
+    borderRadius: radius.medium,
     flex: 1,
     justifyContent: 'center',
     paddingHorizontal: spacing.md,
@@ -727,27 +716,15 @@ const styles = StyleSheet.create({
   collapsedLine: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: spacing.md,
   },
-  // The daily's name takes the semibold the app gives every row label. Size is
-  // what separates it from the open card's title, not weight — a closed row
-  // stays body-sized so it can never compete with the 22pt one above it.
+  // The one place a closed row breaks the SemiBold ceiling: the name is the
+  // whole row now that the mark is the only other thing on it.
   collapsedTitle: {
     ...typography.body.medium,
-    fontFamily: fonts.semibold,
+    fontFamily: fonts.medium,
     color: colors.text.primary,
-    flexShrink: 1,
-  },
-  // Same weight as the title — how long it takes is detail, and the app gives
-  // detail its own colour rather than its own weight.
-  collapsedMeta: {
-    ...typography.body.medium,
-    fontFamily: fonts.semibold,
-    color: colors.text.secondary,
-  },
-  collapsedSeparator: {
-    ...typography.title.title3,
-    color: colors.text.tertiary,
+    flex: 1,
   },
   collapsedContentMuted: {
     color: colors.text.tertiary,

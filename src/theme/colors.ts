@@ -166,6 +166,13 @@ export const colors = {
     headerTint: '#63ADFF',
     // Warm cream for paper/letter surfaces.
     paper: '#FBF7EF',
+    // Translucent dark panel for a card sitting on the meadow: it darkens the
+    // field behind it instead of punching a white hole in it, so the card is
+    // still the scene, read in `text.inverse`.
+    cardScrim: 'rgba(30,40,32,0.22)',
+    // The flat green the home meadow artwork ends on, so the page carries that
+    // same field down past the artwork with no seam.
+    meadow: '#83B85D',
     // Asset-matched fallbacks used while native background images decode.
     sunset: '#042B62',
     dawn: '#FCBF9B',
