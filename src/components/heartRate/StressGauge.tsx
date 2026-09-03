@@ -200,7 +200,6 @@ export default function StressGauge({
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.background.elevated,
-    ...card.shadow,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
     position: 'relative',
