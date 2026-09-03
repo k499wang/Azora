@@ -263,15 +263,21 @@ export const ROOM_SHELLS: Record<RoomShellKey, Poly[]> = Object.fromEntries(
  * colour — a blue room ends in blue plaster, not in the cream the first shell
  * happened to be drawn in.
  *
- * Both are derived from `wallLeft` rather than listed per shell: the five tones
- * are light on one solid, and hand-picking them six times over is six chances
- * for a face to end up brighter than the one turned more squarely to the light.
- * Each is the wall pulled toward its own grey — a cut edge is plaster, the wall
- * is painted, so the cut reads a little flatter — then darkened by how far that
- * face turns away. The factors are the tones the original cream frame was
+ * All five are derived from `floor` rather than listed per shell: the tones are
+ * light on one solid, and hand-picking them six times over is six chances for a
+ * face to end up brighter than the one turned more squarely to the light.
+ *
+ * The floor is the source because it is the only surface carrying the shell's
+ * hue at full strength — every `wallLeft` is a near-white pastel, so a frame
+ * mixed from those came out the same off-white for all six rooms whatever the
+ * room was. Each tone is the floor lifted most of the way to white so the cut
+ * still reads as plaster, pulled slightly toward its own grey because a cut
+ * edge is flatter than a painted surface, then darkened by how far that face
+ * turns from the light. The factors are the tones the original cream frame was
  * authored with, kept as ratios so every shell is lit the same way.
  */
-const FRAME_FLATTEN = 0.35;
+const FRAME_LIFT = 0.62;
+const FRAME_FLATTEN = 0.15;
 const FRAME_FACTORS: Record<keyof FramePalette, number> = {
   cap: 0.96,
   baseLeft: 0.93,
@@ -288,11 +294,14 @@ function channels(hex: string): [number, number, number] {
   ];
 }
 
-function frameTone(wall: string, factor: number): string {
-  const [r, g, b] = channels(wall);
-  const grey = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+function frameTone(source: string, factor: number): string {
+  const lifted = channels(source).map(
+    (value) => value + (255 - value) * FRAME_LIFT,
+  ) as [number, number, number];
+  const grey =
+    0.2126 * lifted[0] + 0.7152 * lifted[1] + 0.0722 * lifted[2];
 
-  const tone = ([r, g, b] as const).map((value) => {
+  const tone = lifted.map((value) => {
     const flattened = value + (grey - value) * FRAME_FLATTEN;
     const lit = Math.round(Math.min(255, Math.max(0, flattened * factor)));
     return lit.toString(16).padStart(2, '0');
@@ -301,20 +310,20 @@ function frameTone(wall: string, factor: number): string {
   return `#${tone.join('')}`;
 }
 
-function framePalette(wall: string): FramePalette {
+function framePalette(source: string): FramePalette {
   return {
-    cap: frameTone(wall, FRAME_FACTORS.cap),
-    baseLeft: frameTone(wall, FRAME_FACTORS.baseLeft),
-    sideLeft: frameTone(wall, FRAME_FACTORS.sideLeft),
-    baseRight: frameTone(wall, FRAME_FACTORS.baseRight),
-    sideRight: frameTone(wall, FRAME_FACTORS.sideRight),
+    cap: frameTone(source, FRAME_FACTORS.cap),
+    baseLeft: frameTone(source, FRAME_FACTORS.baseLeft),
+    sideLeft: frameTone(source, FRAME_FACTORS.sideLeft),
+    baseRight: frameTone(source, FRAME_FACTORS.baseRight),
+    sideRight: frameTone(source, FRAME_FACTORS.sideRight),
   };
 }
 
 export const ROOM_FRAMES: Record<RoomShellKey, Poly[]> = Object.fromEntries(
   ROOM_SHELL_KEYS.map((key) => [
     key,
-    buildRoomFrame(framePalette(SPECS[key].wallLeft)),
+    buildRoomFrame(framePalette(SPECS[key].floor)),
   ]),
 ) as Record<RoomShellKey, Poly[]>;
 
