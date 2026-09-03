@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import {
-  Pressable,
   ScrollView,
   StyleSheet,
   View,
@@ -12,8 +11,8 @@ import TodaysDailiesSection from '../components/home/TodaysDailiesSection';
 import HomeRoom from '../features/room/HomeRoom';
 import HotelButton from '../features/room/HotelButton';
 import NotificationsSettingsSheet from '../features/notifications/NotificationsSettingsSheet';
+import GlassIconButton from '../components/common/GlassIconButton';
 import Icon from '../components/common/icons/Icon';
-import { pressable } from '../theme/pressable';
 import RoomProgressCard from '../features/room/RoomProgressCard';
 import { useRoomClaim } from '../features/room/useRoomClaim';
 import { useStartDaily } from '../hooks/useStartDaily';
@@ -24,6 +23,9 @@ import { useAuthStore } from '../stores/authStore';
 import { useDailyPlanScheduleQuery } from '../queries/dailyPlan/useDailyPlanScheduleQuery';
 import { DEFAULT_DAILY_PLAN_SCHEDULE } from '../services/dailyPlan/types';
 import { useDashboardLayout } from '../hooks/useDashboardLayout';
+
+/** the glass chips either side of Home's top row */
+const HOTEL_ROW_BUTTON_SIZE = 46;
 
 const TOUR_TARGETS: TourTargetId[] = ['dailies'];
 
@@ -62,15 +64,14 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         overScrollMode="always"
       >
         <View style={styles.hotelRow}>
-          <Pressable
-            accessibilityRole="button"
+          <GlassIconButton
             accessibilityLabel="Open notification settings"
-            hitSlop={spacing.md}
-            style={({ pressed }) => (pressed ? pressable.control : undefined)}
+            size={HOTEL_ROW_BUTTON_SIZE}
+            variant="regular"
             onPress={() => setNotificationsVisible(true)}
           >
-            <Icon name="bell" size={30} color={colors.playful.sky.base} />
-          </Pressable>
+            <Icon name="bell" size={26} color={colors.playful.sky.base} />
+          </GlassIconButton>
           <HotelButton floors={roomClaim.room?.floor ?? 1} />
         </View>
 
@@ -136,8 +137,8 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: spacing['7xl'] + spacing.xl,
   },
-  // The hotel sits over the sky, and the room comes up under it: the corner
-  // glyph is the only thing between the status bar and the scene.
+  // Everything below the chips rides up under them: the top row is chrome, so
+  // the room starts as close to the status bar as the chips allow.
   hotelRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -145,7 +146,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
   },
   roomBlock: {
-    marginTop: spacing.md,
+    marginTop: -spacing.sm,
   },
   dailiesGroup: {
     marginTop: margin.itemGap,
