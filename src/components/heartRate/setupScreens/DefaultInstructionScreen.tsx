@@ -1,6 +1,7 @@
 import { Text } from '../../common/Text';
 import { useState } from 'react';
 import {
+  Pressable,
   ScrollView,
   StyleSheet,
   useWindowDimensions,
@@ -9,13 +10,11 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Device from 'expo-device';
 import { useNavigation } from '@react-navigation/native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../../theme/colors';
 import { typography, fonts } from '../../../theme/typography';
 import { spacing, padding } from '../../../theme/spacing';
 import ChunkyButton from '../../common/ChunkyButton';
-import GlassIconButton from '../../common/GlassIconButton';
-import { SESSION_GLASS_BUTTON_SIZE } from '../../../features/exercise/shared/components/SessionGlassButton';
+import Icon from '../../common/icons/Icon';
 import { isShortScreen } from '../../../theme/breakpoints';
 
 /** Slightly taller than the standard primary, matching this flow's footer. */
@@ -73,25 +72,26 @@ export function DefaultInstructionScreen({ onNext, onCancel }: SetupScreenProps)
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      {/* Matches the floating close on the result screens: absolute, above
-          everything, with the scroll content clearing below it. */}
-      <GlassIconButton
-        accessibilityLabel="Close"
-        size={SESSION_GLASS_BUTTON_SIZE}
-        style={[
-          styles.floatingAction,
-          styles.floatingClose,
-          { top: insets.top + padding.screen.vertical },
-        ]}
-        onPress={onCancel}
-      >
-        <MaterialCommunityIcons name="close" size={20} color={colors.text.secondary} />
-      </GlassIconButton>
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
+        {/* Scrolls with the page rather than floating over it, so nothing sits
+            on top of the illustration once the steps are scrolled up. */}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Back"
+          hitSlop={spacing.sm}
+          onPress={onCancel}
+          style={({ pressed }) => [
+            styles.back,
+            pressed && styles.backPressed,
+          ]}
+        >
+          <Icon name="chevron-left" size={26} color={colors.text.primary} />
+        </Pressable>
+
         <Text style={[styles.title, compact && styles.titleCompact]}>
           {placementGuidance.title}
         </Text>
@@ -143,15 +143,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: padding.screen.horizontal,
     backgroundColor: colors.background.canvas,
   },
-  floatingAction: {
-    position: 'absolute',
-    zIndex: 2,
+  back: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 22,
   },
-  floatingClose: {
-    left: padding.screen.horizontal,
+  backPressed: {
+    opacity: 0.6,
   },
   scrollContent: {
-    paddingTop: padding.screen.vertical + SESSION_GLASS_BUTTON_SIZE,
+    paddingTop: padding.screen.vertical,
     paddingBottom: spacing.lg,
   },
   title: {

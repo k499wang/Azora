@@ -37,8 +37,10 @@ export const EXERCISE_DARK_THEMES: ExerciseDarkTheme[] = [
     label: 'Light',
     dotColor: '#63ADFF',
     screen: colors.background.canvas,
-    surface: '#F1F5F9',
-    surfaceBorder: '#E2E8F0',
+    // Warm siblings of the cream screen: a cool grey panel on it read as a
+    // different material rather than a raised part of the same one.
+    surface: '#F3EBE1',
+    surfaceBorder: '#E7DCCE',
     circleOutline: '#63ADFF',
     circleOutlineOpacity: 0.5,
     // The breathing companion's body and aura. Shares Mochi's token so the
@@ -47,7 +49,7 @@ export const EXERCISE_DARK_THEMES: ExerciseDarkTheme[] = [
     circleOuterOpacity: 0.28,
     circleInner: '#3D93FF',
     beatFlush: '#1F7BFF',
-    progressTrack: '#E2E8F0',
+    progressTrack: '#E7DCCE',
     progressFill: '#63ADFF',
     textPrimary: '#2e333a',
     textSecondary: '#3f4855',

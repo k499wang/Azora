@@ -110,6 +110,10 @@ export const colors = {
   // it is lit rather than coloured: one tone per face, ordered by how square
   // that face turns to a light sitting above and to the left. Cooler than the
   // walls it wraps, because a cut edge is plaster and the wall is painted.
+  //
+  // This is the cream the generated `ROOM_SHELL` is cut in. Every shell in
+  // `roomShells.ts` derives its own five tones from its own walls, so a themed
+  // room never reaches for these.
   roomFrame: {
     /** both wall tops */
     cap: '#F5F1E6',
@@ -117,11 +121,6 @@ export const colors = {
     sideLeft: '#E2DBC8',
     baseRight: '#DCD4BF',
     sideRight: '#CFC6AE',
-    /**
-     * The softened line around the cut. Same warm family as the faces, with
-     * enough contrast to define the plaster edge without fencing off the room.
-     */
-    line: 'rgba(154,133,86,0.30)',
   },
 
   // The hex room's resident. A cyan-leaning sky blue keeps him in the app's blue
