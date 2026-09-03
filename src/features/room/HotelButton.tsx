@@ -1,22 +1,20 @@
 /**
  * The way from this week's room to every room before it.
  *
- * It lives in Home's top bar beside the bell rather than over the room: a
- * control that only ever navigates belongs with the other navigation, and its
- * own row above the room spent a full width of the screen on one chip.
- *
- * The pyramid carries colour where the bell does not — it is the only door to
- * the hotel, and a grey glyph in a row of grey glyphs is not a door anyone
- * finds.
+ * A bare pyramid in Home's top corner, scrolling away with the scene rather
+ * than riding over it: the sky behind it is already the contrast a chrome
+ * button would have supplied, and its colour is what marks it as the one door
+ * to the hotel.
  */
 import { useNavigation } from '@react-navigation/native';
+import { Pressable } from 'react-native';
 import Icon from '../../components/common/icons/Icon';
-import GlassIconButton from '../../components/common/GlassIconButton';
 import type { MainTabNavigationProp } from '../../app/navigation';
 import { colors } from '../../theme/colors';
+import { pressable } from '../../theme/pressable';
+import { spacing } from '../../theme/spacing';
 
-const BUTTON_SIZE = 48;
-const ICON_SIZE = 26;
+const ICON_SIZE = 34;
 
 interface HotelButtonProps {
   floors: number;
@@ -26,11 +24,13 @@ export default function HotelButton({ floors }: HotelButtonProps) {
   const navigation = useNavigation<MainTabNavigationProp<'Home'>>();
 
   return (
-    <GlassIconButton
+    <Pressable
+      accessibilityRole="button"
       accessibilityLabel={`My hotel, ${floors} ${
         floors === 1 ? 'floor' : 'floors'
       }`}
-      size={BUTTON_SIZE}
+      hitSlop={spacing.md}
+      style={({ pressed }) => (pressed ? pressable.control : undefined)}
       onPress={() => navigation.navigate('Hotel')}
     >
       <Icon
@@ -38,6 +38,6 @@ export default function HotelButton({ floors }: HotelButtonProps) {
         size={ICON_SIZE}
         color={colors.playful.sky.base}
       />
-    </GlassIconButton>
+    </Pressable>
   );
 }

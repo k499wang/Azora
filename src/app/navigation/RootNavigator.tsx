@@ -20,7 +20,6 @@ import HotelScreen, {
 import NextRoomScreen from '../../screens/NextRoomScreen';
 import SettingsScreen from '../../screens/SettingsScreen';
 import HistoryScreen from '../../screens/HistoryScreen';
-import ExploreScreen from '../../screens/ExploreScreen';
 import ShareableResultScreen from '../../screens/ShareableResultScreen';
 import ExerciseSearchScreen from '../../screens/ExerciseSearchScreen';
 import GardenScreen from '../../screens/GardenScreen';
@@ -83,14 +82,6 @@ function AppStack({ showBootPaywall, tourEnabled }: AppStackProps) {
           />
         )}
       </Stack.Screen>
-      <Stack.Screen
-        name="Explore"
-        component={ExploreScreen}
-        options={{
-          presentation: 'card',
-          animation: 'slide_from_right',
-        }}
-      />
       <Stack.Screen
         name="ExerciseSearch"
         component={ExerciseSearchScreen}

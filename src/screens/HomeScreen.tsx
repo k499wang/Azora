@@ -1,8 +1,14 @@
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { useState } from 'react';
+import {
+  type LayoutChangeEvent,
+  ScrollView,
+  StyleSheet,
+  View,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import { spacing, margin } from '../theme/spacing';
-import AppTopBar from '../components/common/AppTopBar';
-import ExtraPracticeSection from '../components/home/ExtraPracticeSection';
+import HomeMeadowBackground from '../components/home/HomeMeadowBackground';
 import TodaysDailiesSection from '../components/home/TodaysDailiesSection';
 import HomeRoom from '../features/room/HomeRoom';
 import HotelButton from '../features/room/HotelButton';
@@ -17,7 +23,7 @@ import { useDailyPlanScheduleQuery } from '../queries/dailyPlan/useDailyPlanSche
 import { DEFAULT_DAILY_PLAN_SCHEDULE } from '../services/dailyPlan/types';
 import { useDashboardLayout } from '../hooks/useDashboardLayout';
 
-const TOUR_TARGETS: TourTargetId[] = ['dailies', 'extraPractice', 'seeAll'];
+const TOUR_TARGETS: TourTargetId[] = ['dailies'];
 
 export default function HomeScreen({ navigation }: HomeScreenProps) {
   const user = useAuthStore((state) => state.user);
@@ -26,13 +32,30 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     dailyPlanScheduleQuery.data ?? DEFAULT_DAILY_PLAN_SCHEDULE;
   const roomClaim = useRoomClaim(user?.id ?? null);
   const dailies = roomClaim.dailies;
-  const { start, accessAllowed, exerciseAccess } = useStartDaily('Home', dailies);
+  const { start, accessAllowed } = useStartDaily('Home', dailies);
 
   const homeLayout = useDashboardLayout();
+  const insets = useSafeAreaInsets();
+
+  // The artwork ends halfway down the progress card, so that card straddles
+  // the hills and the flat green rather than sitting on one or the other. Its
+  // own offset is relative to the group, so both have to be measured.
+  const [groupTop, setGroupTop] = useState<number | null>(null);
+  const [progressMiddle, setProgressMiddle] = useState<number | null>(null);
+  const sceneHeight =
+    groupTop == null || progressMiddle == null
+      ? null
+      : groupTop + progressMiddle;
+
+  const onGroupLayout = (event: LayoutChangeEvent) =>
+    setGroupTop(event.nativeEvent.layout.y);
+  const onProgressLayout = (event: LayoutChangeEvent) => {
+    const { y, height } = event.nativeEvent.layout;
+    setProgressMiddle(y + height / 2);
+  };
 
   const tourScroll = useTourScroller(TOUR_TARGETS);
   const dailiesTarget = useTourTarget('dailies');
-  const extraPracticeTarget = useTourTarget('extraPractice');
 
   // The recently-logged list and its analytics now live on the Heart tab
   // (see RecentlyLoggedSection — it uses useIsFocused to gate the view event).
@@ -42,17 +65,20 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
       <ScrollView
         {...tourScroll}
         style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingTop: insets.top },
+        ]}
         showsVerticalScrollIndicator={false}
         bounces
         alwaysBounceVertical
         overScrollMode="always"
       >
-        <AppTopBar
-          showNotifications
-          showAvatar={false}
-          rightSlot={<HotelButton floors={roomClaim.room?.floor ?? 1} />}
-        />
+        <HomeMeadowBackground sceneHeight={sceneHeight} />
+
+        <View style={styles.hotelRow}>
+          <HotelButton floors={roomClaim.room?.floor ?? 1} />
+        </View>
 
         <View style={styles.roomBlock}>
           <HomeRoom room={roomClaim.room} progress={roomClaim.progress} />
@@ -65,12 +91,15 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             styles.dailiesGroup,
             { paddingHorizontal: homeLayout.contentInset },
           ]}
+          onLayout={onGroupLayout}
         >
-          <RoomProgressCard
-            progress={roomClaim.progress}
-            dailies={dailies}
-            isLoading={roomClaim.isLoading}
-          />
+          <View onLayout={onProgressLayout}>
+            <RoomProgressCard
+              progress={roomClaim.progress}
+              dailies={dailies}
+              isLoading={roomClaim.isLoading}
+            />
+          </View>
           <View {...dailiesTarget}>
             <TodaysDailiesSection
               technique={dailies.guidedTechnique}
@@ -91,22 +120,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             />
           </View>
         </View>
-
-        {/* The shelf stays horizontally scrollable at every width and runs to
-            the column edge, so the row a tablet cuts off is cut off on the same
-            margin the dailies above it sit on. */}
-        <View style={styles.extraPracticeSection} {...extraPracticeTarget}>
-          <ExtraPracticeSection
-            recommendedTechniqueId={dailies.guidedTechnique?.id ?? null}
-            excludedTechniqueIds={[
-              dailies.guidedTechnique?.id,
-              dailies.handPickedTechnique?.id,
-            ]}
-            exerciseAccess={exerciseAccess}
-            contentMaxWidth={homeLayout.contentMaxWidth}
-            onSeeAll={() => navigation.navigate('Explore')}
-          />
-        </View>
       </ScrollView>
     </View>
   );
@@ -115,7 +128,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: colors.background.canvas,
+    backgroundColor: colors.background.meadow,
   },
   scroll: {
     flex: 1,
@@ -124,16 +137,17 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: spacing['7xl'] + spacing.xl,
   },
-  // Tighter than the standard item gap: the room is what the screen opens on,
-  // so it sits up under the bar rather than reading as the first item in a list.
+  // The hotel sits over the sky, and the room comes up under it: the corner
+  // glyph is the only thing between the status bar and the scene.
+  hotelRow: {
+    alignItems: 'flex-end',
+    paddingHorizontal: spacing.lg,
+  },
   roomBlock: {
-    marginTop: spacing.md,
+    marginTop: -spacing.lg,
   },
   dailiesGroup: {
     marginTop: margin.itemGap,
     gap: spacing.md,
-  },
-  extraPracticeSection: {
-    marginTop: margin.sectionGap,
   },
 });
