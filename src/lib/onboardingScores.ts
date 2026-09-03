@@ -1,4 +1,4 @@
-import type { AgreementValue } from '../components/onboarding/screens/AgreementScreen';
+import type { AgreementValue } from './onboardingAgreement';
 
 export type MindMapAxis = 'calm' | 'recovery' | 'focus' | 'resilience' | 'breathEase';
 

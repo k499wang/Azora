@@ -14,10 +14,7 @@ import IntentPriorityScreen from './screens/IntentPriorityScreen';
 import IntentReflectionScreen from './screens/IntentReflectionScreen';
 import IntentProjectionScreen from './screens/IntentProjectionScreen';
 import BrainScienceScreen from './screens/BrainScienceScreen';
-import AgreementScreen, {
-  AGREEMENT_STATEMENTS,
-  type AgreementValue,
-} from './screens/AgreementScreen';
+import type { AgreementValue } from '../../lib/onboardingAgreement';
 import AssessmentReflectionScreen from './screens/AssessmentReflectionScreen';
 import NameScreen from './screens/NameScreen';
 import GreetingScreen from './screens/GreetingScreen';
@@ -176,7 +173,6 @@ const STEP_ORDER: OnboardingStep[] = [
   'sleep',
   'brainFog',
   'heartWorry',
-  'agreement',
   'assessmentReflection',
   'consistency',
   'scienceCredibility',
@@ -316,18 +312,11 @@ function OnboardingFlowSteps({
   const [hasAnsweredBrainFog, setHasAnsweredBrainFog] = useState(false);
   const [heartWorryLevel, setHeartWorryLevel] = useState(5);
   const [hasAnsweredHeartWorry, setHasAnsweredHeartWorry] = useState(false);
-  const [agreementResponses, setAgreementResponses] = useState<
-    Record<string, AgreementValue | null>
-  >(() =>
-    AGREEMENT_STATEMENTS.reduce<Record<string, AgreementValue | null>>(
-      (acc, statement) => {
-        acc[statement.id] =
-          initialSavedProfile?.agreementResponses?.[statement.id] ?? null;
-        return acc;
-      },
-      {},
-    ),
-  );
+  // Onboarding no longer asks the agreement statements. A profile saved before
+  // they were removed still carries the answers, and the plan, score and
+  // reflection still read them, so they are carried through rather than wiped.
+  const agreementResponses: Record<string, AgreementValue | null> =
+    initialSavedProfile?.agreementResponses ?? {};
   const [age, setAge] = useState(initialSavedProfile?.age ?? 25);
   const [gender, setGender] = useState<GenderOption['id'] | null>(
     toGenderOptionId(initialSavedProfile?.gender),
@@ -1150,33 +1139,15 @@ function OnboardingFlowSteps({
         onChange={setHeartWorryLevel}
         onContinue={() => {
           setHasAnsweredHeartWorry(true);
-          goToStep('agreement', 'continue', { has_heart_worry_level: true });
+          goToStep('assessmentReflection', 'continue', {
+            has_heart_worry_level: true,
+          });
         }}
         onBack={() => goToStep('brainFog', 'back')}
         onSkip={() => {
           setHasAnsweredHeartWorry(false);
-          goToStep('agreement', 'skip');
+          goToStep('assessmentReflection', 'skip');
         }}
-      />
-    );
-  }
-
-  if (step === 'agreement') {
-    return (
-      <AgreementScreen
-        responses={agreementResponses}
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
-        onChange={(id, value) =>
-          setAgreementResponses((prev) => ({ ...prev, [id]: value }))
-        }
-        onContinue={() => goToStep('assessmentReflection', 'continue', {
-          agreement_response_count: Object.values(agreementResponses).filter(
-            (value) => value != null,
-          ).length,
-        })}
-        onBack={() => goToStep('heartWorry', 'back')}
-        onSkip={() => goToStep('assessmentReflection', 'skip')}
       />
     );
   }
@@ -1194,7 +1165,7 @@ function OnboardingFlowSteps({
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goToStep('consistency', 'continue')}
-        onBack={() => goToStep('agreement', 'back')}
+        onBack={() => goToStep('heartWorry', 'back')}
       />
     );
   }

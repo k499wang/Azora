@@ -586,7 +586,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
-    backgroundColor: colors.background.elevated,
+    backgroundColor: colors.background.card,
   },
   retryText: {
     ...typography.button.small,

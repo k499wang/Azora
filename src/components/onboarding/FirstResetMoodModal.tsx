@@ -83,7 +83,7 @@ const styles = StyleSheet.create({
     maxWidth: 344,
     borderRadius: radius.large,
     borderCurve: 'continuous',
-    backgroundColor: colors.background.elevated,
+    backgroundColor: colors.background.card,
     padding: spacing.md,
     gap: spacing.sm,
     ...card.shadowModal,

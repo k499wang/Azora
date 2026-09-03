@@ -62,7 +62,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border.default,
     borderRadius: 16,
-    backgroundColor: colors.background.elevated,
+    backgroundColor: colors.background.card,
     paddingHorizontal: spacing.md,
     ...typography.input.text,
     lineHeight: undefined,

@@ -148,15 +148,19 @@ export const colors = {
     // Cool off-white canvas for the frosted/glass paradigm — a shade deeper than
     // `canvas` so sheets and modals seat below the page they cover.
     primary: '#F3F5F9',
-    // Off-white canvas the playful color blocks and white cards sit on. `card.base`
+    // Warm cream canvas the playful color blocks and white cards sit on. `card.base`
     // is borderless by design, so this gap to `background.card` is the only thing
     // separating a card from the page — never take it to pure white.
-    canvas: '#F6F7FB',
+    canvas: '#FDF6F0',
     secondary: '#E6F1FF',
     elevated: '#FFFFFF',
-    // Cards read pure white, matching Today's Dailies. Every card surface uses
-    // this so the app has one card white, not two that are nearly the same.
-    card: '#FFFFFF',
+    // Cards are a warm white, not a pure one: on the cream canvas pure #FFFFFF
+    // read as a brighter, cooler material than the page rather than a surface
+    // lifted off it. This keeps the same hue as the canvas and only lightens it,
+    // so the card still reads as the brightest thing on screen. Every card
+    // surface uses this so the app has one card white, not two that are nearly
+    // the same.
+    card: '#FFFCF9',
     // Outlined surfaces that sit directly on `canvas` — lighter than the canvas so
     // each row reads as its own surface, still short of `card` so a bordered row
     // never competes with a real elevated card.

@@ -151,7 +151,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
     borderRadius: 999,
-    backgroundColor: colors.neutral[0],
+    backgroundColor: colors.background.card,
   },
   pillLabel: {
     ...typography.label.medium,
