@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useMemo, useRef } from 'react';
+import { forwardRef, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
   Easing,
@@ -51,6 +51,10 @@ export const DAILY_BREATH_HOLD_LEAD_IN_MS =
 
 const INTRO_TITLE = 'The Azora Protocol';
 
+// The hold names itself before it starts counting, so the stage lands as an
+// instruction rather than a clock appearing where a word used to be.
+const HOLD_LABEL_MS = 2000;
+
 const HEADLINE_AREA_HEIGHT = 104;
 // Sits directly under the glass buttons in the scaffold header. The timer is
 // centred inside `HEADLINE_AREA_HEIGHT`, so it keeps its air from them without
@@ -69,24 +73,28 @@ const PHASE_FACES: Record<DailyBreathHoldPhase, BreathFace> = {
   processingResults: 'resting',
 };
 
+// The hold reads as two stages: the word, then the running timer.
+type HeadlineStage = DailyBreathHoldPhase | 'holdTimer';
+
 // Phases that draw the same word share an entry, so the crossfade never fades
-// "Inhale" out and back in to become "Inhale". The hold draws a running timer
-// in place of a word.
-const PHASE_HEADLINES: Record<DailyBreathHoldPhase, string> = {
+// "Inhale" out and back in to become "Inhale". The hold's timer stage draws a
+// running clock in place of a word.
+const PHASE_HEADLINES: Record<HeadlineStage, string> = {
   idle: '',
   intro: '',
   placement: '',
   preInhale: 'Inhale',
   preExhale: 'Exhale',
   inhale: 'Inhale',
-  hold: '',
+  hold: 'Hold',
+  holdTimer: '',
   processingResults: '',
 };
 
-// The hold shares its empty headline with the stages that draw no instruction
-// at all, so it needs its own key to still read as a stage change.
-function headlineFadeKey(phase: DailyBreathHoldPhase): string {
-  return phase === 'hold' ? 'hold' : PHASE_HEADLINES[phase];
+// The timer stage shares its empty headline with the stages that draw no
+// instruction at all, so it needs its own key to still read as a stage change.
+function headlineFadeKey(stage: HeadlineStage): string {
+  return stage === 'holdTimer' ? 'holdTimer' : PHASE_HEADLINES[stage];
 }
 
 type DailyBreathHoldCamera = Pick<
@@ -162,6 +170,18 @@ export const DailyBreathHoldPresentation = forwardRef<
     [prepExhaleSeconds, prepInhaleSeconds],
   );
 
+  const [holdTimerVisible, setHoldTimerVisible] = useState(false);
+
+  useEffect(() => {
+    if (!isHold) {
+      setHoldTimerVisible(false);
+      return;
+    }
+
+    const timer = setTimeout(() => setHoldTimerVisible(true), HOLD_LABEL_MS);
+    return () => clearTimeout(timer);
+  }, [isHold]);
+
   const placementFade = usePlacementFade(measuringPulse);
 
   const transition = useRef(new Animated.Value(isIdle ? 0 : 1)).current;
@@ -200,15 +220,18 @@ export const DailyBreathHoldPresentation = forwardRef<
   // The hold's timer is keyed on the phase, not the second, so it counts up
   // without re-fading; the cycle counter below stays on the live phase because
   // fading it every breath turns a quiet line into a flicker.
-  const { displayPhase, opacity: stageOpacity } = usePhaseCrossfade(phase, {
-    fadeKey: headlineFadeKey(phase),
-    holdMs: Math.min(prepInhaleSeconds, prepExhaleSeconds) * 1000,
-  });
-  const displayHold = displayPhase === 'hold';
+  const stage: HeadlineStage =
+    isHold && holdTimerVisible ? 'holdTimer' : phase;
+  const { displayPhase: displayStage, opacity: stageOpacity } =
+    usePhaseCrossfade<HeadlineStage>(stage, {
+      fadeKey: headlineFadeKey(stage),
+      holdMs: Math.min(prepInhaleSeconds, prepExhaleSeconds) * 1000,
+    });
+  const displayHoldTimer = displayStage === 'holdTimer';
 
-  const headline = displayHold
+  const headline = displayHoldTimer
     ? formatHoldTime(holdSeconds)
-    : PHASE_HEADLINES[displayPhase];
+    : PHASE_HEADLINES[displayStage];
   const subline = phase === 'inhale'
       ? 'Last breath in'
       : isBreathHoldBreathingPhase(phase) && prepCycle > 0
@@ -252,7 +275,7 @@ export const DailyBreathHoldPresentation = forwardRef<
                 <Text
                   style={[
                     styles.headline,
-                    displayHold && styles.headlineTimer,
+                    displayHoldTimer && styles.headlineTimer,
                     { color: theme.textPrimary },
                   ]}
                   numberOfLines={1}
@@ -266,7 +289,7 @@ export const DailyBreathHoldPresentation = forwardRef<
             </View>
           </Animated.View>
 
-          {isHold ? (
+          {displayHoldTimer ? (
             <View style={styles.progressArea}>
               <HoldProgressBar
                 holdSeconds={holdSeconds}
