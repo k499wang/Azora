@@ -104,15 +104,6 @@ export default function AppTopBar({
               )}
               {title != null && <Text style={styles.title}>{title}</Text>}
               {leftSlot}
-              {showStreak && (
-                <TopBarStreak
-                  streakDays={profileSummary?.currentStreak ?? 0}
-                  onPress={openProfile}
-                />
-              )}
-            </View>
-            <View style={styles.rightSide}>
-              {rightSlot}
               {showNotifications && (
                 <GlassIconButton
                   accessibilityLabel="Open notification settings"
@@ -122,6 +113,15 @@ export default function AppTopBar({
                   <Icon name="bell" size={26} color={colors.text.secondary} />
                 </GlassIconButton>
               )}
+              {showStreak && (
+                <TopBarStreak
+                  streakDays={profileSummary?.currentStreak ?? 0}
+                  onPress={openProfile}
+                />
+              )}
+            </View>
+            <View style={styles.rightSide}>
+              {rightSlot}
               {showAvatar && (
                 <TopBarAvatar
                   avatarUrl={profileSummary?.profile?.avatarUrl}

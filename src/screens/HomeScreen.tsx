@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import {
+  Pressable,
   ScrollView,
   StyleSheet,
   View,
@@ -9,6 +11,9 @@ import { spacing, margin } from '../theme/spacing';
 import TodaysDailiesSection from '../components/home/TodaysDailiesSection';
 import HomeRoom from '../features/room/HomeRoom';
 import HotelButton from '../features/room/HotelButton';
+import NotificationsSettingsSheet from '../features/notifications/NotificationsSettingsSheet';
+import Icon from '../components/common/icons/Icon';
+import { pressable } from '../theme/pressable';
 import RoomProgressCard from '../features/room/RoomProgressCard';
 import { useRoomClaim } from '../features/room/useRoomClaim';
 import { useStartDaily } from '../hooks/useStartDaily';
@@ -34,6 +39,8 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const homeLayout = useDashboardLayout();
   const insets = useSafeAreaInsets();
 
+  const [notificationsVisible, setNotificationsVisible] = useState(false);
+
   const tourScroll = useTourScroller(TOUR_TARGETS);
   const dailiesTarget = useTourTarget('dailies');
 
@@ -55,6 +62,15 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         overScrollMode="always"
       >
         <View style={styles.hotelRow}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Open notification settings"
+            hitSlop={spacing.md}
+            style={({ pressed }) => (pressed ? pressable.control : undefined)}
+            onPress={() => setNotificationsVisible(true)}
+          >
+            <Icon name="bell" size={30} color={colors.playful.sky.base} />
+          </Pressable>
           <HotelButton floors={roomClaim.room?.floor ?? 1} />
         </View>
 
@@ -98,6 +114,12 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           </View>
         </View>
       </ScrollView>
+
+      <NotificationsSettingsSheet
+        visible={notificationsVisible}
+        userId={user?.id ?? null}
+        onClose={() => setNotificationsVisible(false)}
+      />
     </View>
   );
 }
@@ -117,11 +139,13 @@ const styles = StyleSheet.create({
   // The hotel sits over the sky, and the room comes up under it: the corner
   // glyph is the only thing between the status bar and the scene.
   hotelRow: {
-    alignItems: 'flex-end',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     paddingHorizontal: spacing.lg,
   },
   roomBlock: {
-    marginTop: -spacing.lg,
+    marginTop: spacing.md,
   },
   dailiesGroup: {
     marginTop: margin.itemGap,
