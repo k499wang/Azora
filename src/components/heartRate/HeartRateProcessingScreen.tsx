@@ -93,7 +93,7 @@ function ProcessingDots({ color, size = 10 }: { color: string; size?: number }) 
 export function HeartRateProcessingScreen({
   title = 'Analyzing your heart rhythm',
   message = 'Building your recovery profile',
-  backgroundColor = colors.background.primary,
+  backgroundColor = colors.background.canvas,
   accentColor = colors.primary.blue600,
   titleColor = colors.text.primary,
   messageColor = colors.text.secondary,

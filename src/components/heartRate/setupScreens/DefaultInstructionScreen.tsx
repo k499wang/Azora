@@ -141,7 +141,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: padding.screen.horizontal,
-    backgroundColor: colors.background.primary,
+    backgroundColor: colors.background.canvas,
   },
   floatingAction: {
     position: 'absolute',
