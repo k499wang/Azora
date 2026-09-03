@@ -18,7 +18,7 @@
  *     distinct pieces of artwork are each built once for the whole app
  */
 import { PaintStyle, Skia, type SkPaint, type SkPath } from '@shopify/react-native-skia';
-import { DECOR, PAINT_ORDER, ROOM_FRAME } from './RoomScene';
+import { DECOR, PAINT_ORDER } from './RoomScene';
 import { colors } from '../../theme/colors';
 import type { DayKey, FrameHue, Picks, Poly } from './RoomScene';
 
@@ -226,13 +226,16 @@ export function latticePath(
 const accents = new Map<FrameHue, PaintedPath[]>();
 
 /**
- * The room's frame, set inside the mortar rather than shared with it.
- *
- * Not a new border: it is `ROOM_FRAME`'s outline — the same ink, at the same
- * widths the home room draws it, though without the wall thickness those lines
- * wrap at full size — on a hexagon pulled in far
- * enough to clear the lattice. A room in the pyramid is outlined exactly as it
- * is anywhere else in the app; only what sits between rooms is new.
+/** the pyramid outline's ink and its two weights */
+const ACCENT_INK = colors.roomFrame.line;
+const ACCENT_LINE = 1;
+const ACCENT_LINE_OUTER = 1.5;
+
+/**
+ * The room's outline in the pyramid, set inside the mortar rather than shared
+ * with it: two weights of the same ink on a hexagon pulled in far enough to
+ * clear the lattice. The home room carries no border of its own, so this is the
+ * one place a room is outlined; only what sits between rooms is new.
  */
 export function accentPaths(hue: FrameHue): PaintedPath[] {
   const hit = accents.get(hue);
@@ -241,16 +244,11 @@ export function accentPaths(hue: FrameHue): PaintedPath[] {
   const path = Skia.Path.Make();
   path.addPoly(hexPoints(ACCENT_INSET), true);
 
-  const built: PaintedPath[] = [];
-
-  for (const poly of ROOM_FRAME[hue]) {
-    // the frame's shaded faces are fills; only its outline survives the trip
-    if (poly.f != null) continue;
-    const color = poly.s;
-    if (color == null || poly.w == null) continue;
-
-    built.push({ path, paint: strokePaint(readableColor(color), poly.w) });
-  }
+  const ink = readableColor(ACCENT_INK);
+  const built: PaintedPath[] = [
+    { path, paint: strokePaint(ink, ACCENT_LINE) },
+    { path, paint: strokePaint(ink, ACCENT_LINE_OUTER) },
+  ];
 
   accents.set(hue, built);
 
