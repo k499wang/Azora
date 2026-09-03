@@ -48,10 +48,9 @@ import Animated, {
 } from 'react-native-reanimated';
 import { usePinchZoomPan } from './usePinchZoomPan';
 import {
-  accentPaths,
   decorationPaths,
   ghostPaths,
-  latticePath,
+  framePaths,
   paintedPaths,
 } from './roomPaths';
 import type { PaintedPath } from './roomPaths';
@@ -176,18 +175,18 @@ function recordRoom(room: PyramidRoom): SkPicture {
   return recordSlot(room.floor - 1, (canvas) => {
     draw(canvas, paintedPaths(room.shell));
     draw(canvas, decorationPaths(room.picks));
-    draw(canvas, accentPaths(room.frameHue));
   });
 }
 
 /**
- * The mortar, over every room at once.
+ * The walls, over every room at once.
  *
- * One picture rather than one per slot: it is a single path however many rooms
- * are in it, and it has to be drawn after all of them — a room recorded later
- * would otherwise paint its floor over its neighbour's share of the lattice.
+ * One picture rather than one per slot, and drawn after all of them — rooms sit
+ * on their shared edges, so a room recorded later would otherwise paint its
+ * floor over the wall standing between the two.
  */
-function recordLattice(
+function recordWalls(
+  shell: Poly[],
   centres: readonly { x: number; y: number }[],
   bounds: Bounds,
 ): SkPicture {
@@ -199,7 +198,7 @@ function recordLattice(
   );
 
   return createPicture((canvas) => {
-    draw(canvas, [latticePath(centres)]);
+    draw(canvas, framePaths(shell, centres));
   }, rect);
 }
 
@@ -260,8 +259,9 @@ export default function PyramidCanvas({ rooms }: Props) {
     return [
       ...drawn,
       {
-        key: 'lattice',
-        picture: recordLattice(
+        key: 'walls',
+        picture: recordWalls(
+          floors[0].shell,
           floors.map((room) => slotAt(room.floor - 1)),
           roomBounds,
         ),

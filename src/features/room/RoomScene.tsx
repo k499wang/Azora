@@ -35,6 +35,7 @@ export type FrameHue = 'sky' | 'teal' | 'blush';
 
 import { colors } from '../../theme/colors';
 import { ROOM_ASPECT, VIEW_BOX } from './roomGeometry';
+import { roomFrameFor } from './roomFrameRegistry';
 
 export {
   ROOM_ASPECT,
@@ -62,54 +63,41 @@ export const ROOM_SHELL: Poly[] = [{"p":"0,-180 -155.9,-90 -155.9,90 0,0","f":"#
  * axis, worked out once and written down: the artwork in this file is data, and
  * a frame that recomputed itself at import would be the only part that is not.
  */
-const FRAME_FACES: Poly[] = [
-  { p: '0,-180 -155.9,-90 -170.7,-98.6 -14.8,-188.6', f: colors.roomFrame.cap },
-  { p: '155.9,-90 0,-180 14.8,-188.6 170.7,-98.6', f: colors.roomFrame.cap },
-  {
-    p: '-155.9,-90 -155.9,90 -170.7,81.4 -170.7,-98.6',
-    f: colors.roomFrame.sideLeft,
-  },
-  {
-    p: '155.9,90 155.9,-90 170.7,-98.6 170.7,81.4',
-    f: colors.roomFrame.sideRight,
-  },
-  // The slab runs out under both walls rather than stopping at the hexagon: the
-  // extrusion is parallel to the floor's own front edges, so carrying it past
-  // them keeps the same line and closes the notch it would otherwise leave.
-  {
-    p: '-170.7,81.4 0,180 0,197.1 -170.7,98.5',
-    f: colors.roomFrame.baseLeft,
-  },
-  {
-    p: '0,180 170.7,81.4 170.7,98.5 0,197.1',
-    f: colors.roomFrame.baseRight,
-  },
-];
-
 /**
- * Where a side wall lands on the slab, the slab's own end shows under it — a
- * block as wide as the wall is thick and as deep as the slab: the room's foot,
- * read by tone alone like every other crease in the solid.
+ * The five tones a frame is cut in, lightest first. They are the light on the
+ * solid, not a colour scheme: which face is brighter is fixed by where the
+ * light sits, so a shell supplies its own five and the reading stays the same.
  */
-const FRAME_FOOTINGS: Poly[] = [
-  {
-    p: '-170.7,81.4 -155.9,90 -155.9,107.1 -170.7,98.5',
-    f: colors.roomFrame.baseLeft,
-  },
-  {
-    p: '170.7,81.4 155.9,90 155.9,107.1 170.7,98.5',
-    f: colors.roomFrame.baseRight,
-  },
-];
+export interface FramePalette {
+  /** both wall tops */
+  cap: string;
+  baseLeft: string;
+  sideLeft: string;
+  baseRight: string;
+  sideRight: string;
+}
 
-const FRAME: Poly[] = [...FRAME_FACES, ...FRAME_FOOTINGS];
+export function buildRoomFrame(palette: FramePalette): Poly[] {
+  return [
+    { p: '0,-180 -155.9,-90 -170.7,-98.6 -14.8,-188.6', f: palette.cap },
+    { p: '155.9,-90 0,-180 14.8,-188.6 170.7,-98.6', f: palette.cap },
+    { p: '-155.9,-90 -155.9,90 -170.7,81.4 -170.7,-98.6', f: palette.sideLeft },
+    { p: '155.9,90 155.9,-90 170.7,-98.6 170.7,81.4', f: palette.sideRight },
+    // The slab runs out under both walls rather than stopping at the hexagon:
+    // the extrusion is parallel to the floor's own front edges, so carrying it
+    // past them keeps the same line and closes the notch it would leave.
+    { p: '-170.7,81.4 0,180 0,197.1 -170.7,98.5', f: palette.baseLeft },
+    { p: '0,180 170.7,81.4 170.7,98.5 0,197.1', f: palette.baseRight },
+    // Where a side wall lands on the slab, the slab's own end shows under it —
+    // a block as wide as the wall is thick and as deep as the slab: the room's
+    // foot, read by tone alone like every other crease in the solid.
+    { p: '-170.7,81.4 -155.9,90 -155.9,107.1 -170.7,98.5', f: palette.baseLeft },
+    { p: '170.7,81.4 155.9,90 155.9,107.1 170.7,98.5', f: palette.baseRight },
+  ];
+}
 
-/** kept per-hue because the callers index by hue, though it no longer varies */
-export const ROOM_FRAME: Record<FrameHue, Poly[]> = {
-  sky: FRAME,
-  teal: FRAME,
-  blush: FRAME,
-};
+/** the frame the generated `ROOM_SHELL` above is cut in */
+export const ROOM_FRAME: Poly[] = buildRoomFrame(colors.roomFrame);
 
 /** a faint outline used when a room is previewed empty */
 export const GHOST_FRAME: Poly[] = [{"p":"0,-180 -155.9,-90 -155.9,90 0,180 155.9,90 155.9,-90","s":"#CBD5E1","w":3}];
@@ -372,7 +360,10 @@ export type HexRoomProps = {
   width?: number;
   /** which option is placed in each day slot; omit a day to leave it empty */
   picks?: Picks;
-  /** hue of the hexagon outline */
+  /**
+   * Kept for the callers that store a room's hue, though the frame now takes
+   * its colour from the shell it is cutting through.
+   */
   frameHue?: FrameHue;
   /** walls, floor and trim; defaults to the original room. See `roomShells.ts`. */
   shell?: Poly[];
@@ -380,7 +371,7 @@ export type HexRoomProps = {
   ghost?: boolean;
 };
 
-export const HexRoom = ({ width = 280, picks = {}, frameHue = 'sky', shell = ROOM_SHELL, ghost = false }: HexRoomProps) => {
+export const HexRoom = ({ width = 280, picks = {}, shell = ROOM_SHELL, ghost = false }: HexRoomProps) => {
   const placed = PAINT_ORDER.map((day) => {
     const id = picks[day];
     return id ? DECOR[day + '.' + id] : undefined;
@@ -394,7 +385,7 @@ export const HexRoom = ({ width = 280, picks = {}, frameHue = 'sky', shell = ROO
       {placed.map((polys, k) => (
         <Polys key={k} polys={polys} />
       ))}
-      <Polys polys={ghost ? GHOST_FRAME : ROOM_FRAME[frameHue]} />
+      <Polys polys={ghost ? GHOST_FRAME : roomFrameFor(shell, ROOM_FRAME)} />
     </Svg>
   );
 };

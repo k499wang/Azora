@@ -1,5 +1,7 @@
 import { FLOOR_HALF_D, FLOOR_HALF_W } from './roomGeometry';
-import type { FrameHue, Poly } from './RoomScene';
+import { buildRoomFrame } from './RoomScene';
+import { registerRoomFrame } from './roomFrameRegistry';
+import type { FramePalette, FrameHue, Poly } from './RoomScene';
 
 /**
  * The room shells — walls, floor, floor pattern, trim.
@@ -254,6 +256,79 @@ export const ROOM_SHELL_KEYS = Object.keys(SPECS) as RoomShellKey[];
 export const ROOM_SHELLS: Record<RoomShellKey, Poly[]> = Object.fromEntries(
   ROOM_SHELL_KEYS.map((key) => [key, buildShell(SPECS[key])]),
 ) as Record<RoomShellKey, Poly[]>;
+
+
+/**
+ * The frame is the cut thickness of the room's own walls, so it is that room's
+ * colour — a blue room ends in blue plaster, not in the cream the first shell
+ * happened to be drawn in.
+ *
+ * Both are derived from `wallLeft` rather than listed per shell: the five tones
+ * are light on one solid, and hand-picking them six times over is six chances
+ * for a face to end up brighter than the one turned more squarely to the light.
+ * Each is the wall pulled toward its own grey — a cut edge is plaster, the wall
+ * is painted, so the cut reads a little flatter — then darkened by how far that
+ * face turns away. The factors are the tones the original cream frame was
+ * authored with, kept as ratios so every shell is lit the same way.
+ */
+const FRAME_FLATTEN = 0.35;
+const FRAME_FACTORS: Record<keyof FramePalette, number> = {
+  cap: 0.96,
+  baseLeft: 0.93,
+  sideLeft: 0.885,
+  baseRight: 0.853,
+  sideRight: 0.805,
+};
+
+function channels(hex: string): [number, number, number] {
+  return [
+    parseInt(hex.slice(1, 3), 16),
+    parseInt(hex.slice(3, 5), 16),
+    parseInt(hex.slice(5, 7), 16),
+  ];
+}
+
+function frameTone(wall: string, factor: number): string {
+  const [r, g, b] = channels(wall);
+  const grey = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+
+  const tone = ([r, g, b] as const).map((value) => {
+    const flattened = value + (grey - value) * FRAME_FLATTEN;
+    const lit = Math.round(Math.min(255, Math.max(0, flattened * factor)));
+    return lit.toString(16).padStart(2, '0');
+  });
+
+  return `#${tone.join('')}`;
+}
+
+function framePalette(wall: string): FramePalette {
+  return {
+    cap: frameTone(wall, FRAME_FACTORS.cap),
+    baseLeft: frameTone(wall, FRAME_FACTORS.baseLeft),
+    sideLeft: frameTone(wall, FRAME_FACTORS.sideLeft),
+    baseRight: frameTone(wall, FRAME_FACTORS.baseRight),
+    sideRight: frameTone(wall, FRAME_FACTORS.sideRight),
+  };
+}
+
+export const ROOM_FRAMES: Record<RoomShellKey, Poly[]> = Object.fromEntries(
+  ROOM_SHELL_KEYS.map((key) => [
+    key,
+    buildRoomFrame(framePalette(SPECS[key].wallLeft)),
+  ]),
+) as Record<RoomShellKey, Poly[]>;
+
+/**
+ * A shell's frame, looked up by the artwork itself.
+ *
+ * Callers hand a room's shell around as polygons, not as a key, so the frame is
+ * registered against the artwork itself — that keeps the pair together with
+ * nothing to thread through every screen that draws a room. Artwork from
+ * outside this table (the generated `ROOM_SHELL`) keeps its authored frame.
+ */
+for (const key of ROOM_SHELL_KEYS) {
+  registerRoomFrame(ROOM_SHELLS[key], ROOM_FRAMES[key]);
+}
 
 /** what the "pick your next room" swatches offer */
 export interface RoomStyle {

@@ -93,7 +93,7 @@ test('the hotel offers its own way back, and does not spend height on it', () =>
   // floats over the pyramid instead, like the zoom controls it lines up with.
   const hotel = read('screens/HotelScreen.tsx');
 
-  assert.match(hotel, /<GlassIconButton[^>]*accessibilityLabel="Back"/s);
+  assert.match(hotel, /<Pressable[^>]*accessibilityLabel="Back"/s);
   assert.match(hotel, /name="chevron-left"/);
   assert.doesNotMatch(hotel, /AppTopBar/);
   assert.match(hotel, /back: \{\s*position: 'absolute'/);

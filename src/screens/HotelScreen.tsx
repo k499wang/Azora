@@ -1,8 +1,7 @@
 import { useMemo } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SafeAreaView } from 'react-native-screens/experimental';
-import GlassIconButton from '../components/common/GlassIconButton';
 import Icon from '../components/common/icons/Icon';
 import PyramidCanvas from '../features/room/PyramidCanvas';
 import type { PyramidRoom } from '../features/room/PyramidCanvas';
@@ -57,7 +56,7 @@ const FIRST_ROOM: PyramidRoom[] = [
   },
 ];
 
-const BACK_ICON_SIZE = 20;
+const BACK_ICON_SIZE = 26;
 
 interface HotelContentProps {
   onBack: () => void;
@@ -98,13 +97,22 @@ function HotelContent({ onBack }: HotelContentProps) {
       {/* Level with the canvas's own zoom controls, which start at the same
           inset on the other side. */}
       <View style={[styles.back, { top: insets.top + spacing.sm }]}>
-        <GlassIconButton accessibilityLabel="Back" onPress={onBack}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Back"
+          onPress={onBack}
+          hitSlop={spacing.sm}
+          style={({ pressed }) => [
+            styles.backButton,
+            pressed && styles.backButtonPressed,
+          ]}
+        >
           <Icon
             name="chevron-left"
             size={BACK_ICON_SIZE}
             color={colors.text.primary}
           />
-        </GlassIconButton>
+        </Pressable>
       </View>
     </>
   );
@@ -134,5 +142,15 @@ const styles = StyleSheet.create({
   back: {
     position: 'absolute',
     left: spacing.md,
+  },
+  backButton: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 22,
+  },
+  backButtonPressed: {
+    opacity: 0.6,
   },
 });

@@ -2,12 +2,13 @@ import { buildFloor, type FloorGrid, type FloorPiece } from './blobWalk';
 import {
   DECOR,
   PAINT_ORDER,
-  ROOM_FRAME,
   type DayKey,
   type FrameHue,
   type Picks,
   type Poly,
 } from './RoomScene';
+import { ROOM_FRAME } from './RoomScene';
+import { roomFrameFor } from './roomFrameRegistry';
 
 /**
  * The room, cut into the layers a resident can be drawn between.
@@ -40,7 +41,7 @@ export interface RoomLayers {
 export function roomLayers(
   picks: Picks,
   shell: Poly[],
-  frameHue: FrameHue,
+  _frameHue: FrameHue,
 ): RoomLayers {
   const base = [...shell];
 
@@ -56,7 +57,7 @@ export function roomLayers(
     return [{ polys, front: footprint(key(day, picks[day] as string)).maxY }];
   });
 
-  return { base, pieces, frame: ROOM_FRAME[frameHue] };
+  return { base, pieces, frame: roomFrameFor(shell, ROOM_FRAME) };
 }
 
 /** the floor plan the blob walks, for a host that paints it at its true depth */
