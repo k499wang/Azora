@@ -7,6 +7,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import { spacing, margin } from '../theme/spacing';
+import ExtraPracticeSection from '../components/home/ExtraPracticeSection';
 import TodaysDailiesSection from '../components/home/TodaysDailiesSection';
 import HomeRoom from '../features/room/HomeRoom';
 import HotelButton from '../features/room/HotelButton';
@@ -27,7 +28,7 @@ import { useDashboardLayout } from '../hooks/useDashboardLayout';
 /** the glass chips either side of Home's top row */
 const HOTEL_ROW_BUTTON_SIZE = 46;
 
-const TOUR_TARGETS: TourTargetId[] = ['dailies'];
+const TOUR_TARGETS: TourTargetId[] = ['dailies', 'extraPractice', 'seeAll'];
 
 export default function HomeScreen({ navigation }: HomeScreenProps) {
   const user = useAuthStore((state) => state.user);
@@ -36,7 +37,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     dailyPlanScheduleQuery.data ?? DEFAULT_DAILY_PLAN_SCHEDULE;
   const roomClaim = useRoomClaim(user?.id ?? null);
   const dailies = roomClaim.dailies;
-  const { start, accessAllowed } = useStartDaily('Home', dailies);
+  const { start, accessAllowed, exerciseAccess } = useStartDaily('Home', dailies);
 
   const homeLayout = useDashboardLayout();
   const insets = useSafeAreaInsets();
@@ -45,6 +46,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
 
   const tourScroll = useTourScroller(TOUR_TARGETS);
   const dailiesTarget = useTourTarget('dailies');
+  const extraPracticeTarget = useTourTarget('extraPractice');
 
   // The recently-logged list and its analytics now live on the Heart tab
   // (see RecentlyLoggedSection — it uses useIsFocused to gate the view event).
@@ -114,6 +116,22 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             />
           </View>
         </View>
+
+        {/* The shelf stays horizontally scrollable at every width and runs to
+            the column edge, so the row a tablet cuts off is cut off on the same
+            margin the dailies above it sit on. */}
+        <View style={styles.extraPracticeSection} {...extraPracticeTarget}>
+          <ExtraPracticeSection
+            recommendedTechniqueId={dailies.guidedTechnique?.id ?? null}
+            excludedTechniqueIds={[
+              dailies.guidedTechnique?.id,
+              dailies.handPickedTechnique?.id,
+            ]}
+            exerciseAccess={exerciseAccess}
+            contentMaxWidth={homeLayout.contentMaxWidth}
+            onSeeAll={() => navigation.navigate('Explore')}
+          />
+        </View>
       </ScrollView>
 
       <NotificationsSettingsSheet
@@ -151,5 +169,8 @@ const styles = StyleSheet.create({
   dailiesGroup: {
     marginTop: margin.itemGap,
     gap: spacing.md,
+  },
+  extraPracticeSection: {
+    marginTop: margin.sectionGap,
   },
 });

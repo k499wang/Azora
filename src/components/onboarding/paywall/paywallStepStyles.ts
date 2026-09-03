@@ -346,12 +346,13 @@ export const paywallStepStyles = StyleSheet.create({
     alignItems: 'stretch',
     gap: spacing.sm,
   },
+  // Equal shares and no offset: the two plans are being compared, so neither
+  // is given more width or a different baseline than the other.
   annualCard: {
     flex: 1,
   },
   weeklyCard: {
-    flex: 1.35,
-    marginTop: spacing.xs,
+    flex: 1,
   },
   planCardsNoTrial: {
     marginTop: spacing.lg,

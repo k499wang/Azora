@@ -18,7 +18,9 @@ test('Home owns See all navigation and places extra practice after dailies', () 
     home,
     /<HomeRoom[\s\S]*?<RoomProgressCard[\s\S]*?<TodaysDailiesSection[\s\S]*?\/>[\s\S]*?<ExtraPracticeSection[\s\S]*?onSeeAll={\(\) => navigation\.navigate\('Explore'\)}/,
   );
-  assert.doesNotMatch(home, /splitRow|splitDailiesColumn|flexDirection:\s*'row'/);
+  // Home stacks: the dailies are never split into side-by-side columns. The
+  // top chrome row is a row by design, so only the split-layout names count.
+  assert.doesNotMatch(home, /splitRow|splitDailiesColumn/);
 });
 
 test('the extra practice section reuses card behavior without query observers', () => {
