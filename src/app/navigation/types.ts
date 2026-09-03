@@ -18,7 +18,6 @@ import type { BreathHoldHeartRateResultStatus } from '../../features/exercise/da
 
 export type MainTabParamList = {
   Home: undefined;
-  Explore: undefined;
   Heart: undefined;
   Profile: undefined;
 };
@@ -28,6 +27,7 @@ export type RoomScreenParams = { fromLab?: boolean } | undefined;
 
 export type RootStackParamList = {
   MainTabs: NavigatorScreenParams<MainTabParamList> | undefined;
+  Explore: undefined;
   HeartRate: { context?: string } | undefined;
   ExerciseSearch: undefined;
   Garden: undefined;
@@ -113,7 +113,7 @@ export type MainTabNavigationProp<
 >;
 
 export type HomeScreenProps = MainTabScreenProps<'Home'>;
-export type ExploreScreenProps = MainTabScreenProps<'Explore'>;
+export type ExploreScreenProps = RootStackScreenProps<'Explore'>;
 export type HotelScreenProps = RootStackScreenProps<'Hotel'>;
 export type HeartTabScreenProps = MainTabScreenProps<'Heart'>;
 export type ProfileScreenProps = MainTabScreenProps<'Profile'>;

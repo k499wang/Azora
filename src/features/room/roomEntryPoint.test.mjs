@@ -80,7 +80,7 @@ test('Hotel is reached from Home, never from a tab', () => {
     (match) => match[1],
   );
 
-  assert.deepEqual(tabNames, ['Home', 'Explore', 'Heart', 'Profile']);
+  assert.deepEqual(tabNames, ['Home', 'Heart', 'Profile']);
   assert.doesNotMatch(tabs, /Hotel/);
   assert.match(root, /name="Hotel"/);
   assert.match(root, /name="HotelPreview"/);
