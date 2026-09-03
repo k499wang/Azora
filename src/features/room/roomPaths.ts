@@ -151,11 +151,13 @@ function decorationPolys(day: DayKey, option: string | undefined) {
  * rooms rather than two walls fighting for it.
  *
  * The artwork is the shell's own frame — the same extruded slab `RoomScene`
- * draws, so a room reads the same on the pyramid as it does on Home.
+ * draws, so a room reads the same on the pyramid as it does on Home. `scale`
+ * is the room's own, so the wall stays welded to the floor it stands on.
  */
 export function framePaths(
   shell: Poly[],
   centres: readonly { x: number; y: number }[],
+  scale: number,
 ): PaintedPath[] {
   const source = paintedPaths(roomFrameFor(shell, ROOM_FRAME));
 
@@ -164,7 +166,9 @@ export function framePaths(
 
     for (const centre of centres) {
       const copy = path.copy();
-      copy.transform(Skia.Matrix().translate(centre.x, centre.y).get());
+      copy.transform(
+        Skia.Matrix().translate(centre.x, centre.y).scale(scale, scale).get(),
+      );
       repeated.addPath(copy);
     }
 

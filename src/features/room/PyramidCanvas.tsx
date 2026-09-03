@@ -102,6 +102,23 @@ const ROOM_BLEED_X = (VIEW_BOX_WIDTH - HEX_W) / 2;
 const ROOM_BLEED_Y = (VIEW_BOX_HEIGHT - HEX_H) / 2;
 
 /**
+ * Rooms are drawn a little smaller than the slot they stand in.
+ *
+ * A room's walls are the thickness of its own hexagon extruded *outwards*, so
+ * at full size they reach past the slot and into the neighbouring one — every
+ * shared edge carried two walls overlapping rather than one wall between two
+ * rooms. Scaling the whole room by the ratio of the two hexagons puts the outer
+ * face of the wall exactly on the slot's edge, so neighbours meet along it and
+ * the honeycomb is walls all the way through with nothing doubled.
+ *
+ * `SLOT_APOTHEM` is the hexagon the pyramid tiles; `WALL_APOTHEM` is where the
+ * wall's outer face lands, both taken from the artwork in `RoomScene`.
+ */
+const SLOT_APOTHEM = 155.9;
+const WALL_APOTHEM = 170.7;
+const SLOT_SCALE = SLOT_APOTHEM / WALL_APOTHEM;
+
+/**
  * The label is authored in viewBox units like the artwork, so it belongs to the
  * slot rather than floating at a fixed size over it: zoom in and it grows with
  * the hexagon it is captioning, and the copy wraps the same way at every zoom
@@ -173,6 +190,7 @@ function recordSlot(
 
 function recordRoom(room: PyramidRoom): SkPicture {
   return recordSlot(room.floor - 1, (canvas) => {
+    canvas.scale(SLOT_SCALE, SLOT_SCALE);
     draw(canvas, paintedPaths(room.shell));
     draw(canvas, decorationPaths(room.picks));
   });
@@ -184,12 +202,12 @@ function recordRoom(room: PyramidRoom): SkPicture {
  * One picture rather than one per slot, and drawn after all of them — rooms sit
  * on their shared edges, so a room recorded later would otherwise paint its
  * floor over the wall standing between the two.
+ *
+ * A wall is cut in its own room's colour, so the rooms are grouped by shell and
+ * each group stamped at its own slots: one pass per look on the pyramid rather
+ * than one per room, and every wall still lands after every floor.
  */
-function recordWalls(
-  shell: Poly[],
-  centres: readonly { x: number; y: number }[],
-  bounds: Bounds,
-): SkPicture {
+function recordWalls(rooms: PyramidRoom[], bounds: Bounds): SkPicture {
   const rect = Skia.XYWHRect(
     bounds.minX,
     bounds.minY,
@@ -197,8 +215,17 @@ function recordWalls(
     bounds.height,
   );
 
+  const byShell = new Map<Poly[], { x: number; y: number }[]>();
+  for (const room of rooms) {
+    const centres = byShell.get(room.shell) ?? [];
+    centres.push(slotAt(room.floor - 1));
+    byShell.set(room.shell, centres);
+  }
+
   return createPicture((canvas) => {
-    draw(canvas, framePaths(shell, centres));
+    for (const [shell, centres] of byShell) {
+      draw(canvas, framePaths(shell, centres, SLOT_SCALE));
+    }
   }, rect);
 }
 
@@ -260,11 +287,7 @@ export default function PyramidCanvas({ rooms }: Props) {
       ...drawn,
       {
         key: 'walls',
-        picture: recordWalls(
-          floors[0].shell,
-          floors.map((room) => slotAt(room.floor - 1)),
-          roomBounds,
-        ),
+        picture: recordWalls(floors, roomBounds),
       },
     ];
   }, [floors, roomBounds]);
