@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import Icon from '../../common/icons/Icon';
 import { colors } from '../../../theme/colors';
 import { padding, spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
@@ -332,7 +332,7 @@ export default function FirstResetScreen({
     >
       <View style={styles.introStage}>
         <View style={styles.techniqueIcon}>
-          <MaterialCommunityIcons
+          <Icon
             name={technique.icon}
             size={170}
             color={colors.primary.blue600}

@@ -1,6 +1,4 @@
-import { useState } from 'react';
 import {
-  type LayoutChangeEvent,
   ScrollView,
   StyleSheet,
   View,
@@ -8,7 +6,6 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import { spacing, margin } from '../theme/spacing';
-import HomeMeadowBackground from '../components/home/HomeMeadowBackground';
 import TodaysDailiesSection from '../components/home/TodaysDailiesSection';
 import HomeRoom from '../features/room/HomeRoom';
 import HotelButton from '../features/room/HotelButton';
@@ -37,23 +34,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const homeLayout = useDashboardLayout();
   const insets = useSafeAreaInsets();
 
-  // The artwork ends halfway down the progress card, so that card straddles
-  // the hills and the flat green rather than sitting on one or the other. Its
-  // own offset is relative to the group, so both have to be measured.
-  const [groupTop, setGroupTop] = useState<number | null>(null);
-  const [progressMiddle, setProgressMiddle] = useState<number | null>(null);
-  const sceneHeight =
-    groupTop == null || progressMiddle == null
-      ? null
-      : groupTop + progressMiddle;
-
-  const onGroupLayout = (event: LayoutChangeEvent) =>
-    setGroupTop(event.nativeEvent.layout.y);
-  const onProgressLayout = (event: LayoutChangeEvent) => {
-    const { y, height } = event.nativeEvent.layout;
-    setProgressMiddle(y + height / 2);
-  };
-
   const tourScroll = useTourScroller(TOUR_TARGETS);
   const dailiesTarget = useTourTarget('dailies');
 
@@ -74,8 +54,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         alwaysBounceVertical
         overScrollMode="always"
       >
-        <HomeMeadowBackground sceneHeight={sceneHeight} />
-
         <View style={styles.hotelRow}>
           <HotelButton floors={roomClaim.room?.floor ?? 1} />
         </View>
@@ -91,9 +69,8 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             styles.dailiesGroup,
             { paddingHorizontal: homeLayout.contentInset },
           ]}
-          onLayout={onGroupLayout}
         >
-          <View onLayout={onProgressLayout}>
+          <View>
             <RoomProgressCard
               progress={roomClaim.progress}
               dailies={dailies}
@@ -128,7 +105,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: colors.background.meadow,
+    backgroundColor: colors.background.canvas,
   },
   scroll: {
     flex: 1,

@@ -1,10 +1,9 @@
-import type { ComponentProps } from 'react';
 import type { ImageSourcePropType } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import type { IconName } from '../../../components/common/icons/Icon';
 import type { BreathingTechniqueBpmResponse } from '../../../lib/heartRate/bpmInsight';
 import type { TechniqueId } from './techniqueCatalog';
 
-type TechniqueIconName = NonNullable<ComponentProps<typeof MaterialCommunityIcons>['name']>;
+type TechniqueIconName = IconName;
 
 export interface BreathingTechnique {
   id: TechniqueId;
@@ -43,7 +42,7 @@ const TECHNIQUES: BreathingTechnique[] = [
     defaultRounds: 8,
     category: 'focus',
     heartRateResponse: 'stabilize',
-    icon: 'checkbox-blank-outline',
+    icon: 'breath-box',
     duration: '~2 min',
     backgroundImage: require('../../../../assets/exercises/grass-v2.jpg'),
   },
@@ -57,7 +56,7 @@ const TECHNIQUES: BreathingTechnique[] = [
     defaultRounds: 4,
     category: 'sleep',
     heartRateResponse: 'downshift',
-    icon: 'moon-waning-crescent',
+    icon: 'breath-moon',
     duration: '~1 min',
     backgroundImage: require('../../../../assets/exercises/lights-v2.jpg'),
   },
@@ -71,7 +70,7 @@ const TECHNIQUES: BreathingTechnique[] = [
     defaultRounds: 30,
     category: 'energy',
     heartRateResponse: 'energize',
-    icon: 'flash-outline',
+    icon: 'breath-lightning',
     duration: '~2 min',
     backgroundImage: require('../../../../assets/exercises/rocks-v2.jpg'),
   },
@@ -99,7 +98,7 @@ const TECHNIQUES: BreathingTechnique[] = [
     defaultRounds: 6,
     category: 'calm',
     heartRateResponse: 'downshift',
-    icon: 'leaf',
+    icon: 'breath-leaf',
     duration: '~1 min',
     backgroundImage: require('../../../../assets/exercises/flowers-v2.jpg'),
   },
@@ -113,7 +112,7 @@ const TECHNIQUES: BreathingTechnique[] = [
     defaultRounds: 10,
     category: 'calm',
     heartRateResponse: 'stabilize',
-    icon: 'lungs',
+    icon: 'breath-hold',
     duration: '~1 min',
     backgroundImage: require('../../../../assets/exercises/belly-v2.jpg'),
   },
@@ -127,7 +126,7 @@ const TECHNIQUES: BreathingTechnique[] = [
     defaultRounds: 8,
     category: 'calm',
     heartRateResponse: 'downshift',
-    icon: 'weather-windy',
+    icon: 'wind',
     duration: '~2 min',
     backgroundImage: require('../../../../assets/exercises/extended-exhale-v2.jpg'),
   },
@@ -155,7 +154,7 @@ const TECHNIQUES: BreathingTechnique[] = [
     defaultRounds: 8,
     category: 'focus',
     heartRateResponse: 'stabilize',
-    icon: 'triangle-outline',
+    icon: 'play-triangle',
     duration: '~2 min',
     backgroundImage: require('../../../../assets/exercises/triangle-v2.jpg'),
   },
@@ -169,7 +168,7 @@ const TECHNIQUES: BreathingTechnique[] = [
     defaultRounds: 6,
     category: 'focus',
     heartRateResponse: 'stabilize',
-    icon: 'square-outline',
+    icon: 'breath-box',
     duration: '~2 min',
     backgroundImage: require('../../../../assets/exercises/deep-box-v2.jpg'),
   },
@@ -183,7 +182,7 @@ const TECHNIQUES: BreathingTechnique[] = [
     defaultRounds: 30,
     category: 'energy',
     heartRateResponse: 'energize',
-    icon: 'fan',
+    icon: 'wind',
     duration: '~1 min',
     backgroundImage: require('../../../../assets/exercises/bhastrika-v2.jpg'),
   },
@@ -197,7 +196,7 @@ const TECHNIQUES: BreathingTechnique[] = [
     defaultRounds: 15,
     category: 'energy',
     heartRateResponse: 'energize',
-    icon: 'weather-sunny',
+    icon: 'sun',
     duration: '~2 min',
     backgroundImage: require('../../../../assets/exercises/morning-charge-v2.jpg'),
   },
@@ -211,7 +210,7 @@ const TECHNIQUES: BreathingTechnique[] = [
     defaultRounds: 6,
     category: 'sleep',
     heartRateResponse: 'downshift',
-    icon: 'weather-night',
+    icon: 'moon',
     duration: '~2 min',
     backgroundImage: require('../../../../assets/exercises/night-settle-v2.jpg'),
   },
@@ -225,7 +224,7 @@ const TECHNIQUES: BreathingTechnique[] = [
     defaultRounds: 6,
     category: 'sleep',
     heartRateResponse: 'downshift',
-    icon: 'bed',
+    icon: 'moon',
     duration: '~2 min',
     backgroundImage: require('../../../../assets/exercises/sleep-descent-v2.jpg'),
   },
@@ -239,7 +238,7 @@ const TECHNIQUES: BreathingTechnique[] = [
     defaultRounds: 10,
     category: 'balance',
     heartRateResponse: 'resonance',
-    icon: 'sine-wave',
+    icon: 'breath-wave',
     duration: '~2 min',
     backgroundImage: require('../../../../assets/exercises/coherent-6-v2.jpg'),
   },
