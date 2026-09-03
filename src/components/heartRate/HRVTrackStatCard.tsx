@@ -1,5 +1,4 @@
 import { Text } from '../common/Text';
-import { card } from '../../theme/card';
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { LockedScrim } from '../common/glass';
@@ -302,7 +301,6 @@ export default function HRVTrackStatCard({
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.background.elevated,
-    ...card.shadow,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
     position: 'relative',

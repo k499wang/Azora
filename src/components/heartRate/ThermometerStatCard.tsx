@@ -1,5 +1,4 @@
 import { Text } from '../common/Text';
-import { card } from '../../theme/card';
 import { Pressable, StyleSheet, View } from 'react-native';
 import type { StyleProp, ViewStyle } from 'react-native';
 import { LockedScrim } from '../common/glass';
@@ -134,7 +133,6 @@ const styles = StyleSheet.create({
   },
   tile: {
     backgroundColor: colors.background.elevated,
-    ...card.shadow,
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.md,
   },
