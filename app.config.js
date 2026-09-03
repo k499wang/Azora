@@ -59,7 +59,7 @@ module.exports = {
   expo: {
     name: 'Azora',
     slug: 'Azora',
-    version: '1.0.19',
+    version: '1.0.20',
     orientation: 'portrait',
     icon: './assets/app/icon.png',
     userInterfaceStyle: 'light',

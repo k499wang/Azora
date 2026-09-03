@@ -525,7 +525,7 @@ export function HeartRateCaptureFlow({
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: colors.background.primary,
+    backgroundColor: colors.background.canvas,
   },
   container: {
     flex: 1,

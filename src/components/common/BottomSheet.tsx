@@ -174,7 +174,7 @@ const styles = StyleSheet.create({
     maxHeight: '90%',
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
-    backgroundColor: colors.background.primary,
+    backgroundColor: colors.background.canvas,
     paddingTop: spacing.sm,
     paddingHorizontal: spacing.lg,
     gap: spacing.lg,

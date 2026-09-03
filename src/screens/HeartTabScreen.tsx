@@ -2,7 +2,6 @@ import { Text } from '../components/common/Text';
 import { useCallback, useMemo, useRef } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Path } from 'react-native-svg';
 import AppTopBar from '../components/common/AppTopBar';
 import GlassIconButton from '../components/common/GlassIconButton';
 import Icon from '../components/common/icons/Icon';
@@ -12,7 +11,6 @@ import RecoveryStatsSection from '../components/heartRate/RecoveryStatsSection';
 import { RecentlyLoggedSection } from '../components/heartRate/RecentlyLoggedSection';
 import { colors } from '../theme/colors';
 import { spacing, padding, margin } from '../theme/spacing';
-import { typography, fonts } from '../theme/typography';
 import { useAuthStore } from '../stores/authStore';
 import { useProfileQuery } from '../queries/profile/useProfileQuery';
 import { useHeartRateStatsQuery } from '../queries/tracking/useHeartRateStatsQuery';
@@ -55,24 +53,6 @@ export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
   const recentHeartRatesError =
     heartRateStatsQuery.isError ||
     (stats?.partialErrors.recent ?? false);
-  const measureHintOpacity = useMemo(
-    () =>
-      scrollY.interpolate({
-        inputRange: [0, 16, 80],
-        outputRange: [1, 1, 0],
-        extrapolate: 'clamp',
-      }),
-    [scrollY],
-  );
-  const measureHintTranslateY = useMemo(
-    () =>
-      scrollY.interpolate({
-        inputRange: [0, 16, 80],
-        outputRange: [0, 0, -10],
-        extrapolate: 'clamp',
-      }),
-    [scrollY],
-  );
   const onScroll = useMemo(
     () =>
       Animated.event(
@@ -196,51 +176,6 @@ export default function HeartTabScreen({ navigation }: HeartTabScreenProps) {
         </ScreenContent>
       </Animated.ScrollView>
 
-      <Animated.View
-        pointerEvents="none"
-        accessible={false}
-        accessibilityElementsHidden
-        importantForAccessibility="no-hide-descendants"
-        style={[
-          styles.measureHintOverlay,
-          {
-            top: insets.top + spacing.sm,
-            right: dashboardLayout.actionInset,
-            opacity: measureHintOpacity,
-            transform: [{ translateY: measureHintTranslateY }],
-          },
-        ]}
-      >
-        <Text numberOfLines={1} style={styles.measureHintText}>
-          Tap the plus to measure
-        </Text>
-        <Svg
-          width={140}
-          height={32}
-          viewBox="0 0 140 32"
-          accessibilityElementsHidden
-          importantForAccessibility="no-hide-descendants"
-          style={styles.measureHintArrow}
-        >
-          <Path
-            d="M6 16 H94"
-            fill="none"
-            stroke={colors.text.brand}
-            strokeWidth={2.4}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <Path
-            d="M88 10 L100 16 L88 22"
-            fill="none"
-            stroke={colors.text.brand}
-            strokeWidth={2.4}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </Svg>
-      </Animated.View>
-
       <View
         {...measureTarget}
         style={[
@@ -284,29 +219,10 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
   },
-  measureHintOverlay: {
-    position: 'absolute',
-    left: spacing.lg,
-    alignItems: 'flex-end',
-  },
-  measureHintArrow: {
-    width: 140,
-    height: 32,
-    marginTop: -spacing.xs,
-    marginRight: MEASURE_BUTTON_SIZE + spacing.xs,
-  },
   stickyAction: {
     position: 'absolute',
     zIndex: 2,
     elevation: 2,
-  },
-  measureHintText: {
-    alignSelf: 'stretch',
-    paddingRight: MEASURE_BUTTON_SIZE + spacing.sm,
-    textAlign: 'right',
-    ...typography.label.medium,
-    fontFamily: fonts.semibold,
-    color: colors.text.brand,
   },
   partialErrorText: {
     color: colors.text.tertiary,

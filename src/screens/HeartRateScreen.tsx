@@ -40,6 +40,6 @@ export function HeartRateScreen({ navigation, route }: HeartRateScreenProps) {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: colors.background.primary,
+    backgroundColor: colors.background.canvas,
   },
 });
