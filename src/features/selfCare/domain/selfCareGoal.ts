@@ -1,12 +1,34 @@
+import { ICON_PATHS, type IconName } from '../../../components/common/icons/paths';
+
 export const MAX_SELF_CARE_GOALS = 20;
 export const MAX_SELF_CARE_GOAL_TITLE_LENGTH = 120;
+
+/** What a to-do wears when it was written from scratch rather than picked. */
+export const DEFAULT_SELF_CARE_GOAL_ICON: IconName = 'sparkle';
 
 export interface SelfCareGoal {
   id: string;
   title: string;
+  icon: IconName;
   createdAt: string;
   updatedAt: string;
   completedToday: boolean;
+  /** singled out as today's one task of the day */
+  featuredToday: boolean;
+}
+
+/**
+ * The stored icon is free text and outlives the app version that wrote it, so a
+ * name this build no longer draws is resolved back to the default here rather
+ * than reaching the renderer and drawing nothing at all.
+ */
+export function resolveSelfCareGoalIcon(
+  value: string | null | undefined,
+): IconName {
+  if (value != null && ICON_PATHS[value as IconName] != null) {
+    return value as IconName;
+  }
+  return DEFAULT_SELF_CARE_GOAL_ICON;
 }
 
 export function normalizeSelfCareGoalTitle(title: string): string | null {

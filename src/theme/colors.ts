@@ -96,6 +96,15 @@ export const colors = {
     blush: { base: '#F04593', mid: '#FA7EB4', soft: '#FCD3E6', ink: '#AB1C5F' },
   },
 
+  // A `playful.*.base` written at zero alpha, for a block that has to fade into
+  // itself — a scrolling list whose bottom edge should dissolve rather than be
+  // cut off on a straight line. A gradient from a colour to `transparent`
+  // interpolates through transparent black and greys out on the way, so the
+  // faded end has to name its own hue.
+  blockFade: {
+    sky: 'rgba(34,128,240,0)',
+  },
+
   // White-alpha layers for content sitting on a `playful.*.base` color block:
   // tinted cells, dividers, and secondary text that must stay legible on the fill.
   onBlock: {

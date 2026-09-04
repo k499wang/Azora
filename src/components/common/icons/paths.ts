@@ -365,6 +365,14 @@ export const ICON_PATHS = {
     <path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" d="M6 6l12 12M18 6L6 18"/>
   `,
 
+  'star-outline': `
+    <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" d="M12 3.4l2.65 5.37 5.93.86-4.29 4.18 1.01 5.9L12 17.93l-5.3 2.78 1.01-5.9-4.29-4.18 5.93-.86z"/>
+  `,
+
+  trash: `
+    <path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M10 4.2h4M6.4 7l.9 12.1A1.9 1.9 0 0 0 9.2 21h5.6a1.9 1.9 0 0 0 1.9-1.9L17.6 7M10 11v6M14 11v6"/>
+  `,
+
   plus: `
     <path fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" d="M12 5v14M5 12h14"/>
   `,
