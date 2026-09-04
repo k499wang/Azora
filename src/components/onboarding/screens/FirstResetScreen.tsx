@@ -17,7 +17,7 @@ import { useReducedMotion } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { isHapticsEnabled } from '../../../services/preferences/hapticsPreference';
 import { triggerCelebrationHaptic } from '../../../native/tapHaptics';
-import ConfettiFall from '../ConfettiFall';
+import ConfettiFall from '../../common/ConfettiFall';
 import FirstResetMoodModal from '../FirstResetMoodModal';
 import type { BreathingCircleRef } from '../../../features/exercise/shared/components/BreathingCircle';
 import BreathingCompanion from '../../../features/exercise/shared/components/BreathingCompanion';

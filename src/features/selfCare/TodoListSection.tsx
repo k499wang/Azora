@@ -5,7 +5,9 @@ import {
   type LayoutChangeEvent,
   Pressable,
   StyleSheet,
+  type StyleProp,
   View,
+  type ViewStyle,
 } from 'react-native';
 import Animated, {
   interpolate,
@@ -18,7 +20,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Text, TextInput } from '../../components/common/Text';
 import Icon from '../../components/common/icons/Icon';
-import Confetti from '../../components/common/Confetti';
+import ConfettiFall from '../../components/common/ConfettiFall';
 import Overline from '../../components/common/Overline';
 import { useTodayLocalDate } from '../../hooks/useTodayLocalDate';
 import { useSelfCareGoalsQuery } from '../../queries/selfCare/useSelfCareGoalsQuery';
@@ -60,6 +62,11 @@ const COMPLETED_CHECK_SIZE = 28;
 // the list, so the scrim it draws sits tighter than the cards above it.
 const COMPLETED_SUMMARY_HEIGHT = 46;
 const COMPLETED_ICON_BADGE_SIZE = 32;
+const DAY_DONE_ICON_SIZE = 64;
+// The card's button is not the list's way in — it sits under a headline with
+// nothing competing for the tap, so it shrinks to what it says.
+const DAY_DONE_ADD_HEIGHT = 44;
+const DAY_DONE_ADD_BADGE_SIZE = 28;
 const COMPLETED_ROW_HEIGHT = 44;
 const DRAWER_TIMING = { duration: duration.base, easing: easing.settle } as const;
 const ADD_ROW_OFFSET = spacing.md;
@@ -68,26 +75,32 @@ const GOAL_CHECK_SIZE = 42;
 const JOURNEY_ROW_GAP = spacing.md;
 /**
  * The celebration when a to-do lands: the green disc springs in past its own
- * size, a ring pushes out through it, and the burst goes off from the middle of
- * the marker. Sized in multiples of the marker so the whole thing stays tied to
- * the dot it is congratulating rather than to the row it sits in.
+ * size and a ring pushes out through it. Sized in multiples of the marker so it
+ * stays tied to the dot it is congratulating rather than to the row it sits in.
  */
 const MARKER_HALO_SIZE = TODAY_JOURNEY_MARKER_SIZE * 2.6;
-const MARKER_CONFETTI_SIZE = TODAY_JOURNEY_MARKER_SIZE * 7;
-const MARKER_CONFETTI_SPREAD = 0.5;
-// Short and over with: the burst is the size of a coin, so at the full flight
-// time the pieces crawl. Ends just after the disc has finished springing.
-const MARKER_CONFETTI_MS = 620;
+// The disc's own beat. Short on purpose: it is the smallest part of the
+// celebration, and the fall across the section carries the rest.
+const MARKER_POP_MS = 620;
 /** the wind-up before the disc springs back — a beat, not a step */
 const SQUASH_MS = 70;
-const MARKER_CONFETTI_STAGGER_MS = 55;
-// Hoisted so the memoized burst is not handed a new array on every re-render
-// the toggle mutation causes while it is in flight.
-const MARKER_CONFETTI_COLORS = [colors.success[500], colors.success[300]] as const;
+/**
+ * The celebration falls across the section rather than out of the marker, so it
+ * survives the row it belongs to being swept into the drawer — or the whole
+ * list being replaced by the day-done card — in the same render.
+ */
+const CELEBRATION_PIECES = 22;
+const CELEBRATION_FALL = 260;
+const CELEBRATION_MS = 2600;
 
 
 
 interface TodoListSectionProps {
+  /**
+   * Everything on both of Home's lists is finished. Decided above this section,
+   * since the card it shows stands for the whole day and not for this list.
+   */
+  dayDone: boolean;
   userId: string | null;
 }
 
@@ -192,7 +205,7 @@ function GoalStatusMarker({ completed }: { completed: boolean }) {
     halo.value = 0;
     halo.value = withDelay(
       SQUASH_MS,
-      withTiming(1, { duration: MARKER_CONFETTI_MS, easing: easing.burst }),
+      withTiming(1, { duration: MARKER_POP_MS, easing: easing.burst }),
     );
   }, [burst, fill, halo]);
 
@@ -222,18 +235,6 @@ function GoalStatusMarker({ completed }: { completed: boolean }) {
         pointerEvents="none"
         style={[styles.markerHalo, haloStyle]}
       />
-      {burst === 0 ? null : (
-        <View pointerEvents="none" style={styles.markerConfetti}>
-          <Confetti
-            key={burst}
-            pieceColors={MARKER_CONFETTI_COLORS}
-            pieceCount={12}
-            spread={MARKER_CONFETTI_SPREAD}
-            durationMs={MARKER_CONFETTI_MS}
-            staggerMs={MARKER_CONFETTI_STAGGER_MS}
-          />
-        </View>
-      )}
       <Animated.View
         style={[styles.statusMarkerFill, fillStyle]}
         pointerEvents="none"
@@ -299,7 +300,76 @@ function CompletedDrawer({
   );
 }
 
-export default function TodoListSection({ userId }: TodoListSectionProps) {
+/**
+ * Calls back with the to-do that was just finished. Ignores the first pass, so
+ * a list that loads with finished to-dos on it does not celebrate them again,
+ * and reads the whole list rather than one row — the row is often gone by the
+ * time the celebration would play.
+ */
+function useGoalCompletionCelebration(
+  goals: SelfCareGoal[],
+  onCompleted: (goalId: string) => void,
+) {
+  const previouslyCompleted = useRef<Set<string> | null>(null);
+  const callback = useRef(onCompleted);
+  callback.current = onCompleted;
+
+  useEffect(() => {
+    const completed = new Set(
+      goals.filter((goal) => goal.completedToday).map((goal) => goal.id),
+    );
+    const previous = previouslyCompleted.current;
+    previouslyCompleted.current = completed;
+    if (previous == null) return;
+    for (const goalId of completed) {
+      if (!previous.has(goalId)) {
+        callback.current(goalId);
+        return;
+      }
+    }
+  }, [goals]);
+}
+
+/** The way onto the list, shown under it and inside the day-done card. */
+function AddGoalRow({
+  onPress,
+  compact = false,
+  style,
+}: {
+  onPress: () => void;
+  /** the smaller form the day-done card carries */
+  compact?: boolean;
+  style?: StyleProp<ViewStyle>;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel="Add a goal"
+      onPress={() => {
+        triggerTapHaptic();
+        onPress();
+      }}
+      style={({ pressed }) => [
+        styles.addRow,
+        compact && styles.addRowCompact,
+        style,
+        pressed && pressable.surface,
+      ]}
+    >
+      <View style={[styles.addBadge, compact && styles.addBadgeCompact]}>
+        <Icon name="plus" size={compact ? 16 : 20} color={colors.text.secondary} />
+      </View>
+      <Text style={[styles.addLabel, compact && styles.addLabelCompact]}>
+        Add a goal
+      </Text>
+    </Pressable>
+  );
+}
+
+export default function TodoListSection({
+  userId,
+  dayDone,
+}: TodoListSectionProps) {
   const localDate = useTodayLocalDate();
   const goalsQuery = useSelfCareGoalsQuery(userId, localDate);
   const createGoal = useCreateSelfCareGoalMutation(userId, localDate);
@@ -316,12 +386,20 @@ export default function TodoListSection({ userId }: TodoListSectionProps) {
    * dailies rail above it.
    */
   const [journeyHeight, setJourneyHeight] = useState<number | null>(null);
+  const [journeyTop, setJourneyTop] = useState(0);
+  // Where the last celebration started and which one it was; the key remounts
+  // the fall so finishing two to-dos in a row plays twice.
+  const [celebration, setCelebration] = useState<{
+    key: number;
+    top: number;
+  } | null>(null);
   // Keyed by goal so removing one cannot leave the rail measured against a row
   // that is no longer last.
   const [goalCenters, setGoalCenters] = useState<Record<string, number>>({});
 
   const measureJourney = useCallback((event: LayoutChangeEvent) => {
     setJourneyHeight(event.nativeEvent.layout.height);
+    setJourneyTop(event.nativeEvent.layout.y);
   }, []);
   const measureGoal = useCallback((goalId: string, event: LayoutChangeEvent) => {
     const { y, height } = event.nativeEvent.layout;
@@ -332,7 +410,28 @@ export default function TodoListSection({ userId }: TodoListSectionProps) {
   }, []);
 
   const goals = goalsQuery.data ?? [];
-  const { rail: railGoals, drawer: drawerGoals } = planSelfCareGoalList(goals);
+  // With the day done every finished to-do folds into the drawer, so the card
+  // stands alone rather than sitting on top of the list it is celebrating.
+  const plan = planSelfCareGoalList(goals);
+  const railGoals = dayDone ? [] : plan.rail;
+  const drawerGoals = dayDone ? goals : plan.drawer;
+  useGoalCompletionCelebration(goals, (goalId) => {
+    const center = goalCenters[goalId];
+    setCelebration({
+      key: Date.now(),
+      // With the list gone — swept into the drawer, or replaced by the day-done
+      // card — the row's measured place no longer means anything, so the fall
+      // starts at the top of the section instead.
+      top: dayDone || center == null ? 0 : journeyTop + center,
+    });
+  });
+
+  useEffect(() => {
+    if (celebration == null) return;
+    const timer = setTimeout(() => setCelebration(null), CELEBRATION_MS);
+    return () => clearTimeout(timer);
+  }, [celebration]);
+
   const normalizedTitle = normalizeSelfCareGoalTitle(title);
   const atLimit = goals.length >= MAX_SELF_CARE_GOALS;
   const mutationError = createGoal.error ?? toggleGoal.error ?? archiveGoal.error;
@@ -406,7 +505,16 @@ export default function TodoListSection({ userId }: TodoListSectionProps) {
 
   return (
     <View style={styles.section}>
-      <Overline label="To-dos" style={styles.groupLabel} />
+      {celebration == null ? null : (
+        <ConfettiFall
+          key={celebration.key}
+          count={CELEBRATION_PIECES}
+          spread={1}
+          startTop={celebration.top}
+          fallDistance={CELEBRATION_FALL}
+        />
+      )}
+      {dayDone ? null : <Overline label="To-dos" style={styles.groupLabel} />}
 
       {goalsQuery.isPending ? (
         <View style={styles.statusRow}>
@@ -419,6 +527,24 @@ export default function TodoListSection({ userId }: TodoListSectionProps) {
           <Pressable accessibilityRole="button" onPress={() => goalsQuery.refetch()}>
             <Text style={styles.retryLabel}>Retry</Text>
           </Pressable>
+        </View>
+      ) : dayDone ? (
+        <View style={styles.dayDone}>
+          <Icon
+            name="celebration"
+            size={DAY_DONE_ICON_SIZE}
+            color={colors.primary.blue600}
+          />
+          <Text style={styles.dayDoneTitle}>
+            Woohoo! You’re all completed for the day!
+          </Text>
+          {atLimit || adding ? null : (
+            <AddGoalRow
+              compact
+              onPress={() => setAdding(true)}
+              style={styles.dayDoneAdd}
+            />
+          )}
         </View>
       ) : goalsQuery.isSuccess && journeyNodeCount > 0 ? (
         <View style={styles.journey} onLayout={measureJourney}>
@@ -458,25 +584,12 @@ export default function TodoListSection({ userId }: TodoListSectionProps) {
             </View>
           ))}
           {addNodeVisible ? (
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Add a goal"
-              onPress={() => setAdding(true)}
-              style={({ pressed }) => [
-                styles.addRow,
-                pressed && pressable.surface,
-              ]}
-            >
-              <View style={styles.addBadge}>
-                <Icon name="plus" size={20} color={colors.text.secondary} />
-              </View>
-              <Text style={styles.addLabel}>Add a goal</Text>
-            </Pressable>
+            <AddGoalRow onPress={() => setAdding(true)} />
           ) : null}
         </View>
       ) : null}
 
-      {drawerGoals.length > 0 ? (
+      {dayDone || drawerGoals.length === 0 ? null : (
         <View style={styles.completed}>
           <Pressable
             accessibilityRole="button"
@@ -532,7 +645,7 @@ export default function TodoListSection({ userId }: TodoListSectionProps) {
             ))}
           </CompletedDrawer>
         </View>
-      ) : null}
+      )}
 
       {adding ? (
         <View style={[card.base, card.shadow, styles.composer]}>
@@ -640,6 +753,37 @@ const styles = StyleSheet.create({
     borderRadius: radius.card,
     backgroundColor: colors.inertRow.fill,
   },
+  // Stands where the list would be, so finishing the day empties the section
+  // down to one card rather than leaving a page of struck-through rows.
+  dayDone: {
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingVertical: spacing.lg,
+  },
+  dayDoneTitle: {
+    ...typography.title.title3,
+    fontFamily: fonts.semibold,
+    color: colors.text.primary,
+    textAlign: 'center',
+  },
+  dayDoneAdd: {
+    marginTop: 0,
+    alignSelf: 'center',
+  },
+  addRowCompact: {
+    minHeight: DAY_DONE_ADD_HEIGHT,
+    gap: spacing.sm,
+    paddingHorizontal: spacing.md,
+  },
+  addBadgeCompact: {
+    width: DAY_DONE_ADD_BADGE_SIZE,
+    height: DAY_DONE_ADD_BADGE_SIZE,
+  },
+  addLabelCompact: {
+    ...typography.body.large,
+    fontSize: 16,
+    lineHeight: 22,
+  },
   addBadge: {
     width: ADD_BADGE_SIZE,
     height: ADD_BADGE_SIZE,
@@ -692,13 +836,6 @@ const styles = StyleSheet.create({
     height: MARKER_HALO_SIZE,
     borderRadius: MARKER_HALO_SIZE / 2,
     backgroundColor: colors.success[300],
-  },
-  markerConfetti: {
-    position: 'absolute',
-    top: (TODAY_JOURNEY_MARKER_SIZE - MARKER_CONFETTI_SIZE) / 2,
-    left: (TODAY_JOURNEY_MARKER_SIZE - MARKER_CONFETTI_SIZE) / 2,
-    width: MARKER_CONFETTI_SIZE,
-    height: MARKER_CONFETTI_SIZE,
   },
   composer: {
     padding: spacing.md,

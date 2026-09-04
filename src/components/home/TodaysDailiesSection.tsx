@@ -138,6 +138,8 @@ interface TodaysDailiesSectionProps {
   onPressHandPickedExercise: () => void;
   onPressBreathHold: () => void;
   onPressHistory: () => void;
+  /** Everything on both of Home's lists is finished; the rail folds away. */
+  dayDone?: boolean;
 }
 
 /**
@@ -419,6 +421,7 @@ export default function TodaysDailiesSection({
   onPressHandPickedExercise,
   onPressBreathHold,
   onPressHistory,
+  dayDone = false,
 }: TodaysDailiesSectionProps) {
   const guidedLocked = !guidedExerciseCompleted && !exerciseAccessAllowed;
   const handPickedLocked =
@@ -572,27 +575,31 @@ export default function TodaysDailiesSection({
         }
       />
 
-      <Overline label="Resets" style={styles.groupLabel} />
+      {dayDone ? null : (
+        <>
+          <Overline label="Exercises" style={styles.groupLabel} />
 
-      <View style={styles.timeline}>
-        <Animated.View
-          style={[styles.timelineRail, railStyle]}
-          pointerEvents="none"
-        >
-          {Array.from({ length: DASH_COUNT }, (_, dash) => (
-            <View key={dash} style={styles.timelineRailDash} />
-          ))}
-        </Animated.View>
-        {orderedActionIds.map((actionId) => (
-          <DailyTaskRow
-            key={actionId}
-            {...rows[actionId]}
-            metrics={metrics}
-            expanded={actionId === expandedActionId}
-            onSelect={() => setOpenedActionId(actionId)}
-          />
-        ))}
-      </View>
+          <View style={styles.timeline}>
+            <Animated.View
+              style={[styles.timelineRail, railStyle]}
+              pointerEvents="none"
+            >
+              {Array.from({ length: DASH_COUNT }, (_, dash) => (
+                <View key={dash} style={styles.timelineRailDash} />
+              ))}
+            </Animated.View>
+            {orderedActionIds.map((actionId) => (
+              <DailyTaskRow
+                key={actionId}
+                {...rows[actionId]}
+                metrics={metrics}
+                expanded={actionId === expandedActionId}
+                onSelect={() => setOpenedActionId(actionId)}
+              />
+            ))}
+          </View>
+        </>
+      )}
     </View>
   );
 }
