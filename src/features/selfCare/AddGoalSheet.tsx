@@ -15,7 +15,9 @@ import { StatusBar } from 'expo-status-bar';
 import { Text, TextInput } from '../../components/common/Text';
 import GlassIconButton from '../../components/common/GlassIconButton';
 import ChunkyButton from '../../components/common/ChunkyButton';
+import BottomSheet from '../../components/common/BottomSheet';
 import GoalIconPicker from './GoalIconPicker';
+import { GoalRepeatOptions, GoalTimeOptions } from './GoalScheduleOptions';
 import Icon from '../../components/common/icons/Icon';
 import { card, radius } from '../../theme/card';
 import { colors } from '../../theme/colors';
@@ -27,11 +29,15 @@ import {
   DEFAULT_SELF_CARE_GOAL_ICON,
   MAX_SELF_CARE_GOAL_TITLE_LENGTH,
   normalizeSelfCareGoalTitle,
+  selfCareGoalDaypartLabel,
+  selfCareGoalRecurrenceLabel,
+  type SelfCareGoalRecurrence,
 } from './domain/selfCareGoal';
 import {
   GOAL_SUGGESTION_CATEGORIES,
   type GoalSuggestion,
 } from './goalSuggestions';
+import type { SelfCareGoalDraft } from '../../services/selfCare/selfCareService';
 import type { IconName } from '../../components/common/icons/paths';
 
 const CLOSE_SIZE = 44;
@@ -39,6 +45,8 @@ const BADGE_SIZE = 64;
 const BADGE_ICON_SIZE = 32;
 const SAVE_MIN_HEIGHT = 48;
 const SUGGESTION_ICON_SIZE = 24;
+const ROW_BADGE_SIZE = 32;
+const ROW_ICON_SIZE = 18;
 // The shelf runs to the bottom of the screen, so the tabs sit clear of the home
 // indicator rather than on top of it — they are a control, not chrome.
 const TABS_LIFT = spacing.lg;
@@ -50,11 +58,69 @@ const SHELF_FADE_TOP_HEIGHT = 32;
 
 const FIRST_CATEGORY = GOAL_SUGGESTION_CATEGORIES[0];
 
+/** What the shelf under the card is showing. */
+type ShelfMode = 'suggestions' | 'icon';
+
+/** Which field the options sheet is open on, if any. */
+type ScheduleField = 'time' | 'repeat';
+
+const SCHEDULE_TITLE: Record<ScheduleField, string> = {
+  time: 'Time of day',
+  repeat: 'Repeat',
+};
+
+/**
+ * What a to-do repeats on when nothing is chosen. The same default the column
+ * carries, so a to-do written without opening the row behaves the way one
+ * written before the row existed does.
+ */
+const DEFAULT_RECURRENCE: SelfCareGoalRecurrence = 'daily';
+
+/**
+ * A field on the goal card, showing the answer it currently holds. Tapping one
+ * swaps the shelf below to its choices, so the card stays the size it is and
+ * the answer never moves while it is being picked.
+ */
+function CardRow({
+  icon,
+  badgeTint,
+  badgeColor,
+  label,
+  value,
+  open,
+  onPress,
+}: {
+  icon: IconName;
+  badgeTint: string;
+  badgeColor: string;
+  label: string;
+  value: string;
+  open: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityState={{ expanded: open }}
+      accessibilityLabel={`${label}, ${value}`}
+      onPress={onPress}
+      style={({ pressed }) => [styles.cardRow, pressed && pressable.surface]}
+    >
+      <View style={[styles.rowBadge, { backgroundColor: badgeTint }]}>
+        <Icon name={icon} size={ROW_ICON_SIZE} color={badgeColor} />
+      </View>
+      <Text style={[styles.rowValue, open && styles.rowValueOpen]}>
+        {value}
+      </Text>
+    </Pressable>
+  );
+}
+
 interface AddGoalSheetProps {
   visible: boolean;
   onClose: () => void;
   /** already normalized — the sheet will not call this with an empty title */
-  onSubmit: (title: string, icon: IconName) => void;
+  onSubmit: (draft: SelfCareGoalDraft) => void;
   pending: boolean;
   error: unknown;
 }
@@ -80,11 +146,16 @@ export default function AddGoalSheet({
   const inputRef = useRef<RNTextInput>(null);
   const [title, setTitle] = useState('');
   const [icon, setIcon] = useState<IconName>(DEFAULT_SELF_CARE_GOAL_ICON);
+  const [recurrence, setRecurrence] = useState<SelfCareGoalRecurrence>(
+    DEFAULT_RECURRENCE,
+  );
+  const [scheduledTime, setScheduledTime] = useState<string | null>(null);
   const [categoryId, setCategoryId] = useState(FIRST_CATEGORY.id);
-  // The picker takes over the shelf rather than opening a layer above it: the
-  // icon it is choosing sits on the card right there, so the choice has to stay
+  // Every picker takes over the shelf rather than opening a layer above it: the
+  // thing being chosen sits on the card right there, so the choice has to stay
   // visible next to what it changes.
-  const [pickingIcon, setPickingIcon] = useState(false);
+  const [shelf, setShelf] = useState<ShelfMode>('suggestions');
+  const [editingField, setEditingField] = useState<ScheduleField | null>(null);
 
   // The sheet is a fresh sheet every time it opens: the draft and the shelf it
   // was left on belong to the goal that was written, not to the next one.
@@ -92,8 +163,11 @@ export default function AddGoalSheet({
     if (visible) return;
     setTitle('');
     setIcon(DEFAULT_SELF_CARE_GOAL_ICON);
+    setRecurrence(DEFAULT_RECURRENCE);
+    setScheduledTime(null);
     setCategoryId(FIRST_CATEGORY.id);
-    setPickingIcon(false);
+    setShelf('suggestions');
+    setEditingField(null);
   }, [visible]);
 
   const normalizedTitle = normalizeSelfCareGoalTitle(title);
@@ -104,24 +178,35 @@ export default function AddGoalSheet({
   const save = () => {
     if (normalizedTitle == null || pending) return;
     triggerTapHaptic();
-    onSubmit(normalizedTitle, icon);
+    onSubmit({ title: normalizedTitle, icon, recurrence, scheduledTime });
+  };
+
+  const openShelf = (mode: ShelfMode) => {
+    triggerTapHaptic();
+    setShelf((current) => (current === mode ? 'suggestions' : mode));
+  };
+
+  const openField = (field: ScheduleField) => {
+    triggerTapHaptic();
+    setEditingField(field);
   };
 
   // A suggestion fills the card rather than saving straight to the list, so the
-  // line stays yours to edit before it becomes a to-do. Its icon comes with it,
-  // and the badge above stays tappable if you want a different one.
+  // line stays yours to edit — and its hour and repeat stay yours to set —
+  // before it becomes a to-do. Its icon comes with it, and the badge above
+  // stays tappable if you want a different one.
   const chooseSuggestion = (suggestion: GoalSuggestion) => {
     triggerTapHaptic();
     setTitle(suggestion.title);
     setIcon(suggestion.icon);
-    setPickingIcon(false);
+    setShelf('suggestions');
     inputRef.current?.focus();
   };
 
   const chooseIcon = (choice: IconName) => {
     triggerTapHaptic();
     setIcon(choice);
-    setPickingIcon(false);
+    setShelf('suggestions');
   };
 
   return (
@@ -150,15 +235,12 @@ export default function AddGoalSheet({
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={
-              pickingIcon ? 'Close the icon picker' : 'Change the icon'
+              shelf === 'icon' ? 'Close the icon picker' : 'Change the icon'
             }
-            onPress={() => {
-              triggerTapHaptic();
-              setPickingIcon((picking) => !picking);
-            }}
+            onPress={() => openShelf('icon')}
             style={({ pressed }) => [
               styles.badge,
-              pickingIcon && styles.badgePicking,
+              shelf === 'icon' && styles.badgePicking,
               pressed && pressable.surface,
             ]}
           >
@@ -183,6 +265,30 @@ export default function AddGoalSheet({
             style={styles.input}
             accessibilityLabel="Goal"
           />
+          {/* The hour and the repeat sit on the card from the first moment,
+              carrying their defaults, so a to-do is never saved under settings
+              that were never shown. */}
+          <View style={styles.cardRows}>
+            <CardRow
+              icon="clock"
+              badgeTint={colors.surface.teal}
+              badgeColor={colors.playful.teal.ink}
+              label="Time of day"
+              value={selfCareGoalDaypartLabel(scheduledTime)}
+              open={editingField === 'time'}
+              onPress={() => openField('time')}
+            />
+            <CardRow
+              icon="calendar"
+              badgeTint={colors.surface.sky}
+              badgeColor={colors.playful.sky.ink}
+              label="Repeat"
+              value={selfCareGoalRecurrenceLabel(recurrence)}
+              open={editingField === 'repeat'}
+              onPress={() => openField('repeat')}
+            />
+          </View>
+
           {normalizedTitle == null ? null : (
             <ChunkyButton
               shape="card"
@@ -203,7 +309,7 @@ export default function AddGoalSheet({
         )}
 
         <Text style={styles.overline}>
-          {pickingIcon ? 'Choose an icon' : 'Suggestions'}
+          {shelf === 'icon' ? 'Choose an icon' : 'Suggestions'}
         </Text>
 
         <View style={styles.shelf}>
@@ -212,7 +318,7 @@ export default function AddGoalSheet({
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            {pickingIcon ? (
+            {shelf === 'icon' ? (
               <GoalIconPicker selected={icon} onSelect={chooseIcon} />
             ) : (
               category.suggestions.map((suggestion) => (
@@ -248,7 +354,7 @@ export default function AddGoalSheet({
           />
         </View>
 
-        {pickingIcon ? null : (
+        {shelf !== 'suggestions' ? null : (
         <View style={{ paddingBottom: insets.bottom + TABS_LIFT }}>
           <ScrollView
             horizontal
@@ -287,6 +393,29 @@ export default function AddGoalSheet({
           </ScrollView>
         </View>
         )}
+
+        {/* The same tiles the edit sheet opens, on a sheet of their own rather
+            than in the shelf: the answer is a grid, and the shelf is a column
+            of lines. Picking one leaves the sheet open — the tile takes the
+            selected border and stays there to be changed again, so the choice
+            is confirmed in place rather than by the sheet vanishing. */}
+        <BottomSheet
+          visible={editingField != null}
+          onClose={() => setEditingField(null)}
+          title={editingField == null ? '' : SCHEDULE_TITLE[editingField]}
+        >
+          {editingField === 'repeat' ? (
+            <GoalRepeatOptions
+              recurrence={recurrence}
+              onSelect={setRecurrence}
+            />
+          ) : (
+            <GoalTimeOptions
+              scheduledTime={scheduledTime}
+              onSelect={setScheduledTime}
+            />
+          )}
+        </BottomSheet>
       </KeyboardAvoidingView>
     </Modal>
   );
@@ -375,6 +504,38 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     height: SHELF_FADE_HEIGHT,
+  },
+  // The rows sit tight under the title with no divider between them: they are
+  // the goal's own settings, not a separate list stacked on the card.
+  cardRows: {
+    gap: spacing.xs,
+    marginTop: -spacing.xs,
+  },
+  cardRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    borderRadius: radius.card,
+    borderCurve: 'continuous',
+  },
+  rowBadge: {
+    width: ROW_BADGE_SIZE,
+    height: ROW_BADGE_SIZE,
+    borderRadius: radius.small,
+    borderCurve: 'continuous',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rowValue: {
+    ...typography.heading.heading1,
+    fontFamily: fonts.semibold,
+    flex: 1,
+    color: colors.text.tertiary,
+  },
+  // The open row is the one the shelf below is answering, so it takes the ink
+  // the answer will land in.
+  rowValueOpen: {
+    color: colors.text.primary,
   },
   suggestion: {
     flexDirection: 'row',

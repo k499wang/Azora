@@ -115,3 +115,45 @@ test('finishing the dailies without placing anything is always claimable', () =>
     assert.equal(result.canClaim, true, `placed ${placed}`);
   }
 });
+
+const NOON = new Date(2026, 8, 7, 12, 0, 0, 0).getTime();
+const AFTERNOON = new Date(2026, 8, 7, 16, 0, 0, 0).getTime();
+
+test('a piece still in delivery is earned but not yet claimable', () => {
+  const result = progress({ deliveryReadyAt: AFTERNOON, nowMs: NOON });
+  assert.equal(result.awaitingDelivery, true);
+  assert.equal(result.canClaim, false);
+  assert.equal(result.deliveryReadyAt, AFTERNOON);
+});
+
+test('a delivery that has come due unlocks the claim', () => {
+  const result = progress({ deliveryReadyAt: NOON, nowMs: AFTERNOON });
+  assert.equal(result.awaitingDelivery, false);
+  assert.equal(result.canClaim, true);
+});
+
+test('an unrecorded delivery leaves the claim alone', () => {
+  const result = progress({ deliveryReadyAt: null, nowMs: NOON });
+  assert.equal(result.awaitingDelivery, false);
+  assert.equal(result.canClaim, true);
+});
+
+test('a day that is not finished is not waiting on a delivery', () => {
+  const result = progress({
+    dailiesComplete: false,
+    deliveryReadyAt: AFTERNOON,
+    nowMs: NOON,
+  });
+  assert.equal(result.awaitingDelivery, false);
+  assert.equal(result.canClaim, false);
+});
+
+test('a day already claimed is not waiting on a delivery', () => {
+  const result = progress({
+    lastEarnedLocalDate: TODAY,
+    deliveryReadyAt: AFTERNOON,
+    nowMs: NOON,
+  });
+  assert.equal(result.awaitingDelivery, false);
+  assert.equal(result.canClaim, false);
+});

@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   updateSelfCareGoal,
-  type SelfCareGoalEdit,
+  type SelfCareGoalDraft,
 } from '../../services/selfCare/selfCareService';
 import {
   isSelfCareGoalDueOn,
@@ -10,7 +10,7 @@ import {
 } from '../../features/selfCare/domain/selfCareGoal';
 import { getSelfCareGoalsQueryKey } from './useSelfCareGoalsQuery';
 
-interface UpdateInput extends SelfCareGoalEdit {
+interface UpdateInput extends SelfCareGoalDraft {
   goalId: string;
 }
 

@@ -28,6 +28,8 @@ import { getRoomDay, getRoomDayLabel } from './roomDays';
 import { isHapticsEnabled } from '../../services/preferences/hapticsPreference';
 import { triggerTapHaptic } from '../../native/tapHaptics';
 import { DAILIES_PER_DAY } from '../../lib/dailies';
+import { decorationArrivalClock } from '../../lib/room/decorationDelivery';
+import { formatDailyPlanTime } from '../../services/dailyPlan/dailyPlanScheduleCore';
 import { radius } from '../../theme/card';
 import { duration, easing, spring } from '../../theme/motion';
 import { colors } from '../../theme/colors';
@@ -84,6 +86,12 @@ interface DailyCompleteSheetProps {
   barFrom: number;
   /** Server-confirmed room entitlement; optimistic completion stays dismissible. */
   rewardReady?: boolean;
+  /**
+   * When today's piece arrives, if it is earned but still on its way. The other
+   * reason `rewardReady` is false is entitlement that has not landed yet, and
+   * that one has no hour to name — so this is what tells the two apart.
+   */
+  deliveryReadyAt?: number | null;
   /** Fires when the native Modal is visible and the entrance may begin. */
   onShow?: () => void;
   /** Fires immediately before the sheet begins its exit animation. */
@@ -114,6 +122,7 @@ function DailyCompleteSheet({
   state,
   barFrom,
   rewardReady = true,
+  deliveryReadyAt = null,
   onShow,
   onExitStart,
   onChoosePiece,
@@ -293,11 +302,16 @@ function DailyCompleteSheet({
                     </Animated.View>
                   </View>
                   <Text style={styles.progressLabel}>
-                    {unlocked
-                      ? day == null
-                        ? 'Ready to place'
-                        : `Ready for the ${day.note}`
-                      : `${remaining} more to earn today's decoration`}
+                    {!unlocked
+                      ? `${remaining} more to earn today's decoration`
+                      : deliveryReadyAt != null
+                        ? `Arriving at ${formatDailyPlanTime(
+                            decorationArrivalClock(deliveryReadyAt),
+                            '12:00',
+                          )}`
+                        : day == null
+                          ? 'Ready to place'
+                          : `Ready for the ${day.note}`}
                   </Text>
                 </Rise>
               ) : null}
