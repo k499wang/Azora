@@ -41,6 +41,13 @@ interface SlideUpSheetProps {
   /** padding and gap for the sheet's own content */
   sheetStyle?: StyleProp<ViewStyle>;
   /**
+   * Take the screen rather than only as much of it as the content needs,
+   * leaving the page showing as a strip above. For sheets that are a task in
+   * themselves — a form — rather than a handful of choices about the page
+   * behind them.
+   */
+  fullHeight?: boolean;
+  /**
    * Drag the sheet from anywhere on it, not just the grabber. For sheets whose
    * content does not scroll — a vertical drag inside a scrolling sheet belongs
    * to the list, not to the sheet around it.
@@ -65,6 +72,7 @@ export default function SlideUpSheet({
   header,
   backgroundColor = colors.background.canvas,
   sheetStyle,
+  fullHeight = false,
   dragAnywhere = false,
   onDismissed,
 }: SlideUpSheetProps) {
@@ -265,6 +273,9 @@ export default function SlideUpSheet({
           }}
           style={[
             styles.sheet,
+            fullHeight
+              ? [styles.sheetFull, { marginTop: insets.top + spacing.md }]
+              : styles.sheetContained,
             { backgroundColor },
             sheetStyle,
             {
@@ -296,11 +307,18 @@ const styles = StyleSheet.create({
     backgroundColor: colors.overlay.dark,
   },
   sheet: {
-    maxHeight: '90%',
     borderTopLeftRadius: radius.sheet,
     borderTopRightRadius: radius.sheet,
     borderCurve: 'continuous',
     paddingTop: spacing.sm,
+  },
+  // Grows with its content, up to most of the screen.
+  sheetContained: {
+    maxHeight: '90%',
+  },
+  // Takes everything under the status bar, however little content it has.
+  sheetFull: {
+    flex: 1,
   },
   // The bar is 5pt of drawing. The padding is the band you can actually grab it
   // by, and the matching negative margins hand that space straight back, so the

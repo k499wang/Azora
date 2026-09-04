@@ -32,7 +32,7 @@ The most common bug pattern with TanStack Query (and the one AI tools repeatedly
 | `getDayHistoryQueryKey` / `getDayHistoryQueryKeyPrefix` | `src/queries/history/useDayHistoryQuery.ts` | `breath_hold_sessions`, `heart_rate_sessions`, `breathing_sessions`, `room_decorations` — all for one local date | One day of the History screen. Per-day key, but completion mutations invalidate the user prefix: a session finished just after midnight writes a different date than the one on screen. |
 | `getDailyActivityRangeQueryKey` / `getDailyActivityRangeQueryKeyPrefix` | `src/queries/tracking/useDailyActivityRangeQuery.ts` | `daily_activity` (last *n* days) | Feeds the completed-day dots on the History date strip. Keyed by day count, so mutations invalidate the user prefix. |
 | `getTechniqueFeedbackQueryKey` | `src/queries/tracking/useTechniqueFeedbackQuery.ts` | `technique_feedback` for the user | "Did this feel helpful?" answers, one per session (`session_key`). Read by the results screen so an answer given for this session survives a re-render; intended to feed technique recommendation. |
-| `getSelfCareGoalsQueryKey` | `src/queries/selfCare/useSelfCareGoalsQuery.ts` | Active `self_care_goals` plus `self_care_goal_completions` for one user and local date | Personal daily checklist only. It does not feed canonical exercise dailies, streaks, room rewards, History, or feature usage. |
+| `getSelfCareGoalsQueryKey` | `src/queries/selfCare/useSelfCareGoalsQuery.ts` | Active `self_care_goals` due on the date, plus `self_care_goal_completions` for one user and local date | Personal daily checklist only. It does not feed canonical exercise dailies, streaks, room rewards, History, or feature usage. Recurrence is applied on read: weekdays to-dos are absent on a weekend, and a one-off is absent once it was completed on an earlier day. |
 
 ---
 
@@ -59,6 +59,7 @@ When adding a mutation, find every field it writes, then look up every query abo
 | `useCreateSelfCareGoalMutation` | `self_care_goals` | Exact `SelfCareGoals(userId, localDate)` updated with the returned canonical row. |
 | `useToggleSelfCareGoalMutation` | `self_care_goal_completions` for `localDate` | Exact `SelfCareGoals(userId, localDate)` optimistically updated, rolled back on error, then invalidated. |
 | `useArchiveSelfCareGoalMutation` | `self_care_goals.archived_at` | Exact `SelfCareGoals(userId, localDate)` filtered after success. |
+| `useUpdateSelfCareGoalMutation` | `self_care_goals` title/icon/recurrence/scheduled_time | Exact `SelfCareGoals(userId, localDate)` seeded with the returned canonical row and re-sorted — an edit that adds an hour moves the to-do up the day, and one that sets a repeat today does not answer to drops it from the day. Turning a to-do into a one-off also invalidates the key: whether it was already finished on an earlier day is not in the returned row. |
 | `useSetSelfCareGoalFeaturedMutation` | `self_care_goals.featured_on` for `localDate` | Exact `SelfCareGoals(userId, localDate)` optimistically updated across every row (only one goal may hold the day), rolled back on error, then invalidated. |
 
 ---
