@@ -24,6 +24,7 @@ import { useAuthStore } from '../stores/authStore';
 import { useDailyPlanScheduleQuery } from '../queries/dailyPlan/useDailyPlanScheduleQuery';
 import { DEFAULT_DAILY_PLAN_SCHEDULE } from '../services/dailyPlan/types';
 import { useDashboardLayout } from '../hooks/useDashboardLayout';
+import TodoListSection from '../features/selfCare/TodoListSection';
 
 /** the glass chips either side of Home's top row */
 const HOTEL_ROW_BUTTON_SIZE = 46;
@@ -97,23 +98,27 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             />
           </View>
           <View {...dailiesTarget}>
-            <TodaysDailiesSection
-              technique={dailies.guidedTechnique}
-              techniqueLoading={dailies.guidedTechniqueLoading}
-              sessionTime={dailyPlanSchedule.actions.session}
-              handPickedTechnique={dailies.handPickedTechnique}
-              handPickedTechniqueLoading={dailies.handPickedTechniqueLoading}
-              handPickedTime={dailyPlanSchedule.actions.handPicked}
-              breathHoldTime={dailyPlanSchedule.actions.checkIn}
-              guidedExerciseCompleted={dailies.guidedCompleted}
-              handPickedExerciseCompleted={dailies.handPickedCompleted}
-              breathHoldCompleted={dailies.breathHoldCompleted}
-              exerciseAccessAllowed={accessAllowed}
-              onPressGuidedExercise={() => start('guided')}
-              onPressHandPickedExercise={() => start('handPicked')}
-              onPressBreathHold={() => start('breathHold')}
-              onPressHistory={() => navigation.navigate('History')}
-            />
+            <View style={styles.todayList}>
+              <TodaysDailiesSection
+                technique={dailies.guidedTechnique}
+                techniqueLoading={dailies.guidedTechniqueLoading}
+                sessionTime={dailyPlanSchedule.actions.session}
+                handPickedTechnique={dailies.handPickedTechnique}
+                handPickedTechniqueLoading={dailies.handPickedTechniqueLoading}
+                handPickedTime={dailyPlanSchedule.actions.handPicked}
+                breathHoldTime={dailyPlanSchedule.actions.checkIn}
+                guidedExerciseCompleted={dailies.guidedCompleted}
+                handPickedExerciseCompleted={dailies.handPickedCompleted}
+                breathHoldCompleted={dailies.breathHoldCompleted}
+                exerciseAccessAllowed={accessAllowed}
+                onPressGuidedExercise={() => start('guided')}
+                onPressHandPickedExercise={() => start('handPicked')}
+                onPressBreathHold={() => start('breathHold')}
+                onPressHistory={() => navigation.navigate('History')}
+                journeyContinues
+              />
+              <TodoListSection userId={user?.id ?? null} />
+            </View>
           </View>
         </View>
 
@@ -168,6 +173,9 @@ const styles = StyleSheet.create({
   },
   dailiesGroup: {
     marginTop: margin.itemGap,
+    gap: spacing.md,
+  },
+  todayList: {
     gap: spacing.md,
   },
   extraPracticeSection: {

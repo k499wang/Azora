@@ -616,6 +616,91 @@ export type Database = {
           },
         ]
       }
+      self_care_goal_completions: {
+        Row: {
+          completed_at: string
+          goal_id: string
+          local_date: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string
+          goal_id: string
+          local_date: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string
+          goal_id?: string
+          local_date?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "self_care_goal_completions_goal_id_fkey"
+            columns: ["goal_id"]
+            isOneToOne: false
+            referencedRelation: "self_care_goals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "self_care_goal_completions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "self_care_goal_completions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_streaks_v"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      self_care_goals: {
+        Row: {
+          archived_at: string | null
+          created_at: string
+          id: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          archived_at?: string | null
+          created_at?: string
+          id?: string
+          title: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string
+          id?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "self_care_goals_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "self_care_goals_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_streaks_v"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       subscriptions: {
         Row: {
           current_period_ends_at: string | null
