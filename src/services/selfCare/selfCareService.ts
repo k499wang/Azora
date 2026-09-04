@@ -112,27 +112,8 @@ async function findSpentOnceGoalIds(
   return new Set((data ?? []).map((row) => row.goal_id));
 }
 
-export async function createSelfCareGoal(
-  userId: string,
-  title: string,
-  icon: IconName,
-  localDate: string,
-): Promise<SelfCareGoal> {
-  const normalizedTitle = normalizeSelfCareGoalTitle(title);
-  if (normalizedTitle == null) throw new Error('Enter a shorter to-do.');
-
-  const supabase = requireSupabaseClient();
-  const { data, error } = await supabase
-    .from('self_care_goals')
-    .insert({ user_id: userId, title: normalizedTitle, icon })
-    .select(GOAL_COLUMNS)
-    .single();
-  if (error != null) throw error;
-
-  return mapGoal(data, new Set(), localDate);
-}
-
-export interface SelfCareGoalEdit {
+/** The four things a to-do is written with, on the way in and on every edit. */
+export interface SelfCareGoalDraft {
   title: string;
   icon: IconName;
   recurrence: SelfCareGoalRecurrence;
@@ -140,10 +121,35 @@ export interface SelfCareGoalEdit {
   scheduledTime: string | null;
 }
 
+export async function createSelfCareGoal(
+  userId: string,
+  draft: SelfCareGoalDraft,
+  localDate: string,
+): Promise<SelfCareGoal> {
+  const normalizedTitle = normalizeSelfCareGoalTitle(draft.title);
+  if (normalizedTitle == null) throw new Error('Enter a shorter to-do.');
+
+  const supabase = requireSupabaseClient();
+  const { data, error } = await supabase
+    .from('self_care_goals')
+    .insert({
+      user_id: userId,
+      title: normalizedTitle,
+      icon: draft.icon,
+      recurrence: draft.recurrence,
+      scheduled_time: draft.scheduledTime,
+    })
+    .select(GOAL_COLUMNS)
+    .single();
+  if (error != null) throw error;
+
+  return mapGoal(data, new Set(), localDate);
+}
+
 export async function updateSelfCareGoal(
   userId: string,
   goalId: string,
-  edit: SelfCareGoalEdit,
+  edit: SelfCareGoalDraft,
   localDate: string,
 ): Promise<SelfCareGoal> {
   const normalizedTitle = normalizeSelfCareGoalTitle(edit.title);

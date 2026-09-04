@@ -18,7 +18,8 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { Text } from '../../components/common/Text';
-import Icon, { type IconName } from '../../components/common/icons/Icon';
+import Icon from '../../components/common/icons/Icon';
+import type { SelfCareGoalDraft } from '../../services/selfCare/selfCareService';
 import Confetti from '../../components/common/Confetti';
 import Overline from '../../components/common/Overline';
 import AddGoalSheet from './AddGoalSheet';
@@ -501,12 +502,9 @@ export default function TodoListSection({
 
   if (userId == null) return null;
 
-  const save = (goalTitle: string, goalIcon: IconName) => {
+  const save = (draft: SelfCareGoalDraft) => {
     if (createGoal.isPending || atLimit) return;
-    createGoal.mutate(
-      { title: goalTitle, icon: goalIcon },
-      { onSuccess: () => setAdding(false) },
-    );
+    createGoal.mutate(draft, { onSuccess: () => setAdding(false) });
   };
 
   const closeSheet = () => {

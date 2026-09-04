@@ -1,7 +1,6 @@
 import { Text } from '../../common/Text';
 import { useState } from 'react';
 import {
-  Pressable,
   ScrollView,
   StyleSheet,
   useWindowDimensions,
@@ -14,7 +13,9 @@ import { colors } from '../../../theme/colors';
 import { typography, fonts } from '../../../theme/typography';
 import { spacing, padding } from '../../../theme/spacing';
 import ChunkyButton from '../../common/ChunkyButton';
-import Icon from '../../common/icons/Icon';
+import GlassIconButton from '../../common/GlassIconButton';
+import { SESSION_GLASS_BUTTON_SIZE } from '../../../features/exercise/shared/components/SessionGlassButton';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { isShortScreen } from '../../../theme/breakpoints';
 
 /** Slightly taller than the standard primary, matching this flow's footer. */
@@ -79,18 +80,13 @@ export function DefaultInstructionScreen({ onNext, onCancel }: SetupScreenProps)
       >
         {/* Scrolls with the page rather than floating over it, so nothing sits
             on top of the illustration once the steps are scrolled up. */}
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Back"
-          hitSlop={spacing.sm}
+        <GlassIconButton
+          accessibilityLabel="Close"
+          size={SESSION_GLASS_BUTTON_SIZE}
           onPress={onCancel}
-          style={({ pressed }) => [
-            styles.back,
-            pressed && styles.backPressed,
-          ]}
         >
-          <Icon name="chevron-left" size={26} color={colors.text.primary} />
-        </Pressable>
+          <MaterialCommunityIcons name="close" size={20} color={colors.text.secondary} />
+        </GlassIconButton>
 
         <Text style={[styles.title, compact && styles.titleCompact]}>
           {placementGuidance.title}
@@ -142,16 +138,6 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: padding.screen.horizontal,
     backgroundColor: colors.background.canvas,
-  },
-  back: {
-    width: 44,
-    height: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 22,
-  },
-  backPressed: {
-    opacity: 0.6,
   },
   scrollContent: {
     paddingTop: padding.screen.vertical,

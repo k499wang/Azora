@@ -22,6 +22,7 @@ import Collapsible, {
   COLLAPSE_TIMING,
 } from '../../components/common/Collapsible';
 import GoalIconPicker from './GoalIconPicker';
+import { GoalRepeatOptions, GoalTimeOptions } from './GoalScheduleOptions';
 import { card, radius } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { pressable } from '../../theme/pressable';
@@ -32,12 +33,8 @@ import type { IconName } from '../../components/common/icons/paths';
 import {
   MAX_SELF_CARE_GOAL_TITLE_LENGTH,
   normalizeSelfCareGoalTitle,
-  selfCareGoalDaypart,
   selfCareGoalDaypartLabel,
-  selfCareGoalDaypartTime,
   selfCareGoalRecurrenceLabel,
-  SELF_CARE_GOAL_DAYPARTS,
-  SELF_CARE_GOAL_RECURRENCES,
   type SelfCareGoal,
   type SelfCareGoalRecurrence,
 } from './domain/selfCareGoal';
@@ -47,7 +44,6 @@ const BADGE_ICON_SIZE = 38;
 const PENCIL_BADGE_SIZE = 28;
 const ROW_BADGE_SIZE = 36;
 const ROW_ICON_SIZE = 20;
-const TILE_ICON_SIZE = 28;
 const SAVE_MIN_HEIGHT = 52;
 const SAVE_MIN_WIDTH = 156;
 
@@ -140,52 +136,6 @@ function ExpandingRow({
 }
 
 /**
- * One choice inside an open field: an icon over its name. `wide` takes the
- * whole row on its own, which is where the odd one out at the end of a block
- * goes so the grid never ends on a half-empty line.
- */
-function OptionTile({
-  icon,
-  label,
-  selected,
-  wide = false,
-  onPress,
-}: {
-  icon: IconName;
-  label: string;
-  selected: boolean;
-  wide?: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityState={{ selected }}
-      accessibilityLabel={label}
-      onPress={() => {
-        triggerTapHaptic();
-        onPress();
-      }}
-      style={({ pressed }) => [
-        styles.tile,
-        wide ? styles.tileWide : styles.tileHalf,
-        selected && styles.tileSelected,
-        pressed && pressable.surface,
-      ]}
-    >
-      <Icon
-        name={icon}
-        size={TILE_ICON_SIZE}
-        color={selected ? colors.primary.blue600 : colors.text.secondary}
-      />
-      <Text style={[styles.tileLabel, selected && styles.tileLabelSelected]}>
-        {label}
-      </Text>
-    </Pressable>
-  );
-}
-
-/**
  * Editing a to-do, one field per card. A sheet of its own rather than a mode on
  * the detail sheet: the two are different shapes — one is three buttons, this
  * one is a form — and growing one into the other under the finger reads as the
@@ -224,7 +174,6 @@ export default function GoalEditSheet({
 
   const normalizedTitle = normalizeSelfCareGoalTitle(title);
   const canSave = normalizedTitle != null && !pending;
-  const daypart = selfCareGoalDaypart(scheduledTime);
 
   const toggle = (section: Exclude<OpenSection, null>) =>
     setOpen((current) => (current === section ? null : section));
@@ -318,26 +267,10 @@ export default function GoalEditSheet({
               open={open === 'time'}
               onToggle={() => toggle('time')}
             >
-              <View style={styles.tiles}>
-                {SELF_CARE_GOAL_DAYPARTS.map((part) => (
-                  <OptionTile
-                    key={part.id}
-                    icon={part.icon}
-                    label={part.label}
-                    selected={daypart === part.id}
-                    onPress={() =>
-                      setScheduledTime(selfCareGoalDaypartTime(part.id))
-                    }
-                  />
-                ))}
-                <OptionTile
-                  wide
-                  icon="clock"
-                  label="Any time"
-                  selected={scheduledTime == null}
-                  onPress={() => setScheduledTime(null)}
-                />
-              </View>
+              <GoalTimeOptions
+                scheduledTime={scheduledTime}
+                onSelect={setScheduledTime}
+              />
             </ExpandingRow>
 
             <ExpandingRow
@@ -349,18 +282,10 @@ export default function GoalEditSheet({
               open={open === 'repeat'}
               onToggle={() => toggle('repeat')}
             >
-              <View style={styles.tiles}>
-                {SELF_CARE_GOAL_RECURRENCES.map((option, index) => (
-                  <OptionTile
-                    key={option.id}
-                    icon={option.icon}
-                    label={option.label}
-                    selected={option.id === recurrence}
-                    wide={index === SELF_CARE_GOAL_RECURRENCES.length - 1}
-                    onPress={() => setRecurrence(option.id)}
-                  />
-                ))}
-              </View>
+              <GoalRepeatOptions
+                recurrence={recurrence}
+                onSelect={setRecurrence}
+              />
             </ExpandingRow>
 
             {error == null ? null : (
@@ -490,49 +415,6 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     paddingHorizontal: spacing.md,
     paddingBottom: spacing.md,
-  },
-  tiles: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-  // Outlined rather than filled: the tiles sit on the same white as the card
-  // holding them, so the line is what separates a choice from its neighbours
-  // and colour is left to mean "chosen".
-  tile: {
-    minHeight: 92,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    padding: spacing.sm,
-    borderRadius: radius.medium,
-    borderCurve: 'continuous',
-    borderWidth: 1.5,
-    borderColor: colors.border.subtle,
-    backgroundColor: colors.background.card,
-  },
-  tileHalf: {
-    flexGrow: 1,
-    flexBasis: '46%',
-  },
-  // Same button, full width. Only the basis changes, so the odd one out at the
-  // end of a block is not a different control from the ones above it.
-  tileWide: {
-    flexGrow: 1,
-    flexBasis: '100%',
-  },
-  tileSelected: {
-    borderColor: colors.primary.blue600,
-    backgroundColor: colors.background.accentSoft,
-  },
-  tileLabel: {
-    ...typography.button.large,
-    fontFamily: fonts.semibold,
-    textAlign: 'center',
-    color: colors.text.secondary,
-  },
-  tileLabelSelected: {
-    color: colors.primary.blue700,
   },
   footer: {
     alignItems: 'flex-end',
