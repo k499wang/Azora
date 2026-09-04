@@ -40,8 +40,6 @@ const PIECES = [
 
 const DEFAULT_PIECE_COUNT = 12;
 const PIECE_FLIGHT_MS = 1100;
-/** the spread the per-piece `delay` values above are authored against */
-const PIECE_STAGGER_MS = 120;
 
 interface ConfettiProps {
   /** Alternated piece to piece, so the burst reads as two-tone rather than flat. */
@@ -50,19 +48,6 @@ interface ConfettiProps {
   startDelayMs?: number;
   /** Number of pieces to render from the fixed choreography. */
   pieceCount?: number;
-  /** Scales how far the pieces travel, for bursts laid over something small. */
-  spread?: number;
-  /**
-   * Flight time of a single piece. A burst over something small wants a shorter
-   * one — the pieces have less ground to cover, and at the full duration they
-   * hang in the air after the moment they were celebrating has passed.
-   */
-  durationMs?: number;
-  /**
-   * Spread of the launch stagger. Scales with the flight time so a short burst
-   * does not spend most of it waiting for the last piece to leave.
-   */
-  staggerMs?: number;
 }
 
 /**
@@ -74,9 +59,6 @@ const Confetti = memo(function Confetti({
   pieceColors,
   startDelayMs = 0,
   pieceCount = DEFAULT_PIECE_COUNT,
-  spread = 1,
-  durationMs = PIECE_FLIGHT_MS,
-  staggerMs = PIECE_STAGGER_MS,
 }: ConfettiProps) {
   const renderedPieceCount = Number.isFinite(pieceCount)
     ? Math.max(0, Math.min(PIECES.length, Math.floor(pieceCount)))
@@ -90,9 +72,6 @@ const Confetti = memo(function Confetti({
           piece={piece}
           color={piece.size % 2 === 0 ? pieceColors[0] : pieceColors[1]}
           startDelayMs={startDelayMs}
-          spread={spread}
-          durationMs={durationMs}
-          staggerMs={staggerMs}
         />
       ))}
     </View>
@@ -103,31 +82,25 @@ function ConfettiPiece({
   piece,
   color,
   startDelayMs,
-  spread,
-  durationMs,
-  staggerMs,
 }: {
   piece: (typeof PIECES)[number];
   color: string;
   startDelayMs: number;
-  spread: number;
-  durationMs: number;
-  staggerMs: number;
 }) {
   const fly = useSharedValue(0);
   const radians = (piece.angle * Math.PI) / 180;
 
   useEffect(() => {
     fly.value = withDelay(
-      startDelayMs + (piece.delay / PIECE_STAGGER_MS) * staggerMs,
-      withTiming(1, { duration: durationMs, easing: easing.burst }),
+      startDelayMs + piece.delay,
+      withTiming(1, { duration: PIECE_FLIGHT_MS, easing: easing.burst }),
     );
-  }, [durationMs, fly, piece.delay, staggerMs, startDelayMs]);
+  }, [fly, piece.delay, startDelayMs]);
 
   const style = useAnimatedStyle(() => {
-    const travel = interpolate(fly.value, [0, 1], [0, piece.distance * spread]);
+    const travel = interpolate(fly.value, [0, 1], [0, piece.distance]);
     // Gravity on the way out — pieces arc rather than shooting in straight lines.
-    const drop = interpolate(fly.value, [0, 1], [0, 90 * spread]);
+    const drop = interpolate(fly.value, [0, 1], [0, 90]);
 
     return {
       opacity: interpolate(fly.value, [0, 0.1, 0.75, 1], [0, 1, 1, 0]),

@@ -7,7 +7,7 @@ import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import { isHapticsEnabled } from '../../services/preferences/hapticsPreference';
 import { useWhileVisible } from '../../hooks/useWhileVisible';
-import ConfettiFall from './ConfettiFall';
+import ConfettiFall from '../common/ConfettiFall';
 import { scaleVisual } from './onboardingVisualScale';
 
 interface CelebrationOverlayProps {

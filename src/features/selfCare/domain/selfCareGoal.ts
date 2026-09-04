@@ -59,5 +59,5 @@ export function planSelfCareGoalList(goals: SelfCareGoal[]): SelfCareGoalList {
 }
 
 export function completedGoalsSummary(count: number): string {
-  return `${count} ${count === 1 ? 'goal' : 'goals'} completed today!`;
+  return `${count} ${count === 1 ? 'to-do' : 'to-dos'} done today!`;
 }

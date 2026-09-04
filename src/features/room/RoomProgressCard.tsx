@@ -12,7 +12,6 @@ import {
   ROOM_SLOT_COUNT,
   type RoomProgress,
 } from '../../lib/room/roomProgress';
-import NextDayCountdown from './NextDayCountdown';
 import { card } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
@@ -161,7 +160,6 @@ export function RoomProgressCardView({
         </View>
       </View>
 
-      {view.countdown === true ? <NextDayCountdown style={styles.countdown} /> : null}
       {view.note == null ? null : (
         <Text style={[styles.note, styles.noteText]}>{view.note}</Text>
       )}
@@ -188,8 +186,6 @@ export interface RoomCardView {
   title: string;
   /** the line under the title, when the title alone does not say the rule */
   note?: string;
-  /** the wait until the next decoration, for a day with nothing left to do */
-  countdown?: boolean;
   /** drives the icon, the bar and the button */
   tone: RoomCardTone;
   /** the bar counts whatever the title is about, never something else */
@@ -243,11 +239,8 @@ export function describeRoomCard({
   if (claimedToday) {
     // Today is what this state is about, so the bar stays on today rather than
     // dropping back to a room count that reads as progress lost.
-    // Nothing here is actionable today, so the card's job is the next day:
-    // point at when it opens rather than closing the loop with a tick.
     return {
       title: 'All set for today!',
-      countdown: true,
       tone: 'done',
       done: DAILIES_PER_DAY,
       total: DAILIES_PER_DAY,
@@ -256,8 +249,7 @@ export function describeRoomCard({
   }
 
   // Still working through today. The title and the 1 / 3 beside it already say
-  // the rule, so the line under them stays empty — it is there for the
-  // countdown, and this is the one state with nothing to wait for.
+  // the rule, so the line under them stays empty.
   //
   // The bar counts the three dailies, because that is what the title asks for —
   // showing room pieces here read as "finish today's dailies — 1 / 7", which
@@ -301,16 +293,11 @@ const styles = StyleSheet.create({
   note: {
     marginTop: -spacing.xs,
   },
-  // Matches the countdown that shares this slot, so the line under the title
-  // is the same line whichever state the card is in.
   noteText: {
     ...typography.label.detail,
     fontSize: 14,
     lineHeight: 18,
     color: colors.text.secondary,
-  },
-  countdown: {
-    marginTop: -spacing.xs,
   },
   // In the bar, in the tone's own ink — dark enough to hold on the pale track
   // and on the fill that passes under it as the bar grows.
