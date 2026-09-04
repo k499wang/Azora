@@ -31,6 +31,7 @@ import { useIsRegularWidth } from '../../hooks/useIsRegularWidth';
 import {
   TODAY_JOURNEY_DASH_GAP,
   TODAY_JOURNEY_DASH_HEIGHT,
+  TODAY_JOURNEY_GROUP_GAP,
   TODAY_JOURNEY_RAIL_TIMING,
   todayJourneyDashCount,
 } from './todayJourneyLayout';
@@ -624,10 +625,11 @@ const styles = StyleSheet.create({
   // Flush with the section title above it. The section's own gap is sized for
   // blocks, so the label is pulled back down onto the rows it names.
   // Flush with the section header's icon, and given room above it so the label
-  // reads as opening a group rather than as a caption on the header.
+  // reads as opening a group rather than as a caption on the header. The gap
+  // below it is the section's own, topped up to the shared group gap.
   groupLabel: {
     marginTop: spacing.sm,
-    marginBottom: -spacing.md,
+    marginBottom: TODAY_JOURNEY_GROUP_GAP - spacing.lg,
   },
   timeline: {
     position: 'relative',

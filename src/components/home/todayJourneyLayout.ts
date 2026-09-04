@@ -1,4 +1,12 @@
 import { Easing } from 'react-native-reanimated';
+import { spacing } from '../../theme/spacing';
+
+/**
+ * The one gap that separates a group from what introduces or follows it: a
+ * label to its first row, and a list to the add row under it. Rows inside a
+ * group sit closer than this, which is what makes them read as one list.
+ */
+export const TODAY_JOURNEY_GROUP_GAP = spacing.lg;
 
 /** Shared geometry for every node in the Home daily journey. */
 export const TODAY_JOURNEY_COLUMN_WIDTH = 40;
