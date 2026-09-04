@@ -21,6 +21,9 @@ import { useTourScroller, useTourTarget } from '../features/tour/tourTargets';
 import type { TourTargetId } from '../features/tour/tourSteps';
 import type { HomeScreenProps } from '../app/navigation';
 import { useAuthStore } from '../stores/authStore';
+import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
+import { useSelfCareGoalsQuery } from '../queries/selfCare/useSelfCareGoalsQuery';
+import { planSelfCareGoalList } from '../features/selfCare/domain/selfCareGoal';
 import { useDailyPlanScheduleQuery } from '../queries/dailyPlan/useDailyPlanScheduleQuery';
 import { DEFAULT_DAILY_PLAN_SCHEDULE } from '../services/dailyPlan/types';
 import { useDashboardLayout } from '../hooks/useDashboardLayout';
@@ -33,6 +36,14 @@ const TOUR_TARGETS: TourTargetId[] = ['dailies', 'extraPractice', 'seeAll'];
 
 export default function HomeScreen({ navigation }: HomeScreenProps) {
   const user = useAuthStore((state) => state.user);
+  const todayLocalDate = useTodayLocalDate();
+  // The dailies rail only runs on into the goals when there is a goal on the
+  // rail to reach. With an empty list, or one whose completed goals have all
+  // folded into the drawer, it has to stop at its own last marker instead of
+  // trailing off into the add row.
+  const selfCareGoals = useSelfCareGoalsQuery(user?.id ?? null, todayLocalDate);
+  const journeyContinues =
+    planSelfCareGoalList(selfCareGoals.data ?? []).rail.length > 0;
   const dailyPlanScheduleQuery = useDailyPlanScheduleQuery(user?.id ?? null);
   const dailyPlanSchedule =
     dailyPlanScheduleQuery.data ?? DEFAULT_DAILY_PLAN_SCHEDULE;
@@ -115,7 +126,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
                 onPressHandPickedExercise={() => start('handPicked')}
                 onPressBreathHold={() => start('breathHold')}
                 onPressHistory={() => navigation.navigate('History')}
-                journeyContinues
+                journeyContinues={journeyContinues}
               />
               <TodoListSection userId={user?.id ?? null} />
             </View>
