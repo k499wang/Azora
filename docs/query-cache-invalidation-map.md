@@ -59,6 +59,7 @@ When adding a mutation, find every field it writes, then look up every query abo
 | `useCreateSelfCareGoalMutation` | `self_care_goals` | Exact `SelfCareGoals(userId, localDate)` updated with the returned canonical row. |
 | `useToggleSelfCareGoalMutation` | `self_care_goal_completions` for `localDate` | Exact `SelfCareGoals(userId, localDate)` optimistically updated, rolled back on error, then invalidated. |
 | `useArchiveSelfCareGoalMutation` | `self_care_goals.archived_at` | Exact `SelfCareGoals(userId, localDate)` filtered after success. |
+| `useSetSelfCareGoalFeaturedMutation` | `self_care_goals.featured_on` for `localDate` | Exact `SelfCareGoals(userId, localDate)` optimistically updated across every row (only one goal may hold the day), rolled back on error, then invalidated. |
 
 ---
 

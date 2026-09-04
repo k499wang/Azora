@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   type LayoutChangeEvent,
   Pressable,
   StyleSheet,
@@ -18,20 +17,21 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
-import { Text, TextInput } from '../../components/common/Text';
-import Icon from '../../components/common/icons/Icon';
+import { Text } from '../../components/common/Text';
+import Icon, { type IconName } from '../../components/common/icons/Icon';
 import Confetti from '../../components/common/Confetti';
 import Overline from '../../components/common/Overline';
+import AddGoalSheet from './AddGoalSheet';
+import GoalDetailSheet from './GoalDetailSheet';
 import { useTodayLocalDate } from '../../hooks/useTodayLocalDate';
 import { useSelfCareGoalsQuery } from '../../queries/selfCare/useSelfCareGoalsQuery';
 import { useCreateSelfCareGoalMutation } from '../../queries/selfCare/useCreateSelfCareGoalMutation';
 import { useToggleSelfCareGoalMutation } from '../../queries/selfCare/useToggleSelfCareGoalMutation';
 import { useArchiveSelfCareGoalMutation } from '../../queries/selfCare/useArchiveSelfCareGoalMutation';
+import { useSetSelfCareGoalFeaturedMutation } from '../../queries/selfCare/useSetSelfCareGoalFeaturedMutation';
 import {
   completedGoalsSummary,
   MAX_SELF_CARE_GOALS,
-  MAX_SELF_CARE_GOAL_TITLE_LENGTH,
-  normalizeSelfCareGoalTitle,
   planSelfCareGoalList,
   type SelfCareGoal,
 } from './domain/selfCareGoal';
@@ -41,7 +41,7 @@ import { pressable } from '../../theme/pressable';
 import { spacing } from '../../theme/spacing';
 import { triggerSuccessHaptic, triggerTapHaptic } from '../../native/tapHaptics';
 import { duration, easing, spring } from '../../theme/motion';
-import { fonts, typography } from '../../theme/typography';
+import { fonts, typography, wrappedLineHeight } from '../../theme/typography';
 import {
   TODAY_JOURNEY_COLUMN_WIDTH,
   TODAY_JOURNEY_DASH_GAP,
@@ -71,6 +71,15 @@ const DAY_DONE_ADD_BADGE_SIZE = 28;
 const COMPLETED_ROW_HEIGHT = 44;
 const DRAWER_TIMING = { duration: duration.base, easing: easing.settle } as const;
 const GOAL_ICON_SIZE = 34;
+const FEATURED_STAR_SIZE = 18;
+const GOAL_TITLE_LINE_HEIGHT = wrappedLineHeight(
+  typography.body.large.fontSize,
+);
+const COMPLETED_ROW_LINE_HEIGHT = wrappedLineHeight(
+  typography.body.medium.fontSize,
+);
+/** A long task gets the room it needs instead of being cut off at two lines. */
+const GOAL_TITLE_MAX_LINES = 3;
 const GOAL_CHECK_SIZE = 42;
 const JOURNEY_ROW_GAP = spacing.md;
 const ADD_ROW_OFFSET = TODAY_JOURNEY_GROUP_GAP - JOURNEY_ROW_GAP;
@@ -93,18 +102,6 @@ const MARKER_CONFETTI_COLORS = [
 const MARKER_POP_MS = 620;
 /** the wind-up before the disc springs back — a beat, not a step */
 const SQUASH_MS = 70;
-/**
- * Two celebrations, picked by what happens to the row.
- *
- * A to-do that stays on the rail is congratulated where it sits: the green
- * burst goes off from its own marker, pointing at the thing you just did. A
- * to-do that vanishes in the same render — swept into the drawer past the
- * collapse threshold, or taken with the whole list by the day-done card — has
- * no marker left to fire from, so Home bursts from its own fixed place instead.
- */
-
-
-
 interface TodoListSectionProps {
   /**
    * Everything on both of Home's lists is finished. Decided above this section,
@@ -128,36 +125,46 @@ interface GoalCardProps {
   goal: SelfCareGoal;
   busy: boolean;
   onToggle: () => void;
-  onRemove: () => void;
+  onOpen: () => void;
 }
 
 /**
  * Shaped like a closed daily above it, so a goal you wrote and a daily the app
  * scheduled read as the same kind of thing on the same journey.
  */
-function GoalCard({ goal, busy, onToggle, onRemove }: GoalCardProps) {
+function GoalCard({ goal, busy, onToggle, onOpen }: GoalCardProps) {
   return (
     <View style={[card.base, styles.goalCard]}>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={goal.title}
-        accessibilityHint="Press and hold to remove"
-        onLongPress={onRemove}
+        accessibilityHint="Opens this to-do"
+        onPress={() => {
+          triggerTapHaptic();
+          onOpen();
+        }}
         style={({ pressed }) => [styles.goalButton, pressed && pressable.subtle]}
       >
         <Icon
-          name="sparkle"
+          name={goal.icon}
           size={GOAL_ICON_SIZE}
           color={
             goal.completedToday ? colors.text.tertiary : colors.primary.blue600
           }
         />
         <Text
-          numberOfLines={2}
+          numberOfLines={GOAL_TITLE_MAX_LINES}
           style={[styles.goalTitle, goal.completedToday && styles.goalTitleDone]}
         >
           {goal.title}
         </Text>
+        {goal.featuredToday ? (
+          <Icon
+            name="star"
+            size={FEATURED_STAR_SIZE}
+            color={colors.reward.gold}
+          />
+        ) : null}
       </Pressable>
       <Pressable
         accessibilityRole="checkbox"
@@ -328,10 +335,26 @@ function CompletedDrawer({
 }
 
 /**
- * Calls back with the to-do that was just finished. Ignores the first pass, so
- * a list that loads with finished to-dos on it does not celebrate them again,
- * and reads the whole list rather than one row — the row is often gone by the
- * time the celebration would play.
+ * Two celebrations, picked by what happens to the row.
+ *
+ * A to-do that stays on the rail is congratulated where it sits: the green
+ * burst goes off from its own marker, pointing at the thing you just did. A
+ * to-do that vanishes in the same render — swept into the drawer past the
+ * collapse threshold, or taken with the whole list by the day-done card — has
+ * no marker left to fire from, so Home bursts from its own fixed place instead.
+ *
+ * This calls back with the to-do that was just finished, for the caller to
+ * make that choice. It ignores the first pass, so a list that loads with
+ * finished to-dos on it does not celebrate them again, and reads the whole list
+ * rather than one row — the row is often gone by the time the celebration would
+ * play.
+ *
+ * The callback runs a tick after the completion lands rather than inside it.
+ * Which of the two celebrations is right depends on `dayDone`, and Home decides
+ * that from the same query this list reads, so it can arrive a commit later
+ * than the completion does. Choosing on the spot loses the last to-do of the
+ * day in that gap: it still looks like a row on the rail, so the burst is left
+ * to a marker that unmounts before it can play, and nothing fires at all.
  */
 function useGoalCompletionCelebration(
   goals: SelfCareGoal[],
@@ -349,10 +372,9 @@ function useGoalCompletionCelebration(
     previouslyCompleted.current = completed;
     if (previous == null) return;
     for (const goalId of completed) {
-      if (!previous.has(goalId)) {
-        callback.current(goalId);
-        return;
-      }
+      if (previous.has(goalId)) continue;
+      const settled = setTimeout(() => callback.current(goalId), 0);
+      return () => clearTimeout(settled);
     }
   }, [goals]);
 }
@@ -403,8 +425,9 @@ export default function TodoListSection({
   const createGoal = useCreateSelfCareGoalMutation(userId, localDate);
   const toggleGoal = useToggleSelfCareGoalMutation(userId, localDate);
   const archiveGoal = useArchiveSelfCareGoalMutation(userId, localDate);
+  const featureGoal = useSetSelfCareGoalFeaturedMutation(userId, localDate);
   const [adding, setAdding] = useState(false);
-  const [title, setTitle] = useState('');
+  const [detailGoalId, setDetailGoalId] = useState<string | null>(null);
   const [completedOpen, setCompletedOpen] = useState(false);
   /**
    * The rail is measured rather than computed. A goal's height is whatever its
@@ -442,10 +465,12 @@ export default function TodoListSection({
     onCelebrate();
   });
 
-  const normalizedTitle = normalizeSelfCareGoalTitle(title);
+  const detailGoal = goals.find((goal) => goal.id === detailGoalId) ?? null;
   const atLimit = goals.length >= MAX_SELF_CARE_GOALS;
-  const mutationError = createGoal.error ?? toggleGoal.error ?? archiveGoal.error;
-  const addNodeVisible = goalsQuery.isSuccess && !adding && !atLimit;
+  // The create error belongs to the sheet that is still open over this list.
+  const mutationError =
+    toggleGoal.error ?? archiveGoal.error ?? featureGoal.error;
+  const addNodeVisible = goalsQuery.isSuccess && !atLimit;
   const journeyNodeCount = railGoals.length + (addNodeVisible ? 1 : 0);
   // The rail runs from the section's top edge to the centre of the last goal's
   // marker, both measured, so it can never outrun the rows it belongs to.
@@ -492,25 +517,17 @@ export default function TodoListSection({
 
   if (userId == null) return null;
 
-  const save = () => {
-    if (normalizedTitle == null || createGoal.isPending || atLimit) return;
-    createGoal.mutate(normalizedTitle, {
-      onSuccess: () => {
-        setTitle('');
-        setAdding(false);
-      },
-    });
+  const save = (goalTitle: string, goalIcon: IconName) => {
+    if (createGoal.isPending || atLimit) return;
+    createGoal.mutate(
+      { title: goalTitle, icon: goalIcon },
+      { onSuccess: () => setAdding(false) },
+    );
   };
 
-  const confirmRemove = (goal: SelfCareGoal) => {
-    Alert.alert('Remove this to-do?', goal.title, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Remove',
-        style: 'destructive',
-        onPress: () => archiveGoal.mutate(goal.id),
-      },
-    ]);
+  const closeSheet = () => {
+    setAdding(false);
+    createGoal.reset();
   };
 
   return (
@@ -539,7 +556,7 @@ export default function TodoListSection({
           <Text style={styles.dayDoneTitle}>
             Woohoo! You’re all completed for the day!
           </Text>
-          {atLimit || adding ? null : (
+          {atLimit ? null : (
             <AddGoalRow
               compact
               onPress={() => setAdding(true)}
@@ -580,7 +597,7 @@ export default function TodoListSection({
                     completed: !goal.completedToday,
                   })
                 }
-                onRemove={() => confirmRemove(goal)}
+                onOpen={() => setDetailGoalId(goal.id)}
               />
             </View>
           ))}
@@ -625,11 +642,10 @@ export default function TodoListSection({
                 key={goal.id}
                 accessibilityRole="button"
                 accessibilityLabel={`${goal.title}, completed`}
-                accessibilityHint="Press to un-complete, press and hold to remove"
-                onLongPress={() => confirmRemove(goal)}
+                accessibilityHint="Opens this to-do"
                 onPress={() => {
                   triggerTapHaptic();
-                  toggleGoal.mutate({ goalId: goal.id, completed: false });
+                  setDetailGoalId(goal.id);
                 }}
                 style={({ pressed }) => [
                   styles.completedRow,
@@ -637,9 +653,12 @@ export default function TodoListSection({
                 ]}
               >
                 <View style={styles.completedRowBadge}>
-                  <Icon name="sparkle" size={20} color={colors.text.tertiary} />
+                  <Icon name={goal.icon} size={20} color={colors.text.tertiary} />
                 </View>
-                <Text style={styles.completedRowTitle} numberOfLines={2}>
+                <Text
+                  style={styles.completedRowTitle}
+                  numberOfLines={GOAL_TITLE_MAX_LINES}
+                >
                   {goal.title}
                 </Text>
               </Pressable>
@@ -648,53 +667,40 @@ export default function TodoListSection({
         </View>
       )}
 
-      {adding ? (
-        <View style={[card.base, card.shadow, styles.composer]}>
-          <TextInput
-            autoFocus
-            value={title}
-            onChangeText={setTitle}
-            onSubmitEditing={save}
-            maxLength={MAX_SELF_CARE_GOAL_TITLE_LENGTH}
-            placeholder="Add a small self-care task"
-            placeholderTextColor={colors.text.tertiary}
-            returnKeyType="done"
-            editable={!createGoal.isPending}
-            style={styles.input}
-            accessibilityLabel="To-do title"
-          />
-          <View style={styles.composerActions}>
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => {
-                setAdding(false);
-                setTitle('');
-                createGoal.reset();
-              }}
-              style={({ pressed }) => [styles.cancelButton, pressed && pressable.subtle]}
-            >
-              <Text style={styles.cancelLabel}>Cancel</Text>
-            </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              disabled={normalizedTitle == null || createGoal.isPending || atLimit}
-              onPress={save}
-              style={({ pressed }) => [
-                styles.saveButton,
-                pressed && pressable.control,
-                (normalizedTitle == null || createGoal.isPending || atLimit) &&
-                  styles.disabled,
-              ]}
-            >
-              {createGoal.isPending ? (
-                <ActivityIndicator size="small" color={colors.text.inverse} />
-              ) : (
-                <Text style={styles.saveLabel}>Save</Text>
-              )}
-            </Pressable>
-          </View>
-        </View>
-      ) : null}
+      <GoalDetailSheet
+        goal={detailGoal}
+        busy={toggleGoal.isPending || archiveGoal.isPending}
+        onClose={() => setDetailGoalId(null)}
+        onToggleComplete={() => {
+          if (detailGoal == null) return;
+          toggleGoal.mutate({
+            goalId: detailGoal.id,
+            completed: !detailGoal.completedToday,
+          });
+          // Closed on the way out so the celebration has the screen to itself.
+          setDetailGoalId(null);
+        }}
+        onToggleFeatured={() => {
+          if (detailGoal == null) return;
+          featureGoal.mutate({
+            goalId: detailGoal.id,
+            featured: !detailGoal.featuredToday,
+          });
+        }}
+        onRemove={() => {
+          if (detailGoal == null) return;
+          setDetailGoalId(null);
+          archiveGoal.mutate(detailGoal.id);
+        }}
+      />
+
+      <AddGoalSheet
+        visible={adding}
+        onClose={closeSheet}
+        onSubmit={save}
+        pending={createGoal.isPending}
+        error={createGoal.error}
+      />
 
       {atLimit ? (
         <Text style={styles.limitText}>Remove a to-do before adding another.</Text>
@@ -845,49 +851,6 @@ const styles = StyleSheet.create({
     borderRadius: MARKER_HALO_SIZE / 2,
     backgroundColor: colors.success[300],
   },
-  composer: {
-    padding: spacing.md,
-    gap: spacing.md,
-  },
-  input: {
-    minHeight: 48,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.medium,
-    backgroundColor: colors.background.cardSoft,
-    color: colors.text.primary,
-    ...typography.body.medium,
-  },
-  composerActions: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: spacing.sm,
-  },
-  cancelButton: {
-    minHeight: 40,
-    justifyContent: 'center',
-    paddingHorizontal: spacing.md,
-  },
-  cancelLabel: {
-    ...typography.button.medium,
-    color: colors.text.secondary,
-  },
-  saveButton: {
-    minWidth: 76,
-    minHeight: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.medium,
-    backgroundColor: colors.primary.blue600,
-  },
-  saveLabel: {
-    ...typography.button.medium,
-    fontFamily: fonts.semibold,
-    color: colors.text.inverse,
-  },
-  disabled: {
-    opacity: 0.5,
-  },
   statusRow: {
     minHeight: 64,
     flexDirection: 'row',
@@ -924,10 +887,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: spacing.md,
     paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
   },
   goalTitle: {
     flex: 1,
     ...typography.body.large,
+    lineHeight: GOAL_TITLE_LINE_HEIGHT,
     fontFamily: fonts.semibold,
     color: colors.text.primary,
   },
@@ -1005,6 +970,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.md,
     paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
   },
   completedRowBadge: {
     width: COMPLETED_ICON_BADGE_SIZE,
@@ -1017,6 +983,7 @@ const styles = StyleSheet.create({
   completedRowTitle: {
     flex: 1,
     ...typography.body.medium,
+    lineHeight: COMPLETED_ROW_LINE_HEIGHT,
     fontFamily: fonts.medium,
     color: colors.text.tertiary,
   },

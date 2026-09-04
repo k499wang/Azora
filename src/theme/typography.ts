@@ -307,4 +307,14 @@ export const typography = {
   overline: scaleToken(baseTypography.overline),
 };
 
+/**
+ * Line height for a short label that wraps — a card title, a list row. The body
+ * and title tokens are spaced for paragraphs, and at that spacing a title that
+ * breaks onto a second line reads as two separate items rather than one thought.
+ * Takes the token's own already-scaled size, so it follows the tablet type scale.
+ */
+export function wrappedLineHeight(fontSize: number): number {
+  return Math.round(fontSize * 1.24);
+}
+
 export const fonts = { heavy: fontHeavy, bold: fontBold, semibold: fontSemiBold, regular: fontRegular, medium: fontMedium, light: fontLight };

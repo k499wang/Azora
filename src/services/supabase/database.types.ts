@@ -663,7 +663,12 @@ export type Database = {
         Row: {
           archived_at: string | null
           created_at: string
+          featured_on: string | null
+          icon: string | null
           id: string
+          recurrence: string
+          scheduled_time: string | null
+          sort_order: number
           title: string
           updated_at: string
           user_id: string
@@ -671,7 +676,12 @@ export type Database = {
         Insert: {
           archived_at?: string | null
           created_at?: string
+          featured_on?: string | null
+          icon?: string | null
           id?: string
+          recurrence?: string
+          scheduled_time?: string | null
+          sort_order?: number
           title: string
           updated_at?: string
           user_id: string
@@ -679,7 +689,12 @@ export type Database = {
         Update: {
           archived_at?: string | null
           created_at?: string
+          featured_on?: string | null
+          icon?: string | null
           id?: string
+          recurrence?: string
+          scheduled_time?: string | null
+          sort_order?: number
           title?: string
           updated_at?: string
           user_id?: string

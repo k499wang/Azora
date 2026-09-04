@@ -259,6 +259,7 @@ Before adding or modifying any `useMutation`, read `docs/query-cache-invalidatio
 ### Conventions to enforce automatically
 - Never inline `fontFamily: 'Nunito-*'` or any font string literal in a component — always `fonts.bold` / `fonts.semibold`.
 - Never inline card shadow/border/radius — always `card.base` / `card.shadow`.
+- Every button is the **lip** type — `ChunkyButton` (`src/components/common/ChunkyButton.tsx`): a face resting on a darker lip that it drops onto when pressed. Never a flat filled `Pressable` that only dims. Add a `ChunkyTone` rather than inlining colours. Circular icon buttons (`GlassIconButton`, `CloseButton`) keep their own treatment.
 - Never hardcode a color hex outside `src/theme/colors.ts`.
 - Prefer adding to existing token files over creating parallel ones.
 - Default to **no comments** — well-named code explains itself. Only comment when the *why* is non-obvious.
