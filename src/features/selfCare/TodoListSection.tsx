@@ -19,6 +19,7 @@ import Animated, {
 import { Text, TextInput } from '../../components/common/Text';
 import Icon from '../../components/common/icons/Icon';
 import Confetti from '../../components/common/Confetti';
+import Overline from '../../components/common/Overline';
 import { useTodayLocalDate } from '../../hooks/useTodayLocalDate';
 import { useSelfCareGoalsQuery } from '../../queries/selfCare/useSelfCareGoalsQuery';
 import { useCreateSelfCareGoalMutation } from '../../queries/selfCare/useCreateSelfCareGoalMutation';
@@ -54,6 +55,13 @@ const GOAL_ROW_HEIGHT = 60;
 // Matches a to-do row, so the way in sits in the same rhythm as the list.
 const ADD_ROW_HEIGHT = GOAL_ROW_HEIGHT;
 const ADD_BADGE_SIZE = 38;
+const COMPLETED_CHECK_SIZE = 28;
+// Shorter than a to-do row: the drawer summary is a lid, not another item on
+// the list, so the scrim it draws sits tighter than the cards above it.
+const COMPLETED_SUMMARY_HEIGHT = 46;
+const COMPLETED_ICON_BADGE_SIZE = 32;
+const COMPLETED_ROW_HEIGHT = 44;
+const DRAWER_TIMING = { duration: duration.base, easing: easing.settle } as const;
 const ADD_ROW_OFFSET = spacing.md;
 const GOAL_ICON_SIZE = 34;
 const GOAL_CHECK_SIZE = 42;
@@ -76,13 +84,7 @@ const MARKER_CONFETTI_STAGGER_MS = 55;
 // Hoisted so the memoized burst is not handed a new array on every re-render
 // the toggle mutation causes while it is in flight.
 const MARKER_CONFETTI_COLORS = [colors.success[500], colors.success[300]] as const;
-/**
- * How far the goal rail reaches up into the gap above it. The dailies rail ends
- * flush with the foot of its own section, so starting one dash gap below that
- * edge makes the first goal dash land on the same rhythm as every dash above
- * it — rather than at whatever phase the section boundary happened to fall on.
- */
-const JOURNEY_CONNECTOR_OVERHANG = spacing.md - TODAY_JOURNEY_DASH_GAP;
+
 
 
 interface TodoListSectionProps {
@@ -247,6 +249,56 @@ function GoalStatusMarker({ completed }: { completed: boolean }) {
   );
 }
 
+/**
+ * The finished to-dos, folded into the summary row above them. Height is
+ * measured once from the laid-out list and animated to, so opening it slides
+ * the rows down out of the scrim instead of popping them into place.
+ */
+function CompletedDrawer({
+  open,
+  children,
+}: {
+  open: boolean;
+  children: React.ReactNode;
+}) {
+  const [contentHeight, setContentHeight] = useState(0);
+  const reveal = useSharedValue(open ? 1 : 0);
+
+  useEffect(() => {
+    // Nothing to animate to until the list has been measured, so the first
+    // open after mount lands on its height rather than animating to zero.
+    if (contentHeight === 0) return;
+    reveal.value = withTiming(open ? 1 : 0, DRAWER_TIMING);
+  }, [contentHeight, open, reveal]);
+
+  const drawerStyle = useAnimatedStyle(
+    () => ({ height: contentHeight * reveal.value }),
+    [contentHeight],
+  );
+  // The list rides down out from under the summary rather than growing in
+  // place, so the movement reads as one sheet unfolding.
+  const contentStyle = useAnimatedStyle(
+    () => ({
+      opacity: reveal.value,
+      transform: [
+        { translateY: interpolate(reveal.value, [0, 1], [-contentHeight, 0]) },
+      ],
+    }),
+    [contentHeight],
+  );
+
+  return (
+    <Animated.View style={[styles.completedList, drawerStyle]}>
+      <Animated.View
+        style={[styles.completedListContent, contentStyle]}
+        onLayout={(event) => setContentHeight(event.nativeEvent.layout.height)}
+      >
+        {children}
+      </Animated.View>
+    </Animated.View>
+  );
+}
+
 export default function TodoListSection({ userId }: TodoListSectionProps) {
   const localDate = useTodayLocalDate();
   const goalsQuery = useSelfCareGoalsQuery(userId, localDate);
@@ -288,13 +340,19 @@ export default function TodoListSection({ userId }: TodoListSectionProps) {
   const journeyNodeCount = railGoals.length + (addNodeVisible ? 1 : 0);
   // The rail runs from the section's top edge to the centre of the last goal's
   // marker, both measured, so it can never outrun the rows it belongs to.
+  const firstGoal = railGoals[0];
   const lastGoal = railGoals[railGoals.length - 1];
+  const firstGoalCenter =
+    firstGoal == null ? undefined : goalCenters[firstGoal.id];
   const lastGoalCenter =
     lastGoal == null ? undefined : goalCenters[lastGoal.id];
-  const railMeasured = journeyHeight != null && lastGoalCenter != null;
-  const railHeight = railMeasured
-    ? JOURNEY_CONNECTOR_OVERHANG + lastGoalCenter
-    : 0;
+  const railMeasured =
+    journeyHeight != null &&
+    firstGoalCenter != null &&
+    lastGoalCenter != null &&
+    lastGoalCenter > firstGoalCenter;
+  const railTop = railMeasured ? firstGoalCenter : 0;
+  const railHeight = railMeasured ? lastGoalCenter - firstGoalCenter : 0;
   const railBottom = railMeasured ? journeyHeight - lastGoalCenter : 0;
   const dashCount = todayJourneyDashCount(railHeight);
   /**
@@ -308,8 +366,19 @@ export default function TodoListSection({ userId }: TodoListSectionProps) {
     railBottomValue.value = withTiming(railBottom, TODAY_JOURNEY_RAIL_TIMING);
   }, [railBottom, railBottomValue]);
   const railStyle = useAnimatedStyle(() => ({
-    top: -JOURNEY_CONNECTOR_OVERHANG,
+    top: railTop,
     bottom: railBottomValue.value,
+  }), [railTop]);
+  // The chevron turns on the same curve the drawer opens on, so the arrow and
+  // the list are one movement.
+  const chevronTurn = useSharedValue(completedOpen ? 1 : 0);
+  useEffect(() => {
+    chevronTurn.value = withTiming(completedOpen ? 1 : 0, DRAWER_TIMING);
+  }, [completedOpen, chevronTurn]);
+  const chevronStyle = useAnimatedStyle(() => ({
+    transform: [
+      { rotate: `${interpolate(chevronTurn.value, [0, 1], [-90, 0])}deg` },
+    ],
   }));
 
   if (userId == null) return null;
@@ -337,6 +406,8 @@ export default function TodoListSection({ userId }: TodoListSectionProps) {
 
   return (
     <View style={styles.section}>
+      <Overline label="To-dos" style={styles.groupLabel} />
+
       {goalsQuery.isPending ? (
         <View style={styles.statusRow}>
           <ActivityIndicator color={colors.primary.blue600} />
@@ -411,38 +482,55 @@ export default function TodoListSection({ userId }: TodoListSectionProps) {
             accessibilityRole="button"
             accessibilityState={{ expanded: completedOpen }}
             accessibilityLabel={completedGoalsSummary(drawerGoals.length)}
-            onPress={() => setCompletedOpen((open) => !open)}
+            onPress={() => {
+              triggerTapHaptic();
+              setCompletedOpen((open) => !open);
+            }}
             style={({ pressed }) => [
               styles.completedSummary,
               pressed && pressable.surface,
             ]}
           >
-            <Icon name="check" size={18} color={colors.success[500]} />
+            <View style={styles.completedCheck}>
+              <Icon name="check" size={16} color={colors.text.secondary} />
+            </View>
             <Text style={styles.completedLabel}>
               {completedGoalsSummary(drawerGoals.length)}
             </Text>
-            <Icon
-              name={completedOpen ? 'chevron-down' : 'chevron-right'}
-              size={18}
-              color={colors.text.secondary}
-            />
+            <Animated.View style={chevronStyle}>
+              <Icon
+                name="chevron-down"
+                size={18}
+                color={colors.text.secondary}
+              />
+            </Animated.View>
           </Pressable>
-          {completedOpen
-            ? drawerGoals.map((goal) => (
-                <GoalCard
-                  key={goal.id}
-                  goal={goal}
-                  busy={
-                    toggleGoal.isPending &&
-                    toggleGoal.variables?.goalId === goal.id
-                  }
-                  onToggle={() =>
-                    toggleGoal.mutate({ goalId: goal.id, completed: false })
-                  }
-                  onRemove={() => confirmRemove(goal)}
-                />
-              ))
-            : null}
+          <CompletedDrawer open={completedOpen}>
+            {drawerGoals.map((goal) => (
+              <Pressable
+                key={goal.id}
+                accessibilityRole="button"
+                accessibilityLabel={`${goal.title}, completed`}
+                accessibilityHint="Press to un-complete, press and hold to remove"
+                onLongPress={() => confirmRemove(goal)}
+                onPress={() => {
+                  triggerTapHaptic();
+                  toggleGoal.mutate({ goalId: goal.id, completed: false });
+                }}
+                style={({ pressed }) => [
+                  styles.completedRow,
+                  pressed && pressable.subtle,
+                ]}
+              >
+                <View style={styles.completedRowBadge}>
+                  <Icon name="sparkle" size={20} color={colors.text.tertiary} />
+                </View>
+                <Text style={styles.completedRowTitle} numberOfLines={2}>
+                  {goal.title}
+                </Text>
+              </Pressable>
+            ))}
+          </CompletedDrawer>
         </View>
       ) : null}
 
@@ -510,6 +598,13 @@ const styles = StyleSheet.create({
   section: {
     gap: spacing.md,
   },
+  // Flush with the section title, and pulled down onto the rows it names.
+  // The break between the dailies above and this list: the space over it is
+  // what separates the two journeys, so it is wider than the section's own gap.
+  groupLabel: {
+    marginTop: spacing.md,
+    marginBottom: -spacing.sm,
+  },
   journey: {
     position: 'relative',
     gap: JOURNEY_ROW_GAP,
@@ -541,8 +636,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    paddingLeft: spacing.sm,
-    paddingRight: spacing.md,
+    paddingHorizontal: spacing.md,
     borderRadius: radius.card,
     backgroundColor: colors.inertRow.fill,
   },
@@ -556,8 +650,9 @@ const styles = StyleSheet.create({
   },
   addLabel: {
     ...typography.body.large,
-    fontFamily: fonts.heavy,
-    fontWeight: '800',
+    fontSize: 20,
+    lineHeight: 28,
+    fontFamily: fonts.semibold,
     color: colors.text.primary,
   },
   timelineColumn: {
@@ -713,23 +808,72 @@ const styles = StyleSheet.create({
     backgroundColor: colors.success[100],
     borderColor: colors.success[300],
   },
+  // The scrim wraps the summary and everything it opens, so the list reads as
+  // the inside of the row you pressed rather than as cards below it.
+  // A tighter radius than the add row: at this row's height the card radius
+  // curves through most of the edge and the scrim reads as a pill.
   completed: {
-    gap: JOURNEY_ROW_GAP,
+    borderRadius: radius.medium,
+    backgroundColor: colors.inertRow.fill,
+    overflow: 'hidden',
   },
   completedSummary: {
-    height: ADD_ROW_HEIGHT,
+    height: COMPLETED_SUMMARY_HEIGHT,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: spacing.md,
     paddingHorizontal: spacing.md,
-    borderRadius: radius.card,
-    backgroundColor: colors.inertRow.fill,
+  },
+  // The same cream square as the add-goal plus, so the two rows that bookend
+  // the list carry the same mark.
+  completedCheck: {
+    width: COMPLETED_CHECK_SIZE,
+    height: COMPLETED_CHECK_SIZE,
+    borderRadius: radius.small,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.background.canvas,
   },
   completedLabel: {
     flex: 1,
     ...typography.body.medium,
     fontFamily: fonts.semibold,
     color: colors.text.primary,
+  },
+  completedList: {
+    overflow: 'hidden',
+  },
+  // Taken out of flow so it is measured at its natural height whatever the
+  // drawer above it is currently clipped to — measuring it in flow gave a
+  // height of zero while the drawer was closed, and the first open had nothing
+  // to animate towards, so it snapped.
+  completedListContent: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    paddingBottom: spacing.sm,
+  },
+  completedRow: {
+    minHeight: COMPLETED_ROW_HEIGHT,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingHorizontal: spacing.md,
+  },
+  completedRowBadge: {
+    width: COMPLETED_ICON_BADGE_SIZE,
+    height: COMPLETED_ICON_BADGE_SIZE,
+    borderRadius: radius.small,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.background.canvas,
+  },
+  completedRowTitle: {
+    flex: 1,
+    ...typography.body.medium,
+    fontFamily: fonts.medium,
+    color: colors.text.tertiary,
   },
   limitText: {
     ...typography.body.xsmall,
