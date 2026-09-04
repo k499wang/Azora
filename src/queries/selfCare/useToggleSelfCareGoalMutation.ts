@@ -17,8 +17,11 @@ export function useToggleSelfCareGoalMutation(userId: string | null, localDate: 
       if (userId == null) throw new Error('Sign in to update a to-do.');
       return setSelfCareGoalCompleted(userId, goalId, localDate, completed);
     },
-    onMutate: async ({ goalId, completed }) => {
-      await queryClient.cancelQueries({ queryKey, exact: true });
+    // The optimistic write goes in before anything is awaited. Awaiting the
+    // cancellation first pushes it behind at least a microtask — and behind a
+    // whole request whenever the previous toggle's refetch is still in flight —
+    // which is long enough to see the list settle in two steps.
+    onMutate: ({ goalId, completed }) => {
       const previous = queryClient.getQueryData<SelfCareGoal[]>(queryKey);
       queryClient.setQueryData<SelfCareGoal[]>(queryKey, (current = []) =>
         sortSelfCareGoals(
@@ -27,6 +30,7 @@ export function useToggleSelfCareGoalMutation(userId: string | null, localDate: 
           ),
         ),
       );
+      void queryClient.cancelQueries({ queryKey, exact: true });
       return { previous };
     },
     onError: (_error, _variables, context) => {

@@ -20,7 +20,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Text, TextInput } from '../../components/common/Text';
 import Icon from '../../components/common/icons/Icon';
-import ConfettiFall from '../../components/common/ConfettiFall';
+import Confetti from '../../components/common/Confetti';
 import Overline from '../../components/common/Overline';
 import { useTodayLocalDate } from '../../hooks/useTodayLocalDate';
 import { useSelfCareGoalsQuery } from '../../queries/selfCare/useSelfCareGoalsQuery';
@@ -46,6 +46,7 @@ import {
   TODAY_JOURNEY_COLUMN_WIDTH,
   TODAY_JOURNEY_DASH_GAP,
   TODAY_JOURNEY_DASH_HEIGHT,
+  TODAY_JOURNEY_GROUP_GAP,
   TODAY_JOURNEY_MARKER_ICON_SIZE,
   TODAY_JOURNEY_MARKER_SIZE,
   TODAY_JOURNEY_RAIL_TIMING,
@@ -69,29 +70,38 @@ const DAY_DONE_ADD_HEIGHT = 44;
 const DAY_DONE_ADD_BADGE_SIZE = 28;
 const COMPLETED_ROW_HEIGHT = 44;
 const DRAWER_TIMING = { duration: duration.base, easing: easing.settle } as const;
-const ADD_ROW_OFFSET = spacing.md;
 const GOAL_ICON_SIZE = 34;
 const GOAL_CHECK_SIZE = 42;
 const JOURNEY_ROW_GAP = spacing.md;
+const ADD_ROW_OFFSET = TODAY_JOURNEY_GROUP_GAP - JOURNEY_ROW_GAP;
 /**
  * The celebration when a to-do lands: the green disc springs in past its own
  * size and a ring pushes out through it. Sized in multiples of the marker so it
  * stays tied to the dot it is congratulating rather than to the row it sits in.
  */
 const MARKER_HALO_SIZE = TODAY_JOURNEY_MARKER_SIZE * 2.6;
+const MARKER_CONFETTI_SIZE = TODAY_JOURNEY_MARKER_SIZE * 7;
+const MARKER_CONFETTI_SPREAD = 0.5;
+// Hoisted so the memoized burst is not handed a new array on every re-render
+// the toggle mutation causes while it is in flight.
+const MARKER_CONFETTI_COLORS = [
+  colors.success[500],
+  colors.success[300],
+] as const;
 // The disc's own beat. Short on purpose: it is the smallest part of the
 // celebration, and the fall across the section carries the rest.
 const MARKER_POP_MS = 620;
 /** the wind-up before the disc springs back — a beat, not a step */
 const SQUASH_MS = 70;
 /**
- * The celebration falls across the section rather than out of the marker, so it
- * survives the row it belongs to being swept into the drawer — or the whole
- * list being replaced by the day-done card — in the same render.
+ * Two celebrations, picked by what happens to the row.
+ *
+ * A to-do that stays on the rail is congratulated where it sits: the green
+ * burst goes off from its own marker, pointing at the thing you just did. A
+ * to-do that vanishes in the same render — swept into the drawer past the
+ * collapse threshold, or taken with the whole list by the day-done card — has
+ * no marker left to fire from, so Home bursts from its own fixed place instead.
  */
-const CELEBRATION_PIECES = 22;
-const CELEBRATION_FALL = 260;
-const CELEBRATION_MS = 2600;
 
 
 
@@ -101,6 +111,12 @@ interface TodoListSectionProps {
    * since the card it shows stands for the whole day and not for this list.
    */
   dayDone: boolean;
+  /**
+   * A to-do was finished and left the rail in the same render, so it has no
+   * marker of its own to celebrate from. Home fires the burst instead, from its
+   * own fixed place on the screen.
+   */
+  onCelebrate: () => void;
   userId: string | null;
 }
 
@@ -235,6 +251,17 @@ function GoalStatusMarker({ completed }: { completed: boolean }) {
         pointerEvents="none"
         style={[styles.markerHalo, haloStyle]}
       />
+      {burst === 0 ? null : (
+        <View pointerEvents="none" style={styles.markerConfetti}>
+          <Confetti
+            key={burst}
+            pieceColors={MARKER_CONFETTI_COLORS}
+            pieceCount={12}
+            spread={MARKER_CONFETTI_SPREAD}
+            durationMs={MARKER_POP_MS}
+          />
+        </View>
+      )}
       <Animated.View
         style={[styles.statusMarkerFill, fillStyle]}
         pointerEvents="none"
@@ -369,6 +396,7 @@ function AddGoalRow({
 export default function TodoListSection({
   userId,
   dayDone,
+  onCelebrate,
 }: TodoListSectionProps) {
   const localDate = useTodayLocalDate();
   const goalsQuery = useSelfCareGoalsQuery(userId, localDate);
@@ -386,20 +414,12 @@ export default function TodoListSection({
    * dailies rail above it.
    */
   const [journeyHeight, setJourneyHeight] = useState<number | null>(null);
-  const [journeyTop, setJourneyTop] = useState(0);
-  // Where the last celebration started and which one it was; the key remounts
-  // the fall so finishing two to-dos in a row plays twice.
-  const [celebration, setCelebration] = useState<{
-    key: number;
-    top: number;
-  } | null>(null);
   // Keyed by goal so removing one cannot leave the rail measured against a row
   // that is no longer last.
   const [goalCenters, setGoalCenters] = useState<Record<string, number>>({});
 
   const measureJourney = useCallback((event: LayoutChangeEvent) => {
     setJourneyHeight(event.nativeEvent.layout.height);
-    setJourneyTop(event.nativeEvent.layout.y);
   }, []);
   const measureGoal = useCallback((goalId: string, event: LayoutChangeEvent) => {
     const { y, height } = event.nativeEvent.layout;
@@ -416,21 +436,11 @@ export default function TodoListSection({
   const railGoals = dayDone ? [] : plan.rail;
   const drawerGoals = dayDone ? goals : plan.drawer;
   useGoalCompletionCelebration(goals, (goalId) => {
-    const center = goalCenters[goalId];
-    setCelebration({
-      key: Date.now(),
-      // With the list gone — swept into the drawer, or replaced by the day-done
-      // card — the row's measured place no longer means anything, so the fall
-      // starts at the top of the section instead.
-      top: dayDone || center == null ? 0 : journeyTop + center,
-    });
+    // Still on the rail: its own marker has the burst, and a second celebration
+    // over the top of it would only bury it.
+    if (railGoals.some((goal) => goal.id === goalId)) return;
+    onCelebrate();
   });
-
-  useEffect(() => {
-    if (celebration == null) return;
-    const timer = setTimeout(() => setCelebration(null), CELEBRATION_MS);
-    return () => clearTimeout(timer);
-  }, [celebration]);
 
   const normalizedTitle = normalizeSelfCareGoalTitle(title);
   const atLimit = goals.length >= MAX_SELF_CARE_GOALS;
@@ -505,15 +515,6 @@ export default function TodoListSection({
 
   return (
     <View style={styles.section}>
-      {celebration == null ? null : (
-        <ConfettiFall
-          key={celebration.key}
-          count={CELEBRATION_PIECES}
-          spread={1}
-          startTop={celebration.top}
-          fallDistance={CELEBRATION_FALL}
-        />
-      )}
       {dayDone ? null : <Overline label="To-dos" style={styles.groupLabel} />}
 
       {goalsQuery.isPending ? (
@@ -716,7 +717,7 @@ const styles = StyleSheet.create({
   // what separates the two journeys, so it is wider than the section's own gap.
   groupLabel: {
     marginTop: spacing.md,
-    marginBottom: -spacing.sm,
+    marginBottom: TODAY_JOURNEY_GROUP_GAP - spacing.md,
   },
   journey: {
     position: 'relative',
@@ -827,6 +828,13 @@ const styles = StyleSheet.create({
     bottom: -2,
     borderRadius: TODAY_JOURNEY_MARKER_SIZE / 2 + 2,
     backgroundColor: colors.success[500],
+  },
+  markerConfetti: {
+    position: 'absolute',
+    top: (TODAY_JOURNEY_MARKER_SIZE - MARKER_CONFETTI_SIZE) / 2,
+    left: (TODAY_JOURNEY_MARKER_SIZE - MARKER_CONFETTI_SIZE) / 2,
+    width: MARKER_CONFETTI_SIZE,
+    height: MARKER_CONFETTI_SIZE,
   },
   markerHalo: {
     position: 'absolute',

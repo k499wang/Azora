@@ -36,6 +36,18 @@ const PIECES = [
   { angle: 195, distance: 175, size: 12, delay: 10, spin: 260 },
   { angle: 225, distance: 205, size: 9, delay: 115, spin: -240 },
   { angle: 255, distance: 165, size: 10, delay: 45, spin: 290 },
+  { angle: -110, distance: 165, size: 12, delay: 20, spin: 240 },
+  { angle: -75, distance: 195, size: 9, delay: 90, spin: -270 },
+  { angle: -45, distance: 230, size: 11, delay: 40, spin: 320 },
+  { angle: -15, distance: 170, size: 8, delay: 110, spin: -220 },
+  { angle: 15, distance: 210, size: 12, delay: 5, spin: 250 },
+  { angle: 45, distance: 190, size: 10, delay: 70, spin: -310 },
+  { angle: 75, distance: 225, size: 7, delay: 30, spin: 280 },
+  { angle: 105, distance: 175, size: 11, delay: 100, spin: -240 },
+  { angle: 145, distance: 200, size: 9, delay: 55, spin: 300 },
+  { angle: 175, distance: 235, size: 12, delay: 15, spin: -260 },
+  { angle: 205, distance: 180, size: 8, delay: 85, spin: 220 },
+  { angle: 235, distance: 215, size: 11, delay: 60, spin: -300 },
 ];
 
 const DEFAULT_PIECE_COUNT = 12;
@@ -48,6 +60,17 @@ interface ConfettiProps {
   startDelayMs?: number;
   /** Number of pieces to render from the fixed choreography. */
   pieceCount?: number;
+  /** Scales how far the pieces travel, for a burst laid over something small. */
+  spread?: number;
+  /** Scales the pieces themselves, for a burst meant to be seen across a screen. */
+  pieceScale?: number;
+  /**
+   * Flight time of a single piece, with the launch stagger scaled to match. A
+   * burst over something small wants both shorter — the pieces have less ground
+   * to cover, and at the full duration they hang in the air after the moment
+   * they were celebrating has passed.
+   */
+  durationMs?: number;
 }
 
 /**
@@ -59,6 +82,9 @@ const Confetti = memo(function Confetti({
   pieceColors,
   startDelayMs = 0,
   pieceCount = DEFAULT_PIECE_COUNT,
+  spread = 1,
+  pieceScale = 1,
+  durationMs = PIECE_FLIGHT_MS,
 }: ConfettiProps) {
   const renderedPieceCount = Number.isFinite(pieceCount)
     ? Math.max(0, Math.min(PIECES.length, Math.floor(pieceCount)))
@@ -72,6 +98,9 @@ const Confetti = memo(function Confetti({
           piece={piece}
           color={piece.size % 2 === 0 ? pieceColors[0] : pieceColors[1]}
           startDelayMs={startDelayMs}
+          spread={spread}
+          pieceScale={pieceScale}
+          durationMs={durationMs}
         />
       ))}
     </View>
@@ -82,25 +111,31 @@ function ConfettiPiece({
   piece,
   color,
   startDelayMs,
+  spread,
+  pieceScale,
+  durationMs,
 }: {
   piece: (typeof PIECES)[number];
   color: string;
   startDelayMs: number;
+  spread: number;
+  pieceScale: number;
+  durationMs: number;
 }) {
   const fly = useSharedValue(0);
   const radians = (piece.angle * Math.PI) / 180;
 
   useEffect(() => {
     fly.value = withDelay(
-      startDelayMs + piece.delay,
-      withTiming(1, { duration: PIECE_FLIGHT_MS, easing: easing.burst }),
+      startDelayMs + piece.delay * (durationMs / PIECE_FLIGHT_MS),
+      withTiming(1, { duration: durationMs, easing: easing.burst }),
     );
-  }, [fly, piece.delay, startDelayMs]);
+  }, [durationMs, fly, piece.delay, startDelayMs]);
 
   const style = useAnimatedStyle(() => {
-    const travel = interpolate(fly.value, [0, 1], [0, piece.distance]);
+    const travel = interpolate(fly.value, [0, 1], [0, piece.distance * spread]);
     // Gravity on the way out — pieces arc rather than shooting in straight lines.
-    const drop = interpolate(fly.value, [0, 1], [0, 90]);
+    const drop = interpolate(fly.value, [0, 1], [0, 90 * spread]);
 
     return {
       opacity: interpolate(fly.value, [0, 0.1, 0.75, 1], [0, 1, 1, 0]),
@@ -116,7 +151,11 @@ function ConfettiPiece({
     <Animated.View
       style={[
         styles.piece,
-        { width: piece.size, height: piece.size * 0.6, backgroundColor: color },
+        {
+          width: piece.size * pieceScale,
+          height: piece.size * 0.6 * pieceScale,
+          backgroundColor: color,
+        },
         style,
       ]}
     />
