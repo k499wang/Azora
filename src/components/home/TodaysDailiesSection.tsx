@@ -8,6 +8,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import ActivityGlyph from '../explore/ActivityGlyph';
 import SectionHeader from '../common/SectionHeader';
+import Overline from '../common/Overline';
 import Icon, { type IconName } from '../common/icons/Icon';
 import {
   formatPattern,
@@ -137,8 +138,6 @@ interface TodaysDailiesSectionProps {
   onPressHandPickedExercise: () => void;
   onPressBreathHold: () => void;
   onPressHistory: () => void;
-  /** Extends the rail through the final authored daily to appended personal nodes. */
-  journeyContinues?: boolean;
 }
 
 /**
@@ -420,7 +419,6 @@ export default function TodaysDailiesSection({
   onPressHandPickedExercise,
   onPressBreathHold,
   onPressHistory,
-  journeyContinues = false,
 }: TodaysDailiesSectionProps) {
   const guidedLocked = !guidedExerciseCompleted && !exerciseAccessAllowed;
   const handPickedLocked =
@@ -537,15 +535,12 @@ export default function TodaysDailiesSection({
     rowHeight(orderedActionIds[orderedActionIds.length - 1]),
   );
   const railTop = useSharedValue(rail.top);
-  const railBottom = useSharedValue(journeyContinues ? 0 : rail.bottom);
+  const railBottom = useSharedValue(rail.bottom);
 
   useEffect(() => {
     railTop.value = withTiming(rail.top, EXPAND_TIMING);
-    railBottom.value = withTiming(
-      journeyContinues ? 0 : rail.bottom,
-      EXPAND_TIMING,
-    );
-  }, [journeyContinues, rail.top, rail.bottom, railTop, railBottom]);
+    railBottom.value = withTiming(rail.bottom, EXPAND_TIMING);
+  }, [rail.top, rail.bottom, railTop, railBottom]);
 
   const railStyle = useAnimatedStyle(() => ({
     top: railTop.value,
@@ -576,6 +571,8 @@ export default function TodaysDailiesSection({
           </Pressable>
         }
       />
+
+      <Overline label="Resets" style={styles.groupLabel} />
 
       <View style={styles.timeline}>
         <Animated.View
@@ -616,6 +613,14 @@ const styles = StyleSheet.create({
   },
   historyLinkPressed: {
     opacity: 0.6,
+  },
+  // Flush with the section title above it. The section's own gap is sized for
+  // blocks, so the label is pulled back down onto the rows it names.
+  // Flush with the section header's icon, and given room above it so the label
+  // reads as opening a group rather than as a caption on the header.
+  groupLabel: {
+    marginTop: spacing.sm,
+    marginBottom: -spacing.md,
   },
   timeline: {
     position: 'relative',
