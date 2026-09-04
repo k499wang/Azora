@@ -32,6 +32,7 @@ The most common bug pattern with TanStack Query (and the one AI tools repeatedly
 | `getDayHistoryQueryKey` / `getDayHistoryQueryKeyPrefix` | `src/queries/history/useDayHistoryQuery.ts` | `breath_hold_sessions`, `heart_rate_sessions`, `breathing_sessions`, `room_decorations` — all for one local date | One day of the History screen. Per-day key, but completion mutations invalidate the user prefix: a session finished just after midnight writes a different date than the one on screen. |
 | `getDailyActivityRangeQueryKey` / `getDailyActivityRangeQueryKeyPrefix` | `src/queries/tracking/useDailyActivityRangeQuery.ts` | `daily_activity` (last *n* days) | Feeds the completed-day dots on the History date strip. Keyed by day count, so mutations invalidate the user prefix. |
 | `getTechniqueFeedbackQueryKey` | `src/queries/tracking/useTechniqueFeedbackQuery.ts` | `technique_feedback` for the user | "Did this feel helpful?" answers, one per session (`session_key`). Read by the results screen so an answer given for this session survives a re-render; intended to feed technique recommendation. |
+| `getSelfCareGoalsQueryKey` | `src/queries/selfCare/useSelfCareGoalsQuery.ts` | Active `self_care_goals` plus `self_care_goal_completions` for one user and local date | Personal daily checklist only. It does not feed canonical exercise dailies, streaks, room rewards, History, or feature usage. |
 
 ---
 
@@ -55,6 +56,9 @@ When adding a mutation, find every field it writes, then look up every query abo
 | `usePlaceDecorationMutation` | `room_decorations` (including `earned_local_date`), and `rooms` on the first placement (opens floor 1) | `CurrentRoom` (canonical `setQueryData`; no refetch), exact `Rooms(userId)` and `DayHistory` user prefix invalidated in the background |
 | `useCreateNextRoomMutation` | `rooms` (opens floor *n+1* with the chosen `shell` and `frame_hue`) | `CurrentRoom` (canonical `setQueryData`; no refetch), exact `Rooms(userId)` invalidated in the background |
 | `useSaveTechniqueFeedbackMutation` | `technique_feedback` (upsert on `user_id,session_key`) | exact `TechniqueFeedback(userId)`. Add `UserDefaultTechnique` / `RecommendedTechnique` here once helpfulness feeds recommendation. |
+| `useCreateSelfCareGoalMutation` | `self_care_goals` | Exact `SelfCareGoals(userId, localDate)` updated with the returned canonical row. |
+| `useToggleSelfCareGoalMutation` | `self_care_goal_completions` for `localDate` | Exact `SelfCareGoals(userId, localDate)` optimistically updated, rolled back on error, then invalidated. |
+| `useArchiveSelfCareGoalMutation` | `self_care_goals.archived_at` | Exact `SelfCareGoals(userId, localDate)` filtered after success. |
 
 ---
 

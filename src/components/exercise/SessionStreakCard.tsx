@@ -10,6 +10,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { Text } from '../common/Text';
+import Icon from '../common/icons/Icon';
 import { colors } from '../../theme/colors';
 import { typography, fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
@@ -93,11 +94,7 @@ export default function SessionStreakCard({
   return (
     <View style={[card.base, styles.container]}>
       <View style={styles.headerRow}>
-        <MaterialCommunityIcons
-          name="fire"
-          size={26}
-          color={colors.mood.lowEnergy}
-        />
+        <Icon name="calendar" size={24} color={colors.primary.blue600} />
         <Text style={styles.streakLabel}>{streakLabelFor(currentStreak)}</Text>
       </View>
 

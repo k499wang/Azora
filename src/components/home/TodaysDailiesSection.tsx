@@ -34,11 +34,17 @@ import {
   type DailyPlanActionId,
 } from '../../services/dailyPlan/dailyPlanScheduleCore';
 import { DEFAULT_DAILY_PLAN_SCHEDULE } from '../../services/dailyPlan/types';
+import {
+  TODAY_JOURNEY_COLUMN_WIDTH,
+  TODAY_JOURNEY_MARKER_ICON_SIZE,
+  TODAY_JOURNEY_MARKER_SIZE,
+  TODAY_JOURNEY_RAIL_WIDTH,
+} from './todayJourneyLayout';
 
-const TIMELINE_COLUMN_WIDTH = 40;
-const TIMELINE_MARKER_SIZE = 22;
-const MARKER_ICON_SIZE = 14;
-const TIMELINE_RAIL_WIDTH = 6;
+const TIMELINE_COLUMN_WIDTH = TODAY_JOURNEY_COLUMN_WIDTH;
+const TIMELINE_MARKER_SIZE = TODAY_JOURNEY_MARKER_SIZE;
+const MARKER_ICON_SIZE = TODAY_JOURNEY_MARKER_ICON_SIZE;
+const TIMELINE_RAIL_WIDTH = TODAY_JOURNEY_RAIL_WIDTH;
 /**
  * How much height a daily is given.
  *
@@ -129,6 +135,8 @@ interface TodaysDailiesSectionProps {
   onPressHandPickedExercise: () => void;
   onPressBreathHold: () => void;
   onPressHistory: () => void;
+  /** Extends the rail through the final authored daily to appended personal nodes. */
+  journeyContinues?: boolean;
 }
 
 /**
@@ -232,9 +240,11 @@ function DailyTaskRow({
               styles.statusMarker,
               completed
                 ? styles.statusMarkerCompleted
-                : expanded
-                  ? { backgroundColor: style.hue.base }
-                  : styles.statusMarkerIdle,
+                : locked
+                  ? styles.statusMarkerLocked
+                  : expanded
+                    ? { backgroundColor: style.hue.base }
+                    : styles.statusMarkerIdle,
             ]}
           >
             {completed ? (
@@ -242,6 +252,12 @@ function DailyTaskRow({
                 name="check"
                 size={MARKER_ICON_SIZE}
                 color={colors.text.inverse}
+              />
+            ) : locked ? (
+              <Icon
+                name="lock"
+                size={MARKER_ICON_SIZE - 2}
+                color={colors.text.tertiary}
               />
             ) : null}
           </View>
@@ -402,6 +418,7 @@ export default function TodaysDailiesSection({
   onPressHandPickedExercise,
   onPressBreathHold,
   onPressHistory,
+  journeyContinues = false,
 }: TodaysDailiesSectionProps) {
   const guidedLocked = !guidedExerciseCompleted && !exerciseAccessAllowed;
   const handPickedLocked =
@@ -518,12 +535,15 @@ export default function TodaysDailiesSection({
     rowHeight(orderedActionIds[orderedActionIds.length - 1]),
   );
   const railTop = useSharedValue(rail.top);
-  const railBottom = useSharedValue(rail.bottom);
+  const railBottom = useSharedValue(journeyContinues ? 0 : rail.bottom);
 
   useEffect(() => {
     railTop.value = withTiming(rail.top, EXPAND_TIMING);
-    railBottom.value = withTiming(rail.bottom, EXPAND_TIMING);
-  }, [rail.top, rail.bottom, railTop, railBottom]);
+    railBottom.value = withTiming(
+      journeyContinues ? 0 : rail.bottom,
+      EXPAND_TIMING,
+    );
+  }, [journeyContinues, rail.top, rail.bottom, railTop, railBottom]);
 
   const railStyle = useAnimatedStyle(() => ({
     top: railTop.value,
@@ -641,6 +661,13 @@ const styles = StyleSheet.create({
   // daily's own colour, so the rail says which row you are looking at.
   statusMarkerIdle: {
     backgroundColor: colors.background.card,
+    borderWidth: 2,
+    borderColor: colors.border.default,
+  },
+  // A daily the free plan has run out of keeps its place on the rail, but the
+  // marker says why it will not open.
+  statusMarkerLocked: {
+    backgroundColor: colors.background.secondary,
     borderWidth: 2,
     borderColor: colors.border.default,
   },
