@@ -280,6 +280,14 @@ export const colors = {
     dark: '#0F172A66',
   },
 
+  // A control that is present without competing with the cards above it: a
+  // translucent grey wash on the page rather than a surface lifted off it. The
+  // badge is lighter than the row so it still reads as a button inside it.
+  inertRow: {
+    fill: 'rgba(15,23,42,0.12)',
+    badge: 'rgba(255,255,255,0.55)',
+  },
+
   // Single scrim treatment for text over nature photography — every photo
   // card fades to the same deep blue-black so imagery reads as one atmosphere.
   photoScrim: {

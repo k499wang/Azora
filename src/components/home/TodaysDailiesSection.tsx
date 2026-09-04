@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { Text } from '../common/Text';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, {
-  Easing,
   useAnimatedStyle,
   useSharedValue,
   withTiming,
@@ -28,6 +27,12 @@ import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import { useIsRegularWidth } from '../../hooks/useIsRegularWidth';
+import {
+  TODAY_JOURNEY_DASH_GAP,
+  TODAY_JOURNEY_DASH_HEIGHT,
+  TODAY_JOURNEY_RAIL_TIMING,
+  todayJourneyDashCount,
+} from './todayJourneyLayout';
 import {
   formatDailyPlanTime,
   sortDailyPlanActionIdsByTime,
@@ -81,16 +86,11 @@ const REGULAR_ROW_METRICS: DailyRowMetrics = {
   contentHeight: 208,
   glyphSize: 210,
 };
-/** how long a row takes to open, and the one it displaces to close */
-const EXPAND_MS = 420;
 /**
  * Every row runs this exact curve off the same prop change, so the one opening
  * and the one closing move together instead of racing.
  */
-const EXPAND_TIMING = {
-  duration: EXPAND_MS,
-  easing: Easing.inOut(Easing.cubic),
-} as const;
+const EXPAND_TIMING = TODAY_JOURNEY_RAIL_TIMING;
 const TASK_GLYPH_RIGHT = -34;
 const TASK_GLYPH_BOTTOM = -40;
 const TASK_COPY_INSET = 72;
@@ -100,11 +100,13 @@ const COLLAPSED_GLYPH_SIZE = 34;
 const TIMELINE_ROW_GAP = spacing.md;
 const TIMELINE_RAIL_LEFT = TIMELINE_COLUMN_WIDTH / 2 - TIMELINE_RAIL_WIDTH / 2;
 /**
- * A fixed count, spread by `space-between`. Deriving it from the rail's length
- * would change it mid-animation, and a dash appearing halfway through the open
- * is the one thing on this rail the eye is guaranteed to catch.
+ * Enough dashes to overfill the rail at its tallest, laid at a fixed pitch and
+ * clipped. The count never changes mid-animation and the pitch matches the goal
+ * rail below, so the two read as one dotted line.
  */
-const DASH_COUNT = 10;
+const DASH_COUNT = todayJourneyDashCount(
+  REGULAR_ROW_METRICS.expandedHeight + REGULAR_ROW_METRICS.collapsedHeight * 2,
+);
 
 
 /**
@@ -619,16 +621,22 @@ const styles = StyleSheet.create({
     position: 'relative',
     gap: TIMELINE_ROW_GAP,
   },
+  // Dashes are anchored to the foot of the rail and overflow off the top,
+  // where the section header hides the cut. Anchoring at the top instead would
+  // leave the last dash at whatever phase the rail's height happened to end on,
+  // and that phase is the gap the goal rail below has to start from.
   timelineRail: {
     position: 'absolute',
     left: TIMELINE_RAIL_LEFT,
     width: TIMELINE_RAIL_WIDTH,
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'flex-end',
+    overflow: 'hidden',
   },
   timelineRailDash: {
     width: TIMELINE_RAIL_WIDTH,
-    height: 10,
+    height: TODAY_JOURNEY_DASH_HEIGHT,
+    marginTop: TODAY_JOURNEY_DASH_GAP,
     borderRadius: TIMELINE_RAIL_WIDTH / 2,
     backgroundColor: colors.border.default,
   },
@@ -750,11 +758,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.md,
   },
-  // The one place a closed row breaks the SemiBold ceiling: the name is the
-  // whole row now that the mark is the only other thing on it.
+  // The name is the whole row now that the mark is the only other thing on it,
+  // so it carries the row's weight.
   collapsedTitle: {
-    ...typography.body.medium,
-    fontFamily: fonts.medium,
+    ...typography.body.large,
+    fontFamily: fonts.semibold,
     color: colors.text.primary,
     flex: 1,
   },
