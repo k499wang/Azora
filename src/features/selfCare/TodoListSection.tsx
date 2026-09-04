@@ -23,14 +23,20 @@ import Confetti from '../../components/common/Confetti';
 import Overline from '../../components/common/Overline';
 import AddGoalSheet from './AddGoalSheet';
 import GoalDetailSheet from './GoalDetailSheet';
+import GoalEditSheet from './GoalEditSheet';
+import Collapsible, {
+  COLLAPSE_TIMING,
+} from '../../components/common/Collapsible';
 import { useTodayLocalDate } from '../../hooks/useTodayLocalDate';
 import { useSelfCareGoalsQuery } from '../../queries/selfCare/useSelfCareGoalsQuery';
 import { useCreateSelfCareGoalMutation } from '../../queries/selfCare/useCreateSelfCareGoalMutation';
 import { useToggleSelfCareGoalMutation } from '../../queries/selfCare/useToggleSelfCareGoalMutation';
 import { useArchiveSelfCareGoalMutation } from '../../queries/selfCare/useArchiveSelfCareGoalMutation';
 import { useSetSelfCareGoalFeaturedMutation } from '../../queries/selfCare/useSetSelfCareGoalFeaturedMutation';
+import { useUpdateSelfCareGoalMutation } from '../../queries/selfCare/useUpdateSelfCareGoalMutation';
 import {
   completedGoalsSummary,
+  selfCareGoalDaypartLabel,
   MAX_SELF_CARE_GOALS,
   planSelfCareGoalList,
   type SelfCareGoal,
@@ -69,9 +75,8 @@ const DAY_DONE_ICON_SIZE = 64;
 const DAY_DONE_ADD_HEIGHT = 44;
 const DAY_DONE_ADD_BADGE_SIZE = 28;
 const COMPLETED_ROW_HEIGHT = 44;
-const DRAWER_TIMING = { duration: duration.base, easing: easing.settle } as const;
 const GOAL_ICON_SIZE = 34;
-const FEATURED_STAR_SIZE = 18;
+const FEATURED_STAR_SIZE = 26;
 const GOAL_TITLE_LINE_HEIGHT = wrappedLineHeight(
   typography.body.large.fontSize,
 );
@@ -152,12 +157,25 @@ function GoalCard({ goal, busy, onToggle, onOpen }: GoalCardProps) {
             goal.completedToday ? colors.text.tertiary : colors.primary.blue600
           }
         />
-        <Text
-          numberOfLines={GOAL_TITLE_MAX_LINES}
-          style={[styles.goalTitle, goal.completedToday && styles.goalTitleDone]}
-        >
-          {goal.title}
-        </Text>
+        <View style={styles.goalText}>
+          {goal.featuredToday ? (
+            <Text style={styles.goalFeaturedLabel}>Task of the day</Text>
+          ) : null}
+          <Text
+            numberOfLines={GOAL_TITLE_MAX_LINES}
+            style={[
+              styles.goalTitle,
+              goal.completedToday && styles.goalTitleDone,
+            ]}
+          >
+            {goal.title}
+          </Text>
+          {goal.scheduledTime == null ? null : (
+            <Text style={styles.goalTime}>
+              {selfCareGoalDaypartLabel(goal.scheduledTime)}
+            </Text>
+          )}
+        </View>
         {goal.featuredToday ? (
           <Icon
             name="star"
@@ -289,51 +307,6 @@ function GoalStatusMarker({ completed }: { completed: boolean }) {
  * measured once from the laid-out list and animated to, so opening it slides
  * the rows down out of the scrim instead of popping them into place.
  */
-function CompletedDrawer({
-  open,
-  children,
-}: {
-  open: boolean;
-  children: React.ReactNode;
-}) {
-  const [contentHeight, setContentHeight] = useState(0);
-  const reveal = useSharedValue(open ? 1 : 0);
-
-  useEffect(() => {
-    // Nothing to animate to until the list has been measured, so the first
-    // open after mount lands on its height rather than animating to zero.
-    if (contentHeight === 0) return;
-    reveal.value = withTiming(open ? 1 : 0, DRAWER_TIMING);
-  }, [contentHeight, open, reveal]);
-
-  const drawerStyle = useAnimatedStyle(
-    () => ({ height: contentHeight * reveal.value }),
-    [contentHeight],
-  );
-  // The list rides down out from under the summary rather than growing in
-  // place, so the movement reads as one sheet unfolding.
-  const contentStyle = useAnimatedStyle(
-    () => ({
-      opacity: reveal.value,
-      transform: [
-        { translateY: interpolate(reveal.value, [0, 1], [-contentHeight, 0]) },
-      ],
-    }),
-    [contentHeight],
-  );
-
-  return (
-    <Animated.View style={[styles.completedList, drawerStyle]}>
-      <Animated.View
-        style={[styles.completedListContent, contentStyle]}
-        onLayout={(event) => setContentHeight(event.nativeEvent.layout.height)}
-      >
-        {children}
-      </Animated.View>
-    </Animated.View>
-  );
-}
-
 /**
  * Two celebrations, picked by what happens to the row.
  *
@@ -426,8 +399,18 @@ export default function TodoListSection({
   const toggleGoal = useToggleSelfCareGoalMutation(userId, localDate);
   const archiveGoal = useArchiveSelfCareGoalMutation(userId, localDate);
   const featureGoal = useSetSelfCareGoalFeaturedMutation(userId, localDate);
+  const updateGoal = useUpdateSelfCareGoalMutation(userId, localDate);
   const [adding, setAdding] = useState(false);
   const [detailGoalId, setDetailGoalId] = useState<string | null>(null);
+  const [editGoalId, setEditGoalId] = useState<string | null>(null);
+  /**
+   * The to-do the detail sheet is handing to the edit sheet on its way out.
+   *
+   * Both sheets are modals, and a modal asked to present while another is still
+   * dismissing is dropped on the floor — the second one simply never appears.
+   * So the handover waits for the first to be off the screen.
+   */
+  const pendingEditGoalId = useRef<string | null>(null);
   const [completedOpen, setCompletedOpen] = useState(false);
   /**
    * The rail is measured rather than computed. A goal's height is whatever its
@@ -466,6 +449,7 @@ export default function TodoListSection({
   });
 
   const detailGoal = goals.find((goal) => goal.id === detailGoalId) ?? null;
+  const editGoal = goals.find((goal) => goal.id === editGoalId) ?? null;
   const atLimit = goals.length >= MAX_SELF_CARE_GOALS;
   // The create error belongs to the sheet that is still open over this list.
   const mutationError =
@@ -507,7 +491,7 @@ export default function TodoListSection({
   // the list are one movement.
   const chevronTurn = useSharedValue(completedOpen ? 1 : 0);
   useEffect(() => {
-    chevronTurn.value = withTiming(completedOpen ? 1 : 0, DRAWER_TIMING);
+    chevronTurn.value = withTiming(completedOpen ? 1 : 0, COLLAPSE_TIMING);
   }, [completedOpen, chevronTurn]);
   const chevronStyle = useAnimatedStyle(() => ({
     transform: [
@@ -636,7 +620,7 @@ export default function TodoListSection({
               />
             </Animated.View>
           </Pressable>
-          <CompletedDrawer open={completedOpen}>
+          <Collapsible open={completedOpen} contentStyle={styles.completedList}>
             {drawerGoals.map((goal) => (
               <Pressable
                 key={goal.id}
@@ -663,7 +647,7 @@ export default function TodoListSection({
                 </Text>
               </Pressable>
             ))}
-          </CompletedDrawer>
+          </Collapsible>
         </View>
       )}
 
@@ -687,10 +671,37 @@ export default function TodoListSection({
             featured: !detailGoal.featuredToday,
           });
         }}
+        onEdit={() => {
+          if (detailGoal == null) return;
+          pendingEditGoalId.current = detailGoal.id;
+          setDetailGoalId(null);
+        }}
+        onDismissed={() => {
+          const next = pendingEditGoalId.current;
+          pendingEditGoalId.current = null;
+          if (next != null) setEditGoalId(next);
+        }}
         onRemove={() => {
           if (detailGoal == null) return;
           setDetailGoalId(null);
           archiveGoal.mutate(detailGoal.id);
+        }}
+      />
+
+      <GoalEditSheet
+        goal={editGoal}
+        pending={updateGoal.isPending}
+        error={updateGoal.error}
+        onClose={() => {
+          setEditGoalId(null);
+          updateGoal.reset();
+        }}
+        onSave={(edit) => {
+          if (editGoal == null) return;
+          updateGoal.mutate(
+            { goalId: editGoal.id, ...edit },
+            { onSuccess: () => setEditGoalId(null) },
+          );
         }}
       />
 
@@ -889,8 +900,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },
-  goalTitle: {
+  goalText: {
     flex: 1,
+    gap: 2,
+  },
+  goalTime: {
+    ...typography.label.detail,
+    color: colors.text.tertiary,
+  },
+  goalFeaturedLabel: {
+    ...typography.overline,
+    fontFamily: fonts.semibold,
+    color: colors.reward.gold,
+  },
+  goalTitle: {
     ...typography.body.large,
     lineHeight: GOAL_TITLE_LINE_HEIGHT,
     fontFamily: fonts.semibold,
@@ -951,17 +974,6 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
   },
   completedList: {
-    overflow: 'hidden',
-  },
-  // Taken out of flow so it is measured at its natural height whatever the
-  // drawer above it is currently clipped to — measuring it in flow gave a
-  // height of zero while the drawer was closed, and the first open had nothing
-  // to animate towards, so it snapped.
-  completedListContent: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
     paddingBottom: spacing.sm,
   },
   completedRow: {

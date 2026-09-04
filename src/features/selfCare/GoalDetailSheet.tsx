@@ -14,6 +14,7 @@ import type { SelfCareGoal } from './domain/selfCareGoal';
 
 const BADGE_SIZE = 72;
 const BADGE_ICON_SIZE = 38;
+const EDIT_ICON_SIZE = 22;
 const REMOVE_ICON_SIZE = 22;
 const COMPLETE_ICON_SIZE = 26;
 const STAR_SIZE = 22;
@@ -31,6 +32,12 @@ const COMPLETE_TONE = {
   lip: colors.border.default,
   label: colors.text.primary,
 };
+/** The quiet white pair beside Remove, on the same soft line as Complete. */
+const EDIT_TONE = {
+  face: colors.background.card,
+  lip: colors.border.default,
+  label: colors.text.secondary,
+};
 /** Soft red, so the destructive action is named by colour before it is read. */
 const REMOVE_TONE = {
   face: colors.error[100],
@@ -43,8 +50,11 @@ interface GoalDetailSheetProps {
   goal: SelfCareGoal | null;
   busy: boolean;
   onClose: () => void;
+  /** the sheet has finished animating out and is off the screen */
+  onDismissed?: () => void;
   onToggleComplete: () => void;
   onToggleFeatured: () => void;
+  onEdit: () => void;
   onRemove: () => void;
 }
 
@@ -57,8 +67,10 @@ export default function GoalDetailSheet({
   goal,
   busy,
   onClose,
+  onDismissed,
   onToggleComplete,
   onToggleFeatured,
+  onEdit,
   onRemove,
 }: GoalDetailSheetProps) {
   // The sheet animates out after the goal is let go of, so it keeps drawing the
@@ -71,6 +83,7 @@ export default function GoalDetailSheet({
     <SlideUpSheet
       visible={goal != null}
       onClose={onClose}
+      onDismissed={onDismissed}
       sheetStyle={styles.sheet}
       dragAnywhere
     >
@@ -127,22 +140,44 @@ export default function GoalDetailSheet({
             </View>
           </View>
 
-          <ChunkyButton
-            shape="card"
-            tone={REMOVE_TONE}
-            label="Remove"
-            disabled={busy}
-            haptic="tap"
-            minHeight={REMOVE_MIN_HEIGHT}
-            onPress={onRemove}
-            icon={
-              <Icon
-                name="trash"
-                size={REMOVE_ICON_SIZE}
-                color={colors.error[700]}
-              />
-            }
-          />
+          {/* The two secondary actions share a line, so the stack stays two
+              steps deep rather than three buttons tall. */}
+          <View style={styles.secondaryRow}>
+            <ChunkyButton
+              shape="card"
+              tone={EDIT_TONE}
+              label="Edit"
+              disabled={busy}
+              haptic="tap"
+              minHeight={REMOVE_MIN_HEIGHT}
+              onPress={onEdit}
+              style={styles.secondary}
+              icon={
+                <Icon
+                  name="pencil"
+                  size={EDIT_ICON_SIZE}
+                  color={colors.text.secondary}
+                />
+              }
+            />
+            <ChunkyButton
+              shape="card"
+              tone={REMOVE_TONE}
+              label="Remove"
+              disabled={busy}
+              haptic="tap"
+              minHeight={REMOVE_MIN_HEIGHT}
+              onPress={onRemove}
+              style={styles.secondary}
+              icon={
+                <Icon
+                  name="trash"
+                  size={REMOVE_ICON_SIZE}
+                  color={colors.error[700]}
+                />
+              }
+            />
+          </View>
 
           <ChunkyButton
             shape="card"
@@ -229,6 +264,13 @@ const styles = StyleSheet.create({
   },
   featureLabelOn: {
     color: colors.text.primary,
+  },
+  secondaryRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  secondary: {
+    flex: 1,
   },
   // Kept clear of Remove, so the destructive button and the one everyone is
   // reaching for are not neighbours under the same thumb.

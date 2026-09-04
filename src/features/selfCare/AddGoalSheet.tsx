@@ -15,6 +15,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Text, TextInput } from '../../components/common/Text';
 import GlassIconButton from '../../components/common/GlassIconButton';
 import ChunkyButton from '../../components/common/ChunkyButton';
+import GoalIconPicker from './GoalIconPicker';
 import Icon from '../../components/common/icons/Icon';
 import { card, radius } from '../../theme/card';
 import { colors } from '../../theme/colors';
@@ -28,7 +29,6 @@ import {
   normalizeSelfCareGoalTitle,
 } from './domain/selfCareGoal';
 import {
-  GOAL_ICON_CHOICES,
   GOAL_SUGGESTION_CATEGORIES,
   type GoalSuggestion,
 } from './goalSuggestions';
@@ -39,8 +39,6 @@ const BADGE_SIZE = 64;
 const BADGE_ICON_SIZE = 32;
 const SAVE_MIN_HEIGHT = 48;
 const SUGGESTION_ICON_SIZE = 24;
-const ICON_TILE_SIZE = 60;
-const ICON_TILE_ICON_SIZE = 28;
 // The shelf runs to the bottom of the screen, so the tabs sit clear of the home
 // indicator rather than on top of it — they are a control, not chrome.
 const TABS_LIFT = spacing.lg;
@@ -215,31 +213,7 @@ export default function AddGoalSheet({
             showsVerticalScrollIndicator={false}
           >
             {pickingIcon ? (
-              <View style={styles.iconGrid}>
-                {GOAL_ICON_CHOICES.map((choice) => {
-                  const selected = choice === icon;
-                  return (
-                    <Pressable
-                      key={choice}
-                      accessibilityRole="button"
-                      accessibilityLabel={choice}
-                      accessibilityState={{ selected }}
-                      onPress={() => chooseIcon(choice)}
-                      style={({ pressed }) => [
-                        styles.iconTile,
-                        selected && styles.iconTileSelected,
-                        pressed && pressable.surface,
-                      ]}
-                    >
-                      <Icon
-                        name={choice}
-                        size={ICON_TILE_ICON_SIZE}
-                        color={colors.text.inverse}
-                      />
-                    </Pressable>
-                  );
-                })}
-              </View>
+              <GoalIconPicker selected={icon} onSelect={chooseIcon} />
             ) : (
               category.suggestions.map((suggestion) => (
                 <Pressable
@@ -345,23 +319,6 @@ const styles = StyleSheet.create({
   },
   badgePicking: {
     backgroundColor: colors.background.accentSoft,
-  },
-  iconGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-  iconTile: {
-    width: ICON_TILE_SIZE,
-    height: ICON_TILE_SIZE,
-    borderRadius: radius.medium,
-    borderCurve: 'continuous',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.onBlock.fill,
-  },
-  iconTileSelected: {
-    backgroundColor: colors.onBlock.fillActive,
   },
   // Sized like a headline, not a form field: the goal is the only thing on the
   // card, so it is written at the size it will be remembered at.
