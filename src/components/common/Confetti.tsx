@@ -1,13 +1,12 @@
-import { memo, useEffect } from 'react';
+import { memo, useEffect, useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, {
-  interpolate,
   useAnimatedStyle,
   useSharedValue,
-  withDelay,
   withTiming,
+  type SharedValue,
 } from 'react-native-reanimated';
-import { easing } from '../../theme/motion';
+import { Easing } from 'react-native-reanimated';
 
 // Fixed rather than random: the same burst every time reads as choreography,
 // and a re-render mid-flight would otherwise reshuffle it.
@@ -48,10 +47,23 @@ const PIECES = [
   { angle: 175, distance: 235, size: 12, delay: 15, spin: -260 },
   { angle: 205, distance: 180, size: 8, delay: 85, spin: 220 },
   { angle: 235, distance: 215, size: 11, delay: 60, spin: -300 },
-];
+].map((piece) => ({
+  ...piece,
+  // Trig once at module load rather than per piece per frame: the flight is
+  // pure arithmetic on the UI thread, and that is where the frame budget goes.
+  dx: Math.cos((piece.angle * Math.PI) / 180),
+  dy: Math.sin((piece.angle * Math.PI) / 180),
+}));
 
 const DEFAULT_PIECE_COUNT = 12;
 const PIECE_FLIGHT_MS = 1100;
+/** the last piece's head start, in the same units the flight is written in */
+const MAX_PIECE_DELAY = PIECES.reduce(
+  (longest, piece) => Math.max(longest, piece.delay),
+  0,
+);
+const GRAVITY_DROP = 90;
+const FLIGHT_EASING = Easing.out(Easing.quad);
 
 interface ConfettiProps {
   /** Alternated piece to piece, so the burst reads as two-tone rather than flat. */
@@ -77,6 +89,10 @@ interface ConfettiProps {
  * A one-shot burst from the centre of whatever it is laid over. It fires on
  * mount and does not repeat, so remount it — via `key` or by mounting it with
  * the moment it celebrates — rather than looking for a replay control.
+ *
+ * Every piece reads one clock. The stagger lives in the arithmetic rather than
+ * in a `withDelay` per piece, so a burst of thirty is one animation the UI
+ * thread drives instead of thirty it has to schedule and tear down.
  */
 const Confetti = memo(function Confetti({
   pieceColors,
@@ -90,59 +106,90 @@ const Confetti = memo(function Confetti({
     ? Math.max(0, Math.min(PIECES.length, Math.floor(pieceCount)))
     : DEFAULT_PIECE_COUNT;
 
+  const stagger = durationMs / PIECE_FLIGHT_MS;
+  const totalMs = durationMs + MAX_PIECE_DELAY * stagger;
+  // Milliseconds since launch, so each piece can find its own place in the
+  // flight without an animation of its own.
+  const elapsed = useSharedValue(0);
+
+  useEffect(() => {
+    elapsed.value = 0;
+    const start = setTimeout(() => {
+      elapsed.value = withTiming(totalMs, {
+        duration: totalMs,
+        easing: Easing.linear,
+      });
+    }, startDelayMs);
+    return () => clearTimeout(start);
+  }, [elapsed, startDelayMs, totalMs]);
+
+  const pieces = useMemo(
+    () => PIECES.slice(0, renderedPieceCount),
+    [renderedPieceCount],
+  );
+
   return (
     <View pointerEvents="none" style={styles.layer}>
-      {PIECES.slice(0, renderedPieceCount).map((piece, index) => (
+      {pieces.map((piece, index) => (
         <ConfettiPiece
           key={index}
           piece={piece}
           color={piece.size % 2 === 0 ? pieceColors[0] : pieceColors[1]}
-          startDelayMs={startDelayMs}
+          elapsed={elapsed}
+          launchMs={piece.delay * stagger}
+          durationMs={durationMs}
           spread={spread}
           pieceScale={pieceScale}
-          durationMs={durationMs}
         />
       ))}
     </View>
   );
 });
 
-function ConfettiPiece({
+const ConfettiPiece = memo(function ConfettiPiece({
   piece,
   color,
-  startDelayMs,
+  elapsed,
+  launchMs,
+  durationMs,
   spread,
   pieceScale,
-  durationMs,
 }: {
   piece: (typeof PIECES)[number];
   color: string;
-  startDelayMs: number;
+  elapsed: SharedValue<number>;
+  launchMs: number;
+  durationMs: number;
   spread: number;
   pieceScale: number;
-  durationMs: number;
 }) {
-  const fly = useSharedValue(0);
-  const radians = (piece.angle * Math.PI) / 180;
-
-  useEffect(() => {
-    fly.value = withDelay(
-      startDelayMs + piece.delay * (durationMs / PIECE_FLIGHT_MS),
-      withTiming(1, { duration: durationMs, easing: easing.burst }),
-    );
-  }, [durationMs, fly, piece.delay, startDelayMs]);
+  const distance = piece.distance * spread;
+  const drop = GRAVITY_DROP * spread;
+  const { dx, dy, spin } = piece;
 
   const style = useAnimatedStyle(() => {
-    const travel = interpolate(fly.value, [0, 1], [0, piece.distance * spread]);
-    // Gravity on the way out — pieces arc rather than shooting in straight lines.
-    const drop = interpolate(fly.value, [0, 1], [0, 90 * spread]);
+    const linear = Math.min(
+      1,
+      Math.max(0, (elapsed.value - launchMs) / durationMs),
+    );
+    const fly = FLIGHT_EASING(linear);
+    const travel = fly * distance;
 
     return {
-      opacity: interpolate(fly.value, [0, 0.1, 0.75, 1], [0, 1, 1, 0]),
+      opacity:
+        linear === 0
+          ? 0
+          : fly < 0.1
+            ? fly * 10
+            : fly > 0.75
+              ? Math.max(0, 1 - (fly - 0.75) * 4)
+              : 1,
       transform: [
-        { translateX: Math.cos(radians) * travel },
-        { translateY: Math.sin(radians) * travel + drop },
-        { rotate: `${interpolate(fly.value, [0, 1], [0, piece.spin])}deg` },
+        { translateX: dx * travel },
+        // Gravity on the way out — pieces arc rather than shooting in
+        // straight lines.
+        { translateY: dy * travel + fly * drop },
+        { rotate: `${fly * spin}deg` },
       ],
     };
   });
@@ -160,7 +207,7 @@ function ConfettiPiece({
       ]}
     />
   );
-}
+});
 
 export default Confetti;
 

@@ -14,16 +14,18 @@ import Animated, {
   useSharedValue,
   withDelay,
   withSequence,
+  withRepeat,
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Text } from '../../components/common/Text';
 import Icon from '../../components/common/icons/Icon';
 import ProgressBar from '../../components/common/ProgressBar';
 import ChunkyButton from '../../components/common/ChunkyButton';
 import Confetti from '../../components/common/Confetti';
-import { Pop, Rise } from '../../components/common/Reveal';
+import { Rise } from '../../components/common/Reveal';
 import { getRoomDay, getRoomDayLabel } from './roomDays';
 import { isHapticsEnabled } from '../../services/preferences/hapticsPreference';
 import { triggerTapHaptic } from '../../native/tapHaptics';
@@ -34,16 +36,26 @@ import { radius } from '../../theme/card';
 import { duration, easing, spring } from '../../theme/motion';
 import { colors } from '../../theme/colors';
 import { padding, spacing } from '../../theme/spacing';
-import { fonts, typography } from '../../theme/typography';
+import { typography } from '../../theme/typography';
 import type { PlayfulHue } from '../exercise/guidedBreathing/categoryPalette';
 import type { DailyCompleteState } from './useDailyCompleteSnapshot';
 
 export type { DailyCompleteState } from './useDailyCompleteSnapshot';
 
+/**
+ * The celebration is always night, never the exercise's category colour.
+ *
+ * The flame is the hero here and it is orange, which glows against a deep blue
+ * and dies against a warm or green block. The screens that cover themselves
+ * while this sheet plays paint that cover in this same colour.
+ */
+export const CELEBRATION_HUE: PlayfulHue = colors.playful.night;
+
 // Sized off the screen rather than fixed, so it stays the hero on a Pro Max
 // without crowding the title off an SE.
 const FLAME_MAX = 260;
 const FLAME_WIDTH_RATIO = 0.62;
+const FLICKER_MS = 1500;
 // Two frames at 60Hz, four at 120 — a whole number on both, which is what keeps
 // the gaps between characters even.
 const TYPE_MIN_STEP = 32;
@@ -56,11 +68,10 @@ const FALL_MS = duration.base;
 // which left the whole sheet sitting empty for the first half second.
 const BEAT = {
   flame: 60,
-  title: 200,
-  subtitle: 290,
-  stats: 400,
-  progress: 560,
-  cta: 700,
+  title: 220,
+  subtitle: 330,
+  progress: 480,
+  cta: 640,
 } as const;
 
 const CONFETTI_MS = 140;
@@ -74,12 +85,8 @@ const BAR_FILL_END = BAR_FILL_DELAY + duration.fill;
 
 interface DailyCompleteSheetProps {
   visible: boolean;
-  /** the colour the whole screen is painted in — the exercise's category hue */
-  hue: PlayfulHue;
   title: string;
   subtitle: string;
-  /** the two or three headline numbers, shown as tiles */
-  stats?: { label: string; value: string }[];
   /** Immutable room state captured before the animated content mounts. */
   state: DailyCompleteState;
   /** Frozen progress-bar origin, including repeat-daily behavior. */
@@ -115,10 +122,8 @@ interface DailyCompleteSheetProps {
  */
 function DailyCompleteSheet({
   visible,
-  hue,
   title,
   subtitle,
-  stats = [],
   state,
   barFrom,
   rewardReady = true,
@@ -239,7 +244,7 @@ function DailyCompleteSheet({
           style={[
             styles.sheet,
             {
-              backgroundColor: hue.base,
+              backgroundColor: CELEBRATION_HUE.base,
               paddingTop: insets.top + spacing.xl,
               paddingBottom: insets.bottom + spacing.xl,
             },
@@ -250,34 +255,15 @@ function DailyCompleteSheet({
             <>
               <View style={styles.center}>
                 <Confetti
-                  pieceColors={[colors.text.inverse, hue.soft]}
+                  pieceColors={[colors.text.inverse, colors.orange[300]]}
                   startDelayMs={CONFETTI_MS}
                 />
-                <Pop delay={BEAT.flame}>
-                  <Icon name="streakFilled" size={flameSize} color={hue.soft} />
-                </Pop>
+                <Flame size={flameSize} delay={BEAT.flame} />
                 <TypedTitle text={headline} delay={BEAT.title} />
                 <Rise delay={BEAT.subtitle}>
                   <Text style={styles.subtitle}>{supporting}</Text>
                 </Rise>
               </View>
-
-              {stats.length === 0 ? null : (
-                <View style={styles.statRow}>
-                  {stats.map((stat, index) => (
-                    <Pop
-                      key={stat.label}
-                      delay={BEAT.stats + index * 90}
-                      style={styles.statSlot}
-                    >
-                      <View style={styles.statTile}>
-                        <Text style={styles.statLabel}>{stat.label}</Text>
-                        <Text style={styles.statValue}>{stat.value}</Text>
-                      </View>
-                    </Pop>
-                  ))}
-                </View>
-              )}
 
               {showBar ? (
                 <Rise delay={BEAT.progress} style={styles.progressBlock}>
@@ -320,11 +306,10 @@ function DailyCompleteSheet({
                 {unlocked && rewardReady ? (
                   <SheetButton
                     label="Choose your decoration"
-                    hue={hue}
                     onPress={choosePiece}
                   />
                 ) : (
-                  <SheetButton label="Continue" hue={hue} onPress={close} />
+                  <SheetButton label="Continue" onPress={close} />
                 )}
               </Rise>
             </>
@@ -336,6 +321,54 @@ function DailyCompleteSheet({
 }
 
 export default memo(DailyCompleteSheet);
+
+/**
+ * The flame.
+ *
+ * A full round fire rather than the app's streak mark, which read as a logo
+ * blown up at 260pt. One flat orange for now; the flicker — a slow sway and
+ * swell — is what keeps it alive without a second tone.
+ */
+function Flame({ size, delay }: { size: number; delay: number }) {
+  const enter = useSharedValue(0);
+  const flicker = useSharedValue(0);
+
+  useEffect(() => {
+    enter.value = withDelay(delay, withSpring(1, spring.pop));
+    flicker.value = withDelay(
+      delay + duration.slower,
+      withRepeat(
+        withTiming(1, { duration: FLICKER_MS, easing: easing.breathe }),
+        -1,
+        true,
+      ),
+    );
+
+    return () => {
+      cancelAnimation(enter);
+      cancelAnimation(flicker);
+    };
+  }, [delay, enter, flicker]);
+
+  const animated = useAnimatedStyle(() => ({
+    opacity: interpolate(enter.value, [0, 0.4], [0, 1], 'clamp'),
+    transform: [
+      { scale: interpolate(enter.value, [0, 1], [0.7, 1]) },
+      { scaleY: interpolate(flicker.value, [0, 1], [0.98, 1.05]) },
+      { rotate: `${interpolate(flicker.value, [0, 1], [-1.5, 1.5])}deg` },
+    ],
+  }));
+
+  return (
+    <Animated.View style={[styles.flameWrap, animated]}>
+      <MaterialCommunityIcons
+        name="fire"
+        size={size}
+        color={colors.orange[400]}
+      />
+    </Animated.View>
+  );
+}
 
 /**
  * The headline types itself out.
@@ -406,11 +439,9 @@ function TypedChar({ char, delay }: { char: string; delay: number }) {
  */
 function SheetButton({
   label,
-  hue,
   onPress,
 }: {
   label: string;
-  hue: PlayfulHue;
   onPress: () => void;
 }) {
   return (
@@ -419,8 +450,8 @@ function SheetButton({
       shape="card"
       tone={{
         face: colors.text.inverse,
-        lip: hue.ink,
-        label: hue.ink,
+        lip: CELEBRATION_HUE.ink,
+        label: CELEBRATION_HUE.ink,
       }}
       onPress={onPress}
     />
@@ -465,43 +496,23 @@ const styles = StyleSheet.create({
   },
   center: {
     flex: 1,
+    alignSelf: 'stretch',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.xs,
-  },
-  statRow: {
-    alignSelf: 'stretch',
-    flexDirection: 'row',
     gap: spacing.sm,
-    marginBottom: spacing.xl,
+    // The headline is the largest type in the app and it is centred, so it can
+    // run wider than the screen margin without ever touching an edge.
+    marginHorizontal: -spacing.sm,
   },
-  statSlot: {
-    flex: 1,
-  },
-  statTile: {
+  flameWrap: {
     alignItems: 'center',
-    gap: spacing.xs,
-    paddingVertical: spacing.md,
-    borderRadius: radius.card,
-    borderCurve: 'continuous',
-    borderWidth: 2,
-    borderColor: colors.onBlock.divider,
-    backgroundColor: colors.onBlock.fill,
-  },
-  statLabel: {
-    ...typography.body.small,
-    fontFamily: fonts.semibold,
-    color: colors.onBlock.textMuted,
-  },
-  statValue: {
-    ...typography.stat.valueMedium,
-    color: colors.text.inverse,
+    justifyContent: 'center',
   },
   ctaBlock: {
     alignSelf: 'stretch',
   },
   titleBlock: {
-    marginTop: spacing.lg,
+    marginTop: spacing.md,
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
@@ -510,12 +521,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   title: {
-    ...typography.display.display2,
+    ...typography.display.display1,
     color: colors.text.inverse,
     textAlign: 'center',
   },
   subtitle: {
-    ...typography.body.medium,
+    ...typography.title.title3,
     color: colors.onBlock.textMuted,
     textAlign: 'center',
   },

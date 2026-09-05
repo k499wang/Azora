@@ -40,7 +40,6 @@ import {
 import { setHotelOverride } from '../features/room/devHotelOverride';
 import type { PyramidRoom } from '../features/room/PyramidCanvas';
 import type { RoomClaim } from '../features/room/useRoomClaim';
-import { CATEGORY_STYLE } from '../features/exercise/guidedBreathing/categoryPalette';
 import {
   DAYS,
   HexRoom,
@@ -351,17 +350,12 @@ export default function RoomLabScreen({ navigation }: RoomLabScreenProps) {
     <View style={styles.screen}>
       <DailyCompleteSheet
         visible={sheetVisible}
-        hue={CATEGORY_STYLE.calm.hue}
         title="Nice work!"
         state={SHEET_CASES[sheetCase].state}
         barFrom={
           Math.max(0, SHEET_CASES[sheetCase].state.done - 1) / 3
         }
         subtitle="Box Breathing"
-        stats={[
-          { label: 'Time', value: '2:00' },
-          { label: 'Breaths', value: '24' },
-        ]}
         onChoosePiece={() => {
           setSheetVisible(false);
           navigation.navigate('RoomDecorate', { fromLab: true });

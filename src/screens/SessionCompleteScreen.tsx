@@ -7,7 +7,9 @@ import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
 import { spacing, padding, margin } from '../theme/spacing';
 import { triggerLightHaptic } from '../native/tapHaptics';
-import DailyCompleteSheet from '../features/room/DailyCompleteSheet';
+import DailyCompleteSheet, {
+  CELEBRATION_HUE,
+} from '../features/room/DailyCompleteSheet';
 import GlassIconButton from '../components/common/GlassIconButton';
 import CloseButton from '../components/common/CloseButton';
 import ChunkyButton from '../components/common/ChunkyButton';
@@ -199,23 +201,14 @@ export default function SessionCompleteScreen({
     navigation.replace('RoomDecorate');
   }, [navigation]);
 
-  const celebrationStats = useMemo(
-    () => [
-      { label: 'Time', value: formatDuration(durationSec) },
-      { label: 'Breaths', value: `${breathCount}` },
-    ],
-    [breathCount, durationSec],
-  );
   const celebrationContentRef = useRef<{
     title: string;
     subtitle: string;
-    stats: typeof celebrationStats;
   } | null>(null);
   if (snapshot != null && celebrationContentRef.current == null) {
     celebrationContentRef.current = {
       title: congratulation,
       subtitle: techniqueName,
-      stats: celebrationStats,
     };
   }
   const celebrationContent = celebrationContentRef.current;
@@ -248,7 +241,7 @@ export default function SessionCompleteScreen({
         {
           paddingTop: insets.top,
           backgroundColor: showDailyCover
-            ? hue.base
+            ? CELEBRATION_HUE.base
             : colors.background.canvas,
         },
       ]}
@@ -256,10 +249,8 @@ export default function SessionCompleteScreen({
       {sheetVisible && snapshot != null && celebrationContent != null ? (
         <DailyCompleteSheet
           visible
-          hue={hue}
           title={celebrationContent.title}
           subtitle={celebrationContent.subtitle}
-          stats={celebrationContent.stats}
           state={snapshot.state}
           barFrom={snapshot.barFrom}
           rewardReady={isDailyCompleteRewardReady(
@@ -396,7 +387,9 @@ export default function SessionCompleteScreen({
       </ScrollView>
 
       {showDailyCover ? (
-        <View style={[styles.dailyCover, { backgroundColor: hue.base }]} />
+        <View
+          style={[styles.dailyCover, { backgroundColor: CELEBRATION_HUE.base }]}
+        />
       ) : null}
     </View>
   );
