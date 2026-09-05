@@ -17,7 +17,7 @@ export const TODAY_JOURNEY_GROUP_GAP = spacing.lg;
  * labels then sit the same distance from their rows by construction rather than
  * by two numbers that have to be kept in step by hand.
  */
-export const TODAY_JOURNEY_LABEL_GAP = spacing.sm + spacing.xs;
+export const TODAY_JOURNEY_LABEL_GAP = spacing.sm;
 
 /** Shared geometry for every node in the Home daily journey. */
 export const TODAY_JOURNEY_COLUMN_WIDTH = 40;

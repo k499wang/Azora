@@ -101,6 +101,8 @@ const TASK_COPY_INSET = 72;
 // and the way in, so the mark is the size of an app tile rather than a bullet.
 const COLLAPSED_GLYPH_SIZE = 34;
 const TIMELINE_ROW_GAP = spacing.md;
+/** How far the group label sits below the section heading. */
+const LABEL_TOP_GAP = 30;
 const TIMELINE_RAIL_LEFT = TIMELINE_COLUMN_WIDTH / 2 - TIMELINE_RAIL_WIDTH / 2;
 /**
  * Enough dashes to overfill the rail at its tallest, laid at a fixed pitch and
@@ -516,6 +518,9 @@ export default function TodaysDailiesSection({
   const [openedActionId, setOpenedActionId] = useState<DailyPlanActionId | null>(
     null,
   );
+  const completedCount = orderedActionIds.filter(
+    (actionId) => rows[actionId].completed,
+  ).length;
   const completionKey = orderedActionIds
     .map((actionId) => (rows[actionId].completed ? '1' : '0'))
     .join('');
@@ -579,7 +584,12 @@ export default function TodaysDailiesSection({
 
       {dayDone ? null : (
         <>
-          <Overline label="Exercises" style={styles.groupLabel} />
+          <Overline
+            label="Exercises"
+            done={completedCount}
+            total={orderedActionIds.length}
+            style={styles.groupLabel}
+          />
 
           <View style={styles.timeline}>
             <Animated.View
@@ -623,11 +633,8 @@ const styles = StyleSheet.create({
   historyLinkPressed: {
     opacity: 0.6,
   },
-  // Flush with the section header's icon. The section's own gap is sized for
-  // blocks of rows, which is more air than a label needs under a heading it
-  // belongs to, so the label is pulled back up toward it.
   groupLabel: {
-    marginTop: spacing.sm,
+    marginTop: LABEL_TOP_GAP - spacing.lg,
     marginBottom: TODAY_JOURNEY_LABEL_GAP - spacing.lg,
     marginLeft: TODAY_JOURNEY_LABEL_INSET,
   },
