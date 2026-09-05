@@ -9,6 +9,9 @@ function claim({
   guided = false,
   handPicked = false,
   breathHold = false,
+  todosDone = 0,
+  todosTotal = 0,
+  earned = false,
   canClaim = false,
   claimedToday = false,
   isComplete = false,
@@ -20,6 +23,11 @@ function claim({
       guidedCompleted: guided,
       handPickedCompleted: handPicked,
       breathHoldCompleted: breathHold,
+    },
+    day: {
+      todosDone,
+      todosTotal,
+      allCompleted: earned,
     },
     progress: {
       canClaim,
@@ -44,6 +52,7 @@ test('captures third-daily unlock and its one-step progress origin', () => {
 
   assert.deepEqual(snapshot.state, {
     done: 3,
+    total: 3,
     unlocked: true,
     showBar: true,
     nextSlot: 'day4',
@@ -132,4 +141,54 @@ test('claimed and full rooms suppress the progress reward state', () => {
   assert.equal(claimed.state.showBar, false);
   assert.equal(full.state.unlocked, false);
   assert.equal(full.state.showBar, false);
+});
+
+test('to-dos count toward the same decoration', () => {
+  const snapshot = buildDailyCompleteSnapshot(
+    claim({
+      guided: true,
+      handPicked: true,
+      breathHold: true,
+      todosDone: 1,
+      todosTotal: 2,
+    }),
+    null,
+  );
+
+  assert.equal(snapshot.state.done, 4);
+  assert.equal(snapshot.state.total, 5);
+  assert.equal(snapshot.state.unlocked, false);
+});
+
+test('the last to-do unlocks the decoration alongside the dailies', () => {
+  const snapshot = buildDailyCompleteSnapshot(
+    claim({
+      guided: true,
+      handPicked: true,
+      breathHold: true,
+      todosDone: 2,
+      todosTotal: 2,
+    }),
+    null,
+  );
+
+  assert.equal(snapshot.state.done, 5);
+  assert.equal(snapshot.state.unlocked, true);
+  assert.equal(snapshot.barFrom, 4 / 5);
+});
+
+test('a day already earned stays unlocked when a to-do is unticked', () => {
+  const snapshot = buildDailyCompleteSnapshot(
+    claim({
+      guided: true,
+      handPicked: true,
+      breathHold: true,
+      todosDone: 1,
+      todosTotal: 2,
+      earned: true,
+    }),
+    null,
+  );
+
+  assert.equal(snapshot.state.unlocked, true);
 });

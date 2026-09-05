@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ScrollView,
   StyleSheet,
@@ -14,19 +14,26 @@ import HotelButton from '../features/room/HotelButton';
 import NotificationsSettingsSheet from '../features/notifications/NotificationsSettingsSheet';
 import GlassIconButton from '../components/common/GlassIconButton';
 import Icon from '../components/common/icons/Icon';
+import TopBarStreak from '../components/common/TopBarStreak';
 import HomeCelebrationLayer, {
   type HomeCelebrationHandle,
 } from '../components/home/HomeCelebrationLayer';
 import RoomProgressCard from '../features/room/RoomProgressCard';
+import DailyCompleteSheet from '../features/room/DailyCompleteSheet';
+import {
+  isDailyCompleteRewardReady,
+  useDailyCompleteSnapshot,
+} from '../features/room/useDailyCompleteSnapshot';
+import { useTrackDailyCompletion } from '../features/room/useTrackDailyCompletion';
 import { useRoomClaim } from '../features/room/useRoomClaim';
 import { useStartDaily } from '../hooks/useStartDaily';
 import { useTourScroller, useTourTarget } from '../features/tour/tourTargets';
 import type { TourTargetId } from '../features/tour/tourSteps';
+import { useIsFocused } from '@react-navigation/native';
 import type { HomeScreenProps } from '../app/navigation';
 import { useAuthStore } from '../stores/authStore';
-import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
-import { useSelfCareGoalsQuery } from '../queries/selfCare/useSelfCareGoalsQuery';
 import { useDailyPlanScheduleQuery } from '../queries/dailyPlan/useDailyPlanScheduleQuery';
+import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
 import { DEFAULT_DAILY_PLAN_SCHEDULE } from '../services/dailyPlan/types';
 import { useDashboardLayout } from '../hooks/useDashboardLayout';
 import { useIsRegularWidth } from '../hooks/useIsRegularWidth';
@@ -40,36 +47,35 @@ import TodoListSection from '../features/selfCare/TodoListSection';
  */
 const TAB_BAR_HEIGHT = 49;
 
-/** the glass chips either side of Home's top row */
+/** the glass chips on the right of Home's top row */
 const HOTEL_ROW_BUTTON_SIZE = 46;
+
+/** Nothing is mid-flight when the day is finished by a to-do on this screen. */
+const NO_PROJECTION = {};
 
 const TOUR_TARGETS: TourTargetId[] = [
   'dailies',
   'todos',
   'extraPractice',
   'seeAll',
+  'hotel',
 ];
 
 export default function HomeScreen({ navigation }: HomeScreenProps) {
   const user = useAuthStore((state) => state.user);
-  const todayLocalDate = useTodayLocalDate();
   const dailyPlanScheduleQuery = useDailyPlanScheduleQuery(user?.id ?? null);
+  const profileSummary = useProfileSummaryQuery(user?.id ?? null).data;
   const dailyPlanSchedule =
     dailyPlanScheduleQuery.data ?? DEFAULT_DAILY_PLAN_SCHEDULE;
   const roomClaim = useRoomClaim(user?.id ?? null);
   const dailies = roomClaim.dailies;
+  const day = roomClaim.day;
   /**
-   * Nothing left in the day, on either list. Home is the only place that can
-   * see both, so it decides — and when it is true both sections fold away and
-   * the day is one card.
+   * Nothing left in the day, on either list — the live answer, not the latched
+   * one: a to-do added after the decoration was earned is still a to-do, and
+   * folding the list away would hide it.
    */
-  const selfCareGoals = useSelfCareGoalsQuery(user?.id ?? null, todayLocalDate);
-  const dayDone =
-    dailies.guidedCompleted &&
-    dailies.handPickedCompleted &&
-    dailies.breathHoldCompleted &&
-    selfCareGoals.isSuccess &&
-    selfCareGoals.data.every((goal) => goal.completedToday);
+  const dayDone = day.liveCompleted;
   const { start, accessAllowed, exerciseAccess } = useStartDaily('Home', dailies);
 
   const homeLayout = useDashboardLayout();
@@ -80,10 +86,50 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
 
   const [notificationsVisible, setNotificationsVisible] = useState(false);
 
+  // The last thing in a day can be a to-do ticked off here rather than a
+  // session, so the unlock celebration has to be able to fire from Home too.
+  //
+  // It plays on the transition only: a day that was already complete when Home
+  // opened has had its moment, and the first loaded read just records where
+  // things stood. The tick is optimistic, so this rides the same frame the row
+  // checks on rather than waiting for the write to come back — the celebration
+  // belongs to the tap.
+  //
+  // Focus matters: a session finishing on the results screen crosses the same
+  // line while Home is still mounted underneath, and that screen has its own
+  // sheet. Recording the transition without firing is what keeps this one from
+  // opening on top of it.
+  const [unlockVisible, setUnlockVisible] = useState(false);
+  const isFocused = useIsFocused();
+  const pieceReady = day.allCompleted && roomClaim.progress.canClaim;
+  const wasPieceReady = useRef<boolean | null>(null);
+
+  useEffect(() => {
+    if (roomClaim.isLoading) return;
+
+    const was = wasPieceReady.current;
+    wasPieceReady.current = pieceReady;
+    if (was === false && pieceReady && isFocused) setUnlockVisible(true);
+  }, [isFocused, pieceReady, roomClaim.isLoading]);
+
+  const { snapshot, markSeen } = useDailyCompleteSnapshot({
+    active: unlockVisible,
+    claim: roomClaim,
+    projection: NO_PROJECTION,
+  });
+  useTrackDailyCompletion(snapshot, roomClaim);
+
+  const handleUnlockDismiss = useCallback(() => setUnlockVisible(false), []);
+  const handleChoosePiece = useCallback(() => {
+    setUnlockVisible(false);
+    navigation.navigate('RoomDecorate');
+  }, [navigation]);
+
   const tourScroll = useTourScroller(TOUR_TARGETS);
   const dailiesTarget = useTourTarget('dailies');
   const todosTarget = useTourTarget('todos');
   const extraPracticeTarget = useTourTarget('extraPractice');
+  const hotelTarget = useTourTarget('hotel');
 
   // The recently-logged list and its analytics now live on the Heart tab
   // (see RecentlyLoggedSection — it uses useIsFocused to gate the view event).
@@ -102,16 +148,24 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         alwaysBounceVertical
         overScrollMode="always"
       >
-        <View style={styles.hotelRow}>
-          <GlassIconButton
-            accessibilityLabel="Open notification settings"
-            size={HOTEL_ROW_BUTTON_SIZE}
-            variant="regular"
-            onPress={() => setNotificationsVisible(true)}
-          >
-            <Icon name="bell" size={26} color={colors.playful.sky.base} />
-          </GlassIconButton>
-          <HotelButton floors={roomClaim.room?.floor ?? 1} />
+        <View style={styles.topRow}>
+          <TopBarStreak
+            streakDays={profileSummary?.currentStreak ?? 0}
+            onPress={() => navigation.navigate('Profile')}
+          />
+          <View style={styles.topRowActions}>
+            <GlassIconButton
+              accessibilityLabel="Open notification settings"
+              size={HOTEL_ROW_BUTTON_SIZE}
+              variant="regular"
+              onPress={() => setNotificationsVisible(true)}
+            >
+              <Icon name="bell" size={26} color={colors.playful.sky.base} />
+            </GlassIconButton>
+            <View {...hotelTarget}>
+              <HotelButton floors={roomClaim.room?.floor ?? 1} />
+            </View>
+          </View>
         </View>
 
         <View style={styles.roomBlock}>
@@ -129,7 +183,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           <View>
             <RoomProgressCard
               progress={roomClaim.progress}
-              dailies={dailies}
+              day={day}
               isLoading={roomClaim.isLoading}
             />
           </View>
@@ -184,6 +238,23 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         </View>
       </ScrollView>
 
+      {unlockVisible && snapshot != null ? (
+        <DailyCompleteSheet
+          visible
+          title="Nice work!"
+          subtitle="Everything on today's list is done"
+          state={snapshot.state}
+          barFrom={snapshot.barFrom}
+          rewardReady={isDailyCompleteRewardReady(
+            snapshot.state,
+            roomClaim.progress.canClaim,
+          )}
+          onShow={markSeen}
+          onChoosePiece={handleChoosePiece}
+          onDismiss={handleUnlockDismiss}
+        />
+      ) : null}
+
       <HomeCelebrationLayer ref={celebrations} tabBarHeight={tabBarHeight} />
 
       <NotificationsSettingsSheet
@@ -209,11 +280,16 @@ const styles = StyleSheet.create({
   },
   // Everything below the chips rides up under them: the top row is chrome, so
   // the room starts as close to the status bar as the chips allow.
-  hotelRow: {
+  topRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: spacing.lg,
+  },
+  topRowActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
   },
   roomBlock: {
     marginTop: -spacing.sm,

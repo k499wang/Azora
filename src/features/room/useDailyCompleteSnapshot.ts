@@ -8,9 +8,11 @@ const SNAPSHOT_DEADLINE_MS = 900;
 
 /** Everything the completion celebration needs from live room state. */
 export interface DailyCompleteState {
-  /** How many of the three dailies are done, 0..3. */
+  /** How much of today is done: the dailies plus the to-dos ticked off. */
   done: number;
-  /** All three are done and today's piece has not yet been placed. */
+  /** What today asks for in total: three dailies plus today's to-dos. */
+  total: number;
+  /** The whole day is done and today's piece has not yet been placed. */
   unlocked: boolean;
   /** False once today's piece is placed, or the room is full. */
   showBar: boolean;
@@ -40,7 +42,7 @@ export function isDailyCompleteRewardReady(
 }
 
 export function buildDailyCompleteSnapshot(
-  claim: Pick<RoomClaim, 'dailies' | 'progress'>,
+  claim: Pick<RoomClaim, 'dailies' | 'day' | 'progress'>,
   seenDone: number | null,
   projection: DailyCompletionProjection = {},
 ): DailyCompleteSnapshot {
@@ -50,13 +52,23 @@ export function buildDailyCompleteSnapshot(
     claim.dailies.handPickedCompleted || projection.handPicked === true;
   const breathHoldCompleted =
     claim.dailies.breathHoldCompleted || projection.breathHold === true;
-  const done = [
+  const dailiesDone = [
     guidedCompleted,
     handPickedCompleted,
     breathHoldCompleted,
   ].filter(Boolean).length;
+  // The to-do list earns the same decoration, so the bar counts it too — see
+  // `useDayCompletion`. The just-finished session is projected on top of the
+  // dailies, but nothing on the list can have changed since it started.
+  const done = dailiesDone + claim.day.todosDone;
+  const total = DAILIES_PER_DAY + claim.day.todosTotal;
   const allCompleted =
-    guidedCompleted && handPickedCompleted && breathHoldCompleted;
+    // Already earned today counts even if a to-do has since been unticked.
+    claim.day.allCompleted ||
+    (guidedCompleted &&
+      handPickedCompleted &&
+      breathHoldCompleted &&
+      claim.day.todosDone === claim.day.todosTotal);
   const canClaim =
     allCompleted &&
     !claim.progress.claimedToday &&
@@ -66,12 +78,12 @@ export function buildDailyCompleteSnapshot(
   return {
     state: {
       done,
+      total,
       unlocked: canClaim,
       showBar: !claim.progress.isComplete && !claim.progress.claimedToday,
       nextSlot: claim.progress.nextSlot,
     },
-    barFrom:
-      (seenDone ?? Math.max(0, done - 1)) / DAILIES_PER_DAY,
+    barFrom: (seenDone ?? Math.max(0, done - 1)) / total,
     todayLocalDate: claim.dailies.todayLocalDate,
   };
 }

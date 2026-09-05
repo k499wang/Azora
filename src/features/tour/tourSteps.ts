@@ -3,6 +3,7 @@ export type TourTargetId =
   | 'todos'
   | 'extraPractice'
   | 'seeAll'
+  | 'hotel'
   | 'measureHeart';
 
 export type TourTab = 'Home' | 'Heart';
@@ -40,6 +41,11 @@ export const tourSteps: readonly TourStep[] = [
     target: 'seeAll',
     tab: 'Home',
     body: 'Looking for more? Tap See all to explore every exercise.',
+  },
+  {
+    target: 'hotel',
+    tab: 'Home',
+    body: 'This is your hotel. Every room you finish stays here, so you can look back on how far you have come.',
   },
   {
     target: 'measureHeart',

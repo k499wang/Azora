@@ -58,17 +58,14 @@ interface RecommendedExerciseScreenProps {
  */
 function StarterPlanRow({
   item,
-  ruled,
   anim,
 }: {
   item: StarterPlanItem;
-  ruled: boolean;
   anim: Animated.Value;
 }) {
   return (
     <PlanNotepadRow
       anim={anim}
-      ruled={ruled}
       title={item.title}
       leading={
         <OnboardingOptionIcon
@@ -170,7 +167,6 @@ export default function RecommendedExerciseScreen({
               <ActionRow
                 key={action.id}
                 action={action}
-                ruled={index > 0}
                 anim={rowAnims[index]}
                 onChangeTime={(minutes) =>
                   onChangeActionTime(action.id, minutes)
@@ -181,7 +177,6 @@ export default function RecommendedExerciseScreen({
               <StarterPlanRow
                 key={item.id}
                 item={item}
-                ruled
                 anim={rowAnims[plan.actions.length + index]}
               />
             ))}
@@ -196,12 +191,10 @@ export default function RecommendedExerciseScreen({
 
 function ActionRow({
   action,
-  ruled,
   anim,
   onChangeTime,
 }: {
   action: PlanAction;
-  ruled: boolean;
   anim: Animated.Value;
   onChangeTime: (minutesFromMidnight: number) => void;
 }) {
@@ -227,7 +220,6 @@ function ActionRow({
     <>
       <PlanNotepadRow
         anim={anim}
-        ruled={ruled}
         title={title}
         meta={planTimeOfDayLabel(action.minutesFromMidnight)}
         onPress={open}

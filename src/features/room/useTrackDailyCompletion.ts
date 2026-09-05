@@ -2,7 +2,6 @@ import { useEffect, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { posthog } from '../../config/posthog';
 import { createSerializedAsync } from '../../lib/serializedAsync';
-import { DAILIES_PER_DAY } from '../../lib/dailies';
 import { useUserEntitlementQuery } from '../../queries/subscriptions/useUserEntitlementQuery';
 import { useHomeStatsQuery } from '../../queries/tracking/useHomeStatsQuery';
 import { AnalyticsEvent } from '../../services/analytics/events';
@@ -100,7 +99,8 @@ export function useTrackDailyCompletion(
   );
 
   const earnedDate = snapshot?.todayLocalDate ?? null;
-  const allDone = snapshot != null && snapshot.state.done >= DAILIES_PER_DAY;
+  const allDone =
+    snapshot != null && snapshot.state.done >= snapshot.state.total;
   const unlocked = snapshot?.state.unlocked === true;
 
   useEffect(() => {

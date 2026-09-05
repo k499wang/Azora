@@ -49,7 +49,15 @@ export default function RoomDecorateScreen({
 }: RoomDecorateScreenProps) {
   const queryClient = useQueryClient();
   const userId = useAuthStore((state) => state.user?.id ?? null);
-  const { room, progress, dailies, isLoading } = useRoomClaim(userId);
+  const {
+    room,
+    progress,
+    dailies,
+    // `day` on this screen is the room's day-slot; the day's own completion is
+    // `today`.
+    day: today,
+    isLoading,
+  } = useRoomClaim(userId);
   const placeDecoration = usePlaceDecorationMutation(userId);
   const { start } = useStartDaily('RoomDecorate', dailies);
 
@@ -62,12 +70,14 @@ export default function RoomDecorateScreen({
     ? { kind: 'complete' }
     : progress.claimedToday
       ? { kind: 'claimed' }
-      : !dailies.allCompleted
+      : !today.allCompleted
         ? {
             kind: 'locked',
             guidedDone: dailies.guidedCompleted,
             handPickedDone: dailies.handPickedCompleted,
             breathHoldDone: dailies.breathHoldCompleted,
+            todosDone: today.todosDone,
+            todosTotal: today.todosTotal,
           }
         : { kind: 'choose', slot: nextSlot ?? 'day1' };
 

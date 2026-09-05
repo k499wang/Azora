@@ -30,12 +30,11 @@ import { Rise } from '../../components/common/Reveal';
 import { getRoomDay } from './roomDays';
 import { isHapticsEnabled } from '../../services/preferences/hapticsPreference';
 import { triggerTapHaptic } from '../../native/tapHaptics';
-import { DAILIES_PER_DAY } from '../../lib/dailies';
 import { radius } from '../../theme/card';
 import { duration, easing, spring } from '../../theme/motion';
 import { colors } from '../../theme/colors';
 import { padding, spacing } from '../../theme/spacing';
-import { typography } from '../../theme/typography';
+import { fonts, typography } from '../../theme/typography';
 import type { PlayfulHue } from '../exercise/guidedBreathing/categoryPalette';
 import type { DailyCompleteState } from './useDailyCompleteSnapshot';
 
@@ -86,6 +85,8 @@ interface DailyCompleteSheetProps {
   visible: boolean;
   title: string;
   subtitle: string;
+  /** a quieter second line under the subtitle, for the streak or the session */
+  subtitleDetail?: string;
   /** Immutable room state captured before the animated content mounts. */
   state: DailyCompleteState;
   /** Frozen progress-bar origin, including repeat-daily behavior. */
@@ -117,6 +118,7 @@ function DailyCompleteSheet({
   visible,
   title,
   subtitle,
+  subtitleDetail,
   state,
   barFrom,
   rewardReady = true,
@@ -138,14 +140,15 @@ function DailyCompleteSheet({
   // The contents animate in instead; only leaving is a slide.
   const offset = useSharedValue(0);
   const badge = useSharedValue(0);
-  const { done, unlocked, showBar } = state;
+  const { done, total, unlocked, showBar } = state;
 
   const day = state.nextSlot == null ? null : getRoomDay(state.nextSlot);
-  const remaining = Math.max(0, DAILIES_PER_DAY - done);
+  const remaining = Math.max(0, total - done);
 
-  // On the third daily the screen stops being about the session and starts
-  // being about the thing they just earned, so the copy changes with it.
-  const headline = unlocked ? 'All 3 dailies done!' : title;
+  // Once the last thing on either list lands, the screen stops being about the
+  // session and starts being about the thing they just earned, so the copy
+  // changes with it.
+  const headline = unlocked ? "That's everything today!" : title;
   const supporting = unlocked ? 'You earned a new decoration' : subtitle;
 
   useEffect(() => {
@@ -272,6 +275,9 @@ function DailyCompleteSheet({
                 reducedMotion={reducedMotion}
               >
                 <Text style={styles.subtitle}>{supporting}</Text>
+                {subtitleDetail == null ? null : (
+                  <Text style={styles.subtitleDetail}>{subtitleDetail}</Text>
+                )}
               </SheetRise>
             </View>
 
@@ -286,10 +292,10 @@ function DailyCompleteSheet({
                   <ProgressBar
                     progress={
                       reducedMotion || presented
-                        ? done / DAILIES_PER_DAY
+                        ? done / total
                         : barFrom
                     }
-                    from={reducedMotion ? done / DAILIES_PER_DAY : barFrom}
+                    from={reducedMotion ? done / total : barFrom}
                     delay={reducedMotion ? 0 : BAR_FILL_DELAY}
                     height={BAR_HEIGHT}
                     trackColor={colors.onBlock.fill}
@@ -601,8 +607,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
-    // The headline is the largest type in the app and it is centred, so it can
-    // run wider than the screen margin without ever touching an edge.
+    // The headline is centred and larger than anything around it, so it can run
+    // wider than the screen margin without ever touching an edge.
     marginHorizontal: -spacing.sm,
   },
   flameWrap: {
@@ -622,7 +628,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   title: {
-    ...typography.display.display1,
+    // A step down from `display1`: these headlines are sentences, not a single
+    // number, and at 48 a long one took three lines and pushed the flame off
+    // the top of an SE.
+    ...typography.display.display2,
     color: colors.text.inverse,
     textAlign: 'center',
   },
@@ -630,6 +639,13 @@ const styles = StyleSheet.create({
     ...typography.title.title3,
     color: colors.onBlock.textMuted,
     textAlign: 'center',
+  },
+  subtitleDetail: {
+    ...typography.body.medium,
+    fontFamily: fonts.semibold,
+    color: colors.onBlock.textFaint,
+    textAlign: 'center',
+    marginTop: spacing.xs,
   },
   progressBlock: {
     alignSelf: 'stretch',
