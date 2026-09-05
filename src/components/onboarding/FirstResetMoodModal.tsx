@@ -1,7 +1,7 @@
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Modal, Pressable, StyleSheet, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import { card, radius } from '../../theme/card';
+import OnboardingOptionIcon from './OnboardingOptionIcon';
 import { colors } from '../../theme/colors';
 import { triggerTapHaptic } from '../../native/tapHaptics';
 import { pressable } from '../../theme/pressable';
@@ -55,7 +55,7 @@ export default function FirstResetMoodModal({
                   pressed && styles.facePressed,
                 ]}
               >
-                <MaterialCommunityIcons
+                <OnboardingOptionIcon
                   name={option.icon}
                   size={FACE_SIZE}
                   color={option.accent}

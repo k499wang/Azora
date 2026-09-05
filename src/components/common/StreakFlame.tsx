@@ -9,11 +9,10 @@ interface Props {
 /**
  * The streak flame.
  *
- * The art is a square PNG with its own gradient and contact shadow, predecoded
- * at launch alongside the hero backgrounds — the source it renders is the
- * retained decode when there is one, so the screen never appears before the
- * flame does. `transition={0}` for the same reason: a fade here would be the
- * very flash the predecode exists to prevent.
+ * The art is a local square PNG with its own gradient and contact shadow. It
+ * reuses a retained decode when another flow has already warmed it, without
+ * delaying app startup for an image used only by this celebration.
+ * `transition={0}` avoids adding a second entrance over the sheet choreography.
  */
 function StreakFlame({ size }: Props) {
   return (

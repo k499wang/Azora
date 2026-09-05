@@ -222,18 +222,23 @@ function GoalCard({ goal, busy, onToggle, onOpen }: GoalCardProps) {
  * so re-completing one replays the celebration. Starts silent: a to-do that is
  * already done when the list loads has nothing to celebrate.
  */
-function useCompletionBurst(completed: boolean): number {
-  const [burst, setBurst] = useState(0);
+function useCompletionBurst(completed: boolean) {
+  const [burst, setBurst] = useState<number | null>(null);
+  const nextBurst = useRef(0);
   const wasCompleted = useRef(completed);
 
   useEffect(() => {
     if (completed && !wasCompleted.current) {
-      setBurst((count) => count + 1);
+      nextBurst.current += 1;
+      setBurst(nextBurst.current);
     }
     wasCompleted.current = completed;
   }, [completed]);
 
-  return burst;
+  const clearBurst = useCallback((completedBurst: number) => {
+    setBurst((current) => current === completedBurst ? null : current);
+  }, []);
+  return { burst, clearBurst };
 }
 
 /**
@@ -248,12 +253,12 @@ const GoalStatusMarker = memo(function GoalStatusMarker({
 }: {
   completed: boolean;
 }) {
-  const burst = useCompletionBurst(completed);
+  const { burst, clearBurst } = useCompletionBurst(completed);
   const fill = useSharedValue(completed ? 1 : 0);
   const halo = useSharedValue(0);
 
   useEffect(() => {
-    if (burst === 0) return;
+    if (burst == null) return;
     triggerSuccessHaptic();
     // Squashed to nothing first, so the spring has somewhere to come from even
     // when the disc was already on screen.
@@ -294,7 +299,7 @@ const GoalStatusMarker = memo(function GoalStatusMarker({
         pointerEvents="none"
         style={[styles.markerHalo, haloStyle]}
       />
-      {burst === 0 ? null : (
+      {burst == null ? null : (
         <View pointerEvents="none" style={styles.markerConfetti}>
           <Confetti
             key={burst}
@@ -303,6 +308,7 @@ const GoalStatusMarker = memo(function GoalStatusMarker({
             spread={MARKER_CONFETTI_SPREAD}
             pieceScale={MARKER_CONFETTI_PIECE_SCALE}
             durationMs={MARKER_CONFETTI_MS}
+            onComplete={() => clearBurst(burst)}
           />
         </View>
       )}

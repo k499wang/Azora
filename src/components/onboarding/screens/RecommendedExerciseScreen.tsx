@@ -1,7 +1,15 @@
 import { Text } from '../../common/Text';
 import { useMemo } from 'react';
-import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
-import CardSurface from '../../common/CardSurface';
+import {
+  Animated,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+} from 'react-native';
+import PlanNotepad, {
+  PlanNotepadRow,
+  useNotepadRowAnimations,
+} from '../PlanNotepad';
 import Icon from '../../common/icons/Icon';
 import MindMapRadar from '../MindMapRadar';
 import { useTimePickerSheet } from '../../common/useTimePickerSheet';
@@ -22,7 +30,10 @@ import {
   type OnboardingPlan,
 } from '../../../lib/onboardingPlan';
 import type { MindMapScore } from '../../../lib/onboardingScores';
-import { PERSONALIZED_INTENT_OPTIONS } from '../data/intentOptions';
+import type { StarterPlanItem } from '../../../lib/onboardingStarterPlan';
+import OnboardingOptionIcon, {
+  type OnboardingOptionIconName,
+} from '../OnboardingOptionIcon';
 import { ONBOARDING_VISUAL_MAX_WIDTH } from '../onboardingVisualScale';
 
 interface RecommendedExerciseScreenProps {
@@ -36,8 +47,38 @@ interface RecommendedExerciseScreenProps {
     actionId: PlanActionId,
     minutesFromMidnight: number,
   ) => void;
+  starterPlan: StarterPlanItem[];
   onContinue: () => void;
   onBack: () => void;
+}
+
+/**
+ * A to-do the plan starts the user on, written the same way a reset is: the
+ * only difference is that its hour is fixed here and changed later on Home.
+ */
+function StarterPlanRow({
+  item,
+  ruled,
+  anim,
+}: {
+  item: StarterPlanItem;
+  ruled: boolean;
+  anim: Animated.Value;
+}) {
+  return (
+    <PlanNotepadRow
+      anim={anim}
+      ruled={ruled}
+      title={item.title}
+      leading={
+        <OnboardingOptionIcon
+          name={item.icon}
+          size={GOAL_ICON_SIZE}
+          color={item.accent}
+        />
+      }
+    />
+  );
 }
 
 function techniqueName(techniqueId: string | null): string | null {
@@ -53,10 +94,16 @@ export default function RecommendedExerciseScreen({
   stepIndex,
   stepCount,
   onChangeActionTime,
+  starterPlan,
   onContinue,
   onBack,
 }: RecommendedExerciseScreenProps) {
   const { width } = useWindowDimensions();
+  // One run of values for the whole page, so the resets and the to-dos are
+  // written on in a single pass rather than two lists racing each other.
+  const rowAnims = useNotepadRowAnimations(
+    plan.actions.length + starterPlan.length,
+  );
 
   const biggestLift = useMemo(() => {
     const growthTarget = targetScores.find(
@@ -73,7 +120,10 @@ export default function RecommendedExerciseScreen({
       centerCopy
       titleStyle={styles.planTitle}
       footer={
-        <OnboardingPrimaryButton label="Start my plan" onPress={onContinue} />
+        <OnboardingPrimaryButton
+          label="Start my plan"
+          onPress={onContinue}
+        />
       }
     >
       <View style={styles.page}>
@@ -111,50 +161,48 @@ export default function RecommendedExerciseScreen({
             variant="heading"
             expression="pleased"
           />
-          {plan.actions.map((action) => (
-            <ActionCard
-              key={action.id}
-              action={action}
-              body={actionBody(action, plan, growthArea)}
-              onChangeTime={(minutes) => onChangeActionTime(action.id, minutes)}
-            />
-          ))}
+
+          {/* One unbroken list: a reset and a to-do are two lines of the same
+              day, and heading them separately made the page read as two lists
+              that happened to share paper. */}
+          <PlanNotepad>
+            {plan.actions.map((action, index) => (
+              <ActionRow
+                key={action.id}
+                action={action}
+                ruled={index > 0}
+                anim={rowAnims[index]}
+                onChangeTime={(minutes) =>
+                  onChangeActionTime(action.id, minutes)
+                }
+              />
+            ))}
+            {starterPlan.map((item, index) => (
+              <StarterPlanRow
+                key={item.id}
+                item={item}
+                ruled
+                anim={rowAnims[plan.actions.length + index]}
+              />
+            ))}
+          </PlanNotepad>
+
         </View>
+
       </View>
     </OnboardingScreenLayout>
   );
 }
 
-function actionBody(
-  action: PlanAction,
-  plan: OnboardingPlan,
-  growthArea: MindMapScore,
-): string {
-  const goalPhrase =
-    PERSONALIZED_INTENT_OPTIONS.find((option) => option.id === plan.intent)
-      ?.goalPhrase ?? null;
-  const when = planTimeOfDayLabel(action.minutesFromMidnight).toLowerCase();
-
-  if (action.id === 'session') {
-    return goalPhrase
-      ? `${action.minutes} minutes every ${when}, chosen to help you ${goalPhrase}.`
-      : `${action.minutes} minutes of Guided Reset every ${when}.`;
-  }
-
-  if (action.id === 'handPicked') {
-    return `A different ${action.minutes}-minute reset each day, ordered to lift your ${growthArea.label.toLowerCase()} first.`;
-  }
-
-  return `A short hold every ${when} to track how your breathing is changing.`;
-}
-
-function ActionCard({
+function ActionRow({
   action,
-  body,
+  ruled,
+  anim,
   onChangeTime,
 }: {
   action: PlanAction;
-  body: string;
+  ruled: boolean;
+  anim: Animated.Value;
   onChangeTime: (minutesFromMidnight: number) => void;
 }) {
   const technique = techniqueName(action.techniqueId);
@@ -176,37 +224,88 @@ function ActionCard({
   });
 
   return (
-    <CardSurface style={styles.actionCard}>
-      <View style={styles.actionHeader}>
-        <View style={styles.actionHeading}>
-          <Text style={styles.actionRole}>{title}</Text>
-          <Text style={styles.actionWhen}>
-            {planTimeOfDayLabel(action.minutesFromMidnight)}
-          </Text>
-        </View>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={`Change time for ${title}, currently ${displayTime}`}
-          onPress={open}
-          hitSlop={8}
-          style={({ pressed }) => [
-            styles.actionTime,
-            pressed && styles.actionTimePressed,
-          ]}
-        >
-          <View style={styles.actionPill}>
-            <Text style={styles.actionPillText}>{displayTime}</Text>
+    <>
+      <PlanNotepadRow
+        anim={anim}
+        ruled={ruled}
+        title={title}
+        meta={planTimeOfDayLabel(action.minutesFromMidnight)}
+        onPress={open}
+        accessibilityRole="button"
+        accessibilityLabel={`Change time for ${title}, currently ${displayTime}`}
+        leading={
+          <OnboardingOptionIcon
+            name={ACTION_ICONS[action.id].name}
+            size={GOAL_ICON_SIZE}
+            color={ACTION_ICONS[action.id].accent}
+          />
+        }
+        trailing={
+          <View style={styles.token}>
+            <Text style={styles.tokenText}>{displayTime}</Text>
+            <Icon
+              name="pencil"
+              size={13}
+              color={colors.playful.amber.ink}
+            />
           </View>
-          <Icon name="pencil" size={16} color={colors.primary.blue600} />
-        </Pressable>
-      </View>
-      <Text style={styles.actionBody}>{body}</Text>
+        }
+      />
       {sheet}
-    </CardSurface>
+    </>
   );
 }
 
+// Matched to the to-do list on Home, so a to-do picked here and the same to-do
+// tomorrow are visibly one object rather than two designs of it.
+const GOAL_ICON_SIZE = 34;
+
+/**
+ * A picture per plan action, each with its own colour like the to-dos below it.
+ * Blue would have marked the resets out as the app's rows and the to-dos as the
+ * user's, which is the seam the single list exists to remove.
+ */
+const ACTION_ICONS: Record<
+  PlanActionId,
+  { name: OnboardingOptionIconName; accent: string }
+> = {
+  session: { name: 'meditation', accent: colors.playful.teal.base },
+  handPicked: { name: 'sparkle', accent: colors.playful.violet.base },
+  checkIn: { name: 'heart-pulse', accent: colors.playful.coral.base },
+};
+/** the height every row's right-hand token shares */
+const TOKEN_HEIGHT = 28;
+
 const styles = StyleSheet.create({
+  // The same words the profile's second list is introduced with, so both
+  // closing screens announce a section the same way.
+  sectionTitle: {
+    ...typography.title.title3,
+    fontFamily: fonts.semibold,
+    fontWeight: '500',
+    color: colors.text.primary,
+    marginTop: spacing.lg,
+    marginBottom: spacing.xs,
+  },
+  // Both kinds of row end in one of these, at one weight: the page has a single
+  // accent and the right-hand column stops looking ragged.
+  token: {
+    height: TOKEN_HEIGHT,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    justifyContent: 'center',
+    borderRadius: TOKEN_HEIGHT / 2,
+    paddingHorizontal: spacing.sm + spacing.xs,
+    backgroundColor: colors.playful.amber.soft,
+  },
+  tokenText: {
+    ...typography.body.small,
+    fontFamily: fonts.semibold,
+    fontWeight: '500',
+    fontVariant: ['tabular-nums'],
+    color: colors.playful.amber.ink,
+  },
   planTitle: {
     fontSize: 32,
     lineHeight: 39,
@@ -229,65 +328,6 @@ const styles = StyleSheet.create({
   },
   section: {
     gap: spacing.md,
-  },
-  actionCard: {
-    backgroundColor: colors.background.card,
-    gap: spacing.sm,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md,
-  },
-  actionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.sm,
-  },
-  actionHeading: {
-    flexShrink: 1,
-    gap: 2,
-  },
-  actionRole: {
-    ...typography.heading.heading2,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    fontSize: 19,
-    lineHeight: 26,
-    color: colors.primary.blue600,
-    flexShrink: 1,
-  },
-  actionWhen: {
-    ...typography.caption.caption1,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    color: colors.text.secondary,
-  },
-  actionTime: {
-    flexShrink: 0,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  actionTimePressed: {
-    opacity: 0.6,
-  },
-  actionPill: {
-    borderRadius: 8,
-    paddingVertical: 3,
-    paddingHorizontal: spacing.sm,
-    backgroundColor: colors.primary.blue600,
-  },
-  actionPillText: {
-    ...typography.body.small,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    fontVariant: ['tabular-nums'],
-    color: colors.neutral[0],
-  },
-  actionBody: {
-    ...typography.body.small,
-    fontSize: 16,
-    color: colors.text.secondary,
-    lineHeight: 23,
   },
   radarWrap: {
     alignItems: 'center',

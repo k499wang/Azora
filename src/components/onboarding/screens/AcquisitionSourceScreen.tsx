@@ -1,3 +1,4 @@
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Icon from '../../common/icons/Icon';
 import {
   ACQUISITION_SOURCE_OPTIONS,
@@ -6,12 +7,14 @@ import {
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import OnboardingOptionList from '../OnboardingOptionList';
-import type { OnboardingOptionIconName } from '../OnboardingOptionIcon';
+import type { ComponentProps } from 'react';
 
-const ACQUISITION_SOURCE_ICONS: Record<
-  AcquisitionSourceId,
-  OnboardingOptionIconName
-> = {
+/** Material's own names, so this screen cannot drift onto the duotone set. */
+type MaterialIconName = NonNullable<
+  ComponentProps<typeof MaterialCommunityIcons>['name']
+>;
+
+const ACQUISITION_SOURCE_ICONS: Record<AcquisitionSourceId, MaterialIconName> = {
   instagram: 'instagram',
   tiktok: 'music-note',
   facebook: 'facebook',
@@ -64,10 +67,20 @@ export default function AcquisitionSourceScreen({
         }))}
         selectedIds={value ? [value] : []}
         onSelect={onSelect}
+        // Drawn here rather than by the shared option icon, which now renders
+        // the duotone set: these rows are logos, and a logo is whatever the
+        // company draws it as. Pinning them keeps this screen looking exactly
+        // as it did when the rest of onboarding changed sets.
         renderGlyph={(option) =>
           option.id === 'tiktok' ? (
             <Icon name="tiktok" size={26} color={option.accent} />
-          ) : null
+          ) : (
+            <MaterialCommunityIcons
+              name={ACQUISITION_SOURCE_ICONS[option.id]}
+              size={26}
+              color={option.accent}
+            />
+          )
         }
       />
     </OnboardingScreenLayout>

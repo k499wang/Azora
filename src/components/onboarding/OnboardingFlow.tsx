@@ -50,6 +50,12 @@ import PlanIntroScreen from './screens/PlanIntroScreen';
 import PlanLoadingScreen from './screens/PlanLoadingScreen';
 import DiagnosisScreen from './screens/DiagnosisScreen';
 import RecommendedExerciseScreen from './screens/RecommendedExerciseScreen';
+import {
+  buildStarterPlan,
+  starterPlanDrafts,
+} from '../../lib/onboardingStarterPlan';
+import { useTodayLocalDate } from '../../hooks/useTodayLocalDate';
+import { useCreateSelfCareGoalsMutation } from '../../queries/selfCare/useCreateSelfCareGoalsMutation';
 import OnboardingPaywallScreen from './screens/OnboardingPaywallScreen';
 import ExitOfferSheet from '../paywall/ExitOfferSheet';
 import type { ExitOfferTrigger } from '../../services/analytics/exitOffer';
@@ -117,7 +123,6 @@ import { useUpdateNotificationPreferencesMutation } from '../../queries/notifica
 import {
   DEFAULT_NOTIFICATION_PREFERENCES,
   ONBOARDING_NOTIFICATION_PREFERENCES,
-  type DailyPlanReminderActionId,
   type DailyPlanReminderPreferences,
 } from '../../services/notifications/types';
 import { useUpdateDailyPlanScheduleMutation } from '../../queries/dailyPlan/useUpdateDailyPlanScheduleMutation';
@@ -178,7 +183,6 @@ const STEP_ORDER: OnboardingStep[] = [
   'personalizeIntro',
   'intent',
   'intentPriority',
-  'acquisitionSource',
   'intentReflection',
   'brainScience',
   'name',
@@ -198,7 +202,12 @@ const STEP_ORDER: OnboardingStep[] = [
   'scienceCredibility',
   'age',
   'gender',
+  // Grouped with the other cheap facts rather than wedged into the goal arc,
+  // where it interrupted "what brought you here" with "how did you hear of us".
+  'acquisitionSource',
   'firstReset',
+  // The plan's own settings, asked together once there is a plan to settle:
+  // how long a day, and the two ends of one.
   'dailyTime',
   'wakeTime',
   'sleepTime',
@@ -370,18 +379,16 @@ function OnboardingFlowSteps({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [notificationErrorMessage, setNotificationErrorMessage] = useState<string | null>(null);
   const [isNotificationSubmitting, setIsNotificationSubmitting] = useState(false);
-  const [onboardingReminders, setOnboardingReminders] =
-    useState<DailyPlanReminderPreferences>(() => ({
-      session: {
-        ...ONBOARDING_NOTIFICATION_PREFERENCES.dailyPlanReminders.session,
-      },
-      handPicked: {
-        ...ONBOARDING_NOTIFICATION_PREFERENCES.dailyPlanReminders.handPicked,
-      },
-      checkIn: {
-        ...ONBOARDING_NOTIFICATION_PREFERENCES.dailyPlanReminders.checkIn,
-      },
-    }));
+  // Reminders are one decision now, taken on the notifications screen itself,
+  // so the set never changes during onboarding — it is the onboarding default
+  // or it is nothing at all.
+  const onboardingReminders: DailyPlanReminderPreferences = {
+    session: { ...ONBOARDING_NOTIFICATION_PREFERENCES.dailyPlanReminders.session },
+    handPicked: {
+      ...ONBOARDING_NOTIFICATION_PREFERENCES.dailyPlanReminders.handPicked,
+    },
+    checkIn: { ...ONBOARDING_NOTIFICATION_PREFERENCES.dailyPlanReminders.checkIn },
+  };
   const [isSubmitting, setIsSubmitting] = useState(false);
   const updateNotificationPreferences = useUpdateNotificationPreferencesMutation(userId);
   const updateDailyPlanSchedule = useUpdateDailyPlanScheduleMutation(userId);
@@ -599,11 +606,11 @@ function OnboardingFlowSteps({
       primary_intent_id: nextPrimaryIntent,
     };
 
-    goToStep('acquisitionSource', 'continue', nextProperties);
+    continueAfterIntentChoice('continue', nextProperties);
   };
 
-  /** where the intent chain resumes once the source question is answered */
-  const continueAfterAcquisitionSource = (
+  /** where the intent chain lands once a goal and its priority are known */
+  const continueAfterIntentChoice = (
     action: OnboardingTransitionAction,
     properties?: OnboardingAnalyticsProperties,
   ) => {
@@ -674,6 +681,48 @@ function OnboardingFlowSteps({
     );
   };
 
+  const todayLocalDate = useTodayLocalDate();
+  const createSelfCareGoals = useCreateSelfCareGoalsMutation(
+    userId,
+    todayLocalDate,
+  );
+
+  const starterPlan = useMemo(
+    () =>
+      buildStarterPlan({
+        wakeEase,
+        sleepDuration,
+        dayActivity,
+        routineHappiness,
+        mentalHealth,
+        procrastinationAreas,
+        procrastinationReasons,
+      }),
+    [
+      dayActivity,
+      mentalHealth,
+      procrastinationAreas,
+      procrastinationReasons,
+      routineHappiness,
+      sleepDuration,
+      wakeEase,
+    ],
+  );
+
+  /**
+   * The plan page shows the list; it does not write it. Everything else
+   * onboarding collects is held until the pact seals the whole run, and the
+   * to-dos are written there too — a page you can step back onto must not be a
+   * page that saves, or stepping back saves the list a second time.
+   */
+  const starterPlanDraftList = () => starterPlanDrafts(starterPlan, []);
+
+  const continueFromStarterPlan = () => {
+    goToStep('mochiPlace', 'continue', {
+      starter_plan_kept_count: starterPlanDraftList().length,
+    });
+  };
+
   const buildOnboardingResult = (): OnboardingFlowResult | null => {
     const goal = buildOnboardingGoal();
     if (goal.length === 0) return null;
@@ -734,6 +783,16 @@ function OnboardingFlowSteps({
           await Promise.all([
             updateDailyPlanSchedule.mutateAsync(schedule),
             updateDailyPlanExercises.mutateAsync(exercisePlan),
+            // A missing starter list is editable from Home; a finish blocked on
+            // it is not, so this one failure stays out of the seal's error.
+            createSelfCareGoals
+              .mutateAsync(starterPlanDraftList())
+              .catch((error) => {
+                console.warn(
+                  '[onboarding-starter-plan] save failed',
+                  getErrorMessage(error),
+                );
+              }),
           ]);
         })(),
         new Promise<void>((resolve) => setTimeout(resolve, 3500)),
@@ -992,7 +1051,12 @@ function OnboardingFlowSteps({
         stepCount={visualStepCount}
         isSubmitting={isSubmitting}
         onContinue={() => goToStep('brainScience', 'continue')}
-        onBack={() => goToStep('acquisitionSource', 'back')}
+        onBack={() =>
+          goToStep(
+            selectedIntents.length >= 2 ? 'intentPriority' : 'intent',
+            'back',
+          )
+        }
       />
     );
   }
@@ -1007,7 +1071,9 @@ function OnboardingFlowSteps({
           goToStep(
             INTENT_REFLECTION_ENABLED && !isOnlyCustomIntent
               ? 'intentReflection'
-              : 'acquisitionSource',
+              : selectedIntents.length >= 2
+                ? 'intentPriority'
+                : 'intent',
             'back',
           )
         }
@@ -1054,19 +1120,14 @@ function OnboardingFlowSteps({
         stepCount={visualStepCount}
         onSelect={recordAcquisitionSource}
         onContinue={() =>
-          continueAfterAcquisitionSource('continue', {
+          goToStep('firstReset', 'continue', {
             acquisition_source: acquisitionSource,
           })
         }
-        onBack={() =>
-          goToStep(
-            selectedIntents.length >= 2 ? 'intentPriority' : 'intent',
-            'back',
-          )
-        }
+        onBack={() => goToStep('gender', 'back')}
         onSkip={() => {
           recordAcquisitionSource('skipped');
-          continueAfterAcquisitionSource('skip');
+          goToStep('firstReset', 'skip');
         }}
       />
     );
@@ -1273,7 +1334,7 @@ function OnboardingFlowSteps({
             first_reset_mood: mood,
           });
         }}
-        onBack={() => goToStep('gender', 'back')}
+        onBack={() => goToStep('acquisitionSource', 'back')}
         onSkip={() => goToStep('dailyTime', 'skip')}
       />
     );
@@ -1301,12 +1362,12 @@ function OnboardingFlowSteps({
         stepCount={visualStepCount}
         onSelect={setGender}
         onContinue={() =>
-          goToStep('firstReset', 'continue', {
+          goToStep('acquisitionSource', 'continue', {
             has_gender: gender != null,
           })
         }
         onBack={() => goToStep('age', 'back')}
-        onSkip={() => goToStep('firstReset', 'skip')}
+        onSkip={() => goToStep('acquisitionSource', 'skip')}
       />
     );
   }
@@ -1558,11 +1619,13 @@ function OnboardingFlowSteps({
             [actionId]: minutesFromMidnight,
           }))
         }
-        onContinue={() => goToStep('mochiPlace', 'continue')}
+        starterPlan={starterPlan}
+        onContinue={continueFromStarterPlan}
         onBack={() => goToStep('diagnosis', 'back')}
       />
     );
   }
+
 
   if (step === 'mochiPlace') {
     return (
@@ -1624,20 +1687,10 @@ function OnboardingFlowSteps({
     return (
       <NotificationPermissionScreen
         schedule={buildDailyPlanSchedule(plan)}
-        reminders={onboardingReminders}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         isSubmitting={isNotificationSubmitting}
         errorMessage={notificationErrorMessage}
-        onReminderEnabledChange={(
-          actionId: DailyPlanReminderActionId,
-          enabled: boolean,
-        ) => {
-          setOnboardingReminders((current) => ({
-            ...current,
-            [actionId]: { enabled },
-          }));
-        }}
         onEnable={() => {
           void enableNotifications();
         }}
