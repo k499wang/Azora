@@ -467,6 +467,7 @@ export default function TodoListSection({
   // With the day done every finished to-do folds into the drawer, so the card
   // stands alone rather than sitting on top of the list it is celebrating.
   const plan = planSelfCareGoalList(goals);
+  const completedGoalCount = goals.filter((goal) => goal.completedToday).length;
   const railGoals = dayDone ? [] : plan.rail;
   const drawerGoals = dayDone ? goals : plan.drawer;
   useGoalCompletionCelebration(goals, (goalId) => {
@@ -542,7 +543,14 @@ export default function TodoListSection({
 
   return (
     <View style={styles.section}>
-      {dayDone ? null : <Overline label="To-dos" style={styles.groupLabel} />}
+      {dayDone ? null : (
+        <Overline
+          label="To-dos"
+          done={completedGoalCount}
+          total={goals.length}
+          style={styles.groupLabel}
+        />
+      )}
 
       {goalsQuery.isPending ? (
         <View style={styles.statusRow}>
