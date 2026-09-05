@@ -8,8 +8,6 @@ import { colors } from '../../theme/colors';
 import { padding, spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import type { DailyId } from '../../hooks/useStartDaily';
-import { decorationArrivalClock } from '../../lib/room/decorationDelivery';
-import { formatDailyPlanTime } from '../../services/dailyPlan/dailyPlanScheduleCore';
 import type { RoomSlot } from '../../lib/room/roomProgress';
 
 const CHECK_SIZE = 18;
@@ -19,8 +17,6 @@ const CHECK_DOT_SIZE = 26;
 export type DecorateState =
   | { kind: 'complete' }
   | { kind: 'claimed' }
-  /** the day is finished and the piece it earned has not arrived yet */
-  | { kind: 'waiting'; readyAt: number | null }
   | {
       kind: 'locked';
       guidedDone: boolean;
@@ -48,8 +44,6 @@ export function decorateTitle(state: DecorateState): string {
       return 'This room is finished';
     case 'claimed':
       return "Today's decoration is placed";
-    case 'waiting':
-      return 'Your decoration is on its way';
     case 'locked':
       return "Finish today's dailies";
     case 'choose':
@@ -99,21 +93,6 @@ export default function DecoratePanel({
           style={styles.primaryButton}
           onPress={onSeeRoom}
         />
-      </View>
-    );
-  }
-
-  if (state.kind === 'waiting') {
-    return (
-      <View style={styles.panel}>
-        <Text style={styles.panelBody}>
-          {state.readyAt == null
-            ? 'Today is done. Your decoration arrives later today.'
-            : `Today is done. Your decoration arrives at ${formatDailyPlanTime(
-                decorationArrivalClock(state.readyAt),
-                '12:00',
-              )}.`}
-        </Text>
       </View>
     );
   }

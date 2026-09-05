@@ -229,11 +229,6 @@ export default function ShareableResultScreen({
             snapshot.state,
             roomClaim.progress.canClaim,
           )}
-          deliveryReadyAt={
-            roomClaim.progress.awaitingDelivery
-              ? roomClaim.progress.deliveryReadyAt
-              : null
-          }
           onShow={handleSheetShow}
           onExitStart={handleSheetExitStart}
           onChoosePiece={handleChoosePiece}

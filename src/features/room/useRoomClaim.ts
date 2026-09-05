@@ -1,5 +1,4 @@
 import { useDailiesCompletion } from '../../hooks/useDailiesCompletion';
-import { useDecorationDelivery } from './useDecorationDelivery';
 import { useRoomOverride } from './devRoomOverride';
 import { roomProgress, type RoomProgress } from '../../lib/room/roomProgress';
 import { useCurrentRoomQuery } from '../../queries/room/useCurrentRoomQuery';
@@ -24,11 +23,6 @@ export function useRoomClaim(userId: string | null): RoomClaim {
   const override = useRoomOverride();
   const currentRoomQuery = useCurrentRoomQuery(userId);
   const dailies = useDailiesCompletion(userId);
-  const deliveryReadyAt = useDecorationDelivery(
-    userId,
-    dailies.todayLocalDate,
-    dailies.allCompleted,
-  );
   const currentRoom = currentRoomQuery.data;
 
   // Dev lab only, and `useRoomOverride` returns null in release builds.
@@ -43,8 +37,6 @@ export function useRoomClaim(userId: string | null): RoomClaim {
       lastEarnedLocalDate: currentRoom?.lastEarnedLocalDate ?? null,
       todayLocalDate: dailies.todayLocalDate,
       dailiesComplete: dailies.allCompleted,
-      deliveryReadyAt,
-      nowMs: Date.now(),
     }),
     dailies,
     isLoading: currentRoomQuery.isPending || dailies.isLoading,

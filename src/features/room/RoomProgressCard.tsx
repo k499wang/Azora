@@ -8,8 +8,6 @@ import ChunkyButton, {
   CHUNKY_TONE_AMBER,
 } from '../../components/common/ChunkyButton';
 import { DAILIES_PER_DAY } from '../../lib/dailies';
-import { decorationArrivalClock } from '../../lib/room/decorationDelivery';
-import { formatDailyPlanTime } from '../../services/dailyPlan/dailyPlanScheduleCore';
 import {
   ROOM_SLOT_COUNT,
   type RoomProgress,
@@ -84,12 +82,7 @@ const TONE_STYLE: Record<
 interface RoomProgressCardProps {
   progress: Pick<
     RoomProgress,
-    | 'isComplete'
-    | 'canClaim'
-    | 'claimedToday'
-    | 'placedCount'
-    | 'awaitingDelivery'
-    | 'deliveryReadyAt'
+    'isComplete' | 'canClaim' | 'claimedToday' | 'placedCount'
   >;
   dailies: Pick<
     DailiesCompletion,
@@ -115,8 +108,6 @@ export default function RoomProgressCard({
   const view = describeRoomCard({
     isComplete: progress.isComplete,
     canClaim: progress.canClaim,
-    awaitingDelivery: progress.awaitingDelivery,
-    deliveryReadyAt: progress.deliveryReadyAt,
     claimedToday: progress.claimedToday,
     dailiesDoneCount: [
       dailies.guidedCompleted,
@@ -211,16 +202,12 @@ export interface RoomCardView {
 export function describeRoomCard({
   isComplete,
   canClaim,
-  awaitingDelivery,
-  deliveryReadyAt,
   claimedToday,
   dailiesDoneCount,
   placedCount,
 }: {
   isComplete: boolean;
   canClaim: boolean;
-  awaitingDelivery: boolean;
-  deliveryReadyAt: number | null;
   claimedToday: boolean;
   dailiesDoneCount: number;
   placedCount: number;
@@ -249,28 +236,6 @@ export function describeRoomCard({
     };
   }
 
-  // The day is done and its piece is on the way. The bar is full because the
-  // work is finished — the wait is the reward taking its time, not the user
-  // having something left to do — and the note names the hour rather than
-  // counting down to it: a clock ticking on Home asks to be watched, and this
-  // is a wait measured in hours.
-  if (awaitingDelivery) {
-    return {
-      title: 'Your decoration is on its way',
-      note:
-        deliveryReadyAt == null
-          ? 'It arrives later today.'
-          : `It arrives at ${formatDailyPlanTime(
-              decorationArrivalClock(deliveryReadyAt),
-              '12:00',
-            )}.`,
-      tone: 'ready',
-      done: DAILIES_PER_DAY,
-      total: DAILIES_PER_DAY,
-      action: null,
-    };
-  }
-
   if (claimedToday) {
     // Today is what this state is about, so the bar stays on today rather than
     // dropping back to a room count that reads as progress lost.
@@ -290,9 +255,8 @@ export function describeRoomCard({
   // showing room pieces here read as "finish today's dailies — 1 / 7", which
   // asks for four days that do not exist.
   //
-  // Finishing them can only land in `canClaim` or `awaitingDelivery` above,
-  // never here: both are built from the same `allCompleted` this branch would
-  // test.
+  // Finishing them can only land in `canClaim` above, never here: that flag is
+  // built from the same `allCompleted` this branch would test.
   return {
     title: "Finish today's dailies",
     tone: 'waiting',

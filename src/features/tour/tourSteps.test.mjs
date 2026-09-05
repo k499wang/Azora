@@ -2,11 +2,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { tourSteps } from './tourSteps.ts';
 
-test('the app tour walks three Home targets before Heart measurement', () => {
+test('the app tour walks four Home targets before Heart measurement', () => {
   assert.deepEqual(
     tourSteps.map(({ target, tab }) => ({ target, tab })),
     [
       { target: 'dailies', tab: 'Home' },
+      { target: 'todos', tab: 'Home' },
       { target: 'extraPractice', tab: 'Home' },
       { target: 'seeAll', tab: 'Home' },
       { target: 'measureHeart', tab: 'Heart' },

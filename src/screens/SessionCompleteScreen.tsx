@@ -257,11 +257,6 @@ export default function SessionCompleteScreen({
             snapshot.state,
             roomClaim.progress.canClaim,
           )}
-          deliveryReadyAt={
-            roomClaim.progress.awaitingDelivery
-              ? roomClaim.progress.deliveryReadyAt
-              : null
-          }
           onShow={handleSheetShow}
           onChoosePiece={handleChoosePiece}
           onDismiss={handleSheetDismiss}

@@ -31,7 +31,6 @@ import { useIsRegularWidth } from '../../hooks/useIsRegularWidth';
 import {
   TODAY_JOURNEY_DASH_GAP,
   TODAY_JOURNEY_DASH_HEIGHT,
-  TODAY_JOURNEY_GROUP_GAP,
   TODAY_JOURNEY_RAIL_TIMING,
   todayJourneyDashCount,
 } from './todayJourneyLayout';
@@ -45,6 +44,8 @@ import {
   TODAY_JOURNEY_COLUMN_WIDTH,
   TODAY_JOURNEY_MARKER_ICON_SIZE,
   TODAY_JOURNEY_MARKER_SIZE,
+  TODAY_JOURNEY_LABEL_INSET,
+  TODAY_JOURNEY_LABEL_GAP,
   TODAY_JOURNEY_RAIL_WIDTH,
 } from './todayJourneyLayout';
 
@@ -622,14 +623,13 @@ const styles = StyleSheet.create({
   historyLinkPressed: {
     opacity: 0.6,
   },
-  // Flush with the section title above it. The section's own gap is sized for
-  // blocks, so the label is pulled back down onto the rows it names.
-  // Flush with the section header's icon, and given room above it so the label
-  // reads as opening a group rather than as a caption on the header. The gap
-  // below it is the section's own, topped up to the shared group gap.
+  // Flush with the section header's icon. The section's own gap is sized for
+  // blocks of rows, which is more air than a label needs under a heading it
+  // belongs to, so the label is pulled back up toward it.
   groupLabel: {
     marginTop: spacing.sm,
-    marginBottom: TODAY_JOURNEY_GROUP_GAP - spacing.lg,
+    marginBottom: TODAY_JOURNEY_LABEL_GAP - spacing.lg,
+    marginLeft: TODAY_JOURNEY_LABEL_INSET,
   },
   timeline: {
     position: 'relative',

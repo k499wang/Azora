@@ -32,7 +32,6 @@ import {
   setRoomOverride,
   isRoomOverridden,
 } from '../features/room/devRoomOverride';
-import { clearDecorationDeliveries } from '../features/room/useDecorationDelivery';
 import {
   setDailiesForcedComplete,
   useDailiesForcedComplete,
@@ -181,8 +180,6 @@ function fakeClaim({
       isComplete: nextSlot == null,
       claimedToday,
       canClaim: allCompleted && !claimedToday && nextSlot != null,
-      awaitingDelivery: false,
-      deliveryReadyAt: null,
     },
     dailies: {
       todayLocalDate: '2026-01-01',
@@ -229,17 +226,12 @@ const SCREEN_CASES: { label: string; claim: RoomClaim }[] = [
  * absent on purpose: dailies finished with a slot free *is* "piece ready", so
  * there is no separate "done but no button" case to preview.
  */
-/** A fixed afternoon, so the delivery case reads the same on every run. */
-const LAB_DELIVERY_READY_AT = new Date(2026, 0, 1, 15, 30, 0, 0).getTime();
-
 const CARD_CASES = [
   {
     label: 'Working through today',
     input: {
       isComplete: false,
       canClaim: false,
-      awaitingDelivery: false,
-      deliveryReadyAt: null,
       claimedToday: false,
       dailiesDoneCount: 1,
       placedCount: 2,
@@ -250,20 +242,6 @@ const CARD_CASES = [
     input: {
       isComplete: false,
       canClaim: true,
-      awaitingDelivery: false,
-      deliveryReadyAt: null,
-      claimedToday: false,
-      dailiesDoneCount: 3,
-      placedCount: 2,
-    },
-  },
-  {
-    label: 'Piece on its way — dailies done, delivery pending',
-    input: {
-      isComplete: false,
-      canClaim: false,
-      awaitingDelivery: true,
-      deliveryReadyAt: LAB_DELIVERY_READY_AT,
       claimedToday: false,
       dailiesDoneCount: 3,
       placedCount: 2,
@@ -274,8 +252,6 @@ const CARD_CASES = [
     input: {
       isComplete: false,
       canClaim: false,
-      awaitingDelivery: false,
-      deliveryReadyAt: null,
       claimedToday: true,
       dailiesDoneCount: 3,
       placedCount: 3,
@@ -286,8 +262,6 @@ const CARD_CASES = [
     input: {
       isComplete: true,
       canClaim: false,
-      awaitingDelivery: false,
-      deliveryReadyAt: null,
       claimedToday: false,
       dailiesDoneCount: 3,
       placedCount: 7,
@@ -688,7 +662,7 @@ export default function RoomLabScreen({ navigation }: RoomLabScreenProps) {
             <SectionHeader title="Today's dailies — faked" />
             <Text style={styles.note}>
               Reports the three dailies as done without doing them. Everything
-              downstream is real: the delivery wait, the picker, and the write.
+              downstream is real: the picker and the write.
               A piece placed this way is a real decoration on your real room.
             </Text>
             <Button
@@ -698,21 +672,6 @@ export default function RoomLabScreen({ navigation }: RoomLabScreenProps) {
                   : 'Finish today without doing it'
               }
               onPress={() => setDailiesForcedComplete(!dailiesForced)}
-            />
-          </View>
-
-          <View style={styles.section}>
-            <SectionHeader title="Decoration delivery" />
-            <Text style={styles.note}>
-              A finished day's piece arrives after a wait — four hours in a
-              release build, one minute in this one. Clearing forgets the wait
-              that is running, so finishing a day starts a fresh one.
-            </Text>
-            <Button
-              label="Restart today's delivery"
-              onPress={() => {
-                void clearDecorationDeliveries();
-              }}
             />
           </View>
 

@@ -43,7 +43,12 @@ const TAB_BAR_HEIGHT = 49;
 /** the glass chips either side of Home's top row */
 const HOTEL_ROW_BUTTON_SIZE = 46;
 
-const TOUR_TARGETS: TourTargetId[] = ['dailies', 'extraPractice', 'seeAll'];
+const TOUR_TARGETS: TourTargetId[] = [
+  'dailies',
+  'todos',
+  'extraPractice',
+  'seeAll',
+];
 
 export default function HomeScreen({ navigation }: HomeScreenProps) {
   const user = useAuthStore((state) => state.user);
@@ -77,6 +82,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
 
   const tourScroll = useTourScroller(TOUR_TARGETS);
   const dailiesTarget = useTourTarget('dailies');
+  const todosTarget = useTourTarget('todos');
   const extraPracticeTarget = useTourTarget('extraPractice');
 
   // The recently-logged list and its analytics now live on the Heart tab
@@ -127,8 +133,8 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
               isLoading={roomClaim.isLoading}
             />
           </View>
-          <View {...dailiesTarget}>
-            <View style={styles.todayList}>
+          <View style={styles.todayList}>
+            <View {...dailiesTarget}>
               <TodaysDailiesSection
                 technique={dailies.guidedTechnique}
                 techniqueLoading={dailies.guidedTechniqueLoading}
@@ -147,6 +153,8 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
                 onPressHistory={() => navigation.navigate('History')}
                 dayDone={dayDone}
               />
+            </View>
+            <View {...todosTarget}>
               <TodoListSection
                 userId={user?.id ?? null}
                 dayDone={dayDone}
@@ -215,7 +223,11 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   todayList: {
-    gap: spacing.md,
+    // The exercises and the to-dos are one day, so they sit closer than two
+    // separate sections would. The to-do group label carries its own space
+    // above it, and stacking a full gap on top of that read as a gulf between
+    // them rather than a break.
+    gap: spacing.sm,
   },
   extraPracticeSection: {
     marginTop: margin.sectionGap,

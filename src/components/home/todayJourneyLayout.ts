@@ -8,11 +8,30 @@ import { spacing } from '../../theme/spacing';
  */
 export const TODAY_JOURNEY_GROUP_GAP = spacing.lg;
 
+/**
+ * How close a group's label sits to the first row it names. Tighter than the
+ * group gap: a label belongs to the rows under it, so it should read as their
+ * heading rather than as something floating between two lists.
+ *
+ * The two sections' own gaps differ, so each subtracts its own from this. Both
+ * labels then sit the same distance from their rows by construction rather than
+ * by two numbers that have to be kept in step by hand.
+ */
+export const TODAY_JOURNEY_LABEL_GAP = spacing.sm + spacing.xs;
+
 /** Shared geometry for every node in the Home daily journey. */
 export const TODAY_JOURNEY_COLUMN_WIDTH = 40;
 export const TODAY_JOURNEY_MARKER_SIZE = 22;
 export const TODAY_JOURNEY_MARKER_ICON_SIZE = 14;
 export const TODAY_JOURNEY_RAIL_WIDTH = 6;
+/**
+ * How far a group's label is indented so it starts on the same vertical line
+ * as the markers beneath it. The markers are centred in a column wider than
+ * they are, so a label flush with the section would sit left of every circle it
+ * introduces.
+ */
+export const TODAY_JOURNEY_LABEL_INSET =
+  (TODAY_JOURNEY_COLUMN_WIDTH - TODAY_JOURNEY_MARKER_SIZE) / 2;
 /**
  * The rail is one dotted line that runs from the first daily to the last goal,
  * so its dashes are laid out at a fixed pitch rather than spread to fit each
