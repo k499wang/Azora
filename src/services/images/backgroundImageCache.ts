@@ -8,6 +8,7 @@ import {
   RESULT_BACKGROUND_ASSET,
   SUNSET_BACKGROUND_ASSET,
 } from '../../data/backgroundAssets';
+import { STREAK_FLAME_ASSET } from '../../data/streakFlameAsset';
 
 export type BackgroundImageKey =
   | 'result'
@@ -16,7 +17,10 @@ export type BackgroundImageKey =
   | 'breathHero'
   | 'heartHero'
   | 'profileHero'
-  | 'dailyPlan';
+  | 'dailyPlan'
+  // Not a background, but it is a full-bleed hero the user must never watch
+  // appear, and this is where the app predecodes those.
+  | 'streakFlame';
 
 const sources: Record<BackgroundImageKey, number> = {
   result: RESULT_BACKGROUND_ASSET.source,
@@ -26,6 +30,7 @@ const sources: Record<BackgroundImageKey, number> = {
   heartHero: HEART_HERO_BACKGROUND_ASSET.source,
   profileHero: PROFILE_HERO_BACKGROUND_ASSET.source,
   dailyPlan: DAILY_PLAN_BACKGROUND_ASSET.source,
+  streakFlame: STREAK_FLAME_ASSET,
 };
 
 const loadOptions: Partial<Record<BackgroundImageKey, ImageLoadOptions>> = {
@@ -71,6 +76,7 @@ export async function loadCriticalBackgroundImages(): Promise<void> {
     'heartHero',
     'profileHero',
     'dailyPlan',
+    'streakFlame',
   ];
   const results = await Promise.allSettled(
     criticalKeys.map((key) => loadBackgroundImage(key)),

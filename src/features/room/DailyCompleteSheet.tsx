@@ -19,14 +19,14 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
-import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Text } from '../../components/common/Text';
 import Icon from '../../components/common/icons/Icon';
 import ProgressBar from '../../components/common/ProgressBar';
+import StreakFlame from '../../components/common/StreakFlame';
 import ChunkyButton from '../../components/common/ChunkyButton';
 import Confetti from '../../components/common/Confetti';
 import { Rise } from '../../components/common/Reveal';
-import { getRoomDay, getRoomDayLabel } from './roomDays';
+import { getRoomDay } from './roomDays';
 import { isHapticsEnabled } from '../../services/preferences/hapticsPreference';
 import { triggerTapHaptic } from '../../native/tapHaptics';
 import { DAILIES_PER_DAY } from '../../lib/dailies';
@@ -53,8 +53,8 @@ export const CELEBRATION_HUE: PlayfulHue = colors.playful.night;
 
 // Sized off the screen rather than fixed, so it stays the hero on a Pro Max
 // without crowding the title off an SE.
-const FLAME_MAX = 260;
-const FLAME_WIDTH_RATIO = 0.62;
+const FLAME_MAX = 320;
+const FLAME_WIDTH_RATIO = 0.74;
 const FLICKER_MS = 1500;
 // Two frames at 60Hz, four at 120 — a whole number on both, which is what keeps
 // the gaps between characters even.
@@ -148,18 +148,12 @@ function DailyCompleteSheet({
   const { done, unlocked, showBar } = state;
 
   const day = state.nextSlot == null ? null : getRoomDay(state.nextSlot);
-  const pieceLabel =
-    state.nextSlot == null ? null : getRoomDayLabel(state.nextSlot);
   const remaining = Math.max(0, DAILIES_PER_DAY - done);
 
   // On the third daily the screen stops being about the session and starts
   // being about the thing they just earned, so the copy changes with it.
   const headline = unlocked ? 'All 3 dailies done!' : title;
-  const supporting = unlocked
-    ? pieceLabel == null
-      ? "You earned today's decoration"
-      : `You earned a new ${pieceLabel}`
-    : subtitle;
+  const supporting = unlocked ? 'You earned a new decoration' : subtitle;
 
   useEffect(() => {
     if (!visible) {
@@ -253,11 +247,14 @@ function DailyCompleteSheet({
         >
           {presented ? (
             <>
+              <Confetti
+                pieceColors={[colors.text.inverse, colors.orange[300]]}
+                startDelayMs={CONFETTI_MS}
+                origin="fall"
+                pieceCount={24}
+              />
+
               <View style={styles.center}>
-                <Confetti
-                  pieceColors={[colors.text.inverse, colors.orange[300]]}
-                  startDelayMs={CONFETTI_MS}
-                />
                 <Flame size={flameSize} delay={BEAT.flame} />
                 <TypedTitle text={headline} delay={BEAT.title} />
                 <Rise delay={BEAT.subtitle}>
@@ -325,9 +322,9 @@ export default memo(DailyCompleteSheet);
 /**
  * The flame.
  *
- * A full round fire rather than the app's streak mark, which read as a logo
- * blown up at 260pt. One flat orange for now; the flicker — a slow sway and
- * swell — is what keeps it alive without a second tone.
+ * `StreakFlame` at hero size, swaying and swelling on a slow loop. The icon
+ * fonts' flames are one flat colour and read as a logo blown up to 260pt; this
+ * one is drawn as nested shapes for exactly this screen.
  */
 function Flame({ size, delay }: { size: number; delay: number }) {
   const enter = useSharedValue(0);
@@ -361,11 +358,7 @@ function Flame({ size, delay }: { size: number; delay: number }) {
 
   return (
     <Animated.View style={[styles.flameWrap, animated]}>
-      <MaterialCommunityIcons
-        name="fire"
-        size={size}
-        color={colors.orange[400]}
-      />
+      <StreakFlame size={size} />
     </Animated.View>
   );
 }
