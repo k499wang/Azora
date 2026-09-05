@@ -37,7 +37,6 @@ export default function IntentPriorityScreen({
   return (
     <OnboardingScreenLayout
       title="What is most important to you?"
-      subtitle="Choose the one you want Azora to focus on first."
       progress={stepIndex / stepCount}
       onBack={onBack}
       footer={

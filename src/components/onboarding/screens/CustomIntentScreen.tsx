@@ -32,7 +32,6 @@ export default function CustomIntentScreen({
   return (
     <OnboardingScreenLayout
       title="What brought you here?"
-      subtitle="Share the goal, feeling, or situation you want Azora to support."
       progress={stepIndex / stepCount}
       onBack={onBack}
       keyboardAvoiding

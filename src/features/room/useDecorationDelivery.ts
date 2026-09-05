@@ -1,8 +1,50 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { decorationReadyAt } from '../../lib/room/decorationDelivery';
+import {
+  DECORATION_DELIVERY_MS,
+  decorationReadyAt,
+} from '../../lib/room/decorationDelivery';
 
 const DELIVERY_KEY_PREFIX = 'room.decoration_delivery';
+
+/**
+ * Short enough to sit through. The real wait is hours, which makes the flow
+ * untestable by hand, so the dev build runs the same code on a minute.
+ */
+const DEV_DELIVERY_MS = 60 * 1000;
+
+function deliveryDelayMs(): number {
+  return __DEV__ ? DEV_DELIVERY_MS : DECORATION_DELIVERY_MS;
+}
+
+// Bumped by the dev lab to make every mounted hook re-read storage. Nothing
+// else writes it, and the clear it exists for is itself `__DEV__`-only.
+let generation = 0;
+const listeners = new Set<() => void>();
+
+function subscribeGeneration(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
+function readGeneration(): number {
+  return generation;
+}
+
+/**
+ * Forget every recorded delivery, so the next finished day starts its wait
+ * again. Dev lab only — a real user's wait is not something the app revokes.
+ */
+export async function clearDecorationDeliveries(): Promise<void> {
+  if (!__DEV__) return;
+
+  const keys = await AsyncStorage.getAllKeys();
+  const ours = keys.filter((key) => key.startsWith(DELIVERY_KEY_PREFIX));
+  if (ours.length > 0) await AsyncStorage.multiRemove(ours);
+
+  generation += 1;
+  listeners.forEach((listener) => listener());
+}
 
 interface StoredDelivery {
   localDate: string;
@@ -27,6 +69,11 @@ export function useDecorationDelivery(
   localDate: string,
   dailiesComplete: boolean,
 ): number | null {
+  const generationTick = useSyncExternalStore(
+    subscribeGeneration,
+    readGeneration,
+    readGeneration,
+  );
   const [readyAt, setReadyAt] = useState<number | null>(null);
   // Nothing is written until the stored record has been read back, or a day
   // finished before the read lands would restart its own clock on every launch.
@@ -61,14 +108,14 @@ export function useDecorationDelivery(
     return () => {
       cancelled = true;
     };
-  }, [userId, localDate]);
+  }, [userId, localDate, generationTick]);
 
   useEffect(() => {
     if (userId == null || !loaded || !dailiesComplete || readyAt != null) {
       return;
     }
 
-    const next = decorationReadyAt(new Date());
+    const next = decorationReadyAt(new Date(), deliveryDelayMs());
     setReadyAt(next);
 
     const record: StoredDelivery = { localDate, readyAt: next };

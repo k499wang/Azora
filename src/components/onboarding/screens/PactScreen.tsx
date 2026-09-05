@@ -312,7 +312,6 @@ export default function PactScreen({
     <>
       <OnboardingScreenLayout
         title="One small promise to yourself."
-        subtitle="Small moments add up. There’s no need to be perfect."
         progress={stepIndex / stepCount}
         onBack={onBack}
         footer={

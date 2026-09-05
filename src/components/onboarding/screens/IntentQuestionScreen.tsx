@@ -1,9 +1,8 @@
 import { Text } from '../../common/Text';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { typography } from '../../../theme/typography';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { INTENT_OPTIONS } from '../data/intentOptions';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
@@ -37,7 +36,6 @@ export default function IntentQuestionScreen({
   return (
     <OnboardingScreenLayout
       title="What's on your mind?"
-      subtitle="Pick as many as feel right — Azora will tune to them."
       progress={stepIndex / stepCount}
       onBack={onBack}
       animateCopy
@@ -50,15 +48,6 @@ export default function IntentQuestionScreen({
         />
       }
     >
-      <View style={styles.timeHint}>
-        <MaterialCommunityIcons
-          name="clock-outline"
-          size={14}
-          color={colors.text.tertiary}
-        />
-        <Text style={styles.timeHintText}>Takes about 5 minutes</Text>
-      </View>
-
       <OnboardingOptionList
         options={INTENT_OPTIONS.map((option) => ({
           id: option.id,
@@ -79,18 +68,6 @@ export default function IntentQuestionScreen({
 }
 
 const styles = StyleSheet.create({
-  timeHint: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    marginTop: -spacing.lg,
-    marginBottom: spacing.xs,
-  },
-  timeHintText: {
-    ...typography.body.small,
-    fontSize: 12,
-    color: colors.text.tertiary,
-  },
   error: {
     ...typography.body.small,
     color: colors.error[700],

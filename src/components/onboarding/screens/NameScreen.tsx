@@ -3,6 +3,7 @@ import { StyleSheet } from 'react-native';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { typography } from '../../../theme/typography';
+import MochiAside from '../MochiAside';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 
@@ -27,8 +28,14 @@ export default function NameScreen({
 }: NameScreenProps) {
   return (
     <OnboardingScreenLayout
-      title="What's your name?"
-      subtitle="Let Azora know a little more about you!"
+      title=""
+      titleSlot={
+        <MochiAside
+          text="Thanks for helping me out! Now, what should I call you?"
+          variant="question"
+          delayMs={160}
+        />
+      }
       progress={stepIndex / stepCount}
       onBack={onBack}
       onSkip={onSkip}

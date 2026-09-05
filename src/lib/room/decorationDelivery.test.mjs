@@ -54,3 +54,12 @@ test('the arrival clock is zero-padded local time', () => {
   assert.equal(decorationArrivalClock(at(9, 5).getTime()), '09:05');
   assert.equal(decorationArrivalClock(at(16, 30).getTime()), '16:30');
 });
+
+test('a supplied delay replaces the default and is still capped', () => {
+  const completed = at(12);
+  assert.equal(
+    decorationReadyAt(completed, 60_000),
+    completed.getTime() + 60_000,
+  );
+  assert.equal(decorationReadyAt(at(20), 6 * 60 * 60 * 1000), at(23).getTime());
+});

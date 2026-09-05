@@ -104,7 +104,6 @@ export default function MicroFactScreen({
   return (
     <OnboardingScreenLayout
       title="Did you know?"
-      subtitle="What users feel within their first minute of a reset."
       progress={stepIndex / stepCount}
       onBack={onBack}
       footer={<OnboardingPrimaryButton label="Cool, let's go" onPress={onContinue} />}

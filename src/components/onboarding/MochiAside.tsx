@@ -44,6 +44,8 @@ import { duration, easing } from '../../theme/motion';
 const MOCHI_SIZE = 52;
 const LEAD_MOCHI_SIZE = 64;
 const TAIL = 13;
+/** the same shallow lip the option rows sit on, so the bubble is a surface too */
+const LIP_DEPTH = 3;
 const PILL_START_SCALE = 0.9;
 
 /**
@@ -143,11 +145,13 @@ const styles = StyleSheet.create({
   // that comes to, so a line that wraps to three needs no measuring.
   bubble: {
     flex: 1,
-    paddingVertical: spacing.sm,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.sm + LIP_DEPTH,
     paddingHorizontal: spacing.md,
   },
   bubbleLead: {
-    paddingVertical: spacing.md,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.md + LIP_DEPTH,
     paddingHorizontal: spacing.lg,
   },
   // No shadow. This layer scales as it pops, and an unrasterised shadow on a
@@ -159,6 +163,8 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     borderWidth: StyleSheet.hairlineWidth,
     borderColor: colors.border.subtle,
+    borderBottomWidth: LIP_DEPTH,
+    borderBottomColor: colors.neutral[200],
     backgroundColor: colors.background.card,
   },
   pillLead: {

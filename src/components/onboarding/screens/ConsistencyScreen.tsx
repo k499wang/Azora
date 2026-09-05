@@ -127,6 +127,7 @@ const styles = StyleSheet.create({
     paddingTop: 24,
     paddingLeft: spacing.sm,
     borderBottomWidth: 1.5,
+    borderLeftWidth: 1.5,
     borderColor: colors.neutral[300],
   },
   bars: {

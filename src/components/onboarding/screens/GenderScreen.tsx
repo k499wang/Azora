@@ -2,8 +2,9 @@ import { GENDER_OPTIONS, type GenderOption } from '../data/genderOptions';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import OnboardingOptionList from '../OnboardingOptionList';
+import type { OnboardingOptionIconName } from '../OnboardingOptionIcon';
 
-const GENDER_ICONS: Record<GenderOption['id'], 'gender-female' | 'gender-male' | 'gender-non-binary' | 'help-circle-outline'> = {
+const GENDER_ICONS: Record<GenderOption['id'], OnboardingOptionIconName> = {
   female: 'gender-female',
   male: 'gender-male',
   nonbinary: 'gender-non-binary',
@@ -32,7 +33,6 @@ export default function GenderScreen({
   return (
     <OnboardingScreenLayout
       title="How do you identify?"
-      subtitle="This helps Azora frame guidance more naturally."
       progress={stepIndex / stepCount}
       onBack={onBack}
       onSkip={onSkip}
