@@ -56,6 +56,8 @@ import {
   TODAY_JOURNEY_GROUP_GAP,
   TODAY_JOURNEY_MARKER_ICON_SIZE,
   TODAY_JOURNEY_MARKER_SIZE,
+  TODAY_JOURNEY_LABEL_INSET,
+  TODAY_JOURNEY_LABEL_GAP,
   TODAY_JOURNEY_RAIL_TIMING,
   TODAY_JOURNEY_RAIL_WIDTH,
   todayJourneyDashCount,
@@ -754,11 +756,15 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   // Flush with the section title, and pulled down onto the rows it names.
-  // The break between the dailies above and this list: the space over it is
-  // what separates the two journeys, so it is wider than the section's own gap.
+  // The break between the dailies above and this list. It stays a break rather
+  // than a gulf: the exercises and the to-dos are the same day, so the label
+  // sits nearer the rows it follows than a separate section would.
   groupLabel: {
-    marginTop: spacing.md,
-    marginBottom: TODAY_JOURNEY_GROUP_GAP - spacing.md,
+    marginLeft: TODAY_JOURNEY_LABEL_INSET,
+    marginTop: spacing.sm,
+    // Each section corrects its own gap to the shared label gap, so both
+    // labels sit the same distance from the rows they introduce.
+    marginBottom: TODAY_JOURNEY_LABEL_GAP - spacing.md,
   },
   journey: {
     position: 'relative',

@@ -6,8 +6,6 @@
  * them to decide what to show, so they cannot live in either one.
  */
 
-import { isDecorationReady } from './decorationDelivery';
-
 /**
  * Slots are filled in this order and never skipped, so a missed day pauses the
  * sequence rather than leaving a permanent hole. Every room ends up complete;
@@ -46,14 +44,6 @@ export interface RoomProgressInput {
   lastEarnedLocalDate: string | null;
   todayLocalDate: string;
   dailiesComplete: boolean;
-  /**
-   * When today's earned piece can be placed, as epoch ms, or null when nothing
-   * is waiting on a clock. Null is also the honest answer on a device that
-   * never saw the day complete, and it reads as ready.
-   */
-  deliveryReadyAt?: number | null;
-  /** only read while a delivery is pending */
-  nowMs?: number;
 }
 
 export interface RoomProgress {
@@ -63,9 +53,6 @@ export interface RoomProgress {
   isComplete: boolean;
   claimedToday: boolean;
   canClaim: boolean;
-  /** the day is finished and the piece it earned has not arrived yet */
-  awaitingDelivery: boolean;
-  deliveryReadyAt: number | null;
 }
 
 function isRoomSlot(slot: string): slot is RoomSlot {
@@ -77,8 +64,6 @@ export function roomProgress({
   lastEarnedLocalDate,
   todayLocalDate,
   dailiesComplete,
-  deliveryReadyAt = null,
-  nowMs = Date.now(),
 }: RoomProgressInput): RoomProgress {
   const filled = new Set(
     decorations.map((decoration) => decoration.slot).filter(isRoomSlot),
@@ -90,18 +75,14 @@ export function roomProgress({
   // slot that is already taken — dead-ending the room for good.
   const nextSlot = ROOM_SLOTS.find((slot) => !filled.has(slot)) ?? null;
   const claimedToday = lastEarnedLocalDate === todayLocalDate;
-  // A full room claims nothing until the next floor is opened — rolling over is
-  // a choice the user makes, not something that happens to them.
-  const earned = dailiesComplete && !claimedToday && nextSlot != null;
-  const awaitingDelivery = earned && !isDecorationReady(deliveryReadyAt, nowMs);
 
   return {
     placedCount,
     nextSlot,
     isComplete: nextSlot == null,
     claimedToday,
-    canClaim: earned && !awaitingDelivery,
-    awaitingDelivery,
-    deliveryReadyAt,
+    // A full room claims nothing until the next floor is opened — rolling over
+    // is a choice the user makes, not something that happens to them.
+    canClaim: dailiesComplete && !claimedToday && nextSlot != null,
   };
 }
