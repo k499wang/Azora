@@ -1,5 +1,5 @@
 import { memo, useEffect, useMemo } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -64,6 +64,10 @@ const MAX_PIECE_DELAY = PIECES.reduce(
 );
 const GRAVITY_DROP = 90;
 const FLIGHT_EASING = Easing.out(Easing.quad);
+/** how long a piece takes to cross the screen when it is falling, not bursting */
+const FALL_FLIGHT_MS = 2600;
+/** how far a falling piece drifts sideways on its way down */
+const FALL_SWAY = 26;
 
 interface ConfettiProps {
   /** Alternated piece to piece, so the burst reads as two-tone rather than flat. */
@@ -77,6 +81,13 @@ interface ConfettiProps {
   /** Scales the pieces themselves, for a burst meant to be seen across a screen. */
   pieceScale?: number;
   /**
+   * Where the pieces come from. `burst` fires them out of the centre of
+   * whatever this is laid over; `fall` starts them off the top edge and drops
+   * them past the bottom, for a surface the burst would be too small an event
+   * for.
+   */
+  origin?: 'burst' | 'fall';
+  /**
    * Flight time of a single piece, with the launch stagger scaled to match. A
    * burst over something small wants both shorter — the pieces have less ground
    * to cover, and at the full duration they hang in the air after the moment
@@ -86,7 +97,8 @@ interface ConfettiProps {
 }
 
 /**
- * A one-shot burst from the centre of whatever it is laid over. It fires on
+ * A one-shot burst from the centre of whatever it is laid over, or — in `fall`
+ * mode — a shower dropping past it from off the top edge. It fires on
  * mount and does not repeat, so remount it — via `key` or by mounting it with
  * the moment it celebrates — rather than looking for a replay control.
  *
@@ -100,13 +112,18 @@ const Confetti = memo(function Confetti({
   pieceCount = DEFAULT_PIECE_COUNT,
   spread = 1,
   pieceScale = 1,
-  durationMs = PIECE_FLIGHT_MS,
+  origin = 'burst',
+  durationMs = origin === 'fall' ? FALL_FLIGHT_MS : PIECE_FLIGHT_MS,
 }: ConfettiProps) {
+  const { height, width } = useWindowDimensions();
   const renderedPieceCount = Number.isFinite(pieceCount)
     ? Math.max(0, Math.min(PIECES.length, Math.floor(pieceCount)))
     : DEFAULT_PIECE_COUNT;
 
-  const stagger = durationMs / PIECE_FLIGHT_MS;
+  // Falling pieces have to keep arriving for the length of the moment, not
+  // launch together — so the stagger is a share of the flight rather than the
+  // burst's fixed head starts.
+  const stagger = origin === 'fall' ? 6 : durationMs / PIECE_FLIGHT_MS;
   const totalMs = durationMs + MAX_PIECE_DELAY * stagger;
   // Milliseconds since launch, so each piece can find its own place in the
   // flight without an animation of its own.
@@ -140,6 +157,9 @@ const Confetti = memo(function Confetti({
           durationMs={durationMs}
           spread={spread}
           pieceScale={pieceScale}
+          origin={origin}
+          fallHeight={height}
+          fallWidth={width}
         />
       ))}
     </View>
@@ -154,6 +174,9 @@ const ConfettiPiece = memo(function ConfettiPiece({
   durationMs,
   spread,
   pieceScale,
+  origin,
+  fallHeight,
+  fallWidth,
 }: {
   piece: (typeof PIECES)[number];
   color: string;
@@ -162,12 +185,36 @@ const ConfettiPiece = memo(function ConfettiPiece({
   durationMs: number;
   spread: number;
   pieceScale: number;
+  origin: 'burst' | 'fall';
+  fallHeight: number;
+  fallWidth: number;
 }) {
   const distance = piece.distance * spread;
   const drop = GRAVITY_DROP * spread;
   const { dx, dy, spin } = piece;
+  // The layer is centred, so a fall runs from half a screen above the middle to
+  // half a screen below it, across a column picked by the piece's own angle.
+  const fallFrom = -fallHeight / 2 - piece.size * 2;
+  const fallTo = fallHeight / 2 + piece.size * 2;
+  const column = dx * (fallWidth / 2 - piece.size * 2);
 
-  const style = useAnimatedStyle(() => {
+  const fallStyle = useAnimatedStyle(() => {
+    const linear = Math.min(
+      1,
+      Math.max(0, (elapsed.value - launchMs) / durationMs),
+    );
+
+    return {
+      opacity: linear === 0 || linear === 1 ? 0 : linear > 0.85 ? (1 - linear) * 6.6 : 1,
+      transform: [
+        { translateX: column + Math.sin(linear * Math.PI * 2 + dy) * FALL_SWAY },
+        { translateY: fallFrom + (fallTo - fallFrom) * linear },
+        { rotate: `${linear * spin}deg` },
+      ],
+    };
+  });
+
+  const burstStyle = useAnimatedStyle(() => {
     const linear = Math.min(
       1,
       Math.max(0, (elapsed.value - launchMs) / durationMs),
@@ -203,7 +250,7 @@ const ConfettiPiece = memo(function ConfettiPiece({
           height: piece.size * 0.6 * pieceScale,
           backgroundColor: color,
         },
-        style,
+        origin === 'fall' ? fallStyle : burstStyle,
       ]}
     />
   );
