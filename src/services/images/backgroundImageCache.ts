@@ -76,7 +76,6 @@ export async function loadCriticalBackgroundImages(): Promise<void> {
     'heartHero',
     'profileHero',
     'dailyPlan',
-    'streakFlame',
   ];
   const results = await Promise.allSettled(
     criticalKeys.map((key) => loadBackgroundImage(key)),

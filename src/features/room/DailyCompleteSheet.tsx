@@ -1,4 +1,4 @@
-import { memo, useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   Modal,
   StyleSheet,
@@ -11,6 +11,7 @@ import Animated, {
   interpolate,
   runOnJS,
   useAnimatedStyle,
+  useReducedMotion,
   useSharedValue,
   withDelay,
   withSequence,
@@ -136,6 +137,7 @@ function DailyCompleteSheet({
   const insets = useSafeAreaInsets();
   const { height, width } = useWindowDimensions();
   const flameSize = Math.min(FLAME_MAX, width * FLAME_WIDTH_RATIO);
+  const reducedMotion = useReducedMotion();
   const [presented, setPresented] = useState(false);
   const closing = useRef(false);
 
@@ -164,7 +166,7 @@ function DailyCompleteSheet({
       return;
     }
 
-    if (!presented) return;
+    if (!presented || reducedMotion) return;
 
     if (unlocked) {
       badge.value = withDelay(
@@ -175,13 +177,17 @@ function DailyCompleteSheet({
         ),
       );
     }
-  }, [badge, offset, presented, unlocked, visible]);
+  }, [badge, offset, presented, reducedMotion, unlocked, visible]);
 
   const close = () => {
     if (closing.current) return;
     closing.current = true;
     onExitStart?.();
     triggerTapHaptic();
+    if (reducedMotion) {
+      onDismiss();
+      return;
+    }
     offset.value = withTiming(
       height,
       { duration: FALL_MS, easing: easing.exit },
@@ -245,72 +251,103 @@ function DailyCompleteSheet({
             sheetStyle,
           ]}
         >
-          {presented ? (
-            <>
+          <>
+            {reducedMotion ? null : (
               <Confetti
                 pieceColors={[colors.text.inverse, colors.orange[300]]}
                 startDelayMs={CONFETTI_MS}
                 origin="fall"
                 pieceCount={24}
+                active={presented}
               />
+            )}
 
-              <View style={styles.center}>
-                <Flame size={flameSize} delay={BEAT.flame} />
-                <TypedTitle text={headline} delay={BEAT.title} />
-                <Rise delay={BEAT.subtitle}>
-                  <Text style={styles.subtitle}>{supporting}</Text>
-                </Rise>
-              </View>
+            <View style={styles.center}>
+              <Flame
+                size={flameSize}
+                delay={BEAT.flame}
+                active={presented}
+                reducedMotion={reducedMotion}
+              />
+              <TypedTitle
+                text={headline}
+                delay={BEAT.title}
+                active={presented}
+                reducedMotion={reducedMotion}
+              />
+              <SheetRise
+                delay={BEAT.subtitle}
+                when={presented}
+                reducedMotion={reducedMotion}
+              >
+                <Text style={styles.subtitle}>{supporting}</Text>
+              </SheetRise>
+            </View>
 
-              {showBar ? (
-                <Rise delay={BEAT.progress} style={styles.progressBlock}>
-                  <View style={styles.barRow}>
-                    <ProgressBar
-                      progress={done / DAILIES_PER_DAY}
-                      from={barFrom}
-                      delay={BAR_FILL_DELAY}
-                      height={BAR_HEIGHT}
-                      trackColor={colors.onBlock.fill}
-                      fillColor={colors.text.inverse}
-                      onFillStart={impactLight}
-                      onFillEnd={() => settleHaptic(unlocked)}
-                      style={styles.bar}
-                    />
-                    <Animated.View style={[styles.badge, badgeStyle]}>
-                      <Icon
-                        name={unlocked ? 'unlock' : 'lock'}
-                        size={18}
-                        color={colors.text.inverse}
-                      />
-                    </Animated.View>
-                  </View>
-                  <Text style={styles.progressLabel}>
-                    {!unlocked
-                      ? `${remaining} more to earn today's decoration`
-                      : deliveryReadyAt != null
-                        ? `Arriving at ${formatDailyPlanTime(
-                            decorationArrivalClock(deliveryReadyAt),
-                            '12:00',
-                          )}`
-                        : day == null
-                          ? 'Ready to place'
-                          : `Ready for the ${day.note}`}
-                  </Text>
-                </Rise>
-              ) : null}
-
-              <Rise delay={BEAT.cta} style={styles.ctaBlock}>
-                {unlocked && rewardReady ? (
-                  <SheetButton
-                    label="Choose your decoration"
-                    onPress={choosePiece}
+            {showBar ? (
+              <SheetRise
+                delay={BEAT.progress}
+                when={presented}
+                reducedMotion={reducedMotion}
+                style={styles.progressBlock}
+              >
+                <View style={styles.barRow}>
+                  <ProgressBar
+                    progress={
+                      reducedMotion || presented
+                        ? done / DAILIES_PER_DAY
+                        : barFrom
+                    }
+                    from={reducedMotion ? done / DAILIES_PER_DAY : barFrom}
+                    delay={reducedMotion ? 0 : BAR_FILL_DELAY}
+                    height={BAR_HEIGHT}
+                    trackColor={colors.onBlock.fill}
+                    fillColor={colors.text.inverse}
+                    onFillStart={reducedMotion ? undefined : impactLight}
+                    onFillEnd={
+                      reducedMotion ? undefined : () => settleHaptic(unlocked)
+                    }
+                    style={styles.bar}
                   />
-                ) : (
-                  <SheetButton label="Continue" onPress={close} />
-                )}
-              </Rise>
-            </>
-          ) : null}
+                  <Animated.View style={[styles.badge, badgeStyle]}>
+                    <Icon
+                      name={unlocked ? 'unlock' : 'lock'}
+                      size={18}
+                      color={colors.text.inverse}
+                    />
+                  </Animated.View>
+                </View>
+                <Text style={styles.progressLabel}>
+                  {!unlocked
+                    ? `${remaining} more to earn today's decoration`
+                    : deliveryReadyAt != null
+                      ? `Arriving at ${formatDailyPlanTime(
+                          decorationArrivalClock(deliveryReadyAt),
+                          '12:00',
+                        )}`
+                      : day == null
+                        ? 'Ready to place'
+                        : `Ready for the ${day.note}`}
+                </Text>
+              </SheetRise>
+            ) : null}
+
+            <SheetRise
+              delay={BEAT.cta}
+              when={presented}
+              reducedMotion={reducedMotion}
+              style={styles.ctaBlock}
+            >
+              {unlocked && rewardReady ? (
+                <SheetButton
+                  label="Choose your decoration"
+                  onPress={choosePiece}
+                />
+              ) : (
+                <SheetButton label="Continue" onPress={close} />
+              )}
+            </SheetRise>
+          </>
         </Animated.View>
       </View>
     </Modal>
@@ -326,11 +363,35 @@ export default memo(DailyCompleteSheet);
  * fonts' flames are one flat colour and read as a logo blown up to 260pt; this
  * one is drawn as nested shapes for exactly this screen.
  */
-function Flame({ size, delay }: { size: number; delay: number }) {
+function Flame({
+  size,
+  delay,
+  active,
+  reducedMotion,
+}: {
+  size: number;
+  delay: number;
+  active: boolean;
+  reducedMotion: boolean;
+}) {
   const enter = useSharedValue(0);
   const flicker = useSharedValue(0);
 
   useEffect(() => {
+    if (!active) {
+      cancelAnimation(enter);
+      cancelAnimation(flicker);
+      enter.value = 0;
+      flicker.value = 0;
+      return;
+    }
+
+    if (reducedMotion) {
+      enter.value = 1;
+      flicker.value = 0;
+      return;
+    }
+
     enter.value = withDelay(delay, withSpring(1, spring.pop));
     flicker.value = withDelay(
       delay + duration.slower,
@@ -345,14 +406,13 @@ function Flame({ size, delay }: { size: number; delay: number }) {
       cancelAnimation(enter);
       cancelAnimation(flicker);
     };
-  }, [delay, enter, flicker]);
+  }, [active, delay, enter, flicker, reducedMotion]);
 
   const animated = useAnimatedStyle(() => ({
     opacity: interpolate(enter.value, [0, 0.4], [0, 1], 'clamp'),
     transform: [
       { scale: interpolate(enter.value, [0, 1], [0.7, 1]) },
       { scaleY: interpolate(flicker.value, [0, 1], [0.98, 1.05]) },
-      { rotate: `${interpolate(flicker.value, [0, 1], [-1.5, 1.5])}deg` },
     ],
   }));
 
@@ -360,6 +420,30 @@ function Flame({ size, delay }: { size: number; delay: number }) {
     <Animated.View style={[styles.flameWrap, animated]}>
       <StreakFlame size={size} />
     </Animated.View>
+  );
+}
+
+function SheetRise({
+  children,
+  delay,
+  when,
+  reducedMotion,
+  style,
+}: {
+  children: ReactNode;
+  delay: number;
+  when: boolean;
+  reducedMotion: boolean;
+  style?: Parameters<typeof Rise>[0]['style'];
+}) {
+  if (reducedMotion) {
+    return <View style={style}>{children}</View>;
+  }
+
+  return (
+    <Rise delay={delay} when={when} style={style}>
+      {children}
+    </Rise>
   );
 }
 
@@ -379,13 +463,36 @@ function Flame({ size, delay }: { size: number; delay: number }) {
  *
  * Words are grouped so the line wraps between them and never mid-word.
  */
-function TypedTitle({ text, delay }: { text: string; delay: number }) {
+function TypedTitle({
+  text,
+  delay,
+  active,
+  reducedMotion,
+}: {
+  text: string;
+  delay: number;
+  active: boolean;
+  reducedMotion: boolean;
+}) {
   // A fixed window would put the characters of a long name closer together than
   // a frame, and gaps that do not divide evenly into frames read as stuttering
   // no matter how smoothly each one fades.
   const step = Math.max(TYPE_MIN_STEP, duration.type / Math.max(1, text.length));
 
   let index = 0;
+
+  if (reducedMotion) {
+    return (
+      <View style={styles.titleBlock}>
+        <Animated.Text
+          allowFontScaling={false}
+          style={[styles.title, { opacity: active ? 1 : 0 }]}
+        >
+          {text}
+        </Animated.Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.titleBlock}>
@@ -396,6 +503,7 @@ function TypedTitle({ text, delay }: { text: string; delay: number }) {
               key={charIndex}
               char={char}
               delay={delay + index++ * step}
+              active={active}
             />
           ))}
         </View>
@@ -404,17 +512,31 @@ function TypedTitle({ text, delay }: { text: string; delay: number }) {
   );
 }
 
-function TypedChar({ char, delay }: { char: string; delay: number }) {
+function TypedChar({
+  char,
+  delay,
+  active,
+}: {
+  char: string;
+  delay: number;
+  active: boolean;
+}) {
   const enter = useSharedValue(0);
 
   useEffect(() => {
+    if (!active) {
+      cancelAnimation(enter);
+      enter.value = 0;
+      return;
+    }
+
     enter.value = withDelay(
       delay,
       withTiming(1, { duration: duration.type, easing: easing.enter }),
     );
 
     return () => cancelAnimation(enter);
-  }, [delay, enter]);
+  }, [active, delay, enter]);
 
   const animated = useAnimatedStyle(() => ({ opacity: enter.value }));
 

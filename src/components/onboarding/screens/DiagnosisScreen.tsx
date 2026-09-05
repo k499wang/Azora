@@ -1,7 +1,9 @@
 import { Text } from '../../common/Text';
 import { useMemo } from 'react';
 import { StyleSheet, useWindowDimensions, View } from 'react-native';
-import CardSurface from '../../common/CardSurface';
+import OnboardingSummaryCard, {
+  OnboardingSummaryPill,
+} from '../OnboardingSummaryCard';
 import MindMapRadar from '../MindMapRadar';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
@@ -36,20 +38,15 @@ function HighlightCardList({ items }: { items: HighlightCard[] }) {
   return (
     <View style={styles.highlightList}>
       {items.map((item) => (
-        <CardSurface key={item.id} style={styles.highlightCard}>
-          <View style={styles.highlightHeader}>
-            <Text style={styles.highlightRole}>{item.role}</Text>
-            <View style={styles.highlightMeta}>
-              {item.subject ? (
-                <Text style={styles.highlightSubject}>{item.subject}</Text>
-              ) : null}
-              <View style={[styles.highlightPill, { backgroundColor: item.pillColor }]}>
-                <Text style={styles.highlightPillText}>{item.pill}</Text>
-              </View>
-            </View>
-          </View>
-          <Text style={styles.highlightBody}>{item.body}</Text>
-        </CardSurface>
+        <OnboardingSummaryCard
+          key={item.id}
+          title={item.role}
+          subject={item.subject}
+          body={item.body}
+          trailing={
+            <OnboardingSummaryPill label={item.pill} color={item.pillColor} />
+          }
+        />
       ))}
     </View>
   );
@@ -209,59 +206,5 @@ const styles = StyleSheet.create({
   },
   highlightList: {
     gap: spacing.sm,
-  },
-  highlightCard: {
-    backgroundColor: colors.background.card,
-    gap: spacing.sm,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md,
-  },
-  highlightHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.sm,
-  },
-  highlightRole: {
-    ...typography.heading.heading2,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    fontSize: 19,
-    lineHeight: 26,
-    color: colors.primary.blue600,
-    flexShrink: 1,
-  },
-  highlightMeta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    flexShrink: 1,
-  },
-  highlightSubject: {
-    ...typography.heading.heading2,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    fontSize: 19,
-    lineHeight: 26,
-    color: colors.text.primary,
-    flexShrink: 1,
-  },
-  highlightPill: {
-    borderRadius: 8,
-    paddingVertical: 3,
-    paddingHorizontal: spacing.sm,
-  },
-  highlightPillText: {
-    ...typography.body.small,
-    fontFamily: fonts.semibold,
-    fontWeight: '500',
-    fontVariant: ['tabular-nums'],
-    color: colors.neutral[0],
-  },
-  highlightBody: {
-    ...typography.body.small,
-    fontSize: 16,
-    color: colors.text.secondary,
-    lineHeight: 23,
   },
 });

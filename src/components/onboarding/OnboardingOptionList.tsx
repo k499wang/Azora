@@ -1,7 +1,6 @@
 import { useEffect, useMemo, type ReactNode } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { isHapticsEnabled } from '../../services/preferences/hapticsPreference';
 import { pauseSessionReplay } from '../../services/analytics/sessionReplay';
 import { card, radius } from '../../theme/card';
@@ -9,7 +8,9 @@ import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import { Text } from '../common/Text';
-import type { OnboardingOptionIconName } from './OnboardingOptionIcon';
+import OnboardingOptionIcon, {
+  type OnboardingOptionIconName,
+} from './OnboardingOptionIcon';
 
 const GLYPH_SIZE = 28;
 const GLYPH_COLUMN = 40;
@@ -150,7 +151,7 @@ export default function OnboardingOptionList<Id extends string>({
                   <View style={styles.glyph} pointerEvents="none">
                     {renderGlyph?.(option) ??
                     (option.icon ? (
-                      <MaterialCommunityIcons
+                      <OnboardingOptionIcon
                         name={option.icon}
                         size={GLYPH_SIZE}
                         color={option.accent}
@@ -221,8 +222,8 @@ const styles = StyleSheet.create({
   },
   title: {
     ...typography.label.large,
-    fontFamily: fonts.regular,
-    fontWeight: '400',
+    fontFamily: fonts.semibold,
+    fontWeight: '500',
     fontSize: 17,
     lineHeight: 22,
     flex: 1,

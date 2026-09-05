@@ -14,31 +14,40 @@ interface PlanLoadingScreenProps {
   onDone: () => void;
 }
 
+/**
+ * What the plan is being built out of, named the way the user would name it.
+ * The old list read like a lab report — heart-rate patterns, focus windows,
+ * signals — which described the machinery rather than the thing they came here
+ * for. These are the same inputs, said as care.
+ */
 const PERSONALIZING_STEPS = [
   {
-    status: 'Reading your heart-rate pattern...',
-    item: 'Heart profile',
+    status: 'Reading how you settle...',
+    item: 'How you settle',
   },
   {
-    status: 'Mapping your stress signals...',
-    item: 'Stress signals',
+    status: 'Finding your stress patterns...',
+    item: 'Your stress',
   },
   {
-    status: 'Checking your sleep and recovery...',
-    item: 'Sleep & recovery',
+    status: 'Checking how you rest...',
+    item: 'Your sleep',
   },
   {
-    status: 'Estimating your focus window...',
-    item: 'Focus window',
+    status: 'Spotting what blocks you...',
+    item: 'What blocks you',
   },
   {
-    status: 'Tuning your daily rhythm...',
-    item: 'Daily rhythm',
+    status: 'Shaping your routine...',
+    item: 'Your routine',
   },
   {
     status: 'Finishing your plan...',
   },
 ];
+
+/** The same shallow lip the option rows and Mochi's bubble sit on. */
+const LIP_DEPTH = 3;
 
 const STEP_DURATION_MS = 1500;
 const HANDOFF_DELAY_MS = 700;
@@ -235,6 +244,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.card,
     marginTop: spacing['3xl'],
     padding: spacing.lg,
+    // the lip is a thicker bottom edge, so the extra depth comes out of the
+    // padding rather than making the card taller than its siblings
+    paddingBottom: spacing.lg - LIP_DEPTH,
+    borderBottomWidth: LIP_DEPTH,
+    borderBottomColor: colors.neutral[200],
     gap: spacing.sm,
   },
   cardTitle: {

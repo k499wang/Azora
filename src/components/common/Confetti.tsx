@@ -1,7 +1,10 @@
 import { memo, useEffect, useMemo } from 'react';
 import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import Animated, {
+  cancelAnimation,
+  runOnJS,
   useAnimatedStyle,
+  useReducedMotion,
   useSharedValue,
   withTiming,
   type SharedValue,
@@ -94,6 +97,10 @@ interface ConfettiProps {
    * they were celebrating has passed.
    */
   durationMs?: number;
+  /** Whether the one-shot flight may begin. Useful when content is pre-mounted. */
+  active?: boolean;
+  /** Called after the final piece has finished, so owners can unmount the tree. */
+  onComplete?: () => void;
 }
 
 /**
@@ -114,7 +121,10 @@ const Confetti = memo(function Confetti({
   pieceScale = 1,
   origin = 'burst',
   durationMs = origin === 'fall' ? FALL_FLIGHT_MS : PIECE_FLIGHT_MS,
+  active = true,
+  onComplete,
 }: ConfettiProps) {
+  const reducedMotion = useReducedMotion();
   const { height, width } = useWindowDimensions();
   const renderedPieceCount = Number.isFinite(pieceCount)
     ? Math.max(0, Math.min(PIECES.length, Math.floor(pieceCount)))
@@ -130,20 +140,38 @@ const Confetti = memo(function Confetti({
   const elapsed = useSharedValue(0);
 
   useEffect(() => {
+    if (!active) {
+      cancelAnimation(elapsed);
+      elapsed.value = 0;
+      return;
+    }
+
+    if (reducedMotion) {
+      onComplete?.();
+      return;
+    }
+
     elapsed.value = 0;
     const start = setTimeout(() => {
       elapsed.value = withTiming(totalMs, {
         duration: totalMs,
         easing: Easing.linear,
+      }, (finished) => {
+        if (finished && onComplete != null) runOnJS(onComplete)();
       });
     }, startDelayMs);
-    return () => clearTimeout(start);
-  }, [elapsed, startDelayMs, totalMs]);
+    return () => {
+      clearTimeout(start);
+      cancelAnimation(elapsed);
+    };
+  }, [active, elapsed, onComplete, reducedMotion, startDelayMs, totalMs]);
 
   const pieces = useMemo(
     () => PIECES.slice(0, renderedPieceCount),
     [renderedPieceCount],
   );
+
+  if (reducedMotion) return null;
 
   return (
     <View pointerEvents="none" style={styles.layer}>
@@ -198,27 +226,31 @@ const ConfettiPiece = memo(function ConfettiPiece({
   const fallTo = fallHeight / 2 + piece.size * 2;
   const column = dx * (fallWidth / 2 - piece.size * 2);
 
-  const fallStyle = useAnimatedStyle(() => {
+  const animatedStyle = useAnimatedStyle(() => {
     const linear = Math.min(
       1,
       Math.max(0, (elapsed.value - launchMs) / durationMs),
     );
 
-    return {
-      opacity: linear === 0 || linear === 1 ? 0 : linear > 0.85 ? (1 - linear) * 6.6 : 1,
-      transform: [
-        { translateX: column + Math.sin(linear * Math.PI * 2 + dy) * FALL_SWAY },
-        { translateY: fallFrom + (fallTo - fallFrom) * linear },
-        { rotate: `${linear * spin}deg` },
-      ],
-    };
-  });
+    if (origin === 'fall') {
+      return {
+        opacity:
+          linear === 0 || linear === 1
+            ? 0
+            : linear > 0.85
+              ? (1 - linear) * 6.6
+              : 1,
+        transform: [
+          {
+            translateX:
+              column + Math.sin(linear * Math.PI * 2 + dy) * FALL_SWAY,
+          },
+          { translateY: fallFrom + (fallTo - fallFrom) * linear },
+          { rotate: `${linear * spin}deg` },
+        ],
+      };
+    }
 
-  const burstStyle = useAnimatedStyle(() => {
-    const linear = Math.min(
-      1,
-      Math.max(0, (elapsed.value - launchMs) / durationMs),
-    );
     const fly = FLIGHT_EASING(linear);
     const travel = fly * distance;
 
@@ -250,7 +282,7 @@ const ConfettiPiece = memo(function ConfettiPiece({
           height: piece.size * 0.6 * pieceScale,
           backgroundColor: color,
         },
-        origin === 'fall' ? fallStyle : burstStyle,
+        animatedStyle,
       ]}
     />
   );

@@ -35,7 +35,7 @@ export default function IntentQuestionScreen({
 
   return (
     <OnboardingScreenLayout
-      title="What's on your mind?"
+      title="What do you need the most help with?"
       progress={stepIndex / stepCount}
       onBack={onBack}
       animateCopy

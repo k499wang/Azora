@@ -146,6 +146,40 @@ export async function createSelfCareGoal(
   return mapGoal(data, new Set(), localDate);
 }
 
+/**
+ * Writes a whole list in one insert. Onboarding's starter plan is a set, not a
+ * sequence of unrelated rows: one statement means it either lands whole or not
+ * at all, rather than leaving a half-written plan behind a failed round trip.
+ */
+export async function createSelfCareGoals(
+  userId: string,
+  drafts: SelfCareGoalDraft[],
+  localDate: string,
+): Promise<SelfCareGoal[]> {
+  if (drafts.length === 0) return [];
+
+  const rows = drafts.map((draft) => {
+    const normalizedTitle = normalizeSelfCareGoalTitle(draft.title);
+    if (normalizedTitle == null) throw new Error('Enter a shorter to-do.');
+    return {
+      user_id: userId,
+      title: normalizedTitle,
+      icon: draft.icon,
+      recurrence: draft.recurrence,
+      scheduled_time: draft.scheduledTime,
+    };
+  });
+
+  const supabase = requireSupabaseClient();
+  const { data, error } = await supabase
+    .from('self_care_goals')
+    .insert(rows)
+    .select(GOAL_COLUMNS);
+  if (error != null) throw error;
+
+  return (data ?? []).map((row) => mapGoal(row, new Set(), localDate));
+}
+
 export async function updateSelfCareGoal(
   userId: string,
   goalId: string,

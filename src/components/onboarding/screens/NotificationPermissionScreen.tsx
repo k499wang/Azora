@@ -1,126 +1,121 @@
-import { StyleSheet, Switch, View } from 'react-native';
+import { Image, StyleSheet, View } from 'react-native';
 import { Text } from '../../common/Text';
+import ChunkyButton, { CHUNKY_TONE_QUIET } from '../../common/ChunkyButton';
 import type { DailyPlanSchedule } from '../../../services/dailyPlan/types';
 import { formatDailyPlanTime } from '../../../services/dailyPlan/dailyPlanScheduleCore';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
-import { card } from '../../../theme/card';
+import { card, radius } from '../../../theme/card';
 import { DAILY_REMINDER_DEFINITIONS } from '../../../services/notifications/notificationCatalog';
-import type {
-  DailyPlanReminderActionId,
-  DailyPlanReminderPreferences,
-} from '../../../services/notifications/types';
+import MochiAside from '../MochiAside';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 
 interface NotificationPermissionScreenProps {
   schedule: DailyPlanSchedule;
-  reminders: DailyPlanReminderPreferences;
   stepIndex: number;
   stepCount: number;
   isSubmitting: boolean;
   errorMessage: string | null;
-  onReminderEnabledChange: (
-    actionId: DailyPlanReminderActionId,
-    enabled: boolean,
-  ) => void;
   onEnable: () => void;
   onSkip: () => void;
   onBack: () => void;
 }
 
+const AVATAR_SIZE = 44;
+/** the real app icon, so the preview looks like the notification it promises */
+const APP_ICON = require('../../../../assets/app/icon.png');
+
+/**
+ * The permission asked as a favour rather than a setting.
+ *
+ * It used to be three switches and a button that counted them, which put a
+ * configuration job in front of someone at the exact moment they were being
+ * asked for something. Reminders are one decision — you either want to hear
+ * from Mochi or you don't — so the screen asks once, in his voice, and shows
+ * the notification it is actually asking permission to send.
+ *
+ * The preview is built from the user's own plan, not from filler: the hour
+ * under it is the hour they set two screens ago, which turns the mockup into a
+ * promise and pays back the work they just did.
+ */
+function NotificationPreview({ schedule }: { schedule: DailyPlanSchedule }) {
+  const definition = DAILY_REMINDER_DEFINITIONS[0];
+  const time = schedule.actions[definition.scheduleActionId];
+
+  return (
+    <View style={styles.preview}>
+      <Image source={APP_ICON} style={styles.avatar} accessibilityIgnoresInvertColors />
+      <View style={styles.previewCopy}>
+        <View style={styles.previewHeader}>
+          <Text style={styles.previewFrom}>Azora</Text>
+          <Text style={styles.previewTime}>
+            {formatDailyPlanTime(time, time)}
+          </Text>
+        </View>
+        <Text style={styles.previewBody}>{definition.content.title}</Text>
+      </View>
+    </View>
+  );
+}
+
 export default function NotificationPermissionScreen({
   schedule,
-  reminders,
   stepIndex,
   stepCount,
   isSubmitting,
   errorMessage,
-  onReminderEnabledChange,
   onEnable,
   onSkip,
   onBack,
 }: NotificationPermissionScreenProps) {
-  const enabledCount = Object.values(reminders).filter(
-    (reminder) => reminder.enabled,
-  ).length;
-
   return (
     <OnboardingScreenLayout
-      title="Stay on track with your daily plan"
+      title=""
+      titleSlot={
+        <MochiAside
+          text="Want me to check in on you?"
+          variant="question"
+          expression="happy"
+          delayMs={160}
+        />
+      }
       progress={stepIndex / stepCount}
       onBack={onBack}
-      onSkip={onSkip}
+      centerBody
       footer={
-        <OnboardingPrimaryButton
-          label={
-            enabledCount === 0
-              ? 'Continue without reminders'
-              : `Enable ${enabledCount} ${enabledCount === 1 ? 'reminder' : 'reminders'}`
-          }
-          loading={isSubmitting}
-          onPress={onEnable}
-        />
+        <View style={styles.footer}>
+          <OnboardingPrimaryButton
+            label="Yes, check in on me"
+            loading={isSubmitting}
+            onPress={onEnable}
+          />
+          {/* Visible rather than a Skip hidden in the top corner: an ask with an
+              obvious way out reads as a question, and a question is what this
+              screen is. */}
+          <ChunkyButton
+            label="Maybe later"
+            tone={CHUNKY_TONE_QUIET}
+            disabled={isSubmitting}
+            onPress={onSkip}
+            haptic="none"
+          />
+        </View>
       }
     >
       <View style={styles.content}>
-        <View style={styles.reminderCards}>
-          {DAILY_REMINDER_DEFINITIONS.map((definition) => {
-            const time = schedule.actions[definition.scheduleActionId];
-
-            return (
-              <ReminderCard
-                key={definition.id}
-                label={definition.onboardingTitle}
-                time={formatDailyPlanTime(time, time)}
-                enabled={reminders[definition.id].enabled}
-                disabled={isSubmitting}
-                onToggle={(enabled) => {
-                  onReminderEnabledChange(definition.id, enabled);
-                }}
-              />
-            );
-          })}
-        </View>
-
-        {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
+        <NotificationPreview schedule={schedule} />
+        <Text style={styles.note}>
+          People who turn reminders on are{' '}
+          <Text style={styles.noteStrong}>3x more likely</Text> to finish their
+          daily plan and stick with it.
+        </Text>
+        {errorMessage ? (
+          <Text style={styles.errorText}>{errorMessage}</Text>
+        ) : null}
       </View>
     </OnboardingScreenLayout>
-  );
-}
-
-function ReminderCard({
-  label,
-  time,
-  enabled,
-  disabled,
-  onToggle,
-}: {
-  label: string;
-  time: string;
-  enabled: boolean;
-  disabled: boolean;
-  onToggle: (enabled: boolean) => void;
-}) {
-  return (
-    <View style={styles.card}>
-      <View style={styles.cardLeft}>
-        <Text style={styles.cardLabel}>{label}</Text>
-        <Text style={styles.cardTime}>{time}</Text>
-      </View>
-      <Switch
-        accessibilityLabel={`${label} reminder`}
-        value={enabled}
-        disabled={disabled}
-        onValueChange={onToggle}
-        trackColor={{
-          false: colors.neutral[300],
-          true: colors.primary.blue300,
-        }}
-        thumbColor={colors.background.elevated}
-      />
-    </View>
   );
 }
 
@@ -128,30 +123,54 @@ const styles = StyleSheet.create({
   content: {
     gap: spacing.md,
   },
-  reminderCards: {
-    gap: spacing.md,
+  footer: {
+    gap: spacing.sm,
   },
-  card: {
+  preview: {
     ...card.base,
-    backgroundColor: colors.background.card,
+    ...card.shadow,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: spacing.lg,
-    paddingHorizontal: spacing.lg,
-    borderRadius: 22,
+    gap: spacing.sm + spacing.xs,
+    padding: spacing.md,
   },
-  cardLeft: {
+  avatar: {
+    width: AVATAR_SIZE,
+    height: AVATAR_SIZE,
+    borderRadius: radius.small,
+    borderCurve: 'continuous',
+  },
+  previewCopy: {
+    flex: 1,
     gap: 2,
   },
-  cardLabel: {
+  previewHeader: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  previewFrom: {
     ...typography.body.small,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
-    color: colors.text.secondary,
+    fontWeight: '600',
+    color: colors.text.primary,
   },
-  cardTime: {
-    ...typography.title.title1,
+  previewTime: {
+    ...typography.caption.caption1,
+    color: colors.text.tertiary,
+    fontVariant: ['tabular-nums'],
+  },
+  previewBody: {
+    ...typography.body.medium,
+    color: colors.text.primary,
+  },
+  note: {
+    ...typography.body.medium,
+    color: colors.text.secondary,
+    textAlign: 'center',
+  },
+  noteStrong: {
     fontFamily: fonts.semibold,
     fontWeight: '500',
     color: colors.text.primary,
