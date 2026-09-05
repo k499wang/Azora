@@ -94,6 +94,10 @@ export const colors = {
     amber: { base: '#CE7A00', mid: '#EDA733', soft: '#FBE5B4', ink: '#8C5300' },
     sky: { base: '#2280F0', mid: '#5EA5F8', soft: '#CCE2FC', ink: '#0F55AA' },
     blush: { base: '#F04593', mid: '#FA7EB4', soft: '#FCD3E6', ink: '#AB1C5F' },
+    // Darker than the rest on purpose: the only block a flame sits on. Orange
+    // reads as light against a deep blue and as another warm shape against
+    // anything warm, so the celebration surface stays night, never a category.
+    night: { base: '#2B2B6B', mid: '#4B4B9E', soft: '#D7D7F2', ink: '#1B1B4A' },
   },
 
   // A `playful.*.base` written at zero alpha, for a block that has to fade into
@@ -304,6 +308,15 @@ export const colors = {
     soft: 'rgba(12,16,33,0.35)',
     medium: 'rgba(12,16,33,0.6)',
     strong: 'rgba(12,16,33,0.82)',
+  },
+
+  // The dark bar that slides up over the page to confirm something landed.
+  // Deliberately the one surface in the app that is dark: it is passing
+  // through, so it must read as chrome rather than as another card.
+  toast: {
+    fill: 'rgba(24,31,46,0.94)',
+    title: '#FFFFFF',
+    detail: 'rgba(255,255,255,0.72)',
   },
 
   // Translucent action banners pinned over photography. Kept on the same

@@ -6,7 +6,9 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 import { typography, fonts } from '../theme/typography';
 import { spacing, padding, margin } from '../theme/spacing';
-import DailyCompleteSheet from '../features/room/DailyCompleteSheet';
+import DailyCompleteSheet, {
+  CELEBRATION_HUE,
+} from '../features/room/DailyCompleteSheet';
 import GlassIconButton from '../components/common/GlassIconButton';
 import ChunkyButton from '../components/common/ChunkyButton';
 import { Rise } from '../components/common/Reveal';
@@ -145,21 +147,10 @@ export default function ShareableResultScreen({
     ],
   );
 
-  const celebrationStats = useMemo(
-    () => [
-      { label: 'Hold', value: formatDuration(holdSeconds) },
-      { label: 'Lung age', value: `${lungAge.years}` },
-    ],
-    [holdSeconds, lungAge.years],
-  );
-  const celebrationContentRef = useRef<{
-    title: string;
-    stats: typeof celebrationStats;
-  } | null>(null);
+  const celebrationContentRef = useRef<{ title: string } | null>(null);
   if (snapshot != null && celebrationContentRef.current == null) {
     celebrationContentRef.current = {
       title: congratulation,
-      stats: celebrationStats,
     };
   }
   const celebrationContent = celebrationContentRef.current;
@@ -222,7 +213,7 @@ export default function ShareableResultScreen({
         {
           paddingTop: insets.top,
           backgroundColor: showDailyCover
-            ? hue.base
+            ? CELEBRATION_HUE.base
             : colors.background.canvas,
         },
       ]}
@@ -230,10 +221,8 @@ export default function ShareableResultScreen({
       {sheetVisible && snapshot != null && celebrationContent != null ? (
         <DailyCompleteSheet
           visible
-          hue={hue}
           title={celebrationContent.title}
           subtitle="The Azora Protocol"
-          stats={celebrationContent.stats}
           state={snapshot.state}
           barFrom={snapshot.barFrom}
           rewardReady={isDailyCompleteRewardReady(
@@ -365,7 +354,9 @@ export default function ShareableResultScreen({
       </ScrollView>
 
       {showDailyCover ? (
-        <View style={[styles.dailyCover, { backgroundColor: hue.base }]} />
+        <View
+          style={[styles.dailyCover, { backgroundColor: CELEBRATION_HUE.base }]}
+        />
       ) : null}
     </View>
   );

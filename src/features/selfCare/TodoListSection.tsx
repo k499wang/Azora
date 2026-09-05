@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   type LayoutChangeEvent,
@@ -95,8 +95,12 @@ const ADD_ROW_OFFSET = TODAY_JOURNEY_GROUP_GAP - JOURNEY_ROW_GAP;
  * stays tied to the dot it is congratulating rather than to the row it sits in.
  */
 const MARKER_HALO_SIZE = TODAY_JOURNEY_MARKER_SIZE * 2.6;
-const MARKER_CONFETTI_SIZE = TODAY_JOURNEY_MARKER_SIZE * 7;
-const MARKER_CONFETTI_SPREAD = 0.5;
+const MARKER_CONFETTI_SIZE = TODAY_JOURNEY_MARKER_SIZE * 14;
+const MARKER_CONFETTI_SPREAD = 1.15;
+const MARKER_CONFETTI_PIECE_SCALE = 1.7;
+const MARKER_CONFETTI_PIECE_COUNT = 26;
+// Longer than the disc's own beat: the bigger burst has further to travel.
+const MARKER_CONFETTI_MS = 950;
 // Hoisted so the memoized burst is not handed a new array on every re-render
 // the toggle mutation causes while it is in flight.
 const MARKER_CONFETTI_COLORS = [
@@ -120,6 +124,12 @@ interface TodoListSectionProps {
    * own fixed place on the screen.
    */
   onCelebrate: () => void;
+  /**
+   * A to-do was finished, wherever its row ended up. Home confirms it with the
+   * bar above the tab bar — the one celebration that plays for every
+   * completion, not only the ones that leave the rail.
+   */
+  onCompleted: (goalTitle: string) => void;
   userId: string | null;
 }
 
@@ -230,7 +240,14 @@ function useCompletionBurst(completed: boolean): number {
  * The dot on the rail, and the whole reward for finishing a to-do. Un-ticking
  * one takes the disc back off quietly — an undo is not an event.
  */
-function GoalStatusMarker({ completed }: { completed: boolean }) {
+// Memoized: the toggle mutation re-renders this list several times while the
+// burst is in the air, and re-rendering the marker means re-mounting the
+// pieces mid-flight.
+const GoalStatusMarker = memo(function GoalStatusMarker({
+  completed,
+}: {
+  completed: boolean;
+}) {
   const burst = useCompletionBurst(completed);
   const fill = useSharedValue(completed ? 1 : 0);
   const halo = useSharedValue(0);
@@ -282,9 +299,10 @@ function GoalStatusMarker({ completed }: { completed: boolean }) {
           <Confetti
             key={burst}
             pieceColors={MARKER_CONFETTI_COLORS}
-            pieceCount={12}
+            pieceCount={MARKER_CONFETTI_PIECE_COUNT}
             spread={MARKER_CONFETTI_SPREAD}
-            durationMs={MARKER_POP_MS}
+            pieceScale={MARKER_CONFETTI_PIECE_SCALE}
+            durationMs={MARKER_CONFETTI_MS}
           />
         </View>
       )}
@@ -301,7 +319,7 @@ function GoalStatusMarker({ completed }: { completed: boolean }) {
       </Animated.View>
     </View>
   );
-}
+});
 
 /**
  * The finished to-dos, folded into the summary row above them. Height is
@@ -393,6 +411,7 @@ export default function TodoListSection({
   userId,
   dayDone,
   onCelebrate,
+  onCompleted,
 }: TodoListSectionProps) {
   const localDate = useTodayLocalDate();
   const goalsQuery = useSelfCareGoalsQuery(userId, localDate);
@@ -443,6 +462,7 @@ export default function TodoListSection({
   const railGoals = dayDone ? [] : plan.rail;
   const drawerGoals = dayDone ? goals : plan.drawer;
   useGoalCompletionCelebration(goals, (goalId) => {
+    onCompleted(goals.find((goal) => goal.id === goalId)?.title ?? '');
     // Still on the rail: its own marker has the burst, and a second celebration
     // over the top of it would only bury it.
     if (railGoals.some((goal) => goal.id === goalId)) return;

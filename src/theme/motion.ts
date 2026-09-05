@@ -35,6 +35,8 @@ export const easing = {
   settle: Easing.bezier(0.16, 1, 0.3, 1),
   /** particles and glows thinning out */
   burst: Easing.out(Easing.quad),
+  /** a loop that never lands — for anything alive and idling */
+  breathe: Easing.inOut(Easing.sin),
 } as const;
 
 export const spring = {
