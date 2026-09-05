@@ -204,11 +204,18 @@ export default function SessionCompleteScreen({
   const celebrationContentRef = useRef<{
     title: string;
     subtitle: string;
+    detail?: string;
   } | null>(null);
   if (snapshot != null && celebrationContentRef.current == null) {
     celebrationContentRef.current = {
       title: congratulation,
-      subtitle: techniqueName,
+      // The technique name alone read as a label. What they just did, in their
+      // own numbers, is what the moment is about.
+      subtitle: `${breathCount} breaths of ${techniqueName}`,
+      detail:
+        streakView != null && streakView.currentStreak >= 2
+          ? `Day ${streakView.currentStreak} in a row`
+          : undefined,
     };
   }
   const celebrationContent = celebrationContentRef.current;
@@ -251,6 +258,7 @@ export default function SessionCompleteScreen({
           visible
           title={celebrationContent.title}
           subtitle={celebrationContent.subtitle}
+          subtitleDetail={celebrationContent.detail}
           state={snapshot.state}
           barFrom={snapshot.barFrom}
           rewardReady={isDailyCompleteRewardReady(

@@ -7,7 +7,6 @@ import ChunkyButton, {
   CHUNKY_TONE,
   CHUNKY_TONE_AMBER,
 } from '../../components/common/ChunkyButton';
-import { DAILIES_PER_DAY } from '../../lib/dailies';
 import {
   ROOM_SLOT_COUNT,
   type RoomProgress,
@@ -17,7 +16,7 @@ import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import type { MainTabNavigationProp } from '../../app/navigation';
-import type { DailiesCompletion } from '../../hooks/useDailiesCompletion';
+import type { DayCompletion } from './useDayCompletion';
 
 /** deep enough to carry the count inside it rather than beside it */
 const BAR_HEIGHT = 20;
@@ -84,16 +83,13 @@ interface RoomProgressCardProps {
     RoomProgress,
     'isComplete' | 'canClaim' | 'claimedToday' | 'placedCount'
   >;
-  dailies: Pick<
-    DailiesCompletion,
-    'guidedCompleted' | 'handPickedCompleted' | 'breathHoldCompleted'
-  >;
+  day: Pick<DayCompletion, 'done' | 'total'>;
   isLoading: boolean;
 }
 
 export default function RoomProgressCard({
   progress,
-  dailies,
+  day,
   isLoading,
 }: RoomProgressCardProps) {
   const navigation = useNavigation<MainTabNavigationProp<'Home'>>();
@@ -109,11 +105,8 @@ export default function RoomProgressCard({
     isComplete: progress.isComplete,
     canClaim: progress.canClaim,
     claimedToday: progress.claimedToday,
-    dailiesDoneCount: [
-      dailies.guidedCompleted,
-      dailies.handPickedCompleted,
-      dailies.breathHoldCompleted,
-    ].filter(Boolean).length,
+    doneCount: day.done,
+    totalCount: day.total,
     placedCount: progress.placedCount,
   });
 
@@ -195,21 +188,25 @@ export interface RoomCardView {
 }
 
 /**
- * The card speaks in terms of today's dailies, because that is the thing the
- * user controls — the floor number is bookkeeping. A button appears only when
- * there is something waiting that they cannot otherwise reach.
+ * The card speaks in terms of today's list — the dailies and the to-dos
+ * together — because that is the thing the user controls; the floor number is
+ * bookkeeping. A button appears only when there is something waiting that they
+ * cannot otherwise reach.
  */
 export function describeRoomCard({
   isComplete,
   canClaim,
   claimedToday,
-  dailiesDoneCount,
+  doneCount,
+  totalCount,
   placedCount,
 }: {
   isComplete: boolean;
   canClaim: boolean;
   claimedToday: boolean;
-  dailiesDoneCount: number;
+  /** everything today asks for, done and in total */
+  doneCount: number;
+  totalCount: number;
   placedCount: number;
 }): RoomCardView {
   const room = { done: placedCount, total: ROOM_SLOT_COUNT };
@@ -226,42 +223,49 @@ export function describeRoomCard({
     };
   }
 
+  // The bar stays on today and stays full: the day is what earned this, and
+  // dropping to a room count here read as "0 / 7" beside a title saying the
+  // thing was ready.
   if (canClaim) {
     return {
       title: 'Your decoration is ready',
-      note: 'Seven decorations finish a room.',
       tone: 'ready',
-      ...room,
+      done: totalCount,
+      total: totalCount,
       action: { label: 'Place it in your room', route: 'RoomDecorate' },
     };
   }
 
   if (claimedToday) {
     // Today is what this state is about, so the bar stays on today rather than
-    // dropping back to a room count that reads as progress lost.
+    // dropping back to a room count that reads as progress lost — and it counts
+    // what is actually left: a to-do added after the decoration was placed is
+    // still a to-do, and a full bar over an open list is a lie the list below
+    // it immediately contradicts.
     return {
       title: 'All set for today!',
       tone: 'done',
-      done: DAILIES_PER_DAY,
-      total: DAILIES_PER_DAY,
+      done: doneCount,
+      total: totalCount,
       action: null,
     };
   }
 
-  // Still working through today. The title and the 1 / 3 beside it already say
+  // Still working through today. The title and the count beside it already say
   // the rule, so the line under them stays empty.
   //
-  // The bar counts the three dailies, because that is what the title asks for —
-  // showing room pieces here read as "finish today's dailies — 1 / 7", which
-  // asks for four days that do not exist.
+  // The bar counts everything today asks for — the three dailies and the
+  // to-dos — because that is what the title asks for. Showing room pieces here
+  // read as "unlock a new decoration — 1 / 7", which asks for four days that do
+  // not exist.
   //
   // Finishing them can only land in `canClaim` above, never here: that flag is
   // built from the same `allCompleted` this branch would test.
   return {
-    title: "Finish today's dailies",
+    title: 'Unlock a new decoration',
     tone: 'waiting',
-    done: dailiesDoneCount,
-    total: DAILIES_PER_DAY,
+    done: doneCount,
+    total: totalCount,
     action: null,
   };
 }

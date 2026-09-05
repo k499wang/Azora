@@ -22,6 +22,9 @@ export type DecorateState =
       guidedDone: boolean;
       handPickedDone: boolean;
       breathHoldDone: boolean;
+      /** today's to-do list, which earns the same decoration */
+      todosDone: number;
+      todosTotal: number;
     }
   | { kind: 'choose'; slot: RoomSlot };
 
@@ -45,7 +48,7 @@ export function decorateTitle(state: DecorateState): string {
     case 'claimed':
       return "Today's decoration is placed";
     case 'locked':
-      return "Finish today's dailies";
+      return 'Unlock a new decoration';
     case 'choose':
       return 'Pick your decoration';
   }
@@ -122,11 +125,17 @@ export default function DecoratePanel({
         done: state.breathHoldDone,
       },
     ];
+    const todosComplete = state.todosDone >= state.todosTotal;
+    // One row for the whole list, not one per to-do: a list of twenty would
+    // bury the three sessions this screen can actually start.
+    const hasTodos = state.todosTotal > 0;
 
     return (
       <View style={styles.panel}>
         <Text style={styles.panelBody}>
-          All 3 earn one decoration for this room.
+          {hasTodos
+            ? 'Finish all of these to earn one decoration for this room.'
+            : 'All 3 earn one decoration for this room.'}
         </Text>
         <View style={styles.checklist}>
           {dailies.map((daily) => (
@@ -159,6 +168,36 @@ export default function DecoratePanel({
               </Text>
             </Pressable>
           ))}
+
+          {/* The to-dos live on Home — this row reports them, it does not
+              start them. */}
+          {hasTodos ? (
+            <View
+              accessibilityRole="text"
+              accessibilityLabel={`To-dos, ${state.todosDone} of ${state.todosTotal} done`}
+              style={styles.checklistRow}
+            >
+              <View
+                style={[styles.checkDot, todosComplete && styles.checkDotDone]}
+              >
+                {todosComplete ? (
+                  <Icon
+                    name="check"
+                    size={CHECK_SIZE}
+                    color={colors.text.inverse}
+                  />
+                ) : null}
+              </View>
+              <Text
+                style={[
+                  styles.checklistLabel,
+                  todosComplete && styles.checklistLabelDone,
+                ]}
+              >
+                {`Your to-dos · ${state.todosDone}/${state.todosTotal}`}
+              </Text>
+            </View>
+          ) : null}
         </View>
       </View>
     );

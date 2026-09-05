@@ -21,8 +21,8 @@ const TAB_HEADROOM = spacing.sm;
  *
  * The screens on either side of it hand things back on cards, and cards are how
  * this app states facts. A plan is not a fact — it is a list someone wrote for
- * you — so it gets to be a different object: cream paper, ruled lines, hung
- * from binder tabs. Everything the plan contains lives on this one page, resets
+ * you — so it gets to be a different object: cream paper hung from binder
+ * tabs. Everything the plan contains lives on this one page, resets
  * and to-dos together, because they are one day rather than two features.
  */
 export default function PlanNotepad({ children }: { children: ReactNode }) {
@@ -50,7 +50,6 @@ export function PlanNotepadRow({
   title,
   meta,
   trailing,
-  ruled = true,
   onPress,
   accessibilityLabel,
   accessibilityRole,
@@ -62,8 +61,6 @@ export function PlanNotepadRow({
   /** when in the day the line belongs — small, under the title */
   meta?: string;
   trailing?: ReactNode;
-  /** the hairline above it — off for the first line of a section */
-  ruled?: boolean;
   onPress?: () => void;
   accessibilityLabel?: string;
   accessibilityRole?: 'button' | 'checkbox';
@@ -71,7 +68,7 @@ export function PlanNotepadRow({
   anim?: Animated.Value;
 }) {
   const body = (
-    <View style={[styles.row, ruled && styles.rowRuled]}>
+    <View style={styles.row}>
       {leading ? <View style={styles.leading}>{leading}</View> : null}
       <View style={styles.copy}>
         <Text style={styles.title}>
@@ -179,8 +176,7 @@ const styles = StyleSheet.create({
     ...card.paper,
     backgroundColor: colors.background.card,
     borderRadius: radius.card,
-    borderColor: colors.playful.amber.soft,
-    borderWidth: 1.5,
+    borderWidth: 0,
     paddingHorizontal: spacing.md,
     // clear of the rings running down over the top edge
     paddingTop: spacing.lg,
@@ -191,12 +187,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm + spacing.xs,
     paddingVertical: spacing.sm + spacing.xs,
-  },
-  // The rule belongs to the row below it, so a section is ruled between its
-  // lines and never under its last one.
-  rowRuled: {
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.playful.amber.soft,
   },
   leading: {
     flexShrink: 0,

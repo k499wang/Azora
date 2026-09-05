@@ -104,23 +104,31 @@ function fakeFloors(count: number): PyramidRoom[] {
 const SHEET_CASES: { label: string; state: DailyCompleteState }[] = [
   {
     label: '1 of 3',
-    state: { done: 1, unlocked: false, showBar: true, nextSlot: 'day1' },
+    state: { done: 1, total: 3, unlocked: false, showBar: true, nextSlot: 'day1' },
   },
   {
     label: '2 of 3',
-    state: { done: 2, unlocked: false, showBar: true, nextSlot: 'day1' },
+    state: { done: 2, total: 3, unlocked: false, showBar: true, nextSlot: 'day1' },
   },
   {
     label: '3 of 3 — unlocked',
-    state: { done: 3, unlocked: true, showBar: true, nextSlot: 'day1' },
+    state: { done: 3, total: 3, unlocked: true, showBar: true, nextSlot: 'day1' },
+  },
+  {
+    label: '4 of 5 — two to-dos',
+    state: { done: 4, total: 5, unlocked: false, showBar: true, nextSlot: 'day1' },
+  },
+  {
+    label: '5 of 5 — unlocked with to-dos',
+    state: { done: 5, total: 5, unlocked: true, showBar: true, nextSlot: 'day1' },
   },
   {
     label: 'Already claimed',
-    state: { done: 3, unlocked: false, showBar: false, nextSlot: 'day2' },
+    state: { done: 3, total: 3, unlocked: false, showBar: false, nextSlot: 'day2' },
   },
   {
     label: 'Room full',
-    state: { done: 3, unlocked: false, showBar: false, nextSlot: null },
+    state: { done: 3, total: 3, unlocked: false, showBar: false, nextSlot: null },
   },
 ];
 
@@ -133,6 +141,8 @@ const PANEL_CASES: { label: string; state: DecorateState }[] = [
       guidedDone: false,
       handPickedDone: false,
       breathHoldDone: false,
+      todosDone: 0,
+      todosTotal: 0,
     },
   },
   {
@@ -142,6 +152,19 @@ const PANEL_CASES: { label: string; state: DecorateState }[] = [
       guidedDone: true,
       handPickedDone: true,
       breathHoldDone: false,
+      todosDone: 0,
+      todosTotal: 0,
+    },
+  },
+  {
+    label: 'Locked — sessions done, to-dos left',
+    state: {
+      kind: 'locked',
+      guidedDone: true,
+      handPickedDone: true,
+      breathHoldDone: true,
+      todosDone: 1,
+      todosTotal: 3,
     },
   },
   { label: 'Claimed today', state: { kind: 'claimed' } },
@@ -165,6 +188,19 @@ function fakeClaim({
   }));
   const nextSlot = ROOM_SLOTS[placed] ?? null;
   const allCompleted = dailiesDone >= 3;
+  const dailies = {
+    todayLocalDate: '2026-01-01',
+    guidedTechnique: null,
+    guidedTechniqueLoading: false,
+    handPickedTechnique: null,
+    handPickedTechniqueLoading: false,
+    guidedCompleted: dailiesDone >= 1,
+    handPickedCompleted: dailiesDone >= 2,
+    breathHoldCompleted: dailiesDone >= 3,
+    allCompleted,
+    isLoading: false,
+    isSettling: false,
+  };
 
   return {
     room: {
@@ -181,18 +217,21 @@ function fakeClaim({
       claimedToday,
       canClaim: allCompleted && !claimedToday && nextSlot != null,
     },
-    dailies: {
-      todayLocalDate: '2026-01-01',
-      guidedTechnique: null,
-      guidedTechniqueLoading: false,
-      handPickedTechnique: null,
-      handPickedTechniqueLoading: false,
-      guidedCompleted: dailiesDone >= 1,
-      handPickedCompleted: dailiesDone >= 2,
-      breathHoldCompleted: dailiesDone >= 3,
+    dailies,
+    // The lab fabricates a day with no to-dos on it: the list is real user
+    // data, and inventing one would put a row on the decorate screen that
+    // nothing in the app could ever tick off.
+    day: {
+      dailies,
+      dailiesDone,
+      todosDone: 0,
+      todosTotal: 0,
+      done: dailiesDone,
+      total: 3,
+      liveCompleted: allCompleted,
       allCompleted,
       isLoading: false,
-    isSettling: false,
+      isSettling: false,
     },
     isLoading: false,
   };
@@ -233,7 +272,8 @@ const CARD_CASES = [
       isComplete: false,
       canClaim: false,
       claimedToday: false,
-      dailiesDoneCount: 1,
+      doneCount: 1,
+      totalCount: 3,
       placedCount: 2,
     },
   },
@@ -243,7 +283,8 @@ const CARD_CASES = [
       isComplete: false,
       canClaim: true,
       claimedToday: false,
-      dailiesDoneCount: 3,
+      doneCount: 3,
+      totalCount: 3,
       placedCount: 2,
     },
   },
@@ -253,7 +294,8 @@ const CARD_CASES = [
       isComplete: false,
       canClaim: false,
       claimedToday: true,
-      dailiesDoneCount: 3,
+      doneCount: 3,
+      totalCount: 3,
       placedCount: 3,
     },
   },
@@ -263,7 +305,8 @@ const CARD_CASES = [
       isComplete: true,
       canClaim: false,
       claimedToday: false,
-      dailiesDoneCount: 3,
+      doneCount: 3,
+      totalCount: 3,
       placedCount: 7,
     },
   },
@@ -329,7 +372,8 @@ export default function RoomLabScreen({ navigation }: RoomLabScreenProps) {
         barFrom={
           Math.max(0, SHEET_CASES[sheetCase].state.done - 1) / 3
         }
-        subtitle="Box Breathing"
+        subtitle="24 breaths of Box Breathing"
+        subtitleDetail="Day 5 in a row"
         onChoosePiece={() => {
           setSheetVisible(false);
           navigation.navigate('RoomDecorate', { fromLab: true });
