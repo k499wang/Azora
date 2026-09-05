@@ -23,8 +23,14 @@ const DELIVERY_CUTOFF_MS = 60 * 60 * 1000;
  * A day finished late shortens its own wait, down to none at all — the clock
  * is there to make the reward worth coming back for, and it is never worth
  * losing the reward over.
+ *
+ * `delayMs` is a parameter so the dev build can hand in a wait short enough to
+ * sit through, without this module having to know a build type.
  */
-export function decorationReadyAt(completedAt: Date): number {
+export function decorationReadyAt(
+  completedAt: Date,
+  delayMs: number = DECORATION_DELIVERY_MS,
+): number {
   const completed = completedAt.getTime();
 
   // Not `setDate(+1)`: on a DST day the next midnight is 23 or 25 hours away,
@@ -33,7 +39,7 @@ export function decorationReadyAt(completedAt: Date): number {
   nextMidnight.setHours(24, 0, 0, 0);
 
   const latest = Math.max(completed, nextMidnight.getTime() - DELIVERY_CUTOFF_MS);
-  return Math.min(completed + DECORATION_DELIVERY_MS, latest);
+  return Math.min(completed + delayMs, latest);
 }
 
 /**

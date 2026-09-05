@@ -72,7 +72,6 @@ export default function IntentReflectionScreen({
   return (
     <OnboardingScreenLayout
       title={option.hook}
-      subtitle={option.reflectionBody}
       progress={stepIndex / stepCount}
       onBack={onBack}
       footer={

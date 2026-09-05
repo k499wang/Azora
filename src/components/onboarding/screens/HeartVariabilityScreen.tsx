@@ -39,40 +39,58 @@ const PAD_BOTTOM = chart.padBottom;
 const TOP_INSET = chart.topInset;
 const SAMPLE_COUNT = 96;
 
-const START_BPM = 80;
+/**
+ * The trace has to say what the title says: stress shows up in the heart. So it
+ * opens under stress — a raised rate whose beat-to-beat swing is small and fast,
+ * which is what low variability looks like — and only then, once the reset
+ * starts, does the rate fall and the swing open out into slow breathing waves.
+ * A trace that was calm from the first pixel illustrated the remedy and left the
+ * claim unmade.
+ */
+const STRESS_BPM = 84;
 const END_BPM = 61;
+/** where the reset begins, as a fraction of the trace */
+const RESET_AT = 0.38;
 // Settling is exponential, not linear: the rate sheds most of the drop in the
 // first few breaths and then flattens out.
-const SETTLE_RATE = 2.4;
+const SETTLE_RATE = 2.6;
 
-// Long, slow breaths that stretch further apart as the breathing settles.
-const BREATH_CYCLES = 5.75;
-const PERIOD_STRETCH = 0.35;
+// Shallow, hurried breathing under stress; long slow ones after the reset.
+const STRESS_CYCLES = 7;
+const RESET_CYCLES = 4.25;
 // Respiratory sinus arrhythmia is asymmetric — the inhale climb is a little
-// sharper than the exhale fall — and the swing widens as the breath lengthens.
+// sharper than the exhale fall.
 const WAVE_SKEW = 0.08;
+/** the tight, rigid swing of a stressed heart */
+const STRESS_SWING = 0.7;
 const START_SWING = 1.5;
-const END_SWING = 2.4;
+const END_SWING = 2.6;
 
-const BPM_MAX = 83;
-const BPM_MIN = 58;
+const BPM_MAX = 88;
+const BPM_MIN = 56;
 
 const REVEAL_DELAY_MS = 650;
 const REVEAL_DURATION_MS = 2600;
 
 function bpmAt(unit: number): number {
   'worklet';
-  const baseline =
-    END_BPM + (START_BPM - END_BPM) * Math.exp(-SETTLE_RATE * unit);
-  const swing = START_SWING + (END_SWING - START_SWING) * unit;
+  const stressed = unit < RESET_AT;
+  const after = Math.max(0, unit - RESET_AT) / (1 - RESET_AT);
 
-  // Frequency falls linearly across the trace, so the phase is its integral.
-  const frequency = BREATH_CYCLES / (1 - PERIOD_STRETCH / 2);
+  const baseline = stressed
+    ? STRESS_BPM
+    : END_BPM + (STRESS_BPM - END_BPM) * Math.exp(-SETTLE_RATE * after);
+  const swing = stressed
+    ? STRESS_SWING
+    : START_SWING + (END_SWING - START_SWING) * after;
+
+  // Two rates, one continuous phase: the fast cycles already run stay counted
+  // when the slow ones take over, so the wave never jumps at the handover.
   const phase =
     2 *
     Math.PI *
-    frequency *
-    (unit - (PERIOD_STRETCH * unit * unit) / 2);
+    (STRESS_CYCLES * Math.min(unit, RESET_AT) +
+      RESET_CYCLES * Math.max(0, unit - RESET_AT));
   const wave = Math.sin(phase + WAVE_SKEW * Math.sin(phase));
 
   return baseline + swing * wave;
@@ -267,7 +285,7 @@ export default function HeartVariabilityScreen({
           ) : null}
         </View>
         <Text style={styles.xAxisLabel}>
-          Two minutes of Azora’s Guided Reset
+          Under stress, then two minutes of Azora’s Guided Reset
         </Text>
       </View>
     </OnboardingScreenLayout>

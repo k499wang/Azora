@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useMemo, type ReactNode } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -52,16 +52,24 @@ export default function OnboardingOptionList<Id extends string>({
   selectedIds,
   onSelect,
   disabled = false,
-  animate = false,
+  animate = true,
   multiSelect = false,
   renderGlyph,
 }: OnboardingOptionListProps<Id>) {
-  const rowAnims = useRef(
-    options.map(() => new Animated.Value(animate ? 0 : 1)),
-  ).current;
+  // Two question screens in a row render the same component in the same slot,
+  // so React reuses this instance and only the options change. The entrance is
+  // therefore keyed on which options these are — not on the instance, which
+  // never remounts, and not on their count, which two six-option questions
+  // share.
+  const optionKey = options.map((option) => option.id).join('|');
+  const rowAnims = useMemo(
+    () => options.map(() => new Animated.Value(animate ? 0 : 1)),
+    [animate, optionKey],
+  );
 
   useEffect(() => {
     if (!animate) return;
+    rowAnims.forEach((anim) => anim.setValue(0));
     const resumeReplay = pauseSessionReplay();
     const animation = Animated.stagger(
       45,
@@ -81,6 +89,12 @@ export default function OnboardingOptionList<Id extends string>({
       resumeReplay();
     };
   }, [animate, rowAnims]);
+
+  // A list with nothing in the glyph column would otherwise hang every label
+  // off an empty 40pt gutter, so a picture-less list centres its labels instead.
+  const hasGlyphs =
+    renderGlyph != null ||
+    options.some((option) => option.icon != null);
 
   const handlePress = (id: Id) => {
     if (isHapticsEnabled()) Haptics.selectionAsync().catch(() => {});
@@ -132,6 +146,7 @@ export default function OnboardingOptionList<Id extends string>({
                     pressed && styles.rowPressed,
                   ]}
                 >
+                  {hasGlyphs ? (
                   <View style={styles.glyph} pointerEvents="none">
                     {renderGlyph?.(option) ??
                     (option.icon ? (
@@ -142,7 +157,10 @@ export default function OnboardingOptionList<Id extends string>({
                       />
                     ) : null)}
                   </View>
-                  <Text style={styles.title}>{option.title}</Text>
+                  ) : null}
+                  <Text style={[styles.title, !hasGlyphs && styles.titleCentered]}>
+                    {option.title}
+                  </Text>
                 </View>
               )}
             </Pressable>
@@ -197,6 +215,9 @@ const styles = StyleSheet.create({
   glyph: {
     width: GLYPH_COLUMN,
     alignItems: 'center',
+  },
+  titleCentered: {
+    textAlign: 'center',
   },
   title: {
     ...typography.label.large,

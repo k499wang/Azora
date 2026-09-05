@@ -6,7 +6,7 @@ import MochiPortrait, {
 import { card, radius } from '../../../theme/card';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
-import { fonts, typography } from '../../../theme/typography';
+import { fonts } from '../../../theme/typography';
 import { Text } from '../../common/Text';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
@@ -103,9 +103,6 @@ export default function PersonalizeIntroScreen({
           <Text style={styles.headline}>
             First, let’s personalize Azora for you.
           </Text>
-          <Text style={styles.sub}>
-            A few questions shape what your daily tasks are.
-          </Text>
         </View>
       </View>
     </OnboardingScreenLayout>
@@ -159,11 +156,5 @@ const styles = StyleSheet.create({
     letterSpacing: -0.6,
     color: colors.text.primary,
     textAlign: 'center',
-  },
-  sub: {
-    ...typography.body.medium,
-    color: colors.text.secondary,
-    textAlign: 'center',
-    paddingHorizontal: spacing.md,
   },
 });

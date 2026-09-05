@@ -196,6 +196,12 @@ const styles = StyleSheet.create({
     marginTop: spacing.xl,
     marginBottom: spacing.xl,
   },
+  subtitle: {
+    ...typography.body.medium,
+    color: colors.text.secondary,
+    textAlign: 'center',
+    paddingHorizontal: spacing.lg,
+  },
   heading: {
     ...typography.display.display2,
     fontFamily: fonts.semibold,
@@ -204,12 +210,6 @@ const styles = StyleSheet.create({
     lineHeight: 52,
     letterSpacing: -1,
     color: colors.text.primary,
-    textAlign: 'center',
-    paddingHorizontal: spacing.lg,
-  },
-  subtitle: {
-    ...typography.body.medium,
-    color: colors.text.secondary,
     textAlign: 'center',
     paddingHorizontal: spacing.lg,
   },

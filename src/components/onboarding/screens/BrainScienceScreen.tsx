@@ -51,7 +51,6 @@ export default function BrainScienceScreen({
   return (
     <OnboardingScreenLayout
       title="This is your brain with Azora."
-      subtitle="Azora uses proven science to settle your nervous system in seconds."
       progress={stepIndex / stepCount}
       onBack={onBack}
       centerBody

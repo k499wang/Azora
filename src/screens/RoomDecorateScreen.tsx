@@ -62,7 +62,9 @@ export default function RoomDecorateScreen({
     ? { kind: 'complete' }
     : progress.claimedToday
       ? { kind: 'claimed' }
-      : !dailies.allCompleted
+      : progress.awaitingDelivery
+        ? { kind: 'waiting', readyAt: progress.deliveryReadyAt }
+        : !dailies.allCompleted
         ? {
             kind: 'locked',
             guidedDone: dailies.guidedCompleted,

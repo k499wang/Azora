@@ -387,11 +387,7 @@ export default function OnboardingScreenLayout({
                       ],
                     }}
                   >
-                    <Text
-                      style={[styles.subtitle, centerCopy && styles.centeredCopy]}
-                    >
-                      {subtitle}
-                    </Text>
+                    <Text style={styles.subtitle}>{subtitle}</Text>
                   </Animated.View>
                 ) : null}
               </View>
@@ -509,7 +505,9 @@ function ProgressBar({ progress }: { progress: number }) {
 
   return (
     <View style={styles.progressBar}>
-      <Reanimated.View style={[styles.progressFill, fillStyle]} />
+      <Reanimated.View style={[styles.progressFill, fillStyle]}>
+        <View style={styles.progressShine} />
+      </Reanimated.View>
     </View>
   );
 }
@@ -555,7 +553,7 @@ const styles = StyleSheet.create({
   },
   progressBar: {
     flex: 1,
-    height: 6,
+    height: 16,
     borderRadius: 999,
     backgroundColor: colors.primary.blue200,
     overflow: 'hidden',
@@ -564,6 +562,16 @@ const styles = StyleSheet.create({
     height: '100%',
     borderRadius: 999,
     backgroundColor: colors.primary.blue600,
+    minWidth: 16,
+    justifyContent: 'flex-start',
+    paddingHorizontal: 4,
+    paddingTop: 3,
+  },
+  progressShine: {
+    height: 4,
+    borderRadius: 999,
+    backgroundColor: colors.background.card,
+    opacity: 0.35,
   },
   backButton: {
     width: 32,
@@ -658,10 +666,12 @@ const styles = StyleSheet.create({
     lineHeight: 36,
     letterSpacing: -0.4,
     color: colors.text.primary,
+    textAlign: 'center',
   },
   subtitle: {
     ...typography.body.small,
     color: colors.text.secondary,
+    textAlign: 'center',
   },
   centeredCopy: {
     textAlign: 'center',

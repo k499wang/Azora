@@ -32,6 +32,11 @@ import {
   setRoomOverride,
   isRoomOverridden,
 } from '../features/room/devRoomOverride';
+import { clearDecorationDeliveries } from '../features/room/useDecorationDelivery';
+import {
+  setDailiesForcedComplete,
+  useDailiesForcedComplete,
+} from '../hooks/devDailiesOverride';
 import { setHotelOverride } from '../features/room/devHotelOverride';
 import type { PyramidRoom } from '../features/room/PyramidCanvas';
 import type { RoomClaim } from '../features/room/useRoomClaim';
@@ -311,6 +316,7 @@ const BAR_STEPS = [
 export default function RoomLabScreen({ navigation }: RoomLabScreenProps) {
   const isDev = __DEV__;
   const roomWidth = useRoomWidth();
+  const dailiesForced = useDailiesForcedComplete();
 
   const [dayIndex, setDayIndex] = useState(0);
   const [optionIndex, setOptionIndex] = useState(0);
@@ -681,6 +687,38 @@ export default function RoomLabScreen({ navigation }: RoomLabScreenProps) {
               }
               disabled={!isRoomOverridden()}
               onPress={() => setRoomOverride(null)}
+            />
+          </View>
+
+          <View style={styles.section}>
+            <SectionHeader title="Today's dailies — faked" />
+            <Text style={styles.note}>
+              Reports the three dailies as done without doing them. Everything
+              downstream is real: the delivery wait, the picker, and the write.
+              A piece placed this way is a real decoration on your real room.
+            </Text>
+            <Button
+              label={
+                dailiesForced
+                  ? 'Stop faking a finished day'
+                  : 'Finish today without doing it'
+              }
+              onPress={() => setDailiesForcedComplete(!dailiesForced)}
+            />
+          </View>
+
+          <View style={styles.section}>
+            <SectionHeader title="Decoration delivery" />
+            <Text style={styles.note}>
+              A finished day's piece arrives after a wait — four hours in a
+              release build, one minute in this one. Clearing forgets the wait
+              that is running, so finishing a day starts a fresh one.
+            </Text>
+            <Button
+              label="Restart today's delivery"
+              onPress={() => {
+                void clearDecorationDeliveries();
+              }}
             />
           </View>
 

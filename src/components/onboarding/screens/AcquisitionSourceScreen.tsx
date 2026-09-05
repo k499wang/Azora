@@ -44,7 +44,6 @@ export default function AcquisitionSourceScreen({
   return (
     <OnboardingScreenLayout
       title="How did you first hear about Azora?"
-      subtitle="It helps us keep making what actually reached you."
       progress={stepIndex / stepCount}
       onBack={onBack}
       onSkip={onSkip}

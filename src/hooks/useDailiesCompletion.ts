@@ -1,4 +1,5 @@
 import { useTodayLocalDate } from './useTodayLocalDate';
+import { useDailiesForcedComplete } from './devDailiesOverride';
 import { useDailyExercisePlan } from '../features/exercise/guidedBreathing/hooks/useDailyExercisePlan';
 import { useRecommendedTechnique } from '../features/exercise/guidedBreathing/hooks/useRecommendedTechnique';
 import {
@@ -42,6 +43,10 @@ export interface DailiesCompletion {
  */
 export function useDailiesCompletion(userId: string | null): DailiesCompletion {
   const todayLocalDate = useTodayLocalDate();
+  // Dev lab only, and `useDailiesForcedComplete` returns false in release
+  // builds. Applied to the three slots rather than to `allCompleted`, so every
+  // surface that counts them agrees with the one that gates the reward.
+  const forced = useDailiesForcedComplete();
   const profileQuery = useProfileQuery(userId);
   const recommended = useRecommendedTechnique(userId);
   const plan = useDailyExercisePlan({
@@ -69,11 +74,15 @@ export function useDailiesCompletion(userId: string | null): DailiesCompletion {
   );
 
   const guidedCompleted =
-    guidedTechnique != null && completedTechniqueIds.includes(guidedTechnique.id);
+    forced ||
+    (guidedTechnique != null &&
+      completedTechniqueIds.includes(guidedTechnique.id));
   const handPickedCompleted =
-    handPickedTechnique != null &&
-    completedTechniqueIds.includes(handPickedTechnique.id);
-  const breathHoldCompleted = todayActivity?.dailyBreathHoldCompleted ?? false;
+    forced ||
+    (handPickedTechnique != null &&
+      completedTechniqueIds.includes(handPickedTechnique.id));
+  const breathHoldCompleted =
+    forced || (todayActivity?.dailyBreathHoldCompleted ?? false);
 
   const isLoading =
     userId != null &&
