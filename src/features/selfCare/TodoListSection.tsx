@@ -1,4 +1,4 @@
-import { memo, useCallback, useEffect, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   type LayoutChangeEvent,
@@ -37,11 +37,18 @@ import { useSetSelfCareGoalFeaturedMutation } from '../../queries/selfCare/useSe
 import { useUpdateSelfCareGoalMutation } from '../../queries/selfCare/useUpdateSelfCareGoalMutation';
 import {
   completedGoalsSummary,
+  reorderedSelfCareGoalPlaces,
   selfCareGoalDaypartLabel,
   MAX_SELF_CARE_GOALS,
   planSelfCareGoalList,
   type SelfCareGoal,
+  type SelfCareGoalPlaces,
 } from './domain/selfCareGoal';
+import {
+  loadSelfCareGoalPlaces,
+  saveSelfCareGoalPlaces,
+  selfCareGoalPlacesNow,
+} from '../../services/preferences/selfCareGoalOrder';
 import { card, radius } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { pressable } from '../../theme/pressable';
@@ -49,6 +56,17 @@ import { spacing } from '../../theme/spacing';
 import { triggerSuccessHaptic, triggerTapHaptic } from '../../native/tapHaptics';
 import { duration, easing, spring } from '../../theme/motion';
 import { fonts, typography, wrappedLineHeight } from '../../theme/typography';
+import JourneyDragRow from '../../components/home/journey/JourneyDragRow';
+import {
+  journeyRowOffset,
+  journeyRowsMeasured,
+} from '../../components/home/journey/journeyReorder';
+import {
+  JOURNEY_DRAG_SETTLE,
+  JOURNEY_REORDER_ACTIONS,
+  useJourneyReorder,
+  type JourneyScrollRef,
+} from '../../components/home/journey/useJourneyReorder';
 import {
   TODAY_JOURNEY_COLUMN_WIDTH,
   TODAY_JOURNEY_DASH_GAP,
@@ -132,6 +150,8 @@ interface TodoListSectionProps {
    * completion, not only the ones that leave the rail.
    */
   onCompleted: (goalTitle: string) => void;
+  /** The page the list sits on; the drag makes it wait rather than scroll. */
+  scrollRef: JourneyScrollRef;
   userId: string | null;
 }
 
@@ -142,22 +162,40 @@ function errorMessage(error: unknown): string {
 interface GoalCardProps {
   goal: SelfCareGoal;
   busy: boolean;
+  /** whether a to-do is being dragged, so a release on this one is not a tap */
+  isArranging: () => boolean;
   onToggle: () => void;
   onOpen: () => void;
+  /** the same reorder the drag does, one place at a time, for VoiceOver */
+  onMove: (delta: number) => void;
 }
 
 /**
  * Shaped like a closed daily above it, so a goal you wrote and a daily the app
  * scheduled read as the same kind of thing on the same journey.
  */
-function GoalCard({ goal, busy, onToggle, onOpen }: GoalCardProps) {
+function GoalCard({
+  goal,
+  busy,
+  isArranging,
+  onToggle,
+  onOpen,
+  onMove,
+}: GoalCardProps) {
   return (
     <View style={[card.base, styles.goalCard]}>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={goal.title}
-        accessibilityHint="Opens this to-do"
+        accessibilityHint="Opens this to-do. Hold to rearrange your list"
+        accessibilityActions={JOURNEY_REORDER_ACTIONS}
+        onAccessibilityAction={(event) => {
+          if (event.nativeEvent.actionName === 'moveUp') onMove(-1);
+          if (event.nativeEvent.actionName === 'moveDown') onMove(1);
+        }}
         onPress={() => {
+          // The finger that just dropped this row is not also tapping it.
+          if (isArranging()) return;
           triggerTapHaptic();
           onOpen();
         }}
@@ -203,6 +241,7 @@ function GoalCard({ goal, busy, onToggle, onOpen }: GoalCardProps) {
         accessibilityLabel={`${goal.title}, ${goal.completedToday ? 'completed' : 'not completed'}`}
         disabled={busy}
         onPress={() => {
+          if (isArranging()) return;
           triggerTapHaptic();
           onToggle();
         }}
@@ -420,6 +459,7 @@ export default function TodoListSection({
   dayDone,
   onCelebrate,
   onCompleted,
+  scrollRef,
 }: TodoListSectionProps) {
   const localDate = useTodayLocalDate();
   const goalsQuery = useSelfCareGoalsQuery(userId, localDate);
@@ -428,6 +468,43 @@ export default function TodoListSection({
   const archiveGoal = useArchiveSelfCareGoalMutation(userId, localDate);
   const featureGoal = useSetSelfCareGoalFeaturedMutation(userId, localDate);
   const updateGoal = useUpdateSelfCareGoalMutation(userId, localDate);
+  /**
+   * Where the user dragged each to-do. A device preference rather than a
+   * column: the order of a checklist is worth remembering and not worth a round
+   * trip before the row can settle under the finger that dropped it. Read once
+   * on the way in, and written straight through on every drop.
+   */
+  const [places, setPlaces] = useState<SelfCareGoalPlaces>(
+    selfCareGoalPlacesNow,
+  );
+
+  // Already primed on all but the very first read of the app's life, so this
+  // usually settles on the same map the first render drew with.
+  useEffect(() => {
+    let live = true;
+    void loadSelfCareGoalPlaces().then((stored) => {
+      if (live) setPlaces(stored);
+    });
+    return () => {
+      live = false;
+    };
+  }, []);
+
+  /**
+   * Forgets where a to-do was dragged, so it goes back to where its hour puts
+   * it. Moving one to a different part of the day is the user asking for that;
+   * a to-do that is gone has no place to keep.
+   */
+  const forgetPlace = useCallback(
+    (goalId: string) => {
+      if (!(goalId in places)) return;
+      const next = { ...places };
+      delete next[goalId];
+      setPlaces(next);
+      void saveSelfCareGoalPlaces(next);
+    },
+    [places],
+  );
   const [adding, setAdding] = useState(false);
   const [detailGoalId, setDetailGoalId] = useState<string | null>(null);
   const [editGoalId, setEditGoalId] = useState<string | null>(null);
@@ -448,25 +525,15 @@ export default function TodoListSection({
    * dailies rail above it.
    */
   const [journeyHeight, setJourneyHeight] = useState<number | null>(null);
-  // Keyed by goal so removing one cannot leave the rail measured against a row
-  // that is no longer last.
-  const [goalCenters, setGoalCenters] = useState<Record<string, number>>({});
 
   const measureJourney = useCallback((event: LayoutChangeEvent) => {
     setJourneyHeight(event.nativeEvent.layout.height);
-  }, []);
-  const measureGoal = useCallback((goalId: string, event: LayoutChangeEvent) => {
-    const { y, height } = event.nativeEvent.layout;
-    const center = y + height / 2;
-    setGoalCenters((centers) =>
-      centers[goalId] === center ? centers : { ...centers, [goalId]: center },
-    );
   }, []);
 
   const goals = goalsQuery.data ?? [];
   // With the day done every finished to-do folds into the drawer, so the card
   // stands alone rather than sitting on top of the list it is celebrating.
-  const plan = planSelfCareGoalList(goals);
+  const plan = planSelfCareGoalList(goals, places);
   const completedGoalCount = goals.filter((goal) => goal.completedToday).length;
   const railGoals = dayDone ? [] : plan.rail;
   const drawerGoals = dayDone ? goals : plan.drawer;
@@ -486,37 +553,82 @@ export default function TodoListSection({
     toggleGoal.error ?? archiveGoal.error ?? featureGoal.error;
   const addNodeVisible = goalsQuery.isSuccess && !atLimit;
   const journeyNodeCount = railGoals.length + (addNodeVisible ? 1 : 0);
-  // The rail runs from the section's top edge to the centre of the last goal's
-  // marker, both measured, so it can never outrun the rows it belongs to.
-  const firstGoal = railGoals[0];
-  const lastGoal = railGoals[railGoals.length - 1];
-  const firstGoalCenter =
-    firstGoal == null ? undefined : goalCenters[firstGoal.id];
-  const lastGoalCenter =
-    lastGoal == null ? undefined : goalCenters[lastGoal.id];
+  const railGoalKey = railGoals.map((goal) => goal.id).join('|');
+  // Stable across renders that did not change the list, so the drag's own
+  // bookkeeping is not rebuilt underneath a finger that is holding a row.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const railGoalIds = useMemo(() => railGoals.map((goal) => goal.id), [railGoalKey]);
+  const { controller, moveBy, restoreOrder } = useJourneyReorder({
+    ids: railGoalIds,
+    gap: JOURNEY_ROW_GAP,
+    enabled: !dayDone,
+    onReorder: (orderedGoalIds) => {
+      // The list changed while the finger was down — a to-do finished on
+      // another device, a refetch landing — so the order is against rows that
+      // have moved and the ones on screen go back where they were.
+      const next = reorderedSelfCareGoalPlaces(
+        railGoals,
+        places,
+        orderedGoalIds,
+      );
+      if (next == null) {
+        restoreOrder();
+        return;
+      }
+      setPlaces(next);
+      void saveSelfCareGoalPlaces(next);
+    },
+  });
+
+  // The rail runs from the first goal's marker to the last one's, off the row
+  // heights rather than measured positions: during a drag the rows have moved
+  // but nothing has been laid out again, so a position read from the layout
+  // would still describe the order the user has already left behind.
+  //
+  // Both ends are worked out in the worklet, from the order the drag is
+  // proposing, so the dotted line re-spans as soon as a taller to-do takes an
+  // end of the list — and a drag crossing a row costs no render here either.
+  const heights = controller.measuredHeights;
   const railMeasured =
-    journeyHeight != null &&
-    firstGoalCenter != null &&
-    lastGoalCenter != null &&
-    lastGoalCenter > firstGoalCenter;
-  const railTop = railMeasured ? firstGoalCenter : 0;
-  const railHeight = railMeasured ? lastGoalCenter - firstGoalCenter : 0;
-  const railBottom = railMeasured ? journeyHeight - lastGoalCenter : 0;
-  const dashCount = todayJourneyDashCount(railHeight);
+    journeyHeight != null && journeyRowsMeasured(railGoalIds, heights);
+  // Counted from the whole section rather than the rail, so the count is an
+  // upper bound that holds however the rows are arranged. The dashes are laid
+  // at a fixed pitch and clipped, so a few spare ones never show.
+  const dashCount = todayJourneyDashCount(journeyHeight ?? 0);
+  const {
+    order: railOrder,
+    heights: railHeights,
+    dragging,
+    gap: railGap,
+  } = controller;
+  const measuredJourneyHeight = journeyHeight ?? 0;
   /**
    * A daily opening above pushes this rail down and changes what it has to
    * span. The rail above animates that on `TODAY_JOURNEY_RAIL_TIMING`, so this
    * one follows the same curve rather than snapping to its new length while the
-   * other half of the same line is still moving.
+   * other half of the same line is still moving — and follows the quicker drag
+   * curve instead while a row is actually being placed.
    */
-  const railBottomValue = useSharedValue(railBottom);
-  useEffect(() => {
-    railBottomValue.value = withTiming(railBottom, TODAY_JOURNEY_RAIL_TIMING);
-  }, [railBottom, railBottomValue]);
-  const railStyle = useAnimatedStyle(() => ({
-    top: railTop,
-    bottom: railBottomValue.value,
-  }), [railTop]);
+  const railStyle = useAnimatedStyle(() => {
+    // The same stale-read guard the rows use: an order built from a list this
+    // one is no longer being rendered from would span the wrong two rows for a
+    // frame, which on a rail reads as the dotted line jumping.
+    const proposed = railOrder.value;
+    const live =
+      proposed.key === controller.committedKey ? proposed.ids : railGoalIds;
+    const sizes = railHeights.value;
+    const first = (sizes[live[0]] ?? 0) / 2;
+    const last =
+      journeyRowOffset(live, sizes, railGap, live.length - 1) +
+      (sizes[live[live.length - 1]] ?? 0) / 2;
+    const timing = dragging.value
+      ? JOURNEY_DRAG_SETTLE
+      : TODAY_JOURNEY_RAIL_TIMING;
+    return {
+      top: withTiming(first, timing),
+      bottom: withTiming(measuredJourneyHeight - last, timing),
+    };
+  }, [measuredJourneyHeight, railGap, railGoalIds, controller.committedKey]);
   // The chevron turns on the same curve the drawer opens on, so the arrow and
   // the list are one movement.
   const chevronTurn = useSharedValue(completedOpen ? 1 : 0);
@@ -594,11 +706,14 @@ export default function TodoListSection({
               ))}
             </Animated.View>
           ) : null}
-          {railGoals.map((goal) => (
-            <View
+          {railGoals.map((goal, index) => (
+            <JourneyDragRow
               key={goal.id}
+              controller={controller}
+              id={goal.id}
+              index={index}
+              scrollRef={scrollRef}
               style={styles.journeyRow}
-              onLayout={(event) => measureGoal(goal.id, event)}
             >
               <View style={styles.timelineColumn} pointerEvents="none">
                 <GoalStatusMarker completed={goal.completedToday} />
@@ -609,6 +724,7 @@ export default function TodoListSection({
                   toggleGoal.isPending &&
                   toggleGoal.variables?.goalId === goal.id
                 }
+                isArranging={controller.isArranging}
                 onToggle={() =>
                   toggleGoal.mutate({
                     goalId: goal.id,
@@ -616,8 +732,9 @@ export default function TodoListSection({
                   })
                 }
                 onOpen={() => setDetailGoalId(goal.id)}
+                onMove={(delta) => moveBy(goal.id, delta)}
               />
-            </View>
+            </JourneyDragRow>
           ))}
           {addNodeVisible ? (
             <AddGoalRow onPress={() => setAdding(true)} />
@@ -718,6 +835,7 @@ export default function TodoListSection({
         onRemove={() => {
           if (detailGoal == null) return;
           setDetailGoalId(null);
+          forgetPlace(detailGoal.id);
           archiveGoal.mutate(detailGoal.id);
         }}
       />
@@ -732,6 +850,12 @@ export default function TodoListSection({
         }}
         onSave={(edit) => {
           if (editGoal == null) return;
+          // An edit that moves the to-do to another part of the day means the
+          // day decides where it sits again. One that only fixes a typo leaves
+          // the place the user dragged it to alone.
+          if (edit.scheduledTime !== editGoal.scheduledTime) {
+            forgetPlace(editGoal.id);
+          }
           updateGoal.mutate(
             { goalId: editGoal.id, ...edit },
             { onSuccess: () => setEditGoalId(null) },

@@ -85,7 +85,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const celebrations = useRef<HomeCelebrationHandle>(null);
 
   const [notificationsVisible, setNotificationsVisible] = useState(false);
-
   // The last thing in a day can be a to-do ticked off here rather than a
   // session, so the unlock celebration has to be able to fire from Home too.
   //
@@ -125,7 +124,16 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     navigation.navigate('RoomDecorate');
   }, [navigation]);
 
+  /**
+   * One ref for this scroll view, not two. The tour scrolls a stop into place
+   * through it, and both lists hand it to their drag so a row held on either
+   * makes this wait rather than scroll — a drag and a scroll are the same
+   * vertical finger, and letting both run moves the list under the row being
+   * placed. A second `ref` here would win over this one and leave the tour
+   * unable to scroll at all.
+   */
   const tourScroll = useTourScroller(TOUR_TARGETS);
+  const scroller = tourScroll.ref;
   const dailiesTarget = useTourTarget('dailies');
   const todosTarget = useTourTarget('todos');
   const extraPracticeTarget = useTourTarget('extraPractice');
@@ -192,11 +200,9 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
               <TodaysDailiesSection
                 technique={dailies.guidedTechnique}
                 techniqueLoading={dailies.guidedTechniqueLoading}
-                sessionTime={dailyPlanSchedule.actions.session}
                 handPickedTechnique={dailies.handPickedTechnique}
                 handPickedTechniqueLoading={dailies.handPickedTechniqueLoading}
-                handPickedTime={dailyPlanSchedule.actions.handPicked}
-                breathHoldTime={dailyPlanSchedule.actions.checkIn}
+                schedule={dailyPlanSchedule}
                 guidedExerciseCompleted={dailies.guidedCompleted}
                 handPickedExerciseCompleted={dailies.handPickedCompleted}
                 breathHoldCompleted={dailies.breathHoldCompleted}
@@ -205,6 +211,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
                 onPressHandPickedExercise={() => start('handPicked')}
                 onPressBreathHold={() => start('breathHold')}
                 onPressHistory={() => navigation.navigate('History')}
+                scrollRef={scroller}
                 dayDone={dayDone}
               />
             </View>
@@ -216,6 +223,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
                 onCompleted={(goalTitle) =>
                   celebrations.current?.confirm(goalTitle)
                 }
+                scrollRef={scroller}
               />
             </View>
           </View>

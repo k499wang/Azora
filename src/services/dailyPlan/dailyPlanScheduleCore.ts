@@ -113,3 +113,46 @@ export function sortDailyPlanActionIdsByTime(
     );
   });
 }
+
+/**
+ * The order the user dragged the three dailies into, if it is still an order of
+ * exactly those three.
+ *
+ * Storage is free text and outlives the version that wrote it, and a daily that
+ * appeared or was renamed since would leave a list that is no longer the day.
+ * Anything short of the full set is refused so the caller falls back to the
+ * schedule instead of drawing a partial one.
+ */
+export function sanitizeDailyPlanOrder(
+  raw: unknown,
+): DailyPlanActionId[] | null {
+  if (!Array.isArray(raw)) return null;
+  if (raw.length !== DAILY_PLAN_ACTION_TIE_ORDER.length) return null;
+
+  const seen = new Set<string>();
+  for (const actionId of raw) {
+    if (typeof actionId !== 'string') return null;
+    if (!DAILY_PLAN_ACTION_TIE_ORDER.includes(actionId as DailyPlanActionId)) {
+      return null;
+    }
+    if (seen.has(actionId)) return null;
+    seen.add(actionId);
+  }
+
+  return raw as DailyPlanActionId[];
+}
+
+/**
+ * The order to draw the dailies in: the one the user arranged, or the order the
+ * day happens in for anyone who never has.
+ *
+ * Dragging a daily is a change to this list and to nothing else — the hours
+ * stay where they were set, so the reminder for a daily keeps firing when it
+ * always did and the card keeps saying so.
+ */
+export function resolveDailyPlanOrder(
+  stored: unknown,
+  actions: Partial<Record<DailyPlanActionId, unknown>>,
+): DailyPlanActionId[] {
+  return sanitizeDailyPlanOrder(stored) ?? sortDailyPlanActionIdsByTime(actions);
+}
