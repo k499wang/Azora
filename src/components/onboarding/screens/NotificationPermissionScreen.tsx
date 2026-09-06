@@ -1,4 +1,5 @@
-import { Image, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { Image } from 'expo-image';
 import { Text } from '../../common/Text';
 import ChunkyButton, { CHUNKY_TONE_QUIET } from '../../common/ChunkyButton';
 import type { DailyPlanSchedule } from '../../../services/dailyPlan/types';
@@ -8,6 +9,7 @@ import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
 import { card, radius } from '../../../theme/card';
 import { DAILY_REMINDER_DEFINITIONS } from '../../../services/notifications/notificationCatalog';
+import { getBackgroundImageSource } from '../../../services/images/backgroundImageCache';
 import MochiAside from '../MochiAside';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
@@ -24,8 +26,6 @@ interface NotificationPermissionScreenProps {
 }
 
 const AVATAR_SIZE = 44;
-/** the real app icon, so the preview looks like the notification it promises */
-const APP_ICON = require('../../../../assets/app/icon.png');
 
 /**
  * The permission asked as a favour rather than a setting.
@@ -46,7 +46,17 @@ function NotificationPreview({ schedule }: { schedule: DailyPlanSchedule }) {
 
   return (
     <View style={styles.preview}>
-      <Image source={APP_ICON} style={styles.avatar} accessibilityIgnoresInvertColors />
+      {/* The retained decode warmed at startup, drawn with no transition: the
+          icon has to be there in the card's first frame, not fade in a beat
+          after the screen has settled. */}
+      <Image
+        source={getBackgroundImageSource('appIcon')}
+        style={styles.avatar}
+        contentFit="contain"
+        transition={0}
+        cachePolicy="memory-disk"
+        accessibilityIgnoresInvertColors
+      />
       <View style={styles.previewCopy}>
         <View style={styles.previewHeader}>
           <Text style={styles.previewFrom}>Azora</Text>
@@ -137,6 +147,7 @@ const styles = StyleSheet.create({
   avatar: {
     width: AVATAR_SIZE,
     height: AVATAR_SIZE,
+    backgroundColor: colors.neutral[100],
     borderRadius: radius.small,
     borderCurve: 'continuous',
   },

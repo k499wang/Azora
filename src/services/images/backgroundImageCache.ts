@@ -9,6 +9,7 @@ import {
   SUNSET_BACKGROUND_ASSET,
 } from '../../data/backgroundAssets';
 import { STREAK_FLAME_ASSET } from '../../data/streakFlameAsset';
+import { APP_ICON_ASSET } from '../../data/appIconAsset';
 
 export type BackgroundImageKey =
   | 'result'
@@ -20,7 +21,11 @@ export type BackgroundImageKey =
   | 'dailyPlan'
   // Not a background, but it is a full-bleed hero the user must never watch
   // appear, and this is where the app predecodes those.
-  | 'streakFlame';
+  | 'streakFlame'
+  // Nor a background: the app icon inside the notification preview, small
+  // enough to be missed as a loading cost and obvious enough to be missed as a
+  // pop-in.
+  | 'appIcon';
 
 const sources: Record<BackgroundImageKey, number> = {
   result: RESULT_BACKGROUND_ASSET.source,
@@ -31,6 +36,7 @@ const sources: Record<BackgroundImageKey, number> = {
   profileHero: PROFILE_HERO_BACKGROUND_ASSET.source,
   dailyPlan: DAILY_PLAN_BACKGROUND_ASSET.source,
   streakFlame: STREAK_FLAME_ASSET,
+  appIcon: APP_ICON_ASSET,
 };
 
 const loadOptions: Partial<Record<BackgroundImageKey, ImageLoadOptions>> = {
@@ -42,6 +48,8 @@ const loadOptions: Partial<Record<BackgroundImageKey, ImageLoadOptions>> = {
   heartHero: { maxWidth: 1400 },
   profileHero: { maxWidth: 1400 },
   dailyPlan: { maxWidth: 1400 },
+  // Drawn at 44pt; the 1024px source never needs to be decoded at full size.
+  appIcon: { maxWidth: 256 },
 };
 
 const retainedImages: Partial<Record<BackgroundImageKey, ImageRef>> = {};
