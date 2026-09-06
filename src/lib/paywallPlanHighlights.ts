@@ -10,6 +10,12 @@ const INTENT_PLAN_HIGHLIGHT: Record<OnboardingIntent, string> = {
   focus:
     'A daily plan built around your goal to stay focused while you work or study.',
   energy: 'A daily plan built around your goal to boost your energy.',
+  self_acceptance:
+    'A daily plan built around your goal to be kinder to yourself.',
+  emotional_balance:
+    'A daily plan built around your goal to steady your emotions.',
+  self_care:
+    'A daily plan built around your goal to make time for yourself.',
   spiritual:
     'A daily plan built around your goal to deepen your spiritual practice.',
   yoga: 'A daily plan built around your goal to support your yoga practice.',

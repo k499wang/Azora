@@ -158,6 +158,99 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
     ],
   },
   {
+    id: 'self_acceptance',
+    icon: 'heart',
+    accent: colors.orange[600],
+    title: 'Be kinder to myself',
+    body: 'Turn down the inner critic and make peace with where you are.',
+    hook: 'You can stop fighting yourself.',
+    goalPhrase: 'be kinder to yourself',
+    assessmentPlan:
+      'We’ll start with slow, warm sessions that leave room for self-compassion.',
+    reflectionHeadline: 'Kindness is a practice, not a mood.',
+    reflectionBody:
+      'Self-criticism keeps the body on alert. Slowing down gives you a moment to meet yourself gently instead.',
+    valuePoints: [
+      {
+        icon: 'heart-glow',
+        accent: colors.orange[600],
+        label: 'A calm body makes self-criticism easier to set down',
+      },
+      {
+        icon: 'face-calm',
+        accent: colors.primary.blue600,
+        label: 'Self-compassion practice is linked to lower anxiety',
+      },
+      {
+        icon: 'sparkle',
+        accent: colors.success[700],
+        label: 'Showing up counts, even on the days it feels small',
+      },
+    ],
+  },
+  {
+    id: 'emotional_balance',
+    icon: 'waves',
+    accent: colors.primary.blue600,
+    title: 'Steady my emotions',
+    body: 'Ride out big feelings without being swept away by them.',
+    hook: 'Feel it without drowning in it.',
+    goalPhrase: 'steady your emotions',
+    assessmentPlan:
+      'We’ll start with longer exhales, the fastest way to take the edge off a spike.',
+    reflectionHeadline: 'The wave passes sooner than you think.',
+    reflectionBody:
+      'Emotions move through the body first. Lengthening your exhale gives the surge somewhere to go before it takes over.',
+    valuePoints: [
+      {
+        icon: 'waves',
+        accent: colors.primary.blue600,
+        label: 'Long exhales pull the body out of alarm mode',
+      },
+      {
+        icon: 'face-calm',
+        accent: colors.success[700],
+        label: 'A steadier body makes room for a steadier reaction',
+      },
+      {
+        icon: 'heart-bpm',
+        accent: colors.error[700],
+        label: 'Higher HRV tracks with better emotional regulation',
+      },
+    ],
+  },
+  {
+    id: 'self_care',
+    icon: 'lotus',
+    accent: colors.success[700],
+    title: 'Make time for myself',
+    body: 'Claim a few quiet minutes in the day that belong only to you.',
+    hook: 'A few minutes that are yours.',
+    goalPhrase: 'make time for yourself',
+    assessmentPlan:
+      'We’ll start with short, unhurried sessions that fit into the day you already have.',
+    reflectionHeadline: 'Small, protected, yours.',
+    reflectionBody:
+      'Time for yourself does not have to be an hour. A few unhurried minutes, taken daily, is the version that survives a busy week.',
+    valuePoints: [
+      {
+        icon: 'timer',
+        accent: colors.success[700],
+        label: 'Two quiet minutes is a real reset, not a compromise',
+      },
+      {
+        icon: 'moon',
+        accent: colors.primary.blue600,
+        label: 'A pause you choose beats one your body forces on you',
+      },
+      {
+        icon: 'streak',
+        accent: colors.orange[600],
+        label: 'Daily and short outlasts long and occasional',
+      },
+    ],
+  },
+  {
     id: 'spiritual',
     icon: 'arrow-up',
     accent: colors.primary.blue600,
