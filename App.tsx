@@ -36,13 +36,17 @@ import { logAppsFlyerDiagnostics } from './src/services/attribution/appsFlyerDia
 import { WelcomeIntro } from './src/components/welcome/WelcomeIntro';
 import { colors } from './src/theme/colors';
 import TECHNIQUES from './src/features/exercise/guidedBreathing/techniques';
-import { loadCriticalBackgroundImages } from './src/services/images/backgroundImageCache';
+import {
+  loadBackgroundImage,
+  loadCriticalBackgroundImages,
+} from './src/services/images/backgroundImageCache';
 SplashScreen.preventAutoHideAsync();
 
 // ─── Secondary asset preloads (fire-and-forget, non-blocking) ──────────
 TECHNIQUES.forEach((technique) => {
   Asset.fromModule(technique.backgroundImage as number).downloadAsync();
 });
+void loadBackgroundImage('appIcon').catch(() => {});
 const navigationRef = createNavigationContainerRef<RootStackParamList>();
 const STARTUP_BACKGROUND_COLOR = colors.neutral[0];
 
