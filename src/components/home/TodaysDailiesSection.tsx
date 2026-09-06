@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Text } from '../common/Text';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, {
@@ -36,10 +36,26 @@ import {
 } from './todayJourneyLayout';
 import {
   formatDailyPlanTime,
-  sortDailyPlanActionIdsByTime,
+  resolveDailyPlanOrder,
+  sanitizeDailyPlanOrder,
   type DailyPlanActionId,
 } from '../../services/dailyPlan/dailyPlanScheduleCore';
-import { DEFAULT_DAILY_PLAN_SCHEDULE } from '../../services/dailyPlan/types';
+import {
+  dailyPlanOrderNow,
+  loadDailyPlanOrder,
+  saveDailyPlanOrder,
+} from '../../services/preferences/dailyPlanOrder';
+import {
+  DEFAULT_DAILY_PLAN_SCHEDULE,
+  type DailyPlanSchedule,
+} from '../../services/dailyPlan/types';
+import JourneyDragRow from './journey/JourneyDragRow';
+import {
+  JOURNEY_DRAG_SETTLE,
+  JOURNEY_REORDER_ACTIONS,
+  useJourneyReorder,
+  type JourneyScrollRef,
+} from './journey/useJourneyReorder';
 import {
   TODAY_JOURNEY_COLUMN_WIDTH,
   TODAY_JOURNEY_MARKER_ICON_SIZE,
@@ -120,6 +136,7 @@ const DASH_COUNT = todayJourneyDashCount(
  * never changes and only these two insets move.
  */
 function railGeometry(firstHeight: number, lastHeight: number) {
+  'worklet';
   return {
     top: firstHeight / 2 + TIMELINE_MARKER_SIZE / 2,
     bottom: lastHeight / 2 + TIMELINE_MARKER_SIZE / 2,
@@ -129,11 +146,18 @@ function railGeometry(firstHeight: number, lastHeight: number) {
 interface TodaysDailiesSectionProps {
   technique: BreathingTechnique | null;
   techniqueLoading: boolean;
-  sessionTime: string;
   handPickedTechnique: BreathingTechnique | null;
   handPickedTechniqueLoading: boolean;
-  handPickedTime: string;
-  breathHoldTime: string;
+
+  /**
+   * The hours the three dailies happen at, and the order they are read in when
+   * the user has not arranged one of their own.
+   *
+   * Dragging a daily does not touch this. The hours are what the reminders fire
+   * on and what each card says; the order they are shown in is a preference
+   * about this screen, kept on the device.
+   */
+  schedule: DailyPlanSchedule;
   guidedExerciseCompleted: boolean;
   handPickedExerciseCompleted: boolean;
   breathHoldCompleted: boolean;
@@ -142,6 +166,8 @@ interface TodaysDailiesSectionProps {
   onPressHandPickedExercise: () => void;
   onPressBreathHold: () => void;
   onPressHistory: () => void;
+  /** The page the section sits on; the drag makes it wait rather than scroll. */
+  scrollRef: JourneyScrollRef;
   /** Everything on both of Home's lists is finished; the rail folds away. */
   dayDone?: boolean;
 }
@@ -168,12 +194,16 @@ interface DailyTaskRowProps {
   /** open this row; the row that was open closes */
   onSelect: () => void;
   onPress?: () => void;
+  /** whether a row is being dragged, so a release on this one is not a tap */
+  isArranging: () => boolean;
+  /** the same reorder the drag does, one place at a time, for VoiceOver */
+  onMove: (delta: number) => void;
 }
 
 /** everything about a daily except which one happens to be open */
 type DailyRowContent = Omit<
   DailyTaskRowProps,
-  'expanded' | 'onSelect' | 'metrics'
+  'expanded' | 'onSelect' | 'metrics' | 'isArranging' | 'onMove'
 >;
 
 function formatCategory(category: BreathingTechnique['category']): string {
@@ -199,8 +229,10 @@ function DailyTaskRow({
   completed,
   locked,
   loading = false,
+  isArranging,
   onSelect,
   onPress,
+  onMove,
 }: DailyTaskRowProps) {
   const unavailable = onPress == null;
   const statusLabel = completed ? 'completed' : locked ? 'locked' : 'not completed';
@@ -227,6 +259,8 @@ function DailyTaskRow({
     <Animated.View style={rowStyle}>
       <Pressable
         onPress={() => {
+          // The finger that just dropped this row is not also tapping it.
+          if (isArranging()) return;
           triggerTapHaptic();
           if (expanded) {
             onPress?.();
@@ -237,8 +271,17 @@ function DailyTaskRow({
         disabled={expanded && unavailable}
         accessibilityRole="button"
         accessibilityLabel={`${title}, ${detailLabel}, scheduled for ${scheduledTime}${techniqueMeta == null ? '' : `, ${techniqueMeta}`}, ${statusLabel}`}
-        accessibilityHint={expanded ? undefined : 'Opens this daily'}
+        accessibilityHint={
+          expanded
+            ? 'Hold to rearrange your dailies'
+            : 'Opens this daily. Hold to rearrange your dailies'
+        }
         accessibilityState={{ expanded, disabled: expanded && unavailable }}
+        accessibilityActions={JOURNEY_REORDER_ACTIONS}
+        onAccessibilityAction={(event) => {
+          if (event.nativeEvent.actionName === 'moveUp') onMove(-1);
+          if (event.nativeEvent.actionName === 'moveDown') onMove(1);
+        }}
         style={({ pressed }) => [styles.taskRow, pressed && styles.taskPressed]}
       >
         <View style={styles.timelineColumn} pointerEvents="none">
@@ -412,11 +455,9 @@ function CollapsedTaskPill({
 export default function TodaysDailiesSection({
   technique,
   techniqueLoading,
-  sessionTime,
   handPickedTechnique,
   handPickedTechniqueLoading,
-  handPickedTime,
-  breathHoldTime,
+  schedule,
   guidedExerciseCompleted,
   handPickedExerciseCompleted,
   breathHoldCompleted,
@@ -425,6 +466,7 @@ export default function TodaysDailiesSection({
   onPressHandPickedExercise,
   onPressBreathHold,
   onPressHistory,
+  scrollRef,
   dayDone = false,
 }: TodaysDailiesSectionProps) {
   const guidedLocked = !guidedExerciseCompleted && !exerciseAccessAllowed;
@@ -437,17 +479,35 @@ export default function TodaysDailiesSection({
   const guidedDetailIcon = technique?.icon ?? 'wind';
   const guidedTitle = technique?.name ?? 'Your reset';
   const guidedScheduledTime = formatDailyPlanTime(
-    sessionTime,
+    schedule.actions.session,
     DEFAULT_DAILY_PLAN_SCHEDULE.actions.session,
   );
   const breathHoldScheduledTime = formatDailyPlanTime(
-    breathHoldTime,
+    schedule.actions.checkIn,
     DEFAULT_DAILY_PLAN_SCHEDULE.actions.checkIn,
   );
   const handPickedScheduledTime = formatDailyPlanTime(
-    handPickedTime,
+    schedule.actions.handPicked,
     DEFAULT_DAILY_PLAN_SCHEDULE.actions.handPicked,
   );
+  /**
+   * The order the user arranged, read once on the way in and written straight
+   * through on every drop. Null until they arrange one, and then the day's own
+   * order stands.
+   */
+  const [arrangedOrder, setArrangedOrder] = useState(dailyPlanOrderNow);
+
+  // Already primed on all but the very first read of the app's life, so this
+  // usually settles on the same order the first render drew with.
+  useEffect(() => {
+    let live = true;
+    void loadDailyPlanOrder().then((stored) => {
+      if (live) setArrangedOrder(stored);
+    });
+    return () => {
+      live = false;
+    };
+  }, []);
   const guidedDetail = technique == null
     ? 'Personalized for you'
     : `${formatCategory(technique.category)} reset`;
@@ -506,11 +566,10 @@ export default function TodaysDailiesSection({
       onPress: onPressBreathHold,
     },
   };
-  const orderedActionIds = sortDailyPlanActionIdsByTime({
-    session: sessionTime,
-    handPicked: handPickedTime,
-    checkIn: breathHoldTime,
-  });
+  const orderedActionIds = useMemo(
+    () => resolveDailyPlanOrder(arrangedOrder, schedule.actions),
+    [arrangedOrder, schedule.actions],
+  );
   // Which row is open is the user's choice and is honoured whatever its state —
   // a finished daily opens like any other, so you can look at what you did or
   // run it again. With no choice made it falls back to the first unfinished
@@ -536,26 +595,69 @@ export default function TodaysDailiesSection({
     openedActionId ??
     orderedActionIds.find((actionId) => !rows[actionId].completed) ??
     orderedActionIds[orderedActionIds.length - 1];
-  const rowHeight = (actionId: DailyPlanActionId) =>
-    actionId === expandedActionId
-      ? metrics.expandedHeight
-      : metrics.collapsedHeight;
-  const rail = railGeometry(
-    rowHeight(orderedActionIds[0]),
-    rowHeight(orderedActionIds[orderedActionIds.length - 1]),
+  // Given rather than measured: a daily's height is a design constant, and the
+  // open one spends 420ms animating between two of them. Measuring that would
+  // be a state update a frame for the whole of it.
+  const rowHeights = useMemo(
+    () =>
+      Object.fromEntries(
+        orderedActionIds.map((actionId) => [
+          actionId,
+          actionId === expandedActionId
+            ? metrics.expandedHeight
+            : metrics.collapsedHeight,
+        ]),
+      ),
+    [orderedActionIds, expandedActionId, metrics],
   );
-  const railTop = useSharedValue(rail.top);
-  const railBottom = useSharedValue(rail.bottom);
+  const { controller, moveBy, restoreOrder } = useJourneyReorder({
+    ids: orderedActionIds,
+    gap: TIMELINE_ROW_GAP,
+    enabled: !dayDone,
+    heights: rowHeights,
+    onReorder: (ids) => {
+      // Refused only if the list is somehow no longer the three dailies, in
+      // which case the rows go back where they were rather than standing in an
+      // order nothing else agrees with.
+      const next = sanitizeDailyPlanOrder(ids);
+      if (next == null) {
+        restoreOrder();
+        return;
+      }
+      setArrangedOrder(next);
+      void saveDailyPlanOrder(next);
+    },
+  });
 
-  useEffect(() => {
-    railTop.value = withTiming(rail.top, EXPAND_TIMING);
-    railBottom.value = withTiming(rail.bottom, EXPAND_TIMING);
-  }, [rail.top, rail.bottom, railTop, railBottom]);
-
-  const railStyle = useAnimatedStyle(() => ({
-    top: railTop.value,
-    bottom: railBottom.value,
-  }));
+  // The rail follows the order the drag is proposing, read straight off the
+  // same shared values the rows move on. Its two ends are the first and last
+  // markers, and both move the moment the open card — the one row taller than
+  // the rest — takes a new end of the list; waiting for the drop would leave
+  // the dotted line short at one end and past the last circle at the other for
+  // the length of the drag. Doing it here rather than in state is what keeps a
+  // drag from re-rendering the section on every row it crosses.
+  const { order: railOrder, heights: railHeights, dragging } = controller;
+  const railStyle = useAnimatedStyle(() => {
+    // The same stale-read guard the rows use: an order built from a list this
+    // one is no longer being rendered from would span the wrong two rooms for
+    // a frame.
+    const proposed = railOrder.value;
+    const live =
+      proposed.key === controller.committedKey ? proposed.ids : orderedActionIds;
+    const sizes = railHeights.value;
+    const rail = railGeometry(
+      sizes[live[0]] ?? 0,
+      sizes[live[live.length - 1]] ?? 0,
+    );
+    // A row being dropped settles faster than a card opens, and the rail is
+    // one line with the rows: it has to move on whichever of the two is
+    // actually happening.
+    const timing = dragging.value ? JOURNEY_DRAG_SETTLE : EXPAND_TIMING;
+    return {
+      top: withTiming(rail.top, timing),
+      bottom: withTiming(rail.bottom, timing),
+    };
+  }, [orderedActionIds, controller.committedKey]);
 
   return (
     <View style={styles.section}>
@@ -600,14 +702,23 @@ export default function TodaysDailiesSection({
                 <View key={dash} style={styles.timelineRailDash} />
               ))}
             </Animated.View>
-            {orderedActionIds.map((actionId) => (
-              <DailyTaskRow
+            {orderedActionIds.map((actionId, index) => (
+              <JourneyDragRow
                 key={actionId}
-                {...rows[actionId]}
-                metrics={metrics}
-                expanded={actionId === expandedActionId}
-                onSelect={() => setOpenedActionId(actionId)}
-              />
+                controller={controller}
+                id={actionId}
+                index={index}
+                scrollRef={scrollRef}
+              >
+                <DailyTaskRow
+                  {...rows[actionId]}
+                  metrics={metrics}
+                  expanded={actionId === expandedActionId}
+                  isArranging={controller.isArranging}
+                  onSelect={() => setOpenedActionId(actionId)}
+                  onMove={(delta) => moveBy(actionId, delta)}
+                />
+              </JourneyDragRow>
             ))}
           </View>
         </>

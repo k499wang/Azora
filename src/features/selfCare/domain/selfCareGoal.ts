@@ -34,6 +34,48 @@ export const SELF_CARE_GOAL_DAYPARTS: DaypartSpec[] = [
   { id: 'bedtime', label: 'Bedtime', icon: 'moon', time: '21:00', until: 24 },
 ];
 
+/**
+ * Where the user dragged each to-do, keyed by goal id and valued on the same
+ * axis an hour puts it on. A to-do with no entry has simply never been dragged.
+ */
+export type SelfCareGoalPlaces = Record<string, number>;
+
+/**
+ * Where an untimed to-do sits on the sort axis: after every hour of the day.
+ * The axis is minutes past midnight, so a to-do lands where its hour puts it
+ * without anyone having to number the list.
+ */
+export const SELF_CARE_GOAL_UNTIMED_SORT = 24 * 60;
+
+/**
+ * The place an hour claims on the list, before anyone drags anything.
+ *
+ * Never zero. Zero is what every row held before to-dos could be dragged, and
+ * reading it back as a real place would sort a whole un-migrated list by
+ * nothing — so it is kept free to mean "no place yet". Midnight is the only
+ * hour that would land there, and it is not one the day-part picker offers.
+ */
+export function selfCareGoalSortSeed(scheduledTime: string | null): number {
+  if (scheduledTime == null) return SELF_CARE_GOAL_UNTIMED_SORT;
+  const [hour, minute] = scheduledTime.split(':').map(Number);
+  if (!Number.isFinite(hour) || !Number.isFinite(minute)) {
+    return SELF_CARE_GOAL_UNTIMED_SORT;
+  }
+  return Math.max(1, hour * 60 + minute);
+}
+
+/**
+ * Where a to-do sits: the place the user dragged it to, or the one its hour
+ * gives it. The two are the same axis, so a list nobody has dragged and a list
+ * they have both sort the same way, with no special case for either.
+ */
+export function selfCareGoalPlace(
+  goal: SelfCareGoal,
+  places: SelfCareGoalPlaces,
+): number {
+  return places[goal.id] ?? selfCareGoalSortSeed(goal.scheduledTime);
+}
+
 export function selfCareGoalDaypartTime(part: SelfCareGoalDaypart): string {
   const spec = SELF_CARE_GOAL_DAYPARTS.find((entry) => entry.id === part);
   return spec?.time ?? SELF_CARE_GOAL_DAYPARTS[0].time;
@@ -196,20 +238,59 @@ export function isSelfCareGoalDueOn(
 /**
  * The day in the order it happens: to-dos with an hour on them run earliest
  * first, and the ones with no hour sink below in the order they were written.
+ * A to-do the user has dragged carries the place they gave it instead, which
+ * is the same axis — the hour is only ever the value it started at.
  *
  * Completing one deliberately does not move it. A row that jumps out from under
  * the finger that just tapped it costs the user their place in the list, and
  * the check itself already says the goal is done.
  */
-export function sortSelfCareGoals(goals: SelfCareGoal[]): SelfCareGoal[] {
+export function sortSelfCareGoals(
+  goals: SelfCareGoal[],
+  places: SelfCareGoalPlaces = {},
+): SelfCareGoal[] {
   return [...goals].sort((left, right) => {
-    if (left.scheduledTime !== right.scheduledTime) {
-      if (left.scheduledTime == null) return 1;
-      if (right.scheduledTime == null) return -1;
-      return left.scheduledTime.localeCompare(right.scheduledTime);
-    }
+    const gap =
+      selfCareGoalPlace(left, places) - selfCareGoalPlace(right, places);
+    if (gap !== 0) return gap;
     return right.createdAt.localeCompare(left.createdAt);
   });
+}
+
+/**
+ * The places to remember after a to-do is dropped somewhere new.
+ *
+ * The list keeps the places it already had and only hands them round: the
+ * to-dos the user can see are re-seated in the order they asked for, and the
+ * ones today is hiding — a weekday to-do on a Sunday — keep the places they had
+ * and so keep their own place among them.
+ *
+ * Two to-dos written for the same hour share a place, which a permutation alone
+ * would leave the tie-break to decide and the list would spring back. So the
+ * run is pushed apart just far enough to be strictly increasing.
+ *
+ * An order that is not this list is refused outright rather than half applied.
+ */
+export function reorderedSelfCareGoalPlaces(
+  goals: SelfCareGoal[],
+  places: SelfCareGoalPlaces,
+  orderedIds: readonly string[],
+): SelfCareGoalPlaces | null {
+  const byId = new Map(goals.map((goal) => [goal.id, goal]));
+  if (orderedIds.length !== goals.length) return null;
+  if (orderedIds.some((id) => !byId.has(id))) return null;
+
+  const seats = goals
+    .map((goal) => selfCareGoalPlace(goal, places))
+    .sort((a, b) => a - b);
+  const next: SelfCareGoalPlaces = { ...places };
+  let previous = Number.NEGATIVE_INFINITY;
+  orderedIds.forEach((id, index) => {
+    const place = Math.max(seats[index], previous + 1);
+    previous = place;
+    next[id] = place;
+  });
+  return next;
 }
 
 /**
@@ -226,8 +307,11 @@ export interface SelfCareGoalList {
   drawer: SelfCareGoal[];
 }
 
-export function planSelfCareGoalList(goals: SelfCareGoal[]): SelfCareGoalList {
-  const sorted = sortSelfCareGoals(goals);
+export function planSelfCareGoalList(
+  goals: SelfCareGoal[],
+  places: SelfCareGoalPlaces = {},
+): SelfCareGoalList {
+  const sorted = sortSelfCareGoals(goals, places);
   const completed = sorted.filter((goal) => goal.completedToday);
   if (completed.length <= COMPLETED_COLLAPSE_THRESHOLD) {
     return { rail: sorted, drawer: [] };

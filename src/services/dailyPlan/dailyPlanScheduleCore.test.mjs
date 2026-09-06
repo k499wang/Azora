@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   formatDailyPlanTime,
   normalizeDailyPlanTime,
+  resolveDailyPlanOrder,
   sanitizeDailyPlanSchedule,
   sortDailyPlanActionIdsByTime,
 } from './dailyPlanScheduleCore.ts';
@@ -102,4 +103,39 @@ test('uses each action default when an ordering time is malformed', () => {
     }),
     ['session', 'handPicked', 'checkIn'],
   );
+});
+
+test('a stored order is used only when it is still the three dailies', () => {
+  const actions = { session: '08:00', handPicked: '13:00', checkIn: '18:00' };
+
+  assert.deepEqual(
+    resolveDailyPlanOrder(['checkIn', 'session', 'handPicked'], actions),
+    ['checkIn', 'session', 'handPicked'],
+  );
+  // Nothing stored, a partial list, a repeat, a name this build does not know,
+  // or something that is not a list at all: the day's own order stands.
+  for (const stored of [
+    null,
+    undefined,
+    ['session'],
+    ['session', 'session', 'checkIn'],
+    ['session', 'handPicked', 'nap'],
+    'checkIn',
+    {},
+  ]) {
+    assert.deepEqual(resolveDailyPlanOrder(stored, actions), [
+      'session',
+      'handPicked',
+      'checkIn',
+    ]);
+  }
+});
+
+test('an arranged order does not move the hours the dailies happen at', () => {
+  const actions = { session: '08:00', handPicked: '13:00', checkIn: '18:00' };
+  const before = { ...actions };
+
+  resolveDailyPlanOrder(['checkIn', 'session', 'handPicked'], actions);
+
+  assert.deepEqual(actions, before);
 });

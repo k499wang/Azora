@@ -21,6 +21,14 @@
  * The swap happens at the scale where the texture stops out-resolving the
  * display, and it is a single re-render at a threshold rather than anything
  * that runs per frame.
+ *
+ * Everything drawn close is recorded per slot, walls included, and that is the
+ * whole of what keeps the close view affordable: a picture that covers one
+ * hexagon is thrown away by a bounds test the moment that hexagon is off
+ * screen, so a zoomed-in pinch draws the two or three rooms in front of you
+ * whether the hotel holds three or fifty-five. Anything recorded across the
+ * pyramid instead has to be re-tessellated on every frame the scale changes,
+ * with the work growing by a room every time the hotel does.
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { PixelRatio, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
@@ -50,12 +58,11 @@ import { usePinchZoomPan } from './usePinchZoomPan';
 import {
   decorationPaths,
   ghostPaths,
-  framePaths,
   paintedPaths,
+  wallPaths,
 } from './roomPaths';
 import type { PaintedPath } from './roomPaths';
 import { snapshotPyramid, type FarView } from './pyramidSnapshot';
-import type { Bounds } from './pyramidLayout';
 import {
   HEX_H,
   HEX_W,
@@ -197,36 +204,20 @@ function recordRoom(room: PyramidRoom): SkPicture {
 }
 
 /**
- * The walls, over every room at once.
+ * One room's walls, in its own slot.
  *
- * One picture rather than one per slot, and drawn after all of them — rooms sit
- * on their shared edges, so a room recorded later would otherwise paint its
- * floor over the wall standing between the two.
- *
- * A wall is cut in its own room's colour, so the rooms are grouped by shell and
- * each group stamped at its own slots: one pass per look on the pyramid rather
- * than one per room, and every wall still lands after every floor.
+ * Recorded apart from the room and drawn after every room, because rooms sit on
+ * their shared edges: a room recorded later would otherwise paint its floor
+ * over the wall standing between the two. Per slot rather than as one path
+ * across the pyramid, so a wall is rejected along with the room it belongs to
+ * the moment that room is off screen — which is what keeps a zoomed-in pinch
+ * costing the same at fifty rooms as at three.
  */
-function recordWalls(rooms: PyramidRoom[], bounds: Bounds): SkPicture {
-  const rect = Skia.XYWHRect(
-    bounds.minX,
-    bounds.minY,
-    bounds.width,
-    bounds.height,
-  );
-
-  const byShell = new Map<Poly[], { x: number; y: number }[]>();
-  for (const room of rooms) {
-    const centres = byShell.get(room.shell) ?? [];
-    centres.push(slotAt(room.floor - 1));
-    byShell.set(room.shell, centres);
-  }
-
-  return createPicture((canvas) => {
-    for (const [shell, centres] of byShell) {
-      draw(canvas, framePaths(shell, centres, SLOT_SCALE));
-    }
-  }, rect);
+function recordWall(room: PyramidRoom): SkPicture {
+  return recordSlot(room.floor - 1, (canvas) => {
+    canvas.scale(SLOT_SCALE, SLOT_SCALE);
+    draw(canvas, wallPaths(room.shell));
+  });
 }
 
 export default function PyramidCanvas({ rooms }: Props) {
@@ -275,22 +266,23 @@ export default function PyramidCanvas({ rooms }: Props) {
     [highestFloor],
   );
 
-  const pictures = useMemo(() => {
-    const drawn = floors.map((room) => ({
-      key: room.key,
-      picture: recordRoom(room),
-    }));
-
-    if (drawn.length === 0) return drawn;
-
-    return [
-      ...drawn,
-      {
-        key: 'walls',
-        picture: recordWalls(floors, roomBounds),
-      },
-    ];
-  }, [floors, roomBounds]);
+  // Every floor, then every wall. The two passes are what stops a room from
+  // painting over the wall it shares with its neighbour, and keeping them as
+  // one flat list per slot is what lets Skia throw both away together when the
+  // room is off screen.
+  const pictures = useMemo(
+    () => [
+      ...floors.map((room) => ({
+        key: room.key,
+        picture: recordRoom(room),
+      })),
+      ...floors.map((room) => ({
+        key: `${room.key}:wall`,
+        picture: recordWall(room),
+      })),
+    ],
+    [floors],
+  );
 
   // What the canvas is framed against: one slot more, so the hotel stands back
   // far enough to show where the next room goes instead of cropping it at the

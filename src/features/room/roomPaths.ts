@@ -145,35 +145,23 @@ function decorationPolys(day: DayKey, option: string | undefined) {
 /**
  * Rooms tessellate, so neighbours do not sit next to a shared edge — they sit
  * on it, and a room drawn later would paint its floor over the wall its
- * neighbour already stood there. So the walls come off the rooms and go into
- * one picture of their own, laid over every room at once: the hotel gets the
- * same solid the home room has, and a shared edge is a single wall between two
- * rooms rather than two walls fighting for it.
+ * neighbour already stood there. So the walls come off the rooms and are drawn
+ * in a pass of their own, laid over every room at once: the hotel gets the same
+ * solid the home room has, and a shared edge is a single wall between two rooms
+ * rather than two walls fighting for it.
  *
  * The artwork is the shell's own frame — the same extruded slab `RoomScene`
- * draws, so a room reads the same on the pyramid as it does on Home. `scale`
- * is the room's own, so the wall stays welded to the floor it stands on.
+ * draws, so a room reads the same on the pyramid as it does on Home.
+ *
+ * One room's walls, at the origin, and cached with the rest of the shell's
+ * artwork. Deliberately not a path spanning every slot: a path that covers the
+ * whole pyramid cannot be rejected when it is off screen and has to be
+ * re-tessellated on every frame a pinch changes the scale, with the work
+ * growing by a room every time the hotel does. Kept per room, the walls are
+ * culled with the room they belong to.
  */
-export function framePaths(
-  shell: Poly[],
-  centres: readonly { x: number; y: number }[],
-  scale: number,
-): PaintedPath[] {
-  const source = paintedPaths(roomFrameFor(shell, ROOM_FRAME));
-
-  return source.map(({ path, paint }) => {
-    const repeated = Skia.Path.Make();
-
-    for (const centre of centres) {
-      const copy = path.copy();
-      copy.transform(
-        Skia.Matrix().translate(centre.x, centre.y).scale(scale, scale).get(),
-      );
-      repeated.addPath(copy);
-    }
-
-    return { path: repeated, paint };
-  });
+export function wallPaths(shell: Poly[]): PaintedPath[] {
+  return paintedPaths(roomFrameFor(shell, ROOM_FRAME));
 }
 
 /**

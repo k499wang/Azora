@@ -1,6 +1,9 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, View, type ViewStyle } from 'react-native';
 import { Text } from '../common/Text';
+import OnboardingOptionIcon, {
+  type OnboardingOptionIconName,
+} from '../onboarding/OnboardingOptionIcon';
 import { useSaveTechniqueFeedbackMutation } from '../../queries/tracking/useSaveTechniqueFeedbackMutation';
 import { useTechniqueFeedbackQuery } from '../../queries/tracking/useTechniqueFeedbackQuery';
 import { useAuthStore } from '../../stores/authStore';
@@ -8,13 +11,35 @@ import { triggerTapHaptic } from '../../native/tapHaptics';
 import { card } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
-import { fonts, typography } from '../../theme/typography';
+import { typography } from '../../theme/typography';
 import type { Helpfulness } from '../../services/tracking/techniqueFeedbackService';
 
-const OPTIONS: { value: Helpfulness; label: string }[] = [
-  { value: 1, label: 'Not really' },
-  { value: 2, label: 'A bit' },
-  { value: 3, label: 'A lot' },
+const FACE_SIZE = 44;
+
+const OPTIONS: {
+  value: Helpfulness;
+  label: string;
+  icon: OnboardingOptionIconName;
+  accent: string;
+}[] = [
+  {
+    value: 1,
+    label: 'Not really',
+    icon: 'emoticon-confused-outline',
+    accent: colors.playful.coral.base,
+  },
+  {
+    value: 2,
+    label: 'A bit',
+    icon: 'emoticon-neutral-outline',
+    accent: colors.playful.amber.base,
+  },
+  {
+    value: 3,
+    label: 'A lot',
+    icon: 'emoticon-excited-outline',
+    accent: colors.playful.sky.base,
+  },
 ];
 
 interface HelpfulnessQuestionProps {
@@ -81,6 +106,11 @@ export default function HelpfulnessQuestion({
                 });
               }}
             >
+              <OnboardingOptionIcon
+                name={option.icon}
+                size={FACE_SIZE}
+                color={option.accent}
+              />
               <Text style={styles.chipLabel}>{option.label}</Text>
             </Pressable>
           );
@@ -105,8 +135,12 @@ const styles = StyleSheet.create({
   chip: {
     ...card.base,
     flex: 1,
+    minHeight: 84,
     alignItems: 'center',
-    paddingVertical: spacing.md,
+    justifyContent: 'center',
+    gap: spacing.xs,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: 2,
   },
   chipActive: {
     backgroundColor: colors.primary.blue100,
@@ -116,8 +150,8 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.98 }],
   },
   chipLabel: {
-    ...typography.body.medium,
-    fontFamily: fonts.semibold,
-    color: colors.text.primary,
+    ...typography.label.medium,
+    color: colors.neutral[900],
+    textAlign: 'center',
   },
 });
