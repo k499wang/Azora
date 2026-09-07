@@ -17,7 +17,7 @@ import { useFeatureAccess } from '../../hooks/useFeatureAccess';
 import { FeatureKey } from '../../services/subscriptions/featureAccess';
 import { PaywallPlacement } from '../../services/paywall';
 import type { TodayHeartRateSummary } from '../../services/tracking/types';
-import type { MainTabNavigationProp } from '../../app/navigation/types';
+import type { RootStackNavigationProp } from '../../app/navigation/types';
 
 interface RecentlyLoggedSectionProps {
   items: TodayHeartRateSummary[];
@@ -75,7 +75,7 @@ export function RecentlyLoggedSection({
   hasError,
   isLoading,
 }: RecentlyLoggedSectionProps) {
-  const navigation = useNavigation<MainTabNavigationProp<'Heart'>>();
+  const navigation = useNavigation<RootStackNavigationProp>();
   const posthog = usePostHog();
   const isFocused = useIsFocused();
   const sessionHistoryAccess = useFeatureAccess(FeatureKey.SessionHistory);

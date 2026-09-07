@@ -11,7 +11,6 @@ import ExtraPracticeSection from '../components/home/ExtraPracticeSection';
 import TodaysDailiesSection from '../components/home/TodaysDailiesSection';
 import HomeRoom from '../features/room/HomeRoom';
 import HotelButton from '../features/room/HotelButton';
-import NotificationsSettingsSheet from '../features/notifications/NotificationsSettingsSheet';
 import GlassIconButton from '../components/common/GlassIconButton';
 import Icon from '../components/common/icons/Icon';
 import TopBarStreak from '../components/common/TopBarStreak';
@@ -59,6 +58,7 @@ const TOUR_TARGETS: TourTargetId[] = [
   'extraPractice',
   'seeAll',
   'hotel',
+  'measureHeart',
 ];
 
 export default function HomeScreen({ navigation }: HomeScreenProps) {
@@ -84,7 +84,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const tabBarHeight = isRegularWidth ? 0 : TAB_BAR_HEIGHT + insets.bottom;
   const celebrations = useRef<HomeCelebrationHandle>(null);
 
-  const [notificationsVisible, setNotificationsVisible] = useState(false);
   // The last thing in a day can be a to-do ticked off here rather than a
   // session, so the unlock celebration has to be able to fire from Home too.
   //
@@ -138,6 +137,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const todosTarget = useTourTarget('todos');
   const extraPracticeTarget = useTourTarget('extraPractice');
   const hotelTarget = useTourTarget('hotel');
+  const measureHeartTarget = useTourTarget('measureHeart');
 
   // The recently-logged list and its analytics now live on the Heart tab
   // (see RecentlyLoggedSection — it uses useIsFocused to gate the view event).
@@ -162,14 +162,16 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             onPress={() => navigation.navigate('Profile')}
           />
           <View style={styles.topRowActions}>
-            <GlassIconButton
-              accessibilityLabel="Open notification settings"
-              size={HOTEL_ROW_BUTTON_SIZE}
-              variant="regular"
-              onPress={() => setNotificationsVisible(true)}
-            >
-              <Icon name="bell" size={26} color={colors.playful.sky.base} />
-            </GlassIconButton>
+            <View {...measureHeartTarget}>
+              <GlassIconButton
+                accessibilityLabel="Open heart page"
+                size={HOTEL_ROW_BUTTON_SIZE}
+                variant="regular"
+                onPress={() => navigation.navigate('Heart')}
+              >
+                <Icon name="bell" size={26} color={colors.playful.sky.base} />
+              </GlassIconButton>
+            </View>
             <View {...hotelTarget}>
               <HotelButton floors={roomClaim.room?.floor ?? 1} />
             </View>
@@ -265,11 +267,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
 
       <HomeCelebrationLayer ref={celebrations} tabBarHeight={tabBarHeight} />
 
-      <NotificationsSettingsSheet
-        visible={notificationsVisible}
-        userId={user?.id ?? null}
-        onClose={() => setNotificationsVisible(false)}
-      />
     </View>
   );
 }

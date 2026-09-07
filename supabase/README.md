@@ -37,6 +37,8 @@ Included in v1 migrations:
 - `heart_rate_samples`
 - `heart_rate_ibi_samples`
 - `daily_activity`
+- `wallet_entries` (additive coin ledger; older app versions ignore it)
+- room inventory ownership and immutable legacy reward history
 - `subscriptions`
 - `revenuecat_events`
 - `web_funnel_sessions`

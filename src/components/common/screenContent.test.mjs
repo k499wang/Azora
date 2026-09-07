@@ -48,29 +48,26 @@ test('ScreenContent keeps focused width by default and exposes semantic variants
 
 test('card-heavy screens opt into the appropriate tablet measure', () => {
   const home = read('screens/HomeScreen.tsx');
-  const heart = read('screens/HeartTabScreen.tsx');
   const detail = read('screens/HeartRateSessionDetailScreen.tsx');
   const profile = read('screens/ProfileScreen.tsx');
   const history = read('screens/HistoryScreen.tsx');
   const settings = read('screens/SettingsScreen.tsx');
 
   assert.match(home, /useDashboardLayout\(\)/);
-  assert.match(heart, /<ScreenContent width="dashboard">/);
   assert.match(detail, /<ScreenContent width="dashboard">/);
   assert.match(profile, /<ScreenContent width="dashboard">/);
   assert.match(history, /<ScreenContent\s+width="grouped"/);
   assert.match(settings, /<ScreenContent width="grouped">/);
 });
 
-test('Home, Heart and Profile share one tablet margin', () => {
+test('Home and Profile share one tablet margin', () => {
   const layout = read('hooks/useDashboardLayout.ts');
   const home = read('screens/HomeScreen.tsx');
-  const heart = read('screens/HeartTabScreen.tsx');
   const profile = read('screens/ProfileScreen.tsx');
 
   // One measure and one inset, so switching tabs never moves the edge.
   assert.match(layout, /padding\.screen\.horizontal;/);
-  for (const screen of [home, heart, profile]) {
+  for (const screen of [home, profile]) {
     assert.match(screen, /useDashboardLayout\(\)/);
   }
 });
@@ -92,13 +89,19 @@ test('a tablet draws a taller daily than a phone', () => {
   assert.ok(Number(regular[1]) > Number(compact[1]));
 });
 
-test('only peer Heart summaries become rows while charts stay outside them', () => {
-  const heart = read('screens/HeartTabScreen.tsx');
+test('removed Heart summary cards stay out of dashboard and result views', () => {
+  const heart = read('screens/HeartScreen.tsx');
   const heartRate = read('components/heartRate/HeartRateStatsSection.tsx');
   const hrv = read('components/heartRate/HRVStatsSection.tsx');
+  const result = read('components/heartRate/HeartRateResultContent.tsx');
+  const sessionComplete = read('screens/SessionCompleteScreen.tsx');
+  const breathHoldResult = read('screens/ShareableResultScreen.tsx');
 
-  assert.match(heart, /useSummaryRow={dashboardLayout\.hasColumns}/);
-  assert.match(heartRate, /useSummaryRow && styles\.summaryRow/);
-  assert.match(hrv, /useSummaryRow && styles\.summaryRow/);
+  assert.match(heart, /showStreak={false}/);
+  assert.doesNotMatch(heartRate, /label="HR change"|label="Lowest HR"/);
+  assert.doesNotMatch(hrv, /label="Avg HRV"/);
+  assert.doesNotMatch(result, /label="Avg HRV"/);
+  assert.doesNotMatch(sessionComplete, /streakFilled|Day .*in a row/);
+  assert.doesNotMatch(breathHoldResult, /streakFilled/);
   assert.doesNotMatch(heart, /numColumns|flexWrap/);
 });

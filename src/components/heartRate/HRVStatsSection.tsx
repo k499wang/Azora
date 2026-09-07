@@ -12,15 +12,8 @@ const RMSSD_INFO = {
     'Root Mean Square of Successive Differences — a heart rate variability (HRV) measure that reflects parasympathetic (vagal) activity and recovery.\n\nHealthy resting range: 20–80 ms. Higher generally indicates better recovery and cardiovascular health. Varies with age, fitness, and stress.',
 };
 
-const SDNN_INFO = {
-  title: 'Avg HRV (SDNN)',
-  message:
-    'Standard Deviation of NN intervals — an overall measure of heart rate variability across the session.\n\nHealthy resting: 30–60 ms in short readings. Higher SDNN reflects a more adaptable autonomic nervous system.',
-};
-
 const LOCKED_PLACEHOLDERS = {
   rmssd: 48,
-  sdnn: 42,
 } as const;
 
 interface HRVSectionProps {
@@ -30,8 +23,6 @@ interface HRVSectionProps {
   ibiMs?: number[];
   locked?: boolean;
   onPressUpgrade?: () => void;
-  /** Places the two peer HRV summaries side by side on wide dashboards. */
-  useSummaryRow?: boolean;
 }
 
 export default function HRVStatsSection({
@@ -41,10 +32,8 @@ export default function HRVStatsSection({
   ibiMs = [],
   locked = false,
   onPressUpgrade,
-  useSummaryRow = false,
 }: HRVSectionProps) {
   const rmssdValue = rmssd ?? (locked ? LOCKED_PLACEHOLDERS.rmssd : null);
-  const sdnnValue = sdnn ?? (locked ? LOCKED_PLACEHOLDERS.sdnn : null);
 
   return (
     <View style={styles.section}>
@@ -56,42 +45,21 @@ export default function HRVStatsSection({
       </View>
 
       <View style={styles.metricColumn}>
-        <View style={[styles.summaryCards, useSummaryRow && styles.summaryRow]}>
-          <View style={useSummaryRow ? styles.summaryCardWide : undefined}>
-            <HRVTrackStatCard
-              label="RMSSD"
-              icon="stat-rmssd"
-              iconColor={colors.primary.blue600}
-              value={rmssdValue}
-              unit="ms"
-              max={80}
-              lowBound={20}
-              highBound={50}
-              info={RMSSD_INFO}
-              locked={locked}
-              onPressLocked={onPressUpgrade}
-              emphasizeValue
-              showMeasuredLabel={false}
-            />
-          </View>
-          <View style={useSummaryRow ? styles.summaryCardWide : undefined}>
-            <HRVTrackStatCard
-              label="Avg HRV"
-              icon="stat-average-hrv"
-              iconColor={colors.primary.blue600}
-              value={sdnnValue}
-              unit="ms"
-              max={80}
-              lowBound={20}
-              highBound={45}
-              info={SDNN_INFO}
-              locked={locked}
-              onPressLocked={onPressUpgrade}
-              emphasizeValue
-              showMeasuredLabel={false}
-            />
-          </View>
-        </View>
+        <HRVTrackStatCard
+          label="RMSSD"
+          icon="stat-rmssd"
+          iconColor={colors.primary.blue600}
+          value={rmssdValue}
+          unit="ms"
+          max={80}
+          lowBound={20}
+          highBound={50}
+          info={RMSSD_INFO}
+          locked={locked}
+          onPressLocked={onPressUpgrade}
+          emphasizeValue
+          showMeasuredLabel={false}
+        />
         <HRVChart
           ibiMs={ibiMs}
           insightSummary={{
@@ -119,15 +87,5 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     gap: spacing.sm,
     paddingHorizontal: padding.screen.horizontal,
-  },
-  summaryCards: {
-    gap: spacing.sm,
-  },
-  summaryRow: {
-    flexDirection: 'row',
-    alignItems: 'stretch',
-  },
-  summaryCardWide: {
-    flex: 1,
   },
 });
