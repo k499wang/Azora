@@ -3,7 +3,6 @@ export type TourTargetId =
   | 'todos'
   | 'extraPractice'
   | 'seeAll'
-  | 'hotel'
   | 'measureHeart';
 
 export type TourTab = 'Home';
@@ -43,13 +42,8 @@ export const tourSteps: readonly TourStep[] = [
     body: 'Looking for more? Tap See all to explore every exercise.',
   },
   {
-    target: 'hotel',
-    tab: 'Home',
-    body: 'This is your hotel. Every room you finish stays here, so you can look back on how far you have come.',
-  },
-  {
     target: 'measureHeart',
     tab: 'Home',
-    body: 'Open your heart page here to track your heart rate and take a measurement.',
+    body: 'Measure your heart rate here. We will show you how before the reading starts.',
   },
 ];

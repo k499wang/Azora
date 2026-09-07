@@ -68,7 +68,7 @@ test('the room screens only offer a back arrow when opened from the lab', () => 
   assert.match(layout, /fromLab \? \(\s*<AppTopBar showBack/);
 });
 
-test('Heart is reached from the Home top bar, never from a tab', () => {
+test('Home heart action opens measurement instructions directly', () => {
   const tabs = read('app/navigation/MainTabs.tsx');
   const root = read('app/navigation/RootNavigator.tsx');
   const home = read('screens/HomeScreen.tsx');
@@ -76,18 +76,16 @@ test('Heart is reached from the Home top bar, never from a tab', () => {
     (match) => match[1],
   );
 
-  assert.deepEqual(tabNames, ['Home', 'Profile']);
+  assert.deepEqual(tabNames, ['Home', 'Hotel', 'Profile']);
   assert.doesNotMatch(tabs, /name="Heart"/);
   assert.match(root, /name="Heart"/);
-  assert.match(home, /accessibilityLabel="Open heart page"/);
-  assert.match(home, /navigation\.navigate\('Heart'\)/);
+  assert.match(root, /name="HeartRate"/);
+  assert.match(home, /accessibilityLabel="Measure heart rate"/);
+  assert.match(home, /navigation\.navigate\('HeartRate'\)/);
+  assert.match(home, /<Icon name="heart"/);
 });
 
-test('Hotel is reached from Home, never from a tab', () => {
-  // A room takes a week to fill, so for the whole of a new user's first week
-  // the hotel is one part-furnished room and an outline. That is not worth a
-  // quarter of the tab bar, and Home already shows that room. It sits in Home's
-  // own top corner instead, over the sky above the room it opens.
+test('Hotel is a main tab and no longer appears in Home shortcuts', () => {
   const tabs = read('app/navigation/MainTabs.tsx');
   const root = read('app/navigation/RootNavigator.tsx');
   const home = read('screens/HomeScreen.tsx');
@@ -95,23 +93,28 @@ test('Hotel is reached from Home, never from a tab', () => {
     (match) => match[1],
   );
 
-  assert.deepEqual(tabNames, ['Home', 'Profile']);
-  assert.doesNotMatch(tabs, /Hotel/);
-  assert.match(root, /name="Hotel"/);
+  assert.deepEqual(tabNames, ['Home', 'Hotel', 'Profile']);
+  assert.match(tabs, /name="Hotel"/);
+  assert.doesNotMatch(root, /name="Hotel"/);
   assert.match(root, /name="HotelPreview"/);
-  assert.match(home, /<HotelButton floors=/);
+  assert.doesNotMatch(home, /<HotelButton floors=/);
+  assert.doesNotMatch(home, /useTourTarget\('hotel'\)/);
 });
 
-test('the hotel offers its own way back, and does not spend height on it', () => {
-  // Pushed over the tab bar rather than under it, so there is no tab to return
-  // by — and a header would take the canvas's height to say so. The button
-  // floats over the pyramid instead, like the zoom controls it lines up with.
+test('only the Hotel lab preview renders a back button', () => {
   const hotel = read('screens/HotelScreen.tsx');
+  const productStart = hotel.indexOf('export default function HotelScreen');
+  const previewStart = hotel.indexOf('export function HotelPreviewScreen');
+  const stylesStart = hotel.indexOf('const styles =', previewStart);
+  const product = hotel.slice(productStart, previewStart);
+  const preview = hotel.slice(previewStart, stylesStart);
 
   assert.match(hotel, /<Pressable[^>]*accessibilityLabel="Back"/s);
   assert.match(hotel, /name="chevron-left"/);
   assert.doesNotMatch(hotel, /AppTopBar/);
   assert.match(hotel, /back: \{\s*position: 'absolute'/);
+  assert.match(product, /<HotelContent \/>/);
+  assert.match(preview, /<HotelContent onBack=/);
 });
 
 test('the hotel avoids native tab-bar overlap without changing its preview', () => {

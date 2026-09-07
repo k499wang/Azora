@@ -90,7 +90,7 @@ single rule is what keeps the building feeling like a home rather than a meter.
 
 | Removed | Why |
 | --- | --- |
-| The Heart tab | The Heart page remains intact and opens from Home's top-bar bell. The tab slot becomes the Shop. |
+| The Heart tab | Heart-rate measurement opens directly from Home's heart button. The tab slot becomes the Shop. |
 | The `day1 → day7` fill order | Slots become categories you can fill in any order, or leave empty |
 | `canClaim` / `claimedToday` / the one-per-day gate | Replaced by "can you afford it" |
 | `NextRoomScreen` (pick your next room's look) | Looks become a purchase, not a consolation prize for finishing |
@@ -101,9 +101,11 @@ The building view is the centrepiece of the new system, not a casualty of it.
 
 ### The Heart tab removal, specifically
 
-The full Heart page remains a stack screen with RHR, HRV, recovery, recent
-readings and its measurement button. Home's existing top-bar bell opens it. A
-measurement remains optional and does not become a fourth qualifying daily.
+The full Heart page remains available as a stack screen with RHR, HRV, recovery,
+recent readings and its measurement button. Home's heart button opens the
+measurement instructions directly. A measurement remains optional and does not
+become a fourth qualifying daily. Hotel is a main tab and also keeps its Home
+shortcut.
 
 ---
 

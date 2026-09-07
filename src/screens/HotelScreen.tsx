@@ -31,10 +31,8 @@ import type {
  * room at the same height on every screen, and the hotel has neither. A blank
  * header here would only push the canvas down the screen.
  *
- * Reached from the room on Home rather than a tab, and pushed over the tab bar
- * rather than under it — a bar across the bottom would sit on the rows of the
- * pyramid nearest the viewer. The way back is a floating button instead of a
- * header, for the same reason: nothing here may cost the canvas height.
+ * The production hotel is a main tab. The development preview keeps a floating
+ * back button so the room lab can open and close it without adding a header.
  */
 /**
  * Floor 1, before the first object lands in it.
@@ -59,7 +57,7 @@ const FIRST_ROOM: PyramidRoom[] = [
 const BACK_ICON_SIZE = 26;
 
 interface HotelContentProps {
-  onBack: () => void;
+  onBack?: () => void;
 }
 
 function HotelContent({ onBack }: HotelContentProps) {
@@ -94,34 +92,36 @@ function HotelContent({ onBack }: HotelContentProps) {
 
       {waiting ? null : <PyramidCanvas rooms={pyramidRooms} />}
 
-      {/* Level with the canvas's own zoom controls, which start at the same
-          inset on the other side. */}
-      <View style={[styles.back, { top: insets.top + spacing.sm }]}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Back"
-          onPress={onBack}
-          hitSlop={spacing.sm}
-          style={({ pressed }) => [
-            styles.backButton,
-            pressed && styles.backButtonPressed,
-          ]}
-        >
-          <Icon
-            name="chevron-left"
-            size={BACK_ICON_SIZE}
-            color={colors.text.primary}
-          />
-        </Pressable>
-      </View>
+      {onBack == null ? null : (
+        // Level with the canvas's own zoom controls, which start at the same
+        // inset on the other side.
+        <View style={[styles.back, { top: insets.top + spacing.sm }]}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Back"
+            onPress={onBack}
+            hitSlop={spacing.sm}
+            style={({ pressed }) => [
+              styles.backButton,
+              pressed && styles.backButtonPressed,
+            ]}
+          >
+            <Icon
+              name="chevron-left"
+              size={BACK_ICON_SIZE}
+              color={colors.text.primary}
+            />
+          </Pressable>
+        </View>
+      )}
     </>
   );
 }
 
-export default function HotelScreen({ navigation }: HotelScreenProps) {
+export default function HotelScreen(_props: HotelScreenProps) {
   return (
     <SafeAreaView style={styles.screen} edges={{ bottom: true }}>
-      <HotelContent onBack={() => navigation.goBack()} />
+      <HotelContent />
     </SafeAreaView>
   );
 }

@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import { createNativeBottomTabNavigator } from '@react-navigation/bottom-tabs/unstable';
 import HomeScreen from '../../screens/HomeScreen';
+import HotelScreen from '../../screens/HotelScreen';
 import ProfileScreen from '../../screens/ProfileScreen';
 import type { MainTabParamList } from './types';
 import { fonts } from '../../theme/typography';
@@ -49,6 +50,17 @@ export function MainTabs({ tourEnabled }: MainTabsProps) {
             tabBarIcon: ({ focused }) => ({
               type: 'sfSymbol',
               name: focused ? 'house.fill' : 'house',
+            }),
+          }}
+        />
+        <Tab.Screen
+          name="Hotel"
+          component={HotelScreen}
+          options={{
+            tabBarLabel: 'Hotel',
+            tabBarIcon: ({ focused }) => ({
+              type: 'sfSymbol',
+              name: focused ? 'building.2.fill' : 'building.2',
             }),
           }}
         />
