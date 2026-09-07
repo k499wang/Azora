@@ -68,7 +68,7 @@ test('the room screens only offer a back arrow when opened from the lab', () => 
   assert.match(layout, /fromLab \? \(\s*<AppTopBar showBack/);
 });
 
-test('Home heart action opens measurement instructions directly', () => {
+test('Home heart action opens the heart statistics screen', () => {
   const tabs = read('app/navigation/MainTabs.tsx');
   const root = read('app/navigation/RootNavigator.tsx');
   const home = read('screens/HomeScreen.tsx');
@@ -80,8 +80,8 @@ test('Home heart action opens measurement instructions directly', () => {
   assert.doesNotMatch(tabs, /name="Heart"/);
   assert.match(root, /name="Heart"/);
   assert.match(root, /name="HeartRate"/);
-  assert.match(home, /accessibilityLabel="Measure heart rate"/);
-  assert.match(home, /navigation\.navigate\('HeartRate'\)/);
+  assert.match(home, /accessibilityLabel="Open heart statistics"/);
+  assert.match(home, /navigation\.navigate\('Heart'\)/);
   assert.match(home, /<Icon name="heart"/);
 });
 

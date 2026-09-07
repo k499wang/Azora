@@ -158,10 +158,10 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           <View style={styles.topRowActions}>
             <View {...measureHeartTarget}>
               <GlassIconButton
-                accessibilityLabel="Measure heart rate"
+                accessibilityLabel="Open heart statistics"
                 size={HEART_ROW_BUTTON_SIZE}
                 variant="regular"
-                onPress={() => navigation.navigate('HeartRate')}
+                onPress={() => navigation.navigate('Heart')}
               >
                 <Icon name="heart" size={26} color={colors.playful.sky.base} />
               </GlassIconButton>
