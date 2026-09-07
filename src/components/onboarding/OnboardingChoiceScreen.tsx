@@ -14,6 +14,10 @@ interface OnboardingChoiceScreenProps<Id extends string> {
   stepCount: number;
   multiSelect?: boolean;
   expression?: MochiExpression;
+  /**
+   * An extra condition on top of having answered — a screen that is still
+   * saving, say. It can only ever tighten the gate, never open it.
+   */
   canContinue?: boolean;
   onSelect: (id: Id) => void;
   onContinue: () => void;
@@ -25,6 +29,11 @@ interface OnboardingChoiceScreenProps<Id extends string> {
  * Mochi asks, the user picks one — the shape every plain question in the
  * assessment now takes. The screens that use it differ only in their copy and
  * their options, so they are configuration rather than components.
+ *
+ * Continue stays down until something is picked. Passing a question by leaving
+ * it blank is what Skip is for, up by the progress bar: two ways past the same
+ * screen would make Continue mean "answered" on one tap and "no answer" on the
+ * next, and the plan would then be built from silences the user never chose.
  */
 export default function OnboardingChoiceScreen<Id extends string>({
   question,
@@ -59,7 +68,7 @@ export default function OnboardingChoiceScreen<Id extends string>({
         <OnboardingPrimaryButton
           label="Continue"
           onPress={onContinue}
-          disabled={!canContinue}
+          disabled={!canContinue || selectedIds.length === 0}
         />
       }
     >

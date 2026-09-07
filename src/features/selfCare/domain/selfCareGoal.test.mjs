@@ -9,6 +9,7 @@ import {
   sortSelfCareGoals,
   COMPLETED_COLLAPSE_THRESHOLD,
   planSelfCareGoalList,
+  resolveSelfCareGoalIcon,
 } from './selfCareGoal.ts';
 
 test('normalizes a goal title and rejects invalid values', () => {
@@ -195,4 +196,9 @@ test('an order that is not the list is refused rather than half applied', () => 
   const goals = [placed('a'), placed('b')];
   assert.equal(reorderedSelfCareGoalPlaces(goals, {}, ['a']), null);
   assert.equal(reorderedSelfCareGoalPlaces(goals, {}, ['a', 'z']), null);
+});
+
+test('a to-do written with a retired icon is drawn with the one that replaced it', () => {
+  assert.equal(resolveSelfCareGoalIcon('heart-pulse'), 'walk');
+  assert.equal(resolveSelfCareGoalIcon('walk'), 'walk');
 });

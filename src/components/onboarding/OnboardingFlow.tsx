@@ -690,6 +690,7 @@ function OnboardingFlowSteps({
   const starterPlan = useMemo(
     () =>
       buildStarterPlan({
+        intent: primaryIntent ?? selectedIntents[0] ?? null,
         wakeEase,
         sleepDuration,
         dayActivity,
@@ -701,9 +702,11 @@ function OnboardingFlowSteps({
     [
       dayActivity,
       mentalHealth,
+      primaryIntent,
       procrastinationAreas,
       procrastinationReasons,
       routineHappiness,
+      selectedIntents,
       sleepDuration,
       wakeEase,
     ],
