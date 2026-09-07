@@ -8,6 +8,9 @@ import { spacing } from '../../theme/spacing';
  */
 export const TODAY_JOURNEY_GROUP_GAP = spacing.lg;
 
+/** Shared minimum height for exercise and to-do cards on Home. */
+export const TODAY_JOURNEY_CARD_MIN_HEIGHT = 82;
+
 /**
  * How close a group's label sits to the first row it names. Tighter than the
  * group gap: a label belongs to the rows under it, so it should read as their

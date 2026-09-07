@@ -80,13 +80,11 @@ test('the extra-practice shelf clips on the content margin, not the window', () 
   assert.match(section, /maxWidth: contentMaxWidth/);
 });
 
-test('a tablet draws a taller daily than a phone', () => {
+test('daily cards use a content-driven minimum height', () => {
   const dailies = read('components/home/TodaysDailiesSection.tsx');
 
-  assert.match(dailies, /useIsRegularWidth\(\)\s*\?\s*REGULAR_ROW_METRICS/);
-  const compact = /COMPACT_ROW_METRICS: DailyRowMetrics = \{\s*expandedHeight: (\d+)/.exec(dailies);
-  const regular = /REGULAR_ROW_METRICS: DailyRowMetrics = \{\s*expandedHeight: (\d+)/.exec(dailies);
-  assert.ok(Number(regular[1]) > Number(compact[1]));
+  assert.match(dailies, /minHeight: TODAY_JOURNEY_CARD_MIN_HEIGHT/);
+  assert.doesNotMatch(dailies, /style=\{\[styles\.taskRow, \{ height:/);
 });
 
 test('removed Heart summary cards stay out of dashboard and result views', () => {
