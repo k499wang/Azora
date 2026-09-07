@@ -38,6 +38,7 @@ import {
   formatDailyPlanTime,
   resolveDailyPlanOrder,
   sanitizeDailyPlanOrder,
+  sortDailyPlanActionIdsByTime,
   type DailyPlanActionId,
 } from '../../services/dailyPlan/dailyPlanScheduleCore';
 import {
@@ -51,8 +52,12 @@ import {
 } from '../../services/dailyPlan/types';
 import JourneyDragRow from './journey/JourneyDragRow';
 import {
-  JOURNEY_DRAG_SETTLE,
-  JOURNEY_REORDER_ACTIONS,
+  type JourneyRailEnds,
+  type JourneyRailMetrics,
+} from './journey/journeyReorder';
+import { useJourneyRail } from './journey/useJourneyRail';
+import {
+  journeyReorderActions,
   useJourneyReorder,
   type JourneyScrollRef,
 } from './journey/useJourneyReorder';
@@ -135,7 +140,10 @@ const DASH_COUNT = todayJourneyDashCount(
  * the last. Exactly one row is open at any time, so the section's total height
  * never changes and only these two insets move.
  */
-function railGeometry(firstHeight: number, lastHeight: number) {
+function railShape({
+  firstHeight,
+  lastHeight,
+}: JourneyRailMetrics): JourneyRailEnds {
   'worklet';
   return {
     top: firstHeight / 2 + TIMELINE_MARKER_SIZE / 2,
@@ -277,11 +285,7 @@ function DailyTaskRow({
             : 'Opens this daily. Hold to rearrange your dailies'
         }
         accessibilityState={{ expanded, disabled: expanded && unavailable }}
-        accessibilityActions={JOURNEY_REORDER_ACTIONS}
-        onAccessibilityAction={(event) => {
-          if (event.nativeEvent.actionName === 'moveUp') onMove(-1);
-          if (event.nativeEvent.actionName === 'moveDown') onMove(1);
-        }}
+        {...journeyReorderActions(onMove)}
         style={({ pressed }) => [styles.taskRow, pressed && styles.taskPressed]}
       >
         <View style={styles.timelineColumn} pointerEvents="none">
@@ -572,15 +576,30 @@ export default function TodaysDailiesSection({
   );
   // Which row is open is the user's choice and is honoured whatever its state —
   // a finished daily opens like any other, so you can look at what you did or
-  // run it again. With no choice made it falls back to the first unfinished
-  // one, including a locked one, which opens the paywall.
+  // run it again. With no choice made it falls back to the first daily of the
+  // day still unfinished, including a locked one, which opens the paywall.
   const [openedActionId, setOpenedActionId] = useState<DailyPlanActionId | null>(
     null,
+  );
+  /**
+   * The dailies in the order the day puts them in, whatever order they are
+   * drawn in.
+   *
+   * Which row is open, and when that choice is dropped, are both decided from
+   * this rather than from the arrangement. Arranging is a display preference —
+   * it does not move an hour and it must not open a card either: reading the
+   * open row off the arrangement means dragging a daily to the top opens it,
+   * which is a 420ms reflow of every row and the rail, committed on the frame
+   * the dropped row is landing on. That is the flash.
+   */
+  const scheduleOrderedActionIds = useMemo(
+    () => sortDailyPlanActionIdsByTime(schedule.actions),
+    [schedule.actions],
   );
   const completedCount = orderedActionIds.filter(
     (actionId) => rows[actionId].completed,
   ).length;
-  const completionKey = orderedActionIds
+  const completionKey = scheduleOrderedActionIds
     .map((actionId) => (rows[actionId].completed ? '1' : '0'))
     .join('');
 
@@ -593,8 +612,8 @@ export default function TodaysDailiesSection({
 
   const expandedActionId =
     openedActionId ??
-    orderedActionIds.find((actionId) => !rows[actionId].completed) ??
-    orderedActionIds[orderedActionIds.length - 1];
+    scheduleOrderedActionIds.find((actionId) => !rows[actionId].completed) ??
+    scheduleOrderedActionIds[scheduleOrderedActionIds.length - 1];
   // Given rather than measured: a daily's height is a design constant, and the
   // open one spends 420ms animating between two of them. Measuring that would
   // be a state update a frame for the whole of it.
@@ -615,6 +634,14 @@ export default function TodaysDailiesSection({
     gap: TIMELINE_ROW_GAP,
     enabled: !dayDone,
     heights: rowHeights,
+    // The three dailies' heights are design constants, so this list can stand
+    // its rows up by transform alone and never re-lay them out — which is what
+    // keeps a drop from painting one frame of the new slot with the dragged
+    // row's old offset still on it.
+    positioned: true,
+    // The open card grows over this, and the rows below have to come down with
+    // it rather than jumping to their new places the moment it is chosen.
+    restingTiming: EXPAND_TIMING,
     onReorder: (ids) => {
       // Refused only if the list is somehow no longer the three dailies, in
       // which case the rows go back where they were rather than standing in an
@@ -629,35 +656,15 @@ export default function TodaysDailiesSection({
     },
   });
 
-  // The rail follows the order the drag is proposing, read straight off the
-  // same shared values the rows move on. Its two ends are the first and last
-  // markers, and both move the moment the open card — the one row taller than
-  // the rest — takes a new end of the list; waiting for the drop would leave
-  // the dotted line short at one end and past the last circle at the other for
-  // the length of the drag. Doing it here rather than in state is what keeps a
-  // drag from re-rendering the section on every row it crosses.
-  const { order: railOrder, heights: railHeights, dragging } = controller;
-  const railStyle = useAnimatedStyle(() => {
-    // The same stale-read guard the rows use: an order built from a list this
-    // one is no longer being rendered from would span the wrong two rooms for
-    // a frame.
-    const proposed = railOrder.value;
-    const live =
-      proposed.key === controller.committedKey ? proposed.ids : orderedActionIds;
-    const sizes = railHeights.value;
-    const rail = railGeometry(
-      sizes[live[0]] ?? 0,
-      sizes[live[live.length - 1]] ?? 0,
-    );
-    // A row being dropped settles faster than a card opens, and the rail is
-    // one line with the rows: it has to move on whichever of the two is
-    // actually happening.
-    const timing = dragging.value ? JOURNEY_DRAG_SETTLE : EXPAND_TIMING;
-    return {
-      top: withTiming(rail.top, timing),
-      bottom: withTiming(rail.bottom, timing),
-    };
-  }, [orderedActionIds, controller.committedKey]);
+  // The rail follows the order the drag is proposing, so the dotted line
+  // re-spans the moment the open card — the one row taller than the rest —
+  // takes a new end of the list.
+  const railStyle = useJourneyRail({
+    controller,
+    ids: orderedActionIds,
+    timing: EXPAND_TIMING,
+    shape: railShape,
+  });
 
   return (
     <View style={styles.section}>
@@ -693,7 +700,14 @@ export default function TodaysDailiesSection({
             style={styles.groupLabel}
           />
 
-          <View style={styles.timeline}>
+          <View
+            style={[
+              styles.timeline,
+              // Told, because the rows no longer tell it: they all stand at the
+              // top of this box and are moved down into place.
+              { height: controller.contentHeight ?? undefined },
+            ]}
+          >
             <Animated.View
               style={[styles.timelineRail, railStyle]}
               pointerEvents="none"

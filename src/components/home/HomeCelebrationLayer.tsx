@@ -6,6 +6,7 @@ import {
 } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Confetti from '../common/Confetti';
+import { loadBackgroundImage } from '../../services/images/backgroundImageCache';
 import CelebrationToast from '../common/CelebrationToast';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
@@ -72,6 +73,15 @@ const HomeCelebrationLayer = forwardRef<
     }),
     [],
   );
+
+  // The bar carries the streak flame, and the flame is a PNG that is not in
+  // the startup set. Left alone it is decoded the first time something on Home
+  // is worth confirming — which is the frame the bar is trying to spring in on,
+  // and the decode lands in the middle of it. Warmed with the screen instead,
+  // so the bar has nothing to wait for.
+  useEffect(() => {
+    void loadBackgroundImage('streakFlame').catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (celebration == null) return;

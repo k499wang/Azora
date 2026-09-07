@@ -1,5 +1,5 @@
 import { useMemo, type ComponentType, type ReactNode, type RefObject } from 'react';
-import type { StyleProp, ViewStyle } from 'react-native';
+import { StyleSheet, type StyleProp, type ViewStyle } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   runOnJS,
@@ -65,10 +65,21 @@ export default function JourneyDragRow({
     order,
     activeId,
     translation,
+    pickup,
     dragging,
+    lifted,
     gap,
     enabled,
+    contentHeight,
+    restingTiming,
   } = controller;
+  /**
+   * A positioned list carries the whole arrangement in the transform, so the
+   * row's own slot in the layout says nothing about where it stands and never
+   * moves. A list laid out in flow is already standing in its slot, so the
+   * transform only says how far it is from it.
+   */
+  const positioned = contentHeight != null;
   // Its resting offset, taken from the same props the layout is built from.
   // Reading it off the shared heights instead would let the transform and the
   // layout disagree for a frame on the render that commits a drop — which is
@@ -96,7 +107,18 @@ export default function JourneyDragRow({
         .onStart(() => {
           activeId.value = id;
           dragging.value = true;
+          lifted.value = true;
           translation.value = 0;
+          // Where it stood as it was picked up. Every position below is
+          // written down the list from the top, so the finger's travel has
+          // something absolute to be added to.
+          const current = order.value;
+          pickup.value = journeyRowOffset(
+            current.ids,
+            heights.value,
+            gap,
+            current.ids.indexOf(id),
+          );
           runOnJS(controller.onLift)();
           runOnJS(triggerLightHaptic)();
         })
@@ -127,6 +149,10 @@ export default function JourneyDragRow({
         .onFinalize(() => {
           const current = order.value;
           if (activeId.value !== id || current.key !== committedKey) return;
+          // Set down as it travels, not once it has arrived: the landing ends
+          // on the same frame the new order is committed, and a lift released
+          // there has no frames left to release in.
+          lifted.value = false;
           const next = current.ids;
           // Where the row has to land: its slot in the proposed order, measured
           // from the slot it was picked up in. The drop animates onto that offset
@@ -134,7 +160,7 @@ export default function JourneyDragRow({
           // already is.
           const landing =
             journeyRowOffset(next, heights.value, gap, next.indexOf(id)) -
-            restingOffset;
+            pickup.value;
           translation.value = withTiming(landing, JOURNEY_DRAG_SETTLE, (done) => {
             // A second row picked up while this one was still settling now owns the
             // drag, and clearing it here would drop that row where it stands.
@@ -155,7 +181,9 @@ export default function JourneyDragRow({
       restingOffset,
       activeId,
       dragging,
+      lifted,
       translation,
+      pickup,
       order,
       heights,
       controller,
@@ -164,48 +192,60 @@ export default function JourneyDragRow({
 
   const dragStyle = useAnimatedStyle(() => {
     const held = activeId.value === id;
-    const lifted = held && dragging.value;
-    const live = order.value;
-    // Built from an order this row is no longer being rendered in — the list
-    // changed a frame ago and the effect that resyncs has not run yet. Every
-    // offset from it would be a slot out, so the row sits where it was laid
-    // out until the two agree again.
-    const shift =
-      live.key === committedKey
-        ? journeyRowOffset(
-            live.ids,
-            heights.value,
-            gap,
-            live.ids.indexOf(id),
-          ) - restingOffset
-        : 0;
+    const raised = held && lifted.value;
+    const live = order.value.ids;
+    // An order this row is not in, or one of a different length, was built from
+    // a list the render has already moved on from — a row added or finished
+    // elsewhere, a frame before the effect that resyncs. Its offsets would put
+    // every row a slot out, so the row falls back to the order it was actually
+    // rendered in. A drop is never this case: it commits exactly the order the
+    // drag proposed, so both agree and the commit moves nothing.
+    const at = live.length === ids.length ? live.indexOf(id) : -1;
+    const resting =
+      at < 0
+        ? restingOffset
+        : journeyRowOffset(live, heights.value, gap, at);
+
+    // Flow rows are already standing in their slot; positioned rows are all
+    // stacked at the top and stand only by this.
+    const base = positioned ? 0 : restingOffset;
+    const settle = dragging.value ? JOURNEY_DRAG_SETTLE : restingTiming;
+
     return {
       transform: [
         {
-          // The held row follows the finger from its own slot. Every other row
-          // is animated only while something is actually held: once the drop
-          // commits, the rows re-lay out and every shift falls to zero in the
-          // same frame, and an animation there would replay the reset as a
-          // second movement.
+          // The held row follows the finger from where it was picked up. Every
+          // other row slides to wherever the order puts it — and a flow row
+          // only while something is held, because once the drop commits the
+          // rows re-lay out and animating there replays the reset as a second
+          // movement.
           translateY: held
-            ? translation.value
-            : dragging.value
-              ? withTiming(shift, JOURNEY_DRAG_SETTLE)
-              : shift,
+            ? pickup.value + translation.value - base
+            : dragging.value || positioned
+              ? withTiming(resting - base, settle)
+              : resting - base,
         },
-        { scale: withTiming(lifted ? JOURNEY_DRAG_LIFT_SCALE : 1, JOURNEY_DRAG_SETTLE) },
+        {
+          scale: withTiming(
+            raised ? JOURNEY_DRAG_LIFT_SCALE : 1,
+            JOURNEY_DRAG_SETTLE,
+          ),
+        },
       ],
       zIndex: held ? 2 : 0,
       // zIndex alone does not raise a view out of its siblings' paint order on
       // Android, and the lift wants a shadow there anyway.
-      elevation: lifted ? JOURNEY_DRAG_LIFT_ELEVATION : 0,
+      elevation: withTiming(
+        raised ? JOURNEY_DRAG_LIFT_ELEVATION : 0,
+        JOURNEY_DRAG_SETTLE,
+      ),
     };
-  }, [id, gap, index, restingOffset, committedKey]);
+  }, [id, ids, gap, restingOffset, positioned, restingTiming]);
 
   return (
     <GestureDetector gesture={gesture}>
       <Animated.View
-        style={[rowStyle, dragStyle]}
+        style={[positioned && styles.positioned, rowStyle, dragStyle]}
         onLayout={(event) => controller.measure(id, event)}
       >
         {children}
@@ -213,3 +253,12 @@ export default function JourneyDragRow({
     </GestureDetector>
   );
 }
+
+const styles = StyleSheet.create({
+  // Every row at the top of the box, standing apart only by its transform.
+  positioned: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+  },
+});
