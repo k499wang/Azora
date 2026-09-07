@@ -797,6 +797,171 @@ export type Database = {
           },
         ]
       }
+      owned_objects: {
+        Row: {
+          acquired_local_date: string | null
+          created_at: string
+          id: string
+          option_id: string
+          user_id: string
+        }
+        Insert: {
+          acquired_local_date?: string | null
+          created_at?: string
+          id?: string
+          option_id: string
+          user_id: string
+        }
+        Update: {
+          acquired_local_date?: string | null
+          created_at?: string
+          id?: string
+          option_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "owned_objects_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "owned_objects_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_streaks_v"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      owned_room_shells: {
+        Row: {
+          created_at: string
+          id: string
+          shell: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          shell: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          shell?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "owned_room_shells_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "owned_room_shells_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_streaks_v"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      room_reward_history: {
+        Row: {
+          created_at: string
+          earned_local_date: string
+          option_id: string
+          room_id: string
+          slot: string
+          source_decoration_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at: string
+          earned_local_date: string
+          option_id: string
+          room_id: string
+          slot: string
+          source_decoration_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          earned_local_date?: string
+          option_id?: string
+          room_id?: string
+          slot?: string
+          source_decoration_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "room_reward_history_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "room_reward_history_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_streaks_v"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      wallet_entries: {
+        Row: {
+          created_at: string
+          currency: string
+          delta: number
+          id: string
+          local_date: string
+          reason: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          delta: number
+          id?: string
+          local_date: string
+          reason: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          delta?: number
+          id?: string
+          local_date?: string
+          reason?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallet_entries_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "wallet_entries_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_streaks_v"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       web_checkout_intents: {
         Row: {
           checkout_event_id: string | null

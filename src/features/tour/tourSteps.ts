@@ -6,7 +6,7 @@ export type TourTargetId =
   | 'hotel'
   | 'measureHeart';
 
-export type TourTab = 'Home' | 'Heart';
+export type TourTab = 'Home';
 
 export interface TourStep {
   /** the element Mochi points at; registered with `useTourTarget` */
@@ -49,7 +49,7 @@ export const tourSteps: readonly TourStep[] = [
   },
   {
     target: 'measureHeart',
-    tab: 'Heart',
-    body: 'This is where you can track your heart rate. Tap + to take a measurement and see how your body responds over time.',
+    tab: 'Home',
+    body: 'Open your heart page here to track your heart rate and take a measurement.',
   },
 ];

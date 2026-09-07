@@ -68,6 +68,21 @@ test('the room screens only offer a back arrow when opened from the lab', () => 
   assert.match(layout, /fromLab \? \(\s*<AppTopBar showBack/);
 });
 
+test('Heart is reached from the Home top bar, never from a tab', () => {
+  const tabs = read('app/navigation/MainTabs.tsx');
+  const root = read('app/navigation/RootNavigator.tsx');
+  const home = read('screens/HomeScreen.tsx');
+  const tabNames = [...tabs.matchAll(/<Tab\.Screen\s+name="([^"]+)"/g)].map(
+    (match) => match[1],
+  );
+
+  assert.deepEqual(tabNames, ['Home', 'Profile']);
+  assert.doesNotMatch(tabs, /name="Heart"/);
+  assert.match(root, /name="Heart"/);
+  assert.match(home, /accessibilityLabel="Open heart page"/);
+  assert.match(home, /navigation\.navigate\('Heart'\)/);
+});
+
 test('Hotel is reached from Home, never from a tab', () => {
   // A room takes a week to fill, so for the whole of a new user's first week
   // the hotel is one part-furnished room and an outline. That is not worth a
@@ -80,7 +95,7 @@ test('Hotel is reached from Home, never from a tab', () => {
     (match) => match[1],
   );
 
-  assert.deepEqual(tabNames, ['Home', 'Heart', 'Profile']);
+  assert.deepEqual(tabNames, ['Home', 'Profile']);
   assert.doesNotMatch(tabs, /Hotel/);
   assert.match(root, /name="Hotel"/);
   assert.match(root, /name="HotelPreview"/);

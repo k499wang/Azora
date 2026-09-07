@@ -14,7 +14,6 @@ import GlassIconButton from '../components/common/GlassIconButton';
 import CloseButton from '../components/common/CloseButton';
 import ChunkyButton from '../components/common/ChunkyButton';
 import HelpfulnessQuestion from '../components/exercise/HelpfulnessQuestion';
-import Icon from '../components/common/icons/Icon';
 import { CATEGORY_STYLE } from '../features/exercise/guidedBreathing/categoryPalette';
 import { getTechnique } from '../features/exercise/guidedBreathing/techniques';
 import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
@@ -25,8 +24,6 @@ import ThermometerStatCard from '../components/heartRate/ThermometerStatCard';
 import type { SessionCompleteScreenProps } from '../app/navigation';
 import { useAuthStore } from '../stores/authStore';
 import { useProfileQuery } from '../queries/profile/useProfileQuery';
-import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
-import { withTodaysSession } from '../lib/weeklyProgress';
 import { APP_STORE_URL } from '../lib/appStoreLink';
 import {
   maybeRequestSessionReview,
@@ -49,7 +46,6 @@ function formatDuration(secs: number): string {
   return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
-const HERO_FLAME_SIZE = 132;
 const EMPTY_HR_SAMPLES: { offsetMs: number; bpm: number }[] = [];
 
 // Everything below re-renders on every query that resolves while the screen is
@@ -82,7 +78,6 @@ export default function SessionCompleteScreen({
   }, []);
 
   const user = useAuthStore((state) => state.user);
-  const profileSummaryQuery = useProfileSummaryQuery(user?.id ?? null);
   const profileQuery = useProfileQuery(user?.id ?? null);
   const [sheetDismissed, setSheetDismissed] = useState(false);
   const [sheetPresented, setSheetPresented] = useState(false);
@@ -150,8 +145,7 @@ export default function SessionCompleteScreen({
     void maybeRequestSessionReview(ReviewTrigger.GuidedBreathing);
   }, [sheetPending]);
 
-  const summary = profileSummaryQuery.data;
-  const displayName = summary?.profile?.displayName ?? null;
+  const displayName = profileQuery.data?.displayName ?? null;
   const firstName = displayName?.trim().split(/\s+/)[0] ?? null;
   const technique = getTechnique(techniqueId);
   const categoryStyle = CATEGORY_STYLE[technique?.category ?? 'calm'];
@@ -176,14 +170,6 @@ export default function SessionCompleteScreen({
     [techniqueBpmResponse, techniqueName],
   );
 
-  const streakView = useMemo(
-    () =>
-      summary == null
-        ? null
-        : withTodaysSession(summary.currentStreak, summary.completedDaysAgo),
-    [summary],
-  );
-
   const handleClose = useCallback(() => {
     returnToHome(navigation);
   }, [navigation]);
@@ -204,7 +190,6 @@ export default function SessionCompleteScreen({
   const celebrationContentRef = useRef<{
     title: string;
     subtitle: string;
-    detail?: string;
   } | null>(null);
   if (snapshot != null && celebrationContentRef.current == null) {
     celebrationContentRef.current = {
@@ -212,10 +197,6 @@ export default function SessionCompleteScreen({
       // The technique name alone read as a label. What they just did, in their
       // own numbers, is what the moment is about.
       subtitle: `${breathCount} breaths of ${techniqueName}`,
-      detail:
-        streakView != null && streakView.currentStreak >= 2
-          ? `Day ${streakView.currentStreak} in a row`
-          : undefined,
     };
   }
   const celebrationContent = celebrationContentRef.current;
@@ -227,11 +208,8 @@ export default function SessionCompleteScreen({
     if (displayAvgBpm != null) {
       parts.push(`Heart rate settled at ${Math.round(displayAvgBpm)} bpm.`);
     }
-    if (streakView != null && streakView.currentStreak >= 2) {
-      parts.push(`Day ${streakView.currentStreak} in a row.`);
-    }
     return `${parts.join(' ')}\n\nBreathe with me:\n${APP_STORE_URL}`;
-  }, [breathCount, displayAvgBpm, durationSec, streakView, techniqueName]);
+  }, [breathCount, displayAvgBpm, durationSec, techniqueName]);
 
   const handleShare = useCallback(async () => {
     try {
@@ -258,7 +236,6 @@ export default function SessionCompleteScreen({
           visible
           title={celebrationContent.title}
           subtitle={celebrationContent.subtitle}
-          subtitleDetail={celebrationContent.detail}
           state={snapshot.state}
           barFrom={snapshot.barFrom}
           rewardReady={isDailyCompleteRewardReady(
@@ -305,7 +282,6 @@ export default function SessionCompleteScreen({
           <View style={styles.heroWrap}>
             <View style={styles.heroShadow}>
               <View style={[styles.heroCard, coloredCard(hue)]}>
-                <Icon name="streakFilled" size={HERO_FLAME_SIZE} color={hue.soft} />
                 <Text style={styles.heroTitle}>{congratulation}</Text>
                 <Text style={styles.heroSubtitle}>
                   {techniqueName} · {formatDuration(durationSec)}

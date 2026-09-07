@@ -14,7 +14,6 @@ import ChunkyButton from '../components/common/ChunkyButton';
 import { Rise } from '../components/common/Reveal';
 import HelpfulnessQuestion from '../components/exercise/HelpfulnessQuestion';
 import { BREATH_HOLD_FEEDBACK_ID } from '../lib/sessionKey';
-import Icon from '../components/common/icons/Icon';
 import { BREATH_HOLD_STYLE } from '../features/exercise/guidedBreathing/categoryPalette';
 import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
 import { card, coloredCard } from '../theme/card';
@@ -48,7 +47,6 @@ import ScreenContent from '../components/common/ScreenContent';
 // The breath hold is not a guided technique, but feedback is stored per
 // technique id, so it answers under its own key.
 
-const HERO_FLAME_SIZE = 132;
 const BREATH_HOLD_COMPLETION = { breathHold: true } as const;
 const EMPTY_BPM_SAMPLES: { offsetMs: number; bpm: number }[] = [];
 
@@ -281,7 +279,6 @@ export default function ShareableResultScreen({
           >
             <View style={styles.heroShadow}>
               <View style={[styles.heroCard, coloredCard(hue)]}>
-                <Icon name="streakFilled" size={HERO_FLAME_SIZE} color={hue.soft} />
                 <Text style={styles.heroTitle}>{congratulation}</Text>
                 <Text style={styles.heroSubtitle}>
                   Breath hold · {formatDuration(holdSeconds)}

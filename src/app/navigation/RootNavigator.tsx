@@ -8,6 +8,7 @@ import DailyBreathHoldScreen from '../../features/exercise/dailyBreathHold/Daily
 import GuidedBreathingSessionScreen from '../../features/exercise/guidedBreathing/GuidedBreathingSessionScreen';
 import SessionCompleteScreen from '../../screens/SessionCompleteScreen';
 import { HeartRateScreen } from '../../screens/HeartRateScreen';
+import HeartScreen from '../../screens/HeartScreen';
 import { HeartRateSessionDetailScreen } from '../../screens/HeartRateSessionDetailScreen';
 import { ProPaywallScreen } from '../../screens/ProPaywallScreen';
 import { ExitOfferScreen } from '../../screens/ExitOfferScreen';
@@ -102,6 +103,14 @@ function AppStack({ showBootPaywall, tourEnabled }: AppStackProps) {
       <Stack.Screen
         name="Garden"
         component={GardenScreen}
+        options={{
+          presentation: 'card',
+          animation: 'slide_from_right',
+        }}
+      />
+      <Stack.Screen
+        name="Heart"
+        component={HeartScreen}
         options={{
           presentation: 'card',
           animation: 'slide_from_right',

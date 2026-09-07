@@ -18,7 +18,6 @@ import HRVTrackStatCard from './HRVTrackStatCard';
 import BPMChart from './BPMChart';
 import HRVChart from './HRVChart';
 import CardSurface from '../common/CardSurface';
-import { useDashboardLayout } from '../../hooks/useDashboardLayout';
 import { DEFAULT_CARD_SURFACE } from '../common/cardSurfaceConfig';
 import { getStressZone } from '../../lib/heartRate/stress';
 import type { BpmTimePoint } from '../../lib/heartRate/bpmSeries';
@@ -127,7 +126,6 @@ export function HeartRateResultContent({
   showRestingHealthBar = false,
   age = null,
 }: HeartRateResultContentProps) {
-  const dashboardLayout = useDashboardLayout();
   const rmssdValue =
     rmssd != null && Number.isFinite(rmssd)
       ? `${Math.round(rmssd)}`
@@ -148,10 +146,6 @@ export function HeartRateResultContent({
       : advancedStatsLocked
         ? 48
         : null;
-  const sdnnFromProp =
-    sdnn != null && Number.isFinite(sdnn) && sdnn > 0 ? sdnn : null;
-  const sdnnRaw = sdnnFromProp;
-  const sdnnNumeric = sdnnRaw ?? (advancedStatsLocked ? 55 : null);
   const bpmChartSamples =
     bpmSamples != null && bpmSamples.length >= 2 ? bpmSamples : undefined;
   const chartIbiMs = ibiSamples.map((sample) => sample.ibiMs);
@@ -287,40 +281,17 @@ export function HeartRateResultContent({
             ) : null}
 
             {showRmssd ? (
-              <View
-                style={[
-                  styles.proStatsColumn,
-                  dashboardLayout.hasColumns && styles.proStatsRow,
-                ]}
-              >
-                <View
-                  style={dashboardLayout.hasColumns ? styles.proStatWide : undefined}
-                >
-                  <HRVTrackStatCard
-                    label="RMSSD"
-                    value={rmssdNumeric}
-                    unit="ms"
-                    max={80}
-                    lowBound={20}
-                    highBound={50}
-                    locked={advancedStatsLocked}
-                    onPressLocked={onPressUpgrade}
-                  />
-                </View>
-                <View
-                  style={dashboardLayout.hasColumns ? styles.proStatWide : undefined}
-                >
-                  <HRVTrackStatCard
-                    label="Avg HRV"
-                    value={sdnnNumeric}
-                    unit="ms"
-                    max={100}
-                    lowBound={30}
-                    highBound={70}
-                    locked={advancedStatsLocked}
-                    onPressLocked={onPressUpgrade}
-                  />
-                </View>
+              <View style={styles.proStatsColumn}>
+                <HRVTrackStatCard
+                  label="RMSSD"
+                  value={rmssdNumeric}
+                  unit="ms"
+                  max={80}
+                  lowBound={20}
+                  highBound={50}
+                  locked={advancedStatsLocked}
+                  onPressLocked={onPressUpgrade}
+                />
               </View>
             ) : null}
         </>
@@ -483,12 +454,6 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     gap: spacing.sm,
     marginTop: spacing.sm,
-  },
-  proStatsRow: {
-    flexDirection: 'row',
-  },
-  proStatWide: {
-    flex: 1,
   },
   proBadge: {
     borderRadius: 999,
