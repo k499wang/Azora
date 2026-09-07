@@ -480,40 +480,42 @@ export default function TodoListSection({
               stand at the top of it and are moved down into place, so it is
               told how tall they are together instead of being told by them —
               and the add row below stays below them. */}
-          <View
-            style={[
-              styles.journeyRows,
-              { height: controller.contentHeight ?? undefined },
-            ]}
-          >
-            {railGoals.map((goal, index) => (
-              <JourneyDragRow
-                key={goal.id}
-                controller={controller}
-                id={goal.id}
-                index={index}
-                scrollRef={scrollRef}
-                style={styles.journeyRow}
-              >
-                <GoalCard
-                  goal={goal}
-                  busy={
-                    toggleGoal.isPending &&
-                    toggleGoal.variables?.goalId === goal.id
-                  }
-                  isArranging={controller.isArranging}
-                  onToggle={() =>
-                    toggleGoal.mutate({
-                      goalId: goal.id,
-                      completed: !goal.completedToday,
-                    })
-                  }
-                  onOpen={() => setDetailGoalId(goal.id)}
-                  onMove={(delta) => moveBy(goal.id, delta)}
-                />
-              </JourneyDragRow>
-            ))}
-          </View>
+          {railGoals.length > 0 ? (
+            <View
+              style={[
+                styles.journeyRows,
+                { height: controller.contentHeight ?? undefined },
+              ]}
+            >
+              {railGoals.map((goal, index) => (
+                <JourneyDragRow
+                  key={goal.id}
+                  controller={controller}
+                  id={goal.id}
+                  index={index}
+                  scrollRef={scrollRef}
+                  style={styles.journeyRow}
+                >
+                  <GoalCard
+                    goal={goal}
+                    busy={
+                      toggleGoal.isPending &&
+                      toggleGoal.variables?.goalId === goal.id
+                    }
+                    isArranging={controller.isArranging}
+                    onToggle={() =>
+                      toggleGoal.mutate({
+                        goalId: goal.id,
+                        completed: !goal.completedToday,
+                      })
+                    }
+                    onOpen={() => setDetailGoalId(goal.id)}
+                    onMove={(delta) => moveBy(goal.id, delta)}
+                  />
+                </JourneyDragRow>
+              ))}
+            </View>
+          ) : null}
           {addNodeVisible ? (
             <AddGoalRow onPress={() => setAdding(true)} />
           ) : null}
