@@ -19,8 +19,8 @@ Decisions to settle before implementation:
   duration, repeats, and whether the session completing dailies can also earn an
   extra reward? Specify stable source IDs and local-date attribution, including
   midnight, offline completion, and timezone changes.
-- Heart-rate measurement remains discoverable through the Heart page opened
-  from Home's top-bar bell. It stays optional and leaves the existing three
+- Heart-rate measurement opens directly from Home's top-bar heart button. It
+  stays optional and leaves the existing three
   canonical dailies intact.
 - Assign all 35 objects to the 30/60/100 price tiers. Do not infer tiers from
   category order; confirm whether included starters span all tiers. Initial rates
@@ -171,13 +171,13 @@ unrewarded persisted completions after restart or reconnect so leaving a result
 screen cannot lose coins. Daily grant identity must be shared across completion
 paths (user, reward date and rule identity), not the last session's ID.
 
-Tabs become `Home | Shop | Profile`. Shop has balance and Objects/Floors/Looks,
+Tabs become `Home | Hotel | Shop | Profile`. Shop has balance and Objects/Floors/Looks,
 room-based previews using `DecorationTile`, owned states and “place it now?”
 callbacks. Reuse theme/design tokens and `ChunkyButton`; virtualize history or
 any growing catalogue rather than eagerly rendering it all.
 
-Keep the full Heart page as a stack screen opened from Home's top-bar bell. Add
-Profile’s distinct collection count and lifetime coins earned. Keep
+Keep the full Heart page as a stack screen, while Home's heart button opens the
+measurement instructions directly. Add Profile’s distinct collection count and lifetime coins earned. Keep
 `HeartRateScreen` and session detail stack routes. Audit all `Heart` references:
 central types, tab registration, Home, History/session-detail return routes,
 analytics, tests and child navigation. Use `returnToHome()` for terminal returns

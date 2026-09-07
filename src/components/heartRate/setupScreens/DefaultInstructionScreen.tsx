@@ -4,22 +4,24 @@ import {
   ScrollView,
   StyleSheet,
   useWindowDimensions,
+  Pressable,
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Device from 'expo-device';
 import { useNavigation } from '@react-navigation/native';
 import { colors } from '../../../theme/colors';
+import { pressable } from '../../../theme/pressable';
 import { typography, fonts } from '../../../theme/typography';
 import { spacing, padding } from '../../../theme/spacing';
 import ChunkyButton from '../../common/ChunkyButton';
-import GlassIconButton from '../../common/GlassIconButton';
-import { SESSION_GLASS_BUTTON_SIZE } from '../../../features/exercise/shared/components/SessionGlassButton';
-import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { isShortScreen } from '../../../theme/breakpoints';
+import Icon from '../../common/icons/Icon';
+import { triggerTapHaptic } from '../../../native/tapHaptics';
 
 /** Slightly taller than the standard primary, matching this flow's footer. */
 const CTA_MIN_HEIGHT = 52;
+const BACK_ICON_SIZE = 26;
 import type { SetupScreenProps } from '../../../lib/heartRate/types';
 import {
   DEFAULT_CAPTURE_MODE,
@@ -80,13 +82,25 @@ export function DefaultInstructionScreen({ onNext, onCancel }: SetupScreenProps)
       >
         {/* Scrolls with the page rather than floating over it, so nothing sits
             on top of the illustration once the steps are scrolled up. */}
-        <GlassIconButton
-          accessibilityLabel="Close"
-          size={SESSION_GLASS_BUTTON_SIZE}
-          onPress={onCancel}
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+          hitSlop={spacing.md}
+          style={({ pressed }) => [
+            styles.back,
+            pressed && styles.backPressed,
+          ]}
+          onPress={() => {
+            triggerTapHaptic();
+            onCancel();
+          }}
         >
-          <MaterialCommunityIcons name="close" size={20} color={colors.text.secondary} />
-        </GlassIconButton>
+          <Icon
+            name="chevron-left"
+            size={BACK_ICON_SIZE}
+            color={colors.text.primary}
+          />
+        </Pressable>
 
         <Text style={[styles.title, compact && styles.titleCompact]}>
           {placementGuidance.title}
@@ -139,6 +153,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: padding.screen.horizontal,
     backgroundColor: colors.background.canvas,
   },
+  back: {
+    marginLeft: -spacing.xs,
+    marginRight: spacing.xs,
+  },
+  backPressed: pressable.control,
   scrollContent: {
     paddingTop: padding.screen.vertical,
     paddingBottom: spacing.lg,

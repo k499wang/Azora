@@ -10,7 +10,6 @@ import { spacing, margin } from '../theme/spacing';
 import ExtraPracticeSection from '../components/home/ExtraPracticeSection';
 import TodaysDailiesSection from '../components/home/TodaysDailiesSection';
 import HomeRoom from '../features/room/HomeRoom';
-import HotelButton from '../features/room/HotelButton';
 import GlassIconButton from '../components/common/GlassIconButton';
 import Icon from '../components/common/icons/Icon';
 import TopBarStreak from '../components/common/TopBarStreak';
@@ -46,8 +45,8 @@ import TodoListSection from '../features/selfCare/TodoListSection';
  */
 const TAB_BAR_HEIGHT = 49;
 
-/** the glass chips on the right of Home's top row */
-const HOTEL_ROW_BUTTON_SIZE = 46;
+/** the glass chip on the right of Home's top row */
+const HEART_ROW_BUTTON_SIZE = 46;
 
 /** Nothing is mid-flight when the day is finished by a to-do on this screen. */
 const NO_PROJECTION = {};
@@ -57,7 +56,6 @@ const TOUR_TARGETS: TourTargetId[] = [
   'todos',
   'extraPractice',
   'seeAll',
-  'hotel',
   'measureHeart',
 ];
 
@@ -136,11 +134,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const dailiesTarget = useTourTarget('dailies');
   const todosTarget = useTourTarget('todos');
   const extraPracticeTarget = useTourTarget('extraPractice');
-  const hotelTarget = useTourTarget('hotel');
   const measureHeartTarget = useTourTarget('measureHeart');
-
-  // The recently-logged list and its analytics now live on the Heart tab
-  // (see RecentlyLoggedSection — it uses useIsFocused to gate the view event).
 
   return (
     <View style={styles.screen}>
@@ -164,16 +158,13 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           <View style={styles.topRowActions}>
             <View {...measureHeartTarget}>
               <GlassIconButton
-                accessibilityLabel="Open heart page"
-                size={HOTEL_ROW_BUTTON_SIZE}
+                accessibilityLabel="Measure heart rate"
+                size={HEART_ROW_BUTTON_SIZE}
                 variant="regular"
-                onPress={() => navigation.navigate('Heart')}
+                onPress={() => navigation.navigate('HeartRate')}
               >
-                <Icon name="bell" size={26} color={colors.playful.sky.base} />
+                <Icon name="heart" size={26} color={colors.playful.sky.base} />
               </GlassIconButton>
-            </View>
-            <View {...hotelTarget}>
-              <HotelButton floors={roomClaim.room?.floor ?? 1} />
             </View>
           </View>
         </View>

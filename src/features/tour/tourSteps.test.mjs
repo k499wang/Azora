@@ -10,7 +10,6 @@ test('the app tour keeps every step on Home', () => {
       { target: 'todos', tab: 'Home' },
       { target: 'extraPractice', tab: 'Home' },
       { target: 'seeAll', tab: 'Home' },
-      { target: 'hotel', tab: 'Home' },
       { target: 'measureHeart', tab: 'Home' },
     ],
   );
@@ -22,8 +21,9 @@ test('the heart stop explains what measurement provides', () => {
   assert.match(heartStep?.body ?? '', /heart rate/i);
 });
 
-test('the hotel stop points at the record of finished rooms', () => {
-  const hotelStep = tourSteps.find(({ target }) => target === 'hotel');
-  assert.match(hotelStep?.body ?? '', /hotel/i);
-  assert.match(hotelStep?.body ?? '', /room/i);
+test('the tour no longer points at the removed hotel shortcut', () => {
+  assert.doesNotMatch(
+    JSON.stringify(tourSteps.map(({ target }) => target)),
+    /hotel/,
+  );
 });
