@@ -1,7 +1,6 @@
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  type LayoutChangeEvent,
   Pressable,
   StyleSheet,
   type StyleProp,
@@ -12,15 +11,11 @@ import Animated, {
   interpolate,
   useAnimatedStyle,
   useSharedValue,
-  withDelay,
-  withSequence,
-  withSpring,
   withTiming,
 } from 'react-native-reanimated';
 import { Text } from '../../components/common/Text';
 import Icon from '../../components/common/icons/Icon';
 import type { SelfCareGoalDraft } from '../../services/selfCare/selfCareService';
-import Confetti from '../../components/common/Confetti';
 import Overline from '../../components/common/Overline';
 import AddGoalSheet from './AddGoalSheet';
 import GoalDetailSheet from './GoalDetailSheet';
@@ -53,37 +48,24 @@ import { card, radius } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { pressable } from '../../theme/pressable';
 import { spacing } from '../../theme/spacing';
-import { triggerSuccessHaptic, triggerTapHaptic } from '../../native/tapHaptics';
-import { duration, easing, spring } from '../../theme/motion';
+import { triggerTapHaptic } from '../../native/tapHaptics';
 import { fonts, typography, wrappedLineHeight } from '../../theme/typography';
 import JourneyDragRow from '../../components/home/journey/JourneyDragRow';
-import {
-  type JourneyRailEnds,
-  type JourneyRailMetrics,
-} from '../../components/home/journey/journeyReorder';
-import { useJourneyRail } from '../../components/home/journey/useJourneyRail';
 import {
   journeyReorderActions,
   useJourneyReorder,
   type JourneyScrollRef,
 } from '../../components/home/journey/useJourneyReorder';
 import {
-  TODAY_JOURNEY_COLUMN_WIDTH,
-  TODAY_JOURNEY_DASH_GAP,
-  TODAY_JOURNEY_DASH_HEIGHT,
+  TODAY_JOURNEY_CARD_MIN_HEIGHT,
   TODAY_JOURNEY_GROUP_GAP,
-  TODAY_JOURNEY_MARKER_ICON_SIZE,
-  TODAY_JOURNEY_MARKER_SIZE,
-  TODAY_JOURNEY_LABEL_INSET,
   TODAY_JOURNEY_LABEL_GAP,
   TODAY_JOURNEY_RAIL_TIMING,
-  TODAY_JOURNEY_RAIL_WIDTH,
-  todayJourneyDashCount,
 } from '../../components/home/todayJourneyLayout';
 
-const GOAL_ROW_HEIGHT = 60;
-// Matches a to-do row, so the way in sits in the same rhythm as the list.
-const ADD_ROW_HEIGHT = GOAL_ROW_HEIGHT;
+const GOAL_ROW_HEIGHT = TODAY_JOURNEY_CARD_MIN_HEIGHT;
+// The add action stays compact even though user-authored to-do cards can grow.
+const ADD_ROW_HEIGHT = 60;
 const ADD_BADGE_SIZE = 38;
 const COMPLETED_CHECK_SIZE = 28;
 // Shorter than a to-do row: the drawer summary is a lid, not another item on
@@ -96,7 +78,7 @@ const DAY_DONE_ICON_SIZE = 64;
 const DAY_DONE_ADD_HEIGHT = 44;
 const DAY_DONE_ADD_BADGE_SIZE = 28;
 const COMPLETED_ROW_HEIGHT = 44;
-const GOAL_ICON_SIZE = 34;
+const GOAL_ICON_SIZE = 38;
 const FEATURED_STAR_SIZE = 26;
 const GOAL_TITLE_LINE_HEIGHT = wrappedLineHeight(
   typography.body.large.fontSize,
@@ -109,48 +91,6 @@ const GOAL_TITLE_MAX_LINES = 3;
 const GOAL_CHECK_SIZE = 42;
 const JOURNEY_ROW_GAP = spacing.md;
 const ADD_ROW_OFFSET = TODAY_JOURNEY_GROUP_GAP - JOURNEY_ROW_GAP;
-/**
- * The celebration when a to-do lands: the green disc springs in past its own
- * size and a ring pushes out through it. Sized in multiples of the marker so it
- * stays tied to the dot it is congratulating rather than to the row it sits in.
- */
-const MARKER_HALO_SIZE = TODAY_JOURNEY_MARKER_SIZE * 2.6;
-const MARKER_CONFETTI_SIZE = TODAY_JOURNEY_MARKER_SIZE * 14;
-const MARKER_CONFETTI_SPREAD = 1.15;
-const MARKER_CONFETTI_PIECE_SCALE = 1.7;
-const MARKER_CONFETTI_PIECE_COUNT = 26;
-// Longer than the disc's own beat: the bigger burst has further to travel.
-const MARKER_CONFETTI_MS = 950;
-// Hoisted so the memoized burst is not handed a new array on every re-render
-// the toggle mutation causes while it is in flight.
-const MARKER_CONFETTI_COLORS = [
-  colors.success[500],
-  colors.success[300],
-] as const;
-// The disc's own beat. Short on purpose: it is the smallest part of the
-// celebration, and the fall across the section carries the rest.
-const MARKER_POP_MS = 620;
-
-/**
- * The rail runs from the first to-do's marker to the last one's, and stops
- * there — the add row below the list is not a stop on the journey, so the
- * bottom end is measured from where the last row's marker sits rather than
- * from the foot of the section.
- */
-function railShape({
-  firstHeight,
-  lastHeight,
-  lastOffset,
-  height,
-}: JourneyRailMetrics): JourneyRailEnds {
-  'worklet';
-  return {
-    top: firstHeight / 2,
-    bottom: height - (lastOffset + lastHeight / 2),
-  };
-}
-/** the wind-up before the disc springs back — a beat, not a step */
-const SQUASH_MS = 70;
 interface TodoListSectionProps {
   /**
    * Everything on both of Home's lists is finished. Decided above this section,
@@ -158,15 +98,14 @@ interface TodoListSectionProps {
    */
   dayDone: boolean;
   /**
-   * A to-do was finished and left the rail in the same render, so it has no
-   * marker of its own to celebrate from. Home fires the burst instead, from its
-   * own fixed place on the screen.
+   * A to-do was finished. Home fires the shared completion burst from its fixed
+   * place on the screen now that rows no longer have journey markers.
    */
   onCelebrate: () => void;
   /**
    * A to-do was finished, wherever its row ended up. Home confirms it with the
    * bar above the tab bar — the one celebration that plays for every
-   * completion, not only the ones that leave the rail.
+   * completion.
    */
   onCompleted: (goalTitle: string) => void;
   /** The page the list sits on; the drag makes it wait rather than scroll. */
@@ -274,148 +213,17 @@ function GoalCard({
 }
 
 /**
- * Counts the moments a to-do is finished — a rising number rather than a flag,
- * so re-completing one replays the celebration. Starts silent: a to-do that is
- * already done when the list loads has nothing to celebrate.
- */
-function useCompletionBurst(completed: boolean) {
-  const [state, setState] = useState<{ burst: number | null; was: boolean }>({
-    burst: null,
-    was: completed,
-  });
-
-  // Adjusted during the render that brings the tick in, rather than in an
-  // effect after it. An effect would put the burst a second render behind the
-  // tap — and that render is queued behind the toggle's own, so the pieces
-  // reach the screen a frame or two after the disc they are supposed to be
-  // coming out of.
-  if (completed !== state.was) {
-    setState({
-      burst: completed ? (state.burst ?? 0) + 1 : null,
-      was: completed,
-    });
-  }
-
-  const clearBurst = useCallback((completedBurst: number) => {
-    setState((current) =>
-      current.burst === completedBurst ? { ...current, burst: null } : current,
-    );
-  }, []);
-  return { burst: state.burst, clearBurst };
-}
-
-/**
- * The dot on the rail, and the whole reward for finishing a to-do. Un-ticking
- * one takes the disc back off quietly — an undo is not an event.
- */
-// Memoized: the toggle mutation re-renders this list several times while the
-// burst is in the air, and re-rendering the marker means re-mounting the
-// pieces mid-flight.
-const GoalStatusMarker = memo(function GoalStatusMarker({
-  completed,
-}: {
-  completed: boolean;
-}) {
-  const { burst, clearBurst } = useCompletionBurst(completed);
-  const fill = useSharedValue(completed ? 1 : 0);
-  const halo = useSharedValue(0);
-
-  useEffect(() => {
-    if (burst == null) return;
-    triggerSuccessHaptic();
-    // Squashed to nothing first, so the spring has somewhere to come from even
-    // when the disc was already on screen.
-    fill.value = withSequence(
-      withTiming(0.2, { duration: SQUASH_MS, easing: easing.exit }),
-      withSpring(1, spring.bounce),
-    );
-    halo.value = 0;
-    halo.value = withDelay(
-      SQUASH_MS,
-      withTiming(1, { duration: MARKER_POP_MS, easing: easing.burst }),
-    );
-  }, [burst, fill, halo]);
-
-  useEffect(() => {
-    if (completed) return;
-    fill.value = withTiming(0, { duration: duration.fast, easing: easing.exit });
-  }, [completed, fill]);
-
-  const fillStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(fill.value, [0, 0.2, 1], [0, 1, 1]),
-    transform: [{ scale: fill.value }],
-  }));
-  // The check lags the disc by a hair and lands on its own spring, so the tick
-  // reads as being stamped into the circle rather than painted on it.
-  const checkStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(fill.value, [0, 0.55, 0.9], [0, 0, 1]),
-    transform: [{ scale: interpolate(fill.value, [0.4, 1], [0.4, 1]) }],
-  }));
-  const haloStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(halo.value, [0, 0.15, 1], [0, 0.5, 0]),
-    transform: [{ scale: interpolate(halo.value, [0, 1], [0.35, 1]) }],
-  }));
-
-  return (
-    <View style={[styles.statusMarker, styles.statusMarkerIdle]}>
-      <Animated.View
-        pointerEvents="none"
-        style={[styles.markerHalo, haloStyle]}
-      />
-      {burst == null ? null : (
-        <View pointerEvents="none" style={styles.markerConfetti}>
-          <Confetti
-            key={burst}
-            pieceColors={MARKER_CONFETTI_COLORS}
-            pieceCount={MARKER_CONFETTI_PIECE_COUNT}
-            spread={MARKER_CONFETTI_SPREAD}
-            pieceScale={MARKER_CONFETTI_PIECE_SCALE}
-            durationMs={MARKER_CONFETTI_MS}
-            onComplete={() => clearBurst(burst)}
-          />
-        </View>
-      )}
-      <Animated.View
-        style={[styles.statusMarkerFill, fillStyle]}
-        pointerEvents="none"
-      />
-      <Animated.View style={checkStyle} pointerEvents="none">
-        <Icon
-          name="check"
-          size={TODAY_JOURNEY_MARKER_ICON_SIZE}
-          color={colors.text.inverse}
-        />
-      </Animated.View>
-    </View>
-  );
-});
-
-/**
  * The finished to-dos, folded into the summary row above them. Height is
  * measured once from the laid-out list and animated to, so opening it slides
  * the rows down out of the scrim instead of popping them into place.
  */
 /**
- * Two celebrations, picked by what happens to the row.
+ * Reports newly finished to-dos after the initial load. Reading the whole list
+ * keeps the notification reliable even when a completed row immediately moves
+ * into the drawer.
  *
- * A to-do that stays on the rail is congratulated where it sits: the green
- * burst goes off from its own marker, pointing at the thing you just did. A
- * to-do that vanishes in the same render — swept into the drawer past the
- * collapse threshold, or taken with the whole list by the day-done card — has
- * no marker left to fire from, so Home bursts from its own fixed place instead.
- *
- * This calls back with the to-do that was just finished, for the caller to
- * make that choice. It ignores the first pass, so a list that loads with
- * finished to-dos on it does not celebrate them again, and reads the whole list
- * rather than one row — the row is often gone by the time the celebration would
- * play.
- *
- * The callback runs a tick after the completion lands rather than inside it.
- * Which of the two celebrations is right depends on `dayDone`, and Home decides
- * that from the same query this list reads, so it can arrive a commit later
- * than the completion does. Choosing on the spot loses the last to-do of the
- * day in that gap: it still looks like a row on the rail, so the burst is left
- * to a marker that unmounts before it can play, and nothing fires at all.
+ * The callback runs a tick after the completion lands so Home can render the
+ * canonical completion state before showing its shared feedback.
  */
 function useGoalCompletionCelebration(
   /** the query's own data — `undefined` until the list has actually loaded */
@@ -546,19 +354,6 @@ export default function TodoListSection({
    */
   const pendingEditGoalId = useRef<string | null>(null);
   const [completedOpen, setCompletedOpen] = useState(false);
-  /**
-   * The rail is measured rather than computed. A goal's height is whatever its
-   * title needs — two lines, a larger text size, a tablet — so deriving the
-   * rail from a row constant drifts the moment a row is taller than the
-   * constant says, and the drift shows up as this rail colliding with the
-   * dailies rail above it.
-   */
-  const [journeyHeight, setJourneyHeight] = useState<number | null>(null);
-
-  const measureJourney = useCallback((event: LayoutChangeEvent) => {
-    setJourneyHeight(event.nativeEvent.layout.height);
-  }, []);
-
   const goals = goalsQuery.data ?? [];
   // With the day done every finished to-do folds into the drawer, so the card
   // stands alone rather than sitting on top of the list it is celebrating.
@@ -568,9 +363,6 @@ export default function TodoListSection({
   const drawerGoals = dayDone ? goals : plan.drawer;
   useGoalCompletionCelebration(goalsQuery.data, (goalId) => {
     onCompleted(goals.find((goal) => goal.id === goalId)?.title ?? '');
-    // Still on the rail: its own marker has the burst, and a second celebration
-    // over the top of it would only bury it.
-    if (railGoals.some((goal) => goal.id === goalId)) return;
     onCelebrate();
   });
 
@@ -596,8 +388,8 @@ export default function TodoListSection({
     // rather than given — a to-do's height is whatever its title needs — so
     // this only takes effect on the frame after the list first lays out.
     positioned: true,
-    // A to-do arriving or leaving moves the rest of the list, and it moves on
-    // the same curve the rail beside it does.
+    // A to-do arriving or leaving moves the rest of the list on the same curve
+    // used by the daily rows above it.
     restingTiming: TODAY_JOURNEY_RAIL_TIMING,
     onReorder: (orderedGoalIds) => {
       // The list changed while the finger was down — a to-do finished on
@@ -617,24 +409,6 @@ export default function TodoListSection({
     },
   });
 
-  // Counted from the whole section rather than the rail, so the count is an
-  // upper bound that holds however the rows are arranged. The dashes are laid
-  // at a fixed pitch and clipped, so a few spare ones never show.
-  const dashCount = todayJourneyDashCount(journeyHeight ?? 0);
-  /**
-   * A daily opening above pushes this rail down and changes what it has to
-   * span. The rail above animates that on `TODAY_JOURNEY_RAIL_TIMING`, so this
-   * one follows the same curve rather than snapping to its new length while the
-   * other half of the same line is still moving — and follows the quicker drag
-   * curve instead while a row is actually being placed.
-   */
-  const railStyle = useJourneyRail({
-    controller,
-    ids: railGoalIds,
-    height: journeyHeight ?? 0,
-    timing: TODAY_JOURNEY_RAIL_TIMING,
-    shape: railShape,
-  });
   // The chevron turns on the same curve the drawer opens on, so the arrow and
   // the list are one movement.
   const chevronTurn = useSharedValue(completedOpen ? 1 : 0);
@@ -701,21 +475,7 @@ export default function TodoListSection({
           )}
         </View>
       ) : goalsQuery.isSuccess && journeyNodeCount > 0 ? (
-        <View style={styles.journey} onLayout={measureJourney}>
-          {/* Mounted with the box it is measured against, and then kept —
-              a to-do being added leaves the new row unmeasured for a frame,
-              and the rail holds its last ends through that rather than
-              blinking off the screen and back. */}
-          {journeyHeight == null ? null : (
-            <Animated.View
-              pointerEvents="none"
-              style={[styles.journeyRail, railStyle]}
-            >
-              {Array.from({ length: dashCount }, (_, dash) => (
-                <View key={dash} style={styles.journeyRailDash} />
-              ))}
-            </Animated.View>
-          )}
+        <View style={styles.journey}>
           {/* The rows' own box. Once they are positioned by transform they
               stand at the top of it and are moved down into place, so it is
               told how tall they are together instead of being told by them —
@@ -735,9 +495,6 @@ export default function TodoListSection({
                 scrollRef={scrollRef}
                 style={styles.journeyRow}
               >
-                <View style={styles.timelineColumn} pointerEvents="none">
-                  <GoalStatusMarker completed={goal.completedToday} />
-                </View>
                 <GoalCard
                   goal={goal}
                   busy={
@@ -913,7 +670,6 @@ const styles = StyleSheet.create({
   // than a gulf: the exercises and the to-dos are the same day, so the label
   // sits nearer the rows it follows than a separate section would.
   groupLabel: {
-    marginLeft: TODAY_JOURNEY_LABEL_INSET,
     marginTop: spacing.sm,
     // Each section corrects its own gap to the shared label gap, so both
     // labels sit the same distance from the rows they introduce.
@@ -922,21 +678,6 @@ const styles = StyleSheet.create({
   journey: {
     position: 'relative',
     gap: JOURNEY_ROW_GAP,
-  },
-  journeyRail: {
-    position: 'absolute',
-    overflow: 'hidden',
-    left:
-      TODAY_JOURNEY_COLUMN_WIDTH / 2 - TODAY_JOURNEY_RAIL_WIDTH / 2,
-    width: TODAY_JOURNEY_RAIL_WIDTH,
-    alignItems: 'center',
-  },
-  journeyRailDash: {
-    width: TODAY_JOURNEY_RAIL_WIDTH,
-    height: TODAY_JOURNEY_DASH_HEIGHT,
-    marginBottom: TODAY_JOURNEY_DASH_GAP,
-    borderRadius: TODAY_JOURNEY_RAIL_WIDTH / 2,
-    backgroundColor: colors.border.default,
   },
   // The gap is the layout's only while the rows are still being measured; once
   // they stand by transform their offsets carry it.
@@ -1004,51 +745,6 @@ const styles = StyleSheet.create({
     lineHeight: 28,
     fontFamily: fonts.semibold,
     color: colors.text.primary,
-  },
-  timelineColumn: {
-    width: TODAY_JOURNEY_COLUMN_WIDTH,
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 1,
-  },
-  statusMarker: {
-    width: TODAY_JOURNEY_MARKER_SIZE,
-    height: TODAY_JOURNEY_MARKER_SIZE,
-    borderRadius: TODAY_JOURNEY_MARKER_SIZE / 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  statusMarkerIdle: {
-    backgroundColor: colors.background.card,
-    borderWidth: 2,
-    borderColor: colors.border.default,
-  },
-  // Laid over the idle dot rather than replacing it, and pulled out past the
-  // border so the spring never shows a rim of the outline underneath.
-  statusMarkerFill: {
-    position: 'absolute',
-    top: -2,
-    left: -2,
-    right: -2,
-    bottom: -2,
-    borderRadius: TODAY_JOURNEY_MARKER_SIZE / 2 + 2,
-    backgroundColor: colors.success[500],
-  },
-  markerConfetti: {
-    position: 'absolute',
-    top: (TODAY_JOURNEY_MARKER_SIZE - MARKER_CONFETTI_SIZE) / 2,
-    left: (TODAY_JOURNEY_MARKER_SIZE - MARKER_CONFETTI_SIZE) / 2,
-    width: MARKER_CONFETTI_SIZE,
-    height: MARKER_CONFETTI_SIZE,
-  },
-  markerHalo: {
-    position: 'absolute',
-    top: (TODAY_JOURNEY_MARKER_SIZE - MARKER_HALO_SIZE) / 2,
-    left: (TODAY_JOURNEY_MARKER_SIZE - MARKER_HALO_SIZE) / 2,
-    width: MARKER_HALO_SIZE,
-    height: MARKER_HALO_SIZE,
-    borderRadius: MARKER_HALO_SIZE / 2,
-    backgroundColor: colors.success[300],
   },
   statusRow: {
     minHeight: 64,
