@@ -15,6 +15,7 @@ import {
   type SelfCareGoalDaypart,
 } from '../features/selfCare/domain/selfCareGoal';
 import type { SelfCareGoalDraft } from '../services/selfCare/selfCareService';
+import type { OnboardingIntent } from '../features/exercise/guidedBreathing/techniqueSelection';
 
 /**
  * The to-do list onboarding hands the user, written from the answers they just
@@ -28,6 +29,8 @@ import type { SelfCareGoalDraft } from '../services/selfCare/selfCareService';
  * only received is Azora's.
  */
 export interface StarterPlanAnswers {
+  /** The goal they chose at the top of onboarding; null when they skipped it. */
+  intent: OnboardingIntent | null;
   wakeEase: WakeEaseId | null;
   sleepDuration: SleepDurationId | null;
   dayActivity: DayActivityId | null;
@@ -62,10 +65,7 @@ interface StarterPlanCandidate extends StarterPlanItem {
 const MAX_ITEMS = 7;
 const MIN_ITEMS = 4;
 
-/**
- * Declared in the order a day happens, which is the order they are shown: the
- * filter preserves it, so the page reads morning to bedtime without sorting.
- */
+/** Declared in the order a day happens; `DAYPART_ORDER` is what shows them. */
 const CANDIDATES: StarterPlanCandidate[] = [
   {
     id: 'outOfBed',
@@ -107,7 +107,7 @@ const CANDIDATES: StarterPlanCandidate[] = [
   },
   {
     id: 'phoneAway',
-    title: 'Work one stretch with the phone in another room',
+    title: 'Work 25 minutes with my phone in another room',
     icon: 'timer',
     accent: colors.playful.night.base,
     daypart: 'afternoon',
@@ -116,7 +116,7 @@ const CANDIDATES: StarterPlanCandidate[] = [
   {
     id: 'walk',
     title: 'Walk for fifteen minutes',
-    icon: 'heart-pulse',
+    icon: 'walk',
     accent: colors.playful.coral.base,
     daypart: 'afternoon',
     matches: (answers) =>
@@ -125,7 +125,7 @@ const CANDIDATES: StarterPlanCandidate[] = [
   },
   {
     id: 'stretch',
-    title: 'Take a stretch break',
+    title: 'Stretch for five minutes',
     icon: 'meditation',
     accent: colors.playful.teal.base,
     daypart: 'afternoon',
@@ -142,7 +142,7 @@ const CANDIDATES: StarterPlanCandidate[] = [
   },
   {
     id: 'happyThing',
-    title: 'Do one thing that makes me happy',
+    title: 'Spend fifteen minutes on something I enjoy',
     icon: 'face-happy',
     accent: colors.playful.blush.base,
     daypart: 'evening',
@@ -150,7 +150,7 @@ const CANDIDATES: StarterPlanCandidate[] = [
   },
   {
     id: 'windDown',
-    title: 'Start winding down thirty minutes before bed',
+    title: 'Put my phone down thirty minutes before bed',
     icon: 'moon',
     accent: colors.playful.violet.base,
     daypart: 'bedtime',
@@ -179,13 +179,189 @@ const RESET_ITEM: StarterPlanItem = {
 };
 
 /**
+ * The lines the chosen goal earns, on top of whatever the routine answers ask
+ * for. Without these the plan reads back the assessment but never the goal —
+ * someone who picked heart health and someone who picked sleep would get the
+ * same list, and the one thing they told us first would be the one thing the
+ * plan never mentions.
+ *
+ * Every line here carries a picture no other line in the file uses — goal or
+ * routine — so no plan can ever show the same icon twice, whichever goal built
+ * it. `buildStarterPlan`'s icon test is what keeps that true.
+ */
+const GOAL_ITEMS: Record<OnboardingIntent, StarterPlanItem[]> = {
+  stress_relief: [
+    {
+      id: 'goalOutside',
+      title: 'Step outside for five minutes',
+      icon: 'weather-windy',
+      accent: colors.playful.amber.base,
+      daypart: 'afternoon',
+    },
+  ],
+  calm_fast: [
+    {
+      id: 'goalNoticeCalm',
+      title: 'Write down one moment that felt calm today',
+      icon: 'sparkle',
+      accent: colors.playful.sky.base,
+      daypart: 'evening',
+    },
+  ],
+  sleep: [
+    {
+      id: 'goalSameBedtime',
+      title: 'Be in bed by the same time as last night',
+      icon: 'bed-clock',
+      accent: colors.playful.violet.base,
+      daypart: 'bedtime',
+    },
+  ],
+  focus: [
+    {
+      id: 'goalOneTask',
+      title: 'Clear my desk before I start work',
+      icon: 'book',
+      accent: colors.playful.sky.base,
+      daypart: 'start',
+    },
+  ],
+  energy: [
+    {
+      id: 'goalDaylight',
+      title: 'Get outside within an hour of waking',
+      icon: 'sun',
+      accent: colors.playful.amber.base,
+      daypart: 'start',
+    },
+  ],
+  self_acceptance: [
+    {
+      id: 'goalDidWell',
+      title: 'Write down one thing I did well',
+      icon: 'calendar-check-outline',
+      accent: colors.playful.blush.base,
+      daypart: 'evening',
+    },
+  ],
+  emotional_balance: [
+    {
+      id: 'goalNameFeeling',
+      title: 'Write down what I felt today, in one line',
+      icon: 'breath-timer',
+      accent: colors.playful.violet.base,
+      daypart: 'evening',
+    },
+  ],
+  self_care: [
+    {
+      id: 'goalFifteenMinutes',
+      title: 'Take a thirty minute break with my phone off',
+      icon: 'coffee-outline',
+      accent: colors.playful.teal.base,
+      daypart: 'evening',
+    },
+  ],
+  spiritual: [
+    {
+      id: 'goalQuiet',
+      title: 'Sit in silence for five minutes',
+      icon: 'lotus',
+      accent: colors.playful.violet.base,
+      daypart: 'evening',
+    },
+  ],
+  yoga: [
+    {
+      id: 'goalMat',
+      title: 'Do ten minutes on the mat',
+      icon: 'yoga',
+      accent: colors.playful.teal.base,
+      daypart: 'afternoon',
+    },
+  ],
+  heart_health: [
+    {
+      id: 'goalRestingRate',
+      title: 'Check my resting heart rate',
+      icon: 'stethoscope',
+      accent: colors.playful.coral.base,
+      daypart: 'start',
+    },
+    {
+      id: 'goalStairs',
+      title: 'Take the stairs today',
+      icon: 'arrow-up',
+      accent: colors.playful.amber.base,
+      daypart: 'afternoon',
+    },
+    {
+      id: 'goalWalkAfterDinner',
+      title: 'Walk after dinner',
+      icon: 'dumbbell',
+      accent: colors.playful.blush.base,
+      daypart: 'evening',
+    },
+  ],
+  // Both left empty on purpose. The daily line a habit-builder needs is the
+  // reset every plan already ends on, and "something else" told us nothing to
+  // write one from; a filler line here would be the plan talking to itself.
+  daily_habit: [],
+  other: [],
+};
+
+/** The order the page reads in, so goal and routine lines interleave by hour. */
+const DAYPART_ORDER: SelfCareGoalDaypart[] = [
+  'start',
+  'afternoon',
+  'evening',
+  'bedtime',
+];
+
+/**
  * Topped up in this order when the answers matched too little to fill a page —
  * someone who reports a steady routine still leaves with a plan, and these are
  * the lines that cost the least to be wrong about.
  */
 const FILLER_IDS = ['water', 'makeBed', 'oneThing', 'walk'];
 
+/**
+ * Which routine line survives when more of them match than the page can hold,
+ * strongest answer first. Ranked by what it costs the user to lose the line,
+ * not by the hour it happens: `CANDIDATES` is declared in day order, so cutting
+ * from its end would drop the bedtime line first and hand someone sleeping
+ * under five hours a plan with no wind-down on it.
+ */
+const PRIORITY_IDS = [
+  'windDown',
+  'outOfBed',
+  'happyThing',
+  'oneThing',
+  'phoneAway',
+  'walk',
+  'errand',
+  'stretch',
+  'makeBed',
+  'water',
+];
+
+function priorityOf(id: string): number {
+  const rank = PRIORITY_IDS.indexOf(id);
+  return rank === -1 ? PRIORITY_IDS.length : rank;
+}
+
+/**
+ * Goal lines are taken first and the routine lines fill what is left, strongest
+ * answer first. So the cap can only ever cost someone a line they implied
+ * faintly — never the goal they asked for outright, and never the wind-down of
+ * someone who told us they barely sleep.
+ */
 export function buildStarterPlan(answers: StarterPlanAnswers): StarterPlanItem[] {
+  const goalItems = (
+    answers.intent == null ? [] : GOAL_ITEMS[answers.intent]
+  ).map((item) => ({ ...item }));
+  const routineSlots = MAX_ITEMS - 1 - goalItems.length;
+
   const picked = new Set(
     CANDIDATES.filter((candidate) => candidate.matches(answers)).map(
       (candidate) => candidate.id,
@@ -193,13 +369,18 @@ export function buildStarterPlan(answers: StarterPlanAnswers): StarterPlanItem[]
   );
 
   for (const id of FILLER_IDS) {
-    if (picked.size >= MIN_ITEMS - 1) break;
+    if (picked.size + goalItems.length >= MIN_ITEMS - 1) break;
     picked.add(id);
   }
 
-  const items = CANDIDATES.filter((candidate) => picked.has(candidate.id))
-    .slice(0, MAX_ITEMS - 1)
+  const routineItems = CANDIDATES.filter((candidate) => picked.has(candidate.id))
+    .sort((a, b) => priorityOf(a.id) - priorityOf(b.id))
+    .slice(0, Math.max(0, routineSlots))
     .map(({ matches, ...item }) => item);
+
+  const items = [...goalItems, ...routineItems].sort(
+    (a, b) => DAYPART_ORDER.indexOf(a.daypart) - DAYPART_ORDER.indexOf(b.daypart),
+  );
 
   return [...items, RESET_ITEM];
 }

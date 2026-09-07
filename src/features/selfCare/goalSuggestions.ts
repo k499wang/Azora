@@ -15,22 +15,32 @@ export interface GoalSuggestionCategory {
  * The icons a to-do can wear. Deliberately a shortlist rather than the app's
  * whole set: stat marks, brand logos and research glyphs mean nothing on a
  * personal to-do, and a picker you can read in one glance beats a complete one.
+ *
+ * It has to cover every icon the starter plan writes, or a to-do onboarding
+ * handed the user would wear a picture they cannot pick again after editing it.
  */
 export const GOAL_ICON_CHOICES: IconName[] = [
   'sparkle',
   'star',
   'heart',
   'sun',
+  'sunrise',
   'moon',
+  'weather-windy',
   'waves',
   'wind',
   'snowflake',
   'lotus',
+  'yoga',
   'meditation',
   'lungs',
-  'heart-pulse',
+  'walk',
+  'dumbbell',
+  'arrow-up',
+  'stethoscope',
   'breath-leaf',
   'breath-wave',
+  'breath-timer',
   'book',
   'journal',
   'pencil',
@@ -39,6 +49,9 @@ export const GOAL_ICON_CHOICES: IconName[] = [
   'clock',
   'timer',
   'calendar',
+  'calendar-check-outline',
+  'bed-clock',
+  'coffee-outline',
   'home',
   'profile',
   'camera',
@@ -83,7 +96,7 @@ export const GOAL_SUGGESTION_CATEGORIES: GoalSuggestionCategory[] = [
     id: 'focus',
     label: 'Focus',
     suggestions: [
-      { icon: 'timer', title: 'Work one stretch with the phone in another room' },
+      { icon: 'timer', title: 'Work 25 minutes with my phone in another room' },
       { icon: 'pencil', title: 'Write down the one thing that matters today' },
       { icon: 'bell', title: 'Turn notifications off for an hour' },
       { icon: 'book', title: 'Read ten pages' },
@@ -94,9 +107,9 @@ export const GOAL_SUGGESTION_CATEGORIES: GoalSuggestionCategory[] = [
     id: 'body',
     label: 'Body',
     suggestions: [
-      { icon: 'heart-pulse', title: 'Walk for fifteen minutes' },
+      { icon: 'walk', title: 'Walk for fifteen minutes' },
       { icon: 'meditation', title: 'Stretch before bed' },
-      { icon: 'lungs', title: 'Take the stairs' },
+      { icon: 'arrow-up', title: 'Take the stairs' },
       { icon: 'sun', title: 'Get sunlight in the first hour awake' },
       { icon: 'clock', title: 'Stand up once every hour' },
     ],

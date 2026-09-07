@@ -170,6 +170,16 @@ export interface SelfCareGoal {
 }
 
 /**
+ * Icons an earlier build wrote onto rows that are still on people's lists.
+ * Renaming one in the source does not reach into the database, so the old name
+ * is answered here — otherwise a to-do written last month keeps the picture the
+ * app has since stopped drawing on that kind of line.
+ */
+const RENAMED_ICONS: Record<string, IconName> = {
+  'heart-pulse': 'walk',
+};
+
+/**
  * The stored icon is free text and outlives the app version that wrote it, so a
  * name this build no longer draws is resolved back to the default here rather
  * than reaching the renderer and drawing nothing at all.
@@ -177,7 +187,10 @@ export interface SelfCareGoal {
 export function resolveSelfCareGoalIcon(
   value: string | null | undefined,
 ): IconName {
-  if (value != null && ICON_PATHS[value as IconName] != null) {
+  if (value == null) return DEFAULT_SELF_CARE_GOAL_ICON;
+  const renamed = RENAMED_ICONS[value];
+  if (renamed != null) return renamed;
+  if (ICON_PATHS[value as IconName] != null) {
     return value as IconName;
   }
   return DEFAULT_SELF_CARE_GOAL_ICON;
