@@ -106,11 +106,13 @@ export default function HelpfulnessQuestion({
                 });
               }}
             >
-              <OnboardingOptionIcon
-                name={option.icon}
-                size={FACE_SIZE}
-                color={option.accent}
-              />
+              <View style={styles.face}>
+                <OnboardingOptionIcon
+                  name={option.icon}
+                  size={FACE_SIZE}
+                  color={option.accent}
+                />
+              </View>
               <Text style={styles.chipLabel}>{option.label}</Text>
             </Pressable>
           );
@@ -135,12 +137,18 @@ const styles = StyleSheet.create({
   chip: {
     ...card.base,
     flex: 1,
-    minHeight: 84,
+    minHeight: 96,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.xs,
+    gap: spacing.sm,
     paddingVertical: spacing.sm,
     paddingHorizontal: 2,
+  },
+  face: {
+    width: FACE_SIZE,
+    height: FACE_SIZE,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   chipActive: {
     backgroundColor: colors.primary.blue100,
