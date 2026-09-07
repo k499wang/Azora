@@ -1,7 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
+  journeyContentHeight,
   journeyDropIndex,
+  journeyRailEnds,
   journeyRowOffset,
   journeyRowsMeasured,
   moveJourneyRow,
@@ -68,4 +70,41 @@ test('moving a row never mutates the order it was given', () => {
   const before = [...ORDER];
   moveJourneyRow(ORDER, 0, 2);
   assert.deepEqual(ORDER, before);
+});
+
+test('a rail spans the first and last rows, and refuses an unmeasured one', () => {
+  const HEIGHTS = { a: 40, b: 80, c: 60 };
+  const shape = ({ firstHeight, lastHeight, lastOffset, height }) => ({
+    top: firstHeight / 2,
+    bottom: height - (lastOffset + lastHeight / 2),
+  });
+
+  // a at 0..40, b at 50..130, c at 140..200, in a 260 tall box
+  assert.deepEqual(journeyRailEnds(['a', 'b', 'c'], HEIGHTS, 10, 260, shape), {
+    top: 20,
+    bottom: 260 - 170,
+  });
+
+  // The same rows, rearranged: both ends move with them.
+  assert.deepEqual(journeyRailEnds(['b', 'a', 'c'], HEIGHTS, 10, 260, shape), {
+    top: 40,
+    bottom: 260 - 170,
+  });
+
+  // A row that has mounted but not been laid out yet has no rail at all, so a
+  // caller can hold the last good one rather than draw a collapsed line.
+  assert.equal(journeyRailEnds(['a', 'd'], HEIGHTS, 10, 260, shape), null);
+  assert.equal(journeyRailEnds([], HEIGHTS, 10, 260, shape), null);
+});
+
+test('a positioned list is as tall as its rows and gaps together', () => {
+  // a 100, gap 10, b 40, gap 10, c 40
+  assert.equal(journeyContentHeight(ORDER, HEIGHTS, GAP), 200);
+  // Rearranging cannot change how tall the list is, which is what lets the box
+  // stay put while the rows move inside it.
+  assert.equal(journeyContentHeight(['c', 'a', 'b'], HEIGHTS, GAP), 200);
+  assert.equal(journeyContentHeight(['a'], HEIGHTS, GAP), 100);
+  // A row that has mounted but not been laid out has no height to add.
+  assert.equal(journeyContentHeight(['a', 'd'], HEIGHTS, GAP), null);
+  assert.equal(journeyContentHeight([], HEIGHTS, GAP), null);
 });

@@ -76,9 +76,88 @@ export function journeyDropIndex(
 }
 
 /** Every row on the rail has been measured, so the drag can do its arithmetic. */
+/**
+ * How tall the rows stand together, or null while any of them is unmeasured.
+ *
+ * A list positioned by transform alone gives up telling its parent how tall it
+ * is — every row sits at the top and is moved down — so the box has to be told.
+ */
+export function journeyContentHeight(
+  order: readonly string[],
+  heights: JourneyRowHeights,
+  gap: number,
+): number | null {
+  if (order.length === 0) return null;
+
+  let total = 0;
+  for (let i = 0; i < order.length; i += 1) {
+    const height = heights[order[i]] ?? 0;
+    if (height <= 0) return null;
+    total += height + (i === 0 ? 0 : gap);
+  }
+  return total;
+}
+
 export function journeyRowsMeasured(
   order: readonly string[],
   heights: JourneyRowHeights,
 ): boolean {
   return order.length > 1 && order.every((id) => (heights[id] ?? 0) > 0);
+}
+
+/**
+ * What a rail needs to know about the rows it runs beside. Everything is in
+ * the order the rail is currently drawn for, which is not always the order the
+ * rows were rendered in — see `useJourneyRail`.
+ */
+export interface JourneyRailMetrics {
+  firstHeight: number;
+  lastHeight: number;
+  /** the top edge of the last row, measured from the top of the first */
+  lastOffset: number;
+  /** the height of the box the rail is drawn in, for a rail inset from it */
+  height: number;
+}
+
+/** The rail's two ends, as insets from the top and bottom of its box. */
+export interface JourneyRailEnds {
+  top: number;
+  bottom: number;
+}
+
+/**
+ * Where a particular list's rail starts and stops. Written per list because
+ * the two differ — one section ends at its last row and the other has an add
+ * button below it — and kept a worklet so the same answer is reachable from
+ * the render pass and from the UI thread.
+ */
+export type JourneyRailShape = (metrics: JourneyRailMetrics) => JourneyRailEnds;
+
+/**
+ * The rail for one order of rows, or null while any of them is still
+ * unmeasured.
+ *
+ * Null rather than a rail drawn from a zero height: a row that has mounted but
+ * not been laid out yet would otherwise pull whichever end it holds up to the
+ * top of the list for a frame.
+ */
+export function journeyRailEnds(
+  order: readonly string[],
+  heights: JourneyRowHeights,
+  gap: number,
+  height: number,
+  shape: JourneyRailShape,
+): JourneyRailEnds | null {
+  'worklet';
+  if (order.length === 0) return null;
+  for (let i = 0; i < order.length; i += 1) {
+    if ((heights[order[i]] ?? 0) <= 0) return null;
+  }
+
+  return shape({
+    firstHeight: heights[order[0]] ?? 0,
+    lastHeight: heights[order[order.length - 1]] ?? 0,
+    lastOffset: journeyRowOffset(order, heights, gap, order.length - 1),
+    height,
+  });
 }

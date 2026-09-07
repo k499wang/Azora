@@ -58,12 +58,12 @@ import { duration, easing, spring } from '../../theme/motion';
 import { fonts, typography, wrappedLineHeight } from '../../theme/typography';
 import JourneyDragRow from '../../components/home/journey/JourneyDragRow';
 import {
-  journeyRowOffset,
-  journeyRowsMeasured,
+  type JourneyRailEnds,
+  type JourneyRailMetrics,
 } from '../../components/home/journey/journeyReorder';
+import { useJourneyRail } from '../../components/home/journey/useJourneyRail';
 import {
-  JOURNEY_DRAG_SETTLE,
-  JOURNEY_REORDER_ACTIONS,
+  journeyReorderActions,
   useJourneyReorder,
   type JourneyScrollRef,
 } from '../../components/home/journey/useJourneyReorder';
@@ -130,6 +130,25 @@ const MARKER_CONFETTI_COLORS = [
 // The disc's own beat. Short on purpose: it is the smallest part of the
 // celebration, and the fall across the section carries the rest.
 const MARKER_POP_MS = 620;
+
+/**
+ * The rail runs from the first to-do's marker to the last one's, and stops
+ * there — the add row below the list is not a stop on the journey, so the
+ * bottom end is measured from where the last row's marker sits rather than
+ * from the foot of the section.
+ */
+function railShape({
+  firstHeight,
+  lastHeight,
+  lastOffset,
+  height,
+}: JourneyRailMetrics): JourneyRailEnds {
+  'worklet';
+  return {
+    top: firstHeight / 2,
+    bottom: height - (lastOffset + lastHeight / 2),
+  };
+}
 /** the wind-up before the disc springs back — a beat, not a step */
 const SQUASH_MS = 70;
 interface TodoListSectionProps {
@@ -188,11 +207,7 @@ function GoalCard({
         accessibilityRole="button"
         accessibilityLabel={goal.title}
         accessibilityHint="Opens this to-do. Hold to rearrange your list"
-        accessibilityActions={JOURNEY_REORDER_ACTIONS}
-        onAccessibilityAction={(event) => {
-          if (event.nativeEvent.actionName === 'moveUp') onMove(-1);
-          if (event.nativeEvent.actionName === 'moveDown') onMove(1);
-        }}
+        {...journeyReorderActions(onMove)}
         onPress={() => {
           // The finger that just dropped this row is not also tapping it.
           if (isArranging()) return;
@@ -264,22 +279,29 @@ function GoalCard({
  * already done when the list loads has nothing to celebrate.
  */
 function useCompletionBurst(completed: boolean) {
-  const [burst, setBurst] = useState<number | null>(null);
-  const nextBurst = useRef(0);
-  const wasCompleted = useRef(completed);
+  const [state, setState] = useState<{ burst: number | null; was: boolean }>({
+    burst: null,
+    was: completed,
+  });
 
-  useEffect(() => {
-    if (completed && !wasCompleted.current) {
-      nextBurst.current += 1;
-      setBurst(nextBurst.current);
-    }
-    wasCompleted.current = completed;
-  }, [completed]);
+  // Adjusted during the render that brings the tick in, rather than in an
+  // effect after it. An effect would put the burst a second render behind the
+  // tap — and that render is queued behind the toggle's own, so the pieces
+  // reach the screen a frame or two after the disc they are supposed to be
+  // coming out of.
+  if (completed !== state.was) {
+    setState({
+      burst: completed ? (state.burst ?? 0) + 1 : null,
+      was: completed,
+    });
+  }
 
   const clearBurst = useCallback((completedBurst: number) => {
-    setBurst((current) => current === completedBurst ? null : current);
+    setState((current) =>
+      current.burst === completedBurst ? { ...current, burst: null } : current,
+    );
   }, []);
-  return { burst, clearBurst };
+  return { burst: state.burst, clearBurst };
 }
 
 /**
@@ -396,7 +418,8 @@ const GoalStatusMarker = memo(function GoalStatusMarker({
  * to a marker that unmounts before it can play, and nothing fires at all.
  */
 function useGoalCompletionCelebration(
-  goals: SelfCareGoal[],
+  /** the query's own data — `undefined` until the list has actually loaded */
+  goals: SelfCareGoal[] | undefined,
   onCompleted: (goalId: string) => void,
 ) {
   const previouslyCompleted = useRef<Set<string> | null>(null);
@@ -404,6 +427,12 @@ function useGoalCompletionCelebration(
   callback.current = onCompleted;
 
   useEffect(() => {
+    // The list this hook baselines against has to be a list, not the empty
+    // stand-in a pending query renders with. Baselining on that one made every
+    // to-do already finished today read as finished just now, so opening the
+    // app to a checklist with anything ticked on it congratulated you for it.
+    if (goals == null) return;
+
     const completed = new Set(
       goals.filter((goal) => goal.completedToday).map((goal) => goal.id),
     );
@@ -537,7 +566,7 @@ export default function TodoListSection({
   const completedGoalCount = goals.filter((goal) => goal.completedToday).length;
   const railGoals = dayDone ? [] : plan.rail;
   const drawerGoals = dayDone ? goals : plan.drawer;
-  useGoalCompletionCelebration(goals, (goalId) => {
+  useGoalCompletionCelebration(goalsQuery.data, (goalId) => {
     onCompleted(goals.find((goal) => goal.id === goalId)?.title ?? '');
     // Still on the rail: its own marker has the burst, and a second celebration
     // over the top of it would only bury it.
@@ -580,28 +609,10 @@ export default function TodoListSection({
     },
   });
 
-  // The rail runs from the first goal's marker to the last one's, off the row
-  // heights rather than measured positions: during a drag the rows have moved
-  // but nothing has been laid out again, so a position read from the layout
-  // would still describe the order the user has already left behind.
-  //
-  // Both ends are worked out in the worklet, from the order the drag is
-  // proposing, so the dotted line re-spans as soon as a taller to-do takes an
-  // end of the list — and a drag crossing a row costs no render here either.
-  const heights = controller.measuredHeights;
-  const railMeasured =
-    journeyHeight != null && journeyRowsMeasured(railGoalIds, heights);
   // Counted from the whole section rather than the rail, so the count is an
   // upper bound that holds however the rows are arranged. The dashes are laid
   // at a fixed pitch and clipped, so a few spare ones never show.
   const dashCount = todayJourneyDashCount(journeyHeight ?? 0);
-  const {
-    order: railOrder,
-    heights: railHeights,
-    dragging,
-    gap: railGap,
-  } = controller;
-  const measuredJourneyHeight = journeyHeight ?? 0;
   /**
    * A daily opening above pushes this rail down and changes what it has to
    * span. The rail above animates that on `TODAY_JOURNEY_RAIL_TIMING`, so this
@@ -609,26 +620,13 @@ export default function TodoListSection({
    * other half of the same line is still moving — and follows the quicker drag
    * curve instead while a row is actually being placed.
    */
-  const railStyle = useAnimatedStyle(() => {
-    // The same stale-read guard the rows use: an order built from a list this
-    // one is no longer being rendered from would span the wrong two rows for a
-    // frame, which on a rail reads as the dotted line jumping.
-    const proposed = railOrder.value;
-    const live =
-      proposed.key === controller.committedKey ? proposed.ids : railGoalIds;
-    const sizes = railHeights.value;
-    const first = (sizes[live[0]] ?? 0) / 2;
-    const last =
-      journeyRowOffset(live, sizes, railGap, live.length - 1) +
-      (sizes[live[live.length - 1]] ?? 0) / 2;
-    const timing = dragging.value
-      ? JOURNEY_DRAG_SETTLE
-      : TODAY_JOURNEY_RAIL_TIMING;
-    return {
-      top: withTiming(first, timing),
-      bottom: withTiming(measuredJourneyHeight - last, timing),
-    };
-  }, [measuredJourneyHeight, railGap, railGoalIds, controller.committedKey]);
+  const railStyle = useJourneyRail({
+    controller,
+    ids: railGoalIds,
+    height: journeyHeight ?? 0,
+    timing: TODAY_JOURNEY_RAIL_TIMING,
+    shape: railShape,
+  });
   // The chevron turns on the same curve the drawer opens on, so the arrow and
   // the list are one movement.
   const chevronTurn = useSharedValue(completedOpen ? 1 : 0);
@@ -696,7 +694,11 @@ export default function TodoListSection({
         </View>
       ) : goalsQuery.isSuccess && journeyNodeCount > 0 ? (
         <View style={styles.journey} onLayout={measureJourney}>
-          {railMeasured ? (
+          {/* Mounted with the box it is measured against, and then kept —
+              a to-do being added leaves the new row unmeasured for a frame,
+              and the rail holds its last ends through that rather than
+              blinking off the screen and back. */}
+          {journeyHeight == null ? null : (
             <Animated.View
               pointerEvents="none"
               style={[styles.journeyRail, railStyle]}
@@ -705,7 +707,7 @@ export default function TodoListSection({
                 <View key={dash} style={styles.journeyRailDash} />
               ))}
             </Animated.View>
-          ) : null}
+          )}
           {railGoals.map((goal, index) => (
             <JourneyDragRow
               key={goal.id}

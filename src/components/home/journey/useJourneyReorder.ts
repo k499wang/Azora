@@ -1,9 +1,18 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { RefObject } from 'react';
-import type { LayoutChangeEvent, ScrollView } from 'react-native';
-import { useSharedValue, type SharedValue } from 'react-native-reanimated';
+import type {
+  LayoutChangeEvent,
+  NativeSyntheticEvent,
+  ScrollView,
+} from 'react-native';
+import {
+  useSharedValue,
+  type SharedValue,
+  type WithTimingConfig,
+} from 'react-native-reanimated';
 import { duration, easing } from '../../../theme/motion';
 import {
+  journeyContentHeight,
   journeyRowsMeasured,
   moveJourneyRow,
   type JourneyRowHeights,
@@ -34,6 +43,24 @@ export const JOURNEY_REORDER_ACTIONS = [
   { name: 'moveUp', label: 'Move up' },
   { name: 'moveDown', label: 'Move down' },
 ] as const;
+
+/**
+ * Spread onto a row's own pressable to make it reorderable without the
+ * gesture. Both lists' rows need exactly this, and a row that carries the
+ * actions but mishandles the event names is a row VoiceOver offers a move it
+ * cannot make.
+ */
+export function journeyReorderActions(onMove: (delta: number) => void) {
+  return {
+    accessibilityActions: JOURNEY_REORDER_ACTIONS,
+    onAccessibilityAction: (
+      event: NativeSyntheticEvent<{ actionName: string }>,
+    ) => {
+      if (event.nativeEvent.actionName === 'moveUp') onMove(-1);
+      if (event.nativeEvent.actionName === 'moveDown') onMove(1);
+    },
+  } as const;
+}
 
 /**
  * The page a journey list is drawn on. Held so a drag can make it wait instead
@@ -82,8 +109,38 @@ export interface JourneyReorderController {
   activeId: SharedValue<string | null>;
   /** the held row's travel from where it was picked up */
   translation: SharedValue<number>;
+  /** where the held row stood when it was picked up, down the list */
+  pickup: SharedValue<number>;
   /** the rows are in motion — a finger is down, or a refused drop is going home */
   dragging: SharedValue<boolean>;
+  /**
+   * The held row is off the list.
+   *
+   * Separate from `dragging` so the card can set itself down while it travels
+   * to its slot instead of at the instant it arrives. That instant is also the
+   * render that commits the new order, and an animation started there is
+   * started into a style whose inputs have just changed — so it does not
+   * animate at all, and a row that was 3% larger snaps back in one frame.
+   */
+  lifted: SharedValue<boolean>;
+  /**
+   * The rows carry their whole position in a transform, and the box they stand
+   * in is this tall. Null for a list that lays its rows out in flow.
+   *
+   * This is the difference between a drop that re-lays the list out and one
+   * that changes nothing but a number on the UI thread. Reanimated restarts a
+   * style's worklet in an effect, so a re-render that moves a row's slot paints
+   * one frame of the new slot with the old transform still on it — displaced by
+   * however far the row was dragged. Rows that are positioned entirely by
+   * transform have no slot to move: the commit is invisible.
+   *
+   * Only a list that knows its row heights before it lays them out can do this;
+   * one that measures them would spend its first frame with every row stacked
+   * at the top. See `positioned` in the options.
+   */
+  contentHeight: number | null;
+  /** how a row moves when the list changes shape without a drag */
+  restingTiming: WithTimingConfig;
   measure: (id: string, event: LayoutChangeEvent) => void;
   /** a row was picked up, so a release on the list is not a tap */
   onLift: () => void;
@@ -110,6 +167,16 @@ interface JourneyReorderOptions {
   heights?: JourneyRowHeights;
   /** off while the list is loading, locked, or too short to have an order */
   enabled?: boolean;
+  /**
+   * Position the rows by transform alone rather than laying them out in order.
+   *
+   * Only for a list that passes `heights` — a list that measures its rows would
+   * have nothing to position them with on the frame they first mount. See
+   * `contentHeight`.
+   */
+  positioned?: boolean;
+  /** how a row moves when the list changes shape without a drag */
+  restingTiming?: WithTimingConfig;
   onReorder: (ids: string[]) => void;
 }
 
@@ -131,6 +198,8 @@ export function useJourneyReorder({
   gap,
   heights: givenHeights,
   enabled = true,
+  positioned = false,
+  restingTiming = JOURNEY_DRAG_SETTLE,
   onReorder,
 }: JourneyReorderOptions) {
   const heights = useSharedValue<JourneyRowHeights>(givenHeights ?? {});
@@ -141,7 +210,9 @@ export function useJourneyReorder({
   });
   const activeId = useSharedValue<string | null>(null);
   const translation = useSharedValue(0);
+  const pickup = useSharedValue(0);
   const dragging = useSharedValue(false);
+  const lifted = useSharedValue(false);
   const [measured, setMeasured] = useState<JourneyRowHeights>({});
   const arranging = useRef(false);
   const restoring = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -160,8 +231,9 @@ export function useJourneyReorder({
     activeId.value = null;
     translation.value = 0;
     dragging.value = false;
+    lifted.value = false;
     arranging.current = false;
-  }, [committedKey, order, activeId, translation, dragging]);
+  }, [committedKey, order, activeId, translation, dragging, lifted]);
 
   const measure = useCallback(
     (id: string, event: LayoutChangeEvent) => {
@@ -238,11 +310,17 @@ export function useJourneyReorder({
       enabled: enabled && journeyRowsMeasured(ids, rowHeights),
       committedKey,
       measuredHeights: rowHeights,
+      contentHeight: positioned
+        ? journeyContentHeight(ids, rowHeights, gap)
+        : null,
+      restingTiming,
       heights,
       order,
       activeId,
       translation,
+      pickup,
       dragging,
+      lifted,
       measure,
       onLift,
       onDrop,
@@ -252,13 +330,17 @@ export function useJourneyReorder({
       ids,
       gap,
       enabled,
+      positioned,
+      restingTiming,
       committedKey,
       rowHeights,
       heights,
       order,
       activeId,
       translation,
+      pickup,
       dragging,
+      lifted,
       measure,
       onLift,
       onDrop,

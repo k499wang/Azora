@@ -33,10 +33,14 @@ export function useToggleSelfCareGoalMutation(userId: string | null, localDate: 
       void queryClient.cancelQueries({ queryKey, exact: true });
       return { previous };
     },
+    // Only on the way back from a failure. A toggle writes one boolean, and the
+    // optimistic write above already put the list in the exact shape a refetch
+    // would return — so invalidating on success bought nothing and cost a round
+    // trip and a whole new list on every tick. Several to-dos ticked quickly
+    // queued several of those, each landing as a full re-render of Home in the
+    // middle of the celebration it had just set off.
     onError: (_error, _variables, context) => {
       if (context?.previous != null) queryClient.setQueryData(queryKey, context.previous);
-    },
-    onSettled: () => {
       void queryClient.invalidateQueries({ queryKey, exact: true });
     },
   });

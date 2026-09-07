@@ -1,15 +1,23 @@
-import { memo, useEffect, useMemo } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef } from 'react';
 import { StyleSheet, View, useWindowDimensions } from 'react-native';
-import Animated, {
+import {
+  Canvas,
+  Picture,
+  Skia,
+  createPicture,
+  type SkPaint,
+  type SkRRect,
+} from '@shopify/react-native-skia';
+import {
+  Easing,
   cancelAnimation,
   runOnJS,
-  useAnimatedStyle,
+  useDerivedValue,
   useReducedMotion,
   useSharedValue,
+  withDelay,
   withTiming,
-  type SharedValue,
 } from 'react-native-reanimated';
-import { Easing } from 'react-native-reanimated';
 
 // Fixed rather than random: the same burst every time reads as choreography,
 // and a re-render mid-flight would otherwise reshuffle it.
@@ -139,6 +147,13 @@ const Confetti = memo(function Confetti({
   // flight without an animation of its own.
   const elapsed = useSharedValue(0);
 
+  // Held rather than closed over. The callers pass a fresh closure every render
+  // — they are naming the burst that just finished — and depending on it would
+  // restart the flight from zero each time the list around it re-rendered.
+  const finished = useRef(onComplete);
+  finished.current = onComplete;
+  const finish = useCallback(() => finished.current?.(), []);
+
   useEffect(() => {
     if (!active) {
       cancelAnimation(elapsed);
@@ -147,146 +162,247 @@ const Confetti = memo(function Confetti({
     }
 
     if (reducedMotion) {
-      onComplete?.();
+      finish();
       return;
     }
 
+    // The head start is held on the UI thread, not in a timer. A burst is
+    // fired from the same tap that writes a to-do to the cache and re-renders
+    // the list under it, so a `setTimeout` here — even at zero — is queued
+    // behind that work and behind every refetch it sets off. Tick several
+    // to-dos quickly and the JS thread is busy for long enough that the burst
+    // visibly starts late and stutters out of the gate. Handed to the
+    // animation, the launch keeps its own clock whatever the JS thread is
+    // doing.
     elapsed.value = 0;
-    const start = setTimeout(() => {
-      elapsed.value = withTiming(totalMs, {
-        duration: totalMs,
-        easing: Easing.linear,
-      }, (finished) => {
-        if (finished && onComplete != null) runOnJS(onComplete)();
-      });
-    }, startDelayMs);
-    return () => {
-      clearTimeout(start);
-      cancelAnimation(elapsed);
-    };
-  }, [active, elapsed, onComplete, reducedMotion, startDelayMs, totalMs]);
+    elapsed.value = withDelay(
+      startDelayMs,
+      withTiming(
+        totalMs,
+        { duration: totalMs, easing: Easing.linear },
+        (done) => {
+          if (done) runOnJS(finish)();
+        },
+      ),
+    );
+    return () => cancelAnimation(elapsed);
+  }, [active, elapsed, finish, reducedMotion, startDelayMs, totalMs]);
 
-  const pieces = useMemo(
-    () => PIECES.slice(0, renderedPieceCount),
-    [renderedPieceCount],
+  // Everything about a piece that does not change while it is in the air,
+  // built once per burst: its shape, the paint it is drawn with, and where in
+  // the flight it launches. The frame loop is then arithmetic and six canvas
+  // calls per piece, with nothing allocated in it.
+  const scene = useMemo(
+    () =>
+      buildScene({
+        pieceCount: renderedPieceCount,
+        pieceColors,
+        spread,
+        pieceScale,
+        origin,
+        stagger,
+        fallHeight: height,
+        fallWidth: width,
+      }),
+    [
+      renderedPieceCount,
+      pieceColors,
+      spread,
+      pieceScale,
+      origin,
+      stagger,
+      height,
+      width,
+    ],
+  );
+
+  const picture = useDerivedValue(
+    () =>
+      createPicture((canvas) => {
+        const originX = scene.width / 2;
+        const originY = scene.height / 2;
+
+        for (let i = 0; i < scene.pieces.length; i += 1) {
+          const piece = scene.pieces[i];
+          const linear = Math.min(
+            1,
+            Math.max(0, (elapsed.value - piece.launchMs) / durationMs),
+          );
+          // Not yet launched, or landed. Either way there is nothing to draw,
+          // and skipping is cheaper than drawing at zero alpha.
+          if (linear <= 0 || linear >= 1) continue;
+
+          let x: number;
+          let y: number;
+          let turn: number;
+          let alpha: number;
+
+          if (origin === 'fall') {
+            alpha = linear > 0.85 ? (1 - linear) * 6.6 : 1;
+            x = piece.column + Math.sin(linear * Math.PI * 2 + piece.dy) * FALL_SWAY;
+            y = piece.fallFrom + (piece.fallTo - piece.fallFrom) * linear;
+            turn = linear * piece.spin;
+          } else {
+            const fly = FLIGHT_EASING(linear);
+            const travel = fly * piece.distance;
+            alpha =
+              fly < 0.1
+                ? fly * 10
+                : fly > 0.75
+                  ? Math.max(0, 1 - (fly - 0.75) * 4)
+                  : 1;
+            x = piece.dx * travel;
+            // Gravity on the way out — pieces arc rather than shooting in
+            // straight lines.
+            y = piece.dy * travel + fly * piece.drop;
+            turn = fly * piece.spin;
+          }
+
+          if (alpha <= 0) continue;
+
+          // The paint is copied into the recording as it is drawn, so the two
+          // tones are re-alpha'd piece by piece rather than needing one paint
+          // each.
+          piece.paint.setAlphaf(alpha);
+          canvas.save();
+          canvas.translate(originX + x, originY + y);
+          canvas.rotate(turn, 0, 0);
+          canvas.drawRRect(piece.shape, piece.paint);
+          canvas.restore();
+        }
+      }),
+    [scene, durationMs, origin],
   );
 
   if (reducedMotion) return null;
 
   return (
     <View pointerEvents="none" style={styles.layer}>
-      {pieces.map((piece, index) => (
-        <ConfettiPiece
-          key={index}
-          piece={piece}
-          color={piece.size % 2 === 0 ? pieceColors[0] : pieceColors[1]}
-          elapsed={elapsed}
-          launchMs={piece.delay * stagger}
-          durationMs={durationMs}
-          spread={spread}
-          pieceScale={pieceScale}
-          origin={origin}
-          fallHeight={height}
-          fallWidth={width}
-        />
-      ))}
+      <Canvas style={{ width: scene.width, height: scene.height }}>
+        <Picture picture={picture} />
+      </Canvas>
     </View>
   );
 });
 
-const ConfettiPiece = memo(function ConfettiPiece({
-  piece,
-  color,
-  elapsed,
-  launchMs,
-  durationMs,
+interface ScenePiece {
+  shape: SkRRect;
+  paint: SkPaint;
+  /** where in the flight this piece leaves, in milliseconds */
+  launchMs: number;
+  dx: number;
+  dy: number;
+  spin: number;
+  distance: number;
+  drop: number;
+  /** the column a falling piece drops down */
+  column: number;
+  fallFrom: number;
+  fallTo: number;
+}
+
+interface Scene {
+  width: number;
+  height: number;
+  pieces: ScenePiece[];
+}
+
+/** the corner on a piece, small enough to read as a rounded fleck */
+const PIECE_RADIUS = 2;
+
+/**
+ * The whole burst as one canvas rather than a view per piece.
+ *
+ * A piece used to be an `Animated.View` with an animated style of its own,
+ * which is thirty-odd views created on the frame a to-do is ticked — in the
+ * same commit as the list re-rendering under it — and thirty-odd sets of props
+ * written to the shadow tree every frame after that. Tick several to-dos
+ * quickly and that commit is what the UI thread is doing instead of drawing the
+ * animation, which is why the burst, and anything else moving at the time,
+ * stuttered. One canvas is one view and one recorded picture per frame, so a
+ * burst costs the tree nothing at all.
+ */
+function buildScene({
+  pieceCount,
+  pieceColors,
   spread,
   pieceScale,
   origin,
+  stagger,
   fallHeight,
   fallWidth,
 }: {
-  piece: (typeof PIECES)[number];
-  color: string;
-  elapsed: SharedValue<number>;
-  launchMs: number;
-  durationMs: number;
+  pieceCount: number;
+  pieceColors: readonly [string, string];
   spread: number;
   pieceScale: number;
   origin: 'burst' | 'fall';
+  stagger: number;
   fallHeight: number;
   fallWidth: number;
-}) {
-  const distance = piece.distance * spread;
-  const drop = GRAVITY_DROP * spread;
-  const { dx, dy, spin } = piece;
-  // The layer is centred, so a fall runs from half a screen above the middle to
-  // half a screen below it, across a column picked by the piece's own angle.
-  const fallFrom = -fallHeight / 2 - piece.size * 2;
-  const fallTo = fallHeight / 2 + piece.size * 2;
-  const column = dx * (fallWidth / 2 - piece.size * 2);
+}): Scene {
+  const paints = pieceColors.map((color) => {
+    const paint = Skia.Paint();
+    paint.setAntiAlias(true);
+    paint.setColor(Skia.Color(color));
+    return paint;
+  });
 
-  const animatedStyle = useAnimatedStyle(() => {
-    const linear = Math.min(
-      1,
-      Math.max(0, (elapsed.value - launchMs) / durationMs),
-    );
-
-    if (origin === 'fall') {
-      return {
-        opacity:
-          linear === 0 || linear === 1
-            ? 0
-            : linear > 0.85
-              ? (1 - linear) * 6.6
-              : 1,
-        transform: [
-          {
-            translateX:
-              column + Math.sin(linear * Math.PI * 2 + dy) * FALL_SWAY,
-          },
-          { translateY: fallFrom + (fallTo - fallFrom) * linear },
-          { rotate: `${linear * spin}deg` },
-        ],
-      };
-    }
-
-    const fly = FLIGHT_EASING(linear);
-    const travel = fly * distance;
+  const used = PIECES.slice(0, pieceCount);
+  let widest = 0;
+  const pieces = used.map((piece) => {
+    const pieceWidth = piece.size * pieceScale;
+    const pieceHeight = piece.size * 0.6 * pieceScale;
+    widest = Math.max(widest, pieceWidth);
 
     return {
-      opacity:
-        linear === 0
-          ? 0
-          : fly < 0.1
-            ? fly * 10
-            : fly > 0.75
-              ? Math.max(0, 1 - (fly - 0.75) * 4)
-              : 1,
-      transform: [
-        { translateX: dx * travel },
-        // Gravity on the way out — pieces arc rather than shooting in
-        // straight lines.
-        { translateY: dy * travel + fly * drop },
-        { rotate: `${fly * spin}deg` },
-      ],
+      // Centred on the origin so a piece turns about itself, and the canvas
+      // only has to be moved to where the piece has flown.
+      shape: Skia.RRectXY(
+        Skia.XYWHRect(
+          -pieceWidth / 2,
+          -pieceHeight / 2,
+          pieceWidth,
+          pieceHeight,
+        ),
+        PIECE_RADIUS,
+        PIECE_RADIUS,
+      ),
+      paint: paints[piece.size % 2 === 0 ? 0 : 1],
+      launchMs: piece.delay * stagger,
+      dx: piece.dx,
+      dy: piece.dy,
+      spin: piece.spin,
+      distance: piece.distance * spread,
+      drop: GRAVITY_DROP * spread,
+      // The canvas is centred on the burst, so a fall runs from half its height
+      // above the middle to half below, down a column picked by the piece's own
+      // angle.
+      column: piece.dx * (fallWidth / 2 - piece.size * 2),
+      fallFrom: -fallHeight / 2 - piece.size * 2,
+      fallTo: fallHeight / 2 + piece.size * 2,
     };
   });
 
-  return (
-    <Animated.View
-      style={[
-        styles.piece,
-        {
-          width: piece.size * pieceScale,
-          height: piece.size * 0.6 * pieceScale,
-          backgroundColor: color,
-        },
-        animatedStyle,
-      ]}
-    />
+  if (origin === 'fall') {
+    return {
+      width: fallWidth,
+      height: fallHeight + widest * 4,
+      pieces,
+    };
+  }
+
+  // Square, and just big enough for the furthest a piece can get: Skia clips to
+  // the canvas, so anything short of the full reach would cut the burst off
+  // mid-flight.
+  const reach = used.reduce(
+    (furthest, piece) => Math.max(furthest, piece.distance * spread),
+    0,
   );
-});
+  const size = (reach + GRAVITY_DROP * spread + widest) * 2;
+
+  return { width: size, height: size, pieces };
+}
 
 export default Confetti;
 
@@ -295,9 +411,5 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  piece: {
-    position: 'absolute',
-    borderRadius: 2,
   },
 });
