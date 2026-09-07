@@ -591,6 +591,14 @@ export default function TodoListSection({
     ids: railGoalIds,
     gap: JOURNEY_ROW_GAP,
     enabled: !dayDone,
+    // The rows stand up by transform rather than by their place in the layout,
+    // so committing a new order re-lays out nothing. Heights here are measured
+    // rather than given — a to-do's height is whatever its title needs — so
+    // this only takes effect on the frame after the list first lays out.
+    positioned: true,
+    // A to-do arriving or leaving moves the rest of the list, and it moves on
+    // the same curve the rail beside it does.
+    restingTiming: TODAY_JOURNEY_RAIL_TIMING,
     onReorder: (orderedGoalIds) => {
       // The list changed while the finger was down — a to-do finished on
       // another device, a refetch landing — so the order is against rows that
@@ -708,36 +716,47 @@ export default function TodoListSection({
               ))}
             </Animated.View>
           )}
-          {railGoals.map((goal, index) => (
-            <JourneyDragRow
-              key={goal.id}
-              controller={controller}
-              id={goal.id}
-              index={index}
-              scrollRef={scrollRef}
-              style={styles.journeyRow}
-            >
-              <View style={styles.timelineColumn} pointerEvents="none">
-                <GoalStatusMarker completed={goal.completedToday} />
-              </View>
-              <GoalCard
-                goal={goal}
-                busy={
-                  toggleGoal.isPending &&
-                  toggleGoal.variables?.goalId === goal.id
-                }
-                isArranging={controller.isArranging}
-                onToggle={() =>
-                  toggleGoal.mutate({
-                    goalId: goal.id,
-                    completed: !goal.completedToday,
-                  })
-                }
-                onOpen={() => setDetailGoalId(goal.id)}
-                onMove={(delta) => moveBy(goal.id, delta)}
-              />
-            </JourneyDragRow>
-          ))}
+          {/* The rows' own box. Once they are positioned by transform they
+              stand at the top of it and are moved down into place, so it is
+              told how tall they are together instead of being told by them —
+              and the add row below stays below them. */}
+          <View
+            style={[
+              styles.journeyRows,
+              { height: controller.contentHeight ?? undefined },
+            ]}
+          >
+            {railGoals.map((goal, index) => (
+              <JourneyDragRow
+                key={goal.id}
+                controller={controller}
+                id={goal.id}
+                index={index}
+                scrollRef={scrollRef}
+                style={styles.journeyRow}
+              >
+                <View style={styles.timelineColumn} pointerEvents="none">
+                  <GoalStatusMarker completed={goal.completedToday} />
+                </View>
+                <GoalCard
+                  goal={goal}
+                  busy={
+                    toggleGoal.isPending &&
+                    toggleGoal.variables?.goalId === goal.id
+                  }
+                  isArranging={controller.isArranging}
+                  onToggle={() =>
+                    toggleGoal.mutate({
+                      goalId: goal.id,
+                      completed: !goal.completedToday,
+                    })
+                  }
+                  onOpen={() => setDetailGoalId(goal.id)}
+                  onMove={(delta) => moveBy(goal.id, delta)}
+                />
+              </JourneyDragRow>
+            ))}
+          </View>
           {addNodeVisible ? (
             <AddGoalRow onPress={() => setAdding(true)} />
           ) : null}
@@ -918,6 +937,11 @@ const styles = StyleSheet.create({
     marginBottom: TODAY_JOURNEY_DASH_GAP,
     borderRadius: TODAY_JOURNEY_RAIL_WIDTH / 2,
     backgroundColor: colors.border.default,
+  },
+  // The gap is the layout's only while the rows are still being measured; once
+  // they stand by transform their offsets carry it.
+  journeyRows: {
+    gap: JOURNEY_ROW_GAP,
   },
   journeyRow: {
     minHeight: GOAL_ROW_HEIGHT,

@@ -49,7 +49,27 @@ interface JourneyDragRowProps {
  * follows the finger from its own resting slot, so the two never fight over the
  * same offset and nothing overlaps but the row that was deliberately lifted.
  */
-export default function JourneyDragRow({
+export default function JourneyDragRow(props: JourneyDragRowProps) {
+  // A row's animated style computes its opening value once, at mount, and on
+  // every later change restarts its worklet in an effect — a frame after the
+  // render. That is fine for a list that has always been positioned by
+  // transform, and wrong for the one render that switches a list from flow to
+  // transforms: the rows would lose their layout slots a frame before they were
+  // given their offsets, and paint stacked at the top. Mounting instead of
+  // updating hands them the right offsets in the same commit that moves them.
+  //
+  // A list that knows its row heights up front never flips this. A list that
+  // measures them flips it once, on the frame after its first layout, before
+  // anything on screen can be interacted with.
+  return (
+    <PositionedRow
+      key={props.controller.contentHeight == null ? 'flow' : 'positioned'}
+      {...props}
+    />
+  );
+}
+
+function PositionedRow({
   controller,
   id,
   index,

@@ -247,6 +247,24 @@ export function useJourneyReorder({
   );
 
   const rowHeights = givenHeights ?? measured;
+
+  /**
+   * Sticky, and deliberately so.
+   *
+   * A row that has just been added has no height for a frame, which would take
+   * this back to null — collapsing the box the rows stand in and, worse, taking
+   * the list back to flow and then to transforms again. The last good height
+   * holds the box open instead, and the new row slides its neighbours apart
+   * once it has been measured.
+   */
+  const lastContentHeight = useRef<number | null>(null);
+  const contentHeight = useMemo(() => {
+    if (!positioned) return null;
+    const next = journeyContentHeight(ids, rowHeights, gap);
+    if (next != null) lastContentHeight.current = next;
+    return next ?? lastContentHeight.current;
+  }, [positioned, ids, rowHeights, gap]);
+
   useEffect(() => {
     heights.value = rowHeights;
   }, [heights, rowHeights]);
@@ -310,9 +328,7 @@ export function useJourneyReorder({
       enabled: enabled && journeyRowsMeasured(ids, rowHeights),
       committedKey,
       measuredHeights: rowHeights,
-      contentHeight: positioned
-        ? journeyContentHeight(ids, rowHeights, gap)
-        : null,
+      contentHeight,
       restingTiming,
       heights,
       order,
@@ -330,7 +346,7 @@ export function useJourneyReorder({
       ids,
       gap,
       enabled,
-      positioned,
+      contentHeight,
       restingTiming,
       committedKey,
       rowHeights,
