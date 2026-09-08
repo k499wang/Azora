@@ -16,7 +16,6 @@ import Animated, {
 import { Text } from '../../components/common/Text';
 import Icon from '../../components/common/icons/Icon';
 import type { SelfCareGoalDraft } from '../../services/selfCare/selfCareService';
-import Overline from '../../components/common/Overline';
 import AddGoalSheet from './AddGoalSheet';
 import GoalDetailSheet from './GoalDetailSheet';
 import GoalEditSheet from './GoalEditSheet';
@@ -59,7 +58,6 @@ import {
 import {
   TODAY_JOURNEY_CARD_MIN_HEIGHT,
   TODAY_JOURNEY_GROUP_GAP,
-  TODAY_JOURNEY_LABEL_GAP,
   TODAY_JOURNEY_RAIL_TIMING,
 } from '../../components/home/todayJourneyLayout';
 
@@ -358,7 +356,6 @@ export default function TodoListSection({
   // With the day done every finished to-do folds into the drawer, so the card
   // stands alone rather than sitting on top of the list it is celebrating.
   const plan = planSelfCareGoalList(goals, places);
-  const completedGoalCount = goals.filter((goal) => goal.completedToday).length;
   const railGoals = dayDone ? [] : plan.rail;
   const drawerGoals = dayDone ? goals : plan.drawer;
   useGoalCompletionCelebration(goalsQuery.data, (goalId) => {
@@ -435,15 +432,6 @@ export default function TodoListSection({
 
   return (
     <View style={styles.section}>
-      {dayDone ? null : (
-        <Overline
-          label="To-dos"
-          done={completedGoalCount}
-          total={goals.length}
-          style={styles.groupLabel}
-        />
-      )}
-
       {goalsQuery.isPending ? (
         <View style={styles.statusRow}>
           <ActivityIndicator color={colors.primary.blue600} />
@@ -666,16 +654,6 @@ export default function TodoListSection({
 const styles = StyleSheet.create({
   section: {
     gap: spacing.md,
-  },
-  // Flush with the section title, and pulled down onto the rows it names.
-  // The break between the dailies above and this list. It stays a break rather
-  // than a gulf: the exercises and the to-dos are the same day, so the label
-  // sits nearer the rows it follows than a separate section would.
-  groupLabel: {
-    marginTop: spacing.sm,
-    // Each section corrects its own gap to the shared label gap, so both
-    // labels sit the same distance from the rows they introduce.
-    marginBottom: TODAY_JOURNEY_LABEL_GAP - spacing.md,
   },
   journey: {
     position: 'relative',

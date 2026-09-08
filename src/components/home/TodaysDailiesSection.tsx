@@ -3,7 +3,6 @@ import { Text } from '../common/Text';
 import { Pressable, StyleSheet, View } from 'react-native';
 import ActivityGlyph from '../explore/ActivityGlyph';
 import SectionHeader from '../common/SectionHeader';
-import Overline from '../common/Overline';
 import Icon from '../common/icons/Icon';
 import type { BreathingTechnique } from '../../features/exercise/guidedBreathing/techniques';
 import {
@@ -21,7 +20,6 @@ import { spacing } from '../../theme/spacing';
 import { fonts, typography, wrappedLineHeight } from '../../theme/typography';
 import {
   TODAY_JOURNEY_CARD_MIN_HEIGHT,
-  TODAY_JOURNEY_LABEL_GAP,
   TODAY_JOURNEY_RAIL_TIMING,
 } from './todayJourneyLayout';
 import {
@@ -55,8 +53,6 @@ import {
 const DAILY_GLYPH_SIZE = 38;
 const ROW_SETTLE_TIMING = TODAY_JOURNEY_RAIL_TIMING;
 const TIMELINE_ROW_GAP = 12;
-/** How far the group label sits below the section heading. */
-const LABEL_TOP_GAP = 30;
 
 interface TodaysDailiesSectionProps {
   technique: BreathingTechnique | null;
@@ -299,9 +295,6 @@ export default function TodaysDailiesSection({
     () => resolveDailyPlanOrder(arrangedOrder, schedule.actions),
     [arrangedOrder, schedule.actions],
   );
-  const completedCount = orderedActionIds.filter(
-    (actionId) => rows[actionId].completed,
-  ).length;
   const { controller, moveBy, restoreOrder } = useJourneyReorder({
     ids: orderedActionIds,
     gap: TIMELINE_ROW_GAP,
@@ -352,39 +345,30 @@ export default function TodaysDailiesSection({
       />
 
       {dayDone ? null : (
-        <>
-          <Overline
-            label="Exercises"
-            done={completedCount}
-            total={orderedActionIds.length}
-            style={styles.groupLabel}
-          />
-
-          <View
-            style={[
-              styles.timeline,
-              // Told, because the rows no longer tell it: they all stand at the
-              // top of this box and are moved down into place.
-              { height: controller.contentHeight ?? undefined },
-            ]}
-          >
-            {orderedActionIds.map((actionId, index) => (
-              <JourneyDragRow
-                key={actionId}
-                controller={controller}
-                id={actionId}
-                index={index}
-                scrollRef={scrollRef}
-              >
-                <DailyTaskRow
-                  {...rows[actionId]}
-                  isArranging={controller.isArranging}
-                  onMove={(delta) => moveBy(actionId, delta)}
-                />
-              </JourneyDragRow>
-            ))}
-          </View>
-        </>
+        <View
+          style={[
+            styles.timeline,
+            // Told, because the rows no longer tell it: they all stand at the
+            // top of this box and are moved down into place.
+            { height: controller.contentHeight ?? undefined },
+          ]}
+        >
+          {orderedActionIds.map((actionId, index) => (
+            <JourneyDragRow
+              key={actionId}
+              controller={controller}
+              id={actionId}
+              index={index}
+              scrollRef={scrollRef}
+            >
+              <DailyTaskRow
+                {...rows[actionId]}
+                isArranging={controller.isArranging}
+                onMove={(delta) => moveBy(actionId, delta)}
+              />
+            </JourneyDragRow>
+          ))}
+        </View>
       )}
     </View>
   );
@@ -406,10 +390,6 @@ const styles = StyleSheet.create({
   },
   historyLinkPressed: {
     opacity: 0.6,
-  },
-  groupLabel: {
-    marginTop: LABEL_TOP_GAP - spacing.lg,
-    marginBottom: TODAY_JOURNEY_LABEL_GAP - spacing.lg,
   },
   timeline: {
     position: 'relative',
