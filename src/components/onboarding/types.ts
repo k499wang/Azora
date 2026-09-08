@@ -28,7 +28,6 @@ export type OnboardingStep =
   | 'mentalHealth'
   | 'procrastinationArea'
   | 'procrastinationReason'
-  | 'firstReset'
   | 'age'
   | 'gender'
   | 'consistency'
@@ -47,9 +46,6 @@ export type OnboardingStep =
   | 'pact'
   | 'notifications'
   | 'paywall';
-
-/** The answer to "how do you feel?" straight after the first reset. */
-export type OnboardingMood = 'calmer' | 'clearer' | 'same' | 'restless';
 
 export interface OnboardingBaselineResult {
   completed: boolean;

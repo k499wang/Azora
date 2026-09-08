@@ -59,7 +59,6 @@ import { useCreateSelfCareGoalsMutation } from '../../queries/selfCare/useCreate
 import OnboardingPaywallScreen from './screens/OnboardingPaywallScreen';
 import ExitOfferSheet from '../paywall/ExitOfferSheet';
 import type { ExitOfferTrigger } from '../../services/analytics/exitOffer';
-import FirstResetScreen from './screens/FirstResetScreen';
 import DoctorReferralScreen, {
   type DoctorReferral,
 } from './screens/DoctorReferralScreen';
@@ -83,7 +82,6 @@ import AcquisitionSourceScreen from './screens/AcquisitionSourceScreen';
 import { useSaveOnboardingSurveyMutation } from '../../queries/profile/useSaveOnboardingSurveyMutation';
 import type {
   CompletedOnboardingBaselineResult,
-  OnboardingMood,
   OnboardingIntent,
   OnboardingStep,
 } from './types';
@@ -205,7 +203,6 @@ const STEP_ORDER: OnboardingStep[] = [
   // Grouped with the other cheap facts rather than wedged into the goal arc,
   // where it interrupted "what brought you here" with "how did you hear of us".
   'acquisitionSource',
-  'firstReset',
   // The plan's own settings, asked together once there is a plan to settle:
   // how long a day, and the two ends of one.
   'dailyTime',
@@ -320,9 +317,6 @@ function OnboardingFlowSteps({
   useEffect(() => releaseMochiReplayPause, [releaseMochiReplayPause]);
 
   const [selectedIntents, setSelectedIntents] = useState<OnboardingIntent[]>([]);
-  const [firstResetMood, setFirstResetMood] = useState<OnboardingMood | null>(
-    null,
-  );
   const [primaryIntent, setPrimaryIntent] = useState<OnboardingIntent | null>(
     null,
   );
@@ -480,7 +474,6 @@ function OnboardingFlowSteps({
       has_age: (profile?.age ?? null) != null,
       has_gender: (profile?.gender ?? null) != null,
       has_daily_minutes: (profile?.dailyMinutes ?? null) != null,
-      first_reset_mood: firstResetMood,
       has_baseline: baseline != null,
     };
   };
@@ -1123,14 +1116,14 @@ function OnboardingFlowSteps({
         stepCount={visualStepCount}
         onSelect={recordAcquisitionSource}
         onContinue={() =>
-          goToStep('firstReset', 'continue', {
+          goToStep('dailyTime', 'continue', {
             acquisition_source: acquisitionSource,
           })
         }
         onBack={() => goToStep('gender', 'back')}
         onSkip={() => {
           recordAcquisitionSource('skipped');
-          goToStep('firstReset', 'skip');
+          goToStep('dailyTime', 'skip');
         }}
       />
     );
@@ -1325,24 +1318,6 @@ function OnboardingFlowSteps({
     );
   }
 
-  if (step === 'firstReset') {
-    return (
-      <FirstResetScreen
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
-        onContinue={(mood) => {
-          setFirstResetMood(mood);
-          goToStep('dailyTime', 'continue', {
-            has_first_reset: true,
-            first_reset_mood: mood,
-          });
-        }}
-        onBack={() => goToStep('acquisitionSource', 'back')}
-        onSkip={() => goToStep('dailyTime', 'skip')}
-      />
-    );
-  }
-
   if (step === 'age') {
     return (
       <AgeScreen
@@ -1451,7 +1426,7 @@ function OnboardingFlowSteps({
         onContinue={() =>
           goToStep('wakeTime', 'continue', { has_daily_minutes: true })
         }
-        onBack={() => goToStep('firstReset', 'back')}
+        onBack={() => goToStep('acquisitionSource', 'back')}
         onSkip={() => goToStep('wakeTime', 'skip')}
       />
     );
