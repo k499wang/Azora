@@ -10,6 +10,7 @@ import BreathBackdrop, {
 import { GuidedBreathingHud } from './components/GuidedBreathingHud';
 import RoundsHapticPicker from './components/RoundsHapticPicker';
 import { SessionGlassButton } from '../shared/components/SessionGlassButton';
+import { ExerciseBackButton } from '../shared/components/ExerciseBackButton';
 import {
   GUIDED_BREATHING_LEAD_IN_MS,
   GuidedBreathingPresentation,
@@ -544,11 +545,20 @@ export default function GuidedBreathingSessionScreen({
             style={isActive ? { opacity: hudOpacity } : undefined}
             pointerEvents={isActive && !hudVisible ? 'none' : 'auto'}
           >
-            <SessionGlassButton
-              theme={activeTheme}
-              icon="close"
-              onPress={handleCloseButtonPress}
-            />
+            {phase === 'idle' ? (
+              <ExerciseBackButton
+                theme={activeTheme}
+                onPress={handleCloseButtonPress}
+                accessibilityLabel="Back to exercises"
+              />
+            ) : (
+              <SessionGlassButton
+                theme={activeTheme}
+                icon="close"
+                onPress={handleCloseButtonPress}
+                accessibilityLabel="Close breathing exercise"
+              />
+            )}
           </Animated.View>
         }
         rightSlot={

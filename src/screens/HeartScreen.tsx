@@ -26,6 +26,7 @@ import {
 import { useAuthStore } from '../stores/authStore';
 import { colors } from '../theme/colors';
 import { margin, padding, spacing } from '../theme/spacing';
+import { useTourTarget } from '../features/tour/tourTargets';
 
 export default function HeartScreen({ navigation }: HeartScreenProps) {
   const insets = useSafeAreaInsets();
@@ -34,6 +35,7 @@ export default function HeartScreen({ navigation }: HeartScreenProps) {
   const profileQuery = useProfileQuery(userId);
   const advancedStatsAccess = useFeatureAccess(FeatureKey.AdvancedStats);
   const dashboardLayout = useDashboardLayout();
+  const startHeartMeasurementTarget = useTourTarget('startHeartMeasurement');
   const stats = statsQuery.data;
   const canonicalSession = stats?.hrvSource.session ?? null;
   const advancedStatsLocked =
@@ -122,21 +124,25 @@ export default function HeartScreen({ navigation }: HeartScreenProps) {
           </View>
         </ScreenContent>
       </ScrollView>
-      <GlassIconButton
-        accessibilityLabel="Measure heart rate"
-        onPress={() => {
-          triggerTapHaptic();
-          navigation.navigate('HeartRate');
-        }}
-        size={48}
+      <View
+        {...startHeartMeasurementTarget}
         style={[
           styles.stickyAction,
           { top: insets.top + spacing.xs, right: dashboardLayout.actionInset },
         ]}
-        variant="regular"
       >
-        <Icon name="plus" size={26} color={colors.text.secondary} />
-      </GlassIconButton>
+        <GlassIconButton
+          accessibilityLabel="Measure heart rate"
+          onPress={() => {
+            triggerTapHaptic();
+            navigation.navigate('HeartRate');
+          }}
+          size={48}
+          variant="regular"
+        >
+          <Icon name="plus" size={26} color={colors.text.secondary} />
+        </GlassIconButton>
+      </View>
     </View>
   );
 }

@@ -80,3 +80,62 @@ test('the dailies tour target highlights the dailies without the progress card',
   assert.match(target, /<TodaysDailiesSection/);
   assert.doesNotMatch(target, /<RoomProgressCard/);
 });
+
+test('the heart tour target belongs to the Home heart button', () => {
+  const home = readFileSync(
+    join(here, '..', '..', 'screens', 'HomeScreen.tsx'),
+    'utf8',
+  );
+  const targetStart = home.indexOf('<View {...measureHeartTarget}>');
+  const targetEnd = home.indexOf('</View>', targetStart);
+  const target = home.slice(targetStart, targetEnd);
+
+  assert.notEqual(targetStart, -1);
+  assert.notEqual(targetEnd, -1);
+  assert.match(target, /accessibilityLabel="Open heart statistics"/);
+  assert.match(target, /name="heart"/);
+});
+
+test('the Heart measurement target wraps the native plus button', () => {
+  const heart = readFileSync(
+    join(here, '..', '..', 'screens', 'HeartScreen.tsx'),
+    'utf8',
+  );
+  const targetStart = heart.indexOf('<View\n        {...startHeartMeasurementTarget}');
+  const targetEnd = heart.indexOf('</View>', targetStart);
+  const target = heart.slice(targetStart, targetEnd);
+
+  assert.notEqual(targetStart, -1);
+  assert.notEqual(targetEnd, -1);
+  assert.match(target, /accessibilityLabel="Measure heart rate"/);
+  assert.match(target, /name="plus"/);
+  assert.match(target, /styles\.stickyAction/);
+});
+
+test('the tour routes each typed destination and closes through returnToHome', () => {
+  const owner = readFileSync(join(here, 'useAppTour.ts'), 'utf8');
+
+  assert.match(owner, /step\.destination\.route === 'MainTabs'/);
+  assert.match(
+    owner,
+    /navigation\.navigate\('MainTabs', \{ screen: step\.destination\.screen \}\)/,
+  );
+  assert.match(owner, /navigation\.navigate\(step\.destination\.route\)/);
+  assert.match(owner, /if \(!enabled \|\| status !== 'closing'\) return;\s*returnToHome\(navigation\);/);
+});
+
+test('MainTabs stays live only while the tour is running or closing', () => {
+  const navigator = readFileSync(
+    join(here, '..', '..', 'app', 'navigation', 'RootNavigator.tsx'),
+    'utf8',
+  );
+
+  assert.match(
+    navigator,
+    /const keepMainTabsLive = tourStatus === 'running' \|\| tourStatus === 'closing';/,
+  );
+  assert.match(
+    navigator,
+    /name="MainTabs"[\s\S]*?options=\{\{ freezeOnBlur: !keepMainTabsLive \}\}/,
+  );
+});

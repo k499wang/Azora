@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import type { RootStackNavigationProp } from '../../app/navigation';
+import { returnToHome } from '../../app/navigation/returnToHome';
 import { loadTourSeen, setTourSeen } from '../../services/preferences/tourSeenPreference';
 import { isTourOverlayMounted } from './tourOverlayPresence';
 import { useCurrentTourStep, useTourStore } from './tourStore';
@@ -49,12 +50,16 @@ export function useAppTour(enabled: boolean) {
 
   useEffect(() => {
     if (!enabled || step == null) return;
-    navigation.navigate('MainTabs', { screen: step.tab });
+    if (step.destination.route === 'MainTabs') {
+      navigation.navigate('MainTabs', { screen: step.destination.screen });
+      return;
+    }
+    navigation.navigate(step.destination.route);
   }, [enabled, navigation, step]);
 
   useEffect(() => {
     if (!enabled || status !== 'closing') return;
-    navigation.navigate('MainTabs', { screen: 'Home' });
+    returnToHome(navigation);
   }, [enabled, navigation, status]);
 
   useEffect(() => {

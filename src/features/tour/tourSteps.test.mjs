@@ -2,23 +2,31 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { tourSteps } from './tourSteps.ts';
 
-test('the app tour keeps every step on Home', () => {
+test('the app tour visits Home before pointing to the Heart measurement action', () => {
   assert.deepEqual(
-    tourSteps.map(({ target, tab }) => ({ target, tab })),
+    tourSteps.map(({ target, destination }) => ({ target, destination })),
     [
-      { target: 'dailies', tab: 'Home' },
-      { target: 'todos', tab: 'Home' },
-      { target: 'extraPractice', tab: 'Home' },
-      { target: 'seeAll', tab: 'Home' },
-      { target: 'measureHeart', tab: 'Home' },
+      { target: 'dailies', destination: { route: 'MainTabs', screen: 'Home' } },
+      { target: 'todos', destination: { route: 'MainTabs', screen: 'Home' } },
+      { target: 'extraPractice', destination: { route: 'MainTabs', screen: 'Home' } },
+      { target: 'seeAll', destination: { route: 'MainTabs', screen: 'Home' } },
+      { target: 'measureHeart', destination: { route: 'MainTabs', screen: 'Home' } },
+      { target: 'startHeartMeasurement', destination: { route: 'Heart' } },
     ],
   );
 });
 
-test('the heart stop explains what measurement provides', () => {
+test('the final heart stop explains how to start a reading', () => {
+  const step = tourSteps.find(({ target }) => target === 'startHeartMeasurement');
+  assert.equal(step?.body, 'Tap the plus button to start a heart-rate reading.');
+});
+
+test('the heart stop explains where to find heart readings', () => {
   const heartStep = tourSteps.find(({ target }) => target === 'measureHeart');
-  assert.match(heartStep?.body ?? '', /measure/i);
-  assert.match(heartStep?.body ?? '', /heart rate/i);
+  assert.equal(
+    heartStep?.body,
+    'Tap the heart to open your Heart page and see your readings.',
+  );
 });
 
 test('the tour no longer points at the removed hotel shortcut', () => {

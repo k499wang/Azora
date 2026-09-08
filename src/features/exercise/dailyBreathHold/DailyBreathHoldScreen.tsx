@@ -15,6 +15,7 @@ import {
 } from './components/DailyBreathHoldPresentation';
 import { DailyBreathHoldHud } from './components/DailyBreathHoldHud';
 import { SessionGlassButton } from '../shared/components/SessionGlassButton';
+import { ExerciseBackButton } from '../shared/components/ExerciseBackButton';
 import { useLivePulse } from '../../../hooks/useLivePulse';
 import { HeartRateProcessingScreen } from '../../../components/heartRate/HeartRateProcessingScreen';
 import {
@@ -495,11 +496,20 @@ export default function DailyBreathHoldScreen({
               style={shouldAutoHideHud ? { opacity: hudOpacity } : undefined}
               pointerEvents={shouldAutoHideHud && !hudVisible ? 'none' : 'auto'}
             >
-              <SessionGlassButton
-                theme={activeTheme}
-                icon="close"
-                onPress={handleExit}
-              />
+              {phase === 'idle' ? (
+                <ExerciseBackButton
+                  theme={activeTheme}
+                  onPress={handleExit}
+                  accessibilityLabel="Back to exercises"
+                />
+              ) : (
+                <SessionGlassButton
+                  theme={activeTheme}
+                  icon="close"
+                  onPress={handleExit}
+                  accessibilityLabel="Close breath hold exercise"
+                />
+              )}
             </Animated.View>
           ) : null
         }
