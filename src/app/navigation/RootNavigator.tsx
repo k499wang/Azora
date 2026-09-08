@@ -72,9 +72,15 @@ interface AppStackProps {
 const SCREEN_OPTIONS = { headerShown: false, freezeOnBlur: true } as const;
 
 function AppStack({ showBootPaywall, tourEnabled }: AppStackProps) {
+  const tourStatus = useTourStore((state) => state.status);
+  const keepMainTabsLive = tourStatus === 'running' || tourStatus === 'closing';
+
   return (
     <Stack.Navigator screenOptions={SCREEN_OPTIONS}>
-      <Stack.Screen name="MainTabs">
+      <Stack.Screen
+        name="MainTabs"
+        options={{ freezeOnBlur: !keepMainTabsLive }}
+      >
         {() => (
           <MainTabsRoute
             showBootPaywall={showBootPaywall}

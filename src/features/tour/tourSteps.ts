@@ -3,15 +3,18 @@ export type TourTargetId =
   | 'todos'
   | 'extraPractice'
   | 'seeAll'
-  | 'measureHeart';
+  | 'measureHeart'
+  | 'startHeartMeasurement';
 
-export type TourTab = 'Home';
+export type TourDestination =
+  | { route: 'MainTabs'; screen: 'Home' }
+  | { route: 'Heart' };
 
 export interface TourStep {
   /** the element Mochi points at; registered with `useTourTarget` */
   target: TourTargetId;
-  /** the tab that has to be showing before this step can be measured */
-  tab: TourTab;
+  /** the registered screen that has to be showing before this step can be measured */
+  destination: TourDestination;
   /** Mochi's single line — he says one thing per stop */
   body: string;
 }
@@ -23,27 +26,32 @@ export interface TourStep {
 export const tourSteps: readonly TourStep[] = [
   {
     target: 'dailies',
-    tab: 'Home',
+    destination: { route: 'MainTabs', screen: 'Home' },
     body: 'Start here! Finish your daily exercises to earn a new piece for your room.',
   },
   {
     target: 'todos',
-    tab: 'Home',
+    destination: { route: 'MainTabs', screen: 'Home' },
     body: 'And here are your to-dos! Tick one off whenever you get to it. Little ones count too.',
   },
   {
     target: 'extraPractice',
-    tab: 'Home',
+    destination: { route: 'MainTabs', screen: 'Home' },
     body: 'Want something different? Pick an exercise that matches how you feel.',
   },
   {
     target: 'seeAll',
-    tab: 'Home',
+    destination: { route: 'MainTabs', screen: 'Home' },
     body: 'Looking for more? Tap See all to explore every exercise.',
   },
   {
     target: 'measureHeart',
-    tab: 'Home',
-    body: 'Measure your heart rate here. We will show you how before the reading starts.',
+    destination: { route: 'MainTabs', screen: 'Home' },
+    body: 'Tap the heart to open your Heart page and see your readings.',
+  },
+  {
+    target: 'startHeartMeasurement',
+    destination: { route: 'Heart' },
+    body: 'Tap the plus button to start a heart-rate reading.',
   },
 ];
