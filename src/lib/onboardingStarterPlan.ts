@@ -59,11 +59,11 @@ interface StarterPlanCandidate extends StarterPlanItem {
 }
 
 /**
- * Seven lines is what fits on the page before it stops looking like a start and
- * begins looking like a workload, and four is the fewest that reads as a plan.
+ * Four lines keeps the starter plan approachable, and three is the fewest that
+ * still reads as a plan.
  */
-const MAX_ITEMS = 7;
-const MIN_ITEMS = 4;
+const MAX_ITEMS = 4;
+const MIN_ITEMS = 3;
 
 /** Declared in the order a day happens; `DAYPART_ORDER` is what shows them. */
 const CANDIDATES: StarterPlanCandidate[] = [
@@ -160,23 +160,6 @@ const CANDIDATES: StarterPlanCandidate[] = [
       answers.procrastinationAreas.includes('sleep'),
   },
 ];
-
-/**
- * The one line every plan ends on. It is the app's own promise in to-do form,
- * so it is not conditional and it is not subject to the cap — a starter plan
- * that could come back without a reset on it would be someone else's list.
- *
- * Placed at the end of the day as well as the end of the page: the list is
- * ordered by the hour each line carries, so an earlier daypart here would show
- * the plan in one order on paper and another on the to-do list.
- */
-const RESET_ITEM: StarterPlanItem = {
-  id: 'reset',
-  title: 'Take 3 deep breaths',
-  icon: 'breath-leaf',
-  accent: colors.playful.teal.base,
-  daypart: 'bedtime',
-};
 
 /**
  * The lines the chosen goal earns, on top of whatever the routine answers ask
@@ -303,9 +286,8 @@ const GOAL_ITEMS: Record<OnboardingIntent, StarterPlanItem[]> = {
       daypart: 'evening',
     },
   ],
-  // Both left empty on purpose. The daily line a habit-builder needs is the
-  // reset every plan already ends on, and "something else" told us nothing to
-  // write one from; a filler line here would be the plan talking to itself.
+  // Both are empty on purpose: these intents do not imply a specific action.
+  // Routine answers and the neutral filler list provide their plan instead.
   daily_habit: [],
   other: [],
 };
@@ -360,7 +342,7 @@ export function buildStarterPlan(answers: StarterPlanAnswers): StarterPlanItem[]
   const goalItems = (
     answers.intent == null ? [] : GOAL_ITEMS[answers.intent]
   ).map((item) => ({ ...item }));
-  const routineSlots = MAX_ITEMS - 1 - goalItems.length;
+  const routineSlots = MAX_ITEMS - goalItems.length;
 
   const picked = new Set(
     CANDIDATES.filter((candidate) => candidate.matches(answers)).map(
@@ -369,7 +351,7 @@ export function buildStarterPlan(answers: StarterPlanAnswers): StarterPlanItem[]
   );
 
   for (const id of FILLER_IDS) {
-    if (picked.size + goalItems.length >= MIN_ITEMS - 1) break;
+    if (picked.size + goalItems.length >= MIN_ITEMS) break;
     picked.add(id);
   }
 
@@ -382,7 +364,7 @@ export function buildStarterPlan(answers: StarterPlanAnswers): StarterPlanItem[]
     (a, b) => DAYPART_ORDER.indexOf(a.daypart) - DAYPART_ORDER.indexOf(b.daypart),
   );
 
-  return [...items, RESET_ITEM];
+  return items;
 }
 
 /**
