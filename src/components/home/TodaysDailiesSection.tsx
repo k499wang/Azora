@@ -18,7 +18,7 @@ import { pressable } from '../../theme/pressable';
 import { triggerTapHaptic } from '../../native/tapHaptics';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
-import { fonts, typography } from '../../theme/typography';
+import { fonts, typography, wrappedLineHeight } from '../../theme/typography';
 import {
   TODAY_JOURNEY_CARD_MIN_HEIGHT,
   TODAY_JOURNEY_LABEL_GAP,
@@ -54,7 +54,7 @@ import {
  */
 const DAILY_GLYPH_SIZE = 38;
 const ROW_SETTLE_TIMING = TODAY_JOURNEY_RAIL_TIMING;
-const TIMELINE_ROW_GAP = spacing.md;
+const TIMELINE_ROW_GAP = 12;
 /** How far the group label sits below the section heading. */
 const LABEL_TOP_GAP = 30;
 
@@ -110,8 +110,18 @@ type DailyRowContent = Omit<
   'isArranging' | 'onMove'
 >;
 
-function formatCategory(category: BreathingTechnique['category']): string {
-  return category.charAt(0).toUpperCase() + category.slice(1);
+const EXERCISE_TITLES: Record<BreathingTechnique['category'], string> = {
+  calm: 'Take a calming reset',
+  focus: 'Do a focus reset',
+  energy: 'Try an energizing reset',
+  sleep: 'Do a sleep exercise before bed',
+  balance: 'Do a mindful breathing exercise',
+};
+
+function resolveExerciseTitle(technique: BreathingTechnique | null): string {
+  return technique == null
+    ? 'Do your daily reset'
+    : EXERCISE_TITLES[technique.category];
 }
 
 function DailyTaskRow({
@@ -176,7 +186,11 @@ function DailyTaskRow({
             pressed && pressable.control,
           ]}
         >
-          <Icon name="play-triangle" size={20} color={colors.primary.blue600} />
+          <Icon
+            name="play-triangle"
+            size={20}
+            color={completed ? colors.text.tertiary : colors.primary.blue600}
+          />
         </Pressable>
       </View>
     </View>
@@ -204,7 +218,7 @@ export default function TodaysDailiesSection({
   const handPickedLocked =
     !handPickedExerciseCompleted && !exerciseAccessAllowed;
   const breathHoldLocked = !breathHoldCompleted && !exerciseAccessAllowed;
-  const guidedTitle = technique?.name ?? 'Your reset';
+  const guidedTitle = resolveExerciseTitle(technique);
   const guidedScheduledTime = formatDailyPlanTime(
     schedule.actions.session,
     DEFAULT_DAILY_PLAN_SCHEDULE.actions.session,
@@ -235,12 +249,9 @@ export default function TodaysDailiesSection({
       live = false;
     };
   }, []);
-  const guidedDetail = technique == null
-    ? 'Personalized for you'
-    : `${formatCategory(technique.category)} reset`;
-  const handPickedDetail = handPickedTechnique == null
-    ? 'Azora’s daily pick'
-    : `${formatCategory(handPickedTechnique.category)} reset`;
+  const guidedDetail = technique?.name ?? 'Personalized for you';
+  const handPickedTitle = resolveExerciseTitle(handPickedTechnique);
+  const handPickedDetail = handPickedTechnique?.name ?? 'Azora’s daily pick';
   const rows: Record<DailyPlanActionId, DailyRowContent> = {
     session: {
       title: guidedTitle,
@@ -258,7 +269,7 @@ export default function TodaysDailiesSection({
       onPress: technique == null ? undefined : onPressGuidedExercise,
     },
     handPicked: {
-      title: handPickedTechnique?.name ?? 'Azora’s daily pick',
+      title: handPickedTitle,
       scheduledTime: handPickedScheduledTime,
       detailLabel: handPickedDetail,
       style: handPickedTechnique
@@ -274,9 +285,9 @@ export default function TodaysDailiesSection({
         handPickedTechnique == null ? undefined : onPressHandPickedExercise,
     },
     checkIn: {
-      title: 'The Azora Protocol',
+      title: 'Complete your daily check-in',
       scheduledTime: breathHoldScheduledTime,
-      detailLabel: 'Daily check-in',
+      detailLabel: 'The Azora Protocol',
       style: BREATH_HOLD_STYLE,
       glyph: BREATH_HOLD_STYLE.glyph,
       completed: breathHoldCompleted,
@@ -431,6 +442,7 @@ const styles = StyleSheet.create({
   },
   taskTitle: {
     ...typography.body.large,
+    lineHeight: wrappedLineHeight(typography.body.large.fontSize),
     fontFamily: fonts.semibold,
     color: colors.text.primary,
   },

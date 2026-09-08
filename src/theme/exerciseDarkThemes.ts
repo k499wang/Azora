@@ -56,7 +56,8 @@ export const EXERCISE_DARK_THEMES: ExerciseDarkTheme[] = [
     textTertiary: '#94A3B8',
     textAccent: '#1F7BFF',
     iconPrimary: '#0F172A',
-    backdropExhale: ['#63ADFF14', '#63ADFF00', '#63ADFF0F'],
+    // Idle and exhale settle back onto the same cream canvas used by Home.
+    backdropExhale: ['#FDF6F000', '#FDF6F000', '#FDF6F000'],
     backdropInhale: ['#63ADFF3D', '#63ADFF00', '#63ADFF29'],
   },
   {

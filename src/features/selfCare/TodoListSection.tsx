@@ -89,7 +89,7 @@ const COMPLETED_ROW_LINE_HEIGHT = wrappedLineHeight(
 /** A long task gets the room it needs instead of being cut off at two lines. */
 const GOAL_TITLE_MAX_LINES = 3;
 const GOAL_CHECK_SIZE = 42;
-const JOURNEY_ROW_GAP = spacing.md;
+const JOURNEY_ROW_GAP = 12;
 const ADD_ROW_OFFSET = TODAY_JOURNEY_GROUP_GAP - JOURNEY_ROW_GAP;
 interface TodoListSectionProps {
   /**
