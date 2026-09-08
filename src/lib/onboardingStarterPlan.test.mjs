@@ -13,10 +13,11 @@ const noAnswers = {
   procrastinationReasons: [],
 };
 
-test('every plan ends on the reset, however little was answered', () => {
+test('a plan has three to four relevant lines without a forced reset', () => {
   const plan = buildStarterPlan(noAnswers);
-  assert.equal(plan[plan.length - 1].id, 'reset');
-  assert.ok(plan.length >= 4);
+  assert.ok(plan.length >= 3 && plan.length <= 4);
+  assert.ok(!plan.some((item) => item.id === 'reset'));
+  assert.ok(!plan.some((item) => item.title === 'Take 3 deep breaths'));
 });
 
 test('the answers pick the lines', () => {
@@ -30,11 +31,11 @@ test('the answers pick the lines', () => {
   const ids = plan.map((item) => item.id);
   assert.ok(ids.includes('outOfBed'));
   assert.ok(ids.includes('oneThing'));
-  assert.ok(ids.includes('walk'));
   assert.ok(ids.includes('windDown'));
+  assert.ok(ids.includes('walk'));
 });
 
-test('the page never runs past seven lines', () => {
+test('the page never runs past four lines', () => {
   const plan = buildStarterPlan({
     wakeEase: 'struggle',
     sleepDuration: 'under5',
@@ -44,8 +45,7 @@ test('the page never runs past seven lines', () => {
     procrastinationAreas: ['work', 'chores', 'movement', 'sleep', 'admin', 'health'],
     procrastinationReasons: ['overwhelmed', 'focus', 'start'],
   });
-  assert.equal(plan.length, 7);
-  assert.equal(plan[plan.length - 1].id, 'reset');
+  assert.equal(plan.length, 4);
 });
 
 test('the lines run in the order the day does', () => {
@@ -74,9 +74,11 @@ test('crossed-off lines are not saved, and the rest carry their hour', () => {
 test('the goal they chose puts its own lines on the plan', () => {
   const plan = buildStarterPlan({ ...noAnswers, intent: 'heart_health' });
   const ids = plan.map((item) => item.id);
-  assert.ok(ids.includes('goalRestingRate'));
-  assert.ok(ids.includes('goalStairs'));
-  assert.ok(ids.includes('goalWalkAfterDinner'));
+  assert.deepEqual(ids, [
+    'goalRestingRate',
+    'goalStairs',
+    'goalWalkAfterDinner',
+  ]);
 });
 
 test('a different goal gets different lines', () => {
@@ -98,11 +100,11 @@ test('the cap never costs the goal its lines', () => {
     procrastinationReasons: ['focus', 'overwhelmed'],
   });
   const ids = plan.map((item) => item.id);
-  assert.ok(plan.length <= 7);
+  assert.equal(plan.length, 4);
   assert.ok(ids.includes('goalRestingRate'));
   assert.ok(ids.includes('goalStairs'));
   assert.ok(ids.includes('goalWalkAfterDinner'));
-  assert.equal(plan[plan.length - 1].id, 'reset');
+  assert.ok(ids.includes('windDown'));
 });
 
 test('no two lines anywhere in the set wear the same icon', () => {
@@ -160,7 +162,7 @@ test('a plan still reads morning to bedtime once goal lines are mixed in', () =>
 
 test('the strongest answer keeps its line when the page is full', () => {
   const plan = buildStarterPlan({
-    intent: 'heart_health',
+    intent: null,
     wakeEase: 'snooze',
     sleepDuration: 'under5',
     dayActivity: 'sitting',
@@ -186,15 +188,30 @@ test('every routine line is ranked, so none of them sorts by accident', () => {
     procrastinationReasons: ['focus', 'overwhelmed'],
   };
   const ranked = buildStarterPlan(everyAnswer).map((item) => item.id);
-  // The six strongest of the ten, in rank order, then the reset.
+  // The four strongest matches, displayed in daypart order.
   assert.deepEqual(ranked, [
     'outOfBed',
     'oneThing',
-    'phoneAway',
-    'walk',
     'happyThing',
     'windDown',
-    'reset',
   ]);
 });
 
+test('representative plans stay within the three-to-four item limit', () => {
+  const plans = [
+    buildStarterPlan(noAnswers),
+    buildStarterPlan({ ...noAnswers, intent: 'daily_habit' }),
+    buildStarterPlan({ ...noAnswers, intent: 'sleep' }),
+    buildStarterPlan({ ...noAnswers, intent: 'heart_health' }),
+    buildStarterPlan({
+      ...noAnswers,
+      intent: 'heart_health',
+      sleepDuration: 'under5',
+    }),
+  ];
+
+  for (const plan of plans) {
+    assert.ok(plan.length >= 3 && plan.length <= 4);
+    assert.ok(!plan.some((item) => item.title === 'Take 3 deep breaths'));
+  }
+});
