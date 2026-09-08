@@ -8,6 +8,7 @@ import BreathBackdrop, {
   type BreathBackdropPhase,
 } from '../shared/components/BreathBackdrop';
 import { GuidedBreathingHud } from './components/GuidedBreathingHud';
+import RoundsHapticPicker from './components/RoundsHapticPicker';
 import { SessionGlassButton } from '../shared/components/SessionGlassButton';
 import {
   GUIDED_BREATHING_LEAD_IN_MS,
@@ -581,6 +582,15 @@ export default function GuidedBreathingSessionScreen({
             technique={technique}
             theme={activeTheme}
             remainingSeconds={remainingSeconds}
+            roundsPicker={
+              <RoundsHapticPicker
+                value={totalRounds}
+                min={MIN_ROUNDS}
+                max={MAX_ROUNDS}
+                onChange={setTotalRounds}
+                theme={activeTheme}
+              />
+            }
             heartRate={{
               enabled: hrEnabled,
               active: pulse.active,
@@ -608,11 +618,6 @@ export default function GuidedBreathingSessionScreen({
           >
             <GuidedBreathingHud
               theme={activeTheme}
-              totalRounds={totalRounds}
-              showRoundsPicker={!showSessionControls && !isPlacement}
-              minRounds={MIN_ROUNDS}
-              maxRounds={MAX_ROUNDS}
-              onRoundsChange={setTotalRounds}
               showSettingsButton={phase === 'idle' || phase === 'done'}
               onSettingsPress={() => setAudioSettingsOpen(true)}
               showButtonRow={!showSessionControls && !isPlacement}

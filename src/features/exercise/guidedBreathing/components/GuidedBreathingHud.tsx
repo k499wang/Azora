@@ -2,19 +2,10 @@ import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import type { ExerciseDarkTheme } from '../../../../theme/exerciseDarkThemes';
 import { spacing } from '../../../../theme/spacing';
 import { isShortScreen } from '../../../../theme/breakpoints';
-import {
-  SESSION_GLASS_CONTROL_SIZE,
-  SessionGlassButton,
-} from '../../shared/components/SessionGlassButton';
-import RoundsHapticPicker from './RoundsHapticPicker';
+import { SessionLipButton } from '../../shared/components/SessionLipButton';
 
 interface GuidedBreathingHudProps {
   theme: ExerciseDarkTheme;
-  totalRounds: number;
-  showRoundsPicker: boolean;
-  minRounds: number;
-  maxRounds: number;
-  onRoundsChange: (rounds: number) => void;
   showSettingsButton: boolean;
   onSettingsPress: () => void;
   /** False while a session runs — those controls move to the top glass row. */
@@ -26,11 +17,6 @@ interface GuidedBreathingHudProps {
 
 export function GuidedBreathingHud({
   theme,
-  totalRounds,
-  showRoundsPicker,
-  minRounds,
-  maxRounds,
-  onRoundsChange,
   showSettingsButton,
   onSettingsPress,
   showButtonRow,
@@ -43,35 +29,24 @@ export function GuidedBreathingHud({
 
   return (
     <View style={[styles.bottomContainer, compact && styles.bottomContainerCompact]}>
-      {showRoundsPicker ? (
-        <RoundsHapticPicker
-          value={totalRounds}
-          min={minRounds}
-          max={maxRounds}
-          onChange={onRoundsChange}
-          theme={theme}
-        />
-      ) : null}
-
       {showButtonRow ? (
         <View style={styles.btnRow}>
           {showSettingsButton ? (
-            <SessionGlassButton
+            <SessionLipButton
               theme={theme}
               icon="cog-outline"
-              accessibilityLabel="Session options"
-              size={SESSION_GLASS_CONTROL_SIZE}
+              label="Session options"
               onPress={onSettingsPress}
             />
           ) : null}
 
           {showPrimaryButton ? (
-            <SessionGlassButton
+            <SessionLipButton
               theme={theme}
-              icon={primaryIcon}
-              accessibilityLabel={primaryIcon === 'play' ? 'Start' : 'Pause'}
-              size={SESSION_GLASS_CONTROL_SIZE}
+              icon="play"
+              label={primaryIcon === 'play' ? 'Start' : 'Pause'}
               onPress={onPrimaryPress}
+              primary
             />
           ) : null}
         </View>
@@ -82,7 +57,7 @@ export function GuidedBreathingHud({
 
 const styles = StyleSheet.create({
   bottomContainer: {
-    alignItems: 'center',
+    alignItems: 'stretch',
     gap: spacing.lg,
     marginBottom: spacing['4xl'],
   },
@@ -93,9 +68,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   btnRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: '100%',
     gap: spacing.md,
   },
 });

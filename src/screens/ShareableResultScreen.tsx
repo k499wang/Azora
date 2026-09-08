@@ -3,6 +3,7 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, ScrollView, Share, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import Icon from '../components/common/icons/Icon';
 import { colors } from '../theme/colors';
 import { typography, fonts } from '../theme/typography';
 import { spacing, padding, margin } from '../theme/spacing';
@@ -49,6 +50,7 @@ import ScreenContent from '../components/common/ScreenContent';
 
 const BREATH_HOLD_COMPLETION = { breathHold: true } as const;
 const EMPTY_BPM_SAMPLES: { offsetMs: number; bpm: number }[] = [];
+const HERO_FLAME_SIZE = 132;
 
 // Profile, feature access, room and dailies all resolve while this screen is
 // on, and each commit lands mid-entrance and reconciles a whole SVG tree.
@@ -279,6 +281,11 @@ export default function ShareableResultScreen({
           >
             <View style={styles.heroShadow}>
               <View style={[styles.heroCard, coloredCard(hue)]}>
+                <Icon
+                  name="streakFilled"
+                  size={HERO_FLAME_SIZE}
+                  color={hue.soft}
+                />
                 <Text style={styles.heroTitle}>{congratulation}</Text>
                 <Text style={styles.heroSubtitle}>
                   Breath hold · {formatDuration(holdSeconds)}

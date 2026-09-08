@@ -1,10 +1,8 @@
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import type { ExerciseDarkTheme } from '../../../../theme/exerciseDarkThemes';
+import { isShortScreen } from '../../../../theme/breakpoints';
 import { spacing } from '../../../../theme/spacing';
-import {
-  SESSION_GLASS_CONTROL_SIZE,
-  SessionGlassButton,
-} from '../../shared/components/SessionGlassButton';
+import { SessionLipButton } from '../../shared/components/SessionLipButton';
 
 interface DailyBreathHoldHudProps {
   theme: ExerciseDarkTheme;
@@ -22,22 +20,24 @@ export function DailyBreathHoldHud({
   onSettingsPress,
   onStart,
 }: DailyBreathHoldHudProps) {
+  const { height } = useWindowDimensions();
+  const compact = isShortScreen(height);
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, compact && styles.containerCompact]}>
       <View style={styles.buttonRow}>
-        <SessionGlassButton
+        <SessionLipButton
           theme={theme}
           icon="cog-outline"
-          accessibilityLabel="Session options"
-          size={SESSION_GLASS_CONTROL_SIZE}
+          label="Session options"
           onPress={onSettingsPress}
         />
-        <SessionGlassButton
+        <SessionLipButton
           theme={theme}
           icon="play"
-          accessibilityLabel="Start"
-          size={SESSION_GLASS_CONTROL_SIZE}
+          label="Start"
           onPress={onStart}
+          primary
         />
       </View>
     </View>
@@ -46,14 +46,16 @@ export function DailyBreathHoldHud({
 
 const styles = StyleSheet.create({
   container: {
-    alignItems: 'center',
+    alignItems: 'stretch',
     gap: spacing.lg,
     marginBottom: spacing['4xl'],
   },
+  containerCompact: {
+    gap: spacing.md,
+    marginBottom: spacing.lg,
+  },
   buttonRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: '100%',
     gap: spacing.md,
   },
 });

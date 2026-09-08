@@ -1,5 +1,5 @@
 import { Text } from '../../../../components/common/Text';
-import { forwardRef, useEffect, useMemo, useRef } from 'react';
+import { forwardRef, useEffect, useMemo, useRef, type ReactNode } from 'react';
 import {
   Animated,
   Easing,
@@ -79,6 +79,7 @@ interface GuidedBreathingPresentationProps {
   technique: BreathingTechnique;
   theme: ExerciseDarkTheme;
   remainingSeconds: number;
+  roundsPicker: ReactNode;
   heartRate: GuidedBreathingHeartRatePresentation;
 }
 
@@ -121,7 +122,7 @@ export const GuidedBreathingPresentation = forwardRef<
   BreathingCircleRef,
   GuidedBreathingPresentationProps
 >(function GuidedBreathingPresentation(
-  { active, phase, technique, theme, remainingSeconds, heartRate },
+  { active, phase, technique, theme, remainingSeconds, roundsPicker, heartRate },
   companionRef,
 ) {
   const isIdle = phase === 'idle';
@@ -211,9 +212,10 @@ export const GuidedBreathingPresentation = forwardRef<
       />
 
       {isIdle ? (
-        <View style={styles.introLayer} pointerEvents="none">
+        <View style={styles.introLayer} pointerEvents="box-none">
           <TechniqueIntro
             technique={technique}
+            roundsPicker={roundsPicker}
             textColors={{
               primary: theme.textPrimary,
               secondary: theme.textSecondary,

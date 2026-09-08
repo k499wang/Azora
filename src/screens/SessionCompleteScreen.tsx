@@ -3,6 +3,7 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, ScrollView, Share, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import Icon from '../components/common/icons/Icon';
 import { colors } from '../theme/colors';
 import { typography } from '../theme/typography';
 import { spacing, padding, margin } from '../theme/spacing';
@@ -47,6 +48,7 @@ function formatDuration(secs: number): string {
 }
 
 const EMPTY_HR_SAMPLES: { offsetMs: number; bpm: number }[] = [];
+const HERO_FLAME_SIZE = 132;
 
 // Everything below re-renders on every query that resolves while the screen is
 // on — profile, summary, room, dailies, feedback — and each of those commits
@@ -282,9 +284,15 @@ export default function SessionCompleteScreen({
           <View style={styles.heroWrap}>
             <View style={styles.heroShadow}>
               <View style={[styles.heroCard, coloredCard(hue)]}>
+                <Icon
+                  name="streakFilled"
+                  size={HERO_FLAME_SIZE}
+                  color={hue.soft}
+                />
                 <Text style={styles.heroTitle}>{congratulation}</Text>
                 <Text style={styles.heroSubtitle}>
-                  {techniqueName} · {formatDuration(durationSec)}
+                  {techniqueName} · {formatDuration(durationSec)} · {breathCount}{' '}
+                  breaths
                 </Text>
               </View>
             </View>
