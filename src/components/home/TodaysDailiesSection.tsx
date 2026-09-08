@@ -431,13 +431,14 @@ const styles = StyleSheet.create({
   taskCopy: {
     flex: 1,
     minWidth: 0,
-    gap: spacing.xs,
+    gap: 6,
   },
   taskHeading: {
-    gap: 0,
+    gap: 6,
   },
   taskType: {
-    ...typography.label.detail,
+    ...typography.overline,
+    fontFamily: fonts.semibold,
     color: colors.text.tertiary,
   },
   taskTitle: {
@@ -457,6 +458,7 @@ const styles = StyleSheet.create({
   },
   taskContentMuted: {
     color: colors.text.tertiary,
+    textDecorationLine: 'line-through',
   },
   startButton: {
     width: 42,

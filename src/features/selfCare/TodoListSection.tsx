@@ -788,7 +788,7 @@ const styles = StyleSheet.create({
   },
   goalText: {
     flex: 1,
-    gap: 2,
+    gap: 6,
   },
   goalTime: {
     ...typography.label.detail,
@@ -807,6 +807,7 @@ const styles = StyleSheet.create({
   },
   goalTitleDone: {
     color: colors.text.tertiary,
+    textDecorationLine: 'line-through',
   },
   // White button with a lip: the thicker bottom edge is what makes it read as
   // a raised key rather than a flat swatch.
