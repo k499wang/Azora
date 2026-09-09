@@ -1,7 +1,4 @@
-import { useNavigation } from '@react-navigation/native';
-import { usePostHog } from 'posthog-react-native';
 import { Pressable, StyleSheet, View } from 'react-native';
-import type { RootStackNavigationProp } from '../../app/navigation';
 import {
   CATEGORY_STYLE,
   TECHNIQUE_GLYPH,
@@ -10,13 +7,13 @@ import {
   formatPattern,
   type BreathingTechnique,
 } from '../../features/exercise/guidedBreathing/techniques';
-import { AnalyticsEvent } from '../../services/analytics/events';
-import { trackFeatureGateHit } from '../../services/analytics/tracking';
-import { PaywallPlacement } from '../../services/paywall';
-import { FeatureKey } from '../../services/subscriptions/featureAccess';
-import type { FeatureAccessResult } from '../../services/subscriptions/featureAccess';
+import {
+  useOpenBreathingTechnique,
+  type BreathingTechniqueSourceAction,
+  type BreathingTechniqueSourceScreen,
+} from '../../features/exercise/shared/hooks/useOpenBreathingTechnique';
+import type { FeatureAccessState } from '../../hooks/useFeatureAccess';
 import { card, coloredCard } from '../../theme/card';
-import { triggerTapHaptic } from '../../native/tapHaptics';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
@@ -32,13 +29,10 @@ const SHELF_GLYPH_SIZE = 186;
 interface TechniqueCardProps {
   technique: BreathingTechnique;
   recommended?: boolean;
-  exerciseAccess: FeatureAccessResult & { isLoading: boolean };
+  exerciseAccess: FeatureAccessState;
   layout: 'shelf' | 'search';
-  sourceScreen: 'Explore' | 'ExerciseSearch' | 'Home';
-  sourceAction:
-    | 'breathing_library'
-    | 'exercise_search_result'
-    | 'extra_practice';
+  sourceScreen: BreathingTechniqueSourceScreen;
+  sourceAction: BreathingTechniqueSourceAction;
 }
 
 export default function TechniqueCard({
@@ -49,8 +43,6 @@ export default function TechniqueCard({
   sourceScreen,
   sourceAction,
 }: TechniqueCardProps) {
-  const navigation = useNavigation<RootStackNavigationProp>();
-  const posthog = usePostHog();
   const categoryStyle = CATEGORY_STYLE[technique.category];
   const textColor = colors.text.inverse;
   const accessHint =
@@ -58,35 +50,13 @@ export default function TechniqueCard({
       ? 'Opens the Pro upgrade screen'
       : 'Starts this reset';
 
-  const handlePress = () => {
-    triggerTapHaptic();
-    posthog.capture(AnalyticsEvent.BreathingTechniqueSelected, {
-      technique_id: technique.id,
-      technique_name: technique.name,
-      technique_category: technique.category,
-      pattern: formatPattern(technique.pattern),
-      recommended,
-    });
-
-    if (!exerciseAccess.allowed && !exerciseAccess.isLoading) {
-      trackFeatureGateHit({
-        feature: FeatureKey.DailyExercise,
-        placement: PaywallPlacement.ExercisePremiumGate,
-        sourceScreen,
-        sourceAction,
-        access: exerciseAccess,
-      });
-      navigation.navigate('ProPaywall', {
-        placement: PaywallPlacement.ExercisePremiumGate,
-        sourceScreen,
-        sourceAction,
-        feature: FeatureKey.DailyExercise,
-      });
-      return;
-    }
-
-    navigation.navigate('ExerciseSession', { techniqueId: technique.id });
-  };
+  const handlePress = useOpenBreathingTechnique({
+    technique,
+    recommended,
+    exerciseAccess,
+    sourceScreen,
+    sourceAction,
+  });
 
   if (layout === 'search') {
     return (
