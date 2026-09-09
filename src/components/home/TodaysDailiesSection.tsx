@@ -136,9 +136,9 @@ export function DailyTaskRow({ title, scheduledTime, detailLabel, style, glyph,
           {...journeyReorderActions(onMove)}
           disabled={disabled}
           onPress={() => { if (!isArranging()) { triggerTapHaptic(); onPress?.(); } }}
-          style={({ pressed }) => [styles.startButton, disabled && pressable.disabled, pressed && pressable.control]}
+          style={({ pressed }) => [styles.startButton, completed && styles.startButtonDone, disabled && pressable.disabled, pressed && pressable.control]}
         >
-          <Icon name="play-triangle" size={20} color={completed ? colors.text.tertiary : colors.primary.blue600} />
+          <Icon name="play-triangle" size={20} color={completed ? colors.success[700] : colors.primary.blue600} />
         </Pressable>
       </View>
     </View>
@@ -155,5 +155,6 @@ const styles = StyleSheet.create({
   metadataRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   metadataText: { ...typography.label.detail, color: colors.text.tertiary },
   taskContentMuted: { color: colors.text.tertiary, textDecorationLine: 'line-through' },
+  startButtonDone: { backgroundColor: colors.success[100], borderColor: colors.success[300] },
   startButton: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center', borderRadius: radius.small, backgroundColor: colors.background.card, borderWidth: 1, borderBottomWidth: 3, borderColor: colors.border.default },
 });

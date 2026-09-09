@@ -7,6 +7,11 @@ export interface ExerciseDarkTheme {
   screen: string;
   surface: string;
   surfaceBorder: string;
+  // Small inline controls — the session-length pill and its menu — sit directly
+  // on `screen` instead of inside a panel, so they read a step lighter than
+  // `surface` to stay legible without turning into a card.
+  controlSurface: string;
+  controlBorder: string;
   circleOutline: string;
   circleOutlineOpacity: number;
   circleOuter: string;
@@ -41,6 +46,8 @@ export const EXERCISE_DARK_THEMES: ExerciseDarkTheme[] = [
     // different material rather than a raised part of the same one.
     surface: '#F3EBE1',
     surfaceBorder: '#E7DCCE',
+    controlSurface: '#F9F3ED',
+    controlBorder: '#EBE1D4',
     circleOutline: '#63ADFF',
     circleOutlineOpacity: 0.5,
     // The breathing companion's body and aura. Shares Mochi's token so the
@@ -67,6 +74,8 @@ export const EXERCISE_DARK_THEMES: ExerciseDarkTheme[] = [
     screen: '#111318',
     surface: '#1C2130',
     surfaceBorder: '#282E40',
+    controlSurface: '#242A3A',
+    controlBorder: '#333A4D',
     circleOutline: '#4A6090',
     circleOutlineOpacity: 0.55,
     circleOuter: '#4A6090',
@@ -90,6 +99,8 @@ export const EXERCISE_DARK_THEMES: ExerciseDarkTheme[] = [
     screen: '#131210',
     surface: '#1E1C1A',
     surfaceBorder: '#2A2824',
+    controlSurface: '#282522',
+    controlBorder: '#37332D',
     circleOutline: '#7A6A5E',
     circleOutlineOpacity: 0.55,
     circleOuter: '#7A6A5E',
@@ -113,6 +124,8 @@ export const EXERCISE_DARK_THEMES: ExerciseDarkTheme[] = [
     screen: '#0E1412',
     surface: '#162018',
     surfaceBorder: '#1E2E28',
+    controlSurface: '#1D2A23',
+    controlBorder: '#293A32',
     circleOutline: '#4A7060',
     circleOutlineOpacity: 0.55,
     circleOuter: '#4A7060',

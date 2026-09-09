@@ -219,7 +219,13 @@ function GoalCard({
           pressed && pressable.control,
         ]}
       >
-        <Icon name="check" size={24} color={colors.primary.blue600} />
+        <Icon
+          name="check"
+          size={24}
+          color={
+            goal.completedToday ? colors.success[700] : colors.primary.blue600
+          }
+        />
       </Pressable>
     </View>
   );
