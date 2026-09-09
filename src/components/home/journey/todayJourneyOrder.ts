@@ -4,6 +4,10 @@ import type {
   SelfCareGoal,
   SelfCareGoalPlaces,
 } from '../../../features/selfCare/domain/selfCareGoal';
+import {
+  SELF_CARE_GOAL_DAYPARTS,
+  selfCareGoalDaypart,
+} from '../../../features/selfCare/domain/selfCareGoal';
 
 export type TodayJourneyId = `exercise:${DailyPlanActionId}` | `todo:${string}`;
 
@@ -13,53 +17,85 @@ export const todoJourneyId = (id: string): TodayJourneyId => `todo:${id}`;
 
 const ACTION_IDS: DailyPlanActionId[] = ['session', 'handPicked', 'checkIn'];
 
-function timePlace(value: string | null | undefined, fallback: number): number {
-  if (value == null) return fallback;
+function journeyTime(value: string | null | undefined): {
+  daypart: number;
+  minute: number;
+} {
+  const fallback = 24 * 60;
+  if (value == null) {
+    return { daypart: SELF_CARE_GOAL_DAYPARTS.length, minute: fallback };
+  }
   const match = /^(\d{2}):(\d{2})$/.exec(value);
-  if (match == null) return fallback;
-  return Number(match[1]) * 60 + Number(match[2]);
+  if (match == null) {
+    return { daypart: SELF_CARE_GOAL_DAYPARTS.length, minute: fallback };
+  }
+  const hour = Number(match[1]);
+  const minute = Number(match[2]);
+  if (hour > 23 || minute > 59) {
+    return { daypart: SELF_CARE_GOAL_DAYPARTS.length, minute: fallback };
+  }
+  const daypart = selfCareGoalDaypart(value);
+  return {
+    daypart: SELF_CARE_GOAL_DAYPARTS.findIndex(({ id }) => id === daypart),
+    minute: hour * 60 + minute,
+  };
 }
 
-/** Default Home order: exercises first, then to-dos; each group runs earliest first. */
+/** Default Home order: each daypart's exercises, then its to-dos. */
 export function defaultTodayJourneyOrder(
   actions: DailyPlanSchedule['actions'],
   goals: readonly SelfCareGoal[],
 ): TodayJourneyId[] {
   const exerciseIds = ACTION_IDS.map((id, index) => ({
     id: exerciseJourneyId(id),
-    place: timePlace(actions[id], 24 * 60) * 100 + index,
-  }))
-    .sort((a, b) => a.place - b.place)
-    .map(({ id }) => id);
+    ...journeyTime(actions[id]),
+    kind: 0,
+    stableIndex: index,
+  }));
   const todoIds = goals.map((goal, index) => ({
     id: todoJourneyId(goal.id),
-    place: timePlace(goal.scheduledTime, 24 * 60) * 100 + index,
-  }))
-    .sort((a, b) => a.place - b.place)
+    ...journeyTime(goal.scheduledTime),
+    kind: 1,
+    stableIndex: index,
+  }));
+  return [...exerciseIds, ...todoIds]
+    .sort((left, right) =>
+      left.daypart - right.daypart ||
+      left.kind - right.kind ||
+      left.minute - right.minute ||
+      left.stableIndex - right.stableIndex,
+    )
     .map(({ id }) => id);
-  return [...exerciseIds, ...todoIds];
 }
 
-/** Storage may outlive rows; missing live rows are appended in default order. */
-export function sanitizeTodayJourneyOrder(
-  raw: unknown,
+/**
+ * Keeps temporarily absent to-dos in storage so recurring rows return to the
+ * same place, while dropping exercise IDs that no longer belong to the plan.
+ * To-dos leave this baseline only after a confirmed archive/delete mutation.
+ */
+export function reconcileTodayJourneyMembership(
+  stored: readonly TodayJourneyId[],
   liveIds: readonly TodayJourneyId[],
 ): TodayJourneyId[] {
   const live = new Set(liveIds);
   const kept: TodayJourneyId[] = [];
-  if (Array.isArray(raw)) {
-    for (const value of raw) {
-      if (
-        typeof value === 'string' &&
-        live.has(value as TodayJourneyId) &&
-        !kept.includes(value as TodayJourneyId)
-      ) {
-        kept.push(value as TodayJourneyId);
-      }
+  for (const id of stored) {
+    if (
+      (id.startsWith('todo:') || live.has(id)) &&
+      !kept.includes(id)
+    ) {
+      kept.push(id);
     }
   }
   for (const id of liveIds) if (!kept.includes(id)) kept.push(id);
   return kept;
+}
+
+export function removeTodayJourneyItem(
+  order: readonly TodayJourneyId[],
+  id: TodayJourneyId,
+): TodayJourneyId[] {
+  return order.filter((candidate) => candidate !== id);
 }
 
 /** Reorders visible rows without losing the places of rows folded away. */
@@ -105,4 +141,21 @@ export function migrateLegacyTodayJourneyOrder(
   return withDailies.map((id) =>
     id.startsWith('todo:') ? todoIds[todoIndex++] : id,
   );
+}
+
+/**
+ * Keeps a saved order stable while reconciling its membership with live rows.
+ * A missing combined preference is the only case that consults the old split
+ * preferences; after that, new rows append and temporarily absent to-dos keep
+ * their slots. Confirmed archive/delete actions remove their IDs explicitly.
+ */
+export function reconcileTodayJourneyOrder(
+  stored: TodayJourneyId[] | null,
+  defaults: readonly TodayJourneyId[],
+  dailyOrder: readonly DailyPlanActionId[] | null,
+  goalPlaces: SelfCareGoalPlaces,
+): TodayJourneyId[] {
+  return stored == null
+    ? migrateLegacyTodayJourneyOrder(defaults, dailyOrder, goalPlaces)
+    : reconcileTodayJourneyMembership(stored, defaults);
 }

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Pressable,
   StyleSheet,
@@ -40,30 +40,16 @@ import {
   MAX_SELF_CARE_GOALS,
   planSelfCareGoalList,
   type SelfCareGoal,
-  type SelfCareGoalPlaces,
 } from './domain/selfCareGoal';
 import {
-  loadSelfCareGoalPlaces,
-  selfCareGoalPlacesNow,
-} from '../../services/preferences/selfCareGoalOrder';
-import {
-  dailyPlanOrderNow,
-  loadDailyPlanOrder,
-} from '../../services/preferences/dailyPlanOrder';
-import {
-  loadTodayJourneyOrder,
-  saveTodayJourneyOrder,
-  todayJourneyOrderNow,
-} from '../../services/preferences/todayJourneyOrder';
-import {
-  defaultTodayJourneyOrder,
   exerciseJourneyId,
-  mergeVisibleTodayJourneyOrder,
-  migrateLegacyTodayJourneyOrder,
-  sanitizeTodayJourneyOrder,
   todoJourneyId,
   type TodayJourneyId,
 } from '../../components/home/journey/todayJourneyOrder';
+import {
+  todayJourneyLoadState,
+  useTodayJourneyOrder,
+} from '../../components/home/journey/useTodayJourneyOrder';
 import type { DailyPlanActionId } from '../../services/dailyPlan/dailyPlanScheduleCore';
 import type { DailyPlanSchedule } from '../../services/dailyPlan/types';
 import { card, radius } from '../../theme/card';
@@ -116,7 +102,6 @@ interface TodoListSectionProps {
   dailyRows: Record<DailyPlanActionId, DailyRowContent> | null;
   /** Canonical persisted schedule. Null while it is still loading. */
   schedule: DailyPlanSchedule | null;
-  scheduleLoading: boolean;
   scheduleError: boolean;
   onRetrySchedule: () => void;
   onPressHistory: () => void;
@@ -322,7 +307,6 @@ function AddGoalRow({
 export default function TodoListSection({
   dailyRows,
   schedule,
-  scheduleLoading,
   scheduleError,
   onRetrySchedule,
   onPressHistory,
@@ -339,68 +323,6 @@ export default function TodoListSection({
   const archiveGoal = useArchiveSelfCareGoalMutation(userId, localDate);
   const featureGoal = useSetSelfCareGoalFeaturedMutation(userId, localDate);
   const updateGoal = useUpdateSelfCareGoalMutation(userId, localDate);
-  /**
-   * Where the user dragged each to-do. A device preference rather than a
-   * column: the order of a checklist is worth remembering and not worth a round
-   * trip before the row can settle under the finger that dropped it. Read once
-   * on the way in, and written straight through on every drop.
-   */
-  const [places, setPlaces] = useState<SelfCareGoalPlaces>(
-    selfCareGoalPlacesNow,
-  );
-  const [storedJourneyOrder, setStoredJourneyOrder] = useState<TodayJourneyId[] | null>(
-    todayJourneyOrderNow,
-  );
-  const [journeyOrderLoaded, setJourneyOrderLoaded] = useState(false);
-  const [journeyOrderError, setJourneyOrderError] = useState(false);
-  const [preferenceLoadAttempt, setPreferenceLoadAttempt] = useState(0);
-
-  // Already primed on all but the very first read of the app's life, so this
-  // usually settles on the same map the first render drew with.
-  useEffect(() => {
-    let live = true;
-    setJourneyOrderError(false);
-    void Promise.all([
-      loadSelfCareGoalPlaces(),
-      loadDailyPlanOrder(),
-      loadTodayJourneyOrder(),
-    ]).then(([storedPlaces, _dailyOrder, journeyOrder]) => {
-      if (!live) return;
-      setPlaces(storedPlaces);
-      if (journeyOrder != null) setStoredJourneyOrder(journeyOrder);
-      setJourneyOrderLoaded(true);
-    }).catch(() => {
-      if (!live) return;
-      setJourneyOrderError(true);
-    });
-    return () => {
-      live = false;
-    };
-  }, [preferenceLoadAttempt]);
-
-  useEffect(() => {
-    if (!journeyOrderLoaded || schedule == null || goalsQuery.data == null || storedJourneyOrder != null) return;
-    setStoredJourneyOrder(migrateLegacyTodayJourneyOrder(
-      defaultTodayJourneyOrder(schedule.actions, goalsQuery.data),
-      dailyPlanOrderNow(),
-      places,
-    ));
-  }, [goalsQuery.data, journeyOrderLoaded, places, schedule, storedJourneyOrder]);
-
-  /**
-   * Forgets where a to-do was dragged, so it goes back to where its hour puts
-   * it. Moving one to a different part of the day is the user asking for that;
-   * a to-do that is gone has no place to keep.
-   */
-  const forgetPlace = useCallback(
-    (goalId: string) => {
-      if (!(goalId in places)) return;
-      const next = { ...places };
-      delete next[goalId];
-      setPlaces(next);
-    },
-    [places],
-  );
   const [adding, setAdding] = useState(false);
   const [detailGoalId, setDetailGoalId] = useState<string | null>(null);
   const [editGoalId, setEditGoalId] = useState<string | null>(null);
@@ -414,9 +336,14 @@ export default function TodoListSection({
   const pendingEditGoalId = useRef<string | null>(null);
   const [completedOpen, setCompletedOpen] = useState(false);
   const goals = goalsQuery.data ?? [];
+  const journeyOrder = useTodayJourneyOrder({
+    userId,
+    actions: schedule?.actions ?? null,
+    goals: goalsQuery.data,
+  });
   // With the day done every finished to-do folds into the drawer, so the card
   // stands alone rather than sitting on top of the list it is celebrating.
-  const plan = planSelfCareGoalList(goals, places);
+  const plan = planSelfCareGoalList(goals, journeyOrder.places);
   const railGoals = dayDone ? [] : plan.rail;
   const drawerGoals = dayDone ? goals : plan.drawer;
   useGoalCompletionCelebration(goalsQuery.data, (goalId) => {
@@ -431,15 +358,8 @@ export default function TodoListSection({
   const mutationError =
     toggleGoal.error ?? archiveGoal.error ?? featureGoal.error;
   const addNodeVisible = goalsQuery.isSuccess && !atLimit;
-  const journeyReady =
-    schedule != null &&
-    dailyRows != null &&
-    goalsQuery.data != null &&
-    journeyOrderLoaded;
-  const defaultOrder = journeyReady
-    ? defaultTodayJourneyOrder(schedule.actions, goals)
-    : [];
-  const fullOrder = sanitizeTodayJourneyOrder(storedJourneyOrder, defaultOrder);
+  const journeyReady = journeyOrder.ready && dailyRows != null;
+  const fullOrder = journeyOrder.fullOrder;
   const railGoalKey = railGoals.map((goal) => goal.id).join('|');
   // Stable across renders that did not change the list, so the drag's own
   // bookkeeping is not rebuilt underneath a finger that is holding a row.
@@ -470,13 +390,9 @@ export default function TodoListSection({
       // The list changed while the finger was down — a to-do finished on
       // another device, a refetch landing — so the order is against rows that
       // have moved and the ones on screen go back where they were.
-      const next = mergeVisibleTodayJourneyOrder(fullOrder, orderedIds as TodayJourneyId[]);
-      if (next == null) {
+      if (!journeyOrder.commitVisibleOrder(orderedIds as TodayJourneyId[])) {
         restoreOrder();
-        return;
       }
-      setStoredJourneyOrder(next);
-      void saveTodayJourneyOrder(next);
     },
   });
 
@@ -494,15 +410,18 @@ export default function TodoListSection({
 
   if (userId == null) return null;
 
-  const initialLoadError =
-    scheduleError || goalsQuery.isError || journeyOrderError;
-  const initialLoading =
-    !initialLoadError &&
-    (scheduleLoading || !journeyReady);
+  const loadState = todayJourneyLoadState({
+    scheduleAvailable: schedule != null && dailyRows != null,
+    scheduleError,
+    goalsAvailable: goalsQuery.data != null,
+    goalsError: goalsQuery.isError,
+    orderReady: journeyOrder.ready,
+  });
+  const initialLoadError = loadState === 'error';
+  const initialLoading = loadState === 'loading';
   const retryInitialLoad = () => {
-    if (scheduleError) onRetrySchedule();
-    if (goalsQuery.isError) void goalsQuery.refetch();
-    if (journeyOrderError) setPreferenceLoadAttempt((attempt) => attempt + 1);
+    if (schedule == null && scheduleError) onRetrySchedule();
+    if (goalsQuery.data == null && goalsQuery.isError) void goalsQuery.refetch();
   };
 
   const save = (draft: SelfCareGoalDraft) => {
@@ -723,9 +642,11 @@ export default function TodoListSection({
         }}
         onRemove={() => {
           if (detailGoal == null) return;
+          const goalId = detailGoal.id;
           setDetailGoalId(null);
-          forgetPlace(detailGoal.id);
-          archiveGoal.mutate(detailGoal.id);
+          archiveGoal.mutate(goalId, {
+            onSuccess: () => journeyOrder.removeGoalFromOrder(goalId),
+          });
         }}
       />
 
@@ -739,12 +660,6 @@ export default function TodoListSection({
         }}
         onSave={(edit) => {
           if (editGoal == null) return;
-          // An edit that moves the to-do to another part of the day means the
-          // day decides where it sits again. One that only fixes a typo leaves
-          // the place the user dragged it to alone.
-          if (edit.scheduledTime !== editGoal.scheduledTime) {
-            forgetPlace(editGoal.id);
-          }
           updateGoal.mutate(
             { goalId: editGoal.id, ...edit },
             { onSuccess: () => setEditGoalId(null) },

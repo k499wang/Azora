@@ -70,7 +70,7 @@ test("the dailies tour target highlights today's two lists without the progress 
   );
   const targetMarker = '<View style={styles.todayList} {...dailiesTarget}>';
   const targetStart = home.indexOf(targetMarker);
-  const targetEnd = home.indexOf('{/* The shelf stays', targetStart);
+  const targetEnd = home.indexOf('      </ScrollView>', targetStart);
   const target = home.slice(targetStart, targetEnd);
 
   assert.equal(home.split(targetMarker).length - 1, 1);
@@ -97,6 +97,20 @@ test('the heart tour target belongs to the Home heart button', () => {
   assert.notEqual(targetEnd, -1);
   assert.match(target, /accessibilityLabel="Open heart statistics"/);
   assert.match(target, /name="heart"/);
+});
+
+test('the Explore tour target belongs to the tab screen search row', () => {
+  const explore = readFileSync(
+    join(here, '..', '..', 'screens', 'ExploreScreen.tsx'),
+    'utf8',
+  );
+
+  assert.match(explore, /useTourTarget\('exploreSearch'\)/);
+  assert.match(
+    explore,
+    /<View style={styles\.searchRow} \{\.\.\.exploreSearchTarget\}>[\s\S]*?<ExerciseSearchBar/,
+  );
+  assert.doesNotMatch(explore, /Back to home|returnToHome/);
 });
 
 test('the Heart measurement target wraps the native plus button', () => {

@@ -115,7 +115,7 @@ export function DailyTaskRow({ title, scheduledTime, detailLabel, style, glyph,
   const disabled = onPress == null || loading;
   const statusLabel = completed ? 'completed' : locked ? 'locked' : 'not completed';
   return (
-    <View style={styles.taskRow} {...journeyReorderActions(onMove)}>
+    <View style={styles.taskRow}>
       <View style={[card.base, card.shadow, styles.taskCard]}>
         <ActivityGlyph shape={glyph} size={DAILY_GLYPH_SIZE} color={completed ? colors.text.tertiary : style.hue.base} />
         <View style={styles.taskCopy}>
@@ -133,6 +133,7 @@ export function DailyTaskRow({ title, scheduledTime, detailLabel, style, glyph,
           accessibilityLabel={`Start ${title}`}
           accessibilityHint={`${statusLabel}. Hold the card to rearrange today's list.`}
           accessibilityState={{ disabled }}
+          {...journeyReorderActions(onMove)}
           disabled={disabled}
           onPress={() => { if (!isArranging()) { triggerTapHaptic(); onPress?.(); } }}
           style={({ pressed }) => [styles.startButton, disabled && pressable.disabled, pressed && pressable.control]}

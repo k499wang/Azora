@@ -1,12 +1,11 @@
 export type TourTargetId =
   | 'dailies'
-  | 'extraPractice'
-  | 'seeAll'
+  | 'exploreSearch'
   | 'measureHeart'
   | 'startHeartMeasurement';
 
 export type TourDestination =
-  | { route: 'MainTabs'; screen: 'Home' }
+  | { route: 'MainTabs'; screen: 'Home' | 'Explore' }
   | { route: 'Heart' };
 
 export interface TourStep {
@@ -29,14 +28,9 @@ export const tourSteps: readonly TourStep[] = [
     body: 'Tap a daily to start it, or tick off a to-do when it’s done.',
   },
   {
-    target: 'extraPractice',
-    destination: { route: 'MainTabs', screen: 'Home' },
-    body: 'Want something different? Pick an exercise that matches how you feel.',
-  },
-  {
-    target: 'seeAll',
-    destination: { route: 'MainTabs', screen: 'Home' },
-    body: 'Looking for more? Tap See all to explore every exercise.',
+    target: 'exploreSearch',
+    destination: { route: 'MainTabs', screen: 'Explore' },
+    body: 'Explore breathing exercises and search for the one you need.',
   },
   {
     target: 'measureHeart',

@@ -7,7 +7,6 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import { spacing, margin } from '../theme/spacing';
-import ExtraPracticeSection from '../components/home/ExtraPracticeSection';
 import { buildDailyRows } from '../components/home/TodaysDailiesSection';
 import HomeRoom from '../features/room/HomeRoom';
 import GlassIconButton from '../components/common/GlassIconButton';
@@ -52,8 +51,6 @@ const NO_PROJECTION = {};
 
 const TOUR_TARGETS: TourTargetId[] = [
   'dailies',
-  'extraPractice',
-  'seeAll',
   'measureHeart',
 ];
 
@@ -71,7 +68,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
    * folding the list away would hide it.
    */
   const dayDone = day.liveCompleted;
-  const { start, accessAllowed, exerciseAccess } = useStartDaily('Home', dailies);
+  const { start, accessAllowed } = useStartDaily('Home', dailies);
 
   const homeLayout = useDashboardLayout();
   const insets = useSafeAreaInsets();
@@ -129,7 +126,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const tourScroll = useTourScroller(TOUR_TARGETS);
   const scroller = tourScroll.ref;
   const dailiesTarget = useTourTarget('dailies');
-  const extraPracticeTarget = useTourTarget('extraPractice');
   const measureHeartTarget = useTourTarget('measureHeart');
   const dailyRows = dailyPlanSchedule == null ? null : buildDailyRows({
     technique: dailies.guidedTechnique,
@@ -202,7 +198,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             <TodoListSection
               dailyRows={dailyRows}
               schedule={dailyPlanSchedule}
-              scheduleLoading={dailyPlanScheduleQuery.isPending}
               scheduleError={dailyPlanScheduleQuery.isError}
               onRetrySchedule={() => dailyPlanScheduleQuery.refetch()}
               onPressHistory={() => navigation.navigate('History')}
@@ -215,22 +210,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
               scrollRef={scroller}
             />
           </View>
-        </View>
-
-        {/* The shelf stays horizontally scrollable at every width and runs to
-            the column edge, so the row a tablet cuts off is cut off on the same
-            margin the dailies above it sit on. */}
-        <View style={styles.extraPracticeSection} {...extraPracticeTarget}>
-          <ExtraPracticeSection
-            recommendedTechniqueId={dailies.guidedTechnique?.id ?? null}
-            excludedTechniqueIds={[
-              dailies.guidedTechnique?.id,
-              dailies.handPickedTechnique?.id,
-            ]}
-            exerciseAccess={exerciseAccess}
-            contentMaxWidth={homeLayout.contentMaxWidth}
-            onSeeAll={() => navigation.navigate('Explore')}
-          />
         </View>
       </ScrollView>
 
@@ -295,8 +274,5 @@ const styles = StyleSheet.create({
     // above it, and stacking a full gap on top of that read as a gulf between
     // them rather than a break.
     gap: spacing.sm,
-  },
-  extraPracticeSection: {
-    marginTop: margin.sectionGap,
   },
 });

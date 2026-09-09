@@ -135,6 +135,7 @@ import { buildOnboardingSaveFailureDiagnostics } from '../../queries/profile/onb
 import type { SavedOnboardingProfile } from '../../services/profile/onboardingStatusService';
 import { requestStoreReview } from '../../services/reviews/storeReview';
 import { pauseSessionReplay } from '../../services/analytics/sessionReplay';
+import { resetTodayJourneyOrderAfterOnboarding } from '../../services/preferences/todayJourneyOrder';
 
 // Set to true to re-enable the intent reflection screen between intent selection and name entry.
 const INTENT_REFLECTION_ENABLED = false;
@@ -771,6 +772,7 @@ function OnboardingFlowSteps({
         growthAreaAxis: planMindMap.growthArea.axis,
         startsOn: formatLocalDate(new Date()),
       });
+      let starterGoalsSaved = false;
       await Promise.all([
         (async () => {
           // The profile owns the user_preferences row through its foreign key,
@@ -783,6 +785,9 @@ function OnboardingFlowSteps({
             // it is not, so this one failure stays out of the seal's error.
             createSelfCareGoals
               .mutateAsync(starterPlanDraftList())
+              .then(() => {
+                starterGoalsSaved = true;
+              })
               .catch((error) => {
                 console.warn(
                   '[onboarding-starter-plan] save failed',
@@ -793,6 +798,9 @@ function OnboardingFlowSteps({
         })(),
         new Promise<void>((resolve) => setTimeout(resolve, 3500)),
       ]);
+      if (starterGoalsSaved) {
+        await resetTodayJourneyOrderAfterOnboarding(userId);
+      }
       trackOnboardingProfileSaveSucceeded({
         ...getStepEventInput(),
         elapsed_ms: Date.now() - startedAt,

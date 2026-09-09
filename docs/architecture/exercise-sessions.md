@@ -62,13 +62,17 @@ notification_preferences                -> notification consent and reminders
 ```
 
 Home presents the primary session, daily pick, breath-hold check-in, and
-self-care to-dos as one reorderable Today’s Dailies list. Its default order is
-chronological by normalized device-local time; exercise IDs and to-do IDs are
-namespaced so they cannot collide. A user arrangement is stored in the local
-`home:today_journey_order` preference. On first use, the app folds the previous
+self-care to-dos as one reorderable Today’s Dailies list. Its default groups
+cards into the existing self-care dayparts. Exercises precede to-dos within
+each daypart; each type remains chronological, and untimed cards appear last.
+IDs are namespaced so they cannot collide. A user arrangement is stored in the local
+`home:today_journey_order:<user-id>` preference. Finishing onboarding resets
+only that user's arrangement so Home derives it from the newly saved schedule
+and starter goals. On first use outside that path, the app folds the previous
 daily-only order and to-do place preferences into the mixed order without
-deleting either legacy key. Hidden completed to-dos retain their slot while
-they are collapsed. This presentation order does not change exercise reminder
+deleting either legacy key. Hidden completed and off-day recurring to-dos
+retain their slots. A to-do leaves the saved order only after its archive or
+delete succeeds. This presentation order does not change exercise reminder
 times or server-owned to-do data.
 
 New onboarding enables one local reminder for each daily plan action: the
@@ -209,6 +213,14 @@ intent-based time: focus and energy use the morning slot, while sleep uses the
 night slot. When the primary intent has no time-specific rule, sleep quality is
 the fallback that can move the session to night; otherwise it uses the evening
 slot. This scheduling decision is separate from the growth-area daily picks.
+
+On Home, the initial Today list groups cards by the existing self-care
+dayparts: Start the day, Afternoon, Evening, then Bedtime. Within each daypart,
+scheduled exercises appear first in chronological order, followed by to-dos in
+chronological order. This means an 8:00 AM morning exercise appears before a
+7:00 AM Start the day to-do. Any-time and invalid schedules appear last. A
+saved manual order remains authoritative, and newly created to-dos append
+rather than being inserted into this default order.
 
 `dailyMinutes` and onboarding experience do not affect technique selection or
 guided-session sizing. Guided exercises continue to use each technique's
@@ -429,7 +441,8 @@ Changes to plan generation, parsing, or day resolution must cover at least:
 - no score, growth-area, or pick effect from experience
 - no selection or guided-session-sizing effect from `dailyMinutes`
 - same-slot in-memory primary replacement and an unchanged seven-day cycle
-- chronological Today’s Dailies ordering, including stable equal-time behavior
+- daypart-based Today’s Dailies ordering, including chronological ordering
+  within each card type and stable equal-time behavior
 - one primary-session notification and no pick/check-in notifications
 - exclusion of the primary technique and all sleep/time-specific techniques
 - valid local dates, pre-start clamping, day-one/day-seven mapping, and repeat
