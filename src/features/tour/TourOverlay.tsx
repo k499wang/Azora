@@ -322,7 +322,7 @@ export default function TourOverlay() {
 
   if (!isModalVisible || presentedStep == null) return null;
 
-  const hole = rect == null ? null : inflate(rect, spacing.sm);
+  const hole = rect == null ? null : inflate(rect, spacing.md);
   const placement =
     hole == null
       ? null

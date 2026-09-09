@@ -1,15 +1,12 @@
-import type { ComponentProps } from 'react';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
+import type { IconName } from '../components/common/icons/paths';
 import { MOOD_TECHNIQUE } from '../features/exercise/guidedBreathing/techniqueSelection';
 import type { TechniqueId } from '../features/exercise/guidedBreathing/techniqueCatalog';
-
-type MoodIconName = NonNullable<ComponentProps<typeof MaterialCommunityIcons>['name']>;
 
 export interface Mood {
   id: 'stressed' | 'anxious' | 'sleepless' | 'focus' | 'angry' | 'lowEnergy';
   label: string;
-  icon: MoodIconName;
+  icon: IconName;
   accentColor: string;
   techniqueId: TechniqueId;
 }
@@ -18,42 +15,42 @@ export const MOODS: Mood[] = [
   {
     id: 'stressed',
     label: 'Stressed',
-    icon: 'weather-cloudy',
+    icon: 'mood-stressed',
     accentColor: colors.mood.stressed,
     techniqueId: MOOD_TECHNIQUE.stressed,
   },
   {
     id: 'anxious',
     label: 'Anxious',
-    icon: 'heart-pulse',
+    icon: 'mood-anxious',
     accentColor: colors.mood.anxious,
     techniqueId: MOOD_TECHNIQUE.anxious,
   },
   {
     id: 'sleepless',
     label: "Can't sleep",
-    icon: 'moon-waning-crescent',
+    icon: 'mood-sleepless',
     accentColor: colors.mood.sleepless,
     techniqueId: MOOD_TECHNIQUE.sleepless,
   },
   {
     id: 'focus',
     label: 'Need focus',
-    icon: 'target',
+    icon: 'mood-focus',
     accentColor: colors.mood.focus,
     techniqueId: MOOD_TECHNIQUE.focus,
   },
   {
     id: 'angry',
     label: 'Angry',
-    icon: 'fire',
+    icon: 'mood-angry',
     accentColor: colors.mood.angry,
     techniqueId: MOOD_TECHNIQUE.angry,
   },
   {
     id: 'lowEnergy',
     label: 'Low energy',
-    icon: 'battery-low',
+    icon: 'mood-low-energy',
     accentColor: colors.mood.lowEnergy,
     techniqueId: MOOD_TECHNIQUE.lowEnergy,
   },

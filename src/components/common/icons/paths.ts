@@ -533,6 +533,32 @@ export const ICON_PATHS = {
     viewBox: '0 0 24 24',
     body: `<g fill="currentColor"><path fill-rule="evenodd" d="M22 10V14C22 14.9319 22 15.3978 21.8478 15.7654C21.6448 16.2554 21.2554 16.6448 20.7654 16.8478C20.3978 17 19.9319 17 19 17C18.0681 17 17.6022 17 17.2346 16.8478C16.7446 16.6448 16.3552 16.2554 16.1522 15.7654C16 15.3978 16 14.4319 16 13.5V10.5C16 9.56812 16 8.60218 16.1522 8.23463C16.3552 7.74458 16.7446 7.35523 17.2346 7.15224C17.6022 7 18.0681 7 19 7C19.9319 7 20.3978 7 20.7654 7.15224C21.2554 7.35523 21.6448 7.74458 21.8478 8.23463C22 8.60218 22 9.06812 22 10ZM8 10.5V13.5C8 14.4319 8 15.3978 7.84776 15.7654C7.64477 16.2554 7.25542 16.6448 6.76537 16.8478C6.39782 17 5.93188 17 5 17C4.06812 17 3.60218 17 3.23463 16.8478C2.74458 16.6448 2.35523 16.2554 2.15224 15.7654C2 15.3978 2 14.9319 2 14V10C2 9.06812 2 8.60218 2.15224 8.23463C2.35523 7.74458 2.74458 7.35523 3.23463 7.15224C3.60218 7 4.06812 7 5 7C5.93188 7 6.39782 7 6.76537 7.15224C7.25542 7.35523 7.64477 7.74458 7.84776 8.23463C8 8.60218 8 9.56812 8 10.5Z" clip-rule="evenodd"/><path d="M16 10.5H8V13.5H16V10.5Z" opacity=".5"/></g>`,
   },
+  // Mood glyphs read as abstract instruments rather than emoji faces: a state
+  // is shown by what it does to a body, not by a cartoon expression.
+  'mood-stressed': {
+    viewBox: '0 0 24 24',
+    body: `<g fill="currentColor"><rect x="4.5" y="3" width="15" height="2.4" rx="1.2"/><rect x="4.5" y="18.6" width="15" height="2.4" rx="1.2"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M6.5 8 17.5 9.6 6.5 11.2 17.5 12.8 6.5 14.4 17.5 16" opacity=".5"/></g>`,
+  },
+  'mood-anxious': {
+    viewBox: '0 0 24 24',
+    body: `<g fill="currentColor"><circle cx="12" cy="12" r="2.7"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M7.6 7.6a6.4 6.4 0 0 0 0 8.8M16.4 7.6a6.4 6.4 0 0 1 0 8.8" opacity=".5"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M4.9 4.9a10.2 10.2 0 0 0 0 14.2M19.1 4.9a10.2 10.2 0 0 1 0 14.2" opacity=".5"/></g>`,
+  },
+  'mood-sleepless': {
+    viewBox: '0 0 24 24',
+    body: `<g fill="currentColor"><path d="M12.8 3.1A9.4 9.4 0 1 0 21 15.4 7.6 7.6 0 0 1 12.8 3.1Z"/><path d="M18.9 2.6l.78 1.86 1.86.78-1.86.78-.78 1.86-.78-1.86L16.26 5.24l1.86-.78z" opacity=".5"/></g>`,
+  },
+  'mood-focus': {
+    viewBox: '0 0 24 24',
+    body: `<g fill="currentColor"><circle cx="12" cy="12" r="9.4" fill="none" stroke="currentColor" stroke-width="1.7" opacity=".5"/><path d="M12 6.9l4.42 2.55v5.1L12 17.1l-4.42-2.55v-5.1z"/></g>`,
+  },
+  'mood-angry': {
+    viewBox: '0 0 24 24',
+    body: `<g fill="currentColor"><rect x="9.9" y="2.6" width="4.2" height="14" rx="2.1" opacity=".5"/><circle cx="12" cy="18.2" r="3.4"/><rect x="11.1" y="6.4" width="1.8" height="11" rx=".9"/><rect x="16.4" y="6.5" width="3.4" height="1.6" rx=".8" opacity=".5"/><rect x="16.4" y="10.6" width="3.4" height="1.6" rx=".8" opacity=".5"/></g>`,
+  },
+  'mood-low-energy': {
+    viewBox: '0 0 24 24',
+    body: `<g fill="currentColor"><rect x="4.8" y="2.4" width="14.4" height="2.2" rx="1.1"/><rect x="4.8" y="19.4" width="14.4" height="2.2" rx="1.1"/><path d="M6.9 4.6h10.2v2.1c0 2.2-1.66 3.6-3.42 5.3 1.76 1.7 3.42 3.1 3.42 5.3v2.1H6.9v-2.1c0-2.2 1.66-3.6 3.42-5.3C8.56 10.3 6.9 8.9 6.9 6.7z" opacity=".5"/><path d="M9.1 19.4c.42-1.95 1.66-3.05 2.9-4.15 1.24 1.1 2.48 2.2 2.9 4.15z"/></g>`,
+  },
 } as const;
 
 export type IconName = keyof typeof ICON_PATHS;

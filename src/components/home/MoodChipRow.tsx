@@ -1,7 +1,6 @@
 import { Text } from '../common/Text';
 import type { ReactNode } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { usePostHog } from 'posthog-react-native';
 import { colors } from '../../theme/colors';
@@ -10,6 +9,7 @@ import { spacing, padding } from '../../theme/spacing';
 import { AnalyticsEvent } from '../../services/analytics/events';
 import { MOODS, type Mood } from '../../data/moods';
 import type { MainTabNavigationProp } from '../../app/navigation';
+import Icon from '../common/icons/Icon';
 import GlassSurface from '../common/GlassSurface';
 import { DEFAULT_CARD_SURFACE } from '../common/cardSurfaceConfig';
 
@@ -41,11 +41,7 @@ export default function MoodChipRow() {
           accessibilityLabel={`Reset for ${mood.label.toLowerCase()}`}
         >
           <MoodChipSurface>
-            <MaterialCommunityIcons
-              name={mood.icon}
-              size={26}
-              color={colors.primary.blue600}
-            />
+            <Icon name={mood.icon} size={24} color={colors.primary.blue600} />
             <Text style={styles.label}>{mood.label}</Text>
           </MoodChipSurface>
         </Pressable>

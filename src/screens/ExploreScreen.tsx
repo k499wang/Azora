@@ -3,13 +3,10 @@ import type { ExploreScreenProps } from '../app/navigation';
 import AppTopBar from '../components/common/AppTopBar';
 import BreathingLibrary from '../components/explore/BreathingLibrary';
 import ExerciseSearchBar from '../components/explore/ExerciseSearchBar';
-import { useTourTarget } from '../features/tour/tourTargets';
 import { colors } from '../theme/colors';
 import { padding, spacing } from '../theme/spacing';
 
 export default function ExploreScreen({ navigation }: ExploreScreenProps) {
-  const exploreSearchTarget = useTourTarget('exploreSearch');
-
   return (
     <View style={styles.screen}>
       <ScrollView
@@ -21,7 +18,7 @@ export default function ExploreScreen({ navigation }: ExploreScreenProps) {
         overScrollMode="always"
       >
         <AppTopBar showAvatar={false} showStreak={false}>
-          <View style={styles.searchRow} {...exploreSearchTarget}>
+          <View style={styles.searchRow}>
             <ExerciseSearchBar
               mode="entry"
               onPress={() => navigation.navigate('ExerciseSearch')}

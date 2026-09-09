@@ -1,4 +1,3 @@
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { MOODS, type Mood } from '../../data/moods';
 import type { PlayfulHue } from '../../features/exercise/guidedBreathing/categoryPalette';
@@ -9,6 +8,7 @@ import { card } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { padding, spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
+import Icon from '../common/icons/Icon';
 import { Text } from '../common/Text';
 
 interface ExtraPracticeSectionProps {
@@ -56,11 +56,7 @@ function ExtraPracticeCard({ mood, exerciseAccess }: ExtraPracticeCardProps) {
       style={({ pressed }) => [styles.item, pressed && styles.itemPressed]}
     >
       <View style={[styles.iconTile, { backgroundColor: hue.base }]}>
-        <MaterialCommunityIcons
-          name={mood.icon}
-          size={30}
-          color={colors.text.inverse}
-        />
+        <Icon name={mood.icon} size={32} color={colors.text.inverse} />
       </View>
       <Text style={styles.label} numberOfLines={1}>
         {label}
