@@ -61,10 +61,15 @@ user_preferences.daily_plan_schedule    -> device-local card display times
 notification_preferences                -> notification consent and reminders
 ```
 
-Today’s Dailies sorts the primary session, daily pick, and breath-hold check-in
-chronologically by their normalized device-local `HH:mm` values. Equal times
-use the stable order `session`, `handPicked`, then `checkIn`. This presentation
-ordering does not change the stored exercise order.
+Home presents the primary session, daily pick, breath-hold check-in, and
+self-care to-dos as one reorderable Today’s Dailies list. Its default order is
+chronological by normalized device-local time; exercise IDs and to-do IDs are
+namespaced so they cannot collide. A user arrangement is stored in the local
+`home:today_journey_order` preference. On first use, the app folds the previous
+daily-only order and to-do place preferences into the mixed order without
+deleting either legacy key. Hidden completed to-dos retain their slot while
+they are collapsed. This presentation order does not change exercise reminder
+times or server-owned to-do data.
 
 New onboarding enables one local reminder for each daily plan action: the
 primary guided session, Azora's daily breathing exercise, and the breath-hold

@@ -8,7 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 import { spacing, margin } from '../theme/spacing';
 import ExtraPracticeSection from '../components/home/ExtraPracticeSection';
-import TodaysDailiesSection from '../components/home/TodaysDailiesSection';
+import { buildDailyRows } from '../components/home/TodaysDailiesSection';
 import HomeRoom from '../features/room/HomeRoom';
 import GlassIconButton from '../components/common/GlassIconButton';
 import Icon from '../components/common/icons/Icon';
@@ -32,7 +32,6 @@ import type { HomeScreenProps } from '../app/navigation';
 import { useAuthStore } from '../stores/authStore';
 import { useDailyPlanScheduleQuery } from '../queries/dailyPlan/useDailyPlanScheduleQuery';
 import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
-import { DEFAULT_DAILY_PLAN_SCHEDULE } from '../services/dailyPlan/types';
 import { useDashboardLayout } from '../hooks/useDashboardLayout';
 import { useIsRegularWidth } from '../hooks/useIsRegularWidth';
 import TodoListSection from '../features/selfCare/TodoListSection';
@@ -53,7 +52,6 @@ const NO_PROJECTION = {};
 
 const TOUR_TARGETS: TourTargetId[] = [
   'dailies',
-  'todos',
   'extraPractice',
   'seeAll',
   'measureHeart',
@@ -63,8 +61,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const user = useAuthStore((state) => state.user);
   const dailyPlanScheduleQuery = useDailyPlanScheduleQuery(user?.id ?? null);
   const profileSummary = useProfileSummaryQuery(user?.id ?? null).data;
-  const dailyPlanSchedule =
-    dailyPlanScheduleQuery.data ?? DEFAULT_DAILY_PLAN_SCHEDULE;
+  const dailyPlanSchedule = dailyPlanScheduleQuery.data ?? null;
   const roomClaim = useRoomClaim(user?.id ?? null);
   const dailies = roomClaim.dailies;
   const day = roomClaim.day;
@@ -132,9 +129,22 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const tourScroll = useTourScroller(TOUR_TARGETS);
   const scroller = tourScroll.ref;
   const dailiesTarget = useTourTarget('dailies');
-  const todosTarget = useTourTarget('todos');
   const extraPracticeTarget = useTourTarget('extraPractice');
   const measureHeartTarget = useTourTarget('measureHeart');
+  const dailyRows = dailyPlanSchedule == null ? null : buildDailyRows({
+    technique: dailies.guidedTechnique,
+    techniqueLoading: dailies.guidedTechniqueLoading,
+    handPickedTechnique: dailies.handPickedTechnique,
+    handPickedTechniqueLoading: dailies.handPickedTechniqueLoading,
+    schedule: dailyPlanSchedule,
+    guidedExerciseCompleted: dailies.guidedCompleted,
+    handPickedExerciseCompleted: dailies.handPickedCompleted,
+    breathHoldCompleted: dailies.breathHoldCompleted,
+    exerciseAccessAllowed: accessAllowed,
+    onPressGuidedExercise: () => start('guided'),
+    onPressHandPickedExercise: () => start('handPicked'),
+    onPressBreathHold: () => start('breathHold'),
+  });
 
   return (
     <View style={styles.screen}>
@@ -188,37 +198,22 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
               isLoading={roomClaim.isLoading}
             />
           </View>
-          <View style={styles.todayList}>
-            <View {...dailiesTarget}>
-              <TodaysDailiesSection
-                technique={dailies.guidedTechnique}
-                techniqueLoading={dailies.guidedTechniqueLoading}
-                handPickedTechnique={dailies.handPickedTechnique}
-                handPickedTechniqueLoading={dailies.handPickedTechniqueLoading}
-                schedule={dailyPlanSchedule}
-                guidedExerciseCompleted={dailies.guidedCompleted}
-                handPickedExerciseCompleted={dailies.handPickedCompleted}
-                breathHoldCompleted={dailies.breathHoldCompleted}
-                exerciseAccessAllowed={accessAllowed}
-                onPressGuidedExercise={() => start('guided')}
-                onPressHandPickedExercise={() => start('handPicked')}
-                onPressBreathHold={() => start('breathHold')}
-                onPressHistory={() => navigation.navigate('History')}
-                scrollRef={scroller}
-                dayDone={dayDone}
-              />
-            </View>
-            <View {...todosTarget}>
-              <TodoListSection
-                userId={user?.id ?? null}
-                dayDone={dayDone}
-                onCelebrate={() => celebrations.current?.burst()}
-                onCompleted={(goalTitle) =>
-                  celebrations.current?.confirm(goalTitle)
-                }
-                scrollRef={scroller}
-              />
-            </View>
+          <View style={styles.todayList} {...dailiesTarget}>
+            <TodoListSection
+              dailyRows={dailyRows}
+              schedule={dailyPlanSchedule}
+              scheduleLoading={dailyPlanScheduleQuery.isPending}
+              scheduleError={dailyPlanScheduleQuery.isError}
+              onRetrySchedule={() => dailyPlanScheduleQuery.refetch()}
+              onPressHistory={() => navigation.navigate('History')}
+              userId={user?.id ?? null}
+              dayDone={dayDone}
+              onCelebrate={() => celebrations.current?.burst()}
+              onCompleted={(goalTitle) =>
+                celebrations.current?.confirm(goalTitle)
+              }
+              scrollRef={scroller}
+            />
           </View>
         </View>
 

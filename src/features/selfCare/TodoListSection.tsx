@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  ActivityIndicator,
   Pressable,
   StyleSheet,
   type StyleProp,
@@ -15,6 +14,12 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Text } from '../../components/common/Text';
 import Icon from '../../components/common/icons/Icon';
+import SectionHeader from '../../components/common/SectionHeader';
+import Skeleton from '../../components/common/Skeleton';
+import {
+  DailyTaskRow,
+  type DailyRowContent,
+} from '../../components/home/TodaysDailiesSection';
 import type { SelfCareGoalDraft } from '../../services/selfCare/selfCareService';
 import AddGoalSheet from './AddGoalSheet';
 import GoalDetailSheet from './GoalDetailSheet';
@@ -31,7 +36,6 @@ import { useSetSelfCareGoalFeaturedMutation } from '../../queries/selfCare/useSe
 import { useUpdateSelfCareGoalMutation } from '../../queries/selfCare/useUpdateSelfCareGoalMutation';
 import {
   completedGoalsSummary,
-  reorderedSelfCareGoalPlaces,
   selfCareGoalDaypartLabel,
   MAX_SELF_CARE_GOALS,
   planSelfCareGoalList,
@@ -40,9 +44,28 @@ import {
 } from './domain/selfCareGoal';
 import {
   loadSelfCareGoalPlaces,
-  saveSelfCareGoalPlaces,
   selfCareGoalPlacesNow,
 } from '../../services/preferences/selfCareGoalOrder';
+import {
+  dailyPlanOrderNow,
+  loadDailyPlanOrder,
+} from '../../services/preferences/dailyPlanOrder';
+import {
+  loadTodayJourneyOrder,
+  saveTodayJourneyOrder,
+  todayJourneyOrderNow,
+} from '../../services/preferences/todayJourneyOrder';
+import {
+  defaultTodayJourneyOrder,
+  exerciseJourneyId,
+  mergeVisibleTodayJourneyOrder,
+  migrateLegacyTodayJourneyOrder,
+  sanitizeTodayJourneyOrder,
+  todoJourneyId,
+  type TodayJourneyId,
+} from '../../components/home/journey/todayJourneyOrder';
+import type { DailyPlanActionId } from '../../services/dailyPlan/dailyPlanScheduleCore';
+import type { DailyPlanSchedule } from '../../services/dailyPlan/types';
 import { card, radius } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { pressable } from '../../theme/pressable';
@@ -90,6 +113,13 @@ const GOAL_CHECK_SIZE = 42;
 const JOURNEY_ROW_GAP = 12;
 const ADD_ROW_OFFSET = TODAY_JOURNEY_GROUP_GAP - JOURNEY_ROW_GAP;
 interface TodoListSectionProps {
+  dailyRows: Record<DailyPlanActionId, DailyRowContent> | null;
+  /** Canonical persisted schedule. Null while it is still loading. */
+  schedule: DailyPlanSchedule | null;
+  scheduleLoading: boolean;
+  scheduleError: boolean;
+  onRetrySchedule: () => void;
+  onPressHistory: () => void;
   /**
    * Everything on both of Home's lists is finished. Decided above this section,
    * since the card it shows stands for the whole day and not for this list.
@@ -290,6 +320,12 @@ function AddGoalRow({
 }
 
 export default function TodoListSection({
+  dailyRows,
+  schedule,
+  scheduleLoading,
+  scheduleError,
+  onRetrySchedule,
+  onPressHistory,
   userId,
   dayDone,
   onCelebrate,
@@ -312,18 +348,44 @@ export default function TodoListSection({
   const [places, setPlaces] = useState<SelfCareGoalPlaces>(
     selfCareGoalPlacesNow,
   );
+  const [storedJourneyOrder, setStoredJourneyOrder] = useState<TodayJourneyId[] | null>(
+    todayJourneyOrderNow,
+  );
+  const [journeyOrderLoaded, setJourneyOrderLoaded] = useState(false);
+  const [journeyOrderError, setJourneyOrderError] = useState(false);
+  const [preferenceLoadAttempt, setPreferenceLoadAttempt] = useState(0);
 
   // Already primed on all but the very first read of the app's life, so this
   // usually settles on the same map the first render drew with.
   useEffect(() => {
     let live = true;
-    void loadSelfCareGoalPlaces().then((stored) => {
-      if (live) setPlaces(stored);
+    setJourneyOrderError(false);
+    void Promise.all([
+      loadSelfCareGoalPlaces(),
+      loadDailyPlanOrder(),
+      loadTodayJourneyOrder(),
+    ]).then(([storedPlaces, _dailyOrder, journeyOrder]) => {
+      if (!live) return;
+      setPlaces(storedPlaces);
+      if (journeyOrder != null) setStoredJourneyOrder(journeyOrder);
+      setJourneyOrderLoaded(true);
+    }).catch(() => {
+      if (!live) return;
+      setJourneyOrderError(true);
     });
     return () => {
       live = false;
     };
-  }, []);
+  }, [preferenceLoadAttempt]);
+
+  useEffect(() => {
+    if (!journeyOrderLoaded || schedule == null || goalsQuery.data == null || storedJourneyOrder != null) return;
+    setStoredJourneyOrder(migrateLegacyTodayJourneyOrder(
+      defaultTodayJourneyOrder(schedule.actions, goalsQuery.data),
+      dailyPlanOrderNow(),
+      places,
+    ));
+  }, [goalsQuery.data, journeyOrderLoaded, places, schedule, storedJourneyOrder]);
 
   /**
    * Forgets where a to-do was dragged, so it goes back to where its hour puts
@@ -336,7 +398,6 @@ export default function TodoListSection({
       const next = { ...places };
       delete next[goalId];
       setPlaces(next);
-      void saveSelfCareGoalPlaces(next);
     },
     [places],
   );
@@ -370,14 +431,31 @@ export default function TodoListSection({
   const mutationError =
     toggleGoal.error ?? archiveGoal.error ?? featureGoal.error;
   const addNodeVisible = goalsQuery.isSuccess && !atLimit;
-  const journeyNodeCount = railGoals.length + (addNodeVisible ? 1 : 0);
+  const journeyReady =
+    schedule != null &&
+    dailyRows != null &&
+    goalsQuery.data != null &&
+    journeyOrderLoaded;
+  const defaultOrder = journeyReady
+    ? defaultTodayJourneyOrder(schedule.actions, goals)
+    : [];
+  const fullOrder = sanitizeTodayJourneyOrder(storedJourneyOrder, defaultOrder);
   const railGoalKey = railGoals.map((goal) => goal.id).join('|');
   // Stable across renders that did not change the list, so the drag's own
   // bookkeeping is not rebuilt underneath a finger that is holding a row.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const railGoalIds = useMemo(() => railGoals.map((goal) => goal.id), [railGoalKey]);
+  const railGoalIds = useMemo(() => railGoals.map((goal) => todoJourneyId(goal.id)), [railGoalKey]);
+  const visibleIdSet = new Set<TodayJourneyId>([
+    exerciseJourneyId('session'),
+    exerciseJourneyId('handPicked'),
+    exerciseJourneyId('checkIn'),
+    ...railGoalIds,
+  ]);
+  const journeyIds = dayDone || !journeyReady
+    ? []
+    : fullOrder.filter((id) => visibleIdSet.has(id));
   const { controller, moveBy, restoreOrder } = useJourneyReorder({
-    ids: railGoalIds,
+    ids: journeyIds,
     gap: JOURNEY_ROW_GAP,
     enabled: !dayDone,
     // The rows stand up by transform rather than by their place in the layout,
@@ -388,21 +466,17 @@ export default function TodoListSection({
     // A to-do arriving or leaving moves the rest of the list on the same curve
     // used by the daily rows above it.
     restingTiming: TODAY_JOURNEY_RAIL_TIMING,
-    onReorder: (orderedGoalIds) => {
+    onReorder: (orderedIds) => {
       // The list changed while the finger was down — a to-do finished on
       // another device, a refetch landing — so the order is against rows that
       // have moved and the ones on screen go back where they were.
-      const next = reorderedSelfCareGoalPlaces(
-        railGoals,
-        places,
-        orderedGoalIds,
-      );
+      const next = mergeVisibleTodayJourneyOrder(fullOrder, orderedIds as TodayJourneyId[]);
       if (next == null) {
         restoreOrder();
         return;
       }
-      setPlaces(next);
-      void saveSelfCareGoalPlaces(next);
+      setStoredJourneyOrder(next);
+      void saveTodayJourneyOrder(next);
     },
   });
 
@@ -420,6 +494,17 @@ export default function TodoListSection({
 
   if (userId == null) return null;
 
+  const initialLoadError =
+    scheduleError || goalsQuery.isError || journeyOrderError;
+  const initialLoading =
+    !initialLoadError &&
+    (scheduleLoading || !journeyReady);
+  const retryInitialLoad = () => {
+    if (scheduleError) onRetrySchedule();
+    if (goalsQuery.isError) void goalsQuery.refetch();
+    if (journeyOrderError) setPreferenceLoadAttempt((attempt) => attempt + 1);
+  };
+
   const save = (draft: SelfCareGoalDraft) => {
     if (createGoal.isPending || atLimit) return;
     createGoal.mutate(draft, { onSuccess: () => setAdding(false) });
@@ -432,15 +517,38 @@ export default function TodoListSection({
 
   return (
     <View style={styles.section}>
-      {goalsQuery.isPending ? (
-        <View style={styles.statusRow}>
-          <ActivityIndicator color={colors.primary.blue600} />
-          <Text style={styles.statusText}>Loading your list…</Text>
+      <SectionHeader
+        icon="calendar"
+        title="Today’s Dailies"
+        right={
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Open your history"
+            hitSlop={spacing.sm}
+            onPress={() => {
+              triggerTapHaptic();
+              onPressHistory();
+            }}
+            style={({ pressed }) => [
+              styles.historyLink,
+              pressed && pressable.subtle,
+            ]}
+          >
+            <Text style={styles.historyLinkText}>History</Text>
+            <Icon name="chevron-right" size={16} color={colors.text.brand} />
+          </Pressable>
+        }
+      />
+      {initialLoading ? (
+        <View accessibilityLabel="Loading today's dailies" style={styles.loadingRows}>
+          {[0, 1, 2].map((index) => (
+            <Skeleton key={index} height={GOAL_ROW_HEIGHT} radius={radius.medium} />
+          ))}
         </View>
-      ) : goalsQuery.isError ? (
+      ) : initialLoadError ? (
         <View style={[card.base, styles.statusCard]}>
-          <Text style={styles.statusText}>Couldn’t load your list.</Text>
-          <Pressable accessibilityRole="button" onPress={() => goalsQuery.refetch()}>
+          <Text style={styles.statusText}>Couldn’t load today’s dailies.</Text>
+          <Pressable accessibilityRole="button" onPress={retryInitialLoad}>
             <Text style={styles.retryLabel}>Retry</Text>
           </Pressable>
         </View>
@@ -462,29 +570,42 @@ export default function TodoListSection({
             />
           )}
         </View>
-      ) : goalsQuery.isSuccess && journeyNodeCount > 0 ? (
+      ) : journeyReady ? (
         <View style={styles.journey}>
           {/* The rows' own box. Once they are positioned by transform they
               stand at the top of it and are moved down into place, so it is
               told how tall they are together instead of being told by them —
               and the add row below stays below them. */}
-          {railGoals.length > 0 ? (
+          {journeyIds.length > 0 ? (
             <View
               style={[
                 styles.journeyRows,
                 { height: controller.contentHeight ?? undefined },
               ]}
             >
-              {railGoals.map((goal, index) => (
+              {journeyIds.map((id, index) => {
+                const actionId = id.startsWith('exercise:')
+                  ? id.slice('exercise:'.length) as DailyPlanActionId
+                  : null;
+                const goal = actionId == null
+                  ? railGoals.find((candidate) => todoJourneyId(candidate.id) === id)
+                  : null;
+                return (
                 <JourneyDragRow
-                  key={goal.id}
+                  key={id}
                   controller={controller}
-                  id={goal.id}
+                  id={id}
                   index={index}
                   scrollRef={scrollRef}
                   style={styles.journeyRow}
                 >
-                  <GoalCard
+                  {actionId != null ? (
+                    <DailyTaskRow
+                      {...dailyRows[actionId]}
+                      isArranging={controller.isArranging}
+                      onMove={(delta) => moveBy(id, delta)}
+                    />
+                  ) : goal != null ? <GoalCard
                     goal={goal}
                     busy={
                       toggleGoal.isPending &&
@@ -498,10 +619,10 @@ export default function TodoListSection({
                       })
                     }
                     onOpen={() => setDetailGoalId(goal.id)}
-                    onMove={(delta) => moveBy(goal.id, delta)}
-                  />
+                    onMove={(delta) => moveBy(id, delta)}
+                  /> : null}
                 </JourneyDragRow>
-              ))}
+              )})}
             </View>
           ) : null}
           {addNodeVisible ? (
@@ -655,8 +776,21 @@ const styles = StyleSheet.create({
   section: {
     gap: spacing.md,
   },
+  historyLinkText: {
+    ...typography.label.medium,
+    fontFamily: fonts.semibold,
+    color: colors.text.brand,
+  },
+  historyLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
   journey: {
     position: 'relative',
+    gap: JOURNEY_ROW_GAP,
+  },
+  loadingRows: {
     gap: JOURNEY_ROW_GAP,
   },
   // The gap is the layout's only while the rows are still being measured; once

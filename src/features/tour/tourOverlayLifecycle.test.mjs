@@ -63,22 +63,25 @@ test('TourOverlay owns settled measurement and layout watching as one lifecycle'
   assert.doesNotMatch(overlay, /\[rect, clusterOpacity, reducedMotion\]/);
 });
 
-test('the dailies tour target highlights the dailies without the progress card', () => {
+test("the dailies tour target highlights today's two lists without the progress card", () => {
   const home = readFileSync(
     join(here, '..', '..', 'screens', 'HomeScreen.tsx'),
     'utf8',
   );
-  const targetMarker = '<View {...dailiesTarget}>';
+  const targetMarker = '<View style={styles.todayList} {...dailiesTarget}>';
   const targetStart = home.indexOf(targetMarker);
-  const targetEnd = home.indexOf('</View>', targetStart);
+  const targetEnd = home.indexOf('{/* The shelf stays', targetStart);
   const target = home.slice(targetStart, targetEnd);
 
   assert.equal(home.split(targetMarker).length - 1, 1);
   assert.notEqual(targetStart, -1);
   assert.notEqual(targetEnd, -1);
   assert.ok(home.indexOf('<RoomProgressCard') < targetStart);
-  assert.match(target, /<TodaysDailiesSection/);
+  assert.match(target, /<TodoListSection/);
+  assert.match(target, /dailyRows={dailyRows}/);
   assert.doesNotMatch(target, /<RoomProgressCard/);
+  assert.doesNotMatch(home, /useTourTarget\('todos'\)/);
+  assert.doesNotMatch(home, /\.\.\.todosTarget/);
 });
 
 test('the heart tour target belongs to the Home heart button', () => {

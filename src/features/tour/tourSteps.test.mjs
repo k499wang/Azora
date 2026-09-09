@@ -7,13 +7,23 @@ test('the app tour visits Home before pointing to the Heart measurement action',
     tourSteps.map(({ target, destination }) => ({ target, destination })),
     [
       { target: 'dailies', destination: { route: 'MainTabs', screen: 'Home' } },
-      { target: 'todos', destination: { route: 'MainTabs', screen: 'Home' } },
       { target: 'extraPractice', destination: { route: 'MainTabs', screen: 'Home' } },
       { target: 'seeAll', destination: { route: 'MainTabs', screen: 'Home' } },
       { target: 'measureHeart', destination: { route: 'MainTabs', screen: 'Home' } },
       { target: 'startHeartMeasurement', destination: { route: 'Heart' } },
     ],
   );
+});
+
+test("today's list is one step that explains dailies and to-dos", () => {
+  const dailySteps = tourSteps.filter(({ target }) => target === 'dailies');
+
+  assert.equal(dailySteps.length, 1);
+  assert.equal(
+    dailySteps[0]?.body,
+    'Tap a daily to start it, or tick off a to-do when it’s done.',
+  );
+  assert.equal(tourSteps.some(({ target }) => target === 'todos'), false);
 });
 
 test('the final heart stop explains how to start a reading', () => {
