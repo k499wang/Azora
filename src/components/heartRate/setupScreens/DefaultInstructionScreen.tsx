@@ -8,7 +8,6 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as Device from 'expo-device';
 import { useNavigation } from '@react-navigation/native';
 import { colors } from '../../../theme/colors';
 import { pressable } from '../../../theme/pressable';
@@ -35,10 +34,7 @@ import { useFeatureAccess } from '../../../hooks/useFeatureAccess';
 import { trackFeatureGateHit } from '../../../services/analytics/tracking';
 import { FeatureKey } from '../../../services/subscriptions/featureAccess';
 import { PaywallPlacement } from '../../../services/paywall';
-import { getHeartRatePlacementGuidance } from '../../../lib/heartRate/captureGuidance';
-import { getHeartRateCameraProfile } from '../../../lib/heartRate/cameraProfile';
-import { HeartRatePlacementIllustration } from '../HeartRatePlacementIllustration';
-import { HeartRatePlacementStepsCard } from '../HeartRatePlacementStepsCard';
+import { HeartRatePlacementInstructions } from '../HeartRatePlacementInstructions';
 
 export function DefaultInstructionScreen({ onNext, onCancel }: SetupScreenProps) {
   const insets = useSafeAreaInsets();
@@ -46,12 +42,6 @@ export function DefaultInstructionScreen({ onNext, onCancel }: SetupScreenProps)
   const advancedStatsAccess = useFeatureAccess(FeatureKey.AdvancedStats);
   const { isPro } = advancedStatsAccess;
   const [mode, setMode] = useState<HeartRateCaptureMode>(DEFAULT_CAPTURE_MODE);
-  const placementGuidance = getHeartRatePlacementGuidance(
-    Device.modelName,
-    Device.modelId,
-  );
-  const showPlacementIllustration =
-    getHeartRateCameraProfile(Device.modelName, Device.modelId).layout !== 'single';
   const { height: windowHeight } = useWindowDimensions();
   const compact = isShortScreen(windowHeight);
 
@@ -102,28 +92,17 @@ export function DefaultInstructionScreen({ onNext, onCancel }: SetupScreenProps)
           />
         </Pressable>
 
-        <Text style={[styles.title, compact && styles.titleCompact]}>
-          {placementGuidance.title}
-        </Text>
-
-        <View style={styles.modeBlock}>
-          <CaptureModeToggle value={mode} onChange={setMode} isPro={isPro} />
-          <Text style={styles.modeCaption}>
-            {HEART_RATE_CAPTURE_MODES[mode].shortDescription}
-          </Text>
-        </View>
-
-        {showPlacementIllustration && (
-          <View style={styles.illustration}>
-            <HeartRatePlacementIllustration compact={compact} />
-          </View>
-        )}
-
-        <View style={styles.stepsSection}>
-          <HeartRatePlacementStepsCard
-            steps={placementGuidance.steps}
-            appearance="card"
-            textSize={compact ? 'default' : 'large'}
+        <View style={styles.instructions}>
+          <HeartRatePlacementInstructions
+            compact={compact}
+            afterTitle={
+              <View style={styles.modeBlock}>
+                <CaptureModeToggle value={mode} onChange={setMode} isPro={isPro} />
+                <Text style={styles.modeCaption}>
+                  {HEART_RATE_CAPTURE_MODES[mode].shortDescription}
+                </Text>
+              </View>
+            }
           />
         </View>
       </ScrollView>
@@ -162,19 +141,10 @@ const styles = StyleSheet.create({
     paddingTop: padding.screen.vertical,
     paddingBottom: spacing.lg,
   },
-  title: {
-    ...typography.title.title1,
-    fontFamily: fonts.semibold,
-    fontWeight: '600',
-    color: colors.text.primary,
-    textAlign: 'center',
+  instructions: {
     marginTop: spacing.xs,
   },
-  titleCompact: {
-    ...typography.title.title2,
-  },
   modeBlock: {
-    marginTop: spacing.lg,
     gap: spacing.sm,
     alignItems: 'center',
   },
@@ -184,12 +154,6 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: colors.text.tertiary,
     textAlign: 'center',
-  },
-  illustration: {
-    marginTop: spacing.lg,
-  },
-  stepsSection: {
-    marginTop: spacing.lg,
   },
   footer: {
     paddingTop: spacing.sm,

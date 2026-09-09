@@ -22,7 +22,7 @@ import { isHapticsEnabled } from '../../../services/preferences/hapticsPreferenc
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import { BaselineCaptureStage } from '../baseline/BaselineCaptureStage';
-import { BaselineIntroContent } from '../baseline/BaselineIntroContent';
+import { HeartRatePlacementInstructions } from '../../heartRate/HeartRatePlacementInstructions';
 import BaselineHeartRateResult from '../baseline/BaselineHeartRateResult';
 import type { GenderOption } from '../data/genderOptions';
 import type {
@@ -453,7 +453,7 @@ export default function BaselineScreen({
         </View>
       }
     >
-      <BaselineIntroContent />
+      <HeartRatePlacementInstructions />
     </OnboardingScreenLayout>
   );
 }

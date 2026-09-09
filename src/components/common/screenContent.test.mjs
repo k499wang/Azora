@@ -91,7 +91,10 @@ test('removed Heart summary cards stay out of dashboard and result views', () =>
   assert.doesNotMatch(heartRate, /label="HR change"|label="Lowest HR"/);
   assert.doesNotMatch(hrv, /label="Avg HRV"/);
   assert.doesNotMatch(result, /label="Avg HRV"/);
-  assert.doesNotMatch(sessionComplete, /streakFilled|Day .*in a row/);
-  assert.doesNotMatch(breathHoldResult, /streakFilled/);
+  // The flame glyph is hero decoration here; what stays out is the streak
+  // count itself.
+  for (const result of [sessionComplete, breathHoldResult]) {
+    assert.doesNotMatch(result, /TopBarStreak|streakDays|Day .*in a row/);
+  }
   assert.doesNotMatch(heart, /numColumns|flexWrap/);
 });
