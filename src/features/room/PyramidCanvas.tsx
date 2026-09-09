@@ -54,6 +54,7 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
+import HotelBlob from './HotelBlob';
 import { usePinchZoomPan } from './usePinchZoomPan';
 import {
   decorationPaths,
@@ -430,6 +431,15 @@ export default function PyramidCanvas({ rooms }: Props) {
           </Group>
         </Canvas>
       </GestureDetector>
+
+      <HotelBlob
+        rooms={highestFloor}
+        width={VIEW_BOX_WIDTH * SLOT_SCALE * MAX_SCALE}
+        drawnAt={MAX_SCALE}
+        scale={scale}
+        translateX={translateX}
+        translateY={translateY}
+      />
 
       <Animated.View style={[styles.label, labelStyle]} pointerEvents="none">
         <Icon

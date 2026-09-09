@@ -5,7 +5,7 @@ import BreathingLibrary from '../components/explore/BreathingLibrary';
 import ExerciseSearchBar from '../components/explore/ExerciseSearchBar';
 import { useTourTarget } from '../features/tour/tourTargets';
 import { colors } from '../theme/colors';
-import { margin, padding, spacing } from '../theme/spacing';
+import { padding, spacing } from '../theme/spacing';
 
 export default function ExploreScreen({ navigation }: ExploreScreenProps) {
   const exploreSearchTarget = useTourTarget('exploreSearch');
@@ -46,7 +46,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingBottom: spacing['7xl'] + spacing.xl,
-    gap: margin.sectionGap,
+    gap: spacing.md,
   },
   searchRow: {
     paddingTop: spacing.sm,

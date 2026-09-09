@@ -55,17 +55,6 @@ export function MainTabs({ tourEnabled }: MainTabsProps) {
           }}
         />
         <Tab.Screen
-          name="Explore"
-          component={ExploreScreen}
-          options={{
-            tabBarLabel: 'Explore',
-            tabBarIcon: ({ focused }) => ({
-              type: 'sfSymbol',
-              name: focused ? 'safari.fill' : 'safari',
-            }),
-          }}
-        />
-        <Tab.Screen
           name="Hotel"
           component={HotelScreen}
           options={{
@@ -73,6 +62,17 @@ export function MainTabs({ tourEnabled }: MainTabsProps) {
             tabBarIcon: ({ focused }) => ({
               type: 'sfSymbol',
               name: focused ? 'building.2.fill' : 'building.2',
+            }),
+          }}
+        />
+        <Tab.Screen
+          name="Explore"
+          component={ExploreScreen}
+          options={{
+            tabBarLabel: 'Explore',
+            tabBarIcon: ({ focused }) => ({
+              type: 'sfSymbol',
+              name: focused ? 'safari.fill' : 'safari',
             }),
           }}
         />

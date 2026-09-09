@@ -37,7 +37,7 @@ export default function ConsistencyScreen({
           toValue: 1,
           damping: 15,
           stiffness: 160,
-          useNativeDriver: false,
+          useNativeDriver: true,
         }),
       ),
     ).start(() => {
@@ -64,6 +64,7 @@ export default function ConsistencyScreen({
             {DAYS.map((_, index) => {
               const anim = barAnims[index];
               const isPeak = index === DAYS.length - 1;
+              const barHeight = CHART_HEIGHT * HEIGHTS[index];
               return (
                 <View key={index} style={styles.barColumn}>
                   <Animated.View
@@ -71,14 +72,16 @@ export default function ConsistencyScreen({
                       styles.bar,
                       isPeak && styles.barPeak,
                       {
-                        height: anim.interpolate({
-                          inputRange: [0, 1],
-                          outputRange: [4, CHART_HEIGHT * HEIGHTS[index]],
-                        }),
+                        height: barHeight,
                         opacity: anim.interpolate({
                           inputRange: [0, 0.2, 1],
                           outputRange: [0, 1, 1],
                         }),
+                        transform: [
+                          { translateY: barHeight / 2 },
+                          { scaleY: anim },
+                          { translateY: -barHeight / 2 },
+                        ],
                       },
                     ]}
                   />
