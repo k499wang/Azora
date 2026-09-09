@@ -1,19 +1,14 @@
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import type { ExploreScreenProps } from '../app/navigation';
-import { returnToHome } from '../app/navigation/returnToHome';
 import AppTopBar from '../components/common/AppTopBar';
-import Icon from '../components/common/icons/Icon';
 import BreathingLibrary from '../components/explore/BreathingLibrary';
 import ExerciseSearchBar from '../components/explore/ExerciseSearchBar';
-import { triggerTapHaptic } from '../native/tapHaptics';
+import { useTourTarget } from '../features/tour/tourTargets';
 import { colors } from '../theme/colors';
 import { margin, padding, spacing } from '../theme/spacing';
 
 export default function ExploreScreen({ navigation }: ExploreScreenProps) {
-  const handleBack = () => {
-    triggerTapHaptic();
-    returnToHome(navigation);
-  };
+  const exploreSearchTarget = useTourTarget('exploreSearch');
 
   return (
     <View style={styles.screen}>
@@ -26,23 +21,7 @@ export default function ExploreScreen({ navigation }: ExploreScreenProps) {
         overScrollMode="always"
       >
         <AppTopBar showAvatar={false} showStreak={false}>
-          <View style={styles.searchRow}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Back to home"
-              onPress={handleBack}
-              hitSlop={spacing.sm}
-              style={({ pressed }) => [
-                styles.backButton,
-                pressed && styles.backButtonPressed,
-              ]}
-            >
-              <Icon
-                name="chevron-left"
-                size={26}
-                color={colors.text.primary}
-              />
-            </Pressable>
+          <View style={styles.searchRow} {...exploreSearchTarget}>
             <ExerciseSearchBar
               mode="entry"
               onPress={() => navigation.navigate('ExerciseSearch')}
@@ -74,16 +53,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: padding.screen.horizontal,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
-  },
-  backButton: {
-    width: 44,
-    height: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 22,
-  },
-  backButtonPressed: {
-    opacity: 0.6,
   },
 });

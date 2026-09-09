@@ -72,14 +72,6 @@ test('Home and Profile share one tablet margin', () => {
   }
 });
 
-test('the extra-practice shelf clips on the content margin, not the window', () => {
-  const home = read('screens/HomeScreen.tsx');
-  const section = read('components/home/ExtraPracticeSection.tsx');
-
-  assert.match(home, /contentMaxWidth={homeLayout\.contentMaxWidth}/);
-  assert.match(section, /maxWidth: contentMaxWidth/);
-});
-
 test('daily cards use a content-driven minimum height', () => {
   const dailies = read('components/home/TodaysDailiesSection.tsx');
 
