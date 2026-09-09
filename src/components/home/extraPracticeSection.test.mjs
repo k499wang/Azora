@@ -16,7 +16,7 @@ test('Home owns See all navigation and places extra practice after dailies', () 
 
   assert.match(
     home,
-    /<HomeRoom[\s\S]*?<RoomProgressCard[\s\S]*?<TodaysDailiesSection[\s\S]*?\/>[\s\S]*?<ExtraPracticeSection[\s\S]*?onSeeAll={\(\) => navigation\.navigate\('Explore'\)}/,
+    /<HomeRoom[\s\S]*?<RoomProgressCard[\s\S]*?<TodoListSection[\s\S]*?\/>[\s\S]*?<ExtraPracticeSection[\s\S]*?onSeeAll={\(\) => navigation\.navigate\('Explore'\)}/,
   );
   // Home stacks: the dailies are never split into side-by-side columns. The
   // top chrome row is a row by design, so only the split-layout names count.

@@ -1,6 +1,5 @@
 export type TourTargetId =
   | 'dailies'
-  | 'todos'
   | 'extraPractice'
   | 'seeAll'
   | 'measureHeart'
@@ -27,12 +26,7 @@ export const tourSteps: readonly TourStep[] = [
   {
     target: 'dailies',
     destination: { route: 'MainTabs', screen: 'Home' },
-    body: 'Start here! Finish your daily exercises to earn a new piece for your room.',
-  },
-  {
-    target: 'todos',
-    destination: { route: 'MainTabs', screen: 'Home' },
-    body: 'And here are your to-dos! Tick one off whenever you get to it. Little ones count too.',
+    body: 'Tap a daily to start it, or tick off a to-do when it’s done.',
   },
   {
     target: 'extraPractice',
