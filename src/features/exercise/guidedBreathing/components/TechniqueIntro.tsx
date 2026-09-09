@@ -54,13 +54,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     gap: spacing.md,
     alignItems: 'center',
-    transform: [{ translateY: -48 }],
+    // Centred against the whole stage, so lifting the block is what opens the
+    // gap down to the HUD buttons. The travel stays well clear of the top bar
+    // even with the longest description.
+    transform: [{ translateY: -80 }],
   },
   // Short screens lose the headroom this block is centred in — tighten it
   // rather than push it up, since the header caps how far it can travel.
   containerCompact: {
     gap: spacing.sm,
-    transform: [{ translateY: -72 }],
+    transform: [{ translateY: -96 }],
   },
   name: {
     ...typography.title.title1,
@@ -84,5 +87,8 @@ const styles = StyleSheet.create({
   roundsPicker: {
     alignItems: 'center',
     zIndex: 2,
+    // Sits a little tighter to the name than the container gap: the pill reads
+    // as a setting on the technique, not as a third peer in the stack.
+    marginBottom: -spacing.xs,
   },
 });

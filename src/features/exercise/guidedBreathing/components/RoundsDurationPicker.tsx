@@ -102,8 +102,8 @@ export default function RoundsDurationPicker({
         style={({ pressed }) => [
           styles.pill,
           {
-            backgroundColor: theme.surface,
-            borderColor: theme.surfaceBorder,
+            backgroundColor: theme.controlSurface,
+            borderColor: theme.controlBorder,
             opacity: pressed ? 0.7 : 1,
           },
         ]}
@@ -134,8 +134,8 @@ export default function RoundsDurationPicker({
           style={[
             styles.menu,
             {
-              backgroundColor: theme.surface,
-              borderColor: theme.surfaceBorder,
+              backgroundColor: theme.controlSurface,
+              borderColor: theme.controlBorder,
             },
             menuStyle,
           ]}
