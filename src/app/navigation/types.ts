@@ -18,8 +18,8 @@ import type { BreathHoldHeartRateResultStatus } from '../../features/exercise/da
 
 export type MainTabParamList = {
   Home: undefined;
-  Explore: undefined;
   Hotel: undefined;
+  Explore: undefined;
   Profile: undefined;
 };
 

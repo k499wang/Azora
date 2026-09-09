@@ -161,3 +161,43 @@ export function expandBounds(bounds: Bounds, x: number, y: number): Bounds {
 
   return { minX, minY, maxX, maxY, width: maxX - minX, height: maxY - minY };
 }
+
+/** the index a room at (row, col) of the given pyramid occupies */
+function slotIndex(pyramid: number, row: number, col: number): number {
+  return pyramid * PYRAMID_CAPACITY + rowStart(row) + col;
+}
+
+/**
+ * The occupied slots this one shares a wall with.
+ *
+ * A room has six neighbours — two beside it, two above, two below — and in a
+ * pyramid most of those are off the edge or not built yet, so the list is
+ * whatever survives being clipped to the rows that exist and to the `occupied`
+ * rooms actually standing. Neighbours are never taken across pyramids: the one
+ * beside this is a separate honeycomb with clear air between them.
+ */
+export function slotNeighbours(index: number, occupied: number): number[] {
+  const { pyramid, row, col } = slotAt(index);
+
+  // A row nests into the notches of the one above, so a room's neighbours below
+  // are the two it straddles, and above are the two straddling it.
+  const around = [
+    [row, col - 1],
+    [row, col + 1],
+    [row - 1, col - 1],
+    [row - 1, col],
+    [row + 1, col],
+    [row + 1, col + 1],
+  ];
+
+  const found: number[] = [];
+
+  for (const [r, c] of around) {
+    if (r < 1 || r > PYRAMID_ROWS || c < 0 || c > r - 1) continue;
+
+    const neighbour = slotIndex(pyramid, r, c);
+    if (neighbour < occupied) found.push(neighbour);
+  }
+
+  return found;
+}

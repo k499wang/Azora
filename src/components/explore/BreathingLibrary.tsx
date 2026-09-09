@@ -115,7 +115,7 @@ const styles = StyleSheet.create({
   // Pulled down toward the protocol card it pairs with; the smaller bottom
   // margin lifts it and everything below by the difference.
   heartCard: {
-    marginTop: spacing.md,
+    marginTop: spacing.sm,
     marginBottom: -spacing.mdPlus,
   },
   // Sits nearer the shelf below it, without moving that shelf.

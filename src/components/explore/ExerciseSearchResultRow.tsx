@@ -1,4 +1,3 @@
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, View } from 'react-native';
 import type {
   GlyphShape,
@@ -73,11 +72,7 @@ export default function ExerciseSearchResultRow({
         </View>
       </View>
 
-      <MaterialCommunityIcons
-        name="chevron-right"
-        size={22}
-        color={colors.onBlock.textMuted}
-      />
+      <Icon name="chevron-right" size={24} color={colors.text.inverse} />
     </Pressable>
   );
 }

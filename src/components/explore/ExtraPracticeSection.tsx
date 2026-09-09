@@ -92,10 +92,10 @@ export default function ExtraPracticeSection({
 const styles = StyleSheet.create({
   row: {
     paddingHorizontal: padding.screen.horizontal,
-    gap: spacing.sm,
+    gap: spacing.xs,
   },
   item: {
-    width: 84,
+    width: 82,
     alignItems: 'center',
     gap: spacing.xs,
     paddingVertical: spacing.xs,
