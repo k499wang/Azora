@@ -7,7 +7,6 @@ test('the app tour visits Home before pointing to the Heart measurement action',
     tourSteps.map(({ target, destination }) => ({ target, destination })),
     [
       { target: 'dailies', destination: { route: 'MainTabs', screen: 'Home' } },
-      { target: 'exploreSearch', destination: { route: 'MainTabs', screen: 'Explore' } },
       { target: 'measureHeart', destination: { route: 'MainTabs', screen: 'Home' } },
       { target: 'startHeartMeasurement', destination: { route: 'Heart' } },
     ],

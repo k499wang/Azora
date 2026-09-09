@@ -99,18 +99,13 @@ test('the heart tour target belongs to the Home heart button', () => {
   assert.match(target, /name="heart"/);
 });
 
-test('the Explore tour target belongs to the tab screen search row', () => {
+test('the tour no longer stops on the Explore screen', () => {
   const explore = readFileSync(
     join(here, '..', '..', 'screens', 'ExploreScreen.tsx'),
     'utf8',
   );
 
-  assert.match(explore, /useTourTarget\('exploreSearch'\)/);
-  assert.match(
-    explore,
-    /<View style={styles\.searchRow} \{\.\.\.exploreSearchTarget\}>[\s\S]*?<ExerciseSearchBar/,
-  );
-  assert.doesNotMatch(explore, /Back to home|returnToHome/);
+  assert.doesNotMatch(explore, /useTourTarget/);
 });
 
 test('the Heart measurement target wraps the native plus button', () => {
