@@ -12,7 +12,7 @@ import Icon from '../common/icons/Icon';
 import { Text } from '../common/Text';
 import ActivityGlyph from './ActivityGlyph';
 
-const CARD_HEIGHT = 88;
+const CARD_HEIGHT = 85;
 const GLYPH_SIZE = 150;
 
 interface ExploreActionCardProps {
