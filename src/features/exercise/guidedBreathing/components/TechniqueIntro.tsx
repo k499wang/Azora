@@ -26,6 +26,7 @@ export default function TechniqueIntro({ technique, textColors, roundsPicker }: 
 
   return (
     <View style={[styles.container, compact && styles.containerCompact]}>
+      <View style={styles.roundsPicker}>{roundsPicker}</View>
       <Text style={[styles.name, textColors && { color: textColors.primary }]}>
         {technique.name}
       </Text>
@@ -38,7 +39,6 @@ export default function TechniqueIntro({ technique, textColors, roundsPicker }: 
       >
         {technique.description}
       </Text>
-      <View style={styles.roundsPicker}>{roundsPicker}</View>
     </View>
   );
 }
@@ -56,9 +56,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     transform: [{ translateY: -48 }],
   },
-  // The intro is centred against the full screen while the rounds picker sits
-  // in normal flow below it, so a long description grows straight into the
-  // picker. Short screens lose that headroom entirely — tighten the block
+  // Short screens lose the headroom this block is centred in — tighten it
   // rather than push it up, since the header caps how far it can travel.
   containerCompact: {
     gap: spacing.sm,
@@ -85,7 +83,6 @@ const styles = StyleSheet.create({
   },
   roundsPicker: {
     alignItems: 'center',
-    marginBottom: spacing.xs,
-    transform: [{ translateY: spacing.sm }],
+    zIndex: 2,
   },
 });

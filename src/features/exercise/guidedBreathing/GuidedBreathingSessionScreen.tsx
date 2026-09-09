@@ -8,7 +8,7 @@ import BreathBackdrop, {
   type BreathBackdropPhase,
 } from '../shared/components/BreathBackdrop';
 import { GuidedBreathingHud } from './components/GuidedBreathingHud';
-import RoundsHapticPicker from './components/RoundsHapticPicker';
+import RoundsDurationPicker from './components/RoundsDurationPicker';
 import { SessionGlassButton } from '../shared/components/SessionGlassButton';
 import { ExerciseBackButton } from '../shared/components/ExerciseBackButton';
 import {
@@ -51,10 +51,9 @@ import {
 } from './hooks/useGuidedBreathingFlow';
 import { buildBreathingSessionCompletion } from './domain/breathingSessionCompletion';
 import { getBreathingSessionTargetSeconds } from './domain/breathingSessionTiming';
+import { getRoundsDurationOptions } from './domain/roundsDurationOptions';
 import { resolveBreathingSessionStart } from '../shared/domain/breathingSessionStart';
 
-const MIN_ROUNDS = 1;
-const MAX_ROUNDS = 30;
 const HUD_HIDE_DELAY_MS = 3000;
 const HUD_FADE_IN_DURATION_MS = 200;
 const HUD_FADE_OUT_DURATION_MS = 600;
@@ -96,6 +95,10 @@ export default function GuidedBreathingSessionScreen({
   });
   const [technique] = useState<BreathingTechnique>(initialTechnique);
   const [totalRounds, setTotalRounds] = useState(initialTechnique.defaultRounds);
+  const roundsOptions = useMemo(
+    () => getRoundsDurationOptions(technique.pattern, technique.defaultRounds),
+    [technique],
+  );
   const [hrEnabled, setHrEnabled] = useState(true);
   const isFocused = useIsFocused();
 
@@ -593,10 +596,9 @@ export default function GuidedBreathingSessionScreen({
             theme={activeTheme}
             remainingSeconds={remainingSeconds}
             roundsPicker={
-              <RoundsHapticPicker
+              <RoundsDurationPicker
+                options={roundsOptions}
                 value={totalRounds}
-                min={MIN_ROUNDS}
-                max={MAX_ROUNDS}
                 onChange={setTotalRounds}
                 theme={activeTheme}
               />
