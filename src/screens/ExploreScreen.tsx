@@ -45,7 +45,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   scrollContent: {
-    paddingBottom: spacing.xl,
+    paddingBottom: spacing['7xl'] + spacing.xl,
     gap: margin.sectionGap,
   },
   searchRow: {

@@ -18,6 +18,28 @@ export interface ExerciseGroup {
   techniques: BreathingTechnique[];
 }
 
+export interface ExploreShelf {
+  id: 'for-you' | 'popular';
+  title: string;
+  techniques: BreathingTechnique[];
+}
+
+/** Explore shows two shelves; the rest of the catalog lives behind search. */
+const SHELF_LENGTH = 5;
+
+/**
+ * The best-known techniques, in the order a newcomer meets them. Fixed rather
+ * than derived: with no usage counts to rank by, a "Popular" shelf that
+ * reshuffles is just noise.
+ */
+const POPULAR_TECHNIQUE_IDS: readonly string[] = [
+  'box',
+  '478',
+  'wimhof',
+  'resonance',
+  'belly',
+];
+
 const CATEGORY_SEARCH_TERMS: Record<
   BreathingTechnique['category'],
   readonly string[]
@@ -71,6 +93,54 @@ export function getBrowseExerciseGroups(
       (technique) => technique.category === group.id,
     ),
   }));
+}
+
+/**
+ * `For you` leads with the recommended technique and fills from its own
+ * category first, so the shelf reads as one answer rather than a sample of the
+ * whole catalog.
+ */
+function getForYouTechniques(
+  recommendedTechniqueId: string | null,
+): BreathingTechnique[] {
+  const recommended =
+    recommendedTechniqueId == null
+      ? null
+      : TECHNIQUES.find(
+          (technique) => technique.id === recommendedTechniqueId,
+        ) ?? null;
+
+  if (recommended == null) return TECHNIQUES.slice(0, SHELF_LENGTH);
+
+  const sameCategory = TECHNIQUES.filter(
+    (technique) =>
+      technique.id !== recommended.id &&
+      technique.category === recommended.category,
+  );
+  const rest = TECHNIQUES.filter(
+    (technique) =>
+      technique.id !== recommended.id &&
+      technique.category !== recommended.category,
+  );
+
+  return [recommended, ...sameCategory, ...rest].slice(0, SHELF_LENGTH);
+}
+
+export function getExploreShelves(
+  recommendedTechniqueId: string | null,
+): ExploreShelf[] {
+  const popular = POPULAR_TECHNIQUE_IDS.map((id) =>
+    TECHNIQUES.find((technique) => technique.id === id),
+  ).filter((technique): technique is BreathingTechnique => technique != null);
+
+  return [
+    {
+      id: 'for-you',
+      title: 'For you',
+      techniques: getForYouTechniques(recommendedTechniqueId),
+    },
+    { id: 'popular', title: 'Popular', techniques: popular },
+  ];
 }
 
 export function searchExerciseCatalog(
