@@ -56,7 +56,7 @@ function ExtraPracticeCard({ mood, exerciseAccess }: ExtraPracticeCardProps) {
       style={({ pressed }) => [styles.item, pressed && styles.itemPressed]}
     >
       <View style={[styles.iconTile, { backgroundColor: hue.base }]}>
-        <Icon name={mood.icon} size={32} color={colors.text.inverse} />
+        <Icon name={mood.icon} size={36} color={colors.text.inverse} />
       </View>
       <Text style={styles.label} numberOfLines={1}>
         {label}
@@ -91,7 +91,7 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   item: {
-    width: 82,
+    width: 90,
     alignItems: 'center',
     gap: spacing.xs,
     paddingVertical: spacing.xs,
@@ -101,8 +101,8 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.97 }],
   },
   iconTile: {
-    width: 66,
-    height: 66,
+    width: 70,
+    height: 70,
     borderRadius: card.base.borderRadius,
     borderCurve: 'continuous',
     alignItems: 'center',
