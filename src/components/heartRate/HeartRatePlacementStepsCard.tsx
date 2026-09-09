@@ -12,7 +12,7 @@ import { Text } from '../common/Text';
 
 // Apple's inset-grouped cells sit as flat white surfaces on the grey canvas;
 // separators start after the leading icon/number, not at the card edge.
-const DIVIDER_INSET = 26 + spacing.md; // number circle width + row gap
+const DIVIDER_INSET = 22 + spacing.md; // number column width + row gap
 
 interface HeartRatePlacementStepsCardProps {
   steps: readonly HeartRatePlacementStep[];
@@ -41,20 +41,24 @@ export function HeartRatePlacementStepsCard({
     >
       {steps.map((step, index) => (
         <View key={step.title} style={styles.cell}>
-          {index > 0 ? (
+          {!isPlain && index > 0 ? (
             <View
               style={[
                 styles.divider,
+                styles.dividerInset,
                 { backgroundColor: palette.divider },
-                !isPlain && styles.dividerInset,
               ]}
             />
           ) : null}
           <View style={styles.row}>
-            <View
-              style={[styles.number, { backgroundColor: palette.markerSurface }]}
-            >
-              <Text style={[styles.numberText, { color: palette.markerText }]}>
+            <View style={styles.number}>
+              <Text
+                style={[
+                  styles.numberText,
+                  hasLargeText && styles.numberTextLarge,
+                  { color: palette.markerText },
+                ]}
+              >
                 {index + 1}
               </Text>
             </View>
@@ -119,18 +123,20 @@ const styles = StyleSheet.create({
   },
   number: {
     flexShrink: 0,
-    width: 26,
-    height: 26,
-    borderRadius: 13,
+    width: 22,
     alignItems: 'center',
-    justifyContent: 'center',
   },
   numberText: {
-    ...typography.label.small,
+    ...typography.body.small,
     fontFamily: fonts.semibold,
     fontWeight: '500',
     textAlign: 'center',
     includeFontPadding: false,
+  },
+  numberTextLarge: {
+    ...typography.body.medium,
+    fontFamily: fonts.semibold,
+    fontWeight: '500',
   },
   copy: {
     flex: 1,
