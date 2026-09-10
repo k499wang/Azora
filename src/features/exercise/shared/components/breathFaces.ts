@@ -12,7 +12,7 @@ export type BreathFace = 'inhale' | 'holdIn' | 'exhale' | 'holdOut' | 'resting';
  * is sealed for everything except the exhale, which is the one phase air leaves
  * through it.
  *
- * All values are in the 100-unit blob coordinate space. Vertical extents are
+ * All values are in the koala's own coordinate space. Vertical extents are
  * signed: negative bulges up, positive bulges down.
  */
 export interface FaceShape {
@@ -21,8 +21,6 @@ export interface FaceShape {
   eyeBottom: number;
   /** 0 = the breathing-phase lens, 1 = a true resting ellipse. */
   eyeRoundness: number;
-  /** 0 = no cheek, 1 = fully flushed and puffed. */
-  cheek: number;
   mouthWidth: number;
   mouthTop: number;
   mouthBottom: number;
@@ -36,87 +34,102 @@ export interface FaceShape {
   mouthPress: number;
 }
 
-export const EYE_Y = 53;
-export const EYE_LEFT_X = 38;
-export const EYE_RIGHT_X = 62;
-export const MOUTH_Y = 67;
-export const CHEEK_Y = 63;
-// Pulled in from the eyes' outer edge: at full puff these are the widest thing
-// on the face, and the stage blows the face up 1.5x inside a body that is
-// deliberately wider than the screen.
-export const CHEEK_LEFT_X = 30;
-export const CHEEK_RIGHT_X = 70;
+/**
+ * Face anchors, in the coordinate space of `koalaPaths` — the same units the
+ * head and ears are drawn in, so the face needs no scaling of its own.
+ */
+export const EYE_Y = 488;
+export const EYE_LEFT_X = 396;
+export const EYE_RIGHT_X = 684;
+export const MOUTH_X = 540;
+export const MOUTH_Y = 636;
+/** Half the open eye, and the eyeball inside it. */
+export const EYE_RADIUS = 67;
+export const IRIS_RADIUS = 46;
+/** How far the irises converge toward the nose. */
+export const IRIS_INSET = 9;
+export const HIGHLIGHT_RADIUS = 18;
+export const HIGHLIGHT_UP = 26;
+/** Toward the nose from the iris centre. */
+export const HIGHLIGHT_IN = 18;
+/** How far inside the lids the eyeball is held, so it never breaks the rim. */
+export const IRIS_LID_INSET = 7;
 
 export const FACE_SHAPES: Record<BreathFace, FaceShape> = {
   // Eyes closed, drawing air in through the nose — the mouth stays shut and
   // only presses thinner as the lungs fill.
   inhale: {
-    eyeWidth: 6,
-    eyeTop: -5,
-    eyeBottom: -1.6,
+    eyeWidth: 66,
+    eyeTop: -38,
+    eyeBottom: -14,
     eyeRoundness: 0,
-    cheek: 0.12,
-    mouthWidth: 5,
-    mouthTop: -0.75,
-    mouthBottom: 0.75,
+    mouthWidth: 55,
+    mouthTop: -8,
+    mouthBottom: 8,
     mouthBreath: 0,
     mouthPress: 1,
   },
-  // Full and straining: squeezed shut, cheeks puffed, lips still pressed from
-  // the inhale that ended here.
+  // Full and straining: squeezed shut, lips still pressed from the inhale
+  // that ended here.
   holdIn: {
-    eyeWidth: 6.6,
-    eyeTop: -6.2,
-    eyeBottom: -2.8,
+    eyeWidth: 73,
+    eyeTop: -46,
+    eyeBottom: -20,
     eyeRoundness: 0,
-    cheek: 1,
-    mouthWidth: 7,
-    mouthTop: -0.8,
-    mouthBottom: 0.8,
+    mouthWidth: 77,
+    mouthTop: -9,
+    mouthBottom: 9,
     mouthBreath: 0,
     mouthPress: 1,
   },
   // Blowing out: the mouth opens into a round O and narrows closed again as
   // the breath empties, landing on the sealed line the next inhale starts from.
   exhale: {
-    eyeWidth: 6,
-    eyeTop: -4.2,
-    eyeBottom: -1.2,
+    eyeWidth: 66,
+    eyeTop: -34,
+    eyeBottom: -12,
     eyeRoundness: 0,
-    cheek: 0.25,
-    mouthWidth: 4.8,
-    mouthTop: -4.2,
-    mouthBottom: 5.8,
+    mouthWidth: 70,
+    mouthTop: -26,
+    mouthBottom: 38,
     mouthBreath: 1,
     mouthPress: 0,
   },
   // Empty and calm: eyes soft, mouth a small neutral line.
   holdOut: {
-    eyeWidth: 5.6,
-    eyeTop: -3.6,
-    eyeBottom: -1.1,
+    eyeWidth: 62,
+    eyeTop: -30,
+    eyeBottom: -11,
     eyeRoundness: 0,
-    cheek: 0,
-    mouthWidth: 4.6,
-    mouthTop: -0.9,
-    mouthBottom: 0.9,
+    mouthWidth: 51,
+    mouthTop: -10,
+    mouthBottom: 10,
     mouthBreath: 0,
     mouthPress: 0,
   },
-  // Between sessions: eyes open, gentle smile.
+  // Between sessions: eyes wide open, gentle smile.
   resting: {
-    eyeWidth: 4.2,
-    eyeTop: -6.4,
-    eyeBottom: 6.4,
+    eyeWidth: EYE_RADIUS,
+    eyeTop: -EYE_RADIUS,
+    eyeBottom: EYE_RADIUS,
     eyeRoundness: 1,
-    cheek: 0,
-    mouthWidth: 9,
-    mouthTop: 0.6,
-    mouthBottom: 4.6,
+    mouthWidth: 55,
+    mouthTop: 4,
+    mouthBottom: 24,
     mouthBreath: 0,
     mouthPress: 0,
   },
 };
+
+/**
+ * How far open a set of lids is, as a share of the resting eye. The lid ink and
+ * the catchlight both key off this, so a squint drawn anywhere between two
+ * phases still reads as one closing eye rather than two crossfading pictures.
+ */
+export function eyeOpenness(shape: FaceShape): number {
+  'worklet';
+  return (shape.eyeBottom - shape.eyeTop) / (EYE_RADIUS * 2);
+}
 
 const ELLIPSE_KAPPA = 0.5522848;
 
@@ -215,7 +228,6 @@ export function lerpFace(from: FaceShape, to: FaceShape, t: number): FaceShape {
     eyeTop: mix(from.eyeTop, to.eyeTop),
     eyeBottom: mix(from.eyeBottom, to.eyeBottom),
     eyeRoundness: mix(from.eyeRoundness, to.eyeRoundness),
-    cheek: mix(from.cheek, to.cheek),
     mouthWidth: mix(from.mouthWidth, to.mouthWidth),
     mouthTop: mix(from.mouthTop, to.mouthTop),
     mouthBottom: mix(from.mouthBottom, to.mouthBottom),

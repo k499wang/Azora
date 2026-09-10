@@ -156,6 +156,22 @@ export const colors = {
     boardEdge: '#8A5A2E',
   },
 
+  /**
+   * Mochi's turnaround artwork, tone for tone. These are the exact fills in
+   * `assets/Poses/koala_turnaround_front.svg`: he is one character, so he is
+   * one set of colours everywhere he appears, never tinted per screen.
+   */
+  koala: {
+    body: '#7CCBFF',
+    /** ear cartilage, nose and mouth */
+    shade: '#4A9FE6',
+    /** inner ear and belly */
+    light: '#AEE1FF',
+    eyeWhite: '#EAF7FF',
+    /** irises, and the lids they close behind */
+    iris: '#0A5279',
+  },
+
   background: {
     // Cool off-white canvas for the frosted/glass paradigm — a shade deeper than
     // `canvas` so sheets and modals seat below the page they cover.

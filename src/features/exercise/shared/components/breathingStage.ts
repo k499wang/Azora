@@ -1,40 +1,54 @@
-import { isRegularWidth } from '../../../../theme/breakpoints';
-
-export const STAGE_VIEWBOX_W = 100;
-export const STAGE_VIEWBOX_H = 160;
-/** Where the face sits in the body, in viewBox units. */
-export const FACE_ORIGIN_Y = 60;
-/** How far down the viewport the face rests. */
-export const FACE_REST_RATIO = 0.66;
+export const STAGE_VIEWBOX_W = 1080;
+/** The artwork's own box. He is drawn whole and stood low, not cropped short. */
+export const STAGE_VIEWBOX_H = 1200;
+/** The eye line, in viewBox units — the point the layout pins. */
+export const FACE_ORIGIN_Y = 488;
 /**
- * The flat flanks of the body, as a share of the stage's width.
+ * How far down the viewport the eyes rest.
  *
- * The path runs from x=1 to x=99, so the straight sides sit this far inside the
- * stage. They are the part that must never be on screen: a visible flank turns
- * the character into a rectangle with a domed top.
+ * Low: standing him this far down the screen is what puts his legs past the
+ * bottom edge, so the session shows his upper body without the drawing itself
+ * having to end at the waist.
  */
-export const STAGE_FLANK_INSET = 0.01;
+export const FACE_REST_RATIO = 0.68;
 
 /**
- * How much wider than the window the character is drawn: just enough that the
- * flat flanks land on the screen edge rather than inside it.
+ * How far the whole character drifts up over an inhale, as a share of the
+ * viewport.
+ *
+ * It is a layout number, not a flourish: whatever he rises by is height he has
+ * to have spare below the bottom edge, or a full inhale pulls his legs into
+ * view. `breathingStage.test.mjs` holds that.
  */
-const WIDTH_RATIO = 1.02;
+export const BREATH_RISE_RATIO = 0.02;
+/** The top of the ears, which is the highest ink on the stage. */
+export const CROWN_Y = 100;
 /**
- * The ceiling a short, wide window imposes.
+ * Where the legs part.
  *
- * The face is pinned at `FACE_REST_RATIO` of the viewport and the crown is
- * `FACE_ORIGIN_Y` of the body above it, so a body much taller than the viewport
- * puts the crown off the top. Both values sit under that.
- *
- * A tablet needs the looser one. At the phone's ceiling a portrait iPad is tall
- * enough that the height, not the width, decided the size — which drew the
- * character *narrower* than the window and put both flat flanks on screen with
- * background either side. Raising it hands the tablet the same width ratio a
- * phone gets, so it overflows the same way.
+ * This, not the soles, is what has to clear the bottom edge: the notch between
+ * his feet is the first thing that gives away that he has legs at all.
  */
-const MAX_WIDTH_FROM_VIEWPORT = 0.62;
-const REGULAR_MAX_WIDTH_FROM_VIEWPORT = 0.9;
+export const INSEAM_Y = 1036;
+
+/** The outer edge of the head, in viewBox units — the widest ink that must land on screen. */
+export const HEAD_LEFT_X = 250;
+export const HEAD_RIGHT_X = 840;
+
+/**
+ * How much of the window's width the character spans.
+ *
+ * Wider than the window, so the head reads large and the ear tips run off the
+ * sides. Paired with `FACE_REST_RATIO`: the larger he is drawn the less of him
+ * fits above the bottom edge, which is what leaves the session showing his
+ * upper body and nothing below it.
+ */
+const WIDTH_RATIO = 1.6;
+/**
+ * The ceiling a short window imposes, so a tablet does not get a head the size
+ * of a dinner plate. Loose enough that no phone is ever capped by it.
+ */
+const MAX_WIDTH_FROM_VIEWPORT = 1.05;
 
 export interface BreathingStage {
   width: number;
@@ -44,19 +58,17 @@ export interface BreathingStage {
 }
 
 /**
- * The character's box on this window. Pure, so "it overflows the screen on
- * every device" is something tests hold rather than something to eyeball.
+ * The character's box on this window. Pure, so "the ears are on screen and the
+ * chest runs off the bottom" is something tests hold rather than something to
+ * eyeball.
  */
 export function getBreathingStage(
   windowWidth: number,
   viewport: number,
 ): BreathingStage {
-  const maxFromViewport = isRegularWidth(windowWidth)
-    ? REGULAR_MAX_WIDTH_FROM_VIEWPORT
-    : MAX_WIDTH_FROM_VIEWPORT;
   const width = Math.min(
     windowWidth * WIDTH_RATIO,
-    viewport * maxFromViewport,
+    viewport * MAX_WIDTH_FROM_VIEWPORT,
   );
   const height = width * (STAGE_VIEWBOX_H / STAGE_VIEWBOX_W);
 

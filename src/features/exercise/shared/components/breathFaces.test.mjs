@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { FACE_SHAPES, lerpFace } from './breathFaces.ts';
+import { EYE_RADIUS, FACE_SHAPES, eyeOpenness, lerpFace } from './breathFaces.ts';
 
 /**
  * The sessions coach a nasal inhale and an oral exhale. The face is the only
@@ -22,21 +22,21 @@ test('the inhale keeps the mouth sealed', () => {
   const { mouthTop, mouthBottom } = FACE_SHAPES.inhale;
   // The two edges of the lens sit within a hair of the lip line, so it reads as
   // a closed line rather than a gap.
-  assert.ok(Math.abs(mouthTop) < 1, 'inhale mouth is open at the top');
-  assert.ok(Math.abs(mouthBottom) < 1, 'inhale mouth is open at the bottom');
+  assert.ok(Math.abs(mouthTop) < 10, 'inhale mouth is open at the top');
+  assert.ok(Math.abs(mouthBottom) < 10, 'inhale mouth is open at the bottom');
 });
 
 test('only the resting face uses tall rounded eyes', () => {
   const { resting, ...breathingFaces } = FACE_SHAPES;
   assert.equal(resting.eyeRoundness, 1);
   assert.equal(resting.eyeTop, -resting.eyeBottom);
-  assert.ok(resting.eyeBottom > resting.eyeWidth);
+  assert.equal(eyeOpenness(resting), 1);
 
   const squints = {
-    inhale: [6, -5, -1.6],
-    holdIn: [6.6, -6.2, -2.8],
-    exhale: [6, -4.2, -1.2],
-    holdOut: [5.6, -3.6, -1.1],
+    inhale: [66, -38, -14],
+    holdIn: [73, -46, -20],
+    exhale: [66, -34, -12],
+    holdOut: [62, -30, -11],
   };
   for (const [face, shape] of Object.entries(breathingFaces)) {
     assert.equal(shape.eyeRoundness, 0, `${face} eyes are rounded`);
@@ -45,6 +45,20 @@ test('only the resting face uses tall rounded eyes', () => {
       squints[face],
       `${face} squint geometry changed`,
     );
+  }
+});
+
+test('a squint reads as shut, never as a half-open eye', () => {
+  const { resting, ...breathingFaces } = FACE_SHAPES;
+  for (const [face, shape] of Object.entries(breathingFaces)) {
+    // Both lids sit above the eye line, so the aperture is a closed arc rather
+    // than a gap the iris could show through.
+    assert.ok(shape.eyeTop < 0 && shape.eyeBottom < 0, `${face} eyes stay open`);
+    assert.ok(
+      eyeOpenness(shape) < 0.35,
+      `${face} leaves the lids ${(eyeOpenness(shape) * 100).toFixed(0)}% open`,
+    );
+    assert.ok(shape.eyeWidth <= EYE_RADIUS * 1.1, `${face} squint is too wide`);
   }
 });
 
