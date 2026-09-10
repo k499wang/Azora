@@ -324,7 +324,7 @@ is required.
   events.
 - Update `docs/query-cache-invalidation-map.md` for the balance query and both
   mutations.
-- Rewrite `docs/mochi-story.md` and onboarding copy because the current product
+- Rewrite `docs/azo-story.md` and onboarding copy because the current product
   story explicitly says there is no economy and promises one daily decoration.
 
 ## Minimum tests

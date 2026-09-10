@@ -1,13 +1,13 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import PlacementReveal from '../../../features/room/PlacementReveal';
-import type { RoomBlobHandle } from '../../../features/room/RoomBlob';
+import type { AzoHandle } from '../../../features/mascot/AzoPortrait';
 import { ROOM_SHELLS } from '../../../features/room/roomShells';
 import { MASCOT_NAME } from '../../../features/room/mascot';
-import MochiStage, { useMochiStageWidth } from '../MochiStage';
+import AzoStage, { useAzoStageWidth } from '../AzoStage';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 
-interface MochiPlaceScreenProps {
+interface AzoPlaceScreenProps {
   stepIndex: number;
   stepCount: number;
   onContinue: () => void;
@@ -16,19 +16,19 @@ interface MochiPlaceScreenProps {
 
 const FIRST_PIECE = 'checker_rug';
 
-export default function MochiPlaceScreen({
+export default function AzoPlaceScreen({
   stepIndex,
   stepCount,
   onContinue,
   onBack,
-}: MochiPlaceScreenProps) {
-  const width = useMochiStageWidth();
-  const blob = useRef<RoomBlobHandle>(null);
+}: AzoPlaceScreenProps) {
+  const width = useAzoStageWidth();
+  const azo = useRef<AzoHandle>(null);
   const [placed, setPlaced] = useState(false);
 
   const onPlaced = useCallback(() => {
     setPlaced(true);
-    blob.current?.cheer();
+    azo.current?.cheer();
   }, []);
 
   // Keep the reveal mounted after it lands. Its final frame already is the
@@ -60,15 +60,15 @@ export default function MochiPlaceScreen({
       centerOnScreen
       footer={<OnboardingPrimaryButton label="Continue" onPress={onContinue} />}
     >
-      <MochiStage
-        ref={blob}
+      <AzoStage
+        ref={azo}
         accessibilityLabel={`Say hello to ${MASCOT_NAME}`}
-        onPress={() => blob.current?.cheer()}
+        onPress={() => azo.current?.cheer()}
         speech={placed ? 'thanks.' : undefined}
         animateEntrance={false}
       >
         {reveal}
-      </MochiStage>
+      </AzoStage>
     </OnboardingScreenLayout>
   );
 }

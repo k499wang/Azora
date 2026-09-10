@@ -1,10 +1,10 @@
 import type { IconName } from '../common/icons/Icon';
 
 export type OnboardingStep =
-  | 'mochiIntro'
-  | 'mochiMoved'
-  | 'mochiNoTime'
-  | 'mochiFresh'
+  | 'azoIntro'
+  | 'azoMoved'
+  | 'azoNoTime'
+  | 'azoFresh'
   | 'personalizeIntro'
   | 'mochiPlace'
   | 'mochiFloor'

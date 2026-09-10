@@ -4,7 +4,7 @@ import { spacing } from '../../../theme/spacing';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import OnboardingHapticSlider from '../OnboardingHapticSlider';
-import MochiAside from '../MochiAside';
+import AzoAside from '../AzoAside';
 
 interface BrainFogScreenProps {
   value: number;
@@ -40,11 +40,10 @@ export default function BrainFogScreen({
     <OnboardingScreenLayout
       title=""
       titleSlot={
-        <MochiAside
+        <AzoAside
           text="How often does brain fog slow you down?"
           variant="question"
-          expression="thinking"
-          holding="notes"
+          wearing="glasses"
           delayMs={160}
         />
       }

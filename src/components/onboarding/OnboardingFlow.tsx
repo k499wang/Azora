@@ -33,12 +33,12 @@ import BrainScienceScreen from './screens/BrainScienceScreen';
 import type { AgreementValue } from '../../lib/onboardingAgreement';
 import NameScreen from './screens/NameScreen';
 import GreetingScreen from './screens/GreetingScreen';
-import MochiStoryScreen from './screens/MochiStoryScreen';
+import AzoStoryScreen from './screens/AzoStoryScreen';
 import PersonalizeIntroScreen from './screens/PersonalizeIntroScreen';
-import { MOCHI_STORY } from './data/mochiStory';
-import MochiPlaceScreen from './screens/MochiPlaceScreen';
-import MochiFloorScreen from './screens/MochiFloorScreen';
-import MochiRoomsScreen from './screens/MochiRoomsScreen';
+import { AZO_STORY } from './data/azoStory';
+import AzoPlaceScreen from './screens/AzoPlaceScreen';
+import AzoFloorScreen from './screens/AzoFloorScreen';
+import AzoRoomsScreen from './screens/AzoRoomsScreen';
 import AttPrimingScreen from './screens/AttPrimingScreen';
 import PactScreen from './screens/PactScreen';
 import NotificationPermissionScreen from './screens/NotificationPermissionScreen';
@@ -175,10 +175,10 @@ interface OnboardingFlowProps {
 }
 
 const STEP_ORDER: OnboardingStep[] = [
-  'mochiIntro',
-  'mochiMoved',
-  'mochiNoTime',
-  'mochiFresh',
+  'azoIntro',
+  'azoMoved',
+  'azoNoTime',
+  'azoFresh',
   'personalizeIntro',
   'intent',
   'intentPriority',
@@ -289,7 +289,7 @@ function OnboardingFlowSteps({
   const userId = useAuthStore((state) => state.user?.id ?? null);
   const isPro = useUserEntitlementQuery(userId).data?.isPro === true;
   const [step, setStep] = useState<OnboardingStep>(
-    initialSavedProfile == null ? 'mochiIntro' : 'paywall',
+    initialSavedProfile == null ? 'azoIntro' : 'paywall',
   );
   const isMochiAnimationSequence = MOCHI_ANIMATION_STEPS.has(step);
   const mochiReplayReleaseRef = useRef<(() => void) | null>(null);
@@ -968,47 +968,47 @@ function OnboardingFlowSteps({
     VISUAL_PROGRESS_STEP_COUNT;
   const visualStepCount = VISUAL_PROGRESS_STEP_COUNT;
 
-  if (step === 'mochiIntro') {
+  if (step === 'azoIntro') {
     return (
-      <MochiStoryScreen
-        beat={MOCHI_STORY.mochiIntro}
-        onContinue={() => goToStep('mochiMoved', 'continue')}
+      <AzoStoryScreen
+        beat={AZO_STORY.azoIntro}
+        onContinue={() => goToStep('azoMoved', 'continue')}
       />
     );
   }
 
-  if (step === 'mochiMoved') {
+  if (step === 'azoMoved') {
     return (
-      <MochiStoryScreen
-        beat={MOCHI_STORY.mochiMoved}
+      <AzoStoryScreen
+        beat={AZO_STORY.azoMoved}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('mochiNoTime', 'continue')}
-        onBack={() => goToStep('mochiIntro', 'back')}
+        onContinue={() => goToStep('azoNoTime', 'continue')}
+        onBack={() => goToStep('azoIntro', 'back')}
       />
     );
   }
 
-  if (step === 'mochiNoTime') {
+  if (step === 'azoNoTime') {
     return (
-      <MochiStoryScreen
-        beat={MOCHI_STORY.mochiNoTime}
+      <AzoStoryScreen
+        beat={AZO_STORY.azoNoTime}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('mochiFresh', 'continue')}
-        onBack={() => goToStep('mochiMoved', 'back')}
+        onContinue={() => goToStep('azoFresh', 'continue')}
+        onBack={() => goToStep('azoMoved', 'back')}
       />
     );
   }
 
-  if (step === 'mochiFresh') {
+  if (step === 'azoFresh') {
     return (
-      <MochiStoryScreen
-        beat={MOCHI_STORY.mochiFresh}
+      <AzoStoryScreen
+        beat={AZO_STORY.azoFresh}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goToStep('personalizeIntro', 'continue')}
-        onBack={() => goToStep('mochiNoTime', 'back')}
+        onBack={() => goToStep('azoNoTime', 'back')}
       />
     );
   }
@@ -1019,7 +1019,7 @@ function OnboardingFlowSteps({
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goToStep('intent', 'continue')}
-        onBack={() => goToStep('mochiFresh', 'back')}
+        onBack={() => goToStep('azoFresh', 'back')}
       />
     );
   }
@@ -1221,7 +1221,6 @@ function OnboardingFlowSteps({
         selectedIds={sleepDuration ? [sleepDuration] : []}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        expression="sleepy"
         onSelect={setSleepDuration}
         onContinue={() =>
           goToStep('wakeEase', 'continue', {
@@ -1242,7 +1241,6 @@ function OnboardingFlowSteps({
         selectedIds={wakeEase ? [wakeEase] : []}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        expression="thinking"
         onSelect={setWakeEase}
         onContinue={() =>
           goToStep('dayActivity', 'continue', {
@@ -1304,7 +1302,6 @@ function OnboardingFlowSteps({
         multiSelect
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        expression="thinking"
         onSelect={(id) =>
           setMentalHealth((current) => {
             // "None of these" is the answer, not one of them.
@@ -1367,7 +1364,6 @@ function OnboardingFlowSteps({
         multiSelect
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        expression="thinking"
         onSelect={(id) =>
           setProcrastinationAreas((current) =>
             current.includes(id)
@@ -1615,7 +1611,7 @@ function OnboardingFlowSteps({
 
   if (step === 'mochiPlace') {
     return (
-      <MochiPlaceScreen
+      <AzoPlaceScreen
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goToStep('mochiFloor', 'continue')}
@@ -1626,7 +1622,7 @@ function OnboardingFlowSteps({
 
   if (step === 'mochiFloor') {
     return (
-      <MochiFloorScreen
+      <AzoFloorScreen
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goToStep('mochiRooms', 'continue')}
@@ -1637,7 +1633,7 @@ function OnboardingFlowSteps({
 
   if (step === 'mochiRooms') {
     return (
-      <MochiRoomsScreen
+      <AzoRoomsScreen
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         onContinue={() => goToStep('attPriming', 'continue')}

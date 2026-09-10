@@ -104,7 +104,7 @@ untouched. New folder `src/features/tour/`:
   above or below the cutout depending on vertical space
 - `tourSteps.ts` — the five stops as data (target id, copy, tab)
 
-Reuse `MochiFace.tsx` and `MochiSpeechBubble.tsx` from `src/features/room/` rather
+Reuse `MochiFace.tsx` and `AzoSpeechBubble.tsx` from `src/features/room/` rather
 than building new mascot rendering. One primary button per stop; skip only as a small
 text link (`onboardingtips.md` #4).
 

@@ -559,6 +559,30 @@ export const ICON_PATHS = {
     viewBox: '0 0 24 24',
     body: `<g fill="currentColor"><rect x="4.8" y="2.4" width="14.4" height="2.2" rx="1.1"/><rect x="4.8" y="19.4" width="14.4" height="2.2" rx="1.1"/><path d="M6.9 4.6h10.2v2.1c0 2.2-1.66 3.6-3.42 5.3 1.76 1.7 3.42 3.1 3.42 5.3v2.1H6.9v-2.1c0-2.2 1.66-3.6 3.42-5.3C8.56 10.3 6.9 8.9 6.9 6.7z" opacity=".5"/><path d="M9.1 19.4c.42-1.95 1.66-3.05 2.9-4.15 1.24 1.1 2.48 2.2 2.9 4.15z"/></g>`,
   },
+  'mood-overwhelmed': {
+    viewBox: '0 0 24 24',
+    body: `<g fill="currentColor"><rect x="8.4" y="2.6" width="7.2" height="3.4" rx="1.7"/><rect x="6.8" y="7.6" width="10.4" height="3.4" rx="1.7" opacity=".5"/><rect x="5.2" y="12.6" width="13.6" height="3.4" rx="1.7" opacity=".5"/><rect x="3" y="18.4" width="18" height="2.4" rx="1.2"/></g>`,
+  },
+  'mood-overthinking': {
+    viewBox: '0 0 24 24',
+    body: `<g fill="currentColor"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M4.3 14.9a8 8 0 1 1 15.3-1.5"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M7.6 15.4a4.7 4.7 0 1 1 8.7-1.2" opacity=".5"/><circle cx="12" cy="12.5" r="1.7"/></g>`,
+  },
+  'mood-restless': {
+    viewBox: '0 0 24 24',
+    body: `<g fill="currentColor"><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" d="M3.2 15.2 7 8.4l3.4 6.8L13.8 6.8l3.4 8.4 2.6-4.4" opacity=".5"/><rect x="3" y="18.4" width="18" height="2.4" rx="1.2"/></g>`,
+  },
+  'mood-low-mood': {
+    viewBox: '0 0 24 24',
+    body: `<g fill="currentColor"><rect x="4.4" y="3.2" width="15.2" height="2.2" rx="1.1"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M4.4 6.4c0 6.4 3.4 9.4 7.6 9.4s7.6-3 7.6-9.4" opacity=".5"/><circle cx="12" cy="17.4" r="2.6"/></g>`,
+  },
+  'mood-morning': {
+    viewBox: '0 0 24 24',
+    body: `<g fill="currentColor"><path d="M12 6.6a5.6 5.6 0 0 1 5.6 5.6H6.4A5.6 5.6 0 0 1 12 6.6Z"/><rect x="2.6" y="14.4" width="18.8" height="2.2" rx="1.1"/><path fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" d="M12 1.8v2.2M4.6 4.9 6.2 6.5M19.4 4.9 17.8 6.5M2.2 12.2h1.2M20.6 12.2h1.2" opacity=".5"/></g>`,
+  },
+  'mood-wind-down': {
+    viewBox: '0 0 24 24',
+    body: `<g fill="currentColor"><rect x="4.6" y="4" width="3.6" height="12.4" rx="1.8"/><rect x="10.2" y="7.6" width="3.6" height="8.8" rx="1.8" opacity=".5"/><rect x="15.8" y="11.2" width="3.6" height="5.2" rx="1.8" opacity=".5"/><rect x="3" y="18.4" width="18" height="2.4" rx="1.2"/></g>`,
+  },
 } as const;
 
 export type IconName = keyof typeof ICON_PATHS;

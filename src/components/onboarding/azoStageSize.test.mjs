@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { getMochiStageWidth } from './mochiStageSize';
+import { getAzoStageWidth } from './azoStageSize';
 import { ROOM_ASPECT } from '../../features/room/roomGeometry';
 
 /**
@@ -33,7 +33,7 @@ const REGULAR_HEIGHT_SHARE = 0.55;
 
 test('the room never takes more than its share of any screen height', () => {
   for (const d of DEVICES) {
-    const height = getMochiStageWidth(d.width, d.height) * ROOM_ASPECT;
+    const height = getAzoStageWidth(d.width, d.height) * ROOM_ASPECT;
     assert.ok(
       height <= d.height * HEIGHT_SHARE + 0.001,
       `${d.name}: room is ${height.toFixed(0)}pt of ${d.height}pt`,
@@ -44,7 +44,7 @@ test('the room never takes more than its share of any screen height', () => {
 test('the room always fits the screen width with its gutters', () => {
   for (const d of DEVICES) {
     assert.ok(
-      getMochiStageWidth(d.width, d.height) <= d.width - 48,
+      getAzoStageWidth(d.width, d.height) <= d.width - 48,
       `${d.name} overflows its gutters`,
     );
   }
@@ -52,7 +52,7 @@ test('the room always fits the screen width with its gutters', () => {
 
 test('only screens that were over budget changed', () => {
   for (const d of DEVICES) {
-    const width = getMochiStageWidth(d.width, d.height);
+    const width = getAzoStageWidth(d.width, d.height);
     const wasOverBudget = d.wasWidth * ROOM_ASPECT > d.height * HEIGHT_SHARE;
     if (wasOverBudget) {
       assert.ok(width < d.wasWidth, `${d.name} should have shrunk`);
@@ -64,7 +64,7 @@ test('only screens that were over budget changed', () => {
 
 test('the room stays big enough to read as a room on the smallest screen', () => {
   const smallest = Math.min(
-    ...DEVICES.map((d) => getMochiStageWidth(d.width, d.height)),
+    ...DEVICES.map((d) => getAzoStageWidth(d.width, d.height)),
   );
   assert.ok(smallest > 200, `smallest room is ${smallest.toFixed(0)}pt`);
 });
@@ -75,8 +75,8 @@ const TABLETS = DEVICES.filter((d) => Math.min(d.width, d.height) >= 600);
 test('a tablet draws a bigger room than the phone caps allowed', () => {
   for (const d of TABLETS) {
     assert.ok(
-      getMochiStageWidth(d.width, d.height, true) >
-        getMochiStageWidth(d.width, d.height),
+      getAzoStageWidth(d.width, d.height, true) >
+        getAzoStageWidth(d.width, d.height),
       `${d.name} did not grow`,
     );
   }
@@ -84,7 +84,7 @@ test('a tablet draws a bigger room than the phone caps allowed', () => {
 
 test('the bigger room still keeps its share of the height and its gutters', () => {
   for (const d of TABLETS) {
-    const width = getMochiStageWidth(d.width, d.height, true);
+    const width = getAzoStageWidth(d.width, d.height, true);
     assert.ok(
       width * ROOM_ASPECT <= d.height * REGULAR_HEIGHT_SHARE + 0.001,
       `${d.name}: room is ${(width * ROOM_ASPECT).toFixed(0)}pt of ${d.height}pt`,
@@ -96,8 +96,8 @@ test('the bigger room still keeps its share of the height and its gutters', () =
 test('a phone is untouched by the regular-width room', () => {
   for (const d of DEVICES.filter((device) => !TABLETS.includes(device))) {
     assert.equal(
-      getMochiStageWidth(d.width, d.height),
-      getMochiStageWidth(d.width, d.height, false),
+      getAzoStageWidth(d.width, d.height),
+      getAzoStageWidth(d.width, d.height, false),
       `${d.name} moved`,
     );
   }

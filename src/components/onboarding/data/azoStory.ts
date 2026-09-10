@@ -1,12 +1,12 @@
 import { MASCOT_NAME } from '../../../features/room/mascot';
 
-export type MochiStoryStep =
-  | 'mochiIntro'
-  | 'mochiMoved'
-  | 'mochiNoTime'
-  | 'mochiFresh';
+export type AzoStoryStep =
+  | 'azoIntro'
+  | 'azoMoved'
+  | 'azoNoTime'
+  | 'azoFresh';
 
-export interface MochiStoryBeat {
+export interface AzoStoryBeat {
   title: string;
   /** a line for the blob to say; it opens on arrival and again on every poke */
   speech?: string;
@@ -22,28 +22,28 @@ export interface MochiStoryBeat {
  * told. Kept together so the arc can be read in one place and rewritten without
  * opening five screens.
  *
- * See `docs/mochi-story.md` for what the fiction may and may not claim.
+ * See `docs/azo-story.md` for what the fiction may and may not claim.
  */
-export const MOCHI_STORY: Record<MochiStoryStep, MochiStoryBeat> = {
-  mochiIntro: {
+export const AZO_STORY: Record<AzoStoryStep, AzoStoryBeat> = {
+  azoIntro: {
     title: `This is ${MASCOT_NAME}.`,
     speech: 'hi.',
     sad: true,
     button: 'Go on',
   },
-  mochiMoved: {
+  azoMoved: {
     title: `${MASCOT_NAME} moves houses a lot.`,
     speech: 'again.',
     sad: true,
     button: 'Continue',
   },
-  mochiNoTime: {
+  azoNoTime: {
     title: `${MASCOT_NAME} never has time to decorate his room.`,
     speech: '...',
     sad: true,
     button: 'Continue',
   },
-  mochiFresh: {
+  azoFresh: {
     title: `Would you help decorate ${MASCOT_NAME}’s room?`,
     speech: 'please.',
     cheer: true,

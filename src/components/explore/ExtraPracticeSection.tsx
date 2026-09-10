@@ -27,10 +27,16 @@ interface ExtraPracticeCardProps {
 const MOOD_STYLE: Record<Mood['id'], { label: string; hue: PlayfulHue }> = {
   stressed: { label: 'Stressed', hue: colors.playful.teal },
   anxious: { label: 'Anxious', hue: colors.playful.violet },
-  sleepless: { label: 'Sleepless', hue: colors.playful.night },
-  focus: { label: 'Focus', hue: colors.playful.sky },
+  overwhelmed: { label: 'Overload', hue: colors.playful.amber },
+  overthinking: { label: 'Spiraling', hue: colors.playful.blush },
   angry: { label: 'Angry', hue: colors.playful.coral },
+  restless: { label: 'Restless', hue: colors.playful.sky },
+  lowMood: { label: 'Low mood', hue: colors.playful.violet },
   lowEnergy: { label: 'Tired', hue: colors.playful.amber },
+  focus: { label: 'Focus', hue: colors.playful.sky },
+  morning: { label: 'Morning', hue: colors.playful.coral },
+  windDown: { label: 'Wind down', hue: colors.playful.teal },
+  sleepless: { label: 'Sleepless', hue: colors.playful.night },
 };
 
 function ExtraPracticeCard({ mood, exerciseAccess }: ExtraPracticeCardProps) {

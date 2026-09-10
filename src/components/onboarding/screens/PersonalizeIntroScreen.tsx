@@ -1,8 +1,7 @@
 import Svg, { Circle, Polyline } from 'react-native-svg';
 import { StyleSheet, View } from 'react-native';
-import MochiPortrait, {
-  getMochiSideroom,
-} from '../../../features/room/MochiPortrait';
+import AzoPortrait from '../../../features/mascot/AzoPortrait';
+import { AZO_MARGIN } from '../../../features/mascot/azoPaths';
 import { card, radius } from '../../../theme/card';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
@@ -19,11 +18,12 @@ interface PersonalizeIntroScreenProps {
   onBack: () => void;
 }
 
-const BLOB_SIZE = scaleVisual(74);
-const BLOB_HELD = 'pencil' as const;
-const BLOB_FACE = 'pleased' as const;
-/** the pencil and his lean widen his box; cancel both so his body stays put */
-const BLOB_INSET = getMochiSideroom(BLOB_SIZE, BLOB_HELD, BLOB_FACE);
+const BLOB_SIZE = scaleVisual(112);
+/** his box carries the room his ears wobble into; cancel it so his body stays put */
+const BLOB_INSET = BLOB_SIZE * AZO_MARGIN;
+const BLOB_BODY_W = BLOB_SIZE - BLOB_INSET * 2;
+/** how far his shoulder crosses onto the sheet, so he is holding it rather than stood beside it */
+const BLOB_OVERLAP = BLOB_BODY_W * 0.4;
 const CARD_W = scaleVisual(140);
 const CARD_H = scaleVisual(156);
 const CHART_W = CARD_W - spacing.md * 2;
@@ -32,9 +32,9 @@ const CHART_W = CARD_W - spacing.md * 2;
 const ROWS = [0.78, 0.54, 0.66];
 
 /**
- * The blob holding the sheet the answers go onto — the same character from the
- * room, doing the thing the next thirty screens are for, so the assessment
- * arrives as his idea rather than as a change of subject.
+ * Azo holding the sheet the answers go onto — the same character from the room,
+ * doing the thing the next thirty screens are for, so the assessment arrives as
+ * his idea rather than as a change of subject.
  */
 function PersonalizeIllustration() {
   return (
@@ -73,11 +73,7 @@ function PersonalizeIllustration() {
 
       {/* overlapping the card's lower-left corner, so he reads as holding it */}
       <View style={[styles.blob, { left: -BLOB_INSET }]}>
-        <MochiPortrait
-          size={BLOB_SIZE}
-          expression={BLOB_FACE}
-          holding={BLOB_HELD}
-        />
+        <AzoPortrait size={BLOB_SIZE} active={false} />
       </View>
     </View>
   );
@@ -118,7 +114,7 @@ const styles = StyleSheet.create({
     paddingBottom: spacing['2xl'],
   },
   illustration: {
-    width: CARD_W + BLOB_SIZE * 0.7,
+    width: CARD_W + BLOB_BODY_W - BLOB_OVERLAP,
     height: CARD_H + spacing.md,
     marginBottom: spacing.lg,
   },

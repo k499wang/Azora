@@ -26,11 +26,11 @@ const REGULAR_ROOM_HEIGHT_SHARE = 0.55;
  * How wide to draw the onboarding room. Pure, so the sizes it has to keep
  * working on are covered by tests rather than by remembering to check a device.
  *
- * Call `useMochiStageWidth` rather than this: the room artwork and the blob
+ * Call `useAzoStageWidth` rather than this: the room artwork and the blob
  * standing in it are sized by different components, and they are only in the
  * same room while both ask the same question.
  */
-export function getMochiStageWidth(
+export function getAzoStageWidth(
   screenWidth: number,
   screenHeight: number,
   regular = false,

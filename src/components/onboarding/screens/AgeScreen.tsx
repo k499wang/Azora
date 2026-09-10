@@ -3,7 +3,7 @@ import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import OnboardingOptionList, {
   type OnboardingOption,
 } from '../OnboardingOptionList';
-import MochiAside from '../MochiAside';
+import AzoAside from '../AzoAside';
 import { colors } from '../../../theme/colors';
 
 /**
@@ -54,11 +54,10 @@ export default function AgeScreen({
     <OnboardingScreenLayout
       title=""
       titleSlot={
-        <MochiAside
+        <AzoAside
           text="How old are you?"
           variant="question"
-          expression="happy"
-          holding="notes"
+          wearing="glasses"
           delayMs={160}
         />
       }

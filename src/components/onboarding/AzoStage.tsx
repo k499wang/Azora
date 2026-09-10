@@ -12,11 +12,12 @@ import Animated, {
   withDelay,
   withTiming,
 } from 'react-native-reanimated';
-import RoomBlob, { type RoomBlobHandle } from '../../features/room/RoomBlob';
+import RoomAzo from '../../features/room/RoomAzo';
+import type { AzoHandle } from '../../features/mascot/AzoPortrait';
 import { ROOM_ASPECT } from '../../features/room/RoomScene';
 import { triggerBounceHaptic } from '../../native/tapHaptics';
 import { duration, easing, travel } from '../../theme/motion';
-import { getMochiStageWidth } from './mochiStageSize';
+import { getAzoStageWidth } from './azoStageSize';
 import { useIsRegularWidth } from '../../hooks/useIsRegularWidth';
 
 /** a beat behind the screen transition, so the room lands into a settled page */
@@ -26,25 +27,25 @@ const ENTER_DELAY_MS = 90;
  * How wide the room is on this window.
  *
  * The one way to ask. A screen that draws the room artwork itself has to render
- * it at exactly the width the stage gives the blob, so the stage cannot own a
- * size the screen can compute differently — that puts Mochi beside the room
- * instead of in it.
+ * it at exactly the width the stage gives him, so the stage cannot own a size
+ * the screen can compute differently — that puts Azo beside the room instead of
+ * in it.
  */
-export function useMochiStageWidth(): number {
+export function useAzoStageWidth(): number {
   const { width, height } = useWindowDimensions();
   const regular = useIsRegularWidth();
 
-  return getMochiStageWidth(width, height, regular);
+  return getAzoStageWidth(width, height, regular);
 }
 
-interface MochiStageProps {
+interface AzoStageProps {
   /** the room artwork this sizes itself to; must be rendered at `width` */
   children: ReactNode;
   accessibilityLabel: string;
   onPress?: () => void;
-  /** a line for the blob to say, opening on mount and on every poke */
+  /** a line for him to say, opening on mount */
   speech?: string;
-  /** whether the blob is slumped and staying put */
+  /** whether he is downcast */
   sad?: boolean;
   /** disable when the child owns the entrance for the whole stage */
   animateEntrance?: boolean;
@@ -54,11 +55,11 @@ interface MochiStageProps {
  * The room plus its resident, filling the body of a story screen.
  *
  * The onboarding story beats all show the same room the Home tab shows, so they
- * use the same wandering `RoomBlob` rather than the static portrait — the blob
- * a user meets here is the one they poke on Home.
+ * use the same `RoomAzo` the Home tab does — the Azo a user meets here is the
+ * one they poke on Home.
  */
-const MochiStage = forwardRef<RoomBlobHandle, MochiStageProps>(
-  function MochiStage(
+const AzoStage = forwardRef<AzoHandle, AzoStageProps>(
+  function AzoStage(
     {
       children,
       accessibilityLabel,
@@ -69,7 +70,7 @@ const MochiStage = forwardRef<RoomBlobHandle, MochiStageProps>(
     },
     ref,
   ) {
-    const width = useMochiStageWidth();
+    const width = useAzoStageWidth();
 
     // The room arrives rather than appearing. Reanimated, so it runs on the UI
     // thread alongside the blob instead of competing with it for JS frames.
@@ -111,7 +112,7 @@ const MochiStage = forwardRef<RoomBlobHandle, MochiStageProps>(
             style={[{ width, height: width * ROOM_ASPECT }, enterStyle]}
           >
             {children}
-            <RoomBlob ref={ref} width={width} speech={speech} sad={sad} />
+            <RoomAzo ref={ref} width={width} speech={speech} sad={sad} />
           </Animated.View>
         </Pressable>
       </View>
@@ -119,7 +120,7 @@ const MochiStage = forwardRef<RoomBlobHandle, MochiStageProps>(
   },
 );
 
-export default MochiStage;
+export default AzoStage;
 
 const styles = StyleSheet.create({
   // The layout's centerBody/centerOnScreen puts this on the true middle of the

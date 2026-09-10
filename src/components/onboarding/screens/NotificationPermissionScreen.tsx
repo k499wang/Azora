@@ -10,7 +10,7 @@ import { fonts, typography } from '../../../theme/typography';
 import { card, radius } from '../../../theme/card';
 import { DAILY_REMINDER_DEFINITIONS } from '../../../services/notifications/notificationCatalog';
 import { getBackgroundImageSource } from '../../../services/images/backgroundImageCache';
-import MochiAside from '../MochiAside';
+import AzoAside from '../AzoAside';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 
@@ -84,10 +84,10 @@ export default function NotificationPermissionScreen({
     <OnboardingScreenLayout
       title=""
       titleSlot={
-        <MochiAside
+        <AzoAside
           text="Want me to check in on you?"
           variant="question"
-          expression="happy"
+          wearing="glasses"
           delayMs={160}
         />
       }

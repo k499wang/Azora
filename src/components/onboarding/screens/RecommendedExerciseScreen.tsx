@@ -16,7 +16,7 @@ import { useTimePickerSheet } from '../../common/useTimePickerSheet';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
-import MochiAside from '../MochiAside';
+import AzoAside from '../AzoAside';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import TECHNIQUES from '../../../features/exercise/guidedBreathing/techniques';
@@ -153,7 +153,7 @@ export default function RecommendedExerciseScreen({
         </View>
 
         <View style={styles.section}>
-          <MochiAside
+          <AzoAside
             text="We made this plan for you:"
             variant="heading"
             expression="pleased"

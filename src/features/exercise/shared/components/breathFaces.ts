@@ -1,3 +1,5 @@
+export { eyePath, lensPath } from '../../../mascot/faceGeometry';
+
 export type BreathFace = 'inhale' | 'holdIn' | 'exhale' | 'holdOut' | 'resting';
 
 /**
@@ -84,14 +86,18 @@ export const FACE_SHAPES: Record<BreathFace, FaceShape> = {
   },
   // Blowing out: the mouth opens into a round O and narrows closed again as
   // the breath empties, landing on the sealed line the next inhale starts from.
+  //
+  // It opens downward, the way a jaw does, and it opens small. A mouth that
+  // widens as much as it drops ends up level with the nose and the same colour
+  // as it, and the two read as one shape rather than a face blowing out.
   exhale: {
     eyeWidth: 66,
     eyeTop: -34,
     eyeBottom: -12,
     eyeRoundness: 0,
-    mouthWidth: 70,
-    mouthTop: -26,
-    mouthBottom: 38,
+    mouthWidth: 44,
+    mouthTop: -8,
+    mouthBottom: 58,
     mouthBreath: 1,
     mouthPress: 0,
   },
@@ -121,6 +127,7 @@ export const FACE_SHAPES: Record<BreathFace, FaceShape> = {
   },
 };
 
+
 /**
  * How far open a set of lids is, as a share of the resting eye. The lid ink and
  * the catchlight both key off this, so a squint drawn anywhere between two
@@ -129,95 +136,6 @@ export const FACE_SHAPES: Record<BreathFace, FaceShape> = {
 export function eyeOpenness(shape: FaceShape): number {
   'worklet';
   return (shape.eyeBottom - shape.eyeTop) / (EYE_RADIUS * 2);
-}
-
-const ELLIPSE_KAPPA = 0.5522848;
-
-/**
- * Four cubics with matching topology at both ends of the morph. At roundness 0,
- * each half is the exact cubic conversion of half of `lensPath`'s quadratic.
- * At roundness 1, the controls are the standard kappa ellipse approximation.
- */
-export function eyePath(
-  cx: number,
-  cy: number,
-  width: number,
-  top: number,
-  bottom: number,
-  roundness: number,
-): string {
-  'worklet';
-  const mix = (from: number, to: number) => from + (to - from) * roundness;
-  const centerY = cy + (top + bottom) / 2;
-  const radiusY = (bottom - top) / 2;
-  const left = cx - width;
-  const right = cx + width;
-  const topY = cy + top;
-  const bottomY = cy + bottom;
-  const sideY = mix(cy, centerY);
-
-  const topLeftControl1X = mix(cx - (2 * width) / 3, left);
-  const topLeftControl1Y = mix(
-    cy + (2 * top) / 3,
-    centerY - ELLIPSE_KAPPA * radiusY,
-  );
-  const topLeftControl2X = mix(cx - width / 3, cx - ELLIPSE_KAPPA * width);
-
-  const topRightControl1X = mix(
-    cx + width / 3,
-    cx + ELLIPSE_KAPPA * width,
-  );
-  const topRightControl2X = mix(cx + (2 * width) / 3, right);
-  const topRightControl2Y = mix(
-    cy + (2 * top) / 3,
-    centerY - ELLIPSE_KAPPA * radiusY,
-  );
-
-  const bottomRightControl1X = mix(cx + (2 * width) / 3, right);
-  const bottomRightControl1Y = mix(
-    cy + (2 * bottom) / 3,
-    centerY + ELLIPSE_KAPPA * radiusY,
-  );
-  const bottomRightControl2X = mix(
-    cx + width / 3,
-    cx + ELLIPSE_KAPPA * width,
-  );
-
-  const bottomLeftControl1X = mix(
-    cx - width / 3,
-    cx - ELLIPSE_KAPPA * width,
-  );
-  const bottomLeftControl2X = mix(cx - (2 * width) / 3, left);
-  const bottomLeftControl2Y = mix(
-    cy + (2 * bottom) / 3,
-    centerY + ELLIPSE_KAPPA * radiusY,
-  );
-
-  return (
-    `M ${left} ${sideY} ` +
-    `C ${topLeftControl1X} ${topLeftControl1Y} ${topLeftControl2X} ${topY} ${cx} ${topY} ` +
-    `C ${topRightControl1X} ${topY} ${topRightControl2X} ${topRightControl2Y} ${right} ${sideY} ` +
-    `C ${bottomRightControl1X} ${bottomRightControl1Y} ${bottomRightControl2X} ${bottomY} ${cx} ${bottomY} ` +
-    `C ${bottomLeftControl1X} ${bottomY} ${bottomLeftControl2X} ${bottomLeftControl2Y} ${left} ${sideY} Z`
-  );
-}
-
-/**
- * Two quadratics meeting at the corners. The control points are doubled because
- * a quadratic reaches half its control offset at the midpoint, so `top` and
- * `bottom` read directly as the shape's vertical extents.
- */
-export function lensPath(
-  cx: number,
-  cy: number,
-  width: number,
-  top: number,
-  bottom: number,
-): string {
-  'worklet';
-  const left = cx - width;
-  const right = cx + width;
-  return `M ${left} ${cy} Q ${cx} ${cy + top * 2} ${right} ${cy} Q ${cx} ${cy + bottom * 2} ${left} ${cy} Z`;
 }
 
 export function lerpFace(from: FaceShape, to: FaceShape, t: number): FaceShape {

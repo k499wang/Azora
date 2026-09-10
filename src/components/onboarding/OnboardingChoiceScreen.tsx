@@ -3,8 +3,7 @@ import OnboardingPrimaryButton from './OnboardingPrimaryButton';
 import OnboardingOptionList, {
   type OnboardingOption,
 } from './OnboardingOptionList';
-import MochiAside from './MochiAside';
-import type { MochiExpression } from '../../features/room/MochiPortrait';
+import AzoAside from './AzoAside';
 
 interface OnboardingChoiceScreenProps<Id extends string> {
   question: string;
@@ -13,7 +12,6 @@ interface OnboardingChoiceScreenProps<Id extends string> {
   stepIndex: number;
   stepCount: number;
   multiSelect?: boolean;
-  expression?: MochiExpression;
   /**
    * An extra condition on top of having answered — a screen that is still
    * saving, say. It can only ever tighten the gate, never open it.
@@ -26,9 +24,13 @@ interface OnboardingChoiceScreenProps<Id extends string> {
 }
 
 /**
- * Mochi asks, the user picks one — the shape every plain question in the
+ * Azo asks, the user picks one — the shape every plain question in the
  * assessment now takes. The screens that use it differ only in their copy and
  * their options, so they are configuration rather than components.
+ *
+ * He asks every one of them wearing the same face and the same glasses. A
+ * question screen is the user's turn, not his: a mascot who pulls a new
+ * expression for each one is reacting to an answer he has not been given yet.
  *
  * Continue stays down until something is picked. Passing a question by leaving
  * it blank is what Skip is for, up by the progress bar: two ways past the same
@@ -42,7 +44,6 @@ export default function OnboardingChoiceScreen<Id extends string>({
   stepIndex,
   stepCount,
   multiSelect = false,
-  expression = 'happy',
   canContinue = true,
   onSelect,
   onContinue,
@@ -53,11 +54,10 @@ export default function OnboardingChoiceScreen<Id extends string>({
     <OnboardingScreenLayout
       title=""
       titleSlot={
-        <MochiAside
+        <AzoAside
           text={question}
           variant="question"
-          expression={expression}
-          holding="notes"
+          wearing="glasses"
           delayMs={160}
         />
       }

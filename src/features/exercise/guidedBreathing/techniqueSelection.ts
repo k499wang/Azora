@@ -43,10 +43,16 @@ export const INTENT_TECHNIQUE: Record<OnboardingIntent, TechniqueId> = {
 export const MOOD_TECHNIQUE: Record<Mood['id'], TechniqueId> = {
   stressed: 'extended-exhale',
   anxious: '478',
-  sleepless: 'sleep-descent',
-  focus: 'box',
+  overwhelmed: 'relaxing',
+  overthinking: 'triangle',
   angry: 'sitali',
+  restless: 'belly',
+  lowMood: 'resonance',
   lowEnergy: 'wimhof',
+  focus: 'box',
+  morning: 'morning-charge',
+  windDown: 'night-settle',
+  sleepless: 'sleep-descent',
 };
 
 export function isOnboardingIntent(value: string): value is OnboardingIntent {
