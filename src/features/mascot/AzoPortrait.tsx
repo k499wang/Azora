@@ -19,7 +19,14 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
-import Svg, { Circle, Ellipse, G, Path, Rect } from 'react-native-svg';
+import Svg, {
+  Circle,
+  Ellipse,
+  G,
+  Path,
+  Polygon,
+  Rect,
+} from 'react-native-svg';
 import { colors } from '../../theme/colors';
 import { duration, easing } from '../../theme/motion';
 import {
@@ -661,57 +668,112 @@ const AzoPortrait = forwardRef<AzoHandle, AzoPortraitProps>(
 );
 
 /**
- * The clipboard he takes notes on.
+ * The clipboard and pencil he takes notes with.
  *
- * Drawn into the body layer rather than a layer of its own, so it swells and
- * leans with the chest it is held against instead of floating in front of one.
- * It sits between the arms, which the source file draws behind the body, so they
- * read as reaching around it.
+ * Drawn into the body layer rather than a layer of their own, so they swell and
+ * lean with the chest they are held against instead of floating in front of one,
+ * and drawn after it so each sits over the hand that holds it.
+ *
+ * Nothing about him moves to hold them. The arms stay exactly where the artwork
+ * puts them — down at his sides — and the board and the pencil are placed at the
+ * point each arm ends on, so he is holding them in the pose he already stands
+ * in. Both anchors are those two path endpoints, which is why they are the only
+ * coordinates here that are not round numbers.
  */
-const BOARD_X = 446;
-const BOARD_Y = 762;
-const BOARD_W = 300;
-const BOARD_H = 340;
+const HAND_RIGHT_X = 239.73;
+const HAND_LEFT_X = 651.32;
+const HAND_Y = 785.98;
+
+/** set outboard of the paw and lifted, so it hangs off the hand rather than the chest */
+const BOARD_X = HAND_RIGHT_X - 22;
+const BOARD_Y = HAND_Y - 46;
+const BOARD_W = 248;
+const BOARD_H = 282;
+const BOARD_TILT = -12;
+/** the back of the clip, the one fitting still visible from behind */
+const CLIP_W = 0.34;
+const CLIP_H = 0.12;
+
+/** held through its middle, out past the paw and angled up away from the board */
+const PENCIL_X = HAND_LEFT_X + 62;
+const PENCIL_Y = HAND_Y - 34;
+const PENCIL_TILT = 35;
+const PENCIL_W = 58;
+const PENCIL_HALF = 152;
+const ERASER_H = 26;
+const FERRULE_H = 19;
+const TIP_H = 56;
+const LEAD_H = 19;
+
+function Pencil() {
+  const left = PENCIL_X - PENCIL_W / 2;
+  const top = PENCIL_Y - PENCIL_HALF;
+  const point = PENCIL_Y + PENCIL_HALF;
+  const wood = point - TIP_H;
+  const lead = point - LEAD_H;
+  const barrel = top + ERASER_H + FERRULE_H;
+  // the graphite is the last stretch of the same cone, so it narrows in step
+  const leadHalf = (PENCIL_W / 2) * (LEAD_H / TIP_H);
+
+  return (
+    <G rotation={PENCIL_TILT} origin={`${PENCIL_X}, ${PENCIL_Y}`}>
+      <Rect
+        x={left}
+        y={top}
+        width={PENCIL_W}
+        height={ERASER_H}
+        rx={11}
+        fill={colors.koala.sheet}
+      />
+      <Rect
+        x={left}
+        y={top + ERASER_H}
+        width={PENCIL_W}
+        height={FERRULE_H}
+        fill={colors.koala.rule}
+      />
+      <Rect
+        x={left}
+        y={barrel}
+        width={PENCIL_W}
+        height={wood - barrel}
+        fill={colors.koala.sparkle}
+      />
+      <Polygon
+        points={`${left},${wood} ${left + PENCIL_W},${wood} ${PENCIL_X},${point}`}
+        fill={colors.koala.board}
+      />
+      <Polygon
+        points={`${PENCIL_X - leadHalf},${lead} ${PENCIL_X + leadHalf},${lead} ${PENCIL_X},${point}`}
+        fill={colors.koala.iris}
+      />
+    </G>
+  );
+}
 
 function Clipboard() {
   return (
-    <G rotation={-7} origin={`${BOARD_X}, ${BOARD_Y}`}>
-      <Rect
-        x={BOARD_X - BOARD_W / 2}
-        y={BOARD_Y - BOARD_H / 2}
-        width={BOARD_W}
-        height={BOARD_H}
-        rx={22}
-        fill={colors.koala.board}
-      />
-      <Rect
-        x={BOARD_X - 125}
-        y={BOARD_Y - 118}
-        width={250}
-        height={288}
-        rx={8}
-        fill={colors.koala.sheet}
-      />
-      {[700, 762, 824].map((y) => (
+    <>
+      <G rotation={BOARD_TILT} origin={`${BOARD_X}, ${BOARD_Y}`}>
         <Rect
-          key={y}
-          x={BOARD_X - 90}
-          y={y}
-          width={180}
-          height={12}
-          rx={6}
-          fill={colors.koala.rule}
+          x={BOARD_X - BOARD_W / 2}
+          y={BOARD_Y - BOARD_H / 2}
+          width={BOARD_W}
+          height={BOARD_H}
+          rx={20}
+          fill={colors.koala.board}
         />
-      ))}
-      <Rect
-        x={BOARD_X - 48}
-        y={BOARD_Y - 162}
-        width={96}
-        height={40}
-        rx={12}
-        fill={colors.koala.boardEdge}
-      />
-    </G>
+        <Rect
+          x={BOARD_X - (BOARD_W * CLIP_W) / 2}
+          y={BOARD_Y - BOARD_H / 2 - BOARD_H * CLIP_H * 0.3}
+          width={BOARD_W * CLIP_W}
+          height={BOARD_H * CLIP_H}
+          rx={10}
+          fill={colors.koala.boardEdge}
+        />
+      </G>
+      <Pencil />
+    </>
   );
 }
 

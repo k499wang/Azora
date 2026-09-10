@@ -43,6 +43,7 @@ export type OnboardingStep =
   | 'diagnosis'
   | 'recommendedExercise'
   | 'scienceCredibility'
+  | 'goalProof'
   | 'pact'
   | 'notifications'
   | 'paywall';

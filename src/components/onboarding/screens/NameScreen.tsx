@@ -33,7 +33,9 @@ export default function NameScreen({
         <AzoAside
           text="Thanks for helping me out! Now, what should I call you?"
           variant="question"
+          expression="curious"
           wearing="glasses"
+          holding="notes"
           delayMs={160}
         />
       }

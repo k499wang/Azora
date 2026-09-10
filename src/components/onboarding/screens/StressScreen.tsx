@@ -43,7 +43,9 @@ export default function StressScreen({
         <AzoAside
           text="How stressed have you felt this past week?"
           variant="question"
+          expression="listening"
           wearing="glasses"
+          holding="notes"
           delayMs={160}
         />
       }

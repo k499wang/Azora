@@ -9,6 +9,8 @@ import { EYE_RADIUS } from './azoPaths';
  */
 export type AzoExpression =
   | 'happy'
+  | 'curious'
+  | 'listening'
   | 'sad'
   | 'sleepy'
   | 'excited'
@@ -63,6 +65,37 @@ export const FACES: Record<AzoExpression, AzoFace> = {
     mouthWidth: 52,
     mouthTop: 2,
     mouthBottom: 30,
+  },
+  // Attending to what he just asked: eyes level, gaze carried a little toward
+  // his own speech bubble, mouth left small and open on the question. One of
+  // the two listening faces — they differ only in where he is looking and how
+  // far the lids are down, which is as much as a face should move on a screen
+  // whose answer he has not been given yet.
+  curious: {
+    eyeWidth: 54,
+    eyeTop: -58,
+    eyeBottom: 56,
+    eyeRoundness: 1,
+    eyeDroop: -2,
+    irisUp: -5,
+    irisSide: 12,
+    mouthWidth: 40,
+    mouthTop: 0,
+    mouthBottom: 26,
+  },
+  // The other listening face: lids a shade lower and the gaze dropped toward
+  // the options, so he is waiting on the answer rather than asking again.
+  listening: {
+    eyeWidth: 53,
+    eyeTop: -46,
+    eyeBottom: 44,
+    eyeRoundness: 0.85,
+    eyeDroop: 1,
+    irisUp: 8,
+    irisSide: -6,
+    mouthWidth: 44,
+    mouthTop: 4,
+    mouthBottom: 20,
   },
   // Softened rather than narrowed: lids down a little, smile smaller. This is
   // the face for a screen that has just told him something good.

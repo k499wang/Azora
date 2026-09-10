@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import AgeScreen from './screens/AgeScreen';
 import ScienceCredibilityScreen from './screens/ScienceCredibilityScreen';
+import GoalProofScreen from './screens/GoalProofScreen';
 import BaselineScreen from './screens/BaselineScreen';
 import BaselineIntroScreen from './screens/BaselineIntroScreen';
 import HeartVariabilityScreen from './screens/HeartVariabilityScreen';
@@ -199,6 +200,7 @@ const STEP_ORDER: OnboardingStep[] = [
   'procrastinationReason',
   'consistency',
   'scienceCredibility',
+  'goalProof',
   'age',
   'gender',
   // Grouped with the other cheap facts rather than wedged into the goal arc,
@@ -1217,6 +1219,7 @@ function OnboardingFlowSteps({
     return (
       <OnboardingChoiceScreen
         question="How long do you usually sleep at night?"
+        expression="curious"
         options={SLEEP_DURATION_OPTIONS}
         selectedIds={sleepDuration ? [sleepDuration] : []}
         stepIndex={visualStepIndex}
@@ -1237,6 +1240,7 @@ function OnboardingFlowSteps({
     return (
       <OnboardingChoiceScreen
         question="How easy is it for you to get out of bed?"
+        expression="listening"
         options={WAKE_EASE_OPTIONS}
         selectedIds={wakeEase ? [wakeEase] : []}
         stepIndex={visualStepIndex}
@@ -1257,6 +1261,7 @@ function OnboardingFlowSteps({
     return (
       <OnboardingChoiceScreen
         question="How active are you during the day?"
+        expression="happy"
         options={DAY_ACTIVITY_OPTIONS}
         selectedIds={dayActivity ? [dayActivity] : []}
         stepIndex={visualStepIndex}
@@ -1277,6 +1282,7 @@ function OnboardingFlowSteps({
     return (
       <OnboardingChoiceScreen
         question="How happy are you with your current routine?"
+        expression="thinking"
         options={ROUTINE_HAPPINESS_OPTIONS}
         selectedIds={routineHappiness ? [routineHappiness] : []}
         stepIndex={visualStepIndex}
@@ -1297,6 +1303,7 @@ function OnboardingFlowSteps({
     return (
       <OnboardingChoiceScreen
         question="Do you struggle with any of these?"
+        expression="curious"
         options={MENTAL_HEALTH_OPTIONS}
         selectedIds={mentalHealth}
         multiSelect
@@ -1331,7 +1338,7 @@ function OnboardingFlowSteps({
         stepCount={visualStepCount}
         onChange={setAge}
         onContinue={() => goToStep('gender', 'continue', { has_age: true })}
-        onBack={() => goToStep('scienceCredibility', 'back')}
+        onBack={() => goToStep('goalProof', 'back')}
         onSkip={() => goToStep('gender', 'skip')}
       />
     );
@@ -1359,6 +1366,7 @@ function OnboardingFlowSteps({
     return (
       <OnboardingChoiceScreen
         question="What do you find yourself putting off most?"
+        expression="listening"
         options={PROCRASTINATION_AREA_OPTIONS}
         selectedIds={procrastinationAreas}
         multiSelect
@@ -1386,6 +1394,7 @@ function OnboardingFlowSteps({
     return (
       <OnboardingChoiceScreen
         question="What usually gets in the way?"
+        expression="thinking"
         options={PROCRASTINATION_REASON_OPTIONS}
         selectedIds={procrastinationReasons}
         multiSelect
@@ -1695,8 +1704,19 @@ function OnboardingFlowSteps({
         stepCount={visualStepCount}
         name={name.trim() || null}
         intentTitle={scIntentTitle}
-        onContinue={() => goToStep('age', 'continue')}
+        onContinue={() => goToStep('goalProof', 'continue')}
         onBack={() => goToStep('consistency', 'back')}
+      />
+    );
+  }
+
+  if (step === 'goalProof') {
+    return (
+      <GoalProofScreen
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onContinue={() => goToStep('age', 'continue')}
+        onBack={() => goToStep('scienceCredibility', 'back')}
       />
     );
   }

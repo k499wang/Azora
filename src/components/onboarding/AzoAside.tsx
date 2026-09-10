@@ -9,6 +9,7 @@ import Reanimated, {
   withTiming,
 } from 'react-native-reanimated';
 import AzoPortrait, {
+  type AzoHeld,
   type AzoWearable,
 } from '../../features/mascot/AzoPortrait';
 import type { AzoExpression } from '../../features/mascot/azoFace';
@@ -65,6 +66,7 @@ interface AzoAsideProps {
   variant?: AzoAsideVariant;
   expression?: AzoExpression;
   wearing?: AzoWearable;
+  holding?: AzoHeld;
   /** lets the screen's own visual land first */
   delayMs?: number;
 }
@@ -74,6 +76,7 @@ export default function AzoAside({
   variant = 'aside',
   expression,
   wearing,
+  holding,
   delayMs = 320,
 }: AzoAsideProps) {
   const lead = variant !== 'aside';
@@ -110,16 +113,19 @@ export default function AzoAside({
 
   return (
     <View style={styles.row} accessible accessibilityLabel={text}>
-      <AzoPortrait
-        size={lead ? LEAD_AZO_SIZE : AZO_SIZE}
-        expression={expression}
-        wearing={wearing}
-        // Still, on purpose. He idles when he is standing in his room, where
-        // the breathing and the sway are him living somewhere; out here he is
-        // beside a question, and a mascot fidgeting next to the thing being
-        // asked pulls the eye off it.
-        active={false}
-      />
+      <Reanimated.View style={pillStyle}>
+        <AzoPortrait
+          size={lead ? LEAD_AZO_SIZE : AZO_SIZE}
+          expression={expression}
+          wearing={wearing}
+          holding={holding}
+          // Still, on purpose. He idles when he is standing in his room, where
+          // the breathing and the sway are him living somewhere; out here he is
+          // beside a question, and a mascot fidgeting next to the thing being
+          // asked pulls the eye off it.
+          active={false}
+        />
+      </Reanimated.View>
       <View style={[styles.bubble, lead && styles.bubbleLead]}>
         <Reanimated.View
           style={[styles.pill, lead && styles.pillLead, pillStyle]}
