@@ -20,7 +20,16 @@ export const FACE_REST_RATIO = 0.68;
  * to have spare below the bottom edge, or a full inhale pulls his legs into
  * view. `breathingStage.test.mjs` holds that.
  */
-export const BREATH_RISE_RATIO = 0.02;
+export const BREATH_RISE_RATIO = 0.038;
+/**
+ * How much further the head rises than the shoulders hand it, as a share of the
+ * stage: the neck coming out of the shoulders at the top of an inhale.
+ *
+ * A layout number for the same reason the drift is one — it is spent out of the
+ * headroom above the ears, and `breathingStage.test.mjs` holds that the crown
+ * still has some left at the top of a full breath.
+ */
+export const NECK_STRETCH_RATIO = 0.038;
 /** The top of the ears, which is the highest ink on the stage. */
 export const CROWN_Y = 100;
 /**
