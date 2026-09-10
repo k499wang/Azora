@@ -2,10 +2,8 @@ import { useMemo } from 'react';
 import { useNavigation } from '@react-navigation/native';
 import { Pressable, StyleSheet, View } from 'react-native';
 import type { MainTabNavigationProp } from '../../app/navigation';
-import { BREATH_HOLD_STYLE } from '../../features/exercise/guidedBreathing/categoryPalette';
 import { useRecommendedTechnique } from '../../features/exercise/guidedBreathing/hooks/useRecommendedTechnique';
 import { useFeatureAccess } from '../../hooks/useFeatureAccess';
-import { useStartDaily } from '../../hooks/useStartDaily';
 import { FeatureKey } from '../../services/subscriptions/featureAccess';
 import { useAuthStore } from '../../stores/authStore';
 import { triggerTapHaptic } from '../../native/tapHaptics';
@@ -18,7 +16,6 @@ import SectionHeader from '../common/SectionHeader';
 import { Text } from '../common/Text';
 import { getExploreShelves } from './exerciseCatalog';
 import ExtraPracticeSection from './ExtraPracticeSection';
-import ExploreActionCard from './ExploreActionCard';
 import HeartRateCheckCard from './HeartRateCheckCard';
 import TechniqueCard from './TechniqueCard';
 import TechniqueShelf from './TechniqueShelf';
@@ -32,10 +29,6 @@ export default function BreathingLibrary() {
     recommendedTechnique.source === 'profile'
       ? recommendedTechnique.technique?.id ?? null
       : null;
-  const { start } = useStartDaily('Explore', {
-    guidedTechnique: null,
-    handPickedTechnique: null,
-  });
   const shelves = useMemo(
     () => getExploreShelves(recommendedTechniqueId),
     [recommendedTechniqueId],
@@ -46,17 +39,6 @@ export default function BreathingLibrary() {
       <ExtraPracticeSection exerciseAccess={exerciseAccess} />
       <View style={styles.heartCard}>
         <HeartRateCheckCard />
-      </View>
-      <View style={styles.protocolCard}>
-        <ExploreActionCard
-          title="The Azora Protocol"
-          subtitle="Test your breath hold"
-          hue={BREATH_HOLD_STYLE.hue}
-          glyph="orb"
-          accessibilityLabel="Start The Azora Protocol"
-          accessibilityHint="Starts today's hold"
-          onPress={() => start('breathHold')}
-        />
       </View>
       {shelves.map((shelf) => (
         <View key={shelf.id} style={styles.exerciseGroup}>
@@ -112,16 +94,8 @@ const styles = StyleSheet.create({
   section: {
     gap: spacing.lg,
   },
-  // Pulled down toward the protocol card it pairs with; the smaller bottom
-  // margin lifts it and everything below by the difference.
   heartCard: {
     marginTop: spacing.sm,
-    marginBottom: -spacing.mdPlus,
-  },
-  // Sits nearer the shelf below it, without moving that shelf.
-  protocolCard: {
-    marginTop: spacing.sm,
-    marginBottom: -spacing.sm,
   },
   exerciseGroup: {
     gap: spacing.lg,
