@@ -7,6 +7,7 @@ import {
   FACE_ORIGIN_Y,
   FACE_REST_RATIO,
   INSEAM_Y,
+  NECK_STRETCH_RATIO,
   getBreathingStage,
   HEAD_LEFT_X,
   HEAD_RIGHT_X,
@@ -73,6 +74,21 @@ test('the crown stays on screen and the chest runs off the bottom', () => {
       stage.top + stage.height > w.viewport,
       `${w.name} shows the base of the chest`,
     );
+  }
+});
+
+test('a full inhale never pushes the ears off the top', () => {
+  // The head spends the drift and the neck stretch together, and the ears ride
+  // the head. Whatever those two cost has to come out of the gap above the
+  // crown, at the smallest window that gap ever is.
+  for (const w of [...WINDOWS, LANDSCAPE]) {
+    const stage = getBreathingStage(w.width, w.viewport);
+    const crown =
+      stage.top +
+      stage.height * (CROWN_Y / STAGE_VIEWBOX_H) -
+      w.viewport * BREATH_RISE_RATIO -
+      stage.height * NECK_STRETCH_RATIO;
+    assert.ok(crown > 0, `${w.name}: a full inhale lifts the ears off the top`);
   }
 });
 

@@ -59,8 +59,8 @@ export const FACE_SHAPES: Record<BreathFace, FaceShape> = {
   // Eyes closed, drawing air in through the nose — the mouth stays shut and
   // only presses thinner as the lungs fill.
   inhale: {
-    eyeWidth: 66,
-    eyeTop: -38,
+    eyeWidth: 70,
+    eyeTop: -44,
     eyeBottom: -14,
     eyeRoundness: 0,
     mouthWidth: 55,
@@ -73,8 +73,8 @@ export const FACE_SHAPES: Record<BreathFace, FaceShape> = {
   // that ended here.
   holdIn: {
     eyeWidth: 73,
-    eyeTop: -46,
-    eyeBottom: -20,
+    eyeTop: -54,
+    eyeBottom: -22,
     eyeRoundness: 0,
     mouthWidth: 77,
     mouthTop: -9,

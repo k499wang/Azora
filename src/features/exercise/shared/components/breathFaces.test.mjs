@@ -33,8 +33,8 @@ test('only the resting face uses tall rounded eyes', () => {
   assert.equal(eyeOpenness(resting), 1);
 
   const squints = {
-    inhale: [66, -38, -14],
-    holdIn: [73, -46, -20],
+    inhale: [70, -44, -14],
+    holdIn: [73, -54, -22],
     exhale: [66, -34, -12],
     holdOut: [62, -30, -11],
   };
