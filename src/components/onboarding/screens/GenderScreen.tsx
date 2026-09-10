@@ -1,4 +1,5 @@
 import { GENDER_OPTIONS, type GenderOption } from '../data/genderOptions';
+import AzoAside from '../AzoAside';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import OnboardingOptionList from '../OnboardingOptionList';
@@ -32,7 +33,17 @@ export default function GenderScreen({
 }: GenderScreenProps) {
   return (
     <OnboardingScreenLayout
-      title="How do you identify?"
+      title=""
+      titleSlot={
+        <AzoAside
+          text="How do you identify?"
+          variant="question"
+          expression="listening"
+          wearing="glasses"
+          holding="notes"
+          delayMs={160}
+        />
+      }
       progress={stepIndex / stepCount}
       onBack={onBack}
       onSkip={onSkip}

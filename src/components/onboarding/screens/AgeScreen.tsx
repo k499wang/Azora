@@ -57,7 +57,9 @@ export default function AgeScreen({
         <AzoAside
           text="How old are you?"
           variant="question"
+          expression="happy"
           wearing="glasses"
+          holding="notes"
           delayMs={160}
         />
       }

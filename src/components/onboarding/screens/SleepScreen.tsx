@@ -43,7 +43,9 @@ export default function SleepScreen({
         <AzoAside
           text="How rested do you feel most mornings?"
           variant="question"
+          expression="curious"
           wearing="glasses"
+          holding="notes"
           delayMs={160}
         />
       }

@@ -46,6 +46,7 @@ export default function DailyTimeScreen({
   return (
     <OnboardingChoiceScreen
       question="How much time can you give every day?"
+      expression="thinking"
       options={DAILY_TIME_BANDS}
       selectedIds={selected ? [selected.id] : []}
       stepIndex={stepIndex}

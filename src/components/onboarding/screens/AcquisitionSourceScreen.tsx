@@ -4,6 +4,7 @@ import {
   ACQUISITION_SOURCE_OPTIONS,
   type AcquisitionSourceId,
 } from '../data/acquisitionOptions';
+import AzoAside from '../AzoAside';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import OnboardingOptionList from '../OnboardingOptionList';
@@ -46,7 +47,17 @@ export default function AcquisitionSourceScreen({
 }: AcquisitionSourceScreenProps) {
   return (
     <OnboardingScreenLayout
-      title="How did you first hear about Azora?"
+      title=""
+      titleSlot={
+        <AzoAside
+          text="How did you first hear about Azora?"
+          variant="question"
+          expression="curious"
+          wearing="glasses"
+          holding="notes"
+          delayMs={160}
+        />
+      }
       progress={stepIndex / stepCount}
       onBack={onBack}
       onSkip={onSkip}

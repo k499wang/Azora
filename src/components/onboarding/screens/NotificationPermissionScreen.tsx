@@ -87,7 +87,9 @@ export default function NotificationPermissionScreen({
         <AzoAside
           text="Want me to check in on you?"
           variant="question"
+          expression="happy"
           wearing="glasses"
+          holding="notes"
           delayMs={160}
         />
       }

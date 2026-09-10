@@ -43,7 +43,9 @@ export default function HeartWorryScreen({
         <AzoAside
           text="How much do you worry about your heart health?"
           variant="question"
+          expression="thinking"
           wearing="glasses"
+          holding="notes"
           delayMs={160}
         />
       }

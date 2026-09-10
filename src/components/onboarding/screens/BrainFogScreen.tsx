@@ -43,7 +43,9 @@ export default function BrainFogScreen({
         <AzoAside
           text="How often does brain fog slow you down?"
           variant="question"
+          expression="listening"
           wearing="glasses"
+          holding="notes"
           delayMs={160}
         />
       }
