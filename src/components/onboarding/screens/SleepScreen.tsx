@@ -4,7 +4,7 @@ import { spacing } from '../../../theme/spacing';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import OnboardingHapticSlider from '../OnboardingHapticSlider';
-import MochiAside from '../MochiAside';
+import AzoAside from '../AzoAside';
 
 interface SleepScreenProps {
   value: number;
@@ -40,11 +40,10 @@ export default function SleepScreen({
     <OnboardingScreenLayout
       title=""
       titleSlot={
-        <MochiAside
+        <AzoAside
           text="How rested do you feel most mornings?"
           variant="question"
-          expression="sleepy"
-          holding="notes"
+          wearing="glasses"
           delayMs={160}
         />
       }

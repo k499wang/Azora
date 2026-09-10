@@ -8,18 +8,17 @@ import Reanimated, {
   withDelay,
   withTiming,
 } from 'react-native-reanimated';
-import MochiPortrait, {
-  type MochiExpression,
-  type MochiHeld,
-  type MochiWearable,
-} from '../../features/room/MochiPortrait';
+import AzoPortrait, {
+  type AzoWearable,
+} from '../../features/mascot/AzoPortrait';
+import type { AzoExpression } from '../../features/mascot/azoFace';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import { duration, easing } from '../../theme/motion';
 
 /**
- * Mochi saying one line from a speech bubble.
+ * Azo saying one line from a speech bubble.
  *
  * In its default `aside` variant this is a footnote, not a narrator: it belongs
  * under a visual that has already made the point, and it says one thing. In
@@ -39,41 +38,44 @@ import { duration, easing } from '../../theme/motion';
  */
 
 // Not on the onboarding visual scale, deliberately: the tour renders this
-// inside a fixed-height cluster, so a tablet-sized Mochi would grow out of the
+// inside a fixed-height cluster, so a tablet-sized Azo would grow out of the
 // box the arrow and speech bubble are placed against.
-const MOCHI_SIZE = 52;
-const LEAD_MOCHI_SIZE = 64;
+//
+// Wider than the blob he replaces for two reasons. A share of his box is the
+// margin his ears wobble into rather than character (see `AZO_MARGIN`), and he
+// is the one talking — sized to the blob's footprint the bubble read as the
+// subject and Azo as its decoration.
+const AZO_SIZE = 94;
+const LEAD_AZO_SIZE = 116;
 const TAIL = 13;
 /** the same shallow lip the option rows sit on, so the bubble is a surface too */
 const LIP_DEPTH = 3;
 const PILL_START_SCALE = 0.9;
 
 /**
- * `aside` is the footnote above. `question` is Mochi asking the screen's own
+ * `aside` is the footnote above. `question` is Azo asking the screen's own
  * question, standing in for the title the screen no longer prints, and
  * `heading` is him introducing a section of a longer page; both of those carry
  * a title's weight, so they share its size.
  */
-export type MochiAsideVariant = 'aside' | 'question' | 'heading';
+export type AzoAsideVariant = 'aside' | 'question' | 'heading';
 
-interface MochiAsideProps {
+interface AzoAsideProps {
   text: string;
-  variant?: MochiAsideVariant;
-  expression?: MochiExpression;
-  wearing?: MochiWearable;
-  holding?: MochiHeld;
+  variant?: AzoAsideVariant;
+  expression?: AzoExpression;
+  wearing?: AzoWearable;
   /** lets the screen's own visual land first */
   delayMs?: number;
 }
 
-export default function MochiAside({
+export default function AzoAside({
   text,
   variant = 'aside',
   expression,
   wearing,
-  holding,
   delayMs = 320,
-}: MochiAsideProps) {
+}: AzoAsideProps) {
   const lead = variant !== 'aside';
   const heading = variant === 'heading';
   const enter = useSharedValue(0);
@@ -108,11 +110,15 @@ export default function MochiAside({
 
   return (
     <View style={styles.row} accessible accessibilityLabel={text}>
-      <MochiPortrait
-        size={lead ? LEAD_MOCHI_SIZE : MOCHI_SIZE}
+      <AzoPortrait
+        size={lead ? LEAD_AZO_SIZE : AZO_SIZE}
         expression={expression}
         wearing={wearing}
-        holding={holding}
+        // Still, on purpose. He idles when he is standing in his room, where
+        // the breathing and the sway are him living somewhere; out here he is
+        // beside a question, and a mascot fidgeting next to the thing being
+        // asked pulls the eye off it.
+        active={false}
       />
       <View style={[styles.bubble, lead && styles.bubbleLead]}>
         <Reanimated.View
@@ -171,7 +177,7 @@ const styles = StyleSheet.create({
     borderRadius: 22,
   },
   // a square rotated onto its corner, tucked behind the pill so only the point
-  // aimed at Mochi shows
+  // aimed at Azo shows
   tail: {
     position: 'absolute',
     left: -TAIL * 0.35,

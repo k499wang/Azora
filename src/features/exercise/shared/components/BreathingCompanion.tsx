@@ -29,7 +29,6 @@ import {
   MOUTH_Y,
   eyeOpenness,
   eyePath,
-  lensPath,
   lerpFace,
   type BreathFace,
   type FaceShape,
@@ -78,7 +77,11 @@ const SHOULDER_LEVER = (INSEAM_Y - SHOULDER_Y) / STAGE_VIEWBOX_H;
 // How much further than the chest the arms travel outward, again as a share of
 // the fill. They are drawn symmetrically about the centre line, so one scale
 // pushes both away from it.
-const ARM_SWING_SHARE = 1.15;
+const ARM_SWING_SHARE = 1.85;
+// And a little way up, on top of what the chest carries them. Kept small on
+// purpose: the arms are drawn behind the body and their tips rest near the
+// bottom of what the window shows, so a big lift would pull them off it.
+const ARM_LIFT = 0.012;
 // A deep breath is a lift as much as a swell, and the top of it is a chin
 // coming up. A front view cannot rotate a head to show that, so the tilt is
 // spelled out entirely in what a nod moves, never in what it deforms: the neck
@@ -94,7 +97,7 @@ const FACE_CLIMB = 0.042;
 // A breath in lifts the chin; a breath out only settles it. Empty lungs are not
 // the same pose as a head hanging, so the down half of the nod is the smaller —
 // and it is the head alone that takes it, never the face on the head.
-const NOD_SETTLE = 0.35;
+const NOD_SETTLE = 0.2;
 
 // The ears are the lightest thing on him, and they hang back — but as a share of
 // the travel, never as a delay in time. A second timeline for them is what put a
@@ -110,7 +113,7 @@ const EAR_SETTLE = 0.018;
 // How far behind the head they hang through the middle of a breath. They are
 // attached to the skull, so they only give a little — a full lag would slide
 // them off the head they are growing out of.
-const EAR_GIVE = 0.45;
+const EAR_GIVE = 0.3;
 
 // Concentric and drawn into one canvas rather than three stacked views: the
 // aura is the largest thing on screen and it rescales every frame, so it is
@@ -124,12 +127,14 @@ const AURA_OUTER = AURA_RINGS[0].radius;
 const AURA_EXHALE_SCALE = 0.55;
 const AURA_INHALE_SCALE = 1.45;
 
-// A lung fills and empties on a curve, not a ramp. Sinusoidal in and out also
-// puts zero velocity at both ends of every phase, so a pattern with no hold
-// between inhale and exhale turns over instead of reversing on a corner. The
-// phase clock is a separate one-second timer, so this changes how the breath
-// looks, never how long it lasts.
-const BREATH_EASING = Easing.inOut(Easing.sin);
+// A lung fills and empties on a curve, not a ramp — but a shallow one. A full
+// sinusoid loiters at both ends of the phase and rushes the middle, which reads
+// as the count drifting out of time with the character; this keeps most of the
+// travel at an even pace and softens only the last of each end, which is all the
+// turnover needs to roll instead of reversing on a corner. The phase clock is a
+// separate one-second timer, so this changes how the breath looks, never how
+// long it lasts.
+const BREATH_EASING = Easing.bezier(0.36, 0.14, 0.64, 0.86);
 
 // Long enough that the eye visibly travels closed rather than blinking there.
 const FACE_MORPH_MS = 560;
@@ -138,13 +143,14 @@ const FACE_MORPH_MS = 560;
 const ENTER_MS = 700;
 const EXIT_MS = 320;
 
-// Under 2.5% on purpose — a hold should read as effort, not as a bounce.
-const HOLD_IN_STRAIN = 0.02;
-const HOLD_OUT_STRAIN = 0.009;
-const HOLD_IN_PERIOD_MS = 1100;
+// A hold should read as a held breath, not as a bounce: well under a percent of
+// the chest, and slow. Both holds get the same tremble — a fuller chest is not a
+// busier one, and two holds that shake differently read as two different
+// characters rather than one holding two different amounts of air.
+const HOLD_STRAIN = 0.006;
+const HOLD_PERIOD_MS = 2400;
 /** How long a tremble takes to arrive, and to leave when the phase turns over. */
 const STRAIN_FADE_MS = 320;
-const HOLD_OUT_PERIOD_MS = 2400;
 
 // Where the lids stop reading as a squint and start reading as shut. The ink
 // that fills the aperture fades in across this range, so a closing eye darkens
@@ -163,9 +169,7 @@ interface BreathingCompanionProps {
 }
 
 function strainAmplitude(face: BreathFace): number {
-  if (face === 'holdIn') return HOLD_IN_STRAIN;
-  if (face === 'holdOut') return HOLD_OUT_STRAIN;
-  return 0;
+  return face === 'holdIn' || face === 'holdOut' ? HOLD_STRAIN : 0;
 }
 
 /** Both lids, as one two-subpath outline. */
@@ -335,11 +339,12 @@ const BreathingCompanion = forwardRef<BreathingCircleRef, BreathingCompanionProp
       // Safe to start the new oscillator from zero: the depth it is multiplied
       // by has been easing to nothing since the last hold ended, so the restart
       // has nothing to show.
-      const halfPeriod =
-        (face === 'holdIn' ? HOLD_IN_PERIOD_MS : HOLD_OUT_PERIOD_MS) / 2;
       strain.value = 0;
       strain.value = withRepeat(
-        withTiming(1, { duration: halfPeriod, easing: Easing.inOut(Easing.ease) }),
+        withTiming(1, {
+          duration: HOLD_PERIOD_MS / 2,
+          easing: Easing.inOut(Easing.ease),
+        }),
         -1,
         true,
       );
@@ -410,10 +415,17 @@ const BreathingCompanion = forwardRef<BreathingCircleRef, BreathingCompanionProp
     }));
 
     // Part of the same mass as the chest, so they take the same transform: an
-    // arm that translated instead would lift its own tip off the bottom edge
-    // and show background under it. The swing is the only thing they add.
+    // arm that only translated would lift its own tip off the bottom edge and
+    // show background under it. What they add is the swing, and a slight rise on
+    // top of what the chest already carries them — shoulders coming up with the
+    // breath. The rise is the up half of the breath only, so on empty lungs they
+    // hang exactly where the artwork draws them.
     const armStyle = useAnimatedStyle(() => ({
       transform: [
+        {
+          translateY:
+            -ARM_LIFT * stageHeight * Math.max(0, nodOf(chest.value)),
+        },
         { translateY: chestPivot },
         { scaleY: chest.value },
         {
@@ -528,7 +540,10 @@ const BreathingCompanion = forwardRef<BreathingCircleRef, BreathingCompanionProp
     }));
 
     // The mouth keeps moving inside a phase, and which way depends on where the
-    // air is going. The exhale is the only phase it leaves through the mouth:
+    // air is going. It is drawn on the same two-lidded outline the eyes are, and
+    // rounds off with the breath: sealed it is a lens with corners, and the
+    // further the exhale opens it the closer it gets to a true O.
+    // The exhale is the only phase it leaves through the mouth:
     // there the breath pushes it open on full lungs and lets it narrow shut as
     // they empty. Everywhere else the air is nasal, so the mouth stays sealed
     // and the breath only presses the lips thin and wide.
@@ -539,12 +554,13 @@ const BreathingCompanion = forwardRef<BreathingCircleRef, BreathingCompanionProp
       const round = 1 - 0.18 * s.mouthBreath * (1 - filled);
       const press = s.mouthPress * filled;
       return {
-        d: lensPath(
+        d: eyePath(
           MOUTH_X,
           MOUTH_Y,
           s.mouthWidth * round * (1 + 0.12 * press),
           s.mouthTop * open * (1 - 0.34 * press),
           s.mouthBottom * open * (1 - 0.34 * press),
+          s.mouthBreath * filled,
         ),
       };
     });

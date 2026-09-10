@@ -40,7 +40,7 @@ export type BubbleTail = 'bottom' | 'bottomLeft';
  */
 export type BubbleUnit = 'character' | 'word';
 
-interface MochiSpeechBubbleProps {
+interface AzoSpeechBubbleProps {
   text: string;
   progress: SharedValue<number>;
   /** which edge the tail points out of, toward whoever is speaking */
@@ -51,7 +51,7 @@ interface MochiSpeechBubbleProps {
   fillStyle: TextStyle;
 }
 
-export default function MochiSpeechBubble({
+export default function AzoSpeechBubble({
   text,
   progress,
   tail,
@@ -59,7 +59,7 @@ export default function MochiSpeechBubble({
   textStyle,
   tailStyle,
   fillStyle,
-}: MochiSpeechBubbleProps) {
+}: AzoSpeechBubbleProps) {
   const pieces = unit === 'word' ? text.split(' ') : text.split('');
   const animatedFillStyle = useAnimatedStyle(() => ({
     transform: [

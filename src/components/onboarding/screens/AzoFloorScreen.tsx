@@ -1,14 +1,14 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import RoomReplay from '../../../features/room/RoomReplay';
-import type { RoomBlobHandle } from '../../../features/room/RoomBlob';
+import type { AzoHandle } from '../../../features/mascot/AzoPortrait';
 import type { Picks } from '../../../features/room/RoomScene';
 import { ROOM_SHELLS } from '../../../features/room/roomShells';
 import { MASCOT_NAME } from '../../../features/room/mascot';
-import MochiStage, { useMochiStageWidth } from '../MochiStage';
+import AzoStage, { useAzoStageWidth } from '../AzoStage';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 
-interface MochiFloorScreenProps {
+interface AzoFloorScreenProps {
   stepIndex: number;
   stepCount: number;
   onContinue: () => void;
@@ -26,20 +26,20 @@ const FINISHED_ROOM: Picks = {
   day7: 'fairy_lights',
 };
 
-export default function MochiFloorScreen({
+export default function AzoFloorScreen({
   stepIndex,
   stepCount,
   onContinue,
   onBack,
-}: MochiFloorScreenProps) {
-  const width = useMochiStageWidth();
-  const blob = useRef<RoomBlobHandle>(null);
+}: AzoFloorScreenProps) {
+  const width = useAzoStageWidth();
+  const azo = useRef<AzoHandle>(null);
 
   const [filled, setFilled] = useState(false);
 
   const onFilled = useCallback(() => {
     setFilled(true);
-    blob.current?.cheer();
+    azo.current?.cheer();
   }, []);
 
   // Seven decoration layers plus the room. Rebuilding that mid-fill is what
@@ -68,15 +68,15 @@ export default function MochiFloorScreen({
       centerOnScreen
       footer={<OnboardingPrimaryButton label="Continue" onPress={onContinue} />}
     >
-      <MochiStage
-        ref={blob}
+      <AzoStage
+        ref={azo}
         accessibilityLabel={`Say hello to ${MASCOT_NAME}`}
-        onPress={() => blob.current?.cheer()}
+        onPress={() => azo.current?.cheer()}
         speech={filled ? 'home.' : undefined}
         animateEntrance={false}
       >
         {replay}
-      </MochiStage>
+      </AzoStage>
     </OnboardingScreenLayout>
   );
 }

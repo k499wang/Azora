@@ -10,7 +10,7 @@ import { isHapticsEnabled } from '../../../services/preferences/hapticsPreferenc
 import { getOnboardingImageSource } from '../../../services/images/onboardingImageCache';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
-import MochiAside from '../MochiAside';
+import AzoAside from '../AzoAside';
 
 const BRAIN_SCAN_ASPECT_RATIO = 3 / 2;
 const BRAIN_SCAN_CONTENT_OFFSET = -10;
@@ -97,11 +97,10 @@ export default function BrainScienceScreen({
           </View>
         </Animated.View>
 
-        <MochiAside
+        <AzoAside
           text={MOCHI_NOTE}
           expression="thinking"
           wearing="glasses"
-          holding="pencil"
         />
       </View>
     </OnboardingScreenLayout>

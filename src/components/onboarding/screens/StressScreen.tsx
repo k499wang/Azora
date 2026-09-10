@@ -4,7 +4,7 @@ import { spacing } from '../../../theme/spacing';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import OnboardingHapticSlider from '../OnboardingHapticSlider';
-import MochiAside from '../MochiAside';
+import AzoAside from '../AzoAside';
 
 interface StressScreenProps {
   value: number;
@@ -40,11 +40,10 @@ export default function StressScreen({
     <OnboardingScreenLayout
       title=""
       titleSlot={
-        <MochiAside
+        <AzoAside
           text="How stressed have you felt this past week?"
           variant="question"
-          expression="thinking"
-          holding="notes"
+          wearing="glasses"
           delayMs={160}
         />
       }

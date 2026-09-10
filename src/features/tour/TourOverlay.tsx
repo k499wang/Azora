@@ -13,7 +13,7 @@ import { useReducedMotion } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, Mask, Path, Rect } from 'react-native-svg';
 import { Text } from '../../components/common/Text';
-import MochiAside from '../../components/onboarding/MochiAside';
+import AzoAside from '../../components/onboarding/AzoAside';
 import { radius } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { duration } from '../../theme/motion';
@@ -39,7 +39,7 @@ import { tourSteps, type TourStep } from './tourSteps';
 const DESIRED_TOP = 220;
 const MEASURE_SETTLE_MAX_MS = 650;
 const MEASURE_TIMEOUT_MS = 1400;
-const CLUSTER_HEIGHT = 170;
+const CLUSTER_HEIGHT = 190;
 const ARROW_WIDTH = 40;
 const ARROW_HEIGHT = 56;
 const TOP_CONTROL_HEIGHT = 56;
@@ -411,7 +411,7 @@ export default function TourOverlay() {
               <Arrow direction="up" left={arrowLeft} />
             )}
             <View style={styles.speech}>
-              <MochiAside text={presentedStep.step.body} delayMs={0} />
+              <AzoAside text={presentedStep.step.body} delayMs={0} />
             </View>
             {placement.pointsDown ? (
               <Arrow direction="down" left={arrowLeft} />

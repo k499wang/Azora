@@ -10,7 +10,7 @@ import Animated, {
 import { HexRoom } from '../../../features/room/RoomScene';
 import { ROOM_SHELLS, ROOM_STYLES } from '../../../features/room/roomShells';
 import { MASCOT_NAME } from '../../../features/room/mascot';
-import { useMochiStageWidth } from '../MochiStage';
+import { useAzoStageWidth } from '../AzoStage';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import { colors } from '../../../theme/colors';
@@ -22,20 +22,20 @@ import { useWhileVisible } from '../../../hooks/useWhileVisible';
 const DWELL_MS = 2000;
 const GAP = spacing.lg;
 
-interface MochiRoomsScreenProps {
+interface AzoRoomsScreenProps {
   stepIndex: number;
   stepCount: number;
   onContinue: () => void;
   onBack: () => void;
 }
 
-export default function MochiRoomsScreen({
+export default function AzoRoomsScreen({
   stepIndex,
   stepCount,
   onContinue,
   onBack,
-}: MochiRoomsScreenProps) {
-  const width = useMochiStageWidth();
+}: AzoRoomsScreenProps) {
+  const width = useAzoStageWidth();
   const reducedMotion = useReducedMotion();
 
   const [{ index, sourceIndex }, setSlide] = useState({

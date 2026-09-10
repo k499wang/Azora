@@ -157,19 +157,29 @@ export const colors = {
   },
 
   /**
-   * Mochi's turnaround artwork, tone for tone. These are the exact fills in
-   * `assets/Poses/koala_turnaround_front.svg`: he is one character, so he is
-   * one set of colours everywhere he appears, never tinted per screen.
+   * Azo's artwork, tone for tone. These are the exact fills in
+   * `assets/New Mascot.svg`: he is one character, so he is one set of colours
+   * everywhere he appears, never tinted per screen.
    */
   koala: {
-    body: '#7CCBFF',
+    body: '#5ECCFF',
     /** ear cartilage, nose and mouth */
-    shade: '#4A9FE6',
+    shade: '#12A0EB',
     /** inner ear and belly */
-    light: '#AEE1FF',
-    eyeWhite: '#EAF7FF',
+    light: '#9EE2FF',
+    eyeWhite: '#E6F7FF',
     /** irises, and the lids they close behind */
-    iris: '#0A5279',
+    iris: '#00547C',
+    /** the pop of sparkles when he is poked */
+    sparkle: '#FFCE3D',
+    /** the clipboard he takes notes on — warm wood against his sky blue */
+    board: '#C08A54',
+    boardEdge: '#8A5A2E',
+    /** the paper clipped to it, and the ruled lines on it */
+    sheet: '#FFF8EF',
+    rule: '#D8C3AB',
+    /** the ground he stands on */
+    shadow: 'rgba(58,67,79,0.22)',
   },
 
   background: {
@@ -367,6 +377,12 @@ export const colors = {
     focus: '#3B88FF',
     angry: '#FF4A54',
     lowEnergy: '#FF7A2F',
+    overwhelmed: '#FF8A3D',
+    overthinking: '#E24E9E',
+    restless: '#2FA8FF',
+    lowMood: '#A05CFF',
+    morning: '#FF6B4A',
+    windDown: '#12B39A',
   },
 
   // Loading placeholder tones. `base` is the resting block fill, `highlight`

@@ -1,18 +1,16 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { HexRoom } from '../../../features/room/RoomScene';
-import {
-  SPEECH_OPEN_MS,
-  type RoomBlobHandle,
-} from '../../../features/room/RoomBlob';
+import { SPEECH_OPEN_MS } from '../../../features/room/RoomAzo';
+import type { AzoHandle } from '../../../features/mascot/AzoPortrait';
 import { ROOM_SHELLS } from '../../../features/room/roomShells';
 import { MASCOT_NAME } from '../../../features/room/mascot';
-import type { MochiStoryBeat } from '../data/mochiStory';
-import MochiStage, { useMochiStageWidth } from '../MochiStage';
+import type { AzoStoryBeat } from '../data/azoStory';
+import AzoStage, { useAzoStageWidth } from '../AzoStage';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 
-interface MochiStoryScreenProps {
-  beat: MochiStoryBeat;
+interface AzoStoryScreenProps {
+  beat: AzoStoryBeat;
   /** both absent on the first beat, which opens the flow with no progress yet */
   stepIndex?: number;
   stepCount?: number;
@@ -23,18 +21,18 @@ interface MochiStoryScreenProps {
 
 /**
  * Every story beat that is copy over the empty room. They differ only in what
- * they say, so they are one screen driven by `MOCHI_STORY` rather than five
+ * they say, so they are one screen driven by `AZO_STORY` rather than five
  * files that drift apart.
  */
-export default function MochiStoryScreen({
+export default function AzoStoryScreen({
   beat,
   stepIndex,
   stepCount,
   onContinue,
   onBack,
-}: MochiStoryScreenProps) {
-  const width = useMochiStageWidth();
-  const blob = useRef<RoomBlobHandle>(null);
+}: AzoStoryScreenProps) {
+  const width = useAzoStageWidth();
+  const azo = useRef<AzoHandle>(null);
 
   const room = useMemo(
     () => <HexRoom width={width} shell={ROOM_SHELLS.cream} frameHue="sky" />,
@@ -45,7 +43,7 @@ export default function MochiStoryScreen({
   // than a bubble and a bounce that happen to share a screen.
   useEffect(() => {
     if (!beat.cheer) return;
-    const timer = setTimeout(() => blob.current?.cheer(), SPEECH_OPEN_MS);
+    const timer = setTimeout(() => azo.current?.cheer(), SPEECH_OPEN_MS);
     return () => clearTimeout(timer);
   }, [beat.cheer]);
 
@@ -66,15 +64,15 @@ export default function MochiStoryScreen({
         <OnboardingPrimaryButton label={beat.button} onPress={onContinue} />
       }
     >
-      <MochiStage
-        ref={blob}
+      <AzoStage
+        ref={azo}
         accessibilityLabel={`Say hello to ${MASCOT_NAME}`}
-        onPress={() => blob.current?.cheer()}
+        onPress={() => azo.current?.cheer()}
         speech={beat.speech}
         sad={beat.sad}
       >
         {room}
-      </MochiStage>
+      </AzoStage>
     </OnboardingScreenLayout>
   );
 }

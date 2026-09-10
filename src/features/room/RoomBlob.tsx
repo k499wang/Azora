@@ -21,7 +21,7 @@ import Icon from '../../components/common/icons/Icon';
 import { colors } from '../../theme/colors';
 import { duration, spring } from '../../theme/motion';
 import { fonts, typography } from '../../theme/typography';
-import MochiSpeechBubble from './MochiSpeechBubble';
+import AzoSpeechBubble from './AzoSpeechBubble';
 import {
   BLOB_HALF_W,
   START,
@@ -569,7 +569,7 @@ const RoomBlob = forwardRef<RoomBlobHandle, Props>(function RoomBlob(
 
       {speech == null ? null : (
         <Animated.View style={[styles.bubble, bubblePositionStyle]}>
-          <MochiSpeechBubble
+          <AzoSpeechBubble
             text={speech}
             progress={bubble}
             tail="bottom"

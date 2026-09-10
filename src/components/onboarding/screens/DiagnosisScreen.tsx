@@ -8,7 +8,7 @@ import MindMapRadar from '../MindMapRadar';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
-import MochiAside from '../MochiAside';
+import AzoAside from '../AzoAside';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import type { MindMapAxis, MindMapScore } from '../../../lib/onboardingScores';
@@ -139,11 +139,10 @@ export default function DiagnosisScreen({
         </Text>
 
         <View style={styles.speech}>
-          <MochiAside
+          <AzoAside
             text="Here are your highlights:"
             variant="heading"
             expression="pleased"
-            holding="notes"
           />
         </View>
 

@@ -82,7 +82,7 @@ between them rather than a duty owed.
 ## Voice
 
 Understated, plain, a little dry. Short sentences. No exclamation marks, no
-whimsy, no pleading — with one deliberate exception, the `mochiFresh` ask, where
+whimsy, no pleading — with one deliberate exception, the `azoFresh` ask, where
 he asks for help outright ("please.") and the button answers "Yes!". That is the
 one place the copy leans on the user's sympathy, it is a single screen, and it
 happens before they have done anything, so nothing they do later can disappoint
@@ -97,7 +97,7 @@ Third person for narration, always: the copy describes Mochi, it does not speak
 as it. Mochi speaks only in bubbles, and only in the room. Onboarding bubbles
 open shortly after the room settles and stay open for as long as the screen does
 — those one-word lines are screen copy, not a flourish that times out. The one
-thing he ever asks for is help decorating, on `mochiFresh`, once.
+thing he ever asks for is help decorating, on `azoFresh`, once.
 
 Home has one deliberate exception. A direct tap on Mochi may produce one short,
 full sentence about live positive state: today's completed resets, a decoration
@@ -120,15 +120,15 @@ day he starts holding a conversation he becomes a chatbot with a face.
 
 The backstory opens the flow; the loop is explained next to the plan, where the
 user has a reason to care about coming back. Copy for every one of these beats
-lives in `src/components/onboarding/data/mochiStory.ts` (see `STEP_ORDER` in
+lives in `src/components/onboarding/data/azoStory.ts` (see `STEP_ORDER` in
 `src/components/onboarding/OnboardingFlow.tsx` for the order).
 
 | Screen | Line |
 | --- | --- |
-| `MochiStoryScreen` (`mochiIntro`) | "This is Mochi." — sad, bubble: "hi." |
-| `MochiStoryScreen` (`mochiMoved`) | "Mochi moves houses a lot." — sad, bubble: "again." |
-| `MochiStoryScreen` (`mochiNoTime`) | "Mochi never has time to decorate his room." — sad, bubble: "..." |
-| `MochiStoryScreen` (`mochiFresh`) | "Would you help decorate Mochi's room?" — sad, bubble: "please.", button "Yes!" |
+| `MochiStoryScreen` (`azoIntro`) | "This is Mochi." — sad, bubble: "hi." |
+| `MochiStoryScreen` (`azoMoved`) | "Mochi moves houses a lot." — sad, bubble: "again." |
+| `MochiStoryScreen` (`azoNoTime`) | "Mochi never has time to decorate his room." — sad, bubble: "..." |
+| `MochiStoryScreen` (`azoFresh`) | "Would you help decorate Mochi's room?" — sad, bubble: "please.", button "Yes!" |
 | `MochiPlaceScreen` | "Finish your daily plan to decorate Mochi’s room." — bubble on landing: "thanks." |
 | `MochiFloorScreen` | "You finish a room once you have seven decorations." — bubble when full: "home." |
 | `MochiRoomsScreen` | "Then you pick another room for Mochi." — empty rooms swipe past on their own |

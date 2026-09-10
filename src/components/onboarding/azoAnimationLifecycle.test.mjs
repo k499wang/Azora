@@ -57,8 +57,8 @@ test('the rich Mochi sequence owns one replay pause across all three steps', () 
 });
 
 test('placement and floor replay have one entrance owner', () => {
-  const place = read('components/onboarding/screens/MochiPlaceScreen.tsx');
-  const floor = read('components/onboarding/screens/MochiFloorScreen.tsx');
+  const place = read('components/onboarding/screens/AzoPlaceScreen.tsx');
+  const floor = read('components/onboarding/screens/AzoFloorScreen.tsx');
 
   for (const screen of [place, floor]) {
     // The layout entrance stays on, so these two arrive like every other step
@@ -73,7 +73,7 @@ test('placement and floor replay have one entrance owner', () => {
 });
 
 test('Mochi animation owners stop work when hidden or unmounted', () => {
-  const stage = read('components/onboarding/MochiStage.tsx');
+  const stage = read('components/onboarding/AzoStage.tsx');
   const blob = read('features/room/RoomBlob.tsx');
   const placement = read('features/room/PlacementReveal.tsx');
 
@@ -87,7 +87,7 @@ test('Mochi animation owners stop work when hidden or unmounted', () => {
 
 test('room sequences construct only the artwork needed for the current beat', () => {
   const replay = read('features/room/RoomReplay.tsx');
-  const rooms = read('components/onboarding/screens/MochiRoomsScreen.tsx');
+  const rooms = read('components/onboarding/screens/AzoRoomsScreen.tsx');
 
   assert.doesNotMatch(replay, /visiblePieceCount/);
   assert.match(replay, /order\.map\(\(day, index\) =>/);
