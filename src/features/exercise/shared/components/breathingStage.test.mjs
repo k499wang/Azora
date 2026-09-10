@@ -2,11 +2,17 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+  BREATH_RISE_RATIO,
+  CROWN_Y,
   FACE_ORIGIN_Y,
+  FACE_REST_RATIO,
+  INSEAM_Y,
   getBreathingStage,
-  STAGE_FLANK_INSET,
+  HEAD_LEFT_X,
+  HEAD_RIGHT_X,
   STAGE_VIEWBOX_H,
-} from './breathingStage';
+  STAGE_VIEWBOX_W,
+} from './breathingStage.ts';
 
 /**
  * Logical portrait sizes with the top inset already taken off, which is the
@@ -26,57 +32,67 @@ const WINDOWS = [
 
 const LANDSCAPE = { name: 'iPad mini landscape', width: 1133, viewport: 720 };
 
-test('the character is always too wide for the window it stands in', () => {
-  for (const w of WINDOWS) {
-    const stage = getBreathingStage(w.width, w.viewport);
-    assert.ok(
-      stage.width > w.width,
-      `${w.name}: ${stage.width.toFixed(0)}pt stage in a ${w.width}pt window`,
-    );
-  }
-});
-
-test('the flat flanks sit on the screen edge, not inside it', () => {
-  for (const w of WINDOWS) {
-    const stage = getBreathingStage(w.width, w.viewport);
-    // The stage is centred, so each flank sits this far outside the window.
-    const clearance =
-      (stage.width - w.width) / 2 - stage.width * STAGE_FLANK_INSET;
-    assert.ok(
-      clearance > -1,
-      `${w.name}: flank is ${(-clearance).toFixed(1)}pt inside the edge`,
-    );
-  }
-});
-
-test('a tablet is sized by its width, exactly as a phone is', () => {
-  for (const w of WINDOWS) {
-    const stage = getBreathingStage(w.width, w.viewport);
-    assert.ok(
-      Math.abs(stage.width / w.width - 1.02) < 0.001,
-      `${w.name} was capped by its height instead`,
-    );
-  }
-});
-
-test('the crown stays on screen and the base runs off the bottom', () => {
+test('he is drawn whole, and stands low enough to hide his legs', () => {
+  // The pose is never redrawn shorter — the session shows his upper body only
+  // because everything below the belly is past the bottom edge. If this fails,
+  // a window is showing the notch between his feet.
   for (const w of [...WINDOWS, LANDSCAPE]) {
     const stage = getBreathingStage(w.width, w.viewport);
-    assert.ok(stage.top > 0, `${w.name} pushes the crown off the top`);
+    // Measured at the top of an inhale, when the drift has pulled him up as far
+    // as he ever goes.
+    const inseam =
+      stage.top +
+      stage.height * (INSEAM_Y / STAGE_VIEWBOX_H) -
+      w.viewport * BREATH_RISE_RATIO;
+    assert.ok(
+      inseam > w.viewport,
+      `${w.name}: a full inhale parts his legs ${(w.viewport - inseam).toFixed(0)}pt above the bottom edge`,
+    );
+  }
+});
+
+test('the head reads large without swallowing the window', () => {
+  // The ears reach wider than the head and are meant to run off the sides; the
+  // head itself keeps air either side of it.
+  for (const w of WINDOWS.slice(0, 5)) {
+    const stage = getBreathingStage(w.width, w.viewport);
+    const share = ((HEAD_RIGHT_X - HEAD_LEFT_X) / STAGE_VIEWBOX_W) * stage.width / w.width;
+    assert.ok(
+      share > 0.8 && share < 0.95,
+      `${w.name}: the head takes ${(share * 100).toFixed(0)}% of the window`,
+    );
+  }
+});
+
+test('the crown stays on screen and the chest runs off the bottom', () => {
+  for (const w of [...WINDOWS, LANDSCAPE]) {
+    const stage = getBreathingStage(w.width, w.viewport);
+    const crown = stage.top + stage.height * (CROWN_Y / STAGE_VIEWBOX_H);
+    assert.ok(crown > 0, `${w.name} pushes the ears off the top`);
     assert.ok(
       stage.top + stage.height > w.viewport,
-      `${w.name} shows the flat base`,
+      `${w.name} shows the base of the chest`,
     );
   }
 });
 
-test('the face rests where the layout puts it, at every size', () => {
+test('the eyes rest where the layout puts them, at every size', () => {
   for (const w of [...WINDOWS, LANDSCAPE]) {
     const stage = getBreathingStage(w.width, w.viewport);
-    const face = stage.top + stage.height * (FACE_ORIGIN_Y / STAGE_VIEWBOX_H);
+    const eyes = stage.top + stage.height * (FACE_ORIGIN_Y / STAGE_VIEWBOX_H);
     assert.ok(
-      Math.abs(face - w.viewport * 0.66) < 0.001,
-      `${w.name} moved the face off its rest line`,
+      Math.abs(eyes - w.viewport * FACE_REST_RATIO) < 0.001,
+      `${w.name} moved the eyes off their rest line`,
+    );
+  }
+});
+
+test('a wide window never draws a head bigger than the viewport allows', () => {
+  for (const w of [...WINDOWS, LANDSCAPE]) {
+    const stage = getBreathingStage(w.width, w.viewport);
+    assert.ok(
+      stage.width <= w.viewport * 1.05 + 0.001,
+      `${w.name} ignored the viewport cap`,
     );
   }
 });
