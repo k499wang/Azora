@@ -1,5 +1,14 @@
-import { memo, useMemo } from 'react';
+import { memo, useEffect, useMemo } from 'react';
 import { StyleSheet } from 'react-native';
+import Animated, {
+  cancelAnimation,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
+  useReducedMotion,
+} from 'react-native-reanimated';
 import Svg, { Polygon } from 'react-native-svg';
 import { ROOM_ASPECT, VIEW_BOX } from './roomGeometry';
 import { ROOM_GHOST_SHAPES } from './roomGhostShapes';
@@ -29,15 +38,44 @@ const DOT_OPACITY = 0.45;
 // viewBox units — the room is 348 x 402, so these read as fine dots on device.
 const DOT_WIDTH = 2.5;
 const DOT_DASH = '0.1 6';
+/** how long one breath of the pulse takes, when the slot is being offered */
+const PULSE_MS = 1400;
 
 interface Props {
   /** must match every other layer of the same room */
   width: number;
   /** the slot a new object goes into, or null once the room is full */
   slot: RoomSlot | null;
+  /** breathe, for the beat where the room is asking to be filled */
+  pulsing?: boolean;
 }
 
-function RoomGhostSlots({ width, slot }: Props) {
+function RoomGhostSlots({ width, slot, pulsing = false }: Props) {
+  const reducedMotion = useReducedMotion();
+  const pulse = useSharedValue(0);
+
+  useEffect(() => {
+    if (!pulsing || reducedMotion) {
+      cancelAnimation(pulse);
+      pulse.value = 0;
+      return;
+    }
+
+    pulse.value = withRepeat(
+      withSequence(
+        withTiming(1, { duration: PULSE_MS / 2 }),
+        withTiming(0, { duration: PULSE_MS / 2 }),
+      ),
+      -1,
+      false,
+    );
+
+    return () => cancelAnimation(pulse);
+  }, [pulse, pulsing, reducedMotion]);
+
+  const pulseStyle = useAnimatedStyle(() => ({
+    opacity: 0.6 + pulse.value * 0.4,
+  }));
   const loops = useMemo(
     () =>
       (slot == null ? [] : (ROOM_GHOST_SHAPES[slot] ?? [])).map((loop) =>
@@ -51,6 +89,10 @@ function RoomGhostSlots({ width, slot }: Props) {
   }
 
   return (
+    <Animated.View
+      style={[StyleSheet.absoluteFill, pulsing ? pulseStyle : null]}
+      pointerEvents="none"
+    >
     <Svg
       width={width}
       height={width * ROOM_ASPECT}
@@ -73,6 +115,7 @@ function RoomGhostSlots({ width, slot }: Props) {
         />
       ))}
     </Svg>
+    </Animated.View>
   );
 }
 

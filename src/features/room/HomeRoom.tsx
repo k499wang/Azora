@@ -17,6 +17,13 @@ import type { Room } from '../../services/room/roomService';
 interface HomeRoomProps {
   room: Room | null;
   progress: Pick<RoomProgress, 'canClaim' | 'placedCount' | 'nextSlot'>;
+  /** dev only: replays the reward flow without arranging a real day */
+  onLongPress?: () => void;
+  /**
+   * How the empty slot is drawn: at rest, breathing while it is being offered,
+   * or gone while a piece is being previewed in it.
+   */
+  ghost?: 'idle' | 'pulsing' | 'hidden';
 }
 
 /**
@@ -26,7 +33,12 @@ interface HomeRoomProps {
  * behind are settled by where the floor puts him rather than reported as he
  * moves: the split is a function of the decorations, not of a frame.
  */
-export default function HomeRoom({ room, progress }: HomeRoomProps) {
+export default function HomeRoom({
+  room,
+  progress,
+  onLongPress,
+  ghost = 'idle',
+}: HomeRoomProps) {
   const { width } = useWindowDimensions();
   const azo = useRef<AzoHandle>(null);
   const roomWidth = getHomeRoomWidth(width);
@@ -72,10 +84,17 @@ export default function HomeRoom({ room, progress }: HomeRoomProps) {
           triggerBounceHaptic();
           azo.current?.cheer();
         }}
+        onLongPress={onLongPress}
       >
         <View style={{ width: roomWidth, height: roomWidth * ROOM_ASPECT }}>
           <RoomLayer width={roomWidth} polys={layers.base} />
-          <RoomGhostSlots width={roomWidth} slot={progress.nextSlot} />
+          {ghost === 'hidden' ? null : (
+            <RoomGhostSlots
+              width={roomWidth}
+              slot={progress.nextSlot}
+              pulsing={ghost === 'pulsing'}
+            />
+          )}
           <RoomLayer width={roomWidth} polys={behind} />
           <RoomAzo ref={azo} width={roomWidth} />
           <RoomLayer width={roomWidth} polys={inFront} />

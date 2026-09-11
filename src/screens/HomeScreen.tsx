@@ -17,6 +17,9 @@ import HomeCelebrationLayer, {
 } from '../components/home/HomeCelebrationLayer';
 import RoomProgressCard from '../features/room/RoomProgressCard';
 import DailyCompleteSheet from '../features/room/DailyCompleteSheet';
+import DailyRewardFlow, {
+  type RewardFlowOrigin,
+} from '../features/room/DailyRewardFlow';
 import {
   isDailyCompleteRewardReady,
   useDailyCompleteSnapshot,
@@ -29,6 +32,8 @@ import type { TourTargetId } from '../features/tour/tourSteps';
 import { useIsFocused } from '@react-navigation/native';
 import type { HomeScreenProps } from '../app/navigation';
 import { useAuthStore } from '../stores/authStore';
+import { usePlaceDecorationMutation } from '../queries/room/usePlaceDecorationMutation';
+import { isRoomOverridden } from '../features/room/devRoomOverride';
 import { useDailyPlanScheduleQuery } from '../queries/dailyPlan/useDailyPlanScheduleQuery';
 import { useProfileSummaryQuery } from '../queries/profile/useProfileSummaryQuery';
 import { useDashboardLayout } from '../hooks/useDashboardLayout';
@@ -89,7 +94,14 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   // line while Home is still mounted underneath, and that screen has its own
   // sheet. Recording the transition without firing is what keeps this one from
   // opening on top of it.
-  const [unlockVisible, setUnlockVisible] = useState(false);
+  /**
+   * Two beats, never overlapping: the sheet carries the flame and the numbers,
+   * then the room takes the screen to be decorated. They cannot share it —
+   * white celebration text over a room is legible in some shells and not
+   * others, and the room's colours change every time a piece is placed.
+   */
+  const [stage, setStage] = useState<'sheet' | 'decorate' | null>(null);
+  const unlockVisible = stage != null;
   const isFocused = useIsFocused();
   const pieceReady = day.allCompleted && roomClaim.progress.canClaim;
   const wasPieceReady = useRef<boolean | null>(null);
@@ -99,7 +111,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
 
     const was = wasPieceReady.current;
     wasPieceReady.current = pieceReady;
-    if (was === false && pieceReady && isFocused) setUnlockVisible(true);
+    if (was === false && pieceReady && isFocused) setStage('sheet');
   }, [isFocused, pieceReady, roomClaim.isLoading]);
 
   const { snapshot, markSeen } = useDailyCompleteSnapshot({
@@ -109,11 +121,65 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   });
   useTrackDailyCompletion(snapshot, roomClaim);
 
-  const handleUnlockDismiss = useCallback(() => setUnlockVisible(false), []);
-  const handleChoosePiece = useCallback(() => {
-    setUnlockVisible(false);
-    navigation.navigate('RoomDecorate');
-  }, [navigation]);
+  const flowVisible = stage === 'decorate';
+
+  /**
+   * Dev only: the flow fires on the day's *transition* to earned, which is
+   * three exercises and a day's wait away — and the Room Lab's fabricated
+   * claims arrive already earned, so they never cross the line that opens it.
+   * A long press on the room replays it against whatever state is loaded.
+   */
+  const replayRewardFlow = useCallback(() => {
+    if (!__DEV__) return;
+    setStage('sheet');
+  }, []);
+
+  const handleUnlockDismiss = useCallback(() => setStage(null), []);
+  const handleChoosePiece = useCallback(() => setStage('decorate'), []);
+
+  const placeDecoration = usePlaceDecorationMutation(user?.id ?? null);
+  const handlePlacePiece = useCallback(
+    (optionId: string) => {
+      const slot = roomClaim.progress.nextSlot;
+      if (slot == null || !roomClaim.progress.canClaim) return;
+
+      // The dev lab hands Home a fabricated room. Playing the landing is the
+      // point there; writing a decoration against invented state is not.
+      if (isRoomOverridden()) return;
+
+      placeDecoration.mutate({
+        slot,
+        optionId,
+        earnedLocalDate: dailies.todayLocalDate,
+      });
+    },
+    [
+      dailies.todayLocalDate,
+      placeDecoration,
+      roomClaim.progress.canClaim,
+      roomClaim.progress.nextSlot,
+    ],
+  );
+
+  /**
+   * Where Home draws its room, so the flow can start its own copy on exactly
+   * that frame and grow from it. A push would cut; this is a zoom, and the
+   * illusion only holds if the first frame lands on the pixel Home had.
+   */
+  const roomBlock = useRef<View>(null);
+  const [roomOrigin, setRoomOrigin] = useState<RewardFlowOrigin | null>(null);
+  const measureRoom = useCallback(() => {
+    roomBlock.current?.measureInWindow((x, y, width) => {
+      if (width > 0) setRoomOrigin({ x, y, width });
+    });
+  }, []);
+
+  // Home scrolls, so where the room sits on screen is only true for as long as
+  // nothing has moved. Measuring again as the flow opens is what keeps its
+  // first frame on top of the room it is pretending to be.
+  useEffect(() => {
+    if (unlockVisible) measureRoom();
+  }, [measureRoom, unlockVisible]);
 
   /**
    * One ref for this scroll view, not two. The tour scrolls a stop into place
@@ -175,8 +241,21 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           </View>
         </View>
 
-        <View style={styles.roomBlock}>
-          <HomeRoom room={roomClaim.room} progress={roomClaim.progress} />
+        <View
+          ref={roomBlock}
+          style={styles.roomBlock}
+          onLayout={measureRoom}
+          // The flow draws its own copy from here, so Home's would show through
+          // the one that is moving.
+          pointerEvents={flowVisible ? 'none' : 'auto'}
+        >
+          {flowVisible ? null : (
+            <HomeRoom
+              room={roomClaim.room}
+              progress={roomClaim.progress}
+              onLongPress={__DEV__ ? replayRewardFlow : undefined}
+            />
+          )}
         </View>
 
         {/* The progress card belongs to the dailies it tracks, so the whole
@@ -213,7 +292,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         </View>
       </ScrollView>
 
-      {unlockVisible && snapshot != null ? (
+      {stage === 'sheet' && snapshot != null ? (
         <DailyCompleteSheet
           visible
           title="Nice work!"
@@ -226,6 +305,20 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
           )}
           onShow={markSeen}
           onChoosePiece={handleChoosePiece}
+          onDismiss={handleUnlockDismiss}
+        />
+      ) : null}
+
+      {flowVisible ? (
+        <DailyRewardFlow
+          origin={roomOrigin}
+          room={roomClaim.room}
+          progress={roomClaim.progress}
+          rewardReady={isDailyCompleteRewardReady(
+            snapshot?.state ?? { unlocked: true },
+            roomClaim.progress.canClaim,
+          )}
+          onPlace={handlePlacePiece}
           onDismiss={handleUnlockDismiss}
         />
       ) : null}

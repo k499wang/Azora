@@ -107,6 +107,8 @@ test('only these files may touch the room override', () => {
     'features/room/useRoomClaim.ts',
     // reads it, so it refuses to write against a fabricated room
     'screens/RoomDecorateScreen.tsx',
+    // same reason: Home places the day's piece from the reward flow now
+    'screens/HomeScreen.tsx',
     // the only writer
     'screens/RoomLabScreen.tsx',
   ]);
