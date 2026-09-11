@@ -78,6 +78,7 @@ import { Text } from '../../components/common/Text';
 import Icon from '../../components/common/icons/Icon';
 import GlassIconButton from '../../components/common/GlassIconButton';
 import { colors } from '../../theme/colors';
+import { duration } from '../../theme/motion';
 import { spacing } from '../../theme/spacing';
 import { typography, fonts } from '../../theme/typography';
 
@@ -164,6 +165,15 @@ export interface PyramidRoom {
 
 interface Props {
   rooms: PyramidRoom[];
+  /**
+   * Called once, when the canvas is measured and the hotel has been framed.
+   *
+   * Until then there is no viewport to fit to, so the scale is 1 and the origin
+   * is the top-left corner: the pyramid and its resident would both be drawn in
+   * the wrong place for a frame and then snap. The host holds a spinner over
+   * that first pass and this is what tells it the pass is over.
+   */
+  onReady?: () => void;
 }
 
 function draw(canvas: SkCanvas, paths: PaintedPath[]) {
@@ -221,7 +231,7 @@ function recordWall(room: PyramidRoom): SkPicture {
   });
 }
 
-export default function PyramidCanvas({ rooms }: Props) {
+export default function PyramidCanvas({ rooms, onReady }: Props) {
   const [size, setSize] = useState<{ width: number; height: number } | null>(
     null,
   );
@@ -387,6 +397,24 @@ export default function PyramidCanvas({ rooms }: Props) {
     ],
   }));
 
+  // Placing the canvas happens in an effect inside `usePinchZoomPan`, which is
+  // registered before this one — so by the time this runs the transform the
+  // first visible frame is drawn with is already on the shared values.
+  const ready = home != null;
+  const told = useRef(false);
+
+  useEffect(() => {
+    if (!ready || told.current) return;
+    told.current = true;
+    onReady?.();
+  }, [ready, onReady]);
+
+  // Measured at zero opacity rather than withheld: the layout pass is what
+  // produces `home`, so a canvas that waits to be mounted never gets framed.
+  const revealStyle = useAnimatedStyle(() => ({
+    opacity: withTiming(ready ? 1 : 0, { duration: duration.base }),
+  }));
+
   const onLayout = (event: LayoutChangeEvent) => {
     const { width, height } = event.nativeEvent.layout;
     if (size != null && size.width === width && size.height === height) return;
@@ -401,7 +429,7 @@ export default function PyramidCanvas({ rooms }: Props) {
   const showFar = far != null && !close;
 
   return (
-    <View style={styles.canvas} onLayout={onLayout}>
+    <Animated.View style={[styles.canvas, revealStyle]} onLayout={onLayout}>
       <GestureDetector gesture={gesture}>
         <Canvas style={StyleSheet.absoluteFill}>
           <Group transform={transform}>
@@ -468,7 +496,7 @@ export default function PyramidCanvas({ rooms }: Props) {
           />
         </GlassIconButton>
       </View>
-    </View>
+    </Animated.View>
   );
 }
 

@@ -133,18 +133,13 @@ function floorPatternPolys(pattern: FloorPattern, line: string, floor: string): 
 }
 
 /**
- * Ambient darkening at the corner seam and where each wall meets the floor.
- * Neutral and constant — it reads as contact shadow, so it must not take the
- * shell's hue or every room ends up looking like the same room in a filter.
+ * The only shading the shell keeps: one thin seam down the inside corner so the
+ * two walls read as two planes. Everything else is a flat block of colour —
+ * the objects and the mascot are built that way, and a room drawn in
+ * translucent washes sat behind them looking like a different medium.
  */
 const SEAM_SHADE: Poly[] = [
-  { p: '0,-172 -6.9,-168 -6.9,4 0,0', f: 'rgba(58,67,79,.05)' },
-  { p: '0,-172 6.9,-168 6.9,4 0,0', f: 'rgba(58,67,79,.07)' },
-];
-
-const FLOOR_SHADE: Poly[] = [
-  { p: '0,0 6.9,4 -149,94 -155.9,90', f: 'rgba(58,67,79,.05)' },
-  { p: '0,0 155.9,90 149,94 -6.9,4', f: 'rgba(58,67,79,.05)' },
+  { p: '0,-172 6.9,-168 6.9,4 0,0', f: 'rgba(58,67,79,.06)' },
 ];
 
 function buildShell(spec: ShellSpec): Poly[] {
@@ -170,7 +165,6 @@ function buildShell(spec: ShellSpec): Poly[] {
     ...SEAM_SHADE,
     { p: floorQuad(0, 1, 0, 1), f: spec.floor },
     ...floorPatternPolys(spec.pattern, spec.floorLine, spec.floor),
-    ...FLOOR_SHADE,
     { p: wallQuad(-1, 0, 1, BASE_TOP, 1), f: spec.baseLeft },
     { p: wallQuad(1, 0, 1, BASE_TOP, 1), f: spec.baseRight },
   ];
@@ -180,12 +174,12 @@ const SPECS = {
   cream: {
     name: 'Sunbeam',
     frameHue: 'sky',
-    wallLeft: '#FFF8DC',
-    wallRight: '#FFEFBD',
-    baseLeft: '#FFE8A6',
-    baseRight: '#FCDA8B',
-    floor: '#F7BB68',
-    floorLine: '#E3A24C',
+    wallLeft: '#F9EDCB',
+    wallRight: '#F0DFB1',
+    baseLeft: '#E9D3A0',
+    baseRight: '#DEC48C',
+    floor: '#EDA85A',
+    floorLine: '#D48E45',
     pattern: 'planks',
   },
   sage: {
@@ -277,7 +271,7 @@ export const ROOM_SHELLS: Record<RoomShellKey, Poly[]> = Object.fromEntries(
  * only has to order the faces, and any more than that turns a light room's own
  * walls into the darkest thing on it.
  */
-const FRAME_LIFT = 0.7;
+const FRAME_LIFT = 0.58;
 const FRAME_FLATTEN = 0.15;
 const FRAME_FACTORS: Record<keyof FramePalette, number> = {
   cap: 0.99,
