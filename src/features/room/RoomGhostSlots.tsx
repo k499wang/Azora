@@ -2,7 +2,6 @@ import { memo, useMemo } from 'react';
 import { StyleSheet } from 'react-native';
 import Svg, { Polygon } from 'react-native-svg';
 import { ROOM_ASPECT, VIEW_BOX } from './roomGeometry';
-import { slotBounds } from './roomStage';
 import { ROOM_GHOST_SHAPES } from './roomGhostShapes';
 import { colors } from '../../theme/colors';
 import type { RoomSlot } from '../../lib/room/roomProgress';
@@ -18,10 +17,10 @@ import type { RoomSlot } from '../../lib/room/roomProgress';
  * piece of furniture rather than an absent one, and the dots are what say
  * *empty*, since nothing else in the room is drawn with them.
  *
- * The shape is authored (`roomGhostShapes.ts`) rather than borrowed from the
- * decorations, which is what makes one clean stroke possible — see that file.
- * It is sized to the patch of room the slot owns, so it lands where the piece
- * will and moves with the art.
+ * The outline is a real piece traced offline into closed loops
+ * (`roomGhostShapes.ts`), which is what keeps the dots clean — stroking the art
+ * itself would dot every seam between its overlapping polygons. Most slots are
+ * one loop; a garland is two, one per wall.
  */
 const GHOST_FILL = colors.neutral[400];
 const GHOST_OPACITY = 0.14;
@@ -30,9 +29,6 @@ const DOT_OPACITY = 0.45;
 // viewBox units — the room is 348 x 402, so these read as fine dots on device.
 const DOT_WIDTH = 2.5;
 const DOT_DASH = '0.1 6';
-// Shapes are drawn a little inside the patch, so the dots do not sit flush
-// against the pieces already in the room.
-const INSET = 0.06;
 
 interface Props {
   /** must match every other layer of the same room */
@@ -42,31 +38,15 @@ interface Props {
 }
 
 function RoomGhostSlots({ width, slot }: Props) {
-  const points = useMemo(() => {
-    if (slot == null) {
-      return null;
-    }
+  const loops = useMemo(
+    () =>
+      (slot == null ? [] : (ROOM_GHOST_SHAPES[slot] ?? [])).map((loop) =>
+        loop.map(([x, y]) => `${x},${y}`).join(' '),
+      ),
+    [slot],
+  );
 
-    const box = slotBounds(slot);
-    const shape = ROOM_GHOST_SHAPES[slot];
-    if (box == null || shape == null) {
-      return null;
-    }
-
-    const boxWidth = box.maxX - box.minX;
-    const boxHeight = box.maxY - box.minY;
-
-    return shape
-      .map(([x, y]) => {
-        const inset = (value: number) => INSET + value * (1 - INSET * 2);
-        return `${box.minX + inset(x) * boxWidth},${
-          box.minY + inset(y) * boxHeight
-        }`;
-      })
-      .join(' ');
-  }, [slot]);
-
-  if (points == null) {
+  if (loops.length === 0) {
     return null;
   }
 
@@ -78,17 +58,20 @@ function RoomGhostSlots({ width, slot }: Props) {
       style={StyleSheet.absoluteFill}
       pointerEvents="none"
     >
-      <Polygon
-        points={points}
-        fill={GHOST_FILL}
-        fillOpacity={GHOST_OPACITY}
-        stroke={DOT_COLOR}
-        strokeOpacity={DOT_OPACITY}
-        strokeWidth={DOT_WIDTH}
-        strokeDasharray={DOT_DASH}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      {loops.map((points, index) => (
+        <Polygon
+          key={index}
+          points={points}
+          fill={GHOST_FILL}
+          fillOpacity={GHOST_OPACITY}
+          stroke={DOT_COLOR}
+          strokeOpacity={DOT_OPACITY}
+          strokeWidth={DOT_WIDTH}
+          strokeDasharray={DOT_DASH}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      ))}
     </Svg>
   );
 }
