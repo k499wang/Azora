@@ -180,7 +180,7 @@ const styles = StyleSheet.create({
   lip: {
     borderRadius: radius.card,
     borderCurve: 'continuous',
-    backgroundColor: colors.neutral[200],
+    backgroundColor: colors.neutral[300],
     paddingBottom: LIP_DEPTH,
   },
   lipSelected: {
@@ -198,7 +198,7 @@ const styles = StyleSheet.create({
     // The selected border is drawn on every row so selecting one does not
     // change its size and nudge the rows under it.
     borderWidth: 2,
-    borderColor: colors.neutral[200],
+    borderColor: colors.neutral[300],
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
   },
