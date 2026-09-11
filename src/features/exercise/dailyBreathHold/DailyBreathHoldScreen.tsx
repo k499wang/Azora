@@ -45,6 +45,7 @@ import { useHeartRateStallHelp } from '../../../hooks/useHeartRateStallHelp';
 import { HeartRateHelpSheet } from '../../../components/heartRate/HeartRateHelpSheet';
 import { signalHint } from '../shared/components/ExerciseHeartRateGuidance';
 import { useBreathingHeartRateMonitoringAccess } from '../shared/hooks/useBreathingHeartRateMonitoringAccess';
+import HeartRateMonitoringToggle from '../shared/components/HeartRateMonitoringToggle';
 import { useBreathHoldPhaseSequence } from './hooks/useBreathHoldPhaseSequence';
 import { useBreathHoldCompletionPersistence } from './hooks/useBreathHoldCompletionPersistence';
 import { useAuthStore } from '../../../stores/authStore';
@@ -153,7 +154,8 @@ export default function DailyBreathHoldScreen({
     heartRateMonitoringAccessLoading,
     heartRateMonitoringProLocked,
     setHeartRateMonitoringEnabled,
-  } = useBreathingHeartRateMonitoringAccess();
+    requestHeartRateMonitoring,
+  } = useBreathingHeartRateMonitoringAccess({ sourceScreen: 'DailyBreathHold' });
   const {
     holdSeconds,
     prepCycle,
@@ -550,6 +552,14 @@ export default function DailyBreathHoldScreen({
             prepCycle={prepCycle}
             holdSeconds={holdSeconds}
             bestHoldSeconds={bestHoldSeconds}
+            heartRateToggle={
+              <HeartRateMonitoringToggle
+                enabled={heartRateMonitoringEnabled && !heartRateMonitoringProLocked}
+                onToggle={requestHeartRateMonitoring}
+                proLocked={heartRateMonitoringProLocked}
+                theme={activeTheme}
+              />
+            }
             heartRate={{
               enabled: hrEnabled,
               active: pulse.active,
@@ -599,7 +609,6 @@ export default function DailyBreathHoldScreen({
         visible={audioSettingsOpen}
         onClose={() => setAudioSettingsOpen(false)}
         title="Session options"
-        heartRateMonitoringLocked={phase !== 'idle'}
         extraSectionsTop={
           <ThemePickerSection
             activeThemeId={activeTheme.id}

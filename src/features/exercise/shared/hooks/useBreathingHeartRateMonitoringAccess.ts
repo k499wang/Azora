@@ -1,9 +1,18 @@
-import { useEffect } from 'react';
+import { useCallback, useEffect } from 'react';
+import { useNavigation } from '@react-navigation/native';
+import type { RootStackNavigationProp } from '../../../../app/navigation';
 import { FeatureKey } from '../../../../services/subscriptions/featureAccess';
 import { useFeatureAccess } from '../../../../hooks/useFeatureAccess';
 import { useHeartRateMonitoringPreference } from '../../../../hooks/useHeartRateMonitoringPreference';
+import { trackFeatureGateHit } from '../../../../services/analytics/tracking';
+import { PaywallPlacement } from '../../../../services/paywall';
 
-export function useBreathingHeartRateMonitoringAccess() {
+interface Options {
+  sourceScreen: string;
+}
+
+export function useBreathingHeartRateMonitoringAccess({ sourceScreen }: Options) {
+  const navigation = useNavigation<RootStackNavigationProp>();
   const {
     heartRateMonitoringEnabled,
     heartRateMonitoringPreferenceLoaded,
@@ -46,6 +55,37 @@ export function useBreathingHeartRateMonitoringAccess() {
     setHeartRateMonitoringEnabled,
   ]);
 
+  // The intro toggle is the only place a session offers the setting, so an
+  // upgrade prompt has to come from here rather than from a settings sheet.
+  const requestHeartRateMonitoring = useCallback(
+    (enabled: boolean) => {
+      if (enabled && heartRateMonitoringProLocked) {
+        trackFeatureGateHit({
+          feature: FeatureKey.BreathingHeartRateMonitoring,
+          placement: PaywallPlacement.HeartRateProGate,
+          sourceScreen,
+          sourceAction: 'heart_rate_monitoring_toggle',
+          access,
+        });
+        navigation.navigate('ProPaywall', {
+          placement: PaywallPlacement.HeartRateProGate,
+          sourceScreen,
+          sourceAction: 'heart_rate_monitoring_toggle',
+          feature: FeatureKey.BreathingHeartRateMonitoring,
+        });
+        return;
+      }
+      setHeartRateMonitoringEnabled(enabled);
+    },
+    [
+      access,
+      heartRateMonitoringProLocked,
+      navigation,
+      setHeartRateMonitoringEnabled,
+      sourceScreen,
+    ],
+  );
+
   return {
     heartRateMonitoringEnabled,
     heartRateMonitoringPreferenceLoaded,
@@ -53,5 +93,6 @@ export function useBreathingHeartRateMonitoringAccess() {
     heartRateMonitoringAccessLoading,
     heartRateMonitoringProLocked,
     setHeartRateMonitoringEnabled,
+    requestHeartRateMonitoring,
   };
 }

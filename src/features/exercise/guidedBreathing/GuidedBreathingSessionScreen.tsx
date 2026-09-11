@@ -28,6 +28,7 @@ import { useHeartRateStallHelp } from '../../../hooks/useHeartRateStallHelp';
 import { HeartRateHelpSheet } from '../../../components/heartRate/HeartRateHelpSheet';
 import { signalHint } from '../shared/components/ExerciseHeartRateGuidance';
 import { useBreathingHeartRateMonitoringAccess } from '../shared/hooks/useBreathingHeartRateMonitoringAccess';
+import HeartRateMonitoringToggle from '../shared/components/HeartRateMonitoringToggle';
 import {
   AudioSettingsSheet,
   ThemePickerSection,
@@ -181,7 +182,8 @@ export default function GuidedBreathingSessionScreen({
     heartRateMonitoringAccessLoading,
     heartRateMonitoringProLocked,
     setHeartRateMonitoringEnabled,
-  } = useBreathingHeartRateMonitoringAccess();
+    requestHeartRateMonitoring,
+  } = useBreathingHeartRateMonitoringAccess({ sourceScreen: 'ExerciseSession' });
 
   const isTimedSession =
     phase !== 'idle' &&
@@ -595,6 +597,14 @@ export default function GuidedBreathingSessionScreen({
             technique={technique}
             theme={activeTheme}
             remainingSeconds={remainingSeconds}
+            heartRateToggle={
+              <HeartRateMonitoringToggle
+                enabled={heartRateMonitoringEnabled && !heartRateMonitoringProLocked}
+                onToggle={requestHeartRateMonitoring}
+                proLocked={heartRateMonitoringProLocked}
+                theme={activeTheme}
+              />
+            }
             roundsPicker={
               <RoundsDurationPicker
                 options={roundsOptions}
@@ -644,7 +654,6 @@ export default function GuidedBreathingSessionScreen({
         visible={audioSettingsOpen}
         onClose={() => setAudioSettingsOpen(false)}
         title="Session options"
-        heartRateMonitoringLocked={phase !== 'idle' && phase !== 'done'}
         extraSectionsTop={
           <ThemePickerSection
             activeThemeId={activeTheme.id}

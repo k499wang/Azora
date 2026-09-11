@@ -37,12 +37,8 @@ import {
 import type { RootStackNavigationProp } from '../../app/navigation';
 import { captureException } from '../../services/analytics/errorTracking';
 import { AnalyticsEvent } from '../../services/analytics/events';
-import { trackFeatureGateHit } from '../../services/analytics/tracking';
 import { useAuthStore } from '../../stores/authStore';
 import { useCompleteHeartRateSessionMutation } from '../../queries/tracking/useCompleteHeartRateSessionMutation';
-import { useFeatureAccess } from '../../hooks/useFeatureAccess';
-import { FeatureKey } from '../../services/subscriptions/featureAccess';
-import { PaywallPlacement } from '../../services/paywall';
 import {
   showCameraAccessNeededAlert,
   showHeartRateCameraUnavailableAlert,
@@ -126,7 +122,6 @@ export function HeartRateCaptureFlow({
   const insets = useSafeAreaInsets();
   const user = useAuthStore((state) => state.user);
   const completeHeartRateSessionMutation = useCompleteHeartRateSessionMutation(user?.id ?? null);
-  const heartRateAccess = useFeatureAccess(FeatureKey.HeartRateMeasurement);
   const [currentSetupIndex, setCurrentSetupIndex] = useState(0);
   const [pastSetup, setPastSetup] = useState(false);
   const [selectedMode, setSelectedMode] = useState<HeartRateCaptureMode>(DEFAULT_CAPTURE_MODE);
@@ -190,23 +185,6 @@ export function HeartRateCaptureFlow({
 
   const beginCapture = useCallback(async () => {
     try {
-      if (!heartRateAccess.allowed && !heartRateAccess.isLoading) {
-        trackFeatureGateHit({
-          feature: FeatureKey.HeartRateMeasurement,
-          placement: PaywallPlacement.HeartRateProGate,
-          sourceScreen: 'HeartRate',
-          sourceAction: 'begin_measurement',
-          access: heartRateAccess,
-        });
-        navigation.replace('ProPaywall', {
-          placement: PaywallPlacement.HeartRateProGate,
-          sourceScreen: 'HeartRate',
-          sourceAction: 'begin_measurement',
-          feature: FeatureKey.HeartRateMeasurement,
-        });
-        return;
-      }
-
       if (!hasPermission) {
         const granted = await requestPermission();
         if (!granted) {
@@ -235,13 +213,6 @@ export function HeartRateCaptureFlow({
     context,
     device,
     hasPermission,
-    heartRateAccess.allowed,
-    heartRateAccess.isLoading,
-    heartRateAccess.isPro,
-    heartRateAccess.limit,
-    heartRateAccess.reason,
-    heartRateAccess.used,
-    navigation,
     posthog,
     requestPermission,
     startCapture,
@@ -295,48 +266,12 @@ export function HeartRateCaptureFlow({
   }, [onCancel]);
 
   const handleRetry = useCallback(() => {
-    const blockedByLimit =
-      completeHeartRateSessionMutation.isSuccess && !heartRateAccess.isPro;
-    const blockedByCache =
-      !heartRateAccess.isLoading && !heartRateAccess.allowed;
-    if (blockedByLimit || blockedByCache) {
-      const access = blockedByLimit && heartRateAccess.allowed
-        ? {
-            ...heartRateAccess,
-            allowed: false,
-            reason: 'free_limit_reached' as const,
-            used: Math.max(heartRateAccess.used, heartRateAccess.limit ?? 1),
-            limit: heartRateAccess.limit ?? 1,
-          }
-        : heartRateAccess;
-      trackFeatureGateHit({
-        feature: FeatureKey.HeartRateMeasurement,
-        placement: PaywallPlacement.HeartRateProGate,
-        sourceScreen: 'HeartRate',
-        sourceAction: 'retry_after_free_capture',
-        access,
-      });
-      navigation.replace('ProPaywall', {
-        placement: PaywallPlacement.HeartRateProGate,
-        sourceScreen: 'HeartRate',
-        sourceAction: 'retry_after_free_capture',
-        feature: FeatureKey.HeartRateMeasurement,
-      });
-      return;
-    }
     setPendingSave(null);
     completeHeartRateSessionMutation.reset();
     reset();
     setCurrentSetupIndex(0);
     setPastSetup(false);
-  }, [
-    completeHeartRateSessionMutation,
-    heartRateAccess.allowed,
-    heartRateAccess.isLoading,
-    heartRateAccess.isPro,
-    navigation,
-    reset,
-  ]);
+  }, [completeHeartRateSessionMutation, reset]);
 
   const retrySave = useCallback(() => {
     const variables = completeHeartRateSessionMutation.variables;

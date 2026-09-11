@@ -1,4 +1,11 @@
-import { forwardRef, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  forwardRef,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
 import {
   Animated,
   Easing,
@@ -121,6 +128,7 @@ interface DailyBreathHoldPresentationProps {
   prepCycle: number;
   holdSeconds: number;
   bestHoldSeconds: number;
+  heartRateToggle: ReactNode;
   heartRate: DailyBreathHoldHeartRatePresentation;
 }
 
@@ -136,6 +144,7 @@ export const DailyBreathHoldPresentation = forwardRef<
     prepCycle,
     holdSeconds,
     bestHoldSeconds,
+    heartRateToggle,
     heartRate,
   },
   companionRef,
@@ -250,8 +259,9 @@ export const DailyBreathHoldPresentation = forwardRef<
       />
 
       {isIdle ? (
-        <View style={styles.introLayer} pointerEvents="none">
+        <View style={styles.introLayer} pointerEvents="box-none">
           <BreathHoldIntro
+            heartRateToggle={heartRateToggle}
             title={INTRO_TITLE}
             description={introDescription}
             steps={introSteps}
