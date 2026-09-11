@@ -488,6 +488,5 @@ const styles = StyleSheet.create({
     ...typography.body.medium,
     fontFamily: fonts.semibold,
     textAlign: 'center',
-    fontWeight: '500',
   },
 });

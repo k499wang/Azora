@@ -159,7 +159,6 @@ const styles = StyleSheet.create({
   title: {
     ...typography.title.title3,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
   },
   illustrationWrap: {
     width: '82%',
@@ -176,6 +175,5 @@ const styles = StyleSheet.create({
   dismissText: {
     ...typography.body.medium,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
   },
 });

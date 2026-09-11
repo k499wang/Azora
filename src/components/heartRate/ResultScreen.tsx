@@ -363,7 +363,6 @@ const styles = StyleSheet.create({
     ...typography.title.title1,
     color: colors.text.primary,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
   },
   heroWrap: {
     paddingHorizontal: padding.screen.horizontal,
@@ -389,7 +388,6 @@ const styles = StyleSheet.create({
   resultTitle: {
     ...typography.title.title1,
     fontFamily: fonts.medium,
-    fontWeight: '500',
     fontSize: 32,
     lineHeight: 40,
     color: colors.text.secondary,
@@ -426,7 +424,6 @@ const styles = StyleSheet.create({
   },
   tipsHeading: {
     ...typography.body.small,
-    fontWeight: '500',
     color: colors.text.primary,
     marginBottom: spacing.xs,
   },

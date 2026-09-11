@@ -223,7 +223,6 @@ const styles = StyleSheet.create({
   title: {
     ...typography.label.large,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     fontSize: 17,
     lineHeight: 22,
     flex: 1,

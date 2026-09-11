@@ -49,7 +49,6 @@ export const paywallStepStyles = StyleSheet.create({
   proofLabel: {
     ...typography.body.small,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     color: colors.text.primary,
   },
   proofDetail: {
@@ -70,7 +69,6 @@ export const paywallStepStyles = StyleSheet.create({
   unlockTitle: {
     ...typography.heading.heading2,
     fontFamily: fonts.heavy,
-    fontWeight: '800',
     color: colors.text.primary,
   },
   planIntroText: {
@@ -113,7 +111,6 @@ export const paywallStepStyles = StyleSheet.create({
   bellBadgeText: {
     ...typography.heading.heading1,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     color: colors.neutral[0],
   },
   headerCopy: {
@@ -124,7 +121,6 @@ export const paywallStepStyles = StyleSheet.create({
   eyebrow: {
     ...typography.body.medium,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     color: colors.text.secondary,
     textAlign: 'left',
   },
@@ -133,7 +129,6 @@ export const paywallStepStyles = StyleSheet.create({
     fontSize: 30,
     lineHeight: 38,
     fontFamily: fonts.heavy,
-    fontWeight: '800',
     color: colors.text.primary,
     textAlign: 'left',
   },
@@ -154,7 +149,6 @@ export const paywallStepStyles = StyleSheet.create({
     fontSize: 30,
     lineHeight: 38,
     fontFamily: fonts.heavy,
-    fontWeight: '800',
     color: colors.text.primary,
     textAlign: 'center',
   },
@@ -171,6 +165,7 @@ export const paywallStepStyles = StyleSheet.create({
     paddingVertical: spacing.lg,
   },
   stepTitleBrand: {
+    fontFamily: fonts.heavy,
     color: colors.primary.blue600,
   },
   stepSubtitle: {
@@ -181,14 +176,12 @@ export const paywallStepStyles = StyleSheet.create({
   sectionTitle: {
     ...typography.heading.heading1,
     fontFamily: fonts.heavy,
-    fontWeight: '800',
     color: colors.text.primary,
     textAlign: 'center',
   },
   trialNote: {
     ...typography.caption.caption1,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     color: colors.primary.blue600,
     textAlign: 'center',
     marginTop: spacing.xs,
@@ -268,7 +261,6 @@ export const paywallStepStyles = StyleSheet.create({
     fontSize: 20,
     lineHeight: 26,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
     color: colors.text.primary,
   },
   timelineBody: {
@@ -311,13 +303,11 @@ export const paywallStepStyles = StyleSheet.create({
   testimonialRatingValue: {
     ...typography.body.small,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     color: colors.text.primary,
   },
   testimonialTitle: {
     ...typography.heading.heading2,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     color: colors.text.primary,
   },
   testimonialQuote: {
@@ -339,7 +329,6 @@ export const paywallStepStyles = StyleSheet.create({
   testimonialAuthor: {
     ...typography.body.medium,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     color: colors.text.primary,
   },
   cardsLoading: {

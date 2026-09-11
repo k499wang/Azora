@@ -310,7 +310,6 @@ const styles = StyleSheet.create({
   },
   closeText: {
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     fontSize: 32,
     lineHeight: 32,
     color: colors.text.primary,
@@ -331,7 +330,6 @@ const styles = StyleSheet.create({
   noPaymentText: {
     ...typography.body.medium,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     color: colors.text.primary,
   },
   content: {
@@ -345,7 +343,6 @@ const styles = StyleSheet.create({
   eyebrow: {
     ...typography.body.medium,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     color: colors.text.secondary,
     textAlign: 'left',
   },
@@ -354,7 +351,6 @@ const styles = StyleSheet.create({
     fontSize: 30,
     lineHeight: 38,
     fontFamily: fonts.heavy,
-    fontWeight: '800',
     color: colors.text.primary,
     textAlign: 'left',
   },
@@ -368,7 +364,6 @@ const styles = StyleSheet.create({
   trialNote: {
     ...typography.caption.caption1,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     color: colors.primary.blue600,
     textAlign: 'left',
     marginTop: spacing.xs,
@@ -411,7 +406,6 @@ const styles = StyleSheet.create({
   retryText: {
     ...typography.button.small,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     color: colors.error[700],
   },
   tray: {

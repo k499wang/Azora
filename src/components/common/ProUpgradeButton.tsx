@@ -53,6 +53,5 @@ const styles = StyleSheet.create({
     ...typography.label.small,
     color: colors.text.inverse,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
   },
 });

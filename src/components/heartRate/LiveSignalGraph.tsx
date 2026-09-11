@@ -573,7 +573,6 @@ const styles = StyleSheet.create({
   },
   bpmNumber: {
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     fontSize: 26,
     lineHeight: 30,
     letterSpacing: 0.5,

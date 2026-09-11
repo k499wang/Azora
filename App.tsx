@@ -9,12 +9,19 @@ import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import {
   useFonts,
-  Outfit_200ExtraLight,
+  BalsamiqSans_400Regular,
+  BalsamiqSans_700Bold,
+} from '@expo-google-fonts/balsamiq-sans';
+import {
+  Fredoka_400Regular,
+  Fredoka_500Medium,
+  Fredoka_600SemiBold,
+} from '@expo-google-fonts/fredoka';
+import {
   Outfit_300Light,
   Outfit_400Regular,
   Outfit_500Medium,
   Outfit_600SemiBold,
-  Outfit_700Bold,
   Outfit_800ExtraBold,
 } from '@expo-google-fonts/outfit';
 import { Asset } from 'expo-asset';
@@ -52,12 +59,15 @@ const STARTUP_BACKGROUND_COLOR = colors.neutral[0];
 
 export default function App() {
   const [fontsLoaded] = useFonts({
-    'Outfit-ExtraLight': Outfit_200ExtraLight,
+    'BalsamiqSans-Regular': BalsamiqSans_400Regular,
+    'BalsamiqSans-Bold': BalsamiqSans_700Bold,
+    'Fredoka-Regular': Fredoka_400Regular,
+    'Fredoka-Medium': Fredoka_500Medium,
+    'Fredoka-SemiBold': Fredoka_600SemiBold,
     'Outfit-Light': Outfit_300Light,
     'Outfit-Regular': Outfit_400Regular,
     'Outfit-Medium': Outfit_500Medium,
     'Outfit-SemiBold': Outfit_600SemiBold,
-    'Outfit-Bold': Outfit_700Bold,
     'Outfit-ExtraBold': Outfit_800ExtraBold,
   });
   const [backgroundImagesReady, setBackgroundImagesReady] = useState(false);

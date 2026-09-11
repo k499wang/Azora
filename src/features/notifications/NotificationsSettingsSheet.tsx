@@ -295,7 +295,6 @@ const styles = StyleSheet.create({
   loadErrorTitle: {
     ...typography.body.large,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     color: colors.text.primary,
     textAlign: 'center',
   },
@@ -320,7 +319,6 @@ const styles = StyleSheet.create({
   retryButtonText: {
     ...typography.body.medium,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     color: colors.background.primary,
   },
   body: {
@@ -348,7 +346,6 @@ const styles = StyleSheet.create({
   rowTitle: {
     ...typography.body.medium,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     color: colors.text.primary,
   },
   rowSubtitle: {

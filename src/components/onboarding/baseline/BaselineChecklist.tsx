@@ -72,7 +72,6 @@ const styles = StyleSheet.create({
   checklistTitle: {
     ...typography.heading.heading2,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     fontSize: 22,
     color: colors.text.primary,
   },
@@ -114,7 +113,6 @@ const styles = StyleSheet.create({
   tipTitle: {
     ...typography.body.medium,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     color: colors.text.primary,
     letterSpacing: -0.1,
   },

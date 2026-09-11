@@ -2,7 +2,7 @@ import { Text } from '../common/Text';
 import { useMemo, useState } from 'react';
 import { LayoutChangeEvent, StyleSheet, View } from 'react-native';
 import { colors } from '../../theme/colors';
-import { typography } from '../../theme/typography';
+import { fonts, typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 
 export interface DataPoint {
@@ -117,7 +117,10 @@ export default function BarGraph({
                   style={[
                     styles.valueLabel,
                     { left: bar.centerX - 20, top: barTop - 18 },
-                    isHighlighted && { color: highlightColor, fontWeight: '600' },
+                    isHighlighted && {
+                      color: highlightColor,
+                      fontFamily: fonts.bold,
+                    },
                   ]}
                   numberOfLines={1}
                 >
@@ -178,7 +181,6 @@ const styles = StyleSheet.create({
     width: 40,
     textAlign: 'center',
     color: colors.text.primary,
-    fontWeight: '500',
   },
   xLabel: {
     ...typography.caption.caption1,

@@ -1,29 +1,28 @@
 import { TextStyle } from 'react-native';
 import { isTablet } from './tablet';
+import { ACTIVE_FONT_PREVIEW, resolveFontPreview } from './fontPreview';
 
 type FontWeight = TextStyle['fontWeight'];
 
-const weight = {
-  light: '300' as FontWeight,
-  regular: '400' as FontWeight,
-  medium: '500' as FontWeight,
-  semibold: '600' as FontWeight,
-  // App rule: SemiBold is the heaviest face the app renders.
-  bold: '600' as FontWeight,
-};
+export const activeFontPreview = resolveFontPreview(
+  ACTIVE_FONT_PREVIEW,
+  __DEV__,
+);
 
-// Single app-wide font family. Switch to try any of:
-// 'Cormorant' | 'Raleway' | 'Outfit' | 'Manrope' | 'Urbanist' | 'Fredoka' | 'Baloo2' | 'Unbounded' | 'Sniglet' | 'Nunito'
-const FONT_FAMILY = 'Outfit';
+const weight = Object.fromEntries(
+  Object.entries(activeFontPreview.roles).map(([role, face]) => [role, face.weight]),
+) as Record<keyof typeof activeFontPreview.roles, FontWeight>;
 
-const fontBold = `${FONT_FAMILY}-SemiBold`;
-// Real Bold face. Reserved for paywall headlines, where the extra weight is a
-// deliberate emphasis break from the app-wide SemiBold ceiling.
-const fontHeavy = `${FONT_FAMILY}-ExtraBold`;
-const fontSemiBold = `${FONT_FAMILY}-SemiBold`;
-const fontRegular = `${FONT_FAMILY}-Regular`;
-const fontMedium = `${FONT_FAMILY}-Medium`;
-const fontLight = `${FONT_FAMILY}-Light`;
+const fontsByRole = Object.fromEntries(
+  Object.entries(activeFontPreview.roles).map(([role, face]) => [role, face.family]),
+) as Record<keyof typeof activeFontPreview.roles, string>;
+
+const fontBold = fontsByRole.bold;
+const fontHeavy = fontsByRole.heavy;
+const fontSemiBold = fontsByRole.semibold;
+const fontRegular = fontsByRole.regular;
+const fontMedium = fontsByRole.medium;
+const fontLight = fontsByRole.light;
 
 const baseTypography = {
   display: {

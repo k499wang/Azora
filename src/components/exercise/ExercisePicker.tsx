@@ -180,7 +180,6 @@ const styles = StyleSheet.create({
   },
   recommendedText: {
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     fontSize: 9,
     letterSpacing: 0.5,
     color: colors.text.inverse,

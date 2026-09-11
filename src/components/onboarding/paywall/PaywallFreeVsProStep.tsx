@@ -200,7 +200,6 @@ const styles = StyleSheet.create({
   columnHeading: {
     ...typography.body.small,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     color: colors.text.secondary,
     textAlign: 'center',
   },
@@ -213,21 +212,18 @@ const styles = StyleSheet.create({
   proPillText: {
     ...typography.caption.caption1,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     color: colors.neutral[0],
     letterSpacing: 0.5,
   },
   freeValue: {
     ...typography.caption.caption1,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     color: colors.text.secondary,
     textAlign: 'center',
   },
   trialFootnote: {
     ...typography.body.small,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     color: colors.primary.blue600,
     textAlign: 'center',
     marginTop: spacing.lg,

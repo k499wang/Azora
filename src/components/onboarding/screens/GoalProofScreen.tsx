@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { Animated, Easing, StyleSheet, View } from "react-native";
 import * as Haptics from "expo-haptics";
-import { Text } from "../../common/Text";
+import { AnimatedText, Text } from "../../common/Text";
 import { colors } from "../../../theme/colors";
 import { spacing } from "../../../theme/spacing";
 import { radius } from "../../../theme/card";
@@ -106,19 +106,19 @@ function Bar({
   return (
     <View style={styles.track}>
       {marker ? (
-        <Animated.Text
+        <AnimatedText
           style={[
             styles.marker,
             { bottom: markerBottom, color: markerColor, opacity: grow },
           ]}
         >
           {marker}
-        </Animated.Text>
+        </AnimatedText>
       ) : null}
       <Animated.View style={[styles.fill, { height, backgroundColor: fill }]}>
-        <Animated.Text style={[styles.barLabel, { opacity: grow }]}>
+        <AnimatedText style={[styles.barLabel, { opacity: grow }]}>
           {label}
-        </Animated.Text>
+        </AnimatedText>
       </Animated.View>
     </View>
   );

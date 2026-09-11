@@ -190,7 +190,6 @@ const styles = StyleSheet.create({
   zoneText: {
     ...typography.label.small,
     fontFamily: fonts.medium,
-    fontWeight: '500',
     fontSize: 11,
   },
   valueRow: {

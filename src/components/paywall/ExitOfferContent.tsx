@@ -456,7 +456,6 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: fonts.heavy,
-    fontWeight: '800',
     fontSize: 56,
     lineHeight: 62,
     color: colors.text.primary,
@@ -465,7 +464,6 @@ const styles = StyleSheet.create({
   heroSubtitle: {
     ...typography.body.small,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     color: colors.text.secondary,
     textAlign: 'center',
     marginTop: spacing.sm,
@@ -495,7 +493,6 @@ const styles = StyleSheet.create({
   },
   discountHeadline: {
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     fontSize: 56,
     lineHeight: 56,
     color: colors.primary.blue700,
@@ -513,19 +510,16 @@ const styles = StyleSheet.create({
   priceSecondary: {
     ...typography.title.title3,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     color: colors.text.secondary,
   },
   priceUnitSecondary: {
     ...typography.body.small,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     color: colors.text.tertiary,
   },
   priceAnchor: {
     ...typography.body.small,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     color: colors.text.tertiary,
     textDecorationLine: 'line-through',
   },
@@ -542,14 +536,12 @@ const styles = StyleSheet.create({
   timerLabel: {
     ...typography.body.medium,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     letterSpacing: 0.3,
     color: colors.error[700],
   },
   timerValue: {
     ...typography.title.title3,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     color: colors.error[700],
     fontVariant: ['tabular-nums'],
   },
@@ -570,7 +562,6 @@ const styles = StyleSheet.create({
   commitmentText: {
     ...typography.body.small,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     color: colors.text.secondary,
   },
 });

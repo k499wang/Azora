@@ -180,7 +180,6 @@ const styles = StyleSheet.create({
   heading: {
     ...typography.display.display2,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     letterSpacing: -1,
     color: colors.text.primary,
     textAlign: 'center',

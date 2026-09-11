@@ -60,7 +60,6 @@ const styles = StyleSheet.create({
   },
   headingTitle: {
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     fontSize: 28,
     lineHeight: 32,
     letterSpacing: -0.4,

@@ -198,7 +198,6 @@ const styles = StyleSheet.create({
   title: {
     ...typography.body.large,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     color: colors.text.primary,
   },
   // The same grey line the to-do list on Home puts under a goal's title.

@@ -151,7 +151,6 @@ const styles = StyleSheet.create({
   modeCaption: {
     ...typography.label.medium,
     fontFamily: fonts.medium,
-    fontWeight: '500',
     color: colors.text.tertiary,
     textAlign: 'center',
   },

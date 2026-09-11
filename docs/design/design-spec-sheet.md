@@ -14,12 +14,13 @@ the numbers.
 
 ## 1. Type
 
-**Family: Outfit.** Only family in the app. Don't introduce another.
+**Family: Balsamiq Sans.** Only family in the app. Don't introduce another.
 
-Faces in use: Light (300), Regular (400), Medium (500), **SemiBold (600)**, ExtraBold (800).
+Faces in use: Regular (400) and Bold (700). Semantic light/regular/medium roles
+use Regular; semibold/bold/heavy roles use Bold.
 
-> **SemiBold is the heaviest weight in the app.** There is no Bold. ExtraBold is
-> reserved for paywall headlines only.
+> **Bold is the heaviest available weight.** Keep using semantic aliases such
+> as `fonts.semibold` and `fonts.heavy`; both resolve to the real Bold face.
 
 | Style | Size / Line | Weight | Use |
 |---|---|---|---|
@@ -283,7 +284,7 @@ inflating them.
 ## 10. Hard rules
 
 1. **No new colors.** If it's not in §2, it doesn't exist.
-2. **No weight above SemiBold** except paywall headlines.
+2. **Use only the loaded Regular and Bold faces.**
 3. **No second font family.**
 4. **Cards are pure white** `#FFFFFF`. Not a tinted near-white.
 5. **No borders on cards.** Depth is shadow + canvas contrast.

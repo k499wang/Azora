@@ -95,7 +95,6 @@ const styles = StyleSheet.create({
   },
   promptTitle: {
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     fontSize: 15,
     lineHeight: 19,
     textAlign: 'center',

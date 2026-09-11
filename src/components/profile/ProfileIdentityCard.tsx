@@ -166,7 +166,6 @@ const styles = StyleSheet.create({
     color: colors.text.primary,
     textAlign: 'center',
     fontFamily: fonts.semibold,
-    fontWeight: '500',
   },
   editNameButton: {
     width: 34,

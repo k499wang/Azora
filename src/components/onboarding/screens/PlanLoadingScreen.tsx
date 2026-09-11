@@ -203,7 +203,6 @@ const styles = StyleSheet.create({
   percent: {
     ...typography.display.display1,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     fontSize: 56,
     lineHeight: 64,
     letterSpacing: -1,
@@ -213,7 +212,6 @@ const styles = StyleSheet.create({
   headline: {
     ...typography.title.title1,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     fontSize: 30,
     lineHeight: 38,
     letterSpacing: -0.4,
@@ -254,7 +252,6 @@ const styles = StyleSheet.create({
   cardTitle: {
     ...typography.body.medium,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     color: colors.text.primary,
     marginBottom: spacing.xs,
   },

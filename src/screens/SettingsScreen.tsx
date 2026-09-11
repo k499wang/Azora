@@ -384,7 +384,6 @@ const styles = StyleSheet.create({
     ...typography.title.title2,
     color: colors.text.primary,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     letterSpacing: 0.2,
   },
   pressed: {

@@ -228,7 +228,6 @@ const styles = StyleSheet.create({
   },
   headline: {
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     fontSize: 30,
     lineHeight: 36,
     letterSpacing: -0.6,
@@ -279,7 +278,6 @@ const styles = StyleSheet.create({
   },
   planCardTitle: {
     fontFamily: fonts.semibold,
-    fontWeight: '600',
     fontSize: 18,
     lineHeight: 26,
     color: colors.text.primary,

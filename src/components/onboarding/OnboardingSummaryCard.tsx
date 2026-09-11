@@ -154,7 +154,6 @@ const styles = StyleSheet.create({
   title: {
     ...typography.body.large,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     color: colors.primary.blue600,
     flexShrink: 1,
   },
@@ -168,14 +167,12 @@ const styles = StyleSheet.create({
   subject: {
     ...typography.body.large,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     color: colors.text.primary,
     flexShrink: 1,
   },
   meta: {
     ...typography.caption.caption1,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     color: colors.text.secondary,
   },
   trailing: {
@@ -195,7 +192,6 @@ const styles = StyleSheet.create({
   pillText: {
     ...typography.body.small,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     fontVariant: ['tabular-nums'],
     color: colors.neutral[0],
   },

@@ -182,12 +182,10 @@ const styles = StyleSheet.create({
   },
   summaryStrong: {
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     color: colors.primary.blue600,
   },
   summaryGrowth: {
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     color: colors.orange[600],
   },
   speech: {
@@ -197,7 +195,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     ...typography.title.title3,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     color: colors.text.primary,
     marginTop: spacing.lg,
     marginBottom: spacing.xs,

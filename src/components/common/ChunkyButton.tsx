@@ -162,7 +162,6 @@ const styles = StyleSheet.create({
   label: {
     ...typography.button.large,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     letterSpacing: 0.3,
   },
 });

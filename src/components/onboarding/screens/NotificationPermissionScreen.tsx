@@ -166,7 +166,6 @@ const styles = StyleSheet.create({
   previewFrom: {
     ...typography.body.small,
     fontFamily: fonts.semibold,
-    fontWeight: '600',
     color: colors.text.primary,
   },
   previewTime: {
@@ -185,7 +184,6 @@ const styles = StyleSheet.create({
   },
   noteStrong: {
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     color: colors.text.primary,
   },
   errorText: {

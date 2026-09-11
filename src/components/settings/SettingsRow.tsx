@@ -92,7 +92,6 @@ const styles = StyleSheet.create({
   label: {
     ...typography.body.medium,
     fontFamily: fonts.regular,
-    fontWeight: '400',
     flex: 1,
   },
   labelCentered: {

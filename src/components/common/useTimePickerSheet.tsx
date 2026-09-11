@@ -168,7 +168,6 @@ const styles = StyleSheet.create({
   sheetTitle: {
     ...typography.body.medium,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     color: colors.text.primary,
   },
   sheetCancel: {
@@ -178,7 +177,6 @@ const styles = StyleSheet.create({
   sheetDone: {
     ...typography.body.medium,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     color: colors.primary.blue600,
   },
   sheetActionPressed: {

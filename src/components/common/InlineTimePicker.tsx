@@ -13,6 +13,7 @@ import { radius } from '../../theme/card';
 import { spacing } from '../../theme/spacing';
 import { typography } from '../../theme/typography';
 import { triggerTapHaptic } from '../../native/tapHaptics';
+import { AnimatedText } from './Text';
 
 const ITEM_HEIGHT = 44;
 const VISIBLE_ITEMS = 5;
@@ -221,7 +222,7 @@ function WheelItem({ label, index, offset, align }: WheelItemProps) {
         { alignItems: align, opacity, transform: [{ scale }] },
       ]}
     >
-      <Animated.Text style={styles.itemLabel}>{label}</Animated.Text>
+      <AnimatedText style={styles.itemLabel}>{label}</AnimatedText>
     </Animated.View>
   );
 }

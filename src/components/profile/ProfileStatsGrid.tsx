@@ -118,7 +118,6 @@ const styles = StyleSheet.create({
     ...typography.display.display2,
     color: colors.text.primary,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
   },
   heroDetail: {
     ...typography.caption.caption1,
@@ -146,7 +145,6 @@ const styles = StyleSheet.create({
     ...typography.title.title2,
     color: colors.text.primary,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
   },
   secondaryLabel: {
     ...typography.caption.caption1,

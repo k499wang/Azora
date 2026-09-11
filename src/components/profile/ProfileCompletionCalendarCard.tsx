@@ -166,7 +166,6 @@ const styles = StyleSheet.create({
   monthLabel: {
     ...typography.title.title3,
     fontFamily: fonts.medium,
-    fontWeight: '500',
     fontSize: 20,
     lineHeight: 26,
     color: colors.text.inverse,

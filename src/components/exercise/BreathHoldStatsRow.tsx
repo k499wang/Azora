@@ -80,7 +80,6 @@ const styles = StyleSheet.create({
   label: {
     ...typography.label.small,
     fontFamily: fonts.regular,
-    fontWeight: '400',
     fontSize: 13,
     color: colors.onBlock.textMuted,
     letterSpacing: 0.2,

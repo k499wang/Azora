@@ -173,7 +173,6 @@ const styles = StyleSheet.create({
     ...typography.display.display1,
     color: colors.text.primary,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
   },
   tier: {
     ...typography.caption.caption1,
@@ -187,7 +186,6 @@ const styles = StyleSheet.create({
     ...typography.title.title3,
     color: colors.text.tertiary,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     letterSpacing: 1.5,
   },
 });
