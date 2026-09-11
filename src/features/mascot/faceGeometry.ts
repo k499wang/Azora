@@ -15,9 +15,20 @@
 const ELLIPSE_KAPPA = 0.5522848;
 
 /**
- * Four cubics with matching topology at both ends of the morph. At roundness 0,
- * each half is the exact cubic conversion of half of `lensPath`'s quadratic.
- * At roundness 1, the controls are the standard kappa ellipse approximation.
+ * One closed outline, built as an ellipse of the given half-width and half-
+ * thickness that is then bent into an arc.
+ *
+ * Bending rather than tapering is what keeps a closed lid soft: the two edges
+ * stay the same distance apart the whole way across, so the shape ends in a
+ * round cap of its own thickness instead of the cusp two curves meeting at a
+ * point would give. `roundness` is how much of that bend is straightened out —
+ * at 1 the arc is a plain ellipse spanning `top` to `bottom`, which is the wide
+ * open eye; at 0 it is the full arc, hanging as far below the tips as `top` and
+ * `bottom` place it.
+ *
+ * The bend is a vertical shear, so control points carry both its value and its
+ * slope at the end they belong to. Without the slope term the tangents no
+ * longer meet at the joins and the arc creases at the apex and the tips.
  */
 export function eyePath(
   cx: number,
@@ -28,49 +39,35 @@ export function eyePath(
   roundness: number,
 ): string {
   'worklet';
-  const mix = (from: number, to: number) => from + (to - from) * roundness;
-  const centerY = cy + (top + bottom) / 2;
   const radiusY = (bottom - top) / 2;
+  const midOffset = (top + bottom) / 2;
+  const baseY = cy + midOffset * roundness;
+  const bend = midOffset * (1 - roundness);
+
+  const shear = (x: number) => {
+    const t = (x - cx) / width;
+    return bend * (1 - t * t);
+  };
+  const shearSlope = (x: number) => (-2 * bend * (x - cx)) / (width * width);
+  /** An on-curve point, carried by the bend itself. */
+  const at = (x: number, y: number) => `${x} ${y + shear(x)}`;
+  /** A control point, carried by the bend at the end it belongs to. */
+  const off = (endX: number, x: number, y: number) =>
+    `${x} ${y + shear(endX) + shearSlope(endX) * (x - endX)}`;
+
   const left = cx - width;
   const right = cx + width;
-  const topY = cy + top;
-  const bottomY = cy + bottom;
-  const sideY = mix(cy, centerY);
-
-  const topLeftControl1X = mix(cx - (2 * width) / 3, left);
-  const topLeftControl1Y = mix(
-    cy + (2 * top) / 3,
-    centerY - ELLIPSE_KAPPA * radiusY,
-  );
-  const topLeftControl2X = mix(cx - width / 3, cx - ELLIPSE_KAPPA * width);
-
-  const topRightControl1X = mix(cx + width / 3, cx + ELLIPSE_KAPPA * width);
-  const topRightControl2X = mix(cx + (2 * width) / 3, right);
-  const topRightControl2Y = mix(
-    cy + (2 * top) / 3,
-    centerY - ELLIPSE_KAPPA * radiusY,
-  );
-
-  const bottomRightControl1X = mix(cx + (2 * width) / 3, right);
-  const bottomRightControl1Y = mix(
-    cy + (2 * bottom) / 3,
-    centerY + ELLIPSE_KAPPA * radiusY,
-  );
-  const bottomRightControl2X = mix(cx + width / 3, cx + ELLIPSE_KAPPA * width);
-
-  const bottomLeftControl1X = mix(cx - width / 3, cx - ELLIPSE_KAPPA * width);
-  const bottomLeftControl2X = mix(cx - (2 * width) / 3, left);
-  const bottomLeftControl2Y = mix(
-    cy + (2 * bottom) / 3,
-    centerY + ELLIPSE_KAPPA * radiusY,
-  );
+  const reachX = ELLIPSE_KAPPA * width;
+  const reachY = ELLIPSE_KAPPA * radiusY;
+  const topY = baseY - radiusY;
+  const bottomY = baseY + radiusY;
 
   return (
-    `M ${left} ${sideY} ` +
-    `C ${topLeftControl1X} ${topLeftControl1Y} ${topLeftControl2X} ${topY} ${cx} ${topY} ` +
-    `C ${topRightControl1X} ${topY} ${topRightControl2X} ${topRightControl2Y} ${right} ${sideY} ` +
-    `C ${bottomRightControl1X} ${bottomRightControl1Y} ${bottomRightControl2X} ${bottomY} ${cx} ${bottomY} ` +
-    `C ${bottomLeftControl1X} ${bottomY} ${bottomLeftControl2X} ${bottomLeftControl2Y} ${left} ${sideY} Z`
+    `M ${at(left, baseY)} ` +
+    `C ${off(left, left, baseY - reachY)} ${off(cx, cx - reachX, topY)} ${at(cx, topY)} ` +
+    `C ${off(cx, cx + reachX, topY)} ${off(right, right, baseY - reachY)} ${at(right, baseY)} ` +
+    `C ${off(right, right, baseY + reachY)} ${off(cx, cx + reachX, bottomY)} ${at(cx, bottomY)} ` +
+    `C ${off(cx, cx - reachX, bottomY)} ${off(left, left, baseY + reachY)} ${at(left, baseY)} Z`
   );
 }
 

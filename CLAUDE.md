@@ -19,7 +19,7 @@ Project-specific guide for Claude Code. Complements `AGENTS.md` — read that fi
 - **Expo** (React Native) + **TypeScript** (strict mode on)
 - **Navigation:** `@react-navigation/native` (native stack + bottom tabs)
 - **Rendering:** `@shopify/react-native-skia` for progress rings, `react-native-svg` for custom icons
-- **Fonts:** Outfit via `@expo-google-fonts/outfit`, loaded in `App.tsx`
+- **Fonts:** Balsamiq Sans via `@expo-google-fonts/balsamiq-sans`, loaded in `App.tsx`
 - **Targets:** iOS now, Android soon — all new code must work on both
 
 ## Commands
@@ -257,7 +257,7 @@ Before adding or modifying any `useMutation`, read `docs/query-cache-invalidatio
 - Flag tradeoffs before acting on them when the call isn't obvious.
 
 ### Conventions to enforce automatically
-- Never inline `fontFamily: 'Nunito-*'` or any font string literal in a component — always `fonts.bold` / `fonts.semibold`.
+- Never inline a font-family string literal in a component — always use the semantic `fonts.*` aliases.
 - Never inline card shadow/border/radius — always `card.base` / `card.shadow`.
 - Every button is the **lip** type — `ChunkyButton` (`src/components/common/ChunkyButton.tsx`): a face resting on a darker lip that it drops onto when pressed. Never a flat filled `Pressable` that only dims. Add a `ChunkyTone` rather than inlining colours. Circular icon buttons (`GlassIconButton`, `CloseButton`) keep their own treatment.
 - Never hardcode a color hex outside `src/theme/colors.ts`.

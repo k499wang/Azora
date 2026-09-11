@@ -4,26 +4,24 @@ import { isTablet } from './tablet';
 type FontWeight = TextStyle['fontWeight'];
 
 const weight = {
-  light: '300' as FontWeight,
+  light: '400' as FontWeight,
   regular: '400' as FontWeight,
-  medium: '500' as FontWeight,
-  semibold: '600' as FontWeight,
-  // App rule: SemiBold is the heaviest face the app renders.
-  bold: '600' as FontWeight,
+  medium: '400' as FontWeight,
+  semibold: '700' as FontWeight,
+  bold: '700' as FontWeight,
 };
 
-// Single app-wide font family. Switch to try any of:
-// 'Cormorant' | 'Raleway' | 'Outfit' | 'Manrope' | 'Urbanist' | 'Fredoka' | 'Baloo2' | 'Unbounded' | 'Sniglet' | 'Nunito'
-const FONT_FAMILY = 'Outfit';
+const FONT_FAMILY = 'BalsamiqSans';
 
-const fontBold = `${FONT_FAMILY}-SemiBold`;
-// Real Bold face. Reserved for paywall headlines, where the extra weight is a
-// deliberate emphasis break from the app-wide SemiBold ceiling.
-const fontHeavy = `${FONT_FAMILY}-ExtraBold`;
-const fontSemiBold = `${FONT_FAMILY}-SemiBold`;
+// Balsamiq Sans ships Regular (400) and Bold (700). Existing aliases remain so
+// call sites retain their semantic intent without asking the native renderer
+// to synthesize unavailable weights.
+const fontBold = `${FONT_FAMILY}-Bold`;
+const fontHeavy = `${FONT_FAMILY}-Bold`;
+const fontSemiBold = `${FONT_FAMILY}-Bold`;
 const fontRegular = `${FONT_FAMILY}-Regular`;
-const fontMedium = `${FONT_FAMILY}-Medium`;
-const fontLight = `${FONT_FAMILY}-Light`;
+const fontMedium = `${FONT_FAMILY}-Regular`;
+const fontLight = `${FONT_FAMILY}-Regular`;
 
 const baseTypography = {
   display: {
