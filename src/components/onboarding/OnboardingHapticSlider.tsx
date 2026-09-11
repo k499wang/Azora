@@ -190,7 +190,6 @@ const styles = StyleSheet.create({
   },
   value: {
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     fontSize: 64,
     lineHeight: 70,
     letterSpacing: -1,
@@ -247,7 +246,6 @@ const styles = StyleSheet.create({
   endLabel: {
     ...typography.body.small,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     fontSize: 15,
     lineHeight: 20,
     color: colors.text.primary,

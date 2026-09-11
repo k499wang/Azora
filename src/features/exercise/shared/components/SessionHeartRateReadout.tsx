@@ -94,7 +94,6 @@ const styles = StyleSheet.create({
   },
   warningText: {
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     fontSize: 16,
     lineHeight: 22,
     color: colors.warning[500],

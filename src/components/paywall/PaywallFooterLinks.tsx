@@ -71,7 +71,6 @@ const styles = StyleSheet.create({
   text: {
     ...typography.button.small,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     color: colors.text.secondary,
     textAlign: 'center',
   },

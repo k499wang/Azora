@@ -77,7 +77,6 @@ const styles = StyleSheet.create({
   pressed: pressable.control,
   count: {
     fontFamily: fonts.semibold,
-    fontWeight: '600',
     fontSize: 20,
     lineHeight: 24,
     color: colors.neutral[900],

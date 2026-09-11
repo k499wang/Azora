@@ -129,14 +129,12 @@ const styles = StyleSheet.create({
   numberText: {
     ...typography.body.small,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     textAlign: 'center',
     includeFontPadding: false,
   },
   numberTextLarge: {
     ...typography.body.medium,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
   },
   copy: {
     flex: 1,
@@ -145,13 +143,11 @@ const styles = StyleSheet.create({
   title: {
     ...typography.body.small,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     textAlign: 'left',
   },
   titleLarge: {
     ...typography.body.medium,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
   },
   detail: {
     ...typography.body.xsmall,

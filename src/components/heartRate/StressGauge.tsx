@@ -269,7 +269,6 @@ const styles = StyleSheet.create({
   },
   currentStatLabel: {
     fontFamily: fonts.medium,
-    fontWeight: '500',
     fontSize: 13,
     lineHeight: 16,
   },

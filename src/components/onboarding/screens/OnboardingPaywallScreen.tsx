@@ -541,7 +541,6 @@ const styles = StyleSheet.create({
   },
   headerText: {
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     fontSize: 34,
     lineHeight: 34,
     color: colors.text.primary,
@@ -579,7 +578,6 @@ const styles = StyleSheet.create({
   noPaymentText: {
     ...typography.body.medium,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     color: colors.text.primary,
   },
   errorBlock: {
@@ -603,7 +601,6 @@ const styles = StyleSheet.create({
   retryText: {
     ...typography.button.small,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     color: colors.error[700],
   },
   // The tray keeps its full-bleed background, shadow and divider so the rule

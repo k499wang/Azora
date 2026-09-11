@@ -247,7 +247,6 @@ const stampStyles = StyleSheet.create({
   },
   stampText: {
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     fontSize: 13,
     letterSpacing: 3,
     color: colors.text.inverse,
@@ -255,7 +254,6 @@ const stampStyles = StyleSheet.create({
   stampCheck: {
     fontSize: 28,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     color: colors.text.inverse,
   },
 });
@@ -358,7 +356,6 @@ const styles = StyleSheet.create({
   note: {
     ...typography.body.large,
     fontFamily: fonts.regular,
-    fontWeight: '400',
     color: colors.text.primary,
   },
 

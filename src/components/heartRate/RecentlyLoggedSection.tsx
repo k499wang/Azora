@@ -246,7 +246,6 @@ const styles = StyleSheet.create({
   thumbBpm: {
     ...typography.display.display3,
     fontFamily: fonts.medium,
-    fontWeight: '500',
     color: colors.error[500],
     fontVariant: ['tabular-nums'],
     letterSpacing: -0.3,
@@ -254,7 +253,6 @@ const styles = StyleSheet.create({
   thumbUnit: {
     ...typography.label.large,
     fontFamily: fonts.bold,
-    fontWeight: '600',
     color: colors.error[500],
     marginTop: 1,
     letterSpacing: 0.5,

@@ -472,7 +472,6 @@ const styles = StyleSheet.create({
   skipText: {
     ...typography.body.small,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     color: colors.text.secondary,
   },
 });

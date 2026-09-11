@@ -53,7 +53,6 @@ const styles = StyleSheet.create({
   title: {
     ...typography.title.title2,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     color: colors.text.primary,
   },
   subtitle: {

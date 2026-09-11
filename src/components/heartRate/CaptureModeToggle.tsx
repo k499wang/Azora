@@ -71,7 +71,6 @@ const styles = StyleSheet.create({
   label: {
     ...typography.label.medium,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     color: colors.text.secondary,
   },
   labelSelected: {
@@ -86,7 +85,6 @@ const styles = StyleSheet.create({
   proBadgeText: {
     ...typography.caption.caption2,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     fontSize: 9,
     letterSpacing: 0.5,
     color: colors.text.inverse,

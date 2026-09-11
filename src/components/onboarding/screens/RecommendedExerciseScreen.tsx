@@ -273,7 +273,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     ...typography.title.title3,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     color: colors.text.primary,
     marginTop: spacing.lg,
     marginBottom: spacing.xs,
@@ -293,7 +292,6 @@ const styles = StyleSheet.create({
   tokenText: {
     ...typography.body.small,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     fontVariant: ['tabular-nums'],
     color: colors.playful.amber.ink,
   },
@@ -352,7 +350,6 @@ const styles = StyleSheet.create({
   legendLabel: {
     ...typography.caption.caption1,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     color: colors.text.secondary,
   },
   note: {

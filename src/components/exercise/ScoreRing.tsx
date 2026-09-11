@@ -502,7 +502,6 @@ const styles = StyleSheet.create({
   ageValue: {
     ...typography.display.display1,
     fontFamily: fonts.medium,
-    fontWeight: '500',
     fontSize: 84,
     lineHeight: 90,
     color: colors.text.secondary,
@@ -539,7 +538,6 @@ const styles = StyleSheet.create({
   gapLabel: {
     ...typography.title.title3,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     fontSize: 18,
     lineHeight: 24,
     textAlign: 'center',

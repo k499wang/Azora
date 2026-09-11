@@ -299,7 +299,6 @@ const styles = StyleSheet.create({
   gaugeHeading: {
     ...typography.title.title1,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     color: colors.text.primary,
     textAlign: 'center',
     paddingHorizontal: spacing.lg,
@@ -307,7 +306,6 @@ const styles = StyleSheet.create({
   gaugeSub: {
     ...typography.body.medium,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     textAlign: 'center',
     marginTop: -spacing.lg,
   },
@@ -335,7 +333,6 @@ const styles = StyleSheet.create({
   },
   gaugeValue: {
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     fontSize: 76,
     lineHeight: 80,
     letterSpacing: -1.5,
@@ -344,7 +341,6 @@ const styles = StyleSheet.create({
   gaugeValueMax: {
     ...typography.body.medium,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     color: colors.text.tertiary,
     letterSpacing: -0.2,
     marginTop: -spacing.xs,
@@ -358,7 +354,6 @@ const styles = StyleSheet.create({
   range: {
     ...typography.body.small,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     color: colors.text.secondary,
     textAlign: 'center',
   },

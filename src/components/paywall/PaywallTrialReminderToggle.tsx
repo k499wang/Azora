@@ -138,7 +138,6 @@ const styles = StyleSheet.create({
   label: {
     ...typography.body.small,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     color: colors.text.primary,
     flex: 1,
   },

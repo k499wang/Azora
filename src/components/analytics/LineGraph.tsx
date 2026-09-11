@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react';
 import { LayoutChangeEvent, StyleSheet, View } from 'react-native';
 import Svg, { Circle, Defs, LinearGradient, Path, Stop } from 'react-native-svg';
 import { colors } from '../../theme/colors';
-import { typography } from '../../theme/typography';
+import { fonts, typography } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
 
 export interface DataPoint {
@@ -216,7 +216,7 @@ export default function LineGraph({
                     },
                     isHighlighted && {
                       color: highlightColor,
-                      fontWeight: '600',
+                      fontFamily: fonts.bold,
                     },
                   ]}
                   numberOfLines={1}
@@ -287,7 +287,6 @@ const styles = StyleSheet.create({
     width: 40,
     textAlign: 'center',
     color: colors.text.primary,
-    fontWeight: '500',
   },
   xLabel: {
     ...typography.caption.caption1,

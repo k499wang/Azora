@@ -81,7 +81,6 @@ const styles = StyleSheet.create({
   description: {
     ...typography.body.large,
     fontFamily: fonts.regular,
-    fontWeight: '400',
     color: colors.text.secondary,
     textAlign: 'center',
     opacity: 0.8,
@@ -89,7 +88,6 @@ const styles = StyleSheet.create({
   descriptionCompact: {
     ...typography.body.small,
     fontFamily: fonts.regular,
-    fontWeight: '400',
   },
   roundsPicker: {
     alignItems: 'center',

@@ -134,7 +134,6 @@ const styles = StyleSheet.create({
     ...typography.title.title1,
     color: colors.text.primary,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
   },
   heroWrap: {
     paddingHorizontal: padding.screen.horizontal,

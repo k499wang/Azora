@@ -273,7 +273,6 @@ const styles = StyleSheet.create({
   hintText: {
     ...typography.title.title3,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     textAlign: 'center',
     paddingHorizontal: spacing.lg,
   },
@@ -302,7 +301,6 @@ const styles = StyleSheet.create({
   },
   bpmNumber: {
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     fontSize: 26,
     lineHeight: 30,
     letterSpacing: 0,
@@ -313,7 +311,6 @@ const styles = StyleSheet.create({
     marginLeft: -4,
     marginTop: 10,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     color: colors.text.secondary,
   },
   bpmUnitDim: {
@@ -344,7 +341,6 @@ const styles = StyleSheet.create({
   skipText: {
     ...typography.body.small,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     color: colors.text.secondary,
   },
 });

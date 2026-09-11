@@ -201,7 +201,6 @@ const styles = StyleSheet.create({
   tagline: {
     ...typography.body.large,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     color: colors.text.secondary,
     textAlign: 'center',
   },

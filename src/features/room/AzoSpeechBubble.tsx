@@ -3,6 +3,7 @@ import Animated, {
   useAnimatedStyle,
   type SharedValue,
 } from 'react-native-reanimated';
+import { fonts } from '../../theme/typography';
 
 /**
  * What the blob is saying.
@@ -128,7 +129,7 @@ function BubblePiece({
   }
 
   return (
-    <Animated.Text style={[style, pieceStyle]}>
+    <Animated.Text style={[{ fontFamily: fonts.regular }, style, pieceStyle]}>
       {spaced ? `${piece} ` : piece}
     </Animated.Text>
   );

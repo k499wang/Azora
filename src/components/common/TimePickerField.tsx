@@ -92,7 +92,6 @@ const styles = StyleSheet.create({
   pillText: {
     ...typography.body.medium,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     color: colors.primary.blue700,
   },
 });

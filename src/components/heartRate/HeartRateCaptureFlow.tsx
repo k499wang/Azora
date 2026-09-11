@@ -523,7 +523,6 @@ const styles = StyleSheet.create({
   bpmValue: {
     color: colors.text.primary,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     fontSize: 56,
     lineHeight: 60,
     minWidth: 64,
@@ -532,7 +531,6 @@ const styles = StyleSheet.create({
   bpmUnit: {
     color: colors.text.secondary,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     fontSize: 20,
     marginLeft: spacing.xs,
   },
@@ -540,7 +538,6 @@ const styles = StyleSheet.create({
     ...typography.title.title3,
     color: colors.text.primary,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     textAlign: 'center',
   },
   floatingClose: {

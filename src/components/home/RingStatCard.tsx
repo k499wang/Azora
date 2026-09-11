@@ -153,7 +153,6 @@ const styles = StyleSheet.create({
     lineHeight: 26,
     color: colors.text.primary,
     fontFamily: fonts.medium,
-    fontWeight: '500',
     fontVariant: ['tabular-nums'],
     letterSpacing: -0.3,
   },
@@ -185,7 +184,6 @@ const styles = StyleSheet.create({
     ...typography.caption.caption2,
     fontSize: 11,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
   },
   ringWrap: {
     alignItems: 'center',

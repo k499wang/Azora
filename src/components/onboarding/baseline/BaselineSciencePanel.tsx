@@ -131,13 +131,11 @@ const styles = StyleSheet.create({
   scienceButtonLabel: {
     ...typography.body.small,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     color: colors.primary.blue700,
     letterSpacing: -0.1,
   },
   scienceButtonChevron: {
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     fontSize: 16,
     lineHeight: 16,
     color: colors.primary.blue700,
@@ -166,7 +164,6 @@ const styles = StyleSheet.create({
   sciencePanelLabel: {
     ...typography.label.small,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     color: colors.primary.blue700,
     letterSpacing: 0.4,
     textTransform: 'uppercase',

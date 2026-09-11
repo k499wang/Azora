@@ -212,7 +212,6 @@ const styles = StyleSheet.create({
   },
   textLead: {
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     fontSize: 19,
     lineHeight: 26,
     letterSpacing: -0.2,

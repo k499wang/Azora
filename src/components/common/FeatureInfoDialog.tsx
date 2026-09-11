@@ -94,7 +94,6 @@ const styles = StyleSheet.create({
     ...typography.heading.heading1,
     color: colors.text.primary,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     marginBottom: spacing.sm,
   },
   scroll: {
@@ -137,6 +136,5 @@ const styles = StyleSheet.create({
     ...typography.button.medium,
     color: colors.text.inverse,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
   },
 });

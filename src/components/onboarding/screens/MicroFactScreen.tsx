@@ -215,14 +215,12 @@ const styles = StyleSheet.create({
   centerKicker: {
     ...typography.caption.caption2,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     fontSize: 9,
     letterSpacing: 1.6,
     color: colors.text.tertiary,
   },
   centerValue: {
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     fontSize: 44,
     lineHeight: 48,
     letterSpacing: -1,
@@ -248,13 +246,11 @@ const styles = StyleSheet.create({
     flex: 1,
     ...typography.body.medium,
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     fontSize: 15,
     color: colors.text.primary,
   },
   legendPercent: {
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     fontSize: 18,
     letterSpacing: -0.3,
   },

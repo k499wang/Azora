@@ -86,7 +86,6 @@ const styles = StyleSheet.create({
   },
   bestLabel: {
     fontFamily: fonts.semibold,
-    fontWeight: '500',
     fontSize: 12,
     letterSpacing: 0.6,
     color: BEST_COLOR,
