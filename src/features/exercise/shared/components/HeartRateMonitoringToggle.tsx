@@ -1,4 +1,11 @@
 import { Pressable, StyleSheet, View } from 'react-native';
+import Animated, {
+  interpolateColor,
+  useAnimatedStyle,
+  useDerivedValue,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { Text } from '../../../../components/common/Text';
 import Icon from '../../../../components/common/icons/Icon';
@@ -21,6 +28,30 @@ export default function HeartRateMonitoringToggle({
   theme,
   proLocked = false,
 }: Props) {
+  const progress = useDerivedValue(() =>
+    withTiming(enabled ? 1 : 0, { duration: 220 }),
+  );
+
+  const trackStyle = useAnimatedStyle(() => ({
+    backgroundColor: interpolateColor(
+      progress.value,
+      [0, 1],
+      [theme.controlBorder, theme.textAccent],
+    ),
+  }));
+
+  const knobStyle = useAnimatedStyle(() => ({
+    transform: [
+      {
+        translateX: withSpring(enabled ? TRACK_WIDTH - KNOB_SIZE - 8 : 0, {
+          damping: 18,
+          stiffness: 220,
+          mass: 0.5,
+        }),
+      },
+    ],
+  }));
+
   const press = () => {
     if (isHapticsEnabled())
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
@@ -50,17 +81,15 @@ export default function HeartRateMonitoringToggle({
           Heart rate monitoring
         </Text>
       </View>
-      <View
-        style={[
-          styles.track,
-          {
-            backgroundColor: enabled ? theme.textAccent : theme.controlBorder,
-            alignItems: enabled ? 'flex-end' : 'flex-start',
-          },
-        ]}
-      >
-        <View style={[styles.knob, { backgroundColor: theme.controlSurface }]} />
-      </View>
+      <Animated.View style={[styles.track, trackStyle]}>
+        <Animated.View
+          style={[
+            styles.knob,
+            { backgroundColor: theme.controlSurface },
+            knobStyle,
+          ]}
+        />
+      </Animated.View>
     </Pressable>
   );
 }
