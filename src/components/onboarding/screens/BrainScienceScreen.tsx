@@ -13,8 +13,8 @@ import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import AzoAside from '../AzoAside';
 
 const BRAIN_SCAN_ASPECT_RATIO = 3 / 2;
-const BRAIN_SCAN_CONTENT_OFFSET = -10;
-const RIGHT_BRAIN_LABEL_OFFSET = 12;
+const BRAIN_SCAN_CONTENT_OFFSET = -12;
+const RIGHT_BRAIN_LABEL_OFFSET = 14;
 const MOCHI_NOTE =
   "Following Azora's scientifically backed exercises can lower your stress and improve your focus!";
 
@@ -112,8 +112,8 @@ const styles = StyleSheet.create({
     gap: spacing['2xl'],
   },
   visual: {
-    width: '88%',
-    maxWidth: 320,
+    width: '100%',
+    maxWidth: 380,
     alignSelf: 'center',
     alignItems: 'center',
   },

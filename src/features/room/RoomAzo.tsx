@@ -43,6 +43,13 @@ const ORIGIN_Y = VIEW_BOX_HEIGHT / 2;
  */
 const STAND = { a: 0.5, b: 0.5 };
 
+/**
+ * Where his feet land, in the same centred viewBox `y` a decoration's front
+ * edge is measured against. A host that paints the room in layers around him
+ * slices them on this, once, instead of being told as he crosses them.
+ */
+export const AZO_FLOOR_Y = FLOOR_HALF_D * (STAND.a + STAND.b);
+
 /** how wide his sprite box is, in viewBox units */
 const AZO_W = 100;
 const AZO_H = AZO_W * AZO_ASPECT;
@@ -129,7 +136,7 @@ function createStyles(u: number) {
   const px = (value: number) => PixelRatio.roundToNearestPixel(value);
 
   const floorX = FLOOR_HALF_W * (STAND.a - STAND.b) + ORIGIN_X;
-  const floorY = FLOOR_HALF_D * (STAND.a + STAND.b) + ORIGIN_Y;
+  const floorY = AZO_FLOOR_Y + ORIGIN_Y;
   /** the top of his box, measured from the floor point his feet are on */
   const crown = floorY - AZO_H * STANDING_SHARE;
 

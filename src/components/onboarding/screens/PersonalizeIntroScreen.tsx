@@ -18,7 +18,7 @@ interface PersonalizeIntroScreenProps {
   onBack: () => void;
 }
 
-const BLOB_SIZE = scaleVisual(112);
+const BLOB_SIZE = scaleVisual(144);
 /** his box carries the room his ears wobble into; cancel it so his body stays put */
 const BLOB_INSET = BLOB_SIZE * AZO_MARGIN;
 const BLOB_BODY_W = BLOB_SIZE - BLOB_INSET * 2;

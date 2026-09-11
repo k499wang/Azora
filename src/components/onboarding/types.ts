@@ -21,6 +21,7 @@ export type OnboardingStep =
   | 'sleep'
   | 'sleepDuration'
   | 'wakeEase'
+  | 'sleepInsight'
   | 'dayActivity'
   | 'brainFog'
   | 'heartWorry'

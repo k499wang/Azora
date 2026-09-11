@@ -6,7 +6,7 @@ import { slotNeighbours } from './pyramidLayout';
  * The blob lives in the whole hotel rather than in one room of it: it settles
  * in a room, wanders the floor there for a while, then crosses a wall into a
  * room next door. Only the choice of room is here — the walk inside a room is
- * `blobWalk`, and how any of it looks is `HotelBlob` and `RoomBlob`.
+ * `blobWalk`, and how any of it looks is `HotelAzo`.
  *
  * It only ever steps to a room sharing a wall, so its path through the hotel is
  * a walk rather than a series of appearances, and it doubles back only when

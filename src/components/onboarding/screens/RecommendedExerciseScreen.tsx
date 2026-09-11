@@ -156,7 +156,6 @@ export default function RecommendedExerciseScreen({
           <AzoAside
             text="We made this plan for you:"
             variant="heading"
-            expression="pleased"
           />
 
           {/* One unbroken list: a reset and a to-do are two lines of the same

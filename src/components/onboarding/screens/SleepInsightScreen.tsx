@@ -1,0 +1,88 @@
+import { StyleSheet, View } from 'react-native';
+import { Image } from 'expo-image';
+import { getOnboardingImageSource } from '../../../services/images/onboardingImageCache';
+import { colors } from '../../../theme/colors';
+import { spacing } from '../../../theme/spacing';
+import { fonts, typography } from '../../../theme/typography';
+import { Text } from '../../common/Text';
+import OnboardingScreenLayout from '../OnboardingScreenLayout';
+import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
+import { scaleVisual } from '../onboardingVisualScale';
+
+interface SleepInsightScreenProps {
+  stepIndex: number;
+  stepCount: number;
+  onContinue: () => void;
+  onBack: () => void;
+}
+
+const KOALA_WIDTH = scaleVisual(290);
+const KOALA_HEIGHT = KOALA_WIDTH;
+
+export default function SleepInsightScreen({
+  stepIndex,
+  stepCount,
+  onContinue,
+  onBack,
+}: SleepInsightScreenProps) {
+  return (
+    <OnboardingScreenLayout
+      title=""
+      progress={stepIndex / stepCount}
+      onBack={onBack}
+      footer={<OnboardingPrimaryButton label="Continue" onPress={onContinue} />}
+    >
+      <View style={styles.stage}>
+        <Image
+          source={getOnboardingImageSource('azoSleeping')}
+          style={styles.koala}
+          contentFit="contain"
+          cachePolicy="memory-disk"
+          transition={0}
+        />
+
+        <View style={styles.copy}>
+          <Text style={styles.headline}>
+            More than 58% of people struggle to get quality sleep.
+          </Text>
+          <Text style={styles.sub}>
+            We’ll guide you into a calming bedtime routine, so winding down
+            happens on its own and mornings start easier.
+          </Text>
+        </View>
+      </View>
+    </OnboardingScreenLayout>
+  );
+}
+
+const styles = StyleSheet.create({
+  stage: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingBottom: spacing['2xl'],
+  },
+  koala: {
+    width: KOALA_WIDTH,
+    height: KOALA_HEIGHT,
+  },
+  copy: {
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.lg,
+  },
+  headline: {
+    fontFamily: fonts.semibold,
+    fontWeight: '500',
+    fontSize: 30,
+    lineHeight: 36,
+    letterSpacing: -0.6,
+    color: colors.text.primary,
+    textAlign: 'center',
+  },
+  sub: {
+    ...typography.body.medium,
+    color: colors.text.secondary,
+    textAlign: 'center',
+  },
+});
