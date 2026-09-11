@@ -15,7 +15,10 @@ export type BreathFace = 'inhale' | 'holdIn' | 'exhale' | 'holdOut' | 'resting';
  * through it.
  *
  * All values are in the koala's own coordinate space. Vertical extents are
- * signed: negative bulges up, positive bulges down.
+ * signed: negative bulges up, positive bulges down. Both edges on the same side
+ * of the line make the shape an arc of constant thickness with rounded ends —
+ * a closed lid hangs below as a soft downward curve, and a sealed mouth is the
+ * same curve, small. Edges on opposite sides open the shape out into a lens.
  */
 export interface FaceShape {
   eyeWidth: number;
@@ -57,43 +60,61 @@ export const HIGHLIGHT_IN = 18;
 /** How far inside the lids the eyeball is held, so it never breaks the rim. */
 export const IRIS_LID_INSET = 7;
 
+/**
+ * A shut lid is the same lid in every phase — same width, same thickness, same
+ * curve. A lid that thickened or straightened between phases reads as the eye
+ * reopening a little on each breath, when what it is doing is staying closed.
+ * The phases are told apart by the mouth and by the body, not by the lids.
+ */
+export const LID_WIDTH = 68;
+export const LID_THICKNESS = 30;
+export const LID_CURVE = 16;
+
+/**
+ * A sealed mouth, likewise one shape wherever the air is going through the
+ * nose. The breath still presses it — see `mouthPress` — but it presses the
+ * same lips.
+ */
+export const SEALED_MOUTH = {
+  mouthWidth: 45,
+  mouthTop: 5,
+  mouthBottom: 21,
+} as const;
+
 export const FACE_SHAPES: Record<BreathFace, FaceShape> = {
   // Eyes closed, drawing air in through the nose — the mouth stays shut and
-  // only presses thinner as the lungs fill.
+  // only settles a little as the lungs fill. Sealed is still a mouth: a small
+  // curve with lips to it, never a drawn line.
   inhale: {
-    eyeWidth: 70,
-    eyeTop: -44,
-    eyeBottom: -14,
+    eyeWidth: LID_WIDTH,
+    eyeTop: LID_CURVE,
+    eyeBottom: LID_CURVE + LID_THICKNESS,
     eyeRoundness: 0,
-    mouthWidth: 55,
-    mouthTop: -8,
-    mouthBottom: 8,
+    ...SEALED_MOUTH,
     mouthBreath: 0,
     mouthPress: 1,
   },
-  // Full and straining: squeezed shut, lips still pressed from the inhale
+  // Full and straining: lids still shut, lips still pressed from the inhale
   // that ended here.
   holdIn: {
-    eyeWidth: 73,
-    eyeTop: -54,
-    eyeBottom: -22,
+    eyeWidth: LID_WIDTH,
+    eyeTop: LID_CURVE,
+    eyeBottom: LID_CURVE + LID_THICKNESS,
     eyeRoundness: 0,
-    mouthWidth: 77,
-    mouthTop: -9,
-    mouthBottom: 9,
+    ...SEALED_MOUTH,
     mouthBreath: 0,
     mouthPress: 1,
   },
   // Blowing out: the mouth opens into a round O and narrows closed again as
-  // the breath empties, landing on the sealed line the next inhale starts from.
+  // the breath empties, landing on the sealed curve the next inhale starts from.
   //
   // It opens downward, the way a jaw does, and it opens small. A mouth that
   // widens as much as it drops ends up level with the nose and the same colour
   // as it, and the two read as one shape rather than a face blowing out.
   exhale: {
-    eyeWidth: 66,
-    eyeTop: -34,
-    eyeBottom: -12,
+    eyeWidth: LID_WIDTH,
+    eyeTop: LID_CURVE,
+    eyeBottom: LID_CURVE + LID_THICKNESS,
     eyeRoundness: 0,
     mouthWidth: 44,
     mouthTop: -8,
@@ -101,15 +122,14 @@ export const FACE_SHAPES: Record<BreathFace, FaceShape> = {
     mouthBreath: 1,
     mouthPress: 0,
   },
-  // Empty and calm: eyes soft, mouth a small neutral line.
+  // Empty and calm: the same shut lids, the same sealed mouth, no press left
+  // in it.
   holdOut: {
-    eyeWidth: 62,
-    eyeTop: -30,
-    eyeBottom: -11,
+    eyeWidth: LID_WIDTH,
+    eyeTop: LID_CURVE,
+    eyeBottom: LID_CURVE + LID_THICKNESS,
     eyeRoundness: 0,
-    mouthWidth: 51,
-    mouthTop: -10,
-    mouthBottom: 10,
+    ...SEALED_MOUTH,
     mouthBreath: 0,
     mouthPress: 0,
   },

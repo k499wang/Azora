@@ -81,10 +81,10 @@ surface; list cards put the hue in a 112pt tile.** Both draw from the same
 
 ## 2. Typography
 
-Single family, `Outfit`, via `FONT_FAMILY` in `src/theme/typography.ts`.
-**SemiBold is the heaviest face the app renders** — `fonts.bold` is aliased to
-SemiBold on purpose. ExtraBold (`fonts.heavy`) is reserved for paywall
-headlines only.
+Single family, `Balsamiq Sans`, via `FONT_FAMILY` in `src/theme/typography.ts`.
+The family provides Regular and Bold. Light/Regular/Medium roles map to
+Regular; SemiBold/Bold/Heavy roles map to Bold so the native renderer never
+synthesizes a missing weight.
 
 Four roles, and only four, appear on a card:
 

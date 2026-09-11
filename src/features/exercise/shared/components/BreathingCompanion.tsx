@@ -26,6 +26,7 @@ import {
   IRIS_LID_INSET,
   IRIS_RADIUS,
   MOUTH_X,
+  SEALED_MOUTH,
   MOUTH_Y,
   eyeOpenness,
   eyePath,
@@ -540,26 +541,31 @@ const BreathingCompanion = forwardRef<BreathingCircleRef, BreathingCompanionProp
     }));
 
     // The mouth keeps moving inside a phase, and which way depends on where the
-    // air is going. It is drawn on the same two-lidded outline the eyes are, and
-    // rounds off with the breath: sealed it is a lens with corners, and the
+    // air is going. It is drawn on the same outline the eyes are, and rounds off
+    // with the breath: sealed it is a small curve with lips to it, and the
     // further the exhale opens it the closer it gets to a true O.
-    // The exhale is the only phase it leaves through the mouth:
+    // The exhale is the only phase the air leaves through the mouth:
     // there the breath pushes it open on full lungs and lets it narrow shut as
-    // they empty. Everywhere else the air is nasal, so the mouth stays sealed
-    // and the breath only presses the lips thin and wide.
+    // they empty — closing onto the sealed curve rather than onto a flat line,
+    // so the O never passes through a dash on its way shut.
+    // Everywhere else the air is nasal, so the mouth stays sealed
+    // and the breath only presses the lips, which settles the curve a little
+    // without straightening it — a sealed mouth flattened onto its own line
+    // stops reading as a mouth at all.
     const mouthProps = useAnimatedProps(() => {
       const s = shape.value;
       const filled = breath.value;
-      const open = 1 - s.mouthBreath + s.mouthBreath * (0.18 + 0.82 * filled);
-      const round = 1 - 0.18 * s.mouthBreath * (1 - filled);
+      const shut = s.mouthBreath * (1 - (0.18 + 0.82 * filled));
       const press = s.mouthPress * filled;
+      const lip = (open: number, sealed: number) =>
+        open + (sealed - open) * shut;
       return {
         d: eyePath(
           MOUTH_X,
           MOUTH_Y,
-          s.mouthWidth * round * (1 + 0.12 * press),
-          s.mouthTop * open * (1 - 0.34 * press),
-          s.mouthBottom * open * (1 - 0.34 * press),
+          lip(s.mouthWidth, SEALED_MOUTH.mouthWidth) * (1 + 0.05 * press),
+          lip(s.mouthTop, SEALED_MOUTH.mouthTop) * (1 - 0.1 * press),
+          lip(s.mouthBottom, SEALED_MOUTH.mouthBottom) * (1 - 0.1 * press),
           s.mouthBreath * filled,
         ),
       };
