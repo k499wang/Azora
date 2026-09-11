@@ -11,6 +11,12 @@ const OVERLAY_MOUNT_WATCHDOG_MS = 5000;
 /**
  * Runs the post-onboarding tour: starts it once per install and selects the
  * screen that owns each step. Mounted once by the tab route.
+ *
+ * `enabled` is the app shell's own readiness, not a feature flag. The tour used
+ * to begin the moment the saved flag came back, which is a few milliseconds
+ * after boot — under the intro splash, on a Home that had not rendered
+ * anything yet. The overlay is a native Modal and sits above the splash, so the
+ * whole tour could play, and mark itself seen, before the user saw the app.
  */
 export function useAppTour(enabled: boolean) {
   const navigation = useNavigation<RootStackNavigationProp<'MainTabs'>>();
@@ -36,10 +42,16 @@ export function useAppTour(enabled: boolean) {
     seenFlagReadRef.current = seenFlagRead;
     void seenFlagRead.then((seen) => {
       if (!isActive) return;
-      // Either way the tour stops being pending, which is what releases the
-      // one-time offer and the boot paywall behind it.
-      if (seen) dismiss();
-      else start();
+      // Only the pending state acts on the flag. The flag stays false for the
+      // whole run, so a remount part-way through — the gate flapping back to
+      // booting on a refetch, the intro finishing — would read it again and
+      // take the user back to the first stop.
+      if (useTourStore.getState().status === 'checking') {
+        // Either way the tour stops being pending, which is what releases the
+        // one-time offer and the boot paywall behind it.
+        if (seen) dismiss();
+        else start();
+      }
       setHasResolvedSeenFlag(true);
     });
 
@@ -75,7 +87,10 @@ export function useAppTour(enabled: boolean) {
         live.stepIndex === watchedIndex &&
         !isTourOverlayMounted(watchedIndex)
       ) {
-        live.next();
+        // Nothing is rendering this step, so nothing can place the next one
+        // either. Stand the tour down — without marking it seen — so the app
+        // is released and it plays properly on the next launch.
+        live.abort();
       }
     }, OVERLAY_MOUNT_WATCHDOG_MS);
 

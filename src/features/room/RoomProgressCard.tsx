@@ -3,6 +3,7 @@ import { useNavigation } from '@react-navigation/native';
 import { Text } from '../../components/common/Text';
 import Icon from '../../components/common/icons/Icon';
 import ProgressBar from '../../components/common/ProgressBar';
+import Skeleton from '../../components/common/Skeleton';
 import ChunkyButton, {
   CHUNKY_TONE,
   CHUNKY_TONE_AMBER,
@@ -11,7 +12,7 @@ import {
   ROOM_SLOT_COUNT,
   type RoomProgress,
 } from '../../lib/room/roomProgress';
-import { card } from '../../theme/card';
+import { card, radius } from '../../theme/card';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
@@ -26,6 +27,8 @@ const BAR_HEIGHT = 20;
  * and the icon marks the pair.
  */
 const HEADLINE_ICON_SIZE = 44;
+/** Shared with the loading placeholder so the two are exactly as tall. */
+const TITLE_LINE_HEIGHT = 26;
 /** Shorter than a screen's primary — this one sits inside a card. */
 const CTA_MIN_HEIGHT = 48;
 
@@ -98,7 +101,7 @@ export default function RoomProgressCard({
   // written when the first piece is placed, so requiring one hid this card from
   // exactly the users who have never been through the loop.
   if (isLoading) {
-    return null;
+    return <RoomProgressCardPlaceholder />;
   }
 
   const view = describeRoomCard({
@@ -115,6 +118,36 @@ export default function RoomProgressCard({
       view={view}
       onAction={(route) => navigation.navigate(route)}
     />
+  );
+}
+
+/**
+ * The card's own shape while its room data loads.
+ *
+ * Returning null here left a card-sized hole that filled in whenever the query
+ * landed, shoving today's list down the page — under the tour's cutout, and
+ * under the user's thumb on the way to a daily. Built from the same pieces at
+ * the same sizes as the waiting state, so nothing moves when the real one
+ * replaces it.
+ */
+function RoomProgressCardPlaceholder() {
+  return (
+    <View
+      accessibilityLabel="Loading room progress"
+      style={[styles.card, styles.cardShadow]}
+    >
+      <View style={styles.headline}>
+        <Skeleton
+          width={HEADLINE_ICON_SIZE}
+          height={HEADLINE_ICON_SIZE}
+          radius={radius.small}
+        />
+        <View style={styles.headlineCopy}>
+          <Skeleton height={TITLE_LINE_HEIGHT} radius={radius.xs} />
+          <Skeleton height={BAR_HEIGHT} radius={radius.full} />
+        </View>
+      </View>
+    </View>
   );
 }
 
@@ -290,7 +323,7 @@ const styles = StyleSheet.create({
   title: {
     ...typography.title.title3,
     fontSize: 19,
-    lineHeight: 26,
+    lineHeight: TITLE_LINE_HEIGHT,
     flex: 1,
     color: colors.text.primary,
   },

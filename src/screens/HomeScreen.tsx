@@ -56,6 +56,7 @@ const NO_PROJECTION = {};
 
 const TOUR_TARGETS: TourTargetId[] = [
   'dailies',
+  'roomProgress',
   'measureHeart',
 ];
 
@@ -192,6 +193,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
   const tourScroll = useTourScroller(TOUR_TARGETS);
   const scroller = tourScroll.ref;
   const dailiesTarget = useTourTarget('dailies');
+  const roomProgressTarget = useTourTarget('roomProgress');
   const measureHeartTarget = useTourTarget('measureHeart');
   const dailyRows = dailyPlanSchedule == null ? null : buildDailyRows({
     technique: dailies.guidedTechnique,
@@ -266,7 +268,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             { paddingHorizontal: homeLayout.contentInset },
           ]}
         >
-          <View>
+          <View {...roomProgressTarget}>
             <RoomProgressCard
               progress={roomClaim.progress}
               day={day}

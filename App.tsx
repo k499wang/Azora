@@ -142,7 +142,7 @@ export default function App() {
           >
             <PostHogProvider client={posthog} autocapture={{ captureTouches: false, captureScreens: false }}>
               <AppProviders>
-                <RootNavigator allowBootPaywall={!introVisible} />
+                <RootNavigator isIntroComplete={!introVisible} />
               </AppProviders>
             </PostHogProvider>
           </NavigationContainer>

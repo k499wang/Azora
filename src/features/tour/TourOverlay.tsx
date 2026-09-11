@@ -28,17 +28,20 @@ import {
   type TourViewport,
 } from './tourGeometry';
 import { registerTourOverlay } from './tourOverlayPresence';
-import {
-  measureTourTarget,
-  remeasureTourTarget,
-  watchTourTargetLayout,
-} from './tourTargets';
+import { measureTourTarget, trackTourTarget } from './tourTargets';
 import { useCurrentTourStep, useTourStore } from './tourStore';
 import { tourSteps, type TourStep } from './tourSteps';
 
 const DESIRED_TOP = 220;
-const MEASURE_SETTLE_MAX_MS = 650;
-const MEASURE_TIMEOUT_MS = 1400;
+const MEASURE_SETTLE_MAX_MS = 1200;
+/**
+ * Long enough to outlast a cold Home: the room block sizing itself, the
+ * progress card arriving, the dailies list swapping its skeleton for rows and
+ * then laying those rows out a second time. Nothing is on screen while this
+ * runs — the overlay does not appear until a stop has actually been placed —
+ * so waiting costs the user nothing, and giving up early cost them the tour.
+ */
+const MEASURE_TIMEOUT_MS = 5000;
 const CLUSTER_HEIGHT = 190;
 const ARROW_WIDTH = 40;
 const ARROW_HEIGHT = 56;
@@ -50,11 +53,6 @@ const MAX_MEASURE_ATTEMPTS = 2;
 interface PositionedRect {
   stepIndex: number;
   rect: TourRect;
-}
-
-interface MeasurementAttempt {
-  stepIndex: number;
-  count: number;
 }
 
 interface PresentedStep {
@@ -72,7 +70,7 @@ export default function TourOverlay() {
   const insets = useSafeAreaInsets();
   const reducedMotion = useReducedMotion();
   const [positionedRect, setPositionedRect] = useState<PositionedRect | null>(null);
-  const [attempt, setAttempt] = useState<MeasurementAttempt | null>(null);
+  const [hasPlacedAnyStep, setHasPlacedAnyStep] = useState(false);
   const [lastPresentedStep, setLastPresentedStep] = useState<PresentedStep | null>(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const modalVisibleRef = useRef(false);
@@ -80,8 +78,16 @@ export default function TourOverlay() {
   const clusterOpacity = useRef(new Animated.Value(0)).current;
 
   const hasActiveStep = step != null && stepIndex != null;
-  const currentAttempt =
-    stepIndex != null && attempt?.stepIndex === stepIndex ? attempt.count : 0;
+  /**
+   * The overlay stays away until the first stop is actually placed.
+   *
+   * Showing the scrim the moment a step became active put a dark screen with
+   * no Azo, no bubble and no arrow in front of the user for however long the
+   * measurement took — and over the intro splash, when the tour had started
+   * behind it. Once a stop has been placed the overlay stays up for the rest of
+   * the run, so the gap between two stops is not a flash of the app.
+   */
+  const shouldShowOverlay = hasActiveStep && hasPlacedAnyStep;
   const measurementViewport: TourViewport = {
     safeLeft: insets.left,
     safeRight: width - insets.right,
@@ -109,7 +115,7 @@ export default function TourOverlay() {
     let frame: number | null = null;
     overlayOpacity.stopAnimation();
 
-    if (hasActiveStep) {
+    if (shouldShowOverlay) {
       modalVisibleRef.current = true;
       setIsModalVisible(true);
       if (reducedMotion) {
@@ -131,7 +137,7 @@ export default function TourOverlay() {
         setIsModalVisible(false);
         setLastPresentedStep(null);
         setPositionedRect(null);
-        setAttempt(null);
+        setHasPlacedAnyStep(false);
       };
       if (reducedMotion) {
         overlayOpacity.setValue(0);
@@ -152,7 +158,7 @@ export default function TourOverlay() {
       if (frame != null) cancelAnimationFrame(frame);
       overlayOpacity.stopAnimation();
     };
-  }, [hasActiveStep, overlayOpacity, reducedMotion]);
+  }, [overlayOpacity, reducedMotion, shouldShowOverlay]);
 
   // Acknowledge closing on the next frame, after React has committed the
   // invisible Modal. This is the only normal path to `finished`.
@@ -169,15 +175,14 @@ export default function TourOverlay() {
     return () => cancelAnimationFrame(frame);
   }, [completeClosing, isModalVisible, status]);
 
-  // Measure, publish, and then watch one target as a single lifecycle. Keeping
-  // one owner prevents a layout event from racing the initial settled measure.
+  // Place one target, then follow it, as a single lifecycle. Keeping one owner
+  // prevents a tracked move from racing the settled measure it came out of.
   useLayoutEffect(() => {
     if (!hasActiveStep || step == null || stepIndex == null) return;
 
     let isActive = true;
     const measuringIndex = stepIndex;
-    let unwatch: (() => void) | null = null;
-    let latestRequestId = 0;
+    let untrack: (() => void) | null = null;
 
     const isCurrentStep = () =>
       isActive && useTourStore.getState().stepIndex === measuringIndex;
@@ -188,79 +193,75 @@ export default function TourOverlay() {
       );
     };
 
-    const stopWatching = () => {
-      if (unwatch == null) return;
-      latestRequestId += 1;
-      const stop = unwatch;
-      unwatch = null;
+    const stopTracking = () => {
+      if (untrack == null) return;
+      const stop = untrack;
+      untrack = null;
       stop();
     };
 
-    const retryOrAdvance = () => {
-      if (!isCurrentStep()) return;
-      if (currentAttempt + 1 < MAX_MEASURE_ATTEMPTS) {
-        setAttempt({ stepIndex: measuringIndex, count: currentAttempt + 1 });
-        return;
+    const place = async (): Promise<TourRect | null> => {
+      for (let tries = 0; tries < MAX_MEASURE_ATTEMPTS; tries += 1) {
+        const measured = await measureTourTarget(step.target, {
+          desiredTop: DESIRED_TOP,
+          settleMs: MEASURE_SETTLE_MAX_MS,
+          timeoutMs: MEASURE_TIMEOUT_MS,
+          animated: !reducedMotion,
+        });
+        if (!isCurrentStep()) return null;
+
+        if (
+          measured != null &&
+          isOnScreen(measured, measurementViewport, MIN_VISIBLE)
+        ) {
+          setPositionedRect({ stepIndex: measuringIndex, rect: measured });
+          setHasPlacedAnyStep(true);
+          return measured;
+        }
+        clearCurrentRect();
       }
-      useTourStore.getState().next();
+      return null;
     };
 
-    // A viewport change or tagged retry must not display old geometry while
-    // the new settled measurement is pending. Preserve other steps for exit.
-    clearCurrentRect();
+    const follow = (from: TourRect) => {
+      untrack = trackTourTarget(step.target, from, (moved) => {
+        if (untrack == null || !isCurrentStep()) return;
 
-    void measureTourTarget(step.target, {
-      desiredTop: DESIRED_TOP,
-      settleMs: MEASURE_SETTLE_MAX_MS,
-      timeoutMs: MEASURE_TIMEOUT_MS,
-      animated: !reducedMotion,
-    }).then((measured) => {
+        if (moved != null && isOnScreen(moved, measurementViewport, MIN_VISIBLE)) {
+          setPositionedRect({ stepIndex: measuringIndex, rect: moved });
+          return;
+        }
+
+        // Something above it grew enough to push it off screen. Scroll it back
+        // rather than dropping a stop the user is looking at.
+        stopTracking();
+        clearCurrentRect();
+        void run();
+      });
+    };
+
+    const run = async () => {
+      const placed = await place();
       if (!isCurrentStep()) return;
-
-      if (
-        measured != null &&
-        isOnScreen(measured, measurementViewport, MIN_VISIBLE)
-      ) {
-        setPositionedRect({ stepIndex: measuringIndex, rect: measured });
-
-        unwatch = watchTourTargetLayout(step.target, () => {
-          if (unwatch == null || !isCurrentStep()) return;
-          const requestId = ++latestRequestId;
-
-          void remeasureTourTarget(step.target).then((updated) => {
-            if (
-              unwatch == null ||
-              !isCurrentStep() ||
-              requestId !== latestRequestId
-            ) {
-              return;
-            }
-
-            if (
-              updated != null &&
-              isOnScreen(updated, measurementViewport, MIN_VISIBLE)
-            ) {
-              setPositionedRect({ stepIndex: measuringIndex, rect: updated });
-              return;
-            }
-
-            stopWatching();
-            clearCurrentRect();
-            retryOrAdvance();
-          });
-        });
+      if (placed == null) {
+        // Never advance past a stop that could not be placed: `next` walks the
+        // tour to its end and calls `stop`, which marks the whole thing seen.
+        useTourStore.getState().abort();
         return;
       }
+      follow(placed);
+    };
 
-      retryOrAdvance();
-    });
+    // A viewport change must not leave old geometry on screen while the new
+    // settled measurement is pending. Preserve other steps for exit.
+    clearCurrentRect();
+    void run();
 
     return () => {
       isActive = false;
-      stopWatching();
+      stopTracking();
     };
   }, [
-    currentAttempt,
     hasActiveStep,
     reducedMotion,
     safeBottom,
