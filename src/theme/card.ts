@@ -17,8 +17,6 @@ import { colors } from './colors';
 export const LINE = 1.25;
 /** Line weight for saturated cards. */
 export const COLORED_CARD_LINE = 2;
-/** Line weight for tinted cards, whose lighter fill needs a finer edge. */
-export const TINTED_CARD_LINE = 1;
 
 type ColoredCardHue = {
   base: string;
@@ -36,33 +34,12 @@ export function coloredCard(hue: ColoredCardHue): ViewStyle {
 
 /**
  * The pastel counterpart of `coloredCard`: the family's `tint` as the fill, so the
- * card reads as light, over a darker line from the same family. Content on it
- * must use `hue.ink`, never white.
+ * card reads as light. Borderless — the fill alone separates it from the cream
+ * canvas. Content on it must use `hue.ink`, never white.
  */
-export function softColoredCard(hue: {
-  tint: string;
-  ink: `#${string}`;
-}): ViewStyle {
+export function softColoredCard(hue: { tint: string }): ViewStyle {
   return {
     backgroundColor: hue.tint,
-    borderColor: `${hue.ink}66`,
-    borderWidth: TINTED_CARD_LINE,
-  };
-}
-
-/**
- * One step down from `softColoredCard`, for browsable cards that have to hold
- * their own against a cream canvas rather than recede into it. Carries a
- * darker line from its own family so the block keeps an edge on the canvas.
- */
-export function firmColoredCard(hue: {
-  tintDeep: string;
-  ink: `#${string}`;
-}): ViewStyle {
-  return {
-    backgroundColor: hue.tintDeep,
-    borderColor: `${hue.ink}66`,
-    borderWidth: TINTED_CARD_LINE,
   };
 }
 

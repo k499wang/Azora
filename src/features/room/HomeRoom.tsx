@@ -17,8 +17,6 @@ import type { Room } from '../../services/room/roomService';
 interface HomeRoomProps {
   room: Room | null;
   progress: Pick<RoomProgress, 'canClaim' | 'placedCount' | 'nextSlot'>;
-  /** dev only: replays the reward flow without arranging a real day */
-  onLongPress?: () => void;
   /**
    * How the empty slot is drawn: at rest, breathing while it is being offered,
    * or gone while a piece is being previewed in it.
@@ -36,7 +34,6 @@ interface HomeRoomProps {
 export default function HomeRoom({
   room,
   progress,
-  onLongPress,
   ghost = 'idle',
 }: HomeRoomProps) {
   const { width } = useWindowDimensions();
@@ -84,7 +81,6 @@ export default function HomeRoom({
           triggerBounceHaptic();
           azo.current?.cheer();
         }}
-        onLongPress={onLongPress}
       >
         <View style={{ width: roomWidth, height: roomWidth * ROOM_ASPECT }}>
           <RoomLayer width={roomWidth} polys={layers.base} />

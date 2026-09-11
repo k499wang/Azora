@@ -3,8 +3,7 @@ import type {
   GlyphShape,
   PlayfulHue,
 } from '../../features/exercise/guidedBreathing/categoryPalette';
-import { colors } from '../../theme/colors';
-import { coloredCard } from '../../theme/card';
+import { softColoredCard } from '../../theme/card';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import Icon from '../common/icons/Icon';
@@ -40,7 +39,7 @@ export default function ExerciseSearchResultRow({
       onPress={onPress}
       style={({ pressed }) => [
         styles.row,
-        coloredCard(hue),
+        softColoredCard(hue),
         pressed && styles.rowPressed,
       ]}
     >
@@ -55,24 +54,27 @@ export default function ExerciseSearchResultRow({
 
       <View style={styles.content}>
         <View style={styles.titleRow}>
-          <Text style={styles.title} numberOfLines={2}>
+          <Text style={[styles.title, { color: hue.ink }]} numberOfLines={2}>
             {title}
           </Text>
           {badge ? (
-            <View style={styles.badge}>
-              <Text style={[styles.badgeText, { color: hue.ink }]}>{badge}</Text>
+            <View style={[styles.badge, { backgroundColor: hue.ink }]}>
+              <Text style={[styles.badgeText, { color: hue.tint }]}>{badge}</Text>
             </View>
           ) : null}
         </View>
         <View style={styles.metadataRow}>
-          <Icon name="timer" size={14} color={colors.onBlock.textMuted} />
-          <Text style={styles.metadata} numberOfLines={1}>
+          <Icon name="timer" size={14} color={`${hue.ink}B3`} />
+          <Text
+            style={[styles.metadata, { color: `${hue.ink}B3` }]}
+            numberOfLines={1}
+          >
             {metadata}
           </Text>
         </View>
       </View>
 
-      <Icon name="chevron-right" size={24} color={colors.text.inverse} />
+      <Icon name="chevron-right" size={24} color={hue.ink} />
     </Pressable>
   );
 }
@@ -110,7 +112,6 @@ const styles = StyleSheet.create({
   },
   title: {
     flex: 1,
-    color: colors.text.inverse,
     fontFamily: fonts.semibold,
     fontSize: 17,
     lineHeight: 22,
@@ -120,7 +121,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.xs,
     paddingVertical: 3,
     borderRadius: 999,
-    backgroundColor: colors.text.inverse,
   },
   badgeText: {
     ...typography.label.small,
@@ -134,7 +134,6 @@ const styles = StyleSheet.create({
   metadata: {
     ...typography.label.medium,
     flex: 1,
-    color: colors.onBlock.textMuted,
     fontFamily: fonts.medium,
   },
 });
