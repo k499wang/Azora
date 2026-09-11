@@ -11,7 +11,7 @@ import { fonts, typography } from '../../../../theme/typography';
 
 interface SessionLipButtonProps {
   theme: ExerciseDarkTheme;
-  icon: 'cog-outline' | 'play';
+  icon: 'cog-outline' | 'play' | 'lock-outline';
   label: string;
   onPress: () => void;
   primary?: boolean;

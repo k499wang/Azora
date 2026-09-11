@@ -11,6 +11,9 @@ import { fonts, typography } from '../../theme/typography';
 import Icon from '../common/icons/Icon';
 import { Text } from '../common/Text';
 
+/** The drop the mood tiles' faces sit above, matching `ChunkyButton`'s lip. */
+const TILE_LIP_DEPTH = 4;
+
 interface ExtraPracticeSectionProps {
   exerciseAccess: FeatureAccessState;
 }
@@ -59,14 +62,26 @@ function ExtraPracticeCard({ mood, exerciseAccess }: ExtraPracticeCardProps) {
       accessibilityLabel={mood.label}
       accessibilityHint={accessHint}
       onPress={handlePress}
-      style={({ pressed }) => [styles.item, pressed && styles.itemPressed]}
+      style={styles.item}
     >
-      <View style={[styles.iconTile, { backgroundColor: hue.base }]}>
-        <Icon name={mood.icon} size={36} color={colors.text.inverse} />
-      </View>
-      <Text style={styles.label} numberOfLines={1}>
-        {label}
-      </Text>
+      {({ pressed }) => (
+        <>
+          <View style={[styles.tileLip, { backgroundColor: hue.mid }]}>
+            <View
+              style={[
+                styles.iconTile,
+                { backgroundColor: hue.tint },
+                pressed && styles.iconTilePressed,
+              ]}
+            >
+              <Icon name={mood.icon} size={32} color={hue.ink} />
+            </View>
+          </View>
+          <Text style={styles.label} numberOfLines={1}>
+            {label}
+          </Text>
+        </>
+      )}
     </Pressable>
   );
 }
@@ -97,22 +112,27 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   item: {
-    width: 90,
+    width: 80,
     alignItems: 'center',
     gap: spacing.xs,
     paddingVertical: spacing.xs,
   },
-  itemPressed: {
-    opacity: 0.9,
-    transform: [{ scale: 0.97 }],
+  tileLip: {
+    borderRadius: card.base.borderRadius,
+    borderCurve: 'continuous',
+    paddingBottom: TILE_LIP_DEPTH,
   },
   iconTile: {
-    width: 70,
-    height: 70,
+    width: 62,
+    height: 62,
     borderRadius: card.base.borderRadius,
     borderCurve: 'continuous',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  // Exactly the lip's depth, so the face lands flush on it when pressed.
+  iconTilePressed: {
+    transform: [{ translateY: TILE_LIP_DEPTH }],
   },
   label: {
     ...typography.body.medium,

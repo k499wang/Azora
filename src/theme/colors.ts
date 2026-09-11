@@ -73,6 +73,9 @@ export const colors = {
   // Playful multi-hue families for the color-blocked home surfaces. `base` is a
   // saturated fill that carries white text (all bases clear 3:1 against white),
   // `soft` is the receded/completed tint, `ink` is the text color on `soft`.
+  // `tint` sits ~42% from `soft` toward `mid`: the pastel fill for a card that
+  // must read as light without going passive. Dark text (`text.primary` or the
+  // family `ink`) clears 4.5:1 on it; white text never does.
   // `mid` is base lifted ~35% toward soft. It exists so a color block can carry
   // a gradient that stays inside the saturated range — base to mid reads as
   // depth, where base to soft washes out to a near-white corner.
@@ -81,23 +84,61 @@ export const colors = {
   // hue, so these are as vivid as they can get without white text going soft.
   // Reach for chroma in `soft`/`mid` when a block needs more life — never by
   // lightening a `base`, which trades legibility for it. `ink` clears 4.5:1 on
-  // its own `soft`.
+  // both its own `soft` and its own `tint`, so a pastel card can take all of its
+  // text in the family ink — a neutral grey on a saturated tint reads muddy.
   playful: {
-    teal: { base: '#06A48C', mid: '#3FC7B0', soft: '#C2F1E7', ink: '#046B5B' },
-    coral: { base: '#F0563A', mid: '#FF8567', soft: '#FFD6C9', ink: '#B23A22' },
+    teal: {
+      base: '#06A48C',
+      mid: '#3FC7B0',
+      soft: '#C2F1E7',
+      tint: '#8BDFD0',
+      ink: '#046254',
+    },
+    coral: {
+      base: '#F0563A',
+      mid: '#FF8567',
+      soft: '#FFD6C9',
+      tint: '#FFB4A0',
+      ink: '#92301C',
+    },
     violet: {
       base: '#9B4DEC',
       mid: '#B77CF6',
       soft: '#E7D8FB',
+      tint: '#D3B1F9',
       ink: '#6428AE',
     },
-    amber: { base: '#CE7A00', mid: '#EDA733', soft: '#FBE5B4', ink: '#8C5300' },
-    sky: { base: '#2280F0', mid: '#5EA5F8', soft: '#CCE2FC', ink: '#0F55AA' },
-    blush: { base: '#F04593', mid: '#FA7EB4', soft: '#FCD3E6', ink: '#AB1C5F' },
+    amber: {
+      base: '#CE7A00',
+      mid: '#EDA733',
+      soft: '#FBE5B4',
+      tint: '#F5CB7E',
+      ink: '#814C00',
+    },
+    sky: {
+      base: '#2280F0',
+      mid: '#5EA5F8',
+      soft: '#CCE2FC',
+      tint: '#9EC8FA',
+      ink: '#0E4E9C',
+    },
+    blush: {
+      base: '#F04593',
+      mid: '#FA7EB4',
+      soft: '#FCD3E6',
+      tint: '#FBAFD1',
+      ink: '#961954',
+    },
     // Darker than the rest on purpose: the only block a flame sits on. Orange
     // reads as light against a deep blue and as another warm shape against
     // anything warm, so the celebration surface stays night, never a category.
-    night: { base: '#2B2B6B', mid: '#4B4B9E', soft: '#D7D7F2', ink: '#1B1B4A' },
+    night: {
+      base: '#2B2B6B',
+      mid: '#4B4B9E',
+      soft: '#D7D7F2',
+      tint: '#9C9CCF',
+      ink: '#1B1B4A',
+    },
   },
 
   // A `playful.*.base` written at zero alpha, for a block that has to fade into

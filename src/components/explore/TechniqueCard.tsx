@@ -13,8 +13,7 @@ import {
   type BreathingTechniqueSourceScreen,
 } from '../../features/exercise/shared/hooks/useOpenBreathingTechnique';
 import type { FeatureAccessState } from '../../hooks/useFeatureAccess';
-import { card, coloredCard } from '../../theme/card';
-import { colors } from '../../theme/colors';
+import { card, softColoredCard } from '../../theme/card';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import Icon from '../common/icons/Icon';
@@ -22,9 +21,9 @@ import { Text } from '../common/Text';
 import ActivityGlyph from './ActivityGlyph';
 import ExerciseSearchResultRow from './ExerciseSearchResultRow';
 
-export const TECHNIQUE_SHELF_CARD_WIDTH = 232;
-const SHELF_CARD_HEIGHT = 262;
-const SHELF_GLYPH_SIZE = 186;
+export const TECHNIQUE_SHELF_CARD_WIDTH = 196;
+const SHELF_CARD_HEIGHT = 220;
+const SHELF_GLYPH_SIZE = 156;
 
 interface TechniqueCardProps {
   technique: BreathingTechnique;
@@ -44,7 +43,7 @@ export default function TechniqueCard({
   sourceAction,
 }: TechniqueCardProps) {
   const categoryStyle = CATEGORY_STYLE[technique.category];
-  const textColor = colors.text.inverse;
+  const textColor = categoryStyle.hue.ink;
   const accessHint =
     !exerciseAccess.allowed && !exerciseAccess.isLoading
       ? 'Opens the Pro upgrade screen'
@@ -82,7 +81,7 @@ export default function TechniqueCard({
         style={({ pressed }) => [
           styles.card,
           styles.shelfCard,
-          coloredCard(categoryStyle.hue),
+          softColoredCard(categoryStyle.hue),
           pressed && styles.cardPressed,
         ]}
       >
@@ -94,7 +93,7 @@ export default function TechniqueCard({
             shape={TECHNIQUE_GLYPH[technique.id]}
             size={SHELF_GLYPH_SIZE}
             color={textColor}
-            opacity={0.16}
+            opacity={0.14}
           />
         </View>
         <View style={styles.cardContent}>
@@ -103,11 +102,16 @@ export default function TechniqueCard({
               {categoryStyle.label}
             </Text>
             {recommended ? (
-              <View style={styles.recommendedPill}>
+              <View
+                style={[
+                  styles.recommendedPill,
+                  { backgroundColor: categoryStyle.hue.ink },
+                ]}
+              >
                 <Text
                   style={[
                     styles.recommendedText,
-                    { color: categoryStyle.hue.ink },
+                    { color: categoryStyle.hue.tint },
                   ]}
                 >
                   For you
@@ -152,8 +156,8 @@ const styles = StyleSheet.create({
   },
   shelfGlyph: {
     position: 'absolute',
-    right: -50,
-    bottom: -58,
+    right: -42,
+    bottom: -48,
   },
   cardContent: {
     flex: 1,
@@ -170,7 +174,6 @@ const styles = StyleSheet.create({
   },
   recommendedPill: {
     borderRadius: 999,
-    backgroundColor: colors.text.inverse,
     paddingHorizontal: spacing.sm,
     paddingVertical: 4,
   },
@@ -184,16 +187,16 @@ const styles = StyleSheet.create({
   techniqueName: {
     ...typography.title.title3,
     fontFamily: fonts.semibold,
-    fontSize: 20,
-    lineHeight: 26,
+    fontSize: 18,
+    lineHeight: 23,
   },
   category: {
     ...typography.overline,
     textTransform: 'none',
     letterSpacing: 0.4,
     fontFamily: fonts.semibold,
-    fontSize: 16,
-    lineHeight: 20,
+    fontSize: 14,
+    lineHeight: 18,
     opacity: 0.8,
   },
   metaRow: {

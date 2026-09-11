@@ -52,7 +52,14 @@ import {
 } from './hooks/useGuidedBreathingFlow';
 import { buildBreathingSessionCompletion } from './domain/breathingSessionCompletion';
 import { getBreathingSessionTargetSeconds } from './domain/breathingSessionTiming';
-import { getRoundsDurationOptions } from './domain/roundsDurationOptions';
+import {
+  getDefaultRoundsOption,
+  getRoundsDurationOptions,
+} from './domain/roundsDurationOptions';
+import { FeatureKey } from '../../../services/subscriptions/featureAccess';
+import { useFeatureAccess } from '../../../hooks/useFeatureAccess';
+import { trackFeatureGateHit } from '../../../services/analytics/tracking';
+import { PaywallPlacement } from '../../../services/paywall';
 import { resolveBreathingSessionStart } from '../shared/domain/breathingSessionStart';
 
 const HUD_HIDE_DELAY_MS = 3000;
@@ -95,11 +102,25 @@ export default function GuidedBreathingSessionScreen({
     onPhaseChange: setPhase,
   });
   const [technique] = useState<BreathingTechnique>(initialTechnique);
-  const [totalRounds, setTotalRounds] = useState(initialTechnique.defaultRounds);
   const roundsOptions = useMemo(
-    () => getRoundsDurationOptions(technique.pattern, technique.defaultRounds),
+    () => getRoundsDurationOptions(technique.pattern),
     [technique],
   );
+  const [totalRounds, setTotalRounds] = useState(
+    () =>
+      getDefaultRoundsOption(
+        getRoundsDurationOptions(initialTechnique.pattern),
+        initialTechnique.defaultRounds,
+      ).rounds,
+  );
+  const longSessionAccess = useFeatureAccess(FeatureKey.LongSessions);
+  const longSessionsProLocked =
+    !longSessionAccess.allowed && !longSessionAccess.isLoading;
+  const selectedRoundsOption =
+    roundsOptions.find((option) => option.rounds === totalRounds) ??
+    roundsOptions[0];
+  const sessionLengthUpgradeRequired =
+    longSessionsProLocked && selectedRoundsOption.proOnly;
   const [hrEnabled, setHrEnabled] = useState(true);
   const isFocused = useIsFocused();
 
@@ -510,10 +531,32 @@ export default function GuidedBreathingSessionScreen({
     if (isActive) showHud();
   };
 
+  const handleUpgradePress = () => {
+    const gate = {
+      placement: PaywallPlacement.ExercisePremiumGate,
+      sourceScreen: 'ExerciseSession',
+      sourceAction: 'session_length_picker',
+    };
+
+    trackFeatureGateHit({
+      ...gate,
+      feature: FeatureKey.LongSessions,
+      access: longSessionAccess,
+    });
+    navigation.navigate('ProPaywall', {
+      ...gate,
+      feature: FeatureKey.LongSessions,
+    });
+  };
+
   const handlePrimaryPress = () => {
     if (phase === 'intro') return;
     if (isActive) showHud();
     if (phase === 'idle' || phase === 'done') {
+      if (sessionLengthUpgradeRequired) {
+        handleUpgradePress();
+        return;
+      }
       handleStart();
     } else if (paused) {
       handleResume();
@@ -610,6 +653,7 @@ export default function GuidedBreathingSessionScreen({
                 options={roundsOptions}
                 value={totalRounds}
                 onChange={setTotalRounds}
+                proLocked={longSessionsProLocked}
                 theme={activeTheme}
               />
             }
@@ -645,6 +689,7 @@ export default function GuidedBreathingSessionScreen({
               showButtonRow={!showSessionControls && !isPlacement}
               showPrimaryButton={!isPlacement}
               primaryIcon={showSessionControls && !paused ? 'pause' : 'play'}
+              upgradeRequired={sessionLengthUpgradeRequired}
               onPrimaryPress={handlePrimaryPress}
             />
           </Animated.View>

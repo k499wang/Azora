@@ -1,6 +1,6 @@
 import { Text } from '../common/Text';
 import { StyleSheet, View } from 'react-native';
-import { colors } from '../../theme/colors';
+import { BREATH_HOLD_STYLE } from '../../features/exercise/guidedBreathing/categoryPalette';
 import { fonts, typography } from '../../theme/typography';
 
 interface Props {
@@ -62,7 +62,7 @@ const styles = StyleSheet.create({
   },
   divider: {
     width: StyleSheet.hairlineWidth,
-    backgroundColor: colors.onBlock.divider,
+    backgroundColor: `${BREATH_HOLD_STYLE.hue.ink}29`,
     marginHorizontal: 8,
   },
   stat: {
@@ -75,13 +75,13 @@ const styles = StyleSheet.create({
     fontFamily: fonts.semibold,
     fontSize: 20,
     fontVariant: ['tabular-nums'],
-    color: colors.text.inverse,
+    color: BREATH_HOLD_STYLE.hue.ink,
   },
   label: {
     ...typography.label.small,
     fontFamily: fonts.regular,
     fontSize: 13,
-    color: colors.onBlock.textMuted,
+    color: `${BREATH_HOLD_STYLE.hue.ink}B3`,
     letterSpacing: 0.2,
   },
 });

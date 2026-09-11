@@ -3,7 +3,7 @@ import { Text } from '../common/Text';
 import { colors } from '../../theme/colors';
 import { typography, fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
-import { card, coloredCard } from '../../theme/card';
+import { card, softColoredCard } from '../../theme/card';
 import ActivityGlyph from '../explore/ActivityGlyph';
 import type {
   GlyphShape,
@@ -15,9 +15,9 @@ import {
   formatProfileDuration,
 } from '../../lib/profileStatsFormat';
 
-const TILE_HEIGHT = 140;
-const GLYPH_SIZE = 96;
-const STAT_VALUE_LINE_HEIGHT = 38;
+const TILE_HEIGHT = 120;
+const GLYPH_SIZE = 84;
+const STAT_VALUE_LINE_HEIGHT = 33;
 
 interface ProfileLifetimeStatsRowProps {
   totalBreaths: number;
@@ -62,19 +62,19 @@ export default function ProfileLifetimeStatsRow({
     <View style={styles.row}>
       {stats.map((stat) => (
         <View key={stat.label} style={styles.tileShadow}>
-          <View style={[styles.tile, coloredCard(stat.hue)]}>
+          <View style={[styles.tile, softColoredCard(stat.hue)]}>
             <View style={styles.tileGlyph} pointerEvents="none">
               <ActivityGlyph
                 shape={stat.glyph}
                 size={GLYPH_SIZE}
-                color={colors.text.inverse}
-                opacity={0.16}
+                color={stat.hue.ink}
+                opacity={0.14}
               />
             </View>
 
             <View style={styles.tileContent}>
               <Text
-                style={styles.statLabel}
+                style={[styles.statLabel, { color: stat.hue.ink }]}
                 numberOfLines={1}
                 adjustsFontSizeToFit
                 minimumFontScale={0.8}
@@ -83,7 +83,7 @@ export default function ProfileLifetimeStatsRow({
               </Text>
               <View style={styles.statValueSlot}>
                 <Text
-                  style={styles.statValue}
+                  style={[styles.statValue, { color: stat.hue.ink }]}
                   accessibilityLabel={stat.value}
                   numberOfLines={2}
                   adjustsFontSizeToFit
@@ -115,8 +115,8 @@ const styles = StyleSheet.create({
   },
   tileGlyph: {
     position: 'absolute',
-    right: -30,
-    bottom: -34,
+    right: -26,
+    bottom: -30,
   },
   tileContent: {
     flex: 1,
@@ -126,9 +126,8 @@ const styles = StyleSheet.create({
   statLabel: {
     ...typography.title.title3,
     fontFamily: fonts.medium,
-    fontSize: 20,
-    lineHeight: 26,
-    color: colors.text.inverse,
+    fontSize: 17,
+    lineHeight: 22,
   },
   // iOS shrinks an `adjustsFontSizeToFit` line to the height it is given as
   // well as the width, so a two-line value in an auto-height box is measured
@@ -141,10 +140,9 @@ const styles = StyleSheet.create({
   statValue: {
     ...typography.display.display3,
     fontFamily: fonts.semibold,
-    fontSize: 32,
+    fontSize: 28,
     lineHeight: STAT_VALUE_LINE_HEIGHT,
     letterSpacing: -0.5,
     fontVariant: ['tabular-nums'],
-    color: colors.text.inverse,
   },
 });

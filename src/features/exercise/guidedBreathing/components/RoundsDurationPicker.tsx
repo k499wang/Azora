@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { Animated, Easing, Pressable, StyleSheet, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
 import * as Haptics from "expo-haptics";
+import Icon from "../../../../components/common/icons/Icon";
 import { radius } from "../../../../theme/card";
 import { spacing } from "../../../../theme/spacing";
 import { fonts, typography } from "../../../../theme/typography";
@@ -14,6 +15,8 @@ interface Props {
   options: RoundsDurationOption[];
   value: number;
   onChange: (rounds: number) => void;
+  /** Pro-only lengths stay selectable; the start button becomes the gate. */
+  proLocked: boolean;
   theme: ExerciseDarkTheme;
 }
 
@@ -27,6 +30,7 @@ export default function RoundsDurationPicker({
   options,
   value,
   onChange,
+  proLocked,
   theme,
 }: Props) {
   const [open, setOpen] = useState(false);
@@ -108,6 +112,9 @@ export default function RoundsDurationPicker({
           },
         ]}
       >
+        {proLocked && selected.proOnly ? (
+          <Icon name="lock" size={12} color={theme.textTertiary} />
+        ) : null}
         <Text style={[styles.label, { color: theme.textSecondary }]}>
           {selected.label}
         </Text>
@@ -153,18 +160,27 @@ export default function RoundsDurationPicker({
                   pressed && { opacity: 0.6 },
                 ]}
               >
-                <Text
-                  style={[
-                    styles.label,
-                    {
-                      color: isSelected
-                        ? theme.textAccent
-                        : theme.textSecondary,
-                    },
-                  ]}
-                >
-                  {option.label}
-                </Text>
+                <View style={styles.menuItemContent}>
+                  <Text
+                    style={[
+                      styles.label,
+                      {
+                        color: isSelected
+                          ? theme.textAccent
+                          : theme.textSecondary,
+                      },
+                    ]}
+                  >
+                    {option.label}
+                  </Text>
+                  {proLocked && option.proOnly ? (
+                    <Icon
+                      name="lock"
+                      size={12}
+                      color={isSelected ? theme.textAccent : theme.textTertiary}
+                    />
+                  ) : null}
+                </View>
               </Pressable>
             );
           })}
@@ -204,6 +220,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
+  },
+  menuItemContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: spacing.xs,
   },
   label: {
     ...typography.label.medium,

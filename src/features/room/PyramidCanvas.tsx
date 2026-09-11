@@ -313,6 +313,11 @@ export default function PyramidCanvas({ rooms, onReady }: Props) {
     minScaleFactor: MIN_SCALE_FACTOR,
     maxScale: MAX_SCALE,
     closeScale: CLOSE_SCALE,
+    // Held to the same box it is framed against, so the pyramid and the slot
+    // the next room goes in are both always reachable and neither can be
+    // dragged away off the screen.
+    content: bounds,
+    viewport: size,
   });
 
   const transform = useDerivedValue(() => [

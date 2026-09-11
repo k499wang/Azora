@@ -4,16 +4,15 @@ import type {
   PlayfulHue,
 } from '../../features/exercise/guidedBreathing/categoryPalette';
 import { triggerTapHaptic } from '../../native/tapHaptics';
-import { card, coloredCard } from '../../theme/card';
-import { colors } from '../../theme/colors';
+import { card, softColoredCard } from '../../theme/card';
 import { padding, spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import Icon from '../common/icons/Icon';
 import { Text } from '../common/Text';
 import ActivityGlyph from './ActivityGlyph';
 
-const CARD_HEIGHT = 85;
-const GLYPH_SIZE = 150;
+const CARD_HEIGHT = 74;
+const GLYPH_SIZE = 128;
 
 interface ExploreActionCardProps {
   title: string;
@@ -35,7 +34,7 @@ export default function ExploreActionCard({
   accessibilityHint,
   onPress,
 }: ExploreActionCardProps) {
-  const textColor = colors.text.inverse;
+  const textColor = hue.ink;
 
   return (
     <View style={styles.wrap}>
@@ -49,7 +48,7 @@ export default function ExploreActionCard({
         }}
         style={({ pressed }) => [
           styles.card,
-          coloredCard(hue),
+          softColoredCard(hue),
           pressed && styles.cardPressed,
         ]}
       >
@@ -58,12 +57,15 @@ export default function ExploreActionCard({
             shape={glyph}
             size={GLYPH_SIZE}
             color={textColor}
-            opacity={0.16}
+            opacity={0.14}
           />
         </View>
         <View style={styles.cardContent}>
           <View style={styles.textBlock}>
-            <Text style={[styles.title, { color: textColor }]} numberOfLines={1}>
+            <Text
+              style={[styles.title, { color: textColor }]}
+              numberOfLines={1}
+            >
               {title}
             </Text>
             <Text
@@ -94,8 +96,8 @@ const styles = StyleSheet.create({
   },
   cardGlyph: {
     position: 'absolute',
-    right: -40,
-    bottom: -50,
+    right: -34,
+    bottom: -42,
   },
   cardContent: {
     flex: 1,
@@ -113,8 +115,8 @@ const styles = StyleSheet.create({
   title: {
     ...typography.title.title3,
     fontFamily: fonts.semibold,
-    fontSize: 19,
-    lineHeight: 24,
+    fontSize: 17,
+    lineHeight: 22,
   },
   subtitle: {
     ...typography.label.medium,

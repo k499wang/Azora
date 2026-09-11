@@ -5,8 +5,10 @@
  * nothing here re-renders while a finger is down, which is what keeps the hotel
  * at sixty frames however many rooms are in it.
  *
- * Panning is deliberately unbounded — the canvas floats free rather than
- * fighting the edges of its content — so double-tap is the way home.
+ * Panning is bounded to the content, loosely: the pyramid may be dragged up to
+ * half a screen past the edge it would otherwise stop at, so it can sit
+ * off-centre, but it can never be flung away into empty canvas. Past that the
+ * drag resists and springs back, the same way the zoom limits already do.
  */
 import { useCallback, useEffect, useMemo } from 'react';
 import { Gesture } from 'react-native-gesture-handler';
@@ -18,7 +20,7 @@ import {
   withTiming,
   type SharedValue,
 } from 'react-native-reanimated';
-import type { Fit } from './pyramidLayout';
+import type { Bounds, Fit } from './pyramidLayout';
 
 /** how far past a zoom limit a pinch can stretch before it springs back */
 const RESISTANCE = 0.28;
@@ -26,6 +28,14 @@ const SPRING = { damping: 18, stiffness: 160 };
 const SETTLE_MS = 260;
 /** a flick coasts nearly a second; higher reads as ice, lower as mud */
 const DECELERATION = 0.995;
+/**
+ * How far past the content a pan may settle, as a fraction of the viewport.
+ *
+ * Zero would pin the pyramid's edge to the screen's, which reads as a scroll
+ * view rather than a canvas. Half a screen is enough to push a room you are
+ * looking at out of the middle without ever losing the hotel off the side.
+ */
+const PAN_SLACK = 0.5;
 
 interface Options {
   /**
@@ -39,6 +49,10 @@ interface Options {
   maxScale: number;
   /** where double-tap goes to look at one thing closely */
   closeScale: number;
+  /** what the pan is held to, in canvas units. Null until it is known. */
+  content: Bounds | null;
+  /** the canvas on screen, in points. Null until it is measured. */
+  viewport: { width: number; height: number } | null;
 }
 
 export interface PinchZoomPan {
@@ -57,11 +71,50 @@ function resist(value: number, min: number, max: number): number {
   return value;
 }
 
+interface Range {
+  lo: number;
+  hi: number;
+}
+
+function clamp(value: number, range: Range): number {
+  'worklet';
+  return Math.min(Math.max(value, range.lo), range.hi);
+}
+
+/**
+ * The translations that keep the content on screen, on one axis.
+ *
+ * The two ends are "content's far edge at the viewport's far edge" and
+ * "content's near edge at the viewport's near edge", and which of them is the
+ * lower number depends on whether the content is currently bigger than the
+ * viewport. Ordering them rather than assuming covers both: zoomed in the range
+ * is the scrollable overhang, zoomed out it is the room the content has to
+ * slide around inside the screen. The slack is added to both ends either way.
+ */
+function panRange(
+  min: number,
+  max: number,
+  scale: number,
+  viewport: number,
+): Range {
+  'worklet';
+  const near = -min * scale;
+  const far = viewport - max * scale;
+  const slack = viewport * PAN_SLACK;
+
+  return {
+    lo: Math.min(near, far) - slack,
+    hi: Math.max(near, far) + slack,
+  };
+}
+
 export function usePinchZoomPan({
   home,
   minScaleFactor,
   maxScale,
   closeScale,
+  content,
+  viewport,
 }: Options): PinchZoomPan {
   const scale = useSharedValue(1);
   const translateX = useSharedValue(0);
@@ -74,6 +127,20 @@ export function usePinchZoomPan({
   const lastPinchScale = useSharedValue(1);
   const focalX = useSharedValue(0);
   const focalY = useSharedValue(0);
+
+  // The pan's own offset, before the bounds push back, for the same reason the
+  // pinch keeps `rawScale`: resisting a value that is already resisted in place
+  // would compound and kill the stretch within a few pixels.
+  const rawX = useSharedValue(0);
+  const rawY = useSharedValue(0);
+
+  const contentMinX = useSharedValue(-Infinity);
+  const contentMaxX = useSharedValue(Infinity);
+  const contentMinY = useSharedValue(-Infinity);
+  const contentMaxY = useSharedValue(Infinity);
+  const viewportWidth = useSharedValue(0);
+  const viewportHeight = useSharedValue(0);
+  const bounded = useSharedValue(false);
 
   const homeScale = useSharedValue(1);
   const homeX = useSharedValue(0);
@@ -96,6 +163,8 @@ export function usePinchZoomPan({
     rawScale.value = home.scale;
     translateX.value = home.x;
     translateY.value = home.y;
+    rawX.value = home.x;
+    rawY.value = home.y;
   }, [
     home,
     homeScale,
@@ -103,10 +172,62 @@ export function usePinchZoomPan({
     homeY,
     placed,
     rawScale,
+    rawX,
+    rawY,
     scale,
     translateX,
     translateY,
   ]);
+
+  useEffect(() => {
+    const known = content != null && viewport != null;
+    bounded.value = known;
+    if (!known) return;
+
+    contentMinX.value = content.minX;
+    contentMaxX.value = content.maxX;
+    contentMinY.value = content.minY;
+    contentMaxY.value = content.maxY;
+    viewportWidth.value = viewport.width;
+    viewportHeight.value = viewport.height;
+  }, [
+    bounded,
+    content,
+    contentMaxX,
+    contentMaxY,
+    contentMinX,
+    contentMinY,
+    viewport,
+    viewportHeight,
+    viewportWidth,
+  ]);
+
+  /** where the pan may settle on each axis, at the scale it is settling at */
+  const limits = useCallback(
+    (at: number) => {
+      'worklet';
+      if (!bounded.value) {
+        return {
+          x: { lo: -Infinity, hi: Infinity },
+          y: { lo: -Infinity, hi: Infinity },
+        };
+      }
+
+      return {
+        x: panRange(contentMinX.value, contentMaxX.value, at, viewportWidth.value),
+        y: panRange(contentMinY.value, contentMaxY.value, at, viewportHeight.value),
+      };
+    },
+    [
+      bounded,
+      contentMaxX,
+      contentMaxY,
+      contentMinX,
+      contentMinY,
+      viewportHeight,
+      viewportWidth,
+    ],
+  );
 
   const zoomBy = useCallback(
     (factor: number, focusX: number, focusY: number) => {
@@ -122,19 +243,33 @@ export function usePinchZoomPan({
 
       const applied = next / scale.value;
       const settle = { duration: SETTLE_MS };
+      // Zooming out grows the room the content has to move in, so the offset
+      // that was legal a moment ago may not be: the button lands inside the
+      // bounds rather than animating to a place a pan would spring back from.
+      const bound = limits(next);
 
-      translateX.value = withTiming(
-        focusX - (focusX - translateX.value) * applied,
-        settle,
-      );
-      translateY.value = withTiming(
-        focusY - (focusY - translateY.value) * applied,
-        settle,
-      );
+      const toX = clamp(focusX - (focusX - translateX.value) * applied, bound.x);
+      const toY = clamp(focusY - (focusY - translateY.value) * applied, bound.y);
+
+      translateX.value = withTiming(toX, settle);
+      translateY.value = withTiming(toY, settle);
       scale.value = withTiming(next, settle);
       rawScale.value = next;
+      rawX.value = toX;
+      rawY.value = toY;
     },
-    [homeScale, maxScale, minScaleFactor, rawScale, scale, translateX, translateY],
+    [
+      homeScale,
+      limits,
+      maxScale,
+      minScaleFactor,
+      rawScale,
+      rawX,
+      rawY,
+      scale,
+      translateX,
+      translateY,
+    ],
   );
 
   const gesture = useMemo(() => {
@@ -189,21 +324,30 @@ export function usePinchZoomPan({
           Math.max(scale.value, homeScale.value * minScaleFactor),
           maxScale,
         );
-        if (settled === scale.value) return;
 
         // Let the stretch go, around the point it was stretched about — which
-        // by now is the middle of whatever the user is looking at.
+        // by now is the middle of whatever the user is looking at. A pinch that
+        // settled inside the zoom limits still comes through here: zooming out
+        // can carry the canvas past the pan bounds without the scale ever
+        // leaving them.
         const factor = settled / scale.value;
-        translateX.value = withSpring(
+        const bound = limits(settled);
+        const toX = clamp(
           focalX.value - (focalX.value - translateX.value) * factor,
-          SPRING,
+          bound.x,
         );
-        translateY.value = withSpring(
+        const toY = clamp(
           focalY.value - (focalY.value - translateY.value) * factor,
-          SPRING,
+          bound.y,
         );
-        scale.value = withSpring(settled, SPRING);
+
+        rawX.value = toX;
+        rawY.value = toY;
         rawScale.value = settled;
+
+        if (toX !== translateX.value) translateX.value = withSpring(toX, SPRING);
+        if (toY !== translateY.value) translateY.value = withSpring(toY, SPRING);
+        if (settled !== scale.value) scale.value = withSpring(settled, SPRING);
       });
 
     const pan = Gesture.Pan()
@@ -213,20 +357,52 @@ export function usePinchZoomPan({
       // same two values. Two fingers move their own centroid, which is the
       // focal point, so letting the pan track them is what makes a pinch drag.
       .averageTouches(true)
-      .onBegin(stop)
+      .onBegin(() => {
+        stop();
+        // Whatever was still decaying owns the offset now; the raw pan picks up
+        // from where it actually is rather than from where it last let go.
+        rawX.value = translateX.value;
+        rawY.value = translateY.value;
+      })
       .onChange((event) => {
-        translateX.value += event.changeX;
-        translateY.value += event.changeY;
+        rawX.value += event.changeX;
+        rawY.value += event.changeY;
+
+        const bound = limits(scale.value);
+        translateX.value = resist(rawX.value, bound.x.lo, bound.x.hi);
+        translateY.value = resist(rawY.value, bound.y.lo, bound.y.hi);
       })
       .onEnd((event) => {
-        translateX.value = withDecay({
-          velocity: event.velocityX,
-          deceleration: DECELERATION,
-        });
-        translateY.value = withDecay({
-          velocity: event.velocityY,
-          deceleration: DECELERATION,
-        });
+        const bound = limits(scale.value);
+        const toX = clamp(translateX.value, bound.x);
+        const toY = clamp(translateY.value, bound.y);
+
+        rawX.value = toX;
+        rawY.value = toY;
+
+        // Dragged past the edge, the flick is spent on the stretch: it springs
+        // back rather than coasting off from where it was already being held.
+        if (toX !== translateX.value) {
+          translateX.value = withSpring(toX, SPRING);
+        } else {
+          // Momentum is clamped rather than sprung, so a flick that runs into
+          // the edge stops there instead of overshooting and bouncing.
+          translateX.value = withDecay({
+            velocity: event.velocityX,
+            deceleration: DECELERATION,
+            clamp: [bound.x.lo, bound.x.hi],
+          });
+        }
+
+        if (toY !== translateY.value) {
+          translateY.value = withSpring(toY, SPRING);
+        } else {
+          translateY.value = withDecay({
+            velocity: event.velocityY,
+            deceleration: DECELERATION,
+            clamp: [bound.y.lo, bound.y.hi],
+          });
+        }
       });
 
     const doubleTap = Gesture.Tap()
@@ -243,20 +419,22 @@ export function usePinchZoomPan({
           translateX.value = withTiming(homeX.value, settle);
           translateY.value = withTiming(homeY.value, settle);
           rawScale.value = homeScale.value;
+          rawX.value = homeX.value;
+          rawY.value = homeY.value;
           return;
         }
 
         const factor = closeScale / scale.value;
-        translateX.value = withTiming(
-          event.x - (event.x - translateX.value) * factor,
-          settle,
-        );
-        translateY.value = withTiming(
-          event.y - (event.y - translateY.value) * factor,
-          settle,
-        );
+        const bound = limits(closeScale);
+        const toX = clamp(event.x - (event.x - translateX.value) * factor, bound.x);
+        const toY = clamp(event.y - (event.y - translateY.value) * factor, bound.y);
+
+        translateX.value = withTiming(toX, settle);
+        translateY.value = withTiming(toY, settle);
         scale.value = withTiming(closeScale, settle);
         rawScale.value = closeScale;
+        rawX.value = toX;
+        rawY.value = toY;
       });
 
     // Raced, not made exclusive: exclusivity would hold every drag back until
@@ -271,9 +449,12 @@ export function usePinchZoomPan({
     homeX,
     homeY,
     lastPinchScale,
+    limits,
     maxScale,
     minScaleFactor,
     rawScale,
+    rawX,
+    rawY,
     scale,
     translateX,
     translateY,

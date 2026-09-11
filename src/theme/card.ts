@@ -32,6 +32,17 @@ export function coloredCard(hue: ColoredCardHue): ViewStyle {
   };
 }
 
+/**
+ * The pastel counterpart of `coloredCard`: the family's `tint` as the fill, so the
+ * card reads as light. Borderless — the tint separates it from the canvas on its
+ * own. Content on it must use `hue.ink`, never white.
+ */
+export function softColoredCard(hue: { tint: string }): ViewStyle {
+  return {
+    backgroundColor: hue.tint,
+  };
+}
+
 export const radius = {
   xs: 8, // tiny chips, skeleton blocks
   small: 12, // paper, icon containers, small cells
