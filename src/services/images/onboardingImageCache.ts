@@ -2,7 +2,6 @@ import { Image, type ImageLoadOptions, type ImageRef } from 'expo-image';
 
 export type OnboardingImageKey =
   | 'brainScan'
-  | 'azoWave'
   | 'azoSleeping'
   | 'agreementQ1'
   | 'agreementQ2'
@@ -19,7 +18,6 @@ export type OnboardingImageKey =
 
 const sources: Record<OnboardingImageKey, number> = {
   brainScan: require('../../../assets/onboarding/brain-scan-comparison.webp'),
-  azoWave: require('../../../assets/Poses/Wave.png'),
   azoSleeping: require('../../../assets/Poses/koala_pose_sleeping.png'),
   agreementQ1: require('../../../assets/onboarding/questions/q1.png'),
   agreementQ2: require('../../../assets/onboarding/questions/q2.png'),
@@ -27,8 +25,8 @@ const sources: Record<OnboardingImageKey, number> = {
   cameraPlacementDual: require('../../../assets/onboarding/camera-placement-dual.png'),
   cameraPlacementTriple: require('../../../assets/onboarding/camera-placement-triple.png'),
   signature: require('../../../assets/brand/signature.png'),
-  oxfordLogo: require('../../../assets/logos/oxford.png'),
-  cambridgeLogo: require('../../../assets/logos/cambridge.png'),
+  oxfordLogo: require('../../../assets/logos/oxford.webp'),
+  cambridgeLogo: require('../../../assets/logos/cambridge.webp'),
   testimonialMaya: require('../../../assets/testimonials/maya-rivera.jpg'),
   testimonialDaniel: require('../../../assets/testimonials/daniel-koch.jpg'),
   testimonialPriya: require('../../../assets/testimonials/priya-shah.jpg'),
@@ -37,7 +35,6 @@ const sources: Record<OnboardingImageKey, number> = {
 
 const loadOptions: Partial<Record<OnboardingImageKey, ImageLoadOptions>> = {
   brainScan: { maxWidth: 1200 },
-  azoWave: { maxWidth: 900 },
   azoSleeping: { maxWidth: 900 },
   agreementQ1: { maxWidth: 1080 },
   agreementQ2: { maxWidth: 1080 },
@@ -45,7 +42,8 @@ const loadOptions: Partial<Record<OnboardingImageKey, ImageLoadOptions>> = {
   cameraPlacementDual: { maxWidth: 1200 },
   cameraPlacementTriple: { maxWidth: 1200 },
   signature: { maxWidth: 1200 },
-  cambridgeLogo: { maxWidth: 1200 },
+  oxfordLogo: { maxWidth: 823 },
+  cambridgeLogo: { maxWidth: 861 },
   testimonialMaya: { maxWidth: 128 },
   testimonialDaniel: { maxWidth: 128 },
   testimonialPriya: { maxWidth: 128 },

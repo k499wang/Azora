@@ -43,9 +43,9 @@ function Timeline({
               <LinearGradient
                 pointerEvents="none"
                 colors={[
-                  colors.success[500],
                   colors.success[300],
-                  'rgba(123,240,174,0)',
+                  colors.success[100],
+                  'rgba(214,251,228,0)',
                 ]}
                 locations={[0, 0.5, 1]}
                 style={styles.timelineRailTail}

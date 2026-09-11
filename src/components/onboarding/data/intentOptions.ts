@@ -5,7 +5,7 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
   {
     id: 'stress_relief',
     icon: 'waves',
-    accent: colors.success[700],
+    accent: colors.playful.teal.base,
     title: 'Reduce stress',
     body: 'Settle your nervous system in a few minutes.',
     hook: "Stress doesn't stand a chance.",
@@ -18,17 +18,17 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
     valuePoints: [
       {
         icon: 'waves',
-        accent: colors.success[700],
+        accent: colors.playful.teal.base,
         label: 'Heart rate slows in under 60 seconds',
       },
       {
         icon: 'breath-timer',
-        accent: colors.primary.blue600,
+        accent: colors.playful.sky.base,
         label: '5 min/day cuts cortisol up to 25%',
       },
       {
         icon: 'meditation',
-        accent: colors.orange[600],
+        accent: colors.playful.amber.base,
         label: 'Stress nearly halved after 8 weeks',
       },
     ],
@@ -36,7 +36,7 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
   {
     id: 'calm_fast',
     icon: 'timer',
-    accent: colors.orange[600],
+    accent: colors.playful.amber.base,
     title: 'Calm down fast',
     body: 'Settle spikes of stress or nerves in the moment.',
     hook: 'Relief in under a minute.',
@@ -49,17 +49,17 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
     valuePoints: [
       {
         icon: 'timer',
-        accent: colors.orange[600],
+        accent: colors.playful.amber.base,
         label: 'A minute of slow exhales settles the alarm response',
       },
       {
         icon: 'waves',
-        accent: colors.primary.blue600,
+        accent: colors.playful.sky.base,
         label: 'Heart rate starts dropping within seconds',
       },
       {
         icon: 'sparkle',
-        accent: colors.success[700],
+        accent: colors.playful.teal.base,
         label: 'Works anywhere — before a call, mid-argument, on the train',
       },
     ],
@@ -67,7 +67,7 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
   {
     id: 'sleep',
     icon: 'moon',
-    accent: colors.primary.blue600,
+    accent: colors.playful.sky.base,
     title: 'Sleep better',
     body: 'Build a slower rhythm before rest.',
     hook: 'Tonight can already feel different.',
@@ -80,17 +80,17 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
     valuePoints: [
       {
         icon: 'moon',
-        accent: colors.primary.blue600,
+        accent: colors.playful.sky.base,
         label: 'Fall asleep up to 37% faster',
       },
       {
         icon: 'breath-timer',
-        accent: colors.success[700],
+        accent: colors.playful.teal.base,
         label: 'A 10 min wind down lifts HRV before bed',
       },
       {
         icon: 'streak',
-        accent: colors.orange[600],
+        accent: colors.playful.amber.base,
         label: 'Add up to 20 min of deep sleep per night',
       },
     ],
@@ -98,7 +98,7 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
   {
     id: 'focus',
     icon: 'meditation',
-    accent: colors.primary.blue600,
+    accent: colors.playful.sky.base,
     title: 'Focus & study',
     body: 'Steady your mind for deep work and exams.',
     hook: 'Clear head, sharper recall.',
@@ -111,17 +111,17 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
     valuePoints: [
       {
         icon: 'sparkle',
-        accent: colors.primary.blue600,
+        accent: colors.playful.sky.base,
         label: 'A 90-second reset sharpens attention fast',
       },
       {
         icon: 'book',
-        accent: colors.success[700],
+        accent: colors.playful.teal.base,
         label: 'Lower anxiety improves memory and recall',
       },
       {
         icon: 'streak',
-        accent: colors.orange[600],
+        accent: colors.playful.amber.base,
         label: 'Steadier focus across longer study sessions',
       },
     ],
@@ -129,7 +129,7 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
   {
     id: 'energy',
     icon: 'sun',
-    accent: colors.orange[600],
+    accent: colors.playful.amber.base,
     title: 'Boost energy',
     body: 'Lift your state without caffeine.',
     hook: 'A cleaner kind of energy.',
@@ -142,17 +142,17 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
     valuePoints: [
       {
         icon: 'sun',
-        accent: colors.orange[600],
+        accent: colors.playful.amber.base,
         label: 'An energizing reset raises alertness in minutes',
       },
       {
         icon: 'waves',
-        accent: colors.primary.blue600,
+        accent: colors.playful.sky.base,
         label: 'A cleaner lift, no caffeine crash',
       },
       {
         icon: 'heart-glow',
-        accent: colors.error[700],
+        accent: colors.playful.coral.base,
         label: 'A repeatable lift you control any time of day',
       },
     ],
@@ -160,7 +160,7 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
   {
     id: 'self_acceptance',
     icon: 'heart',
-    accent: colors.orange[600],
+    accent: colors.playful.amber.base,
     title: 'Be kinder to myself',
     body: 'Turn down the inner critic and make peace with where you are.',
     hook: 'You can stop fighting yourself.',
@@ -173,17 +173,17 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
     valuePoints: [
       {
         icon: 'heart-glow',
-        accent: colors.orange[600],
+        accent: colors.playful.amber.base,
         label: 'A calm body makes self-criticism easier to set down',
       },
       {
         icon: 'face-calm',
-        accent: colors.primary.blue600,
+        accent: colors.playful.sky.base,
         label: 'Self-compassion practice is linked to lower anxiety',
       },
       {
         icon: 'sparkle',
-        accent: colors.success[700],
+        accent: colors.playful.teal.base,
         label: 'Showing up counts, even on the days it feels small',
       },
     ],
@@ -191,7 +191,7 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
   {
     id: 'emotional_balance',
     icon: 'waves',
-    accent: colors.primary.blue600,
+    accent: colors.playful.sky.base,
     title: 'Steady my emotions',
     body: 'Ride out big feelings without being swept away by them.',
     hook: 'Feel it without drowning in it.',
@@ -204,17 +204,17 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
     valuePoints: [
       {
         icon: 'waves',
-        accent: colors.primary.blue600,
+        accent: colors.playful.sky.base,
         label: 'Long exhales pull the body out of alarm mode',
       },
       {
         icon: 'face-calm',
-        accent: colors.success[700],
+        accent: colors.playful.teal.base,
         label: 'A steadier body makes room for a steadier reaction',
       },
       {
         icon: 'heart-bpm',
-        accent: colors.error[700],
+        accent: colors.playful.coral.base,
         label: 'Higher HRV tracks with better emotional regulation',
       },
     ],
@@ -222,7 +222,7 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
   {
     id: 'self_care',
     icon: 'lotus',
-    accent: colors.success[700],
+    accent: colors.playful.teal.base,
     title: 'Make time for myself',
     body: 'Claim a few quiet minutes in the day that belong only to you.',
     hook: 'A few minutes that are yours.',
@@ -235,17 +235,17 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
     valuePoints: [
       {
         icon: 'timer',
-        accent: colors.success[700],
+        accent: colors.playful.teal.base,
         label: 'Two quiet minutes is a real reset, not a compromise',
       },
       {
         icon: 'moon',
-        accent: colors.primary.blue600,
+        accent: colors.playful.sky.base,
         label: 'A pause you choose beats one your body forces on you',
       },
       {
         icon: 'streak',
-        accent: colors.orange[600],
+        accent: colors.playful.amber.base,
         label: 'Daily and short outlasts long and occasional',
       },
     ],
@@ -253,7 +253,7 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
   {
     id: 'spiritual',
     icon: 'arrow-up',
-    accent: colors.primary.blue600,
+    accent: colors.playful.sky.base,
     title: 'Deepen practice',
     body: 'Make more room for stillness and presence.',
     hook: 'A way back to stillness.',
@@ -266,17 +266,17 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
     valuePoints: [
       {
         icon: 'lotus',
-        accent: colors.primary.blue600,
+        accent: colors.playful.sky.base,
         label: 'Slowing down deepens meditative focus',
       },
       {
         icon: 'meditation',
-        accent: colors.success[700],
+        accent: colors.playful.teal.base,
         label: 'Used in yoga and mindfulness for thousands of years',
       },
       {
         icon: 'sparkle',
-        accent: colors.orange[600],
+        accent: colors.playful.amber.base,
         label: 'A few mindful minutes bring you back to now',
       },
     ],
@@ -284,7 +284,7 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
   {
     id: 'yoga',
     icon: 'lotus',
-    accent: colors.primary.blue600,
+    accent: colors.playful.sky.base,
     title: 'Support my yoga',
     body: 'Carry your breath off the mat — pranayama to steady every practice.',
     hook: 'The breath half of your practice.',
@@ -297,17 +297,17 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
     valuePoints: [
       {
         icon: 'lotus',
-        accent: colors.primary.blue600,
+        accent: colors.playful.sky.base,
         label: 'Pranayama is the breath half of yoga, taught for millennia',
       },
       {
         icon: 'waves',
-        accent: colors.success[700],
+        accent: colors.playful.teal.base,
         label: 'Slow breath steadies your transitions between poses',
       },
       {
         icon: 'meditation',
-        accent: colors.orange[600],
+        accent: colors.playful.amber.base,
         label: 'A few minutes of daily practice deepens post-practice stillness',
       },
     ],
@@ -315,7 +315,7 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
   {
     id: 'heart_health',
     icon: 'heart-bpm',
-    accent: colors.error[700],
+    accent: colors.playful.coral.base,
     title: 'Heart health',
     body: 'Measure HRV and recovery trends over time.',
     hook: 'Your heart has been waiting for this.',
@@ -328,17 +328,17 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
     valuePoints: [
       {
         icon: 'heart-bpm',
-        accent: colors.error[700],
+        accent: colors.playful.coral.base,
         label: 'HRV predicts recovery better than heart rate alone',
       },
       {
         icon: 'heart-glow',
-        accent: colors.primary.blue600,
+        accent: colors.playful.sky.base,
         label: 'Higher HRV = ~25% lower cardiovascular risk',
       },
       {
         icon: 'timer',
-        accent: colors.orange[600],
+        accent: colors.playful.amber.base,
         label: 'Trends surface weeks before symptoms appear',
       },
     ],
@@ -346,7 +346,7 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
   {
     id: 'daily_habit',
     icon: 'streak',
-    accent: colors.orange[600],
+    accent: colors.playful.amber.base,
     title: 'Daily habit',
     body: 'Build a steady daily practice you return to.',
     hook: 'Small reps. Real change.',
@@ -359,17 +359,17 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
     valuePoints: [
       {
         icon: 'streak',
-        accent: colors.orange[600],
+        accent: colors.playful.amber.base,
         label: 'Habits solidify in ~66 days — Azora tracks every one',
       },
       {
         icon: 'breath-timer',
-        accent: colors.success[700],
+        accent: colors.playful.teal.base,
         label: '5 min/day beats one long session per week',
       },
       {
         icon: 'sparkle',
-        accent: colors.primary.blue600,
+        accent: colors.playful.sky.base,
         label: 'Daily cues triple retention vs. willpower alone',
       },
     ],
@@ -379,7 +379,7 @@ export const PERSONALIZED_INTENT_OPTIONS: PersonalizedIntentOption[] = [
 const OTHER_INTENT_OPTION: IntentOption = {
   id: 'other',
   icon: 'sparkle',
-  accent: colors.warning[700],
+  accent: colors.playful.violet.base,
   title: 'Something else',
   body: 'Something outside these. Azora keeps the basics covered.',
 };

@@ -70,64 +70,89 @@ export const colors = {
     700: '#CC6A00',
   },
 
-  // Playful multi-hue families for the color-blocked home surfaces. `base` is a
-  // saturated fill that carries white text (all bases clear 3:1 against white),
-  // `soft` is the receded/completed tint, `ink` is the text color on `soft`.
-  // `tint` sits ~42% from `soft` toward `mid`: the pastel fill for a card that
-  // must read as light without going passive. Dark text (`text.primary` or the
-  // family `ink`) clears 4.5:1 on it; white text never does.
-  // `mid` is base lifted ~35% toward soft. It exists so a color block can carry
-  // a gradient that stays inside the saturated range — base to mid reads as
-  // depth, where base to soft washes out to a near-white corner.
+  // Playful multi-hue families for the color-blocked home surfaces.
   //
-  // Every `base` sits at the most chroma the 3:1 white-text floor allows for its
-  // hue, so these are as vivid as they can get without white text going soft.
-  // Reach for chroma in `soft`/`mid` when a block needs more life — never by
-  // lightening a `base`, which trades legibility for it. `ink` clears 4.5:1 on
-  // both its own `soft` and its own `tint`, so a pastel card can take all of its
-  // text in the family ink — a neutral grey on a saturated tint reads muddy.
+  // Every family is generated from one OKLCH ladder, so a tone means the same
+  // brightness and saturation whatever the hue — only the hue itself changes.
+  // This is what makes six unrelated colours read as one app: previously the
+  // hand-picked families ran from chroma 0.118 (teal) to 0.228 (violet), so
+  // violet shouted where teal looked greyed at identical lightness.
+  //
+  //   soft     L 0.92  C 0.050   receded / completed
+  //   tint     L 0.85  C 0.085   pastel card
+  //   tintDeep L 0.80  C 0.110   browsable card (`firmColoredCard`)
+  //   mid      L 0.74  C 0.135   gradient partner for `base`
+  //   base     L 0.63  C 0.165   saturated fill, carries white text
+  //   ink      L 0.44  C 0.110   text on soft / tint / tintDeep
+  //
+  // Chroma is clamped to the sRGB gamut per hue, so a hue that cannot reach the
+  // ladder's chroma sits at its own ceiling instead — teal tops out near 0.117
+  // and is the one family that stays visibly calmer than the rest.
+  //
+  // Contrast holds by construction: every `base` clears 4:1 against white and
+  // every `ink` clears 6.9:1 on its own soft, tint, and tintDeep. To change the
+  // look, move a ladder row and regenerate every family — never nudge a single
+  // hex, which is how the drift started.
   playful: {
     teal: {
-      base: '#06A48C',
-      mid: '#3FC7B0',
-      soft: '#C2F1E7',
-      tint: '#8BDFD0',
-      ink: '#046254',
+      base: '#00A088',
+      mid: '#12C6A9',
+      soft: '#C2F0E4',
+      tint: '#8FE0CD',
+      tintDeep: '#64D5BC',
+      ink: '#006152',
     },
     coral: {
-      base: '#F0563A',
-      mid: '#FF8567',
-      soft: '#FFD6C9',
-      tint: '#FFB4A0',
-      ink: '#92301C',
+      base: '#DA5B42',
+      mid: '#F38972',
+      soft: '#FFDBD3',
+      tint: '#FFBBAB',
+      tintDeep: '#FCA390',
+      ink: '#843728',
     },
     violet: {
-      base: '#9B4DEC',
-      mid: '#B77CF6',
-      soft: '#E7D8FB',
-      tint: '#D3B1F9',
-      ink: '#6428AE',
+      base: '#9C6CDB',
+      mid: '#BB95F1',
+      soft: '#EADEFF',
+      tint: '#D8C1FD',
+      tintDeep: '#CBADF9',
+      ink: '#5E4184',
     },
     amber: {
-      base: '#CE7A00',
-      mid: '#EDA733',
-      soft: '#FBE5B4',
-      tint: '#F5CB7E',
-      ink: '#814C00',
+      base: '#C37300',
+      mid: '#E59744',
+      soft: '#FDDEC3',
+      tint: '#F6C293',
+      tintDeep: '#EFAE70',
+      ink: '#784400',
     },
     sky: {
-      base: '#2280F0',
-      mid: '#5EA5F8',
-      soft: '#CCE2FC',
-      tint: '#9EC8FA',
-      ink: '#0E4E9C',
+      base: '#3C89EA',
+      mid: '#70ADFE',
+      soft: '#D4E6FF',
+      tint: '#AED0FF',
+      tintDeep: '#92C1FF',
+      ink: '#25528E',
     },
     blush: {
-      base: '#F04593',
-      mid: '#FA7EB4',
-      soft: '#FCD3E6',
-      tint: '#FBAFD1',
-      ink: '#961954',
+      base: '#D3578B',
+      mid: '#ED85AC',
+      soft: '#FFD9E5',
+      tint: '#FCB7CE',
+      tintDeep: '#F7A0BF',
+      ink: '#803453',
+    },
+    // The ladder at a fifth of its chroma, for the answer that is deliberately
+    // not a colour: "prefer not to say", "65 or older", "No". It reads as the
+    // quiet option because it is desaturated, not because it is darker — it
+    // sits at exactly the same lightness as its colourful neighbours.
+    stone: {
+      base: '#7D8A9D',
+      mid: '#A0ACBC',
+      soft: '#E0E5EB',
+      tint: '#C7CED9',
+      tintDeep: '#B5BFCC',
+      ink: '#4B535F',
     },
     // Darker than the rest on purpose: the only block a flame sits on. Orange
     // reads as light against a deep blue and as another warm shape against
@@ -137,6 +162,7 @@ export const colors = {
       mid: '#4B4B9E',
       soft: '#D7D7F2',
       tint: '#9C9CCF',
+      tintDeep: '#7C7CBB',
       ink: '#1B1B4A',
     },
   },
@@ -205,12 +231,14 @@ export const colors = {
   koala: {
     body: '#5ECCFF',
     /** ear cartilage, nose and mouth */
-    shade: '#12A0EB',
-    /** inner ear and belly */
+    shade: '#1490D6',
+    /** belly */
     light: '#9EE2FF',
-    eyeWhite: '#E6F7FF',
+    /** inner ear — the one warm note on him, so the coat is not his only tone */
+    earInner: '#FFD9E5',
+    eyeWhite: '#FFF7FA',
     /** irises, and the lids they close behind */
-    iris: '#00547C',
+    iris: '#0A3E5C',
     /** the pop of sparkles when he is poked */
     sparkle: '#FFCE3D',
     /** the clipboard he takes notes on — warm wood against his sky blue */

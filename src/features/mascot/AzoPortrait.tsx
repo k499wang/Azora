@@ -584,14 +584,14 @@ const AzoPortrait = forwardRef<AzoHandle, AzoPortraitProps>(
           <Animated.View style={[StyleSheet.absoluteFillObject, earRightStyle]}>
             <Svg width={width} height={height} viewBox={VIEW_BOX}>
               <Path d={EAR_RIGHT_PATH} fill={colors.koala.shade} />
-              <Path d={EAR_INNER_RIGHT_PATH} fill={colors.koala.light} />
+              <Path d={EAR_INNER_RIGHT_PATH} fill={colors.koala.earInner} />
             </Svg>
           </Animated.View>
 
           <Animated.View style={[StyleSheet.absoluteFillObject, earLeftStyle]}>
             <Svg width={width} height={height} viewBox={VIEW_BOX}>
               <Path d={EAR_LEFT_PATH} fill={colors.koala.shade} />
-              <Path d={EAR_INNER_LEFT_PATH} fill={colors.koala.light} />
+              <Path d={EAR_INNER_LEFT_PATH} fill={colors.koala.earInner} />
             </Svg>
           </Animated.View>
 

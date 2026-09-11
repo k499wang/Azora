@@ -8,8 +8,7 @@ import {
   View,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { Image } from 'expo-image';
-import { getOnboardingImageSource } from '../../../services/images/onboardingImageCache';
+import CelebratingKoala from '../../../../assets/Poses/koala_pose_celebrating.svg';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
@@ -107,15 +106,9 @@ export default function GreetingScreen({
           ]}
           accessible
           accessibilityRole="image"
-          accessibilityLabel="Azo waving hello"
+          accessibilityLabel="Azo cheering hello"
         >
-          <Image
-            source={getOnboardingImageSource('azoWave')}
-            style={styles.koala}
-            contentFit="contain"
-            cachePolicy="memory-disk"
-            transition={0}
-          />
+          <CelebratingKoala width={KOALA_WIDTH} height={KOALA_HEIGHT} />
         </Animated.View>
 
         <View style={styles.copy}>
@@ -163,10 +156,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
     paddingHorizontal: spacing.lg,
-  },
-  koala: {
-    width: '100%',
-    height: '100%',
   },
   mascot: {
     width: KOALA_WIDTH,

@@ -120,7 +120,7 @@ export default function ConsistencyScreen({
             <Svg width={plotWidth} height={CHART_HEIGHT}>
               <AnimatedPath
                 d={path}
-                stroke={colors.primary.blue600}
+                stroke={colors.playful.sky.mid}
                 strokeWidth={STROKE}
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -130,7 +130,7 @@ export default function ConsistencyScreen({
               />
               <AnimatedPath
                 d={arrow}
-                stroke={colors.primary.blue600}
+                stroke={colors.playful.sky.mid}
                 strokeWidth={STROKE}
                 strokeLinecap="round"
                 strokeLinejoin="round"

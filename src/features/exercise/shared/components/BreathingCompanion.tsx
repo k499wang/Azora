@@ -625,9 +625,9 @@ const BreathingCompanion = forwardRef<BreathingCircleRef, BreathingCompanionProp
           <Animated.View style={[StyleSheet.absoluteFillObject, earStyle]}>
             <Svg width={stageWidth} height={stageHeight} viewBox={viewBox}>
               <Path d={EAR_RIGHT_PATH} fill={azo.shade} />
-              <Path d={EAR_INNER_RIGHT_PATH} fill={azo.light} />
+              <Path d={EAR_INNER_RIGHT_PATH} fill={azo.earInner} />
               <Path d={EAR_LEFT_PATH} fill={azo.shade} />
-              <Path d={EAR_INNER_LEFT_PATH} fill={azo.light} />
+              <Path d={EAR_INNER_LEFT_PATH} fill={azo.earInner} />
             </Svg>
           </Animated.View>
 

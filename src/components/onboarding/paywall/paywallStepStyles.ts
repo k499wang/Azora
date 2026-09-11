@@ -207,7 +207,7 @@ export const paywallStepStyles = StyleSheet.create({
     top: 0,
     width: TIMELINE_RAIL_WIDTH,
     borderCurve: 'continuous',
-    backgroundColor: colors.primary.blue600,
+    backgroundColor: colors.primary.blue400,
   },
   timelineRailSegmentFirst: {
     top: -spacing.md,

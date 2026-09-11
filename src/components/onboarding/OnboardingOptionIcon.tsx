@@ -51,7 +51,7 @@ function OnboardingOptionIcon({
   color,
 }: OnboardingOptionIconProps) {
   const tint =
-    color ?? (selected ? colors.primary.blue600 : colors.accent[600]);
+    color ?? (selected ? colors.primary.blue600 : colors.playful.stone.base);
 
   const xml = useMemo(() => {
     if (!isSolarIcon(name)) return null;

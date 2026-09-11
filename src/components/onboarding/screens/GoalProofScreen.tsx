@@ -58,16 +58,18 @@ export default function GoalProofScreen({
           <Bar
             grow={grow}
             ratio={ALONE_FILL_RATIO}
-            fill={colors.neutral[500]}
+            fill={colors.playful.stone.mid}
+            labelColor={colors.playful.stone.ink}
             label={'On\nyour own'}
           />
           <Bar
             grow={grow}
             ratio={AZORA_FILL_RATIO}
-            fill={colors.primary.blue600}
+            fill={colors.playful.sky.mid}
+            labelColor={colors.playful.sky.ink}
             label={'With\nAzora'}
             marker="2×"
-            markerColor={colors.primary.blue700}
+            markerColor={colors.playful.sky.ink}
           />
         </View>
 
@@ -84,6 +86,7 @@ interface BarProps {
   grow: Animated.Value;
   ratio: number;
   fill: string;
+  labelColor: string;
   label: string;
   marker?: string;
   markerColor?: string;
@@ -93,6 +96,7 @@ function Bar({
   grow,
   ratio,
   fill,
+  labelColor,
   label,
   marker,
   markerColor,
@@ -116,7 +120,9 @@ function Bar({
         </AnimatedText>
       ) : null}
       <Animated.View style={[styles.fill, { height, backgroundColor: fill }]}>
-        <AnimatedText style={[styles.barLabel, { opacity: grow }]}>
+        <AnimatedText
+          style={[styles.barLabel, { color: labelColor, opacity: grow }]}
+        >
           {label}
         </AnimatedText>
       </Animated.View>
@@ -146,7 +152,6 @@ const styles = StyleSheet.create({
     fontSize: 22,
     lineHeight: 27,
     textAlign: "center",
-    color: colors.text.inverse,
   },
   // Anchored to the track's floor so the growth reads as a bar filling up
   // rather than a block sliding in under the label.

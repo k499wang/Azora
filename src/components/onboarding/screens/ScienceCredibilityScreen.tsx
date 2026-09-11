@@ -49,7 +49,7 @@ const LOGOS: LogoEntry[] = [
     id: 'cambridge',
     imageKey: 'cambridgeLogo',
     height: 60,
-    aspectRatio: 1558 / 332,
+    aspectRatio: 861 / 180,
   },
 ];
 

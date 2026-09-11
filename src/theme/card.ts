@@ -43,6 +43,16 @@ export function softColoredCard(hue: { tint: string }): ViewStyle {
   };
 }
 
+/**
+ * One step down from `softColoredCard`, for browsable cards that have to hold
+ * their own against a cream canvas rather than recede into it.
+ */
+export function firmColoredCard(hue: { tintDeep: string }): ViewStyle {
+  return {
+    backgroundColor: hue.tintDeep,
+  };
+}
+
 export const radius = {
   xs: 8, // tiny chips, skeleton blocks
   small: 12, // paper, icon containers, small cells

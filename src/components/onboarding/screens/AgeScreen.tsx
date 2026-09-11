@@ -24,7 +24,7 @@ const AGE_BANDS: (OnboardingOption<AgeBandId> & {
   { id: '35', title: '35 to 44', min: 35, max: 44, midpoint: 40, accent: colors.playful.blush.base },
   { id: '45', title: '45 to 54', min: 45, max: 54, midpoint: 50, accent: colors.playful.amber.base },
   { id: '55', title: '55 to 64', min: 55, max: 64, midpoint: 60, accent: colors.playful.coral.base },
-  { id: '65', title: '65 or older', min: 65, max: 120, midpoint: 70, accent: colors.accent[600] },
+  { id: '65', title: '65 or older', min: 65, max: 120, midpoint: 70, accent: colors.playful.stone.base },
 ];
 
 interface AgeScreenProps {

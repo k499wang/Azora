@@ -29,8 +29,8 @@ export interface ExerciseDarkTheme {
   backdropInhale: BreathBackdropColors;
   /**
    * Azo, retoned for the theme he is standing in. He keeps his artwork's tonal
-   * order — body, a darker shade for cartilage and nose, a lighter belly and
-   * inner ear — so only the hue changes, never the read of the character.
+   * order — body, a darker shade for cartilage and nose, a lighter belly and a
+   * warm inner ear — so only the hue changes, never the read of the character.
    */
   companion: CompanionColors;
 }
@@ -39,8 +39,10 @@ export interface CompanionColors {
   body: string;
   /** ear cartilage, nose and mouth */
   shade: string;
-  /** inner ear and belly */
+  /** belly */
   light: string;
+  /** inner ear — a warm note carried at the theme's own lightness */
+  earInner: string;
   eyeWhite: string;
   /** irises, and the lids they close behind */
   iris: string;
@@ -87,6 +89,7 @@ export const EXERCISE_DARK_THEMES: ExerciseDarkTheme[] = [
       body: colors.koala.body,
       shade: colors.koala.shade,
       light: colors.koala.light,
+      earInner: colors.koala.earInner,
       eyeWhite: colors.koala.eyeWhite,
       iris: colors.koala.iris,
     },
@@ -119,6 +122,7 @@ export const EXERCISE_DARK_THEMES: ExerciseDarkTheme[] = [
       body: '#6C8ECB',
       shade: '#3C5A90',
       light: '#A8C0E8',
+      earInner: '#E4BACD',
       eyeWhite: '#E6EEFA',
       iris: '#16233F',
     },
@@ -151,6 +155,7 @@ export const EXERCISE_DARK_THEMES: ExerciseDarkTheme[] = [
       body: '#A88F76',
       shade: '#6E5A45',
       light: '#DCC8AE',
+      earInner: '#E7BDB6',
       eyeWhite: '#F5EBDF',
       iris: '#2C2218',
     },
@@ -183,6 +188,7 @@ export const EXERCISE_DARK_THEMES: ExerciseDarkTheme[] = [
       body: '#74AE90',
       shade: '#427060',
       light: '#B6DAC6',
+      earInner: '#DDB7C3',
       eyeWhite: '#E7F3EC',
       iris: '#112620',
     },
