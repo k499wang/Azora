@@ -18,6 +18,13 @@ interface TourState {
   next: () => void;
   /** remembers finishing or skipping, then starts the overlay close */
   stop: () => Promise<void>;
+  /**
+   * Stands a running tour down *without* marking it seen, so it plays again on
+   * the next launch. For the case where a stop cannot be placed: advancing past
+   * it walks the tour to its end and calls `stop`, which marks the whole thing
+   * seen — one unmeasurable element and the user never gets a tour at all.
+   */
+  abort: () => void;
   /** releases post-tour presenters after the native overlay has closed */
   completeClosing: () => void;
   /** stands the tour down without marking it seen, when it has run before */
@@ -65,6 +72,12 @@ export const useTourStore = create<TourState>((set, get) => ({
       if (stopPromise === pending) stopPromise = null;
     });
     return pending;
+  },
+  abort: () => {
+    if (stopPromise != null) return;
+    if (get().status !== 'running') return;
+    lifecycleGeneration += 1;
+    set({ status: 'closing', stepIndex: null });
   },
   completeClosing: () => {
     if (get().status !== 'closing') return;

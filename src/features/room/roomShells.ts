@@ -64,9 +64,6 @@ interface ShellSpec {
   /** lower-wall panelling; omit for a plain wall */
   wainscotLeft?: string;
   wainscotRight?: string;
-  /** skirting board along the foot of each wall */
-  baseLeft: string;
-  baseRight: string;
   floor: string;
   /** plank seams, grout, and the darker half of a checker */
   floorLine: string;
@@ -77,8 +74,6 @@ interface ShellSpec {
 const SEAM = 0.011;
 /** grout thickness */
 const GROUT = 0.009;
-/** where the skirting board starts */
-const BASE_TOP = 0.967;
 /** where wall panelling starts */
 const WAINSCOT_TOP = 0.6;
 
@@ -132,16 +127,6 @@ function floorPatternPolys(pattern: FloorPattern, line: string, floor: string): 
   }
 }
 
-/**
- * The only shading the shell keeps: one thin seam down the inside corner so the
- * two walls read as two planes. Everything else is a flat block of colour —
- * the objects and the mascot are built that way, and a room drawn in
- * translucent washes sat behind them looking like a different medium.
- */
-const SEAM_SHADE: Poly[] = [
-  { p: '0,-172 6.9,-168 6.9,4 0,0', f: 'rgba(58,67,79,.06)' },
-];
-
 function buildShell(spec: ShellSpec): Poly[] {
   const wainscot: Poly[] = [];
 
@@ -162,11 +147,8 @@ function buildShell(spec: ShellSpec): Poly[] {
     { p: wallQuad(-1, 0, 1, 0, 1), f: spec.wallLeft },
     { p: wallQuad(1, 0, 1, 0, 1), f: spec.wallRight },
     ...wainscot,
-    ...SEAM_SHADE,
     { p: floorQuad(0, 1, 0, 1), f: spec.floor },
     ...floorPatternPolys(spec.pattern, spec.floorLine, spec.floor),
-    { p: wallQuad(-1, 0, 1, BASE_TOP, 1), f: spec.baseLeft },
-    { p: wallQuad(1, 0, 1, BASE_TOP, 1), f: spec.baseRight },
   ];
 }
 
@@ -174,12 +156,10 @@ const SPECS = {
   cream: {
     name: 'Sunbeam',
     frameHue: 'sky',
-    wallLeft: '#F9EDCB',
-    wallRight: '#F0DFB1',
-    baseLeft: '#E9D3A0',
-    baseRight: '#DEC48C',
-    floor: '#EDA85A',
-    floorLine: '#D48E45',
+    wallLeft: '#FFF7D8',
+    wallRight: '#FFECB8',
+    floor: '#FFBE63',
+    floorLine: '#F0A244',
     pattern: 'planks',
   },
   sage: {
@@ -187,8 +167,6 @@ const SPECS = {
     frameHue: 'teal',
     wallLeft: '#EFFCE6',
     wallRight: '#E0F7D0',
-    baseLeft: '#D9F5C6',
-    baseRight: '#C8EDAE',
     floor: '#A4E187',
     floorLine: '#8BCF6A',
     pattern: 'planksCross',
@@ -198,8 +176,6 @@ const SPECS = {
     frameHue: 'blush',
     wallLeft: '#FFF2EA',
     wallRight: '#FFE1D0',
-    baseLeft: '#FFD9C1',
-    baseRight: '#FFC8A9',
     floor: '#FBA47E',
     floorLine: '#E78A63',
     pattern: 'tile',
@@ -211,8 +187,6 @@ const SPECS = {
     wallRight: '#E4DDFF',
     wainscotLeft: '#D6CDFF',
     wainscotRight: '#C4B9FE',
-    baseLeft: '#BEB2FC',
-    baseRight: '#AD9FF8',
     floor: '#B0A2F7',
     floorLine: '#9084EC',
     pattern: 'checker',
@@ -222,8 +196,6 @@ const SPECS = {
     frameHue: 'teal',
     wallLeft: '#E6FCF7',
     wallRight: '#D1F6EF',
-    baseLeft: '#C6F3EA',
-    baseRight: '#B1EBDF',
     floor: '#82E0CD',
     floorLine: '#5FCBB6',
     pattern: 'medallion',
@@ -235,8 +207,6 @@ const SPECS = {
     wallRight: '#BFE0FF',
     wainscotLeft: '#A5D2FF',
     wainscotRight: '#85C1FF',
-    baseLeft: '#79BAFF',
-    baseRight: '#57A6FB',
     floor: '#3E97F7',
     floorLine: '#1F79DC',
     pattern: 'planks',

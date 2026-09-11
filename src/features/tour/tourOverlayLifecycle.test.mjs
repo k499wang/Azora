@@ -6,9 +6,9 @@ import { fileURLToPath } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
 
-test('TourOverlay owns settled measurement and layout watching as one lifecycle', () => {
+test('TourOverlay owns placing and following a stop as one lifecycle', () => {
   const overlay = readFileSync(join(here, 'TourOverlay.tsx'), 'utf8');
-  const ownerStart = overlay.indexOf('// Measure, publish, and then watch');
+  const ownerStart = overlay.indexOf('// Place one target, then follow it');
   const ownerEnd = overlay.indexOf('const presentedStep', ownerStart);
   const owner = overlay.slice(ownerStart, ownerEnd);
 
@@ -16,7 +16,7 @@ test('TourOverlay owns settled measurement and layout watching as one lifecycle'
   assert.notEqual(ownerEnd, -1);
   assert.equal(owner.match(/useLayoutEffect\(\(\) => \{/g)?.length, 1);
   assert.doesNotMatch(owner, /useEffect\(\(\) => \{/);
-  assert.equal(owner.match(/watchTourTargetLayout\(/g)?.length, 1);
+  assert.equal(owner.match(/trackTourTarget\(/g)?.length, 1);
   assert.doesNotMatch(overlay, /measurementGenerationRef|layoutGenerationRef/);
 
   assert.match(
@@ -28,31 +28,35 @@ test('TourOverlay owns settled measurement and layout watching as one lifecycle'
     /current\?\.stepIndex === measuringIndex \? null : current/,
   );
 
-  const initialMeasure = owner.indexOf('void measureTourTarget(');
-  const initialGuard = owner.indexOf('if (!isCurrentStep()) return;', initialMeasure);
-  const initialPublish = owner.indexOf(
+  const measure = owner.indexOf('await measureTourTarget(');
+  const guard = owner.indexOf('if (!isCurrentStep()) return null;', measure);
+  const publish = owner.indexOf(
     'setPositionedRect({ stepIndex: measuringIndex, rect: measured });',
-    initialGuard,
+    guard,
   );
-  const startWatching = owner.indexOf('unwatch = watchTourTargetLayout(', initialPublish);
-  assert.ok(initialMeasure < initialGuard);
-  assert.ok(initialGuard < initialPublish);
-  assert.ok(initialPublish < startWatching);
+  const startTracking = owner.indexOf('untrack = trackTourTarget(', publish);
+  assert.ok(measure < guard);
+  assert.ok(guard < publish);
+  assert.ok(publish < startTracking);
 
-  assert.match(owner, /let latestRequestId = 0/);
-  assert.match(owner, /const requestId = \+\+latestRequestId/);
-  assert.match(owner, /requestId !== latestRequestId/);
+  // A stop that cannot be placed stands the tour down instead of advancing:
+  // `next` past the last step calls `stop`, which marks the tour seen forever.
+  assert.match(owner, /useTourStore\.getState\(\)\.abort\(\);/);
+  assert.doesNotMatch(owner, /useTourStore\.getState\(\)\.next\(\)/);
+
+  // A tracked move that leaves the viewport re-runs the whole placement,
+  // scroll included, rather than dropping the stop.
   assert.match(
     owner,
-    /if \(unwatch == null\) return;[\s\S]*?latestRequestId \+= 1;[\s\S]*?unwatch = null;[\s\S]*?stop\(\)/,
+    /stopTracking\(\);\s*clearCurrentRect\(\);\s*void run\(\);/,
   );
   assert.match(
     owner,
-    /stopWatching\(\);\s*clearCurrentRect\(\);\s*retryOrAdvance\(\);/,
+    /if \(untrack == null\) return;[\s\S]*?untrack = null;[\s\S]*?stop\(\)/,
   );
   assert.match(
     owner,
-    /return \(\) => \{\s*isActive = false;\s*stopWatching\(\);/,
+    /return \(\) => \{\s*isActive = false;\s*stopTracking\(\);/,
   );
 
   assert.match(overlay, /const hasPositionedRect = rect != null/);
@@ -61,6 +65,68 @@ test('TourOverlay owns settled measurement and layout watching as one lifecycle'
     /\[clusterOpacity, hasPositionedRect, reducedMotion\]/,
   );
   assert.doesNotMatch(overlay, /\[rect, clusterOpacity, reducedMotion\]/);
+});
+
+test('the overlay stays away until a stop has actually been placed', () => {
+  const overlay = readFileSync(join(here, 'TourOverlay.tsx'), 'utf8');
+
+  assert.match(
+    overlay,
+    /const shouldShowOverlay = hasActiveStep && hasPlacedAnyStep;/,
+  );
+  // The scrim follows placement, not the bare existence of a step — otherwise
+  // a dark screen with no Azo, no bubble and no arrow is what measuring looks
+  // like, and it lands over the intro splash.
+  assert.match(overlay, /if \(shouldShowOverlay\) \{/);
+  assert.doesNotMatch(overlay, /if \(hasActiveStep\) \{\s*modalVisibleRef/);
+  assert.match(overlay, /setHasPlacedAnyStep\(true\);/);
+  assert.match(overlay, /setHasPlacedAnyStep\(false\);/);
+});
+
+test('nothing that covers the app starts before the intro splash is gone', () => {
+  const app = readFileSync(join(here, '..', '..', '..', 'App.tsx'), 'utf8');
+  const navigator = readFileSync(
+    join(here, '..', '..', 'app', 'navigation', 'RootNavigator.tsx'),
+    'utf8',
+  );
+
+  assert.match(app, /<RootNavigator isIntroComplete=\{!introVisible\} \/>/);
+  assert.match(
+    navigator,
+    /showBootPaywall=\{isIntroComplete\}\s*tourEnabled=\{isIntroComplete\}/,
+  );
+  assert.doesNotMatch(navigator, /tourEnabled\s*\/>/);
+});
+
+test('a tour stop is followed by measurement, never by a layout event', () => {
+  const targets = readFileSync(join(here, 'tourTargets.ts'), 'utf8');
+
+  // Anything growing above a target moves it without changing its own layout,
+  // so onLayout never fires for it and the cutout is left behind. What the
+  // polling itself does is covered for real in tourSampling.test.mjs.
+  assert.doesNotMatch(targets, /watchTourTargetLayout|layoutListeners/);
+  assert.match(targets, /return \{ ref, collapsable: false \} as const;/);
+  assert.match(targets, /export function trackTourTarget\(/);
+  assert.match(targets, /trackMovement\(/);
+
+  // An unstable target is not a guess to draw around.
+  assert.match(targets, /if \(!initial\.stable \|\| initial\.rect == null\) return null;/);
+});
+
+test('the room progress card reserves its height while it loads', () => {
+  const cardSource = readFileSync(
+    join(here, '..', 'room', 'RoomProgressCard.tsx'),
+    'utf8',
+  );
+
+  assert.match(cardSource, /if \(isLoading\) \{\s*return <RoomProgressCardPlaceholder \/>;/);
+  assert.doesNotMatch(cardSource, /if \(isLoading\) \{\s*return null;/);
+  // Built from the same pieces at the same sizes, so nothing below it moves
+  // when the real card replaces it.
+  assert.match(cardSource, /height=\{HEADLINE_ICON_SIZE\}/);
+  assert.match(cardSource, /height=\{TITLE_LINE_HEIGHT\}/);
+  assert.match(cardSource, /height=\{BAR_HEIGHT\}/);
+  assert.match(cardSource, /lineHeight: TITLE_LINE_HEIGHT/);
 });
 
 test("the dailies tour target highlights today's two lists without the progress card", () => {

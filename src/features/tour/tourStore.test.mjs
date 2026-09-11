@@ -35,6 +35,46 @@ test('only closing can be acknowledged as finished', () => {
   assert.equal(useTourStore.getState().status, 'checking');
 });
 
+test('aborting closes the tour without marking it seen', () => {
+  useTourStore.getState().prepare();
+  useTourStore.getState().start();
+
+  useTourStore.getState().abort();
+
+  assert.equal(useTourStore.getState().status, 'closing');
+  assert.equal(useTourStore.getState().stepIndex, null);
+  assert.equal(
+    canPresentAfterTour(true, true, useTourStore.getState().status),
+    false,
+  );
+
+  useTourStore.getState().completeClosing();
+  assert.equal(useTourStore.getState().status, 'finished');
+  assert.equal(
+    canPresentAfterTour(true, true, useTourStore.getState().status),
+    true,
+  );
+});
+
+test('aborting never overtakes a stop that is already persisting', async () => {
+  useTourStore.getState().prepare();
+  useTourStore.getState().start();
+
+  const stopping = useTourStore.getState().stop();
+  useTourStore.getState().abort();
+
+  assert.equal(useTourStore.getState().status, 'running');
+
+  await stopping;
+  assert.equal(useTourStore.getState().status, 'closing');
+});
+
+test('only a running tour can be aborted', () => {
+  useTourStore.getState().prepare();
+  useTourStore.getState().abort();
+  assert.equal(useTourStore.getState().status, 'checking');
+});
+
 test('dismissing a previously seen tour finishes without a closing phase', () => {
   useTourStore.getState().prepare();
   useTourStore.getState().dismiss();

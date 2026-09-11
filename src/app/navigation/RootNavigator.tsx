@@ -428,7 +428,13 @@ function AttFallbackPresenter() {
 }
 
 interface RootNavigatorProps {
-  allowBootPaywall?: boolean;
+  /**
+   * Whether the intro splash has finished. Nothing that covers the app may
+   * start behind it: the boot paywall would be dismissed unseen, and the tour —
+   * a native Modal, which sits above the splash rather than under it — would
+   * play its stops over the brand lockup and mark itself seen.
+   */
+  isIntroComplete?: boolean;
 }
 
 function OnboardingRoot({ gate }: { gate: OnboardingGate }) {
@@ -450,7 +456,7 @@ function OnboardingRoot({ gate }: { gate: OnboardingGate }) {
   );
 }
 
-export function RootNavigator({ allowBootPaywall = true }: RootNavigatorProps) {
+export function RootNavigator({ isIntroComplete = true }: RootNavigatorProps) {
   const gate = useAppGate();
   const lastStableGateStatusRef = useRef<LastStableGateStatus>(null);
   const lastOnboardingGateRef = useRef<OnboardingGate | null>(null);
@@ -484,7 +490,10 @@ export function RootNavigator({ allowBootPaywall = true }: RootNavigatorProps) {
   return (
     <>
       <AttFallbackPresenter />
-      <AppStack showBootPaywall={allowBootPaywall} tourEnabled />
+      <AppStack
+        showBootPaywall={isIntroComplete}
+        tourEnabled={isIntroComplete}
+      />
     </>
   );
 }

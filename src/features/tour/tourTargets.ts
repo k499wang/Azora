@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react';
 import type { NativeScrollEvent, NativeSyntheticEvent, ScrollView, View } from 'react-native';
 import { scrollOffsetFor, type TourRect } from './tourGeometry';
+import { sampleUntilStable, trackMovement, wait } from './tourSampling';
 import type { TourTargetId } from './tourSteps';
 
 interface Scroller {
@@ -13,7 +14,6 @@ type Registrations<T> = Map<TourTargetId, Map<symbol, T>>;
 
 const nodes: Registrations<View> = new Map();
 const scrollers: Registrations<Scroller> = new Map();
-const layoutListeners = new Map<TourTargetId, () => void>();
 
 function register<T>(
   registrations: Registrations<T>,
@@ -50,9 +50,10 @@ function latest<T>(registrations: Registrations<T>, id: TourTargetId): T | null 
 
 /**
  * Marks an element as a tour stop. Spread the result onto a wrapper View — it
- * carries the ref, `collapsable={false}` so the view survives, and an onLayout
- * that lets the overlay re-measure when late-arriving data resizes the element
- * under an already-placed cutout.
+ * carries the ref and `collapsable={false}` so the view survives to be
+ * measured. Movement is followed by `trackTourTarget`, not by an onLayout:
+ * anything growing *above* the element moves it without changing its own
+ * layout, and onLayout never fires for that.
  */
 export function useTourTarget(id: TourTargetId) {
   const owner = useRef(Symbol('tour-target')).current;
@@ -67,24 +68,7 @@ export function useTourTarget(id: TourTargetId) {
 
   useEffect(() => () => unregister(nodes, id, owner), [id, owner]);
 
-  const onLayout = useCallback(() => {
-    layoutListeners.get(id)?.();
-  }, [id]);
-
-  return { ref, onLayout, collapsable: false } as const;
-}
-
-/** Lets the active stop re-measure itself when its element changes size. */
-export function watchTourTargetLayout(id: TourTargetId, onChange: () => void) {
-  layoutListeners.set(id, onChange);
-  return () => {
-    if (layoutListeners.get(id) === onChange) layoutListeners.delete(id);
-  };
-}
-
-/** Measures where a stop is now, without scrolling it anywhere. */
-export function remeasureTourTarget(id: TourTargetId): Promise<TourRect | null> {
-  return measureNode(latest(nodes, id));
+  return { ref, collapsable: false } as const;
 }
 
 /**
@@ -127,109 +111,80 @@ function measureNode(node: View | null): Promise<TourRect | null> {
   });
 }
 
-function wait(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 interface MeasureOptions {
   /** where the element should end up once scrolled into view */
   desiredTop: number;
   /** longest a scroll may take to come to rest before we measure anyway */
   settleMs: number;
-  /** how long to keep waiting for an element that has not registered yet */
+  /** how long to keep waiting for an element to register and hold still */
   timeoutMs: number;
   /** false when the user has requested reduced motion */
   animated: boolean;
 }
 
-const POLL_MS = 60;
+const POLL_MS = 80;
 const SCROLL_START_GRACE_MS = 120;
-const REQUIRED_STABLE_SAMPLES = 3;
-
-function isSamePosition(a: TourRect, b: TourRect) {
-  return Math.abs(a.y - b.y) < 0.5 && Math.abs(a.height - b.height) < 0.5;
-}
-
-/**
- * Waits for a stop to exist and have a size.
- *
- * React runs a child's effects before its parent's, so the overlay asks for a
- * target before the screen holding it has registered one — and a tab mounting
- * for the first time measures zero-sized for a few frames after that. Polling
- * covers both instead of dropping the step.
- */
-async function measureWhenReady(
-  id: TourTargetId,
-  timeoutMs: number,
-): Promise<TourRect | null> {
-  const deadline = Date.now() + timeoutMs;
-
-  for (;;) {
-    const rect = await measureNode(latest(nodes, id));
-    if (rect != null) return rect;
-    if (Date.now() >= deadline) return null;
-    await wait(POLL_MS);
-  }
-}
-
-/**
- * Follows a scrolling element until it comes to rest.
- *
- * A fixed delay cannot know how long a scroll animation takes: too short and
- * the cutout is drawn mid-flight at the wrong place, too long and the tour
- * sits dark doing nothing. Several identical measurements mean it has landed.
- */
-async function measureWhenSettled(
-  id: TourTargetId,
-  fallback: TourRect,
-  settleMs: number,
-): Promise<TourRect> {
-  const deadline = Date.now() + settleMs;
-  let previous: TourRect | null = null;
-  let stableSamples = 0;
-
-  // Give Fabric/native scrolling a chance to begin before equal samples can
-  // count as settled. Three stable polls then cover more than one render frame.
-  await wait(Math.min(SCROLL_START_GRACE_MS, settleMs));
-
-  for (;;) {
-    const rect = await measureNode(latest(nodes, id));
-    if (rect != null) {
-      stableSamples = previous != null && isSamePosition(rect, previous)
-        ? stableSamples + 1
-        : 1;
-      if (stableSamples >= REQUIRED_STABLE_SAMPLES) return rect;
-      previous = rect;
-    }
-    if (Date.now() >= deadline) return previous ?? fallback;
-    await wait(POLL_MS);
-  }
-}
+/** how often a placed stop is checked for having moved under the overlay */
+const TRACK_POLL_MS = 250;
 
 /**
  * Scrolls a stop into a consistent position, then measures where it landed.
  * The scroll is unconditional so every step visibly moves the page.
+ *
+ * A target that never held still inside `timeoutMs` returns null rather than a
+ * guess: a cutout drawn around a rect that was already stale when it was taken
+ * is the dark screen with the highlight nowhere on it.
  */
 export async function measureTourTarget(
   id: TourTargetId,
   { desiredTop, settleMs, timeoutMs, animated }: MeasureOptions,
 ): Promise<TourRect | null> {
-  const initial = await measureWhenReady(id, timeoutMs);
-  if (initial == null) return null;
+  const measure = () => measureNode(latest(nodes, id));
+  const initial = await sampleUntilStable(measure, { timeoutMs, pollMs: POLL_MS });
+  if (!initial.stable || initial.rect == null) return null;
 
   const scroller = latest(scrollers, id);
   const scroll = scroller?.scrollRef.current;
-  if (scroller == null || scroll == null) return initial;
+  // A stop with no list of its own — a sticky header action — is already where
+  // it is going to be, because it was measured stable.
+  if (scroller == null || scroll == null) return initial.rect;
 
   scroll.scrollTo({
-    y: scrollOffsetFor(initial, scroller.offsetRef.current, desiredTop),
+    y: scrollOffsetFor(initial.rect, scroller.offsetRef.current, desiredTop),
     animated,
   });
 
   if (!animated) {
     await wait(POLL_MS);
-    return (await measureNode(latest(nodes, id))) ?? initial;
+    return (await measure()) ?? initial.rect;
   }
 
-  return measureWhenSettled(id, initial, settleMs);
+  const settled = await sampleUntilStable(measure, {
+    timeoutMs: settleMs,
+    pollMs: POLL_MS,
+    graceMs: SCROLL_START_GRACE_MS,
+  });
+  return settled.rect ?? initial.rect;
+}
+
+/**
+ * Follows a placed stop for as long as it is showing, reporting every move.
+ *
+ * The screen underneath keeps working while the overlay covers it, and a shift
+ * in anything above the target moves it without changing its own layout — its
+ * position inside its parent is unchanged — so there is no layout event to
+ * listen for. Polling the window position sees all of it: a card appearing
+ * above the target, a list growing, a query landing late.
+ */
+export function trackTourTarget(
+  id: TourTargetId,
+  from: TourRect,
+  onMove: (rect: TourRect | null) => void,
+): () => void {
+  return trackMovement(
+    () => measureNode(latest(nodes, id)),
+    from,
+    onMove,
+    TRACK_POLL_MS,
+  );
 }
