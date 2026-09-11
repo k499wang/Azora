@@ -1,6 +1,7 @@
 import { Text } from '../../common/Text';
-import { useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, StyleSheet, View } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
@@ -18,8 +19,17 @@ interface ConsistencyScreenProps {
 }
 
 const DAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-const HEIGHTS = [0.28, 0.36, 0.47, 0.55, 0.68, 0.82, 1];
-const CHART_HEIGHT = scaleVisual(200);
+/**
+ * Rising overall, but not smoothly: real weeks dip. The jags keep the promise
+ * honest — progress is the trend, not every single day.
+ */
+const POINTS = [0.18, 0.34, 0.26, 0.5, 0.4, 0.72, 1];
+const CHART_HEIGHT = scaleVisual(260);
+const STROKE = 6;
+const ARROW = 20;
+const DRAW_DURATION = 1400;
+
+const AnimatedPath = Animated.createAnimatedComponent(Path);
 
 export default function ConsistencyScreen({
   stepIndex,
@@ -27,25 +37,68 @@ export default function ConsistencyScreen({
   onContinue,
   onBack,
 }: ConsistencyScreenProps) {
-  const barAnims = useRef(DAYS.map(() => new Animated.Value(0))).current;
+  const [plotWidth, setPlotWidth] = useState(0);
+  const draw = useRef(new Animated.Value(0)).current;
+
+  const { path, length, arrow } = useMemo(() => {
+    const inset = STROKE + ARROW / 2;
+    const usable = Math.max(plotWidth - inset * 2, 0);
+    const top = inset;
+    const bottom = CHART_HEIGHT - inset;
+    const coords = POINTS.map((value, index) => ({
+      x: inset + (usable * index) / (POINTS.length - 1),
+      y: bottom - (bottom - top) * value,
+    }));
+    const total = coords.reduce((sum, point, index) => {
+      if (index === 0) return 0;
+      const prev = coords[index - 1];
+      return sum + Math.hypot(point.x - prev.x, point.y - prev.y);
+    }, 0);
+    // The head sits on the final segment's own heading, so it reads as the
+    // line continuing forward rather than a triangle parked on the end.
+    const tip = coords[coords.length - 1];
+    const before = coords[coords.length - 2];
+    const angle = Math.atan2(tip.y - before.y, tip.x - before.x);
+    const wing = (spread: number) => ({
+      x: tip.x - ARROW * Math.cos(angle - spread),
+      y: tip.y - ARROW * Math.sin(angle - spread),
+    });
+    const left = wing(0.45);
+    const right = wing(-0.45);
+    return {
+      path: coords
+        .map((point, index) => `${index === 0 ? 'M' : 'L'}${point.x} ${point.y}`)
+        .join(' '),
+      length: total,
+      arrow: `M${left.x} ${left.y} L${tip.x} ${tip.y} L${right.x} ${right.y}`,
+    };
+  }, [plotWidth]);
 
   useEffect(() => {
-    Animated.stagger(
-      110,
-      barAnims.map((anim) =>
-        Animated.spring(anim, {
-          toValue: 1,
-          damping: 15,
-          stiffness: 160,
-          useNativeDriver: true,
-        }),
-      ),
-    ).start(() => {
-      if (isHapticsEnabled()) {
+    if (plotWidth === 0) return;
+    draw.setValue(0);
+    const animation = Animated.timing(draw, {
+      toValue: 1,
+      duration: DRAW_DURATION,
+      delay: 240,
+      useNativeDriver: false,
+    });
+    animation.start(({ finished }) => {
+      if (finished && isHapticsEnabled()) {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
       }
     });
-  }, [barAnims]);
+    return () => animation.stop();
+  }, [draw, plotWidth]);
+
+  const dashOffset = draw.interpolate({
+    inputRange: [0, 1],
+    outputRange: [length, 0],
+  });
+  const arrowOpacity = draw.interpolate({
+    inputRange: [0, 0.9, 1],
+    outputRange: [0, 0, 1],
+  });
 
   return (
     <OnboardingScreenLayout
@@ -59,43 +112,40 @@ export default function ConsistencyScreen({
       <View style={styles.chartWrap}>
         <Text style={styles.chartTitle}>Overall Wellbeing</Text>
 
-        <View style={styles.plot}>
-          <View style={styles.bars}>
-            {DAYS.map((_, index) => {
-              const anim = barAnims[index];
-              const isPeak = index === DAYS.length - 1;
-              const barHeight = CHART_HEIGHT * HEIGHTS[index];
-              return (
-                <View key={index} style={styles.barColumn}>
-                  <Animated.View
-                    style={[
-                      styles.bar,
-                      isPeak && styles.barPeak,
-                      {
-                        height: barHeight,
-                        opacity: anim.interpolate({
-                          inputRange: [0, 0.2, 1],
-                          outputRange: [0, 1, 1],
-                        }),
-                        transform: [
-                          { translateY: barHeight / 2 },
-                          { scaleY: anim },
-                          { translateY: -barHeight / 2 },
-                        ],
-                      },
-                    ]}
-                  />
-                </View>
-              );
-            })}
-          </View>
+        <View
+          style={styles.plot}
+          onLayout={(event) => setPlotWidth(event.nativeEvent.layout.width)}
+        >
+          {plotWidth > 0 ? (
+            <Svg width={plotWidth} height={CHART_HEIGHT}>
+              <AnimatedPath
+                d={path}
+                stroke={colors.primary.blue600}
+                strokeWidth={STROKE}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                fill="none"
+                strokeDasharray={length}
+                strokeDashoffset={dashOffset}
+              />
+              <AnimatedPath
+                d={arrow}
+                stroke={colors.primary.blue600}
+                strokeWidth={STROKE}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                fill="none"
+                opacity={arrowOpacity}
+              />
+            </Svg>
+          ) : null}
         </View>
 
         <View style={styles.labelRow}>
           {DAYS.map((label, index) => {
             const isPeak = index === DAYS.length - 1;
             return (
-              <View key={index} style={styles.barColumn}>
+              <View key={index} style={styles.dayColumn}>
                 <Text style={[styles.dayLabel, isPeak && styles.dayLabelPeak]}>
                   {label}
                 </Text>
@@ -126,37 +176,19 @@ const styles = StyleSheet.create({
   },
   plot: {
     width: '100%',
-    height: CHART_HEIGHT + 24,
-    paddingTop: 24,
-    paddingLeft: spacing.sm,
+    height: CHART_HEIGHT,
     borderBottomWidth: 1.5,
     borderLeftWidth: 1.5,
     borderColor: colors.neutral[300],
-  },
-  bars: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'space-between',
   },
   labelRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     width: '100%',
-    paddingLeft: spacing.sm,
   },
-  barColumn: {
+  dayColumn: {
     flex: 1,
     alignItems: 'center',
-  },
-  bar: {
-    width: 26,
-    borderTopLeftRadius: 8,
-    borderTopRightRadius: 8,
-    backgroundColor: colors.primary.blue300,
-  },
-  barPeak: {
-    backgroundColor: colors.primary.blue600,
   },
   dayLabel: {
     ...typography.label.small,
