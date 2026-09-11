@@ -1,8 +1,9 @@
 import { memo, useMemo } from 'react';
 import { StyleSheet } from 'react-native';
-import Svg, { G, Polygon } from 'react-native-svg';
+import Svg, { Polygon } from 'react-native-svg';
 import { ROOM_ASPECT, VIEW_BOX } from './roomGeometry';
-import { DAYS, DECOR, type DayKey } from './RoomScene';
+import { slotBounds } from './roomStage';
+import { ROOM_GHOST_SHAPES } from './roomGhostShapes';
 import { colors } from '../../theme/colors';
 import type { RoomSlot } from '../../lib/room/roomProgress';
 
@@ -13,22 +14,25 @@ import type { RoomSlot } from '../../lib/room/roomProgress';
  * every empty slot both clutters the room and offers six affordances that do
  * not exist — it reads as a checklist rather than a place with a hole in it.
  *
- * The slot's first option stands in for it, flattened to one silhouette: the
- * shape says *something goes here* without promising the particular piece the
- * user will end up choosing.
+ * A pale wash inside a dotted contour: the fill alone reads as a badly drawn
+ * piece of furniture rather than an absent one, and the dots are what say
+ * *empty*, since nothing else in the room is drawn with them.
+ *
+ * The shape is authored (`roomGhostShapes.ts`) rather than borrowed from the
+ * decorations, which is what makes one clean stroke possible — see that file.
+ * It is sized to the patch of room the slot owns, so it lands where the piece
+ * will and moves with the art.
  */
 const GHOST_FILL = colors.neutral[400];
 const GHOST_OPACITY = 0.14;
-
-/** the stand-in shape for an empty slot, without the shadow it would cast */
-function ghostPolys(slot: DayKey) {
-  const option = DAYS.find((day) => day.key === slot)?.options[0]?.id;
-  if (option == null) {
-    return [];
-  }
-
-  return (DECOR[`${slot}.${option}`] ?? []).filter((poly) => poly.sh !== 1);
-}
+const DOT_COLOR = colors.neutral[500];
+const DOT_OPACITY = 0.45;
+// viewBox units — the room is 348 x 402, so these read as fine dots on device.
+const DOT_WIDTH = 2.5;
+const DOT_DASH = '0.1 6';
+// Shapes are drawn a little inside the patch, so the dots do not sit flush
+// against the pieces already in the room.
+const INSET = 0.06;
 
 interface Props {
   /** must match every other layer of the same room */
@@ -38,12 +42,31 @@ interface Props {
 }
 
 function RoomGhostSlots({ width, slot }: Props) {
-  const polys = useMemo(
-    () => (slot == null ? [] : ghostPolys(slot)),
-    [slot],
-  );
+  const points = useMemo(() => {
+    if (slot == null) {
+      return null;
+    }
 
-  if (polys.length === 0) {
+    const box = slotBounds(slot);
+    const shape = ROOM_GHOST_SHAPES[slot];
+    if (box == null || shape == null) {
+      return null;
+    }
+
+    const boxWidth = box.maxX - box.minX;
+    const boxHeight = box.maxY - box.minY;
+
+    return shape
+      .map(([x, y]) => {
+        const inset = (value: number) => INSET + value * (1 - INSET * 2);
+        return `${box.minX + inset(x) * boxWidth},${
+          box.minY + inset(y) * boxHeight
+        }`;
+      })
+      .join(' ');
+  }, [slot]);
+
+  if (points == null) {
     return null;
   }
 
@@ -55,19 +78,17 @@ function RoomGhostSlots({ width, slot }: Props) {
       style={StyleSheet.absoluteFill}
       pointerEvents="none"
     >
-      {/* Grouped so overlapping polys composite once — per-poly opacity would
-          darken every seam inside the shape. */}
-      <G opacity={GHOST_OPACITY}>
-        {polys.map((poly, index) => (
-          <Polygon
-            key={index}
-            points={poly.p}
-            fill={GHOST_FILL}
-            stroke="none"
-            strokeLinejoin="round"
-          />
-        ))}
-      </G>
+      <Polygon
+        points={points}
+        fill={GHOST_FILL}
+        fillOpacity={GHOST_OPACITY}
+        stroke={DOT_COLOR}
+        strokeOpacity={DOT_OPACITY}
+        strokeWidth={DOT_WIDTH}
+        strokeDasharray={DOT_DASH}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </Svg>
   );
 }
