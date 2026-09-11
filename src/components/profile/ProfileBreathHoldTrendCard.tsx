@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { spacing } from '../../theme/spacing';
-import { card, softColoredCard } from '../../theme/card';
+import { card, firmColoredCard } from '../../theme/card';
 import LineGraph, { type DataPoint } from '../analytics/LineGraph';
 import { LockedScrim } from '../common/glass';
 import BreathHoldStatsRow from '../exercise/BreathHoldStatsRow';
@@ -117,7 +117,7 @@ const styles = StyleSheet.create({
   },
   card: {
     ...card.block,
-    ...softColoredCard(BREATH_HOLD_STYLE.hue),
+    ...firmColoredCard(BREATH_HOLD_STYLE.hue),
     padding: spacing.lg,
   },
   cardGlyph: {

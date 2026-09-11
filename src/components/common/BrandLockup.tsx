@@ -11,7 +11,7 @@ export default function BrandLockup() {
   return (
     <View style={styles.row}>
       <Image
-        source={require('../../../assets/brand/logo.png')}
+        source={require('../../../assets/mascot/azo-head.png')}
         style={styles.mark}
         contentFit="contain"
       />

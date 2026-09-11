@@ -30,7 +30,7 @@ import { isShortScreen } from '../theme/breakpoints';
 
 const AZO_SIZE = 220;
 const AZO_SIZE_COMPACT = 168;
-const AZO_IMAGE = require('../../assets/mascot/azo-auth-landing.png');
+const AZO_IMAGE = require('../../assets/mascot/azo-head.png');
 
 // Shown, not named. The first onboarding beat is the reveal, and introducing
 // Azo here would spend it before the story gets there.

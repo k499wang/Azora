@@ -13,7 +13,7 @@ import {
   type BreathingTechniqueSourceScreen,
 } from '../../features/exercise/shared/hooks/useOpenBreathingTechnique';
 import type { FeatureAccessState } from '../../hooks/useFeatureAccess';
-import { card, softColoredCard } from '../../theme/card';
+import { card, firmColoredCard } from '../../theme/card';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import Icon from '../common/icons/Icon';
@@ -81,7 +81,7 @@ export default function TechniqueCard({
         style={({ pressed }) => [
           styles.card,
           styles.shelfCard,
-          softColoredCard(categoryStyle.hue),
+          firmColoredCard(categoryStyle.hue),
           pressed && styles.cardPressed,
         ]}
       >
@@ -93,7 +93,7 @@ export default function TechniqueCard({
             shape={TECHNIQUE_GLYPH[technique.id]}
             size={SHELF_GLYPH_SIZE}
             color={textColor}
-            opacity={0.14}
+            opacity={0.1}
           />
         </View>
         <View style={styles.cardContent}>

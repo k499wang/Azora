@@ -95,9 +95,9 @@ export function PaywallFreeVsProStep({
             <>
               Everything unlocked{'\n'}for{' '}
               <Text style={paywallStepStyles.stepTitleBrand}>
-                {trialDays} days
+                {trialDays} days for free
               </Text>
-              .
+              
             </>
           ) : (
             <>

@@ -30,7 +30,7 @@ export const GENDER_OPTIONS: GenderOption[] = [
   {
     id: 'prefer_not',
     icon: 'sparkle',
-    accent: colors.accent[600],
+    accent: colors.playful.stone.base,
     title: 'Prefer not to say',
   },
 ];

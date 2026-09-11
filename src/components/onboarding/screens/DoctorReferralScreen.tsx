@@ -17,7 +17,7 @@ const OPTIONS: OnboardingOption<DoctorReferral>[] = [
   {
     id: 'no',
     icon: 'close-circle-outline',
-    accent: colors.accent[600],
+    accent: colors.playful.stone.base,
     title: 'No',
   },
 ];

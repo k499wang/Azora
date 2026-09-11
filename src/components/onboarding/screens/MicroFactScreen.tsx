@@ -25,9 +25,9 @@ interface Slice {
 }
 
 const SLICES: Slice[] = [
-  { label: 'Calmer mind', percent: 58, accent: colors.primary.blue600 },
-  { label: 'Slower heart rate', percent: 26, accent: colors.error[500] },
-  { label: 'Less tension', percent: 16, accent: colors.warning[500] },
+  { label: 'Calmer mind', percent: 58, accent: colors.playful.sky.base },
+  { label: 'Slower heart rate', percent: 26, accent: colors.playful.coral.base },
+  { label: 'Less tension', percent: 16, accent: colors.playful.amber.base },
 ];
 
 const CHART_SIZE = scaleVisual(220);

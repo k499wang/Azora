@@ -49,7 +49,7 @@ export default function ExerciseSearchResultRow({
           shape={glyph}
           size={58}
           color={hue.ink}
-          opacity={0.82}
+          opacity={0.68}
         />
       </View>
 

@@ -45,7 +45,7 @@ export function PaywallBenefitsStep({
           {hasTrial ? (
             <>
               The next {asDuration(trialDuration)} of Azora Pro are{' '}
-              <Text style={styles.stepTitleBrand}>on us for free.</Text>
+              <Text style={styles.stepTitleBrand}>on us for free</Text>
             </>
           ) : (
             <>

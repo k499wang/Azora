@@ -117,7 +117,7 @@ export function DailyTaskRow({ title, scheduledTime, detailLabel, style, glyph,
   return (
     <View style={styles.taskRow}>
       <View style={[card.base, card.shadow, styles.taskCard]}>
-        <ActivityGlyph shape={glyph} size={DAILY_GLYPH_SIZE} color={completed ? colors.text.tertiary : style.hue.base} />
+        <ActivityGlyph shape={glyph} size={DAILY_GLYPH_SIZE} color={completed ? colors.text.tertiary : style.hue.mid} />
         <View style={styles.taskCopy}>
           <View style={styles.taskHeading}>
             <Text style={styles.taskType} numberOfLines={1}>{detailLabel}</Text>
@@ -138,7 +138,7 @@ export function DailyTaskRow({ title, scheduledTime, detailLabel, style, glyph,
           onPress={() => { if (!isArranging()) { triggerTapHaptic(); onPress?.(); } }}
           style={({ pressed }) => [styles.startButton, completed && styles.startButtonDone, disabled && pressable.disabled, pressed && pressable.control]}
         >
-          <Icon name="play-triangle" size={20} color={completed ? colors.success[700] : colors.primary.blue600} />
+          <Icon name="play-triangle" size={20} color={completed ? colors.success[500] : colors.primary.blue400} />
         </Pressable>
       </View>
     </View>
