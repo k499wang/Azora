@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { useCallback, useMemo, useState } from 'react';
+import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SafeAreaView } from 'react-native-screens/experimental';
 import Icon from '../components/common/icons/Icon';
@@ -79,18 +79,33 @@ function HotelContent({ onBack }: HotelContentProps) {
     [rooms],
   );
 
+  const [framed, setFramed] = useState(false);
+  const onReady = useCallback(() => setFramed(true), []);
+
   const resolved = override ?? realRooms;
   // The hotel always has a floor 1 — except when the read failed, where an
   // empty room would claim the user has none rather than that we do not know.
   const pyramidRooms =
     resolved.length === 0 && !roomsQuery.isError ? FIRST_ROOM : resolved;
   const waiting = roomsQuery.isPending && override == null;
+  // The rooms arriving is only half of it: the canvas then needs a layout pass
+  // to frame the pyramid, and everything it draws is in the wrong place until
+  // it has one. The spinner covers both, so the hotel never appears part-placed.
+  const loading = waiting || !framed;
 
   return (
     <>
       <View style={{ height: insets.top }} />
 
-      {waiting ? null : <PyramidCanvas rooms={pyramidRooms} />}
+      {waiting ? null : (
+        <PyramidCanvas rooms={pyramidRooms} onReady={onReady} />
+      )}
+
+      {loading ? (
+        <View style={styles.loading} pointerEvents="none">
+          <ActivityIndicator color={colors.text.tertiary} />
+        </View>
+      ) : null}
 
       {onBack == null ? null : (
         // Level with the canvas's own zoom controls, which start at the same
@@ -138,6 +153,12 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: colors.background.canvas,
+  },
+  // Over the canvas, which is fading up underneath it.
+  loading: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   back: {
     position: 'absolute',
