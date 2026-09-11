@@ -105,9 +105,16 @@ const WIDEN_SHARE = 0.5;
 const ARM_SWING_SHARE = 1.1;
 const BREATH_MS = 3200;
 
-/** The idle weight shift, in artwork units and degrees. */
-const SWAY_X = 11;
-const LEAN_DEG = 1.3;
+/**
+ * The idle sway, in degrees.
+ *
+ * A lean about the floor line and nothing else. Sliding him sideways as well
+ * takes his feet with him, and a character whose feet travel is a cutout being
+ * pushed around rather than one shifting its weight — so the whole of the bob is
+ * this one angle, and everything below the knees stays where it was drawn: at
+ * this lean an ankle moves a couple of units against the head's thirty.
+ */
+const LEAN_DEG = 2.8;
 /** Deliberately not a multiple of the breath, so the two never lock into a beat. */
 const SWAY_MS = 2600;
 
@@ -423,7 +430,6 @@ const AzoPortrait = forwardRef<AzoHandle, AzoPortraitProps>(
 
     const leanStyle = useAnimatedStyle(() => ({
       transform: [
-        { translateX: sway.value * SWAY_X * unit },
         { translateY: feetPivot },
         { rotate: `${sway.value * LEAN_DEG}deg` },
         { translateY: -feetPivot },

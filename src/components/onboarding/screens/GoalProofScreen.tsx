@@ -4,15 +4,15 @@ import * as Haptics from "expo-haptics";
 import { Text } from "../../common/Text";
 import { colors } from "../../../theme/colors";
 import { spacing } from "../../../theme/spacing";
-import { card, radius } from "../../../theme/card";
+import { radius } from "../../../theme/card";
 import { fonts, typography } from "../../../theme/typography";
 import { isHapticsEnabled } from "../../../services/preferences/hapticsPreference";
 import OnboardingScreenLayout from "../OnboardingScreenLayout";
 import OnboardingPrimaryButton from "../OnboardingPrimaryButton";
 
-const TRACK_HEIGHT = 300;
+const TRACK_HEIGHT = 340;
 const ALONE_FILL_RATIO = 0.3;
-const AZORA_FILL_RATIO = 0.6;
+const AZORA_FILL_RATIO = 0.72;
 
 interface GoalProofScreenProps {
   stepIndex: number;
@@ -54,34 +54,26 @@ export default function GoalProofScreen({
       footer={<OnboardingPrimaryButton label="Continue" onPress={onContinue} />}
     >
       <View style={styles.body}>
-        <View style={styles.cardShadow}>
-          <View style={styles.card}>
-            <View style={styles.bars}>
-              <Bar
-                grow={grow}
-                ratio={ALONE_FILL_RATIO}
-                track={colors.playful.coral.soft}
-                fill={colors.playful.coral.base}
-                labelColor={colors.playful.coral.ink}
-                label={'On\nyour own'}
-                value="1×"
-              />
-              <Bar
-                grow={grow}
-                ratio={AZORA_FILL_RATIO}
-                track={colors.playful.amber.soft}
-                fill={colors.playful.amber.base}
-                labelColor={colors.playful.amber.ink}
-                label={'With\nAzora'}
-                value="2×"
-              />
-            </View>
-          </View>
+        <View style={styles.bars}>
+          <Bar
+            grow={grow}
+            ratio={ALONE_FILL_RATIO}
+            fill={colors.neutral[500]}
+            label={'On\nyour own'}
+          />
+          <Bar
+            grow={grow}
+            ratio={AZORA_FILL_RATIO}
+            fill={colors.primary.blue600}
+            label={'With\nAzora'}
+            marker="2×"
+            markerColor={colors.primary.blue700}
+          />
         </View>
 
         <Text style={styles.note}>
-          Azora decides what you do and when you do it, then holds you to it —
-          so reaching your goal stops depending on how you feel that day.
+          On your own, motivation fades. With Azora, your plan adapts to you —
+          gently holding you to what matters most.
         </Text>
       </View>
     </OnboardingScreenLayout>
@@ -91,25 +83,41 @@ export default function GoalProofScreen({
 interface BarProps {
   grow: Animated.Value;
   ratio: number;
-  track: string;
   fill: string;
-  labelColor: string;
   label: string;
-  value: string;
+  marker?: string;
+  markerColor?: string;
 }
 
-function Bar({ grow, ratio, track, fill, labelColor, label, value }: BarProps) {
+function Bar({
+  grow,
+  ratio,
+  fill,
+  label,
+  marker,
+  markerColor,
+}: BarProps) {
   const height = grow.interpolate({
     inputRange: [0, 1],
     outputRange: [0, TRACK_HEIGHT * ratio],
   });
+  const markerBottom = Animated.add(height, 8);
 
   return (
-    <View style={[styles.track, { backgroundColor: track }]}>
-      <Text style={[styles.barLabel, { color: labelColor }]}>{label}</Text>
+    <View style={styles.track}>
+      {marker ? (
+        <Animated.Text
+          style={[
+            styles.marker,
+            { bottom: markerBottom, color: markerColor, opacity: grow },
+          ]}
+        >
+          {marker}
+        </Animated.Text>
+      ) : null}
       <Animated.View style={[styles.fill, { height, backgroundColor: fill }]}>
-        <Animated.Text style={[styles.barValue, { opacity: grow }]}>
-          {value}
+        <Animated.Text style={[styles.barLabel, { opacity: grow }]}>
+          {label}
         </Animated.Text>
       </Animated.View>
     </View>
@@ -120,36 +128,25 @@ const styles = StyleSheet.create({
   body: {
     gap: spacing.xl,
   },
-  cardShadow: {
-    ...card.shadow,
-    borderRadius: radius.card,
-    marginTop: spacing["2xl"],
-  },
-  card: {
-    ...card.base,
-    padding: spacing.md,
-  },
   bars: {
     flexDirection: "row",
     justifyContent: "center",
     gap: spacing.md,
+    marginTop: spacing["2xl"],
   },
   track: {
     flex: 1,
     height: TRACK_HEIGHT,
     borderRadius: radius.card,
     borderCurve: "continuous",
-    overflow: "hidden",
-    paddingTop: spacing.lg,
-    justifyContent: "flex-start",
-    alignItems: "center",
   },
   barLabel: {
     ...typography.body.medium,
     fontFamily: fonts.semibold,
-    fontSize: 17,
-    lineHeight: 22,
+    fontSize: 22,
+    lineHeight: 27,
     textAlign: "center",
+    color: colors.text.inverse,
   },
   // Anchored to the track's floor so the growth reads as a bar filling up
   // rather than a block sliding in under the label.
@@ -163,10 +160,15 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  barValue: {
+  marker: {
+    position: "absolute",
+    left: 0,
+    right: 0,
     ...typography.title.title3,
     fontFamily: fonts.semibold,
-    color: colors.text.inverse,
+    fontSize: 38,
+    lineHeight: 44,
+    textAlign: "center",
   },
   note: {
     ...typography.body.small,

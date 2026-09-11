@@ -172,6 +172,7 @@ export function ExitOfferContent({
               style={[styles.title, { marginTop: insets.top + spacing['5xl'] }]}
               numberOfLines={1}
               adjustsFontSizeToFit
+              minimumFontScale={0.8}
             >
               Your one-time offer
             </Text>

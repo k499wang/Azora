@@ -153,10 +153,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.md,
   },
-  // The text sits in flow and gives the box its height; the pill fills whatever
-  // that comes to, so a line that wraps to three needs no measuring.
+  // The text sits in flow and gives the box its size; the pill fills whatever
+  // that comes to, so a line that wraps to three needs no measuring. It shrinks
+  // rather than flexes, so a short line makes a short bubble and only a long
+  // one grows to the width left beside Azo.
   bubble: {
-    flex: 1,
+    flexShrink: 1,
     paddingTop: spacing.sm,
     paddingBottom: spacing.sm + LIP_DEPTH,
     paddingHorizontal: spacing.md,
@@ -198,8 +200,8 @@ const styles = StyleSheet.create({
   },
   text: {
     ...typography.body.small,
-    fontSize: 13,
-    lineHeight: 19,
+    fontSize: 14,
+    lineHeight: 20,
     color: colors.text.secondary,
   },
   // He introduces a section rather than titling it, so it sits below the

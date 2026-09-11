@@ -255,7 +255,7 @@ module.exports = {
     android: {
       adaptiveIcon: {
         foregroundImage: './assets/app/adaptive-icon.png',
-        backgroundColor: '#EEF1FF',
+        backgroundColor: '#FFFFFF',
       },
       edgeToEdgeEnabled: true,
       predictiveBackGestureEnabled: false,

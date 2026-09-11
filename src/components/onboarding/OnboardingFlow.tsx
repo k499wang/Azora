@@ -36,6 +36,7 @@ import NameScreen from './screens/NameScreen';
 import GreetingScreen from './screens/GreetingScreen';
 import AzoStoryScreen from './screens/AzoStoryScreen';
 import PersonalizeIntroScreen from './screens/PersonalizeIntroScreen';
+import SleepInsightScreen from './screens/SleepInsightScreen';
 import { AZO_STORY } from './data/azoStory';
 import AzoPlaceScreen from './screens/AzoPlaceScreen';
 import AzoFloorScreen from './screens/AzoFloorScreen';
@@ -184,15 +185,17 @@ const STEP_ORDER: OnboardingStep[] = [
   'intent',
   'intentPriority',
   'intentReflection',
-  'brainScience',
+  'goalProof',
   'name',
   'greeting',
   'stress',
+  'dayActivity',
+  'brainFog',
+  'brainScience',
   'sleep',
   'sleepDuration',
   'wakeEase',
-  'dayActivity',
-  'brainFog',
+  'sleepInsight',
   'heartWorry',
   'routineHappiness',
   'mentalHealth',
@@ -200,7 +203,6 @@ const STEP_ORDER: OnboardingStep[] = [
   'procrastinationReason',
   'consistency',
   'scienceCredibility',
-  'goalProof',
   'age',
   'gender',
   // Grouped with the other cheap facts rather than wedged into the goal arc,
@@ -611,14 +613,14 @@ function OnboardingFlowSteps({
     properties?: OnboardingAnalyticsProperties,
   ) => {
     if (isOnlyCustomIntent) {
-      goToStep('brainScience', action, properties);
+      goToStep('goalProof', action, properties);
       return;
     }
     if (INTENT_REFLECTION_ENABLED) {
       goToStep('intentReflection', action, properties);
       return;
     }
-    goToStep('brainScience', action, properties);
+    goToStep('goalProof', action, properties);
   };
 
   const goFromIntent = () => {
@@ -1056,30 +1058,10 @@ function OnboardingFlowSteps({
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
         isSubmitting={isSubmitting}
-        onContinue={() => goToStep('brainScience', 'continue')}
+        onContinue={() => goToStep('goalProof', 'continue')}
         onBack={() =>
           goToStep(
             selectedIntents.length >= 2 ? 'intentPriority' : 'intent',
-            'back',
-          )
-        }
-      />
-    );
-  }
-
-  if (step === 'brainScience') {
-    return (
-      <BrainScienceScreen
-        stepIndex={visualStepIndex}
-        stepCount={visualStepCount}
-        onContinue={() => goToStep('name', 'continue')}
-        onBack={() =>
-          goToStep(
-            INTENT_REFLECTION_ENABLED && !isOnlyCustomIntent
-              ? 'intentReflection'
-              : selectedIntents.length >= 2
-                ? 'intentPriority'
-                : 'intent',
             'back',
           )
         }
@@ -1097,7 +1079,7 @@ function OnboardingFlowSteps({
         onContinue={() => goToStep('greeting', 'continue', {
           has_display_name: name.trim().length > 0,
         })}
-        onBack={() => goToStep('brainScience', 'back')}
+        onBack={() => goToStep('goalProof', 'back')}
         onSkip={() => {
           setName('');
           goToStep('greeting', 'skip');
@@ -1147,11 +1129,11 @@ function OnboardingFlowSteps({
         stepCount={visualStepCount}
         onChange={setStressLevel}
         onContinue={() => {
-          goToStep('sleep', 'continue', { has_stress_level: true });
+          goToStep('dayActivity', 'continue', { has_stress_level: true });
         }}
         onBack={() => goToStep('greeting', 'back')}
         onSkip={() => {
-          goToStep('sleep', 'skip');
+          goToStep('dayActivity', 'skip');
         }}
       />
     );
@@ -1167,7 +1149,7 @@ function OnboardingFlowSteps({
         onContinue={() => {
           goToStep('sleepDuration', 'continue', { has_sleep_quality: true });
         }}
-        onBack={() => goToStep('stress', 'back')}
+        onBack={() => goToStep('brainScience', 'back')}
         onSkip={() => {
           goToStep('sleepDuration', 'skip');
         }}
@@ -1184,13 +1166,24 @@ function OnboardingFlowSteps({
         onChange={setBrainFogLevel}
         onContinue={() => {
           setHasAnsweredBrainFog(true);
-          goToStep('heartWorry', 'continue', { has_brain_fog_level: true });
+          goToStep('brainScience', 'continue', { has_brain_fog_level: true });
         }}
         onBack={() => goToStep('dayActivity', 'back')}
         onSkip={() => {
           setHasAnsweredBrainFog(false);
-          goToStep('heartWorry', 'skip');
+          goToStep('brainScience', 'skip');
         }}
+      />
+    );
+  }
+
+  if (step === 'brainScience') {
+    return (
+      <BrainScienceScreen
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onContinue={() => goToStep('sleep', 'continue')}
+        onBack={() => goToStep('brainFog', 'back')}
       />
     );
   }
@@ -1207,7 +1200,7 @@ function OnboardingFlowSteps({
             has_heart_worry_level: true,
           });
         }}
-        onBack={() => goToStep('brainFog', 'back')}
+        onBack={() => goToStep('sleepInsight', 'back')}
         onSkip={() => {
           goToStep('routineHappiness', 'skip');
         }}
@@ -1247,12 +1240,23 @@ function OnboardingFlowSteps({
         stepCount={visualStepCount}
         onSelect={setWakeEase}
         onContinue={() =>
-          goToStep('dayActivity', 'continue', {
+          goToStep('sleepInsight', 'continue', {
             has_wake_ease: wakeEase != null,
           })
         }
         onBack={() => goToStep('sleepDuration', 'back')}
-        onSkip={() => goToStep('dayActivity', 'skip')}
+        onSkip={() => goToStep('sleepInsight', 'skip')}
+      />
+    );
+  }
+
+  if (step === 'sleepInsight') {
+    return (
+      <SleepInsightScreen
+        stepIndex={visualStepIndex}
+        stepCount={visualStepCount}
+        onContinue={() => goToStep('heartWorry', 'continue')}
+        onBack={() => goToStep('wakeEase', 'back')}
       />
     );
   }
@@ -1272,7 +1276,7 @@ function OnboardingFlowSteps({
             has_day_activity: dayActivity != null,
           })
         }
-        onBack={() => goToStep('wakeEase', 'back')}
+        onBack={() => goToStep('stress', 'back')}
         onSkip={() => goToStep('brainFog', 'skip')}
       />
     );
@@ -1338,7 +1342,7 @@ function OnboardingFlowSteps({
         stepCount={visualStepCount}
         onChange={setAge}
         onContinue={() => goToStep('gender', 'continue', { has_age: true })}
-        onBack={() => goToStep('goalProof', 'back')}
+        onBack={() => goToStep('scienceCredibility', 'back')}
         onSkip={() => goToStep('gender', 'skip')}
       />
     );
@@ -1704,7 +1708,7 @@ function OnboardingFlowSteps({
         stepCount={visualStepCount}
         name={name.trim() || null}
         intentTitle={scIntentTitle}
-        onContinue={() => goToStep('goalProof', 'continue')}
+        onContinue={() => goToStep('age', 'continue')}
         onBack={() => goToStep('consistency', 'back')}
       />
     );
@@ -1715,8 +1719,17 @@ function OnboardingFlowSteps({
       <GoalProofScreen
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('age', 'continue')}
-        onBack={() => goToStep('scienceCredibility', 'back')}
+        onContinue={() => goToStep('name', 'continue')}
+        onBack={() =>
+          goToStep(
+            INTENT_REFLECTION_ENABLED && !isOnlyCustomIntent
+              ? 'intentReflection'
+              : selectedIntents.length >= 2
+                ? 'intentPriority'
+                : 'intent',
+            'back',
+          )
+        }
       />
     );
   }

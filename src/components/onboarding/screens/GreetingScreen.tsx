@@ -1,15 +1,21 @@
 import { AnimatedText } from '../../common/Text';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, Easing, StyleSheet, View } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import { useEffect, useMemo, useRef } from 'react';
+import {
+  Animated,
+  Easing,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import * as Haptics from 'expo-haptics';
+import { Image } from 'expo-image';
+import { getOnboardingImageSource } from '../../../services/images/onboardingImageCache';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
 import { isHapticsEnabled } from '../../../services/preferences/hapticsPreference';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
-import { useWhileVisible } from '../../../hooks/useWhileVisible';
 import { scaleVisual } from '../onboardingVisualScale';
 
 interface GreetingScreenProps {
@@ -20,33 +26,24 @@ interface GreetingScreenProps {
   onBack: () => void;
 }
 
-const WAVE_SIZE = scaleVisual(256);
-const HAND_PATH =
-  'M45.7 111.2c-9-4-13.7-14.8-20.3-27.5l-9.1-17.4c-2.3-4.4-.9-9.7 3.3-11.9 4.1-2.1 9.1-.5 11.4 3.9l6.6 12.5c-3.8-8.2-13.4-27.9-16.8-35.3-2-4.3-.4-9.3 3.7-11.2 4.2-2 9.1-.1 11.2 4.2l12.1 25.4-11-31.4c-1.8-4.8.4-9.8 5-11.5 4.7-1.7 9.6.9 11.4 5.6l10.4 28.1-5.7-27.4c-1.2-5 1.8-9.7 6.6-10.9 4.9-1.2 9.4 2 10.7 7l10.9 44.8 4.1-11.2c1.8-5 6.6-7.6 11.5-6 4.8 1.7 7.2 6.9 5.4 11.9L99 80.7c-5.9 16.4-11.6 26.6-23.8 31.3-9.8 3.7-20.5 3.2-29.5-.8Z';
+const KOALA_WIDTH = scaleVisual(290);
+const KOALA_HEIGHT = KOALA_WIDTH;
 
-function WaveHandIllustration() {
-  return (
-    <Svg
-      width={WAVE_SIZE}
-      height={WAVE_SIZE}
-      viewBox="0 0 128 128"
-      accessibilityElementsHidden
-      importantForAccessibility="no"
-    >
-      <Path
-        d={HAND_PATH}
-        fill="#F6C06A"
-      />
-      <Path
-        d={HAND_PATH}
-        fill="none"
-        stroke="#9D5A2E"
-        strokeWidth={5}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </Svg>
-  );
+/**
+ * The greeting at its intended size, and the width that size was drawn for.
+ *
+ * The line is "Hey, <name>.", so its width is the user's to decide. Sizing it
+ * from the window keeps the phone it was designed on at 44 and only steps down
+ * on narrower ones, which leaves `adjustsFontSizeToFit` as a floor for a long
+ * name rather than the thing that sets the size on every device.
+ */
+const HEADING_SIZE = 44;
+const HEADING_REFERENCE_WIDTH = 393;
+const HEADING_MIN_SIZE = 32;
+
+function headingSizeFor(width: number): number {
+  const scaled = Math.round((HEADING_SIZE * width) / HEADING_REFERENCE_WIDTH);
+  return Math.min(HEADING_SIZE, Math.max(HEADING_MIN_SIZE, scaled));
 }
 
 export default function GreetingScreen({
@@ -62,19 +59,10 @@ export default function GreetingScreen({
     return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
   }, [name]);
 
-  const wave = useRef(new Animated.Value(0)).current;
+  const { width } = useWindowDimensions();
+  const headingSize = headingSizeFor(width);
+
   const textEnter = useRef(new Animated.Value(0)).current;
-
-  // react-native-svg never sets the layer's contentsScale, so an <Svg> drawn
-  // before its view reaches a window rasterises at 1x and only sharpens on the
-  // next redraw. Mounting a frame late means the first draw is already at
-  // device scale. styles.wave reserves the space, so nothing shifts.
-  const [isHandMounted, setIsHandMounted] = useState(false);
-
-  useEffect(() => {
-    const frame = requestAnimationFrame(() => setIsHandMounted(true));
-    return () => cancelAnimationFrame(frame);
-  }, []);
 
   useEffect(() => {
     const entrance = Animated.timing(textEnter, {
@@ -92,39 +80,6 @@ export default function GreetingScreen({
     return () => entrance.stop();
   }, [textEnter]);
 
-  useWhileVisible(() => {
-    wave.setValue(0);
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(wave, {
-          toValue: 1,
-          duration: 260,
-          easing: Easing.inOut(Easing.quad),
-          useNativeDriver: true,
-        }),
-        Animated.timing(wave, {
-          toValue: -1,
-          duration: 460,
-          easing: Easing.inOut(Easing.quad),
-          useNativeDriver: true,
-        }),
-        Animated.timing(wave, {
-          toValue: 0,
-          duration: 260,
-          easing: Easing.inOut(Easing.quad),
-          useNativeDriver: true,
-        }),
-        Animated.delay(1400),
-      ]),
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [wave]);
-
-  const rotate = wave.interpolate({
-    inputRange: [-1, 1],
-    outputRange: ['-18deg', '22deg'],
-  });
   const textTranslate = textEnter.interpolate({
     inputRange: [0, 1],
     outputRange: [16, 0],
@@ -138,13 +93,37 @@ export default function GreetingScreen({
       footer={<OnboardingPrimaryButton label="Let's begin" onPress={onContinue} />}
     >
       <View style={styles.stage}>
+        <Animated.View
+          style={[
+            styles.mascot,
+            {
+              opacity: textEnter,
+              transform: [{ translateY: textTranslate }],
+            },
+          ]}
+          accessible
+          accessibilityRole="image"
+          accessibilityLabel="Azo waving hello"
+        >
+          <Image
+            source={getOnboardingImageSource('azoWave')}
+            style={styles.koala}
+            contentFit="contain"
+            cachePolicy="memory-disk"
+            transition={0}
+          />
+        </Animated.View>
+
         <View style={styles.copy}>
           <AnimatedText
-            numberOfLines={1}
+            numberOfLines={2}
             adjustsFontSizeToFit
+            minimumFontScale={0.8}
             style={[
               styles.heading,
               {
+                fontSize: headingSize,
+                lineHeight: Math.round(headingSize * 1.18),
                 opacity: textEnter,
                 transform: [{ translateY: textTranslate }],
               },
@@ -166,12 +145,6 @@ export default function GreetingScreen({
             lately.
           </AnimatedText>
         </View>
-
-        <Animated.View
-          style={[styles.wave, { transform: [{ rotate }] }]}
-        >
-          {isHandMounted ? <WaveHandIllustration /> : null}
-        </Animated.View>
       </View>
     </OnboardingScreenLayout>
   );
@@ -181,36 +154,33 @@ const styles = StyleSheet.create({
   stage: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'flex-start',
-    paddingTop: spacing.sm,
-    gap: spacing.lg,
+    justifyContent: 'center',
+    paddingBottom: spacing['2xl'],
   },
   copy: {
     alignItems: 'center',
-    gap: spacing.lg,
-    marginBottom: spacing.md,
+    gap: spacing.sm,
+    paddingHorizontal: spacing.lg,
   },
-  wave: {
-    width: WAVE_SIZE,
-    height: WAVE_SIZE,
-    marginTop: spacing.xl,
-    marginBottom: spacing.xl,
+  koala: {
+    width: '100%',
+    height: '100%',
+  },
+  mascot: {
+    width: KOALA_WIDTH,
+    height: KOALA_HEIGHT,
   },
   subtitle: {
     ...typography.body.medium,
     color: colors.text.secondary,
     textAlign: 'center',
-    paddingHorizontal: spacing.lg,
   },
   heading: {
     ...typography.display.display2,
     fontFamily: fonts.semibold,
     fontWeight: '500',
-    fontSize: 44,
-    lineHeight: 52,
     letterSpacing: -1,
     color: colors.text.primary,
     textAlign: 'center',
-    paddingHorizontal: spacing.lg,
   },
 });

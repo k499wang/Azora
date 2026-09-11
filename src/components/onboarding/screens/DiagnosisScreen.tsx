@@ -142,7 +142,6 @@ export default function DiagnosisScreen({
           <AzoAside
             text="Here are your highlights:"
             variant="heading"
-            expression="pleased"
           />
         </View>
 

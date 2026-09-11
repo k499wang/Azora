@@ -28,12 +28,12 @@ import { fonts, typography } from '../theme/typography';
 import { spacing } from '../theme/spacing';
 import { isShortScreen } from '../theme/breakpoints';
 
-const MOCHI_SIZE = 160;
-const MOCHI_SIZE_COMPACT = 120;
-const MOCHI_IMAGE = require('../../assets/mascot/mochi-auth-landing.png');
+const AZO_SIZE = 160;
+const AZO_SIZE_COMPACT = 120;
+const AZO_IMAGE = require('../../assets/mascot/azo-auth-landing.png');
 
-// He is shown, not named. The first onboarding beat is "This is Mochi.", and
-// introducing him here would spend that reveal before the story gets to it.
+// Shown, not named. The first onboarding beat is the reveal, and introducing
+// Azo here would spend it before the story gets there.
 const TAGLINE = 'Here to help you unwind.';
 
 function showTermsRequiredAlert() {
@@ -46,7 +46,7 @@ function showTermsRequiredAlert() {
 export default function AuthLandingScreen() {
   const { height: screenHeight } = useWindowDimensions();
   const compact = isShortScreen(screenHeight);
-  const mochiSize = compact ? MOCHI_SIZE_COMPACT : MOCHI_SIZE;
+  const azoSize = compact ? AZO_SIZE_COMPACT : AZO_SIZE;
   const [agreed, setAgreed] = useState(false);
   const [googleBusy, setGoogleBusy] = useState(false);
   const [appleBusy, setAppleBusy] = useState(false);
@@ -99,8 +99,8 @@ export default function AuthLandingScreen() {
       <SafeAreaView edges={['top']} style={styles.heroSafe}>
         <View style={[styles.hero, compact && styles.heroCompact]}>
           <Image
-            source={MOCHI_IMAGE}
-            style={{ width: mochiSize, height: mochiSize }}
+            source={AZO_IMAGE}
+            style={{ width: azoSize, height: azoSize }}
             contentFit="contain"
             accessible={false}
           />

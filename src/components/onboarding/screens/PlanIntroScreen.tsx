@@ -1,14 +1,14 @@
 import { Text } from '../../common/Text';
 import { StyleSheet, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import Svg, { Circle, Defs, Path, RadialGradient, Stop } from 'react-native-svg';
-import Icon from '../../common/icons/Icon';
+import Svg, { Circle, G, Path } from 'react-native-svg';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
 import OnboardingScreenLayout from '../OnboardingScreenLayout';
 import OnboardingPrimaryButton from '../OnboardingPrimaryButton';
 import { scaleVisual } from '../onboardingVisualScale';
+import CelebratingKoala from '../../../../assets/Poses/koala_pose_celebrating.svg';
 
 interface PlanIntroScreenProps {
   stepIndex: number;
@@ -17,17 +17,7 @@ interface PlanIntroScreenProps {
   onBack: () => void;
 }
 
-const VISUAL_SIZE = scaleVisual(240);
-const RING_CENTER = VISUAL_SIZE / 2;
-const RING_RADIUS = scaleVisual(84);
-const CENTER_DISC = scaleVisual(120);
-const SEGMENT_SWEEP = 100;
-const SEGMENT_START_ANGLES = [-90, 30, 150];
-const SEGMENT_COLORS = [
-  colors.primary.blue600,
-  colors.primary.blue400,
-  colors.primary.blue300,
-];
+const VISUAL_SIZE = scaleVisual(290);
 const SEAL_BOX = 52;
 const SEAL_CENTER = SEAL_BOX / 2;
 const SEAL_SIZE = scaleVisual(SEAL_BOX);
@@ -67,86 +57,90 @@ function createPersonalizationSealPath(): string {
 
 const PERSONALIZATION_SEAL_PATH = createPersonalizationSealPath();
 
-function polarPoint(angleDegrees: number) {
-  const radians = (angleDegrees * Math.PI) / 180;
-  return {
-    x: RING_CENTER + Math.cos(radians) * RING_RADIUS,
-    y: RING_CENTER + Math.sin(radians) * RING_RADIUS,
-  };
+/**
+ * Confetti as a still frame, not an animation: the headline is already doing
+ * the celebrating, and a loop behind it would compete with the card the user is
+ * meant to read. Three shapes, the way the artwork draws them — a curled
+ * streamer, a four-point sparkle, and a dot — scattered as fractions of the
+ * visual box so the arrangement scales with the koala on every device.
+ */
+const CONFETTI_BOX = 100;
+/** the confetti field overhangs the koala's box a little, so nothing lands on him */
+const CONFETTI_SIZE = VISUAL_SIZE * 1.12;
+const CONFETTI_INSET = (CONFETTI_SIZE - VISUAL_SIZE) / 2;
+
+/** a streamer seen mid-curl: two arcs of the same bend, capped square */
+const STREAMER_PATH = 'M0 3 Q 5 -3 11 1 L 9.4 5.2 Q 4.6 2 1.6 6.6 Z';
+/** a four-point star with concave sides */
+const SPARKLE_PATH = 'M5 0 Q 5.9 4.1 10 5 Q 5.9 5.9 5 10 Q 4.1 5.9 0 5 Q 4.1 4.1 5 0 Z';
+
+type ConfettiShape = 'streamer' | 'sparkle' | 'dot';
+
+interface ConfettiPiece {
+  x: number;
+  y: number;
+  shape: ConfettiShape;
+  scale: number;
+  rotate: number;
+  color: string;
 }
 
-function arcPath(startAngle: number) {
-  const start = polarPoint(startAngle);
-  const end = polarPoint(startAngle + SEGMENT_SWEEP);
-  return `M ${start.x} ${start.y} A ${RING_RADIUS} ${RING_RADIUS} 0 0 1 ${end.x} ${end.y}`;
+const CONFETTI_PINK = colors.playful.blush.mid;
+const CONFETTI_YELLOW = colors.yellow[300];
+const CONFETTI_GREEN = colors.playful.teal.mid;
+const CONFETTI_BLUE = colors.primary.blue400;
+
+const CONFETTI: ConfettiPiece[] = [
+  { x: 40, y: 2, shape: 'streamer', scale: 1.1, rotate: 74, color: CONFETTI_PINK },
+  { x: 55, y: 12, shape: 'sparkle', scale: 0.9, rotate: 0, color: CONFETTI_YELLOW },
+  { x: 88, y: 17, shape: 'streamer', scale: 1, rotate: 128, color: CONFETTI_GREEN },
+  { x: 12, y: 12, shape: 'dot', scale: 0.5, rotate: 0, color: CONFETTI_PINK },
+  { x: 3, y: 26, shape: 'streamer', scale: 1, rotate: 42, color: CONFETTI_YELLOW },
+  { x: 10, y: 43, shape: 'sparkle', scale: 0.8, rotate: 0, color: CONFETTI_YELLOW },
+  { x: 93, y: 38, shape: 'dot', scale: 0.4, rotate: 0, color: CONFETTI_YELLOW },
+  { x: 86, y: 45, shape: 'streamer', scale: 1.05, rotate: 110, color: CONFETTI_PINK },
+  { x: 15, y: 55, shape: 'dot', scale: 0.35, rotate: 0, color: CONFETTI_BLUE },
+  { x: 8, y: 62, shape: 'streamer', scale: 1, rotate: 16, color: CONFETTI_GREEN },
+  { x: 80, y: 59, shape: 'sparkle', scale: 0.85, rotate: 0, color: CONFETTI_YELLOW },
+  { x: 20, y: 70, shape: 'streamer', scale: 1, rotate: 150, color: CONFETTI_PINK },
+  { x: 88, y: 69, shape: 'dot', scale: 0.4, rotate: 0, color: CONFETTI_BLUE },
+  { x: 74, y: 73, shape: 'streamer', scale: 1.05, rotate: 24, color: CONFETTI_YELLOW },
+  { x: 26, y: 78, shape: 'dot', scale: 0.35, rotate: 0, color: CONFETTI_YELLOW },
+];
+
+function ConfettiPieceShape({ piece }: { piece: ConfettiPiece }) {
+  if (piece.shape === 'dot') {
+    return <Circle cx={piece.x} cy={piece.y} r={piece.scale * 3} fill={piece.color} />;
+  }
+
+  const path = piece.shape === 'streamer' ? STREAMER_PATH : SPARKLE_PATH;
+  const span = piece.shape === 'streamer' ? 11 : 10;
+  const half = (span * piece.scale) / 2;
+
+  return (
+    <G
+      transform={`translate(${piece.x - half} ${piece.y - half}) rotate(${piece.rotate} ${half} ${half}) scale(${piece.scale})`}
+    >
+      <Path d={path} fill={piece.color} />
+    </G>
+  );
 }
 
 function PlanCelebrationVisual() {
   return (
     <View style={styles.visual}>
       <Svg
-        width={VISUAL_SIZE}
-        height={VISUAL_SIZE}
-        style={StyleSheet.absoluteFill}
+        width={CONFETTI_SIZE}
+        height={CONFETTI_SIZE}
+        viewBox={`0 0 ${CONFETTI_BOX} ${CONFETTI_BOX}`}
+        style={styles.confettiField}
       >
-        <Defs>
-          <RadialGradient
-            id="planHalo"
-            cx={RING_CENTER}
-            cy={RING_CENTER}
-            r={RING_CENTER}
-            gradientUnits="userSpaceOnUse"
-          >
-            <Stop
-              offset="0"
-              stopColor={colors.primary.blue100}
-              stopOpacity={0.95}
-            />
-            <Stop
-              offset="0.68"
-              stopColor={colors.primary.blue200}
-              stopOpacity={0.32}
-            />
-            <Stop offset="1" stopColor={colors.primary.blue200} stopOpacity={0} />
-          </RadialGradient>
-        </Defs>
-
-        <Circle
-          cx={RING_CENTER}
-          cy={RING_CENTER}
-          r={RING_CENTER}
-          fill="url(#planHalo)"
-        />
-        <Circle
-          cx={RING_CENTER}
-          cy={RING_CENTER}
-          r={RING_RADIUS}
-          fill="none"
-          stroke={colors.primary.blue200}
-          strokeOpacity={0.55}
-          strokeWidth={12}
-        />
-
-        {SEGMENT_START_ANGLES.map((startAngle, index) => (
-          <Path
-            key={startAngle}
-            d={arcPath(startAngle)}
-            fill="none"
-            stroke={SEGMENT_COLORS[index]}
-            strokeWidth={12}
-            strokeLinecap="round"
-          />
+        {CONFETTI.map((piece, index) => (
+          <ConfettiPieceShape key={index} piece={piece} />
         ))}
       </Svg>
 
-      <View style={styles.centerDisc} />
-      <View style={styles.centerIcon}>
-        <Icon
-          name="sparkle"
-          size={scaleVisual(64)}
-          color={colors.primary.blue600}
-        />
-      </View>
+      <CelebratingKoala width={VISUAL_SIZE} height={VISUAL_SIZE} />
     </View>
   );
 }
@@ -216,48 +210,27 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.md,
     paddingBottom: spacing['2xl'],
   },
   visual: {
     width: VISUAL_SIZE,
     height: VISUAL_SIZE,
   },
-  centerDisc: {
+  confettiField: {
     position: 'absolute',
-    left: RING_CENTER - CENTER_DISC / 2,
-    top: RING_CENTER - CENTER_DISC / 2,
-    width: CENTER_DISC,
-    height: CENTER_DISC,
-    borderRadius: CENTER_DISC / 2,
-    backgroundColor: colors.background.card,
-    borderWidth: 1.5,
-    borderColor: colors.primary.blue200,
-    shadowColor: colors.primary.blue700,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.1,
-    shadowRadius: 16,
-    elevation: 5,
-  },
-  centerIcon: {
-    position: 'absolute',
-    left: RING_CENTER - CENTER_DISC / 2,
-    top: RING_CENTER - CENTER_DISC / 2,
-    width: CENTER_DISC,
-    height: CENTER_DISC,
-    alignItems: 'center',
-    justifyContent: 'center',
+    left: -CONFETTI_INSET,
+    top: -CONFETTI_INSET,
   },
   copy: {
     alignSelf: 'stretch',
     alignItems: 'center',
-    gap: spacing.md,
+    gap: spacing.sm,
   },
   headline: {
     fontFamily: fonts.semibold,
     fontWeight: '500',
-    fontSize: 34,
-    lineHeight: 40,
+    fontSize: 30,
+    lineHeight: 36,
     letterSpacing: -0.6,
     color: colors.text.primary,
     textAlign: 'center',
