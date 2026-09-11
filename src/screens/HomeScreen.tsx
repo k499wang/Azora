@@ -124,17 +124,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
 
   const flowVisible = stage === 'decorate';
 
-  /**
-   * Dev only: the flow fires on the day's *transition* to earned, which is
-   * three exercises and a day's wait away — and the Room Lab's fabricated
-   * claims arrive already earned, so they never cross the line that opens it.
-   * A long press on the room replays it against whatever state is loaded.
-   */
-  const replayRewardFlow = useCallback(() => {
-    if (!__DEV__) return;
-    setStage('sheet');
-  }, []);
-
   const handleUnlockDismiss = useCallback(() => setStage(null), []);
   const handleChoosePiece = useCallback(() => setStage('decorate'), []);
 
@@ -255,7 +244,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             <HomeRoom
               room={roomClaim.room}
               progress={roomClaim.progress}
-              onLongPress={__DEV__ ? replayRewardFlow : undefined}
             />
           )}
         </View>

@@ -4,7 +4,7 @@ import { StyleSheet, View } from 'react-native';
 import { colors } from '../../theme/colors';
 import { typography, fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
-import { card, firmColoredCard } from '../../theme/card';
+import { card, softColoredCard } from '../../theme/card';
 import ActivityGlyph from '../explore/ActivityGlyph';
 
 const WEEKDAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
@@ -148,7 +148,7 @@ const styles = StyleSheet.create({
   },
   card: {
     ...card.block,
-    ...firmColoredCard(colors.playful.sky),
+    ...softColoredCard(colors.playful.sky),
     padding: spacing.md,
     gap: spacing.md,
   },
