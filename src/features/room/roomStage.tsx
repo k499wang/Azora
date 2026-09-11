@@ -42,7 +42,7 @@ function soloPolys(day: DayKey, option: string) {
   return polys.filter((poly) => poly.sh !== 1);
 }
 
-interface Bounds {
+export interface Bounds {
   minX: number;
   minY: number;
   maxX: number;
@@ -77,20 +77,30 @@ function polyBounds(polys: Poly[]): Bounds | null {
 const [VIEW_BOX_MIN_X, VIEW_BOX_MIN_Y] = VIEW_BOX.split(' ').map(Number);
 
 /**
- * Where a day's piece lives in the room, as a fraction of the rendered box.
+ * The patch of room a slot owns, in room space.
  *
- * Every option for a day is authored in the same corner — a rug on the floor,
- * a banner across the back wall — so the union of their bounds is the patch of
- * room that slot owns. That is where the "+" standing in for the empty slot
- * belongs, and it moves with the artwork instead of being a table of numbers
- * that quietly goes stale the next time a piece is redrawn.
+ * Every option for a day is authored in the same corner, so the union of their
+ * bounds is the area the slot occupies however it ends up filled — which is
+ * what anything standing in for the empty slot should be measured against,
+ * rather than whichever option happens to be drawn as the stand-in.
+ */
+export function slotBounds(day: DayKey): Bounds | null {
+  return polyBounds(
+    Object.entries(DECOR)
+      .filter(([key]) => key.startsWith(`${day}.`))
+      .flatMap(([, dayPolys]) => dayPolys.filter((poly) => poly.sh !== 1)),
+  );
+}
+
+/**
+ * The centre of a slot's patch, as a fraction of the rendered box.
+ *
+ * Where the "+" standing in for the empty slot belongs. It moves with the
+ * artwork instead of being a table of numbers that quietly goes stale the next
+ * time a piece is redrawn.
  */
 export function slotAnchor(day: DayKey): { x: number; y: number } | null {
-  const polys = Object.entries(DECOR)
-    .filter(([key]) => key.startsWith(`${day}.`))
-    .flatMap(([, dayPolys]) => dayPolys.filter((poly) => poly.sh !== 1));
-
-  const box = polyBounds(polys);
+  const box = slotBounds(day);
   if (box == null) {
     return null;
   }
