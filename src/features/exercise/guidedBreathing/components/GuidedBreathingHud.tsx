@@ -12,6 +12,8 @@ interface GuidedBreathingHudProps {
   showButtonRow: boolean;
   showPrimaryButton: boolean;
   primaryIcon: 'play' | 'pause';
+  /** A pro-only session length is selected, so the primary button is the gate. */
+  upgradeRequired: boolean;
   onPrimaryPress: () => void;
 }
 
@@ -22,6 +24,7 @@ export function GuidedBreathingHud({
   showButtonRow,
   showPrimaryButton,
   primaryIcon,
+  upgradeRequired,
   onPrimaryPress,
 }: GuidedBreathingHudProps) {
   const { height } = useWindowDimensions();
@@ -43,8 +46,14 @@ export function GuidedBreathingHud({
           {showPrimaryButton ? (
             <SessionLipButton
               theme={theme}
-              icon="play"
-              label={primaryIcon === 'play' ? 'Start' : 'Pause'}
+              icon={upgradeRequired ? 'lock-outline' : 'play'}
+              label={
+                upgradeRequired
+                  ? 'Upgrade'
+                  : primaryIcon === 'play'
+                    ? 'Start'
+                    : 'Pause'
+              }
               onPress={onPrimaryPress}
               primary
             />

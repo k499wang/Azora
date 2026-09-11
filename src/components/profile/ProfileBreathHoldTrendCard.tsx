@@ -1,15 +1,14 @@
 import { useMemo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
-import { card, coloredCard } from '../../theme/card';
+import { card, softColoredCard } from '../../theme/card';
 import LineGraph, { type DataPoint } from '../analytics/LineGraph';
 import { LockedScrim } from '../common/glass';
 import BreathHoldStatsRow from '../exercise/BreathHoldStatsRow';
 import ActivityGlyph from '../explore/ActivityGlyph';
 import { BREATH_HOLD_STYLE } from '../../features/exercise/guidedBreathing/categoryPalette';
 
-const GLYPH_SIZE = 190;
+const GLYPH_SIZE = 170;
 
 interface ProfileBreathHoldTrendCardProps {
   data: DataPoint[];
@@ -58,7 +57,7 @@ export default function ProfileBreathHoldTrendCard({
             <ActivityGlyph
               shape={BREATH_HOLD_STYLE.glyph}
               size={GLYPH_SIZE}
-              color={colors.text.inverse}
+              color={BREATH_HOLD_STYLE.hue.ink}
               opacity={0.12}
             />
           </View>
@@ -67,15 +66,15 @@ export default function ProfileBreathHoldTrendCard({
             <LineGraph
               data={data}
               unit="s"
-              height={210}
+              height={185}
               highlightIndex={bestIndex}
-              lineColor={colors.text.inverse}
-              fillColor={colors.text.inverse}
-              dotColor={colors.text.inverse}
-              highlightColor={colors.text.inverse}
-              dotStrokeColor={BREATH_HOLD_STYLE.hue.base}
-              labelColor={colors.text.inverse}
-              mutedLabelColor={colors.onBlock.textMuted}
+              lineColor={BREATH_HOLD_STYLE.hue.ink}
+              fillColor={BREATH_HOLD_STYLE.hue.ink}
+              dotColor={BREATH_HOLD_STYLE.hue.ink}
+              highlightColor={BREATH_HOLD_STYLE.hue.ink}
+              dotStrokeColor={BREATH_HOLD_STYLE.hue.tint}
+              labelColor={BREATH_HOLD_STYLE.hue.ink}
+              mutedLabelColor={`${BREATH_HOLD_STYLE.hue.ink}B3`}
               showXAxisLabels={false}
               valuePaddingRatio={0.04}
             />
@@ -118,7 +117,7 @@ const styles = StyleSheet.create({
   },
   card: {
     ...card.block,
-    ...coloredCard(BREATH_HOLD_STYLE.hue),
+    ...softColoredCard(BREATH_HOLD_STYLE.hue),
     padding: spacing.lg,
   },
   cardGlyph: {
@@ -131,7 +130,7 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.onBlock.divider,
+    backgroundColor: `${BREATH_HOLD_STYLE.hue.ink}29`,
     marginHorizontal: -spacing.lg,
     marginTop: spacing.lg,
     marginBottom: spacing.lg,

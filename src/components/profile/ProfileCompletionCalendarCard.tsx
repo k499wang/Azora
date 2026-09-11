@@ -4,11 +4,11 @@ import { StyleSheet, View } from 'react-native';
 import { colors } from '../../theme/colors';
 import { typography, fonts } from '../../theme/typography';
 import { spacing } from '../../theme/spacing';
-import { card, coloredCard } from '../../theme/card';
+import { card, softColoredCard } from '../../theme/card';
 import ActivityGlyph from '../explore/ActivityGlyph';
 
 const WEEKDAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-const GLYPH_SIZE = 180;
+const GLYPH_SIZE = 160;
 
 interface CalendarCell {
   key: string;
@@ -92,7 +92,7 @@ export default function ProfileCompletionCalendarCard({
           <ActivityGlyph
             shape="rings"
             size={GLYPH_SIZE}
-            color={colors.text.inverse}
+            color={colors.playful.sky.ink}
             opacity={0.12}
           />
         </View>
@@ -148,7 +148,7 @@ const styles = StyleSheet.create({
   },
   card: {
     ...card.block,
-    ...coloredCard(colors.playful.sky),
+    ...softColoredCard(colors.playful.sky),
     padding: spacing.md,
     gap: spacing.md,
   },
@@ -166,13 +166,13 @@ const styles = StyleSheet.create({
   monthLabel: {
     ...typography.title.title3,
     fontFamily: fonts.medium,
-    fontSize: 20,
-    lineHeight: 26,
-    color: colors.text.inverse,
+    fontSize: 18,
+    lineHeight: 23,
+    color: colors.playful.sky.ink,
   },
   monthMeta: {
     ...typography.caption.caption1,
-    color: colors.onBlock.textMuted,
+    color: `${colors.playful.sky.ink}B3`,
   },
   weekdayRow: {
     flexDirection: 'row',
@@ -181,7 +181,7 @@ const styles = StyleSheet.create({
   },
   weekdayLabel: {
     ...typography.caption.caption1,
-    color: colors.onBlock.textMuted,
+    color: `${colors.playful.sky.ink}B3`,
     width: '14.2857%',
     textAlign: 'center',
   },
@@ -195,9 +195,9 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
   },
   dayCard: {
-    height: 40,
-    borderRadius: 14,
-    backgroundColor: colors.onBlock.fill,
+    aspectRatio: 1,
+    borderRadius: 12,
+    backgroundColor: colors.background.card,
     borderWidth: 2,
     borderColor: 'transparent',
     alignItems: 'center',
@@ -207,19 +207,20 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   dayCardCompleted: {
-    backgroundColor: colors.onBlock.fillActive,
+    backgroundColor: colors.playful.sky.base,
   },
   dayCardToday: {
-    borderColor: colors.text.inverse,
+    borderColor: colors.playful.sky.ink,
   },
   dayLabel: {
     ...typography.label.small,
-    color: colors.text.inverse,
+    color: colors.playful.sky.ink,
   },
   dayLabelMuted: {
-    color: colors.onBlock.textFaint,
+    color: `${colors.playful.sky.ink}66`,
   },
   dayLabelCompleted: {
     fontFamily: fonts.semibold,
+    color: colors.text.inverse,
   },
 });

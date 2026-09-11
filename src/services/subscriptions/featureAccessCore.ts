@@ -4,6 +4,7 @@ export const FeatureKey = {
   DailyExercise: 'daily_exercise',
   AdvancedStats: 'advanced_stats',
   SessionHistory: 'session_history',
+  LongSessions: 'long_sessions',
 } as const;
 
 export type FeatureKeyValue = typeof FeatureKey[keyof typeof FeatureKey];
@@ -30,6 +31,7 @@ const FREE_DAILY_LIMITS: Partial<Record<FeatureKeyValue, number>> = {
 const PRO_ONLY_FEATURES = new Set<FeatureKeyValue>([
   FeatureKey.AdvancedStats,
   FeatureKey.BreathingHeartRateMonitoring,
+  FeatureKey.LongSessions,
 ]);
 
 export function getLocalDate(value = new Date()): string {
