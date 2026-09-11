@@ -536,7 +536,7 @@ important state without text, icon, or shape support.
 
 ### Typography
 
-- Keep Balsamiq Sans as the app family.
+- Keep Outfit as the app family.
 - Reduce normal UI to clear screen-title, section-title, body, label, and stat
   roles.
 - Keep tabular numerals for timers and measurements.
