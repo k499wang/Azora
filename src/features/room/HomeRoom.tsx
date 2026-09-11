@@ -1,6 +1,7 @@
 import { useMemo, useRef } from 'react';
 import { Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
 import RoomAzo, { AZO_FLOOR_Y } from './RoomAzo';
+import RoomGhostSlots from './RoomGhostSlots';
 import RoomLayer from './RoomLayer';
 import { passedCount } from './blobWalk';
 import { roomLayers } from './roomLayers';
@@ -15,7 +16,7 @@ import type { Room } from '../../services/room/roomService';
 
 interface HomeRoomProps {
   room: Room | null;
-  progress: Pick<RoomProgress, 'canClaim' | 'placedCount'>;
+  progress: Pick<RoomProgress, 'canClaim' | 'placedCount' | 'nextSlot'>;
 }
 
 /**
@@ -74,6 +75,7 @@ export default function HomeRoom({ room, progress }: HomeRoomProps) {
       >
         <View style={{ width: roomWidth, height: roomWidth * ROOM_ASPECT }}>
           <RoomLayer width={roomWidth} polys={layers.base} />
+          <RoomGhostSlots width={roomWidth} slot={progress.nextSlot} />
           <RoomLayer width={roomWidth} polys={behind} />
           <RoomAzo ref={azo} width={roomWidth} />
           <RoomLayer width={roomWidth} polys={inFront} />
