@@ -28,8 +28,8 @@ import { fonts, typography } from '../theme/typography';
 import { spacing } from '../theme/spacing';
 import { isShortScreen } from '../theme/breakpoints';
 
-const AZO_SIZE = 160;
-const AZO_SIZE_COMPACT = 120;
+const AZO_SIZE = 220;
+const AZO_SIZE_COMPACT = 168;
 const AZO_IMAGE = require('../../assets/mascot/azo-auth-landing.png');
 
 // Shown, not named. The first onboarding beat is the reveal, and introducing

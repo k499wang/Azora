@@ -17,6 +17,7 @@ import {
 
 const TILE_HEIGHT = 140;
 const GLYPH_SIZE = 96;
+const STAT_VALUE_LINE_HEIGHT = 38;
 
 interface ProfileLifetimeStatsRowProps {
   totalBreaths: number;
@@ -80,15 +81,17 @@ export default function ProfileLifetimeStatsRow({
               >
                 {stat.label}
               </Text>
-              <Text
-                style={styles.statValue}
-                accessibilityLabel={stat.value}
-                numberOfLines={2}
-                adjustsFontSizeToFit
-                minimumFontScale={0.8}
-              >
-                {addProfileValueBreakOpportunities(stat.value)}
-              </Text>
+              <View style={styles.statValueSlot}>
+                <Text
+                  style={styles.statValue}
+                  accessibilityLabel={stat.value}
+                  numberOfLines={2}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.8}
+                >
+                  {addProfileValueBreakOpportunities(stat.value)}
+                </Text>
+              </View>
             </View>
           </View>
         </View>
@@ -128,11 +131,19 @@ const styles = StyleSheet.create({
     lineHeight: 26,
     color: colors.text.inverse,
   },
+  // iOS shrinks an `adjustsFontSizeToFit` line to the height it is given as
+  // well as the width, so a two-line value in an auto-height box is measured
+  // against whatever space happens to be left and comes out far below its
+  // minimum scale. Two lines of the drawn size is the box it is allowed to fill.
+  statValueSlot: {
+    height: STAT_VALUE_LINE_HEIGHT * 2,
+    justifyContent: 'flex-end',
+  },
   statValue: {
     ...typography.display.display3,
     fontFamily: fonts.semibold,
     fontSize: 32,
-    lineHeight: 38,
+    lineHeight: STAT_VALUE_LINE_HEIGHT,
     letterSpacing: -0.5,
     fontVariant: ['tabular-nums'],
     color: colors.text.inverse,

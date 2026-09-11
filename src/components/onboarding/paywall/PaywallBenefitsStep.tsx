@@ -1,58 +1,18 @@
 import { Image } from 'expo-image';
-import { ScrollView, View } from 'react-native';
+import { useWindowDimensions, View } from 'react-native';
 import { Text } from '../../common/Text';
-import { colors } from '../../../theme/colors';
-import { spacing } from '../../../theme/spacing';
-import Icon from '../../common/icons/Icon';
-import PaywallFeatureList, {
-  type PaywallFeature,
-} from '../../paywall/PaywallFeatureList';
-import {
-  getOnboardingImageSource,
-  type OnboardingImageKey,
-} from '../../../services/images/onboardingImageCache';
-import {
-  TESTIMONIAL_CARD_WIDTH,
-  paywallStepStyles as styles,
-} from './paywallStepStyles';
+import type { PaywallFeature } from '../../paywall/PaywallFeatureList';
+import { paywallStepStyles as styles } from './paywallStepStyles';
 
-// Mockup content. Replace with verbatim App Store reviews, real reviewer names,
-// and real headshots before shipping.
-const testimonials: Array<{
-  title: string;
-  quote: string;
-  author: string;
-  avatar: OnboardingImageKey;
-}> = [
-  {
-    title: 'My new bedtime routine',
-    quote:
-      'I started using Azora when I could not switch my brain off at night. Now winding down is something I look forward to instead of something I dread.',
-    author: 'Maya Rivera',
-    avatar: 'testimonialMaya',
-  },
-  {
-    title: 'The stress does not follow me home',
-    quote:
-      'I used to carry every hard day into the evening. One reset at my desk and I walk in the door as myself again.',
-    author: 'Jackie Koch',
-    avatar: 'testimonialDaniel',
-  },
-  {
-    title: 'Looking after myself finally fits',
-    quote:
-      'I do not have an hour to give myself. Five minutes a day turned out to be enough to feel steadier all week.',
-    author: 'Priya Shah',
-    avatar: 'testimonialPriya',
-  },
-  {
-    title: 'I can see my body settle',
-    quote:
-      'I take a heart rate reading before and after. Watching the number come down is what convinced me this was doing something real.',
-    author: 'Nina Alvarez',
-    avatar: 'testimonialNina',
-  },
-];
+const AZO_HEART = require('../../../../assets/mascot/azo-heart.png');
+
+/**
+ * Azo takes the room the step has, rather than a fixed size that reads small on
+ * a large phone and crowds a small one. Capped at the source art's own 512px so
+ * he is never drawn past his resolution on a tablet.
+ */
+const AZO_WIDTH_SHARE = 0.64;
+const AZO_MAX = 268;
 
 interface PaywallBenefitsStepProps {
   features?: PaywallFeature[];
@@ -61,65 +21,48 @@ interface PaywallBenefitsStepProps {
   trialDuration: string;
 }
 
+/**
+ * The trial length reads as a span of time here rather than as the adjective
+ * the plan cards use: "the next 7 days", never "the next 7-day".
+ */
+function asDuration(trialDuration: string): string {
+  const days = trialDuration.match(/^(\d+)[-\s]?day$/i);
+  if (days) return `${days[1]} days`;
+  return trialDuration;
+}
+
 export function PaywallBenefitsStep({
-  features,
-  name,
   hasTrial,
   trialDuration,
 }: PaywallBenefitsStepProps) {
-  const trimmedName = name?.trim();
-  const unlockTitle = hasTrial
-    ? `${trimmedName ? `${trimmedName}, your` : 'Your'} ${trialDuration} trial unlocks`
-    : `${trimmedName ? `${trimmedName}, your` : 'Your'} plan includes`;
+  const { width } = useWindowDimensions();
+  const azoSize = Math.min(AZO_MAX, Math.round(width * AZO_WIDTH_SHARE));
 
   return (
-    <View style={styles.stepContainer}>
+    <View style={styles.benefitsStepContainer}>
       <View style={styles.stepHeader}>
         <Text style={styles.stepTitle}>
-          We want you to try{ '\n' }
-          Azora <Text style={styles.stepTitleBrand}>for free.</Text>
+          {hasTrial ? (
+            <>
+              The next {asDuration(trialDuration)} of Azora Pro are{' '}
+              <Text style={styles.stepTitleBrand}>on us.</Text>
+            </>
+          ) : (
+            <>
+              Everything in{' '}
+              <Text style={styles.stepTitleBrand}>Azora Pro.</Text>
+            </>
+          )}
         </Text>
       </View>
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        decelerationRate="fast"
-        snapToInterval={TESTIMONIAL_CARD_WIDTH + spacing.sm}
-        snapToAlignment="start"
-        style={styles.testimonialScroll}
-        contentContainerStyle={styles.testimonialRow}
-      >
-        {testimonials.map((testimonial) => (
-          <View key={testimonial.author} style={styles.testimonialCard}>
-            <View style={styles.testimonialRating}>
-              <View style={styles.testimonialStars}>
-                {[0, 1, 2, 3, 4].map((index) => (
-                  <Icon key={index} name="star" size={20} color={colors.orange[500]} />
-                ))}
-              </View>
-              <Text style={styles.testimonialRatingValue}>5.0</Text>
-            </View>
-            <Text style={styles.testimonialTitle}>{testimonial.title}</Text>
-            <Text style={styles.testimonialQuote}>{testimonial.quote}</Text>
-            <View style={styles.testimonialAttribution}>
-              <Image
-                source={getOnboardingImageSource(testimonial.avatar)}
-                style={styles.testimonialAvatar}
-                contentFit="cover"
-                cachePolicy="memory-disk"
-                transition={0}
-                accessibilityLabel={`${testimonial.author} profile photo`}
-              />
-              <Text style={styles.testimonialAuthor}>{testimonial.author}</Text>
-            </View>
-          </View>
-        ))}
-      </ScrollView>
-
-      <View style={styles.unlockSection}>
-        <Text style={styles.unlockTitle}>{unlockTitle}</Text>
-        <PaywallFeatureList features={features} />
+      <View style={styles.benefitsArtWrap}>
+        <Image
+          source={AZO_HEART}
+          style={{ width: azoSize, height: azoSize }}
+          contentFit="contain"
+          accessible={false}
+        />
       </View>
     </View>
   );

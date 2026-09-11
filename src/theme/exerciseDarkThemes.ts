@@ -27,6 +27,23 @@ export interface ExerciseDarkTheme {
   iconPrimary: string;
   backdropExhale: BreathBackdropColors;
   backdropInhale: BreathBackdropColors;
+  /**
+   * Azo, retoned for the theme he is standing in. He keeps his artwork's tonal
+   * order — body, a darker shade for cartilage and nose, a lighter belly and
+   * inner ear — so only the hue changes, never the read of the character.
+   */
+  companion: CompanionColors;
+}
+
+export interface CompanionColors {
+  body: string;
+  /** ear cartilage, nose and mouth */
+  shade: string;
+  /** inner ear and belly */
+  light: string;
+  eyeWhite: string;
+  /** irises, and the lids they close behind */
+  iris: string;
 }
 
 // Composited over `screen`, top to bottom, at BREATH_BACKDROP_LOCATIONS. The
@@ -66,6 +83,13 @@ export const EXERCISE_DARK_THEMES: ExerciseDarkTheme[] = [
     // Idle and exhale settle back onto the same cream canvas used by Home.
     backdropExhale: ['#FDF6F000', '#FDF6F000', '#FDF6F000'],
     backdropInhale: ['#63ADFF3D', '#63ADFF00', '#63ADFF29'],
+    companion: {
+      body: colors.koala.body,
+      shade: colors.koala.shade,
+      light: colors.koala.light,
+      eyeWhite: colors.koala.eyeWhite,
+      iris: colors.koala.iris,
+    },
   },
   {
     id: 'slate',
@@ -91,6 +115,13 @@ export const EXERCISE_DARK_THEMES: ExerciseDarkTheme[] = [
     iconPrimary: '#C8D4E8',
     backdropExhale: ['#4A609014', '#4A609000', '#4A60900F'],
     backdropInhale: ['#4A609047', '#4A609000', '#4A60902E'],
+    companion: {
+      body: '#6C8ECB',
+      shade: '#3C5A90',
+      light: '#A8C0E8',
+      eyeWhite: '#E6EEFA',
+      iris: '#16233F',
+    },
   },
   {
     id: 'stone',
@@ -116,6 +147,13 @@ export const EXERCISE_DARK_THEMES: ExerciseDarkTheme[] = [
     iconPrimary: '#E0D8D0',
     backdropExhale: ['#7A6A5E14', '#7A6A5E00', '#7A6A5E0F'],
     backdropInhale: ['#7A6A5E47', '#7A6A5E00', '#7A6A5E2E'],
+    companion: {
+      body: '#A88F76',
+      shade: '#6E5A45',
+      light: '#DCC8AE',
+      eyeWhite: '#F5EBDF',
+      iris: '#2C2218',
+    },
   },
   {
     id: 'sage',
@@ -141,5 +179,12 @@ export const EXERCISE_DARK_THEMES: ExerciseDarkTheme[] = [
     iconPrimary: '#C4D8D0',
     backdropExhale: ['#4A706014', '#4A706000', '#4A70600F'],
     backdropInhale: ['#4A706047', '#4A706000', '#4A70602E'],
+    companion: {
+      body: '#74AE90',
+      shade: '#427060',
+      light: '#B6DAC6',
+      eyeWhite: '#E7F3EC',
+      iris: '#112620',
+    },
   },
 ];
