@@ -82,6 +82,17 @@ export const GOAL_SUGGESTION_CATEGORIES: GoalSuggestionCategory[] = [
     ],
   },
   {
+    id: 'cleaning',
+    label: 'Cleaning',
+    suggestions: [
+      { icon: 'timer', title: 'Tidy one surface for five minutes' },
+      { icon: 'waves', title: 'Wash the dishes in the sink' },
+      { icon: 'coffee-outline', title: 'Wipe down the kitchen counter' },
+      { icon: 'home', title: 'Put away anything left on the floor' },
+      { icon: 'sparkle', title: 'Empty the bin before it overflows' },
+    ],
+  },
+  {
     id: 'calm',
     label: 'Calm',
     suggestions: [

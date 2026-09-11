@@ -17,9 +17,7 @@ export function useFeatureAccess(feature: FeatureKeyValue): FeatureAccessState {
   const userId = user?.id ?? null;
   const entitlementQuery = useUserEntitlementQuery(userId);
   const isPro = entitlementQuery.data?.isPro === true;
-  const needsUsage =
-    feature === FeatureKey.HeartRateMeasurement ||
-    feature === FeatureKey.DailyExercise;
+  const needsUsage = feature === FeatureKey.DailyExercise;
   const usageQuery = useDailyFeatureUsageQuery(needsUsage ? userId : null);
 
   const access = useMemo(

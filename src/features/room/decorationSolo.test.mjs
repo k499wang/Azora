@@ -18,7 +18,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const PAD = 12;
 const BOX = 172;
 /** floor shadows under the standing pieces, wall shadows behind the hung ones */
-const SHADOWS = 18;
+const SHADOWS = 23;
 
 function decor() {
   const src = readFileSync(join(here, 'RoomScene.tsx'), 'utf8');

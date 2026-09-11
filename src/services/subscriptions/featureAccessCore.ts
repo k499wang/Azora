@@ -24,7 +24,6 @@ export interface FeatureAccessResult {
 }
 
 const FREE_DAILY_LIMITS: Partial<Record<FeatureKeyValue, number>> = {
-  [FeatureKey.HeartRateMeasurement]: 1,
   [FeatureKey.DailyExercise]: 3,
 };
 
@@ -93,10 +92,6 @@ function getUsedCount(
   usage?: DailyFeatureUsage | null,
 ): number {
   if (usage == null) return 0;
-
-  if (feature === FeatureKey.HeartRateMeasurement) {
-    return usage.heartRateCaptureCount;
-  }
 
   if (feature === FeatureKey.DailyExercise) {
     return usage.breathHoldCount + usage.breathingSessionCount;

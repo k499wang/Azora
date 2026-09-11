@@ -80,6 +80,7 @@ interface GuidedBreathingPresentationProps {
   theme: ExerciseDarkTheme;
   remainingSeconds: number;
   roundsPicker: ReactNode;
+  heartRateToggle: ReactNode;
   heartRate: GuidedBreathingHeartRatePresentation;
 }
 
@@ -122,7 +123,7 @@ export const GuidedBreathingPresentation = forwardRef<
   BreathingCircleRef,
   GuidedBreathingPresentationProps
 >(function GuidedBreathingPresentation(
-  { active, phase, technique, theme, remainingSeconds, roundsPicker, heartRate },
+  { active, phase, technique, theme, remainingSeconds, roundsPicker, heartRateToggle, heartRate },
   companionRef,
 ) {
   const isIdle = phase === 'idle';
@@ -216,6 +217,7 @@ export const GuidedBreathingPresentation = forwardRef<
           <TechniqueIntro
             technique={technique}
             roundsPicker={roundsPicker}
+            heartRateToggle={heartRateToggle}
             textColors={{
               primary: theme.textPrimary,
               secondary: theme.textSecondary,

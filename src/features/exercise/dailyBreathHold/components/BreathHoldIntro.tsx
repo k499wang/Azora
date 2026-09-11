@@ -1,4 +1,5 @@
 import { Text } from '../../../../components/common/Text';
+import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { colors } from '../../../../theme/colors';
@@ -25,6 +26,7 @@ interface Props {
   steps: BreathHoldStep[];
   caption?: string;
   textColors?: TextColors;
+  heartRateToggle?: ReactNode;
 }
 
 export default function BreathHoldIntro({
@@ -33,6 +35,7 @@ export default function BreathHoldIntro({
   steps,
   caption,
   textColors,
+  heartRateToggle,
 }: Props) {
   return (
     <View style={styles.container}>
@@ -66,6 +69,7 @@ export default function BreathHoldIntro({
       <Text style={[styles.description, textColors && { color: textColors.secondary }]}>
         {description}
       </Text>
+      {heartRateToggle}
     </View>
   );
 }

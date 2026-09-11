@@ -1,30 +1,21 @@
 import { Text } from '../../components/common/Text';
-import { useCallback, useEffect, useMemo, useRef, type ReactNode } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
 import BottomSheet from '../../components/common/BottomSheet';
-import type { RootStackNavigationProp } from '../../app/navigation';
 import { colors } from '../../theme/colors';
 import { spacing } from '../../theme/spacing';
 import { fonts, typography } from '../../theme/typography';
 import AudioSettingsRow from './AudioSettingsRow';
-import HeartRateMonitoringSection from './HeartRateMonitoringSection';
 import { audioCategories } from './registry';
 import type { AudioCategory, AudioOption } from './types';
 import { useAudioPreferences } from './useAudioPreferences';
 import { useAudioPreview } from './useAudioPreview';
-import { useHeartRateMonitoringPreference } from '../../hooks/useHeartRateMonitoringPreference';
-import { useFeatureAccess } from '../../hooks/useFeatureAccess';
-import { trackFeatureGateHit } from '../../services/analytics/tracking';
-import { PaywallPlacement } from '../../services/paywall';
-import { FeatureKey } from '../../services/subscriptions/featureAccess';
 
 interface AudioSettingsSheetProps {
   visible: boolean;
   onClose: () => void;
   title?: string;
   extraSectionsTop?: ReactNode;
-  heartRateMonitoringLocked?: boolean;
 }
 
 export default function AudioSettingsSheet({
@@ -32,71 +23,9 @@ export default function AudioSettingsSheet({
   onClose,
   title = 'Settings',
   extraSectionsTop,
-  heartRateMonitoringLocked = false,
 }: AudioSettingsSheetProps) {
-  const navigation = useNavigation<RootStackNavigationProp>();
   const { preferences, select, reset } = useAudioPreferences();
   const { play, stop, previewingAsset } = useAudioPreview();
-  const heartRatePaywallPendingRef = useRef(false);
-  const heartRateMonitoringAccess = useFeatureAccess(FeatureKey.BreathingHeartRateMonitoring);
-  const {
-    heartRateMonitoringEnabled,
-    setHeartRateMonitoringEnabled,
-  } = useHeartRateMonitoringPreference();
-  const heartRateMonitoringProLocked =
-    !heartRateMonitoringAccess.allowed && !heartRateMonitoringAccess.isLoading;
-  const effectiveHeartRateMonitoringEnabled =
-    heartRateMonitoringProLocked ? false : heartRateMonitoringEnabled;
-
-  useEffect(() => {
-    if (!heartRateMonitoringProLocked || !heartRateMonitoringEnabled) return;
-    setHeartRateMonitoringEnabled(false);
-  }, [
-    heartRateMonitoringEnabled,
-    heartRateMonitoringProLocked,
-    setHeartRateMonitoringEnabled,
-  ]);
-
-  const navigateToHeartRateMonitoringPaywall = useCallback(() => {
-    if (!heartRatePaywallPendingRef.current) return;
-    heartRatePaywallPendingRef.current = false;
-    navigation.navigate('ProPaywall', {
-      placement: PaywallPlacement.HeartRateProGate,
-      sourceScreen: 'AudioSettings',
-      sourceAction: 'heart_rate_monitoring_toggle',
-      feature: FeatureKey.BreathingHeartRateMonitoring,
-    });
-  }, [navigation]);
-
-  const openHeartRateMonitoringPaywall = useCallback(() => {
-    if (heartRatePaywallPendingRef.current) return;
-
-    trackFeatureGateHit({
-      feature: FeatureKey.BreathingHeartRateMonitoring,
-      placement: PaywallPlacement.HeartRateProGate,
-      sourceScreen: 'AudioSettings',
-      sourceAction: 'heart_rate_monitoring_toggle',
-      access: heartRateMonitoringAccess,
-    });
-    heartRatePaywallPendingRef.current = true;
-    stop();
-    onClose();
-  }, [heartRateMonitoringAccess, onClose, stop]);
-
-  const handleHeartRateMonitoringToggle = useCallback(
-    (enabled: boolean) => {
-      if (enabled && heartRateMonitoringProLocked) {
-        openHeartRateMonitoringPaywall();
-        return;
-      }
-      setHeartRateMonitoringEnabled(enabled);
-    },
-    [
-      heartRateMonitoringProLocked,
-      openHeartRateMonitoringPaywall,
-      setHeartRateMonitoringEnabled,
-    ],
-  );
 
   const handleClose = () => {
     stop();
@@ -108,7 +37,6 @@ export default function AudioSettingsSheet({
       visible={visible}
       onClose={handleClose}
       title={title}
-      onDismissed={navigateToHeartRateMonitoringPaywall}
     >
       <ScrollView
         style={styles.scroll}
@@ -116,12 +44,6 @@ export default function AudioSettingsSheet({
         showsVerticalScrollIndicator={false}
       >
         {extraSectionsTop}
-        <HeartRateMonitoringSection
-          enabled={effectiveHeartRateMonitoringEnabled}
-          locked={heartRateMonitoringLocked}
-          proLocked={heartRateMonitoringProLocked}
-          onToggle={handleHeartRateMonitoringToggle}
-        />
         {audioCategories.map((category) => (
           <CategorySection
             key={category.id}
