@@ -34,8 +34,12 @@ const KOALA_HEIGHT = KOALA_WIDTH;
  *
  * The line is "Hey, <name>.", so its width is the user's to decide. Sizing it
  * from the window keeps the phone it was designed on at 44 and only steps down
- * on narrower ones, which leaves `adjustsFontSizeToFit` as a floor for a long
- * name rather than the thing that sets the size on every device.
+ * on narrower ones; a name too long for one line wraps onto the second.
+ *
+ * Deliberately not `adjustsFontSizeToFit`: on iOS it measures against the
+ * height it is given as well as the width, and this heading sits in a centred
+ * flex box with no fixed height, so it shrank the greeting to a fraction of its
+ * size on a real device while reading correctly in a fixed-height preview.
  */
 const HEADING_SIZE = 44;
 const HEADING_REFERENCE_WIDTH = 393;
@@ -117,8 +121,6 @@ export default function GreetingScreen({
         <View style={styles.copy}>
           <AnimatedText
             numberOfLines={2}
-            adjustsFontSizeToFit
-            minimumFontScale={0.8}
             style={[
               styles.heading,
               {

@@ -56,7 +56,6 @@ import {
   SHOULDER_Y,
 } from './koalaPaths';
 import type { ExerciseDarkTheme } from '../../../../theme/exerciseDarkThemes';
-import { colors } from '../../../../theme/colors';
 
 const AnimatedPath = Animated.createAnimatedComponent(Path);
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
@@ -194,6 +193,7 @@ const BreathingCompanion = forwardRef<BreathingCircleRef, BreathingCompanionProp
     { active, face, theme, reducedMotion, visible },
     ref,
   ) {
+    const azo = theme.companion;
     const { width, height } = useWindowDimensions();
     const insets = useSafeAreaInsets();
     // The stage is laid out inside the scaffold's safe area, so every ratio
@@ -604,55 +604,55 @@ const BreathingCompanion = forwardRef<BreathingCircleRef, BreathingCompanionProp
 
           <Animated.View style={[StyleSheet.absoluteFillObject, armStyle]}>
             <Svg width={stageWidth} height={stageHeight} viewBox={viewBox}>
-              <Path d={ARM_RIGHT_PATH} fill={colors.koala.body} />
-              <Path d={ARM_LEFT_PATH} fill={colors.koala.body} />
+              <Path d={ARM_RIGHT_PATH} fill={azo.body} />
+              <Path d={ARM_LEFT_PATH} fill={azo.body} />
             </Svg>
           </Animated.View>
 
           <Animated.View style={[StyleSheet.absoluteFillObject, chestStyle]}>
             <Svg width={stageWidth} height={stageHeight} viewBox={viewBox}>
-              <Path d={BODY_PATH} fill={colors.koala.body} />
-              <Path d={BELLY_PATH} fill={colors.koala.light} />
+              <Path d={BODY_PATH} fill={azo.body} />
+              <Path d={BELLY_PATH} fill={azo.light} />
             </Svg>
           </Animated.View>
 
           <Animated.View style={[StyleSheet.absoluteFillObject, earStyle]}>
             <Svg width={stageWidth} height={stageHeight} viewBox={viewBox}>
-              <Path d={EAR_RIGHT_PATH} fill={colors.koala.shade} />
-              <Path d={EAR_INNER_RIGHT_PATH} fill={colors.koala.light} />
-              <Path d={EAR_LEFT_PATH} fill={colors.koala.shade} />
-              <Path d={EAR_INNER_LEFT_PATH} fill={colors.koala.light} />
+              <Path d={EAR_RIGHT_PATH} fill={azo.shade} />
+              <Path d={EAR_INNER_RIGHT_PATH} fill={azo.light} />
+              <Path d={EAR_LEFT_PATH} fill={azo.shade} />
+              <Path d={EAR_INNER_LEFT_PATH} fill={azo.light} />
             </Svg>
           </Animated.View>
 
           <Animated.View style={[StyleSheet.absoluteFillObject, headStyle]}>
             <Svg width={stageWidth} height={stageHeight} viewBox={viewBox}>
-              <Path d={HEAD_PATH} fill={colors.koala.body} />
+              <Path d={HEAD_PATH} fill={azo.body} />
             </Svg>
 
             <Animated.View style={[StyleSheet.absoluteFillObject, faceStyle]}>
               <Svg width={stageWidth} height={stageHeight} viewBox={viewBox}>
-                <AnimatedPath fill={colors.koala.eyeWhite} animatedProps={eyeWhitesProps} />
-                <AnimatedPath fill={colors.koala.iris} animatedProps={irisesProps} />
+                <AnimatedPath fill={azo.eyeWhite} animatedProps={eyeWhitesProps} />
+                <AnimatedPath fill={azo.iris} animatedProps={irisesProps} />
                 <AnimatedCircle
                   cx={EYE_LEFT_X + IRIS_INSET + HIGHLIGHT_IN}
                   cy={EYE_Y - HIGHLIGHT_UP}
                   r={HIGHLIGHT_RADIUS}
-                  fill={colors.koala.eyeWhite}
+                  fill={azo.eyeWhite}
                   animatedProps={highlightProps}
                 />
                 <AnimatedCircle
                   cx={EYE_RIGHT_X - IRIS_INSET - HIGHLIGHT_IN}
                   cy={EYE_Y - HIGHLIGHT_UP}
                   r={HIGHLIGHT_RADIUS}
-                  fill={colors.koala.eyeWhite}
+                  fill={azo.eyeWhite}
                   animatedProps={highlightProps}
                 />
-                <AnimatedPath fill={colors.koala.iris} animatedProps={lidsProps} />
+                <AnimatedPath fill={azo.iris} animatedProps={lidsProps} />
 
-                <Path d={NOSE_PATH} fill={colors.koala.shade} />
+                <Path d={NOSE_PATH} fill={azo.shade} />
                 <AnimatedPath
-                  fill={colors.koala.shade}
+                  fill={azo.shade}
                   animatedProps={mouthProps}
                 />
               </Svg>

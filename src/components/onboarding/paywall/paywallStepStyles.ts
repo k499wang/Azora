@@ -158,6 +158,18 @@ export const paywallStepStyles = StyleSheet.create({
     color: colors.text.primary,
     textAlign: 'center',
   },
+  // Step 0 is a title and a drawing and nothing else, so it takes the height it
+  // is given rather than stacking to its content and leaving the drawing high.
+  benefitsStepContainer: {
+    flexGrow: 1,
+    gap: spacing.md,
+  },
+  benefitsArtWrap: {
+    flexGrow: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.lg,
+  },
   stepTitleBrand: {
     color: colors.primary.blue600,
   },

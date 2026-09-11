@@ -397,10 +397,13 @@ export default function OnboardingPaywallScreen({
             ]}
           >
             <Animated.View
-              style={{
-                opacity: stepOpacity,
-                transform: [{ translateX: stepTranslateX }],
-              }}
+              style={[
+                styles.stepLayer,
+                {
+                  opacity: stepOpacity,
+                  transform: [{ translateX: stepTranslateX }],
+                },
+              ]}
             >
               {step === 0 ? (
                 <PaywallBenefitsStep
@@ -550,9 +553,18 @@ const styles = StyleSheet.create({
     ...dashboardContentColumn,
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.xl,
+    // The first step is a title over a single drawing, so it has to be able to
+    // use the whole viewport to centre that drawing in the space left under the
+    // title. The later steps already overflow, where growing to the viewport is
+    // what they do anyway.
+    flexGrow: 1,
   },
   content: {
     gap: spacing.lg,
+    flexGrow: 1,
+  },
+  stepLayer: {
+    flexGrow: 1,
   },
   finalStepContent: {
     gap: spacing.sm,
