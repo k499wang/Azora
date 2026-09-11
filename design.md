@@ -224,10 +224,10 @@ belongs to Azora's brand — Azora's blue is `primary.blue*`, not violet.
 
 ## 4. Typography
 
-One app-wide family: **Balsamiq Sans** (loaded via `@expo-google-fonts`), with
+One app-wide family: **Outfit** (loaded via `@expo-google-fonts`), with
 `fonts.*` exports in `src/theme/typography.ts`. The weight ceiling is
-**Bold (700)**. Regular covers the light/regular/medium semantic roles, while
-Bold covers semibold/bold/heavy roles.
+**SemiBold (600)**. `fonts.heavy` (ExtraBold) is reserved for paywall
+headlines only.
 
 Use the scale: `display1–3`, `title1–3`, `heading1–2`, `body.large/medium/
 small/xsmall`, `label.large/medium/small/detail`, `button.large/medium/small`,
@@ -236,7 +236,8 @@ small/xsmall`, `label.large/medium/small/detail`, `button.large/medium/small`,
 - **Stat/display styles already carry `fontVariant: ['tabular-nums']`.**
   Anywhere a changing number is shown (timers, streaks, BPM, HRV, progress,
   counts, scores, prices), use tabular numerals so digits don't shift.
-- Body text and medium roles use Regular; emphasized headings use Bold.
+- Body text is light-weight; headings are medium/semibold; bold is used only
+  when necessary.
 
 ### Branded type exception
 
