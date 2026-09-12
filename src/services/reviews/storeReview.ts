@@ -4,7 +4,7 @@ import { shouldRequestReview } from './reviewPromptPolicy';
 import { markPromptShown, markSessionCompleted } from './reviewPromptState';
 
 export const ReviewTrigger = {
-  Onboarding: 'onboarding',
+  OnboardingBaseline: 'onboarding_baseline',
   GuidedBreathing: 'guided_breathing',
   BreathHold: 'breath_hold',
   HeartRate: 'heart_rate',
@@ -14,7 +14,8 @@ export type ReviewTriggerValue =
   typeof ReviewTrigger[keyof typeof ReviewTrigger];
 
 // The native sheet slides up over whatever is on screen; give the result screen
-// a beat to land first so it does not fight the navigation transition.
+// a beat to land first so it does not fight the navigation transition, and so
+// the user reads their own number before the sheet covers it.
 const PROMPT_DELAY_MS = 1800;
 
 function delay(ms: number): Promise<void> {
@@ -22,10 +23,11 @@ function delay(ms: number): Promise<void> {
 }
 
 export async function requestStoreReview(
-  trigger: ReviewTriggerValue = ReviewTrigger.Onboarding,
+  trigger: ReviewTriggerValue,
 ): Promise<void> {
   try {
     if (!(await StoreReview.isAvailableAsync())) return;
+    await delay(PROMPT_DELAY_MS);
     await StoreReview.requestReview();
     const state = await markPromptShown(Date.now());
     trackReviewPromptRequested({
@@ -43,6 +45,5 @@ export async function maybeRequestSessionReview(
 ): Promise<void> {
   const state = await markSessionCompleted();
   if (!shouldRequestReview(state, Date.now())) return;
-  await delay(PROMPT_DELAY_MS);
   await requestStoreReview(trigger);
 }

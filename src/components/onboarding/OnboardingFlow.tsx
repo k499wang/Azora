@@ -135,7 +135,10 @@ import { buildGrowthAreaSevenDayExercisePlanV2 } from '../../features/exercise/g
 import { formatLocalDate } from '../../lib/calendar/weekCalendarDays';
 import { buildOnboardingSaveFailureDiagnostics } from '../../queries/profile/onboardingSaveDiagnostics';
 import type { SavedOnboardingProfile } from '../../services/profile/onboardingStatusService';
-import { requestStoreReview } from '../../services/reviews/storeReview';
+import {
+  ReviewTrigger,
+  requestStoreReview,
+} from '../../services/reviews/storeReview';
 import { pauseSessionReplay } from '../../services/analytics/sessionReplay';
 import { resetTodayJourneyOrderAfterOnboarding } from '../../services/preferences/todayJourneyOrder';
 
@@ -941,11 +944,9 @@ function OnboardingFlowSteps({
         ]);
       }
 
-      void requestStoreReview().finally(() =>
-        goToStep('pact', 'continue', {
-          notification_status: permissionStatus,
-        }),
-      );
+      goToStep('pact', 'continue', {
+        notification_status: permissionStatus,
+      });
     } catch (error) {
       setNotificationErrorMessage(getErrorMessage(error));
     } finally {
@@ -958,7 +959,7 @@ function OnboardingFlowSteps({
     setNotificationErrorMessage(null);
     setIsNotificationSubmitting(true);
     try {
-      void requestStoreReview().finally(() => goToStep('pact', 'skip'));
+      goToStep('pact', 'skip');
     } finally {
       setIsNotificationSubmitting(false);
     }
@@ -1593,7 +1594,12 @@ function OnboardingFlowSteps({
         restingBpm={baseline?.avgBpm ?? null}
         stepIndex={visualStepIndex}
         stepCount={visualStepCount}
-        onContinue={() => goToStep('recommendedExercise', 'continue')}
+        onContinue={() => {
+          if (baseline != null) {
+            void requestStoreReview(ReviewTrigger.OnboardingBaseline);
+          }
+          goToStep('recommendedExercise', 'continue');
+        }}
         onBack={() => goToStep('planIntro', 'back')}
       />
     );

@@ -1,9 +1,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { formatLocalDate } from '../../lib/calendar/weekCalendarDays';
 import { createSerializedAsync } from '../../lib/serializedAsync';
 import {
   EMPTY_REVIEW_PROMPT_STATE,
   normalizeReviewPromptState,
   recordCompletedSession,
+  recordPaywallDismissed,
   recordPrompt,
   type ReviewPromptState,
 } from './reviewPromptPolicy';
@@ -40,9 +42,15 @@ async function update(
 }
 
 export function markSessionCompleted(): Promise<ReviewPromptState> {
-  return update(recordCompletedSession);
+  const today = formatLocalDate(new Date());
+  return update((state) => recordCompletedSession(state, today));
 }
 
 export function markPromptShown(nowMs: number): Promise<ReviewPromptState> {
   return update((state) => recordPrompt(state, nowMs));
+}
+
+export function markPaywallDismissed(): Promise<ReviewPromptState> {
+  const now = Date.now();
+  return update((state) => recordPaywallDismissed(state, now));
 }
