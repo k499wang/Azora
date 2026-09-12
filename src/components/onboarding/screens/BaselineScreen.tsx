@@ -14,7 +14,6 @@ import {
   getMeasurementCorrectionMessage,
   hasConfirmedPulse,
 } from '../../../lib/heartRate/captureGuidance';
-import { HEART_RATE_ONBOARDING_STALL_DELAY_MS } from '../../../lib/heartRate/captureStall';
 import type { FingerPlacementState, SignalStatus } from '../../../lib/heartRate/types';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
@@ -166,7 +165,6 @@ export default function BaselineScreen({
     fingerPlacement: stream.fingerPlacement,
     signalStatus: stream.signalStatus,
     context: 'onboarding_baseline',
-    delayMs: HEART_RATE_ONBOARDING_STALL_DELAY_MS,
   });
 
   useEffect(() => {

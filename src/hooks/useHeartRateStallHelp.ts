@@ -19,8 +19,6 @@ interface UseHeartRateStallHelpOptions {
   signalStatus: SignalStatus;
   context?: string | null;
   mode?: HeartRateCaptureMode;
-  /** How long the search may stall before the sheet takes over. */
-  delayMs?: number;
 }
 
 interface UseHeartRateStallHelpReturn {
@@ -34,7 +32,7 @@ interface UseHeartRateStallHelpReturn {
 
 /**
  * Watches a pulse search and surfaces the help sheet once it has run
- * `delayMs` without ever locking on. Shows at most once per
+ * `HEART_RATE_STALL_DELAY_MS` without ever locking on. Shows at most once per
  * active window; a confirmed pulse stands it down for good.
  */
 export function useHeartRateStallHelp({
@@ -44,7 +42,6 @@ export function useHeartRateStallHelp({
   signalStatus,
   context,
   mode,
-  delayMs = HEART_RATE_STALL_DELAY_MS,
 }: UseHeartRateStallHelpOptions): UseHeartRateStallHelpReturn {
   const posthog = usePostHog();
   const [visible, setVisible] = useState(false);
@@ -86,10 +83,10 @@ export function useHeartRateStallHelp({
         mode: report.mode ?? null,
         context: report.context ?? null,
       });
-    }, delayMs);
+    }, HEART_RATE_STALL_DELAY_MS);
 
     return clearStallTimer;
-  }, [active, clearStallTimer, delayMs]);
+  }, [active, clearStallTimer]);
 
   // Which fault held longest decides the advice, so every change is timestamped.
   useEffect(() => {
