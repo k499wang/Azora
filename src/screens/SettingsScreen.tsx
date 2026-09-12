@@ -17,6 +17,7 @@ import { useAuthStore } from '../stores/authStore';
 import { useHapticsPreference } from '../hooks/useHapticsPreference';
 import { trackProfileAction } from '../services/analytics/tracking';
 import { restorePaywallPurchases } from '../services/paywall';
+import { resetReviewPromptState } from '../services/reviews/reviewPromptState';
 import { getUserEntitlementQueryKey } from '../queries/subscriptions/useUserEntitlementQuery';
 import type { SettingsScreenProps } from '../app/navigation';
 import { subscribeToClosingTransitionEnd } from '../app/navigation/useOpeningTransitionComplete';
@@ -360,6 +361,14 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
                 <SettingsRow
                   label="Replay app tour (dev)"
                   onPress={handleReplayAppTour}
+                />
+                <SettingsRow
+                  label="Reset review prompt (dev)"
+                  onPress={() => {
+                    void resetReviewPromptState().then(() => {
+                      Alert.alert('Review prompt reset', 'The budget and streak are cleared.');
+                    });
+                  }}
                   isLast
                 />
               </SettingsGroup>

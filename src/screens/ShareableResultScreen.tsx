@@ -273,10 +273,9 @@ export default function ShareableResultScreen({
         {reward.decorating ? (
           <DailyRewardFlow
             hosted
-            // No room on a result screen, so nothing to grow from or shrink
-            // back into. The flow settles in place and clears, leaving the
-            // result underneath exactly as it was.
-            origin={null}
+            // No room on a result screen, so nothing to shrink back into. The
+            // reward slides back down the way it came, leaving the result
+            // underneath exactly as it was.
             room={roomClaim.room}
             progress={roomClaim.progress}
             rewardReady={isDailyCompleteRewardReady(

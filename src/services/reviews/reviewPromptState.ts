@@ -56,6 +56,20 @@ export function markPromptShown(): Promise<ReviewPromptState> {
   return update((state) => recordPrompt(state, now));
 }
 
+/**
+ * Development builds are not rate-limited by Apple, but our own three-per-year
+ * budget still is, so testing the prompt more than three times needs this.
+ */
+export function resetReviewPromptState(): Promise<void> {
+  return queue.run(async () => {
+    try {
+      await AsyncStorage.removeItem(REVIEW_PROMPT_STATE_KEY);
+    } catch {
+      // Nothing to recover; the next launch simply reads the old state.
+    }
+  });
+}
+
 export function markPaywallDismissed(): Promise<ReviewPromptState> {
   const now = Date.now();
   return update((state) => recordPaywallDismissed(state, now));

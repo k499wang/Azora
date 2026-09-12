@@ -25,13 +25,8 @@ import {
   toRoomShell,
   type RoomStyle,
 } from './roomShells';
-import { ROOM_ASPECT } from './roomGeometry';
 import { sealLayout } from './roomSealLayout';
-import {
-  REWARD_FLOW_BEATS,
-  type RewardFlowOrigin,
-  type RewardRoomBox,
-} from './DailyRewardFlow';
+import { REWARD_FLOW_BEATS, type RewardRoomBox } from './DailyRewardFlow';
 import { CELEBRATION_HUE } from './DailyCompleteSheet';
 import { isRoomOverridden } from './devRoomOverride';
 import { useCreateNextRoomMutation } from '../../queries/room/useCreateNextRoomMutation';
@@ -66,13 +61,6 @@ interface Props {
    * everything around it rises in.
    */
   from?: RewardRoomBox | null;
-  /**
-   * Where Home draws its room, so the room chosen here can shrink into it
-   * rather than the surface cutting to Home around it — the same return the
-   * decorating stage makes, for the same reason: this is the room they will be
-   * living in, and they should see it take its place.
-   */
-  origin?: RewardFlowOrigin | null;
   /** the next room has been opened, or the user is done here */
   onDone: () => void;
 }
@@ -81,7 +69,6 @@ export default function RoomSealFlow({
   userId,
   room,
   from = null,
-  origin = null,
   onDone,
 }: Props) {
   const { width: windowWidth, height: windowHeight } = useWindowDimensions();
@@ -92,11 +79,11 @@ export default function RoomSealFlow({
   const [phase, setPhase] = useState<'rebuild' | 'picking'>('rebuild');
   const [replayDone, setReplayDone] = useState(false);
   const [trayHeight, setTrayHeight] = useState(0);
-  /** the room is on its way to Home; nothing here is asking anything any more */
+  /** the surface is on its way out; nothing here is asking anything any more */
   const [leaving, setLeaving] = useState(false);
   const fade = useSharedValue(1);
   const entered = useSharedValue(0);
-  /** 0 standing here, 1 arrived in Home's frame */
+  /** 0 in place, 1 slid off the bottom */
   const leave = useSharedValue(0);
 
   const picks = room == null ? null : toPicks(room.decorations);
@@ -189,8 +176,8 @@ export default function RoomSealFlow({
     [fade, leave],
   );
 
-  /** the room taking its place on Home, then the surface letting go */
-  const toHome = useCallback(() => {
+  /** the surface sliding away, then letting go */
+  const dismiss = useCallback(() => {
     setLeaving(true);
 
     if (reducedMotion) {
@@ -200,52 +187,19 @@ export default function RoomSealFlow({
 
     leave.value = withTiming(
       1,
-      { duration: REWARD_FLOW_BEATS.exit, easing: easing.enter },
+      { duration: REWARD_FLOW_BEATS.exit, easing: easing.exit },
       (finished) => {
         if (finished) runOnJS(onDone)();
       },
     );
   }, [leave, onDone, reducedMotion]);
 
-  /** the whole room travelling from the stage's frame to this one */
-  /** the room leaving for the frame Home draws it in */
-  const roomStyle = useAnimatedStyle(() => {
-    const centreX = roomLeft + roomWidth / 2;
-    const centreY = roomTop + roomHeight / 2;
+  /** the swap between the week replayed and the room being chosen */
+  const roomStyle = useAnimatedStyle(() => ({ opacity: fade.value }));
 
-    // `origin` is Home's unscaled box, scaled about its own centre, so the
-    // centre is the only part of it that carries over.
-    const homeCentreX = origin == null ? centreX : origin.x + origin.width / 2;
-    const homeCentreY =
-      origin == null ? centreY : origin.y + (origin.width * ROOM_ASPECT) / 2;
-    const homeScale = origin == null ? 1 : origin.width / roomWidth;
-
-    return {
-      // Nothing handed over, so nothing to draw until the tray has said how
-      // much room is left.
-      opacity: from == null && !measured ? 0 : fade.value,
-      transform: [
-        {
-          translateX: interpolate(
-            leave.value,
-            [0, 1],
-            [0, homeCentreX - centreX],
-          ),
-        },
-        {
-          translateY: interpolate(
-            leave.value,
-            [0, 1],
-            [0, homeCentreY - centreY],
-          ),
-        },
-        { scale: interpolate(leave.value, [0, 1], [1, homeScale]) },
-      ],
-    };
-  });
-
-  const fieldStyle = useAnimatedStyle(() => ({
-    opacity: 1 - leave.value,
+  /** the whole surface leaving downwards, the way a sheet does */
+  const exitStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: leave.value * windowHeight }],
   }));
 
   const aroundStyle = useAnimatedStyle(() => ({
@@ -256,41 +210,32 @@ export default function RoomSealFlow({
   }));
 
   return (
-    <View style={StyleSheet.absoluteFill}>
-      {/* The field is its own layer rather than the room's parent, so it can
-          clear while the room stays solid all the way into Home's frame. */}
-      <Animated.View style={[styles.field, fieldStyle]} />
+    <Animated.View style={[StyleSheet.absoluteFill, exitStyle]}>
+      {/* Solid until it is gone. Nothing fades it out: thinning it would show
+          what is underneath through the thing that is still leaving. */}
+      <View style={styles.field} />
 
       <Animated.View
         pointerEvents={picking && !leaving ? 'auto' : 'none'}
-        // Flattened only while it travels to Home. A cached bitmap cannot show
-        // what changes inside it, and plenty changes: the week rebuilds itself
-        // piece by piece, and the pager scrolls through seven rooms.
+        // Flattened only while the surface slides away. A cached bitmap cannot
+        // show what changes inside it, and plenty changes: the week rebuilds
+        // itself piece by piece, and the pager scrolls through seven rooms.
         shouldRasterizeIOS={leaving}
         renderToHardwareTextureAndroid={leaving}
         style={[
           styles.room,
           // Picking only widens the box, never the room: the pages are a
           // screen across so they can be swiped, while each page is pinned to
-          // the room's own height. The room itself stands in the same place
-          // throughout, which is what lets it leave for Home from there.
+          // the room's own height, so the room stands in one place from the
+          // replay to the last room picked.
           { top: roomTop },
-          picking && !leaving
+          picking
             ? { left: 0, width: windowWidth }
             : { left: roomLeft, width: roomWidth },
           roomStyle,
         ]}
       >
-        {leaving ? (
-          // Only the chosen room leaves. The pager is a row of them, and the
-          // page it is parked on is the same picture in the same box, so
-          // dropping it for the one room is invisible.
-          <HexRoom
-            width={roomWidth}
-            frameHue={style.frameHue}
-            shell={ROOM_SHELLS[style.shell]}
-          />
-        ) : picking ? (
+        {picking ? (
           <RoomPager<RoomStyle>
             onField
             chrome={false}
@@ -387,23 +332,21 @@ export default function RoomSealFlow({
             // The lab previews this against a fabricated room. Opening the next
             // floor is a real write, and a preview must not make one.
             if (isRoomOverridden()) {
-              toHome();
+              dismiss();
               return;
             }
 
             createNextRoom.mutate(
               { shell: style.shell, frameHue: style.frameHue },
-              // Home rather than anywhere else: the new room is empty and
-              // today is already spent, so there is nothing to do in it — and
-              // the room goes there itself rather than the screen cutting to
-              // it. The cache is seeded by then, so Home is already drawing
-              // this exact room under the field.
-              { onSuccess: toHome },
+              // Nothing else to ask for: the new room is empty and today is
+              // already spent. The cache is seeded by the time this runs, so
+              // whatever is behind the sheet is already drawing the new room.
+              { onSuccess: dismiss },
             );
           }}
         />
       </Animated.View>
-    </View>
+    </Animated.View>
   );
 }
 
@@ -422,8 +365,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   // Under the room it names, where a pager's own caption would be — but drawn
-  // outside the room's box, so that the thing that flies to Home is nothing
-  // but the room.
+  // outside the room's box, which holds nothing but rooms.
   caption: {
     position: 'absolute',
     left: 0,

@@ -26,6 +26,8 @@ import type { Bounds, Fit } from './pyramidLayout';
 const RESISTANCE = 0.28;
 const SPRING = { damping: 18, stiffness: 160 };
 const SETTLE_MS = 260;
+/** how far a finger may travel between down and up and still read as a tap */
+const TAP_SLOP = 12;
 /** a flick coasts nearly a second; higher reads as ice, lower as mud */
 const DECELERATION = 0.995;
 /**
@@ -408,6 +410,16 @@ export function usePinchZoomPan({
     const doubleTap = Gesture.Tap()
       .numberOfTaps(2)
       .maxDuration(SETTLE_MS)
+      // iOS counts each finger landing as another tap rather than counting
+      // taps, and leaves a tap free to travel any distance unless told
+      // otherwise. Together those made a quick pinch read as a double tap: two
+      // fingers down inside `SETTLE_MS` is two taps, so the canvas jumped to
+      // `closeScale` mid-zoom. A double tap is one finger, twice, and it does
+      // not move.
+      .maxDistance(TAP_SLOP)
+      .onTouchesDown((event, manager) => {
+        if (event.numberOfTouches > 1) manager.fail();
+      })
       .onEnd((event) => {
         stop();
 
@@ -439,7 +451,8 @@ export function usePinchZoomPan({
 
     // Raced, not made exclusive: exclusivity would hold every drag back until
     // the double-tap had failed, and a drag that starts late reads as a dropped
-    // frame. A tap does not move, so it wins the race on its own.
+    // frame. The tap fails itself the moment a second finger lands or the
+    // first one travels, so it only wins the race when it really is a tap.
     return Gesture.Race(doubleTap, Gesture.Simultaneous(pinch, pan));
   }, [
     closeScale,

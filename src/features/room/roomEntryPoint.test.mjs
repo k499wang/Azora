@@ -353,21 +353,6 @@ test('__DEV__ still gates the arrow, whatever the param says', () => {
   assert.match(hook, /__DEV__ && params\?\.fromLab === true/);
 });
 
-/**
- * The room never cuts. It arrives from the stage, stands still while the week
- * replays and the next one is chosen, and then takes its place on Home — one
- * continuous object across what used to be three screens.
- */
-test('the room chosen at the seal travels into Home rather than cutting', () => {
-  const seal = read('features/room/RoomSealFlow.tsx');
-
-  assert.match(seal, /origin\?: RewardFlowOrigin \| null/);
-  assert.match(seal, /onSuccess: toHome/);
-  assert.match(seal, /origin\.width \/ roomWidth/);
-
-  const home = read('screens/HomeScreen.tsx');
-  assert.match(home, /<RoomSealFlow[\s\S]*?origin=\{roomOrigin\}/);
-});
 
 test('only the room is inside the thing that flies to Home', () => {
   const seal = read('features/room/RoomSealFlow.tsx');
@@ -397,5 +382,43 @@ test('no room is flattened into a texture while its contents change', () => {
         `${file} rasterises unconditionally; gate it on the view actually moving`,
       );
     }
+  }
+});
+
+
+
+
+/**
+ * The reward is a sheet, not a zoom.
+ *
+ * It used to end by shrinking its room into the frame Home draws its room in,
+ * which tied the reward to whatever happened to be behind it: scroll Home and
+ * the target moved off screen, open it from a result screen and there was no
+ * target at all. It covers the screen and then it leaves, the same way from
+ * every entry point.
+ */
+test('the reward never reaches for whatever is behind it', () => {
+  for (const file of [
+    'features/room/DailyRewardFlow.tsx',
+    'features/room/RoomSealFlow.tsx',
+    'screens/HomeScreen.tsx',
+    'screens/SessionCompleteScreen.tsx',
+    'screens/ShareableResultScreen.tsx',
+  ]) {
+    const source = read(file);
+
+    assert.doesNotMatch(source, /RewardFlowOrigin|measureInWindow/, file);
+    assert.doesNotMatch(source, /\borigin\b/, file);
+  }
+
+  for (const file of [
+    'features/room/DailyRewardFlow.tsx',
+    'features/room/RoomSealFlow.tsx',
+  ]) {
+    assert.match(
+      read(file),
+      /translateY: leave\.value \* windowHeight/,
+      `${file} must leave downwards`,
+    );
   }
 });

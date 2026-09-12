@@ -200,10 +200,28 @@ not re-add it without asking.
 
 Run `npm run check`.
 
+### Where the sheet actually appears
+
+`expo-store-review`'s `isAvailableAsync()` returns `!isRunningFromTestFlight()`,
+and that check is `sandboxReceipt && no embedded.mobileprovision`. So:
+
+| Build | Sheet appears? | Apple's 3/year cap? |
+|---|---|---|
+| `expo run:ios --device` / Xcode | **Yes** — it carries a provisioning profile | **No**, dev builds are not limited |
+| Simulator | Yes | No |
+| **TestFlight** | **No** — `isAvailableAsync()` is false, we return early | n/a |
+| App Store | Yes | Yes |
+
+TestFlight is the one place it never shows. A development build is the *easiest*
+place to see it, not the hardest.
+
+Our own `MAX_PROMPTS` budget still applies in development, so the fourth attempt
+on one install is suppressed even though Apple would allow it. Clear it with
+**Settings → Reset review prompt (dev)**, or reinstall.
+
 ### What automated tests cannot cover
 
-The native sheet is a no-op outside TestFlight and App Store builds, so these
-need a device:
+These need a device:
 
 1. **Onboarding, baseline completed** — sheet appears ~1.8s after Continue on
    diagnosis, over a settled recommended-exercise screen.
@@ -212,10 +230,12 @@ need a device:
    the app. No sheet, and no `review_prompt_requested` event.
 4. **Settings → Restore purchases** — on an account with and without a
    subscription, and with airplane mode on for the failure copy.
+5. **Fourth attempt on one install** — suppressed with reason
+   `budget_exhausted`, until the dev reset is used.
 
-In a dev build the native call no-ops, so verify by watching PostHog for
-`review_prompt_requested` and `review_prompt_suppressed` rather than looking for
-the sheet.
+`review_prompt_requested` and `review_prompt_suppressed` in PostHog confirm what
+the app decided, which is the part we control. Whether the sheet then renders is
+Apple's call.
 
 ---
 

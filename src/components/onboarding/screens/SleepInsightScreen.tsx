@@ -43,8 +43,8 @@ export default function SleepInsightScreen({
 
         <View style={styles.copy}>
           <Text style={styles.headline}>
-            More than <Text style={styles.headlineEmphasis}>58%</Text> of people
-            struggle to get <Text style={styles.headlineEmphasis}>quality sleep</Text>.
+            <Text style={styles.headlineEmphasis}>58%</Text> of people struggle
+            with <Text style={styles.headlineEmphasis}>quality sleep</Text>.
           </Text>
           <Text style={styles.sub}>
             We’ll guide you into a calming bedtime routine, so winding down
