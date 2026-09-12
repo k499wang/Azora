@@ -15,7 +15,7 @@ import { typography } from '../../theme/typography';
 import { triggerTapHaptic } from '../../native/tapHaptics';
 import { AnimatedText } from './Text';
 
-const ITEM_HEIGHT = 44;
+const ITEM_HEIGHT = 52;
 const VISIBLE_ITEMS = 5;
 const WHEEL_HEIGHT = ITEM_HEIGHT * VISIBLE_ITEMS;
 const EDGE_PADDING = (WHEEL_HEIGHT - ITEM_HEIGHT) / 2;
@@ -287,7 +287,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   column: {
-    width: 84,
+    width: 96,
     height: WHEEL_HEIGHT,
   },
   columnContent: {
@@ -299,7 +299,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
   },
   itemLabel: {
-    ...typography.stat.valueMedium,
+    ...typography.stat.valueLarge,
     color: colors.primary.blue700,
   },
 });
