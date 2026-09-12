@@ -15,9 +15,7 @@ import RoomProgressCard from '../features/room/RoomProgressCard';
 import DailyCompleteSheet from '../features/room/DailyCompleteSheet';
 import DailyRewardSurface from '../features/room/DailyRewardSurface';
 import RoomSealFlow from '../features/room/RoomSealFlow';
-import DailyRewardFlow, {
-  type RewardFlowOrigin,
-} from '../features/room/DailyRewardFlow';
+import DailyRewardFlow from '../features/room/DailyRewardFlow';
 import {
   isDailyCompleteRewardReady,
   useDailyCompleteSnapshot,
@@ -106,6 +104,8 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     todayLocalDate: dailies.todayLocalDate,
   });
   const unlockVisible = sheetOpen || reward.decorating;
+  /** anything the reward draws on its surface, in any phase */
+  const rewardVisible = unlockVisible || reward.sealing;
   const isFocused = useIsFocused();
   const pieceReady = day.allCompleted && roomClaim.progress.canClaim;
   const wasPieceReady = useRef<boolean | null>(null);
@@ -148,25 +148,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
     reward.open({ handOver: true });
   }, [reward]);
 
-  /**
-   * Where Home draws its room, so the flow can start its own copy on exactly
-   * that frame and grow from it. A push would cut; this is a zoom, and the
-   * illusion only holds if the first frame lands on the pixel Home had.
-   */
-  const roomBlock = useRef<View>(null);
-  const [roomOrigin, setRoomOrigin] = useState<RewardFlowOrigin | null>(null);
-  const measureRoom = useCallback(() => {
-    roomBlock.current?.measureInWindow((x, y, width) => {
-      if (width > 0) setRoomOrigin({ x, y, width });
-    });
-  }, []);
 
-  // Home scrolls, so where the room sits on screen is only true for as long as
-  // nothing has moved. Measuring again as the flow opens is what keeps its
-  // first frame on top of the room it is pretending to be.
-  useEffect(() => {
-    if (unlockVisible) measureRoom();
-  }, [measureRoom, unlockVisible]);
 
   /**
    * One ref for this scroll view, not two. The tour scrolls a stop into place
@@ -230,15 +212,11 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         </View>
 
         <View
-          ref={roomBlock}
           style={styles.roomBlock}
-          onLayout={measureRoom}
-          // The flow draws its own copy over the top of this one. It stays
-          // mounted underneath: the flow's room ends its return exactly on this
-          // frame, so the handover is one room replacing an identical room in
-          // the same place. Unmounting it meant the modal closed onto an empty
-          // block and the real room appeared all at once — the stop at the end
-          // of the transform.
+          // The reward draws its own copy over the top of this one, on a sheet
+          // that covers the whole screen. This one stays mounted underneath so
+          // that when the sheet leaves there is already a room here, rather
+          // than an empty block that fills in a frame later.
           pointerEvents={flowVisible ? 'none' : 'auto'}
         >
           <HomeRoom room={roomClaim.room} progress={roomClaim.progress} />
@@ -282,7 +260,7 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
       {/* One presentation from the flame through to the piece landing. The
           celebration lingers behind the stage's field as it closes over it,
           which is a cross-fade rather than one modal replacing another. */}
-      <DailyRewardSurface visible={unlockVisible || reward.sealing}>
+      <DailyRewardSurface visible={rewardVisible}>
         {(sheetOpen || reward.handingOver) && snapshot != null ? (
           <DailyCompleteSheet
             hosted
@@ -304,7 +282,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
         {flowVisible ? (
           <DailyRewardFlow
             hosted
-            origin={roomOrigin}
             room={roomClaim.room}
             progress={roomClaim.progress}
             rewardReady={isDailyCompleteRewardReady(
@@ -322,7 +299,6 @@ export default function HomeScreen({ navigation }: HomeScreenProps) {
             userId={user?.id ?? null}
             room={roomClaim.room}
             from={reward.sealFrom}
-            origin={roomOrigin}
             onDone={reward.endSeal}
           />
         ) : null}

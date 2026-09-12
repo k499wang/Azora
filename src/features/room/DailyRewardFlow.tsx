@@ -54,10 +54,11 @@ import type { Room } from '../../services/room/roomService';
  * both readable; the night field carries across, so it still reads as one
  * moment rather than two screens.
  *
- * Leaving is the transform: the room shrinks into the exact frame Home draws it
- * at, so the last thing seen is the room that just changed, in its place.
- * Arriving cannot do the same — the sheet's field covers Home's room, and there
- * is nothing on screen for a room to grow out of.
+ * It arrives and leaves as a sheet, covering whatever is behind it rather than
+ * growing out of it. Shrinking the room back into the frame Home draws it at
+ * read well when Home was sitting there unscrolled, and badly the rest of the
+ * time — flying to a frame off the top of the screen, or to no frame at all on
+ * a result screen. One exit, from every entry point.
  *
  * Picking is two beats, not one: a tile puts the piece *in the room* so it can
  * be seen where it will live, and a second press commits it. A row of
@@ -78,19 +79,12 @@ export const REWARD_FLOW_BEATS = {
   rail: 420,
   /** the piece is left at rest before the room goes back */
   hold: 420,
-  /** the room returns to its place on Home */
+  /** the sheet slides away */
   exit: 300,
 } as const;
 
 const TILE = 88;
 const WELL = TILE - spacing.sm * 2;
-
-export interface RewardFlowOrigin {
-  /** where Home draws its room, in window coordinates */
-  x: number;
-  y: number;
-  width: number;
-}
 
 /** the room's frame on the stage, for whatever takes the surface over next */
 export interface RewardRoomBox {
@@ -101,8 +95,6 @@ export interface RewardRoomBox {
 }
 
 interface Props {
-  /** the frame on Home the room returns to when this closes */
-  origin: RewardFlowOrigin | null;
   room: Room | null;
   progress: Pick<RoomProgress, 'canClaim' | 'placedCount' | 'nextSlot'>;
   /** server-confirmed entitlement; the rail stays shut until this is true */
@@ -124,7 +116,6 @@ interface Props {
 }
 
 function DailyRewardFlow({
-  origin,
   room,
   progress,
   rewardReady,
@@ -190,10 +181,7 @@ function DailyRewardFlow({
    * draws the arriving object itself, so it must be handed the room it is
    * arriving into.
    */
-  const placedPicks = useMemo(
-    () => toPicks(room?.decorations ?? []),
-    [room],
-  );
+  const placedPicks = useMemo(() => toPicks(room?.decorations ?? []), [room]);
   const shell = useMemo(() => roomShellPolys(room?.shell), [room?.shell]);
   const frameHue = useMemo(() => toFrameHue(room?.frameHue), [room?.frameHue]);
 
@@ -208,9 +196,9 @@ function DailyRewardFlow({
    * lands except that it falls there.
    */
   /**
-   * The room is travelling or scaling: arriving from Home, or going back to it.
-   * In between it stands still and its contents change, which is the exact
-   * opposite of what flattening it into a texture is for.
+   * The room is scaling in, or the piece is on its way down. In between it
+   * stands still and its contents change, which is the exact opposite of what
+   * flattening it into a texture is for.
    */
   const moving = !settled || committed;
 
@@ -249,11 +237,8 @@ function DailyRewardFlow({
   const stageScale = stageWidth / roomWidth;
   const stageLeft = (windowWidth - roomWidth) / 2;
   // Centred in the space the sheet leaves, rather than pinned under the status
-  // bar: the room is scaled about its own centre, so that centre is the only
-  // point worth placing, and the exit measures from it too.
-  const stageCentreX = stageLeft + roomWidth / 2;
-  const stageCentreY = insets.top + spacing.md + free / 2;
-  const stageTop = stageCentreY - roomHeight / 2;
+  // bar.
+  const stageTop = insets.top + spacing.md + (free - roomHeight) / 2;
 
   /**
    * The room fades in once, and only once it can be drawn where it belongs.
@@ -306,13 +291,10 @@ function DailyRewardFlow({
   }, [cover, enter, leave, railOut]);
 
   const close = useCallback(() => {
-    // Returning to the frame Home draws the room at: a shrink rather than a
-    // dismiss, so the piece that just landed is last seen where it lives.
-    //
-    // Without an origin — a result screen, which has no room on it to return
-    // to — the same animation runs with nowhere to travel: the room settles
-    // back to Home's size in place while the field clears. Not the transform,
-    // but not the cut either.
+    // Down and out, the way a sheet goes. The room used to shrink into the
+    // frame Home draws it in, which tied the reward to whatever was behind it
+    // and broke the moment that frame was scrolled away. It is a sheet: it
+    // covers what is behind it and then it leaves.
     if (reducedMotion) {
       onDismiss();
       return;
@@ -320,12 +302,12 @@ function DailyRewardFlow({
 
     leave.value = withTiming(
       1,
-      { duration: REWARD_FLOW_BEATS.exit, easing: easing.enter },
+      { duration: REWARD_FLOW_BEATS.exit, easing: easing.exit },
       (finished) => {
         if (finished) runOnJS(onDismiss)();
       },
     );
-  }, [leave, onDismiss, origin, reducedMotion]);
+  }, [leave, onDismiss, reducedMotion]);
 
   const handleSelect = useCallback((optionId: string) => {
     triggerTapHaptic();
@@ -382,50 +364,33 @@ function DailyRewardFlow({
     return () => clearTimeout(timer);
   }, [close, landed]);
 
-  const roomStyle = useAnimatedStyle(() => {
-    const originCentreX =
-      origin == null
-        ? stageCentreX
-        : origin.x + origin.width / 2;
-    const originCentreY =
-      origin == null
-        ? stageCentreY
-        : origin.y + roomHeight / 2;
-
-    const arriving = interpolate(enter.value, [0, 1], [stageScale * 0.94, stageScale]);
-    const scale = interpolate(leave.value, [0, 1], [arriving, 1]);
-
-    return {
-      opacity: interpolate(enter.value, [0, 0.5], [0, 1], 'clamp'),
-      transform: [
-        {
-          translateX: interpolate(
-            leave.value,
-            [0, 1],
-            [0, originCentreX - stageCentreX],
-          ),
-        },
-        {
-          translateY: interpolate(
-            leave.value,
-            [0, 1],
-            [0, originCentreY - stageCentreY],
-          ),
-        },
-        { scale },
-      ],
-    };
-  });
+  const roomStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(enter.value, [0, 0.5], [0, 1], 'clamp'),
+    transform: [
+      {
+        scale: interpolate(
+          enter.value,
+          [0, 1],
+          [stageScale * 0.94, stageScale],
+        ),
+      },
+    ],
+  }));
 
   const fieldStyle = useAnimatedStyle(() => ({
-    opacity: cover.value * interpolate(leave.value, [0, 1], [1, 0]),
+    // Solid until it is gone: thinning it out would show Home through the
+    // thing that is still leaving.
+    opacity: cover.value,
+  }));
+
+  /** the whole thing leaving downwards, the way a sheet does */
+  const exitStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: leave.value * windowHeight }],
   }));
 
   const railStyle = useAnimatedStyle(() => ({
     opacity:
-      interpolate(enter.value, [0.5, 1], [0, 1], 'clamp') *
-      (1 - leave.value) *
-      (1 - railOut.value),
+      interpolate(enter.value, [0.5, 1], [0, 1], 'clamp') * (1 - railOut.value),
     transform: [
       {
         translateY:
@@ -436,129 +401,125 @@ function DailyRewardFlow({
   }));
 
   const body = (
-    <View style={StyleSheet.absoluteFill}>
-        {/* The only way out without placing, now that the sheet carries just
+    <Animated.View style={[StyleSheet.absoluteFill, exitStyle]}>
+      {/* The only way out without placing, now that the sheet carries just
             the one button. Nothing else up here is touchable. */}
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Close"
-          style={StyleSheet.absoluteFill}
-          disabled={committed}
-          onPress={close}
-        >
-          <Animated.View style={[styles.field, fieldStyle]} />
-        </Pressable>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Close"
+        style={StyleSheet.absoluteFill}
+        disabled={committed}
+        onPress={close}
+      >
+        <Animated.View style={[styles.field, fieldStyle]} />
+      </Pressable>
 
-        <Animated.View
-          pointerEvents="none"
-          // Only while the room itself is moving.
-          //
-          // Rasterising flattens several hundred polygons across four stacked
-          // SVGs into one texture, which is what makes the entrance and the
-          // return cheap. But a flattened layer is a cached bitmap, and the
-          // room is not a still picture in between: choosing a tile builds the
-          // piece into it and hides the ghost. Cached through that, the room
-          // can go on showing the frame it was flattened at — a picker whose
-          // room never previews anything.
-          shouldRasterizeIOS={moving}
-          renderToHardwareTextureAndroid={moving}
-          style={[
-            styles.room,
-            { left: stageLeft, top: stageTop, width: roomWidth },
-            roomStyle,
-          ]}
-        >
-          {landing != null ? (
-            <PlacementReveal
-              width={roomWidth}
-              day={landing.slot}
-              option={landing.option}
-              picks={landing.picks}
-              frameHue={frameHue}
-              shell={shell}
-              onDone={() => setLanded(true)}
-            />
-          ) : (
-            <HomeRoom
-              room={previewRoom}
-              progress={progress}
-              ghost={
-                selected != null ? 'hidden' : settled ? 'pulsing' : 'idle'
-              }
-              mascot={false}
-            />
-          )}
-        </Animated.View>
+      <Animated.View
+        pointerEvents="none"
+        // Only while the room itself is moving.
+        //
+        // Rasterising flattens several hundred polygons across four stacked
+        // SVGs into one texture, which is what makes the entrance and the
+        // return cheap. But a flattened layer is a cached bitmap, and the
+        // room is not a still picture in between: choosing a tile builds the
+        // piece into it and hides the ghost. Cached through that, the room
+        // can go on showing the frame it was flattened at — a picker whose
+        // room never previews anything.
+        shouldRasterizeIOS={moving}
+        renderToHardwareTextureAndroid={moving}
+        style={[
+          styles.room,
+          { left: stageLeft, top: stageTop, width: roomWidth },
+          roomStyle,
+        ]}
+      >
+        {landing != null ? (
+          <PlacementReveal
+            width={roomWidth}
+            day={landing.slot}
+            option={landing.option}
+            picks={landing.picks}
+            frameHue={frameHue}
+            shell={shell}
+            onDone={() => setLanded(true)}
+          />
+        ) : (
+          <HomeRoom
+            room={previewRoom}
+            progress={progress}
+            ghost={selected != null ? 'hidden' : settled ? 'pulsing' : 'idle'}
+            mascot={false}
+          />
+        )}
+      </Animated.View>
 
-        <Animated.View
-          onLayout={(event) => {
-            // Not once the piece is falling. The sheet empties out for the
-            // landing, so its height collapses — and the room, which is
-            // centred in the space above it, would slide down into the space
-            // that freed up while the object was still in the air.
-            if (committed) return;
-            setSheetHeight(event.nativeEvent.layout.height);
-          }}
-          style={[
-            styles.rail,
-            { paddingBottom: Math.max(insets.bottom, spacing.md) },
-            railStyle,
-          ]}
-        >
-          {landing != null ? null : day != null && slot != null ? (
-            <>
-              <Text style={styles.railTitle}>
-                {slotLabel == null
-                  ? 'Choose a piece'
-                  : `Choose a ${slotLabel}`}
-              </Text>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.railRow}
-              >
-                {day.options.map((option) => {
-                  const active = selected === option.id;
+      <Animated.View
+        onLayout={(event) => {
+          // Not once the piece is falling. The sheet empties out for the
+          // landing, so its height collapses — and the room, which is
+          // centred in the space above it, would slide down into the space
+          // that freed up while the object was still in the air.
+          if (committed) return;
+          setSheetHeight(event.nativeEvent.layout.height);
+        }}
+        style={[
+          styles.rail,
+          { paddingBottom: Math.max(insets.bottom, spacing.md) },
+          railStyle,
+        ]}
+      >
+        {landing != null ? null : day != null && slot != null ? (
+          <>
+            <Text style={styles.railTitle}>
+              {slotLabel == null ? 'Choose a piece' : `Choose a ${slotLabel}`}
+            </Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.railRow}
+            >
+              {day.options.map((option) => {
+                const active = selected === option.id;
 
-                  return (
-                    <Pressable
-                      key={option.id}
-                      accessibilityRole="button"
-                      accessibilityLabel={option.name}
-                      accessibilityState={{ selected: active }}
-                      disabled={!unlocked}
-                      style={({ pressed }) => [
-                        styles.tile,
-                        active && styles.tileSelected,
-                        pressed && styles.tilePressed,
-                      ]}
-                      onPress={() => handleSelect(option.id)}
-                    >
-                      <View style={styles.well}>
-                        <DecorationSolo
-                          width={WELL}
-                          height={WELL}
-                          day={slot}
-                          option={option.id}
-                        />
-                      </View>
-                    </Pressable>
-                  );
-                })}
-              </ScrollView>
-              {/* Standing the whole time, disabled until there is something to
+                return (
+                  <Pressable
+                    key={option.id}
+                    accessibilityRole="button"
+                    accessibilityLabel={option.name}
+                    accessibilityState={{ selected: active }}
+                    disabled={!unlocked}
+                    style={({ pressed }) => [
+                      styles.tile,
+                      active && styles.tileSelected,
+                      pressed && styles.tilePressed,
+                    ]}
+                    onPress={() => handleSelect(option.id)}
+                  >
+                    <View style={styles.well}>
+                      <DecorationSolo
+                        width={WELL}
+                        height={WELL}
+                        day={slot}
+                        option={option.id}
+                      />
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+            {/* Standing the whole time, disabled until there is something to
                   place. Appearing only once a tile was tapped moved the thing
                   under the user's thumb at the moment they were reaching. */}
-              <ChunkyButton
-                label="Place it"
-                shape="card"
-                disabled={!unlocked || selected == null}
-                onPress={handlePlace}
-              />
-            </>
-          ) : null}
+            <ChunkyButton
+              label="Place it"
+              shape="card"
+              disabled={!unlocked || selected == null}
+              onPress={handlePlace}
+            />
+          </>
+        ) : null}
       </Animated.View>
-    </View>
+    </Animated.View>
   );
 
   if (hosted) {
@@ -567,8 +528,7 @@ function DailyRewardFlow({
 
   // Presenting alone, a Modal keeps the tab bar off it: the navigator draws
   // that above every screen, and a celebration with a tab bar across the bottom
-  // is not a celebration. `origin` is in window space, which is the space a
-  // modal lives in too, so the return trip still lands.
+  // is not a celebration.
   return (
     <Modal visible transparent animationType="none" statusBarTranslucent>
       {body}

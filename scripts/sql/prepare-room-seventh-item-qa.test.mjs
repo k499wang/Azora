@@ -115,3 +115,119 @@ test('today exercise counters reset without touching heart-rate or XP counters',
   assert.doesNotMatch(activityReset, /xp_earned\s*=/);
   assert.match(setup, /Destructive reset verification failed/);
 });
+
+/**
+ * The fixture leaves the account one to-do away from the seventh piece: the
+ * exercises are seeded done, the to-do ticks are cleared. Ticking one in the
+ * app then runs the real earn rule rather than a forced flag.
+ */
+test('today is seeded complete on exercises but not on to-dos', () => {
+  // Every active technique, because the app decides which two count from the
+  // day's recommendation and plan.
+  assert.match(
+    setup,
+    /insert into public\.breathing_sessions[\s\S]*from public\.breathing_technique_catalog as catalog\s+where catalog\.active = true;/,
+  );
+  assert.match(setup, /insert into public\.breath_hold_sessions/);
+  assert.match(setup, /daily_breath_hold_completed = true/);
+
+  // Today's ticks go; the to-dos themselves are the account's own.
+  assert.match(
+    setup,
+    /delete from public\.self_care_goal_completions\s+where user_id = v_user_id\s+and local_date = v_today;/,
+  );
+  assert.doesNotMatch(setup, /delete from public\.self_care_goals\b/);
+});
+
+test('the fixture refuses to run for an account with no to-dos to tick', () => {
+  assert.match(setup, /if v_active_todos = 0 then/);
+  assert.match(setup, /raise exception[\s\S]*no to-dos/);
+});
+
+/**
+ * The exercises are seeded because they are the only part of the day that costs
+ * real time. The to-do list is left for the tester, so the earn still happens
+ * through the real path rather than arriving already earned.
+ */
+test('the to-do list is left outstanding rather than seeded', () => {
+  assert.doesNotMatch(setup, /insert into public\.self_care_goal_completions/);
+  assert.match(
+    setup,
+    /\) <> 0 then/,
+    'the seeded-day check must assert that no to-do is ticked',
+  );
+});
+
+test('the seeded day is verified before the fixture reports success', () => {
+  const verification = setup.slice(
+    setup.indexOf('Seeded-day verification failed'),
+  );
+
+  assert.ok(verification.length > 0, 'no seeded-day verification');
+  assert.match(
+    setup.slice(0, setup.indexOf('Seeded-day verification failed')),
+    /insert into public\.breath_hold_sessions/,
+    'verification must come after the seeding it checks',
+  );
+});
+
+/**
+ * The fixture seeds a session for every row in the database's technique
+ * catalog, and the app picks the day's two techniques from its own mirror of
+ * that catalog — kept in step by `techniqueCatalog.test.mjs`. So whichever two
+ * the app asks for on the test day, the fixture has already completed.
+ */
+test('every technique the app can ask for is one the fixture seeds', async () => {
+  const { TECHNIQUE_IDS } = await import(
+    '../../src/features/exercise/guidedBreathing/techniqueCatalog.ts'
+  );
+
+  assert.ok(TECHNIQUE_IDS.length > 0);
+  assert.match(
+    setup,
+    /from public\.breathing_technique_catalog as catalog\s+where catalog\.active = true;/,
+    'the seeding must come from the catalog, not a hard-coded list that can drift',
+  );
+  assert.doesNotMatch(
+    setup,
+    /technique_id\s*(?:=|in)\s*'/,
+    'no technique id may be named in the fixture',
+  );
+});
+
+test('the fixture writes only columns that exist, and every required one', () => {
+  // Guards the three inserts the seeding added. The reset half was already
+  // covered; this fails if a migration renames or drops what it writes.
+  const inserts = [...setup.matchAll(/insert into public\.(\w+)\s*\(([^)]*)\)/g)].map(
+    ([, table, cols]) => ({
+      table,
+      cols: cols
+        .split(',')
+        .map((col) => col.trim())
+        .filter(Boolean),
+    }),
+  );
+
+  const seeded = Object.fromEntries(inserts.map(({ table, cols }) => [table, cols]));
+
+  assert.deepEqual(seeded.breathing_sessions, [
+    'user_id',
+    'technique_id',
+    'started_at',
+    'ended_at',
+    'local_date',
+    'timezone',
+    'duration_seconds',
+    'completed',
+  ]);
+  assert.deepEqual(seeded.breath_hold_sessions, [
+    'user_id',
+    'started_at',
+    'ended_at',
+    'local_date',
+    'timezone',
+    'hold_seconds',
+  ]);
+  assert.ok(seeded.daily_activity.includes('daily_breath_hold_completed'));
+  assert.ok(seeded.daily_activity.includes('breathing_session_count'));
+});

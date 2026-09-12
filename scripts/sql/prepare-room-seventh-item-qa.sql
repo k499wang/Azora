@@ -7,8 +7,17 @@
 -- This is an operational fixture, not a migration. Run it only from the
 -- Supabase SQL editor with an account that has completed onboarding. Reset mode
 -- deletes that account's entire hotel and today's breathing/breath-hold history.
--- It deliberately does not seed daily completion: complete the three real
--- dailies in the app so the production reward path is part of the test.
+--
+-- It then seeds today's three exercises as done and clears today's to-do ticks,
+-- so the only thing left is the to-do list. Ticking it off in the app runs the
+-- real earn path — the same `allCompleted` rule, the same claim, the same write
+-- — without three real sessions per attempt. The exercises are the only part of
+-- the day that costs real time, so they are the only part seeded.
+--
+-- Exercises are seeded for every active technique in the catalog rather than
+-- for two chosen ids, because which two count is decided in the app from the
+-- day's recommendation and plan. Seeding all of them makes whichever pair it
+-- picks already complete.
 --
 -- Before running:
 --   1. Force-quit the app so it cannot write room data during setup.
@@ -47,6 +56,9 @@ declare
   v_deleted_breath_hold_sessions bigint;
   v_reset_daily_activity_rows bigint;
   v_decoration_count bigint;
+  v_seeded_breathing_sessions bigint;
+  v_active_todos bigint;
+  v_cleared_todo_ticks bigint;
   v_slots text[];
   v_last_earned_local_date date;
 begin
@@ -169,6 +181,106 @@ begin
     raise exception 'Destructive reset verification failed for user %', v_user_id;
   end if;
 
+  -- Today's exercises, as the app's own RPCs would have written them: one
+  -- completed session per active technique, one breath hold, and the same
+  -- daily_activity aggregates both of those maintain.
+  insert into public.breathing_sessions (
+    user_id,
+    technique_id,
+    started_at,
+    ended_at,
+    local_date,
+    timezone,
+    duration_seconds,
+    completed
+  )
+  select
+    v_user_id,
+    catalog.id,
+    now() - interval '10 minutes',
+    now() - interval '5 minutes',
+    v_today,
+    v_device_timezone,
+    300,
+    true
+  from public.breathing_technique_catalog as catalog
+  where catalog.active = true;
+
+  get diagnostics v_seeded_breathing_sessions = row_count;
+
+  insert into public.breath_hold_sessions (
+    user_id,
+    started_at,
+    ended_at,
+    local_date,
+    timezone,
+    hold_seconds
+  )
+  values (
+    v_user_id,
+    now() - interval '4 minutes',
+    now() - interval '3 minutes',
+    v_today,
+    v_device_timezone,
+    45
+  );
+
+  insert into public.daily_activity (
+    user_id,
+    activity_date,
+    timezone,
+    breathing_session_count,
+    breathing_seconds,
+    daily_breath_hold_completed,
+    breath_hold_count,
+    best_hold_seconds,
+    qualifies_for_streak
+  )
+  values (
+    v_user_id,
+    v_today,
+    v_device_timezone,
+    v_seeded_breathing_sessions,
+    v_seeded_breathing_sessions * 300,
+    true,
+    1,
+    45,
+    true
+  )
+  on conflict (user_id, activity_date) do update set
+    timezone = excluded.timezone,
+    breathing_session_count = excluded.breathing_session_count,
+    breathing_seconds = excluded.breathing_seconds,
+    daily_breath_hold_completed = true,
+    breath_hold_count = 1,
+    best_hold_seconds = 45,
+    qualifies_for_streak = true,
+    updated_at = now();
+
+  -- The to-dos are left for the tester.
+  --
+  -- Only today's ticks are cleared, so the list starts the day untouched; the
+  -- goals themselves are the account's own and are never touched. Ticking them
+  -- off is quick, and it is the part of the day worth doing by hand — it is the
+  -- real earn path, and the exercises are the only part that costs real time.
+  delete from public.self_care_goal_completions
+   where user_id = v_user_id
+     and local_date = v_today;
+
+  get diagnostics v_cleared_todo_ticks = row_count;
+
+  select count(*)
+    into v_active_todos
+    from public.self_care_goals
+   where user_id = v_user_id
+     and archived_at is null;
+
+  if v_active_todos = 0 then
+    raise exception
+      'User % has no to-dos; the day would already be complete on the seeded exercises and the piece would arrive unprompted. Add one in the app first',
+      v_user_id;
+  end if;
+
   insert into public.rooms (
     id,
     user_id,
@@ -224,6 +336,24 @@ begin
       v_last_earned_local_date;
   end if;
 
+  if not exists (
+    select 1
+      from public.daily_activity
+     where user_id = v_user_id
+       and activity_date = v_today
+       and daily_breath_hold_completed
+  ) or v_seeded_breathing_sessions = 0 or (
+    select count(*)
+      from public.self_care_goal_completions
+     where user_id = v_user_id
+       and local_date = v_today
+  ) <> 0 then
+    raise exception
+      'Seeded-day verification failed for user %: breathing %, the breath hold, or the to-do ticks are not as expected',
+      v_user_id,
+      v_seeded_breathing_sessions;
+  end if;
+
   raise notice 'Room fixture reset and verified';
   raise notice 'email: %', v_email;
   raise notice 'user_id: %', v_user_id;
@@ -235,8 +365,14 @@ begin
     v_deleted_breathing_sessions,
     v_deleted_breath_hold_sessions,
     v_reset_daily_activity_rows;
+  raise notice
+    'seeded today: % breathing sessions, 1 breath hold; to-dos: % ticks cleared, % left to do',
+    v_seeded_breathing_sessions,
+    v_cleared_todo_ticks,
+    v_active_todos;
   raise notice 'progress: 6/7; next slot: day7; last earned: %',
     v_last_earned_local_date;
+  raise notice 'to finish: tick off the % to-do(s) in the app', v_active_todos;
 end
 $fixture$;
 
@@ -245,6 +381,86 @@ $fixture$;
 rollback;
 -- commit;
 
+
+-- =============================================================================
+-- WHY ARE TODAY'S DAILIES STILL UNCHECKED?
+--
+-- Run this after committing the fixture. It reports what the app looks for,
+-- from the same angle the app looks at it. Set both values first.
+--
+-- Reading it:
+--   · seeded_for is the date the rows carry. The app asks for its own device
+--     date. If these differ, v_device_timezone did not match the device and
+--     nothing the app asks for exists.
+--   · completed_breathing_sessions is what makes the two breathing dailies tick.
+--     Zero means the fixture did not commit — the script ends in ROLLBACK by
+--     default, and a dry run reports success and writes nothing.
+--   · breath_hold_done is the third daily, read straight off daily_activity.
+--   · If all three look right and the app still shows them unchecked, it is the
+--     five-minute query cache: force-quit and relaunch, do not just background.
+-- =============================================================================
+
+-- do $diagnose$
+-- declare
+--   v_email text := '<QA_EMAIL>';
+--   v_device_timezone text := 'America/Toronto';
+--   v_user_id uuid;
+--   v_today date;
+--   v_sessions bigint;
+--   v_techniques text[];
+--   v_hold boolean;
+--   v_todos_open bigint;
+--   v_decorations bigint;
+-- begin
+--   select users.id into v_user_id
+--     from auth.users as users
+--    where lower(users.email) = lower(v_email);
+--
+--   if v_user_id is null then
+--     raise exception 'No auth user found for email %', v_email;
+--   end if;
+--
+--   v_today := (now() at time zone v_device_timezone)::date;
+--
+--   select count(*), array_agg(technique_id order by technique_id)
+--     into v_sessions, v_techniques
+--     from public.breathing_sessions
+--    where user_id = v_user_id
+--      and local_date = v_today
+--      and completed = true;
+--
+--   select coalesce(bool_or(daily_breath_hold_completed), false)
+--     into v_hold
+--     from public.daily_activity
+--    where user_id = v_user_id
+--      and activity_date = v_today;
+--
+--   select count(*)
+--     into v_todos_open
+--     from public.self_care_goals as goals
+--    where goals.user_id = v_user_id
+--      and goals.archived_at is null
+--      and not exists (
+--        select 1
+--          from public.self_care_goal_completions as ticks
+--         where ticks.goal_id = goals.id
+--           and ticks.local_date = v_today
+--      );
+--
+--   select count(*)
+--     into v_decorations
+--     from public.room_decorations
+--    where user_id = v_user_id;
+--
+--   raise notice 'user: %', v_user_id;
+--   raise notice 'seeded_for: % (timezone %)', v_today, v_device_timezone;
+--   raise notice 'utc date now: %', (now() at time zone 'UTC')::date;
+--   raise notice 'completed_breathing_sessions: % %', v_sessions, v_techniques;
+--   raise notice 'breath_hold_done: %', v_hold;
+--   raise notice 'decorations placed: % (want 6)', v_decorations;
+--   raise notice 'to-dos still open: %', v_todos_open;
+-- end
+-- $diagnose$;
 
 -- =============================================================================
 -- POST-TEST VERIFICATION

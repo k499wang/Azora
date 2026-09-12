@@ -1,8 +1,9 @@
 import { Text } from '../../common/Text';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Animated, StyleSheet, View } from 'react-native';
+import { Animated, StyleSheet, useWindowDimensions, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
+import { isShortScreen } from '../../../theme/breakpoints';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
 import { fonts, typography } from '../../../theme/typography';
@@ -25,6 +26,7 @@ const DAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
  */
 const POINTS = [0.18, 0.34, 0.26, 0.5, 0.4, 0.72, 1];
 const CHART_HEIGHT = scaleVisual(260);
+const CHART_HEIGHT_COMPACT = scaleVisual(200);
 const STROKE = 6;
 const ARROW = 20;
 const DRAW_DURATION = 1400;
@@ -37,14 +39,18 @@ export default function ConsistencyScreen({
   onContinue,
   onBack,
 }: ConsistencyScreenProps) {
+  const { height } = useWindowDimensions();
+  const compact = isShortScreen(height);
   const [plotWidth, setPlotWidth] = useState(0);
   const draw = useRef(new Animated.Value(0)).current;
+
+  const chartHeight = compact ? CHART_HEIGHT_COMPACT : CHART_HEIGHT;
 
   const { path, length, arrow } = useMemo(() => {
     const inset = STROKE + ARROW / 2;
     const usable = Math.max(plotWidth - inset * 2, 0);
     const top = inset;
-    const bottom = CHART_HEIGHT - inset;
+    const bottom = chartHeight - inset;
     const coords = POINTS.map((value, index) => ({
       x: inset + (usable * index) / (POINTS.length - 1),
       y: bottom - (bottom - top) * value,
@@ -72,7 +78,7 @@ export default function ConsistencyScreen({
       length: total,
       arrow: `M${left.x} ${left.y} L${tip.x} ${tip.y} L${right.x} ${right.y}`,
     };
-  }, [plotWidth]);
+  }, [chartHeight, plotWidth]);
 
   useEffect(() => {
     if (plotWidth === 0) return;
@@ -89,7 +95,7 @@ export default function ConsistencyScreen({
       }
     });
     return () => animation.stop();
-  }, [draw, plotWidth]);
+  }, [chartHeight, draw, plotWidth]);
 
   const dashOffset = draw.interpolate({
     inputRange: [0, 1],
@@ -103,21 +109,20 @@ export default function ConsistencyScreen({
   return (
     <OnboardingScreenLayout
       title="You have great potential to crush your goal."
-      subtitle="People who practice daily feel calmer within 2 weeks."
+      subtitle="A daily routine compounds — most people hold focus longer by week two."
       progress={stepIndex / stepCount}
       onBack={onBack}
-      centerBody
       footer={<OnboardingPrimaryButton label="Continue" onPress={onContinue} />}
     >
-      <View style={styles.chartWrap}>
+      <View style={[styles.chartWrap, compact && styles.chartWrapCompact]}>
         <Text style={styles.chartTitle}>Overall Wellbeing</Text>
 
         <View
-          style={styles.plot}
+          style={[styles.plot, { height: chartHeight }]}
           onLayout={(event) => setPlotWidth(event.nativeEvent.layout.width)}
         >
           {plotWidth > 0 ? (
-            <Svg width={plotWidth} height={CHART_HEIGHT}>
+            <Svg width={plotWidth} height={chartHeight}>
               <AnimatedPath
                 d={path}
                 stroke={colors.playful.sky.mid}
@@ -161,12 +166,20 @@ export default function ConsistencyScreen({
 }
 
 const styles = StyleSheet.create({
+  // Flowed, not `centerBody`: that centres the body over the whole content box,
+  // including the space the title and subtitle occupy, so on shorter screens the
+  // chart's own title crept up under the subtitle. Auto margins centre it in
+  // whatever room is left *below* the copy instead.
   chartWrap: {
     width: '100%',
     alignItems: 'center',
     gap: spacing.md,
-    marginTop: spacing.lg,
+    marginTop: 'auto',
+    marginBottom: 'auto',
     paddingHorizontal: spacing.sm,
+  },
+  chartWrapCompact: {
+    marginTop: spacing.sm,
   },
   chartTitle: {
     ...typography.body.small,
@@ -176,7 +189,6 @@ const styles = StyleSheet.create({
   },
   plot: {
     width: '100%',
-    height: CHART_HEIGHT,
     borderBottomWidth: 1.5,
     borderLeftWidth: 1.5,
     borderColor: colors.neutral[300],
