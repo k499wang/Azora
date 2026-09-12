@@ -5,14 +5,19 @@ export type HeartRatePhysicalCamera =
 
 export interface HeartRateCameraProfile {
   readonly layout: HeartRateCameraLayout;
-  readonly target: 'bottom camera' | 'rightmost camera' | 'camera lens';
+  /**
+   * Deliberately never names a direction. Lens order and position vary across
+   * models, so a wrong "rightmost"/"bottom" is worse than no direction at all —
+   * the highlighted illustration and the live preview point at the right lens.
+   */
+  readonly target: 'camera lens';
   readonly title: string;
 }
 
 const DUAL_CAMERA_PROFILE: HeartRateCameraProfile = {
   layout: 'dual',
-  target: 'bottom camera',
-  title: 'Cover the bottom camera',
+  target: 'camera lens',
+  title: 'Cover the camera lens',
 };
 
 const SINGLE_CAMERA_PROFILE: HeartRateCameraProfile = {
@@ -23,8 +28,8 @@ const SINGLE_CAMERA_PROFILE: HeartRateCameraProfile = {
 
 const TRIPLE_CAMERA_PROFILE: HeartRateCameraProfile = {
   layout: 'triple',
-  target: 'rightmost camera',
-  title: 'Cover the rightmost camera',
+  target: 'camera lens',
+  title: 'Cover the camera lens',
 };
 
 const UNKNOWN_CAMERA_PROFILE: HeartRateCameraProfile = {

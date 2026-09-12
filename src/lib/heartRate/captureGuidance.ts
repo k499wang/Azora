@@ -26,17 +26,13 @@ export function getHeartRatePlacementGuidance(
   modelId?: string | null,
 ): HeartRatePlacementGuidance {
   const profile = getHeartRateCameraProfile(modelName, modelId);
-  const cameraTarget = profile.target;
-  const isKnownLayout = profile.layout !== 'unknown';
 
   return {
     title: profile.title,
-    instruction: isKnownLayout
-      ? `Press the soft pad of your index finger against the ${cameraTarget} so it is completely covered, with your skin touching the glass. Leave the flash uncovered.`
-      : 'Press the soft pad of your index finger against the lens shown in the live check so it is completely covered, with your skin touching the glass. Leave the flash uncovered.',
-    multiCameraWarning: isKnownLayout
-      ? `Use the highlighted ${cameraTarget} — covering another lens will not work.`
-      : 'Use the lens shown during the live check — covering another lens will not work.',
+    instruction:
+      'Press the soft pad of your index finger against the lens shown in the live check so it is completely covered, with your skin touching the glass. Leave the flash uncovered.',
+    multiCameraWarning:
+      'Use the lens shown during the live check — covering another lens will not work.',
     steps: [
       {
         title: 'Case off, hands warm',
@@ -44,9 +40,7 @@ export function getHeartRatePlacementGuidance(
           'A case sitting over the lens or tinting the flash blocks the light the reading needs. Cold fingers are the other common blocker — rub your hands together for about 30 seconds first.',
       },
       {
-        title: isKnownLayout
-          ? `Press against the ${cameraTarget}`
-          : 'Press against the lens shown in the live check',
+        title: 'Press against the lens shown in the live check',
         detail:
           'Lay the soft pad of your index finger flat on the lens and keep it pressed there. Resting it near the lens or hovering over it will not read your pulse. Keep the flash uncovered.',
       },
@@ -58,7 +52,7 @@ export function getHeartRatePlacementGuidance(
       {
         title: 'Keep completely still',
         detail:
-          'Keep your body, hand, phone, and finger completely still. Don’t talk or adjust your grip. Breathe normally. If possible, support your phone and hand on a stable surface.',
+          'Keep your body, hand, phone, and finger completely still. Don’t talk or adjust your grip. Breathe normally. If you can, rest your elbows on a table or your knees so your hands are braced.',
       },
     ],
   };
@@ -85,9 +79,9 @@ const TROUBLESHOOTING_TIPS: Record<string, HeartRatePlacementStep> = {
       'A case that sits over the lens or tints the flash blocks the light the reading depends on.',
   },
   restOnTable: {
-    title: 'Rest the phone on a table',
+    title: 'Brace your arms',
     detail:
-      'Set the phone down and let your hand rest on it. Holding it up adds small movements that break the signal.',
+      'Rest your elbows or forearms on a table or your knees and keep holding the phone, screen facing you. Unsupported hands drift just enough to break the signal.',
   },
   indexPad: {
     title: 'Use your index fingertip',
