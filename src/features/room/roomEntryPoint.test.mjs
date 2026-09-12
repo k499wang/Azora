@@ -173,7 +173,8 @@ test('the completion sheet delegates typed forward navigation to its callers', (
     assert.match(caller, /onChoosePiece={handleChoosePiece}/);
     // The celebration and the stage are content of one presentation; two
     // native modals cannot hand over without one tearing the other down.
-    assert.match(caller, /<DailyRewardSurface visible=/);
+    // Whitespace-tolerant: how the attribute is wrapped is a formatter's business.
+    assert.match(caller, /<DailyRewardSurface\s+visible=/);
     assert.match(caller, /<DailyCompleteSheet\s*\n\s*hosted/);
     assert.match(caller, /<DailyRewardFlow\s*\n\s*hosted/);
   }
@@ -375,4 +376,26 @@ test('only the room is inside the thing that flies to Home', () => {
   // rooms and nothing else.
   assert.match(seal, /chrome=\{false\}/);
   assert.match(seal, /<PagerDots/);
+});
+
+/**
+ * Flattening a view into a texture is how the room's entrances and exits stay
+ * cheap, and it is also a cache. A cache over something that changes shows the
+ * frame it was taken at — a picker whose room never previews the piece, or a
+ * week that never rebuilds. Both rooms may only rasterise while they move.
+ */
+test('no room is flattened into a texture while its contents change', () => {
+  for (const file of [
+    'features/room/DailyRewardFlow.tsx',
+    'features/room/RoomSealFlow.tsx',
+  ]) {
+    const source = read(file);
+
+    for (const match of source.matchAll(/shouldRasterizeIOS(=\{[^}]*\})?/g)) {
+      assert.ok(
+        match[1] != null,
+        `${file} rasterises unconditionally; gate it on the view actually moving`,
+      );
+    }
+  }
 });

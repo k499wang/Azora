@@ -97,8 +97,7 @@ export default function ShareableResultScreen({
   const [sheetDismissed, setSheetDismissed] = useState(false);
   const [sheetPresented, setSheetPresented] = useState(false);
   const [sheetExitStarted, setSheetExitStarted] = useState(false);
-  const openingTransitionComplete =
-    useOpeningTransitionComplete(navigation);
+  const openingTransitionComplete = useOpeningTransitionComplete(navigation);
   const roomClaim = useRoomClaim(userId);
   /**
    * The day's piece opens here rather than on a screen of its own. Replacing
@@ -125,7 +124,9 @@ export default function ShareableResultScreen({
   // running. Nothing heavy is left to commit once the screen is on-screen —
   // `transitionEnd` only decides when things become *visible*.
   const sheetVisible =
-    (!sheetDismissed || reward.handingOver) && snapshot != null && openingTransitionComplete;
+    (!sheetDismissed || reward.handingOver) &&
+    snapshot != null &&
+    openingTransitionComplete;
   const showDailyCover = !sheetDismissed && !sheetPresented;
   const revealResults = sheetExitStarted || sheetDismissed;
 
@@ -193,10 +194,18 @@ export default function ShareableResultScreen({
     reward.open({ handOver: true });
   }, [reward]);
 
+  /**
+   * The reward ends where the day ended.
+   *
+   * It used to hand over to Home, on the reasoning that the piece belongs in
+   * the room and the room is on Home. But the result behind this is the thing
+   * the user came here for, and taking it away the moment they finish looking
+   * at a decoration is the app deciding they are done. They leave when they
+   * leave.
+   */
   const handleRewardDone = useCallback(() => {
     reward.close();
-    returnToHome(navigation);
-  }, [navigation, reward]);
+  }, [reward]);
 
   const handleShare = useCallback(async () => {
     try {
@@ -223,10 +232,7 @@ export default function ShareableResultScreen({
       sourceAction: 'result_stats',
       feature: FeatureKey.AdvancedStats,
     });
-  }, [
-    advancedStatsTrackingAccess,
-    navigation,
-  ]);
+  }, [advancedStatsTrackingAccess, navigation]);
 
   return (
     <View
@@ -242,7 +248,9 @@ export default function ShareableResultScreen({
     >
       {/* One presentation from the flame through to the piece landing;
           see `DailyRewardSurface` for why it cannot be two. */}
-      <DailyRewardSurface visible={sheetVisible || reward.decorating || reward.sealing}>
+      <DailyRewardSurface
+        visible={sheetVisible || reward.decorating || reward.sealing}
+      >
         {sheetVisible && snapshot != null && celebrationContent != null ? (
           <DailyCompleteSheet
             hosted
@@ -266,8 +274,8 @@ export default function ShareableResultScreen({
           <DailyRewardFlow
             hosted
             // No room on a result screen, so nothing to grow from or shrink
-            // back into. The flow settles in place and hands over to Home, where
-            // the piece it just placed is already in the room.
+            // back into. The flow settles in place and clears, leaving the
+            // result underneath exactly as it was.
             origin={null}
             room={roomClaim.room}
             progress={roomClaim.progress}
@@ -286,10 +294,7 @@ export default function ShareableResultScreen({
             userId={userId}
             room={roomClaim.room}
             from={reward.sealFrom}
-            onDone={() => {
-              reward.endSeal();
-              returnToHome(navigation);
-            }}
+            onDone={reward.endSeal}
           />
         ) : null}
       </DailyRewardSurface>

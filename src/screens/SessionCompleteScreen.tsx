@@ -87,8 +87,7 @@ export default function SessionCompleteScreen({
   const profileQuery = useProfileQuery(user?.id ?? null);
   const [sheetDismissed, setSheetDismissed] = useState(false);
   const [sheetPresented, setSheetPresented] = useState(false);
-  const openingTransitionComplete =
-    useOpeningTransitionComplete(navigation);
+  const openingTransitionComplete = useOpeningTransitionComplete(navigation);
   const roomClaim = useRoomClaim(user?.id ?? null);
   const todayLocalDate = useTodayLocalDate();
   const dailies = roomClaim.dailies;
@@ -100,8 +99,8 @@ export default function SessionCompleteScreen({
   const currentlyDaily =
     techniqueId === dailies.guidedTechnique?.id ||
     techniqueId === dailies.handPickedTechnique?.id;
-  const [dailyEligibility, setDailyEligibility] = useState<boolean | null>(() =>
-    dailies.isLoading ? null : currentlyDaily,
+  const [dailyEligibility, setDailyEligibility] = useState<boolean | null>(
+    () => (dailies.isLoading ? null : currentlyDaily),
   );
 
   useEffect(() => {
@@ -115,11 +114,7 @@ export default function SessionCompleteScreen({
       guided: techniqueId === dailies.guidedTechnique?.id,
       handPicked: techniqueId === dailies.handPickedTechnique?.id,
     }),
-    [
-      dailies.guidedTechnique?.id,
-      dailies.handPickedTechnique?.id,
-      techniqueId,
-    ],
+    [dailies.guidedTechnique?.id, dailies.handPickedTechnique?.id, techniqueId],
   );
   /**
    * The day's piece opens here rather than on a screen of its own. Replacing
@@ -144,7 +139,10 @@ export default function SessionCompleteScreen({
   // The native stack owns the base result entrance. Transition completion only
   // sequences the optional daily celebration sheet over that content.
   const sheetVisible =
-    isDaily && (!sheetDismissed || reward.handingOver) && snapshot != null && openingTransitionComplete;
+    isDaily &&
+    (!sheetDismissed || reward.handingOver) &&
+    snapshot != null &&
+    openingTransitionComplete;
   // Cover only while a celebration is actually coming. Eligibility resolves
   // synchronously from cache in the normal flow; the transition guard just
   // avoids flashing results mid-slide on a cold start.
@@ -206,10 +204,18 @@ export default function SessionCompleteScreen({
     reward.open({ handOver: true });
   }, [reward]);
 
+  /**
+   * The reward ends where the day ended.
+   *
+   * It used to hand over to Home, on the reasoning that the piece belongs in
+   * the room and the room is on Home. But the result behind this is the thing
+   * the user came here for, and taking it away the moment they finish looking
+   * at a decoration is the app deciding they are done. They leave when they
+   * leave.
+   */
   const handleRewardDone = useCallback(() => {
     reward.close();
-    returnToHome(navigation);
-  }, [navigation, reward]);
+  }, [reward]);
 
   const celebrationContentRef = useRef<{
     title: string;
@@ -257,7 +263,9 @@ export default function SessionCompleteScreen({
     >
       {/* One presentation from the flame through to the piece landing;
           see `DailyRewardSurface` for why it cannot be two. */}
-      <DailyRewardSurface visible={sheetVisible || reward.decorating || reward.sealing}>
+      <DailyRewardSurface
+        visible={sheetVisible || reward.decorating || reward.sealing}
+      >
         {sheetVisible && snapshot != null && celebrationContent != null ? (
           <DailyCompleteSheet
             hosted
@@ -280,8 +288,8 @@ export default function SessionCompleteScreen({
           <DailyRewardFlow
             hosted
             // No room on a result screen, so nothing to grow from or shrink
-            // back into. The flow settles in place and hands over to Home, where
-            // the piece it just placed is already in the room.
+            // back into. The flow settles in place and clears, leaving the
+            // result underneath exactly as it was.
             origin={null}
             room={roomClaim.room}
             progress={roomClaim.progress}
@@ -300,10 +308,7 @@ export default function SessionCompleteScreen({
             userId={user?.id ?? null}
             room={roomClaim.room}
             from={reward.sealFrom}
-            onDone={() => {
-              reward.endSeal();
-              returnToHome(navigation);
-            }}
+            onDone={reward.endSeal}
           />
         ) : null}
       </DailyRewardSurface>
@@ -351,8 +356,8 @@ export default function SessionCompleteScreen({
                   {congratulation}
                 </Text>
                 <Text style={[styles.heroSubtitle, { color: hue.ink }]}>
-                  {techniqueName} · {formatDuration(durationSec)} · {breathCount}{' '}
-                  breaths
+                  {techniqueName} · {formatDuration(durationSec)} ·{' '}
+                  {breathCount} breaths
                 </Text>
               </View>
             </View>
