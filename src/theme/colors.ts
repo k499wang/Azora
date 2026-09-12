@@ -362,6 +362,7 @@ export const colors = {
     facebook: '#0866FF',
     reddit: '#FF4500',
     appStore: '#0D96F6',
+    google: '#4285F4',
   },
 
   text: {

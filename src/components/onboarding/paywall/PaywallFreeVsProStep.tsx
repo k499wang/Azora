@@ -137,7 +137,7 @@ export function PaywallFreeVsProStep({
               )}
             </View>
             <View style={styles.valueCell}>
-              <Icon name="check" size={22} color={colors.primary.blue600} />
+              <Icon name="check" size={22} color={colors.primary.blue500} />
             </View>
           </View>
         ))}
@@ -207,7 +207,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     paddingVertical: 4,
     borderRadius: 999,
-    backgroundColor: colors.primary.blue600,
+    backgroundColor: colors.primary.blue500,
   },
   proPillText: {
     ...typography.caption.caption1,
@@ -224,7 +224,7 @@ const styles = StyleSheet.create({
   trialFootnote: {
     ...typography.body.small,
     fontFamily: fonts.semibold,
-    color: colors.primary.blue600,
+    color: colors.primary.blue500,
     textAlign: 'center',
     marginTop: spacing.lg,
     paddingHorizontal: spacing.md,

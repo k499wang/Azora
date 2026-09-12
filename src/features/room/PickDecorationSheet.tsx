@@ -182,7 +182,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   tileActive: {
-    borderColor: colors.primary.blue600,
+    borderColor: colors.primary.blue500,
     backgroundColor: colors.primary.blue100,
   },
   well: {

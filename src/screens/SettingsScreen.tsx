@@ -247,7 +247,7 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
                       false: colors.neutral[300],
                       true: colors.primary.blue300,
                     }}
-                    thumbColor={hapticsEnabled ? colors.primary.blue600 : colors.neutral[50]}
+                    thumbColor={hapticsEnabled ? colors.primary.blue500 : colors.neutral[50]}
                   />
                 }
               />

@@ -24,6 +24,14 @@ export interface ExerciseDarkTheme {
   textSecondary: string;
   textTertiary: string;
   textAccent: string;
+  /**
+   * The accent as a filled surface — the session's Start button. Split from
+   * `textAccent` because a fill and a label have opposite contrast needs: on
+   * the light theme the accent has to lighten to match the app's primary
+   * button, which is exactly the direction that would wash out accent text on
+   * the cream screen. The dark themes carry the same value for both.
+   */
+  accentFill: string;
   iconPrimary: string;
   backdropExhale: BreathBackdropColors;
   backdropInhale: BreathBackdropColors;
@@ -59,7 +67,7 @@ export const EXERCISE_DARK_THEMES: ExerciseDarkTheme[] = [
   {
     id: 'light',
     label: 'Light',
-    dotColor: '#63ADFF',
+    dotColor: colors.primary.blue400,
     screen: colors.background.canvas,
     // Warm siblings of the cream screen: a cool grey panel on it read as a
     // different material rather than a raised part of the same one.
@@ -67,24 +75,36 @@ export const EXERCISE_DARK_THEMES: ExerciseDarkTheme[] = [
     surfaceBorder: '#E7DCCE',
     controlSurface: '#F9F3ED',
     controlBorder: '#EBE1D4',
-    circleOutline: '#63ADFF',
+    circleOutline: colors.primary.blue400,
     circleOutlineOpacity: 0.5,
     // The breathing companion's body and aura. Shares Mochi's token so the
     // mascot is one colour wherever he appears.
     circleOuter: colors.roomBlob.body,
     circleOuterOpacity: 0.28,
-    circleInner: '#3D93FF',
-    beatFlush: '#1F7BFF',
+    circleInner: colors.primary.blue500,
+    // A beat has to read as a brightening, so the flush sits a rung *above*
+    // `circleInner`, the way every dark theme's does. It used to be a rung
+    // below, which made the light theme pulse darker than the other three.
+    beatFlush: colors.primary.blue400,
     progressTrack: '#E7DCCE',
-    progressFill: '#63ADFF',
+    progressFill: colors.primary.blue400,
     textPrimary: '#2e333a',
     textSecondary: '#3f4855',
     textTertiary: '#94A3B8',
-    textAccent: '#1F7BFF',
+    textAccent: colors.primary.blue600,
+    accentFill: colors.primary.blue500,
     iconPrimary: '#0F172A',
     // Idle and exhale settle back onto the same cream canvas used by Home.
-    backdropExhale: ['#FDF6F000', '#FDF6F000', '#FDF6F000'],
-    backdropInhale: ['#63ADFF3D', '#63ADFF00', '#63ADFF29'],
+    backdropExhale: [
+      `${colors.background.canvas}00`,
+      `${colors.background.canvas}00`,
+      `${colors.background.canvas}00`,
+    ],
+    backdropInhale: [
+      `${colors.primary.blue400}3D`,
+      `${colors.primary.blue400}00`,
+      `${colors.primary.blue400}29`,
+    ],
     companion: {
       body: colors.koala.body,
       shade: colors.koala.shade,
@@ -115,6 +135,7 @@ export const EXERCISE_DARK_THEMES: ExerciseDarkTheme[] = [
     textSecondary: '#8A98B4',
     textTertiary: '#5A6880',
     textAccent: '#6A90C8',
+    accentFill: '#6A90C8',
     iconPrimary: '#C8D4E8',
     backdropExhale: ['#4A609014', '#4A609000', '#4A60900F'],
     backdropInhale: ['#4A609047', '#4A609000', '#4A60902E'],
@@ -148,6 +169,7 @@ export const EXERCISE_DARK_THEMES: ExerciseDarkTheme[] = [
     textSecondary: '#A09088',
     textTertiary: '#6A5E56',
     textAccent: '#C8A880',
+    accentFill: '#C8A880',
     iconPrimary: '#E0D8D0',
     backdropExhale: ['#7A6A5E14', '#7A6A5E00', '#7A6A5E0F'],
     backdropInhale: ['#7A6A5E47', '#7A6A5E00', '#7A6A5E2E'],
@@ -181,6 +203,7 @@ export const EXERCISE_DARK_THEMES: ExerciseDarkTheme[] = [
     textSecondary: '#7A9A90',
     textTertiary: '#4A6860',
     textAccent: '#6AB890',
+    accentFill: '#6AB890',
     iconPrimary: '#C4D8D0',
     backdropExhale: ['#4A706014', '#4A706000', '#4A70600F'],
     backdropInhale: ['#4A706047', '#4A706000', '#4A70602E'],

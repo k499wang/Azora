@@ -165,7 +165,7 @@ const styles = StyleSheet.create({
     color: colors.text.tertiary,
   },
   optionPatternSelected: {
-    color: colors.primary.blue600,
+    color: colors.primary.blue500,
   },
   optionNameRow: {
     flexDirection: 'row',
@@ -176,7 +176,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 999,
-    backgroundColor: colors.primary.blue600,
+    backgroundColor: colors.primary.blue500,
   },
   recommendedText: {
     fontFamily: fonts.semibold,

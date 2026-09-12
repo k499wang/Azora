@@ -17,7 +17,7 @@ import HelpfulnessQuestion from '../components/exercise/HelpfulnessQuestion';
 import { BREATH_HOLD_FEEDBACK_ID } from '../lib/sessionKey';
 import { BREATH_HOLD_STYLE } from '../features/exercise/guidedBreathing/categoryPalette';
 import { useTodayLocalDate } from '../hooks/useTodayLocalDate';
-import { card, coloredCard } from '../theme/card';
+import { card, softColoredCard } from '../theme/card';
 import HeartRateStatsSection from '../components/heartRate/HeartRateStatsSection';
 import type { DailyResultScreenProps } from '../app/navigation';
 import { estimateLungAge } from '../lib/lungAge';
@@ -265,7 +265,7 @@ export default function ShareableResultScreen({
         <MaterialCommunityIcons
           name="share-variant"
           size={20}
-          color={colors.primary.blue600}
+          color={colors.primary.blue500}
         />
       </GlassIconButton>
 
@@ -280,18 +280,27 @@ export default function ShareableResultScreen({
             style={styles.heroWrap}
           >
             <View style={styles.heroShadow}>
-              <View style={[styles.heroCard, coloredCard(hue)]}>
+              <View style={[styles.heroCard, softColoredCard(hue)]}>
                 <Icon
                   name="streakFilled"
                   size={HERO_FLAME_SIZE}
-                  color={hue.soft}
+                  color={hue.base}
                 />
-                <Text style={styles.heroTitle}>{congratulation}</Text>
-                <Text style={styles.heroSubtitle}>
+                <Text style={[styles.heroTitle, { color: hue.ink }]}>
+                  {congratulation}
+                </Text>
+                <Text style={[styles.heroSubtitle, { color: hue.ink }]}>
                   Breath hold · {formatDuration(holdSeconds)}
                 </Text>
                 {comparisonLabel == null ? null : (
-                  <Text style={styles.heroBadge}>{comparisonLabel}</Text>
+                  <Text
+                    style={[
+                      styles.heroBadge,
+                      { color: hue.ink, backgroundColor: hue.soft },
+                    ]}
+                  >
+                    {comparisonLabel}
+                  </Text>
                 )}
               </View>
             </View>
@@ -400,22 +409,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.xs,
   },
+  // Colour comes from the hue at the call site: the card is the family's
+  // `tint`, so its content is that family's `ink`, never white.
   heroTitle: {
     ...typography.display.display3,
-    color: colors.text.inverse,
     textAlign: 'center',
     marginTop: spacing.sm,
   },
   heroSubtitle: {
     ...typography.body.medium,
-    color: colors.onBlock.textMuted,
     textAlign: 'center',
+    opacity: 0.85,
   },
   heroBadge: {
     ...typography.body.small,
     fontFamily: fonts.semibold,
-    color: colors.text.inverse,
-    backgroundColor: colors.onBlock.fill,
     overflow: 'hidden',
     borderRadius: 999,
     paddingHorizontal: spacing.md,

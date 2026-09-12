@@ -313,7 +313,7 @@ const styles = StyleSheet.create({
   goalPillText: {
     ...typography.label.large,
     textAlign: 'center',
-    color: colors.primary.blue600,
+    color: colors.primary.blue500,
   },
   section: {
     gap: spacing.md,

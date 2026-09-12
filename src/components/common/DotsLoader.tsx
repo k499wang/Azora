@@ -9,7 +9,7 @@ interface Props {
   size?: number;
 }
 
-export function DotsLoader({ color = colors.primary.blue600, size = 10 }: Props) {
+export function DotsLoader({ color = colors.primary.blue500, size = 10 }: Props) {
   // One array for the life of the component. Rebuilding it every render made
   // the effect below tear down and restart all three loops on every render of
   // whatever screen the loader sits on.

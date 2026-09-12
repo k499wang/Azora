@@ -41,7 +41,7 @@ export default function PaywallFeatureList({ features }: PaywallFeatureListProps
       {resolvedFeatures.map((feature) => (
         <View key={feature.text} style={styles.row}>
           <View style={styles.iconWrap}>
-            <Icon name={feature.icon} size={22} color={colors.primary.blue600} />
+            <Icon name={feature.icon} size={22} color={colors.primary.blue500} />
           </View>
           <Text style={styles.text}>{feature.text}</Text>
         </View>

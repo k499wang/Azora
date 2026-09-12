@@ -48,7 +48,7 @@ export default function HRVStatsSection({
         <HRVTrackStatCard
           label="RMSSD"
           icon="stat-rmssd"
-          iconColor={colors.primary.blue600}
+          iconColor={colors.primary.blue500}
           value={rmssdValue}
           unit="ms"
           max={80}

@@ -561,7 +561,7 @@ const styles = StyleSheet.create({
   progressFill: {
     height: '100%',
     borderRadius: 999,
-    backgroundColor: colors.primary.blue600,
+    backgroundColor: colors.primary.blue500,
     minWidth: 16,
     justifyContent: 'flex-start',
     paddingHorizontal: 4,

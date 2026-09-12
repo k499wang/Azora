@@ -94,7 +94,7 @@ export function HeartRateProcessingScreen({
   title = 'Analyzing your heart rhythm',
   message = 'Building your recovery profile',
   backgroundColor = colors.background.canvas,
-  accentColor = colors.primary.blue600,
+  accentColor = colors.primary.blue500,
   titleColor = colors.text.primary,
   messageColor = colors.text.secondary,
 }: HeartRateProcessingScreenProps) {

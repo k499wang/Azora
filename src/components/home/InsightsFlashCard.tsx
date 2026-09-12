@@ -234,7 +234,7 @@ const styles = StyleSheet.create({
   eyebrow: {
     ...typography.label.small,
     fontFamily: fonts.semibold,
-    color: colors.primary.blue600,
+    color: colors.primary.blue500,
     flexShrink: 1,
   },
   cardHeader: {

@@ -184,7 +184,7 @@ const styles = StyleSheet.create({
     paddingBottom: LIP_DEPTH,
   },
   lipSelected: {
-    backgroundColor: colors.primary.blue600,
+    backgroundColor: colors.primary.blue500,
   },
   row: {
     ...card.base,
@@ -203,7 +203,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
   },
   rowSelected: {
-    borderColor: colors.primary.blue600,
+    borderColor: colors.primary.blue500,
     backgroundColor: colors.primary.blue100,
   },
   // Exactly the lip's depth, so the row lands flush on its bottom edge.

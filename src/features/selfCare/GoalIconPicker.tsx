@@ -51,7 +51,7 @@ export default function GoalIconPicker({
             <Icon
               name={choice}
               size={TILE_ICON_SIZE}
-              color={onCard ? colors.primary.blue600 : colors.text.inverse}
+              color={onCard ? colors.primary.blue500 : colors.text.inverse}
             />
           </Pressable>
         );

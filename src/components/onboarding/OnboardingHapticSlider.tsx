@@ -59,7 +59,7 @@ export default function OnboardingHapticSlider({
   step = 1,
   value,
   unit,
-  accent = colors.primary.blue600,
+  accent = colors.primary.blue500,
   formatValue,
   minLabel,
   maxLabel,

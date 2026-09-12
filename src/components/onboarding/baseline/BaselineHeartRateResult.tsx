@@ -82,7 +82,7 @@ const GAUGE_TICK_PATHS = [0, 25, 50, 75, 100].map((t) =>
 
 const BAND_COLOR: Record<RestingHeartRateBand, string> = {
   below: colors.success[500],
-  typical: colors.primary.blue600,
+  typical: colors.primary.blue500,
   above: colors.warning[500],
 };
 

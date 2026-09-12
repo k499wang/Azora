@@ -229,7 +229,7 @@ export default function ExerciseSearchScreen({
               accessibilityLabel="Searching resets"
               style={styles.searching}
             >
-              <ActivityIndicator size="small" color={colors.primary.blue600} />
+              <ActivityIndicator size="small" color={colors.primary.blue500} />
               <Text style={styles.searchingText}>Searching…</Text>
             </View>
           ) : showInitialPrompt ? (
@@ -338,8 +338,8 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
   },
   filterChipSelected: {
-    backgroundColor: colors.primary.blue600,
-    borderColor: colors.primary.blue600,
+    backgroundColor: colors.primary.blue500,
+    borderColor: colors.primary.blue500,
   },
   filterChipDefault: {
     backgroundColor: colors.background.elevated,

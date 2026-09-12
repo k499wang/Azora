@@ -25,7 +25,7 @@ const CELEBRATION_PIECE_SCALE = 1.9;
 const CELEBRATION_SECOND_DELAY_MS = 240;
 const CELEBRATION_MS = 1800;
 const CELEBRATION_COLORS = [
-  colors.primary.blue600,
+  colors.primary.blue500,
   colors.success[500],
 ] as const;
 /** clear of the tab bar without floating away from it */

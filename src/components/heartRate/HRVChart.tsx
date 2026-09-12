@@ -149,7 +149,7 @@ export default function HRVChart({
         </>
       ) : null}
       <View style={styles.titleRow}>
-        <Icon name="stat-average-hrv" size={28} color={colors.primary.blue600} />
+        <Icon name="stat-average-hrv" size={28} color={colors.primary.blue500} />
         <Text style={styles.title}>Heart rate variability</Text>
       </View>
 
@@ -268,7 +268,7 @@ export default function HRVChart({
         <>
           <LockedScrim />
           <View style={styles.clearHeaderOverlay} pointerEvents="none">
-            <Icon name="stat-average-hrv" size={28} color={colors.primary.blue600} />
+            <Icon name="stat-average-hrv" size={28} color={colors.primary.blue500} />
             <Text style={styles.title}>Heart rate variability</Text>
           </View>
           {onPressLocked ? (

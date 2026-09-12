@@ -364,7 +364,7 @@ export function HeartRateCaptureFlow({
     ? measuringWarning(signalStatus, fingerPlacement, cameraTarget)
     : null;
 
-  const ringColor = colors.primary.blue600;
+  const ringColor = colors.primary.blue500;
   const ringProgress = isMeasuring ? progress : 0;
   const trackColor = colors.border.subtle;
 

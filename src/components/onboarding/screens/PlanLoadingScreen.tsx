@@ -230,7 +230,7 @@ const styles = StyleSheet.create({
   fill: {
     height: '100%',
     borderRadius: 999,
-    backgroundColor: colors.primary.blue600,
+    backgroundColor: colors.primary.blue500,
   },
   status: {
     ...typography.body.small,
@@ -270,7 +270,7 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: colors.primary.blue600,
+    backgroundColor: colors.primary.blue500,
     alignItems: 'center',
     justifyContent: 'center',
   },

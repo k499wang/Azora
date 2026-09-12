@@ -103,8 +103,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   checkboxChecked: {
-    backgroundColor: colors.primary.blue600,
-    borderColor: colors.primary.blue600,
+    backgroundColor: colors.primary.blue500,
+    borderColor: colors.primary.blue500,
   },
   tipText: {
     flex: 1,

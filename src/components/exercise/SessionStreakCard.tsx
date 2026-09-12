@@ -83,7 +83,7 @@ export default function SessionStreakCard({
     backgroundColor: interpolateColor(
       todayFill.value,
       [0, 1],
-      [colors.background.secondary, colors.primary.blue600],
+      [colors.background.secondary, colors.primary.blue500],
     ),
   }));
 
@@ -94,7 +94,7 @@ export default function SessionStreakCard({
   return (
     <View style={[card.base, styles.container]}>
       <View style={styles.headerRow}>
-        <Icon name="calendar" size={24} color={colors.primary.blue600} />
+        <Icon name="calendar" size={24} color={colors.primary.blue500} />
         <Text style={styles.streakLabel}>{streakLabelFor(currentStreak)}</Text>
       </View>
 
@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background.secondary,
   },
   dayDotDone: {
-    backgroundColor: colors.primary.blue600,
+    backgroundColor: colors.primary.blue500,
   },
   dayDotToday: {
     borderWidth: 2,

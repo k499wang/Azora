@@ -21,7 +21,6 @@ import {
   FACE_SHAPES,
   HIGHLIGHT_IN,
   HIGHLIGHT_RADIUS,
-  HIGHLIGHT_UP,
   IRIS_INSET,
   IRIS_LID_INSET,
   IRIS_RADIUS,
@@ -182,6 +181,78 @@ function eyeAperture(shape: FaceShape): string {
   );
 }
 
+/**
+ * The ball behind the lids: the iris lens, held far enough inside the aperture
+ * that it never breaks the rim. Both the iris and the catchlight on it are read
+ * off this, so the whole eyeball closes as one thing.
+ */
+function eyeball(shape: FaceShape): {
+  top: number;
+  bottom: number;
+  width: number;
+} {
+  'worklet';
+  const top = Math.max(shape.eyeTop + IRIS_LID_INSET, -IRIS_RADIUS);
+  const bottom = Math.max(
+    top,
+    Math.min(shape.eyeBottom - IRIS_LID_INSET, IRIS_RADIUS),
+  );
+  return { top, bottom, width: Math.min(IRIS_RADIUS, shape.eyeWidth - IRIS_LID_INSET) };
+}
+
+/**
+ * Where the eyeball's upper edge sits, `inset` from its centre — the same bent
+ * ellipse `eyePath` draws, evaluated at one point rather than built as a path.
+ */
+function eyeballTopAt(
+  shape: FaceShape,
+  top: number,
+  bottom: number,
+  width: number,
+  inset: number,
+): number {
+  'worklet';
+  const radiusY = (bottom - top) / 2;
+  const midOffset = (top + bottom) / 2;
+  const t = width === 0 ? 0 : inset / width;
+  const along = Math.max(0, 1 - t * t);
+  return (
+    EYE_Y +
+    midOffset * shape.eyeRoundness -
+    radiusY * Math.sqrt(along) +
+    midOffset * (1 - shape.eyeRoundness) * along
+  );
+}
+
+/**
+ * One face's mouth at a given breath.
+ *
+ * Which way it moves inside a phase depends on where the air is going. The
+ * exhale is the only phase air leaves through the mouth: the breath pushes it
+ * open on full lungs and lets it narrow as they empty, closing the whole way
+ * onto the sealed curve rather than onto a flat line, so the O never passes
+ * through a dash on its way shut and the next face has nothing left to close.
+ * Everywhere else the air is nasal, so the mouth stays sealed and the breath
+ * only presses the lips — which settles the curve a little without
+ * straightening it, since a sealed mouth flattened onto its own line stops
+ * reading as a mouth at all.
+ */
+function mouthOf(
+  shape: FaceShape,
+  filled: number,
+): { width: number; top: number; bottom: number; roundness: number } {
+  'worklet';
+  const close = shape.mouthBreath * (1 - filled);
+  const press = shape.mouthPress * filled;
+  const lip = (open: number, sealed: number) => open + (sealed - open) * close;
+  return {
+    width: lip(shape.mouthWidth, SEALED_MOUTH.mouthWidth) * (1 + 0.05 * press),
+    top: lip(shape.mouthTop, SEALED_MOUTH.mouthTop) * (1 - 0.1 * press),
+    bottom: lip(shape.mouthBottom, SEALED_MOUTH.mouthBottom) * (1 - 0.1 * press),
+    roundness: shape.mouthBreath * filled,
+  };
+}
+
 /** 1 where the lids are shut, 0 where the eye is wide. */
 function lidInk(shape: FaceShape): number {
   'worklet';
@@ -221,6 +292,11 @@ const BreathingCompanion = forwardRef<BreathingCircleRef, BreathingCompanionProp
     const faceFrom = useSharedValue(FACE_SHAPES[face]);
     const faceTo = useSharedValue(FACE_SHAPES[face]);
     const faceProgress = useSharedValue(1);
+    // The breath the outgoing face last drew at. A face on its way out is a
+    // past pose: read at the live breath it goes on acting out the phase that
+    // has already replaced it, and the exhale's mouth re-opens as the next
+    // inhale refills the lungs. Frozen, it only fades.
+    const faceFromBreath = useSharedValue(0);
 
     useEffect(() => {
       if (!active) {
@@ -287,13 +363,14 @@ const BreathingCompanion = forwardRef<BreathingCircleRef, BreathingCompanionProp
       // Start from wherever the morph currently sits, so a phase that changes
       // mid-transition continues from the drawn face instead of snapping.
       faceFrom.value = lerpFace(faceFrom.value, faceTo.value, faceProgress.value);
+      faceFromBreath.value = breath.value;
       faceTo.value = FACE_SHAPES[face];
       faceProgress.value = 0;
       faceProgress.value = withTiming(1, {
         duration: reducedMotion ? 0 : FACE_MORPH_MS,
         easing: Easing.inOut(Easing.quad),
       });
-    }, [active, face, faceFrom, faceProgress, faceTo, reducedMotion]);
+    }, [active, breath, face, faceFrom, faceFromBreath, faceProgress, faceTo, reducedMotion]);
 
     useEffect(() => {
       if (!active) return;
@@ -515,12 +592,7 @@ const BreathingCompanion = forwardRef<BreathingCircleRef, BreathingCompanionProp
     // is the same colour, so the handover itself is invisible.
     const irisesProps = useAnimatedProps(() => {
       const s = shape.value;
-      const top = Math.max(s.eyeTop + IRIS_LID_INSET, -IRIS_RADIUS);
-      const bottom = Math.max(
-        top,
-        Math.min(s.eyeBottom - IRIS_LID_INSET, IRIS_RADIUS),
-      );
-      const width = Math.min(IRIS_RADIUS, s.eyeWidth - IRIS_LID_INSET);
+      const { top, bottom, width } = eyeball(s);
       return {
         d:
           eyePath(EYE_LEFT_X + IRIS_INSET, EYE_Y, width, top, bottom, s.eyeRoundness) +
@@ -529,9 +601,18 @@ const BreathingCompanion = forwardRef<BreathingCircleRef, BreathingCompanionProp
       };
     });
 
-    const highlightProps = useAnimatedProps(() => ({
-      fillOpacity: 1 - lidInk(shape.value),
-    }));
+    // The catchlight is on the eyeball, not on the face, so it goes where the
+    // eyeball goes: pinned to a fixed point on the skull it stays put while the
+    // aperture closes around it and ends up sitting on bare fur above a shut
+    // lid — an eye that is still half there while the lid is already down. It
+    // rides the eyeball's own upper edge instead, and shrinks with it, so the
+    // lids swallow it the way they swallow the iris.
+    const highlightProps = useAnimatedProps(() => {
+      const s = shape.value;
+      const { top, bottom, width } = eyeball(s);
+      const radius = HIGHLIGHT_RADIUS * Math.min(1, (bottom - top) / (IRIS_RADIUS * 2));
+      return { cy: eyeballTopAt(s, top, bottom, width, HIGHLIGHT_IN) + radius, r: radius, fillOpacity: 1 - lidInk(s) };
+    });
 
     // Ink poured into the aperture as the lids come together, so a shut eye is
     // the closing arc itself rather than a separate drawing of one.
@@ -540,33 +621,28 @@ const BreathingCompanion = forwardRef<BreathingCircleRef, BreathingCompanionProp
       fillOpacity: lidInk(shape.value),
     }));
 
-    // The mouth keeps moving inside a phase, and which way depends on where the
-    // air is going. It is drawn on the same outline the eyes are, and rounds off
-    // with the breath: sealed it is a small curve with lips to it, and the
-    // further the exhale opens it the closer it gets to a true O.
-    // The exhale is the only phase the air leaves through the mouth:
-    // there the breath pushes it open on full lungs and lets it narrow shut as
-    // they empty — closing onto the sealed curve rather than onto a flat line,
-    // so the O never passes through a dash on its way shut.
-    // Everywhere else the air is nasal, so the mouth stays sealed
-    // and the breath only presses the lips, which settles the curve a little
-    // without straightening it — a sealed mouth flattened onto its own line
-    // stops reading as a mouth at all.
+    // The mouth is resolved for each face at the breath the frame is on and the
+    // two answers are crossfaded, rather than crossfading the two faces and
+    // resolving once. The difference is the whole of the smoothness: `mouthBreath`
+    // is what scales the closure, and it decays across a morph, so a closure
+    // applied after the blend gets undone as the blend runs — the mouth drops
+    // back open a few units at the top of every inhale before closing again.
+    // Resolved per face, both ends already agree on the sealed curve and there
+    // is nothing to undo.
     const mouthProps = useAnimatedProps(() => {
-      const s = shape.value;
       const filled = breath.value;
-      const shut = s.mouthBreath * (1 - (0.18 + 0.82 * filled));
-      const press = s.mouthPress * filled;
-      const lip = (open: number, sealed: number) =>
-        open + (sealed - open) * shut;
+      const from = mouthOf(faceFrom.value, faceFromBreath.value);
+      const to = mouthOf(faceTo.value, filled);
+      const t = faceProgress.value;
+      const mix = (a: number, b: number) => a + (b - a) * t;
       return {
         d: eyePath(
           MOUTH_X,
           MOUTH_Y,
-          lip(s.mouthWidth, SEALED_MOUTH.mouthWidth) * (1 + 0.05 * press),
-          lip(s.mouthTop, SEALED_MOUTH.mouthTop) * (1 - 0.1 * press),
-          lip(s.mouthBottom, SEALED_MOUTH.mouthBottom) * (1 - 0.1 * press),
-          s.mouthBreath * filled,
+          mix(from.width, to.width),
+          mix(from.top, to.top),
+          mix(from.bottom, to.bottom),
+          mix(from.roundness, to.roundness),
         ),
       };
     });
@@ -642,14 +718,12 @@ const BreathingCompanion = forwardRef<BreathingCircleRef, BreathingCompanionProp
                 <AnimatedPath fill={azo.iris} animatedProps={irisesProps} />
                 <AnimatedCircle
                   cx={EYE_LEFT_X + IRIS_INSET + HIGHLIGHT_IN}
-                  cy={EYE_Y - HIGHLIGHT_UP}
                   r={HIGHLIGHT_RADIUS}
                   fill={azo.eyeWhite}
                   animatedProps={highlightProps}
                 />
                 <AnimatedCircle
                   cx={EYE_RIGHT_X - IRIS_INSET - HIGHLIGHT_IN}
-                  cy={EYE_Y - HIGHLIGHT_UP}
                   r={HIGHLIGHT_RADIUS}
                   fill={azo.eyeWhite}
                   animatedProps={highlightProps}

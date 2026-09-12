@@ -81,7 +81,7 @@ const styles = StyleSheet.create({
     paddingRight: spacing.sm,
     borderRadius: radius.full,
     borderWidth: 1,
-    borderColor: colors.primary.blue600,
+    borderColor: colors.primary.blue500,
     backgroundColor: colors.primary.blue100,
   },
   pillPressed: pressable.control,

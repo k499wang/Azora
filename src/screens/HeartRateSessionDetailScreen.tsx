@@ -46,7 +46,7 @@ export function HeartRateSessionDetailScreen({
 
           {detailQuery.isLoading ? (
             <View style={styles.centerState}>
-              <ActivityIndicator color={colors.primary.blue600} />
+              <ActivityIndicator color={colors.primary.blue500} />
             </View>
           ) : detailQuery.isError || detail == null ? (
             <View style={styles.centerState}>

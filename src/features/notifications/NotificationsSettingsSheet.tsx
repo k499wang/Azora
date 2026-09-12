@@ -178,7 +178,7 @@ export default function NotificationsSettingsSheet({
           </View>
         ) : (
           <View style={styles.loading}>
-            <ActivityIndicator color={colors.primary.blue600} />
+            <ActivityIndicator color={colors.primary.blue500} />
           </View>
         )
       ) : (
@@ -251,7 +251,7 @@ function ReminderRow({
         <MaterialCommunityIcons
           name="bell-outline"
           size={21}
-          color={colors.primary.blue600}
+          color={colors.primary.blue500}
         />
         <View style={styles.rowCopy}>
           <Text style={styles.rowTitle}>{title}</Text>
@@ -264,7 +264,7 @@ function ReminderRow({
             void onUpdate({ enabled });
           }}
           trackColor={{ false: colors.neutral[300], true: colors.primary.blue300 }}
-          thumbColor={reminder.enabled ? colors.primary.blue600 : colors.neutral[50]}
+          thumbColor={reminder.enabled ? colors.primary.blue500 : colors.neutral[50]}
         />
       </View>
       <TimePickerField
@@ -310,7 +310,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.primary.blue600,
+    backgroundColor: colors.primary.blue500,
     paddingHorizontal: spacing.lg,
   },
   retryButtonPressed: {

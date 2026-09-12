@@ -48,7 +48,7 @@ function Sparkline({ values }: { values: number[] }) {
       <Polyline
         points={points.join(' ')}
         fill="none"
-        stroke={colors.primary.blue600}
+        stroke={colors.primary.blue500}
         strokeWidth={2}
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -63,7 +63,7 @@ export default function ProfileStatsGrid({ hero, secondary }: ProfileStatsGridPr
       <View style={styles.heroCard}>
         <View style={styles.heroLeft}>
           <View style={styles.heroLabelRow}>
-            <Icon name={hero.icon} size={16} color={colors.primary.blue600} />
+            <Icon name={hero.icon} size={16} color={colors.primary.blue500} />
             <Text style={styles.heroLabel}>{hero.label}</Text>
           </View>
           <Text style={styles.heroValue}>{hero.value}</Text>
@@ -78,7 +78,7 @@ export default function ProfileStatsGrid({ hero, secondary }: ProfileStatsGridPr
       <View style={styles.secondaryRow}>
         {secondary.map((badge) => (
           <View key={badge.label} style={styles.secondaryCard}>
-            <Icon name={badge.icon} size={18} color={colors.primary.blue600} />
+            <Icon name={badge.icon} size={18} color={colors.primary.blue500} />
             <Text style={styles.secondaryValue}>{badge.value}</Text>
             <Text style={styles.secondaryLabel}>{badge.label}</Text>
           </View>

@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
   sheetDone: {
     ...typography.body.medium,
     fontFamily: fonts.semibold,
-    color: colors.primary.blue600,
+    color: colors.primary.blue500,
   },
   sheetActionPressed: {
     opacity: 0.6,

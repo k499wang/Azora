@@ -113,7 +113,7 @@ export default function OnboardingSummaryCard({
 /** The card's right-hand token: a time, a score, a count. */
 export function OnboardingSummaryPill({
   label,
-  color = colors.primary.blue600,
+  color = colors.primary.blue500,
 }: {
   label: string;
   color?: string;
@@ -154,7 +154,7 @@ const styles = StyleSheet.create({
   title: {
     ...typography.body.large,
     fontFamily: fonts.semibold,
-    color: colors.primary.blue600,
+    color: colors.primary.blue500,
     flexShrink: 1,
   },
   titlePlain: {

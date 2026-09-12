@@ -1,3 +1,5 @@
+import { colors } from '../../../theme/colors';
+
 // Custom icon set. Each entry is a single SVG <path> / <g> body, already
 // styled with stroke="currentColor" fill="none" so the wrapper can swap color.
 
@@ -27,20 +29,20 @@ export const ICON_PATHS = {
 
   <defs>
     <linearGradient id="airwayBlue" x1="17" y1="0" x2="17" y2="20" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#EAF2FF"/>
-      <stop offset="1" stop-color="#63ADFF"/>
+      <stop stop-color="${colors.primary.blue100}"/>
+      <stop offset="1" stop-color="${colors.primary.blue400}"/>
     </linearGradient>
 
     <radialGradient id="leftLungBlue" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(6.35 9.44) rotate(78) scale(19.85 12.41)">
-      <stop stop-color="#C8DBFF"/>
-      <stop offset="0.55" stop-color="#3D93FF"/>
-      <stop offset="1" stop-color="#1E63D6"/>
+      <stop stop-color="${colors.primary.blue200}"/>
+      <stop offset="0.55" stop-color="${colors.primary.blue500}"/>
+      <stop offset="1" stop-color="${colors.primary.blue700}"/>
     </radialGradient>
 
     <radialGradient id="rightLungBlue" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(22.73 10.59) rotate(87) scale(18.29 11.43)">
-      <stop stop-color="#C8DBFF"/>
-      <stop offset="0.55" stop-color="#3D93FF"/>
-      <stop offset="1" stop-color="#1E63D6"/>
+      <stop stop-color="${colors.primary.blue200}"/>
+      <stop offset="0.55" stop-color="${colors.primary.blue500}"/>
+      <stop offset="1" stop-color="${colors.primary.blue700}"/>
     </radialGradient>
   </defs>
 `,
@@ -300,7 +302,7 @@ export const ICON_PATHS = {
   `,
 
   google: `
-    <path fill="#4285F4" d="M21.6 12.23c0-.74-.07-1.45-.19-2.13H12v4.03h5.39a4.6 4.6 0 0 1-2 3.02v2.51h3.24c1.9-1.74 2.97-4.32 2.97-7.43Z"/>
+    <path fill="${colors.channel.google}" d="M21.6 12.23c0-.74-.07-1.45-.19-2.13H12v4.03h5.39a4.6 4.6 0 0 1-2 3.02v2.51h3.24c1.9-1.74 2.97-4.32 2.97-7.43Z"/>
     <path fill="#34A853" d="M12 22c2.7 0 4.96-.9 6.62-2.43l-3.24-2.51c-.9.6-2.05.96-3.38.96-2.6 0-4.81-1.76-5.6-4.12H3.05v2.59A10 10 0 0 0 12 22Z"/>
     <path fill="#FBBC05" d="M6.4 13.9a6 6 0 0 1 0-3.81V7.5H3.05a10 10 0 0 0 0 9l3.35-2.6Z"/>
     <path fill="#EA4335" d="M12 5.97c1.47 0 2.79.51 3.83 1.5l2.87-2.87C16.95 2.99 14.7 2 12 2A10 10 0 0 0 3.05 7.5L6.4 10.1c.79-2.36 3-4.12 5.6-4.12Z"/>

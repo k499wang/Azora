@@ -160,7 +160,7 @@ export function RecentlyLoggedSection({
               metrics.push({
                 key: 'hrDrop',
                 value: `${item.hrDrop} HR drop`,
-                iconColor: colors.primary.blue600,
+                iconColor: colors.primary.blue500,
                 iconBg: colors.primary.blue100,
               });
             }
