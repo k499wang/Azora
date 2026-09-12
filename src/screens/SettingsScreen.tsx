@@ -1,5 +1,6 @@
 import { Text } from '../components/common/Text';
 import { useRef, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Alert, Linking, Pressable, ScrollView, StyleSheet, Switch, View } from 'react-native';
 import * as Device from 'expo-device';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -15,6 +16,8 @@ import { replayAppTour } from '../features/tour/useAppTour';
 import { useAuthStore } from '../stores/authStore';
 import { useHapticsPreference } from '../hooks/useHapticsPreference';
 import { trackProfileAction } from '../services/analytics/tracking';
+import { restorePaywallPurchases } from '../services/paywall';
+import { getUserEntitlementQueryKey } from '../queries/subscriptions/useUserEntitlementQuery';
 import type { SettingsScreenProps } from '../app/navigation';
 import { subscribeToClosingTransitionEnd } from '../app/navigation/useOpeningTransitionComplete';
 import { returnToHome } from '../app/navigation/returnToHome';
@@ -31,8 +34,41 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
   const [signingOut, setSigningOut] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [notificationsVisible, setNotificationsVisible] = useState(false);
+  const [restoring, setRestoring] = useState(false);
+  const queryClient = useQueryClient();
   const replayingTourRef = useRef(false);
   const { hapticsEnabled, setHapticsEnabled } = useHapticsPreference();
+
+  const handleRestorePurchases = async () => {
+    if (restoring) return;
+    setRestoring(true);
+    trackProfileAction('restore_purchases_started');
+    try {
+      const result = await restorePaywallPurchases();
+      if (result.status === 'restored' && result.isPro) {
+        await queryClient.invalidateQueries({
+          queryKey: getUserEntitlementQueryKey(user?.id ?? null),
+        });
+        trackProfileAction('restore_purchases_succeeded');
+        Alert.alert('Restored', 'Your subscription is active again.');
+        return;
+      }
+      trackProfileAction('restore_purchases_failed', { status: result.status });
+      if (result.status === 'failed') {
+        Alert.alert(
+          'Restore did not finish',
+          'Check your connection and try again in a moment.',
+        );
+        return;
+      }
+      Alert.alert(
+        'Nothing to restore',
+        'We could not find a subscription on this account. Make sure the store is signed in to the account that bought it.',
+      );
+    } finally {
+      setRestoring(false);
+    }
+  };
 
   const handleSignOut = () => {
     if (signingOut) return;
@@ -250,6 +286,20 @@ export default function SettingsScreen({ navigation }: SettingsScreenProps) {
                     thumbColor={hapticsEnabled ? colors.primary.blue500 : colors.neutral[50]}
                   />
                 }
+              />
+            </SettingsGroup>
+          </View>
+
+          <View style={styles.section}>
+            <SectionHeader title="Subscription" />
+            <SettingsGroup>
+              <SettingsRow
+                icon="restore"
+                label={restoring ? 'Restoring…' : 'Restore purchases'}
+                onPress={() => {
+                  void handleRestorePurchases();
+                }}
+                isLast
               />
             </SettingsGroup>
           </View>

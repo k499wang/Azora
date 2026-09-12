@@ -75,26 +75,51 @@ export function normalizeReviewPromptState(value: unknown): ReviewPromptState {
   };
 }
 
-export function shouldRequestReview(
+/**
+ * Why a prompt was held back. Reported as-is to analytics, so a suppressed
+ * prompt is visible rather than a silent nothing.
+ */
+export const ReviewPromptBlock = {
+  BudgetExhausted: 'budget_exhausted',
+  TooFewSessions: 'too_few_sessions',
+  TooFewDays: 'too_few_days',
+  PaywallCooldown: 'paywall_cooldown',
+  TooSoonAfterPrompt: 'too_soon_after_prompt',
+  TooFewSessionsSincePrompt: 'too_few_sessions_since_prompt',
+} as const;
+
+export type ReviewPromptBlockValue =
+  typeof ReviewPromptBlock[keyof typeof ReviewPromptBlock];
+
+/** Returns the rule that blocked the prompt, or null when it may be shown. */
+export function evaluateReviewPrompt(
   state: ReviewPromptState,
   nowMs: number,
-): boolean {
-  if (state.promptCount >= MAX_PROMPTS) return false;
-  if (state.completedSessions < MIN_SESSIONS_BEFORE_FIRST_PROMPT) return false;
-  if (state.consecutiveSessionDays < MIN_CONSECUTIVE_SESSION_DAYS) return false;
+): ReviewPromptBlockValue | null {
+  if (state.promptCount >= MAX_PROMPTS) return ReviewPromptBlock.BudgetExhausted;
+  if (state.completedSessions < MIN_SESSIONS_BEFORE_FIRST_PROMPT) {
+    return ReviewPromptBlock.TooFewSessions;
+  }
+  if (state.consecutiveSessionDays < MIN_CONSECUTIVE_SESSION_DAYS) {
+    return ReviewPromptBlock.TooFewDays;
+  }
   if (
     state.lastPaywallDismissedAt != null &&
     nowMs - state.lastPaywallDismissedAt < PAYWALL_COOLDOWN_MS
   ) {
-    return false;
+    return ReviewPromptBlock.PaywallCooldown;
   }
-  if (state.lastPromptAt == null) return true;
+  if (state.lastPromptAt == null) return null;
 
   const elapsedDays = (nowMs - state.lastPromptAt) / DAY_MS;
-  if (elapsedDays < MIN_DAYS_BETWEEN_PROMPTS) return false;
+  if (elapsedDays < MIN_DAYS_BETWEEN_PROMPTS) {
+    return ReviewPromptBlock.TooSoonAfterPrompt;
+  }
 
   const sessionsSincePrompt = state.completedSessions - state.lastPromptSessionCount;
-  return sessionsSincePrompt >= MIN_SESSIONS_BETWEEN_PROMPTS;
+  return sessionsSincePrompt >= MIN_SESSIONS_BETWEEN_PROMPTS
+    ? null
+    : ReviewPromptBlock.TooFewSessionsSincePrompt;
 }
 
 export function recordCompletedSession(
