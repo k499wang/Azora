@@ -327,6 +327,20 @@ export default function RoomSealFlow({
         )}
       </Animated.View>
 
+      {picking ? (
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            styles.caption,
+            { top: roomTop + roomHeight + spacing.md },
+            aroundStyle,
+          ]}
+        >
+          <Text style={styles.name}>{style.name}</Text>
+          <PagerDots count={ROOM_STYLES.length} index={index} onField />
+        </Animated.View>
+      ) : null}
+
       <Animated.View
         // The tallest the tray ever gets, not the tray it happens to be now.
         // Its words change between the two questions, and a tray that grows or
@@ -343,30 +357,12 @@ export default function RoomSealFlow({
         ]}
       >
         <Text style={styles.title}>
-          {picking ? 'Where next?' : 'You filled every corner'}
+          {picking && createNextRoom.isError
+            ? 'That didn’t open. Have another go.'
+            : picking
+              ? 'Where next?'
+              : 'You filled every corner'}
         </Text>
-        {picking && createNextRoom.isError ? (
-          // Said here rather than in an alert: the flow has one surface, and a
-          // failure that arrives as a system dialog over it is both a new
-          // screen and a dead end. The button is live again underneath, which
-          // is the whole recovery.
-          <Text style={styles.note}>That didn’t open. Have another go.</Text>
-        ) : picking ? (
-          // The name of the room being swiped through, and where it sits in
-          // the row — the pager's own, moved down here where every other word
-          // in this flow lives, and out of the room's box so that nothing but
-          // the room is in the thing that flies to Home.
-          <>
-            <Text style={styles.note}>{style.name}</Text>
-            <View style={styles.dots}>
-              <PagerDots count={ROOM_STYLES.length} index={index} onField />
-            </View>
-          </>
-        ) : (
-          <Text style={styles.note}>
-            All 7 decorations placed — this room is finished.
-          </Text>
-        )}
 
         <ChunkyButton
           label={
@@ -425,14 +421,20 @@ const styles = StyleSheet.create({
     color: colors.text.inverse,
     textAlign: 'center',
   },
-  note: {
-    ...typography.body.small,
-    color: colors.onBlock.textMuted,
-    textAlign: 'center',
-  },
-  dots: {
+  // Under the room it names, where a pager's own caption would be — but drawn
+  // outside the room's box, so that the thing that flies to Home is nothing
+  // but the room.
+  caption: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
     alignItems: 'center',
-    marginTop: spacing.xs,
+    gap: spacing.sm,
+  },
+  name: {
+    ...typography.title.title3,
+    color: colors.text.inverse,
+    textAlign: 'center',
   },
   tray: {
     position: 'absolute',
@@ -441,6 +443,6 @@ const styles = StyleSheet.create({
     bottom: 0,
     paddingTop: spacing.md,
     paddingHorizontal: padding.screen.horizontal,
-    gap: spacing.xs,
+    gap: spacing.md,
   },
 });
