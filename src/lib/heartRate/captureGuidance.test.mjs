@@ -39,15 +39,20 @@ test('unknown devices get generic guidance without a false camera claim', () => 
     /bottom|rightmost/,
   );
   assert.doesNotMatch(
-    getHeartRatePlacementGuidance(null).steps[0].title,
+    getHeartRatePlacementGuidance(null).steps[1].title,
     /bottom|rightmost/,
   );
 });
 
-test('placement steps explain coverage, pressure, and a steady posture', () => {
+test('placement steps prepare the hand, then explain coverage, pressure, and a steady posture', () => {
   const guidance = getHeartRatePlacementGuidance('iPhone 16');
 
   assert.deepEqual(guidance.steps, [
+    {
+      title: 'Case off, hands warm',
+      detail:
+        'A case sitting over the lens or tinting the flash blocks the light the reading needs. Cold fingers are the other common blocker \u2014 rub your hands together for about 30 seconds first.',
+    },
     {
       title: 'Press against the bottom camera',
       detail:

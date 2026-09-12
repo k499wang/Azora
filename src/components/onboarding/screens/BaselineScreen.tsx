@@ -14,6 +14,7 @@ import {
   getMeasurementCorrectionMessage,
   hasConfirmedPulse,
 } from '../../../lib/heartRate/captureGuidance';
+import { HEART_RATE_ONBOARDING_STALL_DELAY_MS } from '../../../lib/heartRate/captureStall';
 import type { FingerPlacementState, SignalStatus } from '../../../lib/heartRate/types';
 import { colors } from '../../../theme/colors';
 import { spacing } from '../../../theme/spacing';
@@ -110,7 +111,7 @@ export default function BaselineScreen({
   const [result, setResult] =
     useState<CompletedOnboardingBaselineResult | null>(null);
   const [progress, setProgress] = useState(0);
-  const cameraTarget = getHeartRateCameraTarget(Device.modelName);
+  const cameraTarget = getHeartRateCameraTarget(Device.modelName, Device.modelId);
 
   const startedAtRef = useRef<number | null>(null);
   const earlyBpmsRef = useRef<number[]>([]);
@@ -165,6 +166,7 @@ export default function BaselineScreen({
     fingerPlacement: stream.fingerPlacement,
     signalStatus: stream.signalStatus,
     context: 'onboarding_baseline',
+    delayMs: HEART_RATE_ONBOARDING_STALL_DELAY_MS,
   });
 
   useEffect(() => {
@@ -421,6 +423,7 @@ export default function BaselineScreen({
           visible={stallHelp.visible}
           statusMessage={placementCfg.status}
           pulseConfirmed={hasConfirmedSignal}
+          issue={stallHelp.issue}
           onDismiss={stallHelp.dismiss}
         />
       </>
@@ -436,7 +439,7 @@ export default function BaselineScreen({
       footer={
         <View style={styles.introFooter}>
           <OnboardingPrimaryButton
-            label="Check finger placement"
+            label="Start my reading"
             onPress={handleStart}
             enableHaptics={false}
           />

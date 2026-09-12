@@ -7,6 +7,12 @@ import type { FingerPlacementState, SignalStatus } from './types';
  */
 export const HEART_RATE_STALL_DELAY_MS = 20_000;
 
+/**
+ * Onboarding gets the help sooner. A first-time reader has no idea whether the
+ * wait is normal, and this capture is the one they can abandon the app over.
+ */
+export const HEART_RATE_ONBOARDING_STALL_DELAY_MS = 10_000;
+
 export type HeartRateStallIssue =
   | 'no_finger'
   | 'partial_coverage'

@@ -1,5 +1,11 @@
 import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import * as Device from 'expo-device';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import type { HeartRateStallIssue } from '../../lib/heartRate/captureStall';
+import {
+  getHeartRateCameraTarget,
+  getHeartRateTroubleshooting,
+} from '../../lib/heartRate/captureGuidance';
 import { colors } from '../../theme/colors';
 import type { ExerciseDarkTheme } from '../../theme/exerciseDarkThemes';
 import {
@@ -17,6 +23,8 @@ interface HeartRateHelpSheetProps {
   /** Mirrors the live check underneath, which the sheet covers while it is open. */
   statusMessage: string;
   pulseConfirmed: boolean;
+  /** The fault that stalled the search; decides which advice is shown. */
+  issue: HeartRateStallIssue | null;
   onDismiss: () => void;
   /** Set inside a session so the sheet matches the theme it interrupts. */
   theme?: ExerciseDarkTheme;
@@ -26,6 +34,7 @@ export function HeartRateHelpSheet({
   visible,
   statusMessage,
   pulseConfirmed,
+  issue,
   onDismiss,
   theme,
 }: HeartRateHelpSheetProps) {
@@ -35,20 +44,12 @@ export function HeartRateHelpSheet({
       ? LIGHT_HEART_RATE_HELP_PALETTE
       : exerciseHeartRateHelpPalette(theme);
 
-  const tips = [
-    {
-      title: 'Cover the lens',
-      detail: 'Lay your index fingertip flat over the highlighted lens. Keep the flash uncovered.',
-    },
-    {
-      title: 'Use light pressure',
-      detail: 'Rest your finger on the glass—don’t squeeze.',
-    },
-    {
-      title: 'Keep still',
-      detail: 'Set the phone down, relax your hand, and breathe normally.',
-    },
-  ];
+  // A window that never classified anything is the weak-perfusion case, which
+  // is what `no_pulse` already advises on.
+  const troubleshooting = getHeartRateTroubleshooting(
+    issue ?? 'no_pulse',
+    getHeartRateCameraTarget(Device.modelName, Device.modelId),
+  );
 
   return (
     <Modal
@@ -87,12 +88,17 @@ export function HeartRateHelpSheet({
             contentContainerStyle={styles.content}
             showsVerticalScrollIndicator={false}
           >
-            <Text style={[styles.title, { color: palette.title }]}>Tips</Text>
+            <Text style={[styles.title, { color: palette.title }]}>
+              {troubleshooting.title}
+            </Text>
+            <Text style={[styles.diagnosis, { color: palette.detail }]}>
+              {troubleshooting.diagnosis}
+            </Text>
             <View style={styles.illustrationWrap}>
               <HeartRatePlacementIllustration compact palette={palette} />
             </View>
             <HeartRatePlacementStepsCard
-              steps={tips}
+              steps={troubleshooting.tips}
               appearance="plain"
               palette={palette}
             />
@@ -159,6 +165,10 @@ const styles = StyleSheet.create({
   title: {
     ...typography.title.title3,
     fontFamily: fonts.semibold,
+  },
+  diagnosis: {
+    ...typography.body.small,
+    paddingBottom: spacing.xs,
   },
   illustrationWrap: {
     width: '82%',
